@@ -95,8 +95,87 @@ long xhdi_handler(ushort stack);
 
 ulong my_drvbits;
 PUN_INFO pun_usb;
+#ifdef TOSONLY
+static short xhdl_exists;       /* set by install_xhdi_driver() */
+static long dl_secsiz;
+static long dl_clusts;
+static long dl_maxsec;
+static long dl_clusts12;
+#endif
 
 /*---Functions ---*/
+
+#ifdef TOSONLY
+/*
+ * XHDI syscall XHDOSLimits routine
+ */
+static long
+sys_XHDOSLimits (ushort which, ulong limit)
+{
+    if (xhdl_exists)            /* if XHDOSLimits() already exists, */
+        return ENOSYS;          /* let previous driver handle it    */
+
+    if (limit == 0)
+    {
+        switch (which)
+        {
+            /* maximal sector size (BIOS level) */
+            case XH_DL_SECSIZ:
+                return dl_secsiz;
+
+            /* minimal number of FATs */
+            case XH_DL_MINFAT:
+                return 2L;
+
+            /* maximal number of FATs */
+            case XH_DL_MAXFAT:
+                return 2L;
+
+            /* sectors per cluster minimal */
+            case XH_DL_MINSPC:
+                return 2L;
+
+            /* sectors per cluster maximal */
+            case XH_DL_MAXSPC:
+                return 2L;
+
+            /* maximal number of clusters of a 16 bit FAT */
+            case XH_DL_CLUSTS:
+                return dl_clusts;
+
+            /* maximal number of sectors */
+            case XH_DL_MAXSEC:
+                return dl_maxsec;
+
+            /* maximal number of BIOS drives supported by the DOS */
+            case XH_DL_DRIVES:
+                return MAX_LOGICAL_DRIVE;
+
+            /* maximal clustersize */
+            case XH_DL_CLSIZB:
+                return dl_secsiz * 2;
+
+            /* maximal (bpb->rdlen * bpb->recsiz / 32) */
+            case XH_DL_RDLEN:
+                return 1008L;   /* we return the same value as HDDRIVER */
+
+            /* maximal number of clusters of a 12 bit FAT */
+            case XH_DL_CLUSTS12:
+                return dl_clusts12;
+
+            /* maximal number of clusters of a 32 bit FAT */
+            case XH_DL_CLUSTS32:
+                return 0L;          /* TOS doesn't support FAT32 */
+
+            /* supported bits in bpb->bflags */
+            case XH_DL_BFLAGS:
+                return 0x00000001L;
+        }
+    }
+
+    return ENOSYS;
+}
+#endif
 
 static ushort
 XHGetVersion(void)
@@ -355,8 +434,6 @@ XHMiNTInfo(void *data)
 	return ENOSYS;
 }
 
-/* The kernel handles this call */
-#ifdef TOSONLY
 static long
 XHDOSLimits(ushort which, ulong limit)
 {
@@ -366,9 +443,12 @@ XHDOSLimits(ushort which, ulong limit)
 			return ret;
 	}
 
-	return ENOSYS;
-}
+#ifdef TOSONLY
+	return sys_XHDOSLimits(which,limit);
+#else
+	return ENOSYS;	/* so FreeMiNT kernel will handle this call */
 #endif
+}
 
 static long
 XHLastAccess(ushort major, ushort minor, ulong *ms)
@@ -786,7 +866,6 @@ xhdi_handler(ushort stack)
 			return XHMiNTInfo(args->data);
 		}
 
-#ifdef TOSONLY
 		case XHDOSLIMITS:
 		{
 			struct XHDOSLIMITS_args
@@ -798,7 +877,6 @@ xhdi_handler(ushort stack)
 
 			return XHDOSLimits(args->which, args->limit);
 		}
-#endif
 
 		case XHLASTACCESS:
 		{
@@ -904,16 +982,57 @@ set_cookie (void)
 long
 install_xhdi_driver(void)
 {
+#ifndef TOSONLY
+    return xhnewcookie(*xhdi_handler);
+#else
     long r = 0;
-#ifdef TOSONLY
-  	cookie_fun XHDI = get_fun_ptr ();
-    if (XHDI) {     
-        r = XHDI (9, *xhdi_handler);
+    ushort version;
+    cookie_fun XHDI = get_fun_ptr ();
+
+    xhdl_exists = 0;
+    if (XHDI) {
+        if (XHDI(XHDOSLIMITS,XH_DL_SECSIZ,0) >= 0)
+            xhdl_exists = 1;
+        r = XHDI(XHNEWCOOKIE,*xhdi_handler);
     } else {
         set_cookie();
     }
-#else
-	r = xhnewcookie(*xhdi_handler);
-#endif
+
+    if (xhdl_exists == 0)       /* set up values used by sys_XHDOSLimits() */
+    {
+        version = Sversion();                   /* determine GEMDOS version */
+        version = (version>>8) | (version<<8);  /* swap to correct order */
+
+        if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = 16383L;
+            dl_maxsec = 32767L;     /* max partition size = 256MB approx */
+            dl_clusts12 = 2046L;
+        }
+        else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = MAX_FAT16_CLUSTERS;
+            dl_maxsec = 65535L;     /* max partition size = 512MB approx */
+            dl_clusts12 = MAX_FAT12_CLUSTERS;
+        }
+        else if (version < 0x0040)  /* i.e. TOS 4.0x */
+        {
+            dl_secsiz = MAX_LOGSEC_SIZE;
+            dl_clusts = MAX_FAT16_CLUSTERS;
+            dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
+            dl_clusts12 = MAX_FAT12_CLUSTERS;
+        }
+        else                        /* something strange, assume the worst */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = 16383L;
+            dl_maxsec = 32767L;
+            dl_clusts12 = 2046L;
+        }
+    }
+
     return r;
+#endif
 }
