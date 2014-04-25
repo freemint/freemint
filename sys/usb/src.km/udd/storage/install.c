@@ -31,10 +31,6 @@
 /*
  * the following should be in headers for other modules
  */
-#define MAX_LOGSEC_SIZE		16384
-#define MAX_FAT12_CLUSTERS  4078    /* architectural constants */
-#define MAX_FAT16_CLUSTERS  65518
-
 #define RWFLAG			0x0001		/* for Rwabs() 'mode' */
 #define NOTRANSLATE		0x0008
 
