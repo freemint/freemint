@@ -6,7 +6,8 @@
  * 
  * Modified for FreeMiNT by Frank Naumann <fnaumann@freemint.de>
  * 
- * Copyright 1994 Hamish Macdonald
+ * Copyright (C) 1994 Hamish Macdonald
+ * Copyright (C) 2004 Greg Ungerer <gerg@uclinux.com>
  * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
@@ -36,7 +37,7 @@
 # define _mint_m68k_asm_delay_h
 
 # include "mint/ktypes.h"
-
+# include "arch/timer.h"
 
 # if __KERNEL__ == 1
 
@@ -56,19 +57,50 @@ extern ulong loops_per_sec;
 static inline void
 __delay (register ulong loops)
 {
+# ifdef __mcoldfire__
+
+	/* The coldfire runs this loop at significantly different speeds
+	 * depending upon long word alignment or not.  We'll pad it to
+	 * long word alignment which is the faster version.
+	 * The 0x4a8e is of course a 'tstl %fp' instruction.  This is better
+	 * than using a NOP (0x4e71) instruction because it executes in one
+	 * cycle not three and doesn't allow for an arbitary delay waiting
+	 * for bus cycles to finish.  Also fp/a6 isn't likely to cause a
+	 * stall waiting for the register to become valid if such is added
+	 * to the coldfire at some stage.
+	 */
+	__asm__ __volatile__ (	".balignw 4, 0x4a8e\n\t"
+				"1: subql #1, %0\n\t"
+				"jcc 1b"
+		: "=d" (loops) : "0" (loops));
+
+# else
+
 	__asm__ __volatile__
 	(
 		"1: subql #1,%0; jcc 1b"
 		: "=d" (loops)
 		: "0" (loops)
 	);
-}
 
-# ifdef __M68020__
+# endif /* (__mcoldfire__) */
+}
 
 static inline void
 udelay (register ulong usecs)
 {
+/*
+ *	loops = (usecs * loops_per_sec) / 1000000
+ *	loops_per_sec = loops_per_jiffy * HZ
+ *
+ *	We use integer arithmetic (no floating point).
+ *	Because of the (1/1000000) component loops_per_sec easily becomes
+ *	zero. To solve this we multiply loops_per_sec by 2^32, product moves
+ *	left by 32 bit, we get product most significant 32 bits.
+ */
+
+# if defined (__M68020__)
+
 	register ulong tmp;
 	
 	usecs *= 4295;		/* 2**32 / 1000000 */
@@ -79,22 +111,52 @@ udelay (register ulong usecs)
 		: "=d" (usecs), "=d" (tmp)
 		: "d" (usecs), "1" (loops_per_sec)
 	);
-	
+
 	__delay (usecs);
-}
 
-# else
+# elif defined (__mcoldfire__)
 
-static inline void
-udelay (register ulong usecs)
-{
+/*
+ *	Ideally we use a 32*32->64 multiply to calculate the number of
+ *	loop iterations, but the older standard 68k and ColdFire do not
+ *	have this instruction. So for them we have a close approximation
+ *	loop using 32*32->32 multiplies only. This calculation based on
+ *	the Linux ARM old version of delay.
+ *
+ *	We want to implement:
+ *
+ *	loops = (a * b) / 2^32
+ *	a = usecs * HZ * SCALE and b = loops_per_jiffy
+ *
+ *	loops = (usecs * SCALE * HZ * loops_per_jiffy) / 2^32
+ *	SCALE = 2^32 / 1000000  ==~ 4294 == 0x10c6
+ *
+ *	Finally to get the best accuracy for HZ = 200 (MiNT's tick frecuency),
+ *	we use 2^28 instead of 2^32.
+ */
+
+# define	HZSCALE			(268435456 / (1000000/HZ)) /* 268435456 = 2^28 */
+# define	loops_per_jiffy		(loops_per_sec / HZ)
+
+	__delay((((usecs * HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6);
+
+# else /* M68000 */
+
 	__delay(usecs); /* Sigh */
-}
 
 # endif
+}
 
 # ifdef loops_per_sec
 # undef loops_per_sec
 # endif
+
+/*
+ *	Moved the udelay() function into library code, no longer inlined.
+ *	I had to change the algorithm because we are overflowing now on
+ *	the faster ColdFire parts. The code is a little bigger, so it makes
+ *	sense to library it.
+ */
+extern void udelay(unsigned long usecs);
 
 # endif /* _mint_m68k_asm_delay_h */
