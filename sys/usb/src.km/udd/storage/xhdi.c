@@ -70,6 +70,9 @@ char *DRIVER_COMPANY = "FreeMiNT list";
 # define ASSERT(x)	assert x
 
 #endif
+
+# define Sversion()	0x4000		/* this is FreeMiNT's GEMDOS version */
+
 #endif
 /*--- External variables ---*/
 
@@ -94,26 +97,50 @@ long xhdi_handler(ushort stack);
 /*--- Global variables ---*/
 
 ulong my_drvbits;
-PUN_INFO pun_usb;
-#ifdef TOSONLY
-static short xhdl_exists;       /* set by install_xhdi_driver() */
-static long dl_secsiz;
-static long dl_clusts;
-static long dl_maxsec;
-static long dl_clusts12;
-#endif
+USB_PUN_INFO pun_usb;
 
 /*---Functions ---*/
 
-#ifdef TOSONLY
 /*
  * XHDI syscall XHDOSLimits routine
  */
-static long
-sys_XHDOSLimits (ushort which, ulong limit)
+long
+sys_XHDOSLimits(ushort which,ulong limit)
 {
-    if (xhdl_exists)            /* if XHDOSLimits() already exists, */
-        return ENOSYS;          /* let previous driver handle it    */
+    static long dl_secsiz, dl_clusts, dl_maxsec, dl_clusts12;
+    static int first_time = 1;
+
+    if (first_time)
+    {
+        ushort version = Sversion();            /* determine GEMDOS version */
+        version = (version>>8) | (version<<8);  /* swap to correct order */
+
+        if (version > 0x0040)       /* unknown               */
+            version = 0x0000;       /* so force it to lowest */
+
+        if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = 16383L;
+            dl_maxsec = 32767L;     /* max partition size = 256MB approx */
+            dl_clusts12 = 2046L;
+        }
+        else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = 32767L;
+            dl_maxsec = 65535L;     /* max partition size = 512MB approx */
+            dl_clusts12 = MAX_FAT12_CLUSTERS;
+        }
+        else                        /* i.e. TOS 4.0x or FreeMiNT */
+        {
+            dl_secsiz = MAX_LOGSEC_SIZE;
+            dl_clusts = 32767L;
+            dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
+            dl_clusts12 = MAX_FAT12_CLUSTERS;
+        }
+        first_time = 0;
+    }
 
     if (limit == 0)
     {
@@ -175,7 +202,6 @@ sys_XHDOSLimits (ushort which, ulong limit)
 
     return ENOSYS;
 }
-#endif
 
 static ushort
 XHGetVersion(void)
@@ -986,51 +1012,12 @@ install_xhdi_driver(void)
     return xhnewcookie(*xhdi_handler);
 #else
     long r = 0;
-    ushort version;
     cookie_fun XHDI = get_fun_ptr ();
 
-    xhdl_exists = 0;
     if (XHDI) {
-        if (XHDI(XHDOSLIMITS,XH_DL_SECSIZ,0) >= 0)
-            xhdl_exists = 1;
         r = XHDI(XHNEWCOOKIE,*xhdi_handler);
     } else {
         set_cookie();
-    }
-
-    if (xhdl_exists == 0)       /* set up values used by sys_XHDOSLimits() */
-    {
-        version = Sversion();                   /* determine GEMDOS version */
-        version = (version>>8) | (version<<8);  /* swap to correct order */
-
-        if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
-        {
-            dl_secsiz = 8192L;
-            dl_clusts = 16383L;
-            dl_maxsec = 32767L;     /* max partition size = 256MB approx */
-            dl_clusts12 = 2046L;
-        }
-        else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
-        {
-            dl_secsiz = 8192L;
-            dl_clusts = MAX_FAT16_CLUSTERS;
-            dl_maxsec = 65535L;     /* max partition size = 512MB approx */
-            dl_clusts12 = MAX_FAT12_CLUSTERS;
-        }
-        else if (version < 0x0040)  /* i.e. TOS 4.0x */
-        {
-            dl_secsiz = MAX_LOGSEC_SIZE;
-            dl_clusts = MAX_FAT16_CLUSTERS;
-            dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
-            dl_clusts12 = MAX_FAT12_CLUSTERS;
-        }
-        else                        /* something strange, assume the worst */
-        {
-            dl_secsiz = 8192L;
-            dl_clusts = 16383L;
-            dl_maxsec = 32767L;
-            dl_clusts12 = 2046L;
-        }
     }
 
     return r;
