@@ -19,15 +19,10 @@
 #ifndef _XHDI_H
 #define _XHDI_H
 
+#include "../../../../pun.h"		/* for PUN_INFO */
 /* AHDI */
 
-#define PUN_DEV           0x1F /* device number of HD */
-#define PUN_UNIT          0x07 /* Unit number */
-#define PUN_SCSI          0x08 /* 1=SCSI 0=ACSI */
-#define PUN_IDE           0x10 /* Falcon IDE */
 #define PUN_USB           0x20 /* USB */
-//#define PUN_REMOVABLE     0x40 /* Removable media */
-#define PUN_VALID         0x80 /* zero if valid */
 
 /* BIOS parameter block */
 
@@ -53,7 +48,7 @@ typedef struct bpb BPB;
 #define MAX_LOGICAL_DRIVE 32
 #endif
 
-struct pun_info
+struct usb_pun_info
 {
 	ushort	puns;			/* Number of HD's */
 	uchar	pun [MAX_LOGICAL_DRIVE];		/* AND with masks below: */
@@ -67,9 +62,9 @@ struct pun_info
 	short	flags[MAX_LOGICAL_DRIVE];		/* B15:swap, B7:change, B0:bootable */
 	BPB	bpb[MAX_LOGICAL_DRIVE];
 };
-typedef struct pun_info PUN_INFO;
+typedef struct usb_pun_info USB_PUN_INFO;
 
-/* flags in PUN_INFO */
+/* flags in USB_PUN_INFO */
 #define CHANGE_FLAG		(1<<7)
 
 /* XHDI opcodes */
@@ -116,6 +111,8 @@ typedef struct pun_info PUN_INFO;
  */
 #define MAX_LOGSEC_SIZE     16384L		/* old versions of TOS have lower limits */
 #define MAX_FAT12_CLUSTERS  4078L
-#define MAX_FAT16_CLUSTERS  32767L
+#define MAX_FAT16_CLUSTERS  65518L
+
+long sys_XHDOSLimits(ushort which,ulong limit);	/* called directly by install.c */
 
 #endif /* _XHDI_H */

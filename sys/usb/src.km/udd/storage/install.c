@@ -26,7 +26,7 @@
 #include <gem.h>
 #endif
 #include "../../global.h"
-#include "xhdi.h"					/* for PUN_XXX */
+#include "xhdi.h"					/* for USB_PUN_XXX */
 
 /*
  * the following should be in headers for other modules
@@ -46,7 +46,7 @@ unsigned long usb_stor_write(long device,unsigned long blknr,
 		unsigned long blkcnt,const void *buffer);		//usb_storage.c
 
 long install_xhdi_driver(void);							//xhdi.c
-extern PUN_INFO pun_usb;								//xhdi.c
+extern USB_PUN_INFO pun_usb;							//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
 /*
  * end of stuff for other headers
@@ -190,7 +190,10 @@ static unsigned long getilong(uchar *byte)
 /*
  *	build the BPB from the boot sector
  *
- *	if it is neither FAT12 nor FAT16, we set 'recsiz' to zero
+ *	we set 'recsiz' to zero, meaning this partition is unavailable, for
+ *	any of the following reasons:
+ *	1. too many clusters for the current TOS version
+ *	2. logical sectors too large for the current TOS version
  */
 static void build_bpb(BPB *bpbptr, void *bs)
 {
@@ -208,6 +211,8 @@ static void build_bpb(BPB *bpbptr, void *bs)
 	bps = getiword(dosbs->bps);				/* bytes per sector */
 	if (bps == 0)
 		return;
+	if (bps > sys_XHDOSLimits(XH_DL_SECSIZ,0))
+		return;
 
 	bpbptr->recsiz = bps;
 	bpbptr->clsiz = dosbs->spc;				/* sectors per cluster */
@@ -224,14 +229,16 @@ static void build_bpb(BPB *bpbptr, void *bs)
 
 	sectors = getiword(dosbs->sec);			/* old sector count */
 	if (!sectors) 							/* zero => more than 65535, */
-		sectors = getilong(dosbs->sec2);		/*  so use new sector count */
+		sectors = getilong(dosbs->sec2);	/*  so use new sector count */
+
 	clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
-	if (clusters > MAX_FAT16_CLUSTERS) {
+	if (clusters > sys_XHDOSLimits(XH_DL_CLUSTS,0)) {
 		bpbptr->recsiz = 0;
 		return;
 	}
+
 	bpbptr->numcl = clusters;
-	if (clusters > MAX_FAT12_CLUSTERS)
+	if (clusters > sys_XHDOSLimits(XH_DL_CLUSTS12,0))
 		bpbptr->bflags = 1;					/* FAT16 */
 }
 
@@ -305,6 +312,96 @@ static int valid_partition(unsigned long type)
 }
 
 /*
+ * the following routine is stolen from FreeMiNT's pun.c module
+ */
+#define PUN_PTR	(*((PUN_INFO **) 0x516L))
+PUN_INFO *get_pun(void)
+{
+	PUN_INFO *pun = PUN_PTR;
+	if (pun)
+		if (pun->cookie == 0x41484449L)
+			if (pun->cookie_ptr == &(pun->cookie))
+				if (pun->version_num >= 0x300)
+					return pun;
+	return NULL;
+}
+
+#ifdef TOSONLY
+#define bufl0	(*(BCB **)0x4b2L)
+#define bufl1	(*(BCB **)0x4b6L)
+
+#define BCB	struct _bcb
+BCB
+{
+    BCB     *b_link;    /* next bcb (API)          */
+    char    filler[12];	/* not relevant            */
+    char    *b_bufr;    /* pointer to buffer (API) */
+};
+
+/*
+ * when no AHDI structure exists, this routine is called to install one.
+ * it assumes that the existing buffer pool uses 512-byte buffers (the
+ * logical sector size for floppies)
+ */
+static PUN_INFO *install_pun(void)
+{
+	PUN_INFO *pun;
+	BCB *bcb;
+	long bufsiz, bufcnt = 0L;
+	char *bufptr;
+
+	bufsiz = sys_XHDOSLimits(XH_DL_SECSIZ,0);
+
+	/*
+	 * allocate new buffers for BCB chains
+	 */
+	for (bcb = bufl0; bcb; bcb = bcb->b_link)
+		bufcnt++;
+	for (bcb = bufl1; bcb; bcb = bcb->b_link)
+		bufcnt++;
+	bufptr = (char *)Malloc(bufcnt*bufsiz);
+	if (!bufptr)
+		return NULL;
+
+	/*
+	 * create & initialise PUN_INFO structure
+	 */
+	pun = (PUN_INFO *)Malloc(sizeof(PUN_INFO));
+	if (!pun) {
+		Mfree(bufptr);
+		return NULL;
+	}
+	memset(pun,0x00,sizeof(PUN_INFO));
+	memset(pun->pun,0xff,16); 
+	pun->cookie = AHDI;
+	pun->cookie_ptr = &pun->cookie;
+	pun->version_num = 0x0300;
+	pun->max_sect_siz = bufsiz;
+	PUN_PTR = pun;
+
+	/*
+	 * copy existing buffers to new ones, updating the BCBs
+	 */
+	for (bcb = bufl0; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
+		memcpy(bufptr,bcb->b_bufr,512);
+		bcb->b_bufr = bufptr;
+	}
+	for (bcb = bufl1; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
+		memcpy(bufptr,bcb->b_bufr,512);
+		bcb->b_bufr = bufptr;
+	}
+
+	return pun;
+}
+#endif
+
+#ifdef TOSONLY
+#define restore_old_state(ret) { if (ret) SuperToUser(ret); }
+#else
+#define restore_old_state(ret)
+#endif
+
+/*
  *  install the new device
  *
  *	returns -1 for error, otherwise the drive number assigned
@@ -314,37 +411,56 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 {
 	int logdrv;
 	long mask;
+	PUN_INFO *pun_ptr;
 
+#ifdef TOSONLY
+	/* goto supervisor mode because of drvbits & handlers */
+	long ret = 0;
+	if (!Super(1L))
+		ret = Super(0L);
+#endif
+
+	pun_ptr = get_pun();
+
+#ifdef TOSONLY
 	/*
-	 * check input parameters
+	 * install PUN_INFO if necessary (i.e. no hard disk driver loaded)
 	 */
-	if (dev_num > PUN_DEV) {
-		display_error(dev_num,vendor,revision,product,"invalid device number");
+	if (!pun_ptr)
+		pun_ptr = install_pun();
+
+	if (!pun_ptr) {
+		restore_old_state(ret);
+		display_error(dev_num,vendor,revision,product,"insufficient memory");
 		return -1L;
 	}
-	if (!valid_partition(part_type)) {
-		display_error(dev_num,vendor,revision,product,"invalid partition type");
-		return -1L;
-	}
+#endif
 
 	/*
-	 * install PUN_INFO if necessary
+	 * install USB_PUN_INFO if necessary
 	 */
 	if (pun_usb.cookie != AHDI) {
 		pun_usb.cookie = AHDI;
 		pun_usb.cookie_ptr = &pun_usb.cookie;
 		pun_usb.puns = 0;
 		pun_usb.version_num = 0x0300;
-		pun_usb.max_sect_siz = MAX_LOGSEC_SIZE;
+		pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
 		memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE);	/* mark all puns invalid */
 	}
 
-#ifdef TOSONLY
-	/* goto supervisor mode because of drvbits & handlers */
-        long ret = 0;
-        if (!Super(1L))
-                ret = Super(0L);
-#endif
+	/*
+	 * check input parameters
+	 */
+	if (dev_num > PUN_DEV) {
+		restore_old_state(ret);
+		display_error(dev_num,vendor,revision,product,"invalid device number");
+		return -1L;
+	}
+	if (!valid_partition(part_type)) {
+		restore_old_state(ret);
+		display_error(dev_num,vendor,revision,product,"invalid partition type");
+		return -1L;
+	}
 
 	/*
 	 * find first free non-floppy drive
@@ -353,9 +469,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		if (!(drvbits&mask))
 			break;
 	if (logdrv >= MAX_LOGICAL_DRIVE) {
-#ifdef TOSONLY
-        if (ret) SuperToUser(ret);
-#endif
+		restore_old_state(ret);
 		display_error(dev_num,vendor,revision,product,"no drives available");
 		return -1L;
 	}
@@ -364,15 +478,13 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	 * read in the first sector, which we'll get BPB info from
 	 */
 	if (usb_stor_read(dev_num,part_offset,1,boot_sector) != 1) {
-#ifdef TOSONLY
-        if (ret) SuperToUser(ret);
-#endif
+		restore_old_state(ret);
 		display_error(dev_num,vendor,revision,product,"boot sector not readable");
 		return -1L;
 	}
 
 	/*
-	 * fill in the pun_info structure
+	 * update the usb_pun_info structure
 	 */
 	pun_usb.puns++;
 
@@ -407,10 +519,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		vectors_installed = 1;
 	}
 
-#ifdef TOSONLY
-        if (ret) SuperToUser(ret);
-#endif
-
+	restore_old_state(ret);
 	display_installed(dev_num,vendor,revision,product,logdrv);
 
 	return logdrv;
@@ -426,17 +535,15 @@ long uninstall_usb_stor(long logdrv)
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
 
 #ifdef TOSONLY
-	/* goto supervisor mode because of drvbits & handlers */
-        long ret = 0;
-        if (!Super(1L))
-                ret = Super(0L);
+	/* goto supervisor mode because of drvbits */
+	long ret = 0;
+	if (!Super(1L))
+		ret = Super(0L);
 #endif
 	drvbits &= ~(1L<<logdrv);
 	my_drvbits &= ~(1L<<logdrv);
-#ifdef TOSONLY
-        if (ret) SuperToUser(ret);
-#endif
 
+	restore_old_state(ret);
 
 	return 0L;
 }
