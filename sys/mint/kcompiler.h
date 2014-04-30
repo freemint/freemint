@@ -109,7 +109,12 @@
 # define MAX(a,b)	(((a) > (b)) ? (a) : (b))
 # define MIN(a,b)	(((a) > (b)) ? (b) : (a))
 
+# define MAX3(a,b,c)	((a) > (b) ? ((a) > (c) ? (a) : (c)) : ((b) > (c) ? (b) : (c)))
+# define MIN3(a,b,c)	((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+
 # define ABS(val)	(((val) < 0) ? -val : val)
 
+# define ROUNDUP(a,b)	((((a) + ((b) - 1)) / (b)) * (b))
+# define ROUNDDOWN(a,b)	(((a) / (b)) * (b))
 
 # endif /* _mint_misc_h */
