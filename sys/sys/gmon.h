@@ -132,12 +132,6 @@ struct rawarc
 };
 
 /*
- * general rounding functions.
- */
-# define ROUNDDOWN(x,y)	(((x)/(y))*(y))
-# define ROUNDUP(x,y)	((((x)+(y)-1)/(y))*(y))
-
-/*
  * The profiling data structures are housed in this structure.
  */
 struct gmonparam
