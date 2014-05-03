@@ -31,11 +31,10 @@
 
 /*--- Defines ---*/
 
-#define XHDI_VERSION		0x120
+#define XHDI_VERSION		0x130
 #define MAX_IPL			5
-#define BLOCKSIZE		512
 #define XH_TARGET_REMOVABLE	0x02L
-#define STRINGLEN		32
+#define STRINGLEN		33 /* including termination character */
 
 #ifdef TOSONLY
 char *DRIVER_NAME = "TOS USB";
@@ -522,32 +521,34 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-	if (blocksize) {
-		/* usually physical sector size on HDD is 512 bytes */
-		*blocksize = BLOCKSIZE;
-		DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
-			major, minor, *blocksize));
-	}
-
-	if (deviceflags) {
-		*deviceflags = XH_TARGET_REMOVABLE;
-		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
-			major, minor, *deviceflags));
-	}
-
-	if (productname) {
+    {
 		short dev = major & PUN_DEV;
-		block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
-		char devName[64];
+        block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+	
+        if (blocksize) {
+	    	*blocksize = dev_desc->blksz;
+	    	DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
+	    		major, minor, *blocksize));
+	    }
 
-		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
-				
-		memset(devName, 0, 64);
-		strcat(devName, dev_desc->vendor);
-		strcat(devName, " ");
-		strcat(devName, dev_desc->product);
-		strncpy(productname, devName, stringlen - 1);
-	}
+    	if (deviceflags) {
+    		*deviceflags = XH_TARGET_REMOVABLE;
+    		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
+    			major, minor, *deviceflags));
+    	}
+
+    	if (productname) {
+    		char devName[64];
+
+    		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
+
+    		memset(devName, 0, 64);
+    		strcat(devName, dev_desc->vendor);
+    		strcat(devName, " ");
+    		strcat(devName, dev_desc->product);
+    		strncpy(productname, devName, stringlen);
+    	}
+    }
 
 	return E_OK;
 }
