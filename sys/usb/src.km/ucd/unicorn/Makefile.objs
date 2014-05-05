@@ -49,7 +49,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(CC) -Wl,-M $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
+	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 	
 $(OBJS): ../UNICORNDEFS
 
