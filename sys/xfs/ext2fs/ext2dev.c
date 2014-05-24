@@ -243,16 +243,6 @@ e_write (FILEPTR *f, const char *buf, long bytes)
 	if (IS_APPEND (c))	pos = c->i_size;
 	else			pos = f->pos;
 	
-# if 0
-	/* Check for overflow.. */
-	if (pos > (__u32) (pos + count))
-	{
-		count = ~pos; /* == 0xFFFFFFFF - pos */
-		if (!count)
-			return EFBIG;
-	}
-# endif
-	
 	block = pos >> EXT2_BLOCK_SIZE_BITS (s);
 	offset = pos & EXT2_BLOCK_SIZE_MASK (s);
 	
@@ -375,9 +365,13 @@ out:
 	if (pos > c->i_size)
 	{
 		c->i_size = pos;
-		c->in.i_size = cpu2le32 (pos);
 	}
-	
+
+	if (pos > cpu2le32(c->in.i_size)) 
+	{
+		c->in.i_size = cpu2le32(pos);
+	}
+
 	c->in.i_ctime = c->in.i_mtime = cpu2le32 (CURRENT_TIME);
 	mark_inode_dirty (c);
 	
@@ -404,7 +398,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	if (EXT2_ISDIR (le2cpu16 (c->in.i_mode)))
 		return EISDIR;
 	
-	todo = MIN ((long)(c->i_size - f->pos), bytes);
+	todo = MAX(0, MIN ((long)(c->i_size - f->pos), bytes));
 	done = 0;
 	
 	if (todo == 0)
@@ -550,7 +544,7 @@ e_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 	
-	if ((where < 0) || (where > c->i_size))
+	if (where < 0)
 	{
 		DEBUG (("Ext2-FS [%c]: e_lseek: EBADARG", f->fc.dev+'A'));
 		return EBADARG;
@@ -759,8 +753,10 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 				while (lck)
 				{
 					if (lck->l.l_pid == cpid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;

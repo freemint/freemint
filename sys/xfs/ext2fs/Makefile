@@ -1,10 +1,10 @@
 #
-# Makefile for 
+# Makefile for
 #
 TARGET = ext2.xfs
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
@@ -25,7 +25,8 @@ DEFINITIONS = -D__KERNEL_XFS__
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 CPU = 020-60
-STRIPFLAGS = 
+#CPU = 000
+STRIPFLAGS =
 
 # default definitions
 SGENFILES = $(TARGET)
