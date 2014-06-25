@@ -367,7 +367,7 @@ out:
 		c->i_size = pos;
 	}
 
-	if (pos > cpu2le32(c->in.i_size)) 
+	if (pos > le2cpu32(c->in.i_size)) 
 	{
 		c->in.i_size = cpu2le32(pos);
 	}
