@@ -239,6 +239,7 @@ _Read_mem_longword:
 	rts
 
 _Fast_read_mem_byte:
+	move.l 4(SP),D0          // handle
 	move.l 8(SP),D1          // address to access (in PCI memory address space)
 	move.l _tab_funcs_pci,A1
 	move.l 88(A1),A1
@@ -248,6 +249,7 @@ _Fast_read_mem_byte:
 	rts
 
 _Fast_read_mem_word:
+	move.l 4(SP),D0          // handle
 	move.l 8(SP),D1          // address to access (in PCI memory address space)
 	move.l _tab_funcs_pci,A1
 	move.l 92(A1),A1
@@ -257,6 +259,7 @@ _Fast_read_mem_word:
 	rts
 
 _Fast_read_mem_longword:
+	move.l 4(SP),D0          // handle
 	move.l 8(SP),D1          // address to access (in PCI memory address space)
 	move.l _tab_funcs_pci,A1
 	move.l 96(A1),A1
@@ -320,6 +323,7 @@ _Read_io_longword:
 	rts
 
 _Fast_read_io_byte:
+	move.l 4(SP),D0          // handle
 	move.l 8(SP),D1          // address to access (in PCI I/O address space)
 	move.l _tab_funcs_pci,A1
 	move.l 124(A1),A1
@@ -329,6 +333,7 @@ _Fast_read_io_byte:
 	rts
 
 _Fast_read_io_word:
+	move.l 4(SP),D0          // handle
 	move.l 8(SP),D1          // address to access (in PCI I/O address space)
 	move.l _tab_funcs_pci,A1
 	move.l 128(A1),A1
@@ -338,6 +343,7 @@ _Fast_read_io_word:
 	rts
 
 _Fast_read_io_longword:
+	move.l 4(SP),D0          // handle
 	move.l 8(SP),D1          // address to access (in PCI I/O address space)
 	move.l _tab_funcs_pci,A1
 	move.l 132(A1),A1
