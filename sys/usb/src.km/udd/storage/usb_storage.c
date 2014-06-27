@@ -675,16 +675,9 @@ dev_print(block_dev_desc_t *dev_desc)
 #endif
 	if(dev_desc->type == DEV_TYPE_UNKNOWN)
 	{
-		c_conws(("not available"));
+		DEBUG(("not available"));
 		return;
 	}
-    c_conws("Vendor: ");
-    c_conws(dev_desc->vendor);
-    c_conws(" Rev: ");
-    c_conws(dev_desc->revision);
-    c_conws(" Prod: ");
-    c_conws(dev_desc->product);
-    c_conws("\r\n");
 	if((dev_desc->lba * dev_desc->blksz) > 0L)
 	{
 		unsigned long mb, mb_quot, mb_rem, gb, gb_quot, gb_rem;
@@ -701,18 +694,13 @@ dev_print(block_dev_desc_t *dev_desc)
 		UNUSED(gb_rem);
 #ifdef CONFIG_LBA48
 		if(dev_desc->lba48)
-			c_conws("Supports 48-bit addressing");
+			DEBUG(("Supports 48-bit addressing"));
 #endif
-        c_conws("Capacity: ");
-        c_conout('0' + gb_quot);
-        c_conout('.');
-        c_conout('0' + gb_rem);
-        c_conws(" GB\r\n");
-//		ALERT(("Capacity: %ld.%ld MB = %ld.%ld GB (%ld x %ld)", mb_quot, mb_rem, gb_quot, gb_rem, (unsigned long)lba, dev_desc->blksz));
+		DEBUG(("Capacity: %ld.%ld MB = %ld.%ld GB (%ld x %ld)", mb_quot, mb_rem, gb_quot, gb_rem, (unsigned long)lba, dev_desc->blksz));
 	}
 	else
 	{
-		c_conws("Capacity: not available\r\n");
+		DEBUG(("Capacity: not available\r\n"));
 	}
 }
 
@@ -1977,7 +1965,7 @@ storage_probe(struct usb_device *dev)
 
 	if(ss->subclass == US_SC_UFI)
     {
-        c_conws("detected USB floppy not supported at this time\r\n");
+        DEBUG(("detected USB floppy not supported at this time\r\n"));
         /* This is a floppy drive, so give it a drive letter ? B ?. */
         /* Also, we may be better to intercept the TRAP #1 floppy handlers
          * and deal with them here. ??? */
@@ -2192,10 +2180,9 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		pun_ptr = install_pun();
 
 	if (!pun_ptr) {
-#ifdef TOSONLY
         if (ret)
             SuperToUser(ret);
-#endif
+
         c_conws("Failed to initialize, out of memory\r\n");
 		return -1;
 	}
@@ -2218,22 +2205,17 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
         memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE); /* mark all puns invalid */
     }
 
-#if 1
     install_vectors();
     install_xhdi_driver();
-#endif
-#ifdef TOSONLY
-    install_scsidrv();
-#endif
-
-#ifdef TOSONLY
-    if (ret)
-        SuperToUser(ret);
-#endif
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
+    install_scsidrv();
+
+    if (ret)
+        SuperToUser(ret);
+
 	c_conws("USB storage driver installed.\r\n");
 
 	Ptermres(_PgmSize,0);
