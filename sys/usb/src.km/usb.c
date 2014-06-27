@@ -176,12 +176,14 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.setup = &setup_packet;
 
 	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
+
 	if (timeout == 0)
 	{
 		DEBUG(("size %d \r", size));
 		return (long)size;
 	}
 
+#ifdef INTERRUPTHANDLER
        /*
         * Wait for status to update until timeout expires, USB driver
         * interrupt handler may set the status when the USB operation has
@@ -192,6 +194,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 			break;
 		mdelay(1);
 	}
+#endif
 
 	if (dev->status)
 	{
@@ -227,11 +230,13 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 
 	r = (*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
 
+#ifdef INTERRUPTHANDLER
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
 			break;
 		mdelay(1);
 	}
+#endif
 
 	*actual_length = dev->act_len;
 	if (dev->status == 0)
@@ -750,10 +755,8 @@ long usb_string(struct usb_device *dev, long index, char *buf, long size)
  * Something got disconnected. Get rid of it, and all of its children.
  */
 void
-usb_disconnect(struct usb_device **pdev)
+usb_disconnect(struct usb_device *dev)
 {
-	struct usb_device *dev = *pdev;
-
 	if (dev)
 	{
 		long i;
@@ -771,16 +774,16 @@ usb_disconnect(struct usb_device **pdev)
 		for (i = 0; i < dev->maxchild; i++)
 		{
 			DEBUG(("Disconnect children %ld", dev->children[i]->devnum));
-			struct usb_device **child = &dev->children[i];
-			DEBUG(("child %lx", *child));
+			struct usb_device *child = dev->children[i];
+			DEBUG(("child %lx", child));
 			usb_disconnect(child);
 			dev->children[i] = NULL;
 		}
 
 		/* See if it's a hub */
-		if (dev->privptr) {
-			usb_hub_disconnect(dev);
-		}
+        if (dev->privptr) {
+    		usb_hub_disconnect(dev);
+        }
 
 		memset(dev, 0, sizeof(struct usb_device));
 		dev->devnum = -1;
@@ -793,6 +796,9 @@ usb_disconnect(struct usb_device **pdev)
  */
 struct usb_device *usb_get_dev_index(long index)
 {
+    if (index >= USB_MAX_DEVICE)
+        return NULL;
+
 	if (usb_dev[index].devnum == -1)
 		return NULL;
 	else
@@ -856,7 +862,6 @@ long usb_new_device(struct usb_device *dev)
 	struct usb_device_descriptor *desc;
 	long port = -1;
 	struct usb_device *parent = dev->parent;
-	unsigned short portstatus;
 
 	DEBUG(("usb_new_device: "));
  
@@ -910,7 +915,7 @@ long usb_new_device(struct usb_device *dev)
 		}
 
 		/* reset the port for the second time */
-		err = hub_port_reset(dev->parent, port, &portstatus);
+		err = hub_port_reset(dev->parent, port);
 		if (err < 0) {
 			DEBUG(("Couldn't reset port %li", port));
 			dev->devnum = addr;

@@ -75,8 +75,8 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
                 return -1;
 	}
 
-        hub = usb_alloc_new_device(a);
-        if (!hub) 
+    hub = usb_alloc_new_device(a);
+    if (!hub) 
 	{
 		return -1;
 	}

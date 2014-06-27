@@ -16,7 +16,8 @@ SSOBJS = \
 	vectors.S
 
 TOSCOBJS = \
-        crtinit.c
+    usb_scsidrv.c \
+    crtinit.c
 
 TOSSSOBJS = \
         entry.S \

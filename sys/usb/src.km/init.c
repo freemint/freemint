@@ -34,12 +34,13 @@ long loader_pgrp = 0;
 
 struct usb_module_api usb_api;
 
-#define MSG_VERSION     "0.1.0"
+#define MSG_VERSION     "BETA TOS DRIVERS"
 #define MSG_BUILDDATE   __DATE__
 
 #ifdef TOSONLY
 #define MSG_BOOT        \
-        "\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n"
+        "\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
+        "Brought to TOS by Alan Hourihane.\r\n"
 #else
 #define MSG_BOOT        \
         "\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
@@ -48,7 +49,7 @@ struct usb_module_api usb_api;
 #define MSG_GREET       \
 	"David Galvez 2010-2014.\r\n" \
 	"Alan Hourihane 2013-2014.\r\n" \
-        "Compiled " MSG_BUILDDATE ".\r\n\r\n"
+    "Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 static void
 bootmessage(void)
@@ -119,7 +120,7 @@ setup_usb_module_api(void)
 	usb_api.ucd_register = &ucd_register;
 	usb_api.ucd_unregister = &ucd_unregister;
 	usb_api.usb_rh_wakeup = &usb_rh_wakeup;
-	usb_api.usb_hub_events = &usb_hub_events;
+
 	usb_api.usb_set_protocol = &usb_set_protocol;
 	usb_api.usb_set_idle = &usb_set_idle;
 	usb_api.usb_get_dev_index = &usb_get_dev_index;
@@ -144,9 +145,10 @@ setup_usb_module_api(void)
 	usb_api.usb_alloc_new_device = &usb_alloc_new_device;
 	usb_api.usb_new_device = &usb_new_device;
 	
-	/* For now we leave this hub specific
-	 * stuff out of the api.
+	/* For now we leave most of this hub specific functions out of the api.
 	 */
+	usb_api.usb_hub_events = &usb_hub_events;
+
 //	usb_api.usb_get_hub_descriptor = &usb_get_hub_descriptor;
 //	usb_api.usb_clear_port_feature = &usb_clear_port_feature;
 //	usb_api.usb_get_hub_status = &usb_get_hub_status;
@@ -210,16 +212,13 @@ init(struct kentry *k, const struct kernel_module *km)
 
 #ifdef TOSONLY
 	{
-		/* set additional memory to 32KB */
-		unsigned long size = _PgmSize + 32768;
-
 		/* Set the _USB API cookie */
-                Supexec(set_cookie);
+        Supexec(set_cookie);
 
 		c_conws("USB core installed.\r\n");
 
 		/* terminate and stay resident */
-		Ptermres(size, 0);
+		Ptermres(_PgmSize, 0);
 	}
 
 

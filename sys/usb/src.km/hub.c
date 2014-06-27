@@ -175,8 +175,12 @@ void usb_hub_reset(void)
 
 struct usb_hub_device *usb_get_hub_index(long index)
 {
-	struct usb_device *dev = hub_dev[index].pusb_dev;
+	struct usb_device *dev;
 
+    if (index >= USB_MAX_HUB)
+        return NULL;
+
+	dev = hub_dev[index].pusb_dev;
 	if (dev && dev->devnum != -1 && dev->devnum != 0)
 		return &hub_dev[index];
 	else
@@ -233,8 +237,7 @@ static inline char *portspeed(long portstatus)
 	return speed_str;
 }
 
-long hub_port_reset(struct usb_device *dev, long port,
-			unsigned short *portstat)
+long hub_port_reset(struct usb_device *dev, long port)
 {
 	long tries;
 	struct usb_port_status portsts;
@@ -243,7 +246,7 @@ long hub_port_reset(struct usb_device *dev, long port,
 	DEBUG(("hub_port_reset: resetting port %ld...", port));
 	for (tries = 0; tries < MAX_TRIES; tries++) {
 		usb_set_port_feature(dev, port + 1, USB_PORT_FEAT_RESET);
-		mdelay(200);
+		mdelay(150);
 
 		if (usb_get_port_status(dev, port + 1, &portsts) < 0) {
 			DEBUG(("get_port_status failed status %lx",
@@ -269,8 +272,6 @@ long hub_port_reset(struct usb_device *dev, long port,
 
 		if (portstatus & USB_PORT_STAT_ENABLE)
 			break;
-
-		mdelay(200);
 	}
 
 	if (tries == MAX_TRIES) {
@@ -281,28 +282,14 @@ long hub_port_reset(struct usb_device *dev, long port,
 	}
 
 	usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_C_RESET);
-	*portstat = portstatus;
+
 	return 0;
 }
 
 
-long usb_hub_port_connect_change(struct usb_device *dev, long port)
+long usb_hub_port_connect_change(struct usb_device *dev, long port, unsigned short portstatus)
 {
 	struct usb_device *usb;
-	struct usb_port_status portsts;
-	unsigned short portstatus;
-
-	/* Check status */
-	if (usb_get_port_status(dev, port + 1, &portsts) < 0) {
-		DEBUG(("get_port_status failed"));
-		return -1;
-	}
-
-	portstatus = le2cpu16(portsts.wPortStatus);
-	DEBUG(("portstatus %x, change %x, %s\n",
-	      portstatus,
-	      le2cpu16(portsts.wPortChange),
-	      portspeed(portstatus)));
 
 	/* Clear the connection change status */
 	usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_C_CONNECTION);
@@ -311,15 +298,16 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port)
 	if (((!(portstatus & USB_PORT_STAT_CONNECTION)) &&
 	     (!(portstatus & USB_PORT_STAT_ENABLE))) || (dev->children[port])) {
 		DEBUG(("usb_disconnect"));
-		usb_disconnect(&dev->children[port]);
+		usb_disconnect(dev->children[port]);
 		dev->children[port] = NULL;
 		/* Return now if nothing is connected */
-		if (!(portstatus & USB_PORT_STAT_CONNECTION))
+		if (!(portstatus & USB_PORT_STAT_CONNECTION)) {
 			return 0;
+        }
 	}
 
 	/* Reset the port */
-	if (hub_port_reset(dev, port, &portstatus) < 0) {
+	if (hub_port_reset(dev, port) < 0) {
 		DEBUG(("cannot reset port %li!?", port + 1));
 		return -1;
 	}
@@ -342,7 +330,7 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port)
 		break;
 	}
 
-	dev->portnr = port; /* let the device know which parent port its on */
+	dev->portnr = port;
 	dev->children[port] = usb;
 	usb->parent = dev;
 	/* Run it through the hoops (find a driver, etc) */
@@ -517,10 +505,10 @@ usb_hub_events(struct usb_hub_device *hub)
 			changed |= USB_PORT_STAT_C_CONNECTION;
 			DEBUG(("port %ld connection change", i + 1));
 
-			/* If something disconnect, return now, as it
+			/* If something disconnected, return now, as it
 			 * could have been our hub.
 			 */
-			if (usb_hub_port_connect_change(dev, i) == 0) 
+			if (usb_hub_port_connect_change(dev, i, portstatus) == 0) 
 			{
 				return changed;
 			}
@@ -545,10 +533,10 @@ usb_hub_events(struct usb_hub_device *hub)
 						"disabled by hub (EMI?), " \
 						"re-enabling...", i + 1));
 
-				/* If something disconnect, return now, as it
+				/* If something disconnected, return now, as it
 				 * could have been our hub.
 				 */
-				if (usb_hub_port_connect_change(dev, i) == 0)
+				if (usb_hub_port_connect_change(dev, i, portstatus) == 0)
 				{
 					return changed;
 				}
@@ -592,13 +580,11 @@ usb_hub_events(struct usb_hub_device *hub)
 
 		if (hubchange & HUB_CHANGE_LOCAL_POWER) {
 			usb_clear_hub_feature(dev, C_HUB_LOCAL_POWER);
-			mdelay(500);
 		}
 		if (hubchange & HUB_CHANGE_OVERCURRENT) {
 			usb_clear_hub_feature(dev, C_HUB_OVER_CURRENT);
 			mdelay(500);
 			usb_hub_power_on(hub->pusb_dev, hub->desc.bPwrOn2PwrGood * 2);
-			mdelay(500);
 			usb_get_hub_status(dev, &hubsts);
 
 			hubstatus = le2cpu16(hubsts.wHubStatus);
@@ -818,14 +804,42 @@ usb_hub_thread(void *ptr)
 }
 #endif
 
-/*
- * This should be may be a separate module.
- */
 void
 usb_hub_init(struct usb_device *dev)
 {
 #ifdef TOSONLY
-	/* nothing to do here as the desk accessory takes this job. */
+    long i,j,k = 0;
+
+    (void)c_conws("Scanning USB devices.... Please wait...\r\n");
+
+again:
+    for (i = 0; i < USB_MAX_HUB; i++)
+    {
+        struct usb_hub_device *hub = usb_get_hub_index (i);
+        if (hub)
+        {
+            if (usb_hub_events (hub) == 1)
+            {
+                for (j = k; j < USB_MAX_DEVICE; j++)
+                {
+                    struct usb_device *pdev = usb_get_dev_index (j);
+                    if (pdev && pdev->mf && pdev->prod)
+                    {
+                        char name[128];
+                        memset (name, 0, sizeof(name));
+                        strcat (name, "Found ");
+                        strcat (name, pdev->mf);
+                        strcat (name, " ");
+                        strcat (name, pdev->prod);
+                        strcat (name, ".\r\n");
+                        c_conws(name);
+                        k = j+1;
+                    }
+                }
+                goto again;
+            }
+        }
+    }
 #else
 	DEBUG(("Creating USB hub kernel thread"));
 	long r;
