@@ -27,6 +27,7 @@
 #endif
 #include "../../global.h"
 #include "xhdi.h"					/* for USB_PUN_XXX */
+#include <mint/osbind.h>
 
 /*
  * the following should be in headers for other modules
@@ -39,13 +40,14 @@
 
 void install_vectors(void);								//vectors.S
 
-#define DEFAULT_SECTOR_SIZE	2048						//usb_storage.c
+#define DEFAULT_SECTOR_SIZE 2048						//usb_storage.c
 unsigned long usb_stor_read(long device,unsigned long blknr,
 		unsigned long blkcnt,void *buffer);				//usb_storage.c
 unsigned long usb_stor_write(long device,unsigned long blknr,
 		unsigned long blkcnt,const void *buffer);		//usb_storage.c
 
 long install_xhdi_driver(void);							//xhdi.c
+void install_scsidrv(void);			    				//usb_scsidrv.c
 extern USB_PUN_INFO pun_usb;							//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
 /*
@@ -108,52 +110,19 @@ typedef struct {
  */
 static const unsigned long valid_dos[] = { 0x04, 0x06, 0x0e, 0x0b, 0x0c, 0x81, 0x83, 0 };
 
-unsigned short vectors_installed = 0;
-char boot_sector[DEFAULT_SECTOR_SIZE];
-
 /*
  *	local function prototypes
  */
 static void build_bpb(BPB *bpbptr,void *bs);
-static void display_error(long dev_num,char *vendor,char *revision,char *product,char *msg);
-static void display_installed(long dev_num,char *vendor,char *revision,char *product,int logdrv);
-static void display_usb(long dev_num,char *vendor,char *revision,char *product);
 static unsigned long getilong(uchar *byte);
 static unsigned short getiword(uchar *byte);
 static long valid_drive(long logdrv);
 
-#define DEBUGGING_ROUTINES
+//#define DEBUGGING_ROUTINES
 #ifdef DEBUGGING_ROUTINES
-void hex_nybble(int n);
-void hex_byte(uchar n);
-void hex_word(ushort n);
-void hex_long(ulong n);
-
-void hex_nybble(int n)
-{
-	char c;
-
-	c = (n > 9) ? 'A'+n-10 : '0'+n;
-	c_conout(c);
-}
-
-void hex_byte(uchar n)
-{
-	hex_nybble(n>>4);
-	hex_nybble(n&0x0f);
-}
-
-void hex_word(ushort n)
-{
-	hex_byte(n>>8);
-	hex_byte(n&0xff);
-}
-
-void hex_long(ulong n)
-{
-	hex_word(n>>16);
-	hex_word(n&0xffff);
-};
+static void display_error(long dev_num,char *vendor,char *revision,char *product,char *msg);
+static void display_installed(long dev_num,char *vendor,char *revision,char *product,int logdrv);
+static void display_usb(long dev_num,char *vendor,char *revision,char *product);
 #endif
 
 /*
@@ -242,6 +211,7 @@ static void build_bpb(BPB *bpbptr, void *bs)
 		bpbptr->bflags = 1;					/* FAT16 */
 }
 
+#ifdef DEBUGGING_ROUTINES
 static void display_usb(long dev_num,char *vendor,char *revision,char *product)
 {
 	c_conws("USB ");
@@ -288,10 +258,11 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
 	c_conws("\r\n");
 #endif
 }
+#endif
 
 /*
  *	test for valid DOS or GEMDOS partition
- *	returns 1 iff valid
+ *	returns 1 if valid
  */
 static int valid_partition(unsigned long type)
 {
@@ -305,95 +276,17 @@ static int valid_partition(unsigned long type)
 
 	type &= 0x00ffffffL;
 
+#ifdef DEBUGGING_ROUTINES
+    c_conws("Found partition ");
+    hex_long(type);
+    c_conws("\r\n");
+#endif
+
 	if ((type == GEM) || (type == BGM) || (type == RAW))
 		return 1;
 
 	return 0;
 }
-
-/*
- * the following routine is stolen from FreeMiNT's pun.c module
- */
-#define PUN_PTR	(*((PUN_INFO **) 0x516L))
-PUN_INFO *get_pun(void)
-{
-	PUN_INFO *pun = PUN_PTR;
-	if (pun)
-		if (pun->cookie == 0x41484449L)
-			if (pun->cookie_ptr == &(pun->cookie))
-				if (pun->version_num >= 0x300)
-					return pun;
-	return NULL;
-}
-
-#ifdef TOSONLY
-#define bufl0	(*(BCB **)0x4b2L)
-#define bufl1	(*(BCB **)0x4b6L)
-
-#define BCB	struct _bcb
-BCB
-{
-    BCB     *b_link;    /* next bcb (API)          */
-    char    filler[12];	/* not relevant            */
-    char    *b_bufr;    /* pointer to buffer (API) */
-};
-
-/*
- * when no AHDI structure exists, this routine is called to install one.
- * it assumes that the existing buffer pool uses 512-byte buffers (the
- * logical sector size for floppies)
- */
-static PUN_INFO *install_pun(void)
-{
-	PUN_INFO *pun;
-	BCB *bcb;
-	long bufsiz, bufcnt = 0L;
-	char *bufptr;
-
-	bufsiz = sys_XHDOSLimits(XH_DL_SECSIZ,0);
-
-	/*
-	 * allocate new buffers for BCB chains
-	 */
-	for (bcb = bufl0; bcb; bcb = bcb->b_link)
-		bufcnt++;
-	for (bcb = bufl1; bcb; bcb = bcb->b_link)
-		bufcnt++;
-	bufptr = (char *)Malloc(bufcnt*bufsiz);
-	if (!bufptr)
-		return NULL;
-
-	/*
-	 * create & initialise PUN_INFO structure
-	 */
-	pun = (PUN_INFO *)Malloc(sizeof(PUN_INFO));
-	if (!pun) {
-		Mfree(bufptr);
-		return NULL;
-	}
-	memset(pun,0x00,sizeof(PUN_INFO));
-	memset(pun->pun,0xff,16); 
-	pun->cookie = AHDI;
-	pun->cookie_ptr = &pun->cookie;
-	pun->version_num = 0x0300;
-	pun->max_sect_siz = bufsiz;
-	PUN_PTR = pun;
-
-	/*
-	 * copy existing buffers to new ones, updating the BCBs
-	 */
-	for (bcb = bufl0; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
-		memcpy(bufptr,bcb->b_bufr,512);
-		bcb->b_bufr = bufptr;
-	}
-	for (bcb = bufl1; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
-		memcpy(bufptr,bcb->b_bufr,512);
-		bcb->b_bufr = bufptr;
-	}
-
-	return pun;
-}
-#endif
 
 #ifdef TOSONLY
 #define restore_old_state(ret) { if (ret) SuperToUser(ret); }
@@ -409,9 +302,9 @@ static PUN_INFO *install_pun(void)
 long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_offset,
 					unsigned long part_size,char *vendor,char *revision,char *product)
 {
+    char boot_sector[DEFAULT_SECTOR_SIZE];
 	int logdrv;
 	long mask;
-	PUN_INFO *pun_ptr;
 
 #ifdef TOSONLY
 	/* goto supervisor mode because of drvbits & handlers */
@@ -420,45 +313,21 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		ret = Super(0L);
 #endif
 
-	pun_ptr = get_pun();
-
-#ifdef TOSONLY
-	/*
-	 * install PUN_INFO if necessary (i.e. no hard disk driver loaded)
-	 */
-	if (!pun_ptr)
-		pun_ptr = install_pun();
-
-	if (!pun_ptr) {
-		restore_old_state(ret);
-		display_error(dev_num,vendor,revision,product,"insufficient memory");
-		return -1L;
-	}
-#endif
-
-	/*
-	 * install USB_PUN_INFO if necessary
-	 */
-	if (pun_usb.cookie != AHDI) {
-		pun_usb.cookie = AHDI;
-		pun_usb.cookie_ptr = &pun_usb.cookie;
-		pun_usb.puns = 0;
-		pun_usb.version_num = 0x0300;
-		pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
-		memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE);	/* mark all puns invalid */
-	}
-
 	/*
 	 * check input parameters
 	 */
 	if (dev_num > PUN_DEV) {
 		restore_old_state(ret);
+#ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"invalid device number");
+#endif
 		return -1L;
 	}
 	if (!valid_partition(part_type)) {
 		restore_old_state(ret);
+#ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"invalid partition type");
+#endif
 		return -1L;
 	}
 
@@ -470,7 +339,9 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 			break;
 	if (logdrv >= MAX_LOGICAL_DRIVE) {
 		restore_old_state(ret);
+#ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"no drives available");
+#endif
 		return -1L;
 	}
 
@@ -479,22 +350,24 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	 */
 	if (usb_stor_read(dev_num,part_offset,1,boot_sector) != 1) {
 		restore_old_state(ret);
+#ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"boot sector not readable");
+#endif
 		return -1L;
 	}
 
 	/*
 	 * update the usb_pun_info structure
 	 */
-	pun_usb.puns++;
-
+    pun_usb.puns++;
 	pun_usb.pun[logdrv] = dev_num | PUN_USB;
 	pun_usb.partition_start[logdrv] = part_offset;
 
 	part_type <<= 8;					/* for XHDI, make it a 3-character string */
-	if (part_type&0xff000000L)						/* i.e. GEM/BGM/RAW */
+	if (part_type&0xff000000L)		    				/* i.e. GEM/BGM/RAW */
 		pun_usb.ptype[logdrv] = part_type;				/* e.g. 0x47454d00 */
-	else pun_usb.ptype[logdrv] = 0x00440000L | part_type;/* e.g. 0x00440600 */
+	else 
+        pun_usb.ptype[logdrv] = 0x00440000L | part_type;/* e.g. 0x00440600 */
 
 	pun_usb.psize[logdrv] = part_size;
 	pun_usb.flags[logdrv] = CHANGE_FLAG;
@@ -510,17 +383,31 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		d_setdrv(logdrv);
 	}
 
-	/*
-	 * if necessary, install hdv_xxx vectors & xhdi driver
-	 */
-	if (!vectors_installed) {
-		install_vectors();
-		install_xhdi_driver();
-		vectors_installed = 1;
-	}
+    /* Force media change, the recommended AHDI way..... */
+    {
+        char tmpname[16];
+	    char drv[2];
+        long fh;
+
+	    drv[0] = ('A' + logdrv);
+	    drv[1] = 0;
+
+        memset(tmpname, 0, sizeof(tmpname));
+        strcat(tmpname, drv);
+        strcat(tmpname, ":\\test");
+        fh = Fopen(tmpname, 0);
+        if (fh < 0) {
+            /* don't worry about it for now, unless it presents problems. */
+        } else {
+            Fclose(fh);
+        }
+    }
 
 	restore_old_state(ret);
+
+#ifdef DEBUGGING_ROUTINES
 	display_installed(dev_num,vendor,revision,product,logdrv);
+#endif
 
 	return logdrv;
 }
@@ -530,7 +417,7 @@ long uninstall_usb_stor(long logdrv)
 	if ((logdrv < 0) || (logdrv >= MAX_LOGICAL_DRIVE))
 		return -1L;
 
-	pun_usb.puns--;
+    pun_usb.puns--;
 	pun_usb.pun[logdrv] = 0xff;
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
 
@@ -559,10 +446,11 @@ static long valid_drive(long logdrv)
 {
 	if ((logdrv < 0) || (logdrv >= MAX_LOGICAL_DRIVE))
 		return 0;
-	if (pun_usb.pun[logdrv]&PUN_VALID)	/* means invalid ... */
+
+	if (pun_usb.pun[logdrv] & PUN_VALID)	/* means invalid ... */
 		return 0;
 
-	if (!(pun_usb.pun[logdrv]&PUN_USB))
+	if (!(pun_usb.pun[logdrv] & PUN_USB))
 		return 0;
 
 	return 1;
@@ -580,16 +468,20 @@ BPB *usb_getbpb(long logdrv)
 		return NULL;
 
 	type = pun_usb.ptype[logdrv] >> 8;
+
+    /*
+     * We allow the partition through to get a drive letter, but stop
+     * access to the drives BPB as there isn't one.
+     */
 	if ((type == LNX) || (type == MINIX) || (type == RAW))
 		return NULL;
 
 	bpbptr = &pun_usb.bpb[logdrv];
+
 #ifdef TOSONLY
 	/*
-	 * note: we don't check for a proper Atari partition type, although we
-	 * theoretically should.  this is to allow us to create TOS-readable
-	 * memory sticks, by using Linux to create an Atari-format filesystem
-	 * within a partition that's identified as DOS FAT16.
+	 * ensure that filesystem inside partition is suitable for TOS
+	 * (paranoia rules)
 	 */
 	if (bpbptr->recsiz == 0)	/* not FAT16 when building the BPB */
 		return NULL;
@@ -614,22 +506,29 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	if ((start < 0L) || (count < 0L) || !buffer)
 		return EBADR;			/* same as EBADRQ */
 
+    /* 
+     * Tell the user that the media has changed, so call getbpb first !
+     */
+	if (pun_usb.flags[logdrv] & CHANGE_FLAG)
+        return ECHMEDIA;
+
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
 		physdev = logdrv & PUN_DEV;	/*  has already allowed for floppies     */
 	} else {
 		BPB *bpbptr;
 		unsigned short phys_per_log;	/* physical sectors per logical sector */
-
 		if (!valid_drive(logdrv))
 			return ENXIO;		/* same as EDRIVE */
 
 		bpbptr = &pun_usb.bpb[logdrv];
 		if (!bpbptr->recsiz)
 			return ENXIO;
+
 		phys_per_log = bpbptr->recsiz / 512;
 
 		start = start * phys_per_log;
 		count = count * phys_per_log;
+
 		if ((start+count) > pun_usb.psize[logdrv])
 			return EBADR;
 
@@ -640,7 +539,6 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	/*
 	 * set up for read or write
 	 */
-
 	if (mode&RWFLAG)
 		rc = usb_stor_write(physdev,start,count,buffer);
 	else 
@@ -657,9 +555,9 @@ long usb_mediach(long logdrv)
 	long rc;
 
 	if (!valid_drive(logdrv))
-		return 0;
+		return ENXIO;
 
-	rc = (pun_usb.flags[logdrv]&CHANGE_FLAG) ? 2 : 0;
+	rc = (pun_usb.flags[logdrv] & CHANGE_FLAG) ? 2 : 0;
 	pun_usb.flags[logdrv] &= ~CHANGE_FLAG;
 
 	return rc;

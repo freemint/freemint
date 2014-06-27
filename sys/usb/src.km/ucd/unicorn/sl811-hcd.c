@@ -758,7 +758,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 	if (status & SL811_USB_STS_STALL)
 		err |= USB_ST_STALLED;
 
-	ALERT(("usb transfer error 0x%x", (int)status));
+	DEBUG(("usb transfer error 0x%x", (int)status));
 
 	sl811_write_intr(intr);
 	sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);

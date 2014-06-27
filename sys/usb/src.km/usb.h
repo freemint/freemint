@@ -43,6 +43,12 @@
 #define USB_CNTL_TIMEOUT 		100	/* 100ms timeout */
 #define USB_BUFSIZ			512
 
+/*
+ * This is the timeout to allow for submitting a message in ms.
+ * We allow more time for a BULK device to react - some are slow.
+ */
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 100)
+
 /* String descriptor */
 struct usb_string_descriptor
 {
@@ -271,7 +277,7 @@ long 		usb_get_string		(struct usb_device *dev, unsigned short langid,
 struct usb_device *	usb_alloc_new_device(void *controller);
 void		usb_free_device		(long idx);
 long 		usb_new_device		(struct usb_device *dev);
-void		usb_disconnect		(struct usb_device **pdev);
+void		usb_disconnect		(struct usb_device *pdev);
 //inline void wait_ms(unsigned long ms);
 long		usb_find_interface_driver(struct usb_device *dev, unsigned ifnum);
 

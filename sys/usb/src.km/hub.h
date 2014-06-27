@@ -76,12 +76,11 @@ struct usb_hub_device * usb_get_hub_index       (long idx);
 struct usb_hub_device *	usb_hub_allocate(void);
 long		usb_hub_events		(struct usb_hub_device *);
 void		usb_hub_disconnect	(struct usb_device *dev);
-long 		usb_hub_port_connect_change	(struct usb_device *dev, long port);
+long 		usb_hub_port_connect_change	(struct usb_device *dev, long port, unsigned short portstatus);
 struct usb_hub_device *	usb_hub_configure	(struct usb_device *dev);
 long 		usb_hub_probe		(struct usb_device *dev, long ifnum);
 void 		usb_hub_reset		(void);
-long 		hub_port_reset		(struct usb_device *dev, long port,
-			  		 unsigned short *portstat);
+long 		hub_port_reset		(struct usb_device *dev, long port);
 void		usb_rh_wakeup		(void);
 void		usb_hub_init		(struct usb_device *);
 void		usb_hub_thread		(void *);

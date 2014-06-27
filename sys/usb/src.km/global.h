@@ -196,4 +196,30 @@ get_usb_cookie (void)
 }
 #endif
 
+static inline void hex_nybble(int n)
+{
+	char c;
+
+	c = (n > 9) ? 'A'+n-10 : '0'+n;
+	c_conout(c);
+}
+
+static inline void hex_byte(uchar n)
+{
+	hex_nybble(n>>4);
+	hex_nybble(n&0x0f);
+}
+
+static inline void hex_word(ushort n)
+{
+	hex_byte(n>>8);
+	hex_byte(n&0xff);
+}
+
+static inline void hex_long(ulong n)
+{
+	hex_word(n>>16);
+	hex_word(n&0xffff);
+};
+
 #endif /* _global_h */

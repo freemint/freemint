@@ -50,21 +50,23 @@
 #ifndef TOSONLY
 #include "mint/mint.h"
 #include "libkern/libkern.h"
+#else
+#include "gem.h"
 #endif
 #include "../../global.h"
 
 #include "part.h"
 #include "scsi.h"
-#include "part.h"
+#include "xhdi.h"                   /* for PUN_XXX */
+
 #include "mint/endian.h"
 #include "mint/mdelay.h"
 
 #include "../../usb.h"
 #include "../../usb_api.h"
+#include "usb_storage.h"
 
-extern void hex_long(ulong n);
-
-#define MSG_VERSION "0.3.0"
+#define MSG_VERSION "BETA TOS DRIVERS"
 char *drv_version = MSG_VERSION;
 
 #define MSG_BUILDDATE	__DATE__
@@ -74,6 +76,8 @@ char *drv_version = MSG_VERSION;
 
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
+	"Atari partition support by Roger Burrows.\r\n" \
+	"SCSIDRV support by Alan Hourihane.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 /*
@@ -161,6 +165,13 @@ extern long install_usb_stor	(long dev_num, unsigned long part_type,
 			     	 unsigned long part_offset, unsigned long part_size, 
 			     	 char *vendor, char *revision, char *product);
 extern long uninstall_usb_stor	(long dev_num);
+extern long install_xhdi_driver(void);                         //xhdi.c
+extern void install_vectors(void);                             //vectors.S
+#ifdef TOSONLY
+extern void install_scsidrv(void);                             //usb_scsidrv.c
+extern void SCSIDRV_MediaChange(long dev_num);
+#endif
+
 
 
 /* direction table -- this indicates the direction of the data
@@ -219,42 +230,9 @@ typedef struct
 } umass_bbb_csw_t;
 #define UMASS_BBB_CSW_SIZE	13
 
-#define USB_MAX_STOR_DEV 	5	/* DEFAULT 5 */
+#define USB_MAX_STOR_DEV 	8 /* max SCSI devices in chain */
 
 static block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
-
-struct us_data;
-typedef long (*trans_cmnd)(ccb *cb, struct us_data *data);
-typedef long (*trans_reset)(struct us_data *data);
-
-/* Galvez: For this struct we should take care and cast to long the unsigned 
- *         char elements before calling some of the MACROs defined in usb.h
- *         If we don't do that, when compiling with mshort, some values are 
- *	   transformed wrongly during the operations done in those MACROs
- */
-struct us_data
-{
-	struct usb_device *pusb_dev;		 /* this usb_device */
-	unsigned long	flags;			/* from filter initially */
-# define USB_READY (1<<0)
-	unsigned char	ifnum;			/* interface number */
-	unsigned char	ep_in;			/* in endpoint */
-	unsigned char	ep_out;			/* out ....... */
-	unsigned char	ep_int;			/* interrupt . */
-	unsigned char	subclass;		/* as in overview */
-	unsigned char	protocol;		/* .............. */
-	unsigned char	attention_done;		/* force attn on first cmd */
-	unsigned short	ip_data;		/* interrupt data */
-	long		action;			/* what to do */
-	long		ip_wanted;		/* needed */
-	long		*irq_handle;		/* for USB int requests */
-	unsigned long	irqpipe;	 	/* pipe for release_irq */
-	unsigned char	irqmaxp;		/* max packed for irq Pipe */
-	unsigned char	irqinterval;		/* Intervall for IRQ Pipe */
-	ccb		*srb;			/* current srb */
-	trans_reset	transport_reset;	/* reset routine */
-	trans_cmnd	transport;		/* transport routine */
-};
 
 struct bios_partitions
 {
@@ -338,7 +316,6 @@ storage_ioctl (struct uddif *u, short cmd, long arg)
 }
 /* ------------------------------------------------------------------------- */
 
-#if 0
 static unsigned long usb_get_max_lun(struct us_data *us)
 {
 	int len;
@@ -353,7 +330,6 @@ static unsigned long usb_get_max_lun(struct us_data *us)
 	DEBUG(("Get Max LUN -> len = %i, result = %i", len, (long) *result));
 	return (len > 0) ? *result : 0;
 }
-#endif
 
 block_dev_desc_t *usb_stor_get_dev(long idx)
 {
@@ -550,6 +526,7 @@ is_extended_dos(long part_type)
 	return(part_type == 0x5 || part_type == 0xf || part_type == 0x85);
 }
 
+#ifndef TOSONLY
 /*
  * 	extract partition info for specified DOS-style partition
  */
@@ -605,6 +582,7 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
 	}
 	return -1;
 }
+#endif
 
 /*
  * 	extract partition info for specified partition
@@ -622,14 +600,29 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 		return -1;
 	}
 
+    /*
+     * We lookup atari partitions first as they're identified with 
+     * specific code such as GEM, BGM etc.
+     */
+	DEBUG(("Try looking up Atari MBR sector"));
+	if (get_partinfo_atari(dev_desc,part_num,which_part,info) == 0) {
+        return 0;
+    }
+
+#ifndef TOSONLY
+    /*
+     * We only try adding DOS style partitions in FreeMiNT as HDDRIVER
+     * and other HD managers create a dual partition setup which has
+     * both Atari & DOS and we don't want both installed.
+     */
 	if(buffer[DOS_PART_MAGIC_OFFSET] == 0x55 && buffer[DOS_PART_MAGIC_OFFSET+1] == 0xaa)
 	{
 		DEBUG(("found DOS MBR sector"));
 		return get_partinfo_dos(dev_desc,ext_part_sector,relative,part_num,which_part,info);
 	}
+#endif
 
-	DEBUG(("assuming Atari MBR sector"));
-	return get_partinfo_atari(dev_desc,part_num,which_part,info);
+    return -1;
 }
 
 long
@@ -682,11 +675,16 @@ dev_print(block_dev_desc_t *dev_desc)
 #endif
 	if(dev_desc->type == DEV_TYPE_UNKNOWN)
 	{
-		DEBUG(("not available"));
+		c_conws(("not available"));
 		return;
 	}
-	DEBUG(("Vendor: %s Rev: %s Prod: %s", dev_desc->vendor, dev_desc->revision, dev_desc->product));
-	DEBUG((""));
+    c_conws("Vendor: ");
+    c_conws(dev_desc->vendor);
+    c_conws(" Rev: ");
+    c_conws(dev_desc->revision);
+    c_conws(" Prod: ");
+    c_conws(dev_desc->product);
+    c_conws("\r\n");
 	if((dev_desc->lba * dev_desc->blksz) > 0L)
 	{
 		unsigned long mb, mb_quot, mb_rem, gb, gb_quot, gb_rem;
@@ -703,15 +701,18 @@ dev_print(block_dev_desc_t *dev_desc)
 		UNUSED(gb_rem);
 #ifdef CONFIG_LBA48
 		if(dev_desc->lba48)
-			DEBUG(("Supports 48-bit addressing"));
+			c_conws("Supports 48-bit addressing");
 #endif
-		DEBUG(("Capacity: %ld.%ld MB = %ld.%ld GB (%ld x %ld)", mb_quot, mb_rem, gb_quot, gb_rem, (unsigned long)lba, dev_desc->blksz));
+        c_conws("Capacity: ");
+        c_conout('0' + gb_quot);
+        c_conout('.');
+        c_conout('0' + gb_rem);
+        c_conws(" GB\r\n");
 //		ALERT(("Capacity: %ld.%ld MB = %ld.%ld GB (%ld x %ld)", mb_quot, mb_rem, gb_quot, gb_rem, (unsigned long)lba, dev_desc->blksz));
 	}
 	else
 	{
-		DEBUG(("Capacity: not available"));
-		ALERT(("Capacity: not available"));
+		c_conws("Capacity: not available\r\n");
 	}
 }
 
@@ -870,6 +871,7 @@ usb_stor_BBB_reset(struct us_data *us)
 	/* long wait for reset */
 	pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
 	result = usb_clear_halt(us->pusb_dev, pipe);
+
 	mdelay(150);
 	DEBUG(("BBB_reset result %ld: status %lx clearing OUT endpoint", result, us->pusb_dev->status));
 	DEBUG(("BBB_reset done"));
@@ -1017,16 +1019,12 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 long
 usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 {
-	long timeout;
+    long result;
 	us->ip_wanted = 1;
-	usb_submit_int_msg(us->pusb_dev, us->irqpipe, (void *) &us->ip_data, us->irqmaxp, us->irqinterval);
-	timeout = 1000;
-	while(timeout--)
-	{
-		if((volatile long *) us->ip_wanted == 0)
-			break;
-		mdelay(10);
-	}
+	result = usb_submit_int_msg(us->pusb_dev, us->irqpipe, (void *) &us->ip_data, us->irqmaxp, us->irqinterval);
+    if (result < 0) {
+        return USB_STOR_TRANSPORT_ERROR;
+    }
 	if(us->ip_wanted)
 	{
 		DEBUG(("Did not get interrupt on CBI"));
@@ -1090,8 +1088,6 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
-        if (!(us->flags & USB_READY))
-                mdelay(20);
 	pipein = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
 	pipeout = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
 	/* DATA phase + error handling */
@@ -1215,13 +1211,20 @@ again:
 long usb_stor_CB_transport(ccb *srb, struct us_data *us)
 {
 	long result, status;
-	ccb *psrb;
 	ccb reqsrb;
 	long retry, notready;
-	psrb = &reqsrb;
 	status = USB_STOR_TRANSPORT_GOOD;
 	retry = 0;
 	notready = 0;
+	long dir_in;
+	unsigned long pipe;
+
+    dir_in = US_DIRECTION(srb->cmd[0]);
+    if(dir_in)
+        pipe = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
+    else
+        pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
+
 	/* issue the command */
 do_retry:
 	result = usb_stor_CB_comdat(srb, us);
@@ -1230,7 +1233,6 @@ do_retry:
 	if(us->protocol == US_PR_CBI)
 	{
 		status = usb_stor_CBI_get_status(srb, us);
-		/* if the status is error, report it */
 		if(status == USB_STOR_TRANSPORT_ERROR)
 		{
 			DEBUG((" USB CBI Command Error"));
@@ -1263,19 +1265,20 @@ do_retry:
 		return USB_STOR_TRANSPORT_GOOD;
 	}
 	/* issue an request_sense */
-	memset(&psrb->cmd[0], 0, 12);
-	psrb->cmd[0] = SCSI_REQ_SENSE;
-	psrb->cmd[1] = srb->lun << 5;
-	psrb->cmd[4] = 18;
-	psrb->datalen = 18;
-	psrb->pdata = &srb->sense_buf[0];
-	psrb->cmdlen = 12;
+	memset(&reqsrb.cmd[0], 0, 12);
+	reqsrb.cmd[0] = SCSI_REQ_SENSE;
+	reqsrb.cmd[1] = srb->lun << 5;
+	reqsrb.cmd[4] = 18;
+	reqsrb.datalen = 18;
+	reqsrb.pdata = &srb->sense_buf[0];
+	reqsrb.cmdlen = 12;
 	/* issue the command */
-	result = usb_stor_CB_comdat(psrb, us);
+	result = usb_stor_CB_comdat(&reqsrb, us);
 	DEBUG(("auto request returned %ld", result));
 	/* if this is an CBI Protocol, get IRQ */
-	if(us->protocol == US_PR_CBI)
-		status = usb_stor_CBI_get_status(psrb, us);
+	if(us->protocol == US_PR_CBI) {
+		status = usb_stor_CBI_get_status(&reqsrb, us);
+    }
 	if((result < 0) && !(us->pusb_dev->status & USB_ST_STALLED))
 	{
 		DEBUG((" AUTO REQUEST ERROR %ld", us->pusb_dev->status));
@@ -1324,7 +1327,7 @@ do_retry:
 static long
 usb_inquiry(ccb *srb, struct us_data *ss)
 {
-	DEBUG(("usb_inquiry()"));  /* GALVEZ: DEBUG */
+	DEBUG(("usb_inquiry()")); 
 
 	long retry, i;
 	retry = 5;
@@ -1332,6 +1335,7 @@ usb_inquiry(ccb *srb, struct us_data *ss)
 	{
 		memset(&srb->cmd[0], 0, 12);
 		srb->cmd[0] = SCSI_INQUIRY;
+        srb->cmd[1] = srb->lun << 5;
 		srb->cmd[4] = 36;
 		srb->datalen = 36;
 		srb->cmdlen = 12;
@@ -1351,11 +1355,12 @@ usb_inquiry(ccb *srb, struct us_data *ss)
 static long
 usb_request_sense(ccb *srb, struct us_data *ss)
 {
-	DEBUG(("usb_request_sense()"));  /* GALVEZ: DEBUG */
+	DEBUG(("usb_request_sense()"));
 	char *ptr;
 	ptr = (char *)srb->pdata;
 	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_REQ_SENSE;
+    srb->cmd[1] = srb->lun << 5;
 	srb->cmd[4] = 18;
 	srb->datalen = 18;
 	srb->pdata = &srb->sense_buf[0];
@@ -1370,15 +1375,15 @@ static long
 usb_test_unit_ready(ccb *srb, struct us_data *ss)
 {
 	long retries = 10;
-	DEBUG(("usb_test_unit_ready()"));  /* GALVEZ: DEBUG */
+	DEBUG(("usb_test_unit_ready()"));
 	do
 	{
-		memset(&srb->cmd[0], 0, 6);	/* GALVEZ: DEBUG: DEFAULT 12 */ 
+		memset(&srb->cmd[0], 0, 12);
 		srb->cmd[0] = SCSI_TST_U_RDY;
+        srb->cmd[1] = srb->lun << 5;
 		srb->datalen = 0;
-		srb->cmdlen = 6;		/* GALVEZ: DEBUG: DEFAULT 12 */
+		srb->cmdlen = 12;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
-			ss->flags |= USB_READY;
 			return 0;
 		}
 		usb_request_sense(srb, ss);
@@ -1397,11 +1402,12 @@ usb_read_capacity(ccb *srb, struct us_data *ss)
 	long retry;
 	/* XXX retries */
 	retry = 3;
-	DEBUG(("usb_read_capacity()"));  /* GALVEZ: DEBUG */
+	DEBUG(("usb_read_capacity()"));
 	do
 	{
 		memset(&srb->cmd[0], 0, 12);
 		srb->cmd[0] = SCSI_RD_CAPAC;
+        srb->cmd[1] = srb->lun << 5;
 		srb->datalen = 8;
 		srb->cmdlen = 12;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
@@ -1416,6 +1422,7 @@ usb_read_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short bl
 {
 	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_READ10;
+    srb->cmd[1] = srb->lun << 5;
 	srb->cmd[2] = ((unsigned char) (start >> 24)) & 0xff;
 	srb->cmd[3] = ((unsigned char) (start >> 16)) & 0xff;
 	srb->cmd[4] = ((unsigned char) (start >> 8)) & 0xff;
@@ -1432,6 +1439,7 @@ usb_write_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short b
 {
 	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_WRITE10;
+    srb->cmd[1] = srb->lun << 5;
 	srb->cmd[2] = ((unsigned char) (start >> 24)) & 0xff;
 	srb->cmd[3] = ((unsigned char) (start >> 16)) & 0xff;
 	srb->cmd[4] = ((unsigned char) (start >> 8)) & 0xff;
@@ -1466,7 +1474,7 @@ usb_bin_fixup(struct usb_device_descriptor descriptor, unsigned char vendor[], u
 }
 #endif /* CONFIG_USB_BIN_FIXUP */
 
-#define USB_MAX_READ_BLK 32	/* Galvez: default 20 */
+#define USB_MAX_READ_BLK 64
 
 unsigned long
 usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buffer)
@@ -1521,7 +1529,6 @@ retry_it:
 		buf_addr += srb.datalen;
 	}
 	while(blks != 0);
-	ss->flags &= ~USB_READY;
 	DEBUG(("usb_read: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
 	return blkcnt;
@@ -1579,7 +1586,6 @@ retry_it:
 		buf_addr += srb.datalen;
 	}
 	while(blks != 0);
-	ss->flags &= ~USB_READY;
 	DEBUG(("usb_write: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
@@ -1599,16 +1605,20 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 
 	/* let's examine the device now */
 	iface = &dev->config.if_desc[ifnum];
-# if 0
-	DEBUG(("iVendor 0x%x iProduct 0x%x", dev->descriptor.idVendor, dev->descriptor.idProduct);
-	/* this is the place to patch some storage devices */
-	if((dev->descriptor.idVendor) == 0x066b && (dev->descriptor.idProduct) == 0x0103)
+
+	DEBUG(("iVendor 0x%x iProduct 0x%x", dev->descriptor.idVendor, dev->descriptor.idProduct));
+
+    /* Patch devices....
+     */
+
+    /* TEAC Floppy should use US_PR_CB not US_PR_CBI */
+	if (dev->descriptor.idVendor == 0x0644 && 
+        dev->descriptor.idProduct == 0x0000)
 	{
-		DEBUG(("patched for E-USB"));
 		protocol = US_PR_CB;
-		subclass = US_SC_UFI;	    /* an assumption */
+		subclass = US_SC_UFI;
 	}
-# endif
+
 	if (dev->descriptor.bDeviceClass != 0 ||
 			iface->desc.bInterfaceClass != USB_CLASS_MASS_STORAGE ||
 			iface->desc.bInterfaceSubClass < US_SC_MIN ||
@@ -1619,7 +1629,7 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	memset(ss, 0, sizeof(struct us_data));
 	/* At this point, we know we've got a live one */
 	DEBUG(("USB Mass Storage device detected"));
-	DEBUG(("Protocol: %x SubClass: %x", iface->desc.bInterfaceProtocol,       /* GALVEZ: DEBUG */
+	DEBUG(("Protocol: %x SubClass: %x", iface->desc.bInterfaceProtocol,
 					    iface->desc.bInterfaceSubClass ));
 	/* Initialize the us_data structure with some useful info */
 	ss->flags = flags;
@@ -1700,7 +1710,9 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	 * the only ones.
 	 * The SFF8070 accepts the requests used in u-boot
 	 */
-	if(ss->subclass != US_SC_UFI && ss->subclass != US_SC_SCSI && ss->subclass != US_SC_8070)
+	if(ss->subclass != US_SC_UFI && 
+       ss->subclass != US_SC_SCSI && 
+       ss->subclass != US_SC_8070)
 	{
 		DEBUG(("Sorry, protocol %d not yet supported.", ss->subclass));
 		ALERT(("Sorry, protocol %d not yet supported.", ss->subclass));
@@ -1729,6 +1741,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	unsigned long *capacity, *blksz;
 	ccb pccb;
 	DEBUG(("usb_stor_get_info()"));
+
 	/* for some reasons a couple of devices would not survive this reset */
 	if(
 	 /* Sony USM256E */
@@ -1743,8 +1756,9 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	{
 		DEBUG(("usb_stor_get_info: skipping RESET.."));
 	}
-	else
+	else {
 		ss->transport_reset(ss);
+    }
 
 	pccb.pdata = usb_stor_buf;
 	dev_desc->priv = dev;
@@ -1756,12 +1770,14 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	}
 	perq = usb_stor_buf[0];
 	modi = usb_stor_buf[1];
+
+	/* skip unknown devices */
 	if((perq & 0x1f) == 0x1f) {
-		/* skip unknown devices */
 		return 0;
 	}
+
+	/* drive is removable */
 	if((modi&0x80) == 0x80)
-		/* drive is removable */
 		dev_desc->removable = 1;
 	memcpy(&dev_desc->vendor[0], &usb_stor_buf[8], 8);
 	memcpy(&dev_desc->product[0], &usb_stor_buf[16], 16);
@@ -1784,6 +1800,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 		}
 		return 0;
 	}
+
 	pccb.pdata = (unsigned char *)&cap[0];
 	memset(pccb.pdata, 0, 8);
 	if(usb_read_capacity(&pccb, ss) != 0)
@@ -1792,7 +1809,6 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 		cap[0] = 2880;
 		cap[1] = 0x200;
 	}
-	ss->flags &= ~USB_READY;
 	DEBUG(("Read Capacity returns: 0x%lx, 0x%lx", cap[0], cap[1]));
 # if 0
 	if(cap[0] > (0x200000 * 10)) /* greater than 10 GByte */
@@ -1810,8 +1826,10 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	dev_desc->type = perq;
 	DEBUG((" address %d", dev_desc->target));
 	DEBUG(("partype: %d", dev_desc->part_type));
+#if 0 /* Why? */
 	init_part(dev_desc);
 	DEBUG(("partype: %d", dev_desc->part_type));
+#endif
 	return 1;
 }
 
@@ -1839,7 +1857,6 @@ usb_stor_eject(long device)
 	for (idx = 1; idx <= bios_part[device].partnum; idx++)
 	{	
 		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
-		changedrv(bios_part[device].biosnum[idx - 1]);
 	}
 	bios_part[device].partnum = 0;
 
@@ -1882,7 +1899,6 @@ storage_disconnect(struct usb_device *dev)
 	for (idx = 1; idx <= bios_part[i].partnum; idx++)
 	{	
 		uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
-		changedrv(bios_part[i].biosnum[idx - 1]);
 	}
 	bios_part[i].partnum = 0;
 
@@ -1899,8 +1915,8 @@ storage_disconnect(struct usb_device *dev)
 static long
 storage_probe(struct usb_device *dev)
 {
-	long r;	
-	long i;
+	long r, i, lun, start;	
+    long max_lun;
 	
 	if(dev == NULL)
 		return -1;
@@ -1927,20 +1943,62 @@ storage_probe(struct usb_device *dev)
 		return -1; /* It's not a storage device */
 	}
 
-	/* ok, it is a storage devices
-	 * get info and fill it in
-	 */
-	if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[i])) {
-		usb_disable_asynch(0); /* asynch transfer allowed */
-		return -1;
-	}
+    start = i;
+    max_lun = usb_get_max_lun(&usb_stor[i]);
+    /* override */
+    max_lun = 0; /* not yet */
+    for (lun = 0;
+         lun <= max_lun &&
+         start < USB_MAX_STOR_DEV; 
+         lun++) {
+	    /* ok, it is a storage devices
+    	 * get info and fill it in
+    	 */
+        usb_dev_desc[i].lun = lun;
+    	if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[start])) {
+    		usb_disable_asynch(0); /* asynch transfer allowed */
+    		return -1;
+    	}
+        start++;
+    }
+
 	
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
 	long dev_num = i;
-	block_dev_desc_t *stor_dev;
 
+	block_dev_desc_t *stor_dev;
 	stor_dev = usb_stor_get_dev(dev_num);
+
+	struct us_data *ss;
+    ss = (struct us_data *)dev->privptr;
+
+    //dev_print(stor_dev);
+
+	if(ss->subclass == US_SC_UFI)
+    {
+        c_conws("detected USB floppy not supported at this time\r\n");
+        /* This is a floppy drive, so give it a drive letter ? B ?. */
+        /* Also, we may be better to intercept the TRAP #1 floppy handlers
+         * and deal with them here. ??? */
+        return 0;
+    }
+
+    /* Skip everything apart from HARDDISKS */
+    if((stor_dev->type & 0x1f) != DEV_TYPE_HARDDISK) {
+#if 0
+        c_conws(stor_dev->vendor);
+        c_conout(' ');
+        c_conws(stor_dev->product);
+        c_conout(' ');
+        c_conws(", type : ");
+        hex_long(stor_dev->type & 0x1f);
+        c_conws(" not installed\r\n");
+#endif
+        return 0;
+    }
+
+
 	long part_num = 1;
 	unsigned long part_type, part_offset, part_size;
 	
@@ -1952,12 +2010,14 @@ storage_probe(struct usb_device *dev)
 		r = install_usb_stor(dev_num, part_type, part_offset, 
 				     part_size, stor_dev->vendor, 
 				     stor_dev->revision, stor_dev->product);
-		if (r == -1)
-			c_conws("unable to install storage device\r\n");
+		if (r == -1) {
+			DEBUG(("unable to install storage device\r\n"));
+        }
 		else
 		{
-			/* inform the kernel about media change */
-			changedrv(r);
+#ifdef TOSONLY
+            SCSIDRV_MediaChange(dev_num);
+#endif
 			bios_part[dev_num].biosnum[part_num - 1] = r;
 			bios_part[dev_num].partnum = part_num;
 		}	
@@ -1983,7 +2043,97 @@ usb_storage_init(void)
 	}
 }
 
+#define AHDI        0x41484449L     /* 'AHDI' */
+extern PUN_INFO pun_usb;                                //xhdi.c
 #ifdef TOSONLY
+#define MAX_LOGICAL_DRIVE 16
+#else
+#define MAX_LOGICAL_DRIVE 32
+#endif
+
+/*
+ * the following routine is stolen from FreeMiNT's pun.c module
+ */
+#define PUN_PTR	(*((PUN_INFO **) 0x516L))
+PUN_INFO *get_pun(void)
+{
+	PUN_INFO *pun = PUN_PTR;
+	if (pun)
+		if (pun->cookie == 0x41484449L)
+			if (pun->cookie_ptr == &(pun->cookie))
+				if (pun->version_num >= 0x300)
+					return pun;
+	return NULL;
+}
+
+#ifdef TOSONLY
+#define bufl0	(*(BCB **)0x4b2L)
+#define bufl1	(*(BCB **)0x4b6L)
+
+#define BCB	struct _bcb
+BCB
+{
+    BCB     *b_link;    /* next bcb (API)          */
+    char    filler[12];	/* not relevant            */
+    char    *b_bufr;    /* pointer to buffer (API) */
+};
+
+/*
+ * when no AHDI structure exists, this routine is called to install one.
+ * it assumes that the existing buffer pool uses 512-byte buffers (the
+ * logical sector size for floppies)
+ */
+static PUN_INFO *install_pun(void)
+{
+	PUN_INFO *pun;
+	BCB *bcb;
+	long bufsiz, bufcnt = 0L;
+	char *bufptr;
+
+	bufsiz = sys_XHDOSLimits(XH_DL_SECSIZ,0);
+
+	/*
+	 * allocate new buffers for BCB chains
+	 */
+	for (bcb = bufl0; bcb; bcb = bcb->b_link)
+		bufcnt++;
+	for (bcb = bufl1; bcb; bcb = bcb->b_link)
+		bufcnt++;
+	bufptr = (char *)Malloc(bufcnt*bufsiz);
+	if (!bufptr)
+		return NULL;
+
+	/*
+	 * create & initialise PUN_INFO structure
+	 */
+	pun = (PUN_INFO *)Malloc(sizeof(PUN_INFO));
+	if (!pun) {
+		Mfree(bufptr);
+		return NULL;
+	}
+	memset(pun,0x00,sizeof(PUN_INFO));
+	memset(pun->pun,0xff,16); 
+	pun->cookie = AHDI;
+	pun->cookie_ptr = &pun->cookie;
+	pun->version_num = 0x0300;
+	pun->max_sect_siz = bufsiz;
+	PUN_PTR = pun;
+
+	/*
+	 * copy existing buffers to new ones, updating the BCBs
+	 */
+	for (bcb = bufl0; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
+		memcpy(bufptr,bcb->b_bufr,512);
+		bcb->b_bufr = bufptr;
+	}
+	for (bcb = bufl1; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
+		memcpy(bufptr,bcb->b_bufr,512);
+		bcb->b_bufr = bufptr;
+	}
+
+	return pun;
+}
+
 int init(void);
 int
 init (void)
@@ -1993,6 +2143,7 @@ long _cdecl
 init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 #endif
 {
+    PUN_INFO *pun_ptr;
 	long ret;
 
 #ifndef TOSONLY
@@ -2025,12 +2176,67 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		return -1;
 	}
 
+#ifdef TOSONLY
+    /* goto supervisor mode because of drvbits & handlers */
+    if (!Super(1L))
+        ret = Super(0L);
+#endif
+
+	pun_ptr = get_pun();
+
+#ifdef TOSONLY
+	/*
+	 * install PUN_INFO if necessary (i.e. no hard disk driver loaded)
+	 */
+	if (!pun_ptr)
+		pun_ptr = install_pun();
+
+	if (!pun_ptr) {
+#ifdef TOSONLY
+        if (ret)
+            SuperToUser(ret);
+#endif
+        c_conws("Failed to initialize, out of memory\r\n");
+		return -1;
+	}
+#else
+	if (!pun_ptr) {
+        c_conws("Failed to initialize, PUN info not available.\r\n");
+		return -1;
+    }
+#endif
+
+    /*
+     * install PUN_INFO if necessary
+     */
+    if (pun_usb.cookie != AHDI) {
+        pun_usb.cookie = AHDI;
+        pun_usb.cookie_ptr = &pun_usb.cookie;
+        pun_usb.puns = 0;
+        pun_usb.version_num = 0x0300;
+        pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
+        memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE); /* mark all puns invalid */
+    }
+
+#if 1
+    install_vectors();
+    install_xhdi_driver();
+#endif
+#ifdef TOSONLY
+    install_scsidrv();
+#endif
+
+#ifdef TOSONLY
+    if (ret)
+        SuperToUser(ret);
+#endif
+
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
 	c_conws("USB storage driver installed.\r\n");
 
-	Ptermres(_PgmSize + 65536,0);
+	Ptermres(_PgmSize,0);
 #endif
 
 	return 0;
