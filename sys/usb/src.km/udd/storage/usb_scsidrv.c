@@ -1,3 +1,8 @@
+/*
+ * USB Storage SCSIDRV Implementation (C) 2014.
+ * By Alan Hourihane <alanh@fairlite.co.uk>
+ */
+
 #include <mint/osbind.h>
 #include "../../global.h"
 #include "scsi.h"
