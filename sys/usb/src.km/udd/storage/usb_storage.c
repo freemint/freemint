@@ -1204,15 +1204,6 @@ long usb_stor_CB_transport(ccb *srb, struct us_data *us)
 	status = USB_STOR_TRANSPORT_GOOD;
 	retry = 0;
 	notready = 0;
-	long dir_in;
-	unsigned long pipe;
-
-    dir_in = US_DIRECTION(srb->cmd[0]);
-    if(dir_in)
-        pipe = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
-    else
-        pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
-
 	/* issue the command */
 do_retry:
 	result = usb_stor_CB_comdat(srb, us);
