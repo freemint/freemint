@@ -66,7 +66,11 @@
 #include "../../usb_api.h"
 #include "usb_storage.h"
 
-#define MSG_VERSION "BETA TOS DRIVERS"
+#ifdef TOSONLY
+#define MSG_VERSION "TOS DRIVERS"
+#else
+#define MSG_VERSION "FreeMiNT DRIVERS"
+#endif
 char *drv_version = MSG_VERSION;
 
 #define MSG_BUILDDATE	__DATE__

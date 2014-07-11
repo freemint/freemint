@@ -34,14 +34,15 @@ long loader_pgrp = 0;
 
 struct usb_module_api usb_api;
 
-#define MSG_VERSION     "BETA TOS DRIVERS"
 #define MSG_BUILDDATE   __DATE__
 
 #ifdef TOSONLY
+#define MSG_VERSION     "TOS DRIVERS"
 #define MSG_BOOT        \
         "\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
         "Brought to TOS by Alan Hourihane.\r\n"
 #else
+#define MSG_VERSION     "FreeMiNT DRIVERS"
 #define MSG_BOOT        \
         "\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
 #endif
