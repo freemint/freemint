@@ -5,7 +5,11 @@
 
 #include <mint/osbind.h>
 
-#define MSG_VERSION "BETA TOS DRIVERS"
+#ifdef TOSONLY
+#define MSG_VERSION "TOS DRIVERS"
+#else
+#define MSG_VERSION "FreeMiNT DRIVERS"
+#endif
 
 #define MSG_BUILDDATE	__DATE__
 
