@@ -47,6 +47,10 @@
  * only been tested with USB memory sticks.
  */
 
+#if 0
+# define DEV_DEBUG	1
+#endif
+
 #ifndef TOSONLY
 #include "mint/mint.h"
 #include "libkern/libkern.h"
@@ -87,40 +91,9 @@ char *drv_version = MSG_VERSION;
 /*
  * Debug section
  */
-#ifndef TOSONLY
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-/*
- * Extra debug messages
- * uncomment them if you want them on
- * BE AWARE, IF YOU TURN THEM ON IN SLOW SYSTEMS
- * THE OVERHAEAD CAN PRODUCE THE BUS MALFUNCTION 
- */
 //#define USB_STOR_DEBUG
 //#define BBB_COMDAT_TRACE
 //#define BBB_XPORT_TRACE
-
-#else
-
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
-# define ASSERT(x)	assert x
-
-#endif
-
-#endif
 
 /****************************************************************************/
 /* BEGIN kernel interface */
@@ -257,6 +230,10 @@ static unsigned char readbuf[DEFAULT_SECTOR_SIZE];
 
 #define ATARI_PART_TBL_OFFSET   0x1c6
 #define XGM                     0x0058474dL     /* '\0XGM' */
+#define GEM                     0x0047454dL     /* '\0GEM' */
+#define BGM                     0x0042474dL     /* '\0BGM' */
+#define RAW                     0x00524157L     /* '\0RAW' */
+
 
 typedef struct {
     unsigned long id;           /* really 1-byte flag followed by GEM, BGM, or XGM */
@@ -391,6 +368,26 @@ init_part(block_dev_desc_t *dev_desc)
 #endif	
 }
 
+/*
+ *	test for valid DOS or GEMDOS partition
+ *	returns 1 if valid
+ */
+static int is_atari_partition(unsigned long type)
+{
+	type &= 0x00ffffffL;
+
+#ifdef DEBUGGING_ROUTINES
+    c_conws("Found partition ");
+    hex_long(type);
+    c_conws("\r\n");
+#endif
+
+	if ((type == GEM) || (type == XGM) || (type == BGM) || (type == RAW))
+		return 1;
+
+	return 0;
+}
+
 static inline long
 is_active_atari(long part_type)
 {
@@ -447,6 +444,9 @@ get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long par
 		for (i = 0, pt = part; i < 4; i++, pt++) {
 			if (!is_active_atari(pt->id))
 				continue;
+            if (!is_atari_partition(pt->id))
+                continue;
+
 			/*
 			 * links always follow the partition description, so if we get a link,
 			 * we know we're finished with this subpartition.
@@ -503,6 +503,9 @@ get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, d
 	{
 		if (!is_active_atari(pt->id))
 			continue;
+
+        if (!is_atari_partition(pt->id))
+            continue;
 
 		if (is_extended_atari(pt->id))
 		{
