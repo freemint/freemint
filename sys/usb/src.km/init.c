@@ -27,26 +27,36 @@
 #include "hub.h"
 #include "ucdload.h"
 #include "uddload.h"
-#include "udd.h"
-#include "udd/udd_defs.h"
+#include "usb_api.h"
 
 long loader_pid = 0;
 long loader_pgrp = 0;
 
 struct usb_module_api usb_api;
 
-void	setup_usb_module_api(void);
+#define MSG_BUILDDATE   __DATE__
+
+#ifdef TOSONLY
+#define MSG_VERSION     "TOS DRIVERS"
+#define MSG_BOOT        \
+        "\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
+        "Brought to TOS by Alan Hourihane.\r\n"
+#else
+#define MSG_VERSION     "FreeMiNT DRIVERS"
+#define MSG_BOOT        \
+        "\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
+#endif
+
+#define MSG_GREET       \
+	"David Galvez 2010-2014.\r\n" \
+	"Alan Hourihane 2013-2014.\r\n" \
+    "Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 static void
 bootmessage(void)
 {
-#ifdef TOSONLY
-	c_conws("USB driver for TOS\n\r");
-#else
-	c_conws("USB driver for MiNT\n\r");
-#endif
-	c_conws("David Galvez. 2010-2014\n\r");
-	c_conws("Alan Hourihane. 2014\n\r");
+	c_conws(MSG_BOOT);
+	c_conws(MSG_GREET);
 }
 
 struct kentry *kentry;
@@ -57,21 +67,65 @@ struct kentry *kentry;
  * - start main kernel thread
  */
 
-Path start_path;		/* The directory that the started binary lives */
 #ifndef TOSONLY
+Path start_path;
 static const struct kernel_module *self = NULL;
+#else
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	long n = 0;
+
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == _USB)
+		{
+			cjar->value = (long)&usb_api;
+			return;
+		}
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = _USB;
+		cjar->value = (long)&usb_api;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
+
+extern unsigned long _PgmSize;
 #endif
 
-void
+long            udd_register            (struct uddif *u);
+long            udd_unregister          (struct uddif *u);
+extern long	ucd_register		(struct ucdif *u, struct usb_device **dev);
+extern long	ucd_unregister		(struct ucdif *u);
+
+static void
 setup_usb_module_api(void)
 {
+	usb_api.api_version = USB_API_VERSION;
+	usb_api.max_devices = USB_MAX_DEVICE;
+	usb_api.max_hubs = USB_MAX_HUB;
+
 	usb_api.udd_register = &udd_register;
 	usb_api.udd_unregister = &udd_unregister;
-//	usb_api.fname = &fname;
+	usb_api.ucd_register = &ucd_register;
+	usb_api.ucd_unregister = &ucd_unregister;
+	usb_api.usb_rh_wakeup = &usb_rh_wakeup;
 
 	usb_api.usb_set_protocol = &usb_set_protocol;
 	usb_api.usb_set_idle = &usb_set_idle;
 	usb_api.usb_get_dev_index = &usb_get_dev_index;
+	usb_api.usb_get_hub_index = &usb_get_hub_index;
 	usb_api.usb_control_msg = &usb_control_msg;
 	usb_api.usb_bulk_msg = &usb_bulk_msg;
 	usb_api.usb_submit_int_msg = &usb_submit_int_msg;
@@ -92,9 +146,10 @@ setup_usb_module_api(void)
 	usb_api.usb_alloc_new_device = &usb_alloc_new_device;
 	usb_api.usb_new_device = &usb_new_device;
 	
-	/* For now we leave this hub specific
-	 * stuff out of the api.
+	/* For now we leave most of this hub specific functions out of the api.
 	 */
+	usb_api.usb_hub_events = &usb_hub_events;
+
 //	usb_api.usb_get_hub_descriptor = &usb_get_hub_descriptor;
 //	usb_api.usb_clear_port_feature = &usb_clear_port_feature;
 //	usb_api.usb_get_hub_status = &usb_get_hub_status;
@@ -106,9 +161,13 @@ setup_usb_module_api(void)
 }
 
 #ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
 int
-main(void)
+init(int argc, char **argv, char **env)
 #else
+long init(struct kentry *k, const struct kernel_module *km);
+
 long
 init(struct kentry *k, const struct kernel_module *km)
 #endif
@@ -119,6 +178,8 @@ init(struct kentry *k, const struct kernel_module *km)
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
+
+	bootmessage();
 
 	get_drive_and_path(start_path, sizeof(start_path));
 
@@ -132,20 +193,39 @@ init(struct kentry *k, const struct kernel_module *km)
 
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
-#endif
-
+#else
 	bootmessage();
 
-	usb_stop();
+	{
+		struct usb_module_api *checkapi;
+
+		checkapi = get_usb_cookie();
+		if (checkapi != NULL) {
+			c_conws("USB core already installed.\r\n");
+			return 0;
+		}
+	}
+#endif
 
 	setup_usb_module_api();
 
-	if ((err = usb_main(0)))
-		goto error;
+	usb_main();
 
-	usb_hub_init();
+#ifdef TOSONLY
+	{
+		/* Set the _USB API cookie */
+        Supexec(set_cookie);
 
+		c_conws("USB core installed.\r\n");
+
+		/* terminate and stay resident */
+		Ptermres(_PgmSize, 0);
+	}
+
+
+#else
 error:
+#endif
 	return err;
 }
 

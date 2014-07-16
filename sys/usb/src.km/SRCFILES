@@ -2,13 +2,10 @@
 # the files that should go only into source distributions.
 
 HEADER = \
-	config.h \
 	global.h \
 	hub.h \
 	init.h \
-	ucd.h \
 	ucdload.h \
-	udd.h \
 	uddload.h \
 	usb.h \
 	usb_defs.h \
@@ -25,8 +22,15 @@ COBJS = \
 	usb.c \
 	util.c
 
-SOBJS = \
+TOSCOBJS = \
+	crtinit.c
 
-SSOBJS = \
+SOBJS =
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
+SSOBJS =
+
+TOSSSOBJS = \
+	entry.S \
+	setstack.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)

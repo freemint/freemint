@@ -14,7 +14,9 @@ endif
 ifeq ($(usb),prg)
 TARGET = usb.prg
 CPU = 000
-USBDEFS += -DTOSONLY
+USBDEFS += -DTOSONLY -fno-builtin
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+OBJS += usb_int.S
 endif
 
 ifeq ($(usb),000)

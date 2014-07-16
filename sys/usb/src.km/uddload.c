@@ -20,15 +20,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef TOSONLY
 #include "global.h"
 #include "uddload.h"
 #include "usb.h"
-#include "udd.h"
+#include "usb_api.h"
 
 #include "mint/basepage.h"
 
 extern Path start_path;
-
 static char no_reason[] = "Nothing";
 
 static long
@@ -71,3 +71,4 @@ udd_load(bool first)
 	load_modules(start_path, ".udd", load_udd);
 	DEBUG(("udd_load: done"));
 }
+#endif

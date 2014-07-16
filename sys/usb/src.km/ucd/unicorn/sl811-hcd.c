@@ -1,4 +1,10 @@
 /*
+ * Brought to the Atari by Alan Hourihane <alanh@fairlite.co.uk>
+ *
+ * Hardware designed by Alan Hourihane <alanh@fairlite.co.uk>
+ * 
+ * The "Unicorn-USB" adapter driver !
+ *
  * (C) Copyright 2004
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  *
@@ -33,37 +39,33 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
- *
- * Brought to the Atari by Alan Hourihane <alanh@fairlite.co.uk>
- *
- * Hardware designed by Alan Hourihane <alanh@fairlite.co.uk>
- * 
- * The "Unicorn-USB" adapter driver !
  */
 
-#include <stddef.h>
-#include <mint/osbind.h> /* Setexc */
+#ifndef TOSONLY
 #include "mint/mint.h"
-#include <mint/asm.h>
 #include "libkern/libkern.h"
-#include "mint/dcntl.h"
+#endif
 
-#include "../../config.h"
+#include "../../global.h"
+
 #include "../../endian/io.h"
+#include "mint/endian.h"
+#include "mint/mdelay.h"
 #include "../../usb.h"
 #include "mint/time.h"
 #include "arch/timer.h"
-#include "../ucd_defs.h"
+#include "../../usb_api.h"
 
 #define CONFIG_SYS_HZ CLOCKS_PER_SEC
 
 #include "sl811.h"
 
+#ifndef TOSONLY
 #if 0
-# define SL811_DEBUG
+# define DEV_DEBUG
 #endif
 
-#ifdef SL811_DEBUG
+#ifdef DEV_DEBUG
 
 # define FORCE(x)       
 # define ALERT(x)       KERNEL_ALERT x
@@ -80,6 +82,7 @@
 # define ASSERT(x)      assert x
 
 #endif
+#endif
 
 unsigned long
 get_hz_200(void)
@@ -90,11 +93,24 @@ get_hz_200(void)
 /****************************************************************************/
 /* BEGIN kernel interface */
 
+#ifndef TOSONLY
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
 void sl811_hub_poll_thread(void *);
 void sl811_hub_poll(PROC *proc, long dummy);
 void sl811_hub_events(void);
+#else
+/* old handler */
+extern void (*old_mfp_int)(void);
+
+/* interrupt wrapper routine */
+extern void interrupt_mfp (void);
+
+extern unsigned long _PgmSize;
+
+static int reset_stage = 0;
+#endif
+extern unsigned char check_flock(void);
+struct usb_module_api   *api;
 
 /* interrupt wrapper routine */
 void unicorn_int (void);
@@ -107,13 +123,9 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 unsigned short, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-struct usb_port_status {
-	unsigned short wPortStatus;
-	unsigned short wPortChange;
-} __attribute__ ((packed));
-
 static struct usb_port_status rh_status = { 0, 0 };
-static int root_hub_devnum = 0; /* assumed.... fixme for multiple USB controllers */
+static struct usb_device *root_hub_dev = NULL;
+static unsigned short root_address = 0;
 static int intr = 0;
 
 static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
@@ -130,20 +142,67 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 #define WRITEMODE (*(volatile unsigned short *)0xFFFF8606)
 #define DACCESS (*(volatile unsigned short *)0xFFFF8604L)
 #define MFP_GPIP (*(volatile unsigned char *)0xFFFFFA01L)
+#define WRITEACC (*(volatile unsigned long *)0xFFFF8604L)
 
 /*
  * Lock the ACSI port using FLOCK.
  */
+#ifdef TOSONLY
+#define LOCKUSBWITHNORETURN \
+	unsigned long ret = 0; \
+	if (!Super(1L)) { \
+		ret = Super(0L); \
+	} \
+	if (check_flock() != 0) { \
+		if (ret) \
+  			SuperToUser(ret); \
+		return; \
+	} \
+	WRITEMODE = 0x88; \
+    WRITEACC = ((long)ACSI << 21) | 0x8a;
+#define LOCKUSBWITHRETURN \
+	unsigned long ret = 0; \
+	if (!Super(1L)) { \
+		ret = Super(0L); \
+	} \
+	if (check_flock() != 0) { \
+		if (ret) \
+  			SuperToUser(ret); \
+		return -1; \
+	} \
+	WRITEMODE = 0x88; \
+    WRITEACC = ((long)ACSI << 21) | 0x8a;
+
+#define LOCKUSB \
+	unsigned long ret = 0; \
+	if (!Super(1L)) { \
+		ret = Super(0L); \
+	} \
+	while (check_flock() != 0); \
+	WRITEMODE = 0x88; \
+    WRITEACC = ((long)ACSI << 21) | 0x8a;
+
+#define UNLOCKUSB  \
+    WRITEMODE = 0x00; \
+	__asm__ volatile("clr.w 0x43e"); \
+	if (ret) \
+  		SuperToUser(ret);
+#else
 #define LOCKUSB \
         {   \
                 __asm__ volatile("1: tas.b 0x43e");        \
                 __asm__ volatile("bne.b 1b");        \
         } \
 	WRITEMODE = 0x88; \
-	DACCESS = (ACSI << 5); \
-	WRITEMODE = 0x8a;
+    WRITEACC = ((long)ACSI << 21) | 0x8a;
+#define LOCKUSBWITHRETURN LOCKUSB
+#define LOCKUSBWITHNORETURN LOCKUSB
 
-#define UNLOCKUSB  __asm__ volatile("clr.b 0x43e");
+#define UNLOCKUSB  \
+    WRITEMODE = 0x00; \
+	__asm__ volatile("clr.w 0x43e");
+#endif
+		
 
 static inline void sl811_write (__u8 index, __u8 data)
 {
@@ -166,6 +225,111 @@ static inline __u8 sl811_read (__u8 index)
  */
 static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
 {
+	if ((long)buf & 1) {
+        /* Make it even, to prevent crashes on 68000. */
+		DACCESS = offset++;
+		*buf++ = (__u8) DACCESS;
+        size--;
+	}
+
+    /* Speed optimization */
+	while (size >= 16) {
+        __asm__ volatile
+		(
+			"lea 0xffff8604,a1;"
+			"move.l #0,d0;"
+			"move.b %3,d0;"
+
+			"move.w d0,(a1);"
+			"move.w (a1),d4;"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d4;"
+			"move.b d1, d4;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d4;"
+			"move.b d1, d4;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d4;"
+			"move.b d1, d4;"
+
+			"move.w d0,(a1);"
+			"move.w (a1),d5;"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d5;"
+			"move.b d1, d5;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d5;"
+			"move.b d1, d5;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d5;"
+			"move.b d1, d5;"
+
+			"move.w d0,(a1);"
+			"move.w (a1),d6;"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d6;"
+			"move.b d1, d6;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d6;"
+			"move.b d1, d6;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d6;"
+			"move.b d1, d6;"
+
+			"move.w d0,(a1);"
+			"move.w (a1),d7;"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d7;"
+			"move.b d1, d7;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d7;"
+			"move.b d1, d7;"
+			"move.w d0,(a1);"
+			"move.w (a1),d1;"
+			"addq.l #1, d0;"
+			"lsl.l #8, d7;"
+			"move.b d1, d7;"
+
+			"move.l %2,a0;"
+			"movem.l d4-d7,(a0);"
+			"add.l #16,a0;"
+			"move.b d0,%0;"
+			"move.l a0,%1;"
+
+            : "=d" (offset), "=m" (buf)
+			: "m" (buf), "d" (offset)
+			: "d0","d1","d4","d5","d6","d7","a0","a1"
+		);
+		
+		size -= 16;
+	}
+
 	while (size--) {
 		/* Auto-increment would have been nice, but it's 
 		 * a hw bug of the SL811. So the workaround is baked
@@ -183,6 +347,115 @@ static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
  */
 static void inline sl811_write_buf(__u8 offset, __u8 *buf, __u8 size)
 {
+	if ((long)buf & 1) {
+        /* Make it even, to prevent crashes on 68000. */
+		DACCESS = offset++;
+		DACCESS = *buf++;
+        size--;
+	}
+
+	while (size >= 16) {
+        __asm__ volatile
+		(
+			"lea 0xffff8604,a1;"
+			"move.l #0,d0;"
+			"move.b %3,d0;"
+
+			"move.l %2,a0;"
+			"movem.l (a0),d4-d7;"
+			"add.l #16,a0;"
+			"move.l a0,%1;"
+
+			"move.w d0,(a1);"
+            "move.l d4,d1;"
+            "swap d1;"
+            "lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d4,d1;"
+            "swap d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d4,d1;"
+			"lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w d4,(a1);"
+			"addq.l #1, d0;"
+
+			"move.w d0,(a1);"
+            "move.l d5,d1;"
+            "swap d1;"
+            "lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d5,d1;"
+            "swap d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d5,d1;"
+			"lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w d5,(a1);"
+			"addq.l #1, d0;"
+
+			"move.w d0,(a1);"
+            "move.l d6,d1;"
+            "swap d1;"
+            "lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d6,d1;"
+            "swap d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d6,d1;"
+			"lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w d6,(a1);"
+			"addq.l #1, d0;"
+
+			"move.w d0,(a1);"
+            "move.l d7,d1;"
+            "swap d1;"
+            "lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d7,d1;"
+            "swap d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+            "move.l d7,d1;"
+			"lsr.l #8, d1;"
+			"move.w d1,(a1);"
+			"addq.l #1, d0;"
+			"move.w d0,(a1);"
+			"move.w d7,(a1);"
+			"addq.l #1, d0;"
+
+			"move.b d0,%0;"
+
+            : "=d" (offset), "=m" (buf)
+			: "m" (buf), "d" (offset)
+			: "d0","d1","d4","d5","d6","d7","a0","a1"
+		);
+		
+		size -= 16;
+	}
+
 	while (size--) {
 		/* Auto-increment would have been nice, but it's 
 		 * a hw bug of the SL811. So the workaround is baked
@@ -211,7 +484,6 @@ static int usb_init_atari (void)
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		if (buf[i] != i) {
 			DEBUG(("SL811 compare error index=0x%02x read=0x%02x 0x%02x 0x%02x 0x%02x\n", i, buf[i], buf[i+1], buf[i+2], buf[i+3]));
-			ALERT(("SL811 not found at ACSI ID %d", ACSI));
 			return (-1);
 		}
 	}
@@ -224,12 +496,6 @@ static void sl811_write_intr(__u8 irq)
 	sl811_write(SL811_INTR, irq);
 }
 
-/*
- * This function resets SL811HS controller and detects the speed of
- * the connecting device
- *
- * Return: 0 = no device attached; 1 = USB device attached
- */
 static long sl811_hc_reset(void)
 {
 	__u8 status;
@@ -242,7 +508,7 @@ static long sl811_hc_reset(void)
 	/* Disable hardware SOF generation, clear all irq status. */
 	sl811_write(SL811_CTRL1, 0);
 	mdelay(2);
-	sl811_write(SL811_INTRSTS, 0xfe);
+	sl811_write(SL811_INTRSTS, 0xff);
 	status = sl811_read(SL811_INTRSTS);
 
 	if (status & SL811_INTR_NOTPRESENT) {
@@ -287,7 +553,7 @@ static long sl811_hc_reset(void)
 	/* start the SOF or EOP */
 	sl811_write(SL811_CTRL_B, SL811_USB_CTRL_ARM);
 	mdelay(2);
-	sl811_write(SL811_INTRSTS, 0xfe);
+	sl811_write(SL811_INTRSTS, 0xff);
 
 	rh_status.wPortChange |= USB_PORT_STAT_C_CONNECTION;
 	intr = SL811_INTR_DETECT | SL811_INTR_INSRMV;
@@ -299,7 +565,7 @@ static long sl811_hc_reset(void)
 static inline void
 int_handle_tophalf(PROC *process, long arg)
 {
-	(*uinf->usb_rh_wakeup)();
+	usb_rh_wakeup();
 }
 
 long
@@ -310,8 +576,10 @@ usb_lowlevel_init(void *dummy)
 	/*
 	 * Check the adapter is functional.
 	 */
-	if (usb_init_atari() != 0)
+	if (usb_init_atari() != 0) {
+       c_conws("Unicorn USB not found\r\n");
 	   return -1;
+    }
 
 	/*
 	 * Initialize the chip.
@@ -320,10 +588,19 @@ usb_lowlevel_init(void *dummy)
         r = sl811_hc_reset();
 	UNLOCKUSB;
         if (r)
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	else
 		rh_status.wPortChange = 0;
 
+#ifdef TOSONLY
+	//old_mfp_int = Setexc (0x70/4, (long) interrupt_mfp);
+	{
+		ret = Super(0L);
+		old_mfp_int = (void*)*(volatile unsigned long *)0x400;
+		*(volatile unsigned long *)0x400 = (unsigned long)interrupt_mfp;
+		SuperToUser(ret);
+	}
+#else
 	/*
 	 * Start the root hub thread.
 	 */
@@ -332,6 +609,7 @@ usb_lowlevel_init(void *dummy)
 	{
 		return -1;
 	}
+#endif
 
 	return 0;
 }
@@ -351,23 +629,37 @@ usb_lowlevel_stop(void *dummy)
 
 static int calc_needed_buswidth(long bytes, long need_preamble)
 {
-	return !need_preamble ? bytes * 8 + 256 : 8 * 8 * bytes + 2048;
+    /*
+     * This is the performance optimizer.
+     *
+     * Basically the USB frame can contain a number of bits.
+     *
+     * Unfortunately, our poor ST's are only 8MHz 68000's and are
+     * slow in terms of USB rates. This means we need a larger slop
+     * for potentially missing the end of the frame, and resulting
+     * in device timeouts. Hence 5120 for full speed USB devices.
+     * Low speed use the alternate algorithm
+     *
+     * Reducing 5120 helps performance as we can slot more of our
+     * packets inside a USB frame, but it can result in timeouts if
+     * too low and the USB device could be shutdown.
+     */
+	return !need_preamble ? bytes * 8 + 5120 : bytes * 64 + 3072;
 }
 
 static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *buffer, long len, long flags)
 {
-	unsigned long time_start = get_hz_200();
-	__u8 ctrl = SL811_USB_CTRL_ARM | SL811_USB_CTRL_ENABLE;
-	__u8 status = 0;
+	register unsigned long time_start = get_hz_200();
+	register __u8 ctrl = SL811_USB_CTRL_ARM | SL811_USB_CTRL_ENABLE;
+	register __u8 status = 0;
 	long err = 0;
 	long nak = 0;
 	long need_preamble = !(rh_status.wPortStatus & USB_PORT_STAT_LOW_SPEED) &&
 		(dev->speed == USB_SPEED_LOW);
 	int calc = calc_needed_buswidth(len, need_preamble);
-	int sofcnt;
 
 	if (len > SL811_DATA_LIMIT) {
-		DEBUG(("Packet too large (%ldbytes)",len));
+		ALERT(("Packet too large (%ldbytes)",len));
 		return -1;
 	}
 
@@ -379,9 +671,10 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		ctrl |= SL811_USB_CTRL_PREAMBLE;
 
 	sl811_write_intr(SL811_INTR_DONE_A);
-	sl811_write(SL811_INTRSTS, 0xff);
+	sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 	while (err < 3) {
-		unsigned char intrq;
+		register unsigned char intrq;
+	    register int sofcnt;
 
 		sl811_write(SL811_ADDR_A, SL811_DATA_START);
 		sl811_write(SL811_LEN_A, len);
@@ -400,8 +693,17 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		{
 			if (5*CONFIG_SYS_HZ < (get_hz_200() - time_start)) {
 				DEBUG(("USB transmit timed out %d",sl811_read(SL811_INTR)));
-				sl811_write_intr(intr);
-				sl811_write(SL811_INTRSTS, 0xff);
+		                if (intrq & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
+#ifndef TOSONLY
+		                        sl811_hc_reset();
+		                        addroottimeout (0, int_handle_tophalf, 1);
+#else
+					reset_stage = 1;
+#endif
+		                } else {
+					sl811_write_intr(intr);
+					sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
+				}
 				return -USB_ST_CRC_ERR;
 			}
 		}
@@ -412,14 +714,14 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		if (status & SL811_USB_STS_ACK) {
 			__u8 remainder = sl811_read(SL811_CNT_A);
 			if (remainder) {
-				DEBUG(("usb transfer remainder = %d", remainder));
+		//		DEBUG(("usb transfer remainder = %d", remainder));
 				len -= remainder;
 			}
 			if (usb_pipein(pipe) && len) {
 				sl811_read_buf(SL811_DATA_START, buffer, len);
 			}
 			sl811_write_intr(intr);
-			sl811_write(SL811_INTRSTS, 0xff);
+			sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 			return len;
 		}
 
@@ -429,6 +731,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 			if (flags & USB_BULK_FLAG_EARLY_TIMEOUT) {
 				err++;
 			}
+
 			continue;
 		}
 
@@ -436,6 +739,15 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 	}
 
 	err = 0;
+
+#if 0
+    if (status) {
+    	c_conws("ERROR\n\r");
+       	hex_long(len);
+    	hex_long(status);
+    	c_conws("\r\n");
+    }
+#endif
 
 	if (status & SL811_USB_STS_NAK)
 		err |= USB_ST_NAK_REC;
@@ -449,7 +761,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 	DEBUG(("usb transfer error 0x%x", (int)status));
 
 	sl811_write_intr(intr);
-	sl811_write(SL811_INTRSTS, 0xff);
+	sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 
 	return -err;
 }
@@ -461,20 +773,40 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int devnum = usb_pipedevice(pipe);
 	int dir_out = usb_pipeout(pipe);
 	int ep = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+
+	long max = usb_maxpacket(dev, pipe);
 	long done = 0;
 
 	DEBUG(("dev = %ld pipe = %ld buf = 0x%lx size = 0x%lx dir_out = %d",
 	       usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
 
-	if (max == 0) {
-		DEBUG(("USBbulk max %ld len %ld",max,len));
-		return 0;
+	dev->status = -1;
+	dev->act_len = 0;
+
+	if (dev->devnum == -1) {
+		c_conws("BAD DEVNUM, POSSIBLE DEVICE REMOVAL!\n\rn");
+		return -1;
 	}
 
-	dev->status = 0;
+	LOCKUSBWITHRETURN;
 
-	LOCKUSB;
+#ifdef TOSONLY
+	if (reset_stage == 1) {
+		if (ret == 0) {
+			/* we're in interrupt context */
+			UNLOCKUSB;
+			return -1;
+		}
+#if 0
+		sl811_hc_reset();
+		reset_stage = 0;
+#endif
+		UNLOCKUSB;
+		return -1;
+	}
+#endif
+
+//	max = SL811_DATA_LIMIT;
 	sl811_write(SL811_DEV_A, devnum);
 	sl811_write(SL811_PIDEP_A, PIDEP(!dir_out ? USB_PID_IN : USB_PID_OUT, ep));
 	usb_settoggle(dev, ep, !dir_out, 1);
@@ -497,6 +829,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	}
 
 	dev->act_len = done;
+    dev->status = 0;
 
 	UNLOCKUSB;
 
@@ -510,26 +843,52 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long done = 0;
 	int devnum = usb_pipedevice(pipe);
 	int ep = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+	long max = usb_maxpacket(dev, pipe);
 
-	dev->status = 0;
+	dev->status = -1;
+	dev->act_len = 0;
 
-	DEBUG(("control %d %d",devnum,root_hub_devnum));
-
-	if (max == 0) {
-		DEBUG(("USBcontrol max %ld len %ld",max,len));
-		return 0;
-	}
-
-	if (devnum == root_hub_devnum) {
-		return sl811_rh_submit_urb(dev, pipe, buffer, len, setup);
+	if (dev->devnum == -1) {
+		c_conws("BAD DEVNUM, POSSIBLE DEVICE REMOVAL!\n\rn");
+		return -1;
 	}
 
 	DEBUG(("dev = 0x%lx pipe = %ld buf = 0x%lx size = 0x%x rt = 0x%x req = 0x%x bus = %i",
 	       devnum, ep, buffer, len, setup->requesttype,
 	       setup->request, sl811_read(SL811_SOFCNTDIV)*64));
 
-	LOCKUSB;
+	LOCKUSBWITHRETURN;
+
+	if (devnum == root_address) {
+        long rret;
+#ifdef TOSONLY
+        if (reset_stage == 1) {
+    	    sl811_hc_reset();
+        }
+    	reset_stage = 0;
+#endif
+    	rret = sl811_rh_submit_urb(dev, pipe, buffer, len, setup);
+    	UNLOCKUSB;
+		return rret;
+	}
+
+#ifdef TOSONLY
+	if (reset_stage == 1) {
+		if (ret == 0) {
+			UNLOCKUSB;
+			/* we're in interrupt context */
+			return -1;
+		}
+#if 0
+		sl811_hc_reset();
+		reset_stage = 0;
+#endif
+        /* try to continue after the reset */
+		UNLOCKUSB;
+        return -1;
+
+	}
+#endif
 
 	sl811_write(SL811_DEV_A, devnum);
 	sl811_write(SL811_PIDEP_A, PIDEP(USB_PID_SETUP, ep));
@@ -545,18 +904,24 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 			    PIDEP(dir_in ? USB_PID_IN : USB_PID_OUT, ep));
 		usb_settoggle(dev, ep, usb_pipeout(pipe), 1);
 	
+//		max = SL811_DATA_LIMIT;
+
+	    dev->status = 0;
+
 		while (done < len) {
 			long res;
 			long nlen = (max > (len - done)) ? (len - done) : max;
 			res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
 			if (res < 0) {
-				UNLOCKUSB;
+				ALERT(("1status data failed!"));
 				dev->status = -res;
+				UNLOCKUSB;
 				dev->act_len = done;
 				return 0;
 			}
 			done += res;
 			usb_dotoggle(dev, ep, usb_pipeout(pipe));
+
 			if (dir_in && res < max) /* short packet */
 				break;
 		}
@@ -569,10 +934,12 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				      !dir_in ? usb_rcvctrlpipe(dev, ep) :
 				      usb_sndctrlpipe(dev, ep),
 				      0, 0, 0) < 0) {
+			ALERT(("2status phase failed!"));
 			dev->status = -1;
 			done = 0;
 		}
 	} else {
+		ALERT(("3setup phase failed!"));
 		dev->status = -1;
 		done = 0;
 	}
@@ -588,10 +955,45 @@ long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		   long len, long interval)
 {
+	int devnum = usb_pipedevice(pipe);
+	int dir_out = usb_pipeout(pipe);
+	int ep = usb_pipeendpoint(pipe);
+	long max = usb_maxpacket(dev, pipe);
+	long done = 0;
+
 	DEBUG(("dev = 0x%lx pipe = %#lx buf = 0x%lx size = %ld int = %d", dev, pipe,
 	       buffer, len, interval));
 
-	return -1;
+	LOCKUSBWITHRETURN;
+	sl811_write(SL811_DEV_A, devnum);
+	sl811_write(SL811_PIDEP_A, PIDEP(!dir_out ? USB_PID_IN : USB_PID_OUT, ep));
+	usb_settoggle(dev, ep, !dir_out, 1);
+	while (done < len) {
+		long res;
+		long nlen = (max > (len - done)) ? (len - done) : max;
+
+		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
+		if (res < 0) {
+			UNLOCKUSB;
+
+			dev->act_len = done;
+			dev->status = -res;
+			return res;
+		}
+		done += res;
+		usb_dotoggle(dev, ep, dir_out);
+
+		if (!dir_out && res < nlen) /* short packet */
+			break;
+	}
+
+	dev->act_len = done;
+
+    dev->irq_handle(dev);
+
+	UNLOCKUSB;
+
+	return done;
 }
 
 /*
@@ -690,13 +1092,14 @@ static int ascii2utf (char *s, u8 *utf, int utfmax)
  * root_hub_string is used by each host controller's root hub code,
  * so that they're identified consistently throughout the system.
  */
-static int usb_root_hub_string (int id, int serial, char *type, __u8 *data, long len)
+static int usb_root_hub_string (int id, __u8 *data, long len)
 {
 	char buf [30];
 
 	/* assert (len > (2 * (sizeof (buf) + 1)));
 	   assert (strlen (type) <= 8);*/
 
+	memset(buf, 0, sizeof(buf));
 	/* language ids */
 	if (id == 0) {
 		*data++ = 4; *data++ = 3;	/* 4 bytes data */
@@ -705,11 +1108,11 @@ static int usb_root_hub_string (int id, int serial, char *type, __u8 *data, long
 
 	/* serial number */
 	} else if (id == 1) {
-		sprintf (buf, sizeof(buf), "%#x", serial);
+		strcat (buf, "0");
 
 	/* product description */
 	} else if (id == 2) {
-		sprintf (buf, sizeof(buf), "USB %s Root Hub", type);
+		strcat (buf, "Unicorn USB Root Hub");
 
 	/* id 3 == vendor description */
 
@@ -729,7 +1132,7 @@ static int usb_root_hub_string (int id, int serial, char *type, __u8 *data, long
 /*
  * This function handles all USB request to the the virtual root hub
  */
-static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
+static inline long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	 		        void *data, unsigned short buf_len, struct devrequest *cmd)
 {
 	__u8 data_buf[16];
@@ -739,7 +1142,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	__u16 bmRType_bReq;
 	__u16 wValue  = le2cpu16(cmd->value);
 	__u16 wLength = le2cpu16(cmd->length);
-#ifdef SL811_DEBUG
+#ifdef DEV_DEBUG
 	__u16 wIndex  = le2cpu16(cmd->index);
 #endif
 
@@ -863,7 +1266,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 		break;
 
 	case RH_SET_ADDRESS:
-		root_hub_devnum = wValue;
+		root_address = wValue;
 		OK(0);
 
 	case RH_GET_DESCRIPTOR:
@@ -879,7 +1282,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 			OK(len);
 
 		case USB_DT_STRING:
-			len = usb_root_hub_string(wValue & 0xff, (int)(long)0,	"SL811HS", data, wLength);
+			len = usb_root_hub_string(wValue & 0xff, data, wLength);
 			if (len > 0) {
 				bufp = data;
 				OK(len);
@@ -919,10 +1322,11 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	return status == 0 ? usb_dev->act_len : usb_dev->status;
 }
 
-#define VER_MAJOR	0
-#define VER_MINOR	1
-#define VER_STATUS	
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+#ifdef TOSONLY
+#define MSG_VERSION	"TOS DRIVERS"
+#else
+#define MSG_VERSION	"FreeMiNT DRIVERS"
+#endif
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -936,7 +1340,6 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
  * USB controller interface
  */
 
-long init			(struct kentry *, struct ucdinfo *, char **);
 static long sl811_open		(struct ucdif *);
 static long sl811_close		(struct ucdif *);
 static long sl811_ioctl		(struct ucdif *, short, long);
@@ -946,6 +1349,7 @@ static char lname[] = "Unicorn USB controller driver for FreeMiNT\0";
 static struct ucdif sl811_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"sl811",		/* name */
@@ -956,10 +1360,6 @@ static struct ucdif sl811_uif =
 	0,			/* resrvd1 */
 	sl811_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
-//	submit_bulk_msg,
-//	submit_control_msg,
-//	submit_int_msg,
-//	{ NULL },
 };
 
 
@@ -985,11 +1385,6 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 
 	switch (cmd)
 	{
-		case FS_INFO:
-		{
-			*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
-			break;
-		}
 		case LOWLEVEL_INIT :
 		{
 			ret = usb_lowlevel_init (u->ucd_priv);
@@ -1035,22 +1430,41 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 	return ret;
 }
 
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long init (struct kentry *, struct usb_module_api *, char **);
+
 long
-init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init (struct kentry *k, struct usb_module_api *uapi, char **reason)
+#endif
 {
 	long ret;
 
+#ifndef TOSONLY
+	api	= uapi;
 	kentry	= k;
-	uinf	= uinfo;
 
 	if (check_kentry_version())
 		return -1;
+#endif
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&sl811_uif);
+#ifdef TOSONLY
+	api = get_usb_cookie();
+	if (!api) {
+		(void)Cconws("UNICORN failed to get _USB cookie\r\n");
+		return -1;
+	}
+#endif
+
+	ret = ucd_register(&sl811_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));
@@ -1059,30 +1473,56 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 
 	DEBUG (("%s: ucd register ok", __FILE__));
 
+#ifdef TOSONLY
+	c_conws("Unicorn USB driver installed.\r\n");
+
+	Ptermres(_PgmSize,0);
+#endif
+
 	return 0;
 }
 
 void
 unicorn_int (void)
 {
+#ifdef TOSONLY
+	if (reset_stage != 0)
+		return;
+#endif
+
 	if (!(MFP_GPIP & 0x20)) {
 		__u8 status;
 
-		LOCKUSB;
+		if (check_flock() != 0) { 
+			return; 
+		} 
+
+		WRITEMODE = 0x88;
+        WRITEACC = ((long)ACSI << 21) | 0x8a;
+
 		status = sl811_read(SL811_INTRSTS);
 		sl811_write(SL811_INTRSTS, 0xfe);
 
 		if (status & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
+#ifdef TOSONLY
+			reset_stage = 1;
+#else
 			sl811_hc_reset();
-			UNLOCKUSB;
+#endif
+            WRITEMODE = 0x00;
+			__asm__ volatile("clr.w 0x43e");
+//			c_conws("RESET\r\n");
+#ifndef TOSONLY
 			addroottimeout (0, int_handle_tophalf, 1);
+#endif
 		} else {
-			UNLOCKUSB;
+            WRITEMODE = 0x00;
+			__asm__ volatile("clr.w 0x43e");
 		}
 	}
 }
 
-
+#ifndef TOSONLY
 void
 sl811_hub_poll(PROC *proc, long dummy)
 {
@@ -1106,3 +1546,4 @@ sl811_hub_poll_thread(void *dummy)
 
 	kthread_exit(0);
 }
+#endif

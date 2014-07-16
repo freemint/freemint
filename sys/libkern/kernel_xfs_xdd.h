@@ -488,6 +488,9 @@ extern struct kerinfo *KERNEL;
 INLINE long c_conws(const char *str)
 { return ((long _cdecl (*)(const char *)) _c_conws)(str); }
 
+INLINE long c_conout(const int c)
+{ return ((long _cdecl (*)(const int)) _c_conout)(c); }
+
 INLINE long f_setdta(DTABUF *dta)
 { return ((long _cdecl (*)(DTABUF *)) _f_setdta)(dta); }
 

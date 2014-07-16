@@ -8,11 +8,20 @@ HEADER = \
 	xhdi.h
 
 COBJS = \
+	install.c \
 	usb_storage.c \
 	xhdi.c
 
 SSOBJS = \
-	bios.S \
-	debug2.S
+	vectors.S
 
-SRCFILES = $(HEADER) $(SSOBJS) $(COBJS)
+TOSCOBJS = \
+    usb_scsidrv.c \
+    crtinit.c
+
+TOSSSOBJS = \
+        entry.S \
+        setstack.S \
+	xhdiasm.S
+
+SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)

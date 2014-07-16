@@ -491,6 +491,9 @@ extern struct kentry *kentry;
 INLINE long c_conws(const char *str)
 { return ((long _cdecl (*)(const char *)) _c_conws)(str); }
 
+INLINE long c_conout(const int c)
+{ return ((long _cdecl (*)(const int)) _c_conout)(c); }
+
 INLINE long d_setdrv(int drv)
 { return ((long _cdecl (*)(int)) _d_setdrv)(drv); }
 

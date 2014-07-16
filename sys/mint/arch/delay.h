@@ -54,7 +54,7 @@ extern ulong loops_per_sec;
 # endif
 
 
-static inline void
+INLINE void
 __delay (register ulong loops)
 {
 # ifdef __mcoldfire__
@@ -86,7 +86,7 @@ __delay (register ulong loops)
 # endif /* (__mcoldfire__) */
 }
 
-static inline void
+INLINE void
 udelay (register ulong usecs)
 {
 /*

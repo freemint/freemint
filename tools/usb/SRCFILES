@@ -1,0 +1,14 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = 
+
+COBJS = \
+	usb.c
+
+SOBJS = 
+
+SSOBJS = \
+	entry.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)

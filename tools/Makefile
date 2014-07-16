@@ -20,7 +20,8 @@ SUBDIRS = \
 	net-tools \
 	nfs \
 	sysctl \
-	toswin2
+	toswin2 \
+	usb
 
 srcdir = .
 top_srcdir = .

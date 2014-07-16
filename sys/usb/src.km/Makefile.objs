@@ -24,9 +24,9 @@ all-here: build
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=usb $(USBDEFS)
 
 INCLUDES += -I$(top_srcdir)/../../sys
+CFLAGS += -DMAINUSB
 WARN = 	-Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
 	-Wcast-qual
@@ -38,6 +38,9 @@ STRIPFLAGS =
 # default definitions
 GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
+ifeq ($(TARGET),usb.prg)
+OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
+endif
 
 VPATH = ..
 
@@ -48,7 +51,7 @@ build: $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
-
+	
 $(OBJS): ../USBDEFS
 
 
