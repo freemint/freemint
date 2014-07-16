@@ -102,6 +102,31 @@ struct ehci_hcor {
 #define USBMODE_CM_HC	(3 << 0)	/* host controller mode */
 #define USBMODE_CM_IDLE	(0 << 0)	/* idle state */
 
+/* Interface descriptor */
+struct usb_linux_interface_descriptor {
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bInterfaceNumber;
+	unsigned char	bAlternateSetting;
+	unsigned char	bNumEndpoints;
+	unsigned char	bInterfaceClass;
+	unsigned char	bInterfaceSubClass;
+	unsigned char	bInterfaceProtocol;
+	unsigned char	iInterface;
+} __attribute__ ((packed));
+
+/* Configuration descriptor information.. */
+struct usb_linux_config_descriptor {
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned short	wTotalLength;
+	unsigned char	bNumInterfaces;
+	unsigned char	bConfigurationValue;
+	unsigned char	iConfiguration;
+	unsigned char	bmAttributes;
+	unsigned char	MaxPower;
+} __attribute__ ((packed));
+
 #if defined CONFIG_EHCI_DESC_BIG_ENDIAN
 #define	ehci_readl(x)		(*((volatile unsigned long *)(x)))
 #define ehci_writel(a, b)	(*((volatile unsigned long *)(a)) = ((volatile unsigned long)b))
@@ -210,7 +235,7 @@ long ehci_interrupt_handle(struct ehci *ehci);
 struct ehci_bus {
 	long (*init)(void *);
 	void (*stop)(struct ehci *);
-	long (*probe)(struct ucdinfo *uinf, struct ucdif *);
+	long (*probe)(struct ucdif *);
 	long (*reset)(struct ehci *);
 	void (*error)(struct ehci *);
 };

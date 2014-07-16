@@ -32,6 +32,4 @@ extern long loader_pgrp;
 
 extern char version[];
 
-long 		init		(struct kentry *k, const struct kernel_module *km);
-
 #endif /* _init_h */

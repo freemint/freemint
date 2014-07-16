@@ -62,12 +62,13 @@
 
 #include "mint/mint.h"
 #include "libkern/libkern.h"
+#include "mint/mdelay.h"
 #include "mint/dcntl.h"
 
-#include "../../config.h"
 #include "../../endian/io.h"
 #include "../../usb.h"
-#include "../ucd_defs.h"
+#include "../../usb_api.h"
+
 #include "netusbee_int.h"
 
 #define VER_MAJOR	0
@@ -83,12 +84,6 @@
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-#define MSG_MINT	\
-	"\033pMiNT too old!\033q\r\n"
-
-#define MSG_FAILURE	\
-	"\7\r\nSorry, failed!\r\n\r\n"
 
 /*
  * Debug section
@@ -133,12 +128,13 @@ static const char hcd_name[] = "isp116x-hcd";
 /* BEGIN kernel interface */
 
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
+struct usb_module_api *api;
 
 /* END kernel interface */
 /****************************************************************************/
 
 
+static struct usb_device *root_hub_dev = NULL;
 struct isp116x isp116x_dev;
 struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
@@ -164,7 +160,7 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
+long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /*
  * USB controller interface
@@ -179,6 +175,7 @@ static char lname[] = "NetUSBee USB controller driver for FreeMiNT\0";
 static struct ucdif netusbee_uif =
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"netusbee",		/* name */
@@ -189,10 +186,6 @@ static struct ucdif netusbee_uif =
 	0,			/* resrvd1 */
 	netusbee_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
-//	submit_bulk_msg,
-//	submit_control_msg,
-//	submit_int_msg,
-//	{ NULL },
 };
 
 /* ------------------------------------------------------------------------- */
@@ -781,7 +774,7 @@ struct ptd ptd[1];
 static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
 {
-	unsigned mpck = (*uinf->usb_maxpacket)(dev, pipe);
+	long mpck = usb_maxpacket(dev, pipe);
 
 	/* One PTD can transfer 1023 bytes but try to always
 	 * transfer multiples of endpoint buffer size
@@ -798,7 +791,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	struct isp116x *isp116x = &isp116x_dev;
 	long type = usb_pipetype(pipe);
 	long epnum = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+	long max = usb_maxpacket(dev, pipe);
 	long dir_out = usb_pipeout(pipe);
 	long speed_low = usb_pipeslow(pipe);
 	long i, done = 0, stat, timeout, cc;
@@ -1595,12 +1588,12 @@ int_handle_tophalf(PROC *process, long arg)
 
 	if (isp116x->rhport[0] & RH_PS_CSC)
 	{
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	}
 
 	if (isp116x->rhport[1] & RH_PS_CSC)
 	{
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	}
 }
 
@@ -1911,12 +1904,12 @@ usb_lowlevel_stop(void *dummy)
 }
 
 long _cdecl
-init(struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
 
 	kentry	= k;
-	uinf	= uinfo;
+	api     = uapi;
 
 	if (check_kentry_version())
 		return -1;
@@ -1925,7 +1918,7 @@ init(struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&netusbee_uif);
+	ret = ucd_register(&netusbee_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

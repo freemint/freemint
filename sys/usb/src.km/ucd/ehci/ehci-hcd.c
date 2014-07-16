@@ -31,9 +31,16 @@
 
 #include "libkern/libkern.h"
 
+#include "../../global.h"
+
+#include "../../endian/io.h"
+#include "mint/endian.h"
+#include "mint/mdelay.h"
 #include "../../usb.h"
-#include "../../hub.h"
-#include "../ucd_defs.h"
+#include "mint/time.h"
+#include "arch/timer.h"
+#include "../../usb_api.h"
+
 #include "ehci.h"
 
 
@@ -61,34 +68,39 @@
  * Debug section
  */
 
+#ifndef TOSONLY
 #if 0
-# define DEV_DEBUG	1
+# define DEV_DEBUG
 #endif
 
 #ifdef DEV_DEBUG
 
-# define FORCE(x)	KERNEL_FORCE x
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
+# define FORCE(x)       
+# define ALERT(x)       KERNEL_ALERT x
+# define DEBUG(x)       KERNEL_DEBUG x
+# define TRACE(x)       KERNEL_TRACE x
+# define ASSERT(x)      assert x
 
 #else
 
-# define FORCE(x)	KERNEL_FORCE x
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)
-# define TRACE(x)
-# define ASSERT(x)	assert x
+# define FORCE(x)       
+# define ALERT(x)       KERNEL_ALERT x
+# define DEBUG(x)       
+# define TRACE(x)       
+# define ASSERT(x)      assert x
 
+#endif
 #endif
 
 /*
  * kernel interface
  */
 
+#ifndef TOSONLY
 struct kentry	*kentry;
 struct ucdinfo	*uinf;
+#endif
+struct usb_module_api   *api;
 
 /*
  * USB controller interface
@@ -113,8 +125,6 @@ long		submit_bulk_msg		(struct usb_device *, unsigned long, void *, long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *, long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
-
 /*
  * Structures
  */
@@ -122,8 +132,8 @@ long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
 struct descriptor {
 	struct usb_hub_descriptor hub;
 	struct usb_device_descriptor device;
-	struct usb_config_descriptor config;
-	struct usb_interface_descriptor interface;
+	struct usb_linux_config_descriptor config;
+	struct usb_linux_interface_descriptor interface;
 	struct usb_endpoint_descriptor endpoint;
 } __attribute__ ((packed));
 
@@ -388,7 +398,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	int timeout;
 	long ret = 0;
 
-	struct ehci *gehci = ((struct ucdif*)dev->controller)->ucd_priv;
+	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 
 	DEBUG(("dev=0x%lx, pipe=0x%lx, buffer=0x%lx, length=%ld, req=0x%lx", dev, pipe, buffer, length, req));
 	if(req != NULL)
@@ -408,7 +418,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	qh->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list - gehci->dma_offset) | QH_LINK_TYPE_QH);
 	c = (usb_pipespeed(pipe) != USB_SPEED_HIGH && usb_pipeendpoint(pipe) == 0) ? 1 : 0;
 
-	endpt = (8UL << 28) | (c << 27) | ((*uinf->usb_maxpacket)(dev, pipe) << 16) |
+	endpt = (8UL << 28) | (c << 27) | (usb_maxpacket(dev, pipe) << 16) |
 		(0 << 15) | (1 << 14) | (ehci_encode_speed(usb_pipespeed(pipe)) << 12) |
 		(usb_pipeendpoint(pipe) << 8) | (0 << 7) | (usb_pipedevice(pipe) << 0);
 	qh->qh_endpt1 = cpu_to_hc32(endpt);
@@ -607,7 +617,7 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 	unsigned long reg;
 	unsigned long *status_reg;
 
-	struct ehci *gehci = ((struct ucdif*)dev->controller)->ucd_priv;
+	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 
 	if(le2cpu16(req->index) > CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS)
 	{
@@ -864,7 +874,7 @@ long ehci_interrupt_handle(struct ehci *ehci)
 				ehci_writel(&ehci->hcor->or_portsc[i-1], pstatus);
 			}
 			else if((pstatus & EHCI_PS_CSC))
-				(*uinf->usb_rh_wakeup)();
+				usb_rh_wakeup();
 		}
 	} 
 	ehci_writel(&ehci->hcor->or_usbsts, status);
@@ -1056,7 +1066,7 @@ long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, l
 
 long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length, struct devrequest *setup)
 {
-	struct ehci *gehci = ((struct ucdif*)dev->controller)->ucd_priv;
+	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 
 	if(usb_pipetype(pipe) != PIPE_CONTROL)
 	{
@@ -1169,6 +1179,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 	ehci_uif = *u;
 
 	ehci_uif->next = 0;
+    ehci_uif->api_version = USB_API_VERSION;
 	ehci_uif->class = USB_CONTRLL;
 	ehci_uif->lname = lname;
 	ehci_uif->unit = 0;
@@ -1178,6 +1189,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 	ehci_uif->resrvd1 = 0;
 	ehci_uif->ioctl = ehci_ioctl;
 	ehci_uif->resrvd2 = 0;
+    strcpy(ehci_uif->name, "ehci-pci");
 	if(!(ehci_uif->ucd_priv = kmalloc(sizeof(struct ehci))))
 		return -1;
 
@@ -1186,13 +1198,21 @@ ehci_alloc_ucdif(struct ucdif **u)
 
 /* Entry function */
 
-long _cdecl
-init(struct kentry *k, struct ucdinfo *uinfo, char **reason)
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long init (struct kentry *, struct usb_module_api *, char **);
+
+long
+init (struct kentry *k, struct usb_module_api *uapi, char **reason)
+#endif
 {
 	long ret;
 
 	kentry	= k;
-	uinf	= uinfo;
 
 	struct ucdif *ehci_uif = NULL;
 
@@ -1201,7 +1221,7 @@ init(struct kentry *k, struct ucdinfo *uinfo, char **reason)
 		*reason = fail_kentry;
 		return -1;
 	}
-	ret = ehci_bus_probe(uinf, ehci_uif);
+	ret = ehci_bus_probe(ehci_uif);
 	if (ret < 0) 
 	{
 		*reason = fail_probe;

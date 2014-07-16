@@ -35,47 +35,41 @@
  */
 
 #include "global.h"
-#include "config.h" 
 #include "usb.h"
 #include "hub.h"
-#include "ucd.h"
+#include "usb_api.h"
 #include "ucdload.h"
 #include "uddload.h"
+#include "mint/mdelay.h"
+#include "mint/endian.h"
+#include <mint/osbind.h> /* Setexc */
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];
 static long asynch_allowed;
-char usb_started; /* flag for the started/stopped USB status */
-
-static long 	usb_find_interface_driver	(struct usb_device *dev, unsigned ifnum);
 
 /***************************************************************************
  * Init USB Device
  */
 
-long usb_main(void *dummy)
+void
+usb_main(void)
 {
+	usb_init();
+
+#ifndef TOSONLY
+	/* load device driver modules */
+	udd_load(1);
+
 	/* load driver for usb host controller */
 	ucd_load(1);
-
-	if (!usb_init())
-	{	
-		/* load device driver modules */
-		udd_load(1);
-		return 0;
-	}
-	DEBUG(("Failing with USB init"));
-	return -1;
+#endif
 }
 
-long usb_init(void)
+void usb_init(void)
 {
-	struct ucdif *a;
-	struct usb_device *dev;
 	int i;
 
 	DEBUG(("usb_init"));
-
-	long result;
 
 	asynch_allowed = 1;
 	usb_hub_reset();
@@ -85,62 +79,22 @@ long usb_init(void)
                 memset(&usb_dev[i], 0, sizeof(struct usb_device));
                 usb_dev[i].devnum = -1;
         }
-
-	/* init low_level USB */
-	for (a = allucdifs; a; a = a->next) {
-		ucd_open (a);
-	
-		result = (a->ioctl)(a, LOWLEVEL_INIT, 0);
-		if (result)
-		{
-			DEBUG (("%s: ucd low level init failed!", __FILE__));
-			return -1;
-		}
-
-		/* if lowlevel init is OK, scan the bus for devices
-		 * i.e. search HUBs and configure them 
-		 */
-
-		dev = usb_alloc_new_device(a);
-		/*
-		 * device 0 is always present
-		 * (root hub, so let it analyze)
-		 */
-		if (dev)
-			usb_new_device(dev);
-
-		usb_started = 1;
-	}
-
-	DEBUG(("scan end"));
-	/* if we were not able to find at least one working bus, bail out */
-	if (!usb_started) {
-		DEBUG(("USB error: all controllers failed lowlevel init"));
-		return -1;
-	}
-
-	return 0;
 }
 
 /******************************************************************************
  * Stop USB this stops the LowLevel Part and deregisters USB devices.
  */
-long usb_stop(void)
+extern struct ucdif *allucdifs;
+extern long ucd_unregister(struct ucdif *a);
+void usb_stop(void)
 {
 	struct ucdif *a;
 
-	if (usb_started)
-	{
-		asynch_allowed = 1;
-		usb_started = 0;
-		usb_hub_reset();
+	asynch_allowed = 1;
 
-		for (a = allucdifs; a; a = a->next) {
-			(*a->ioctl)(a, LOWLEVEL_STOP, 0);
-		}
+	for (a = allucdifs; a; a = a->next) {
+		ucd_unregister(a);
 	}
-
-	return 0;
 }
 
 /*
@@ -196,7 +150,9 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 {
 	struct control_msg arg;
 	struct devrequest setup_packet;
+	long r;
 	struct ucdif *ucd = dev->controller;
+	(void) r;
 
 	if ((timeout == 0) && (!asynch_allowed)) {
 		/* request for a asynch control pipe is not allowed */
@@ -219,13 +175,15 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.size = size;
 	arg.setup = &setup_packet;
 
-	(*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
+	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
+
 	if (timeout == 0)
 	{
 		DEBUG(("size %d \r", size));
 		return (long)size;
 	}
 
+#ifdef INTERRUPTHANDLER
        /*
         * Wait for status to update until timeout expires, USB driver
         * interrupt handler may set the status when the USB operation has
@@ -236,6 +194,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 			break;
 		mdelay(1);
 	}
+#endif
 
 	if (dev->status)
 	{
@@ -254,7 +213,9 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 		  void *data, long len, long *actual_length, long timeout, long flags)
 {
 	struct bulk_msg arg;
+	long r;
 	struct ucdif *ucd = dev->controller;
+	(void) r;
 
 	if (len < 0)
 		return -1;
@@ -267,13 +228,15 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	arg.len = len;
 	arg.flags = flags;
 
-	(*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
+	r = (*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
 
+#ifdef INTERRUPTHANDLER
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
 			break;
 		mdelay(1);
 	}
+#endif
 
 	*actual_length = dev->act_len;
 	if (dev->status == 0)
@@ -435,6 +398,7 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 				return 1;
 
 			DEBUG(("unknown Description Type : %x", head->bDescriptorType));
+#if 0 /* debug */
 			{
 				unsigned char *ch = (unsigned char *)head;
 				int i;
@@ -450,7 +414,7 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 				}
 				DEBUG((buf));
 			}
-
+#endif
 			break;
 		}
 		index += head->bLength;
@@ -791,10 +755,8 @@ long usb_string(struct usb_device *dev, long index, char *buf, long size)
  * Something got disconnected. Get rid of it, and all of its children.
  */
 void
-usb_disconnect(struct usb_device **pdev)
+usb_disconnect(struct usb_device *dev)
 {
-	struct usb_device *dev = *pdev;
-
 	if (dev)
 	{
 		long i;
@@ -812,15 +774,16 @@ usb_disconnect(struct usb_device **pdev)
 		for (i = 0; i < dev->maxchild; i++)
 		{
 			DEBUG(("Disconnect children %ld", dev->children[i]->devnum));
-			struct usb_device **child = &dev->children[i];
-			DEBUG(("child %lx", *child));
+			struct usb_device *child = dev->children[i];
+			DEBUG(("child %lx", child));
 			usb_disconnect(child);
 			dev->children[i] = NULL;
 		}
 
-		if (dev->privptr) {
-			usb_hub_disconnect(dev);
-		}
+		/* See if it's a hub */
+        if (dev->privptr) {
+    		usb_hub_disconnect(dev);
+        }
 
 		memset(dev, 0, sizeof(struct usb_device));
 		dev->devnum = -1;
@@ -833,6 +796,9 @@ usb_disconnect(struct usb_device **pdev)
  */
 struct usb_device *usb_get_dev_index(long index)
 {
+    if (index >= USB_MAX_DEVICE)
+        return NULL;
+
 	if (usb_dev[index].devnum == -1)
 		return NULL;
 	else
@@ -890,46 +856,18 @@ void usb_free_device(long dev_index)
  */
 long usb_new_device(struct usb_device *dev)
 {
-	DEBUG(("usb_new_device: "));
 	long addr, err;
-	long tmp;
 	unsigned char tmpbuf[USB_BUFSIZ];
+	long tmp;
+	struct usb_device_descriptor *desc;
+	long port = -1;
+	struct usb_device *parent = dev->parent;
+
+	DEBUG(("usb_new_device: "));
  
 	/* We still haven't set the Address yet */
 	addr = dev->devnum;
 	dev->devnum = 0;
-
-#ifdef CONFIG_LEGACY_USB_INIT_SEQ
-	/* this is the old and known way of initializing devices, it is
-	 * different than what Windows and Linux are doing. Windows and Linux
-	 * both retrieve 64 bytes while reading the device descriptor
-	 * Several USB stick devices report ERR: CTL_TIMEOUT, caused by an
-	 * invalid header while reading 8 bytes as device descriptor. */
-	dev->descriptor.bMaxPacketSize0 = 8;	    /* Start off at 8 bytes  */
-	dev->maxpacketsize = PACKET_SIZE_8;
-	dev->epmaxpacketin[0] = 8;
-	dev->epmaxpacketout[0] = 8;
-
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, tmpbuf, 8);
-	if (err < 8) {
-		DEBUG(("\n      USB device not responding, " \
-		       "giving up (status=%lX)\n", dev->status));
-		dev->devnum = addr;
-		return 1;
-	}
-	memcpy(&dev->descriptor, tmpbuf, 8);
-#else
-	/* This is a Windows scheme of initialization sequence, with double
-	 * reset of the device (Linux uses the same sequence)
-	 * Some equipment is said to work only with such init sequence; this
-	 * patch is based on the work by Alan Stern:
-	 * http://sourceforge.net/mailarchive/forum.php?
-	 * thread_id=5729457&forum_id=5398
-	 */
-	struct usb_device_descriptor *desc;
-	long port = -1;
-	struct usb_device *parent = dev->parent;
-	unsigned short portstatus;
 
 	/* send 64-byte GET-DEVICE-DESCRIPTOR request.  Since the descriptor is
 	 * only 18 bytes long, this will terminate with a short packet.  But if
@@ -937,7 +875,9 @@ long usb_new_device(struct usb_device *dev)
 	 * some more, or keeps on retransmitting the 8 byte header. */
 
 	desc = (struct usb_device_descriptor *)tmpbuf;
+
 	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
+
 	/* Default to 64 byte max packet size */
 	dev->maxpacketsize = PACKET_SIZE_64;
 	dev->epmaxpacketin[0] = 64;
@@ -949,8 +889,9 @@ long usb_new_device(struct usb_device *dev)
 		dev->devnum = addr;
 		return 1;
 	}
-
+	
 	dev->descriptor.bMaxPacketSize0 = desc->bMaxPacketSize0;
+
 	/*
 	 * Fetch the device class, driver can use this info
 	 * to differentiate between HUB and DEVICE.
@@ -974,14 +915,13 @@ long usb_new_device(struct usb_device *dev)
 		}
 
 		/* reset the port for the second time */
-		err = hub_port_reset(dev->parent, port, &portstatus);
+		err = hub_port_reset(dev->parent, port);
 		if (err < 0) {
 			DEBUG(("Couldn't reset port %li", port));
 			dev->devnum = addr;
 			return 1;
 		}
 	}
-#endif
 
 	dev->epmaxpacketin[0] = dev->descriptor.bMaxPacketSize0;
 	dev->epmaxpacketout[0] = dev->descriptor.bMaxPacketSize0;
@@ -1013,7 +953,7 @@ long usb_new_device(struct usb_device *dev)
 		return 1;
 	}
 
-	mdelay(50);	/* Let the SET_ADDRESS settle */
+	mdelay(200);	/* Let the SET_ADDRESS settle */
 
 	tmp = sizeof(dev->descriptor);
 
@@ -1084,12 +1024,12 @@ long usb_new_device(struct usb_device *dev)
 	return 0;
 }
 
+
 /********************************************************************
  * USB device driver handling:
  * 
  */
 
-extern LIST_HEAD(,usb_driver) usb_driver_list;
 
 /*
  * This entrypoint gets called for each new device.
@@ -1103,10 +1043,12 @@ extern LIST_HEAD(,usb_driver) usb_driver_list;
  *
  * Returns: 0 if a driver accepted the interface, -1 otherwise
  */
-static long 
+extern struct uddif *alluddifs;
+
+long 
 usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 {
-	struct usb_driver *driver;
+	struct uddif *driver = alluddifs;
 
 	if ((!dev) || (ifnum >= dev->config.desc.bNumInterfaces)) {
 		DEBUG(("bad find_interface_driver params"));
@@ -1119,7 +1061,7 @@ usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 	if (dev->driver)
 		return -1;
 
-	LIST_FOREACH (driver, &usb_driver_list, chain)
+	while (driver)
 	{
 		if (!driver->probe(dev))
 		{
@@ -1127,6 +1069,8 @@ usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 			
 			return 0;
 		}
+
+		driver = driver->next;
 	}
 
 	return -1;

@@ -24,21 +24,29 @@
  */
 
 #include "mint/mint.h"
-#include "libkern/libkern.h"
+#include "../../global.h"
 
+#include "part.h"
 #include "xhdi.h"
 
 /*--- Defines ---*/
 
-#define XHDI_VERSION		0x120
-#define DRIVER_NAME		FreeMiNT USB
-#define DRIVER_COMPANY		FreeMiNT list
+#define XHDI_VERSION		0x130
 #define MAX_IPL			5
-#define BLOCKSIZE		512
 #define XH_TARGET_REMOVABLE	0x02L
-#define STRINGLEN		32
+#define STRINGLEN		33 /* including termination character */
+
+#ifdef TOSONLY
+char *DRIVER_NAME = "TOS USB";
+#else
+char *DRIVER_NAME = "FreeMiNT USB";
+#endif
+char *DRIVER_COMPANY = "FreeMiNT list";
+
 
 /*--- Debug section ---*/
+
+#ifndef TOSONLY
 
 #if 0
 # define DEV_DEBUG	1
@@ -61,15 +69,17 @@
 # define ASSERT(x)	assert x
 
 #endif
+
+# define Sversion()	0x4000		/* this is FreeMiNT's GEMDOS version */
+
+#endif
 /*--- External variables ---*/
 
 extern char *drv_version;
-extern long usb_1st_disk_drive;
-extern short max_logical_drive;
-#define MAX_LOGICAL_DRIVE	max_logical_drive
 
 /* --- External functions ---*/
 
+extern block_dev_desc_t *usb_stor_get_dev(long);
 extern ulong usb_stor_read(long, ulong, ulong, void *);
 extern ulong usb_stor_write(long, ulong, ulong, const void *);
 extern void usb_stor_eject(long);
@@ -77,6 +87,7 @@ extern void usb_stor_eject(long);
 /*--- Functions prototypes ---*/
 
 typedef long (*XHDI_HANDLER)(ushort opcode, ...);
+extern XHDI_HANDLER usbxhdi;
 static XHDI_HANDLER next_handler; /* Next handler installed by XHNewCookie() */
 
 long install_xhdi_driver(void);
@@ -84,12 +95,112 @@ long xhdi_handler(ushort stack);
 
 /*--- Global variables ---*/
 
-long my_drvbits;
-long product_name[32];
-PUN_INFO pun_usb;
-PUN_INFO *pun_ptr_usb;
+ulong my_drvbits;
+USB_PUN_INFO pun_usb;
 
 /*---Functions ---*/
+
+/*
+ * XHDI syscall XHDOSLimits routine
+ */
+long
+sys_XHDOSLimits(ushort which,ulong limit)
+{
+    static long dl_secsiz, dl_clusts, dl_maxsec, dl_clusts12;
+    static int first_time = 1;
+
+    if (first_time)
+    {
+        ushort version = Sversion();            /* determine GEMDOS version */
+        version = (version>>8) | (version<<8);  /* swap to correct order */
+
+        if (version > 0x0040)       /* unknown               */
+            version = 0x0000;       /* so force it to lowest */
+
+        if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = 16383L;
+            dl_maxsec = 32767L;     /* max partition size = 256MB approx */
+            dl_clusts12 = 2046L;
+        }
+        else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
+        {
+            dl_secsiz = 8192L;
+            dl_clusts = 32767L;
+            dl_maxsec = 65535L;     /* max partition size = 512MB approx */
+            dl_clusts12 = MAX_FAT12_CLUSTERS;
+        }
+        else                        /* i.e. TOS 4.0x or FreeMiNT */
+        {
+            dl_secsiz = MAX_LOGSEC_SIZE;
+            dl_clusts = 32767L;
+            dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
+            dl_clusts12 = MAX_FAT12_CLUSTERS;
+        }
+        first_time = 0;
+    }
+
+    if (limit == 0)
+    {
+        switch (which)
+        {
+            /* maximal sector size (BIOS level) */
+            case XH_DL_SECSIZ:
+                return dl_secsiz;
+
+            /* minimal number of FATs */
+            case XH_DL_MINFAT:
+                return 2L;
+
+            /* maximal number of FATs */
+            case XH_DL_MAXFAT:
+                return 2L;
+
+            /* sectors per cluster minimal */
+            case XH_DL_MINSPC:
+                return 2L;
+
+            /* sectors per cluster maximal */
+            case XH_DL_MAXSPC:
+                return 2L;
+
+            /* maximal number of clusters of a 16 bit FAT */
+            case XH_DL_CLUSTS:
+                return dl_clusts;
+
+            /* maximal number of sectors */
+            case XH_DL_MAXSEC:
+                return dl_maxsec;
+
+            /* maximal number of BIOS drives supported by the DOS */
+            case XH_DL_DRIVES:
+                return MAX_LOGICAL_DRIVE;
+
+            /* maximal clustersize */
+            case XH_DL_CLSIZB:
+                return dl_secsiz * 2;
+
+            /* maximal (bpb->rdlen * bpb->recsiz / 32) */
+            case XH_DL_RDLEN:
+                return 1008L;   /* we return the same value as HDDRIVER */
+
+            /* maximal number of clusters of a 12 bit FAT */
+            case XH_DL_CLUSTS12:
+                return dl_clusts12;
+
+            /* maximal number of clusters of a 32 bit FAT */
+            case XH_DL_CLUSTS32:
+                return 0L;          /* TOS doesn't support FAT32 */
+
+            /* supported bits in bpb->bflags */
+            case XH_DL_BFLAGS:
+                return 0x00000001L;
+        }
+    }
+
+    return ENOSYS;
+}
 
 static ushort
 XHGetVersion(void)
@@ -131,11 +242,11 @@ static long
 XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	  ulong *blocks, char *partid)
 {
-	long pstart = pun_ptr_usb->partition_start[drv];
+	long pstart = pun_usb.partition_start[drv];
 	BPB *myBPB;
 
 	DEBUG(("XHInqDev2(%c:) drv=%d pun %x",
-		'A' + drv, drv, pun_ptr_usb->pun[drv]));
+		'A' + drv, drv, pun_usb.pun[drv]));
 
 	if (next_handler) {
 		long ret = next_handler(XHINQDEV2, drv, major, minor, start,
@@ -144,12 +255,11 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 			return ret;
 	}
 
-	if (drv < usb_1st_disk_drive ||
-	    drv > usb_1st_disk_drive + MAX_LOGICAL_DRIVE)
+	if (pun_usb.pun[drv] & PUN_VALID)
 		return ENODEV;
 
 	if (major) {
-		*major = (PUN_DEV+PUN_USB) & pun_ptr_usb->pun[drv];
+		*major = (PUN_DEV+PUN_USB) & pun_usb.pun[drv];
 		DEBUG(("XHInqDev2() major: %d", *major));
 	}
 	if (minor)
@@ -165,7 +275,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 		DEBUG(("XHInqDev2() pstart: %lx", *start));
 	}
 
-	myBPB = (&pun_ptr_usb->bpb[drv]);
+	myBPB = (&pun_usb.bpb[drv]);
 
 	if (bpb) {
 		memcpy(bpb, myBPB, sizeof(BPB));
@@ -183,18 +293,18 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	}
 
 	if (blocks) {
-		*blocks = pun_ptr_usb->psize[drv];
+		*blocks = pun_usb.psize[drv];
 		DEBUG(("XHInqDev2(%c:) blocks=%ld",
 			'A' + drv, *blocks));
 	}
 
 	if (partid) {
-		memcpy(partid, &pun_ptr_usb->ptype[drv], sizeof(long));
+		memcpy(partid, &pun_usb.ptype[drv], sizeof(long));
 
 		if (partid[0] == '\0') /* DOS partitiopn */
 			DEBUG(("XHInqDev2(%c:) major=%d, partid=%08lx",
 				'A' + drv, *major, *((long *)partid),
-				pun_ptr_usb->ptype[drv]));
+				pun_usb.ptype[drv]));
 		else
 			DEBUG(("XHInqDev2(%c:) major=%d, ID=%c%c%c",
 				'A' + drv, *major, partid[0], partid[1],
@@ -214,8 +324,7 @@ XHInqDev(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb)
 			return ret;
 	}
 
-	if (drv < usb_1st_disk_drive ||
-	    drv > usb_1st_disk_drive + MAX_LOGICAL_DRIVE)
+	if (pun_usb.pun[drv] & PUN_VALID)
 		return ENODEV;
 
 	return XHInqDev2(drv, major, minor, start, bpb, NULL, NULL);
@@ -231,7 +340,7 @@ XHReserve(ushort major, ushort minor, ushort do_reserve, ushort key)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return ENOSYS;
@@ -246,7 +355,7 @@ XHLock(ushort major, ushort minor, ushort do_lock, ushort key)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return ENOSYS;
@@ -261,7 +370,7 @@ XHStop(ushort major, ushort minor, ushort do_stop, ushort key)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return ENOSYS;
@@ -276,11 +385,11 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	/* device number in the USB bus */
-	short dev = pun_ptr_usb->dev_num[major & PUN_DEV];
+	short dev = major & PUN_DEV;
 
 	usb_stor_eject(dev);
 
@@ -298,17 +407,16 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 			return ret;
 	}
 
-	if (dev < usb_1st_disk_drive ||
-	    dev > usb_1st_disk_drive + MAX_LOGICAL_DRIVE)
+	if (pun_usb.pun[dev] & PUN_VALID)
 		return ENODEV;
 
-	name = str(DRIVER_NAME);
+	name = DRIVER_NAME;
 	version = drv_version;
-	company = str(DRIVER_COMPANY);
-	memcpy(ahdi_version, &(pun_ptr_usb->version_num), sizeof(short));
+	company = DRIVER_COMPANY;
+	*ahdi_version = pun_usb.version_num;
 	*max_IPL = MAX_IPL;
 
-	return ENOSYS;
+	return E_OK;
 }
 
 static long
@@ -333,7 +441,7 @@ XHMediumChanged(ushort major, ushort minor)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return ENOSYS;
@@ -351,8 +459,6 @@ XHMiNTInfo(void *data)
 	return ENOSYS;
 }
 
-/* The kernel handles this call */
-#if 0
 static long
 XHDOSLimits(ushort which, ulong limit)
 {
@@ -362,9 +468,12 @@ XHDOSLimits(ushort which, ulong limit)
 			return ret;
 	}
 
-	return ENOSYS;
-}
+#ifdef TOSONLY
+	return sys_XHDOSLimits(which,limit);
+#else
+	return ENOSYS;	/* so FreeMiNT kernel will handle this call */
 #endif
+}
 
 static long
 XHLastAccess(ushort major, ushort minor, ulong *ms)
@@ -375,7 +484,7 @@ XHLastAccess(ushort major, ushort minor, ulong *ms)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return ENOSYS;
@@ -390,7 +499,7 @@ XHReaccess(ushort major, ushort minor)
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return ENOSYS;
@@ -409,32 +518,37 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-	if (blocksize) {
-		/* usually physical sector size on HDD is 512 bytes */
-		*blocksize = BLOCKSIZE;
-		DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
-			major, minor, *blocksize));
-	}
+    {
+		short dev = major & PUN_DEV;
+        block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+	
+        if (blocksize) {
+	    	*blocksize = dev_desc->blksz;
+	    	DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
+	    		major, minor, *blocksize));
+	    }
 
-	if (deviceflags) {
-		*deviceflags = XH_TARGET_REMOVABLE;
-		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
-			major, minor, *deviceflags));
-	}
+    	if (deviceflags) {
+    		*deviceflags = XH_TARGET_REMOVABLE;
+    		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
+    			major, minor, *deviceflags));
+    	}
 
-	if (productname) {
-		short drv = major & PUN_DEV;
+    	if (productname) {
+    		char devName[64];
 
-		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, drv));
-				
-		strncpy(productname, (const char *)product_name[drv],
-			stringlen - 1);
-		DEBUG(("XHInqTarget2. %d product_name %s %s stringlen %d",
-			drv, product_name[drv], productname, stringlen));
-	}
+    		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
+
+    		memset(devName, 0, 64);
+    		strcat(devName, dev_desc->vendor);
+    		strcat(devName, " ");
+    		strcat(devName, dev_desc->product);
+    		strncpy(productname, devName, stringlen);
+    	}
+    }
 
 	return E_OK;
 }
@@ -450,7 +564,7 @@ XHInqTarget(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	return XHInqTarget2(major, minor, blocksize, deviceflags,
@@ -470,10 +584,18 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-	return ENOSYS;
+    {
+		short dev = major & PUN_DEV;
+        block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+
+        *blocks = dev_desc->lba;
+        *blocksize = dev_desc->blksz;
+    }
+
+	return E_OK;
 }
 
 static long
@@ -492,7 +614,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 			return ret;
 	}
 
-	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
+	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
 	if (minor != 0)
@@ -502,7 +624,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		return EERROR;
 
 	/* device number in the USB bus */
-	short dev = pun_ptr_usb->dev_num[major & PUN_DEV];
+	short dev = major & PUN_DEV;
 
 	if (rw & 0x0001) {
 		ret = usb_stor_write(dev, sector, (long)count, buf);
@@ -771,8 +893,6 @@ xhdi_handler(ushort stack)
 			return XHMiNTInfo(args->data);
 		}
 
-/* We'll never get this call, it's handle by the kernel */
-#if 0
 		case XHDOSLIMITS:
 		{
 			struct XHDOSLIMITS_args
@@ -784,7 +904,6 @@ xhdi_handler(ushort stack)
 
 			return XHDOSLimits(args->which, args->limit);
 		}
-#endif
 
 		case XHLASTACCESS:
 		{
@@ -818,12 +937,90 @@ xhdi_handler(ushort stack)
 	}
 }
 
+#ifdef TOSONLY
+#define XHDIMAGIC 0x27011992L
+
+typedef long (*cookie_fun)(unsigned short opcode,...);
+
+static long
+getcookie (long cookie, long *p_value)
+{
+	long *cookiejar = *((long **)0x5a0);
+
+	if (!cookiejar) return 0;
+
+	do
+	{
+		if (cookiejar[0] == cookie)
+		{
+			if (p_value) *p_value = cookiejar[1];
+			return 1;
+		}
+		else
+			cookiejar = &(cookiejar[2]);
+	} while (cookiejar[-2]);
+
+	return 0;
+}
+
+static cookie_fun
+get_fun_ptr (void)
+{
+	static cookie_fun XHDI = NULL;
+	long *magic_test;
+	
+	getcookie (*((long *)"XHDI"), (long *)&XHDI);
+
+	/* check magic */
+		
+	magic_test = (long *)XHDI;
+	if (magic_test && (magic_test[-1] != XHDIMAGIC))
+		XHDI = NULL;
+	
+	return XHDI;
+}
+
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	long n = 0;
+
+	while (cjar->tag)
+	{
+		n++;
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = *((long *)"XHDI");
+		cjar->value = (long)&usbxhdi;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
+#endif
+
 long
 install_xhdi_driver(void)
 {
-	long r;
-	r = xhnewcookie(*xhdi_handler);
-	DEBUG(("XHNewCookie, return: %ld", r));
-	return r;
-}
+#ifndef TOSONLY
+    return xhnewcookie(*xhdi_handler);
+#else
+    long r = 0;
+    cookie_fun XHDI = get_fun_ptr ();
 
+    if (XHDI) {
+        r = XHDI(XHNEWCOOKIE,*xhdi_handler);
+    } else {
+        set_cookie();
+    }
+
+    return r;
+#endif
+}

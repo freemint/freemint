@@ -2,7 +2,6 @@
 # the files that should go only into source distributions.
 
 HEADER = \
-	ucd_defs.h
 
 
 COBJS = \
