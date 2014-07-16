@@ -120,6 +120,7 @@ typedef struct SCSI_cmd_block
 #define SENSE_MISCOMPARE		0xE
 
 
+#define SCSI_GET_CONFIG 0x46        /* HDDRUTIL tries to do this. */
 #define SCSI_CHANGE_DEF	0x40		/* Change Definition (Optional) */
 #define SCSI_COMPARE	0x39		/* Compare (O) */
 #define SCSI_COPY	0x18		/* Copy (O) */
@@ -146,6 +147,8 @@ typedef struct SCSI_cmd_block
 #define SCSI_MED_REMOVL	0x1E		/* Prevent/Allow medium Removal (O) */
 #define SCSI_READ6	0x08		/* Read 6-byte (MANDATORY) */
 #define SCSI_READ10	0x28		/* Read 10-byte (MANDATORY) */
+#define SCSI_READ12	0xA8		/* Read 12-byte (MANDATORY) */
+#define SCSI_READ16	0x88		/* Read 16-byte (MANDATORY) */
 #define SCSI_RD_CAPAC	0x25		/* Read Capacity (MANDATORY) */
 #define SCSI_RD_DEFECT	0x37		/* Read Defect Data (O) */
 #define SCSI_READ_LONG	0x3E		/* Read Long (O) */
@@ -165,6 +168,8 @@ typedef struct SCSI_cmd_block
 #define SCSI_VERIFY	0x2F		/* Verify (O) */
 #define SCSI_WRITE6	0x0A		/* Write 6-Byte (MANDATORY) */
 #define SCSI_WRITE10	0x2A		/* Write 10-Byte (MANDATORY) */
+#define SCSI_WRITE12	0xAA		/* Write 12-Byte (MANDATORY) */
+#define SCSI_WRITE16	0x8A		/* Write 16-Byte (MANDATORY) */
 #define SCSI_WRT_VERIFY	0x2E		/* Write and Verify (O) */
 #define SCSI_WRITE_LONG	0x3F		/* Write Long (O) */
 #define SCSI_WRITE_SAME	0x41		/* Write Same (O) */

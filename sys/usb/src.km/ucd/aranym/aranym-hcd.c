@@ -31,7 +31,7 @@
 #include "usbhost_nfapi.h"
 
 #include "../../usb.h"
-#include "../ucd_defs.h"
+#include "../../usb_api.h"
 
 
 #define VER_MAJOR	0
@@ -49,13 +49,6 @@
 #define MSG_GREET	\
 	"(c) 2012-2014 by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-#define MSG_MINT	\
-	"\033pMiNT too old!\033q\r\n"
-
-#define MSG_FAILURE	\
-	"\7\r\nSorry, failed!\r\n\r\n"
-
 
 /*--- Debug section ---*/
 
@@ -90,10 +83,11 @@ static char lname[] = "Aranym USB controller driver for FreeMiNT\0";
 /* BEGIN kernel interface */
 
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
+struct usb_module_api *api;
 
 /* END kernel interface */
 
+static struct usb_device *root_hub_dev = NULL;
 unsigned long rh_port_status[NUMBER_OF_PORTS]; 
 
 
@@ -115,7 +109,7 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
+long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /* USB controller interface */
 static long _cdecl	aranym_open		(struct ucdif *);
@@ -126,6 +120,7 @@ static long _cdecl	aranym_ioctl		(struct ucdif *, short, long);
 static struct ucdif aranym_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"aranym",		/* name */
@@ -239,7 +234,7 @@ int_handle_tophalf (PROC *process, long arg)
 	{
 		if (rh_port_status[i] & RH_PS_CSC)
 		{
-			(*uinf->usb_rh_wakeup)();
+			usb_rh_wakeup();
 		}
 	}
 }
@@ -357,10 +352,9 @@ usb_lowlevel_stop(void *dummy)
 
 /* Entry function */
 long _cdecl
-init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
-
 	char message[100];
 	
 	kentry	= k;
@@ -388,7 +382,7 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	}
 
 
-	uinf	= uinfo;
+	api	= uapi;
 
 	if (check_kentry_version())
 		return -1;
@@ -397,7 +391,7 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&aranym_uif);
+	ret = ucd_register(&aranym_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

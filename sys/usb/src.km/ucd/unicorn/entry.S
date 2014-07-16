@@ -1,6 +1,6 @@
 /*
  * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2011
- *
+ * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -20,20 +20,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _udd_h
-#define _udd_h
+	.globl	__base
+	.globl	__start
+	.globl	__crtinit
 
-#include "global.h"
-#include "udd/udd_defs.h"
+	.bss
+__base:
+	ds.l	1
 
-extern struct 	uddif *alluddifs;
+	.text
 
-struct uddif *	udd_name2udd		(char *aname);
-short		udd_getfreeunit		(char *name);
-long		udd_register		(struct uddif *u, struct usb_driver *);
-long		udd_unregister		(struct uddif *u, struct usb_driver *);
-long		udd_close		(struct uddif *u);
-long		udd_open		(struct uddif *u);
-long		udd_ioctl		(struct uddif *u, short cmd, long arg);
+__start:
+	move.l	0x4(sp),a0		// basepage address
+	move.l	a0,__base
 
-#endif /* _udd_h */
+	movel	a0@(4),d0		// get _base->p_hitpa
+	bclr	#0,d0			// round off
+	movel	d0,sp			// set stack (temporarily)
+	jmp	__crtinit		// in crtinit.c
