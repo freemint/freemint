@@ -1,6 +1,6 @@
 /*
  * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2011
- *
+ * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -20,20 +20,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _ucd_h
-#define _ucd_h
+	.globl	__base
+	.globl	__start
+	.globl	__crtinit
 
-#include "global.h"
-#include "ucd/ucd_defs.h"
+	.bss
+__base:
+	ds.l	1
 
-extern struct 	ucdif *allucdifs;
+	.text
 
-struct ucdif *	ucd_name2ucd		(char *aname);
-short		ucd_getfreeunit		(char *name);
-long		ucd_register		(struct ucdif *u);
-long		ucd_unregister		(struct ucdif *u);
-long		ucd_close		(struct ucdif *u);
-long		ucd_open		(struct ucdif *u);
-long		ucd_ioctl		(struct ucdif *u, short cmd, long arg);
+__start:
+	move.l	0x4(sp),a0		// basepage address
+	move.l	a0,__base
 
-#endif /* _ucd_h */
+	movel	a0@(4),d0		// get _base->p_hitpa
+	bclr	#0,d0			// round off
+	movel	d0,sp			// set stack (temporarily)
+	jmp	__crtinit		// in crtinit.c

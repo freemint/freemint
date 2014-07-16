@@ -22,10 +22,18 @@
 
 #include "mint/pcibios.h"
 #include "mint/pci_ids.h"
-
 #include "libkern/libkern.h"
+#include "../../global.h"
 
-#include "../ucd_defs.h"
+#include "../../endian/io.h"
+#include "mint/endian.h"
+#include "mint/mdelay.h"
+#include "../../usb.h"
+#include "mint/time.h"
+#include "arch/timer.h"
+#include "../../usb_api.h"
+
+#include "mod_devicetable.h"
 #include "ehci.h"
 
 /*
@@ -54,12 +62,14 @@
 
 #endif
 
+extern struct usb_module_api   *api;
+
 /*
  * Function prototypes
  */
 long ehci_pci_init	(void *);
 void ehci_pci_stop	(struct ehci *);
-long ehci_pci_probe	(struct ucdinfo *uinf, struct ucdif *);
+long ehci_pci_probe	(struct ucdif *);
 long ehci_pci_reset	(struct ehci *);
 void ehci_pci_error	(struct ehci *);
 
@@ -176,8 +186,13 @@ void ehci_pci_stop(struct ehci *gehci)
 	Unhook_interrupt(((struct ehci_pci *)gehci->bus)->handle);
 }
 
+/* temporary, need multiple versions and alloc, but the new ucd_register
+ * doesn't support more than one at this time.
+ */
+static struct usb_device *root_hub_dev = NULL;
+
 long
-ehci_pci_probe(struct ucdinfo	*uinf, struct ucdif *ehci_uif)
+ehci_pci_probe(struct ucdif *ehci_uif)
 {
 	short index;
 	long err;
@@ -219,17 +234,16 @@ ehci_pci_probe(struct ucdinfo	*uinf, struct ucdif *ehci_uif)
 								    && (board->device == (id >> 16)))
 								{
 									err = ehci_alloc_ucdif(&ehci_uif);
-									strcpy(ehci_uif->name, "ehci-pci");
 									if (err < 0)
 										break;
 									/* assign an interface */
-									err = (*uinf->ucd_register)(ehci_uif);
+									err = ucd_register(ehci_uif, &root_hub_dev);
 									if (err) 
 									{
 										DEBUG (("%s: ucd register failed!", __FILE__));
 										break;
 									}
-									struct ehci *gehci = ehci_uif->ucd_priv;
+									struct ehci *gehci = (struct ehci *)ehci_uif->ucd_priv;
 									gehci->bus = kmalloc (sizeof(struct ehci_pci));
 									((struct ehci_pci *)gehci->bus)->handle = handle;
 									((struct ehci_pci *)gehci->bus)->ent = board;

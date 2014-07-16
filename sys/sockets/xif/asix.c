@@ -35,11 +35,12 @@
 #include "mint/time.h"
 #include "inet4/mii.h"
 #include "mint/sockio.h"
+#include "mint/endian.h"
+#include "mint/mdelay.h"
 #include <mint/osbind.h>
 
-#include "../../usb/src.km/config.h"
+//#include "../../usb/src.km/config.h"
 #include "../../usb/src.km/usb.h"
-#include "../../usb/src.km/udd/udd_defs.h"
 #include "../../usb/src.km/usb_api.h"
 #include "../../usb/src.km/udd/eth/usb_ether.h"
 

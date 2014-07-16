@@ -22,25 +22,39 @@
 
 #include "global.h"
 #include "usb.h"
-#include "udd.h"
+#include "usb_api.h"
+#include <mint/osbind.h> /* Setexc */
+
 
 struct uddif *alluddifs = NULL;
 
-LIST_HEAD(,usb_driver) usb_driver_list = LIST_HEAD_INITIALIZER(usb_driver_list);
+extern struct usb_device usb_dev[USB_MAX_DEVICE];
+extern struct usb_module_api usb_api;
 
+long udd_register(struct uddif *a);
+long udd_unregister(struct uddif *a);
 
 /*
  * Called by udd upon init to register itself
  */
 long
-udd_register(struct uddif *a, struct usb_driver *new_driver)
+udd_register(struct uddif *a)
 {
+	long i;
+
 	DEBUG(("udd_register: Registered device %s (%s)", a->name, a->lname));
+
+	if (a->api_version != usb_api.api_version) {
+		c_conws("API Mismatch\r\n");
+		return -1;
+	}
+
 	a->next = alluddifs;
 	alluddifs = a;
 
-	/* Add it to the list of known drivers */
-	LIST_INSERT_HEAD(&usb_driver_list, new_driver, chain);
+	for (i = 0; i < USB_MAX_DEVICE; i++) {
+        	usb_find_interface_driver(&usb_dev[i], 0);
+	}
 
 	return 0;
 }
@@ -50,7 +64,7 @@ udd_register(struct uddif *a, struct usb_driver *new_driver)
  */
 
 long
-udd_unregister(struct uddif *a, struct usb_driver *driver)
+udd_unregister(struct uddif *a)
 {
 	struct uddif **list = &alluddifs;
 
@@ -59,93 +73,10 @@ udd_unregister(struct uddif *a, struct usb_driver *driver)
 		if (a == *list)
 		{
 			*list = a->next;
-			return E_OK;
+			break;
 		}
 		list = &((*list)->next);
 	}
+
 	return -1L;
 }
-
-long
-udd_open(struct uddif *a)
-{
-	long error;
-
-	error = (*a->open)(a);
-	if (error)
-	{
-		DEBUG(("udd_open: Cannot open USB host driver %s%d", a->name, a->unit));
-		return error;
-	}
-	a->flags |= UDD_OPEN;
-	return 0;
-}
-
-long
-udd_close(struct uddif *a)
-{
-	long error;
-
-	error = (*a->close)(a);
-	if (error)
-	{
-		DEBUG(("udd_close: Cannot close USB host driver %s%d", a->name, a->unit));
-		return error;
-	}
-	a->flags &= ~UDD_OPEN;
-	return 0;
-}
-
-/*
- * Get an unused unit number for interface name 'name'
- */
-short
-udd_getfreeunit (char *name)
-{
-	struct uddif *uddp;
-	short max = -1;
-
-	for (uddp = alluddifs; uddp; uddp = uddp->next)
-	{
-		if (!strncmp (uddp->name, name, UDD_NAMSIZ) && uddp->unit > max)
-			max = uddp->unit;
-	}
-
-	return max+1;
-}
-
-struct uddif *
-udd_name2udd (char *aname)
-{
-	char name[UDD_NAMSIZ+1], *cp;
-	short i;
-	long unit = 0;
-	struct uddif *a;
-
-	for (i = 0, cp = aname; i < UDD_NAMSIZ && *cp; ++cp, ++i)
-	{
-		if (*cp >= '0' && *cp <= '9')
-		{
-			unit = atol (cp);
-			break;
-		}
-		name[i] = *cp;
-	}
-
-	name[i] = '\0';
-	for (a = alluddifs; a; a = a->next)
-	{
-		if (!stricmp (a->name, name) && a->unit == unit)
-			return a;
-	}
-
-	return NULL;
-}
-
-
-long
-udd_ioctl(struct uddif *u, short cmd, long arg)
-{
-	return (*u->ioctl)(u, cmd, arg);
-}
-

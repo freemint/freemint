@@ -27,12 +27,9 @@
 #ifndef _USB_H_
 #define _USB_H_
 
-#include "mint/lists.h"
-#include "mint/endian.h"
-#include "mint/mdelay.h"
 #include "usb_defs.h"
 
-/* Everything is aribtrary */
+/* Everything is arbitrary */
 #define USB_ALTSETTINGALLOC		4
 #define USB_MAXALTSETTING		128	/* Hard limit */
 
@@ -112,8 +109,8 @@ struct usb_endpoint_descriptor
 /* Interface descriptor */
 struct usb_interface_descriptor
 {
-	__u8	bLength;
-	__u8	bDescriptorType;
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
 	unsigned char	bInterfaceNumber;
 	unsigned char	bAlternateSetting;
 	unsigned char	bNumEndpoints;
@@ -125,11 +122,11 @@ struct usb_interface_descriptor
 
 /* USB_DT_SS_ENDPOINT_COMP: SuperSpeed Endpoint Companion descriptor */
 struct usb_ss_ep_comp_descriptor {
-	__u8  bLength;
-	__u8  bDescriptorType;
+	unsigned char  bLength;
+	unsigned char bDescriptorType;
 
-	__u8  bMaxBurst;
-	__u8  bmAttributes;
+	unsigned char  bMaxBurst;
+	unsigned char  bmAttributes;
 	unsigned short wBytesPerInterval;
 } __attribute__ ((packed));
 
@@ -181,15 +178,6 @@ enum {
 
 struct usb_device;
 
-struct usb_driver
-{
-	const char * 		name;
-	long 	(*probe)	(struct usb_device *);
-	void 	(*disconnect)	(struct usb_device *);
-	LIST_ENTRY(usb_driver) 	chain;
-};
-
-
 struct usb_device
 {
 	long	devnum;			/* Device number on USB bus */
@@ -230,49 +218,23 @@ struct usb_device
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
 
-	struct usb_driver *driver;
-	void *controller; /* struct ucdif *controller */
+	struct uddif *driver;
+	struct ucdif *controller;
 
 };
-
-
-#ifdef CONFIG_USB_INTERRUPT_POLLING
-void usb_event_poll(void);
-#else
-void usb_enable_interrupt(long enable);
-#endif
 
 /* Defines */
 #define USB_UHCI_VEND_ID		0x8086
 #define USB_UHCI_DEV_ID		0x7112
-
-
-#ifdef CONFIG_USB_MOUSE
-long drv_usb_mouse_init(void);
-long usb_mouse_deregister(void);
-#endif
-
-
-#ifdef CONFIG_USB_KEYBOARD
-long drv_usb_kbd_init(void);
-long usb_kbd_deregister(void);
-#endif
-
-
-/* memory */
-//void *usb_malloc(long amount);
-//long usb_free(void *addr);
-//long usb_mem_init(void);
-//void usb_mem_stop(void);
 
 /* low level functions */
 long 		usb_lowlevel_init		(void *ucd_priv);
 long 		usb_lowlevel_stop		(void *ucd_priv);
 
 /* routines */
-long		usb_main		(void *dummy);
-long 		usb_init		(void); /* initialize the USB Controller */
-long 		usb_stop		(void); /* stop the USB Controller */
+void		usb_main		(void);
+void 		usb_init		(void); /* initialize the USB Controller */
+void 		usb_stop		(void); /* stop the USB Controller */
 
 
 long		usb_set_protocol	(struct usb_device *dev, long ifnum, long protocol);
@@ -315,14 +277,10 @@ long 		usb_get_string		(struct usb_device *dev, unsigned short langid,
 struct usb_device *	usb_alloc_new_device(void *controller);
 void		usb_free_device		(long idx);
 long 		usb_new_device		(struct usb_device *dev);
-void 		usb_scan_devices	(void);
-void		usb_disconnect		(struct usb_device **pdev);
-void		usb_driver_claim_interface	(struct usb_driver *driver,
-						 struct usb_interface *iface, void* priv);
-long 		usb_interface_claimed		(struct usb_interface *iface);
+void		usb_disconnect		(struct usb_device *pdev);
 //inline void wait_ms(unsigned long ms);
+long		usb_find_interface_driver(struct usb_device *dev, unsigned ifnum);
 
-//#if 0
 /* big endian -> little endian conversion */
 /* some CPUs are already little endian e.g. the ARM920T */
 #define __swap_16(x) \
@@ -346,8 +304,6 @@ long 		usb_interface_claimed		(struct usb_interface *iface);
 # define swap_16(x) __swap_16(x)
 # define swap_32(x) __swap_32(x)
 #endif
-
-//#endif
 
 /*
  * Calling this entity a "pipe" is glorifying it. A USB pipe

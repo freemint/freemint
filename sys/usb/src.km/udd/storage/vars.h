@@ -26,9 +26,8 @@
 #define memvalid    0x420
 #define _bootdev    0x446
 #define hdv_init    0x46A
-#define hdv_bpb    0x472
-#define HDV_RW      0x476
-#define hdv_rw     0x476
+#define hdv_bpb     0x472
+#define hdv_rw      0x476
 #define hdv_boot    0x47A
 #define hdv_mediach 0x47E
 #define _drvbits    0x4C2
