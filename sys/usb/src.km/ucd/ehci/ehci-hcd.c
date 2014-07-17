@@ -75,7 +75,7 @@
 
 #ifdef DEV_DEBUG
 
-# define FORCE(x)       
+# define FORCE(x)       KERNEL_FORCE x
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)       KERNEL_DEBUG x
 # define TRACE(x)       KERNEL_TRACE x
@@ -83,7 +83,7 @@
 
 #else
 
-# define FORCE(x)       
+# define FORCE(x)       KERNEL_FORCE x
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)       
 # define TRACE(x)       
@@ -132,8 +132,8 @@ long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 struct descriptor {
 	struct usb_hub_descriptor hub;
 	struct usb_device_descriptor device;
-	struct usb_linux_config_descriptor config;
-	struct usb_linux_interface_descriptor interface;
+	struct usb_config_descriptor config;
+	struct usb_interface_descriptor interface;
 	struct usb_endpoint_descriptor endpoint;
 } __attribute__ ((packed));
 

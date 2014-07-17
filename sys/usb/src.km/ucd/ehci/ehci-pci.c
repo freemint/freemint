@@ -33,7 +33,6 @@
 #include "arch/timer.h"
 #include "../../usb_api.h"
 
-#include "mod_devicetable.h"
 #include "ehci.h"
 
 /*
