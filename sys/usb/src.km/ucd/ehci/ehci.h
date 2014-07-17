@@ -210,7 +210,7 @@ long ehci_interrupt_handle(struct ehci *ehci);
 struct ehci_bus {
 	long (*init)(void *);
 	void (*stop)(struct ehci *);
-	long (*probe)(struct ucdinfo *uinf, struct ucdif *);
+	long (*probe)(struct ucdif *);
 	long (*reset)(struct ehci *);
 	void (*error)(struct ehci *);
 };

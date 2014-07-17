@@ -16,6 +16,19 @@
  * History:
  *
  * $Log$
+ * Revision 1.2  2014/07/16 16:31:55  alanh
+ * Merge usbtos branch to the trunk.
+ *
+ * This brings in lots of updates, fixes and new features.
+ *
+ * - USB stack now available for TOS only (requires the usb ACCessory)
+ * - New USB mouse driver
+ * - SCSIDRV available for TOS only (possibly for FreeMiNT later)
+ * - Unicorn USB adapter driver available for TOS only. Others need porting.
+ *
+ * Thanks to Roger Burrows for his work on bringing some of the USB code
+ * out of assembly language and into C too !
+ *
  * Revision 1.1.2.1  2014/06/27 15:39:46  alanh
  * Add all my latest USB for TOS updates.
  * Add USB SCSIDRV support files.
