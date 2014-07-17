@@ -28,6 +28,14 @@
 # ifndef _mint_pcibios_h
 # define _mint_pcibios_h
 
+#define PCI_ANY_ID (~0)
+
+struct pci_device_id {
+    unsigned long vendor, device;       /* Vendor and device ID or PCI_ANY_ID*/
+    unsigned long subvendor, subdevice; /* Subsystem ID's or PCI_ANY_ID */
+    unsigned long class, class_mask;    /* (class,subclass,prog-if) triplet */
+    unsigned long driver_data;  /* Data private to the driver */
+};
 
 /* PCI config registers offsets
  */

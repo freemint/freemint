@@ -25,7 +25,7 @@ XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
+CPU = 000
 
 # default definitions
 SGENFILES = $(TARGET)
