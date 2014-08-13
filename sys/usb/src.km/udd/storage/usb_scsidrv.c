@@ -211,6 +211,11 @@ SCSIDRV_In (tpSCSICmd Parms)
                 return -1;
             }
 
+            /* No LUN supported - yet */
+            if (Parms->Cmd[1] & 0xE0) {
+                return -1;
+            }
+
             memset (&srb, 0, sizeof (srb));
             for (i = 0; i < Parms->CmdLen; i++)
             {
@@ -365,6 +370,11 @@ SCSIDRV_Out (tpSCSICmd Parms)
             long r;
 
             if (Parms->CmdLen > 16) {
+                return -1;
+            }
+
+            /* No LUN supported - yet */
+            if (Parms->Cmd[1] & 0xE0) {
                 return -1;
             }
 
