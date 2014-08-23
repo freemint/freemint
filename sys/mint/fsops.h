@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -22,6 +22,7 @@ struct fcookie
 {
 	FILESYS	*fs;		/* filesystem that knows about this cookie */
 	ushort	dev;		/* device info (e.g. Rwabs device number) */
+#define DANGLING_SYMLINK 0x8000 /* set by relpath2cookie, used by do_open */
 	ushort	aux;		/* extra data that the file system may want */
 	long	index;		/* this+dev uniquely identifies a file */
 };
@@ -51,13 +52,13 @@ struct devdrv
 	long _cdecl (*close)	(FILEPTR *f, int pid);
 	long _cdecl (*select)	(FILEPTR *f, long proc, int mode);
 	void _cdecl (*unselect)	(FILEPTR *f, long proc, int mode);
-	
+
 	/* extensions, check dev_descr.drvsize (size of DEVDRV struct) before calling:
 	 * fast RAW tty byte io
 	 */
 	long _cdecl (*writeb)	(FILEPTR *f, const char *buf, long bytes);
 	long _cdecl (*readb)	(FILEPTR *f, char *buf, long bytes);
-	
+
 	/* what about: scatter/gather io for DMA devices...
 	 * long _cdecl (*writev)(FILEPTR *f, const struct iovec *iov, long cnt);
 	 * long _cdecl (*readv)	(FILEPTR *f, struct iovec *iov, long cnt);
@@ -82,7 +83,7 @@ struct filesys
 # define FS_EXT_1		0x0200	/* extensions level 1 - mknod & unmount */
 # define FS_EXT_2		0x0400	/* extensions level 2 - additional place at the end */
 # define FS_EXT_3		0x0800	/* extensions level 3 - stat & native UTC timestamps */
-	
+
 	/* filesystem functions
 	 */
 	long	_cdecl (*root)		(int drv, fcookie *fc);
@@ -117,9 +118,9 @@ struct filesys
 	long	_cdecl (*mknod)		(fcookie *dir, const char *name, ulong mode);
 	long	_cdecl (*unmount)	(int drv);
 	long	_cdecl (*stat64)	(fcookie *file, STAT *stat);
-	
+
 	long	res1, res2, res3;	/* reserved */
-	
+
 	/* experimental extension
 	 */
 	ulong	lock;			/* for non-blocking DMA */

@@ -417,7 +417,6 @@ close_filesys (void)
  * does all the dirty work, and is called automatically when
  * disk_changed detects a media change.
  */
-
 void _cdecl
 _changedrv (ushort d, const char *function)
 {
@@ -733,7 +732,6 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	int drv;
 	XATTR xattr;
 	long r;
-
 
 	/* dolast: 0 == return a cookie for the directory the file is in
 	 *         1 == return a cookie for the file itself, don't follow links
@@ -1135,6 +1133,8 @@ restart_mount:
 				release_cookie (&dir);
 				if (r)
 				{
+					if( dolast == 2 )
+						res->aux |= DANGLING_SYMLINK;
 					DEBUG (("error following symbolic link"));
 					break;
 				}

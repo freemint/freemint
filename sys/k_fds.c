@@ -227,6 +227,47 @@ do_dup (short fd, short min, int cmd)
 	return newfd;
 }
 
+/*
+ * modify dir and temp1 to point to the possible link-target not the link
+ */
+long
+get_link_target( struct proc *p, fcookie *dir, char *temp1 )
+{
+	char temp2[PATH_MAX];
+	fcookie fc;
+	XATTR xattr;
+	int links;
+	long r;
+	for( links = 0; links <= MAX_LINKS; links++ )
+	{
+		r = relpath2cookie (p, dir, temp1, 0, &fc, 0);	/* get a cookie for the link (temp1 is the linkname) */
+		if( r )
+		{
+			DEBUG(("get_link_target:%s:ENOENT", temp1));
+			if( links == 0 )
+				return ENOENT;
+			break;
+		}
+		r = xfs_getxattr (fc.fs, &fc, &xattr);
+		if ( r || !S_ISLNK(xattr.mode) )	/* is it a symbolic link? */
+			break;
+		r = xfs_readlink (fc.fs, &fc, temp2, PATH_MAX);
+		if( r )
+			break;
+		/* change dir to a cookie for the link-target-dir, and temp1 to the link-target-filename */
+		r = path2cookie (p, temp2, temp1, dir);
+		if( r )
+		{
+			break;
+		}
+	}
+	if( links > MAX_LINKS )
+		r = ELOOP;
+
+	release_cookie (&fc);
+	return r;
+}
+
 /* do_open(f, name, rwmode, attr, x)
  *
  * f      - pointer to FIELPTR *
@@ -340,6 +381,13 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 
 		assert (p->p_cwd);
 
+		/* in case of a symbolic link create the link-target */
+		/* -> could relpath2cookie perhaps tell us if 'name' is a sym-link? */
+		if( (fc.aux & DANGLING_SYMLINK) && get_link_target( p, &dir, temp1 ) == ELOOP )
+		{
+			release_cookie (&dir);
+			return ELOOP;
+		}
 		r = xfs_creat (dir.fs, &dir, temp1,
 			(S_IFREG|DEFAULT_MODE) & (~p->p_cwd->cmask), attr, &fc);
 
@@ -479,14 +527,14 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 	else
 	{
 		if( !(name[0] == '/' || name[0] == '\\' || name[1] == ':') )
-			l = strlen( p->p_cwd->fullpath ) + strlen( name ) + 1;
+			l = strlen( p->p_cwd->fullpath ) + strlen( name );
 		else
 		{
 			fullp = 1;
-			l = strlen( name ) + 1;
+			l = strlen( name );
 		}
 	}
-	r = FP_ALLOCN (op, f, l);
+	r = FP_ALLOCN (op, f, l);	/* term. 0 in file.fname */
 	}
 #else
 	r = FP_ALLOC (op, f );
@@ -535,7 +583,8 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 		else
 		{
 			strcpy( (*f)->fname, p->p_cwd->fullpath );
-			strcat( (*f)->fname, name );
+			if( !(name[0] == '.' && name[1] == 0) )	/* do_open(".") */
+				strcat( (*f)->fname, name );
 		}
 	}
 #endif

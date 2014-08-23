@@ -61,6 +61,7 @@ long fp_get1	(struct proc *p, short fd, FILEPTR **fp, const char *func);
 # define GETFILEPTR(p, fd, fp)	   fp_get     (p, fd, fp, __FUNCTION__)
 
 long do_dup	(short fd, short min, int cmd);
+long get_link_target( struct proc *p, fcookie *dir, char *temp1 );
 long do_open	(FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, XATTR *x);
 long do_close	(struct proc *p, FILEPTR *f);
 

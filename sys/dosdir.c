@@ -402,6 +402,11 @@ sys_d_setpath0 (struct proc *p, const char *path)
 		fcookie *pdir = &cwd->curdir[dir.dev],
 			*proot = &cwd->root[dir.dev];
 		r = xfs_getname (dir.fs, proot, pdir, ppath, PATH_MAX );
+		if (r)
+		{
+			DEBUG( ("Dsetpath(%s): getname fail!", path));
+			goto error;
+		}
 		strcpy( cwd->fullpath, ppath );
 		strcat( cwd->fullpath, path );
 	}
@@ -424,7 +429,7 @@ sys_d_setpath0 (struct proc *p, const char *path)
 			}
 		}
 	}
-
+error:
 	release_cookie (&cwd->curdir[drv]);
 	cwd->curdir[drv] = dir;
 	return E_OK;
@@ -1102,7 +1107,7 @@ sys_f_delete (const char *name)
 	}
 
 	release_cookie (&fc);
-	r = xfs_remove (dir.fs, &dir,temp1);
+	r = xfs_remove (dir.fs, &dir, temp1);
 	release_cookie (&dir);
 
 	return r;
@@ -1674,7 +1679,14 @@ sys_d_cntl (int cmd, const char *name, long arg)
 		return r;
 	}
 
-	switch (cmd)
+	r = 0;
+
+	if( (cmd == FUTIME_UTC || cmd == FUTIME) )	//&& (dir.aux & DANGLING_SYMLINK) )
+	{
+		r = get_link_target( p, &dir, temp1 );	/* this costs ~10% */
+	}
+
+	if( !r )switch (cmd)
 	{
 		case FUTIME:
 		{
@@ -2322,6 +2334,7 @@ sys_f_dirfd (long handle)
 	while (*where && *where != dirh)
 		where = &((*where)->next);
 
+	DEBUG (("Fdirfd: %ld", handle ));
 	if (!*where)
 	{
 		DEBUG (("Fdirfd: not an open directory"));
