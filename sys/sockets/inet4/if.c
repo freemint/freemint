@@ -729,7 +729,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.dstaddr.sa_family));
+					ifr->ifru.dstadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -751,7 +751,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.dstaddr.sa_family));
+					ifr->ifru.dstadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -783,7 +783,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.addr.sa_family));
+					ifr->ifru.dstadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -811,7 +811,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.broadaddr.sa_family));
+					ifr->ifru.broadadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -833,7 +833,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.broadaddr.sa_family));
+					ifr->ifru.broadadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -861,7 +861,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.netmask.sa_family));
+					ifr->ifru.netmsk.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -880,7 +880,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.netmask.sa_family));
+					ifr->ifru.netmsk.sa.sa_family));
 				return EINVAL;
 			}
 			
