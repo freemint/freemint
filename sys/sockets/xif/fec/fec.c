@@ -1280,7 +1280,7 @@ fec_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short 
         goto out_err0;
     }
     /* packet is resized, recalculate len: */
-    len = ((unsigned long)buf->dend) - ((unsigned long)buf->dstart);
+    len = ((unsigned long)nbuf->dend) - ((unsigned long)nbuf->dstart);
 
     /* FEC needs at least ETH_MIN_FRM: */
     lenpad = MAX(len, ETH_MIN_FRM );
