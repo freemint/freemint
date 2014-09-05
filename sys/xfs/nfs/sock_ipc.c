@@ -276,6 +276,10 @@ REQUEST *pending = NULL;
 /* TL: implement locking functions for the request actions.
  *     Note: We will need this when MiNT will be also multitasking
  *           in super mode some day.
+ *     Note: The TAS instruction is only useful on multiprocessor
+ *           systems, and it is buggy on the FireBee.
+ *           The BSET.B #7 instruction does exactly the same thing,
+ *           without additional overhead.
  */
 
 volatile char lock = 0;
@@ -286,7 +290,7 @@ volatile char lock = 0;
 	__asm__ __volatile__(					\
 		"clrb		%0\n\t"				\
 		"movel		%1,a0\n\t"			\
-		"tas		a0@\n\t"			\
+		"bsetb		#7,a0@\n\t"			\
 		"beq		1f\n\t"				\
 		"moveb		#1,%0\n\t"			\
 		"1:\n\t"					\
