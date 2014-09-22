@@ -1227,12 +1227,11 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				{
 					killgroup (tty->pgrp, SIGHUP, 0);
 					killgroup (tty->pgrp, SIGCONT, 0);
+
+					tty->pgrp = 0;
+					DEBUG (("TIOCNOTTY: assigned tty->pgrp = %i", tty->pgrp));
 				}
-				
 			}
-			
-			tty->pgrp = 0;
-			DEBUG (("TIOCNOTTY: assigned tty->pgrp = %i", tty->pgrp));
 			
 			do_close (get_curproc(), get_curproc()->p_fd->control);
 			get_curproc()->p_fd->control = NULL;
