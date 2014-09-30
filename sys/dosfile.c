@@ -1258,7 +1258,7 @@ retry_after_collision:
 	if (timeout == ~0)
 		timeout = 0;
 	else if (timeout == 0)
-		timeout = 1;
+		goto cancel;
 
 	if (count == 0)
 	{
