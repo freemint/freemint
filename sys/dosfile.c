@@ -791,6 +791,14 @@ retry_after_collision:
 		mask = mask << 1L;
 	}
 
+	/*
+	 * A value of 1 is meant to simulate a small enough delay that it's deemed
+	 * unnoticeable. In practice that doesn't occur.
+	 */
+	if (timeout == 1) {
+		goto cancel;
+	}
+
 	if (count == 0)
 	{
 		/* no data is ready yet */
