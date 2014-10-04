@@ -158,7 +158,7 @@ struct usb_config_descriptor
 	unsigned char	bConfigurationValue;
 	unsigned char	iConfiguration;
 	unsigned char	bmAttributes;
-	unsigned char	MaxPower;
+	unsigned char	bMaxPower;
 } __attribute__ ((packed));
 
 struct usb_config {
