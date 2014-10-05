@@ -469,15 +469,15 @@ long usb_get_descriptor(struct usb_device *dev, unsigned char type,
 /**********************************************************************
  * gets configuration cfgno and store it in the buffer
  */
-long usb_get_configuration_no(struct usb_device *dev, unsigned char *buffer, long cfgno)
+long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 {
-	long result;
+	unsigned char *buffer;
+	long result, err;
 	unsigned long tmp;
 	struct usb_config_descriptor *config;
 
-
-	config = (struct usb_config_descriptor *)&buffer[0];
-	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, 9);
+	config = (struct usb_config_descriptor *)kmalloc(9);
+	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, config, 9);
 	if (result < 9) {
 		if (result < 0)
 			DEBUG(("unable to get descriptor, error %lx",
@@ -485,19 +485,26 @@ long usb_get_configuration_no(struct usb_device *dev, unsigned char *buffer, lon
 		else
 			DEBUG(("config descriptor too short " \
 				"(expected %i, got %i)", 9, result));
+		kfree(config);
 		return -1;
 	}
 	tmp = le2cpu16(config->wTotalLength);
+	kfree(config);
 
-	if (tmp > USB_BUFSIZ) {
-		DEBUG(("usb_get_configuration_no: failed to get " \
-			   "descriptor - too long: %ld", tmp));
-		return -1;
-	}
-
+	buffer = (unsigned char*)kmalloc(tmp);
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, tmp);
 	DEBUG(("get_conf_no %ld Result %ld, wLength %ld",
 		   cfgno, result, tmp));
+
+	err = usb_parse_config(dev, buffer, 0);
+	if (err < 0) {
+		DEBUG(("usb_new_device: Cannot parse configuration, " \
+		       "skipping device %04x:%04x\n",
+		       dev->descriptor.idVendor, dev->descriptor.idProduct));
+		kfree(buffer);
+		return -1;
+	}
+	kfree(buffer);
 	return result;
 }
 
@@ -857,7 +864,7 @@ void usb_free_device(long dev_index)
 long usb_new_device(struct usb_device *dev)
 {
 	long addr, err;
-	unsigned char tmpbuf[USB_BUFSIZ];
+	unsigned char *tmpbuf;
 	long tmp;
 	struct usb_device_descriptor *desc;
 	long port = -1;
@@ -873,8 +880,7 @@ long usb_new_device(struct usb_device *dev)
 	 * only 18 bytes long, this will terminate with a short packet.  But if
 	 * the maxpacket size is 8 or 16 the device may be waiting to transmit
 	 * some more, or keeps on retransmitting the 8 byte header. */
-
-	desc = (struct usb_device_descriptor *)tmpbuf;
+	desc = (struct usb_device_descriptor *)kmalloc(64);
 
 	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
 
@@ -887,6 +893,7 @@ long usb_new_device(struct usb_device *dev)
 	if (err < 0) {
 		DEBUG(("usb_new_device: usb_get_descriptor() failed"));
 		dev->devnum = addr;
+		kfree(desc);
 		return 1;
 	}
 	
@@ -897,6 +904,7 @@ long usb_new_device(struct usb_device *dev)
 	 * to differentiate between HUB and DEVICE.
 	 */
 	dev->descriptor.bDeviceClass = desc->bDeviceClass;
+	kfree(desc);
 
 	/* find the port number we're at */
 	if (parent) {
@@ -956,6 +964,7 @@ long usb_new_device(struct usb_device *dev)
 	mdelay(200);	/* Let the SET_ADDRESS settle */
 
 	tmp = sizeof(dev->descriptor);
+	tmpbuf = (unsigned char *)kmalloc(tmp);
 
 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, tmpbuf, tmp);
 	if (err < tmp) {
@@ -965,29 +974,27 @@ long usb_new_device(struct usb_device *dev)
 		else
 			DEBUG(("USB device descriptor short read " \
 				"(expected %li, got %li)", tmp, err));
+		kfree(tmpbuf);
 		return 1;
 	}
 	memcpy(&dev->descriptor, tmpbuf, sizeof(dev->descriptor));
-	/* correct le values */
+	kfree(tmpbuf);
+
+	/* correct the values */
 	dev->descriptor.bcdUSB = le2cpu16(dev->descriptor.bcdUSB);
 	dev->descriptor.idVendor = le2cpu16(dev->descriptor.idVendor);
 	dev->descriptor.idProduct = le2cpu16(dev->descriptor.idProduct);
 	dev->descriptor.bcdDevice = le2cpu16(dev->descriptor.bcdDevice);
+
 	/* only support for one config for now */
-	err = usb_get_configuration_no(dev, tmpbuf, 0);
+	err = usb_get_configuration_no(dev, 0);
 	if (err < 0) {
 		DEBUG(("usb_new_device: Cannot read configuration, " \
 		       "skipping device %04x:%04x\n",
 		       dev->descriptor.idVendor, dev->descriptor.idProduct));
 		return -1;
 	}
-	err = usb_parse_config(dev, tmpbuf, 0);
-	if (err < 0) {
-		DEBUG(("usb_new_device: Cannot parse configuration, " \
-		       "skipping device %04x:%04x\n",
-		       dev->descriptor.idVendor, dev->descriptor.idProduct));
-		return -1;
-	}
+
 	usb_set_maxpacket(dev);
 	/* we set the default configuration here */
 	if (usb_set_configuration(dev, dev->config.desc.bConfigurationValue)) {
