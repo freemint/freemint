@@ -477,6 +477,10 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 	struct usb_config_descriptor *config;
 
 	config = (struct usb_config_descriptor *)kmalloc(9);
+	if (!config) {
+		DEBUG(("Out of memory"));
+		return -1;
+	}
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, config, 9);
 	if (result < 9) {
 		if (result < 0)
@@ -492,6 +496,10 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 	kfree(config);
 
 	buffer = (unsigned char*)kmalloc(tmp);
+	if (!buffer) {
+		DEBUG(("Out of memory"));
+		return -1;
+	}
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, tmp);
 	DEBUG(("get_conf_no %ld Result %ld, wLength %ld",
 		   cfgno, result, tmp));
@@ -881,6 +889,10 @@ long usb_new_device(struct usb_device *dev)
 	 * the maxpacket size is 8 or 16 the device may be waiting to transmit
 	 * some more, or keeps on retransmitting the 8 byte header. */
 	desc = (struct usb_device_descriptor *)kmalloc(64);
+	if (!desc) {
+		DEBUG(("Out of memory"));
+		return -1;
+	}
 
 	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
 
@@ -965,6 +977,10 @@ long usb_new_device(struct usb_device *dev)
 
 	tmp = sizeof(dev->descriptor);
 	tmpbuf = (unsigned char *)kmalloc(tmp);
+	if (!tmpbuf) {
+		DEBUG(("Out of memory"));
+		return -1;
+	}
 
 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, tmpbuf, tmp);
 	if (err < tmp) {
