@@ -207,43 +207,61 @@ static struct descriptor rom_descriptor = {
 
 void ehci_show_registers(struct ehci *gehci, struct devrequest *req)
 {
-	DEBUG(("[USBCMD] %08lx", ehci_readl(&gehci->hcor->or_usbcmd)));
-	DEBUG(("[USBSTS] %08lx", ehci_readl(&gehci->hcor->or_usbsts)));
-
 	int i = gehci->descriptor->hub.bNbrPorts;
+
+	DEBUG(("--- REGISTERS ---"));
+	DEBUG(("[CAPBAS] %08lx", ehci_readl(&gehci->hccr->cr_capbase)));
+	DEBUG(("[HCSPAR] %08lx", ehci_readl(&gehci->hccr->cr_hcsparams)));
+	DEBUG(("[HCCPAR] %08lx", ehci_readl(&gehci->hccr->cr_hccparams)));
 	while (i) {
-		DEBUG(("status reg port[%d] 0x%08lx", i + 1, ehci_readl(&gehci->hcor->or_portsc[i])));
+		DEBUG(("capability reg port[%d] 0x%08lx", 
+			i, ehci_readl(&gehci->hccr->cr_hcsp_portrt[i - 1])));
 		i--;
 	};
+
+	DEBUG(("[USBCMD] %08lx", ehci_readl(&gehci->hcor->or_usbcmd)));
+	DEBUG(("[USBSTS] %08lx", ehci_readl(&gehci->hcor->or_usbsts)));
+	DEBUG(("[USBINR] %08lx", ehci_readl(&gehci->hcor->or_usbintr)));
+	DEBUG(("[FRIDNX] %08lx", ehci_readl(&gehci->hcor->or_frindex)));
+	DEBUG(("[CTRLDS] %08lx", ehci_readl(&gehci->hcor->or_ctrldssegment)));
+	DEBUG(("[PERDLB] %08lx", ehci_readl(&gehci->hcor->or_periodiclistbase)));
+	DEBUG(("[ASYNCL] %08lx", ehci_readl(&gehci->hcor->or_asynclistaddr)));
+	DEBUG(("[CNFLAG] %08lx", ehci_readl(&gehci->hcor->or_configflag)));
+	i = gehci->descriptor->hub.bNbrPorts;
+	while (i) {
+		DEBUG(("status reg port[%d] 0x%08lx", 
+			i, ehci_readl(&gehci->hcor->or_portsc[i - 1])));
+		i--;
+	};
+	DEBUG(("[SYSTUN] %08lx", ehci_readl(&gehci->hcor->or_systune)));
 }
 
 void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 {
+	DEBUG(("--- QUEUE HEAD ---"));
 	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 0, hc32_to_cpu(qh->qh_link)));
 	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 1, hc32_to_cpu(qh->qh_endpt1)));
 	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 2, hc32_to_cpu(qh->qh_endpt2)));
-	DEBUG(("[0x%08lx] %08lx current qtd", ((unsigned long *)qh) + 3, hc32_to_cpu(qh->qh_curtd)));
-	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 4, hc32_to_cpu(qh->qh_overlay.qt_next)));
+	DEBUG(("[0x%08lx] %08lx - current qTD", ((unsigned long *)qh) + 3, hc32_to_cpu(qh->qh_curtd)));
+	DEBUG(("[0x%08lx] %08lx - next qtd", ((unsigned long *)qh) + 4, hc32_to_cpu(qh->qh_overlay.qt_next)));
 	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 5, hc32_to_cpu(qh->qh_overlay.qt_altnext)));
-	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 6, hc32_to_cpu(qh->qh_overlay.qt_token)));
-	DEBUG(("[0x%08lx] %08lx buffer", ((unsigned long *)qh) + 7, hc32_to_cpu(qh->qh_overlay.qt_buffer[0])));
+	DEBUG(("[0x%08lx] %08lx - token", ((unsigned long *)qh) + 6, hc32_to_cpu(qh->qh_overlay.qt_token)));
+	DEBUG(("[0x%08lx] %08lx - buffer", ((unsigned long *)qh) + 7, hc32_to_cpu(qh->qh_overlay.qt_buffer[0])));
 
 	if (qh->qh_curtd != 0) {
-		DEBUG(("[0x%08lx] %08lx current qtd", 
-					hc32_to_cpu(qh->qh_curtd), 
-					hc32_to_cpu(*(((unsigned long *)(hc32_to_cpu(qh->qh_curtd)))))));
+		DEBUG(("--- current qTD ---"));
+		DEBUG(("[0x%08lx] [0x%08lx]- next qTD", 
+					hc32_to_cpu(qh->qh_curtd + gehci->dma_offset), 
+					hc32_to_cpu(qh->qh_curtd)));
 		DEBUG(("[0x%08lx] %08lx", 
 					(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 1), 
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 1))));
-		DEBUG(("[0x%08lx] %08lx", 
+		DEBUG(("[0x%08lx] %08lx - token", 
 					(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 2), 
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 2))));
-		DEBUG(("[0x%08lx] %08lx", 
+		DEBUG(("[0x%08lx] %08lx - buffer", 
 					(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3), 
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3))));
-		DEBUG(("[0x%08lx] %08lx", 
-					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3)), 
-					*((unsigned long *)(hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3))))));
 	}
 }
 
@@ -349,9 +367,9 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	long idx;
 
 	if (sz != rsz)
-		DEBUG(("EHCI-HCD: Misaligned buffer size (%08x)\n", sz));
+		DEBUG(("EHCI-HCD: Misaligned buffer size (%d)\n", sz));
 	if (addr & 31)
-		DEBUG(("EHCI-HCD: Misaligned buffer address (%lx)\n", buf));
+		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)\n", buf));
 
 	idx = 0;
 	while(idx < 5)
