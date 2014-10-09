@@ -16,7 +16,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: $(TARGET) actrl
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
@@ -33,5 +33,7 @@ OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
+actrl:
+	$(CC) $(MODEL) $(OPTS) $(WARN) actrl.c -o $@
 
 include $(top_srcdir)/DEPENDENCIES
