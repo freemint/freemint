@@ -17,6 +17,6 @@ COBJS = \
 	psgtab.c
 
 SOBJS = \
-	audioasm.s
+	audioasm.S
 
 SRCFILES = $(HEADER) $(COBJS) $(SOBJS)

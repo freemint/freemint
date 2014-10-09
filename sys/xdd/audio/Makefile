@@ -28,7 +28,7 @@ CPU = 020-60
 
 # default definitions
 SGENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
