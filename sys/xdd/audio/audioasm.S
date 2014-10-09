@@ -23,25 +23,54 @@ _timer_func:
 	.long 0
 
 _new_gpi7_vector:
+#ifdef __mcoldfire__
+	lea	sp@(-16), sp
+	moveml	d0-d1/a0-a1, sp@
+#else
 	moveml	d0-d1/a0-a1, sp@-
+#endif
 	moveal	_timer_func, a0
 	jsr a0@			| do thangs...
+#ifdef __mcoldfire__
+	lea	mfp_isra:w, a0
+	moveb	#0x7f, a0@
+	moveml	sp@, d0-d1/a0-a1
+	lea	sp@(16), sp
+#else
 	moveml	sp@+, d0-d1/a0-a1
 	moveb	#0x7f, mfp_isra:w
+#endif
 	rte
 
 _new_timera_vector:
+#ifdef __mcoldfire__
+	lea	sp@(-16), sp
+	moveml	d0-d1/a0-a1, sp@
+#else
 	moveml	d0-d1/a0-a1, sp@-
+#endif
 	moveal	_timer_func, a0
 	jsr	a0@			| do things...
+#ifdef __mcoldfire__
+	lea	mfp_isra:w, a0
+	moveb	#0xdf, a0@
+	moveml	sp@, d0-d1/a0-a1
+	lea	sp@(16), sp
+#else
 	moveml	sp@+, d0-d1/a0-a1
 	moveb	#0xdf, mfp_isra:w
+#endif
 	rte
 
 	.globl _digitab, _playptr, _playlen, _psg_player
 
 _psg_player:
+#ifdef __mcoldfire__
+	lea	sp@(-16), sp
+	moveml	d0-d1/a0-a1, sp@
+#else
 	moveml	d0-d1/a0-a1, sp@-
+#endif
 	tstl	_playlen
 	bgt	_psg_player_1
 	moveal	_timer_func, a0
@@ -56,12 +85,30 @@ _psg_player_1:
 	movel	a0, _playptr
 	lsll	#3, d0
 	lea	_digitab, a0
+#ifdef __mcoldfire__
+	addl	d0, a0
+	lea	0xffff8800:w, a1
+	moveb	a0@+, a1@
+	moveb	a0@+, a1@(2)
+	moveb	a0@+, a1@
+	moveb	a0@+, a1@(2)
+	moveb	a0@+, a1@
+	moveb	a0@, a1@(2)
+#else
 	movel	a0@(0,d0:w), d1
 	movew	a0@(4,d0:w), d0
 	lea	0xffff8800:w, a0
 	movepl	d1, a0@(0)
 	movepw	d0, a0@(0)
+#endif
 _psg_player_2:
+#ifdef __mcoldfire__
+	lea	mfp_isra:w, a0
+	moveb	#0xdf, a0@
+	moveml	sp@, d0-d1/a0-a1
+	lea	sp@(16), sp
+#else
 	moveml	sp@+, d0-d1/a0-a1
 	moveb	#0xdf, mfp_isra:w
+#endif
 	rte
