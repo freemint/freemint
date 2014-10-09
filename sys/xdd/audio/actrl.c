@@ -15,15 +15,16 @@
 # include <errno.h>
 # include <unistd.h>
 # include <fcntl.h>
-# include <ioctl.h>
+# include <sys/ioctl.h>
+# include "../../mint/ioctl.h"
 
  
-char *loptarg;
+static char *loptarg;
 
-int
+static int
 lgetopt (int argc, char *argv[], const char *opts)
 {
-	static char sp = 1;
+	static int sp = 1;
 	const char *op, *lop;
 	int i, olen;
 
@@ -73,7 +74,7 @@ lgetopt (int argc, char *argv[], const char *opts)
 	return 0;
 }
 
-void
+static void
 usage (void)
 {
 	fprintf (stderr,
