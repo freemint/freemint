@@ -791,23 +791,19 @@ retry_after_collision:
 		mask = mask << 1L;
 	}
 
-    /*
-     * We can't do this on it's own as some code may well pass select()
-     * with a timeout of 1, and now get no timeout at all.
-     *
-     * MyAES is something that needs checking.
-     *
-     * Sigh. More checking on what can be done here yet.....
-     */
-#if 0
 	/*
 	 * A value of 1 is meant to simulate a small enough delay that it's deemed
 	 * unnoticeable. In practice that doesn't occur.
+     *
+     * NOTE: Applications that call Fselect(1,....) directly should be
+     * fixed to call Fselect(2,.....) for a minimal timeout value.
+     *
+     * The MiNTlib would do Fselect(1,....) to simulate select() with
+     * a timeout of 0. i.e. to return immediately.
 	 */
 	if (timeout == 1) {
 		goto cancel;
 	}
-#endif
 
 	if (count == 0)
 	{
