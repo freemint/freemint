@@ -868,37 +868,6 @@ unknown:
 	return -1;
 }
 
-long ehci_interrupt_handle(struct ehci *ehci)
-{
-	unsigned long status;
-
-	/* flush caches */
-	cpush(ehci, -1);
-
-	status = ehci_readl(&ehci->hcor->or_usbsts);
-	if(status & STS_PCD) /* port change detect */
-	{
-		unsigned long reg = ehci_readl(&ehci->hccr->cr_hcsparams);
-		unsigned long i = HCS_N_PORTS(reg);
-		while(i--)
-		{
-			unsigned long pstatus = ehci_readl(&ehci->hcor->or_portsc[i-1]);
-			if(pstatus & EHCI_PS_PO)
-				continue;
-			if(ehci->companion & (1 << i))
-			{
-				/* Low speed device, give up ownership. */
-				pstatus |= EHCI_PS_PO;
-				ehci_writel(&ehci->hcor->or_portsc[i-1], pstatus);
-			}
-			else if((pstatus & EHCI_PS_CSC))
-				usb_rh_wakeup();
-		}
-	} 
-	ehci_writel(&ehci->hcor->or_usbsts, status);
-	return 1; /* clear interrupt, 0: disable interrupt */
-}
-
 static void hc_free_buffers(struct ehci *ehci)
 {
 	long i;
