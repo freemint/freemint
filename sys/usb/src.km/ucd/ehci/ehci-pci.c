@@ -63,6 +63,8 @@
 
 extern struct usb_module_api   *api;
 
+extern void ehci_int_handle_asm(void);
+
 /*
  * Function prototypes
  */
@@ -175,7 +177,7 @@ ehci_pci_init(void *ucd_priv)
 	}
 
 	/* hook interrupt handler */
-	Hook_interrupt(((struct ehci_pci *)gehci->bus)->handle, (void *)ehci_interrupt_handle, (unsigned long *)gehci);
+	Hook_interrupt(((struct ehci_pci *)gehci->bus)->handle, (void *)ehci_int_handle_asm, (unsigned long *)gehci);
 
 	return 0;
 }
@@ -262,4 +264,40 @@ ehci_pci_probe(struct ucdif *ehci_uif)
 	while(loop_counter <= 2); /* Number of card slots */
 
 	return 0;
+}
+
+long ehci_interrupt_handle(long param)
+{
+	struct ehci *ehci = (struct ehci *)param;
+	unsigned long status;
+
+	/* flush caches */
+	cpush(ehci, -1);
+
+	status = ehci_readl(&ehci->hcor->or_usbsts);
+	if(status & STS_PCD) /* port change detect */
+	{
+		unsigned long reg = ehci_readl(&ehci->hccr->cr_hcsparams);
+		unsigned long i = HCS_N_PORTS(reg);
+		while(i--)
+		{
+			unsigned long pstatus = ehci_readl(&ehci->hcor->or_portsc[i-1]);
+			if(pstatus & EHCI_PS_PO)
+				continue;
+			if(ehci->companion & (1 << i))
+			{
+				/* Low speed device, give up ownership. */
+				pstatus |= EHCI_PS_PO;
+				ehci_writel(&ehci->hcor->or_portsc[i-1], pstatus);
+			}
+			else if((pstatus & EHCI_PS_CSC))
+				usb_rh_wakeup();
+		}
+	}
+
+	/* Disable interrupt */
+	ehci_writel(&ehci->hcor->or_usbsts, status);
+
+	/* PCI_BIOS specification: if interrupt was for us set D0.0 */
+	return 1;
 }

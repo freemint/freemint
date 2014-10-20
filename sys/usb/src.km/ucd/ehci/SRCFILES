@@ -9,5 +9,6 @@ COBJS = \
 	ehci-pci.c
 
 SSOBJS = \
+	ehci.S \
 
 SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
