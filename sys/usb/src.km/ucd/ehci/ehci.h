@@ -203,7 +203,7 @@ struct ehci {
 long ehci_hcd_init(void);
 long ehci_hcd_stop(void);
 long ehci_alloc_ucdif(struct ucdif **);
-long ehci_interrupt_handle(struct ehci *ehci);
+long ehci_interrupt_handle(long);
 
 /* Interface with bus/platform */
 
