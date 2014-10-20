@@ -1200,6 +1200,7 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	long ret;
 
 	kentry	= k;
+	api = uapi;
 
 	struct ucdif *ehci_uif = NULL;
 
