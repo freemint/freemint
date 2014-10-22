@@ -92,9 +92,6 @@
 #define RH_REQ_ERR                 -1
 #define RH_NACK                    0x00
 
-
-#define USB_MAX_DEVICE		32
-
 #define NUMBER_OF_PORTS		2
 
 
