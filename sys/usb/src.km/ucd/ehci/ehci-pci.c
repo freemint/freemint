@@ -237,6 +237,12 @@ ehci_pci_probe(struct ucdif *ehci_uif)
 									err = ehci_alloc_ucdif(&ehci_uif);
 									if (err < 0)
 										break;
+
+									struct ehci *gehci = (struct ehci *)ehci_uif->ucd_priv;
+									gehci->bus = kmalloc (sizeof(struct ehci_pci));
+									((struct ehci_pci *)gehci->bus)->handle = handle;
+									((struct ehci_pci *)gehci->bus)->ent = board;
+
 									/* assign an interface */
 									err = ucd_register(ehci_uif, &root_hub_dev);
 									if (err) 
@@ -244,10 +250,6 @@ ehci_pci_probe(struct ucdif *ehci_uif)
 										DEBUG (("%s: ucd register failed!", __FILE__));
 										break;
 									}
-									struct ehci *gehci = (struct ehci *)ehci_uif->ucd_priv;
-									gehci->bus = kmalloc (sizeof(struct ehci_pci));
-									((struct ehci_pci *)gehci->bus)->handle = handle;
-									((struct ehci_pci *)gehci->bus)->ent = board;
 									DEBUG (("%s: ucd register ok", __FILE__));
 									break;
 								}
