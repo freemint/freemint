@@ -73,7 +73,7 @@ void ehci_pci_stop	(struct ehci *);
 long ehci_pci_probe	(struct ucdif *);
 long ehci_pci_reset	(struct ehci *);
 void ehci_pci_error	(struct ehci *);
-
+unsigned long ehci_pci_getaddr	(struct ehci *, unsigned long, unsigned long *);
 
 struct ehci_pci {
 	long handle;				/* PCI BIOS */
@@ -95,6 +95,7 @@ struct ehci_bus ehci_bus = {
 	.probe = ehci_pci_probe,
 	.reset = ehci_pci_reset,
 	.error = ehci_pci_error,
+	.getaddr = ehci_pci_getaddr,
 };
 
 void
@@ -302,4 +303,17 @@ long ehci_interrupt_handle(long param)
 
 	/* PCI_BIOS specification: if interrupt was for us set D0.0 */
 	return 1;
+}
+
+unsigned long ehci_pci_getaddr(struct ehci *gehci, unsigned long addr, unsigned long *pciaddr)
+{
+	long status;
+	PCI_CONV_ADR cr;
+
+	status = Virt_to_bus(((struct ehci_pci *)gehci->bus)->handle, addr, (struct pci_conv_adr *)&cr);
+	if (status != PCI_SUCCESSFUL)
+			return -1;
+
+	*pciaddr = cr.adr;
+	return 0;
 }

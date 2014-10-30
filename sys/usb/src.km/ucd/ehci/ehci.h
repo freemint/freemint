@@ -184,10 +184,14 @@ struct ehci {
 	volatile struct ehci_hcor *hcor;
 	struct QH *qh_list_unaligned;
 	struct QH *qh_list;
+	struct QH *qh_list_busaddr;
 	struct QH *qh_unaligned;
 	struct QH *qh;
+	struct QH *qh_busaddr;
 	struct qTD *td_unaligned[3];
 	struct qTD *td[3];
+	struct qTD *td_busaddr[3];
+	unsigned long td_offset[3];
 	struct descriptor *descriptor;
 	long irq;
 	unsigned long dma_offset;
@@ -213,13 +217,15 @@ struct ehci_bus {
 	long (*probe)(struct ucdif *);
 	long (*reset)(struct ehci *);
 	void (*error)(struct ehci *);
+	unsigned long (*getaddr)(struct ehci *, unsigned long, unsigned long *);
 };
 
-#define ehci_bus_init	ehci_bus.init
-#define ehci_bus_stop	ehci_bus.stop
-#define ehci_bus_probe	ehci_bus.probe
-#define ehci_bus_reset	ehci_bus.reset
-#define ehci_bus_error	ehci_bus.error
+#define ehci_bus_init		ehci_bus.init
+#define ehci_bus_stop		ehci_bus.stop
+#define ehci_bus_probe		ehci_bus.probe
+#define ehci_bus_reset		ehci_bus.reset
+#define ehci_bus_error		ehci_bus.error
+#define ehci_bus_getaddr	ehci_bus.getaddr
 
 extern struct ehci_bus ehci_bus;
 

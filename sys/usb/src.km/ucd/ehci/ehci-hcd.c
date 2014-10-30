@@ -332,7 +332,7 @@ out:
 	return ret;
 }
 
-static void *ehci_alloc(struct ehci *gehci, size_t sz, size_t align)
+static void *ehci_alloc(struct ehci *gehci, size_t sz, size_t align, unsigned long *td_offset)
 {
 	static long ntds;
 	void *p;
@@ -349,6 +349,7 @@ static void *ehci_alloc(struct ehci *gehci, size_t sz, size_t align)
 				return NULL;
 			}
 			p = gehci->td[ntds];
+			*td_offset = gehci->td_offset[ntds];
 			ntds++;
 			break;
 		default:
@@ -362,9 +363,16 @@ static void *ehci_alloc(struct ehci *gehci, size_t sz, size_t align)
 static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t sz)
 {
 	unsigned long delta, next;
-	unsigned long addr = (ulong)buf;
+	unsigned long addr;
 	size_t rsz = ROUNDUP(sz, 32);
-	long idx;
+	long idx, r;
+
+	r = ehci_bus_getaddr(gehci, (unsigned long)buf, &addr);
+	if (r < 0)
+	{
+		DEBUG(("EHCI_HCD: Unable to get bus address"));
+		return -1;
+	}
 
 	if (sz != rsz)
 		DEBUG(("EHCI-HCD: Misaligned buffer size (%d)\n", sz));
@@ -374,7 +382,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	idx = 0;
 	while(idx < 5)
 	{
-		td->qt_buffer[idx] = cpu_to_hc32(addr - gehci->dma_offset);
+		td->qt_buffer[idx] = cpu_to_hc32(addr);
 		next = (addr + 4096) & ~4095;
 		delta = next - addr;
 		if (delta >= sz)
@@ -415,6 +423,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	unsigned long cmd;
 	int timeout;
 	long ret = 0;
+	unsigned long td_offset;
 
 	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 
@@ -423,7 +432,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		DEBUG(("ehci_submit_async req=%u (0x%x), type=%u (0x%x), value=%u (0x%x), index=%u",
 		req->request, req->request, req->requesttype, req->requesttype,
 		le2cpu16(req->value), le2cpu16(req->value), le2cpu16(req->index)));
-	qh = ehci_alloc(gehci, sizeof(struct QH), 32);
+	qh = ehci_alloc(gehci, sizeof(struct QH), 32, &td_offset);
 
 	if(qh == NULL)
 	{
@@ -433,7 +442,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 
 	toggle = usb_gettoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe));
 
-	qh->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list - gehci->dma_offset) | QH_LINK_TYPE_QH);
+	qh->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list_busaddr) | QH_LINK_TYPE_QH);
 	c = (usb_pipespeed(pipe) != USB_SPEED_HIGH && usb_pipeendpoint(pipe) == 0) ? 1 : 0;
 
 	endpt = (8UL << 28) | (c << 27) | (usb_maxpacket(dev, pipe) << 16) |
@@ -449,7 +458,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 
 	if(req != NULL)
 	{
-		td = ehci_alloc(gehci, sizeof(struct qTD), 32);
+		td = ehci_alloc(gehci, sizeof(struct qTD), 32, &td_offset);
 		if(td == NULL)
 		{
 			DEBUG(("unable to allocate SETUP td"));
@@ -467,14 +476,14 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 			ehci_free(td, sizeof(*td));
 			goto fail;
 		}
-		*tdp = cpu_to_hc32((unsigned long)td - gehci->dma_offset);
+		*tdp = cpu_to_hc32((unsigned long)td - td_offset);
 		tdp = &td->qt_next;
 		toggle = 1;
 	}
 
 	if(length > 0 || req == NULL)
 	{
-		td = ehci_alloc(gehci, sizeof(struct qTD), 32);
+		td = ehci_alloc(gehci, sizeof(struct qTD), 32, &td_offset);
 		if(td == NULL)
 		{
 			DEBUG(("unable to allocate DATA td"));
@@ -491,13 +500,13 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 			ehci_free(td, sizeof(*td));
 			goto fail;
 		}
-		*tdp = cpu_to_hc32((unsigned long)td - gehci->dma_offset);
+		*tdp = cpu_to_hc32((unsigned long)td - td_offset);
 		tdp = &td->qt_next;
 	}
 
 	if(req != NULL)
 	{
-		td = ehci_alloc(gehci, sizeof(struct qTD), 32);
+		td = ehci_alloc(gehci, sizeof(struct qTD), 32, &td_offset);
 		if(td == NULL)
 		{
 			DEBUG(("unable to allocate ACK td"));
@@ -508,11 +517,11 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		token = (toggle << 31) | (0UL << 16) | (1U << 15) | (0 << 12) |
 			(3 << 10) | ((usb_pipein(pipe) ? 0 : 1) << 8) | (0x80 << 0);
 		td->qt_token = cpu_to_hc32(token);
-		*tdp = cpu_to_hc32((unsigned long)td - gehci->dma_offset);
+		*tdp = cpu_to_hc32((unsigned long)td - td_offset);
 		tdp = &td->qt_next;
 	}
 
-	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)qh - gehci->dma_offset) | QH_LINK_TYPE_QH);
+	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_busaddr) | QH_LINK_TYPE_QH);
 	/* Flush dcache */
 	cpush(&gehci->qh_list, (long)&gehci->qh_list + sizeof(struct QH));
 	cpush(&qh, (long)&qh + sizeof(struct QH));
@@ -568,7 +577,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		goto fail;
 	}
 
-	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list - gehci->dma_offset) | QH_LINK_TYPE_QH);
+	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list_busaddr) | QH_LINK_TYPE_QH);
 	if(!(token & 0x80))
 	{
 		DEBUG(("TOKEN=%lx", token));
@@ -608,14 +617,14 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 fail:
 	td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
 	if(td != (void *)QT_NEXT_TERMINATE)
-		td = (struct qTD *)(gehci->dma_offset + (unsigned long)td);
+		td = (struct qTD *)(td_offset + (unsigned long)td);
 	while(td != (void *)QT_NEXT_TERMINATE)
 	{
 		qh->qh_overlay.qt_next = td->qt_next;
 		ehci_free(td, sizeof(*td));
 		td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
 		if(td != (void *)QT_NEXT_TERMINATE)
-			td = (struct qTD *)(gehci->dma_offset + (unsigned long)td);
+			td = (struct qTD *)(td_offset + (unsigned long)td);
 	}
 	ehci_free(qh, sizeof(*qh));
 	if(ehci_readl(&gehci->hcor->or_usbsts) & STS_HSE) /* Host System Error */
@@ -902,17 +911,11 @@ static void hc_free_buffers(struct ehci *ehci)
 
 long usb_lowlevel_init(void *ucd_priv)
 {
-	long i;
+	long i, r;
 	unsigned long reg;
 	unsigned long cmd;
 
 	struct ehci *gehci = (struct ehci*)ucd_priv;
-
-	if(ehci_bus_init(gehci)) 
-	{
-		hc_free_buffers(gehci);
-		return (-1);
-	};
 
 	gehci->qh_list_unaligned = (struct QH *)kmalloc(sizeof(struct QH) + 32);
 	if(gehci->qh_list_unaligned == NULL)
@@ -923,6 +926,7 @@ long usb_lowlevel_init(void *ucd_priv)
 	}
 	gehci->qh_list = (struct QH *)(((unsigned long)gehci->qh_list_unaligned + 31) & ~31);
 	memset(gehci->qh_list, 0, sizeof(struct QH));
+
 	gehci->qh_unaligned = (struct QH *)kmalloc(sizeof(struct QH) + 32);
 	if(gehci->qh_unaligned == NULL)
 	{
@@ -932,6 +936,7 @@ long usb_lowlevel_init(void *ucd_priv)
 	}
 	gehci->qh = (struct QH *)(((unsigned long)gehci->qh_unaligned + 31) & ~31);
 	memset(gehci->qh, 0, sizeof(struct QH));
+
 	for(i = 0; i < 3; i++)
 	{
 		gehci->td_unaligned[i] = (struct qTD *)kmalloc(sizeof(struct qTD) + 32);
@@ -942,8 +947,9 @@ long usb_lowlevel_init(void *ucd_priv)
 			return(-1);
 		}
 		gehci->td[i] = (struct qTD *)(((unsigned long)gehci->td_unaligned[i] + 31) & ~31);
-		memset(gehci->td[i], 0, sizeof(struct qTD));	
+		memset(gehci->td[i], 0, sizeof(struct qTD));
 	}
+
 	gehci->descriptor = (struct descriptor *)kmalloc(sizeof(struct descriptor));
 	if(gehci->descriptor == NULL)
 	{
@@ -953,7 +959,41 @@ long usb_lowlevel_init(void *ucd_priv)
 	}
 	memcpy(gehci->descriptor, &rom_descriptor, sizeof(struct descriptor));
 
+	if(ehci_bus_init(gehci)) 
+	{
+		hc_free_buffers(gehci);
+		return (-1);
+	};
 	gehci->hcor = (struct ehci_hcor *)((unsigned long)gehci->hccr + HC_LENGTH(ehci_readl(&gehci->hccr->cr_capbase)));
+
+	/* Get bus addresses */
+	r = ehci_bus_getaddr(gehci, (unsigned long)gehci->qh_list, (unsigned long *)&gehci->qh_list_busaddr);
+	if(r < 0)
+	{
+		DEBUG(("Getting qh_list bus address failed"));
+		hc_free_buffers(gehci);
+		return(-1);
+	}
+
+	r = ehci_bus_getaddr(gehci, (unsigned long)gehci->qh, (unsigned long *)&gehci->qh_busaddr);
+	if(r < 0)
+	{
+		DEBUG(("Getting qh bus address failed"));
+		hc_free_buffers(gehci);
+		return(-1);
+	}
+
+	for(i = 0; i < 3; i++)
+	{
+		r = ehci_bus_getaddr(gehci, (unsigned long)gehci->td[i], (unsigned long *)&gehci->td_busaddr[i]);
+		if(r < 0)
+		{
+			DEBUG(("Getting td bus address failed"));
+			hc_free_buffers(gehci);
+			return(-1);
+		}
+		gehci->td_offset[i] = (unsigned long)gehci->td[i] - (unsigned long)gehci->td_busaddr[i];
+	}
 
 	/* EHCI spec section 4.1 */
 	if(ehci_reset(gehci) != 0)
@@ -962,7 +1002,7 @@ long usb_lowlevel_init(void *ucd_priv)
 		return(-1);
 	}
 	/* Set head of reclaim list */
-	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list - gehci->dma_offset) | QH_LINK_TYPE_QH);
+	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list_busaddr) | QH_LINK_TYPE_QH);
 	gehci->qh_list->qh_endpt1 = cpu_to_hc32((1UL << 15) | (USB_SPEED_HIGH << 12));
 	gehci->qh_list->qh_curtd = cpu_to_hc32(QT_NEXT_TERMINATE);
 	gehci->qh_list->qh_overlay.qt_next = cpu_to_hc32(QT_NEXT_TERMINATE);
@@ -970,7 +1010,7 @@ long usb_lowlevel_init(void *ucd_priv)
 	gehci->qh_list->qh_overlay.qt_token = cpu_to_hc32(0x40);
 
 	/* Set async. queue head pointer. */
-	ehci_writel(&gehci->hcor->or_asynclistaddr, (unsigned long)gehci->qh_list - gehci->dma_offset);
+	ehci_writel(&gehci->hcor->or_asynclistaddr, (unsigned long)gehci->qh_list_busaddr);
 	reg = ehci_readl(&gehci->hccr->cr_hcsparams);
 	gehci->descriptor->hub.bNbrPorts = HCS_N_PORTS(reg);
 	DEBUG(("Register %lx NbrPorts %d", reg, gehci->descriptor->hub.bNbrPorts));
