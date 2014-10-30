@@ -20,9 +20,16 @@
  * MA 02111-1307 USA
  */
 
+#ifndef TOSONLY
+#if 0
+# define DEV_DEBUG
+#endif
+#endif
+
 #include "mint/pcibios.h"
 #include "mint/pci_ids.h"
 #include "libkern/libkern.h"
+
 #include "../../global.h"
 
 #include "../../endian/io.h"
@@ -34,32 +41,6 @@
 #include "../../usb_api.h"
 
 #include "ehci.h"
-
-/*
- * Debug section
- */
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)	KERNEL_FORCE x
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-
-#else
-
-# define FORCE(x)	KERNEL_FORCE x
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)
-# define TRACE(x)
-# define ASSERT(x)	assert x
-
-#endif
 
 extern struct usb_module_api   *api;
 
