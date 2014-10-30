@@ -60,29 +60,6 @@
 
 #include "sl811.h"
 
-#ifndef TOSONLY
-#if 0
-# define DEV_DEBUG
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)       
-# define ALERT(x)       KERNEL_ALERT x
-# define DEBUG(x)       KERNEL_DEBUG x
-# define TRACE(x)       KERNEL_TRACE x
-# define ASSERT(x)      assert x
-
-#else
-
-# define FORCE(x)       
-# define ALERT(x)       KERNEL_ALERT x
-# define DEBUG(x)       
-# define TRACE(x)       
-# define ASSERT(x)      assert x
-
-#endif
-#endif
 
 unsigned long
 get_hz_200(void)
