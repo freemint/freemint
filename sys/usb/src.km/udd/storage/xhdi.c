@@ -23,6 +23,12 @@
  * TODO: Fix XHMiNTInfo
  */
 
+#ifndef TOSONLY
+#if 0
+# define DEV_DEBUG	1
+#endif
+#endif
+
 #include "mint/mint.h"
 #include "../../global.h"
 
@@ -43,36 +49,10 @@ char *DRIVER_NAME = "FreeMiNT USB";
 #endif
 char *DRIVER_COMPANY = "FreeMiNT list";
 
-
-/*--- Debug section ---*/
-
 #ifndef TOSONLY
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-
-#else
-
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
-# define ASSERT(x)	assert x
-
-#endif
-
 # define Sversion()	0x4000		/* this is FreeMiNT's GEMDOS version */
-
 #endif
+
 /*--- External variables ---*/
 
 extern char *drv_version;
