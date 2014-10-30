@@ -42,6 +42,7 @@ typedef char Path[PATH_MAX];
 
 #ifdef DEV_DEBUG
 
+# define FORCE(x)       KERNEL_FORCE x
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)       KERNEL_DEBUG x
 # define TRACE(x)       KERNEL_TRACE x
@@ -49,6 +50,7 @@ typedef char Path[PATH_MAX];
 
 #else
 
+# define FORCE(x)       KERNEL_FORCE x
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)
 # define TRACE(x)
