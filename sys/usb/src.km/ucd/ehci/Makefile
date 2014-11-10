@@ -1,37 +1,63 @@
 #
-# Makefile for ucd module
+# Makefile for ehci
 #
-TARGET = ehci-pci.ucd
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ../../../..
-subdir = ehci-pci
+subdir = ehci
 
-default: all
+default:
+
+include ./EHCIDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=ehci-pci $(XDD_DEFINITIONS)
-XDD_DEFINITIONS = 
-
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
-SGENFILES = $(TARGET)
-OBJS = $(SSOBJS:.S=.o) $(COBJS:.c=.o)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) *.ucd *.prg
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(ehcitargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-include $(top_srcdir)/DEPENDENCIES
+$(ehcitargets): 
+	$(MAKE) buildehci ehci=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(ehci),)
+
+compile_dir = .compile_$(ehci)
+ehcitarget = _stmp_$(ehci)
+realtarget = $(ehcitarget)
+
+$(ehcitarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildehci: $(realtarget)
