@@ -116,5 +116,7 @@
 
 # define ROUNDUP(a,b)	((((a) + ((b) - 1)) / (b)) * (b))
 # define ROUNDDOWN(a,b)	(((a) / (b)) * (b))
+# define ROUNDUP2(a,b)		(((a) + (b) - 1) & ~((b) - 1))		/* if y is power of two */
+# define ROUNDDOWN2(a,b)	((a) & (~((b) - 1)))				/* if y is power of two */
 
 # endif /* _mint_misc_h */
