@@ -149,7 +149,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 			void *data, unsigned short size, long timeout)
 {
 	struct control_msg arg;
-	struct devrequest setup_packet;
+	struct devrequest *setup_packet;
 	long r;
 	struct ucdif *ucd = dev->controller;
 	(void) r;
@@ -159,12 +159,18 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 		return -1;
 	}
 
+	setup_packet = (struct devrequest *)kmalloc(sizeof(struct devrequest));
+	if (!setup_packet) {
+		DEBUG(("Out of memory"));
+		return ENOMEM;
+	}
+
 	/* set setup command */
-	setup_packet.requesttype = requesttype;
-	setup_packet.request = request;
-	setup_packet.value = cpu2le16(value);
-	setup_packet.index = cpu2le16(index);
-	setup_packet.length = cpu2le16(size);
+	setup_packet->requesttype = requesttype;
+	setup_packet->request = request;
+	setup_packet->value = cpu2le16(value);
+	setup_packet->index = cpu2le16(index);
+	setup_packet->length = cpu2le16(size);
 	DEBUG(("usb_control_msg: request: 0x%x, requesttype: 0x%x, value 0x%x idx 0x%x length 0x%x",
 		   request, requesttype, value, index, size));
 	dev->status = USB_ST_NOT_PROC; /* not yet processed */
@@ -173,9 +179,11 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.pipe = pipe;
 	arg.data = data;
 	arg.size = size;
-	arg.setup = &setup_packet;
+	arg.setup = setup_packet;
 
 	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
+
+	kfree(setup_packet);
 
 	if (timeout == 0)
 	{
@@ -197,9 +205,8 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 #endif
 
 	if (dev->status)
-	{
 		return -1;
-	}
+
 
 	return dev->act_len;
 }
@@ -711,15 +718,19 @@ static long usb_string_sub(struct usb_device *dev, unsigned long langid,
  */
 long usb_string(struct usb_device *dev, long index, char *buf, long size)
 {
-	unsigned char mybuf[USB_BUFSIZ];
 	unsigned char *tbuf;
 	long err;
 	unsigned long u, idx;
 
 	if (size <= 0 || !buf || !index)
 		return -1;
+
+	tbuf = (unsigned char *)kmalloc(USB_BUFSIZ);
+	if (!tbuf) {
+		DEBUG(("Out of memory"));
+		return ENOMEM;
+	}
 	buf[0] = 0;
-	tbuf = &mybuf[0];
 
 	/* get langid for strings if it's not yet known */
 	if (!dev->have_langid) {
@@ -727,10 +738,11 @@ long usb_string(struct usb_device *dev, long index, char *buf, long size)
 		if (err < 0) {
 			DEBUG(("error getting string descriptor 0 " \
 				   "(error=%lx)", dev->status));
-			return -1;
+			goto errout;
 		} else if (tbuf[0] < 4) {
 			DEBUG(("string descriptor 0 too short"));
-			return -1;
+			err = -1;
+			goto errout;
 		} else {
 			dev->have_langid = -1;
 			dev->string_langid = tbuf[2] | (tbuf[3] << 8);
@@ -743,7 +755,7 @@ long usb_string(struct usb_device *dev, long index, char *buf, long size)
 
 	err = usb_string_sub(dev, dev->string_langid, index, tbuf);
 	if (err < 0)
-		return err;
+		goto errout;
 
 	size--;		/* leave room for trailing NULL char in output buffer */
 	for (idx = 0, u = 2; u < err; u += 2) {
@@ -756,6 +768,8 @@ long usb_string(struct usb_device *dev, long index, char *buf, long size)
 	}
 	buf[idx] = 0;
 	err = idx;
+errout:
+	kfree(tbuf);
 	return err;
 }
 
