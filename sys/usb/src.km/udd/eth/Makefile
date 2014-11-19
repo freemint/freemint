@@ -28,7 +28,7 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
-SGENFILES = $(TARGET)
+GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o) $(SSOBJS:.S=.o) 
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
