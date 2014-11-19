@@ -342,7 +342,6 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 {
 	unsigned long delta, next;
 	unsigned long addr;
-	size_t rsz = ROUNDUP(sz, 32);
 	long idx, r;
 
 	r = ehci_bus_getaddr(gehci, (unsigned long)buf, &addr);
@@ -352,9 +351,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 		return -1;
 	}
 
-	if (sz != rsz)
-		DEBUG(("EHCI-HCD: Misaligned buffer size (%d)\n", sz));
-	if (addr & 31)
+	if (addr & (M68K_CACHE_LINE_SIZE - 1))
 		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)\n", buf));
 
 	idx = 0;
