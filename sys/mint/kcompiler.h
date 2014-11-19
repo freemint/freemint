@@ -119,4 +119,7 @@
 # define ROUNDUP2(a,b)		(((a) + (b) - 1) & ~((b) - 1))		/* if y is power of two */
 # define ROUNDDOWN2(a,b)	((a) & (~((b) - 1)))				/* if y is power of two */
 
+# define ALIGN(x,a)		__ALIGN_MASK((x),(typeof(x))(a) - 1)
+# define __ALIGN_MASK(x,mask)	(((x) + (mask)) & ~(mask))
+
 # endif /* _mint_misc_h */

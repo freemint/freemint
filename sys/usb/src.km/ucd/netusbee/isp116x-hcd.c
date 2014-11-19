@@ -190,7 +190,6 @@ static struct ucdif netusbee_uif =
 
 /* ------------------------------------------------------------------------- */
 
-#define ALIGN(x,a)	(((x)+(a)-1UL)&~((a)-1UL))
 #define min1_t(type,x,y)	\
 	({ type __x = (x); type __y = (y); __x < __y ? __x : __y; })
 
