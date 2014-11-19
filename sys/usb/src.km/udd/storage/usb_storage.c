@@ -300,7 +300,7 @@ storage_ioctl (struct uddif *u, short cmd, long arg)
 static unsigned long usb_get_max_lun(struct us_data *us)
 {
 	int len;
-	unsigned char result[1];
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, result, 1);
 	len = usb_control_msg(us->pusb_dev,
 			      usb_rcvctrlpipe(us->pusb_dev, 0),
 			      US_BBB_GET_MAX_LUN,
@@ -909,7 +909,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	long actlen;
 	long dir_in;
 	unsigned long pipe;
-	umass_bbb_cbw_t cbw;
+	umass_bbb_cbw_t *cbw;
 	dir_in = US_DIRECTION(srb->cmd[0]);
 	DEBUG(("usb_stor_BBB_comdat: dir_in: %ld",dir_in));
 #ifdef BBB_COMDAT_TRACE
@@ -930,6 +930,13 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 		DEBUG((buf));
 	}
 #endif
+
+	cbw = (umass_bbb_cbw_t *)kmalloc(sizeof(umass_bbb_cbw_t));
+	if (!cbw)
+	{
+		DEBUG(("Out of memory"));
+		return ENOMEM;
+	}
 	/* sanity checks */
 	if(!(srb->cmdlen <= CBWCDBLENGTH))
 	{
@@ -938,21 +945,22 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	}
 	/* always OUT to the ep */
 	pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
-	cbw.dCBWSignature = cpu2le32(CBWSIGNATURE);
-	cbw.dCBWTag = cpu2le32(CBWTag++);
-	cbw.dCBWDataTransferLength = cpu2le32(srb->datalen);
-	cbw.bCBWFlags = (dir_in ? CBWFLAGS_IN : CBWFLAGS_OUT);
-	cbw.bCBWLUN = srb->lun;
-	cbw.bCDBLength = srb->cmdlen;
+	cbw->dCBWSignature = cpu2le32(CBWSIGNATURE);
+	cbw->dCBWTag = cpu2le32(CBWTag++);
+	cbw->dCBWDataTransferLength = cpu2le32(srb->datalen);
+	cbw->bCBWFlags = (dir_in ? CBWFLAGS_IN : CBWFLAGS_OUT);
+	cbw->bCBWLUN = srb->lun;
+	cbw->bCDBLength = srb->cmdlen;
 	/* copy the command data into the CBW command data buffer */
 	/* DST SRC LEN!!! */
-	memcpy(&cbw.CBWCDB, srb->cmd, srb->cmdlen);
+	memcpy(cbw->CBWCDB, srb->cmd, srb->cmdlen);
 
-	result = usb_bulk_msg(us->pusb_dev, pipe, &cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5, 0);
+	result = usb_bulk_msg(us->pusb_dev, pipe, cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5, 0);
 	if(result < 0)
 	{
 		DEBUG(("usb_stor_BBB_comdat:usb_bulk_msg error"));
 	}
+	kfree(cbw);
 	return result;
 }
 
@@ -1072,7 +1080,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	unsigned char *ptr;
 	long idx;
 #endif
-	umass_bbb_csw_t csw;
+	umass_bbb_csw_t *csw;
 	dir_in = US_DIRECTION(srb->cmd[0]);
 	/* COMMAND phase */
 	DEBUG(("COMMAND phase"));
@@ -1131,7 +1139,13 @@ st:
 	retry = 0;
 again:
 	DEBUG(("STATUS phase"));
-	result = usb_bulk_msg(us->pusb_dev, pipein, &csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5, 0);
+	csw = (umass_bbb_csw_t *)kmalloc(sizeof(umass_bbb_csw_t));
+	if (!csw)
+	{
+		DEBUG(("Out of memory"));
+		return USB_STOR_TRANSPORT_FAILED;
+	}
+	result = usb_bulk_msg(us->pusb_dev, pipein, csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5, 0);
 	/* special handling of STALL in STATUS phase */
 
 	if((result < 0) && (retry < 1) && (us->pusb_dev->status & USB_ST_STALLED))
@@ -1148,13 +1162,14 @@ again:
 	{
 		DEBUG(("usb_bulk_msg error status %ld", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
 #ifdef BBB_XPORT_TRACE
 	unsigned char buf2[UMASS_BBB_CSW_SIZE * 16];
 
 	sprintf(buf2, sizeof(buf2),"\0");
-	ptr = (unsigned char *)&csw;
+	ptr = (unsigned char *)csw;
 	for(idx = 0; idx < UMASS_BBB_CSW_SIZE; idx++)
 	{
 		sprintf(build_str, sizeof(build_str), "ptr[%ld] 0x%x ", idx, ptr[idx]);
@@ -1163,43 +1178,51 @@ again:
 	DEBUG((buf2));
 #endif
 	/* misuse pipe to get the residue */
-	pipe = le2cpu32(csw.dCSWDataResidue);
+	pipe = le2cpu32(csw->dCSWDataResidue);
 	if(pipe == 0 && srb->datalen != 0 && srb->datalen - data_actlen != 0)
 		pipe = srb->datalen - data_actlen;
-	if(CSWSIGNATURE != le2cpu32(csw.dCSWSignature))
+	if(CSWSIGNATURE != le2cpu32(csw->dCSWSignature))
 	{
 		DEBUG(("!CSWSIGNATURE"));
 		usb_stor_BBB_reset(us);
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
-	else if((CBWTag - 1) != le2cpu32(csw.dCSWTag))
+	else if((CBWTag - 1) != le2cpu32(csw->dCSWTag))
 	{
 		DEBUG(("!Tag"));
 		usb_stor_BBB_reset(us);
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
-	else if(csw.bCSWStatus > CSWSTATUS_PHASE)
+	else if(csw->bCSWStatus > CSWSTATUS_PHASE)
 	{
 		DEBUG((">PHASE"));
 		usb_stor_BBB_reset(us);
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
-	else if(csw.bCSWStatus == CSWSTATUS_PHASE)
+	else if(csw->bCSWStatus == CSWSTATUS_PHASE)
 	{
 		DEBUG(("=PHASE"));
 		usb_stor_BBB_reset(us);
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
 	else if(data_actlen > srb->datalen)
 	{
 		DEBUG(("transferred %dB instead of %ldB", data_actlen, srb->datalen));
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
-	else if(csw.bCSWStatus == CSWSTATUS_FAILED)
+	else if(csw->bCSWStatus == CSWSTATUS_FAILED)
 	{
 		DEBUG(("FAILED"));
-		return USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_FAILED;
+		goto out;
 	}
+out:
+	kfree(csw);
 	return result;
 }
 
@@ -1722,8 +1745,8 @@ long
 usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *dev_desc)
 {
 	unsigned char perq, modi;
-	unsigned long cap[2];
-	unsigned char usb_stor_buf[36];
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned long, cap, 2);
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, usb_stor_buf, 36);
 	unsigned long *capacity, *blksz;
 	ccb pccb;
 	DEBUG(("usb_stor_get_info()"));

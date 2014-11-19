@@ -249,7 +249,7 @@ static inline int asix_set_hw_mii(struct ueth_data *dev)
 
 static int asix_mdio_read(struct ueth_data *dev, int phy_id, int loc)
 {
-	__u16 res[1];
+	ALLOC_CACHE_ALIGN_BUFFER(__u16, res, 1);
 
 	asix_set_sw_mii(dev);
 	asix_read_cmd(dev, AX_CMD_READ_MII_REG, phy_id, (__u16)loc, 2, res);
@@ -264,7 +264,7 @@ static int asix_mdio_read(struct ueth_data *dev, int phy_id, int loc)
 static void
 asix_mdio_write(struct ueth_data *dev, int phy_id, int loc, int val)
 {
-	__u16 res[1];
+	ALLOC_CACHE_ALIGN_BUFFER(__u16, res, 1);
 	*res = cpu2le16(val);
 
 	DEBUG(("asix_mdio_write() phy_id=0x%02x, loc=0x%02x, val=0x%04x\n",
@@ -292,7 +292,7 @@ static int asix_sw_reset(struct ueth_data *dev, u8 flags)
 
 static inline int asix_get_phy_addr(struct ueth_data *dev)
 {
-	u8 buf[2];
+	ALLOC_CACHE_ALIGN_BUFFER(u8, buf, 2);
 
 	int ret = asix_read_cmd(dev, AX_CMD_READ_PHY_ID, 0, 0, 2, buf);
 
@@ -325,7 +325,7 @@ static int asix_write_medium_mode(struct ueth_data *dev, u16 mode)
 
 static u16 asix_read_rx_ctl(struct ueth_data *dev)
 {
-	__u16 v[1];
+	ALLOC_CACHE_ALIGN_BUFFER(__u16, v, 1);
 
 	int ret = asix_read_cmd(dev, AX_CMD_READ_RX_CTL, 0, 0, 2, v);
 
@@ -396,7 +396,7 @@ static int asix_read_mac(struct eth_device *eth)
 	struct ueth_data *dev = (struct ueth_data *)eth->data;
 	struct asix_private *priv = (struct asix_private *)dev->dev_priv;
 	int i;
-	unsigned char buf[ETH_ALEN];
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, buf, ETH_ALEN);
 
 	if (priv->flags & FLAG_EEPROM_MAC) {
 		for (i = 0; i < (ETH_ALEN >> 1); i++) {
@@ -569,7 +569,7 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 	u32 packet_len;
 	long actual_len = 0;
 	long size;
-	unsigned char msg[length + sizeof(packet_len) + 3 /* pad */];
+	unsigned char *msg;
 
 	DEBUG(("** %s(), len %d\n", __func__, length));
 	if (dev->pusb_dev == 0) {
@@ -578,6 +578,12 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 
 	packet_len = ((length ^ 0x0000ffff) << 16) + length;
 	packet_len = cpu2le32(packet_len);
+
+	msg = (unsigned char *)kmalloc(length + sizeof(packet_len) + 3 /* pad */);
+	if (!msg) {
+		DEBUG(("Out of memory"));
+		return ENOMEM;
+	}
 
 	memcpy(msg, &packet_len, sizeof(packet_len));
 	memcpy(msg + sizeof(packet_len), (void *)packet, length);
@@ -592,7 +598,8 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 				size,
 				&actual_len,
 				USB_BULK_SEND_TIMEOUT, 0);
-	if (err != 0)
+	kfree(msg);
+	if (err != 0) 
 		return ENOMEM;
 	else 
 		return E_OK;
@@ -600,13 +607,19 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 
 static int asix_recv(struct eth_device *eth)
 {
-	unsigned char recv_buf[AX_RX_URB_SIZE];
+	unsigned char *recv_buf;
 	struct ueth_data *dev = (struct ueth_data *)eth->data;
 	unsigned char *buf_ptr;
 	long err;
 	long actual_len;
 	u32 packet_len;
 	BUF *buf;
+
+	recv_buf = (unsigned char *)kmalloc(AX_RX_URB_SIZE);
+	if (!recv_buf) {
+		DEBUG(("Out of memory"));
+		return ENOMEM;
+	}
 
 	if (dev->pusb_dev == 0) {
 		err = -1;
@@ -694,7 +707,7 @@ out:
 #else
 	addroottimeout(10, asix_poll, 0);
 #endif
-
+	kfree(recv_buf);
 	return err;
 }
 
