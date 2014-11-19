@@ -28,7 +28,7 @@ CPU = 020-60
 STRIPFLAGS = 
 
 # default definitions
-SGENFILES = $(TARGET)
+GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
