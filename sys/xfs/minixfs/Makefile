@@ -28,7 +28,7 @@ CPU = 000
 STRIPFLAGS = $(shell for i in `cat syms.mfs` ; do echo -n "-K $$i " ; done)
 
 # default definitions
-SGENFILES = $(TARGET)
+GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
