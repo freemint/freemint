@@ -483,19 +483,19 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 	unsigned long tmp;
 	struct usb_config_descriptor *config;
 
-	config = (struct usb_config_descriptor *)kmalloc(9);
+	config = (struct usb_config_descriptor *)kmalloc(USB_DT_CONFIG_SIZE);
 	if (!config) {
 		DEBUG(("Out of memory"));
 		return -1;
 	}
-	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, config, 9);
+	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, config, USB_DT_CONFIG_SIZE);
 	if (result < 9) {
 		if (result < 0)
 			DEBUG(("unable to get descriptor, error %lx",
 				dev->status));
 		else
 			DEBUG(("config descriptor too short " \
-				"(expected %i, got %i)", 9, result));
+				"(expected %i, got %i)", USB_DT_CONFIG_SIZE, result));
 		kfree(config);
 		return -1;
 	}
@@ -902,7 +902,8 @@ long usb_new_device(struct usb_device *dev)
 	 * only 18 bytes long, this will terminate with a short packet.  But if
 	 * the maxpacket size is 8 or 16 the device may be waiting to transmit
 	 * some more, or keeps on retransmitting the 8 byte header. */
-	desc = (struct usb_device_descriptor *)kmalloc(64);
+#define GET_DESCRIPTOR_BUFSIZE	64
+	desc = (struct usb_device_descriptor *)kmalloc(GET_DESCRIPTOR_BUFSIZE);
 	if (!desc) {
 		DEBUG(("Out of memory"));
 		return -1;
@@ -915,7 +916,7 @@ long usb_new_device(struct usb_device *dev)
 	dev->epmaxpacketin[0] = 64;
 	dev->epmaxpacketout[0] = 64;
 
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
+	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, GET_DESCRIPTOR_BUFSIZE);
 	if (err < 0) {
 		DEBUG(("usb_new_device: usb_get_descriptor() failed"));
 		dev->devnum = addr;
@@ -931,7 +932,7 @@ long usb_new_device(struct usb_device *dev)
 	 */
 	dev->descriptor.bDeviceClass = desc->bDeviceClass;
 	kfree(desc);
-
+#undef GET_DESCRIPTOR_BUFSIZE
 	/* find the port number we're at */
 	if (parent) {
 		long j;
