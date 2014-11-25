@@ -74,11 +74,11 @@ void usb_init(void)
 	asynch_allowed = 1;
 	usb_hub_reset();
 
-        /* first make all devices unknown */
-        for (i = 0; i < USB_MAX_DEVICE; i++) {
-                memset(&usb_dev[i], 0, sizeof(struct usb_device));
-                usb_dev[i].devnum = -1;
-        }
+	/* first make all devices unknown */
+	for (i = 0; i < USB_MAX_DEVICE; i++) {
+		memset(&usb_dev[i], 0, sizeof(struct usb_device));
+		usb_dev[i].devnum = -1;
+	}
 }
 
 /******************************************************************************
@@ -124,13 +124,13 @@ long usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 {
 	struct int_msg arg;
 	struct ucdif *ucd = dev->controller;
-	
+
 	arg.dev = dev;
 	arg.pipe = pipe;
 	arg.buffer = buffer;
 	arg.transfer_len = transfer_len;
 	arg.interval =  interval;
-	
+
 	return (*ucd->ioctl)(ucd, SUBMIT_INT_MSG, (long)&arg);
 }
 
@@ -192,11 +192,11 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	}
 
 #ifdef INTERRUPTHANDLER
-       /*
-        * Wait for status to update until timeout expires, USB driver
-        * interrupt handler may set the status when the USB operation has
-        * been completed.
-        */
+	/*
+	 * Wait for status to update until timeout expires, USB driver
+	 * interrupt handler may set the status when the USB operation has
+	 * been completed.
+	 */
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
 			break;
@@ -206,7 +206,6 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 
 	if (dev->status)
 		return -1;
-
 
 	return dev->act_len;
 }
@@ -810,9 +809,9 @@ usb_disconnect(struct usb_device *dev)
 		}
 
 		/* See if it's a hub */
-        if (dev->privptr) {
-    		usb_hub_disconnect(dev);
-        }
+		if (dev->privptr) {
+			usb_hub_disconnect(dev);
+		}
 
 		memset(dev, 0, sizeof(struct usb_device));
 		dev->devnum = -1;
@@ -825,8 +824,8 @@ usb_disconnect(struct usb_device *dev)
  */
 struct usb_device *usb_get_dev_index(long index)
 {
-    if (index >= USB_MAX_DEVICE)
-        return NULL;
+	if (index >= USB_MAX_DEVICE)
+		return NULL;
 
 	if (usb_dev[index].devnum == -1)
 		return NULL;
@@ -893,7 +892,7 @@ long usb_new_device(struct usb_device *dev)
 	struct usb_device *parent = dev->parent;
 
 	DEBUG(("usb_new_device: "));
- 
+
 	/* We still haven't set the Address yet */
 	addr = dev->devnum;
 	dev->devnum = 0;
@@ -923,7 +922,7 @@ long usb_new_device(struct usb_device *dev)
 		kfree(desc);
 		return 1;
 	}
-	
+
 	dev->descriptor.bMaxPacketSize0 = desc->bMaxPacketSize0;
 
 	/*

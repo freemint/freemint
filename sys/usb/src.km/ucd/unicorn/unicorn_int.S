@@ -25,10 +25,10 @@ _interrupt_mfp:
 
 | Checks & Sets FLOCK
 _check_flock:
-    tst.w 0x43e
-    bne.w done
-    dc.w 0x50f9
-    dc.l 0x43e
+	tst.w 0x43e
+	bne.w done
+	dc.w 0x50f9
+	dc.l 0x43e
 	move.b #0, D0
 	rts
 done:

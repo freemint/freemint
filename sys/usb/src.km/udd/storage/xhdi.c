@@ -86,100 +86,100 @@ USB_PUN_INFO pun_usb;
 long
 sys_XHDOSLimits(ushort which,ulong limit)
 {
-    static long dl_secsiz, dl_clusts, dl_maxsec, dl_clusts12;
-    static int first_time = 1;
+	static long dl_secsiz, dl_clusts, dl_maxsec, dl_clusts12;
+	static int first_time = 1;
 
-    if (first_time)
-    {
-        ushort version = Sversion();            /* determine GEMDOS version */
-        version = (version>>8) | (version<<8);  /* swap to correct order */
+	if (first_time)
+	{
+		ushort version = Sversion();            /* determine GEMDOS version */
+		version = (version>>8) | (version<<8);  /* swap to correct order */
 
-        if (version > 0x0040)       /* unknown               */
-            version = 0x0000;       /* so force it to lowest */
+		if (version > 0x0040)       /* unknown               */
+			version = 0x0000;       /* so force it to lowest */
 
-        if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
-        {
-            dl_secsiz = 8192L;
-            dl_clusts = 16383L;
-            dl_maxsec = 32767L;     /* max partition size = 256MB approx */
-            dl_clusts12 = 2046L;
-        }
-        else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
-        {
-            dl_secsiz = 8192L;
-            dl_clusts = 32767L;
-            dl_maxsec = 65535L;     /* max partition size = 512MB approx */
-            dl_clusts12 = MAX_FAT12_CLUSTERS;
-        }
-        else                        /* i.e. TOS 4.0x or FreeMiNT */
-        {
-            dl_secsiz = MAX_LOGSEC_SIZE;
-            dl_clusts = 32767L;
-            dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
-            dl_clusts12 = MAX_FAT12_CLUSTERS;
-        }
-        first_time = 0;
-    }
+		if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
+		{
+			dl_secsiz = 8192L;
+			dl_clusts = 16383L;
+			dl_maxsec = 32767L;     /* max partition size = 256MB approx */
+			dl_clusts12 = 2046L;
+		}
+		else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
+		{
+			dl_secsiz = 8192L;
+			dl_clusts = 32767L;
+			dl_maxsec = 65535L;     /* max partition size = 512MB approx */
+			dl_clusts12 = MAX_FAT12_CLUSTERS;
+		}
+		else                        /* i.e. TOS 4.0x or FreeMiNT */
+		{
+			dl_secsiz = MAX_LOGSEC_SIZE;
+			dl_clusts = 32767L;
+			dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
+			dl_clusts12 = MAX_FAT12_CLUSTERS;
+		}
+		first_time = 0;
+	}
 
-    if (limit == 0)
-    {
-        switch (which)
-        {
-            /* maximal sector size (BIOS level) */
-            case XH_DL_SECSIZ:
-                return dl_secsiz;
+	if (limit == 0)
+	{
+		switch (which)
+		{
+			/* maximal sector size (BIOS level) */
+			case XH_DL_SECSIZ:
+				return dl_secsiz;
 
-            /* minimal number of FATs */
-            case XH_DL_MINFAT:
-                return 2L;
+			/* minimal number of FATs */
+			case XH_DL_MINFAT:
+				return 2L;
 
-            /* maximal number of FATs */
-            case XH_DL_MAXFAT:
-                return 2L;
+			/* maximal number of FATs */
+			case XH_DL_MAXFAT:
+				return 2L;
 
-            /* sectors per cluster minimal */
-            case XH_DL_MINSPC:
-                return 2L;
+			/* sectors per cluster minimal */
+			case XH_DL_MINSPC:
+				return 2L;
 
-            /* sectors per cluster maximal */
-            case XH_DL_MAXSPC:
-                return 2L;
+			/* sectors per cluster maximal */
+			case XH_DL_MAXSPC:
+				return 2L;
 
-            /* maximal number of clusters of a 16 bit FAT */
-            case XH_DL_CLUSTS:
-                return dl_clusts;
+			/* maximal number of clusters of a 16 bit FAT */
+			case XH_DL_CLUSTS:
+				return dl_clusts;
 
-            /* maximal number of sectors */
-            case XH_DL_MAXSEC:
-                return dl_maxsec;
+			/* maximal number of sectors */
+			case XH_DL_MAXSEC:
+				return dl_maxsec;
 
-            /* maximal number of BIOS drives supported by the DOS */
-            case XH_DL_DRIVES:
-                return MAX_LOGICAL_DRIVE;
+			/* maximal number of BIOS drives supported by the DOS */
+			case XH_DL_DRIVES:
+				return MAX_LOGICAL_DRIVE;
 
-            /* maximal clustersize */
-            case XH_DL_CLSIZB:
-                return dl_secsiz * 2;
+			/* maximal clustersize */
+			case XH_DL_CLSIZB:
+				return dl_secsiz * 2;
 
-            /* maximal (bpb->rdlen * bpb->recsiz / 32) */
-            case XH_DL_RDLEN:
-                return 1008L;   /* we return the same value as HDDRIVER */
+			/* maximal (bpb->rdlen * bpb->recsiz / 32) */
+			case XH_DL_RDLEN:
+				return 1008L;   /* we return the same value as HDDRIVER */
 
-            /* maximal number of clusters of a 12 bit FAT */
-            case XH_DL_CLUSTS12:
-                return dl_clusts12;
+			/* maximal number of clusters of a 12 bit FAT */
+			case XH_DL_CLUSTS12:
+				return dl_clusts12;
 
-            /* maximal number of clusters of a 32 bit FAT */
-            case XH_DL_CLUSTS32:
-                return 0L;          /* TOS doesn't support FAT32 */
+			/* maximal number of clusters of a 32 bit FAT */
+			case XH_DL_CLUSTS32:
+				return 0L;          /* TOS doesn't support FAT32 */
 
-            /* supported bits in bpb->bflags */
-            case XH_DL_BFLAGS:
-                return 0x00000001L;
-        }
-    }
+			/* supported bits in bpb->bflags */
+			case XH_DL_BFLAGS:
+				return 0x00000001L;
+		}
+	}
 
-    return ENOSYS;
+	return ENOSYS;
 }
 
 static ushort
@@ -487,7 +487,7 @@ XHReaccess(ushort major, ushort minor)
 
 static long
 XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
-	     char *productname, ushort stringlen)
+		 char *productname, ushort stringlen)
 {
 	DEBUG(("XHInqTarget2(%d.%d)", major, minor));
 
@@ -501,41 +501,41 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-    {
+	{
 		short dev = major & PUN_DEV;
-        block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+		block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 	
-        if (blocksize) {
-	    	*blocksize = dev_desc->blksz;
-	    	DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
-	    		major, minor, *blocksize));
-	    }
+		if (blocksize) {
+			*blocksize = dev_desc->blksz;
+			DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
+				major, minor, *blocksize));
+		}
 
-    	if (deviceflags) {
-    		*deviceflags = XH_TARGET_REMOVABLE;
-    		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
-    			major, minor, *deviceflags));
-    	}
+		if (deviceflags) {
+			*deviceflags = XH_TARGET_REMOVABLE;
+			DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
+				major, minor, *deviceflags));
+		}
 
-    	if (productname) {
-    		char devName[64];
+		if (productname) {
+			char devName[64];
 
-    		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
+			DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
 
-    		memset(devName, 0, 64);
-    		strcat(devName, dev_desc->vendor);
-    		strcat(devName, " ");
-    		strcat(devName, dev_desc->product);
-    		strncpy(productname, devName, stringlen);
-    	}
-    }
+			memset(devName, 0, 64);
+			strcat(devName, dev_desc->vendor);
+			strcat(devName, " ");
+			strcat(devName, dev_desc->product);
+			strncpy(productname, devName, stringlen);
+		}
+	}
 
 	return E_OK;
 }
 
 static long
 XHInqTarget(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
-	    char *productname)
+		char *productname)
 {
 	if (next_handler) {
 		long ret = next_handler(XHINQTARGET, major, minor, blocksize,
@@ -548,7 +548,7 @@ XHInqTarget(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		return ENODEV;
 
 	return XHInqTarget2(major, minor, blocksize, deviceflags,
-			    productname, STRINGLEN);
+				productname, STRINGLEN);
 }
 
 static long
@@ -567,13 +567,13 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-    {
+	{
 		short dev = major & PUN_DEV;
-        block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+		block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
-        *blocks = dev_desc->lba;
-        *blocksize = dev_desc->blksz;
-    }
+		*blocks = dev_desc->lba;
+		*blocksize = dev_desc->blksz;
+	}
 
 	return E_OK;
 }
@@ -681,7 +681,7 @@ xhdi_handler(ushort stack)
 			} *args = (struct XHLOCK_args *)(&stack);
 
 			return XHLock(args->major, args->minor,
-				      args->do_lock, args->key);
+					  args->do_lock, args->key);
 		}
 
 		case XHSTOP:
@@ -696,7 +696,7 @@ xhdi_handler(ushort stack)
 			} *args = (struct XHSTOP_args *)(&stack);
 
 			return XHStop(args->major, args->minor,
-				      args->do_stop, args->key);
+					  args->do_stop, args->key);
 		}
 
 		case XHEJECT:
@@ -711,7 +711,7 @@ xhdi_handler(ushort stack)
 			} *args = (struct XHEJECT_args *)(&stack);
 
 			return XHEject(args->major, args->minor, args->do_eject,
-				       args->key);
+					   args->key);
 		}
 
 		case XHDRVMAP:
@@ -796,8 +796,8 @@ xhdi_handler(ushort stack)
 			} *args = (struct XHINQTARGET2_args *)(&stack);
 
 			return XHInqTarget2(args->major, args->minor,
-					    args->blocksize, args->deviceflags,
-					    args->productname, args->stringlen);
+						args->blocksize, args->deviceflags,
+						args->productname, args->stringlen);
 		}
 
 		case XHINQDEV2:
@@ -831,7 +831,7 @@ xhdi_handler(ushort stack)
 			} *args = (struct XHDRIVERSPECIAL_args *)(&stack);
 
 			return XHDriverSpecial(args->key1, args->key2,
-					       args->subopcode, args->data);
+						   args->subopcode, args->data);
 		}
 
 		case XHGETCAPACITY:
@@ -846,7 +846,7 @@ xhdi_handler(ushort stack)
 			} *args = (struct XHGETCAPACITY_args *)(&stack);
 
 			return XHGetCapacity(args->major, args->minor,
-					     args->blocks, args->blocksize);
+						 args->blocks, args->blocksize);
 		}
 
 		case XHMEDIUMCHANGED:
@@ -990,17 +990,17 @@ long
 install_xhdi_driver(void)
 {
 #ifndef TOSONLY
-    return xhnewcookie(*xhdi_handler);
+	return xhnewcookie(*xhdi_handler);
 #else
-    long r = 0;
-    cookie_fun XHDI = get_fun_ptr ();
+	long r = 0;
+	cookie_fun XHDI = get_fun_ptr ();
 
-    if (XHDI) {
-        r = XHDI(XHNEWCOOKIE,*xhdi_handler);
-    } else {
-        set_cookie();
-    }
+	if (XHDI) {
+		r = XHDI(XHNEWCOOKIE,*xhdi_handler);
+	} else {
+		set_cookie();
+	}
 
-    return r;
+	return r;
 #endif
 }

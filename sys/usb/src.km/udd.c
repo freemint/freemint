@@ -53,7 +53,7 @@ udd_register(struct uddif *a)
 	alluddifs = a;
 
 	for (i = 0; i < USB_MAX_DEVICE; i++) {
-        	usb_find_interface_driver(&usb_dev[i], 0);
+		usb_find_interface_driver(&usb_dev[i], 0);
 	}
 
 	return 0;

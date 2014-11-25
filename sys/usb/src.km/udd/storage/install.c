@@ -1,9 +1,9 @@
 /*
  *      install.c: install functions for USB storage under TOS/FreeMiNT
  *      
- * 		Based on the assembler code by David Galvez (2010-2012), which
- *		was itself extracted from the USB disk utility assembler code by
- *		Didier Mequignon (2005-2009).
+ *      Based on the assembler code by David Galvez (2010-2012), which
+ *      was itself extracted from the USB disk utility assembler code by
+ *      Didier Mequignon (2005-2009).
  *
  *      Copyright 2014 Roger Burrows <rfburrows@ymail.com>
  *      
@@ -277,9 +277,9 @@ static int valid_partition(unsigned long type)
 	type &= 0x00ffffffL;
 
 #ifdef DEBUGGING_ROUTINES
-    c_conws("Found partition ");
-    hex_long(type);
-    c_conws("\r\n");
+	c_conws("Found partition ");
+	hex_long(type);
+	c_conws("\r\n");
 #endif
 
 	if ((type == GEM) || (type == BGM) || (type == RAW))
@@ -302,7 +302,7 @@ static int valid_partition(unsigned long type)
 long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_offset,
 					unsigned long part_size,char *vendor,char *revision,char *product)
 {
-    char boot_sector[DEFAULT_SECTOR_SIZE];
+	char boot_sector[DEFAULT_SECTOR_SIZE];
 	int logdrv;
 	long mask;
 
@@ -359,7 +359,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * update the usb_pun_info structure
 	 */
-    pun_usb.puns++;
+	pun_usb.puns++;
 	pun_usb.pun[logdrv] = dev_num | PUN_USB;
 	pun_usb.partition_start[logdrv] = part_offset;
 
@@ -367,7 +367,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	if (part_type&0xff000000L)		    				/* i.e. GEM/BGM/RAW */
 		pun_usb.ptype[logdrv] = part_type;				/* e.g. 0x47454d00 */
 	else 
-        pun_usb.ptype[logdrv] = 0x00440000L | part_type;/* e.g. 0x00440600 */
+		pun_usb.ptype[logdrv] = 0x00440000L | part_type;/* e.g. 0x00440600 */
 
 	pun_usb.psize[logdrv] = part_size;
 	pun_usb.flags[logdrv] = CHANGE_FLAG;
@@ -383,25 +383,25 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		d_setdrv(logdrv);
 	}
 
-    /* Force media change, the recommended AHDI way..... */
-    {
-        char tmpname[16];
-	    char drv[2];
-        long fh;
+	/* Force media change, the recommended AHDI way..... */
+	{
+		char tmpname[16];
+		char drv[2];
+		long fh;
 
-	    drv[0] = ('A' + logdrv);
-	    drv[1] = 0;
+		drv[0] = ('A' + logdrv);
+		drv[1] = 0;
 
-        memset(tmpname, 0, sizeof(tmpname));
-        strcat(tmpname, drv);
-        strcat(tmpname, ":\\test");
-        fh = Fopen(tmpname, 0);
-        if (fh < 0) {
-            /* don't worry about it for now, unless it presents problems. */
-        } else {
-            Fclose(fh);
-        }
-    }
+		memset(tmpname, 0, sizeof(tmpname));
+		strcat(tmpname, drv);
+		strcat(tmpname, ":\\test");
+		fh = Fopen(tmpname, 0);
+		if (fh < 0) {
+			/* don't worry about it for now, unless it presents problems. */
+		} else {
+			Fclose(fh);
+		}
+	}
 
 	restore_old_state(ret);
 
@@ -417,7 +417,7 @@ long uninstall_usb_stor(long logdrv)
 	if ((logdrv < 0) || (logdrv >= MAX_LOGICAL_DRIVE))
 		return -1L;
 
-    pun_usb.puns--;
+	pun_usb.puns--;
 	pun_usb.pun[logdrv] = 0xff;
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
 
@@ -469,10 +469,10 @@ BPB *usb_getbpb(long logdrv)
 
 	type = pun_usb.ptype[logdrv] >> 8;
 
-    /*
-     * We allow the partition through to get a drive letter, but stop
-     * access to the drives BPB as there isn't one.
-     */
+	/*
+	 * We allow the partition through to get a drive letter, but stop
+	 * access to the drives BPB as there isn't one.
+	 */
 	if ((type == LNX) || (type == MINIX) || (type == RAW))
 		return NULL;
 
@@ -506,11 +506,11 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	if ((start < 0L) || (count < 0L) || !buffer)
 		return EBADR;			/* same as EBADRQ */
 
-    /* 
-     * Tell the user that the media has changed, so call getbpb first !
-     */
+	/* 
+	 * Tell the user that the media has changed, so call getbpb first !
+	 */
 	if (pun_usb.flags[logdrv] & CHANGE_FLAG)
-        return ECHMEDIA;
+		return ECHMEDIA;
 
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
 		physdev = logdrv & PUN_DEV;	/*  has already allowed for floppies     */
