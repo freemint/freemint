@@ -1183,7 +1183,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 	ehci_uif = *u;
 
 	ehci_uif->next = 0;
-    ehci_uif->api_version = USB_API_VERSION;
+	ehci_uif->api_version = USB_API_VERSION;
 	ehci_uif->class = USB_CONTRLL;
 	ehci_uif->lname = lname;
 	ehci_uif->unit = 0;
@@ -1193,7 +1193,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 	ehci_uif->resrvd1 = 0;
 	ehci_uif->ioctl = ehci_ioctl;
 	ehci_uif->resrvd2 = 0;
-    strcpy(ehci_uif->name, "ehci-pci");
+	strcpy(ehci_uif->name, "ehci-pci");
 	if(!(ehci_uif->ucd_priv = kmalloc(sizeof(struct ehci))))
 		return -1;
 

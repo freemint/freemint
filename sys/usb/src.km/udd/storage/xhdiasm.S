@@ -1,7 +1,7 @@
-	.globl	_usbxhdi
-	.globl	_xhdi_handler
+    .globl	_usbxhdi
+    .globl	_xhdi_handler
 
-	dc.l	0x27011992	// XHDIMAGIC
+    dc.l	0x27011992	// XHDIMAGIC
 _usbxhdi:
     // Important: The XHDI specification requires to backup all the registers
 #ifdef __mcoldfire__

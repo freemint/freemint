@@ -32,8 +32,8 @@
 
 typedef struct
 {
-        unsigned long  name;
-        unsigned long  val;
+	unsigned long  name;
+	unsigned long  val;
 } COOKIE;
 
 #define COOKIEBASE (*(COOKIE **)0x5a0)
@@ -67,15 +67,15 @@ typedef struct
 #define MSG_VERSION     str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
 #define MSG_BUILDDATE   __DATE__
 
-#define MSG_BOOT        \
-        "\033p USB ethernet class driver " MSG_VERSION " \033q\r\n"
+#define MSG_BOOT	\
+		"\033p USB ethernet class driver " MSG_VERSION " \033q\r\n"
 
-#define MSG_GREET       \
-        "Ported, mixed and shaken by Alan Hourihane.\r\n" \
-        "Compiled " MSG_BUILDDATE ".\r\n\r\n"
+#define MSG_GREET	   \
+		"Ported, mixed and shaken by Alan Hourihane.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
-#define MSG_FAILURE     \
-        "\7\r\nSorry, failed!\r\n\r\n"
+#define MSG_FAILURE	 \
+		"\7\r\nSorry, failed!\r\n\r\n"
 
 char *drv_version = MSG_VERSION;
 
@@ -139,8 +139,8 @@ static long probe_valid_drivers(struct usb_device *dev)
 
 	for (j = 0; j < numDevices; j++) {
 		if (!usbNetAPI->usbnet[j].before_probe ||
-		    !usbNetAPI->usbnet[j].probe ||
-		    !usbNetAPI->usbnet[j].get_info)
+			!usbNetAPI->usbnet[j].probe ||
+			!usbNetAPI->usbnet[j].get_info)
 			continue;
 
 		usbNetAPI->usbnet[j].before_probe(api);
@@ -206,7 +206,7 @@ ethernet_disconnect(struct usb_device *dev)
 long _cdecl
 init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 {
-        COOKIE *cookie = COOKIEBASE;
+	COOKIE *cookie = COOKIEBASE;
 	long ret;
 
 	kentry	= k;
@@ -222,17 +222,17 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	/*
 	 * Find EUSB cookie.
 	 */
-        if (cookie)
-        {
-                while (cookie->name)
-                {
-                        if (cookie->name == COOKIE_EUSB) {
-                                usbNetAPI = (struct usb_netapi *)cookie->val;
+	if (cookie)
+	{
+		while (cookie->name)
+		{
+			if (cookie->name == COOKIE_EUSB) {
+				usbNetAPI = (struct usb_netapi *)cookie->val;
 				break;
-                        }
-                        cookie++;
-                }
-        }
+			}
+			cookie++;
+		}
+	}
 
 	if (!usbNetAPI) {
 		c_conws (MSG_FAILURE);

@@ -80,11 +80,11 @@
 
 /* USB device speeds */
 enum usb_device_speed {
-        USB_SPEED_UNKNOWN = 0,                  /* enumerating */
-        USB_SPEED_LOW, USB_SPEED_FULL,          /* usb 1.1 */
-        USB_SPEED_HIGH,                         /* usb 2.0 */
-        USB_SPEED_WIRELESS,                     /* wireless (usb 2.5) */
-        USB_SPEED_SUPER,                        /* usb 3.0 */
+		USB_SPEED_UNKNOWN = 0,                  /* enumerating */
+		USB_SPEED_LOW, USB_SPEED_FULL,          /* usb 1.1 */
+		USB_SPEED_HIGH,                         /* usb 2.0 */
+		USB_SPEED_WIRELESS,                     /* wireless (usb 2.5) */
+		USB_SPEED_SUPER,                        /* usb 3.0 */
 };
 
 /* Descriptor types */
@@ -226,7 +226,7 @@ enum usb_device_speed {
 #define USB_PORT_STAT_POWER         0x0100
 #define USB_PORT_STAT_LOW_SPEED     0x0200
 #define USB_PORT_STAT_HIGH_SPEED    0x0400	/* support for EHCI */
-#define USB_PORT_STAT_SUPER_SPEED   0x0600      /* faking support to XHCI */
+#define USB_PORT_STAT_SUPER_SPEED   0x0600	/* faking support to XHCI */
 #define USB_PORT_STAT_SPEED_MASK        \
         (USB_PORT_STAT_LOW_SPEED | USB_PORT_STAT_HIGH_SPEED)
 

@@ -353,9 +353,9 @@ struct isp116x_platform_data
 	   thereby power consumption in suspended state. */
 	unsigned remote_wakeup_enable:1;
 	/* INT output polarity */
-        unsigned int_act_high:1;
-        /* INT edge or level triggered */
-        unsigned int_edge_triggered:1;
+	unsigned int_act_high:1;
+	/* INT edge or level triggered */
+	unsigned int_edge_triggered:1;
 
 };
 

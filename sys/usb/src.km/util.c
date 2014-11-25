@@ -70,8 +70,8 @@ strip_fname(const char *path, char *newpath, char *fname)
 		if (c == '/' || c == '\\')
 		{
 			d = s + 1;
-// 			if (c == '\\')
-// 				*s = '/';
+//			if (c == '\\')
+//				*s = '/';
 		}
 		c = *++s;
 	}
