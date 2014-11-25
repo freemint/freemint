@@ -116,8 +116,8 @@
 
 # define ROUNDUP(a,b)	((((a) + ((b) - 1)) / (b)) * (b))
 # define ROUNDDOWN(a,b)	(((a) / (b)) * (b))
-# define ROUNDUP2(a,b)		(((a) + (b) - 1) & ~((b) - 1))		/* if y is power of two */
-# define ROUNDDOWN2(a,b)	((a) & (~((b) - 1)))				/* if y is power of two */
+# define ROUNDUP2(a,b)		(((a) + (b) - 1) & ~((b) - 1))		/* if b is power of two */
+# define ROUNDDOWN2(a,b)	((a) & (~((b) - 1)))				/* if b is power of two */
 
 # define ALIGN(x,a)		__ALIGN_MASK((x),(typeof(x))(a) - 1)
 # define __ALIGN_MASK(x,mask)	(((x) + (mask)) & ~(mask))
