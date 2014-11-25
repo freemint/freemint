@@ -279,12 +279,12 @@ unsigned long 	usb_stor_read		(long, unsigned long, unsigned long, void *);
 unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
 block_dev_desc_t *	usb_stor_get_dev	(long);
-long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
-long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
-long 		usb_stor_CBI_get_status	(ccb *, struct us_data *);
-long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char);
-long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
-long 		usb_stor_CB_transport	(ccb *, struct us_data *);
+static long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
+static long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
+static long 		usb_stor_CBI_get_status	(ccb *, struct us_data *);
+static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char);
+static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
+static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 
 
@@ -902,7 +902,7 @@ usb_stor_CB_reset(struct us_data *us)
  * Set up the command for a BBB device. Note that the actual SCSI
  * command is copied into cbw.CBWCDB.
  */
-long
+static long
 usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 {
 	long result;
@@ -967,7 +967,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 /* FIXME: we also need a CBI_command which sets up the completion
  * interrupt, and waits for it
  */
-long
+static long
 usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 {
 	long result = 0;
@@ -1019,7 +1019,7 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 	return result;
 }
 
-long
+static long
 usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 {
     long result;
@@ -1059,7 +1059,7 @@ usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 #define USB_TRANSPORT_NOT_READY_RETRY 10
 
 /* clear a stall on an endpoint - special for BBB devices */
-long
+static long
 usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt)
 {
 	long result;
@@ -1069,7 +1069,7 @@ usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt)
 	return result;
 }
 
-long
+static long
 usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 {
 	long result, retry;
@@ -1226,7 +1226,8 @@ out:
 	return result;
 }
 
-long usb_stor_CB_transport(ccb *srb, struct us_data *us)
+static long
+usb_stor_CB_transport(ccb *srb, struct us_data *us)
 {
 	long result, status;
 	ccb reqsrb;
