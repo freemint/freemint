@@ -159,8 +159,8 @@ static inline long strlen (const char *scan)
 
 struct cookie
 {
-        long tag;
-        long value;
+	long tag;
+	long value;
 };
 
 #define _USB 0x5f555342L

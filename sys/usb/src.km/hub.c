@@ -177,8 +177,8 @@ struct usb_hub_device *usb_get_hub_index(long index)
 {
 	struct usb_device *dev;
 
-    if (index >= USB_MAX_HUB)
-        return NULL;
+	if (index >= USB_MAX_HUB)
+		return NULL;
 
 	dev = hub_dev[index].pusb_dev;
 	if (dev && dev->devnum != -1 && dev->devnum != 0)
@@ -303,7 +303,7 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port, unsigned sho
 		/* Return now if nothing is connected */
 		if (!(portstatus & USB_PORT_STAT_CONNECTION)) {
 			return 0;
-        }
+		}
 	}
 
 	/* Reset the port */
@@ -680,14 +680,14 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 
 		long r;
 		r = kthread_create(NULL, usb_hub_poll_thread, dev, NULL, "hubpoll");
-		
+
 		if (r)
 		{
 			/* XXX todo -> exit gracefully */
 			DEBUG((/*0000000a*/"can't create USB hub kernel thread"));
 		}
 	}
-#endif		
+#endif
 
 	return 1;
 }
@@ -789,7 +789,7 @@ setup_common(void)
 	p_signal(SIGCHLD,  (long) sigchld);
 
 //	d_setdrv('u' - 'a');
-// 	d_setpath("/");
+//	d_setpath("/");
 
 }
 
@@ -820,38 +820,38 @@ void
 usb_hub_init(struct usb_device *dev)
 {
 #ifdef TOSONLY
-    long i,j,k = 0;
+	long i,j,k = 0;
 
-    (void)c_conws("Scanning USB devices.... Please wait...\r\n");
+	(void)c_conws("Scanning USB devices.... Please wait...\r\n");
 
 again:
-    for (i = 0; i < USB_MAX_HUB; i++)
-    {
-        struct usb_hub_device *hub = usb_get_hub_index (i);
-        if (hub)
-        {
-            if (usb_hub_events (hub) == 1)
-            {
-                for (j = k; j < USB_MAX_DEVICE; j++)
-                {
-                    struct usb_device *pdev = usb_get_dev_index (j);
-                    if (pdev && pdev->mf && pdev->prod)
-                    {
-                        char name[128];
-                        memset (name, 0, sizeof(name));
-                        strcat (name, "Found ");
-                        strcat (name, pdev->mf);
-                        strcat (name, " ");
-                        strcat (name, pdev->prod);
-                        strcat (name, ".\r\n");
-                        c_conws(name);
-                        k = j+1;
-                    }
-                }
-                goto again;
-            }
-        }
-    }
+	for (i = 0; i < USB_MAX_HUB; i++)
+	{
+		struct usb_hub_device *hub = usb_get_hub_index (i);
+		if (hub)
+		{
+			if (usb_hub_events (hub) == 1)
+			{
+				for (j = k; j < USB_MAX_DEVICE; j++)
+				{
+					struct usb_device *pdev = usb_get_dev_index (j);
+					if (pdev && pdev->mf && pdev->prod)
+					{
+						char name[128];
+						memset (name, 0, sizeof(name));
+						strcat (name, "Found ");
+						strcat (name, pdev->mf);
+						strcat (name, " ");
+						strcat (name, pdev->prod);
+						strcat (name, ".\r\n");
+						c_conws(name);
+						k = j+1;
+					}
+				}
+				goto again;
+			}
+		}
+	}
 #else
 	DEBUG(("Creating USB hub kernel thread"));
 	long r;

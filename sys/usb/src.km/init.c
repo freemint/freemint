@@ -34,23 +34,23 @@ long loader_pgrp = 0;
 
 struct usb_module_api usb_api;
 
-#define MSG_BUILDDATE   __DATE__
+#define MSG_BUILDDATE	__DATE__
 
 #ifdef TOSONLY
-#define MSG_VERSION     "TOS DRIVERS"
-#define MSG_BOOT        \
-        "\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
-        "Brought to TOS by Alan Hourihane.\r\n"
+#define MSG_VERSION		"TOS DRIVERS"
+#define MSG_BOOT		\
+		"\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
+		"Brought to TOS by Alan Hourihane.\r\n"
 #else
-#define MSG_VERSION     "FreeMiNT DRIVERS"
-#define MSG_BOOT        \
-        "\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
+#define MSG_VERSION	"FreeMiNT DRIVERS"
+#define MSG_BOOT	\
+		"\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
 #endif
 
-#define MSG_GREET       \
+#define MSG_GREET		\
 	"David Galvez 2010-2014.\r\n" \
 	"Alan Hourihane 2013-2014.\r\n" \
-    "Compiled " MSG_BUILDDATE ".\r\n\r\n"
+	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 static void
 bootmessage(void)
@@ -104,8 +104,8 @@ set_cookie (void)
 extern unsigned long _PgmSize;
 #endif
 
-long            udd_register            (struct uddif *u);
-long            udd_unregister          (struct uddif *u);
+long			udd_register		(struct uddif *u);
+long			udd_unregister		(struct uddif *u);
 extern long	ucd_register		(struct ucdif *u, struct usb_device **dev);
 extern long	ucd_unregister		(struct ucdif *u);
 
@@ -214,7 +214,7 @@ init(struct kentry *k, const struct kernel_module *km)
 #ifdef TOSONLY
 	{
 		/* Set the _USB API cookie */
-        Supexec(set_cookie);
+		Supexec(set_cookie);
 
 		c_conws("USB core installed.\r\n");
 

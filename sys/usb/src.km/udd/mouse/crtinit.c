@@ -199,7 +199,7 @@ parseargs(BASEPAGE *bp)
 				p = *--envp;
 				while(*p)
 					*q++ = *p++;
-		        	*q = '\0';
+					*q = '\0';
 			}
 		}
 	}
@@ -317,12 +317,12 @@ do_argc:
 		p = my_strrchr(program_invocation_name, '\\');
 		if (p == NULL)
 			p = my_strrchr(program_invocation_name, '/');
- 		if (p != NULL)
- 			p++;
+		if (p != NULL)
+			p++;
 
 		program_invocation_short_name = (p == 0) ?
- 			program_invocation_name : p;
- 	}
+			program_invocation_name : p;
+	}
 
 	__libc_argc = 1; /* at this point __libc_argv[0] is done */
 	while (*from)
