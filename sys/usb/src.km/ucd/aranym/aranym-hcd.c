@@ -327,7 +327,7 @@ long
 usb_lowlevel_init(void *dummy)
 {
 	int r;
-	
+
 	r = nf_call(USBHOST(USBHOST_LOWLEVEL_INIT));
 
 	if (!r) 
@@ -356,7 +356,7 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
 	char message[100];
-	
+
 	kentry	= k;
 
 	/* get the USBHost NatFeat ID */

@@ -139,8 +139,8 @@ static struct uddif storage_uif =
  * External prototypes
  */
 extern long install_usb_stor	(long dev_num, unsigned long part_type, 
-			     	 unsigned long part_offset, unsigned long part_size, 
-			     	 char *vendor, char *revision, char *product);
+					 unsigned long part_offset, unsigned long part_size, 
+					 char *vendor, char *revision, char *product);
 extern long uninstall_usb_stor	(long dev_num);
 extern long install_xhdi_driver(void);                         //xhdi.c
 extern void install_vectors(void);                             //vectors.S
@@ -236,9 +236,9 @@ static unsigned char readbuf[DEFAULT_SECTOR_SIZE];
 
 
 typedef struct {
-    unsigned long id;           /* really 1-byte flag followed by GEM, BGM, or XGM */
-    unsigned long start;        /* starting sector */
-    unsigned long size;         /* size in sectors */
+	unsigned long id;           /* really 1-byte flag followed by GEM, BGM, or XGM */
+	unsigned long start;        /* starting sector */
+	unsigned long size;         /* size in sectors */
 } atari_partition_t;
 
 
@@ -377,9 +377,9 @@ static int is_atari_partition(unsigned long type)
 	type &= 0x00ffffffL;
 
 #ifdef DEBUGGING_ROUTINES
-    c_conws("Found partition ");
-    hex_long(type);
-    c_conws("\r\n");
+	c_conws("Found partition ");
+	hex_long(type);
+	c_conws("\r\n");
 #endif
 
 	if ((type == GEM) || (type == XGM) || (type == BGM) || (type == RAW))
@@ -391,13 +391,13 @@ static int is_atari_partition(unsigned long type)
 static inline long
 is_active_atari(long part_type)
 {
-    return (part_type & 0x01000000L);
+	return (part_type & 0x01000000L);
 }
 
 static inline long
 is_extended_atari(long part_type)
 {
-    return ((part_type&0x00ffffffL) == XGM);
+	return ((part_type&0x00ffffffL) == XGM);
 }
 
 /*
@@ -444,8 +444,8 @@ get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long par
 		for (i = 0, pt = part; i < 4; i++, pt++) {
 			if (!is_active_atari(pt->id))
 				continue;
-            if (!is_atari_partition(pt->id))
-                continue;
+			if (!is_atari_partition(pt->id))
+				continue;
 
 			/*
 			 * links always follow the partition description, so if we get a link,
@@ -504,8 +504,8 @@ get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, d
 		if (!is_active_atari(pt->id))
 			continue;
 
-        if (!is_atari_partition(pt->id))
-            continue;
+		if (!is_atari_partition(pt->id))
+			continue;
 
 		if (is_extended_atari(pt->id))
 		{
@@ -607,21 +607,21 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 		return -1;
 	}
 
-    /*
-     * We lookup atari partitions first as they're identified with 
-     * specific code such as GEM, BGM etc.
-     */
+	/*
+	* We lookup atari partitions first as they're identified with 
+	* specific code such as GEM, BGM etc.
+	*/
 	DEBUG(("Try looking up Atari MBR sector"));
 	if (get_partinfo_atari(dev_desc,part_num,which_part,info) == 0) {
-        return 0;
-    }
+		return 0;
+	}
 
 #ifndef TOSONLY
-    /*
-     * We only try adding DOS style partitions in FreeMiNT as HDDRIVER
-     * and other HD managers create a dual partition setup which has
-     * both Atari & DOS and we don't want both installed.
-     */
+	/*
+	* We only try adding DOS style partitions in FreeMiNT as HDDRIVER
+	* and other HD managers create a dual partition setup which has
+	* both Atari & DOS and we don't want both installed.
+	*/
 	if(buffer[DOS_PART_MAGIC_OFFSET] == 0x55 && buffer[DOS_PART_MAGIC_OFFSET+1] == 0xaa)
 	{
 		DEBUG(("found DOS MBR sector"));
@@ -629,7 +629,7 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 	}
 #endif
 
-    return -1;
+	return -1;
 }
 
 long
@@ -1022,12 +1022,12 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 static long
 usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 {
-    long result;
+	long result;
 	us->ip_wanted = 1;
 	result = usb_submit_int_msg(us->pusb_dev, us->irqpipe, (void *) &us->ip_data, us->irqmaxp, us->irqinterval);
-    if (result < 0) {
-        return USB_STOR_TRANSPORT_ERROR;
-    }
+	if (result < 0) {
+		return USB_STOR_TRANSPORT_ERROR;
+	}
 	if(us->ip_wanted)
 	{
 		DEBUG(("Did not get interrupt on CBI"));
@@ -1288,7 +1288,7 @@ do_retry:
 	/* if this is an CBI Protocol, get IRQ */
 	if(us->protocol == US_PR_CBI) {
 		status = usb_stor_CBI_get_status(&reqsrb, us);
-    }
+	}
 	if((result < 0) && !(us->pusb_dev->status & USB_ST_STALLED))
 	{
 		DEBUG((" AUTO REQUEST ERROR %ld", us->pusb_dev->status));
@@ -1310,7 +1310,8 @@ do_retry:
 		case 0x02: /* Not Ready */
 			if(notready++ > USB_TRANSPORT_NOT_READY_RETRY)
 			{
-				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)", srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
+				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)", 
+						srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
 				return USB_STOR_TRANSPORT_FAILED;
 			}
 			else
@@ -1345,7 +1346,7 @@ usb_inquiry(ccb *srb, struct us_data *ss)
 	{
 		memset(&srb->cmd[0], 0, 12);
 		srb->cmd[0] = SCSI_INQUIRY;
-        srb->cmd[1] = srb->lun << 5;
+		srb->cmd[1] = srb->lun << 5;
 		srb->cmd[4] = 36;
 		srb->datalen = 36;
 		srb->cmdlen = 12;
@@ -1370,7 +1371,7 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	ptr = (char *)srb->pdata;
 	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_REQ_SENSE;
-    srb->cmd[1] = srb->lun << 5;
+	srb->cmd[1] = srb->lun << 5;
 	srb->cmd[4] = 18;
 	srb->datalen = 18;
 	srb->pdata = &srb->sense_buf[0];
@@ -1390,7 +1391,7 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 	{
 		memset(&srb->cmd[0], 0, 12);
 		srb->cmd[0] = SCSI_TST_U_RDY;
-        srb->cmd[1] = srb->lun << 5;
+		srb->cmd[1] = srb->lun << 5;
 		srb->datalen = 0;
 		srb->cmdlen = 12;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
@@ -1398,8 +1399,8 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 		}
 		usb_request_sense(srb, ss);
 		if ((srb->sense_buf[2] == 0x02) &&
-                    (srb->sense_buf[12] == 0x3a))
-                        return -1;
+			(srb->sense_buf[12] == 0x3a))
+				return -1;
 		mdelay(100);
 	}
 	while(retries--);
@@ -1417,7 +1418,7 @@ usb_read_capacity(ccb *srb, struct us_data *ss)
 	{
 		memset(&srb->cmd[0], 0, 12);
 		srb->cmd[0] = SCSI_RD_CAPAC;
-        srb->cmd[1] = srb->lun << 5;
+		srb->cmd[1] = srb->lun << 5;
 		srb->datalen = 8;
 		srb->cmdlen = 12;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
@@ -1432,7 +1433,7 @@ usb_read_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short bl
 {
 	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_READ10;
-    srb->cmd[1] = srb->lun << 5;
+	srb->cmd[1] = srb->lun << 5;
 	srb->cmd[2] = ((unsigned char) (start >> 24)) & 0xff;
 	srb->cmd[3] = ((unsigned char) (start >> 16)) & 0xff;
 	srb->cmd[4] = ((unsigned char) (start >> 8)) & 0xff;
@@ -1449,7 +1450,7 @@ usb_write_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short b
 {
 	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_WRITE10;
-    srb->cmd[1] = srb->lun << 5;
+	srb->cmd[1] = srb->lun << 5;
 	srb->cmd[2] = ((unsigned char) (start >> 24)) & 0xff;
 	srb->cmd[3] = ((unsigned char) (start >> 16)) & 0xff;
 	srb->cmd[4] = ((unsigned char) (start >> 8)) & 0xff;
@@ -1504,7 +1505,7 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	device &= 0xff;	
 	/* Setup  device */
 	DEBUG(("usb_read: dev %ld ", device));
-        dev = usb_dev_desc[device].priv;
+			dev = usb_dev_desc[device].priv;
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb.lun = usb_dev_desc[device].lun;
@@ -1560,7 +1561,7 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, void *buf
 	device &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_write: dev %ld ", device));
-        dev = usb_dev_desc[device].priv;
+			dev = usb_dev_desc[device].priv;
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb.lun = usb_dev_desc[device].lun;
@@ -1618,12 +1619,12 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 
 	DEBUG(("iVendor 0x%x iProduct 0x%x", dev->descriptor.idVendor, dev->descriptor.idProduct));
 
-    /* Patch devices....
-     */
+	/* Patch devices....
+	*/
 
-    /* TEAC Floppy should use US_PR_CB not US_PR_CBI */
+	/* TEAC Floppy should use US_PR_CB not US_PR_CBI */
 	if (dev->descriptor.idVendor == 0x0644 && 
-        dev->descriptor.idProduct == 0x0000)
+		dev->descriptor.idProduct == 0x0000)
 	{
 		protocol = US_PR_CB;
 		subclass = US_SC_UFI;
@@ -1690,7 +1691,7 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 		ep_desc = &iface->ep_desc[i];
 		/* is it an BULK endpoint? */
 		if ((ep_desc->bmAttributes &
-		     USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK) {
+			USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK) {
 			if (ep_desc->bEndpointAddress & USB_DIR_IN)
 				ss->ep_in = ep_desc->bEndpointAddress &
 						USB_ENDPOINT_NUMBER_MASK;
@@ -1701,7 +1702,7 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 		}
 		/* is it an interrupt endpoint? */
 		if ((ep_desc->bmAttributes &
-		     USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT) {
+			USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT) {
 			ss->ep_int = ep_desc->bEndpointAddress &
 						USB_ENDPOINT_NUMBER_MASK;
 			ss->irqinterval = ep_desc->bInterval;
@@ -1710,8 +1711,8 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	DEBUG(("Endpoints In %d Out %d Int %d", ss->ep_in, ss->ep_out, ss->ep_int));
 	/* Do some basic sanity checks, and bail if we find a problem */
 	if (usb_set_interface(dev, iface->desc.bInterfaceNumber, 0) ||
-	    !ss->ep_in || !ss->ep_out ||
-	    (ss->protocol == US_PR_CBI && ss->ep_int == 0)) {
+		!ss->ep_in || !ss->ep_out ||
+		(ss->protocol == US_PR_CBI && ss->ep_int == 0)) {
 		DEBUG(("Problems with device"));
 		return 0;
 	}
@@ -1721,8 +1722,8 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	 * The SFF8070 accepts the requests used in u-boot
 	 */
 	if(ss->subclass != US_SC_UFI && 
-       ss->subclass != US_SC_SCSI && 
-       ss->subclass != US_SC_8070)
+		ss->subclass != US_SC_SCSI && 
+		ss->subclass != US_SC_8070)
 	{
 		DEBUG(("Sorry, protocol %d not yet supported.", ss->subclass));
 		ALERT(("Sorry, protocol %d not yet supported.", ss->subclass));
@@ -1768,7 +1769,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	}
 	else {
 		ss->transport_reset(ss);
-    }
+	}
 
 	pccb.pdata = usb_stor_buf;
 	dev_desc->priv = dev;
@@ -1926,7 +1927,7 @@ static long
 storage_probe(struct usb_device *dev)
 {
 	long r, i, lun, start;	
-    long max_lun;
+	long max_lun;
 	
 	if(dev == NULL)
 		return -1;
@@ -1953,24 +1954,24 @@ storage_probe(struct usb_device *dev)
 		return -1; /* It's not a storage device */
 	}
 
-    start = i;
-    max_lun = usb_get_max_lun(&usb_stor[i]);
-    /* override */
-    max_lun = 0; /* not yet */
-    for (lun = 0;
-         lun <= max_lun &&
-         start < USB_MAX_STOR_DEV; 
-         lun++) {
-	    /* ok, it is a storage devices
-    	 * get info and fill it in
-    	 */
-        usb_dev_desc[i].lun = lun;
-    	if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[start])) {
-    		usb_disable_asynch(0); /* asynch transfer allowed */
-    		return -1;
-    	}
-        start++;
-    }
+	start = i;
+	max_lun = usb_get_max_lun(&usb_stor[i]);
+	/* override */
+	max_lun = 0; /* not yet */
+	for (lun = 0;
+		 lun <= max_lun &&
+		 start < USB_MAX_STOR_DEV; 
+		 lun++) {
+		/* ok, it is a storage devices
+		 * get info and fill it in
+		 */
+		usb_dev_desc[i].lun = lun;
+		if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[start])) {
+			usb_disable_asynch(0); /* asynch transfer allowed */
+			return -1;
+		}
+		start++;
+	}
 
 	
 	usb_disable_asynch(0); /* asynch transfer allowed */
@@ -1981,32 +1982,32 @@ storage_probe(struct usb_device *dev)
 	stor_dev = usb_stor_get_dev(dev_num);
 
 	struct us_data *ss;
-    ss = (struct us_data *)dev->privptr;
+	ss = (struct us_data *)dev->privptr;
 
-    //dev_print(stor_dev);
+	//dev_print(stor_dev);
 
 	if(ss->subclass == US_SC_UFI)
-    {
-        DEBUG(("detected USB floppy not supported at this time\r\n"));
-        /* This is a floppy drive, so give it a drive letter ? B ?. */
-        /* Also, we may be better to intercept the TRAP #1 floppy handlers
-         * and deal with them here. ??? */
-        return 0;
-    }
+	{
+		DEBUG(("detected USB floppy not supported at this time\r\n"));
+		/* This is a floppy drive, so give it a drive letter ? B ?. */
+		/* Also, we may be better to intercept the TRAP #1 floppy handlers
+		 * and deal with them here. ??? */
+		return 0;
+	}
 
-    /* Skip everything apart from HARDDISKS */
-    if((stor_dev->type & 0x1f) != DEV_TYPE_HARDDISK) {
+	/* Skip everything apart from HARDDISKS */
+	if((stor_dev->type & 0x1f) != DEV_TYPE_HARDDISK) {
 #if 0
-        c_conws(stor_dev->vendor);
-        c_conout(' ');
-        c_conws(stor_dev->product);
-        c_conout(' ');
-        c_conws(", type : ");
-        hex_long(stor_dev->type & 0x1f);
-        c_conws(" not installed\r\n");
+		c_conws(stor_dev->vendor);
+		c_conout(' ');
+		c_conws(stor_dev->product);
+		c_conout(' ');
+		c_conws(", type : ");
+		hex_long(stor_dev->type & 0x1f);
+		c_conws(" not installed\r\n");
 #endif
-        return 0;
-    }
+	return 0;
+	}
 
 
 	long part_num = 1;
@@ -2022,11 +2023,11 @@ storage_probe(struct usb_device *dev)
 				     stor_dev->revision, stor_dev->product);
 		if (r == -1) {
 			DEBUG(("unable to install storage device\r\n"));
-        }
+		}
 		else
 		{
 #ifdef TOSONLY
-            SCSIDRV_MediaChange(dev_num);
+			SCSIDRV_MediaChange(dev_num);
 #endif
 			bios_part[dev_num].biosnum[part_num - 1] = r;
 			bios_part[dev_num].partnum = part_num;
@@ -2083,9 +2084,9 @@ PUN_INFO *get_pun(void)
 #define BCB	struct _bcb
 BCB
 {
-    BCB     *b_link;    /* next bcb (API)          */
-    char    filler[12];	/* not relevant            */
-    char    *b_bufr;    /* pointer to buffer (API) */
+	BCB		*b_link;	/* next bcb (API)          */
+	char	filler[12];	/* not relevant            */
+	char	*b_bufr;	/* pointer to buffer (API) */
 };
 
 /*
@@ -2153,7 +2154,7 @@ long _cdecl
 init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 #endif
 {
-    PUN_INFO *pun_ptr;
+	PUN_INFO *pun_ptr;
 	long ret;
 
 #ifndef TOSONLY
@@ -2187,9 +2188,9 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	}
 
 #ifdef TOSONLY
-    /* goto supervisor mode because of drvbits & handlers */
-    if (!Super(1L))
-        ret = Super(0L);
+	/* goto supervisor mode because of drvbits & handlers */
+	if (!Super(1L))
+		ret = Super(0L);
 #endif
 
 	pun_ptr = get_pun();
@@ -2202,41 +2203,41 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		pun_ptr = install_pun();
 
 	if (!pun_ptr) {
-        if (ret)
-            SuperToUser(ret);
+		if (ret)
+			SuperToUser(ret);
 
-        c_conws("Failed to initialize, out of memory\r\n");
+		c_conws("Failed to initialize, out of memory\r\n");
 		return -1;
 	}
 #else
 	if (!pun_ptr) {
-        c_conws("Failed to initialize, PUN info not available.\r\n");
+		c_conws("Failed to initialize, PUN info not available.\r\n");
 		return -1;
-    }
+	}
 #endif
 
-    /*
-     * install PUN_INFO if necessary
-     */
-    if (pun_usb.cookie != AHDI) {
-        pun_usb.cookie = AHDI;
-        pun_usb.cookie_ptr = &pun_usb.cookie;
-        pun_usb.puns = 0;
-        pun_usb.version_num = 0x0300;
-        pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
-        memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE); /* mark all puns invalid */
-    }
+	/*
+	 * install PUN_INFO if necessary
+	 */
+	if (pun_usb.cookie != AHDI) {
+		pun_usb.cookie = AHDI;
+		pun_usb.cookie_ptr = &pun_usb.cookie;
+		pun_usb.puns = 0;
+		pun_usb.version_num = 0x0300;
+		pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
+		memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE); /* mark all puns invalid */
+	}
 
-    install_vectors();
-    install_xhdi_driver();
+	install_vectors();
+	install_xhdi_driver();
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
-    install_scsidrv();
+	install_scsidrv();
 
-    if (ret)
-        SuperToUser(ret);
+	if (ret)
+		SuperToUser(ret);
 
 	c_conws("USB storage driver installed.\r\n");
 

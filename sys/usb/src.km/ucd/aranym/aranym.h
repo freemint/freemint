@@ -124,9 +124,9 @@ typedef struct {
 
 	int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 			        int len, struct devrequest *setup)
-      
+
 	int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		    		int len)
+					int len)
 */
 
 #endif /* _ARANYM_H */
