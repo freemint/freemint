@@ -354,6 +354,8 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	if (addr & (M68K_CACHE_LINE_SIZE - 1))
 		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)\n", buf));
 
+	cpush(buf, ALIGN((unsigned long)buf + sz, M68K_CACHE_LINE_SIZE));
+
 	idx = 0;
 	while(idx < 5)
 	{
