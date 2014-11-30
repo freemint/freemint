@@ -636,14 +636,6 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 				tab->scroll = cfg.menu_settings.mn_set.height;
 			else
 				tab->scroll = 0;
-// 			else if (mn->menu.mn_scroll > 1)
-// 			{
-// 				tab->scroll = (mn->menu.mn_scroll < 8) ? 8 : mn->menu.mn_scroll;
-// 			}
-// 			else
-// 				tab->scroll = 0;
-
-// 			tab->scroll = (mn->menu.mn_scroll == -1) ? 8 : 0;
 
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
