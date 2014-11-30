@@ -538,9 +538,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 			struct xa_widget *widg;
 			short mb = cfg.menu_bar;
 
-//			if (nk == NK_ESC && !TAB_LIST_START)
-//				goto otm;
-
 			client = NULL;
 			widg = NULL;
 
@@ -559,7 +556,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 						client = NULL;
 				}
 			}
-			else
+			else if( cfg.menu_bar != -1 )	/* if menu-bar was on */
 				toggle_menu(lock, 1);
 
 			if (!client)
@@ -578,7 +575,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				}
 			}
 			if (client)
-				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
+				post_cevent(client, cXA_open_menubykbd, wind, widg, 0,0, NULL,NULL);
 			if( !mb )
 				cfg.menu_bar = -1;
 			return true;
@@ -850,10 +847,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 		return true;
 #endif
-		case '.':	// .: remove widgets and display top-window full-screen, todo: restore
+		case '.':	// .: toggle widgets and display top-window full-screen
 			remove_window_widgets(lock, 1);
 		return true;
-		case ',':	// ,: remove widgets
+		case ',':	// ,: toggle widgets
 			remove_window_widgets(lock, 0);
 		return true;
 
