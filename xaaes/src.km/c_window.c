@@ -1576,7 +1576,8 @@ void remove_window_widgets(enum locks lock, int full)
 		wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
 		  WM_SIZED, 0, 0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 		set_and_update_window(wind, false, false, NULL);
-		update_windows_below(lock, &screen.r, NULL, wind, NULL);
+		if( full && !( wind->window_status & XAWS_RM_WDG) )
+			update_windows_below(lock, &screen.r, NULL, wind, NULL);
 	}
 }
 
