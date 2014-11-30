@@ -1246,7 +1246,6 @@ create_window(
 
 	r = R;
 
-
 #if GENERATE_DIAGS
 	if (max)
 	{
@@ -1260,7 +1259,6 @@ create_window(
 	}
 
 #endif
-
 	w = kmalloc(sizeof(*w));
 	if (!w)	/* Unable to allocate memory for window? */
 		return NULL;
@@ -1545,40 +1543,40 @@ change_window_attribs(enum locks lock,
 		*remember = w->r;
 }
 
+/* remove_window_widgets
+ * remove/restore all widgets of the top-window, leave BORDER untouched
+ * if full=true also size to fullscreen
+ * default binding 'C-A-,' (full=false), 'C-A-.' (full=true)
+ */
 void remove_window_widgets(enum locks lock, int full)
 {
 	struct xa_window *wind = TOP_WINDOW;
 	if( wind && !(wind->window_status & XAWS_ICONIFIED) )
 	{
 		XA_WIND_ATTR	active_widgets;
-		if( !(wind->window_status & XAWS_RM_WDG) )
-		{
-			wind->save_widgets = wind->active_widgets;
-			active_widgets = 0;	// todo: uninstall menu/toolbar
-			wind->window_status |= XAWS_RM_WDG;
-			if( full )
-			{
-				wind->ro = wind->r;
-				wind->r = screen.r;
-			}
-		}
-		else
+		if( (wind->window_status & XAWS_RM_WDG) )
 		{
 			wind->window_status &= ~XAWS_RM_WDG;
 			active_widgets = wind->save_widgets;	// todo: re-install menu/toolbar
 			if( full )
-				wind->r = wind->ro;
+				wind->r = wind->pr;
+		}
+		else
+		{
+			wind->save_widgets = wind->active_widgets;
+			active_widgets = (wind->active_widgets & BORDER);	// todo: uninstall menu/toolbar
+			wind->window_status |= XAWS_RM_WDG;
+			if( full )
+			{
+				wind->pr = wind->r;
+				wind->r = screen.r;
+			}
 		}
 		change_window_attribs(lock, wind->owner, wind, active_widgets, false, false, 0, wind->r, NULL);
-		if( full )
-		{
-			wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
-		  	WM_SIZED, 0, 0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h);
-		}
-		if( memcmp( &wind->r, &screen.r, sizeof(RECT) ) )
-		{
-			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
-		}
+		wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
+		  WM_SIZED, 0, 0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		set_and_update_window(wind, false, false, NULL);
+		update_windows_below(lock, &screen.r, NULL, wind, NULL);
 	}
 }
 
@@ -1889,7 +1887,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 	{
 		wind->redraw(lock, wind);
 	}
-
 	{
 		int f;
 		WINDOW_STATUS status = wind->window_status;
@@ -1900,7 +1897,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 		{
 			(*wind->draw_canvas)(wind, &wind->outer, &wind->inner, clip);
 		}
-
 		for (f = 0; f < XA_MAX_WIDGETS; f++)
 		{
 			widg = get_widget(wind, f);
@@ -1911,7 +1907,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 			{
 				continue;
 			}
-
 			if ( !(status & widg->m.statusmask) )
 			{
 				if( wdg_is_inst(widg) )
@@ -2330,6 +2325,8 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	if (wind->owner->status & CS_EXITING)
 		return;
 
+	if( wind->r.x == X && wind->r.y == Y && wind->r.w == W && wind->r.h == H )
+		return;
 	new.x = X;
 	new.y = Y;
 	new.w = W;
@@ -2373,7 +2370,6 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 			if (newstate == ~XAWS_FULLED)
 			{
 				blit = false;
-				wind->pr = wind->rc;
 				DIAGS(("move_window: unFULLED"));
 			}
 			wind->window_status &= newstate;
@@ -2401,7 +2397,9 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 			if (newstate == XAWS_FULLED)
 			{
 				blit = false;
-				wind->pr = wind->rc;
+				if( screen.r.w -  wind->rc.w > 64
+					|| screen.r.h -  wind->rc.h > 64)
+					wind->pr = wind->rc;
 				DIAGS(("move_window: win is FULLED"));
 			}
 			wind->window_status |= newstate;
@@ -2409,13 +2407,29 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	}
 	else
 	{
+		RECT rd;
 #if GENERATE_DIAGS
 		if ((wind->window_status & XAWS_SHADED))
 		{
 			DIAGS(("move_window: win is shaded"));
 		}
 #endif
-		wind->pr = wind->rc;
+		rd.x = wind->rc.x - wind->pr.x;
+		rd.y = wind->rc.y - wind->pr.y;
+		rd.w = wind->rc.w - wind->pr.w;
+		rd.h = wind->rc.h - wind->pr.h;
+		if( (abs(rd.w) > 64 || abs(rd.h) > 64
+				|| abs(rd.x) > 64 || abs(rd.y) > 64)
+			&& (screen.r.w -  wind->rc.w > 64
+				|| screen.r.h -  wind->rc.h > 64)
+			)
+			wind->pr = wind->rc;
+		else
+		{
+		 if( screen.r.w -  new.w > 64
+				|| screen.r.h -  new.h > 64)
+			wind->pr = new;
+		}
 	}
 
 	inside_root(&new, wind->owner->options.noleft);
