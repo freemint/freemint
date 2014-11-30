@@ -1033,8 +1033,7 @@ fatal(int sig)
 	KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
 	ferr = sig;
 	S.clients_exiting = 0;
-	C.shutdown |= EXIT_MAINLOOP | KILLEM_ALL;
-	dispatch_shutdown( RESTART_XAAES);
+	dispatch_shutdown( RESTART_XAAES | EXIT_MAINLOOP | KILLEM_ALL);
 }
 #endif
 
