@@ -64,7 +64,7 @@ static XA_TREE *set_popup_widget(Tab *tab, struct xa_window *wind, int item);
 static inline bool
 barred(Tab *tab)
 {
-	return tab->ty == MENU_BAR || tab->ty == ROOT_MENU;
+	return (tab->ty == MENU_BAR || tab->ty == ROOT_MENU);
 }
 
 static inline unsigned long
@@ -96,6 +96,9 @@ change_title(Tab *tab, int state)
 	OBJECT *obtree = wt->tree;
 	int t = k->m.current;
 
+	if (t < 0 || !obtree) /* || t > ?? */
+		return;
+
 	if (state)
 		state = obtree[t].ob_state | OS_SELECTED;
 	else
@@ -115,24 +118,23 @@ change_title(Tab *tab, int state)
 	wt->rend_flags &= ~WTR_ROOTMENU;
 }
 
-static void
+static int
 change_entry(Tab *tab, int state)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	XA_TREE *wt = k->p.wt; //k->wt;
+	XA_TREE *wt = k->p.wt;
 	OBJECT *obtree = wt?wt->tree:0;
 	short t = k->p.current;
-
 	DIAGS(("change entry: tab=%lx, obtree=%lx, obj=%d, state=%d",
 		tab, obtree, k->p.current, state));
 
 	if (t < 0 || !obtree) /* || t > ?? */
-		return;
+		return 1;
 
 	if (state)
 		state = obtree[t].ob_state | OS_SELECTED;
 	else
-		state = obtree[t].ob_state & ~OS_SELECTED;
+		state = obtree[t].ob_state & ~OS_SELECTED;	// <-!
 
 	obtree->ob_x = k->pdx;
 	obtree->ob_y = k->pdy;
@@ -153,6 +155,7 @@ change_entry(Tab *tab, int state)
 		DIAGS(("change_entry: no popw"));
 		obj_change(wt, C.Aes->vdi_settings, aesobj(wt->tree, t), 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, NULL, 0);
 	}
+	return 0;
 }
 
 static void
@@ -181,7 +184,7 @@ redraw_entry(Tab *tab, short t)
 	}
 	else
 	{
-		DIAGS(("change_entry: no popw"));
+		DIAGS(("redraw_entry: no popw"));
 		obj_draw(wt, C.Aes->vdi_settings, aesobj(wt->tree, t), 1 | 0x8000, NULL, NULL, 0);
 	}
 }
@@ -560,12 +563,6 @@ nest_menutask(Tab *tab)
 		}
 		else
 			new_tab->ty = NO_TASK;
-
-// 		new_mt->p.attach_wt	= NULL;
-// 		new_mt->p.attach_item	= -1;
-// 		new_mt->p.attached_to	= -1;
-// 		new_mt->p.current	= -1;
-// 		new_mt->p.attach_parent	= -1;
 	}
 	return new_tab;
 }
@@ -840,6 +837,8 @@ title_tnormal(Tab *tab)
 	}
 }
 
+static void
+menu_finish(struct task_administration_block *tab);
 static Tab *
 menu_pop(Tab *tab)
 {
@@ -860,7 +859,8 @@ menu_pop(Tab *tab)
 
 	k->p.wt->dx = k->p.wt->dy = 0;
 
-	change_entry(tab, 0);
+	if( change_entry(tab, 0) )
+		return tab;
 
 	w = k->p.wind;
 	if (w)		/* Windowed popup's */
@@ -922,7 +922,7 @@ menu_finish(struct task_administration_block *tab)
 	if (tab)
 	{
 		MENU_TASK *k = &tab->task_data.menu;
-		OBJECT *obtree = k->m.wt->tree;
+		OBJECT *obtree = k->p.wt->tree;
 
 		cancel_pop_timeouts();
 
@@ -931,6 +931,7 @@ menu_finish(struct task_administration_block *tab)
 
 		DIAG((D_menu, tab->client, "[%d]menu_finish, tab=%lx, ty:%d for %s", tab->dbg2, tab, tab->ty, tab->client->name));
 
+		/* obtree is owned by client */
 		if (is_bar && !NEXT_TAB(tab))
 			obtree[k->m.popups].ob_flags |= OF_HIDETREE;
 
@@ -1611,7 +1612,6 @@ menu_bar(struct task_administration_block *tab, short item)
 	MENU_TASK *k = &tab->task_data.menu;
 	short title, dx, dy;
 
-
 	dx = k->m.wt->dx;
 	dy = k->m.wt->dy;
 	k->m.wt->dx = k->m.wt->dy = 0;
@@ -1642,12 +1642,16 @@ menu_bar(struct task_administration_block *tab, short item)
 	}
 	else
 	{
-		if (TAB_LIST_START != tab)
+		if (tab && TAB_LIST_START != tab)
 		{
 			tab = collapse(TAB_LIST_START, tab);
 		}
 
+		if( !tab )
+			return 0;
 		tab = menu_pop(tab);
+		if( !tab )
+			return 0;
 		title_tnormal(tab);
 		if (!menu_title(tab->lock, tab, item, tab->wind, tab->widg, tab->locker, NULL))
 		{
@@ -1671,10 +1675,10 @@ outofpop(Tab *tab, short item)
 	if (S.popout_timeout && S.popout_timeout->arg == (long)tab)
 		cancel_popout_timeout();
 
-// 	if (k->p.current > 0 && !(obtree[k->p.current].ob_state & OS_DISABLED) && k->p.attached_to != k->p.current)
 	if (k->p.current > 0 && !(obtree[k->p.current].ob_state & OS_DISABLED) && (!k->p.at_up || k->p.at_up->to_item != k->p.current))
 	{
-		change_entry(tab, 0);
+		if( change_entry(tab, 0) )
+			return tab;
 		k->p.current = -1;
 	}
 
@@ -1682,7 +1686,8 @@ outofpop(Tab *tab, short item)
 	if (k->p.at_up && k->p.at_up->to_item != k->p.current)
 	{
 		k->p.current = k->p.at_up->to_item; //k->p.attached_to;
-		change_entry(tab, 1);
+		if( change_entry(tab, 1) )
+			return tab;
 	}
 
 	k->em.m2 = k->drop;
@@ -1772,7 +1777,8 @@ popup(struct task_administration_block *tab, short item)
 		if (p > 0 && (!at || (at->to_item != p)) && !(obtree[p].ob_state & OS_DISABLED))
 // 		if (p > 0 && p != a && !(obtree[p].ob_state & OS_DISABLED))
 		{
-			change_entry(tab, 0);
+			if( change_entry(tab, 0) )
+				return 0;
 			k->p.current = -1;
 			set_popout_timeout(tab, false);
 		}
@@ -1780,7 +1786,8 @@ popup(struct task_administration_block *tab, short item)
 // 		if (a > 0 && a != p)
 		{
 			k->p.current = at->to_item; //k->p.attached_to;
-			change_entry(tab, 1);
+			if( change_entry(tab, 1) )
+				return 0;
 			cancel_popout_timeout();
 		}
 
@@ -1824,13 +1831,15 @@ popup(struct task_administration_block *tab, short item)
 			if (   k->p.current > -1
 			    && !(obtree[k->p.current].ob_state & OS_DISABLED))
 			{
-				change_entry(tab, 0);
+				if( change_entry(tab, 0) )
+					return 0;
 			}
 
 			k->p.current = m;
 
 			if (!dis)
-				change_entry(tab, 1);
+				if( change_entry(tab, 1) )
+					return 0;
 			if (item == -1)
 			{
 				open_attach(tab, -1, false);
@@ -2276,11 +2285,11 @@ keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget 
 	}
 	else
 	{
-		if (TAB_LIST_START->task_data.menu.entry)
-			(*TAB_LIST_START->task_data.menu.entry)(TAB_LIST_START, -2); //menuclick(tab, k->p.current);
+		MENU_TASK *k = &TAB_LIST_START->task_data.menu;
+		if (k->entry)
+			k->entry(TAB_LIST_START, -2);
 	}
 	return false;
-
 }
 
 static bool
