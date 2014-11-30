@@ -480,6 +480,11 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	}
 
 	/* Set the default button if it was specified */
+	if (default_button < 0)
+	{
+		default_button = -default_button;
+		retv = -1;
+	}
 	if (default_button > 0)
 	{
 		if (default_button > n_buttons)
@@ -755,9 +760,11 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
 	client->status |= CS_FORM_ALERT;
 	release_blocks(client);
-	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
-	(*client->block)(client, 0); //Block(client, 0);
-	client->status &= ~CS_FORM_ALERT;
+	if( do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL) >= 0 )
+	{
+		(*client->block)(client, 0);
+		client->status &= ~CS_FORM_ALERT;
+	}
 
 	return XAC_DONE;
 }
