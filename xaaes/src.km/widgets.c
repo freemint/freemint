@@ -1960,17 +1960,8 @@ cancel_winctxt_popup(enum locks lock, struct xa_window *wind, struct xa_client *
 
 	cancel_CE(C.Hlp, CE_winctxt, cwinctxt, (long)&parms);
 
-// 	display("cancel_winctxt_popup: wind = %d(%lx), owner = '%s', client '%s'",
-// 		wind ? wind->handle : -2, wind, wind ? wind->owner->proc_name : "None",
-// 		client ? client->proc_name : "none");
-
-// 	display("Ctxtwin = %lx, owner = %s", Ctxtwin, Ctxtwin ? Ctxtwin->owner->proc_name : "none");
-// 	if (Ctxtwin && Ctxtwin == wind)
-// 		display(" MATCHING WINDOWS");
-
 	if (Ctxtwin && ((Ctxtwin == wind) || (client && client == Ctxtwin->owner)))
 	{
-// 		display("poping out winctxt popup on wind %d for %s", wind->handle, wind->owner->proc_name);
 		Ctxtwin = NULL;
 		popout(TAB_LIST_START);
 		C.Hlp->usr_evnt = 2;
@@ -2272,7 +2263,6 @@ CE_winctxt(enum locks lock, struct c_event *ce, short cancel)
 
 			if (TAB_LIST_START && TAB_LIST_START->client == ce->client)
 			{
-// 				display("whoopsiedaisies!");
 				popout(TAB_LIST_START);
 			}
 
@@ -3042,8 +3032,6 @@ calc_work_area(struct xa_window *wind)
 	short wa_borders = 0;
 	bool shaded = wind->window_status & XAWS_SHADED;
 
-// 	wind->wa = r;
-
 	/* a colour work area frame is larger to allow for the
 	 * fancy borders :-) unless thinwork has been specified
 	 * a color work area frame consists of a grey, a light and
@@ -3058,6 +3046,9 @@ calc_work_area(struct xa_window *wind)
 
 	wind->outer = wind->rc;
 	wind->wadelta = wind->bd;
+
+	if( frame < 4 && (wind->window_status & XAWS_RM_WDG) )
+		frame = 4;
 
 	if (frame >= 0)
 	{
