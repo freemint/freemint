@@ -82,8 +82,6 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (new_window)
 	{
-// 		if (d) display("xa_wind_create: new window %d", new_window->handle);
-
 		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (new_window->opts & XAWO_WCOWORK)
@@ -265,7 +263,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *w;
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
-// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(6,1,0)
 
@@ -490,9 +487,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	 *
 	 */
 	case WF_FULLXYWH:
-	case WF_PREVXYWH:
 	case WF_CURRXYWH:
 	case WF_WORKXYWH:
+	case WF_PREVXYWH:
 	{
 		bool blit = false;
 		bool move = (pb->intin[2] == -1 && pb->intin[3] == -1 &&
@@ -500,7 +497,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT *ir;
 		RECT r;
 		RECT m;
-// 		short mx, my, mw, mh;
 		WINDOW_STATUS status = -1L, msg = -1;
 
 		if (cmd == WF_PREVXYWH)
@@ -555,13 +551,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
 
-
-			if( !(cfg.menu_bar & 1) || w->rc.y >= root_window->wa.y )
-			{
-				blit = true;
-			}
 		}
-
 		if (!move)
 		{
 			/* Not all coords have a value of -1 meaning we should
@@ -591,15 +581,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				m = *ir;
 				ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
 			}
-		#if 0
-			mx = ir->x;
-			my = ir->y;
-			mw = ir->w;
-			mh = ir->h;
-			ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
-		#endif
-			if ( (m.w != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
-			     (m.h != w->rc.h && (w->opts & XAWO_NOBLITH)))
+			if ( m.w == w->rc.w && m.h == w->rc.h )
+				blit = true;
+			else if ( (m.w != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
+			          (m.h != w->rc.h && (w->opts & XAWO_NOBLITH)))
 				blit = false;
 
 			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
@@ -645,7 +630,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						 *	so we dont render resizing using left/top border useless!
 						 *	Hopefully this will be good enough...
 						 */
-						if (blit && w->opts & XAWO_FULLREDRAW)
+						if (blit && (w->opts & XAWO_FULLREDRAW))
 						{
 							if (m.x != w->rc.x && m.y != w->rc.y &&
 							    m.w != w->rc.w && m.h != w->rc.h)
@@ -663,21 +648,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			inside_minmax(&m, w);
-		#if 0
-			if (w->active_widgets & USE_MAX)
-			{
-				if (w->max.w && m.w > w->max.w)
-					m.w = w->max.w;
-				if (w->max.w && m.h > w->max.h)
-					m.h = w->max.h;
-			}
-		#endif
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
-
-// 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
 			move_window(lock, w, blit, status, m.x, m.y, m.w, m.h);
-
 			if (msg != -1 && w->send_message)
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg, 0, 0, w->handle, 0,0,0,0);
 		}
@@ -847,7 +820,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 				*(RECT *)(pb->intout + 1) = w->rc;
 
-// 			display("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1));
 			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
 		}
 		break;
@@ -866,7 +838,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
-// 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 
 		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",ob, widg->stuff));
 // 		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
@@ -1395,6 +1366,8 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
+		if( !w->rect_list.start )	/* can be 0 - why? */
+			make_rect_list(w, true, RECT_SYS);
 		w->use_rlc = false;
 		if (is_shaded(w) || !get_rect(&w->rect_list, &w->rwa, true, ro))
 		{
@@ -1499,7 +1472,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 			*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
-			wind ,ro->x,ro->y,ro->w,ro->h));
+			w ,ro->x,ro->y,ro->w,ro->h));
 		break;
 	}
 	/*
