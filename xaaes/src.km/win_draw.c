@@ -765,36 +765,24 @@ struct window_colours def_otop_cols =
  G_LBLACK, /* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
-#ifdef ST_ONLY
+/* --------- win ---------- */
  { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+        {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+        {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
-#else
- { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
-#endif
-#ifdef ST_ONLY
+/* ------- borders ------- */
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
-        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
-        {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-#else
-  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
-        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
-        {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-#endif
+        {G_LWHITE,   FIS_SOLID,   8,   G_LWHITE,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+        {G_LWHITE,   FIS_SOLID,   8,   G_LBLACK,     1,    G_LWHITE, G_WHITE, NULL},		/* Selected */
+        {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Horizontal Slider */
 #if !WITH_GRADIENTS
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+        { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
 #else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+        { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslider_gradient},	/* Normal */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_hslider_gradient},	/* Selected */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &otop_hslider_gradient}}, /* Highlighted */
@@ -988,44 +976,33 @@ struct window_colours def_utop_cols =
  { 0 },	/* data header */
  0,
 
- G_LBLACK,	/* Window work area frame color */
- G_LBLACK,	/* window frame color */
+ G_LWHITE, /* window workarea frame color (waframe_col) */
+ G_LWHITE, /* window frame color (frame_col) */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
+/* --------- win ---------- */
  /* Window color (when unused window exterior is drawn) */
-#if !WITH_GRADIENTS
  { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
-          {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-          {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
-#else
- { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
-          {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-          {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
-#endif
-#if !WITH_GRADIENTS
+          {G_LBLACK, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+          {G_LBLACK, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+          {G_LBLACK, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
+
+/* ------- borders ------- */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#endif
+          {G_LBLACK, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+          {G_LBLACK, FIS_SOLID,   8,   G_LBLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
+          {G_LBLACK, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* H Slider */
 #if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
 #else
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_hslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_hslider_gradient}},	/* Highlighted */
+          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslider_gradient},	/* Normal */
+          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_hslider_gradient},	/* Selected */
+          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_hslider_gradient}},	/* Highlighted */
 #endif
  /* H Slide */
 #if !WITH_GRADIENTS
@@ -1758,15 +1735,17 @@ struct window_colours slist_def_otop_cols =
  G_LBLACK, /* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
+/* --------- win ---------- */
  { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
 
+/* ------- borders ------- */
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
-                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
-                                                    {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+                                                    {G_LBLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_WHITE, NULL},	/* Normal */
+                                                    {G_LBLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},		/* Selected */
+                                                    {G_LWHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Horizontal Slider */
 #if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -2710,10 +2689,13 @@ d_borders(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	short size = wind->frame;
 	RECT r;
 
-	if (wind->frame > 0)
+	if (size > 0 )
 	{
-		if (wind->frame >= 4)
+		if( size < 4 && (wind->window_status & XAWS_RM_WDG) )
+			size = 4;
+		if (size >= 4 && (wind->window_status & XAWS_FIRST) )	/* only for top-window */
 		{
+			(*v->api->l_color)(v, ((struct window_colours *)wind->colours)->frame_col);
 			/* top-left box */
 			r.x = wind->r.x;
 			r.y = wind->r.y;
