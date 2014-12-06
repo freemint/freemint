@@ -250,7 +250,7 @@ ehci_pci_probe(struct ucdif *ehci_uif)
 	return 0;
 }
 
-long ehci_interrupt_handle(long param)
+long ehci_interrupt_handle(long param, long biosparam)
 {
 	struct ehci *ehci = (struct ehci *)param;
 	unsigned long status;
@@ -278,6 +278,8 @@ long ehci_interrupt_handle(long param)
 				usb_rh_wakeup();
 		}
 	}
+	else /* not our interrupt */
+		return biosparam;
 
 	/* Disable interrupt */
 	ehci_writel(&ehci->hcor->or_usbsts, status);
