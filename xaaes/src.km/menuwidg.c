@@ -128,8 +128,10 @@ change_entry(Tab *tab, int state)
 	DIAGS(("change entry: tab=%lx, obtree=%lx, obj=%d, state=%d",
 		tab, obtree, k->p.current, state));
 
-	if (t < 0 || !obtree) /* || t > ?? */
-		return 1;
+	if (!obtree) /* || t > ?? */
+		return 1;	/* ERROR */
+	if( t < 0 )
+		return 0;
 
 	if (state)
 		state = obtree[t].ob_state | OS_SELECTED;
