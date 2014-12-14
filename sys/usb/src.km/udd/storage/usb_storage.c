@@ -809,11 +809,11 @@ us_one_transfer(struct us_data *us, long pipe, char *buf, long length)
 				DEBUG(("bulk transferred with error"));
 				if(this_xfer == partial)
 				{
-					DEBUG((" %ld, but data ok", us->pusb_dev->status));
+					DEBUG((" %lx, but data ok", us->pusb_dev->status));
 					return 0;
 				}
 				/* if our try counter reaches 0, bail out */
-				DEBUG((" %ld, data %d", us->pusb_dev->status, partial));
+				DEBUG((" %lx, data %d", us->pusb_dev->status, partial));
 				if(!maxtry--)
 					return result;
 			}
@@ -1087,7 +1087,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	result = usb_stor_BBB_comdat(srb, us);
 	if(result < 0)
 	{
-		DEBUG(("failed to send CBW status %ld", us->pusb_dev->status));
+		DEBUG(("failed to send CBW status %lx", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
@@ -1118,7 +1118,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	}
 	if(result < 0)
 	{
-		DEBUG(("usb_bulk_msg error status %ld", us->pusb_dev->status));
+		DEBUG(("usb_bulk_msg error status %lx", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
@@ -1160,7 +1160,7 @@ again:
 
 	if(result < 0)
 	{
-		DEBUG(("usb_bulk_msg error status %ld", us->pusb_dev->status));
+		DEBUG(("usb_bulk_msg error status %lx", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
 		result = USB_STOR_TRANSPORT_FAILED;
 		goto out;
@@ -1291,7 +1291,7 @@ do_retry:
 	}
 	if((result < 0) && !(us->pusb_dev->status & USB_ST_STALLED))
 	{
-		DEBUG((" AUTO REQUEST ERROR %ld", us->pusb_dev->status));
+		DEBUG((" AUTO REQUEST ERROR %lx", us->pusb_dev->status));
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 	DEBUG(("autorequest returned 0x%02x 0x%02x 0x%02x 0x%02x", srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
