@@ -739,7 +739,7 @@ driver_init (void)
 	if((ferror = Fopen("ethernat.inf",0)) < 0) { /* Try first in sysdir */
 		short sysdrv = *((short *) 0x446);	/* get the boot drive number */
 		char ethernat_inf[] = "A:\\ETHERNAT.INF";
-		ethernat_inf[0] = sysdrv;
+		ethernat_inf[0] = 'A' + sysdrv;
 
 		ferror = Fopen(ethernat_inf,0);/* otherwise in boot drive's root */
 	}
@@ -779,19 +779,19 @@ driver_init (void)
 		//ksprintf (message, "Error opening ethernat.inf!\n\r");
 		//c_conws (message);
 		c_conws("Could not open ethernat.inf\n\r");
-		c_conws("Using default ethernet address 01:02:03:04:05:06\n\r");
+		c_conws("Using default ethernet address 00:01:02:03:04:05\n\r");
 		macbuf[0] = '0';
-		macbuf[1] = '1';
+		macbuf[1] = '0';
 		macbuf[2] = '0';
-		macbuf[3] = '2';
+		macbuf[3] = '1';
 		macbuf[4] = '0';
-		macbuf[5] = '3';
+		macbuf[5] = '2';
 		macbuf[6] = '0';
-		macbuf[7] = '4';
+		macbuf[7] = '3';
 		macbuf[8] = '0';
-		macbuf[9] = '5';
+		macbuf[9] = '4';
 		macbuf[10] = '0';
-		macbuf[11] = '6';
+		macbuf[11] = '5';
 	}
 
 	macbuf[12] = 0;
