@@ -5243,7 +5243,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	else
 
 	/*
-	 * step 3: check for dos medium (supported signs: 0x04, 0x06, 0x0b, 0x0c, 0x0e)
+	 * step 3: check for dos medium (supported signs: 0x01, 0x04, 0x06, 0x0b, 0x0c, 0x0e)
 	 */
 
 	if (di->id[0] == '\0' && di->id[1] == 'D')
@@ -5252,6 +5252,12 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 		switch (di->id[2])
 		{
+			case 0x01:
+			{
+				xbpb->ftype = FAT_TYPE_12;
+				fvi = (void *) (u->data + sizeof (*fbs));
+				break;
+			}
 			case 0x04:
 			case 0x06:
 			case 0x0e: /* FAT16, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */

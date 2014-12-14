@@ -108,7 +108,7 @@ typedef struct {
 /*
  * DOS & Linux partition ids that we support
  */
-static const unsigned long valid_dos[] = { 0x04, 0x06, 0x0e, 0x0b, 0x0c, 0x81, 0x83, 0 };
+static const unsigned long valid_dos[] = { 0x01, 0x04, 0x06, 0x0e, 0x0b, 0x0c, 0x81, 0x83, 0 };
 
 /*
  *	local function prototypes
@@ -209,6 +209,8 @@ static void build_bpb(BPB *bpbptr, void *bs)
 	bpbptr->numcl = clusters;
 	if (clusters > sys_XHDOSLimits(XH_DL_CLUSTS12,0))
 		bpbptr->bflags = 1;					/* FAT16 */
+	else 
+		bpbptr->bflags = 0;					/* FAT12 */
 }
 
 #ifdef DEBUGGING_ROUTINES
