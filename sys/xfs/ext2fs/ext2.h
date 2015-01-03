@@ -35,7 +35,7 @@
 /*
  * Define EXT2FS_DEBUG to produce debug messages
  */
-# undef EXT2FS_DEBUG
+//# undef EXT2FS_DEBUG
 
 /*
  * Define EXT2_PREALLOCATE to preallocate data blocks for expanding files
