@@ -510,6 +510,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 {
 	struct bios_file *b;
 
+	DEBUG(("bios_lookup: %s, index=%ld", name, dir->index ));
 	if (dir->index != 0)
 	{
 		/* check for \dev\fd directory */
@@ -534,16 +535,21 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 		if (isdigit(*name) || *name == '-')
 		{
 			long fd;
+			const char *np;
 			int minus = 0;
 			if( *name == '-' )
 			{
 				minus = 1;
 				name++;
 			}
+			/* /dev/fd: only digits possible */
+			for( np = name; *np; np++ )
+				if( !isdigit(*np) )
+					return ENOENT;
 			fd = atol(name);
 			if( minus )
 				fd = -fd;
-			if (fd >= MIN_HANDLE && fd < get_curproc()->p_fd->nfiles)
+			if ((fd >= MIN_HANDLE && fd < 0) || get_curproc()->p_fd->ofiles[fd] != 0)
 			{
 				fc->fs = &bios_filesys;
 				fc->dev = dir->dev;
