@@ -1847,6 +1847,7 @@ load_keyboard_table(const char *path, short flag)
 	char buf[64];
 	const char *name;
 	FILEPTR *fp;
+	XATTR xattr;
 	long ret;
 
 	if (!path)
@@ -1861,30 +1862,26 @@ load_keyboard_table(const char *path, short flag)
 
 	TRACE(("%s(): path `%s'", __FUNCTION__, name));
 
-		XATTR xattr;
-
-		ret = do_open(&fp, rootproc, name, O_RDONLY, 0, &xattr);
-		if (ret == 0)
+	ret = do_open(&fp, rootproc, name, O_RDONLY, 0, &xattr);
+	if (ret == 0)
+	{
+# ifdef VERBOSE_BOOT
+		if (flag & 0x1)
+			boot_printf(MSG_keytable_loading, name);
+# endif
+		ret = load_external_table(fp, name, xattr.size);
+# ifdef VERBOSE_BOOT
+		if (flag & 0x01)
 		{
-# ifdef VERBOSE_BOOT
-			if (flag & 0x1)
-				boot_printf(MSG_keytable_loading, name);
-# endif
-			ret = load_external_table(fp, name, xattr.size);
-# ifdef VERBOSE_BOOT
-			if (flag & 0x01)
-			{
-				if (ret == 0)
-					boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
-				else
-					boot_printf(MSG_init_error, ret);
-			}
-			boot_printf("\r\n");
-# endif
-			do_close(rootproc, fp);
+			if (ret == 0)
+				boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
+			else
+				boot_printf(MSG_init_error, ret);
 		}
-		else
-			fp->links = 0;	/* XXX suppress complaints */
+		boot_printf("\r\n");
+# endif
+		do_close(rootproc, fp);
+	}
 
 	return ret;
 }
