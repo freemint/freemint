@@ -1681,7 +1681,7 @@ sys_d_cntl (int cmd, const char *name, long arg)
 
 	r = 0;
 
-	if( (cmd == FUTIME_UTC || cmd == FUTIME) )	//&& (dir.aux & DANGLING_SYMLINK) )
+	if( (cmd == FUTIME_UTC || cmd == FUTIME) )
 	{
 		r = get_link_target( p, &dir, temp1 );	/* this costs ~10% */
 	}
@@ -1826,7 +1826,13 @@ sys_f_chmod (const char *name, unsigned int mode)
 	if (r)
 	{
 		DEBUG (("Fchmod(%s): error %ld", name, r));
-		return r;
+		if( (fc.aux & CLOSED_FIFO) )
+		{
+			if( !path2cookie (p, name, NULL, &fc) )
+				r = 0;
+		}
+		if( r )
+			return r;
 	}
 
 	r = xfs_getxattr (fc.fs, &fc, &xattr);
@@ -2163,11 +2169,28 @@ sys_f_stat64 (int flag, const char *name, STAT *stat)
 	if (r)
 	{
 		DEBUG (("Fstat64(%s): path2cookie returned %ld", name, r));
-		return r;
+		if( flag == 0 && (fc.aux & CLOSED_FIFO) )
+		{
+			if( !path2cookie (p, name, NULL, &fc) )
+				r = 0;
+		}
+		if( r )
+			return r;
 	}
 
 	r = xfs_stat64 (fc.fs, &fc, stat);
 	if (r) DEBUG (("Fstat64(%s): returning %ld", name, r));
+	if (S_ISLNK(stat->mode))
+	{
+		char buf[64];
+		int buflen = sizeof(buf);
+		int ret = xfs_readlink (fc.fs, &fc, buf, buflen);
+		if( !ret )
+		{
+			if( !strncmp( buf, "u:\\pipe\\", 8 ) )
+				stat->mode = S_IFIFO | (stat->mode & S_IRWXUGO);
+		}
+	}
 
 	release_cookie (&fc);
 	return r;

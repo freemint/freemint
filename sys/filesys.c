@@ -982,7 +982,7 @@ restart_mount:
 		 */
 		if (denyaccess (p->p_cred->ucr, &xattr, S_IXOTH))
 		{
-			DEBUG (("search permission in directory denied"));
+			DEBUG (("relpath2cookie: search permission in directory denied"));
 			release_cookie (&dir);
 			/* r = ENOTDIR; */
 			r = EACCES;
@@ -1096,7 +1096,6 @@ restart_mount:
 			release_cookie (res);
 			break;
 		}
-
 		/* check for a symbolic link
 		 * - if the file is a link, and we're following links, follow it
 		 */
@@ -1134,7 +1133,11 @@ restart_mount:
 				if (r)
 				{
 					if( dolast == 2 )
+					{
 						res->aux |= DANGLING_SYMLINK;
+						if( res->fs == &pipe_filesys )
+							res->aux |= CLOSED_FIFO;
+					}
 					DEBUG (("error following symbolic link"));
 					break;
 				}
@@ -1149,23 +1152,22 @@ restart_mount:
 			release_cookie (&dir);
 			dir = *res;
 		}
-
 # if WITH_KERNFS
-	if( res->fs == &bios_filesys && IS_FD_DIR(res) )	/* /dev/fd */
-	{
-		char tmp[128];
-		ksprintf( tmp, sizeof tmp, "u:/kern/%d/fd", p->pid);
-		r = relpath2cookie(p, &dir, tmp, 0, res, 0);
-		if( r )
+		if( res->fs == &bios_filesys && IS_FD_DIR(res) )	/* /dev/fd */
 		{
-			DEBUG (("error following /dev/fd: %s, %ld", path, dir.index));
-			break;
+			char tmp[128];
+			ksprintf( tmp, sizeof tmp, "u:/kern/%d/fd", p->pid);
+			r = relpath2cookie(p, &dir, tmp, 0, res, 0);
+			if( r )
+			{
+				DEBUG (("error following /dev/fd: %s, %ld", path, dir.index));
+				break;
+			}
+			if( dolast == 1 )
+				dir = *res;
 		}
-		if( dolast == 1 )
-			dir = *res;
-	}
 #endif
-	}
+	}	/* while (*path) */
 	PATH2COOKIE_DB (("relpath2cookie(3): returning %ld", r));
 	return r;
 }
@@ -1280,7 +1282,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		{
 		 	if (newrm != O_RDONLY)
 		 	{
-				DEBUG (("write access denied"));
+				DEBUG (("denyshare: write access denied"));
 				return 1;
 			}
 		}
@@ -1289,7 +1291,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		{
 			if (newrm != O_WRONLY)
 			{
-				DEBUG (("read access denied"));
+				DEBUG (("denyshare: read access denied"));
 				return 1;
 			}
 		}
@@ -1298,7 +1300,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		{
 			if (oldrm != O_RDONLY)
 			{
-				DEBUG (("couldn't deny writes"));
+				DEBUG (("denyshare: couldn't deny writes"));
 				return 1;
 			}
 		}
@@ -1307,7 +1309,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		{
 			if (oldrm != O_WRONLY)
 			{
-				DEBUG (("couldn't deny reads"));
+				DEBUG (("denyshare: couldn't deny reads"));
 				return 1;
 			}
 		}
@@ -1330,7 +1332,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 					goto found;
 
 			/* old file pointer is not open by this process */
-			DEBUG (("O_COMPAT file was opened for writing by another process"));
+			DEBUG (("denyshare: O_COMPAT file was opened for writing by another process"));
 			return 1;
 
 		found:
@@ -1367,8 +1369,10 @@ denyaccess(struct ucred *cred, XATTR *xattr, ushort perm)
 		perm = perm << 3;
 
 	if ((mode & perm) != perm)
+	{
 		/* access denied */
 		return 1;
+	}
 
 	return 0;
 }
@@ -1447,7 +1451,7 @@ dir_access(struct ucred *cred, fcookie *dir, ushort perm, ushort *mode)
 
 	if (denyaccess(cred, &xattr, perm))
 	{
-		DEBUG(("no permission for directory"));
+		DEBUG(("dir_access: no permission for directory"));
 		return EACCES;
 	}
 

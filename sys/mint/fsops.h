@@ -22,6 +22,7 @@ struct fcookie
 {
 	FILESYS	*fs;		/* filesystem that knows about this cookie */
 	ushort	dev;		/* device info (e.g. Rwabs device number) */
+#define CLOSED_FIFO      0x4000 /* dangling symlink to u:/pipe */
 #define DANGLING_SYMLINK 0x8000 /* set by relpath2cookie, used by do_open */
 	ushort	aux;		/* extra data that the file system may want */
 	long	index;		/* this+dev uniquely identifies a file */

@@ -11,6 +11,68 @@
  *
  *
  * simple pipefs.c
+
+Posix (open()):
+
+Some implementations permit opening FIFOs with O_RDWR. Since FIFOs could
+be implemented in other ways, and since two file descriptors can be used
+to the same effect, this possibility is left as undefined.
+
+The use of the O_TRUNC flag on FIFOs and directories (pipes cannot be
+open()-ed) must be permissible without unexpected side-effects (for
+example, creat() on a FIFO must not remove data). Since terminal special
+files might have type-ahead data stored in the buffer, O_TRUNC should
+not affect their content, particularly if a program that normally opens
+a regular file should open the current controlling terminal instead.
+Other file types, particularly implementation-defined ones, are left
+implementation-defined.
+
+
+O_NONBLOCK
+When opening a FIFO with O_RDONLY or O_WRONLY set:
+
+If O_NONBLOCK is set, an open() for reading-only shall return without
+delay. An open() for writing-only shall return an error if no process
+currently has the file open for reading.
+
+If O_NONBLOCK is clear, an open() for reading-only shall block the
+calling thread until a thread opens the file for writing. An open() for
+writing-only shall block the calling thread until a thread opens the
+file for reading.
+
+When opening a block special or character special file that supports non-blocking opens:
+
+If O_NONBLOCK is set, the open() function shall return without blocking
+for the device to be ready or available. Subsequent behavior of the
+device is device-specific.
+
+If O_NONBLOCK is clear, the open() function shall block the calling
+thread until the device is ready or available
+before returning.
+
+Otherwise, the O_NONBLOCK flag shall not cause an error, but it is
+unspecified whether the file status flags will include the O_NONBLOCK
+flag.
+
+O_TRUNC
+
+If the file exists and is a regular file, and the file is successfully
+opened O_RDWR or O_WRONLY, its length shall be truncated to 0, and the
+mode and owner shall be unchanged. It shall have no effect on FIFO
+special files or terminal device files. Its effect on other file types
+is implementation-defined. The result of using O_TRUNC without either
+O_RDWR or O_WRONLY is undefined.
+
+O_RDWR
+Open for reading and writing. The result is undefined if this flag is applied to a FIFO.
+
+
+[ENXIO]
+
+O_NONBLOCK is set, the named file is a FIFO, O_WRONLY is set, and no
+process has the file open for reading.
+
+
  *
  */
 
@@ -138,6 +200,20 @@ DEVDRV pipe_device =
 };
 
 
+/* /pipe is read/write for any user */
+#ifndef PIPE_DIRMODE
+# define PIPE_DIRMODE 0767
+#endif
+
+/*
+ * fifo.flags:
+ * don't wait for input when open O_HEAD
+ * multiple readers/writers possible
+ */
+#ifndef P_SELFREAD
+# define P_SELFREAD 0x100
+#endif
+
 /* size of pipes */
 #define PIPESIZ	4096		/* MUST be a multiple of 4 */
 
@@ -244,7 +320,7 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 		*(long *) &xattr->atime = xtime.tv_sec;
 		*(long *) &xattr->ctime = rootproc->started.tv_sec;
 #endif
-		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
+		xattr->mode = S_IFDIR | PIPE_DIRMODE;
 		xattr->attr = FA_DIR;
 		xattr->size = xattr->nblocks = 0;
 	}
@@ -305,7 +381,7 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 	{
 		/* root directory */
 
-		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
+		ptr->mode = S_IFDIR | PIPE_DIRMODE;
 
 		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
@@ -625,6 +701,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	 * clear the flag when this happens.
 	 */
 	b->flags = ((attrib & FA_SYSTEM) ? O_TTY : 0) | O_HEAD;
+	b->flags |= selfread ? P_SELFREAD : 0;
 	b->lockpid = b->cursrate = 0;
 	b->inp = inp; b->outp = outp; b->tty = tty;
 
@@ -670,6 +747,40 @@ pipe_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	return ENOSYS;
 }
 
+/* Two little helpers for waking up processes sleeping on our pipe
+ */
+
+static int _cdecl
+pipe_wake_readers (struct pipe* pipe)
+{
+	int r = 0;
+	if (pipe->rsel && pipe->len > 0)
+		wakeselect ((PROC *) pipe->rsel);
+	else if( !pipe->rsel )
+	{
+		r = 1;
+	}
+
+	if (pipe->len > 0)
+		wake (IO_Q, (long) pipe);
+	return r;
+}
+
+static int _cdecl
+pipe_wake_writers (struct pipe* pipe)
+{
+	int r = 0;
+	if (pipe->wsel && pipe->len < PIPESIZ)
+		wakeselect ((PROC *) pipe->wsel);
+	else if( !pipe->wsel )
+	{
+		r = 1;
+	}
+	if (pipe->len < PIPESIZ)
+		wake (IO_Q, (long) pipe);
+	return r;
+}
+
 /*
  * PIPE device driver
  */
@@ -696,8 +807,12 @@ pipe_open (FILEPTR *f)
 		}
 		p->flags &= ~O_HEAD;
 	}
-	else
+	else if( !(p->flags & P_SELFREAD) )
 	{
+		if( !(rwmode & (O_WRONLY|O_RDWR)) && (p->outp && p->outp->readers != VIRGIN_PIPE) )
+			return EBUSY;	/* someone is already reading */
+		if( (rwmode & (O_WRONLY|O_RDWR)) && (p->inp && p->outp->writers != VIRGIN_PIPE) )
+			return EBUSY;	/* someone is already writing */
 # if 0
 		if (f->flags & O_TRUNC)
 		{
@@ -732,6 +847,7 @@ pipe_open (FILEPTR *f)
 				p->inp->readers = 1;
 			else
 				p->inp->readers++;
+			pipe_wake_writers (p->inp);
 		}
 
 		if ((rwmode == O_WRONLY || rwmode == O_RDWR) && p->outp)
@@ -740,38 +856,30 @@ pipe_open (FILEPTR *f)
 				p->outp->writers = 1;
 			else
 				p->outp->writers++;
+			pipe_wake_readers(p->outp);
+		}
+		yield();
+	}
+	else if (!(p->flags & P_SELFREAD) && !(p->flags & O_TTY) )
+	{
+		/* posix wants this */
+		if( (rwmode == O_RDONLY || rwmode == O_RDWR) && p->outp)
+		{
+			pipe_wake_writers (p->outp);
+			sleep(IO_Q, (long)p->outp);
+		}
+		else if( (rwmode == O_WRONLY || rwmode == O_RDWR) )
+		{
+			pipe_wake_readers (p->inp);
+			sleep(IO_Q, (long)p->inp);
 		}
 	}
-
 	/* TTY devices need a tty structure in f->devinfo */
 	f->devinfo = (long) p->tty;
 
 	p->mtime = xtime;
 
 	return E_OK;
-}
-
-/* Two little helpers for waking up processes sleeping on our pipe
- */
-
-static void _cdecl
-pipe_wake_readers (struct pipe* pipe)
-{
-	if (pipe->rsel && pipe->len > 0)
-		wakeselect ((PROC *) pipe->rsel);
-
-	if (pipe->len > 0)
-		wake (IO_Q, (long) pipe);
-}
-
-static void _cdecl
-pipe_wake_writers (struct pipe* pipe)
-{
-	if (pipe->wsel && pipe->len < PIPESIZ)
-		wakeselect ((PROC *) pipe->wsel);
-
-	if (pipe->len < PIPESIZ)
-		wake (IO_Q, (long) pipe);
 }
 
 static long _cdecl
@@ -940,19 +1048,21 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 			memcpy (buf, pbuf, j);
 			buf += j;
 			if (nbytes > 0 && plen > 0) {
-			    j = plen;
-			    if (j > nbytes) j = (int)nbytes;
-			    nbytes -= j; plen -= j;
-			    bytes_read += j;
-			    p->start = j;
-			    memcpy (buf, p->buf, j);
-			    buf += j;
-			  }
+				j = plen;
+				if (j > nbytes) j = (int)nbytes;
+				nbytes -= j; plen -= j;
+				bytes_read += j;
+				p->start = j;
+				memcpy (buf, p->buf, j);
+				buf += j;
+		  }
 			p->len = plen;
 			if (plen == 0 || p->start == PIPESIZ)
 			  p->start = 0;
 			pipe_wake_writers (p);
-		} else if (p->writers <= 0 || p->writers == VIRGIN_PIPE) {
+		}
+		else if ((p->writers <= 0 || p->writers == VIRGIN_PIPE) && !(f->flags & O_HEAD))
+		{
 			TRACE(("pipe_read: no more writers"));
 			break;
 		} else if ((f->flags & O_NDELAY) ||
@@ -961,12 +1071,18 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 		} else {
 	/* is someone select()ing the other end of the pipe for writing? */
 			pipe_wake_writers (p);
-			if (p->len == plen) {
-				/* Nobody has read from the pipe. */
-				TRACE(("pipe_read: pipe empty: sleep on %lx", p));
-				if (sleep(IO_Q, (long)p)) {
-					return EINTR;
+			if (p->len == plen )
+			{
+				if( p->writers != 0 && p->writers != VIRGIN_PIPE )
+				{
+					/* Nobody has written to the pipe. */
+					TRACE(("pipe_read: pipe empty: sleep on %lx", p));
+					if (sleep(IO_Q, (long)p)) {
+						return EINTR;
+					}
 				}
+				else
+					break;
 			}
 		}
 	}
@@ -1448,12 +1564,6 @@ pipe_close (FILEPTR *f, int pid)
 	{
 		/* wake any processes waiting on this pipe */
 
-		wake (IO_Q, (long) this->inp);
-		if (this->inp->rsel)
-			wakeselect ((PROC *) this->inp->rsel);
-		if (this->inp->wsel)
-			wakeselect ((PROC *) this->inp->wsel);
-
 		if (this->outp)
 		{
 			wake (IO_Q, (long) this->outp);
@@ -1462,6 +1572,12 @@ pipe_close (FILEPTR *f, int pid)
 			if (this->outp->rsel)
 				wakeselect ((PROC *) this->outp->rsel);
 		}
+
+		wake (IO_Q, (long) this->inp);
+		if (this->inp->rsel)
+			wakeselect ((PROC *) this->inp->rsel);
+		if (this->inp->wsel)
+			wakeselect ((PROC *) this->inp->wsel);
 
 		/* remove the file pointer from the list of open file
 		 * pointers of this pipe
@@ -1522,12 +1638,10 @@ pipe_close (FILEPTR *f, int pid)
 			if (p)
 			{
 				p->writers--;
-# if 1
 				/* if pty master exits tell the slaves */
 				if (!p->writers && is_terminal(f) &&
 				    (f->flags & O_HEAD) && this->tty->pgrp)
 					killgroup(this->tty->pgrp, SIGHUP, 1);
-# endif
 			}
 		}
 
