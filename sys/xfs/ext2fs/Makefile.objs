@@ -1,0 +1,47 @@
+#
+# Makefile for
+#
+TARGET = ext2.xfs
+
+SHELL = /bin/sh
+SUBDIRS =
+
+srcdir = ..
+top_srcdir = ../../..
+VPATH=..
+
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
+
+ifeq ($(CPU),dbg)
+CPU = 000
+MODEL = -m68000
+CFLAGS += -DEXT2FS_DEBUG=1
+LIBKERNSTMP = $(top_srcdir)/libkern/libkern$(CPU).a
+LIBKERN = -L$(top_srcdir)/libkern -lkern$(CPU)
+libkerntarget=
+else
+libkerntarget = $(top_srcdir)/libkern/$(LIBKERNTARGET)
+endif
+
+all: $(TARGET)
+
+# default overwrites
+INCLUDES = -I$(top_srcdir)
+DEFINITIONS = -D__KERNEL_XFS__
+
+LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LIBS = $(LIBKERN) -lgcc
+STRIPFLAGS =
+
+include ../SRCFILES
+# default definitions
+OBJS = $(COBJS:.c=.o)
+
+$(TARGET): $(OBJS) $(libkerntarget)
+	echo LIBKERN=$(LIBKERN) LIBKERNTARGET=$(LIBKERNTARGET) CPU=$(CPU)
+	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(STRIP) $(STRIPFLAGS) $@
+
+include $(top_srcdir)/DEPENDENCIES

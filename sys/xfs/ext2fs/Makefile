@@ -8,7 +8,6 @@ SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
-subdir = src
 
 default: all
 
@@ -16,25 +15,14 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+targets=000 020-60 v4e dbg
 
-# default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_XFS__
+all: $(targets)
 
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
-#CPU = 000
-STRIPFLAGS =
+include SRCFILES
 
-# default definitions
-SGENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o)
+$(targets): $(SRCFILES)
+	mkdir -p .$@ && cd .$@ && make -f ../Makefile.objs CPU=$@ $(TARGETS)
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-	$(STRIP) $(STRIPFLAGS) $@
+#include $(top_srcdir)/DEPENDENCIES
 
-
-include $(top_srcdir)/DEPENDENCIES
