@@ -18,8 +18,8 @@ ifeq ($(CPU),dbg)
 CPU = 000
 MODEL = -m68000
 CFLAGS += -DEXT2FS_DEBUG=1
-LIBKERNSTMP = $(top_srcdir)/libkern/libkern$(CPU).a
-LIBKERN = -L$(top_srcdir)/libkern -lkern$(CPU)
+LIBKERNSTMP = $(top_srcdir)/libkern/libkern000.a
+LIBKERN = -L$(top_srcdir)/libkern -lkern000
 libkerntarget=
 else
 libkerntarget = $(top_srcdir)/libkern/$(LIBKERNTARGET)
