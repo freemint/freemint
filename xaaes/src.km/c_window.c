@@ -2326,7 +2326,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	if (wind->owner->status & CS_EXITING)
 		return;
 
-	if( wind->r.x == X && wind->r.y == Y && wind->r.w == W && wind->r.h == H )
+	if( (wind->window_status & newstate) && wind->r.x == X && wind->r.y == Y && wind->r.w == W && wind->r.h == H )
 		return;
 	new.x = X;
 	new.y = Y;
