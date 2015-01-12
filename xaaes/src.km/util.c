@@ -58,7 +58,8 @@ redir_debug( struct proc *p, int md )
 	}
 	if( md == 1 && (r=s_system( S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
 	{
-		fp = kernel_open(bl, O_RDWR|O_CREAT, NULL,NULL);
+		long err;
+		fp = kernel_open(bl, O_WRONLY|O_CREAT, &err, NULL);
 		if( fp )
 		{
 			kernel_lseek(fp, 0, SEEK_END);
@@ -66,6 +67,8 @@ redir_debug( struct proc *p, int md )
 			p->p_fd->ofiles[1] = fp;
 			r = s_system( S_SETDEBUGFP, (long)fp, 0 );
 		}
+		else
+			BLOG((0,"redir_debug: could not open '%s': %ld", bl, err ));
 	}
 	return;
 }
