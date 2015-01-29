@@ -731,7 +731,7 @@ long _cdecl
 relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	       fcookie *res, int depth)
 {
-	static char newpath[16] = "U:\\DEV\\";
+	char newpath[16];
 
 	struct cwd *cwd = p->p_cwd;
 
@@ -788,7 +788,31 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	if (strlen (path) == 4 && path[3] == ':')
 # endif
 	{
-		strncpy (newpath+7, path, 3);
+		strcpy(newpath, "U:\\DEV\\");
+		newpath[7] = path[0];
+		newpath[8] = path[1];
+		newpath[9] = path[2];
+
+		if ((path[0] == 'N' || path[0] == 'n') &&
+		    (path[1] == 'U' || path[1] == 'u') &&
+		    (path[2] == 'L' || path[2] == 'l'))
+		{
+			/* the device file is u:\dev\null */
+			newpath[10] = 'l';
+			newpath[11] = '\0';
+		} else
+		if ((path[0] == 'M' || path[0] == 'm') &&
+		    (path[1] == 'I' || path[1] == 'i') &&
+		    (path[2] == 'D' || path[2] == 'd'))
+		{
+			/* the device file is u:\dev\midi */
+			newpath[10] = 'i';
+			newpath[11] = '\0';
+		} else {
+			/* add the NULL terminator */
+			newpath[10] = '\0';
+		}
+
 		path = newpath;
 	}
 
