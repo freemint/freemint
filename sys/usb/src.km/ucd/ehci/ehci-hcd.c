@@ -39,7 +39,6 @@
 
 #include "../../global.h"
 
-#include "../../endian/io.h"
 #include "mint/endian.h"
 #include "mint/mdelay.h"
 #include "../../usb.h"
