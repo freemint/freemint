@@ -64,8 +64,8 @@
 #include "libkern/libkern.h"
 #include "mint/mdelay.h"
 #include "mint/dcntl.h"
+#include "mint/swap.h"
 
-#include "../../endian/io.h"
 #include "../../usb.h"
 #include "../../usb_api.h"
 
