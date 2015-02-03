@@ -48,7 +48,6 @@
 
 #include "../../global.h"
 
-#include "../../endian/io.h"
 #include "mint/endian.h"
 #include "mint/mdelay.h"
 #include "../../usb.h"
@@ -181,31 +180,31 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 #endif
 		
 
-static inline void sl811_write (__u8 index, __u8 data)
+static inline void sl811_write (unsigned char index, unsigned char data)
 {
 	DACCESS = index;
 	DACCESS = data;
 }
 
-static inline __u8 sl811_read (__u8 index)
+static inline unsigned char sl811_read (unsigned char index)
 {
 	register unsigned short data;
 
 	DACCESS = index;
 	data = DACCESS;
 
-	return (__u8)data;
+	return (unsigned char)data;
 }
 
 /*
  * Read consecutive bytes of data from the SL811H/SL11H buffer
  */
-static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
+static void inline sl811_read_buf(unsigned char offset, unsigned char *buf, unsigned char size)
 {
 	if ((long)buf & 1) {
 		/* Make it even, to prevent crashes on 68000. */
 		DACCESS = offset++;
-		*buf++ = (__u8) DACCESS;
+		*buf++ = (unsigned char) DACCESS;
 		size--;
 	}
 
@@ -315,14 +314,14 @@ static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
 		 * So you need to write address, then read or write data.
 		 */
 		DACCESS = offset++;
-		*buf++ = (__u8) DACCESS;
+		*buf++ = (unsigned char) DACCESS;
 	}
 }
 
 /*
  * Write consecutive bytes of data to the SL811H/SL11H buffer
  */
-static void inline sl811_write_buf(__u8 offset, __u8 *buf, __u8 size)
+static void inline sl811_write_buf(unsigned char offset, unsigned char *buf, unsigned char size)
 {
 	if ((long)buf & 1) {
 		/* Make it even, to prevent crashes on 68000. */
@@ -468,14 +467,14 @@ static int usb_init_atari (void)
 	return (0);
 }
 
-static void sl811_write_intr(__u8 irq)
+static void sl811_write_intr(unsigned char irq)
 {
 	sl811_write(SL811_INTR, irq);
 }
 
 static long sl811_hc_reset(void)
 {
-	__u8 status;
+	unsigned char status;
 
 	sl811_write(SL811_CTRL2, SL811_CTL2_HOST | SL811_12M_HI);
 	sl811_write(SL811_CTRL1, SL811_CTRL1_RESET);
@@ -624,11 +623,11 @@ static int calc_needed_buswidth(long bytes, long need_preamble)
 	return !need_preamble ? bytes * 8 + 5120 : bytes * 64 + 3072;
 }
 
-static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *buffer, long len, long flags)
+static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, unsigned char *buffer, long len, long flags)
 {
 	register unsigned long time_start = get_hz_200();
-	register __u8 ctrl = SL811_USB_CTRL_ARM | SL811_USB_CTRL_ENABLE;
-	register __u8 status = 0;
+	register unsigned char ctrl = SL811_USB_CTRL_ARM | SL811_USB_CTRL_ENABLE;
+	register unsigned char status = 0;
 	long err = 0;
 	long nak = 0;
 	long need_preamble = !(rh_status.wPortStatus & USB_PORT_STAT_LOW_SPEED) &&
@@ -689,7 +688,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		status = sl811_read(SL811_STS_A);
 
 		if (status & SL811_USB_STS_ACK) {
-			__u8 remainder = sl811_read(SL811_CNT_A);
+			unsigned char remainder = sl811_read(SL811_CNT_A);
 			if (remainder) {
 		//		DEBUG(("usb transfer remainder = %d", remainder));
 				len -= remainder;
@@ -791,7 +790,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long res;
 		long nlen = (max > (len - done)) ? (len - done) : max;
 
-		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, flags);
+		res = sl811_send_packet(dev, pipe, (unsigned char*)buffer+done, nlen, flags);
 		if (res < 0) {
 			UNLOCKUSB;
 			dev->act_len = done;
@@ -873,7 +872,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	/* setup phase */
 	usb_settoggle(dev, ep, 1, 0);
 	if (sl811_send_packet(dev, usb_sndctrlpipe(dev, ep),
-			      (__u8*)setup, sizeof(*setup), 0) == sizeof(*setup)) {
+			      (unsigned char*)setup, sizeof(*setup), 0) == sizeof(*setup)) {
 		int dir_in = usb_pipein(pipe);
 
 		/* data phase */
@@ -888,7 +887,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		while (done < len) {
 			long res;
 			long nlen = (max > (len - done)) ? (len - done) : max;
-			res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
+			res = sl811_send_packet(dev, pipe, (unsigned char*)buffer+done, nlen, 0);
 			if (res < 0) {
 				ALERT(("1status data failed!"));
 				dev->status = -res;
@@ -949,7 +948,7 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long res;
 		long nlen = (max > (len - done)) ? (len - done) : max;
 
-		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
+		res = sl811_send_packet(dev, pipe, (unsigned char*)buffer+done, nlen, 0);
 		if (res < 0) {
 			UNLOCKUSB;
 
@@ -978,7 +977,7 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
  */
 
 /* Device descriptor */
-static __u8 sl811_rh_dev_des[] =
+static unsigned char sl811_rh_dev_des[] =
 {
 	0x12,		/*	__u8  bLength; */
 	0x01,		/*	__u8  bDescriptorType; Device */
@@ -1001,7 +1000,7 @@ static __u8 sl811_rh_dev_des[] =
 };
 
 /* Configuration descriptor */
-static __u8 sl811_rh_config_des[] =
+static unsigned char sl811_rh_config_des[] =
 {
 	0x09,		/*	__u8  bLength; */
 	0x02,		/*	__u8  bDescriptorType; Configuration */
@@ -1037,7 +1036,7 @@ static __u8 sl811_rh_config_des[] =
 };
 
 /* root hub class descriptor*/
-static __u8 sl811_rh_hub_des[] =
+static unsigned char sl811_rh_hub_des[] =
 {
 	0x09,			/*  __u8  bLength; */
 	0x29,			/*  __u8  bDescriptorType; Hub-descriptor */
@@ -1054,7 +1053,7 @@ static __u8 sl811_rh_hub_des[] =
  * helper routine for returning string descriptors in UTF-16LE
  * input can actually be ISO-8859-1; ASCII is its 7-bit subset
  */
-static int ascii2utf (char *s, u8 *utf, int utfmax)
+static int ascii2utf (char *s, unsigned char *utf, int utfmax)
 {
 	int retval;
 
@@ -1069,7 +1068,7 @@ static int ascii2utf (char *s, u8 *utf, int utfmax)
  * root_hub_string is used by each host controller's root hub code,
  * so that they're identified consistently throughout the system.
  */
-static int usb_root_hub_string (int id, __u8 *data, long len)
+static int usb_root_hub_string (int id, unsigned char *data, long len)
 {
 	char buf [30];
 
@@ -1112,8 +1111,8 @@ static int usb_root_hub_string (int id, __u8 *data, long len)
 static inline long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	 		        void *data, unsigned short buf_len, struct devrequest *cmd)
 {
-	__u8 data_buf[16];
-	__u8 *bufp = data_buf;
+	unsigned char data_buf[16];
+	unsigned char *bufp = data_buf;
 	unsigned short len = 0;
 	long status = 0;
 	__u16 bmRType_bReq;
@@ -1468,7 +1467,7 @@ unicorn_int (void)
 #endif
 
 	if (!(MFP_GPIP & 0x20)) {
-		__u8 status;
+		unsigned char status;
 
 		if (check_flock() != 0) { 
 			return; 
