@@ -65,8 +65,8 @@
 #include "mint/mdelay.h"
 #include "mint/dcntl.h"
 #include "mint/arch/asm_spl.h" /* spl() */
+#include "mint/swap.h"
 
-#include "../../endian/io.h"
 #include "../../usb.h"
 #include "../../usb_api.h"
 
