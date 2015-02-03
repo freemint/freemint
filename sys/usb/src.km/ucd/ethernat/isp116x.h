@@ -404,12 +404,32 @@ struct isp116x
 # define	isp116x_delay(h,d)	do {} while (0)
 #endif
 
+/* ISP116x registers access */
+
+inline void write_le16_reg(volatile unsigned short * addr, short val);
+inline unsigned read_le16_reg(const volatile unsigned short *addr);
+
+inline void write_le16_reg(volatile unsigned short * addr, short val)
+{
+	*addr = SWAP16(val);
+}
+
+inline unsigned read_le16_reg(const volatile unsigned short *addr)
+{
+	unsigned result = *addr;
+	return SWAP16(result);
+}
+
+# define raw_readw(addr)	(*(volatile unsigned short *)(addr))
+# define raw_writew(w,addr)	((*(volatile unsigned short *) (addr)) = (w))
+# define readw(addr)		read_le16_reg((volatile unsigned short *)(addr))
+# define writew(b,addr)		write_le16_reg((volatile unsigned short *)(addr),(b))
 
 unsigned long p;	
 			 
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
-	__raw_writew(reg & 0xff, isp116x->addr_reg );
+	raw_writew(reg & 0xff, isp116x->addr_reg );
 	isp116x_delay(isp116x, UDELAY);
 }
 
@@ -421,7 +441,7 @@ static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short 
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
-	__raw_writew(val, isp116x->data_reg);
+	raw_writew(val, isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
 }
 
@@ -439,7 +459,7 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	val = __raw_readw(isp116x->data_reg);
+	val = raw_readw(isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
 
 	return val;
@@ -460,9 +480,9 @@ static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long v
  */
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
-	__raw_writew(val & 0xffff, isp116x->data_reg);
+	raw_writew(val & 0xffff, isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
-	__raw_writew(val >> 16, isp116x->data_reg);
+	raw_writew(val >> 16, isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
 }
 /***********************************************/
@@ -487,9 +507,9 @@ static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 {
 	unsigned long val;
 
-	val = (unsigned long) __raw_readw(isp116x->data_reg);
+	val = (unsigned long) raw_readw(isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
-	val |= ((unsigned long) __raw_readw(isp116x->data_reg)) << 16;
+	val |= ((unsigned long) raw_readw(isp116x->data_reg)) << 16;
 	isp116x_delay(isp116x, UDELAY);
 
 	return val;
