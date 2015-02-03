@@ -425,8 +425,6 @@ inline unsigned read_le16_reg(const volatile unsigned short *addr)
 # define readw(addr)		read_le16_reg((volatile unsigned short *)(addr))
 # define writew(b,addr)		write_le16_reg((volatile unsigned short *)(addr),(b))
 
-unsigned long p;	
-			 
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
 	raw_writew(reg & 0xff, isp116x->addr_reg );

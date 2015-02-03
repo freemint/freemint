@@ -402,8 +402,6 @@ struct isp116x
 #endif
 
 
-unsigned long p;	
-			 
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
 	u16 dumm;
