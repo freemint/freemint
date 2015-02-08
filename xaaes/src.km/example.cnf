@@ -30,7 +30,7 @@
 #exec c:\auto\nvdi
 ######################################################################
 #
-# install [-P XBRA-predicates] [-C COOKIE-predicates] <path> [arg ...]
+# install [-wq] [-P XBRA-predicates] [-C COOKIE-predicates] <path> [arg ...]
 #
 # run 'exec path' if predicates evaluate to true wich is the default.
 # predicates is a comma-separated lists of tags that are looked up
@@ -41,6 +41,10 @@
 # predicate evaluates false, while the '!' is not used in the lookup.
 # If any predicate evaluates false install will abort.
 # A tag-name must be 4 characters long.
+#
+# -w: wait for key
+#
+# -q: ask before installing
 #
 #examples:
 # run nvdi if neither MiNT or NVDI are found in the
