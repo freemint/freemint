@@ -345,11 +345,6 @@ Form_Button(XA_TREE *wt,
 	if (!rl)
 		rl = &lrl;
 
-	DIAG((D_form, NULL, "Form_Button: wt=%lx, obtree=%lx, obj=%d",
-		wt, wt->tree, aesobj_item(&obj)));
-
-// 	display("Form_Button: wt=%lx, obtree=%lx, obj=%d",
-// 		wt, wt->tree, obj);
 
 	flags = aesobj_flags(&obj);
 	state = pstate = aesobj_state(&obj);
@@ -534,9 +529,6 @@ Form_Button(XA_TREE *wt,
 
 	DIAGS(("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", aesobj_item(&next_obj), state, dc ? 0x8000:0));
-
-// 	display("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
-// 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
 
 	return no_exit;
 }
@@ -1162,8 +1154,6 @@ Click_form_do(enum locks lock,
 	DIAG((D_form, client, "Click_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
 
-// 	display("Click_form_do: %s formdo for %s",
-// 		wind ? "windowed":"classic", client->name);
 	/*
 	 * If window is not NULL, the form_do is a windowed one,
 	 * else it is a classic blocking form_do
@@ -1175,7 +1165,6 @@ Click_form_do(enum locks lock,
 		if (!wind->nolist && !is_topped(wind) && is_toppable(wind)) // !wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
-// 			display("Click_form_do: topping window");
 			top_window(lock, true, false, wind);
 			return false;
 		}
@@ -1183,16 +1172,12 @@ Click_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using wind->toolbar"));
-// 			display("Click_form_do: using wind->toolbar");
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		}
 
 		if (wt)
 		{
 			obtree = rp_2_ap(wind, wt->widg, &r);
-// 			display("Click_form_do: wt=%lx, wt_tree=%lx, widg=%lx, obtree = %lx",
-// 				wt, wt->tree, wt->widg, obtree);
-// 			display(" ---===---     widg=%lx, widg->stuff=%lx", widg, widg->stuff);
 		}
 	}
 	/*
@@ -1205,7 +1190,6 @@ Click_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using client->wt"));
-// 			display("Click_form_do: using client->wt");
 			wt = client->fmd.wt;
 		}
 		if (wt)
@@ -1228,11 +1212,9 @@ Click_form_do(enum locks lock,
 				 &fr.obj,
 				 &fr.dblmask))
 		{
-// 			display("Click_form_do: exit_for = %lx", wt->exit_form);
 			if (wt->exit_form)
 			{
 				DIAGS(("Click_form_do: calling exit_form"));
-// 				display("Click_form_do: calling exit_form");
 				fr.md = md;
 				fr.key = NULL;
 				fr.no_exit = false;
@@ -1244,12 +1226,10 @@ Click_form_do(enum locks lock,
 	else
 	{
 		DIAGS(("Click_form_do: NO OBTREE!!"));
-// 		display("Click_form_do: NO OBTREE!!");
 	}
 #endif
 
 	DIAGS(("Click_form_do: return"));
-// 	display("Click_form_do: return");
 	return false;
 }
 

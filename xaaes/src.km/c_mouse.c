@@ -387,8 +387,6 @@ cXA_do_widgets(enum locks lock, struct c_event *ce, short cancel)
 	if (!cancel)
 	{
 		DIAG((D_mouse, ce->client, "cXA_do_widgets for %s", ce->client->name));
-// 		if (ce->md.cstate)
-// 			button_event(lock, ce->client, &ce->md);
 		do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
 	}
 }

@@ -1415,7 +1415,6 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
 
-// 				d = (void *)&pixel;
 				for (i = 0; i < h; i++)
 				{
 					col.red = red >> 16;
@@ -1576,15 +1575,8 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 
 				for (i = 0; i < h1; i++)
 				{
-// 					d = data;
-
 					(*to)(&col, &pixel);
 					(*rp)(&pixel, data, w);
-
-// 					for (j = 0; j < w; j++)
-// 					{
-// 						d = (*to)(&col, d);
-// 					}
 
 					red += ired;
 					green += igreen;
@@ -1617,11 +1609,6 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				{
 					(*to)(&col, &pixel);
 					(*rp)(&pixel, data, w);
-// 					d = data;
-// 					for (j = 0; j < w; j++)
-// 					{
-// 						d = (*to)(&col, d);
-// 					}
 					red += ired;
 					green += igreen;
 					blue += iblue;
