@@ -1060,6 +1060,8 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 			if (plen == 0 || p->start == PIPESIZ)
 			  p->start = 0;
 			pipe_wake_writers (p);
+			if( !is_terminal(f) )
+				break;
 		}
 		else if ((p->writers <= 0 || p->writers == VIRGIN_PIPE) && !(f->flags & O_HEAD))
 		{
@@ -1089,7 +1091,6 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 
 	if (p->len < PIPESIZ)
 		pipe_wake_writers (p);
-
 	return bytes_read;
 }
 
