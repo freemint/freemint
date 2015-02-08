@@ -1138,7 +1138,7 @@ kern_pathconf (fcookie *dir, int which)
 	}
 
 	DEBUG (("kern_pathconf: unknown opcode 0x%04x", (unsigned) which));
-	return EINVAL;
+	return ENOSYS;
 }
 
 static long _cdecl
@@ -1451,7 +1451,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		default:
 		{
 			DEBUG (("kern_fscntl: unknown opcode 0x%04x", (unsigned) cmd));
-			return EINVAL;
+			return ENOSYS;
 		}
 	}
 
