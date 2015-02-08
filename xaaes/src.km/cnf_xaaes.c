@@ -1161,56 +1161,63 @@ pCB_install(const char *path, const char *line, struct parsinf *inf)
 	char cmdline[128], cmd[256], *lp;
 	char *optarg[4] = {0};
 	unsigned long opts = 0;
+	int o;
 
 	if( line )
 		sprintf( cmd, sizeof(cmd), "%s %s", path, line );
 	else
 		strcpy( cmd, path );
-	opts = cnf_getopt( cmd, &lp, "P:wq:", optarg, inf );
+	opts = cnf_getopt( cmd, &lp, "P:C:wq:", optarg, inf );
 	if( !lp )
 		return;
 
 	path = lp;
 
-	if( (opts & 1) )
+	for( o = 0; o < 2; o++ )
 	{
-		char *tags = optarg[0];
-		while( *tags )
+		if( opts & (1<<o) )
 		{
-			union {	char s[4];	long l;} tag;
-			char s[6];
-			int not, i;
-			long r;
+			char *tags = optarg[o];
+			while( *tags )
+			{
+				union {	char s[4];	long l;} tag;
+				char s[6];
+				int not, i;
+				long r, v;
 
-			if( *tags == '!' )
-			{
-				tags++;
-				not = 1;
+				if( *tags == '!' )
+				{
+					tags++;
+					not = 1;
+				}
+				else
+					not = 0;
+				for( i = 0; i < 4 && *tags; i++ )
+					tag.s[i] = *tags++;
+				if( i < 4 || (*tags && *tags != ',') )
+				{
+					BLOG(( 0,"install: %s: %d: error: tag-name too %s: %s", inf->file, inf->line, i<4?"short":"long", optarg[0] ));
+					goto inst_ret;	/* don't install */
+				}
+				if( o == 0 )	/* -P */
+					r = s_system(S_XBRALOOKUP, TRAP2, tag.l );
+				else if( o == 1 ) /* -C */
+					r = s_system(S_GETCOOKIE, tag.l, (unsigned long)&v );
+				memcpy( s, tag.s, 4 );
+				s[5] = 0;
+				BLOG(( 1,"install: %s(%lx) %sfound,not=%d", s, tag.l, r?"not ":"", not));
+				r = r == 0;
+				if( r == not )
+				{
+					BLOG((1,"did not run %s ", path ));
+					goto inst_ret;	/* don't install */
+				}
+				if( *tags )
+					tags++;
 			}
-			else
-				not = 0;
-			for( i = 0; i < 4 && *tags; i++ )
-				tag.s[i] = *tags++;
-			if( i < 4 || (*tags && *tags != ',') )
-			{
-				BLOG(( 0,"install: %s: %d: error: tag-name too %s: %s", inf->file, inf->line, i<4?"short":"long", optarg[0] ));
-				goto inst_ret;	/* don't install */
-			}
-			r = s_system(S_XBRALOOKUP, TRAP2, tag.l );
-			memcpy( s, tag.s, 4 );
-			s[5] = 0;
-			BLOG(( 1,"install: %s(%lx) %sfound,not=%d", s, tag.l, r?"not ":"", not));
-			r = r == 0;
-			if( r == not )
-			{
-				BLOG((1,"did not run %s ", path ));
-				goto inst_ret;	/* don't install */
-			}
-			if( *tags )
-				tags++;
 		}
 	}
-	if( opts & 4 )
+	if( opts & (1<<3) )	/* q */
 	{
 		int c = getkey( optarg[2], 1 );
 		if( !strchr( "yYjJ", c ) )
@@ -1220,7 +1227,7 @@ pCB_install(const char *path, const char *line, struct parsinf *inf)
 	BLOG((0,"exec %s, %s", path, cmdline+1 ));
 	do_exec( path, cmdline );
 inst_ret:
-	if( opts & 2 )
+	if( opts & (1<<2) )	/* w */
 	{
 		pCB_getkey(0);
 	}
