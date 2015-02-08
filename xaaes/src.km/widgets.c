@@ -4837,7 +4837,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 								}
 								S.wm_count--;
 							}
-							if (m_inside(rx, ry, &r) && widg->m.click)
+							if (widg->m.click && m_inside(rx, ry, &r))
 							{
 								rtn = widg->m.click(lock, w, widg, md);
 							}
