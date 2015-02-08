@@ -791,20 +791,6 @@ retry_after_collision:
 		mask = mask << 1L;
 	}
 
-	/*
-	 * A value of 1 is meant to simulate a small enough delay that it's deemed
-	 * unnoticeable. In practice that doesn't occur.
-     *
-     * NOTE: Applications that call Fselect(1,....) directly should be
-     * fixed to call Fselect(2,.....) for a minimal timeout value.
-     *
-     * The MiNTlib would do Fselect(1,....) to simulate select() with
-     * a timeout of 0. i.e. to return immediately.
-	 */
-	if (timeout == 1) {
-		goto cancel;
-	}
-
 	if (count == 0)
 	{
 		/* no data is ready yet */
