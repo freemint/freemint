@@ -293,7 +293,7 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 #if STORE_FILENAMES
 	int l, fullp = 0;
 #endif
-	TRACE (("do_open(%s) mode=%x", name, rwmode));
+	TRACE (("do_open(%s) rwmode=%x", name, rwmode));
 
 	*f = 0;
 	/*
@@ -360,7 +360,7 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 		if (r)
 		{
 			DEBUG(("do_open(%s): couldn't get "
-			      "write permission on directory", name));
+			      "write permission on directory:%ld", name, r));
 			release_cookie (&dir);
 			return r;
 		}
@@ -825,3 +825,4 @@ do_close (struct proc *p, FILEPTR *f)
 
 	return  r;
 }
+
