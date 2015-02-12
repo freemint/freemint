@@ -996,7 +996,38 @@ install_xhdi_driver(void)
 	cookie_fun XHDI = get_fun_ptr ();
 
 	if (XHDI) {
-		r = XHDI(XHNEWCOOKIE,*xhdi_handler);
+		long tmp;
+
+		/* Tell the underlying XHDI driver of our limits. */
+
+		tmp = sys_XHDOSLimits(XH_DL_SECSIZ, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_SECSIZ, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MINFAT, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MINFAT, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXFAT, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MAXFAT, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MINSPC, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MINSPC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXSPC, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MAXSPC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXSEC, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MAXSEC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_DRIVES, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_DRIVES, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLSIZB, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLSIZB, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_RDLEN, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_RDLEN, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS12, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS12, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS32, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS32, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_BFLAGS, tmp);
+
+		r = XHDI(XHNEWCOOKIE, *xhdi_handler);
 	} else {
 		set_cookie();
 	}
