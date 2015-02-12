@@ -2043,28 +2043,14 @@ usb_storage_init(void)
 
 #define AHDI        0x41484449L     /* 'AHDI' */
 extern PUN_INFO pun_usb;                                //xhdi.c
+#define PUN_PTR	(*((PUN_INFO **) 0x516L))
+
 #ifdef TOSONLY
 #define MAX_LOGICAL_DRIVE 16
-#else
-#define MAX_LOGICAL_DRIVE 32
-#endif
 
 /*
  * the following routine is stolen from FreeMiNT's pun.c module
  */
-#define PUN_PTR	(*((PUN_INFO **) 0x516L))
-PUN_INFO *get_pun(void)
-{
-	PUN_INFO *pun = PUN_PTR;
-	if (pun)
-		if (pun->cookie == 0x41484449L)
-			if (pun->cookie_ptr == &(pun->cookie))
-				if (pun->version_num >= 0x300)
-					return pun;
-	return NULL;
-}
-
-#ifdef TOSONLY
 #define bufl0	(*(BCB **)0x4b2L)
 #define bufl1	(*(BCB **)0x4b6L)
 
@@ -2097,16 +2083,16 @@ static PUN_INFO *install_pun(void)
 		bufcnt++;
 	for (bcb = bufl1; bcb; bcb = bcb->b_link)
 		bufcnt++;
-	bufptr = (char *)Malloc(bufcnt*bufsiz);
+	bufptr = (char *)kmalloc(bufcnt*bufsiz);
 	if (!bufptr)
 		return NULL;
 
 	/*
 	 * create & initialise PUN_INFO structure
 	 */
-	pun = (PUN_INFO *)Malloc(sizeof(PUN_INFO));
+	pun = (PUN_INFO *)kmalloc(sizeof(PUN_INFO));
 	if (!pun) {
-		Mfree(bufptr);
+		kfree(bufptr);
 		return NULL;
 	}
 	memset(pun,0x00,sizeof(PUN_INFO));
@@ -2131,7 +2117,48 @@ static PUN_INFO *install_pun(void)
 
 	return pun;
 }
+#else
+#define MAX_LOGICAL_DRIVE 32
+#endif
 
+PUN_INFO *get_pun(void)
+{
+	PUN_INFO *pun;
+#ifdef TOSONLY
+	long ret = 0;
+
+	/* goto supervisor mode because of drvbits & handlers */
+	if (!Super(1L))
+		ret = Super(0L);
+#endif
+	pun = PUN_PTR;
+
+	if (pun)
+		if (pun->cookie == 0x41484449L)
+			if (pun->cookie_ptr == &(pun->cookie))
+				if (pun->version_num >= 0x300) {
+#ifdef TOSONLY
+					if (ret)
+						SuperToUser(ret);
+#endif
+					return pun;
+				}
+
+#ifdef TOSONLY
+	/*
+	 * install PUN_INFO if necessary (i.e. no hard disk driver loaded)
+	 */
+	if (!pun)
+		pun = install_pun();
+
+	if (ret)
+		SuperToUser(ret);
+#endif
+
+	return pun;
+}
+
+#ifdef TOSONLY
 int init(void);
 int
 init (void)
@@ -2165,43 +2192,15 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	}
 #endif
 
-	usb_storage_init();
-
-	ret = udd_register(&storage_uif);
-	if (ret)
-	{
-		DEBUG (("%s: udd register failed!", __FILE__));
-		return -1;
-	}
-
-#ifdef TOSONLY
-	/* goto supervisor mode because of drvbits & handlers */
-	if (!Super(1L))
-		ret = Super(0L);
-#endif
-
 	pun_ptr = get_pun();
-
+	if (!pun_ptr) {
 #ifdef TOSONLY
-	/*
-	 * install PUN_INFO if necessary (i.e. no hard disk driver loaded)
-	 */
-	if (!pun_ptr)
-		pun_ptr = install_pun();
-
-	if (!pun_ptr) {
-		if (ret)
-			SuperToUser(ret);
-
 		c_conws("Failed to initialize, out of memory\r\n");
-		return -1;
-	}
 #else
-	if (!pun_ptr) {
 		c_conws("Failed to initialize, PUN info not available.\r\n");
+#endif
 		return -1;
 	}
-#endif
 
 	/*
 	 * install PUN_INFO if necessary
@@ -2214,6 +2213,20 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
 		memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE); /* mark all puns invalid */
 	}
+
+	usb_storage_init();
+
+	ret = udd_register(&storage_uif);
+	if (ret)
+	{
+		DEBUG (("%s: udd register failed!", __FILE__));
+		return -1;
+	}
+
+#ifdef TOSONLY
+	if (!Super(1L))
+		ret = Super(0L);
+#endif
 
 	install_vectors();
 	install_xhdi_driver();
