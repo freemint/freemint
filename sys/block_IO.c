@@ -191,7 +191,16 @@
 # define HASHSIZE	(1UL << HASHBITS)
 # define HASHMASK	(HASHSIZE - 1)
 
-# define MIN_BLOCK	8192UL		/* minimal block size */
+/* note the following constraint for MIN_BLOCK: the FATFS requires that
+ * a cluster fit into a block, so MIN_BLOCK must be at least the size of
+ * the largest possible cluster.
+ *
+ * MiNT previously attempted to determine this dynamically by doubling
+ * the size of the current largest logical sector (obtained from the
+ * AHDI PUN_INFO structure).  however, this does not work for DOS-style
+ * FAT filesystems with more than 2 logical sectors per cluster.
+ */
+# define MIN_BLOCK	32768UL		/* minimal block size */
 # define CHUNK_SIZE	512UL		/* minimal chunk size */
 # define CHUNK_SHIFT	9		/* shift value */
 
@@ -1395,22 +1404,11 @@ static DI bio_di [NUM_DRIVES];
 void
 init_block_IO (void)
 {
-	PUN_INFO *pun;
 	long i;
 
 
 	/* set up aligned buffer */
 	buffer = (char *) (((long) _buffer + 15) & ~15);
-
-
-	/* validate AHDI minimum version */
-	pun = get_pun ();
-	if (!pun)
-	{
-		BIO_FORCE(("PUN cookie (from AHDI >=3.0) not found on this system."));
-		BIO_FORCE(("System may have problems with the maximum sector size calculation."));
-	}
-
 
 	/* initalize SCSIDRV interface */
 	scsidrv_init ();
@@ -1439,13 +1437,7 @@ init_block_IO (void)
 	 */
 
 	cache.percentage = 0;
-
-	if (pun)
-		cache.max_size = pun->max_sect_siz * 2L;
-	else
-		cache.max_size = 0;
-
-	cache.max_size = MAX (cache.max_size, MIN_BLOCK);
+	cache.max_size = MIN_BLOCK;
 	cache.chunks = cache.max_size >> CHUNK_SHIFT;
 	cache.count = 0;
 	cache.blocks = NULL;
