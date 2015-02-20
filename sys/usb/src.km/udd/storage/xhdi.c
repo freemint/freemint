@@ -107,14 +107,14 @@ sys_XHDOSLimits(ushort which,ulong limit)
 		else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
 		{
 			dl_secsiz = 8192L;
-			dl_clusts = 32767L;
+			dl_clusts = 32766L;
 			dl_maxsec = 65535L;     /* max partition size = 512MB approx */
 			dl_clusts12 = MAX_FAT12_CLUSTERS;
 		}
 		else                        /* i.e. TOS 4.0x or FreeMiNT */
 		{
 			dl_secsiz = MAX_LOGSEC_SIZE;
-			dl_clusts = 32767L;
+			dl_clusts = 32766L;
 			dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
 			dl_clusts12 = MAX_FAT12_CLUSTERS;
 		}
