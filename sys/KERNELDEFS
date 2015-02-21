@@ -117,6 +117,13 @@ KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
 MODULEDIRS = xfs/hostfs
 endif
 
+ifeq ($(kernel),hat)
+MINT = minthat.prg
+CPU  = 000
+KERNELDEFS = -DM68000 -DOLDTOSFS -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
+kernel_nocflags = -DWITH_MMU_SUPPORT
+endif
+
 ifeq ($(kernel),my1)
 MINT = mintnp.prg
 CPU  = 020-60
@@ -148,7 +155,7 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 020 030 040 060 deb mil ara
+kerneltargets = 000 020 030 040 060 deb mil ara hat
 cputargets = 000 020 030 040 060 020-60
 
 ifeq ($(COLDFIRE),yes)
