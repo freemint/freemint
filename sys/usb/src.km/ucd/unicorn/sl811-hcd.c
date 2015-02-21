@@ -124,64 +124,33 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
  * Lock the ACSI port using FLOCK.
  */
 #ifdef TOSONLY
-#define LOCKUSBWITHNORETURN \
-	unsigned long ret = 0; \
-	if (!Super(1L)) { \
-		ret = Super(0L); \
-	} \
-	if (check_flock() != 0) { \
-		if (ret) \
-			SuperToUser(ret); \
-		return; \
-	} \
-	WRITEMODE = 0x88; \
-	WRITEACC = ((long)ACSI << 21) | 0x8a;
-#define LOCKUSBWITHRETURN \
-	unsigned long ret = 0; \
-	if (!Super(1L)) { \
-		ret = Super(0L); \
-	} \
-	if (check_flock() != 0) { \
-		if (ret) \
-			SuperToUser(ret); \
-		return -1; \
-	} \
-	WRITEMODE = 0x88; \
-	WRITEACC = ((long)ACSI << 21) | 0x8a;
-
 #define LOCKUSB \
 	unsigned long ret = 0; \
 	if (!Super(1L)) { \
 		ret = Super(0L); \
 	} \
-	while (check_flock() != 0); \
-	WRITEMODE = 0x88; \
-    WRITEACC = ((long)ACSI << 21) | 0x8a;
+	while (check_flock() != 0);
 
 #define UNLOCKUSB  \
-	WRITEMODE = 0x00; \
 	__asm__ volatile("clr.w 0x43e"); \
 	if (ret) \
 		SuperToUser(ret);
 #else
 #define LOCKUSB \
-		{   \
-				__asm__ volatile("1: tas.b 0x43e");        \
-				__asm__ volatile("bne.b 1b");        \
-		} \
-	WRITEMODE = 0x88; \
-	WRITEACC = ((long)ACSI << 21) | 0x8a;
-#define LOCKUSBWITHRETURN LOCKUSB
-#define LOCKUSBWITHNORETURN LOCKUSB
+	{   \
+		__asm__ volatile("1: tas.b 0x43e");        \
+		__asm__ volatile("bne.b 1b");        \
+	} 
 
 #define UNLOCKUSB  \
-	WRITEMODE = 0x00; \
 	__asm__ volatile("clr.w 0x43e");
 #endif
 		
 
 static inline void sl811_write (unsigned char index, unsigned char data)
 {
+	WRITEMODE = 0x88;
+	WRITEACC = ((long)ACSI << 21) | 0x8a;
 	DACCESS = index;
 	DACCESS = data;
 }
@@ -190,6 +159,8 @@ static inline unsigned char sl811_read (unsigned char index)
 {
 	register unsigned short data;
 
+	WRITEMODE = 0x88;
+	WRITEACC = ((long)ACSI << 21) | 0x8a;
 	DACCESS = index;
 	data = DACCESS;
 
@@ -201,6 +172,9 @@ static inline unsigned char sl811_read (unsigned char index)
  */
 static void inline sl811_read_buf(unsigned char offset, unsigned char *buf, unsigned char size)
 {
+	WRITEMODE = 0x88;
+	WRITEACC = ((long)ACSI << 21) | 0x8a;
+
 	if ((long)buf & 1) {
 		/* Make it even, to prevent crashes on 68000. */
 		DACCESS = offset++;
@@ -323,6 +297,9 @@ static void inline sl811_read_buf(unsigned char offset, unsigned char *buf, unsi
  */
 static void inline sl811_write_buf(unsigned char offset, unsigned char *buf, unsigned char size)
 {
+	WRITEMODE = 0x88;
+	WRITEACC = ((long)ACSI << 21) | 0x8a;
+
 	if ((long)buf & 1) {
 		/* Make it even, to prevent crashes on 68000. */
 		DACCESS = offset++;
@@ -605,27 +582,11 @@ usb_lowlevel_stop(void *dummy)
 
 static int calc_needed_buswidth(long bytes, long need_preamble)
 {
-	/*
-	 * This is the performance optimizer.
-	 *
-	 * Basically the USB frame can contain a number of bits.
-	 *
-	 * Unfortunately, our poor ST's are only 8MHz 68000's and are
-	 * slow in terms of USB rates. This means we need a larger slop
-	 * for potentially missing the end of the frame, and resulting
-	 * in device timeouts. Hence 5120 for full speed USB devices.
-	 * Low speed use the alternate algorithm
-	 *
-	 * Reducing 5120 helps performance as we can slot more of our
-	 * packets inside a USB frame, but it can result in timeouts if
-	 * too low and the USB device could be shutdown.
-	 */
-	return !need_preamble ? bytes * 8 + 5120 : bytes * 64 + 3072;
+	return !need_preamble ? bytes * 8 + 1024 : bytes * 64 + 2048;
 }
 
 static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, unsigned char *buffer, long len, long flags)
 {
-	register unsigned long time_start = get_hz_200();
 	register unsigned char ctrl = SL811_USB_CTRL_ARM | SL811_USB_CTRL_ENABLE;
 	register unsigned char status = 0;
 	long err = 0;
@@ -646,15 +607,16 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, unsign
 	if (need_preamble)
 		ctrl |= SL811_USB_CTRL_PREAMBLE;
 
-	sl811_write_intr(SL811_INTR_DONE_A);
 	sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
+	sl811_write_intr(SL811_INTR_DONE_A);
 	while (err < 3) {
+		register unsigned long time_start = get_hz_200();
 		register unsigned char intrq;
 		register int sofcnt;
 
 		sl811_write(SL811_ADDR_A, SL811_DATA_START);
 		sl811_write(SL811_LEN_A, len);
-		if (usb_pipeout(pipe) && len)
+		if (usb_pipeout(pipe) && len && !nak)
 			sl811_write_buf(SL811_DATA_START, buffer, len);
 
 		sofcnt = sl811_read(SL811_SOFCNTDIV)*64;
@@ -764,21 +726,12 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		return -1;
 	}
 
-	LOCKUSBWITHRETURN;
+	LOCKUSB;
 
 #ifdef TOSONLY
 	if (reset_stage == 1) {
-		if (ret == 0) {
-			/* we're in interrupt context */
-			UNLOCKUSB;
-			return -1;
-		}
-#if 0
 		sl811_hc_reset();
 		reset_stage = 0;
-#endif
-		UNLOCKUSB;
-		return -1;
 	}
 #endif
 
@@ -833,7 +786,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	       devnum, ep, buffer, len, setup->requesttype,
 	       setup->request, sl811_read(SL811_SOFCNTDIV)*64));
 
-	LOCKUSBWITHRETURN;
+	LOCKUSB;
 
 	if (devnum == root_address) {
 		long rret;
@@ -850,18 +803,8 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 #ifdef TOSONLY
 	if (reset_stage == 1) {
-		if (ret == 0) {
-			UNLOCKUSB;
-			/* we're in interrupt context */
-			return -1;
-		}
-#if 0
 		sl811_hc_reset();
 		reset_stage = 0;
-#endif
-		/* try to continue after the reset */
-		UNLOCKUSB;
-		return -1;
 
 	}
 #endif
@@ -940,7 +883,7 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	DEBUG(("dev = 0x%lx pipe = %#lx buf = 0x%lx size = %ld int = %d", dev, pipe,
 	       buffer, len, interval));
 
-	LOCKUSBWITHRETURN;
+	LOCKUSB;
 	sl811_write(SL811_DEV_A, devnum);
 	sl811_write(SL811_PIDEP_A, PIDEP(!dir_out ? USB_PID_IN : USB_PID_OUT, ep));
 	usb_settoggle(dev, ep, !dir_out, 1);
@@ -1473,9 +1416,6 @@ unicorn_int (void)
 			return; 
 		} 
 
-		WRITEMODE = 0x88;
-		WRITEACC = ((long)ACSI << 21) | 0x8a;
-
 		status = sl811_read(SL811_INTRSTS);
 		sl811_write(SL811_INTRSTS, 0xfe);
 
@@ -1485,14 +1425,12 @@ unicorn_int (void)
 #else
 			sl811_hc_reset();
 #endif
-			WRITEMODE = 0x00;
 			__asm__ volatile("clr.w 0x43e");
 //			c_conws("RESET\r\n");
 #ifndef TOSONLY
 			addroottimeout (0, int_handle_tophalf, 1);
 #endif
 		} else {
-			WRITEMODE = 0x00;
 			__asm__ volatile("clr.w 0x43e");
 		}
 	}
