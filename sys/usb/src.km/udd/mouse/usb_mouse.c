@@ -80,7 +80,7 @@ void mouse_int (void);
 
 static long mouse_ioctl (struct uddif *, short, long);
 static long mouse_disconnect (struct usb_device *dev);
-static long mouse_probe (struct usb_device *dev);
+static long mouse_probe (struct usb_device *dev, unsigned int ifnum);
 
 static char lname[] = "USB mouse class driver\0";
 
@@ -290,7 +290,7 @@ mouse_poll_thread (void *dummy)
  * 
  */
 static long
-mouse_probe (struct usb_device *dev)
+mouse_probe (struct usb_device *dev, unsigned int ifnum)
 {
 	struct usb_interface *iface;
 	struct usb_endpoint_descriptor *ep_desc;
@@ -314,7 +314,7 @@ mouse_probe (struct usb_device *dev)
 	/*
 	 * let's examine the device now 
 	 */
-	iface = &dev->config.if_desc[0];
+	iface = &dev->config.if_desc[ifnum];
 	if (!iface)
 	{
 		return -1;

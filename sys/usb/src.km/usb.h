@@ -134,7 +134,7 @@ struct usb_ss_ep_comp_descriptor {
 
 struct usb_interface {
 	struct usb_interface_descriptor desc;
-
+	struct uddif *driver;
 	unsigned char	no_of_ep;
 	unsigned char	num_altsetting;
 	unsigned char	act_altsetting;
@@ -218,7 +218,6 @@ struct usb_device
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
 
-	struct uddif *driver;
 	struct ucdif *controller;
 
 };
