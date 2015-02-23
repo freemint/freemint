@@ -19,13 +19,14 @@
 #include "ssystem.h"
 #include "arch/cpu.h"					// for cpushi (cache control)
 #include "util.h"
+#include "cookie.h"
 
 #include "platform/board.h"
 #include "platform/dma.h"
 
 #include "fec.h"
 #include "am79c874.h"
-
+#include "bcm5222.h"
 
 #ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -107,6 +108,21 @@ static long	fec_close	(struct netif *);
 static long	fec_output	(struct netif *, BUF *, const char *, short, short);
 static long	fec_ioctl	(struct netif *, short, long);
 static long	fec_config	(struct netif *, struct ifopt *);
+
+extern uint32 mch_cookie( void );
+
+/*
+ * machine type detection
+ */
+uint32 mch_cookie( void )
+{
+	uint32 mch = 0;
+
+	if (s_system (S_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
+		mch = 0;
+
+	return mch;
+}
 
 static unsigned char *board_get_ethaddr(unsigned char *ethaddr);
 
@@ -1158,8 +1174,9 @@ driver_init (void)
      */
     if_register (&if_fec[0]);
 
-    ksprintf (message, "%s v%d.%d  (%s%d - %02x:%02x:%02x:%02x:%02x:%02x)\r\n",
+    ksprintf (message, "%s (%s) v%d.%d  (%s%d - %02x:%02x:%02x:%02x:%02x:%02x)\r\n",
               FEC_DRIVER_DESC,
+              mch_cookie() == FALCON ? "Firebee" : "m548x",
               FEC_DRIVER_MAJOR_VERSION,
               FEC_DRIVER_MINOR_VERSION,
               FEC_DEVICE_NAME,
@@ -1204,18 +1221,21 @@ fec_open (struct netif *nif)
         fec_init(fi, mode, duplex, (const uint8 *)nif->hwlocal.adr.bytes);
 
         /* Initialize the PHY interface */
-        if( (mode == FEC_MODE_MII) && (am79c874_init(fi->ch, FEC_PHY(fi->ch), speed, duplex) == 0) )
+		 if( (mode == FEC_MODE_MII) && mch_cookie() == FALCON ? (am79c874_init(fi->ch, FEC_PHY(fi->ch), speed, duplex) == 0)  :
+															   (bcm5222_init(fi->ch, FEC_PHY(fi->ch), speed, duplex) == 0))
         {
             /* Flush the network buffers */
-            c_conws("am79c874_init failed!\r\n");
+	          c_conws("ethernet PHY init failed!\r\n");
             fec_buf_flush(fi);
             res = 1;
         }
         else
         {
             /* Enable the multi-channel DMA tasks */
+            KDEBUG(("starting multi-channel DMA tasks\r\n"));
             fec_rx_start(nif, (s8*)fi->rx_bd, fi->ch ? FEC1RX_DMA_PRI : FEC0RX_DMA_PRI);
             fec_tx_start(nif, (s8*)fi->tx_bd, fi->ch ? FEC1TX_DMA_PRI : FEC0TX_DMA_PRI);
+            KDEBUG(("enable network interface\r\n"));
             fec_enable(fi->ch);
         }
     }
