@@ -113,7 +113,7 @@ struct usb_module_api	*api;
  */
 
 static long	storage_ioctl		(struct uddif *, short, long);
-static long	storage_probe		(struct usb_device *);
+static long	storage_probe		(struct usb_device *, unsigned int ifnum);
 static long	storage_disconnect	(struct usb_device *);
 
 static char lname[] = "USB mass storage class driver\0";
@@ -274,7 +274,7 @@ typedef struct disk_partition
 
 /* Functions prototypes */
 long 		usb_stor_get_info	(struct usb_device *, struct us_data *, block_dev_desc_t *);
-long 		usb_stor_probe		(struct usb_device *, unsigned long, struct us_data *);
+long 		usb_stor_probe		(struct usb_device *, unsigned int, struct us_data *);
 unsigned long 	usb_stor_read		(long, unsigned long, unsigned long, void *);
 unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
@@ -1592,7 +1592,7 @@ retry_it:
 
 /* Probe to see if a new device is actually a Storage device */
 long
-usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
+usb_stor_probe(struct usb_device *dev, unsigned int ifnum, struct us_data *ss)
 {
 	struct usb_interface *iface;
 	struct usb_endpoint_descriptor *ep_desc;
@@ -1911,7 +1911,7 @@ storage_disconnect(struct usb_device *dev)
  * 
  */
 static long
-storage_probe(struct usb_device *dev)
+storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
 	long r, i, lun, start;	
 	long max_lun;
@@ -1936,7 +1936,7 @@ storage_probe(struct usb_device *dev)
 
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 
-	if(!usb_stor_probe(dev, 0, &usb_stor[i])) {
+	if(!usb_stor_probe(dev, ifnum, &usb_stor[i])) {
 		usb_disable_asynch(0); /* asynch transfer allowed */
 		return -1; /* It's not a storage device */
 	}
