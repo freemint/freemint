@@ -795,8 +795,11 @@ usb_disconnect(struct usb_device *dev)
 		DEBUG(("USB disconnected, device number %ld", dev->devnum));
 		DEBUG(("USB device disconnected, device %s", dev->prod));
 
-		if(dev->driver)
-			dev->driver->disconnect(dev);
+		/* Disconnect drivers from interfaces */
+		for (i = 0; i < dev->config.no_of_if; i++) {
+			if(dev->config.if_desc[i].driver)
+				dev->config.if_desc[i].driver->disconnect(dev);
+		}
 
 		/* Free up all the children.. */
 		for (i = 0; i < dev->maxchild; i++)
@@ -890,6 +893,7 @@ long usb_new_device(struct usb_device *dev)
 	struct usb_device_descriptor *desc;
 	long port = -1;
 	struct usb_device *parent = dev->parent;
+	int idx = 0;
 
 	DEBUG(("usb_new_device: "));
 
@@ -1055,7 +1059,9 @@ long usb_new_device(struct usb_device *dev)
 	/* now probe if the device is a hub */
 	if (usb_hub_probe(dev, 0) == 0) {
 		/* assign driver if possible */
-		usb_find_interface_driver(dev, 0);
+		while (idx < dev->config.no_of_if) {
+			usb_find_interface_driver(dev, idx++);
+		}
 	}
 
 	return 0;
@@ -1095,15 +1101,15 @@ usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 	/*
 	 * Already attached ?
 	 */
-	if (dev->driver)
+	if (dev->config.if_desc[ifnum].driver)
 		return -1;
 
 	while (driver)
 	{
-		if (!driver->probe(dev))
+		if (!driver->probe(dev, ifnum))
 		{
-			dev->driver = driver;
-			
+			dev->config.if_desc[ifnum].driver = driver;
+			DEBUG(("driver attached to iface %d", ifnum));
 			return 0;
 		}
 
