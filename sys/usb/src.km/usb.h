@@ -1,5 +1,5 @@
 /*
- * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2014
+ * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2015
  * Modified for Atari by Didier Mequignon 2009
  *	
  * (C) Copyright 2001
