@@ -84,7 +84,7 @@ char *drv_version = MSG_VERSION;
  * USB device interface
  */
 
-static long ethernet_probe		(struct usb_device *dev);
+static long ethernet_probe		(struct usb_device *dev, unsigned int ifnum);
 static long ethernet_disconnect		(struct usb_device *dev);
 static long ethernet_ioctl		(struct uddif *, short, long);
 
@@ -125,7 +125,7 @@ static struct ueth_data *usb_eth;
  * Given a USB device, ask each driver if it can support it, and attach it
  * to the first driver that says 'yes'
  */
-static long probe_valid_drivers(struct usb_device *dev)
+static long probe_valid_drivers(struct usb_device *dev, unsigned int ifnum)
 {
 	long j, devid;
 	long numDevices = usbNetAPI->numDevices;
@@ -145,7 +145,7 @@ static long probe_valid_drivers(struct usb_device *dev)
 
 		usbNetAPI->usbnet[j].before_probe(api);
 
-		if (!usbNetAPI->usbnet[j].probe(dev, 0, &usb_eth[devid]))
+		if (!usbNetAPI->usbnet[j].probe(dev, ifnum, &usb_eth[devid]))
 			continue;
 		/*
 		 * ok, it is a supported eth device. Get info and fill it in
@@ -165,7 +165,7 @@ ethernet_ioctl (struct uddif *u, short cmd, long arg)
 }
 
 static long
-ethernet_probe(struct usb_device *dev)
+ethernet_probe(struct usb_device *dev, unsigned int ifnum)
 {
 	int old_async;
 	long r;
@@ -176,7 +176,7 @@ ethernet_probe(struct usb_device *dev)
 	old_async = usb_disable_asynch(1); /* asynch transfer not allowed */
 
 	/* find valid usb_ether driver for this device, if any */
-	r = probe_valid_drivers(dev);
+	r = probe_valid_drivers(dev, ifnum);
 
 	usb_disable_asynch(old_async); /* restore asynch value */
 

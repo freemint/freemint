@@ -26,7 +26,7 @@
 /*
  * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
  */
-#define USB_API_VERSION 0
+#define USB_API_VERSION 1
 
 /*
  * UCD - USB Controller Driver.
@@ -116,7 +116,7 @@ struct uddif
 
 	unsigned short	flags;
 
-	long		(*probe)	(struct usb_device *);
+	long		(*probe)	(struct usb_device *, unsigned int ifnum);
 	long		(*disconnect)	(struct usb_device *);
 	long		resrvd1;	/* (*output)  */
 	long		(*ioctl)	(struct uddif *, short cmd, long arg);
