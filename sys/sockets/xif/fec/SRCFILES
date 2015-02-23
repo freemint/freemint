@@ -4,6 +4,7 @@
 FECDMA_SRCS = \
     dma.c \
     am79c874.c \
+    bcm5222.c \
     fec.c
 
 COMMON_SRCS = \
