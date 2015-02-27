@@ -1,38 +1,80 @@
 #
-# Makefile for 
+# Makefile for ext2
 #
-TARGET = ext2.xfs
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ../..
-subdir = src
+subdir = 
 
-default: all
+default: help
+
+include ./EXT2DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_XFS__
-
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
-STRIPFLAGS = 
 
 # default definitions
-GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o)
-
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) *.km
+SGENFILES = xversion.h
 
 
-include $(top_srcdir)/DEPENDENCIES
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(ext2targets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - help'
+	@echo '#'
+
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(ext2targets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(ext2targets): xversion.h
+	$(MAKE) buildext2 ext2=$@
+
+xversion.h: $(SRCFILES)
+	$(SHELL) xversion.sh $@ $?
+
+#
+# multi target stuff
+#
+
+ifneq ($(ext2),)
+
+compile_dir = .compile_$(ext2)
+ext2target = _stmp_$(ext2)
+realtarget = $(ext2target)
+
+$(ext2target): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildext2: $(realtarget)
