@@ -488,9 +488,12 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 	bytes_written = 0;
 
 	/*
-	 * "mode" can now be reduced to just T_CRMODE or not
+	 * "mode" can now be reduced to just T_CRMODE|T_ECHOCTL or not
+	 * if T_ECHO is unset T_ECHOCTL has no effect except:
+	 * T_ECHOCTL now is equivalent to T_CRMODE if T_ECHO is not set (avoid stairs).
+	 *
 	 */
-	mode &= ~T_CRMOD;
+	mode &= (T_CRMOD|((mode & T_ECHO)?0:T_ECHOCTL));
 
 	if (nbytes == 0)
 		return bytes_written;
@@ -1539,20 +1542,12 @@ escseq (struct tty *tty, int scan)
 
 		default:
 		{
-			//int m = (scan & 0xf00) >> 8;
-			//scan &= 0xff;
 			if (scan >= F_1 && scan <= F_10)
-			{
-				//if (m == 2)	/* Ctrl-Fkey */
-					//i = scan - F_1 + 39 + 1;
-				//else
 					i = scan - F_1;
-			}
 			else if (scan >= F_11 && scan <= F_20)	/* Shift-Fkey */
 			{
 				i = 10 + scan - F_11;
-					tty->state &= ~VT_SHIFT_ESC;	/* already shift */
-				/* else Ctrl-Shift-Fkey */
+				tty->state &= ~VT_SHIFT_ESC;	/* already shift */
 			}
 			else
 				i = -1;
@@ -1579,7 +1574,6 @@ escseq (struct tty *tty, int scan)
 			if (tab[i] == 0) i = 0;
 			tty->esc_state = i;
 		}
-
 		return scan;
 	}
 
@@ -1766,6 +1760,8 @@ tty_getchar (FILEPTR *f, int mode)
 
 		c = r & 0x00ff;
 		scan = (int)((r & 0x00ff0000L) >> 16);
+		if( c == 0x80 && scan == 0xff )
+			return 0;	/* EOF: ignore? */
 
 		/* extended keycodes
 		 * every key+modifier gives a uniqe esc-sequence
@@ -2047,9 +2043,6 @@ tty_getchar (FILEPTR *f, int mode)
 			return ret;
 		}
 	}
-
-	if( r & 0x0000ff00 )
-		FORCE("tty_getchar:return %lx!",r);
 	return r;
 }
 
