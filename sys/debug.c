@@ -642,20 +642,26 @@ do_func_key(int scan)
 			debug_logging ^= 1;
 			break;
 		}
-# else
+# else	/* no DEBUG_INFO */
 		/* F6: always print MiNT basepage */
 		case 0x40:
 		{
 			FORCE("MiNT base %lx (%lx)", rootproc->p_mem->base, _base);
 			break;
 		}
-# endif
+# endif	/* DEBUG_INFO */
 		/* F8: dump log */
 		case 0x42:
 		{
 			DUMPLOG();
 			break;
 		}
+# if ARANYM
+		/* shift+F10: shutdown (aranym) */
+		case 0x5d:
+			sys_s_hutdown(1);
+		break;
+# endif
 # ifdef DEBUG_INFO
 		/* F9: dump the global memory table */
 		case 0x43:

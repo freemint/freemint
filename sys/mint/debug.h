@@ -54,6 +54,7 @@ extern int debug_logging;
 
 /* can be removed by sed */
 # define DBG_FORCE(x) FORCE x
+# define DBG_IF(a,x) if(a)FORCE x
 
 # ifndef str
 # define str(x)		_stringify(x)
