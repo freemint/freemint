@@ -415,7 +415,7 @@ checkalarms (void)
 	/* see if there are outstanding timeout requests to do */
 	while (tlist && ((delta = tlist->when) <= 0))
 	{
-		/* hack: pass an extra long as args, those intrested in it will
+		/* hack: pass an extra long as args, those interested in it will
 		 * need a cast and have to place it in t->arg themselves but
 		 * that way everything else still works without change -nox
 		 */
@@ -443,7 +443,7 @@ checkalarms (void)
 		/* ++kay: debug output at spl7 hangs the system, so moved it
 		 * here
 		 */
-		TRACE (("doing timeout code for pid %d", p->pid));
+		TRACE (("doing timeout code for pid %d,delta=%ld, when=%ld,arg=%lx,evnt=%lx", p->pid, delta, tlist->when, tlist->arg, evnt));
 
 		/* call the timeout function */
 		(*evnt)(p, args);
