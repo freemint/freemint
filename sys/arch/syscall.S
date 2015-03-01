@@ -1553,7 +1553,7 @@ reent2_enter_aes:
 	// REturn the GDOS version if VDI is installed
 	// as a kernel module.
 reent2_trap2_gdosvers:
-	tst.l	_vdi_handler
+	move.l	_vdi_handler,d2
 	beq.s	reent2_old_trap2
 	move.l	_gdos_version,d0
 	moveq	#0,d2
