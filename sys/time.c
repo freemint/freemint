@@ -215,7 +215,7 @@ do_gettimeofday (struct timeval* tv)
 long _cdecl
 sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 {
-	TRACE (("Tgettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
+	TRACE (("Tgettimeofday (tv = 0x%lx, tz = 0x%lx)", tv, tz));
 
 	if (tz != NULL)
 		memcpy (tz, &sys_tz, sizeof (sys_tz));
