@@ -78,7 +78,7 @@
 /*--- Global variables ---*/
 
 static const char hcd_name[] = "aranym-hcd";
-static char lname[] = "Aranym USB controller driver for FreeMiNT\0";
+static char lname[] = "Aranym USB driver\0";
 
 /* BEGIN kernel interface */
 
