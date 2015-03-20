@@ -40,14 +40,25 @@ long udd_unregister(struct uddif *a);
 long
 udd_register(struct uddif *a)
 {
+	struct uddif *list = alluddifs;
 	long i;
-
-	DEBUG(("udd_register: Registered device %s (%s)", a->name, a->lname));
 
 	if (a->api_version != usb_api.api_version) {
 		c_conws("API Mismatch\r\n");
 		return -1;
 	}
+
+	while (list)
+	{
+		if (!strncmp(a->name, list->name, UDD_NAMSIZ))
+		{
+			c_conws("Driver already installed\r\n");
+			return -1;
+		}
+		list = list->next;
+	}
+
+	DEBUG(("udd_register: Registered device %s (%s)", a->name, a->lname));
 
 	a->next = alluddifs;
 	alluddifs = a;
