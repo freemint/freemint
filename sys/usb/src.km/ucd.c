@@ -52,8 +52,8 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 	{
 		if (!strncmp(a->name, list->name, UCD_NAMSIZ))
 		{
-			/* already installed */
 			/* FIXME - more than one controller ??? */
+			c_conws("Driver already installed\r\n");
 			return -1;
 		}
 		list = list->next;
