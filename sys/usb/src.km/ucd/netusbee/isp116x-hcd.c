@@ -170,7 +170,7 @@ static long _cdecl	netusbee_open		(struct ucdif *);
 static long _cdecl	netusbee_close		(struct ucdif *);
 static long _cdecl	netusbee_ioctl		(struct ucdif *, short, long);
 
-static char lname[] = "NetUSBee USB controller driver for FreeMiNT\0";
+static char lname[] = "NetUSBee USB driver\0";
 
 static struct ucdif netusbee_uif =
 {

@@ -1263,7 +1263,7 @@ static long sl811_open		(struct ucdif *);
 static long sl811_close		(struct ucdif *);
 static long sl811_ioctl		(struct ucdif *, short, long);
 
-static char lname[] = "Unicorn USB controller driver for FreeMiNT\0";
+static char lname[] = "Unicorn USB driver\0";
 
 static struct ucdif sl811_uif = 
 {
