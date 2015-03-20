@@ -1242,14 +1242,14 @@ static inline long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long
 }
 
 #ifdef TOSONLY
-#define MSG_VERSION	"TOS DRIVERS"
+#define MSG_VERSION	"TOS"
 #else
-#define MSG_VERSION	"FreeMiNT DRIVERS"
+#define MSG_VERSION	"FreeMiNT"
 #endif
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
-	"\033p Unicorn USB controller driver " MSG_VERSION " \033q\r\n"
+	"\033p Unicorn USB controller driver (" MSG_VERSION ") \033q\r\n"
 
 #define MSG_GREET	\
 	"Ported, mixed and shaken by Alan Hourihane.\r\n" \
