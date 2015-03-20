@@ -87,7 +87,7 @@ static long _cdecl	ehci_open		(struct ucdif *);
 static long _cdecl	ehci_close		(struct ucdif *);
 static long _cdecl	ehci_ioctl		(struct ucdif *, short, long);
 
-static char lname[] = "EHCI-PCI USB controller driver for FreeMiNT\0";
+static char lname[] = "EHCI-PCI USB driver\0";
 
 /*
  * Function prototypes

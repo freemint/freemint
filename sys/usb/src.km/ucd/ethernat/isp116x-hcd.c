@@ -172,7 +172,7 @@ static long _cdecl	ethernat_open		(struct ucdif *);
 static long _cdecl	ethernat_close		(struct ucdif *);
 static long _cdecl	ethernat_ioctl		(struct ucdif *, short, long);
 
-static char lname[] = "Ethernat USB controller driver for FreeMiNT\0";
+static char lname[] = "Ethernat USB driver\0";
 
 static struct ucdif ethernat_uif =
 {
