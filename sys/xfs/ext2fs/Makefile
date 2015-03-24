@@ -2,7 +2,7 @@
 # Makefile for
 #
 TARGET = ext2.xfs
-
+BUILD_PREFIX = .compile
 SHELL = /bin/sh
 SUBDIRS =
 
@@ -22,7 +22,12 @@ all: $(targets)
 include SRCFILES
 
 $(targets): $(SRCFILES)
-	mkdir -p .$@ && cd .$@ && make -f ../Makefile.objs CPU=$@ $(TARGETS)
+	mkdir -p $(BUILD_PREFIX)$@ && cd $(BUILD_PREFIX)$@ && make -f ../Makefile.objs CPU=$@
 
-#include $(top_srcdir)/DEPENDENCIES
+BINFILES: Makefile
+	$(SHELL) -c '{ \
+	echo "# This file gets included by the Makefile in this directory to determine"; \
+	echo "# the files that should go only into binary distributions."; \
+	echo; echo -n "BINFILES ="; \
+	for t in $(targets); do echo -n " $(BUILD_PREFIX)$$t/$(TARGET)"; done; echo; } >$@'
 
