@@ -14,7 +14,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-ifeq ($(CPU),dbg)
+ifeq ($(CPU),deb)
 CPU = 000
 MODEL = -m68000
 CFLAGS += -DEXT2FS_DEBUG=1
