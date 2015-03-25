@@ -2,7 +2,7 @@
 # Makefile for
 #
 TARGET = ext2.xfs
-BUILD_PREFIX = .compile
+BUILD_PREFIX = .compile_
 SHELL = /bin/sh
 SUBDIRS =
 
@@ -15,7 +15,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-targets=000 020-60 v4e dbg
+targets=000 020-60 v4e deb
 
 all: $(targets)
 
