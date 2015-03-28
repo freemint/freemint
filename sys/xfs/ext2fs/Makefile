@@ -4,25 +4,22 @@
 TARGET = ext2.xfs
 BUILD_PREFIX = .compile_
 SHELL = /bin/sh
-SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
 
-default: all
-
-include $(top_srcdir)/CONFIGVARS
-include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-targets=000 020-60 v4e deb
+default: all
+
+targets=000 020060 col deb
 
 all: $(targets)
 
 include SRCFILES
 
 $(targets): $(SRCFILES)
-	mkdir -p $(BUILD_PREFIX)$@ && cd $(BUILD_PREFIX)$@ && make -f ../Makefile.objs CPU=$@
+	mkdir -p $(BUILD_PREFIX)$@ && cd $(BUILD_PREFIX)$@ && make -f ../Makefile.objs target=$@ TARGET=$(TARGET)
 
 BINFILES: Makefile
 	$(SHELL) -c '{ \

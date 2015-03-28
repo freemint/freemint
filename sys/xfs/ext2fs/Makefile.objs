@@ -1,7 +1,7 @@
 #
-# Makefile for
+# Makefile
 #
-TARGET = ext2.xfs
+#TARGET = ext2.xfs
 
 SHELL = /bin/sh
 SUBDIRS =
@@ -10,20 +10,26 @@ srcdir = ..
 top_srcdir = ../../..
 VPATH=..
 
+# set parameters for 'special' targets
+# (used target-name does not match gcc-compiler-options).
+ifeq ($(target),col)
+ CPU=v4e
+else
+ifeq ($(target),deb)
+ CPU=000
+ CFLAGS += -DEXT2FS_DEBUG=1
+else
+ifeq ($(target),020060)
+ CPU=020-60
+else
+ CPU=$(target)
+endif
+endif
+endif
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
-
-ifeq ($(CPU),deb)
-CPU = 000
-MODEL = -m68000
-CFLAGS += -DEXT2FS_DEBUG=1
-LIBKERNSTMP = $(top_srcdir)/libkern/libkern000.a
-LIBKERN = -L$(top_srcdir)/libkern -lkern000
-libkerntarget=
-else
-libkerntarget = $(top_srcdir)/libkern/$(LIBKERNTARGET)
-endif
 
 all: $(TARGET)
 
