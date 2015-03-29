@@ -1,4 +1,4 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into binary distributions.
 
-BINFILES = .compile_000/ext2.xfs .compile_020-60/ext2.xfs .compile_v4e/ext2.xfs .compile_deb/ext2.xfs
+BINFILES = .compile_000/ext2.xfs .compile_020060/ext2.xfs .compile_col/ext2.xfs .compile_deb/ext2.xfs
