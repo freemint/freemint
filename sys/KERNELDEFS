@@ -77,7 +77,7 @@ endif
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DM68030 -DNO_RAMFS
+KERNELDEFS = -DM68030 -DNO_RAMFS 
 endif
 
 ifeq ($(kernel),040)
@@ -95,7 +95,7 @@ endif
 ifeq ($(kernel),deb)
 MINT = mintdeb.prg
 CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
+KERNELDEFS = -DDEBUG_INFO -DM68030
 endif
 
 ifeq ($(kernel),col)

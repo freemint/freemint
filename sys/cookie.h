@@ -62,6 +62,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_MiNT	0x4d694e54L
 # define COOKIE_PMMU	0x504d4d55L
 # define COOKIE__ISO	0x5f49534fL
+# define COOKIE_EUSB	0x45555342L /* Ethernet USB API exported by inet4 */
 
 /* Some third party cookies */
 # define COOKIE_XHDI	0x58484449L
@@ -83,10 +84,14 @@ long	del_rsvfentry	(char *name);
 /* hardware cookies */
 # define COOKIE_CT60	0x43543630L
 # define COOKIE_HADES	0x68616465L
+# define COOKIE__PCI	0x5f504349L
+# define COOKIE__CF_	0x5f43465fL /* ColdFire, set by FireTOS and EmuTOS */
 
 /* values of MCH cookie */
 # define ST		0
 # define STE		0x00010000L
+# define STBOOK		0x00010001L
+# define STEIDE		0x00010008L
 # define MEGASTE	0x00010010L
 # define TT		0x00020000L
 # define FALCON		0x00030000L

@@ -5225,7 +5225,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: GEM/BGM detected"));
 
 		xbpb->ftype = FAT_TYPE_16;
-		//fvi = (void *) (u->data + sizeof (*fbs));
 	}
 	else
 
@@ -5238,7 +5237,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: F32 detected"));
 
 		xbpb->ftype = FAT_TYPE_32;
-		//fvi = (void *) (u->data + sizeof (*f32bs));
 	}
 	else
 
@@ -5252,19 +5250,22 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 		switch (di->id[2])
 		{
+			case 0x01:
+			{
+				xbpb->ftype = FAT_TYPE_12;
+				break;
+			}
 			case 0x04:
 			case 0x06:
 			case 0x0e: /* FAT16, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_16;
-				//fvi = (void *) (u->data + sizeof (*fbs));
 				break;
 			}
 			case 0x0b:
 			case 0x0c: /* FAT32, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_32;
-				//fvi = (void *) (u->data + sizeof (*f32bs));
 				break;
 			}
 			default:
@@ -7074,7 +7075,7 @@ fatfs_writelabel (fcookie *dir, const char *name)
 
 	if (r == E_OK)
 	{
-		register union { const char *cc; const unsigned char *c; } nameptr = {name};// nameptr.cc = name;
+		register union { const char *cc; const unsigned char *c; } nameptr = {name};
 		register const char *table = DEFAULT_T (dir->dev);
 		register const uchar *src = nameptr.c;
 		register char *dst = odir.info->name;
@@ -7903,19 +7904,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	if (bytes <= 0)
 	{
 		FAT_DEBUG (("__FIO: ERROR -> bytes = %li)", bytes));
-
-		if (bytes < 0 && mode == READ)
-		{
-			/* hmm, Draco's idea */
-
-			bytes = 2147483647L; /* LONG_MAX */
-			FAT_DEBUG (("__FIO: (fix) mode == READ -> bytes = %li", bytes));
-		}
-		else
-		{
-			FAT_DEBUG (("__FIO: return 0"));
-			return 0;
-		}
+		return 0;
 	}
 
 	if (mode == READ)
@@ -7953,7 +7942,8 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	while (todo > 0)
 	{
 		temp = f->pos / CLUSTSIZE (dev);
-		if (temp > ptr->cl)
+
+		while (temp > ptr->cl)
 		{
 			/* get next cluster */
 
@@ -8032,8 +8022,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 
 			FAT_DEBUG (("__FIO: BYTES (todo = %li, pos = %li)", todo, f->pos));
 
-			data = CLUSTSIZE (dev) - offset;
-			data = MIN (todo, data);
+			data = MIN (todo, CLUSTSIZE (dev) - offset);
 
 			/* read the unit */
 			u = bio_data_read (dev, ptr->current);
@@ -8181,7 +8170,7 @@ fatfs_open (FILEPTR *f)
 static long _cdecl
 fatfs_write (FILEPTR *f, const char *buf, long bytes)
 {
-	union { const char *cc; char *c; } bufptr = {buf};// bufptr.cc = buf;
+	union { const char *cc; char *c; } bufptr = {buf};
 
 	FAT_DEBUG (("fatfs_write [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
 
@@ -8220,6 +8209,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 {
 	register COOKIE *c = (COOKIE *) f->fc.index;
 	register FILE *ptr = (FILE *) f->devinfo;
+	long oldfpos;
 
 	FAT_DEBUG (("fatfs_lseek [%s]: enter (where = %li, whence = %i)", c->name, where, whence));
 
@@ -8231,20 +8221,26 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		default:	return ENOSYS;
 	}
 
-	if (where > c->flen || where < 0)
+	if (where < 0)
 	{
 		FAT_DEBUG (("fatfs_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
 	}
 
+	oldfpos = f->pos;
+	f->pos = where;
+
+	if (where > c->flen) {
+		where = c->flen;
+	}
+
 	if (where == 0)
 	{
-		f->pos = 0;
 		ptr->cl = 0;
 		ptr->current = c->stcl;
 
 		FAT_DEBUG (("fatfs_lseek: leave ok (where = %li)", where));
-		return 0;
+		return f->pos;
 	}
 
 	{	/* calculate and set the new current cluster and position */
@@ -8273,6 +8269,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 			{
 				/* bad clustered or read error */
 				ptr->error = current;
+				f->pos = oldfpos;
 
 				FAT_DEBUG (("fatfs_lseek: leave failure, bad clustered (ptr->error = %li)", ptr->error));
 				return EACCES;
@@ -8281,12 +8278,10 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 			ptr->cl = cl;
 			ptr->current = current;
 		}
-
-		f->pos = where;
 	}
 
 	FAT_DEBUG (("fatfs_lseek: leave ok (f->pos = %li)", f->pos));
-	return where;
+	return f->pos;
 }
 
 /*
@@ -8428,8 +8423,10 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == get_curproc()->pid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+              && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len)
+								 || (lck->l.l_start >= t.l.l_start
+						     	&& t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;

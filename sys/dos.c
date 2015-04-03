@@ -14,6 +14,7 @@
 /* miscellaneous DOS functions */
 
 # include "dos.h"
+# include "init.h"
 # include "global.h"
 
 # include "arch/halt.h"		/* hw_poweroff, hw_halt, ... */
@@ -620,26 +621,6 @@ extern unsigned short proc_clock;
 unsigned short pc;
 #endif
 
-#if NEWLOAD
-/* when loadaverage[0] is 0x4143544CL	fill loadaverage[3] with actual load */
-#define WITH_ACTLD	0x4143544CL	/* 'ACTL' */
-extern unsigned short new_ld;
-extern unsigned short uptimetick;
-
-void vbl_on(void);
-
-#ifdef DEBUG_INFO
-#define TEST_TICK	1
-#else
-#define TEST_TICK	0
-#endif
-
-
-#if TEST_TICK
-extern unsigned short uptime_ovfl;
-extern unsigned short uptime_ovfl1, uptime_ovfl2, modwr, mint_vblcnt;
-#endif
-#endif
 /*
  * Suptime: get time in seconds since boot and current load averages from
  * kernel.
@@ -649,27 +630,6 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 {
 	*cur_uptime = uptime;
 
-#if NEWLOAD
-
-#if TEST_TICK
-	/*
-	DEBUG(("ld=%d uptime=%ld tick=%u overfl=%d/%d/%d modwr=%d vbl=%d", act_ld, uptime, uptimetick,
-		uptime_ovfl, uptime_ovfl1, uptime_ovfl2, modwr, mint_vblcnt));
-	*/
-	if( uptimetick > 200 || uptime_ovfl1 || uptime_ovfl2 )
-	{
-		DEBUG(("uptime():ld=%d tick=%u overfl=%d/%d/%d vbl=%d:%d:%d",
-			new_ld, uptimetick, uptime_ovfl, uptime_ovfl1, uptime_ovfl2, mint_vblcnt, proc_clock, pc));
-		uptimetick = 200;
-		uptime_ovfl = uptime_ovfl1 = uptime_ovfl2 = 0;
-
-	}
-#endif
-	if( loadaverage[0] == WITH_ACTLD )
-	{
-		loadaverage[3] = new_ld;
-	}
-#endif
 	loadaverage[0] = avenrun[0];
 	loadaverage[1] = avenrun[1];
 	loadaverage[2] = avenrun[2];
@@ -772,7 +732,6 @@ shutdown(void)
 	delay_seconds(2);
 }
 
-extern int sys_err;
 /*
  * where restart is:
  *

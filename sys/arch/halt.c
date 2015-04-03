@@ -49,6 +49,35 @@
 
 # include "aranym.h"
 
+# ifdef __mcoldfire__
+
+/* FireBee defines */
+# define __MBAR ((volatile uchar*)0xff000000)
+# define MCF_UART_USR3 (*(volatile uchar*)(&__MBAR[0x8904]))
+# define MCF_UART_UTB3 (*(volatile uchar*)(&__MBAR[0x890c]))
+# define MCF_UART_USR_TXRDY 0x04
+
+static bool
+firebee_pic_can_write(void)
+{
+	/* Check if space is available in the FIFO */
+	return MCF_UART_USR3 & MCF_UART_USR_TXRDY;
+}
+
+static void
+firebee_pic_write_byte(uchar b)
+{
+	while (!firebee_pic_can_write())
+	{
+		/* Wait */
+	}
+
+	/* Send the byte */
+	MCF_UART_UTB3 = b;
+}
+
+# endif /* __mcoldfire__ */
+
 void
 hw_poweroff(void)
 {
@@ -65,6 +94,18 @@ hw_poweroff(void)
 	
 		/* does not return */ 
 	}
+
+# ifdef __mcoldfire__
+	/* Firebee poweroff */
+	if (machine == machine_firebee)
+	{
+		firebee_pic_write_byte(0x0c); /* Header */
+		firebee_pic_write_byte('O');
+		firebee_pic_write_byte('F');
+		firebee_pic_write_byte('F');
+	}
+# endif /* __mcoldfire__ */
+
 # endif
 }
 

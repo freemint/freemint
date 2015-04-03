@@ -28,6 +28,8 @@ SOBJS = \
 	kernel.S \
 	mmu030.S \
 	mmu040.S \
+	pcibios.S \
+	pcibios_emu.S \
 	scsidrv_emu.S \
 	syscall.S \
 	user_things.S \

@@ -50,33 +50,14 @@ sys_f_open (const char *name, short mode)
 	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
-	int globl = 0;
 	long ret;
 
 	TRACE (("Fopen(%s, %x)", name, mode));
 
-# if O_GLOBAL
-	if (mode & O_GLOBAL)
-	{
-		if (p->p_cred->ucr->euid)
-		{
-			DEBUG (("Fopen(%s): O_GLOBAL denied for non root"));
-			return EPERM;
-		}
-
-		/* from now the sockets are clean */
-		if (!stricmp (name, "u:\\dev\\socket"))
-		{
-			ALERT (MSG_oglobal_denied);
+	if (mode & O_GLOBAL) {
+	   ALERT("O_GLOBAL is obsolete, please update your driver (%s)",name);
 			return EINVAL;
 		}
-
-		ALERT (MSG_global_handle, name);
-
-		p = rootproc;
-		globl = 1;
-	}
-# endif
 
 	/* make sure the mode is legal */
 	mode &= O_USER;
@@ -98,19 +79,12 @@ sys_f_open (const char *name, short mode)
 	/* activate the fp, default is to close non-standard files on exec */
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
 
-# if O_GLOBAL
-	if (globl)
-		/* we just opened a global handle */
-		fd += 100;
-# endif
-
 	TRACE (("Fopen: returning %d", fd));
 	return fd;
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
-	if (fp)
-		fp->links--;
+	if (fp) { fp->links--; FP_FREE (fp); }
 
 	return ret;
 }
@@ -124,14 +98,6 @@ sys_f_create (const char *name, short attrib)
 	long ret;
 
 	TRACE (("Fcreate(%s, %x)", name, attrib));
-
-# if O_GLOBAL
-	if (attrib & O_GLOBAL)
-	{
-		DEBUG (("Fcreate(%s): O_GLOBAL denied"));
-		return EPERM;
-	}
-# endif
 
 	assert (p->p_fd && p->p_cwd);
 
@@ -180,8 +146,7 @@ sys_f_create (const char *name, short attrib)
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
-	if (fp)
-		fp->links--;
+	if (fp) { fp->links--; FP_FREE (fp); }
 	return ret;
 }
 
@@ -696,7 +661,7 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	long count;
 	FILEPTR *f;
 	struct proc *p;
-	TIMEOUT *t;
+	TIMEOUT *t = NULL;
 	int i, rsel;
 	long wait_cond;
 	short sr;
@@ -717,8 +682,6 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	if (rfdp) *rfdp = 0;
 	if (wfdp) *wfdp = 0;
 	if (xfdp) *xfdp = 0;
-
-	t = 0;
 
 	TRACELOW(("Fselect(%u, %lx, %lx, %lx)", timeout, rfd, wfd, xfd));
 	p = get_curproc();			/* help the optimizer out */
@@ -958,24 +921,6 @@ cancel:
 		mask = mask << 1L;
 	}
 
-#if 0
-/* GEM kludgery continued...
- *
- * if the counter was already in use and is somewhere at 3 minutes now
- * then just restore the old value
- */
-	if (oldgemtimer) {
-		long *bar = (long *)gemtimer;
-		short sr = spl7();
-		if ((gemtimer = *bar) <= 0x2600 && gemtimer > 0x2000 &&
-		    gemtimer > oldgemtimer) {
-			*bar = oldgemtimer;
-			spl(sr);
-			DEBUG(("select: restoring gem timer (%lx: %lx -> %lx)", bar, gemtimer, oldgemtimer));
-		}
-		spl(sr);
-	}
-#endif
 	/* wake other processes which got a collision */
 	if (rfd || wfd || xfd)
 		wake(SELECT_Q, (long)&select_coll);
@@ -1203,89 +1148,260 @@ sys_f_seek64 (llong place, short fd, short how, llong *newpos)
 long _cdecl
 sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 {
-	ulong rfds = 0;
-	ulong wfds = 0;
-	ulong xfds = 0;
-	long retval;
+	struct proc *p = get_curproc();
 	register long i;
+	long count = 0;
+	long wait_cond;
+	FILEPTR *f;
+	TIMEOUT *t = NULL;
+	int rsel;
+	short sr;
+
+	/* validate */
+	for (i = 0; i < nfds; i++)
+	{
+# define LEGAL_INPUT_FLAGS \
+	(POLLIN | POLLPRI | POLLOUT | POLLRDNORM | POLLWRNORM | POLLRDBAND | POLLWRBAND)
+		if (((fds[i].events | LEGAL_INPUT_FLAGS) != LEGAL_INPUT_FLAGS) ||
+		   fds[i].fd >= NDFILE ||
+		   !p->p_fd->ofiles[fds[i].fd]) {
+			fds[i].revents |= POLLNVAL;
+		} else {
+			fds[i].revents = fds[i].events;
+		}
+	}
+
+        assert (p->p_fd && p->p_cwd);
+
+retry_after_collision:
+	p->wait_cond = (long)wakeselect;                /* flag */
+	wait_cond = (long)wakeselect;
+	count = 0;
 
 	for (i = 0; i < nfds; i++)
 	{
-		if (fds[i].fd > 31)
-			return EINVAL;
+		if (fds[i].revents & POLLNVAL)
+			continue;
 
-# define LEGAL_FLAGS \
-	(POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP | POLLNVAL | POLLRDNORM | POLLWRNORM | POLLRDBAND | POLLWRBAND)
+		f = p->p_fd->ofiles[fds[i].fd];
 
-		if ((fds[i].events | LEGAL_FLAGS) != LEGAL_FLAGS) {
-			return EINVAL;
+		if (fds[i].revents & (POLLIN | POLLRDNORM))
+		{
+			if (is_terminal(f))
+				rsel = (int) tty_select(f, (long)p, O_RDONLY);
+			else
+				rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
+			switch (rsel)
+			{
+			case 0:
+				fds[i].revents &= ~(fds[i].events & (POLLIN | POLLRDNORM));
+				break;
+			case 1:
+				fds[i].revents |= (fds[i].events & (POLLIN | POLLRDNORM));
+				count++;
+				break;
+			case 2:
+				wait_cond = (long)&select_coll;
+				break;
+			}
 		}
-
-		if (fds[i].events & (POLLIN | POLLRDNORM))
-			rfds |= (1L << (fds[i].fd));
-		if (fds[i].events & POLLPRI)
-			xfds |= (1L << (fds[i].fd));
-		if (fds[i].events & (POLLOUT | POLLWRNORM))
-			wfds |= (1L << (fds[i].fd));
+		if (fds[i].revents & (POLLOUT | POLLWRNORM))
+		{
+			if (is_terminal(f))
+				rsel = (int) tty_select(f, (long)p, O_WRONLY);
+			else
+				rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
+			switch (rsel)
+			{
+			case 0:
+				fds[i].revents &= ~(fds[i].events & (POLLOUT | POLLWRNORM));
+				break;
+			case 1:
+				fds[i].revents |= (fds[i].events & (POLLOUT | POLLWRNORM));
+				count++;
+				break;
+			case 2:
+				wait_cond = (long)&select_coll;
+				break;
+			}
+		}
+		if (fds[i].revents & POLLPRI)
+		{
+/* tesche: anybody worried about using O_RDWR for exceptional data? ;) */
+			rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
+/*  tesche: for old device drivers, which don't understand this
+ * call, this will never be true and therefore won't disturb us here.
+ */
+			switch (rsel)
+			{
+			case 0:
+				fds[i].revents &= ~(fds[i].events & POLLPRI);
+				break;
+			case 1:
+				fds[i].revents |= (fds[i].events & POLLPRI);
+				count++;
+				break;
+			case 2:
+				wait_cond = (long)&select_coll;
+				break;
+			}
+		}
 	}
 
+	/* reset timeout for our select call */
 	if (timeout == ~0)
-		retval = sys_f_select (0L, (long *)&rfds, (long *)&wfds, (long *)&xfds);
+		timeout = 0;
 	else if (timeout == 0)
-		retval = sys_f_select (1L, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-# define USHRT_MAX	65535
-	else if (timeout < USHRT_MAX)
-		retval = sys_f_select (timeout, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-	else
+		goto cancel;
+
+	if (count == 0)
 	{
-		ulong saved_rfds, saved_wfds, saved_xfds;
-		ushort this_timeout;
-		int last_round = 0;
-
-		saved_rfds = rfds;
-		saved_wfds = wfds;
-		saved_xfds = xfds;
-
-		do {
-			if ((ulong) timeout > USHRT_MAX)
-				this_timeout = USHRT_MAX;
-			else
+		/* no data is ready yet */
+		if (timeout && !t)
 			{
-				this_timeout = timeout;
-				last_round = 1;
+			t = addtimeout (p, (long)timeout, unselectme);
+			timeout = 0;
 			}
 
-			retval = sys_f_select (this_timeout, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-			if (retval != 0)
-				break;
+		/* curproc->wait_cond changes when data arrives or the timeout happens */
+		sr = spl7 ();
+		while (p->wait_cond == (long)wakeselect)
+		{
+			p->wait_cond = wait_cond;
+			spl (sr);
+			/*
+			 * The 0x100 tells sleep() to return without sleeping
+			 * when curproc->wait_cond changes. This way we don't
+			 * need spl7 (avoiding endless serial overruns).
+			 * Also fixes a deadlock with checkkeys/checkbttys.
+			 * They are called from sleep and may wakeselect()
+			 * curproc. But sleep used to reset curproc->wait_cond
+			 * to wakeselect causing curproc to sleep forever.
+			 */
+			if (sleep (SELECT_Q|0x100, wait_cond)) {
+				/* signal happened, abort */
+				if (t) canceltimeout(t);
 
-			timeout -= this_timeout;
+				count = EINTR;
 
-			rfds = saved_rfds;
-			wfds = saved_wfds;
-			xfds = saved_xfds;
+				goto cancel;
 		}
-		while (!last_round);
+			sr = spl7 ();
+		}
+		if (p->wait_cond == (long)&select_coll)
+		{
+			spl (sr);
+			goto retry_after_collision;
+	}
+		spl (sr);
+
+	/* we can cancel the time out now (if it hasn't already happened) */
+		if (t) canceltimeout(t);
+
+	/* OK, let's see what data arrived (if any) */
+	for (i = 0; i < nfds; i++)
+	{
+			ushort events = fds[i].events;
+
+			if (fds[i].revents & POLLNVAL)
+				continue;
+
+			f = p->p_fd->ofiles[fds[i].fd];
+
+			if (events & (POLLIN | POLLRDNORM))
+			{
+				if (f)
+				{
+				    if (is_terminal(f))
+					rsel = (int) tty_select(f, (long)p, O_RDONLY);
+		else
+					rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
+
+				    if (rsel == 1) {
+					fds[i].revents |= (fds[i].events & (POLLIN | POLLRDNORM));
+					count++;
+				    }
+				}
+			}
+			if (events & (POLLOUT | POLLWRNORM))
+			{
+				if (f)
+				{
+				    if (is_terminal(f))
+					rsel = (int) tty_select(f, (long)p, O_WRONLY);
+				    else
+					rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
+
+				    if (rsel == 1) {
+			fds[i].revents |= (fds[i].events & (POLLOUT | POLLWRNORM));
+					count++;
+				    }
+				}
+			}
+			if (events & POLLPRI)
+			{
+				if (f)
+				{
+/*  tesche: since old device drivers won't understand this call,
+ * we set up `no exceptional condition' as default.
+ */
+				    rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
+				    if (rsel == 1) {
+					fds[i].revents |= (fds[i].events & POLLPRI);
+					count++;
+				    }
+				}
+			}
+		}
+	}
+	else if (t)
+	{
+		/* in case data arrived after a collsion, there
+		 * could be a timeout pending even if count > 0
+		 */
+		canceltimeout(t);
 	}
 
-	if (retval < 0)
-		return retval;
+cancel:
+	/* at this point, we either have data or a time out */
+	/* cancel all the selects */
 
 	for (i = 0; i < nfds; i++)
 	{
-		if (rfds & (1L << (fds[i].fd)))
-			fds[i].revents = (fds[i].events & (POLLIN | POLLRDNORM));
-		else
-			fds[i].revents = 0;
+#if 0
+		if (count == EINTR) {
+			fds[i].revents |= POLLHUP;
+			continue;
+		}
+#endif
+		if (fds[i].revents & POLLNVAL) {
+			count++;
+			continue;
+		}
 
-		if (xfds & (1L << (fds[i].fd)))
-			fds[i].revents |= POLLPRI;
+		f = p->p_fd->ofiles[fds[i].fd];
 
-		if (wfds & (1L << (fds[i].fd)))
-			fds[i].revents |= (fds[i].events & (POLLOUT | POLLWRNORM));
+		if (fds[i].events & (POLLIN | POLLRDNORM))
+		{
+			if (f)
+				(*f->dev->unselect)(f, (long)p, O_RDONLY);
+		}
+		if (fds[i].events & (POLLOUT | POLLWRNORM))
+		{
+			if (f)
+				(*f->dev->unselect)(f, (long)p, O_WRONLY);
+		}
+		if (fds[i].events & POLLPRI)
+		{
+			if (f)
+				(*f->dev->unselect)(f, (long)p, O_RDWR);
+		}
 	}
 
-	return retval;
+	/* wake other processes which got a collision */
+	wake(SELECT_Q, (long)&select_coll);
+
+	return count;
 }
 
 long _cdecl

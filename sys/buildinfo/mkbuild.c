@@ -42,9 +42,6 @@ char* killfile = NULL;
 
 void signal_handler (int sigum);
 
-char _host[64];
-char _domain[256];
-
 char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 char* wdays[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
@@ -63,43 +60,12 @@ main (int argc, char* argv[])
 {
 	char *myname = argv [0];
 	time_t then = time (NULL);
-	char *host = getenv ("BUILD_HOST");
-	char *domain = getenv ("BUILD_DOMAIN");
-	char *user = getenv ("BUILD_USER");
 	
 	/* Fixme: Should we use gmtime() instead of local time? */
 	struct tm *now = localtime (&then);
 	FILE *out = fopen (OUTNAME, "wb");
 	int catchsigs [] = { SIGHUP, SIGINT, SIGQUIT, SIGTERM, -1 };
 	int i;
-	
-	if (host == NULL)
-	{
-		host = _host;
-		if (gethostname (_host, sizeof _host) != 0)
-		{
-			perror ("gethostname");
-			return 1;
-		}
-	}
-	
-	if (domain == NULL)
-	{
-		domain = _domain;
-		if (getdomainname (_domain, sizeof _domain) != 0)
-		{
-			perror ("getdomainname");
-			return 1;
-		}
-	}
-	
-	if (user == NULL)
-		user = getlogin ();
-	
-	if (user == NULL)
-		user = "Bill.Gates";	/* That will teach 'em to provide
-					 * a sane environment.
-					 */
 	
 	for (i = 0; catchsigs [i] > 0; i++)
 		if (signal (catchsigs [i], signal_handler) != 0)
@@ -141,9 +107,6 @@ main (int argc, char* argv[])
 #else
 		"# define BUILD_CTIME \"%s %s %02d %02d:%02d:%02d %s %04d\"\n"
 #endif
-		"# define BUILD_USER \"%s\"\n"
-		"# define BUILD_HOST \"%s\"\n"
-		"# define BUILD_DOMAIN \"%s\"\n"
 		"# define BUILD_SERIAL %d\n"
 		"\n"
 		"# endif /* _build_h */\n",
@@ -160,9 +123,6 @@ main (int argc, char* argv[])
 		now->tm_zone,
 #endif
 		now->tm_year + 1900,
-		user,
-		host,
-		domain,
 		1
 	);
 	

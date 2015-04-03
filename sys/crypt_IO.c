@@ -79,7 +79,6 @@ init_crypt_IO (void)
 }
 
 # ifdef CRYPTO_CODE
-
 /*
  * cbc_encipher
  *

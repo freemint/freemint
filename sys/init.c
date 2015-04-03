@@ -1273,7 +1273,7 @@ mint_thread(void *arg)
 # ifndef DEBUG_INFO
 	else
 	{
-		sys_err |= 0x80;
+		sys_err |= SE_INIT_PRG_FAILED;
 		sys_s_hutdown(SHUT_HALT);		/* Everything failed. Halt. */
 	}
 
@@ -1286,7 +1286,7 @@ mint_thread(void *arg)
 	/* With debug kernels, always halt
 	 */
 	FORCE("init:sys_s_hutdown:HALT");
-	sys_err |= 0x80;
+	sys_err |= SE_INIT_PRG_FAILED;
 	(void) sys_s_hutdown(SHUT_HALT);
 # endif
 

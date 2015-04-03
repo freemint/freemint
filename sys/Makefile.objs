@@ -23,8 +23,8 @@ WARN =  -Wall \
 	-Wmissing-prototypes \
 	-Wshadow \
 	-Wpointer-arith \
-	-Wcast-qual \
-	-Werror
+	-Wcast-qual
+#	-Werror
 LDFLAGS = -nostdlib
 LDFLAGS += -Wl,-Map -Wl,map.txt
 # XXX should be come from arch/

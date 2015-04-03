@@ -12,6 +12,9 @@
 # include "mint/basepage.h"
 # include "mint/emu_tos.h"
 
+extern int sys_err;
+#define SE_INIT_PRG_FAILED 0x01	/* MiNT could not start anything */
+
 extern short intr_done;
 extern short step_by_step;
 extern short write_boot_file;

@@ -308,6 +308,8 @@ identify (long mch, enum special_hw info)
 					machine = machine_st;
 					break;
 				case STE:
+				case STBOOK: /* Classed as an STE machine */
+				case STEIDE: /* STE with IDE */
 					machine = machine_ste;
 					break;
 				case MEGASTE:
@@ -391,72 +393,72 @@ identify (long mch, enum special_hw info)
 	else
 #endif
 	{
-	_cpu = "m68k";
-	_mmu = "";
+		_cpu = "m68k";
+		_mmu = "";
 
-	switch (mcpu)
-	{
-		case 0:
-			cpu_type = "68000";
-			_cpu = cpu_type;
-			break;
-		case 10:
-			cpu_type = "68010";
-			_cpu = cpu_type;
-			break;
-		case 20:
-			cpu_type = "68020";
-			_cpu = cpu_type;
-			break;
-		case 30:
-				cpu_type = "68030";
-			_cpu = cpu_type;
-				if (pmmu)
-				{
-					mmu_type = cpu_type;
-			_mmu = "/MMU";
-				}
-			break;
-		case 40:
-				cpu_type = "68040";
-			_cpu = cpu_type;
-				if (pmmu)
-				{
-					mmu_type = cpu_type;
-			_mmu = "/MMU";
-				}
-			break;
-		case 60:
+		switch (mcpu)
 		{
-			ulong pcr;
+			case 0:
+				cpu_type = "68000";
+				_cpu = cpu_type;
+				break;
+			case 10:
+				cpu_type = "68010";
+				_cpu = cpu_type;
+				break;
+			case 20:
+				cpu_type = "68020";
+				_cpu = cpu_type;
+				break;
+			case 30:
+				cpu_type = "68030";
+				_cpu = cpu_type;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
+				_mmu = "/MMU";
+				}
+				break;
+			case 40:
+				cpu_type = "68040";
+				_cpu = cpu_type;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
+				_mmu = "/MMU";
+				}
+				break;
+			case 60:
+			{
+				ulong pcr;
 
-			__asm__
-			(
-				".word 0x4e7a,0x0808;"
-				"movl %%d0,%0"
-				: "=d"(pcr)
-				:
-				: "d0"
-			);
+				__asm__
+				(
+					".word 0x4e7a,0x0808;"
+					"movl %%d0,%0"
+					: "=d"(pcr)
+					:
+					: "d0"
+				);
 
-			ksprintf (buf, sizeof (buf), "68%s060 rev.%ld",
-					pcr & 0x10000 ? "LC/EC" : "",
-					(pcr >> 8) & 0xff);
+				ksprintf (buf, sizeof (buf), "68%s060 rev.%ld",
+						pcr & 0x10000 ? "LC/EC" : "",
+						(pcr >> 8) & 0xff);
 
 				cpu_type = "68060";
-			_cpu = buf;
+				_cpu = buf;
 				if (pmmu)
 				{
 					mmu_type = cpu_type;
-			_mmu = "/MMU";
+				_mmu = "/MMU";
 				}
-			break;
+				break;
+			}
 		}
 	}
-	}
 
-	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
-			machine_str(), _cpu, _mmu, _fpu);
+	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU) (_MCH 0x%lx)",
+			machine_str(), _cpu, _mmu, _fpu, mch);
 
 	boot_printf ("%s\r\n\r\n", cpu_model);
 }

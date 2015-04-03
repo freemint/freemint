@@ -529,10 +529,6 @@ pCB_prn(char *path)
 	FILEPTR *fp;
 	long ret;
 
-	/*ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-	*/
-
 	ret = do_open(&fp, rootproc, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
