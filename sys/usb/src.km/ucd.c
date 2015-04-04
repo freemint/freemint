@@ -86,6 +86,8 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 	
 	if (usb_new_device(hub)) 
 	{
+		/* Something went wrong, clear device */
+		usb_free_device(hub->devnum);
 		return -1;
 	}
 
