@@ -314,6 +314,10 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port, unsigned sho
 
 	/* Allocate a new device struct for it */
 	usb = usb_alloc_new_device(dev->controller);
+	if (!usb) 
+	{
+		return -1;
+	}
 
 	switch (portstatus & USB_PORT_STAT_SPEED_MASK) {
 	case USB_PORT_STAT_SUPER_SPEED:
