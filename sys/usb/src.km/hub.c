@@ -297,7 +297,6 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port, unsigned sho
 	/* Disconnect any existing devices under this port */
 	if (((!(portstatus & USB_PORT_STAT_CONNECTION)) &&
 	     (!(portstatus & USB_PORT_STAT_ENABLE))) || (dev->children[port])) {
-		DEBUG(("usb_disconnect"));
 		usb_disconnect(dev->children[port]);
 		dev->children[port] = NULL;
 		/* Return now if nothing is connected */
