@@ -33,7 +33,7 @@
  * BIOS parameter block (osbind.h is buggy)
  */
 
-typedef struct
+typedef struct bpb
 {
 	ushort	recsiz;		/* bytes per sector */
 	short	clsiz;		/* sectors per cluster */
