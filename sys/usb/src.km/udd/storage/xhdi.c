@@ -86,6 +86,7 @@ USB_PUN_INFO pun_usb;
 long
 sys_XHDOSLimits(ushort which,ulong limit)
 {
+#ifdef TOSONLY
 	static long dl_secsiz, dl_clusts, dl_maxsec, dl_clusts12;
 	static int first_time = 1;
 
@@ -111,7 +112,7 @@ sys_XHDOSLimits(ushort which,ulong limit)
 			dl_maxsec = 65535L;     /* max partition size = 512MB approx */
 			dl_clusts12 = MAX_FAT12_CLUSTERS;
 		}
-		else                        /* i.e. TOS 4.0x or FreeMiNT */
+		else                        /* i.e. TOS 4.0x */
 		{
 			dl_secsiz = MAX_LOGSEC_SIZE;
 			dl_clusts = 32766L;
@@ -178,8 +179,10 @@ sys_XHDOSLimits(ushort which,ulong limit)
 				return 0x00000001L;
 		}
 	}
-
 	return ENOSYS;
+#else
+	return xhdoslimits(which, limit);
+#endif /* TOSONLY */
 }
 
 static ushort
