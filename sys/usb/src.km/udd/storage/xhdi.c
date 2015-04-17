@@ -264,14 +264,14 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 		memcpy(bpb, myBPB, sizeof(BPB));
 
 		DEBUG(("XHInqDev2() BPB"));
-		DEBUG(("recsiz:	%d", bpb->recsiz));
+		DEBUG(("recsiz:	%u", bpb->recsiz));
 		DEBUG(("clsiz:	%d", bpb->clsiz));
-		DEBUG(("clsizb:	%d", bpb->clsizb));
+		DEBUG(("clsizb:	%u", bpb->clsizb));
 		DEBUG(("rdlen:	%d", bpb->rdlen));
 		DEBUG(("fsiz:	%d", bpb->fsiz));
 		DEBUG(("fatrec:	%d", bpb->fatrec));
 		DEBUG(("datrec:	%d", bpb->datrec));
-		DEBUG(("numcl:	%d", bpb->numcl));
+		DEBUG(("numcl:	%u", bpb->numcl));
 		DEBUG(("bflags:	%x", bpb->bflags));
 	}
 
