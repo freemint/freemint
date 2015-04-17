@@ -49,12 +49,14 @@
 /* forward declarations */
 struct basepage;
 struct bio;
+struct bpb;
 struct create_process_opts;
 struct dirstruct;
 struct dma;
 struct file;
 struct global;
 struct ilock;
+struct kerinfo;
 struct memregion;
 struct mfp;
 struct module_callback;
@@ -109,7 +111,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	19
+#define KENTRY_MIN_VERSION	20
 
 /* hardware dependant vector
  */
@@ -563,11 +565,6 @@ struct kentry_misc
 	long _cdecl (*trap_1_emu)(short fnum, ...);
 	long _cdecl (*trap_13_emu)(short fnum, ...);
 	long _cdecl (*trap_14_emu)(short fnum, ...);
-
-	/*
-	 * function to install XHDI drivers
-	 */
-	long _cdecl (*XHNewCookie)(void *newcookie);
 };
 #define DEFAULTS_kentry_misc \
 { \
@@ -583,7 +580,6 @@ struct kentry_misc
 	trap_1_emu, \
 	trap_13_emu, \
 	trap_14_emu, \
-	XHNewCookie, \
 }
 
 /* debug support
@@ -975,6 +971,53 @@ struct kentry_pcibios
 	Phys_to_virt, \
 }
 
+struct kentry_xhdi
+{
+long _cdecl (*XHGetVersion)(void);
+long _cdecl (*XHInqTarget)(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name);
+long _cdecl (*XHReserve)(ushort major, ushort minor, ushort do_reserve, ushort key);
+long _cdecl (*XHLock)(ushort major, ushort minor, ushort do_lock, ushort key);
+long _cdecl (*XHStop)(ushort major, ushort minor, ushort do_stop, ushort key);
+long _cdecl (*XHEject)(ushort major, ushort minor, ushort do_eject, ushort key);
+long _cdecl (*XHDrvMap)(void);
+long _cdecl (*XHInqDev)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, struct bpb *bpb);
+long _cdecl (*XHInqDriver)(ushort bios_device, char *name, char *ver, char *company, ushort *ahdi_version, ushort *maxIPL);
+long _cdecl (*XHNewCookie)(void *newcookie);
+long _cdecl (*XHReadWrite)(ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf);
+long _cdecl (*XHInqTarget2)(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen);
+long _cdecl (*XHInqDev2)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, struct bpb *bpb, ulong *blocks, char *partid);
+long _cdecl (*XHDriverSpecial)(ulong key1, ulong key2, ushort subopcode, void *data);
+long _cdecl (*XHGetCapacity)(ushort major, ushort minor, ulong *blocks, ulong *bs);
+long _cdecl (*XHMediumChanged)(ushort major, ushort minor);
+long _cdecl (*XHMiNTInfo)(ushort opcode, struct kerinfo *data);
+long _cdecl (*XHDOSLimits)(ushort which, ulong limit);
+long _cdecl (*XHLastAccess)(ushort major, ushort minor, ulong *ms);
+long _cdecl (*XHReaccess)(ushort major, ushort minor);
+};
+#define DEFAULTS_kentry_xhdi \
+{ \
+	XHGetVersion, \
+	XHInqTarget, \
+	XHReserve, \
+	XHLock, \
+	XHStop, \
+	XHEject, \
+	XHDrvMap, \
+	XHInqDev, \
+	XHInqDriver, \
+	XHNewCookie, \
+	XHReadWrite, \
+	XHInqTarget2, \
+	XHInqDev2, \
+	XHDriverSpecial, \
+	XHGetCapacity, \
+	XHMediumChanged, \
+	XHMiNTInfo, \
+	XHDOSLimits, \
+	XHLastAccess, \
+	XHReaccess, \
+}
+
 /* the complete kernel entry
  */
 struct kentry
@@ -1011,6 +1054,7 @@ struct kentry
 	struct kentry_xdd vec_xdd;
 
 	struct kentry_pcibios vec_pcibios;
+	struct kentry_xhdi vec_xhdi;
 };
 # define DEFAULTS_kentry \
 { \
@@ -1041,7 +1085,8 @@ struct kentry
 	DEFAULTS_kentry_libkern, \
 	DEFAULTS_kentry_xfs, \
 	DEFAULTS_kentry_xdd, \
-	DEFAULTS_kentry_pcibios \
+	DEFAULTS_kentry_pcibios, \
+	DEFAULTS_kentry_xhdi, \
 }
 
 # endif /* _mint_kentry_h */

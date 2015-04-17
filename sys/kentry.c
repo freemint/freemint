@@ -63,7 +63,7 @@
 # include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
-# include "xhdi.h"		/* XHNewCookie */
+# include "xhdi.h"
 
 
 # undef DEFAULT_MODE
