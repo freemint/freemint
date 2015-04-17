@@ -953,7 +953,6 @@ check_kentry_version(void)
 
 # define ROM_Setexc(vnum,vptr)	(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 
-# define xhnewcookie		(*KENTRY->vec_misc.XHNewCookie)
 
 /*
  * kentry_debug
@@ -1155,5 +1154,31 @@ INLINE long Write_io_byte(long handle, unsigned long offset, unsigned short val)
 
 INLINE long Write_io_word(long handle, unsigned long offset, unsigned short val)
 { wrap3 f = (wrap3)_Write_io_word; return (*f)(handle, offset, val); }
+
+
+/*
+ * kentry_xhdi
+ */
+
+# define xhgetversion		(*KENTRY->vec_xhdi.XHGetVersion)
+# define xhinqtarget		(*KENTRY->vec_xhdi.XHInqTarget)
+# define xhreserve			(*KENTRY->vec_xhdi.XHReserve)
+# define xhlock				(*KENTRY->vec_xhdi.XHLock)
+# define xhstop				(*KENTRY->vec_xhdi.XHStop)
+# define xheject			(*KENTRY->vec_xhdi.XHEject)
+# define xhdrvmap			(*KENTRY->vec_xhdi.XHDrvMap)
+# define xhinqdev			(*KENTRY->vec_xhdi.XHInqDev)
+# define xhinqdriver		(*KENTRY->vec_xhdi.XHInqDriver)
+# define xhnewcookie		(*KENTRY->vec_xhdi.XHNewCookie)
+# define xhreadwrite		(*KENTRY->vec_xhdi.XHReadWrite)
+# define xhinqtarget		(*KENTRY->vec_xhdi.XHInqTarget)
+# define xhinqdev2			(*KENTRY->vec_xhdi.XHInqDev2)
+# define xhdriverspecial	(*KENTRY->vec_xhdi.XHDriverSpecial)
+# define xhgetcapacity		(*KENTRY->vec_xhdi.XHGetCapacity)
+# define xhmediumchaged		(*KENTRY->vec_xhdi.XHMediumChanged)
+# define xhmintinfo			(*KENTRY->vec_xhdi.XHMiNTInfo)
+# define xhdoslimits		(*KENTRY->vec_xhdi.XHDOSLimits)
+# define xhlastaccess		(*KENTRY->vec_xhdi.XHLastAccess)
+# define xhreaccess			(*KENTRY->vec_xhdi.XHReaccess)
 
 # endif /* _libkern_kernel_module_h */
