@@ -358,6 +358,9 @@ XHMiNTInfo (ushort opcode, struct kerinfo *data)
 long
 XHDOSLimits (ushort which, ulong limit)
 {
+	if (limit == 0)
+		return sys_XHDOSLimits(which, limit);
+
 	return XHDI (17, which, limit);
 }
 
