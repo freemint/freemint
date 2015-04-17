@@ -762,8 +762,8 @@ struct kentry_libkern
 
 struct kentry_xfs
 {
-	void _cdecl (*block) (FILESYS *fs, ushort dev, const char *func);
-	void _cdecl (*deblock) (FILESYS *fs, ushort dev, const char *func);
+	void _cdecl (*block)(FILESYS *fs, ushort dev, const char *func);
+	void _cdecl (*deblock)(FILESYS *fs, ushort dev, const char *func);
 
 
 	long _cdecl (*root)(FILESYS *fs, int drv, fcookie *fc);
@@ -879,49 +879,49 @@ struct kentry_xdd
 struct kentry_pcibios
 {
 	unsigned long *pcibios_installed;
-	long _cdecl (*Find_pci_device)	(unsigned long id, unsigned short index);
-	long _cdecl (*Find_pci_classcode)	(unsigned long class, unsigned short index);
-	long _cdecl (*Read_config_byte)	(long handle, unsigned short reg, unsigned char *address);
-	long _cdecl (*Read_config_word)	(long handle, unsigned short reg, unsigned short *address);
-	long _cdecl (*Read_config_longword)	(long handle, unsigned short reg, unsigned long *address);
-	unsigned char _cdecl (*Fast_read_config_byte)	(long handle, unsigned short reg);
-	unsigned short _cdecl (*Fast_read_config_word)	(long handle, unsigned short reg);
-	unsigned long _cdecl (*Fast_read_config_longword)	(long handle, unsigned short reg);
-	long _cdecl (*Write_config_byte)	(long handle, unsigned short reg, unsigned short val);
-	long _cdecl (*Write_config_word)	(long handle, unsigned short reg, unsigned short val);
-	long _cdecl (*Write_config_longword)	(long handle, unsigned short reg, unsigned long val);
-	long _cdecl (*Hook_interrupt)	(long handle, unsigned long *routine, unsigned long *parameter);
-	long _cdecl (*Unhook_interrupt)	(long handle);
-	long _cdecl (*Special_cycle)	(unsigned short bus, unsigned long data);
-	long _cdecl (*Get_routing)	(long handle);
-	long _cdecl (*Set_interrupt)	(long handle);
-	long _cdecl (*Get_resource)	(long handle);
-	long _cdecl (*Get_card_used)	(long handle, unsigned long *address);
-	long _cdecl (*Set_card_used)	(long handle, unsigned long *callback);
-	long _cdecl (*Read_mem_byte)	(long handle, unsigned long offset, unsigned char *address);
-	long _cdecl (*Read_mem_word)	(long handle, unsigned long offset, unsigned short *address);
-	long _cdecl (*Read_mem_longword)	(long handle, unsigned long offset, unsigned long *address);
-	unsigned char _cdecl (*Fast_read_mem_byte)	(long handle, unsigned long offset);
-	unsigned short _cdecl (*Fast_read_mem_word)	(long handle, unsigned long offset);
-	unsigned long _cdecl (*Fast_read_mem_longword)	(long handle, unsigned long offset);
-	long _cdecl (*Write_mem_byte)	(long handle, unsigned long offset, unsigned short val);
-	long _cdecl (*Write_mem_word)	(long handle, unsigned long offset, unsigned short val);
-	long _cdecl (*Write_mem_longword)	(long handle, unsigned long offset, unsigned long val);
-	long _cdecl (*Read_io_byte)	(long handle, unsigned long offset, unsigned char *address);
-	long _cdecl (*Read_io_word)	(long handle, unsigned long offset, unsigned short *address);
-	long _cdecl (*Read_io_longword)	(long handle, unsigned long offset, unsigned long *address);
-	unsigned char _cdecl (*Fast_read_io_byte)	(long handle, unsigned long offset);
-	unsigned short _cdecl (*Fast_read_io_word)	(long handle, unsigned long offset);
-	unsigned long _cdecl (*Fast_read_io_longword)	(long handle, unsigned long offset);
-	long _cdecl (*Write_io_byte)	(long handle, unsigned long offset, unsigned short val);
-	long _cdecl (*Write_io_word)	(long handle, unsigned long offset, unsigned short val);
-	long _cdecl (*Write_io_longword)	(long handle, unsigned long offset, unsigned long val);
-	long _cdecl (*Get_machine_id)	(void);
-	long _cdecl (*Get_pagesize)	(void);
-	long _cdecl (*Virt_to_bus)	(long handle, unsigned long address, struct pci_conv_adr *pointer);
-	long _cdecl (*Bus_to_virt)	(long handle, unsigned long address, struct pci_conv_adr *pointer);
-	long _cdecl (*Virt_to_phys)	(unsigned long address, struct pci_conv_adr *pointer);
-	long _cdecl (*Phys_to_virt)	(unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Find_pci_device)(unsigned long id, unsigned short index);
+	long _cdecl (*Find_pci_classcode)(unsigned long class, unsigned short index);
+	long _cdecl (*Read_config_byte)(long handle, unsigned short reg, unsigned char *address);
+	long _cdecl (*Read_config_word)(long handle, unsigned short reg, unsigned short *address);
+	long _cdecl (*Read_config_longword)(long handle, unsigned short reg, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_config_byte)(long handle, unsigned short reg);
+	unsigned short _cdecl (*Fast_read_config_word)(long handle, unsigned short reg);
+	unsigned long _cdecl (*Fast_read_config_longword)(long handle, unsigned short reg);
+	long _cdecl (*Write_config_byte)(long handle, unsigned short reg, unsigned short val);
+	long _cdecl (*Write_config_word)(long handle, unsigned short reg, unsigned short val);
+	long _cdecl (*Write_config_longword)(long handle, unsigned short reg, unsigned long val);
+	long _cdecl (*Hook_interrupt)(long handle, unsigned long *routine, unsigned long *parameter);
+	long _cdecl (*Unhook_interrupt)(long handle);
+	long _cdecl (*Special_cycle)(unsigned short bus, unsigned long data);
+	long _cdecl (*Get_routing)(long handle);
+	long _cdecl (*Set_interrupt)(long handle);
+	long _cdecl (*Get_resource)(long handle);
+	long _cdecl (*Get_card_used)(long handle, unsigned long *address);
+	long _cdecl (*Set_card_used)(long handle, unsigned long *callback);
+	long _cdecl (*Read_mem_byte)(long handle, unsigned long offset, unsigned char *address);
+	long _cdecl (*Read_mem_word)(long handle, unsigned long offset, unsigned short *address);
+	long _cdecl (*Read_mem_longword)(long handle, unsigned long offset, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_mem_byte)(long handle, unsigned long offset);
+	unsigned short _cdecl (*Fast_read_mem_word)(long handle, unsigned long offset);
+	unsigned long _cdecl (*Fast_read_mem_longword)(long handle, unsigned long offset);
+	long _cdecl (*Write_mem_byte)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_mem_word)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_mem_longword)(long handle, unsigned long offset, unsigned long val);
+	long _cdecl (*Read_io_byte)(long handle, unsigned long offset, unsigned char *address);
+	long _cdecl (*Read_io_word)(long handle, unsigned long offset, unsigned short *address);
+	long _cdecl (*Read_io_longword)(long handle, unsigned long offset, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_io_byte)(long handle, unsigned long offset);
+	unsigned short _cdecl (*Fast_read_io_word)(long handle, unsigned long offset);
+	unsigned long _cdecl (*Fast_read_io_longword)(long handle, unsigned long offset);
+	long _cdecl (*Write_io_byte)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_io_word)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_io_longword)(long handle, unsigned long offset, unsigned long val);
+	long _cdecl (*Get_machine_id)(void);
+	long _cdecl (*Get_pagesize)(void);
+	long _cdecl (*Virt_to_bus)(long handle, unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Bus_to_virt)(long handle, unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Virt_to_phys)(unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Phys_to_virt)(unsigned long address, struct pci_conv_adr *pointer);
 };
 #define DEFAULTS_kentry_pcibios \
 { \
