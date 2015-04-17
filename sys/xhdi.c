@@ -320,7 +320,7 @@ XHInqTarget2 (ushort major, ushort minor, ulong *block_size, ulong *device_flags
 {
 	return XHDI (11, major, minor, block_size, device_flags, product_name, stringlen);
 }
-          
+
 long
 XHInqDev2 (ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb, ulong *blocks, char *partid)
 {
