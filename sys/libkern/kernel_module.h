@@ -947,9 +947,9 @@ check_kentry_version(void)
 # define del_rsvfentry		(*KENTRY->vec_misc.del_rsvfentry)
 # define remaining_proc_time	(*KENTRY->vec_misc.remaining_proc_time)
 
-# define trap_1_emu		(*KENTRY->vec.misc.trap_1_emu)
-# define trap_13_emu		(*KENTRY->vec.misc.trap_13_emu)
-# define trap_14_emu		(*KENTRY->vec.misc.trap_14_emu)
+# define trap_1_emu		(*KENTRY->vec_misc.trap_1_emu)
+# define trap_13_emu		(*KENTRY->vec_misc.trap_13_emu)
+# define trap_14_emu		(*KENTRY->vec_misc.trap_14_emu)
 
 # define ROM_Setexc(vnum,vptr)	(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 
