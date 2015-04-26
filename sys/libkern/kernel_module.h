@@ -1181,4 +1181,28 @@ INLINE long Write_io_word(long handle, unsigned long offset, unsigned short val)
 # define xhlastaccess		(*KENTRY->vec_xhdi.XHLastAccess)
 # define xhreaccess			(*KENTRY->vec_xhdi.XHReaccess)
 
+
+/*
+ * kentry_scsidrv
+ */
+
+# define scsidrv_In				(*KENTRY->vec_scsidrv.scsidrv_In)
+# define scsidrv_Out			(*KENTRY->vec_scsidrv.scsidrv_Out)
+# define scsidrv_InquireSCSI	(*KENTRY->vec_scsidrv.scsidrv_InquireSCSI)
+# define scsidrv_InquireBus		(*KENTRY->vec_scsidrv.scsidrv_InquireBus)
+# define scsidrv_CheckDev		(*KENTRY->vec_scsidrv.scsidrv_CheckDev)
+# define scsidrv_RescanBus		(*KENTRY->vec_scsidrv.scsidrv_RescanBus)
+# define scsidrv_Open			(*KENTRY->vec_scsidrv.scsidrv_Open)
+# define scsidrv_Close			(*KENTRY->vec_scsidrv.scsidrv_Close)
+# define scsidrv_Error			(*KENTRY->vec_scsidrv.scsidrv_Error)
+# define scsidrv_Install		(*KENTRY->vec_scsidrv.scsidrv_Install)
+# define scsidrv_Deinstall		(*KENTRY->vec_scsidrv.scsidrv_Deinstall)
+# define scsidrv_GetCmd			(*KENTRY->vec_scsidrv.scsidrv_GetCmd)
+# define scsidrv_SendData		(*KENTRY->vec_scsidrv.scsidrv_SendData)
+# define scsidrv_GetData		(*KENTRY->vec_scsidrv.scsidrv_GetData)
+# define scsidrv_SendStatus		(*KENTRY->vec_scsidrv.scsidrv_SendStatus)
+# define scsidrv_SendMsg		(*KENTRY->vec_scsidrv.scsidrv_SendMsg)
+# define scsidrv_GetMsg			(*KENTRY->vec_scsidrv.scsidrv_GetMsg)
+# define scsidrv_InstallNewDriver	(*KENTRY->vec_scsidrv.scsidrv_InstallNewDriver)
+
 # endif /* _libkern_kernel_module_h */

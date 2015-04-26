@@ -50,8 +50,11 @@
 struct basepage;
 struct bio;
 struct bpb;
+struct businfo;
 struct create_process_opts;
+struct devinfo;
 struct dirstruct;
+struct dlong;
 struct dma;
 struct file;
 struct global;
@@ -64,7 +67,10 @@ struct nf_ops;
 struct parser_item;
 struct parsinf;
 struct pci_conv_adr;
+struct scsicmd;
+struct scsidrv;
 struct semaphore;
+struct target;
 struct timeout;
 struct timeval;
 
@@ -111,7 +117,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	20
+#define KENTRY_MIN_VERSION	21
 
 /* hardware dependant vector
  */
@@ -1018,6 +1024,49 @@ long _cdecl (*XHReaccess)(ushort major, ushort minor);
 	XHReaccess, \
 }
 
+struct kentry_scsidrv
+{
+long _cdecl (*scsidrv_In)(struct scsicmd *par);
+long _cdecl (*scsidrv_Out)(struct scsicmd *par);
+long _cdecl (*scsidrv_InquireSCSI)(short what, struct businfo *info);
+long _cdecl (*scsidrv_InquireBus)(short what, short BusNo, struct devinfo *dev);
+long _cdecl (*scsidrv_CheckDev)(short BusNo, const struct dlong *SCSIId, char *Name, ushort *Features);
+long _cdecl (*scsidrv_RescanBus)(short BusNo);
+long _cdecl (*scsidrv_Open)(short BusNo, const struct dlong *SCSIId, ulong *MaxLen);
+long _cdecl (*scsidrv_Close)(short *handle);
+long _cdecl (*scsidrv_Error)(short *handle, short rwflag, short ErrNo);
+long _cdecl (*scsidrv_Install)(ushort bus, struct target *handler);
+long _cdecl (*scsidrv_Deinstall)(ushort bus, struct target *handler);
+long _cdecl (*scsidrv_GetCmd)(ushort bus, char *cmd);
+long _cdecl (*scsidrv_SendData)(ushort bus, char *buf, ulong len);
+long _cdecl (*scsidrv_GetData)(ushort bus, void *buf, ulong len);
+long _cdecl (*scsidrv_SendStatus)(ushort bus, ushort status);
+long _cdecl (*scsidrv_SendMsg)(ushort bus, ushort msg);
+long _cdecl (*scsidrv_GetMsg)(ushort bus, ushort *msg);
+long _cdecl (*scsidrv_InstallNewDriver)(struct scsidrv *newdrv);
+};
+#define DEFAULTS_kentry_scsidrv \
+{ \
+	scsidrv_In, \
+	scsidrv_Out, \
+	scsidrv_InquireSCSI, \
+	scsidrv_InquireBus, \
+	scsidrv_CheckDev, \
+	scsidrv_RescanBus, \
+	scsidrv_Open, \
+	scsidrv_Close, \
+	scsidrv_Error, \
+	scsidrv_Install, \
+	scsidrv_Deinstall, \
+	scsidrv_GetCmd, \
+	scsidrv_SendData, \
+	scsidrv_GetData, \
+	scsidrv_SendStatus, \
+	scsidrv_SendMsg, \
+	scsidrv_GetMsg, \
+	scsidrv_InstallNewDriver, \
+}
+
 /* the complete kernel entry
  */
 struct kentry
@@ -1055,6 +1104,7 @@ struct kentry
 
 	struct kentry_pcibios vec_pcibios;
 	struct kentry_xhdi vec_xhdi;
+	struct kentry_scsidrv vec_scsidrv;
 };
 # define DEFAULTS_kentry \
 { \
@@ -1087,6 +1137,7 @@ struct kentry
 	DEFAULTS_kentry_xdd, \
 	DEFAULTS_kentry_pcibios, \
 	DEFAULTS_kentry_xhdi, \
+	DEFAULTS_kentry_scsidrv, \
 }
 
 # endif /* _mint_kentry_h */

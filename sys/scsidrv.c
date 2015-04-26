@@ -232,9 +232,40 @@ sys_scsidrv (ushort op,
 
 
 long
+scsidrv_InstallNewDriver (SCSIDRV *newdrv)
+{
+	long olddrv = NULL;
+
+	if (!scsidrv)
+	{
+		scsidrv = newdrv;
+		scsidrv_installed = scsidrv->version;
+
+		emu_scsidrv.version = scsidrv_installed;
+		if (emu_scsidrv.version > 0x0101)
+			emu_scsidrv.version = 0x0101;
+
+		set_cookie (NULL, COOKIE_SCSI, (long) &emu_scsidrv);
+	}
+	else
+	{
+		if (newdrv->version < 0x0101)
+			emu_scsidrv.version = newdrv->version;
+
+		olddrv = (long) scsidrv;
+		scsidrv = newdrv;
+	}
+	return olddrv;
+}
+
+long
 scsidrv_In (SCSICMD *par)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_In (%lx)", par));
 	ret = (*scsidrv->In)(par);
 	SCSIDRV_DEBUG (("scsidrv_In (...) -> %li", ret));
@@ -245,6 +276,10 @@ long
 scsidrv_Out (SCSICMD *par)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_Out (%lx)", par));
 	ret = (*scsidrv->Out)(par);
 	SCSIDRV_DEBUG (("scsidrv_Out (...) -> %li", ret));
@@ -255,6 +290,10 @@ long
 scsidrv_InquireSCSI (short what, BUSINFO *info)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (%i, %lx)", what, info));
 	ret = (*scsidrv->InquireSCSI)(what, info);
 	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (...) -> %li", ret));
@@ -265,6 +304,10 @@ long
 scsidrv_InquireBus (short what, short busno, DEVINFO *dev)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_InquireBUS (%i, %i, %lx)", what, busno, dev));
 	ret = (*scsidrv->InquireBus)(what, busno, dev);
 	SCSIDRV_DEBUG (("scsidrv_InquireBUS (...) -> %li", ret));
@@ -275,6 +318,10 @@ long
 scsidrv_CheckDev (short busno, const DLONG *SCSIId, char *name, ushort *features)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_CheckDev (%i, %lx, %lx, %lx)", busno, SCSIId, name, features));
 	ret = (*scsidrv->CheckDev)(busno, SCSIId, name, features);
 	SCSIDRV_DEBUG (("scsidrv_CheckDev (...) -> %li", ret));
@@ -285,6 +332,10 @@ long
 scsidrv_RescanBus (short busno)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_RescanBus (%i)", busno));
 	ret = (*scsidrv->RescanBus)(busno);
 	SCSIDRV_DEBUG (("scsidrv_RescanBus (...) -> %li", ret));
@@ -295,6 +346,10 @@ long
 scsidrv_Open (short busno, const DLONG *SCSIId, ulong *maxlen)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_Open (%i, %lx, %lx)", busno, SCSIId, maxlen));
 	ret = (*scsidrv->Open)(busno, SCSIId, maxlen);
 	SCSIDRV_DEBUG (("scsidrv_Open (...) -> %li", ret));
@@ -305,6 +360,10 @@ long
 scsidrv_Close (short *handle)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_Close (%lx)", handle));
 	ret = (*scsidrv->Close)(handle);
 	SCSIDRV_DEBUG (("scsidrv_Close (...) -> %li", ret));
@@ -315,6 +374,10 @@ long
 scsidrv_Error (short *handle, short rwflag, short ErrNo)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_Error (%lx, %i, %i)", handle, rwflag, ErrNo));
 	ret = (*scsidrv->Error)(handle, rwflag, ErrNo);
 	SCSIDRV_DEBUG (("scsidrv_Error (...) -> %li", ret));
@@ -325,48 +388,72 @@ scsidrv_Error (short *handle, short rwflag, short ErrNo)
 long
 scsidrv_Install (ushort bus, TARGET *handler)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->Install)(bus, handler);
 }
 
 long
 scsidrv_Deinstall (ushort bus, TARGET *handler)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->Deinstall)(bus, handler);
 }
 
 long
 scsidrv_GetCmd (ushort bus, char *cmd)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->GetCmd)(bus, cmd);
 }
 
 long
 scsidrv_SendData (ushort bus, char *buf, ulong len)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->SendData)(bus, buf, len);
 }
 
 long
 scsidrv_GetData (ushort bus, void *buf, ulong len)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->GetData)(bus, buf, len);
 }
 
 long
 scsidrv_SendStatus (ushort bus, ushort status)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->SendStatus)(bus, status);
 }
 
 long
 scsidrv_SendMsg (ushort bus, ushort msg)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->SendMsg)(bus, msg);
 }
 
 long
 scsidrv_GetMsg (ushort bus, ushort *msg)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->GetMsg)(bus, msg);
 }
 
