@@ -70,11 +70,7 @@
 #include "../../usb_api.h"
 #include "usb_storage.h"
 
-#ifdef TOSONLY
-#define MSG_VERSION "TOS DRIVERS"
-#else
-#define MSG_VERSION "FreeMiNT DRIVERS"
-#endif
+#define MSG_VERSION "1.0"
 char *drv_version = MSG_VERSION;
 
 #define MSG_BUILDDATE	__DATE__
