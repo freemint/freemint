@@ -9,6 +9,7 @@ HEADER = \
 
 COBJS = \
 	install.c \
+	usb_scsidrv.c \
 	usb_storage.c \
 	xhdi.c
 
@@ -16,7 +17,6 @@ SSOBJS = \
 	vectors.S
 
 TOSCOBJS = \
-    usb_scsidrv.c \
     crtinit.c
 
 TOSSSOBJS = \
