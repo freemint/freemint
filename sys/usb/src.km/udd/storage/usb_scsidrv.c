@@ -19,7 +19,11 @@ extern block_dev_desc_t *usb_stor_get_dev (long);
 
 //#define DEBUGSCSIDRV
 #ifdef DEBUGSCSIDRV
+#ifdef TOSONLY
 #define debug(a) (void)Cconws(a)
+#else
+#define debug(a) DEBUG((a))
+#endif
 #else
 #define debug(a)
 #endif
@@ -116,6 +120,7 @@ static REQDATA reqdata;
 
 typedef struct SCSIDRV_Data
 {
+	ushort features; /* this has to be at the top ! */
 	short changed;
 } SCSIDRV_Data;
 
@@ -237,6 +242,8 @@ SCSIDRV_In (SCSICMD *parms)
 			c_conws ("SCSIPACKET\r\n");
 			hex_long (srb.cmd[0]);
 			c_conout(' ');
+			hex_long (srb.cmd[1]);
+			c_conout(' ');
 			hex_long (srb.cmd[2]);
 			c_conout(' ');
 			hex_long (srb.cmd[3]);
@@ -269,17 +276,18 @@ SCSIDRV_In (SCSICMD *parms)
 			{
 				long block;
 				srb.cmd[0] = SCSI_READ10;
-				block = ((long) srb.cmd[1] & 0x1f) << 16 |
+				block = (long) (srb.cmd[1] & 0x1f) << 16 |
 					(long) srb.cmd[2] << 8 | (long) srb.cmd[3];
-				srb.cmd[6] = 0;
-				srb.cmd[7] = 0;
+                		/* do 4 & 5 here as we overwrite them later */
 				srb.cmd[8] = srb.cmd[4];
+				srb.cmd[9] = srb.cmd[5];
 				srb.cmd[1] = 0;
 				srb.cmd[2] = (block >> 24) & 0xff;
 				srb.cmd[3] = (block >> 16) & 0xff;
 				srb.cmd[4] = (block >> 8) & 0xff;
 				srb.cmd[5] = block & 0xff;
-				srb.cmd[9] = 0;
+				srb.cmd[6] = 0;
+				srb.cmd[7] = 0;
 				srb.cmdlen = 10;
 			}
 
@@ -400,17 +408,19 @@ SCSIDRV_Out (SCSICMD *parms)
 			{
 				long block;
 				srb.cmd[0] = SCSI_WRITE10;
-				block = ((long) srb.cmd[1] & 0x1f) << 16 |
+				block = (long) (srb.cmd[1] & 0x1f) << 16 |
 					(long) srb.cmd[2] << 8 | (long) srb.cmd[3];
-				srb.cmd[6] = 0;
-				srb.cmd[7] = 0;
+
+                		/* do 4 & 5 here as we overwrite them later */
 				srb.cmd[8] = srb.cmd[4];
+				srb.cmd[9] = srb.cmd[5];
 				srb.cmd[1] = 0;
 				srb.cmd[2] = (block >> 24) & 0xff;
 				srb.cmd[3] = (block >> 16) & 0xff;
 				srb.cmd[4] = (block >> 8) & 0xff;
 				srb.cmd[5] = block & 0xff;
-				srb.cmd[9] = 0;
+				srb.cmd[6] = 0;
+				srb.cmd[7] = 0;
 				srb.cmdlen = 10;
 			}
 
@@ -703,6 +713,7 @@ install_scsidrv (void)
 
 	for (i = 0; i < 8; i++)
 	{
+		private[i].features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
 		private[i].changed = FALSE;
 	}
 
