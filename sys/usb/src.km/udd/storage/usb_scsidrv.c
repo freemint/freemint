@@ -1,5 +1,5 @@
 /*
- * USB Storage SCSIDRV Implementation (C) 2014.
+ * USB Storage SCSIDRV Implementation (C) 2014-2015.
  * By Alan Hourihane <alanh@fairlite.co.uk>
  */
 
