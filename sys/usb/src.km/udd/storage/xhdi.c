@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 David Galvez
+ * Copyright (c) 2012-2015 David Galvez
  *
  * Parts of this file has been inspired by code typed by:
  * Frank Naumann
