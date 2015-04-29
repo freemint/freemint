@@ -393,11 +393,16 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 	if (pun_usb.pun[dev] & PUN_VALID)
 		return ENODEV;
 
-	name = DRIVER_NAME;
-	version = drv_version;
-	company = DRIVER_COMPANY;
-	*ahdi_version = pun_usb.version_num;
-	*max_IPL = MAX_IPL;
+	if(name)
+		name = DRIVER_NAME;
+	if(version)
+		version = drv_version;
+	if(company)
+		company = DRIVER_COMPANY;
+	if(ahdi_version)
+		*ahdi_version = pun_usb.version_num;
+	if(max_IPL)
+		*max_IPL = MAX_IPL;
 
 	return E_OK;
 }
