@@ -144,8 +144,8 @@ extern long install_usb_stor	(long dev_num, unsigned long part_type,
 extern long uninstall_usb_stor	(long dev_num);
 extern long install_xhdi_driver(void);                         //xhdi.c
 extern void install_vectors(void);                             //vectors.S
-#ifdef TOSONLY
 extern void install_scsidrv(void);                             //usb_scsidrv.c
+#ifdef TOSONLY
 extern void SCSIDRV_MediaChange(long dev_num);
 #endif
 
@@ -2230,12 +2230,11 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	install_vectors();
 	install_xhdi_driver();
+	install_scsidrv();
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
-	install_scsidrv();
-
 	if (ret)
 		SuperToUser(ret);
 

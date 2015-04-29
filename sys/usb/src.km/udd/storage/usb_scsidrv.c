@@ -3,7 +3,9 @@
  * By Alan Hourihane <alanh@fairlite.co.uk>
  */
 
+#ifdef TOSONLY
 #include <mint/osbind.h>
+#endif
 #include "../../global.h"
 #include "scsi.h"
 #include "part.h"
@@ -22,8 +24,10 @@ extern block_dev_desc_t *usb_stor_get_dev (long);
 #define debug(a)
 #endif
 
-#define cdecl
-#include "scsidefs.h"
+
+#include "mint/scsidrv.h"
+
+#ifdef TOSONLY
 typedef struct
 {
     long ident;
@@ -104,6 +108,11 @@ add_cookie (COOKIE * cook)
 }
 
 long ssp;
+static COOKIE SCSIDRV_COOKIE;
+static COOKIE *old_cookie;
+#endif /* TOSONLY */
+
+static REQDATA reqdata;
 
 typedef struct SCSIDRV_Data
 {
@@ -111,11 +120,8 @@ typedef struct SCSIDRV_Data
 } SCSIDRV_Data;
 
 static SCSIDRV_Data private[8];
-static COOKIE SCSIDRV_COOKIE;
-static tScsiCall scsidrv;
-static tScsiCall oldscsi;
-static COOKIE *old_cookie;
-static tReqData reqdata;
+static SCSIDRV scsidrv;
+static SCSIDRV oldscsi;
 static unsigned short USBbus = 3; /* default */
 
 void SCSIDRV_MediaChange(int dev);
@@ -134,55 +140,55 @@ SCSIDRV_MediaChange(int dev)
  */
 
 static long
-SCSIDRV_Install (WORD bus, tpTargetHandler handler)
+SCSIDRV_Install (ushort bus, TARGET *handler)
 {
     return 0;
 }
 
 static long
-SCSIDRV_Deinstall (WORD bus, tpTargetHandler handler)
+SCSIDRV_Deinstall (ushort bus, TARGET *handler)
 {
     return 0;
 }
 
 static long
-SCSIDRV_GetCmd (WORD bus, char *cmd)
+SCSIDRV_GetCmd (ushort bus, char *cmd)
 {
     return 0;
 }
 
 static long
-SCSIDRV_SendData (WORD bus, char *buf, ULONG len)
+SCSIDRV_SendData (ushort bus, char *buf, ulong len)
 {
     return 0;
 }
 
 static long
-SCSIDRV_GetData (WORD bus, void *buf, ULONG len)
+SCSIDRV_GetData (ushort bus, void *buf, ulong len)
 {
     return 0;
 }
 
 static long
-SCSIDRV_SendStatus (WORD bus, UWORD status)
+SCSIDRV_SendStatus (ushort bus, ushort status)
 {
     return 0;
 }
 
 static long
-SCSIDRV_SendMsg (WORD bus, UWORD msg)
+SCSIDRV_SendMsg (ushort bus, ushort msg)
 {
     return 0;
 }
 
 static long
-SCSIDRV_GetMsg (WORD bus, UWORD * msg)
+SCSIDRV_GetMsg (ushort bus, ushort * msg)
 {
     return 0;
 }
 
 static long
-SCSIDRV_In (tpSCSICmd Parms)
+SCSIDRV_In (SCSICMD *parms)
 {
     SCSIDRV_Data *priv = NULL;
     long i;
@@ -190,8 +196,8 @@ SCSIDRV_In (tpSCSICmd Parms)
     debug ("IN\r\n");
 
     for (i = 0; i < 8; i++) {
-        if (&private[i] == (SCSIDRV_Data *) Parms->Handle) {
-            priv = (SCSIDRV_Data *) Parms->Handle;
+        if (&private[i] == (SCSIDRV_Data *) parms->handle) {
+            priv = (SCSIDRV_Data *) parms->handle;
             break;
         }
     }
@@ -207,24 +213,24 @@ SCSIDRV_In (tpSCSICmd Parms)
             ccb srb;
             long r;
 
-            if (Parms->CmdLen > 16) {
+            if (parms->cmdlen > 16) {
                 return -1;
             }
 
             /* No LUN supported - yet */
-            if (Parms->Cmd[1] & 0xE0) {
+            if (parms->cmd[1] & 0xE0) {
                 return -1;
             }
 
             memset (&srb, 0, sizeof (srb));
-            for (i = 0; i < Parms->CmdLen; i++)
+            for (i = 0; i < parms->cmdlen; i++)
             {
-                srb.cmd[i] = Parms->Cmd[i];
+                srb.cmd[i] = parms->cmd[i];
             }
 
-            srb.cmdlen = Parms->CmdLen;
-            srb.datalen = Parms->TransferLen;
-            srb.pdata = Parms->Buffer;
+            srb.cmdlen = parms->cmdlen;
+            srb.datalen = parms->transferlen;
+            srb.pdata = parms->buf;
 
 #if 0
             c_conws ("SCSIPACKET\r\n");
@@ -286,8 +292,8 @@ SCSIDRV_In (tpSCSICmd Parms)
              */
             if (srb.cmd[0] == SCSI_TST_U_RDY && priv->changed) {
                 /* Report Media Change sense key */
-                Parms->SenseBuffer[2] = 0x06;
-                Parms->SenseBuffer[12] = 0x28;
+                parms->sense[2] = 0x06;
+                parms->sense[12] = 0x28;
                 priv->changed = FALSE;
                 return 2;
             }
@@ -321,7 +327,7 @@ retry:
                 srb.cmd[0] = SCSI_REQ_SENSE;
                 srb.cmd[4] = 18;
                 srb.datalen = 18;
-                srb.pdata = (unsigned char *) &Parms->SenseBuffer[0];
+                srb.pdata = (unsigned char *) &parms->sense[0];
                 srb.cmdlen = 12;
                 ss->transport (&srb, ss);
                 srb.pdata = (unsigned char *) ptr;
@@ -334,9 +340,9 @@ retry:
     }
     else
     {
-        if (old_cookie)
+        if (oldscsi.version)
         {
-            return oldscsi.In (Parms);
+            return oldscsi.In (parms);
         }
     }
 
@@ -344,7 +350,7 @@ retry:
 }
 
 static long
-SCSIDRV_Out (tpSCSICmd Parms)
+SCSIDRV_Out (SCSICMD *parms)
 {
     SCSIDRV_Data *priv = NULL;
     long i;
@@ -352,8 +358,8 @@ SCSIDRV_Out (tpSCSICmd Parms)
     debug ("OUT\r\n");
 
     for (i = 0; i < 8; i++) {
-        if (&private[i] == (SCSIDRV_Data *) Parms->Handle) {
-            priv = (SCSIDRV_Data *) Parms->Handle;
+        if (&private[i] == (SCSIDRV_Data *) parms->handle) {
+            priv = (SCSIDRV_Data *) parms->handle;
             break;
         }
     }
@@ -369,24 +375,24 @@ SCSIDRV_Out (tpSCSICmd Parms)
             ccb srb;
             long r;
 
-            if (Parms->CmdLen > 16) {
+            if (parms->cmdlen > 16) {
                 return -1;
             }
 
             /* No LUN supported - yet */
-            if (Parms->Cmd[1] & 0xE0) {
+            if (parms->cmd[1] & 0xE0) {
                 return -1;
             }
 
             memset (&srb, 0, sizeof (srb));
-            for (i = 0; i < Parms->CmdLen; i++)
+            for (i = 0; i < parms->cmdlen; i++)
             {
-                srb.cmd[i] = Parms->Cmd[i];
+                srb.cmd[i] = parms->cmd[i];
             }
 
-            srb.cmdlen = Parms->CmdLen;
-            srb.datalen = Parms->TransferLen;
-            srb.pdata = Parms->Buffer;
+            srb.cmdlen = parms->cmdlen;
+            srb.datalen = parms->transferlen;
+            srb.pdata = parms->buf;
 
             /* promote write6 to write10 */
             if (srb.cmd[0] == SCSI_WRITE6)
@@ -417,7 +423,7 @@ SCSIDRV_Out (tpSCSICmd Parms)
                 srb.cmd[0] = SCSI_REQ_SENSE;
                 srb.cmd[4] = 18;
                 srb.datalen = 18;
-                srb.pdata = (unsigned char *) &Parms->SenseBuffer[0];
+                srb.pdata = (unsigned char *) &parms->sense[0];
                 srb.cmdlen = 12;
                 ss->transport (&srb, ss);
                 srb.pdata = (unsigned char *) ptr;
@@ -430,32 +436,32 @@ SCSIDRV_Out (tpSCSICmd Parms)
     }
     else
     {
-        if (old_cookie)
+        if (oldscsi.version)
         {
-            return oldscsi.Out (Parms);
+            return oldscsi.Out (parms);
         }
     }
     return -1;
 }
 
 static long
-SCSIDRV_InquireSCSI (WORD what, tBusInfo * Info)
+SCSIDRV_InquireSCSI (short what, BUSINFO * info)
 {
     long ret;
 
     debug ("INQSCSI\r\n");
 
     if (what == cInqFirst) {
-        Info->Private.BusIds = 0;
+        info->busids = 0;
     }
 
     /* 
      * We let Uwe go first because it looks nicer in HDDRUTIL to show
      * 0, 1, 2, and then 3 :-)
      */
-    if (old_cookie)
+    if (oldscsi.version)
     {
-        ret = oldscsi.InquireSCSI (what, Info);
+        ret = oldscsi.InquireSCSI (what, info);
         if (ret == 0)
             return 0;
     }
@@ -464,13 +470,13 @@ SCSIDRV_InquireSCSI (WORD what, tBusInfo * Info)
      * We shouldn't fail here as we scanned the busses when we installed
      * so our USBbus number should be valid.
      */
-    if (!(Info->Private.BusIds & (1<<USBbus)))
+    if (!(info->busids & (1<<USBbus)))
     {
-        strncpy (Info->BusName, USBNAME, sizeof(Info->BusName));
-        Info->Private.BusIds |= 1<<USBbus;
-        Info->BusNo = USBbus;
-        Info->Features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
-        Info->MaxLen = 64L * 1024L;
+        strncpy (info->busname, USBNAME, sizeof(info->busname));
+        info->busids |= 1<<USBbus;
+        info->busno = USBbus;
+        info->features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
+        info->maxlen = 64L * 1024L;
         return 0;
     }
 
@@ -479,7 +485,7 @@ SCSIDRV_InquireSCSI (WORD what, tBusInfo * Info)
 
 
 static long
-SCSIDRV_InquireBus (WORD what, WORD BusNo, tDevInfo * Dev)
+SCSIDRV_InquireBus (short what, short busno, DEVINFO * dev)
 {
     static long inqbusnext;
     long ret;
@@ -491,17 +497,17 @@ SCSIDRV_InquireBus (WORD what, WORD BusNo, tDevInfo * Dev)
         inqbusnext = 0;
     }
 
-    if (old_cookie)
+    if (oldscsi.version)
     {
-        ret = oldscsi.InquireBus (what, BusNo, Dev);
+        ret = oldscsi.InquireBus (what, busno, dev);
         if (ret == 0)
             return 0;
     }
 
-    if (BusNo == USBbus)
+    if (busno == USBbus)
     {
         block_dev_desc_t *dev_desc;
-        memset (Dev->Private, 0, 32);
+        memset (dev->priv, 0, 32);
         if (inqbusnext >= 8)
         {
             return -1;
@@ -519,8 +525,8 @@ again:
             goto again;
         }
 
-        Dev->SCSIId.hi = 0;
-        Dev->SCSIId.lo = inqbusnext;
+        dev->SCSIId.hi = 0;
+        dev->SCSIId.lo = inqbusnext;
         inqbusnext++;
         return 0;
     }
@@ -529,12 +535,12 @@ again:
 }
 
 static long
-SCSIDRV_CheckDev (WORD BusNo,
-                      const DLONG * DevNo, char *Name, UWORD * Features)
+SCSIDRV_CheckDev (short busno,
+                      const DLONG * DevNo, char *Name, ushort * Features)
 {
     debug ("CHECKDEV\r\n");
 
-    if (BusNo == USBbus)
+    if (busno == USBbus)
     {
         block_dev_desc_t *dev_desc;
 
@@ -559,34 +565,34 @@ SCSIDRV_CheckDev (WORD BusNo,
     }
     else
     {
-        if (old_cookie)
+        if (oldscsi.version)
         {
-            return oldscsi.CheckDev (BusNo, DevNo, Name, Features);
+            return oldscsi.CheckDev (busno, DevNo, Name, Features);
         }
     }
     return ENODEV;
 }
 
 static long
-SCSIDRV_RescanBus (WORD BusNo)
+SCSIDRV_RescanBus (short busno)
 {
     debug ("RESCAN\r\n");
-    if (BusNo == USBbus)
+    if (busno == USBbus)
     {
         return 0;
     }
     else
     {
-        if (old_cookie)
+        if (oldscsi.version)
         {
-            return oldscsi.RescanBus (BusNo);
+            return oldscsi.RescanBus (busno);
         }
     }
     return -1;
 }
 
 static long
-SCSIDRV_Open (WORD bus, const DLONG * Id, ULONG * MaxLen)
+SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 {
     debug ("OPEN\r\n");
     if (bus == USBbus)
@@ -617,7 +623,7 @@ SCSIDRV_Open (WORD bus, const DLONG * Id, ULONG * MaxLen)
     }
     else
     {
-        if (old_cookie)
+        if (oldscsi.version)
         {
             return oldscsi.Open (bus, Id, MaxLen);
         }
@@ -626,7 +632,7 @@ SCSIDRV_Open (WORD bus, const DLONG * Id, ULONG * MaxLen)
 }
 
 static long
-SCSIDRV_Close (tHandle handle)
+SCSIDRV_Close (short *handle)
 {
     long i;
 
@@ -638,7 +644,7 @@ SCSIDRV_Close (tHandle handle)
         }
     }
 
-    if (old_cookie) {
+    if (oldscsi.version) {
         return oldscsi.Close (handle);
     }
 
@@ -646,7 +652,7 @@ SCSIDRV_Close (tHandle handle)
 }
 
 static long
-SCSIDRV_Error (tHandle handle, WORD rwflag, WORD ErrNo)
+SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 {
     long i;
 
@@ -658,7 +664,7 @@ SCSIDRV_Error (tHandle handle, WORD rwflag, WORD ErrNo)
         }
     }
 
-    if (old_cookie)
+    if (oldscsi.version)
     {
         return oldscsi.Error (handle, rwflag, ErrNo);
     }
@@ -670,9 +676,9 @@ void install_scsidrv (void);
 void
 install_scsidrv (void)
 {
-    WORD i;
+    short i;
 
-    scsidrv.Version = SCSIRevision;
+    scsidrv.version = SCSIRevision;
     scsidrv.In = SCSIDRV_In;
     scsidrv.Out = SCSIDRV_Out;
     scsidrv.InquireSCSI = SCSIDRV_InquireSCSI;
@@ -699,27 +705,28 @@ install_scsidrv (void)
         private[i].changed = FALSE;
     }
 
+#ifdef TOSONLY
     old_cookie = (COOKIE *) get_cookie (0x53435349L);
     if (old_cookie) {
-        tBusInfo Info[32];
-        WORD j;
-        LONG ret;
-        tScsiCall *tmp = (tScsiCall *)old_cookie->v.l;
+        SCSIDRV *tmp = (SCSIDRV *)old_cookie->v.l;
+        BUSINFO info[32];
+        short j;
+        long ret;
 
         /*
-         * Find a BusNo. We start at 3, and work up to a max of 32.
+         * Find a busno. We start at 3, and work up to a max of 32.
          */
         i = 0;
-        ret = tmp->InquireSCSI(cInqFirst, &Info[i++]);
+        ret = tmp->InquireSCSI(cInqFirst, &info[i++]);
 
         while (ret == 0 && i < 32)
         {
-            ret = tmp->InquireSCSI(cInqNext, &Info[i++]);
+            ret = tmp->InquireSCSI(cInqNext, &info[i++]);
         }
 
 again:
         for (j = 0; j < i; j++) {
-            if (Info[j].BusNo == USBbus) {
+            if (info[j].busno == USBbus) {
                 USBbus++;
                 goto again;
             }
@@ -747,4 +754,37 @@ again:
         SCSIDRV_COOKIE.v.l = (long) &scsidrv;
         add_cookie (&SCSIDRV_COOKIE);
     }
+#else
+    BUSINFO info[32];
+    short j;
+    long ret;
+    SCSIDRV *tmpscsi;
+
+    /*
+     * Find a busno. We start at 3, and work up to a max of 32.
+     */
+    i = 0;
+    ret =scsidrv_InquireSCSI(cInqFirst, &info[i++]);
+
+    while (ret == 0 && i < 32)
+    {
+        ret = scsidrv_InquireSCSI(cInqNext, &info[i++]);
+    }
+
+again:
+    for (j = 0; j < i; j++) {
+        if (info[j].busno == USBbus) {
+            USBbus++;
+            goto again;
+        }
+    }
+
+    /* don't install, we couldn't find a bus */
+    if (USBbus >= 32) 
+        return;
+
+    tmpscsi = (SCSIDRV *)scsidrv_InstallNewDriver(&scsidrv);
+    if (tmpscsi)
+        memcpy(&oldscsi, tmpscsi, sizeof(oldscsi));
+#endif /* TOSONLY */
 }
