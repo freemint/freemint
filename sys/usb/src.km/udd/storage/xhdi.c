@@ -41,6 +41,9 @@
 #define MAX_IPL			5
 #define XH_TARGET_REMOVABLE	0x02L
 #define STRINGLEN		33 /* including termination character */
+#define DRIVER_NAME_MAXLEN		17
+#define DRIVER_VERSION_MAXLEN	7
+#define DRIVER_COMPANY_MAXLEN	17
 
 #ifdef TOSONLY
 char *DRIVER_NAME = "TOS USB";
@@ -394,11 +397,11 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 		return ENODEV;
 
 	if(name)
-		name = DRIVER_NAME;
+		strncpy(name, DRIVER_NAME, DRIVER_NAME_MAXLEN);
 	if(version)
-		version = drv_version;
+		strncpy(version, drv_version, DRIVER_VERSION_MAXLEN);
 	if(company)
-		company = DRIVER_COMPANY;
+		strncpy(company, DRIVER_COMPANY, DRIVER_COMPANY_MAXLEN);
 	if(ahdi_version)
 		*ahdi_version = pun_usb.version_num;
 	if(max_IPL)
