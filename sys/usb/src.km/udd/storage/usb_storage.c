@@ -2038,7 +2038,7 @@ usb_storage_init(void)
 }
 
 #define AHDI        0x41484449L     /* 'AHDI' */
-extern PUN_INFO pun_usb;                                //xhdi.c
+extern USB_PUN_INFO pun_usb;                                //xhdi.c
 #define PUN_PTR	(*((PUN_INFO **) 0x516L))
 
 #ifdef TOSONLY
