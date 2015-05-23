@@ -759,8 +759,8 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 
 	*lastname = '\0';
 
-	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %lx, %i])",
-		path, dolast, depth, relto->fs, relto->dev));
+	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %lx, %i],root_dir=%lx)",
+		path, dolast, depth, relto->fs, relto->dev, cwd->root_dir));
 
 	if (depth > MAX_LINKS)
 	{
@@ -824,8 +824,10 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 
 		if (c >= 'a' && c <= 'z')
 			drv = c - 'a';
+#ifndef ARANYM	/* fixme: this would fail in init_drive->root()->bio_readin (drives >Z not supported?) */
 		else if (c >= '1' && c <= '6')
 			drv = 26 + (c - '1');
+#endif
 		else
 			goto nodrive;
 
