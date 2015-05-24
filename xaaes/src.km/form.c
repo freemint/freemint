@@ -618,6 +618,8 @@ Form_Cursor(XA_TREE *wt,
 			break;
 		}
 		case SC_SPACE:
+			if( (wt->focus.ob->ob_flags & OF_EDITABLE) )
+				keystate = 0;
 			o = inv_aesobj();
 			if( (keystate & (K_RSHIFT|K_LSHIFT)) )
 			{
@@ -626,15 +628,15 @@ Form_Cursor(XA_TREE *wt,
 			}
 			else
 			{
-			kout = keycode;
-			if( wt->focus.item < 0 || !(wt->focus.ob->ob_flags & OF_EDITABLE) )
-			{
-				nxt = ob_find_type( obtree, G_SLIST );
-				if( set_nxt_focus( &nxt, &o, ret_focus ) == true )
+				kout = keycode;
+				if( wt->focus.item < 0 )
 				{
-					wt->focus = nxt;
+					nxt = ob_find_type( obtree, G_SLIST );
+					if( set_nxt_focus( &nxt, &o, ret_focus ) == true )
+					{
+						wt->focus = nxt;
+					}
 				}
-			}
 			}
 		break;
 		case SC_SHFT_UPARROW:	/* 0x4838: */ /* shift + up arrow */
@@ -757,7 +759,7 @@ Form_Cursor(XA_TREE *wt,
 		default:
 		{
 			kout = keycode;
-			o = inv_aesobj();		/* This is also a safeguard.  */
+			o = inv_aesobj();	/* return-value */
 			break;
 		}
 	}
