@@ -45,6 +45,7 @@
 
 # include "kcompiler.h"
 # include "ktypes.h"
+# include "xhdi.h"
 
 /* forward declarations */
 struct basepage;
@@ -986,12 +987,12 @@ long _cdecl (*XHLock)(ushort major, ushort minor, ushort do_lock, ushort key);
 long _cdecl (*XHStop)(ushort major, ushort minor, ushort do_stop, ushort key);
 long _cdecl (*XHEject)(ushort major, ushort minor, ushort do_eject, ushort key);
 long _cdecl (*XHDrvMap)(void);
-long _cdecl (*XHInqDev)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, struct bpb *bpb);
+long _cdecl (*XHInqDev)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb);
 long _cdecl (*XHInqDriver)(ushort bios_device, char *name, char *ver, char *company, ushort *ahdi_version, ushort *maxIPL);
 long _cdecl (*XHNewCookie)(void *newcookie);
 long _cdecl (*XHReadWrite)(ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf);
 long _cdecl (*XHInqTarget2)(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen);
-long _cdecl (*XHInqDev2)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, struct bpb *bpb, ulong *blocks, char *partid);
+long _cdecl (*XHInqDev2)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb, ulong *blocks, char *partid);
 long _cdecl (*XHDriverSpecial)(ulong key1, ulong key2, ushort subopcode, void *data);
 long _cdecl (*XHGetCapacity)(ushort major, ushort minor, ulong *blocks, ulong *bs);
 long _cdecl (*XHMediumChanged)(ushort major, ushort minor);
