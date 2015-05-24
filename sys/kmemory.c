@@ -1509,10 +1509,8 @@ _kmalloc(unsigned long size, const char *func)
 void _cdecl
 _kfree(void *place, const char *func)
 {
-	//char *ptr = place;
 	KM_P *page;
 
-	//KM_FORCE(("_kfree(%lx)", place));
 	if (!place)
 	{
 		KM_ALERT(("%s: kfree on NULL ptr!", func));
@@ -1570,7 +1568,6 @@ _kfree(void *place, const char *func)
 			}
 			case S2_MAGIC:
 			{
-				//KM_FORCE(("km_s2_free:%lx", ptr));
 				km_s2_free((KM_S2 *)((char *) place - S2_HEAD), page);
 				break;
 			}

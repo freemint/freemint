@@ -322,7 +322,6 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		char cbuf[128];
 		long ret;
 		union { const char *cc; char *c; } tail; tail.cc = ptr_2.cc;
-		//const char *tail = ptr_2.cc;
 
 		if (overlay)
 		{
