@@ -647,8 +647,6 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	}
 	else
 	{
-		fp->links = 0;
-
 		parser_msg(inf, NULL);
 		boot_printf(MSG_cnf_cannot_include, path);
 		parser_msg(NULL, NULL);
@@ -672,7 +670,6 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 	}
 	else
 	{
-		fp->links = 0;
 		ALERT(MSG_cnf_cant_open, path);
 	}
 	return ret;
