@@ -4,7 +4,7 @@
 #
 #COLDFIRE = yes
 
-# 
+#
 # cross compiling
 #
 ifneq (yes,$(M68K_ATARI_MINT_CROSS))
@@ -16,7 +16,7 @@ endif
 
 #
 # target and host compiler
-# 
+#
 ifeq ($(CROSS),yes)
 
 CROSSPREFIX=m68k-atari-mint-
@@ -51,9 +51,9 @@ FLAGS = $(CROSSPREFIX)flags
 OBJDUMP = $(CROSSPREFIX)objdump
 STACK = $(CROSSPREFIX)stack
 
-# 
+#
 # some tools
-# 
+#
 YACC  = bison -dk
 LEX   = flex
 MV    = mv
@@ -65,7 +65,7 @@ SED   = sed
 
 #
 # optimizations
-# 
+#
 OPTS = -O2 -fomit-frame-pointer
 
 #
@@ -77,15 +77,16 @@ WARN = \
 	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
+	-Wcast-qual \
 	-Waggregate-return
 #	-Werror
 
 #
 # default definitions
 #
-DEFINITIONS = 
+DEFINITIONS =
 
 #
 # model type
 #
-MODEL = 
+MODEL =
