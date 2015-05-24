@@ -443,8 +443,8 @@ do_wakeup_things(short sr, int newslice, long cond)
 
 		if (p->pid && ((long) &foo) < (long) p->stack + ISTKSIZE + 512)
 		{
-			FORCE("do_wakeup_things:stack underflow, %lx<->%lx", &foo, p->stack);
-			//handle_sig(SIGBUS);
+			ALERT("do_wakeup_things:stack underflow, %lx<->%lx", &foo, p->stack);
+			handle_sig(SIGBUS);
 		}
 
 		/* see if process' time limit has been exceeded */
@@ -495,21 +495,6 @@ do_wakeup_things(short sr, int newslice, long cond)
 }
 
 static long sleepcond, iwakecond;
-
-#ifdef ARANYM
-#define TEST_TICK	1
-#else
-#define TEST_TICK	1
-#endif
-
-#if TEST_TICK
-unsigned short uptime_ovfl2 = 0;
-#ifdef DEBUG_INFO
-unsigned short uptime_ovfl = 0;
-unsigned short uptime_ovfl1 = 0, mint_vblcnt = 0;
-#endif
-
-#endif
 
 /*
  * sleep: returns 1 if no signals have happened since our last sleep, 0
