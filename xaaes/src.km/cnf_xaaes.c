@@ -1203,6 +1203,7 @@ pCB_install(const char *path, const char *line, struct parsinf *inf)
 					r = s_system(S_XBRALOOKUP, TRAP2, tag.l );
 				else if( o == 1 ) /* -C */
 					r = s_system(S_GETCOOKIE, tag.l, (unsigned long)&v );
+				else break;	/* ERROR */
 				memcpy( s, tag.s, 4 );
 				s[5] = 0;
 				BLOG(( 1,"install: %s(%lx) %sfound,not=%d", s, tag.l, r?"not ":"", not));
@@ -1482,8 +1483,12 @@ void read_inf(void)
 {
 	struct cnfdata mydata;
 	char buf[256];
+	struct file *fp;
 	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
-	BLOG((1,"%s:read_inf:%s", get_curproc()->name, buf));
+	if( !(fp = kernel_open( buf, O_RDONLY, 0, NULL )) )
+		return;	/* avoid file-not-found-message in parse_cnf */
+	kernel_close( fp );
+	BLOG((0,"%s:read_inf:%s", get_curproc()->name, buf));
 	parse_cnf(buf, inf_tab, &mydata);
 }
 
