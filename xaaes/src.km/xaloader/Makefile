@@ -19,7 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
+LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
 LIBS = -lgcc
 CPU = 000
 STRIPFLAGS =
