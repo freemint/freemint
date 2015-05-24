@@ -14,8 +14,8 @@ OPTS = -O2 -fomit-frame-pointer
 #
 # MiNT must be compiled with 16 bit integers (-mshort)
 #
-#GENERAL += -mshort -g
-GENERAL += -mshort 
+GENERAL += -mshort -g
+#GENERAL += -mshort
 
 #
 # XaAES configuration
