@@ -174,7 +174,6 @@ static long
 unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 {
 	struct un_data *undata = so->data;
-	XATTR attrib;
 	long r, fd, index;
 
 	if (!addr)
@@ -200,12 +199,11 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 		return EAFNOSUPPORT;
 	}
 
-	/* Lets first see, if the file exists. */
-	r = sys_f_xattr (0, undata->addr.sun_path, &attrib);
-	if (!r) return EADDRINUSE;
-
 	/* Invalidate cache entries referring to the same file. */
-	un_cache_remove (undata->addr.sun_path);
+	r = un_cache_remove (undata->addr.sun_path);
+	if (r < 0) {
+		return r;
+	}
 
 	/* To do the creat(), the user must have write access for the
 	 * directory containing the file.
@@ -215,6 +213,8 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	{
 		DEBUG (("unix: unix_bind: could not create file %s",
 			undata->addr.sun_path));
+		if (fd == EEXIST)
+			return EADDRINUSE;
 		return fd;
 	}
 
@@ -712,7 +712,8 @@ un_namei (struct sockaddr *addr, short addrlen, long *index)
 	}
 
 	memcpy (&un, addr, addrlen);
-	un.sun_path[addrlen - UN_PATH_OFFSET] = '\0';
+	un.sun_path[
+		MIN(sizeof(struct sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
 
 	if (un.sun_family != AF_UNIX)
 	{

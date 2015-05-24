@@ -8,6 +8,7 @@
 # -DBUILTIN_SHELL	include the built-in minimal shell
 # -DC_ONLY		replace some assembly function by C compatible one
 # -DWITH_MMU_SUPPORT	include MMU support
+# -DPCI_BIOS		include PCI_BIOS interface emulation
 
 #
 # machine flags
@@ -38,6 +39,7 @@
 #
 # experimental; for developers only
 #
+# -DOLDTOSFS		use GEMDOS FS instead of real FAT XFS (pending removal)
 # -DJAR_PRIVATE		make Cookie Jar private for processes
 # -DWITHOUT_TOS		exclude TOS dependencies
 # 			warning, experimental and work in progress
@@ -77,7 +79,7 @@ endif
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DM68030 -DNO_RAMFS 
+KERNELDEFS = -DM68030 -DNO_RAMFS
 endif
 
 ifeq ($(kernel),040)
@@ -89,7 +91,7 @@ endif
 ifeq ($(kernel),060)
 MINT = mint060.prg
 CPU  = 060
-KERNELDEFS = -DM68040
+KERNELDEFS = -DM68060 -DPCI_BIOS
 endif
 
 ifeq ($(kernel),deb)
@@ -101,14 +103,14 @@ endif
 ifeq ($(kernel),col)
 MINT = mintv4e.prg
 CPU  = v4e
-KERNELDEFS = -DM68040 -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY
+KERNELDEFS = -DM68040 -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),mil)
 MINT = mintmil.prg
 CPU  = 020-60
-KERNELDEFS = -DMILAN -DM68040
+KERNELDEFS = -DMILAN -DM68040 -DPCI_BIOS
 endif
 
 ifeq ($(kernel),ara)

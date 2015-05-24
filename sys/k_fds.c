@@ -151,13 +151,6 @@ fp_free (FILEPTR *fp, const char *func)
 long
 fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 {
-# if O_GLOBAL
-	if (*fd >= 100)
-	{
-		*fd -= 100;
-		*p = rootproc;
-	}
-# endif
 
 	assert ((*p));
 	if( !(*p)->p_fd )
@@ -789,7 +782,6 @@ do_close (struct proc *p, FILEPTR *f)
 				tty->hup_ospeed = -1;
 			/* stop output, flush buffers, drop DTR... */
 				tty_ioctl(f, TIOCSTOP, 0);
-				//FORCE("TIOCFLUSH for %lx", f);
 				tty_ioctl(f, TIOCFLUSH, 0);
 				if (ospeed > 0) {
 					tty->hup_ospeed = ospeed;

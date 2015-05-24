@@ -30,7 +30,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - sockets / xdd / xfs'
+	@echo '# - sockets / xdd / xfs / usb'
 	@echo '# - all-kernels'
 	@echo '# - $(kerneltargets)'
 	@echo '#'
@@ -53,5 +53,6 @@ all-kernels:
 $(kerneltargets):
 	$(MAKE) buildkernel kernel=$@
 
-sockets xdd xfs:
+sockets xdd xfs usb:
 	cd $@; $(MAKE) all
+
