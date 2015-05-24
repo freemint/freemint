@@ -286,9 +286,9 @@ const char *MSG_cnf_set_ignored = " ignored.";
 const char *MSG_cnf_parser_skipped = ", skipped.";
 const char *MSG_cnf_empty_file = "[%s] empty file, skipped.";
 const char *MSG_cnf_cant_allocate = "[%s] can't allocate %li bytes, break.";
-const char *MSG_cnf_reading_mintcnf = "\r\nReading `%s' ... ";
-const char *MSG_cnf_not_successful = "not successful, break.\r\n\r\n";
-const char *MSG_cnf_bytes_done = "%li bytes done.\r\n\r\n";
+const char *MSG_cnf_reading_mintcnf = "Reading `%s' ... ";
+const char *MSG_cnf_not_successful = "not successful, break.\r\n";
+const char *MSG_cnf_bytes_done = "%li bytes done.\r\n";
 const char *MSG_cnf_unknown_variable = "unknown variable";
 const char *MSG_cnf_syntax_error = "syntax error";
 const char *MSG_cnf_keyword_not_supported = "keyword '%s' not supported yet";
@@ -328,11 +328,6 @@ const char *ERR_dma_deblock_on_inv_handle = "dma_deblock on invalid handle %lu";
 const char *ERR_dma_addroottimeout = "dma_block: addroottimeout failed!";
 
 /* --------- dosfile.c --------- */
-
-# if O_GLOBAL
-const char *MSG_oglobal_denied = "O_GLOBAL for sockets denied; update your network tools";
-const char *MSG_global_handle = "Opening global handle (%s)";
-# endif
 
 /* -------- filesys.c --------- */
 
