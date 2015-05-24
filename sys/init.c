@@ -1068,7 +1068,7 @@ mint_thread(void *arg)
 	 */
 	{
 		unsigned short i;
-		cwd = (char *)sys_m_xalloc(PATH_MAX, 0x0003);
+		char *cwd = (char *)sys_m_xalloc(PATH_MAX, 0x0003);
 		if (!cwd)
 		{
 			FATAL ("Can't allocate OLDTOSFS cwd!");
