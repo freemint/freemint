@@ -82,7 +82,6 @@ f_pipe (short *usrh)
 	if (r)
 	{
 		out->links--;
-		//FP_FREE (out);
 
 		DEBUG (("Fpipe: error %d", r));
 		return r;
