@@ -87,7 +87,7 @@ file_getchar (FILEPTR *f, int mode)
 	if (is_terminal (f))
 		return tty_getchar (f, mode);
 
-		r = xdd_read (f, &c, 1L);
+	r = xdd_read (f, &c, 1L);
 	if (r < 0) {
 		return r;
 	}
@@ -306,29 +306,17 @@ sys_c_auxos (void)
 	return -(!!file_outstat (get_curproc()->p_fd->ofiles[2]));
 }
 
-
 /* Extended GEMDOS routines
  */
 
 long _cdecl
-sys_f_instat (int h)
+sys_f_instat (int fh)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Finstat: bad handle %d", h));
+		DEBUG (("Finstat: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -336,24 +324,13 @@ sys_f_instat (int h)
 }
 
 long _cdecl
-sys_f_outstat (int h)
+sys_f_outstat (int fh)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Foutstat: bad handle %d", h));
+		DEBUG (("Foutstat: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -361,24 +338,13 @@ sys_f_outstat (int h)
 }
 
 long _cdecl
-sys_f_getchar (int h, int mode)
+sys_f_getchar (int fh, int mode)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Fgetchar: bad handle %d", h));
+		DEBUG (("Fgetchar: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -386,24 +352,13 @@ sys_f_getchar (int h, int mode)
 }
 
 long _cdecl
-sys_f_putchar (int h, long c, int mode)
+sys_f_putchar (int fh, long c, int mode)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Fputchar: bad handle %d", h));
+		DEBUG (("Fputchar: bad handle %d", fh));
 		return EBADF;
 	}
 

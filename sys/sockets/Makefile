@@ -24,7 +24,9 @@ DEFINITIONS = -D__KERNEL_XDD__
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = -Linet4 -linet4 $(LIBKERN) -lgcc
+ifndef CPU
 CPU = 000
+endif
 
 # default definitions
 SGENFILES = $(TARGET)
