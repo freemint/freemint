@@ -62,13 +62,14 @@
 
 #include "mint/mint.h"
 #include "libkern/libkern.h"
+#include "mint/mdelay.h"
 #include "mint/dcntl.h"
 #include "mint/arch/asm_spl.h" /* spl() */
+#include "mint/swap.h"
 
-#include "../../config.h"
-#include "../../endian/io.h"
 #include "../../usb.h"
-#include "../ucd_defs.h"
+#include "../../usb_api.h"
+
 #include "ethernat_int.h"
 
 #define VER_MAJOR	0
@@ -84,48 +85,6 @@
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-#define MSG_MINT	\
-	"\033pMiNT too old!\033q\r\n"
-
-#define MSG_FAILURE	\
-	"\7\r\nSorry, failed!\r\n\r\n"
-
-/*
- * ISP116x chips require certain delays between accesses to its
- * registers. The following timing options exist.
- *
- * 1. Configure your memory controller (the best)
- * 2. Use ndelay (easiest, poorest). For that, enable the following macro.
- *
- * Value is in microseconds.
- */
-#ifdef ISP116X_HCD_USE_UDELAY
-# define UDELAY		1
-#endif
-
-/*
- * On some (slowly?) machines an extra delay after data packing into
- * controller's FIFOs is required, * otherwise you may get the following
- * error:
- *
- *   uboot> usb start
- *   (Re)start USB...
- *   USB:   scanning bus for devices... isp116x: isp116x_submit_job: CTL:TIMEOUT
- *   isp116x: isp116x_submit_job: ****** FIFO not ready! ******
- *
- *         USB device not responding, giving up (status=4)
- *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
- *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
- *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
- *         3 USB Device(s) found
- *                scanning bus for storage devices... 0 Storage Device(s) found
- *
- * Value is in milliseconds.
- */
-#ifdef ISP116X_HCD_USE_EXTRA_DELAY
-# define EXTRA_DELAY	2	/* DEFAULT 2 */
-#endif
 
 /*
  * Debug section
@@ -170,12 +129,13 @@ static const char hcd_name[] = "isp116x-hcd";
 /* BEGIN kernel interface */
 
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
+struct usb_module_api *api;
 
 /* END kernel interface */
 /****************************************************************************/
 
 
+static struct usb_device *root_hub_dev = NULL;
 struct isp116x isp116x_dev;
 struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
@@ -186,7 +146,7 @@ static int found = 0;
 /*
  * interrupt handling - bottom half
  */
-void _cdecl 	ethernat_int 	(void);
+void _cdecl	ethernat_int	(void);
 /*
  * interrupt handling - top half
  */
@@ -196,13 +156,13 @@ static void	int_handle_tophalf	(PROC *p, long arg);
  *Function prototypes
  */
 long 		isp116x_check_id	(struct isp116x *);
-static long 	isp116x_reset		(struct isp116x *);
-long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long);
+static long	isp116x_reset		(struct isp116x *);
+long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
+long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /*
  * USB controller interface
@@ -212,11 +172,12 @@ static long _cdecl	ethernat_open		(struct ucdif *);
 static long _cdecl	ethernat_close		(struct ucdif *);
 static long _cdecl	ethernat_ioctl		(struct ucdif *, short, long);
 
-static char lname[] = "Ethernat USB controller driver for FreeMiNT\0";
+static char lname[] = "Ethernat USB driver\0";
 
 static struct ucdif ethernat_uif =
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"ethernat",		/* name */
@@ -227,15 +188,10 @@ static struct ucdif ethernat_uif =
 	0,			/* resrvd1 */
 	ethernat_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
-//	submit_bulk_msg,
-//	submit_control_msg,
-//	submit_int_msg,
-//	{ NULL },
 };
 
 /* ------------------------------------------------------------------------- */
 
-#define ALIGN(x,a)	(((x)+(a)-1UL)&~((a)-1UL))
 #define min1_t(type,x,y)	\
 	({ type __x = (x); type __y = (y); __x < __y ? __x : __y; })
 
@@ -577,7 +533,7 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
  * like that EtherNat swap the bytes for us, so we swap them before we send
  * them, then the bytes will arrive to the USB device with the correct positions
  */
- 	if ((unsigned long)dp2 & 1)
+	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
 		for (; len > 1; len -= 2)
@@ -616,7 +572,6 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 /* For EtherNAT, take the raw_read out from read functions, we want to swap the bytes to
  *  read correct values because EtherNat swapped the bytes by hardware before we read them
  */
-
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
@@ -664,7 +619,7 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	{
 		DEBUG(("i=%ld - done=%ld - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
 
-/* For EtherNAT, use raw_write to don't swap bytes */
+		/* For EtherNAT, use raw_write to don't swap bytes */
 		dump_ptd(&ptd[i]);
 		isp116x_raw_write_data16(isp116x, ptd[i].count);
 		isp116x_raw_write_data16(isp116x, ptd[i].mps);
@@ -703,11 +658,6 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	done = 0;
 	for (i = 0; i < n; i++)
 	{
-		/* Galvez: DEBUG */
-//		DEBUG(("i=%d - done=%d - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
-		DEBUG(("i=%ld n=%ld - done=%ld - len= %ld ptd_len=%d", i, n, done, len, PTD_GET_LEN(&ptd[i])));
-		/*****************/
-
 		/* For EtherNAT, use raw_read to don't swap bytes */
 		ptd[i].count = isp116x_raw_read_data16(isp116x);
 		ptd[i].mps = isp116x_raw_read_data16(isp116x);
@@ -818,15 +768,13 @@ struct ptd ptd[1];
 static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
 {
-	unsigned mpck = (*uinf->usb_maxpacket)(dev, pipe);
+	unsigned mpck = usb_maxpacket(dev, pipe);
 
 	/* One PTD can transfer 1023 bytes but try to always
 	 * transfer multiples of endpoint buffer size
 	 */
 	return 1023 / mpck * mpck;
 }
-//#include <mintbind.h>	/* Tgettimeofday */
-//#include <mint/time.h>
 
 /* Do an USB transfer
  */
@@ -837,7 +785,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	struct isp116x *isp116x = &isp116x_dev;
 	long type = usb_pipetype(pipe);
 	long epnum = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+	long max = usb_maxpacket(dev, pipe);
 	long dir_out = usb_pipeout(pipe);
 	long speed_low = usb_pipeslow(pipe);
 	long i, done = 0, stat, timeout, cc;
@@ -903,13 +851,12 @@ retry:
 	ptd->len = PTD_LEN(len) | PTD_DIR(dir);
 	ptd->faddr = PTD_FA(usb_pipedevice(pipe));
 
-
 retry_same:
 
 	/* FIFO not empty? */
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
-		DEBUG(("****** FIFO not empty! ******"));
+		DEBUG(("****** FIFO not empty! (2) ******"));
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
 	}
@@ -976,7 +923,6 @@ retry_same:
 		}
 	}
 
-
 	/* Ok, now we can read transfer status */
 
 	/* FIFO not ready? */
@@ -986,6 +932,7 @@ retry_same:
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
 	}
+
 	/* Unpack data from FIFO ram */
 	cc = unpack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
 
@@ -994,13 +941,12 @@ retry_same:
 	buffer = (char *)buffer + i;
 	len -= i;
 
-
 	/* There was some kind of real problem; Prepare the PTD again
 	 * and retry from the failed transaction on
 	 */
 	if (cc && cc != TD_NOTACCESSED && cc != TD_DATAUNDERRUN)
 	{
-		DEBUG(("PROBLEM cc: %d", cc));
+		DEBUG(("PROBLEM cc: %ld", cc));
 		if (retries >= 100)
 		{
 			retries -= 100;
@@ -1032,10 +978,9 @@ retry_same:
 		}
 	}
 
-
 	if (cc != TD_CC_NOERROR && cc != TD_DATAUNDERRUN)
 	{
-		DEBUG(("****** completition code error %x ******", cc));
+		DEBUG(("****** completion code error %lx ******", cc));
 		switch (cc)
 		{
 			case TD_CC_BITSTUFFING:
@@ -1178,19 +1123,19 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			{
 				case RH_PORT_ENABLE:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-						   		 RH_PS_CCS);
+							    RH_PS_CCS);
 					len = 0;
 					break;
 
 				case RH_PORT_SUSPEND:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-						   		 RH_PS_POCI);
+							    RH_PS_POCI);
 					len = 0;
 					break;
 
 				case RH_PORT_POWER:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-						   		RH_PS_LSDA);
+							    RH_PS_LSDA);
 					len = 0;
 					break;
 
@@ -1202,7 +1147,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case RH_C_PORT_ENABLE:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					   			RH_PS_PESC);
+							    RH_PS_PESC);
 					len = 0;
 					break;
 
@@ -1239,7 +1184,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			{
 				case RH_PORT_SUSPEND:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					   			 RH_PS_PSS);
+							    RH_PS_PSS);
 					len = 0;
 					break;
 
@@ -1254,7 +1199,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 					mdelay(1);
 					}
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					    			RH_PS_PRS);
+							    RH_PS_PRS);
 					mdelay(10);
 					len = 0;
 					break;
@@ -1267,7 +1212,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case RH_PORT_ENABLE:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					    RH_PS_PES);
+							    RH_PS_PES);
 					len = 0;
 					break;
 
@@ -1292,7 +1237,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			{
 				case (USB_DT_DEVICE << 8):	/* device descriptor */
 					len = min1_t(unsigned long,
-				    			leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_dev_des),
 							wLength));
 				data_buf = root_hub_dev_des;
@@ -1300,7 +1245,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case (USB_DT_CONFIG << 8):	/* configuration descriptor */
 					len = min1_t(unsigned long,
-				  	 		leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_config_des),
 							wLength));
 					data_buf = root_hub_config_des;
@@ -1308,7 +1253,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case ((USB_DT_STRING << 8) | 0x00):	/* string 0 descriptors */
 					len = min1_t(unsigned long,
-				    			leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_str_index0),
 							wLength));
 					data_buf = root_hub_str_index0;
@@ -1316,7 +1261,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case ((USB_DT_STRING << 8) | 0x01):	/* string 1 descriptors */
 					len = min1_t(unsigned long,
-				    			leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_str_index1),
 							wLength));
 					data_buf = root_hub_str_index1;
@@ -1361,7 +1306,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			}
 
 			len = min1_t(unsigned long, leni,
-			   		 min2_t(unsigned long, data_buf[0], wLength));
+					 min2_t(unsigned long, data_buf[0], wLength));
 			break;
 
 		case RH_GET_CONFIGURATION:
@@ -1400,17 +1345,17 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		   long len, long interval)
+		long len, long interval)
 {
 	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
-	    dev, pipe, buffer, len, interval));
+		dev, pipe, buffer, len, interval));
 
 	return -1;
 }
 
 long
 submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		       long len, struct devrequest *setup)
+		   long len, struct devrequest *setup)
 {
 	long devnum = usb_pipedevice(pipe);
 	long epnum = usb_pipeendpoint(pipe);
@@ -1480,7 +1425,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		    long len)
+		long len, long flags)
 {
 	long dir_out = usb_pipeout(pipe);
 	long max = max_transfer_len(dev, pipe);
@@ -1488,7 +1433,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 	DEBUG(("--- BULK ---------------------------------------"));
 	DEBUG(("dev=%ld pipe=%ld buf=0x%lx size=%d dir_out=%d",
-	    usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
+		usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
 	done = 0;
 	while (done < len)
 	{
@@ -1600,10 +1545,10 @@ isp116x_reset(struct isp116x *isp116x)
 	}
 	if (!clkrdy)
 	{
-		ALERT(("clock not ready after %dms", timeout));
+		ALERT(("clock not ready after %ldms", timeout));
 		/* After sw_reset the clock won't report to be ready, if
 		   H_WAKEUP pin is high. */
-		ALERT(("please make sure that the H_WAKEUP pin is pulled low!"));
+		DEBUG(("please make sure that the H_WAKEUP pin is pulled low!"));
 		ret = -1;
 	}
 	return ret;
@@ -1631,18 +1576,18 @@ isp116x_stop(struct isp116x *isp116x)
 }
 
 static void
-int_handle_tophalf (PROC *process, long arg)
+int_handle_tophalf(PROC *process, long arg)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 
 	if (isp116x->rhport[0] & RH_PS_CSC)
 	{
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	}
 
 	if (isp116x->rhport[1] & RH_PS_CSC)
 	{
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	}
 
 }
@@ -1667,7 +1612,7 @@ ethernat_int(void)
 		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
 		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
 
-                if (intstat & HCINT_RHSC)
+		if (intstat & HCINT_RHSC)
 		{
 			isp116x->rhstatus = isp116x_read_reg32(isp116x, HCRHSTATUS);
 			isp116x->rhport[0] = isp116x_read_reg32(isp116x, HCRHPORT1);
@@ -1675,7 +1620,7 @@ ethernat_int(void)
 
 			addroottimeout (0L, int_handle_tophalf, 0x1);
 		}
-         }
+	}
 
 	isp116x_write_reg16(isp116x, HCuPINTENB, HCuPINT_OPR);
 	set_int_lvl6();
@@ -1774,19 +1719,19 @@ isp116x_start(struct isp116x *isp116x)
 /* --- Inteface functions -------------------------------------------------- */
 
 static long _cdecl
-ethernat_open (struct ucdif *u)
+ethernat_open(struct ucdif *u)
 {
 	return E_OK;
 }
 
 static long _cdecl
-ethernat_close (struct ucdif *u)
+ethernat_close(struct ucdif *u)
 {
 	return E_OK;
 }
 
 static long _cdecl
-ethernat_ioctl (struct ucdif *u, short cmd, long arg)
+ethernat_ioctl(struct ucdif *u, short cmd, long arg)
 {
 	long ret = E_OK;
 
@@ -1799,12 +1744,12 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 		}
 		case LOWLEVEL_INIT :
 		{
-			ret = usb_lowlevel_init (0, NULL);
+			ret = usb_lowlevel_init (u->ucd_priv);
 			break;
 		}
 		case LOWLEVEL_STOP :
 		{
-			ret = usb_lowlevel_stop ();
+			ret = usb_lowlevel_stop (u->ucd_priv);
 			break;
 		}
 		case SUBMIT_CONTROL_MSG :
@@ -1812,7 +1757,8 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 			struct control_msg *ctrl_msg = (struct control_msg *)arg;
 
 			ret = submit_control_msg (ctrl_msg->dev, ctrl_msg->pipe,
-			 		    ctrl_msg->data, ctrl_msg->size, ctrl_msg->setup);
+						  ctrl_msg->data, ctrl_msg->size,
+						  ctrl_msg->setup);
 			break;
 		}
 		case SUBMIT_BULK_MSG :
@@ -1820,7 +1766,7 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-				         bulk_msg->data, bulk_msg->len);
+					       bulk_msg->data, bulk_msg->len, bulk_msg->flags);
 
 			break;
 		}
@@ -1829,8 +1775,8 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 			struct int_msg *int_msg = (struct int_msg *)arg;
 
 			ret = submit_int_msg(int_msg->dev, int_msg->pipe,
-				       int_msg->buffer, int_msg->transfer_len,
-				       int_msg->interval);
+					     int_msg->buffer, int_msg->transfer_len,
+					     int_msg->interval);
 
 			break;
 		}
@@ -1863,9 +1809,8 @@ isp116x_check_id(struct isp116x *isp116x)
 	return 0;
 }
 
-
 long
-usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
+usb_lowlevel_init(void *dummy)
 {
 //	unsigned short val;
 
@@ -1919,7 +1864,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 }
 
 long
-usb_lowlevel_stop(void)
+usb_lowlevel_stop(void *dummy)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 
@@ -1930,7 +1875,7 @@ usb_lowlevel_stop(void)
 }
 
 void
-ethernat_probe_c (void)
+ethernat_probe_c(void)
 {
 	if (!((*ETHERNAT_CPLD_CR) == (*ETHERNAT_CPLD_CR)))
 		return;
@@ -1939,13 +1884,13 @@ ethernat_probe_c (void)
 }
 
 long _cdecl
-init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
 	short sr;
 
 	kentry	= k;
-	uinf	= uinfo;
+	api     = uapi;
 
 	if (check_kentry_version())
 		return -1;
@@ -1966,7 +1911,7 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&ethernat_uif);
+	ret = ucd_register(&ethernat_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

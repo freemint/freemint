@@ -1,6 +1,7 @@
 #
-# Makefile for moose
+# Makefile for ucd module
 #
+TARGET = netusbee.ucd
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -15,27 +16,24 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: entry
+all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=netusbee $(XDD_DEFINITIONS) -DUSB_SUPPORT
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=netusbee $(XDD_DEFINITIONS)
 XDD_DEFINITIONS = 
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 030
+ifndef CPU
+CPU = 000
+endif
 
 # default definitions
-SGENFILES = netusbee.ucd
-OBJS = $(SSOBJS:.s=.o)
+GENFILES = $(TARGET)
+OBJS = $(SSOBJS:.S=.o) $(COBJS:.c=.o)
 
-
-entry:
-	$(MAKE) netusbee.ucd
-	
-netusbee.ucd: isp116x-hcd.o $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
-
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
+	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 include $(top_srcdir)/DEPENDENCIES

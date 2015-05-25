@@ -189,6 +189,9 @@ loader_init(int argc, char **argv, char **env)
 	}
 	else
 	{
+#ifdef __mcoldfire__
+		name = "usbv4e.km";
+#else
 		long cpu;
 
 		name = DEFAULT;
@@ -197,9 +200,29 @@ loader_init(int argc, char **argv, char **env)
 		 * module
 		 */
 		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
-		if (r == 0 && cpu < 20)
-			name = DEFAULT_68000;
+		if (r == 0 )
+		{
+			switch( cpu )
+			{
+			case 30:
+				name = "usb030.km";
+			break;
+			case 40:
+				name = "usb040.km";
+			break;
+			case 60:
+				name = "usb060.km";
+			break;
+			default:
+				name = DEFAULT_68000;
+			}
+		}
+		else
+			(void)Cconws("CPU-cookie not found \r\n");
+#endif
 	}
+	(void)Cconws(name);
+	(void)Cconws("\r\n");
 
 	/* change to the usb module directory */
 	r = Dsetpath(path);

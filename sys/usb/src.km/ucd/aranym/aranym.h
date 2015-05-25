@@ -92,9 +92,6 @@
 #define RH_REQ_ERR                 -1
 #define RH_NACK                    0x00
 
-
-#define USB_MAX_DEVICE		32
-
 #define NUMBER_OF_PORTS		2
 
 
@@ -118,18 +115,18 @@ typedef struct {
 /*--- Low level API functions that need to be supported ---*/
 /*
 
-	int usb_lowlevel_init(void)
+	int usb_lowlevel_init(void *ucd_priv)
 
-	int usb_lowlevel_stop(void)
+	int usb_lowlevel_stop(void *ucd_priv)
 
 	int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				int len, int interval)
 
 	int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 			        int len, struct devrequest *setup)
-      
+
 	int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		    		int len)
+					int len)
 */
 
 #endif /* _ARANYM_H */

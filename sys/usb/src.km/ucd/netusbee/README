@@ -1,1 +1,32 @@
-﻿
+NetUSBee driver module
+===================================================================
+December 12th 2011             dgalvez75 (ARROBA) gmail (PUNTO) com
+===================================================================
+
+This driver has serious reliability issues.﻿ In case any other developer wants to
+continue the work on this here is a summary of what I found out:
+
+- Randomly during BULK data transfers the USB controller chip stops to send/read
+  data. It can happen after few KBytes or after 60 MBytes.
+
+- When the data transfer speed is slowed down, because trace or debug messages
+  are enabled, the bug takes more time to trigger (but no more data gets to be 
+  transferred than in normal speed).
+
+- Transferring data from the USB device to the computer seems to work much
+  better that transferring data from the computer to the USB device.
+
+- The transfer stops usually when BULK data is read from the USB controller’s
+  FIFO RAM not when writing to it. See unpack( ) function in the source code.
+
+- When the transfers fails unexpectedly one strange thing is that bit CLKREADY
+  in HcμPInterrupt register is set. According to the ISP116x chip documentation 
+  this happens when the controller has been suspended (save power mode) and
+  resumed (wake-up) again. There is no code to suspend the chip in the driver.
+
+- The controller has an "over-current protection" mode that disable the USB
+  ports when over-current condition exists. With the NetUSBee one of the ports 
+  gets disable as soon as the power is on, it’s necessary to disable this 
+  protection mode or to force ports to be always powered (see bit 
+  NoPowerSwitching in HcRhDescriptorA register).
+  Something looks wrong at the hardware level?.

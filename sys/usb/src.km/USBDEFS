@@ -1,52 +1,67 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
 ifeq ($(usb),deb)
 TARGET = usbdeb.km
 CPU = 020-60
-USBDEFS +=
+USBDEFS += -DDEV_DEBUG
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(usb),prg)
+TARGET = usb.prg
+CPU = 000
+USBDEFS += -DTOSONLY -fno-builtin
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+OBJS += usb_int.S
 endif
 
 ifeq ($(usb),000)
 TARGET = usb000.km
 CPU = 000
 USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
-ifeq ($(usb),020)
-TARGET = usb020.km
-CPU = 020
+ifeq ($(usb),02060)
+TARGET = usb02060.km
+CPU = 020-60
 USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(usb),030)
 TARGET = usb030.km
 CPU = 030
 USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(usb),040)
 TARGET = usb040.km
 CPU = 040
 USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(usb),060)
 TARGET = usb060.km
 CPU = 060
 USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(usb),col)
 TARGET = usbv4e.km
 CPU  = v4e
 USBDEFS += -DCOLDFIRE
-endif
-
-ifeq ($(usb),ara)
-TARGET = usbara.km
-CPU = 040
-USBDEFS += -DARANYM
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 #
 # all default targets
 #
-usbtargets = 000 020 030 040 060 deb col ara
+usbtargets = 02060 030 040 060 deb 000 col prg

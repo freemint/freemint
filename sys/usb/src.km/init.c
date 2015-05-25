@@ -27,66 +27,39 @@
 #include "hub.h"
 #include "ucdload.h"
 #include "uddload.h"
-#include "udd.h"
-#include "udd/udd_defs.h"
+#include "usb_api.h"
 
 long loader_pid = 0;
 long loader_pgrp = 0;
-short usb_found = 0;
 
 struct usb_module_api usb_api;
 
-//static char usb_display_name[32];
+#define MSG_BUILDDATE	__DATE__
 
-void	setup_usb_module_api(void);
+#ifdef TOSONLY
+#define MSG_VERSION		"TOS DRIVERS"
+#define MSG_BOOT		\
+		"\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
+		"Brought to TOS by Alan Hourihane.\r\n"
+#else
+#define MSG_VERSION	"FreeMiNT DRIVERS"
+#define MSG_BOOT	\
+		"\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
+#endif
+
+#define MSG_GREET		\
+	"David Galvez 2010-2014.\r\n" \
+	"Alan Hourihane 2013-2014.\r\n" \
+	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 static void
 bootmessage(void)
 {
-	c_conws("USB driver for MiNT\n\r");
-	c_conws("EXPERIMENTAL!!!!!!!\n\r");
-	c_conws("David Galvez. 2010\n\r");
+	c_conws(MSG_BOOT);
+	c_conws(MSG_GREET);
 }
 
 struct kentry *kentry;
-#if 0
-static bool
-sysfile_exists(const char *sd, char *fn)
-{
-	struct file *check;
-	bool flag = false;
-	int o = 0;
-	char *buf, *tmp;
-
-	buf = kmalloc(strlen(sd)+16);
-	if (buf)
-	{
-		if (sd[0] == '/' || sd[0] == '\\')
-		{
-			buf[0] = 'u';
-			buf[1] = ':';
-			o += 2;
-		}
-		strcpy(buf + o, sd);
-		tmp = buf + strlen(buf) - 1;
-		if (*tmp != '/' && *tmp != '\\')
-		{
-			tmp[1] = '\\';
-			tmp[2] = '\0';
-		}
-		strcat(buf + o, fn);
-		display("sysfile_exits: '%s'", buf);
-		check = kernel_open(buf, O_RDONLY, NULL, NULL);
-		if (check)
-		{
-			kernel_close(check);
-			flag = true;
-		}
-		kfree(buf);
-	}
-	return flag;
-}
-#endif
 
 /*
  * Module initialisation
@@ -94,26 +67,65 @@ sysfile_exists(const char *sd, char *fn)
  * - start main kernel thread
  */
 
-Path start_path;		/* The directory that the started binary lives */
+#ifndef TOSONLY
+Path start_path;
 static const struct kernel_module *self = NULL;
+#else
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	long n = 0;
 
-void usb_storage_init(void);	/* Prototype, this shouldn't be here */
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == _USB)
+		{
+			cjar->value = (long)&usb_api;
+			return;
+		}
+		cjar++;
+	}
 
-void
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = _USB;
+		cjar->value = (long)&usb_api;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
+
+extern unsigned long _PgmSize;
+#endif
+
+long			udd_register		(struct uddif *u);
+long			udd_unregister		(struct uddif *u);
+extern long	ucd_register		(struct ucdif *u, struct usb_device **dev);
+extern long	ucd_unregister		(struct ucdif *u);
+
+static void
 setup_usb_module_api(void)
 {
+	usb_api.api_version = USB_API_VERSION;
+	usb_api.max_devices = USB_MAX_DEVICE;
+	usb_api.max_hubs = USB_MAX_HUB;
+
 	usb_api.udd_register = &udd_register;
 	usb_api.udd_unregister = &udd_unregister;
-//	usb_api.fname = &fname;
-
-
-//	usb_api.usb_init = &usb_init;
-//	usb_api.usb_stop = &usb_stop;
-
+	usb_api.ucd_register = &ucd_register;
+	usb_api.ucd_unregister = &ucd_unregister;
+	usb_api.usb_rh_wakeup = &usb_rh_wakeup;
 
 	usb_api.usb_set_protocol = &usb_set_protocol;
 	usb_api.usb_set_idle = &usb_set_idle;
 	usb_api.usb_get_dev_index = &usb_get_dev_index;
+	usb_api.usb_get_hub_index = &usb_get_hub_index;
 	usb_api.usb_control_msg = &usb_control_msg;
 	usb_api.usb_bulk_msg = &usb_bulk_msg;
 	usb_api.usb_submit_int_msg = &usb_submit_int_msg;
@@ -134,11 +146,11 @@ setup_usb_module_api(void)
 	usb_api.usb_alloc_new_device = &usb_alloc_new_device;
 	usb_api.usb_new_device = &usb_new_device;
 	
-	/* For now we leave this hub specific
-	 * stuff out of the api.
+	/* For now we leave most of this hub specific functions out of the api.
 	 */
+	usb_api.usb_hub_events = &usb_hub_events;
+
 //	usb_api.usb_get_hub_descriptor = &usb_get_hub_descriptor;
-//	usb_api.usb_clear_hub_feature = &usb_clear_hub_feature;
 //	usb_api.usb_clear_port_feature = &usb_clear_port_feature;
 //	usb_api.usb_get_hub_status = &usb_get_hub_status;
 //	usb_api.usb_set_port_feature = &usb_set_port_feature;
@@ -148,16 +160,26 @@ setup_usb_module_api(void)
 //	usb_api.usb_hub_configure = &usb_hub_configure;	
 }
 
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long init(struct kentry *k, const struct kernel_module *km);
+
 long
-init(struct kentry *k, const struct kernel_module *km) //const char *path)
+init(struct kentry *k, const struct kernel_module *km)
+#endif
 {
 	long err = 0L;
-	bool first = true;
-//	struct proc *rootproc;
 
+#ifndef TOSONLY
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
+
+	bootmessage();
 
 	get_drive_and_path(start_path, sizeof(start_path));
 
@@ -171,27 +193,39 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
+#else
+	bootmessage();
 
-	/* do some sanity checks of the installation
-	 * that are a common source of user problems
-	 */
-	if (first)
 	{
-		
+		struct usb_module_api *checkapi;
+
+		checkapi = get_usb_cookie();
+		if (checkapi != NULL) {
+			c_conws("USB core already installed.\r\n");
+			return 0;
+		}
 	}
-
-	if (first)
-		bootmessage();
-
-	usb_stop();
+#endif
 
 	setup_usb_module_api();
 
-	usb_main(0);
+	usb_main();
 
-	usb_hub_init();
+#ifdef TOSONLY
+	{
+		/* Set the _USB API cookie */
+		Supexec(set_cookie);
 
+		c_conws("USB core installed.\r\n");
+
+		/* terminate and stay resident */
+		Ptermres(_PgmSize, 0);
+	}
+
+
+#else
 error:
+#endif
 	return err;
 }
 

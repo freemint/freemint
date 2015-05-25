@@ -20,43 +20,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef TOSONLY
 #include "global.h"
 #include "uddload.h"
 #include "usb.h"
-#include "udd.h"
+#include "usb_api.h"
 
 #include "mint/basepage.h"
 
 extern Path start_path;
-
 static char no_reason[] = "Nothing";
 
-
 static long
-udd_init(void *initfunc, struct kentry *k, struct usb_module_api *a, long arg, long reason)
+udd_init(long initfunc(struct kentry *, struct usb_module_api *a, long arg, long reason), struct kentry *k, struct usb_module_api *a, long arg, long reason)
 {
-	register long ret __asm__("d0");
-
-	__asm__ volatile
-	(
-	        "lea     -45(sp),sp;"
-		"movem.l d3-d7/a3-a6,(sp);"
-		"move.l %5,-(sp);"
-		"move.l %4,-(sp);"
-		"move.l	%3,-(sp);"
-		"move.l	%2,-(sp);"
-		"move.l	%1,a0;"
-		"jsr	(a0);"
-		"lea	16(sp),sp;"
-		"movem.l (sp),d3-d7/a3-a6;"
-		"lea    45(sp),sp;"
-		: "=r"(ret)						/* outputs */
-		: "g"(initfunc), "r"(k), "r"(a), "r"(arg), "g"(reason)	/* inputs  */
-		: __CLOBBER_RETURN("d0")
-		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
-		  "memory"
-	);
-	return ret;
+	return (*initfunc)(k,a,arg,reason);
 }
 
 extern struct usb_module_api usb_api;
@@ -93,3 +71,4 @@ udd_load(bool first)
 	load_modules(start_path, ".udd", load_udd);
 	DEBUG(("udd_load: done"));
 }
+#endif

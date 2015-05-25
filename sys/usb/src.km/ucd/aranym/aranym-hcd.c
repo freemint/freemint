@@ -1,7 +1,7 @@
 /*
  * Aranym USB (virtual) Controller Driver.
  *
- * Copyright (c) 2012 David Galvez.
+ * Copyright (c) 2012-2014 David Galvez.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,31 +31,24 @@
 #include "usbhost_nfapi.h"
 
 #include "../../usb.h"
-#include "../ucd_defs.h"
+#include "../../usb_api.h"
 
 
 #define VER_MAJOR	0
-#define VER_MINOR	1
+#define VER_MINOR	2
 #define VER_STATUS	
 
-#define DRIVER_VERSION	"16 Jan 2012"
+#define DRIVER_VERSION	"12 Feb 2014"
 
 #define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
-	"\033p Aranym USB controller driver " MSG_VERSION " \033q\r\n"
+	"\033pAranym USB controller driver " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
-	"(c) 2012 by David Galvez.\r\n" \
+	"(c) 2012-2014 by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-#define MSG_MINT	\
-	"\033pMiNT too old!\033q\r\n"
-
-#define MSG_FAILURE	\
-	"\7\r\nSorry, failed!\r\n\r\n"
-
 
 /*--- Debug section ---*/
 
@@ -85,15 +78,16 @@
 /*--- Global variables ---*/
 
 static const char hcd_name[] = "aranym-hcd";
-static char lname[] = "Aranym USB controller driver for FreeMiNT\0";
+static char lname[] = "Aranym USB driver\0";
 
 /* BEGIN kernel interface */
 
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
+struct usb_module_api *api;
 
 /* END kernel interface */
 
+static struct usb_device *root_hub_dev = NULL;
 unsigned long rh_port_status[NUMBER_OF_PORTS]; 
 
 
@@ -110,12 +104,12 @@ void my_interrupt (void);
 /* interrupt handling - bottom half */
 void _cdecl 	nfusb_interrupt	(void);
 
-long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long);
+long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
+long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /* USB controller interface */
 static long _cdecl	aranym_open		(struct ucdif *);
@@ -126,6 +120,7 @@ static long _cdecl	aranym_ioctl		(struct ucdif *, short, long);
 static struct ucdif aranym_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"aranym",		/* name */
@@ -176,11 +171,17 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
 	    dev, pipe, buffer, len, interval));
 	
-	int r;
+	long r;
 
-	r = nf_call(USBHOST(USBHOST_SUBMIT_INT_MSG), dev, pipe, buffer, len, interval);
+	r = nf_call(USBHOST(USBHOST_SUBMIT_INT_MSG), pipe, buffer, len, interval);
 
-	return r;
+	if(r >= 0) {
+		dev->status = 0;
+		dev->act_len = r;
+		return 0;
+	}
+
+	return -1;
 }
 
 
@@ -188,23 +189,35 @@ long
 submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		       long len, struct devrequest *setup)
 {
-	int r;
+	long r;
 
-	r = nf_call(USBHOST(USBHOST_SUBMIT_CONTROL_MSG), dev, pipe, buffer, len, setup);
+	r = nf_call(USBHOST(USBHOST_SUBMIT_CONTROL_MSG), pipe, buffer, len, setup);
 
-	return r;
+	if(r >= 0) {
+		dev->status = 0;
+		dev->act_len = r;
+		return 0;
+	}
+
+	return -1;
 }
 
 
 long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		    long len)
+		    long len, long flags)
 {
-	int r;
+	long r;
 
-	r = nf_call(USBHOST(USBHOST_SUBMIT_BULK_MSG), dev, pipe, buffer, len);
+	r = nf_call(USBHOST(USBHOST_SUBMIT_BULK_MSG), pipe, buffer, len);
 
-	return r;
+	if(r >= 0) {
+		dev->status = 0;
+		dev->act_len = r;
+		return 0;
+	}
+
+	return -1;
 }
 
 
@@ -221,7 +234,7 @@ int_handle_tophalf (PROC *process, long arg)
 	{
 		if (rh_port_status[i] & RH_PS_CSC)
 		{
-			(*uinf->usb_rh_wakeup)();
+			usb_rh_wakeup();
 		}
 	}
 }
@@ -264,12 +277,12 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 		}
 		case LOWLEVEL_INIT :
 		{
-			ret = usb_lowlevel_init (0, NULL);
+			ret = usb_lowlevel_init (u->ucd_priv);
 			break;
 		}
 		case LOWLEVEL_STOP :
 		{
-			ret = usb_lowlevel_stop ();
+			ret = usb_lowlevel_stop (u->ucd_priv);
 			break;
 		}
 		case SUBMIT_CONTROL_MSG :
@@ -285,7 +298,7 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-				         bulk_msg->data, bulk_msg->len);			
+				         bulk_msg->data, bulk_msg->len, bulk_msg->flags);			
 
 			break;
 		}
@@ -311,23 +324,23 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 /* --- Init functions ------------------------------------------------------ */
 
 long 
-usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
+usb_lowlevel_init(void *dummy)
 {
 	int r;
-	
+
 	r = nf_call(USBHOST(USBHOST_LOWLEVEL_INIT));
 
 	if (!r) 
-		(void) Cconws(" Aranym USB Controller Driver init \r\n");
+		(void) Cconws("Aranym USB Controller Driver init \r\n");
 	else
-		(void) Cconws(" Couldn't init aranym host chip emulator \r\n");
+		(void) Cconws("Couldn't init aranym host chip emulator \r\n");
 
 	return 0;
 }
 
 
 long 
-usb_lowlevel_stop(void)
+usb_lowlevel_stop(void *dummy)
 {
 	int r;
 
@@ -339,12 +352,11 @@ usb_lowlevel_stop(void)
 
 /* Entry function */
 long _cdecl
-init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
-
 	char message[100];
-	
+
 	kentry	= k;
 
 	/* get the USBHost NatFeat ID */
@@ -370,7 +382,7 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	}
 
 
-	uinf	= uinfo;
+	api	= uapi;
 
 	if (check_kentry_version())
 		return -1;
@@ -379,7 +391,7 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&aranym_uif);
+	ret = ucd_register(&aranym_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

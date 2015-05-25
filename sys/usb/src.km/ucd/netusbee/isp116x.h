@@ -57,6 +57,53 @@
 
 #define ISP116x_WRITE_OFFSET	0x80
 
+/* --- Board settings -------------------------------------------------------*/
+
+#define ISP116X_HCD_INT_ACT_HIGH
+//#define ISP116X_HCD_INT_EDGE_TRIGGERED
+#define ISP116X_HCD_SEL15kRES
+#define ISP116X_HCD_OC_ENABLE
+//#define ISP116X_HCD_REMOTE_WAKEUP_ENABLE
+
+//#define ISP116X_HCD_USE_UDELAY
+#define ISP116X_HCD_USE_EXTRA_DELAY
+
+/*
+ * ISP116x chips require certain delays between accesses to its
+ * registers. The following timing options exist.
+ *
+ * 1. Configure your memory controller (the best)
+ * 2. Use ndelay (easiest, poorest). For that, enable the following macro.
+ *
+ * Value is in microseconds.
+ */
+#ifdef ISP116X_HCD_USE_UDELAY
+# define UDELAY		1
+#endif
+
+/*
+ * On some (slowly?) machines an extra delay after data packing into
+ * controller's FIFOs is required, * otherwise you may get the following
+ * error:
+ *
+ *   uboot> usb start
+ *   (Re)start USB...
+ *   USB:   scanning bus for devices... isp116x: isp116x_submit_job: CTL:TIMEOUT
+ *   isp116x: isp116x_submit_job: ****** FIFO not ready! ******
+ *
+ *         USB device not responding, giving up (status=4)
+ *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
+ *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
+ *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
+ *         3 USB Device(s) found
+ *                scanning bus for storage devices... 0 Storage Device(s) found
+ *
+ * Value is in milliseconds.
+ */
+#ifdef ISP116X_HCD_USE_EXTRA_DELAY
+# define EXTRA_DELAY	10	/* DEFAULT 2 */
+#endif
+
 /* --- ISP116x address registers in Netusbee --------------------------------*/
 
 #define ISP116X_HCD_ADDR	0x00FBC000
@@ -303,9 +350,9 @@ struct isp116x_platform_data
 	   thereby power consumption in suspended state. */
 	unsigned remote_wakeup_enable:1;
 	/* INT output polarity */
-        unsigned int_act_high:1;
-        /* INT edge or level triggered */
-        unsigned int_edge_triggered:1;
+	unsigned int_act_high:1;
+	/* INT edge or level triggered */
+	unsigned int_edge_triggered:1;
 
 };
 
@@ -354,17 +401,36 @@ struct isp116x
 # define	isp116x_delay(h,d)	do {} while (0)
 #endif
 
+/* ISP116x registers access */
 
-unsigned long p;	
-			 
+inline void write_le16_reg(volatile unsigned short * addr, short val);
+inline unsigned read_le16_reg(const volatile unsigned short *addr);
+
+inline void write_le16_reg(volatile unsigned short * addr, short val)
+{
+	*addr = SWAP16(val);
+}
+
+inline unsigned read_le16_reg(const volatile unsigned short *addr)
+{
+	unsigned result = *addr;
+	return SWAP16(result);
+}
+
+# define raw_readw(addr)	(*(volatile unsigned short *)(addr))
+# define raw_writew(w,addr)	((*(volatile unsigned short *) (addr)) = (w))
+# define readw(addr)		read_le16_reg((volatile unsigned short *)(addr))
+# define writew(b,addr)		write_le16_reg((volatile unsigned short *)(addr),(b))
+
+
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
-	u16 dumm;
+	unsigned short dumm;
 
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + ((reg & 0x00ff)<<1)); 
-	dumm = __raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (u16*)ISP116X_HCD_ADDR;
-	dumm = __raw_readw(isp116x->addr_reg);
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((reg & 0x00ff)<<1));
+	dumm = raw_readw(isp116x->data_reg);
+	isp116x->addr_reg = (unsigned short*)ISP116X_HCD_ADDR;
+	dumm = raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
 
 	UNUSED (dumm);
@@ -372,12 +438,12 @@ static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 
 static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short val)
 {
-	u16 dumm;
+	unsigned short dumm;
 	
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + ((val & 0xff00)>>7)); 
-	dumm = __raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x00ff)<<1));
-	dumm = __raw_readw(isp116x->addr_reg);
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((val & 0xff00)>>7));
+	dumm = raw_readw(isp116x->data_reg);
+	isp116x->addr_reg = (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x00ff)<<1));
+	dumm = raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
 
 	UNUSED (dumm);
@@ -385,12 +451,12 @@ static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short 
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
-	u16 dumm;
+	unsigned short dumm;
 
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + ((val & 0x00ff)<<1));
-	dumm = __raw_readw(isp116x->data_reg);
-	isp116x->addr_reg =  (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff00)>>7)); 
-	dumm = __raw_readw(isp116x->addr_reg);
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((val & 0x00ff)<<1));
+	dumm = raw_readw(isp116x->data_reg);
+	isp116x->addr_reg =  (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff00)>>7));
+	dumm = raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
 
 	UNUSED (dumm);
@@ -400,7 +466,7 @@ static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + 0x8000);
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + 0x8000);
 	val = readw(isp116x->data_reg );
 	isp116x_delay(isp116x, UDELAY);
 
@@ -411,8 +477,8 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + 0x8000);
-	val = __raw_readw(isp116x->data_reg );
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + 0x8000);
+	val = raw_readw(isp116x->data_reg );
 	isp116x_delay(isp116x, UDELAY);
 
 	return val;
@@ -433,17 +499,17 @@ static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long v
  */
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
-	u16 dumm;
+	unsigned short dumm;
 
-	isp116x->data_reg =  (u16*)(ISP116X_HCD_DATA + ((val & 0x000000ff)<<1)); 
-	dumm = __raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x0000ff00)>>7)); 
-	dumm = __raw_readw(isp116x->addr_reg);
+	isp116x->data_reg =  (unsigned short*)(ISP116X_HCD_DATA + ((val & 0x000000ff)<<1));
+	dumm = raw_readw(isp116x->data_reg);
+	isp116x->addr_reg = (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x0000ff00)>>7));
+	dumm = raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + ((val & 0x00ff0000)>>15));
-	dumm = __raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff000000)>>23) );
-	dumm = __raw_readw(isp116x->addr_reg);
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((val & 0x00ff0000)>>15));
+	dumm = raw_readw(isp116x->data_reg);
+	isp116x->addr_reg = (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff000000)>>23) );
+	dumm = raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
 
 	UNUSED (dumm);
@@ -470,10 +536,10 @@ static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 {
 	unsigned long val;
 
-	isp116x->data_reg = (u16*)(ISP116X_HCD_DATA + 0x8000);
-	val = (u32) __raw_readw(isp116x->data_reg );
+	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + 0x8000);
+	val = (unsigned long) raw_readw(isp116x->data_reg );
 	isp116x_delay(isp116x, UDELAY);
-	val |= ((u32) __raw_readw(isp116x->data_reg )) << 16;
+	val |= ((unsigned long) raw_readw(isp116x->data_reg )) << 16;
 	isp116x_delay(isp116x, UDELAY);
 
 	return val;

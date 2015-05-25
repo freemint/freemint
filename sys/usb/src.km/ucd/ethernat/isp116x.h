@@ -58,12 +58,60 @@
 
 #define ISP116x_WRITE_OFFSET	0x80
 
+/* --- Board settings -------------------------------------------------------*/
+
+#define ISP116X_HCD_INT_ACT_HIGH
+//#define ISP116X_HCD_INT_EDGE_TRIGGERED
+//#define ISP116X_HCD_SEL15kRES
+#define ISP116X_HCD_OC_ENABLE
+//#define ISP116X_HCD_REMOTE_WAKEUP_ENABLE
+
+#define ISP116X_HCD_USE_UDELAY
+//#define ISP116X_HCD_USE_EXTRA_DELAY
+
+/*
+ * ISP116x chips require certain delays between accesses to its
+ * registers. The following timing options exist.
+ *
+ * 1. Configure your memory controller (the best)
+ * 2. Use ndelay (easiest, poorest). For that, enable the following macro.
+ *
+ * Value is in microseconds.
+ */
+#ifdef ISP116X_HCD_USE_UDELAY
+# define UDELAY		1
+#endif
+
+/*
+ * On some (slowly?) machines an extra delay after data packing into
+ * controller's FIFOs is required, * otherwise you may get the following
+ * error:
+ *
+ *   uboot> usb start
+ *   (Re)start USB...
+ *   USB:   scanning bus for devices... isp116x: isp116x_submit_job: CTL:TIMEOUT
+ *   isp116x: isp116x_submit_job: ****** FIFO not ready! ******
+ *
+ *         USB device not responding, giving up (status=4)
+ *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
+ *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
+ *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
+ *         3 USB Device(s) found
+ *                scanning bus for storage devices... 0 Storage Device(s) found
+ *
+ * Value is in milliseconds.
+ */
+#ifdef ISP116X_HCD_USE_EXTRA_DELAY
+# define EXTRA_DELAY	2	/* DEFAULT 2 */
+#endif
+
 /* --- ISP116x address registers in EtherNAT --------------------------------*/
 
 #define ISP116X_HCD_ADDR	0x80000016
 #define ISP116X_HCD_DATA	0x80000012
 //#define ETHERNAT_CPLD_CR	0x80000023   /* 0x80000023 - 1 */
 volatile unsigned char* const ETHERNAT_CPLD_CR = (volatile unsigned char*) 0x80000023;
+
 /* --- ISP116x registers/bits ---------------------------------------------- */
 
 #define	HCREVISION	0x00
@@ -305,9 +353,9 @@ struct isp116x_platform_data
 	   thereby power consumption in suspended state. */
 	unsigned remote_wakeup_enable:1;
 	/* INT output polarity */
-        unsigned int_act_high:1;
-        /* INT edge or level triggered */
-        unsigned int_edge_triggered:1;
+	unsigned int_act_high:1;
+	/* INT edge or level triggered */
+	unsigned int_edge_triggered:1;
 
 };
 
@@ -356,12 +404,30 @@ struct isp116x
 # define	isp116x_delay(h,d)	do {} while (0)
 #endif
 
+/* ISP116x registers access */
 
-unsigned long p;	
-			 
+inline void write_le16_reg(volatile unsigned short * addr, short val);
+inline unsigned read_le16_reg(const volatile unsigned short *addr);
+
+inline void write_le16_reg(volatile unsigned short * addr, short val)
+{
+	*addr = SWAP16(val);
+}
+
+inline unsigned read_le16_reg(const volatile unsigned short *addr)
+{
+	unsigned result = *addr;
+	return SWAP16(result);
+}
+
+# define raw_readw(addr)	(*(volatile unsigned short *)(addr))
+# define raw_writew(w,addr)	((*(volatile unsigned short *) (addr)) = (w))
+# define readw(addr)		read_le16_reg((volatile unsigned short *)(addr))
+# define writew(b,addr)		write_le16_reg((volatile unsigned short *)(addr),(b))
+
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
-	__raw_writew(reg & 0xff, isp116x->addr_reg );
+	raw_writew(reg & 0xff, isp116x->addr_reg );
 	isp116x_delay(isp116x, UDELAY);
 }
 
@@ -373,7 +439,7 @@ static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short 
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
-	__raw_writew(val, isp116x->data_reg);
+	raw_writew(val, isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
 }
 
@@ -391,7 +457,7 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	val = __raw_readw(isp116x->data_reg);
+	val = raw_readw(isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
 
 	return val;
@@ -407,14 +473,14 @@ static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long v
 }
 
 /*
- * Added for EtherNat, to write HC registers without swaping them
+ * Added for EtherNat, to write HC registers without swapping them
  * EtherNat already swap them by hardware (i suppose.....)
  */
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
-	__raw_writew(val & 0xffff, isp116x->data_reg);
+	raw_writew(val & 0xffff, isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
-	__raw_writew(val >> 16, isp116x->data_reg);
+	raw_writew(val >> 16, isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
 }
 /***********************************************/
@@ -432,16 +498,16 @@ static inline unsigned long isp116x_read_data32(struct isp116x *isp116x)
 }
 
 /*
- * Added for EtherNat, to read HC registers without swaping them
+ * Added for EtherNat, to read HC registers without swapping them
  * EtherNat already swap them by hardware (i suppose.....)
  */
 static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 {
 	unsigned long val;
 
-	val = (unsigned long) __raw_readw(isp116x->data_reg);
+	val = (unsigned long) raw_readw(isp116x->data_reg);
 	isp116x_delay(isp116x, UDELAY);
-	val |= ((unsigned long) __raw_readw(isp116x->data_reg)) << 16;
+	val |= ((unsigned long) raw_readw(isp116x->data_reg)) << 16;
 	isp116x_delay(isp116x, UDELAY);
 
 	return val;
@@ -452,7 +518,7 @@ static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
    we wait at least 150 ns at every access.
 */
 
-/* with EtherNat use raw_read to avoid swaping bytes*/
+/* with EtherNat use raw_read to avoid swapping bytes*/
 
 static unsigned short isp116x_read_reg16(struct isp116x *isp116x, unsigned reg)
 {
@@ -473,7 +539,7 @@ static void isp116x_write_reg16(struct isp116x *isp116x, unsigned reg,
 	isp116x_raw_write_data16(isp116x, (unsigned short) (val & 0xffff));
 }
 
-/* with Etehrnat used raw_write to avoid swaping bytes by software */
+/* with Etehrnat used raw_write to avoid swapping bytes by software */
 static void isp116x_write_reg32(struct isp116x *isp116x, unsigned long reg,
 				unsigned long val)
 {
