@@ -1,45 +1,45 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1998-02-01
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * changes since last version:
- * 
+ *
  * 1998-05-25:
- * 
+ *
  * - initial revision
- * 
+ *
  * known bugs:
- * 
+ *
  * todo:
- * 
+ *
  */
 
 # include "xhdi.h"
@@ -65,7 +65,7 @@ static long
 XHDIfail (ushort opcode, ...)
 {
 	UNUSED (opcode);
-	
+
 	return ENOSYS;
 }
 
@@ -80,17 +80,17 @@ XHDI_init (void)
 {
 	long r;
 	unsigned long t = 0;
-	
+
 	r = get_toscookie (COOKIE_XHDI, &t);
 	XHDI = (long(*)(unsigned short, ...))t;
 	if (!r && XHDI)
 	{
 		long *magic_test = (long *) XHDI;
-		
+
 		magic_test--;
-		
+
 # define XHDIMAGIC	0x27011992L
-		
+
 		if (*magic_test == XHDIMAGIC)
 		{
 			/* check version */
@@ -98,7 +98,7 @@ XHDI_init (void)
 			XHDI_installed = XHGetVersion ();
 		}
 	}
-	
+
 	/* we need at least XHDI 1.10 */
 	if (XHDI_installed >= 0x110)
 	{
@@ -107,27 +107,27 @@ XHDI_init (void)
 # else
 		r = 1;
 # endif
-		
+
 		boot_printf (MSG_xhdi_present,
 			XHDI_installed >> 8, XHDI_installed & 0xff,
 			r ? MSG_kerinfo_rejected : MSG_kerinfo_accepted
 		);
-		
+
 		*((long *) 0x4c2L) |= XHDrvMap ();
-		
+
 		set_toscookie (COOKIE_XHDI, (long) emu_xhdi);
 		r = E_OK;
 	}
 	else
 	{
 		boot_print (MSG_xhdi_absent);
-		
+
 		XHDI = XHDIfail;
 		XHDI_installed = 0;
-		
+
 		r = ENOSYS;
 	}
-	
+
 	return r;
 }
 
@@ -146,57 +146,57 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			/* maximal sector size (BIOS level) */
 			case XH_DL_SECSIZ:
 				return 32768L;
-			
+
 			/* minimal number of FATs */
 			case XH_DL_MINFAT:
 				return 1L;
-			
+
 			/* maximal number of FATs */
 			case XH_DL_MAXFAT:
 				return 4L;
-			
+
 			/* sectors per cluster minimal */
 			case XH_DL_MINSPC:
 				return 1L;
-			
+
 			/* sectors per cluster maximal */
 			case XH_DL_MAXSPC:
 				return 128L;
-			
+
 			/* maximal number of clusters of a 16 bit FAT */
 			case XH_DL_CLUSTS:
 				return 65518L; /* 0xffee */
-			
+
 			/* maximal number of sectors */
 			case XH_DL_MAXSEC:
 				return 2147483647L; /* LONG_MAX */
-			
+
 			/* maximal number of BIOS drives supported by the DOS */
 			case XH_DL_DRIVES:
 				return 32L;
-			
+
 			/* maximal clustersize */
 			case XH_DL_CLSIZB:
 				return 65536L;
-			
+
 			/* maximal (bpb->rdlen * bpb->recsiz / 32) */
 			case XH_DL_RDLEN:
 				return 2048; /* ??? */
-			
+
 			/* maximal number of clusters of a 12 bit FAT */
 			case XH_DL_CLUSTS12:
 				return 4078L; /* 0xfee */
-			
+
 			/* maximal number of clusters of a 32 bit FAT */
 			case XH_DL_CLUSTS32:
 				return 268435455L; /* 0x0fffffff */
-			
+
 			/* supported bits in bpb->bflags */
 			case XH_DL_BFLAGS:
 				return XHDOSLimits (XH_DL_BFLAGS, 0UL);
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -212,25 +212,25 @@ sys_xhdi (ushort op,
 	/* version information */
 	if (op == 0)
 		return XHDI_installed;
-	
+
 	/* XHDrvMap */
 	if (op == 6)
 		return XHDI (6);
-	
+
 	/* all other functions are restricted to root processes */
 	if (!suser (get_curproc()->p_cred->ucr))
 		return EPERM;
-	
+
 	/* XHNewCookie and XHMiNTInfo are never allowed */
 	if (op == 9 || op == 16)
 		return ENOSYS;
-	
+
 	/* applications see our own XHDOSLimits;
 	 * mainly to make Uwe happy
 	 */
 	if (op == 17)
 		return sys_XHDOSLimits ((a1 >> 16), (a1 << 16) | (a2 >> 16));
-	
+
 	return XHDI (op, a1, a2, a3, a4, a5, a6, a7);
 }
 
@@ -244,11 +244,11 @@ XHGetVersion (void)
 {
 	long own_version = 0x130;
 	long installed;
-	
+
 	installed = XHDI (0);
 	if (XHDI_installed)
 		return MIN (own_version, installed);
-	
+
 	return 0;
 }
 
@@ -317,7 +317,7 @@ XHInqTarget2 (ushort major, ushort minor, ulong *block_size, ulong *device_flags
 {
 	return XHDI (11, major, minor, block_size, device_flags, product_name, stringlen);
 }
-          
+
 long
 XHInqDev2 (ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb, ulong *blocks, char *partid)
 {
