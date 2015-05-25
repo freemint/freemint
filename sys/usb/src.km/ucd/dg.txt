@@ -1,3 +1,0 @@
-Add new USB host controller driver for the virtual USB host chip
-inside Aranym.
-Contribted by David Galvez
