@@ -301,18 +301,20 @@ exit:	move.l	a1,sp
 // FPU type detection, experimental (draco@atari.org).
 //
 // This can only detect the hardware FPU, any software emulation
-// will be ignored.
-//
-// NOTICE: the _FPU cookie value for 68060 is not defined by Atari!
-//         *** How does it look like on a Hades060? ***
+// will be ignored (a non-zero low word indicates the presence of software
+// floating point support; no specific values have yet been assigned).
 //
 // Return value is cookie value for _FPU slot or a zero if no FPU
 // is present:
 //
 // 0x00000000, no FPU
-// 0x00020000, 68881 or 68882
-// 0x00040000, 68881 for sure
-// 0x00060000, 68882 for sure
+// 0x00010000, SFP-004 or compatible FPU-card (6888x as a peripheral component) [unused]
+// 0x00020000, 68881 or 68882 [unused]
+// 0x00030000, 68881 or 68882 and SFP-004 [unused]
+// 0x00040000, 68881
+// 0x00050000, 68881 and SFP-004
+// 0x00060000, 68882
+// 0x00070000, 68882 and SFP-004
 // 0x00080000, 68040 internal FPU
 // 0x00100000, 68060 internal FPU
 //
@@ -322,11 +324,8 @@ exit:	move.l	a1,sp
 //   in coprocessor mode. If the CPU is >= 68020, no FPU is assumed.
 // - if FNOP doesn't take an exception, an FPU attached in coprocessor mode
 //   is present. Then if 68040 or 68060 CPU was detected previously, an appropriate
-//   FPU type is assumed. Otherwise the stackframe is checked for magic value
-//   indicating 68882 and if it is different, a 68881 is assumed.
-//
-// I am very interested if this will really work on everything =)
-// On a 68030/68882 tandem it does.
+//   FPU type is assumed. Otherwise the stackframe is checked for stack frame size
+//   indicating 68881 and if it is different, a 68882 is assumed.
 
 	.globl	_detect_fpu
 	.globl	_mcpu
@@ -374,14 +373,27 @@ no60:	fnop
 	moveq	#0x08,d0	// if not 060, maybe a 040 (cookie 0x00080000)
 	cmpi.w	#40,d1
 	beq.s	fexit
-	moveq	#0x06,d0	// if neither, so maybe a 68882 (cookie 0x00060000)
-	move.b	(sp)+,d1
-	cmpi.b	#0x1f,d1
-	beq.s	fexit
-	moveq	#0x04,d0	// must be 68881
+	clr.l	d0
+x688x:	move.b	1(sp),d1	// if neither, maybe a 68881 or 68882
+	cmpi.b	#0x18,d1
+	bne.s	no6881
+	ori.w	#0x04,d0	// 68881 (cookie 0x00040000)
+	bne.s	fexit
+no6881:	ori.w	#0x06,d0	// must be 68882 (cookie 0x00060000)
 	bra.s	fexit
-sfp:	tst.w	(0xfa40).w	// CIR
+
+sfp:	move.w	(0xfa44).w,d0	// read the save register
+	move.w	d0,d1
+	andi.w	#0xff00,d1	// isolate the format word
+	beq.s	sfp_store	// if null idle, store the format word
+	cmpi.w	#0x0100,d1	// if the coprocessor busy
+	beq.s	sfp		// keep checking until CP is finished processing
+sfp_store:
+	swap	d0		// place the format word in the upper 16 bits
+	move.l	d0,-(sp)	// store format word on the stack
 	moveq	#0x01,d0	// memory mapped FPU
+	bra.s	x688x
+
 fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	move.l	a2,(0x08).w
 	move.l	a0,sp
