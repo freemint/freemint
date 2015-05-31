@@ -193,7 +193,7 @@ _getmch (void)
 	/* own FPU test; this must be done after the CPU detection */
 	fputype = detect_fpu ();
 
-	if ((fputype >> 16) > 1)
+	if ((fputype >> 16) > 1 && ((fputype >> 16) & 0x01) == 0)	// coprocessor mode only
 		fpu = 1;
 
 #ifdef WITH_MMU_SUPPORT
@@ -354,31 +354,32 @@ identify (long mch, enum special_hw info)
 	}
 	else
 #endif
-	if (fpu)
+	switch (fputype >> 16)
 	{
-		switch (fputype >> 16)
-		{
-			case 0x02:
-				fpu_type = "68881/82";
-				_fpu = " 68881/82 ";
-				break;
-			case 0x04:
-				fpu_type = "68881";
-				_fpu = " 68881 ";
-				break;
-			case 0x06:
-				fpu_type = "68882";
-				_fpu = " 68882 ";
-				break;
-			case 0x08:
-				fpu_type = "68040";
-				_fpu = "/";
-				break;
-			case 0x10:
-				fpu_type = "68060";
-				_fpu = "/";
-				break;
-		}
+		case 0x04:
+			fpu_type = "68881";
+			_fpu = " 68881 ";
+			break;
+		case 0x05:
+			fpu_type = "68881 (SFP-004)";
+			_fpu = " 68881 ";
+			break;
+		case 0x06:
+			fpu_type = "68882";
+			_fpu = " 68882 ";
+			break;
+		case 0x07:
+			fpu_type = "68882 (SFP-004)";
+			_fpu = " 68882 ";
+			break;
+		case 0x08:
+			fpu_type = "68040";
+			_fpu = "/";
+			break;
+		case 0x10:
+			fpu_type = "68060";
+			_fpu = "/";
+			break;
 	}
 
 #ifdef __mcoldfire__

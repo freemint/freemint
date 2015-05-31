@@ -540,10 +540,8 @@ sigfpe(void)
 	{
 		CONTEXT *ctxt = &curproc->ctxt[SYSCALL];
 		
-		/* 0x1f38 is a Motorola magic cookie to detect a 68882 idle
-		 * state frame
-		 */
-		if (ctxt->fstate.words[0] == 0x1f38
+		/* 0x38 is the stack frame size value for 68882 */
+		if ((ctxt->fstate.words[0] & 0xff) == 0x38
 			&& ((ctxt->sfmt & 0xfff) >= 0xc0L)
 			&& ((ctxt->sfmt & 0xfff) <= 0xd8L))
 		{
