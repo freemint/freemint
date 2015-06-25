@@ -46,6 +46,14 @@ struct netinfo netinfo =
 	_if_deregister:         if_deregister
 };
 
+#if 0
+/*
+ * This doesn't work for non-GCC compiled modules. i.e. enec.xif.
+ * Looks like these modules smash other registers.
+ *
+ * Note: the same hack as for other kernel modules
+ *       module_init() in sys/module.c
+ */
 static long
 xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 {
@@ -54,10 +62,37 @@ xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 	init = initfunc;
 	return (*init)(k, n);
 }
+#else
+static long
+xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
+{
+	register long ret __asm__("d0");
+
+	__asm__ volatile
+	(
+		PUSH_SP("d3-d7/a3-a6", 36)
+		"movl	%3,sp@-\n\t"
+		"movl	%2,sp@-\n\t"
+		"movl	%1,a0\n\t"
+		"jsr	a0@\n\t"
+		"addql	#8,sp\n\t"
+		POP_SP("d3-d7/a3-a6", 36)
+		: "=r"(ret)				/* outputs */
+		: "g"(initfunc), "g"(k), "g"(n)		/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
+		  "memory"
+	);
+	return ret;
+}
+#endif
 
 static long
 load_xif (struct basepage *b, const char *name, short *class, short *subclass)
 {
+#if 0
+	long (*init)(struct kerinfo *, struct netinfo *);
+#endif
 	long r;
 	
 	DEBUG (("load_xif: enter (0x%lx, %s)", b, name));
@@ -69,7 +104,12 @@ load_xif (struct basepage *b, const char *name, short *class, short *subclass)
 	netinfo.fname = name;
 	*class = MODCLASS_XIF;
 	*subclass = 0;
+#if 0
+	init = (long (*)(struct kerinfo *, struct netinfo *))b->p_tbase;
+	r = (*init)(KERNEL, &netinfo);
+#else
 	r = xif_module_init((void*)b->p_tbase, KERNEL, &netinfo);
+#endif
 	netinfo.fname = NULL;
 	
 	return r;
