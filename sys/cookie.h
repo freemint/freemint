@@ -82,6 +82,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_NF	0x5F5F4E46L
 
 /* hardware cookies */
+# define COOKIE__CT2	0x5f435432L
 # define COOKIE_CT60	0x43543630L
 # define COOKIE_HADES	0x68616465L
 # define COOKIE__PCI	0x5f504349L

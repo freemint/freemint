@@ -121,6 +121,7 @@ typedef enum
 	machine_falcon,
 	machine_milan,
 	machine_hades,
+	machine_ct2,
 	machine_ct60,
 	machine_firebee
 #ifdef ARANYM

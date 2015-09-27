@@ -200,7 +200,6 @@ init_tables(void)
 	}
 
 {
-    struct cookie *cookie;
     int n_megabytes;
     long global_mode_table_size;
 
@@ -214,21 +213,8 @@ init_tables(void)
         mint_top_tt = 0;
     else
     {
-        int ct2 = 0;
-        mint_top_tt = phys_top_tt;
-        cookie = *CJAR;
-
-        if (cookie)
-        {
-            while (cookie->tag)
-            {
-                if (cookie->tag == 0x5f435432)	/* _CT2 */
-                    ct2=1;
-                cookie++;
-           }
-       }
-
-       if ((machine == machine_falcon) && ct2)
+       mint_top_tt = phys_top_tt;
+       if (machine == machine_ct2)
        {
             offset_tt_ram = 0x03000000L;
             DEBUG (("init_tables: Falcon CT2 -> offset 0x%lx", offset_tt_ram));
