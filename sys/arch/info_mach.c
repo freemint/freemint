@@ -75,6 +75,9 @@ char *machine_str (void)
 		case machine_hades:
 			str = "Hades";
 			break;
+		case machine_ct2:
+			str = "Atari Falcon/CT2";
+			break;
 		case machine_ct60:
 			str = "Atari Falcon/CT60";
 			break;

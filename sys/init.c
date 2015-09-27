@@ -684,6 +684,9 @@ init (void)
 			case machine_hades:
 				mch_str = "hades";
 				break;
+			case machine_ct2:
+				mch_str = "ct2";
+				break;
 			case machine_ct60:
 				mch_str = "ct60";
 				break;
