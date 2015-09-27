@@ -50,12 +50,13 @@
 
 /*
  * _MCH cookie is not exact anymore
- * (special hades cookie, special ct60 cookie, special aranym cookie)
+ * (special hades cookie, special ct2/ct60 cookie, special aranym cookie)
  */
 enum special_hw
 {
 	none = 0,
 	hades,
+	ct2,
 	ct60
 # ifdef ARANYM
 	,
@@ -157,6 +158,12 @@ _getmch (void)
 					add_info = hades;
 					break;
 				}
+				
+				case COOKIE__CT2:
+				{
+					add_info = ct2;
+					break;
+				}
 
 				case COOKIE_CT60:
 				{
@@ -197,9 +204,9 @@ _getmch (void)
 		fpu = 1;
 
 #ifdef WITH_MMU_SUPPORT
-	if (add_info == ct60 && !old_no_mem_prot)
+	if ((add_info == ct60 || add_info == ct2) && !old_no_mem_prot)
 	{
-		// HACK: PMMU cookie is for some reason set on CT60
+		// HACK: PMMU cookie is for some reason set on CT2/CT60
 		// so make sure we set the old value as intended
 		no_mem_prot = 0;
 	}
@@ -333,6 +340,9 @@ identify (long mch, enum special_hw info)
 		}
 		case hades:
 			machine = machine_hades;
+			break;
+		case ct2:
+			machine = machine_ct2;
 			break;
 		case ct60:
 			machine = machine_ct60;
