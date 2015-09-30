@@ -25,7 +25,7 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.km
-SGENFILES = xversion.h
+SGENFILES =
 
 
 help:
@@ -48,11 +48,8 @@ all-targets:
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-$(usbtargets): xversion.h
+$(usbtargets):
 	$(MAKE) buildusb usb=$@
-
-xversion.h: $(SRCFILES)
-	$(SHELL) xversion.sh $@ $?
 
 #
 # multi target stuff
