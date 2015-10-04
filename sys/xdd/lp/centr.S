@@ -26,7 +26,21 @@ _new_centr_vector:
 	bclr	#0, 0xFFFFFA11
 #endif
 	rte
-	
+
+#ifdef __mcoldfire__
+|
+| stupid delay for Coldfires to keep the strobe signal
+| active long enough according to the standards
+|
+strobe_delay:
+	move.l	(sp)+,d0		| 1
+1:
+	nop				| 6
+	subq.l	#1,d0			| 1
+	bne	1b			| 0 = 8 clocks at best
+	rts
+#endif
+
 _print_byte:
 	movew	sp@(4), d0		| character to print
 #ifdef __mcoldfire__
@@ -41,12 +55,27 @@ _print_byte:
 	movel	#0xFFFF8800, a0
 	moveb	#15, a0@		| select port B
 	moveb	d0, a0@(2)		| and write the character
+
+#ifdef __mcoldfire__
+	move.l	d0,-(sp)
+	move.l	#21,-(sp)		| 773 ns according to my calculations
+	bsr	strobe_delay		| ieee 1284 requires at least 750 ns
+	move.l	(sp)+,d0
+#endif
+
 	moveb	#14, a0@		| select port A
 	moveb	a0@, d0			| read it
 	bclr	#5, d0
 	moveb	d0, a0@(2)		| strobe low
+#ifdef __mcoldfire__
+	move.l	d0,-(sp)
+	move.l	#21,-(sp)		| see above
+	bsr	strobe_delay
+	move.l	(sp)+,d0
+#else
 	nop
 	nop
+#endif
 	bset	#5, d0
 	moveb	d0, a0@(2)		| strobe high
 #ifdef __mcoldfire__
