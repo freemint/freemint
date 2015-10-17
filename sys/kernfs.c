@@ -190,9 +190,12 @@ static DEVDRV kern_device =
  *
  * For the file handles directory:
  *
- * /sys/<PID>/fd/<HANDLE>:	(pid << 16 | 0x100 | handle)
+ * /sys/<PID>/fd/<HANDLE>:	(pid << 16 | 0x80000000 | handle)
  */
 
+/* mark fddir in cookie.index */
+#define FF_MASK   0x80000000
+#define FF_FDDIR  0x80000000
 
 typedef struct kentry KENTRY;
 struct kentry
@@ -437,10 +440,10 @@ INLINE long
 kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	long desc;
-	short pid = (dir->index & 0xffff0000) >> 16;
+	short pid = (dir->index & ~FF_MASK) >> 16;
 	PROC *p;
 
-	TRACE (("kern_fddir_lookup in [%u:%ld] for %s", dir->dev, dir->index, name));
+	TRACE (("kern_fddir_lookup in [%u:%lx] for %s", dir->dev, dir->index, name));
 
 	p = pid2proc (pid);
 	if (!p)
@@ -457,6 +460,11 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 		*fc = *dir;
 	else if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 		fc->index = (dir->index & 0xffff0000) | PROCDIR_DIR;
+	else if (!strncmp( "pipe:", name, 5 ))
+	{
+		fc->aux |= CA_FIFO;
+		return E_OK;
+	}
 	else if (strtonumber (name, &desc, 1, 0) == 0)
 	{
 		char cdesc;
@@ -482,7 +490,8 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return ENOENT;
 		}
 
-		fc->index = (dir->index & 0xffff0000) | 0x100 | (desc & 0xff);
+		fc->index = (dir->index & 0xffff0000) | FF_FDDIR | (desc & 0xff);
+		fc->aux = desc & 0xff;
 	}
 	else
 	{
@@ -499,7 +508,7 @@ kern_lookup (fcookie *dir, const char *name, fcookie *fc)
 	KENTRY *t;
 	long pid;
 
-	TRACE (("kern_lookup in [%u:%ld] for %s", dir->dev, dir->index, name));
+	TRACE (("kern_lookup in [%u:%lx] for %s", dir->dev, dir->index, name));
 
 	if ((dir->index & 0xffff0000) && (dir->index & 0x0000ffff) == PROCDIR_FD)
 		return kern_fddir_lookup (dir, name, fc);
@@ -525,17 +534,6 @@ kern_lookup (fcookie *dir, const char *name, fcookie *fc)
 		return EMOUNT;
 	}
 
-	t = search_name (rootdir, name);
-	if (t)
-	{
-		fc->fs = &kern_filesys;
-		fc->dev = KERNDRV;
-		fc->aux = 0;
-		fc->index = t->inode;
-
-		return E_OK;
-	}
-
 	if (strtonumber (name, &pid, 0, 0) == 0)
 	{
 		PROC *p = pid2proc (pid);
@@ -553,8 +551,18 @@ kern_lookup (fcookie *dir, const char *name, fcookie *fc)
 
 		return E_OK;
 	}
+	t = search_name (rootdir, name);
+	if (t)
+	{
+		fc->fs = &kern_filesys;
+		fc->dev = KERNDRV;
+		fc->aux = 0;
+		fc->index = t->inode;
 
-	DEBUG (("kern_lookup in [%u:%ld] for %s failed", dir->dev, dir->index, name));
+		return E_OK;
+	}
+
+	DEBUG (("kern_lookup in [%u:%lx] for %s failed", dir->dev, dir->index, name));
 	return ENOENT;
 }
 
@@ -571,7 +579,7 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	PROC *p;
 	KENTRY *t;
 
-	TRACE (("kern_proc_stat ([%u:%ld], %i)", file->dev, file->index, pid));
+	TRACE (("kern_proc_stat64 ([%u:%lx], %i)", file->dev, file->index, pid));
 
 	p = pid2proc (pid);
 	if (!p)
@@ -628,15 +636,15 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 INLINE long
 kern_fddir_stat64 (fcookie *file, STAT *stat)
 {
-	int pid = file->index >> 16;
+	int pid = (file->index & ~FF_MASK) >> 16;
 	PROC *p;
 
-	TRACE (("kern_fddir_stat ([%u:%ld], %i)", file->dev, file->index, pid));
+	TRACE (("kern_fddir_stat64 ([%u:%lx:%lx], %i)", file->dev, file->index, file->fs, pid));
 
 	p = pid2proc (pid);
 	if (!p)
 	{
-		DEBUG (("kern_fddir_stat: no such process id %i", pid));
+		DEBUG (("kern_fddir_stat64: no such process id %i", pid));
 		return ENOENT;
 	}
 
@@ -644,7 +652,6 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
-	stat->mode = S_IFLNK | 0500;
 	stat->rdev = KERNDRV;
 	stat->nlink = 1;
 	stat->uid = p->p_cred->ruid;
@@ -661,17 +668,10 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	mint_bzero (stat->res, sizeof (stat->res));
-
-	if ((file->index & 0xffff0000) == PROCDIR_FD)
-		stat->mode = S_IFDIR | 0500;
-	else if ((file->index & 0xffff0000) == PROCDIR_DIR)
-		stat->mode = S_IFDIR | 0555;
-	else
 	{
 		char desc = (char) file->index;
 
-		if ((file->index & 0x0000ff00) != 0x100)
+		if ((file->index & FF_MASK) != FF_FDDIR)
 			return ENOENT;
 
 		if (!p->p_fd)
@@ -685,8 +685,14 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 
 		if (*(p->p_fd->ofiles + desc) == NULL)
 			return ENOENT;
+
+		if( stat->res[0] == 0 )
+			stat->mode = S_IFIFO | 0600;
+		else
+			stat->mode = S_IFLNK | 0500;
 	}
 
+	mint_bzero (stat->res, sizeof (stat->res));
 	return E_OK;
 }
 
@@ -695,9 +701,9 @@ kern_stat64 (fcookie *file, STAT *stat)
 {
 	KENTRY *t;
 
-	TRACE (("kern_stat64 ([%u:%ld])", file->dev, file->index));
+	TRACE (("kern_stat64 ([%u:%lx])", file->dev, file->index));
 
-	if ((file->index & 0xffff0000) && (file->index & 0xff00) == 0x100)
+	if ((file->index & 0xffff0000) && (file->index & FF_MASK) == FF_FDDIR)
 		return kern_fddir_stat64 (file, stat);
 
 	if (file->index & 0xffff0000)
@@ -890,7 +896,7 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	char buf[13];
 	ulong len;
-	short pid = dirh->fc.index >> 16;
+	short pid = (dirh->fc.index & ~FF_MASK) >> 16;
 	PROC *p;
 
 	/* simple check */
@@ -954,8 +960,7 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				{
 					ksprintf (buf, sizeof (buf), "%ld", (desc));
 					fc->index =
-						(dirh->fc.index & 0xffff0000) |
-						0x100 | (desc & 0xff);
+						(dirh->fc.index & 0xffff0000) | FF_FDDIR | (desc & 0xff);
 					break;
 				}
 
@@ -1203,9 +1208,10 @@ kern_get_linkname( struct proc *p, struct file *f, char *name, int namelen )
 
 	if( f->dev == &sockdev )
 	{
-		/* todo */
-		struct socket *s = (struct socket *)f->devinfo;
-		ksprintf( name, namelen, "pipe:[%d,%d,%x,%d,%x]", s->type, s->state, s->flags, s->ops->domain, f->flags );
+		/* todo: pid of  peer */
+		/*struct socket *s = (struct socket *)f->devinfo;
+		ksprintf( name, namelen, "pipe:[%ld:%ld]", s->wsel, s->rsel );*/
+		ksprintf( name, namelen, "pipe:" );
 		return;
 	}
 	if( fs )
@@ -1252,9 +1258,7 @@ kern_get_linkname( struct proc *p, struct file *f, char *name, int namelen )
 		devname[1] = 0;
 	}
 	if( rv != 0 )
-	{
 		ksprintf( name, namelen, "/%s/[%lu]", devname, fp.index );
-	}
 	else
 		ksprintf (name, namelen, "/%s/%s", devname, fname+foffs );
 }
@@ -1268,8 +1272,9 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 	char buf[64];
 	ulong len;
 
-	TRACE (("kern_proc_readlink ([%u:%ld])", dir->dev, dir->index));
+	TRACE (("kern_proc_readlink ([%u:%lx])", dir->dev, dir->index));
 
+	buf[0] = 0;
 	p = pid2proc (pid);
 	if (!p)
 	{
@@ -1286,7 +1291,7 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 			if ( !cwd || follow_link_denied (p, __FUNCTION__))
 				return EACCES;
 #if STORE_FILENAMES
-			strcpy( buf, cwd->fullpath );
+			strncpy( buf, cwd->fullpath, sizeof (buf) );
 			if( *buf )
 				*(strchr( buf, 0 ) -1) = 0;	/* trailing / */
 #else
@@ -1300,17 +1305,14 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		{
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
-			ksprintf (buf, sizeof (buf), "[%04u]:%lu",
-				p->exe.dev,
-				(ulong) p->exe.index);
+			strncpy( buf, p->fname, sizeof( buf ) );
 			break;
 		}
 		case PROCDIR_ROOT:
 		{
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
-			ksprintf (buf, sizeof (buf), "[%04u]:%lu", cwd->rootdir.dev,
-				(ulong) cwd->rootdir.index);
+			strncpy( buf, cwd->root_dir ? cwd->root_dir : "/", sizeof (buf) );
 			break;
 		}
 		default:
@@ -1329,14 +1331,14 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		return EBADARG;
 	}
 
-	TRACE (("kern_proc_readlink, dir->index: %ld, name: %s", dir->index, name));
+	TRACE (("kern_proc_readlink, dir->index: %lx, name: %s", dir->index, name));
 	return E_OK;
 }
 
 INLINE long
 kern_fddir_readlink (fcookie *file, char *name, int namelen)
 {
-	short pid = file->index >> 16;
+	short pid = (file->index & ~FF_MASK) >> 16;
 	PROC *p;
 	struct filedesc *fd;
 	char buf[64];
@@ -1387,9 +1389,9 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 static long _cdecl
 kern_readlink (fcookie *file, char *name, int namelen)
 {
-	TRACE (("kern_readlink ([%u:%ld])", file->dev, file->index));
+	TRACE (("kern_readlink ([%u:%lx])", file->dev, file->index));
 
-	if ((file->index & 0xffff0000) && (file->index & 0xff00) == 0x100)
+	if ((file->index & 0xffff0000) && (file->index & FF_MASK) == FF_FDDIR)
 		return kern_fddir_readlink (file, name, namelen);
 
 	if (file->index & 0xffff0000)
@@ -1722,7 +1724,7 @@ kern_follow_link (fcookie *fc, int depth)
 	struct filedesc *fd;
 	struct cwd *cwd;
 
-	TRACE (("kern_follow_link ([%u:%ld]), depth %d", fc->dev, fc->index, depth));
+	TRACE (("kern_follow_link ([%u:%lx]), depth %d", fc->dev, fc->index, depth));
 
 	if (depth > MAX_LINKS)
 	{
@@ -1736,7 +1738,7 @@ kern_follow_link (fcookie *fc, int depth)
 		return 0;
 	}
 
-	pid = fc->index >> 16;
+	pid = (fc->index & ~FF_MASK) >> 16;
 	p = pid2proc (pid);
 	if (p == NULL)
 	{
@@ -1750,7 +1752,7 @@ kern_follow_link (fcookie *fc, int depth)
 	if (!fd || !cwd)
 		return ENOENT;
 
-	if ((fc->index & 0xff00) == 0x100)
+	if ((fc->index & FF_MASK) == FF_FDDIR)
 	{
 		char desc = fc->index & 0xff;
 
@@ -1772,7 +1774,7 @@ kern_follow_link (fcookie *fc, int depth)
 	}
 	else if ((fc->index & 0xffff) == PROCDIR_ROOT)
 	{
-		src = &cwd->rootdir;
+		src = &cwd->root[UNIDRV];
 	}
 
 	if (src == NULL)
@@ -1786,7 +1788,7 @@ kern_follow_link (fcookie *fc, int depth)
 
 	/* This happens with "root" very often */
 	if (src->dev == 0 && src->index == 0)
-		src = &cwd->root[UNIDRV];
+		src = fc;
 
 	release_cookie (fc);
 	dup_cookie (fc, src);

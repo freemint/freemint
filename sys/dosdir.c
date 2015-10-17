@@ -1831,7 +1831,7 @@ sys_f_chmod (const char *name, unsigned int mode)
 	if (r)
 	{
 		DEBUG (("Fchmod(%s): error %ld", name, r));
-		if( (fc.aux & CLOSED_FIFO) )
+		if( (fc.aux & CA_CLOSED_FIFO) )
 		{
 			if( !path2cookie (p, name, NULL, &fc) )
 				r = 0;
@@ -2170,11 +2170,13 @@ sys_f_stat64 (int flag, const char *name, STAT *stat)
 
 	TRACE (("Fstat64(%d, %s)", flag, name));
 
+	fc.aux = 0;
+	stat->res[0] = flag;	/* misuse res[0] for follow-links-setting (in kern_fddir_stat64) */
 	r = path2cookie (p, name, flag ? NULL : follow_links, &fc);
 	if (r)
 	{
 		DEBUG (("Fstat64(%s): path2cookie returned %ld", name, r));
-		if( flag == 0 && (fc.aux & CLOSED_FIFO) )
+		if( flag == 0 && (fc.aux & CA_CLOSED_FIFO) )
 		{
 			if( !path2cookie (p, name, NULL, &fc) )
 				r = 0;
@@ -2185,6 +2187,9 @@ sys_f_stat64 (int flag, const char *name, STAT *stat)
 
 	r = xfs_stat64 (fc.fs, &fc, stat);
 	if (r) DEBUG (("Fstat64(%s): returning %ld", name, r));
+	else if( (fc.aux & CA_FIFO) && (!strncmp( name, "/dev/fd/", 8 )) )
+		stat->mode = S_IFIFO | 0500;
+	else
 	if (S_ISLNK(stat->mode))
 	{
 		char buf[64];

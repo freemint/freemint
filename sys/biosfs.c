@@ -317,7 +317,7 @@ rsvf_ioctl (int f, void *arg, int mode)
 #define IS_FD_ENTRY(fc, p) \
 	((fc)->index > 0 && (fc)->index <= ((p)->p_fd->nfiles - MIN_HANDLE))
 
-struct bios_file *broot, *bdevlast;
+static struct bios_file *broot, *bdevlast;
 
 /* a file pointer for BIOS device 1, provided only for insurance
  * in case a Bconmap happens and we can't allocate a new FILEPTR;
@@ -325,13 +325,13 @@ struct bios_file *broot, *bdevlast;
  * way.
  */
 
-FILEPTR *defaultaux;
+static FILEPTR *defaultaux;
 
 /* ts: a xattr field used for the root directory, 'cause there's no
  * bios_file structure for it.
  */
-XATTR rxattr;
-XATTR fdxattr;
+static XATTR rxattr;
+static XATTR fdxattr;
 
 /* ts: a small utility function to set up a xattr structure
  */
@@ -519,6 +519,12 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 			DEBUG(("bios_lookup: bad directory"));
 			return ENOTDIR;
 		}
+		if( !strncmp( name, "pipe:", 5 ) )
+		{
+			*fc = *dir;
+			fc->aux |= CA_FIFO;	/* mark Fifo */
+			return E_OK;
+		}
 		if (!*name || (name[0] == '.' && name[1] == 0))
 		{
 			*fc = *dir;
@@ -553,7 +559,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 			{
 				fc->fs = &bios_filesys;
 				fc->dev = dir->dev;
-				fc->aux = fd;
+				fc->aux = fd & ~CA_MASK;
 				fc->index = fd - MIN_HANDLE + 1;
 				return E_OK;
 			}
@@ -595,10 +601,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 static long _cdecl
 bios_getxattr (fcookie *fc, XATTR *xattr)
 {
-#ifdef FOLLOW_XATTR_CHAIN
-	FILEPTR *f;
-	long r;
-#endif
+	FILEPTR *f = 0;
 	struct bios_file *b = (struct bios_file *) fc->index;
 	int majdev, mindev;
 
@@ -608,66 +611,50 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 	if (fc->index == 0)			/* root directory? */
 	{
 		*xattr = rxattr;
-		xattr->index = fc->index;
 		xattr->dev = fc->dev;
 	}
 	else if (IS_FD_DIR(fc))			/* fd directory? */
 	{
 		*xattr = fdxattr;
-		xattr->index = fc->index;
 		xattr->dev = fc->dev;
 	}
 	else if (IS_FD_ENTRY(fc, get_curproc()))
 	{
 		/* u:\dev\fd\n */
-#ifdef FOLLOW_XATTR_CHAIN
-		f = get_curproc()->handle[(int)fc->aux];
-		if (f)
+		ushort md = 0666;
+		majdev = FAKE_RDEV;
+		mindev = ((int)fc->aux) & ~CA_MASK;
+		if( mindev >= 0 )
 		{
-			r = (*f->fc.fs->getxattr)(&f->fc, xattr);
-			if (r < E_OK)
-				return r;
+			struct filedesc	*p_fd = get_curproc()->p_fd;
+			if( mindev < p_fd->nfiles )
+			{
+				f = p_fd->ofiles[mindev];
+				if( f && !f->fc.fs )
+					md |= S_IFIFO;	/* pipe */
+				else
+					md |= S_IFCHR;
+			}
+			else
+				md |= S_IFCHR;
 		}
-		else
-		{
-#endif
-			majdev = FAKE_RDEV;
-			mindev = ((int)fc->aux) & 0x00ff;
-			set_xattr (xattr, S_IFCHR|0666, majdev|mindev);
-#ifndef FOLLOW_XATTR_CHAIN
-			xattr->index = fc->index;
-#else
-		}
-#endif
+		set_xattr (xattr, md, majdev|mindev);
 	}
 	else if (b->device == &fakedev)
 	{
-#ifdef FOLLOW_XATTR_CHAIN
-		if ((f = get_curproc()->handle[b->private]) != 0)
-		{
-			/* u:\dev\stdin, u:\dev\stdout, etc. */
-			r = (*f->fc.fs->getxattr) (&f->fc, xattr);
-			 if (r < E_OK) return r;
-		}
-		else
-		{
-#endif
-			majdev = FAKE_RDEV;
-			mindev = ((int)b->private) & 0x00ff;
-			set_xattr (xattr, S_IFCHR|0666, majdev|mindev);
-#ifndef FOLLOW_XATTR_CHAIN
-			xattr->index = fc->index;
-#else
-		}
-#endif
+		majdev = FAKE_RDEV;
+		mindev = ((int)b->private) & 0x00ff;
+		set_xattr (xattr, S_IFCHR|0666, majdev|mindev);
 	}
 	else
 	{
 		*xattr = b->xattr;
-		xattr->index = fc->index;
 		xattr->dev = fc->dev;
+		if (b->device == &sockdev)
+			set_xattr (xattr, S_IFIFO|0666, majdev|mindev);	/* pipe */
 	}
 
+	xattr->index = fc->index;
 	return E_OK;
 }
 
@@ -1305,7 +1292,7 @@ bios_twrite (FILEPTR *f, const char *buf, long bytes)
 
 	ptr.b = buf;
 
-	r = ptr.l;// (long *) buf;
+	r = ptr.l;
 
 /* Check for control characters on any newline output.
  * Note that newlines are always output through tty_putchar,
