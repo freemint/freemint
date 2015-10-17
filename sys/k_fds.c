@@ -227,7 +227,7 @@ long
 get_link_target( struct proc *p, fcookie *dir, char *temp1 )
 {
 	char temp2[PATH_MAX];
-	fcookie fc;
+	fcookie fc = {0};
 	XATTR xattr;
 	int links;
 	long r;
@@ -236,7 +236,7 @@ get_link_target( struct proc *p, fcookie *dir, char *temp1 )
 		r = relpath2cookie (p, dir, temp1, 0, &fc, 0);	/* get a cookie for the link (temp1 is the linkname) */
 		if( r )
 		{
-			DEBUG(("get_link_target:%s:ENOENT", temp1));
+			DEBUG(("get_link_target:%s:%ld, links=%d", temp1, r, links));
 			if( links == 0 )
 				return ENOENT;
 			break;
@@ -245,6 +245,7 @@ get_link_target( struct proc *p, fcookie *dir, char *temp1 )
 		if ( r || !S_ISLNK(xattr.mode) )	/* is it a symbolic link? */
 			break;
 		r = xfs_readlink (fc.fs, &fc, temp2, PATH_MAX);
+		release_cookie (&fc);
 		if( r )
 			break;
 		/* change dir to a cookie for the link-target-dir, and temp1 to the link-target-filename */
@@ -257,7 +258,9 @@ get_link_target( struct proc *p, fcookie *dir, char *temp1 )
 	if( links > MAX_LINKS )
 		r = ELOOP;
 
-	release_cookie (&fc);
+	if( fc.index )	/* cookie valid? */
+		release_cookie (&fc);
+	DEBUG(("get_link_target:return %ld, index=%ld", r, fc.index ));
 	return r;
 }
 
@@ -376,7 +379,7 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 
 		/* in case of a symbolic link create the link-target */
 		/* -> could relpath2cookie perhaps tell us if 'name' is a sym-link? */
-		if( (fc.aux & DANGLING_SYMLINK) && get_link_target( p, &dir, temp1 ) == ELOOP )
+		if( (fc.aux & CA_DANGLING_SYMLINK) && get_link_target( p, &dir, temp1 ) == ELOOP )
 		{
 			release_cookie (&dir);
 			return ELOOP;
