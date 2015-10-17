@@ -81,8 +81,6 @@ f_pipe (short *usrh)
 
 	if (r)
 	{
-		out->links--;
-
 		DEBUG (("Fpipe: error %d", r));
 		return r;
 	}
@@ -91,7 +89,6 @@ f_pipe (short *usrh)
 	if (r)
 	{
 		do_close (p, out);
-		in->links--;
 
 		DEBUG (("Fpipe: in side of pipe not opened (error %d)", r));
 		return r;

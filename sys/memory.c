@@ -1527,8 +1527,6 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 
 	if (*err)
 	{
-		if( f )
-			f->links--;
 		return NULL;
 	}
 

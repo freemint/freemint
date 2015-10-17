@@ -84,8 +84,6 @@ sys_f_open (const char *name, short mode)
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
-	if (fp)
-		fp->links--;
 
 	return ret;
 }
@@ -147,8 +145,7 @@ sys_f_create (const char *name, short attrib)
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
-	if (fp)
-		fp->links--;
+
 	return ret;
 }
 
@@ -268,7 +265,6 @@ sys_f_write (short fd, long count, const char *buf)
 		DEBUG (("Fwrite: write on a read-only handle"));
 		return EACCES;
 	}
-
 	if (is_terminal (f))
 		return tty_write (f, buf, count);
 

@@ -839,11 +839,6 @@ init_unicode(void)
 			boot_printf(MSG_init_error, ret);
 # endif
 	}
-	else
-	{
-		if( fp )
-			fp->links = 0;		/* suppress complaints */
-	}
 }
 
 # endif

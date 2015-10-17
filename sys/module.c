@@ -114,11 +114,6 @@ kernel_open(const char *path, int rwmode, long *err, XATTR *x)
 	long r;
 
 	r = do_open(&f, rootproc, path, rwmode, 0, x);
-	if (r)
-	{
-		if( f )
-			f->links--;
-	}
 
 	if (err) *err = r;
 	return f;
