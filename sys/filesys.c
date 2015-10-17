@@ -1160,9 +1160,9 @@ restart_mount:
 				{
 					if( dolast == 2 )
 					{
-						res->aux |= DANGLING_SYMLINK;
+						res->aux |= CA_DANGLING_SYMLINK;
 						if( res->fs == &pipe_filesys )
-							res->aux |= CLOSED_FIFO;
+							res->aux |= CA_CLOSED_FIFO;
 					}
 					DEBUG (("error following symbolic link"));
 					break;
