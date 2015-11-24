@@ -55,9 +55,8 @@ sys_f_open (const char *name, short mode)
 	TRACE (("Fopen(%s, %x)", name, mode));
 
 	if (mode & O_GLOBAL) {
-	   ALERT("O_GLOBAL is obsolete, please update your driver (%s)",name);
-			return EINVAL;
-		}
+		ALERT("O_GLOBAL is obsolete, please update your driver (%s)",name);
+	}
 
 	/* make sure the mode is legal */
 	mode &= O_USER;
