@@ -20,7 +20,7 @@ all-here: all-libs
 # default overwrites
 
 # default definitions
-GENFILES = .cpu_* libkern*.a
+GENFILES = .compile_* libkern*.a
 
 
 help:
@@ -51,23 +51,23 @@ $(cputargets):
 libkern$(CPU).a: objs asm-files
 	$(shell \
 	  if [ ! -e $@ \
-	         -o .cpu_$(CPU)/objs -nt $@ \
-	         -o asm/.cpu_$(CPU)/asm-files -nt $@ ] ; \
+	         -o .compile_$(CPU)/objs -nt $@ \
+	         -o asm/.compile_$(CPU)/asm-files -nt $@ ] ; \
 	  then \
-		objs=`cat .cpu_$(CPU)/objs` ; \
-		objs=`for i in $$objs ; do echo .cpu_$(CPU)/$$i ; done` ; \
+		objs=`cat .compile_$(CPU)/objs` ; \
+		objs=`for i in $$objs ; do echo .compile_$(CPU)/$$i ; done` ; \
 		\
-		asmobjs=`cat asm/.cpu_$(CPU)/asm-files` ; \
-		asmobjs=`for i in $$asmobjs ;  do echo asm/.cpu_$(CPU)/$$i ; done` ; \
+		asmobjs=`cat asm/.compile_$(CPU)/asm-files` ; \
+		asmobjs=`for i in $$asmobjs ;  do echo asm/.compile_$(CPU)/$$i ; done` ; \
 		\
 		echo "$(RM) $@; $(AR) rc $@ $$objs $$asmobjs; $(RANLIB) $@;" ; \
 	  fi \
 	)
 
-objs: .cpu_$(CPU)
-	cd .cpu_$(CPU); $(MAKE)
+objs: .compile_$(CPU)
+	cd .compile_$(CPU); $(MAKE)
 
-.cpu_$(CPU): Makefile.objs
+.compile_$(CPU): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
 
