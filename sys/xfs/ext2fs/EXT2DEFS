@@ -7,49 +7,49 @@
 ifeq ($(ext2),deb)
 TARGET = ext2.xfs
 CPU = 020-60
-USBDEFS += -DDEV_DEBUG
+EXT2DEFS += -DDEV_DEBUG
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(ext2),000)
 TARGET = ext2.xfs
 CPU = 000
-USBDEFS +=
+EXT2DEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(ext2),02060)
 TARGET = ext2.xfs
 CPU = 020-60
-USBDEFS +=
+EXT2DEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(ext2),030)
 TARGET = ext2.xfs
 CPU = 030
-USBDEFS +=
+EXT2DEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(ext2),040)
 TARGET = ext2.xfs
 CPU = 040
-USBDEFS +=
+EXT2DEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(ext2),060)
 TARGET = ext2.xfs
 CPU = 060
-USBDEFS +=
+EXT2DEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(ext2),col)
 TARGET = ext2.xfs
 CPU  = v4e
-USBDEFS += 
+EXT2DEFS += 
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
