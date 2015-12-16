@@ -12,7 +12,7 @@
 /*
  * System Bus Clock Info
  */
-#define SYSTEM_CLOCK 133
+#define SYSTEM_CLOCK 132
 
 /*
 	CPU Type
