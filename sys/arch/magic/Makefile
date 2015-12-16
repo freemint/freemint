@@ -26,7 +26,17 @@ LIBS = $(LIBKERN) -lgcc
 # default definitions
 OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
 GENFILES = $(TARGET) magic.i
+COLDFIRE := $(shell grep -q V4e /kern/cpuinfo; \
+					status=$$?; \
+					if [ $$status = 0 ]; \
+					then echo 1; \
+					else echo 0; \
+					fi)
+ifeq ($(COLDFIRE),1)
+CPU = v4e
+else
 CPU = 000
+endif
 
 
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
