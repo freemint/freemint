@@ -62,7 +62,6 @@ short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
 static short save_ini = 1;	/* Flag: write new ini file while exiting bootmenu (if 1) */
 static short boot_delay = 1;	/* boot delay in seconds */
 static const char *mint_ini = "mint.ini";
-static short use_cmdline = 0;	/* use command line (only provided by EmuTOS if bootstrapped */
 static char  *argsptr = 0L;
 
 
@@ -140,16 +139,14 @@ static const char *debug_devices[] =
 
 static const char *write_boot_levels[] =
 {
-# ifdef ARANYM
-	"(none)",
-	"(File)",
-	"(File/Host-Console)"
-# define WBOOTLVL 2
-# else
 	"(no)",
-	"(yes)"
-# define WBOOTLVL 1
+# ifdef ARANYM
+	"(File)",
+	"(File/Host-Console)",
+# else
+	"(yes)",
 # endif
+	"(All)"
 };
 
 /* Pairs of functions handling each keyword. The do_xxx_yyyy() function
@@ -403,7 +400,7 @@ static void
 do_write_boot(char *arg)
 {
 	write_boot_file = *arg - '0';
-	if( write_boot_file < 0 || write_boot_file > 2 )
+	if( write_boot_file < 0 || write_boot_file > WBOOTLVL )
 		write_boot_file = 1;
 }
 
@@ -575,7 +572,6 @@ read_ini (void)
 	argsptr = (*(BASEPAGE**)(*((long **)(0x4f2L)))[10])->p_cmdlin;
 
 	if ( argsptr && strlen(argsptr) > 0 ) {
-		use_cmdline = 1;
 		save_ini = 0;
 
 		strcpy(ini_file, "args: ");
@@ -584,7 +580,6 @@ read_ini (void)
 			TRAP_Super(usp);
 
 		boot_printf(MSG_init_read, ini_file);
-
 
 		read_ini_file( -1, ' ');
 	} else {

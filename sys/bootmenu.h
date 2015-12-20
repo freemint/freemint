@@ -37,4 +37,10 @@ int boot_kernel_p(void);
 void read_ini(void);
 void pause_and_ask(void);
 
+# ifdef ARANYM
+# define WBOOTLVL 3
+# else
+# define WBOOTLVL 2
+# endif
+
 # endif
