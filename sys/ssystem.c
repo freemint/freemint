@@ -23,6 +23,7 @@
 # include "ssystem.h"
 # include "global.h"
 # include "init.h"
+# include "debug.h"	/* debug_fp */
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
@@ -47,6 +48,7 @@
 # include "proc.h"
 # include "time.h"
 # include "update.h"
+# include "xfs_xdd.h" /* xdd_lseek */
 
 
 # if 0
@@ -425,7 +427,10 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1)
 			{
 				*(char**)arg1 = BOOTLOGFILE;
-				r = 0;
+				if( debug_fp )
+					r = 1;
+				else
+					r = 0;
 			}
 			else
 				r = EBADARG;
@@ -440,8 +445,12 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				extern FILEPTR *debug_fp;	/* debug.c */
 				if( arg1 == 1 && debug_fp == 0 )
 				{
-					do_close_fp = 1;
 					debug_fp = kernel_open(BOOTLOGFILE, O_RDWR|O_CREAT, NULL,NULL);
+					if( debug_fp )
+					{
+						do_close_fp = 1;
+						xdd_lseek(debug_fp, SEEK_SET, SEEK_END);
+					}
 				}
 				else
 				{
