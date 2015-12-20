@@ -124,7 +124,6 @@ unsigned long initialmem = 1024;	/* ditto */
  * init_mem()
  */
 static unsigned long scrnsize, scrnplace;
-
 void
 init_mem (void)
 {
@@ -355,11 +354,12 @@ init_core (void)
 		scrnplace = (*(long *) 0x44eL);
 # endif
 
+# define phys_top_st (*(ulong *) 0x42eL)
 	if (FalconVideo) {
 		short vsm = TRAP_VsetMode(-1);
 		/* the Falcon can tell us the screen size */
 		scrnsize = TRAP_VgetSize(vsm);
-	} else {
+	} else if (scrnplace < phys_top_st) {
 		struct screen *vscreen;
 
 		vscreen = (struct screen *)((char *)lineA0() - 346);
@@ -369,7 +369,6 @@ init_core (void)
 	}
 
 	/* check for a graphics card with fixed screen location */
-# define phys_top_st (*(ulong *) 0x42eL)
 
 	if (scrnplace >= phys_top_st) {
 		/* screen isn't in ST RAM */
