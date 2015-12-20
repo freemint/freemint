@@ -681,7 +681,7 @@ init_moose(void)
 	}
 	else
 	{
-		display(/*00000011*/"Could not find moose.adi, please install in %s!", C.Aes->home_path);
+		display(/*00000011*/"Could not run moose.adi, please install executably in %s", C.Aes->home_path);
 	}
 
 	return ret;
@@ -1772,22 +1772,23 @@ k_main(void *dummy)
 
 	pferr = ferr;
 
+	redir_debug( p, 1 );
 	if ((ferr = k_init(next_res)) != 0)
 	{
 		BLOG((1, "ERROR: k_init failed!"));
 		goto leave;
 	}
+	d_setdrv('u' - 'a');
+	d_setpath("/");
 	/*
 	 * register trap#2 handler
 	 */
-
 	if (register_trap2(XA_handler, 0, 0, 0))
 	{
 		BLOG((1, "ERROR: register_trap2 failed!"));
 		goto leave;
 	}
 
-	redir_debug( p, 1 );
 	read_inf();
 
 	/*
@@ -2165,9 +2166,6 @@ setup_common(void)
 	/* other stuff */
 	p_signal(SIGTERM,  (long) sigterm);
 	p_signal(SIGCHLD,  (long) sigchld);
-
-	d_setdrv('u' - 'a');
- 	d_setpath("/");
 
 }
 
