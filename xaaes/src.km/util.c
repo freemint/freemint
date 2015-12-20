@@ -40,8 +40,9 @@ redir_debug( struct proc *p, int md )
 {
 	char *bl;
 	long r;
-	static struct file *fp = 0;
-	static struct file *fo = 0;
+	static struct file *fp = 0;	/* log-file */
+	static struct file *fo = 0;	/* original stdout */
+	static int flg = 0;	/* if 1 boot-log was open in kernel */
 
 	if( md == 1 && fp )
 		return; /* already open */
@@ -49,26 +50,33 @@ redir_debug( struct proc *p, int md )
 	{
 		if( fp && fo )
 		{
-			s_system( 31, 0, 0 );
+			if( flg )
+				s_system( S_SETDEBUGFP, 0, 0 );
 			kernel_close(fp);
 			p->p_fd->ofiles[1] = fo;
 			fp = fo = 0;
 		}
 		return;
 	}
-	if( md == 1 && (r=s_system( S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
+	if( md == 1 )
 	{
-		long err;
-		fp = kernel_open(bl, O_WRONLY|O_CREAT, &err, NULL);
-		if( fp )
+		flg = 1;
+		if( (r=s_system( S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
 		{
-			kernel_lseek(fp, 0, SEEK_END);
-			fo = p->p_fd->ofiles[1];
-			p->p_fd->ofiles[1] = fp;
-			r = s_system( S_SETDEBUGFP, (long)fp, 0 );
+			long err;
+			fp = kernel_open(bl, O_WRONLY|(!r?O_CREAT:0), &err, NULL);
+			if( fp )
+			{
+				if( r == 0 )
+					r = s_system( S_SETDEBUGFP, (long)fp, 0 );
+				else flg = 0;
+				fo = p->p_fd->ofiles[1];
+				p->p_fd->ofiles[1] = fp;
+				r = kernel_lseek(fp, 0, SEEK_END);
+			}
+			else
+				BLOG((0,"redir_debug: could not open '%s': %ld", bl, err ));
 		}
-		else
-			BLOG((0,"redir_debug: could not open '%s': %ld", bl, err ));
 	}
 	return;
 }
