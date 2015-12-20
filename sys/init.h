@@ -18,6 +18,9 @@ extern int sys_err;
 extern short intr_done;
 extern short step_by_step;
 extern short write_boot_file;
+#if MINT_VDI
+extern long  mint_vdi;
+#endif
 #define BOOTLOGFILE "C:/mint/boot.log"
 
 void	boot_print	(const char *s);
