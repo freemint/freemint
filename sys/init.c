@@ -24,59 +24,59 @@
 # include "mint/basepage.h"
 # include "mint/xbra.h"
 
-# include "arch/cpu.h"		/* init_cache, cpush, setstack */
-# include "arch/context.h"	/* restore_context */
-# include "arch/intr.h"		/* new_mediach, new_rwabs, new_getbpb, same for old_ */
-# include "arch/init_intr.h"	/* init_intr() */
-# include "arch/init_mach.h"	/* */
-# include "arch/mmu.h"		/* save_mmu */
-# include "arch/mprot.h"	/* */
-# include "arch/syscall.h"	/* call_aes */
-# include "arch/timer.h"	/* delay_seconds() */
+# include "arch/cpu.h"          /* init_cache, cpush, setstack */
+# include "arch/context.h"      /* restore_context */
+# include "arch/intr.h"         /* new_mediach, new_rwabs, new_getbpb, same for old_ */
+# include "arch/init_intr.h"    /* init_intr() */
+# include "arch/init_mach.h"    /* */
+# include "arch/mmu.h"          /* save_mmu */
+# include "arch/mprot.h"        /* */
+# include "arch/syscall.h"      /* call_aes */
+# include "arch/timer.h"        /* delay_seconds() */
 # include "arch/tosbind.h"
 
-# include "bios.h"		/* */
-# include "block_IO.h"		/* init_block_IO */
-# include "bootmenu.h"		/* boot_kernel_p(), read_ini() */
-# include "cnf_mint.h"		/* load_config, some variables */
-# include "console.h"		/* */
-# include "cookie.h"		/* restr_cookie */
-# include "crypt_IO.h"		/* init_crypt_IO */
-# include "delay.h"		/* calibrate_delay */
-# include "dos.h"		/* */
-# include "dosdir.h"		/* */
-# include "dosmem.h"		/* QUANTUM */
-# include "filesys.h"		/* init_filesys, s_ync, close_filesys */
+# include "bios.h"              /* */
+# include "block_IO.h"          /* init_block_IO */
+# include "bootmenu.h"          /* boot_kernel_p(), read_ini() */
+# include "cnf_mint.h"          /* load_config, some variables */
+# include "console.h"           /* */
+# include "cookie.h"            /* restr_cookie */
+# include "crypt_IO.h"          /* init_crypt_IO */
+# include "delay.h"             /* calibrate_delay */
+# include "dos.h"               /* */
+# include "dosdir.h"            /* */
+# include "dosmem.h"            /* QUANTUM */
+# include "filesys.h"           /* init_filesys, s_ync, close_filesys */
 # ifdef FLOPPY_ROUTINES
-# include "floppy.h"		/* init_floppy */
+# include "floppy.h"            /* init_floppy */
 # endif
-# include "gmon.h"		/* monstartup */
-# include "info.h"		/* welcome messages */
-# include "ipc_socketutil.h"	/* domaininit() */
-# include "k_exec.h"		/* sys_pexec */
-# include "k_exit.h"		/* sys_pwaitpid */
-# include "k_fds.h"		/* do_open/do_close */
-# include "keyboard.h"		/* init_keytbl() */
-# include "kmemory.h"		/* kmalloc */
-# include "memory.h"		/* init_mem, get_region, attach_region, restr_screen */
-# include "mis.h"		/* startup_shell */
-# include "module.h"		/* load_all_modules */
-# include "pcibios.h"		/* pcibios_init() */
-# include "proc.h"		/* init_proc, add_q, rm_q */
-# include "signal.h"		/* post_sig */
+# include "gmon.h"              /* monstartup */
+# include "info.h"              /* welcome messages */
+# include "ipc_socketutil.h"    /* domaininit() */
+# include "k_exec.h"            /* sys_pexec */
+# include "k_exit.h"            /* sys_pwaitpid */
+# include "k_fds.h"             /* do_open/do_close */
+# include "keyboard.h"          /* init_keytbl() */
+# include "kmemory.h"           /* kmalloc */
+# include "memory.h"            /* init_mem, get_region, attach_region, restr_screen */
+# include "mis.h"               /* startup_shell */
+# include "module.h"            /* load_all_modules */
+# include "pcibios.h"           /* pcibios_init() */
+# include "proc.h"              /* init_proc, add_q, rm_q */
+# include "signal.h"            /* post_sig */
+# include "ssystem.h"           /* sys_s_system */
 # include "syscall_vectors.h"
-# include "time.h"		/* */
-# include "timeout.h"		/* */
-# include "unicode.h"		/* init_unicode() */
-# include "update.h"		/* start_sysupdate */
-# include "util.h"		/* */
-# include "xbios.h"		/* has_bconmap, curbconmap */
+# include "time.h"              /* */
+# include "timeout.h"           /* */
+# include "unicode.h"           /* init_unicode() */
+# include "update.h"            /* start_sysupdate */
+# include "util.h"              /* */
+# include "xbios.h"             /* has_bconmap, curbconmap */
 
 # ifdef OLDTOSFS
-# include "fatfs.h"		/* fatfs_config() */
-# include "tosfs.h"		/* tos_filesys */
+# include "fatfs.h"             /* fatfs_config() */
+# include "tosfs.h"             /* tos_filesys */
 # endif
-
 # define EXEC_OS	0x4feL
 
 long _cdecl mint_criticerr (long);
@@ -192,7 +192,7 @@ static short aes_globl[15];
 static short aes_cntrl[6] = { 10, 0, 1, 0, 0 };
 
 short *aes_pb[6] = { aes_cntrl, aes_globl, aes_dummy, aes_intout,
-		     aes_dummy, aes_dummy };
+                     aes_dummy, aes_dummy };
 
 /*
  * check for whether GEM is active; remember, this *must* be done in
@@ -202,7 +202,7 @@ short *aes_pb[6] = { aes_cntrl, aes_globl, aes_dummy, aes_intout,
 INLINE int
 check_for_gem (void)
 {
-	call_aes(aes_pb);	/* does an appl_init */
+	call_aes(aes_pb);    /* does an appl_init */
 	return aes_globl[0];
 }
 
@@ -210,28 +210,107 @@ static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS
 extern int debug_level;
 
 typedef struct _osheader
-{
-	ushort    os_entry;       /* BRAnch instruction to Reset-handler  */
-  ushort    os_version;     /* TOS version number                   */
-  void       *reseth;         /* Pointer to Reset-handler             */
-  struct _osheader *os_beg;   /* Base address of the operating system */
-  void       *os_end;         /* First byte not used by the OS        */
-  ulong     os_rsvl;        /* Reserved                             */
- 	void/*GEM_MUPB*/   *os_magic;       /* GEM memory-usage parameter block     */
-  long     os_date;        /* TOS date (English !) in BCD format   */
-  ushort    os_conf;        /* Various configuration bits           */
-  ushort    os_dosdate;     /* TOS date in GEMDOS format            */
+	{
+	ushort    os_entry;         /* BRAnch instruction to Reset-handler  */
+	ushort    os_version;       /* TOS version number                   */
+	void      *reseth;          /* Pointer to Reset-handler             */
+	struct _osheader *os_beg;   /* Base address of the operating system */
+	void      *os_end;          /* First byte not used by the OS        */
+	ulong     os_rsvl;          /* Reserved                             */
+	void/*GEM_MUPB*/   *os_magic;       /* GEM memory-usage parameter block     */
+	long      os_date;          /* TOS date (English !) in BCD format  */
+	ushort    os_conf;          /* Various configuration bits           */
+	ushort    os_dosdate;       /* TOS date in GEMDOS format            */
 
-    /* The following components are available only as of TOS Version
-       1.02 (Blitter-TOS)               */
-  uchar    **p_root;         /* Base address of the GEMDOS pool      */
-  uchar    **pkbshift;       /* Pointer to BIOS Kbshift variable
-                                  (for TOS 1.00 see Kbshift)           */
-  BASEPAGE  **p_run;          /* Address of the variables containing
-                                 a pointer to the current GEMDOS
-                                 process.                             */
-  ulong     p_rsv2;         /* Reserved, always 'ETOS', if EmuTOS present     */
+	  /* The following components are available only as of TOS Version
+	     1.02 (Blitter-TOS)               */
+	uchar     **p_root;         /* Base address of the GEMDOS pool     */
+	uchar     **pkbshift;       /* Pointer to BIOS Kbshift variable
+	                                (for TOS 1.00 see Kbshift)           */
+	BASEPAGE  **p_run;          /* Address of the variables containing
+	                               a pointer to the current GEMDOS
+	                               process.                             */
+	ulong     p_rsv2;           /* Reserved, always 'ETOS', if EmuTOS present     */
 } OSHEADER;
+
+#if MINT_VDI
+typedef struct
+{
+	short 			*control; /**< TODO */
+	const short *intin; 	/**< TODO */
+	const short *ptsin; 	/**< TODO */
+	short 			*intout;	/**< TODO */
+	short 			*ptsout;	/**< TODO */
+} VDIPB;
+
+/* vdi-handler for MiNT:
+ * this could go into an slb or km.
+ * only for debuggung yet.
+ */
+
+static long
+call_vdi(VDIPB *pb)
+{
+
+	register long ret __asm__("d0");
+	__asm__ volatile
+	(
+		"move.l #0x73,d0\n\t"
+		"move.l %1,d1\n\t"
+		"jsr _trap_2_emu\n\t"
+		: "=r"(ret) 			/* outputs */
+		: "r"(pb) 		/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		"d1", 	/* clobbered regs */
+		"memory"
+	);
+	return ret;
+}
+
+static long
+VDI_handler( void *p )
+{
+	VDIPB *pb = (VDIPB *)p;
+	if( pb->control[0] == 1 )	/* v_opnwk */
+	{
+		FORCE("VDI_handler: v_opnwk: pb=%lx:%d\ncontrol=%lx\nintin=  %lx\nptsin=  %lx\n\
+intout= %lx:%lx\nptsout= %lx\n.",
+		pb, pb->control[0], pb->control, pb->intin, pb->ptsin, pb->intout, pb->intout+45, pb->ptsout
+		 );
+
+		FORCE("VDI_handler: control=%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
+		pb->control[0], pb->control[1], pb->control[2], pb->control[3], pb->control[4],
+		pb->control[5], pb->control[6], pb->control[7], pb->control[8], pb->control[9],
+		pb->control[10], pb->control[11],
+		pb->control[12], pb->control[13], pb->control[14] );
+
+		FORCE("VDI_handler: intin=%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], pb->intin[4],
+		pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], pb->intin[9], pb->intin[10], pb->intin[11],
+		pb->intin[12], pb->intin[13], pb->intin[14], pb->intin[15] );
+		if( pb->control[3] >= 14 && pb->intin[12] && pb->intin[13] )
+		{
+			char *gname = (char *)(((long)pb->intin[12] ) | ((long)pb->intin[13] << 16));
+			FORCE("VDI_handler: gname=%x,%x->%lx:%s", pb->intin[12], pb->intin[13], gname, gname );
+		}
+	}
+	/* do the real vdi-call */
+	call_vdi( pb );
+	if( pb->control[0] == 1 )	/* v_opnwk */
+	{
+		FORCE("VDI_handler: v_opnwk done." );
+		FORCE("VDI_handler: intout=%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
+		pb->intout[0], pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4],
+		pb->intout[5], pb->intout[6], pb->intout[7], pb->intout[8], pb->intout[9], pb->intout[10], pb->intout[11],
+		pb->intout[12], pb->intout[13], pb->intout[14], pb->intout[15] );
+		FORCE("VDI_handler: ptsout=%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
+		pb->ptsout[0], pb->ptsout[1], pb->ptsout[2], pb->ptsout[3], pb->ptsout[4],
+		pb->ptsout[5], pb->ptsout[6], pb->ptsout[7], pb->ptsout[8], pb->ptsout[9], pb->ptsout[10], pb->ptsout[11],
+		pb->ptsout[12], pb->ptsout[13], pb->ptsout[14], pb->ptsout[15] );
+	}
+	return 0;
+}
+#endif
 
 short write_boot_file = 0;
 void
@@ -529,8 +608,13 @@ init (void)
 	else
 	{
 		FILEPTR *fb;
-
-		r = do_open( &fb, rootproc, BOOTLOGFILE, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		char *blp = BOOTLOGFILE, sav[PATH_MAX], *cp = strchr( blp, 0 );
+		int n = cp - blp;
+		memcpy( sav, blp, n + 1 );
+		sav[n-1]++;
+		sys_f_delete( sav );
+		sys_f_rename (0, blp, sav );
+		r = do_open( &fb, rootproc, blp, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
 		if( !r )
 		{
 			//boot_print("open BOOTLOGFILE OK\r\n" );
@@ -999,7 +1083,10 @@ do_exec_os (long basepage)
 	TRAP_Pterm ((int)r);
 }
 
-int sys_err= 0;
+int sys_err = 0;
+#if MINT_VDI
+long mint_vdi = 0;	/* vdi-options */
+#endif
 
 void
 mint_thread(void *arg)
@@ -1129,18 +1216,30 @@ mint_thread(void *arg)
  	sys_d_setpath("/");
 	stop_and_ask();
 
-	DEBUG(( "closing bootlog, fd=%lx\r\n",rootproc->p_fd->ofiles[0] ));
+	DEBUG(( "closing bootlog, fd=%lx,write_boot_file=%d\r\n",rootproc->p_fd->ofiles[0], write_boot_file ));
 
 	if( write_boot_file )
 	{
-		//boot_printf( "closing bootlog, fd=%lx\r\n",rootproc->p_fd->ofiles[1] );
+		//boot_printf( "closing bootlog, fd=%lx,write_boot_file=%d\r\n",rootproc->p_fd->ofiles[1], write_boot_file );
 		r = do_close( rootproc, rootproc->p_fd->ofiles[1] );
 		if( r )
 			DEBUG(( "error closing bootlog:%ld\r\n", r));
 		rootproc->p_fd->ofiles[1] = rootproc->p_fd->ofiles[0];
 		rootproc->p_fd->ofiles[0]->links++;
+		if( write_boot_file == WBOOTLVL )	/* write debug-output to boot.log */
+			sys_s_system (S_SETDEBUGFP, 1, 0);
 		write_boot_file = 0;
 	}
+#if MINT_VDI
+	if(mint_vdi)
+	{
+    FORCE("register_trap2");
+	  if (register_trap2(VDI_handler, 0, 1, 0))
+	  {
+	    FORCE("ERROR: register_trap2 failed!");
+	  }
+  }
+#endif
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();
 
