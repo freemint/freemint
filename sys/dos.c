@@ -13,6 +13,7 @@
 
 /* miscellaneous DOS functions */
 
+# include "debug.h"
 # include "dos.h"
 # include "init.h"
 # include "global.h"
@@ -754,9 +755,9 @@ sys_s_hutdown(long restart)
 	}
 	shutting_down = 1;
 
-	/* cursor home (vt52) */
-	if( !sys_err )
+	if( !debug_fp && !sys_err )
 	{
+		/* cursor home (vt52) */
 		char h[3] = {0x1b,'E',0};
 		debug_ws(h);
 	}
