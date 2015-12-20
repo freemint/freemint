@@ -276,6 +276,35 @@
 #video = 4
 
 ####################################################
+# notes for nvdi/et4000
+#
+# --------------- Method 1 ---------------
+# make a symlink from c:\auto to u:
+#	e.g. mint.cnf: sln c:\auto u:\auto (not necessary since XaAES 1.8.4)
+# make sure sclt_dev.prg is executed during boot (reason yet unknown).
+# video may remain unset.
+# do not set et4000_hack!
+# verified with nvdi-et4000 v4.11 in 8 and 15 bit-video
+# and a CrazyDots-VME-card.
+#
+# ------ Method 2 (not recommended) ------
+# run opnwk.prg BEFORE mint and AFTER nvdi.
+# set
+# et4000_hack = 1
+#
+# video-setting ignored
+# verified with nvdi-et4000 v4.11 in 8 bit-video
+# and a CrazyDots-VME-card.
+#
+# ------ Method 3 (not recommended) ------
+#
+# set GEM=ROM in mint.cnf
+#
+# video-setting ignored
+# verified with nvdi-et4000 v4.11 in 8 bit-video
+# and a CrazyDots-VME-card.
+
+####################################################
 # gradients = <name|[0|1]>    (default = 0)
 #
 # setting gradients to a nonzero value or a name turns on use of
