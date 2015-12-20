@@ -253,6 +253,9 @@ static struct parser_item parser_tab[] =
 	{ "SECURELEVEL",	PI_V_L,   pCL_securelevel, Range(0, 2)	},
 	{ "SLICES",		PI_R_S,   & time_slice			},
 	{ "UPDATE",		PI_R_L,   & sync_time			},
+#if MINT_VDI
+	{ "VDI",		PI_R_L,   & mint_vdi },
+#endif
 	{ "VFAT",		PI_V_D,   pCB_vfat			},
 	{ "VFATLCASE",		PI_V_B,   pCB_vfatlcase			},
 	{ "WB_ENABLE",		PI_V_D,   pCB_wb_enable			},
