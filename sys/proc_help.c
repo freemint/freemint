@@ -175,7 +175,7 @@ copy_mem (struct proc *p)
 	m->tp_reg = get_region(alt, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
-
+#if __GNUC__ > 2
 	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg,
 #ifdef WITH_MMU_SUPPORT
 		no_mem_prot
@@ -183,7 +183,7 @@ copy_mem (struct proc *p)
 		true
 #endif
 		? "off":"on"));
-
+#endif
 #ifndef WITH_MMU_SUPPORT
 	if (!ptr.c || !m->tp_reg)
 #else
