@@ -42,6 +42,13 @@
 # define SYSUPDATE_DAEMON
 
 /*
+ * define 1 for the MiNT-VDI-handler
+ */
+#ifndef MINT_VDI
+# define MINT_VDI 0
+#endif
+
+/*
  * use GEMDOS FS instead of real FAT XFS
  */
 //# undef OLDTOSFS
