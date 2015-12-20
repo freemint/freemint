@@ -1036,7 +1036,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				if ((secure_mode) && (get_curproc()->p_cred->ucr->euid))
 					return EPERM;
 				/* you're making the process OS_SPECIAL */
-				TRACE (("Fcntl OS_SPECIAL pid %d",p->pid));
+				TRACE (("Fcntl OS_SPECIAL pid %d,%x->%x",p->pid, p->p_mem->memflags, newflags));
 				p->p_mem->memflags = newflags;
 				mem_prot_special (p);
 			}
