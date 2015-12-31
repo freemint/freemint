@@ -3,6 +3,6 @@
 
 HEADER = lp.h
 COBJS = lp.c
-SOBJS = centr.S
+SSOBJS = centr.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
