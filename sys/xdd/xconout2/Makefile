@@ -1,7 +1,6 @@
 #
-# Makefile for 
+# Makefile for xconout2
 #
-TARGET = xconout2.xdd
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,28 +9,66 @@ srcdir = .
 top_srcdir = ../..
 subdir = xconout2
 
-default: all
+default: help
+
+include ./XCONOUT2DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_XDD__
-
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
-GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) *.xdd
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(xconout2targets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - help'
+	@echo '#'
 
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(xconout2targets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-include $(top_srcdir)/DEPENDENCIES
+$(xconout2targets): 
+	$(MAKE) buildxconout2 xconout2=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(xconout2),)
+
+compile_dir = .compile_$(xconout2)
+xconout2target = _stmp_$(xconout2)
+realtarget = $(xconout2target)
+
+$(xconout2target): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildxconout2: $(realtarget)

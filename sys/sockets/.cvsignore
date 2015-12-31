@@ -11,3 +11,4 @@ lib*.a
 *.app
 *.prg
 __target.*
+.compile_*
