@@ -1,4 +1,4 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into binary distributions.
 
-BINFILES = moose.xdd
+BINFILES = compile_*/moose.adi compile_*/moose_w.adi
