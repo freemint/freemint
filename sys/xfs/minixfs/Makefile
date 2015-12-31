@@ -1,7 +1,6 @@
 #
-# Makefile for 
+# Makefile for minixfs
 #
-TARGET = minix.xfs
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,29 +9,66 @@ srcdir = .
 top_srcdir = ../..
 subdir = minixfs
 
-default: all
+default: help
+
+include ./MINIXDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_XFS__
-
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
-CPU = 000
-STRIPFLAGS = $(shell for i in `cat syms.mfs` ; do echo -n "-K $$i " ; done)
 
 # default definitions
-GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) *.xfs
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(minixtargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - help'
+	@echo '#'
 
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(minixtargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-include $(top_srcdir)/DEPENDENCIES
+$(minixtargets):
+	$(MAKE) buildminix minix=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(minix),)
+
+compile_dir = .compile_$(minix)
+minixtarget = _stmp_$(minix)
+realtarget = $(minixtarget)
+
+$(minixtarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildminix: $(realtarget)

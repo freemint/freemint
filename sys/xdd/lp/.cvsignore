@@ -1,3 +1,4 @@
 .deps
 lp.xdd
 *.o
+.compile_*

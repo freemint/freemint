@@ -2,3 +2,4 @@
 moose*.adi
 *.o
 whlmoose_w.c
+.compile_*
