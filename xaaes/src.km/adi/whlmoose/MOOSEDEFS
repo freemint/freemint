@@ -1,0 +1,52 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
+ifeq ($(moose),deb)
+TARGET = moose.adi
+CPU = 020-60
+MOOSEDEFS += -DDEV_DEBUG
+endif
+
+ifeq ($(moose),000)
+TARGET = moose.adi
+CPU = 000
+MOOSEDEFS +=
+endif
+
+ifeq ($(moose),02060)
+TARGET = moose.adi
+CPU = 020-60
+MOOSEDEFS +=
+endif
+
+ifeq ($(moose),030)
+TARGET = moose.adi
+CPU = 030
+MOOSEDEFS +=
+endif
+
+ifeq ($(moose),040)
+TARGET = moose.adi
+CPU = 040
+MOOSEDEFS +=
+endif
+
+ifeq ($(moose),060)
+TARGET = moose.adi
+CPU = 060
+MOOSEDEFS +=
+endif
+
+ifeq ($(moose),col)
+TARGET = moose.adi
+CPU  = v4e
+MOOSEDEFS += 
+endif
+
+#
+# all default targets
+#
+moosetargets = 02060 030 040 060 deb 000 col
