@@ -229,16 +229,14 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 
 			if( w > 1280 || h > 128 )
 				return 0;
+			/* position the text (x: center, y: upper) */
 			x = area->x + (area->w >> 1);
-			y = area->y + 4;//(area->h >> 1);
+			y = area->y + 4;
 
-			//y -= (h >> 1);
 			x -= (w >> 1);
 
 			if (x < area->x)
 				x = area->x;
-			if (y < area->y)
-				y = area->y;
 
 			v_gtext(vdih, x, y, txt);
 			w /= (int)strlen(txt);
