@@ -190,9 +190,13 @@ void ehci_show_registers(struct ehci *gehci, struct devrequest *req)
 	DEBUG(("[CAPBAS] %08lx", ehci_readl(&gehci->hccr->cr_capbase)));
 	DEBUG(("[HCSPAR] %08lx", ehci_readl(&gehci->hccr->cr_hcsparams)));
 	DEBUG(("[HCCPAR] %08lx", ehci_readl(&gehci->hccr->cr_hccparams)));
+
 	while (i) {
+		unsigned long *ptr = (unsigned long *)&gehci->hccr->cr_hcsp_portrt[i - 1];
+		(void)ptr;
+		
 		DEBUG(("capability reg port[%d] 0x%08lx", 
-			i, ehci_readl(&gehci->hccr->cr_hcsp_portrt[i - 1])));
+			i, ehci_readl(ptr)));
 		i--;
 	};
 

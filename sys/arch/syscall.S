@@ -54,6 +54,7 @@
  */
 
 #ifndef __mcoldfire__
+	.cpu	68030
 	.arch	68030
 #endif
 
