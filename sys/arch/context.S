@@ -50,6 +50,7 @@
 
 #ifndef __mcoldfire__
 	.arch	68030
+	.cpu	68030
 #endif
 
 #include "magic/magic.i"

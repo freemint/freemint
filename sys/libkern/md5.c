@@ -160,8 +160,14 @@ MD5Final(unsigned char digest[16], struct MD5Context *ctx)
 	byteReverse((unsigned long *) ctx->in, 14);
 	
 	/* Append length in bits and transform */
-	((__u32 *) ctx->in)[14] = ctx->bits[0];
-	((__u32 *) ctx->in)[15] = ctx->bits[1];
+	{
+	   __u32 *ptr;
+
+	   ptr = (__u32 *)&ctx->in[56];
+	   *ptr = ctx->bits[0];
+	   ptr = (__u32 *)&ctx->in[60];
+	   *ptr = ctx->bits[1];
+        }
 	
 	MD5Transform(ctx->buf, (__u32 *) ctx->in);
 	byteReverse(ctx->buf, 4);
