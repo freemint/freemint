@@ -101,7 +101,11 @@ search_dir (const char *name, unsigned inum, ushort drive, int flag)
 					 * store old inode num in last 2 bytes of name
 					 * This allows recovery in case of accident
 					 */
-					*((ushort *) &try->d_name[mfname - 2]) = inumtemp;
+					{
+						ushort *ptr;
+						ptr = (ushort *)&try->d_name[mfname - 2];
+						*ptr = inumtemp;
+					}
 					
 					bio_MARK_MODIFIED (&(bio), u);
 				}
