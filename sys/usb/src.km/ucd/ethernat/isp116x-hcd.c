@@ -136,7 +136,7 @@ struct usb_module_api *api;
 
 
 static struct usb_device *root_hub_dev = NULL;
-struct isp116x isp116x_dev;
+static struct isp116x isp116x_dev;
 struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
 struct usb_device *devgone;	/* device which was disconnected */
@@ -763,7 +763,7 @@ isp116x_interrupt(struct isp116x *isp116x)
 /* With one PTD we can transfer almost 1K in one go;
  * HC does the splitting into endpoint digestible transactions
  */
-struct ptd ptd[1];
+static struct ptd ptd[1];
 
 static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
