@@ -51,7 +51,8 @@
 // Input:
 // 4(sp): New root pointer to write into URP and SRP
 
-	.arch   68040
+	.cpu   68040
+	.arch  68040
 	.text
 
 	.globl	_set_mmu

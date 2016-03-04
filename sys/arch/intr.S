@@ -20,6 +20,7 @@
 
 #if __GNUC__ > 2
 #ifndef __mcoldfire__
+	.cpu	68030
 	.arch	68030
 #endif
 #endif

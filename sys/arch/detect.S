@@ -21,6 +21,7 @@
  */
 
 #if !defined(__mcoldfire__) && (__GNUC__ > 2)
+	.cpu	68030
 	.arch	68030
 #endif
 
