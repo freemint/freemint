@@ -468,7 +468,7 @@ xvqt_name(struct xa_fnts_info *fnts, XVDIPB *vpb, short index, struct xa_fnts_it
 	 */
 	fitem->f.npts = 0;
 	xvst_font(vpb, fnts->vdi_handle, fitem->f.id);
-	for (i = 0; i < sizeof(pt_sizes); i++)
+	for (i = 0; i < (sizeof(pt_sizes) / sizeof(pt_sizes[0])); i++)
 	{
 		add_point(fitem, xvst_point(vpb, fnts->vdi_handle, pt_sizes[i]));
 	}
