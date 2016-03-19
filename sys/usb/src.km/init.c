@@ -37,14 +37,12 @@ struct usb_module_api usb_api;
 #define MSG_BUILDDATE	__DATE__
 
 #ifdef TOSONLY
-#define MSG_VERSION		"TOS DRIVERS"
 #define MSG_BOOT		\
-		"\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n" \
+		"\033p USB core API driver for TOS \033q\r\n" \
 		"Brought to TOS by Alan Hourihane.\r\n"
 #else
-#define MSG_VERSION	"FreeMiNT DRIVERS"
 #define MSG_BOOT	\
-		"\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
+		"\033p USB core API driver for FreeMiNT \033q\r\n"
 #endif
 
 #define MSG_GREET		\
