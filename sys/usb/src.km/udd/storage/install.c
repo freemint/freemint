@@ -491,6 +491,9 @@ BPB *usb_getbpb(long logdrv)
 		return NULL;
 #endif
 
+	/* clear the media change flag */
+	pun_usb.flags[logdrv] &= ~CHANGE_FLAG;
+
 	return bpbptr;
 }
 
