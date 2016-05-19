@@ -557,7 +557,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 			if( minus )
 				fd = -fd;
 			p = get_curproc();
-			if ((fd >= MIN_HANDLE && fd < 0) || (fd < p->p_fd->nfiles && p->p_fd->ofiles[fd] != 0))
+			if (minus ? fd >= MIN_HANDLE : fd < p->p_fd->nfiles && p->p_fd->ofiles[fd] != 0)
 			{
 				fc->fs = &bios_filesys;
 				fc->dev = dir->dev;
