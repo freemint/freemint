@@ -543,6 +543,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 			long fd;
 			const char *np;
 			int minus = 0;
+			struct proc *p;
 			if( *name == '-' )
 			{
 				minus = 1;
@@ -555,7 +556,8 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 			fd = atol(name);
 			if( minus )
 				fd = -fd;
-			if ((fd >= MIN_HANDLE && fd < 0) || get_curproc()->p_fd->ofiles[fd] != 0)
+			p = get_curproc();
+			if ((fd >= MIN_HANDLE && fd < 0) || (fd < p->p_fd->nfiles && p->p_fd->ofiles[fd] != 0))
 			{
 				fc->fs = &bios_filesys;
 				fc->dev = dir->dev;
