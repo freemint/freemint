@@ -651,7 +651,7 @@ add_to_tasklist(struct xa_client *client)
 			(const char*)p.arg.txt = sc.t.text;
 			list->get(list, this, SEGET_ENTRYBYTEXT, &p);
 			this = p.e;
-		if( this )
+			if( this )
 				add_proc_info( 1, client, list, this, &sc );
 
 		}
@@ -659,6 +659,7 @@ add_to_tasklist(struct xa_client *client)
 	}
 }
 
+/* also called by exit_client */
 void
 remove_from_tasklist(struct xa_client *client)
 {
@@ -684,7 +685,7 @@ remove_from_tasklist(struct xa_client *client)
 			{
 #if 0	//debugging-info: dont delete
 				struct scroll_entry *this = p.e;
-				BLOG((0,"remove_from_tasklist:'%s': this=%lx,client=%lx,p=%lx", get_curproc()->name, this, client, client ? client->p : -1 ));
+				BLOG((0,"remove_from_tasklist:'%s': this=%lx,client=%lx,p=%lx", get_curproc()->name, this, client, client ? client->p : (void*)-1 ));
 				BLOGif(this,(0,"remove_from_tasklist: flags=%lx,content=%lx", this->usr_flags, this->content ));
 				if( this->usr_flags & TM_NOAES )
 				{
@@ -1319,7 +1320,8 @@ static void kill_client( SCROLL_INFO *list )
 		long i, k;
 		int pid;
 
-		pid = (int)(long)list->cur->data;
+		SCROLL_ENTRY *cur = list->cur;	/* remember cur in case exit_client has changed the list */
+		pid = (int)(long)cur->data;
 		if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 			return;
 
@@ -1331,7 +1333,7 @@ static void kill_client( SCROLL_INFO *list )
 		}
 		if( k )
 		{
-			remove_from_tasklist( list->cur->data );
+			remove_from_tasklist( cur->data );
 		}
 #if BOOTLOG
 		else
