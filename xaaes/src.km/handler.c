@@ -613,7 +613,7 @@ XA_handler(void *_pb)
 		}
 #endif
 #if DBG_CALLS
-		BLOGif(cmd!=25,(2, "%s[%d:%x] made by %lx:%s(%s:%d),status=%lx",	aes_tab[cmd].descr, cmd, aes_tab[cmd].flags, client, client ? client->name : "", get_curproc()->name, get_curproc()->pid, client->status));
+		BLOGif(((DBG_CALLS==-1&&(cmd!=25))||DBG_CALLS==cmd),(2, "%s[%d:%x] made by %lx:%s(%s:%d),status=%lx",	aes_tab[cmd].descr, cmd, aes_tab[cmd].flags, client, client ? client->name : "", get_curproc()->name, get_curproc()->pid, client->status));
 #endif
 		cmd_routine = aes_tab[cmd].f;
 
@@ -664,7 +664,7 @@ XA_handler(void *_pb)
 			}
 #endif
 #if DBG_CALLS
-			BLOGif(cmd!=25,(2, "%s[%d] returned %ld for %s", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
+			BLOGif(((DBG_CALLS==-1&&(cmd!=25))||DBG_CALLS==cmd),(2, "%s[%d] returned %ld for %s", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
 #endif
 			/* Ozk:
 			 * Now we check if circumstances under which we check if process started/ended
