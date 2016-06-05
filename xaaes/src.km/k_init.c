@@ -721,6 +721,8 @@ k_init(unsigned long vm)
 		{
 			BLOG((false, "Default screenmode"));
 		}
+		BLOG((false, "Screenmode is: %d", mode));
+
 		/* set drive to where the auto-folder is.
 		 * this helps nvdi find nvdivga.inf (fix for et4000).
 		 */
