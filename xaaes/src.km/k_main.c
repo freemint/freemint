@@ -793,9 +793,8 @@ CE_fa(enum locks lock, struct c_event *ce, short cancel)
 			struct helpthread_data *htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
 			struct xa_window *wind = NULL;
 			int c;
-#if ALERTTIME
+			long len;
 			char b[MAXALERTLEN];	// to be output by form_alert
-#endif
 			unsigned short amask;
 			struct widget_tree *wt;
 			OBJECT *form=0, *icon=0;		/* gcc4 isnt that clever? */
@@ -809,7 +808,40 @@ CE_fa(enum locks lock, struct c_event *ce, short cancel)
 				wind = htd->w_sysalrt;
 
 			c = data->buf[1] - '0';
+			strncpy( b, data->buf, sizeof(b)-1 );
+			b[sizeof(b)-1] = 0;
+#if ALERTTIME
+			{
+				union udostim
+				{
+					long l;
+					/* from libkern/unix2xbios.c */
+					struct dostim
+					{
+						unsigned year: 7;
+						unsigned month: 4;
+						unsigned day: 5;
+						unsigned hour: 5;
+						unsigned minute: 6;
+						unsigned sec2: 5;
+					}t;
+				};
+				struct timeval tv;
+				struct timezone tz;
+				union udostim dtim;
+				//extern struct xa_wtxt_inf norm_txt;	/* from taskman.c */
 
+				Tgettimeofday( &tv, &tz );
+				dtim.l = unix2xbios( tv.tv_sec );
+				len = sprintf( data->buf, data->len, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
+			}
+#else
+			len = sprintf( data->buf, data->len, "%s", b + 4 );
+#endif
+			strrpl( data->buf, '|', ' ', ' ' );
+			if( len > 7 )
+				data->buf[len-7] = 0;	/* strip off [ OK ] */
+			BLOG((0, data->buf));
 			if (wind)
 			{
 				wt = get_widget(wind, XAW_TOOLBAR)->stuff;
@@ -831,46 +863,12 @@ CE_fa(enum locks lock, struct c_event *ce, short cancel)
 				}
 			if (wind)
 			{
-				strncpy( b, data->buf, sizeof(b)-1 );
-				b[sizeof(b)-1] = 0;
-
 				/* Add the log entry */
 				{
 					struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 					struct sesetget_params p = { 0 };
 					struct scroll_content sc = {{ 0 }};
-
-#if ALERTTIME
-					union udostim
-					{
-						long l;
-						/* from libkern/unix2xbios.c */
-						struct dostim
-						{
-							unsigned year: 7;
-							unsigned month: 4;
-							unsigned day: 5;
-							unsigned hour: 5;
-							unsigned minute: 6;
-							unsigned sec2: 5;
-						}t;
-					};
-					struct timeval tv;
-					struct timezone tz;
-					union udostim dtim;
-					extern struct xa_wtxt_inf norm_txt;	/* from taskman.c */
-					long len;
-
-					Tgettimeofday( &tv, &tz );
-					dtim.l = unix2xbios( tv.tv_sec );
-					sprintf( data->buf, data->len, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
-					strrpl( data->buf, '|', ' ', ' ' );
-					len = strlen(data->buf);
-					if( len > 7 )
-						data->buf[len-7] = 0;	/* strip off [ OK ] */
-					BLOG((0, data->buf));
-#endif
-					sc.t.text = data->buf;
+					sc.t.text = b;//data->buf;
 					sc.icon = icon;
 					sc.t.strings = 1;
 					sc.fnt = &norm_txt;
@@ -885,11 +883,8 @@ CE_fa(enum locks lock, struct c_event *ce, short cancel)
 					}
 				}
 			}
-
 			if ( C.shutdown == 0 && (cfg.alert_winds & amask))
 			{
-
-#if ALERTTIME
 				/* really bad hack: apps often crash when accessing /host/clipbrd under aranym
 				 * and this should prevent from debugging XaAES
 				 * (see: http://sourceforge.net/tracker/?func=detail&aid=3038473&group_id=41106&atid=429796)
@@ -902,13 +897,7 @@ CE_fa(enum locks lock, struct c_event *ce, short cancel)
 				/* if an app left the mouse off */
 				forcem();
 				do_form_alert(data->lock, client, 1, b, "XaAES");
-#else
-				/* if an app left the mouse off */
-				forcem();
-				do_form_alert(data->lock, client, 1, data->buf, "XaAES");
-#endif
 			}
-
 			kfree(data);
 		}
 	}
@@ -932,10 +921,10 @@ display_alert(struct proc *p, long arg)
 	}
 	else
 	{
-		struct display_alert_data *data = (struct display_alert_data *)arg;
+		//struct display_alert_data *data = (struct display_alert_data *)arg;
 
 		/* Bring up an alert */
-		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
+		post_cevent(C.Hlp, CE_fa, (void*)arg, NULL, 0,0, NULL,NULL);
 	}
 }
 
@@ -973,18 +962,19 @@ alert_input(enum locks lock)
 		data->lock = lock;
 		data->len = n + ALERTPL;
 		f_read(C.alert_pipe, n, data->buf);
-		data->buf[n] = '\0';
 		if( ferr )
 			return;
+		data->buf[n] = '\0';
 
-		if( data->buf[0] == '#' && data->buf[1] == '$' )
+		if( data->buf[0] == '#' && data->buf[1] == '$' && data->buf[2] == '#' && data->buf[3] >= '0' )
 		{
-			if( data->buf[2] == '#' && data->buf[3] >= '0' && data->buf[3] - '0' < sizeof(xa_config) / sizeof(void*) )
-				xa_config[(int)data->buf[3]-'0']( (void*)(data->buf + 4) );
+			int ind = (int)data->buf[3]-'0';
+			if( ind < sizeof(xa_config) / sizeof(void*) )
+				xa_config[ind]( (void*)(data->buf + 4) );
 			kfree(data);
 			return;
 		}
-		if (C.Hlp && n < MAX_ALERTLEN && *data->buf == '[')
+		if (C.Hlp && n <= MAX_ALERTLEN && *data->buf == '[')
 		{
 			post_cevent(C.Hlp, CE_fa, data, NULL, 0, 0, NULL,NULL);
 		}
