@@ -179,13 +179,6 @@
 # 2: allow all
 #
 #####################################################################
-# et4000_hack (default:0)
-# if XaAES is run with NVDI and an ET4000-graphics-card, it cannot open
-# the physical workstation. Either start from ROM-desktop or open the
-# physical workstation before MiNT by another program. In that case this
-# has to be set.
-#et4000_hack = 1
-#####################################################################
 # xa_bubble (default:0)
 # if you want to use the XaAES-builtin bubble-help (since 1.1.21) set
 # this. You can deactivate any external bubble-app if you use xa_bubble.
@@ -280,25 +273,19 @@
 #
 # --------------- Method 1 ---------------
 # make a symlink from c:\auto to u:
-#	e.g. mint.cnf: sln c:\auto u:\auto (not necessary since XaAES 1.8.4)
+#	e.g.: mint.cnf: sln c:\auto u:\auto (not necessary since XaAES 1.8.4)
 # make sure sclt_dev.prg is executed during boot (reason yet unknown).
 # video may remain unset.
 # do not set et4000_hack!
 # verified with nvdi-et4000 v4.11 in 8 and 15 bit-video
 # and a CrazyDots-VME-card.
 #
-# ------ Method 2 (not recommended) ------
-# run opnwk.prg BEFORE mint and AFTER nvdi.
-# set
-# et4000_hack = 1
-#
-# video-setting ignored
-# verified with nvdi-et4000 v4.11 in 8 bit-video
-# and a CrazyDots-VME-card.
-#
-# ------ Method 3 (not recommended) ------
-#
+# -------------- Method 2  ---------------
 # set GEM=ROM in mint.cnf
+# To automate the boot-process it is possible to install xaloader.prg as
+# autostart-application in the ROM-desktop.
+# This works with XaAES since
+# version 0.999.
 #
 # video-setting ignored
 # verified with nvdi-et4000 v4.11 in 8 bit-video
