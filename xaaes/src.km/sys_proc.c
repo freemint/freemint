@@ -189,7 +189,7 @@ info_release(void *_info)
 
 		if( !(*x == 0x7f || *(x-1) < 130 ) || *(x-1) > MAX_CMDLEN || !p || p->pid != info->reserved )
 		{
-			BLOG((0,"info_release:kfree(%lx)->%lx:%ld): pid=%d:%d: error", x, *x, *(x-1), info->reserved, p ? p->pid : -1 ));
+			BLOG((0,"%s:info_release:kfree(%lx)->%lx:%ld): pid=%d:%d: error", get_curproc()->name, x, *x, *(x-1), info->reserved, p ? p->pid : -1 ));
 			return;
 		}
 		kfree(info->cmd_tail);
