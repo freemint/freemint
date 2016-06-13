@@ -608,13 +608,27 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 	dc.l	0x4d694e54		// MiNT
 _oldkeys:	dc.l	0
 _newkeys:
+#ifdef __mcoldfire__
+	lea	-20(sp),sp
+	movem.l	d1-d2/a0-a2,(sp)
+#else
 	movem.l	d1-d2/a0-a2,-(sp)
+#endif
 	move.l	_keyrec,-(sp)
+#ifdef __mcoldfire__
+	and.l	#0x00ff,d0
+#else
 	and.w	#0x00ff,d0
+#endif
 	move.w	d0,-(sp)
 	jsr	_ikbd_scan
 	addq.l	#6,sp
+#ifdef __mcoldfire__
+	movem.l	(sp),d1-d2/a0-a2
+	lea	20(sp),sp
+#else
 	movem.l	(sp)+,d1-d2/a0-a2
+#endif
 	rts
 #endif
 
