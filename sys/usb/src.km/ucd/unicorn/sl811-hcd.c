@@ -582,7 +582,22 @@ usb_lowlevel_stop(void *dummy)
 
 static int calc_needed_buswidth(long bytes, long need_preamble)
 {
-	return !need_preamble ? bytes * 8 + 1024 : bytes * 64 + 2048;
+	/*
+	 * This is the performance optimizer.
+	 *
+	 * Basically the USB frame can contain a number of bits.
+	 *
+	 * Unfortunately, our poor ST's are only 8MHz 68000's and are
+	 * slow in terms of USB rates. This means we need a larger slop
+	 * for potentially missing the end of the frame, and resulting
+	 * in device timeouts. Hence 5120 for full speed USB devices.
+	 * Low speed use the alternate algorithm
+	 *
+	 * Reducing 5120 helps performance as we can slot more of our
+	 * packets inside a USB frame, but it can result in timeouts if
+	 * too low and the USB device could be shutdown.
+	 */
+	return !need_preamble ? bytes * 8 + 5120 : bytes * 64 + 3072;
 }
 
 static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, unsigned char *buffer, long len, long flags)
