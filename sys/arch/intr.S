@@ -595,11 +595,12 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 // keyboard scancode. The scancode byte is in d0, IOREC struct
 // pointer in a0.
 //
-// BUG: will not work on TOS < 2.0. The vector used is available
-//	since TOS 2.0.
+// Note: this vector has only been available since TOS 2.0.
+// For TOS 1.x compatible method, the ikbdsys vector must be hooked.
+// See _ikbdsys_handler and _new_acia for that alternate method.
+// In both cases, the goal is to call _ikbd_scan with keyboard bytes.
 
 #ifndef NO_AKP_KEYBOARD
-#ifdef MILAN
 	.globl	_newkeys
 	.globl	_oldkeys
 	.globl	_ikbd_scan
@@ -630,7 +631,6 @@ _newkeys:
 	movem.l	(sp)+,d1-d2/a0-a2
 #endif
 	rts
-#endif
 
 // Calling the keyclick routines. This is a helper for keyboard driver.
 
