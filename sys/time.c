@@ -35,6 +35,7 @@
  */
 
 # include "time.h"
+# include "global.h"
 
 # include "libkern/libkern.h"
 # include "mint/arch/mfp.h"
@@ -366,7 +367,12 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 void
 init_time (void)
 {
-	long value = _mfpregs->tbdr;
+	long value;
+
+	if (machine == machine_unknown)
+		value = 0;
+	else
+		value = _mfpregs->tbdr;
 
 # if 0
 	/* See, a piece of code is a function, not just a long integer */
@@ -453,7 +459,11 @@ quick_synch (void)
 			 * to care to much about overflows.
 			 */
 
-	timerc = _mfpregs->tbdr;
+	if (machine == machine_unknown)
+		timerc = 0;
+	else
+		timerc = _mfpregs->tbdr;
+
 	current_ticks = *hz_200;
 
 	/* Make sure that the clock runs monotonic.  */
