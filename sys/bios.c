@@ -615,8 +615,16 @@ isonline (struct bios_tty *b)
 	{
 		/* modem1 */
 
-		/* CD is !bit 1 on the 68901 GPIP port */
-		return (1 << 1) & ~(_mfpregs->gpip);
+		if (machine == machine_unknown)
+		{
+			/* unknown hardware, assume CD always on. */
+			return 1;
+		}
+		else
+		{
+			/* CD is !bit 1 on the 68901 GPIP port */
+			return (1 << 1) & ~(_mfpregs->gpip);
+		}
 	}
 	else if (b->tty == &sccb_tty)
 	{
@@ -672,8 +680,16 @@ isbrk (struct bios_tty *b)
 	{
 		/* modem1 */
 
-		/* break is bit 3 in the 68901 RSR */
-		return (1 << 3) & _mfpregs->rsr;
+		if (machine == machine_unknown)
+		{
+			/* unknown hardware, cannot detect breaks... */
+			return 0;
+		}
+		else
+		{
+			/* break is bit 3 in the 68901 RSR */
+			return (1 << 3) & _mfpregs->rsr;
+		}
 	}
 	else if (b->tty == &sccb_tty)
 	{
