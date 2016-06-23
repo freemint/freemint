@@ -260,7 +260,7 @@ _getmch (void)
 
 	DEBUG (("detecting hardware ... "));
 	/* at the moment only detection of ST-ESCC */
-	if (mcpu < 40 && detect_hardware ())
+	if (machine != machine_unknown && mcpu < 40 && detect_hardware ())
 		boot_print ("ST-ESCC extension detected\r\n");
 	DEBUG (("ok!\r\n"));
 
