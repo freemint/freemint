@@ -72,7 +72,7 @@ redir_debug( struct proc *p, int md )
 				else flg = 0;
 				fo = p->p_fd->ofiles[1];
 				p->p_fd->ofiles[1] = fp;
-				r = kernel_lseek(fp, SEEK_SET, SEEK_END);
+				r = kernel_lseek(fp, 0, SEEK_END);
 			}
 			else
 				BLOG((0,"redir_debug: could not open '%s': %ld", bl, err ));
