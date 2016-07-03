@@ -443,11 +443,6 @@ init (void)
 	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
 
-# ifdef VERBOSE_BOOT
-	boot_printf(MSG_init_tosver_kbshft, (tosvers >> 8) & 0xff, tosvers & 0xff, \
-			falcontos ? " (FalconTOS)" : "", (long)kbshft);
-# endif
-
 #ifndef __mcoldfire__
 	/* Currently, ColdFire machines have trouble with Bconmap() */
 	if (falcontos)
@@ -643,6 +638,10 @@ init (void)
 		boot_printf("Kernel USP:  0x%08lx (FREE: %ld bytes)\n", usp, usp - (_base->p_bbase + _base->p_blen));
 		boot_printf("Kernel SSP:  0x%08lx (FREE: %ld bytes)\n", ssp, ssp - (_base->p_bbase + _base->p_blen));
 	}
+# endif
+# ifdef VERBOSE_BOOT
+	boot_printf(MSG_init_tosver_kbshft, (tosvers >> 8) & 0xff, tosvers & 0xff, \
+			falcontos ? " (FalconTOS)" : "", (long)kbshft);
 # endif
 
 	r = do_open(&f, rootproc, "u:/dev/modem1", O_RDWR, 0, NULL);
@@ -1233,12 +1232,12 @@ mint_thread(void *arg)
 #if MINT_VDI
 	if(mint_vdi)
 	{
-    FORCE("register_trap2");
-	  if (register_trap2(VDI_handler, 0, 1, 0))
-	  {
-	    FORCE("ERROR: register_trap2 failed!");
-	  }
-  }
+		FORCE("register_trap2");
+		if (register_trap2(VDI_handler, 0, 1, 0))
+		{
+			FORCE("ERROR: register_trap2 failed!");
+		}
+	}
 #endif
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();
