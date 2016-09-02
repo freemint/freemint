@@ -281,11 +281,11 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 
 	bra.s	exit
 
-// 68040 or 68060. Quad word mulu test.
+// 68040 or 68060.
 
-x040:	moveq	#60,d0		// assume 68060
-	dc.l	0x4c102401	// mulu.l (a0),d1-d2
-	moveq	#40,d0		// no fault -> this is 68040
+x040:	moveq	#40,d0		// assume 68040
+	dc.l	0x4e7a1808	// attempt to access the PCR
+	moveq	#60,d0		// no fault -> this is 68060
 
 exit:	move.l	a1,sp
 
