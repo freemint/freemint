@@ -399,6 +399,7 @@ inet_ioctl (struct socket *so, short cmd, void *buf)
 		case SIOCGIFSTATS:
 		case SIOCGLNKFLAGS:
 		case SIOCSLNKFLAGS:
+		case SIOCSIFHWADDR:
 		case SIOCGIFHWADDR:
 		case SIOCGLNKSTATS:
 		case SIOCSIFOPT:
