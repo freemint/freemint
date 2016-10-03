@@ -612,6 +612,15 @@ if_ioctl (short cmd, long arg)
 	
 	switch (cmd)
 	{
+		case SIOCSIFHWADDR:
+		{
+			struct sockaddr_hw *shw = &ifr->ifru.adr.hw;
+
+			memcpy(nif->hwlocal.adr.bytes, shw->shw_adr.bytes, MIN (shw->shw_len, sizeof (shw->shw_adr)));
+
+			return 0;
+		}
+
 		case SIOCGIFHWADDR:
 		{
 			struct sockaddr_hw *shw = &ifr->ifru.adr.hw;
