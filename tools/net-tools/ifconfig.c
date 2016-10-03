@@ -17,12 +17,13 @@
 #include <sockios.h>
 #include "ifopts.h"
 
+#define SIOCSIFHWADDR	(('S' << 8) | 49)	/* set hardware address, currently missing from MiNTlib */
 
 static const char *
 which2str(short which)
 {
 	const char *ret = "(unknown)";
-	
+
 	switch (which)
 	{
 		case SIOCSIFADDR:
@@ -50,7 +51,7 @@ which2str(short which)
 			ret = "MTU";
 			break;
 	}
-	
+
 	return ret;
 }
 
@@ -204,6 +205,32 @@ get_addr (char *name, short which)
 	return ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr;
 }
 
+#define HWTYPE_ETH	1		/* this is defined in inet4/if.h, but not in MiNTlib */
+
+static int
+get_hwaddr (char *name, unsigned char *hwaddr)
+{
+	struct ifreq ifr;
+	struct sockaddr_hw *shw = (struct sockaddr_hw *) &ifr.ifr_ifru.ifru_hwaddr;
+
+	strcpy (ifr.ifr_name, name);
+
+	if (ioctl (sock, SIOCGIFHWADDR, &ifr) < 0)
+	{
+		fprintf(stderr, "%s: cannot get HW address\n", name);
+		exit (1);
+	}
+
+	if (shw->shw_type == HWTYPE_ETH)
+	{
+		memcpy (hwaddr, shw->shw_addr, shw->shw_len);
+		return 0;
+	}
+
+	return -1;		/* we can only display the hardware address for ethernet interfaces */
+}
+
+
 static char *
 decode_flags (short flags)
 {
@@ -241,6 +268,7 @@ print_if (char *name)
 	char *sflags;
 	struct in_addr addr;
 	long mtu_metric;
+	unsigned char hw_addr[6];
 	struct ifstat stats;
 
 	flags = get_flags (name);
@@ -277,7 +305,14 @@ print_if (char *name)
 	printf ("metric %ld ", mtu_metric);
 
 	mtu_metric = get_mtu_metric (name, SIOCGIFMTU);
-	printf ("mtu %ld\n\t", mtu_metric);
+	printf ("mtu %ld ", mtu_metric);
+
+	/* display hardware address for ethernet type interfaces */
+	if (!get_hwaddr(name, hw_addr))
+		printf ("hwaddr %02x:%02x:%02x:%02x:%02x:%02x\n\t",
+				hw_addr[0], hw_addr[1], hw_addr[2], hw_addr[3], hw_addr[4], hw_addr[5]);
+	else
+		printf ("\n\t");
 
 	get_stats (name, &stats);
 	printf ("in-packets  %lu in-errors  %lu collisions %lu\n\t",
@@ -320,6 +355,7 @@ usage (void)
 	printf ("\t [dstaddr <point to point destination address>]\n");
 	printf ("\t [broadaddr aa.bb.cc.dd]\n");
 	printf ("\t [up|down|[-]arp|[-]trailers|[-]debug]\n");
+	printf ("\t [hwaddr aa:bb:cc:dd:ee:ff]\n");
 	printf ("\t [mtu NN] [metric NN]\n");
 	printf ("\t [linkNN] [-linkNN]\n");
 	printf ("\t [-f <option file>]\n");
@@ -472,6 +508,30 @@ main (int argc, char *argv[])
 			{
 				NEXTARG (i);
 				opt_file (argv[i], ifname, sock);
+			}
+			else if (!strcmp (argv[i], "hwaddr"))
+			{
+				struct ifreq ifr;
+				struct sockaddr_hw *shw = (struct sockaddr_hw *) &ifr.ifr_ifru.ifru_hwaddr;
+				char hwaddr[6];
+				int res;
+
+				NEXTARG(i);
+
+				if (parse_hwaddr(hwaddr, argv[i]) != 0)
+					fprintf(stderr, "illegal hwaddr argument %s\n", argv[i]);
+				else
+				{
+					fprintf(stderr, "set hwaddr to %02x:%02x:%02x:%02x:%02x:%02x\n",
+							(unsigned char) hwaddr[0], (unsigned char) hwaddr[1], (unsigned char) hwaddr[2],
+							(unsigned char) hwaddr[3], (unsigned char) hwaddr[4], (unsigned char) hwaddr[5]);
+					strcpy (ifr.ifr_name, ifname);
+					ifr.ifr_addr.sa_family = AF_INET;
+					shw->shw_len = sizeof(hwaddr);
+					memcpy(shw->shw_addr, hwaddr, sizeof(hwaddr));
+					if ((res = ioctl (sock, SIOCSIFHWADDR, &ifr)) < 0)
+						fprintf(stderr, "interface does not support SIOCSIFHWADDR ioctl\n");
+				}
 			}
 			else
 			{
