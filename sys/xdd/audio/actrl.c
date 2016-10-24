@@ -1,7 +1,7 @@
 /*
  * /dev/audio configuration utility.
  *
- * (w) 1995, Kay Roemer.
+ * (C) 1995, Kay Roemer.
  *
  *	9802, John Blakeley - added support for F030 which can handle up to
  *						4 pairs: had to change mono/stereo into chans.

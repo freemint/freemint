@@ -107,10 +107,10 @@ init (struct kerinfo *k)
 	ksprintf (msg, "\r\nAudio device for Mint, version %s\r\n",
 		AUDIO_VERSION);
 	c_conws (msg);
-	c_conws ("(w) 1995 Charles Briscoe-Smith\r\n");
-	c_conws ("(w) 1995 Kay Roemer\r\n");
-	c_conws ("(w) 1997, 1998 John Blakeley\r\n");
-	c_conws ("(w) 2001 Frank Naumann\r\n");
+	c_conws ("\xbd 1995 Charles Briscoe-Smith\r\n");
+	c_conws ("\xbd 1995 Kay Roemer\r\n");
+	c_conws ("\xbd 1997, 1998 John Blakeley\r\n");
+	c_conws ("\xbd 2001 Frank Naumann\r\n");
 
 	if ((s_system (S_GETCOOKIE, COOKIE__MCH, (long) &mch) == 0)
 		&& (mch == MILAN_C))
