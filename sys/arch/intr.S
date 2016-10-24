@@ -237,7 +237,16 @@ _mint_vbl:
 #endif
 	addq.l	#0x01,_c20ms
 
-#ifdef NO_AKP_KEYBOARD
+// Poll the character buffer.
+// This is mandatory when NO_AKP_KEYBOARD is defined,
+// because that buffer is filled by the TOS IKBD interrupt.
+// It is also useful to do that even when FreeMiNT installs its own IKBD hook,
+// because this allows external software to directly generate ASCII characters
+// without dealing with scancodes.
+// This is specially necessary for EmuTOS "Serial Console" feature used on
+// ColdFire evaluation boards. ASCII characters are received on the serial
+// port and directly put into the character buffer.
+
 	move.l	_keyrec,a0
 	move.w	6(a0),d0
 	cmp.w	8(a0),d0
@@ -246,7 +255,6 @@ _mint_vbl:
 	move.b	d0,_kintr+1
 #else
 	sne	_kintr+1
-#endif
 #endif
 
 	lea	_proc_clock,a0
