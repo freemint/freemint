@@ -583,7 +583,7 @@ dsp56k_close(FILEPTR *f, int pid)
 static long _cdecl
 dsp56k_lseek(FILEPTR *f, long where, int whence)
 {
-	return 0;
+	return ESPIPE;
 }
 
 static long _cdecl
