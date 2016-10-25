@@ -233,7 +233,7 @@ audio_read (FILEPTR *fp, char *buf, long nbytes)
 static long
 audio_lseek (FILEPTR *fp, long where, int whence)
 {
-	return 0;
+	return ESPIPE;
 }
 
 static long
