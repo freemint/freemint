@@ -1168,7 +1168,31 @@ tot_rsize (MMAP map, short flag)
 	for (m = *map; m; m = m->next)
 	{
 		if (flag || ISFREE(m) || (m->links == -1/*0xffff*/))
-			size += m->len;
+		{
+			/* Shadowed regions occupy the same address space,
+			 * so they must be counted only once.
+			 */
+			bool already_counted = false;
+
+			if (m->shadow)
+			{
+				/* This region shadows another one.
+				 * Check if the shadow has already been counted.
+				 */
+				MEMREGION *m2;
+				for (m2 = *map; m2 && m2 != m; m2 = m2->next)
+				{
+					if (m2 == m->shadow)
+					{
+						already_counted = true;
+						break;
+					}
+				}
+			}
+			
+			if (!already_counted)
+				size += m->len;
+		}
 	}
 
 	return size;
