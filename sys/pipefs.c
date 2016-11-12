@@ -754,13 +754,13 @@ static int _cdecl
 pipe_wake_readers (struct pipe* pipe)
 {
 	int r = 0;
+	//struct proc *p = get_curproc();
 	if (pipe->rsel && pipe->len > 0)
 		wakeselect ((PROC *) pipe->rsel);
 	else if( !pipe->rsel )
 	{
 		r = 1;
 	}
-
 	if (pipe->len > 0)
 		wake (IO_Q, (long) pipe);
 	return r;
@@ -770,6 +770,7 @@ static int _cdecl
 pipe_wake_writers (struct pipe* pipe)
 {
 	int r = 0;
+	//struct proc *p = get_curproc();
 	if (pipe->wsel && pipe->len < PIPESIZ)
 		wakeselect ((PROC *) pipe->wsel);
 	else if( !pipe->wsel )
@@ -789,9 +790,10 @@ static long _cdecl
 pipe_open (FILEPTR *f)
 {
 	struct fifo *p;
-	int rwmode = f->flags & O_RWMODE;
+	int rwmode = f->flags & O_RWMODE, is_fifo;
 
 	p = (struct fifo *) f->fc.index;
+	is_fifo = p->name[0] == 'n' && p->name[1] == '$';	/* created by mkfifo (todo) */
 	f->flags |= p->flags;
 
 	/* if this is the first open for this file, then the O_HEAD flag is
@@ -863,15 +865,18 @@ pipe_open (FILEPTR *f)
 	else if (!(p->flags & P_SELFREAD) && !(p->flags & O_TTY) )
 	{
 		/* posix wants this */
-		if( (rwmode == O_RDONLY || rwmode == O_RDWR) && p->outp)
+		if( p->outp && (rwmode == O_RDONLY || rwmode == O_RDWR) )
 		{
 			pipe_wake_writers (p->outp);
-			sleep(IO_Q, (long)p->outp);
+			/* if devinfo not 0 assuming a fifo created by mkfifo else direct access of /pipe/f: don't sleep */
+			if( rwmode == O_RDONLY || is_fifo )
+				sleep(IO_Q, (long)p->outp);
 		}
-		else if( (rwmode == O_WRONLY || rwmode == O_RDWR) )
+		else if( p->inp && (rwmode == O_WRONLY || rwmode == O_RDWR) )
 		{
 			pipe_wake_readers (p->inp);
-			sleep(IO_Q, (long)p->inp);
+			if( rwmode == O_WRONLY || is_fifo )
+				sleep(IO_Q, (long)p->inp);
 		}
 	}
 	/* TTY devices need a tty structure in f->devinfo */
