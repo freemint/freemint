@@ -47,7 +47,7 @@
  */
 
 /* if the user is holding down the magic shift key, we ask before booting */
-# ifdef ARANYM
+# if 0//def ARANYM
 # define MAGIC_SHIFT    0x1                /* right shift (left does not work) */
 # else
 # define MAGIC_SHIFT    0x2                /* left shift */
@@ -642,7 +642,7 @@ boot_kernel_p (void)
 			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[6], debug_levels[option[6]],
 			option[7], debug_devices[option[7]],
-			option[8], write_boot_levels[option[8]],
+			BOOTLOGFILE, option[8], write_boot_levels[option[8]],
 			option[9] ? MSG_init_menu_yesrn : MSG_init_menu_norn);
 
 wait:
