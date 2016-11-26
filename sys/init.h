@@ -21,7 +21,7 @@ extern short write_boot_file;
 #if MINT_VDI
 extern long  mint_vdi;
 #endif
-#define BOOTLOGFILE "C:/mint/boot.log"
+extern char BOOTLOGFILE[];
 
 void	boot_print	(const char *s);
 void	boot_printf	(const char *fmt, ...);
