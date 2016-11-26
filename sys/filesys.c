@@ -1150,7 +1150,7 @@ restart_mount:
 				release_cookie (res);
 				if (r)
 				{
-					DEBUG (("error reading symbolic link"));
+					DEBUG (("relpath2cookie: error reading symbolic link"));
 					release_cookie (&dir);
 					break;
 				}
@@ -1164,7 +1164,7 @@ restart_mount:
 						if( res->fs == &pipe_filesys )
 							res->aux |= CA_CLOSED_FIFO;
 					}
-					DEBUG (("error following symbolic link"));
+					DEBUG (("relpath2cookie: error following symbolic link"));
 					break;
 				}
 			}
