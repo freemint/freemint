@@ -269,14 +269,12 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 	cmp.w	#40,d0
 	beq.s	x040
 
-// this idea is borrowed from Linux/m68k, following the suggestion
-// of Petr Stehlik <joy@sophics.cz>.
-//
-// By the way: gas accepts `pmove tt0,d1' which is illegal. Why?
-//
-
-	clr.l	-(sp)		// make some room on the stack
-	pmove	tt0,(sp)	// 68030 only
+	// detect 68881/68882: this is what TOS 3.06 for PAK/3 does
+	bset  #9,d1           // Datacache on
+	movec d1,cacr         // write CACR
+	movec cacr,d1         // read CACR
+	bclr  #9,d1           // Datacache still on?
+	beq.s exit            // no: 68020
 	moveq	#30,d0
 
 	bra.s	exit
