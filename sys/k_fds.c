@@ -517,7 +517,6 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 		return devsp ? devsp : EINTERNAL;
 	}
 #if STORE_FILENAMES
-	{
 	if( fc.fs == &bios_filesys || fc.fs == &pipe_filesys )
 		l = 0;
 	else
@@ -531,7 +530,6 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 		}
 	}
 	r = FP_ALLOCN (op, f, l);	/* term. 0 in file.fname */
-	}
 #else
 	r = FP_ALLOC (op, f );
 #endif
@@ -585,7 +583,6 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 	}
 #endif
 	release_cookie (&dir);
-
 	r = xdd_open (*f);
 	if (r < E_OK)
 	{
