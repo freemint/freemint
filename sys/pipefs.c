@@ -754,7 +754,6 @@ static int _cdecl
 pipe_wake_readers (struct pipe* pipe)
 {
 	int r = 0;
-	//struct proc *p = get_curproc();
 	if (pipe->rsel && pipe->len > 0)
 		wakeselect ((PROC *) pipe->rsel);
 	else if( !pipe->rsel )
@@ -770,7 +769,6 @@ static int _cdecl
 pipe_wake_writers (struct pipe* pipe)
 {
 	int r = 0;
-	//struct proc *p = get_curproc();
 	if (pipe->wsel && pipe->len < PIPESIZ)
 		wakeselect ((PROC *) pipe->wsel);
 	else if( !pipe->wsel )
@@ -868,7 +866,7 @@ pipe_open (FILEPTR *f)
 		if( p->outp && (rwmode == O_RDONLY || rwmode == O_RDWR) )
 		{
 			pipe_wake_writers (p->outp);
-			/* if devinfo not 0 assuming a fifo created by mkfifo else direct access of /pipe/f: don't sleep */
+			/* if is_fifo assuming a fifo created by mkfifo else direct access of /pipe/f: don't sleep */
 			if( rwmode == O_RDONLY || is_fifo )
 				sleep(IO_Q, (long)p->outp);
 		}
