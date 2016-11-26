@@ -367,10 +367,9 @@ init_core (void)
 		/* otherwise, use the line A variables */
 		scrnsize = (vscreen->maxy+1)*(long)vscreen->linelen;
 	}
-
+	temp = !get_toscookie(0x424C4F57, 0);	/* BLOW */
 	/* check for a graphics card with fixed screen location */
-
-	if (scrnplace >= phys_top_st) {
+	if (temp || scrnplace >= phys_top_st) {
 		/* screen isn't in ST RAM */
 		scrnsize = 0x7fffffffUL;
 		scrndone = 1;
