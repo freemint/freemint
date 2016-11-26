@@ -94,6 +94,8 @@ boot_print (const char *s)
 		sys_c_conws(s);
 	else
 		(void)TRAP_Cconws (s);
+	if( write_boot_file > 1 )
+		TRAP_Fwrite( write_boot_file, strlen(s), s );
 }
 
 void
@@ -313,12 +315,14 @@ intout= %lx:%lx\nptsout= %lx\n.",
 #endif
 
 short write_boot_file = 0;
+char BOOTLOGFILE[32];
 void
 init (void)
 {
 	long r, *sysbase;
 	OSHEADER *os;
 	FILEPTR *f;
+	//int sfd = 0;
 
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
@@ -361,13 +365,36 @@ init (void)
 		TRAP_Pterm0();
 	}
 
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_supermode);
+# endif
+	(void) TRAP_Super (0L);
+
+	sysdrv = *((short *) 0x446);	/* get the boot drive number */
+
+	BOOTLOGFILE[0] = sysdrv + 'a';
+	memcpy( BOOTLOGFILE + 1, ":/mint/boot.log", 16 );
+
 	/* Read user defined defaults before anything else so we can override them later */
 	read_ini();
-
 	/* Ask the user if s/he wants to boot MiNT */
 	pause_and_ask();
 
 	boot_print("\r\n");
+
+	if( write_boot_file )
+	{
+		char eboot[32];
+		eboot[0] = sysdrv + 'a';
+		memcpy( eboot + 1, ":\\mint\\early.log", 17 );
+		write_boot_file = TRAP_Fcreate( eboot, 0 );
+		if( write_boot_file < 0 )
+		{
+			boot_printf( "Fcreate( early.log ) failed: %d (key)\r\n", write_boot_file );
+			TRAP_Cconin();
+			write_boot_file = -1;
+		}
+	}
 
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
@@ -395,18 +422,12 @@ init (void)
 	/* These are set inside getmch() */
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
 
-	boot_print(MSG_init_supermode);
 # endif
-
-	(void) TRAP_Super (0L);
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
 # endif
 	stop_and_ask();
-
-	/*--+*/
-	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
@@ -494,10 +515,12 @@ init (void)
 # endif
 
 	/* initialize memory */
+	stop_and_ask();
 	init_mem ();
 	DEBUG (("init_mem() ok!"));
 
 	/* Initialize high-resolution calendar time */
+	stop_and_ask();
 	init_time ();
 	DEBUG (("init_time() ok!"));
 
@@ -595,34 +618,40 @@ init (void)
 
 	rootproc->p_fd->control = f;
 	rootproc->p_fd->ofiles[0] = f; f->links++;
-	if( !write_boot_file )
-	{
-		rootproc->p_fd->ofiles[1] = f;
-		f->links++;
-	}
-	else
+	if( write_boot_file )
 	{
 		FILEPTR *fb;
-		char *blp = BOOTLOGFILE, sav[PATH_MAX], *cp = strchr( blp, 0 );
-		int n = cp - blp;
+		char *blp = BOOTLOGFILE, sav[PATH_MAX];
+		int n = strlen( blp );
+		if( write_boot_file > 1 )
+		{
+			Fclose( write_boot_file );
+			write_boot_file = 1;
+		}
 		memcpy( sav, blp, n + 1 );
 		sav[n-1]++;
 		sys_f_delete( sav );
 		sys_f_rename (0, blp, sav );
-		r = do_open( &fb, rootproc, blp, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
-		if( !r )
+		sav[n-1]--;
+		r = do_open( &fb, rootproc, sav, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		if( r )
 		{
-			//boot_print("open BOOTLOGFILE OK\r\n" );
-			rootproc->p_fd->ofiles[1] = fb;
-		}
-		else
-		{
-			boot_print("could not open "BOOTLOGFILE"\r\n" );
+			boot_printf("could not open %s\r\n", BOOTLOGFILE );
 			(void)TRAP_Cconin();
 			rootproc->p_fd->ofiles[1] = f;
 			f->links++;
 			write_boot_file = 0;
 		}
+		else
+		{
+			//boot_print("open BOOTLOGFILE OK\r\n" );
+			rootproc->p_fd->ofiles[1] = fb;
+		}
+	}
+	else
+	{
+		rootproc->p_fd->ofiles[1] = f;
+		f->links++;
 	}
 
 # ifdef DEBUG_INFO
@@ -1215,11 +1244,10 @@ mint_thread(void *arg)
  	sys_d_setpath("/");
 	stop_and_ask();
 
-	DEBUG(( "closing bootlog, fd=%lx,write_boot_file=%d\r\n",rootproc->p_fd->ofiles[0], write_boot_file ));
 
 	if( write_boot_file )
 	{
-		//boot_printf( "closing bootlog, fd=%lx,write_boot_file=%d\r\n",rootproc->p_fd->ofiles[1], write_boot_file );
+		DEBUG(( "closing bootlog, fd=%lx,write_boot_file=%d\r\n",rootproc->p_fd->ofiles[0], write_boot_file ));
 		r = do_close( rootproc, rootproc->p_fd->ofiles[1] );
 		if( r )
 			DEBUG(( "error closing bootlog:%ld\r\n", r));
@@ -1405,3 +1433,4 @@ mint_thread(void *arg)
 
 	/* Never returns */
 }
+/* -- end of /v/home/hk/mymint/sys/init.c -- */
