@@ -385,14 +385,13 @@ init (void)
 	if( write_boot_file )
 	{
 		char eboot[32];
-		eboot[0] = sysdrv + 'a';
-		memcpy( eboot + 1, ":\\mint\\early.log", 17 );
+		eboot[0] = sysdrv + 'A';
+		memcpy( eboot + 1, ":\\MINT\\EARLY.LOG", 17 );
 		write_boot_file = TRAP_Fcreate( eboot, 0 );
 		if( write_boot_file < 0 )
 		{
-			boot_printf( "Fcreate( early.log ) failed: %d (key)\r\n", write_boot_file );
+			boot_printf( "Fcreate %s failed: %d (key)\r\n", eboot, write_boot_file );
 			TRAP_Cconin();
-			write_boot_file = -1;
 		}
 	}
 
@@ -538,6 +537,11 @@ init (void)
 	init_crypt_IO ();
 	DEBUG (("init_crypt_IO() ok!"));
 
+	if( write_boot_file > 1 )
+	{
+		TRAP_Fclose( write_boot_file );
+		write_boot_file = 1;
+	}
 	/* initialize the basic file systems */
 	init_filesys ();
 	DEBUG (("init_filesys() ok!"));
@@ -572,6 +576,42 @@ init (void)
 
 	/* initialize interrupt vectors */
 	init_intr ();
+	r = do_open(&f, rootproc, "u:/dev/console", O_RDWR, 0, NULL);
+	if (r)
+		FATAL("unable to open CONSOLE device");
+
+	rootproc->p_fd->control = f;
+	rootproc->p_fd->ofiles[0] = f; f->links++;
+	if( write_boot_file )
+	{
+		FILEPTR *fb;
+		char *blp = BOOTLOGFILE, sav[PATH_MAX];
+		int n = strlen( blp );
+		memcpy( sav, blp, n + 1 );
+		sav[n-1]++;
+		sys_f_delete( sav );
+		sys_f_rename (0, blp, sav );
+		sav[n-1]--;
+		r = do_open( &fb, rootproc, sav, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		if( r )
+		{
+			boot_printf("could not open %s\r\n", BOOTLOGFILE );
+			(void)TRAP_Cconin();
+			rootproc->p_fd->ofiles[1] = f;
+			f->links++;
+			write_boot_file = 0;
+		}
+		else
+		{
+			//boot_print("open BOOTLOGFILE OK\r\n" );
+			rootproc->p_fd->ofiles[1] = fb;
+		}
+	}
+	else
+	{
+		rootproc->p_fd->ofiles[1] = f;
+		f->links++;
+	}
 
 	/* after init_intr we are in kernel
 	 * trapping isn't allowed anymore; use direct calls
@@ -611,48 +651,6 @@ init (void)
 	 * do this here, *after* init_intr has set the Rwabs vector,
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
-
-	r = do_open(&f, rootproc, "u:/dev/console", O_RDWR, 0, NULL);
-	if (r)
-		FATAL("unable to open CONSOLE device");
-
-	rootproc->p_fd->control = f;
-	rootproc->p_fd->ofiles[0] = f; f->links++;
-	if( write_boot_file )
-	{
-		FILEPTR *fb;
-		char *blp = BOOTLOGFILE, sav[PATH_MAX];
-		int n = strlen( blp );
-		if( write_boot_file > 1 )
-		{
-			Fclose( write_boot_file );
-			write_boot_file = 1;
-		}
-		memcpy( sav, blp, n + 1 );
-		sav[n-1]++;
-		sys_f_delete( sav );
-		sys_f_rename (0, blp, sav );
-		sav[n-1]--;
-		r = do_open( &fb, rootproc, sav, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
-		if( r )
-		{
-			boot_printf("could not open %s\r\n", BOOTLOGFILE );
-			(void)TRAP_Cconin();
-			rootproc->p_fd->ofiles[1] = f;
-			f->links++;
-			write_boot_file = 0;
-		}
-		else
-		{
-			//boot_print("open BOOTLOGFILE OK\r\n" );
-			rootproc->p_fd->ofiles[1] = fb;
-		}
-	}
-	else
-	{
-		rootproc->p_fd->ofiles[1] = f;
-		f->links++;
-	}
 
 # ifdef DEBUG_INFO
 	{
