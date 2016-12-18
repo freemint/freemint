@@ -103,11 +103,16 @@ add_cookie (COOKIE * cook)
 				return (0);
 			}
 			else
+			{
+				c_conws("Failed to add SCSIDRV cookie, no slots left. Install bigger cookie jar.\r\n");
 				return (-2);	/* problem */
+			}
 		}
 		i++;
 		p = ncookie (p);
 	}
+
+	c_conws("Failed to add SCSIDRV cookie, no slots left. Install bigger cookie jar.\r\n");
 	return (-1);				/* no cookie-jar */
 }
 
