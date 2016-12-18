@@ -48,7 +48,7 @@ char **__libc_argv;
 long   __libc_argc;
 
 /* size to be allocated for the stack */
-long _stksize = 8192;
+long _stksize = 16384;
 
 /* total size of program area */
 unsigned long _PgmSize;
