@@ -271,6 +271,11 @@ SCSIDRV_In (SCSICMD *parms)
 			if (srb.cmd[0] == SCSI_TST_U_RDY)
 				retries = 10;
 
+			/* HDDRUTIL 10.x issues this */
+			if (srb.cmd[0] == SCSI_REPORT_LUN) {
+				return -1;
+ 			}
+
 			/* HDDRUTIL does this and locks up my USB CDROM */
 			if (srb.cmd[0] == SCSI_GET_CONFIG) {
 				return -1;
