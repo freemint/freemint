@@ -119,8 +119,8 @@ typedef struct SCSI_cmd_block
 #define SENSE_VOLUME_OVERFLOW		0xD
 #define SENSE_MISCOMPARE		0xE
 
-
-#define SCSI_GET_CONFIG 0x46        /* HDDRUTIL tries to do this. */
+#define SCSI_REPORT_LUN 0xA0		/* Report LUN information HDDR 10.x */
+#define SCSI_GET_CONFIG 0x46		/* HDDRUTIL tries to do this. */
 #define SCSI_CHANGE_DEF	0x40		/* Change Definition (Optional) */
 #define SCSI_COMPARE	0x39		/* Compare (O) */
 #define SCSI_COPY	0x18		/* Copy (O) */
@@ -174,25 +174,7 @@ typedef struct SCSI_cmd_block
 #define SCSI_WRITE_LONG	0x3F		/* Write Long (O) */
 #define SCSI_WRITE_SAME	0x41		/* Write Same (O) */
 
-# if 0
-/****************************************************************************
- * decleration of functions which have to reside in the LowLevel Part Driver
- */
-
-void scsi_print_error(ccb *pccb);
-int scsi_exec(ccb *pccb);
-void scsi_bus_reset(void);
-void scsi_low_level_init(int busdevfunc);
-
-
-/***************************************************************************
- * functions residing inside cmd_scsi.c
- */
-void scsi_init(void);
-
-# endif
-
-#define SCSI_IDENTIFY				0xC0  /* not used */
+#define SCSI_IDENTIFY	0xC0		/* not used */
 
 /* Hardware errors  */
 #define SCSI_SEL_TIME_OUT			0x00000101	 /* Selection time out */
