@@ -262,11 +262,25 @@ SCSIDRV_In (SCSICMD *parms)
 			hex_long (srb.datalen);
 			c_conws ("\r\n");
 #endif
+
 			if (srb.cmd[0] == SCSI_INQUIRY)
 				retries = 3;
 
-			if (srb.cmd[0] == SCSI_RD_CAPAC)
+			if (srb.cmd[0] == SCSI_RD_CAPAC ||
+			    srb.cmd[0] == SCSI_RD_CAPAC16) {
+				ccb pccb;
+
 				retries = 5;
+
+				memset(&pccb.cmd[0], 0, 12);
+				pccb.cmd[0] = SCSI_TST_U_RDY;
+				pccb.cmd[1] = 0;
+				pccb.datalen = 0;
+				pccb.cmdlen = 12;
+				if(ss->transport(&pccb, ss) != 0) {
+					return -1;
+				}
+			}
 
 			if (srb.cmd[0] == SCSI_TST_U_RDY)
 				retries = 10;
