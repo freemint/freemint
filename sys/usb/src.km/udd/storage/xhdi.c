@@ -70,11 +70,11 @@ extern void usb_stor_eject(long);
 /*--- Functions prototypes ---*/
 
 typedef long (*XHDI_HANDLER)(ushort opcode, ...);
-extern XHDI_HANDLER usbxhdi;
 static XHDI_HANDLER next_handler; /* Next handler installed by XHNewCookie() */
 
+extern long usbxhdi(ushort opcode, ...);
 long install_xhdi_driver(void);
-long xhdi_handler(ushort stack);
+long xhdi_handler(ushort *stack);
 
 /*--- Global variables ---*/
 
@@ -216,8 +216,9 @@ XHDrvMap(void)
 static long
 XHNewCookie(ulong newcookie)
 {
-	if (next_handler)
+	if (next_handler) {
 		return next_handler(XHNEWCOOKIE, newcookie);
+	}
 
 	next_handler = (XHDI_HANDLER)newcookie;
 
@@ -228,7 +229,7 @@ static long
 XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	  ulong *blocks, char *partid)
 {
-	long pstart = pun_usb.partition_start[drv];
+	long pstart;
 	BPB *myBPB;
 
 	DEBUG(("XHInqDev2(%c:) drv=%d pun %x",
@@ -241,6 +242,11 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 			return ret;
 	}
 
+	if (drv >= MAX_LOGICAL_DRIVE)
+		return ENODEV;
+
+	pstart = pun_usb.partition_start[drv];
+
 	if (pun_usb.pun[drv] & PUN_VALID)
 		return ENODEV;
 
@@ -248,8 +254,10 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 		*major = (PUN_DEV+PUN_USB) & pun_usb.pun[drv];
 		DEBUG(("XHInqDev2() major: %d", *major));
 	}
+
 	if (minor)
 		*minor = 0;
+
 	if (bpb)
 		bpb->recsiz = 0;
 
@@ -309,6 +317,9 @@ XHInqDev(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb)
 		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
 	}
+
+	if (drv >= MAX_LOGICAL_DRIVE)
+		return ENODEV;
 
 	if (pun_usb.pun[drv] & PUN_VALID)
 		return ENODEV;
@@ -392,6 +403,9 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
 	}
+
+	if (dev >= MAX_LOGICAL_DRIVE)
+		return ENODEV;
 
 	if (pun_usb.pun[dev] & PUN_VALID)
 		return ENODEV;
@@ -635,9 +649,9 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 }
 
 long
-xhdi_handler(ushort stack)
+xhdi_handler(ushort *stack)
 {
-	ushort opcode = stack;
+	ushort opcode = *stack;
 
 	DEBUG(("XHDI handler, opcode: %d", opcode));
 
@@ -658,7 +672,7 @@ xhdi_handler(ushort stack)
 				ulong *blocksize;
 				ulong *deviceflags;
 				char *productname;
-			} *args = (struct XHINQTARGET_args *)(&stack);
+			} *args = (struct XHINQTARGET_args *)stack;
 
 			return XHInqTarget(args->major, args->minor,
 					   args->blocksize, args->deviceflags,
@@ -674,7 +688,7 @@ xhdi_handler(ushort stack)
 				ushort minor;
 				ushort do_reserve;
 				ushort key;
-			} *args = (struct XHRESERVE_args *)(&stack);
+			} *args = (struct XHRESERVE_args *)stack;
 
 			return XHReserve(args->major, args->minor,
 					 args->do_reserve, args->key);
@@ -689,7 +703,7 @@ xhdi_handler(ushort stack)
 				ushort minor;
 				ushort do_lock;
 				ushort key;
-			} *args = (struct XHLOCK_args *)(&stack);
+			} *args = (struct XHLOCK_args *)stack;
 
 			return XHLock(args->major, args->minor,
 					  args->do_lock, args->key);
@@ -704,7 +718,7 @@ xhdi_handler(ushort stack)
 				ushort minor;
 				ushort do_stop;
 				ushort key;
-			} *args = (struct XHSTOP_args *)(&stack);
+			} *args = (struct XHSTOP_args *)stack;
 
 			return XHStop(args->major, args->minor,
 					  args->do_stop, args->key);
@@ -719,7 +733,7 @@ xhdi_handler(ushort stack)
 				ushort minor;
 				ushort do_eject;
 				ushort key;
-			} *args = (struct XHEJECT_args *)(&stack);
+			} *args = (struct XHEJECT_args *)stack;
 
 			return XHEject(args->major, args->minor, args->do_eject,
 					   args->key);
@@ -740,7 +754,7 @@ xhdi_handler(ushort stack)
 				ushort *minor;
 				ulong *start;
 				BPB *bpb;
-			} *args = (struct XHINQDEV_args *)(&stack);
+			} *args = (struct XHINQDEV_args *)stack;
 
 			return XHInqDev(args->drv, args->major, args->minor,
 					args->start, args->bpb);
@@ -757,7 +771,7 @@ xhdi_handler(ushort stack)
 				char *company;
 				ushort *ahdi_version;
 				ushort *maxIPL;
-			} *args = (struct XHINQDRIVER_args *)(&stack);
+			} *args = (struct XHINQDRIVER_args *)stack;
 
 			return XHInqDriver(args->dev, args->name, args->version,
 					   args->company, args->ahdi_version,
@@ -770,7 +784,7 @@ xhdi_handler(ushort stack)
 			{
 				ushort opcode;
 				ulong newcookie;
-			} *args = (struct XHNEWCOOKIE_args *)(&stack);
+			} *args = (struct XHNEWCOOKIE_args *)stack;
 
 			return XHNewCookie(args->newcookie);
 		}
@@ -786,7 +800,7 @@ xhdi_handler(ushort stack)
 				ulong sector;
 				ushort count;
 				void *buf;
-			} *args = (struct XHREADWRITE_args *)(&stack);
+			} *args = (struct XHREADWRITE_args *)stack;
 
 			return XHReadWrite(args->major, args->minor, args->rw,
 					   args->sector, args->count,
@@ -804,7 +818,7 @@ xhdi_handler(ushort stack)
 				ulong *deviceflags;
 				char *productname;
 				ushort stringlen;
-			} *args = (struct XHINQTARGET2_args *)(&stack);
+			} *args = (struct XHINQTARGET2_args *)stack;
 
 			return XHInqTarget2(args->major, args->minor,
 						args->blocksize, args->deviceflags,
@@ -823,7 +837,7 @@ xhdi_handler(ushort stack)
 				BPB *bpb;
 				ulong *blocks;
 				char *partid;
-			} *args = (struct XHINQDEV2_args *)(&stack);
+			} *args = (struct XHINQDEV2_args *)stack;
 
 			return XHInqDev2(args->drv, args->major, args->minor,
 					 args->start, args->bpb, args->blocks,
@@ -839,7 +853,7 @@ xhdi_handler(ushort stack)
 				ulong key2;
 				ushort subopcode;
 				void *data;
-			} *args = (struct XHDRIVERSPECIAL_args *)(&stack);
+			} *args = (struct XHDRIVERSPECIAL_args *)stack;
 
 			return XHDriverSpecial(args->key1, args->key2,
 						   args->subopcode, args->data);
@@ -854,7 +868,7 @@ xhdi_handler(ushort stack)
 				ushort minor;
 				ulong *blocks;
 				ulong *blocksize;
-			} *args = (struct XHGETCAPACITY_args *)(&stack);
+			} *args = (struct XHGETCAPACITY_args *)stack;
 
 			return XHGetCapacity(args->major, args->minor,
 						 args->blocks, args->blocksize);
@@ -867,7 +881,7 @@ xhdi_handler(ushort stack)
 				ushort opcode;
 				ushort major;
 				ushort minor;
-			} *args = (struct XHMEDIUMCHANGED_args *)(&stack);
+			} *args = (struct XHMEDIUMCHANGED_args *)stack;
 
 			return XHMediumChanged(args->major, args->minor);
 		}
@@ -879,7 +893,7 @@ xhdi_handler(ushort stack)
 			{
 				ushort opcode;
 				void *data;
-			} *args = (struct XHMINTINFO_args *)(&stack);
+			} *args = (struct XHMINTINFO_args *)stack;
 
 			return XHMiNTInfo(args->data);
 		}
@@ -891,7 +905,7 @@ xhdi_handler(ushort stack)
 				ushort opcode;
 				ushort which;
 				ulong limit;
-			} *args = (struct XHDOSLIMITS_args *)(&stack);
+			} *args = (struct XHDOSLIMITS_args *)stack;
 
 			return XHDOSLimits(args->which, args->limit);
 		}
@@ -904,7 +918,7 @@ xhdi_handler(ushort stack)
 				ushort major;
 				ushort minor;
 				ulong *ms;
-			} *args = (struct XHLASTACCESS_args *)(&stack);
+			} *args = (struct XHLASTACCESS_args *)stack;
 
 			return XHLastAccess(args->major, args->minor, args->ms);
 		}
@@ -916,7 +930,7 @@ xhdi_handler(ushort stack)
 				ushort opcode;
 				ushort major;
 				ushort minor;
-			} *args = (struct XHREACCESS_args *)(&stack);
+			} *args = (struct XHREACCESS_args *)stack;
 
 			return XHReaccess(args->major, args->minor);
 		}
