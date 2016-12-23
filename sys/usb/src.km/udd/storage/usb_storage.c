@@ -144,6 +144,7 @@ extern void install_scsidrv(void);                             //usb_scsidrv.c
 #ifdef TOSONLY
 extern void SCSIDRV_MediaChange(long dev_num);
 #endif
+extern long dl_maxdrives;
 
 
 
@@ -529,7 +530,6 @@ is_extended_dos(long part_type)
 	return(part_type == 0x5 || part_type == 0xf || part_type == 0x85);
 }
 
-#ifndef TOSONLY
 /*
  * 	extract partition info for specified DOS-style partition
  */
@@ -585,7 +585,6 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
 	}
 	return -1;
 }
-#endif
 
 /*
  * 	extract partition info for specified partition
@@ -612,18 +611,11 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 		return 0;
 	}
 
-#ifndef TOSONLY
-	/*
-	* We only try adding DOS style partitions in FreeMiNT as HDDRIVER
-	* and other HD managers create a dual partition setup which has
-	* both Atari & DOS and we don't want both installed.
-	*/
 	if(buffer[DOS_PART_MAGIC_OFFSET] == 0x55 && buffer[DOS_PART_MAGIC_OFFSET+1] == 0xaa)
 	{
 		DEBUG(("found DOS MBR sector"));
 		return get_partinfo_dos(dev_desc,ext_part_sector,relative,part_num,which_part,info);
 	}
-#endif
 
 	return -1;
 }
@@ -2042,8 +2034,6 @@ extern USB_PUN_INFO pun_usb;                                //xhdi.c
 #define PUN_PTR	(*((PUN_INFO **) 0x516L))
 
 #ifdef TOSONLY
-#define MAX_LOGICAL_DRIVE 16
-
 /*
  * the following routine is stolen from FreeMiNT's pun.c module
  */
@@ -2113,8 +2103,6 @@ static PUN_INFO *install_pun(void)
 
 	return pun;
 }
-#else
-#define MAX_LOGICAL_DRIVE 32
 #endif
 
 PUN_INFO *get_pun(void)
@@ -2207,7 +2195,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		pun_usb.puns = 0;
 		pun_usb.version_num = 0x0300;
 		pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
-		memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE); /* mark all puns invalid */
+		memset(pun_usb.pun,0xff,dl_maxdrives); /* mark all puns invalid */
 	}
 
 	usb_storage_init();

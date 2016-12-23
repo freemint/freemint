@@ -50,6 +50,7 @@ long install_xhdi_driver(void);							//xhdi.c
 void install_scsidrv(void);			    				//usb_scsidrv.c
 extern USB_PUN_INFO pun_usb;							//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
+extern long dl_maxdrives;
 /*
  * end of stuff for other headers
  */
@@ -64,6 +65,7 @@ long uninstall_usb_stor(long logdrv);
 BPB *usb_getbpb(long logdrv);
 long usb_mediach(long logdrv);
 long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode);
+void usb_build_bpb(BPB *bpbptr,void *bs);
 
 
 /*
@@ -108,12 +110,19 @@ typedef struct {
 /*
  * DOS & Linux partition ids that we support
  */
-static const unsigned long valid_dos[] = { 0x01, 0x04, 0x06, 0x0e, 0x0b, 0x0c, 0x81, 0x83, 0 };
+#define FAT12 		0x01 /* FAT12 */
+#define FAT16LESS32	0x04 /* FAT16 less than 32MB */
+#define FAT16		0x06 /* FAT16 */
+#define FAT16LBA	0x0e /* FAT16 W95 LBA */
+#define FAT32		0x0b /* FAT32 W95 */
+#define FAT32LBA	0x0c /* FAT32 W95 LBA */
+#define OLDLINUX	0x81 /* OLD LINUX */
+#define LINUX		0x83 /* LINUX */
+static const unsigned long valid_dos[] = { FAT12, FAT16LESS32, FAT16, FAT16LBA, FAT32, FAT32LBA, OLDLINUX, LINUX, 0 };
 
 /*
  *	local function prototypes
  */
-static void build_bpb(BPB *bpbptr,void *bs);
 static unsigned long getilong(uchar *byte);
 static unsigned short getiword(uchar *byte);
 static long valid_drive(long logdrv);
@@ -159,58 +168,73 @@ static unsigned long getilong(uchar *byte)
 /*
  *	build the BPB from the boot sector
  *
- *	we set 'recsiz' to zero, meaning this partition is unavailable, for
+ *	we set 'clsizb' to zero, meaning this partition is unavailable, for
  *	any of the following reasons:
  *	1. too many clusters for the current TOS version
  *	2. logical sectors too large for the current TOS version
  */
-static void build_bpb(BPB *bpbptr, void *bs)
+void usb_build_bpb(BPB *bpbptr, void *bs)
 {
-	FAT16_BS *dosbs = (FAT16_BS*)bs;
-	unsigned short bps, spf;
-	unsigned long res, sectors, clusters;
-
-	bpbptr->recsiz = 0;						/* default to invalid size */
+	bpbptr->clsizb = 0;	/* default to invalid size */
 
 	/*
-	 * check for valid FAT16
+	 * check for valid BPB
 	 */
-	if (dosbs->spc == 0)
-		return;
-	bps = getiword(dosbs->bps);				/* bytes per sector */
-	if (bps == 0)
-		return;
-	if (bps > sys_XHDOSLimits(XH_DL_SECSIZ,0))
-		return;
+	if (bs) {
+		FAT16_BS *dosbs = (FAT16_BS*)bs;
+		unsigned short bps, spf;
+		unsigned long res, sectors, clusters;
 
-	bpbptr->recsiz = bps;
-	bpbptr->clsiz = dosbs->spc;				/* sectors per cluster */
-	bpbptr->clsizb = dosbs->spc * bps;
-	bpbptr->rdlen = (32L*getiword(dosbs->dir)+bps-1) / bps;/* root dir len, rounded up */
+		if (dosbs->spc == 0) {
+			return;
+		}
 
-	res = getiword(dosbs->res);				/* reserved sectors */
-	if (res == 0)							/* shouldn't happen:          */
-		res = 1;							/*  we use the TOS assumption */
-	spf = getiword(dosbs->spf);				/* sectors per fat */
-	bpbptr->fsiz = spf;
-	bpbptr->fatrec = res + spf;				/* start of fat #2 */
-	bpbptr->datrec = res + dosbs->fat*spf + bpbptr->rdlen;	/* start of data */
+		bps = getiword(dosbs->bps);				/* bytes per sector */
 
-	sectors = getiword(dosbs->sec);			/* old sector count */
-	if (!sectors) 							/* zero => more than 65535, */
-		sectors = getilong(dosbs->sec2);	/*  so use new sector count */
+		if (bps == 0) {
+			return;
+		}
 
-	clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
-	if (clusters > sys_XHDOSLimits(XH_DL_CLUSTS,0)) {
-		bpbptr->recsiz = 0;
+		bpbptr->recsiz = bps;
+		bpbptr->rdlen = 0;
+		bpbptr->clsiz = dosbs->spc;				/* sectors per cluster */
+		bpbptr->rdlen = (32L*getiword(dosbs->dir)) / bps;/* root dir len, rounded up */
+
+		res = getiword(dosbs->res);				/* reserved sectors */
+		if (res == 0)							/* shouldn't happen:          */
+			res = 1;							/*  we use the TOS assumption */
+		spf = getiword(dosbs->spf);				/* sectors per fat */
+		bpbptr->fsiz = spf;
+		bpbptr->fatrec = res + spf;				/* start of fat #2 */
+		bpbptr->datrec = res + dosbs->fat*spf + bpbptr->rdlen;	/* start of data */
+
+		sectors = getiword(dosbs->sec);			/* old sector count */
+		if (!sectors) 							/* zero => more than 65535, */
+			sectors = getilong(dosbs->sec2);	/*  so use new sector count */
+
+		clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
+		bpbptr->numcl = clusters;
+	}
+
+	/*
+	 * Do this here and we can re-evaluate the BPB when XHDI changes.
+	 */
+	if (bpbptr->recsiz > sys_XHDOSLimits(XH_DL_SECSIZ,0)) {
+		bpbptr->clsizb = 0;
 		return;
 	}
 
-	bpbptr->numcl = clusters;
-	if (clusters > sys_XHDOSLimits(XH_DL_CLUSTS12,0))
-		bpbptr->bflags = 1;					/* FAT16 */
+	if (bpbptr->numcl > sys_XHDOSLimits(XH_DL_CLUSTS,0)) {
+		bpbptr->clsizb = 0;
+		return;
+	}
+
+	if (bpbptr->numcl > sys_XHDOSLimits(XH_DL_CLUSTS12,0))
+		bpbptr->bflags = 1;				/* FAT16 */
 	else 
-		bpbptr->bflags = 0;					/* FAT12 */
+		bpbptr->bflags = 0;				/* FAT12 */
+
+	bpbptr->clsizb = bpbptr->clsiz * bpbptr->recsiz;
 }
 
 #ifdef DEBUGGING_ROUTINES
@@ -268,13 +292,11 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
  */
 static int valid_partition(unsigned long type)
 {
-#ifndef TOSONLY
 	const unsigned long *valid;
 
 	for (valid = valid_dos; *valid; valid++)
 		if (type == *valid)
 			return 1;
-#endif
 
 	type &= 0x00ffffffL;
 
@@ -302,7 +324,7 @@ static int valid_partition(unsigned long type)
  *	returns -1 for error, otherwise the drive number assigned
  */
 long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_offset,
-					unsigned long part_size,char *vendor,char *revision,char *product)
+			unsigned long part_size,char *vendor,char *revision,char *product)
 {
 	char boot_sector[DEFAULT_SECTOR_SIZE];
 	int logdrv;
@@ -336,10 +358,10 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * find first free non-floppy drive
 	 */
-	for (logdrv = 'C'-'A', mask = (1L<<logdrv); logdrv < MAX_LOGICAL_DRIVE; logdrv++, mask<<=1)
+	for (logdrv = 'C'-'A', mask = (1L<<logdrv); logdrv < dl_maxdrives; logdrv++, mask<<=1)
 		if (!(drvbits&mask))
 			break;
-	if (logdrv >= MAX_LOGICAL_DRIVE) {
+	if (logdrv >= dl_maxdrives) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"no drives available");
@@ -373,7 +395,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 
 	pun_usb.psize[logdrv] = part_size;
 	pun_usb.flags[logdrv] = CHANGE_FLAG;
-	build_bpb(&pun_usb.bpb[logdrv],(FAT16_BS *)boot_sector);
+	usb_build_bpb(&pun_usb.bpb[logdrv],(FAT16_BS *)boot_sector);
 
 	/*
 	 * update drive bits etc
@@ -381,7 +403,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	drvbits |= 1L << logdrv;
 	my_drvbits |= 1L << logdrv;			/* used for XHDI */
 	if (logdrv == 'C'-'A') {			/* if drive C, make it the boot drive */
-		bootdev = logdrv;				/* (is this correct?)                 */
+		//bootdev = logdrv;				/* (is this correct?)                 */
 		d_setdrv(logdrv);
 	}
 
@@ -416,7 +438,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 
 long uninstall_usb_stor(long logdrv)
 {
-	if ((logdrv < 0) || (logdrv >= MAX_LOGICAL_DRIVE))
+	if ((logdrv < 0) || (logdrv >= dl_maxdrives))
 		return -1L;
 
 	pun_usb.puns--;
@@ -446,7 +468,7 @@ long uninstall_usb_stor(long logdrv)
  */
 static long valid_drive(long logdrv)
 {
-	if ((logdrv < 0) || (logdrv >= MAX_LOGICAL_DRIVE))
+	if ((logdrv < 0) || (logdrv >= dl_maxdrives))
 		return 0;
 
 	if (pun_usb.pun[logdrv] & PUN_VALID)	/* means invalid ... */
@@ -481,14 +503,13 @@ BPB *usb_getbpb(long logdrv)
 	bpbptr = &pun_usb.bpb[logdrv];
 
 #ifdef TOSONLY
-	/*
-	 * ensure that filesystem inside partition is suitable for TOS
-	 * (paranoia rules)
-	 */
-	if (bpbptr->recsiz == 0)	/* not FAT16 when building the BPB */
-		return NULL;
-	if (bpbptr->clsiz != 2)		/* TOS only likes 2-sector clusters */
-		return NULL;
+ 	/*
+ 	 * ensure that filesystem inside partition is suitable for TOS
+ 	 * (paranoia rules)
+ 	 */
+	if (bpbptr->clsizb == 0) {
+ 		return NULL;
+	}
 #endif
 
 	/* clear the media change flag */
@@ -514,9 +535,6 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	/* 
 	 * Tell the user that the media has changed, so call getbpb first !
 	 */
-	if (pun_usb.flags[logdrv] & CHANGE_FLAG)
-		return ECHMEDIA;
-
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
 		physdev = logdrv & PUN_DEV;	/*  has already allowed for floppies     */
 	} else {
@@ -525,8 +543,11 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 		if (!valid_drive(logdrv))
 			return ENXIO;		/* same as EDRIVE */
 
+		if (pun_usb.flags[logdrv] & CHANGE_FLAG)
+			return ECHMEDIA;
+
 		bpbptr = &pun_usb.bpb[logdrv];
-		if (!bpbptr->recsiz)
+		if (!bpbptr->clsizb)
 			return ENXIO;
 
 		phys_per_log = bpbptr->recsiz / 512;
