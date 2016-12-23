@@ -66,6 +66,7 @@ extern block_dev_desc_t *usb_stor_get_dev(long);
 extern ulong usb_stor_read(long, ulong, ulong, void *);
 extern ulong usb_stor_write(long, ulong, ulong, const void *);
 extern void usb_stor_eject(long);
+extern void usb_build_bpb(BPB *bpbptr, void *bs);
 
 /*--- Functions prototypes ---*/
 
@@ -75,6 +76,7 @@ static XHDI_HANDLER next_handler; /* Next handler installed by XHNewCookie() */
 extern long usbxhdi(ushort opcode, ...);
 long install_xhdi_driver(void);
 long xhdi_handler(ushort *stack);
+long dl_maxdrives = MAX_LOGICAL_DRIVE;
 
 /*--- Global variables ---*/
 
@@ -91,13 +93,18 @@ sys_XHDOSLimits(ushort which,ulong limit)
 {
 #ifdef TOSONLY
 	static long dl_secsiz, dl_clusts, dl_maxsec, dl_clusts12;
+	static long dl_clustsiz, dl_minspc = 2, dl_maxspc = 2;
+	static long dl_clusts32;
+	static long dl_minfat, dl_maxfat;
 	static int first_time = 1;
+	long old_limit = 0;
+	long unhandled = 0;
+	long i;
 
 	if (first_time)
 	{
 		ushort version = Sversion();            /* determine GEMDOS version */
 		version = (version>>8) | (version<<8);  /* swap to correct order */
-
 		if (version > 0x0040)       /* unknown               */
 			version = 0x0000;       /* so force it to lowest */
 
@@ -122,67 +129,117 @@ sys_XHDOSLimits(ushort which,ulong limit)
 			dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
 			dl_clusts12 = MAX_FAT12_CLUSTERS;
 		}
+		dl_clustsiz = dl_secsiz * 2;
+		dl_clusts32 = 0;
+		dl_minfat = 2;
+		dl_maxfat = 2;
 		first_time = 0;
 	}
 
-	if (limit == 0)
+	switch (which)
 	{
-		switch (which)
-		{
-			/* maximal sector size (BIOS level) */
-			case XH_DL_SECSIZ:
-				return dl_secsiz;
+		/* maximal sector size (BIOS level) */
+		case XH_DL_SECSIZ:
+			old_limit = dl_secsiz;
+			if (limit != 0)
+				dl_secsiz = limit;
+			break;
 
-			/* minimal number of FATs */
-			case XH_DL_MINFAT:
-				return 2L;
+		/* minimal number of FATs */
+		case XH_DL_MINFAT:
+			old_limit = dl_minfat;
+			if (limit != 0)
+				dl_minfat = limit;
+			break;
 
-			/* maximal number of FATs */
-			case XH_DL_MAXFAT:
-				return 2L;
+		/* maximal number of FATs */
+		case XH_DL_MAXFAT:
+			old_limit = dl_maxfat;
+			if (limit != 0)
+				dl_maxfat = limit;
+			break;
 
-			/* sectors per cluster minimal */
-			case XH_DL_MINSPC:
-				return 2L;
+		/* sectors per cluster minimal */
+		case XH_DL_MINSPC:
+			old_limit = dl_minspc;
+			if (limit != 0)
+				dl_minspc = limit;
+			break;
 
-			/* sectors per cluster maximal */
-			case XH_DL_MAXSPC:
-				return 2L;
+		/* sectors per cluster maximal */
+		case XH_DL_MAXSPC:
+			old_limit = dl_maxspc;
+			if (limit != 0)
+				dl_maxspc = limit;
+			break;
 
-			/* maximal number of clusters of a 16 bit FAT */
-			case XH_DL_CLUSTS:
-				return dl_clusts;
+		/* maximal number of clusters of a 16 bit FAT */
+		case XH_DL_CLUSTS:
+			old_limit = dl_clusts;
+			if (limit != 0)
+				dl_clusts = limit;
+			break;
 
-			/* maximal number of sectors */
-			case XH_DL_MAXSEC:
-				return dl_maxsec;
+		/* maximal number of sectors */
+		case XH_DL_MAXSEC:
+			old_limit = dl_maxsec;
+			if (limit != 0)
+				dl_maxsec = limit;
+			break;
 
-			/* maximal number of BIOS drives supported by the DOS */
-			case XH_DL_DRIVES:
-				return MAX_LOGICAL_DRIVE;
+		/* maximal number of BIOS drives supported by the DOS */
+		case XH_DL_DRIVES:
+			old_limit = dl_maxdrives;
+			if (limit != 0)
+				dl_maxdrives = limit;
+			break;
 
-			/* maximal clustersize */
-			case XH_DL_CLSIZB:
-				return dl_secsiz * 2;
+		/* maximal clustersize */
+		case XH_DL_CLSIZB:
+			old_limit = dl_clustsiz;
+			if (limit != 0)
+				dl_clustsiz = limit;
+			break;
 
-			/* maximal (bpb->rdlen * bpb->recsiz / 32) */
-			case XH_DL_RDLEN:
-				return 1008L;   /* we return the same value as HDDRIVER */
+		/* maximal (bpb->rdlen * bpb->recsiz / 32) */
+		case XH_DL_RDLEN:
+			return 1008L;   /* we return the same value as HDDRIVER */
 
-			/* maximal number of clusters of a 12 bit FAT */
-			case XH_DL_CLUSTS12:
-				return dl_clusts12;
+		/* maximal number of clusters of a 12 bit FAT */
+		case XH_DL_CLUSTS12:
+			old_limit = dl_clusts12;
+			if (limit != 0)
+				dl_clusts12 = limit;
+			break;
 
-			/* maximal number of clusters of a 32 bit FAT */
-			case XH_DL_CLUSTS32:
-				return 0L;          /* TOS doesn't support FAT32 */
+		/* maximal number of clusters of a 32 bit FAT */
+		case XH_DL_CLUSTS32:
+			old_limit = dl_clusts32;
+			if (limit != 0)
+				dl_clusts32 = limit;
+			break;
 
-			/* supported bits in bpb->bflags */
-			case XH_DL_BFLAGS:
-				return 0x00000001L;
+		/* supported bits in bpb->bflags */
+		case XH_DL_BFLAGS:
+			return 0x00000001L;
+
+		default:
+			unhandled = 1;
+			break;
+	}
+
+	if (unhandled) {
+		return ENOSYS;
+	}
+
+	/* Rebuild BPB based on XHDOSLimit changes */
+	if (limit != 0) {
+		for (i = 0; i < dl_maxdrives; i++) {
+			usb_build_bpb(&pun_usb.bpb[i], NULL);
 		}
 	}
-	return ENOSYS;
+
+	return old_limit;
 #else
 	return xhdoslimits(which, limit);
 #endif /* TOSONLY */
@@ -242,7 +299,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 			return ret;
 	}
 
-	if (drv >= MAX_LOGICAL_DRIVE)
+	if (drv >= dl_maxdrives)
 		return ENODEV;
 
 	pstart = pun_usb.partition_start[drv];
@@ -318,7 +375,7 @@ XHInqDev(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb)
 			return ret;
 	}
 
-	if (drv >= MAX_LOGICAL_DRIVE)
+	if (drv >= dl_maxdrives)
 		return ENODEV;
 
 	if (pun_usb.pun[drv] & PUN_VALID)
@@ -404,7 +461,7 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 			return ret;
 	}
 
-	if (dev >= MAX_LOGICAL_DRIVE)
+	if (dev >= dl_maxdrives)
 		return ENODEV;
 
 	if (pun_usb.pun[dev] & PUN_VALID)

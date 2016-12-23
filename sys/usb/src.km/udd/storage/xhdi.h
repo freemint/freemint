@@ -42,11 +42,7 @@ typedef struct bpb BPB;
 
 /* Extended pun struct for USB */
 
-#ifdef TOSONLY
-#define MAX_LOGICAL_DRIVE 16
-#else
 #define MAX_LOGICAL_DRIVE 32
-#endif
 
 struct usb_pun_info
 {
