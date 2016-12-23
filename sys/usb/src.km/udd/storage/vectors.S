@@ -35,11 +35,7 @@
 #define pinfo_pun       2           /* offset to pun[] within PUN_INFO */
 
 // FixME - defined in xhdi.h as well
-#ifdef TOSONLY
-#define MAX_LOGICAL_DRIVE   16
-#else
 #define MAX_LOGICAL_DRIVE   32
-#endif
 
     .text
 /*
