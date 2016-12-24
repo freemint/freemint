@@ -77,6 +77,7 @@ extern long usbxhdi(ushort opcode, ...);
 long install_xhdi_driver(void);
 long xhdi_handler(ushort *stack);
 long dl_maxdrives = MAX_LOGICAL_DRIVE;
+long XHDOSLimits(ushort which, ulong limit);
 
 /*--- Global variables ---*/
 
@@ -88,7 +89,7 @@ USB_PUN_INFO pun_usb;
 /*
  * XHDI syscall XHDOSLimits routine
  */
-long
+static long
 sys_XHDOSLimits(ushort which,ulong limit)
 {
 #ifdef TOSONLY
@@ -521,20 +522,21 @@ XHMiNTInfo(void *data)
 	return ENOSYS;
 }
 
-static long
+long
 XHDOSLimits(ushort which, ulong limit)
 {
-	if (next_handler) {
-		long ret = next_handler(XHDOSLIMITS, which, limit);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (limit != 0) {
+		(void)sys_XHDOSLimits(which, limit);
 	}
 
-#ifdef TOSONLY
-	return sys_XHDOSLimits(which,limit);
-#else
-	return ENOSYS;	/* so FreeMiNT kernel will handle this call */
-#endif
+	if (next_handler) {
+		long ret = next_handler(XHDOSLIMITS, which, limit);
+		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO) {
+			return ret;
+		}
+	}
+
+	return sys_XHDOSLimits(which, limit);
 }
 
 static long
@@ -1051,6 +1053,11 @@ set_cookie (void)
 	while (cjar->tag)
 	{
 		n++;
+		if (cjar->tag == *((long *)"XHDI"))
+		{
+			cjar->value = (long)&usbxhdi;
+			return;
+		}
 		cjar++;
 	}
 
@@ -1072,7 +1079,7 @@ long
 install_xhdi_driver(void)
 {
 #ifndef TOSONLY
-	return xhnewcookie(*xhdi_handler);
+	return xhnewcookie(xhdi_handler);
 #else
 	long r = 0;
 	cookie_fun XHDI = get_fun_ptr ();
@@ -1109,10 +1116,10 @@ install_xhdi_driver(void)
 		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
 	        (void)XHDI(XHDOSLIMITS, XH_DL_BFLAGS, tmp);
 
-		r = XHDI(XHNEWCOOKIE, *xhdi_handler);
-	} else {
-		set_cookie();
+		next_handler = XHDI;
 	}
+
+	set_cookie();
 
 	return r;
 #endif

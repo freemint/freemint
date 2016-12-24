@@ -145,6 +145,7 @@ extern void install_scsidrv(void);                             //usb_scsidrv.c
 extern void SCSIDRV_MediaChange(long dev_num);
 #endif
 extern long dl_maxdrives;
+extern long XHDOSLimits(ushort which, ulong limit);
 
 
 
@@ -2060,7 +2061,7 @@ static PUN_INFO *install_pun(void)
 	long bufsiz, bufcnt = 0L;
 	char *bufptr;
 
-	bufsiz = sys_XHDOSLimits(XH_DL_SECSIZ,0);
+	bufsiz = XHDOSLimits(XH_DL_SECSIZ,0);
 
 	/*
 	 * allocate new buffers for BCB chains
@@ -2211,7 +2212,6 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	if (!Super(1L))
 		ret = Super(0L);
 #endif
-
 	install_vectors();
 	install_xhdi_driver();
 	install_scsidrv();

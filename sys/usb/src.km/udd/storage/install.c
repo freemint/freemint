@@ -37,20 +37,17 @@
 
 #define bootdev			*(short *)0x446
 #define drvbits			*(unsigned long *)0x4C2
-
-void install_vectors(void);								//vectors.S
-
 #define DEFAULT_SECTOR_SIZE 2048						//usb_storage.c
 unsigned long usb_stor_read(long device,unsigned long blknr,
 		unsigned long blkcnt,void *buffer);				//usb_storage.c
 unsigned long usb_stor_write(long device,unsigned long blknr,
 		unsigned long blkcnt,const void *buffer);		//usb_storage.c
 
-long install_xhdi_driver(void);							//xhdi.c
-void install_scsidrv(void);			    				//usb_scsidrv.c
 extern USB_PUN_INFO pun_usb;							//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
 extern long dl_maxdrives;
+extern long XHDOSLimits(ushort which, ulong limit);
+
 /*
  * end of stuff for other headers
  */
@@ -219,17 +216,17 @@ void usb_build_bpb(BPB *bpbptr, void *bs)
 	/*
 	 * Do this here and we can re-evaluate the BPB when XHDI changes.
 	 */
-	if (bpbptr->recsiz > sys_XHDOSLimits(XH_DL_SECSIZ,0)) {
+	if (bpbptr->recsiz > XHDOSLimits(XH_DL_SECSIZ,0)) {
 		bpbptr->clsizb = 0;
 		return;
 	}
 
-	if (bpbptr->numcl > sys_XHDOSLimits(XH_DL_CLUSTS,0)) {
+	if (bpbptr->numcl > XHDOSLimits(XH_DL_CLUSTS,0)) {
 		bpbptr->clsizb = 0;
 		return;
 	}
 
-	if (bpbptr->numcl > sys_XHDOSLimits(XH_DL_CLUSTS12,0))
+	if (bpbptr->numcl > XHDOSLimits(XH_DL_CLUSTS12,0))
 		bpbptr->bflags = 1;				/* FAT16 */
 	else 
 		bpbptr->bflags = 0;				/* FAT12 */
