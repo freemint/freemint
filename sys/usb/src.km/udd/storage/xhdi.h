@@ -115,6 +115,4 @@ typedef struct usb_pun_info USB_PUN_INFO;
 #define MAX_FAT12_CLUSTERS  4078L
 #define MAX_FAT16_CLUSTERS  65518L
 
-long sys_XHDOSLimits(ushort which,ulong limit);	/* called directly by install.c */
-
 #endif /* _XHDI_H */
