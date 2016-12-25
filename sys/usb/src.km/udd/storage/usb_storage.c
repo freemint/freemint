@@ -2049,6 +2049,8 @@ BCB
 	char	*b_bufr;	/* pointer to buffer (API) */
 };
 
+static PUN_INFO pun_ahdi;
+
 /*
  * when no AHDI structure exists, this routine is called to install one.
  * it assumes that the existing buffer pool uses 512-byte buffers (the
@@ -2063,6 +2065,17 @@ static PUN_INFO *install_pun(void)
 
 	bufsiz = XHDOSLimits(XH_DL_SECSIZ,0);
 
+	memset(&pun_ahdi,0x00,sizeof(PUN_INFO));
+	memset(&pun_ahdi.pun,0xff,16); 
+
+	pun = PUN_PTR;
+	if (pun)
+		if (pun->cookie == AHDI)
+			if (pun->cookie_ptr == &(pun->cookie))
+				if (pun->version_num >= 0x300) 
+					if (bufsiz == pun->max_sect_siz) 
+						return pun;
+
 	/*
 	 * allocate new buffers for BCB chains
 	 */
@@ -2073,17 +2086,9 @@ static PUN_INFO *install_pun(void)
 	bufptr = (char *)kmalloc(bufcnt*bufsiz);
 	if (!bufptr)
 		return NULL;
+	memset(bufptr, 0, bufcnt*bufsiz);
 
-	/*
-	 * create & initialise PUN_INFO structure
-	 */
-	pun = (PUN_INFO *)kmalloc(sizeof(PUN_INFO));
-	if (!pun) {
-		kfree(bufptr);
-		return NULL;
-	}
-	memset(pun,0x00,sizeof(PUN_INFO));
-	memset(pun->pun,0xff,16); 
+	pun = &pun_ahdi;
 	pun->cookie = AHDI;
 	pun->cookie_ptr = &pun->cookie;
 	pun->version_num = 0x0300;
@@ -2093,13 +2098,15 @@ static PUN_INFO *install_pun(void)
 	/*
 	 * copy existing buffers to new ones, updating the BCBs
 	 */
-	for (bcb = bufl0; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
+	for (bcb = bufl0; bcb; bcb = bcb->b_link) {
 		memcpy(bufptr,bcb->b_bufr,512);
 		bcb->b_bufr = bufptr;
+		bufptr += bufsiz;
 	}
-	for (bcb = bufl1; bcb; bcb = bcb->b_link, bufptr += bufsiz) {
+	for (bcb = bufl1; bcb; bcb = bcb->b_link) {
 		memcpy(bufptr,bcb->b_bufr,512);
 		bcb->b_bufr = bufptr;
+		bufptr += bufsiz;
 	}
 
 	return pun;
@@ -2111,36 +2118,32 @@ PUN_INFO *get_pun(void)
 	PUN_INFO *pun;
 #ifdef TOSONLY
 	long ret = 0;
+#endif
 
+#ifndef TOSONLY
+	pun = PUN_PTR;
+	if (pun)
+		if (pun->cookie == AHDI)
+			if (pun->cookie_ptr == &(pun->cookie))
+				if (pun->version_num >= 0x300) {
+					return pun;
+				}
+	return NULL;
+#else
 	/* goto supervisor mode because of drvbits & handlers */
 	if (!Super(1L))
 		ret = Super(0L);
-#endif
-	pun = PUN_PTR;
 
-	if (pun)
-		if (pun->cookie == 0x41484449L)
-			if (pun->cookie_ptr == &(pun->cookie))
-				if (pun->version_num >= 0x300) {
-#ifdef TOSONLY
-					if (ret)
-						SuperToUser(ret);
-#endif
-					return pun;
-				}
-
-#ifdef TOSONLY
 	/*
 	 * install PUN_INFO if necessary (i.e. no hard disk driver loaded)
 	 */
-	if (!pun)
-		pun = install_pun();
+	pun = install_pun();
 
 	if (ret)
 		SuperToUser(ret);
-#endif
 
 	return pun;
+#endif
 }
 
 #ifdef TOSONLY
