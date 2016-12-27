@@ -1729,6 +1729,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	ccb pccb;
 	DEBUG(("usb_stor_get_info()"));
 
+#if 0
 	/* for some reasons a couple of devices would not survive this reset */
 	if(
 	 /* Sony USM256E */
@@ -1746,6 +1747,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	else {
 		ss->transport_reset(ss);
 	}
+#endif
 
 	pccb.pdata = usb_stor_buf;
 	dev_desc->priv = dev;
