@@ -21,11 +21,18 @@
  * MA 02111-1307 USA
  */
 
-#include "cookie.h"
-#include "usbnet.h"
-#include "libkern/libkern.h"
-#include "mint/dcntl.h"
+#if 0
+# define DEV_DEBUG	1
+#endif
 
+#include "usbnet.h"
+#ifndef TOSONLY
+#include "mint/mint.h"
+#include "libkern/libkern.h"
+#else
+#include "gem.h"
+#endif
+#include "../../global.h"
 #include "../../usb.h"
 #include "../../usb_api.h"
 
@@ -38,33 +45,7 @@ typedef struct
 
 #define COOKIEBASE (*(COOKIE **)0x5a0)
 
-/*
- * Debug section
- */
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-#else
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
-# define ASSERT(x)	assert x
-#endif
-
-#define VER_MAJOR       0
-#define VER_MINOR       1
-#define VER_STATUS      
-
-#define MSG_VERSION     str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+#define MSG_VERSION     "0.1"
 #define MSG_BUILDDATE   __DATE__
 
 #define MSG_BOOT	\
@@ -112,7 +93,6 @@ static struct uddif eth_uif =
 struct kentry   *kentry;
 struct usb_module_api   *api;
 struct usb_netapi *usbNetAPI = NULL;
-long _cdecl init (struct kentry *, struct usb_module_api *, long, long);
 
 /* END kernel interface */
 /****************************************************************************/
@@ -120,6 +100,63 @@ long _cdecl init (struct kentry *, struct usb_module_api *, long, long);
 #include "usb_ether.h"
 
 static struct ueth_data *usb_eth;
+
+#ifdef TOSONLY
+/*
+ * For USB ethernet devices.
+ */
+#define MAX_USB_ETHERNET_DEVICES 4
+# define COOKIE_EUSB	0x45555342L
+
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	long n = 0;
+
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == COOKIE_EUSB)
+		{
+			cjar->value = (long)usbNetAPI;
+			return;
+		}
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = COOKIE_EUSB;
+		cjar->value = (long)usbNetAPI;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
+static long usb_eth_register(struct usb_eth_prob_dev *ethdev)
+{
+	long i;
+
+	for (i = 0; i < usbNetAPI->numDevices; i++) {
+		if (!usbNetAPI->usbnet[i].before_probe) {
+			usbNetAPI->usbnet[i] = *ethdev;
+
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static void usb_eth_deregister(long i)
+{
+	memset(&usbNetAPI->usbnet[i], 0, sizeof(struct usb_eth_prob_dev));
+}
+#endif
 
 /*
  * Given a USB device, ask each driver if it can support it, and attach it
@@ -154,7 +191,6 @@ static long probe_valid_drivers(struct usb_device *dev, unsigned int ifnum)
 			return 0;
 		}
 	}
-
 	return -1;
 }
 
@@ -199,26 +235,69 @@ ethernet_disconnect(struct usb_device *dev)
 			break;
 		};
 	}
-
 	return 0;
 }
 
+#ifdef TOSONLY
+int init (void);
+int
+init (void)
+#else
+long _cdecl init (struct kentry *, struct usb_module_api *, long, long);
 long _cdecl
 init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
+#endif
 {
+#ifndef TOSONLY
 	COOKIE *cookie = COOKIEBASE;
+#endif
 	long ret;
 
+#ifndef TOSONLY
 	kentry	= k;
 	api	= uapi;
 
 	if (check_kentry_version())
 		return -1;
+#endif
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
+#ifdef TOSONLY
+	/*
+	 * GET _USB COOKIE to REGISTER 
+	 */
+	api = get_usb_cookie ();
+	if (!api)
+	{
+		(void) Cconws ("ETH failed to get _USB cookie\r\n");
+		return -1;
+	}
+
+ 	/* Set the EUSB cookie so that USB ethernet devices can be probed. */
+	usbNetAPI = (struct usb_netapi *)kmalloc(sizeof(struct usb_netapi));
+	if (!usbNetAPI) {
+		(void) Cconws ("Failed to alloc usbNetAPI\r\n");
+		return -1;
+	}
+	memset(&usbNetAPI, 0, sizeof(struct usb_netapi));
+
+	usbNetAPI->majorVersion = 0;
+	usbNetAPI->minorVersion = 0;
+	usbNetAPI->numDevices = MAX_USB_ETHERNET_DEVICES;
+	usbNetAPI->usb_eth_register = usb_eth_register;
+	usbNetAPI->usb_eth_deregister = usb_eth_deregister;
+	usbNetAPI->usbnet = (struct usb_eth_prob_dev *)kmalloc(usbNetAPI->numDevices * sizeof(struct usb_eth_prob_dev));
+	if (!usbNetAPI->usbnet) {
+		(void) Cconws ("Failed to alloc usbnet\r\n");
+		return -1;
+	}
+	memset(usbNetAPI->usbnet, 0, usbNetAPI->numDevices * sizeof(struct usb_eth_prob_dev));
+
+	set_cookie ();
+#else
 	/*
 	 * Find EUSB cookie.
 	 */
@@ -226,6 +305,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	{
 		while (cookie->name)
 		{
+#define COOKIE_EUSB	0x45555342L
 			if (cookie->name == COOKIE_EUSB) {
 				usbNetAPI = (struct usb_netapi *)cookie->val;
 				break;
@@ -238,8 +318,9 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		c_conws (MSG_FAILURE);
 		return 1;
 	}
+#endif
 
-	usb_eth = kmalloc(sizeof(struct ueth_data) * usbNetAPI->numDevices);
+	usb_eth = (struct ueth_data *) kmalloc(sizeof(struct ueth_data) * usbNetAPI->numDevices);
 	if (!usb_eth) {
 		c_conws (MSG_FAILURE);
 		return 1;
