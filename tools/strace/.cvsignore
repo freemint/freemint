@@ -1,6 +1,0 @@
-.deps
-genstamp
-gentables
-strace
-sysenttab.c
-sysenttab.h
