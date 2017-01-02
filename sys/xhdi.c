@@ -72,8 +72,11 @@ XHDIfail (ushort opcode, ...)
 /* XHDI handler function */
 static long (*XHDI)(ushort opcode, ...) = XHDIfail;
 
+static long sys_XHDOSLimits (ushort which, ulong limit);
+
 ushort XHDI_installed = 0;
 
+#define XHDOSLIMITS 17
 
 long
 XHDI_init (void)
@@ -102,6 +105,36 @@ XHDI_init (void)
 	/* we need at least XHDI 1.10 */
 	if (XHDI_installed >= 0x110)
 	{
+		long tmp;
+
+		/* Tell the underlying XHDI driver of our limits. */
+		tmp = sys_XHDOSLimits(XH_DL_SECSIZ, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_SECSIZ, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MINFAT, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MINFAT, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXFAT, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MAXFAT, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MINSPC, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MINSPC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXSPC, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MAXSPC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXSEC, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_MAXSEC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_DRIVES, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_DRIVES, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLSIZB, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLSIZB, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_RDLEN, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_RDLEN, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS12, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS12, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS32, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS32, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
+	        (void)XHDI(XHDOSLIMITS, XH_DL_BFLAGS, tmp);
+
 # ifdef NONBLOCKING_DMA
 		r = XHMiNTInfo (XH_MI_SETKERINFO, &kernelinfo);
 # else
@@ -193,7 +226,7 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			
 			/* supported bits in bpb->bflags */
 			case XH_DL_BFLAGS:
-				return XHDOSLimits (XH_DL_BFLAGS, 0UL);
+				return XHDI (XH_DL_BFLAGS, 0UL);
 		}
 	}
 	
