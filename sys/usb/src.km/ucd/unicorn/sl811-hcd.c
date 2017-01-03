@@ -1424,7 +1424,7 @@ unicorn_int (void)
 		return;
 #endif
 
-	if (!(MFP_GPIP & 0x20)) {
+	if ((MFP_GPIP & 0x30) == 0x20) {
 		unsigned char status;
 
 		if (check_flock() != 0) { 
