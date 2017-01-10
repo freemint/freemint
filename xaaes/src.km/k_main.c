@@ -1,3 +1,4 @@
+/*k_main.c last change: Sun Sep 25 11:31:57 2016*/
 /*
  * $Id$
  *
@@ -1313,7 +1314,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				if (flag)
 				{
 					C.shutdown_step = 1;
-					set_shutdown_timeout(SD_TIMEOUT); //(4000);
+					set_shutdown_timeout(SD_TIMEOUT);
 				}
 			}
 			else
@@ -1742,7 +1743,7 @@ k_main(void *dummy)
 				C.reschange = open_nova_reschange;
 		}
 	}
-#endif
+#endif	/*0*/
 	{
 	short x;
 	if( mt_appl_init(my_global_aes) != -1 )
@@ -1875,7 +1876,6 @@ k_main(void *dummy)
 		adi_move( 0, x, y );
 		xa_graf_mouse(-1, NULL, C.Aes, true);
 	}
-
 	/*
 	 * console-output:
 	 * if RAW Ctrl-S is not eaten by the kernel, but \n is not translated to \r\n
@@ -2108,6 +2108,7 @@ k_main(void *dummy)
 
 leave:
 	{
+		if( wait )C.shutdown |= INIT_ERROR;
 		/* delete semaphore */
 		r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
 		if( r )
@@ -2203,12 +2204,6 @@ k_exit(int wait)
 	}
 
 	k_shutdown();
-	if (wait)
-	{
-		display("XaAES: see %s - press any key to continue ...", C.bootlog_path);
-		_c_conin();
-	}
-
 	if (c_naes)
 	{
 		delete_cookie( (void**)&c_naes, C_nAES, 1 );
@@ -2259,6 +2254,7 @@ k_exit(int wait)
 		f_close( cfg.remote_inp->u.fd );
 	}
 #endif
+
 	BLOG((1,"wake loader: %lx;shutdown=%x", (long)&loader_pid, C.shutdown));
 	wake(WAIT_Q, (long)&loader_pid);
 
@@ -2275,3 +2271,4 @@ k_exit(int wait)
 
 	kthread_exit(0);
 }
+/* -- end of k_main.c -- */

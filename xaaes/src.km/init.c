@@ -1,3 +1,4 @@
+/*init.c last change: Sat Sep 17 10:45:37 2016*/
 /*
  * $Id$
  *
@@ -759,7 +760,6 @@ again:
 	BLOG((false, "Creating XaAES kernel thread"));
 	{
 		long r;
-
 		r = kthread_create(NULL, k_main, NULL, &(C.Aes->p), "AESSYS");
 		if (r)
 			/* XXX todo -> exit gracefully */
@@ -777,6 +777,13 @@ again:
 		{
 			sleep(WAIT_Q, (long)&loader_pid);
 		}
+		if (C.shutdown & INIT_ERROR)
+		{
+			char *s = C.loglvl ? "" : " set loglvl and";
+			bootlog(1, "XaAES:%s see %s - press any key to continue ...", s, C.bootlog_path);
+			_c_conin();
+		}
+#if BOOTLOG
 		switch( C.shutdown & 0x0178)
 		{
 		case HALT_SYSTEM:
@@ -794,7 +801,6 @@ again:
 		default:
 			sd_str = "Quit XaAES";
 		}
-#if BOOTLOG
 		BLOG((1,"AESSYS kthread exited - shutdown = %x(%s).", C.shutdown, sd_str));
 #else
 		UNUSED(sd_str);
@@ -863,3 +869,4 @@ module_exit(void)
 	return 0;
 }
 #endif
+/* -- end of init.c -- */
