@@ -452,8 +452,6 @@ struct nwidget_row sl_def_layout[] =
 /* ------------------------------------------------------------------------- */
 #ifndef ST_ONLY
 static void set_texture(struct module *m, struct xa_wcol_inf *wcol, struct widg_texture *t); //struct xa_wtexture *wtexture);
-// static void free_texture(struct module *m, struct xa_wcol_inf *wcol);
-// static struct widg_texture * load_grad(struct module *m, struct rgb_1000 *start, short w, short h, short steps, short flags);
 #if WITH_GRADIENTS
 static struct xa_wtexture * find_gradient(struct xa_vdi_settings *, struct xa_wcol *, bool, struct xa_data_hdr **, short w, short h);
 #endif
@@ -2589,7 +2587,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 static void
 draw_widget_text(struct xa_vdi_settings *v, struct xa_widget *widg, struct xa_wtxt_inf *wtxti, char *txt, short xoff, short yoff)
 {
-	(*v->api->wtxt_output)(v, wtxti, txt, widg->state, &widg->ar, xoff, yoff);
+	(*v->api->wtxt_output)(v, wtxti, txt, widg->state, &widg->ar, xoff, yoff);	/* xa_wtxt_output */
 }
 
 static void
@@ -2798,8 +2796,8 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct options *o = &wind->owner->options;
 	struct window_colours *wc = wind->colours;
-	struct xa_wcol_inf *wci = &wc->title; //&((struct window_colours *)wind->colours)->title;
-	struct xa_wtxt_inf *wti = &wc->title_txt; //&((struct window_colours *)wind->colours)->title_txt;
+	struct xa_wcol_inf *wci = &wc->title;
+	struct xa_wtxt_inf *wti = &wc->title_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_wtexture *t = NULL;
 	char tn[256];
@@ -2822,7 +2820,6 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		if (scrninf->planes > 8)
 		{
 			struct xa_data_hdr **allocs;
-// 			struct module *m = wind->active_theme->module;
 			struct xa_wcol *wcol;
 
 			if (wc->flags & WCF_TOP)
@@ -2840,64 +2837,8 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 #endif
 		widg->prevr = widg->ar;
 
-	#if 0
-		if (scrninf->planes > 8 && wci->n.texture->w != widg->ar.w)
-		{
-			struct module *m;
-			struct widg_texture *t;
-			struct rgb_1000 s[2];
-
-			m = wind->active_theme->module; //&((struct module *)wind->active_theme->module)
-
-			if (wc->flags & WCF_TOP)
-			{
-// 				s[0] = (struct rgb_1000){400, 400, 600};
-// 				s[1] = (struct rgb_1000){800, 800, 1000};
-				s[0] = (struct rgb_1000){300, 500, 300};
-				s[1] = (struct rgb_1000){800, 1000, 800};
-			}
-			else
-			{
-				s[0] = (struct rgb_1000){500, 500, 500};
-				s[1] = (struct rgb_1000){900, 900, 900};
-// 				s[0] = (struct rgb_1000){100, 100, 100};
-// 				s[1] = (struct rgb_1000){500, 500, 500};
-			}
-			free_texture(m, wci);
-			t = load_grad(m, s, widg->ar.w, widg->ar.h, 0, 2);
-			set_texture(m, wci, t);
-			wci->n.texture->w = widg->ar.w;
-		}
-	#endif
 		draw_widg_box(v, 0, wci, t, widg->state, &widg->ar, &widg->ar); // &wind->r);
-#if 0
-		/* no move, no 3D */
-		if (wind->active_widgets & MOVER)
-		{
-			draw_widg_box(v, 0, wci, widg->state, &widg->ar, &wind->r);
-		}
-		else
-		{
-			/* XXX - ozk: hack to make mono look ok! */
-			if (MONO)
-			{
-				(*v->api->l_color)(v, G_BLACK);
-				(*v->api->p_gbar)(v, 0, &widg->ar);
-				(*v->api->f_color)(v, G_WHITE);
-				(*v->api->gbar)(v, -1, &widg->ar);
-			}
-			else
-			{
-				(*v->api->l_color)(v, G_BLACK);
-				(*v->api->p_gbar)(v, 0, &widg->ar);
-				(*v->api->f_color)(v, wci->n.c);
-				(*v->api->gbar)(v, -1, &widg->ar);
-			}
-		}
-#endif
 	}
-
-// 	(*v->api->wr_mode)(v, MD_TRANS);
 
 	if (o->windowner && wind->owner && !wind->winob && !dial)
 	{
@@ -3075,7 +3016,6 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	RECT dr = v->clip;
 
-
 	/* Convert relative coords and window location to absolute screen location */
 	(*api->rp2ap)(wind, widg, &widg->ar);
 #if WITH_GRADIENTS
@@ -3099,7 +3039,6 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	}
 #endif
 	widg->prevr = widg->ar;
-
 
 	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 
@@ -3506,18 +3445,18 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 
 	if (!wti->n.f)
 	{
-// 		(*v->api->t_font)(v, wti->n.p, 9912);
-// 		if (v->font_rid != v->font_sid)
-// 			(*v->api->t_font)(v, wti->n.p, 9919);
-// 		if (v->font_rid != v->font_sid)
-			(*v->api->t_font)(v, wti->n.p, 1);
+		(*v->api->t_font)(v, wti->n.p, 1);
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	}
-	(*v->api->t_font)(v, wti->n.p, wti->n.f);
-	(*v->api->t_effects)(v, wti->n.e);
-	(*v->api->t_extent)(v, "A", &w, &h);
-	(*v->api->t_effects)(v, 0);
-
+	if( cfg.title_height )
+		h = cfg.title_height;
+	else
+	{
+		(*v->api->t_font)(v, wti->n.p, wti->n.f);
+		(*v->api->t_effects)(v, wti->n.e);
+		(*v->api->t_extent)(v, "A", &w, &h);
+		(*v->api->t_effects)(v, 0);
+	}
 	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
 	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
@@ -3538,20 +3477,15 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	if (!wti->n.f)
 	{
 
-		(*v->api->t_font)(v, wti->n.p, cfg.font_id); // 103);
-// 		if (v->font_rid != v->font_sid)
-// 			(*v->api->t_font)(v, wti->n.p, 13384);
+		(*v->api->t_font)(v, wti->n.p, cfg.font_id);
 		if (v->font_rid != v->font_sid)
 			(*v->api->t_font)(v, wti->n.p, 1);
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	}
-
-//		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->text_extent)(v, "X", &wti->n, &w, &h);
 	(*v->api->t_effects)(v, 0);
-	//(*v->api->t_extent)(v, "A", &w, &h);
  	h += 2;
  	/*************************************************************************
  	{
@@ -3560,8 +3494,6 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
  		h += 4;
  	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
  		h++;
-// 	if ((wci->flags & WCOL_BOXED))
-// 		h += 2;
 	}	***************************************************************************/
 	widg->r.h = h;
 }
@@ -3571,7 +3503,6 @@ s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
-	//extern struct xa_screen screen;
 
 	(*v->api->t_font)(v, wind->owner->options.standard_font_point, scrninf->standard_font_id);
 	(*v->api->t_effects)(v, 0);
@@ -3590,6 +3521,10 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 	f = wci->flags;
 
 	(*api->object_spec_wh)(ob, &w, &h);
+
+	if( cfg.title_height )
+		w = h = cfg.title_height;
+
  	if (f & WCOL_DRAW3D)
  		h += 2, w += 2;
  	if (f & WCOL_BOXED)
@@ -4460,13 +4395,8 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			OBJECT *tree = (*api->resource_tree)(rsc, 0);
 			(*api->ob_spec_xywh)(tree, 1, &c);
 			(*api->init_widget_tree)(NULL, &m->wwt, tree);
-
-// 			display(" -- init widget_tree=%lx", (long)&m->wwt);
-
 			widg_w = c.w;
 			widg_h = c.h;
-
-			DIAGS(("widg: %d/%d", widg_w, widg_h));
 		}
 		fix_default_widgets(rsc);
 
@@ -4493,14 +4423,31 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_otop_cols.title_txt.s.bgc = G_WHITE;
 		}
 
-		if (scrninf->r.h <= 280)
+		if (cfg.title_height < 16)
 		{
-			def_otop_cols.title_txt.n.p = 9;
-			def_otop_cols.title_txt.s.p = 9;
-			def_otop_cols.title_txt.h.p = 9;
-			def_utop_cols.title_txt.n.p = 9;
-			def_utop_cols.title_txt.s.p = 9;
-			def_utop_cols.title_txt.h.p = 9;
+			int pt = cfg.title_height < 8 ? 6 : 9;
+			def_otop_cols.title_txt.n.p = pt;
+			def_otop_cols.title_txt.s.p = pt;
+			def_otop_cols.title_txt.h.p = pt;
+			def_utop_cols.title_txt.n.p = pt;
+			def_utop_cols.title_txt.s.p = pt;
+			def_utop_cols.title_txt.h.p = pt;
+
+			mono_def_otop_cols.title_txt.n.p = pt;
+			mono_def_otop_cols.title_txt.s.p = pt;
+			mono_def_otop_cols.title_txt.h.p = pt;
+			mono_def_utop_cols.title_txt.n.p = pt;
+			mono_def_utop_cols.title_txt.s.p = pt;
+			mono_def_utop_cols.title_txt.h.p = pt;
+
+			alert_def_otop_cols.title_txt.n.p = pt;
+			alert_def_utop_cols.title_txt.n.p = pt;
+			alert_def_otop_cols.title_txt.s.p = pt;
+			alert_def_utop_cols.title_txt.s.p = pt;
+#ifndef ST_ONLY
+			slist_def_otop_cols.title_txt.n.p = pt;
+			slist_def_utop_cols.title_txt.n.p = pt;
+#endif
 		}
 
 		/* set window-title and info-font-id */
@@ -4550,7 +4497,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		mono_def_utop_cols.info_txt.s.f = cfg.font_id;
 		mono_def_utop_cols.info_txt.h.f = cfg.font_id;
 
-
 #ifndef ST_ONLY
 		/* set slist-window-title and info font-id */
 		slist_def_otop_cols.title_txt.n.f= cfg.font_id;
@@ -4569,7 +4515,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		slist_def_utop_cols.info_txt.s.f = cfg.font_id;
 		slist_def_utop_cols.info_txt.h.f = cfg.font_id;
 
-
 		/* set infoline-point */
 		slist_def_otop_cols.info_txt.n.p = cfg.xaw_point;
 		slist_def_otop_cols.info_txt.s.p = cfg.xaw_point;
@@ -4578,8 +4523,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		slist_def_utop_cols.info_txt.n.p = cfg.xaw_point;
 		slist_def_utop_cols.info_txt.s.p = cfg.xaw_point;
 		slist_def_utop_cols.info_txt.h.p = cfg.xaw_point;
-
-
 #endif
 
 	}

@@ -1,3 +1,4 @@
+/*k_init.c last change: Sun Sep 25 11:31:58 2016*/
 /*
  * $Id$
  *
@@ -590,7 +591,7 @@ k_init(unsigned long vm)
 	 */
 	v->handle = 0;
 
-	if( C.P_handle > 0 || (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
+	if( C.P_handle > 0 )//|| (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
 	{
 		memset( work_out, 0, sizeof(work_out) );
 		set_wrkin(work_in, 1);	//cfg.videomode);
@@ -726,9 +727,11 @@ k_init(unsigned long vm)
 		/* set drive to where the auto-folder is.
 		 * this helps nvdi find nvdivga.inf (fix for et4000).
 		 */
-		d_setdrv(sysdrv);
-		d_setpath("/");
-
+		if( cfg.et4000_hack )
+		{
+			d_setdrv(sysdrv);
+			d_setpath("/");
+		}
 #ifndef ST_ONLY
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
@@ -757,10 +760,12 @@ k_init(unsigned long vm)
 			s_system(S_CTRLCACHE, sc, cm);
 #endif
 		}
-#else
+#else	/* ST_ONLY */
 		set_wrkin(work_in, mode);
+		BLOG((0,"k_init: v_opnwk() mode=%d", mode ));
 		v_opnwk(work_in, &(C.P_handle), work_out);
-#endif
+		BLOG((0,"k_init: v_opnwk() handle=%d", C.P_handle ));
+#endif	/* ST_ONLY */
 		BLOG((false, "Physical work station opened: %d", C.P_handle));
 
 		if (C.P_handle == 0)
@@ -801,6 +806,13 @@ k_init(unsigned long vm)
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
+	if( !cfg.title_height )
+	{
+		if( screen.r.h < 300 )	/* ST-HIGH/MED: 200 */
+			cfg.title_height = 8;
+		else
+			cfg.title_height = 16;
+	}
 	screen.colours = work_out[13];
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
@@ -1220,3 +1232,4 @@ load_accs(void)
 		kernel_closedir(&dirh);
 	}
 }
+/* -- end of k_init.c -- */

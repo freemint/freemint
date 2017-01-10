@@ -994,6 +994,8 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 # medium_point   - The same, but for low resolution screens
 # small_point    - Size of the 'small' AES font
 # infoline_point - Fontsize for window infoline
+# xaw_point      - Fontsize for XaAES-windows (not in sto)
+# title_height   - height for window-title (also affects title-font/slider-widget-size)
 #
 # defaults:
 #
@@ -1002,6 +1004,8 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #medium_point=9
 #small_point=8
 #infoline_point=10
+#xaw_point=10
+#title_height=16
 
 #####################################################################
 # start any other programs with run

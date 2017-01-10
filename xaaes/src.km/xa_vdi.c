@@ -434,7 +434,7 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 {
 	struct xa_fnt_info *wtxt;
 	bool sel = state & OS_SELECTED;
-	short x, y, f = wtxti->flags;
+	short x, y, f = wtxti->flags, d;
 	char t[200];
 
 	if (sel)
@@ -442,10 +442,10 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 	else
 		wtxt = &wtxti->n;
 
-	xa_wr_mode(v, wtxt->wrm); //MD_TRANS);
+	xa_wr_mode(v, wtxt->wrm);
 	xa_t_font(v, wtxt->p, wtxt->f);
 
-	xa_t_effects(v, wtxt->e); //vst_effects(v->handle, wtxt->e);
+	xa_t_effects(v, wtxt->e);
 
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));
@@ -453,7 +453,10 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 		xa_prop_clipped_name(v, txt, t, r->w - (xoff << 1), &x, &y, 1);
 
 	xa_t_extent(v, t, &x, &y);
-	y = yoff + r->y + ((r->h - y) >> 1);
+	d = (r->h - y);
+	y = yoff + r->y + (d >> 1);
+	if( d & 1 )	/* fix rounding */
+		y++;
 
 	if (f & WTXT_CENTER)
 	{

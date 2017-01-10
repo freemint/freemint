@@ -132,6 +132,7 @@ static struct parser_item parser_tab[] =
 	{ "SMALL_POINT",           PI_R_S,   & cfg.small_font_point	},
 	{ "INFOLINE_POINT",        PI_R_S,   & cfg.info_font_point	},
 	{ "XAW_POINT",             PI_R_S,   & cfg.xaw_point		},
+	{ "TITLE_HEIGHT",          PI_R_S,   & cfg.title_height		},
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
@@ -1220,7 +1221,7 @@ pCB_install(const char *path, const char *line, struct parsinf *inf)
 	}
 	if( opts & (1<<3) )	/* q */
 	{
-		int c = getkey( optarg[2], 1 );
+		int c = getkey( optarg[3], 1 );
 		if( !strchr( "yYjJ", c ) )
 			return;
 	}
@@ -1229,9 +1230,7 @@ pCB_install(const char *path, const char *line, struct parsinf *inf)
 	do_exec( path, cmdline );
 inst_ret:
 	if( opts & (1<<2) )	/* w */
-	{
 		pCB_getkey(0);
-	}
 }
 #endif /* XT_CNF */
 
@@ -1279,10 +1278,8 @@ load_config(void *path )
 	else
 		strncpy(cpath, path, sizeof(cpath) );
 
-	DIAGS(("Loading config %s", cpath));
 	BLOG((0,"Loading config %s", cpath));
 	parse_cnf(cpath, parser_tab, &mydata);
-
 
 #if GENERATE_DIAGS
 	{
@@ -1491,4 +1488,3 @@ void read_inf(void)
 	BLOG((0,"%s:read_inf:%s", get_curproc()->name, buf));
 	parse_cnf(buf, inf_tab, &mydata);
 }
-

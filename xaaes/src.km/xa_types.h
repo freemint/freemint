@@ -1567,36 +1567,36 @@ struct toolbar_handlers
 /* Window Widget */
 struct xa_widget
 {
-	struct xa_widget	*next_in_row;
+  struct xa_widget *next_in_row;
 
-	struct xa_window	*wind;		/* Window to which this widget belongs */
-	struct xa_client	*owner;
-	struct xa_widget_methods m;
+  struct xa_window  *wind;    /* Window to which this widget belongs */
+  struct xa_client  *owner;
+  struct xa_widget_methods m;
 
-	short		state;		/* Current status (selected, etc) */
+  short   state;              /* Current status (selected, etc) */
 
-	RECT		r;		/* Relative position */
-	RECT		ar;		/* Absolute position */
-	RECT		prevr;		/* Prevsioiu position - free to use for modules */
+  RECT    r;                  /* Relative position */
+  RECT    ar;                 /* Absolute position */
+  RECT    prevr;              /* Previous position - free to use for modules */
 
-#define XAWF_ALLOC		1
-#define XAWF_STUFFKMALLOC	2
-	short flags;
+#define XAWF_ALLOC    1
+#define XAWF_STUFFKMALLOC 2
+  short flags;
 
-	short x, y;			/* If we are activated because we've been clicked on, this is the
-					 * relative location of the click (click_object_widget)*/
-	short arrowx;			/* WM_ARROWED msg type */
-	short xarrow;			/* reverse action when right clicked. */
-	short limit;			/* on which limit to stop */
-	short xlimit;			/* for reverse action */
-	short slider_type;		/* which slider should move for scroll widget */
+  short x, y;                 /* If we are activated because we've been clicked on, this is the
+                               * relative location of the click (click_object_widget)*/
+  short arrowx;               /* WM_ARROWED msg type */
+  short xarrow;               /* reverse action when right clicked. */
+  short limit;                /* on which limit to stop */
+  short xlimit;               /* for reverse action */
+  short slider_type;          /* which slider should move for scroll widget */
 
 #define STUFF_IS_WT 1
 
-	short stufftype;		/* type of widget dependant pointer */
-	void *stuff;			/* Pointer to widget dependant context data, if any */
+  short stufftype;            /* type of widget dependant pointer */
+  void *stuff;                /* Pointer to widget dependant context data, if any */
 
-	short  start;			/* If stuff is a OBJECT tree, we want start drawing here */
+  short  start;               /* If stuff is a OBJECT tree, we want start drawing here */
 };
 typedef struct xa_widget XA_WIDGET;
 
@@ -2879,17 +2879,18 @@ struct common
 	struct xa_client *csr_client;	/* Client current in query by the Kill or Wait dialog */
 
 	short shutdown;			/* flags for shutting down xaaes */
-#define SHUTDOWN_STARTED	0x0001
-#define SHUTTING_DOWN		0x0002
-#define QUIT_NOW		0x0004		/* - enter shutdown the next possible time */
-#define HALT_SYSTEM		0x0008		/* - halt system after xaaes shutdown */
-#define REBOOT_SYSTEM		0x0010		/* - reboot system after xaaes shutdown */
-#define COLDSTART_SYSTEM	0x0020		/* - cold reboot */
-#define RESOLUTION_CHANGE	0x0040
-#define KILLEM_ALL		0x0080
-#define RESTART_XAAES	0x0100
-#define RESTART_AFTER_BOMB	0x0400
-#define EXIT_MAINLOOP		0x8000
+#define SHUTDOWN_STARTED   0x0001
+#define SHUTTING_DOWN      0x0002
+#define QUIT_NOW           0x0004    /* - enter shutdown the next possible time */
+#define HALT_SYSTEM        0x0008    /* - halt system after xaaes shutdown */
+#define REBOOT_SYSTEM      0x0010    /* - reboot system after xaaes shutdown */
+#define COLDSTART_SYSTEM   0x0020    /* - cold reboot */
+#define RESOLUTION_CHANGE  0x0040
+#define KILLEM_ALL         0x0080
+#define RESTART_XAAES      0x0100
+#define RESTART_AFTER_BOMB 0x0400
+#define INIT_ERROR         0x0800
+#define EXIT_MAINLOOP      0x8000
 	short shutdown_step;
 	struct timeout *sdt;		/* Shutdown Timeout */
 
@@ -2979,126 +2980,117 @@ struct xa_keyboards
 struct config
 {
 #if WITH_GRADIENTS
-	Path gradients;
+  Path gradients;
 #endif
-	Path textures;
-	Path palette;       /* load palette from file */
+  Path textures;
+  Path palette;              /* load palette from file */
 
-	Path launch_path;		/* Initial path for launcher */
-	Path scrap_path;		/* Path to the scrap directory */
-	Path snapper;				/* if !0 this is launched on C-A-D */
-	Path acc_path;			/* Path to desk accessory directory */
+  Path launch_path;          /* Initial path for launcher */
+  Path scrap_path;           /* Path to the scrap directory */
+  Path snapper;              /* if !0 this is launched on C-A-D */
+  Path acc_path;             /* Path to desk accessory directory */
 
-	Path widg_name;			/* Path to XaAES widget rsc */
-	Path rsc_name;			/* Path to XaAES rsc */
-	Path xobj_name;
+  Path widg_name;            /* Path to XaAES widget rsc */
+  Path rsc_name;             /* Path to XaAES rsc */
+  Path xobj_name;
 
-	char lang[4];				/* language (de,en,es,...) */
+  char lang[4];              /* language (de,en,es,...) */
 
-	/* display modes of window title (unimplemented)*/
-	/*short topname;
-	short backname;
-	*/
-
-	short next_active;		/* 0 = set previous active client active upon client termination */
-					/* 1 = set owner of previous topped (or only) window upon client termination */
-//	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
-//					/* 1 = Keep client whose last window was closed infront. */
+  short next_active;         /* 0 = set previous active client active upon client termination */
+                             /* 1 = set owner of previous topped (or only) window upon client termination */
 
 #if WITH_BBL_HELP
-	short xa_bubble;	/* use XaAES for bubble-help: 1: tooltip-style, 2: ballon-style */
-	short describe_widgets;	/* display widget-name/function */
+  short xa_bubble;           /* use XaAES for bubble-help: 1: tooltip-style, 2: ballon-style */
+  short describe_widgets;    /* display widget-name/function */
 #endif
-	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
-	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
-	bool leave_top_border;	/* windows may be moved higher than top of screen */
-	bool remap_cicons;
-	bool set_rscpalette;
-	bool no_xa_fsel;
-	bool point_to_type;
-	bool fsel_cookie;
-	bool save_windows;
+  bool lrmb_swap;            /* Swap left and right mouse-button status bits */
+  bool widg_auto_highlight;  /* WIDGET Highligh when Mouse Hovers */
+  bool leave_top_border;     /* windows may be moved higher than top of screen */
+  bool remap_cicons;
+  bool set_rscpalette;
+  bool no_xa_fsel;
+  bool point_to_type;
+  bool fsel_cookie;
+  bool save_windows;
 #if EIFFEL_SUPPORT
-	bool eiffel_support;	/* generate wheel-events on special keys */
+  bool eiffel_support;       /* generate wheel-events on special keys */
 #endif
-	bool usehome;			/* use $HOME in shell_find */
-	bool naes_cookie;		/* If true, install fake nAES cookie */
-	bool menupop_pids;		/* If true, add PIDs to clients listed in menupop clientlist */
-	bool menu_locking;		/* menus run in a window.
-	                                 * See lines.app run underneath the pulldown menu. :-) */
-	bool opentaskman;		/* open taskmanager at boot. */
+  bool usehome;              /* use $HOME in shell_find */
+  bool naes_cookie;          /* If true, install fake nAES cookie */
+  bool menupop_pids;         /* If true, add PIDs to clients listed in menupop clientlist */
+  bool menu_locking;         /* menus run in a window.
+                              * See lines.app run underneath the pulldown menu. :-) */
+  bool opentaskman;          /* open taskmanager at boot. */
 
-	short alert_winds;		/* If set, alert windows are shown */
-	short back_col;       /* if set, use for background */
-	short menu_bar;				/* If 0 don't draw main-menubar */
-	short menu_layout;		/* short, float .. */
-	short menu_ontop;     /* menubar is window */
+  short alert_winds;         /* If set, alert windows are shown */
+  short back_col;            /* if set, use for background */
+  short menu_bar;            /* If 0 don't draw main-menubar */
+  short menu_layout;         /* short, float .. */
+  short menu_ontop;          /* menubar is window */
 
-	struct xa_keyboards keyboards;
-	char cancel_buttons[NUM_CB][CB_L];
+  struct xa_keyboards keyboards;
+  char cancel_buttons[NUM_CB][CB_L];
 #if FILESELECTOR
-	char Filters[FS_NPATTERNS][FS_PATLEN];
+  char Filters[FS_NPATTERNS][FS_PATLEN];
 #endif
 
-	enum menu_behave menu_behave;	/* pull, push or leave */
+  enum menu_behave menu_behave; /* pull, push or leave */
 
-//	short widg_w, widg_h;
-//	short widg_dw, widg_dh;		/* flexible widget object types. */
+  short ted_filler;
+  short font_id;             /* Font id to use (buttons, menus) */
+  short xaw_point;           /* Font-point to use (XaAES-window-content) */
+  short title_height;        /* height for window-title (also affects title-font/slider-widget-size) */
+  short double_click_time;   /* Double click timing */
+  short mouse_packet_timegap;
+  short redraw_timeout;
 
-	short ted_filler;
-	short font_id;			/* Font id to use (buttons, menus) */
-	short xaw_point;	/* Font id to use (XaAES-window-content) */
-	short double_click_time;	/* Double click timing */
-	short mouse_packet_timegap;
-	short redraw_timeout;
+  union {
+    MN_SET mn_set;
+    struct xa_menu_settings xamn_set;
+  } menu_settings;
 
-	union {
-		MN_SET mn_set;
-		struct xa_menu_settings	xamn_set;
-	} menu_settings;
+  short popup_timeout;
+  short popout_timeout;
 
-	short popup_timeout;
-	short popout_timeout;
+  short have_wheel_vector;   /* If vex_whlv changed its save_ptr,
+             we have a VDI that supports mouse wheels. */
+  short ver_wheel_id;        /* ID of horizontal wheel */
+  short ver_wheel_amount;
+  short hor_wheel_id;        /* ID of vertical wheel */
+  short hor_wheel_amount;
+  //short wheel_amount;      /* amount of lines for a wheel click. */
 
-	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
-					   we have a VDI that supports mouse wheels. */
-	short ver_wheel_id;		/* ID of horizontal wheel */
-	short ver_wheel_amount;
-	short hor_wheel_id;		/* ID of vertical wheel */
-	short hor_wheel_amount;
-	//short wheel_amount;		/* amount of lines for a wheel click. */
+  short icnfy_orient;
+  short icnfy_l_x;
+  short icnfy_r_x;
+  short icnfy_t_y;
+  short icnfy_b_y;
+  short icnfy_w;
+  short icnfy_h;
+  short icnfy_reorder_to;
 
-	short icnfy_orient;
-	short icnfy_l_x;
-	short icnfy_r_x;
-	short icnfy_t_y;
-	short icnfy_b_y;
-	short icnfy_w;
-	short icnfy_h;
-	short icnfy_reorder_to;
+  short standard_font_point; /* Size for normal text */
+  short medium_font_point;   /* The same, but for low resolution screens */
+  short small_font_point;    /* Size for small text */
+  short info_font_point;     /* Size for infoline */
+  short popscroll;           /* number of lines of a popup above which it will be made scrollable. */
 
-	short standard_font_point;	/* Size for normal text */
-	short medium_font_point;	/* The same, but for low resolution screens */
-	short small_font_point;		/* Size for small text */
-	short info_font_point;	/* Size for infoline */
-	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
+  short allow_setexc;        /* 0: never, 1: no trap-vectors, 2: all */
+  bool et4000_hack;          /* always try open virtual wk first */
+  short videomode;           /* ID of screen device opened by v_opnwk() */
 
-	short allow_setexc;  /* 0: never, 1: no trap-vectors, 2: all */
-	bool et4000_hack;	/* always try open virtual wk first */
-	short videomode;		/* ID of screen device opened by v_opnwk() */
+  struct helpserver *helpservers; /* configured helpservers */
+  struct remote *remote_inp;
+  struct cfg_name_list *ctlalta;
+  struct cfg_name_list *kwq; /* Apps listed here are killed without question upon shutdowns */
 
-	struct helpserver *helpservers;	/* configured helpservers */
-	struct remote *remote_inp;
-	struct cfg_name_list *ctlalta;
-	struct cfg_name_list *kwq;	/* Apps listed here are killed without question upon shutdowns */
+  /* postponed cnf things */
+  char *cnf_shell;           /* SHELL= */
+  char *cnf_shell_arg;       /* args for SHELL cnf directive */
+  char *cnf_run[32];         /* RUN directives */
+  char *cnf_run_arg[32];     /* args for RUN cnf directives */
 
-	/* postponed cnf things */
-	char *cnf_shell;		/* SHELL= */
-	char *cnf_shell_arg;		/* args for SHELL cnf directive */
-	char *cnf_run[32];		/* RUN directives */
-	char *cnf_run_arg[32];		/* args for RUN cnf directives */
-
-	char focus[10];		/* first focus after startup */
+  char focus[10];            /* first focus after startup */
 };
 /*
  * module_register() modes..
@@ -3204,9 +3196,6 @@ struct xa_module_api
 	void _cdecl	(*send_wind_to_bottom)	(enum locks lock, struct xa_window *wind);
 	void _cdecl	(*delete_window)	(enum locks lock, struct xa_window *wind);
 	void _cdecl	(*delayed_delete_window)(enum locks lock, struct xa_window *wind);
-
-
-
 
 	struct xa_window * _cdecl (*create_dwind)(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
 
