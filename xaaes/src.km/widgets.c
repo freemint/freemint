@@ -55,13 +55,10 @@
 
 #include "mint/signal.h"
 
-// static struct xa_widget_row * get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
-// static struct xa_widget_row * get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
 static void rp_2_ap_row(struct xa_window *wind);
 STATIC void free_wt(XA_TREE *wt);
 STATIC short	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 
-//static OBJECT *def_widgets;
 
 #if GENERATE_DIAGS
 static char *t_widg[] =
@@ -3600,7 +3597,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		short diff;
 		short orient = rows->rel & XAR_VERT;
 		short placement = rows->rel & XAR_PM;
-// 		bool d = (!strnicmp(wind->owner->proc_name, "ergo_hlp", 8) && !(wind->dial & created_for_CALC));
 
 		/*
 		 * See if this widget is already in this row
@@ -3610,7 +3606,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 
 		if (nxt_w && (nxt_w != widg))
 		{
-// 			if (d) display("adding %lx to rownr %d", widg->m.r.tp, rows->rownr);
 
 			/*
 			 * Widget not in row, link it in
@@ -3629,7 +3624,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		}
 		else if (!nxt_w)
 		{
-// 			if (d) display("row %d, tp = %lx", rows->rownr, widg->m.r.tp);
 			/*
 			 * This is the first widget in this row, and thus we also init its Y
 			 */
@@ -3738,16 +3732,14 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		 * If callback to calc w/h of widget provided...
 		 */
 		if (m->r.setsize)
-		{
-			(*m->r.setsize)(wind, widg);
-		}
+			(*m->r.setsize)(wind, widg);	/* e.g.: s_title_size */
 		/*
 		 * ... else just use standard w/h
 		 */
 		else
 		{
-			widg->r.w = screen.c_max_w; //cfg.widg_w;
-			widg->r.h = screen.c_max_h; //cfg.widg_h;
+			widg->r.w = screen.c_max_w;
+			widg->r.h = screen.c_max_h;
 		}
 		/*
 		 * If Widget height is larger than largest one in this row,
@@ -3915,7 +3907,6 @@ create_widg_layout(struct xa_window *wind)
 {
 	XA_WIND_ATTR tp;
 	struct nwidget_row *rows;
-// 	struct xa_widget_theme *theme = wind->widget_theme;
 	struct widget_theme *theme = wind->active_theme;
 	int nrows;
 	struct xa_widget_row *xa_rows, *ret = NULL;
@@ -4012,7 +4003,6 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 
 		if (slider_idx == XAW_VSLIDE)
 		{
-			DIAGS(("Make vslide (uparrow)"));
 			w = make_widget(wind, &def_methods[XAW_UPPAGE + 1], NULL, offsets);
 			w->arrowx = WA_UPPAGE;
 			w->xarrow = WA_DNPAGE;
@@ -4020,7 +4010,6 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 			w->xlimit = SL_RANGE;
 			w->slider_type = XAW_VSLIDE;
 
-			DIAGS(("Make vslide (dnarrow)"));
 			w = make_widget(wind, &def_methods[XAW_DNPAGE + 1], NULL, offsets);
 			w->arrowx = WA_DNPAGE;
 			w->xarrow = WA_UPPAGE;
@@ -4054,15 +4043,12 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
  * Setup the required 'standard' widgets for a window. These are the ordinary GEM
  * behaviours. These can be changed for any given window if you want special behaviours.
  */
-//position_widget(struct xa_widget *w, struct xa_widget_row *strt_rows, void(*widg_size)(struct xa_widget *widg))
 void
 standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 {
 	struct widget_theme *theme = wind->active_theme;
 	XA_WIND_ATTR utp = 0;
 
-	DIAGS(("standard_widgets: new(%lx), prev(%lx) on wind %d for %s",
-		tp, wind->active_widgets, wind->handle, wind->owner->proc_name));
 
 	if (!wind->widg_rows)
 		wind->widg_rows = create_widg_layout(wind);

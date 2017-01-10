@@ -1246,19 +1246,7 @@ create_window(
 
 	r = R;
 
-#if GENERATE_DIAGS
-	if (max)
-	{
-		DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  max:%d,%d/%d,%d",
-			c_owner(client), r.x,r.y,r.w,r.h,max->x,max->y,max->w,max->h));
-	}
-	else
-	{
-		DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  no max",
-			c_owner(client), r.x,r.y,r.w,r.h));
-	}
 
-#endif
 	w = kmalloc(sizeof(*w));
 	if (!w)	/* Unable to allocate memory for window? */
 		return NULL;
@@ -1367,15 +1355,11 @@ create_window(
 	}
 	w->wa_frame = true;
 
-// 	if (w->frame > 0)
-// 		tp |= BORDER;
-
 	if (nolist)
 	{
 		if (!(w->dial & (created_for_SLIST | created_for_CALC)))
 			wi_put_first(&S.closed_nlwindows, w);
 		/* Attach the appropriate widgets to the window */
-		DIAGS((" -- nolist window"));
 		standard_widgets(w, tp, false);
 	}
 	else
