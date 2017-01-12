@@ -1,0 +1,13 @@
+language: c
+os: linux
+dist: trusty
+sudo: required
+
+compiler:
+   - m68k-atari-mint-gcc
+
+before_install:
+  - 'sh ./.install-cross-mint.sh'
+
+script:
+  - make CROSS=yes
