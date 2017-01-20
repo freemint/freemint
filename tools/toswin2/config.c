@@ -731,7 +731,6 @@ bool config_load(void)
 			if (gl_con_log)
 			{
 				bool on = gl_con_log;
-				gl_con_log = FALSE;
 				gl_con_log = log_console(on);
 			}
 
