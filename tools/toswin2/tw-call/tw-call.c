@@ -159,7 +159,7 @@ static int find_tw(void)
 				strcat(str, "toswin2.app");
 			}
 		}
-		id = shel_write(1, 1, 1, str, "");
+		id = shel_write(1, 1, 0, str, "");
 		if (id > 0)
 			evnt_timer(500L);
 		else

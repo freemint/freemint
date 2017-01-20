@@ -134,16 +134,16 @@ init_ansi_colors (const short* work_out)
 		bright = renderer[i].bright;
 		hbright = renderer[i].hbright;
 
-		debug ("ANSI color #%d:\n", i);
+//		debug ("ANSI color #%d:\n", i);
 		vq_color (vdi_handle, renderer[i].bright, 1, (short*) &rgb);
-		debug ("  Bright:      (%04d|%04d|%04d), effects: 0x%08x\n",
-		       rgb.red, rgb.green, rgb.blue, renderer[i].bright_effects);
+//		debug ("  Bright:      (%04d|%04d|%04d), effects: 0x%08x\n",
+//		       rgb.red, rgb.green, rgb.blue, renderer[i].bright_effects);
 		vq_color (vdi_handle, renderer[i].normal, 1, (short*) &rgb);
-		debug ("  Normal:      (%04d|%04d|%04d), effects: 0x%08x\n",
-		       rgb.red, rgb.green, rgb.blue, 0);
+//		debug ("  Normal:      (%04d|%04d|%04d), effects: 0x%08x\n",
+//		       rgb.red, rgb.green, rgb.blue, 0);
 		vq_color (vdi_handle, renderer[i].hbright, 1, (short*) &rgb);
-		debug ("  Half-bright: (%04d|%04d|%04d), effects: 0x%08x\n",
-		       rgb.red, rgb.green, rgb.blue, renderer[i].hbright_effects);
+//		debug ("  Half-bright: (%04d|%04d|%04d), effects: 0x%08x\n",
+//		       rgb.red, rgb.green, rgb.blue, renderer[i].hbright_effects);
 	}
 }
 
