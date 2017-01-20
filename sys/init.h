@@ -15,7 +15,7 @@
 extern short intr_done;
 extern short step_by_step;
 extern short write_boot_file;
-#define BOOTLOGFILE "C:/mint/boot.log"
+extern char boot_file[48+12];	/* sizeof(mchdir) + filename.ext */
 
 void	boot_print	(const char *s);
 void	boot_printf	(const char *fmt, ...);
