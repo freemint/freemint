@@ -380,9 +380,9 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		{
 			if (isroot == 0)
 				r = EPERM;
-			else if (arg1)
+			else if (arg1 && arg2 > 0)
 			{
-				*(char**)arg1 = BOOTLOGFILE;
+				strncpy_f ((char *) arg1, boot_file, arg2);
 				r = 0;
 			}
 			else

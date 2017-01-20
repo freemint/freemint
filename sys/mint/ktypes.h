@@ -144,7 +144,7 @@ struct global
 	 */
 	short sysdrv;
 	char  sysdir[32];
-	char  mchdir[32];	/* sysdir/<machine>, derived from machine type */
+	char  mchdir[48];	/* sysdir/<machine>, derived from machine type */
 };
 
 /* BIOS device map */
