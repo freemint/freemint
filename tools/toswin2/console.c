@@ -9,7 +9,7 @@
 long con_fd = 0;
 long con_log_fd = 0;
 
-static TEXTWIN	*con_win;
+TEXTWIN	*con_win = NULL;
 static bool	is_dirty = FALSE;
 
 
@@ -31,47 +31,73 @@ static void uniconify_con(WINDOW *v, short x, short y, short w, short h)
 	is_dirty = FALSE;
 }
 
-void open_console(void)
+static bool open_con_fd(void)
 {
-	WINCFG	*cfg;
-	char		str[30];
-
 	if (con_fd == 0)
 	{
 		con_fd = Fopen(XCONNAME, 2);
 		if (con_fd > 0)
 		{
-			cfg = get_wincfg("Console");
-			if (cfg->title[0] == '\0')
-				strcpy(str, " Console ");
-			else
-				strcpy(str, cfg->title);
-			con_win = create_textwin(str, cfg); 
-			con_win->win->uniconify = uniconify_con;
-			if (con_win)
-			{
-				Fsymlink(XCONNAME, TWCONNAME);
-				con_win->prog = strdup(str);
-				con_win->fd = con_fd;
-				add_fd(con_fd);
+			Fsymlink(XCONNAME, TWCONNAME);
+			add_fd(con_fd);
+		}
+		else
+		{
+			debug("open_con_fd() failed\n");
+			return FALSE;
+		}
+	}
 
-				/* Cursor mu an, sonst kommt die Ausgabe durcheinander!! */
-				(*con_win->output)(con_win, '\033');
-				(*con_win->output)(con_win, 'e');
+	return TRUE;
+}
 
-				open_window(con_win->win, cfg->iconified);
-			}
-			else
+static void close_con_fd(void)
+{
+	if (con_fd != 0 && con_win == NULL)
+	{
+		Fdelete(TWCONNAME);
+		Fclose(con_fd);
+		con_fd = 0;
+	}
+}
+
+void open_console(void)
+{
+	WINCFG	*cfg;
+	char		str[30];
+
+	if (con_win == NULL)
+	{
+		cfg = get_wincfg("Console");
+		if (cfg->title[0] == '\0')
+			strcpy(str, " Console ");
+		else
+			strcpy(str, cfg->title);
+
+		con_win = create_textwin(str, cfg);
+		if (con_win)
+		{
+			if (!open_con_fd())
 			{
+				destroy_textwin(con_win);
 				alert(1, 0, XCONERR);
-				Fclose(con_fd);
-				con_fd = 0;
+				return;
 			}
+
+			con_win->win->uniconify = uniconify_con;
+			con_win->prog = strdup(str);
+			con_win->fd = con_fd;
+
+			/* Cursor mu an, sonst kommt die Ausgabe durcheinander!! */
+			(*con_win->output)(con_win, '\033');
+			(*con_win->output)(con_win, 'e');
+
+			open_window(con_win->win, cfg->iconified);
 		}
 		else
 		{
 			alert(1, 0, XCONERR);
-			con_fd = 0;
+			return;
 		}
 	}
 	else
@@ -113,21 +139,25 @@ void handle_console(char *txt, long len)
 			return;
 	}
 
-	if (con_win->win->flags == WICONIFIED && !gl_con_output)
+	if (con_win != NULL)
 	{
-		is_dirty = TRUE; 
-		draw_winicon(con_win->win);
-	}
-	else
-		is_dirty = FALSE;
+		if (con_win->win->flags == WICONIFIED && !gl_con_output)
+		{
+			is_dirty = TRUE;
+			draw_winicon(con_win->win);
+		}
+		else
+			is_dirty = FALSE;
 
-	if (gl_con_output)
-	{
-		if (con_win->win->flags & WICONIFIED)
-			(*con_win->win->uniconify)(con_win->win, -1, -1, -1, -1);
-		else if (con_win->win->flags & WSHADED)
-			(*con_win->win->shaded)(con_win->win, -1);
+		if (gl_con_output)
+		{
+			if (con_win->win->flags & WICONIFIED)
+				(*con_win->win->uniconify)(con_win->win, -1, -1, -1, -1);
+			else if (con_win->win->flags & WSHADED)
+				(*con_win->win->shaded)(con_win->win, -1);
+		}
 	}
+
 	if (con_log_fd > 0)
 		Fwrite(con_log_fd, len, txt);
 }
@@ -139,6 +169,8 @@ bool log_console(bool on)
 	{
 		Fclose(con_log_fd);
 		con_log_fd = 0;
+
+		close_con_fd();
 	}
 	if (!gl_con_log && on && con_log_fd == 0)
 	{
@@ -149,6 +181,13 @@ bool log_console(bool on)
 		{
 			Fseek(0, log, 2);
 			con_log_fd = log;
+
+			if (!open_con_fd())
+			{
+				Fclose(con_log_fd);
+				con_log_fd = 0;
+				on = FALSE;
+			}
 		}
 		else
 		{

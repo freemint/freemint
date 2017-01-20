@@ -174,6 +174,7 @@ static int exit_conwd(WDIALOG *wd, short exit_obj)
 
 			strcpy(gl_con_logname, new_log);
 			gl_con_log = log_console(get_state(wd->tree, CLOGACTIVE, OS_SELECTED));
+			set_state(wd->tree, CLOGACTIVE, OS_SELECTED, gl_con_log);
 
 			close = TRUE;
 			break;
@@ -726,6 +727,14 @@ bool config_load(void)
 					buffer[strlen(buffer) - 1] = '\0';
 				parse_line(buffer);
 			}
+
+			if (gl_con_log)
+			{
+				bool on = gl_con_log;
+				gl_con_log = FALSE;
+				gl_con_log = log_console(on);
+			}
+
 			ret = TRUE;
 		}
 		else
@@ -869,4 +878,5 @@ void config_term(void)
 {
 	delete_wdial(con_wd);
 	delete_wdial(cfg_wd);
+	exit_colorpop();
 }

@@ -19,14 +19,6 @@
 int do_debug = 0;
 #endif
 
-/* from mintlib:mintlib/main.c */
-extern int __mint;
-
-#ifdef __GNUC__
-long _stksize = 32768;
-#endif
-
-
 static void term_tw(int ret_code)
 {
 	config_term();
@@ -125,7 +117,8 @@ int main(int argc, char *argv[])
 
 	if (gl_con_auto)
 		open_console();
-	
+
+#if 0
 	if (gl_debug)
 	{
 		if (gl_magx)
@@ -137,11 +130,12 @@ int main(int argc, char *argv[])
 			t = new_proc("C:\\TMP\\DUM.TOS", "", NULL, "C:\\TMP", cfg, -1, NULL);
 			if (t)
 				open_window(t->win, FALSE);
-		}	
+		}
 		else
-			new_shell();	
+			new_shell();
 	}
-	
+#endif
+
 	if (argc >= 2)
 	{
 		if (argv[1][0] == '-')		/* filter options */
