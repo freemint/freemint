@@ -246,7 +246,7 @@ const char *MSG_init_bootmenu =
 	"<6> Init step by step: %s"
 	"<7> Debug/trace level: %d %s\r\n"
 	"<8> Debug output dev.: %d %s\r\n"
-	"<9> Write boot-logs to "BOOTLOGFILE": %d %s\r\n"
+	"<9> Write bootlog:     %d %s\r\n"
 	"<0> Remember settings: %s\r\n"
 	"[Return] accept,\r\n"
 	"[Ctrl-C] cancel.\r\n"
