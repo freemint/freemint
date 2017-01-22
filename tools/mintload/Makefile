@@ -1,14 +1,14 @@
 #
 # Makefile for MiNT loader
 #
-TARGET = mintloader.prg
+TARGET = mintload.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ..
-subdir = mintloader
+subdir = mintload
 
 default: all
 
@@ -25,7 +25,7 @@ CPU = 000
 STRIPFLAGS =
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 GENFILES = $(TARGET)
 
 
