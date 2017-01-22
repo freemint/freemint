@@ -7,10 +7,8 @@ COBJS = \
 	crtinit.c \
 	mintloader.c
 
-SOBJS = 
-
-SSOBJS = \
+SOBJS = \
 	entry.S \
 	setstack.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
