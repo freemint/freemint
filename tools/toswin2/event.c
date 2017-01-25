@@ -303,9 +303,9 @@ void event_loop(void)
 	short msgbuff[8], item, title;
 
 	evset = (MU_MESAG | MU_BUTTON | MU_KEYBD);
-	do 
+	do
 	{
-		if (gl_winanz > 0)
+		if (gl_con_log || gl_winanz > 0)
 			evset |= MU_TIMER;
 		else
 			evset &= ~MU_TIMER;
