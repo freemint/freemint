@@ -129,13 +129,14 @@ long
 kern_get_bootlog (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
-	ulong len = 512;
+	ulong len = strlen(boot_file) + 1;
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
-	info->len = ksprintf (info->buf, len, "%s", BOOTLOGFILE);
+	strcpy (info->buf, boot_file);
+	info->len = strlen(info->buf);
 
 	*buffer = info;
 	return 0;
