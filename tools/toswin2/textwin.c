@@ -1990,6 +1990,8 @@ void destroy_textwin(TEXTWIN *t)
 {
 	int i;
 
+	if (con_win != NULL && t->win == con_win->win)
+		con_win = NULL;
 	destroy_window(t->win);
 	for (i = 0; i < t->maxy; i++)
 	{
