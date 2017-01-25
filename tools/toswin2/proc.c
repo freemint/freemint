@@ -204,7 +204,7 @@ debug("new_proc: pid= %d, fd= %d\n", i, ourfd);
 void
 term_proc(TEXTWIN *t)
 {
-	if (t->fd > 0)
+	if (t->fd > 0 && (t->fd != con_fd || !gl_con_log))
 	{
 		(void)Fclose(t->fd);
 		if (t->fd == con_fd)
@@ -404,28 +404,46 @@ fd_input(void)
 	if (fdmask) 
 	{
 		readfds = fdmask;
-		if ((r = Fselect(1, &readfds, 0L, 0L)) > 0) 
+		if ((r = Fselect(1, &readfds, 0L, 0L)) > 0)
 		{
-			for (w = gl_winlist; w; w = w->next) 
+			bool consoleHandled = FALSE;
+			/* handle closed console separately so we can open it only if read_bytes >0 */
+			if (con_win == NULL && con_fd > 0 && (readfds & (1L << con_fd)))
+			{
+				long int read_bytes = Fread(con_fd, (long)READBUFSIZ, buf);
+				if (read_bytes > 0) {
+					if (gl_con_output) {
+						open_console();
+						write_text(con_win, buf, read_bytes);
+						consoleHandled = TRUE;
+					}
+					handle_console(buf, read_bytes);
+				}
+			}
+
+			for (w = gl_winlist; w; w = w->next)
 			{
 				if (w->flags & WISDIAL)
 					continue;
 
 				t = w->extra;
-				if (!t || !t->fd) 
+				if (!t || !t->fd)
 					continue;
-				if (readfds & (1L << t->fd)) 
+
+				if (readfds & (1L << t->fd))
 				{
-					long int read_bytes =
-						Fread(t->fd, (long)READBUFSIZ, buf);
-					if (read_bytes > 0)
+					if (t->fd != con_fd || !consoleHandled)
 					{
-						write_text(t, buf, read_bytes);
-						if (t->fd == con_fd)
-							handle_console(buf, read_bytes);
+						long int read_bytes = Fread(t->fd, (long)READBUFSIZ, buf);
+						if (read_bytes > 0)
+						{
+							write_text(t, buf, read_bytes);
+							if (t->fd == con_fd)
+								handle_console(buf, read_bytes);
+						}
+						else
+							checkdead |= (1L << t->fd);
 					}
-					else
-						checkdead |= (1L << t->fd);
 				}
 			}
 		}

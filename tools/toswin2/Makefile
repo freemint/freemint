@@ -21,15 +21,13 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-INCLUDES += -I/usr/GEM/include
-CFLAGS += -D_GNU_SOURCE
-#CFLAGS += -DDEBUG
-CFLAGS += -g
+#CFLAGS += -DDEBUG -g
+#CFLAGS += -mcpu=5475
 #CFLAGS += -DONLY_XAAES
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
-LIBS += -L/usr/GEM/lib -lcflib -lgem
+LIBS += -lcflib -lgem
 GENFILES = $(TARGET)
 
 MEMDEBUG = no

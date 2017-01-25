@@ -4,15 +4,13 @@
 
 #include <gem.h>
 
-#ifndef tw_global_h
-# include "global.h"
-#endif
-#ifndef tw_window_h
-# include "window.h"
-#endif
+#include "global.h"
+#include "window.h"
+#include "textwin.h"
 
 extern long con_fd;		/* Handle der Console oder 0 */
 extern long con_log_fd;		/* Handle des Console-Log oder 0 */
+extern TEXTWIN *con_win;	/* console window */
 
 
 void	open_console	(void);
