@@ -19,6 +19,7 @@ SUBDIRS = \
 	mktbl \
 	net-tools \
 	nfs \
+	nohog2 \
 	sysctl \
 	toswin2 \
 	usb
