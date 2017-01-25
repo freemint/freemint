@@ -234,6 +234,7 @@ typedef struct _osheader
 } OSHEADER;
 
 short write_boot_file = 0;
+char boot_file[48+12] = { 0 };
 
 void
 init (void)
@@ -525,97 +526,6 @@ init (void)
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
 
-	/* set up standard file handles for the current process
-	 * do this here, *after* init_intr has set the Rwabs vector,
-	 * so that AHDI doesn't get upset by references to drive U:
-	 */
-
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/console", O_RDWR, 0, NULL);
-	if (r)
-		FATAL("unable to open CONSOLE device");
-
-	rootproc->p_fd->control = f;
-	rootproc->p_fd->ofiles[0] = f; f->links++;
-	if( !write_boot_file )
-	{
-		rootproc->p_fd->ofiles[1] = f;
-		f->links++;
-	}
-	else
-	{
-		FILEPTR *fb;
-
-		r = FP_ALLOC(rootproc, &fb);
-		if (r) FATAL("Can't allocate fp for bootlog!");
-		r = do_open( &fb, BOOTLOGFILE, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
-		if( !r )
-		{
-			rootproc->p_fd->ofiles[1] = fb;
-		}
-		else
-		{
-			boot_print("could not open "BOOTLOGFILE"\r\n" );
-			(void)TRAP_Cconin();
-			rootproc->p_fd->ofiles[1] = f;
-			f->links++;
-		}
-	}
-
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/modem1", O_RDWR, 0, NULL);
-	if (r)
-		FATAL("unable to open MODEM1 device");
-
-	rootproc->p_fd->aux = f;
-	((struct tty *) f->devinfo)->aux_cnt = 1;
-	f->pos = 1;	/* flag for close to --aux_cnt */
-
-	if (has_bconmap)
-	{
-		/* If someone has already done a Bconmap call, then
-		 * MODEM1 may no longer be the default
-		 */
-		sys_b_bconmap(curbconmap);
-		f = rootproc->p_fd->aux;	/* bconmap can change rootproc->aux */
-	}
-
-	if (f)
-	{
-		rootproc->p_fd->ofiles[2] = f;
-		f->links++;
-	}
-
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/centr", O_RDWR, 0, NULL);
-	if (!r)
-	{
-		rootproc->p_fd->ofiles[3] = f;
-		rootproc->p_fd->prn = f;
-		f->links++;
-	}
-
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/midi", O_RDWR, 0, NULL);
-	if (!r)
-	{
-		rootproc->p_fd->midiin = f;
-		rootproc->p_fd->midiout = f;
-		f->links++;
-
-		((struct tty *) f->devinfo)->use_cnt++;
-		((struct tty *) f->devinfo)->aux_cnt = 2;
-		f->pos = 1;	/* flag for close to --aux_cnt */
-	}
-
 # ifdef BOOTSTRAPABLE
 	/* Bootstrapped kernel (executed directly by some loader) does
 	 * not have any drive access until the init_filesys() is called.
@@ -708,6 +618,110 @@ init (void)
 		{
 			ksprintf (mchdir, sizeof(mchdir), "%s%s/", sysdir, mch_str);
 		}
+	}
+
+	/* set up standard file handles for the current process
+	 * do this here, *after* init_intr has set the Rwabs vector,
+	 * so that AHDI doesn't get upset by references to drive U:
+	 */
+
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
+
+	r = do_open(&f, "u:/dev/console", O_RDWR, 0, NULL);
+	if (r)
+		FATAL("unable to open CONSOLE device");
+
+	rootproc->p_fd->control = f;
+	rootproc->p_fd->ofiles[0] = f; f->links++;
+	if( !write_boot_file )
+	{
+		rootproc->p_fd->ofiles[1] = f;
+		f->links++;
+	}
+	else
+	{
+		FILEPTR *fb;
+
+		r = FP_ALLOC(rootproc, &fb);
+		if (r) FATAL("Can't allocate fp for bootlog!");
+
+		r = ENOENT;	/* file not found */
+		if (strlen(mchdir) > 0)
+		{
+			ksprintf (boot_file, sizeof(boot_file), "%s%s", mchdir, "boot.log");
+			r = do_open( &fb, boot_file, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		}
+
+		if (r)
+		{
+			ksprintf (boot_file, sizeof(boot_file), "%s%s", sysdir, "boot.log");
+			r = do_open( &fb, boot_file, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		}
+
+		if (!r)
+		{
+			rootproc->p_fd->ofiles[1] = fb;
+		}
+		else
+		{
+			boot_print("could not open bootlog file\r\n");
+			(void)TRAP_Cconin();
+			rootproc->p_fd->ofiles[1] = f;
+			f->links++;
+		}
+	}
+
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
+
+	r = do_open(&f, "u:/dev/modem1", O_RDWR, 0, NULL);
+	if (r)
+		FATAL("unable to open MODEM1 device");
+
+	rootproc->p_fd->aux = f;
+	((struct tty *) f->devinfo)->aux_cnt = 1;
+	f->pos = 1;	/* flag for close to --aux_cnt */
+
+	if (has_bconmap)
+	{
+		/* If someone has already done a Bconmap call, then
+		 * MODEM1 may no longer be the default
+		 */
+		sys_b_bconmap(curbconmap);
+		f = rootproc->p_fd->aux;	/* bconmap can change rootproc->aux */
+	}
+
+	if (f)
+	{
+		rootproc->p_fd->ofiles[2] = f;
+		f->links++;
+	}
+
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
+
+	r = do_open(&f, "u:/dev/centr", O_RDWR, 0, NULL);
+	if (!r)
+	{
+		rootproc->p_fd->ofiles[3] = f;
+		rootproc->p_fd->prn = f;
+		f->links++;
+	}
+
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
+
+	r = do_open(&f, "u:/dev/midi", O_RDWR, 0, NULL);
+	if (!r)
+	{
+		rootproc->p_fd->midiin = f;
+		rootproc->p_fd->midiout = f;
+		f->links++;
+
+		((struct tty *) f->devinfo)->use_cnt++;
+		((struct tty *) f->devinfo)->aux_cnt = 2;
+		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
 
 	/* print the warning message if MP is turned off */
