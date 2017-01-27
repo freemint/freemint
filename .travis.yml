@@ -18,11 +18,10 @@ after_success:
   - chmod 600 .travis/id_rsa.pem # @mikrosk's private key (push access to freemint.github.io)
   - ssh-add .travis/id_rsa.pem
   - cd ..
-  - ls; ls freemint/sys/libkern; ls freemint/sys/libkern/.compile_000
   - git clone git@github.com:mikrosk/freemint.github.io.git
-  - 'cd freemint.github.io \
-      && echo "git rm -f builds/freemint/*.tar.bz2 builds/freemint/*.zip" \
-      && cp ../freemint/sys/libkern/.compile_000/libkern000.a builds/freemint \
-      && git add builds/freemint/*.tar.bz2 builds/freemint/*.zip builds/freemint/*.a \
-      && git commit -m "build xyz" && git push
+  - 'cd freemint.github.io &&
+      echo "git rm -f builds/freemint/*.tar.bz2 builds/freemint/*.zip" &&
+      cp ../freemint/sys/libkern/libkern000.a builds/freemint &&
+      git add builds/freemint/*.tar.bz2 builds/freemint/*.zip builds/freemint/*.a &&
+      git commit -m "build xyz" && git push
     '
