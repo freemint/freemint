@@ -16,14 +16,14 @@ script:
 after_success:
   - if [ "${TRAVIS_EVENT_TYPE}" = "push" ];
     then
-        eval "$(ssh-agent -s)"
-        chmod 600 .travis/id_rsa.pem
-        ssh-add .travis/id_rsa.pem
-        export ID=$(git log -n1 --format="%cd-%h" --date=short)
-        cd ..
-        git clone git@github.com:mikrosk/freemint.github.io.git
-        cd freemint.github.io
-        git rm -f --ignore-unmatch builds/freemint/{*.tar.bz2,*.zip,*.a}
-        cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID.tar.bz2
-        git add builds/freemint/*.tar.bz2 && git commit -m "FreeMiNT $TRAVIS_COMMIT" && git push
+        eval "$(ssh-agent -s)";
+        chmod 600 .travis/id_rsa.pem;
+        ssh-add .travis/id_rsa.pem;
+        export ID=$(git log -n1 --format="%cd-%h" --date=short);
+        cd ..;
+        git clone git@github.com:mikrosk/freemint.github.io.git;
+        cd freemint.github.io;
+        git rm -f --ignore-unmatch builds/freemint/{*.tar.bz2,*.zip,*.a};
+        cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID.tar.bz2;
+        git add builds/freemint/*.tar.bz2 && git commit -m "FreeMiNT $TRAVIS_COMMIT" && git push;
     fi
