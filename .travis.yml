@@ -22,6 +22,6 @@ after_success:
   - 'cd freemint.github.io &&
       echo "git rm -f builds/freemint/*.tar.bz2 builds/freemint/*.zip" &&
       cp ../freemint/sys/libkern/libkern000.a builds/freemint &&
-      git add builds/freemint/*.tar.bz2 builds/freemint/*.zip builds/freemint/*.a &&
+      git add builds/freemint/*.a &&
       git commit -m "build xyz" && git push
     '
