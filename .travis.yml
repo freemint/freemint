@@ -20,6 +20,10 @@ after_success:
   - export ID=$(git log -n1 --format="%cd-%h" --date=short)
   - cd ..
   - git clone git@github.com:mikrosk/freemint.github.io.git
-  - cd freemint.github.io && git rm -f --ignore-unmatch builds/freemint/{*.tar.bz2,*.zip,*.a} && cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID && git add builds/freemint/*.a && git commit -m "build xyz" && git push
+  - cd freemint.github.io 
+  - git rm -f --ignore-unmatch builds/freemint/{*.tar.bz2,*.zip,*.a}
+  - cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID
+  - ls builds/freemint
+  - git add builds/freemint/*.a && git commit -m "build xyz" && git push
 
 #git rm -f builds/freemint/{*.tar.bz2,*.zip} &&
