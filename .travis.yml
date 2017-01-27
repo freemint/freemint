@@ -27,5 +27,5 @@ after_success:
         git rm -f --ignore-unmatch builds/freemint/{*.tar.bz2,*.zip};
         cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID.tar.bz2;
         cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID.zip;
-        git add builds/freemint/{*.tar.bz2,*.zip} && git commit -m "freemint $TRAVIS_COMMIT_SHORT mikrosk/freemint#2" && git push;
+        git add builds/freemint/{*.tar.bz2,*.zip} && git commit -m "https://github.com/mikrosk/freemint.github.io/tree/master/builds/freemint mikrosk/freemint#2" && git push;
     fi
