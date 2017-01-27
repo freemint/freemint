@@ -7,7 +7,20 @@ compiler:
    - m68k-atari-mint-gcc
 
 before_install:
-  - 'sh ./.install-cross-mint.sh'
+  - 'sh ./.travis/install-cross-mint.sh'
+  - 'openssl aes-256-cbc -K $encrypted_8fe468c72adb_key -iv $encrypted_8fe468c72adb_iv -in .travis/id_rsa.pem.enc -out .travis/id_rsa.pem -d'
 
 script:
-  - make CROSS=yes
+  - cd sys && make 000 CROSS=yes && cd ..
+
+after_success:
+  - eval "$(ssh-agent -s)" #start the ssh agent
+  - chmod 600 .travis/id_rsa.pem # @mikrosk's private key (push access to freemint.github.io)
+  - ssh-add .travis/id_rsa.pem
+  - cd ..
+  - git clone git@github.com:mikrosk/freemint.github.io.git
+  - cd freemint.github.io
+  - echo "git rm -f builds/freemint/*.tar.bz2 builds/freemint/*.zip"
+  - cp ../freemint/sys/libkern/.compile_000/libkern000.a builds/freemint
+  - git add builds/freemint/*.tar.bz2 builds/freemint/*.zip builds/freemint/*.a
+  - git commit -m 'build xyz' && git push
