@@ -48,7 +48,7 @@ LIBCMINI_CPU := m5475
 else
 LIBCMINI_CPU := .
 endif
-LIBCMINI_LIBPATH := $(top_srcdir)/../../libcmini/libcmini/$(LIBCMINI_CPU)
+LIBCMINI_LIBPATH := $(LIBCMINI_PATH)/$(LIBCMINI_CPU)
 LIBCMINI_STARTUP := $(LIBCMINI_PATH)/$(LIBCMINI_CPU)/startup.o
 endif
 
