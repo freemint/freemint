@@ -20,17 +20,13 @@ endif
 ifeq ($(CROSS),yes)
 
 CROSSPREFIX=m68k-atari-mint-
-#CROSSPREFIX=ozk42-
 
 LANG=C
 NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
 CRLF = echo crlf -s
 
-# e.g. when you don't have the mintlib/gemlib/cflib in
-#      the /usr/m68k-atari/mint
 GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS)
-#	-ffreestanding -I/usr/m68k-atari-mint/include -specs=/home/ozk/specs
 
 else
 
@@ -40,6 +36,20 @@ NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
 CRLF  = crlf -s
 
+endif
+
+# If you want to use libcmini instead of mintlib
+# for a smaller footprint of your TOS executables, call the Makefile with LIBCMINI=yes.
+# libcmini must be installed parallel to the freemint top dir for this to work
+ifeq (yes,$(LIBCMINI))
+LIBCMINI_PATH := $(top_srcdir)/../../libcmini/libcmini
+ifeq (v4e,$(CPU))
+LIBCMINI_CPU := m5475
+else
+LIBCMINI_CPU := .
+endif
+LIBCMINI_LIBPATH := $(top_srcdir)/../../libcmini/libcmini/$(LIBCMINI_CPU)
+LIBCMINI_STARTUP := $(LIBCMINI_PATH)/$(LIBCMINI_CPU)/startup.o
 endif
 
 CC = $(CROSSPREFIX)gcc
@@ -88,3 +98,8 @@ DEFINITIONS =
 # model type
 #
 MODEL = 
+
+.PHONY: printvars tests
+printvars:
+	@$(foreach V,$(.VARIABLES), $(if $(filter-out environment% default automatic, $(origin $V)),$(warning $V=$($V))))
+
