@@ -99,7 +99,7 @@ DEFINITIONS =
 #
 MODEL = 
 
-.PHONY: printvars tests
+.PHONY: printvars
 printvars:
 	@$(foreach V,$(.VARIABLES), $(if $(filter-out environment% default automatic, $(origin $V)),$(warning $V=$($V))))
 
