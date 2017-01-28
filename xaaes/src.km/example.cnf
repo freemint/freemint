@@ -784,6 +784,13 @@ redraw_timeout = 2000
 # If true difference between resource-filesize and size given
 # in rsc-header is no error.
 #
+#--------------------------------------------------------------------
+#	standard_font_point = <value>
+# (Override standard_point)
+#
+#  example:
+#  app_options = HDDRUTIL, standard_font_point = 10
+#
 #######################################################################
 #
 # This default setting will make XaAES look closer to n.aes, but
