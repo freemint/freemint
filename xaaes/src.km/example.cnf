@@ -702,12 +702,20 @@ redraw_timeout = 2000
 # in rsc-header is no error.
 #
 #--------------------------------------------------------------------
+#  standard_font_point = <value>
+# (override standard_point)
+#
+#  example:
+#  app_options = HDDRUTIL, standard_font_point = 10
+#
+#--------------------------------------------------------------------
 #  submenu_indicator = <value>  default: 0
 #
 # Controls how the attachment of a submenu is indicated.
 #
 # 0 = Use "right arrow" (0x03)
 # 1 = Greater than sign ">" (Classic XaAES)
+#
 #######################################################################
 #
 # This default setting will make XaAES look closer to n.aes, but
@@ -914,7 +922,7 @@ helpserver = HTM,HighWire,d:\internet\www\highwire\highwire.app
 #####################################################################
 # cancel = string,string
 #
-cancel = cancel,abbruch,annuler,anular,annulla,m‚gsem,îòìåíà,Zru¹it,avbryt,anuluj,afbryd,undo
+cancel = cancel,abbruch,annuler,anular,annulla,mï¿½gsem,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,Zruï¿½it,avbryt,anuluj,afbryd,undo
 
 #####################################################################
 # filters = mask, mask, ...
