@@ -19,21 +19,23 @@ env:
   global:
     - WEBSITE_USER="mikrosk" # change to freemint
     - WEBSITE_PROJECT="freemint.github.io"
+    - PROJECT=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 2)
     - PUBLISH_REPO="git@github.com:${WEBSITE_USER}/${WEBSITE_PROJECT}.git"
-    - PUBLISH_PATH="builds/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
+    - PUBLISH_PATH="${PROJECT}/builds/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
     - PUBLISH_URL="https://github.com/${WEBSITE_USER}/${WEBSITE_PROJECT}/tree/${PUBLISH_PATH}"
-    - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then PUBLISH_PATH="${PUBLISH_PATH}/${TRAVIS_PULL_REQUEST}"; fi
-    - if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
+    - if [ "${TRAVIS_PULL_REQUEST}" != false ]; then PUBLISH_PATH="${PUBLISH_PATH}/${TRAVIS_PULL_REQUEST}"; fi
+    - if [ "${TRAVIS_PULL_REQUEST}" = false ];
       then
-        COMMIT_MESSAGE="[${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] Commit ${TRAVIS_COMMIT}";
+        COMMIT_MESSAGE="[${PROJECT}] [${TRAVIS_BRANCH}] Commit ${TRAVIS_COMMIT}";
       else
-        COMMIT_MESSAGE="[${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] PR ${PUBLISH_URL}\n\n${TRAVIS_REPO_SLUG}#${TRAVIS_PULL_REQUEST}";
+        COMMIT_MESSAGE="[${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] PR ${PUBLISH_URL} ${TRAVIS_REPO_SLUG}#${TRAVIS_PULL_REQUEST}";
       fi
 
 script:
   - cd sys && make 000 CROSS=yes && cd ..
 
 after_success:
+  - echo $PROJECT, $PUBLISH_PATH, $PUBLISH_URL, $TRAVIS_PULL_REQUEST, $COMMIT_MESSAGE
   - eval "$(ssh-agent -s)"
   - chmod 600 .travis/id_rsa.pem
   - ssh-add .travis/id_rsa.pem
