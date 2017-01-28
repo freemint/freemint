@@ -1,3 +1,8 @@
+# mintlib, lib, fdlibm: put in master
+# freemint: put in: master, helmut-enhancements
+#                   freemint-1_18, freemint-1_17, branch-1_16, branch-1_15
+#                   usbtos?
+
 language: c
 os: linux
 dist: trusty
@@ -10,22 +15,34 @@ before_install:
   - 'sh ./.travis/install-cross-mint.sh'
   - 'openssl aes-256-cbc -K $encrypted_8fe468c72adb_key -iv $encrypted_8fe468c72adb_iv -in .travis/id_rsa.pem.enc -out .travis/id_rsa.pem -d'
 
+env:
+  global:
+    - WEBSITE_USER="mikrosk" # change to freemint
+    - WEBSITE_PROJECT="freemint.github.io"
+    - PUBLISH_REPO="git@github.com:${WEBSITE_USER}/${WEBSITE_PROJECT}.git"
+    - PUBLISH_PATH="builds/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
+    - PUBLISH_URL="https://github.com/${WEBSITE_USER}/${WEBSITE_PROJECT}/tree/${PUBLISH_PATH}"
+    - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then PUBLISH_PATH="${PUBLISH_PATH}/${TRAVIS_PULL_REQUEST}"; fi
+    - if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
+      then
+        COMMIT_MESSAGE=" [${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] Commit: ${TRAVIS_COMMIT}"
+      else
+        COMMIT_MESSAGE=" [${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] PR: ${PUBLISH_URL}\n\n${TRAVIS_REPO_SLUG}#${TRAVIS_PULL_REQUEST}"
+      fi
+
 script:
   - cd sys && make 000 CROSS=yes && cd ..
 
 after_success:
-  - if [ "${TRAVIS_EVENT_TYPE}" = "push" ];
-    then
-        eval "$(ssh-agent -s)";
-        chmod 600 .travis/id_rsa.pem;
-        ssh-add .travis/id_rsa.pem;
-        export TRAVIS_COMMIT_SHORT=$(git log -n1 --format="%h")
-        export ID=$(git log -n1 --format="%cd-%h" --date=short);
-        cd ..;
-        git clone git@github.com:mikrosk/freemint.github.io.git;
-        cd freemint.github.io;
-        git rm -f --ignore-unmatch builds/freemint/{*.tar.bz2,*.zip};
-        cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID.tar.bz2;
-        cp ../freemint/sys/libkern/libkern000.a builds/freemint/xxx-$ID.zip;
-        git add builds/freemint/{*.tar.bz2,*.zip} && git commit -m "https://github.com/mikrosk/freemint.github.io/tree/master/builds/freemint mikrosk/freemint#2" && git push;
-    fi
+  - eval "$(ssh-agent -s)"
+  - chmod 600 .travis/id_rsa.pem
+  - ssh-add .travis/id_rsa.pem
+  - export ID=$(git log -n1 --format="%cd-%h" --date=short)
+  - cd ..
+  - git clone "${PUBLISH_REPO}"
+  - cd "${WEBSITE_PROJECT}"
+  - git rm -rf "${PUBLISH_PATH}"
+  - mkdir -p "${PUBLISH_PATH}"
+  - cp ../freemint/sys/libkern/libkern000.a "${PUBLISH_PATH}/xxx-$ID.tar.bz2"
+  - cp ../freemint/sys/libkern/libkern000.a "${PUBLISH_PATH}/xxx-$ID.zip"
+  - git add "${PUBLISH_PATH}" && git commit -m "${COMMIT_MESSAGE}" && git push
