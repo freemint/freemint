@@ -35,7 +35,11 @@ script:
   - cd sys && make 000 CROSS=yes && cd ..
 
 after_success:
-  - echo $PROJECT, $PUBLISH_PATH, $PUBLISH_URL, $TRAVIS_PULL_REQUEST, $COMMIT_MESSAGE
+  - echo $PROJECT, $PUBLISH_PATH, $PUBLISH_URL, "${TRAVIS_PULL_REQUEST}", $COMMIT_MESSAGE
+  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ]; then echo "1je to false!!"; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then echo "2je to false!!"; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" = false ]; then echo "3je to false!!"; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" == false ]; then echo "4je to false!!"; fi
   - eval "$(ssh-agent -s)"
   - chmod 600 .travis/id_rsa.pem
   - ssh-add .travis/id_rsa.pem
