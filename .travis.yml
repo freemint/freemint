@@ -23,13 +23,15 @@ env:
     - PUBLISH_REPO="git@github.com:${WEBSITE_USER}/${WEBSITE_PROJECT}.git"
     - PUBLISH_PATH="${PROJECT}/builds/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
     - PUBLISH_URL="https://github.com/${WEBSITE_USER}/${WEBSITE_PROJECT}/tree/${PUBLISH_PATH}"
-    - 'if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then PUBLISH_PATH="${PUBLISH_PATH}/${TRAVIS_PULL_REQUEST}"; fi'
-    - 'if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
+
+before_script:
+    - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then PUBLISH_PATH="${PUBLISH_PATH}/${TRAVIS_PULL_REQUEST}"; fi
+    - if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
       then
         COMMIT_MESSAGE="[${PROJECT}] [${TRAVIS_BRANCH}] Commit ${TRAVIS_COMMIT}";
       else
         COMMIT_MESSAGE="[${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] PR ${PUBLISH_URL} ${TRAVIS_REPO_SLUG}#${TRAVIS_PULL_REQUEST}";
-      fi'
+      fi
 
 script:
   - cd sys && make 000 CROSS=yes && cd ..
