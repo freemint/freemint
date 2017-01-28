@@ -1,7 +1,7 @@
 # mintlib, lib, fdlibm: put in master
 # freemint: put in: master, helmut-enhancements
 #                   freemint-1_18, freemint-1_17, branch-1_16, branch-1_15
-#                   usbtos?
+#                   usbtos? yyy
 
 language: c
 os: linux
