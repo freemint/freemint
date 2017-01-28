@@ -21,7 +21,7 @@ env:
     - WEBSITE_PROJECT="freemint.github.io"
     - PROJECT=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 2)
     - PUBLISH_REPO="git@github.com:${WEBSITE_USER}/${WEBSITE_PROJECT}.git"
-    - PUBLISH_PATH="${PROJECT}/builds/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
+    - PUBLISH_PATH="builds/${PROJECT}/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
     - PUBLISH_URL="https://github.com/${WEBSITE_USER}/${WEBSITE_PROJECT}/tree/${PUBLISH_PATH}"
 
 before_script:
@@ -37,11 +37,6 @@ script:
   - cd sys && make 000 CROSS=yes && cd ..
 
 after_success:
-  - echo $PROJECT, $PUBLISH_PATH, $PUBLISH_URL, "${TRAVIS_PULL_REQUEST}", $COMMIT_MESSAGE
-  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ]; then echo "1je to false!!"; fi
-  - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then echo "2je to false!!"; fi
-  - if [ "${TRAVIS_PULL_REQUEST}" = false ]; then echo "3je to false!!"; fi
-  - if [ "${TRAVIS_PULL_REQUEST}" == false ]; then echo "4je to false!!"; fi
   - eval "$(ssh-agent -s)"
   - chmod 600 .travis/id_rsa.pem
   - ssh-add .travis/id_rsa.pem
