@@ -40,6 +40,12 @@ tools/net-tools/pppconf
 tools/net-tools/route
 tools/net-tools/slattach
 tools/net-tools/slinkctl/slinkctl
+tools/strace/genstamp
+tools/strace/gentables
+tools/strace/strace
+tools/strace/sysenttab.c
+tools/strace/sysenttab.h
+tools/swkbdtbl/swkbdtbl
 tools/net-tools/tests/client
 tools/net-tools/tests/dgram
 tools/net-tools/tests/dgramd

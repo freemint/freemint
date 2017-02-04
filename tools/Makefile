@@ -20,6 +20,8 @@ SUBDIRS = \
 	net-tools \
 	nfs \
 	nohog2 \
+	strace \
+	swkbdtbl \
 	sysctl \
 	toswin2 \
 	usb
