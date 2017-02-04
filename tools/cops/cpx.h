@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * COPS (c) 1995 - 2003 Sven & Wilfried Behne
  *                 2004 F.Naumann & O.Skancke
  *
@@ -28,7 +28,7 @@
 
 #include <setjmp.h>
 #include <gemx.h>
-#if __GEMLIB_MAJOR__ != 0 || __GEMLIB_MINOR__ < 43 || __GEMLIB_REVISION__ < 2
+#if __GEMLIB_MAJOR__ != 0 || __GEMLIB_MINOR__ < 43 || (__GEMLIB_MINOR__ == 43 && __GEMLIB_REVISION__ < 2)
 #error COPS require at least gemlib 0.43.2
 #endif
 #include "global.h"
@@ -124,7 +124,7 @@ struct cpxlist
 
 /*
  * exported functions to cpx (xcontrol parameter block)
- * 
+ *
  * 32bit clean
  */
 
@@ -215,7 +215,7 @@ struct xcpb
 
 /*
  * CPX interface entry points
- * 
+ *
  * 32bit clean
  */
 
@@ -287,7 +287,7 @@ typedef	struct cpx_desc
 				   wegen WDIALOG-Fehler aus 2 Objekten bestehend */
 
 	struct cl_segm segm;
-	
+
 	short	icon_x;		/* Iconposition innerhalb des Hauptfensters */
 	short	icon_y;
 
