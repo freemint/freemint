@@ -34,7 +34,7 @@
 # ifndef _m68k_bswap_h
 # define _m68k_bswap_h
 
-
+#ifndef __mcoldfire__
 static inline __u16
 __asm_bswap16 (register __u16 x)
 {
@@ -62,9 +62,54 @@ __asm_bswap32 (register __u32 x)
 	
 	return x;
 }
+#endif
 
-# define BSWAP16(x)	(__asm_bswap16 (x))
-# define BSWAP32(x)	(__asm_bswap32 (x))
+static inline __u16
+__const_bswap16 (register __u16 x)
+{
+	register __u16 r;
+
+	r  = (x <<  8) & 0xff00;
+	r |= (x >>  8) & 0x00ff;
+
+	return r;
+}
+
+static inline __u32
+__const_bswap32 (register __u32 x)
+{
+	register __u32 r;
+
+	r  = (x << 24) & 0xff000000;
+	r |= (x <<  8) & 0x00ff0000;
+	r |= (x >>  8) & 0x0000ff00;
+	r |= (x >> 24) & 0x000000ff;
+
+	return r;
+}
+
+static inline __u16
+bswap16 (register __u16 x)
+{
+#ifndef __mcoldfire__
+	return (__builtin_constant_p (x) ? __const_bswap16 (x) : __asm_bswap16 (x));
+#else
+	return __const_bswap16 (x);
+#endif
+}
+
+static inline __u32
+bswap32 (register __u32 x)
+{
+#ifndef __mcoldfire__
+	return (__builtin_constant_p (x) ? __const_bswap32 (x) : __asm_bswap32 (x));
+#else
+	return __const_bswap32 (x);
+#endif
+}
+
+# define BSWAP16(x)	(bswap16 (x))
+# define BSWAP32(x)	(bswap32 (x))
 
 
 # endif /* _m68k_bswap_h */

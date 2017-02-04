@@ -28,43 +28,7 @@
 
 # include "md5.h"
 # include <string.h>
-
-
-static inline ulong
-__asm_bswap32 (register ulong x)
-{
-	__asm__
-	(
-		"rolw #8, %0;"
-		"swap %0;"
-		"rolw #8, %0;"
-		: "=d" (x)
-		: "0" (x)
-	);
-	
-	return x;
-}
-
-static inline ulong
-__const_bswap32 (register ulong x)
-{
-	register ulong r;
-	
-	r  = (x << 24) & 0xff000000;
-	r |= (x <<  8) & 0x00ff0000;
-	r |= (x >>  8) & 0x0000ff00;
-	r |= (x >> 24) & 0x000000ff;
-	
-	return r;
-}
-
-static inline ulong
-bswap32 (register ulong x)
-{
-	return (__builtin_constant_p (x) ? __const_bswap32 (x) : __asm_bswap32 (x));
-}
-
-# define BSWAP32(x)	(bswap32 (x))
+# include "bswap.h"
 
 /*
  * Note: this code is harmless on little-endian machines.
