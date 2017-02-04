@@ -20,12 +20,6 @@ all-here: asm-files
 # default overwrites
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = 
-#ifeq ($(CPU),030)
-#DEFINITIONS = -DM68030
-#endif
-#ifeq ($(CPU),020-60)
-#DEFINITIONS = -DM68030
-#endif
 
 # default definitions
 OBJS = $(SOBJS:.S=.o)
