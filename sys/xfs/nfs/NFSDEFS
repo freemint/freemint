@@ -22,31 +22,13 @@ CPU = 020-60
 NFSDEFS +=
 endif
 
-ifeq ($(nfs),030)
-TARGET = nfs.xfs
-CPU = 030
-NFSDEFS +=
-endif
-
-ifeq ($(nfs),040)
-TARGET = nfs.xfs
-CPU = 040
-NFSDEFS +=
-endif
-
-ifeq ($(nfs),060)
-TARGET = nfs.xfs
-CPU = 060
-NFSDEFS +=
-endif
-
 ifeq ($(nfs),col)
 TARGET = nfs.xfs
 CPU  = v4e
-NFSDEFS += 
+NFSDEFS +=
 endif
 
 #
 # all default targets
 #
-nfstargets = 02060 030 040 060 deb 000 col
+nfstargets = deb 000 02060 col

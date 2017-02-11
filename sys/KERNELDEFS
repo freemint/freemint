@@ -16,7 +16,6 @@
 # -DM68000		build for 68000 (no mmu, no caches)
 # -DM68030		build for 68030
 # -DM68040		build for 68040-060
-# -DM68060		build for 68060
 # -DMILAN		build Milan kernel
 # -DARANYM		build Aranym kernel
 
@@ -59,6 +58,13 @@ KERNELDEFAULTDEFS += -DSOFT_UNITABLE
 KERNELDEFAULTDEFS += -DBUILTIN_SHELL
 endif
 
+ifeq ($(kernel),deb)
+MINT = mintdeb.prg
+CPU  = 020-60
+KERNELDEFS = -DDEBUG_INFO -DM68040
+endif
+
+# ST, STE, 020+ MMU-less machines
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
@@ -66,37 +72,28 @@ KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
+# TT030, Falcon030, CT2, PAK68/3
 ifeq ($(kernel),030)
 MINT = mint030.prg
-CPU  = 030
+CPU  = 020-60
 KERNELDEFS = -DM68030
 endif
 
-ifeq ($(kernel),040)
-MINT = mint040.prg
-CPU  = 040
-KERNELDEFS = -DM68040
-endif
-
-ifeq ($(kernel),060)
-MINT = mint060.prg
-CPU  = 060
-KERNELDEFS = -DM68060 -DPCI_BIOS
-endif
-
-ifeq ($(kernel),020)
-MINT = mint020.prg
-CPU  = 020
-KERNELDEFS = -DM68000
-kernel_nocflags = -DWITH_MMU_SUPPORT
-endif
-
-ifeq ($(kernel),deb)
-MINT = mintdeb.prg
+# CT60, CTPCI
+ifeq ($(kernel),04060)
+MINT = mint4060.prg
 CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
+KERNELDEFS = -DM68040 -DPCI_BIOS
 endif
 
+# Milan040, Milan060
+ifeq ($(kernel),mil)
+MINT = mintmil.prg
+CPU  = 020-60
+KERNELDEFS = -DMILAN -DM68040 -DPCI_BIOS
+endif
+
+# FireBee
 ifeq ($(kernel),col)
 MINT = mintv4e.prg
 CPU  = v4e
@@ -104,19 +101,15 @@ KERNELDEFS = -DM68040 -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
-ifeq ($(kernel),mil)
-MINT = mintmil.prg
-CPU  = 020-60
-KERNELDEFS = -DMILAN -DM68040 -DPCI_BIOS
-endif
-
+# ARAnyM with built-in hostfs.xfs
 ifeq ($(kernel),ara)
 MINT = mintara.prg
-CPU  = 040
+CPU  = 020-60
 KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
 MODULEDIRS = xfs/hostfs
 endif
 
+# Hatari with GEMDOS emulation
 ifeq ($(kernel),hat)
 MINT = minthat.prg
 CPU  = 000
@@ -124,41 +117,8 @@ KERNELDEFS = -DM68000 -DOLDTOSFS -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
-ifeq ($(kernel),my1)
-MINT = mintnp.prg
-CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
-endif
-
-ifeq ($(kernel),my2)
-MINT = mint040.prg
-CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
-KERNELDEFS += -DMFP_DEBUG_DIRECT
-#KERNELDEFS += -DPROFILING
-#kernel_cflags = -pg
-#kernel_nocflags = -fomit-frame-pointer
-endif
-
-ifeq ($(kernel),my3)
-MINT = mint030.prg
-CPU  = 030
-KERNELDEFS = -DDEBUG_INFO -DM68030
-endif
-
-ifeq ($(kernel),my4)
-MINT = mintmdbg.prg
-CPU = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
-endif
-
 #
 # all default targets
 #
-kerneltargets = 000 020 030 040 060 deb mil ara hat
-cputargets = 000 020 030 040 060 020-60
-
-ifeq ($(COLDFIRE),yes)
-kerneltargets += col
-cputargets += v4e
-endif
+kerneltargets = deb 000 030 04060 mil col ara hat
+cputargets = 000 020-60 v4e

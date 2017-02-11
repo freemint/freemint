@@ -22,31 +22,13 @@ CPU = 020-60
 INET4DEFS +=
 endif
 
-ifeq ($(inet4),030)
-TARGET = libinet4.a
-CPU = 030
-INET4DEFS +=
-endif
-
-ifeq ($(inet4),040)
-TARGET = libinet4.a
-CPU = 040
-INET4DEFS +=
-endif
-
-ifeq ($(inet4),060)
-TARGET = libinet4.a
-CPU = 060
-INET4DEFS +=
-endif
-
 ifeq ($(inet4),col)
 TARGET = libinet4.a
 CPU  = v4e
-INET4DEFS += 
+INET4DEFS +=
 endif
 
 #
 # all default targets
 #
-inet4targets = 02060 030 040 060 deb 000 col
+inet4targets = deb 000 02060 col

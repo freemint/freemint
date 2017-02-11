@@ -32,27 +32,6 @@ USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
-ifeq ($(ehci),030)
-TARGET = ehci.ucd
-CPU = 030
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
-
-ifeq ($(ehci),040)
-TARGET = ehci.ucd
-CPU = 040
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
-
-ifeq ($(ehci),060)
-TARGET = ehci.ucd
-CPU = 060
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
-
 ifeq ($(ehci),col)
 TARGET = ehci.ucd
 CPU  = v4e
@@ -63,4 +42,4 @@ endif
 #
 # all default targets
 #
-ehcitargets = 02060 030 040 060 deb 000 col #prg
+ehcitargets = deb 000 02060 col #prg
