@@ -79,7 +79,7 @@ CPU  = 020-60
 KERNELDEFS = -DM68030
 endif
 
-# CT60, CTPCI
+# AfterBurner040, CT60, CTPCI
 ifeq ($(kernel),04060)
 MINT = mint4060.prg
 CPU  = 020-60
