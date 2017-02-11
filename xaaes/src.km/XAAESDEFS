@@ -13,7 +13,7 @@ XAAESDEFS += -DWDIALOG_PDLG=1	# pdlg_xx() extensions
 #XAAESDEFS += -DBOOTLOG=1
 
 ifeq ($(xaaes),deb)
-TARGET = ../xaaesdeb.km
+TARGET = xaaesdeb.km
 CPU = 020-60
 XAAESDEFS += -DGENERATE_DIAGS=1 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
