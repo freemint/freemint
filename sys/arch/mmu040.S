@@ -42,7 +42,7 @@
  * 
  */
 
-#if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
+#if defined(WITH_MMU_SUPPORT) && defined(M68040)
 
 // set_mmu
 //

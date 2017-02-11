@@ -141,9 +141,6 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_OSCOMPILE:
 		{
-# ifdef M68060
-			r = 0x0000003cL;	/* 060 kernel */
-# endif
 # ifdef M68040
 			r = 0x00000028L;	/* 040 kernel */
 # endif
