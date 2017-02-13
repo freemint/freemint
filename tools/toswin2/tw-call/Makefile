@@ -21,7 +21,6 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-#CFLAGS += -mcpu=5475
 
 # default definitions
 OBJS = $(COBJS:.c=.o)

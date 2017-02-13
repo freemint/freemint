@@ -22,7 +22,6 @@ all-here: $(TARGET)
 
 # default overwrites
 #CFLAGS += -DDEBUG -g
-#CFLAGS += -mcpu=5475
 #CFLAGS += -DONLY_XAAES
 
 # default definitions
