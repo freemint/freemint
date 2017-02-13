@@ -5,6 +5,12 @@
 #include <sys/fcntl.h>
 #include <string.h>
 
+#include "../../sys/buildinfo/version.h"
+#ifndef str
+#define str(x) _stringify(x)
+#define _stringify(x)  #x
+#endif
+
 /* cookie jar definition
 */
 typedef struct
@@ -15,7 +21,7 @@ typedef struct
 
 #define CJAR    (*(struct cookie *)(0x5A0))
 
-#define MINTDIR        "\\mint"
+#define MINTDIR        MINT_VERS_PATH_STRING
 #define DEFAULT        "mint.prg"
 #define DEFAULT_68000  "mint000.prg"
 #define DEFAULT_68020  "mint020.prg"
