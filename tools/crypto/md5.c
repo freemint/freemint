@@ -28,43 +28,7 @@
 
 # include "md5.h"
 # include <string.h>
-
-
-static inline ulong
-__asm_bswap32 (register ulong x)
-{
-	__asm__
-	(
-		"rolw #8, %0;"
-		"swap %0;"
-		"rolw #8, %0;"
-		: "=d" (x)
-		: "0" (x)
-	);
-	
-	return x;
-}
-
-static inline ulong
-__const_bswap32 (register ulong x)
-{
-	register ulong r;
-	
-	r  = (x << 24) & 0xff000000;
-	r |= (x <<  8) & 0x00ff0000;
-	r |= (x >>  8) & 0x0000ff00;
-	r |= (x >> 24) & 0x000000ff;
-	
-	return r;
-}
-
-static inline ulong
-bswap32 (register ulong x)
-{
-	return (__builtin_constant_p (x) ? __const_bswap32 (x) : __asm_bswap32 (x));
-}
-
-# define BSWAP32(x)	(bswap32 (x))
+# include "bswap.h"
 
 /*
  * Note: this code is harmless on little-endian machines.
@@ -90,7 +54,7 @@ MD5Init (struct MD5Context *ctx)
 	ctx->buf[1] = 0xefcdab89;
 	ctx->buf[2] = 0x98badcfe;
 	ctx->buf[3] = 0x10325476;
-	
+
 	ctx->bits[0] = 0;
 	ctx->bits[1] = 0;
 }
@@ -103,21 +67,21 @@ void
 MD5Update (struct MD5Context *ctx, uchar const *buf, ushort len)
 {
 	ulong t;
-	
+
 	/* Update bitcount */
 	t = ctx->bits[0];
 	if ((ctx->bits[0] = t + ((ulong) len << 3)) < t)
 		ctx->bits[1]++;		/* Carry from low to high */
 	ctx->bits[1] += (ulong) len >> 29;
-	
+
 	/* Bytes already in shsInfo->data */
 	t = (t >> 3) & 0x3f;
-	
+
 	/* Handle any leading odd-sized chunks */
 	if (t)
 	{
 		uchar *p = ctx->in + t;
-		
+
 		t = 64 - t;
 		if (len < t)
 		{
@@ -130,7 +94,7 @@ MD5Update (struct MD5Context *ctx, uchar const *buf, ushort len)
 		buf += t;
 		len -= t;
 	}
-	
+
 	/* Process data in 64-byte chunks */
 	while (len >= 64)
 	{
@@ -140,13 +104,13 @@ MD5Update (struct MD5Context *ctx, uchar const *buf, ushort len)
 		buf += 64;
 		len -= 64;
 	}
-	
+
 	/* Handle any remaining bytes of data. */
 	memcpy (ctx->in, buf, len);
 }
 
 /*
- * Final wrapup - pad to 64-byte boundary with the bit pattern 
+ * Final wrapup - pad to 64-byte boundary with the bit pattern
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
 void
@@ -154,19 +118,19 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
 {
 	ulong count;
 	uchar *p;
-	
+
 	/* Compute number of bytes mod 64 */
 	count = (ctx->bits[0] >> 3) & 0x3F;
-	
+
 	/* Set the first char of padding to 0x80.  This is safe since there is
 	 * always at least one byte free
 	 */
 	p = ctx->in + count;
 	*p++ = 0x80;
-	
+
 	/* Bytes of padding needed to make 64 bytes */
 	count = 64 - 1 - count;
-	
+
 	/* Pad out to 56 mod 64 */
 	if (count < 8)
 	{
@@ -174,7 +138,7 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
 		bzero (p, count);
 		byteReverse ((ulong *) ctx->in, 16);
 		MD5Transform (ctx->buf, (ulong *) ctx->in);
-		
+
 		/* Now fill the next block with 56 bytes */
 		bzero (ctx->in, 56);
 	}
@@ -184,11 +148,11 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
 		bzero (p, count - 8);
 	}
 	byteReverse ((ulong *) ctx->in, 14);
-	
+
 	/* Append length in bits and transform */
 	((ulong *) ctx->in)[14] = ctx->bits[0];
 	((ulong *) ctx->in)[15] = ctx->bits[1];
-	
+
 	MD5Transform (ctx->buf, (ulong *) ctx->in);
 	byteReverse (ctx->buf, 4);
 	memcpy (digest, ctx->buf, 16);
@@ -214,12 +178,12 @@ void
 MD5Transform (ulong buf[4], ulong const in[16])
 {
 	register ulong a, b, c, d;
-	
+
 	a = buf[0];
 	b = buf[1];
 	c = buf[2];
 	d = buf[3];
-	
+
 	MD5STEP (F1, a, b, c, d, in[ 0] + 0xd76aa478,  7);
 	MD5STEP (F1, d, a, b, c, in[ 1] + 0xe8c7b756, 12);
 	MD5STEP (F1, c, d, a, b, in[ 2] + 0x242070db, 17);
@@ -236,7 +200,7 @@ MD5Transform (ulong buf[4], ulong const in[16])
 	MD5STEP (F1, d, a, b, c, in[13] + 0xfd987193, 12);
 	MD5STEP (F1, c, d, a, b, in[14] + 0xa679438e, 17);
 	MD5STEP (F1, b, c, d, a, in[15] + 0x49b40821, 22);
-	
+
 	MD5STEP (F2, a, b, c, d, in[ 1] + 0xf61e2562,  5);
 	MD5STEP (F2, d, a, b, c, in[ 6] + 0xc040b340,  9);
 	MD5STEP (F2, c, d, a, b, in[11] + 0x265e5a51, 14);
@@ -253,7 +217,7 @@ MD5Transform (ulong buf[4], ulong const in[16])
 	MD5STEP (F2, d, a, b, c, in[ 2] + 0xfcefa3f8,  9);
 	MD5STEP (F2, c, d, a, b, in[ 7] + 0x676f02d9, 14);
 	MD5STEP (F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
-	
+
 	MD5STEP (F3, a, b, c, d, in[ 5] + 0xfffa3942,  4);
 	MD5STEP (F3, d, a, b, c, in[ 8] + 0x8771f681, 11);
 	MD5STEP (F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
@@ -270,7 +234,7 @@ MD5Transform (ulong buf[4], ulong const in[16])
 	MD5STEP (F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
 	MD5STEP (F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
 	MD5STEP (F3, b, c, d, a, in[ 2] + 0xc4ac5665, 23);
-	
+
 	MD5STEP (F4, a, b, c, d, in[ 0] + 0xf4292244,  6);
 	MD5STEP (F4, d, a, b, c, in[ 7] + 0x432aff97, 10);
 	MD5STEP (F4, c, d, a, b, in[14] + 0xab9423a7, 15);
@@ -287,7 +251,7 @@ MD5Transform (ulong buf[4], ulong const in[16])
 	MD5STEP (F4, d, a, b, c, in[11] + 0xbd3af235, 10);
 	MD5STEP (F4, c, d, a, b, in[ 2] + 0x2ad7d2bb, 15);
 	MD5STEP (F4, b, c, d, a, in[ 9] + 0xeb86d391, 21);
-	
+
 	buf[0] += a;
 	buf[1] += b;
 	buf[2] += c;

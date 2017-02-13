@@ -7,6 +7,17 @@ include $(srcdir)/SRCFILES
 include $(srcdir)/EXTRAFILES
 include $(srcdir)/MISCFILES
 
+ifdef CPU
+ifeq ($(CPU),v4e)
+MODEL = -mcpu=5475
+else
+MODEL = -m68$(CPU)
+endif
+else
+# leave empty/default
+MODEL =
+endif
+
 all: all-recursive all-here
 
 clean: clean-recursive
