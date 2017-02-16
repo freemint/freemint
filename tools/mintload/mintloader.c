@@ -22,7 +22,7 @@ typedef struct
 #define CJAR    (*(struct cookie *)(0x5A0))
 
 #define MINTDIR        MINT_VERS_PATH_STRING
-#define DEFAULT        "mint.prg"
+#define DEFAULT        "mint000.prg"
 #define DEFAULT_68000  "mint000.prg"
 #define DEFAULT_68020  "mint020.prg"
 #define DEFAULT_68030  "mint030.prg"
@@ -130,6 +130,9 @@ loader_init(int argc, char **argv, char **env)
 		/* if the system have a 68000 CPU we use the 68000 compiled
 		* kernel by default
 		*/
+#ifdef __mcoldfire__
+		name = "mintv4e.prg";
+#else
 		r = get_cookie(C__CPU, &cpu);
 		if (r && cpu < 20)
 				name = DEFAULT_68000;
@@ -169,7 +172,7 @@ loader_init(int argc, char **argv, char **env)
 		}
 
 		Fclose((int)fh);
-
+#endif
 		/* append kernel name */
 		my_strlcat(path, "\\", sizeof(path));
 		my_strlcat(path, name, sizeof(path));

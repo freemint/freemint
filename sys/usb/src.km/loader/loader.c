@@ -31,7 +31,6 @@
 #include "../../../mint/ioctl.h"
 
 #define DEFAULT        "usb.km"
-#define DEFAULT_68000  "usb000.km"
 
 static void
 my_strlcpy(char *dst, const char *src, size_t n)
@@ -118,7 +117,7 @@ int
 loader_init(int argc, char **argv, char **env)
 {
 	char path[384];
-	char *name;
+	char *name = NULL;
 	long fh, r = 1;
 
 	/*
@@ -151,7 +150,7 @@ loader_init(int argc, char **argv, char **env)
 	}
 	if (r >= sizeof(path))
 	{
-		(void)Cconws("usb loader: buffer for Fread(\"/kern/sysdir\") to small!\r\n");
+		(void)Cconws("usb loader: buffer for Fread(\"/kern/sysdir\") too small!\r\n");
 		goto error;
 	}
 	Fclose((int)fh);
@@ -166,8 +165,6 @@ loader_init(int argc, char **argv, char **env)
 	{
 		char *s = argv[1];
 		char c;
-
-		name = NULL;
 
 		do
 		{
@@ -187,42 +184,6 @@ loader_init(int argc, char **argv, char **env)
 		else
 			name = argv[1];
 	}
-	else
-	{
-#ifdef __mcoldfire__
-		name = "usbv4e.km";
-#else
-		long cpu;
-
-		name = DEFAULT;
-
-		/* if the system have a 68000 CPU we use the 68000 compiled
-		 * module
-		 */
-		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
-		if (r == 0 )
-		{
-			switch( cpu )
-			{
-			case 30:
-				name = "usb030.km";
-			break;
-			case 40:
-				name = "usb040.km";
-			break;
-			case 60:
-				name = "usb060.km";
-			break;
-			default:
-				name = DEFAULT_68000;
-			}
-		}
-		else
-			(void)Cconws("CPU-cookie not found \r\n");
-#endif
-	}
-	(void)Cconws(name);
-	(void)Cconws("\r\n");
 
 	/* change to the usb module directory */
 	r = Dsetpath(path);
@@ -242,20 +203,57 @@ loader_init(int argc, char **argv, char **env)
 		goto error;
 	}
 
+	if (name == NULL)
+	{
+		/* Try the legacy names first.
+		 */
+#ifdef __mcoldfire__
+		name = "usbv4e.km";
+#else
+		long cpu;
+		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
+		if (r == 0)
+		{
+			switch(cpu)
+			{
+			case 30:
+				name = "usb030.km";
+			break;
+			case 40:
+				name = "usb040.km";
+			break;
+			case 60:
+				name = "usb060.km";
+			break;
+			default:
+				name = "usb000.km";
+			}
+		}
+		else
+		{
+			(void)Cconws("CPU-cookie not found \r\n");
+			name = "usb000.km";
+		}
+#endif
+	}
+
+	/* check if file exists */
+	fh = Fopen(name, O_RDONLY);
+	if (fh < 0)
+	{
+		name = DEFAULT;
+		fh = Fopen(name, O_RDONLY);
+		if (fh < 0)
+		{
+			(void)Cconws("usb loader: No such file: \""DEFAULT"\"\r\n");
+			goto error;
+		}
+	}
+	Fclose((int)fh);
+
 	/* append module name */
 	my_strlcat(path, "\\", sizeof(path));
 	my_strlcat(path, name, sizeof(path));
-
-	/* check if file exist */
-	fh = Fopen(path, O_RDONLY);
-	if (fh < 0)
-	{
-		(void)Cconws("usb loader: No such file: \"");
-		(void)Cconws(path);
-		(void)Cconws("\"\r\n");
-		goto error;
-	}
-	Fclose((int)fh);
 
 	(void)Cconws("Load kernel module: ");
 	(void)Cconws(path);
