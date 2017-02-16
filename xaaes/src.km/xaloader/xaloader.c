@@ -12,7 +12,6 @@
 #include "../../../sys/mint/ioctl.h"
 
 #define DEFAULT        "xaaes.km"
-#define DEFAULT_68000  "xaaes000.km"
 
 static void
 my_strlcpy(char *dst, const char *src, size_t n)
@@ -115,7 +114,7 @@ int
 loader_init(int argc, char **argv, char **env)
 {
 	char path[384];
-	char *name;
+	char *name = NULL;
 	long fh, r = 1;
 
 again:
@@ -148,7 +147,7 @@ again:
 	}
 	if (r >= sizeof(path))
 	{
-		ConsoleWrite("XaAES loader: buffer for Fread(\"/kern/sysdir\") to small!\r\n");
+		ConsoleWrite("XaAES loader: buffer for Fread(\"/kern/sysdir\") too small!\r\n");
 		goto error;
 	}
 	Fclose((int)fh);
@@ -164,8 +163,6 @@ again:
 		char *s = argv[1];
 		char c;
 
-		name = NULL;
-
 		do {
 			c = *s++;
 			if (c == '\\' || c == '/')
@@ -179,48 +176,11 @@ again:
 			*name = '\0';
 
 			my_strlcpy(path, argv[1], sizeof(path));
-			//my_strlcat(path, "/", sizeof(path));
 			*name++ = c;
 		}
 		else
 			name = argv[1];
 	}
-	else
-	{
-#ifdef __mcoldfire__
-		name = "xaaesv4e.km";
-#else
-		long cpu;
-
-		name = DEFAULT;
-
-		/* if the system has a 68000 CPU we use the 68000 compiled
-		 * module
-		 */
-		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
-		if (r == 0 )
-		{
-			switch( cpu )
-			{
-			case 30:
-				name = "xaaes030.km";
-			break;
-			case 40:
-				name = "xaaes040.km";
-			break;
-			case 60:
-				name = "xaaes060.km";
-			break;
-			default:
-				name = DEFAULT_68000;
-			}
-		}
-		else
-			ConsoleWrite("CPU-cookie not found \r\n");
-#endif
-	}
-	ConsoleWrite(name);
-	ConsoleWrite("\r\n");
 
 	/* change to the XaAES module directory */
 	r = Dsetpath(path);
@@ -246,24 +206,57 @@ again:
 
 	ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
-	/* append module name */
-	//my_strlcat(path, name, sizeof(path));
 
-	/* check if file exist */
+	if (name == NULL)
+	{
+		/* Try the legacy names first.
+		 */
+#ifdef __mcoldfire__
+		name = "xaaesv4e.km";
+#else
+		long cpu;
+		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
+		if (r == 0)
+		{
+			switch(cpu)
+			{
+			case 30:
+				name = "xaaes030.km";
+			break;
+			case 40:
+				name = "xaaes040.km";
+			break;
+			case 60:
+				name = "xaaes060.km";
+			break;
+			default:
+				name = "xaaes000.km";
+			}
+		}
+		else
+		{
+			ConsoleWrite("CPU-cookie not found\r\n");
+			name = "xaaes000.km";
+		}
+#endif
+	}
+
+	/* check if file exists */
 	fh = Fopen(name, O_RDONLY);
-	//fh = Fopen(path, O_RDONLY);
 	if (fh < 0)
 	{
-		ConsoleWrite("XaAES loader: No such file: \"");
-		ConsoleWrite(path);
-		ConsoleWrite("\"\r\n");
-		goto error;
+		name = DEFAULT;
+		fh = Fopen(name, O_RDONLY);
+		if (fh < 0)
+		{
+			ConsoleWrite("XaAES loader: No such file: \""DEFAULT"\"\r\n");
+			goto error;
+		}
 	}
 	Fclose((int)fh);
 
 	ConsoleWrite("Load kernel module: '");
 	ConsoleWrite(name);
-	//ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 
 	fh = Fopen("/dev/km", O_RDONLY);
@@ -284,7 +277,6 @@ again:
 	//Cconin();
 
 	r = Fcntl((int)fh, name, KM_RUN);
-	//r = Fcntl((int)fh, path, KM_RUN);
 	//ConsoleWrite( "XaAES loader: KM_RUN done()\r\n");
 
 	if( r < 0 )
@@ -333,10 +325,8 @@ again:
 		}
 
 	}
-	//ConsoleWrite( "XaAES loader: Fclose()\r\n");
 	Fclose((int)fh);
-	//ConsoleWrite( "XaAES loader: return\r\n");
-	//Cconin();
+
 	if( r )
 		goto error;
 	/* when xaloader has pid 1 it is the direct child of the kernel
