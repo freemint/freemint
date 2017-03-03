@@ -1,3 +1,8 @@
+# mintlib, lib, fdlibm: put in master
+# freemint: put in: master, helmut-enhancements
+#                   freemint-1_18, freemint-1_17, branch-1_16, branch-1_15
+#                   usbtos? yyy
+
 language: c
 os: linux
 dist: trusty
@@ -7,7 +12,40 @@ compiler:
    - m68k-atari-mint-gcc
 
 before_install:
-  - 'sh ./.install-cross-mint.sh'
+  - 'sh ./.travis/install-cross-mint.sh'
+  - 'openssl aes-256-cbc -K $encrypted_8fe468c72adb_key -iv $encrypted_8fe468c72adb_iv -in .travis/id_rsa.pem.enc -out .travis/id_rsa.pem -d'
+
+env:
+  global:
+    - WEBSITE_USER="mikrosk" # change to freemint
+    - WEBSITE_PROJECT="freemint.github.io"
+    - PROJECT=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 2)
+    - PUBLISH_REPO="git@github.com:${WEBSITE_USER}/${WEBSITE_PROJECT}.git"
+    - PUBLISH_PATH="builds/${PROJECT}/${TRAVIS_BRANCH}/${TRAVIS_EVENT_TYPE}"
+    - PUBLISH_URL="https://github.com/${WEBSITE_USER}/${WEBSITE_PROJECT}/tree/${PUBLISH_PATH}"
+
+before_script:
+    - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then PUBLISH_PATH="${PUBLISH_PATH}/${TRAVIS_PULL_REQUEST}"; fi
+    - if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
+      then
+        COMMIT_MESSAGE="[${PROJECT}] [${TRAVIS_BRANCH}] Commit ${TRAVIS_COMMIT}";
+      else
+        COMMIT_MESSAGE="[${TRAVIS_REPO_SLUG}] [${TRAVIS_BRANCH}] PR ${PUBLISH_URL} ${TRAVIS_REPO_SLUG}#${TRAVIS_PULL_REQUEST}";
+      fi
 
 script:
-  - make CROSS=yes
+  - cd sys && make 000 CROSS=yes && cd ..
+
+after_success:
+  - eval "$(ssh-agent -s)"
+  - chmod 600 .travis/id_rsa.pem
+  - ssh-add .travis/id_rsa.pem
+  - export ID=$(git log -n1 --format="%cd-%h" --date=short)
+  - cd ..
+  - git clone "${PUBLISH_REPO}"
+  - cd "${WEBSITE_PROJECT}"
+  - git rm -rf "${PUBLISH_PATH}"
+  - mkdir -p "${PUBLISH_PATH}"
+  - cp ../freemint/sys/libkern/libkern000.a "${PUBLISH_PATH}/xxx-$ID.tar.bz2"
+  - cp ../freemint/sys/libkern/libkern000.a "${PUBLISH_PATH}/xxx-$ID.zip"
+  - git add "${PUBLISH_PATH}" && git commit -m "${COMMIT_MESSAGE}" && git push
