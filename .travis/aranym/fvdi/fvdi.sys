@@ -1,0 +1,267 @@
+# fVDI configuration
+# $Id: fvdi.sys,v 1.4 2003-04-06 13:35:38 johan Exp $
+
+
+# ----- Standard setup -----
+
+# This is the path to fonts and drivers.
+PATH = C:\GEMSYS
+
+# Uncomment and modify this if you want to load another palette at
+# startup time. The file must be 1536 bytes and contain 3 (RGB) * 256
+# VDI palette values (0 - 1000). (This is a common palette file
+# format.)
+#palette c:\nvdi5.pal
+
+# Tell fVDI the size of your screen, in mm. Recommended!
+# A negative number can be given to specify a fixed DPI.
+# Defaults to the approximate size of the picture on an SM124.
+width -90
+height -90
+
+# If fVDI is not being started from the AUTO folder, comment this out.
+booted
+
+
+# ----- Various fixes -----
+
+# With this uncommented fVDI can use NVDI as a background VDI (for
+# dealing with non-screen devices). Some strange problems still
+# remain, though.
+#nvdifix
+
+# Some programs look in the lineA variables for certain information.
+# Uncomment this to make fVDI do a few more changes there.
+#lineafix
+
+# With this uncommented fVDI will make the XBIOS report the correct
+# screen address even if using a graphics card. There are still
+# problems with this.
+#xbiosfix
+
+
+# ----- Advanced setup -----
+
+# Specify the 'roundness' of circles/ellipses/arcs.
+# The split number indicates how many lines will be drawn as a
+# percentage of the largest ellipse radius. The min/max numbers
+# make sure that not too few or too many lines are used.
+# More lines will result in slower drawing.
+# Defaults are as in the original VDI (the GPLed sources).
+#arcsplit 25
+#arcmin 8
+#arcmax 256
+
+# Uncomment this to force fVDI to make do with a single Trap #2
+# bending. Normally fVDI tries to move itself forward in the vector
+# chains, but this might cause trouble together with some other TSR.
+singlebend
+
+# Unless this is uncommented, fVDI tries to allocate memory as itself
+# rather than the calling application under normal TOS.
+# This option might possibly be useful if fVDI is launched before
+# MiNT.
+#nopidalloc
+
+# If this is uncommented, fVDI will refrain from keeping a list of all
+# allocated memory blocks. This option is useful if fVDI is launched
+# before MiNT running with memory protection.
+#nomemlink
+
+# Uncomment this to disable all the VDI vector functions (vex_).
+#novex
+
+# Uncomment this to force fVDI to not rely on a previous VDI.
+# For now, this will mean no mouse support...
+#standalone
+
+# The number of internal memory blocks allocated.
+# Defaults to two, and there should normally be no reason to change
+# that setting.
+#blocks 2
+
+# The size of the internal memory blocks in kbyte.
+# Defaults to ten, which should normally be enough.
+#blocksize 10
+
+
+# ----- Debug setup -----
+
+# This will turn on a few debug features in fVDI if uncommented.
+# If something bombs, the information given at startup (this is before
+# fVDI is running, so it will be on the normal Atari screen) using
+# this, together with what for example ERR_RPRT.PRG shows, is very
+# useful.
+# Multiple 'debug' turns on more debug output/features.
+#debug debug debug
+
+# This enables interactive debugging if uncommented.
+# fVDI will stop and wait for key presses after displaying debug
+# output. See the development documentation for more information.
+#interactive
+
+# Uncomment this one if you want the debug output to go somewhere else
+# than the screen. The number is a BIOS (Bconout) device, where the
+# most useful ones are the parallel port (0), the serial port (1), and
+# the midi port (3). Use -1 for ARAnyM console output and -2 to return
+# to the default (screen output via Cconws).
+#debugout 1
+
+# The size of the VDI call log in kbyte.
+# Defaults to 4, but is neither allocated nor used without 'debug'.
+#logsize 100
+
+# Uncomment this one to use the mouse routines from the old VDI.
+# You will also need to add the same switch to the configuration line
+# of the driver being used.
+#oldmouse
+
+# To test the boot code without actually rebooting the system, it can
+# be useful to uncomment the following. With this enabled, no previous
+# virtual workstations will be copied by fVDI. They will actually continue
+# to be handled by the old VDI
+#fakeboot
+
+# For testing purposes it can be useful to make fVDI available in
+# parallel with the normal VDI. See the documentation for information.
+#disable
+
+
+# ----- Interactive setup -----
+
+# Uncomment and change to write any text to the screen.
+# Note the quotes!
+#echo "Select graphics mode (or 'q' to skip fVDI):"
+
+# Uncomment and change to set up a default key (reported if none is
+# pressed). A device driver (or exitkey/casekey) can ask for this
+# value later on.
+#setkey 6
+
+# Uncomment and change to wait for a key (for a specified number of
+# seconds). A device driver (or exitkey/casekey) can ask for this
+# value later on.
+#waitkey 3
+
+# Uncomment and change to specify a key for quitting fVDI immediately.
+#exitkey q
+
+# Uncomment to exchange the last key pressed with a stored one.
+#swapkey
+
+# Depending on the stored key, a jump to a later place in the file can
+# be done. The place must be marked by the same text as the second
+# parameter below, followed by a ':'.
+#casekey m monochrome
+
+
+# ----- Driver configuration -----
+
+# Common driver initialization options (any driver can add to these):
+# accelerate xxxxxxx
+#     Any soft- or hardware accelerations can be turned off using the
+#     'accelerate xxxxxxx' option. For any 'x' that is replaced by a
+#     '-' or a '0', the corresponding accelerated function will be
+#     turned off.
+#     If this option is not used, all acceleration will be on.
+#     Acceleration possibilities (in order):
+#        line expand fillpoly fill blit text mouse
+# oldmouse
+#     Well, this switch is actually needed here too.
+
+# The standard software accelerated drivers all recognize
+# shadow
+#     Use a separate buffer of the screen in RAM. This is not useful
+#     unless you have a really fast processor ('040) and RAM that can
+#     be accessed much faster than the screen.
+
+# The Eclipse/RageII driver recognizes
+# mode n    ('n' can be replaced by 'key' (see above))
+#     Sets default mode n. 0 is always 640x480x8@60.
+# mode WIDTHxHEIGHTxDEPTH@FREQUENCY
+#     Sets a mode as close to (but not higher) the given numbers as
+#     possible.
+# doblit
+#     Causes screen->RAM blits to be done.
+#     Without 'pcibios' this is currently _very_ slow.
+#     Now only necessary when running without 'pcibios'.
+# pcibios
+#     Set things up to work under an Eclipse PCI BIOS.
+#     You should normally use this.
+# oldinit
+#     Will force the initialization to be done as if 'pcibios' was not
+#     active.
+#     Could help if there are initialization problems.
+# imgcache
+#     Tell fVDI to cache images (currently only icon (32x32) sized).
+# screencache
+#     Lets fVDI assume that the applications will only use data
+#     blitted from the screen for direct repaint (a single one).
+#     Will cause problems with some applications, but is very fast.
+# onlysrc
+#     Force all blits to D=S mode with the 32 bit driver.
+#     The standard Falcon desktop can not display icons without this.
+# realones
+#     Do not special case all zero/one blit types in true colour mode.
+#     Often better left inactive.
+# bright
+#     Makes the display somewhat brighter.
+# 4mb
+#     Tell fVDI to treat the card as a 4Mbyte one.
+#     Only necessary when running without 'pcibios'.
+# nosetmouse
+#     Do not set the mouse position on return from drawing routines.
+# nopalette
+#     Force the DAC to bypass the hardware palette.
+#     Should never be necessary.
+# screen n
+#     In case the internal old screen check is fooled somehow.
+#     This is not needed if the fVDI ACC is installed.
+# aesbuf n
+#     Let fVDI know about the AES's background buffer.
+#     This is not needed if the fVDI ACC is installed.
+# debug
+#     Turn on debugging aids.
+# scrninfo fb
+#     Force vq_scrninfo to return information regarding the actual
+#     frame buffer layout rather than that used for VDI blits.
+# notoram
+#     Skip any blits from screen to ram.
+# clrbltidx
+#     Resets the count of cached areas.
+# experiment
+#     Test a few things.
+
+
+# fVDI should be able to deal with any standard fonts.
+# Just list what you want to use below the driver definition.
+# You specify a system font by adding an 's' before the font
+# filename. If you do not specify a system font, fVDI will use the
+# default one (from the ROM).
+# It is a very good idea to have a system font in the same sizes as
+# the normal GEM one, but it is not necessary.
+
+#01r 1dummy.sys
+#01r 1plane.sys
+#01r 4plane.sys
+#01r 16bit.sys shadow oldmouse accelerate xxxxxx-
+#01r rage.sys screencache onlysrc 4mb mode key imgcache
+
+#01r rage_lc.sys pcibios screencache imgcache mode key accelerate xxxxxxx
+#01r rage.sys pcibios mode key imgcache screencache accelerate xxxxxxx
+#01r rage.sys pcibios mode 800x600x16@72 imgcache screencache accelerate xxxxxxx
+#01r rage.sys pcibios mode key imgcache screencache accelerate xxxxxxx realones
+#01r rage.sys 4mb mode key screencache imgcache
+#01r rage.sys pcibios mode key accelerate xxxxxxx realones
+#01r rage.sys doblit 4mb mode key accelerate xxxxxxx realones
+#01r rage.sys pcibios experiment 4mb mode key
+
+#01r rage.sys pcibios doblit 4mb mode key
+#01r rage.sys 4mb mode key screencache imgcache
+
+01r aranym.sys mode 1024x768x32@60
+
+#s MONACO08.FNT
+#s MONACO09.FNT
+#s MONACO10.FNT
+#s MONACO20.FNT
