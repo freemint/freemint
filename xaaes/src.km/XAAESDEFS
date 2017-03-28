@@ -55,7 +55,7 @@ endif
 ifeq ($(xaaes),col)
 TARGET = ../xaaesv4e.km
 CPU  = v4e
-XAAESDEFS += -DM68040 -DCOLDFIRE -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
+XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 
 #ifeq ($(xaaes),ozk)
