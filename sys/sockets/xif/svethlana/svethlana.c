@@ -166,7 +166,7 @@ svethlana_open (struct netif *nif)
 
 	initializing = 0;
 //	in_use = 0;
-	
+
 	return 0;
 }
 
@@ -304,7 +304,7 @@ svethlana_close (struct netif *nif)
  *	addroottimeout (..., ..., 1);
  */
 
- 
+
 static long
 svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
@@ -341,7 +341,7 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 		return ENOMEM;
 	}
 	nif->out_packets++;
-	
+
 	/*
 	 * Here you should either send the packet to the hardware or
 	 * enqueue the packet and send the next packet as soon as
@@ -366,9 +366,9 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 //	}
 
 	//shut out TX and RX interrupt, so we can send our packet safely
-//	ETH_INT_MASK = 0UL;	
+//	ETH_INT_MASK = 0UL;
 	//Turn off interrupts completely
-	int_off();	
+	int_off();
 
 	result = send_packet(nif, nbuf, BUF_NORMAL, slot_index, slot_index == (ETH_PKT_BUFFS-1) );
 
@@ -412,7 +412,7 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
   the svethlana_service() routine.
 */
 //There is a risk that the TX ISR gets here too, when the svethlana_output() (working in usermode)
-//is alredy writing a packet to the MAC controller. Therefore TX interrupt must be shut off before 
+//is alredy writing a packet to the MAC controller. Therefore TX interrupt must be shut off before
 //calling send_packet(). This assumes that a TX interrupt is not missed while the TXIE is disabled (check
 //this in the MAC controller docs).
 static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint32 slot, uint32 last_packet)
@@ -425,7 +425,7 @@ static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint
 	uint32					 origlen;
 //	uchar	message[80];
 
-	
+
 	//calculate packet length
 	origlen = (nbuf->dend) - (nbuf->dstart);
 
@@ -467,7 +467,7 @@ static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint
 		*/
 
 		*eth_dst_pnt++ = *datapnt++;
-	}	
+	}
 
 /*
 	if ((((uint32)eth_dst_pnt) > (ETH_DATA_BASE_ADDR + (1536*2))) ||
@@ -495,7 +495,7 @@ static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint
 
 	buf_deref (nbuf, buf_alloc_type);						//free buf because contents of packet
 																							//is now in the MAC controller
-	
+
 	return 0L;
 }
 
@@ -520,14 +520,14 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 
 //	c_conws("ioctl\n\r");		//debug
 
-	
+
 	switch (cmd)
 	{
 		case SIOCSIFNETMASK:
 		case SIOCSIFFLAGS:
 		case SIOCSIFADDR:
 			return 0;
-		
+
 		case SIOCSIFMTU:
 			/*
 			 * Limit MTU to 1500 bytes. MintNet has alraedy set nif->mtu
@@ -536,7 +536,7 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 			if (nif->mtu > ETH_MAX_DLEN)
 				nif->mtu = ETH_MAX_DLEN;
 			return 0;
-		
+
 		case SIOCSIFOPT:
 			/*
 			 * Interface configuration, handled by dummy_config()
@@ -544,7 +544,7 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 			ifr = (struct ifreq *) arg;
 			return svethlana_config (nif, ifr->ifru.data);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -571,7 +571,7 @@ svethlana_config (struct netif *nif, struct ifopt *ifo)
 //	c_conws("Config\n\r");
 
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
-	
+
 	if (!STRNCMP ("hwaddr"))
 	{
 #ifdef SVETHLANA_DEBUG
@@ -624,7 +624,7 @@ svethlana_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		DEBUG (("dummy: log file is %s", ifo->ifou.v_string));
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -634,7 +634,7 @@ void Init_BD()
 {
 	uint32_t	i;
 	char*			even_packet_base;
-	
+
 	packets_base = (char*) ct60_vmalloc(0, ETH_PKT_BUFFS * 2UL * 2048UL + 2048UL);
 	even_packet_base = (char*)((((unsigned long)packets_base) + 2047UL) & 0xFFFFF800UL);	//Make it all start at even 2048 bytes
 
@@ -658,7 +658,7 @@ void Init_BD()
 		}
 		eth_tx_bd[i].data_pnt = ((uint32_t)even_packet_base) + (i*2048UL);		//TX buffers come first
 		eth_rx_bd[i].data_pnt = ((uint32_t)even_packet_base) + ((ETH_PKT_BUFFS+i)*2048UL);		//then all RX buffers
-	}	
+	}
 
 }
 
@@ -704,7 +704,7 @@ driver_init (void)
 		{
 			c_conws( "This driver needs at least SV FW version 10!\n\r" );
 			Bconin(2);
-			return -1;		
+			return -1;
 		}
 	}
 
@@ -773,12 +773,12 @@ driver_init (void)
 	//Then release reset of the MAC controller
 	ETH_MODER = 0L;
 
-	//Set MAC address in MAC controller	
-	ETH_MAC_ADDR1 = (((uint32)(if_svethlana.hwlocal.adr.bytes[0])) <<  8) + 
+	//Set MAC address in MAC controller
+	ETH_MAC_ADDR1 = (((uint32)(if_svethlana.hwlocal.adr.bytes[0])) <<  8) +
 					(((uint32)(if_svethlana.hwlocal.adr.bytes[1])) <<  0);
-	ETH_MAC_ADDR0 = (((uint32)(if_svethlana.hwlocal.adr.bytes[2])) << 24) + 
+	ETH_MAC_ADDR0 = (((uint32)(if_svethlana.hwlocal.adr.bytes[2])) << 24) +
 					(((uint32)(if_svethlana.hwlocal.adr.bytes[3])) << 16) +
-					(((uint32)(if_svethlana.hwlocal.adr.bytes[4])) <<  8) + 
+					(((uint32)(if_svethlana.hwlocal.adr.bytes[4])) <<  8) +
 					(((uint32)(if_svethlana.hwlocal.adr.bytes[5])) <<  0);
 
 	//Inter packet gap
@@ -795,8 +795,8 @@ driver_init (void)
 					  (((unsigned long)(if_svethlana.hwlocal.adr.bytes[5])) << 16);
 
 
-	Init_BD();	
-	
+	Init_BD();
+
 
 	/*********************************************
 	 * Here comes functions not using the hardware
@@ -835,7 +835,7 @@ driver_init (void)
 	 * Time in ms between calls to (*if_svethlana.timeout) ();
 	 */
 	if_svethlana.timer = 0;
-	
+
 	/*
 	 * Interface hardware type
 	 */
@@ -846,13 +846,13 @@ driver_init (void)
 	 */
 	if_svethlana.hwlocal.len =
 	if_svethlana.hwbrcst.len = ETH_ALEN;
-	
+
 	/*
 	 * Set interface broadcast address. For real ethernet
 	 * drivers you must get them from the hardware of course!
 	 */
 	memcpy (if_svethlana.hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
-	
+
 	/*
 	 * Set length of send and receive queue. IF_MAXQ is a good value.
 	 */
@@ -871,23 +871,23 @@ driver_init (void)
 	 * Optional timer function that is called every 200ms.
 	 */
 	if_svethlana.timeout = NULL;
-	
+
 	/*
 	 * Here you could attach some more data your driver may need
 	 */
 	if_svethlana.data = 0UL;
-	
+
 	/*
 	 * Number of packets the hardware can receive in fast succession,
 	 * 0 means unlimited.
 	 */
 	if_svethlana.maxpackets = ETH_PKT_BUFFS;
-	
+
 	/*
 	 * Register the interface.
 	 */
 	if_register (&if_svethlana);
-	
+
 	/*
 	 * And say we are alive...
 	 */
@@ -917,7 +917,7 @@ driver_init (void)
 
 
 
-	// Install interrupt handler	
+	// Install interrupt handler
 	svethlana_install_int();
 
 	//c_conws("Init succeeded\n\r");
@@ -929,14 +929,14 @@ static void
 svethlana_install_int (void)
 {
 //	uint32	old_sp;
-	
+
 //	old_sp = Super(0L);
 
 	old_i6_int = Setexc (0xC5, (long) interrupt_i6);
 
 //	Super(old_sp);
 
-	//c_conws("Installed ISR\r\n");	
+	//c_conws("Installed ISR\r\n");
 }
 
 
@@ -1045,9 +1045,9 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 
 	if (int_src & ETH_INT_BUSY)
 	{
-		c_conws ("Busy\r\n");	
+		c_conws ("Busy\r\n");
 	}
-	
+
 	if (int_src & ETH_INT_RXE)
 	{
 		//c_conws("RX error!\r\n");
@@ -1068,10 +1068,10 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 					//Clear error flags
 					eth_rx_bd[i].len_ctrl &= ~(ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
 																		 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL);
-					
+
 					//mark the buffer as empty and free to use
 					eth_rx_bd[i].len_ctrl |= ETH_RX_BD_EMPTY;
-					nif->in_errors++;	
+					nif->in_errors++;
 				}
 			}
 		}
@@ -1136,9 +1136,9 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 				// Pass packet to upper layers
 				if (nif->bpf)
 					bpf_input (nif, b);
-	
+
 				type = eth_remove_hdr(b);
-	
+
 				// and enqueue packet
 				if(!if_input(nif, b, 0UL, type))
 					nif->in_packets++;
@@ -1148,14 +1148,14 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 					c_conws("input packet failed when receiving!\n\r");
 				}
 			}
-				
+
 			//now mark the buffer as empty and free to use
 			eth_rx_bd[slot].len_ctrl |= ETH_RX_BD_EMPTY;
-			
-			slot = Check_Rx_Buffers();		
+
+			slot = Check_Rx_Buffers();
 		}
 	}
-	
+
 
 	// Check for transmitted packets
 	if ((int_src & (ETH_INT_TXB || ETH_INT_TXE)) != 0)	// Transmit complete or error
@@ -1187,7 +1187,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 			//c_conws(message);
 		}
 	}
-	
+
 }
 
 
@@ -1211,7 +1211,7 @@ void hex2ascii(ulong l, uchar* c)
 {
 	short	i;
 	uchar	t;
-	
+
 	for(i=7; i!=0; i--)
 	{
 		t = (uchar)(l & 0xf);				// Keep only lower nibble
