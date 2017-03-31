@@ -3,7 +3,7 @@
 
 SVETHLANA_SRCS = \
 	svethlana.c \
-	svethlana_i6.s
+	svethlana_i6.S
 
 COMMON_SRCS = \
 	../main.c
