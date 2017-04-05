@@ -1,12 +1,12 @@
 #
-# Makefile for 
+# Makefile for
 #
 TARGET = svethlan.xif
 
 GENFILES = $(TARGET)
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../../..
@@ -22,7 +22,7 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I../.. -I$(top_srcdir)
-XIF_DEFINITIONS = 
+XIF_DEFINITIONS =
 DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
@@ -38,5 +38,5 @@ main.o:	../main.c
 # ethernat driver target
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-	
+
 include $(top_srcdir)/DEPENDENCIES

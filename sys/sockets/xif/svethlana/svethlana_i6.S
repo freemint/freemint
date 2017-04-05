@@ -1,4 +1,4 @@
-| 
+|
 | Low level and interrupt routines for the Svethlana driver
 |
 | 2010-12-17 Torbj”rn & Henrik Gild†
