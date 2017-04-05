@@ -1,0 +1,56 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	biodma.h \
+	de600.h \
+	lance.c.hack \
+	lancemem.h \
+	pamsdma.h \
+	pl0.h \
+	plip.h \
+	ppp.h \
+	serial.h \
+	slcompress.h \
+	slip.h
+
+COMMON_SRCS = main.c
+DIAL_SRCS = dial.c
+SLIP_SRCS = slip.c serial.c ppp.c slcompress.c
+PLIP_SRCS = plip.c pl0.c pl0asm.s
+DUMMY_SRCS = dummyeth.c
+DE600_SRCS = de600.c de600asm.s
+LANCE_SRCS = lance.c lanceasm.s
+RIEBL_SPEC_SRCS = rieblspc.c lanceasm.s
+RIEBL_SPEC_FAST_SRCS = rieblspc_fast.c lanceasm.s
+RIEBL_MST_SRCS = rieblmst.c lanceasm.s
+RIEBL_MST_FAST_SRCS = rieblmst_fast.c lanceasm.s
+RIEBL_MSTE_SRCS = rieblste.c lanceasm.s
+RIEBL_TT_SRCS = riebltt.c lanceasm.s
+PAMSDMA_SRCS = pamsdma.c dmaasm.s
+BIODMA_SRCS = biodma.c dmaasm.s
+RTL8012_SRCS = rtl8012.c rtl8012_vblint.s
+ETHERNAT_SRCS = 91c111.c ethernat.c ethernat_200Hzint.s
+SVETHLANA_SRCS = svethlana.c svethlana_i6.s
+
+COBJS = \
+	$(COMMON_SRCS) \
+	$(DIAL_SRCS) \
+	$(SLIP_SRCS) \
+	$(PLIP_SRCS) \
+	$(DUMMY_SRCS) \
+	$(DE600_SRCS) \
+	$(LANCE_SRCS) \
+	$(RIEBL_SPEC_SRCS) \
+	$(RIEBL_SPEC_FAST_SRCS) \
+	$(RIEBL_MST_SRCS) \
+	$(RIEBL_MST_FAST_SRCS) \
+	$(RIEBL_MSTE_SRCS) \
+	$(RIEBL_TT_SRCS) \
+	$(PAMSDMA_SRCS) \
+	$(BIODMA_SRCS) \
+	$(RTL8012_SRCS) \
+	$(ETHERNAT_SRCS) \
+	$(SVETHLANA_SRCS)
+
+SRCFILES = $(HEADER) $(COBJS)
