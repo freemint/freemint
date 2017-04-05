@@ -203,6 +203,9 @@ Defines for the I2C controller in the FPGA
 /*************************************
   Ethernet MAC controller registers
 **************************************/
+//Define the number of packet buffers each for TX and RX
+#define ETH_PKT_BUFFS		64UL
+
 /*
 Struct used for both TX and RX BD. Note that you can only access
 these registers as whole longwords, so there's no point in defining
@@ -245,7 +248,7 @@ typedef volatile struct
 
 /*Define RX BD and put two slots away in the BD space*/
 /*ETH_BD_TYPE * const eth_rx_bd = (ETH_BD_TYPE*)(ETH_BD_BASE_PNT + 2UL * sizeof(ETH_BD_TYPE));*/
-#define eth_rx_bd  ((ETH_BD_TYPE*)(ETH_BD_BASE_PNT + 2UL * sizeof(ETH_BD_TYPE)))
+#define eth_rx_bd  ((ETH_BD_TYPE*)(ETH_BD_BASE_PNT + ETH_PKT_BUFFS * sizeof(ETH_BD_TYPE)))
 
 /* Data buffer pointer */
 #define ETH_DATA_BASE_ADDR	0x80012800UL
