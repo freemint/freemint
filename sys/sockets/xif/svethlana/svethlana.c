@@ -1,17 +1,4 @@
 /*****************************************************************************
-** TODO 20110104: 
-**       We get bus errors (access of address 0) when running
-**       a heavy copying operation using cp or scp (but not floodping).
-**       Somehow we manage to use a null-pointer somewhere. Add
-**       checks before using pointers and print if a null was found.
-**       This problem seems to appear also in the slightly older
-**       version when we hadn't added the alternating use of both TX slots yet,
-**       and the shut off of TX interrupt source in the MAC controller before
-**       calling send_packet().
-**      20110105:
-**       By printing the functions addresses we have seen that the null-pointer
-**       exception comes somewhere in svethlana_output.
-**		 Try turning off interrupts completely in svethlana_output.
 *******************************************************************************/
 
 
@@ -23,7 +10,7 @@
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
- * Copyright (c) 2007 Torbjorn and Henrik Gilda
+ * Copyright (c) 2007-2016 Torbjorn and Henrik Gilda
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,13 +28,14 @@
  */
 
 /*
- *	Svethlana packet driver.
+ *	Svethlana packet driver version 0.9
+ *  SuperVidel FW v10 is required by this driver
  *
  *	Usage:
  *		ifconfig en0 addr u.v.w.x
  *		route add u.v.w.x en0
  *
- *		20101228	/Henrik and Torbj”rn Gild†
+ *		20160426	/Henrik and Torbj”rn Gild†
  *
  */
 
@@ -67,6 +55,10 @@
 #include "svethlana_i6.h"
 
 #include <mint/osbind.h>
+
+/* #include "vmalloc.h" */
+#define ct60_vmalloc(mode,value) (unsigned long)trap_14_wwl((short)(0xc60e),(short)(mode),(unsigned long)(value))
+
 
 /*
  * From main.c
@@ -148,6 +140,10 @@ static uint32 cur_rx_slot = 0;
 //static uchar upperleft[] = {27,'H',0};
 //static uchar col40[] = {27,'Y',32,72,0};
 
+//This is the pointer to the whole memory block for all the packet buffers needed.
+//It's allocated in Init_BD() and deallocated at shutdown. The allocation is and
+//must be done in SuperVidel video RAM (DDR RAM).
+static char* packets_base = 0;
 
 /*
  * This gets called when someone makes an 'ifconfig up' on this interface
@@ -162,34 +158,11 @@ svethlana_open (struct netif *nif)
 
 //	c_conws("Svethlana up!\n\r");
 
-
-	// Enable interrupts in the LAN91C111
-/*
-	ksprintf (message, "Enable interrupts in the LAN91C111... ");
-	c_conws (message);
-*/
-
-	//enable RX, RX error, TX and TX error int sources
-	ETH_INT_MASK = ETH_INT_MASK_RXF | ETH_INT_MASK_RXE | ETH_INT_MASK_TXE | ETH_INT_MASK_TXB;
+	//enable RX, RX error, TX, TX error and Busy int sources
+	ETH_INT_MASK = ETH_INT_MASK_RXF | ETH_INT_MASK_RXE | ETH_INT_MASK_TXE | ETH_INT_MASK_TXB | ETH_INT_MASK_BUSY;
 
 	//Enable Transmit, full duplex, and CRC appending
 	ETH_MODER = ETH_MODER_TXEN | ETH_MODER_RXEN | ETH_MODER_FULLD | ETH_MODER_CRCEN | ETH_MODER_RECSMALL | ETH_MODER_PAD;
-
-/*
-#ifdef USE_I6
-	Eth_set_bank(2);
-	*LAN_INTMSK = (*LAN_INTMSK) | 0x1;					//enable RCV_INT
-#endif
-*/
-
-/*
-	ksprintf (message, "OK\n\r");
-	c_conws (message);
-*/
-
-
-//	Eth_set_bank(0);
-//	*LAN_RCR = (*LAN_RCR) | 0x0001;						//receive enable
 
 	initializing = 0;
 //	in_use = 0;
@@ -213,6 +186,7 @@ svethlana_close (struct netif *nif)
 	c_conws("Svethlana down!\n\r");
 
 	initializing = 1;
+
 	return 0;
 }
 
@@ -334,7 +308,7 @@ svethlana_close (struct netif *nif)
 static long
 svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
-	BUF				*nbuf;
+	BUF			*nbuf;
 	int32			result;
 //	unsigned char	littlemem;
 //	static	uchar	message[100];
@@ -396,14 +370,14 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 	//Turn off interrupts completely
 	int_off();	
 
-	result = send_packet(nif, nbuf, BUF_NORMAL, slot_index, slot_index);
+	result = send_packet(nif, nbuf, BUF_NORMAL, slot_index, slot_index == (ETH_PKT_BUFFS-1) );
 
 	int_on();
 
 	if(result == 0L)
 	{
-		//Use the other TX slot for next packet to send
-		slot_index = (slot_index + 1) & 0x1;
+		//Use the next TX slot for next packet to send
+		slot_index = (slot_index + 1) & (ETH_PKT_BUFFS-1);
 	}
 	else if(result == -2L)
 	{
@@ -443,11 +417,12 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 //this in the MAC controller docs).
 static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint32 slot, uint32 last_packet)
 {
-	uint32			i;
-	volatile uint32	*datapnt;
-	volatile uint32 *eth_dst_pnt;
-	uint32	rounded_len;
-	uint32	origlen;
+	uint32					 i;
+	volatile	uint32 j;
+	volatile	uint32 *datapnt;
+	volatile	uint32 *eth_dst_pnt;
+	uint32					 rounded_len;
+	uint32					 origlen;
 //	uchar	message[80];
 
 	
@@ -473,28 +448,39 @@ static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint
 	rounded_len = rounded_len >> 2;
 
 	//Write packet data
-	eth_dst_pnt = &ETH_DATA_BASE_PNT[slot * (1536/4)];
+//	eth_dst_pnt = &ETH_DATA_BASE_PNT[slot * (1536/4)];
+	eth_dst_pnt = (uint32*)(eth_tx_bd[slot].data_pnt);
 	datapnt = (uint32*)nbuf->dstart;
 	for(i=0; i < rounded_len; i++)
 	{
+		/*
 		if (eth_dst_pnt == 0UL)
 		{
 			c_conws("Send_packet: eth_dst_pnt is 0\r\n");
-			Bconin(2);
+			//Bconin(2);
 		}
 		if (datapnt == 0UL)
 		{
 			c_conws("Send_packet: datapnt is 0\r\n");
-			Bconin(2);
+			//Bconin(2);
 		}
+		*/
 
 		*eth_dst_pnt++ = *datapnt++;
 	}	
 
+/*
 	if ((((uint32)eth_dst_pnt) > (ETH_DATA_BASE_ADDR + (1536*2))) ||
 		(((uint32)eth_dst_pnt) < ETH_DATA_BASE_ADDR))
 	{
 		c_conws("Send_packet: eth_dst_pnt outside tx slots!\r\n");
+	}
+	*/
+
+	//Dummy loop to wait for the CT60 write FIFO to empty
+	for (j = 0; j < 1000; j++)
+	{
+		asm("nop;");
 	}
 
 	//Write length of data, BD ready, BD CRC enable
@@ -504,10 +490,11 @@ static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint
 	else
 		eth_tx_bd[slot].len_ctrl = (uint32)(origlen << 16) | ETH_TX_BD_READY | ETH_TX_BD_IRQ | ETH_TX_BD_CRC;
 
-	//printf("Sent in slot %lu, len_ctrl: 0x%08x\r\n", slot, eth_tx_bd[slot].len_ctrl);
+	//ksprintf (message, "T%02lu 0x%08lx\r\n", slot, eth_tx_bd[slot].len_ctrl);
+	//c_conws (message);
 
 	buf_deref (nbuf, buf_alloc_type);						//free buf because contents of packet
-															//is now in the MAC controller
+																							//is now in the MAC controller
 	
 	return 0L;
 }
@@ -598,9 +585,9 @@ svethlana_config (struct netif *nif, struct ifopt *ifo)
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 #ifdef SVETHLANA_DEBUG
 		cp = nif->hwlocal.adr.bytes;
-#endif
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("braddr"))
 	{
@@ -615,9 +602,9 @@ svethlana_config (struct netif *nif, struct ifopt *ifo)
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 #ifdef SVETHLANA_DEBUG
 		cp = nif->hwbrcst.adr.bytes;
-#endif
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("debug"))
 	{
@@ -645,23 +632,34 @@ svethlana_config (struct netif *nif, struct ifopt *ifo)
 
 void Init_BD()
 {
-	//Set two TX packet BDs and 2 RX BDs
-	ETH_TX_BD_NUM = 2UL;
+	uint32_t	i;
+	char*			even_packet_base;
+	
+	packets_base = (char*) ct60_vmalloc(0, ETH_PKT_BUFFS * 2UL * 2048UL + 2048UL);
+	even_packet_base = (char*)((((unsigned long)packets_base) + 2047UL) & 0xFFFFF800UL);	//Make it all start at even 2048 bytes
+
+	//Set number of TX packet BDs and RX BDs
+	ETH_TX_BD_NUM = ETH_PKT_BUFFS;
 
 	//Init each BD ctrl longword
-	eth_tx_bd[0].len_ctrl = ETH_TX_BD_CRC;										// no wrap
-	eth_tx_bd[1].len_ctrl = ETH_TX_BD_CRC | ETH_TX_BD_WRAP;						// wrap on last TX BD
-	
-	//Init both RX slots to empty, so they can receive a packet
-	eth_rx_bd[0].len_ctrl = ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ;					// no wrap
-	eth_rx_bd[1].len_ctrl = ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ | ETH_RX_BD_WRAP;	// wrap on last RX BD
+	//Init all RX slots to empty, so they can receive a packet
+	//Init all data pointers, so they get 2048 bytes each.
+	for (i = 0; i < ETH_PKT_BUFFS; i++)
+	{
+		if (i != (ETH_PKT_BUFFS-1))
+		{
+			eth_tx_bd[i].len_ctrl = ETH_TX_BD_CRC;																	// no wrap
+			eth_rx_bd[i].len_ctrl = ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ;								// no wrap
+		}
+		else
+		{
+			eth_tx_bd[i].len_ctrl = ETH_TX_BD_CRC   | ETH_TX_BD_WRAP;									// wrap on last TX BD
+			eth_rx_bd[i].len_ctrl = ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ | ETH_RX_BD_WRAP;	// wrap on last RX BD
+		}
+		eth_tx_bd[i].data_pnt = ((uint32_t)even_packet_base) + (i*2048UL);		//TX buffers come first
+		eth_rx_bd[i].data_pnt = ((uint32_t)even_packet_base) + ((ETH_PKT_BUFFS+i)*2048UL);		//then all RX buffers
+	}	
 
-	//Init all data pointers, so they get 1536 bytes each. The MAC controller
-	//sees the 4 packet buffers starting at address 2048.
-	eth_tx_bd[0].data_pnt = 2048UL;
-	eth_tx_bd[1].data_pnt = (2048UL + 1536UL);
-	eth_rx_bd[0].data_pnt = (2048UL + 1536UL * 2UL);
-	eth_rx_bd[1].data_pnt = (2048UL + 1536UL * 3UL);
 }
 
 
@@ -690,37 +688,28 @@ driver_init (void)
 	short	fhandle;
 	char	macbuf[13];
 
+	c_conws("********************************\n\r");
+	c_conws("*****   SVEthLANa driver   *****\n\r");
+	c_conws("********************************\n\r");
 
-
-//	c_conws("Driver init\n\r");
-
-	// Lock out interrupt function
-//	initializing = 1;
-//	in_use = 1;
-
-
-/*
-	//TODO: First check that the Svethlana card can be found (needs to override Access fault vector to do this neatly)
-	if((*LAN_BANK & 0x00ff) != 0x0033)
+	//Check that the SV version is at least 10
+	//Otherwise the FW doesn't have Ethernet DMA
 	{
-//		ksprintf (message, "EtherNat not found! \n\r");
-//		c_conws (message);
+		uint32 sv_fw_version = SV_VERSION & 0x3FFUL;
 
-		return -1;	
+		ksprintf (message, "SuperVidel FW version is %lu\n\r", sv_fw_version);
+		c_conws  (message);
+
+		if (sv_fw_version < 10)
+		{
+			c_conws( "This driver needs at least SV FW version 10!\n\r" );
+			Bconin(2);
+			return -1;		
+		}
 	}
-*/
-//	c_conws("Efter koll av ethernat\n\r");
-
-
-	c_conws("*********************************\n\r");
-	c_conws("******* SVEthLANa driver *********\n\r");
-	c_conws("*********************************\n\r");
-
-
 
 	// Open svethlan.inf to read the MAC address
 	ferror = Fopen("svethlan.inf",0);
-//	c_conws("Efter FOPEN\n\r");
 	if(ferror >= 0)
 	{
 		fhandle = (short)(ferror & 0xffff);
@@ -781,7 +770,7 @@ driver_init (void)
 	//Then write to the MODER register to reset the MAC controller
 	ETH_MODER = ETH_MODER_RST;
 
-	//The release reset of the MAC controller
+	//Then release reset of the MAC controller
 	ETH_MODER = 0L;
 
 	//Set MAC address in MAC controller	
@@ -892,7 +881,7 @@ driver_init (void)
 	 * Number of packets the hardware can receive in fast succession,
 	 * 0 means unlimited.
 	 */
-	if_svethlana.maxpackets = 2;
+	if_svethlana.maxpackets = ETH_PKT_BUFFS;
 	
 	/*
 	 * Register the interface.
@@ -902,26 +891,26 @@ driver_init (void)
 	/*
 	 * And say we are alive...
 	 */
-	ksprintf (message, "SVEthLANa driver v0.1 (en%d)\n\r", if_svethlana.unit);
+	ksprintf (message, "SVEthLANa driver v0.9 (en%d)\n\r", if_svethlana.unit);
 	c_conws (message);
 
 	//print out all function pointers
 //	if (!has_printed_functions)
 //	{
-		ksprintf(message, "svethlana_open 0x%08lx\r\n", (uint32)(svethlana_open));
-		c_conws(message);
-		ksprintf(message, "svethlana_close 0x%08lx\r\n", (uint32)(svethlana_close));
-		c_conws(message);
-		ksprintf(message, "svethlana_output 0x%08lx\r\n", (uint32)(svethlana_output));
-		c_conws(message);
-		ksprintf(message, "svethlana_ioctl 0x%08lx\r\n", (uint32)(svethlana_ioctl));
-		c_conws(message);
-		ksprintf(message, "svethlana_config 0x%08lx\r\n", (uint32)svethlana_config);
-		c_conws(message);
-		ksprintf(message, "send_packet 0x%08lx\r\n", (uint32)(send_packet));
-		c_conws(message);
-		ksprintf(message, "svethlana_service 0x%08lx\r\n", (uint32)svethlana_service);
-		c_conws(message);
+//		ksprintf(message, "svethlana_open 0x%08lx\r\n", (uint32)(svethlana_open));
+//		c_conws(message);
+//		ksprintf(message, "svethlana_close 0x%08lx\r\n", (uint32)(svethlana_close));
+//		c_conws(message);
+//		ksprintf(message, "svethlana_output 0x%08lx\r\n", (uint32)(svethlana_output));
+//		c_conws(message);
+//		ksprintf(message, "svethlana_ioctl 0x%08lx\r\n", (uint32)(svethlana_ioctl));
+//		c_conws(message);
+//		ksprintf(message, "svethlana_config 0x%08lx\r\n", (uint32)svethlana_config);
+//		c_conws(message);
+//		ksprintf(message, "send_packet 0x%08lx\r\n", (uint32)(send_packet));
+//		c_conws(message);
+//		ksprintf(message, "svethlana_service 0x%08lx\r\n", (uint32)svethlana_service);
+//		c_conws(message);
 
 //		has_printed_functions = 1UL;
 //	}
@@ -965,7 +954,7 @@ svethlana_int (void)
 	//Dummy read from motherboard to satisfy ABE-chip (should be done before interrupt
 	//source is quenched? Interrupt is effectively shut off above)
 	temp = *((volatile uint16*)0xffff8240);
-	(void)temp;
+        (void)temp;
 
 	int_src = ETH_INT_SOURCE;
 
@@ -1003,13 +992,29 @@ int32 Check_Rx_Buffers()
 int32 Check_Rx_Buffers()
 {
 	int32  retval = -1L;
+	uint32 tmp1;
+	uint32 tmp2;
 
 	//We check only one slot, which is the one not checked the last time
 	//we were here. We only move to the other slot if we found a packet in the current slot.
-	if((eth_rx_bd[cur_rx_slot].len_ctrl & ETH_RX_BD_EMPTY) == 0UL)
+	tmp1 = eth_rx_bd[cur_rx_slot].len_ctrl;
+	if ((tmp1 & ETH_RX_BD_EMPTY) == 0UL)
 	{
 		retval = (int32)cur_rx_slot;
-		cur_rx_slot = (cur_rx_slot + 1) & 0x1UL;
+		cur_rx_slot = (cur_rx_slot + 1) & (ETH_PKT_BUFFS-1);
+	}
+	else
+	{
+		//No packet in the expected slot
+		//Try again
+		tmp2 = eth_rx_bd[cur_rx_slot].len_ctrl;
+		if ((tmp2 & ETH_RX_BD_EMPTY) == 0UL)
+		{
+			ksprintf (message, "Slot %lu RX retried read: 0x%08lx then 0x%08lx\n\r", cur_rx_slot, tmp1, tmp2);
+			c_conws (message);
+			retval = (int32)cur_rx_slot;
+			cur_rx_slot = (cur_rx_slot + 1) & (ETH_PKT_BUFFS-1);
+		}
 	}
 	return retval;
 }
@@ -1032,11 +1037,16 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 //	char	message[80];
 //	long	tmp, *dpnt;
 	BUF		*b;
+	volatile uint32	j;
 
 //	long		timeval;
 
 
 
+	if (int_src & ETH_INT_BUSY)
+	{
+		c_conws ("Busy\r\n");	
+	}
 	
 	if (int_src & ETH_INT_RXE)
 	{
@@ -1044,32 +1054,25 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 		//printf("E");
 
 		// Check which BD has the error and clear it
-		if((eth_rx_bd[0].len_ctrl & ETH_RX_BD_EMPTY) == 0UL)
+		for (i = 0; i < ETH_PKT_BUFFS; i++)
 		{
-			if (eth_rx_bd[0].len_ctrl & (ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
-										 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL))
+			if((eth_rx_bd[i].len_ctrl & ETH_RX_BD_EMPTY) == 0UL)
 			{
-				//At least one of the above error flags was set
-				//mark the buffer as empty and free to use
-				eth_rx_bd[0].len_ctrl |= ETH_RX_BD_EMPTY;
-				nif->in_errors++;
+				if (eth_rx_bd[i].len_ctrl & (ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
+											 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL))
+				{
+					//At least one of the above error flags was set
+					ksprintf (message, "Slot %hu RX errorflags: 0x%08lx \n\r", i, eth_rx_bd[i].len_ctrl);
+					c_conws (message);
 
-				ksprintf (message, "Slot 0 RX errorflags: 0x%08x \n\r", eth_rx_bd[0].len_ctrl);
-				c_conws (message);
-			}
-		}
-		if((eth_rx_bd[1].len_ctrl & ETH_RX_BD_EMPTY) == 0UL)
-		{
-			if (eth_rx_bd[1].len_ctrl & (ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
-										 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL))
-			{
-				//At least one of the above error flags was set
-				//mark the buffer as empty and free to use
-				eth_rx_bd[1].len_ctrl |= ETH_RX_BD_EMPTY;
-				nif->in_errors++;
-
-				ksprintf (message, "Slot 1 RX errorflags: 0x%08x \n\r", eth_rx_bd[1].len_ctrl);
-				c_conws (message);
+					//Clear error flags
+					eth_rx_bd[i].len_ctrl &= ~(ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
+																		 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL);
+					
+					//mark the buffer as empty and free to use
+					eth_rx_bd[i].len_ctrl |= ETH_RX_BD_EMPTY;
+					nif->in_errors++;	
+				}
 			}
 		}
 	}
@@ -1081,25 +1084,27 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 		//printf("RX frame!\r\n");
 
 		int32 slot = Check_Rx_Buffers();
-		while ((slot == 0) || (slot == 1))
+		while (slot != -1)
 		{
-			volatile uint32	*src;
-			volatile uint32	*dest;
-			uint32			length, len_longs;
+			uint32	*src;
+			uint32	*dest;
+			uint32	length, len_longs;
 
-			//c_conws("Received packet\r\n");
+			//ksprintf (message, "R%02li 0x%08lx\n\r", slot, eth_rx_bd[slot].len_ctrl);
+			//c_conws(message);
 
 			length = ((eth_rx_bd[slot].len_ctrl) >> 16);	//length in upper word
 			len_longs = (length + 3UL) >> 2;
-			src = &ETH_DATA_BASE_PNT[(1536UL / 4UL) * (slot+2L)];	//2 TX buffers before the RX buffers
+//			src = &ETH_DATA_BASE_PNT[(1536UL / 4UL) * (slot+2L)];	//2 TX buffers before the RX buffers
+			src = (uint32*)eth_rx_bd[slot].data_pnt;
 
 //			b = buf_alloc (length+200, 100, BUF_ATOMIC);
 			b = buf_alloc (1518UL + 128UL, 64UL, BUF_ATOMIC);
 			if(b == 0UL)
 			{
 				nif->in_errors++;
-				ksprintf (message, "buf_alloc RX failed, %lu \n\r", 1518UL + 200UL);
-				c_conws(message);
+				//ksprintf (message, "buf_alloc RX failed, %lu \n\r", 1518UL + 200UL);
+				//c_conws(message);
 			}
 			else
 			{
@@ -1109,20 +1114,16 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 				b->dstart = (char*)(((uint32)(b->dstart)) & 0xFFFFFFFCUL);
 				b->dend = (char*)(((uint32)(b->dend)) & 0xFFFFFFFCUL);
 
+				//Dummy loop to wait for the MAC write FIFO to empty
+				for (j = 0; j < 1000; j++)
+				{
+					asm("nop;");
+				}
+
 				//read the data, rounded up to even longwords
 				dest = (uint32*)(b->dstart);
 				for(i=0; i < len_longs; i++)
 				{
-					/*if (dest == 0UL)
-					{
-						c_conws("Service RX: dest is 0\r\n");
-						Bconin(2);
-					}
-					if (src == 0UL)
-					{
-						c_conws("Service RX: src is 0\r\n");
-						Bconin(2);
-					}*/
 					*dest++ = *src++;
 				}
 //				b->dend += length - 4;							//TODO: should we subtract 4 here, to skip the CRC?
@@ -1177,8 +1178,8 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 			//Possible errors returned are -1 and -2, meaning "no free slot" and "too large packet" respectively.
 			//-1 isn't possible because of the check above, and -2 isn't possible either, because
 			//we don't enqueue packets in svethlana_output() that are too large.
-			send_packet(nif, b, BUF_ATOMIC, slot_index, slot_index);
-			slot_index = (slot_index + 1) & 0x1UL;
+			send_packet(nif, b, BUF_ATOMIC, slot_index, slot_index == (ETH_PKT_BUFFS-1) );
+			slot_index = (slot_index + 1) & (ETH_PKT_BUFFS-1);
 
 			//in_queue--;
 
