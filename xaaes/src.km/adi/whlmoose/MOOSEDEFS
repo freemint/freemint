@@ -22,31 +22,13 @@ CPU = 020-60
 MOOSEDEFS +=
 endif
 
-ifeq ($(moose),030)
-TARGET = moose.adi
-CPU = 030
-MOOSEDEFS +=
-endif
-
-ifeq ($(moose),040)
-TARGET = moose.adi
-CPU = 040
-MOOSEDEFS +=
-endif
-
-ifeq ($(moose),060)
-TARGET = moose.adi
-CPU = 060
-MOOSEDEFS +=
-endif
-
 ifeq ($(moose),col)
 TARGET = moose.adi
 CPU  = v4e
-MOOSEDEFS += 
+MOOSEDEFS +=
 endif
 
 #
 # all default targets
 #
-moosetargets = 02060 030 040 060 deb 000 col
+moosetargets = deb 000 02060 col

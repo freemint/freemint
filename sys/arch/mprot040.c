@@ -133,7 +133,7 @@
 # include "mmu.h"
 
 
-#if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
+#if defined(WITH_MMU_SUPPORT) && defined(M68040)
 
 #define MP_DEBUG_INFO DEBUG_INFO
 

@@ -13,7 +13,7 @@
 
 #if defined(WITH_MMU_SUPPORT)
 
-#if !defined(M68040) && !defined(M68060)
+#ifndef M68040
 void _cdecl	set_mmu		(crp_reg, tc_reg);
 #else
 void _cdecl	set_mmu		(ulong *);

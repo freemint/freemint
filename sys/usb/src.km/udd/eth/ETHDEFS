@@ -32,27 +32,6 @@ USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
-ifeq ($(eth),030)
-TARGET = eth.udd
-CPU = 030
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
-
-ifeq ($(eth),040)
-TARGET = eth.udd
-CPU = 040
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
-
-ifeq ($(eth),060)
-TARGET = eth.udd
-CPU = 060
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
-
 ifeq ($(eth),col)
 TARGET = eth.udd
 CPU  = v4e
@@ -63,4 +42,4 @@ endif
 #
 # all default targets
 #
-ethtargets = 02060 030 040 060 deb 000 col prg
+ethtargets = deb prg 000 02060 col

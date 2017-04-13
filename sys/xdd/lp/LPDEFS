@@ -22,31 +22,13 @@ CPU = 020-60
 LPDEFS +=
 endif
 
-ifeq ($(lp),030)
-TARGET = lp.xdd
-CPU = 030
-LPDEFS +=
-endif
-
-ifeq ($(lp),040)
-TARGET = lp.xdd
-CPU = 040
-LPDEFS +=
-endif
-
-ifeq ($(lp),060)
-TARGET = lp.xdd
-CPU = 060
-LPDEFS +=
-endif
-
 ifeq ($(lp),col)
 TARGET = lp.xdd
 CPU  = v4e
-LPDEFS += 
+LPDEFS +=
 endif
 
 #
 # all default targets
 #
-lptargets = 02060 030 040 060 deb 000 col
+lptargets = deb 000 02060 col

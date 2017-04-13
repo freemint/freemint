@@ -24,10 +24,10 @@ typedef struct
 #define MINTDIR        MINT_VERS_PATH_STRING
 #define DEFAULT        "mint000.prg"
 #define DEFAULT_68000  "mint000.prg"
-#define DEFAULT_68020  "mint020.prg"
+#define DEFAULT_68020  "mint000.prg"
 #define DEFAULT_68030  "mint030.prg"
-#define DEFAULT_68040  "mint040.prg"
-#define DEFAULT_68060  "mint060.prg"
+#define DEFAULT_68040  "mint4060.prg"
+#define DEFAULT_68060  "mint4060.prg"
 #define DEFAULT_MILAN  "mintmil.prg"
 #define DEFAULT_ARANYM "mintara.prg"
 

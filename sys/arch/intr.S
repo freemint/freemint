@@ -863,7 +863,7 @@ _mmu_sigbus:
 	bra.s	ms_goon
 mmu_sigbus_68k:
 #endif
-#if !defined(M68040) && !defined(M68060)
+#ifndef M68040
 	move.w	0xA(a1),d0		// d0 is SSW
 	btst	#6,d0			// read or write?
 	beq.s	ms_w030

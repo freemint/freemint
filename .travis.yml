@@ -7,6 +7,8 @@ compiler:
    - m68k-atari-mint-gcc
 
 before_install:
+  - echo ${TRAVIS_PULL_REQUEST_SLUG}
+  - echo ${TRAVIS_REPO_SLUG}
   - 'sh ./.install-cross-mint.sh'
 
 script:

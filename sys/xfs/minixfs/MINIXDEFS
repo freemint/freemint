@@ -22,31 +22,13 @@ CPU = 020-60
 MINIXDEFS +=
 endif
 
-ifeq ($(minix),030)
-TARGET = minix.xfs
-CPU = 030
-MINIXDEFS +=
-endif
-
-ifeq ($(minix),040)
-TARGET = minix.xfs
-CPU = 040
-MINIXDEFS +=
-endif
-
-ifeq ($(minix),060)
-TARGET = minix.xfs
-CPU = 060
-MINIXDEFS +=
-endif
-
 ifeq ($(minix),col)
 TARGET = minix.xfs
 CPU  = v4e
-MINIXDEFS += 
+MINIXDEFS +=
 endif
 
 #
 # all default targets
 #
-minixtargets = 02060 030 040 060 deb 000 col
+minixtargets = deb 000 02060 col
