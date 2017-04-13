@@ -34,5 +34,4 @@ script:
   - sh ./.travis/build.sh "${PWD}/.travis/tmp" "${PWD}/.travis/out"
 
 after_success:
-# TODO: - sh ./.travis/deploy.sh $encrypted_ca43c43c6830_key $encrypted_ca43c43c6830_iv "${PWD}/.travis/out"
-  - sh ./.travis/deploy.sh "${PWD}/.travis/out" $encrypted_8fe468c72adb_key $encrypted_8fe468c72adb_iv
+  - sh ./.travis/deploy.sh "${PWD}/.travis/out" $encrypted_ca43c43c6830_key $encrypted_ca43c43c6830_iv 
