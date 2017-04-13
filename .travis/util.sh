@@ -255,6 +255,7 @@ copy_xaaes() {
 	mkdir -p "$XAAESDIR/xobj"
 	cp "$SRC/xaaes/src.km/xobj"/*.rsc "$XAAESDIR/xobj"
 	cp "$SRC/xaaes/src.km/example.cnf" "$XAAESDIR/xaaes.cnf"
+	sed -e "s/^setenv TOSRUN		u:\\\\usr\\\\gem\\\\toswin2\\\\tw-call.app/setenv TOSRUN		u:\\\\c\\\\mint\\\\$VER\\\\sysroot\\\\GEM\\\\toswin2\\\\tw-call.app/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
 	cp "$SRC/xaaes/src.km"/xa_help.* "$XAAESDIR"
 	cp "$SRC/xaaes/src.km"/*.rsc "$XAAESDIR"
 	cp "$SRC/xaaes/src.km"/*.rsl "$XAAESDIR"
