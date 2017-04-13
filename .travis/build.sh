@@ -32,4 +32,4 @@ cd "${TMP}/mint-${SHORT_ID}" && zip -r -9 "${OUT}/${PROJECT}-${VERSION}-usb4tos.
 
 "./${PROJECT}/.travis/freemint.org/freemint.build" "${OUT}"
 
-cd "${TMP}/aranym-${VERSION}" && zip -r -9 "${OUT}/aranym-${VERSION}.zip" * > /dev/null && cd -
+cd "${TMP}" && zip -r -9 "${OUT}/aranym-${VERSION}.zip" "aranym-${VERSION}" > /dev/null && cd -

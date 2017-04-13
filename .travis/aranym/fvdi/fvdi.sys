@@ -19,7 +19,7 @@ PATH = C:\GEMSYS
 width -90
 height -90
 
-# If fVDI is not being started from the AUTO folder, comment this out.
+# If fVDI is not being started from the AUTO folder, comment this out. 
 booted
 
 
@@ -162,7 +162,7 @@ singlebend
 #     Any soft- or hardware accelerations can be turned off using the
 #     'accelerate xxxxxxx' option. For any 'x' that is replaced by a
 #     '-' or a '0', the corresponding accelerated function will be
-#     turned off.
+#     turned off. 
 #     If this option is not used, all acceleration will be on.
 #     Acceleration possibilities (in order):
 #        line expand fillpoly fill blit text mouse
@@ -200,7 +200,7 @@ singlebend
 #     Will cause problems with some applications, but is very fast.
 # onlysrc
 #     Force all blits to D=S mode with the 32 bit driver.
-#     The standard Falcon desktop can not display icons without this.
+#     The standard Falcon desktop can not display icons without this. 
 # realones
 #     Do not special case all zero/one blit types in true colour mode.
 #     Often better left inactive.
@@ -251,7 +251,7 @@ singlebend
 #01r rage.sys pcibios mode key imgcache screencache accelerate xxxxxxx
 #01r rage.sys pcibios mode 800x600x16@72 imgcache screencache accelerate xxxxxxx
 #01r rage.sys pcibios mode key imgcache screencache accelerate xxxxxxx realones
-#01r rage.sys 4mb mode key screencache imgcache
+#01r rage.sys 4mb mode key screencache imgcache 
 #01r rage.sys pcibios mode key accelerate xxxxxxx realones
 #01r rage.sys doblit 4mb mode key accelerate xxxxxxx realones
 #01r rage.sys pcibios experiment 4mb mode key
