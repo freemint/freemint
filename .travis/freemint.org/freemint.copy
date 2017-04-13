@@ -1,0 +1,167 @@
+#!/bin/bash
+DESTDIR=$DEST/mint/$MINTVER
+AUTODIR=$DEST/auto
+DOCDIR=$DEST/doc
+XIFDIR=$DEST/driver/xif
+XFSDIR=$DEST/driver/xfs
+XDDDIR=$DEST/driver/xdd
+FONTDIR=$DEST/fonts
+TOOLSDIR=$DEST/tools
+USBDIR=$DEST/usb
+mkdir -p $DESTDIR $AUTODIR $XIFDIR $DOCDIR $XFSDIR $XDDDIR $USBDIR
+
+cp doc/examples/mint.cnf $DESTDIR
+cp COPYING COPYING.GPL COPYING.LGPL COPYING.MiNT $DEST
+
+# DOCS
+cp -R doc/* $DOCDIR
+find $DOCDIR -name CVS -print | xargs rm -rf
+
+cp ./sys/xfs/aranym/README $XFSDIR/aranym.txt
+cp ./sys/xfs/hostfs/README $XFSDIR/hostfs.txt
+cp ./sys/xfs/ext2fs/Readme $XFSDIR/ext2.txt
+cp ./sys/xfs/minixfs/README $XFSDIR/minix.txt
+cp ./sys/xfs/nfs/README	$XFSDIR/nfs.txt
+cp ./sys/xdd/audio/README $XDDDIR/audiodev.txt
+cp ./sys/xdd/dsp56k/README_MiNT $XDDDIR/dsp56k.txt
+cp ./sys/xdd/flop-raw/README $XDDDIR/flop_raw.txt
+cp ./sys/xdd/mfp/README $XDDDIR/mfp.txt
+cp ./sys/xdd/mfp/ports.txt $XDDDIR/ports.txt
+cp ./sys/xdd/nfstderr/README $XDDDIR/nfstderr.txt
+cp ./sys/xdd/scc/README $XDDDIR/scc.txt
+cp ./sys/xdd/uart/README $XDDDIR/uart.txt
+cp ./sys/xdd/xconout2/README $XDDDIR/xconout2.txt
+cp ./sys/sockets/README $XDDDIR/inet4.txt
+cp ./sys/sockets/xif/daynaport/README $XIFDIR/scsilink.txt
+cp ./sys/sockets/xif/ethernat/README $XIFDIR/ethernat.txt
+cp ./sys/sockets/xif/nfeth/README $XIFDIR/nfeth.txt
+cp ./sys/sockets/xif/BIODMA.txt $XIFDIR/biodma.txt
+cp ./sys/sockets/xif/DE600.txt $XIFDIR/de600.txt
+cp ./sys/sockets/xif/DIAL.txt $XIFDIR/dial.txt
+cp ./sys/sockets/xif/LANCE.txt $XIFDIR/lance.txt
+cp ./sys/sockets/xif/PAMs_DMA.txt $XIFDIR/pamsdma.txt
+cp ./sys/sockets/xif/PLIP.txt $XIFDIR/plip.txt
+#cp ./sys/sockets/xif/SLIP.txt $XIFDIR/slip.txt
+#cp ./sys/sockets/xif/PPP.txt $XIFDIR/ppp.txt
+
+# usb
+cp ./sys/usb/src.km/loader/loader.prg $USBDIR 
+cp ./sys/usb/src.km/.compile*/usb*.km $USBDIR
+cp ./sys/usb/src.km/ucd/*/*.ucd $USBDIR
+cp ./sys/usb/src.km/udd/*/*.udd $USBDIR
+cp ./sys/usb/src.km/ucd/*/.compile_000/*.ucd $USBDIR
+cp ./sys/usb/src.km/udd/*/.compile_000/*.udd $USBDIR
+
+# XFS
+mkdir $XFSDIR/{02060,030,040,060,000,col}
+cp sys/xfs/*/*.xfs $XFSDIR
+cp sys/xfs/*/.compile_02060/*.xfs $XFSDIR/02060
+cp sys/xfs/*/.compile_030/*.xfs $XFSDIR/030
+cp sys/xfs/*/.compile_040/*.xfs $XFSDIR/040
+cp sys/xfs/*/.compile_060/*.xfs $XFSDIR/060
+cp sys/xfs/*/.compile_000/*.xfs $XFSDIR/000
+cp sys/xfs/*/.compile_col/*.xfs $XFSDIR/col
+rm -f $XFSDIR/Makefile*
+
+# XDD
+mkdir $XDDDIR/{02060,030,040,060,000,col}
+cp sys/xdd/*/*.xdd $XDDDIR
+cp sys/xdd/*/.compile_02060/*.xdd sys/sockets/.compile_02060/*.xdd $XDDDIR/02060
+cp sys/xdd/*/.compile_030/*.xdd sys/sockets/.compile_030/*.xdd $XDDDIR/030
+cp sys/xdd/*/.compile_040/*.xdd sys/sockets/.compile_040/*.xdd $XDDDIR/040
+cp sys/xdd/*/.compile_060/*.xdd sys/sockets/.compile_060/*.xdd $XDDDIR/060
+cp sys/xdd/*/.compile_000/*.xdd sys/sockets/.compile_000/*.xdd $XDDDIR/000
+cp sys/xdd/*/.compile_col/*.xdd sys/sockets/.compile_col/*.xdd $XDDDIR/col
+rm -f $XDDDIR/Makefile*
+
+# AUTO
+cp sys/.compile*/*.prg $AUTODIR
+
+cp sys/sockets/xif/*.xif $XIFDIR
+cp sys/sockets/xif/*/*.xif $XIFDIR
+
+mkdir -p $DEST/keyboard
+cp sys/tbl/*/*tbl $DEST/keyboard
+
+mkdir -p $DESTDIR/xaaes/widgets
+mkdir -p $DESTDIR/xaaes/xobj
+mkdir -p $DESTDIR/xaaes/img/{8b,hc}
+mkdir -p $DESTDIR/xaaes/gradient
+mkdir -p $DESTDIR/xaaes/pal
+mkdir -p $DESTDIR/xaaes/{02060,030,040,060,000,col}
+
+cp xaaes/src.km/*.km $DESTDIR/xaaes
+cp xaaes/src.km/{*.cnf,*.rsc,*.rsl,*.txt,xa_help.*,xaaes.cnf,xaloader/xaloader.prg} $DESTDIR/xaaes
+cp xaaes/src.km/adi/whlmoose/.compile_02060/*.adi $DESTDIR/xaaes/02060
+cp xaaes/src.km/adi/whlmoose/.compile_030/*.adi $DESTDIR/xaaes/030
+cp xaaes/src.km/adi/whlmoose/.compile_040/*.adi $DESTDIR/xaaes/040
+cp xaaes/src.km/adi/whlmoose/.compile_060/*.adi $DESTDIR/xaaes/060
+cp xaaes/src.km/adi/whlmoose/.compile_000/*.adi $DESTDIR/xaaes/000
+cp xaaes/src.km/adi/whlmoose/.compile_col/*.adi $DESTDIR/xaaes/col
+#cp xaaes/src.km/widgets/{*.hrd,*.rsc} $DESTDIR/xaaes/widgets
+#cp xaaes/src.km/xobj/{*.hrd,*.rsc} $DESTDIR/xaaes/xobj
+cp xaaes/src.km/widgets/*.rsc $DESTDIR/xaaes/widgets
+cp xaaes/src.km/xobj/*.rsc $DESTDIR/xaaes/xobj
+cp xaaes/src.km/img/8b/*.img $DESTDIR/xaaes/img/8b
+cp xaaes/src.km/img/hc/*.img $DESTDIR/xaaes/img/hc
+cp xaaes/src.km/gradient/*.grd $DESTDIR/xaaes/gradient
+cp xaaes/src.km/pal/*.pal $DESTDIR/xaaes/pal
+
+# fonts
+mkdir -p $FONTDIR/{cs,ru}
+cp fonts/cs/*.fnt $FONTDIR/cs
+cp fonts/ru/*.fnt $FONTDIR/ru
+
+# ozk
+#cp xaaes/src.km/xad/whlmoose/*.xad $DESTDIR/xaaes
+#cp xaaes/src.km/xam/rezchg/src/{*.xam,*.rsc} $DESTDIR/xaaes
+
+# TOOLS
+#mkdir -p $TOOLSDIR/cops
+#cp tools/cops/*.app $TOOLSDIR/cops
+#cp -R tools/cops/rsc/* $TOOLSDIR/cops/
+#find $TOOLSDIR -name CVS -print | xargs rm -rf
+
+# FSETTER
+mkdir -p $TOOLSDIR/fsetter
+cp tools/fsetter/{*.app,*.rsc} $TOOLSDIR/fsetter
+
+# GLUESTIK
+mkdir -p $TOOLSDIR/gluestik
+cp tools/gluestik/*.prg $TOOLSDIR/gluestik
+
+# LPFLUSH
+mkdir -p $TOOLSDIR/lpflush
+cp tools/lpflush/lpflush $TOOLSDIR/lpflush
+
+# MGW
+mkdir -p $TOOLSDIR/mgw/examples
+cp tools/mgw/*prg $TOOLSDIR/mgw/
+cp tools/mgw/examples/* $TOOLSDIR/mgw/examples/
+
+# MKFATFS
+mkdir -p $TOOLSDIR/mkfatfs
+cp tools/mkfatfs/mkfatfs $TOOLSDIR/mkfatfs
+
+# SYSCTL
+mkdir -p $TOOLSDIR/sysctl
+cp tools/sysctl/sysctl $TOOLSDIR/sysctl
+
+# TOSWIN2
+mkdir -p $TOOLSDIR/toswin2
+cp tools/toswin2/{BUGS,FAQ,NEWS,README.terminfo,toswin2.app,toswin2.rsc,tw-call/tw-call.app,twterm.src} $TOOLSDIR/toswin2/
+mkdir -p $TOOLSDIR/toswin2/english
+cp tools/toswin2/english/* $TOOLSDIR/toswin2/english
+
+# MKTBL
+mkdir -p $TOOLSDIR/mktbl
+cp tools/mktbl/mktbl $TOOLSDIR/mktbl/
+
+m68k-atari-mint-strip $AUTODIR/*.prg
+m68k-atari-mint-strip $DESTDIR/*
+m68k-atari-mint-strip $XIFDIR/*
+m68k-atari-mint-strip $XDDDIR/*
+m68k-atari-mint-strip $XFSDIR/*
+m68k-atari-mint-strip $USBDIR/*
+m68k-atari-mint-strip $DESTDIR/xaaes/*
+find $TOOLSDIR -name *.app -print | xargs m68k-atari-mint-strip

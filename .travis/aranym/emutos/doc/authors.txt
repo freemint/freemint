@@ -1,0 +1,206 @@
+EmuTOS source code consists of several parts, and includes code taken from
+other projects - Many thanks to them and to their authors for releasing the
+code under GPL.
+
+The 'historical' authors - those who wrote the code before the start of the
+EmuTOS project - are mentioned in the individual files they've authored.
+Major 'historical' parts are:
+- BDOS, VDI - both come from the latest known GEMDOS version from
+  Digital Research (later versions seem to have been developed by Atari).
+- AES, desktop - The C source code for GEM comes from the x86 version.
+- Some GEM assembler files come from the AES for the Apple LISA.
+
+All these historical parts were released under the General Public License
+by Caldera, Inc. in mid april 2000 (?)  (For the record, Caldera bought it
+from Novell in 1997 along with DR-DOS; later Caldera disappeared and this
+is the copyright notice that refers to Lineo)
+
+Minor borrowed stuff:
+- the printf and memcpy stuff is inspired by the Minix kernel and library;
+- the processor/FPU detection is taken from the MiNT kernel;
+- "Bug" includes parts of the original gettext source code;
+- some low-level hardware stuff comes from the Linux kernel;
+
+While the main Amiga support was written from scratch by the EmuTOS team,
+some advanced code (FastRAM and floppy support) has been borrowed from the
+AROS project. Due to license incompatibilities, that code is shipped in the
+source archive, but not compiled into the official binaries.
+
+The following is a list of 'recent' contributors - individuals involved in the
+EmuTOS project. In this project virtually everybody modifies every file;
+nevertheless here is an attempt at identifying who's guilty of what:
+
+Roger Burrows (RFB) <rfburrows at ymail.com>
+- Current project admin
+- Support for SD/MMC Cards on the FireBee
+- Improvements to IDE, CompactFlash, ACSI, and other mass-storage support
+- FAT16 partitions up to 2 GB (inspired by Didier Méquignon's BDOS fork)
+- Full support for Falcon video hardware
+- Real Falcon 030 support (cache, MMU, SCC, HD floppy)
+- Real TT 030 support (video, MFP2)
+- Desktop and file selector improvements
+- EmuCON2
+- erd tool: the EmuTOS Resource Decompiler
+- Various bugfixes and cleanups
+
+Vincent Rivière (VRI) <vincent.riviere at freesbee.fr>
+- Many improvements to the build and configuration process
+- Patches for compiling with GCC 4.x
+- ColdFire CPU and FireBee support
+- Initial IDE driver
+- Amiga support
+- ColdFire Evaluation Boards support
+- Apollo Core 68080 support
+- French translation update
+- Various bug fixes and cleanups
+
+Thomas Huth (THH) <huth at users.berlios.de>
+- Lots of bugfixes all over the place
+- Integration and maintenance of the AES and GEM-Desktop
+- XBIOS DMA sound functions
+- German translation update
+
+Petr Stehlik (PES) <pstehlik at sophics.cz>
+- BIOS disk interface, BDOS filesystem
+- Falcon and ARAnyM support
+- Czech translation update
+
+Laurent Vogel (LVL) <lvl at club-internet.fr>
+- Original ST hardware (MFP, ACIA, parport, sound, floppy, ACSI)
+- Makefile tricks and tools
+- NLS support
+
+Martin Doering (MAD) <mdoering at users.sourceforge.net>
+- Original project initiator (but retired many years ago)
+- Memory setup, VT52 console, Line A, mouse
+- Virtually everything not modified later by the others
+
+
+Thanks also to all mailing list contributors for their help, and
+especially:
+
+Bohdan Milar <milarb at volny.cz>
+- Czech translation
+
+Gabriel Huertas
+- Spanish translation
+
+George Nakos
+- Greek translation
+
+Stanislav Opichal (SOP) <opichals at seznam.cz>
+- FreeMiNT kernel bootstrap via BOOTSTRAP NatFeat
+
+Frank Naumann
+- FreeMiNT
+
+Ctirad Fertr <phanatic at volny.cz>,
+Milan Jurik <M.Jurik at sh.cvut.cz>
+- The ARanyM team
+
+Johan Klockars <rand at cd.chalmers.se>
+- fVDI
+
+Henk Robbers <h.robbers at chello.nl>
+- XaAES, AHCC
+
+Jacques-Etienne Rahon "Kevin Flynn" <kevin.flynn at wanadoo.fr>
+- Extensive demo testing on STeeM
+
+Patrice Mandin and Markus Oberhumer
+- Hints and patches for compiling EmuTOS with GCC 3.x
+
+Eero Tamminen
+- Many bug reports, extensive testing, testcases supply
+- Many documentation updates
+- Hatari debug symbols
+- Finnish translation and keyboard mapping
+- Static source analysis and cleanup
+- Line-A implementation
+
+Gerhard Stoll
+- Improved our nvmaccess() function
+- TOS hypertext
+
+Roger Crettol
+- Found and fixed a bug in GEMDOS Pterm() function
+- Support for swiss german keyboard
+- Some EmuCON improvements
+
+David Savinkoff
+- Bug fixes for the BIOS parallel port code
+- Other various bugfixes
+
+Dima Sobolev <avtandil33 at gmail.com>
+- Russian translation
+
+Olivier Landemarre <olivier.landemarre at free.fr>
+- Renamed internal VDI functions to avoid name conflicts
+
+Jean-François Del Nero <jeanfrancoisdelnero at free.fr>
+- Improved memory detection on cold boot
+- Tested the EmuTOS ROM on real STe hardware
+- Various bugfixes
+
+Lodovico Zanier <lvc958 at libero.it>
+- Italian translation
+
+Pavel Salač <salac.pavel at gmail.com>
+- Czech translation update
+
+David Gálvez <dgalvez75 at gmail.com>
+- Spanish translation update
+- XHNewCookie() implementation
+
+Christos Tziotzis <ctziotzis at gmail.com>
+- Greek translation update
+
+Fredi Aschwanden <mcs at kingx.com>
+and all the ACP team
+- Tests on the FireBee hardware
+
+James Boulton <james.boulton at eiconic.com>
+- floprw() fix for reading multiple sectors
+
+Stephen Leary <sleary at vavi.co.uk>
+- Fixed support for IDE slave device
+
+Miro Kropáček <miro.kropacek at gmail.com>
+- Experimental 68040 MMU support
+
+WongCK on Atari-Forum
+- Tests on real Falcon 030
+
+Michaël Gibs on English Amiga Board
+- Tests on Amiga 1200 with Blizzard 1260 accelerator
+
+Amiman99 on English Amiga Board
+- Tests on Amiga 1000
+
+Radoslaw Kujawa
+- Compilation fix on 64-bit build systems
+
+Hampa Hug
+- Fixed ACSI bugs
+
+Markus Fröschle
+- Tests on the FireBee and BaS_gcc support
+- Fix GEM bugs
+
+Jan Krupka <krupkaj at centrum.cz>
+- Czech translation update
+
+Christian Zietz <czietz at gmx.net>
+- Fix floppy/ACSI bug
+- Fix memory detection to support STs as well as STes
+
+Jo Even Skarstein (joska at online.no)
+- Support for Norwegian & Swedish keyboards
+- Support for MonSTer add-on board
+
+Thorsten Otto (admin at tho-otto.de)
+- Make EmuTOS more compatible with Atari TOS in several areas
+- Miscellaneous source code cleanup
+
+Gunnar von Boehn, Philippe Flype and Simo Koivukoski
+- Apollo Core 68080 and Amiga support

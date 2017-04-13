@@ -1,0 +1,6 @@
+rm -rf /tmp/usb
+mkdir -p /tmp/usb/
+cp sys/usb/src.km/.compile_prg/usb.prg sys/usb/src.km/ucd/unicorn/.compile_prg/unicorn.prg sys/usb/src.km/udd/mouse/.compile_prg/mouse.prg sys/usb/src.km/udd/storage/.compile_prg/storage.prg sys/usb/src.km/udd/eth/.compile_prg/eth.prg tools/usb/usb.acc /tmp/usb
+m68k-atari-mint-strip /tmp/usb/*
+rm /tmp/usb.zip
+pushd /tmp/usb; zip /tmp/usb.zip *; popd
