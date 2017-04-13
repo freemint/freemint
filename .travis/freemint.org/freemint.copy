@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 DESTDIR=$DEST/mint/$MINTVER
 AUTODIR=$DEST/auto
 DOCDIR=$DEST/doc
