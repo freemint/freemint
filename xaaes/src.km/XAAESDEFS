@@ -35,7 +35,6 @@ endif
 
 ifeq ($(xaaes),030)
 TARGET = ../xaaes030.km
-#CPU = 020-60
 CPU = 030
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
@@ -55,16 +54,16 @@ endif
 ifeq ($(xaaes),col)
 TARGET = ../xaaesv4e.km
 CPU  = v4e
-XAAESDEFS += -DM68040 -DCOLDFIRE -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
+XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 
-#ifeq ($(xaaes),ozk)
-#TARGET = ../xaaesozk.km
-#CPU = 040
-#XAAESDEFS += -DGENERATE_DIAGS=1 -DDEBUG_CONTROL=0
-#endif
+ifeq ($(xaaes),02060)
+TARGET = ../xaaes02060.km
+CPU = 020-60
+XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
+endif
 
 #
 # all default targets
 #
-xaaestargets = deb 000 sto 030 040 060 col 020060
+xaaestargets = deb 000 sto 030 040 060 col 02060
