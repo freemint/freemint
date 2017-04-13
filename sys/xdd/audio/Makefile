@@ -24,7 +24,7 @@ DEFINITIONS = -D__KERNEL_XDD__
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
+CPU = 000
 
 # default definitions
 GENFILES = $(TARGET) actrl
