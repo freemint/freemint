@@ -21,7 +21,7 @@ typedef struct
 
 #define CJAR    (*(struct cookie *)(0x5A0))
 
-#define MINTDIR        MINT_VERS_PATH_STRING
+#define MINTDIR        "\\mint\\"MINT_VERS_PATH_STRING
 #define DEFAULT        "mint000.prg"
 #define DEFAULT_68000  "mint000.prg"
 #define DEFAULT_68020  "mint020.prg"
