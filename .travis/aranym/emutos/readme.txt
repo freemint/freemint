@@ -5,6 +5,10 @@ http://aranym.org/
 
 emutos-aranym.img - Multilanguage
 
+The following optional files are also supplied:
+emuicon.rsc - contains additional icons for the desktop
+emuicon.def - definition file for the above
+
 The default language is English.
 Other languages can be used by setting the NVRAM appropriately.
 
@@ -40,7 +44,7 @@ Vincent Rivière's GCC 4.6.4 cross-compiler.  The custom tools used in
 the build process were built with native GCC 4.8.4.
 
 The source package and other binary packages are available at:
-http://sourceforge.net/projects/emutos/files/emutos/0.9.7/
+http://sourceforge.net/projects/emutos/files/emutos/0.9.8/
 
 If you want to read more about EmuTOS, please take a look at these files:
 
@@ -50,6 +54,7 @@ doc/authors.txt       - A list of the authors of EmuTOS
 doc/bugs.txt          - Currently known bugs
 doc/changelog.txt     - A list of changes: detailed up to and including
                         version 0.9.4; summarised for subsequent versions
+doc/emudesk.txt       - A brief guide to the newer features of the desktop
 doc/license.txt       - The FSF General Public License for EmuTOS
 doc/license_aros.txt  - The AROS Public License for certain Amiga source
                         code distributed as part of EmuTOS source
