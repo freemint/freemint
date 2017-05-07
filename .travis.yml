@@ -13,13 +13,7 @@ compiler:
   - m68k-atari-mint-gcc
 
 before_install:
-  - export OWNER=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 1)
-  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
-    then
-        export USER=${OWNER};
-    else
-        export USER=$(echo "${TRAVIS_PULL_REQUEST_SLUG}" | cut -d '/' -f 1);
-    fi
+  - export USER=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 1)
   - export BASE_RAW_URL="https://raw.githubusercontent.com/${USER}"
 
   - wget -O .travis/download_prerequisities.sh "${BASE_RAW_URL}/travis-scripts/master/download_prerequisities.sh"
