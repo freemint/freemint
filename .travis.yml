@@ -1,8 +1,7 @@
 # TODO: put into helmut-enhancements, freemint-1_18, freemint-1_17, branch-1_16, branch-1_15
 
-# if you want to debug the deploy process, change 'USER' to your github name,
-# make a fork of freemint.github.io, travis-scripts and travis-pr projects and
-# use your own private key for decrypting .travis/deploy-key.enc
+# if you want to debug the deploy process, make a fork of freemint.github.io, travis-scripts
+# and travis-pr projects and use your own private key for decrypting .travis/deploy-key.enc
 
 language: c
 os: linux
@@ -13,19 +12,13 @@ compiler:
   - m68k-atari-mint-gcc
 
 before_install:
-  - export OWNER=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 1)
-  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ];
-    then
-        export USER=${OWNER};
-    else
-        export USER=$(echo "${TRAVIS_PULL_REQUEST_SLUG}" | cut -d '/' -f 1);
-    fi
+  - export USER=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 1)
   - export BASE_RAW_URL="https://raw.githubusercontent.com/${USER}"
 
   - wget -O .travis/download_prerequisities.sh "${BASE_RAW_URL}/travis-scripts/master/download_prerequisities.sh"
   - sh ./.travis/download_prerequisities.sh
   - sh ./.travis/install-cross-mint.sh trusty cross-mint-essential cflib-m68k-atari-mint > /dev/null
-  
+
 before_script:
   - . ./.travis/setup_env.sh
   - export SHORT_ID=$(git log -n1 --format="%H" | cut -c 1-3)
