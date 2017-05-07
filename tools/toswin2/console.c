@@ -198,6 +198,17 @@ bool log_console(bool on)
 	return on;
 }
 
+bool out_console(bool on)
+{
+	if (gl_con_output && !on && con_fd > 0)
+	{
+		close_con_fd();
+	}
+	if (!gl_con_output && on && con_fd == 0)
+	{
+		open_con_fd();
+	}
+}
 
 bool is_console(WINDOW *win)
 {
