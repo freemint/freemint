@@ -102,15 +102,13 @@ void open_console(void)
 	}
 	else
 	{
-		if (con_win->win->flags & WICONIFIED)
+		if (!(con_win->win->flags & WICONIFIED))
 		{
-			is_dirty = FALSE;
-			(*con_win->win->uniconify)(con_win->win, -1, -1, -1, -1);
+			if (con_win->win->flags & WSHADED)
+				(*con_win->win->shaded)(con_win->win, -1);
+			else
+				(*con_win->win->topped)(con_win->win);
 		}
-		else if (con_win->win->flags & WSHADED)
-			(*con_win->win->shaded)(con_win->win, -1);
-		else
-			(*con_win->win->topped)(con_win->win);
 	}
 }
 
@@ -141,20 +139,20 @@ void handle_console(char *txt, long len)
 
 	if (con_win != NULL)
 	{
-		if (con_win->win->flags == WICONIFIED && !gl_con_output)
+		if (con_win->win->flags == WICONIFIED)
 		{
 			is_dirty = TRUE;
 			draw_winicon(con_win->win);
 		}
 		else
-			is_dirty = FALSE;
-
-		if (gl_con_output)
 		{
-			if (con_win->win->flags & WICONIFIED)
-				(*con_win->win->uniconify)(con_win->win, -1, -1, -1, -1);
-			else if (con_win->win->flags & WSHADED)
-				(*con_win->win->shaded)(con_win->win, -1);
+			is_dirty = FALSE;
+			
+			if (gl_con_output)
+			{
+				if (con_win->win->flags & WSHADED)
+					(*con_win->win->shaded)(con_win->win, -1);
+			}
 		}
 	}
 
