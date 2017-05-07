@@ -170,7 +170,7 @@ static int exit_conwd(WDIALOG *wd, short exit_obj)
 
 		case COK :
 			gl_con_auto = get_state(wd->tree, CAUTO, OS_SELECTED);
-			gl_con_output = get_state(wd->tree, COUTPUT, OS_SELECTED);
+			gl_con_output = out_console(get_state(wd->tree, COUTPUT, OS_SELECTED));
 
 			strcpy(gl_con_logname, new_log);
 			gl_con_log = log_console(get_state(wd->tree, CLOGACTIVE, OS_SELECTED));
