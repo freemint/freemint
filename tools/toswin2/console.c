@@ -204,8 +204,13 @@ bool out_console(bool on)
 	}
 	if (!gl_con_output && on && con_fd == 0)
 	{
-		open_con_fd();
+		if (!open_con_fd())
+		{
+			on = FALSE;
+		}
 	}
+
+	return on;
 }
 
 bool is_console(WINDOW *win)
