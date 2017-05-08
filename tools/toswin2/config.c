@@ -19,7 +19,7 @@ bool	gl_shortcut = TRUE;
 bool	gl_allogin = TRUE;
 
 bool	gl_con_auto = FALSE;		/* beim Start anlegen */
-bool	gl_con_output = FALSE;		/* bei Ausgaben ffnen */
+bool	gl_con_output = TRUE;		/* bei Ausgaben ffnen */
 bool	gl_con_log = FALSE;		/* Datei-Loggin */
 char	gl_con_logname[128] = "U:\\ram\\con.log";
 
