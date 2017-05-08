@@ -204,7 +204,7 @@ debug("new_proc: pid= %d, fd= %d\n", i, ourfd);
 void
 term_proc(TEXTWIN *t)
 {
-	if (t->fd > 0 && (t->fd != con_fd || !gl_con_log))
+	if (t->fd > 0 && (t->fd != con_fd || (!gl_con_log && !gl_con_output)))
 	{
 		(void)Fclose(t->fd);
 		if (t->fd == con_fd)

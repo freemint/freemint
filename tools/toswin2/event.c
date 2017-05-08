@@ -305,7 +305,7 @@ void event_loop(void)
 	evset = (MU_MESAG | MU_BUTTON | MU_KEYBD);
 	do
 	{
-		if (gl_con_log || gl_winanz > 0)
+		if (gl_con_log || gl_con_output || gl_winanz > 0)
 			evset |= MU_TIMER;
 		else
 			evset &= ~MU_TIMER;

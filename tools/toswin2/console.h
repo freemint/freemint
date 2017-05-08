@@ -15,6 +15,7 @@ extern TEXTWIN *con_win;	/* console window */
 
 void	open_console	(void);
 bool	log_console	(bool on);
+bool	out_console	(bool on);
 void	handle_console	(char *txt, long len);
 
 bool	is_console	(WINDOW *win);
