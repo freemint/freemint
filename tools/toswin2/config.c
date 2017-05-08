@@ -711,11 +711,7 @@ bool config_load(void)
 	int	ret = FALSE;
 	char	buffer[256];
 
-	if (!get_cfg_path())					/* keine cfg gefunden */
-		return FALSE;
-
-	fd = fopen(cfg_path, "r");
-	if (fd != NULL)
+	if (get_cfg_path() && (fd = fopen(cfg_path, "r")) != NULL)
 	{
 		/* 1. Zeile auf ID checken */
 		fgets(buffer, sizeof(buffer), fd);
@@ -728,20 +724,6 @@ bool config_load(void)
 				parse_line(buffer);
 			}
 
-			if (gl_con_log)
-			{
-				bool on = gl_con_log;
-				gl_con_log = FALSE;
-				gl_con_log = log_console(on);
-			}
-
-			if (gl_con_output)
-			{
-				bool on = gl_con_output;
-				gl_con_output = FALSE;
-				gl_con_output = out_console(on);
-			}
-
 			ret = TRUE;
 		}
 		else
@@ -749,6 +731,21 @@ bool config_load(void)
 		fclose(fd);
 		fd = NULL;
 	}
+
+	if (gl_con_log)
+	{
+		bool on = gl_con_log;
+		gl_con_log = FALSE;
+		gl_con_log = log_console(on);
+	}
+
+	if (gl_con_output)
+	{
+		bool on = gl_con_output;
+		gl_con_output = FALSE;
+		gl_con_output = out_console(on);
+	}
+
 	return ret;
 }
 
