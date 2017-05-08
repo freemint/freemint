@@ -204,8 +204,8 @@ copy_ct60_modules() {
 	mkdir -p "$MCHDIR/doc"
 	cp "$SRC/sys/sockets/xif/ethernat/ethernat.xif" "$MCHDIR/ethernat.xix"
 	cp "$SRC/sys/sockets/xif/ethernat/README" "$MCHDIR/doc/ethernat.txt"
-	cp "$SRC/sys/sockets/xif/svethlan/svethlan.xif" "$MCHDIR/svethlan.xix"
-	cp "$SRC/sys/sockets/xif/svethlan/README" "$MCHDIR/doc/svethlan.txt"
+	cp "$SRC/sys/sockets/xif/svethlana/svethlan.xif" "$MCHDIR/svethlan.xix"
+	cp "$SRC/sys/sockets/xif/svethlana/README" "$MCHDIR/doc/svethlan.txt"
 }
 copy_firebee_modules() {
 	MCHDIR="$1/firebee"
