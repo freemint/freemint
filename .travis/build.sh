@@ -5,6 +5,8 @@ OUT="$2"
 
 if [ -z "$OLD_BUILD" -o "$OLD_BUILD" -eq "0" ]
 then
+	export PUBLISH_PATH="${PUBLISH_PATH}/new"
+
 	sed -e "s/\"cur\"/\"${SHORT_ID}\"/;" sys/buildinfo/version.h > sys/buildinfo/version.h.tmp && mv sys/buildinfo/version.h.tmp sys/buildinfo/version.h
 	cd ..
 	cp -r "${PROJECT}" "${PROJECT}-020"
@@ -34,5 +36,7 @@ then
 	
 	cd "${TMP}" && zip -r -9 "${OUT}/aranym-${VERSION}.zip" "aranym-${VERSION}" > /dev/null && cd -
 else
+	export PUBLISH_PATH="${PUBLISH_PATH}/old"
+
 	"./.travis/freemint.org/freemint.build" "${OUT}"
 fi
