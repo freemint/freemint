@@ -1,4 +1,4 @@
-# TODO: put into helmut-enhancements, freemint-1_18, freemint-1_17, branch-1_16, branch-1_15
+# TODO: put into freemint-1_18, freemint-1_17, branch-1_16, branch-1_15
 
 # if you want to debug the deploy process, make a fork of freemint.github.io, travis-scripts
 # and travis-pr projects and use your own private key for decrypting .travis/deploy-key.enc
@@ -7,6 +7,11 @@ language: c
 os: linux
 dist: trusty
 sudo: required
+
+env:
+  matrix:
+    - OLD_BUILD=0
+    - OLD_BUILD=1
 
 compiler:
   - m68k-atari-mint-gcc
