@@ -7,15 +7,14 @@ TODAY=`date +%d%m%Y`
 # 	tail -20 /tmp/compile.out | sed -e 's+/data/code/Atari/++g' | mail -s "FreeMiNT build broken (trunk)" freemint-list@mail.atariforge.org
 # 	exit 1
 # fi
-# cd freemint
+cd freemint
 # make CROSS=yes distclean
 # make CROSS=yes > /tmp/compile.out 2>&1
-make
 # if [ $? != 0 ]; then
 # 	tail -20 /tmp/compile.out | sed -e 's+/data/code/Atari/++g' | mail -s "FreeMiNT build broken (trunk)" freemint-list@mail.atariforge.org
 # else
 	rm -rf /tmp/freemint/
-	DEST=/tmp/freemint MINTVER=1-19-CUR ./.travis/freemint.org/freemint.copy
+	DEST=/tmp/freemint MINTVER=1-19-$SHORT_ID ./.travis/freemint.org/freemint.copy
 	tar -C /tmp/freemint/ -cjf /tmp/trunk-$TODAY.tar.bz2 .
 	# Now upload
 	cp /tmp/trunk-$TODAY.tar.bz2 "$1"
