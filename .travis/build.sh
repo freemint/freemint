@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Use as: ". build.sh"
+
 TMP="$1"
 OUT="$2"
 
