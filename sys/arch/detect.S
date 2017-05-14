@@ -281,10 +281,21 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 
 	bra.s	exit
 
-// 68040 or 68060.
+// 68040 or higher.
 
 x040:	moveq	#40,d0		// assume 68040
 	dc.l	0x4e7a1808	// attempt to access the PCR
+
+// 68060 or Apollo 68080
+
+	moveq	#60,d0		// assume 68060
+	dc.l	0x06d00000	// check for 68080 addiw.l instruction
+
+// Apollo 68080
+	moveq	#40,d0          // force 68040 detection
+	move.w	#1,_is_apollo_68080
+	bra.s	exit
+
 	moveq	#60,d0		// no fault -> this is 68060
 
 exit:	move.l	a1,sp

@@ -40,6 +40,7 @@ struct global global =
 };
 
 long mcpu = 0;
+bool is_apollo_68080 = false;
 short pmmu = 0;
 short fpu = 0;
 #ifdef __mcoldfire__
