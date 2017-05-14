@@ -56,6 +56,8 @@ extern BASEPAGE *_base;	/* pointer to kernel's basepage */
 
 extern long mcpu; /* processor we are running */
 
+extern bool is_apollo_68080; /* Set to true if CPU is Apollo 68080 */
+
 extern short pmmu; /* flag if mmu is present */
 
 /* for proper co-processors we must consider saving their context.
