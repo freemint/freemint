@@ -11,6 +11,11 @@ sudo: required
 compiler:
   - m68k-atari-mint-gcc
 
+env:
+  matrix:
+    - OLD_BUILD=0
+    - OLD_BUILD=1
+
 before_install:
   - export USER=$(echo "${TRAVIS_REPO_SLUG}" | cut -d '/' -f 1)
   - export BASE_RAW_URL="https://raw.githubusercontent.com/${USER}"
@@ -24,7 +29,7 @@ before_script:
   - export SHORT_ID=$(git log -n1 --format="%H" | cut -c 1-3)
 
 script:
-  - sh ./.travis/build.sh "${PWD}/.travis/tmp" "${PWD}/.travis/out"
+  - . ./.travis/build.sh "${PWD}/.travis/tmp" "${PWD}/.travis/out"
 
 after_success:
   - sh ./.travis/deploy.sh "${PWD}/.travis/out" $encrypted_ca43c43c6830_key $encrypted_ca43c43c6830_iv 

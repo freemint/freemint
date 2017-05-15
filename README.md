@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/freemint/freemint.svg?branch=master)](https://travis-ci.org/freemint/freemint)
 
-This is FreeMiNT.  Please see the file `COPYING' for licensing conditions.
+This is FreeMiNT.  Please see the file `COPYING` for licensing conditions.
 Please send electronic mail to freemint-list@mail.atariforge.org for further 
 information.
 
