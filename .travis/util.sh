@@ -202,6 +202,9 @@ copy_ct60_modules() {
 	MCHDIR="$1/ct60"
 	mkdir -p "$MCHDIR"
 	mkdir -p "$MCHDIR/doc"
+
+	cp -r "$1/falcon"/* "$MCHDIR"
+
 	cp "$SRC/sys/sockets/xif/ethernat/ethernat.xif" "$MCHDIR/ethernat.xix"
 	cp "$SRC/sys/sockets/xif/ethernat/README" "$MCHDIR/doc/ethernat.txt"
 	cp "$SRC/sys/sockets/xif/svethlana/svethlan.xif" "$MCHDIR/svethlan.xix"
