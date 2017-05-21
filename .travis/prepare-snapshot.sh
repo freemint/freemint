@@ -94,5 +94,5 @@ copy_sysroot "$SYSROOT_000"
 
 # Atari hardware only
 mkdir -p "$SYSROOT_020/bin"
-cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT_000/bin"
-cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT_020/bin"
+cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT_000/bin/actrl.ttp"
+cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT_020/bin/actrl.ttp"

@@ -34,7 +34,7 @@ copy_tbl "$TBLDIR_020"
 
 # TODO: copy_sysroot "$SYSROOT_020" (done as a separate step)
 mkdir -p "$SYSROOT_020/bin"
-cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT_020/bin"
+cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT_020/bin/actrl.ttp"
 
 ############
 # filesystem
