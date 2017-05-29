@@ -302,8 +302,6 @@ struct cbl
 
 static long	_cdecl rwabs_log	(DI *di, ushort rw, void *buf, ulong size, ulong rec);
 static long	_cdecl rwabs_log_lrec	(DI *di, ushort rw, void *buf, ulong size, ulong rec);
-/*static long	_cdecl rwabs_phy	(DI *di, ushort rw, void *buf, ulong size, ulong rec);*/
-/*static long	_cdecl rwabs_phy_lrec	(DI *di, ushort rw, void *buf, ulong size, ulong rec);*/
 static long	_cdecl rwabs_xhdi	(DI *di, ushort rw, void *buf, ulong size, ulong rec);
 
 
@@ -451,80 +449,6 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 	return sys_b_rwabs (rw, buf, n, -1, di->drv, recno);
 }
-
-# if 0
-static long _cdecl
-rwabs_phy (DI *di, ushort rw, void *buf, ulong size, ulong rec)
-{
-	register ulong n;
-	register ulong recno;
-
-	add_blkdev_randomness (di->drv);
-
-//	if (rw && (di->mode & BIO_WP_MODE))
-//	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
-//		return EROFS;
-//	}
-
-	n = size >> di->pshift;
-	recno = rec << di->lshift;
-
-	if (!n || n > 65535UL)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy: n outside range (%li)", di->drv+'A', n));
-		return ESECTOR;
-	}
-
-# if 0
-	if ((recno + n) > di->size)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy: access outside partition", di->drv));
-		return ESECTOR;
-	}
-# endif
-
-	BIO_FORCE (("block_IO [%i]: rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
-	return sys_b_rwabs (rw | 8, buf, n, (recno + di->start), di->major, 0L);
-}
-# endif
-
-# if 0
-static long _cdecl
-rwabs_phy_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
-{
-	register ulong n;
-	register ulong recno;
-
-	add_blkdev_randomness (di->drv);
-
-//	if (rw && (di->mode & BIO_WP_MODE))
-//	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
-//		return EROFS;
-//	}
-
-	n = size >> di->pshift;
-	recno = rec << di->lshift;
-
-	if (!n || n > 65535UL)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy_lrec: n outside range (%li)", di->drv+'A', n));
-		return ESECTOR;
-	}
-
-# if 0
-	if ((recno + n) > di->size)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy_lrec: access outside partition", di->drv));
-		return ESECTOR;
-	}
-# endif
-
-	BIO_FORCE (("block_IO [%i]: rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
-	return sys_b_rwabs (rw | 8, buf, n, -1, di->major, (recno + di->start));
-}
-# endif
 
 static long _cdecl
 rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
