@@ -7691,6 +7691,15 @@ fatfs_dskchng (int drv, int mode)
 
 	FAT_DEBUG (("fatfs_dskchng: invalidate drv (change = %li)", change));
 
+	if (CLEAN (drv))
+	{
+		if (!BIO_MODIFIED_CHECK(DI (drv)))
+		{
+			FAT_DEBUG (("fatfs_dskchng [%c]: partition is not modified, marking as valid", drv+'A'));
+			clean_flag (drv, CLEANFLAG_SET);
+		}
+	}
+
 	/* I hope this isn't a failure */
 	bio.sync_drv (DI (drv));
 

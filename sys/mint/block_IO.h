@@ -71,9 +71,10 @@ struct di
 # define BIO_WB_MODE		0x02	/* write-back bit (soft) */
 # define BIO_REMOVABLE		0x04	/* removable media */
 # define BIO_LOCKABLE		0x08	/* lockable media */
-# define BIO_LRECNO		0x10	/* lrecno supported */
+# define BIO_LRECNO			0x10	/* lrecno supported */
 # define BIO_WP_HARD		0x20	/* write-protected partition */
 # define BIO_ENCRYPTED		0x40	/* partition is encrypted */
+# define BIO_MODIFIED		0x80	/* partition is modified */
 	
 	ulong	start;			/* physical start sector */
 	ulong	size;			/* physical sectors */
@@ -202,7 +203,7 @@ struct bio
 
 
 /*
- * useful makros
+ * useful macros
  */
 
 # define BIO_RWABS(di, rw, buf, size, recno) \
@@ -212,6 +213,7 @@ struct bio
 # define BIO_WP_CHECK(di)	((di->mode & BIO_WP_MODE) ? ENABLE : DISABLE)
 # define BIO_WB_CHECK(di)	((di->mode & BIO_WB_MODE) ? ENABLE : DISABLE)
 # define BIO_LR_CHECK(di)	((di->mode & BIO_LRECNO) ? ENABLE : DISABLE)
+# define BIO_MODIFIED_CHECK(di) ((di->mode & BIO_MODIFIED) ? ENABLE : DISABLE)
 
 INLINE void
 bio_MARK_MODIFIED (BIO *bio, UNIT *u)

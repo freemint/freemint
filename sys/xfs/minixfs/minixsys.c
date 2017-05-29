@@ -1636,8 +1636,17 @@ m_dskchng (int drv, int mode)
 	
 	s->idirty =	0;
 	s->zdirty = 0;
-	
-	
+
+	if (!(s->s_flags & MS_RDONLY) && !(s->s_flags & S_NOT_CLEAN_MOUNTED))
+	{
+		if (!BIO_MODIFIED_CHECK(s->di))
+		{
+			DEBUG (("Minix-FS (%c): partition is not modified, marking as valid", drv+'A'));
+			s->sblk->s_state |= MINIX_VALID_FS;
+			bio_MARK_MODIFIED (&bio, s->sunit);
+		}
+	}
+
 	/* free the DI (invalidate also the cache units) */
 	bio.free_di (s->di);
 	
