@@ -32,6 +32,7 @@
  */
 
 # include "mint/mint.h"
+# include "mint/arch/nf_ops.h"
 
 # include "mint/asm.h"
 # include "mint/dcntl.h"
@@ -238,7 +239,7 @@ nfexec_close (FILEPTR *f, int pid)
 
 	if (f->links <= 0)
 	{
-		ALERT (("nfexec_close: f->links <= 0!");
+		ALERT (("nfexec_close: f->links <= 0!"));
 	}
 
 	return E_OK;
