@@ -424,7 +424,6 @@ copy_sysroot() {
 	cp "$SRC/tools/mkfatfs/README" "$SYSROOT/share/doc/mkfatfs"
 	
 	mkdir -p "$SYSROOT/share/doc/mktbl"
-	cp -r "$SRC/tools/mktbl/keyboards" "$SYSROOT/share/doc/mktbl"
 	cp "$SRC/tools/mktbl/COPYING" "$SYSROOT/share/doc/mktbl"
 	
 	mkdir -p "$SYSROOT/share/man/man8"
