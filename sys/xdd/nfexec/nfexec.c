@@ -239,7 +239,7 @@ nfexec_close (FILEPTR *f, int pid)
 
 	if (f->links <= 0)
 	{
-		ALERT (("nfexec_close: f->links <= 0!"));
+		//ALERT (("nfexec_close: f->links <= 0!"));
 	}
 
 	return E_OK;
