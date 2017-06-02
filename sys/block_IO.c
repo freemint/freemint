@@ -752,7 +752,6 @@ bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 	else
 	{
 		BIO_DEBUG (("bio_writeout [sector %lu]: %lu bytes written back!", sector, size));
-		di->mode |= BIO_MODIFIED;
 	}
 
 	return r;
@@ -1606,7 +1605,7 @@ bio_init_di (DI *di)
 
 	di->major = 0;
 	di->minor = 0;
-	di->mode &= ~(BIO_REMOVABLE | BIO_LOCKABLE | BIO_LRECNO | BIO_MODIFIED);
+	di->mode &= ~(BIO_REMOVABLE | BIO_LOCKABLE | BIO_LRECNO);
 
 	di->start = 0;
 	di->size = 0;
