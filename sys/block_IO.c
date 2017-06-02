@@ -2422,7 +2422,7 @@ bio_invalidate (DI *di)
 
 	if (di->lock > 1)
 	{
-		BIO_FORCE (("block_IO [%c]: invalidate on LOCKED di", di->drv+'A'));
+		BIO_DEBUG (("block_IO [%c]: invalidate on LOCKED di", di->drv+'A'));
 	}
 
 restart:
@@ -2447,7 +2447,7 @@ restart:
 				u->dirty = 0;
 
 				/* inform user */
-				BIO_ALERT (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", di->drv+'A', u->sector, u->size));
+				BIO_DEBUG (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", di->drv+'A', u->sector, u->size));
 			}
 
 			/* remove from table */
