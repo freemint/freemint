@@ -2150,16 +2150,6 @@ e_dskchng (int drv, int mode)
 
 	DEBUG (("Ext2-FS [%c]: e_dskchng (mode = %i): invalidate drv (change = %li, memory = %li)", drv+'A', mode, change, memory));
 
-	if (!(s->s_flags & MS_RDONLY) && !(s->s_flags & S_NOT_CLEAN_MOUNTED))
-	{
-		if (!BIO_MODIFIED_CHECK(s->di))
-		{
-			DEBUG (("Ext2-FS [%c]: partition is not modified, marking as valid", drv+'A'));
-			s->sbi.s_sb->s_state = cpu2le16 (le2cpu16 (s->sbi.s_sb->s_state) | EXT2_VALID_FS);
-			bio_MARK_MODIFIED (&bio, s->sbi.s_sb_unit);
-		}
-	}
-
 	/* sync the inode cache */
 	sync_cookies ();
 
