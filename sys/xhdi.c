@@ -226,7 +226,7 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			
 			/* supported bits in bpb->bflags */
 			case XH_DL_BFLAGS:
-				return XHDI (XH_DL_BFLAGS, 0UL);
+				return XHDI (XHDOSLIMITS, XH_DL_BFLAGS, 0UL);
 		}
 	}
 	
