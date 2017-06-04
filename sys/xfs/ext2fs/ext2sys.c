@@ -2150,12 +2150,6 @@ e_dskchng (int drv, int mode)
 
 	DEBUG (("Ext2-FS [%c]: e_dskchng (mode = %i): invalidate drv (change = %li, memory = %li)", drv+'A', mode, change, memory));
 
-	/* sync the inode cache */
-	sync_cookies ();
-
-	/* sync the buffer cache */
-	bio.sync_drv (s->di);
-
 	/* free the DI (invalidate also the cache units) */
 	bio.free_di (s->di);
 
@@ -2296,7 +2290,26 @@ e_unmount (int drv)
 		DEBUG (("can't unmount cleanly"));
 	}
 
-	e_dskchng (drv, 1);
+	/* sync the inode cache */
+	sync_cookies ();
+
+	/* sync the buffer cache */
+	bio.sync_drv (s->di);
+
+	/* free the DI (invalidate also the cache units) */
+	bio.free_di (s->di);
+
+	/* clear directory cache */
+	d_inv_dir (drv);
+
+	/* clear inode cache */
+	inv_ctable (drv);
+
+	/* free allocated memory */
+	kfree (s->sbi.s_group_desc, s->sbi.s_group_desc_size);
+	kfree (s, sizeof (*s));
+
+	super [drv] = NULL;
 
 	return E_OK;
 }
