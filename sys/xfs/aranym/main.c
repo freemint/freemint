@@ -67,24 +67,24 @@ static short mount(FILESYS *fs)
 
 	/* Install the filesystem */
 	r = d_cntl (FS_INSTALL, "u:\\", (long) &arafs_descr);
-	KERNEL_DEBUG("arafs: Dcntl(FS_INSTALL) descr=%x", &arafs_descr);
+	DEBUG(("arafs: Dcntl(FS_INSTALL) descr=%p", &arafs_descr));
 	if (r != 0 && r != (long)KERNEL)
 	{
-		KERNEL_DEBUG("arafs: Dcntl(FS_INSTALL) return value was %li", r);
+		DEBUG(("arafs: Dcntl(FS_INSTALL) return value was %li", r));
 
 		/* Nothing installed, so nothing to stay resident */
 		return 0;
 	}
 
 	r = d_cntl(FS_MOUNT, "u:\\host", (long) &arafs_descr);
-	KERNEL_DEBUG("arafs: Dcntl(FS_MOUNT) dev_no: %d", arafs_descr.dev_no);
+	DEBUG(("arafs: Dcntl(FS_MOUNT) dev_no: %d", arafs_descr.dev_no));
 	if ( r == arafs_descr.dev_no ) return r; /* mount successfull */
 
-	KERNEL_DEBUG("arafs: Dcntl(FS_MOUNT) return value was %li", r);
+	DEBUG(("arafs: Dcntl(FS_MOUNT) return value was %li", r));
 
 	r = d_cntl(FS_UNMOUNT, "u:\\host", (long) &arafs_descr);
 	if ( r < 0 ) {
-		KERNEL_DEBUG("arafs: Dcntl(FS_UNMOUNT) return value was %li", r);
+		DEBUG(("arafs: Dcntl(FS_UNMOUNT) return value was %li", r));
 		/* Can't uninstall, because unmount failed */
 		return -1;
 	}
@@ -92,7 +92,7 @@ static short mount(FILESYS *fs)
 	/* Something went wrong here -> uninstall the filesystem */
 	r = d_cntl(FS_UNINSTALL, "u:\\", (long) &arafs_descr);
 	if ( r < 0 ) {
-		KERNEL_DEBUG("arafs: Dcntl(FS_UNINSTALL) return value was %li", r);
+		DEBUG(("arafs: Dcntl(FS_UNINSTALL) return value was %li", r));
 		/* Can't uninstall, because unmount failed */
 		return -1;
 	}
@@ -143,7 +143,7 @@ FILESYS * _cdecl init(struct kerinfo *k)
 
 	/* something went wrong */
 	if ( dev < 0 )
-		return (FILESYS*) -1;
+		return (FILESYS*) 1;
 
 	/* nothing installed */
 	if ( !dev )
@@ -191,4 +191,3 @@ FILESYS * _cdecl init(struct kerinfo *k)
 
 	return fs;
 }
-
