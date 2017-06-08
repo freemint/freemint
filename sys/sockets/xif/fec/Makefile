@@ -14,6 +14,8 @@ subdir = fec
 
 default: all
 
+CPU = v4e
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -27,8 +29,6 @@ DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = v4e
-MODEL = -mcpu=5475
 
 # default definitions
 OBJS = $(addsuffix .o, $(basename $(notdir $(FECDMA_SRCS) $(COMMON_SRCS))))

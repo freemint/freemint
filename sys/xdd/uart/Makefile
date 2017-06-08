@@ -12,6 +12,8 @@ subdir = uart
 
 default: all
 
+CPU = 020-60
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -24,7 +26,6 @@ DEFINITIONS = -D__KERNEL_XDD__
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
 
 # default definitions
 GENFILES = $(TARGET)
