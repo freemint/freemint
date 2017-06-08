@@ -13,6 +13,10 @@ subdir = loader
 
 default: all
 
+ifndef CPU
+CPU = 000
+endif
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -22,9 +26,6 @@ all-here: $(TARGETS)
 # default overwrites
 LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
 LIBS = -lgcc
-ifndef CPU
-CPU = 000
-endif
 STRIPFLAGS =
 INCLUDES = 
 

@@ -12,6 +12,8 @@ subdir = usb
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -22,7 +24,6 @@ all-here: $(TARGET)
 CFLAGS += -fno-builtin -I../../sys
 LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
 LIBS = -lgcc -lgem
-CPU = 000
 STRIPFLAGS =
 
 # default definitions
