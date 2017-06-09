@@ -424,7 +424,7 @@ static long _cdecl
 proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 {
 	PROC *p;
-	char buffer[20]; /* enough if proc names no longer than 8 chars */
+	char buffer[PNAMSIZ + 5]; /* enough if proc names no longer than 8 chars */
 	
 	UNUSED (root);
 	
@@ -437,7 +437,7 @@ proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 		p = getproc (dir->index);
 		if (!p) return EBADARG;
 		
-		ksprintf (buffer, sizeof (buffer), "%s.03d", p->name, p->pid);
+		ksprintf (buffer, sizeof (buffer), "%s.%03d", p->name, p->pid);
 	}
 	
 	if (strlen (buffer) < size)
@@ -1012,7 +1012,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				return EBADF;
 			}
 			
-			pfd = (*(ushort *) buf);
+			pfd = (*(short *) buf);
 			if ((pfd < MIN_HANDLE) || (pfd >= fd->nfiles)
 				|| ((pf = fd->ofiles[pfd]) == 0))
 			{

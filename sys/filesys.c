@@ -290,11 +290,11 @@ xfs_name (fcookie *fc)
 		r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long)&buf);
 	else {
 		r = 0;
-		ksprintf(buf, sizeof(buf), "unknown fs (%lx)", fc->fs);
+		ksprintf(buf, sizeof(buf), "unknown fs (%p)", fc->fs);
 	}
 	TRACE(("xfs_name: xfs_fctnl returned %lx", r));
 	if (r)
-		ksprintf (buf, sizeof (buf), "unknown (%lx -> %li)", fc->fs, r);
+		ksprintf (buf, sizeof (buf), "unknown (%p -> %li)", fc->fs, r);
 
 	return buf;
 }
