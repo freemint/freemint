@@ -1238,9 +1238,11 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 			
+			cpid = p_getpid();
+			
 			if (mode == F_GETLK)
 			{
-				lck = denylock(c->locks, &t);
+				lck = denylock(cpid, c->locks, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -1248,8 +1250,6 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 				
 				return E_OK;
 			}
-			
-			cpid = p_getpid();
 			
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -1287,7 +1287,7 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 			DEBUG(("isofs_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 			
 			/* see if there's a conflicting lock */
-			while ((lck = denylock(c->locks, &t)) != 0)
+			while ((lck = denylock(cpid, c->locks, &t)) != 0)
 			{
 				DEBUG(("isofs_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 				if (mode == F_SETLKW)

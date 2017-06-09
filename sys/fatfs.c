@@ -4222,7 +4222,7 @@ rel_cookie (COOKIE *c)
 	{
 		if (c->unlinked)
 		{
-			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %lx", c->dev+'A', c));
+			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %p", c->dev+'A', c));
 			delete_cookie (c);
 		}
 	}
@@ -7350,24 +7350,10 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					info->type = _MAJOR_FAT;
 				}
 
-# ifdef M68000
 				*dst++ = 'f';
 				*dst++ = 'a';
 				*dst++ = 't';
 				*dst++ = ' ';
-# else
-				/* The compiler should optimize this below
-				 * into a single move.
-				 */
-				{
-					ulong *ddest;
-
-					ddest = (ulong *)dst;
-					/* this is 'fat ' */
-					*ddest++ = 0x66617420UL;
-					dst = (char *)ddest;
-				}
-# endif
 				switch (FAT_TYPE (dir->dev))
 				{
 					case FAT_TYPE_12:
@@ -8803,12 +8789,12 @@ fatfs_dump_hashtable (void)
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			COOKIE *temp = ctable[i];
-			ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
+			ksprintf (buf, buflen, "nr: %li\tptr = %p", i, temp);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (; temp; temp = temp->next)
 			{
 				ksprintf (buf, buflen, "\r\n"
-					"\tnext = %lx\tlinks = %li"
+					"\tnext = %p\tlinks = %li"
 					"\tdev = %i\tname = %s\r\n",
 					temp->next,
 					temp->links,
