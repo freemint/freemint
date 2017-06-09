@@ -1480,7 +1480,7 @@ bio_set_cache_size (long size)
 	data = kmalloc (count * cache.max_size);
 	if ((long) data & 15)
 	{
-		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long)__LINE__, data));
+		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long)__LINE__, (unsigned long)data));
 	}
 
 	if (!blocks || !data)
@@ -2723,11 +2723,11 @@ bio_dump_cache (void)
 				for (j = 0; j < HASHSIZE; j++)
 				{
 					UNIT *t = table [j];
-					ksprintf (buf, buflen, "nr: %li\tptr = %lx", j, t);
+					ksprintf (buf, buflen, "nr: %li\tptr = %p", j, t);
 					(*fp->dev->write)(fp, buf, strlen (buf));
 					for (; t; t = t->next)
 					{
-						ksprintf (buf, buflen, "\r\n\thnext = %lx\tlock = %i\tdirty = %i"
+						ksprintf (buf, buflen, "\r\n\thnext = %p\tlock = %i\tdirty = %i"
 							"\tsector = %li\tdev = %i\r\n",
 							t->next, t->lock, t->dirty, t->sector, t->di->drv
 						);
@@ -2742,11 +2742,11 @@ bio_dump_cache (void)
 		for (i = 0; i < cache.count; i++)
 		{
 			ulong j;
-			ksprintf (buf, buflen, "buffer = %lx, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
+			ksprintf (buf, buflen, "buffer = %p, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (j = 0; j < cache.chunks; j++)
 			{
-				ksprintf (buf, buflen, "\tused = %u\tstat = %li\tactive = %lx\r\n", b[i].used[j], b[i].active[j] ? b[i].active[j]->stat : -1, b[i].active[j]);
+				ksprintf (buf, buflen, "\tused = %u\tstat = %li\tactive = %p\r\n", b[i].used[j], b[i].active[j] ? b[i].active[j]->stat : -1, b[i].active[j]);
 				(*fp->dev->write)(fp, buf, strlen (buf));
 			}
 			(*fp->dev->write)(fp, "\r\n", 2);
