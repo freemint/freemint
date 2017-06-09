@@ -139,7 +139,7 @@ sys_f_create (const char *name, short attrib)
 		ret = do_open (&fp, name, O_RDWR|O_CREAT|O_TRUNC, attrib, NULL);
 		if (ret)
 		{
-			DEBUG (("Fcreate(%s) failed, error %d", name, ret));
+			DEBUG (("Fcreate(%s) failed, error %ld", name, ret));
 			goto error;
 		}
 	}
@@ -253,7 +253,7 @@ sys_f_read (short fd, long count, char *buf)
 	if (is_terminal (f))
 		return tty_read (f, buf, count);
 
-	TRACELOW (("Fread: %ld bytes from handle %d to %lx", count, fd, buf));
+	TRACELOW (("Fread: %ld bytes from handle %d to %p", count, fd, buf));
 	return xdd_read (f, buf, count);
 }
 
@@ -283,7 +283,7 @@ sys_f_write (short fd, long count, const char *buf)
 	 */
 	if (count <= 0)
 	{
-		DEBUG (("Fwrite: invalid count: %d", count));
+		DEBUG (("Fwrite: invalid count: %ld", count));
 		return 0;
 	}
 
@@ -931,7 +931,7 @@ cancel:
 	if (rfd || wfd || xfd)
 		wake(SELECT_Q, (long)&select_coll);
 
-	TRACELOW(("Fselect: returning %d", count));
+	TRACELOW(("Fselect: returning %ld", count));
 	return count;
 }
 
@@ -1417,7 +1417,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 	FILEPTR *f;
 	long r;
 
-	TRACE (("Fwritev(%i, %lx, %li)", fd, iov, niov));
+	TRACE (("Fwritev(%i, %p, %li)", fd, iov, niov));
 
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
@@ -1482,7 +1482,7 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 	FILEPTR *f;
 	long r;
 
-	TRACE (("Freadv(%i, %lx, %li)", fd, iov, niov));
+	TRACE (("Freadv(%i, %p, %li)", fd, iov, niov));
 
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
