@@ -727,9 +727,11 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 			
+			cpid = p_getpid ();
+			
 			if (mode == F_GETLK)
 			{
-				lck = denylock (c->locks, &t);
+				lck = denylock (cpid, c->locks, &t);
 				if (lck)
 				{
 					*fl = lck->l;
@@ -741,8 +743,6 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 				
 				return E_OK;
 			}
-			
-			cpid = p_getpid ();
 			
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -783,7 +783,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 				long r;
 				
 				/* see if there's a conflicting lock */
-				while ((lck = denylock (c->locks, &t)) != 0)
+				while ((lck = denylock (cpid, c->locks, &t)) != 0)
 				{
 					DEBUG (("e_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 					if (mode == F_SETLKW)
