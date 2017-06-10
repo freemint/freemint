@@ -446,7 +446,7 @@ sys_m_validate (int pid, unsigned long addr, long size, long *flags)
 	struct proc *p = NULL;
 	MEMREGION *m;
 
-	TRACE (("Mvalidate(%i, %lx, %li, %lx)", pid, addr, size, flags));
+	TRACE (("Mvalidate(%i, %lx, %li, %p)", pid, addr, size, flags));
 
 	if (pid == 0)
 		p = get_curproc();

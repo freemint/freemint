@@ -111,7 +111,7 @@ init_proc(void)
 	fd0.ofileflags = (unsigned char *)fd0.dfileflags;
 	fd0.nfiles = NDFILE;
 
-	DEBUG(("init_proc() inf : %lx, %lx, %lx, %lx, %lx, %lx, %lx",
+	DEBUG(("init_proc() inf : %p, %p, %p, %p, %p, %p, %p",
 		&rootproc0, &mem0, &pcred0, &ucred0, &fd0, &cwd0, &sigacts0));
 
 	curproc = rootproc = &rootproc0;
@@ -845,7 +845,7 @@ DUMPPROC(void)
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		FORCE("state %s sys %s, inkern %s PC: %lx/%lx BP: %lx (pgrp %i)",
+		FORCE("state %s sys %s, inkern %s PC: %lx/%lx BP: %p (pgrp %i)",
 			qname(curproc->wait_q),
 			curproc->p_flag & P_FLAG_SYS ? "yes":" no",
 			curproc->in_kern ? "yes":" no",

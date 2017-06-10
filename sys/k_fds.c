@@ -80,9 +80,9 @@ fd_alloc (struct proc *p, short *fd, short min, const char *func)
 		FILEPTR *f = p->p_fd->ofiles[i];
 
 		if (f && (f != (FILEPTR *) 1))
-			DEBUG (("%i -> %lx, links %i, flags %x, dev = %lx", i, f, f->links, f->flags, f->dev));
+			DEBUG (("%i -> %p, links %i, flags %x, dev = %p", i, f, f->links, f->flags, f->dev));
 		else
-			DEBUG (("%i -> %lx", i, f));
+			DEBUG (("%i -> %p", i, f));
 	}
 # endif
 	return EMFILE;
@@ -118,7 +118,7 @@ fp_alloc (struct proc *p, FILEPTR **resultfp, const char *func)
 
 	*resultfp = fp;
 
-	TRACE (("%s: fp_alloc: kmalloc %lx", func, fp));
+	TRACE (("%s: fp_alloc: kmalloc %p", func, fp));
 	return 0;
 }
 
@@ -144,7 +144,7 @@ fp_free (FILEPTR *fp, const char *func)
 	// later
 	// free_cred (fp->cred);
 
-	TRACE (("%s: fp_free: kfree %lx", func, fp));
+	TRACE (("%s: fp_free: kfree %p", func, fp));
 	kfree (fp);
 }
 
@@ -152,11 +152,9 @@ long
 fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 {
 	assert ((*p));
-	if( !(*p)->p_fd )
-		FORCE("fp_get:ERROR:p_fd=0");
 
 	if ((*fd < MIN_HANDLE)
-			|| !(*p)->p_fd
+		|| !(*p)->p_fd
 	    || (*fd >= (*p)->p_fd->nfiles)
 	    || !(*fp = (*p)->p_fd->ofiles[*fd])
 	    || (*fp == (FILEPTR *) 1))
@@ -231,7 +229,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	struct proc *p = get_curproc();
 
 	fcookie dir, fc;
-	long devsp;
+	long devsp = 0;
 	DEVDRV *dev;
 	long r;
 	XATTR xattr;

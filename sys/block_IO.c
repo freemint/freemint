@@ -1404,7 +1404,7 @@ bio_set_cache_size (long size)
 	data = kmalloc (count * cache.max_size);
 	if ((long) data & 15)
 	{
-		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long)__LINE__, data));
+		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long)__LINE__, (unsigned long)data));
 	}
 
 	if (!blocks || !data)

@@ -4222,7 +4222,7 @@ rel_cookie (COOKIE *c)
 	{
 		if (c->unlinked)
 		{
-			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %lx", c->dev+'A', c));
+			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %p", c->dev+'A', c));
 			delete_cookie (c);
 		}
 	}
@@ -8826,12 +8826,12 @@ fatfs_dump_hashtable (void)
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			COOKIE *temp = ctable[i];
-			ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
+			ksprintf (buf, buflen, "nr: %li\tptr = %p", i, temp);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (; temp; temp = temp->next)
 			{
 				ksprintf (buf, buflen, "\r\n"
-					"\tnext = %lx\tlinks = %li"
+					"\tnext = %p\tlinks = %li"
 					"\tdev = %i\tname = %s\r\n",
 					temp->next,
 					temp->links,

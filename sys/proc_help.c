@@ -135,7 +135,7 @@ copy_mem (struct proc *p)
 	union { char *c; void *v; } ptr;
 	int i;
 	
-	TRACE (("copy_mem: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_mem: pid %i (%p)", p->pid, p));
 	assert (p && p->p_mem && p->p_mem->links > 0);
 	
 	m = kmalloc (sizeof (*m));
@@ -176,7 +176,7 @@ copy_mem (struct proc *p)
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	
-	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg,
+	TRACE(("copy_mem: ptr=%p, m->pt_mem = %p, m->tp_reg = %p, mp=%s", ptr.v, m->pt_mem, m->tp_reg,
 #ifdef WITH_MMU_SUPPORT
 		no_mem_prot
 #else
@@ -265,7 +265,7 @@ copy_mem (struct proc *p)
 #endif
 	detach_region(get_curproc(), m->tp_reg);
 	
-	TRACE (("copy_mem: ok (%lx)", m));
+	TRACE (("copy_mem: ok (%p)", m));
 	return m;
 	
 nomem:
@@ -413,7 +413,7 @@ copy_fd (struct proc *p)
 	struct filedesc *fd;
 	long i;
 	
-	TRACE (("copy_fd: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_fd: pid %i (%p)", p->pid, p));
 	assert (p && p->p_fd && p->p_fd->links > 0);
 	org_fd = p->p_fd;
 	
@@ -471,7 +471,7 @@ copy_fd (struct proc *p)
 	mint_bzero (fd->srchdir, sizeof (fd->srchdir));
 	fd->searches = NULL;
 	
-	TRACE (("copy_fd: ok (%lx)", fd));
+	TRACE (("copy_fd: ok (%p)", fd));
 	return fd;
 }
 
@@ -602,7 +602,7 @@ copy_cwd (struct proc *p)
 	struct cwd *cwd;
 	int i;
 	
-	TRACE (("copy_cwd: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_cwd: pid %i (%p)", p->pid, p));
 	assert (p && p->p_cwd && p->p_cwd->links > 0);
 	org_cwd = p->p_cwd;
 	
@@ -640,7 +640,7 @@ copy_cwd (struct proc *p)
 		dup_cookie (&cwd->curdir[i], &org_cwd->curdir[i]);
 	}
 	
-	TRACE (("copy_cwd: ok (%lx)", cwd));
+	TRACE (("copy_cwd: ok (%p)", cwd));
 	return cwd;
 }
 
@@ -688,7 +688,7 @@ copy_sigacts (struct proc *p)
 {
 	struct sigacts *p_sigacts;
 	
-	TRACE (("copy_sigacts: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_sigacts: pid %i (%p)", p->pid, p));
 	assert (p && p->p_sigacts && p->p_sigacts->links > 0);
 	
 	p_sigacts = kmalloc (sizeof (*p_sigacts));
@@ -701,7 +701,7 @@ copy_sigacts (struct proc *p)
 	bcopy (p->p_sigacts, p_sigacts, sizeof (*p_sigacts));
 	p_sigacts->links = 1;
 	
-	TRACE (("copy_sigacts: ok (%lx)", p_sigacts));
+	TRACE (("copy_sigacts: ok (%p)", p_sigacts));
 	return p_sigacts;
 }
 

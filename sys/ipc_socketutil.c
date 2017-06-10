@@ -63,7 +63,7 @@ static struct dom_ops *alldomains = NULL;
 void
 so_register (short domain, struct dom_ops *ops)
 {
-	DEBUG (("sockets: registering domain %i (ops %lx)", domain, ops));
+	DEBUG (("sockets: registering domain %i (ops %p)", domain, ops));
 
 	ops->domain = domain;
 	ops->next = alldomains;

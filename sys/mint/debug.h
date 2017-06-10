@@ -60,16 +60,16 @@ extern int debug_logging;
 
 
 void		debug_ws	(const char *s);
-int		_ALERT		(char *);
+int		_ALERT		(const char *);
 
-void	_cdecl	Tracelow	(const char *s, ...);
-void	_cdecl	Trace		(const char *s, ...);
-void		display		(const char *s, ...);
-void	_cdecl	Debug		(const char *s, ...);
-void	_cdecl	ALERT		(const char *s, ...);
-void	_cdecl	FORCE		(const char *s, ...);
+void	_cdecl	Tracelow	(const char *s, ...) __attribute__((format(printf, 1, 2)));
+void	_cdecl	Trace		(const char *s, ...) __attribute__((format(printf, 1, 2)));
+void		display		(const char *s, ...) __attribute__((format(printf, 1, 2)));
+void	_cdecl	Debug		(const char *s, ...) __attribute__((format(printf, 1, 2)));
+void	_cdecl	ALERT		(const char *s, ...) __attribute__((format(printf, 1, 2)));
+void	_cdecl	FORCE		(const char *s, ...) __attribute__((format(printf, 1, 2)));
 
-EXITING	_cdecl	FATAL		(const char *s, ...)	NORETURN;
+EXITING	_cdecl	FATAL		(const char *s, ...) __attribute__((format(printf, 1, 2))) NORETURN;
 
 void		DUMPLOG		(void);
 void		do_func_key	(int);
