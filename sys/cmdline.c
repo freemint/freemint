@@ -401,7 +401,7 @@ make_real_cmdline(struct proc *p)
 				char* to1 = raw_argv[opt];
 				ulong deleted = 0;
 
-				TRACE (("make_real_cmdline: zero out argv[%lu] (%s)", opt, raw_argv[opt]));
+				TRACE (("make_real_cmdline: zero out argv[%u] (%s)", opt, raw_argv[opt]));
 				if (from1 == NULL)
 				{
 					from1 = raw_argv[opt];

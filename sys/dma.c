@@ -327,7 +327,7 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p, long arg))
 		c->t = NULL;
 	}
 	
-	DMA_DEBUG (("dma_block: leave (%lu -> %lx)", i+1, c->idev));
+	DMA_DEBUG (("dma_block: leave (%lu -> %p)", i+1, c->idev));
 	return c->idev;
 }
 

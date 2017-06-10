@@ -186,7 +186,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 
 # ifdef DEBUG_INFO
 	/* tfmt and tail_offs are used for debugging only */
-	const char *tfmt = "Pexec(%d,%s,\"%s\",%lx)";
+	const char *tfmt = "Pexec(%d,%s,\"%s\",$%08lx)";
 	int tail_offs = 1;
 # endif
 	TRACE(("Pexec mode:%d",mode));
@@ -201,7 +201,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			display("pexec(%d) for %s", mode, pr->name);
 	}
 #endif
-	DEBUG(("Pexec: mode %d, %lx,%lx,%lx", mode, ptr_1.c, ptr_2.c ? ptr_2.c : "NULL", ptr_3.c));
+	DEBUG(("Pexec: mode %d, $%08lx,$%08lx,$%08lx", mode, ptr_1.l, ptr_2.l, ptr_3.l));
 
 	/* the high bit of mode controls process tracing */
 	switch (mode & 0x7fff)
@@ -227,7 +227,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			mkwait = mkgo = 1;
 			thread = (mode == 4);
 # ifdef DEBUG_INFO
-			tfmt = "Pexec(%d,%lx,BP:%lx,%lx)";
+			tfmt = "Pexec(%d,$%08lx,BP:$%08lx,$%08lx)";
 			tail_offs = 0;
 # endif
 			break;
@@ -238,7 +238,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			mkgo = 1;
 			mkname = (ptr_1.v != NULL);
 # ifdef DEBUG_INFO
-			tfmt = "Pexec(%d,%s,BP:%lx,%lx)";
+			tfmt = "Pexec(%d,%s,BP:$%08lx,$%08lx)";
 			tail_offs = 0;
 # endif
 			break;
@@ -256,7 +256,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			mkgo = overlay = 1;
 			mkname = (ptr_1.v != NULL);
 # ifdef DEBUG_INFO
-			tfmt = "Pexec(%d,%s,BP:%lx,%lx)";
+			tfmt = "Pexec(%d,%s,BP:$%08lx,$%08lx)";
 			tail_offs = 0;
 # endif
 			break;
@@ -271,13 +271,13 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		case 5:
 			mkbase = 1;
 # ifdef DEBUG_INFO
-			tfmt = "Pexec(%d,%lx,%s,%lx)";
+			tfmt = "Pexec(%d,$%08lx,%s,$%08lx)";
 			tail_offs = 0;
 # endif
 			break;
 		default:
 		{
-			DEBUG(("Pexec(%d,%lx,%lx,%lx): bad mode", mode, ptr_1.l, ptr_2.l, ptr_3.l));
+			DEBUG(("Pexec(%d,$%08lx,$%08lx,$%08lx): bad mode\n", mode, ptr_1.l, ptr_2.l, ptr_3.l));
 			return ENOSYS;
 		}
 	}
@@ -289,12 +289,12 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 
 	/* Was there passed a filename? */
 	if (mkname)
-		make_name(localname, ptr_1.c);
+		make_name(localname, ptr_1.cc);
 
 	if (mkload || mkbase)
 	{
 		TRACE(("creating environment"));
-		env = create_env(ptr_3.c, flags);
+		env = create_env(ptr_3.cc, flags);
 		if (!env)
 		{
 			DEBUG(("Pexec: unable to create environment"));
@@ -307,7 +307,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		long ret;
 
 		TRACE(("creating base page"));
-		base = create_base(ptr_2.c, env, flags, 0L, &ret);
+		base = create_base(ptr_2.cc, env, flags, 0L, &ret);
 		if (!base)
 		{
 			DEBUG(("Pexec: unable to create basepage"));
@@ -315,7 +315,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			return ret;
 		}
 
-		TRACELOW (("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+		TRACELOW (("Pexec: basepage region(%p) is %ld bytes at $%08lx", base, base->len, base->loc));
 	}
 	else if (mkload)
 	{
@@ -332,7 +332,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			tail.cc = strncpy(cbuf, ptr_2.cc, 127);
 		}
 
-		base = load_region(ptr_1.c, env, tail.c, &xattr, &flags, &ret);
+		base = load_region(ptr_1.cc, env, tail.cc, &xattr, &flags, &ret);
 		if (!base)
 		{
 			DEBUG(("Pexec: load_region failed"));
@@ -340,7 +340,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			return ret;
 		}
 
-		TRACE(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+		TRACE(("Pexec: basepage region(%p) is %ld bytes at $%08lx", base, base->len, base->loc));
 	}
 	else
 	{
@@ -406,9 +406,9 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		/* jr: add Pexec information to PROC struct */
 		strncpy(p->cmdlin, b->p_cmdlin, 128);
 
-		if (mkload || (thread && ptr_1.c))
+		if (mkload || (thread && ptr_1.cc))
 		{
-			r = make_fname(p, ptr_1.c);
+			r = make_fname(p, ptr_1.cc);
 			if (r)
 			{
 				if (mkload || mkbase)
@@ -622,7 +622,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 	{
 		/* guarantee ourselves at least 3 timeslices to do an Mshrink */
 		fresh_slices(3);
-		TRACE(("leaving Pexec with basepage address %lx", base->loc));
+		TRACE(("leaving Pexec with basepage address $%08lx", base->loc));
 		return base->loc;
 	}
 }
@@ -647,7 +647,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 	int i;
 	MEMREGION *m;
 
-	TRACE(("exec_region: enter (PROC %lx, mem = %lx)", p, mem));
+	TRACE(("exec_region: enter (PROC %p, mem = %p)", p, mem));
 	assert(p && mem && fd);
 	assert(p->p_cwd);
 	assert(p->p_mem);
@@ -744,7 +744,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 					if (!m->links)
 						free_region(m);
 					else
-						FATAL("exec_region: region %lx bogus link count %d, not freed (len %lx)",
+						FATAL("exec_region: region $%08lx bogus link count %ld, not freed (len $%08lx)",
 							m->loc, m->links, m->len);
 				}
 				else
@@ -854,7 +854,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 	if (get_curproc() != rootproc)
 		get_curproc()->p_mem->base->p_usp = get_curproc()->ctxt[SYSCALL].usp - 0x32;
 
-	TRACE(("exec_region: ok (%lx)", p));
+	TRACE(("exec_region: ok (%p)", p));
 	return p;
 }
 
@@ -889,11 +889,11 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 		goto leave;
 	}
 
-	TRACE(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+	TRACE(("create_process: basepage region(%p) is %ld bytes at $%08lx", base, base->len, base->loc));
 
 	b = (BASEPAGE *) base->loc;
 
-	DEBUG(("create_process: p_flags=%lx", b->p_flags));
+	DEBUG(("create_process: p_flags=$%08lx", b->p_flags));
 
 # ifdef WITH_SINGLE_TASK_SUPPORT
 	if ((b->p_flags & F_SINGLE_TASK) && (rootproc->modeflags & M_SINGLE_TASK))
@@ -922,12 +922,12 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 # ifdef WITH_SINGLE_TASK_SUPPORT
 	if (b->p_flags & F_SINGLE_TASK)
 	{
-		DEBUG(("create_process: setting M_SINGLE_TASK for %s", filename));
+		DEBUG(("create_process: setting M_SINGLE_TASK for %s", (const char *)filename));
 		p->modeflags |= M_SINGLE_TASK;
 	}
 	if (b->p_flags & F_DONT_STOP)
 	{
-		DEBUG(("create_process: setting M_DONT_STOP for %s", filename));
+		DEBUG(("create_process: setting M_DONT_STOP for %s", (const char *)filename));
 		p->modeflags |= M_DONT_STOP;
 	}
 	b->p_flags &= ~(F_SINGLE_TASK | F_DONT_STOP);
