@@ -307,7 +307,7 @@ neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
 	{
 		short len = nbuf->dend - nbuf->dstart;
 		int ethX = nif->unit;
-		DEBUG (("nfeth: send %d (%x) bytes", len));
+		DEBUG (("nfeth: send %d (0x%x) bytes", len, len));
 		len = MAX (len, 60);
 
 		send_block (ethX, nbuf->dstart, len);

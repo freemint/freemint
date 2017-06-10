@@ -272,7 +272,7 @@ copy_cred(struct ucred *ucr)
 {
 	struct ucred *n;
 	
-	TRACE(("copy_cred: %lx links %li", ucr, ucr->links));
+	TRACE(("copy_cred: %p links %i", ucr, ucr->links));
 	assert(ucr->links > 0);
 	
 	if (ucr->links == 1)

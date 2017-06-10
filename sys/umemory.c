@@ -267,7 +267,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: found %lx in managed region %i", ptr, i));
+				DEBUG(("umalloc: found %p in managed region %i", ptr, i));
 				return ptr;
 			}
 		}
@@ -296,7 +296,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: allocated new region %i, return %lx", i, ptr));
+				DEBUG(("umalloc: allocated new region %i, return %p", i, ptr));
 				return ptr;
 			}
 		}
@@ -317,7 +317,7 @@ _ufree(void *plac, const char *func)
 
 	placeptr.v = plac;
 
-	DEBUG(("ufree(0x%lx, %s)", plac, func));
+	DEBUG(("ufree(0x%p, %s)", plac, func));
 
 	m = proc_addr2region(p, placeptr.l);
 	if (m)

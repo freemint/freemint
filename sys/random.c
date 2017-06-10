@@ -1387,7 +1387,7 @@ random_read (FILEPTR * file, char * buf, long nbytes)
 		if (n < 0)
 			return n;
 		
-		TRACE (("random_read: got %d new entropy bytes", n));
+		TRACE (("random_read: got %ld new entropy bytes", n));
 		
 		count += n;
 		buf += n;

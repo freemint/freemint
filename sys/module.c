@@ -323,7 +323,7 @@ load_module(const char *path, const char *filename, long *err)
 	kernel_close(f);
 
 	DEBUG(("load_module: name '%s', path '%s'", km->name, km->path));
-	DEBUG(("load_module: basepage = %lx", b));
+	DEBUG(("load_module: basepage = %p", b));
 	return km;
 failed:
 	kernel_close(f);
@@ -370,7 +370,7 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 	char *name;
 	long len, r;
 
-	DEBUG(("load_modules: enter(\"%s\", \"%s\", 0x%lx)", path ? path : sysdir, ext, loader));
+	DEBUG(("load_modules: enter(\"%s\", \"%s\", 0x%p)", path ? path : sysdir, ext, loader));
 
 	strcpy(buf, path ? path : sysdir);
 	len = strlen(buf);
@@ -501,13 +501,13 @@ load_xfs(struct basepage *b, const char *name, short *class, short *subclass)
 	void *initfunc = (void *)b->p_tbase;
 	FILESYS *fs;
 
-	DEBUG(("load_xfs: enter (0x%lx, %s)", b, name));
-	DEBUG(("load_xfs: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_xfs: enter (0x%p, %s)", b, name));
+	DEBUG(("load_xfs: init 0x%p, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
 	fs = module_init(initfunc, &kernelinfo);
 	if (fs)
 	{
-		DEBUG(("load_xfs: %s loaded OK (%lx)", name, fs));
+		DEBUG(("load_xfs: %s loaded OK (%p)", name, fs));
 
 		*class = MODCLASS_XFS;
 		*subclass = 0;
@@ -540,7 +540,7 @@ load_xfs(struct basepage *b, const char *name, short *class, short *subclass)
 				/* we ran completly through the list
 				 */
 
-				DEBUG(("load_xfs: xfs_add (%lx)", fs));
+				DEBUG(("load_xfs: xfs_add (%p)", fs));
 				xfs_add(fs);
 			}
 		}
@@ -564,8 +564,8 @@ load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 	void *initfunc = (void *)b->p_tbase;
 	DEVDRV *dev;
 
-	DEBUG(("load_xdd: enter (0x%lx, %s)", b, name));
-	DEBUG(("load_xdd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_xdd: enter (0x%p, %s)", b, name));
+	DEBUG(("load_xdd: init 0x%p, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
 	dev = module_init(initfunc, &kernelinfo);
 	if (dev)
@@ -615,7 +615,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 	long *x = NULL;
 	long ret = EINVAL;
 
-	DEBUG(("register_trap2(0x%lx, %i, %i)", dispatch, mode, flag));
+	DEBUG(("register_trap2(0x%p, %i, %i)", dispatch, mode, flag));
 
 	if (flag == 0)
 	{
@@ -633,7 +633,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 
 		if (*handler == NULL)
 		{
-			DEBUG(("register_trap2: installing handler at 0x%lx", dispatch));
+			DEBUG(("register_trap2: installing handler at 0x%p", dispatch));
 
 			*handler = dispatch;
 			if (x)
@@ -651,7 +651,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 
 		if (*handler == dispatch)
 		{
-			DEBUG(("register_trap2: removing handler at 0x%lx", dispatch));
+			DEBUG(("register_trap2: removing handler at 0x%p", dispatch));
 
 			*handler = NULL;
 			if (x)
@@ -739,12 +739,12 @@ run_km(const char *path)
 	{
 		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
 
-		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
+		FORCE("run_km(%s) ok (bp 0x%lx)!", path, (unsigned long)km->b);
 //		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
 		km->caller = curproc;
-		FORCE("run_km: run=0x%lx", run);
+		FORCE("run_km: run=0x%lx", (unsigned long)run);
 		err = (*run)(&kentry, km); //km->path);
 	}
 	else
@@ -790,7 +790,7 @@ run_km(const char *path)
 static long _cdecl
 module_open(FILEPTR *f)
 {
-	DEBUG(("module_open [%i]: enter (%lx)", f->fc.aux, f->flags));
+	DEBUG(("module_open [%i]: enter (%x)", f->fc.aux, f->flags));
 
 	if (!suser(get_curproc()->p_cred->ucr))
 		return EPERM;
@@ -831,7 +831,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 	char *p1, *p2;
 	struct kernel_module *km;
 
-	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %lx)",
+	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %p)",
 		f->fc.aux, mode, (char)(mode >> 8), (mode & 0xff), buf));
 
 	if( !buf )
@@ -876,7 +876,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 			/* check if module loaded */
 			for( km = loaded_modules; km; km = km->next )
 			{
-				DEBUG(("module_ioctl: free_km: looking(%s) cur:%lx caller:%lx", km->name, curproc, km->caller));
+				DEBUG(("module_ioctl: free_km: looking(%s) cur:%p caller:%p", km->name, curproc, km->caller));
 				if( km->class == MODCLASS_KM && km->caller == curproc && !strcmp( buf, km->name ) )
 				{
 					DEBUG(("module_ioctl: free_km(%s)",km->name));
@@ -887,7 +887,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 				if( !km )
 				{
 					r = ENOENT;
-					DEBUG(("module_ioctl: free_km(%s) not found",buf));
+					DEBUG(("module_ioctl: free_km(%s) not found", (const char *)buf));
 				}
 			}
 			break;

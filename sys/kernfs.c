@@ -541,7 +541,7 @@ kern_lookup (fcookie *dir, const char *name, fcookie *fc)
 
 		if (p == NULL || pid <= 0L)
 		{
-			DEBUG (("kern_lookup in [%u:%ld]: No such process: %d", dir->dev, dir->index, pid));
+			DEBUG (("kern_lookup in [%u:%ld]: No such process: %ld", dir->dev, dir->index, pid));
 			return ENOENT;
 		}
 
@@ -1677,7 +1677,7 @@ kern_follow_link (fcookie *fc, int depth)
 
 		if (desc < -5 || desc >= fd->nfiles || *(fd->ofiles + desc) == NULL)
 		{
-		    	DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
+			DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
 			return ENOENT;
 		}
 

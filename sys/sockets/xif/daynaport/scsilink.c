@@ -189,7 +189,7 @@ int i, bus, id;
 	/*
 	 *	validate system
 	 */
-	if (s_system (S_GETCOOKIE, COOKIE_MiNT, NULL) == 1) {
+	if (s_system (S_GETCOOKIE, COOKIE_MiNT, 0L) == 1) {
 		ksprintf(message,"%s: must run under MiNT\r\n",DRIVER);
 		c_conws(message);
 		return 1L;
