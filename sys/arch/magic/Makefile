@@ -12,19 +12,12 @@ subdir = magic
 
 default: all
 
-COLDFIRE := $(shell grep -q V4e /kern/cpuinfo 2>/dev/null; \
-					status=$$?; \
-					if [ $$status = 0 ]; \
-					then echo 1; \
-					else echo 0; \
-					fi)
-ifeq ($(COLDFIRE),1)
+include $(top_srcdir)/CONFIGVARS
+ifeq ($(NATIVE_COLDFIRE),1)
 CPU = v4e
 else
 CPU = 000
 endif
-
-include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
