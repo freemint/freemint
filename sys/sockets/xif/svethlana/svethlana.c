@@ -709,7 +709,14 @@ driver_init (void)
 	}
 
 	// Open svethlan.inf to read the MAC address
-	ferror = Fopen("svethlan.inf",0);
+	if((ferror = Fopen("svethlan.inf",0)) < 0) { /* Try first in sysdir */
+		short sysdrv = *((short *) 0x446);	/* get the boot drive number */
+		char svethlan_inf[] = "A:\\SVETHLAN.INF";
+		svethlan_inf[0] = 'A' + sysdrv;
+
+		ferror = Fopen(svethlan_inf,0);/* otherwise in boot drive's root */
+	}
+
 	if(ferror >= 0)
 	{
 		fhandle = (short)(ferror & 0xffff);
@@ -736,19 +743,19 @@ driver_init (void)
 	else
 	{
 		c_conws("Could not open svethlan.inf\n\r");
-		c_conws("Using default ethernet address 01:02:03:04:05:07\n\r");
+		c_conws("Using default ethernet address 00:01:02:03:04:05\n\r");
 		macbuf[0] = '0';
-		macbuf[1] = '1';
+		macbuf[1] = '0';
 		macbuf[2] = '0';
-		macbuf[3] = '2';
+		macbuf[3] = '1';
 		macbuf[4] = '0';
-		macbuf[5] = '3';
+		macbuf[5] = '2';
 		macbuf[6] = '0';
-		macbuf[7] = '4';
+		macbuf[7] = '3';
 		macbuf[8] = '0';
-		macbuf[9] = '5';
+		macbuf[9] = '4';
 		macbuf[10] = '0';
-		macbuf[11] = '7';
+		macbuf[11] = '5';
 	}
 
 	macbuf[12] = 0;

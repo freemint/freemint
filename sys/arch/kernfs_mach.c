@@ -66,7 +66,11 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 	}
 	else
 #endif	
-	switch (mcpu)
+	if (is_apollo_68080)
+	{
+		clockfactor = 2; // Experimentally almost accurate
+	}
+	else switch (mcpu)
 	{
 		case 20:
 			clockfactor = 8;
