@@ -47,8 +47,8 @@ $(TARGET): $(OBJS) $(LIBKERNSTMP)
 ifeq ($(CROSS),yes)
 
 # for cross-compiling use this: (assumes you have perl and cnm)
-magic.i: $(TARGET)
-	perl genmagic.pl > $@
+magic.i: genmagic.o
+	perl genmagic.pl > $@.$$$$ && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 else
 

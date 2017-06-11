@@ -55,7 +55,7 @@ $(inet4targets):
 ifneq ($(inet4),)
 
 compile_dir = .compile_$(inet4)
-inet4target = _stmp_$(inet4)
+inet4target = $(compile_dir)/libinet4.a
 realtarget = $(inet4target)
 
 $(inet4target): $(compile_dir)
