@@ -22,7 +22,7 @@ before_install:
 
   - wget -O .travis/download_prerequisities.sh "${BASE_RAW_URL}/travis-scripts/master/download_prerequisities.sh"
   - sh ./.travis/download_prerequisities.sh
-  - sh ./.travis/install-cross-mint.sh trusty cross-mint-essential cflib-m68k-atari-mint > /dev/null
+  - sh ./.travis/install-cross-mint.sh cross-mint-essential cflib-m68k-atari-mint > /dev/null
 
 before_script:
   - . ./.travis/setup_env.sh

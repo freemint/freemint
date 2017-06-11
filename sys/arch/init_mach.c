@@ -407,7 +407,12 @@ identify (long mch, enum special_hw info)
 		_cpu = "m68k";
 		_mmu = "";
 
-		switch (mcpu)
+		if (is_apollo_68080)
+		{
+			cpu_type = "68080";
+			_cpu = cpu_type;
+		}
+		else switch (mcpu)
 		{
 			case 0:
 				cpu_type = "68000";

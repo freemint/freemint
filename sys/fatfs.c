@@ -7691,9 +7691,6 @@ fatfs_dskchng (int drv, int mode)
 
 	FAT_DEBUG (("fatfs_dskchng: invalidate drv (change = %li)", change));
 
-	/* I hope this isn't a failure */
-	bio.sync_drv (DI (drv));
-
 	/* invalid all cookies */
 	{
 		register long i;
@@ -7771,7 +7768,33 @@ fatfs_unmount (int drv)
 	if (CLEAN (drv))
 		clean_flag (drv, CLEANFLAG_SET);
 
-	fatfs_dskchng (drv, 1);
+	/* I hope this isn't a failure */
+	bio.sync_drv (DI (drv));
+
+	/* invalid all cookies */
+	{
+		register long i;
+		for (i = 0; i < COOKIE_CACHE; i++)
+		{
+			register COOKIE *c = &(cookies[i]);
+			if (c->dev == drv)
+			{
+				if (c->name)
+				{
+					c_del_cookie (c);
+				}
+			}
+		}
+	}
+
+	/* free the DI (also invalidate cache units) */
+	bio.free_di (DI (drv));
+
+	/* invalidate the BPB */
+	BPBVALID (drv) = INVALID;
+
+	/* free the dynamically allocated memory */
+	kfree (BPB (drv)); BPB (drv) = NULL;
 
 	return E_OK;
 }

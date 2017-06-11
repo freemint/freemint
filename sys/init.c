@@ -726,7 +726,7 @@ init (void)
 
 	/* print the warning message if MP is turned off */
 # ifdef WITH_MMU_SUPPORT
-	if (no_mem_prot && mcpu > 20)
+	if (no_mem_prot && mcpu > 20 && !is_apollo_68080)
 		boot_print(memprot_warning);
 
 	stop_and_ask();
