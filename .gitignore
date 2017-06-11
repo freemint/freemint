@@ -77,3 +77,4 @@ tools/sysctl/sysctl
 *.app
 *.prg
 *~
+*.exe
