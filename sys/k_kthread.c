@@ -69,7 +69,7 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 
 	if (!p) p = rootproc;
 
-	DEBUG(("kthread_create for pid %i: 0x%lx", p->pid, func));
+	DEBUG(("kthread_create for pid %i: 0x%p", p->pid, func));
 
 	p2 = fork_proc1(p, FORK_SHAREVM|FORK_SHARECWD|FORK_SHAREFILES|FORK_SHAREEXT, &err);
 	if (p2)
@@ -123,7 +123,7 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 		*((long *)(p2->ctxt[CURRENT].usp + 4)) = (long) arg;
 		*((long *)(p2->ctxt[SYSCALL].usp + 4)) = (long) arg;
 
-		DEBUG(("kthread_create: p2 0x%lx", p2));
+		DEBUG(("kthread_create: p2 0x%p", p2));
 
 		if (np != NULL)
 			*np = p2;

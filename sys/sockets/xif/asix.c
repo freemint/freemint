@@ -39,7 +39,6 @@
 #include "mint/mdelay.h"
 #include <mint/osbind.h>
 
-//#include "../../usb/src.km/config.h"
 #include "../../usb/src.km/usb.h"
 #include "../../usb/src.km/usb_api.h"
 #include "../../usb/src.km/udd/eth/usb_ether.h"
@@ -599,7 +598,7 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 				&actual_len,
 				USB_BULK_SEND_TIMEOUT, 0);
 	kfree(msg);
-	if (err != 0) 
+	if (err != 0)
 		return ENOMEM;
 	else 
 		return E_OK;

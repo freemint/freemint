@@ -1745,7 +1745,7 @@ gotowner:
 	{
 		ulong *table = proc->p_mem->page_table;
 		
-		FORCE ("MMU tree for PID %d, logical address: %08lx", proc->pid, table);
+		FORCE ("MMU tree for PID %d, logical address: %08lx", proc->pid, (unsigned long)table);
 		FORCE ("\rST-RAM:                                  ");
 		
 		dump_area (table, membot, mint_top_st, buf, buflen);

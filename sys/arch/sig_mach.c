@@ -283,7 +283,7 @@ top:
 	}
 	if (frame[1] == 0)
 	{
-		DEBUG (("Psigreturn: frame at %lx points to 0", frame-1));
+		DEBUG (("Psigreturn: frame at %p points to 0", frame-1));
 		return E_OK;
 	}
 	unwound_stack = curproc->sysstack;
@@ -393,7 +393,7 @@ bombs(ushort sig)
 	long *procinfo = (long *)0x380L;
 	int i;
 	CONTEXT *crash;
-	
+
 	if (sig >= NSIG)
 	{
 		ALERT("bombs(%d): sig out of range", sig);
@@ -429,14 +429,14 @@ bombs(ushort sig)
 				ALERT("%s: User PC=%lx, Address: %lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc, curproc->exception_addr,
-					base, ptext, pdata, pbss);
+					(unsigned long)base, ptext, pdata, pbss);
 			}
 			else
 			{
 				ALERT("%s: User PC=%lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc,
-					base, ptext, pdata, pbss);
+					(unsigned long)base, ptext, pdata, pbss);
 			}
 		}
 		
@@ -457,7 +457,7 @@ bombs(ushort sig)
 		*procinfo++ = curproc->exception_ssp;
 		*procinfo++ = ((long)excep_num[sig]) << 24L;
 		*procinfo = crash->usp;
-		
+
 		/* we're also supposed to save some info from the supervisor
 		 * stack. it's not clear what we should do for MiNT, since
 		 * most of the stuff that used to be on the stack has been

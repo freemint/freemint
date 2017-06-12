@@ -956,8 +956,8 @@ IkbdScan(PROC *p, long arg)
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
 
-		DEBUG(("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
-// 		display("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
+		DEBUG(("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
+// 		display("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
 
 		scan = scancode & 0xff;
 
@@ -1637,7 +1637,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 			}
 			default:
 			{
-				DEBUG(("%s(): unknown format 0x%04x", __FUNCTION__, (ushort *)kbuf));
+				DEBUG(("%s(): unknown format 0x%p", __FUNCTION__, (ushort *)kbuf));
 
 				ret = EFTYPE;	/* wrong format */
 				break;
@@ -1875,7 +1875,7 @@ init_keybd(void)
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
 # endif
 
-	TRACE(("%s(): BIOS keyboard table at 0x%08lx", __FUNCTION__, tos_keytab));
+	TRACE(("%s(): BIOS keyboard table at 0x%p", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
 	delayrate = TRAP_Kbrate(-1, -1);

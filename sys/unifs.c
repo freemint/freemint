@@ -986,7 +986,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				/* cannot unmount the builtin drive */
 				if (u->dev < UNI_NUM_DRVS || u->dev != d->dev_no) {
 					/* this should never happen, only sanity check */
-					DEBUG (("uni_remove: an attempt to remove builtin mountpoint '%s'", name, u->dev));
+					DEBUG (("uni_remove: an attempt to remove builtin mountpoint '%s', dev_no = %d", name, u->dev));
 					return ENOTDIR;
 				}
 

@@ -497,7 +497,7 @@ sys_d_getcwd (char *path, int drv, int size)
 			int len = strlen (cwd->root_dir);
 
 			DEBUG (("root_dir detected = %i, (%s), %s", len, path, cwd->root_dir));
-			DEBUG (("strncmp = %i", (long) strncmp (cwd->root_dir, path, len)));
+			DEBUG (("strncmp = %i", (int)strncmp (cwd->root_dir, path, len)));
 
 			if (!strncmp (cwd->root_dir, path, len))
 			{
@@ -526,7 +526,7 @@ sys_f_setdta (DTABUF *dta)
 {
 	struct proc *p = get_curproc();
 
-	TRACE(("Fsetdta: %lx", dta));
+	TRACE(("Fsetdta: %p", dta));
 	p->p_fd->dta = dta;
 	p->p_mem->base->p_dta = (char *) dta;
 
@@ -581,7 +581,7 @@ sys_f_sfirst (const char *path, int attrib)
 	s = temp1;
 	while (*s)
 	{
-		if (*s == '\\')
+		if (*s == '\\' || *s == '/')
 			slash = s;
 		s++;
 	}
@@ -820,20 +820,20 @@ sys_f_snext (void)
 
 	if (dta->magic == EVALID)
 	{
-		DEBUG (("Fsnext(%lx): DTA marked a failing search", dta));
+		DEBUG (("Fsnext(%p): DTA marked a failing search", dta));
 		return ENMFILES;
 	}
 
 	if (dta->magic != SVALID)
 	{
-		DEBUG (("Fsnext(%lx): dta incorrectly set up", dta));
+		DEBUG (("Fsnext(%p): dta incorrectly set up", dta));
 		return ENOSYS;
 	}
 
 	i = dta->index;
 	if (i >= NUM_SEARCH)
 	{
-		DEBUG (("Fsnext(%lx): DTA has invalid index", dta));
+		DEBUG (("Fsnext(%p): DTA has invalid index", dta));
 		return EBADARG;
 	}
 
@@ -844,7 +844,7 @@ sys_f_snext (void)
 	if (!fs)
 	{
 		/* oops -- the directory got closed somehow */
-		DEBUG (("Fsnext(%lx): invalid filesystem", dta));
+		DEBUG (("Fsnext(%p): invalid filesystem", dta));
 		return EINTERNAL;
 	}
 
@@ -2111,8 +2111,8 @@ sys_d_chroot (const char *path)
 	cwd->rootdir = dir;
 
 	DEBUG (("Dchroot(%s): ok [%lx,%i]", cwd->root_dir, dir.index, dir.dev));
-	DEBUG (("Dchroot: [%lx,%lx]", cwd->curdir[dir.dev].index, cwd->curdir[dir.dev].fs));
-	DEBUG (("Dchroot: [%lx,%lx]", cwd->root[dir.dev].index, cwd->root[dir.dev].fs));
+	DEBUG (("Dchroot: [%lx,%p]", cwd->curdir[dir.dev].index, cwd->curdir[dir.dev].fs));
+	DEBUG (("Dchroot: [%lx,%p]", cwd->root[dir.dev].index, cwd->root[dir.dev].fs));
 	return E_OK;
 
 error:

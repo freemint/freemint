@@ -435,7 +435,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	asc.a[4] = '\0';
 # endif
 
-	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc.a, ret));
+	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%p", tag, asc.a, ret));
 
 	if( !cj )
 	{
@@ -462,7 +462,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 		 */
 		if (ret != 0)
 		{
-			DEBUG (("exit get_cookie(): NULL value written to %08lx", ret));
+			DEBUG (("exit get_cookie(): NULL value written to %p", ret));
 			*ret = cjar->value;
 			return E_OK;
 		}
@@ -479,7 +479,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	 */
 	if ((tag & 0xffff0000UL) == 0)
 	{
-		DEBUG (("get_cookie(): looking for entry number %d", tag));
+		DEBUG (("get_cookie(): looking for entry number %ld", tag));
 		while (cjar->tag)
 		{
 			cjar++;
@@ -503,7 +503,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 
 		if (ret)
 		{
-			DEBUG (("get_cookie(): cjar=%lx, tag %08lx returned at %08lx", cjar, cjar->tag, ret));
+			DEBUG (("get_cookie(): cjar=%p, tag %08lx returned at %p", cjar, cjar->tag, ret));
 			*ret = cjar->tag;
 			return E_OK;
 		}
@@ -523,7 +523,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 		{
 			if (ret)
 			{
-				DEBUG (("get_cookie(): value %08lx returned at %08lx", cjar->value, ret));
+				DEBUG (("get_cookie(): value %08lx returned at %p", cjar->value, ret));
 				*ret = cjar->value;
 				return E_OK;
 			}

@@ -216,7 +216,7 @@ do_gettimeofday (struct timeval* tv)
 long _cdecl
 sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 {
-	TRACE (("Tgettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
+	TRACE (("Tgettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
 
 	if (tz != NULL)
 		memcpy (tz, &sys_tz, sizeof (sys_tz));
@@ -265,7 +265,7 @@ do_settimeofday (struct timeval* tv)
 long _cdecl
 sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 {
-	TRACE (("Tsettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
+	TRACE (("Tsettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
@@ -324,7 +324,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 long _cdecl
 sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 {
-	TRACE (("Tadjtime (delta = 0x%x, olddelta = 0x%x)", delta, olddelta));
+	TRACE (("Tadjtime (delta = 0x%p, olddelta = 0x%p)", delta, olddelta));
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
