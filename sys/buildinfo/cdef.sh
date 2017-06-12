@@ -3,7 +3,7 @@
 # read compiler name
 out=`$CC -v 2>&1 | tail -n 1`
 
-cat > cdef.h <<EOF
+cat <<EOF
 /* This is an automatically generated file.
  * Do not edit, edit cdef.sh instead
  */

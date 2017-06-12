@@ -36,7 +36,7 @@
 # include "init.h"
 
 # include "buildinfo/build.h"
-# include "buildinfo/cdef.h"
+# include "cdef.h"
 # include "buildinfo/version.h"
 
 # include "libkern/libkern.h"
