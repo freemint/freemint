@@ -105,8 +105,8 @@ int	_cdecl _mint_toupper	(int c);
  * kernel string functions
  */
 
-long	_cdecl kvsprintf	(char *buf, long buflen, const char *fmt, va_list args);
-long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...);
+long	_cdecl kvsprintf	(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
+long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 int	_cdecl ksprintf_old	(char *buf, const char *fmt, ...);
 
 char *	_cdecl _mint_getenv	(BASEPAGE *bp, const char *var);

@@ -1910,7 +1910,7 @@ km_trace_dump(void)
 			if (km_trace[i].ptr)
 			{
 				ksprintf(line, sizeof(line),
-					 "[%4li]: %6lu bytes at 0x%08lx from %s\n",
+					 "[%4li]: %6lu bytes at %p from %s\n",
 					 i,
 					 km_trace[i].size,
 					 km_trace[i].ptr,
@@ -1944,7 +1944,7 @@ km_trace_lookup(void *ptr, char *buf, unsigned long buflen)
 		if (loc >= block && loc < (block + km_trace[i].size))
 		{
 			ksprintf(buf, buflen,
-				 "[%4li]: %6lu bytes at 0x%08lx from %s",
+				 "[%4li]: %6lu bytes at %p from %s",
 				 i,
 				 km_trace[i].size,
 				 km_trace[i].ptr,

@@ -232,6 +232,13 @@ kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 				p += PUTL (p, &cnt, l_arg, 16, width, fill_char, 0);
 				break;
 			}
+			case 'p':
+			{
+				l_arg = (long)va_arg (args, void *);
+
+				p += PUTL (p, &cnt, l_arg, 16, width, fill_char, 0);
+				break;
+			}
 			case 'u':
 			{
 				if (long_flag)
