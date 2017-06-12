@@ -280,7 +280,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		case S_GETCOOKIE:
 		{
 			r = get_cookie (NULL, arg1, (unsigned long *) arg2);
-			DEBUG (("GET_COOKIE: return %lx", *(long*)arg2));
+			DEBUG (("GET_COOKIE($%lx): r=%ld, val=$%lx", arg1, r, *(long*)arg2));
 			break;
 		}
 		case S_SETCOOKIE:
@@ -676,7 +676,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			break;
 		}
 #endif
-#if MINT_STATUS_CVS
+#ifdef MINT_STATUS_CVS
 		/* XXX only for testing */
 		case 3000:
 		{

@@ -290,7 +290,7 @@ sys_socketpair (long domain, long type, long protocol, short fds[2])
 	struct socket *so1 = NULL, *so2 = NULL;
 	long ret;
 	
-	DEBUG (("sys_socketpair(%li, %li, %li, %lx)", domain, type, protocol, fds));
+	DEBUG (("sys_socketpair(%li, %li, %li, %p)", domain, type, protocol, fds));
 	
 	ret = so_create (&so1, domain, type, protocol);
 	if (ret) goto error;
@@ -352,7 +352,7 @@ sys_bind (short fd, struct sockaddr *addr, long addrlen)
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_bind(%i, 0x%lx, %li)", fd, addr, addrlen));
+	DEBUG (("sys_bind(%i, 0x%p, %li)", fd, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -406,7 +406,7 @@ sys_accept (short fd, struct sockaddr *addr, long *addrlen)
 	struct socket *so, *newso = NULL;
 	long ret;
 	
-	DEBUG (("sys_accept(%i, 0x%lx, 0x%lx)", fd, addr, addrlen));
+	DEBUG (("sys_accept(%i, 0x%p, 0x%p)", fd, addr, addrlen));
 	
 	ret = getsock (p, fd, &fp);
 	if (ret) return ret;
@@ -477,7 +477,7 @@ sys_connect (short fd, struct sockaddr *addr, long addrlen)
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_connect(%i, 0x%lx, %li)", fd, addr, addrlen));
+	DEBUG (("sys_connect(%i, 0x%p, %li)", fd, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r)
@@ -532,7 +532,7 @@ sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 	struct socket *so;
 	short addrlen16;
 	
-	DEBUG (("sys_getsockname(%i, 0x%lx, 0x%lx)", fd, addr, addrlen));
+	DEBUG (("sys_getsockname(%i, 0x%p, 0x%p)", fd, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -561,7 +561,7 @@ sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 	struct socket *so;
 	short addrlen16;
 	
-	DEBUG (("sys_getpeername(%i, 0x%lx, 0x%lx)", fd, addr, addrlen));
+	DEBUG (("sys_getpeername(%i, 0x%p, 0x%p)", fd, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -590,7 +590,7 @@ sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr,
 	struct socket *so;
 	struct iovec iov[1] = {{ buf, buflen }};
 	
-	DEBUG (("sys_sendto(%i, %lx, %li, %li, 0x%lx, %li)", fd, buf, buflen, flags, addr, addrlen));
+	DEBUG (("sys_sendto(%i, %p, %li, %li, 0x%p, %li)", fd, buf, buflen, flags, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -610,7 +610,7 @@ sys_sendmsg (short fd, struct msghdr *msg, long flags)
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_sendmsg(%i, 0x%lx, %li)", fd, msg, flags));
+	DEBUG (("sys_sendmsg(%i, 0x%p, %li)", fd, msg, flags));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -640,7 +640,7 @@ sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *add
 	struct iovec iov[1] = {{ buf, buflen }};
 	short addrlen16;
 	
-	DEBUG (("sys_recvfrom(%i, %lx, %li, %li, 0x%lx, 0x%lx)", fd, buf, buflen, flags, addr, addrlen));
+	DEBUG (("sys_recvfrom(%i, %p, %li, %li, 0x%p, 0x%p)", fd, buf, buflen, flags, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -669,7 +669,7 @@ sys_recvmsg (short fd, struct msghdr *msg, long flags)
 	struct socket *so;
 	short namelen = msg->msg_namelen;
 	
-	DEBUG (("sys_recvmsg(%i, 0x%lx, %li)", fd, msg, flags));
+	DEBUG (("sys_recvmsg(%i, 0x%p, %li)", fd, msg, flags));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -695,7 +695,7 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 	FILEPTR *fp;
 	long r;
 	
-	DEBUG (("sys_setsockopt(%i, %li, %li, 0x%lx, %li)", fd, level, optname, optval, optlen));
+	DEBUG (("sys_setsockopt(%i, %li, %li, 0x%p, %li)", fd, level, optname, optval, optlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
@@ -712,7 +712,7 @@ sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 	FILEPTR *fp;
 	long r;
 	
-	DEBUG (("sys_getsockopt(%i, %li, %li, 0x%lx, 0x%lx)", fd, level, optname, optval, optlen));
+	DEBUG (("sys_getsockopt(%i, %li, %li, 0x%p, 0x%p)", fd, level, optname, optval, optlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;

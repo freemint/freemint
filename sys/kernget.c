@@ -713,9 +713,9 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 
 	pbase = (long)p->p_mem->base;
 
-	DEBUG (("get_environ: curproc = %lx, p = %lx", get_curproc(), p));
-	DEBUG (("get_environ: curproc->base = %lx, p->base = %lx", get_curproc()->p_mem->base, pbase));
-	DEBUG (("get_environ: %lx, %lx, %lx, %lx",
+	DEBUG (("get_environ: curproc = %p, p = %p", get_curproc(), p));
+	DEBUG (("get_environ: curproc->base = %p, p->base = %lx", get_curproc()->p_mem->base, pbase));
+	DEBUG (("get_environ: %p, %p, %p, %p",
 			proc_addr2region (get_curproc(), pbase),
 			proc_addr2region (p, pbase),
 			addr2mem (get_curproc(), pbase),

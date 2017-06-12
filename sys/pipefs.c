@@ -893,7 +893,7 @@ check_atomicity:
 			if (p->len == plen)
 			{
 				/* Nobody has read from the pipe.  */
-				TRACE (("pipe_write: pipe full: sleep on %lx", p));
+				TRACE (("pipe_write: pipe full: sleep on %p", p));
 				if (sleep (IO_Q, (long)p))
 					return EINTR;
 			}
@@ -963,7 +963,7 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 			pipe_wake_writers (p);
 			if (p->len == plen) {
 				/* Nobody has read from the pipe. */
-				TRACE(("pipe_read: pipe empty: sleep on %lx", p));
+				TRACE(("pipe_read: pipe empty: sleep on %p", p));
 				if (sleep(IO_Q, (long)p)) {
 					return EINTR;
 				}
