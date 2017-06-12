@@ -36,7 +36,6 @@
 
 
 unsigned long nf_hostfs_id = 0;
-long __CDECL (*nf_call)(long id, ...) = 0UL;
 
 
 ulong    _cdecl fs_drive_bits(void)

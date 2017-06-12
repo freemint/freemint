@@ -40,6 +40,11 @@ extern FILESYS * _cdecl init(struct kerinfo *k);
  */
 struct kerinfo *KERNEL;
 
+/*
+ * nf_ops->call function reference.
+ */
+long __CDECL (*nf_call)(long id, ...) = 0L;
+
 
 FILESYS * _cdecl init(struct kerinfo *k)
 {
