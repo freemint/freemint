@@ -46,7 +46,6 @@
 
 # ifdef FS_DEBUG
 
-# define FORCE(x)
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)       KERNEL_DEBUG x
 # define TRACE(x)       KERNEL_TRACE x
@@ -54,7 +53,6 @@
 
 # else
 
-# define FORCE(x)
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)
 # define TRACE(x)
@@ -70,6 +68,22 @@
 
 #include "kerinfo.h"
 #define KERNEL (&kernelinfo)
+
+#include "dosdir.h"
+#include "kmemory.h"
+#include "k_prot.h"
+#include "filesys.h"
+#include "dos.h"
+#include "dosmem.h"
+#include "proc.h"
+#define p_getuid() sys_pgetuid()
+#define p_geteuid() sys_pgeteuid()
+#define p_getgid() sys_pgetgid()
+#define p_getegid() sys_pgetegid()
+#define p_getpid() sys_p_getpid()
+#define m_alloc(size) sys_m_alloc(size)
+#define ALERT(x) ALERT x
+
 #endif
 
 /*

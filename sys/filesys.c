@@ -54,6 +54,9 @@
 # include "xfs/hostfs/hostfs_xfs.h"
 # include "xfs/hostfs/hostfs.h"
 # endif
+# ifdef WITH_ARANYMFS
+# include "xfs/aranym/aranym_fsdev.h"
+# endif
 
 
 #if 1
@@ -183,14 +186,14 @@ init_drive (int i)
 
 	for (fs = active_fs; fs; fs = fs->next)
 	{
-		DEBUG(("init_drive: fs %lx, drv %d", fs, i));
+		DEBUG(("init_drive: fs %p, drv %d", fs, i));
 
 		r = xfs_root (fs, i, &root_dir);
 		if (r == 0)
 		{
 			drives[i] = root_dir.fs;
 			release_cookie (&root_dir);
-			DEBUG(("init_drive: drv %d is fs %lx", i, fs));
+			DEBUG(("init_drive: drv %d is fs %p", i, fs));
 			break;
 		}
 	}
@@ -273,6 +276,17 @@ init_filesys (void)
 	}
 # endif
 
+# ifdef WITH_ARANYMFS
+	/* initialize the arafs file system */
+	{
+		FILESYS *fs = aranymfs_init ();
+		if ( fs )
+			arafs_mount_drives( fs );
+		else
+			xfs_dismiss( &arafs_filesys );
+	}
+# endif
+
 	UNUSED (xfs_dismiss); /* Maybe */
 }
 
@@ -285,16 +299,16 @@ xfs_name (fcookie *fc)
 
 	buf [0] = '\0';
 
-	TRACE(("xfs_name: call xfs_fscntl.. buf = %lx, fc %lx, fs %lx", &buf, fc, (long)fc->fs));
+	TRACE(("xfs_name: call xfs_fscntl.. buf = %p, fc %p, fs %p", &buf, fc, fc->fs));
 	if (fc->fs)
 		r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long)&buf);
 	else {
 		r = 0;
-		ksprintf(buf, sizeof(buf), "unknown fs (%lx)", fc->fs);
+		ksprintf(buf, sizeof(buf), "unknown fs (%p)", fc->fs);
 	}
 	TRACE(("xfs_name: xfs_fctnl returned %lx", r));
 	if (r)
-		ksprintf (buf, sizeof (buf), "unknown (%lx -> %li)", fc->fs, r);
+		ksprintf (buf, sizeof (buf), "unknown (%p -> %li)", fc->fs, r);
 
 	return buf;
 }
@@ -679,7 +693,7 @@ disk_changed (ushort d)
 		if (r != ECHMEDIA)
 		{
 			/* nope, no change */
-			TRACE (("rwabs returned %d", r));
+			TRACE (("rwabs returned %ld", r));
 
 			return (r < 0) ? r : 0;
 		}
@@ -770,7 +784,7 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 
 	*lastname = '\0';
 
-	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %lx, %i])",
+	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %p, %i])",
 		path, dolast, depth, relto->fs, relto->dev));
 
 	if (depth > MAX_LINKS)
@@ -883,7 +897,7 @@ nodrive:
 		}
 		else
 		{
-			PATH2COOKIE_DB (("relpath2cookie: using relto (%lx, %li, %i) for dir", relto->fs, relto->index, relto->dev));
+			PATH2COOKIE_DB (("relpath2cookie: using relto (%p, %li, %i) for dir", relto->fs, relto->index, relto->dev));
 			dup_cookie (&dir, relto);
 		}
 	}
@@ -918,7 +932,7 @@ restart_mount:
 		if (r > 0)
 			r = ECHMEDIA;
 
-		PATH2COOKIE_DB (("relpath2cookie(1): returning %d", r));
+		PATH2COOKIE_DB (("relpath2cookie(1): returning %ld", r));
 		return r;
 	}
 
@@ -1062,7 +1076,7 @@ restart_mount:
 			if (!*s) {
 				PATH2COOKIE_DB (("relpath2cookie: no more path, breaking"));
 				*res = dir;
-				PATH2COOKIE_DB (("relpath2cookie: *res = [%lx, %i]", res->fs, res->dev));
+				PATH2COOKIE_DB (("relpath2cookie: *res = [%p, %i]", res->fs, res->dev));
 				break;
 			}
 		}

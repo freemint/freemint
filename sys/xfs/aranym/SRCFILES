@@ -8,6 +8,7 @@ HEADER = \
 	nfclip_dev.h
 
 COBJS = \
+	arafs.c \
 	aranym_fsdev.c \
 	nfclip_dev.c
 
