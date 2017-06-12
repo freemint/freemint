@@ -12,6 +12,10 @@ subdir = netusbee
 
 default: all
 
+ifndef CPU
+CPU = 000
+endif
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -25,9 +29,6 @@ XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-ifndef CPU
-CPU = 000
-endif
 
 # default definitions
 GENFILES = $(TARGET)

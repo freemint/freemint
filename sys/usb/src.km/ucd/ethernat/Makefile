@@ -12,6 +12,8 @@ subdir = ethernat
 
 default: all
 
+CPU = 060
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -25,7 +27,6 @@ XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 060
 
 # default definitions
 GENFILES = $(TARGET)

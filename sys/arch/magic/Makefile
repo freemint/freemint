@@ -13,6 +13,11 @@ subdir = magic
 default: all
 
 include $(top_srcdir)/CONFIGVARS
+ifeq ($(NATIVE_COLDFIRE),1)
+CPU = v4e
+else
+CPU = 000
+endif
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
@@ -26,17 +31,6 @@ LIBS = $(LIBKERN) -lgcc
 # default definitions
 OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
 GENFILES = $(TARGET) magic.i
-COLDFIRE := $(shell grep -q V4e /kern/cpuinfo; \
-					status=$$?; \
-					if [ $$status = 0 ]; \
-					then echo 1; \
-					else echo 0; \
-					fi)
-ifeq ($(COLDFIRE),1)
-CPU = v4e
-else
-CPU = 000
-endif
 
 
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
@@ -46,8 +40,8 @@ $(TARGET): $(OBJS) $(LIBKERNSTMP)
 ifeq ($(CROSS),yes)
 
 # for cross-compiling use this: (assumes you have perl and cnm)
-magic.i: $(TARGET)
-	perl genmagic.pl > $@
+magic.i: genmagic.o
+	perl genmagic.pl > $@.$$$$ && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 else
 
