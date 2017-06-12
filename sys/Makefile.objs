@@ -47,6 +47,8 @@ NOCFLAGS-update.c = -pg
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
+CFLAGS-info.c = -I$(srcdir)/$(compile_dir)
+
 # default definitions
 GENFILES = $(BUILDINFO) $(MINT)
 BUILD = info
@@ -61,13 +63,13 @@ VPATH = ..
 build: $(MINT)
 
 $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ \
+	$(CC) $(CFLAGS) $(LDFLAGS) -s -o $@ -Wl,-Map=mint.map \
 		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/startup` ; \
 			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
 		$(OBJS) $(BUILDINFO) \
 		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/objs` ; \
 			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
-		$(shell for mdir in '$(MODULEDIRS)'; do \
+		$(shell for mdir in $(MODULEDIRS); do \
 				for file in `cat $(srcdir)/$$mdir/$(compile_dir)/objs` ; \
 					do echo $(srcdir)/$$mdir/$(compile_dir)/$$file ; \
 				done; \
@@ -77,11 +79,11 @@ $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
 $(BUILDINFO): compiler buildheader buildserial
 
 compiler:
-	cd $(srcdir)/buildinfo; \
+	(cd $(srcdir)/buildinfo; \
 	CC="$(CC)" \
 	OPTS="$(filter-out $(nocflags), $(MODEL) $(GENERAL) $(OPTS))" \
 	DEFS="$(filter-out $(nocflags), $(DEFINITIONS))" \
-	sh cdef.sh
+	sh cdef.sh) > $(srcdir)/$(compile_dir)/cdef.h
 
 buildheader:
 	cd $(srcdir)/buildinfo; ./mkbuild
