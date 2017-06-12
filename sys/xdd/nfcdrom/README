@@ -1,0 +1,25 @@
+NFCDROM.XDD
+============
+
+It should serve as an example of how to use native features in FreeMiNT
+device drivers and other modules. It requires the kernel to be build
+with -DARANYM (common aranym aware FreeMiNT kernel builds) to actually
+work.
+
+This implements a device /dev/nfcdrom to MiNT through which you can send
+information to the ARAnyM cdrom driver.
+
+It uses the CDROM native feature which is not part of the basic set
+of features, and therefore might not be available in the emulator.
+
+You also have to make sure that a cdrom device is correctly configured
+on the emulator side.
+
+Note that there might also be a NFCDROM.BOS file in your distribution.
+This driver is a standalone MiNT device driver, while NFCDROM.BOS
+is activated by MetaDOS (or a compatible extension). They should
+be able to coexist.
+
+Enjoy
+
+Thorsten Otto <admin @ tho-otto.de>
