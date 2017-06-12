@@ -136,7 +136,7 @@ report_buserr(void)
 		 curproc->name,
 		 curproc->pid,
 		 type, pc,
-		 aa, curproc->p_mem->base,
+		 aa, (ulong)curproc->p_mem->base,
 		 pc - ((ulong)curproc->p_mem->base + 256));
 	
 	DEBUG((alertbuf));

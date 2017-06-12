@@ -230,7 +230,7 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	// Just for testing the lose of Memory
 	ulong dp_diff = size;
 
-	TRACELOW(("add_region(map=%lx,place=%lx,size=%lx,flags=%x)",
+	TRACELOW(("add_region(map=%p,place=%lx,size=%lx,flags=%x)",
 		map,place,size,mflags));
 
 	m = kmr_get ();
@@ -782,7 +782,7 @@ win:
 		n->mflags |= M_KEEP;
 
 	SANITY_CHECK (map);
-	TRACELOW (("get_region: return %lx", n));
+	TRACELOW (("get_region: return %p", n));
 	return n;
 }
 
@@ -940,7 +940,7 @@ free_region (MEMREGION *reg)
 
 	if (m == NULL)
 		FATAL ("couldn't find region %lx: loc: %lx len: %ld",
-			reg, reg->loc, reg->len);
+			(unsigned long)reg, reg->loc, reg->len);
 
 	if (reg->len == 0)
 	{
@@ -1003,7 +1003,7 @@ shrink_region (MEMREGION *reg, unsigned long nsize)
 
 	newsize = ROUND(nsize);
 
-	DEBUG(("shrink_region: reg %lx, nsize %ld, newsize %ld", reg, nsize, newsize));
+	DEBUG(("shrink_region: reg %p, nsize %ld, newsize %ld", reg, nsize, newsize));
 
 	assert(reg->links > 0);
 
@@ -1347,14 +1347,14 @@ create_env (const char *env, unsigned long flags)
 	MEMREGION *m;
 	long size;
 
-	TRACELOW (("create_env: %lx, %lx", env, flags));
+	TRACELOW (("create_env: %p, %lx", env, flags));
 
 	if (!env)
 	{
 		/* duplicate parent's environment */
 		assert(get_curproc()->p_mem);
 		env = get_curproc()->p_mem->base->p_env;
-		TRACELOW (("create_env: using parents env: %lx", env));
+		TRACELOW (("create_env: using parents env: %p", env));
 	}
 
 	/* calculate environment size */
@@ -1392,7 +1392,7 @@ create_env (const char *env, unsigned long flags)
 		assert(m);
 	}
 
-	TRACE(("copying environment: from %lx to %lx", env, m->loc));
+	TRACE(("copying environment: from %p to %lx", env, m->loc));
 	memcpy((void *) m->loc, env, size);
 	TRACE(("finished copying environment"));
 
@@ -1636,7 +1636,7 @@ failed:
 
 	do_close (get_curproc(), f);
 
-	DEBUG (("load_region: return region = %lx", reg));
+	DEBUG (("load_region: return region = %p", reg));
 
 	SANITY_CHECK_MAPS ();
 
@@ -1651,8 +1651,8 @@ failed:
 
 		if (coldfire_purec_patcher == NULL)
 		{
-			ulong pexe = NULL;
-			if (get_toscookie(0x50455845L, &pexe) == 0 && pexe != NULL)
+			ulong pexe = 0;
+			if (get_toscookie(0x50455845L, &pexe) == 0 && pexe != 0)
 				coldfire_purec_patcher = (void (*)(BASEPAGE*))pexe;  // Patcher exported from FireTOS.
 			else
 				coldfire_purec_patcher = patch_memset_purec; // Fallback to internal MiNT patcher.
@@ -1685,7 +1685,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 	long reloc;
 
 
-	TRACE (("load_and_reloc: %ld to %ld at %lx", start, nbytes+start, where));
+	TRACE (("load_and_reloc: %ld to %ld at %p", start, nbytes+start, where));
 
 	r = xdd_lseek(f, start + sizeof(FILEHEAD), SEEK_SET);
 	if (r < E_OK) return r;
@@ -2091,7 +2091,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		{
 			/* add this memory to the previous free region */
 
-			FORCE("reg = %lx", reg);
+			FORCE("reg = %p", reg);
 			FORCE("loc = %lx", reg->loc);
 
 			prevptr->len += oldsize - newsize;
@@ -2305,16 +2305,16 @@ DUMPMEM (MMAP map)
 	MEMREGION *m;
 
 	m = *map;
-	FORCE ("%s memory dump: starting at region %lx",
+	FORCE ("%s memory dump: starting at region %p",
 		(map == core ? "core" : "alt"), m);
 
 	while (m)
 	{
-		FORCE ("%8ld bytes at %lx: next %lx [%d links, mflags %x]",
+		FORCE ("%8ld bytes at %lx: next %p [%ld links, mflags %x]",
 			m->len, m->loc, m->next, m->links, m->mflags);
 
 		if (m->shadow)
-			FORCE ("\t\tshadow %lx, save %lx", m->shadow, m->save);
+			FORCE ("\t\tshadow %p, save %p", m->shadow, m->save);
 
 		m = m->next;
 	}
@@ -2330,20 +2330,20 @@ kern_get_memdebug_1 (MMAP map, char *crs, ulong len)
 	ulong i;
 
 	i = ksprintf (crs, len,
-		      "%s memory dump: starting at region %lx\n",
+		      "%s memory dump: starting at region %p\n",
 		      (map == core ? "core" : "alt"), m);
 	crs += i; len -= i;
 
 	while (m)
 	{
 		i = ksprintf (crs, len,
-			      "%9ld bytes at %8lx: next %8lx [%d links, mflags %4x]\n",
+			      "%9ld bytes at %8lx: next %p [%ld links, mflags %4x]\n",
 			      m->len, m->loc, m->next, m->links, m->mflags);
 		crs += i; len -= i;
 
 		if (m->shadow)
 		{
-			i = ksprintf (crs, len, "\t\tshadow %lx, save %lx\n",
+			i = ksprintf (crs, len, "\t\tshadow %p, save %p\n",
 				      m->shadow, m->save);
 			crs += i; len -= i;
 		}
@@ -2423,7 +2423,7 @@ sanity_check (MMAP map, ulong line)
 			else if (end == next->loc && ISFREE (m) && ISFREE (next))
 			{
 				DEBUG (("%lu: Contiguous memory regions not merged!", line));
-				DEBUG (("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next));
+				DEBUG (("  m %p, loc %lx, len %lx, links %lu, next %p", m, m->loc, m->len, m->links, m->next));
 			}
 # ifdef WITH_MMU_SUPPORT
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
