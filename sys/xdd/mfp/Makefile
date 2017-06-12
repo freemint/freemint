@@ -11,6 +11,8 @@ subdir = mfp
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -24,7 +26,6 @@ XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
 GENFILES = mfp.xdd mfp_mil.xdd

@@ -14,6 +14,8 @@ subdir = xif
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -27,7 +29,6 @@ DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
 GENFILES = *.xif

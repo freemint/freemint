@@ -12,6 +12,8 @@ subdir =
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -24,7 +26,6 @@ DEFINITIONS = -D__KERNEL_XFS__
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
 GENFILES = $(TARGET)

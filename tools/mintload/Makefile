@@ -12,6 +12,8 @@ subdir = mintload
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -21,7 +23,6 @@ all-here: $(TARGET)
 # default overwrites
 LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
 LIBS = -lgcc
-CPU = 000
 STRIPFLAGS =
 
 # default definitions
