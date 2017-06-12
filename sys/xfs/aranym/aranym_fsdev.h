@@ -148,6 +148,8 @@ extern FILESYS arafs_filesys;
 extern DEVDRV arafs_fs_devdrv;
 
 extern short arafs_init( short dev );
+FILESYS *aranymfs_init(void);
+FILESYS *arafs_mount_drives(FILESYS *fs);
 
 #endif /* _arafs_xfs_h_ */
 
