@@ -34,6 +34,7 @@
 # include "arch/syscall.h"	/* call_aes */
 # include "arch/timer.h"	/* delay_seconds() */
 # include "arch/tosbind.h"
+# include "arch/aranym.h"
 
 # include "bios.h"		/* */
 # include "block_IO.h"		/* init_block_IO */
@@ -248,7 +249,7 @@ init (void)
 	 */
 	boot_print (greet1);
 	boot_print (greet2);
-	debug_level = 3;
+	debug_level = TRACE_LEVEL;
 	/*
 	 * Initialize sysdir
 	 *
@@ -335,7 +336,7 @@ init (void)
 		usp = get_usp();
 		ssp = get_ssp();
 
-		DEBUG(("Kernel BASE: 0x%08lx", _base));
+		DEBUG(("Kernel BASE: 0x%08lx", (unsigned long)_base));
 		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
 		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
 		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
@@ -463,7 +464,7 @@ init (void)
 
 	/* initialize processes */
 	init_proc();
-	DEBUG (("init_proc() ok! (base = %lx)", _base));
+	DEBUG (("init_proc() ok! (base = %p)", _base));
 
 	/* initialize system calls */
 	init_bios ();
@@ -1158,7 +1159,7 @@ mint_thread(void *arg)
  	sys_d_setpath("/");
 	stop_and_ask();
 
-	DEBUG(( "closing bootlog, fd=%lx\r\n",rootproc->p_fd->ofiles[0] ));
+	DEBUG(( "closing bootlog, fd=%p\r\n",rootproc->p_fd->ofiles[0] ));
 
 	if( write_boot_file )
 	{

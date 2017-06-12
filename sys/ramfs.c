@@ -2587,7 +2587,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			lck = kmalloc (sizeof (*lck));
 			if (!lck)
 			{
-				RAM_ALERT (("ramfs: kmalloc fail in: ram_ioctl (%lx)", c));
+				RAM_ALERT (("ramfs: kmalloc fail in: ram_ioctl (%p)", c));
 				return ENOMEM;
 			}
 

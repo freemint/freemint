@@ -45,7 +45,7 @@
 static void VDEBUGOUT(const char *, va_list, int);
 
 
-int debug_level = 1;	/* how much debugging info should we print? */
+int debug_level = ALERT_LEVEL;	/* how much debugging info should we print? */
 # if MFP_DEBUG_DIRECT
 int out_device = 0;
 # else
@@ -233,7 +233,7 @@ cont:
  */
 
 int
-_ALERT(char *s)
+_ALERT(const char *s)
 {
 	FILEPTR *fp;
 	long ret;
@@ -244,7 +244,7 @@ _ALERT(char *s)
 	int olddebug = debug_level;
 	int oldlogging = debug_logging;
 	
-	debug_level = 0;
+	debug_level = FORCE_LEVEL;
 	debug_logging = 0;
 	
 	ret = FP_ALLOC(rootproc, &fp);
@@ -257,7 +257,7 @@ _ALERT(char *s)
 	
 	if (!ret)
 	{		
-		char *alert;
+		const char *alert;
 		
 		/* format the string into an alert box
 		 */
@@ -361,9 +361,9 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	
 	if (get_curproc())
 	{
-		ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
-		lptemp += strlen(lp);
-		len -= strlen(lp);
+		int splen = ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
+		lptemp += splen;
+		len -= splen;
 	}
 	
 	kvsprintf(lptemp, len, s, args);
@@ -637,7 +637,7 @@ do_func_key(int scan)
 		/* F6: always print MiNT basepage */
 		case 0x40:
 		{
-			FORCE("MiNT base %lx (%lx)", rootproc->p_mem->base, _base);
+			FORCE("MiNT base %lx (%lx)", (unsigned long)rootproc->p_mem->base, (unsigned long)_base);
 			break;
 		}
 # endif

@@ -4222,7 +4222,7 @@ rel_cookie (COOKIE *c)
 	{
 		if (c->unlinked)
 		{
-			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %lx", c->dev+'A', c));
+			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %p", c->dev+'A', c));
 			delete_cookie (c);
 		}
 	}

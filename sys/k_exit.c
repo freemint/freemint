@@ -403,7 +403,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	ourpgrp = get_curproc()->pgrp;
 
 	if (ourpid)
-		TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
+		TRACE(("Pwaitpid(%d, %d, %p)", pid, nohang, rusage));
 
 	/* if there are terminated children, clean up and return their info;
 	 * if there are children, but still running, wait for them;

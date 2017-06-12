@@ -130,7 +130,7 @@ sys_p_msg(int mode, long mbid, char *ptr)
     int noblock;
     PROC *p;
 
-    TRACELOW(("Pmsg(%d,%lx,%lx)",mode,mbid,ptr));
+    TRACELOW(("Pmsg(%d,%lx,%p)",mode,mbid,ptr));
 
     noblock = (mode & 0x8000);
     mode &= ~0x8000;

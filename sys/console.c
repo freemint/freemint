@@ -181,8 +181,6 @@ sys_c_necin (void)
 	return file_getchar (get_curproc()->p_fd->ofiles[0], COOKED | NOECHO);
 }
 
-int
-nf_debug(const char *msg);
 long _cdecl
 sys_c_conws (const char *str)
 {

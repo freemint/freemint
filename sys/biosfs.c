@@ -218,7 +218,7 @@ scc_set5 (volatile char *control, int setp, unsigned int bits, IOREC_T *iorec)
 	if (!(((char *) iorec)[0x1d] & 8))
 	{
 		spl(sr);
-		ALERT ("scc_set5: iorec %lx w5 copy has sender enable bit off, w5 not changed", iorec);
+		ALERT ("scc_set5: iorec %p w5 copy has sender enable bit off, w5 not changed", iorec);
 		return;
 	}
 # endif
@@ -296,7 +296,7 @@ rsvf_close (int f)
 	if (f != ENODEV)
 	{
 		r = ROM_Fclose (f);
-		if (r) ALERT ("rsvf_close(%d): ROM_Fclose %x returned %lx", f, r);
+		if (r) ALERT ("rsvf_close(%d): ROM_Fclose returned %lx", f, r);
 	}
 
 	return r;

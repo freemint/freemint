@@ -187,7 +187,7 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 			 * expects politeness. So we go via callout(), which
 			 * will save registers for us.
 			 */
-			TRACE (("calling RWABS buffer:%lx",buffer));
+			TRACE (("calling RWABS buffer:%p",buffer));
 			r = callout (RWABS, rwflag, buffer, number, recno, dev, lrecno);
 			TRACE (("returning from RWABS"));
 		}
@@ -199,7 +199,7 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 	}
 	else
 	{
-		TRACE (("calling RWABS buffer:%lx",buffer));
+		TRACE (("calling RWABS buffer:%p",buffer));
 		r = callout (RWABS, rwflag, buffer, number, recno, dev, lrecno);
 		TRACE (("returning from RWABS"));
 	}
@@ -527,7 +527,7 @@ sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 
 		if ((ushort) dev < BDEVMAP_MAX)
 		{
-			DEBUG (("rsconf: %i -> %lx", dev, bdevmap [dev].rsconf));
+			DEBUG (("rsconf: %i -> %p", dev, bdevmap [dev].rsconf));
 
 			if (bdevmap [dev].rsconf)
 				return (*bdevmap [dev].rsconf)(dev, baud, flow, uc, rs, ts, sc);
@@ -1607,7 +1607,7 @@ checkkeys (void)
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 				    oldktail = keyrec->head = keyrec->tail;
 
-				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig, 1));
+				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig));
 				killgroup(tty->pgrp, sig, 1);
 				ret = 1;
 			}
