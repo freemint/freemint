@@ -28,13 +28,21 @@ CRLF = echo crlf -s
 
 GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS)
 
+NATIVE_COLDFIRE := 0
+
 else
+
+NATIVE_COLDFIRE := $(shell if uname -s -p | grep 'MiNT.*V4e'; then echo 1; else echo 0; pfi)
 
 CROSSPREFIX=
 
 NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
 CRLF  = crlf -s
+
+ifeq ($(NATIVE_COLDFIRE),1)
+NATIVECFLAGS += -mcpu=5475
+endif
 
 endif
 

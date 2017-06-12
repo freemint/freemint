@@ -29,10 +29,12 @@ OBJS = $(COBJS:.c=.o)
 LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -lgem
 GENFILES = $(TARGET) pc.pdb
 
-$(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a
+$(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 	$(STRIP) $(TARGET)
 	$(STACK) -S128K $(TARGET)
+
+hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a: all-recursive
 
 include $(top_srcdir)/DEPENDENCIES
 

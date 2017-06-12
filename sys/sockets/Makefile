@@ -55,11 +55,11 @@ $(inet4targets):
 ifneq ($(inet4),)
 
 compile_dir = .compile_$(inet4)
-inet4target = _stmp_$(inet4)
+inet4target = inet4
 realtarget = $(inet4target)
 
-$(inet4target): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+$(inet4target):: 
+	$(MAKE) -C inet4 all
 
 $(compile_dir): Makefile.objs
 	$(MKDIR) -p $@

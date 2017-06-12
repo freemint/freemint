@@ -16,10 +16,10 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: generator $(TARGET)
+all-here: gentables $(TARGET)
 
 # default overwrites
-NATIVECFLAGS = -I$(top_srcdir)/../shared
+NATIVECFLAGS += -I$(top_srcdir)/../shared
 NATIVE_LIBS_DEP += $(top_srcdir)/../shared/libsyscall/libsyscall.a
 NATIVE_LIBS += -L$(top_srcdir)/../shared/libsyscall -lsyscall
 NATIVE_LIBS += -lfl
@@ -34,6 +34,7 @@ OBJS = $(COBJS:.c=.o)
 OBJS += sysenttab.o
 GENFILES = $(TARGET) sysenttab.* gentables genstamp
 
+sysenttab.o: sysenttab.h
 
 $(TARGET): genstamp $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
@@ -44,14 +45,13 @@ genstamp: $(MASTER) gentables
 	./gentables $<
 	touch $@
 
-generator:
-	cd $(top_srcdir)/../shared/libsyscall; $(MAKE)
-	$(MAKE) gentables \
-		CC="$(NATIVECC)" CFLAGS="$(NATIVECFLAGS)" \
-		LIBS_DEP="$(NATIVE_LIBS_DEP)" LIBS="$(NATIVE_LIBS)"
+gentables.o: gentables.c $(top_srcdir)/../shared/libsyscall/libsyscall.h
+	$(NATIVECC) $(NATIVECFLAGS) -c $< -o $@
 
-gentables: gentables.o $(LIBS_DEP)
-	$(CC) -o $@ $(CFLAGS) $< $(LIBS)
+gentables: gentables.o $(NATIVE_LIBS_DEP)
+	$(NATIVECC) -o $@ $(NATIVECFLAGS) $< $(NATIVE_LIBS)
 
+$(top_srcdir)/../shared/libsyscall/libsyscall.h:
+	$(MAKE) -C $(top_srcdir)/../shared/libsyscall
 
 include $(top_srcdir)/DEPENDENCIES
