@@ -405,13 +405,10 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 	if (f->fc.fs && f->fc.fs->fsflags & FS_EXT_3)
 	{
 		unsigned long ut = 0;
-		unsigned short dt;
 		if (wflag)
 			ut = unixtime(timeptr[0], timeptr[1]) + timezone;
-		dt = ut >> 16;
-		r = xdd_datime(f, &dt, wflag);
+		r = xdd_datime(f, (ushort *)&ut, wflag);
 		if (!r && !wflag) {
-			ut = (ut & 0x0000ffffUL) | ((unsigned long)dt << 16);
 			ut = dostime(ut - timezone);
 			timeptr[1] = (unsigned short)ut;
 			ut >>= 16;
@@ -474,7 +471,9 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 		return ENOSYS;
 	}
 
-	ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
+	ret = xdd_ioctl(f, FSTAT, xattr);
+	if (ret == ENOSYS)
+		ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
 	if ((ret == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
 	{
 		xtime_to_local_dos(xattr,m);
@@ -488,6 +487,8 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 static long
 sys__ffstat_1_16 (struct file *f, struct stat *st)
 {
+	long ret;
+
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
@@ -501,7 +502,10 @@ sys__ffstat_1_16 (struct file *f, struct stat *st)
 		return ENOSYS;
 	}
 
-	return xfs_stat64 (f->fc.fs, &f->fc, st);
+	ret = xdd_ioctl(f, FSTAT64, st);
+	if (ret == ENOSYS)
+		ret = xfs_stat64 (f->fc.fs, &f->fc, st);
+	return ret;
 }
 
 long _cdecl
