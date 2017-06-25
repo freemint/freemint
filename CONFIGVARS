@@ -32,7 +32,7 @@ NATIVE_COLDFIRE := 0
 
 else
 
-NATIVE_COLDFIRE := $(shell if uname -s -p | grep 'MiNT.*V4e'; then echo 1; else echo 0; pfi)
+NATIVE_COLDFIRE := $(shell if uname -s -p | grep 'MiNT.*V4e'; then echo 1; else echo 0; fi)
 
 CROSSPREFIX=
 
