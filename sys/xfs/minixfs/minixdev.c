@@ -607,9 +607,11 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 			
+			cpid = p_getpid ();
+			
 			if (mode == F_GETLK)
 			{
-				lck = denylock (*fch->lfirst, &t);
+				lck = denylock (cpid, *fch->lfirst, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -617,8 +619,6 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				
 				return E_OK;
 			}
-			
-			cpid = p_getpid ();
 			
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -650,7 +650,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				return ENSLOCK;
 			}
 			
-			while (lck = denylock (*fch->lfirst, &t), lck != 0)
+			while (lck = denylock (cpid, *fch->lfirst, &t), lck != 0)
 			{
 				if (mode == F_SETLKW)
 					/* sleep a while */
@@ -810,4 +810,3 @@ m_unselect (FILEPTR *f, long int proc, int mode)
 {
 	/* Do nothing */
 }
-
