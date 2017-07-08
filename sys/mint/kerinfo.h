@@ -206,7 +206,7 @@ struct kerinfo
 	 * min_version >= 94. Otherwise, it will be a null pointer.
 	 */
 	int	_cdecl (*denyshare)(FILEPTR *, FILEPTR *);
-	LOCK *	_cdecl (*denylock)(LOCK *, LOCK *);
+	LOCK *	_cdecl (*denylock)(ushort pid, LOCK *, LOCK *);
 
 
 	/* functions for adding/cancelling timeouts
