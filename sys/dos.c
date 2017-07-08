@@ -741,7 +741,7 @@ sys_s_hutdown(long restart)
 	shutting_down = 1;
 	DEBUG(("sys_s_hutdown: %ld", restart));
 	/* only root may shut down the system */
-	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
+	if (suser(p->p_cred->ucr) || (p->p_cred->ruid == 0))
 	{
 		shutdown();
 
@@ -771,6 +771,7 @@ sys_s_hutdown(long restart)
 
 		/* not reached */
 	}
+	shutting_down = 0;
 
 	return EPERM;
 }
