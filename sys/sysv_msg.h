@@ -38,10 +38,10 @@
 # include "mint/msg.h"
 
 
-long sys_p_msgctl (long msqid, long cmd, struct msqid_ds *buf);
-long sys_p_msgget (long key, long msgflg);
-long sys_p_msgsnd (long msqid, const void *msgp, long msgsz, long msgflg);
-long sys_p_msgrcv (long msqid, void *msgp, long msgsz, long msgtyp, long msgflg);
+long _cdecl sys_p_msgctl (long msqid, long cmd, struct msqid_ds *buf);
+long _cdecl sys_p_msgget (long key, long msgflg);
+long _cdecl sys_p_msgsnd (long msqid, const void *msgp, long msgsz, long msgflg);
+long _cdecl sys_p_msgrcv (long msqid, void *msgp, long msgsz, long msgtyp, long msgflg);
 
 
 # endif	/* _sysv_msg_h  */

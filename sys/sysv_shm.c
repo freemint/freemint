@@ -34,25 +34,25 @@
 # include "sysv_shm.h"
 
 
-long
+long _cdecl
 sys_p_shmdt (const void *shmaddr)
 {
 	return ENOSYS;
 }
 
-long
+long _cdecl
 sys_p_shmat (long shmid, const void *shmaddr, long shmflg)
 {
 	return ENOSYS;
 }
 
-long
+long _cdecl
 sys_p_shmctl (long shmid, long cmd, struct shmid_ds *buf)
 {
 	return ENOSYS;
 }
 
-long
+long _cdecl
 sys_p_shmget (long key, long size, long shmflg)
 {
 	return ENOSYS;
