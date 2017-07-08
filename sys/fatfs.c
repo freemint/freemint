@@ -7350,24 +7350,10 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					info->type = _MAJOR_FAT;
 				}
 
-# ifdef M68000
 				*dst++ = 'f';
 				*dst++ = 'a';
 				*dst++ = 't';
 				*dst++ = ' ';
-# else
-				/* The compiler should optimize this below
-				 * into a single move.
-				 */
-				{
-					ulong *ddest;
-
-					ddest = (ulong *)dst;
-					/* this is 'fat ' */
-					*ddest++ = 0x66617420UL;
-					dst = (char *)ddest;
-				}
-# endif
 				switch (FAT_TYPE (dir->dev))
 				{
 					case FAT_TYPE_12:

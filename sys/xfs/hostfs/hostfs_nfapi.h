@@ -42,7 +42,7 @@
  * general XFS driver version
  */
 #define HOSTFS_XFS_VERSION       0
-#define BETA
+#undef BETA
 
 /* if you change anything in the enum {} below you have to increase
    this HOSTFS_NFAPI_VERSION!

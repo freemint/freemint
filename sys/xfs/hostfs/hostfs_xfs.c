@@ -246,15 +246,11 @@ long     _cdecl hostfs_fs_unmount    (int drv)
 	return nf_call(HOSTFS(XFS_UNMOUNT), (long)drv);
 }
 
-#if 0
-/* This is not used as there are problems with timezone synchronization
-   between FreeMiNT and the NF implementing emulator. */
 static
 long     _cdecl hostfs_fs_stat64     (fcookie *file, STAT *xattr)
 {
 	return nf_call(HOSTFS(XFS_STAT64), file, xattr);
 }
-#endif
 
 /*
  * filesystem driver map
@@ -286,7 +282,8 @@ FILESYS hostfs_filesys =
 	FS_REENTRANT_L1  |
 	FS_REENTRANT_L2  |
 	FS_EXT_1         |
-	FS_EXT_2         ,
+	FS_EXT_2         |
+	FS_EXT_3         ,
 	hostfs_fs_root, hostfs_fs_lookup, hostfs_fs_creat, hostfs_fs_getdev, hostfs_fs_getxattr,
 	hostfs_fs_chattr, hostfs_fs_chown, hostfs_fs_chmode, hostfs_fs_mkdir, hostfs_fs_rmdir,
 	hostfs_fs_remove, hostfs_fs_getname, hostfs_fs_rename, hostfs_fs_opendir,
@@ -299,7 +296,7 @@ FILESYS hostfs_filesys =
 	hostfs_fs_mknod, hostfs_fs_unmount,
 	/* FS_EXT_2 */
 	/* FS_EXT_3 */
-	0L,
+	hostfs_fs_stat64,
 	0L, 0L, 0L,         /* reserved 1,2,3 */
 	0L, 0L,             /* lock, sleepers */
 	0L, 0L              /* block(), deblock() */
@@ -338,4 +335,3 @@ FILESYS *hostfs_init(void)
 
 	return &hostfs_filesys;
 }
-
