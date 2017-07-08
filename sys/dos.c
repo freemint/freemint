@@ -578,15 +578,13 @@ foundtimer:
 long _cdecl
 sys_s_ysconf (int which)
 {
-	PROC *p = get_curproc();
-
 	switch (which)
 	{
 		case -1:	return 4;
 		case  0:	return UNLIMITED;
 		case  1:	return 32767; /* matches ARG_MAX */
-		case  2:	return p->p_fd->nfiles;
-		case  3:	return p->p_cred->ucr->ngroups;
+		case  2:	return NDFILE;
+		case  3:	return NGROUPS_MAX;
 		case  4:	return UNLIMITED;
 		case  5:	return HZ;
 		case  6:	return PAGESIZE;
