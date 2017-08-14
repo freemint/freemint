@@ -63,7 +63,6 @@ oldSR:	ds.w	1
 
 // Sets interrupt level to what was in the SR
 _set_old_int_lvl:
-	move.w	(sp),oldSR
 	andi.w	#0x0f00,oldSR		//just keep the int lvl
 	move.l	d0,-(sp)
 	move.w	sr,d0
@@ -77,6 +76,7 @@ _set_old_int_lvl:
 _set_int_lvl6:
 	move.w	d0,-(sp)
 	move.w	sr,d0
+	move.w	d0,oldSR
 	andi.w	#0xf0ff,d0
 	ori.w	#0x0600,d0
 	move.w	d0,sr
