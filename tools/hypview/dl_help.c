@@ -26,7 +26,6 @@
 #include <string.h>
 #ifdef __GNUC__
 	#include <osbind.h>
-	#include "include/mem.h"
 #else
 	#include <tos.h>
 #endif
@@ -97,7 +96,7 @@ char *help_article;
 		char *command;
 			
 			/*	Allocate global accessible memory for transfer	*/
-			command=(char *)Mxalloc(strlen(help_file)+strlen(help_article)+1, MX_PREFTT|MX_MPROT|MX_READABLE);
+			command=(char *)Mxalloc(strlen(help_file)+strlen(help_article)+1, MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 			if(!command)
 			{
 				/*	Alert user: not enough memory	*/

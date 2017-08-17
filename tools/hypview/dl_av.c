@@ -26,7 +26,6 @@
 #include <string.h>
 #ifdef __GNUC__
 	#include <osbind.h>
-	#include "include/mem.h"
 #else
 	#include <tos.h>
 #endif
@@ -107,7 +106,7 @@ void DoAV_PROTOKOLL(short flags)
 		{
 			if(!av_name)
 			{
-				av_name = (char *)Mxalloc(16, MX_PREFTT|MX_MPROT|MX_READABLE);
+				av_name = (char *)Mxalloc(16, MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 				if(!av_name)
 					return;
 				
