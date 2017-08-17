@@ -625,9 +625,10 @@ static void fec_init( fec_if_t *fec, uint8 mode, uint8 duplex, const uint8 *pa)
     else
         fec_duplex(ch, duplex);
 
-	if( fec->mode & FEC_IMODE_PROMISCUOUS ){
-		MCF_FEC_RCR(ch) |= MCF_FEC_RCR_PROM;
-	}
+    if (fec->mode & FEC_IMODE_PROMISCUOUS)
+    {
+        MCF_FEC_RCR(ch) |= MCF_FEC_RCR_PROM;
+    }
 
     /* Set Rx FIFO alarm and granularity */
     MCF_FEC_FECRFCR(ch) = MCF_FEC_FECRFCR_FRM | MCF_FEC_FECRFCR_RXW_MSK | MCF_FEC_FECRFCR_GR(7);
@@ -1143,7 +1144,7 @@ driver_init (void)
      */
     if_fec[0].data = (void*)&fecif_g[0];
     fi = &fecif_g[0];
-    memset( if_fec[0].data, sizeof(fec_if_t), 0);
+    memset( if_fec[0].data, 0, sizeof(fec_if_t) );
     fi->ch = 0;
     fi->rx_dma_ch = -1;
     fi->tx_dma_ch = -1;
@@ -1321,7 +1322,7 @@ fec_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short 
     {
         if( lenpad != len )
         {
-            memset( (void*)dmaBuf->dataPointer, lenpad, 0);
+            memset( (void*)dmaBuf->dataPointer, 0, lenpad );
         }
         memcpy( (void*)dmaBuf->dataPointer, nbuf->dstart, len );
         dmaBuf->length = lenpad;

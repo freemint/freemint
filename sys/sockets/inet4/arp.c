@@ -254,7 +254,7 @@ arp_sendreq (struct arp_entry *are)
 		short flags = are->flags;
 		DEBUG (("arp_send: timeout after %d retries", are->retries-1));
 		arp_remove (are);
-		if (flags & ATF_HWCOM);
+		if (flags & ATF_HWCOM)
 			rarp_remove (are);
 		return;
 	}

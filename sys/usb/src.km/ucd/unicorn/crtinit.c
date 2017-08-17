@@ -199,7 +199,7 @@ parseargs(BASEPAGE *bp)
 				p = *--envp;
 				while(*p)
 					*q++ = *p++;
-					*q = '\0';
+				*q = '\0';
 			}
 		}
 	}
