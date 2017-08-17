@@ -25,7 +25,6 @@
 
 #ifdef __GNUC__
 	#include <osbind.h>
-	#include "../include/mem.h"
 #else
 	#include <tos.h>
 #endif
@@ -211,7 +210,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 	/*							Debug("temp2=%s",temp);
 	*/						}
 
-							av_parameter = (char *)Mxalloc(strlen(temp) + 1, MX_PREFTT|MX_MPROT|MX_READABLE);
+							av_parameter = (char *)Mxalloc(strlen(temp) + 1, MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 							
 							if (av_parameter)
 							{
@@ -250,7 +249,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 /*								Debug("temp2=%s",temp);
 */							}
 	
-							av_parameter = (char *)Mxalloc(strlen(temp)+1,  MX_PREFTT|MX_MPROT|MX_READABLE);
+							av_parameter = (char *)Mxalloc(strlen(temp)+1,  MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 							if(av_parameter)
 							{
 								strcpy(av_parameter,temp);

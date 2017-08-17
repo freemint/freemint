@@ -403,7 +403,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	unsigned long cmd;
 	int timeout;
 	long ret = 0;
-	unsigned long td_offset;
+	unsigned long td_offset = 0;	/* make compiler happy */
 
 	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 

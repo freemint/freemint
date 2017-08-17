@@ -784,7 +784,7 @@ struct asix_dongle {
 	int flags;
 };
 
-static const struct asix_dongle const asix_dongles[] = {
+static const struct asix_dongle asix_dongles[] = {
 	{ 0x05ac, 0x1402, FLAG_TYPE_AX88772 },	/* Apple USB Ethernet Adapter */
 	{ 0x0b95, 0x772a, FLAG_TYPE_AX88772 },  /* Cables-to-Go USB Ethernet Adapter */
 	{ 0x0b95, 0x7720, FLAG_TYPE_AX88772 },	/* Trendnet TU2-ET100 V3.0R */
