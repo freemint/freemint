@@ -3118,7 +3118,7 @@ static struct xa_data_hdr *pmaps;
 static const struct xa_module_api *api = NULL;
 static const struct xa_screen *screen = NULL;
 
-static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6, 2, 4, 3};
+/*static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6, 2, 4, 3};*/
 static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6, 2, 4, 3};
 static const short efx3d_colour[] =      {8, 9,10,11,12,13,14,15, 0, 1, 2, 3, 4, 5, 6, 7};
 static XA_TREE nil_tree = { 0 };
