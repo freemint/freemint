@@ -392,7 +392,7 @@ make_real_cmdline(struct proc *p)
 			if (opt >= argc)
 				   valid = 0;
 
-			if (raw_argv[opt] == '\0')
+			if (raw_argv[opt] == NULL)
 				   valid = 0;
 
 			if (valid)

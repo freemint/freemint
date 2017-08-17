@@ -179,7 +179,7 @@ tcbs_listen (struct tcb *tcb, BUF *buf)
 	r = tcp_options (ntcb, tcph);
 	ntcb->snd_mss =
 	ntcb->snd_cwnd = tcp_mss (ntcb, data->dst.addr, r);
-	if (ntcb->snd_thresh < 2*ntcb->snd_cwnd);
+	if (ntcb->snd_thresh < 2*ntcb->snd_cwnd)
 		ntcb->snd_thresh = 2*ntcb->snd_cwnd;
 	
 	tcp_rcvdata (ntcb, buf);
@@ -265,7 +265,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 	r = tcp_options (tcb, tcph);
 	tcb->snd_mss =
 	tcb->snd_cwnd = tcp_mss (tcb, tcb->data->dst.addr, r);
-	if (tcb->snd_thresh < 2*tcb->snd_cwnd);
+	if (tcb->snd_thresh < 2*tcb->snd_cwnd)
 		tcb->snd_thresh = 2*tcb->snd_cwnd;
 	
 	tcp_rcvdata (tcb, buf);
