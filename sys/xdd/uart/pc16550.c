@@ -428,14 +428,12 @@ INLINE void	pc16550_read_x	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read_o	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_write	(IOVAR *iovar, UART *regs);
-static void	pc16550_int	(void) USED;
 
-static void	pc16550_intx	(void) USED;
-       void	pc16550_int0	(void);
-       void	pc16550_int1	(void);
-       void	pc16550_int2	(void);
-       void	pc16550_int3	(void);
-       void	pc16550_int4	(void);
+static void	pc16550_int0	(void);
+static void	pc16550_int1	(void);
+static void	pc16550_int2	(void);
+static void	pc16550_int3	(void);
+static void	pc16550_int4	(void);
 
 
 /*
@@ -1685,20 +1683,11 @@ pc16550_write (IOVAR *iovar, UART *regs)
  * HACK: Der IOVAR-Zeiger wird in A0 uebergeben!
  */
 static void
-pc16550_int (void)
+pc16550_int (IOVAR *iovar)
 {
-	IOVAR *iovar;
 	UART *regs;
 	ushort sr;
 	uchar event;
-	
-	asm volatile
-	(
-		"move.l %%a0,%0"
-		: "=da" (iovar)		/* output register */
-		: 			/* input registers */
-		: "cc"			/* clobbered */
-	);
 	
 next_uart:
 	
@@ -1837,73 +1826,34 @@ next_uart:
 
 /* Interrupt-Routinen fuer PC16550 - rufen die eigentlichen C-Routinen auf
  */
-static void
-pc16550_intx (void)
+static void __attribute__((interrupt))
+pc16550_int0 (void)
 {
-	asm volatile
-	(
-		"_pc16550_int0:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		: "m" (intr_iovar), "m" (pc16550_int)	/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int1:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  %0+4,%%a0\n\t" \
-		 "bsr     %1\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		: "m" (intr_iovar), "m" (pc16550_int)   /* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int2:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  %0+8,%%a0\n\t" \
-		 "bsr     %1\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		: "m" (intr_iovar), "m" (pc16550_int)   /* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int3:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  %0+12,%%a0\n\t" \
-		 "bsr     %1\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		: "m" (intr_iovar), "m" (pc16550_int)   /* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int4:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  %0+16,%%a0\n\t" \
-		 "bsr     %1\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		: "m" (intr_iovar), "m" (pc16550_int)   /* input registers */
-		 			/* clobbered */
-	);
+	pc16550_int(intr_iovar[0]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int1 (void)
+{
+	pc16550_int(intr_iovar[1]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int2 (void)
+{
+	pc16550_int(intr_iovar[2]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int3 (void)
+{
+	pc16550_int(intr_iovar[3]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int4 (void)
+{
+	pc16550_int(intr_iovar[4]);
 }
 
 /* END interrupt handling - bottom half */
