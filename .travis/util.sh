@@ -347,7 +347,7 @@ copy_sysroot() {
 	cp "$SRC/tools/hypview/release"/* "$SYSROOT/GEM/hyp_view"
 	cp -r "$SRC/tools/hypview/skins" "$SYSROOT/GEM/hyp_view"
 	cp "$SRC/tools/hypview/hyp_view.bgh" "$SYSROOT/GEM/hyp_view"
-	cp "$SRC/tools/hypview/hyp_view.rsc" "$SYSROOT/GEM/hyp_view"
+	cp "$SRC/tools/hypview/hyp_view/en.rsc" "$SYSROOT/GEM/hyp_view/hyp_view.rsc"
 	
 	mkdir -p "$SYSROOT/GEM/mgw"
 	cp "$SRC/tools/mgw/mgw.prg" "$SYSROOT/GEM/mgw"
