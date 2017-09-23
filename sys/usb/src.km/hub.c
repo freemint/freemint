@@ -353,23 +353,17 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port, unsigned sho
 struct usb_hub_device *
 usb_hub_configure(struct usb_device *dev)
 {
-	unsigned char *buffer;
 	struct usb_hub_descriptor *descriptor;
 	struct usb_hub_status *hubsts;
 	long i;
 	struct usb_hub_device *hub;
+	unsigned char buffer[USB_BUFSIZ];
 
 	/* "allocate" Hub device */
 	hub = usb_hub_allocate();
 	if (hub == NULL)
 		return NULL;
 
-	/* Get the the hub descriptor */
-	buffer = (unsigned char *)kmalloc(USB_BUFSIZ);
-	if (!buffer) {
-		DEBUG(("Out of memory"));
-		return NULL;
-	}
 	if (usb_get_hub_descriptor(dev, buffer, 4) < 0) {
 		DEBUG(("usb_hub_configure: failed to get hub " \
 				   "descriptor, giving up %lx", dev->status));
@@ -388,13 +382,13 @@ usb_hub_configure(struct usb_device *dev)
 		goto errout;
 	}
 
-	if (usb_get_hub_descriptor(dev, buffer, descriptor->bLength) < 0) {
+	if (usb_get_hub_descriptor(dev, &buffer, descriptor->bLength) < 0) {
 		DEBUG(("usb_hub_configure: failed to get hub " \
 				"descriptor 2nd giving up %lx", dev->status));
 		hub = NULL;
 		goto errout;
 	}
-	memcpy((unsigned char *)&hub->desc, buffer, descriptor->bLength);
+	memcpy((unsigned char *)&hub->desc, &buffer, descriptor->bLength);
 	/* adjust 16bit values */
 	hub->desc.wHubCharacteristics =
 				le2cpu16(descriptor->wHubCharacteristics);
@@ -462,7 +456,7 @@ usb_hub_configure(struct usb_device *dev)
 		goto errout;
 	}
 
-	if (usb_get_hub_status(dev, buffer) < 0) {
+	if (usb_get_hub_status(dev, &buffer) < 0) {
 		DEBUG(("usb_hub_configure: failed to get Status %lx",
 				dev->status));
 		hub = NULL;
@@ -486,7 +480,6 @@ usb_hub_configure(struct usb_device *dev)
 	hub->pusb_dev = dev;
 
 errout:
-	kfree(buffer);
 	return hub;
 }
 

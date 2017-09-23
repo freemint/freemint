@@ -149,7 +149,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 			void *data, unsigned short size, long timeout)
 {
 	struct control_msg arg;
-	struct devrequest *setup_packet;
+	struct devrequest setup_packet;
 	long r;
 	struct ucdif *ucd = dev->controller;
 	(void) r;
@@ -159,18 +159,12 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 		return -1;
 	}
 
-	setup_packet = (struct devrequest *)kmalloc(sizeof(struct devrequest));
-	if (!setup_packet) {
-		DEBUG(("Out of memory"));
-		return ENOMEM;
-	}
-
 	/* set setup command */
-	setup_packet->requesttype = requesttype;
-	setup_packet->request = request;
-	setup_packet->value = cpu2le16(value);
-	setup_packet->index = cpu2le16(index);
-	setup_packet->length = cpu2le16(size);
+	setup_packet.requesttype = requesttype;
+	setup_packet.request = request;
+	setup_packet.value = cpu2le16(value);
+	setup_packet.index = cpu2le16(index);
+	setup_packet.length = cpu2le16(size);
 	DEBUG(("usb_control_msg: request: 0x%x, requesttype: 0x%x, value 0x%x idx 0x%x length 0x%x",
 		   request, requesttype, value, index, size));
 	dev->status = USB_ST_NOT_PROC; /* not yet processed */
@@ -179,11 +173,9 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.pipe = pipe;
 	arg.data = data;
 	arg.size = size;
-	arg.setup = setup_packet;
+	arg.setup = &setup_packet;
 
 	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
-
-	kfree(setup_packet);
 
 	if (timeout == 0)
 	{
@@ -477,17 +469,12 @@ long usb_get_descriptor(struct usb_device *dev, unsigned char type,
  */
 long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 {
-	unsigned char *buffer;
 	long result, err;
 	unsigned long tmp;
-	struct usb_config_descriptor *config;
+	struct usb_config_descriptor config;
+	unsigned char buffer[65536];
 
-	config = (struct usb_config_descriptor *)kmalloc(USB_DT_CONFIG_SIZE);
-	if (!config) {
-		DEBUG(("Out of memory"));
-		return -1;
-	}
-	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, config, USB_DT_CONFIG_SIZE);
+	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, &config, USB_DT_CONFIG_SIZE);
 	if (result < 9) {
 		if (result < 0)
 			DEBUG(("unable to get descriptor, error %lx",
@@ -495,17 +482,14 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 		else
 			DEBUG(("config descriptor too short " \
 				"(expected %i, got %i)", USB_DT_CONFIG_SIZE, result));
-		kfree(config);
 		return -1;
 	}
-	tmp = le2cpu16(config->wTotalLength);
-	kfree(config);
 
-	buffer = (unsigned char*)kmalloc(tmp);
-	if (!buffer) {
-		DEBUG(("Out of memory"));
-		return -1;
-	}
+	/*
+	 * tmp cannot be longer than 65536 bytes as it's length is 2 bytes.
+	 */
+	tmp = le2cpu16(config.wTotalLength);
+
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, tmp);
 	DEBUG(("get_conf_no %ld Result %ld, wLength %ld",
 		   cfgno, result, tmp));
@@ -515,10 +499,8 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 		DEBUG(("usb_new_device: Cannot parse configuration, " \
 		       "skipping device %04x:%04x\n",
 		       dev->descriptor.idVendor, dev->descriptor.idProduct));
-		kfree(buffer);
 		return -1;
 	}
-	kfree(buffer);
 	return result;
 }
 
@@ -717,18 +699,13 @@ static long usb_string_sub(struct usb_device *dev, unsigned long langid,
  */
 long usb_string(struct usb_device *dev, long index, char *buf, long size)
 {
-	unsigned char *tbuf;
+	unsigned char tbuf[USB_BUFSIZ];
 	long err;
 	unsigned long u, idx;
 
 	if (size <= 0 || !buf || !index)
 		return -1;
 
-	tbuf = (unsigned char *)kmalloc(USB_BUFSIZ);
-	if (!tbuf) {
-		DEBUG(("Out of memory"));
-		return ENOMEM;
-	}
 	buf[0] = 0;
 
 	/* get langid for strings if it's not yet known */
@@ -768,7 +745,6 @@ long usb_string(struct usb_device *dev, long index, char *buf, long size)
 	buf[idx] = 0;
 	err = idx;
 errout:
-	kfree(tbuf);
 	return err;
 }
 
@@ -885,15 +861,18 @@ void usb_free_device(long dev_index)
  *
  * Returns 0 for success, != 0 for error.
  */
+#define GET_DESCRIPTOR_BUFSIZE	64
+
 long usb_new_device(struct usb_device *dev)
 {
 	long addr, err;
-	unsigned char *tmpbuf;
 	long tmp;
-	struct usb_device_descriptor *desc;
 	long port = -1;
 	struct usb_device *parent = dev->parent;
 	int idx = 0;
+	struct usb_device_descriptor *desc;
+	unsigned char descbuf[GET_DESCRIPTOR_BUFSIZE];
+	struct usb_device_descriptor tmpbuf;
 
 	DEBUG(("usb_new_device: "));
 
@@ -905,13 +884,6 @@ long usb_new_device(struct usb_device *dev)
 	 * only 18 bytes long, this will terminate with a short packet.  But if
 	 * the maxpacket size is 8 or 16 the device may be waiting to transmit
 	 * some more, or keeps on retransmitting the 8 byte header. */
-#define GET_DESCRIPTOR_BUFSIZE	64
-	desc = (struct usb_device_descriptor *)kmalloc(GET_DESCRIPTOR_BUFSIZE);
-	if (!desc) {
-		DEBUG(("Out of memory"));
-		return -1;
-	}
-
 	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
 
 	/* Default to 64 byte max packet size */
@@ -919,13 +891,14 @@ long usb_new_device(struct usb_device *dev)
 	dev->epmaxpacketin[0] = 64;
 	dev->epmaxpacketout[0] = 64;
 
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, GET_DESCRIPTOR_BUFSIZE);
+	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, descbuf, GET_DESCRIPTOR_BUFSIZE);
 	if (err < 0) {
 		DEBUG(("usb_new_device: usb_get_descriptor() failed"));
 		dev->devnum = addr;
-		kfree(desc);
 		return 1;
 	}
+
+	desc = (struct usb_device_descriptor *)descbuf;
 
 	dev->descriptor.bMaxPacketSize0 = desc->bMaxPacketSize0;
 
@@ -934,7 +907,6 @@ long usb_new_device(struct usb_device *dev)
 	 * to differentiate between HUB and DEVICE.
 	 */
 	dev->descriptor.bDeviceClass = desc->bDeviceClass;
-	kfree(desc);
 #undef GET_DESCRIPTOR_BUFSIZE
 	/* find the port number we're at */
 	if (parent) {
@@ -993,14 +965,8 @@ long usb_new_device(struct usb_device *dev)
 
 	mdelay(200);	/* Let the SET_ADDRESS settle */
 
-	tmp = sizeof(dev->descriptor);
-	tmpbuf = (unsigned char *)kmalloc(tmp);
-	if (!tmpbuf) {
-		DEBUG(("Out of memory"));
-		return -1;
-	}
-
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, tmpbuf, tmp);
+	tmp = sizeof(tmpbuf);
+	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, (void*)&tmpbuf, tmp);
 	if (err < tmp) {
 		if (err < 0)
 			DEBUG(("unable to get device descriptor (error=%ld)",
@@ -1008,11 +974,9 @@ long usb_new_device(struct usb_device *dev)
 		else
 			DEBUG(("USB device descriptor short read " \
 				"(expected %li, got %li)", tmp, err));
-		kfree(tmpbuf);
 		return 1;
 	}
-	memcpy(&dev->descriptor, tmpbuf, sizeof(dev->descriptor));
-	kfree(tmpbuf);
+	memcpy(&dev->descriptor, &tmpbuf, sizeof(dev->descriptor));
 
 	/* correct the values */
 	dev->descriptor.bcdUSB = le2cpu16(dev->descriptor.bcdUSB);
