@@ -34,25 +34,25 @@
 # include "sysv_sem.h"
 
 
-long
+long _cdecl
 sys_p_semctl (long semid, long semnum, long cmd, union __semun *arg)
 {
 	return ENOSYS;
 }
 
-long
+long _cdecl
 sys_p_semget (long key, long nsems, long semflg)
 {
 	return ENOSYS;
 }
 
-long
+long _cdecl
 sys_p_semop (long semid, struct sembuf *sops, long nsops)
 {
 	return ENOSYS;
 }
 
-long
+long _cdecl
 sys_p_semconfig (long flag)
 {
 	return ENOSYS;
