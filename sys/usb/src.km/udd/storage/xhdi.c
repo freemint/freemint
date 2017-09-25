@@ -1079,7 +1079,7 @@ long
 install_xhdi_driver(void)
 {
 #ifndef TOSONLY
-	return xhnewcookie(xhdi_handler);
+	return xhnewcookie(usbxhdi);
 #else
 	long r = 0;
 	cookie_fun XHDI = get_fun_ptr ();

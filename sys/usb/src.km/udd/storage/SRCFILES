@@ -14,14 +14,14 @@ COBJS = \
 	xhdi.c
 
 SSOBJS = \
-	vectors.S
+	vectors.S \
+	xhdiasm.S
 
 TOSCOBJS = \
 	crtinit.c
 
 TOSSSOBJS = \
 	entry.S \
-	setstack.S \
-	xhdiasm.S
+	setstack.S
 
 SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
