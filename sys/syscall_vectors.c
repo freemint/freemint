@@ -481,11 +481,11 @@ Func dos_tab [DOS_MAX] =
 	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
 	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
 	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */
-	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.15.11 */
+	/* 0x15e */		sys_p_sysctl,	/* 1.15.11 */
 	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 
-	/* 0x160 */	(Func)	sys_socket,	/* 1.16 */
-	/* 0x161 */	(Func)	sys_socketpair,	/* 1.16 */
+	/* 0x160 */		sys_socket,	/* 1.16 */
+	/* 0x161 */		sys_socketpair,	/* 1.16 */
 	/* 0x162 */	(Func)	sys_accept,	/* 1.16 */
 	/* 0x163 */	(Func)	sys_connect,	/* 1.16 */
 	/* 0x164 */	(Func)	sys_bind,	/* 1.16 */
@@ -503,7 +503,7 @@ Func dos_tab [DOS_MAX] =
 
 	/* 0x170 */		sys_p_shmget,
 	/* 0x171 */		sys_p_shmctl,
-	/* 0x172 */	(Func)	sys_p_shmat,
+	/* 0x172 */		sys_p_shmat,
 	/* 0x173 */		sys_p_shmdt,
 	/* 0x174 */		sys_p_semget,	/* not implemented */
 	/* 0x175 */		sys_p_semctl,	/* not implemented */
