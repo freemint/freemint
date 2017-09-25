@@ -64,10 +64,10 @@ struct sem_undo
 	} un_ent[1];			/* undo entries */
 };
 
-long sys_p_semctl (long semid, long semnum, long cmd, union __semun *arg);
-long sys_p_semget (long key, long nsems, long semflg);
-long sys_p_semop (long semid, struct sembuf *sops, long nsops);
-long sys_p_semconfig (long flag);
+long _cdecl sys_p_semctl (long semid, long semnum, long cmd, union __semun *arg);
+long _cdecl sys_p_semget (long key, long nsems, long semflg);
+long _cdecl sys_p_semop (long semid, struct sembuf *sops, long nsops);
+long _cdecl sys_p_semconfig (long flag);
 
 
 # endif	/* _sysv_sem_h  */
