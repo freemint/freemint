@@ -279,6 +279,7 @@ copy_usb() {
 	mkdir -p "$USBDIR"
 	cp "$SRC/sys/usb/src.km/.compile_$TARGET"/*.km "$USBDIR/usb.km"
 	cp "$SRC/sys/usb/src.km/ucd/ehci/.compile_$TARGET/ehci.ucd" "$USBDIR"
+	cp "$SRC/sys/usb/src.km/ucd/netusbee/netusbee.ucd" "$USBDIR"
 	cp "$SRC/sys/usb/src.km/ucd/unicorn/.compile_$TARGET/unicorn.ucd" "$USBDIR"
 	cp "$SRC/sys/usb/src.km/udd/eth/.compile_$TARGET/eth.udd" "$USBDIR"
 	cp "$SRC/sys/usb/src.km/udd/mouse/.compile_$TARGET/mouse.udd" "$USBDIR"
