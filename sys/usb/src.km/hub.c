@@ -382,13 +382,13 @@ usb_hub_configure(struct usb_device *dev)
 		goto errout;
 	}
 
-	if (usb_get_hub_descriptor(dev, &buffer, descriptor->bLength) < 0) {
+	if (usb_get_hub_descriptor(dev, buffer, descriptor->bLength) < 0) {
 		DEBUG(("usb_hub_configure: failed to get hub " \
 				"descriptor 2nd giving up %lx", dev->status));
 		hub = NULL;
 		goto errout;
 	}
-	memcpy((unsigned char *)&hub->desc, &buffer, descriptor->bLength);
+	memcpy((unsigned char *)&hub->desc, buffer, descriptor->bLength);
 	/* adjust 16bit values */
 	hub->desc.wHubCharacteristics =
 				le2cpu16(descriptor->wHubCharacteristics);
@@ -456,7 +456,7 @@ usb_hub_configure(struct usb_device *dev)
 		goto errout;
 	}
 
-	if (usb_get_hub_status(dev, &buffer) < 0) {
+	if (usb_get_hub_status(dev, buffer) < 0) {
 		DEBUG(("usb_hub_configure: failed to get Status %lx",
 				dev->status));
 		hub = NULL;
