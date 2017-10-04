@@ -20,7 +20,6 @@
 
 # include <mintbind.h>
 # include <fcntl.h>
-# include <gemma/gemma.h>
 # include <string.h>
 
 #include "util.h"
@@ -40,7 +39,7 @@ quote_and_cat(char *to, const char *from)
 	if (*from == 0)
 		return;
 
-	if ((long)strchr(from, '\x20') || (long)strchr(from, '\''))
+	if (strchr(from, ' ') || strchr(from, '\''))
 	{
 		*t++ = '\'';
 		for(;;) {
@@ -53,7 +52,7 @@ quote_and_cat(char *to, const char *from)
 		}
 		*t++ = '\'';
 		*t = 0;
-		strcat(to, (const char *)tmp);
+		strcat(to, tmp);
 	} else
 		strcat(to, from);
 }
