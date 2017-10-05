@@ -99,6 +99,14 @@
 # define NO		0
 # define YES		1
 
+#ifndef NO_CONST
+#  ifdef __GNUC__
+#	 define NO_CONST(p) __extension__({ union { const void *cs; void *s; } _x; _x.cs = p; _x.s; })
+#  else
+#	 define NO_CONST(p) ((void *)(p))
+#  endif
+#endif
+
 /****************************************************************************/
 /* BEGIN definition part */
 
@@ -311,7 +319,7 @@ static int	check	= NO;	/* Default to no readability checking */
 static int	always	= NO;	/* Default check partition IDs */
 static int	verbose	= YES;	/* Default to verbose mode on */
 static int	only_bs	= NO;	/* Write only the bootsector (dangerous option) */
-static char *	program	= NULL;	/* Name of the program */
+static char const program[] = "mkfatfs";	/* Name of the program */
 
 static _F32_BS	f32bs;		/* Boot sector data (FAT and FAT32) */
 static uchar *	fsinfo;		/* FAT32 signature sector */
@@ -364,7 +372,6 @@ static long	chunks	= 32;
 # define CHECK		check
 # define ALWAYS		always
 # define VERBOSE	verbose
-# define PROGRAM	program
 # define ONLY_BS	only_bs
 
 # define BOOT		f32bs.fbs
@@ -441,7 +448,7 @@ cdiv (long a, long b)
 static void
 fatal_ (const char *fmt_string)
 {
-	printf (fmt_string, PROGRAM, 'A' + DRV);
+	printf (fmt_string, program, 'A' + DRV);
 	
 	exit (1);
 }
@@ -1343,13 +1350,8 @@ main (int argc, char **argv)
 	
 	VOL_NAME = strdup ("           ");
 	
-	/* What's the program name? */
-	if (argc && *argv)
-		PROGRAM = *argv;
-	else
-		PROGRAM = "mkdosfs";
-	
-	printf ("%s " VERSION ", 2002-09-19 for TOS and DOS FAT/FAT32-FS\n", PROGRAM);
+	argv[0] = (char *)NO_CONST(program);
+	printf ("%s " VERSION ", 2002-09-19 for TOS and DOS FAT/FAT32-FS\n", program);
 	
 	/* check and initalize XHDI */
 	if (init_XHDI ())
