@@ -413,7 +413,10 @@ main(void)
 	 */
 	r = appl_open("gemkfatfs.rsc", 0, (char *)PNAME);
 	if (r < 0)
+	{
+		(void) Salert("gemkfatfs: appl_open() failed");
 		return r;
+	}
 
 	/* this initializes the entire WINDIAL structure */
 	wd = (WINDIAL *)windial_create(0, WINDOW, ICON, VOLUMELABEL, (char *)WINTITLE);
