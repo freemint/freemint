@@ -117,24 +117,15 @@ newmsg(WINDIAL *wd, short vec, short *msg)
 	return 0;
 }
 
-static long
-newkey(WINDIAL *wd, short vec, short ks, short kc)
-{
-	if ((kc & 0x007f) == 0x0011)
-		windial_longjmp(wd, vec);
-	return 0;
-}
-
-char file1[1024];
-char file2[1024];
-short secperc;
-const short option[] = 	{ SETVOLUMELABEL, BADBLOCKFILENAME, SETVOLUMEID,
+static char file1[PATH_MAX];
+static char file2[PATH_MAX];
+static short secperc;
+static const short option[] = 	{ SETVOLUMELABEL, BADBLOCKFILENAME, SETVOLUMEID,
 			  BOOTMESSAGE, SETROOTENTRIES, SETSPC,
 			  NOPARTITIONIDCHK, CHECKFAT };
-const short argums[] =	{ 1, 2, 1, 2, 1, 3, 0, 0 };
-const char *cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-a", "-c" };
-long argfdd[] =		{ VOLUMELABEL, 0, VOLUMEID, 0,
-			  ROOTENTRIES, SPC, 0, 0 };
+static const short argums[] =	{ 1, 2, 1, 2, 1, 3, 0, 0 };
+static const char *const cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-a", "-c" };
+static long argfdd[] =		{ VOLUMELABEL, 0, VOLUMEID, 0, ROOTENTRIES, SPC, 0, 0 };
 
 static void sig_child(void)
 {
@@ -291,8 +282,6 @@ do_window(WINDIAL *wd)
 	 */
 	if (windial_setjmp(wd, 0, newmsg) == 1)
 		return;
-	if (windial_setjmp(wd, 1, newkey) == 1)
-		return;
 
 	for(;;)
 	{
@@ -424,7 +413,7 @@ main(void)
 		return r;
 
 	/* this initializes the entire WINDIAL structure */
-	wd = (WINDIAL *)windial_create(0, WINDOW, ICON, VOLUMELABEL, WINTITLE);
+	wd = (WINDIAL *)windial_create(0, WINDOW, ICON, VOLUMELABEL, (char *)WINTITLE);
 
 	do_window(wd);		/* do all the stuff */
 
