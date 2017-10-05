@@ -84,24 +84,35 @@ newmsg(WINDIAL *wd, short vec, short *msg)
 		windial_longjmp(wd, vec);	/* never returns */
 	if (msg[0] == CH_EXIT)
 	{
-		ret = (long)msg[5];
+		ret = msg[4];
 		if (ret != 0)
 		{
+			/* process was signaled, or exited with exitcode != 0 */
 			if ((char)ret != 127)
 			{
+				/* process was signaled */
 				bell();
 				if ((char)ret == 0)
-					windial_alert(1, SIGNALTERM);
-				else
 				{
+					/* process was exited by signal */
+					windial_alert(1, (const char *)SIGNALTERM);
+				} else
+				{
+					/* process was exited with exitcode != 0 */
 					if (ret < 0)
-						windial_error(ret, ERRMKFATFS);
+						windial_error(ret, (const char *)ERRMKFATFS);
 					else
-						windial_error(-1L, ERRMKFATFS);
+						windial_error(-1L, (const char *)ERRMKFATFS);
 				}
+			} else
+			{
+				/* process was stopped */
 			}
 		} else
-			windial_alert(1, MKFATFSOK);
+		{
+			/* process exited */
+			windial_alert(1, (const char *)MKFATFSOK);
+		}
 	}
 	return 0;
 }
@@ -124,6 +135,27 @@ const short argums[] =	{ 1, 2, 1, 2, 1, 3, 0, 0 };
 const char *cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-a", "-c" };
 long argfdd[] =		{ VOLUMELABEL, 0, VOLUMEID, 0,
 			  ROOTENTRIES, SPC, 0, 0 };
+
+static void sig_child(void)
+{
+	long p;
+	short msg[8];
+	GEM_ARRAY *me;
+	
+	p = Pwait3(1, NULL);
+	Psignal(SIGCHLD, sig_child);
+	me = gem_control();
+	msg[0] = CH_EXIT;
+	msg[1] = me->global[2];
+	msg[2] = 0;
+	msg[3] = (short)(p>>16);
+	msg[4] = (short)p;
+	msg[5] = 0;
+	msg[6] = 0;
+	msg[7] = 0;
+	appl_write(me->global[2], 16, msg);
+}
+
 
 static long
 exec_mkfatfs(WINDIAL *wd, short drive)
@@ -209,7 +241,8 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 	if (r == 2)
 		return 0;
 
-	r = proc_exec(100, 0x5L, "mkfatfs", command, 0);
+	Psignal(SIGCHLD, sig_child);
+	r = proc_exec(100, 0x1, "mkfatfs", command, NULL);
 
 	return r;
 }
