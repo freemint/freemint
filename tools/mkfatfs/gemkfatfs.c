@@ -158,7 +158,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 					if (argfdd[x])
 					{
 						tmp = (char *)argfdd[x];
-						if ((long)tmp)
+						if (tmp)
 						{
 							strcat(cmd, cmd_sw[x]);
 							strcat(cmd, tmp);
@@ -168,7 +168,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 				case	3:
 					pop = (OBJECT *)rsrc_xgaddr(R_TREE, POPUP);
 					tmp = pop[secperc + SPC2].ob_spec.free_string;
-					while(*tmp == 0x20)
+					while(*tmp == ' ')
 						tmp++;
 					strcat(cmd, cmd_sw[x]);
 					strcat(cmd, tmp);
@@ -197,11 +197,11 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 	strcat(cmd, tmp);
 
 	cmd = command + strlen(command);
-	*cmd++ = '\x20';
+	*cmd++ = ' ';
 	if (drive < 26)
-		*cmd++ = (char)(drive + 0x61);
+		*cmd++ = (char)(drive + 'a');
 	else
-		*cmd++ = (char)(drive + 0x17);
+		*cmd++ = (char)(drive - 26 + '1');
 	*cmd++ = ':';
 	*cmd = '\0';
 
@@ -239,7 +239,8 @@ do_window(WINDIAL *wd)
 
 	ob[SPC].ob_spec = menu.mn_tree[SPC2].ob_spec;
 
-	dmap = Dsetdrv(Dgetdrv()) >> 2;
+	drive = Dgetdrv();
+	dmap = Dsetdrv(drive) >> 2;
 	r = DISK_C;
 	while(r < DISK_C+30)
 	{
@@ -277,7 +278,7 @@ do_window(WINDIAL *wd)
 					{
 						if (Pkill(chpid, SIGNULL) >= 0)
 						{
-							r = windial_alert(1, MKFATFSKILL);
+							r = windial_alert(1, (const char *)MKFATFSKILL);
 							if (r == 1)
 							{
 								Psignal(SIGCHLD, SIG_DFL);
@@ -291,7 +292,7 @@ do_window(WINDIAL *wd)
 			case	MAKEFS:
 					chpid = r = exec_mkfatfs(wd, drive);
 					if (r < 0)
-						windial_error(r, NOMKFATFS);
+						windial_error(r, (const char *)NOMKFATFS);
 					break;
 			case	MYHOMEPAGE:
 					open_url(ob[m].ob_spec.tedinfo->te_ptext);
