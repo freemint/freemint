@@ -874,7 +874,7 @@ setup_tables (void)
 		clust16 = (long long) fatdata * SECSIZE / ((long) BOOT.cluster_size * SECSIZE + 4);
 		fatlength16 = cdiv (clust16 * 2, SECSIZE);
 		maxclust16 = (fatlength16 * SECSIZE) / 2;
-		if (maxclust16 > GEMDOS ? 32766 : 65526)
+		if (maxclust16 > (GEMDOS ? 32766 : 65526))
 			maxclust16 = GEMDOS ? 32766 : 65526;
 		if (clust16 > maxclust16)
 			clust16 = 0;
