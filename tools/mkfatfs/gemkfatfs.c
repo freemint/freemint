@@ -25,12 +25,14 @@
  * 
  */
 
+# include <stdio.h>
 # include <errno.h>
 # include <fcntl.h>
 # include <signal.h>
 # include <string.h>
 # include <mintbind.h>
-# include <gemma/gemma.h>
+# include <slb/gemma.h>
+# include <limits.h>
 
 # include "gemkfatfs.h"
 # include "util.h"
