@@ -354,6 +354,7 @@ static char *	vol	= NULL;	/* Volume name */
 static time_t	cr_time	= 0;	/* Creation time */
 
 static ushort	drv	= 0;
+static ushort	drv_char = '?';
 static ushort	major	= 0;
 static ushort	minor	= 0;
 static ulong	start	= 0;
@@ -446,7 +447,7 @@ cdiv (long a, long b)
 static void
 fatal_ (const char *fmt_string)
 {
-	printf (fmt_string, program, 'A' + DRV);
+	printf (fmt_string, program, drv_char);
 	
 	exit (1);
 }
@@ -675,7 +676,7 @@ get_geometry (void)
 {
 	long r;
 	
-	r = XHInqDev2 (DRV, &MAJOR, &MINOR, &START, NULL, &PSECS, ID);
+	r = XHInqDev2 (drv, &MAJOR, &MINOR, &START, NULL, &PSECS, ID);
 	if (r == 0)
 	{
 		r = XHInqTarget2 (MAJOR, MINOR, &PSECSIZE, NULL, NULL, 0);
@@ -688,7 +689,7 @@ get_geometry (void)
 	
 	ID [3] = '\0';
 	
-	printf ("Physical informations about partition %c:\n", 'A' + DRV);
+	printf ("Physical informations about partition %c:\n", drv_char);
 	printf ("----------------------------------------\n");
 	printf ("XHDI major number    : %d\n", MAJOR);
 	printf ("XHDI minor number    : %d\n", MINOR);
@@ -1005,7 +1006,7 @@ setup_tables (void)
 	
 	if (VERBOSE)
 	{
-		printf ("Logical informations about partition %c:\n", 'A' + DRV);
+		printf ("Logical informations about partition %c:\n", drv_char);
 		printf ("---------------------------------------\n");
 		printf ("Media descriptor    : 0x%02x\n", (unsigned int)(BOOT.media));
 		printf ("logical sector size : %ld\n", SECSIZE);
@@ -1321,12 +1322,12 @@ verify_user (void)
 	
 	if (ONLY_BS == YES)
 	{
-		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", 'A' + DRV);
+		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", drv_char);
 		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
 	else
 	{
-		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", 'A' + DRV);
+		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", drv_char);
 		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
 	scanf ("%c", &c);
@@ -1488,12 +1489,18 @@ main (int argc, char **argv)
 		usage ();
 	}
 	
-	DRV = (ushort) (toupper (c) - 'A');
-	if (DRV > 31)
+	drv_char = toupper (c);
+	if (drv_char >= 'A' && drv_char <= 'Z')
+	{
+		drv = drv_char - 'A';
+	} else if (drv_char >= '1' && drv_char <= '6')
+	{
+		drv = (drv_char - '1') + 26;
+	} else
 	{
 		fatal ("invalid drive");
 	}
-	
+
 	/*
 	 * Auto and specified bad sector handling are mutually
 	 * exclusive of each other!
@@ -1504,7 +1511,7 @@ main (int argc, char **argv)
 	}
 	
 	/* lock the drv */
-	if (Dlock (1, DRV))
+	if (Dlock (1, drv))
 	{
 		fatal ("Can't lock %c:");
 	}
@@ -1534,10 +1541,10 @@ main (int argc, char **argv)
 		write_tables ();
 	}
 	
-	(void) Dlock (0, DRV);
+	(void) Dlock (0, drv);
 	
 	/* Terminate with no errors! */
-	exit (0);
+	return EXIT_SUCCESS;
 }
 
 /* END main */
