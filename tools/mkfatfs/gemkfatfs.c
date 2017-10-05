@@ -296,6 +296,7 @@ do_window(WINDIAL *wd)
 		switch(m)
 		{
 			case	EXIT:
+					deselect(wd, m, 1);
 					if (chpid)
 					{
 						if (Pkill(chpid, SIGNULL) >= 0)
@@ -315,8 +316,10 @@ do_window(WINDIAL *wd)
 					chpid = r = exec_mkfatfs(wd, drive);
 					if (r < 0)
 						windial_error(r, (const char *)NOMKFATFS);
+					deselect(wd, m, 1);
 					break;
 			case	MYHOMEPAGE:
+					deselect(wd, m, 1);
 					open_url(ob[m].ob_spec.tedinfo->te_ptext);
 					break;
 			case	BADBLOCKFILENAME:
