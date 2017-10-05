@@ -364,6 +364,7 @@ static ulong	psectors= 0;	/* Number of physical sectors in filesystem */
 static ulong	lsectors= 0;	/* Number of logical sectors in filesystem */
 static ulong	pssize	= 512;	/* physical sectorsize */
 static ulong	lssize	= 512;	/* logical sectorsize */
+static short    quiet;
 
 static long	bad	= 0;	/* Number of bad sectors in the filesystam */
 static ulong	test	= 0;	/* Block currently being tested (if autodetect bad sectors) */
@@ -1325,13 +1326,17 @@ verify_user (void)
 	if (ONLY_BS == YES)
 	{
 		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", drv_char);
-		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+		if (!quiet)
+			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
 	else
 	{
 		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", drv_char);
-		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+		if (!quiet)
+			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
+	if (quiet)
+		return 1;
 	scanf ("%c", &c);
 	printf ("\n");
 	
@@ -1364,7 +1369,7 @@ main (int argc, char **argv)
 	time (&CTIME);
 	VOL_ID = (long) CTIME;
 	
-	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:r:s:avB")) != EOF)
+	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:qr:s:avB")) != EOF)
 	{
 		/* Scan the command line for options */
 		switch (c)
@@ -1474,6 +1479,9 @@ main (int argc, char **argv)
 				ONLY_BS = YES;
 				break;
 			}
+			case 'q':
+				quiet = 1;
+				break;
 			default:
 			{
 				usage ();
