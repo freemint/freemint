@@ -81,13 +81,8 @@
 # include <ctype.h>
 # include <time.h>
 # include <signal.h>
+# include <getopt.h>
 # include <unistd.h>
-
-/* why not in unistd.h? */
-extern char *optarg;
-extern int opterr;
-extern int optind;
-
 # include <mintbind.h>
 
 # include "xhdi.h"
