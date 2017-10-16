@@ -472,7 +472,7 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 	long result, err;
 	unsigned long tmp;
 	struct usb_config_descriptor config;
-	unsigned char buffer[65536];
+	static unsigned char buffer[65536];
 
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, &config, USB_DT_CONFIG_SIZE);
 	if (result < 9) {
