@@ -73,6 +73,7 @@ long _cdecl hostfs_fs_dev_lseek    (FILEPTR *f, long where, int whence) {
 }
 
 long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf) {
+#ifndef ARAnyM_MetaDOS
 	/*
 	 * The hostfs part in the emulator will never be able to
 	 * emulate file locking, since it does not have any notice of
@@ -209,6 +210,7 @@ long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf) {
 			return E_OK;
 		}
 	}
+#endif /* ARAnyM_MetaDOS */
 		
 	return nf_call(HOSTFS(DEV_IOCTL), f, (long)mode, buf);
 }
@@ -218,6 +220,7 @@ long _cdecl hostfs_fs_dev_datime   (FILEPTR *f, ushort *timeptr, int rwflag) {
 }
 
 long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid) {
+#ifndef ARAnyM_MetaDOS
 	if (f->flags & O_LOCK)
 	{
 		LOCK *lock;
@@ -250,6 +253,7 @@ long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid) {
 			r = nf_call(HOSTFS(DEV_IOCTL), f, (long)F_SETLK, locks);
 		}
 	}
+#endif /* ARAnyM_MetaDOS */
 	return nf_call(HOSTFS(DEV_CLOSE), f, (long)pid);
 }
 
