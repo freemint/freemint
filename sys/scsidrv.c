@@ -234,7 +234,7 @@ sys_scsidrv (ushort op,
 long
 scsidrv_InstallNewDriver (SCSIDRV *newdrv)
 {
-	long olddrv = NULL;
+	long olddrv = 0;
 
 	if (!scsidrv)
 	{
