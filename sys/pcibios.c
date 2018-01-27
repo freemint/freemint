@@ -87,7 +87,7 @@ static PCIBIOS emu_pcibios = {
 # ifdef DEBUG_INFO
 # define PCIBIOS_DEBUG(x)	DEBUG (x)
 # else
-# define SCSIDRV_DEBUG(x)
+# define PCIBIOS_DEBUG(x)
 # endif
 
 
