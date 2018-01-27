@@ -139,16 +139,6 @@ struct pcibios {
 	long reserved[2];
 };
 
-typedef struct pcibios_mint {
-	PCIBIOS emu_pcibios;
-	/* Only for FireTOS and CTPCI */
-#define PCI_MAX_HANDLE		5 	/* 4 slots on the CTPCI + host bridge PLX9054 */
-#define PCI_MAX_FUNCTION	4	/* 4 functions per PCI slot */
-#define PCI_MAX_RSC_DESC	6	/* 6 resource descriptors */
-	PCI_RSC_DESC pci_rsc_desc[PCI_MAX_HANDLE][PCI_MAX_FUNCTION][PCI_MAX_RSC_DESC];
-	PCI_STS_DESC pci_sts_desc[PCI_MAX_HANDLE][PCI_MAX_FUNCTION];
-} PCIBIOS_MINT;
-
 
 /* PCI bios calls from _PCI cookie
  */

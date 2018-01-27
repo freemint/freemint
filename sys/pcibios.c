@@ -35,7 +35,7 @@
 
 # include "proc.h"
 
-static PCIBIOS_MINT pcibios_MiNT = { {
+static PCIBIOS emu_pcibios = {
 	0,
 	0,
 	emu_pcibios_Find_pci_device,
@@ -81,7 +81,7 @@ static PCIBIOS_MINT pcibios_MiNT = { {
 	emu_pcibios_Bus_to_virt,
 	emu_pcibios_Virt_to_phys,
 	emu_pcibios_Phys_to_virt,
-} };
+};
 
 
 # ifdef DEBUG_INFO
@@ -94,6 +94,7 @@ static PCIBIOS_MINT pcibios_MiNT = { {
 ulong pcibios_installed = 0;
 
 PCIBIOS *pcibios = NULL;
+PCIBIOS pcibios_ct60tos;
 void *tab_funcs_pci;
 
 long
@@ -110,8 +111,8 @@ pcibios_init (void)
 		pcibios_installed = pcibios->version;
 		/* First function in jump table */
 		tab_funcs_pci = &pcibios->Find_pci_device;
-		pcibios_MiNT.emu_pcibios.version = pcibios_installed;
-		r = set_toscookie (COOKIE__PCI, (long) &(pcibios_MiNT.emu_pcibios));
+		emu_pcibios.version = pcibios_installed;
+		r = set_toscookie (COOKIE__PCI, (long) &emu_pcibios);
 	}
 	else
 	{
@@ -120,22 +121,32 @@ pcibios_init (void)
 		return r;
 	}
 
-	/* Some PCI-BIOS functions in FireTOS and CTPCI PCI-BIOS get the
+	/* Some PCI-BIOS functions in FireTOS and CT60TOS PCI-BIOS get the
 	 * cookie value every time they're called to calculate the place
 	 * in memory where descriptors are stored, as the cookie value
-	 * is replaced by MiNT the memory addresses calculated are wrong,
-	 * so to avoid this we need to make this hack. Resource and status
+	 * is replaced by MiNT the memory addresses calculated are wrong.
+	 * To avoid crashes we need to make this hack. Resource and status
 	 * descriptors are store following the PCI-BIOS functions jump table.
 	 */
-	r = get_toscookie(COOKIE__CPU, &t); /* cf68klib in FireTOS emulates 68060 CPU */
-	if (!r && t == 60)
+#define JUMPTABLESIZE	sizeof(PCIBIOS) - 8
+
+	r = get_toscookie(COOKIE__CPU, &t);
+	if (!r && t == 60)	/* cf68klib in FireTOS emulates 68060 CPU! */
 		if (!get_toscookie(COOKIE__CF_, &dummy) ||	/* Test for FireTOS */
-		     !get_toscookie(COOKIE_CT60, &dummy)) {	/* Test for CT60 (CTPCI) */
-			/* Copy descriptors following the PCI-BIOS structure */
-			memcpy(&(pcibios_MiNT.pci_rsc_desc), pcibios + 1, 
-				PCI_MAX_HANDLE * PCI_MAX_FUNCTION * ((sizeof(PCI_RSC_DESC) *  PCI_MAX_RSC_DESC) + sizeof(PCI_STS_DESC)));
-			r = set_toscookie (COOKIE__PCI, (long) &pcibios_MiNT);
-	}
+		    !get_toscookie(COOKIE_CT60, &dummy))	/* Test for CT60 (CTPCI) */
+		{
+			/* Save the old jumptable to a new memory loaction */
+			memcpy(&pcibios_ct60tos.Find_pci_device, &pcibios->Find_pci_device, JUMPTABLESIZE);
+
+			/* Make the wrapper point to the new location */
+			tab_funcs_pci = &pcibios_ct60tos.Find_pci_device;
+
+			/* Copy the wrapper's jumptable to the memory pointed by the old _PCI cookie's value */
+			memcpy(&pcibios->Find_pci_device, &emu_pcibios.Find_pci_device, JUMPTABLESIZE);
+
+			/* Restore the old cookie value */
+			r = set_toscookie(COOKIE__PCI, (long)pcibios);
+		}
 
 	return r;
 }
