@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 David Galvez.
+ * Copyright 2014-2018 David Galvez.
  * Based on SCSIDRV sys_emu implementation by Frank Naumann.
  * Some code chunks taken from FireTOS sources:
  * Didier Mequignon 2005-2007, e-mail: aniplay@wanadoo.fr

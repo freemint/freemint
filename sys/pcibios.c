@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 David Galvez.
+ * Copyright 2014-2018 David Galvez.
  * Based on SCSIDRV sys_emu implementation by Frank Naumann.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
