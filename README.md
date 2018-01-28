@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/freemint/freemint.svg?branch=master)](https://travis-ci.org/freemint/freemint)
 
 This is FreeMiNT.  Please see the file `COPYING` for licensing conditions.
-Please send electronic mail to freemint-list@mail.atariforge.org for further 
-information.
+Please send electronic mail to freemint-discuss@lists.sourceforge.net for
+further information.
 
 The current FreeMiNT kernel coordinator is Alan Hourihane
 <alanh@freemint.org>
