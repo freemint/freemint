@@ -40,8 +40,10 @@
 #include "usb_api.h"
 #include "ucdload.h"
 #include "uddload.h"
-#include "mint/mdelay.h"
 #include "mint/endian.h"
+#ifndef TOSONLY
+#include "mint/mdelay.h"
+#endif
 #include <mint/osbind.h> /* Setexc */
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];

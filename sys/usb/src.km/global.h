@@ -196,6 +196,26 @@ get_usb_cookie (void)
 
 	return NULL;
 }
+
+/*
+ * delay functions, not accurate at all,
+ * for slow CPUs (ex: 68000 on the ST)
+ */
+static inline void udelay (register ulong loops)
+{
+	__asm__ __volatile__
+	(
+		"1: subql #1,%0; jcc 1b"
+		: "=d" (loops)
+		: "0" (loops)
+	);
+}
+
+static inline void mdelay (register ulong msecs)
+{
+	while (msecs--)
+		udelay (1000);
+}
 #endif
 
 static inline void hex_nybble(int n)

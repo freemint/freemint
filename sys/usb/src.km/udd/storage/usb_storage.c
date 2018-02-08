@@ -54,6 +54,7 @@
 #ifndef TOSONLY
 #include "mint/mint.h"
 #include "libkern/libkern.h"
+#include "mint/mdelay.h"
 #else
 #include "gem.h"
 #endif
@@ -64,7 +65,6 @@
 #include "xhdi.h"                   /* for PUN_XXX */
 
 #include "mint/endian.h"
-#include "mint/mdelay.h"
 
 #include "../../usb.h"
 #include "../../usb_api.h"
