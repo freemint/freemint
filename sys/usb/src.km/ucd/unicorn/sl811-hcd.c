@@ -44,12 +44,12 @@
 #ifndef TOSONLY
 #include "mint/mint.h"
 #include "libkern/libkern.h"
+#include "mint/mdelay.h"
 #endif
 
 #include "../../global.h"
 
 #include "mint/endian.h"
-#include "mint/mdelay.h"
 #include "../../usb.h"
 #include "mint/time.h"
 #include "arch/timer.h"
