@@ -70,6 +70,7 @@ tools/sysctl/sysctl
 *.o
 *.a
 xaaes*.km
+usb*.km
 *.xif
 *.xdd
 *.xfs
