@@ -147,12 +147,4 @@ udelay (register ulong usecs)
 # undef loops_per_sec
 # endif
 
-/*
- *	Moved the udelay() function into library code, no longer inlined.
- *	I had to change the algorithm because we are overflowing now on
- *	the faster ColdFire parts. The code is a little bigger, so it makes
- *	sense to library it.
- */
-extern void udelay(unsigned long usecs);
-
 # endif /* _mint_m68k_asm_delay_h */
