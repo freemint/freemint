@@ -114,7 +114,7 @@ udelay (register ulong usecs)
 
 	__delay (usecs);
 
-# elif defined (__mcoldfire__)
+# else
 
 /*
  *	Ideally we use a 32*32->64 multiply to calculate the number of
@@ -140,11 +140,7 @@ udelay (register ulong usecs)
 
 	__delay((((usecs * HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6);
 
-# else /* M68000 */
-
-	__delay(usecs); /* Sigh */
-
-# endif
+# endif /* __M68020__ */
 }
 
 # ifdef loops_per_sec
