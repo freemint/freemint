@@ -122,7 +122,6 @@
 
 #include "isp116x.h"
 
-#define DRIVER_VERSION	"02 Feb 2011"
 /*static const char hcd_name[] = "isp116x-hcd";*/
 
 /****************************************************************************/
