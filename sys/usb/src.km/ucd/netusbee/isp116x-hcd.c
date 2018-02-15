@@ -1549,7 +1549,7 @@ isp116x_reset(struct isp116x *isp116x)
 		clkrdy = isp116x_read_reg16(isp116x, HCuPINT) & HCuPINT_CLKRDY;
 		if (clkrdy)
 			break;
-		mdelay(4); /* Default 1 ms */
+		mdelay(1);
 	}
 	if (!clkrdy)
 	{
@@ -1652,7 +1652,7 @@ netusbee_hub_poll_thread(void *dummy)
 	for (;;)
 	{
 		netusbee_hub_events();
-		addtimeout(1000L, netusbee_hub_poll);
+		addtimeout(500L, netusbee_hub_poll);
 		sleep(WAIT_Q, (long)&netusbee_hub_poll_thread);
 	}
 
