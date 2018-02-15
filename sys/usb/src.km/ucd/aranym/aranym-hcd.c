@@ -38,8 +38,6 @@
 #define VER_MINOR	2
 #define VER_STATUS	
 
-#define DRIVER_VERSION	"12 Feb 2014"
-
 #define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
 #define MSG_BUILDDATE	__DATE__
 
