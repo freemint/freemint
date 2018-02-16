@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * The Host OS filesystem access driver - entry point definitions.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12

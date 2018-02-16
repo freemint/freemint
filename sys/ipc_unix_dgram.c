@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * send(), recv(), socketpair() and connect(), select() and ioctl()
  * routines for datagram unix sockets.
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * Filename:     mkfatfs.c
  * Author:       Frank Naumann
  * Started:      1998-08-01

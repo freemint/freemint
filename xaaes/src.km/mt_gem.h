@@ -1,7 +1,3 @@
-/*
- *  $Id$
- */
-
 #ifndef _MT_GEMLIB_H_
 # define _MT_GEMLIB_H_
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Native Features ethernet driver - header file.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
