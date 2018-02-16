@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Modified for XaAES by Frank Naumann <fnaumann@freemint.de>
  *
  * Crtinit: C run-time initialization code.

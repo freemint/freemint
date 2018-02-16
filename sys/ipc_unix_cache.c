@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file implements some sort of filename -> un_index conversion
  * cache. Speeds up for real FS's (where the inode numbers are NOT
  * junk) and slows down for the silly FS's where the inode numbers

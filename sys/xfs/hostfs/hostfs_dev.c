@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * The Host OS filesystem access driver - device IO.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12

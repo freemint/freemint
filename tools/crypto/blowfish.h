@@ -11,8 +11,6 @@
 # include "mytypes.h"
 
 
-/* $Id$*/
-
 # define MAXKEYBYTES	56		/* 448 bits */
 # define bf_N		16
 # define noErr		0
