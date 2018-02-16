@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * send(), recv(), socketpair(), connect(), select() and ioctl()
  * routines for stream unix sockets.
  * 

@@ -1,7 +1,5 @@
 
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *

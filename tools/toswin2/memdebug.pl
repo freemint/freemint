@@ -4,8 +4,6 @@
 # Copyright (C) 2001 Guido Flohr <guido@freemint.de>,
 # all rights reserved.
 #
-# $Id$
-#
 # This is a quick hack that analyzes the Toswin2 memory management.
 # If the variable MEMDEBUG is set to yes in the Makefile, then all
 # calls to malloc, free & friends a wrapped into functions that

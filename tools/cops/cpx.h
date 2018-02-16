@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * COPS (c) 1995 - 2003 Sven & Wilfried Behne
  *                 2004 F.Naumann & O.Skancke
  *

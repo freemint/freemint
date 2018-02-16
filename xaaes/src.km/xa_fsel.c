@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *																 1999 - 2003 H.Robbers
  *																				2004 F.Naumann & O.Skancke

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file implements the UNIX communication domain.
  * Neither MSG_OOB nor MSG_PEEK flags for send/recv
  * work on UNIX sockets. The getsockname/getpeername calls

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been created as part of the FreeMiNT project.
  */
 

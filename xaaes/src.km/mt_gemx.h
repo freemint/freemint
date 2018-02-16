@@ -1,6 +1,4 @@
 /*
- *  $Id$
- *
  * gemx.h - main header file for new gem-lib extensions
  *
  * This lib contains all GEM extensions of MagiC and NVDI/FSM/Speedo
