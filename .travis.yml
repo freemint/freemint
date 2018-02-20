@@ -1,0 +1,64 @@
+language: c
+os: linux
+sudo: false
+dist: trusty
+compiler:
+  - m68k-atari-mint-gcc
+
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:vriviere/ppa'
+    packages:
+      - cross-mint-essential
+      - cflib-m68k-atari-mint
+
+env:
+  global:
+    - BINTRAY_USER="mikrosk"
+    # this creates variable BINTRAY_API_KEY="<api key>"
+    - secure: "Y1pKyw5Q5eNe4GxwgLk+Qf+T5yePW5tQIdFGnPyiPtXxVaFmfN7GhCQ9P92BcfROypnQ/yHpgs8gVsLqdeyAM+XGKgWUXRBwLctek4cJcrCbx3FhF5UgpZHVHO1UCdjnJxuaPUbEmTIWNMCOB8c3xHmfIpWWedSUdhjt55oUaWJhn66IVETGyV/h1MKiJtEJMSk+aBgIf7CiMH3G/1A16rOxK9HISTDEM9nMea++NNFTnwPmS5xkM0miI7tiF+MJrXavDPm+fH3Y0SwWamaXxb4oCHNyNQtqFvak05I7QKyr/Y/Mzpq0rqUVK1lNvEcpgFH5K4es9hgqaYe9pxc3cKQpkezp/GG/8qYGhIDSyn2CNBqQbVxDMrHD3c93LPIPhxw1dtE5keMhlc0L6mO/Ke8qJVOWQMv8FdjWfj04odNZkKeH3S0rmFZDB/YpET0MucRvd6IzmCfmEmwdV7aFpPPbn4F6Uftq8A4UgcrGyleyuZOR30CPhd8QpqpMcT0eedt7ZY5t9BxFiFKmBV1ttE3mGvWIbv/YrmqRWvBlDdkDePvnPwsZ3CQf4MvnbQOdw89zZrnDzJsfPcuEZhu2FUfokm3BjR+oPzldszH1SrC4Abz/B8XimhFLlXE8vHjLmyELhKQfIMIUci3OzwOS6kTlbfX/AqWNaQdLxsVDuT4="
+  matrix:
+    - OLD_BUILD=0 SCRIPT_FILE="travis-freemint-master.tar.bz2"
+    - OLD_BUILD=1 SCRIPT_FILE="travis-freemint-master-raw.tar.bz2"
+
+# If before_install, install or before_script return a non-zero exit code, the build is errored and stops immediately.
+before_install:
+  - wget -qO- https://bintray.com/freemint/travis-support/download_file?file_path=${SCRIPT_FILE} | tar xjf -
+  - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
+
+install:
+  - if [ -x .travis/install.sh ]; then ./.travis/install.sh; else true; fi
+
+before_script:
+  - if [ -x .travis/before_script.sh ]; then ./.travis/before_script.sh; else true; fi
+
+# If script returns a non-zero exit code, the build is failed, but continues to run before being marked as failed.
+script:
+  - if [ -x .travis/script.sh ]; then ./.travis/script.sh; else true; fi
+# The exit code of after_success, after_failure, after_script and subsequent stages do not affect the build result.
+# However, if one of these stages times out, the build is marked as a failure.
+after_success:
+  - if [ -x .travis/after_success.sh ]; then ./.travis/after_success.sh; else true; fi
+after_failure:
+  - if [ -x .travis/after_failure.sh ]; then ./.travis/after_failure.sh; else true; fi
+
+# A non-zero exit code in this phase will mark the build as errored.
+before_deploy:
+  - if [ -x .travis/before_deploy.sh ]; then ./.travis/before_deploy.sh; else true; fi
+
+deploy:
+  provider: bintray
+  file: ".travis/bintray.desc"
+  user: "${BINTRAY_USER}"
+  key: "${BINTRAY_API_KEY}"
+  skip_cleanup: true
+  on:
+    branch: master
+    repo: mikrosk/freemint
+
+after_deploy:
+  - if [ -x .travis/after_deploy.sh ]; then ./.travis/after_deploy.sh; else true; fi
+
+after_script:
+  - if [ -x .travis/after_script.sh ]; then ./.travis/after_script.sh; else true; fi
