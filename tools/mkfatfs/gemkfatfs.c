@@ -25,12 +25,14 @@
  * 
  */
 
+# include <stdio.h>
 # include <errno.h>
 # include <fcntl.h>
 # include <signal.h>
 # include <string.h>
 # include <mintbind.h>
-# include <gemma/gemma.h>
+# include <slb/gemma.h>
+# include <limits.h>
 
 # include "gemkfatfs.h"
 # include "util.h"
@@ -82,46 +84,69 @@ newmsg(WINDIAL *wd, short vec, short *msg)
 		windial_longjmp(wd, vec);	/* never returns */
 	if (msg[0] == CH_EXIT)
 	{
-		ret = (long)msg[5];
+		ret = msg[4];
 		if (ret != 0)
 		{
+			/* process was signaled, or exited with exitcode != 0 */
 			if ((char)ret != 127)
 			{
+				/* process was signaled */
 				bell();
 				if ((char)ret == 0)
-					windial_alert(1, SIGNALTERM);
-				else
 				{
+					/* process was exited by signal */
+					windial_alert(1, (const char *)SIGNALTERM);
+				} else
+				{
+					/* process was exited with exitcode != 0 */
 					if (ret < 0)
-						windial_error(ret, ERRMKFATFS);
+						windial_error(ret, (const char *)ERRMKFATFS);
 					else
-						windial_error(-1L, ERRMKFATFS);
+						windial_error(-1L, (const char *)ERRMKFATFS);
 				}
+			} else
+			{
+				/* process was stopped */
 			}
 		} else
-			windial_alert(1, MKFATFSOK);
+		{
+			/* process exited */
+			windial_alert(1, (const char *)MKFATFSOK);
+		}
 	}
 	return 0;
 }
 
-static long
-newkey(WINDIAL *wd, short vec, short ks, short kc)
-{
-	if ((kc & 0x007f) == 0x0011)
-		windial_longjmp(wd, vec);
-	return 0;
-}
-
-char file1[1024];
-char file2[1024];
-short secperc;
-const short option[] = 	{ SETVOLUMELABEL, BADBLOCKFILENAME, SETVOLUMEID,
+static char file1[PATH_MAX];
+static char file2[PATH_MAX];
+static short secperc;
+static const short option[] = 	{ SETVOLUMELABEL, BADBLOCKFILENAME, SETVOLUMEID,
 			  BOOTMESSAGE, SETROOTENTRIES, SETSPC,
 			  NOPARTITIONIDCHK, CHECKFAT };
-const short argums[] =	{ 1, 2, 1, 2, 1, 3, 0, 0 };
-const char *cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-a", "-c" };
-long argfdd[] =		{ VOLUMELABEL, 0, VOLUMEID, 0,
-			  ROOTENTRIES, SPC, 0, 0 };
+static const short argums[] =	{ 1, 2, 1, 2, 1, 3, 0, 0 };
+static const char *const cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-a", "-c" };
+static long argfdd[] =		{ VOLUMELABEL, 0, VOLUMEID, 0, ROOTENTRIES, SPC, 0, 0 };
+
+static void sig_child(void)
+{
+	long p;
+	short msg[8];
+	GEM_ARRAY *me;
+	
+	p = Pwait3(1, NULL);
+	Psignal(SIGCHLD, sig_child);
+	me = gem_control();
+	msg[0] = CH_EXIT;
+	msg[1] = me->global[2];
+	msg[2] = 0;
+	msg[3] = (short)(p>>16);
+	msg[4] = (short)p;
+	msg[5] = 0;
+	msg[6] = 0;
+	msg[7] = 0;
+	appl_write(me->global[2], 16, msg);
+}
+
 
 static long
 exec_mkfatfs(WINDIAL *wd, short drive)
@@ -156,7 +181,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 					if (argfdd[x])
 					{
 						tmp = (char *)argfdd[x];
-						if ((long)tmp)
+						if (tmp)
 						{
 							strcat(cmd, cmd_sw[x]);
 							strcat(cmd, tmp);
@@ -166,7 +191,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 				case	3:
 					pop = (OBJECT *)rsrc_xgaddr(R_TREE, POPUP);
 					tmp = pop[secperc + SPC2].ob_spec.free_string;
-					while(*tmp == 0x20)
+					while(*tmp == ' ')
 						tmp++;
 					strcat(cmd, cmd_sw[x]);
 					strcat(cmd, tmp);
@@ -195,11 +220,11 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 	strcat(cmd, tmp);
 
 	cmd = command + strlen(command);
-	*cmd++ = '\x20';
+	*cmd++ = ' ';
 	if (drive < 26)
-		*cmd++ = (char)(drive + 0x61);
+		*cmd++ = (char)(drive + 'a');
 	else
-		*cmd++ = (char)(drive + 0x17);
+		*cmd++ = (char)(drive - 26 + '1');
 	*cmd++ = ':';
 	*cmd = '\0';
 
@@ -207,7 +232,8 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 	if (r == 2)
 		return 0;
 
-	r = proc_exec(100, 0x5L, "mkfatfs", command, 0);
+	Psignal(SIGCHLD, sig_child);
+	r = proc_exec(100, 0x1, "mkfatfs", command, NULL);
 
 	return r;
 }
@@ -237,7 +263,8 @@ do_window(WINDIAL *wd)
 
 	ob[SPC].ob_spec = menu.mn_tree[SPC2].ob_spec;
 
-	dmap = Dsetdrv(Dgetdrv()) >> 2;
+	drive = Dgetdrv();
+	dmap = Dsetdrv(drive) >> 2;
 	r = DISK_C;
 	while(r < DISK_C+30)
 	{
@@ -255,8 +282,6 @@ do_window(WINDIAL *wd)
 	 */
 	if (windial_setjmp(wd, 0, newmsg) == 1)
 		return;
-	if (windial_setjmp(wd, 1, newkey) == 1)
-		return;
 
 	for(;;)
 	{
@@ -271,11 +296,12 @@ do_window(WINDIAL *wd)
 		switch(m)
 		{
 			case	EXIT:
+					deselect(wd, m, 1);
 					if (chpid)
 					{
 						if (Pkill(chpid, SIGNULL) >= 0)
 						{
-							r = windial_alert(1, MKFATFSKILL);
+							r = windial_alert(1, (const char *)MKFATFSKILL);
 							if (r == 1)
 							{
 								Psignal(SIGCHLD, SIG_DFL);
@@ -289,9 +315,11 @@ do_window(WINDIAL *wd)
 			case	MAKEFS:
 					chpid = r = exec_mkfatfs(wd, drive);
 					if (r < 0)
-						windial_error(r, NOMKFATFS);
+						windial_error(r, (const char *)NOMKFATFS);
+					deselect(wd, m, 1);
 					break;
 			case	MYHOMEPAGE:
+					deselect(wd, m, 1);
 					open_url(ob[m].ob_spec.tedinfo->te_ptext);
 					break;
 			case	BADBLOCKFILENAME:
@@ -385,10 +413,13 @@ main(void)
 	 */
 	r = appl_open("gemkfatfs.rsc", 0, (char *)PNAME);
 	if (r < 0)
+	{
+		(void) Salert("gemkfatfs: appl_open() failed");
 		return r;
+	}
 
 	/* this initializes the entire WINDIAL structure */
-	wd = (WINDIAL *)windial_create(0, WINDOW, ICON, VOLUMELABEL, WINTITLE);
+	wd = (WINDIAL *)windial_create(0, WINDOW, ICON, VOLUMELABEL, (char *)WINTITLE);
 
 	do_window(wd);		/* do all the stuff */
 

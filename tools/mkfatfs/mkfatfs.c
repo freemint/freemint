@@ -81,13 +81,8 @@
 # include <ctype.h>
 # include <time.h>
 # include <signal.h>
+# include <getopt.h>
 # include <unistd.h>
-
-/* why not in unistd.h? */
-extern char *optarg;
-extern int opterr;
-extern int optind;
-
 # include <mintbind.h>
 
 # include "xhdi.h"
@@ -101,6 +96,14 @@ extern int optind;
 
 # define NO		0
 # define YES		1
+
+#ifndef NO_CONST
+#  ifdef __GNUC__
+#	 define NO_CONST(p) __extension__({ union { const void *cs; void *s; } _x; _x.cs = p; _x.s; })
+#  else
+#	 define NO_CONST(p) ((void *)(p))
+#  endif
+#endif
 
 /****************************************************************************/
 /* BEGIN definition part */
@@ -314,7 +317,7 @@ static int	check	= NO;	/* Default to no readability checking */
 static int	always	= NO;	/* Default check partition IDs */
 static int	verbose	= YES;	/* Default to verbose mode on */
 static int	only_bs	= NO;	/* Write only the bootsector (dangerous option) */
-static char *	program	= NULL;	/* Name of the program */
+static char const program[] = "mkfatfs";	/* Name of the program */
 
 static _F32_BS	f32bs;		/* Boot sector data (FAT and FAT32) */
 static uchar *	fsinfo;		/* FAT32 signature sector */
@@ -351,6 +354,7 @@ static char *	vol	= NULL;	/* Volume name */
 static time_t	cr_time	= 0;	/* Creation time */
 
 static ushort	drv	= 0;
+static ushort	drv_char = '?';
 static ushort	major	= 0;
 static ushort	minor	= 0;
 static ulong	start	= 0;
@@ -358,6 +362,7 @@ static ulong	psectors= 0;	/* Number of physical sectors in filesystem */
 static ulong	lsectors= 0;	/* Number of logical sectors in filesystem */
 static ulong	pssize	= 512;	/* physical sectorsize */
 static ulong	lssize	= 512;	/* logical sectorsize */
+static short    quiet;
 
 static long	bad	= 0;	/* Number of bad sectors in the filesystam */
 static ulong	test	= 0;	/* Block currently being tested (if autodetect bad sectors) */
@@ -367,7 +372,6 @@ static long	chunks	= 32;
 # define CHECK		check
 # define ALWAYS		always
 # define VERBOSE	verbose
-# define PROGRAM	program
 # define ONLY_BS	only_bs
 
 # define BOOT		f32bs.fbs
@@ -444,7 +448,7 @@ cdiv (long a, long b)
 static void
 fatal_ (const char *fmt_string)
 {
-	printf (fmt_string, PROGRAM, 'A' + DRV);
+	printf (fmt_string, program, drv_char);
 	
 	exit (1);
 }
@@ -673,7 +677,7 @@ get_geometry (void)
 {
 	long r;
 	
-	r = XHInqDev2 (DRV, &MAJOR, &MINOR, &START, NULL, &PSECS, ID);
+	r = XHInqDev2 (drv, &MAJOR, &MINOR, &START, NULL, &PSECS, ID);
 	if (r == 0)
 	{
 		r = XHInqTarget2 (MAJOR, MINOR, &PSECSIZE, NULL, NULL, 0);
@@ -686,7 +690,7 @@ get_geometry (void)
 	
 	ID [3] = '\0';
 	
-	printf ("Physical informations about partition %c:\n", 'A' + DRV);
+	printf ("Physical informations about partition %c:\n", drv_char);
 	printf ("----------------------------------------\n");
 	printf ("XHDI major number    : %d\n", MAJOR);
 	printf ("XHDI minor number    : %d\n", MINOR);
@@ -872,7 +876,7 @@ setup_tables (void)
 		clust16 = (long long) fatdata * SECSIZE / ((long) BOOT.cluster_size * SECSIZE + 4);
 		fatlength16 = cdiv (clust16 * 2, SECSIZE);
 		maxclust16 = (fatlength16 * SECSIZE) / 2;
-		if (maxclust16 > GEMDOS ? 32766 : 65526)
+		if (maxclust16 > (GEMDOS ? 32766 : 65526))
 			maxclust16 = GEMDOS ? 32766 : 65526;
 		if (clust16 > maxclust16)
 			clust16 = 0;
@@ -1003,7 +1007,7 @@ setup_tables (void)
 	
 	if (VERBOSE)
 	{
-		printf ("Logical informations about partition %c:\n", 'A' + DRV);
+		printf ("Logical informations about partition %c:\n", drv_char);
 		printf ("---------------------------------------\n");
 		printf ("Media descriptor    : 0x%02x\n", (unsigned int)(BOOT.media));
 		printf ("logical sector size : %ld\n", SECSIZE);
@@ -1319,14 +1323,18 @@ verify_user (void)
 	
 	if (ONLY_BS == YES)
 	{
-		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", 'A' + DRV);
-		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", drv_char);
+		if (!quiet)
+			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
 	else
 	{
-		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", 'A' + DRV);
-		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", drv_char);
+		if (!quiet)
+			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
+	if (quiet)
+		return 1;
 	scanf ("%c", &c);
 	printf ("\n");
 	
@@ -1346,13 +1354,8 @@ main (int argc, char **argv)
 	
 	VOL_NAME = strdup ("           ");
 	
-	/* What's the program name? */
-	if (argc && *argv)
-		PROGRAM = *argv;
-	else
-		PROGRAM = "mkdosfs";
-	
-	printf ("%s " VERSION ", 2002-09-19 for TOS and DOS FAT/FAT32-FS\n", PROGRAM);
+	argv[0] = (char *)NO_CONST(program);
+	printf ("%s " VERSION ", 2002-09-19 for TOS and DOS FAT/FAT32-FS\n", program);
 	
 	/* check and initalize XHDI */
 	if (init_XHDI ())
@@ -1364,7 +1367,7 @@ main (int argc, char **argv)
 	time (&CTIME);
 	VOL_ID = (long) CTIME;
 	
-	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:r:s:avB")) != EOF)
+	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:qr:s:avB")) != EOF)
 	{
 		/* Scan the command line for options */
 		switch (c)
@@ -1474,6 +1477,9 @@ main (int argc, char **argv)
 				ONLY_BS = YES;
 				break;
 			}
+			case 'q':
+				quiet = 1;
+				break;
 			default:
 			{
 				usage ();
@@ -1491,12 +1497,18 @@ main (int argc, char **argv)
 		usage ();
 	}
 	
-	DRV = (ushort) (toupper (c) - 'A');
-	if (DRV > 31)
+	drv_char = toupper (c);
+	if (drv_char >= 'A' && drv_char <= 'Z')
+	{
+		drv = drv_char - 'A';
+	} else if (drv_char >= '1' && drv_char <= '6')
+	{
+		drv = (drv_char - '1') + 26;
+	} else
 	{
 		fatal ("invalid drive");
 	}
-	
+
 	/*
 	 * Auto and specified bad sector handling are mutually
 	 * exclusive of each other!
@@ -1507,7 +1519,7 @@ main (int argc, char **argv)
 	}
 	
 	/* lock the drv */
-	if (Dlock (1, DRV))
+	if (Dlock (1, drv))
 	{
 		fatal ("Can't lock %c:");
 	}
@@ -1537,10 +1549,10 @@ main (int argc, char **argv)
 		write_tables ();
 	}
 	
-	(void) Dlock (0, DRV);
+	(void) Dlock (0, drv);
 	
 	/* Terminate with no errors! */
-	exit (0);
+	return EXIT_SUCCESS;
 }
 
 /* END main */
