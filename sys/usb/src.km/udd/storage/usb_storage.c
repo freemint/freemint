@@ -2054,15 +2054,21 @@ BCB
 static PUN_INFO pun_ahdi;
 
 /*
- * when no AHDI structure exists, this routine is called to install one.
+ * this routine checks if an AHDI structure exists.  if it does, and it
+ * is suitable, its address is returned.  otherwise, this routine installs
+ * a new one and returns that address.
+ *
  * it assumes that the existing buffer pool uses 512-byte buffers (the
- * logical sector size for floppies)
+ * logical sector size for floppies), unless an AHDI structure with a
+ * version number of 3.00 or greater exists.  in this case, the size of
+ * the existing buffers is taken from the existing AHDI structure.
  */
 static PUN_INFO *install_pun(void)
 {
 	PUN_INFO *pun;
 	BCB *bcb;
 	long bufsiz, bufcnt = 0L;
+	long old_bufsiz = 512L;
 	char *bufptr;
 
 	bufsiz = XHDOSLimits(XH_DL_SECSIZ,0);
@@ -2074,9 +2080,12 @@ static PUN_INFO *install_pun(void)
 	if (pun)
 		if (pun->cookie == AHDI)
 			if (pun->cookie_ptr == &(pun->cookie))
-				if (pun->version_num >= 0x300) 
-					if (bufsiz == pun->max_sect_siz) 
-						return pun;
+				if (pun->version_num >= 0x300)
+					old_bufsiz = pun->max_sect_siz;
+
+	/* see if we can use the existing buffer pool */
+	if (bufsiz <= old_bufsiz)
+		return pun;
 
 	/*
 	 * allocate new buffers for BCB chains
@@ -2101,12 +2110,12 @@ static PUN_INFO *install_pun(void)
 	 * copy existing buffers to new ones, updating the BCBs
 	 */
 	for (bcb = bufl0; bcb; bcb = bcb->b_link) {
-		memcpy(bufptr,bcb->b_bufr,512);
+		memcpy(bufptr,bcb->b_bufr,old_bufsiz);
 		bcb->b_bufr = bufptr;
 		bufptr += bufsiz;
 	}
 	for (bcb = bufl1; bcb; bcb = bcb->b_link) {
-		memcpy(bufptr,bcb->b_bufr,512);
+		memcpy(bufptr,bcb->b_bufr,old_bufsiz);
 		bcb->b_bufr = bufptr;
 		bufptr += bufsiz;
 	}
