@@ -17,7 +17,7 @@ env:
   global:
     - BINTRAY_USER="mikrosk"
     # this creates variable BINTRAY_API_KEY="<api key>"
-    - secure: "Y1pKyw5Q5eNe4GxwgLk+Qf+T5yePW5tQIdFGnPyiPtXxVaFmfN7GhCQ9P92BcfROypnQ/yHpgs8gVsLqdeyAM+XGKgWUXRBwLctek4cJcrCbx3FhF5UgpZHVHO1UCdjnJxuaPUbEmTIWNMCOB8c3xHmfIpWWedSUdhjt55oUaWJhn66IVETGyV/h1MKiJtEJMSk+aBgIf7CiMH3G/1A16rOxK9HISTDEM9nMea++NNFTnwPmS5xkM0miI7tiF+MJrXavDPm+fH3Y0SwWamaXxb4oCHNyNQtqFvak05I7QKyr/Y/Mzpq0rqUVK1lNvEcpgFH5K4es9hgqaYe9pxc3cKQpkezp/GG/8qYGhIDSyn2CNBqQbVxDMrHD3c93LPIPhxw1dtE5keMhlc0L6mO/Ke8qJVOWQMv8FdjWfj04odNZkKeH3S0rmFZDB/YpET0MucRvd6IzmCfmEmwdV7aFpPPbn4F6Uftq8A4UgcrGyleyuZOR30CPhd8QpqpMcT0eedt7ZY5t9BxFiFKmBV1ttE3mGvWIbv/YrmqRWvBlDdkDePvnPwsZ3CQf4MvnbQOdw89zZrnDzJsfPcuEZhu2FUfokm3BjR+oPzldszH1SrC4Abz/B8XimhFLlXE8vHjLmyELhKQfIMIUci3OzwOS6kTlbfX/AqWNaQdLxsVDuT4="
+    - secure: "bMkAkMFU2BqPBUAj2BqmgR+eScOs69wNxTFc4rMwekQxejC99NWefgdPsM5m3OUmj0T7KVPTwfbBJymVHk2ISd5ZehynITA1aUI6WAX7HBGTfeaCQHPd8zazDeY9BasVIP3ddmuM7lHrzg7zG1bmWT2cxAt9+G82TNDemZGVXhtmHP5wQV8Uwg/uIkSdeUEq+fxU5DSttTusSMrNrHGkHLPGVzfERPo85qs3yfGcVH5BKOM32PJBW+sM8nAMwxsbT4ModY5T8kM8zM2sa0TzBH3AIwh3ss32KAd/fpZwvMnAEJsY40g6xQfd/CWQYXxW2OkohqpPUt8X+8nVIRZbbIT7GjqfI3wOSzBDenZ9z0ZVDuVvWhRDIFeYyTkBa9PRZVrJtxBSgkVX+6K5PRxykIDIoqmxXyan+GT70WC35HCKhOYTwXhrAX90hmm+xkCfe85rIsDCjb1P/TtELO1NZS+SjgFRDD9TC7FUtt/ioYPbnwZ64zmyt4ptxEPLCjCqmT88Jx7S2hkGSjuHLlr0S8I7vY6kVlJn4ZUfCnZuM9HZGuIryOjyVLisoEa4SpX0ZpACBdnN8qvjIYLLV3Ux+cc/96n7NqEA+NE5LgT6C83Otg5ooYtvH9MtS4K6TdaDMGCmGkmx45WcCibRMInsHC4v03alwnP7G+qUFX1DUQA="
   matrix:
     - OLD_BUILD=0 SCRIPT_FILE="travis-freemint-master.tar.bz2"
     - OLD_BUILD=1 SCRIPT_FILE="travis-freemint-master-raw.tar.bz2"
@@ -48,6 +48,8 @@ before_deploy:
   - if [ -x .travis/before_deploy.sh ]; then ./.travis/before_deploy.sh; else true; fi
 
 deploy:
+  edge:
+    branch: v1.8.47
   provider: bintray
   file: ".travis/bintray.desc"
   user: "${BINTRAY_USER}"
@@ -55,7 +57,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
-    repo: mikrosk/freemint
+    repo: freemint/freemint
 
 after_deploy:
   - if [ -x .travis/after_deploy.sh ]; then ./.travis/after_deploy.sh; else true; fi
