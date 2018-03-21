@@ -63,6 +63,12 @@
 # define mdelay(x)	/* on 68000 we don't need to delay */
 # endif
 
+# ifdef __mc68060__
+# define UDELAY_060(x)	udelay(x)
+# else
+# define UDELAY_060(x)
+# endif
+
 # define wait5ms	mdelay (5)
 
 
@@ -182,6 +188,8 @@ RdNib (ushort rreg)
 	*(volatile uchar *) (0xfa0000 + Table[EOC+rreg]);
 	*(volatile uchar *) (0xfa0000 + Table[RdAddr+rreg]);
 	
+	UDELAY_060(1);
+
 	/* Read nib */
 # if 1
 	//*(volatile ushort *) 0xfa0000;
@@ -190,6 +198,7 @@ RdNib (ushort rreg)
 	*(volatile uchar *) 0xfa0001;
 	c = *(volatile uchar *) 0xfa0001;
 # endif
+	UDELAY_060(1);
 	
 	*(volatile uchar *) (0xfa0000 + Table[EOC+rreg]);
 	
@@ -251,10 +260,13 @@ RdBytEP (void)
 	
 	c = x & 0x0f;
 	
+	UDELAY_060(1);
+
 	/* CLK down */
 	*(volatile uchar *) 0xfb0000;
 	
 	//nop
+	UDELAY_060(1);
 	
 	/* get hi nib */
 	//x = *(volatile ushort *) 0xfa0000;
@@ -337,9 +349,9 @@ rtl8012_doreset (void)
 	/* Clear ISR */
 	WrNib (ISR, EPLC_ROK+EPLC_TER+EPLC_TOK);
 	WrNib (ISR+HNib, HNib+EPLC_RBER);
-	
-	//udelay (10);
-	
+
+	UDELAY_060(10);
+
 	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
 	DEBUG (("rtl8012: reset -> 2: %i [expected 2]", i));
 	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
