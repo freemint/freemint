@@ -2,7 +2,7 @@
 # Makefile for 
 #
 TARGET = 
-DRIVERS = rtl8012 rtl8012st dial plip dummy de600 lance pamsdma biodma \
+DRIVERS = rtl8012 rtl8012st rtl8012ct60 dial plip dummy de600 lance pamsdma biodma \
 	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix
 
 SHELL = /bin/sh
@@ -32,7 +32,7 @@ LIBS = $(LIBKERN) -lgcc
 
 # default definitions
 GENFILES = *.xif
-SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c
 
  
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
@@ -54,6 +54,7 @@ PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
 BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
 RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
 RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir rtl8012st.c rtl8012_vblint.s)))
+RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
 ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
 
 # entry point
@@ -182,6 +183,15 @@ rtl8012st:
 		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)"
 
 rtl8012st.c:
+	ln -s rtl8012.c $@
+
+rtl8012ct60:
+	$(MAKE) rtl8012ct60.xif \
+		"TARGET=rtl8012ct60.xif" \
+		"XOBJS=$(COMMON_OBJS) $(RTL8012CT60_OBJS)" \
+		CPU=060
+
+rtl8012ct60.c:
 	ln -s rtl8012.c $@
 
 

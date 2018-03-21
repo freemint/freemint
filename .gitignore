@@ -17,6 +17,7 @@ sys/sockets/xif/rieblspc_fast.c
 sys/sockets/xif/rieblste.c
 sys/sockets/xif/riebltt.c
 sys/sockets/xif/rtl8012st.c
+sys/sockets/xif/rtl8012ct60.c
 sys/xdd/audio/actrl
 sys/xdd/mfp/mfp_mil.c
 tools/crypto/crypto
