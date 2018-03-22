@@ -32,7 +32,7 @@
 void
 unaligned_putl(char *addr, long value)
 {
-#if defined(__M68000__)
+#if defined(__mc68000__)
 	if ((long)addr & 1)
 	{
 		addr[0] = (value >> 24) & 0xff;
@@ -42,7 +42,7 @@ unaligned_putl(char *addr, long value)
 	}
 	else
 #else
-#ifndef __M68020__
+#ifndef __mc68020__
 #warning Does this cpu support unaligned memory accesses?
 #endif
 #endif
