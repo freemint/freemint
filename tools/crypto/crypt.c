@@ -132,7 +132,7 @@ blow_doblock (BF_KEY *bfk,
 	count = 0;
 	blocksize = p_secsize;
 	
-# ifdef __M68000__
+# ifdef __mc68000__
 	if (((ulong) buf & 1L) /* && (mcpu < 20) */)
 	{
 		/* Unfortunately, the block isn't word aligned ...
