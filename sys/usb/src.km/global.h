@@ -23,6 +23,7 @@
 #ifndef _global_h
 #define _global_h
 
+#include "cookie.h"
 #include "mint/module.h"
 #ifndef TOSONLY
 #include "libkern/libkern.h"
@@ -156,12 +157,6 @@ static inline long strlen (const char *scan)
 
 /* cookie jar definition
  */
-
-struct cookie
-{
-	long tag;
-	long value;
-};
 
 #define _USB 0x5f555342L
 #define CJAR ((struct cookie **) 0x5a0)
