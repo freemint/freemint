@@ -255,7 +255,7 @@ nfexec_write (FILEPTR *f, const char *buf, long bytes)
 
 	DEBUG (("nfexec_write [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
 
-	done = nf_call(nf_id, buf, bytes);
+	done = nf_call(nf_id | 1, buf, bytes);
 
 	DEBUG (("nfexec_write: leave (%ld)", done));
 	return done;
