@@ -174,8 +174,9 @@ biodma:
 rtl8012:
 	$(MAKE) rtl8012.xif \
 		"TARGET=rtl8012.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
+		"XOBJS=main_020.o $(RTL8012_OBJS)" \
 		CPU=020-60
+main_020.o: main_020.c
 
 rtl8012st:
 	$(MAKE) rtl8012st.xif \
@@ -188,11 +189,13 @@ rtl8012st.c:
 rtl8012ct60:
 	$(MAKE) rtl8012ct60.xif \
 		"TARGET=rtl8012ct60.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012CT60_OBJS)" \
+		"XOBJS=main_020.o $(RTL8012CT60_OBJS)" \
 		CPU=060
 
 rtl8012ct60.c:
 	ln -s rtl8012.c $@
 
+main_020.c: main.c
+	ln -s $< $@
 
 include $(top_srcdir)/DEPENDENCIES

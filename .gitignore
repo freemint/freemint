@@ -10,6 +10,7 @@ sys/buildinfo/buildserial
 sys/buildinfo/cdef.h
 sys/buildinfo/mkbuild
 sys/gen-syscall/gen-syscall
+sys/sockets/xif/main_020.c
 sys/sockets/xif/rieblmst.c
 sys/sockets/xif/rieblmst_fast.c
 sys/sockets/xif/rieblspc.c
