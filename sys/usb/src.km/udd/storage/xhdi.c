@@ -1033,7 +1033,7 @@ get_fun_ptr (void)
 	static cookie_fun XHDI = NULL;
 	long *magic_test;
 	
-	getcookie (*((long *)"XHDI"), (long *)&XHDI);
+	getcookie (COOKIE_XHDI, (long *)&XHDI);
 
 	/* check magic */
 		
@@ -1053,7 +1053,7 @@ set_cookie (void)
 	while (cjar->tag)
 	{
 		n++;
-		if (cjar->tag == *((long *)"XHDI"))
+		if (cjar->tag == COOKIE_XHDI)
 		{
 			cjar->value = (long)&usbxhdi;
 			return;
@@ -1065,7 +1065,7 @@ set_cookie (void)
 	if (n < cjar->value)
 	{
 		n = cjar->value;
-		cjar->tag = *((long *)"XHDI");
+		cjar->tag = COOKIE_XHDI;
 		cjar->value = (long)&usbxhdi;
 
 		cjar++;
