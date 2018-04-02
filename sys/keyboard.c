@@ -954,7 +954,7 @@ IkbdScan(PROC *p, long arg)
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
 
-		DEBUG(("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
+		TRACE(("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
 // 		display("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
 
 		scan = scancode & 0xff;
