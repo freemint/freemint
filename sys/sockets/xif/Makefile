@@ -53,7 +53,7 @@ RIEBL_TT_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_TT_SRCS))))
 PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
 BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
 RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
-RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir rtl8012st.c rtl8012_vblint.s)))
+RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012ST_SRCS))))
 RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
 ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
 
