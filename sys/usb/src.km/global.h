@@ -159,7 +159,6 @@ static inline long strlen (const char *scan)
  */
 
 #define _USB 0x5f555342L
-#define CJAR ((struct cookie **) 0x5a0)
 
 static inline struct usb_module_api *
 get_usb_cookie (void)
