@@ -69,35 +69,6 @@ struct kentry *kentry;
 Path start_path;
 static const struct kernel_module *self = NULL;
 #else
-static void
-set_cookie (void)
-{
-	struct cookie *cjar = *CJAR;
-	long n = 0;
-
-	while (cjar->tag)
-	{
-		n++;
-		if (cjar->tag == _USB)
-		{
-			cjar->value = (long)&usb_api;
-			return;
-		}
-		cjar++;
-	}
-
-	n++;
-	if (n < cjar->value)
-	{
-		n = cjar->value;
-		cjar->tag = _USB;
-		cjar->value = (long)&usb_api;
-
-		cjar++;
-		cjar->tag = 0L;
-		cjar->value = n;
-	}
-}
 
 extern unsigned long _PgmSize;
 #endif
@@ -212,7 +183,7 @@ init(struct kentry *k, const struct kernel_module *km)
 #ifdef TOSONLY
 	{
 		/* Set the _USB API cookie */
-		Supexec(set_cookie);
+		setcookie(_USB, (long)&usb_api);
 
 		c_conws("USB core installed.\r\n");
 

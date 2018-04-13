@@ -67,20 +67,6 @@ ncookie (COOKIE * p)
 	return (++p);
 }
 
-static COOKIE *
-get_cookie (long id)
-{
-	COOKIE *p;
-	p = findcookie ();
-	while (p)
-	{
-		if (p->ident == id)
-			return p;
-		p = ncookie (p);
-	}
-	return ((COOKIE *) 0);
-}
-
 static int
 add_cookie (COOKIE * cook)
 {
@@ -118,7 +104,6 @@ add_cookie (COOKIE * cook)
 
 long ssp;
 static COOKIE SCSIDRV_COOKIE;
-static COOKIE *old_cookie;
 #endif /* TOSONLY */
 
 static REQDATA reqdata;
@@ -742,9 +727,9 @@ install_scsidrv (void)
 	}
 
 #ifdef TOSONLY
-	old_cookie = (COOKIE *) get_cookie (0x53435349L);
-	if (old_cookie) {
-		SCSIDRV *tmp = (SCSIDRV *)old_cookie->v.l;
+	SCSIDRV *tmp = NULL;
+	if (getcookie (0x53435349L, (long *)&tmp))
+	{
 		BUSINFO info[32];
 		short j;
 		long ret;
@@ -775,7 +760,7 @@ again:
 		/* Take a copy of the old pointers, and replace with ours.
 		 * This way we don't delete and replace the existing cookie.
 		 */
-		memcpy(&oldscsi, (char*)old_cookie->v.l, sizeof(oldscsi));
+		memcpy(&oldscsi, (char*)tmp, sizeof(oldscsi));
 		tmp->In = SCSIDRV_In;
 		tmp->Out = SCSIDRV_Out;
 		tmp->InquireSCSI = SCSIDRV_InquireSCSI;

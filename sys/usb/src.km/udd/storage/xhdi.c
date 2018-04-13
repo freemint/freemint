@@ -1006,27 +1006,6 @@ xhdi_handler(ushort *stack)
 
 typedef long (*cookie_fun)(unsigned short opcode,...);
 
-static long
-getcookie (long cookie, long *p_value)
-{
-	long *cookiejar = *((long **)0x5a0);
-
-	if (!cookiejar) return 0;
-
-	do
-	{
-		if (cookiejar[0] == cookie)
-		{
-			if (p_value) *p_value = cookiejar[1];
-			return 1;
-		}
-		else
-			cookiejar = &(cookiejar[2]);
-	} while (cookiejar[-2]);
-
-	return 0;
-}
-
 static cookie_fun
 get_fun_ptr (void)
 {
@@ -1042,36 +1021,6 @@ get_fun_ptr (void)
 		XHDI = NULL;
 	
 	return XHDI;
-}
-
-static void
-set_cookie (void)
-{
-	struct cookie *cjar = *CJAR;
-	long n = 0;
-
-	while (cjar->tag)
-	{
-		n++;
-		if (cjar->tag == COOKIE_XHDI)
-		{
-			cjar->value = (long)&usbxhdi;
-			return;
-		}
-		cjar++;
-	}
-
-	n++;
-	if (n < cjar->value)
-	{
-		n = cjar->value;
-		cjar->tag = COOKIE_XHDI;
-		cjar->value = (long)&usbxhdi;
-
-		cjar++;
-		cjar->tag = 0L;
-		cjar->value = n;
-	}
 }
 #endif
 
@@ -1119,7 +1068,7 @@ install_xhdi_driver(void)
 		next_handler = XHDI;
 	}
 
-	set_cookie();
+	setcookie(COOKIE_XHDI, (long)&usbxhdi);
 
 	return r;
 #endif
