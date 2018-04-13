@@ -160,6 +160,74 @@ static inline long strlen (const char *scan)
 
 #define _USB 0x5f555342L
 
+static inline int getcookie(long target,long *p_value)
+{
+	long oldssp;
+	struct cookie *cookie_ptr;
+
+	if (Super((void *)1L) == 0L)
+		oldssp = Super(0L);
+	else
+		oldssp = 0;
+
+	cookie_ptr = *CJAR;
+
+	if (oldssp)
+		SuperToUser((void *)oldssp);
+
+	if (cookie_ptr) {
+		do {
+			if (cookie_ptr->tag == target) {
+				if (p_value)
+					*p_value = cookie_ptr->value;
+				return 1;
+			}
+		} while ((cookie_ptr++)->tag != 0L);
+	}
+
+	return 0;
+}
+
+static inline void setcookie (long tag, long value)
+{
+	long oldssp;
+	struct cookie *cjar;
+	long n = 0;
+
+	if (Super((void *)1L) == 0L)
+		oldssp = Super(0L);
+	else
+		oldssp = 0;
+
+	cjar = * CJAR;
+
+	if (oldssp)
+		SuperToUser((void *)oldssp);
+
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == tag)
+		{
+			cjar->value = value;
+			return;
+		}
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = tag;
+		cjar->value = value;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
+
 static inline struct usb_module_api *
 get_usb_cookie (void)
 {

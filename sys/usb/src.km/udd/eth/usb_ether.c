@@ -108,35 +108,6 @@ static struct ueth_data *usb_eth;
 #define MAX_USB_ETHERNET_DEVICES 4
 # define COOKIE_EUSB	0x45555342L
 
-static void
-set_cookie (void)
-{
-	struct cookie *cjar = *CJAR;
-	long n = 0;
-
-	while (cjar->tag)
-	{
-		n++;
-		if (cjar->tag == COOKIE_EUSB)
-		{
-			cjar->value = (long)usbNetAPI;
-			return;
-		}
-		cjar++;
-	}
-
-	n++;
-	if (n < cjar->value)
-	{
-		n = cjar->value;
-		cjar->tag = COOKIE_EUSB;
-		cjar->value = (long)usbNetAPI;
-
-		cjar++;
-		cjar->tag = 0L;
-		cjar->value = n;
-	}
-}
 static long usb_eth_register(struct usb_eth_prob_dev *ethdev)
 {
 	long i;
@@ -296,7 +267,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	}
 	memset(usbNetAPI->usbnet, 0, usbNetAPI->numDevices * sizeof(struct usb_eth_prob_dev));
 
-	set_cookie ();
+	setcookie(COOKIE_EUSB, (long)usbNetAPI);
 #else
 	/*
 	 * Find EUSB cookie.
