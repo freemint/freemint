@@ -728,7 +728,7 @@ install_scsidrv (void)
 
 #ifdef TOSONLY
 	SCSIDRV *tmp = NULL;
-	if (getcookie (0x53435349L, (long *)&tmp))
+	if (getcookie (COOKIE_SCSI, (long *)&tmp))
 	{
 		BUSINFO info[32];
 		short j;
@@ -771,7 +771,7 @@ again:
 		tmp->Close = SCSIDRV_Close;
 		tmp->Error = SCSIDRV_Error;
 	} else {
-		SCSIDRV_COOKIE.ident = 0x53435349L;
+		SCSIDRV_COOKIE.ident = COOKIE_SCSI;
 		SCSIDRV_COOKIE.v.l = (long) &scsidrv;
 		add_cookie (&SCSIDRV_COOKIE);
 	}
