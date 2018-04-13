@@ -168,8 +168,8 @@ init(struct kentry *k, const struct kernel_module *km)
 	{
 		struct usb_module_api *checkapi;
 
-		checkapi = get_usb_cookie();
-		if (checkapi != NULL) {
+		/* Get USB cookie */
+		if (getcookie(_USB, (long *)&checkapi)) {
 			c_conws("USB core already installed.\r\n");
 			return 0;
 		}

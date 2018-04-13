@@ -419,8 +419,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	/*
 	 * GET _USB COOKIE to REGISTER 
 	 */
-	api = get_usb_cookie ();
-	if (!api)
+	if (!getcookie (_USB, (long *)&api))
 	{
 		(void) Cconws ("MOUSE failed to get _USB cookie\r\n");
 		return -1;

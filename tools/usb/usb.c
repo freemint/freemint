@@ -121,7 +121,8 @@ events (short menuID)
         {
             if (!api)
             {
-                api = get_usb_cookie ();
+                /* Get USB cookie */
+                getcookie (_USB, (long *)&api);
             }
             else
             {

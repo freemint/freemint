@@ -228,37 +228,6 @@ static inline void setcookie (long tag, long value)
 	}
 }
 
-static inline struct usb_module_api *
-get_usb_cookie (void)
-{
-	struct usb_module_api *api;
-	long ret;
-	struct cookie *cjar;
-
-	ret = Super(0L);
-
-	api = NULL;
-	cjar = *CJAR;
-
-	while (cjar->tag)
-	{
-		if (cjar->tag == _USB)
-		{
-			api = (struct usb_module_api *)cjar->value;
-	
-			SuperToUser(ret);
-
-			return api;
-		}
-
-		cjar++;
-	}
-
-	SuperToUser(ret);
-
-	return NULL;
-}
-
 /*
  * delay functions, not accurate at all,
  * for slow CPUs (ex: 68000 on the ST)
