@@ -1391,8 +1391,8 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	DEBUG (("%s: enter init", __FILE__));
 
 #ifdef TOSONLY
-	api = get_usb_cookie();
-	if (!api) {
+	/* Get USB cookie */
+	if (!getcookie(_USB, (long *)&api)) {
 		(void)Cconws("UNICORN failed to get _USB cookie\r\n");
 		return -1;
 	}

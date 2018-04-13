@@ -2184,8 +2184,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 #ifdef TOSONLY
 	/* GET _USB COOKIE to REGISTER */
-	api = get_usb_cookie();
-	if (!api) {
+	if (!getcookie(_USB, (long *)&api)) {
 		(void)Cconws("STORAGE failed to get _USB cookie\r\n");
 		return -1;
 	}
