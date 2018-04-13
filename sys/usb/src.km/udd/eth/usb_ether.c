@@ -106,7 +106,6 @@ static struct ueth_data *usb_eth;
  * For USB ethernet devices.
  */
 #define MAX_USB_ETHERNET_DEVICES 4
-# define COOKIE_EUSB	0x45555342L
 
 static long usb_eth_register(struct usb_eth_prob_dev *ethdev)
 {
@@ -275,7 +274,6 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	{
 		while (cookie->name)
 		{
-#define COOKIE_EUSB	0x45555342L
 			if (cookie->name == COOKIE_EUSB) {
 				usbNetAPI = (struct usb_netapi *)cookie->val;
 				break;
