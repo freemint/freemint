@@ -47,8 +47,12 @@ char **environ;
 char **__libc_argv;
 long   __libc_argc;
 
-/* size to be allocated for the stack */
-long _stksize = 16384;
+
+/* size to be allocated for the stack
+ * it's defined in XXXXDEFS build files
+ * (ex: USBDEFS, STORAGEDEFS, etc )
+ */
+long _stksize = STACKSIZE;
 
 /* total size of program area */
 unsigned long _PgmSize;

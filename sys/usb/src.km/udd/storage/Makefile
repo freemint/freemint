@@ -8,6 +8,7 @@ SUBDIRS =
 srcdir = .
 top_srcdir = ../../../..
 subdir = storage
+toscommon_srcdir = ../../tos-common
 
 default:
 
@@ -25,6 +26,7 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.udd *.prg
+SGENFILES = crtinit.c entry.S setstack.S
 
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
@@ -53,6 +55,13 @@ $(storagetarget): $(compile_dir)
 $(compile_dir): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
+
+# Link common TOS files
+ifeq ($(storage),prg)
+	ln -s $(toscommon_srcdir)/crtinit.c $(srcdir)/crtinit.c; \
+	ln -s $(toscommon_srcdir)/entry.S $(srcdir)/entry.S; \
+	ln -s $(toscommon_srcdir)/setstack.S $(srcdir)/setstack.S
+endif
 
 else
 

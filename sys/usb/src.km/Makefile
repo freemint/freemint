@@ -8,6 +8,7 @@ SUBDIRS = loader ucd udd
 srcdir = .
 top_srcdir = ../..
 subdir = src.km
+toscommon_srcdir = ./tos-common
 
 default: help
 
@@ -25,7 +26,7 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.km
-SGENFILES =
+SGENFILES = crtinit.c entry.S setstack.S
 
 
 help:
@@ -67,6 +68,13 @@ $(usbtarget): $(compile_dir)
 $(compile_dir): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
+
+# Link common TOS files
+ifeq ($(usb),prg)
+	ln -s $(toscommon_srcdir)/crtinit.c $(srcdir)/crtinit.c; \
+	ln -s $(toscommon_srcdir)/entry.S $(srcdir)/entry.S; \
+	ln -s $(toscommon_srcdir)/setstack.S $(srcdir)/setstack.S
+endif
 
 else
 
