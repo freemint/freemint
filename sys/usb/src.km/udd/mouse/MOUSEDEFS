@@ -14,7 +14,7 @@ endif
 ifeq ($(mouse),prg)
 TARGET = mouse.prg
 CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin
+USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=8192
 LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
 endif
 
