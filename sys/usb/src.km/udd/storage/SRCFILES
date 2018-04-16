@@ -21,6 +21,7 @@ TOSCOBJS = \
 	crtinit.c
 
 TOSSSOBJS = \
+	delayasm.S \
 	entry.S \
 	setstack.S
 

@@ -26,7 +26,7 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.km
-SGENFILES = crtinit.c entry.S setstack.S
+SGENFILES = crtinit.c delayasm.S entry.S setstack.S
 
 
 help:
@@ -72,6 +72,7 @@ $(compile_dir): Makefile.objs
 # Link common TOS files
 ifeq ($(usb),prg)
 	ln -s $(toscommon_srcdir)/crtinit.c $(srcdir)/crtinit.c; \
+	ln -s $(toscommon_srcdir)/delayasm.S $(srcdir)/delayasm.S; \
 	ln -s $(toscommon_srcdir)/entry.S $(srcdir)/entry.S; \
 	ln -s $(toscommon_srcdir)/setstack.S $(srcdir)/setstack.S
 endif

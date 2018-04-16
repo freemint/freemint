@@ -30,6 +30,7 @@ SOBJS =
 SSOBJS =
 
 TOSSSOBJS = \
+	delayasm.S \
 	entry.S \
 	setstack.S
 

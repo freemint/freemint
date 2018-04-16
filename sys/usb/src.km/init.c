@@ -173,6 +173,8 @@ init(struct kentry *k, const struct kernel_module *km)
 			c_conws("USB core already installed.\r\n");
 			return 0;
 		}
+		/* for precise mdelay/udelay relative to CPU power */
+		set_tos_delay();
 	}
 #endif
 
