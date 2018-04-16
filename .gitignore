@@ -26,6 +26,10 @@ sys/usb/src.km/setstack.S
 sys/usb/src.km/ucd/unicorn/crtinit.c
 sys/usb/src.km/ucd/unicorn/entry.S
 sys/usb/src.km/ucd/unicorn/setstack.S
+sys/usb/src.km/ucd/netusbee/crtinit.c
+sys/usb/src.km/ucd/netusbee/delayasm.S
+sys/usb/src.km/ucd/netusbee/entry.S
+sys/usb/src.km/ucd/netusbee/setstack.S
 sys/usb/src.km/udd/eth/crtinit.c
 sys/usb/src.km/udd/eth/entry.S
 sys/usb/src.km/udd/eth/setstack.S

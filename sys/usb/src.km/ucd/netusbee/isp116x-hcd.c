@@ -57,59 +57,42 @@
  *    Note: Part of this code has been derived from linux
  */
 
+#ifndef TOSONLY
 #include <stddef.h>
 #include <mint/osbind.h> /* Setexc */
-
 #include "mint/mint.h"
 #include "libkern/libkern.h"
 #include "mint/mdelay.h"
+#endif
+
+#include "../../global.h"
+
 #include "mint/dcntl.h"
 #include "mint/swap.h"
-
 #include "../../usb.h"
 #include "../../usb_api.h"
 
 #include "netusbee_int.h"
 
 #define VER_MAJOR	0
-#define VER_MINOR	1
+#define VER_MINOR	2
 #define VER_STATUS
 
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
+#ifdef TOSONLY
+#define MSG_VERSION    "TOS"
+#else
+#define MSG_VERSION    "FreeMiNT"
+#endif
+
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
-	"\033p NetUSBee USB controller driver " MSG_VERSION " \033q\r\n"
+	"\033p NetUSBee USB controller driver for " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
+	"Brought to TOS by Claude Labelle.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-/*
- * Debug section
- */
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-
-#else
-
-# define FORCE(x)
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)
-# define TRACE(x)
-# define ASSERT(x)	assert x
-
-#endif
 
 /*
  * Enable the following defines if you wish enable extra debugging messages.
@@ -119,14 +102,21 @@
 # define VERBOSE		/* verbose debugging messages */
 #endif
 
-#include "isp116x.h"
-
 /*static const char hcd_name[] = "isp116x-hcd";*/
 
 /****************************************************************************/
 /* BEGIN kernel interface */
 
+#ifndef TOSONLY
 struct kentry	*kentry;
+#else
+extern unsigned long _PgmSize;
+ulong delay_150ns;
+ulong delay_300ns;
+#endif
+
+#include "isp116x.h"
+
 struct usb_module_api *api;
 
 /* END kernel interface */
@@ -147,7 +137,11 @@ void _cdecl	netusbee_int	(void);
 /*
  * interrupt handling - top half
  */
-static void	int_handle_tophalf	(PROC *p, long arg);
+#ifndef TOSONLY
+static void    int_handle_tophalf    (PROC *p, long arg);
+#endif
+
+void _cdecl netusbee_hub_events(void);
 
 /*
  *Function prototypes
@@ -158,8 +152,6 @@ long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long)
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
-
-long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /*
  * USB controller interface
@@ -609,7 +601,6 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
 
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
-	set_int_lvl7();
 	isp116x_write_addr(isp116x, HCATLPORT | ISP116x_WRITE_OFFSET);
 
 	done = 0;
@@ -627,14 +618,13 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
 
 		/* This part is critical, disamble interrupts */
-//		set_int_lvl7();
+		SET_INT_LVL6;
 		write_ptddata_to_fifo(isp116x,
 				      (unsigned char *) data + done,
 				      PTD_GET_LEN(&ptd[i]));
-//		set_old_int_lvl();
+		SET_OLD_INT_LVL;
 
 		done += PTD_GET_LEN(&ptd[i]);
-		set_old_int_lvl();
 	}
 }
 
@@ -651,7 +641,6 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
-	set_int_lvl7();
 	isp116x_write_addr(isp116x, HCATLPORT);
 
 	ret = TD_CC_NOERROR;
@@ -672,11 +661,11 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 			|| PTD_GET_CC(ptd) == 5 || PTD_GET_CC(ptd) == 6)
 		{
 			/* This part is critical, disamble interrupts */
-//			set_int_lvl7();
+			SET_INT_LVL6;
 			read_ptddata_from_fifo(isp116x,
 					       (unsigned char *) data + done,
 					       PTD_GET_LEN(&ptd[i]));
-//			set_old_int_lvl();
+			SET_OLD_INT_LVL;
 		}
 
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
@@ -694,8 +683,6 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 			ret = cc;
 	}
 	DEBUG(("--- unpack buffer 0x%08lx - %ld bytes (fifo %ld) count: %d ---", data, len, buflen, PTD_GET_COUNT(ptd)));
-
-	set_old_int_lvl();
 
 	return ret;
 }
@@ -1578,7 +1565,7 @@ isp116x_stop(struct isp116x *isp116x)
 	isp116x_sw_reset(isp116x);
 }
 
-
+#ifndef TOSONLY
 static void
 int_handle_tophalf(PROC *process, long arg)
 {
@@ -1594,7 +1581,7 @@ int_handle_tophalf(PROC *process, long arg)
 		usb_rh_wakeup();
 	}
 }
-
+#endif
 
 void _cdecl netusbee_hub_events(void);
 
@@ -1621,8 +1608,9 @@ netusbee_hub_events(void)
 			isp116x->rhstatus = isp116x_read_reg32(isp116x, HCRHSTATUS);
 			isp116x->rhport[0] = isp116x_read_reg32(isp116x, HCRHPORT1);
 			isp116x->rhport[1] = isp116x_read_reg32(isp116x, HCRHPORT2);
-
+#ifndef TOSONLY
 			addroottimeout (0L, int_handle_tophalf, 0x1);
+#endif
 		}
 		isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_OPR);
 	}
@@ -1631,6 +1619,7 @@ netusbee_hub_events(void)
 //	set_int_lvl7();
 }
 
+#ifndef TOSONLY
 void netusbee_hub_poll_thread(void *);
 void netusbee_hub_poll(PROC *proc, long dummy);
 
@@ -1657,7 +1646,7 @@ netusbee_hub_poll_thread(void *dummy)
 
 	kthread_exit(0);
 }
-
+#endif
 
 /*
  *  Configure the chip. The chip must be successfully reset by now.
@@ -1737,15 +1726,15 @@ isp116x_start(struct isp116x *isp116x)
 //	val |= HCHWCFG_INT_ENABLE;
 //	isp116x_write_reg16(isp116x, HCHWCFG, val);
 
+#ifndef TOSONLY
 	long r;
 	r = kthread_create(NULL, netusbee_hub_poll_thread, NULL, NULL, "hubpoll");
-
 	if (r)
 	{
 		/* XXX todo -> exit gracefully */
 		//DEBUG((/*0000000a*/"can't create NetUSBee kernel thread"));
 	}
-
+#endif
 	isp116x_show_regs(isp116x);
 
 	isp116x->disabled = 0;
@@ -1885,6 +1874,10 @@ usb_lowlevel_init(void *dummy)
 	isp116x->sleeping = 0;
 
 	isp116x_reset(isp116x);
+/* Following line added by Claude. But does nothing under TOS, see hub.c. */
+#ifdef TOSONLY
+    usb_rh_wakeup();
+#endif
 	isp116x_start(isp116x);
 
 	return 0;
@@ -1901,21 +1894,42 @@ usb_lowlevel_stop(void *dummy)
 	return 0;
 }
 
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long _cdecl init (struct kentry *, struct usb_module_api *, char **);
+
 long _cdecl
 init(struct kentry *k, struct usb_module_api *uapi, char **reason)
+#endif
 {
 	long ret;
-
+#ifndef TOSONLY
 	kentry	= k;
 	api     = uapi;
 
 	if (check_kentry_version())
 		return -1;
-
+#endif
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
+#ifdef TOSONLY
+	/* Get USB cookie */
+	if (!getcookie(_USB, (long *)&api))
+	{
+		(void)Cconws("NetUSBee failed to get _USB cookie\r\n");
+		return -1;
+	}
 
+	/* for precise mdelay/udelay relative to CPU power */
+	set_tos_delay();
+	delay_150ns = loopcount_1_msec * 15 / 100000;
+	delay_300ns = loopcount_1_msec * 3 / 10000;
+#endif
 	ret = ucd_register(&netusbee_uif, &root_hub_dev);
 	if (ret)
 	{
@@ -1924,5 +1938,9 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	}
 
 	DEBUG (("%s: ucd register ok", __FILE__));
+#ifdef TOSONLY
+	c_conws("NetUSBee USB driver installed.\r\n");
+	Ptermres(_PgmSize,0);
+#endif
 	return 0;
 }

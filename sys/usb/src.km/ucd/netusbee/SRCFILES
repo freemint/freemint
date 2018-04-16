@@ -8,7 +8,15 @@ HEADER = \
 COBJS = \
 	isp116x-hcd.c
 
+TOSCOBJS = \
+	crtinit.c
+
 SSOBJS = \
 	netusbee_int.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+TOSSSOBJS = \
+	entry.S \
+	setstack.S \
+	delayasm.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)
