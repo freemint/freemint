@@ -2188,6 +2188,8 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		(void)Cconws("STORAGE failed to get _USB cookie\r\n");
 		return -1;
 	}
+	/* for precise mdelay/udelay relative to CPU power */
+	set_tos_delay();
 #endif
 
 	pun_ptr = get_pun();
