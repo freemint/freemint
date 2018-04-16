@@ -19,7 +19,10 @@ sys/sockets/xif/rieblste.c
 sys/sockets/xif/riebltt.c
 sys/sockets/xif/rtl8012st.c
 sys/sockets/xif/rtl8012ct60.c
+sys/usb/src.km/crtinit.c
 sys/usb/src.km/delayasm.S
+sys/usb/src.km/entry.S
+sys/usb/src.km/setstack.S
 sys/usb/src.km/ucd/unicorn/crtinit.c
 sys/usb/src.km/ucd/unicorn/entry.S
 sys/usb/src.km/ucd/unicorn/setstack.S
