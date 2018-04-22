@@ -46,7 +46,7 @@ _quickmovb1:
 #endif
 	beq.s	quickmov1
 
-#ifdef mc68000
+#if !defined(__mc68020__) && !defined(__mc68030__) && !defined(__mc68040__) && !defined(__mc68060__) && !defined(__mcoldfire__)
 bytecopy:
 	move.b	(a1)+,(a0)+
 	subq.l	#1,d0
@@ -63,7 +63,7 @@ sodd:
 #else
 	and.w	10(sp),d1
 #endif
-#ifdef mc68000
+#if !defined(__mc68020__) && !defined(__mc68030__) && !defined(__mc68040__) && !defined(__mc68060__) && !defined(__mcoldfire__)
 	beq.s	bytecopy
 #else
 	beq.s	quickmov1

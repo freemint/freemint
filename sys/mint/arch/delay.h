@@ -97,7 +97,7 @@ udelay (register ulong usecs)
  *	left by 32 bit, we get product most significant 32 bits.
  */
 
-# if defined (__mc68020__)
+# if defined(__mc68020__) || defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 
 	register ulong tmp;
 	
@@ -138,7 +138,7 @@ udelay (register ulong usecs)
 
 	__delay((((usecs * HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6);
 
-# endif /* __mc68020__ */
+# endif /* (__mc68020__) || (__mc68030__) || (__mc68040__) || (__mc68060__) */
 }
 
 # ifdef loops_per_sec
