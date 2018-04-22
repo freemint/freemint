@@ -1095,7 +1095,7 @@ driver_init (void)
 	}
 	
 	if ((s_system (S_GETCOOKIE, COOKIE__CPU, (long) &cpu) != 0)
-# ifdef __mc68020__
+# if defined(__mc68020__) || defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 		|| (cpu < 20))
 	{
 		c_conws (MSG_CPU_020);

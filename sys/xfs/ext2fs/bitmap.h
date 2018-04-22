@@ -36,7 +36,7 @@ ulong	ext2_count_free	(char *map, ulong numchars);
 
 /* Bitmap functions for the ext2 filesystem. */
 
-# ifdef __mc68020__
+# if defined(__mc68020__) || defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 
 INLINE long
 ext2_set_bit (long nr, void *vaddr)
