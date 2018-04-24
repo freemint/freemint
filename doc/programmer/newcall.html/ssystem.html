@@ -155,9 +155,10 @@ bits	meaning
 8-15	binary major CPU ID
 16-31	reserved for future definition.
 </pre>
-The major ID identifies a particular series of processors. Currently
-only a value of $00 is defined and it is assigned to Motorola 68k
-series. Other values of this field are reserved for future definition.
+The major ID identifies a particular series of processors. A value of
+$00 is assigned to the Motorola 68k series and since kernel version 1.19
+a value of $01 is assigned to the ColdFire processors. Other values of this
+field are reserved for future definition.
 <p>The minor CPU ID interpretation depends on the major ID. For
 68k series, values are as follows:
 <pre>
@@ -167,6 +168,13 @@ $14	68020
 $1e	68030
 $28	68040
 $3c	68060
+</pre>
+<p>For the ColdFire series:
+<pre>
+$00	isa_a
+$01	isa_a+
+$02	isa_b
+$03	isa_c
 </pre>
 <i>This is not the same as the </i><b>_CPU</b><i> cookie value. The
 </i><b>_CPU</b><i> cookie specifies the CPU physically present in the
