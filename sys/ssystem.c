@@ -148,6 +148,16 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 # ifdef M68030
 			r = 0x0000001eL;	/* 030 kernel */
 # endif
+/* Kernel for the ColdFire:
+ * Major CPU ID is 0x01
+ * Minor CPU ID is 0x00 for isa_a
+ *                 0x01 for isa_a+
+ *                 0x02 for isa_b
+ *                 0x03 for isa_c
+ */
+# ifdef __mcfisab__
+			r = 0x00000102L;	/* ColdFire isa_b kernel */
+#endif
 			break;			/* generic 68000 */
 		}
 
