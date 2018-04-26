@@ -1,0 +1,2227 @@
+******************************************************************************
+2000-05-31:
+
+Frank Naumann:
+--------------
+
+Switched over to CVS usage. See in the README for more details.
+Handwritten ChangeLog end here.
+
+< ChangeLog now automatically handled by CVS >
+
+
+******************************************************************************
+2000-05-30:
+
+Frank Naumann:
+--------------
+unifs.c:
+	- restricted Dcntl(FS_INSTALL, FS_MOUNT, FS_UMOUNT, FS_UNINSTALL)
+	  to root
+
+- complete new Makefile system
+- moved all *.spp mprot* files to new arch/ subfolder
+
+Thomas Binder:
+--------------
+signal.c:
+	- in stop() the parent process that sleep in pwaitpid
+	  was not awakened
+
+******************************************************************************
+2000-05-12:
+
+FreeMiNT 1.15.9 beta
+--------------------
+
+Draco:
+------
+slb.c, slb_util.spp:
+	- SLB extension cancelled (but that does not mean the flag 
+	  definition is dropped!)
+
+cpu.spp:
+	- minor size optimization
+
+info.c:
+	- greet fixed to make both my Falcon and Q-Funk happy.
+
+
+Frank Naumann:
+--------------
+global.*, dosmem.c, dosfile.c, memory.*, proc.*:
+	- eliminated global symbol mint_errno
+	- modified do_open that accept a additional pointer there it can store
+	  the error value
+	- modified load_region, create_base, get_text_seg, fork_proc in the
+	  same way
+	- corrected all calls to that functions to handle correctly the
+	  method
+
+filesys.c, dosdir.c:
+	- fixed absolutly bad bug in disk_changed and d_lock;
+	  the array aliasdrv was possible accessed outside
+	  with strange side effects; how the hell the kernel worked until now?
+
+kernegt.c:
+	- fixed memory protection bugs in get_proc_stat and get_proc_environ
+
+dosmem.c:
+	- fix bug in terminate, exe cookie not freed
+
+info.c:
+	- removed vt-52 clear screen command before greet1
+
+
+Thomas Binder:
+--------------
+cnf.c, fasttext.c:
+	- Again made changes to make -DFASTTEXT work. Frank, maybe it
+	  would be a good idea to always test whether a kernel with all
+	  possible -Ds enabled and one with all disabled will build
+	  correctly _before_ releasing a beta ...
+
+memory.c:
+	- Due to draco's changes in syscall.spp (copying 36 bytes of
+	  stack instead of 28), programs which called Pterm() using the
+	  initial stackpointer failed with a memory protection, because
+	  exec_region() set the usp to "end_of_tpa - 0x20". Looks like
+	  the new trap handler hasn't been tested very thoroughly.
+	  exec_region() now initializes the user stackpointer to
+	  "end_of_tpa - 0x28", curing the problem.
+
+filesys.c:
+	- Yet another bug which makes me doubt the involved change has
+	  been tested ... getxattr() didn't check whether blksize >> 9
+	  yiels 0 before dividing by it, causing an exception when
+	  calling Fxattr() on files in /proc, /shm, and others with a
+	  blksize of 1.
+	- getxattr() also didn't properly initialize the "attr" field,
+	  leading to problems like shared memory no longer working or
+	  programs displaying wrong file types. *xattr is now bzero()ed
+	  before anything is written to it, to be on the safe side.
+
+Makefile:
+	- Added missing ./ in calls to mkbuild and genmagic - having "."
+	  in $PATH isn't a good idea ...
+
+libkern/asm/Makefile:
+	- Prevent "-include $(DEPENDENCIES)" to be executed when
+	  $(DEPENDENCIES) expands to the empty string
+
+******************************************************************************
+2000-05-05:
+
+FreeMiNT 1.15.8 beta
+--------------------
+
+Frank Naumann:
+--------------
+libkern/*
+	- new subfolder, contain kernel library used by the kernel
+	  and kernel modules
+	- moved all string functions, utility functions to this directory;
+	  splitted all fucntions of into seperate files
+	- splitted off assembler modules into seperate directory
+	- changes all over the place to reflect these
+
+mint/*:
+	- lot of new files, restructurization of all header files,
+	  lot of enhancements
+	- splitted of machine dependencies
+	- changes all over the place to reflect these
+
+time.c, util.c:
+	- moved unix2xbios to util.c
+	- replaced dostime by wrapper for unix2xbios
+	- some fixes in time.c
+
+string.c, string.h:
+	- ksprintf/vsprintf get the buflen as an additional argument;
+	  changed all ksprintf/vsprintf calls over the source
+	  to reflect these changes
+	- added ksprintf_old for the kernel interface that wrap around
+	  the new ksprintf
+
+kernfs.c, kernfs.h, kernget.c, kernget.h:
+	- finally integrated new kern pseudo filesystem
+	- lot of corrections, simplification and cleanup;
+	  now a lot safer, smaller and faster
+	- depend now on compile time switch
+
+dosfile.c, dosdir.c, unifs.c:
+	- fixes for xfs_* call handling
+
+filesys.h:
+	- export now DIRSEP, MAX_LINKS; deleted all other definitions
+
+welcome.c, welcome.h:
+	- removed; welcome messages are now in info.c, info.h;
+	  this is neccessary as welcome message use __DATE__
+	  and must be recompiled every time
+
+sys_emu.c, sys_emu.h (new):
+	- new systemcall, emulation trap
+
+xhdi_emu.spp, xhdi_emu.h, xhdi.c,
+scsidrv_emu.spp, scsidrv_emu.h, scsidrv.c, scsidrv.h (new):
+	- emulation of these non system call interfaces through systemcalls;
+	  necessary for nonblocking DMA operations
+	- added sys_XHDOSLimits for system calls
+	- some enhancements
+
+fatfs.c, tosfs.c, pipefs.c:
+	- correction in stat64, 'blocks' is measured in 512 byte blocks
+
+init.h, init.c (new):
+	- renamed main.* to init.*
+	- moved global variables to global.*
+	- corrected #include directives in most *.c files related to this
+	  change
+
+Guido Flohr:
+------------
+cmdline.c, cmdline.h kernfs.c, kernfs.h, kernget.c, kernget.h:
+	- new kern pseudo filesystem
+
+filesys.c, unifs.c, mint/file.h:
+	- some small modifications for the kern pseudo filesystem
+
+dosmem.c:
+	- fix in waitpid
+
+Thomas Binder:
+--------------
+cnf.c, mem.h, memory.c, mprot.h, mprot030.c, mprot040.c:
+	- Processes always had unrestricted access to their parent's
+	  address space. Unfortunately, both Atari AES 4.x and N.AES
+	  depend on that behaviour (they use the OS_SPECIAL process
+	  flag, but seem to have overlooked that this only means
+	  supervisor access to their address space for other processes),
+	  thus this bug is not completely removed, but converted into an
+	  optional feature, with "on" being the default (i.e. you
+	  explicitly have to enable the "bugfix" in mint.cnf).
+	- New config option MPFLAGS, a bitvector containing memory
+	  protection flags. Currently, only bit 0 is defined; if set,
+	  the memory protection is "strict", i.e. a process no longer
+	  has unrestricted access to its parent's address space (see
+	  above)
+
+mprot030.c, mprot040.c:
+	- mark_proc_region() (used for attaching/detaching memory
+	  regions to/from a process) now restores the global access mode
+	  for a region when detaching it, instead of blindly setting it
+	  to "invalid" - the right thing to do, as detach_region() will
+	  only call mark_proc_region() for regions with a link count >
+	  1, i.e. those still being attached to another process
+	- mem_prot_special() no longer marks regions as "super" that are
+	  already marked as anything different than "private". Of
+	  course, this may cause problems if the program's memory flags
+	  are "readable", but an "OS_SPECIAL" program shouldn't need
+	  that, anyway.
+
+dosfile.c:
+	- Fixed bug in f_datime(), which always read and wrote _two_
+	  timestamps from/to the buffer (caused an annoyingly
+	  hard-to-find "bug" in Thing, as a local variable on the stack
+	  got currupted)
+
+fasttext.c:
+	- Fixes to make it compile when enabled - once again ...
+
+fatfs.c:
+	- Calculation of rdlen now rounds up, as described in the
+	  Microsoft FAT whitepaper
+	- fatfs_root() no longer forces a media change on drive A when
+	  drive B gets accessed (and vice versa), but instead only syncs
+	  the buffer cache - this fixes crashes when both drive letters
+	  are accessed like this: A-B-A or B-A-B
+	- Fixed wrong order of arguments in a macro call in
+	  fatfs_rename(), causing write accesses to wrong sectors
+
+mmu030.spp:
+	- Added dummy symbol for compilation without 030 memory
+	  protection, as (older versions of?) GNU ld do not accept .o
+	  files without a symbol table
+
+Andreas Baer:
+-------------
+slb.c:
+	- detect new binutils 2.9.1 format, new style linked shared libs
+	  are now loaded
+
+Draco:
+------
+kernget.c:
+	- in kern_get_cpuinfo() corrected the 68881/2 FPU information 
+	  (4 is '68881 for sure', 6 is '68882 for sure').
+	- MMU assumed "none" for 68000, 68010, and 68020 (since MiNT 
+	  doesn't care whether there is 68851 or not).
+
+mprot030.c:
+	- fixed calls for new ksprintf(), exactly like in the mprot040.c
+
+info.c:
+	- added vt-52 clear screen command before greet1 (to avoid mess)
+
+syscall.h, syscall.spp:
+	- in mint_dos(), GEMDOS trap handler now copies 36 bytes of 
+	  trap arguments onto supervisor stack (instead of 28 
+	  previously), which ensures the Sysemu() call will get all 
+	  the parameters it needs, and e2fsck works again :)
+	- unified syscall.*.reentrant and syscall.*.not.reentrant 
+	  into single files controlled by the switch 
+	  SYSCALL_REENTRANT. Nb. the switch must be defined in the 
+	  Makefile, not in mint/mint.h.
+
+scsidrv_emu.spp, xhdi_emu.spp:
+	- minor improvements
+
+bios.c:
+	- changed EACCES to EPERM in Setexc() and Rwabs()
+	- init_vectors(), table VEC[] and stuff commented out (not 
+	  used in any place across the kernel, only waste space).
+
+xbios.c:
+	- changed EACCES to EPERM in supexec()
+	- functions vsetmode() and videl_patch() removed, these 
+	  aren't efficient anyway.
+
+syscall_vectors.c:
+	- removed vsetmode() from XBIOS table.
+
+proc.c:
+	- in sleep(), sleepcond = 0 put before spl(sr); consider it 
+	  temporary.
+
+slb.c, slb_util.h, slb_util.spp:
+	- added the discussed SLB flag extension: when the flag field 
+	  in the library header has its lowest bit set, library calls 
+	  get an empty longword instead of a pointer to the basepage 
+	  of the calling process.
+
+	- added function getslbpath() which is searching the 
+	  environment for the variable $SLBPATH.
+
+	- in load_and_init_slb(): if user specified path for 
+	  Slbopen() is NULL, then the return value of the 
+	  getslbpath() is used as this. If this is NULL too, the 
+	  current directory will be used.
+
+Usage:	the default path pointing to a folder which contains SLB 
+	libraries must be specified in the environment as SLBPATH 
+	variable. For example:
+
+	SLBPATH=u:\usr\local\lib\slb
+
+	If one wants the previous behaviour, just undefine the 
+	variable.
+
+Limits:	SLBPATH value can be only specified as a GEMDOS-like (not 
+	Unix-like) pathname. Hence such forms of the SLBPATH as:
+
+	SLBPATH=c:\multitos\slb
+	SLBPATH=u:\c\multitos\slb
+	SLBPATH=u:\usr\local\lib\slb
+	
+	or
+	
+	SLBPATH=u:/usr/local/lib/slb
+	
+	are perfecly valid (provided these folders really do exist).
+
+******************************************************************************
+2000-02-28:
+
+FreeMiNT 1.15.7 beta
+--------------------
+
+Frank Naumann:
+--------------
+mmu.h, intr.h, quickmove.h, quickswap.h, quickzero.h:
+	- new files, replaced include/sproto.h
+	- added various #include of these headers to some src files
+
+timeout.c:
+	- removed timestamp, datestamp declaration as they are
+	  already declaration in time.c
+
+include/inline.h:
+	- removed inline flush_pmmu; conflict with other MMU code
+
+mmu030.spp:
+	- new file, moved 030 MMU code from CPU in this file
+
+mmu040.spp:
+	- moved flush_mmu from cpu.spp in this file
+
+block_IO.c, include/block_IO.h:
+	- changes all over the place to make the buffer cache
+	  reentrant
+
+dosdir.c:
+	- fixed bug in d_create, missing check for nulldirectories
+	- fixed bug in f_sfirst cache re-use; invalidate DTA in user
+	  space too
+	- added extra check to f_snext
+
+procfs.c, shmfs.c, time.c:
+	- corrected time stamp handling
+
+filesys.c, main.c:
+	- rewritten completly module loading routines
+	  now much smarter and need less memory as before
+
+xhdi.c:
+	- added XHMiNTInfo (XH_SET_KERINFO) in XHDI_init (disabled)
+
+include/file.h, global.c, dma.c, dma.h (new):
+	- added DMA interface to kerinfo structure
+
+Thomas Binder:
+--------------
+block_IO.c:
+	- Added debug output of XHDI ID
+
+mprot030.c:
+	- Memory areas that are neither ROM, RAM, nor IO are now marked
+	  "supervisor only". This avoids problems with the Falcon, which
+	  (due to its limited address bus) mirrors physical RAM at each
+	  16 MB boundary, i.e. accessing 0x10203040 results in a
+	  physical access to 0x203040, bypassing any memory protection
+	  set for that area.
+	- Removed serious bug in report_buserr(); I added %s to the
+	  format string for 1.15.6b (to display the type of access, read
+	  or write), but forgot to add the corresponding parameter to
+	  the list ... This resulted in strange crashs for unhandled
+	  memory violations.
+
+mprot040.c:
+	- If not already set, walk_page() will enable supervisor
+	  protection for the first logical page, i.e. address 0
+
+fatfs.c:
+	- According to Microsoft's documentation, FAT32 still sets the
+	  start cluster of the parent directory to 0 if it's the root
+	  directory, even though the root directory actually has a real
+	  start cluster.
+	- Fixed fatfs_readdir() that would abort on the first long name
+	  encountered when in compatibility mode (e.g. when internally
+	  used by Fsfirst()). Also, in compatibility mode, the short
+	  name wasn't always lowered for processes running in the MiNT
+	  domain.
+
+main.c:
+	- When compiled with -DDEBUG_INFO, always halt on exit of the
+	  initial program, never reboot. I had some crashes which lead
+	  to a reboot without being able to read what caused it, so this
+	  is probably a good idea.
+
+signal.c:
+	- The bus error report message mixed PC and AA
+
+syscall.spp, syscall_vectors.c:
+	- addition of Sys_printf(), Sys-Mon's GEMDOS call to
+	  display debugging output, only in DEBUG kernel available
+
+crypt_IO.c, crypt_IO.h:
+	- Added additional parameter to Dsetkey(), to select the cipher
+	  to use (although currently only Blowfish is supported). This
+	  shouldn't break existing code, as MiNT has not yet been
+	  officially release with -DCRYPTO_CODE.
+
+Draco:
+------
+startup.spp (new file):
+	- replaces the standard libc startup code with own minimal one,
+	  this saves about 2k of memory
+	- initial stack size reduced to 4k
+
+memset.spp, memset.h:
+	- replacement for lib's memset(); this function is used by mprotxxx.c
+
+main.c:
+	- removed reading command line at startup
+
+welcome.c:
+	- removed two warning messages not used anymore after 
+	  removing the command line stuff.
+
+******************************************************************************
+2000-01-19:
+
+FreeMiNT 1.15.6 beta
+--------------------
+
+Frank Naumann:
+--------------
+pipefs.c, procfs.c, shmfs.c:
+	- moved to UTC mode, added stat64 call
+	- cleanup, moved ENOSYS functions to nullfs
+
+nullfs.c, nullfs.h:
+	- added some more functions
+
+filesys.c, filesys.h:
+	- added getxattr emulation if getxattr isn't avaialble
+
+biosfs.c, dosdir.c, fatfs.c, pipefs.c, procfs.c, shmfs.c, tosfs.c, unifs.c:
+	- corrected wrong return code ENAMETOOLONG to EBADARG
+	  (related to new error codes)
+
+main.c:
+	- detect_hardware() in getmch() only called for
+	  machines less than 040 (undefined behaviour on Milan060)
+
+cookie.*, ssystem.c, global.c, include/file.h:
+	- moved cookie handling completly to the cookie module
+	- added rsvf cookie handling
+	- enhanced KERINFO structure for the new calls
+	- new function for COOKIE remove (new Ssystem opcode)
+
+bios.c, biosfs.c, include/file.h, include/types.h:
+	- added code for BIOS device remapping
+	- new opcode DEV_INSTALL2 that can overlay already
+	  installed BIOS drivers (including BIOS functions)
+
+xbios.*, syscall_vectors.*
+	- moved XBIOS table to the right place
+	- some cleanup and reorganisation
+
+Thomas Binder:
+--------------
+dosdir.c:
+	- small fix in Fdelete to verify that a folder is deleted
+
+Draco:
+------
+intr.spp, cpu.spp, kernel.spp:
+	- variables those don't need preinitializing (because are 
+	  explicitly initialized by the code that is using them) are 
+	  now in BSS.
+	- tas instruction which can supposedly cause problems with 
+	  some broken 68000 accelerator boards, is now replaced with 
+	  bset #$07 (also slightly faster, thx Joerg for the point)
+	- changed the way it is decided if it is the time to 
+	  recalculate load averages
+
+detect.spp:
+	- removed superfluous move.l from detect_fpu()
+
+vm5.spp:
+	- removed the dummy rts at the end, label kept (because if the
+	  module is completely empty, linker cries).
+
+procfs.c:
+	- in proc_ioctl(): inserted a compile time conditional to 
+	  exclude code checking for the 68000 CPU in 68020+ kernels.
+	- in proc_write(): added code for preserving security 
+	  critical stuff across writes to the PROC structure at 
+	  SECURELEVEL > 0 (this is against the mh.c exploit)
+	- in proc_write(): blocked writes to parent memory space. Is 
+	  there any use of this "feature"?
+	- changed EACCES to EPERM in proc_ioctl(PSETFLAGS)
+
+dossig.c:
+	- Psigintr() now returns ENXIO if the vector being registered 
+	  is NULL or has an odd value.
+	- sig_user(): removed superfluous extern
+	- in p_sigintr(): removed superfluous declaration `extern 
+	  long mcpu' (not used in this module)
+
+mprot030.c:
+	- in mark_pages(): removed superfluous check for the CPU type.
+
+ssystem.c:
+	- formal improvement of a compile time conditional
+	- removed superfluous declaration `extern int no_mem_prot'
+	- rest of extern ints changed to `extern short'
+
+unifs.c, unifs.h:
+	- added FS_INFO so that Fsetter does not display garbage for U:
+
+dos.c:
+	- checking the Shutdown() parameter, whether it is -1, moved 
+	  to the begin of the function (where only makes sense).
+	- removed conditional excluding close_filesys(), this is always
+	  called now.
+
+pipefs.c:
+	- added temporary workaround for the shutdown bug (better than
+          before, now it at least allows close_filesys() to do its things).
+
+main.c:
+	- exception shadow area is now allocated with kmalloc(), I 
+	  forgot to change this, sorry.
+	- mcpu does not to be preinitialized with a 0, because it is 
+	  explicitly intialized by detect_cpu()
+	- removed old stuff related to save_dos, save_bios and save_xbios
+          variables, which are not used by any code anymore.
+
+syscall.spp:
+	- removed obscure undocumented function, which returned MiNT 
+	  function table address in d0 for the appropriate handler 
+	  while trapping to it with opcode value of -1.
+	- BIOS and GEMDOS functions unknown to the kernel are no 
+	  longer passed along to the underlying system (ENOSYS is 
+	  returned instead). The only subsystem that is still routed 
+	  to ROM this way, is XBIOS.
+
+include/mint.h:
+	- corrected weird typo
+
+info.c:
+	- corrected a minor typo
+
+dosfile.c:
+	- corrected minor messages.
+
+******************************************************************************
+1999-11-16:
+
+FreeMiNT 1.15.5 official release
+--------------------------------
+
+Thomas Binder:
+--------------
+bios.c:
+	- Removed bug in setexc() that caused write accesses to address
+	  0 on machines with less than an 68020 - this usually resulted
+	  in a bus error on the first call to Setexc(), sometimes
+	  stalling the system
+block_IO.c:
+	- Workaround for bug in XHInqDev() of HDDRIVER prior to 7.8
+	  (calling it with a NULL pointer for the BPB didn't report the
+	  correct values of a newly insterted medium, if the last call
+	  to Getbpb() mas made with no medium present)
+	- bio_get_di() didn't correctly react on XHInqDev() returning -1
+	  for the start sector, which means that the device is not
+	  currently accessible
+mprot030.c:
+	- mark_region() does no longer try to write to the global mode
+	  page table if it has not yet been allocated (I already added
+	  that check to mprot040.c in an earlier beta, but forgot that
+	  it's useful in mprot030.c as well - until MiNT crashed on
+	  startup with MP enabled on my Falcon again ...)
+cnf.c, fasttext.c:
+	- -DFASTTEXT now works again
+dos.c, dos.h, main.c:
+	- Removed shutdown-stuff from main.c and created a new function
+	  shutdown() in dos.c (and the corresponding prototype in
+	  dos.h). This saves some code, and also ensures that on exit
+	  from MiNT, the correct code is called (the old one in main.c
+	  was missing unmounting of filesystems)
+dosdir.c:
+	- Made d_lock() not only DEBUG-report the PID, but also the name
+	  of the process having an open file on the affected drive
+fatfs.c:
+	- Added "| 0777" to the mode returned for symbolic links in
+	  fatfs_getxattr(). This is the behaviour of other filesystems
+	  like Minix or ext2, so no need to do it differently. This does
+	  _not_ influence the protection of the link, as it's impossible
+	  to read from/write to it directly, it will always be
+	  dereferenced, so that the access bits of the destination
+	  decide whether access is allowed.
+signal.c, signals.h, Makefile:
+	- Added new signal SIGPWR and removed a flaw in the Makefile
+	  (incomplete dependencies for genmagic.ttp)
+main.c:
+	- Until TOSFS is completely removed, try to trigger media
+	  changes on drives which have already been "grabbed" by TOSFS,
+	  but are supposed to be handled by NEWFATFS, according to
+	  mint.cnf
+shmfs.c:
+	- Replaced code that searched the memory region for a given
+	  memory block address by the corresponding call to addr2mem()
+tosfs.c:
+	- Removed the #ifdefs in tosfs_root (FATFS_TESTING is only set
+	  in fatfs.h, and actually equivalent to OLDTOSFS), so that
+	  TOSFS will never touch NEWFATFS drives, even if NEWFATFS
+	  decided not to accept them
+memory.c:
+	- Added two useless tests in sanity_check()
+crypt_IO.c:
+	- d_setkey() now removes a key from memory when ciphering gets
+	  disabled
+	- Disabling ciphering now only works on drives where it is
+	  currently active
+
+Frank:
+------
+dosdir.c:
+	- missing UTC -> localtime recalculation for UTC mode filesystems
+	  in f_sfirst/f_snext
+
+fatfs.c, shmfs.c, biosfs.c:
+	- wrong time/date and uid/gid for ROOT cookie
+	  missing initializations
+
+Draco:
+------
+detect.spp:
+	- size optimization
+
+procfs.c:
+	- Fcntl(PSETMEMFLAGS) requires euid root when setting F_OS_SPECIAL
+	  at securelevel > 1.
+
+bios.c:
+	- added detection of installing exception handlers by 
+	  programs, which have improper protection mode set in the 
+	  program header.
+	- old "automatic" code to handle this commented out (this 
+	  WON'T work).
+	- corrected the OLDTOSF to OLDTOSFS define in a compile time 
+	  conditional.
+
+memory.c:
+	- small correction of the F_SMALLTPA related code in 
+	  create_base()
+	- Srealloc() filled with asserts and FATALs temporarily for 
+	  debuging
+
+crypt_IO.c:
+	- corrected a typo in the legal message
+	- added preprocessor conditional to exclude 68000 code when 
+	  compiling for 68020+.
+	- fixed a bug in the aforementioned 68000 code (or Gryf, it 
+	  was meant so perhaps? I am not a crypto guru...)
+
+Makefile:
+	- added -DTRAPS_PRIVATE, please keep it defined, or prove it 
+	  creates problems.
+
+debug.c, main.c:
+	- removed (commented out) the rest of code that served for 
+	  returns to TOS.
+
+
+Guido Flohr:
+------------
+include/dcntl.h:
+	- Added TIOCSCTTY to set controlling tty.
+
+tty.c:
+	- Support for TIOCSCTTY (set controlling tty) and TIOCNOTTY
+	  (disassociate from controlling tty).
+
+Makefile:
+	- generate dependencies for genmagic.ttp.
+
+signal.c:
+	- Behave like BSD4.4 for negative PID arguments to Pkill.
+	  Furthermore, the update daemon and PID 1 (if not AESSYS) cannot
+	  get SIGKILLed or SIGSTOPped.
+
+******************************************************************************
+1999-10-11:
+
+FreeMiNT 1.15.4 beta
+--------------------
+
+Frank:
+------
+include/mint.h, include/file.h, dosdir.c, filesys.c:
+	- removed FCOOKIE_CACHE stuff, never worked and pollute the src
+
+syscall_vectors.* (new):
+	- moved bios_tab and dos_tab to this files
+
+Makefile, dos.c, stubs.*, syscall.spp, trapatch.*:
+	- removed trapatch trap handler and trapatch functions
+	  sorry Joerg but it's a bad concept, not the right way for MiNT
+
+dos.c, dosdir.c, dosfile.c, global.c:
+	- added native UTC filesystem support, changes related to
+	  convert unix times to local and back
+	- added new system call Fstat(), 64bit clean, UTC times
+	  see in file.h or in the MiNT-Lib
+	- added new ioctl(FSTAT64) and FUTIME_UTC
+	- Fstat() finally ready now, UTC mode work ok with the
+	  updated xfs driver
+
+proc.c:
+	- bugfix for Dchroot(), string not copied on fork
+
+Draco:
+------
+dos.c:
+	- enhanced Shutdown()
+
+main.c:
+	- if the init (pid 1) terminates, the kernel does not return to TOS,
+	  but reboots. This is useful when we manage to kill the init while
+	  being logged onto a remote terminal - in this case we can hope
+	  the system will be back after awhile.
+	  at the occasion, the internal shutdown() function is removed and
+	  replaced by the "real" Shutdown() call from dos.c.
+
+dosmem.c:
+	- Maddalt() now requires root euid.
+
+main.c, welcome.c, welcome.h:
+	- copyright notice for the random generator moved and reformatted a
+	  bit.
+
+Thomas Binder:
+--------------
+blowfish.*, md5.*, crypt_IO.*:
+	- new crypto low level layer for block devices
+	  new system call for set keyword (experimental)
+
+block_IO.c:
+	- bugfix in get_di; sector size not checked
+
+Guido Flohr:
+------------
+errno.h (new), atarierr.h (expired):
+	- new error codes
+	- changed all definitions in the kernel
+
+dosmem.c:
+	- bugfix in p_waitpid
+
+Andreas B„r:
+------------
+include/dcntl.h, procfs.c:
+	- new ioctl to get allocated memory regions per process
+
+******************************************************************************
+1999-08-20:
+
+FreeMiNT 1.15.3 beta
+--------------------
+
+Frank:
+------
+ssystem.h, ssystem.c:
+	- added S_INITIALTPA for runtime configuration of the new
+	  config option
+
+unifs.c:
+	- added Dcntl(FUTIME)
+
+main.c, main.h:
+	- removed not used pointer variable
+	- removed LATTICE support
+	- cleanup
+
+bios.c, tosfs.c, tosfs.h:
+	- moved clsizb array from bios.c to tosfs.c;
+	  now only compiled with OLDTOSFS define
+	- added OLDTOSFS define in bios.c to the clsizb access
+
+biosfs.c,
+dev-null.*, dev-mouse.*, nullfs.* (new):
+	- started restructurization of the biosfs,
+	  minimized biosfs.c to the main functions
+
+main.c, update.*:
+	- moved all filesystem update stuff from main.c to update.c
+	  activated update daemon instead timeout method for default
+	  (this is neccessary for non-blocking fs operations)
+
+include/file.h, filesys.*, dos*.*, *fs.c:
+	- added code for non blocking filesystem operations (not ready)
+
+include/file.h, dosdir.*, dos.c, global.c:
+	- added code for (not ready) new Fstat() systemcall
+	- enhanced kernel interface, allow now access to UTC time
+	- enhanced filesystem interface for the new call
+	- added wrapper code to Fxattr() to compensate UTC times
+	  for UTC working filesystems
+
+include/proc.h, filesys.c, dosdir.c, dos.c:
+	added code to handle new Dchroot() systemcall:
+	- current dir and drv will be changed to new root dir and drv
+	- getcwd map out the root path
+	- d_setdrv don't work after Pchroot()
+	- absolute DOS addressing is blocked in relpath2cookie
+	- '..' on new root dir is mapped to '.' in relpath2cookie
+	- Dlock() check for active root mapped prozesses
+
+include/mint.h, Makefile, filesys.c:
+	- removed DIRSEP_SLASH define - without it, MiNT isn't very useful;
+	  so it's now always active
+
+proc.c:
+	- removed two redundant strcpy
+
+block_IO.c, include/block_IO.h:
+	- added new feature
+	- fixed memory leak
+
+fatfs.c:
+	- bugfix
+
+Joerg:
+------
+trapatch.*, stubs.* (all new)
+syscall.spp, dos.c:
+	- experimental new trap handler based on trapatch
+	  see in the files for detailed informations
+
+Gryf:
+-----
+cnf.c:
+	- changed drive-letter-to-drive-number conversion to handle
+	  drives 1: to 6: correctly
+
+cnf.c, memory.c:
+	- added support for new mint.cnf-keyword "INITIALMEM" that
+	  limits the amount of memory allocated for TPAs (in addition to
+	  the size of the program segments); unlike "MAXMEM", it does
+	  not limit Malloc()ed memory
+
+dos.c:
+	- fixed bug in s_hutdown() (syncing was done after invalidating)
+	  drives ("not written out" errors on shutdown)
+
+memory.c:
+	- support for the new program header flag F_SMALLTPA
+	  (originating from MagiC)
+	- fix bug in get_text_seg
+
+mint.h, procfs.c, util.c:
+	- changed the hardcoded maximum PID of 1000 into the constant
+	  MAXPID
+
+mprot030.c, mprot040.c, memory.c:
+	- for MMU trees smaller than MAX_TEMPLATE, four additional
+	  template trees (one for each protection type) are generated
+	  and then used in mark_pages(), to speed up mark_region()
+	- speed improvement in 040 MP code
+	- bugfix in memory calculation
+
+proc.c:
+	- add missing #include of random.h, to avoid compiler warning
+
+dos.c, dosmem.c, dosmem.h, genmagic.c, mint.h, signal.c slb.c (new),
+slb.h (new), include/slb.h (new), slb_util.spp (new), Makefile:
+	- experimental support for MagiC-style "shared libraries" (it's
+	  not fully compatible, see slb.c for details)
+
+Draco:
+------
+main.c:
+	- fix bug in install cookie; fpu cookie is now always installed
+
+******************************************************************************
+1999-07-01:
+
+FreeMiNT 1.15.2 beta
+--------------------
+
+Frank:
+------
+dosfile.c, dosfile.h, dos.c:
+	- added two new systemcalls: Ffchown() and Ffchmod()
+	  to change uig/gid and mode bits on open files
+	
+dosdir.c:
+	- removed Fchown() workaround; must be handled by
+	  MiNT-Lib (or the xfs)
+	
+fatfs.c:
+	- fix some bugs (rename, rmdir, xdd)
+	
+detect.h, detect.spp, main.c:
+	- removed required defines for CPU and FPU detection
+	- MiNT now always detect itself the CPU and FPU type
+
+Ralph:
+------
+cnf.c:
+	- fix bug in include mechanism
+
+Joerg:
+------
+detect.spp:
+	- fixed ST-ESCC detection
+
+Guido:
+------
+random.h, random.c (new):
+	- new random device
+	- minor changes for this also in biosfs.c, block_IO.c and some other
+	
+xbios.c, xbios.h, kernel.spp, kernel.h:
+	- new & better XBIOS random generator
+	- removed old routine
+
+******************************************************************************
+******************************************************************************
+******************************************************************************
+1999-04-13:
+
+FreeMiNT 1.15.1
+---------------
+
+revision 1.5 - final release
+
+Frank:
+------
+main.c:
+	- added MILAN check
+fatfs.c:
+	- fix bug in symlink
+
+Gryf:
+-----
+cpu.spp:
+	- fix bug cpush060
+mprot040.c:
+	- fix bug in read_tables
+Draco:
+------
+	- fix small bug in detect.h (missing clr)
+Guido:
+------
+biosfs.c:
+	- added /dev/zero
+
+******************************************************************************
+1999-04-13:
+
+revision 1.4:
+
+Gryf:
+-----
+mprot040.c:
+	- enhancements and optimizations
+block_IO.c:
+	- fix 0 division bug
+intr.spp:
+	- on Milan old VBL vector was inactive
+
+Frank:
+------
+fatfs.c:
+	- fix little bug in free cluster calculation (32bit FAT)
+main.h, main.c, welcome.h, welcome.c, cnf.c, syscall.spp:
+	- removed latest changes
+filesys.c:
+	- removed initial FILEPTRs;  FILEPTRs will now always kmalloced/kfreed
+
+******************************************************************************
+1999-04-13:
+
+revision 1.3:
+
+Frank:
+------
+dos.c, dosdir.c:
+	- unmount support for xfs (Shutdown(), Dlock())
+include/file.h:
+	- new extensions for xfs interface
+intr.spp:
+	- readded 040 MMU exception handling
+main.h, main.c, welcome.h, welcome.c:
+	- clean up startup messages
+	  until init_intr() we must use Trap #1 calls
+	  after init_intr() we call directly our own functions
+
+Joerg:
+------
+sycall.h (new), syscall.c (from syscall.h.new)
+	- changes related to reentrant trap handler
+	- prototypes for Trap #1 emulation
+	  and some needed ROM-GEMDOS functions
+biosfs.c, tosfs.c:
+	- changed Trap #1 GEMDOS calls to
+	  ROM-GEMDOS calls through Trap #1 emulation
+
+******************************************************************************
+1999-04-13:
+
+revision 1.2:
+
+Draco:
+------
+intr.spp, main.c:
+	- clean up Milan VBL emulation
+
+Frank:
+------
+cnf.c:
+	- new CNF keyword to support write protection at startup
+include/proc.h:
+	- increased super stack
+dma.c (new):
+	- new file for nonblocking DMA support (in development)
+tosfs.c:
+	- fixed bug in root for drives >= P:
+	  access is only rejected if it's a XHDI drive
+	- better executable_extension() for x-bit emulation
+fatfs.c
+	- added configurable write protection (soft/hard)
+block_IO.c:
+	- some changes related to write protection support
+
+Gryf:
+-----
+mprot030.c:
+	- bugfix in init_tables (missing braces)
+
+******************************************************************************
+1999-03-15:
+
+revision 1.1:
+
+Frank:
+------
+renamed memprot.c to mprot030.c:
+	- more consistent now
+memory.c:
+	fixed typo in s_realloc introduced in beta 1.0
+include/fsting.h:
+	added _STRNCP_F; same as _mint_strncpy_f
+string.c, string.h:
+	added _mint_strncpy_f
+	- fast strncpy with always NULL termination
+	  (copy (n - 1) character maximum, add always '\0')
+
+Gryf:
+-----
+memory protection support for 040/060 (060 not tested yet):
+
+mprot040.c, mmu040.spp:
+	- new files
+intr.spp, main.c, include/mint.h, include/sproto.h, include/proc.h:
+	- minor changes to reflect this 
+cpu.spp:
+	- added missing cpushas/cinvas in ccw_set
+	- added log2phys (not needed yet)
+
+Draco:
+------
+welcome.c:
+	unused notice commented out (waste of memory)
+
+memory.c:
+	O_DENYNONE changed to O_DENYW in load_region() as the comment 
+	there suggested. MultiTOS still works as it did, do we 
+	support SingleTOS GEM forever?
+
+main.c, detect.spp, detect.h:
+	small blurp added to be displayed on boot (notice on whether 
+	the memprot is enabled or not). Similar blurp on ST-ESCC.
+
+intr.spp:
+	corrected a comment.
+
+syscall.spp.new:
+	trap #1 handler no longer wraps to ROM. This makes TOSFS no 
+	longer valid. Underlying functions not supported by MiNT are 
+	still called via wrapper trap_1_emu(). Also similar wrappers 
+	are done for BIOS and XBIOS (now commented out for future 
+	usage). This also causes a (very small) reduction of GEMDOS 
+	call overhead.
+
+	To still be able to use old TOSFS XFS, one will have to 
+	change TOS bindings so that they do jsr _tos_1_emu instead of 
+	trap #1.
+
+******************************************************************************
+1999-03-15:
+
+revision 1.0:
+
+Frank:
+------
+fatfs.c:
+	fix new bug (typo)
+cnf.c:
+	better message if NEWFATFS is default FS
+	VFAT drives implies NEWFATFS now
+
+Draco:
+------
+welcome.c:
+	removed compiler options from the initial welcome
+	text (pure waste of memory)
+
+proc.c, intr.spp:
+	uptime & uptimetick stuff removed from calc_load_average()
+	and inlined directly into intr.spp. Thanks Frank for
+	pointing this out, I liked the gcc's way of calculating the
+	remainder (i.e. the code was funny :-))
+
+main.c, kernel.spp, kernel.h:
+	removed the reset handler movement stuff (no work, sorry).
+	On reset problems please run MiNT from ST-RAM (applies to
+	Afterburner040 and BlowUp FX, probably).
+
+******************************************************************************
+1999-03-10:
+
+revision 0.9:
+
+Gryf:
+-----
+intr.spp:
+	added VBL Milan kludge to reactivate preemptive
+	Multitasking on Milans
+cdef.sh:
+	changed to sh syntax
+memory.c:
+	fix bad bug in MMU table initialization for MP
+fatfs.c:
+	high speed ffree32 (enabled by default)
+	some optimizations
+
+Frank:
+------
+kmemory.c:
+	disabled default debug mode, some optimizations & corrections
+fatfs.c:
+	updating (FAT32 info sector stuff), bugfixes
+block_IO.c, fatfs.c, time.c:
+	fix some PureC warnings
+
+******************************************************************************
+1999-02-26:
+
+revision 0.8:
+
+Frank:
+------
+fatfs.c:
+	fix in lookup
+info.h, info.c, cdef.h & cdef.sh:
+	new files (experimental); compiler informations
+	info.c replace build.c
+ssystem.h, ssystem.c:
+	new opcodes for compiler informations
+block_IO.c:
+	optimizations
+dosmem.c:
+	replace if else if construct with switch statement
+
+Thomas:
+-------
+block_IO.c:
+	additional caching strategie; new CNF keyword for customization
+	(CNF keyword is experimental for the moment)
+
+Draco:
+------
+
+1999-02-25:
+-----------
+detect.h, detect.spp, main.c:
+	some changes in detect_fpu()
+
+kernel.spp:
+	nothing, I am just not sure if the previous file I sent was correct...
+
+memory.c:
+	Srealloc() fixed to do proper screen pads on Falcons. It it now so, that
+	the screen size is rounded up to a 256 byte boundary (= like TOS). Previous
+	code just blindly added 256 bytes, so the screen pad was always 512 bytes,
+	thus 800x608/mono under Videl Inside II was a bit of mess. Fixed now and I
+	hope it won't make any problems. It shouldn't unless a screen enhancer has
+	a fix against that MiNT's Srealloc() "feature".
+
+1999-02-17:
+-----------
+main.c, detect.spp:
+	final (I hope) changes in FPU detection code,
+	a cookie for a memory mapped FPU is copied to the
+	new Cookie Jar, but MiNT doesn't consider such FPU
+	"true".
+
+ssystem.c, ssystem.h, cpu.spp, cpu.h (new file):
+	new cache control mode ($0017) for Ssystem() call.
+	See included examples, more documentation soon.
+
+ssystem.c, ssystem.h, xhdi.c:
+	"improved" names of Ssystem() modes.
+
+bios.c:
+	Setexc() called in secure mode now raises SIGSYS
+	rather than explicitly terminates the caller.
+
+dos.c:
+	Super() at securelevel == 2 now raises SIGSYS.
+
+xbios.c:
+	so does Supexec()
+
+main.c, syscall.spp:
+	unused traps (except for trap #15, see comments in main.c)
+	now sell the caller SIGSYS rather than draw 32 bombs on
+	the console.
+
+system.c:
+	slight changes related to debug info.
+	S_FLUSHCACHE mode added (guess, what does it do :))
+
+intr.spp, kernel.spp, kernel.h, main.c:
+	reset routine relocated to ST-RAM if MiNT runs in fast RAM.
+	This is to prevent "black crashes" on AB040 et consortes.
+
+main.c, kernel.h, kernel.spp:
+	experimental replacement routine for Random(). Uses similar 
+	algorithm as TOS does, but is supposedly faster.
+
+bios.c, dosmem.h, dossig.c, dossig.h, intr.spp, main.c:
+
+	The code behind Psigintr() cleaned up, assembler part 
+	rewritten, the call now actually works, isn't so hopelessly 
+	limited and shouldn't cause system freezes anymore. Changes 
+	in behaviour are:
+
+	- the registered interrupt is now passed over to the original 
+	interrupt service, once a signal has been posted.
+
+	- Psigintr(0,0) does cancel all interrupts previously 
+	registered by the caller.
+
+	- ERANGE is now returned when signal number bigger than 30 
+	was specified to be registered.
+
+	- also ERANGE is returned if vector number other than for 
+	autovectors, traps and user specified interrupts was 
+	specified. Other vectors either already generate own signals 
+	or are of no interest.
+
+	- also, the call now returns E_OK on success rather than the 
+	old value of the interrupt vector (what a cleanly written 
+	program is supposed to do with that number, eh?).
+
+	Unless I miss something, it seems to be now guaranteed, that 
+	all interrupts will be still serviced as before a Psigintr() 
+	call was made (previous implementation was just stealing a 
+	vector to point to new_intr(), then that last was doing 
+	rte... of course, the proper service routine was ignored, 
+	until the process terminated, yet the sig_usr() hacked the 
+	MFP to pretend the interrupt to be serviced... urg,...).
+
+	Multiple processes are still allowed to register same 
+	interrupt, or different interrupts or whatever. There are no 
+	special limits, except for common sense. If two processes 
+	registered same interrupt, both receive requested signals, 
+	when the interrupt occurs.
+
+	However, it is not guaranteed that all interrupts will result 
+	in signal delivery. A single interrupt results in 1 signal 
+	posted, but 1000 interrupts also may result in 1 turn of 
+	posting signals (1 turn means that there will be 1 signal 
+	posted per signal registered per proces :)).
+
+	UNFORTUNATELY, all this has two side effects:
+
+	a) the kernel takes 1k more memory (yes, interrupt vectors 
+	shadow)
+	b) all this doesn't work on a 68000 anymore (did it any time, 
+	though?), at least 68020 is needed, because only 68020 and up 
+	save all necessary information in the stack frame.
+
+	On a 68000 machine the Psigintr() call doesn't work simply 
+	returning EINVFN.
+
+	Psigintr() may be useful to create for example a system clean 
+	screen saver.
+
+detect.h, detect.spp, main.c:
+	detect_fpu() now directly returns the _FPU cookie value instead
+	of cryptic codes, what allowed to simplify the relevant part of main.c.
+	Only an FPU in coprocessor mode ( >= 68020 ) is considered a `true' FPU.
+
+Guido:
+------
+time.c:
+ 	- Duplicate line removed (typo).
+	- Mysterious clock leap for localtime kernel clocks should now be	
+	  fixed.  Forgot to change the kernel clock when timezone
+	  information was applied via Tsettimeofday.
+
+******************************************************************************
+1999-02-04
+
+revision 0.7:
+
+Frank:
+------
+kmemory.c:
+	moved block free pointer into system area
+fatfs.c:
+	changed short datatypes to ushort
+block_IO.c, include/block_IO.h:
+	added new functionality - revision level 1
+	changed short datatypes to ushort
+
+Thomas:
+-------
+unifs.c:
+	better behaviour for removable drives with no media at bootup
+filesys.c:
+	fix possible bug in PATH2COOKIE
+fatfs.c:
+	small upper/lowercase correction in dirread
+
+Guido:
+------
+time.c:
+	- Consistency check for timezone argument to Tsettimeofday
+	  removed.  It was previously assumed that the maximum allowed
+	  offset to UTC was 12 hours which was not enough for DST in
+	  Auckland/New Zealand.  What is a reasonable value?  13 hours may
+	  not be enough.  14 hours?  (TODO!)
+
+Draco:
+------
+xbios.c, syscall.spp:
+	removed Vsetscreen() patch, conflict with Centurbo 2 (grrr...)
+
+dosfile.c:
+	old GEM (MTOS) kludge commented out, watch out, might be 
+	necessary anyways...
+
+******************************************************************************
+1999-01-20
+
+revision 0.6:
+
+Frank:
+------
+include/dcntl.h:
+	- added new FS number for STonXfs4MiNT
+ssystem.c:
+	- added support for debug device and level
+block_IO.c, fatfs.c:
+	- updates, bugfixes
+	- implement missing functionality
+
+Ralph:
+------
+cnf.c:
+	- complete new enhanced CNF parser
+
+Draco:
+------
+detect.spp:
+	added a routine for hardware CPU detection.
+	began a routine for hardware FPU detection.
+
+main.c, detect.h:
+	changes reflecting the detect_cpu() and detect_fpu().
+	the loop that copies the TOS Cookie Jar into new location
+	is simplified (though may look more complex =))
+
+cpu.spp:
+	init_cache() rewritten.
+
+Makefile:
+	added $(DEFAULTDEFS) for asm module compiling,
+	this is *necessary* there!
+
+dossig.c:
+	Psigintr(0,0) now removes user handlers installed by process.
+
+There are two new definitions:
+
+`CPU_TEST' causes the TOS _CPU cookie to be ignored and enables own
+hardware test for CPU type. The result of this test is later written
+to the MiNT Cookie Jar. The routine should automatically detect
+68000, 68010, 68020, 68030, 68040 and 68060.
+
+`FPU_TEST' (valid only if CPU_TEST is defined!) enables own hardware
+test for FPU type. In this case the TOS _FPU cookie is ignored completely
+and if own test indicates a true coprocessor, MiNT establishes entirely
+new _FPU cookie.
+
+The CPU_TEST routine should be considered already completed and fully working
+unless it contains a bug. In other words, it needs only testing, and if
+tests succeed, there's nothing against enabling it permanently. The routine
+should be tested "against" =) various CPU types, as well as new install_cookies()
+code should be tested on a machine where TOS didn't establish the Cookie Jar.
+
+The FPU_TEST is not finished. However, I am very interested about results
+generated on various machines. So my proposal is to enable it in next beta,
+then observe reactions =) An alternative is to distribute both tests in a form
+of separate program, which users could try on their machines and give results
+back to us.
+
+For now I can only prove that both tests work perfectly on a 68030/68882.
+
+******************************************************************************
+1998-12-22
+
+revision 0.5:
+
+Frank:
+------
+
+fatfs.c:
+	- bugfix in rename
+	- bugfix for read with negative bytecount (suggestion from Draco)
+time.c, intr.spp:
+	- deactivated get_time from hardware clock (bootproblem)
+
+Draco:
+------
+syscall.spp:
+	- bugfix
+
+Joerg:
+------
+
+detect.spp, detect.h:
+	- automatic detection of Harun Sheutzows ST-ESCC
+	- removed defines in include/mint.h
+
+******************************************************************************
+1998-12-11
+
+revision 0.4:
+
+Frank:
+------
+
+fatfs.c:
+	- bugfixes and updates
+	- rewritten readlabel/writelabel
+	- position save renaming on non VFAT partitions
+string.c, string.h (new):
+	- moved all string functions in this file
+	  (from util.c)
+include/kctype.h, include/fstring.h:
+	- some name changes related to the string functions
+time.c, intr.spp
+
+Draco:
+------
+intr.spp:
+	- fixed a possible bug in mint_timer().
+main.c, intr.spp, syscall.spp:
+	- new way of linking some vectors using new_xbra_install() 
+	  function. Not all for now, but this will change.
+main.c, cpu.spp:
+	- inserted a NOP into cpush() to sync pipelines.
+	- new way of cache type selection, now proper cache
+	  handling is selected by a vector initialized at
+	  startup.
+main.c:
+	- variable gemdos_version and a call to Sversion() commented out
+          if OLDTOSFS is not used. 
+
+syscall.spp, xbios.c:
+	- byzantine construction to patch the syncbug in Vsetscreen()
+	  on Falcons (so far only Vsetmode() was patched). But guys,
+	  please note that it only patches programs making system calls to
+	  change resolutions! If a proggy switches it by hardware directly
+	  (e.g. some versions of vconsd), the syncbug will still occur!
+
+******************************************************************************
+1998-11-24
+
+revision 0.3:
+
+Frank:
+------
+fatfs.c:
+	fix bug in fat12 access routines
+block_IO.c:
+	some fixes in initalization
+	fix for logical Rwabs mode
+include/file.h, *fs.c:
+	remove DP_MAXREQ definition, correct all
+	internal filesystems
+main.c:
+	add cpush after xbra chain manipulation (Michael)
+
+******************************************************************************
+1998-11-03
+
+revision 0.2:
+
+Frank:
+------
+include/fstring.h, include/block_IO.h, include/default.h,
+fatfs.c, unicode.h:
+	removed all USE_INLINE_FUNCS stuff
+	removed all unused makros
+	cleanup, small corrections
+block_IO.c:
+	cleanup, corrections, some bugfixes
+kmemory.c:
+	cleanup, alignment fixes
+xhdi.c:
+	add XHDrvMap to drvmap()
+unifs.c, dosdir.c:
+	remove "| PSEUDORVS" to drvmap (always done at boottime in main.c)
+	
+Julian:
+-------
+include/file.h:
+	add new Spin FS_INFO types
+include/dcntl.h:
+	new Dpathconf (DP_VOLNAMEMAX)
+	updated man2/Dpathconf.2
+
+******************************************************************************
+1998-10-26
+
+revision 0.1:
+
+Frank:
+------
+dos.c:
+	return our own GEMDOS version if OLDTOSFS is disabled
+
+Draco:
+------
+contex.spp, intr.spp:
+	update & bugfixes
+
+******************************************************************************
+1998-10-22
+
+revision 0.0:
+
+Frank:
+------
+fatfs.c:
+	added uid/guid/mode for the root cookie for every drive
+	(same method as in TOSFS)
+block_IO.c:
+	some fixes, fix a bug in bio_res_di
+memory.c, memory.h:
+	removed new_region/dispose_region
+	-> replaced by kmr_get/kmr_free in kmemory
+	-> some replacements and adjustments for this change
+kmemory.c, kmemory.h:
+	new files, handles the complete internal small block
+	memory management, three different strategies
+main.c:
+	added patch for centek2 user, TOS is reported as 7.0x
+	(falcontos detection)
+
+******************************************************************************
+******************************************************************************
+******************************************************************************
+1998-10-08
+
+FreeMiNT 1.15.0
+---------------
+
+revision 3.1: (final)
+
+Frank:
+------
+fatfs.c, cnf.c:
+	added LCASE keyword; force use of lower case FAT names
+main.c:
+	add pseudodrives before xfs are loaded
+bios.c, biosfs.c, xbios.c, main.c, cnf.c:
+	replaced st_escc variable with preprocessor defines
+	for ESCC support -> new compile time switch
+	(old method doesn't work at bootup)
+block_IO.c:
+	fixed a possible bug
+include/block_IO.h:
+	cleanup (moved struct cbl definition to ./block_IO.h)
+	
+
+******************************************************************************
+1998-09-27
+
+revision 3.0:
+
+Frank:
+------
+ssystem2.c renamed to ssystem.c:
+	added new call Ssystem(SYNC_TIME) to set time for
+	filesystem sync.
+cnf.h, cnf.c (new):
+	moved MiNT.CNF parser from main.c here
+	added new HIDE_B= keyword to remove drive B: from drive list
+fatfs.c, block_IO.c, include/block_IO.h:
+	some minor fixes and updates
+
+Draco:
+------
+
+Speed optimizations done in order to reduce the total overhead of the
+scheduling code and GEMDOS timer.
+
+BTW.: all this somehow fixes the problem with FastCOPY Pro, which was always
+very slow formatting and writing floppies under MultiTOS.
+Works much much much faster now.
+
+kernel.spp:
+	new file with assembler routines enter_gemdos(), enter_bios()
+	and leave_kernel() - equivalents for functions removed from main.c.
+	changed the way of redirecting system calls to ROM, currently trap
+	vectors are not saved/restored at each kernel entrance anymore. This
+	significantly reduces the enter/leave procedures.
+main.c, main.h:
+	enter_kernel() and leave_kernel() removed.
+	variables save_dos, save_bios and save_xbios removed as well.
+bios.c:
+	Setexc() updated for handling trap vectors correctly.
+timeout.c, timeout.h:
+	timeout() moved to intr.spp.
+intr.spp:
+	enter_bios() and leave_kernel() inlined into mint_vbl().
+	skipped setting IPL 7 before enter_bios() and after preempt() in mint_vbl().
+	optimized assembly equivalent of the timeout() inlined into mint_timer().
+	removed two movem.l instructions saving/restoring registers in mint_timer().
+syscall.spp:
+	changes reflecting the removal of enter_kernel().
+	subroutine check_priv now inlined into mint_xbios().
+context.spp:
+	skipping change to IPL 7 in restore_context().
+	tiny optimizations (removed maybe four instructions).
+genmagic.c:
+	update for new indexes needed in assembler modules.
+
+Other changes made at the occasion:
+
+time.c, intr.spp:
+	init_time() now seems to read the IKBD time-of-day packets.
+	struct ikbd_time simplified. See comments there.
+	newcvec() fixed to work.
+main.c, dos.c:
+	kernel's Sversion() no longer calls the ROM GEMDOS. Small step on a way
+	to get rid of the ROM GEMDOS completely.
+bios.c, vm5.spp, main.c, intr.spp, ssystem2.c:
+	the rest of the VM code ifdef'd out if VM_EXTENSION is not defined.
+	this makes the kernel shorter about 3k.
+
+******************************************************************************
+1998-09-09
+
+revision 2.9:
+
+Frank:
+------
+fatfs.c:
+	fix a bug in symlink; some additional checks
+block_IO.c:
+	added XHReserve/XHLock support for removable medias
+include/types.h:
+	added llong (64bit int) type
+include/dcntl.h:
+	some updates of Dcntl and data types
+
+******************************************************************************
+1998-09-03
+
+revision 2.8:
+
+Frank:
+------
+bcache.c & hdio.c:
+	merged into block_IO.c, buffer cache rewritten (dirty cache units
+	are now blocked and written back in sorted order on each drive)
+	Medichange bug fixed
+dosdir.c:
+	f_chown return E_OK if function isn't supported by xfs
+	(problems with some GNU tools)
+include/ctype.h renamed to include/kctype.h:
+	avoid problems with ctype.h from MiNT-Lib
+
+******************************************************************************
+1998-08-24
+
+revision 2.7:
+
+Frank:
+------
+dosdir.c:
+	fixed a bug in d_delete and f_delete
+	(dupcookie/releasecookie mechanism)
+mfp.h (new), time.c, dossig.h, bios.c, xbios.c, biosfs.c:
+	replaced MFP hardware adresses by preprocessor define
+	(defined in mfp.h)
+include/misc.h (new):
+	moved all compiler specific stuff from mint.h in this file
+fatfs.c:
+	fixed a bug in delete_cookie
+
+******************************************************************************
+1998-08-06
+
+revision 2.6:
+
+Frank:
+------
+bios.c, biosfs.c, dossig.c, welcome.c:
+	add simple MILAN support for different hardware addresses
+	(preprocessor define)
+time.c, time.h, dos.c, xbios.c, proc.c:
+	disabled new timer from guido (doesn't work on Milan at the moment)
+fatfs.c:
+	some optimizations
+
+Rainer:
+-------
+include/dcntl.h:
+	Add some opcodes from biosfs.c, MiNTlib's include/ioctl.h and HSMODA.
+biosfs.c, fasttext.c, pipefs.c, xbios.c:
+	Fcntl(..., TCURS*) work uniq and as documented in The Atari Compendium.
+	Cursconf() works at all.
+biosfs.c, pipefs.c, procfs.c, shmfs.c, tosfs.c, unifs.c:
+	*_getname(), *_readdir() and *_readlabel terminate the name with 0
+	if it has the maximum length resp. correctly check the length.
+	Also a bit faster (strncpy() clears the complete buffer!).
+biosfs.c, shmfs.c:
+	*_rename() respects mame truncation.
+dosdir.c:
+	Dsetpath() recognizes drives "A..Z1..6" and "A..Z[\]^_`".
+	Changes on file attribute handling for ISO/IEC 9293 compatibility.
+	Fattrib() allows all but changes between file/directory/label type.
+dosmem.c:
+	Pexec() names the drives for the PLOADINFO buffer "A..Z1..6".
+fatfs.c:
+	getcl12()/fixcl12() work on 68000.
+falcon.h, memory.c, xbios.c:
+	Renamed Montype() to VgetMonitor(), Vgetsize() to VgetSize(),
+	Vsetmode() to VsetMode() and Vsetscreen() to VsetScreen(). Corrected
+	Lattice binding for VgetSize().
+ssystem2.c:
+	Ssystem(TOSHEADER, ...) returns always a complete and corrected
+	OSHEADER and works at all.
+tosfs.c:
+	Fchmod(..., S_ISUID) hides subdirectories as on HP-UX.
+	Changes on file attribute handling for ISO/IEC 9293 compatibility.
+unifs.c:
+	unifs_init() names the drives on U:\ "a..z1..6".
+xbios.c, syscall.spp:
+	Replaced call_dosound() by Dosound().
+diverse:
+	Changes for Pure C (not complete).
+	Changed the type of date and time variables from short to ushort.
+	Replaced error code "0" by "E_OK". Also for some other codes.
+	Replaced seekmode numbers by "SEEK_*".
+	Changed some mixed space/tabulator use to tabulators. Please use only
+	tabulators for indentation.
+	Changed some calendar dates in various formats to the format
+	YYYY-MM-DD as defined in ISO 8601. Please use only this date format in
+	international contexts.
+intr.spp, syscall.spp, vm5.spp:
+	Removed some useless code avoiding "clr" for not-hardware on 68000.
+	Add some missing ":" after labels.
+
+******************************************************************************
+1998-07-23
+
+revision 2.5:
+
+Frank:
+------
+include/fstring.h: (new)
+	introduce new file - fast string - with inline string functions
+	for time critical parts, moved string stuff from mint.h
+fatfs.c:
+	remove string stuff (now in fstring.h)
+	some minor fixes (FAT32 detection)
+
+Rainer:
+-------
+fatfs.c:
+	some minor fixes
+	(see in fatfs.c for a detailed list of changes)
+unicode.*:
+	name correction
+
+******************************************************************************
+1998-07-13
+
+revision 2.4:
+
+Frank:
+------
+dosdir.c:
+	dlock() now sync the filesystems before a lock is made
+filesys.c, include/file.h:
+	add new dskchng strategie (new fsflag and a extended dskchng routine)
+	if the new flag is set the kernel ask the xfs for a mediachange
+	(old: kernel do this itself but this fail on non BIOS devices)
+	this introduce a new flag to dskchng: 0 = aks, 1 = force disk change
+bcache.c, include/bcache.h:
+	extend buffercache interface, add some new useful functions
+	(see in bcache.c for a detailed list of changes)
+fatfs.c:
+	some minor fixes
+	(see in fatfs.c for a detailed list of changes)
+
+******************************************************************************
+1998-07-10
+
+revision 2.3:
+
+Frank:
+------
+include/bcache.h, include/hdio.h, file.h:
+	extend Kernelinterface for new buffer cache and so, experimental!!!
+	(will be removed or will be changed in the next time)
+global.*, timeout.c:
+	add global 20ms counter
+global.*:
+	introduce new file that holds global useful data,
+	move kernelinfo from main.c to global.c
+bcache.*:
+	new files, replace hdcache.*
+	new, memory optimizing, intelligent buffer caching
+fatfs.*, bcache.*, hdio.*, xhdi.*:
+	update and bugfixes,
+	see in the files itself for a detailed list of changes
+unicode.*:
+	add new table for Atari ST character set -> Unicode
+	(thank to gryf who create this table), add translate function
+include/dcntl.h:
+	new file with all known opcodes
+	(moved from file.h and other places)
+include/atarierr.h:
+	add some new error codes (Rainer Seitel)
+dos.c:
+	update security check in super (final I hope)
+xbios.c:
+	update security check in supexec (final I hope)
+*fs.c:
+	add Dcntl opcode MX_KER_XFSNAME to all
+	filesystems in FreeMiNT
+
+Draco:
+------
+dos.c:
+	Super() now ignored when called by an unprivileged process.
+main.c, syscall.spp:
+	added a kludge for DSP XBIOS calls, Dsp_LodToBinary() works now.
+	all XBIOS calls except Random() and Cursconf() are now restricted
+	for root only.
+xbios.c:
+	most of security code moved to syscall.spp.
+ssystem2.c:
+	filesystem control removed, use Dcntl() instead.
+genmagic.c:
+	update.
+ssystem2.doc:
+	update, clarifications, corrections.
+
+******************************************************************************
+1998-06-23
+
+Frank:
+------
+hdio.c, hdio.h:
+	new files.
+biosfs.c:
+	improved syntax of a conditional in iread()
+filesys.c, mint.h, main.c, ssystem.h, ssystem2.c, tosfs.c:
+	various changes to reflect -DOLDTOSFS compiler switch.
+fatfs.c, fatfs.h, xhdi.h:
+	update and bugfixes,
+	see in the files itself for a detailed list of changes
+unifs.c:
+	fixed a warning.
+
+Draco:
+------
+ssystem2.c:
+	added trace & debugging code.
+dosfile.c:
+	added a check in F_write() against negative block counts.
+console.c:
+	applied Thomas Binder's patch for C_conrs()
+tosfs.c:
+	applied Thomas Binder's patch for filtering VFAT entries
+	on TOS filesystems.
+bios.c:
+	inquire part of the Setexc() open for all processes
+	(suggestion from the mintlist).
+
+******************************************************************************
+1998-05-25
+
+(b4)
+
+Frank:
+------
+fatfs.c, fatfs.h, hdcache.c, hdcache.h:
+	update
+Makefile:
+	update for 68040 kernels
+
+Draco:
+------
+cpu.spp, Makefile:
+	Mikko's 68060 patch applied.
+main.c, ssystem2.c, mint.h, Makefile:
+	The switch -DONLY030 is now obligatory for
+	all CPUs from 68020 to 68060.
+
+******************************************************************************
+1998-05-19
+
+(b3)
+
+Frank:
+	Source tree redintegration of Guido's patches.
+
+Draco:
+	Final review and textfiles corrections
+	util/uname/uname.c: updated.
+	util/cjar/clist.c: updated.
+
+******************************************************************************
+1998-04-24
+
+Guido:
+------
+Directory structure has been radically resorted. Manual pages (out of
+date) and more docs (also out of date) and an occasional README added
+every here and there.  Further:
+
+time.c (new), time.h (new), dos.c,
+main.c, mint.h, ssystem.c, ssystem.h, timeout.c, xbios.c:
+	New kernel time-keeping model implemented with new
+	system calls Tgettimeofday and Tsettimeofday.  Old
+	Tgettime, Tgetdate, Tsettime, Tsetdate, Gettime and
+	Settime are bypassed by the new routines.
+
+resource.c (new), resource.h (new), dos.c:
+	New system calls Pgetpriority and Psetpriority.
+	Moved compatibility code for Pnice and Prenice to resource.[ch].
+
+Docs/timezone.doc, Docs/minttime.doc:
+	New files describe new time facilities.
+
+Docs/ssystem.doc:
+	Updated.
+	Changed the meaning of the `beta-tag'.  Every printable
+	character that may characterize the current version of
+	MiNT is now allowed (not only `b').
+
+bios.c, biosfs.c, dosfile.c, tty.c:
+	Added typecasts, initializations to make MiNT compile
+	with less warnings.
+
+Makefile, build.c (new):
+	Avoid re-compilation of ssystem.o over and over again.
+	DEBUG_INFO is now default,  optimization default is -O3.
+
+dosmem.c, proc.c, proc.h, signal.c:
+	Pwaitpid now returns the signal numbers for signalled processes
+	(as the MiNTLib implementation of wait4 and friends already
+	expects).
+
+mkbuild.c:
+	Month and week numbers for build.h are now calculated correctly.
+
+ssystem.c:
+	Allowed read access to everybody.  Disabled checking of real
+	user-id when checking privileges (the super-user needs some
+	way to get rid of the privileges).
+
+******************************************************************************
+1998-05-10
+
+Frank:
+------
+fatfs.c, fatfs.h, hdcache.c, hdcache.h, unicode.c, unicode.h, pun.c, pun.h,
+xhdi.h (all new):
+	new FAT/FAT32/VFAT filesystem integrated with the kernel.
+main.c:
+	also related cnf commands added: NEWFATFS, VFAT, WB_ENABLE, CACHE
+proto.h:
+	gone; separate header files introduced instead.
+
+	asm translator moved to ./asm
+	top level header moved to ./include
+	complete new Makefile, automatic dependencies
+
+Draco:
+------
+ssystem2.c:
+	added modes 20 and 21 to control the new filesystem on the fly.
+xbios.c:
+	Videl patch modified (should be closer to a 100% fix).
+main.c, mem.c, ssystem2.c:
+	modified for new FASTLOAD cnf keyword.
+mkbuild.c:
+	fixed inappropriate month for build date, fixed bogus warnings.
+version.h:
+	modified
+mem.c:
+	TOS-4-ramvalid fix #ifdef'd depending on the VM_EXTENSION
+	(caused problems with real fastram on all computers (?))
+ssystem2.c, intr.spp:
+	singlemode abandoned (moved to the future, that is).
+ssystem2.c:
+	Ssystem(GETCOOKIE) call expanded to be able to return any
+	slot value (the previous implementation didn't handle cookies with
+	a value of -1). The previous behaviour is still kept however. See
+	ssystem.doc for details.
+ssystem2.c:
+	Ssystem(SYS_SLEVEL) now allows to inquire the security level by
+	user processes.
+dos.c:
+	Super() protection bugfix (it should work now)
+bios.c:
+	Setexc() now allows user processes to change the critical error
+	handler	and the GEMDOS terminate vector (oups!)
+bios.c, biosfs.c, xbios.c, main.c:
+	ST ESCC support added, controlled by STESCC cnf keyword
+
+******************************************************************************
+Draco Sun Apr 05 17:25:16 CET 1998
+
+mint-1.14.7-beta
+
+pipefs.c:
+	pipe_write() and pipe_read() now wake process sleeping
+	on the corresponding pipe conditions immediately.
+	Bi-directional IPC should now work better (Guido).
+intr.spp:
+	scheduler modified for single mode.
+system2.c:
+	added definitions for SET/GET_SMODE, RUN_LEVEL, T_SLICE.
+falcon.h:
+	added.
+xbios.c:
+	Videl patch applied for Vsetscreen() and Vsetmode()
+	(no more sync errors in mono res on Falcons).
+	Vsetscreen(), Vsetmode(), Rsconf(), Midiws(), Dosound(),
+	Iorec(), Bconmap() restricted for euid root at level 1.
+cpu.spp:
+	line 67 modified for 68060 machines.
+mem.c:
+	fix for ramvalid under TOS 4 incorporated to init_mem().
+nottram.prg:
+	no longer needed.
+dosdir.c:
+	Dsetpath() no longer needs +r for the directory (as in Unix).
+main.c:
+	SINGLEMODE keyword added to MINT.CNF.
+version.h:
+	modified
+proto.h:
+	int in the Ssystem() prototype changed to short.
+mkbuild.c: new file by Guido (replacement for my hack known as
+	makebuildtime.c ;))
+ssystem.h:
+	modified.
+
+**************************************
+Draco Thu Dec 07 03:01:26 CET 1997
+
+mint-1.14.6-beta
+
+version.h, dos.c, proto.h, makefile:
+	modified.
+ssystem2.c, ssystem.h (all new):
+	New system call, Ssystem(), is introduced into the kernel. See
+	ssystem2.c and included examples for details and use. The code is
+	based on that developed by Jerry Geiger (jerry@zedat.fu-berlin.de)
+	by Draco (draco@mi.com.pl).
+main.c:
+	the SECURITY command removed from the kernel,
+	SECURELEVEL introduced instead as more flexible. See MINT.CNF.
+mem.c, mem.h:
+	ST_LEFT_AFTER_VM removed.
+mem.c, makefile:
+	VERBOSE_BOOT option added.
+bios.c:
+	Setexc() protected for euid root at level 1.
+dos.c:
+	Super() restricted for euid root at level 2.
+xbios.c:
+	Supexec() restricted for euid root at level 2.
+
+**************************************
+Draco Sun Sep 14 06:14:22 CET 1997
+
+mint-1.14.5-beta:
+
+version.h:
+	patchlevel number modified
+mint.h:
+	#undef VM_EXTENSION if ONLY030 is not defined
+main.c:
+	PMMU cookie will be set if VM is active.
+	Cookie Jar size increased - now 8 entries more.
+	New command, SECURITY, introduced to the MINT.CNF
+	(see readme.1st for details). New global symbol,
+	secure_mode, defined (set to 1 if SECURITY=YES).
+bios.c:
+	if SECURITY=YES, Rwabs() is not available for anyone
+	but superuser.
+dosdir.c:
+	if SECURITY=YES, Dwritelabel() is available for
+	superuser only.
+procfs.c:
+	fixed a bug so that regular users are no longer able
+	to remove processes those aren't their own.
+vm5.spp:
+	"Falcon cold start bombing problem" fixed.
+	VM stability improved noticeably.
+nottram.s, nottram.prg:
+	added to the binary distribution
+	(see nottram.doc for details and use).
+
+**************************************
+Draco Mon Aug 25 00:52:44 CET 1997
+
+mint-1.14.4:
+
+mem.c:
+	Harry Eaton's pexec() patch applied.
+mem.h:
+	#define ST_LEFT_AFTER_VM only if VM_EXTENSION is defined.
+version.h:
+	patchlevel number modified.
+mint.h:
+	-DMULTITOS, -DONLY030, -DDIRSEP_SLASH, -DVM_EXTENSION,
+	-DVM_DEBUGGING moved to the makefile.
+makefile:
+	see above + new kernel version definition (030 with the VM)
+vm5.spp:
+	some testcode (accidentally left in 1.14.3) removed.
+	physical disk access changed to BIOS logical mode.
+
+Three binaries are included/will be produced:
+mintvmx.prg - 68030 with VM extension
+mint030.prg - 68030 without VM extension
+mint.prg    - 68000 (without VM extension, of course)
+
+All binaries compiled with gcc 2.7.2.
+
+**************************************
+Draco Wed Jun 11 00:55:40 CET 1997
+
+mint-1.14.3:
+
+tty.c:
+	Torsten Lang's serial patch applied.
+vm5.spp:
+	modified to run VM on Falcon IDE (still not stable).
+quickmov.spp:
+	skipping some 68000 junk while compiling for 68030.
+welcome.c:
+	modified.
+version.h:
+	patchlevel number modified.
+
+Kernel compiled with gcc 2.7.2.
+
+**************************************
+
+mint-1-14(.0):
+
+**************************************
+Sven Karlsson Sat Sep 21 20:15:00 GMT 1996
+
+makefile, mem.c, mem.h, intr.spp, version.h, welcome.c:
+	modified.
+vm5.spp (new):
+	VM is introduced in the kernel.
+
+True lattice projectfile added.
+doswap utility is added. se doswap/read.me for details on usage.
+
+mint-1.13 is skipped

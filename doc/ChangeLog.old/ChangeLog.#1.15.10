@@ -1,0 +1,1701 @@
+2000-10-29 Sunday 20:09  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/buildinfo/version.h:
+
+	Bumped version to 1.15.11.
+	
+2000-10-29 Sunday 13:43  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.15.10:
+
+	New file, all changes of the 1.15.10 beta.
+	
+2000-10-29 Sunday 13:42  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/buildinfo/version.h:
+
+	Bumped version to 1.16.
+	
+2000-10-29 Sunday 00:39  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/toswin2/tw-call/tw-call.c:
+
+	Corrected header include.
+	
+2000-10-28 Saturday 14:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/ext2dev.c:
+
+	Corrected special EXT2_IOCTL euid check, superuser can always
+	change.
+	
+2000-10-28 Saturday 14:41  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/mint/dcntl.h:
+
+	Added two new ioctl() to reserve this opcodes.
+	
+2000-10-28 Saturday 14:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dosdir.c:
+
+	Changed Dlock(UNLOCK) to not access the partition immediatly. There
+	is no need for that.
+	
+2000-10-28 Saturday 14:39  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dosmem.c:
+
+	Changed M(x)alloc(-1) to return always blocksizes corrected down
+	about QUANTUM bytes to avoid race conditions if the kernel itself
+	require memory too.
+	
+2000-10-23 Monday 13:48  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/libkern/strstr.c:
+
+	New file
+	
+2000-10-23 Monday 13:04  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/: KERNELDEFS, cnf.c, fatfs.c, info.c, init.c,
+	libkern/SRCFILES, libkern/libkern.h:
+
+	Added boot menu (press SHIFT while booting MiNT)
+	
+2000-10-19 Thursday 10:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/inet4/ip.c:
+
+	Spelling correction in DEBUG statements.
+	
+2000-10-19 Thursday 10:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/inet4/route.h:
+
+	Replaced route_deref makro by inline function.
+	
+2000-10-19 Thursday 10:40  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/mgw/: main.c, mgw.c:
+
+	Added new emulation calls for the current Draconis Cookie interface.
+	
+2000-10-19 Thursday 10:38  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/mint/arch/delay.h:
+
+	Undef'ed loops_per_sec makro after usage for xdd/xfs.
+	
+2000-10-19 Thursday 10:36  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/inode.c:
+
+	Changed open fileptr ALERT to DEBUG statement.
+	
+2000-10-19 Thursday 10:36  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/Readme:
+
+	Updated e-mail address.
+	
+2000-10-17 Tuesday 00:45  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xdd/scc/scc.c:
+
+	Updated to current kernel, removed redundant code. Use now udelay
+	kernel support for mikrodelays on SCC register access.
+	
+2000-10-17 Tuesday 00:33  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xdd/uart/pc16550.c:
+
+	Added extensive DEBUG statements in debug mode.
+	
+2000-10-16 Monday 23:53  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/util.h:
+
+	Removed trailing \.
+	
+2000-10-16 Monday 23:46  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/signal.c:
+
+	Code cleanup.
+	
+2000-10-16 Monday 23:44  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dosmem.c:
+
+	Enhanced Pwaitpid() TRACE messages, minor code cleanup.
+	
+2000-10-16 Monday 23:39  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: dosmem.c, kernget.c, memory.c, memory.h, shmfs.c:
+
+	Changed addr2mem calling convention, get now the PROC ptr as parameter
+	instead using curproc implicitly.
+	
+2000-10-06 Friday 22:27  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dosfile.c:
+
+	Removed unnecessary read/write permission check for advisory locks.
+	
+2000-10-06 Friday 15:57  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/crypto/main.c:
+
+	Updated logfile name handling, updated rescue file.
+	action & cipher are stored too.
+	
+2000-10-06 Friday 14:21  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/crypto/main.c:
+
+	Heavily rewritten the restart option. Now the robust mode is default
+	and a rescue file is created to restart interrupted sessions.
+	
+2000-10-06 Friday 00:53  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/crypto/: io.c, main.c:
+
+	Heavily extended, mostly finished now.
+	
+2000-10-04 Wednesday 09:57  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/SRCFILES:
+
+	Added new file module.c to src file list.
+	
+2000-10-04 Wednesday 09:56  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: filesys.c, module.c, module.h:
+
+	New modul for module handling. Moduls are now always placed into kernel
+	memory. This save a little bit more memory too.
+	
+2000-10-02 Monday 12:29  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/slb.c:
+
+	SLB command line changed back to the previous form (as defined in doc).
+	Backslash separator replaced with slash.
+	
+2000-10-02 Monday 12:28  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/: bios.c, bios.h, memory.c:
+
+	Removed function unlink_vectors().
+	
+2000-09-29 Friday 11:03  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/fatfs.c:
+
+	Changed FAT access routines, now FAT#2 is read/write at first.
+	Added kernel ALERT message if FAT contain illgeal entries.
+	Small spelling correction.
+	
+2000-09-29 Friday 10:59  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/cmdline.c:
+
+	Added missing 'return ENOMEM' if kmalloc() fail.
+	
+2000-09-27 Wednesday 16:31  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/fsetter/fsetter.c:
+
+	Added copyright notice.
+	
+2000-09-27 Wednesday 12:46  Frank Naumann <fnaumann@freemint.de>
+
+	* .cvsignore, tools/.cvsignore:
+
+	Removed unnecessary definitions.
+	
+2000-09-27 Wednesday 12:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dos.c:
+
+	Added splhigh() blocking around TIMEOUT list accesses to prevent
+	race conditions.
+	
+2000-09-27 Wednesday 11:59  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/filesys.c:
+
+	Bugfix for drive 1: - 6: handling.
+	
+2000-09-27 Wednesday 11:46  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/gluestik/gs_config.c:
+
+	Fixed bug in read_configfile, invalid memory was sometimes accessed.
+	
+2000-09-27 Wednesday 11:44  Frank Naumann <fnaumann@freemint.de>
+
+	* BUGS, HACKING:
+
+	New information files.
+	
+2000-09-27 Wednesday 11:43  Frank Naumann <fnaumann@freemint.de>
+
+	* DEPENDENCIES, EXTRAFILES, sys/EXTRAFILES, sys/arch/EXTRAFILES,
+	sys/arch/Makefile.objs, sys/libkern/Makefile.objs,
+	sys/libkern/asm/EXTRAFILES, sys/xfs/BINFILES, sys/xfs/EXTRAFILES,
+	sys/xfs/MISCFILES, sys/xfs/Makefile, sys/xfs/SRCFILES,
+	sys/xfs/ext2fs/BINFILES, sys/xfs/ext2fs/MISCFILES,
+	sys/xfs/minixfs/MISCFILES, sys/xfs/nfs/BINFILES,
+	sys/xfs/nfs/MISCFILES, sys/xfs/nfs/ksocket/BINFILES,
+	sys/xfs/nfs/ksocket/MISCFILES, sys/xfs/minixfs/EXTRAFILES:
+
+	Updated Makefile system, corrected missing/incorrect definitions.
+	
+2000-09-27 Wednesday 11:37  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/Makefile:
+
+	Added TosWin2 subdir.
+	
+2000-09-27 Wednesday 11:36  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/toswin2/: .cvsignore, BINFILES, EXTRAFILES, MISCFILES,
+	Makefile, SRCFILES, av.c, av.h, clipbrd.c, clipbrd.h, config.c,
+	config.h, console.c, console.h, drag.c, drag.h, environ.c,
+	environ.h, event.c, event.h, global.c, global.h, main.c, proc.c,
+	proc.h, share.c, share.h, textwin.c, textwin.h, toswin2.h,
+	toswin2.hrd, toswin2.rsc, version.h, vt.c, vt.h, vt100.c, vt52.c,
+	window.c, window.h, tw-call/.cvsignore, tw-call/BINFILES,
+	tw-call/EXTRAFILES, tw-call/MISCFILES, tw-call/Makefile,
+	tw-call/SRCFILES, tw-call/tw-call.c:
+
+	Initial checkin of current TosWin2. Updated for FreeMiNT CVS and
+	MiNTLib 0.55.
+	
+2000-09-27 Wednesday 11:33  Frank Naumann <fnaumann@freemint.de>
+
+	* COPYING, COPYING.GPL, COPYING.LGPL, COPYING.MiNT,
+	sys/sockets/COPYING, sys/xdd/mfp/COPYING, sys/xdd/scc/COPYING,
+	sys/xdd/uart/COPYING, sys/xfs/ext2fs/COPYING,
+	sys/xfs/minixfs/COPYING, sys/xfs/minixfs/bitmap.c,
+	sys/xfs/minixfs/bitmap.h, sys/xfs/minixfs/config.h,
+	sys/xfs/minixfs/dir.c, sys/xfs/minixfs/dir.h,
+	sys/xfs/minixfs/global.c, sys/xfs/minixfs/global.h,
+	sys/xfs/minixfs/inode.c, sys/xfs/minixfs/inode.h,
+	sys/xfs/minixfs/main.c, sys/xfs/minixfs/main.h,
+	sys/xfs/minixfs/minix.h, sys/xfs/minixfs/minixdev.c,
+	sys/xfs/minixfs/minixdev.h, sys/xfs/minixfs/minixsys.c,
+	sys/xfs/minixfs/minixsys.h, sys/xfs/minixfs/misc.c,
+	sys/xfs/minixfs/misc.h, sys/xfs/minixfs/trans.c,
+	sys/xfs/minixfs/trans.h, sys/xfs/minixfs/version.h,
+	sys/xfs/minixfs/zone.c, sys/xfs/minixfs/copying,
+	sys/xfs/minixfs/zone.h, sys/xfs/nfs/cache.c, sys/xfs/nfs/cache.h,
+	sys/xfs/nfs/config.h, sys/xfs/nfs/global.c, sys/xfs/nfs/global.h,
+	sys/xfs/nfs/index.c, sys/xfs/nfs/index.h, sys/xfs/nfs/nfs_xdr.c,
+	sys/xfs/nfs/nfs_xdr.h, sys/xfs/nfs/nfsdev.c, sys/xfs/nfs/nfsdev.h,
+	sys/xfs/nfs/nfssys.c, sys/xfs/nfs/nfssys.h, sys/xfs/nfs/nfsutil.c,
+	sys/xfs/nfs/nfsutil.h, sys/xfs/nfs/rpc_xdr.c,
+	sys/xfs/nfs/rpc_xdr.h, sys/xfs/nfs/sock_ipc.c,
+	sys/xfs/nfs/sock_ipc.h, sys/xfs/nfs/xdr.c, sys/xfs/nfs/xdr.h,
+	sys/xfs/nfs/ksocket/accept.c, sys/xfs/nfs/ksocket/bind.c,
+	sys/xfs/nfs/ksocket/connect.c, sys/xfs/nfs/ksocket/getpeername.c,
+	sys/xfs/nfs/ksocket/getsockname.c,
+	sys/xfs/nfs/ksocket/getsockopt.c, sys/xfs/nfs/ksocket/ksocket.h,
+	sys/xfs/nfs/ksocket/listen.c, sys/xfs/nfs/ksocket/recv.c,
+	sys/xfs/nfs/ksocket/recvfrom.c, sys/xfs/nfs/ksocket/recvmsg.c,
+	sys/xfs/nfs/ksocket/send.c, sys/xfs/nfs/ksocket/sendmsg.c,
+	sys/xfs/nfs/ksocket/sendto.c, sys/xfs/nfs/ksocket/setsockopt.c,
+	sys/gen-syscall/COPYING, sys/xfs/nfs/ksocket/shutdown.c,
+	sys/xfs/nfs/ksocket/socket.c, sys/xfs/nfs/ksocket/socketpair.c,
+	tools/IO/COPYING, tools/crypto/COPYING, tools/fdisk/COPYING,
+	tools/fsetter/COPYING, tools/gluestik/COPYING, tools/mgw/COPYING,
+	tools/mkfatfs/COPYING, sys/xdd/xconout2/COPYING:
+
+	Corrected COPYING files, corrected some source files. Added top
+	level copyright informations.
+	
+2000-09-27 Wednesday 11:11  Frank Naumann <fnaumann@freemint.de>
+
+	* CHANGES, ChangeLog.#0.50-1.12, ChangeLog.#1.12-1.12.6,
+	ChangeLog.#1.13-1.15.9, sys/sockets/CHANGES,
+	sys/sockets/ChangeLog.old, sys/xfs/ext2fs/Changes,
+	sys/xfs/minixfs/ChangeLog.old, sys/xfs/minixfs/Changes,
+	sys/xfs/ext2fs/ChangeLog.old, sys/xfs/nfs/ChangeLog.old,
+	sys/xfs/nfs/Changes:
+
+	Unified ChangeLog file name strategy. Added old kernel changes files.
+	
+2000-09-20 Wednesday 15:38  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/fatfs.c:
+
+	Added 'SLB' to the list of executable extensions.
+	
+2000-09-18 Monday 14:42  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/kernget.c:
+
+	Added bogomips information, expanded /kern/welcome with crypt message
+	
+2000-09-18 Monday 14:40  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/: crypt_IO.c, info.c, info.h:
+
+	Info messages reordered and reformatted
+	
+2000-09-18 Monday 14:38  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/memory.c:
+
+	Removed unused function restr_screen()
+	
+2000-09-18 Monday 14:29  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/ssystem.c:
+
+	Added a bit to S_OSFEATURES which indicated the presence of the crypt
+	expansion.
+	
+2000-09-08 Friday 08:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/asm/: Makefile.objs, SRCFILES, blockcopy.S,
+	blockcopy.spp, memset.S, memset.spp, peekpoke.S, peekpoke.spp,
+	quickmove.S, quickmove.spp, quickswap.S, quickswap.spp,
+	quickzero.S, quickzero.spp:
+
+	Removed asmtrans dependency, only a few modifcations are neccessary for that.
+	
+2000-09-07 Thursday 01:48  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dma.c:
+
+	Corrected timeout handling.
+	
+2000-09-07 Thursday 01:46  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: delay.c, mint/mdelay.h, mint/arch/delay.h:
+
+	Fixed #error statements for 68000 target, code is #ifdef'ed out now.
+	
+2000-09-07 Thursday 01:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/: context.spp, intr.spp, kernel.spp, slb_util.spp,
+	syscall.spp:
+
+	Fixes for new multilib targets (corrected include path).
+	
+2000-09-07 Thursday 01:41  Frank Naumann <fnaumann@freemint.de>
+
+	* BINFILES, CONFIGVARS, DEPENDENCIES, EXTRAFILES, MISCFILES,
+	Makefile, PHONY, RULES, SRCFILES, tools/CONFIGVARS,
+	tools/DEPENDENCIES, tools/PHONY, tools/RULES, sys/CONFIGVARS,
+	sys/DEPENDENCIES, sys/KERNELDEFS, sys/Makefile, sys/.cvsignore,
+	sys/Makefile.kernel, sys/Makefile.objs, sys/PHONY, sys/RULES,
+	sys/arch/.cvsignore, sys/arch/Makefile, sys/arch/Makefile.objs,
+	sys/libkern/.cvsignore, sys/libkern/Makefile,
+	sys/libkern/Makefile.objs, sys/libkern/asm/.cvsignore,
+	sys/libkern/asm/Makefile, sys/libkern/asm/Makefile.asm-files,
+	sys/libkern/asm/Makefile.objs:
+
+	Reorganized Makefile system, different kernels can be built parallel.
+	
+2000-09-06 Wednesday 10:37  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/crypto/xhdi.h:
+
+	Removed forgotten xhdi.h too (now in libIO).
+	
+2000-09-04 Monday 12:06  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: CONFIGVARS, RULES, gluestik/Makefile, mgw/Makefile,
+	nfs/Makefile, nfs/lib/Makefile:
+
+	Fixed wrong OPTS = -mshort definitions.
+	
+2000-09-04 Monday 11:47  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/asm/Makefile:
+
+	Fixed typo.
+	
+2000-09-04 Monday 11:35  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: BINFILES, CONFIGVARS, DEPENDENCIES, EXTRAFILES,
+	MISCFILES, Makefile, PHONY, RULES, SRCFILES:
+
+	New Makefile system.
+	
+2000-09-04 Monday 11:35  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/minix/: .cvsignore, BINFILES, COPYING, EXTRAFILES,
+	MISCFILES, Makefile, SRCFILES, docs/.cvsignore, docs/BINFILES,
+	docs/EXTRAFILES, docs/MISCFILES, docs/Makefile, docs/SRCFILES,
+	docs/address.doc, docs/bugs.doc, docs/flist.doc, docs/fsck.doc,
+	docs/latest.doc, docs/mfsconf.doc, docs/mfsdoc.doc, docs/minit.doc,
+	docs/minixfs.doc, docs/readme.doc, docs/syscall.doc,
+	fsck/.cvsignore, fsck/BINFILES, fsck/EXTRAFILES, fsck/MISCFILES,
+	fsck/Makefile, fsck/SRCFILES, fsck/common.c, fsck/common.h,
+	fsck/fs.h, fsck/fsck.c, fsck/fsck.h, fsck/global.c, fsck/global.h,
+	fsck/io.c, fsck/io.h, fsck/main.c, minit/.cvsignore,
+	minit/BINFILES, minit/EXTRAFILES, minit/MISCFILES, minit/Makefile,
+	minit/SRCFILES, minit/minit.c, tools/.cvsignore, tools/BINFILES,
+	tools/EXTRAFILES, tools/MISCFILES, tools/Makefile, tools/SRCFILES,
+	tools/flist.c, tools/mfsconf.c:
+
+	Source restructurization, moved from sys/xfs/minix to this place.
+	
+2000-09-04 Monday 11:33  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/nfs/: .cvsignore, BINFILES, COPYING, EXTRAFILES, MISCFILES,
+	Makefile, README, SRCFILES, common.h, mntent.c, mntent.h, mount.8,
+	mount.c, mount.h, mount_xdr.c, mtab.5, nfsmnt.c, lib/.cvsignore,
+	lib/BINFILES, lib/EXTRAFILES, lib/MISCFILES, lib/Makefile,
+	lib/SRCFILES, lib/atarierr.h, lib/auth_unix.h, lib/clnt.c,
+	lib/clnt.h, lib/pmap.h, lib/pmap_get.c, lib/pmap_set.c,
+	lib/pmap_xdr.c, lib/rpc.h, lib/rpc_xdr.c, lib/svc.c, lib/svc.h,
+	lib/svc_auth.c, lib/svc_main.c, lib/thread.c, lib/thread.h,
+	lib/xdr.c, lib/xdr.h:
+
+	Source restructurization, moved from sys/xfs/nfs to this place.
+	
+2000-09-04 Monday 01:22  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/fnramfs/: .cvsignore, BINFILES, COPYING, EXTRAFILES,
+	INSTALL, MISCFILES, Makefile, README, SRCFILES, fnramfs.c:
+
+	Removed fnramfs, integrated statically into kernel.
+	
+2000-09-04 Monday 01:21  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/: ext2dev.c, inode.c:
+
+	Small fixes and optimizations.
+	
+2000-09-04 Monday 01:19  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/fnramfs/fnramfs.c:
+
+	Small fixes.
+	
+2000-09-04 Monday 01:14  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/nfs/: Makefile, ksocket/.cvsignore, ksocket/Makefile:
+
+	Small fix, corrected Makefiles due to the move.
+	
+2000-09-04 Monday 01:04  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/nfs/: BINFILES, EXTRAFILES, MISCFILES, Makefile,
+	SRCFILES, cache.c, cache.h, config.h, global.c, global.h, index.c,
+	index.h, main.c, nfs_xdr.c, nfs_xdr.h, nfsdev.c, nfsdev.h,
+	nfssys.c, nfssys.h, nfsutil.c, nfsutil.h, rpc_xdr.c, rpc_xdr.h,
+	sock_ipc.c, sock_ipc.h, version.h, xdr.c, xdr.h, ksocket/BINFILES,
+	ksocket/EXTRAFILES, ksocket/MISCFILES, ksocket/Makefile,
+	ksocket/SRCFILES, ksocket/accept.c, ksocket/bind.c,
+	ksocket/connect.c, ksocket/getpeername.c, ksocket/getsockname.c,
+	ksocket/getsockopt.c, ksocket/in.h, ksocket/ksocket.h,
+	ksocket/listen.c, ksocket/recv.c, ksocket/recvfrom.c,
+	ksocket/recvmsg.c, ksocket/send.c, ksocket/sendmsg.c,
+	ksocket/sendto.c, ksocket/setsockopt.c, ksocket/shutdown.c,
+	ksocket/socket.c, ksocket/socketpair.c, man/cat5/mtab.5,
+	man/cat5/rmtab.5, man/cat5/xtab.5, man/cat8/mount.8,
+	man/cat8/mountd.8, man/cat8/nfsd.8, mount/Makefile, mount/common.h,
+	mount/mntent.c, mount/mntent.h, mount/mount.c, mount/mount.h,
+	mount/mount_xdr.c, mount/nfsmnt.c, mount/lib/Makefile,
+	mount/lib/atarierr.h, mount/lib/auth_unix.h, mount/lib/clnt.c,
+	mount/lib/clnt.h, mount/lib/pmap.h, mount/lib/pmap_get.c,
+	mount/lib/pmap_set.c, mount/lib/pmap_xdr.c, mount/lib/rpc.h,
+	mount/lib/rpc_xdr.c, mount/lib/svc.c, mount/lib/svc.h,
+	mount/lib/svc_auth.c, mount/lib/svc_main.c, mount/lib/thread.c,
+	mount/lib/thread.h, mount/lib/xdr.c, mount/lib/xdr.h, nfs/BINFILES,
+	nfs/EXTRAFILES, nfs/MISCFILES, nfs/Makefile, nfs/SRCFILES,
+	nfs/cache.c, nfs/cache.h, nfs/config.h, nfs/global.c, nfs/global.h,
+	nfs/index.c, nfs/index.h, nfs/main.c, nfs/nfs_xdr.c, nfs/nfs_xdr.h,
+	nfs/nfsdev.c, nfs/nfsdev.h, nfs/nfssys.c, nfs/nfssys.h,
+	nfs/nfsutil.c, nfs/nfsutil.h, nfs/rpc_xdr.c, nfs/rpc_xdr.h,
+	nfs/sock_ipc.c, nfs/sock_ipc.h, nfs/version.h, nfs/xdr.c,
+	nfs/xdr.h, nfs/ksocket/BINFILES, nfs/ksocket/EXTRAFILES,
+	nfs/ksocket/MISCFILES, nfs/ksocket/Makefile, nfs/ksocket/SRCFILES,
+	nfs/ksocket/accept.c, nfs/ksocket/bind.c, nfs/ksocket/connect.c,
+	nfs/ksocket/getpeername.c, nfs/ksocket/getsockname.c,
+	nfs/ksocket/getsockopt.c, nfs/ksocket/in.h, nfs/ksocket/ksocket.h,
+	nfs/ksocket/listen.c, nfs/ksocket/recv.c, nfs/ksocket/recvfrom.c,
+	nfs/ksocket/recvmsg.c, nfs/ksocket/send.c, nfs/ksocket/sendmsg.c,
+	nfs/ksocket/sendto.c, nfs/ksocket/setsockopt.c,
+	nfs/ksocket/shutdown.c, nfs/ksocket/socket.c,
+	nfs/ksocket/socketpair.c:
+
+	Restructured source, moved mount program to tools/ folder.
+	
+2000-09-04 Monday 00:44  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: gluestik/BINFILES, gluestik/EXTRAFILES,
+	gluestik/MISCFILES, gluestik/Makefile, gluestik/SRCFILES,
+	gluestik/gs.h, gluestik/gs_config.c, gluestik/gs_config.h,
+	gluestik/gs_func.c, gluestik/gs_func.h, gluestik/gs_mem.c,
+	gluestik/gs_mem.h, gluestik/gs_stik.c, gluestik/gs_stik.h,
+	gluestik/main.c, gluestik/testit.c, gluestik/transprt.h,
+	gluestik/version.h, gluestik/src/.cvsignore, gluestik/src/Makefile,
+	gluestik/src/gs.h, gluestik/src/gs_config.c,
+	gluestik/src/gs_config.h, gluestik/src/gs_func.c,
+	gluestik/src/gs_func.h, gluestik/src/gs_mem.c,
+	gluestik/src/gs_mem.h, gluestik/src/gs_stik.c,
+	gluestik/src/gs_stik.h, gluestik/src/main.c, gluestik/src/testit.c,
+	gluestik/src/version.h, gluestik/src/include/.cvsignore,
+	gluestik/src/include/errno.h, gluestik/src/include/sockerr.h,
+	gluestik/src/include/transprt.h, mgw/BINFILES, mgw/EXTRAFILES,
+	mgw/MISCFILES, mgw/Makefile, mgw/SRCFILES, mgw/main.c:
+
+	Updated for new Makefiles.
+	
+2000-09-04 Monday 00:43  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: crypto/BINFILES, crypto/COPYING, crypto/EXTRAFILES,
+	crypto/MISCFILES, crypto/Makefile, crypto/SRCFILES,
+	crypto/mytypes.h, crypto/xhdi.c, fdisk/BINFILES, fdisk/EXTRAFILES,
+	fdisk/MISCFILES, fdisk/Makefile, fdisk/SRCFILES, fdisk/bswap.h,
+	fdisk/fdisk.c, fdisk/mytypes.h, fdisk/xhdi.c, fdisk/xhdi.h,
+	fsetter/BINFILES, fsetter/EXTRAFILES, fsetter/MISCFILES,
+	fsetter/Makefile, fsetter/SRCFILES, fsetter/fsetter.c,
+	fsetter/fsetter.h, fsetter/fsetter.hrd, fsetter/fsetter.rsc,
+	fsetter/fsetter_e.rsc, fsetter/src/.cvsignore,
+	fsetter/src/Makefile, fsetter/src/fsetter.c, fsetter/src/fsetter.h,
+	fsetter/src/fsetter.hrd, fsetter/src/fsetter.rsc,
+	fsetter/src/fsetter_e.rsc, fsetter/src/xhdi.c, fsetter/src/xhdi.h,
+	mkfatfs/BINFILES, mkfatfs/EXTRAFILES, mkfatfs/MISCFILES,
+	mkfatfs/Makefile, mkfatfs/SRCFILES, mkfatfs/bswap.h,
+	mkfatfs/mkfatfs.c, mkfatfs/mytypes.h, mkfatfs/xhdi.c,
+	mkfatfs/xhdi.h:
+
+	Updated for new IO lib, new Makefiles.
+	
+2000-09-04 Monday 00:42  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/IO/: .cvsignore, BINFILES, COPYING, EXTRAFILES, MISCFILES,
+	Makefile, SRCFILES, bswap.h, mytypes.h, xhdi.c, xhdi.h:
+
+	New lib, share I/O routines for the tools.
+	
+2000-09-04 Monday 00:26  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/minixfs/: docs/address.doc, docs/bugs.doc,
+	docs/flist.doc, docs/fsck.doc, docs/latest.doc, docs/mfsconf.doc,
+	docs/mfsdoc.doc, docs/minit.doc, docs/minixfs.doc, docs/readme.doc,
+	docs/syscall.doc, fsck/Makefile, fsck/common.c, fsck/common.h,
+	fsck/fs.h, fsck/fsck.c, fsck/fsck.h, fsck/global.c, fsck/global.h,
+	fsck/io.c, fsck/io.h, fsck/main.c, fsck/xhdi.c, fsck/xhdi.h,
+	minit/Makefile, minit/minit.c, minit/xhdi.c, minit/xhdi.h,
+	minixfs/BINFILES, minixfs/EXTRAFILES, minixfs/MISCFILES,
+	minixfs/Makefile, minixfs/SRCFILES, minixfs/bitmap.c,
+	minixfs/bitmap.h, minixfs/config.h, minixfs/dir.c, minixfs/dir.h,
+	minixfs/global.c, minixfs/global.h, minixfs/inode.c,
+	minixfs/inode.h, minixfs/main.c, minixfs/main.h, minixfs/minix.h,
+	minixfs/minixdev.c, minixfs/minixdev.h, minixfs/minixsys.c,
+	minixfs/minixsys.h, minixfs/misc.c, minixfs/misc.h,
+	minixfs/syms.mfs, minixfs/trans.c, minixfs/trans.h,
+	minixfs/version.h, minixfs/zone.c, minixfs/zone.h,
+	minixfs/old/cache.c, minixfs/old/cache.h, minixfs/old/check.c,
+	minixfs/old/check.h, minixfs/old/hdio.c, minixfs/old/hdio.h,
+	minixfs/old/io.c, minixfs/old/io.h, minixfs/old/pun.h,
+	minixfs/old/tinyxhdi.c, minixfs/old/xhdi.h, tools/Makefile,
+	tools/flist.c, tools/mfsconf.c:
+
+	Restructured source, contain now only the xfs. The minixfs tools are moved to tools/ folder.
+	
+2000-09-04 Monday 00:26  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/minixfs/: BINFILES, EXTRAFILES, MISCFILES, Makefile,
+	SRCFILES, bitmap.c, bitmap.h, config.h, dir.c, dir.h, global.c,
+	global.h, inode.c, inode.h, main.c, main.h, minix.h, minixdev.c,
+	minixdev.h, minixsys.c, minixsys.h, misc.c, misc.h, syms.mfs,
+	trans.c, trans.h, version.h, zone.c, zone.h, old/cache.c,
+	old/cache.h, old/check.c, old/check.h, old/hdio.c, old/hdio.h,
+	old/io.c, old/io.h, old/pun.h, old/tinyxhdi.c, old/xhdi.h:
+
+	Restructured source, contain now only the xfs. The minixfs tools are moved to  
+	tools/ folder.
+	
+2000-08-29 Tuesday 10:35  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: mfp.h, bios.c, biosfs.c, dossig.c, falcon.h, memory.c,
+	time.c, xbios.c, mint/falcon.h, mint/arch/mfp.h:
+
+	Moved mfp.h and falcon.h to better places (mint/arch/mfp.h and mint/falcon.h).
+	
+2000-08-28 Monday 15:35  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/mint/file.h:
+
+	Added static define for ramdisk xfs.
+	
+2000-08-28 Monday 15:34  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/filesys.c:
+
+	Fixed a bug in load_xdd/load_xfs, the region must be detached if module
+	loading fails.
+	
+2000-08-28 Monday 15:32  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: SRCFILES, filesys.c, ramfs.c, ramfs.h, unifs.c:
+
+	Integrated ramdisk xfs into kernel, so it's always available. This allow safe  
+	shortcuts for debugging purposes.
+	
+2000-08-28 Monday 15:27  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/fatfs.c:
+
+	Unified version message strings.
+	
+2000-08-28 Monday 15:24  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/delay.c:
+
+	Corrected typo.
+	
+2000-08-28 Monday 15:22  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/memory.c:
+
+	Cleanup, more precise debug messages of sanity_check.
+	
+2000-08-28 Monday 15:18  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/update.c:
+
+	Better initialization for update daemon.
+	
+2000-08-28 Monday 15:18  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/memory.h:
+
+	Removed invalid 'extern MMAP ker' declaration.
+	
+2000-08-22 Tuesday 13:09  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/xif/rtl8012_vblint.s:
+
+	Removed ATARI cr's.
+	
+2000-08-04 Friday 00:26  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/mint/proc.h:
+
+	Clenaup and some changes for kernel modules and exported definitions.
+	
+2000-08-04 Friday 00:24  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: console.c, dosfile.c, filesys.h, memory.c:
+
+	New: xfs_locking code for device driver access. Only the storage I/O functions!
+	
+2000-08-04 Friday 00:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/scsidrv.c:
+
+	Changed debug behaviour to standard behaviour.
+	
+2000-08-04 Friday 00:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/kernget.c:
+
+	Pseudo file /kern/hz use new <arch/timer.h>.
+	
+2000-08-04 Friday 00:12  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/timer.h:
+
+	HZ definition is now as long constant declared
+	
+2000-08-04 Friday 00:11  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: bios.c, biosfs.c, random.c, xbios.c, time.c, time.h:
+
+	Changes for new <arch/timer.h>. Removed double hz_200 definitions and so on.
+	
+2000-08-04 Friday 00:08  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/: Makefile.objs, xfs_xdd_kernel.h:
+
+	Small updates for various enhancements.
+	
+2000-08-04 Friday 00:06  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: CONFIGVARS, Makefile, Makefile.kernel:
+
+	Added new target my3 for 030 kernel with profiling support.
+	
+2000-08-04 Friday 00:05  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/RULES:
+
+	Small update for libkern handling.
+	
+2000-08-04 Friday 00:05  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: delay.c, delay.h, global.c, init.c, mint/delay.h,
+	mint/file.h, mint/mdelay.h, mint/arch/delay.h:
+
+	New functionality, mikrodelay for very small delays. Useful for hardware       
+	drivers. Enhanced kerinfo structure for that.
+	
+	Attention: Only available for 68020 and higher. On 68000 it make no sense as
+	the 68000 is to slow for that.
+	
+2000-08-04 Friday 00:05  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/SRCFILES:
+
+	New system calls Fseek64() and Fpoll() that just wrap around the 32bit
+	versions at the moment. At the moment it help the MiNTLib development.
+	
+	Attention: Only available for 68020 and higher. On 68000 it make no sense as
+	the 68000 is to slow for that.
+	
+2000-08-03 Thursday 23:54  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/xif/: Makefile, SRCFILES, rtl8012.c, rtl8012.h,
+	rtl8012_vblint.h, rtl8012_vblint.s:
+
+	New xif driver for the ROM-port ethernet pocket adapter rtl8012.
+	
+2000-08-03 Thursday 23:52  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/xif/.cvsignore:
+
+	Updated.
+	
+2000-08-03 Thursday 23:52  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/xif/de600.c:
+
+	Added hz_200 declaration.
+	
+2000-08-03 Thursday 16:36  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/xif/de600.c:
+
+	Updated to <mint/timer.h>
+	
+2000-08-03 Thursday 16:35  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/xif/dial.c:
+
+	Added last patches from Torsten.
+	
+2000-08-03 Thursday 10:42  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/: Makefile, SRCFILES, timer.c, timer.h:
+
+	New definitions and prototypes for the system timer. This timer
+	is in fact updated by TOS timer at the moment.
+	
+2000-08-03 Thursday 10:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/magic/genmagic.c:
+
+	Cleanup.
+	
+2000-08-03 Thursday 10:39  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/: context.h, cpu.h, detect.h, intr.h, kernel.h, mmu.h,
+	mprot.h, scsidrv_emu.h, slb_util.h, syscall.h, xhdi_emu.h:
+
+	Corrected multiple inclusion definition to _m68k_<file>.
+	
+2000-07-18 Tuesday 17:42  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/Makefile:
+
+	Corrected toplevel dir due to moving.
+	
+2000-07-18 Tuesday 17:41  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/src/: BINFILES, EXTRAFILES, MISCFILES, Makefile,
+	SRCFILES, balloc.c, balloc.h, bitmap.c, bitmap.h, ext2.h,
+	ext2dev.c, ext2dev.h, ext2sys.c, ext2sys.h, global.c, global.h,
+	ialloc.c, ialloc.h, inode.c, inode.h, main.c, namei.c, namei.h,
+	super.c, super.h, truncate.c, truncate.h, version.h:
+
+	Moved upwards.
+	
+2000-07-18 Tuesday 17:35  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/: BINFILES, EXTRAFILES, MISCFILES, Makefile,
+	SRCFILES, ext2dev.c, ext2sys.c, main.c, src/BINFILES,
+	src/EXTRAFILES, src/MISCFILES, src/Makefile, src/SRCFILES,
+	src/ext2dev.c, src/ext2sys.c, src/main.c:
+
+	Updated to new Makefile system.
+	
+2000-07-17 Monday 14:23  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sys/: .cvsignore, gmon.h, gmon_out.h:
+
+	The neccessary header files for kernel profiling support.
+	
+2000-07-14 Friday 12:53  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: gmon.c, gmon.h, CONFIGVARS, DEPENDENCIES, Makefile.kernel,
+	SRCFILES, debug.c, init.c, mcount.c, profil.c, profil.h,
+	arch/intr.spp, mint/arch/asm.h, mint/arch/asm_atomic.h:
+
+	Added kernel profiling support. It's now possible to profile the kernel itself.
+	New top level definition PROFILING enable this routines. All files must be
+	compiled with -pg too. New CTR-ALT-F? debug key combinations to dump out
+	profiling data (u:/ram/gmon.out) and disable/enable profiling.
+	
+2000-07-14 Friday 12:47  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: kmemory.c, memory.c, memory.h:
+
+	Changed kernel malloc to last fit strategy and not best fit like user malloc.  
+	This place kernel memory at the top and will hopefully decrease memory
+	fragmentation. Also disabled the irritating shared text segment concentation.
+	
+2000-07-14 Friday 12:44  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/proc.c:
+
+	Code cleanup.
+	
+2000-07-14 Friday 12:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: syscall_vectors.c, syscalls.master:
+
+	Updates for the new system calls, prepared new socket system calls.
+	
+2000-07-14 Friday 12:42  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: dosfile.c, dosfile.h:
+
+	New system calls Fseek64() and Fpoll() that just wrap around the 32bit
+	versions at the moment. At the moment it help the MiNTLib development.
+	
+2000-07-14 Friday 12:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xbios.c:
+
+	Removed irritating Iorec() ALERT message.
+	
+2000-07-14 Friday 12:36  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: biosfs.c, dos.c, global.c, timeout.c, timeout.h, tty.c,
+	rendez.c:
+
+	Changed addtimeout to use new PROC *p parameter instead curproc. Added
+	backward compatible addtimeout_curproc. Fixed up all places there addtimeout
+	is used. This remove the ugly curproc <-> p swapping in dos.c Tsetitimer()
+	timer routines.
+	
+2000-07-14 Friday 12:30  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: filesys.c, filesys.h:
+
+	New sytem call fsync, call at the moment simply sync.
+	
+2000-07-04 Tuesday 09:46  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/: buf.c, sockdev.c:
+
+	Code cleanup, corrected some types, corrected wrong FATAL statements.
+	
+2000-06-30 Friday 15:27  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: CONFIGVARS, DEPENDENCIES, RULES, syscalls.master,
+	mint/dcntl.h, mint/file.h, mint/ktypes.h:
+
+	Minor updates and cleanups.
+	
+2000-06-30 Friday 11:29  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/fatfs.c:
+
+	Fix for bad bug from last change, unlink flag was not cleared.
+	
+2000-06-29 Thursday 21:07  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/: .cvsignore, BINFILES, CHANGES, EXTRAFILES,
+	MISCFILES, Makefile, README, README.1ST, README.masquerade,
+	README.masquerade.TL, SRCFILES, buf.c, buf.h, config.h, dummydev.c,
+	dummydev.h, global.c, global.h, iov.c, iov.h, main.c, mintsock.h,
+	net.h, netinfo.h, sockdev.c, sockdev.h, socket.h, sockutil.c,
+	sockutil.h, timer.c, timer.h, util.h, version.h, inet4/.cvsignore,
+	inet4/BINFILES, inet4/BUGS, inet4/EXTRAFILES, inet4/MISCFILES,
+	inet4/Makefile, inet4/SRCFILES, inet4/arp.c, inet4/arp.h,
+	inet4/arpdev.c, inet4/arpdev.h, inet4/bpf.c, inet4/bpf.h,
+	inet4/bpf_filter.c, inet4/icmp.c, inet4/icmp.h, inet4/if.c,
+	inet4/if.h, inet4/ifeth.c, inet4/ifeth.h, inet4/ifload.c,
+	inet4/ifload.h, inet4/in.h, inet4/inet.c, inet4/inet.h,
+	inet4/inetdev.c, inet4/inetdev.h, inet4/inetutil.c,
+	inet4/inetutil.h, inet4/ip.c, inet4/ip.h, inet4/loopback.c,
+	inet4/loopback.h, inet4/masqdev.c, inet4/masqdev.h,
+	inet4/masquerade.c, inet4/masquerade.h, inet4/port.c, inet4/port.h,
+	inet4/rawip.c, inet4/rawip.h, inet4/route.c, inet4/route.h,
+	inet4/routedev.c, inet4/routedev.h, inet4/tcp.c, inet4/tcp.h,
+	inet4/tcpin.c, inet4/tcpin.h, inet4/tcpout.c, inet4/tcpout.h,
+	inet4/tcpsig.c, inet4/tcpsig.h, inet4/tcputil.c, inet4/tcputil.h,
+	inet4/udp.c, inet4/udp.h, unix/.cvsignore, unix/BINFILES,
+	unix/EXTRAFILES, unix/MISCFILES, unix/Makefile, unix/SRCFILES,
+	unix/cache.c, unix/cache.h, unix/dgram.c, unix/dgram.h,
+	unix/stream.c, unix/stream.h, unix/un.h, unix/unix.c, unix/unix.h,
+	unix/unixdev.c, unix/unixdev.h, xif/.cvsignore, xif/BINFILES,
+	xif/BIODMA.txt, xif/DE600.txt, xif/DIAL.txt, xif/EXTRAFILES,
+	xif/LANCE.txt, xif/MISCFILES, xif/Makefile, xif/PAMs_DMA.txt,
+	xif/PLIP.txt, xif/PPP.txt, xif/README, xif/SLIP.txt, xif/SRCFILES,
+	xif/biodma.c, xif/biodma.h, xif/de600.c, xif/de600.h,
+	xif/de600asm.s, xif/dial.c, xif/dmaasm.s, xif/dummyeth.c,
+	xif/genfcs.c, xif/lance.c, xif/lanceasm.s, xif/lancemem.h,
+	xif/main.c, xif/pamsdma.c, xif/pamsdma.h, xif/pl0.c, xif/pl0.h,
+	xif/pl0asm.s, xif/plip.c, xif/plip.h, xif/ppp.c, xif/ppp.h,
+	xif/rieblmst.c, xif/rieblmst_fast.c, xif/rieblspc.c,
+	xif/rieblspc_fast.c, xif/rieblste.c, xif/riebltt.c, xif/serial.c,
+	xif/serial.h, xif/slcompress.c, xif/slcompress.h, xif/slip.c,
+	xif/slip.h, xif/obsolete/BIODMA.txt, xif/obsolete/OSLIP.txt,
+	xif/obsolete/biodma.c, xif/obsolete/biodma.h, xif/obsolete/osl0.c,
+	xif/obsolete/osl0.h, xif/obsolete/osl0asm.s, xif/obsolete/oslip.c:
+
+	2000-06-29 Initial CVS import of reworked and modernized MiNTNet 1.04.
+	
+2000-06-27 Tuesday 23:54  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/unix2xbios.c:
+
+	Fixed name conflict in variable definition.
+	
+2000-06-27 Tuesday 23:53  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/xfs_xdd_kernel.h:
+
+	Added some GEMDOS kernel function entries, required to compile the sockets.
+	
+2000-06-27 Tuesday 23:51  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/: SRCFILES, libkern.h, strtol.c, strtoll.c,
+	strtoul.c, strtoull.c:
+
+	New string conversion routines, stolen from the MiNTLib.
+	
+2000-06-27 Tuesday 21:59  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/.cvsignore, sys/arch/asmtrans/.cvsignore,
+	sys/arch/magic/.cvsignore, sys/buildinfo/.cvsignore,
+	sys/gen-syscall/.cvsignore, tools/crypto/.cvsignore,
+	tools/fdisk/.cvsignore, tools/mkfatfs/.cvsignore:
+
+	Updated for special build files.
+	
+2000-06-27 Tuesday 18:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/.cvsignore, sys/arch/asmtrans/.cvsignore,
+	sys/arch/magic/.cvsignore, sys/mint/.cvsignore,
+	sys/mint/arch/.cvsignore, sys/buildinfo/.cvsignore,
+	sys/gen-syscall/.cvsignore, sys/libkern/.cvsignore,
+	sys/libkern/asm/.cvsignore, sys/xdd/flop-raw/.cvsignore,
+	sys/xdd/mfp/.cvsignore, sys/xdd/scc/.cvsignore, sys/xdd/.cvsignore,
+	sys/xdd/uart/.cvsignore, sys/xdd/xconout2/.cvsignore,
+	sys/xfs/ext2fs/.cvsignore, sys/xfs/fnramfs/.cvsignore,
+	sys/xfs/minixfs/.cvsignore, sys/xfs/nfs/.cvsignore, .cvsignore,
+	sys/.cvsignore, sys/xfs/.cvsignore, tools/crypto/.cvsignore,
+	tools/fsetter/.cvsignore, tools/fsetter/src/.cvsignore,
+	tools/gluestik/.cvsignore, tools/gluestik/src/.cvsignore,
+	tools/gluestik/src/include/.cvsignore, tools/mgw/.cvsignore,
+	tools/.cvsignore, tools/fdisk/.cvsignore, tools/mkfatfs/.cvsignore:
+
+	Added .cvsignore to reduce cvs messages about temporary files.
+	
+2000-06-21 Wednesday 10:16  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/fatfs.c:
+
+	Handle Unix style unlink now correctly.
+	
+2000-06-19 Monday 18:04  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/fdisk/fdisk.c:
+
+	New fdisk for TOS compatible partitions. Not completly ready but listing
+	and changing the ID work.
+	
+2000-06-18 Sunday 23:55  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/crypto/: Makefile, io.c, io.h, main.c, md5.c, md5.h,
+	xhdi.c, xhdi.h:
+
+	New 32bit clean XHDI wrapper, removed mshort compile option. Minor changes,
+	mostly type corrections, over the src files.
+	
+2000-06-18 Sunday 23:31  Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+
+	* sys/cnf.c, sys/tty.c, tools/crypto/main.c:
+
+	sys/cnf.c:
+		- Link count of files opened for PRN: and AUX: is now
+		  incremented, not statically set to two (which cures the
+		  shutdown problem when using something like
+		  PRN=U:\dev\prn
+		  in mint.cnf
+	
+	sys/tty.c:
+		- Better solution for the controlling-TTY-and-link-count-
+		  problem
+		- When making a TTY the controling TTY, the TTY's link count is
+		  now increased, as do_pclose() will decrease it
+	
+	tools/crypto/Makefile:
+		- No changes, no idea why CVS marked it as 'changed'
+	
+	tools/crypto/main.c:
+		- Corrected some typos in the program messages
+		- Better initialization of some static variables (using the
+		  constant instead of the numeric value)
+		- Fixed bug in feedback initialization, the wrong sector number
+		  was used
+	
+2000-06-15 Thursday 21:25  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/fdisk/: COPYING, Makefile, bswap.h, mytypes.h, sfdisk.8,
+	sfdisk.c, sfdisk.examples, xhdi.c, xhdi.h:
+
+	Initial checkin of sfdisk (Linux fdisk ported to MiNT).
+	
+2000-06-14 Wednesday 17:08  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/mkfatfs/: Makefile, xhdi.c, xhdi.h:
+
+	New 32bit clean XHDI wrapper.
+	
+2000-06-14 Wednesday 16:17  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/mkfatfs/mkfatfs.c:
+
+	Changes against MiNTLib 0.55, accept now now more DOS FAT partition types,
+	better feedback.
+	
+2000-06-14 Wednesday 12:43  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/mkfatfs/: bswap.h, mytypes.h:
+
+	New file.
+	
+2000-06-13 Tuesday 11:26  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/fatfs.c:
+
+	Internal get_bpb don't complain about unknown DOS partition types now.
+	
+2000-06-08 Thursday 00:05  Frank Naumann <fnaumann@freemint.de>
+
+	* CHANGES:
+
+	Added Gryfs patches.
+	
+2000-06-07 Wednesday 23:44  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/global.c:
+
+	[no log message]
+	
+2000-06-07 Wednesday 23:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/biosfs.c:
+
+	Corrected small typo.
+	
+2000-06-07 Wednesday 23:42  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/filesys.c:
+
+	Slighty improved the test for the special cases like CON: etc.
+	
+2000-06-07 Wednesday 23:42  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/crypt_IO.c:
+
+	- crypt_block() now gets the physical record number, adapted
+	  calls to it accordingly
+	- rwabs_crypto() didn't properly skip the bootsector (forgot to
+	  increment the record number, which is used for the feedback in
+	  CBC mode)
+	
+2000-06-07 Wednesday 23:41  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/memory.c:
+
+	Stupid bug in the new "strict" memory protection model could
+	lead to a memory violation ...
+	
+2000-06-07 Wednesday 23:41  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/tty.c:
+
+	Ioctl(TIOCNOTTY) didn't decrease the link count of the
+	detached filepointer, ioctl(TIOCSCTTY) didn't increase that of
+	the attached filepointer (and had some useless and buggy code
+	in a loop). As far as I can judge, this was the reason for the
+	infamous "dispose_fileptr: f->links == -1" messages a lot of
+	people get on shutdown. I managed to get them at runtime (when
+	trying to get sshd 1.2.27 to run properly), so I had a better
+	chance to track the problem down.
+	
+2000-06-07 Wednesday 23:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/mprot030.c:
+
+	Didn't use the new interface of ksprintf().
+	
+2000-05-31 Wednesday 11:50  Frank Naumann <fnaumann@freemint.de>
+
+	* CHANGES, sys/BINFILES, sys/CONFIGVARS, sys/DEPENDENCIES,
+	sys/EXTRAFILES, sys/MISCFILES, sys/Makefile, sys/Makefile.kernel,
+	sys/PHONY, sys/RULES, sys/SRCFILES, sys/bf_tab.h, sys/bios.c,
+	sys/bios.h, sys/biosfs.c, sys/biosfs.h, sys/block_IO.c,
+	sys/block_IO.h, sys/blowfish.c, sys/blowfish.h, sys/cmdline.c,
+	sys/cmdline.h, sys/cnf.c, sys/cnf.h, sys/console.c, sys/console.h,
+	sys/cookie.c, sys/cookie.h, sys/crypt_IO.c, sys/crypt_IO.h,
+	sys/syscalls.master, sys/debug.c, sys/debug.h, sys/dev-mouse.c,
+	sys/dev-mouse.h, sys/dev-null.c, sys/dev-null.h, sys/dma.c,
+	sys/dma.h, sys/dos.c, sys/dos.h, sys/dosdir.c, sys/dosdir.h,
+	sys/dosfile.c, sys/dosfile.h, sys/dosmem.c, sys/dosmem.h,
+	sys/dossig.c, sys/dossig.h, sys/falcon.h, sys/fasttext.c,
+	sys/fasttext.h, sys/fatfs.c, sys/fatfs.h, sys/filesys.c,
+	sys/filesys.h, sys/global.c, sys/global.h, sys/info.c, sys/info.h,
+	sys/init.c, sys/init.h, sys/kernfs.c, sys/kernfs.h, sys/kernget.c,
+	sys/kernget.h, sys/kmemory.c, sys/kmemory.h, sys/md5.c, sys/md5.h,
+	sys/memory.c, sys/memory.h, sys/mfp.h, sys/nullfs.c, sys/nullfs.h,
+	sys/pipefs.c, sys/pipefs.h, sys/proc.c, sys/proc.h, sys/procfs.c,
+	sys/procfs.h, sys/pun.c, sys/pun.h, sys/random.c, sys/random.h,
+	sys/rendez.c, sys/rendez.h, sys/resource.c, sys/resource.h,
+	sys/scsidrv.c, sys/scsidrv.h, sys/shmfs.c, sys/shmfs.h,
+	sys/signal.c, sys/signal.h, sys/slb.c, sys/slb.h, sys/ssystem.c,
+	sys/ssystem.h, sys/sys_emu.c, sys/sys_emu.h, sys/syscall_vectors.c,
+	sys/syscall_vectors.h, sys/time.c, sys/time.h, sys/timeout.c,
+	sys/timeout.h, sys/tosfs.c, sys/tosfs.h, sys/tty.c, sys/tty.h,
+	sys/unicode.c, sys/unicode.h, sys/unifs.c, sys/unifs.h,
+	sys/update.c, sys/update.h, sys/util.c, sys/util.h, sys/xbios.c,
+	sys/xbios.h, sys/xhdi.c, sys/xhdi.h, sys/arch/BINFILES,
+	sys/arch/EXTRAFILES, sys/arch/MISCFILES, sys/arch/Makefile,
+	sys/arch/SRCFILES, sys/arch/context.h, sys/arch/context.spp,
+	sys/arch/cpu.h, sys/arch/cpu.spp, sys/arch/delay.c,
+	sys/arch/delay5.spp, sys/arch/detect.h, sys/arch/detect.spp,
+	sys/arch/intr.h, sys/arch/intr.spp, sys/arch/kernel.h,
+	sys/arch/kernel.spp, sys/arch/mmu.h, sys/arch/mmu030.spp,
+	sys/arch/mmu040.spp, sys/arch/mprot.h, sys/arch/scsidrv_emu.h,
+	sys/arch/mprot030.c, sys/arch/mprot040.c, sys/arch/scsidrv_emu.spp,
+	sys/arch/slb_util.h, sys/arch/slb_util.spp, sys/arch/startup.spp,
+	sys/arch/syscall.h, sys/arch/syscall.spp, sys/arch/vm5.spp,
+	sys/arch/xhdi_emu.h, sys/arch/xhdi_emu.spp,
+	sys/arch/asmtrans/BINFILES, sys/arch/asmtrans/EXTRAFILES,
+	sys/arch/asmtrans/MISCFILES, sys/arch/asmtrans/Makefile,
+	sys/arch/asmtrans/SRCFILES, sys/arch/asmtrans/asm.y,
+	sys/arch/asmtrans/asmtrans.h, sys/arch/asmtrans/trans.c,
+	sys/arch/asmtrans/trutil.c, sys/arch/magic/BINFILES,
+	sys/arch/magic/EXTRAFILES, sys/arch/magic/MISCFILES,
+	sys/arch/magic/Makefile, sys/arch/magic/SRCFILES,
+	sys/arch/magic/genmagic.c, sys/arch/magic/genmagic.pl,
+	sys/buildinfo/BINFILES, sys/buildinfo/EXTRAFILES,
+	sys/buildinfo/MISCFILES, sys/buildinfo/Makefile,
+	sys/buildinfo/SRCFILES, sys/buildinfo/cdef.sh,
+	sys/buildinfo/mkbuild.c, sys/buildinfo/version.h,
+	sys/gen-syscall/BINFILES, sys/gen-syscall/EXTRAFILES,
+	sys/gen-syscall/MISCFILES, sys/gen-syscall/Makefile,
+	sys/gen-syscall/SRCFILES, sys/gen-syscall/check.c,
+	sys/gen-syscall/check.h, sys/gen-syscall/generate.c,
+	sys/gen-syscall/generate.h, sys/gen-syscall/list.c,
+	sys/gen-syscall/list.h, sys/gen-syscall/main.c,
+	sys/gen-syscall/pars.y, sys/gen-syscall/scan.l,
+	sys/libkern/BINFILES, sys/libkern/EXTRAFILES,
+	sys/libkern/MISCFILES, sys/libkern/Makefile,
+	sys/libkern/Makefile.objs, sys/libkern/SRCFILES,
+	sys/libkern/atol.c, sys/libkern/bzero.c, sys/libkern/ctype.c,
+	sys/libkern/dostime.c, sys/libkern/ksprintf_old.c, sys/mint/asm.h,
+	sys/mint/basepage.h, sys/mint/block_IO.h, sys/mint/bswap.h,
+	sys/mint/config.h, sys/mint/dcntl.h, sys/mint/debug.h,
+	sys/mint/endian.h, sys/mint/errno.h, sys/mint/file.h,
+	sys/mint/kassert.h, sys/mint/kcompiler.h, sys/mint/kernel.h,
+	sys/mint/ktypes.h, sys/mint/mem.h, sys/mint/mint.h,
+	sys/mint/proc.h, sys/mint/rsvf.h, sys/mint/signal.h,
+	sys/mint/slb.h, sys/mint/swap.h, sys/mint/xbra.h,
+	sys/mint/arch/asm.h, sys/mint/arch/asm_atomic.h,
+	sys/mint/arch/asm_misc.h, sys/mint/arch/asm_spl.h,
+	sys/mint/arch/bswap.h, sys/mint/arch/endian.h,
+	sys/mint/arch/swap.h, sys/libkern/fstring.h,
+	sys/libkern/ksprintf.c, sys/libkern/libkern.h,
+	sys/libkern/memchr.c, sys/libkern/memcmp.c, sys/libkern/ms_time.c,
+	sys/libkern/strcat.c, sys/libkern/strcmp.c, sys/libkern/strcpy.c,
+	sys/libkern/stricmp.c, sys/libkern/stricmp_16.c,
+	sys/libkern/strlen.c, sys/libkern/strlen.s, sys/libkern/strlwr.c,
+	sys/libkern/strncmp.c, sys/libkern/strncpy.c,
+	sys/libkern/strncpy_f.c, sys/libkern/strnicmp.c,
+	sys/libkern/strnicmp_16.c, sys/libkern/strrchr.c,
+	sys/libkern/strrev.c, sys/libkern/strtonumber.c,
+	sys/libkern/strupr.c, sys/libkern/tolower.c, sys/libkern/toupper.c,
+	sys/libkern/unix2xbios.c, sys/libkern/unixtime.c,
+	sys/libkern/vsprintf.c, sys/libkern/xfs_xdd_kernel.h,
+	sys/libkern/asm/BINFILES, sys/libkern/asm/EXTRAFILES,
+	sys/libkern/asm/MISCFILES, sys/libkern/asm/Makefile,
+	sys/libkern/asm/Makefile.asm-files, sys/libkern/asm/SRCFILES,
+	sys/libkern/asm/blockcopy.spp, sys/libkern/asm/memset.spp,
+	sys/libkern/asm/peekpoke.h, sys/libkern/asm/peekpoke.spp,
+	sys/libkern/asm/quickmove.spp, sys/libkern/asm/quickswap.spp,
+	sys/libkern/asm/quickzero.spp, sys/misc/sizes.c,
+	sys/misc/expired/atarierr.h, sys/misc/expired/build.c,
+	sys/misc/expired/cnf.c, sys/misc/expired/nalloc2.c,
+	sys/misc/expired/nalloc2.h, sys/misc/rejected/gryf-hidegemdos.diff,
+	sys/misc/rejected/petr-main.c.diff, sys/misc/rejected/stubs.h,
+	sys/misc/rejected/stubs.m4, sys/misc/rejected/syscall.spp,
+	sys/misc/rejected/trapatch.c, sys/misc/rejected/trapatch.h,
+	sys/xdd/BINFILES, sys/xdd/EXTRAFILES, sys/xdd/MISCFILES,
+	sys/xdd/Makefile, sys/xdd/SRCFILES, sys/xdd/flop-raw/BINFILES,
+	sys/xdd/flop-raw/EXTRAFILES, sys/xdd/flop-raw/MISCFILES,
+	sys/xdd/flop-raw/Makefile, sys/xdd/flop-raw/README,
+	sys/xdd/flop-raw/SRCFILES, sys/xdd/flop-raw/flop_raw.c,
+	sys/xdd/mfp/BINFILES, sys/xdd/mfp/COPYING, sys/xdd/mfp/EXTRAFILES,
+	sys/xdd/mfp/LIESMICH, sys/xdd/mfp/MISCFILES, sys/xdd/mfp/Makefile,
+	sys/xdd/mfp/README, sys/xdd/mfp/SRCFILES, sys/xdd/mfp/mfp.c,
+	sys/xdd/mfp/mfp.h, sys/xdd/mfp/ports.txt, sys/xdd/scc/BINFILES,
+	sys/xdd/scc/COPYING, sys/xdd/scc/EXTRAFILES, sys/xdd/scc/LIESMICH,
+	sys/xdd/scc/MISCFILES, sys/xdd/scc/Makefile, sys/xdd/scc/README,
+	sys/xdd/scc/SRCFILES, sys/xdd/scc/ports.txt, sys/xdd/scc/scc.c,
+	sys/xdd/scc/scc.h, sys/xdd/uart/BINFILES, sys/xdd/uart/COPYING,
+	sys/xdd/uart/EXTRAFILES, sys/xdd/uart/LIESMICH,
+	sys/xdd/uart/MISCFILES, sys/xdd/uart/Makefile, sys/xdd/uart/README,
+	sys/xdd/uart/SRCFILES, sys/xdd/uart/pc16550.c,
+	sys/xdd/uart/pc16550.h, sys/xdd/uart/ports.txt,
+	sys/xdd/xconout2/BINFILES, sys/xdd/xconout2/EXTRAFILES,
+	sys/xdd/xconout2/MISCFILES, sys/xdd/xconout2/Makefile,
+	sys/xdd/xconout2/README, sys/xdd/xconout2/SRCFILES,
+	sys/xdd/xconout2/xconout2.c, sys/xfs/ext2fs/COPYING,
+	sys/xfs/ext2fs/Changes, sys/xfs/ext2fs/Makefile,
+	sys/xfs/ext2fs/Readme, sys/xfs/ext2fs/balloc.c,
+	sys/xfs/ext2fs/balloc.h, sys/xfs/ext2fs/bitmap.c,
+	sys/xfs/ext2fs/bitmap.h, sys/xfs/ext2fs/ext2.h,
+	sys/xfs/ext2fs/ext2dev.c, sys/xfs/ext2fs/ext2dev.h,
+	sys/xfs/ext2fs/src/Makefile, sys/xfs/ext2fs/src/balloc.c,
+	sys/xfs/ext2fs/src/balloc.h, sys/xfs/ext2fs/src/bitmap.c,
+	sys/xfs/ext2fs/src/bitmap.h, sys/xfs/ext2fs/src/ext2.h,
+	sys/xfs/ext2fs/src/ext2dev.c, sys/xfs/ext2fs/src/ext2dev.h,
+	sys/xfs/ext2fs/ext2sys.c, sys/xfs/ext2fs/ext2sys.h,
+	sys/xfs/ext2fs/global.c, sys/xfs/ext2fs/global.h,
+	sys/xfs/ext2fs/ialloc.c, sys/xfs/ext2fs/ialloc.h,
+	sys/xfs/ext2fs/inode.c, sys/xfs/ext2fs/inode.h,
+	sys/xfs/ext2fs/main.c, sys/xfs/ext2fs/namei.c,
+	sys/xfs/ext2fs/namei.h, sys/xfs/ext2fs/super.c,
+	sys/xfs/ext2fs/super.h, sys/xfs/ext2fs/truncate.c,
+	sys/xfs/ext2fs/truncate.h, sys/xfs/ext2fs/version.h,
+	sys/xfs/ext2fs/src/ext2sys.c, sys/xfs/ext2fs/src/ext2sys.h,
+	sys/xfs/ext2fs/src/global.c, sys/xfs/ext2fs/src/global.h,
+	sys/xfs/ext2fs/src/ialloc.c, sys/xfs/ext2fs/src/ialloc.h,
+	sys/xfs/ext2fs/src/inode.c, sys/xfs/ext2fs/src/inode.h,
+	sys/xfs/ext2fs/src/main.c, sys/xfs/ext2fs/src/namei.c,
+	sys/xfs/ext2fs/src/namei.h, sys/xfs/ext2fs/src/super.c,
+	sys/xfs/ext2fs/src/super.h, sys/xfs/ext2fs/src/truncate.c,
+	sys/xfs/ext2fs/src/truncate.h, sys/xfs/ext2fs/src/version.h,
+	sys/xfs/fnramfs/BINFILES, sys/xfs/fnramfs/COPYING,
+	sys/xfs/fnramfs/EXTRAFILES, sys/xfs/fnramfs/INSTALL,
+	sys/xfs/fnramfs/MISCFILES, sys/xfs/fnramfs/Makefile,
+	sys/xfs/fnramfs/README, sys/xfs/fnramfs/SRCFILES,
+	sys/xfs/fnramfs/fnramfs.c, sys/xfs/minixfs/Changes,
+	sys/xfs/minixfs/Makefile, sys/xfs/minixfs/README,
+	sys/xfs/minixfs/copying, sys/xfs/minixfs/docs/address.doc,
+	sys/xfs/minixfs/docs/bugs.doc, sys/xfs/minixfs/docs/flist.doc,
+	sys/xfs/minixfs/docs/fsck.doc, sys/xfs/minixfs/docs/latest.doc,
+	sys/xfs/minixfs/docs/mfsconf.doc, sys/xfs/minixfs/docs/mfsdoc.doc,
+	sys/xfs/minixfs/docs/minit.doc, sys/xfs/minixfs/docs/minixfs.doc,
+	sys/xfs/minixfs/docs/readme.doc, sys/xfs/minixfs/docs/syscall.doc,
+	sys/xfs/minixfs/fsck/Makefile, sys/xfs/minixfs/fsck/common.c,
+	sys/xfs/minixfs/fsck/common.h, sys/xfs/minixfs/fsck/fs.h,
+	sys/xfs/minixfs/fsck/fsck.c, sys/xfs/minixfs/fsck/fsck.h,
+	sys/xfs/minixfs/fsck/global.c, sys/xfs/minixfs/fsck/global.h,
+	sys/xfs/minixfs/fsck/io.c, sys/xfs/minixfs/fsck/io.h,
+	sys/xfs/minixfs/fsck/main.c, sys/xfs/minixfs/fsck/xhdi.c,
+	sys/xfs/minixfs/fsck/xhdi.h, sys/xfs/minixfs/minit/Makefile,
+	sys/xfs/minixfs/minit/minit.c, sys/xfs/minixfs/minit/xhdi.c,
+	sys/xfs/minixfs/minit/xhdi.h, sys/xfs/minixfs/minixfs/BINFILES,
+	sys/xfs/minixfs/minixfs/EXTRAFILES,
+	sys/xfs/minixfs/minixfs/MISCFILES,
+	sys/xfs/minixfs/minixfs/Makefile, sys/xfs/minixfs/minixfs/SRCFILES,
+	sys/xfs/minixfs/minixfs/bitmap.c, sys/xfs/minixfs/minixfs/bitmap.h,
+	sys/xfs/minixfs/minixfs/config.h, sys/xfs/minixfs/minixfs/dir.c,
+	sys/xfs/minixfs/minixfs/dir.h, sys/xfs/minixfs/minixfs/global.c,
+	sys/xfs/minixfs/minixfs/global.h, sys/xfs/minixfs/minixfs/inode.c,
+	sys/xfs/minixfs/minixfs/inode.h, sys/xfs/minixfs/minixfs/main.c,
+	sys/xfs/minixfs/minixfs/main.h, sys/xfs/minixfs/minixfs/minix.h,
+	sys/xfs/minixfs/minixfs/minixdev.c,
+	sys/xfs/minixfs/minixfs/minixdev.h,
+	sys/xfs/minixfs/minixfs/minixsys.c,
+	sys/xfs/minixfs/minixfs/minixsys.h, sys/xfs/minixfs/minixfs/misc.c,
+	sys/xfs/minixfs/minixfs/misc.h, sys/xfs/minixfs/minixfs/syms.mfs,
+	sys/xfs/minixfs/minixfs/trans.c, sys/xfs/minixfs/minixfs/trans.h,
+	sys/xfs/minixfs/minixfs/version.h, sys/xfs/minixfs/minixfs/zone.c,
+	sys/xfs/minixfs/minixfs/zone.h,
+	sys/xfs/minixfs/minixfs/old/cache.c,
+	sys/xfs/minixfs/minixfs/old/cache.h,
+	sys/xfs/minixfs/minixfs/old/check.c,
+	sys/xfs/minixfs/minixfs/old/check.h,
+	sys/xfs/minixfs/minixfs/old/hdio.c,
+	sys/xfs/minixfs/minixfs/old/hdio.h,
+	sys/xfs/minixfs/minixfs/old/io.c, sys/xfs/minixfs/minixfs/old/io.h,
+	sys/xfs/minixfs/minixfs/old/pun.h,
+	sys/xfs/minixfs/minixfs/old/tinyxhdi.c,
+	sys/xfs/minixfs/minixfs/old/xhdi.h, sys/xfs/minixfs/tools/Makefile,
+	sys/xfs/minixfs/tools/flist.c, sys/xfs/minixfs/tools/mfsconf.c,
+	sys/xfs/nfs/COPYING, sys/xfs/nfs/Changes, sys/xfs/nfs/README,
+	sys/xfs/nfs/man/cat5/mtab.5, sys/xfs/nfs/man/cat5/rmtab.5,
+	sys/xfs/nfs/man/cat5/xtab.5, sys/xfs/nfs/man/cat8/mount.8,
+	sys/xfs/nfs/man/cat8/mountd.8, sys/xfs/nfs/man/cat8/nfsd.8,
+	sys/xfs/nfs/mount/Makefile, sys/xfs/nfs/mount/common.h,
+	sys/xfs/nfs/mount/mntent.c, sys/xfs/nfs/mount/mntent.h,
+	sys/xfs/nfs/mount/mount.c, sys/xfs/nfs/mount/mount.h,
+	sys/xfs/nfs/mount/mount_xdr.c, sys/xfs/nfs/mount/nfsmnt.c,
+	sys/xfs/nfs/mount/lib/Makefile, sys/xfs/nfs/mount/lib/atarierr.h,
+	sys/xfs/nfs/mount/lib/auth_unix.h, sys/xfs/nfs/mount/lib/clnt.c,
+	sys/xfs/nfs/mount/lib/clnt.h, sys/xfs/nfs/mount/lib/pmap.h,
+	sys/xfs/nfs/mount/lib/pmap_get.c, sys/xfs/nfs/mount/lib/pmap_set.c,
+	sys/xfs/nfs/mount/lib/pmap_xdr.c, sys/xfs/nfs/mount/lib/rpc.h,
+	sys/xfs/nfs/mount/lib/rpc_xdr.c, sys/xfs/nfs/mount/lib/svc.c,
+	sys/xfs/nfs/mount/lib/svc.h, sys/xfs/nfs/mount/lib/svc_auth.c,
+	sys/xfs/nfs/mount/lib/svc_main.c, sys/xfs/nfs/mount/lib/thread.c,
+	sys/xfs/nfs/mount/lib/thread.h, sys/xfs/nfs/mount/lib/xdr.c,
+	sys/xfs/nfs/mount/lib/xdr.h, sys/xfs/nfs/nfs/BINFILES,
+	sys/xfs/nfs/nfs/EXTRAFILES, sys/xfs/nfs/nfs/MISCFILES,
+	sys/xfs/nfs/nfs/Makefile, sys/xfs/nfs/nfs/SRCFILES,
+	sys/xfs/nfs/nfs/cache.c, sys/xfs/nfs/nfs/cache.h,
+	sys/xfs/nfs/nfs/config.h, sys/xfs/nfs/nfs/global.c,
+	sys/xfs/nfs/nfs/global.h, sys/xfs/nfs/nfs/index.c,
+	sys/xfs/nfs/nfs/index.h, sys/xfs/nfs/nfs/main.c,
+	sys/xfs/nfs/nfs/nfs_xdr.c, sys/xfs/nfs/nfs/nfs_xdr.h,
+	sys/xfs/nfs/nfs/nfsdev.c, sys/xfs/nfs/nfs/nfsdev.h,
+	sys/xfs/nfs/nfs/nfssys.c, sys/xfs/nfs/nfs/nfssys.h,
+	sys/xfs/nfs/nfs/nfsutil.c, sys/xfs/nfs/nfs/nfsutil.h,
+	sys/xfs/nfs/nfs/rpc_xdr.c, sys/xfs/nfs/nfs/rpc_xdr.h,
+	sys/xfs/nfs/nfs/sock_ipc.c, sys/xfs/nfs/nfs/sock_ipc.h,
+	sys/xfs/nfs/nfs/version.h, sys/xfs/nfs/nfs/xdr.c,
+	sys/xfs/nfs/nfs/xdr.h, sys/xfs/nfs/nfs/ksocket/BINFILES,
+	sys/xfs/nfs/nfs/ksocket/EXTRAFILES,
+	sys/xfs/nfs/nfs/ksocket/MISCFILES,
+	sys/xfs/nfs/nfs/ksocket/Makefile, sys/xfs/nfs/nfs/ksocket/SRCFILES,
+	sys/xfs/nfs/nfs/ksocket/accept.c, sys/xfs/nfs/nfs/ksocket/bind.c,
+	sys/xfs/nfs/nfs/ksocket/connect.c,
+	sys/xfs/nfs/nfs/ksocket/getpeername.c,
+	sys/xfs/nfs/nfs/ksocket/getsockname.c,
+	sys/xfs/nfs/nfs/ksocket/getsockopt.c, sys/xfs/nfs/nfs/ksocket/in.h,
+	sys/xfs/nfs/nfs/ksocket/ksocket.h,
+	sys/xfs/nfs/nfs/ksocket/listen.c, sys/xfs/nfs/nfs/ksocket/recv.c,
+	sys/xfs/nfs/nfs/ksocket/recvfrom.c,
+	sys/xfs/nfs/nfs/ksocket/recvmsg.c, sys/xfs/nfs/nfs/ksocket/send.c,
+	sys/xfs/nfs/nfs/ksocket/sendmsg.c,
+	sys/xfs/nfs/nfs/ksocket/sendto.c,
+	sys/xfs/nfs/nfs/ksocket/setsockopt.c,
+	sys/xfs/nfs/nfs/ksocket/shutdown.c,
+	sys/xfs/nfs/nfs/ksocket/socket.c,
+	sys/xfs/nfs/nfs/ksocket/socketpair.c, tools/gluestik/COPYING,
+	tools/gluestik/LIESMICH, tools/gluestik/README,
+	tools/gluestik/src/Makefile, tools/gluestik/src/gs.h,
+	tools/gluestik/src/gs_config.c, tools/gluestik/src/gs_config.h,
+	tools/gluestik/src/gs_func.c, tools/gluestik/src/gs_func.h,
+	tools/gluestik/src/gs_mem.c, tools/gluestik/src/gs_mem.h,
+	tools/gluestik/src/gs_stik.c, tools/gluestik/src/gs_stik.h,
+	tools/gluestik/src/main.c, tools/gluestik/src/testit.c,
+	tools/gluestik/src/version.h, tools/gluestik/src/include/sockerr.h,
+	tools/gluestik/src/include/transprt.h, tools/crypto/Makefile,
+	tools/crypto/bf_tab.h, tools/crypto/blowfish.c,
+	tools/crypto/blowfish.h, tools/crypto/crypt.c,
+	tools/crypto/crypt.h, tools/crypto/io.c, tools/crypto/io.h,
+	tools/crypto/main.c, tools/crypto/md5.c, tools/crypto/md5.h,
+	tools/crypto/mytypes.h, tools/crypto/xhdi.c, tools/crypto/xhdi.h,
+	tools/fsetter/history.txt, tools/fsetter/liesmich,
+	tools/fsetter/readme, tools/fsetter/src/Makefile,
+	tools/fsetter/src/fsetter.c, tools/fsetter/src/fsetter.h,
+	tools/fsetter/src/fsetter.hrd, tools/fsetter/src/fsetter.rsc,
+	tools/fsetter/src/fsetter_e.rsc, tools/fsetter/src/xhdi.c,
+	tools/fsetter/src/xhdi.h, tools/gluestik/src/include/errno.h,
+	tools/mgw/COPYING, tools/mgw/LIESMICH, tools/mgw/Makefile,
+	tools/mgw/README, tools/mgw/global.h, tools/mgw/main.c,
+	tools/mgw/mgw.c, tools/mgw/mgw.h, tools/mgw/mintsock.h,
+	tools/mgw/options.h, tools/mkfatfs/COPYING, tools/mkfatfs/Makefile,
+	tools/mkfatfs/README, tools/mkfatfs/mkfatfs.c,
+	tools/mkfatfs/xhdi.c, tools/mkfatfs/xhdi.h:
+
+	2000-05-31
+	
+	Initial CVS import.
+	
+2000-05-31 Wednesday 11:50  Frank Naumann <fnaumann@freemint.de>
+
+	* CHANGES, sys/BINFILES, sys/CONFIGVARS, sys/DEPENDENCIES,
+	sys/EXTRAFILES, sys/MISCFILES, sys/Makefile, sys/Makefile.kernel,
+	sys/PHONY, sys/RULES, sys/SRCFILES, sys/bf_tab.h, sys/bios.c,
+	sys/bios.h, sys/biosfs.c, sys/biosfs.h, sys/block_IO.c,
+	sys/block_IO.h, sys/blowfish.c, sys/blowfish.h, sys/cmdline.c,
+	sys/cmdline.h, sys/cnf.c, sys/cnf.h, sys/console.c, sys/console.h,
+	sys/cookie.c, sys/cookie.h, sys/crypt_IO.c, sys/crypt_IO.h,
+	sys/syscalls.master, sys/debug.c, sys/debug.h, sys/dev-mouse.c,
+	sys/dev-mouse.h, sys/dev-null.c, sys/dev-null.h, sys/dma.c,
+	sys/dma.h, sys/dos.c, sys/dos.h, sys/dosdir.c, sys/dosdir.h,
+	sys/dosfile.c, sys/dosfile.h, sys/dosmem.c, sys/dosmem.h,
+	sys/dossig.c, sys/dossig.h, sys/falcon.h, sys/fasttext.c,
+	sys/fasttext.h, sys/fatfs.c, sys/fatfs.h, sys/filesys.c,
+	sys/filesys.h, sys/global.c, sys/global.h, sys/info.c, sys/info.h,
+	sys/init.c, sys/init.h, sys/kernfs.c, sys/kernfs.h, sys/kernget.c,
+	sys/kernget.h, sys/kmemory.c, sys/kmemory.h, sys/md5.c, sys/md5.h,
+	sys/memory.c, sys/memory.h, sys/mfp.h, sys/nullfs.c, sys/nullfs.h,
+	sys/pipefs.c, sys/pipefs.h, sys/proc.c, sys/proc.h, sys/procfs.c,
+	sys/procfs.h, sys/pun.c, sys/pun.h, sys/random.c, sys/random.h,
+	sys/rendez.c, sys/rendez.h, sys/resource.c, sys/resource.h,
+	sys/scsidrv.c, sys/scsidrv.h, sys/shmfs.c, sys/shmfs.h,
+	sys/signal.c, sys/signal.h, sys/slb.c, sys/slb.h, sys/ssystem.c,
+	sys/ssystem.h, sys/sys_emu.c, sys/sys_emu.h, sys/syscall_vectors.c,
+	sys/syscall_vectors.h, sys/time.c, sys/time.h, sys/timeout.c,
+	sys/timeout.h, sys/tosfs.c, sys/tosfs.h, sys/tty.c, sys/tty.h,
+	sys/unicode.c, sys/unicode.h, sys/unifs.c, sys/unifs.h,
+	sys/update.c, sys/update.h, sys/util.c, sys/util.h, sys/xbios.c,
+	sys/xbios.h, sys/xhdi.c, sys/xhdi.h, sys/arch/BINFILES,
+	sys/arch/EXTRAFILES, sys/arch/MISCFILES, sys/arch/Makefile,
+	sys/arch/SRCFILES, sys/arch/context.h, sys/arch/context.spp,
+	sys/arch/cpu.h, sys/arch/cpu.spp, sys/arch/delay.c,
+	sys/arch/delay5.spp, sys/arch/detect.h, sys/arch/detect.spp,
+	sys/arch/intr.h, sys/arch/intr.spp, sys/arch/kernel.h,
+	sys/arch/kernel.spp, sys/arch/mmu.h, sys/arch/mmu030.spp,
+	sys/arch/mmu040.spp, sys/arch/mprot.h, sys/arch/scsidrv_emu.h,
+	sys/arch/mprot030.c, sys/arch/mprot040.c, sys/arch/scsidrv_emu.spp,
+	sys/arch/slb_util.h, sys/arch/slb_util.spp, sys/arch/startup.spp,
+	sys/arch/syscall.h, sys/arch/syscall.spp, sys/arch/vm5.spp,
+	sys/arch/xhdi_emu.h, sys/arch/xhdi_emu.spp,
+	sys/arch/asmtrans/BINFILES, sys/arch/asmtrans/EXTRAFILES,
+	sys/arch/asmtrans/MISCFILES, sys/arch/asmtrans/Makefile,
+	sys/arch/asmtrans/SRCFILES, sys/arch/asmtrans/asm.y,
+	sys/arch/asmtrans/asmtrans.h, sys/arch/asmtrans/trans.c,
+	sys/arch/asmtrans/trutil.c, sys/arch/magic/BINFILES,
+	sys/arch/magic/EXTRAFILES, sys/arch/magic/MISCFILES,
+	sys/arch/magic/Makefile, sys/arch/magic/SRCFILES,
+	sys/arch/magic/genmagic.c, sys/arch/magic/genmagic.pl,
+	sys/buildinfo/BINFILES, sys/buildinfo/EXTRAFILES,
+	sys/buildinfo/MISCFILES, sys/buildinfo/Makefile,
+	sys/buildinfo/SRCFILES, sys/buildinfo/cdef.sh,
+	sys/buildinfo/mkbuild.c, sys/buildinfo/version.h,
+	sys/gen-syscall/BINFILES, sys/gen-syscall/EXTRAFILES,
+	sys/gen-syscall/MISCFILES, sys/gen-syscall/Makefile,
+	sys/gen-syscall/SRCFILES, sys/gen-syscall/check.c,
+	sys/gen-syscall/check.h, sys/gen-syscall/generate.c,
+	sys/gen-syscall/generate.h, sys/gen-syscall/list.c,
+	sys/gen-syscall/list.h, sys/gen-syscall/main.c,
+	sys/gen-syscall/pars.y, sys/gen-syscall/scan.l,
+	sys/libkern/BINFILES, sys/libkern/EXTRAFILES,
+	sys/libkern/MISCFILES, sys/libkern/Makefile,
+	sys/libkern/Makefile.objs, sys/libkern/SRCFILES,
+	sys/libkern/atol.c, sys/libkern/bzero.c, sys/libkern/ctype.c,
+	sys/libkern/dostime.c, sys/libkern/ksprintf_old.c, sys/mint/asm.h,
+	sys/mint/basepage.h, sys/mint/block_IO.h, sys/mint/bswap.h,
+	sys/mint/config.h, sys/mint/dcntl.h, sys/mint/debug.h,
+	sys/mint/endian.h, sys/mint/errno.h, sys/mint/file.h,
+	sys/mint/kassert.h, sys/mint/kcompiler.h, sys/mint/kernel.h,
+	sys/mint/ktypes.h, sys/mint/mem.h, sys/mint/mint.h,
+	sys/mint/proc.h, sys/mint/rsvf.h, sys/mint/signal.h,
+	sys/mint/slb.h, sys/mint/swap.h, sys/mint/xbra.h,
+	sys/mint/arch/asm.h, sys/mint/arch/asm_atomic.h,
+	sys/mint/arch/asm_misc.h, sys/mint/arch/asm_spl.h,
+	sys/mint/arch/bswap.h, sys/mint/arch/endian.h,
+	sys/mint/arch/swap.h, sys/libkern/fstring.h,
+	sys/libkern/ksprintf.c, sys/libkern/libkern.h,
+	sys/libkern/memchr.c, sys/libkern/memcmp.c, sys/libkern/ms_time.c,
+	sys/libkern/strcat.c, sys/libkern/strcmp.c, sys/libkern/strcpy.c,
+	sys/libkern/stricmp.c, sys/libkern/stricmp_16.c,
+	sys/libkern/strlen.c, sys/libkern/strlen.s, sys/libkern/strlwr.c,
+	sys/libkern/strncmp.c, sys/libkern/strncpy.c,
+	sys/libkern/strncpy_f.c, sys/libkern/strnicmp.c,
+	sys/libkern/strnicmp_16.c, sys/libkern/strrchr.c,
+	sys/libkern/strrev.c, sys/libkern/strtonumber.c,
+	sys/libkern/strupr.c, sys/libkern/tolower.c, sys/libkern/toupper.c,
+	sys/libkern/unix2xbios.c, sys/libkern/unixtime.c,
+	sys/libkern/vsprintf.c, sys/libkern/xfs_xdd_kernel.h,
+	sys/libkern/asm/BINFILES, sys/libkern/asm/EXTRAFILES,
+	sys/libkern/asm/MISCFILES, sys/libkern/asm/Makefile,
+	sys/libkern/asm/Makefile.asm-files, sys/libkern/asm/SRCFILES,
+	sys/libkern/asm/blockcopy.spp, sys/libkern/asm/memset.spp,
+	sys/libkern/asm/peekpoke.h, sys/libkern/asm/peekpoke.spp,
+	sys/libkern/asm/quickmove.spp, sys/libkern/asm/quickswap.spp,
+	sys/libkern/asm/quickzero.spp, sys/misc/sizes.c,
+	sys/misc/expired/atarierr.h, sys/misc/expired/build.c,
+	sys/misc/expired/cnf.c, sys/misc/expired/nalloc2.c,
+	sys/misc/expired/nalloc2.h, sys/misc/rejected/gryf-hidegemdos.diff,
+	sys/misc/rejected/petr-main.c.diff, sys/misc/rejected/stubs.h,
+	sys/misc/rejected/stubs.m4, sys/misc/rejected/syscall.spp,
+	sys/misc/rejected/trapatch.c, sys/misc/rejected/trapatch.h,
+	sys/xdd/BINFILES, sys/xdd/EXTRAFILES, sys/xdd/MISCFILES,
+	sys/xdd/Makefile, sys/xdd/SRCFILES, sys/xdd/flop-raw/BINFILES,
+	sys/xdd/flop-raw/EXTRAFILES, sys/xdd/flop-raw/MISCFILES,
+	sys/xdd/flop-raw/Makefile, sys/xdd/flop-raw/README,
+	sys/xdd/flop-raw/SRCFILES, sys/xdd/flop-raw/flop_raw.c,
+	sys/xdd/mfp/BINFILES, sys/xdd/mfp/COPYING, sys/xdd/mfp/EXTRAFILES,
+	sys/xdd/mfp/LIESMICH, sys/xdd/mfp/MISCFILES, sys/xdd/mfp/Makefile,
+	sys/xdd/mfp/README, sys/xdd/mfp/SRCFILES, sys/xdd/mfp/mfp.c,
+	sys/xdd/mfp/mfp.h, sys/xdd/mfp/ports.txt, sys/xdd/scc/BINFILES,
+	sys/xdd/scc/COPYING, sys/xdd/scc/EXTRAFILES, sys/xdd/scc/LIESMICH,
+	sys/xdd/scc/MISCFILES, sys/xdd/scc/Makefile, sys/xdd/scc/README,
+	sys/xdd/scc/SRCFILES, sys/xdd/scc/ports.txt, sys/xdd/scc/scc.c,
+	sys/xdd/scc/scc.h, sys/xdd/uart/BINFILES, sys/xdd/uart/COPYING,
+	sys/xdd/uart/EXTRAFILES, sys/xdd/uart/LIESMICH,
+	sys/xdd/uart/MISCFILES, sys/xdd/uart/Makefile, sys/xdd/uart/README,
+	sys/xdd/uart/SRCFILES, sys/xdd/uart/pc16550.c,
+	sys/xdd/uart/pc16550.h, sys/xdd/uart/ports.txt,
+	sys/xdd/xconout2/BINFILES, sys/xdd/xconout2/EXTRAFILES,
+	sys/xdd/xconout2/MISCFILES, sys/xdd/xconout2/Makefile,
+	sys/xdd/xconout2/README, sys/xdd/xconout2/SRCFILES,
+	sys/xdd/xconout2/xconout2.c, sys/xfs/ext2fs/COPYING,
+	sys/xfs/ext2fs/Changes, sys/xfs/ext2fs/Makefile,
+	sys/xfs/ext2fs/Readme, sys/xfs/ext2fs/balloc.c,
+	sys/xfs/ext2fs/balloc.h, sys/xfs/ext2fs/bitmap.c,
+	sys/xfs/ext2fs/bitmap.h, sys/xfs/ext2fs/ext2.h,
+	sys/xfs/ext2fs/ext2dev.c, sys/xfs/ext2fs/ext2dev.h,
+	sys/xfs/ext2fs/src/Makefile, sys/xfs/ext2fs/src/balloc.c,
+	sys/xfs/ext2fs/src/balloc.h, sys/xfs/ext2fs/src/bitmap.c,
+	sys/xfs/ext2fs/src/bitmap.h, sys/xfs/ext2fs/src/ext2.h,
+	sys/xfs/ext2fs/src/ext2dev.c, sys/xfs/ext2fs/src/ext2dev.h,
+	sys/xfs/ext2fs/ext2sys.c, sys/xfs/ext2fs/ext2sys.h,
+	sys/xfs/ext2fs/global.c, sys/xfs/ext2fs/global.h,
+	sys/xfs/ext2fs/ialloc.c, sys/xfs/ext2fs/ialloc.h,
+	sys/xfs/ext2fs/inode.c, sys/xfs/ext2fs/inode.h,
+	sys/xfs/ext2fs/main.c, sys/xfs/ext2fs/namei.c,
+	sys/xfs/ext2fs/namei.h, sys/xfs/ext2fs/super.c,
+	sys/xfs/ext2fs/super.h, sys/xfs/ext2fs/truncate.c,
+	sys/xfs/ext2fs/truncate.h, sys/xfs/ext2fs/version.h,
+	sys/xfs/ext2fs/src/ext2sys.c, sys/xfs/ext2fs/src/ext2sys.h,
+	sys/xfs/ext2fs/src/global.c, sys/xfs/ext2fs/src/global.h,
+	sys/xfs/ext2fs/src/ialloc.c, sys/xfs/ext2fs/src/ialloc.h,
+	sys/xfs/ext2fs/src/inode.c, sys/xfs/ext2fs/src/inode.h,
+	sys/xfs/ext2fs/src/main.c, sys/xfs/ext2fs/src/namei.c,
+	sys/xfs/ext2fs/src/namei.h, sys/xfs/ext2fs/src/super.c,
+	sys/xfs/ext2fs/src/super.h, sys/xfs/ext2fs/src/truncate.c,
+	sys/xfs/ext2fs/src/truncate.h, sys/xfs/ext2fs/src/version.h,
+	sys/xfs/fnramfs/BINFILES, sys/xfs/fnramfs/COPYING,
+	sys/xfs/fnramfs/EXTRAFILES, sys/xfs/fnramfs/INSTALL,
+	sys/xfs/fnramfs/MISCFILES, sys/xfs/fnramfs/Makefile,
+	sys/xfs/fnramfs/README, sys/xfs/fnramfs/SRCFILES,
+	sys/xfs/fnramfs/fnramfs.c, sys/xfs/minixfs/Changes,
+	sys/xfs/minixfs/Makefile, sys/xfs/minixfs/README,
+	sys/xfs/minixfs/copying, sys/xfs/minixfs/docs/address.doc,
+	sys/xfs/minixfs/docs/bugs.doc, sys/xfs/minixfs/docs/flist.doc,
+	sys/xfs/minixfs/docs/fsck.doc, sys/xfs/minixfs/docs/latest.doc,
+	sys/xfs/minixfs/docs/mfsconf.doc, sys/xfs/minixfs/docs/mfsdoc.doc,
+	sys/xfs/minixfs/docs/minit.doc, sys/xfs/minixfs/docs/minixfs.doc,
+	sys/xfs/minixfs/docs/readme.doc, sys/xfs/minixfs/docs/syscall.doc,
+	sys/xfs/minixfs/fsck/Makefile, sys/xfs/minixfs/fsck/common.c,
+	sys/xfs/minixfs/fsck/common.h, sys/xfs/minixfs/fsck/fs.h,
+	sys/xfs/minixfs/fsck/fsck.c, sys/xfs/minixfs/fsck/fsck.h,
+	sys/xfs/minixfs/fsck/global.c, sys/xfs/minixfs/fsck/global.h,
+	sys/xfs/minixfs/fsck/io.c, sys/xfs/minixfs/fsck/io.h,
+	sys/xfs/minixfs/fsck/main.c, sys/xfs/minixfs/fsck/xhdi.c,
+	sys/xfs/minixfs/fsck/xhdi.h, sys/xfs/minixfs/minit/Makefile,
+	sys/xfs/minixfs/minit/minit.c, sys/xfs/minixfs/minit/xhdi.c,
+	sys/xfs/minixfs/minit/xhdi.h, sys/xfs/minixfs/minixfs/BINFILES,
+	sys/xfs/minixfs/minixfs/EXTRAFILES,
+	sys/xfs/minixfs/minixfs/MISCFILES,
+	sys/xfs/minixfs/minixfs/Makefile, sys/xfs/minixfs/minixfs/SRCFILES,
+	sys/xfs/minixfs/minixfs/bitmap.c, sys/xfs/minixfs/minixfs/bitmap.h,
+	sys/xfs/minixfs/minixfs/config.h, sys/xfs/minixfs/minixfs/dir.c,
+	sys/xfs/minixfs/minixfs/dir.h, sys/xfs/minixfs/minixfs/global.c,
+	sys/xfs/minixfs/minixfs/global.h, sys/xfs/minixfs/minixfs/inode.c,
+	sys/xfs/minixfs/minixfs/inode.h, sys/xfs/minixfs/minixfs/main.c,
+	sys/xfs/minixfs/minixfs/main.h, sys/xfs/minixfs/minixfs/minix.h,
+	sys/xfs/minixfs/minixfs/minixdev.c,
+	sys/xfs/minixfs/minixfs/minixdev.h,
+	sys/xfs/minixfs/minixfs/minixsys.c,
+	sys/xfs/minixfs/minixfs/minixsys.h, sys/xfs/minixfs/minixfs/misc.c,
+	sys/xfs/minixfs/minixfs/misc.h, sys/xfs/minixfs/minixfs/syms.mfs,
+	sys/xfs/minixfs/minixfs/trans.c, sys/xfs/minixfs/minixfs/trans.h,
+	sys/xfs/minixfs/minixfs/version.h, sys/xfs/minixfs/minixfs/zone.c,
+	sys/xfs/minixfs/minixfs/zone.h,
+	sys/xfs/minixfs/minixfs/old/cache.c,
+	sys/xfs/minixfs/minixfs/old/cache.h,
+	sys/xfs/minixfs/minixfs/old/check.c,
+	sys/xfs/minixfs/minixfs/old/check.h,
+	sys/xfs/minixfs/minixfs/old/hdio.c,
+	sys/xfs/minixfs/minixfs/old/hdio.h,
+	sys/xfs/minixfs/minixfs/old/io.c, sys/xfs/minixfs/minixfs/old/io.h,
+	sys/xfs/minixfs/minixfs/old/pun.h,
+	sys/xfs/minixfs/minixfs/old/tinyxhdi.c,
+	sys/xfs/minixfs/minixfs/old/xhdi.h, sys/xfs/minixfs/tools/Makefile,
+	sys/xfs/minixfs/tools/flist.c, sys/xfs/minixfs/tools/mfsconf.c,
+	sys/xfs/nfs/COPYING, sys/xfs/nfs/Changes, sys/xfs/nfs/README,
+	sys/xfs/nfs/man/cat5/mtab.5, sys/xfs/nfs/man/cat5/rmtab.5,
+	sys/xfs/nfs/man/cat5/xtab.5, sys/xfs/nfs/man/cat8/mount.8,
+	sys/xfs/nfs/man/cat8/mountd.8, sys/xfs/nfs/man/cat8/nfsd.8,
+	sys/xfs/nfs/mount/Makefile, sys/xfs/nfs/mount/common.h,
+	sys/xfs/nfs/mount/mntent.c, sys/xfs/nfs/mount/mntent.h,
+	sys/xfs/nfs/mount/mount.c, sys/xfs/nfs/mount/mount.h,
+	sys/xfs/nfs/mount/mount_xdr.c, sys/xfs/nfs/mount/nfsmnt.c,
+	sys/xfs/nfs/mount/lib/Makefile, sys/xfs/nfs/mount/lib/atarierr.h,
+	sys/xfs/nfs/mount/lib/auth_unix.h, sys/xfs/nfs/mount/lib/clnt.c,
+	sys/xfs/nfs/mount/lib/clnt.h, sys/xfs/nfs/mount/lib/pmap.h,
+	sys/xfs/nfs/mount/lib/pmap_get.c, sys/xfs/nfs/mount/lib/pmap_set.c,
+	sys/xfs/nfs/mount/lib/pmap_xdr.c, sys/xfs/nfs/mount/lib/rpc.h,
+	sys/xfs/nfs/mount/lib/rpc_xdr.c, sys/xfs/nfs/mount/lib/svc.c,
+	sys/xfs/nfs/mount/lib/svc.h, sys/xfs/nfs/mount/lib/svc_auth.c,
+	sys/xfs/nfs/mount/lib/svc_main.c, sys/xfs/nfs/mount/lib/thread.c,
+	sys/xfs/nfs/mount/lib/thread.h, sys/xfs/nfs/mount/lib/xdr.c,
+	sys/xfs/nfs/mount/lib/xdr.h, sys/xfs/nfs/nfs/BINFILES,
+	sys/xfs/nfs/nfs/EXTRAFILES, sys/xfs/nfs/nfs/MISCFILES,
+	sys/xfs/nfs/nfs/Makefile, sys/xfs/nfs/nfs/SRCFILES,
+	sys/xfs/nfs/nfs/cache.c, sys/xfs/nfs/nfs/cache.h,
+	sys/xfs/nfs/nfs/config.h, sys/xfs/nfs/nfs/global.c,
+	sys/xfs/nfs/nfs/global.h, sys/xfs/nfs/nfs/index.c,
+	sys/xfs/nfs/nfs/index.h, sys/xfs/nfs/nfs/main.c,
+	sys/xfs/nfs/nfs/nfs_xdr.c, sys/xfs/nfs/nfs/nfs_xdr.h,
+	sys/xfs/nfs/nfs/nfsdev.c, sys/xfs/nfs/nfs/nfsdev.h,
+	sys/xfs/nfs/nfs/nfssys.c, sys/xfs/nfs/nfs/nfssys.h,
+	sys/xfs/nfs/nfs/nfsutil.c, sys/xfs/nfs/nfs/nfsutil.h,
+	sys/xfs/nfs/nfs/rpc_xdr.c, sys/xfs/nfs/nfs/rpc_xdr.h,
+	sys/xfs/nfs/nfs/sock_ipc.c, sys/xfs/nfs/nfs/sock_ipc.h,
+	sys/xfs/nfs/nfs/version.h, sys/xfs/nfs/nfs/xdr.c,
+	sys/xfs/nfs/nfs/xdr.h, sys/xfs/nfs/nfs/ksocket/BINFILES,
+	sys/xfs/nfs/nfs/ksocket/EXTRAFILES,
+	sys/xfs/nfs/nfs/ksocket/MISCFILES,
+	sys/xfs/nfs/nfs/ksocket/Makefile, sys/xfs/nfs/nfs/ksocket/SRCFILES,
+	sys/xfs/nfs/nfs/ksocket/accept.c, sys/xfs/nfs/nfs/ksocket/bind.c,
+	sys/xfs/nfs/nfs/ksocket/connect.c,
+	sys/xfs/nfs/nfs/ksocket/getpeername.c,
+	sys/xfs/nfs/nfs/ksocket/getsockname.c,
+	sys/xfs/nfs/nfs/ksocket/getsockopt.c, sys/xfs/nfs/nfs/ksocket/in.h,
+	sys/xfs/nfs/nfs/ksocket/ksocket.h,
+	sys/xfs/nfs/nfs/ksocket/listen.c, sys/xfs/nfs/nfs/ksocket/recv.c,
+	sys/xfs/nfs/nfs/ksocket/recvfrom.c,
+	sys/xfs/nfs/nfs/ksocket/recvmsg.c, sys/xfs/nfs/nfs/ksocket/send.c,
+	sys/xfs/nfs/nfs/ksocket/sendmsg.c,
+	sys/xfs/nfs/nfs/ksocket/sendto.c,
+	sys/xfs/nfs/nfs/ksocket/setsockopt.c,
+	sys/xfs/nfs/nfs/ksocket/shutdown.c,
+	sys/xfs/nfs/nfs/ksocket/socket.c,
+	sys/xfs/nfs/nfs/ksocket/socketpair.c, tools/gluestik/COPYING,
+	tools/gluestik/LIESMICH, tools/gluestik/README,
+	tools/gluestik/src/Makefile, tools/gluestik/src/gs.h,
+	tools/gluestik/src/gs_config.c, tools/gluestik/src/gs_config.h,
+	tools/gluestik/src/gs_func.c, tools/gluestik/src/gs_func.h,
+	tools/gluestik/src/gs_mem.c, tools/gluestik/src/gs_mem.h,
+	tools/gluestik/src/gs_stik.c, tools/gluestik/src/gs_stik.h,
+	tools/gluestik/src/main.c, tools/gluestik/src/testit.c,
+	tools/gluestik/src/version.h, tools/gluestik/src/include/sockerr.h,
+	tools/gluestik/src/include/transprt.h, tools/crypto/Makefile,
+	tools/crypto/bf_tab.h, tools/crypto/blowfish.c,
+	tools/crypto/blowfish.h, tools/crypto/crypt.c,
+	tools/crypto/crypt.h, tools/crypto/io.c, tools/crypto/io.h,
+	tools/crypto/main.c, tools/crypto/md5.c, tools/crypto/md5.h,
+	tools/crypto/mytypes.h, tools/crypto/xhdi.c, tools/crypto/xhdi.h,
+	tools/fsetter/history.txt, tools/fsetter/liesmich,
+	tools/fsetter/readme, tools/fsetter/src/Makefile,
+	tools/fsetter/src/fsetter.c, tools/fsetter/src/fsetter.h,
+	tools/fsetter/src/fsetter.hrd, tools/fsetter/src/fsetter.rsc,
+	tools/fsetter/src/fsetter_e.rsc, tools/fsetter/src/xhdi.c,
+	tools/fsetter/src/xhdi.h, tools/gluestik/src/include/errno.h,
+	tools/mgw/COPYING, tools/mgw/LIESMICH, tools/mgw/Makefile,
+	tools/mgw/README, tools/mgw/global.h, tools/mgw/main.c,
+	tools/mgw/mgw.c, tools/mgw/mgw.h, tools/mgw/mintsock.h,
+	tools/mgw/options.h, tools/mkfatfs/COPYING, tools/mkfatfs/Makefile,
+	tools/mkfatfs/README, tools/mkfatfs/mkfatfs.c,
+	tools/mkfatfs/xhdi.c, tools/mkfatfs/xhdi.h:
+
+	Initial revision
+	
