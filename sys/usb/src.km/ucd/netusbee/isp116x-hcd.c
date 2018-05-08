@@ -598,10 +598,12 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 
 	DEBUG(("--- pack buffer 0x%08lx - %ld bytes (fifo %ld) ---", data, len, buflen));
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
 
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
 	isp116x_write_addr(isp116x, HCATLPORT | ISP116x_WRITE_OFFSET);
+	MINT_INT_ON;
 
 	done = 0;
 	for (i = 0; i < n; i++)
@@ -610,19 +612,23 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 
 		/* For NetUSBee, use raw_write to don't swap bytes */
 		dump_ptd(&ptd[i]);
+
+		MINT_INT_OFF;
 		isp116x_raw_write_data16(isp116x, ptd[i].count);
 		isp116x_raw_write_data16(isp116x, ptd[i].mps);
 		isp116x_raw_write_data16(isp116x, ptd[i].len);
 		isp116x_raw_write_data16(isp116x, ptd[i].faddr);
+		MINT_INT_ON;
 
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
 
-		/* This part is critical, disamble interrupts */
-		SET_INT_LVL6;
+		MINT_INT_OFF;
+		TOS_INT_OFF;
 		write_ptddata_to_fifo(isp116x,
 				      (unsigned char *) data + done,
 				      PTD_GET_LEN(&ptd[i]));
-		SET_OLD_INT_LVL;
+		MINT_INT_ON;
+		TOS_INT_ON;
 
 		done += PTD_GET_LEN(&ptd[i]);
 	}
@@ -639,19 +645,24 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	long buflen = n * sizeof(struct ptd) + len;
 	long i, done, cc, ret;
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
 	isp116x_write_addr(isp116x, HCATLPORT);
+	MINT_INT_ON;
 
 	ret = TD_CC_NOERROR;
 	done = 0;
 	for (i = 0; i < n; i++)
 	{
+		MINT_INT_OFF;
 		/* For NetUSBee, use raw_read to don't swap bytes */
 		ptd[i].count = isp116x_raw_read_data16(isp116x);
 		ptd[i].mps = isp116x_raw_read_data16(isp116x);
 		ptd[i].len = isp116x_raw_read_data16(isp116x);
 		ptd[i].faddr = isp116x_raw_read_data16(isp116x);
+		MINT_INT_ON;
+
 		dump_ptd(&ptd[i]);
 
 		/* when cc is 15 the data has not being touch by the HC
@@ -660,12 +671,13 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		if (PTD_GET_COUNT(ptd) != 0 || PTD_GET_CC(ptd) == 15 
 			|| PTD_GET_CC(ptd) == 5 || PTD_GET_CC(ptd) == 6)
 		{
-			/* This part is critical, disamble interrupts */
-			SET_INT_LVL6;
+			MINT_INT_OFF;
+			TOS_INT_OFF;
 			read_ptddata_from_fifo(isp116x,
 					       (unsigned char *) data + done,
 					       PTD_GET_LEN(&ptd[i]));
-			SET_OLD_INT_LVL;
+			MINT_INT_ON;
+			TOS_INT_ON;
 		}
 
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
@@ -696,9 +708,12 @@ isp116x_interrupt(struct isp116x *isp116x)
 	unsigned long intstat;
 	long ret = 0;
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
 	isp116x_write_reg16(isp116x, HCuPINT, irqstat);
+	MINT_INT_ON;
+
 	DEBUG((">>>>>> irqstat %x <<<<<<", irqstat));
 
 	if (irqstat & HCuPINT_ATL)
@@ -710,8 +725,11 @@ isp116x_interrupt(struct isp116x *isp116x)
 
 	if (irqstat & HCuPINT_OPR)
 	{
+		MINT_INT_OFF;
 		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
 		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
+		MINT_INT_ON;
+
 		DEBUG((">>>>>> HCuPINT_OPR %x <<<<<<", intstat));
 
 		if (intstat & HCINT_UE)
@@ -747,7 +765,10 @@ isp116x_interrupt(struct isp116x *isp116x)
 		irqstat &= ~HCuPINT_OPR;
 	}
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
+	MINT_INT_ON;
+
 	return ret;
 }
 
@@ -826,8 +847,10 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	}
 
 	/* FIFO not empty? */
+	MINT_INT_OFF;
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
+		MINT_INT_ON;
 		DEBUG(("****** FIFO not empty! ******"));
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
@@ -847,10 +870,12 @@ retry_same:
 	/* FIFO not empty? */
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
+		MINT_INT_ON;
 		DEBUG(("****** FIFO not empty! (2) ******"));
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
 	}
+	MINT_INT_ON;
 
 	/* Pack data into FIFO ram */
 	pack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
@@ -899,12 +924,17 @@ retry_same:
 	/* We got an Root Hub Status Change interrupt */
 	if (got_rhsc)
 	{
+		MINT_INT_OFF;
 		isp116x_show_regs(isp116x);
+		MINT_INT_ON;
 
 		got_rhsc = 0;
 
 		/* Abuse timeout */
+		MINT_INT_OFF;
 		timeout = rh_check_port_status(isp116x);
+		MINT_INT_ON;
+
 		if (timeout >= 0)
 		{
 			/*
@@ -919,12 +949,15 @@ retry_same:
 	/* Ok, now we can read transfer status */
 
 	/* FIFO not ready? */
+	MINT_INT_OFF;
 	if (!(isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_DONE))
 	{
+		MINT_INT_ON;
 		DEBUG(("****** FIFO not ready! ******"));
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
 	}
+	MINT_INT_ON;
 
 	/* Unpack data from FIFO ram */
 	cc = unpack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
@@ -947,6 +980,7 @@ retry_same:
 			 * transaction too. We have to toggle it back.
 			 */
 			usb_settoggle(dev, epnum, dir_out, !PTD_GET_TOGGLE(ptd));
+			MINT_INT_OFF;
 			goto retry;
 		}
 	}
@@ -964,9 +998,11 @@ retry_same:
 			if (cc == TD_NOTACCESSED && PTD_GET_ACTIVE(ptd) && !PTD_GET_COUNT(ptd))
 			{
 				set_extra_delay = 1;
+				MINT_INT_OFF;
 				goto retry_same;
 			}
 			usb_settoggle(dev, epnum, dir_out, PTD_GET_TOGGLE(ptd));
+			MINT_INT_OFF;
 			goto retry;
 		}
 	}
@@ -1037,6 +1073,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 	dump_msg(dev, pipe, buffer, transfer_len, "RH"));
 	DEBUG(("------------------------------------------------"));
 
+	MINT_INT_OFF;
 	switch (bmRType_bReq)
 	{
 		case RH_GET_STATUS:
@@ -1319,6 +1356,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			ALERT(("*** *** *** unsupported root hub command *** *** ***"));
 			stat = USB_ST_STALLED;
 	}
+	MINT_INT_ON;
 
 	len = min1_t(long, len, leni);
 	if (buffer != data_buf)
@@ -1482,6 +1520,7 @@ isp116x_sw_reset(struct isp116x *isp116x)
 
 	isp116x->disabled = 1;
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCSWRES, HCSWRES_MAGIC);
 	isp116x_write_reg32(isp116x, HCCMDSTAT, HCCMDSTAT_HCR);
 
@@ -1493,6 +1532,7 @@ isp116x_sw_reset(struct isp116x *isp116x)
 		if (!(isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR))
 			break;
 	}
+	MINT_INT_ON;
 
 	if (!retries)
 	{
@@ -1530,6 +1570,7 @@ isp116x_reset(struct isp116x *isp116x)
 	if (ret)
 		return ret;
 
+	MINT_INT_OFF;
 	for (t = 0; t < timeout; t++)
 	{
 		clkrdy = isp116x_read_reg16(isp116x, HCuPINT) & HCuPINT_CLKRDY;
@@ -1537,6 +1578,8 @@ isp116x_reset(struct isp116x *isp116x)
 			break;
 		mdelay(1);
 	}
+	MINT_INT_ON;
+
 	if (!clkrdy)
 	{
 		ALERT(("clock not ready after %ldms", timeout));
@@ -1553,6 +1596,7 @@ isp116x_stop(struct isp116x *isp116x)
 {
 	unsigned long val;
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 
 	/* Switch off ports' power, some devices don't come up
@@ -1561,6 +1605,7 @@ isp116x_stop(struct isp116x *isp116x)
 	val &= ~(RH_A_NPS | RH_A_PSM);
 	isp116x_write_reg32(isp116x, HCRHDESCA, val);
 	isp116x_write_reg32(isp116x, HCRHSTATUS, RH_HS_LPS);
+	MINT_INT_ON;
 
 	isp116x_sw_reset(isp116x);
 }
@@ -1592,11 +1637,10 @@ netusbee_hub_events(void)
 	unsigned short irqstat;
 	unsigned long intstat;
 
+	MINT_INT_OFF;
 	/* Shut out all further interrupts */
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
-
-//	set_old_int_lvl();
 
 	if (irqstat & HCuPINT_OPR)
 	{
@@ -1616,7 +1660,7 @@ netusbee_hub_events(void)
 	}
 
 	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
-//	set_int_lvl7();
+	MINT_INT_ON;
 }
 
 #ifndef TOSONLY
@@ -1658,6 +1702,7 @@ isp116x_start(struct isp116x *isp116x)
 	unsigned long val;
 
 	/* Clear interrupt status and disable all interrupt sources */
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, 0xff);
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 
@@ -1725,6 +1770,7 @@ isp116x_start(struct isp116x *isp116x)
 //	val = isp116x_read_reg16(isp116x, HCHWCFG);
 //	val |= HCHWCFG_INT_ENABLE;
 //	isp116x_write_reg16(isp116x, HCHWCFG, val);
+	MINT_INT_ON;
 
 #ifndef TOSONLY
 	long r;
@@ -1735,7 +1781,10 @@ isp116x_start(struct isp116x *isp116x)
 		//DEBUG((/*0000000a*/"can't create NetUSBee kernel thread"));
 	}
 #endif
+
+	MINT_INT_OFF;
 	isp116x_show_regs(isp116x);
+	MINT_INT_ON;
 
 	isp116x->disabled = 0;
 
@@ -1823,7 +1872,9 @@ isp116x_check_id(struct isp116x *isp116x)
 {
 	unsigned short val;
 
+	MINT_INT_OFF;
 	val = isp116x_read_reg16(isp116x, HCCHIPID);
+	MINT_INT_ON;
 	DEBUG(("chip ID: %x", val));
 
 	if ((val & HCCHIPID_MASK) != HCCHIPID_MAGIC)
