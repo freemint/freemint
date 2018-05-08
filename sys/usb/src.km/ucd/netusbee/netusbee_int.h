@@ -26,11 +26,15 @@
 #define _netusbee_int_h
 
 #ifdef TOSONLY
-#define SET_INT_LVL6		Supexec(set_int_lvl6)
-#define SET_OLD_INT_LVL		Supexec(set_old_int_lvl)
+#define MINT_INT_OFF
+#define MINT_INT_ON
+#define TOS_INT_OFF		Supexec(set_int_lvl6)
+#define TOS_INT_ON		Supexec(set_old_int_lvl)
 #else
-#define SET_INT_LVL6		set_int_lvl6()
-#define SET_OLD_INT_LVL		set_old_int_lvl()
+#define MINT_INT_OFF		set_int_lvl6()
+#define MINT_INT_ON		set_old_int_lvl()
+#define TOS_INT_OFF
+#define TOS_INT_ON
 #endif
 
 // old handler
