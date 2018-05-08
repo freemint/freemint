@@ -1684,7 +1684,7 @@ netusbee_hub_poll_thread(void *dummy)
 	for (;;)
 	{
 		netusbee_hub_events();
-		addtimeout(500L, netusbee_hub_poll);
+		addtimeout(1000L, netusbee_hub_poll);
 		sleep(WAIT_Q, (long)&netusbee_hub_poll_thread);
 	}
 
