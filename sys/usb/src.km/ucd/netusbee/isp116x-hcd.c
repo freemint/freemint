@@ -1582,7 +1582,7 @@ isp116x_reset(struct isp116x *isp116x)
 
 	if (!clkrdy)
 	{
-		ALERT(("clock not ready after %ldms", timeout));
+		DEBUG(("clock not ready after %ldms", timeout));
 		/* After sw_reset the clock won't report to be ready, if
 		   H_WAKEUP pin is high. */
 		DEBUG(("please make sure that the H_WAKEUP pin is pulled low!"));
