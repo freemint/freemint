@@ -1495,23 +1495,6 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 /* --- Basic functions ----------------------------------------------------- */
 
-
-# if 0
-/* GALVEZ: Test function */
-static long GALVEZ_test_function( struct isp116x *isp116x )
-{
-	short rwc;
-
-	rwc = isp116x_read_reg16(isp116x, HCCONTROL) & HCCONTROL_RWC;
-	if (rwc)
-	{
-		INFO ("remote wake-up supported \n\r");
-	}
-	return 0;
-
-}
-# endif
-
 static long
 isp116x_sw_reset(struct isp116x *isp116x)
 {
@@ -1539,18 +1522,6 @@ isp116x_sw_reset(struct isp116x *isp116x)
 		DEBUG(("software reset timeout"));
 		ret = -1;
 	}
-
-# if 0
-	/* GALVEZ: DEBUG SOFTWARE RESET */
-
-	retries = 5000;
-
-	while (--retries){
-		if ((isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR)) {
-			INFO ("HCR: 1 retries: %d\n\r",retries);
-		}
-	}
-# endif /* END DEBUG */
 
 	return ret;
 }
