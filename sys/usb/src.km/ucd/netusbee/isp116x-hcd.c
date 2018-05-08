@@ -881,7 +881,7 @@ retry_same:
 	pack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
 
 # ifdef EXTRA_DELAY
-//	mdelay(EXTRA_DELAY);
+	mdelay(EXTRA_DELAY);
 # endif
 	if(set_extra_delay) 
 	{
