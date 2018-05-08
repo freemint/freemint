@@ -315,9 +315,7 @@ loader_init(int argc, char **argv, char **env)
 		}
 	}
 #endif
-	(void) Cconws( "usb loader: Fclose()\r\n");
 	Fclose((int)fh);
-	(void) Cconws( "usb loader: return\r\n");
 	//Cconin();
 	return r;
 
