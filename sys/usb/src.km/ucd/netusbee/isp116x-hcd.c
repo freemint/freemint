@@ -892,9 +892,9 @@ retry_same:
 
 	/* Allow more time for a BULK device to react - some are slow */
 	if (usb_pipebulk(pipe))
-		timeout = 5000; /* Galvez: default = 5000 */
+		timeout = 5000;
 	else
-		timeout = 100; /* Galvez : netusbee : default = 100 */
+		timeout = 100;
 
 	/* Wait for it to complete */
 	for (;;)
