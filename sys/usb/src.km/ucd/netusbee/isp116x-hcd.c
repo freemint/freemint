@@ -885,7 +885,7 @@ retry_same:
 # endif
 	if(set_extra_delay) 
 	{
-		mdelay(10);
+		mdelay(2);
 	}
 
 	/* Start the data transfer */
