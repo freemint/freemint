@@ -87,7 +87,7 @@
 
 //#define ISP116X_HCD_USE_EXTRA_DELAY
 #ifdef ISP116X_HCD_USE_EXTRA_DELAY
-# define EXTRA_DELAY	10	/* DEFAULT 2 */
+# define EXTRA_DELAY	2
 #endif
 
 /* --- ISP116x address registers in Netusbee --------------------------------*/
