@@ -441,21 +441,23 @@ static unsigned char root_hub_str_index0[] =
 
 static unsigned char root_hub_str_index1[] =
 {
-	0x22,			/*  unsigned char  bLength; */
+	0x24,			/*  unsigned char  bLength; */
 	0x03,			/*  unsigned char  bDescriptorType; String-descriptor */
-	'I',			/*  unsigned char  Unicode */
+	'N',			/*  unsigned char  Unicode */
+	0,			/*  unsigned char  Unicode */
+	'e',			/*  unsigned char  Unicode */
+	0,			/*  unsigned char  Unicode */
+	't',			/*  unsigned char  Unicode */
+	0,			/*  unsigned char  Unicode */
+	'U',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
 	'S',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'P',			/*  unsigned char  Unicode */
+	'B',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'1',			/*  unsigned char  Unicode */
+	'e',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'1',			/*  unsigned char  Unicode */
-	0,			/*  unsigned char  Unicode */
-	'6',			/*  unsigned char  Unicode */
-	0,			/*  unsigned char  Unicode */
-	'x',			/*  unsigned char  Unicode */
+	'e',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
 	' ',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
@@ -473,8 +475,8 @@ static unsigned char root_hub_str_index1[] =
 	0,			/*  unsigned char  Unicode */
 	'u',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'b',			/*  unsigned char  Unicode */
-	0,			/*  unsigned char  Unicode */
+	 'b',			/*  unsigned char  Unicode */
+	 0,			/*  unsigned char  Unicode */
 };
 
 /*
