@@ -149,6 +149,7 @@ static void rtl8012_install_int		(void);
 INLINE void rtl8012_recv_packet		(struct netif *);
 
 void rtl8012_int (void);
+static void int_handle_tophalf	(PROC *p, long arg);
 
 
 /* hardware NIC address */
@@ -1271,8 +1272,8 @@ buf_empty (void)
 /*
  * Busy (vbl for now) interrupt routine
  */
-void _cdecl
-rtl8012_int (void)
+static void
+int_handle_tophalf(PROC *process, long arg)
 {
 	if (in_use)
 		return;
@@ -1283,4 +1284,10 @@ rtl8012_int (void)
 		rtl8012_recv_packet (&if_RTL12);
 	
 	in_use = 0;
+}
+
+void _cdecl
+rtl8012_int (void)
+{
+	addroottimeout (0L, int_handle_tophalf, 0x1);
 }
