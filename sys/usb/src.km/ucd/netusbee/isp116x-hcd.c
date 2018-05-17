@@ -129,6 +129,7 @@ struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
 struct usb_device *devgone;	/* device which was disconnected */
 static long rh_devnum;		/* address of Root Hub endpoint */
+static char job_in_progress = 0;
 
 /*
  * interrupt handling - bottom half
@@ -510,6 +511,23 @@ rh_check_port_status(struct isp116x *isp116x)
 
 /* --- HC management functions --------------------------------------------- */
 
+/* locking functions */
+inline static char lock_usb(char *lock) {
+	char ret = 0;
+
+	__asm("tas %1\n\t"
+	      "seq %0"
+	      : "=d" (ret)   /* outputs */
+	      : "m"  (*lock) /* inputs, note that this really has to be "*lock", not "lock" */
+	      : "cc");       /* clobbers condition codes */
+
+	return ret;
+}
+
+inline static void unlock_usb(char *lock) {
+	*lock = 0;
+}
+
 /* Write len bytes to fifo, pad till 32-bit boundary
  */
 static void
@@ -848,6 +866,14 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 		return -1;
 	}
 
+	/* Another job in progress */
+	if (!lock_usb(&job_in_progress))
+	{
+		DEBUG(("Another USB job in progress -- must not happen"));
+		dev->status = USB_ST_BUF_ERR;
+		return -1;
+	}
+
 	/* FIFO not empty? */
 	MINT_INT_OFF;
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
@@ -855,6 +881,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 		MINT_INT_ON;
 		DEBUG(("****** FIFO not empty! ******"));
 		dev->status = USB_ST_BUF_ERR;
+		unlock_usb(&job_in_progress);
 		return -1;
 	}
 
@@ -875,6 +902,7 @@ retry_same:
 		MINT_INT_ON;
 		DEBUG(("****** FIFO not empty! (2) ******"));
 		dev->status = USB_ST_BUF_ERR;
+		unlock_usb(&job_in_progress);
 		return -1;
 	}
 	MINT_INT_ON;
@@ -957,6 +985,7 @@ retry_same:
 		MINT_INT_ON;
 		DEBUG(("****** FIFO not ready! ******"));
 		dev->status = USB_ST_BUF_ERR;
+		unlock_usb(&job_in_progress);
 		return -1;
 	}
 	MINT_INT_ON;
@@ -1027,6 +1056,8 @@ retry_same:
 			default:
 				dev->status = USB_ST_CRC_ERR;
 		}
+		unlock_usb(&job_in_progress);
+
 		return -cc;
 	}
 	else
@@ -1035,6 +1066,8 @@ retry_same:
 	dump_msg(dev, pipe, buffer, len, "SUBMIT(ret)");
 
 	dev->status = 0;
+	unlock_usb(&job_in_progress);
+
 	return done;
 }
 
