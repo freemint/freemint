@@ -181,7 +181,8 @@ main_020.o: main_020.c
 rtl8012st:
 	$(MAKE) rtl8012st.xif \
 		"TARGET=rtl8012st.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)"
+		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)" \
+		"XIF_DEFINITIONS=-DNO_DELAY"
 
 rtl8012st.c:
 	ln -s rtl8012.c $@
