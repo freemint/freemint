@@ -1943,6 +1943,12 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 		delay_150ns = loopcount_1_msec * 15 / 100000;
 		delay_300ns = loopcount_1_msec * 3 / 10000;
 	}
+#else
+	if (machine == machine_falcon || machine == machine_ct2 || machine == machine_tt)
+	{
+		ALERT(("Sorry, this driver doesn't work with the 68030 CPU"));
+		return 1;
+	}
 #endif
 	ret = ucd_register(&netusbee_uif, &root_hub_dev);
 	if (ret)
