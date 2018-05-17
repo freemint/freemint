@@ -111,8 +111,8 @@
 struct kentry	*kentry;
 #else
 extern unsigned long _PgmSize;
-ulong delay_150ns;
-ulong delay_300ns;
+static ulong delay_150ns;
+static ulong delay_300ns;
 #endif
 
 #include "isp116x.h"
