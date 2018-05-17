@@ -111,6 +111,7 @@
 struct kentry	*kentry;
 #else
 extern unsigned long _PgmSize;
+static int with_delay = 0;
 static ulong delay_150ns;
 static ulong delay_300ns;
 #endif
@@ -1918,6 +1919,8 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 #ifdef TOSONLY
+	long mcpu = 1L;
+
 	/* Get USB cookie */
 	if (!getcookie(_USB, (long *)&api))
 	{
@@ -1927,8 +1930,19 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 
 	/* for precise mdelay/udelay relative to CPU power */
 	set_tos_delay();
-	delay_150ns = loopcount_1_msec * 15 / 100000;
-	delay_300ns = loopcount_1_msec * 3 / 10000;
+
+	/* Get _CPU cookie */
+	if (!getcookie(COOKIE__CPU, &mcpu))
+	{
+		(void)Cconws("_CPU cookie reading failed\r\n");
+	}
+
+	if (mcpu != 00)
+	{
+		with_delay = 1;
+		delay_150ns = loopcount_1_msec * 15 / 100000;
+		delay_300ns = loopcount_1_msec * 3 / 10000;
+	}
 #endif
 	ret = ucd_register(&netusbee_uif, &root_hub_dev);
 	if (ret)

@@ -381,9 +381,10 @@ struct isp116x
  * 300ns delay between access to ADDR_REG and DATA_REG
  * OE, WE MUST NOT be changed during these intervals
  */
+
 #ifdef TOSONLY
-# define DELAY_150NS delay_loop(delay_150ns)
-# define DELAY_300NS delay_loop(delay_300ns)
+# define DELAY_150NS if (with_delay) delay_loop(delay_150ns)
+# define DELAY_300NS if (with_delay) delay_loop(delay_300ns)
 #else
 # define DELAY_150NS udelay(1)
 # define DELAY_300NS udelay(1)
