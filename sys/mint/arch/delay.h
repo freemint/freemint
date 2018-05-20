@@ -51,6 +51,8 @@ extern ulong loops_per_sec;
 
 # endif
 
+# define	HZSCALE			(268435456 / (1000000 / HZ)) /* 268435456 = 2^28 */
+# define	loops_per_jiffy		(loops_per_sec / HZ)
 
 INLINE void
 __delay (register ulong loops)
@@ -133,12 +135,51 @@ udelay (register ulong usecs)
  *	we use 2^28 instead of 2^32.
  */
 
-# define	HZSCALE			(268435456 / (1000000/HZ)) /* 268435456 = 2^28 */
-# define	loops_per_jiffy		(loops_per_sec / HZ)
-
 	__delay((((usecs * HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6);
 
 # endif /* (__mc68020__) || (__mc68030__) || (__mc68040__) || (__mc68060__) */
+}
+
+/*
+ * nanosecond delay:
+ *
+ * The simpler m68k and ColdFire processors do not have a 32*32->64
+ * multiply instruction. So we need to handle them a little differently.
+ * We use a bit of shifting and a single 32*32->32 multiply to get close.
+ *
+ * ((((HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6) is the number of loops
+ * per microsecond
+ *
+ * 1000 / ((((HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6) is the number of
+ * nanoseconds per loop
+ *
+ * So n / ( 1000 / ((((HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6) ) would
+ * be the number of loops for n nanoseconds
+ *
+ */
+
+#define ndelay(n) ndelay_loops(getloops4ns(n))
+
+/*
+ * The time spent for calculating the number of loops is in m68k systems equal or
+ * longer than the delay requested in nanoseconds, to avoid the overhead calculating
+ * the loop count value while ndelay() is needed, these two functions allow drivers to
+ * get the loop count for the nanoseconds required before the ndelay() function is called.
+ * First during the driver initialization get the loop count with getloops4ns() and then
+ * use ndelay_loops() instead of ndelay( ) with the loops number obtained.
+ *
+ * Please note that getting nanosecond delays through this function is only possible with
+ * the fastest m68k processors (68060 and ColdFire), for other CPUs (68000 and 68030) it's
+ * best to use the "nop" instruction. The 68040 is on the border, at 25 MHz you could use 
+ * ndelay_loops() to get nanosecond delays with around 200 nsec granularity.
+ */
+
+#define ndelay_loops(x) __delay(x)
+
+INLINE ulong
+getloops4ns (register ulong nsecs)
+{
+	return (DIV_ROUND_UP((nsecs) * ((((HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6), 1000));
 }
 
 # ifdef loops_per_sec
