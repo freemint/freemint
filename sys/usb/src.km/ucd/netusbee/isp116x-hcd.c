@@ -111,11 +111,10 @@
 struct kentry	*kentry;
 #else
 extern unsigned long _PgmSize;
+#endif
 static int with_delay = 0;
 static ulong delay_150ns;
 static ulong delay_300ns;
-#endif
-
 #include "isp116x.h"
 
 struct usb_module_api *api;
@@ -1908,6 +1907,7 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;
+	unsigned long mcpu = 1L;
 #ifndef TOSONLY
 	kentry	= k;
 	api     = uapi;
@@ -1919,8 +1919,6 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 #ifdef TOSONLY
-	long mcpu = 1L;
-
 	/* Get USB cookie */
 	if (!getcookie(_USB, (long *)&api))
 	{
@@ -1932,24 +1930,35 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	set_tos_delay();
 
 	/* Get _CPU cookie */
-	if (!getcookie(COOKIE__CPU, &mcpu))
+	if (!getcookie(COOKIE__CPU, (long *)&mcpu))
 	{
 		(void)Cconws("_CPU cookie reading failed\r\n");
 	}
-
-	if (mcpu != 00)
+# else
+	/* Get _CPU cookie */
+	if (!get_toscookie(COOKIE__CPU, &mcpu))
 	{
-		with_delay = 1;
-		delay_150ns = loopcount_1_msec * 15 / 100000;
-		delay_300ns = loopcount_1_msec * 3 / 10000;
+		DEBUG(("_CPU cookie reading failed\r\n"));
 	}
-#else
-	if (machine == machine_falcon || machine == machine_ct2 || machine == machine_tt)
+	if (mcpu == 30)
 	{
 		ALERT(("Sorry, this driver doesn't work with the 68030 CPU"));
 		return 1;
 	}
 #endif
+
+	if (mcpu != 00)
+	{
+		with_delay = 1;
+#ifdef TOSONLY
+		delay_150ns = loopcount_1_msec * 15 / 100000;
+		delay_300ns = loopcount_1_msec * 3 / 10000;
+#else
+		delay_150ns = getloops4ns(150);
+		delay_300ns = getloops4ns(300);
+#endif
+	}
+
 	ret = ucd_register(&netusbee_uif, &root_hub_dev);
 	if (ret)
 	{
