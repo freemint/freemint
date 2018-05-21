@@ -386,8 +386,8 @@ struct isp116x
 # define DELAY_150NS if (with_delay) delay_loop(delay_150ns)
 # define DELAY_300NS if (with_delay) delay_loop(delay_300ns)
 #else
-# define DELAY_150NS udelay(1)
-# define DELAY_300NS udelay(1)
+# define DELAY_150NS if (with_delay) ndelay_loops(delay_150ns)
+# define DELAY_300NS if (with_delay) ndelay_loops(delay_300ns)
 #endif
 
 /* ISP116x registers access */
