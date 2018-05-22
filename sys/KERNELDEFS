@@ -100,7 +100,7 @@ endif
 ifeq ($(kernel),col)
 MINT = mintv4e.prg
 CPU  = v4e
-KERNELDEFS = -DM68040 -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
+KERNELDEFS = -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
