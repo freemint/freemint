@@ -1987,10 +1987,7 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	set_tos_delay();
 
 	/* Get _CPU cookie */
-	if (!getcookie(COOKIE__CPU, (long *)&mcpu))
-	{
-		(void)Cconws("_CPU cookie reading failed\r\n");
-	}
+	mcpu = (unsigned long)getmCPU();
 # else
 	/* Get _CPU cookie */
 	if (!get_toscookie(COOKIE__CPU, &mcpu))
