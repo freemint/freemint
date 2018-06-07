@@ -348,9 +348,6 @@ mouse_rclick(PROC *p, long arg)
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	*kbshft |= MM_ALTERNATE;
-
-	/* Generate "release" packet */
-	addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 }
 
 /* Generate left click */
@@ -366,9 +363,6 @@ mouse_lclick(PROC *p, long arg)
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	*kbshft |= MM_ALTERNATE;
-
-	/* Generate "release" packet */
-	addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 }
 
 /* Generate double left click */
@@ -482,6 +476,9 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 
 				kbdclick(scan);
 			}
+			else
+				/* Generate "release" packet */
+				addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 
 			return -1;
 		}
@@ -493,6 +490,9 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 
 				kbdclick(scan);
 			}
+			else
+				/* Generate "release" packet */
+				addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 
 			return -1;
 		}
