@@ -347,6 +347,8 @@ mouse_rclick(PROC *p, long arg)
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
+	*kbshft |= MM_ALTERNATE;
+
 	/* Generate "release" packet */
 	addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 }
@@ -362,6 +364,8 @@ mouse_lclick(PROC *p, long arg)
 	*kbshft &= ~MM_ALTERNATE;
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+
+	*kbshft |= MM_ALTERNATE;
 
 	/* Generate "release" packet */
 	addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
