@@ -206,15 +206,19 @@ static MEMREGION *user_keytab_region = NULL;
 static short keep_sending;		/* flag for mouse packets auto-repetition */
 static char mouse_packet[6];
 
+static char mbuttons_state;
+#define MOUSE_RBUTTON_DOWN	0x01
+#define MOUSE_LBUTTON_DOWN	0x02
+
 /* Mouse movements in four directions */
 static void
 mouse_up(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = -pixels;	/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;		/* header */
+	mouse_packet[1] = 0;					/* X axis */
+	mouse_packet[2] = -pixels;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -240,9 +244,9 @@ mouse_down(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = pixels;	/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = pixels;			/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -268,9 +272,9 @@ mouse_left(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = -pixels;	/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = -pixels;			/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -297,9 +301,9 @@ mouse_right(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = pixels;	/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = pixels;			/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -324,9 +328,9 @@ mouse_right(PROC *p, long pixels)
 static void
 mouse_noclick(PROC *p, long arg)
 {
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 }
@@ -339,9 +343,9 @@ mouse_noclick(PROC *p, long arg)
 static void
 mouse_rclick(PROC *p, long arg)
 {
-	mouse_packet[0] = 0xf9;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	*kbshft &= ~MM_ALTERNATE;
 
@@ -354,9 +358,9 @@ mouse_rclick(PROC *p, long arg)
 static void
 mouse_lclick(PROC *p, long arg)
 {
-	mouse_packet[0] = 0xfa;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	*kbshft &= ~MM_ALTERNATE;
 
@@ -469,6 +473,8 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 		{
 			if (make)
 			{
+				mbuttons_state |= MOUSE_LBUTTON_DOWN;
+
 				if (shift & MM_ESHIFT)
 					addroottimeout(ROOT_TIMEOUT, mouse_dclick, 1);
 				else
@@ -477,8 +483,11 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 				kbdclick(scan);
 			}
 			else
+			{
 				/* Generate "release" packet */
+				mbuttons_state &= ~MOUSE_LBUTTON_DOWN;
 				addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
+			}
 
 			return -1;
 		}
@@ -486,13 +495,17 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 		{
 			if (make)
 			{
+				mbuttons_state |= MOUSE_RBUTTON_DOWN;
 				addroottimeout(ROOT_TIMEOUT, mouse_rclick, 1);
 
 				kbdclick(scan);
 			}
 			else
+			{
 				/* Generate "release" packet */
+				mbuttons_state &= ~MOUSE_RBUTTON_DOWN;
 				addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
+			}
 
 			return -1;
 		}
