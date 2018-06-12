@@ -374,7 +374,12 @@ static void
 mouse_dclick(PROC *p, long arg)
 {
 	mouse_lclick(p, arg);
-	addroottimeout(MOUSE_TIMEOUT + 20, mouse_lclick, 0);
+
+	mbuttons_state &= ~MOUSE_LBUTTON_DOWN;
+	mouse_noclick(p, arg);
+
+	mbuttons_state |= MOUSE_LBUTTON_DOWN;
+	addroottimeout(MOUSE_TIMEOUT, mouse_lclick, 0);
 }
 
 static void
@@ -475,7 +480,7 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			{
 				mbuttons_state |= MOUSE_LBUTTON_DOWN;
 
-				if (shift & MM_ESHIFT)
+				if (shift & MM_RSHIFT)
 					addroottimeout(ROOT_TIMEOUT, mouse_dclick, 1);
 				else
 					addroottimeout(ROOT_TIMEOUT, mouse_lclick, 1);
