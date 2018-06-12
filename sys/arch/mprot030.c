@@ -761,7 +761,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
     assert (p_mem->page_table);
 
-    TRACELOW(("init_page_table (p_mem = %lx)", p_mem));
+    TRACELOW(("init_page_table (p_mem = %lx)", (unsigned long)p_mem));
 
     tptr = p_mem->page_table;
     if ((long) tptr >= 0x01000000L)
@@ -1026,7 +1026,7 @@ _dump_tree(long_desc tbl, int level)
 	tbl.page_type.s,
 	tbl.page_type.wp,
 	tbl.page_type.dt,
-	(long_desc *)((ulong)tbl.tbl_address - offset));
+	(unsigned long)((ulong)tbl.tbl_address - offset));
 
     if (tbl.page_type.dt == 3) {
 	if (level == 0) {
