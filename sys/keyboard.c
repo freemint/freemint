@@ -977,7 +977,6 @@ IkbdScan(PROC *p, long arg)
 		scanb_head = (scanb_head + 1) & 0xf;
 
 		TRACE(("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
-// 		display("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
 
 		scan = scancode & 0xff;
 
