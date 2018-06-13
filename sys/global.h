@@ -90,6 +90,8 @@ extern short FalconVideo;
 extern short ste_video;
 extern short protect_page0;
 
+/* pointer to vector used by 200 Hz system timer */
+extern long *p5msvec;
 # endif
 
 # endif /* _global_h */

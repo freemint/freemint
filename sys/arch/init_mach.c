@@ -189,6 +189,13 @@ _getmch (void)
 					break;
 				}
 #endif
+
+				case COOKIE__5MS:
+				{
+					/* pointer to vector used by 200 Hz system timer */
+					p5msvec = (long *)jar->value;
+					break;
+				}
 			}
 
 			jar++;
