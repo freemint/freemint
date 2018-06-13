@@ -72,3 +72,10 @@ short ste_video = 0;
  * vectors from userspace accesses
  */
 short protect_page0 = 0;
+
+/* On Atari hardware, the 200 Hz system timer is implemented with the MFP
+ * Timer C. On non-Atari hardware supported by EmuTOS, the 200 Hz system
+ * timer may be implemented differently. In that case, the _5MS cookie
+ * indicates the address of the vector used by the 200 Hz system timer
+ */
+long *p5msvec = (long *)0x114L; /* Default to Timer C vector */

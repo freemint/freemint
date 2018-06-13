@@ -38,8 +38,6 @@ long old_term;
 long old_resval;	/* old reset validation */
 long olddrvs;		/* BIOS drive map */
 
-static long *p5msvec; /* pointer to vector used by 200 Hz system timer */
-
 /* table of processor frame sizes in _words_ (not used on MC68000) */
 uchar framesizes[16] =
 {
@@ -168,13 +166,8 @@ init_intr (void)
 	 * push a fake additional exception stack frame, so when the previous
 	 * 200 Hz handler returns with RTE, it will actually call _mint_vbl
 	 * to mimic a 50 Hz VBL interrupt.
-	 *
-	 * On Atari hardware, the 200 Hz system timer is implemented with the MFP
-	 * Timer C. On non-Atari hardware supported by EmuTOS, the 200 Hz system
-	 * timer may be implemented differently. In that case, the _5MS cookie
-	 * indicates the address of the vector used by the 200 Hz system timer */
-	if (get_cookie(NULL, COOKIE__5MS, (ulong *)&p5msvec) != E_OK)
-		p5msvec = (long *)0x114L; /* Default to Timer C vector */
+	 */
+
 	new_xbra_install (&old_5ms, (long)p5msvec, mint_5ms);
 
 #if 0	/* this should really not be necessary ... rincewind */
