@@ -29,11 +29,15 @@
 #endif
 #endif
 
+#ifdef TOSONLY
+#include "mint/mintbind.h" /* Dcntl() */
+#endif
 #include "mint/mint.h"
 #include "../../global.h"
 
 #include "part.h"
 #include "xhdi.h"
+
 
 /*--- Defines ---*/
 
@@ -100,40 +104,57 @@ sys_XHDOSLimits(ushort which,ulong limit)
 	static int first_time = 1;
 	long old_limit = 0;
 	long unhandled = 0;
-	long i;
+	long i, val;
 
 	if (first_time)
 	{
-		ushort version = Sversion();            /* determine GEMDOS version */
-		version = (version>>8) | (version<<8);  /* swap to correct order */
-		if (version > 0x0040)       /* unknown               */
-			version = 0x0000;       /* so force it to lowest */
+		if (getcookie(MagX_COOKIE, &val))
+		{
+			MX_DOSLIMITS **ptr;
+			ptr = (MX_DOSLIMITS **) Dcntl(KER_DOSLIMITS, 0, 0L);
+			dl_secsiz = (*ptr)->max_secsizb;
+			dl_minfat = (*ptr)->min_nfats;
+			dl_maxfat = (*ptr)->max_nfats;
+			dl_minspc = (*ptr)->min_nclsiz;
+			dl_maxspc = (*ptr)->max_nclsiz;
+			dl_clusts = (*ptr)->max_ncl;
+			dl_maxsec = (*ptr)->max_nsec;
+			dl_clusts12 = MAX_FAT12_CLUSTERS;
+			if (Mediach(2)) (void)Getbpb(2);
+		}
+		else
+		{
+			ushort version = Sversion();            /* determine GEMDOS version */
+			version = (version>>8) | (version<<8);  /* swap to correct order */
+			if (version > 0x0040)                   /* unknown               */
+				version = 0x0000;               /* so force it to lowest */
 
-		if (version < 0x0015)       /* TOS 1.00, 1.02, KAOS TOS */
-		{
-			dl_secsiz = 8192L;
-			dl_clusts = 16383L;
-			dl_maxsec = 32767L;     /* max partition size = 256MB approx */
-			dl_clusts12 = 2046L;
-		}
-		else if (version < 0x0030)  /* i.e. TOS 1.04 to TOS 3.06 */
-		{
-			dl_secsiz = 8192L;
-			dl_clusts = 32766L;
-			dl_maxsec = 65535L;     /* max partition size = 512MB approx */
-			dl_clusts12 = MAX_FAT12_CLUSTERS;
-		}
-		else                        /* i.e. TOS 4.0x */
-		{
-			dl_secsiz = MAX_LOGSEC_SIZE;
-			dl_clusts = 32766L;
-			dl_maxsec = 65535L;     /* max partition size = 1024MB approx */
-			dl_clusts12 = MAX_FAT12_CLUSTERS;
+			if (version < 0x0015)                   /* TOS 1.00, 1.02, KAOS TOS */
+			{
+				dl_secsiz = 8192L;
+				dl_clusts = 16383L;
+				dl_maxsec = 32767L;             /* max partition size = 256MB approx */
+				dl_clusts12 = 2046L;
+			}
+			else if (version < 0x0030)              /* i.e. TOS 1.04 to TOS 3.06 */
+			{
+				dl_secsiz = 8192L;
+				dl_clusts = 32766L;
+				dl_maxsec = 65535L;             /* max partition size = 512MB approx */
+				dl_clusts12 = MAX_FAT12_CLUSTERS;
+			}
+			else                                    /* i.e. TOS 4.0x */
+			{
+				dl_secsiz = MAX_LOGSEC_SIZE;
+				dl_clusts = 32766L;
+				dl_maxsec = 65535L;             /* max partition size = 1024MB approx */
+				dl_clusts12 = MAX_FAT12_CLUSTERS;
+			}
+			dl_minfat = 2;
+			dl_maxfat = 2;
 		}
 		dl_clustsiz = dl_secsiz * 2;
 		dl_clusts32 = 0;
-		dl_minfat = 2;
-		dl_maxfat = 2;
 		first_time = 0;
 	}
 

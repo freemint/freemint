@@ -107,6 +107,26 @@ typedef struct usb_pun_info USB_PUN_INFO;
 #define XH_DL_CLUSTS32  13  /* max. number of clusters of a 32 bit FAT */
 #define XH_DL_BFLAGS    14  /* supported bits in bpb->bflags */
 
+#ifdef TOSONLY
+/*
+ * MagiC-specific, used for XHDOSLimits()
+ */
+#define MagX_COOKIE    0x4D616758L
+#define KER_DOSLIMITS  0x0101
+
+typedef struct {
+	ushort	version;                 /* Version number                  */
+	ushort	num_drives;              /* Max. number of drives           */
+	ulong	 max_secsizb;            /* Max. sector size in bytes       */
+	ushort	min_nfats;               /* Min. number of FATs             */
+	ushort	max_nfats;               /* Max. number of FATs             */
+	ulong	 min_nclsiz;             /* Min. number of sectors/clusters */
+	ulong	 max_nclsiz;             /* Max. number of sectors/clusters */
+	ulong	 max_ncl;                /* Max. number of clusters         */
+	ulong	 max_nsec;               /* Max. number of sectors          */
+} MX_DOSLIMITS;
+#endif
+
 /*
  * some architectural constants
  */
