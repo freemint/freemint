@@ -18,6 +18,7 @@
 # include "mint/basepage.h"
 # include "mint/config.h"
 # include "mint/emu_tos.h"
+# include "mint/arch/asm.h"
 
 
 struct netinfo netinfo =
