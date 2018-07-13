@@ -2601,7 +2601,7 @@ mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 		flags &= ~TF_STOPBITS;
 		flags |= (ucr & 0x18) >> 3;
 
-		if ((flags & TF_CHARBITS) == TF_15STOP)
+		if ((flags & TF_STOPBITS) == TF_15STOP)
 		{
 			flags &= ~TF_STOPBITS;
 			flags |= TF_1STOP;
