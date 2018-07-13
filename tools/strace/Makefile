@@ -36,22 +36,23 @@ GENFILES = $(TARGET) sysenttab.* gentables genstamp
 
 sysenttab.o: sysenttab.h
 
-$(TARGET): genstamp $(OBJS)
+$(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 
 sysenttab.c sysenttab.h: genstamp
+strace.o: sysenttab.h
 
 genstamp: $(MASTER) gentables
 	./gentables $<
 	touch $@
 
-gentables.o: gentables.c $(top_srcdir)/../shared/libsyscall/libsyscall.h
+gentables.o: gentables.c $(top_srcdir)/../shared/libsyscall/syscalldefs.h
 	$(NATIVECC) $(NATIVECFLAGS) -c $< -o $@
 
 gentables: gentables.o $(NATIVE_LIBS_DEP)
 	$(NATIVECC) -o $@ $(NATIVECFLAGS) $< $(NATIVE_LIBS)
 
-$(top_srcdir)/../shared/libsyscall/libsyscall.h:
+$(top_srcdir)/../shared/libsyscall/libsyscall.a:
 	$(MAKE) -C $(top_srcdir)/../shared/libsyscall
 
 include $(top_srcdir)/DEPENDENCIES

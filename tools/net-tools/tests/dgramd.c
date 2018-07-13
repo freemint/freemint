@@ -54,7 +54,7 @@ main (void)
 	for (;;)
 	{
 		char scratch[1];
-		size_t addrlen = sizeof (sun);
+		socklen_t addrlen = sizeof (sun);
 		int i;
 		
 		r = recvfrom (fd, scratch, sizeof (scratch), 0,

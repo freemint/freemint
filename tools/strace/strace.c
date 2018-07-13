@@ -53,10 +53,10 @@ static void enter_systrace(void);
 int
 main(int argc, char **argv)
 {
-	const char *myname = *argv++;
 	const char *command;
 	pid_t child;
 	
+	argv++;
 	if (*argv == NULL)
 		exit(1);
 	

@@ -56,7 +56,7 @@ ppp_stats (unsigned long *l, char *name)
 }
 
 static void
-slip_stats (long *l, char *name)
+slip_stats (unsigned long *l, char *name)
 {
 	printf ("Statistics for SLIP interface %s:\n", name);
 	printf ("%10lu input packets\n", *l++);
