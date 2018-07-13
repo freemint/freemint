@@ -66,9 +66,9 @@ init_page_table_ptr (struct memspace *m)
 	}
 	else
 	{
+		MEMREGION *pt = NULL;
 # if defined (M68040) || defined (M68060)
 		extern int page_ram_type;	/* mprot040.c */
-		MEMREGION *pt = NULL;
 		
 // 		FORCE("init_page_table_ptr: p_mem->mem = %lx", curproc->p_mem->mem);
 		if (page_ram_type & 2)
@@ -80,16 +80,19 @@ init_page_table_ptr (struct memspace *m)
 		m->page_table = pt ? ROUND512 (pt->loc) : NULL;
 		m->pt_mem = pt;
 # else /* M68040 || M68060 */
-		void *pt;
-		
-		pt = kmalloc (page_table_size + 16);
-		
+		extern int tt_mbytes;		/* mprot030.c */
+
+		if (tt_mbytes)
+			pt = get_region (alt, page_table_size + 16, PROT_S);
+		if (!pt && !tt_mbytes)
+			pt = get_region (core, page_table_size + 16, PROT_S);
+
 		/* page tables must be on 16 byte boundaries, so we
 		 * round off by 16 for that; however, we will want to
-		 * kfree that memory at some point, so we squirrel
+		 * free that memory at some point, so we squirrel
 		 * away the original address for later use
 		 */
-		m->page_table = pt ? ROUND16 (pt) : NULL;
+		m->page_table = pt ? ROUND16 (pt->loc) : NULL;
 		m->pt_mem = pt;
 # endif /* M68040 || M68060 */
 		
@@ -104,7 +107,7 @@ free_page_table_ptr (struct memspace *m)
 # ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 	{
-# if defined(M68040) || defined(M68060)
+# if defined(M68030) || defined(M68040) || defined(M68060)
 		MEMREGION *pt;
 		
 		pt = m->pt_mem;
@@ -113,13 +116,6 @@ free_page_table_ptr (struct memspace *m)
 		pt->links--;
 		if (!pt->links)
 			free_region(pt);
-# else
-		void *pt;
-		
-		pt = m->pt_mem;
-		m->pt_mem = NULL;
-		
-		kfree(pt);
 # endif
 	}
 # endif
