@@ -235,8 +235,6 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	if (!m)
 		return 0;	/* failure */
 
-	mint_bzero(m, sizeof (*m));
-
 	if (place & MASKBITS)
 	{
 		/* increase place & shorten size by the amount we're trimming */
