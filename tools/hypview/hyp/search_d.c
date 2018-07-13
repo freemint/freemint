@@ -28,7 +28,9 @@
 #include "defs.h"
 #include "hyp.h"
 
+#if 0
 static DIALOG *Hypfind_Dialog;
+#endif
 static short HypfindID;
 static char filename[DL_PATHMAX];
 

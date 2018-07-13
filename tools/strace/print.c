@@ -176,7 +176,7 @@ print_struct_timeval(pid_t pid, const void *data)
 {
 	struct timeval tv;
 	
-	copy_bytes(pid, data, (char *)(&tv), sizeof(tv));
+	copy_bytes(pid, data, (unsigned char *)(&tv), sizeof(tv));
 	
 	printf("struct timeval { %li, %li }", tv.tv_sec, tv.tv_usec);
 }

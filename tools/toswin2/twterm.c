@@ -169,7 +169,7 @@ popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 	int n = 0;
 	char s[ESCBUFSIZE] = "\0";
 	char *sp = s;
-	char *ep1, *ep2;
+	unsigned char *ep1, *ep2;
 
 	ep2 = ep1 = escbuf;
 	while (*ep1 != '\0' && *ep1 != ';')
@@ -221,10 +221,7 @@ keylocked (TEXTWIN* tw, unsigned int c)
 /* Handle control sequence ESC [?...n.	*/
 static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 {
-	int cx, cy, count, ei;
-
-	cx = tw->cx;
-	cy = tw->cy;
+	int count, ei;
 
 #ifdef DEBUG_VT
 	debug("vt100_esc_mode: %c (%u)\n", c, c);
@@ -1152,11 +1149,6 @@ vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
 static void
 vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 {
-	int cx, cy;
-
-	cx = tw->cx;
-	cy = tw->cy;
-
 #ifdef DEBUG_VT
 	debug("vt100_esc_char_size: %c (%d)\n", c, c);
 #endif
@@ -1645,13 +1637,12 @@ escy_putch (TEXTWIN* tw, unsigned int c)
 void
 vt100_putch (TEXTWIN* tw, unsigned int c)
 {
-	int cx, cy;
+	int cy;
 
 #ifdef DUMP
 	dump(c);
 #endif
 
-	cx = tw->cx;
 	cy = tw->cy;
 
 	c &= 0x00ff;

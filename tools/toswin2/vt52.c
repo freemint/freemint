@@ -391,9 +391,8 @@ static void escy_putch(TEXTWIN *v, unsigned int c)
  */
 void vt52_putch(TEXTWIN *v, unsigned int c)
 {
-	int cx, cy;
+	int cy;
 
-	cx = v->cx;
 	cy = v->cy;
 
 	c &= 0x00ff;

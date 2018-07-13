@@ -145,7 +145,7 @@ do_link (char *device, char *name)
 	}
 
 	close (sockfd);
-	strncpy (ifname, ifl.ifname, sizeof (ifl.ifname));
+	strncpy (ifname, ifl.ifname, sizeof (ifname));
 }
 
 /*

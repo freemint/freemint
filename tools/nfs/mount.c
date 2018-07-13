@@ -424,6 +424,7 @@ main (int argc, char *argv[])
 				break;
 			}
 		}
+		(void) which;
 		
 		if (mnt)
 		{

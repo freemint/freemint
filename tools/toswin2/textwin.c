@@ -187,7 +187,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 	short cheight = t->cheight;
 	short pxy[8];
 	short box = cwidth > cheight ? cheight - 1 : cwidth - 1;
-	unsigned char letter[2] = { '\0', '\0' };
+	char letter[2] = { '\0', '\0' };
 
 	while (*crs && x < max_x)
 	{
@@ -699,7 +699,8 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 	      short lastline, short force)
 {
 #define CBUFSIZ 127
-	unsigned char buf[CBUFSIZ+1], c;
+	char buf[CBUFSIZ+1];
+	unsigned char c;
 	short px, py, ax, i, cnt, bufwidth;
 	ulong flag;
 	short *WIDE = t->cwidths;
@@ -1472,9 +1473,9 @@ static void set_scroll_bars(TEXTWIN *t)
 	WINDOW	*v = t->win;
 	short vsize;
 	short vpos;
-	long width, height;
+	long height;
 
-	width = t->cmaxwidth * NCOLS (t);
+	/* width = t->cmaxwidth * NCOLS (t); */
 	height = t->cheight * t->maxy;
 
 	/* see if the new offset is too big for the window */
