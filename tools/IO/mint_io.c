@@ -409,7 +409,7 @@ rwabs_xhdi(struct device *mydev, ushort rw, void *buf, ulong size, ulong recno)
 # define max(a,b)	(a > b ? a : b)
 # define min(a,b)	(a > b ? b : a)
 
-int
+ssize_t
 read(int fd, void *_buf, size_t size)
 {
 	struct device *mydev = get_device(fd);
@@ -521,7 +521,7 @@ out:
 }
 }
 
-int
+ssize_t
 write(int fd, const void *_buf, size_t size)
 {
 	struct device *mydev = get_device(fd);
