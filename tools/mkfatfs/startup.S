@@ -24,7 +24,7 @@
 	.globl	__base
 
 #ifndef STACKSIZE
-#define STACKSIZE 0x2000
+#define STACKSIZE 0x20000
 #endif
 
 	.data
