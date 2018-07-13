@@ -1107,7 +1107,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 
 //			b = buf_alloc (length+200, 100, BUF_ATOMIC);
 			b = buf_alloc (1518UL + 128UL, 64UL, BUF_ATOMIC);
-			if(b == 0UL)
+			if(b == 0)
 			{
 				nif->in_errors++;
 				//ksprintf (message, "buf_alloc RX failed, %lu \n\r", 1518UL + 200UL);
