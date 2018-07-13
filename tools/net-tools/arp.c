@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <net/if_arp.h>
+#include <net/ethernet.h>
 #include <netinet/if_ether.h>
 #include <sockios.h>
 #include <stdlib.h>
