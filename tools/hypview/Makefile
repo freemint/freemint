@@ -30,9 +30,8 @@ LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -lgem
 GENFILES = $(TARGET) pc.pdb
 
 $(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -Wl,-stack,128k
 	$(STRIP) $(TARGET)
-	$(STACK) -S128K $(TARGET)
 
 hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a: all-recursive
 

@@ -47,7 +47,7 @@ DrawPicture(WINDOW_DATA *win, char *src, long x, long y)
 		MFDB screen = {NULL};
 
 		tx = ((unsigned char *)src)[3];
-		ty = dec_from_chars(&src[4]);
+		ty = dec_from_chars((unsigned char *) &src[4]);
 		
 		/*	Quellrechteck	*/
 		xy[0] = 0;
@@ -90,7 +90,7 @@ DrawLine(WINDOW_DATA *win, char *src, long x, long y)
 	short xy[4], tx, ty, w, h, mode;
 
 	tx = ((unsigned char *)src)[1];
-	ty = dec_from_chars(&src[2]);
+	ty = dec_from_chars((unsigned char *) &src[2]);
 	w = (((unsigned char *)src)[4]) - 128;
 	h = (((unsigned char *)src)[5]) - 1;
 	mode = ((unsigned char *)src)[6] - 1;
@@ -128,7 +128,7 @@ DrawBox(WINDOW_DATA *win, char *src, long x, long y)
 	short xy[4], tx, ty, w, h, mode;
 
 	tx = ((unsigned char *)src)[1];
-	ty = dec_from_chars(&src[2]);
+	ty = dec_from_chars((unsigned char *) &src[2]);
 	w = (((unsigned char *)src)[4]);
 	h = (((unsigned char *)src)[5]);
 	mode = ((unsigned char *)src)[6] - 1;

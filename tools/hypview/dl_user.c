@@ -157,12 +157,11 @@ void DoUserEvents(EVNT *event)
 	}
 	else if(event->mwhich & MU_KEYBD)
 	{
-	short ascii=event->key,scan;
+	short ascii=event->key;
 	short kstate=event->kstate;
 
 		ConvertKeypress(&ascii,&kstate);
 
-		scan=(ascii>>8) & 0xff;
 		ascii=ascii & 0xff;
 
 		if(kstate & KbCTRL)

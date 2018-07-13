@@ -156,7 +156,7 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
 	MD5Transform (ctx->buf, (ulong *) ctx->in);
 	byteReverse (ctx->buf, 4);
 	memcpy (digest, ctx->buf, 16);
-	bzero (ctx, sizeof (ctx));	/* In case it's sensitive */
+	bzero (ctx, sizeof (*ctx));	/* In case it's sensitive */
 }
 
 /* The four core functions */

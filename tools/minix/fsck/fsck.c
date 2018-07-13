@@ -180,7 +180,7 @@ do_fsck (void)
 				{
 					rip->i_size &= ~(DSIZE*incr-1);
 					cdirty=1;
-					trunc=2;
+					truncated=2;
 				}
 			}
 			traverse_zones(pass1);
@@ -196,7 +196,7 @@ do_fsck (void)
 				}
 			}
 			ndir++;
-			trunc=0;
+			truncated=0;
 			ist->flag|=I_DIR;
 			break;
 
@@ -473,7 +473,7 @@ traverse_zones (int (*func)(zone_nr *zone, ushort level))
 	tindcount = NO_TRPL (zonecount);
 #endif
 
-	if(trunc!=2) trunc=0; /* 2 means silently truncate (directory) */
+	if(truncated!=2) truncated=0; /* 2 means silently truncate (directory) */
 	done_trunc=0;
 	dirsparse=0;
 
@@ -575,7 +575,7 @@ static int
 pass1 (zone_nr *zone, ushort level)
 {
 
-	if(!done_trunc || trunc)
+	if(!done_trunc || truncated)
 	{
 		switch(level)
 		{
@@ -583,7 +583,7 @@ pass1 (zone_nr *zone, ushort level)
 
 			if(zonecount==0)
 			{
-				if(*zone && ( trunc || do_trunc() ) )
+				if(*zone && ( truncated || do_trunc() ) )
 				{
 					*zone=0;
 					return 1;
@@ -599,7 +599,7 @@ pass1 (zone_nr *zone, ushort level)
 			case 1:
 			if(indcount==0)
 			{
-				if(*zone && ( trunc || do_trunc() ) )
+				if(*zone && ( truncated || do_trunc() ) )
 				{
 					*zone=0;
 					return 1;
@@ -615,7 +615,7 @@ pass1 (zone_nr *zone, ushort level)
 			case 2:
 			if(dindcount==0)
 			{
-				if(*zone && (trunc || do_trunc() ) )
+				if(*zone && (truncated || do_trunc() ) )
 				{
 					*zone=0;
 					return 1;
@@ -632,7 +632,7 @@ pass1 (zone_nr *zone, ushort level)
 		      case 3:
 			if (tindcount == 0)
 			  {
-			    if (*zone && (trunc || do_trunc()))
+			    if (*zone && (truncated || do_trunc()))
 			      {
 				*zone = 0;
 				return 1;

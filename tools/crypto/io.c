@@ -41,7 +41,7 @@
 static short drv = -1;
 static ushort major = 0;
 static ushort minor = 0;
-static long start = 0;
+static ulong start = 0;
 static long sectors = 0;
 static long ssize = 0;
 
@@ -119,7 +119,7 @@ io_open (int64_t _dev)
 	printf ("---------------------\n");
 	printf ("XHDI major number    : %d\n", major);
 	printf ("XHDI minor number    : %d\n", minor);
-	printf ("partition start      : %ld\n", start);
+	printf ("partition start      : %lu\n", start);
 	printf ("partition length     : %ld sectors\n", sectors);
 	printf ("physical sector size : %ld bytes\n", ssize);
 	printf ("\n");
@@ -141,12 +141,10 @@ io_open (int64_t _dev)
 int
 io_close (int handle)
 {
-	long ret;
-	
 	if (handle != drv)
 		return -1;
 	
-	ret = Dlock (0, drv);
+	(void) Dlock (0, drv);
 	drv = -1;
 	
 	return 0;

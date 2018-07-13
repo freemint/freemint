@@ -32,6 +32,7 @@ static DIALOG *Hypfind_Dialog;
 static short HypfindID;
 static char filename[DL_PATHMAX];
 
+#if 0
 static short __CDECL
 HypfindHandle ( struct HNDL_OBJ_args args)
 {
@@ -73,6 +74,7 @@ HypfindHandle ( struct HNDL_OBJ_args args)
 
 	return 1;
 }
+#endif
 
 void Hypfind( DOCUMENT *doc )
 {

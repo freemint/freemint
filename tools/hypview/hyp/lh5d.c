@@ -136,7 +136,10 @@ make_table( short nchar, unsigned char bitlen[], short tablebits, unsigned short
 		start[i] >>= jutbits;
 		weight[i] = 1U << (tablebits - i);
 	}
-	while (i <= 16) weight[i++] = 1U << (16 - i);
+	while (i <= 16) {
+		weight[i] = 1U << (16 - i);
+		i++;
+	}
 
 	i = start[tablebits + 1] >> jutbits;
 	if (i != (unsigned short)(1U << 16)) {

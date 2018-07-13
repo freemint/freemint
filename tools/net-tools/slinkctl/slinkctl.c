@@ -191,7 +191,7 @@ struct trace_entry *t;
 	stats_length = rc;
 
 	stats = malloc(min(stats_length,sizeof(SCSILINK_STATS)));	/* malloc area for statistics */
-	memset(stats,sizeof(SCSILINK_STATS),0x00);					/* & ensure basic stats are zeroed */
+	memset(stats,0x00,sizeof(SCSILINK_STATS));					/* & ensure basic stats are zeroed */
 
 	ifr.ifr_ifru.ifru_data = (char *)stats;
 	rc = Fcntl(sock,(long)&ifr,SIOCGLNKSTATS);

@@ -6,9 +6,11 @@
 	#include <fcntl.h>
 
 	/* Mxalloc mode: global memory */
-	#define MX_GLOBAL	(2<<4)
 #else
 	#include <tos.h>
+#endif
+#ifndef MX_GLOBAL
+	#define MX_GLOBAL	(2<<4)
 #endif
 #include <gem.h>
 #include "bubble.h"

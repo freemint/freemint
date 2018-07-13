@@ -52,7 +52,10 @@ static void
 Decode(unsigned char *ptr, long bytes)
 {
 	while (bytes--)
-		*ptr++ = *ptr ^ 127;							/*	Entschlsseln	*/
+	{
+		*ptr = *ptr ^ 127;							/*	Entschlsseln	*/
+		ptr++;
+	}
 }
 
 /*	Gibt die unkomprimierte Groesse des Eintrags <num> zurck	*/

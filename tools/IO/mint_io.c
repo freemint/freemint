@@ -596,7 +596,7 @@ write(int fd, const void *_buf, size_t size)
 		ulong data = (todo / mydev->xhdi_blocksize) * mydev->xhdi_blocksize;
 		long ret;
 		
-		ret = rwabs_xhdi(mydev, 1, buf, data, recno);
+		ret = rwabs_xhdi(mydev, 1, (void *)buf, data, recno);
 		if (ret)
 		{
 			DEBUG(("write: full blocks: write failure (r = %li, errno = %i)\n", ret, errno));

@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -12,7 +13,7 @@
 typedef size_t socklen_t;
 # endif
 
-#define OFFSET	((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	offsetof(struct sockaddr_un, sun_path)
 
 int
 main (void)

@@ -52,11 +52,13 @@ void DoEvent(void);
 
 void DoKeybd(EVNT *event)
 {
-short ascii=event->key,scan;
+short ascii=event->key;
+#if USE_STGUIDE==YES
+	short scan=(ascii>>8) & 0xff;
+#endif
 short kstate=event->kstate;
 	ConvertKeypress(&ascii,&kstate);
 
-	scan=(ascii>>8) & 0xff;
 	ascii=ascii & 0xff;
 	
 	if(kstate == (K_CTRL|K_ALT))
