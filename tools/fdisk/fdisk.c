@@ -79,7 +79,9 @@ static int quiet = 0;		/* 1: suppress all warnings */
 static int dump = 0;		/* 1: list in a format suitable for later input */
 static int verify = 0;		/* 1: check that listed partition is reasonable */
 static int no_write = 0;	/* 1: do not actually write to disk */
+#if 0
 static int no_reread = 0;	/* 1: skip the BLKRRPART ioctl test at startup */
+#endif
 static int opt_list = 0;
 static char *save_sector_file = NULL;
 static char *restore_sector_file = NULL;
@@ -250,15 +252,13 @@ _my_open (const char *_dev, int iomode)
 static int
 _my_close (int fd)
 {
-	long ret;
-	
 	if (fd != xhdi_drv)
 	{
 		__set_errno (EBADF);
 		return -1;
 	}
 	
-	ret = Dlock (0, xhdi_drv);
+	(void) Dlock (0, xhdi_drv);
 	xhdi_drv = -1;
 	
 	return 0;
@@ -314,7 +314,7 @@ _my_write (int fd, const void *buf, size_t size)
 	
 	recno = xhdi_pos / xhdi_ssize;
 	
-	ret = rwabs_xhdi (1, buf, size, recno);
+	ret = rwabs_xhdi (1, (void *) buf, size, recno);
 	if (!ret)
 	{
 		xhdi_pos += size;
@@ -590,7 +590,7 @@ restore_sectors (char *dev)
 {
 	int fdin, fdout, ct;
 	struct stat statbuf;
-	char *ss0, *ss;
+	uchar *ss0, *ss;
 	ulong sno;
 	
 	if (stat (restore_sector_file, &statbuf) < 0)
@@ -607,7 +607,7 @@ restore_sectors (char *dev)
 		return 0;
 	}
 	
-	ss = malloc (statbuf.st_size);
+	ss = (uchar *) malloc (statbuf.st_size);
 	if (!ss)
 	{
 		error ("out of memory?\n");
@@ -852,6 +852,7 @@ struct part_desc
 }
 zero_part_desc;
 
+#if 0
 static struct part_desc *
 outer_extended_partition (struct part_desc *p)
 {
@@ -874,6 +875,7 @@ is_parent (struct part_desc *pp, struct part_desc *p)
 	
 	return 0;
 }
+#endif
 
 struct disk_desc
 {
@@ -881,6 +883,8 @@ struct disk_desc
     int partno;
 }
 oldp, newp;
+
+#if 0
 
 /* determine where on the disk this information goes */
 static void
@@ -896,6 +900,7 @@ add_sector_and_offset (struct disk_desc *z)
 		p->sector = (p->ep ? p->ep->start : 0);
 	}
 }
+#endif
 
 /* tell the kernel to reread the partition tables */
 static int
@@ -983,7 +988,9 @@ static int default_format = F_MEGABYTE;
 static int specified_format = 0;
 static int show_extended = 0;
 static int one_only = 0;
+#if 0
 static int one_only_pno;
+#endif
 static int increment = 0;
 
 static void
@@ -1566,6 +1573,8 @@ write_partitions (char *dev, int fd, struct disk_desc *z)
  * Otherwise empty lines are ignored.
  */
 
+# if 0
+
 static int eof, eob;
 
 static struct dumpfld
@@ -1592,9 +1601,9 @@ dumpflds[] =
 # define RD_CMD	(-2)
 
 static int
-read_stdin (uchar **fields, uchar *line, int fieldssize, int linesize)
+read_stdin (char **fields, char *line, int fieldssize, int linesize)
 {
-	uchar *lp, *ip;
+	char *lp, *ip;
 	int c, fno;
 	
 	/* boolean true and empty string at start */
@@ -1612,14 +1621,14 @@ read_stdin (uchar **fields, uchar *line, int fieldssize, int linesize)
 		return RD_EOF;
 	}
 	
-	lp = index (lp, '\n');
+	lp = strchr (lp, '\n');
 	if (!lp)
 		fatal ("long or incomplete input line - quitting\n");
 	
 	*lp = 0;
 	
 	/* remove comments, if any */
-	lp = index (line+2, '#');
+	lp = strchr (line+2, '#');
 	if (lp) *lp = 0;
 	
 	/* recognize a few commands - to be expanded */
@@ -1630,7 +1639,7 @@ read_stdin (uchar **fields, uchar *line, int fieldssize, int linesize)
 	}
 	
 	/* dump style? - then bad input is fatal */
-	ip = index (line+2, ':');
+	ip = strchr (line+2, ':');
 	if (ip)
 	{
 		struct dumpfld *d;
@@ -1732,8 +1741,6 @@ get_ul (char *u, ulong *up, ulong def, int base)
 	
 	return 0;
 }
-
-# if 0
 
 /* There are two common ways to structure extended partitions:
    as nested boxes, and as a chain. Sometimes the partitions
@@ -1916,7 +1923,7 @@ read_line (int pno, struct part_desc *ep, char *dev, int interactive,
 		struct disk_desc *z)
 {
 	uchar line[1000];
-	uchar *fields[11];
+	char *fields[11];
 	int fno, pct = pno%4;
 	struct part_desc p, *orig;
 	ulong ff, ff1, ul, ml, ml1, def;
@@ -2184,10 +2191,10 @@ read_input (char *dev, int interactive, struct disk_desc *z)
 	z->partno = 0;
 	
 	if (interactive)
-		warn ("
-Input in the following format; absent fields get a default value.
-<start> <size> <type [E,S,L,X,hex]> <bootable [-,*]> <c,h,s> <c,h,s>
-Usually you only need to specify <start> and <size> (and perhaps <type>).
+		warn ("\
+Input in the following format; absent fields get a default value.\n\
+<start> <size> <type [E,S,L,X,hex]> <bootable [-,*]> <c,h,s> <c,h,s>\n\
+Usually you only need to specify <start> and <size> (and perhaps <type>).\n\
 ");
 	eof = 0;
 	
@@ -2589,7 +2596,7 @@ do_activate (char **av, int ac, char *arg)
 {
 	char *dev = av[0];
 	int fd;
-	int rw, i, pno, lpno;
+	int rw, i, pno;
 	struct disk_desc *z;
 	
 	z = &oldp;
