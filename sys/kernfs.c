@@ -660,9 +660,9 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 
 	mint_bzero (stat->res, sizeof (stat->res));
 
-	if ((file->index & 0xffff0000) == PROCDIR_FD)
+	if ((file->index & 0x0000ffff) == PROCDIR_FD)
 		stat->mode = S_IFDIR | 0500;
-	else if ((file->index & 0xffff0000) == PROCDIR_DIR)
+	else if ((file->index & 0x0000ffff) == PROCDIR_DIR)
 		stat->mode = S_IFDIR | 0555;
 	else
 	{
