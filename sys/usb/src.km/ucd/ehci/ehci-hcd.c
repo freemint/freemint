@@ -106,6 +106,10 @@ long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
  * Structures
  */
 
+#if __GNUC_PREREQ(8,1)
+#pragma GCC diagnostic ignored "-Wpacked-not-aligned"
+#endif
+
 struct descriptor {
 	struct usb_hub_descriptor hub;
 	struct usb_device_descriptor device;
