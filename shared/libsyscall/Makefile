@@ -32,7 +32,7 @@ GENFILES += pars.c pars.h scan.c
 
 
 $(TARGET): $(OBJS)
-	$(AR) r $@ $(OBJS)
+	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 
 pars.c pars.h: pars.y
