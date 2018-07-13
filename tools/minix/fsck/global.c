@@ -36,7 +36,7 @@ long indcount;		/* Number of indirection blocks */
 char dindcount;		/* Number of double indirection blocks */
 char tindcount;		/* '1' If triple indirection block */
 
-char trunc,done_trunc;	/* Flags for truncation of files */
+char truncated,done_trunc;	/* Flags for truncation of files */
 
 char quit_trav;
 
