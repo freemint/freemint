@@ -24,7 +24,7 @@ all-here: $(TARGET)
 OBJS = $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS)
-	$(AR) r $@ $(OBJS)
+	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 
 
