@@ -19,7 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)/IO
+INCLUDES = -I$(top_srcdir)/IO -I.
 
 # default definitions
 OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
@@ -35,7 +35,7 @@ mkfatfs: $(MKFATFSOBJS) $(LIBIOSTMP)
 
 gemkfatfs.app: $(GEMKFATFSOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(GEMKFATFSOBJS) \
-		-nostartfiles -nostdlib -lgemma -lc -lgcc
+		-nostartfiles -nostdlib -Lslb -lgemma -lc -lgcc
 
 
 include $(top_srcdir)/DEPENDENCIES
