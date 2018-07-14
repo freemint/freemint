@@ -1,7 +1,7 @@
 #
 # Makefile for MiNT loader
 #
-TARGET = usb.acc
+TARGET = usbtool.acc
 
 SHELL = /bin/sh
 SUBDIRS = 
