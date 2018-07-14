@@ -4,7 +4,7 @@
 HEADER = 
 
 COBJS = \
-	usb.c
+	usbtool.c 
 
 SOBJS = 
 

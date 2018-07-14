@@ -24,7 +24,7 @@ SUBDIRS = \
 	swkbdtbl \
 	sysctl \
 	toswin2 \
-	usb
+	usbtool
 
 srcdir = .
 top_srcdir = .
