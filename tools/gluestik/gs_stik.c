@@ -508,7 +508,7 @@ init_stik_if (void)
 {
 	if (Psemaphore (0, FLG_SEM, 0) < 0)
 	{
-		Cconws ("Unable to obtain STiK flag semaphore\r\n");
+		(void) Cconws ("Unable to obtain STiK flag semaphore\r\n");
 		return 0;
 	}
 	

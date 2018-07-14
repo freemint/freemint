@@ -25,8 +25,7 @@ OBJS = $(COBJS:.c=.o)
 GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(FLAGS) --mglobal-memory $@
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -Wl,--mprg-flags,0x17
 
 
 include $(top_srcdir)/DEPENDENCIES

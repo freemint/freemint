@@ -89,7 +89,8 @@ get_drives (void)
 	int i, j;
 	char lw[] = " A:";
 	
-	drive_bits = Dsetdrv (Dgetdrv ());
+	i = Dgetdrv ();
+	drive_bits = Dsetdrv (i);
 	num_flops = get_nflops ();
 	if (num_flops == 1)			/* nur eine Floppy */
 		drive_bits &= ~2;		/*  -> B ausblenden */
