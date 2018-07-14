@@ -1,7 +1,7 @@
 #
-# Makefile for mkaftafs and gemkfatfs
+# Makefile for mkfatfs and gemkfatfs
 #
-TARGET = mkfatfs # gemkfatfs.app
+TARGET = mkfatfs gemkfatfs.app
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -19,11 +19,13 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)/IO -I/usr/GEM/include
+INCLUDES = -I$(top_srcdir)/IO
 
 # default definitions
 OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 GENFILES = $(TARGET)
+CFLAGS += -Wno-inline
+LDFLAGS += -s
 
 MKFATFSOBJS = mkfatfs.o
 GEMKFATFSOBJS = startup.o gemkfatfs.o util.o
@@ -33,7 +35,7 @@ mkfatfs: $(MKFATFSOBJS) $(LIBIOSTMP)
 
 gemkfatfs.app: $(GEMKFATFSOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(GEMKFATFSOBJS) \
-		-nostartfiles -nostdlib -L/usr/GEM/lib -lgemma -lslb -lc -lgcc
+		-nostartfiles -nostdlib -lgemma -lc -lgcc
 
 
 include $(top_srcdir)/DEPENDENCIES
