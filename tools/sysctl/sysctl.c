@@ -85,7 +85,7 @@ struct list secondlevel[] = {
 /*
  * A dummy type for limits, which requires special parsing
  */
-#define CTLTYPE_LIMIT	((~0x1) << 31)
+#define CTLTYPE_LIMIT	32000
 
 int main __P((int, char *[]));
 
