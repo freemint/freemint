@@ -1853,7 +1853,7 @@ enum { NESTED, CHAINED, ONESECTOR } boxes = NESTED;
 
 /* find the default value for <start> - assuming entire units */
 static unsigned long
-first_free(int pno, int is_extended, struct part_desc *ep, int format,
+first_free(int pno, int extended, struct part_desc *ep, int format,
 	   unsigned long mid, struct disk_desc *z) {
     unsigned long ff, fff;
     unsigned long unit = unitsize(format);
@@ -1864,7 +1864,7 @@ first_free(int pno, int is_extended, struct part_desc *ep, int format,
       ep = ep->ep;
 
     if (ep) {
-	if (boxes == NESTED || (boxes == CHAINED && !is_extended))
+	if (boxes == NESTED || (boxes == CHAINED && !extended))
 	  pp = ep;
 	else if (all_logicals_inside_outermost_extended)
 	  pp = outer_extended_partition(ep);
@@ -1897,7 +1897,7 @@ first_free(int pno, int is_extended, struct part_desc *ep, int format,
 
 /* find the default value for <size> - assuming entire units */
 static unsigned long
-max_length(int pno, int is_extended, struct part_desc *ep, int format,
+max_length(int pno, int extended, struct part_desc *ep, int format,
 	   unsigned long start, struct disk_desc *z) {
     unsigned long fu;
     unsigned long unit = unitsize(format);
@@ -1908,7 +1908,7 @@ max_length(int pno, int is_extended, struct part_desc *ep, int format,
       ep = ep->ep;
 
     if (ep) {
-	if (boxes == NESTED || (boxes == CHAINED && !is_extended))
+	if (boxes == NESTED || (boxes == CHAINED && !extended))
 	  pp = ep;
 	else if (all_logicals_inside_outermost_extended)
 	  pp = outer_extended_partition(ep);

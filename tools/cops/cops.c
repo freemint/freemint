@@ -3860,7 +3860,7 @@ main(int argc, char *argv[])
 		appl_exit();
 	}
 	else
-		Cconws(fstring_addr[NOAES_STR]);
+		(void) Cconws(fstring_addr[NOAES_STR]);
 
 	return 0;
 }

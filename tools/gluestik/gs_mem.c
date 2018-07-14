@@ -66,7 +66,7 @@ init_mem (void)
 	
 	if (poolsize <= MIN_CHUNK)
 	{
-		Cconws ("alloc pool size too small - using default size\r\n");
+		(void) Cconws ("alloc pool size too small - using default size\r\n");
 		poolsize = POOLSIZE_DEFAULT;
 	}
 	
@@ -78,7 +78,7 @@ init_mem (void)
 	pool = malloc (poolsize);
 	if (!pool)
 	{
-		Cconws ("Unable to allocate alloc pool\r\n");
+		(void) Cconws ("Unable to allocate alloc pool\r\n");
 		return 0;
 	}
 	

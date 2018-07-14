@@ -207,7 +207,7 @@ find_config_file (void)
 	boot = Supexec (get_bootdrive);
 	if (boot < 0 || boot > 31)
 	{
-		Cconws ("Failed to determine boot device!\r\n");
+		(void) Cconws ("Failed to determine boot device!\r\n");
 		return 1;
 	}
 	
@@ -221,7 +221,7 @@ find_config_file (void)
 	if ((n = Fread (fd, sizeof (cfg_filename), cfg_filename)) < 0)
 	{
 		Fclose (fd);
-		Cconws ("Error reading STIK_DIR.DAT; using default path\r\n");
+		(void) Cconws ("Error reading STIK_DIR.DAT; using default path\r\n");
 		return 1;
 	}
 	
@@ -261,7 +261,7 @@ load_config_file (void)
 	
 	if (!GROWBUF (gvars, 100, vars) || !GROWBUF (gdata, 5000, data))
 	{
-		Cconws ("Cannot get memory for STiK vars\r\n");
+		(void) Cconws ("Cannot get memory for STiK vars\r\n");
 		return 0;
 	}
 	
@@ -269,15 +269,15 @@ load_config_file (void)
 	{
 		/* Okay, so I'm paranoid... ;)
 		 */
-		Cconws ("Unable to find config file\r\n");
+		(void) Cconws ("Unable to find config file\r\n");
 		return 0;
 	}
 	
 	if (Fxattr (0, cfg_filename, &xattr))
 	{
-		Cconws ("Config file ");
-		Cconws (cfg_filename);
-		Cconws (" does not exist; using built-in defaults...\r\n");
+		(void) Cconws ("Config file ");
+		(void) Cconws (cfg_filename);
+		(void) Cconws (" does not exist; using built-in defaults...\r\n");
 		
 		if (!set_var ("ALLOCMEM", "100000"))
 			return 0;
@@ -288,23 +288,23 @@ load_config_file (void)
 	}
 	
 	filesize = xattr.size;
-	Cconws ("Reading config file ");
-	Cconws (cfg_filename);
-	Cconws ("...\r\n");
+	(void) Cconws ("Reading config file ");
+	(void) Cconws (cfg_filename);
+	(void) Cconws ("...\r\n");
 	
 	file_data = malloc (filesize + 2);
 	if (!file_data)
 	{
-		Cconws ("Cannot get memory to read config file\r\n");
+		(void) Cconws ("Cannot get memory to read config file\r\n");
 		return 0;
 	}
 	file_data [filesize] = file_data [filesize + 1] = '\0';
 	
 	if ((l = Fopen (cfg_filename, 0)) < 0)
 	{
-		Cconws ("Error opening config file ");
-		Cconws (cfg_filename);
-		Cconws ("\r\n");
+		(void) Cconws ("Error opening config file ");
+		(void) Cconws (cfg_filename);
+		(void) Cconws ("\r\n");
 		return 0;
 	}
 	fd = l;
@@ -315,9 +315,9 @@ load_config_file (void)
 	
 	if (n < 0)
 	{
-		Cconws ("Error reading config file ");
-		Cconws (cfg_filename);
-		Cconws ("\r\n");
+		(void) Cconws ("Error reading config file ");
+		(void) Cconws (cfg_filename);
+		(void) Cconws ("\r\n");
 		free (file_data);
 		return 0;
 	}
@@ -385,9 +385,9 @@ setit:
 			continue;
 		}
 		
-		Cconws ("Unable to set variable \"");
-		Cconws (s);
-		Cconws ("\"\r\n");
+		(void) Cconws ("Unable to set variable \"");
+		(void) Cconws (s);
+		(void) Cconws ("\"\r\n");
 		free (file_data);
 		return 0;
 	}

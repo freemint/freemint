@@ -180,7 +180,10 @@ struct trace_entry *t;
 	}
 
 	if (opt_specified)
-		return min(rc1,min(rc2,rc3));
+	{
+		rc2 = min(rc2,rc3);
+		return min(rc1,rc2);
+	}
 
 	ifr.ifr_ifru.ifru_data = (char *)SL_STATS_LENGTH;
 	rc = Fcntl(sock,(long)&ifr,SIOCGLNKFLAGS);

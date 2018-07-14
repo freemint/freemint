@@ -120,7 +120,7 @@ install_cookie (void)
 	
 	if (Ssystem (-1, 0, 0) == -32)
 	{
-		Cconws (MSG_MINT);
+		(void) Cconws (MSG_MINT);
 		return 1;
 	}
 
@@ -129,7 +129,7 @@ install_cookie (void)
 	}
 	if (Ssystem (S_GETCOOKIE, C_STiK, &dummy) == 0)
 	{
-		Cconws (MSG_ALREADY);
+		(void) Cconws (MSG_ALREADY);
 		return 1;
 	}
 	
@@ -184,18 +184,18 @@ main (int argc, char *argv[])
 
 		parse_cmdline(argc, argv);
 
-		Cconws (MSG_BOOT);
-		Cconws (MSG_GREET);
+		(void) Cconws (MSG_BOOT);
+		(void) Cconws (MSG_GREET);
 # ifdef ALPHA
-		Cconws (MSG_ALPHA);
+		(void) Cconws (MSG_ALPHA);
 # endif
-		Cconws ("\r\n");
+		(void) Cconws ("\r\n");
 		
 		for (i = 0; init_funcs [i]; ++i)
 		{
 			if (!(*init_funcs [i])())
 			{
-				Cconws (MSG_FAILURE);
+				(void) Cconws (MSG_FAILURE);
 				
 				cleanup ();
 				exit (1);
@@ -204,7 +204,7 @@ main (int argc, char *argv[])
 		
 		if (install_cookie ())
 		{
-			Cconws (MSG_FAILURE);
+			(void) Cconws (MSG_FAILURE);
 			
 			cleanup ();
 			exit (1);
