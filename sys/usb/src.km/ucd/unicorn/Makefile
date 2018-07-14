@@ -18,15 +18,15 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+SGENFILES = crtinit.c entry.S setstack.S
 
-all-here: all-targets
+all-here: $(SGENFILES) all-targets
 
 # default overwrites
 
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.ucd *.prg
-SGENFILES = crtinit.c entry.S setstack.S
 
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
@@ -56,17 +56,20 @@ $(compile_dir): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
 
-# Link common TOS files
-ifeq ($(unicorn),prg)
-	ln -s $(toscommon_srcdir)/crtinit.c $(srcdir)/crtinit.c; \
-	ln -s $(toscommon_srcdir)/entry.S $(srcdir)/entry.S; \
-	ln -s $(toscommon_srcdir)/setstack.S $(srcdir)/setstack.S
-endif
-
 else
 
 realtarget =
 
 endif
+
+# Link common TOS files
+crtinit.c: $(toscommon_srcdir)/crtinit.c
+	ln -sf $< $(srcdir)/$@
+delayasm.S: $(toscommon_srcdir)/delayasm.S
+	ln -sf $< $(srcdir)/$@
+entry.S: $(toscommon_srcdir)/entry.S
+	ln -sf $< $(srcdir)/$@
+setstack.S: $(toscommon_srcdir)/setstack.S
+	ln -sf $< $(srcdir)/$@
 
 buildunicorn: $(realtarget)
