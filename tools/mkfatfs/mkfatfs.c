@@ -317,7 +317,7 @@ static int	check	= NO;	/* Default to no readability checking */
 static int	always	= NO;	/* Default check partition IDs */
 static int	verbose	= YES;	/* Default to verbose mode on */
 static int	only_bs	= NO;	/* Write only the bootsector (dangerous option) */
-static char const program[] = "mkfatfs";	/* Name of the program */
+static const char *program = "mkfatfs";	/* Name of the program */
 
 static _F32_BS	f32bs;		/* Boot sector data (FAT and FAT32) */
 static uchar *	fsinfo;		/* FAT32 signature sector */
@@ -1354,7 +1354,18 @@ main (int argc, char **argv)
 	
 	VOL_NAME = strdup ("           ");
 	
-	argv[0] = (char *)NO_CONST(program);
+	if (argc && *argv && **argv)
+	{
+		char *p, *p2;
+
+		program = argv[0];
+		p = strrchr(argv[0], '/');
+		p2 = strrchr(argv[0], '\\');
+		if (p == NULL || p2 > p)
+			p = p2;
+		if (p)
+			program = p + 1;
+	}
 	printf ("%s " VERSION ", 2002-09-19 for TOS and DOS FAT/FAT32-FS\n", program);
 	
 	/* check and initalize XHDI */
