@@ -67,9 +67,12 @@ libkern$(CPU).a: objs asm-files
 objs: .compile_$(CPU)
 	cd .compile_$(CPU); $(MAKE)
 
+# prevent overriding the same recipe from RULES
+ifneq ($(compile_dir),.compile_$(CPU))
 .compile_$(CPU): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
+endif
 
 asm-files:
 	cd asm; $(MAKE) CPU="$(CPU)" asm-files

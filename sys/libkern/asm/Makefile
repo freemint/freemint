@@ -28,6 +28,9 @@ GENFILES = .compile_*
 asm-files: .compile_$(CPU)
 	cd .compile_$(CPU); $(MAKE)
 
+# prevent overriding the same recipe from RULES
+ifneq ($(compile_dir),.compile_$(CPU))
 .compile_$(CPU): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
+endif
