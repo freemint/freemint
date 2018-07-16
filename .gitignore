@@ -23,6 +23,9 @@ sys/usb/src.km/crtinit.c
 sys/usb/src.km/delayasm.S
 sys/usb/src.km/entry.S
 sys/usb/src.km/setstack.S
+sys/usb/src.km/loader/crtinit.c
+sys/usb/src.km/loader/entry.S
+sys/usb/src.km/loader/setstack.S
 sys/usb/src.km/ucd/unicorn/crtinit.c
 sys/usb/src.km/ucd/unicorn/entry.S
 sys/usb/src.km/ucd/unicorn/setstack.S
