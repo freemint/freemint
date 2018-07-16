@@ -84,7 +84,7 @@ my_strlcat(char *dst, const char *src, size_t n)
  *     from there
  */
 
-int loader_init(int argc, char **argv, char **env);
+int init(int argc, char **argv, char **env);
 
 static void ignore(long sig)
 {
@@ -114,7 +114,7 @@ static void ignore(long sig)
 }
 
 int
-loader_init(int argc, char **argv, char **env)
+init(int argc, char **argv, char **env)
 {
 	char path[384];
 	char *name = NULL;
