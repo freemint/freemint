@@ -20,7 +20,7 @@ include $(top_srcdir)/PHONY
 
 SGENFILES = crtinit.c delayasm.S entry.S setstack.S
 
-all-here: $(SGENFILES) all-targets
+all-here: all-targets
 
 # default overwrites
 
@@ -49,8 +49,19 @@ all-targets:
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-$(usbtargets):
+$(usbtargets): $(SGENFILES)
 	$(MAKE) buildusb usb=$@
+
+# Link common TOS files
+crtinit.c: $(toscommon_srcdir)/crtinit.c
+	ln -sf $< $(srcdir)/$@
+delayasm.S: $(toscommon_srcdir)/delayasm.S
+	ln -sf $< $(srcdir)/$@
+entry.S: $(toscommon_srcdir)/entry.S
+	ln -sf $< $(srcdir)/$@
+setstack.S: $(toscommon_srcdir)/setstack.S
+	ln -sf $< $(srcdir)/$@
+
 
 #
 # multi target stuff
@@ -74,15 +85,5 @@ else
 realtarget =
 
 endif
-
-# Link common TOS files
-crtinit.c: $(toscommon_srcdir)/crtinit.c
-	ln -sf $< $(srcdir)/$@
-delayasm.S: $(toscommon_srcdir)/delayasm.S
-	ln -sf $< $(srcdir)/$@
-entry.S: $(toscommon_srcdir)/entry.S
-	ln -sf $< $(srcdir)/$@
-setstack.S: $(toscommon_srcdir)/setstack.S
-	ln -sf $< $(srcdir)/$@
 
 buildusb: $(realtarget)
