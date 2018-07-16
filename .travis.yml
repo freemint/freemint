@@ -12,6 +12,7 @@ addons:
     packages:
       - cross-mint-essential
       - cflib-m68k-atari-mint
+      - gemma-m68k-atari-mint
 
 env:
   global:
