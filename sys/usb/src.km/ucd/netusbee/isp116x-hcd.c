@@ -924,7 +924,7 @@ retry_same:
 	if (usb_pipebulk(pipe))
 		timeout = 5000;
 	else
-		timeout = 100;
+		timeout = 1000;
 
 	/* Wait for it to complete */
 	for (;;)
