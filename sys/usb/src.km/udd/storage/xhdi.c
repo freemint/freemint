@@ -120,7 +120,6 @@ sys_XHDOSLimits(ushort which,ulong limit)
 			dl_clusts = (*ptr)->max_ncl;
 			dl_maxsec = (*ptr)->max_nsec;
 			dl_clusts12 = MAX_FAT12_CLUSTERS;
-			if (Mediach(2)) (void)Getbpb(2);
 		}
 		else
 		{
@@ -1085,6 +1084,8 @@ install_xhdi_driver(void)
 	        (void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS32, tmp);
 		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
 	        (void)XHDI(XHDOSLIMITS, XH_DL_BFLAGS, tmp);
+
+		if (Mediach(2)) (void)Getbpb(2);
 
 		next_handler = XHDI;
 	}
