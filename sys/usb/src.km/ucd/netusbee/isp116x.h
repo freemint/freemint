@@ -473,15 +473,6 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 	return val;
 }
 
-
-static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long val)
-{
-	writew(val & 0xffff, isp116x->data_reg);
-	DELAY_150NS;
-	writew(val >> 16, isp116x->data_reg);
-	DELAY_150NS;
-}
-
 /*
  * Added for NetUSBee, to write HC registers without swapping them
  * NetUSBee already swap them by hardware (i suppose.....)
@@ -504,18 +495,6 @@ static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned lo
 	UNUSED (dumm);
 }
 /***********************************************/
-
-static inline unsigned long isp116x_read_data32(struct isp116x *isp116x)
-{
-	unsigned long val;
-
-	val = (unsigned long) readw(isp116x->data_reg);
-	DELAY_150NS;
-	val |= ((unsigned long) readw(isp116x->data_reg)) << 16;
-	DELAY_150NS;
-
-	return val;
-}
 
 /*
  * Added for NetUSBee, to read HC registers without swapping them
