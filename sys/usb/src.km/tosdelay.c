@@ -1,9 +1,19 @@
 /*
- *  tosdelay.c
+ * tosdelay.c - initialise values used to provide microsecond-order delays
+ * based on delay.c from EmuTOS
  *
- *  Copyright (c) 2018 Claude Labelle
+ * note that the timings are quite imprecise (but conservative) unless
+ * you are running on at least a 32MHz 68030 processor
  *
- *  For license details see COPYING.GPL
+ * Copyright (C) 2013-2017 The EmuTOS development team
+ *
+ * Authors:
+ *  RFB    Roger Burrows
+ *
+ * Modified by Claude Labelle to include mdelay() and udelay() functions
+ *
+ * This file is distributed under the GPL, version 2 or at your
+ * option any later version.  See /COPYING.GPL for details.
  */
 
 #include "tosdelay.h"
