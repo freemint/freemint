@@ -50,7 +50,7 @@ endif
 # for a smaller footprint of your TOS executables, call the Makefile with LIBCMINI=yes.
 # libcmini must be installed parallel to the freemint top dir for this to work
 ifeq (yes,$(LIBCMINI))
-LIBCMINI_PATH := $(top_srcdir)/../../libcmini/libcmini
+LIBCMINI_PATH := $(top_srcdir)/../../libcmini
 ifeq (v4e,$(CPU))
 LIBCMINI_CPU := m5475
 else
