@@ -1,9 +1,18 @@
 /*
- *  tosdelay.h
+ * tosdelay.h - header for tosdelay.c
+ * based on delay.h from EmuTOS
  *
- *  Copyright (c) 2018 Claude Labelle
+ * Copyright (C) 2013 The EmuTOS development team
  *
- *  For license details see COPYING.GPL
+ * Authors:
+ *  RFB    Roger Burrows
+ *  LVL    Laurent Vogel
+ *
+ * Modified by Claude Labelle to include delay_loop() found
+ * in asm.h from EmuTOS.
+ *
+ * This file is distributed under the GPL, version 2 or at your
+ * option any later version.  See /COPYING.GPL for details.
  */
 
 #ifndef tosdelay_h
