@@ -22,7 +22,12 @@ all-here: $(TARGET)
 
 # default overwrites
 CFLAGS += -g
+
+ifneq (yes,$(LIBCMINI))
 INCLUDES = -I$(top_srcdir)/hypview
+else
+INCLUDES = -I$(LIBCMINI_PATH)/include -I$(top_srcdir)/hypview
+endif
 
 # default definitions
 OBJS = $(COBJS:.c=.o)

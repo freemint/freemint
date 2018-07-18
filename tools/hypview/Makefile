@@ -18,6 +18,14 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+ifeq (v4e,$(CPU))
+CFLAGS += -mcpu=5474
+endif
+
+ifeq (yes,$(LIBCMINI))
+INCLUDES := -I$(LIBCMINI_PATH)/include $(INCLUDES)
+endif
+
 all-here: $(TARGET)
 
 # default overwrites
@@ -29,9 +37,15 @@ OBJS = $(COBJS:.c=.o)
 LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -lgem
 GENFILES = $(TARGET) pc.pdb
 
+ifneq (yes,$(LIBCMINI))
 $(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -Wl,-stack,128k
 	$(STRIP) $(TARGET)
+else
+$(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a
+	$(CC) -I$(LIBCMINI_PATH)/include -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(LDFLAGS) $(OBJS) -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc -Wl,-stack,128k
+	$(STRIP) $(TARGET)
+endif
 
 hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a: all-recursive
 
