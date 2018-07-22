@@ -92,8 +92,10 @@
 
 /* --- ISP116x address registers in Netusbee --------------------------------*/
 
-#define ISP116X_HCD_ADDR	0x00FBC000
-#define ISP116X_HCD_DATA	0x00FA0000
+#define ISP116X_LSB_WRITE	0x00FA0000
+#define ISP116X_DATA_READ	0x00FA8000
+#define ISP116X_MSB_DATA_WRITE	0x00FB8000
+#define ISP116x_MSB_CMD_WRITE	0x00FBC000
 
 /* --- ISP116x registers/bits ---------------------------------------------- */
 
@@ -344,8 +346,8 @@ struct isp116x_platform_data
 
 struct isp116x
 {
-	unsigned short *addr_reg;
-	unsigned short *data_reg;
+	unsigned short *addr_reg;	/* Unused for the NetUSBee */
+	unsigned short *data_reg;	/* Unused for the NetUSBee */
 
 	struct isp116x_platform_data *board;
 
@@ -382,6 +384,10 @@ struct isp116x
  * OE, WE MUST NOT be changed during these intervals
  */
 
+/* The overhead accesing registers in the NetUSBee through the
+ * romport makes these delays unnecessary most of the times.
+ */
+
 #ifdef TOSONLY
 # define DELAY_150NS if (with_delay) delay_loop(delay_150ns)
 # define DELAY_300NS if (with_delay) delay_loop(delay_300ns)
@@ -389,6 +395,14 @@ struct isp116x
 # define DELAY_150NS if (with_delay) ndelay_loops(delay_150ns)
 # define DELAY_300NS if (with_delay) ndelay_loops(delay_300ns)
 #endif
+
+/* This is to create a small delay when reading the romport,
+ * the compiler will generate a move instruction (move #1, _dumm)
+ * that it's doing a better job than using nop instructions.
+ */
+
+static unsigned short volatile dumm;
+#define NOP	dumm = 1;
 
 /* ISP116x registers access */
 
@@ -414,49 +428,29 @@ inline unsigned read_le16_reg(const volatile unsigned short *addr)
 
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
-	unsigned short dumm;
-
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((reg & 0x00ff)<<1));
-	dumm = raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (unsigned short*)ISP116X_HCD_ADDR;
-	dumm = raw_readw(isp116x->addr_reg);
-	DELAY_300NS;
-
-	UNUSED (dumm);
+	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((reg & 0x00ff)<<1)));
+	dumm = raw_readw((unsigned short*)ISP116x_MSB_CMD_WRITE);
 }
 
 static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short val)
 {
-	unsigned short dumm;
-	
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((val & 0xff00)>>7));
-	dumm = raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x00ff)<<1));
-	dumm = raw_readw(isp116x->addr_reg);
-	DELAY_300NS;
-
-	UNUSED (dumm);
+	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + (((val & 0xff00)>>8)<<1)));
+	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + ((val & 0x00ff)<<1)));
 }
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
-	unsigned short dumm;
-
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((val & 0x00ff)<<1));
-	dumm = raw_readw(isp116x->data_reg);
-	isp116x->addr_reg =  (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff00)>>7));
-	dumm = raw_readw(isp116x->addr_reg);
-	DELAY_300NS;
-
-	UNUSED (dumm);
+	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((val & 0x00ff)<<1)));
+	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0xff00)>>8)<<1)));
 }
 
 static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + 0x8000);
-	val = readw(isp116x->data_reg );
+	NOP;
+
+	val = readw(ISP116X_DATA_READ);
 	DELAY_150NS;
 
 	return val;
@@ -466,59 +460,44 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + 0x8000);
-	val = raw_readw(isp116x->data_reg );
+	NOP;
+
+	val = raw_readw(ISP116X_DATA_READ);
 	DELAY_150NS;
 
 	return val;
 }
 
 /*
- * Added for NetUSBee, to write HC registers without swapping them
- * NetUSBee already swap them by hardware (i suppose.....)
+ * These two functions are added for the NetUSBee to write HC registers
+ * without swapping them, the NetUSBee already swaps them by hardware.
  */
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
-	unsigned short dumm;
+	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((val & 0x000000ff)<<1)));
+	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0x0000ff00)>>8)<<1)));
 
-	isp116x->data_reg =  (unsigned short*)(ISP116X_HCD_DATA + ((val & 0x000000ff)<<1));
-	dumm = raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x0000ff00)>>7));
-	dumm = raw_readw(isp116x->addr_reg);
-	DELAY_300NS;
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + ((val & 0x00ff0000)>>15));
-	dumm = raw_readw(isp116x->data_reg);
-	isp116x->addr_reg = (unsigned short*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff000000)>>23) );
-	dumm = raw_readw(isp116x->addr_reg);
-	DELAY_300NS;
-
-	UNUSED (dumm);
+	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + (((val & 0x00ff0000)>>16)<<1)));
+	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0xff000000)>>24)<<1)));
 }
-/***********************************************/
 
-/*
- * Added for NetUSBee, to read HC registers without swapping them
- * NetUSBee already swap them by hardware (i suppose.....)
- */
 static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 {
 	unsigned long val;
 
-	isp116x->data_reg = (unsigned short*)(ISP116X_HCD_DATA + 0x8000);
-	val = (unsigned long) raw_readw(isp116x->data_reg );
-	DELAY_150NS;
-	val |= ((unsigned long) raw_readw(isp116x->data_reg )) << 16;
+	NOP;
+	val = (unsigned long) raw_readw(ISP116X_DATA_READ);
+
+	NOP;
+	val |= ((unsigned long) raw_readw(ISP116X_DATA_READ)) << 16;
+
 	DELAY_150NS;
 
 	return val;
 }
 /*******************************************************************/
 
-/* Let's keep register access functions out of line. Hint:
-   we wait at least 150 ns at every access.
-*/
-
-/* with NetUSBee use raw_read to avoid swapping bytes*/
+/* For the NetUSBee use raw_read to avoid swapping bytes by software*/
 
 static unsigned short isp116x_read_reg16(struct isp116x *isp116x, unsigned reg)
 {
@@ -539,7 +518,7 @@ static void isp116x_write_reg16(struct isp116x *isp116x, unsigned reg,
 	isp116x_raw_write_data16(isp116x, (unsigned short) (val & 0xffff));
 }
 
-/* with NetUSBee used raw_write to avoid swapping bytes by software */
+/* For the NetUSBee use raw_write to avoid swapping bytes by software */
 static void isp116x_write_reg32(struct isp116x *isp116x, unsigned long reg,
 				unsigned long val)
 {
