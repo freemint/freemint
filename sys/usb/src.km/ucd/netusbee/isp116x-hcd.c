@@ -1902,8 +1902,8 @@ usb_lowlevel_init(void *dummy)
 	got_rhsc = rh_devnum = 0;
 
 	/* Init device registers addr */
-	isp116x->addr_reg = (unsigned short *) ISP116X_HCD_ADDR;
-	isp116x->data_reg = (unsigned short *) ISP116X_HCD_DATA;
+	isp116x->addr_reg = NULL;	/* Not use in the NetUSBee driver */
+	isp116x->data_reg = NULL;	/* Not use in the NetUSBee driver */
 
 	/* Setup specific board settings */
 #ifdef ISP116X_HCD_INT_ACT_HIGH
