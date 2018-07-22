@@ -1994,11 +1994,6 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	{
 		DEBUG(("_CPU cookie reading failed\r\n"));
 	}
-	if (mcpu == 30)
-	{
-		ALERT(("Sorry, this driver doesn't work with the 68030 CPU"));
-		return 1;
-	}
 #endif
 
 	if (mcpu != 00)
