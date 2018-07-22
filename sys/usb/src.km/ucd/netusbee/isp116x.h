@@ -388,13 +388,18 @@ struct isp116x
  * romport makes these delays unnecessary most of the times.
  */
 
+#if defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 #ifdef TOSONLY
-# define DELAY_150NS if (with_delay) delay_loop(delay_150ns)
-# define DELAY_300NS if (with_delay) delay_loop(delay_300ns)
+# define DELAY_150NS	delay_loop(delay_150ns)
+# define DELAY_300NS	delay_loop(delay_300ns)
 #else
-# define DELAY_150NS if (with_delay) ndelay_loops(delay_150ns)
-# define DELAY_300NS if (with_delay) ndelay_loops(delay_300ns)
-#endif
+# define DELAY_150NS	ndelay_loops(delay_150ns)
+# define DELAY_300NS	ndelay_loops(delay_300ns)
+#endif /* TOSONLY */
+#else
+# define DELAY_150NS
+# define DELAY_300NS
+#endif /* (__mc68030__) || (__mc68040__) || (__mc68060__) */
 
 /* This is to create a small delay when reading the romport,
  * the compiler will generate a move instruction (move #1, _dumm)

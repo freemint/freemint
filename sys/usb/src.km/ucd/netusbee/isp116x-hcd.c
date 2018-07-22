@@ -112,9 +112,10 @@ struct kentry	*kentry;
 #else
 extern unsigned long _PgmSize;
 #endif
-static int with_delay = 0;
+#if defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 static ulong delay_150ns;
 static ulong delay_300ns;
+#endif
 #include "isp116x.h"
 
 struct usb_module_api *api;
@@ -1964,7 +1965,6 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;
-	unsigned long mcpu = 1L;
 #ifndef TOSONLY
 	kentry	= k;
 	api     = uapi;
@@ -1985,28 +1985,17 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 
 	/* for precise mdelay/udelay relative to CPU power */
 	set_tos_delay();
-
-	/* Get _CPU cookie */
-	mcpu = (unsigned long)getmCPU();
-# else
-	/* Get _CPU cookie */
-	if (!get_toscookie(COOKIE__CPU, &mcpu))
-	{
-		DEBUG(("_CPU cookie reading failed\r\n"));
-	}
 #endif
 
-	if (mcpu != 00)
-	{
-		with_delay = 1;
+#if defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 #ifdef TOSONLY
-		delay_150ns = loopcount_1_msec * 15 / 100000;
-		delay_300ns = loopcount_1_msec * 3 / 10000;
+	delay_150ns = loopcount_1_msec * 15 / 100000;
+	delay_300ns = loopcount_1_msec * 3 / 10000;
 #else
-		delay_150ns = getloops4ns(150);
-		delay_300ns = getloops4ns(300);
-#endif
-	}
+	delay_150ns = getloops4ns(150);
+	delay_300ns = getloops4ns(300);
+#endif /* TOSONLY */
+#endif /* (__mc68030__) || (__mc68040__) || (__mc68060__) */
 
 	ret = ucd_register(&netusbee_uif, &root_hub_dev);
 	if (ret)
