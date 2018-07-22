@@ -13,6 +13,13 @@ endif
 
 ifeq ($(netusbee),prg)
 TARGET = netusbee.prg
+CPU = 020-60
+USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+endif
+
+ifeq ($(netusbee),prg_000)
+TARGET = netusbee.prg
 CPU = 000
 USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
 LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
@@ -63,4 +70,4 @@ endif
 #
 # all default targets
 #
-netusbeetargets = 02060 030 040 060 deb 000 prg #col
+netusbeetargets = 02060 030 040 060 deb 000 prg prg_000 #col
