@@ -385,7 +385,9 @@ struct isp116x
  */
 
 /* The overhead accesing registers in the NetUSBee through the
- * romport makes these delays unnecessary most of the times.
+ * romport makes these delays unnecessary.
+ * For now we keep the code to generate those delays, just in
+ * case we need them again in the future.
  */
 
 #if defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
@@ -456,7 +458,6 @@ static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
 	NOP;
 
 	val = readw(ISP116X_DATA_READ);
-	DELAY_150NS;
 
 	return val;
 }
@@ -468,7 +469,6 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 	NOP;
 
 	val = raw_readw(ISP116X_DATA_READ);
-	DELAY_150NS;
 
 	return val;
 }
@@ -495,8 +495,6 @@ static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 
 	NOP;
 	val |= ((unsigned long) raw_readw(ISP116X_DATA_READ)) << 16;
-
-	DELAY_150NS;
 
 	return val;
 }
