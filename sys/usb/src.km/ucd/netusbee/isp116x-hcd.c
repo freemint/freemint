@@ -534,10 +534,13 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	unsigned short w;
 	long quot = len % 4;
 
-/* For NetUSBee, take the raw_write out in write functions, here we don't
- * like that NetUSBee swap the bytes for us, so we swap them before we send
- * them, then the bytes will arrive to the USB device with the correct positions
- */
+	/*
+	 * because of little-endian considerations, the FIFO buffer has the
+	 * bytes swapped from a big-endian POV.  we swap them here.
+	 *
+	 * for an unaligned buffer, it's easier to use the raw write function
+	 * and explicitly swap the bytes.
+	 */
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
@@ -545,10 +548,10 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 		{
 			w = *dp++;
 			w |= *dp++ << 8;
-			isp116x_write_data16(isp116x, w);
+			isp116x_raw_write_data16(isp116x, w);
 		}
 		if (len)
-			isp116x_write_data16(isp116x, (unsigned short) * dp);
+			isp116x_raw_write_data16(isp116x, (unsigned short) * dp);
 	}
 	else
 	{
