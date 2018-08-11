@@ -844,6 +844,8 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	dump_msg(dev, pipe, buffer, len, "SUBMIT");
 	DEBUG(("------------------------------------------------"));
 
+	dev->act_len = 0L;		/* for safety, init bytes transferred */
+
 	if (len >= 1024)
 	{
 		ALERT(("Too big job"));
