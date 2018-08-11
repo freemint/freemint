@@ -76,7 +76,6 @@
 
 #define VER_MAJOR	0
 #define VER_MINOR	2
-#define VER_STATUS
 
 #ifdef TOSONLY
 #define MSG_VERSION    "TOS"
