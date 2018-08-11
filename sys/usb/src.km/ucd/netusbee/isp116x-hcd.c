@@ -609,7 +609,14 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		      unsigned long pipe, PTD *ptd, void *data,
 		      long len)
 {
-	long buflen = sizeof(PTD) + len;
+	int write_data = FALSE;
+	long buflen = sizeof(PTD);
+
+	if ((PTD_GET_DIR(ptd) == PTD_DIR_OUT) || (PTD_GET_DIR(ptd) == PTD_DIR_SETUP))
+	{
+		write_data = TRUE;
+		buflen += len;
+	}
 
 	DEBUG(("--- pack buffer %p - %ld bytes (fifo %ld) ---", data, len, buflen));
 
@@ -632,13 +639,16 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 
 	dump_ptd_data(ptd, (unsigned char *) data, 0);
 
-	MINT_INT_OFF;
-	TOS_INT_OFF;
-	write_ptddata_to_fifo(isp116x,
-			      (unsigned char *) data,
-			      PTD_GET_LEN(ptd));
-	MINT_INT_ON;
-	TOS_INT_ON;
+	if (write_data)
+	{
+		MINT_INT_OFF;
+		TOS_INT_OFF;
+		write_ptddata_to_fifo(isp116x,
+				      (unsigned char *) data,
+				      PTD_GET_LEN(ptd));
+		MINT_INT_ON;
+		TOS_INT_ON;
+	}
 }
 
 /* Read the processed PTD's and data from fifo ram back to URBs' buffers.
