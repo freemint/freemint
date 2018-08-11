@@ -1941,11 +1941,11 @@ isp116x_start(struct isp116x *isp116x)
 
 	isp116x->intenb = HCINT_MIE | HCINT_RHSC; /*  HCINT_UE */
 	isp116x_write_reg32(isp116x, HCINTENB, isp116x->intenb);
-//	isp116x->irqenb = HCuPINT_OPR; /* | HCuPINT_ATL;  | HCuPINT_SUSP */
-//	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
-//	val = isp116x_read_reg16(isp116x, HCHWCFG);
-//	val |= HCHWCFG_INT_ENABLE;
-//	isp116x_write_reg16(isp116x, HCHWCFG, val);
+	isp116x->irqenb = HCuPINT_OPR; /* | HCuPINT_ATL;  | HCuPINT_SUSP */
+	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
+	val = isp116x_read_reg16(isp116x, HCHWCFG);
+	val |= HCHWCFG_INT_ENABLE;
+	isp116x_write_reg16(isp116x, HCHWCFG, val);
 	MINT_INT_ON;
 
 #ifndef TOSONLY
