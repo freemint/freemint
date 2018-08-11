@@ -601,8 +601,11 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 	if (len)
 		*dp = 0xff & isp116x_raw_read_data16(isp116x);
 
+	/*
+	 * since we throw the data away, we can just use the raw read here
+	 */
 	if (quot == 1 || quot == 2)
-		isp116x_read_data16(isp116x);
+		isp116x_raw_read_data16(isp116x);
 }
 
 /* Write PTD's and data for scheduled transfers into the fifo ram.
