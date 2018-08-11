@@ -1525,11 +1525,36 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 /* --- Basic functions ----------------------------------------------------- */
 
+/*
+ * The following reset stuff is somewhat bogus, but less than before.
+ *
+ * The previous isp116x_sw_reset() loop delayed 7msec between checks for
+ * HCCMDSTAT_HCR, which seems pointless as the reset should complete
+ * within 1msec, and there's no reason to check less frequently than that.
+ * We now delay 1msec between checks (and reset complete seems to always
+ * occur in the first loop).
+ *
+ * The previous isp116x_reset() code looped, waiting for HCuPINT_CLKRDY
+ * to be set in the HCuPINT register.  As far as I can determine from
+ * the datasheet, this only happens when the H_WAKEUP pin is strobed
+ * high - which doesn't happen here.  The effect was that we always
+ * timed out waiting for clkrdy: depending on the particular instance
+ * of the code, this could be as much as 1000msec.
+ *
+ * Tests showed that at least some devices weren't recognised properly
+ * if we eliminate this delay entirely, so now we just delay explicitly
+ * for 250msec.
+ *
+ * Code has been added to conform to Philips document AN10003-01:
+ * "ISP1160 Embedded Programming Guide Rev.1.0".
+ *
+ * This code should be refined, probably via the USB specs.
+ */
+
 static long
 isp116x_sw_reset(struct isp116x *isp116x)
 {
-	long retries = 15;
-	long ret = 0;
+	int retries = 10;	/* arbitrary */
 
 	isp116x->disabled = 1;
 
@@ -1539,57 +1564,37 @@ isp116x_sw_reset(struct isp116x *isp116x)
 
 	while (--retries)
 	{
-		/* It usually resets within 1 ms */
-		/* GALVEZ: not enough for TOS, try 7 ms */
-		mdelay(7);
+		/* It should reset within 1 msec */
+		mdelay(1);
 		if (!(isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR))
-			break;
+			return 0;
 	}
 	MINT_INT_ON;
 
-	if (!retries)
-	{
-		DEBUG(("software reset timeout"));
-		ret = -1;
-	}
-
-	return ret;
+	DEBUG(("software reset timeout"));
+	return -1;
 }
 
 static long
 isp116x_reset(struct isp116x *isp116x)
 {
-	unsigned long t;
-	unsigned short clkrdy = 0;
-	long ret, timeout = 1000;/* ms
-				* Galvez: 15 ms sometimes isn't enough,
-				* for NetUSBee under TOS ??????? increased to 150 ms 
-				*/
+	long ret;
+	unsigned long temp;
 
 	ret = isp116x_sw_reset(isp116x);
-
 	if (ret)
 		return ret;
 
 	MINT_INT_OFF;
-	for (t = 0; t < timeout; t++)
-	{
-		clkrdy = isp116x_read_reg16(isp116x, HCuPINT) & HCuPINT_CLKRDY;
-		if (clkrdy)
-			break;
-		mdelay(1);
-	}
+	/* AN10003-01 says to do this, though it worked without it */
+	temp = isp116x_read_reg32(isp116x, HCCONTROL);
+	temp = (temp & ~HCCONTROL_HCFS) | HCCONTROL_USB_RESET;
+	isp116x_write_reg32(isp116x, HCCONTROL, temp);
 	MINT_INT_ON;
 
-	if (!clkrdy)
-	{
-		DEBUG(("clock not ready after %ldms", timeout));
-		/* After sw_reset the clock won't report to be ready, if
-		   H_WAKEUP pin is high. */
-		DEBUG(("please make sure that the H_WAKEUP pin is pulled low!"));
-		ret = -1;
-	}
-	return ret;
+	mdelay(250);	/* arbitrary, give devices time to wake up */
+
+	return 0;
 }
 
 static void
