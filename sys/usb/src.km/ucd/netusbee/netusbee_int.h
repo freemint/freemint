@@ -37,15 +37,7 @@
 #define TOS_INT_ON
 #endif
 
-// old handler
-extern void (*old_200Hz_int)(void);
-
-// interrupt wrapper routine
-void interrupt_200Hz(void);
-
 void set_old_int_lvl(void);
-void set_int_lvl5(void);
 void set_int_lvl6(void);
-void set_int_lvl7(void);
 
 #endif // _netusbee_int_h
