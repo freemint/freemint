@@ -574,20 +574,24 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 	unsigned short w;
 	long quot = len % 4;
 
-/* For NetUSBee, take the raw_read out from read functions, we want to swap the bytes to
- * read correct values because NetUSBee swapped the bytes by hardware before we read them
- */
+	/*
+	 * because of little-endian considerations, the FIFO buffer has the
+	 * bytes swapped from a big-endian POV.  we swap them back here.
+	 *
+	 * for an unaligned buffer, it's easier to use the raw read function
+	 * and explicitly swap the bytes.
+	 */
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
 		for (; len > 1; len -= 2)
 		{
-			w = isp116x_read_data16(isp116x);
+			w = isp116x_raw_read_data16(isp116x);
 			*dp++ = w & 0xff;
 			*dp++ = (w >> 8) & 0xff;
 		}
 		if (len)
-			*dp = 0xff & isp116x_read_data16(isp116x);
+			*dp = 0xff & isp116x_raw_read_data16(isp116x);
 	}
 	else
 	{
