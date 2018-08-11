@@ -931,7 +931,7 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
  */
 static long
 isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
-			      long dir, void *buffer, long len)
+			      long dir, void *buffer, long len, long flags)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 	long type = usb_pipetype(pipe);
@@ -948,7 +948,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	 * most of the time.  So we don't retry, we just report an error and let the
 	 * upper level driver retry the transfer at regular intervals.
 	 */
-	short retries = (type == PIPE_INTERRUPT) ? 0 : 500;
+	short retries = ((type==PIPE_INTERRUPT) || (flags&USB_BULK_FLAG_EARLY_TIMEOUT)) ? 0 : 500;
 	short set_extra_delay = 0;
 	short poll_interrupts = 0;
 
@@ -1607,7 +1607,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 	ret = isp116x_submit_job(dev, pipe,
 				PTD_DIR_SETUP,
-				 setup, sizeof(struct devrequest));
+				 setup, sizeof(struct devrequest), 0);
 	if (ret < 0)
 	{
 		DEBUG(("control setup phase error (ret = %ld", ret));
@@ -1623,7 +1623,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ret = isp116x_submit_job(dev, pipe,
 					 dir_in ? PTD_DIR_IN : PTD_DIR_OUT,
 					 (unsigned char *) buffer + done,
-					 max > len - done ? len - done : max);
+					 max > len - done ? len - done : max, 0);
 		if (ret < 0)
 		{
 			DEBUG(("control data phase error (ret = %ld)", ret));
@@ -1639,7 +1639,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	DEBUG(("--- STATUS PHASE -------------------------------"));
 	usb_settoggle(dev, epnum, !dir_in, 1);
 	ret = isp116x_submit_job(dev, pipe,
-				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0);
+				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0, 0);
 	if (ret < 0)
 	{
 		DEBUG(("control status phase error (ret = %ld", ret));
@@ -1673,7 +1673,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ret = isp116x_submit_job(dev, pipe,
 					 !dir_out ? PTD_DIR_IN : PTD_DIR_OUT,
 					 (unsigned char *) buffer + done,
-					 max > len - done ? len - done : max);
+					 max > len - done ? len - done : max, flags);
 
 		if (ret < 0)
 		{
