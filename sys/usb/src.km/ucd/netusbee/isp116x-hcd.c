@@ -291,12 +291,12 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
   perfectly, right :)
 */
 static inline void
-dump_ptd(struct ptd *ptd)
+dump_ptd(PTD *ptd)
 {
 #if defined(VERBOSE)
 	long k;
 	char build_str[64];
-	char buf[64 + 4 * sizeof(struct ptd)];
+	char buf[64 + 4 * sizeof(PTD)];
 #endif
 
 	DEBUG(("PTD(ext) : cc:%x %d%c%d %d,%d,%d t:%x %x%x%x",
@@ -309,7 +309,7 @@ dump_ptd(struct ptd *ptd)
 	sprintf(buf, sizeof(buf),"\0");
 	sprintf(build_str, sizeof(build_str), "isp116x: %s: PTD(byte): ", __FUNCTION__);
 	strcat(buf, build_str);
-	for (k = 0; k < sizeof(struct ptd); ++k) /* Galvez: note that bytes in the words are shown swapped */
+	for (k = 0; k < sizeof(PTD); ++k) /* Galvez: note that bytes in the words are shown swapped */
 	{
 		sprintf(build_str, sizeof(build_str),"%02x ", ((unsigned char *) ptd)[k]);
 		strcat(buf, build_str);
@@ -319,7 +319,7 @@ dump_ptd(struct ptd *ptd)
 }
 
 static inline void
-dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
+dump_ptd_data(PTD *ptd, unsigned char * buffer, long type)
 {
 #if defined(VERBOSE)
 	long k;
@@ -606,10 +606,10 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
  */
 static void
 pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
-		      unsigned long pipe, struct ptd *ptd, long n, void *data,
+		      unsigned long pipe, PTD *ptd, long n, void *data,
 		      long len)
 {
-	long buflen = n * sizeof(struct ptd) + len;
+	long buflen = n * sizeof(PTD) + len;
 	long i, done;
 
 	DEBUG(("--- pack buffer 0x%08lx - %ld bytes (fifo %ld) ---", data, len, buflen));
@@ -655,10 +655,10 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
  */
 static long
 unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
-		       unsigned long pipe, struct ptd *ptd, long n, void *data,
+		       unsigned long pipe, PTD *ptd, long n, void *data,
 		       long len)
 {
-	long buflen = n * sizeof(struct ptd) + len;
+	long buflen = n * sizeof(PTD) + len;
 	long i, done, cc, ret;
 
 	MINT_INT_OFF;
@@ -791,7 +791,7 @@ isp116x_interrupt(struct isp116x *isp116x)
 /* With one PTD we can transfer almost 1K in one go;
  * HC does the splitting into endpoint digestible transactions
  */
-static struct ptd ptd[1];
+static PTD ptd[1];
 
 static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
