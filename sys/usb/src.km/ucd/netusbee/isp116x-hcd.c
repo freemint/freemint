@@ -561,8 +561,13 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	if (len)
 		isp116x_raw_write_data16(isp116x, (unsigned short) *dp);
 
+	/*
+	 * since we throw the data away, we just use the raw write here for
+	 * consistency with read_ptddata_from_fifo() [in fact, the generated
+	 * code should be the same for either]
+	 */
 	if (quot == 1 || quot == 2)
-		isp116x_write_data16(isp116x, 0);
+		isp116x_raw_write_data16(isp116x, 0);
 }
 
 /* Read len bytes from fifo and then read till 32-bit boundary
