@@ -735,7 +735,6 @@ isp116x_interrupt(struct isp116x *isp116x)
 	if (irqstat & HCuPINT_ATL)
 	{
 		DEBUG((">>>>>> HCuPINT_ATL <<<<<<"));
-		udelay(500);
 		ret = 1;
 	}
 
