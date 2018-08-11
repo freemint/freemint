@@ -1100,8 +1100,8 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 	DEBUG(("--- HUB ----------------------------------------"));
 	DEBUG(("submit rh urb, req=%x val=0x%x index=0x%x len=%d",
-	    bmRType_bReq, wValue, wIndex, wLength);
-	dump_msg(dev, pipe, buffer, transfer_len, "RH"));
+	    bmRType_bReq, wValue, wIndex, wLength));
+	dump_msg(dev, pipe, buffer, transfer_len, "RH");
 	DEBUG(("------------------------------------------------"));
 
 	MINT_INT_OFF;
