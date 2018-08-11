@@ -2101,10 +2101,6 @@ usb_lowlevel_init(void *dummy)
 	isp116x->sleeping = 0;
 
 	isp116x_reset(isp116x);
-/* Following line added by Claude. But does nothing under TOS, see hub.c. */
-#ifdef TOSONLY
-    usb_rh_wakeup();
-#endif
 	isp116x_start(isp116x);
 
 	return 0;
