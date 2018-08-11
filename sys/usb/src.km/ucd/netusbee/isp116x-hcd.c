@@ -817,8 +817,14 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	long speed_low = usb_pipeslow(pipe);
 	long i, done = 0, stat, timeout, cc;
 
-	/* 500 frames or 0.5s timeout when function is busy and NAKs transactions for a while */
-	long retries = 500;
+	/*
+	 * For non-interrupt transfers, if the function is busy and we receive a NAK,
+	 * we retry up to 500 frames (0.5s timeout).
+	 * For interrupt transfers (e.g. mouse/keyboard), we expect to receive a NAK
+	 * most of the time.  So we don't retry, we just report an error and let the
+	 * upper level driver retry the transfer at regular intervals.
+	 */
+	short retries = (type == PIPE_INTERRUPT) ? 0 : 500;
 	short set_extra_delay = 0;
 
 	DEBUG(("------------------------------------------------"));
