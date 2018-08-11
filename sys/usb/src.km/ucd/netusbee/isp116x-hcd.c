@@ -659,8 +659,15 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		       unsigned long pipe, PTD *ptd, void *data,
 		       long len)
 {
-	long buflen = sizeof(PTD) + len;
+	int read_data = FALSE;
+	long buflen = sizeof(PTD);
 	long cc, ret;
+
+	if (PTD_GET_DIR(ptd) == PTD_DIR_IN)
+	{
+		read_data = TRUE;
+		buflen += len;
+	}
 
 	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
@@ -680,11 +687,7 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 
 	dump_ptd(ptd);
 
-	/* when cc is 15 the data has not being touch by the HC
-	 * so we have to read all to empty completly the buffer
-	 */
-	if (PTD_GET_COUNT(ptd) != 0 || PTD_GET_CC(ptd) == 15 
-		|| PTD_GET_CC(ptd) == 5 || PTD_GET_CC(ptd) == 6)
+	if (read_data)
 	{
 		MINT_INT_OFF;
 		TOS_INT_OFF;
