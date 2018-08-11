@@ -892,7 +892,8 @@ retry:
 	ptd->count = PTD_CC_MSK | PTD_ACTIVE_MSK |
 		PTD_TOGGLE(usb_gettoggle(dev, epnum, dir_out));
 	ptd->mps = PTD_MPS(max) | PTD_SPD(speed_low) | PTD_EP(epnum) | PTD_LAST_MSK;
-	ptd->len = PTD_LEN(len) | PTD_DIR(dir);
+	/* setting the B5_5 bit below limits interrupt transfers to one per frame */
+	ptd->len = PTD_LEN(len) | PTD_DIR(dir) | PTD_B5_5(type == PIPE_INTERRUPT);
 	ptd->faddr = PTD_FA(usb_pipedevice(pipe));
 
 retry_same:
@@ -998,6 +999,21 @@ retry_same:
 	done += i;
 	buffer = (char *)buffer + i;
 	len -= i;
+
+	/*
+	 * The following is taken from the Lightning VME driver by
+	 * Ingo Uhlemann/Christian Zietz.
+	 *
+	 * Bugfix for possible ISP1160 hardware bug:
+	 * If B5_5 was set (for an interrupt transfer), the PTD will return
+	 * with CC=0, count=0 when the device has in fact NAKed the transaction.
+	 * The chip will have updated the toggle bit erroneously.
+	 */
+	if (PTD_GET_B5_5(ptd) && !cc && !PTD_GET_COUNT(ptd))
+	{
+		/* Toggle it back so that driver can do its usual processing. */
+		ptd->count ^= PTD_TOGGLE_MSK;
+	}
 
 	/* There was some kind of real problem; Prepare the PTD again
 	 * and retry from the failed transaction on
