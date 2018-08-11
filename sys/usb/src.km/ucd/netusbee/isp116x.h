@@ -413,13 +413,7 @@ static unsigned short volatile dumm;
 
 /* ISP116x registers access */
 
-inline void write_le16_reg(volatile unsigned short * addr, short val);
 inline unsigned read_le16_reg(const volatile unsigned short *addr);
-
-inline void write_le16_reg(volatile unsigned short * addr, short val)
-{
-	*addr = SWAP16(val);
-}
 
 inline unsigned read_le16_reg(const volatile unsigned short *addr)
 {
@@ -428,9 +422,7 @@ inline unsigned read_le16_reg(const volatile unsigned short *addr)
 }
 
 # define raw_readw(addr)	(*(volatile unsigned short *)(addr))
-# define raw_writew(w,addr)	((*(volatile unsigned short *) (addr)) = (w))
 # define readw(addr)		read_le16_reg((volatile unsigned short *)(addr))
-# define writew(b,addr)		write_le16_reg((volatile unsigned short *)(addr),(b))
 
 
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
