@@ -590,17 +590,17 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 			*dp++ = w & 0xff;
 			*dp++ = (w >> 8) & 0xff;
 		}
-		if (len)
-			*dp = 0xff & isp116x_raw_read_data16(isp116x);
 	}
 	else
 	{
 		/* aligned */
 		for (; len > 1; len -= 2)
 			*dp2++ = isp116x_read_data16(isp116x);
-		if (len)
-			*(unsigned char *) dp2 = 0xff & isp116x_raw_read_data16(isp116x);
+		dp = (unsigned char *)dp2;
 	}
+	if (len)
+		*dp = 0xff & isp116x_raw_read_data16(isp116x);
+
 	if (quot == 1 || quot == 2)
 		isp116x_read_data16(isp116x);
 }
