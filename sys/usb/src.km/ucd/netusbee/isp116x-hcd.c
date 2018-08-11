@@ -143,12 +143,12 @@ void _cdecl netusbee_hub_events(void);
 /*
  *Function prototypes
  */
-long 		isp116x_check_id	(struct isp116x *);
+static long	isp116x_check_id	(struct isp116x *);
 static long	isp116x_reset		(struct isp116x *);
-long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
-long		submit_control_msg	(struct usb_device *, unsigned long, void *,
+static long	submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
+static long	submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
-long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
+static long	submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
 /*
  * USB controller interface
@@ -1404,7 +1404,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 /* --- Transfer functions -------------------------------------------------- */
 
-long
+static long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long len, long interval)
 {
@@ -1414,7 +1414,7 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	return -1;
 }
 
-long
+static long
 submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		   long len, struct devrequest *setup)
 {
@@ -1486,7 +1486,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 short flagy = 0;
 
-long
+static long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long len, long flags)
 {
@@ -1869,7 +1869,7 @@ netusbee_ioctl(struct ucdif *u, short cmd, long arg)
 
 /* --- Init functions ------------------------------------------------------ */
 
-long
+static long
 isp116x_check_id(struct isp116x *isp116x)
 {
 	unsigned short val;
