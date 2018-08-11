@@ -489,7 +489,7 @@ rh_check_port_status(struct isp116x *isp116x)
 	long res;
 
 	res = -1;
-	temp = isp116x_read_reg32(isp116x, HCRHSTATUS);
+	temp = isp116x_read_reg32(isp116x, HCRHDESCA);
 	ndp = (temp & RH_A_NDP);
 	for (i = 0; i < ndp; i++)
 	{
