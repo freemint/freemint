@@ -132,10 +132,6 @@ static long rh_devnum;		/* address of Root Hub endpoint */
 static char job_in_progress = 0;
 
 /*
- * interrupt handling - bottom half
- */
-void _cdecl	netusbee_int	(void);
-/*
  * interrupt handling - top half
  */
 #ifndef TOSONLY
