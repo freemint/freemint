@@ -41,5 +41,6 @@
 
 void set_old_int_lvl(void);
 void set_int_lvl6(void);
+void fake_ikbd_int(void);
 
 #endif // _netusbee_int_h

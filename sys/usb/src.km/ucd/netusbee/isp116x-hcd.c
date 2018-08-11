@@ -524,7 +524,29 @@ inline static void unlock_usb(char *lock) {
 	*lock = 0;
 }
 
+/*
+ * Check if there is a pending interrupt request from the keyboard ACIA.
+ * We use this while the CPU priority is set to 6, causing interrupts to
+ * be disabled.  The major problem with this is that some keyboard/mouse
+ * interrupt data is lost, which typically results in mouse movements
+ * being interpreted as keyclicks, then repeating keys and other nasties.
+ *
+ * We call this routine to poll for ikbd interrupts, which are then serviced
+ * by calling the keyboard interrupt routine ourselves.
+ *
+ * Returns != 0 if there is a pending interrupt request.
+ */
+static inline int ikbd_int_pending(void)
+{
+	unsigned char keyctl = *(volatile unsigned char *)0xFFFFFC00UL;
+	return keyctl & 0x80;
+}
+
 /* Write len bytes to fifo, pad till 32-bit boundary
+ *
+ * Note that we unroll big loops to allow us to check for pending ikbd
+ * activity frequently, but not too frequently.  It may also provide
+ * a marginal speed improvement.
  */
 static void
 write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
@@ -544,6 +566,34 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 		{
 			w = *dp++;
@@ -554,6 +604,18 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	else
 	{
 		/* aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 			isp116x_write_data16(isp116x, *dp2++);
 		dp = (unsigned char *)dp2;
@@ -571,6 +633,10 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 }
 
 /* Read len bytes from fifo and then read till 32-bit boundary
+ *
+ * Note that we unroll big loops to allow us to check for pending ikbd
+ * activity frequently, but not too frequently.  It may also provide
+ * a marginal speed improvement.
  */
 static void
 read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
@@ -590,6 +656,34 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 		{
 			w = isp116x_raw_read_data16(isp116x);
@@ -600,6 +694,18 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 	else
 	{
 		/* aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 			*dp2++ = isp116x_read_data16(isp116x);
 		dp = (unsigned char *)dp2;

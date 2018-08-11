@@ -33,6 +33,7 @@
 
 	.globl _set_old_int_lvl
 	.globl _set_int_lvl6
+	.globl _fake_ikbd_int
 
 	.text
 
@@ -58,4 +59,17 @@ _set_int_lvl6:
 	ori.w	#0x0600,d0		// & wedge new one in
 	move.w	d0,sr
 	move.w	(sp)+,d0		//restore reg
+	rts
+
+// calls the keyboard/MIDI handler as though an interrupt has occurred
+_fake_ikbd_int:
+	tst.w	0x59e.w			//handle 68000/68030 difference
+	beq.b	shortframe
+	move.w	#0x118,-(sp)		//push vector offset
+shortframe:
+	pea		retaddr(pc)	// return address
+	move	sr,-(sp)		//  and SR
+	move.l	0x118,a0
+	jmp		(a0)		//go to interrupt handler
+retaddr:				// (returns here)
 	rts
