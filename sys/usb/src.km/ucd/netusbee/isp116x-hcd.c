@@ -612,7 +612,7 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	long buflen = n * sizeof(PTD) + len;
 	long i, done;
 
-	DEBUG(("--- pack buffer 0x%08lx - %ld bytes (fifo %ld) ---", data, len, buflen));
+	DEBUG(("--- pack buffer %p - %ld bytes (fifo %ld) ---", data, len, buflen));
 
 	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
@@ -710,7 +710,7 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 				(cc != TD_CC_NOERROR && (ret == TD_CC_NOERROR || ret == TD_DATAUNDERRUN)))
 			ret = cc;
 	}
-	DEBUG(("--- unpack buffer 0x%08lx - %ld bytes (fifo %ld) count: %d ---", data, len, buflen, PTD_GET_COUNT(ptd)));
+	DEBUG(("--- unpack buffer %p - %ld bytes (fifo %ld) count: %d ---", data, len, buflen, PTD_GET_COUNT(ptd)));
 
 	return ret;
 }
@@ -746,7 +746,7 @@ isp116x_interrupt(struct isp116x *isp116x)
 		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
 		MINT_INT_ON;
 
-		DEBUG((">>>>>> HCuPINT_OPR %x <<<<<<", intstat));
+		DEBUG((">>>>>> HCuPINT_OPR %lx <<<<<<", intstat));
 
 		if (intstat & HCINT_UE)
 		{
@@ -1408,7 +1408,7 @@ static long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long len, long interval)
 {
-	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
+	DEBUG(("dev=%p pipe=%lx buf=%p size=%ld int=%ld",
 		dev, pipe, buffer, len, interval));
 
 	return -1;
@@ -1441,7 +1441,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				 setup, sizeof(struct devrequest));
 	if (ret < 0)
 	{
-		DEBUG(("control setup phase error (ret = %d", ret));
+		DEBUG(("control setup phase error (ret = %ld", ret));
 		return -1;
 	}
 
@@ -1457,7 +1457,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 					 max > len - done ? len - done : max);
 		if (ret < 0)
 		{
-			DEBUG(("control data phase error (ret = %d)", ret));
+			DEBUG(("control data phase error (ret = %ld)", ret));
 			return -1;
 		}
 		done += ret;
@@ -1473,7 +1473,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0);
 	if (ret < 0)
 	{
-		DEBUG(("control status phase error (ret = %d", ret));
+		DEBUG(("control status phase error (ret = %ld", ret));
 		return -1;
 	}
 
@@ -1495,7 +1495,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long done, ret;
 
 	DEBUG(("--- BULK ---------------------------------------"));
-	DEBUG(("dev=%ld pipe=%ld buf=0x%lx size=%d dir_out=%d",
+	DEBUG(("dev=%ld pipe=%ld buf=%p size=%ld dir_out=%ld",
 		usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
 	done = 0;
 	while (done < len)
@@ -1508,7 +1508,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 		if (ret < 0)
 		{
-			DEBUG(("error on bulk message (ret = %d)", ret));
+			DEBUG(("error on bulk message (ret = %ld)", ret));
 			return -1;
 		}
 
