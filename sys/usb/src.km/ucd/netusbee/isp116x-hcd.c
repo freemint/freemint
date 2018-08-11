@@ -961,7 +961,7 @@ retry_same:
 		else
 		{
 			DEBUG(("CTL:TIMEOUT "));
-			stat = USB_ST_CRC_ERR;
+			dev->status = USB_ST_CRC_ERR;
 			break;
 		}
 	}
