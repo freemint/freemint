@@ -550,19 +550,17 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 			w |= *dp++ << 8;
 			isp116x_raw_write_data16(isp116x, w);
 		}
-		if (len)
-			isp116x_raw_write_data16(isp116x, (unsigned short) * dp);
 	}
 	else
 	{
 		/* aligned */
 		for (; len > 1; len -= 2)
 			isp116x_write_data16(isp116x, *dp2++);
-		if (len)
-		{
-			isp116x_raw_write_data16(isp116x, 0xff & *((unsigned char *) dp2));
-		}
+		dp = (unsigned char *)dp2;
 	}
+	if (len)
+		isp116x_raw_write_data16(isp116x, (unsigned short) *dp);
+
 	if (quot == 1 || quot == 2)
 		isp116x_write_data16(isp116x, 0);
 }
