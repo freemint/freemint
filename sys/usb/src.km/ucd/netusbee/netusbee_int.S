@@ -41,21 +41,21 @@ oldSR:	ds.w	1
 // Sets interrupt level to what was in the SR
 _set_old_int_lvl:
 	andi.w	#0x0f00,oldSR		//just keep the int lvl
-	move.l	d0,-(sp)
+	move.l	d0,-(sp)		//save reg
 	move.w	sr,d0
-	andi.w	#0xf0ff,d0
-	or.w	oldSR,d0
+	andi.w	#0xf0ff,d0		//remove current int lvl
+	or.w	oldSR,d0		// & wedge old one in
 	move.w	d0,sr
-	move.l	(sp)+,d0
+	move.l	(sp)+,d0		//restore reg
 	rts
 
 // Sets interrupt level to 6
 _set_int_lvl6:
-	move.w	d0,-(sp)
+	move.w	d0,-(sp)		//save reg
 	move.w	sr,d0
 	move.w	d0,oldSR
-	andi.w	#0xf0ff,d0
-	ori.w	#0x0600,d0
+	andi.w	#0xf0ff,d0		//remove current int lvl
+	ori.w	#0x0600,d0		// & wedge new one in
 	move.w	d0,sr
-	move.w	(sp)+,d0
+	move.w	(sp)+,d0		//restore reg
 	rts
