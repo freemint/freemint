@@ -606,11 +606,10 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
  */
 static void
 pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
-		      unsigned long pipe, PTD *ptd, long n, void *data,
+		      unsigned long pipe, PTD *ptd, void *data,
 		      long len)
 {
-	long buflen = n * sizeof(PTD) + len;
-	long i, done;
+	long buflen = sizeof(PTD) + len;
 
 	DEBUG(("--- pack buffer %p - %ld bytes (fifo %ld) ---", data, len, buflen));
 
@@ -621,33 +620,25 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	isp116x_write_addr(isp116x, HCATLPORT | ISP116x_WRITE_OFFSET);
 	MINT_INT_ON;
 
-	done = 0;
-	for (i = 0; i < n; i++)
-	{
-		DEBUG(("i=%ld - done=%ld - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
+	/* For NetUSBee, use raw_write to don't swap bytes */
+	dump_ptd(ptd);
 
-		/* For NetUSBee, use raw_write to don't swap bytes */
-		dump_ptd(&ptd[i]);
+	MINT_INT_OFF;
+	isp116x_raw_write_data16(isp116x, ptd->count);
+	isp116x_raw_write_data16(isp116x, ptd->mps);
+	isp116x_raw_write_data16(isp116x, ptd->len);
+	isp116x_raw_write_data16(isp116x, ptd->faddr);
+	MINT_INT_ON;
 
-		MINT_INT_OFF;
-		isp116x_raw_write_data16(isp116x, ptd[i].count);
-		isp116x_raw_write_data16(isp116x, ptd[i].mps);
-		isp116x_raw_write_data16(isp116x, ptd[i].len);
-		isp116x_raw_write_data16(isp116x, ptd[i].faddr);
-		MINT_INT_ON;
+	dump_ptd_data(ptd, (unsigned char *) data, 0);
 
-		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
-
-		MINT_INT_OFF;
-		TOS_INT_OFF;
-		write_ptddata_to_fifo(isp116x,
-				      (unsigned char *) data + done,
-				      PTD_GET_LEN(&ptd[i]));
-		MINT_INT_ON;
-		TOS_INT_ON;
-
-		done += PTD_GET_LEN(&ptd[i]);
-	}
+	MINT_INT_OFF;
+	TOS_INT_OFF;
+	write_ptddata_to_fifo(isp116x,
+			      (unsigned char *) data,
+			      PTD_GET_LEN(ptd));
+	MINT_INT_ON;
+	TOS_INT_ON;
 }
 
 /* Read the processed PTD's and data from fifo ram back to URBs' buffers.
@@ -655,11 +646,11 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
  */
 static long
 unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
-		       unsigned long pipe, PTD *ptd, long n, void *data,
+		       unsigned long pipe, PTD *ptd, void *data,
 		       long len)
 {
-	long buflen = n * sizeof(PTD) + len;
-	long i, done, cc, ret;
+	long buflen = sizeof(PTD) + len;
+	long cc, ret;
 
 	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
@@ -668,48 +659,44 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	MINT_INT_ON;
 
 	ret = TD_CC_NOERROR;
-	done = 0;
-	for (i = 0; i < n; i++)
+
+	MINT_INT_OFF;
+	/* For NetUSBee, use raw_read to don't swap bytes */
+	ptd->count = isp116x_raw_read_data16(isp116x);
+	ptd->mps = isp116x_raw_read_data16(isp116x);
+	ptd->len = isp116x_raw_read_data16(isp116x);
+	ptd->faddr = isp116x_raw_read_data16(isp116x);
+	MINT_INT_ON;
+
+	dump_ptd(ptd);
+
+	/* when cc is 15 the data has not being touch by the HC
+	 * so we have to read all to empty completly the buffer
+	 */
+	if (PTD_GET_COUNT(ptd) != 0 || PTD_GET_CC(ptd) == 15 
+		|| PTD_GET_CC(ptd) == 5 || PTD_GET_CC(ptd) == 6)
 	{
 		MINT_INT_OFF;
-		/* For NetUSBee, use raw_read to don't swap bytes */
-		ptd[i].count = isp116x_raw_read_data16(isp116x);
-		ptd[i].mps = isp116x_raw_read_data16(isp116x);
-		ptd[i].len = isp116x_raw_read_data16(isp116x);
-		ptd[i].faddr = isp116x_raw_read_data16(isp116x);
+		TOS_INT_OFF;
+		read_ptddata_from_fifo(isp116x,
+				       (unsigned char *) data,
+				       PTD_GET_LEN(ptd));
 		MINT_INT_ON;
-
-		dump_ptd(&ptd[i]);
-
-		/* when cc is 15 the data has not being touch by the HC
-		 * so we have to read all to empty completly the buffer
-		 */
-		if (PTD_GET_COUNT(ptd) != 0 || PTD_GET_CC(ptd) == 15 
-			|| PTD_GET_CC(ptd) == 5 || PTD_GET_CC(ptd) == 6)
-		{
-			MINT_INT_OFF;
-			TOS_INT_OFF;
-			read_ptddata_from_fifo(isp116x,
-					       (unsigned char *) data + done,
-					       PTD_GET_LEN(&ptd[i]));
-			MINT_INT_ON;
-			TOS_INT_ON;
-		}
-
-		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
-
-		done += PTD_GET_LEN(&ptd[i]);
-
-		cc = PTD_GET_CC(&ptd[i]);
-
-		/* Data underrun means basically that we had more buffer space than
-		 * the function had data. It is perfectly normal but upper levels have
-		 * to know how much we actually transferred.
-		 */
-		if (cc == TD_NOTACCESSED ||
-				(cc != TD_CC_NOERROR && (ret == TD_CC_NOERROR || ret == TD_DATAUNDERRUN)))
-			ret = cc;
+		TOS_INT_ON;
 	}
+
+	dump_ptd_data(ptd, (unsigned char *) data, 1);
+
+	cc = PTD_GET_CC(ptd);
+
+	/* Data underrun means basically that we had more buffer space than
+	 * the function had data. It is perfectly normal but upper levels have
+	 * to know how much we actually transferred.
+	 */
+	if (cc == TD_NOTACCESSED ||
+			(cc != TD_CC_NOERROR && (ret == TD_CC_NOERROR || ret == TD_DATAUNDERRUN)))
+		ret = cc;
+
 	DEBUG(("--- unpack buffer %p - %ld bytes (fifo %ld) count: %d ---", data, len, buflen, PTD_GET_COUNT(ptd)));
 
 	return ret;
@@ -904,7 +891,7 @@ retry_same:
 	MINT_INT_ON;
 
 	/* Pack data into FIFO ram */
-	pack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
+	pack_fifo(isp116x, dev, pipe, ptd, buffer, len);
 
 # ifdef EXTRA_DELAY
 	mdelay(EXTRA_DELAY);
@@ -987,7 +974,7 @@ retry_same:
 	MINT_INT_ON;
 
 	/* Unpack data from FIFO ram */
-	cc = unpack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
+	cc = unpack_fifo(isp116x, dev, pipe, ptd, buffer, len);
 
 	i = PTD_GET_COUNT(ptd);
 	done += i;
