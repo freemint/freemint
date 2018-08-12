@@ -90,7 +90,7 @@
 
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
-	"Brought to TOS by Claude Labelle.\r\n" \
+	"Brought to TOS by Claude Labelle & Roger Burrows.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 /*
