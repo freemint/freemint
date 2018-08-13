@@ -64,6 +64,7 @@ typedef struct kbdvbase KBDVEC;
 KBDVEC *vector;
 static char mouse_packet[6];
 void _cdecl send_packet (long func, char *buf, char *bufend);
+void _cdecl fake_hwint(void);
 
 struct usb_module_api *api;
 
@@ -253,6 +254,7 @@ mouse_int (void)
 			}
 		}
 #endif
+		fake_hwint();
 		send_packet (vector->mousevec, mouse_packet, mouse_packet + 3);
 		mse_data.data[0] = mse_data.new[0];
 		mse_data.data[1] = mse_data.new[1];
