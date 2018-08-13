@@ -374,9 +374,9 @@ mouse_probe (struct usb_device *dev, unsigned int ifnum)
 	memset (mse_data.new, 0, 8);
 
 	// if(mse_data.irqmaxp < 6)
-	// usb_set_protocol(dev, iface->desc.bInterfaceNumber, 0); /* boot */
+	usb_set_protocol(dev, iface->desc.bInterfaceNumber, 0); /* boot */
 	// else
-	usb_set_protocol (dev, iface->desc.bInterfaceNumber, 1);    /* report */
+	//usb_set_protocol (dev, iface->desc.bInterfaceNumber, 1);    /* report */
 
 	usb_set_idle (dev, iface->desc.bInterfaceNumber, 0, 0);     /* report
                                                                  * infinite 
