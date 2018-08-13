@@ -25,6 +25,7 @@ _interrupt_ikbd:
 #endif
 
 	.globl _send_packet
+	.globl _fake_hwint
 
 _send_packet:
 	lea	-60(sp),sp
@@ -35,4 +36,17 @@ _send_packet:
 	jsr	(a2)
 	movem.l	(sp),d0-a6
 	lea	60(sp),sp
+	rts
+
+_fake_hwint:
+	tst.w	0x59e.w
+	beq	shortframe
+	move.w	#0x118,-(sp)
+shortframe:
+	pea	retaddr(pc)
+	move	sr,d0
+	move.w	d0,-(sp)
+	move.l	0x118,a0
+	jmp	(a0)
+retaddr:
 	rts
