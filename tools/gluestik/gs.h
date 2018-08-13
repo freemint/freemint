@@ -41,7 +41,8 @@
 # ifndef GS_DEBUG
 # define DEBUG(x)
 # else
-# define DEBUG(x)	{ printf x; printf ("\n"); fflush (stdout); }
+# define DEBUG(x)	{ printf x; printf ("\r\n"); fflush (stdout); }
+# define DEBUG_ADDR(x) (unsigned int)((x) >> 24) & 0xff, (unsigned int)((x) >> 16) & 0xff, (unsigned int)((x) >> 8) & 0xff, (unsigned int)((x)) & 0xff
 # endif
 
 # if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57

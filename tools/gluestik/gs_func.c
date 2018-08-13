@@ -307,8 +307,8 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	int pending = 0;
 # endif
 	
-	DEBUG (("gs_connect(%i, {%lu, %i}, {%lu, %i}) [%x]",
-		fd, rhost, rport, lhost, lport, gs ? gs->flags : 0xffff));
+	DEBUG (("gs_connect(%i, {%d.%d.%d.%d, %i}, {%d.%d.%d.%d, %i}) [%x]",
+		fd, DEBUG_ADDR(rhost), rport, DEBUG_ADDR(lhost), lport, gs ? gs->flags : 0xffff));
 	
 	if (!gs || !(gs->flags & GS_NOSOCKET))
 	{
@@ -430,7 +430,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	int pending = 0;
 # endif
 	
-	DEBUG (("gs_udp_open(%i, %lu, %i)", fd, rhost, rport));
+	DEBUG (("gs_udp_open(%i, %d.%d.%d.%d, %i)", fd, DEBUG_ADDR(rhost), rport));
 	
 	if (!gs || !(gs->flags & GS_NOSOCKET))
 	{
@@ -942,8 +942,8 @@ gs_resolve (char *dn, char **rdn, uint32 *alist, int16 lsize)
 	 */
 	for (ret = 0, raddr = host->h_addr_list; *raddr && ret < lsize; ret++, raddr++)
 	{
-		DEBUG (("gs_resolve: Copying address %p to array element %i",
-			(void *) ((struct in_addr *) (*raddr))->s_addr, ret));
+		DEBUG (("gs_resolve: Copying address %d.%d.%d.%d to array element %i",
+			DEBUG_ADDR(((struct in_addr *) (*raddr))->s_addr), ret));
 		
 		alist [ret] = ((struct in_addr *) (*raddr))->s_addr;
 	}
