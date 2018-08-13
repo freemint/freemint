@@ -185,7 +185,7 @@ do_TCP_open (struct TCP_open_param p)
 	int fd;
 	long ret;
 	
-	DEBUG (("do_TCP_open: rhost = %lu, rport = %i", p.rhost, p.rport));
+	DEBUG (("do_TCP_open: rhost = %d.%d.%d.%d, rport = %i", DEBUG_ADDR(p.rhost), p.rport));
 	
 	if (p.rhost == 0)
 	{
