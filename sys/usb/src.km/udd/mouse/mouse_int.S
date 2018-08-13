@@ -16,7 +16,10 @@ _old_ikbd_int:
 	ds.l	1
 _interrupt_ikbd:
 	movem.l	a0-a7/d0-d7,-(sp)
+	move.l	a7,oldSP
+	lea	ourSP,a7
 	bsr	_mouse_int
+	move.l	oldSP,a7
 	movem.l	(sp)+,a0-a7/d0-d7
 	move.l	_old_ikbd_int(PC),-(sp)
 	rts
@@ -48,3 +51,9 @@ shortframe:
 	jmp	(a0)
 retaddr:
 	rts
+
+	.bss
+oldSP:	ds.l 1
+	ds.l 1024
+ourSP:
+	.end
