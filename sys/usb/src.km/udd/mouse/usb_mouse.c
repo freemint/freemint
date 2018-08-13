@@ -274,6 +274,8 @@ mouse_poll (PROC * proc, long dummy)
 void
 mouse_poll_thread (void *dummy)
 {
+	p_setpriority(0,0,-20);
+
 	while (mse_data.pusb_dev)
 	{
 		mouse_int ();
