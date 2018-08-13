@@ -279,7 +279,7 @@ mouse_poll_thread (void *dummy)
 	while (mse_data.pusb_dev)
 	{
 		mouse_int ();
-		addroottimeout (200, mouse_poll, 0);
+		addroottimeout (20, mouse_poll, 0);
 		sleep (WAIT_Q, (long) &mouse_poll_thread);
 	}
 
