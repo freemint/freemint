@@ -1028,7 +1028,12 @@ retry:
 	ptd->count = PTD_CC_MSK | PTD_ACTIVE_MSK |
 		PTD_TOGGLE(usb_gettoggle(dev, epnum, dir_out));
 	ptd->mps = PTD_MPS(max) | PTD_SPD(speed_low) | PTD_EP(epnum) | PTD_LAST_MSK;
-	/* setting the B5_5 bit below limits interrupt transfers to one per frame */
+	/*
+	 * Setting the B5_5 bit below limits interrupt transfers to one per frame.
+	 * If this bit is NOT set, interrupt transfers by the ISP1160 violate the
+	 * USB standard and some hardware will malfunction (information courtesy
+	 * of Christian Zietz).
+	 */
 	ptd->len = PTD_LEN(len) | PTD_DIR(dir) | PTD_B5_5(type == PIPE_INTERRUPT);
 	ptd->faddr = PTD_FA(usb_pipedevice(pipe));
 
