@@ -147,7 +147,7 @@ gs_open (void)
 void
 gs_close (int fd)
 {
-	GS *gs = table [fd];
+	GS *gs = gs_get(fd);
 	
 	if (gs)
 	{
