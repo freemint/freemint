@@ -724,23 +724,10 @@ fatal(short sig)
 static void
 sigterm(void)
 {
-//	struct proc *p = get_curproc();
 	DEBUG(("%s(%ld:USB: ): sigterm received", get_curproc()->name, get_curproc()->pid));
-
-#if 0
-	DEBUG(("(ignored)" ));
-	return;
-#else
-//	if( p->pid != C.AESpid )
-//	{
-//		BLOG((false, "(ignored)" ));
-//		return;
-
-//	}
 	DEBUG(("shutdown USB" ));
 
 	kthread_exit(0);
-#endif
 }
 
 static void
@@ -787,10 +774,6 @@ setup_common(void)
 	/* other stuff */
 	p_signal(SIGTERM,  (long) sigterm);
 	p_signal(SIGCHLD,  (long) sigchld);
-
-//	d_setdrv('u' - 'a');
-//	d_setpath("/");
-
 }
 
 void
@@ -861,7 +844,7 @@ again:
 	if (r)
 	{
 		/* XXX todo -> exit gracefully */
-		DEBUG((/*0000000a*/"can't create USB hub kernel thread"));
+		DEBUG(("can't create USB hub kernel thread"));
 	}
 #endif
 }
