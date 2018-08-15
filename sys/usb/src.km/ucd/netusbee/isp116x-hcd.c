@@ -132,15 +132,6 @@ static long rh_devnum;		/* address of Root Hub endpoint */
 static char job_in_progress = 0;
 
 /*
- * interrupt handling - top half
- */
-#ifndef TOSONLY
-static void    int_handle_tophalf    (PROC *p, long arg);
-#endif
-
-void _cdecl netusbee_hub_events(void);
-
-/*
  *Function prototypes
  */
 static long	isp116x_check_id	(struct isp116x *);
@@ -1792,59 +1783,6 @@ isp116x_stop(struct isp116x *isp116x)
 }
 
 #ifndef TOSONLY
-static void
-int_handle_tophalf(PROC *process, long arg)
-{
-	struct isp116x *isp116x = &isp116x_dev;
-
-	if (isp116x->rhport[0] & RH_PS_CSC)
-	{
-		usb_rh_wakeup();
-	}
-
-	if (isp116x->rhport[1] & RH_PS_CSC)
-	{
-		usb_rh_wakeup();
-	}
-}
-#endif
-
-void _cdecl netusbee_hub_events(void);
-
-void _cdecl
-netusbee_hub_events(void)
-{
-	struct isp116x *isp116x = &isp116x_dev;
-	unsigned short irqstat;
-	unsigned long intstat;
-
-	MINT_INT_OFF;
-	/* Shut out all further interrupts */
-	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
-	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
-
-	if (irqstat & HCuPINT_OPR)
-	{
-		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
-		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
-
-		if (intstat & HCINT_RHSC)
-		{
-			isp116x->rhstatus = isp116x_read_reg32(isp116x, HCRHSTATUS);
-			isp116x->rhport[0] = isp116x_read_reg32(isp116x, HCRHPORT1);
-			isp116x->rhport[1] = isp116x_read_reg32(isp116x, HCRHPORT2);
-#ifndef TOSONLY
-			addroottimeout (0L, int_handle_tophalf, 0x1);
-#endif
-		}
-		isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_OPR);
-	}
-
-	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
-	MINT_INT_ON;
-}
-
-#ifndef TOSONLY
 void netusbee_hub_poll_thread(void *);
 void netusbee_hub_poll(PROC *proc, long dummy);
 
@@ -1857,6 +1795,8 @@ netusbee_hub_poll(PROC *proc, long dummy)
 void 
 netusbee_hub_poll_thread(void *dummy)
 {
+#define ROOT_HUB_INDEX	0
+	struct usb_hub_device *hub = usb_get_hub_index(ROOT_HUB_INDEX);
 
 	/* join process group of loader, 
 	 * otherwise doesn't ends when shutingdown
@@ -1864,7 +1804,7 @@ netusbee_hub_poll_thread(void *dummy)
 
 	for (;;)
 	{
-		netusbee_hub_events();
+		usb_hub_events(hub);
 		addtimeout(1000L, netusbee_hub_poll);
 		sleep(WAIT_Q, (long)&netusbee_hub_poll_thread);
 	}
