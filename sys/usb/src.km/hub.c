@@ -744,7 +744,6 @@ sigchld(void)
 static void
 setup_common(void)
 {
-
 	/* terminating signals */
 	p_signal(SIGHUP,   (long) ignore);
 	p_signal(SIGINT,   (long) ignore);
