@@ -1795,16 +1795,13 @@ netusbee_hub_poll(PROC *proc, long dummy)
 void 
 netusbee_hub_poll_thread(void *dummy)
 {
-#define ROOT_HUB_INDEX	0
-	struct usb_hub_device *hub = usb_get_hub_index(ROOT_HUB_INDEX);
-
 	/* join process group of loader, 
 	 * otherwise doesn't ends when shutingdown
 	 */
 
 	for (;;)
 	{
-		usb_hub_events(hub);
+		usb_rh_wakeup();
 		addtimeout(1000L, netusbee_hub_poll);
 		sleep(WAIT_Q, (long)&netusbee_hub_poll_thread);
 	}
