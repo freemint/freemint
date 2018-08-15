@@ -189,24 +189,31 @@ do_TCP_open (struct TCP_open_param p)
 	
 	if (p.rhost == 0)
 	{
+		/*
+		 * STiK-compatible, passive connection;
+		 * 2nd parameter (rport) is used as local port,
+		 * connection from any port/host will be accepted
+		 */
 		p.rhost = 0;
 		lhost = INADDR_ANY;
 		lport = p.rport;
 		p.rport = 0;
 	}
-	else if (p.rport == 0)
+	else if (p.rport == TCP_ACTIVE || p.rport == TCP_PASSIVE)
 	{
-		CIB *cib = (CIB *) p.rhost;
+		CAB *cab = (CAB *) p.rhost;
 		
-		p.rhost = cib->rhost;
-		p.rport = cib->rport;
-		lhost = cib->lhost;
-		lport = cib->lport;
+		/*
+		 * STinG: rhost gives all parameters
+		 */
+		p.rhost = cab->rhost;
+		p.rport = cab->rport;
+		lhost = cab->lhost;
+		lport = cab->lport;
 	}
 	else
 	{
-	//	p.rhost = p.rhost;
-	//	p.rport = p.rport;
+		/* STiK-compatible, active connection */
 		lhost = INADDR_ANY;
 		lport = 0;
 	}
@@ -220,8 +227,11 @@ do_TCP_open (struct TCP_open_param p)
 	 */
 	ret = gs_connect (fd, p.rhost, p.rport, lhost, lport);
 	if (ret < 0)
+	{
+		gs_close(fd);
 		return ret;
-	
+	}
+
 	DEBUG (("do_TCP_open: fd = %i", fd));
 	return fd;
 }
@@ -269,8 +279,11 @@ do_UDP_open (struct UDP_open_param p)
 	 */
 	ret = gs_udp_open (fd, p.rhost, p.rport);
 	if (ret < 0)
+	{
+		gs_close(fd);
 		return ret;
-	
+	}
+
 	return fd;
 }
 

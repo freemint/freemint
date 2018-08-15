@@ -82,6 +82,13 @@ extern DRV_LIST *drivers;
 #define TCP_DRIVER_VERSION  "01.00"
 
 
+/*----------------------------------*/
+/*	TCP and UDP port escape flags.	*/
+/*----------------------------------*/
+#define TCP_ACTIVE		0x0000	/* Initiate active connection	*/
+#define TCP_PASSIVE		0xffff	/* Initiate passive connection	*/
+#define UDP_EXTEND		0x0000	/* Extended addressing scheme	*/
+
 /*
  *   TCP connection states
  */
@@ -192,6 +199,17 @@ typedef struct ndb {        /* Network Data Block.  For data delivery       */
     struct ndb  *next;      /* Next NDB in chain or NULL                    */
  } NDB;
 
+
+/*--------------------------------------------------------------------------*/
+/*	Addressing information block.											*/
+/*--------------------------------------------------------------------------*/
+typedef  struct cab
+{
+	uint16		lport;		/* TCP local  port     (ie: local machine)		*/
+	uint16		rport;		/* TCP remote port     (ie: remote machine)		*/
+	uint32		rhost;		/* TCP remote IP addr  (ie: remote machine)		*/
+	uint32		lhost;		/* TCP local  IP addr  (ie: local machine)		*/
+} CAB;
 
 /*
  *   Connection information block
