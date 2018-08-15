@@ -716,7 +716,8 @@ fatal(short sig)
 {
 	DEBUG(("'%s': fatal error: %d", get_curproc()->name, sig));
 	DEBUG(("'%s': fatal error, trying to clean up", get_curproc()->name ));
-	usb_stop();
+
+	kthread_exit(0);
 }
 
 
@@ -737,7 +738,8 @@ sigterm(void)
 
 //	}
 	DEBUG(("shutdown USB" ));
-	usb_stop();
+
+	kthread_exit(0);
 #endif
 }
 
