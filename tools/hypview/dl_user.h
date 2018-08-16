@@ -111,8 +111,6 @@
 #define	PROGRAM_UNAME		"HYP_VIEW"
 /* Name of the resource file */
 #define	RESOURCE_FILE		"hyp_view.rsc"
-/* Name of the resource header file */
-#define	RESOURCE_HEADER_FILE	"hyp_view.h"
 /* Name of the BubbleGEM header file */
 #define	BUBBLEGEM_FILE		"hyp_view.bgh"
 /* Name of the ST-Guide help file */

@@ -1,0 +1,25 @@
+Attention:
+
+This directory now contains the MASTER resource files
+(previously they were created by a MultiLayer Resource
+in the parent directory). Also, definition files have been
+changed to use *.rso format. If you absolutely need to
+edit the files with some other editor, then:
+- use ORCS to create definition files for it (all known
+  formats are supported, even *.rsm)
+- Edit the file
+- DELETE the *.rso file. This is important, because if
+  you use eg. InterFace to edit the resource, it will
+  not care about the *.rso file, and only update the
+  *.hrd file. ORCS will then load the (old) rso file,
+  which does not match anymore.
+- Run ORCS again, and recreate the *.rso file by just saving
+  the file
+
+
+Also, since the various languages are now in separate resource
+files, don't forget to update the other two if you made structural
+changes (change object types, reorder items etc.)
+
+The hyp_view.rsc in the parent directory should be a copy
+of the en.rsc from here.

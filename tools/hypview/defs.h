@@ -75,7 +75,7 @@ struct _document_
 	long lines;                 /* Number of lines (in window lines) */
 	long height;
 	long columns;               /* Number of window columns */
-	short buttons;              /* Toolbar button configuration (bit vector)*/
+	unsigned long buttons;      /* Toolbar button configuration (bit vector)*/
 	void *data;                 /* File format specific data */
 	short mtime,mdate;          /* File modification time and date */
 	WINDOW_DATA *window;        /* Window associated with this file */
@@ -96,7 +96,7 @@ typedef struct _document_ DOCUMENT;
 
 
 /*	Convert toolbar object number into bit values for DOCUMENT->buttons */
-#define BITVAL(x)	(1<<(x-4))
+#define BITVAL(x)	(1L<<(x))
 
 
 /*

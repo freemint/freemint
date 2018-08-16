@@ -35,7 +35,7 @@
 
 #include "dl_user.h"            /* Application specific definitions */
 
-#include RESOURCE_HEADER_FILE   /* Include resource header file */
+#include "hyp_view/en.h"        /* Include resource header file */
 
 #include "dl_miss.h"            /* Include missing type definitions */
 

@@ -7,7 +7,7 @@ HEADER = \
 	dl_miss.h \
 	dl_user.h \
 	hyp.h \
-	hyp_view.h
+	hyp_view/en.h
 
 COBJS = \
 	autoloc.c \

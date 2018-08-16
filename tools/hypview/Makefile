@@ -53,6 +53,7 @@ include $(top_srcdir)/DEPENDENCIES
 
 install: all
 	$(top_srcdir)/mkinstalldirs $(installdir)
-	cp $(TARGET) $(srcdir)/hyp_view.rsc $(srcdir)/hyp_view.hrd $(installdir)
+	cp $(TARGET) $(srcdir)/hyp_view.rsc $(installdir)
+	cp $(srcdir)/hyp_view/en.rso $(installdir)/hyp_view.rso
 	chmod 755 $(installdir)/$(TARGET)
 	$(STRIP) $(installdir)/$(TARGET)
