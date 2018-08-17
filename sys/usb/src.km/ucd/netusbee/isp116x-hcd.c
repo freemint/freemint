@@ -1795,10 +1795,6 @@ netusbee_hub_poll(PROC *proc, long dummy)
 void 
 netusbee_hub_poll_thread(void *dummy)
 {
-	/* join process group of loader, 
-	 * otherwise doesn't ends when shutingdown
-	 */
-
 	for (;;)
 	{
 		usb_rh_wakeup();

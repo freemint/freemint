@@ -621,11 +621,6 @@ usb_hub_poll_thread(void *ptr)
 {
 	struct usb_device *dev = (struct usb_device *)ptr;
 
-	/* join process group of loader, 
-	 * otherwise doesn't ends when shutingdown
-	 */
-	p_setpgrp(0, loader_pgrp);
-
 	while (dev->maxchild)
 	{
 		(void)usb_hub_events(dev->privptr);
@@ -780,11 +775,6 @@ usb_hub_thread(void *ptr)
 {
 	struct usb_device *dev = (struct usb_device *)ptr;
 	setup_common();
-	
-	/* join process group of loader, 
-	 * otherwise doesn't ends when shutingdown
-	 */
-	p_setpgrp(0, loader_pgrp);
 
 	for (;;)
 	{
