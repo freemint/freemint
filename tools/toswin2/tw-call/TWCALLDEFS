@@ -1,0 +1,31 @@
+ifeq ($(twcall),000)
+TARGET = ./tw-call.app
+CPU = 000
+endif
+
+ifeq ($(twcall),02060)
+TARGET = ./tw-call.app
+CPU = 020-60
+endif
+
+ifeq ($(twcall),030)
+TARGET = ./tw-call.app
+CPU = 030
+endif
+
+ifeq ($(twcall),040)
+TARGET = ./tw-call.app
+CPU = 040
+endif
+
+ifeq ($(twcall),060)
+TARGET = ./tw-call.app
+CPU = 060
+endif
+
+ifeq ($(twcall),col)
+TARGET = ./tw-call.app
+CPU = v4e
+endif
+
+twcalltargets = 000 02060 030 040 060 col

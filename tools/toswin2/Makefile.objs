@@ -1,0 +1,61 @@
+#
+# Makefile for TosWin 2
+#
+
+SHELL = /bin/sh
+SUBDIRS = ../tw-call
+
+srcdir = ..
+top_srcdir = ../..
+subdir = $(compile_dir)
+
+installdir = /opt/GEM/toswin2
+
+default: all
+
+include $(srcdir)/TOSWIN2DEFS
+
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
+
+all-here: build
+
+# default overwrites
+#CFLAGS += -DDEBUG -g
+#CFLAGS += -DONLY_XAAES
+
+# default definitions
+OBJS = $(COBJS:.c=.o)
+LIBS += -lcflib -lgem
+GENFILES = $(TARGET) pc.pdb
+
+MEMDEBUG = no
+ifeq ($(MEMDEBUG), yes)
+CFLAGS += -DMEMDEBUG=\"/tmp/memdebug.txt\" -O0
+LDFLAGS += -Wl,--wrap -Wl,malloc -Wl,--wrap -Wl,realloc \
+-Wl,--wrap -Wl,calloc -Wl,--wrap -Wl,free
+endif
+
+VPATH = ..
+
+#
+# main target
+#
+
+build: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+
+install: all
+	$(top_srcdir)/mkinstalldirs $(installdir)
+	cp $(TARGET) $(installdir)
+	chmod 755 $(installdir)/$(TARGET)
+	$(STRIP) $(installdir)/$(TARGET)
+
+
+# default dependencies
+# must be included last
+include $(top_srcdir)/DEPENDENCIES
+

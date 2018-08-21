@@ -1,7 +1,6 @@
 #
 # Makefile for TosWin 2
 #
-TARGET = toswin2.app
 
 SHELL = /bin/sh
 SUBDIRS = tw-call
@@ -10,40 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = toswin2
 
-installdir = /opt/GEM/toswin2
+default: all-here
 
-default: all
+include $(srcdir)/TOSWIN2DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-#CFLAGS += -DDEBUG -g
-#CFLAGS += -DONLY_XAAES
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-LIBS += -lcflib -lgem
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
-MEMDEBUG = no
-ifeq ($(MEMDEBUG), yes)
-CFLAGS += -DMEMDEBUG=\"/tmp/memdebug.txt\" -O0
-LDFLAGS += -Wl,--wrap -Wl,malloc -Wl,--wrap -Wl,realloc \
--Wl,--wrap -Wl,calloc -Wl,--wrap -Wl,free
+
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(toswin2targets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(toswin2targets):
+	$(MAKE) buildtoswin2 toswin2=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(toswin2),)
+
+compile_dir = .compile_$(toswin2)
+toswin2target = _stmp_$(toswin2)
+realtarget = $(toswin2target)
+
+$(toswin2target): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
 endif
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-
-include $(top_srcdir)/DEPENDENCIES
-
-install: all
-	$(top_srcdir)/mkinstalldirs $(installdir)
-	cp $(TARGET) $(srcdir)/toswin2.rsc $(srcdir)/toswin2.hrd $(installdir)
-	chmod 755 $(installdir)/$(TARGET)
-	$(STRIP) $(installdir)/$(TARGET)
-	
+buildtoswin2: $(realtarget)

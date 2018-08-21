@@ -1,0 +1,31 @@
+ifeq ($(toswin2),000)
+TARGET = ./toswin2.app
+CPU = 000
+endif
+
+ifeq ($(toswin2),02060)
+TARGET = ./toswin2.app
+CPU = 020-60
+endif
+
+ifeq ($(toswin2),030)
+TARGET = ./toswin2.app
+CPU = 030
+endif
+
+ifeq ($(toswin2),040)
+TARGET = ./toswin2.app
+CPU = 040
+endif
+
+ifeq ($(toswin2),060)
+TARGET = ./toswin2.app
+CPU = 060
+endif
+
+ifeq ($(toswin2),col)
+TARGET = ./toswin2.app
+CPU = v4e
+endif
+
+toswin2targets = 000 02060 030 040 060 col

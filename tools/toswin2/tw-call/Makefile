@@ -1,7 +1,6 @@
 #
 # Makefile for tw-call, TosWin2 helper
 #
-TARGET = tw-call.app
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,33 +9,55 @@ srcdir = .
 top_srcdir = ../..
 subdir = tw-call
 
-installdir = /opt/GEM/toswin2
+default: all-here
 
-default: all
+include $(srcdir)/TWCALLDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-LIBS += -lcflib -lgem
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(twcalltargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
+$(twcalltargets):
+	$(MAKE) buildtwcall twcall=$@
 
-include $(top_srcdir)/DEPENDENCIES
+#
+# multi target stuff
+#
 
-install: all
-	$(top_srcdir)/mkinstalldirs $(installdir)
-	cp $(TARGET) $(installdir)
-	chmod 755 $(installdir)/$(TARGET)
-	$(STRIP) $(installdir)/$(TARGET)
-	
+ifneq ($(twcall),)
+
+compile_dir = .compile_$(twcall)
+twcalltarget = _stmp_$(twcall)
+realtarget = $(twcalltarget)
+
+$(twcalltarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildtwcall: $(realtarget)
