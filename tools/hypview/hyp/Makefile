@@ -1,7 +1,6 @@
 #
 # Makefile for hyp_view (hyp)
 #
-TARGET = libhyp.a
 
 SHELL = /bin/sh
 SUBDIRS =
@@ -10,30 +9,55 @@ srcdir = .
 top_srcdir = ../..
 subdir = hyp
 
-installdir =
+default: all-here
 
-default: all
+include $(srcdir)/HYPDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-CFLAGS += -g
-
-ifneq (yes,$(LIBCMINI))
-INCLUDES = -I$(top_srcdir)/hypview
-else
-INCLUDES = -I$(LIBCMINI_PATH)/include -I$(top_srcdir)/hypview
-endif
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) libhyp*.a
 
-$(TARGET) : $(OBJS)
-	$(AR) cr $@ $(OBJS)
-	$(RANLIB) $@
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(hyptargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(hyptargets):
+	$(MAKE) buildhyp hyp=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(hyp),)
+
+compile_dir = .compile_$(hyp)
+hyptarget = _stmp_$(hyp)
+realtarget = $(hyptarget)
+
+$(hyptarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildhyp: $(realtarget)

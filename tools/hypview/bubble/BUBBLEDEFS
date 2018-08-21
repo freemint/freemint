@@ -1,0 +1,31 @@
+ifeq ($(bubble),000)
+TARGET = ../libbgh000.a
+CPU = 000
+endif
+
+ifeq ($(bubble),02060)
+TARGET = ../libbgh020-60.a
+CPU = 020-60
+endif
+
+ifeq ($(bubble),030)
+TARGET = ../libbgh030.a
+CPU = 030
+endif
+
+ifeq ($(bubble),040)
+TARGET = ../libbgh040.a
+CPU = 040
+endif
+
+ifeq ($(bubble),060)
+TARGET = ../libbgh060.a
+CPU = 060
+endif
+
+ifeq ($(bubble),col)
+TARGET = ../libbghv4e.a
+CPU = v4e
+endif
+
+bubbletargets = 000 02060 030 040 060 col

@@ -1,0 +1,31 @@
+ifeq ($(plain),000)
+TARGET = ../libplain000.a
+CPU = 000
+endif
+
+ifeq ($(plain),02060)
+TARGET = ../libplain020-60.a
+CPU = 020-60
+endif
+
+ifeq ($(plain),030)
+TARGET = ../libplain030.a
+CPU = 030
+endif
+
+ifeq ($(plain),040)
+TARGET = ../libplain040.a
+CPU = 040
+endif
+
+ifeq ($(plain),060)
+TARGET = ../libplain060.a
+CPU = 060
+endif
+
+ifeq ($(plain),col)
+TARGET = ../libplainv4e.a
+CPU = v4e
+endif
+
+plaintargets = 000 02060 030 040 060 col
