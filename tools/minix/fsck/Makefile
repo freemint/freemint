@@ -1,7 +1,6 @@
 #
 # Makefile for minixfs checker
 #
-TARGET = fsck.minix
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,28 +9,55 @@ srcdir = .
 top_srcdir = ../..
 subdir = fsck
 
-default: all
+default: all-here
+
+include $(srcdir)/FSCKDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)/IO
 
 # default definitions
-OBJS = $(COBJS:.c=.o) fsck1.o
-LIBS += $(LIBIO)
-GENFILES = $(TARGET)
-
-$(TARGET): $(OBJS) $(LIBIOSTMP)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-
-fsck1.o: fsck.c fsck.o
-	@echo "$(CC) -DV1 $(CFLAGS) -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) -DV1 $(CFLAGS) -c $< -o $@
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(fscktargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(fscktargets):
+	$(MAKE) buildfsck fsck=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(fsck),)
+
+compile_dir = .compile_$(fsck)
+fscktarget = _stmp_$(fsck)
+realtarget = $(fscktarget)
+
+$(fscktarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildfsck: $(realtarget)

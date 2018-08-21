@@ -16,5 +16,6 @@ CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
 #
 # libIO target
 #
-LIBIOSTMP = $(top_srcdir)/IO/libIO.a
-LIBIO = -L$(top_srcdir)/IO -lIO
+LIBIOTARGET = libIO$(CPU).a
+LIBIOSTMP = $(top_srcdir)/IO/libIO$(CPU).a
+LIBIO = -L$(top_srcdir)/IO -lIO$(CPU)

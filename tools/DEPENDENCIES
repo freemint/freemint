@@ -7,3 +7,8 @@ include $(top_srcdir)/../DEPENDENCIES
 # private definitions
 #
 
+#
+# libio target
+#
+$(LIBIOTARGET) $(LIBIOSTMP):
+	cd $(top_srcdir)/IO; $(MAKE) CPU="$(CPU)"
