@@ -1,38 +1,63 @@
 #
-# Makefile for MiNT loader
+# Makefile for USB tool
 #
-TARGET = usbtool.acc
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ..
-subdir = usb
+subdir = usbtool
 
-default: all
+default: all-here
 
-CPU = 000
+include $(srcdir)/USBTOOLDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-CFLAGS += -fno-builtin -I../../sys
-LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
-LIBS = -lgcc -lgem
-STRIPFLAGS =
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-$(TARGET): $(OBJS)
-	$(LD) -o $@ -Wall $^ $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(usbtooltargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
+$(usbtooltargets):
+	$(MAKE) buildusbtool usbtool=$@
 
-include $(top_srcdir)/DEPENDENCIES
+#
+# multi target stuff
+#
+
+ifneq ($(usbtool),)
+
+compile_dir = .compile_$(usbtool)
+usbtooltarget = _stmp_$(usbtool)
+realtarget = $(usbtooltarget)
+
+$(usbtooltarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildusbtool: $(realtarget)
