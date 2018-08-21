@@ -1,0 +1,31 @@
+ifeq ($(lpflush),000)
+TARGET = ./lpflush
+CPU = 000
+endif
+
+ifeq ($(lpflush),02060)
+TARGET = ./lpflush
+CPU = 020-60
+endif
+
+ifeq ($(lpflush),030)
+TARGET = ./lpflush
+CPU = 030
+endif
+
+ifeq ($(lpflush),040)
+TARGET = ./lpflush
+CPU = 040
+endif
+
+ifeq ($(lpflush),060)
+TARGET = ./lpflush
+CPU = 060
+endif
+
+ifeq ($(lpflush),col)
+TARGET = ./lpflush
+CPU = v4e
+endif
+
+lpflushtargets = 000 02060 030 040 060 col
