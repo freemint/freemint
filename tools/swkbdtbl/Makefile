@@ -1,32 +1,63 @@
 #
 # the keyboard table switcher
 #
-TARGET = swkbdtbl
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ..
+subdir = swkbdtbl
 
-default: all
+default: all-here
+
+include $(srcdir)/SWKBDTBLDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-LIBS = 
 
 # default definitions
-OBJS = $(TARGET).o
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
-# default dependencies
-# must be included last
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(swkbdtbltargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(swkbdtbltargets):
+	$(MAKE) buildswkbdtbl swkbdtbl=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(swkbdtbl),)
+
+compile_dir = .compile_$(swkbdtbl)
+swkbdtbltarget = _stmp_$(swkbdtbl)
+realtarget = $(swkbdtbltarget)
+
+$(swkbdtbltarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildswkbdtbl: $(realtarget)
