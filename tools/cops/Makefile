@@ -11,6 +11,8 @@ subdir = cops
 
 default: all-here
 
+include $(srcdir)/COPSDEFS
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
@@ -18,11 +20,10 @@ include $(top_srcdir)/PHONY
 all-here: all-targets
 
 # default overwrites
-include $(srcdir)/COPSDEFS
 
 # default definitions
 compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs) cops*.app
+GENFILES = $(compile_all_dirs)
 
 
 all-targets:
