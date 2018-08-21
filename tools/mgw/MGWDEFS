@@ -1,0 +1,31 @@
+ifeq ($(mgw),000)
+TARGET = ./mgw.prg
+CPU = 000
+endif
+
+ifeq ($(mgw),02060)
+TARGET = ./mgw.prg
+CPU = 020-60
+endif
+
+ifeq ($(mgw),030)
+TARGET = ./mgw.prg
+CPU = 030
+endif
+
+ifeq ($(mgw),040)
+TARGET = ./mgw.prg
+CPU = 040
+endif
+
+ifeq ($(mgw),060)
+TARGET = ./mgw.prg
+CPU = 060
+endif
+
+ifeq ($(mgw),col)
+TARGET = ./mgw.prg
+CPU = v4e
+endif
+
+mgwtargets = 000 02060 030 040 060 col
