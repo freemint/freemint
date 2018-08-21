@@ -1,7 +1,6 @@
 #
 # Makefile for minixfs tools
 #
-TARGET = flist mfsconf
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,28 +9,55 @@ srcdir = .
 top_srcdir = ../..
 subdir = tools
 
-default: all
+default: all-here
+
+include $(srcdir)/TOOLSDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-GENFILES = $(TARGET)
-
-FLISTOBJS = flist.o
-MFSCONFOBJS = mfsconf.o
-
-flist: $(FLISTOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(FLISTOBJS) $(LIBS)
-
-mfsconf: $(MFSCONFOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MFSCONFOBJS) $(LIBS)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(toolstargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(toolstargets):
+	$(MAKE) buildtools tools=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(tools),)
+
+compile_dir = .compile_$(tools)
+toolstarget = _stmp_$(tools)
+realtarget = $(toolstarget)
+
+$(toolstarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildtools: $(realtarget)

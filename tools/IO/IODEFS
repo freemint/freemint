@@ -1,0 +1,31 @@
+ifeq ($(io),000)
+TARGET = ../libIO000.a
+CPU = 000
+endif
+
+ifeq ($(io),02060)
+TARGET = ../libIO020-60.a
+CPU = 020-60
+endif
+
+ifeq ($(io),030)
+TARGET = ../libIO030.a
+CPU = 030
+endif
+
+ifeq ($(io),040)
+TARGET = ../libIO040.a
+CPU = 040
+endif
+
+ifeq ($(io),060)
+TARGET = ../libIO060.a
+CPU = 060
+endif
+
+ifeq ($(io),col)
+TARGET = ../libIOv4e.a
+CPU = v4e
+endif
+
+iotargets = 000 02060 030 040 060 col
