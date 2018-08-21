@@ -1,7 +1,6 @@
 #
 # Makefile for mgw, a draconis TCP/IP emulator for mintnet
 #
-TARGET = mgw.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,22 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = mgw
 
-default: all
+default: all-here
+
+include $(srcdir)/MGWDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-GENFILES = $(TARGET)
-
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -Wl,--mprg-flags,0x17
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(mgwtargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(mgwtargets):
+	$(MAKE) buildmgw mgw=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(mgw),)
+
+compile_dir = .compile_$(mgw)
+mgwtarget = _stmp_$(mgw)
+realtarget = $(mgwtarget)
+
+$(mgwtarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildmgw: $(realtarget)
