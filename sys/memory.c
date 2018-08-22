@@ -250,6 +250,29 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	if (size & MASKBITS)
 		size &= ~MASKBITS;
 
+	/*
+	 * we don't want to end up beyond 2GB
+	 */
+	if (place >= 0x80000000UL)
+		return 0;
+	/*
+	 * workaround for 030 memory-protection, until
+	 * mmu table initialization has been fixed
+	 */
+#ifdef WITH_MMU_SUPPORT
+	if (!no_mem_prot && mcpu == 30 && (place + size) > 0x10000000UL)
+	{
+		FORCE("add_region: ommitting last %lu KB of memory", (place + size - 0x10000000UL) >> 10);
+		size = 0x10000000UL - place;
+		/* ramtop might also be wrong in this case */
+		if (*(unsigned long *)0x05a4L > 0x10000000UL)
+		{
+			FORCE("ramtop adjusted");
+			*(unsigned long *)0x05a4L = 0x10000000UL;
+		}
+	}
+#endif
+
 	/* only add if there's anything left */
 	if (size)
 	{
