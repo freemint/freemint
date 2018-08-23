@@ -1687,7 +1687,7 @@ BIG_MEM_DUMP_1 (int bigone, PROC *proc, MMAP which)
 	*buf = '\0';
 	for (mp = *map; mp; mp = mp->next)
 	{
-		for (loc = mp->loc; loc < (mp->loc + mp->len); loc += EIGHT_K)
+		for (loc = mp->loc; loc < (mp->loc + mp->len); loc += QUANTUM)
 		{
 			if (first || ((loc & 0x1ffffL) == 0))
 			{
@@ -1701,7 +1701,7 @@ BIG_MEM_DUMP_1 (int bigone, PROC *proc, MMAP which)
 			
 			if (loc == mp->loc)
 			{
-				*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
+				*lp++ = modesym[global_mode_table[loc / QUANTUM]];
 				
 				for (p = proclist; p; p = p->gl_next)
 				{
