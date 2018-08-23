@@ -37,12 +37,8 @@
 /* macro for turning a curproc->base_table pointer into a 16-byte boundary */
 # define ROUND16(ld)	((long_desc *)(((ulong)(ld) + 15) & ~15))
 
-/* TBL_SIZE is the size in entries of the A, B, and C level tables */
-# define TBL_SIZE	(16)
-# define TBL_SIZE_BYTES	(TBL_SIZE * sizeof (long_desc))
-
 typedef struct {
-	short limit;
+	unsigned short limit;
 	unsigned zeros:14;
 	unsigned dt:2;
 	struct long_desc *tbl_address;
@@ -51,7 +47,7 @@ typedef struct {
 /* format of long descriptors, both page descriptors and table descriptors */
 
 typedef struct {
-	unsigned limit;		/* set to $7fff to disable */
+	unsigned short limit; /* set to $7fff to disable */
 	unsigned unused1:6;
 	unsigned unused2:1;
 	unsigned s:1;		/* 1 grants supervisor access only */
