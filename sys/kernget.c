@@ -1178,16 +1178,16 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 		return ENOMEM;
 
 
-	// exchange LOG2_EIGHT_K with PAGEBITS. !!!
 	// Why is it in 'kmemory.c' and not in 'kmemory.h' ?
+#define PAGESIZE 8192
 
 	ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
-		total >> LOG2_EIGHT_K,
-		resid >> LOG2_EIGHT_K,
-		share >> LOG2_EIGHT_K,
-		txtrs >> LOG2_EIGHT_K,
-		librs >> LOG2_EIGHT_K,
-		datrs >> LOG2_EIGHT_K,
+		total / PAGESIZE,
+		resid / PAGESIZE,
+		share / PAGESIZE,
+		txtrs / PAGESIZE,
+		librs / PAGESIZE,
+		datrs / PAGESIZE,
 		dpage
 	);
 	info->len = len;
