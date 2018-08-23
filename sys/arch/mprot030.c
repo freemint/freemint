@@ -109,10 +109,29 @@
 #define TIC_SHIFT (TID_BITS + PAGE_SIZE_SHIFT)
 #define TID_SHIFT (PAGE_SIZE_SHIFT)
 
-#define TIA_MASK ((1 << TIA_BITS) - 1)
-#define TIB_MASK ((1 << TIB_BITS) - 1)
-#define TIC_MASK ((1 << TIC_BITS) - 1)
-#define TID_MASK ((1 << TID_BITS) - 1)
+/* TBL_SIZE is the size in entries of the A, B, and C level tables */
+# define TBLA_SIZE	(1 << TIA_BITS)
+# define TBLB_SIZE	(1 << TIB_BITS)
+# define TBLC_SIZE	(1 << TIC_BITS)
+# define TBLD_SIZE	(1 << TID_BITS)
+# define TBLA_SIZE_BYTES	(TBLA_SIZE * sizeof (long_desc))
+# define TBLB_SIZE_BYTES	(TBLB_SIZE * sizeof (long_desc))
+# define TBLC_SIZE_BYTES	(TBLC_SIZE * sizeof (long_desc))
+# define TBLD_SIZE_BYTES	(TBLD_SIZE * sizeof (long_desc))
+
+#define TIA_MASK (TBLA_SIZE - 1)
+#define TIB_MASK (TBLB_SIZE - 1)
+#define TIC_MASK (TBLC_SIZE - 1)
+#define TID_MASK (TBLD_SIZE - 1)
+
+/* the memory area that an entry in a level C table describes (1MB) */
+#define TBLC_MEMSIZE (1UL << TIC_SHIFT)
+/* the memory area that an entry in a level B table describes (16MB) */
+#define TBLB_MEMSIZE (1UL << TIB_SHIFT)
+/* the memory area that an entry in a level A table describes (256MB) */
+#define TBLA_MEMSIZE (1UL << TIA_SHIFT)
+
+#define TTRAM_START 0x01000000UL
 
 
 #if 0
@@ -166,7 +185,7 @@ int tt_mbytes;
  * bytes here.
  */
 
-unsigned char *global_mode_table = 0L;
+static unsigned char *global_mode_table = 0L;
 
 /*
  * prototype descriptors; field u1 must be all ones, other u? are zero.
@@ -178,15 +197,15 @@ unsigned char *global_mode_table = 0L;
  * a page with the corresponding value in global_mode_table.
  */
 
-page_type g_page;
-page_type g_ci_page;
-page_type s_ci_page;
-page_type s_page;
-page_type readable_page;
-page_type invalid_page;
-page_type page_ptr;
+static page_type g_page;
+static page_type g_ci_page;
+static page_type s_ci_page;
+static page_type s_page;
+static page_type readable_page;
+static page_type invalid_page;
+static page_type page_ptr;
 
-page_type *const proto_page_type[] =
+static page_type *const proto_page_type[] =
 	{ &invalid_page, &g_page, &s_page, &readable_page, &invalid_page };
 /*	private	     global    super	private/read	invalid */
 
@@ -226,7 +245,7 @@ init_tables(void)
 
 	offset_tt_ram = 0;
 
-	if (phys_top_tt == 0x01000000L)
+	if (phys_top_tt <= TTRAM_START)
 		mint_top_tt = 0;
 	else
 	{
@@ -242,11 +261,11 @@ init_tables(void)
 	mint_top_st = phys_top_st;
 
 	if (mint_top_tt)
-		tt_mbytes = (int)((mint_top_tt - 0x01000000L + ONE_MEG - 1L) / ONE_MEG);
+		tt_mbytes = (int)((mint_top_tt - TTRAM_START + TBLC_MEMSIZE - 1L) / TBLC_MEMSIZE);
 	else
 		tt_mbytes = 0;
 
-	n_megabytes = (int) ((mint_top_st / ONE_MEG) + tt_mbytes);
+	n_megabytes = (int) ((mint_top_st / TBLC_MEMSIZE) + tt_mbytes);
 
 	/*
 	 * page table size: room for A table, B0 table, BF table, STRAM C
@@ -254,12 +273,15 @@ init_tables(void)
 	 * bytes per megabyte.
 	 */
 
-	page_table_size = (4L * TBL_SIZE_BYTES) +
-			  (((tt_mbytes+15L)/16L) * TBL_SIZE_BYTES) +
-			  (n_megabytes*1024L);
+	page_table_size =
+		TBLA_SIZE_BYTES +                            /* level A table */
+		TBLB_SIZE_BYTES + TBLB_SIZE_BYTES +          /* B0 and BF tables */
+		TBLC_SIZE_BYTES +                            /* level C table for STRAM */
+		(((tt_mbytes+15L)/16L) * TBLC_SIZE_BYTES) +  /* level C tables for TTRAM */
+		(n_megabytes*TBLD_SIZE_BYTES);               /* level D page descriptors */
 
-	global_mode_table_size = ((SIXTEEN_MEG / PHYS_PAGESIZE) +
-				 (((ulong)tt_mbytes * ONE_MEG) / PHYS_PAGESIZE));
+	global_mode_table_size = ((TBLB_MEMSIZE / PHYS_PAGESIZE) +
+				 (((ulong)tt_mbytes * TBLC_MEMSIZE) / PHYS_PAGESIZE));
 
 	global_mode_table = kmalloc(global_mode_table_size);
 
@@ -384,7 +406,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 			return 1;
 		}
 	}
-	else if (start >= 0x01000000L && start < mint_top_tt) {
+	else if (start >= TTRAM_START && start < mint_top_tt) {
 		/* start is in TT RAM; fail if not entirely in TT RAM */
 		if (start+len > mint_top_tt) {
 			return 1;
@@ -402,7 +424,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 	c_index = (int)(start >> TIC_SHIFT) & TIC_MASK;
 	d_index = (int)(start >> TID_SHIFT) & TID_MASK;
 
-	if ((long)base_tbl >= 0x01000000L)
+	if ((ulong)base_tbl >= TTRAM_START)
 		offset = offset_tt_ram;
 	else
 		offset = 0;
@@ -471,7 +493,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 	c_index = (int)(start >> TIC_SHIFT) & TIC_MASK;
 	d_index = (int)(start >> TID_SHIFT) & TID_MASK;
 
-	if ((long)base_tbl >= 0x01000000L)
+	if ((ulong)base_tbl >= TTRAM_START)
 		offset = offset_tt_ram;
 	else
 		offset = 0;
@@ -783,17 +805,17 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	TRACELOW(("init_page_table (p_mem = %lx)", (unsigned long)p_mem));
 
 	tptr = p_mem->page_table;
-	if ((long) tptr >= 0x01000000L)
+	if ((ulong) tptr >= TTRAM_START)
 		offset = offset_tt_ram;
 	else
 		offset = 0;
 
 	tbl_a = tptr;
-	tptr += TBL_SIZE;
+	tptr += TBLA_SIZE;
 	tbl_b0 = tptr;
-	tptr += TBL_SIZE;
+	tptr += TBLB_SIZE;
 	tbl_bf = tptr;
-	tptr += TBL_SIZE;
+	tptr += TBLB_SIZE;
 
 	/*
 	 * table A indexes by the first nybble: $0 and $F refer to their tables,
@@ -823,15 +845,15 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	tbl_b0[0].page_type = page_ptr;
 	tbl_b0[0].tbl_address = (long_desc *)((ulong)tptr + offset);
 	tbl_c = tptr;
-	tptr += TBL_SIZE;
+	tptr += TBLC_SIZE;
 
 	/* for each megabyte that is RAM, allocate a table */
-	for (i = 0, k = 0, p = 0; p < mint_top_st; i++, p += 0x00100000L) {
+	for (i = 0, k = 0, p = 0; p < mint_top_st; i++, p += TBLC_MEMSIZE) {
 		tbl_c[i].page_type = page_ptr;
 		tbl_c[i].tbl_address = (long_desc *)((ulong)tptr + offset);
 
 		/* for each page in this megabyte, write a page entry */
-		for (q = p, j = 0; j < 128; j++, q += 0x2000, k++) {
+		for (q = p, j = 0; j < TBLD_SIZE; j++, q += PHYS_PAGESIZE, k++) {
 			tptr->page_type = *proto_page_type[global_mode_table[k]];
 			tptr->tbl_address = (long_desc *)q;
 			tptr++;
@@ -839,7 +861,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	}
 
 	/* now for each megabyte from mint_top_st to ROM, mark global */
-	for ( ; p < 0x00E00000L; i++, p += 0x00100000L) {
+	for ( ; p < 0x00E00000L; i++, p += TBLC_MEMSIZE) {
 		tbl_c[i].page_type = g_page;
 		tbl_c[i].tbl_address = (long_desc *)p;
 	}
@@ -847,7 +869,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	/* fill in the E and F tables: 00Ex is ROM, 00Fx is I/O  */
 	tbl_c[i].page_type = g_page;
 	tbl_c[i].tbl_address = (long_desc *)p;
-	i++, p += 0x00100000L;
+	i++, p += TBLC_MEMSIZE;
 	tbl_c[i].page_type = g_ci_page;
 	tbl_c[i].tbl_address = (long_desc *)p;
 
@@ -870,26 +892,26 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 */
 
 	/* i counts 16MBs */
-	for (i = 1, p = 0x01000000L, g = 2048;
+	for (i = 1, p = TTRAM_START, g = TTRAM_START / PHYS_PAGESIZE;
 	     p < mint_top_tt;
-	     p += SIXTEEN_MEG, i++) {
+	     p += TBLB_MEMSIZE, i++) {
 		tbl_b0[i].page_type = page_ptr;
 		tbl_b0[i].tbl_address = (long_desc *)((ulong)tptr + offset);
 		tbl_c = tptr;
-		tptr += TBL_SIZE;
+		tptr += TBLC_SIZE;
 
 		/* j counts MBs */
-		for (j = 0, q = p; j < 16 && q < mint_top_tt; q += ONE_MEG, j++) {
+		for (j = 0, q = p; j < TBLC_SIZE && q < mint_top_tt; q += TBLC_MEMSIZE, j++) {
 			tbl_c[j].page_type = page_ptr;
 			tbl_c[j].tbl_address = (long_desc *)((ulong)tptr + offset);
 			/* k counts pages (8K) */
-			for (r = q, k = 0; k < 128; k++, r += 0x2000, g++) {
+			for (r = q, k = 0; k < TBLD_SIZE; k++, r += PHYS_PAGESIZE, g++) {
 				tptr->page_type = *proto_page_type[global_mode_table[g]];
 				tptr->tbl_address = (long_desc *)(r + offset_tt_ram);
 				tptr++;
 			}
 		}
-		for ( ; j < 16; j++, q += ONE_MEG) {
+		for ( ; j < TBLC_SIZE; j++, q += TBLC_MEMSIZE) {
 			/* fill in the rest of this 16MB */
 			tbl_c[j].page_type = s_page;
 			tbl_c[j].tbl_address = (long_desc *)(q + offset_tt_ram);
@@ -897,7 +919,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	}
 
 	/* fill in the rest of $00-$0F as supervisor, but cacheable */
-	for ( ; i < 16; i++, p += SIXTEEN_MEG) {
+	for ( ; i < TBLB_SIZE; i++, p += TBLB_MEMSIZE) {
 		tbl_b0[i].page_type = s_page;
 		tbl_b0[i].tbl_address = (long_desc *)p;
 	}
@@ -991,8 +1013,8 @@ mem_prot_special(PROC *proc)
 	mark_pages(proc->p_mem->page_table,0,mint_top_st,1,0,0);
 	if (mint_top_tt) {
 		mark_pages(proc->p_mem->page_table,
-			   0x01000000L,
-			   mint_top_tt - 0x01000000L,
+			   TTRAM_START,
+			   mint_top_tt - TTRAM_START,
 			   1,0,0);
 	}
 
@@ -1034,7 +1056,7 @@ _dump_tree(long_desc tbl, int level)
 	ulong offset;
 	static const char spaces[9] = "        ";
 
-	if ((long) &tbl >= 0x01000000L)
+	if ((ulong) &tbl >= TTRAM_START)
 		offset = offset_tt_ram;
 	else
 		offset = 0;
