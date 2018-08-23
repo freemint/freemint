@@ -96,6 +96,25 @@
 
 #if defined(WITH_MMU_SUPPORT) && defined(M68030)
 
+#define TIA_BITS 4
+#define TIB_BITS 4
+#define TIC_BITS 4
+#define TID_BITS 7
+#define PAGE_SIZE_SHIFT 13
+/* 0+4+4+4+7+13 == 32 */
+#define PHYS_PAGESIZE (1UL << PAGE_SIZE_SHIFT)
+
+#define TIA_SHIFT (TIB_BITS + TIC_BITS + TID_BITS + PAGE_SIZE_SHIFT)
+#define TIB_SHIFT (TIC_BITS + TID_BITS + PAGE_SIZE_SHIFT)
+#define TIC_SHIFT (TID_BITS + PAGE_SIZE_SHIFT)
+#define TID_SHIFT (PAGE_SIZE_SHIFT)
+
+#define TIA_MASK ((1 << TIA_BITS) - 1)
+#define TIB_MASK ((1 << TIB_BITS) - 1)
+#define TIC_MASK ((1 << TIC_BITS) - 1)
+#define TID_MASK ((1 << TID_BITS) - 1)
+
+
 #if 0
 #define MP_DEBUG(x) DEBUG(x)
 #else
@@ -239,8 +258,8 @@ init_tables(void)
 			  (((tt_mbytes+15L)/16L) * TBL_SIZE_BYTES) +
 			  (n_megabytes*1024L);
 
-	global_mode_table_size = ((SIXTEEN_MEG / QUANTUM) +
-				 (((ulong)tt_mbytes * ONE_MEG) / QUANTUM));
+	global_mode_table_size = ((SIXTEEN_MEG / PHYS_PAGESIZE) +
+				 (((ulong)tt_mbytes * ONE_MEG) / PHYS_PAGESIZE));
 
 	global_mode_table = kmalloc(global_mode_table_size);
 
@@ -289,11 +308,11 @@ init_tables(void)
 	tc.sre = 0;
 	tc.fcl = 0;
 	tc.is = 0;
-	tc.tia = 4;
-	tc.tib = 4;
-	tc.tic = 4;
-	tc.tid = 7;			/* 0+4+4+4+7+13 == 32 */
-	tc.ps = 13;			/* 8K page size */
+	tc.tia = TIA_BITS;
+	tc.tib = TIB_BITS;
+	tc.tic = TIC_BITS;
+	tc.tid = TID_BITS;			/* 0+4+4+4+7+13 == 32 */
+	tc.ps = PAGE_SIZE_SHIFT;	/* 8K page size */
 
 	/* set the whole global_mode_table to "global" */
 	memset(global_mode_table,PROT_G,global_mode_table_size);
@@ -379,9 +398,9 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 	 * d_index is the 8K number within that 1MB (0-127).
 	 */
 
-	b_index = (int)(start >> LOG2_16_MEG);
-	c_index = (int)(start >> LOG2_ONE_MEG) & 0xf;
-	d_index = (int)(start >> LOG2_EIGHT_K) & 0x7f;
+	b_index = (int)(start >> TIB_SHIFT) & TIB_MASK;
+	c_index = (int)(start >> TIC_SHIFT) & TIC_MASK;
+	d_index = (int)(start >> TID_SHIFT) & TID_MASK;
 
 	if ((long)base_tbl >= 0x01000000L)
 		offset = offset_tt_ram;
@@ -407,7 +426,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 				/* fail because it's not all the same protection */
 				return 0;
 			}
-			len -= EIGHT_K;
+			len -= PHYS_PAGESIZE;
 		}
 
 		if (len == 0L)
@@ -448,9 +467,9 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 	 * d_index is the 8K number within that 1MB (0-127).
 	 */
 
-	b_index = (int)(start >> LOG2_16_MEG);
-	c_index = (int)(start >> LOG2_ONE_MEG) & 0xf;
-	d_index = (int)(start >> LOG2_EIGHT_K) & 0x7f;
+	b_index = (int)(start >> TIB_SHIFT) & TIB_MASK;
+	c_index = (int)(start >> TIC_SHIFT) & TIC_MASK;
+	d_index = (int)(start >> TID_SHIFT) & TID_MASK;
 
 	if ((long)base_tbl >= 0x01000000L)
 		offset = offset_tt_ram;
@@ -495,7 +514,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 			tbl->page_type.dt = dt_val;
 			tbl->page_type.s = s_val;
 			tbl->page_type.wp = wp_val;
-			len -= EIGHT_K;
+			len -= PHYS_PAGESIZE;
 		}
 
 		if (len == 0L)
@@ -535,7 +554,7 @@ get_prot_mode(MEMREGION *r)
 		return PROT_G;
 {
 	ulong start = r->loc;
-	return global_mode_table[(start >> 13)];
+	return global_mode_table[(start >> PAGE_SIZE_SHIFT)];
 }
 }
 
@@ -561,7 +580,7 @@ mark_region(MEMREGION *region, short mode, short cmode __attribute__((unused)))
 
 #if 0 /* this should not occur any more */
 	if (mode == PROT_NOCHANGE) {
-	mode = global_mode_table[(start >> 13)];
+	mode = global_mode_table[(start >> PAGE_SIZE_SHIFT)];
 	}
 #else
 	assert(mode != PROT_NOCHANGE);
@@ -569,7 +588,7 @@ mark_region(MEMREGION *region, short mode, short cmode __attribute__((unused)))
 
 	/* mark the global page table */
 
-	memset(&global_mode_table[start >> 13],mode,(len >> 13));
+	memset(&global_mode_table[start >> PAGE_SIZE_SHIFT],mode,(len >> PAGE_SIZE_SHIFT));
 
 	for (proc = proclist; proc; proc = proc->gl_next) {
 		if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
@@ -631,7 +650,7 @@ mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pi
 	MP_DEBUG(("mark_proc_region %lx len %lx mode %d for pid %d",
 		  start, len, mode, pid));
 
-	global_mode = global_mode_table[(start >> 13)];
+	global_mode = global_mode_table[(start >> PAGE_SIZE_SHIFT)];
 
 	assert(p_mem && p_mem->page_table);
 	if (global_mode == PROT_I || global_mode == PROT_G)
@@ -988,7 +1007,7 @@ mem_prot_special(PROC *proc)
 
 	for (i = 0; i < proc->p_mem->num_reg; i++, mr++) {
 		if (*mr) {
-			mode = global_mode_table[((*mr)->loc >> 13)];
+			mode = global_mode_table[((*mr)->loc >> PAGE_SIZE_SHIFT)];
 			if (mode == PROT_P)
 				mark_region(*mr, PROT_S, 0);
 			else
@@ -1066,22 +1085,22 @@ QUICKDUMP(void)
 
 	FORCE("STRAM global table:");
 	outstr[32] = '\0';
-	end = mint_top_st / QUANTUM;
+	end = mint_top_st / PHYS_PAGESIZE;
 	for (i = 0; i < end; i += 32) {
 		for (j=0; j<32; j++) {
 			outstr[j] = modesym[global_mode_table[j+i]];
 		}
-	FORCE("%08lx: %s",i*8192L,outstr);
+	FORCE("%08lx: %s",i*PHYS_PAGESIZE,outstr);
 	}
 
 	if (mint_top_tt) {
 		FORCE("TTRAM global table:");
-		end = mint_top_tt / QUANTUM;
+		end = mint_top_tt / PHYS_PAGESIZE;
 		for (i = 2048; i < end; i += 32) {
 			for (j=0; j<32; j++) {
 			outstr[j] = modesym[global_mode_table[j+i]];
 			}
-			FORCE("%08lx: %s",i*8192L,outstr);
+			FORCE("%08lx: %s",i*PHYS_PAGESIZE,outstr);
 		}
 	}
 }
@@ -1138,7 +1157,7 @@ BIG_MEM_DUMP(int bigone __attribute__((unused)), PROC *proc __attribute__((unuse
 		first = 1;
 		*linebuf = '\0';
 		for (mp = *map; mp; mp = mp->next) {
-			for (loc = mp->loc; loc < (mp->loc + mp->len); loc += EIGHT_K) {
+			for (loc = mp->loc; loc < (mp->loc + mp->len); loc += PHYS_PAGESIZE) {
 				if (first || ((loc & 0x1ffffL) == 0)) {
 					if (*linebuf) FORCE(linebuf);
 					len = sizeof(linebuf);
@@ -1148,7 +1167,7 @@ BIG_MEM_DUMP(int bigone __attribute__((unused)), PROC *proc __attribute__((unuse
 					first = 0;
 				}
 				if (loc == mp->loc) {
-					*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
+					*lp++ = modesym[global_mode_table[loc / PHYS_PAGESIZE]];
 
 					for (p = proclist; p; p = p->gl_next) {
 						if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
