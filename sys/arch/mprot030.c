@@ -163,11 +163,11 @@ ulong mem_prot_flags = 0L; /* Bitvector, currently only bit 0 is used */
  * functions that dump page tables.
  */
 
-tc_reg tc;
+static tc_reg tc;
 
 /* mint_top_* get used in mem.c also */
-ulong mint_top_tt;
-ulong mint_top_st;
+static ulong mint_top_tt;
+static ulong mint_top_st;
 
 /* offset for CT2 tt-ram normally to 0 */
 ulong offset_tt_ram;
@@ -205,9 +205,14 @@ static page_type readable_page;
 static page_type invalid_page;
 static page_type page_ptr;
 
-static page_type *const proto_page_type[] =
-	{ &invalid_page, &g_page, &s_page, &readable_page, &invalid_page };
-/*	private	     global    super	private/read	invalid */
+static page_type *const proto_page_type[] =	{
+	&invalid_page,	/* private:      PROT_P */
+	&g_page,		/* global:       PROT_G */
+	&s_page,	 	/* super:        PROT_S */
+	&readable_page,	/* private/read: PROT_PR */
+	&invalid_page   /* invalid:      PROT_I */
+};
+
 
 /*
  * Init_tables: called sometime in initialization.  We set up some
@@ -276,7 +281,7 @@ init_tables(void)
 	page_table_size =
 		TBLA_SIZE_BYTES +                            /* level A table */
 		TBLB_SIZE_BYTES + TBLB_SIZE_BYTES +          /* B0 and BF tables */
-		TBLC_SIZE_BYTES +                            /* level C table for STRAM */
+		TBLC_SIZE_BYTES +                            /* level C table for STRAM (always exactly one needed) */
 		(((tt_mbytes+15L)/16L) * TBLC_SIZE_BYTES) +  /* level C tables for TTRAM */
 		(n_megabytes*TBLD_SIZE_BYTES);               /* level D page descriptors */
 
@@ -372,16 +377,16 @@ The idea is this:
  */
 
 /*
-		                invalid---v
-		          private/gr---v  |
-		        super-------v  |  |
-		    global-------v  |  |  |
-		private-------v  |  |  |  |
-			      |  |  |  |  |
+                                       invalid---v
+                                 private/gr---v  |
+                               super-------v  |  |
+                           global-------v  |  |  |
+                       private-------v  |  |  |  |
+                                     |  |  |  |  |
 */
-const ushort other_dt[] =   { 0, 1, 1, 1, 0 };
-const ushort other_s[] =    { 0, 0, 1, 0, 0 };
-const ushort other_wp[] =   { 0, 0, 0, 1, 0 };
+static const ushort other_dt[] =   { 0, 1, 1, 1, 0 };
+static const ushort other_s[] =    { 0, 0, 1, 0, 0 };
+static const ushort other_wp[] =   { 0, 0, 0, 1, 0 };
 
 
 /*
@@ -440,7 +445,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 
 	for (;;) {
 		/* quickly loop through the 1MB-block */
-		for (; len && tbl < (long_desc *)((ulong)&tbl_c->tbl_address[0x80] - offset); tbl++)
+		for (; len && tbl < (long_desc *)((ulong)&tbl_c->tbl_address[TBLD_SIZE] - offset); tbl++)
 		{
 			if ((tbl->page_type.dt != dt) ||
 			    (tbl->page_type.s != s) ||
@@ -531,7 +536,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 	for (;;)
 	{
 		/* quickly loop through the 1MB-block */
-		for (; len && tbl < (long_desc *)((ulong)&tbl_c->tbl_address[0x80] - offset); tbl++)
+		for (; len && tbl < (long_desc *)((ulong)&tbl_c->tbl_address[TBLD_SIZE] - offset); tbl++)
 		{
 			tbl->page_type.dt = dt_val;
 			tbl->page_type.s = s_val;
@@ -929,7 +934,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	/*
 	 * Table BF: translates addresses starting with $F.  First 15 are
 	 * uncontrolled, cacheable; last one translates $FF, which
-	 * which shadows $00 (the 16MB ST address space).  The rest
+	 * will shadow $00 (the 16MB ST address space).  The rest
 	 * are uncontrolled, not cacheable.
 	 *
 	 * The table address of the copy has a 1 in the low (unused) bit, which
