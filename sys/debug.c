@@ -40,7 +40,7 @@
 # include "xdd/mfp/kgdb_mfp.c"
 # endif
 
-static void VDEBUGOUT(const char *, va_list, int);
+static void VDEBUGOUT(const char *, va_list, int alert_flag, int nl);
 
 
 int debug_level = ALERT_LEVEL;	/* how much debugging info should we print? */
@@ -344,7 +344,7 @@ _ALERT(const char *s)
 }
 
 static void
-VDEBUGOUT(const char *s, va_list args, int alert_flag)
+VDEBUGOUT(const char *s, va_list args, int alert_flag, int nl)
 {
 	char *lp;
 	char *lptemp;
@@ -357,7 +357,7 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	if (++logptr == LBSIZE)
 		logptr = 0;
 	
-	if (get_curproc())
+	if (nl && get_curproc())
 	{
 		int splen = ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
 		lptemp += splen;
@@ -371,7 +371,8 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 		return;
 	
 	debug_ws(lp);
-	debug_ws("\r\n");
+	if (nl)
+		debug_ws("\r\n");
 }
 
 void _cdecl
@@ -388,7 +389,7 @@ Tracelow(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}
 }
@@ -407,7 +408,7 @@ Trace(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}
 }
@@ -419,7 +420,7 @@ display(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}	
 }
@@ -438,7 +439,7 @@ Debug(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}
 	
@@ -458,7 +459,7 @@ ALERT(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 1);
+		VDEBUGOUT(s, args, 1, 1);
 		va_end(args);
 	}
 	
@@ -474,7 +475,22 @@ FORCE(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
+		va_end(args);
+	}
+	
+	/* don't dump log here - hardly ever what you mean to do. */
+}
+
+void _cdecl
+FORCENONL(const char *s, ...)
+{
+	if (debug_level >= FORCE_LEVEL)
+	{
+		va_list args;
+		
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0, 0);
 		va_end(args);
 	}
 	
@@ -525,7 +541,7 @@ FATAL(const char *s, ...)
 	va_list args;
 	
 	va_start(args, s);
-	VDEBUGOUT(s, args, 0);
+	VDEBUGOUT(s, args, 0, 1);
 	va_end(args);
 	
 	if (debug_logging)
