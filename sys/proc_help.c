@@ -68,7 +68,6 @@ init_page_table_ptr (struct memspace *m)
 	{
 		MEMREGION *pt = NULL;
 # if defined (M68040) || defined (M68060)
-		extern int page_ram_type;	/* mprot040.c */
 		
 // 		FORCE("init_page_table_ptr: p_mem->mem = %lx", curproc->p_mem->mem);
 		if (page_ram_type & 2)
@@ -80,7 +79,6 @@ init_page_table_ptr (struct memspace *m)
 		m->page_table = pt ? ROUND512 (pt->loc) : NULL;
 		m->pt_mem = pt;
 # else /* M68040 || M68060 */
-		extern int tt_mbytes;		/* mprot030.c */
 
 		if (tt_mbytes)
 			pt = get_region (alt, page_table_size + 16, PROT_S);
