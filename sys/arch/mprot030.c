@@ -92,6 +92,7 @@
 # include "memory.h"
 # include "mmu.h"
 # include "cookie.h"
+# include "mmudefs.h"
 
 
 #if defined(WITH_MMU_SUPPORT) && defined(M68030)
@@ -139,6 +140,8 @@
 #else
 #define MP_DEBUG(x)
 #endif
+
+#define DEBUG_MMU_TREE 0
 
 #ifdef DEBUG_INFO
 static void _dump_tree (long_desc tbl, int level);
@@ -308,7 +311,7 @@ init_tables(void)
 	g_page.m = 1;		/* set m and u to 1 so CPU won't do writes */
 	g_page.u = 1;
 	g_page.wp = 0;		/* not write-protected */
-	g_page.dt = 1;		/* descriptor type 1: page descriptor */
+	g_page.dt = MMU030_DESCR_TYPE_PAGE;		/* descriptor type 1: page descriptor */
 
 	g_ci_page = g_page;		/* global page, non-cacheable */
 	g_ci_page.ci = 1;
@@ -324,11 +327,11 @@ init_tables(void)
 	s_page.s = 1;		/* if you're supervisor */
 
 	invalid_page = g_page;
-	invalid_page.dt = 0;
+	invalid_page.dt = MMU030_DESCR_TYPE_INVALID;
 
 	page_ptr = g_page;
 	page_ptr.m = 0;		/* this must be zero in page pointers */
-	page_ptr.dt = 3;
+	page_ptr.dt = MMU030_DESCR_TYPE_VALID8;
 
 	tc.enable = 1;
 	tc.zeros = 0;
@@ -637,7 +640,7 @@ mark_region(MEMREGION *region, short mode, short cmode __attribute__((unused)))
 				if (*mr == region) {
 					MP_DEBUG(("mark_region: pid %d is an owner",proc->pid));
 owner:
-					dt_val = 1;
+					dt_val = MMU030_DESCR_TYPE_PAGE;
 					s_val = 0;
 					wp_val = 0;
 					goto gotvals;
@@ -691,7 +694,7 @@ mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pi
 		if (mode == PROT_P) {
 			MP_DEBUG(("mark_proc_region: pid %d is an owner",pid));
 owner:
-			dt_val = 1;
+			dt_val = MMU030_DESCR_TYPE_PAGE;
 			s_val = 0;
 			wp_val = 0;
 			goto gotvals;
@@ -774,6 +777,10 @@ prot_temp(ulong loc, ulong len, short mode)
 	}
 }
 }
+
+#if DEBUG_MMU_TREE
+#include "mmudump030.c"
+#endif
 
 /*
  * init_page_table: fill in the page table for the indicated process. The
@@ -936,10 +943,6 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	 * uncontrolled, cacheable; last one translates $FF, which
 	 * will shadow $00 (the 16MB ST address space).  The rest
 	 * are uncontrolled, not cacheable.
-	 *
-	 * The table address of the copy has a 1 in the low (unused) bit, which
-	 * is a signal to the table dumper not to dump this, as it's a copy
-	 * of tbl_b0[0].
 	 */
 
 	for (i=0; i<0xf; i++) {
@@ -947,18 +950,30 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 		tbl_bf[i].tbl_address = (long_desc *)((i << 24) | 0xf0000000L);
 	}
 	tbl_bf[0xf] = tbl_b0[0];
-//	*(ulong *) (&(tbl_bf[0xf].tbl_address)) |= 1;
-	{
-	unsigned long tbla = (unsigned long)tbl_bf[0xf].tbl_address | 1;
-	tbl_bf[0xf].tbl_address = (struct long_desc *)tbla;
-	}
 
 	proc->ctxt[0].crp.limit = 0x7fff;	/* disable limit function */
-	proc->ctxt[0].crp.dt = 3;		/* points to valid 8-byte entries */
+	proc->ctxt[0].crp.dt = MMU030_DESCR_TYPE_VALID8;		/* points to valid 8-byte entries */
 	proc->ctxt[0].crp.tbl_address = (long_desc *)((ulong)tbl_a + offset);
 	proc->ctxt[1].crp = proc->ctxt[0].crp;
 	proc->ctxt[0].tc = tc;
 	proc->ctxt[1].tc = tc;
+
+#if DEBUG_MMU_TREE
+	if (!mmu_is_set_up)
+	{
+		{
+			struct mmuinfo info;
+
+			FORCENONL("MMU TREE (before mark_pages)\r\n");
+			init_mmu_info_030(&info, proc->ctxt[0].tc);
+			print_tc_info_030(&info);
+			print_rp_info_030("CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
+
+			mmu030_print_tree(&info, (const cpuaddr *)&proc->ctxt[0].crp);
+			FORCENONL("\r\n\r\n");
+		}
+	}
+#endif
 
 	/*
 	 * OK, memory tables are now there as if you're a non-owner of every
@@ -981,6 +996,19 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
 		set_mmu(proc->ctxt[0].crp,proc->ctxt[0].tc);
 		mmu_is_set_up = 1;
+#if DEBUG_MMU_TREE
+		{
+			struct mmuinfo info;
+
+			init_mmu_info_030(&info, proc->ctxt[0].tc);
+			FORCENONL("MMU TREE (after mark_pages)\r\n");
+			print_tc_info_030(&info);
+			print_rp_info_030("CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
+
+			mmu030_print_tree(&info, (const cpuaddr *)&proc->ctxt[0].crp);
+		}
+#endif
+
 	}
 }
 }
@@ -1074,7 +1102,7 @@ _dump_tree(long_desc tbl, int level)
 	tbl.page_type.dt,
 	(unsigned long)((ulong)tbl.tbl_address - offset));
 
-	if (tbl.page_type.dt == 3) {
+	if (tbl.page_type.dt == MMU030_DESCR_TYPE_VALID8) {
 		if (level == 0) {
 			j = (1 << tc.tia);
 		}
@@ -1087,9 +1115,6 @@ _dump_tree(long_desc tbl, int level)
 		else {
 			j = (1 << tc.tid);
 		}
-
-		/* don't show table if it's the duplicate */
-		if ((ulong)tbl.tbl_address & 1) return;
 
 		++level;
 		p = (long_desc *)((ulong)tbl.tbl_address - offset);
@@ -1183,18 +1208,18 @@ BIG_MEM_DUMP(int bigone __attribute__((unused)), PROC *proc __attribute__((unuse
 		FORCE("Annotated memory dump for %s",(map == core ? "core" : "alt"));
 		first = 1;
 		*linebuf = '\0';
+		len = 0;
 		for (mp = *map; mp; mp = mp->next) {
 			for (loc = mp->loc; loc < (mp->loc + mp->len); loc += PHYS_PAGESIZE) {
 				if (first || ((loc & 0x1ffffL) == 0)) {
 					if (*linebuf) FORCE(linebuf);
-					len = sizeof(linebuf);
-					ksprintf(linebuf,len,"\r%08lx: ",loc);
-					lp = linebuf + 11;
-					len -= 11;
+					len = ksprintf(linebuf,sizeof(linebuf),"\r%08lx: ",loc);
+					lp = linebuf + len;
 					first = 0;
 				}
 				if (loc == mp->loc) {
 					*lp++ = modesym[global_mode_table[loc / PHYS_PAGESIZE]];
+					len++;
 
 					for (p = proclist; p; p = p->gl_next) {
 						if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
@@ -1211,9 +1236,7 @@ BIG_MEM_DUMP(int bigone __attribute__((unused)), PROC *proc __attribute__((unuse
 					}
 					owner = 000;
 gotowner:
-					ksprintf(lp,len,"%03d",owner);
-					lp += 3;
-					len -= 3;
+					len += ksprintf(lp,sizeof(linebuf) - len,"%03d",owner);
 				}
 				else {
 					*lp++ = ' ';
@@ -1221,7 +1244,7 @@ gotowner:
 					*lp++ = '-';
 					*lp++ = '-';
 					*lp = '\0';	/* string is always null-terminated */
-					len -= 4;
+					len += 4;
 				}
 			}
 		}
