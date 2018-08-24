@@ -152,7 +152,7 @@ const char *greet2 =
 
 # ifndef M68000
 const char *memprot_warning =
-	"\007\033p"
+	"\033p"
 	"             *** WARNING ***              \033q\r\n"
 	"You have turned off the memory protection.\r\n"
 	"This is not recommended and may not be\r\n"
