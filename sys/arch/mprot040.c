@@ -191,8 +191,8 @@ static ulong pagesize;
 static ulong root_descriptors, pointer_descriptors, page_descriptors;
 
 /* mint_top_* get used in mem.c also */
-ulong mint_top_tt;
-ulong mint_top_st;
+static ulong mint_top_tt;
+static ulong mint_top_st;
 
 /* number of megabytes of TT RAM (rounded up, if necessary) */
 int tt_mbytes;
@@ -222,7 +222,7 @@ static unsigned char *global_mode_table = 0L;
 #define RESIDENT	0x01UL
 #define PROTECTIONBITS	(SUPERBIT | READONLYBIT | PAGETYPEBITS)
 
-ulong mode_descriptors[PROT_MAX_MODE+1] =
+static ulong mode_descriptors[PROT_MAX_MODE+1] =
 	{
 		INVALID,		/* private */
 		RESIDENT,		/* global */
@@ -231,7 +231,7 @@ ulong mode_descriptors[PROT_MAX_MODE+1] =
 		INVALID			/* invalid/free */
 	};
 
-ulong cmode_descriptors[CM_MAX_MODE+1] =
+static ulong cmode_descriptors[CM_MAX_MODE+1] =
 	{
 		0,
 		NOCACHE,
@@ -1758,11 +1758,7 @@ gotowner:
 # endif
 
 void
-#ifdef DEBUG_INFO
 BIG_MEM_DUMP (int bigone, PROC *proc)
-#else
-BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unused)))
-#endif
 {
 # ifdef DEBUG_INFO
 	BIG_MEM_DUMP_1 (bigone, proc, core);
