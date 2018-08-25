@@ -1017,7 +1017,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	/*
 	 * Table BF: translates addresses starting with $F.  First 15 are
 	 * uncontrolled, cacheable; last one translates $FF, which
-	 * will shadow $00 (the 16MB ST address space).  The rest
+	 * shadows $00 (the 16MB ST address space).  The rest
 	 * are uncontrolled, not cacheable.
 	 */
 
