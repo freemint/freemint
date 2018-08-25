@@ -69,7 +69,7 @@ endif
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DM68030
+KERNELDEFS = -DM68030 -DARANYM
 endif
 
 ifeq ($(kernel),040)
