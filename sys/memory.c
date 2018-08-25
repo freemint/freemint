@@ -255,23 +255,17 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	 */
 	if (place >= 0x80000000UL)
 		return 0;
-	/*
-	 * workaround for 030 memory-protection, until
-	 * mmu table initialization has been fixed
-	 */
-#ifdef WITH_MMU_SUPPORT
-	if (!no_mem_prot && mcpu == 30 && (place + size) > 0x10000000UL)
+	if ((place + size) > 0x80000000UL)
 	{
-		FORCE("add_region: ommitting last %lu KB of memory", (place + size - 0x10000000UL) >> 10);
-		size = 0x10000000UL - place;
+		FORCE("add_region: ommitting last %lu KB of memory", (place + size - 0x80000000UL) >> 10);
+		size = 0x80000000UL - place;
 		/* ramtop might also be wrong in this case */
-		if (*(unsigned long *)0x05a4L > 0x10000000UL)
+		if (*(unsigned long *)0x05a4L > 0x80000000UL)
 		{
 			FORCE("ramtop adjusted");
-			*(unsigned long *)0x05a4L = 0x10000000UL;
+			*(unsigned long *)0x05a4L = 0x80000000UL;
 		}
 	}
-#endif
 
 	/* only add if there's anything left */
 	if (size)
@@ -414,7 +408,7 @@ init_core (void)
 	boot_printf (MSG_mem_core, size);
 # endif
 
-       	while (size > 0) {
+	while (size > 0) {
 		place = (ulong) core_malloc (size, 0);
 		if (!scrndone && (place + size == scrnplace)) {
 			size += scrnsize;
