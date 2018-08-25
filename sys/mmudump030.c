@@ -230,7 +230,7 @@ static void mmu030_print_page_descriptor(const cpuaddr *descr, int descr_size, c
 }
 
 
-static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level, int descr_size, cpuaddr table_addr)
+static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level, int descr_size, cpuaddr table_addr, int *indices)
 {
 	cpuaddr log_addr_inc;
 	unsigned short table_index, count;
@@ -238,6 +238,7 @@ static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level
 	cpuaddr descr_addr;
 	cpuaddr page_addr;
 	unsigned char descr_type;
+	int l;
 	
 	log_addr_inc = 1UL << info->translation.table[level].shift;
 	count = 1 << info->translation.table[level].bits;
@@ -256,6 +257,8 @@ static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level
 			
 		descr_type = (descr[0] & MMU030_DESCR_MASK) >> MMU030_DESCR_SHIFT;
 		indent(level);
+		for (l = 0; l < level; l++)
+			FORCENONL("%04x:", indices[l]);
 		FORCENONL("%04x: %08lx: ", table_index, page_addr);
 		switch (descr_type)
 		{
@@ -283,14 +286,16 @@ static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level
 			page_addr &= MMU030_DESCR_TD_ADDR_MASK;
 			indent(level + 1);
 			mmu030_print_page_descriptor(descr, descr_size, log_addr, page_addr, FALSE);
-			mmu030_print_table(info, log_addr, level + 1, 4, page_addr);
+			indices[level] = table_index;
+			mmu030_print_table(info, log_addr, level + 1, 4, page_addr, indices);
 			break;
 		case MMU030_DESCR_TYPE_VALID8:
 			FORCENONL("Long Descriptors\r\n");
 			page_addr &= MMU030_DESCR_TD_ADDR_MASK;
 			indent(level + 1);
 			mmu030_print_page_descriptor(descr, descr_size, log_addr, page_addr, FALSE);
-			mmu030_print_table(info, log_addr, level + 1, 8, page_addr);
+			indices[level] = table_index;
+			mmu030_print_table(info, log_addr, level + 1, 8, page_addr, indices);
 			break;
 		}
 	}
@@ -311,6 +316,7 @@ static void mmu030_print_tree(struct mmuinfo *info, const cpuaddr *crp)
 	int next_size = 0;
 	int descr_size = 8;
 	unsigned short table_index;
+	int indices[4];
 	
 	descr[0] = crp[0];
 	descr[1] = crp[1];
@@ -389,18 +395,18 @@ static void mmu030_print_tree(struct mmuinfo *info, const cpuaddr *crp)
 				page_addr &= MMU030_DESCR_TD_ADDR_MASK;
 				indent(1);
 				mmu030_print_page_descriptor(descr, descr_size, 0, page_addr, FALSE);
-				mmu030_print_table(info, 0, 0, 4, page_addr);
+				mmu030_print_table(info, 0, 0, 4, page_addr, indices);
 				break;
 			case MMU030_DESCR_TYPE_VALID8:
 				FORCENONL("Long Descriptors\r\n");
 				page_addr &= MMU030_DESCR_TD_ADDR_MASK;
 				indent(1);
 				mmu030_print_page_descriptor(descr, descr_size, 0, page_addr, FALSE);
-				mmu030_print_table(info, 0, 0, 8, page_addr);
+				mmu030_print_table(info, 0, 0, 8, page_addr, indices);
 				break;
 			}
 		}
 		return;
 	}
-	mmu030_print_table(info, 0, 0, next_size, page_addr);
+	mmu030_print_table(info, 0, 0, next_size, page_addr, indices);
 }
