@@ -1,4 +1,5 @@
 Memory Protection
+=================
 
 Memory protection works on a per-process basis.  Unless it uses the special
 mode bits in Mxalloc(), a process' entire text+data+bss and any memory it
@@ -35,3 +36,30 @@ it can't change the access permissions of any other process' space. If you
 set the PRGFLAGS of some process so it loads into global memory, that
 doesn't mean it can access anybody else's memory, it just means that
 anybody can access ITS memory.
+
+Memory Requirements
+===================
+
+To make memory protection work, additional memory to store the protection
+tables is required. The exact amount is:
+
+- for 030, for every process:
+    128 bytes for every 256MB of memory available (ST- or TT-RAM)
+  + 384 bytes
+  + 128 bytes for every 16MB of TT-RAM
+  + 1024 bytes for every MB of memory (ST- or TT-RAM)
+
+  Additionaly, for a table that is shared between all processes:
+      2K
+    + 128 bytes for every MB of TT-RAM
+  
+  For example, with 16MB ST-RAM + 16MB TT-RAM, that will make
+  - ~18K per process
+  - 4K globally
+
+  for 16MB ST-RAM + 256MB TT-RAM, that will make
+  - ~243 KB per process
+  - 34K globally
+
+  That is, running 100 processes at the same time will eat up
+  ~10% of your TT-RAM just for these tables! You have been warned.
