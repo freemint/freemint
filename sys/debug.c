@@ -173,7 +173,7 @@ debug_ws(const char *s)
 	{
 		safe_Bconout(out_device, *s);
 		
-		while (*s == '\n' && safe_Bconstat(out_device))
+		while (out_device != 0 && *s == '\n' && safe_Bconstat(out_device))
 		{
 			stopped = 0;
 			while (1)
