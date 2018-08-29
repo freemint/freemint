@@ -12,7 +12,7 @@
 __mint_blockcpy:
 	movem.l	4(sp),a0/a1		| dst & src
 	move.l	12(sp),d0		| blocks
-#if !(defined(M68000) || defined(__mcoldfire__))
+#if defined(__mc68040__) || defined(__mc68060__)
 	move.l	_mcpu,d1
 	cmp.w	#40,d1
 	bcc.s	L_040			| for 68000-68030 do quickmove
