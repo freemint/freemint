@@ -1211,12 +1211,8 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_NAME:		/* new since N.Aes */
 	{
-		/* -Wcast-qual doesn't work as expected in gcc 2.95.x
-		 * the worning is not valid here (seems to be fixed in 3.3.2 at least) 
-		 * warns here: char *s = *(char **)&pb->intin[2];
-		 */
 		if (w->active_widgets & NAME)
-			get_window_title(w, (char *)((long)pb->intin[2] << 16 | pb->intin[3]));
+			get_window_title(w, (char *)ptr_from_shorts(pb->intin[2], pb->intin[3]));
 		else
 			o[0] = 0;
 
@@ -1225,7 +1221,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_INFO:		/* new since N.Aes */
 	{
 		if (w->active_widgets & INFO)
-			get_window_info(w, (char *)((long)pb->intin[2] << 16 | pb->intin[3]));
+			get_window_info(w, (char *)ptr_from_shorts(pb->intin[2], pb->intin[3]));
 		else
 			o[0] = 0;
 		break;
