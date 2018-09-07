@@ -296,7 +296,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 			 * instant below but that doesn't hurt.  If a time
 			 * was supplied it was really in UTC.
 			 */
-			xtime.tv_sec += (old_timezone + timezone);
+			xtime.tv_sec += (old_timezone - timezone);
 		}
 
 		/* Update timestamp and datestamp */
