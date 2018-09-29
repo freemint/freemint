@@ -1,0 +1,31 @@
+ifeq ($(slinkctl),000)
+TARGET = ./slinkctl
+CPU = 000
+endif
+
+ifeq ($(slinkctl),02060)
+TARGET = ./fslinkctl
+CPU = 020-60
+endif
+
+ifeq ($(slinkctl),030)
+TARGET = ./slinkctl
+CPU = 030
+endif
+
+ifeq ($(slinkctl),040)
+TARGET = ./slinkctl
+CPU = 040
+endif
+
+ifeq ($(slinkctl),060)
+TARGET = ./fslinkctl
+CPU = 060
+endif
+
+ifeq ($(slinkctl),col)
+TARGET = ./slinkctl
+CPU = v4e
+endif
+
+slinkctltargets = 000 02060 030 040 060 col
