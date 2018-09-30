@@ -36,13 +36,9 @@
 /*----------------------------------------------------------------------------------------*/
 #define	WWORK window->workarea
 
-typedef enum { FALSE = (0 == 1), TRUE  = (1 == 1) } boolean;
-
 /*----------------------------------------------------------------------------------------*/
 /* Globale Variablen                                                                      */
 /*----------------------------------------------------------------------------------------*/
-short app_id;
-short vdi_handle;
 static short work_out[57];
 			
 static WINDOW *window_list = NULL;
@@ -702,12 +698,12 @@ size_window(short handle, GRECT *size)
 	window = search_struct(handle);
 	if (window)
 	{
-		boolean	full_redraw;
+		int	full_redraw;
 		
-		full_redraw = FALSE;
+		full_redraw = 0;
 		
 		if (window->wflags.smart_size == 0) /* gesamtes Fenster neuzeichnen? */
-			full_redraw = TRUE;	
+			full_redraw = 1;
 
 		wind_update(BEG_UPDATE); /* Bildschirm sperren */
 
@@ -777,13 +773,13 @@ size_window(short handle, GRECT *size)
 			if (window->x + WWORK.g_w > window->w)
 			{
 				window->x = window->w - WWORK.g_w;
-				full_redraw = TRUE; /* gesamtes Fenster neuzeichnen */
+				full_redraw = 1; /* gesamtes Fenster neuzeichnen */
 			}
 
 			if (window->y + WWORK.g_h > window->h)
 			{
 				window->y = window->h - WWORK.g_h;
-				full_redraw = TRUE; /* gesamtes Fenster neuzeichnen */
+				full_redraw = 1; /* gesamtes Fenster neuzeichnen */
 			}
 		}
 
