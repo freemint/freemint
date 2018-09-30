@@ -26,9 +26,6 @@
 
 #include <setjmp.h>
 #include <gemx.h>
-#if __GEMLIB_MAJOR__ != 0 || __GEMLIB_MINOR__ < 43 || (__GEMLIB_MINOR__ == 43 && __GEMLIB_REVISION__ < 2)
-#error COPS require at least gemlib 0.43.2
-#endif
 #include "global.h"
 
 
@@ -66,13 +63,10 @@ struct cpxhead
 {
 	unsigned short magic;
 
-	struct
-	{
-		unsigned reserved:	13;
-		unsigned ram_resident:	1;
-		unsigned boot_init:	1;
-		unsigned set_only:	1;
-	} flags;
+	unsigned short flags;
+#define CPX_SETONLY		0x0001		/* Set Only CPX Flag 		*/
+#define CPX_BOOTINIT	0x0002		/* Boot Initialization Flag	*/
+#define CPX_RESIDENT	0x0004		/* RAM Resident Flag		*/
 
 	long cpx_id;
 	unsigned short cpx_version;
