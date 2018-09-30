@@ -1021,9 +1021,14 @@ void * _cdecl Get_Buffer(const long *sp)
 /*----------------------------------------------------------------------------------------*/ 
 static short _cdecl getcookie(long cookie, long *p_value)
 {
+	short ret;
+
 	DEBUG(("getcookie(0x%lx, %p)\n", cookie, p_value));
 
-	return (Getcookie(cookie, p_value) == 0);
+	ret = Getcookie(cookie, p_value) == C_FOUND;
+	if (!ret && p_value)
+		*p_value = 0;
+	return ret;
 }
 
 /*----------------------------------------------------------------------------------------*/ 
