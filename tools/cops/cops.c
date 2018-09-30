@@ -43,9 +43,9 @@
 #include <sys/signal.h>
 #include <time.h>
 
+#include "cops_rsc.h"
 #include "adaptrsc.h"
 #include "callback.h"
-#include "cops_rsc.h"
 #include "cops.h"
 #include "cpx_bind.h"
 #include "key_map.h"
@@ -452,8 +452,8 @@ init_cpx(char *file_path, char *file_name, short inactive)
 				list_append((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
 
 				/* CPX aufrufen? */
-				if (cpx_desc->old.header.flags.boot_init ||
-					  cpx_desc->old.header.flags.set_only)
+				if ((cpx_desc->old.header.flags & CPX_BOOTINIT) ||
+					(cpx_desc->old.header.flags & CPX_SETONLY))
 				{
 					/* aktives CPX? */
 					if (inactive == 0)
@@ -474,7 +474,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 				return;
 			}
 
-			if ((cpx_desc->old.header.flags.ram_resident == 0) || inactive)
+			if (!(cpx_desc->old.header.flags & CPX_RESIDENT) || inactive)
 			{
 				cpx_desc->start_of_cpx = NULL;
 				cpx_desc->end_of_cpx = NULL;
@@ -1730,8 +1730,8 @@ activate_cpx(CPX_DESC *cpx_desc)
 			cpx_desc->flags &= ~CPXD_INACTIVE;
 			cpx_desc->file_name[strlen(cpx_desc->file_name) - 1] -= 'Z' - 'X';
 
-			if (cpx_desc->old.header.flags.boot_init
-			    || cpx_desc->old.header.flags.ram_resident)
+			if ((cpx_desc->old.header.flags & CPX_BOOTINIT) ||
+			    (cpx_desc->old.header.flags & CPX_RESIDENT))
 			{
 				void *addr;
 				long size;
@@ -1745,7 +1745,7 @@ activate_cpx(CPX_DESC *cpx_desc)
 					cpx_desc->end_of_cpx = (void *)((char *)addr + size);
 
 					/* CPX aufrufen? */
-					if (cpx_desc->old.header.flags.boot_init)
+					if (cpx_desc->old.header.flags & CPX_BOOTINIT)
 					{
 						cpx_desc->xctrl_pb.booting = 1;
 						if (cpx_init(cpx_desc, &cpx_desc->xctrl_pb) == 0L)
@@ -1756,7 +1756,7 @@ activate_cpx(CPX_DESC *cpx_desc)
 						cpx_desc->xctrl_pb.booting = 0;
 					}
 
-					if (cpx_desc->old.header.flags.ram_resident == 0)
+					if (!(cpx_desc->old.header.flags & CPX_RESIDENT))
 					{
 						unload_cpx(addr); /* Speicher fuer CPX freigeben */
 						cpx_desc->start_of_cpx = 0L;
@@ -1881,17 +1881,17 @@ cpx_info(CPX_DESC *cpx_desc)
 	strcpy(cpxinfo[CIVER].ob_spec.free_string, strrev(txt));
 	strncpy(cpxinfo[CIID].ob_spec.free_string, (char *) &(cpx->header.cpx_id), 4);
 
-	if (cpx->header.flags.ram_resident)
+	if (cpx->header.flags & CPX_RESIDENT)
 		cpxinfo[CIRAM].ob_state |= OS_SELECTED;
 	else
 		cpxinfo[CIRAM].ob_state &= ~OS_SELECTED;
 
-	if (cpx->header.flags.set_only)
+	if (cpx->header.flags & CPX_SETONLY)
 		cpxinfo[CISET].ob_state |= OS_SELECTED;
 	else
 		cpxinfo[CISET].ob_state &= ~OS_SELECTED;
 
-	if (cpx->header.flags.boot_init)
+	if (cpx->header.flags & CPX_BOOTINIT)
 		cpxinfo[CIBOOT].ob_state |= OS_SELECTED;
 	else
 		cpxinfo[CIBOOT].ob_state &= ~OS_SELECTED;
@@ -1909,9 +1909,9 @@ cpx_info(CPX_DESC *cpx_desc)
 			cpx_desc->flags &= ~CPXD_AUTOSTART;
 	
 		if (is_obj_SELECTED(cpxinfo, CIRAM))
-			cpx->header.flags.ram_resident = 1;
+			cpx->header.flags |= CPX_RESIDENT;
 		else
-			cpx->header.flags.ram_resident = 0;
+			cpx->header.flags &= ~CPX_RESIDENT;
 
 		save_header(cpx);
 	}
@@ -3028,7 +3028,7 @@ close_all_cpx(void)
 			{
 				cpx_close(cpx_desc, 1); /* CPX benachrichtigen */
 				cpx_close_window(cpx_desc); /* Fenster schliessen */
-				if (cpx_desc->old.header.flags.ram_resident == 0)
+				if (!(cpx_desc->old.header.flags & CPX_RESIDENT))
 				{
 					unload_cpx(cpx_desc->start_of_cpx);
 					cpx_desc->start_of_cpx = 0L;
@@ -3161,7 +3161,7 @@ cpx_main_loop(void)
 						cpx_close(cpx_desc, 1); /* CPX benachrichtigen */
 						cpx_close_window(cpx_desc); /* Fenster schliessen */
 
-						if (cpx_desc->old.header.flags.ram_resident == 0)
+						if (!(cpx_desc->old.header.flags & CPX_RESIDENT))
 						{
 							unload_cpx(cpx_desc->start_of_cpx);
 							cpx_desc->start_of_cpx = 0L;
