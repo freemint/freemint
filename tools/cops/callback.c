@@ -709,11 +709,11 @@ is_edit_obj_hidden(OBJECT *tree, short obj)
 /*	msg:		Zeiger auf Message-Buffer fuer ausgewaehlte Ereignisse		  */
 /*----------------------------------------------------------------------------------------*/ 
 void
-cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
+cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, _WORD edit_obj, _WORD *msg)
 {
 	DIALOG *dialog;
-	short last_edit_obj;
-	short cursor;
+	_WORD last_edit_obj;
+	_WORD cursor;
 
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -1045,7 +1045,7 @@ static void _cdecl MFsave(struct MFsave_args args) /* contributed by Arnaud */
 
 	if (has_mouse == 0)
 	{
-		short parm1, dum;
+		_WORD parm1, dum;
 
 		if (appl_getinfo(AES_MOUSE, &parm1, &dum, &dum, &dum) == 1
 		    && parm1 == 1)

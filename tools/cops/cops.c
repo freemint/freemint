@@ -59,13 +59,31 @@
 extern short _app;
 
 /* magic mt_aes -> gemlib wrapper */
-typedef struct { short x; short y; short bstate; short kstate; } EVNTDATA;
+#ifndef __EVNTDATA
+#define __EVNTDATA
+typedef struct {
+	_WORD x;
+	_WORD y;
+	_WORD bstate;
+	_WORD kstate;
+} EVNTDATA;
+#endif
 #define graf_mkstate_evntdata(evntdata) \
 	graf_mkstate(&(evntdata)->x,&(evntdata)->y,&(evntdata)->bstate,&(evntdata)->kstate)
 
 /* default window style */
 #define MAINWINDOWSTYLE	\
 		NAME|CLOSER|FULLER|MOVER|SIZER|VSLIDE|HSLIDE|UPARROW|DNARROW|LFARROW|RTARROW|SMALLER
+
+/*
+ * some compilers define their own constants for these
+ * (e.g PureC, Lattice-C),
+ * but we need the MiNT definitions
+ */
+#undef SIGTERM
+#undef SIGQUIT
+#define SIGTERM		15		/* software termination signal */
+#define SIGQUIT		3		/* quit signal */
 
 /*----------------------------------------------------------------------------------------*/
 
@@ -103,19 +121,19 @@ struct auto_start
 
 /*----------------------------------------------------------------------------------------*/
 
-short app_id;
-short vdi_handle;
-short aes_handle;
-short aes_flags;
-short aes_font;
-short aes_height;
-short pwchar;
-short phchar;
-short pwbox;
-short phbox;
+_WORD app_id;
+_WORD vdi_handle;
+_WORD aes_handle;
+_WORD aes_flags;
+_WORD aes_font;
+_WORD aes_height;
+_WORD pwchar;
+_WORD phchar;
+_WORD pwbox;
+_WORD phbox;
 
-short menu_id;
-short quit;
+_WORD menu_id;
+_WORD quit;
 
 GRECT desk_grect;
 WINDOW *main_window = NULL;
@@ -144,64 +162,20 @@ static time_t termtime;
 
 /* internal functions */
 
-static short _cdecl handle_form_cpx(struct HNDL_OBJ_args);
-static short cpx_open_window(CPX_DESC *cpx_desc);
-static short cpx_close_window(CPX_DESC *cpx_desc);
-static short top_whdl(void);
-static void remove_cpx(CPX_DESC *cpx_desc);
-static void init_cpx(char *file_path, char *file_name, short inactive);
-static short search_cpx_selected(long selected, void *entry);
-static short cmp_cpx_id(long id, void *entry);
-static short search_cpx_name(long name, void *entry);
-static short update_cpx_list(void);
-static void unload_all_cpx(void);
-static int cmp_cpx_names(const void *_a, const void *_b);
-static int cmp_cpx_position(const void *_a, const void *_b);
-static void sort_cpx_icons(short x, short y, short window_width);
-static void tidy_up_icons(void);
-static void read_inf(void);
-static void save_inf(void);
-static short get_help_id(void);
-static void call_help(void);
-static void open_main_window(void);
-static void close_main_window(void);
-static CPX_DESC *find_cpx(short mx, short my);
 static short cpx_in_rect(CPX_DESC *cpx_desc, GRECT *rect);
 static void cpx_to_end(CPX_DESC *cpx_desc);
-static void get_cpximg_size(CPX_DESC *cpx_desc, GRECT *area);
-static void redraw_cpximg(CPX_DESC *cpx_desc);
 static void get_cpx_bbox(GRECT *bbox);
 static void full_redraw_main_window(void);
 static void redraw_main_window(WINDOW *w, GRECT *area);
-static void deselect_all_cpx_draw(void);
-static void select_all_cpx(void);
-static void draw_cpx_frames(int xof, int yof);
-static void open_cpx(CPX_DESC *cpx_desc);
 static short activate_cpx(CPX_DESC *cpx_desc);
-static short deactivate_cpx(CPX_DESC *cpx_desc);
 static void update_cpx_path(void);
-static void cpx_info(CPX_DESC *cpx_desc);
 static short do_dialog(OBJECT *tree);
-static void einstellungen(void);
-static void about(void);
-static short handle_keyboard(short kstate, short key);
-static void drag_icons(void);
-static void select_icons(void);
-static void handle_bt1(CPX_DESC *cpx_desc, int kstate, int clicks);
-static void handle_button(int mx, int my, int bstate, int kstate, int clicks);
-static short handle_message(short msg[8]);
+static short handle_message(_WORD msg[8]);
 static void do_args(char *args);
 static void set_termtime(void);
-static CPX_DESC *top_cpx(void);
-static void close_all_cpx(void);
 static short MapKey(short keystate, short key);
 static short handle_evnt_cpx(CPX_DESC *cpx_desc, EVNT *events);
-static void fix_tree(OBJECT *obj);
-static void fix_popup_strings(OBJECT *obj);
-static void std_settings(void);
-static void init_rsrc(void);
 static void _cdecl sig_handler(long sig);
-static int init_vwork(void);
 
 /*----------------------------------------------------------------------------------------*/
 
@@ -209,9 +183,9 @@ static long
 read_file(char *name, void *dest, long offset, long len)
 {
 	long read = 0;
-	long fh;
+	short fh;
 
-	fh = Fopen(name, O_RDONLY);
+	fh = (short)Fopen(name, O_RDONLY);
 	if (fh >= 0)
 	{
 		if (offset)
@@ -242,7 +216,7 @@ read_file(char *name, void *dest, long offset, long len)
 /*	clicks:		Anzahl der Mausklicks */
 /*	data:		Zeiger auf zusaetzliche Daten */
 /*----------------------------------------------------------------------------------------*/
-static short _cdecl
+static _WORD _cdecl
 handle_form_cpx(struct HNDL_OBJ_args args)
 {
 	DEBUG(("%s: %s\n", __FUNCTION__, ((CPX_DESC *)args.data)->file_name));
@@ -281,7 +255,7 @@ handle_form_cpx(struct HNDL_OBJ_args args)
 /* Funktionsergebnis:	0: Fehler 1: weitermachen */
 /*	cpx_desc:	CPX-Beschreibung */
 /*----------------------------------------------------------------------------------------*/
-static short
+static _WORD
 cpx_open_window(CPX_DESC *cpx_desc)
 {
 	OBJECT *tree;
@@ -306,7 +280,7 @@ cpx_open_window(CPX_DESC *cpx_desc)
 	cpx_desc->dialog = wdlg_create(handle_form_cpx, tree, cpx_desc, 0, 0L, 0);
 	if (cpx_desc->dialog)
 	{
-		cpx_desc->whdl = wdlg_open(cpx_desc->dialog, cpx_desc->old.header.text,
+		cpx_desc->whdl = wdlg_open(cpx_desc->dialog, cpx_desc->old.header.title_txt,
 					   NAME + CLOSER + MOVER,
 					   cpx_desc->window_x, cpx_desc->window_y, 0, 0L);
 
@@ -361,12 +335,12 @@ cpx_close_window(CPX_DESC *cpx_desc)
 /* Handle des obersten Fenster zurueckliefern */
 /* Funktionsresultat:	Handle des Fensters oder -1 (kein Fenster der eigenen Applikation)*/
 /*----------------------------------------------------------------------------------------*/
-static short
+static _WORD
 top_whdl(void)
 {
-	short whdl;
+	_WORD whdl;
 
-	if (wind_get(0, WF_TOP, &whdl, 0, 0, 0) == 0) /* Fehler? */
+	if (wind_get_int(0, WF_TOP, &whdl) == 0) /* Fehler? */
 		return -1;
 
 	if (whdl < 0) /* liegt ein Fenster einer anderen Applikation vorne? */
@@ -735,7 +709,7 @@ cmp_cpx_names(const void *_a, const void *_b)
 	const CPX_DESC * const *a = _a;
 	const CPX_DESC * const *b = _b;
 
-	return stricmp((*a)->old.header.text, (*b)->old.header.text);
+	return stricmp((*a)->old.header.title_txt, (*b)->old.header.title_txt);
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1204,12 +1178,12 @@ cpx_in_rect(CPX_DESC *cpx_desc, GRECT *rect)
 {
 	WINDOW *w;
 	GRECT box;
-	short extent[8];
-	short dummy;
+	_WORD extent[8];
+	_WORD dummy;
 
 	w = main_window;
-	box.g_x = cpx_desc->icon_x + w->workarea.g_x - w->x;
-	box.g_y = cpx_desc->icon_y + w->workarea.g_y - w->y;
+	box.g_x = (_WORD)(cpx_desc->icon_x + w->workarea.g_x - w->x);
+	box.g_y = (_WORD)(cpx_desc->icon_y + w->workarea.g_y - w->y);
 	box.g_w = 32;
 	box.g_h = 24;
 	
@@ -1217,11 +1191,11 @@ cpx_in_rect(CPX_DESC *cpx_desc, GRECT *rect)
 		return 1;
 
 	vst_point(vdi_handle, 8, &dummy, &dummy, &dummy, &dummy);
-	vqt_extent(vdi_handle, cpx_desc->old.header.text, extent);
+	vqt_extent(vdi_handle, cpx_desc->old.header.title_txt, extent);
 	
 	box.g_w = extent[2] - extent[0];
-	box.g_x = cpx_desc->icon_x + w->workarea.g_x - w->x;
-	box.g_y = cpx_desc->icon_y + w->workarea.g_y - w->y;
+	box.g_x = (_WORD)(cpx_desc->icon_x + w->workarea.g_x - w->x);
+	box.g_y = (_WORD)(cpx_desc->icon_y + w->workarea.g_y - w->y);
 	box.g_x += 16 - (box.g_w / 2);
 	box.g_y += 24 + 2;
 	box.g_h = extent[7] - extent[1];
@@ -1253,12 +1227,12 @@ cpx_to_end(CPX_DESC *cpx_desc)
 static void
 get_cpximg_size(CPX_DESC *cpx_desc, GRECT *area)
 {
-	short extent[8];
-	short dummy;
-	short tw;
+	_WORD extent[8];
+	_WORD dummy;
+	_WORD tw;
 	
 	vst_point(vdi_handle, 8, &dummy, &dummy, &dummy, &dummy);
-	vqt_extent(vdi_handle, cpx_desc->old.header.text, extent);
+	vqt_extent(vdi_handle, cpx_desc->old.header.title_txt, extent);
 	tw = extent[2] - extent[0];
 
 	area->g_x = cpx_desc->icon_x;
@@ -1281,8 +1255,8 @@ redraw_cpximg(CPX_DESC *cpx_desc)
 
 	get_cpximg_size(cpx_desc, &area);
 
-	area.g_x += main_window->workarea.g_x - main_window->x;
-	area.g_y += main_window->workarea.g_y - main_window->y;
+	area.g_x += (_WORD)(main_window->workarea.g_x - main_window->x);
+	area.g_y += (_WORD)(main_window->workarea.g_y - main_window->y);
 
 	if (main_window)
 		redraw_window(main_window->handle, &area);
@@ -1331,11 +1305,11 @@ full_redraw_main_window(void)
 static void
 redraw_main_window(WINDOW *w, GRECT *area)
 {
-	short clip[4], colors[2], pxy[8];
+	_WORD clip[4], colors[2], pxy[8];
 	CPX_DESC *cpx_desc;
 	MFDB src;
 	MFDB des;
-	short dummy;
+	_WORD dummy;
 
 
 	if (w->wflags.iconified)
@@ -1385,8 +1359,8 @@ redraw_main_window(WINDOW *w, GRECT *area)
 			short mode;
 			
 			cpx = &cpx_desc->old;
-			pxy[4] = w->workarea.g_x + cpx_desc->icon_x - w->x;
-			pxy[5] = w->workarea.g_y + cpx_desc->icon_y - w->y;
+			pxy[4] = (_WORD)(w->workarea.g_x + cpx_desc->icon_x - w->x);
+			pxy[5] = (_WORD)(w->workarea.g_y + cpx_desc->icon_y - w->y);
 			pxy[6] = pxy[4] + 31;
 			pxy[7] = pxy[5] + 23;
 			
@@ -1394,10 +1368,10 @@ redraw_main_window(WINDOW *w, GRECT *area)
 	
 			if (cpx_desc->selected)
 			{
-				short extent[8];
-				short xy[4];
+				_WORD extent[8];
+				_WORD xy[4];
 				
-				vqt_extent(vdi_handle, cpx_desc->old.header.text, extent);
+				vqt_extent(vdi_handle, cpx_desc->old.header.title_txt, extent);
 				
 				vswr_mode(vdi_handle, MD_REPLACE);
 				vsf_color(vdi_handle, 1);
@@ -1429,7 +1403,7 @@ redraw_main_window(WINDOW *w, GRECT *area)
 			vswr_mode(vdi_handle, mode);
 			vrt_cpyfm(vdi_handle, mode, pxy, &src, &des, colors);
 			vst_color(vdi_handle, colors[0]);
-			v_gtext(vdi_handle, pxy[4] + 16, pxy[5] + 24 + 2, cpx->header.text);
+			v_gtext(vdi_handle, pxy[4] + 16, pxy[5] + 24 + 2, cpx->header.title_txt);
 	
 			if (cpx_desc->flags & CPXD_INACTIVE)
 			{
@@ -1486,7 +1460,7 @@ static void
 draw_cpx_frames(int xof, int yof)
 {
 	CPX_DESC *cpx_desc;
-	short xy[10];
+	_WORD xy[10];
 
 	graf_mouse(M_OFF, 0L);
 
@@ -1510,8 +1484,8 @@ draw_cpx_frames(int xof, int yof)
 
 			get_cpximg_size(cpx_desc, &area);
 
-			area.g_x += main_window->workarea.g_x - main_window->x + xof;
-			area.g_y += main_window->workarea.g_y - main_window->y + yof;
+			area.g_x += (_WORD)(main_window->workarea.g_x - main_window->x + xof);
+			area.g_y += (_WORD)(main_window->workarea.g_y - main_window->y + yof);
 
 			xy[0] = area.g_x;
 			xy[1] = area.g_y;
@@ -1855,7 +1829,7 @@ cpx_info(CPX_DESC *cpx_desc)
 	if (str == 0L)
 		str = cpxinfo[CITITLE].ob_spec.free_string;
 
-	strcpy(str, cpx->header.text);
+	strcpy(str, cpx->header.title_txt);
 	
 	if (strlen(cpx_desc->file_name) > 20)
 	{
@@ -1925,8 +1899,8 @@ do_dialog(OBJECT *tree)
 	GRECT start;
 	GRECT center;
 	void *flyinf;
-	short dummy;
-	short obj;
+	_WORD dummy;
+	_WORD obj;
 
 	wind_update(BEG_UPDATE);
 	wind_update(BEG_MCTRL);
@@ -2002,8 +1976,8 @@ einstellungen(void)
 		{
 			char tmp_path[128];
 			char file[128];
-			short btn;
-			short ok;
+			_WORD btn;
+			_WORD ok;
 
 			file[0] = 0;
 
@@ -2118,7 +2092,7 @@ handle_keyboard(short kstate, short key)
 			{
 				if (main_window && (main_window->wflags.iconified == 0))
 				{
-					short msg[8];
+					_WORD msg[8];
 
 					msg[0] = WM_ARROWED;
 					msg[1] = app_id;
@@ -2179,7 +2153,7 @@ handle_keyboard(short kstate, short key)
 			{
 				if (main_window && (main_window->wflags.iconified == 0))
 				{
-					short	msg[8];
+					_WORD	msg[8];
 	
 					msg[0] = WM_ARROWED;
 					msg[1] = app_id;
@@ -2275,7 +2249,7 @@ handle_keyboard(short kstate, short key)
 					{
 						if (main_window)
 						{
-							short msg[8];
+							_WORD msg[8];
 							
 							msg[0] = WM_CLOSED;
 							msg[1] = app_id;
@@ -2311,7 +2285,7 @@ handle_keyboard(short kstate, short key)
 					{
 						if (main_window && (main_window->wflags.iconified == 0))
 						{
-							short msg[8];
+							_WORD msg[8];
 							
 							msg[0] = WM_FULLED;
 							msg[1] = app_id;
@@ -2403,8 +2377,8 @@ drag_icons(void)
 					GRECT area;
 				
 					get_cpximg_size(cpx_desc, &area);
-					area.g_x += w->workarea.g_x - w->x;
-					area.g_y += w->workarea.g_y - w->y;
+					area.g_x += (_WORD)(w->workarea.g_x - w->x);
+					area.g_y += (_WORD)(w->workarea.g_y - w->y);
 
 					cpx_desc->icon_x += x_offset; /* Icon verschieben */
 					cpx_desc->icon_y += y_offset;
@@ -2494,8 +2468,8 @@ select_icons(void)
 	if (mevnt.bstate == 1)
 	{
 		GRECT area;
-		short w;
-		short h;
+		_WORD w;
+		_WORD h;
 
 		area.g_x = mevnt.x;
 		area.g_y = mevnt.y;
@@ -2776,7 +2750,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 }
 
 static short
-handle_message(short msg[8])
+handle_message(_WORD msg[8])
 {
 	switch (msg[0])
 	{
@@ -3504,8 +3478,8 @@ fix_popup_strings(OBJECT *obj)
 static void
 std_settings(void)
 {
-	short hor_3d;
-	short ver_3d;
+	_WORD hor_3d;
+	_WORD ver_3d;
 	char *env;
 	long header_size;
 
@@ -3517,7 +3491,7 @@ std_settings(void)
 	if (aes_flags & GAI_APTERM)
 		shel_write(SHW_INFRECGN, 1, 0, 0L, 0L); /* Programm versteht AP_TERM */
 
-	wind_get(0, WF_WORKXYWH, &desk_grect.g_x, &desk_grect.g_y, &desk_grect.g_w, &desk_grect.g_h);
+	wind_get_grect(0, WF_WORKXYWH, &desk_grect);
 
 	cpx_desc_list = NULL;
 	auto_start_list = NULL;	/* CPXe nicht automatisch starten */
@@ -3692,8 +3666,8 @@ sig_handler(long sig)
 static int
 init_vwork(void)
 {
-	short work_out[57];
-	short work_in[11];
+	_WORD work_out[57];
+	_WORD work_in[11];
 	int i;
 	
 	for (i = 0; i < 10; i++)
@@ -3840,7 +3814,7 @@ main(int argc, char *argv[])
 					/* Endlosschleife */
 					while (1)
 					{
-						short	msg[8];
+						_WORD	msg[8];
 
 						evnt_mesag(msg);
 

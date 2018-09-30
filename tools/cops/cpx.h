@@ -80,7 +80,7 @@ struct cpxhead
 		unsigned i_char:	8;
 	} i_info;
 
-	char text[18];
+	char title_txt[18];
 
 	struct
 	{
@@ -142,34 +142,34 @@ struct Sl_size_args
 };
 struct Sl_xy_args
 {
-	OBJECT *tree; short base; short slider; short value;
-	short min; short max; void (*userdef)(void);
+	OBJECT *tree; _WORD base; _WORD slider; _WORD value;
+	_WORD min; _WORD max; void (*userdef)(void);
 };
 struct Sl_arrow_args
 {
-	OBJECT *tree; short base; short slider; short obj; short inc;
-	short min; short max; short *value; short direction; void (*userdef)(void);
+	OBJECT *tree; _WORD base; _WORD slider; _WORD obj; _WORD inc;
+	_WORD min; _WORD max; _WORD *value; _WORD direction; void (*userdef)(void);
 };
 struct Sl_dragxy_args
 {
-	OBJECT *tree; short base; short slider;
-	short min; short max; short *value; void (*userdef)(void);
+	OBJECT *tree; _WORD base; short slider;
+	_WORD min; _WORD max; _WORD *value; void (*userdef)(void);
 };
 struct Xform_do_args
 {
-	OBJECT *tree; short edit_obj; short *msg;
+	OBJECT *tree; _WORD edit_obj; _WORD *msg;
 };
 struct Set_Evnt_Mask_args
 {
-	short mask; MOBLK *m1; MOBLK *m2; long evtime;
+	_WORD mask; MOBLK *m1; MOBLK *m2; long evtime;
 };
 struct XGen_Alert_args
 {
-	short alert_id;
+	_WORD alert_id;
 };
 struct MFsave_args
 {
-	short flag; MFORM *mf;
+	_WORD flag; MFORM *mf;
 };
 
 struct xcpb
@@ -214,7 +214,7 @@ struct xcpb
 /* helper structs for 16bit argument alignment */
 struct cpx_key_args { short kstate; short key; short *quit; };
 struct cpx_button_args { MRETS *mrets; short nclicks; short *quit; };
-struct cpx_hook_args { short event; short *msg; MRETS *mrets; short *key; short *nclicks; };
+struct cpx_hook_args { _WORD event; _WORD *msg; MRETS *mrets; _WORD *key; _WORD *nclicks; };
 struct cpx_close_args { short flag; };
 
 typedef struct
@@ -263,25 +263,25 @@ typedef	struct cpx_desc
 
 	DIALOG	*dialog;	/* Zeiger auf die Dialogbeschreibung oder 0L, wenn das CPX nicht offen ist */
 	OBJECT	*tree;		/* ist bei Form-CPX 0L, bis cpx_form_do() aufgerufen wird */
-	short	whdl;		/* Handle des Dialogfensters */
-	short	window_x;	/* Position des Dialogfensters */
-	short	window_y;
+	_WORD	whdl;		/* Handle des Dialogfensters */
+	_WORD	window_x;	/* Position des Dialogfensters */
+	_WORD	window_y;
 
 	short	is_evnt_cpx;	/* 0: Form-CPX 1: Event-CPX */
-	short	button;		/* wird von handle_form_cpx() zurueckgeliefert */
-	short	*msg;		/* Zeiger auf den bei Xform_do() uebergebenen Messagebuffer */
+	_WORD	button;		/* wird von handle_form_cpx() zurueckgeliefert */
+	_WORD	*msg;		/* Zeiger auf den bei Xform_do() uebergebenen Messagebuffer */
 
 	short	obfix_cnt;
-	short	box_width;
-	short	box_height;
+	_WORD	box_width;
+	_WORD	box_height;
 	GRECT	size;		/* Dialogausmasse und -position */
 	OBJECT	empty_tree[2];	/* IBOX fuer leeren Objektbaum am Anfang,
 				   wegen WDIALOG-Fehler aus 2 Objekten bestehend */
 
 	struct cl_segm segm;
 
-	short	icon_x;		/* Iconposition innerhalb des Hauptfensters */
-	short	icon_y;
+	_WORD	icon_x;		/* Iconposition innerhalb des Hauptfensters */
+	_WORD	icon_y;
 
 	int	selected;
 	short	flags;

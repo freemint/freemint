@@ -1,0 +1,7 @@
+*.c text eol=crlf
+*.h text eol=crlf
+*.s text eol=crlf
+*.S text eol=crlf
+*.prj text eol=crlf
+*.rsh text eol=crlf
+*.rh text eol=crlf

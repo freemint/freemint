@@ -26,6 +26,7 @@
 
 #include <mint/cookie.h>
 
+#include "cops_rsc.h"
 #include "adaptrsc.h"
 #include "cops.h"
 
@@ -42,8 +43,8 @@
 #endif
 
 
-typedef	void *DOSVARS;
-
+#ifndef _AESVARS
+#define _AESVARS
 typedef struct
 {
 	long	magic;				/* must be 0x87654321 */
@@ -64,27 +65,31 @@ typedef struct
 	int	release;			/* Release-Status */
 
 } AESVARS;
+#endif
 
+#ifndef _MAGX_COOKIE
+#define _MAGX_COOKIE
 typedef struct
 {
 	long	config_status;
-	DOSVARS	*dosvars;
+	void	*dosvars;
 	AESVARS	*aesvars;
 
 } MAGX_COOKIE;
+#endif
 
 
 static USERBLK *substitute_ublks;
 static OBJECT *radio_slct;
 static OBJECT *radio_deslct;
-static short radio_bgcol;
-static short magic_version = 0;
+static _WORD radio_bgcol;
+static _WORD magic_version = 0;
 
-static short _cdecl check_button(PARMBLK *parmblock);
-static short _cdecl radio_button(PARMBLK *parmblock);
-static short _cdecl group(PARMBLK *parmblock);
-static short _cdecl title(PARMBLK *parmblock);
-static void userdef_text(short x, short y, char *string);
+static _WORD _cdecl check_button(PARMBLK *parmblock);
+static _WORD _cdecl radio_button(PARMBLK *parmblock);
+static _WORD _cdecl group(PARMBLK *parmblock);
+static _WORD _cdecl title(PARMBLK *parmblock);
+static void userdef_text(_WORD x, _WORD y, char *string);
 
 /*----------------------------------------------------------------------------------------*/
 /* Informationen ueber die AES-Funktionen zurueckliefern*/
@@ -94,14 +99,14 @@ static void userdef_text(short x, short y, char *string);
 /*	hor_3d:		zusaetzlicher horizontaler beidseitiger Rand fuer 3D-Objekte */
 /*	ver_3d:		zusaetzlicher vertikaler beidseitiger Rand fuer 3D-Objekte */
 /*----------------------------------------------------------------------------------------*/
-short
-get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
+_WORD
+get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d)
 {
 	MAGX_COOKIE *magic;
-	short work_out[57];
-	short attrib[10];
-	short pens;
-	short flags;
+	_WORD work_out[57];
+	_WORD attrib[10];
+	_WORD pens;
+	_WORD flags;
 	
 	vq_extnd(vdi_handle, 0, work_out);
 	vqt_attributes(vdi_handle, attrib);
@@ -134,10 +139,10 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 		
 	if (flags & GAI_INFO)		/* ist appl_getinfo() vorhanden? */
 	{
-		short ag1;
-		short ag2;
-		short ag3;
-		short ag4;
+		_WORD ag1;
+		_WORD ag2;
+		_WORD ag3;
+		_WORD ag4;
 
 		if (appl_getinfo(0, &ag1, &ag2, &ag3, &ag4)) /* Unterfunktion 0, Fonts */
 		{
@@ -168,7 +173,7 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 				{
 					if (pens >= 16) /* mindestens 16 Farben? */
 					{
-						short dummy;
+						_WORD dummy;
 						
 						flags |= GAI_3D;
 						objc_sysvar(0, BACKGRCOL, 0, 0, &radio_bgcol, &dummy);
@@ -190,7 +195,7 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 /*	ver_3d:		zusaetzlicher vertikaler beidseitiger Rand fuer 3D-Objekte */
 /*----------------------------------------------------------------------------------------*/
 void
-adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, short hor_3d, short ver_3d)
+adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, _WORD hor_3d, _WORD ver_3d)
 {
 	while (no_objs > 0)
 	{
@@ -426,12 +431,12 @@ substitute_free(void)
 /* Funktionsresultat:	nicht aktualisierte Objektstati */
 /* parmblock:		Zeiger auf die Parameter-Block-Struktur */
 /*----------------------------------------------------------------------------------------*/
-static short _cdecl
+static _WORD _cdecl
 check_button(PARMBLK *parmblock)
 {
-	short rect[4];
-	short clip[4];
-	short xy[10];
+	_WORD rect[4];
+	_WORD clip[4];
+	_WORD xy[10];
 	char *string;
 	
 	string = (char *) parmblock->pb_parm;
@@ -439,15 +444,15 @@ check_button(PARMBLK *parmblock)
 	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
 	clip[2] += clip[0] - 1;
 	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	*(GRECT *) rect = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
 	rect[2] = rect[0] + phchar - 2;
 	rect[3] = rect[1] + phchar - 2;
 
-	vswr_mode(vdi_handle, 1); /* Ersetzend */
+	udef_vswr_mode(vdi_handle, 1); /* Ersetzend */
 
-	vsl_color(vdi_handle, 1); /* schwarz */
+	udef_vsl_color(vdi_handle, 1); /* schwarz */
 
 	xy[0] = rect[0];
 	xy[1] = rect[1];
@@ -459,30 +464,30 @@ check_button(PARMBLK *parmblock)
 	xy[7] = rect[3];
 	xy[8] = rect[0];
 	xy[9] = rect[1];
-	v_pline(vdi_handle, 5, xy); /* schwarzen Rahmen zeichnen */
+	udef_v_pline(vdi_handle, 5, xy); /* schwarzen Rahmen zeichnen */
 
-	vsf_color(vdi_handle, 0); /* weiss */
+	udef_vsf_color(vdi_handle, 0); /* weiss */
 	
 	xy[0] = rect[0] + 1;
 	xy[1] = rect[1] + 1;
 	xy[2] = rect[2] - 1;
 	xy[3] = rect[3] - 1;
-	vr_recfl(vdi_handle, xy); /* weisse Box zeichnen */
+	udef_vr_recfl(vdi_handle, xy); /* weisse Box zeichnen */
 
 	if (parmblock->pb_currstate & OS_SELECTED)
 	{
 		parmblock->pb_currstate &= ~OS_SELECTED; /* Bit loeschen */
 		
-		vsl_color(vdi_handle, 1); /* schwarz - fuer das Kreuz */
+		udef_vsl_color(vdi_handle, 1); /* schwarz - fuer das Kreuz */
 		xy[0] = rect[0] + 2;
 		xy[1] = rect[1] + 2;
 		xy[2] = rect[2] - 2;
 		xy[3] = rect[3] - 2;
-		v_pline(vdi_handle, 2, xy);
+		udef_v_pline(vdi_handle, 2, xy);
 		
 		xy[1] = rect[3] - 2;
 		xy[3] = rect[1] + 2;
-		v_pline(vdi_handle, 2, xy);
+		udef_v_pline(vdi_handle, 2, xy);
 	}
 	userdef_text(parmblock->pb_x + phchar + pwchar, parmblock->pb_y, string);
 
@@ -494,21 +499,21 @@ check_button(PARMBLK *parmblock)
 /* Funktionsresultat:	nicht aktualisierte Objektstati */
 /* parmblock:		Zeiger auf die Parameter-Block-Struktur */
 /*----------------------------------------------------------------------------------------*/
-static short _cdecl
+static _WORD _cdecl
 radio_button(PARMBLK *parmblock)
 {
 	BITBLK *image;
 	MFDB src;
 	MFDB des;
-	short clip[4];
-	short xy[8];
-	short image_colors[2];
+	_WORD clip[4];
+	_WORD xy[8];
+	_WORD image_colors[2];
 	char *string;
 
 	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
 	clip[2] += clip[0] - 1;
 	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschr„nken */
+	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschr„nken */
 
 	string = (char *) parmblock->pb_parm;
 
@@ -544,7 +549,7 @@ radio_button(PARMBLK *parmblock)
 	image_colors[0] = 1; /* schwarz als Vordergrundfarbe */
 	image_colors[1] = radio_bgcol; /* Hintergrundfarbe */
 
-	vrt_cpyfm(vdi_handle, MD_REPLACE, xy, &src, &des, image_colors);
+	udef_vrt_cpyfm(vdi_handle, MD_REPLACE, xy, &src, &des, image_colors);
 	userdef_text(parmblock->pb_x + phchar + pwchar, parmblock->pb_y, string);
 
 	return parmblock->pb_currstate;
@@ -555,12 +560,12 @@ radio_button(PARMBLK *parmblock)
 /* Funktionsresultat:	nicht aktualisierte Objektstati */
 /* parmblock:		Zeiger auf die Parameter-Block-Struktur */
 /*----------------------------------------------------------------------------------------*/
-static short _cdecl
+static _WORD _cdecl
 group(PARMBLK *parmblock)
 {
-	short clip[4];
-	short obj[4];
-	short xy[12];
+	_WORD clip[4];
+	_WORD obj[4];
+	_WORD xy[12];
 	char *string;
 
 	string = (char *) parmblock->pb_parm;
@@ -568,11 +573,11 @@ group(PARMBLK *parmblock)
 	*(GRECT *) &clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
 	clip[2] += clip[0] - 1;
 	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
-	vswr_mode(vdi_handle, MD_TRANS);
-	vsl_color(vdi_handle, 1);
-	vsl_type(vdi_handle, 1);
+	udef_vswr_mode(vdi_handle, MD_TRANS);
+	udef_vsl_color(vdi_handle, 1);
+	udef_vsl_type(vdi_handle, 1);
 
 	*(GRECT *) obj = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
 	obj[2] += obj[0] - 1;
@@ -591,7 +596,7 @@ group(PARMBLK *parmblock)
 	xy[10] = (short) (xy[0] + strlen(string) * pwchar);
 	xy[11] = xy[1];
 	
-	v_pline(vdi_handle, 6, xy);
+	udef_v_pline(vdi_handle, 6, xy);
 
 	userdef_text(obj[0] + pwchar, obj[1], string);
 
@@ -603,11 +608,11 @@ group(PARMBLK *parmblock)
 /* Funktionsresultat:	nicht aktualisierte Objektstati */
 /* parmblock:		Zeiger auf die Parameter-Block-Struktur */
 /*----------------------------------------------------------------------------------------*/
-static short _cdecl
+static _WORD _cdecl
 title(PARMBLK *parmblock)
 {
-	short clip[4];
-	short xy[4];
+	_WORD clip[4];
+	_WORD xy[4];
 	char *string;
 
 	string = (char *) parmblock->pb_parm;
@@ -615,17 +620,17 @@ title(PARMBLK *parmblock)
 	*(GRECT *) &clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
 	clip[2] += clip[0] - 1;
 	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
-	vswr_mode(vdi_handle, MD_TRANS);
-	vsl_color(vdi_handle, 1);
-	vsl_type(vdi_handle, 1);
+	udef_vswr_mode(vdi_handle, MD_TRANS);
+	udef_vsl_color(vdi_handle, 1);
+	udef_vsl_type(vdi_handle, 1);
 
 	xy[0] = parmblock->pb_x;
 	xy[1] = parmblock->pb_y + parmblock->pb_h - 1;
 	xy[2] = parmblock->pb_x + parmblock->pb_w - 1;
 	xy[3] = xy[1];
-	v_pline(vdi_handle, 2, xy);
+	udef_v_pline(vdi_handle, 2, xy);
 
 	userdef_text(parmblock->pb_x, parmblock->pb_y, string);
 
@@ -633,16 +638,16 @@ title(PARMBLK *parmblock)
 }
 
 static void
-userdef_text(short x, short y, char *string)
+userdef_text(_WORD x, _WORD y, char *string)
 {
-	short tmp;
+	_WORD tmp;
 	
-	vswr_mode(vdi_handle, MD_TRANS);
-	vst_font(vdi_handle, aes_font); /* Font einstellen */
-	vst_color(vdi_handle, 1); /* schwarz */
-	vst_effects(vdi_handle, 0); /* keine Effekte */
-	vst_alignment(vdi_handle, 0, 5, &tmp, &tmp); /* an der Zeichenzellenoberkante ausrichten */
-	vst_height(vdi_handle, aes_height, &tmp, &tmp, &tmp, &tmp);
+	udef_vswr_mode(vdi_handle, MD_TRANS);
+	udef_vst_font(vdi_handle, aes_font); /* Font einstellen */
+	udef_vst_color(vdi_handle, 1); /* schwarz */
+	udef_vst_effects(vdi_handle, 0); /* keine Effekte */
+	udef_vst_alignment(vdi_handle, 0, 5, &tmp, &tmp); /* an der Zeichenzellenoberkante ausrichten */
+	udef_vst_height(vdi_handle, aes_height, &tmp, &tmp, &tmp, &tmp);
 	
-	v_gtext(vdi_handle, x, y, string);
+	udef_v_gtext(vdi_handle, x, y, string);
 }

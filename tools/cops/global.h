@@ -50,24 +50,27 @@
 #endif
 
 /* XXX add to mintlib somewhere under include/mint */
+#ifndef __XATTR
+#define __XATTR
 struct xattr
 {
-	unsigned short mode;
-	long           ino;	/* must be 32 bits */
-	unsigned short dev;	/* must be 16 bits */
-	short          rdev;	/* not supported by the kernel */
-	unsigned short nlink;
-	unsigned short uid;	/* must be 16 bits */
-	unsigned short gid;	/* must be 16 bits */
-	long           size;
-	long           blksize;
-	long           blocks;
-	unsigned long  mtime;
-	unsigned long  atime;
-	unsigned long  ctime;
-	short          attr;
+	unsigned short st_mode;
+	long           st_ino;	/* must be 32 bits */
+	unsigned short st_dev;	/* must be 16 bits */
+	short          st_rdev;	/* not supported by the kernel */
+	unsigned short st_nlink;
+	unsigned short st_uid;	/* must be 16 bits */
+	unsigned short st_gid;	/* must be 16 bits */
+	long           st_size;
+	long           st_blksize;
+	long           st_blocks;
+	unsigned long  st_mtime;
+	unsigned long  st_atime;
+	unsigned long  st_ctime;
+	short          st_attr;
 	short res1;		/* reserved for future kernel use */
 	long res2[2];
 };
+#endif
 
 # endif /* _global_h */

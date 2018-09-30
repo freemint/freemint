@@ -27,14 +27,14 @@ struct foobar
 {
 	short dummy;	/* ist wahrscheinlich vorhanden, weil irgendein Kretin
 			   zwei Bytes zuviel rausgeschrieben hat */
-	short *image;	/* Zeiger auf Image */
+	_WORD *image;	/* Zeiger auf Image */
 };
 
 static void fix_trindex(short num_tree, OBJECT **rs_trindex, OBJECT *rs_object);
 static void fix_objects(short num_objs, OBJECT *obj, TEDINFO *ted, char *str[],
 			ICONBLK *icon, BITBLK *bblk, struct foobar *rs_imdope);
 static void fix_str(char **where, char *str[]);
-static void fix_img(short **where, struct foobar *rs_imdope);
+static void fix_img(_WORD **where, struct foobar *rs_imdope);
 static void fix_frstr(short num_frstr, long *rs_frstr, char *str[]);
 static void fix_frimg(short num_frimg, BITBLK **rs_frimg, BITBLK *bblk,
 		      struct foobar *rs_imdope);
@@ -189,7 +189,7 @@ fix_str(char **where, char *str[])
 /*	rs_imdope:	Feld mit Zeigern auf Images fuer ICONBLKs */
 /*----------------------------------------------------------------------------------------*/ 
 static void
-fix_img(short **where, struct foobar *rs_imdope)
+fix_img(_WORD **where, struct foobar *rs_imdope)
 {
 	long index = (long) *where;
 

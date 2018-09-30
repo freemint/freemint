@@ -23,20 +23,22 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <mt_gemx.h>
 
+#include "cops_rsc.h"
 #include "cops.h"
 #include "objmacro.h"
 #include "popup.h"
 
 
 static void _cdecl strs_init(struct POPUP_INIT_args);
-static short _cdecl draw_arrow(PARMBLK *parmblock);
+static _WORD _cdecl draw_arrow(PARMBLK *parmblock);
 
 /*----------------------------------------------------------------------------------------*/ 
 /* BITBLKs fuer Pfeile nach oben und unten */
 /*----------------------------------------------------------------------------------------*/ 
-static short up_arrow_data[] = { 0x0000, 0x0100, 0x0380, 0x07C0, 0x0FE0, 0x1FF0, 0x3FF8, 0x0000 };
-static short dn_arrow_data[] = { 0x0000, 0x3FF8, 0x1FF0, 0x0FE0, 0x07C0, 0x0380, 0x0100, 0x0000 };
+static _WORD up_arrow_data[] = { 0x0000, 0x0100, 0x0380, 0x07C0, 0x0FE0, 0x1FF0, 0x3FF8, 0x0000 };
+static _WORD dn_arrow_data[] = { 0x0000, 0x3FF8, 0x1FF0, 0x0FE0, 0x07C0, 0x0380, 0x0100, 0x0000 };
 
 static BITBLK up_arrow = { up_arrow_data, 2, 8, 0, 0, 0x0001 };
 static BITBLK dn_arrow = { dn_arrow_data, 2, 8, 0, 0, 0x0001 };
@@ -56,8 +58,8 @@ typedef struct
 	char *buf_str[MAX_STRS];
 } PSTRS;
 
-short
-do_obj_popup(OBJECT *parent_tree, short parent_obj, char **strs, short no_strs, short no_spaces, short slct)
+_WORD
+do_obj_popup(OBJECT *parent_tree, _WORD parent_obj, char **strs, _WORD no_strs, _WORD no_spaces, _WORD slct)
 {
 	GRECT button_rect;
 
@@ -77,14 +79,14 @@ do_obj_popup(OBJECT *parent_tree, short parent_obj, char **strs, short no_strs, 
 /*	spaces:		Anzahl der vor den Strings einzufuegenden Leerzeichen */
 /*	slct:		Index des selektierten Strings */
 /*----------------------------------------------------------------------------------------*/ 
-short
-do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slct)
+_WORD
+do_popup(GRECT *button_rect, char **strs, _WORD no_strs, _WORD spaces, _WORD slct)
 {
 	PSTRS popup_par;
 	OBJECT *tree;
-	short max_width;
-	short max_strs;
-	short i;
+	_WORD max_width;
+	_WORD max_strs;
+	_WORD i;
 	long tree_size;
 
 	if (no_strs > MAX_STRS)
@@ -114,7 +116,7 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 
 	if (tree) /* Speicher vorhanden? */
 	{
-		short scroll_pos;
+		_WORD scroll_pos;
 
 		max_width *= pwchar; /* Breite in Pixeln */
 
@@ -166,8 +168,18 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 			slct = 0;
 
 		{
-			struct POPUP_INIT_args args = { tree, scroll_pos, no_strs, (void *) &popup_par };
+			struct POPUP_INIT_args args;
+			args.tree = tree;
+			args.scrollpos = scroll_pos;
+			args.nlines = no_strs;
+			args.param = (void *) &popup_par;
+#ifdef __PUREC__
+#pragma warn -stv
+#endif
 			strs_init(args); /* String besetzen */
+#ifdef __PUREC__
+#pragma warn +stv
+#endif
 		}
 
 		tree->ob_y -= (slct - scroll_pos) * phchar; /* Popup nach oben verschieben */
@@ -274,20 +286,20 @@ strs_init(struct POPUP_INIT_args args)
 /* Funktionsresultat:	nicht aktualisierte Objektstati */
 /* parmblock:		Zeiger auf die Parameter-Block-Struktur */
 /*----------------------------------------------------------------------------------------*/ 
-static short _cdecl
+static _WORD _cdecl
 draw_arrow(PARMBLK *parmblock)
 {
 	BITBLK *image;
 	MFDB src;
 	MFDB des;
-	short clip[4];
-	short xy[8];
-	short image_colors[2];
+	_WORD clip[4];
+	_WORD xy[8];
+	_WORD image_colors[2];
 
 	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
 	clip[2] += clip[0] - 1;
 	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	image = (BITBLK *) parmblock->pb_parm;
 
@@ -315,7 +327,7 @@ draw_arrow(PARMBLK *parmblock)
 	image_colors[0] = 1; /* schwarz als Vordergrundfarbe */
 	image_colors[1] = 0; /* Hintergrundfarbe */
 
-	vrt_cpyfm(vdi_handle, MD_REPLACE, xy, &src, &des, image_colors);
+	udef_vrt_cpyfm(vdi_handle, MD_REPLACE, xy, &src, &des, image_colors);
 
 	return parmblock->pb_currstate;
 }

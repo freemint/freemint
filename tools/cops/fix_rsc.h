@@ -25,6 +25,7 @@
 #define _fix_rsc_h
 
 #include <gem.h>
+#include "cops_rsc.h"
 #include "global.h"
 
 struct foobar;

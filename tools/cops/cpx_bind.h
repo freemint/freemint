@@ -39,8 +39,8 @@ short cpx_key(CPX_DESC *cpx_desc, short kstate, short key);
 short cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks);
 short cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets);
 short cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets);
-short cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, short *nclicks);
-void cpx_close(CPX_DESC *cpx_desc, short flag);
+short cpx_hook(CPX_DESC *cpx_desc, _WORD event, _WORD *msg, MRETS *mrets, _WORD *key, _WORD *nclicks);
+void cpx_close(CPX_DESC *cpx_desc, _WORD flag);
 
 /* the cpx context magics (rewritten in C from the asm parts) */
 void a_call_main(void);

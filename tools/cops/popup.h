@@ -27,7 +27,7 @@
 #include <gem.h>
 #include "global.h"
 
-short do_obj_popup(OBJECT *parent_tree, short parent_obj, char **strs, short no_strs, short no_spaces, short slct);
-short do_popup(GRECT *button_rect, char **strs, short no_strs, short no_spaces, short slct);
+_WORD do_obj_popup(OBJECT *parent_tree, _WORD parent_obj, char **strs, _WORD no_strs, _WORD no_spaces, _WORD slct);
+_WORD do_popup(GRECT *button_rect, char **strs, _WORD no_strs, _WORD no_spaces, _WORD slct);
 
 #endif /* _popup_h */
