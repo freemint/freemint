@@ -25,9 +25,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "cops_rsc.h"
 #include "callback.h"
 #include "cpx_bind.h"
 #include "cops.h"
+
+#if defined(__GNUC__) && defined(__MINTLIB__)
+#  ifdef _BITS_SETJMP_H
+     /* using new definition with array of struct */
+#    define JUMPBUF_RET_PC(jb) (jb)[0].__jmpbuf[0].ret_pc
+#    define JUMPBUF_RET_SP(jb) (jb)[0].__jmpbuf[0].regs[11]
+#  else
+     /* using old definition with array of longs */
+#    define JUMPBUF_RET_PC(jb) (jb)[0]
+#    define JUMPBUF_RET_SP(jb) (jb)[12]
+#  endif
+#endif
+
+#if defined(__PUREC__) || defined(__AHCC__)
+#  define JUMPBUF_RET_PC(jb) ((long *)(jb))[5]
+#  define JUMPBUF_RET_SP(jb) ((long *)(jb))[11]
+#endif
 
 
 #define DEBUG_CALLBACK(cpx) DEBUG(("%s(%s)\n", __FUNCTION__, cpx->file_name))
@@ -60,7 +78,7 @@ cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 	 * - then hex value 0x10001 (whatever it means, taken from
 	 *   original assembler bindings)
 	 */
-	ret = (*init)(xcpb, 0x434F5053, 0x10001);
+	ret = (*init)(xcpb, 0x434F5053L, 0x10001L);
 
 	DEBUG(("cpx_init -> %p\n", ret));
 	return ret;
@@ -123,7 +141,10 @@ cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 
 	if (cpx_desc->info->cpx_key)
 	{
-		struct cpx_key_args args = { kstate, key, &ret };
+		struct cpx_key_args args;
+		args.kstate = kstate;
+		args.key = key;
+		args.quit = &ret;
 		(*cpx_desc->info->cpx_key)(args);
 	}
 	else
@@ -141,7 +162,10 @@ cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 
 	if (cpx_desc->info->cpx_button)
 	{
-		struct cpx_button_args args = { mrets, nclicks, &ret };
+		struct cpx_button_args args;
+		args.mrets = mrets;
+		args.nclicks = nclicks;
+		args.quit = &ret;
 		(*cpx_desc->info->cpx_button)(args);
 	}
 	else
@@ -181,7 +205,7 @@ cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 }
 
 short
-cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, short *nclicks)
+cpx_hook(CPX_DESC *cpx_desc, _WORD event, _WORD *msg, MRETS *mrets, _WORD *key, _WORD *nclicks)
 {
 	register short ret;
 
@@ -189,7 +213,12 @@ cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, 
 
 	if (cpx_desc->info->cpx_hook)
 	{
-		struct cpx_hook_args args = { event, msg, mrets, key, nclicks };
+		struct cpx_hook_args args;
+		args.event = event;
+		args.msg = msg;
+		args.mrets = mrets;
+		args.key = key;
+		args.nclicks = nclicks;
 		ret = (*cpx_desc->info->cpx_hook)(args);
 	}
 	else
@@ -199,13 +228,14 @@ cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, 
 }
 
 void
-cpx_close(CPX_DESC *cpx_desc, short flag)
+cpx_close(CPX_DESC *cpx_desc, _WORD flag)
 {
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_close)
 	{
-		struct cpx_close_args args = { flag };
+		struct cpx_close_args args;
+		args.flag = flag;
 		(*cpx_desc->info->cpx_close)(args);
 	}
 }
@@ -240,11 +270,11 @@ a_call_main(void)
 	}
 
 	/* remember current stack */
-	kernel_stack = alpha_context[12];
+	kernel_stack = JUMPBUF_RET_SP(alpha_context);
 	DEBUG(("a_call_main: kernel_stack 0x%lx\n", kernel_stack));
 
-	jb[0] = (long)cpx_main_loop;
-	jb[12] = kernel_stack;
+	JUMPBUF_RET_PC(jb) = (long)cpx_main_loop;
+	JUMPBUF_RET_SP(jb) = kernel_stack;
 
 	longjmp(jb, 1);
 
@@ -342,8 +372,8 @@ Xform_do(const long *sp)
 		 * switch stack and call out form_do
 		 */
 
-		jb[0] = (long)call_cpx_form_do;
-		jb[12] = kernel_stack;
+		JUMPBUF_RET_PC(jb) = (long)call_cpx_form_do;
+		JUMPBUF_RET_SP(jb) = kernel_stack;
 
 		longjmp(jb, 1);
 
@@ -402,8 +432,8 @@ new_context_done(void)
 	free(call_open_cpx_context_desc->stack);
 	call_open_cpx_context_desc->stack = NULL;
 
-	jb[0] = (long)cpx_main_loop;
-	jb[12] = kernel_stack;
+	JUMPBUF_RET_PC(jb) = (long)cpx_main_loop;
+	JUMPBUF_RET_SP(jb) = kernel_stack;
 
 	longjmp(jb, 1);
 }
@@ -417,8 +447,8 @@ call_open_cpx_context(void)
 
 	DEBUG(("call_open_cpx_context(%s) -> go back\n", call_open_cpx_context_desc->file_name));
 
-	jb[0] = (long)new_context_done;
-	jb[12] = kernel_stack;
+	JUMPBUF_RET_PC(jb) = (long)new_context_done;
+	JUMPBUF_RET_SP(jb) = kernel_stack;
 
 	longjmp(jb, 1);
 }
@@ -437,8 +467,8 @@ new_context(CPX_DESC *cpx_desc)
 
 		call_open_cpx_context_desc = cpx_desc;
 
-		jb[0] = (long)call_open_cpx_context;
-		jb[12] = (long)cpx_desc->stack + 16380;
+		JUMPBUF_RET_PC(jb) = (long)call_open_cpx_context;
+		JUMPBUF_RET_SP(jb) = (long)cpx_desc->stack + 16380;
 
 		longjmp(jb, 1);
 

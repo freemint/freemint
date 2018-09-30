@@ -39,8 +39,8 @@
 #define	GAI_APTERM	0x1000	/* AP_TERM wird unterstÅtzt */
 #define	GAI_GSHORTCUT	0x2000	/* Objekttyp G_SHORTCUT wird unterstÅtzt */
 
-short get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d);
-void adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, short hor_3d, short ver_3d);
+_WORD get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d);
+void adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, _WORD hor_3d, _WORD ver_3d);
 void no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext);
 void substitute_objects(OBJECT *objs, unsigned short no_objs, short aes_flags, OBJECT *rslct, OBJECT *rdeslct);
 void substitute_free(void);

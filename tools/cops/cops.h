@@ -29,19 +29,19 @@
 
 #define ALPHAFILEVERSION 8
 
-extern short app_id;
-extern short aes_handle;
-extern short vdi_handle;
-extern short pwchar;
-extern short phchar;
-extern short pwbox;
-extern short phbox;
+extern _WORD app_id;
+extern _WORD aes_handle;
+extern _WORD vdi_handle;
+extern _WORD pwchar;
+extern _WORD phchar;
+extern _WORD pwbox;
+extern _WORD phbox;
 
-extern short menu_id;
-extern short aes_flags;
-extern short aes_font;
-extern short aes_height;
-extern short quit;
+extern _WORD menu_id;
+extern _WORD aes_flags;
+extern _WORD aes_font;
+extern _WORD aes_height;
+extern _WORD quit;
 
 extern GRECT desk_grect;
 

@@ -28,8 +28,10 @@
 
 #include <mint/ssystem.h>
 
+#include "cops_rsc.h"
 #include "phstuff.h"
 
+extern long clear_cpu_caches(void);
 
 /*----------------------------------------------------------------------------------------*/ 
 /* CPX-Datei laden und relozieren */
@@ -143,17 +145,14 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 	/* Programm geladen? */
 	if (addr)
 	{
-		if (!Ssystem(-1, 0,NULL))
+		if (!Ssystem(-1, 0L, 0L))
 		{
 			/* flush cpu caches */
-			Ssystem(S_FLUSHCACHE, addr, TDB_len);
+			Ssystem(S_FLUSHCACHE, (long)addr, TDB_len);
 		}
 		else
 		{
-#if 0 /* correct clear_cpu_caches.s */
-			extern long clear_cpu_caches(void);
 			Supexec(clear_cpu_caches);
-#endif
 		}
 	}
 
@@ -185,7 +184,7 @@ load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header
 			else
 				Fseek(sizeof(struct cpxhead), (short)handle, 0);
 
-			xattr.size -= sizeof(struct cpxhead);
+			xattr.st_size -= sizeof(struct cpxhead);
 
 			/* load program header */
 			if (Fread((short)handle, sizeof(phead), &phead) == sizeof(phead))
@@ -193,7 +192,7 @@ load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header
 				/* bra.s am Anfang? */
 				if (phead.ph_branch == PH_MAGIC)
 					/* load and relocate */
-					addr = load_and_reloc(cpx_desc, handle, xattr.size, &phead, cmplt_size);
+					addr = load_and_reloc(cpx_desc, handle, xattr.st_size, &phead, cmplt_size);
 			}
 			Fclose((short)handle);
 		}

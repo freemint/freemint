@@ -27,10 +27,6 @@
 #include <gem.h>
 #include "global.h"
 
-#define	EXTERN extern
-#define BYTE char
-#define WORD short
-#define LONG long
 #define rs_tedinfo	rsc_rs_tedinfo
 #define rs_ciconblk	rsc_rs_ciconblk
 #define rs_cicon	rsc_rs_cicon
@@ -42,10 +38,17 @@
 #define rs_object	rsc_rs_object
 
 #include "cops_rs.h"
-#include "cops_rs.rh"
 
 #ifdef WITH_RSC_DEFINITIONS
 #include "cops_rs.rsh"
+#endif
+
+#ifndef _WORD
+#if defined(__GNUC__)
+#define _WORD short
+#elif defined(__PUREC__) || defined(__AHCC__)
+#define _WORD int
+#endif
 #endif
 
 #undef rs_tedinfo
@@ -57,9 +60,5 @@
 #undef rs_frimg
 #undef rs_trindex
 #undef rs_object
-#undef LONG
-#undef WORD
-#undef BYTE
-#undef EXTERN
 
 #endif /* _cops_rsc_h */

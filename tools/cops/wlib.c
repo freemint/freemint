@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cops_rsc.h"
 #include "cops.h"
 #include "list.h"
 #include "wlib.h"
@@ -39,7 +40,7 @@
 /*----------------------------------------------------------------------------------------*/
 /* Globale Variablen                                                                      */
 /*----------------------------------------------------------------------------------------*/
-static short work_out[57];
+static _WORD work_out[57];
 			
 static WINDOW *window_list = NULL;
 
@@ -55,8 +56,8 @@ static void scroll_vertical(WINDOW *window, short dy);
 short
 init_wlib(short id)
 {
-	short work_in[11];
-	short i;
+	_WORD work_in[11];
+	_WORD i;
 			
 	app_id = id; /* AES-Programm-ID */
 	window_list = NULL;
@@ -580,7 +581,7 @@ scroll_horizontal(WINDOW *window, short dx)
 						rect[0].x2 += box.g_x - 1;
 						rect[0].y2 += box.g_y - 1;
 		
-						vs_clip(vdi_handle, 1, (short *) rect);	/* Clipping-Rechteck setzen */
+						vs_clip(vdi_handle, 1, (_WORD *) rect);	/* Clipping-Rechteck setzen */
 					
 						rect[1] = rect[0];
 						
@@ -598,7 +599,7 @@ scroll_horizontal(WINDOW *window, short dx)
 						}
 				  		box.g_w = ABS(dx);
 					
-						vro_cpyfm(vdi_handle, S_ONLY, (short *) rect, &screen, &screen);
+						vro_cpyfm(vdi_handle, S_ONLY, (_WORD *) rect, &screen, &screen);
 					   
 					}
 					window->redraw(window, &box); /* Bereich box zeichnen */
@@ -647,7 +648,7 @@ scroll_vertical(WINDOW *window, short dy)
 						rect[0].x2 += box.g_x - 1;
 						rect[0].y2 += box.g_y - 1;
 
-						vs_clip(vdi_handle, 1, (short *) rect);	/* Clipping-Rechteck setzen */
+						vs_clip(vdi_handle, 1, (_WORD *) rect);	/* Clipping-Rechteck setzen */
 
 						rect[1] = rect[0];
 
@@ -666,7 +667,7 @@ scroll_vertical(WINDOW *window, short dy)
 
 				  		box.g_h = ABS(dy);
 
-						vro_cpyfm(vdi_handle, S_ONLY, (short *) rect, &screen, &screen);
+						vro_cpyfm(vdi_handle, S_ONLY, (_WORD *) rect, &screen, &screen);
 					}
 					window->redraw(window, &box); /* Bereich box zeichnen */
 				}	
@@ -932,9 +933,9 @@ full_window(short handle, short max_width, short max_height)
 					max_h = window->h;
 
 				if (area.g_w > max_w)
-					area.g_w = max_w;
+					area.g_w = (_WORD)max_w;
 				if (area.g_h > max_h)
-					area.g_h = max_h;
+					area.g_h = (_WORD)max_h;
 			}
 
 			if (max_width || max_height) /* Fenstergroesse nur so gross wie noetig machen? */
@@ -1049,10 +1050,10 @@ uniconify_window(short handle, GRECT *size)
 void
 switch_window(void)
 {
-	short handle, buf[8];
+	_WORD handle, buf[8];
 	WINDOW *change;
 
-	wind_get(0, WF_TOP, &handle, 0, 0, 0);
+	wind_get_int(0, WF_TOP, &handle);
 
 	/* liegt ein Fenster des eigenen Programms vorne? */
 	change = search_struct(handle);
