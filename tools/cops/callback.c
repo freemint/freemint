@@ -25,13 +25,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <gem.h>
 
 #include <fcntl.h>
 #include <mint/cookie.h>
 #include <mint/mintbind.h>
 
-#include "callback.h"
 #include "cops_rsc.h"
+#include "callback.h"
 #include "cops.h"
 #include "cpx_bind.h"
 #include "fix_rsc.h"
@@ -190,8 +191,7 @@ save_header(struct cpxlist *cpx_list)
 
 static void cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob);
 
-static inline void
-cpx_rsh_fix(CPX_DESC *cpx_desc, const struct rsh_fix_args *args)
+static void cpx_rsh_fix(CPX_DESC *cpx_desc, const struct rsh_fix_args *args)
 {
 	OBJECT *obj;
 
@@ -757,8 +757,7 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*	redraw_area:	Maximale Groesse des insgesamt zu zeichnenden Bereichs		*/
 /*----------------------------------------------------------------------------------------*/ 
-static inline GRECT *
-cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
+static GRECT *cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 {
 	GRECT *w;
 
@@ -771,7 +770,7 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 	       redraw_area->g_x, redraw_area->g_y, redraw_area->g_w, redraw_area->g_h));
 
 	/* first redraw rectangle */
-	wind_get(cpx_desc->whdl, WF_FIRSTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
+	wind_get_grect(cpx_desc->whdl, WF_FIRSTXYWH, w);
 
 	while (w->g_w)
 	{
@@ -785,7 +784,7 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 		}
 
 		/* naechstes Redraw-Rechteck */
-		wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
+		wind_get_grect(cpx_desc->whdl, WF_NEXTXYWH, w);
 	}
 
 	DEBUG(("cpx_get_first_rect: no more rectangles\n"));
@@ -793,8 +792,7 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 	return NULL;
 
 }
-GRECT * _cdecl
-GetFirstRect(const long *sp)
+GRECT * _cdecl GetFirstRect(const long *sp)
 {
 	CPX_DESC *cpx;
 
@@ -816,15 +814,14 @@ GetFirstRect(const long *sp)
 /* Funktionsergebnis:	Redraw-Rechteck oder NULL						*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-static inline GRECT *
-cpx_get_next_rect(CPX_DESC *cpx_desc)
+static GRECT *cpx_get_next_rect(CPX_DESC *cpx_desc)
 {
 	GRECT *w = &(cpx_desc->dirty_area);
 
 	DEBUG_CALLBACK(cpx_desc);
 
 	/* naechstes Redraw-Rechteck */
-	wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
+	wind_get_grect(cpx_desc->whdl, WF_NEXTXYWH, w);
 
 	while (w->g_w)
 	{
@@ -838,14 +835,13 @@ cpx_get_next_rect(CPX_DESC *cpx_desc)
 		}
 
 		/* naechstes Redraw-Rechteck */
-		wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
+		wind_get_grect(cpx_desc->whdl, WF_NEXTXYWH, w);
 	}
 
 	DEBUG(("cpx_get_next_rect: no more rectangles\n"));
 	return NULL;
 }
-GRECT * _cdecl
-GetNextRect(const long *sp)
+GRECT * _cdecl GetNextRect(const long *sp)
 {
 	CPX_DESC *cpx;
 
@@ -867,7 +863,7 @@ GetNextRect(const long *sp)
 /*	m2:		zweites Mausrechteck						*/
 /*	time:		Timerintervall							*/
 /*----------------------------------------------------------------------------------------*/ 
-static inline void
+static void
 cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long time)
 {
 	DEBUG_CALLBACK(cpx_desc);
@@ -889,8 +885,7 @@ cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long tim
 
 	cpx_desc->mask = mask;		/* zusaetzliche Ereignismaske */
 }
-void _cdecl
-Set_Evnt_Mask(const long *sp)
+void _cdecl Set_Evnt_Mask(const long *sp)
 {
 	CPX_DESC *cpx;
 
@@ -953,8 +948,7 @@ XGen_Alert(struct XGen_Alert_args args)
 /* Funktionsresultat:	0: Fehler 1: alles in Ordnung					*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-static inline short
-cpx_save_data(CPX_DESC *cpx_desc, void *buf, long bytes)
+static short cpx_save_data(CPX_DESC *cpx_desc, void *buf, long bytes)
 {
 	char name[256];
 	long handle, offset;
@@ -1006,8 +1000,7 @@ CPX_Save(const long *sp)
 /* Funktionsresultat:	Zeiger auf 64-Bytes						*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-void * _cdecl
-Get_Buffer(const long *sp)
+void * _cdecl Get_Buffer(const long *sp)
 {
 	CPX_DESC *cpx;
 
@@ -1026,8 +1019,7 @@ Get_Buffer(const long *sp)
 /*	cookie: Cookietyp								*/
 /*	p_value: hier wird der Cookiewert zurueckgeliefert				*/
 /*----------------------------------------------------------------------------------------*/ 
-static short _cdecl
-getcookie(long cookie, long *p_value)
+static short _cdecl getcookie(long cookie, long *p_value)
 {
 	DEBUG(("getcookie(0x%lx, %p)\n", cookie, p_value));
 
@@ -1040,8 +1032,7 @@ getcookie(long cookie, long *p_value)
 /*	flag: 0: Mausform setzen 1: Mausform sichern					*/
 /*	mf: Zeiger auf Mausform								*/
 /*----------------------------------------------------------------------------------------*/ 
-static void _cdecl
-MFsave(struct MFsave_args args) /* contributed by Arnaud */
+static void _cdecl MFsave(struct MFsave_args args) /* contributed by Arnaud */
 {
 	static short has_mouse = 0;
 
