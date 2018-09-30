@@ -499,6 +499,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 static short
 search_cpx_selected(long selected, void *entry)
 {
+	(void)selected;
 	if (((CPX_DESC *) entry)->selected)
 		return 0;
 	else
@@ -1870,7 +1871,7 @@ cpx_info(CPX_DESC *cpx_desc)
 	 * 
 	 * ltoa(cpx->header.cpx_version, txt, 16);
 	 */
-	snprintf(txt, sizeof(txt), "%x", cpx->header.cpx_version);
+	sprintf(txt, "%x", cpx->header.cpx_version);
 	strrev(txt);
 	while (strlen(txt) < 3)
 		strcat(txt,"0");
@@ -1974,7 +1975,7 @@ einstellungen(void)
 	 *
 	 * itoa(settings.after, alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, 10);
 	 */
-	snprintf(alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, 10, "%d", settings.after);
+	sprintf(alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, "%d", settings.after);
 
 	if (settings.booticon)
 		obj_SELECTED(alphaconf, ACBOOT);
@@ -3590,6 +3591,8 @@ std_settings(void)
 
 		if (settings.after < 1)
 			settings.after = 1;
+		else if (settings.after > 99)
+			settings.after = 99;
 
 		if (settings.version < 8)
 		{
