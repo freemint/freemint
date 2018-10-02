@@ -18,6 +18,7 @@ popup.c
 wlib.c
 
 callpc.s
+clearcpu.s
 
 pcgemlib.lib
 pctoslib.lib

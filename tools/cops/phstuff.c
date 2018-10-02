@@ -31,6 +31,7 @@
 #include "cops_rsc.h"
 #include "phstuff.h"
 
+extern long clear_cpu_caches(void);
 
 /*----------------------------------------------------------------------------------------*/ 
 /* CPX-Datei laden und relozieren */
@@ -151,10 +152,7 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 		}
 		else
 		{
-#if 0 /* correct clear_cpu_caches.s */
-			extern long clear_cpu_caches(void);
 			Supexec(clear_cpu_caches);
-#endif
 		}
 	}
 

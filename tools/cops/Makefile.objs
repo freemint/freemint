@@ -22,7 +22,7 @@ include $(srcdir)/COPSDEFS
 NOCFLAGS-cops_rsc.c = -Wall
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 LIBS += -lgem
 GENFILES = $(TARGET)
 

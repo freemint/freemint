@@ -33,6 +33,7 @@ COBJS = \
 	wlib.c
 
 SOBJS = \
-	callback_wrap.s
+	callback_wrap.S \
+	clear_cpu_caches.S
 
 SRCFILES = $(HEADER) $(COBJS)
