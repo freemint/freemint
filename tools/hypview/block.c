@@ -187,6 +187,8 @@ short GetScrapPath(char *scrap_path, short clear)
 					}
 				}while(ret == 0);
 				Dclosedir(dirhandle);
+				/* Remove file name from scrap_path */
+				*ptr = '\0';
 			}
 		}
 	}
