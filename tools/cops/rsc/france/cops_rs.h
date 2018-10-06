@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        67
+ * Number of Strings:        68
  * Number of Bitblks:        2
  * Number of Iconblks:       1
  * Number of Color Iconblks: 1
  * Number of Color Icons:    1
  * Number of Tedinfos:       4
- * Number of Free Strings:   13
+ * Number of Free Strings:   14
  * Number of Free Images:    0
  * Number of Objects:        60
  * Number of Trees:          9
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          6844
+ * Total file size:          6908
  */
 
 #undef RSC_NAME
@@ -35,8 +35,8 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 67
-#define NUM_FRSTR 13
+#define NUM_STRINGS 68
+#define NUM_FRSTR 14
 #define NUM_UD 0
 #define NUM_IMAGES 4
 #define NUM_BB 2
@@ -151,6 +151,9 @@ extern OBJECT *rs_trindex[];
 
 #define ICNFTITLE_STR     12 /* Free string */
 /*  COPS  */
+
+#define AL_NO_SOUND_DMA   13 /* Alert string */
+/* [1][ | Le son st‚r‚o | n'est pas | disponible. ][ CONFIRME ] */
 
 
 

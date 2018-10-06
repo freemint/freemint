@@ -913,7 +913,7 @@ XGen_Alert(struct XGen_Alert_args args)
 	switch (args.alert_id)
 	{
 		/* Voreinstellungen sichern? */
-		case 0:
+		case XAL_SAVE_DEFAULTS:
 		{
 			if (form_alert(1, fstring_addr[SAVE_DFLT_ALERT]) == 1)
 				return 1;
@@ -921,21 +921,26 @@ XGen_Alert(struct XGen_Alert_args args)
 			break;
 		}
 		/* nicht genuegend Speicher */
-		case 1:
+		case XAL_MEM_ERR:
 		{
 			form_alert(1, fstring_addr[MEM_ERR_ALERT]);
 			return 0;
 		}
 		/* Schreib- oder Lesefehler */
-		case 2:
+		case XAL_FILE_ERR:
 		{
 			form_alert(1, fstring_addr[FILE_ERR_ALERT]);
 			return 0;
 		}
 		/* Datei nicht gefunden */
-		case 3:
+		case XAL_FILE_NOT_FOUND:
 		{
 			form_alert(1, fstring_addr[FNF_ERR_ALERT]);
+			return 0;
+		}
+		case XAL_NO_SOUND_DMA:
+		{
+			form_alert(1, fstring_addr[AL_NO_SOUND_DMA]);
 			return 0;
 		}
 	}
