@@ -232,11 +232,20 @@ typedef struct
 } CPXINFO;
 
 
-/* Nuetzliche Definitionen */
+/* Documented alert message numbers for XGen_Alert  */
 #define XAL_SAVE_DEFAULTS	0
 #define XAL_MEM_ERR		1
 #define XAL_FILE_ERR		2
 #define XAL_FILE_NOT_FOUND	3
+/* Undocumented alert message numbers for XGen_Alert  */
+#define XAL_NO_NODES_ERR	4
+#define XAL_RELOAD_CPXS		5
+#define XAL_UNLOAD_CPX		6
+#define XAL_NO_RELOAD		7
+#define XAL_SAVE_HEADER		8
+#define XAL_FILE_NOT_CPX	9
+#define XAL_NO_SOUND_DMA	10	/* used by sound.cpx/fsound.cpx */
+#define XAL_SHUTDOWN		11
 
 #define MFSAVE      1
 #define MFRESTORE   0
