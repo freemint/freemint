@@ -340,7 +340,7 @@ top_whdl(void)
 {
 	_WORD whdl;
 
-	if (wind_get_int(0, WF_TOP, &whdl) == 0) /* Fehler? */
+	if (wind_get(0, WF_TOP, &whdl, 0, 0, 0) == 0) /* Fehler? */
 		return -1;
 
 	if (whdl < 0) /* liegt ein Fenster einer anderen Applikation vorne? */

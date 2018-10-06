@@ -1053,7 +1053,7 @@ switch_window(void)
 	_WORD handle, buf[8];
 	WINDOW *change;
 
-	wind_get_int(0, WF_TOP, &handle);
+	wind_get(0, WF_TOP, &handle, 0, 0, 0);
 
 	/* liegt ein Fenster des eigenen Programms vorne? */
 	change = search_struct(handle);
