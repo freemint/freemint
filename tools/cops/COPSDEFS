@@ -124,9 +124,4 @@ LANGUAGE = german
 CFLAGS += -DGERMAN
 endif
 
-copstargets = english_000 france_000 german_000 \
-              english_02060 france_02060 german_02060 \
-              english_030 france_030 german_030 \
-              english_040 france_040 german_040 \
-              english_060 france_060 german_060 \
-              english_col france_col german_col 
+copstargets = english_000 france_000 german_000 english_02060 france_02060 german_02060 english_030 france_030 german_030 english_040 france_040 german_040 english_060 france_060 german_060 english_col france_col german_col

@@ -102,7 +102,13 @@ struct xcpb xctrl_pb =
 	Get_Buffer_wrap,
 	getcookie,
 
+#if defined(GERMAN)
 	1,
+#elif defined(FRENCH)
+	2,
+#else
+	0,
+#endif
 
 	MFsave
 };
