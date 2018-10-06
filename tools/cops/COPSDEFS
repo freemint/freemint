@@ -3,14 +3,17 @@ INCLUDES = -I$(srcdir)/rsc/$(cops)
 
 ifeq ($(cops),english)
 TARGET = ../cops.app
+CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france)
 TARGET = ../cops_fr.app
+CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german)
 TARGET = ../cops_de.app
+CFLAGS += -DGERMAN
 endif
 
 copstargets = english france german
