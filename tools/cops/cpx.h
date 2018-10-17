@@ -143,17 +143,17 @@ struct Sl_size_args
 struct Sl_xy_args
 {
 	OBJECT *tree; _WORD base; _WORD slider; _WORD value;
-	_WORD min; _WORD max; void (*userdef)(void);
+	_WORD min; _WORD max; void _cdecl (*userdef)(void);
 };
 struct Sl_arrow_args
 {
 	OBJECT *tree; _WORD base; _WORD slider; _WORD obj; _WORD inc;
-	_WORD min; _WORD max; _WORD *value; _WORD direction; void (*userdef)(void);
+	_WORD min; _WORD max; _WORD *value; _WORD direction; void _cdecl (*userdef)(void);
 };
 struct Sl_dragxy_args
 {
 	OBJECT *tree; _WORD base; short slider;
-	_WORD min; _WORD max; _WORD *value; void (*userdef)(void);
+	_WORD min; _WORD max; _WORD *value; void _cdecl (*userdef)(void);
 };
 struct Xform_do_args
 {

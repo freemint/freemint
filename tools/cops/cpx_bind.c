@@ -57,7 +57,14 @@ cpx_userdef(void (*userdef)(void))
 	DEBUG(("cpx_userdef(%p)\n", userdef));
 
 	if (userdef)
-		(*userdef)();
+	{
+		__asm__ __volatile__(
+				"\tjsr (%0)\n"
+			:
+			: "a"(userdef)
+			: "d2", "a2", "cc" AND_MEMORY
+			);
+	}
 }
 
 
