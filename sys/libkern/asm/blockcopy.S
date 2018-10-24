@@ -12,11 +12,13 @@
 __mint_blockcpy:
 	movem.l	4(sp),a0/a1		| dst & src
 	move.l	12(sp),d0		| blocks
-#if !(defined(M68000) || defined(__mcoldfire__))
+#if defined(__mc68040__) || defined(__mc68060__)
+#ifdef __mc68020__	/* -m68020-60 */
 	move.l	_mcpu,d1
 	cmp.w	#40,d1
 	bcc.s	L_040			| for 68000-68030 do quickmove
 	bra	blkmv
+#endif
 L_040:	dc.l	0xf6218000		| move16 (a1)+,(a0)+
 	dc.l	0xf6218000
 	dc.l	0xf6218000
@@ -54,6 +56,7 @@ L_040:	dc.l	0xf6218000		| move16 (a1)+,(a0)+
 	rts
 #endif
 
+#if !(defined(__mc68040__) || defined(__mc68060__)) || defined(__mc68020__)
 blkmv:
 #ifdef __mcoldfire__
 	lea	-44(sp),sp
@@ -127,3 +130,4 @@ L1:
 #endif
 
 	rts				| return
+#endif	/* !((__mc68040__) || (__mc68060__)) || (__mc68020__) */
