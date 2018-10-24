@@ -21,7 +21,7 @@ _memset:
 	beq.s	L_exit
 	move.l	a1,a0
 	move.w	8+4(sp),d1
-#ifndef M68000
+#if defined(__mc68020__) || defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__) || defined(__mcoldfire__)
 	move.b	d1,d0		| expand d1 to longword
 #ifdef __mcoldfire__
 	lsl.l	#0x8,d1
