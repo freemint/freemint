@@ -40,8 +40,6 @@
 /*----------------------------------------------------------------------------------------*/
 /* Globale Variablen                                                                      */
 /*----------------------------------------------------------------------------------------*/
-static _WORD work_out[57];
-			
 static WINDOW *window_list = NULL;
 
 /*----------------------------------------------------------------------------------------*/
@@ -56,25 +54,9 @@ static void scroll_vertical(WINDOW *window, short dy);
 short
 init_wlib(short id)
 {
-	_WORD work_in[11];
-	_WORD i;
-			
 	app_id = id; /* AES-Programm-ID */
 	window_list = NULL;
-
-	for (i = 1; i < 10 ; i++)
-		work_in[i] = 1;
-
-	work_in[0] = Getrez() + 2; /* Aufloesung */
-	work_in[10] = 2; /* Rasterkoordinaten benutzen */
-
-	vdi_handle = graf_handle(&i, &i, &i, &i);
-	v_opnvwk(work_in, &vdi_handle, work_out);
-
-	if (vdi_handle > 0)
-		return 1;
-
-	return 0;
+	return 1;
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -86,8 +68,6 @@ reset_wlib(void)
 {
 	while (window_list)
 		delete_window(window_list->handle); /* Fenster loeschen */
-
-	v_clsvwk(vdi_handle); /* Workstation schliessen */
 
 	return 1;
 }

@@ -154,7 +154,7 @@ get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d)
 			flags |= GAI_CICN;
 
 		if (appl_getinfo(7, &ag1, &ag2, &ag3, &ag4)) /* Unterfunktion 7 */
-			flags |= ag1 & 0x0f;
+			flags |= ag1 & (GAI_WDLG|GAI_LBOX|GAI_FNTS|GAI_FSEL);
 
 		if (appl_getinfo(12, &ag1, &ag2, &ag3, &ag4) && (ag1 & 8)) /* AP_TERM? */
 			flags |= GAI_APTERM;

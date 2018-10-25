@@ -251,7 +251,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		(void) Cconws ("Failed to alloc usbNetAPI\r\n");
 		return -1;
 	}
-	memset(&usbNetAPI, 0, sizeof(struct usb_netapi));
+	memset(usbNetAPI, 0, sizeof(struct usb_netapi));
 
 	usbNetAPI->majorVersion = 0;
 	usbNetAPI->minorVersion = 0;

@@ -3803,10 +3803,11 @@ main(int argc, char *argv[])
 			}
 			else
 			{			
-				form_alert(1, fstring_addr[NOWDIALOG_ALERT]);
-
 				/* Accessory? */
-				if (_app == 0)
+				if (_app)
+				{
+					form_alert(1, fstring_addr[NOWDIALOG_ALERT]);
+				} else
 				{
 					/* Taskwechsel unter TOS wieder zulassen */
 					wind_update(END_UPDATE);
