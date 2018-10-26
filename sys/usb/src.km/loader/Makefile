@@ -18,6 +18,8 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+SGENFILES = crtinit.c entry.S setstack.S
+
 all-here: all-targets
 
 # default overwrites
@@ -25,14 +27,8 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs)
-SGENFILES = crtinit.c entry.S setstack.S
 
 all-targets:
-# Link common TOS files
-	ln -sf $(toscommon_srcdir)/crtinit.c crtinit.c
-	ln -sf $(toscommon_srcdir)/entry.S entry.S
-	ln -sf $(toscommon_srcdir)/setstack.S setstack.S
-
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(usbloadtargets); do \
 		echo "Making $$i"; \
@@ -40,8 +36,16 @@ all-targets:
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-$(usbloadtargets):
+$(usbloadtargets): $(SGENFILES)
 	$(MAKE) buildusbload usbload=$@
+
+# Link common TOS files
+crtinit.c: $(toscommon_srcdir)/crtinit.c
+	ln -sf $< $(srcdir)/$@
+entry.S: $(toscommon_srcdir)/entry.S
+	ln -sf $< $(srcdir)/$@
+setstack.S: $(toscommon_srcdir)/setstack.S
+	ln -sf $< $(srcdir)/$@
 
 #
 # multi target stuff
