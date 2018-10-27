@@ -32,7 +32,7 @@ LIBS = $(LIBKERN) -lgcc
 
 # default definitions
 GENFILES = *.xif
-SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c main_020.c
 
  
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
