@@ -29,6 +29,7 @@ skip:	move.l	_old_ikbd_int(PC),-(sp)
 #endif
 
 	.globl _send_packet
+	.globl _send_data
 	.globl _fake_hwint
 
 _send_packet:
@@ -41,6 +42,17 @@ _send_packet:
 	movem.l	(sp),d0-a6
 	lea	60(sp),sp
 	rts
+
+_send_data:
+	lea	-60(sp),sp
+	movem.l	d0-a6,(sp)
+	move.l	64(sp),a2
+	move.l	68(sp),a0
+	move.l	72(sp),d0
+	jsr	(a2)
+	movem.l	(sp),d0-a6
+	lea	60(sp),sp
+rts
 
 _fake_hwint:
 	tst.w	0x59e.w
