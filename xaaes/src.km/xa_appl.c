@@ -398,12 +398,6 @@ static char  *strip_uni_drive( char *in )
 
 #define F_FORCE_MINT	0x40000
 
-static void ikill_proc(enum locks lock, struct c_event *ce, short cancel)
-{
-	UNUSED(cancel);
-	ikill( ce->d0, ce->d1 );
-}
-
 struct file *xconout_dev = 0;
 /*
  * Application initialise - appl_init()
@@ -422,28 +416,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* some slb do appl_init !?! */
 	if( (pp->p_flag & P_FLAG_SLO) || (p->p_flag & P_FLAG_SLB) )
 	{
-#if RUN_BOGUS_SLB
-		char s[128];
-		int r = -1;
-		sprintf( s, sizeof(s), "[2][%s(%d)(called by %s(%d)) did appl_init][Continue|Kill]", p->name, p->pid, pp->name, p->ppid );
-		r = xaaes_do_form_alert( lock, C.Aes, 2, s );
-		if( r != 1 )
-#endif
-		{
-			globl->id =	pb->intout[0] = -1;
-			post_cevent(C.Hlp, ikill_proc, NULL, NULL, p->pid, SIGKILL, NULL, NULL);
-			post_cevent(C.Hlp, ikill_proc, NULL, NULL, p->ppid, SIGKILL, NULL, NULL);
-			exit_proc(0, pp, 0);
-
-#if !RUN_BOGUS_SLB
-			ALERT(( "SLB %s (used by %s) called appl_init (killed)!", p->name, pp->name));
-#endif
-			return XAC_DONE;	//BLOCK;
-		}
-#if RUN_BOGUS_SLB
-		else
-			globl->id =	pb->intout[0] = pp->pid;
-#endif
+		globl->id =	pb->intout[0] = pp->pid;
 		return XAC_DONE;
 	}
 // 	if (d) display("appl_init: client = %lx, globl = %lx for %d", client, globl, p->pid);
