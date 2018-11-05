@@ -3344,6 +3344,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
 	short ret = 0;
+	short button = 0;
 
 	DIAG((D_pdlg, client, "XA_pdlg_evnt"));
 // 	display("XA_pdlg_evnt: %s", client->name);
@@ -3379,31 +3380,30 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			/* prepare return stuff here */
 		}
+		ret = 1;
 		if( valid_aesobj(&wep.obj) && aesobj_tree(&wep.obj) == pdlg->mwt->tree )
 		{
-			ret = 0;
 			switch( aesobj_item(&wep.obj) )
 			{
 				case XPDLG_PRINT:
-					pb->intout[1] =  2;
+					button =  PDLG_OK;
+					ret = 0;
 				break;
 				case XPDLG_CANCEL:
-					pb->intout[1] =  1;
+					button =  PDLG_CANCEL;
+					ret = 0;
 				break;
 			}
 		}
-		else
-		{
-			ret = 1;
-		}
 
-		if (pb->intout[1] == XPDLG_PRINT && out)
+		if (button == PDLG_OK && out)
 		{
 			build_prn_settings(pdlg, &pdlg->current_settings);
 			*out = pdlg->current_settings;
 		}
 	}
 	pb->intout[0] = ret;
+	pb->intout[1] = button;
 
 	DIAG((D_pdlg, client, " --- return %d, obj=%d",
 		pb->intout[0], pb->intout[1]));
@@ -3491,7 +3491,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		OBJECT *obtree = wt->tree;
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
-		short ret = 1;	// Cancel
+		short ret = PDLG_CANCEL;	// Cancel
 
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		center_rect(&or);
@@ -3525,7 +3525,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			build_prn_settings(pdlg, &pdlg->current_settings);
 			*outpset = pdlg->current_settings;
 // 			display_pset(outpset);
-			ret = 2;	// Ok
+			ret = PDLG_OK;	// Ok
 		}
 		pb->intout[0] = ret;
 	}
