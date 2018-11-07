@@ -4,7 +4,7 @@ CPU = 000
 endif
 
 ifeq ($(slinkctl),02060)
-TARGET = ./fslinkctl
+TARGET = ./slinkctl
 CPU = 020-60
 endif
 
@@ -19,7 +19,7 @@ CPU = 040
 endif
 
 ifeq ($(slinkctl),060)
-TARGET = ./fslinkctl
+TARGET = ./slinkctl
 CPU = 060
 endif
 
