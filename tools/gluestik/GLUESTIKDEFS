@@ -1,0 +1,31 @@
+ifeq ($(gluestik),000)
+TARGET = ./gluestik.prg
+CPU = 000
+endif
+
+ifeq ($(gluestik),02060)
+TARGET = ./gluestik.prg
+CPU = 020-60
+endif
+
+ifeq ($(gluestik),030)
+TARGET = ./gluestik.prg
+CPU = 030
+endif
+
+ifeq ($(gluestik),040)
+TARGET = ./gluestik.prg
+CPU = 040
+endif
+
+ifeq ($(gluestik),060)
+TARGET = ./gluestik.prg
+CPU = 060
+endif
+
+ifeq ($(gluestik),col)
+TARGET = ./gluestik.prg
+CPU = v4e
+endif
+
+gluestiktargets = 000 02060 030 040 060 col

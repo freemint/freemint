@@ -1,0 +1,30 @@
+ifeq ($(minit),000)
+TARGET = ./minit
+CPU = 000
+endif
+
+ifeq ($(minit),02060)
+TARGET = ./minit
+CPU = 020-60
+endif
+
+ifeq ($(minit),030)
+TARGET = ./minit
+CPU = 030
+endif
+
+ifeq ($(minit),040)
+TARGET = ./minit
+CPU = 040
+endif
+
+ifeq ($(minit),060)
+TARGET = ./minit
+CPU = 060
+endif
+
+ifeq ($(minit),col)
+TARGET = ./minit
+CPU = v4e
+endif
+minittargets = 000 02060 030 040 060 col

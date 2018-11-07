@@ -1,0 +1,31 @@
+ifeq ($(mktbl),000)
+TARGET = ./mktbl
+CPU = 000
+endif
+
+ifeq ($(mktbl),02060)
+TARGET = ./mktbl
+CPU = 020-60
+endif
+
+ifeq ($(mktbl),030)
+TARGET = ./mktbl
+CPU = 030
+endif
+
+ifeq ($(mktbl),040)
+TARGET = ./mktbl
+CPU = 040
+endif
+
+ifeq ($(mktbl),060)
+TARGET = ./mktbl
+CPU = 060
+endif
+
+ifeq ($(mktbl),col)
+TARGET = ./mktbl
+CPU = v4e
+endif
+
+mktbltargets = 000 02060 030 040 060 col

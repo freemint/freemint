@@ -1,7 +1,6 @@
 #
 # Makefile for MiNT loader
 #
-TARGET = mintload.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,28 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = mintload
 
-default: all
+default: all-here
 
-CPU = 000
+include $(srcdir)/MINTLOADDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
-LIBS = -lgcc
-STRIPFLAGS =
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-$(TARGET): $(OBJS)
-	$(LD) -o $@ -Wall $^ $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(mintloadtargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
+$(mintloadtargets):
+	$(MAKE) buildmintload mintload=$@
 
-include $(top_srcdir)/DEPENDENCIES
+#
+# multi target stuff
+#
+
+ifneq ($(mintload),)
+
+compile_dir = .compile_$(mintload)
+mintloadtarget = _stmp_$(mintload)
+realtarget = $(mintloadtarget)
+
+$(mintloadtarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildmintload: $(realtarget)

@@ -1,0 +1,31 @@
+ifeq ($(strace),000)
+TARGET = ./strace
+CPU = 000
+endif
+
+ifeq ($(strace),02060)
+TARGET = ./strace
+CPU = 020-60
+endif
+
+ifeq ($(strace),030)
+TARGET = ./strace
+CPU = 030
+endif
+
+ifeq ($(strace),040)
+TARGET = ./strace
+CPU = 040
+endif
+
+ifeq ($(strace),060)
+TARGET = ./strace
+CPU = 060
+endif
+
+ifeq ($(strace),col)
+TARGET = ./strace
+CPU = v4e
+endif
+
+stracetargets = 000 02060 030 040 060 col

@@ -1,8 +1,6 @@
 #
-# Makefile for usb loader
+# Makefile for USB loader
 #
-
-TARGETS = loader.prg #unloader.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -12,45 +10,60 @@ top_srcdir = ../../..
 subdir = loader
 toscommon_srcdir = ../tos-common
 
-default: all
+default: all-here
 
-ifndef CPU
-CPU = 000
-endif
+include $(srcdir)/USBLOADDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-SGENFILES = crtinit.c entry.S setstack.S
-
-all-here: $(TARGETS)
+all-here: all-targets
 
 # default overwrites
-LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
-LIBS = -lgcc
-STRIPFLAGS =
-INCLUDES = 
-DEFINITIONS = -DSTACKSIZE=2048
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
-GENFILES = $(TARGETS)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
+SGENFILES = crtinit.c entry.S setstack.S
 
-#COMMON		= crtinit.o $(SSOBJS:.S=.o)
-#LOADER		= loader.o $(COMMON)
-#UNLOADER	= unloader.o $(COMMON)
-
-$(TARGETS): $(OBJS)
-	$(LD) -o $@ -Wall $^ $(LIBS)
-	$(STRIP) $@
-
+all-targets:
 # Link common TOS files
-crtinit.c: $(toscommon_srcdir)/crtinit.c
-	ln -sf $< $(srcdir)/$@
-entry.S: $(toscommon_srcdir)/entry.S
-	ln -sf $< $(srcdir)/$@
-setstack.S: $(toscommon_srcdir)/setstack.S
-	ln -sf $< $(srcdir)/$@
+	ln -sf $(toscommon_srcdir)/crtinit.c crtinit.c
+	ln -sf $(toscommon_srcdir)/entry.S entry.S
+	ln -sf $(toscommon_srcdir)/setstack.S setstack.S
 
-include $(top_srcdir)/DEPENDENCIES
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(usbloadtargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(usbloadtargets):
+	$(MAKE) buildusbload usbload=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(usbload),)
+
+compile_dir = .compile_$(usbload)
+usbloadtarget = _stmp_$(usbload)
+realtarget = $(usbloadtarget)
+
+$(usbloadtarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildusbload: $(realtarget)

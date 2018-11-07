@@ -1,7 +1,6 @@
 #
 # Makefile for NoHog2
 #
-TARGET = nohog2.acc
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,35 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = nohog2
 
-default: all
+default: all-here
 
+include $(srcdir)/NOHOG2DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-ifeq (v4e,$(CPU))
-CFLAGS += -mcpu=5474
-endif
-
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-LIBS += -lgem
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
-ifneq (yes,$(LIBCMINI))
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(nohog2targets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(nohog2targets):
+	$(MAKE) buildnohog2 nohog2=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(nohog2),)
+
+compile_dir = .compile_$(nohog2)
+nohog2target = _stmp_$(nohog2)
+realtarget = $(nohog2target)
+
+$(nohog2target): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
 else
-$(TARGET): $(OBJS)
-	$(CC) -I$(LIBCMINI_PATH)/include -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(OBJS) -L$(LIBCMINI_LIBPATH) -lcmini $(LIBS) -lgcc
-	$(STRIP) $@
+
+realtarget =
+
 endif
 
-
-include $(top_srcdir)/DEPENDENCIES
-
+buildnohog2: $(realtarget)

@@ -1,7 +1,6 @@
 #
 # Makefile for ATARI and DOS fdisk
 #
-TARGET = fdisk sfdisk
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,30 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = fdisk
 
-default: all
+default: all-here
+
+include $(srcdir)/FDISKDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)/IO
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-LIBS += $(LIBIO)
-GENFILES = $(TARGET)
-
-FDISKOBJS = fdisk.o
-SFDISKOBJS = sfdisk.o
-
-fdisk: $(FDISKOBJS) $(LIBIOSTMP)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-sfdisk: $(SFDISKOBJS) $(LIBIOSTMP)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(fdisktargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(fdisktargets):
+	$(MAKE) buildfdisk fdisk=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(fdisk),)
+
+compile_dir = .compile_$(fdisk)
+fdisktarget = _stmp_$(fdisk)
+realtarget = $(fdisktarget)
+
+$(fdisktarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildfdisk: $(realtarget)
