@@ -1,7 +1,6 @@
 #
 # Makefile for hyp_view
 #
-TARGET = hyp_view.app
 
 SHELL = /bin/sh
 SUBDIRS = hyp plain dragdrop bubble
@@ -10,50 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = hypview
 
-installdir = /opt/GEM/hypview
+default: all-here
 
-default: all
+include $(srcdir)/HYPVIEWDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-ifeq (v4e,$(CPU))
-CFLAGS += -mcpu=5474
-endif
-
-ifeq (yes,$(LIBCMINI))
-INCLUDES := -I$(LIBCMINI_PATH)/include $(INCLUDES)
-endif
-
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-CFLAGS += -D_GNU_SOURCE
-CFLAGS += -g
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -lgem
-GENFILES = $(TARGET) pc.pdb
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
-ifneq (yes,$(LIBCMINI))
-$(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -Wl,-stack,128k
-	$(STRIP) $(TARGET)
+
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(hypviewtargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(hypviewtargets):
+	$(MAKE) buildhypview hypview=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(hypview),)
+
+compile_dir = .compile_$(hypview)
+hypviewtarget = _stmp_$(hypview)
+realtarget = $(hypviewtarget)
+
+$(hypviewtarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
 else
-$(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a
-	$(CC) -I$(LIBCMINI_PATH)/include -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(LDFLAGS) $(OBJS) -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc -Wl,-stack,128k
-	$(STRIP) $(TARGET)
+
+realtarget =
+
 endif
 
-hyp/libhyp.a plain/libplain.a dragdrop/libdgdp.a bubble/libbgh.a: all-recursive
-
-include $(top_srcdir)/DEPENDENCIES
-
-install: all
-	$(top_srcdir)/mkinstalldirs $(installdir)
-	cp $(TARGET) $(srcdir)/hyp_view.rsc $(installdir)
-	cp $(srcdir)/hyp_view/en.rso $(installdir)/hyp_view.rso
-	chmod 755 $(installdir)/$(TARGET)
-	$(STRIP) $(installdir)/$(TARGET)
+buildhypview: $(realtarget)

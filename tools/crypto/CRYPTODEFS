@@ -1,0 +1,31 @@
+ifeq ($(crypto),000)
+TARGET = ./crypto
+CPU = 000
+endif
+
+ifeq ($(crypto),02060)
+TARGET = ./crypto
+CPU = 020-60
+endif
+
+ifeq ($(crypto),030)
+TARGET = ./crypto
+CPU = 030
+endif
+
+ifeq ($(crypto),040)
+TARGET = ./crypto
+CPU = 040
+endif
+
+ifeq ($(crypto),060)
+TARGET = ./crypto
+CPU = 060
+endif
+
+ifeq ($(crypto),col)
+TARGET = ./crypto
+CPU = v4e
+endif
+
+cryptotargets = 000 02060 030 040 060 col

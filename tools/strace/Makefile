@@ -1,7 +1,6 @@
 #
 # Makefile for the strace system tool
 #
-TARGET = strace
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,49 +9,55 @@ srcdir = .
 top_srcdir = ..
 subdir = strace
 
-default: all
+default: all-here
+
+include $(srcdir)/STRACEDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: gentables $(TARGET)
+all-here: all-targets
 
 # default overwrites
-NATIVECFLAGS += -I$(top_srcdir)/../shared
-NATIVE_LIBS_DEP += $(top_srcdir)/../shared/libsyscall/libsyscall.a
-NATIVE_LIBS += -L$(top_srcdir)/../shared/libsyscall -lsyscall
-NATIVE_LIBS += -lfl
-
-MASTER = $(top_srcdir)/../sys/syscalls.master
-DEFINITIONS += -D_GNU_SOURCE
-
-NOCFLAGS-print.c = -Wcast-qual
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-OBJS += sysenttab.o
-GENFILES = $(TARGET) sysenttab.* gentables genstamp
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
-sysenttab.o: sysenttab.h
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(stracetargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-sysenttab.c sysenttab.h: genstamp
-strace.o: sysenttab.h
+$(stracetargets):
+	$(MAKE) buildstrace strace=$@
 
-genstamp: $(MASTER) gentables
-	./gentables $<
-	touch $@
+#
+# multi target stuff
+#
 
-gentables.o: gentables.c $(top_srcdir)/../shared/libsyscall/syscalldefs.h
-	$(NATIVECC) $(NATIVECFLAGS) -c $< -o $@
+ifneq ($(strace),)
 
-gentables: gentables.o $(NATIVE_LIBS_DEP)
-	$(NATIVECC) -o $@ $(NATIVECFLAGS) $< $(NATIVE_LIBS)
+compile_dir = .compile_$(strace)
+stracetarget = _stmp_$(strace)
+realtarget = $(stracetarget)
 
-$(top_srcdir)/../shared/libsyscall/libsyscall.a:
-	$(MAKE) -C $(top_srcdir)/../shared/libsyscall
+$(stracetarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
 
-include $(top_srcdir)/DEPENDENCIES
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildstrace: $(realtarget)

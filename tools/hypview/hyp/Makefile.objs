@@ -1,0 +1,49 @@
+#
+# Makefile for hyp_view (plain)
+#
+
+SHELL = /bin/sh
+SUBDIRS = 
+
+srcdir = ..
+top_srcdir = ../../..
+subdir = $(compile_dir)
+
+default: all
+
+include $(srcdir)/HYPDEFS
+
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
+
+all-here: build
+
+# default overwrites
+
+CFLAGS += -g
+
+ifneq (yes,$(LIBCMINI))
+INCLUDES = -I$(top_srcdir)/hypview
+else
+INCLUDES = -I$(LIBCMINI_PATH)/include -I$(top_srcdir)/hypview
+endif
+
+# default definitions
+OBJS = $(COBJS:.c=.o)
+
+
+VPATH = ..
+
+#
+# main target
+#
+build: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(AR) cr $@ $(OBJS)
+	$(RANLIB) $@
+
+# default dependencies
+# must be included last
+include $(top_srcdir)/DEPENDENCIES

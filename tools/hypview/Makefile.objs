@@ -1,0 +1,72 @@
+#
+# Makefile for hyp_view
+#
+
+SHELL = /bin/sh
+SUBDIRS = ../hyp ../plain ../dragdrop ../bubble
+
+srcdir = ..
+top_srcdir = ../..
+subdir = $(compile_dir)
+
+installdir = /opt/GEM/hypview
+
+default: all
+
+include $(srcdir)/HYPVIEWDEFS
+
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
+
+LIBPLAIN = -L$(srcdir)/plain -lplain$(CPU)
+LIBHYP = -L$(srcdir)/hyp -lhyp$(CPU)
+LIBDRAGDROP = -L$(srcdir)/dragdrop -ldgdp$(CPU)
+
+ifeq (yes,$(LIBCMINI))
+INCLUDES := -I$(LIBCMINI_PATH)/include $(INCLUDES)
+endif
+
+all-here: build
+
+# default overwrites
+CFLAGS += -D_GNU_SOURCE
+CFLAGS += -g
+
+# default definitions
+OBJS = $(COBJS:.c=.o)
+LIBS += $(LIBPLAIN) $(LIBHYP) $(LIBDRAGDROP) -lgem
+GENFILES = $(TARGET) pc.pdb
+
+VPATH = ..
+
+#
+# main target
+#
+
+build: $(TARGET)
+
+ifneq (yes,$(LIBCMINI))
+$(TARGET): $(OBJS) hyp/libhyp$(CPU).a plain/libplain$(CPU).a dragdrop/libdgdp$(CPU).a bubble/libbgh$(CPU).a
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -Wl,-stack,128k
+	$(STRIP) $(TARGET)
+else
+$(TARGET): $(OBJS) hyp/libhyp$(CPU).a plain/libplain$(CPU).a dragdrop/libdgdp$(CPU).a bubble/libbgh$(CPU).a
+	$(CC) -I$(LIBCMINI_PATH)/include -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(LDFLAGS) $(OBJS) -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc -Wl,-stack,128k
+	$(STRIP) $(TARGET)
+endif
+
+hyp/libhyp*.a plain/libplain*.a dragdrop/libdgdp*.a bubble/libbgh*.a: all-recursive
+
+install: all
+	$(top_srcdir)/mkinstalldirs $(installdir)
+	cp $(TARGET) $(srcdir)/hyp_view.rsc $(installdir)
+	cp $(srcdir)/hyp_view/en.rso $(installdir)/hyp_view.rso
+	chmod 755 $(installdir)/$(TARGET)
+	$(STRIP) $(installdir)/$(TARGET)
+
+
+# default dependencies
+# must be included last
+include $(top_srcdir)/DEPENDENCIES
+

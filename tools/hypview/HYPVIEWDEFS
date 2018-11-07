@@ -1,0 +1,31 @@
+ifeq ($(hypview),000)
+TARGET = ./hyp_view.app
+CPU = 000
+endif
+
+ifeq ($(hypview),02060)
+TARGET = ./hyp_view.app
+CPU = 020-60
+endif
+
+ifeq ($(hypview),030)
+TARGET = ./hyp_view.app
+CPU = 030
+endif
+
+ifeq ($(hypview),040)
+TARGET = ./hyp_view.app
+CPU = 040
+endif
+
+ifeq ($(hypview),060)
+TARGET = ./hyp_view.app
+CPU = 060
+endif
+
+ifeq ($(hypview),col)
+TARGET = ./hyp_view.app
+CPU = v4e
+endif
+
+hypviewtargets = 000 02060 030 040 060 col

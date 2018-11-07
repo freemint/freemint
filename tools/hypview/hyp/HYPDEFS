@@ -1,0 +1,31 @@
+ifeq ($(hyp),000)
+TARGET = ../libhyp000.a
+CPU = 000
+endif
+
+ifeq ($(hyp),02060)
+TARGET = ../libhyp020-60.a
+CPU = 020-60
+endif
+
+ifeq ($(hyp),030)
+TARGET = ../libhyp030.a
+CPU = 030
+endif
+
+ifeq ($(hyp),040)
+TARGET = ../libhyp040.a
+CPU = 040
+endif
+
+ifeq ($(hyp),060)
+TARGET = ../libhyp060.a
+CPU = 060
+endif
+
+ifeq ($(hyp),col)
+TARGET = ../libhypv4e.a
+CPU = v4e
+endif
+
+hyptargets = 000 02060 030 040 060 col

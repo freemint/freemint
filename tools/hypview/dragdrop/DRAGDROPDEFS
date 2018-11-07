@@ -1,0 +1,31 @@
+ifeq ($(dragdrop),000)
+TARGET = ../libdgdp000.a
+CPU = 000
+endif
+
+ifeq ($(dragdrop),02060)
+TARGET = ../libdgdp020-60.a
+CPU = 020-60
+endif
+
+ifeq ($(dragdrop),030)
+TARGET = ../libdgdp030.a
+CPU = 030
+endif
+
+ifeq ($(dragdrop),040)
+TARGET = ../libdgdp040.a
+CPU = 040
+endif
+
+ifeq ($(dragdrop),060)
+TARGET = ../libdgdp060.a
+CPU = 060
+endif
+
+ifeq ($(dragdrop),col)
+TARGET = ../libdgdpv4e.a
+CPU = v4e
+endif
+
+dragdroptargets = 000 02060 030 040 060 col

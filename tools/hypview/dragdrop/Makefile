@@ -1,7 +1,6 @@
 #
-# Makefile for hyp_view (plain)
+# Makefile for hyp_view (dragdrop)
 #
-TARGET = libdgdp.a
 
 SHELL = /bin/sh
 SUBDIRS =
@@ -10,26 +9,55 @@ srcdir = .
 top_srcdir = ../..
 subdir = dragdrop
 
-installdir =
+default: all-here
 
-default: all
+include $(srcdir)/DRAGDROPDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-CFLAGS += -g
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-GENFILES = $(TARGET) libdgdp.pdb libdgdp.lib
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) libdgdp*.pdb libdgdp*.a
 
-$(TARGET): $(OBJS)
-	$(AR) cr $@ $(OBJS)
-	$(RANLIB) $@
 
-include $(top_srcdir)/DEPENDENCIES
-	
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(dragdroptargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(dragdroptargets):
+	$(MAKE) builddragdrop dragdrop=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(dragdrop),)
+
+compile_dir = .compile_$(dragdrop)
+dragdroptarget = _stmp_$(dragdrop)
+realtarget = $(dragdroptarget)
+
+$(dragdroptarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+builddragdrop: $(realtarget)
