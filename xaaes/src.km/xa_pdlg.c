@@ -75,7 +75,7 @@ static char *outfiles[] =
 	"AUX:", "Serial device",
 	"PRN:", "Parallel device",
 	"ACSI:", "ACSI device",
-	"SCSI:", "SCSII device",
+	"SCSI:", "SCSI device",
 	NULL, NULL,
 };
 
@@ -2502,17 +2502,16 @@ add_dialog(struct xa_pdlg_info *pdlg, PDLG_SUB *new, char *name, OBJECT *to_tree
 }
 
 static struct scroll_entry *
-get_entry_bytext(struct scroll_info *list, char *txt)
+get_entry_byidx(struct scroll_info *list, int idx)
 {
 	struct sesetget_params p;
 
-	p.idx = -1;
-	p.arg.txt = txt;
+	p.idx = idx;
 	p.level.flags = 0;
 	p.level.maxlevel = -1;
 	p.level.curlevel = 0;
 
-	list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+	list->get(list, NULL, SEGET_ENTRYBYIDX, &p);
 
 	return p.e;
 }
@@ -2650,7 +2649,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 
 			pdlg->list = list;
 
-			add_dialog(pdlg, NULL, "General", pdlg->dwt->tree, PDLG_GENERAL);
+			add_dialog(pdlg, NULL, "General", pdlg->dwt->tree, PDLG_GENERAL); /* TODO: move strings to resource file */
 			add_dialog(pdlg, NULL, "Paper", pdlg->dwt->tree, PDLG_PAPER);
 			add_dialog(pdlg, NULL, "Raster", pdlg->dwt->tree, PDLG_RASTER);
 			add_dialog(pdlg, NULL, "Interface", pdlg->dwt->tree, PDLG_PORT);
@@ -2789,9 +2788,12 @@ apply_option_flags(struct xa_pdlg_info *pdlg, short options)
 	disable_object(tree + PDLG_G_EVEN, (options & PDLG_EVENODD) ? false : true);
 	disable_object(tree + PDLG_G_ODD , (options & PDLG_EVENODD) ? false : true);
 
-	this = get_entry_bytext(pdlg->list, (options & PDLG_PRINT) ? "Paper" : "General");
+	this = get_entry_byidx(pdlg->list, (options & PDLG_PRINT) ? 1 : 2);
 	if (this)
+	{
+		pdlg->list->cur = NULL;
 		pdlg->list->set(pdlg->list, this, SESET_ACTIVE, 0, NOREDRAW);
+	}
 }
 
 static short
@@ -3007,6 +3009,7 @@ init_dialog(struct xa_pdlg_info *pdlg)
 	d_set_prn_fgbg(pdlg, (ps->driver_mode & 1));
 	d_set_plane_flags(pdlg, ps->plane_flags);
 	apply_option_flags(pdlg, pdlg->option_flags);
+	pdlg->mwt->tree[XPDLG_PRINT].ob_spec.free_string = pdlg->option_flags & PDLG_PRINT ? "Print" : "OK"; /* TODO: move strings to resource file */
 
 #endif
 }
