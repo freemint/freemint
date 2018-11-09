@@ -692,7 +692,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_BEVENT:
 	{
-		if (pb->intin[2] & 1)
+		if (pb->intin[2] & BEVENT_WORK)
 			w->active_widgets |= NO_TOPPED;
 		else
 			w->active_widgets &= ~NO_TOPPED;
@@ -1533,7 +1533,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	case WF_BEVENT:
 	{
-		o[1] = ((w->active_widgets & NO_TOPPED) != 0) & 1;
+		o[1] = (w->active_widgets & NO_TOPPED) ? BEVENT_WORK : 0;
 		o[2] = o[3] = o[4] = 0;
 		break;
 	}
