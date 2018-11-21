@@ -10,10 +10,10 @@ SSOBJS = \
 	mouse_int.S
 
 TOSCOBJS = \
-        crtinit.c
+	crtinit.c
 
 TOSSSOBJS = \
-        entry.S \
-        setstack.S \
+	entry.S \
+	setstack.S \
 
 SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
