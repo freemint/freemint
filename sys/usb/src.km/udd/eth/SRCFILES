@@ -8,4 +8,11 @@ COBJS = \
 
 SSOBJS =
 
+TOSCOBJS = \
+	crtinit.c
+
+TOSSSOBJS = \
+	entry.S \
+	setstack.S \
+
 SRCFILES = $(HEADER) $(SSOBJS) $(COBJS)
