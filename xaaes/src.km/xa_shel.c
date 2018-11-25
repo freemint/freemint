@@ -39,6 +39,7 @@
 
 #include "mint/signal.h"
 #include "mint/stat.h"
+#include "mint/pathconf.h"
 #include "k_exec.h"
 
 
@@ -241,7 +242,9 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	{
 	//	display("defdir '%s'", defdir);
 	//	display("apphom '%s'", caller->home_path);
-		if (caller == C.Aes || (drv >= 0 && !strcmp(caller->home_path, defdir)))
+		if (caller == C.Aes || (drv >= 0 &&
+							    ((d_pathconf(caller->home_path, DP_CASE) || d_pathconf(defdir, DP_CASE)) ?
+								!stricmp(caller->home_path, defdir) : !strcmp(caller->home_path, defdir))))
 		{
 			defdir[0] = drv + 'a';
 			defdir[1] = ':';
