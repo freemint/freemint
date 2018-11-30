@@ -429,7 +429,7 @@ Sl_size(struct Sl_size_args args)
 /*----------------------------------------------------------------------------------------*/ 
 static void
 cpx_Sl_x(OBJECT *tree, short base, short slider, short value,
-	 short min, short max, void (*userdef)(void))
+	 short min, short max, void __CDECL (*userdef)(void))
 {
 	short w;
 
@@ -486,7 +486,7 @@ Sl_x(struct Sl_xy_args args)
 /*----------------------------------------------------------------------------------------*/ 
 static void
 cpx_Sl_y(OBJECT *tree, short base, short slider, short value,
-	 short min, short max, void (*userdef)(void))
+	 short min, short max, void __CDECL (*userdef)(void))
 {
 	short h;
 

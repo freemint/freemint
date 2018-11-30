@@ -27,7 +27,7 @@
 #include "global.h"
 #include "cpx.h"
 
-void cpx_userdef(void (*cpx_userdef)(void));
+void cpx_userdef(void __CDECL (*cpx_userdef)(void));
 
 /* cpx callbacks */
 CPXINFO	*cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb);

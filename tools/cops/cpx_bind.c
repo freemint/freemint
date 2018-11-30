@@ -52,18 +52,24 @@
 
 
 void
-cpx_userdef(void (*userdef)(void))
+cpx_userdef(void __CDECL (*userdef)(void))
 {
 	DEBUG(("cpx_userdef(%p)\n", userdef));
 
 	if (userdef)
 	{
+#if defined(__GNUC__)
 		__asm__ __volatile__(
 				"\tjsr (%0)\n"
 			:
 			: "a"(userdef)
 			: "d2", "a2", "cc" AND_MEMORY
 			);
+#elif defined (__PUREC__)
+	(*userdef)();
+#else
+	you loose
+#endif
 	}
 }
 
