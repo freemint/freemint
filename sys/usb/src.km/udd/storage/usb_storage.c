@@ -1826,15 +1826,20 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 void
 usb_stor_eject(long device)
 {
+	long lun, max_lun;
+
 	if (usb_stor[device].pusb_dev->devnum == usb_dev_desc[device].target)
 	{
-		memset(&usb_dev_desc[device], 0, sizeof(block_dev_desc_t));
-		usb_dev_desc[device].target = 0xff;
-		usb_dev_desc[device].if_type = IF_TYPE_USB;
-		usb_dev_desc[device].dev = device;
-		usb_dev_desc[device].part_type = PART_TYPE_UNKNOWN;
-		usb_dev_desc[device].block_read = usb_stor_read;
-		usb_dev_desc[device].block_write = usb_stor_write;
+		max_lun = usb_get_max_lun(&usb_stor[device]);
+		for (lun = 0; lun <= max_lun; lun++) {
+			memset(&usb_dev_desc[device + lun], 0, sizeof(block_dev_desc_t));
+			usb_dev_desc[device + lun].target = 0xff;
+			usb_dev_desc[device + lun].if_type = IF_TYPE_USB;
+			usb_dev_desc[device + lun].dev = device + lun;
+			usb_dev_desc[device + lun].part_type = PART_TYPE_UNKNOWN;
+			usb_dev_desc[device + lun].block_read = usb_stor_read;
+			usb_dev_desc[device + lun].block_write = usb_stor_write;
+		}
 	}
 	else
 	{
@@ -1843,11 +1848,12 @@ usb_stor_eject(long device)
 	}
 
 	long idx;
-	for (idx = 1; idx <= bios_part[device].partnum; idx++)
-	{	
-		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
+	for (lun = 0; lun <= max_lun; lun++) {
+		for (idx = 1; idx <= bios_part[device + lun].partnum; idx++) {
+			uninstall_usb_stor(bios_part[device + lun].biosnum[idx - 1]);
+		}
+		bios_part[device + lun].partnum = 0;
 	}
-	bios_part[device].partnum = 0;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", usb_stor[device].pusb_dev->devnum,
 							    usb_stor[device].pusb_dev->prod));
@@ -1861,18 +1867,22 @@ usb_stor_eject(long device)
 static long
 storage_disconnect(struct usb_device *dev)
 {
-	long i;
+	long i, lun, max_lun;
+
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
 		if (dev->devnum == usb_dev_desc[i].target)
 		{
-			memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
-			usb_dev_desc[i].target = 0xff;
-			usb_dev_desc[i].if_type = IF_TYPE_USB;
-			usb_dev_desc[i].dev = i;
-			usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
-			usb_dev_desc[i].block_read = usb_stor_read;
-			usb_dev_desc[i].block_write = usb_stor_write;
+			max_lun = usb_get_max_lun(&usb_stor[i]);
+			for (lun = 0; lun <= max_lun; lun++) {
+				memset(&usb_dev_desc[i + lun], 0, sizeof(block_dev_desc_t));
+				usb_dev_desc[i + lun].target = 0xff;
+				usb_dev_desc[i + lun].if_type = IF_TYPE_USB;
+				usb_dev_desc[i + lun].dev = i + lun;
+				usb_dev_desc[i + lun].part_type = PART_TYPE_UNKNOWN;
+				usb_dev_desc[i + lun].block_read = usb_stor_read;
+				usb_dev_desc[i + lun].block_write = usb_stor_write;
+			}
 			break;
 		}
 	}
@@ -1885,11 +1895,12 @@ storage_disconnect(struct usb_device *dev)
 	}
 
 	long idx;
-	for (idx = 1; idx <= bios_part[i].partnum; idx++)
-	{	
-		uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
+	for (lun = 0; lun <= max_lun; lun++) {
+		for (idx = 1; idx <= bios_part[i + lun].partnum; idx++) {
+			uninstall_usb_stor(bios_part[i + lun].biosnum[idx - 1]);
+		}
+		bios_part[i + lun].partnum = 0;
 	}
-	bios_part[i].partnum = 0;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
 
@@ -1935,7 +1946,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 	start = i;
 	max_lun = usb_get_max_lun(&usb_stor[i]);
 	/* override */
-	max_lun = 0; /* not yet */
+
 	for (lun = 0;
 		 lun <= max_lun &&
 		 start < USB_MAX_STOR_DEV; 
@@ -1943,7 +1954,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		/* ok, it is a storage devices
 		 * get info and fill it in
 		 */
-		usb_dev_desc[i].lun = lun;
+		usb_dev_desc[start].lun = lun;
 		if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[start])) {
 			usb_disable_asynch(0); /* asynch transfer allowed */
 			return -1;
@@ -1956,25 +1967,30 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	long dev_num = i;
 
-	block_dev_desc_t *stor_dev;
-	stor_dev = usb_stor_get_dev(dev_num);
+	for (lun = 0;
+		 lun <= max_lun &&
+		 start < USB_MAX_STOR_DEV;
+		 lun++) {
 
-	struct us_data *ss;
-	ss = (struct us_data *)dev->privptr;
+		block_dev_desc_t *stor_dev;
+		stor_dev = usb_stor_get_dev(dev_num + lun);
 
-	//dev_print(stor_dev);
+		struct us_data *ss;
+		ss = (struct us_data *)dev->privptr;
 
-	if(ss->subclass == US_SC_UFI)
-	{
-		DEBUG(("detected USB floppy not supported at this time\r\n"));
-		/* This is a floppy drive, so give it a drive letter ? B ?. */
-		/* Also, we may be better to intercept the TRAP #1 floppy handlers
-		 * and deal with them here. ??? */
-		return 0;
-	}
+		//dev_print(stor_dev);
 
-	/* Skip everything apart from HARDDISKS */
-	if((stor_dev->type & 0x1f) != DEV_TYPE_HARDDISK) {
+		if(ss->subclass == US_SC_UFI)
+		{
+			DEBUG(("detected USB floppy not supported at this time\r\n"));
+			/* This is a floppy drive, so give it a drive letter ? B ?. */
+			/* Also, we may be better to intercept the TRAP #1 floppy handlers
+			 * and deal with them here. ??? */
+			continue;
+		}
+
+		/* Skip everything apart from HARDDISKS */
+		if((stor_dev->type & 0x1f) != DEV_TYPE_HARDDISK) {
 #if 0
 		c_conws(stor_dev->vendor);
 		c_conout(' ');
@@ -1984,33 +2000,33 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		hex_long(stor_dev->type & 0x1f);
 		c_conws(" not installed\r\n");
 #endif
-	return 0;
-	}
-
-
-	long part_num = 1;
-	unsigned long part_type, part_offset, part_size;
-	
-	/* Now find partitions in this storage device */	
-	while (!fat_register_device(stor_dev, part_num, &part_type, 
-				    &part_offset, &part_size))
-	{
-		/* install partition */
-		r = install_usb_stor(dev_num, part_type, part_offset, 
-				     part_size, stor_dev->vendor, 
-				     stor_dev->revision, stor_dev->product);
-		if (r == -1) {
-			DEBUG(("unable to install storage device\r\n"));
+			continue;
 		}
-		else
+
+		long part_num = 1;
+		unsigned long part_type, part_offset, part_size;
+	
+		/* Now find partitions in this storage device */
+		while (!fat_register_device(stor_dev, part_num, &part_type, 
+					    &part_offset, &part_size))
 		{
+			/* install partition */
+			r = install_usb_stor(dev_num + lun, part_type, part_offset, 
+					     part_size, stor_dev->vendor, 
+					     stor_dev->revision, stor_dev->product);
+			if (r == -1) {
+				DEBUG(("unable to install storage device\r\n"));
+			}
+			else
+			{
 #ifdef TOSONLY
-			SCSIDRV_MediaChange(dev_num);
+				SCSIDRV_MediaChange(dev_num + lun);
 #endif
-			bios_part[dev_num].biosnum[part_num - 1] = r;
-			bios_part[dev_num].partnum = part_num;
-		}	
-		part_num++;
+				bios_part[dev_num + lun].biosnum[part_num - 1] = r;
+				bios_part[dev_num + lun].partnum = part_num;
+			}
+			part_num++;
+		}
 	}
 	return 0;
 }
