@@ -327,7 +327,7 @@ init_part(block_dev_desc_t *dev_desc)
 	}
 	dev_desc->part_type = PART_TYPE_DOS;
 	DEBUG(("DOS partition table found"));
-#ifdef USB_STOR_DEBUG			
+#ifdef USB_STOR_DEBUG
 	{
 		char buf[128];
 		char build_str[64];
@@ -360,10 +360,9 @@ init_part(block_dev_desc_t *dev_desc)
 				DEBUG((buf));
 				sprintf(buf, sizeof(buf), "\0");
 			}
-			
 		}
-	}			
-#endif	
+	}
+#endif
 }
 
 /*
@@ -1114,7 +1113,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	{
 		sprintf(build_str, sizeof(build_str), "pdata[%ld] 0x%x ", idx, srb->pdata[idx]);
 		strcat(buf, build_str);
-	}	
+	}
 	DEBUG((buf));
 #endif
 	/* STATUS phase + error handling */
@@ -1478,7 +1477,7 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	if(blkcnt == 0)
 		return 0;
 
-	device &= 0xff;	
+	device &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_read: dev %ld ", device));
 			dev = usb_dev_desc[device].priv;
@@ -1915,7 +1914,7 @@ storage_disconnect(struct usb_device *dev)
 static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
-	long r, i, lun, start;	
+	long r, i, lun, start;
 	long max_lun;
 	
 	if(dev == NULL)
