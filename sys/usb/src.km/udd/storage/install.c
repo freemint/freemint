@@ -451,6 +451,8 @@ long uninstall_usb_stor(long logdrv)
 	drvbits &= ~(1L<<logdrv);
 	my_drvbits &= ~(1L<<logdrv);
 
+	changedrv(logdrv);
+
 	restore_old_state(ret);
 
 	return 0L;
