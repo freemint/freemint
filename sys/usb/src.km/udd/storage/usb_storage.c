@@ -306,7 +306,7 @@ static unsigned long usb_get_max_lun(struct us_data *us)
 			      0, us->ifnum,
 			      result, sizeof(char),
 		      USB_CNTL_TIMEOUT * 5);
-	DEBUG(("Get Max LUN -> len = %i, result = %i", len, (long) *result));
+	DEBUG(("Get Max LUN -> len = %i, result = %li", len, (long) *result));
 	return (len > 0) ? *result : 0;
 }
 
