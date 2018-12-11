@@ -365,6 +365,39 @@ init_part(block_dev_desc_t *dev_desc)
 #endif
 }
 
+static void
+part_init(long dev_num, block_dev_desc_t *stor_dev)
+{
+	long r;
+//	long dev_num = i;
+
+
+	long part_num = 1;
+	unsigned long part_type, part_offset, part_size;
+
+	/* Now find partitions in this storage device */
+	while (!fat_register_device(stor_dev, part_num, &part_type,
+				    &part_offset, &part_size))
+	{
+		/* install partition */
+		r = install_usb_stor(dev_num, part_type, part_offset,
+					     part_size, stor_dev->vendor,
+				     stor_dev->revision, stor_dev->product);
+		if (r == -1) {
+			DEBUG(("unable to install storage device\r\n"));
+		}
+		else
+		{
+#ifdef TOSONLY
+			SCSIDRV_MediaChange(dev_num);
+#endif
+			bios_part[dev_num].biosnum[part_num - 1] = r;
+			bios_part[dev_num].partnum = part_num;
+		}
+		part_num++;
+	}
+}
+
 /*
  *	test for valid DOS or GEMDOS partition
  *	returns 1 if valid
@@ -1784,7 +1817,6 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 		if(dev_desc->removable == 1)
 		{
 			dev_desc->type = perq;
-			return 1;
 		}
 		return 0;
 	}
@@ -1914,7 +1946,7 @@ storage_disconnect(struct usb_device *dev)
 static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
-	long r, i, lun, start;
+	long i, lun, dev_num;
 	long max_lun;
 	
 	if(dev == NULL)
@@ -1942,37 +1974,29 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		return -1; /* It's not a storage device */
 	}
 
-	start = i;
+	dev_num = i;
 	max_lun = usb_get_max_lun(&usb_stor[i]);
-	/* override */
 
 	for (lun = 0;
 		 lun <= max_lun &&
-		 start < USB_MAX_STOR_DEV; 
+		 dev_num < USB_MAX_STOR_DEV;
 		 lun++) {
 		/* ok, it is a storage devices
 		 * get info and fill it in
 		 */
-		usb_dev_desc[start].lun = lun;
-		if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[start])) {
-			usb_disable_asynch(0); /* asynch transfer allowed */
-			return -1;
+		usb_dev_desc[dev_num].lun = lun;
+		if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[dev_num])) {
+			if (!max_lun && !usb_dev_desc[dev_num].removable) {
+			/* We only return an error if the device has a single LUN */
+				usb_disable_asynch(0); /* asynch transfer allowed */
+				return -1;
+			}
+			else
+				continue;
 		}
-		start++;
-	}
-
-	
-	usb_disable_asynch(0); /* asynch transfer allowed */
-
-	long dev_num = i;
-
-	for (lun = 0;
-		 lun <= max_lun &&
-		 start < USB_MAX_STOR_DEV;
-		 lun++) {
 
 		block_dev_desc_t *stor_dev;
-		stor_dev = usb_stor_get_dev(dev_num + lun);
+		stor_dev = usb_stor_get_dev(dev_num);
 
 		struct us_data *ss;
 		ss = (struct us_data *)dev->privptr;
@@ -2001,32 +2025,12 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 #endif
 			continue;
 		}
-
-		long part_num = 1;
-		unsigned long part_type, part_offset, part_size;
-	
-		/* Now find partitions in this storage device */
-		while (!fat_register_device(stor_dev, part_num, &part_type, 
-					    &part_offset, &part_size))
-		{
-			/* install partition */
-			r = install_usb_stor(dev_num + lun, part_type, part_offset, 
-					     part_size, stor_dev->vendor, 
-					     stor_dev->revision, stor_dev->product);
-			if (r == -1) {
-				DEBUG(("unable to install storage device\r\n"));
-			}
-			else
-			{
-#ifdef TOSONLY
-				SCSIDRV_MediaChange(dev_num + lun);
-#endif
-				bios_part[dev_num + lun].biosnum[part_num - 1] = r;
-				bios_part[dev_num + lun].partnum = part_num;
-			}
-			part_num++;
-		}
+		part_init(dev_num, stor_dev);
+		dev_num++;
 	}
+
+	usb_disable_asynch(0); /* asynch transfer allowed */
+
 	return 0;
 }
 
