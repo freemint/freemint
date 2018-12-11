@@ -215,7 +215,7 @@ do_dup (short fd, short min, int cmd)
 
 /* do_open(f, name, rwmode, attr, x)
  *
- * f      - pointer to FIELPTR *
+ * f      - pointer to FILEPTR *
  * name   - file name
  * rwmode - file access mode
  * attr   - TOS attributes for created files (if applicable)
