@@ -883,6 +883,11 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 
 	CONTROL(9,1,0)
+	if (pb->control[3] >= 2 && pb->addrin[0] != 0)
+	{
+		void **p = (void **)pb->addrin[0];
+		*p = 0;
+	}
 
 	switch(pb->intin[0])
 	{
