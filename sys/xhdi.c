@@ -243,7 +243,14 @@ sys_xhdi (ushort op,
 	/* version information */
 	if (op == 0)
 		return XHDI_installed;
-	
+
+	/* XHEject */
+	/* a2 contains do_eject parameter */
+	if (op == 5 && (a2 >> 16) == 1)
+	{
+		bio_sync_all ();
+	}
+
 	/* XHDrvMap */
 	if (op == 6)
 		return XHDI (6);
