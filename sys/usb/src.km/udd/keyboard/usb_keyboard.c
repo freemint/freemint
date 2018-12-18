@@ -523,7 +523,7 @@ kbd_probe (struct usb_device *dev, unsigned int ifnum)
 
 	if (r)
 	{
-		return 0;
+		return -1;
 	}
 #endif
 	return 0;
