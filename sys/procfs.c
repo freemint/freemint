@@ -604,7 +604,7 @@ proc_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "proc-xfs");
+			strcpy ((char *) arg, "proc");
 			return E_OK;
 		}
 	}

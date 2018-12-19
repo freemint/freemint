@@ -1554,7 +1554,7 @@ ara_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "ara-xfs");
+			strcpy ((char *) arg, "arafs");
 			return E_OK;
 		}
 		case FS_INFO:

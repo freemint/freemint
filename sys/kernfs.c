@@ -1349,7 +1349,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "kern");
+			strcpy ((char *) arg, "kernfs");
 			break;;
 		}
 		case FS_INFO:

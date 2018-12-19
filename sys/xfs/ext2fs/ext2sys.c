@@ -1928,7 +1928,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "ext2-xfs");
+			strcpy ((char *) arg, "ext2");
 			return E_OK;
 		}
 		case FS_INFO:

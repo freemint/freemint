@@ -1848,7 +1848,7 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "nfs-xfs");
+			strcpy ((char *) arg, "nfs");
 			return E_OK;
 		}
 		case FS_INFO:
