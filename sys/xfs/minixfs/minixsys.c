@@ -1295,7 +1295,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "Minix-FS");
+			strcpy ((char *) arg, "minix");
 			return E_OK;
 		}
 		case FS_INFO:

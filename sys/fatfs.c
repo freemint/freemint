@@ -7322,7 +7322,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "vfat-xfs");
+			strcpy ((char *) arg, "vfat");
 			return E_OK;
 		}
 		case FS_INFO:

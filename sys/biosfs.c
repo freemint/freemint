@@ -998,7 +998,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 	if (cmd == MX_KER_XFSNAME)
 	{
-		strcpy ((char *) arg, "bios-xfs");
+		strcpy ((char *) arg, "biosfs");
 		return E_OK;
 	}
 

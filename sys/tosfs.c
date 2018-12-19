@@ -1312,7 +1312,7 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "tos-xfs");
+			strcpy ((char *) arg, "tos");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -1320,17 +1320,12 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			struct fs_info *info = (struct fs_info *) arg;
 			if (info)
 			{
-				char *dst = info->type_asc;
-				
 				strcpy (info->name, "tos-xfs");
 				info->version = (gemdos_version & 0xf) << 8;
 				info->version |= gemdos_version >> 8;
 				info->type = FS_OLDTOS;
 				
-				*dst++ = 't';
-				*dst++ = 'o';
-				*dst++ = 's';
-				*dst++ = '\0';
+				strcpy(info->type_asc, "tos");
 			}
 			
 			return E_OK;

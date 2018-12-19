@@ -1009,7 +1009,7 @@ isofs_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy((char *) arg, "isofs-xfs");
+			strcpy((char *) arg, "isofs");
 			return E_OK;
 		}
 		case FS_INFO:

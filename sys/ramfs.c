@@ -1773,7 +1773,7 @@ ram_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "ram-xfs");
+			strcpy ((char *) arg, "ramfs");
 			return E_OK;
 		}
 		case FS_INFO:

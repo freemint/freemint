@@ -843,7 +843,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 		case MX_KER_XFSNAME:
 		{
 			char *n = (char *)arg;
-			strcpy (n/*(char *) arg*/, "uni-xfs");
+			strcpy (n/*(char *) arg*/, "unifs");
 			return E_OK;
 		}
 		case FS_INSTALL: /* install a new filesystem */

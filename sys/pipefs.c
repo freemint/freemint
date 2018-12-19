@@ -660,7 +660,7 @@ pipe_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "pipe-xfs");
+			strcpy ((char *) arg, "pipe");
 			return E_OK;
 		}
 	}
