@@ -463,7 +463,7 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-	/* device number in the USB bus */
+	/* mass storage logical device number in the USB bus */
 	short dev = major & PUN_DEV;
 
 	usb_stor_eject(dev);
