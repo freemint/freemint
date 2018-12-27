@@ -26,7 +26,7 @@ typedef unsigned long lbaint_t;
 typedef struct block_dev_desc
 {
 	long		if_type;	/* type of the interface */
-	long		dev;		/* device number */
+	long			usb_logdrv;	/* USB logical drive (LUNs count between all USB Mass Storage devices) */
 	unsigned char	part_type;	/* partition type */
 	unsigned char	target;		/* target SCSI ID */
 	unsigned char	lun;		/* target LUN */
