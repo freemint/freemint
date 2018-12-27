@@ -1864,7 +1864,7 @@ usb_stor_eject(long device)
 	char product[20+1];
 	long i = 0, f = 0;
 
-	strncpy(product, usb_dev_desc[device].product, 20+1);
+	strncpy(product, usb_dev_desc[device].product, PRODUCT_STRING_LENGTH);
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if ((usb_dev_desc[i].lun == lun) && (usb_dev_desc[i].usb_logdrv == device)) {

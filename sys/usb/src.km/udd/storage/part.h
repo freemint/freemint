@@ -23,6 +23,10 @@
 typedef unsigned long long uint64_t;
 typedef unsigned long lbaint_t;
 
+#define VENDOR_STRING_LENGTH	40+1
+#define PRODUCT_STRING_LENGTH	20+1
+#define REVISION_STRING_LENGTH	8+1
+
 typedef struct block_dev_desc
 {
 	long		if_type;	/* type of the interface */
@@ -38,9 +42,9 @@ typedef struct block_dev_desc
 # endif
 	lbaint_t		lba;		/* number of blocks */
 	unsigned long	blksz;		/* block size */
-	char		vendor [40+1];	/* IDE model, SCSI Vendor */
-	char		product[20+1];	/* IDE Serial no, SCSI product */
-	char		revision[8+1];	/* firmware revision */
+	char		vendor[VENDOR_STRING_LENGTH];		/* IDE model, SCSI Vendor */
+	char		product[PRODUCT_STRING_LENGTH];		/* IDE Serial no, SCSI product */
+	char		revision[REVISION_STRING_LENGTH];	/* firmware revision */
 	unsigned long	(*block_read)(long dev, unsigned long start, lbaint_t blkcnt, void *buffer);
 	unsigned long	(*block_write)(long dev, unsigned long start, lbaint_t blkcnt, void *buffer);
 	void		*priv;		/* driver private struct pointer */
