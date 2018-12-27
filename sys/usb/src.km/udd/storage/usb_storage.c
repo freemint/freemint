@@ -205,7 +205,7 @@ typedef struct
 } umass_bbb_csw_t;
 #define UMASS_BBB_CSW_SIZE	13
 
-#define USB_MAX_STOR_DEV 	8 /* max SCSI devices in chain */
+#define USB_MAX_STOR_DEV 	8 /* Total max number of LUN units */
 
 static block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
 
@@ -216,7 +216,7 @@ struct bios_partitions
 };
 
 static struct us_data usb_stor[USB_MAX_STOR_DEV];
-static struct bios_partitions bios_part[USB_MAX_STOR_DEV];
+static struct bios_partitions bios_part[USB_MAX_STOR_DEV]; /* BIOS partitions per LUN */
 
 #define USB_STOR_TRANSPORT_GOOD	   0
 #define USB_STOR_TRANSPORT_FAILED -1
@@ -1981,7 +1981,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		 lun <= max_lun &&
 		 dev_num < USB_MAX_STOR_DEV;
 		 lun++) {
-		/* ok, it is a storage devices
+		/* ok, it is a storage device
 		 * get info and fill it in
 		 */
 		usb_dev_desc[dev_num].lun = lun;
