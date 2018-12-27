@@ -1867,6 +1867,7 @@ usb_stor_eject(long device)
 			usb_dev_desc[device + lun].target = 0xff;
 			usb_dev_desc[device + lun].if_type = IF_TYPE_USB;
 			usb_dev_desc[device + lun].usb_logdrv = device + lun;
+			usb_dev_desc[i].usb_phydrv = 0xff;
 			usb_dev_desc[device + lun].part_type = PART_TYPE_UNKNOWN;
 			usb_dev_desc[device + lun].block_read = usb_stor_read;
 			usb_dev_desc[device + lun].block_write = usb_stor_write;
@@ -1910,6 +1911,7 @@ storage_disconnect(struct usb_device *dev)
 				usb_dev_desc[i + lun].target = 0xff;
 				usb_dev_desc[i + lun].if_type = IF_TYPE_USB;
 				usb_dev_desc[i + lun].usb_logdrv = i + lun;
+				usb_dev_desc[i].usb_phydrv = 0xff;
 				usb_dev_desc[i + lun].part_type = PART_TYPE_UNKNOWN;
 				usb_dev_desc[i + lun].block_read = usb_stor_read;
 				usb_dev_desc[i + lun].block_write = usb_stor_write;
@@ -2025,6 +2027,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 #endif
 			continue;
 		}
+		usb_dev_desc[dev_num].usb_phydrv = i;
 		part_init(dev_num, stor_dev);
 		dev_num++;
 	}
@@ -2045,6 +2048,7 @@ usb_storage_init(void)
 		usb_dev_desc[i].target = 0xff;
 		usb_dev_desc[i].if_type = IF_TYPE_USB;
 		usb_dev_desc[i].usb_logdrv = i;
+		usb_dev_desc[i].usb_phydrv = 0xff;
 		usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
 		usb_dev_desc[i].block_read = usb_stor_read;
 		usb_dev_desc[i].block_write = usb_stor_write;
