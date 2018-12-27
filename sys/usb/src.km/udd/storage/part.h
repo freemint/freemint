@@ -30,8 +30,8 @@ typedef unsigned long lbaint_t;
 typedef struct block_dev_desc
 {
 	long		if_type;	/* type of the interface */
-	long			usb_phydrv;	/* USB physical drive (USB mass storage device number) */
-	long			usb_logdrv;	/* USB logical drive (LUNs count between all USB Mass Storage devices) */
+	long		usb_phydrv;	/* USB physical drive (USB mass storage device number) */
+	long		usb_logdrv;	/* USB logical drive (LUNs count between all USB Mass Storage devices) */
 	unsigned char	part_type;	/* partition table type */
 	unsigned char	target;		/* target SCSI ID (= USB device ID)*/
 	unsigned char	lun;		/* LUN number in this target */
@@ -40,7 +40,7 @@ typedef struct block_dev_desc
 # ifdef CONFIG_LBA48
 	unsigned char	lba48;		/* device can use 48bit addr (ATA/ATAPI v7) */
 # endif
-	lbaint_t		lba;		/* number of blocks */
+	lbaint_t	lba;		/* number of blocks */
 	unsigned long	blksz;		/* block size */
 	char		vendor[VENDOR_STRING_LENGTH];		/* IDE model, SCSI Vendor */
 	char		product[PRODUCT_STRING_LENGTH];		/* IDE Serial no, SCSI product */
@@ -66,7 +66,7 @@ typedef struct block_dev_desc
 #define PART_TYPE_MAC		0x01
 #define PART_TYPE_DOS		0x02
 #define PART_TYPE_ISO		0x03
-#define PART_TYPE_AMIGA	0x04
+#define PART_TYPE_AMIGA		0x04
 #define PART_TYPE_EFI		0x05
 
 /*
@@ -80,7 +80,7 @@ typedef struct block_dev_desc
 #define DEV_TYPE_HARDDISK	0x00	/* harddisk */
 #define DEV_TYPE_TAPE		0x01	/* Tape */
 #define DEV_TYPE_CDROM		0x05	/* CD-ROM */
-#define DEV_TYPE_OPDISK	0x07	/* optical disk */
+#define DEV_TYPE_OPDISK		0x07	/* optical disk */
 
 void print_part(block_dev_desc_t *dev_desc);
 void init_part(block_dev_desc_t *dev_desc);
