@@ -320,7 +320,7 @@ init_part(block_dev_desc_t *dev_desc)
 {
 	unsigned char *buffer = readbuf;
 
-	if((dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	if((dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	 || (buffer[DOS_PART_MAGIC_OFFSET + 0] != 0x55) || (buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa))
 	{
 		return;
@@ -463,9 +463,9 @@ get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long par
 
 	while(1)
 	{
-		if (dev_desc->block_read(dev_desc->dev, xgm_start+offset, 1, (unsigned long *)buffer) != 1)
+		if (dev_desc->block_read(dev_desc->usb_logdrv, xgm_start+offset, 1, (unsigned long *)buffer) != 1)
 		{
-			DEBUG(("Can't read subpartition table on %ld:%ld", dev_desc->dev, xgm_start+offset));
+			DEBUG(("Can't read subpartition table on %ld:%ld", dev_desc->usb_logdrv, xgm_start+offset));
 			return -1;
 		}
 
@@ -513,16 +513,16 @@ get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, d
 	atari_partition_t part[4], *pt;
 	long i, rc;
 
-	if (dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	if (dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read partition table on %ld:0", dev_desc->dev));
+		DEBUG(("Can't read partition table on %ld:0", dev_desc->usb_logdrv));
 		return -1;
 	}
 
 	pt = (atari_partition_t *)(buffer + ATARI_PART_TBL_OFFSET);
 	if (is_active_atari(pt->id) && is_extended_atari(pt->id))
 	{
-		DEBUG(("Error: extended partition in slot0 of partition table on %ld:0", dev_desc->dev));
+		DEBUG(("Error: extended partition in slot0 of partition table on %ld:0", dev_desc->usb_logdrv));
 		return -1;
 	}
 
@@ -573,9 +573,9 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
 	dos_partition_t part[4], *pt;
 	long i;
 
-	if(dev_desc->block_read(dev_desc->dev, ext_part_sector, 1, (unsigned long *)buffer) != 1)
+	if(dev_desc->block_read(dev_desc->usb_logdrv, ext_part_sector, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read partition table on %ld:%ld", dev_desc->dev, ext_part_sector));
+		DEBUG(("Can't read partition table on %ld:%ld", dev_desc->usb_logdrv, ext_part_sector));
 		return -1;
 	}
 	
@@ -629,9 +629,9 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 {
 	unsigned char *buffer = readbuf;
 
-	if(dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	if(dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read boot sector from device %ld", dev_desc->dev));
+		DEBUG(("Can't read boot sector from device %ld", dev_desc->usb_logdrv));
 		return -1;
 	}
 
@@ -673,9 +673,9 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 	}
 
 	/* no MBR, check for PBR */
-	if(dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	if(dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read boot sector from device %ld", dev_desc->dev));
+		DEBUG(("Can't read boot sector from device %ld", dev_desc->usb_logdrv));
 		return -1;
 	}
 
@@ -688,7 +688,7 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 		return 0;
 	}
 
-	DEBUG(("Partition %ld not valid on device %ld", part_no, dev_desc->dev));
+	DEBUG(("Partition %ld not valid on device %ld", part_no, dev_desc->usb_logdrv));
 	return -1;
 }
 
@@ -1866,7 +1866,7 @@ usb_stor_eject(long device)
 			memset(&usb_dev_desc[device + lun], 0, sizeof(block_dev_desc_t));
 			usb_dev_desc[device + lun].target = 0xff;
 			usb_dev_desc[device + lun].if_type = IF_TYPE_USB;
-			usb_dev_desc[device + lun].dev = device + lun;
+			usb_dev_desc[device + lun].usb_logdrv = device + lun;
 			usb_dev_desc[device + lun].part_type = PART_TYPE_UNKNOWN;
 			usb_dev_desc[device + lun].block_read = usb_stor_read;
 			usb_dev_desc[device + lun].block_write = usb_stor_write;
@@ -1909,7 +1909,7 @@ storage_disconnect(struct usb_device *dev)
 				memset(&usb_dev_desc[i + lun], 0, sizeof(block_dev_desc_t));
 				usb_dev_desc[i + lun].target = 0xff;
 				usb_dev_desc[i + lun].if_type = IF_TYPE_USB;
-				usb_dev_desc[i + lun].dev = i + lun;
+				usb_dev_desc[i + lun].usb_logdrv = i + lun;
 				usb_dev_desc[i + lun].part_type = PART_TYPE_UNKNOWN;
 				usb_dev_desc[i + lun].block_read = usb_stor_read;
 				usb_dev_desc[i + lun].block_write = usb_stor_write;
@@ -2044,7 +2044,7 @@ usb_storage_init(void)
 		memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
 		usb_dev_desc[i].target = 0xff;
 		usb_dev_desc[i].if_type = IF_TYPE_USB;
-		usb_dev_desc[i].dev = i;
+		usb_dev_desc[i].usb_logdrv = i;
 		usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
 		usb_dev_desc[i].block_read = usb_stor_read;
 		usb_dev_desc[i].block_write = usb_stor_write;
