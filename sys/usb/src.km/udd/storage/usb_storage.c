@@ -1857,38 +1857,44 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 void
 usb_stor_eject(long device)
 {
-	long lun, max_lun;
+#ifndef TOSONLY
+	long usb_phydrv = usb_dev_desc[device].usb_phydrv;
+#endif
+	long lun = usb_dev_desc[device].lun;
+	char product[20+1];
+	long i = 0, f = 0;
 
-	if (usb_stor[device].pusb_dev->devnum == usb_dev_desc[device].target)
-	{
-		max_lun = usb_get_max_lun(&usb_stor[device]);
-		for (lun = 0; lun <= max_lun; lun++) {
-			memset(&usb_dev_desc[device + lun], 0, sizeof(block_dev_desc_t));
-			usb_dev_desc[device + lun].target = 0xff;
-			usb_dev_desc[device + lun].if_type = IF_TYPE_USB;
-			usb_dev_desc[device + lun].usb_logdrv = device + lun;
+	strncpy(product, usb_dev_desc[device].product, 20+1);
+
+	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
+		if ((usb_dev_desc[i].lun == lun) && (usb_dev_desc[i].usb_logdrv == device)) {
+			memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
+			usb_dev_desc[i].target = 0xff;
+			usb_dev_desc[i].lun = 0xff;
+			usb_dev_desc[i].if_type = IF_TYPE_USB;
+			usb_dev_desc[i].usb_logdrv = i;
 			usb_dev_desc[i].usb_phydrv = 0xff;
-			usb_dev_desc[device + lun].part_type = PART_TYPE_UNKNOWN;
-			usb_dev_desc[device + lun].block_read = usb_stor_read;
-			usb_dev_desc[device + lun].block_write = usb_stor_write;
+			usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
+			usb_dev_desc[i].block_read = usb_stor_read;
+			usb_dev_desc[i].block_write = usb_stor_write;
+			f = 1;
 		}
 	}
-	else
+
+	if (!f)
 	{
-		DEBUG(("USB mass storage device was already disconnected"));
+		DEBUG(("USB mass storage device was already ejected"));
 		return;
 	}
 
-	long idx;
-	for (lun = 0; lun <= max_lun; lun++) {
-		for (idx = 1; idx <= bios_part[device + lun].partnum; idx++) {
-			uninstall_usb_stor(bios_part[device + lun].biosnum[idx - 1]);
-		}
-		bios_part[device + lun].partnum = 0;
+	long idx = bios_part[device].partnum;
+	while (idx > 0) {
+		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
+		idx--;
 	}
+	bios_part[device].partnum = 0;
 
-	ALERT(("USB Storage Device disconnected: (%ld) %s", usb_stor[device].pusb_dev->devnum,
-							    usb_stor[device].pusb_dev->prod));
+	ALERT(("USB Mass Storage Device (%ld) LUN (%ld) ejected: %s", usb_phydrv, lun, product));
 }
 
 
@@ -1899,40 +1905,36 @@ usb_stor_eject(long device)
 static long
 storage_disconnect(struct usb_device *dev)
 {
-	long i, lun, max_lun;
+	long i, f = 0;
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
 		if (dev->devnum == usb_dev_desc[i].target)
 		{
-			max_lun = usb_get_max_lun(&usb_stor[i]);
-			for (lun = 0; lun <= max_lun; lun++) {
-				memset(&usb_dev_desc[i + lun], 0, sizeof(block_dev_desc_t));
-				usb_dev_desc[i + lun].target = 0xff;
-				usb_dev_desc[i + lun].if_type = IF_TYPE_USB;
-				usb_dev_desc[i + lun].usb_logdrv = i + lun;
-				usb_dev_desc[i].usb_phydrv = 0xff;
-				usb_dev_desc[i + lun].part_type = PART_TYPE_UNKNOWN;
-				usb_dev_desc[i + lun].block_read = usb_stor_read;
-				usb_dev_desc[i + lun].block_write = usb_stor_write;
+			memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
+			usb_dev_desc[i].target = 0xff;
+			usb_dev_desc[i].lun = 0xff;
+			usb_dev_desc[i].if_type = IF_TYPE_USB;
+			usb_dev_desc[i].usb_logdrv = i;
+			usb_dev_desc[i].usb_phydrv = 0xff;
+			usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
+			usb_dev_desc[i].block_read = usb_stor_read;
+			usb_dev_desc[i].block_write = usb_stor_write;
+
+			long idx;
+			for (idx = 1; idx <= bios_part[i].partnum; idx++) {
+				uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
 			}
-			break;
+			bios_part[i].partnum = 0;
+			f = 1;
 		}
 	}
 
-	if (i == USB_MAX_STOR_DEV) 
+	if (!f)
 	{
 		/* Probably the device has been already disconnected by software (XHEject) */
 		DEBUG(("USB mass storage device was already disconnected"));
 		return -1;
-	}
-
-	long idx;
-	for (lun = 0; lun <= max_lun; lun++) {
-		for (idx = 1; idx <= bios_part[i + lun].partnum; idx++) {
-			uninstall_usb_stor(bios_part[i + lun].biosnum[idx - 1]);
-		}
-		bios_part[i + lun].partnum = 0;
 	}
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
