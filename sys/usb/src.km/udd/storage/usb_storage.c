@@ -1997,13 +1997,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 				continue;
 		}
 
-		block_dev_desc_t *stor_dev;
-		stor_dev = usb_stor_get_dev(dev_num);
-
 		struct us_data *ss;
 		ss = (struct us_data *)dev->privptr;
 
-		//dev_print(stor_dev);
+		//dev_print(&usb_dev_desc[dev_num]);
 
 		if(ss->subclass == US_SC_UFI)
 		{
@@ -2015,20 +2012,20 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 
 		/* Skip everything apart from HARDDISKS */
-		if((stor_dev->type & 0x1f) != DEV_TYPE_HARDDISK) {
+		if((usb_dev_desc[dev_num].type & 0x1f) != DEV_TYPE_HARDDISK) {
 #if 0
-		c_conws(stor_dev->vendor);
+		c_conws(usb_dev_desc[dev_num].vendor);
 		c_conout(' ');
-		c_conws(stor_dev->product);
+		c_conws(usb_dev_desc[dev_num].product);
 		c_conout(' ');
 		c_conws(", type : ");
-		hex_long(stor_dev->type & 0x1f);
+		hex_long(usb_dev_desc[dev_num].type & 0x1f);
 		c_conws(" not installed\r\n");
 #endif
 			continue;
 		}
 		usb_dev_desc[dev_num].usb_phydrv = i;
-		part_init(dev_num, stor_dev);
+		part_init(dev_num, &usb_dev_desc[dev_num]);
 		dev_num++;
 	}
 
