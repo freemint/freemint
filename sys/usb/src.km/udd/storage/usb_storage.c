@@ -2043,6 +2043,7 @@ usb_storage_init(void)
 	{
 		memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
 		usb_dev_desc[i].target = 0xff;
+		usb_dev_desc[i].lun = 0xff;
 		usb_dev_desc[i].if_type = IF_TYPE_USB;
 		usb_dev_desc[i].usb_logdrv = i;
 		usb_dev_desc[i].usb_phydrv = 0xff;
