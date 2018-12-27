@@ -1513,7 +1513,7 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	device &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_read: dev %ld ", device));
-			dev = usb_dev_desc[device].priv;
+	dev = usb_dev_desc[device].priv;
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb.lun = usb_dev_desc[device].lun;
@@ -1569,7 +1569,7 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, void *buf
 	device &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_write: dev %ld ", device));
-			dev = usb_dev_desc[device].priv;
+	dev = usb_dev_desc[device].priv;
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb.lun = usb_dev_desc[device].lun;
