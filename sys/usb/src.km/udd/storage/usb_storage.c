@@ -1989,7 +1989,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		 */
 		usb_dev_desc[dev_num].lun = lun;
 		if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[dev_num])) {
-			if (!max_lun && !usb_dev_desc[dev_num].removable) {
+			if (!max_lun) {
 			/* We only return an error if the device has a single LUN */
 				usb_disable_asynch(0); /* asynch transfer allowed */
 				return -1;
