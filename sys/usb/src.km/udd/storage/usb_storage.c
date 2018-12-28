@@ -1966,8 +1966,8 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 	/* if storage device */
 	if(i == USB_MAX_STOR_DEV)
 	{
-			ALERT(("Max USB Storage Device reached: %ld stopping", USB_MAX_STOR_DEV));
-			return -1;
+		ALERT(("Max USB Storage Device reached: %ld stopping", USB_MAX_STOR_DEV));
+		return -1;
 	}
 
 	usb_disable_asynch(1); /* asynch transfer not allowed */
