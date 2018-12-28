@@ -207,6 +207,7 @@ typedef struct
 
 #define USB_MAX_STOR_DEV 	8 /* Total max number of LUN units */
 
+/* There are a copy of these structs for every logical device (LUN) */
 static block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
 
 struct bios_partitions
@@ -215,8 +216,11 @@ struct bios_partitions
 	short partnum;				/* Total number of partitions this device has */
 };
 
-static struct us_data usb_stor[USB_MAX_STOR_DEV];
 static struct bios_partitions bios_part[USB_MAX_STOR_DEV]; /* BIOS partitions per LUN */
+
+/* There is a copy of this struct for every physical device */
+static struct us_data usb_stor[USB_MAX_STOR_DEV];
+
 
 #define USB_STOR_TRANSPORT_GOOD	   0
 #define USB_STOR_TRANSPORT_FAILED -1
@@ -1949,7 +1953,7 @@ storage_disconnect(struct usb_device *dev)
 static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
-	long i, lun, dev_num;
+	long i, lun, dev_num; /* dev_num represents a logical unit (LUN) */
 	long max_lun;
 	
 	if(dev == NULL)
@@ -1972,6 +1976,11 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 
+	/* For now we use the same array index for usb_dev_desc (block_dev_desc
+	 * struct's array for LUNs) and usb_stor (us_data struct's array for
+	 * physical devices), we need less copies of the us_data struct than
+	 * the block_dev_desc struct but the code gets simpler.
+	 */
 	if(!usb_stor_probe(dev, ifnum, &usb_stor[i])) {
 		usb_disable_asynch(0); /* asynch transfer allowed */
 		return -1; /* It's not a storage device */
