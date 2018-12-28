@@ -369,8 +369,6 @@ static void
 part_init(long dev_num, block_dev_desc_t *stor_dev)
 {
 	long r;
-//	long dev_num = i;
-
 
 	long part_num = 1;
 	unsigned long part_type, part_offset, part_size;
