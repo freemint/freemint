@@ -2036,7 +2036,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 		usb_dev_desc[dev_num].usb_phydrv = i;
 		part_init(dev_num, &usb_dev_desc[dev_num]);
-		dev_num++;
+
+		do {
+			dev_num++;
+		} while (usb_dev_desc[dev_num].target != 0xff && dev_num < USB_MAX_STOR_DEV);
 	}
 
 	usb_disable_asynch(0); /* asynch transfer allowed */
