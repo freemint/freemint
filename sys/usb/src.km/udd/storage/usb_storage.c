@@ -280,6 +280,7 @@ long 		usb_stor_probe		(struct usb_device *, unsigned int, struct us_data *);
 unsigned long 	usb_stor_read		(long, unsigned long, unsigned long, void *);
 unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
+void		usb_stor_reset		(long);
 block_dev_desc_t *	usb_stor_get_dev	(long);
 static long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
@@ -1855,6 +1856,20 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	return 1;
 }
 
+void
+usb_stor_reset(long i)
+{
+	memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
+	usb_dev_desc[i].target = 0xff;
+	usb_dev_desc[i].lun = 0xff;
+	usb_dev_desc[i].if_type = IF_TYPE_USB;
+	usb_dev_desc[i].usb_logdrv = i;
+	usb_dev_desc[i].usb_phydrv = 0xff;
+	usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
+	usb_dev_desc[i].removable = 0;
+	usb_dev_desc[i].block_read = usb_stor_read;
+	usb_dev_desc[i].block_write = usb_stor_write;
+}
 
 void
 usb_stor_eject(long device)
@@ -1870,15 +1885,7 @@ usb_stor_eject(long device)
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if ((usb_dev_desc[i].lun == lun) && (usb_dev_desc[i].usb_logdrv == device)) {
-			memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
-			usb_dev_desc[i].target = 0xff;
-			usb_dev_desc[i].lun = 0xff;
-			usb_dev_desc[i].if_type = IF_TYPE_USB;
-			usb_dev_desc[i].usb_logdrv = i;
-			usb_dev_desc[i].usb_phydrv = 0xff;
-			usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
-			usb_dev_desc[i].block_read = usb_stor_read;
-			usb_dev_desc[i].block_write = usb_stor_write;
+			usb_stor_reset(i);
 			f = 1;
 		}
 	}
@@ -1913,16 +1920,7 @@ storage_disconnect(struct usb_device *dev)
 	{
 		if (dev->devnum == usb_dev_desc[i].target)
 		{
-			memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
-			usb_dev_desc[i].target = 0xff;
-			usb_dev_desc[i].lun = 0xff;
-			usb_dev_desc[i].if_type = IF_TYPE_USB;
-			usb_dev_desc[i].usb_logdrv = i;
-			usb_dev_desc[i].usb_phydrv = 0xff;
-			usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
-			usb_dev_desc[i].removable = 0;
-			usb_dev_desc[i].block_read = usb_stor_read;
-			usb_dev_desc[i].block_write = usb_stor_write;
+			usb_stor_reset(i);
 
 			long idx;
 			for (idx = 1; idx <= bios_part[i].partnum; idx++) {
@@ -2054,16 +2052,7 @@ usb_storage_init(void)
 
 	for(i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
-		memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
-		usb_dev_desc[i].target = 0xff;
-		usb_dev_desc[i].lun = 0xff;
-		usb_dev_desc[i].if_type = IF_TYPE_USB;
-		usb_dev_desc[i].usb_logdrv = i;
-		usb_dev_desc[i].usb_phydrv = 0xff;
-		usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
-		usb_dev_desc[i].removable = 0;
-		usb_dev_desc[i].block_read = usb_stor_read;
-		usb_dev_desc[i].block_write = usb_stor_write;
+		usb_stor_reset(i);
 	}
 }
 
