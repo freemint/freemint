@@ -207,7 +207,7 @@ typedef struct
 
 #define USB_MAX_STOR_DEV 	8 /* Total max number of LUN units */
 
-/* There are a copy of these structs for every logical device (LUN) */
+/* There is a copy of this struct for every logical device (LUN) */
 static block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
 
 struct bios_partitions
