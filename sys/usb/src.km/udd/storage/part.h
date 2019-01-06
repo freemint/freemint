@@ -37,6 +37,8 @@ typedef struct block_dev_desc
 	unsigned char	lun;		/* LUN number in this target */
 	unsigned char	type;		/* device type */
 	unsigned char	removable;	/* removable device */
+	unsigned char	ready;		/* unit ready */
+	unsigned char	sw_ejected;	/* device ejected by software */
 # ifdef CONFIG_LBA48
 	unsigned char	lba48;		/* device can use 48bit addr (ATA/ATAPI v7) */
 # endif

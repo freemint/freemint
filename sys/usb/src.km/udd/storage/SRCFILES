@@ -9,6 +9,7 @@ HEADER = \
 
 COBJS = \
 	install.c \
+	polling.c \
 	usb_scsidrv.c \
 	usb_storage.c \
 	xhdi.c

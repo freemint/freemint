@@ -146,8 +146,8 @@ extern void SCSIDRV_MediaChange(long dev_num);
 #endif
 extern long dl_maxdrives;
 extern long XHDOSLimits(ushort which, ulong limit);
-
-
+extern void init_polling(void);
+extern short num_multilun_dev;
 
 /* direction table -- this indicates the direction of the data
  * transfer for each command code -- a 1 indicates input
@@ -1847,6 +1847,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	dev_desc->lba = *capacity;
 	dev_desc->blksz = *blksz;
 	dev_desc->type = perq;
+	dev_desc->ready = 1;
 	DEBUG((" address %d", dev_desc->target));
 	DEBUG(("partype: %d", dev_desc->part_type));
 #if 0 /* Why? */
@@ -1866,6 +1867,7 @@ usb_stor_reset(long i)
 	usb_dev_desc[i].usb_logdrv = i;
 	usb_dev_desc[i].usb_phydrv = 0xff;
 	usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
+	usb_dev_desc[i].ready = 0;
 	usb_dev_desc[i].removable = 0;
 	usb_dev_desc[i].block_read = usb_stor_read;
 	usb_dev_desc[i].block_write = usb_stor_write;
@@ -1885,7 +1887,7 @@ usb_stor_eject(long device)
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if ((usb_dev_desc[i].lun == lun) && (usb_dev_desc[i].usb_logdrv == device)) {
-			usb_stor_reset(i);
+			usb_dev_desc[i].sw_ejected = 1;
 			f = 1;
 		}
 	}
@@ -1914,7 +1916,7 @@ usb_stor_eject(long device)
 static long
 storage_disconnect(struct usb_device *dev)
 {
-	long i, f = 0;
+	long i, f = 0, how_many_luns = 0;
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
@@ -1926,6 +1928,7 @@ storage_disconnect(struct usb_device *dev)
 			for (idx = 1; idx <= bios_part[i].partnum; idx++) {
 				uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
 			}
+			how_many_luns++;
 			bios_part[i].partnum = 0;
 			f = 1;
 		}
@@ -1937,6 +1940,9 @@ storage_disconnect(struct usb_device *dev)
 		DEBUG(("USB mass storage device was already disconnected"));
 		return -1;
 	}
+
+	if (how_many_luns > 1)
+		num_multilun_dev--;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
 
@@ -2044,6 +2050,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			dev_num++;
 		} while (usb_dev_desc[dev_num].target != 0xff && dev_num < USB_MAX_STOR_DEV);
 	}
+
+	if (max_lun > 0)
+		init_polling();
 
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
