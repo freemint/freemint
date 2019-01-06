@@ -30,3 +30,5 @@ struct us_data
 	trans_reset	transport_reset;	/* reset routine */
 	trans_cmnd	transport;		/* transport routine */
 };
+
+#define USB_MAX_STOR_DEV 	8 /* Total max number of LUN units */

@@ -205,8 +205,6 @@ typedef struct
 } umass_bbb_csw_t;
 #define UMASS_BBB_CSW_SIZE	13
 
-#define USB_MAX_STOR_DEV 	8 /* Total max number of LUN units */
-
 /* There is a copy of this struct for every logical device (LUN) */
 static block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
 
