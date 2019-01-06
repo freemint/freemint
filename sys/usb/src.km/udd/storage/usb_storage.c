@@ -1788,7 +1788,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	dev_desc->priv = dev;
 	dev_desc->target = dev->devnum;
 	pccb.lun = dev_desc->lun;
-	DEBUG(("address %d", dev_desc->target));
+
 	if(usb_inquiry(&pccb, ss)) {
 		return -1;
 	}
@@ -1848,8 +1848,6 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	dev_desc->blksz = *blksz;
 	dev_desc->type = perq;
 	dev_desc->ready = 1;
-	DEBUG((" address %d", dev_desc->target));
-	DEBUG(("partype: %d", dev_desc->part_type));
 #if 0 /* Why? */
 	init_part(dev_desc);
 	DEBUG(("partype: %d", dev_desc->part_type));
