@@ -1867,6 +1867,7 @@ usb_stor_reset(long i)
 	usb_dev_desc[i].usb_logdrv = i;
 	usb_dev_desc[i].usb_phydrv = 0xff;
 	usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
+	usb_dev_desc[i].type = DEV_TYPE_UNKNOWN;
 	usb_dev_desc[i].ready = 0;
 	usb_dev_desc[i].removable = 0;
 	usb_dev_desc[i].block_read = usb_stor_read;
