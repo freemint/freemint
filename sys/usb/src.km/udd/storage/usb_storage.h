@@ -31,4 +31,4 @@ struct us_data
 	trans_cmnd	transport;		/* transport routine */
 };
 
-#define USB_MAX_STOR_DEV 	8 /* Total max number of LUN units */
+#define USB_MAX_STOR_DEV 	10 /* Total max number of LUN units */
