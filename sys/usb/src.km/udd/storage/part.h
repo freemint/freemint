@@ -1,4 +1,6 @@
 /*
+ * Modified for the FreeMiNT USB subsystem by David Galvez. 2010-2019
+ *
  * (C) Copyright 2000-2004
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  *
