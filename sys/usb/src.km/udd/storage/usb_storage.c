@@ -1797,7 +1797,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 
 	/* skip unknown devices */
 	if((perq & 0x1f) == 0x1f) {
-		return 0;
+		return -1;
 	}
 
 	/* drive is removable */
@@ -1951,7 +1951,7 @@ storage_disconnect(struct usb_device *dev)
 static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
-	long i, lun, dev_num; /* dev_num represents a logical unit (LUN) */
+	long i, r, lun, dev_num; /* dev_num represents a logical unit (LUN) */
 	long max_lun;
 	
 	if(dev == NULL)
@@ -1995,7 +1995,8 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		 * get info and fill it in
 		 */
 		usb_dev_desc[dev_num].lun = lun;
-		if(usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[dev_num]) <= 0) {
+		r = usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[dev_num]);
+		if(r < 0) {
 			/* There was an error, invalidate entry */
 			usb_stor_reset(dev_num);
 			if (!max_lun) {
@@ -2035,7 +2036,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			continue;
 		}
 		usb_dev_desc[dev_num].usb_phydrv = i;
-		part_init(dev_num, &usb_dev_desc[dev_num]);
+
+		if (r > 0) /* Only init partitions when LUN is ready */
+			part_init(dev_num, &usb_dev_desc[dev_num]);
 
 		do {
 			dev_num++;
