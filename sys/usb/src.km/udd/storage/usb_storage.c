@@ -206,7 +206,7 @@ typedef struct
 #define UMASS_BBB_CSW_SIZE	13
 
 /* There is a copy of this struct for every logical device (LUN) */
-static block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
+block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
 
 struct bios_partitions
 {
@@ -217,7 +217,7 @@ struct bios_partitions
 static struct bios_partitions bios_part[USB_MAX_STOR_DEV]; /* BIOS partitions per LUN */
 
 /* There is a copy of this struct for every physical device */
-static struct us_data usb_stor[USB_MAX_STOR_DEV];
+struct us_data usb_stor[USB_MAX_STOR_DEV];
 
 
 #define USB_STOR_TRANSPORT_GOOD	   0
@@ -287,7 +287,9 @@ static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char);
 static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
+long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
 
+void		part_init		(long dev_num, block_dev_desc_t *stor_dev);
 
 /* --- Inteface functions -------------------------------------------------- */
 
@@ -368,7 +370,7 @@ init_part(block_dev_desc_t *dev_desc)
 #endif
 }
 
-static void
+void
 part_init(long dev_num, block_dev_desc_t *stor_dev)
 {
 	long r;
@@ -1391,7 +1393,7 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	return 0;
 }
 
-static long
+long
 usb_test_unit_ready(ccb *srb, struct us_data *ss)
 {
 	long retries = 10;
