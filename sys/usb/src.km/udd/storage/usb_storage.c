@@ -1882,8 +1882,6 @@ usb_stor_eject(long device)
 	char product[20+1];
 	long i = 0, f = 0;
 
-	strncpy(product, usb_dev_desc[device].product, PRODUCT_STRING_LENGTH);
-
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if ((usb_dev_desc[i].lun == lun) && (usb_dev_desc[i].usb_logdrv == device)) {
 			usb_dev_desc[i].sw_ejected = 1;
@@ -1904,6 +1902,7 @@ usb_stor_eject(long device)
 	}
 	bios_part[device].partnum = 0;
 
+	strncpy(product, usb_dev_desc[device].product, PRODUCT_STRING_LENGTH);
 	ALERT(("USB Mass Storage Device (%ld) LUN (%ld) ejected: %s", usb_phydrv, lun, product));
 }
 
