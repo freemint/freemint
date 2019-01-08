@@ -42,6 +42,12 @@ static void storage_int(void)
 {
 	int i, r;
 	ccb pccb;
+	static int lock = 0;
+
+	if (lock)
+		return;
+
+	lock = TRUE;
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (usb_dev_desc[i].target == 0xff) {
@@ -63,6 +69,8 @@ static void storage_int(void)
 				usb_dev_desc[i].usb_phydrv, usb_dev_desc[i].lun, usb_dev_desc[i].product));
 		}
 	}
+
+	lock = FALSE;
 }
 
 static void
