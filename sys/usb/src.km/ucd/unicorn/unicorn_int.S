@@ -11,7 +11,7 @@
 oldSR:  ds.w    1
 
 	dc.l	0x58425241		| XBRA
-	dc.l	0x534d5343		| _USB
+	dc.l	0x554e4943		| UNIC
 _old_mfp_int:
 	ds.l	1
 _interrupt_mfp:
