@@ -11,7 +11,7 @@
 	.text
 
 	dc.l	0x58425241		| XBRA
-	dc.l	0x534d5343		| _USB
+	dc.l	0x554b4244		| UKBD
 _old_ikbd_int:
 	ds.l	1
 _interrupt_ikbd:
