@@ -17,11 +17,18 @@
 #include "scsi.h"
 #include "usb_storage.h"
 
+#ifdef TOSONLY
+struct xbra
+{
+	long	xbra;
+	long	id;
+	void	(*oldvec)();
+};
+#endif
+
 /* Global variables */
 short num_multilun_dev = 0;
-#ifndef TOSONLY
 static int polling_on = 0;
-#endif
 
 /* External declarations */
 extern block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
@@ -31,14 +38,19 @@ extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
 extern void part_init(long dev_num, block_dev_desc_t *stor_dev);
+#ifdef TOSONLY
+extern long *old_etv_timer_int;
+extern void interrupt_storage (void);
+#endif
 
 /* Functions prototypes */
 void init_polling(void);
+void storage_int(void);
 #ifndef TOSONLY
 static void stor_poll_thread(void *dummy);
+#endif
 
-
-static void storage_int(void)
+void storage_int(void)
 {
 	int i, r;
 	ccb pccb;
@@ -69,10 +81,42 @@ static void storage_int(void)
 				usb_dev_desc[i].usb_phydrv, usb_dev_desc[i].lun, usb_dev_desc[i].product));
 		}
 	}
+#ifdef TOSONLY /* TOS driver code for uninstalling polling routine */
+	unsigned long first_etv_timer_int;
+	unsigned long *tmp_etv_timer_int;
+	struct xbra *tmp_xbra;
 
+	/* If there is no devices with more than 1 LUN then uninstall polling routine */
+	if (!num_multilun_dev) {
+		first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
+		tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
+
+		if (tmp_xbra->xbra == 0x58425241 && tmp_xbra->id == 0x55535452) {
+			*(volatile unsigned long *) 0x400 = (unsigned long) tmp_xbra->oldvec;
+			polling_on = 0;
+			lock = FALSE;
+			return;
+		}
+
+		tmp_etv_timer_int = (unsigned long *) &tmp_xbra->oldvec;
+		tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
+		while (tmp_xbra->xbra == 0x58425241) { /* XBRA */
+			if (tmp_xbra->id == 0x55535452) { /* USTR */
+				*tmp_etv_timer_int = (long)tmp_xbra->oldvec;
+				polling_on = 0;
+				break;
+			}
+			else {
+				*tmp_etv_timer_int = (unsigned long) &tmp_xbra->oldvec;
+				tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
+			}
+		}
+	}
+#endif
 	lock = FALSE;
 }
 
+#ifndef TOSONLY
 static void
 stor_poll(PROC *proc, long dummy)
 {
@@ -99,19 +143,26 @@ stor_poll_thread(void *dummy)
 
 void init_polling(void)
 {
-#ifndef TOSONLY
-	int r = 0;
+	long r = 0;
 
 	num_multilun_dev++;
 
-	if (!polling_on)
+	if (!polling_on) {
+#ifndef TOSONLY
 		r = kthread_create(get_curproc (), stor_poll_thread, NULL, NULL, "usbstor");
-
+#else
+		r = Super (0L);
+		old_etv_timer_int = (void *) *(volatile unsigned long *) 0x400;
+		*(volatile unsigned long *) 0x400 = (unsigned long) interrupt_storage;
+		SuperToUser (r);
+#endif
+	}
+#ifndef TOSONLY
 	if (r) {
 		DEBUG(("Failed to create storage polling thread"));
 		return;
 	}
 	else
-		polling_on = 1;
 #endif
+		polling_on = 1;
 }

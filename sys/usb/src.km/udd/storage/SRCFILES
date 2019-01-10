@@ -24,6 +24,7 @@ TOSCOBJS = \
 TOSSSOBJS = \
 	delayasm.S \
 	entry.S \
-	setstack.S
+	setstack.S \
+	storage_int.S
 
 SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
