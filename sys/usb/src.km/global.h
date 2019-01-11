@@ -63,8 +63,12 @@ typedef char Path[PATH_MAX];
 #include <mint/osbind.h> /* Setexc */
 #include <stdarg.h>
 
+/* DavidGZ: changedrv doesn't seem equivalent to Mediach BIOS function.
+ * I don't know why this was done, just in case I'm missing something
+ * I've commented the define instead of removing it.
+ */
 #undef changedrv
-#define changedrv (void)Mediach
+#define changedrv(x) /* (void)Mediach */
 #undef c_conws
 #define c_conws (void)Cconws
 #undef c_conout
