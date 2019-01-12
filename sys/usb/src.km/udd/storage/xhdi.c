@@ -44,6 +44,7 @@
 #define XHDI_VERSION		0x130
 #define MAX_IPL			5
 #define XH_TARGET_REMOVABLE	0x02L
+#define XH_TARGET_EJECTABLE	0x08L
 #define STRINGLEN		33 /* including termination character */
 #define DRIVER_NAME_MAXLEN		17
 #define DRIVER_VERSION_MAXLEN	7
@@ -623,7 +624,7 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 
 		if (deviceflags) {
 			if (dev_desc->removable)
-				*deviceflags = XH_TARGET_REMOVABLE;
+				*deviceflags = XH_TARGET_REMOVABLE | XH_TARGET_EJECTABLE;
 			DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
 				major, minor, *deviceflags));
 		}
