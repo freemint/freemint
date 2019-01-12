@@ -466,7 +466,13 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	/* mass storage logical device number in the USB bus */
 	short dev = major & PUN_DEV;
 
-	usb_stor_eject(dev);
+	if (do_eject == 1)
+		usb_stor_eject(dev);
+	else
+	/* When we eject a device it's removed from the PUN struct,
+	 * so we shouldn't get an insert medium parameter (do_eject=0).
+	 */
+		return EERROR;
 
 	return E_OK;
 }
