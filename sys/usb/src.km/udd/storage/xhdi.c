@@ -23,6 +23,22 @@
  * TODO: Fix XHMiNTInfo
  */
 
+/*
+ * This driver doesn't support lockable devices, so we don't implement XHLock.
+ * It doesn't support stoppable devices, so XHStop is not implemented either.
+ * According to the XHDI specification error codes from these two calls are
+ * undefined. We return ENOSYS for them. If the device is not lockable XHReserve
+ * doesn't make sense to be implemented either.
+ *
+ * The XHDI specification says that a device is ejectable if "the device can
+ * physically eject the medium", I understand this describes something like
+ * a CD-ROM. So this driver doesn't support ejectable devices. BUT we need a
+ * way to inform the kernel from the user space that a device is going to be
+ * removed so the kernel can sync disk caches, the only way I see to do this
+ * through XHDI is using XHEject, so we implement this function even if USB
+ * mass storage devices supported by this driver are not ejectable.
+ */
+
 #ifndef TOSONLY
 #if 0
 # define DEV_DEBUG	1
