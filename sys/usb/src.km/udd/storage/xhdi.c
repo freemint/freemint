@@ -616,7 +616,8 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		}
 
 		if (deviceflags) {
-			*deviceflags = XH_TARGET_REMOVABLE;
+			if (dev_desc->removable)
+				*deviceflags = XH_TARGET_REMOVABLE;
 			DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
 				major, minor, *deviceflags));
 		}
