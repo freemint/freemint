@@ -288,6 +288,7 @@ static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
+unsigned long	usb_get_max_lun		(struct us_data *us);
 
 void		part_init		(long dev_num, block_dev_desc_t *stor_dev);
 
@@ -300,7 +301,7 @@ storage_ioctl (struct uddif *u, short cmd, long arg)
 }
 /* ------------------------------------------------------------------------- */
 
-static unsigned long usb_get_max_lun(struct us_data *us)
+unsigned long usb_get_max_lun(struct us_data *us)
 {
 	int len;
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, result, 1);

@@ -13,7 +13,10 @@
 #include "../../usb_api.h"
 #include "usb_storage.h"
 
+extern struct us_data usb_stor[USB_MAX_STOR_DEV];
+
 extern block_dev_desc_t *usb_stor_get_dev (long);
+extern unsigned long usb_get_max_lun (struct us_data *us);
 
 #define USBNAME "USB Mass Storage"
 
@@ -114,7 +117,7 @@ typedef struct SCSIDRV_Data
 	short changed;
 } SCSIDRV_Data;
 
-static SCSIDRV_Data private[8];
+static SCSIDRV_Data private[USB_MAX_STOR_DEV];
 static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
 static unsigned short USBbus = 3; /* default */
@@ -191,7 +194,7 @@ SCSIDRV_In (SCSICMD *parms)
 
 	debug ("IN\r\n");
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (&private[i] == (SCSIDRV_Data *) parms->handle) {
 			priv = (SCSIDRV_Data *) parms->handle;
 			break;
@@ -213,8 +216,8 @@ SCSIDRV_In (SCSICMD *parms)
 				return -1;
 			}
 
-			/* No LUN supported - yet */
-			if (parms->cmd[1] & 0xE0) {
+			/* Filter commands for non existent LUNs */
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&usb_stor[i])) {
 				return -1;
 			}
 
@@ -227,6 +230,7 @@ SCSIDRV_In (SCSICMD *parms)
 			srb.cmdlen = parms->cmdlen;
 			srb.datalen = parms->transferlen;
 			srb.pdata = parms->buf;
+			srb.lun = (parms->cmd[1] & 0xE0) >> 5;
 
 #if 0
 			c_conws ("SCSIPACKET\r\n");
@@ -259,7 +263,6 @@ SCSIDRV_In (SCSICMD *parms)
 
 				memset(&pccb.cmd[0], 0, 12);
 				pccb.cmd[0] = SCSI_TST_U_RDY;
-				pccb.cmd[1] = 0;
 				pccb.datalen = 0;
 				pccb.cmdlen = 12;
 				if(ss->transport(&pccb, ss) != 0) {
@@ -269,11 +272,6 @@ SCSIDRV_In (SCSICMD *parms)
 
 			if (srb.cmd[0] == SCSI_TST_U_RDY)
 				retries = 10;
-
-			/* HDDRUTIL 10.x issues this */
-			if (srb.cmd[0] == SCSI_REPORT_LUN) {
-				return -1;
- 			}
 
 			/* HDDRUTIL does this and locks up my USB CDROM */
 			if (srb.cmd[0] == SCSI_GET_CONFIG) {
@@ -290,7 +288,6 @@ SCSIDRV_In (SCSICMD *parms)
                 		/* do 4 & 5 here as we overwrite them later */
 				srb.cmd[8] = srb.cmd[4];
 				srb.cmd[9] = srb.cmd[5];
-				srb.cmd[1] = 0;
 				srb.cmd[2] = (block >> 24) & 0xff;
 				srb.cmd[3] = (block >> 16) & 0xff;
 				srb.cmd[4] = (block >> 8) & 0xff;
@@ -375,7 +372,7 @@ SCSIDRV_Out (SCSICMD *parms)
 
 	debug ("OUT\r\n");
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (&private[i] == (SCSIDRV_Data *) parms->handle) {
 			priv = (SCSIDRV_Data *) parms->handle;
 			break;
@@ -397,8 +394,8 @@ SCSIDRV_Out (SCSICMD *parms)
 				return -1;
 			}
 
-			/* No LUN supported - yet */
-			if (parms->cmd[1] & 0xE0) {
+			/* Filter commands for non existent LUNs */
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&usb_stor[i])) {
 				return -1;
 			}
 
@@ -411,6 +408,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			srb.cmdlen = parms->cmdlen;
 			srb.datalen = parms->transferlen;
 			srb.pdata = parms->buf;
+			srb.lun = (parms->cmd[1] & 0xE0) >> 5;
 
 			/* promote write6 to write10 */
 			if (srb.cmd[0] == SCSI_WRITE6)
@@ -423,7 +421,6 @@ SCSIDRV_Out (SCSICMD *parms)
                 		/* do 4 & 5 here as we overwrite them later */
 				srb.cmd[8] = srb.cmd[4];
 				srb.cmd[9] = srb.cmd[5];
-				srb.cmd[1] = 0;
 				srb.cmd[2] = (block >> 24) & 0xff;
 				srb.cmd[3] = (block >> 16) & 0xff;
 				srb.cmd[4] = (block >> 8) & 0xff;
@@ -528,17 +525,17 @@ SCSIDRV_InquireBus (short what, short busno, DEVINFO * dev)
 	{
 		block_dev_desc_t *dev_desc;
 		memset (dev->priv, 0, 32);
-		if (inqbusnext >= 8)
+		if (inqbusnext >= USB_MAX_STOR_DEV)
 		{
 			return -1;
 		}
 
 again:
 		dev_desc = usb_stor_get_dev (inqbusnext);
-		if (dev_desc->target == 0xff)
+		if (dev_desc->target == 0xff || dev_desc->lun > 0)
 		{
 			inqbusnext++;
-			if (inqbusnext >= 8)
+			if (inqbusnext >= USB_MAX_STOR_DEV)
 			{
 				return -1;
 			}
@@ -571,7 +568,7 @@ SCSIDRV_CheckDev (short busno,
 		{
 			return ENODEV;
 		}
-		if (DevNo->lo >= 8L)
+		if (DevNo->lo >= USB_MAX_STOR_DEV)
 		{
 			return ENODEV;
 		}
@@ -622,7 +619,7 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 		if (Id->hi != 0)
 			return -1;
 
-		if (Id->lo >= 8)
+		if (Id->lo >= USB_MAX_STOR_DEV)
 			return -1;
 
 		dev_desc = usb_stor_get_dev (Id->lo);
@@ -658,7 +655,7 @@ SCSIDRV_Close (short *handle)
 
 	debug ("CLOSE\r\n");
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (&private[i] == (SCSIDRV_Data *) handle) {
 			return 0;
 		}
@@ -678,7 +675,7 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 
 	debug ("ERROR\r\n");
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (&private[i] == (SCSIDRV_Data *) handle) {
 			return 0;
 		}
@@ -720,7 +717,7 @@ install_scsidrv (void)
 	scsidrv.GetMsg = SCSIDRV_GetMsg;
 	scsidrv.ReqData = &reqdata;
 
-	for (i = 0; i < 8; i++)
+	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
 		private[i].features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
 		private[i].changed = FALSE;
