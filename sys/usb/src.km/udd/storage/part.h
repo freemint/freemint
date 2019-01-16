@@ -73,12 +73,6 @@ typedef struct block_dev_desc
 #define PART_TYPE_AMIGA		0x04
 #define PART_TYPE_EFI		0x05
 
-/*
- * Type string for U-Boot bootable partitions
- */
-#define BOOT_PART_TYPE	"U-Boot"	/* primary boot partition type	*/
-#define BOOT_PART_COMP	"PPCBoot"	/* PPCBoot compatibility type	*/
-
 /* device types */
 #define DEV_TYPE_UNKNOWN	0xff	/* not connected */
 #define DEV_TYPE_HARDDISK	0x00	/* harddisk */
