@@ -41,11 +41,6 @@
  * is only tested with a TEAC USB Floppy. Other Massstorages with CBI or CB
  * transport protocoll may work as well.
  */
-/*
- * New Note:
- * Support for USB Mass Storage Devices (BBB) has been added. It has
- * only been tested with USB memory sticks.
- */
 
 #if 0
 # define DEV_DEBUG	1
