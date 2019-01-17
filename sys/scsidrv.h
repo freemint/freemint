@@ -74,5 +74,9 @@ long	scsidrv_SendStatus	(ushort bus, ushort status);
 long	scsidrv_SendMsg		(ushort bus, ushort msg);
 long	scsidrv_GetMsg		(ushort bus, ushort *msg);
 
+#define SCSI_START_STP		0x1B		/* Start/Stop Unit */
+#define SCSI_START_STP_START	(1 << 0)
+#define SCSI_START_STP_LOEJ	(1 << 1)
+#define SCSI_START_STP_PWCO	0xF0
 
 # endif /* _scsidrv_h */
