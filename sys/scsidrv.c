@@ -100,6 +100,9 @@ ushort scsidrv_installed = 0;
 
 static SCSIDRV *scsidrv = NULL;
 
+# ifdef SCSIDRV_MON
+static void init_scsidrv_mon(void);
+# endif
 
 long
 scsidrv_init (void)
@@ -108,7 +111,6 @@ scsidrv_init (void)
 	unsigned long t = 0;
 
 # ifdef SCSIDRV_MON
-	static void init_scsidrv_mon(void);
 	init_scsidrv_mon();
 # endif
 	r = get_toscookie(COOKIE_SCSI, &t);
@@ -556,7 +558,7 @@ installHandler(void)
 	while (!r)
 	{
 		if (busInfo.features & cTarget)
-			if (!scsiCall->Install(busInfo.BusNo, &targetHandler))
+			if (!scsiCall->Install(busInfo.busno, &targetHandler))
 				installed = 1;
 
 		r = scsiCall->InquireSCSI(cInqNext, &busInfo);
@@ -570,7 +572,7 @@ init_scsidrv_mon(void)
 {
 	long r;
 
-	r = get_toscookie (COOKIE_SCSI, (long *) &scsiCall);
+	r = get_toscookie (COOKIE_SCSI, (unsigned long *) &scsiCall);
 	if (r == 0 && scsiCall)
 	{
 		installHandler();
@@ -633,7 +635,7 @@ scsidrv_mon_InquireSCSI(short what, BUSINFO *info)
 		char buf[256];
 		char s[32];
 
-		ksprintf(buf, sizeof(buf), "-> BusName \"%s\"  BusNo %d  Features", info->BusName, info->BusNo);
+		ksprintf(buf, sizeof(buf), "-> BusName \"%s\"  BusNo %d  Features", info->busname, info->busno);
 
 		if (!(info->features & 0x3f))
 		{
@@ -647,7 +649,7 @@ scsidrv_mon_InquireSCSI(short what, BUSINFO *info)
 		if (info->features & 0x10) strcat(buf, " cCanDisconnect");
 		if (info->features & 0x20) strcat(buf, " cScatterGather");
 
-		ksprintf(s, sizeof(s), "  MaxLen %ld", info->MaxLen);
+		ksprintf(s, sizeof(s), "  MaxLen %ld", info->maxlen);
 		strcat(buf, s);
 
 		SCSIDRV_DEBUG(("%s", buf));
