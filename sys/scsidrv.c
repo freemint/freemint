@@ -55,7 +55,7 @@
 # include "k_prot.h"
 
 # include "proc.h"
-
+# include "block_IO.h"	/* bio_sync_all */
 
 static REQDATA emu_scsidrv_ReqData;
 
@@ -265,6 +265,15 @@ scsidrv_In (SCSICMD *par)
 
 	if (!scsidrv)
 		return ENOSYS;
+
+	/* Catch eject command to sync disk caches */
+	if (par->cmd[0] == SCSI_START_STP &&
+	    par->cmd[4] & SCSI_START_STP_LOEJ &&
+	  !(par->cmd[4] & SCSI_START_STP_START) &&
+	  !(par->cmd[4] & SCSI_START_STP_PWCO))
+	{
+		bio_sync_all ();
+	}
 
 	SCSIDRV_DEBUG (("scsidrv_In (%p)", par));
 	ret = (*scsidrv->In)(par);
