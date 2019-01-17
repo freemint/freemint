@@ -31,8 +31,8 @@ short num_multilun_dev = 0;
 static int polling_on = 0;
 
 /* External declarations */
-extern block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
-extern struct us_data usb_stor[USB_MAX_STOR_DEV];
+extern block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
+extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];;
 
 extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
 extern void usb_stor_eject(long device);
@@ -61,12 +61,12 @@ void storage_int(void)
 
 	lock = TRUE;
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
+	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
 		if (usb_dev_desc[i].target == 0xff) {
 			continue;
 		}
 		pccb.lun = usb_dev_desc[i].lun;
-		r = usb_test_unit_ready(&pccb, &usb_stor[usb_dev_desc[i].usb_phydrv]);
+		r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
 		if ((r) && (usb_dev_desc[i].ready)) { /* Card unplugged */
 			if (!usb_dev_desc[i].sw_ejected)
 				usb_stor_eject(i);
@@ -74,7 +74,7 @@ void storage_int(void)
 			usb_dev_desc[i].sw_ejected = 0;
 		}
 		else if ((!r) && (!usb_dev_desc[i].ready)) { /* Card plugged */
-			usb_stor_get_info(usb_dev_desc[i].priv, &usb_stor[usb_dev_desc[i].usb_phydrv], &usb_dev_desc[i]);
+			usb_stor_get_info(usb_dev_desc[i].priv, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor, &usb_dev_desc[i]);
 			part_init(i, &usb_dev_desc[i]);
 
 			ALERT(("USB Mass Storage Device (%d) LUN (%d) inserted %s",

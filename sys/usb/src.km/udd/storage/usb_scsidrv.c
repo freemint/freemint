@@ -13,9 +13,8 @@
 #include "../../usb_api.h"
 #include "usb_storage.h"
 
-extern struct us_data usb_stor[USB_MAX_STOR_DEV];
+extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
-extern block_dev_desc_t *usb_stor_get_dev (long);
 extern unsigned long usb_get_max_lun (struct us_data *us);
 
 #define USBNAME "USB Mass Storage"
@@ -203,11 +202,9 @@ SCSIDRV_In (SCSICMD *parms)
 
 	if (priv)
 	{
-		block_dev_desc_t *dev_desc = usb_stor_get_dev (i);
-		if (dev_desc->target != 0xff)
+		if (mass_storage_dev[i].target != 0xff)
 		{
-			struct usb_device *dev = (struct usb_device *) dev_desc->priv;
-			struct us_data *ss = (struct us_data *) dev->privptr;
+			struct us_data *ss = &mass_storage_dev[i].usb_stor;
 			long retries = 0;
 			ccb srb;
 			long r;
@@ -217,7 +214,7 @@ SCSIDRV_In (SCSICMD *parms)
 			}
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&usb_stor[i])) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&mass_storage_dev[i].usb_stor)) {
 				return -1;
 			}
 
@@ -382,11 +379,9 @@ SCSIDRV_Out (SCSICMD *parms)
 
 	if (priv)
 	{
-		block_dev_desc_t *dev_desc = usb_stor_get_dev (i);
-		if (dev_desc->target != 0xff)
+		if (mass_storage_dev[i].target != 0xff)
 		{
-			struct usb_device *dev = (struct usb_device *) dev_desc->priv;
-			struct us_data *ss = (struct us_data *) dev->privptr;
+			struct us_data *ss = &mass_storage_dev[i].usb_stor;
 			ccb srb;
 			long r;
 
@@ -395,7 +390,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			}
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&usb_stor[i])) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&mass_storage_dev[i].usb_stor)) {
 				return -1;
 			}
 
@@ -523,7 +518,6 @@ SCSIDRV_InquireBus (short what, short busno, DEVINFO * dev)
 
 	if (busno == USBbus)
 	{
-		block_dev_desc_t *dev_desc;
 		memset (dev->priv, 0, 32);
 		if (inqbusnext >= USB_MAX_STOR_DEV)
 		{
@@ -531,8 +525,7 @@ SCSIDRV_InquireBus (short what, short busno, DEVINFO * dev)
 		}
 
 again:
-		dev_desc = usb_stor_get_dev (inqbusnext);
-		if (dev_desc->target == 0xff || dev_desc->lun > 0)
+		if (mass_storage_dev[inqbusnext].target == 0xff)
 		{
 			inqbusnext++;
 			if (inqbusnext >= USB_MAX_STOR_DEV)
@@ -559,8 +552,6 @@ SCSIDRV_CheckDev (short busno,
 
 	if (busno == USBbus)
 	{
-		block_dev_desc_t *dev_desc;
-
 		memset (Name, 0, 20);
 		strcat (Name, USBNAME);
 		*Features = 0;
@@ -572,8 +563,7 @@ SCSIDRV_CheckDev (short busno,
 		{
 			return ENODEV;
 		}
-		dev_desc = usb_stor_get_dev (DevNo->lo);
-		if (dev_desc->target != 0xff)
+		if (mass_storage_dev[DevNo->lo].target != 0xff)
 		{
 			*Features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
 			return 0;
@@ -614,19 +604,15 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 	debug ("OPEN\r\n");
 	if (bus == USBbus)
 	{
-		block_dev_desc_t *dev_desc;
-
 		if (Id->hi != 0)
 			return -1;
 
 		if (Id->lo >= USB_MAX_STOR_DEV)
 			return -1;
 
-		dev_desc = usb_stor_get_dev (Id->lo);
-		if (dev_desc->target != 0xff)
+		if (mass_storage_dev[Id->lo].target != 0xff)
 		{
-			struct usb_device *dev = (struct usb_device *) dev_desc->priv;
-			struct us_data *ss = (struct us_data *) dev->privptr;
+			struct us_data *ss = &mass_storage_dev[Id->lo].usb_stor;
 
 			/* We only allow SCSI compliant USB devices */
 			if (ss->subclass != US_SC_SCSI) {
