@@ -206,19 +206,18 @@ typedef struct
 #define UMASS_BBB_CSW_SIZE	13
 
 /* There is a copy of this struct for every logical device (LUN) */
-block_dev_desc_t usb_dev_desc[USB_MAX_STOR_DEV];
+block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
 
 struct bios_partitions
 {
-	unsigned long biosnum[32];		/* BIOS device number belonging this USB device */
+	unsigned long biosnum[32];		/* BIOS device number belonging this USB logical device (LUN) */
 	short partnum;				/* Total number of partitions this device has */
 };
 
-static struct bios_partitions bios_part[USB_MAX_STOR_DEV]; /* BIOS partitions per LUN */
+static struct bios_partitions bios_part[MAX_TOTAL_LUN_NUM]; /* BIOS partitions per LUN */
 
 /* There is a copy of this struct for every physical device */
-struct us_data usb_stor[USB_MAX_STOR_DEV];
-
+struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
 #define USB_STOR_TRANSPORT_GOOD	   0
 #define USB_STOR_TRANSPORT_FAILED -1
@@ -318,7 +317,7 @@ unsigned long usb_get_max_lun(struct us_data *us)
 
 block_dev_desc_t *usb_stor_get_dev(long idx)
 {
-	return(idx < USB_MAX_STOR_DEV) ? &usb_dev_desc[idx] : NULL;
+	return(idx < MAX_TOTAL_LUN_NUM) ? &usb_dev_desc[idx] : NULL;
 }
 
 void
@@ -1883,7 +1882,7 @@ usb_stor_eject(long device)
 	char product[20+1];
 	long i = 0, f = 0;
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
+	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
 		if ((usb_dev_desc[i].lun == lun) && (usb_dev_desc[i].usb_logdrv == device)) {
 			usb_dev_desc[i].sw_ejected = 1;
 			f = 1;
@@ -1918,6 +1917,12 @@ storage_disconnect(struct usb_device *dev)
 	long i, f = 0, how_many_luns = 0;
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
+	{
+		if (dev->devnum == mass_storage_dev[i].target)
+			mass_storage_dev[i].target = 0xff;
+	}
+
+	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++)
 	{
 		if (dev->devnum == usb_dev_desc[i].target)
 		{
@@ -1956,7 +1961,7 @@ storage_disconnect(struct usb_device *dev)
 static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
-	long i, r, lun, dev_num; /* dev_num represents a logical unit (LUN) */
+	long i, r, lun, lun_global_num;
 	long max_lun;
 	
 	if(dev == NULL)
@@ -1964,7 +1969,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 	
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
-		if (usb_dev_desc[i].target == 0xff)
+		if (mass_storage_dev[i].target == 0xff)
 		{
 			break;
 		}
@@ -1979,31 +1984,36 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 
-	/* For now we use the same array index for usb_dev_desc (block_dev_desc
-	 * struct's array for LUNs) and usb_stor (us_data struct's array for
-	 * physical devices), we need less copies of the us_data struct than
-	 * the block_dev_desc struct but the code gets simpler.
-	 */
-	if(!usb_stor_probe(dev, ifnum, &usb_stor[i])) {
+	if(!usb_stor_probe(dev, ifnum, &mass_storage_dev[i].usb_stor)) {
 		usb_disable_asynch(0); /* asynch transfer allowed */
 		return -1; /* It's not a storage device */
 	}
 
-	dev_num = i;
-	max_lun = usb_get_max_lun(&usb_stor[i]);
+	mass_storage_dev[i].target = dev->devnum;
+
+	for (lun_global_num = 0; i < MAX_TOTAL_LUN_NUM; lun_global_num++)
+	{
+		if (usb_dev_desc[lun_global_num].target == 0xff)
+		{
+			break;
+		}
+	}
+
+	max_lun = usb_get_max_lun(&mass_storage_dev[i].usb_stor);
 
 	for (lun = 0;
-		 lun <= max_lun &&
-		 dev_num < USB_MAX_STOR_DEV;
-		 lun++) {
+		lun <= max_lun &&
+		lun < MAX_LUN_NUM_PER_DEV &&
+		lun_global_num < MAX_TOTAL_LUN_NUM;
+		lun++) {
 		/* ok, it is a storage device
 		 * get info and fill it in
 		 */
-		usb_dev_desc[dev_num].lun = lun;
-		r = usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[dev_num]);
+		usb_dev_desc[lun_global_num].lun = lun;
+		r = usb_stor_get_info(dev, &mass_storage_dev[i].usb_stor, &usb_dev_desc[lun_global_num]);
 		if(r < 0) {
 			/* There was an error, invalidate entry */
-			usb_stor_reset(dev_num);
+			usb_stor_reset(lun_global_num);
 			if (!max_lun) {
 			/* We only return an error if the device has a single LUN */
 				usb_disable_asynch(0); /* asynch transfer allowed */
@@ -2016,7 +2026,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		struct us_data *ss;
 		ss = (struct us_data *)dev->privptr;
 
-		//dev_print(&usb_dev_desc[dev_num]);
+		//dev_print(&usb_dev_desc[lun_global_num]);
 
 		if(ss->subclass == US_SC_UFI)
 		{
@@ -2028,26 +2038,26 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 
 		/* Skip everything apart from HARDDISKS */
-		if((usb_dev_desc[dev_num].type & 0x1f) != DEV_TYPE_HARDDISK) {
+		if((usb_dev_desc[lun_global_num].type & 0x1f) != DEV_TYPE_HARDDISK) {
 #if 0
-		c_conws(usb_dev_desc[dev_num].vendor);
+		c_conws(usb_dev_desc[lun_global_num].vendor);
 		c_conout(' ');
-		c_conws(usb_dev_desc[dev_num].product);
+		c_conws(usb_dev_desc[lun_global_num].product);
 		c_conout(' ');
 		c_conws(", type : ");
-		hex_long(usb_dev_desc[dev_num].type & 0x1f);
+		hex_long(usb_dev_desc[lun_global_num].type & 0x1f);
 		c_conws(" not installed\r\n");
 #endif
 			continue;
 		}
-		usb_dev_desc[dev_num].usb_phydrv = i;
+		usb_dev_desc[lun_global_num].usb_phydrv = i;
 
 		if (r > 0) /* Only init partitions when LUN is ready */
-			part_init(dev_num, &usb_dev_desc[dev_num]);
+			part_init(lun_global_num, &usb_dev_desc[lun_global_num]);
 
 		do {
-			dev_num++;
-		} while (usb_dev_desc[dev_num].target != 0xff && dev_num < USB_MAX_STOR_DEV);
+			lun_global_num++;
+		} while (usb_dev_desc[lun_global_num].target != 0xff && lun_global_num < MAX_TOTAL_LUN_NUM);
 	}
 
 	if (max_lun > 0)
@@ -2063,7 +2073,12 @@ usb_storage_init(void)
 {
 	unsigned char i;
 
-	for(i = 0; i < USB_MAX_STOR_DEV; i++)
+	for (i = 0; i < USB_MAX_STOR_DEV; i++)
+	{
+		mass_storage_dev[i].target = 0xff;
+	}
+
+	for(i = 0; i < MAX_TOTAL_LUN_NUM; i++)
 	{
 		usb_stor_reset(i);
 	}
