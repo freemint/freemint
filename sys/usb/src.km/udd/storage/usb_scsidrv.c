@@ -16,6 +16,7 @@
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
 extern unsigned long usb_get_max_lun (struct us_data *us);
+extern void usb_stor_eject (long);
 
 #define USBNAME "USB Mass Storage"
 
@@ -207,7 +208,7 @@ SCSIDRV_In (SCSICMD *parms)
 			struct us_data *ss = &mass_storage_dev[i].usb_stor;
 			long retries = 0;
 			ccb srb;
-			long r;
+			long r, dev = i;
 
 			if (parms->cmdlen > 16) {
 				return -1;
@@ -345,6 +346,15 @@ retry:
 				srb.pdata = (unsigned char *) ptr;
 #endif
 				return -1;
+			}
+
+			/* an EJECT command? */
+			if (srb.cmd[0] == SCSI_START_STP &&
+			    srb.cmd[4] & SCSI_START_STP_LOEJ &&
+			  !(srb.cmd[4] & SCSI_START_STP_START) &&
+			  !(srb.cmd[4] & SCSI_START_STP_PWCO))
+			{
+				usb_stor_eject(mass_storage_dev[dev].usb_dev_desc[srb.lun]->usb_logdrv);
 			}
 			return 0;
 		}
