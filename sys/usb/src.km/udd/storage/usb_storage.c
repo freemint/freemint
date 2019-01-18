@@ -282,7 +282,6 @@ static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
-unsigned long	usb_get_max_lun		(struct us_data *us);
 
 void		part_init		(long dev_num, block_dev_desc_t *stor_dev);
 
@@ -295,7 +294,7 @@ storage_ioctl (struct uddif *u, short cmd, long arg)
 }
 /* ------------------------------------------------------------------------- */
 
-unsigned long usb_get_max_lun(struct us_data *us)
+static unsigned long usb_get_max_lun(struct us_data *us)
 {
 	int len;
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, result, 1);
@@ -1957,8 +1956,7 @@ static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
 	long i, r, lun, lun_global_num;
-	long max_lun;
-	
+
 	if(dev == NULL)
 		return -1;
 	
@@ -1994,10 +1992,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 	}
 
-	max_lun = usb_get_max_lun(&mass_storage_dev[i].usb_stor);
+	mass_storage_dev[i].total_lun = usb_get_max_lun(&mass_storage_dev[i].usb_stor);
 
 	for (lun = 0;
-		lun <= max_lun &&
+		lun <= mass_storage_dev[i].total_lun &&
 		lun < MAX_LUN_NUM_PER_DEV &&
 		lun_global_num < MAX_TOTAL_LUN_NUM;
 		lun++) {
@@ -2009,7 +2007,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		if(r < 0) {
 			/* There was an error, invalidate entry */
 			usb_stor_reset(lun_global_num);
-			if (!max_lun) {
+			if (!mass_storage_dev[i].total_lun) {
 			/* We only return an error if the device has a single LUN */
 				usb_disable_asynch(0); /* asynch transfer allowed */
 				return -1;
@@ -2056,7 +2054,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		} while (usb_dev_desc[lun_global_num].target != 0xff && lun_global_num < MAX_TOTAL_LUN_NUM);
 	}
 
-	if (max_lun > 0)
+	if (mass_storage_dev[i].total_lun > 0)
 		init_polling();
 
 	usb_disable_asynch(0); /* asynch transfer allowed */
