@@ -2046,6 +2046,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			continue;
 		}
 		usb_dev_desc[lun_global_num].usb_phydrv = i;
+		mass_storage_dev[i].usb_dev_desc[lun] = &usb_dev_desc[lun_global_num];
 
 		if (r > 0) /* Only init partitions when LUN is ready */
 			part_init(lun_global_num, &usb_dev_desc[lun_global_num]);
