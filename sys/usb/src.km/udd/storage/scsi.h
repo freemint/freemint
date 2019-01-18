@@ -177,6 +177,11 @@ typedef struct SCSI_cmd_block
 
 #define SCSI_IDENTIFY	0xC0		/* not used */
 
+/* EJECT bits in START STOP COMMAND */
+#define SCSI_START_STP_START	(1 << 0)
+#define SCSI_START_STP_LOEJ	(1 << 1)
+#define SCSI_START_STP_PWCO	0xF0
+
 /* Hardware errors  */
 #define SCSI_SEL_TIME_OUT			0x00000101	 /* Selection time out */
 #define SCSI_HNS_TIME_OUT			0x00000102  /* Handshake */
