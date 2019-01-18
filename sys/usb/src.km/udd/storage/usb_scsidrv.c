@@ -15,7 +15,6 @@
 
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
-extern unsigned long usb_get_max_lun (struct us_data *us);
 extern void usb_stor_eject (long);
 
 #define USBNAME "USB Mass Storage"
@@ -215,7 +214,7 @@ SCSIDRV_In (SCSICMD *parms)
 			}
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&mass_storage_dev[i].usb_stor)) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
 				return -1;
 			}
 
@@ -400,7 +399,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			}
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > usb_get_max_lun(&mass_storage_dev[i].usb_stor)) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
 				return -1;
 			}
 
