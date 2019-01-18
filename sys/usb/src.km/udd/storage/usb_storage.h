@@ -38,5 +38,5 @@ struct us_data
 struct mass_storage_dev {
 	unsigned char	target;
 	struct us_data usb_stor;
-//	block_dev_desc_t *usb_dev_desc[MAX_LUN_NUM_PER_DEV];
+	block_dev_desc_t *usb_dev_desc[MAX_LUN_NUM_PER_DEV];	/* LUNs structs */
 };
