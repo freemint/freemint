@@ -36,7 +36,7 @@ struct us_data
 #define USB_MAX_STOR_DEV 	8	/* Total number of USB mass storage devices */
 
 struct mass_storage_dev {
-	unsigned char	target;
+	unsigned char	target;					/* USB device ID */
 	struct us_data usb_stor;
 	block_dev_desc_t *usb_dev_desc[MAX_LUN_NUM_PER_DEV];	/* LUNs structs */
 };
