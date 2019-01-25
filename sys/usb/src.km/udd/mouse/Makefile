@@ -42,8 +42,6 @@ $(mousetargets): $(SGENFILES)
 # Link common TOS files
 crtinit.c: $(toscommon_srcdir)/crtinit.c
 	ln -sf $< $(srcdir)/$@
-delayasm.S: $(toscommon_srcdir)/delayasm.S
-	ln -sf $< $(srcdir)/$@
 entry.S: $(toscommon_srcdir)/entry.S
 	ln -sf $< $(srcdir)/$@
 setstack.S: $(toscommon_srcdir)/setstack.S
