@@ -42,6 +42,9 @@ sys/usb/src.km/udd/keyboard/setstack.S
 sys/usb/src.km/udd/mouse/crtinit.c
 sys/usb/src.km/udd/mouse/entry.S
 sys/usb/src.km/udd/mouse/setstack.S
+sys/usb/src.km/udd/printer/crtinit.c
+sys/usb/src.km/udd/printer/entry.S
+sys/usb/src.km/udd/printer/setstack.S
 sys/usb/src.km/udd/storage/crtinit.c
 sys/usb/src.km/udd/storage/delayasm.S
 sys/usb/src.km/udd/storage/entry.S
