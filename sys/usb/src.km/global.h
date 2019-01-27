@@ -192,7 +192,7 @@ static inline int getcookie(long target,long *p_value)
 	return 0;
 }
 
-static inline void setcookie (long tag, long value)
+static inline int setcookie (long tag, long value)
 {
 	long oldssp;
 	struct cookie *cjar;
@@ -214,7 +214,7 @@ static inline void setcookie (long tag, long value)
 		if (cjar->tag == tag)
 		{
 			cjar->value = value;
-			return;
+			return 1;
 		}
 		cjar++;
 	}
@@ -229,7 +229,10 @@ static inline void setcookie (long tag, long value)
 		cjar++;
 		cjar->tag = 0L;
 		cjar->value = n;
+		return 1;
 	}
+
+	return 0;
 }
 
 /* Precise delays functions for TOS USB drivers */
