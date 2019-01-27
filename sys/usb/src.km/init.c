@@ -185,7 +185,10 @@ init(struct kentry *k, const struct kernel_module *km)
 #ifdef TOSONLY
 	{
 		/* Set the _USB API cookie */
-		setcookie(_USB, (long)&usb_api);
+		if (!setcookie(_USB, (long)&usb_api)) {
+			c_conws("Failed to set _USB cookie.\r\nRun JARxxx.PRG to enlarge cookie jar.\r\n");
+			return 0;
+		}
 
 		c_conws("USB core installed.\r\n");
 
