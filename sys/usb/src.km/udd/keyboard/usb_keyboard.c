@@ -251,7 +251,9 @@ translate_key(unsigned char usbkey)
 	case 0x43: return 0x44; // F10
 	case 0x44: return   98; // F11 -> Help
 	case 0x45: return   97; // F12 -> Undo
+	case 0x46: return   99; // PrintScreen -> KP (
 
+	case 0x48: return  100; // Pause -> KP )
 	case 0x49: return   82; // Insert
 	case 0x4a: return   71; // Home -> ClrHome
 	//case 0x4b: return   99; // PageUp -> KP (
