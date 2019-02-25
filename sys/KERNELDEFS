@@ -155,10 +155,5 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 020 030 040 060 deb mil ara hat
-cputargets = 000 020 030 040 060 020-60
-
-ifeq ($(COLDFIRE),yes)
-kerneltargets += col
-cputargets += v4e
-endif
+kerneltargets = 000 020 030 040 060 deb mil ara hat col
+cputargets = 000 020 030 040 060 020-60 v4e
