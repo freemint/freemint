@@ -2,6 +2,7 @@
 #define DEV_TYPE_HUB 1
 #define DEV_TYPE_GENERAL 2
 #define DEV_TYPE_ERROR 3
+#define DEV_TYPE_NODRIVER 4
 
 /*    Prototypes : */
 

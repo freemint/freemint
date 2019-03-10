@@ -189,13 +189,23 @@ void update_text(void)
                 }
                 else
                 {
-                    dev_types[j] = DEV_TYPE_GENERAL;
+                   if (iface->driver)
+                       dev_types[j] = DEV_TYPE_GENERAL;
+                   else
+                       dev_types[j] = DEV_TYPE_NODRIVER;
                 }
                 memset (dev_names[j], 0, 64);
-                strcat (dev_names[j], dev->mf); /* manufacturer */
-                strcat (dev_names[j], " ");
-                strcat (dev_names[j], dev->prod); /* product */
-                j++;
+               if (strlen(dev->mf) == 0 && strlen(dev->prod) == 0 && j != 0)
+               {
+                   strcat(dev_names[j], "NO NAME");
+               }
+               else
+               {
+                   strcat (dev_names[j], dev->mf); /* manufacturer */
+                   strcat (dev_names[j], " ");
+                   strcat (dev_names[j], dev->prod); /* product */
+               }
+               j++;
             }
         }
         dev_count = j;
@@ -332,6 +342,10 @@ void redraw(short w_handle, short x, short y, short w, short h)
                         vst_effects(vdi_handle, 0);
                         vst_color(vdi_handle, 1);
                         break;
+                   case DEV_TYPE_NODRIVER:
+                       vst_effects(vdi_handle, 2);
+                       vst_color(vdi_handle, 1);
+                       break;
                     case DEV_TYPE_ERROR:
                         vst_effects(vdi_handle, 0);
                         vst_color(vdi_handle, 2);
