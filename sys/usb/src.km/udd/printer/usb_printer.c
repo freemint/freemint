@@ -150,14 +150,11 @@ printer_bconout(ushort dev, ushort ch)
 	long chunk_len = TRANSFER_SIZE;
 	static int i = 0;
 	int j;
-	static int text = 1; //is job text only
-	static int pjl = 0; //is job a pjl
+	static int type = TYPE_UNKNOWN;
 	static char last9[10] = "         ";
+	static int jpg_count = 0; //to count jpg codes, some jpg files may have several
 	/* unsigned char c1 = (ch>>8); */
-	char pjl_code[10] = " %-12345X";
-	pjl_code[0] = 0x1B; // Escape
-
-	char c2 = (ch&0xff);
+	unsigned char c2 = (ch&0xff);
 	prn_data.buf[i++] = c2;
 
 	/* Remember last 9 characters */
@@ -168,47 +165,83 @@ printer_bconout(ushort dev, ushort ch)
 		*c0++ = *c1++;
 	}
 	*c0 = c2;
-
-	/* Detect end of job according to type (text, PJL, PCL) */
+	
+	/* Detect end of job according to type (text, PJL, PCL, PDF, JPG) */
 	switch(c2)
 	{
 		case 0x0C : //Form Feed (text)
-			if (text)
+			if (type == TYPE_UNKNOWN)
 			{
 				chunk_len = i;
 #ifdef TEST
 				Bconout(2, 't');
 #endif
-				memset(last9, ' ', 9);
 			}
 			break;
-		case 0x1B : //Escape
-			text = 0;
+		case 0x1B : //Escape (PCL)
+			if (type == TYPE_UNKNOWN)
+				type = TYPE_PCL;
 			break;
 		case 'X' : //PJL
-			if (strncmp(last9, pjl_code, 9) == 0L)
+			if (strncmp(last9, PJL_CODE, 9) == 0L)
 			{
-				pjl = (pjl)?0:1;
-				if (pjl == 0)
+				if (type == TYPE_PJL)
 				{
 					chunk_len = i;
-					text = 1;
 #ifdef TEST
 					Bconout(2, 'j');
 #endif
-					memset(last9, ' ', 9);
+					type = TYPE_UNKNOWN;
+				}else if (type == TYPE_UNKNOWN || type == TYPE_PCL)
+				{
+					type = TYPE_PJL;
 				}
 			}
 			break;
-		case 0x45 : //Reset (PCL)
-			if (last9[7] == 0x1B && strncmp(last9, "         ", 7) != 0L && !pjl)
+		case 'E' : //Reset (PCL)
+			if (last9[7] == 0x1B && type == TYPE_PCL)
 			{
 				chunk_len = i;
-				text = 1;
 #ifdef TEST
 				Bconout(2, 'c');
 #endif
-				memset(last9, ' ', 9);
+				type = TYPE_UNKNOWN;
+			}
+			break;
+		case '-' : //PDF
+			if (strncmp(&last9[4], PDF_CODE, 5) == 0L && type == TYPE_UNKNOWN)
+				type = TYPE_PDF;
+			break;
+		case 'F' : //PDF eof
+			if (strncmp(&last9[4], PDF_CODE_EOF, 5) == 0L && type == TYPE_PDF)
+			{
+				chunk_len = i;
+#ifdef TEST
+				Bconout(2, 'f');
+#endif
+				type = TYPE_UNKNOWN;
+			}
+			break;
+		case 0xFF : //JPG
+			if (strncmp(&last9[6], JPG_CODE, 3) == 0L)
+			{
+				if (type == TYPE_UNKNOWN)
+					type = TYPE_JPG;
+				jpg_count++;
+			}
+			break;
+		case 0xD9 : //JPG eof
+			if (strncmp(&last9[7], JPG_CODE_EOF, 2) == 0L  && type == TYPE_JPG)
+			{
+				jpg_count--;
+				if (jpg_count == 0)
+				{
+					chunk_len = i;
+#ifdef TEST
+					Bconout(2, 'g');
+#endif
+					type = TYPE_UNKNOWN;
+				}
 			}
 			break;
 		default:
