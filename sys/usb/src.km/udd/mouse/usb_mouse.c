@@ -34,6 +34,7 @@
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 #define WHEELMOUSE
+#define MAX_WHEEL_INTERVAL 10
 
 /****************************************************************************/
 /*
@@ -233,17 +234,20 @@ static void send_via_buffer(unsigned short scancode, char ascii)
 	*(unsigned long *)(iokbd->buf + tail) = keycode;
 	iokbd->tail = tail;
 }
-//#define SEND_SCAN(x) send_data(kbd_vector[-1], (long)iokbd, (x)) // assumes TOS >= 2
 
 void
 mouse_int (void)
 {
 	long mouse_change = 0, wheel_change = 0;
+	static long wheel_interval = 0; //time interval between wheel reports (each 20ms)
 	long actlen = 0;
 	long r;
 
 	if (mse_data.pusb_dev == NULL)
 		return;
+
+	if (wheel_interval < MAX_WHEEL_INTERVAL)
+		wheel_interval++;
 
 #if 0
 	usb_submit_int_msg (mse_data.pusb_dev,
@@ -305,27 +309,31 @@ mouse_int (void)
 	if (wheel_change)
 	{
 		char wheel;
-		short i;
+		short i, j;
 
 		(void) wheel;
 
 		wheel = mse_data.new[3];
-		if (wheel > 0)
+		for (j = 0; j < (MAX_WHEEL_INTERVAL - wheel_interval + 1); j++)
 		{
-			for (i = 0; i < wheel; i++)
+			if (wheel > 0)
 			{
-				usb_kbd_send_code (0x48, 0); //UP press
-				usb_kbd_send_code (0xC8, 0); //UP release
+				for (i = 0; i < wheel; i++)
+				{
+					usb_kbd_send_code (0x48, 0); //UP press
+					usb_kbd_send_code (0xC8, 0); //UP release
+				}
+			}
+			else if (wheel < 0)
+			{
+				for (i = 0; i > wheel; i--)
+				{
+					usb_kbd_send_code (0x50, 0); //DOWN press
+					usb_kbd_send_code (0xD0, 0); //DOWN release
+				}
 			}
 		}
-		else if (wheel < 0)
-		{
-			for (i = 0; i > wheel; i--)
-			{
-				usb_kbd_send_code (0x50, 0); //DOWN press
-				usb_kbd_send_code (0xD0, 0); //DOWN release
-			}
-		}
+		wheel_interval = 0;
 	}
 #endif
 	if (mouse_change || wheel_change)
