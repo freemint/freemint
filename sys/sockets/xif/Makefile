@@ -3,7 +3,7 @@
 #
 TARGET = 
 DRIVERS = rtl8012 rtl8012st rtl8012ct60 dial plip dummy de600 lance pamsdma biodma \
-	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix
+	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139
 
 SHELL = /bin/sh
 SUBDIRS = nfeth daynaport ethernat fec svethlana
@@ -32,7 +32,7 @@ LIBS = $(LIBKERN) -lgcc
 
 # default definitions
 GENFILES = *.xif
-SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c main_020.c
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c main_020.c rtl8139.c
 
  
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
@@ -55,6 +55,7 @@ BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
 RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
 RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012ST_SRCS))))
 RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
+RTL8139_OBJS = $(addsuffix .o, $(basename $(notdir rtl8139.c)))
 ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
 
 # entry point
@@ -195,6 +196,13 @@ rtl8012ct60:
 
 rtl8012ct60.c:
 	ln -s rtl8012.c $@
+
+rtl8139:
+	$(MAKE) rtl8139.xif \
+		"TARGET=rtl8139.xif" \
+		"XOBJS=main_020.o $(RTL8139_OBJS)" \
+		CPU=060
+
 
 main_020.c: main.c
 	ln -s $< $@
