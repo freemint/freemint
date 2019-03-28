@@ -24,7 +24,7 @@ LIBHYP = -L$(srcdir)/hyp -lhyp$(CPU)
 LIBDRAGDROP = -L$(srcdir)/dragdrop -ldgdp$(CPU)
 
 ifeq (yes,$(LIBCMINI))
-INCLUDES := -I$(LIBCMINI_PATH)/include $(INCLUDES)
+INCLUDES := -I$(LIBCMINI_INCPATH) $(INCLUDES)
 endif
 
 all-here: build
@@ -52,7 +52,7 @@ $(TARGET): $(OBJS) hyp/libhyp$(CPU).a plain/libplain$(CPU).a dragdrop/libdgdp$(C
 	$(STRIP) $(TARGET)
 else
 $(TARGET): $(OBJS) hyp/libhyp$(CPU).a plain/libplain$(CPU).a dragdrop/libdgdp$(CPU).a bubble/libbgh$(CPU).a
-	$(CC) -I$(LIBCMINI_PATH)/include -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(LDFLAGS) $(OBJS) -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc -Wl,-stack,128k
+	$(CC) -I$(LIBCMINI_INCPATH) -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(LDFLAGS) $(OBJS) -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc -Wl,-stack,128k
 	$(STRIP) $(TARGET)
 endif
 

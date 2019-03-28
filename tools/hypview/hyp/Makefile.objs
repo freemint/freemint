@@ -26,7 +26,7 @@ CFLAGS += -g
 ifneq (yes,$(LIBCMINI))
 INCLUDES = -I$(top_srcdir)/hypview
 else
-INCLUDES = -I$(LIBCMINI_PATH)/include -I$(top_srcdir)/hypview
+INCLUDES = -I$(LIBCMINI_INCPATH) -I$(top_srcdir)/hypview
 endif
 
 # default definitions
