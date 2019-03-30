@@ -1,9 +1,7 @@
 language: c
 os: linux
+dist: xenial
 sudo: false
-dist: trusty
-compiler:
-  - m68k-atari-mint-gcc
 
 addons:
   apt:
@@ -20,12 +18,26 @@ env:
     # this creates variable BINTRAY_API_KEY="<api key>"
     - secure: "bMkAkMFU2BqPBUAj2BqmgR+eScOs69wNxTFc4rMwekQxejC99NWefgdPsM5m3OUmj0T7KVPTwfbBJymVHk2ISd5ZehynITA1aUI6WAX7HBGTfeaCQHPd8zazDeY9BasVIP3ddmuM7lHrzg7zG1bmWT2cxAt9+G82TNDemZGVXhtmHP5wQV8Uwg/uIkSdeUEq+fxU5DSttTusSMrNrHGkHLPGVzfERPo85qs3yfGcVH5BKOM32PJBW+sM8nAMwxsbT4ModY5T8kM8zM2sa0TzBH3AIwh3ss32KAd/fpZwvMnAEJsY40g6xQfd/CWQYXxW2OkohqpPUt8X+8nVIRZbbIT7GjqfI3wOSzBDenZ9z0ZVDuVvWhRDIFeYyTkBa9PRZVrJtxBSgkVX+6K5PRxykIDIoqmxXyan+GT70WC35HCKhOYTwXhrAX90hmm+xkCfe85rIsDCjb1P/TtELO1NZS+SjgFRDD9TC7FUtt/ioYPbnwZ64zmyt4ptxEPLCjCqmT88Jx7S2hkGSjuHLlr0S8I7vY6kVlJn4ZUfCnZuM9HZGuIryOjyVLisoEa4SpX0ZpACBdnN8qvjIYLLV3Ux+cc/96n7NqEA+NE5LgT6C83Otg5ooYtvH9MtS4K6TdaDMGCmGkmx45WcCibRMInsHC4v03alwnP7G+qUFX1DUQA="
   matrix:
-    - OLD_BUILD=0 SCRIPT_BRANCH="freemint-master"
-    - OLD_BUILD=1 SCRIPT_BRANCH="freemint-master-raw"
+    # unversioned archives
+    - CPU_TARGET=000
+    - CPU_TARGET=02060
+    - CPU_TARGET=030
+    - CPU_TARGET=040
+    - CPU_TARGET=060
+    - CPU_TARGET=col
+    # versioned archives
+    - CPU_TARGET=000 VERSIONED="-st_ste"
+    - CPU_TARGET=02060 VERSIONED="-tt_falcon_clones"
+    - CPU_TARGET=col VERSIONED="-firebee"
+    # ARAnyM
+    - CPU_TARGET=ara
+    - CPU_TARGET=ara VERSIONED=""
+    # USB4TOS
+    - CPU_TARGET=prg
 
 # If before_install, install or before_script return a non-zero exit code, the build is errored and stops immediately.
 before_install:
-  - git clone --depth=1 --branch=${SCRIPT_BRANCH} https://github.com/freemint/travis-scripts.git .travis
+  - git clone --depth=1 --branch=freemint-master https://github.com/freemint/travis-scripts.git .travis
   - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
 
 install:
@@ -49,8 +61,6 @@ before_deploy:
   - if [ -x .travis/before_deploy.sh ]; then ./.travis/before_deploy.sh; else true; fi
 
 deploy:
-  edge:
-    branch: v1.8.47
   provider: bintray
   file: ".travis/bintray.desc"
   user: "${BINTRAY_USER}"
