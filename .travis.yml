@@ -15,8 +15,7 @@ addons:
 env:
   global:
     - BINTRAY_USER="mikrosk"
-    # this creates variable BINTRAY_API_KEY="<api key>"
-    - secure: "bMkAkMFU2BqPBUAj2BqmgR+eScOs69wNxTFc4rMwekQxejC99NWefgdPsM5m3OUmj0T7KVPTwfbBJymVHk2ISd5ZehynITA1aUI6WAX7HBGTfeaCQHPd8zazDeY9BasVIP3ddmuM7lHrzg7zG1bmWT2cxAt9+G82TNDemZGVXhtmHP5wQV8Uwg/uIkSdeUEq+fxU5DSttTusSMrNrHGkHLPGVzfERPo85qs3yfGcVH5BKOM32PJBW+sM8nAMwxsbT4ModY5T8kM8zM2sa0TzBH3AIwh3ss32KAd/fpZwvMnAEJsY40g6xQfd/CWQYXxW2OkohqpPUt8X+8nVIRZbbIT7GjqfI3wOSzBDenZ9z0ZVDuVvWhRDIFeYyTkBa9PRZVrJtxBSgkVX+6K5PRxykIDIoqmxXyan+GT70WC35HCKhOYTwXhrAX90hmm+xkCfe85rIsDCjb1P/TtELO1NZS+SjgFRDD9TC7FUtt/ioYPbnwZ64zmyt4ptxEPLCjCqmT88Jx7S2hkGSjuHLlr0S8I7vY6kVlJn4ZUfCnZuM9HZGuIryOjyVLisoEa4SpX0ZpACBdnN8qvjIYLLV3Ux+cc/96n7NqEA+NE5LgT6C83Otg5ooYtvH9MtS4K6TdaDMGCmGkmx45WcCibRMInsHC4v03alwnP7G+qUFX1DUQA="
+    # BINTRAY_API_KEY is defined in Travis Settings of freemint/freemint
   matrix:
     # unversioned archives
     - CPU_TARGET=000
