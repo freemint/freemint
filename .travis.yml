@@ -21,22 +21,20 @@ env:
     - CPU_TARGET=000
     - CPU_TARGET=02060
     - CPU_TARGET=030
-    - CPU_TARGET=040
+    - CPU_TARGET=040    # includes aranym build
     - CPU_TARGET=060
     - CPU_TARGET=col
     # versioned archives
     - CPU_TARGET=000 VERSIONED="-st_ste"
     - CPU_TARGET=02060 VERSIONED="-tt_falcon_clones"
     - CPU_TARGET=col VERSIONED="-firebee"
-    # ARAnyM
-    - CPU_TARGET=ara
-    - CPU_TARGET=ara VERSIONED=""
+    - CPU_TARGET=ara VERSIONED="-aranym"
     # USB4TOS
     - CPU_TARGET=prg
 
 # If before_install, install or before_script return a non-zero exit code, the build is errored and stops immediately.
 before_install:
-  - git clone --depth=1 --branch=freemint-master https://github.com/freemint/travis-scripts.git .travis
+  - git clone --depth=1 --branch=freemint-master https://github.com/mikrosk/travis-scripts.git .travis
   - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
 
 install:
