@@ -314,8 +314,6 @@ kbd_int (void)
 		kbd_data.newdata.keys[i-2] = 0;
 	}
 
-	fake_hwint();
-
 	/* Handle modifier keys first */
 	DEBUG(("m: %02x", kbd_data.newdata.mod));
 	/* Newly released modifiers */
@@ -397,6 +395,8 @@ kbd_int (void)
 				set_led();
 		}
 	}
+
+	fake_hwint();
 
 	kbd_data.olddata = kbd_data.newdata;
 }
