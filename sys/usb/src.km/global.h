@@ -80,10 +80,34 @@ typedef char Path[PATH_MAX];
 #undef kfree
 #define kfree Mfree
 
+#ifdef DEV_DEBUG
+
+/* Debug console output for TOS */
+static char tos_debugbuffer[512];
+long _cdecl kvsprintf(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
+static void tos_printmsg(const char *fmt, ...)
+{
+	va_list args;
+
+	va_start (args, fmt);
+	kvsprintf (tos_debugbuffer, sizeof(tos_debugbuffer)-1, fmt, args);
+	va_end (args);
+	(void)Cconws(tos_debugbuffer);
+	(void)Cconws("\r\n");
+}
+
+# define ALERT(x)       tos_printmsg x
+# define DEBUG(x)       tos_printmsg x
+# define TRACE(x)
+# define ASSERT(x)
+
+#else /* !DEV_DEBUG */
+
 # define ALERT(x)
 # define DEBUG(x)
 # define TRACE(x)
 # define ASSERT(x)
+#endif
 
 /* library replacements */
 static inline void *memset(void *s, int c, long n)
