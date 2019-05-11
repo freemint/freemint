@@ -1907,7 +1907,7 @@ sys_d_lock (int mode, int _dev)
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
 			f = fd->ofiles[i];
-			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == dev))
+			if (f && (f != (FILEPTR *) 1) && (f->fc.fs && f->fc.dev == dev))
 			{
 				DEBUG (("Dlock: process %d (%s) has an open "
 					"handle on the drive", p->pid, p->name));
