@@ -131,7 +131,7 @@ udelay (register ulong usecs)
  *	loops = (usecs * SCALE * HZ * loops_per_jiffy) / 2^32
  *	SCALE = 2^32 / 1000000  ==~ 4294 == 0x10c6
  *
- *	Finally to get the best accuracy for HZ = 200 (MiNT's tick frecuency),
+ *	Finally to get the best accuracy for HZ = 200 (MiNT's tick frequency),
  *	we use 2^28 instead of 2^32.
  */
 
