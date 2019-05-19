@@ -1174,7 +1174,7 @@ screen_dump(enum locks lock, struct xa_client *client, short open)
 							*(cmdlin + 3) = '2';
 						else if (a->intout[0] == 1)	/* box */
 						{
-							int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d\0", r.x, r.y, r.w, r.h );
+							int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d", r.x, r.y, r.w, r.h );
 							*(cmdlin + 3) = '8';
 							*cmdlin = i + 6;
 						}
@@ -2837,7 +2837,7 @@ static void add_kerinfo(
 						for( cpx = cp; *cpx > ' '; cpx++ );
 						*cpx = 0;
 						if( cp && *cp && sizeof(line) > j + 32)
-							j += sprintf( (char*)line+j, sizeof(line)-j-1, "%s%s ", pinfo[p+1], cp );
+							j += sprintf( (char*)line+j, sizeof(line)-j-1, "%s%s ", (char *)pinfo[p+1], cp );
 						p += 3;
 						*cpx = ' ';
 					}

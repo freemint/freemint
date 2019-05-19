@@ -637,8 +637,8 @@ struct kentry_libkern
 	 * vsprintf, sprintf: floating point formats are not supported!
 	 */
 
-	long	_cdecl (*vsprintf)(char *buf, long buflen, const char *fmt, va_list args);
-	long	_cdecl (*sprintf)(char *dst, long buflen, const char *fmt, ...);
+	long	_cdecl (*vsprintf)(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
+	long	_cdecl (*sprintf)(char *dst, long buflen, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
 	char *	_cdecl (*getenv)(struct basepage *bp, const char *var);
 
