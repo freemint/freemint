@@ -12,6 +12,7 @@
 #define __KERNEL__ 1
 #include <gem.h>
 #include <mint/osbind.h>
+#include <string.h>
 #define TOSONLY
 #include "usbtool.h"
 #include "../../sys/usb/src.km/global.h"
@@ -44,7 +45,7 @@ struct usb_module_api *api = 0;
 short polling_flag = 0;         /* ON=always poll, OFF=poll only when window is opened */
 
 void
-init (void)
+main (void)
 {
     short menuID;
     short attributes[12], work_in[11], work_out[57], dummy;

@@ -8,7 +8,6 @@ COBJS = \
 
 SOBJS = 
 
-SSOBJS = \
-	entry.S
+SSOBJS = 
 
 SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)

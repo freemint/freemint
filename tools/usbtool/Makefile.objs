@@ -21,7 +21,7 @@ all-here: build
 
 # default overwrites
 CFLAGS += -fno-builtin -I$(top_srcdir)/../sys
-LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
+LD = $(CC) $(CFLAGS)
 LIBS = -lgcc -lgem
 STRIPFLAGS =
 
@@ -36,10 +36,15 @@ VPATH = ..
 #
 build: $(TARGET)
 
+ifneq (yes,$(LIBCMINI))
 $(TARGET): $(OBJS)
 	$(LD) -o $@ -Wall $^ $(LIBS)
 	$(STRIP) $@
-
+else
+$(TARGET): $(OBJS)
+	$(CC) -I$(LIBCMINI_INCPATH) -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(OBJS) -L$(LIBCMINI_LIBPATH) -lcmini $(LIBS) -lgcc
+	$(STRIP) $@
+endif
 
 # default dependencies
 # must be included last
