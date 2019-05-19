@@ -2930,13 +2930,13 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			char ns[32];
 			strip_name(ns, ow);
 			if (*ns)
-				sprintf(tn, sizeof(tn), "(%s) %s", ns, widg->stuff);
+				sprintf(tn, sizeof(tn), "(%s) %s", ns, (char *)widg->stuff);
 			else
 				ow = NULL;
 		}
 
 		if (!ow)
-			sprintf(tn, sizeof(tn), "(%d) %s", wind->owner->p->pid, widg->stuff);
+			sprintf(tn, sizeof(tn), "(%d) %s", wind->owner->p->pid, (char *)widg->stuff);
 	}
 	else
 		strcpy(tn, widg->stuff);

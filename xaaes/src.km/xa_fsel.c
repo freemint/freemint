@@ -3100,7 +3100,7 @@ fs_msg_handler(
 							*/
 							}
 							/* this blocks until file is in window! -> post_cevent, speed up add_scroll_entry */
-							sprintf( pt, sizeof(pt)-1, "%s%s", fs->path, p.ret.ptr );	//fs->file);
+							sprintf( pt, sizeof(pt)-1, "%s%s", fs->path, (char *)p.ret.ptr );	//fs->file);
 							client->status |= CS_USES_ABOUT;
 							open_about( lock, client, true, pt );
 							client->status &= ~CS_USES_ABOUT;
