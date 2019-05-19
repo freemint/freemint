@@ -109,8 +109,8 @@ static inline void calibrate_delay(void)
 	
 	if (intcount)	   /* check for valid */
 		loopcount_1_msec = (loopcount * 24) / (intcount * 25);
-	
-	 delay_1usec = loopcount_1_msec / 1000;	
+
+	delay_1usec = loopcount_1_msec / 1000;
 }
 
 static inline void udelay (register ulong usecs)
