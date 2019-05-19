@@ -80,11 +80,36 @@ typedef char Path[PATH_MAX];
 #undef kfree
 #define kfree Mfree
 
+/* library declarations from libkern */
+
+# if __KERNEL__ == 3	/* These declarations are only needed for TOS drivers,
+						 * usbtool.acc is linked against LIBCMINI
+						 */
+void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
+void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
+
+long	_cdecl _mint_strncmp	(const char *str1, const char *str2, long len);
+char *	_cdecl _mint_strncpy	(char *dst, const char *src, long len);
+char *	_cdecl _mint_strcat	(char *dst, const char *src);
+long	_cdecl _mint_strlen	(const char *s);
+
+long	_cdecl kvsprintf(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
+long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+
+# define strlen			_mint_strlen
+# define strncmp		_mint_strncmp
+# define strncpy		_mint_strncpy
+# define strcat			_mint_strcat
+
+#define sprintf			ksprintf
+
+#endif /* __KERNEL__ */
+
 #ifdef DEV_DEBUG
 
 /* Debug console output for TOS */
 static char tos_debugbuffer[512];
-long _cdecl kvsprintf(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
+
 static void tos_printmsg(const char *fmt, ...)
 {
 	va_list args;
@@ -109,79 +134,6 @@ static void tos_printmsg(const char *fmt, ...)
 # define ASSERT(x)
 #endif
 
-/* library replacements */
-static inline void *memset(void *s, int c, long n)
-{
-	char *ptr = (char *)s;
-
-	while (n--) {
-		*ptr++ = c;
-	}
-
-	return s;
-}
-
-static inline void *memcpy(void *dest, const void *source, long n)
-{
-	char *dst = (char*)dest;
-	const char *src = (const char*)source;
-
-	while (n--) {
-		*dst++ = *src++;
-	}
-
-	return dest;
-}
-
-static inline long strncmp (const char *str1, const char *str2, long len)
-{
-	register char c1, c2;
-
-	do {
-		c1 = *str1++;
-		c2 = *str2++;
-	}
-	while (--len >= 0 && c1 && c1 == c2);
-	
-	if (len < 0)
-		return 0L;
-	
-	return (long) (c1 - c2);
-}
-
-static inline char *strncpy (char *dst, const char *src, long len)
-{
-	register char *_dst = dst;
-	
-	while (--len >= 0 && (*_dst++ = *src++) != 0)
-		continue;
-	
-	while (--len >= 0)
-		*_dst++ = 0;
-	
-	return dst;
-}
-
-static inline char *strcat (char *dst, const char *src)
-{
-	register char *_dscan;
-	
-	for (_dscan = dst; *_dscan; _dscan++) ;
-	while ((*_dscan++ = *src++) != 0) ;
-	
-	return dst;
-}
-
-static inline long strlen (const char *scan)
-{
-	register const char *start;
-	
-	start = scan + 1;
-	while (*scan++)
-		;
-	
-	return (long) (scan - start);
-}
 
 /* cookie jar definition
  */
