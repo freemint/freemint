@@ -285,7 +285,7 @@ long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
 
 void		part_init		(long dev_num, block_dev_desc_t *stor_dev);
 
-/* --- Inteface functions -------------------------------------------------- */
+/* --- Interface functions -------------------------------------------------- */
 
 static long _cdecl
 storage_ioctl (struct uddif *u, short cmd, long arg)
