@@ -253,7 +253,7 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				len, dev->status));
 
 #if defined(VERBOSE)
-	sprintf(buf, sizeof(buf),"\0");
+	sprintf(buf, sizeof(buf),"%c",'0');
 	if (len > 0 && buffer)
 	{
 		sprintf(build_str, sizeof(build_str), __FILE__ ": data(%ld):", len);
@@ -297,7 +297,7 @@ dump_ptd(PTD *ptd)
 	    PTD_GET_TOGGLE(ptd),
 	    PTD_GET_ACTIVE(ptd), PTD_GET_SPD(ptd), PTD_GET_LAST(ptd)));
 #if defined(VERBOSE)
-	sprintf(buf, sizeof(buf),"\0");
+	sprintf(buf, sizeof(buf),"%c",'0');
 	sprintf(build_str, sizeof(build_str), "isp116x: %s: PTD(byte): ", __FUNCTION__);
 	strcat(buf, build_str);
 	for (k = 0; k < sizeof(PTD); ++k) /* Galvez: note that bytes in the words are shown swapped */
@@ -317,7 +317,7 @@ dump_ptd_data(PTD *ptd, unsigned char * buffer, long type)
 	char build_str[64];
 	char buf[64 + 4 * PTD_GET_LEN(ptd)];
 
-	sprintf(buf, sizeof(buf),"\0");
+	sprintf(buf, sizeof(buf),"%c",'0');
 	if (type == 0 /* 0ut data */ )
 	{
 		sprintf(build_str, sizeof(build_str), "isp116x: %s: out data: ", __FUNCTION__);
