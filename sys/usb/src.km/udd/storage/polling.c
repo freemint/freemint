@@ -41,6 +41,7 @@ extern void part_init(long dev_num, block_dev_desc_t *stor_dev);
 #ifdef TOSONLY
 extern long *old_etv_timer_int;
 extern void interrupt_storage (void);
+extern int transfer_running;
 #endif
 
 /* Functions prototypes */
@@ -60,6 +61,10 @@ void storage_int(void)
 		return;
 
 	lock = TRUE;
+#ifdef TOSONLY
+	if (transfer_running)
+		return;
+#endif
 
 	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
 		if (usb_dev_desc[i].target == 0xff) {
