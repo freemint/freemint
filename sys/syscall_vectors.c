@@ -600,7 +600,7 @@ ushort xbios_max = XBIOS_MAX;
 
 Func xbios_tab [XBIOS_MAX] =
 {
-        /* 0x000 */		NULL,
+	/* 0x000 */		NULL,
 	/* 0x001 */		NULL,
 	/* 0x002 */		NULL,
 	/* 0x003 */		NULL,
