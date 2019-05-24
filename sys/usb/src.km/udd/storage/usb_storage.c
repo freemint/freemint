@@ -214,6 +214,11 @@ static struct bios_partitions bios_part[MAX_TOTAL_LUN_NUM]; /* BIOS partitions p
 /* There is a copy of this struct for every physical device */
 struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
+#ifdef TOSONLY
+/* Semaphore to avoid polling LUN status while transfer is in process */
+int transfer_running;
+#endif
+
 #define USB_STOR_TRANSPORT_GOOD	   0
 #define USB_STOR_TRANSPORT_FAILED -1
 #define USB_STOR_TRANSPORT_ERROR  -2
@@ -1093,6 +1098,11 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	long idx;
 #endif
 	umass_bbb_csw_t csw;
+
+#ifdef TOSONLY
+	transfer_running = 1;
+#endif
+
 	dir_in = US_DIRECTION(srb->cmd[0]);
 	/* COMMAND phase */
 	DEBUG(("COMMAND phase"));
@@ -1101,6 +1111,9 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	{
 		DEBUG(("failed to send CBW status %lx", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
 		return USB_STOR_TRANSPORT_FAILED;
 	}
 	pipein = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
@@ -1132,6 +1145,9 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	{
 		DEBUG(("usb_bulk_msg error status %lx", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
 		return USB_STOR_TRANSPORT_FAILED;
 	}
 #ifdef BBB_XPORT_TRACE
@@ -1228,6 +1244,9 @@ again:
 		goto out;
 	}
 out:
+#ifdef TOSONLY
+	transfer_running = 0;
+#endif
 	return result;
 }
 
@@ -1240,6 +1259,9 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 	status = USB_STOR_TRANSPORT_GOOD;
 	retry = 0;
 	notready = 0;
+#ifdef TOSONLY
+	transfer_running = 1;
+#endif
 	/* issue the command */
 do_retry:
 	result = usb_stor_CB_comdat(srb, us);
@@ -1251,6 +1273,9 @@ do_retry:
 		if(status == USB_STOR_TRANSPORT_ERROR)
 		{
 			DEBUG((" USB CBI Command Error"));
+#ifdef TOSONLY
+			transfer_running = 0;
+#endif
 			return status;
 		}
 		srb->sense_buf[12] = (unsigned char)(us->ip_data >> 8);
@@ -1261,6 +1286,9 @@ do_retry:
 			if(status == USB_STOR_TRANSPORT_GOOD)
 			{
 				DEBUG((" USB CBI Command Good"));
+#ifdef TOSONLY
+				transfer_running = 0;
+#endif
 				return status;
 			}
 		}
@@ -1271,12 +1299,18 @@ do_retry:
 	{
 		DEBUG(("ERROR %lx", us->pusb_dev->status));
 		us->transport_reset(us);
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 	if((us->protocol == US_PR_CBI) && ((srb->cmd[0] == SCSI_REQ_SENSE) || (srb->cmd[0] == SCSI_INQUIRY)))
 	{
 		/* do not issue an autorequest after request sense */
 		DEBUG(("No auto request and good"));
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
 		return USB_STOR_TRANSPORT_GOOD;
 	}
 	/* issue an request_sense */
@@ -1297,6 +1331,9 @@ do_retry:
 	if((result < 0) && !(us->pusb_dev->status & USB_ST_STALLED))
 	{
 		DEBUG((" AUTO REQUEST ERROR %lx", us->pusb_dev->status));
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 	DEBUG(("autorequest returned 0x%02x 0x%02x 0x%02x 0x%02x", srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
@@ -1304,6 +1341,9 @@ do_retry:
 	if((srb->sense_buf[2] == 0) && (srb->sense_buf[12] == 0) && (srb->sense_buf[13] == 0))
 	{
 		/* ok, no sense */
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
 		return USB_STOR_TRANSPORT_GOOD;
 	}
 	/* Check the auto request result */
@@ -1317,6 +1357,9 @@ do_retry:
 			{
 				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)", 
 						srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
+#ifdef TOSONLY
+				transfer_running = 0;
+#endif
 				return USB_STOR_TRANSPORT_FAILED;
 			}
 			else
@@ -1331,12 +1374,18 @@ do_retry:
 				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x", 
 					       srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2],
 					       srb->sense_buf[12], srb->sense_buf[13]));
+#ifdef TOSONLY
+				transfer_running = 0;
+#endif
 				return USB_STOR_TRANSPORT_FAILED;
 			}
 			else
 				goto do_retry;
 			break;
 	}
+#ifdef TOSONLY
+	transfer_running = 0;
+#endif
 	return USB_STOR_TRANSPORT_FAILED;
 }
 
