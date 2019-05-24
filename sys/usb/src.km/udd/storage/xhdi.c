@@ -73,10 +73,6 @@ char *DRIVER_NAME = "FreeMiNT USB";
 #endif
 char *DRIVER_COMPANY = "FreeMiNT list";
 
-#ifndef TOSONLY
-# define Sversion()	0x4000		/* this is FreeMiNT's GEMDOS version */
-#endif
-
 /*--- External variables ---*/
 
 extern char *drv_version;

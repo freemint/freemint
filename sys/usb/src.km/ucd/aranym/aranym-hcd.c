@@ -329,9 +329,9 @@ usb_lowlevel_init(void *dummy)
 	r = nf_call(USBHOST(USBHOST_LOWLEVEL_INIT));
 
 	if (!r) 
-		(void) Cconws("Aranym USB Controller Driver init \r\n");
+		(void) c_conws("Aranym USB Controller Driver init \r\n");
 	else
-		(void) Cconws("Couldn't init aranym host chip emulator \r\n");
+		(void) c_conws("Couldn't init aranym host chip emulator \r\n");
 
 	return 0;
 }
@@ -400,7 +400,7 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 
 	/* Set handler and interrupt for Root Hub Status Change */
 # define vector(x)      (x / 4)
-	old_interrupt = Setexc(vector(0x60) + get_int_level(), (long) my_interrupt);
+	old_interrupt = (void(*)()) b_setexc(vector(0x60) + get_int_level(), (long) my_interrupt);
 	
 	return 0;
 }

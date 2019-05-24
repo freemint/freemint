@@ -430,14 +430,14 @@ printer_spool (char *filename)
 
 	memset (buf, 0, sizeof(chunk_len)); // needed? it just fills with 0 the array.
 
-	fh = Fopen(filename, 0);
+	fh = f_open(filename, 0);
 	if (fh < 0)
 	{
 		c_conws ("\r\n error opening printer file.");
 		return; // TO DO, return error codes
 	}
 
-	while ((bytes_read = Fread(fh, chunk_len, buf)))
+	while ((bytes_read = f_read(fh, chunk_len, buf)))
 	{
 		if (bytes_read < 0)
 		{
@@ -472,7 +472,7 @@ printer_spool (char *filename)
 	c_conws ("\r\n usb_bulk_msg actual length: ");
 	hex_long(actlen);
 
-	Fclose(fh);
+	f_close(fh);
 }
 
 /*

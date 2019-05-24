@@ -1694,7 +1694,7 @@ isp116x_start(struct isp116x *isp116x)
 	isp116x_write_reg32(isp116x, HCRHPORT2, RH_PS_CCS);
 
 	/* Set handler and interrupt for Root Hub Status Change */
-	old_int = Setexc (0xC3, (long)interrupt);
+	old_int  = (void(*)())b_setexc (0xC3, (long)interrupt);
 
 	isp116x->intenb = HCINT_MIE | HCINT_RHSC; /* HCINT_UE */
 	isp116x_write_reg32(isp116x, HCINTENB, isp116x->intenb);

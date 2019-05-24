@@ -564,7 +564,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	 *  . TOS 1 (which does not have it) reports versions < 0x0019
 	 *  . TOS 2/3/4, MagiC, and EmuTOS (which all have it) report versions >= 0x0019
 	 */
-	gemdos = Sversion();
+	gemdos = s_version();
 	gemdos = (gemdos>>8) | (gemdos<<8); /* major|minor */
 	if (gemdos < 0x0019)
 	{
@@ -593,8 +593,8 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
-	vector = (long *) Kbdvbase ();
-	iokbd = (void *)Iorec(1);
+	vector = (long *) b_kbdvbase ();
+	iokbd = (void *) b_uiorec (1);
 #ifdef TOSONLY
 #if 0
 	old_ikbd_int = Setexc (0x114/4, (long) interrupt_ikbd);
