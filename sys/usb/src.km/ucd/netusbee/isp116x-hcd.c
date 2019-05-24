@@ -919,6 +919,9 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
  * assumption that we were called from the timer interrupt (via etv_timer)
  * and thus are running with interrupts disabled.  This will happen when
  * called by a USB mouse or keyboard driver.
+ *
+ * DavidGZ: MiNT drivers always run in supervisor mode so the comment above
+ * only applies for TOS drivers
  */
 static long
 isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
@@ -950,7 +953,9 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	/*
 	 * set flag if we need to poll for ikbd interrupts
 	 */
+#ifdef TOSONLY
 	if (Super(1L))
+#endif
 		poll_interrupts = 1;
 
 	if (poll_interrupts && ikbd_int_pending())
