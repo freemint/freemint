@@ -28,7 +28,6 @@
 #include "usbnet.h"
 #ifndef TOSONLY
 #include "mint/mint.h"
-#include "libkern/libkern.h"
 #else
 #include "gem.h"
 #endif

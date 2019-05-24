@@ -58,8 +58,6 @@
  */
 
 #ifndef TOSONLY
-#include <stddef.h>
-#include <mint/osbind.h> /* Setexc */
 #include "mint/mint.h"
 #include "libkern/libkern.h"
 #include "mint/mdelay.h"

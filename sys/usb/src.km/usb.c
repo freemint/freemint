@@ -44,7 +44,6 @@
 #ifndef TOSONLY
 #include "mint/mdelay.h"
 #endif
-#include <mint/osbind.h> /* Setexc */
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];
 static long asynch_allowed;

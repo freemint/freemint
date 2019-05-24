@@ -35,8 +35,6 @@
 #include "mint/mint.h"
 #include "mint/dcntl.h"
 
-#include "libkern/libkern.h"
-
 #include "../../global.h"
 
 #include "mint/endian.h"

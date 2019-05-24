@@ -3,9 +3,6 @@
  * By Alan Hourihane <alanh@fairlite.co.uk>
  */
 
-#ifdef TOSONLY
-#include <mint/osbind.h>
-#endif
 #include "../../global.h"
 #include "scsi.h"
 #include "part.h"

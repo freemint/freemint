@@ -28,7 +28,6 @@
 
 #include "mint/pcibios.h"
 #include "mint/pci_ids.h"
-#include "libkern/libkern.h"
 
 #include "../../global.h"
 

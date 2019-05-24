@@ -34,8 +34,6 @@
  *
  */
 
-#include <mint/osbind.h> /* Setexc */
-
 #include "global.h"
 #include "usb.h"
 #include "hub.h"

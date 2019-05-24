@@ -41,13 +41,12 @@
  * MA 02111-1307 USA
  */
 
+#include "../../global.h"
+
 #ifndef TOSONLY
 #include "mint/mint.h"
-#include "libkern/libkern.h"
 #include "mint/mdelay.h"
 #endif
-
-#include "../../global.h"
 
 #include "mint/endian.h"
 #include "../../usb.h"
