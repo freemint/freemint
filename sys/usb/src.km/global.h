@@ -63,12 +63,28 @@ typedef char Path[PATH_MAX];
 #include <mint/osbind.h> /* Setexc */
 #include <stdarg.h>
 
+/* BIOS */
+
 /* DavidGZ: changedrv doesn't seem equivalent to Mediach BIOS function.
  * I don't know why this was done, just in case I'm missing something
  * I've commented the define instead of removing it.
  */
 #undef changedrv
 #define changedrv(x) /* (void)Mediach */
+#undef b_setexc
+#define b_setexc Setexc
+
+/* XBIOS */
+#undef s_version
+#define s_version Sversion
+#undef b_kbdvbase
+#define b_kbdvbase Kbdvbase
+#undef b_uiorec
+#define b_uiorec Iorec
+#undef b_supexec
+#define b_supexec(x0,x1,x2,x3,x4,x5) Supexec(x0)
+
+/* GEMDOS */
 #undef c_conws
 #define c_conws (void)Cconws
 #undef c_conout
@@ -79,6 +95,13 @@ typedef char Path[PATH_MAX];
 #define kmalloc Malloc
 #undef kfree
 #define kfree Mfree
+#undef f_open
+#define f_open Fopen
+#undef f_read
+#define f_read Fread
+#undef f_close
+#define f_close Fclose
+
 
 /* library declarations from libkern */
 
