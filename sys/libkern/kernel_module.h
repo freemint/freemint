@@ -752,6 +752,8 @@ INLINE long b_setexc(short number, long vector)
 INLINE long b_drvmap(void)
 { return ((long _cdecl (*)(void)) _b_drvmap)(); }
 
+	/* 0x020 */		/* BIOS_MAX */
+
 
 /*
  * vec_xbios
