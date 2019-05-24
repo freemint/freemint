@@ -15,8 +15,6 @@
 #include "../../usb.h"
 #include "../../usb_api.h"
 
-#include <mint/osbind.h>
-
 #ifdef TOSONLY
 #define MSG_VERSION "TOS DRIVERS"
 #else

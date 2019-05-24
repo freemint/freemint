@@ -27,7 +27,6 @@
 #endif
 #include "../../global.h"
 #include "xhdi.h"					/* for USB_PUN_XXX */
-#include <mint/osbind.h>
 
 /*
  * the following should be in headers for other modules

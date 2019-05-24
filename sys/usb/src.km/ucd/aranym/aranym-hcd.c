@@ -19,9 +19,6 @@
  *
  */
 
-#include <stddef.h>
-#include <osbind.h> /* Setexc */
-
 #include "mint/mint.h"
 #include "mint/dcntl.h"
 #include "mint/arch/nf_ops.h"

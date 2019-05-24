@@ -23,7 +23,6 @@
 #include "global.h"
 #include "usb.h"
 #include "usb_api.h"
-#include <mint/osbind.h> /* Setexc */
 
 
 struct uddif *alluddifs = NULL;
