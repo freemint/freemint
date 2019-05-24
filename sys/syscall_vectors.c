@@ -617,11 +617,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x00e */		sys_b_uiorec,
 	/* 0x00f */		sys_b_ursconf,
 
-# ifndef NO_AKP_KEYBOARD
 	/* 0x010 */	(Func)	sys_b_keytbl,
-# else
-	/* 0x010 */		NULL,
-# endif
 	/* 0x011 */		sys_b_random,
 	/* 0x012 */		NULL,
 	/* 0x013 */		NULL,
@@ -629,11 +625,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x015 */		sys_b_cursconf,
 	/* 0x016 */	(Func)	sys_b_settime,
 	/* 0x017 */		sys_b_gettime,
-# ifndef NO_AKP_KEYBOARD
 	/* 0x018 */	(Func)	sys_b_bioskeys,
-# else
-	/* 0x018 */		NULL,
-# endif
 	/* 0x019 */		NULL,
 	/* 0x01a */		NULL,
 	/* 0x01b */		NULL,
@@ -644,13 +636,8 @@ Func xbios_tab [XBIOS_MAX] =
 
 	/* 0x020 */		sys_b_dosound,
 	/* 0x021 */		NULL,
-# ifndef NO_AKP_KEYBOARD
 	/* 0x022 */	(Func)	sys_b_kbdvbase,
 	/* 0x023 */	(Func)	sys_b_kbrate,
-# else
-	/* 0x022 */		NULL,
-	/* 0x023 */		NULL,
-# endif
 	/* 0x024 */		NULL,
 	/* 0x025 */		NULL,
 	/* 0x026 */		sys_b_supexec,
