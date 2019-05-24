@@ -510,6 +510,9 @@ INLINE long _cdecl t_gettime(void)
 INLINE long f_getdta(void)
 { return ((long _cdecl (*)(void)) _f_getdta)(); }
 
+INLINE long s_version(void)
+{ return ((long _cdecl (*)(void)) _s_version)(); }
+
 INLINE long d_setpath(const char *path)
 { return ((long _cdecl (*)(const char *)) _d_setpath)(path); }
 
