@@ -530,10 +530,10 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
-	vector = (KBDVEC *) Kbdvbase ();
-	iokbd = (IOREC *)Iorec(1);
+	vector = (KBDVEC *)b_kbdvbase();
+	iokbd = (IOREC *)b_uiorec(1);
 	conterm_ptr = (unsigned char *) 0x484;
-	Supexec(init_shifty_ptr);
+	b_supexec(init_shifty_ptr, 0L, 0L, 0L, 0L, 0L);
 
 	/*
 	 * This driver uses the extended KBDVECS structure, if available.
@@ -543,10 +543,10 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	 *  . TOS 1 (which does not have it) reports versions < 0x0019
 	 *  . TOS 2/3/4, MagiC, and EmuTOS (which all have it) report versions >= 0x0019
 	 */
-	gemdos = Sversion();
+	gemdos = s_version();
 	gemdos = (gemdos>>8) | (gemdos<<8); /* major|minor */
 	usb_kbd_send_code = (gemdos >= 0x0019) ? send_via_kbdvecs : send_via_buffer;
-	iokbd = (void *)Iorec(1);
+	iokbd = (void *)b_uiorec(1);
 
 #ifdef TOSONLY
 #if 0

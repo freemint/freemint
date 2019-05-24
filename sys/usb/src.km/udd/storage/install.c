@@ -416,11 +416,11 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		memset(tmpname, 0, sizeof(tmpname));
 		strcat(tmpname, drv);
 		strcat(tmpname, ":\\test");
-		fh = Fopen(tmpname, 0);
+		fh = f_open(tmpname, 0);
 		if (fh < 0) {
 			/* don't worry about it for now, unless it presents problems. */
 		} else {
-			Fclose(fh);
+			f_close(fh);
 		}
 	}
 
