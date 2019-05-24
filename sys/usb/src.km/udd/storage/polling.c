@@ -55,13 +55,14 @@ void storage_int(void)
 {
 	int i, r;
 	ccb pccb;
+#ifndef TOSONLY
 	static int lock = 0;
 
 	if (lock)
 		return;
 
 	lock = TRUE;
-#ifdef TOSONLY
+#else
 	if (transfer_running)
 		return;
 #endif
@@ -99,7 +100,6 @@ void storage_int(void)
 		if (tmp_xbra->xbra == 0x58425241 && tmp_xbra->id == 0x55535452) {
 			*(volatile unsigned long *) 0x400 = (unsigned long) tmp_xbra->oldvec;
 			polling_on = 0;
-			lock = FALSE;
 			return;
 		}
 
@@ -117,8 +117,9 @@ void storage_int(void)
 			}
 		}
 	}
-#endif
+#else
 	lock = FALSE;
+#endif
 }
 
 #ifndef TOSONLY
