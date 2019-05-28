@@ -189,10 +189,20 @@ void update_text(void)
                 }
                 else
                 {
-                   if (iface->driver)
-                       dev_types[j] = DEV_TYPE_GENERAL;
-                   else
-                       dev_types[j] = DEV_TYPE_NODRIVER;
+                    unsigned char ifaces = dev->config.no_of_if;
+                    while (ifaces--)
+                    {
+                        iface = &dev->config.if_desc[ifaces];
+                        if (iface->driver)
+                        {
+                            dev_types[j] = DEV_TYPE_GENERAL;
+                            break;
+                        }
+                        else
+                        {
+                            dev_types[j] = DEV_TYPE_NODRIVER;
+                        }
+                     }
                 }
                 memset (dev_names[j], 0, 64);
                if (strlen(dev->mf) == 0 && strlen(dev->prod) == 0 && j != 0)
