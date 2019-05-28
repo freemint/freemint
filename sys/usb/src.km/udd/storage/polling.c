@@ -91,21 +91,27 @@ void storage_int(void)
 	unsigned long *tmp_etv_timer_int;
 	struct xbra *tmp_xbra;
 
+#define ETV_TIMER 0x400
+#define XBRA 0x58425241
+#define USTR 0x55535452
+
+
 	/* If there is no devices with more than 1 LUN then uninstall polling routine */
 	if (!num_multilun_dev) {
 		first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
 		tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
 
-		if (tmp_xbra->xbra == 0x58425241 && tmp_xbra->id == 0x55535452) {
-			*(volatile unsigned long *) 0x400 = (unsigned long) tmp_xbra->oldvec;
+
+		if (tmp_xbra->xbra == XBRA && tmp_xbra->id == USTR) {
+			*(volatile unsigned long *) ETV_TIMER = (unsigned long) tmp_xbra->oldvec;
 			polling_on = 0;
 			return;
 		}
 
 		tmp_etv_timer_int = (unsigned long *) &tmp_xbra->oldvec;
 		tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
-		while (tmp_xbra->xbra == 0x58425241) { /* XBRA */
-			if (tmp_xbra->id == 0x55535452) { /* USTR */
+		while (tmp_xbra->xbra == XBRA) {
+			if (tmp_xbra->id == USTR) {
 				*tmp_etv_timer_int = (long)tmp_xbra->oldvec;
 				polling_on = 0;
 				break;
