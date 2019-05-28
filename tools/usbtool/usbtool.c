@@ -27,19 +27,19 @@ char dev_names[USB_MAX_DEVICE][64];
 short dev_types[USB_MAX_DEVICE];
 short dev_count;
 short text_handle;
-short h_ligne;
+short h_line;
 short xf, yf, wf, hf;
 VdiHdl aes_handle, vdi_handle;
 short baseline, w_char, h_char;
 
-/* Attributs fenêtre principale */
+/* Main window attributes */
 #define wind_attr NAME|CLOSER|FULLER|MOVER|SIZER|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE|INFO
 
-short ligne_0;                  /* 1e ligne de l'affichage */
-short char_0;                   /* 1e caractère de l'affichage */
+short line_0;                  /* 1st line of display */
+short char_0;                  /* 1st character of display */
 short full_flag;
-short hauteur_totale;           /* Hauteur totale en nbr. de lignes de texte*/
-short largeur_totale;           /* Largeur totale en nbr. de caractères */
+short total_height;            /* Total height in number of text lines */
+short total_width;             /* Total width in number of characters */
 
 struct usb_module_api *api = 0;
 short polling_flag = 0;         /* ON=always poll, OFF=poll only when window is opened */
@@ -65,9 +65,8 @@ main (void)
     vqt_attributes(aes_handle, attributes);
     baseline = attributes[7];
 
-    /* hauteur des caractères + 1 pour éviter que les lignes de textes
-     ne se touchent. */
-    h_ligne = h_char + 1;
+    /* character height + 1, to prevent text lines from touching each other */
+    h_line = h_char + 1;
     /* if usbtool.acc is renamed, don't always poll */
     if (appl_find("USBTOOL ")>= 0)
         polling_flag = 1;
@@ -132,7 +131,7 @@ events (short menuID)
                     break;
                 case WM_MOVED :
                     wind_set(buff[3], WF_CURRXYWH, buff[4], buff[5], buff[6], buff[7]);
-                    xf = buff[4]; yf = buff[5]; /* mémoriser les nouvelles coordonnÇes */
+                    xf = buff[4]; yf = buff[5]; /* remember the new coordinates */
                     break;
              }
         }
@@ -235,13 +234,13 @@ void update_text(void)
         strcat(info_line, " (updates when window open)");
     wind_set (text_handle, WF_INFO, (long) info_line >> 16, (long) info_line & 0xffff, 0, 0);
 
-    /* Trouver hauteur et largeur maximales */
-    hauteur_totale = dev_count;
-    largeur_totale = 0;
+    /* Find maximum height and width */
+    total_height = dev_count;
+    total_width = 0;
     for (i = 0; i < dev_count; i++)
     {
-        if (strlen(dev_names[i]) > largeur_totale)
-            largeur_totale = (short) strlen(dev_names[i]);
+        if (strlen(dev_names[i]) > total_width)
+            total_width = (short) strlen(dev_names[i]);
     }
     sliders();
     /* Redraw */
@@ -263,11 +262,11 @@ void open_text(void)
     short workH;
     short ret;
 
-    if (text_handle > 0)                /* Si la fenêtre est déjà ouverte */
-        wind_set(text_handle, WF_TOP, 0, 0, 0, 0);    /* On la passe au premier plan */
+    if (text_handle > 0)                /* If the window is already opened */
+        wind_set(text_handle, WF_TOP, 0, 0, 0, 0);    /* We bring it on top */
     else
     {
-        ligne_0 = 0;
+        line_0 = 0;
         char_0 = 0;
         /* Initial position */
         if (xf == NO_POSITION)
@@ -318,16 +317,15 @@ void redraw(short w_handle, short x, short y, short w, short h)
         {
             v_hide_c(vdi_handle);
             set_clip(1, &r);
-            y_base = yo + baseline + 1; /* Début de l'affichage en Y + 1
-                                         pour éviter que la première ligne de texte ne touche le haut de la fenêtre. */
-            xo = xo + 4; /* pour éviter que le premier caractère ne touche le bord de la fenêtre */
+            y_base = yo + baseline + 1; /* Start display at y + 1, to prevent the first line of text from touching the top of the window */
+            xo = xo + 4; /* to prevent the first character from touching the side of the window */
             xy[0] = r.g_x;
             xy[1] = r.g_y;
             xy[2] = xy[0]+r.g_w-1;
             xy[3] = xy[1]+r.g_h-1;
             vr_recfl(vdi_handle, xy);
             vswr_mode(vdi_handle, MD_TRANS);
-            for (i = ligne_0; i < dev_count; i++)
+            for (i = line_0; i < dev_count; i++)
             {
                 switch(dev_types[i])
                 {
@@ -355,7 +353,7 @@ void redraw(short w_handle, short x, short y, short w, short h)
                         break;
                 }
                 v_gtext(vdi_handle, xo, y_base, dev_names[i] + MIN(char_0, strlen(dev_names[i])));
-                y_base += h_ligne; /* Prêt pour ligne suivante. */
+                y_base += h_line; /* Ready for next line */
             }
             vswr_mode(vdi_handle, MD_REPLACE);
             v_show_c(vdi_handle, 1);
@@ -371,10 +369,10 @@ void sized(short w_handle, short x, short y, short w, short h)
     short msg[8];
     wind_set(w_handle, WF_CURRXYWH, x, y, w, h);
     wind_get(w_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
-    /* Enregistrer les coordonnées */
+    /* Save the coordinates */
     wind_get(w_handle, WF_CURRXYWH, &xf, &yf, &wf, &hf);
-    hf = hf - (wh - (wh / h_ligne * h_ligne)); /* Normaliser pour afficher ligne entière */
-    full_flag = FALSE;        /* Annuler le flag de pleine ouverture */
+    hf = hf - (wh - (wh / h_line * h_line)); /* Normalize to display entire line */
+    full_flag = FALSE;        /* Cancel full screen flag */
     sliders();
     /* Redraw */
     msg[0] = WM_REDRAW;
@@ -394,7 +392,7 @@ void fulled()
     short wx, wy, ww, wh;
     short msg[8];
     short mode;
-    if (full_flag)    /* Si elle est déjà plein écran */
+    if (full_flag)    /* If already full screen */
     {
         mode = WF_PREVXYWH;
         full_flag = FALSE;
@@ -405,13 +403,13 @@ void fulled()
         full_flag = TRUE;
     }
     wind_get(text_handle, mode, &x, &y, &w, &h);
-    wind_set(text_handle, WF_CURRXYWH, x, y, w, h);    /* Nouvelles coordonnées */
+    wind_set(text_handle, WF_CURRXYWH, x, y, w, h);    /* New coordinates */
     wind_get(text_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
-    /* Enregistrer les coordonnées */
+    /* Save the coordinates */
     wind_get(text_handle, WF_CURRXYWH, &xf, &yf, &wf, &hf);
-    hf = hf - (wh - (wh / h_ligne * h_ligne)); /* Normaliser pour afficher ligne entière */
+    hf = hf - (wh - (wh / h_line * h_line)); /* Normalize to display entire line */
     wind_set(text_handle, mode, xf, yf, wf, hf);
-    sliders();    /* Ajuster tailles et positions sliders */
+    sliders();    /* Adjust sizes and positions of sliders */
     /* Redraw */
     msg[0] = WM_REDRAW;
     msg[1] = gl_apid;
@@ -427,65 +425,65 @@ void fulled()
 void arrow(short buff4)
 {
     short wx, wy, ww, wh;
-    int action = FALSE, hauteur_page, largeur_page;
+    int action = FALSE, page_height, page_width;
     short msg[8];
 
     wind_get(text_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
-    hauteur_page = wh / h_ligne;        /* Hauteur fenêtre en lignes de caractères */
-    largeur_page = ww / w_char;         /* Largeur fenêtre en caractères */
+    page_height = wh / h_line;        /* Window height in lines of characters */
+    page_width = ww / w_char;         /* Window width in characters */
     switch (buff4)
     {
-        case WA_UPPAGE :                /* Page vers le haut */
-            if (ligne_0 > 0)
+        case WA_UPPAGE :                /* Page Up */
+            if (line_0 > 0)
             {
-                ligne_0 = MAX (ligne_0 - hauteur_page, 0);
+                line_0 = MAX (line_0 - page_height, 0);
                 action = TRUE;
             }
             break;
-        case WA_DNPAGE :                /* Page vers le bas */
-            if ((ligne_0 + hauteur_page) < hauteur_totale)
+        case WA_DNPAGE :                /* Page Down */
+            if ((line_0 + page_height) < total_height)
             {
-                ligne_0 = MIN (ligne_0 + hauteur_page, hauteur_totale - hauteur_page);
+                line_0 = MIN (line_0 + page_height, total_height - page_height);
                 action = TRUE;
             }
             break;
-        case WA_LFPAGE :                /* Page vers la gauche */
+        case WA_LFPAGE :                /* Page Left */
             if (char_0 > 0)
             {
-                char_0 = MAX (char_0 - largeur_page, 0);
+                char_0 = MAX (char_0 - page_width, 0);
                 action = TRUE;
             }
             break;
-        case WA_RTPAGE :                /* Page vers la droite */
-            if ((char_0 + largeur_page) < largeur_totale)
+        case WA_RTPAGE :                /* Page Right */
+            if ((char_0 + page_width) < total_width)
             {
-                char_0 = MIN (char_0 + largeur_page, largeur_totale - largeur_page);
+                char_0 = MIN (char_0 + page_width, total_width - page_width);
                 action = TRUE;
             }
             break;
-        case WA_UPLINE :                /* Ligne vers le haut */
-            if (ligne_0 > 0)
+        case WA_UPLINE :                /* Line Up */
+            if (line_0 > 0)
             {
-                ligne_0--;
+                line_0--;
                 action = TRUE;
             }
             break;
-        case WA_DNLINE :                /* Ligne vers le bas */
-            if ((ligne_0 + hauteur_page) < hauteur_totale)
+        case WA_DNLINE :                /* Line Down */
+            if ((line_0 + page_height) < total_height)
             {
-                ligne_0++;
+                line_0++;
                 action = TRUE;
             }
             break;
-        case WA_LFLINE :                /* Caractère vers la gauche */
+        case WA_LFLINE :                /* Character Left */
             if (char_0 > 0)
             {
                 char_0--;
                 action = TRUE;
             }
             break;
-        case WA_RTLINE :                /* Caractère vers la droite */
-            if ((char_0 + largeur_page) < largeur_totale)
+        case WA_RTLINE :                /* Character Right */
+            if ((char_0 + page_width) < total_width)
             {
                 char_0++;
                 action = TRUE;
@@ -510,16 +508,16 @@ void arrow(short buff4)
 
 void vslider(short w_handle, short x, short y, short w, short h)
 {
-    short slide, wx, wy, ww, wh, hauteur_page, old_ligne_0;
+    short slide, wx, wy, ww, wh, page_height, old_line_0;
     short msg[8];
     wind_get(w_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
     slide = x;
-    hauteur_page = wh / h_ligne;    /* Hauteur en lignes de texte */
-    old_ligne_0 = ligne_0;
-    ligne_0 = (short)((long)slide * (hauteur_totale - hauteur_page) / 1000);
+    page_height = wh / h_line;    /* Height in lines of text */
+    old_line_0 = line_0;
+    line_0 = (short)((long)slide * (total_height - page_height) / 1000);
     wind_set(w_handle, WF_VSLIDE, slide, 0, 0, 0);
     /* Redraw */
-    if (old_ligne_0 != ligne_0)
+    if (old_line_0 != line_0)
     {
         msg[0] = WM_REDRAW;
         msg[1] = gl_apid;
@@ -535,13 +533,13 @@ void vslider(short w_handle, short x, short y, short w, short h)
 
 void hslider(short w_handle, short x, short y, short w, short h)
 {
-    short slide, wx, wy, ww, wh, largeur_page, old_char_0;
+    short slide, wx, wy, ww, wh, page_width, old_char_0;
     short msg[8];
     wind_get(w_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
     slide = x;
-    largeur_page = ww / w_char;    /* Largeur en nombre de caractères */
+    page_width = ww / w_char;    /* Width in number of characters */
     old_char_0 = char_0;
-    char_0 = (short)((long)slide * (largeur_totale - largeur_page) / 1000);
+    char_0 = (short)((long)slide * (total_width - page_width) / 1000);
     wind_set(w_handle, WF_HSLIDE, slide, 0, 0, 0);
     /* Redraw */
     if (old_char_0 != char_0)
@@ -558,32 +556,32 @@ void hslider(short w_handle, short x, short y, short w, short h)
     }
 }
 
-/*    Taille et position sliders V et H : */
+/* Size and position of sliders V and H : */
 
 void sliders(void)
 {
-    short wx, wy, ww, wh, hauteur_page, largeur_page;
+    short wx, wy, ww, wh, page_height, page_width;
     wind_get(text_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
-    hauteur_page = wh / h_ligne;
-    largeur_page = ww / w_char;
-    /* Taille sliders */
-    wind_set(text_handle, WF_VSLSIZE, (short) ((1000L * hauteur_page)
-                                             / (MAX(1, hauteur_totale))),  0, 0, 0);
-    wind_set(text_handle, WF_HSLSIZE, (short)((1000L * largeur_page)
-                                            / (MAX(1, largeur_totale))), 0, 0, 0);
-    ligne_0 = MIN(ligne_0, hauteur_totale - hauteur_page);
-    if (ligne_0 < 0)
-        ligne_0 = 0;
+    page_height = wh / h_line;
+    page_width = ww / w_char;
+    /* Size sliders */
+    wind_set(text_handle, WF_VSLSIZE, (short) ((1000L * page_height)
+                                             / (MAX(1, total_height))),  0, 0, 0);
+    wind_set(text_handle, WF_HSLSIZE, (short)((1000L * page_width)
+                                            / (MAX(1, total_width))), 0, 0, 0);
+    line_0 = MIN(line_0, total_height - page_height);
+    if (line_0 < 0)
+        line_0 = 0;
 
-    char_0 = MIN(char_0, largeur_totale - largeur_page);
+    char_0 = MIN(char_0, total_width - page_width);
     if (char_0 < 0)
         char_0 = 0;
 
     /* Position sliders */
-    wind_set(text_handle, WF_VSLIDE, (short)((1000L * ligne_0)
-                                           / (MAX(1, hauteur_totale - hauteur_page))), 0, 0, 0);
+    wind_set(text_handle, WF_VSLIDE, (short)((1000L * line_0)
+                                           / (MAX(1, total_height - page_height))), 0, 0, 0);
     wind_set(text_handle, WF_HSLIDE, (short)((1000L * char_0)
-                                           / (MAX(1, largeur_totale - largeur_page))), 0, 0, 0);
+                                           / (MAX(1, total_width - page_width))), 0, 0, 0);
 }
 
 /***********************************************************************/
