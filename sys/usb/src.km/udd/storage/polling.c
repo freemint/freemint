@@ -101,6 +101,8 @@ void storage_int(void)
 		first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
 		tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
 
+	if (!first_etv_timer_int || tmp_xbra->xbra != XBRA)
+		return;
 
 		if (tmp_xbra->xbra == XBRA && tmp_xbra->id == USTR) {
 			*(volatile unsigned long *) ETV_TIMER = (unsigned long) tmp_xbra->oldvec;
@@ -108,7 +110,7 @@ void storage_int(void)
 			return;
 		}
 
-		tmp_etv_timer_int = (unsigned long *) &tmp_xbra->oldvec;
+		tmp_etv_timer_int = (unsigned long *) tmp_xbra->oldvec;
 		tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
 		while (tmp_xbra->xbra == XBRA) {
 			if (tmp_xbra->id == USTR) {
@@ -117,7 +119,7 @@ void storage_int(void)
 				break;
 			}
 			else {
-				*tmp_etv_timer_int = (unsigned long) &tmp_xbra->oldvec;
+				tmp_etv_timer_int = (unsigned long *) &tmp_xbra->oldvec;
 				tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
 			}
 		}
