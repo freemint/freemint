@@ -20,14 +20,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "global.h"
 #include "util.h"
 #include "init.h"
 #include "usb.h"
 #include "hub.h"
+#include "usb_api.h"
+#ifndef TOSONLY
 #include "ucdload.h"
 #include "uddload.h"
-#include "usb_api.h"
+#endif
 
 long loader_pid = 0;
 long loader_pgrp = 0;

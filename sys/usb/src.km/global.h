@@ -24,9 +24,10 @@
 #define _global_h
 
 #include "cookie.h"
-#include "mint/module.h"
+
 #ifndef TOSONLY
 #include "libkern/libkern.h"
+#include "mint/module.h"
 
 typedef char Path[PATH_MAX];
 

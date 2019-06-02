@@ -17,7 +17,6 @@
  */
 
 #include "tosdelay.h"
-#include "global.h"
 
 /*
  * initial 1 millisecond delay loop values

@@ -38,13 +38,13 @@
 #include "usb.h"
 #include "hub.h"
 #include "init.h"
-#include "time.h"
 
-#include "mint/signal.h"
-#include "mint/proc.h"
 #include "mint/endian.h"
 #ifndef TOSONLY
 #include "mint/mdelay.h"
+#include "mint/signal.h"
+#include "mint/proc.h"
+#include "time.h"
 #endif 
 
 /****************************************************************************
