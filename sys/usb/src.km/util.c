@@ -22,7 +22,6 @@
 
 #ifndef TOSONLY
 #include "util.h"
-//#include "debug.h"
 
 int
 get_drv(const char *p)

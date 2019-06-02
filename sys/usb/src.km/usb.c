@@ -38,10 +38,10 @@
 #include "usb.h"
 #include "hub.h"
 #include "usb_api.h"
-#include "ucdload.h"
-#include "uddload.h"
 #include "mint/endian.h"
 #ifndef TOSONLY
+#include "ucdload.h"
+#include "uddload.h"
 #include "mint/mdelay.h"
 #endif
 
