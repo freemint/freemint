@@ -155,7 +155,7 @@ static void tos_printmsg(const char *fmt, ...)
 # define DEBUG(x)
 # define TRACE(x)
 # define ASSERT(x)
-#endif
+#endif /* !DEV_DEBUG */
 
 
 /* cookie jar definition
@@ -237,7 +237,7 @@ static inline int setcookie (long tag, long value)
 /* Precise delays functions for TOS USB drivers */
 #include "tosdelay.c"
 
-#endif
+#endif /* TOSONLY */
 
 static inline void hex_nybble(int n)
 {
