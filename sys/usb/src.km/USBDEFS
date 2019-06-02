@@ -16,7 +16,7 @@ TARGET = usb.prg
 CPU = 000
 USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=98304
 LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
-OBJS += usb_int.S
+OBJS += 
 endif
 
 ifeq ($(usb),000)
