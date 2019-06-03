@@ -55,5 +55,6 @@ void set_int_lvl6(void);
 void ethernat_probe_asm(void);
 void ethernat_probe_c(void);
 
+void fake_ikbd_int(void);
 
 #endif // _ethernat_int_h

@@ -126,6 +126,7 @@ static long got_rhsc;		/* root hub status change */
 struct usb_device *devgone;	/* device which was disconnected */
 static long rh_devnum;		/* address of Root Hub endpoint */
 static int found = 0;
+static char job_in_progress = 0;
 
 /*
  * interrupt handling - bottom half
@@ -291,12 +292,12 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
   perfectly, right :)
 */
 static inline void
-dump_ptd(struct ptd *ptd)
+dump_ptd(PTD *ptd)
 {
 #if defined(VERBOSE)
 	long k;
 	char build_str[64];
-	char buf[64 + 4 * sizeof(struct ptd)];
+	char buf[64 + 4 * sizeof(PTD)];
 #endif
 
 	DEBUG(("PTD(ext) : cc:%x %d%c%d %d,%d,%d t:%x %x%x%x",
@@ -309,7 +310,7 @@ dump_ptd(struct ptd *ptd)
 	sprintf(buf, sizeof(buf),"%c",'0');
 	sprintf(build_str, sizeof(build_str), "isp116x: %s: PTD(byte): ", __FUNCTION__);
 	strcat(buf, build_str);
-	for (k = 0; k < sizeof(struct ptd); ++k) /* Galvez: note that bytes in the words are shown swapped */
+	for (k = 0; k < sizeof(PTD); ++k) /* Galvez: note that bytes in the words are shown swapped */
 	{
 		sprintf(build_str, sizeof(build_str),"%02x ", ((unsigned char *) ptd)[k]);
 		strcat(buf, build_str);
@@ -319,7 +320,7 @@ dump_ptd(struct ptd *ptd)
 }
 
 static inline void
-dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
+dump_ptd_data(PTD *ptd, unsigned char * buffer, long type)
 {
 #if defined(VERBOSE)
 	long k;
@@ -507,7 +508,47 @@ rh_check_port_status(struct isp116x *isp116x)
 
 /* --- HC management functions --------------------------------------------- */
 
+/* locking functions */
+inline static char lock_usb(char *lock) {
+	char ret = 0;
+
+	__asm("tas %1\n\t"
+	      "seq %0"
+	      : "=d" (ret)   /* outputs */
+	      : "m"  (*lock) /* inputs, note that this really has to be "*lock", not "lock" */
+	      : "cc");       /* clobbers condition codes */
+
+	return ret;
+}
+
+inline static void unlock_usb(char *lock) {
+	*lock = 0;
+}
+
+/*
+ * Check if there is a pending interrupt request from the keyboard ACIA.
+ * We use this while the CPU priority is set to 6, causing interrupts to
+ * be disabled.  The major problem with this is that some keyboard/mouse
+ * interrupt data is lost, which typically results in mouse movements
+ * being interpreted as keyclicks, then repeating keys and other nasties.
+ *
+ * We call this routine to poll for ikbd interrupts, which are then serviced
+ * by calling the keyboard interrupt routine ourselves.
+ *
+ * Returns != 0 if there is a pending interrupt request.
+ */
+static inline int ikbd_int_pending(void)
+{
+	unsigned char keyctl = *(volatile unsigned char *)0xFFFFFC00UL;
+	return keyctl & 0x80;
+}
+
+
 /* Write len bytes to fifo, pad till 32-bit boundary
+ *
+ * Note that we unroll big loops to allow us to check for pending ikbd
+ * activity frequently, but not too frequently.  It may also provide
+ * a marginal speed improvement.
  */
 static void
 write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
@@ -517,37 +558,87 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	unsigned short w;
 	long quot = len % 4;
 
-/* For EtherNat, take the raw_write out in write functions, here we don't
- * like that EtherNat swap the bytes for us, so we swap them before we send
- * them, then the bytes will arrive to the USB device with the correct positions
- */
+	/*
+	 * because of little-endian considerations, the FIFO buffer has the
+	 * bytes swapped from a big-endian POV.  we swap them here.
+	 *
+	 * for an unaligned buffer, it's easier to use the raw write function
+	 * and explicitly swap the bytes.
+	 */
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			w = *dp++;
+			w |= *dp++ << 8;
+			isp116x_raw_write_data16(isp116x, w);
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 		{
 			w = *dp++;
 			w |= *dp++ << 8;
-			isp116x_write_data16(isp116x, w);
+			isp116x_raw_write_data16(isp116x, w);
 		}
-		if (len)
-			isp116x_write_data16(isp116x, (unsigned short) * dp);
 	}
 	else
 	{
 		/* aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			isp116x_write_data16(isp116x, *dp2++);
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 			isp116x_write_data16(isp116x, *dp2++);
-		if (len)
-		{
-			isp116x_raw_write_data16(isp116x, 0xff & *((unsigned char *) dp2));
-		}
+		dp = (unsigned char *)dp2;
 	}
+	if (len)
+		isp116x_raw_write_data16(isp116x, (unsigned short) *dp);
+
+	/*
+	 * since we throw the data away, we just use the raw write here for
+	 * consistency with read_ptddata_from_fifo() [in fact, the generated
+	 * code should be the same for either]
+	 */
 	if (quot == 1 || quot == 2)
-		isp116x_write_data16(isp116x, 0);
+		isp116x_raw_write_data16(isp116x, 0);
 }
 
 /* Read len bytes from fifo and then read till 32-bit boundary
+ *
+ * Note that we unroll big loops to allow us to check for pending ikbd
+ * activity frequently, but not too frequently.  It may also provide
+ * a marginal speed improvement.
  */
 static void
 read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
@@ -557,31 +648,78 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 	unsigned short w;
 	long quot = len % 4;
 
-/* For EtherNAT, take the raw_read out from read functions, we want to swap the bytes to
- *  read correct values because EtherNat swapped the bytes by hardware before we read them
- */
+	/*
+	 * because of little-endian considerations, the FIFO buffer has the
+	 * bytes swapped from a big-endian POV.  we swap them back here.
+	 *
+	 * for an unaligned buffer, it's easier to use the raw read function
+	 * and explicitly swap the bytes.
+	 */
 	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			w = isp116x_raw_read_data16(isp116x);
+			*dp++ = w & 0xff;
+			*dp++ = (w >> 8) & 0xff;
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 		{
-			w = isp116x_read_data16(isp116x);
+			w = isp116x_raw_read_data16(isp116x);
 			*dp++ = w & 0xff;
 			*dp++ = (w >> 8) & 0xff;
 		}
-		if (len)
-			*dp = 0xff & isp116x_read_data16(isp116x);
 	}
 	else
 	{
 		/* aligned */
+		for (; len >= 16; len -= 16) {	/* unrolled loop */
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			*dp2++ = isp116x_read_data16(isp116x);
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+		}
 		for (; len > 1; len -= 2)
 			*dp2++ = isp116x_read_data16(isp116x);
-		if (len)
-			*(unsigned char *) dp2 = 0xff & isp116x_raw_read_data16(isp116x);
+		dp = (unsigned char *)dp2;
 	}
+	if (len)
+		*dp = 0xff & isp116x_raw_read_data16(isp116x);
+
+	/*
+	 * since we throw the data away, we can just use the raw read here
+	 */
 	if (quot == 1 || quot == 2)
-		isp116x_read_data16(isp116x);
+		isp116x_raw_read_data16(isp116x);
 }
 
 /* Write PTD's and data for scheduled transfers into the fifo ram.
@@ -589,43 +727,48 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
  */
 static void
 pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
-		      unsigned long pipe, struct ptd *ptd, long n, void *data,
+		      unsigned long pipe, PTD *ptd, void *data,
 		      long len)
 {
-	long buflen = n * sizeof(struct ptd) + len;
-	long i, done;
+	int write_data = FALSE;
+	long buflen = sizeof(PTD);
 
-	DEBUG(("--- pack buffer 0x%08lx - %ld bytes (fifo %ld) ---", data, len, buflen));
+	if ((PTD_GET_DIR(ptd) == PTD_DIR_OUT) || (PTD_GET_DIR(ptd) == PTD_DIR_SETUP))
+	{
+		write_data = TRUE;
+		buflen += len;
+	}
 
+	DEBUG(("--- pack buffer %p - %ld bytes (fifo %ld) ---", data, len, buflen));
+
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
 
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
 	isp116x_write_addr(isp116x, HCATLPORT | ISP116x_WRITE_OFFSET);
+	MINT_INT_ON;
 
-	done = 0;
-	for (i = 0; i < n; i++)
+	/* For EtherNAT, use raw_write to don't swap bytes */
+	dump_ptd(ptd);
+
+	MINT_INT_OFF;
+	isp116x_raw_write_data16(isp116x, ptd->count);
+	isp116x_raw_write_data16(isp116x, ptd->mps);
+	isp116x_raw_write_data16(isp116x, ptd->len);
+	isp116x_raw_write_data16(isp116x, ptd->faddr);
+	MINT_INT_ON;
+
+	dump_ptd_data(ptd, (unsigned char *) data, 0);
+
+	if (write_data)
 	{
-		DEBUG(("i=%ld - done=%ld - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
-
-		/* For EtherNAT, use raw_write to don't swap bytes */
-		dump_ptd(&ptd[i]);
-		isp116x_raw_write_data16(isp116x, ptd[i].count);
-		isp116x_raw_write_data16(isp116x, ptd[i].mps);
-		isp116x_raw_write_data16(isp116x, ptd[i].len);
-		isp116x_raw_write_data16(isp116x, ptd[i].faddr);
-
-		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
-
-		/* This part is critical, disamble interrupts */
 		MINT_INT_OFF;
 		TOS_INT_OFF;
 		write_ptddata_to_fifo(isp116x,
-				      (unsigned char *) data + done,
-				      PTD_GET_LEN(&ptd[i]));
+				      (unsigned char *) data,
+				      PTD_GET_LEN(ptd));
 		MINT_INT_ON;
 		TOS_INT_ON;
-
-		done += PTD_GET_LEN(&ptd[i]);
 	}
 }
 
@@ -634,56 +777,61 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
  */
 static long
 unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
-		       unsigned long pipe, struct ptd *ptd, long n, void *data,
+		       unsigned long pipe, PTD *ptd, void *data,
 		       long len)
 {
-	long buflen = n * sizeof(struct ptd) + len;
-	long i, done, cc, ret;
+	int read_data = FALSE;
+	long buflen = sizeof(PTD);
+	long cc, ret;
 
+	if (PTD_GET_DIR(ptd) == PTD_DIR_IN)
+	{
+		read_data = TRUE;
+		buflen += len;
+	}
+
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
 	isp116x_write_addr(isp116x, HCATLPORT);
+	MINT_INT_ON;
 
 	ret = TD_CC_NOERROR;
-	done = 0;
-	for (i = 0; i < n; i++)
+
+	MINT_INT_OFF;
+	/* For ETHERNAT, use raw_read to don't swap bytes */
+	ptd->count = isp116x_raw_read_data16(isp116x);
+	ptd->mps = isp116x_raw_read_data16(isp116x);
+	ptd->len = isp116x_raw_read_data16(isp116x);
+	ptd->faddr = isp116x_raw_read_data16(isp116x);
+	MINT_INT_ON;
+
+	dump_ptd(ptd);
+
+	if (read_data)
 	{
-		/* For EtherNAT, use raw_read to don't swap bytes */
-		ptd[i].count = isp116x_raw_read_data16(isp116x);
-		ptd[i].mps = isp116x_raw_read_data16(isp116x);
-		ptd[i].len = isp116x_raw_read_data16(isp116x);
-		ptd[i].faddr = isp116x_raw_read_data16(isp116x);
-		dump_ptd(&ptd[i]);
-
-		/* when cc is 15 the data has not being touch by the HC
-		 * so we have to read all to empty completly the buffer
-		 */
-//		if (PTD_GET_COUNT(ptd) != 0 || PTD_GET_CC(ptd) == 15)
-		{
-			/* This part is critical, disamble interrupts */
-			MINT_INT_OFF;
-			TOS_INT_OFF;
-			read_ptddata_from_fifo(isp116x,
-					       (unsigned char *) data + done,
-					       PTD_GET_LEN(&ptd[i]));
-			MINT_INT_ON;
-			TOS_INT_ON;
-		}
-		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
-
-		done += PTD_GET_LEN(&ptd[i]);
-
-		cc = PTD_GET_CC(&ptd[i]);
-
-		/* Data underrun means basically that we had more buffer space than
-		 * the function had data. It is perfectly normal but upper levels have
-		 * to know how much we actually transferred.
-		 */
-		if (cc == TD_NOTACCESSED ||
-				(cc != TD_CC_NOERROR && (ret == TD_CC_NOERROR || ret == TD_DATAUNDERRUN)))
-			ret = cc;
+		MINT_INT_OFF;
+		TOS_INT_OFF;
+		read_ptddata_from_fifo(isp116x,
+				       (unsigned char *) data,
+				       PTD_GET_LEN(ptd));
+		MINT_INT_ON;
+		TOS_INT_ON;
 	}
-	DEBUG(("--- unpack buffer 0x%08lx - %ld bytes (fifo %ld) count: %d ---", data, len, buflen, PTD_GET_COUNT(ptd)));
+
+	dump_ptd_data(ptd, (unsigned char *) data, 1);
+
+	cc = PTD_GET_CC(ptd);
+
+	/* Data underrun means basically that we had more buffer space than
+	 * the function had data. It is perfectly normal but upper levels have
+	 * to know how much we actually transferred.
+	 */
+	if (cc == TD_NOTACCESSED ||
+			(cc != TD_CC_NOERROR && (ret == TD_CC_NOERROR || ret == TD_DATAUNDERRUN)))
+		ret = cc;
+
+	DEBUG(("--- unpack buffer %p - %ld bytes (fifo %ld) count: %d ---", data, len, buflen, PTD_GET_COUNT(ptd)));
 
 	return ret;
 }
@@ -697,23 +845,28 @@ isp116x_interrupt(struct isp116x *isp116x)
 	unsigned long intstat;
 	long ret = 0;
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
 	isp116x_write_reg16(isp116x, HCuPINT, irqstat);
+	MINT_INT_ON;
+
 	DEBUG((">>>>>> irqstat %x <<<<<<", irqstat));
 
 	if (irqstat & HCuPINT_ATL)
 	{
 		DEBUG((">>>>>> HCuPINT_ATL <<<<<<"));
-		udelay(500);
 		ret = 1;
 	}
 
 	if (irqstat & HCuPINT_OPR)
 	{
+		MINT_INT_OFF;
 		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
 		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
-		DEBUG((">>>>>> HCuPINT_OPR %x <<<<<<", intstat));
+		MINT_INT_ON;
+
+		DEBUG((">>>>>> HCuPINT_OPR %lx <<<<<<", intstat));
 
 		if (intstat & HCINT_UE)
 		{
@@ -748,14 +901,17 @@ isp116x_interrupt(struct isp116x *isp116x)
 		irqstat &= ~HCuPINT_OPR;
 	}
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
+	MINT_INT_ON;
+
 	return ret;
 }
 
 /* With one PTD we can transfer almost 1K in one go;
  * HC does the splitting into endpoint digestible transactions
  */
-static struct ptd ptd[1];
+static PTD ptd[1];
 
 static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
@@ -769,10 +925,18 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
 }
 
 /* Do an USB transfer
+ *
+ * If we are in supervisor state, we poll for ikbd interrupts on the
+ * assumption that we were called from the timer interrupt (via etv_timer)
+ * and thus are running with interrupts disabled.  This will happen when
+ * called by a USB mouse or keyboard driver.
+ *
+ * DavidGZ: MiNT drivers always run in supervisor mode so the comment above
+ * only applies for TOS drivers
  */
 static long
 isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
-			      long dir, void *buffer, long len)
+			      long dir, void *buffer, long len, long flags)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 	long type = usb_pipetype(pipe);
@@ -782,13 +946,33 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	long speed_low = usb_pipeslow(pipe);
 	long i, done = 0, stat, timeout, cc;
 
-	/* 500 frames or 0.5s timeout when function is busy and NAKs transactions for a while */
-	long retries = 500;
+	/*
+	 * For non-interrupt transfers, if the function is busy and we receive a NAK,
+	 * we retry up to 500 frames (0.5s timeout).
+	 * For interrupt transfers (e.g. mouse/keyboard), we expect to receive a NAK
+	 * most of the time.  So we don't retry, we just report an error and let the
+	 * upper level driver retry the transfer at regular intervals.
+	 */
+	short retries = ((type==PIPE_INTERRUPT) || (flags&USB_BULK_FLAG_EARLY_TIMEOUT)) ? 0 : 500;
 	short set_extra_delay = 0;
+	short poll_interrupts = 0;
 
 	DEBUG(("------------------------------------------------"));
 	dump_msg(dev, pipe, buffer, len, "SUBMIT");
 	DEBUG(("------------------------------------------------"));
+
+	/*
+	 * set flag if we need to poll for ikbd interrupts
+	 */
+#ifdef TOSONLY
+	if (Super(1L))
+#endif
+		poll_interrupts = 1;
+
+	if (poll_interrupts && ikbd_int_pending())
+		fake_ikbd_int();
+
+	dev->act_len = 0L;		/* for safety, init bytes transferred */
 
 	if (len >= 1024)
 	{
@@ -826,11 +1010,22 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 		return -1;
 	}
 
+	/* Another job in progress */
+	if (!lock_usb(&job_in_progress))
+	{
+		DEBUG(("Another USB job in progress -- must not happen"));
+		dev->status = USB_ST_BUF_ERR;
+		return -1;
+	}
+
 	/* FIFO not empty? */
+	MINT_INT_OFF;
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
+		MINT_INT_ON;
 		DEBUG(("****** FIFO not empty! ******"));
 		dev->status = USB_ST_BUF_ERR;
+		unlock_usb(&job_in_progress);
 		return -1;
 	}
 
@@ -840,7 +1035,13 @@ retry:
 	ptd->count = PTD_CC_MSK | PTD_ACTIVE_MSK |
 		PTD_TOGGLE(usb_gettoggle(dev, epnum, dir_out));
 	ptd->mps = PTD_MPS(max) | PTD_SPD(speed_low) | PTD_EP(epnum) | PTD_LAST_MSK;
-	ptd->len = PTD_LEN(len) | PTD_DIR(dir);
+	/*
+	 * Setting the B5_5 bit below limits interrupt transfers to one per frame.
+	 * If this bit is NOT set, interrupt transfers by the ISP1160 violate the
+	 * USB standard and some hardware will malfunction (information courtesy
+	 * of Christian Zietz).
+	 */
+	ptd->len = PTD_LEN(len) | PTD_DIR(dir) | PTD_B5_5(type == PIPE_INTERRUPT);
 	ptd->faddr = PTD_FA(usb_pipedevice(pipe));
 
 retry_same:
@@ -848,31 +1049,42 @@ retry_same:
 	/* FIFO not empty? */
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
+		MINT_INT_ON;
 		DEBUG(("****** FIFO not empty! (2) ******"));
 		dev->status = USB_ST_BUF_ERR;
+		unlock_usb(&job_in_progress);
 		return -1;
 	}
+	MINT_INT_ON;
+
+	if (poll_interrupts && ikbd_int_pending())
+		fake_ikbd_int();
 
 	/* Pack data into FIFO ram */
-	pack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
+	pack_fifo(isp116x, dev, pipe, ptd, buffer, len);
 
 # ifdef EXTRA_DELAY
 	mdelay(EXTRA_DELAY);
 # endif
 	if(set_extra_delay)
-		mdelay(4);
+	{
+		mdelay(2);
+	}
 
 	/* Start the data transfer */
 
 	/* Allow more time for a BULK device to react - some are slow */
 	if (usb_pipebulk(pipe))
-		timeout = 5000; /* Galvez: default = 5000 */
+		timeout = 5000;
 	else
-		timeout = 100;
+		timeout = 1000;
 
 	/* Wait for it to complete */
 	for (;;)
 	{
+		if (poll_interrupts && ikbd_int_pending())
+			fake_ikbd_int();
+
 		/* Check whether the controller is done */
 		stat = isp116x_interrupt(isp116x);
 
@@ -890,7 +1102,7 @@ retry_same:
 		else
 		{
 			DEBUG(("CTL:TIMEOUT "));
-			stat = USB_ST_CRC_ERR;
+			dev->status = USB_ST_CRC_ERR;
 			break;
 		}
 	}
@@ -898,12 +1110,17 @@ retry_same:
 	/* We got an Root Hub Status Change interrupt */
 	if (got_rhsc)
 	{
+		MINT_INT_OFF;
 		isp116x_show_regs(isp116x);
+		MINT_INT_ON;
 
 		got_rhsc = 0;
 
 		/* Abuse timeout */
+		MINT_INT_OFF;
 		timeout = rh_check_port_status(isp116x);
+		MINT_INT_ON;
+
 		if (timeout >= 0)
 		{
 			/*
@@ -918,20 +1135,42 @@ retry_same:
 	/* Ok, now we can read transfer status */
 
 	/* FIFO not ready? */
+	MINT_INT_OFF;
 	if (!(isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_DONE))
 	{
+		MINT_INT_ON;
 		DEBUG(("****** FIFO not ready! ******"));
 		dev->status = USB_ST_BUF_ERR;
+		unlock_usb(&job_in_progress);
 		return -1;
 	}
+	MINT_INT_ON;
+
+	if (poll_interrupts && ikbd_int_pending())
+		fake_ikbd_int();
 
 	/* Unpack data from FIFO ram */
-	cc = unpack_fifo(isp116x, dev, pipe, ptd, 1, buffer, len);
+	cc = unpack_fifo(isp116x, dev, pipe, ptd, buffer, len);
 
 	i = PTD_GET_COUNT(ptd);
 	done += i;
 	buffer = (char *)buffer + i;
 	len -= i;
+
+	/*
+	 * The following is taken from the Lightning VME driver by
+	 * Ingo Uhlemann/Christian Zietz.
+	 *
+	 * Bugfix for possible ISP1160 hardware bug:
+	 * If B5_5 was set (for an interrupt transfer), the PTD will return
+	 * with CC=0, count=0 when the device has in fact NAKed the transaction.
+	 * The chip will have updated the toggle bit erroneously.
+	 */
+	if (PTD_GET_B5_5(ptd) && !cc && !PTD_GET_COUNT(ptd))
+	{
+		/* Toggle it back so that driver can do its usual processing. */
+		ptd->count ^= PTD_TOGGLE_MSK;
+	}
 
 	/* There was some kind of real problem; Prepare the PTD again
 	 * and retry from the failed transaction on
@@ -946,6 +1185,7 @@ retry_same:
 			 * transaction too. We have to toggle it back.
 			 */
 			usb_settoggle(dev, epnum, dir_out, !PTD_GET_TOGGLE(ptd));
+			MINT_INT_OFF;
 			goto retry;
 		}
 	}
@@ -963,9 +1203,11 @@ retry_same:
 			if (cc == TD_NOTACCESSED && PTD_GET_ACTIVE(ptd) && !PTD_GET_COUNT(ptd))
 			{
 				set_extra_delay = 1;
+				MINT_INT_OFF;
 				goto retry_same;
 			}
 			usb_settoggle(dev, epnum, dir_out, PTD_GET_TOGGLE(ptd));
+			MINT_INT_OFF;
 			goto retry;
 		}
 	}
@@ -988,6 +1230,8 @@ retry_same:
 			default:
 				dev->status = USB_ST_CRC_ERR;
 		}
+		unlock_usb(&job_in_progress);
+
 		return -cc;
 	}
 	else
@@ -996,6 +1240,11 @@ retry_same:
 	dump_msg(dev, pipe, buffer, len, "SUBMIT(ret)");
 
 	dev->status = 0;
+	unlock_usb(&job_in_progress);
+
+	if (poll_interrupts && ikbd_int_pending())
+		fake_ikbd_int();
+
 	return done;
 }
 
@@ -1369,7 +1618,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 	ret = isp116x_submit_job(dev, pipe,
 				PTD_DIR_SETUP,
-				 setup, sizeof(struct devrequest));
+				 setup, sizeof(struct devrequest), 0);
 	if (ret < 0)
 	{
 		DEBUG(("control setup phase error (ret = %d", ret));
@@ -1385,7 +1634,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ret = isp116x_submit_job(dev, pipe,
 					 dir_in ? PTD_DIR_IN : PTD_DIR_OUT,
 					 (unsigned char *) buffer + done,
-					 max > len - done ? len - done : max);
+					 max > len - done ? len - done : max, 0);
 		if (ret < 0)
 		{
 			DEBUG(("control data phase error (ret = %d)", ret));
@@ -1401,7 +1650,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	DEBUG(("--- STATUS PHASE -------------------------------"));
 	usb_settoggle(dev, epnum, !dir_in, 1);
 	ret = isp116x_submit_job(dev, pipe,
-				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0);
+				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0, 0);
 	if (ret < 0)
 	{
 		DEBUG(("control status phase error (ret = %d", ret));
@@ -1433,7 +1682,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ret = isp116x_submit_job(dev, pipe,
 					 !dir_out ? PTD_DIR_IN : PTD_DIR_OUT,
 					 (unsigned char *) buffer + done,
-					 max > len - done ? len - done : max);
+					 max > len - done ? len - done : max, flags);
 
 		if (ret < 0)
 		{
@@ -1455,6 +1704,31 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 /* --- Basic functions ----------------------------------------------------- */
 
+/*
+ * The following reset stuff is somewhat bogus, but less than before.
+ *
+ * The previous isp116x_sw_reset() loop delayed 7msec between checks for
+ * HCCMDSTAT_HCR, which seems pointless as the reset should complete
+ * within 1msec, and there's no reason to check less frequently than that.
+ * We now delay 1msec between checks (and reset complete seems to always
+ * occur in the first loop).
+ *
+ * The previous isp116x_reset() code looped, waiting for HCuPINT_CLKRDY
+ * to be set in the HCuPINT register.  As far as I can determine from
+ * the datasheet, this only happens when the H_WAKEUP pin is strobed
+ * high - which doesn't happen here.  The effect was that we always
+ * timed out waiting for clkrdy: depending on the particular instance
+ * of the code, this could be as much as 1000msec.
+ *
+ * Tests showed that at least some devices weren't recognised properly
+ * if we eliminate this delay entirely, so now we just delay explicitly
+ * for 250msec.
+ *
+ * Code has been added to conform to Philips document AN10003-01:
+ * "ISP1160 Embedded Programming Guide Rev.1.0".
+ *
+ * This code should be refined, probably via the USB specs.
+ */
 
 # if 0
 /* GALVEZ: Test function */
@@ -1475,28 +1749,25 @@ static long GALVEZ_test_function( struct isp116x *isp116x )
 static long
 isp116x_sw_reset(struct isp116x *isp116x)
 {
-	long retries = 15;
-	long ret = 0;
+	int retries = 10;	/* arbitrary */
 
 	isp116x->disabled = 1;
 
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCSWRES, HCSWRES_MAGIC);
 	isp116x_write_reg32(isp116x, HCCMDSTAT, HCCMDSTAT_HCR);
 
 	while (--retries)
 	{
-		/* It usually resets within 1 ms */
-		/* GALVEZ: not enough for TOS, try 7 ms */
-		mdelay(7);
+		/* It should reset within 1 msec */
+		mdelay(1);
 		if (!(isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR))
-			break;
+			return 0;
 	}
+	MINT_INT_ON;
 
-	if (!retries)
-	{
-		DEBUG(("software reset timeout"));
-		ret = -1;
-	}
+	DEBUG(("software reset timeout"));
+	return -1;
 
 # if 0
 	/* GALVEZ: DEBUG SOFTWARE RESET */
@@ -1509,41 +1780,28 @@ isp116x_sw_reset(struct isp116x *isp116x)
 		}
 	}
 # endif /* END DEBUG */
-
-	return ret;
 }
 
 static long
 isp116x_reset(struct isp116x *isp116x)
 {
-	unsigned long t;
-	unsigned short clkrdy = 0;
-	long ret, timeout = 15;/* ms
-				* Galvez: 15 ms sometimes isn't enough,
-				* for EtherNat under TOS ??????? increased to 150 ms
-				*/
+	long ret;
+	unsigned long temp;
 
 	ret = isp116x_sw_reset(isp116x);
-
 	if (ret)
 		return ret;
 
-	for (t = 0; t < timeout; t++)
-	{
-		clkrdy = isp116x_read_reg16(isp116x, HCuPINT) & HCuPINT_CLKRDY;
-		if (clkrdy)
-			break;
-		mdelay(1);
-	}
-	if (!clkrdy)
-	{
-		ALERT(("clock not ready after %ldms", timeout));
-		/* After sw_reset the clock won't report to be ready, if
-		   H_WAKEUP pin is high. */
-		DEBUG(("please make sure that the H_WAKEUP pin is pulled low!"));
-		ret = -1;
-	}
-	return ret;
+	MINT_INT_OFF;
+	/* AN10003-01 says to do this, though it worked without it */
+	temp = isp116x_read_reg32(isp116x, HCCONTROL);
+	temp = (temp & ~HCCONTROL_HCFS) | HCCONTROL_USB_RESET;
+	isp116x_write_reg32(isp116x, HCCONTROL, temp);
+	MINT_INT_ON;
+
+	mdelay(250);	/* arbitrary, give devices time to wake up */
+
+	return 0;
 }
 
 static void
@@ -1641,6 +1899,7 @@ isp116x_start(struct isp116x *isp116x)
 	unsigned long val;
 
 	/* Clear interrupt status and disable all interrupt sources */
+	MINT_INT_OFF;
 	isp116x_write_reg16(isp116x, HCuPINT, 0xff);
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 
@@ -1706,6 +1965,7 @@ isp116x_start(struct isp116x *isp116x)
 	val = isp116x_read_reg16(isp116x, HCHWCFG);
 	val |= HCHWCFG_INT_ENABLE;
 	isp116x_write_reg16(isp116x, HCHWCFG, val);
+	MINT_INT_ON;
 
 
 	/* EtherNAT control register, enable interrupt for USB */
@@ -1716,7 +1976,9 @@ isp116x_start(struct isp116x *isp116x)
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
+	MINT_INT_OFF;
 	isp116x_show_regs(isp116x);
+	MINT_INT_ON;
 
 	isp116x->disabled = 0;
 
@@ -1804,7 +2066,9 @@ isp116x_check_id(struct isp116x *isp116x)
 {
 	unsigned short val;
 
+	MINT_INT_OFF;
 	val = isp116x_read_reg16(isp116x, HCCHIPID);
+	MINT_INT_ON;
 	DEBUG(("chip ID: %x", val));
 
 	if ((val & HCCHIPID_MASK) != HCCHIPID_MAGIC)
