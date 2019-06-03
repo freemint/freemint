@@ -25,6 +25,19 @@
 #ifndef _ethernat_int_h
 #define _ethernat_int_h
 
+#ifdef TOSONLY
+#define MINT_INT_OFF
+#define MINT_INT_ON
+#define TOS_INT_OFF		unsigned long oldmode = (Super(1L) ? 0L: Super(0L)); \
+				set_int_lvl6();
+#define TOS_INT_ON		set_old_int_lvl(); \
+				if (oldmode) SuperToUser(oldmode);
+#else
+#define MINT_INT_OFF		set_int_lvl6()
+#define MINT_INT_ON		set_old_int_lvl()
+#define TOS_INT_OFF
+#define TOS_INT_ON
+#endif
 
 // old handler
 extern void (*old_int)(void);
