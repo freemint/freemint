@@ -106,8 +106,6 @@ static ulong delay_300ns;
 
 #include "isp116x.h"
 
-/*static const char hcd_name[] = "isp116x-hcd";*/
-
 /****************************************************************************/
 /* BEGIN kernel interface */
 
