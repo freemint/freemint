@@ -288,7 +288,7 @@ volatile unsigned char* const ETHERNAT_CPLD_CR = (volatile unsigned char*) 0x800
 #define	PERIODIC_SIZE		(1 << LOG2_PERIODIC_SIZE)
 
 /* Philips transfer descriptor */
-struct ptd {
+typedef struct {
 	unsigned short count;
 #define	PTD_COUNT_MSK	(0x3ff << 0)
 #define	PTD_TOGGLE_MSK	(1 << 10)
@@ -309,12 +309,12 @@ struct ptd {
 	unsigned short faddr;
 #define	PTD_FA_MSK	(0x7f << 0)
 #define	PTD_FMT_MSK	(1 << 7)
-} __attribute__ ((packed, aligned(2)));
+} __attribute__ ((packed, aligned(2))) PTD;
 
 struct isp116x_ep
 {
 	struct usb_device *udev;
-	struct ptd ptd;
+	PTD ptd;
 
 	unsigned char maxpacket;
 	unsigned char epnum;
