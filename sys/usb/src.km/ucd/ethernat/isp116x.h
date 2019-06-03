@@ -69,18 +69,6 @@
 #define ISP116X_HCD_USE_UDELAY
 //#define ISP116X_HCD_USE_EXTRA_DELAY
 
-/*
- * ISP116x chips require certain delays between accesses to its
- * registers. The following timing options exist.
- *
- * 1. Configure your memory controller (the best)
- * 2. Use ndelay (easiest, poorest). For that, enable the following macro.
- *
- * Value is in microseconds.
- */
-#ifdef ISP116X_HCD_USE_UDELAY
-# define UDELAY		1
-#endif
 
 /*
  * On some (slowly?) machines an extra delay after data packing into
@@ -398,10 +386,13 @@ struct isp116x
  * 300ns delay between access to ADDR_REG and DATA_REG
  * OE, WE MUST NOT be changed during these intervals
  */
-#if defined(UDELAY)
-# define	isp116x_delay(h,d)	udelay(d)
+
+#ifdef TOSONLY
+# define DELAY_150NS	delay_loop(delay_150ns)
+# define DELAY_300NS	delay_loop(delay_300ns)
 #else
-# define	isp116x_delay(h,d)	do {} while (0)
+# define DELAY_150NS	ndelay_loops(delay_150ns)
+# define DELAY_300NS	ndelay_loops(delay_300ns)
 #endif
 
 /* ISP116x registers access */
@@ -428,19 +419,19 @@ inline unsigned read_le16_reg(const volatile unsigned short *addr)
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
 	raw_writew(reg & 0xff, isp116x->addr_reg );
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_300NS;
 }
 
 static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short val)
 {
 	writew(val, isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 }
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
 	raw_writew(val, isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 }
 
 static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
@@ -448,7 +439,7 @@ static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
 	unsigned short val;
 
 	val = readw(isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 
 	return val;
 }
@@ -458,7 +449,7 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 	unsigned short val;
 
 	val = raw_readw(isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 
 	return val;
 }
@@ -467,9 +458,9 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long val)
 {
 	writew(val & 0xffff, isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 	writew(val >> 16, isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 }
 
 /*
@@ -479,9 +470,9 @@ static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long v
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
 	raw_writew(val & 0xffff, isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 	raw_writew(val >> 16, isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 }
 /***********************************************/
 
@@ -490,9 +481,9 @@ static inline unsigned long isp116x_read_data32(struct isp116x *isp116x)
 	unsigned long val;
 
 	val = (unsigned long) readw(isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 	val |= ((unsigned long) readw(isp116x->data_reg)) << 16;
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 
 	return val;
 }
@@ -506,9 +497,9 @@ static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 	unsigned long val;
 
 	val = (unsigned long) raw_readw(isp116x->data_reg);
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 	val |= ((unsigned long) raw_readw(isp116x->data_reg)) << 16;
-	isp116x_delay(isp116x, UDELAY);
+	DELAY_150NS;
 
 	return val;
 }
