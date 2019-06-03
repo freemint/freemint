@@ -99,8 +99,6 @@
 # define VERBOSE		/* verbose debugging messages */
 #endif
 
-/*static const char hcd_name[] = "isp116x-hcd";*/
-
 /****************************************************************************/
 /* BEGIN kernel interface */
 
