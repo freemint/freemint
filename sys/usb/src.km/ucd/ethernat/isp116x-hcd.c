@@ -101,6 +101,9 @@
 # define VERBOSE		/* verbose debugging messages */
 #endif
 
+static ulong delay_150ns;
+static ulong delay_300ns;
+
 #include "isp116x.h"
 
 /*static const char hcd_name[] = "isp116x-hcd";*/
@@ -2178,7 +2181,13 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 
 	/* for precise mdelay/udelay relative to CPU power */
 	set_tos_delay();
-#endif
+	delay_150ns = loopcount_1_msec * 15 / 100000;
+	delay_300ns = loopcount_1_msec * 3 / 10000;
+#else
+	delay_150ns = getloops4ns(150);
+	delay_300ns = getloops4ns(300);
+#endif /* TOSONLY */
+
 	ret = ucd_register(&ethernat_uif, &root_hub_dev);
 	if (ret)
 	{
