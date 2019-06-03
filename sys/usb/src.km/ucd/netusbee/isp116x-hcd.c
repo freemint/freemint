@@ -1652,8 +1652,6 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	return done;
 }
 
-short flagy = 0;
-
 static long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long len, long flags)
