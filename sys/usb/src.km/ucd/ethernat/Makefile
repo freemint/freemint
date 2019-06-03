@@ -1,7 +1,6 @@
 #
-# Makefile for ucd module
+# Makefile for ethernat
 #
-TARGET = ethernat.ucd
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -9,30 +8,68 @@ SUBDIRS =
 srcdir = .
 top_srcdir = ../../../..
 subdir = ethernat
+toscommon_srcdir = ../../tos-common
 
-default: all
+default:
 
-CPU = 060
+include ./ETHERNATDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+SGENFILES = crtinit.c delayasm.S entry.S setstack.S
+
+all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=ethernat $(XDD_DEFINITIONS)
-XDD_DEFINITIONS = 
-
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
 
 # default definitions
-GENFILES = $(TARGET)
-OBJS = $(SSOBJS:.S=.o) $(COBJS:.c=.o)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) *.ucd *.prg
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(ethernattargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-include $(top_srcdir)/DEPENDENCIES
+$(ethernattargets): $(SGENFILES)
+	$(MAKE) buildethernat ethernat=$@
+
+# Link common TOS files
+crtinit.c: $(toscommon_srcdir)/crtinit.c
+	ln -sf $< $(srcdir)/$@
+delayasm.S: $(toscommon_srcdir)/delayasm.S
+	ln -sf $< $(srcdir)/$@
+entry.S: $(toscommon_srcdir)/entry.S
+	ln -sf $< $(srcdir)/$@
+setstack.S: $(toscommon_srcdir)/setstack.S
+	ln -sf $< $(srcdir)/$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(ethernat),)
+
+compile_dir = .compile_$(ethernat)
+ethernattarget = _stmp_$(ethernat)
+realtarget = $(ethernattarget)
+
+$(ethernattarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildethernat: $(realtarget)

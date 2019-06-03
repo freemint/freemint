@@ -8,7 +8,15 @@ HEADER = \
 COBJS = \
 	isp116x-hcd.c
 
+TOSCOBJS = \
+	crtinit.c
+
 SSOBJS = \
 	ethernat_int.S
+
+TOSSSOBJS = \
+	entry.S \
+	setstack.S \
+	delayasm.S
 
 SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)

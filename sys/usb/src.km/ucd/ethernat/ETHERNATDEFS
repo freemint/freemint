@@ -1,0 +1,31 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
+ifeq ($(ethernat),deb)
+TARGET = ethernat.ucd
+CPU = 060
+USBDEFS += -DDEV_DEBUG
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(ethernat),prg)
+TARGET = ethernat.prg
+CPU = 060
+USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+endif
+
+ifeq ($(ethernat),060)
+TARGET = ethernat.ucd
+CPU = 060
+USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+#
+# all default targets
+#
+ethernattargets = 060 deb prg #col

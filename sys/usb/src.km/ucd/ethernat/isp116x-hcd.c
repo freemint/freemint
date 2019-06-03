@@ -57,9 +57,14 @@
  *    Note: Part of this code has been derived from linux
  */
 
+#ifndef TOSONLY
 #include "mint/mint.h"
 #include "libkern/libkern.h"
 #include "mint/mdelay.h"
+#endif
+
+#include "../../global.h"
+
 #include "mint/dcntl.h"
 #include "mint/arch/asm_spl.h" /* spl() */
 #include "mint/swap.h"
@@ -70,10 +75,15 @@
 #include "ethernat_int.h"
 
 #define VER_MAJOR	0
-#define VER_MINOR	1
+#define VER_MINOR	2
 #define VER_STATUS
 
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
+#ifdef TOSONLY
+#define MSG_VERSION    "TOS"
+#else
+#define MSG_VERSION    "FreeMiNT"
+#endif
+
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -82,32 +92,6 @@
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-/*
- * Debug section
- */
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-
-#else
-
-# define FORCE(x)
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)
-# define TRACE(x)
-# define ASSERT(x)	assert x
-
-#endif
 
 /*
  * Enable the following defines if you wish enable extra debugging messages.
@@ -124,7 +108,11 @@
 /****************************************************************************/
 /* BEGIN kernel interface */
 
+#ifndef TOSONLY
 struct kentry	*kentry;
+#else
+extern unsigned long _PgmSize;
+#endif
 struct usb_module_api *api;
 
 /* END kernel interface */
@@ -146,7 +134,11 @@ void _cdecl	ethernat_int	(void);
 /*
  * interrupt handling - top half
  */
+#ifdef TOSONLY
+static void	int_handle_tophalf	(void);
+#else
 static void	int_handle_tophalf	(PROC *p, long arg);
+#endif
 
 /*
  *Function prototypes
@@ -157,8 +149,6 @@ long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long)
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
-
-long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /*
  * USB controller interface
@@ -272,7 +262,7 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				len, dev->status));
 
 #if defined(VERBOSE)
-	sprintf(buf, sizeof(buf),"\0");
+	sprintf(buf, sizeof(buf),"%c",'0');
 	if (len > 0 && buffer)
 	{
 		sprintf(build_str, sizeof(build_str), __FILE__ ": data(%ld):", len);
@@ -316,7 +306,7 @@ dump_ptd(struct ptd *ptd)
 	    PTD_GET_TOGGLE(ptd),
 	    PTD_GET_ACTIVE(ptd), PTD_GET_SPD(ptd), PTD_GET_LAST(ptd)));
 #if defined(VERBOSE)
-	sprintf(buf, sizeof(buf),"\0");
+	sprintf(buf, sizeof(buf),"%c",'0');
 	sprintf(build_str, sizeof(build_str), "isp116x: %s: PTD(byte): ", __FUNCTION__);
 	strcat(buf, build_str);
 	for (k = 0; k < sizeof(struct ptd); ++k) /* Galvez: note that bytes in the words are shown swapped */
@@ -336,7 +326,7 @@ dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
 	char build_str[64];
 	char buf[64 + 4 * PTD_GET_LEN(ptd)];
 
-	sprintf(buf, sizeof(buf),"\0");
+	sprintf(buf, sizeof(buf),"%c",'0');
 	if (type == 0 /* 0ut data */ )
 	{
 		sprintf(build_str, sizeof(build_str), "isp116x: %s: out data: ", __FUNCTION__);
@@ -448,21 +438,23 @@ static unsigned char root_hub_str_index0[] =
 
 static unsigned char root_hub_str_index1[] =
 {
-	0x22,			/*  unsigned char  bLength; */
+	0x24,			/*  unsigned char  bLength; */
 	0x03,			/*  unsigned char  bDescriptorType; String-descriptor */
-	'I',			/*  unsigned char  Unicode */
+	'E',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'S',			/*  unsigned char  Unicode */
+	't',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'P',			/*  unsigned char  Unicode */
+	'h',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'1',			/*  unsigned char  Unicode */
+	'e',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'1',			/*  unsigned char  Unicode */
+	'r',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'6',			/*  unsigned char  Unicode */
+	'N',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
-	'x',			/*  unsigned char  Unicode */
+	'A',			/*  unsigned char  Unicode */
+	0,			/*  unsigned char  Unicode */
+	'T',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
 	' ',			/*  unsigned char  Unicode */
 	0,			/*  unsigned char  Unicode */
@@ -625,11 +617,13 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
 
 		/* This part is critical, disamble interrupts */
-		set_int_lvl6();
+		MINT_INT_OFF;
+		TOS_INT_OFF;
 		write_ptddata_to_fifo(isp116x,
 				      (unsigned char *) data + done,
 				      PTD_GET_LEN(&ptd[i]));
-		set_old_int_lvl();
+		MINT_INT_ON;
+		TOS_INT_ON;
 
 		done += PTD_GET_LEN(&ptd[i]);
 	}
@@ -667,11 +661,13 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 //		if (PTD_GET_COUNT(ptd) != 0 || PTD_GET_CC(ptd) == 15)
 		{
 			/* This part is critical, disamble interrupts */
-			set_int_lvl6();
+			MINT_INT_OFF;
+			TOS_INT_OFF;
 			read_ptddata_from_fifo(isp116x,
 					       (unsigned char *) data + done,
 					       PTD_GET_LEN(&ptd[i]));
-			set_old_int_lvl();
+			MINT_INT_ON;
+			TOS_INT_ON;
 		}
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
 
@@ -1555,10 +1551,15 @@ isp116x_stop(struct isp116x *isp116x)
 {
 	unsigned long val;
 
-#if 1
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	/* EtherNAT control register, disamble interrupt for USB */
 	*ETHERNAT_CPLD_CR = (*ETHERNAT_CPLD_CR) & 0xFB;
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
 #endif
+
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 
 	/* Switch off ports' power, some devices don't come up
@@ -1572,7 +1573,11 @@ isp116x_stop(struct isp116x *isp116x)
 }
 
 static void
+#ifdef TOSONLY
+int_handle_tophalf(void)
+#else
 int_handle_tophalf(PROC *process, long arg)
+#endif
 {
 	struct isp116x *isp116x = &isp116x_dev;
 
@@ -1601,8 +1606,6 @@ ethernat_int(void)
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
 	isp116x_write_reg16(isp116x, HCuPINT, irqstat);
 
-	set_old_int_lvl();
-
 	if (irqstat & HCuPINT_OPR)
 	{
 		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
@@ -1613,13 +1616,16 @@ ethernat_int(void)
 			isp116x->rhstatus = isp116x_read_reg32(isp116x, HCRHSTATUS);
 			isp116x->rhport[0] = isp116x_read_reg32(isp116x, HCRHPORT1);
 			isp116x->rhport[1] = isp116x_read_reg32(isp116x, HCRHPORT2);
-
+#ifdef TOSONLY
+			int_handle_tophalf();
+#else
 			addroottimeout (0L, int_handle_tophalf, 0x1);
+#endif
 		}
 	}
 
 	isp116x_write_reg16(isp116x, HCuPINTENB, HCuPINT_OPR);
-	set_int_lvl6();
+
 	/* Enable CPLD USB interrupt again */
 	*ETHERNAT_CPLD_CR = (*ETHERNAT_CPLD_CR) | 0x04;
 }
@@ -1701,9 +1707,14 @@ isp116x_start(struct isp116x *isp116x)
 	val |= HCHWCFG_INT_ENABLE;
 	isp116x_write_reg16(isp116x, HCHWCFG, val);
 
-#if 1
+
 	/* EtherNAT control register, enable interrupt for USB */
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	*ETHERNAT_CPLD_CR = (*ETHERNAT_CPLD_CR) | 0x04;
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
 #endif
 	isp116x_show_regs(isp116x);
 
@@ -1819,7 +1830,13 @@ usb_lowlevel_init(void *dummy)
 	isp116x->data_reg = (unsigned short *) ISP116X_HCD_DATA;
 
 	/* Disamble USB interrupt in the EtherNat board */
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	*ETHERNAT_CPLD_CR = (*ETHERNAT_CPLD_CR) & 0xFB;
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 
 	/* Setup specific board settings */
 #ifdef ISP116X_HCD_INT_ACT_HIGH
@@ -1879,22 +1896,33 @@ ethernat_probe_c(void)
 	found = 1;
 }
 
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long _cdecl init (struct kentry *, struct usb_module_api *, char **);
+
 long _cdecl
 init(struct kentry *k, struct usb_module_api *uapi, char **reason)
+#endif
 {
 	long ret;
-	short sr;
-
+#ifndef TOSONLY
 	kentry	= k;
 	api     = uapi;
 
 	if (check_kentry_version())
 		return -1;
+#endif
 
 	/* Check that the Ethernat card can be found */
-	sr = spl7 ();
+	MINT_INT_OFF;
+	TOS_INT_OFF;
 	ethernat_probe_asm();
-	spl (sr);
+	MINT_INT_ON;
+	TOS_INT_ON;
 
 	if(!found)
 	{
@@ -1906,7 +1934,17 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
+#ifdef TOSONLY
+	/* Get USB cookie */
+	if (!getcookie(_USB, (long *)&api))
+	{
+		(void)Cconws("EtherNAT failed to get _USB cookie\r\n");
+		return -1;
+	}
 
+	/* for precise mdelay/udelay relative to CPU power */
+	set_tos_delay();
+#endif
 	ret = ucd_register(&ethernat_uif, &root_hub_dev);
 	if (ret)
 	{
@@ -1915,5 +1953,10 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	}
 
 	DEBUG (("%s: ucd register ok", __FILE__));
+
+#ifdef TOSONLY
+	c_conws("EtherNAT USB driver installed.\r\n");
+	Ptermres(_PgmSize,0);
+#endif
 	return 0;
 }
