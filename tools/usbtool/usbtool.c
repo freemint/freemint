@@ -185,7 +185,7 @@ void update_text(void)
                 struct usb_interface *iface = &dev->config.if_desc[0L];
                 if (iface->desc.bInterfaceClass == USB_CLASS_HUB)
                 {
-                    dev_types[j] = (j==0)?DEV_TYPE_ROOT_HUB:DEV_TYPE_HUB;
+                    dev_types[j] = dev->parent?DEV_TYPE_HUB:DEV_TYPE_ROOT_HUB;
                 }
                 else
                 {
