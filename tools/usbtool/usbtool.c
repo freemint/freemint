@@ -212,7 +212,8 @@ void update_text(void)
                else
                {
                    strcat (dev_names[j], dev->mf); /* manufacturer */
-                   strcat (dev_names[j], " ");
+                   if (strlen(dev->mf)) /* For better aligment don't add a blank if mf is empty */
+                       strcat (dev_names[dev_index], " ");
                    strcat (dev_names[j], dev->prod); /* product */
                }
                j++;
