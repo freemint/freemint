@@ -14,10 +14,10 @@
 #include <mint/osbind.h>
 #include <string.h>
 #define TOSONLY
-#include "usbtool.h"
 #include "../../sys/usb/src.km/global.h"
 #include "../../sys/usb/src.km/usb.h"
 #include "../../sys/usb/src.km/usb_api.h"
+#include "usbtool.h"
 
 #define NO_WINDOW   -1      /* no window opened */
 #define NO_POSITION -1      /* window has no position yet */
@@ -161,9 +161,64 @@ events (short menuID)
     }
 }
 
+void get_device_info(struct usb_device *dev, int dev_index)
+{
+    unsigned char ifaces = dev->config.no_of_if;
+    struct usb_interface *iface;
+
+    while (ifaces--)
+    {
+        iface = &dev->config.if_desc[ifaces];
+        if (iface->desc.bInterfaceClass == USB_CLASS_HUB)
+        {
+            dev_types[dev_index] = dev->parent?DEV_TYPE_HUB:DEV_TYPE_ROOT_HUB;
+        }
+        else if (iface->driver)
+        {
+            dev_types[dev_index] = DEV_TYPE_GENERAL;
+            break;
+        }
+        else
+        {
+            dev_types[dev_index] = DEV_TYPE_NODRIVER;
+        }
+    }
+    memset (dev_names[dev_index], 0, 64);
+    if (strlen(dev->mf) == 0 && strlen(dev->prod) == 0 && dev_index != 0)
+    {
+        strcat(dev_names[dev_index], "NO NAME");
+    }
+    else
+    {
+       strcat (dev_names[dev_index], dev->mf); /* manufacturer */
+       if (strlen(dev->mf)) /* For better aligment don't add a blank if mf is empty */
+          strcat (dev_names[dev_index], " ");
+       strcat (dev_names[dev_index], dev->prod); /* product */
+    }
+}
+
+int process_children(struct usb_device *dev, int dev_index)
+{
+    int i;
+
+    for (i = 0; i <= dev->maxchild; i++)
+    {
+        if (!dev->children[i])
+            continue;
+        dev_index++;
+        get_device_info(dev->children[i], dev_index);
+        struct usb_interface *iface = &dev->children[i]->config.if_desc[0L];
+        if (iface->desc.bInterfaceClass == USB_CLASS_HUB)
+        {
+            dev_index = process_children(dev->children[i], dev_index);
+        }
+    }
+    return dev_index;
+}
+
 void update_text(void)
 {
-    int i, j = 0;
+    int i, dev_index = 0;
     short msg[8];
     static char info_line[64] = "";
     char n_devices[3];
@@ -181,45 +236,17 @@ void update_text(void)
             struct usb_device *dev = usb_get_dev_index (i);
             if (dev && dev->mf && dev->prod)
             {
-                /* See if it's a hub */
+                /* See if it's a root hub */
                 struct usb_interface *iface = &dev->config.if_desc[0L];
-                if (iface->desc.bInterfaceClass == USB_CLASS_HUB)
+                if (iface->desc.bInterfaceClass == USB_CLASS_HUB && (!dev->parent))
                 {
-                    dev_types[j] = dev->parent?DEV_TYPE_HUB:DEV_TYPE_ROOT_HUB;
+                    get_device_info(dev, dev_index);
+                    dev_index = process_children(dev, dev_index);
+                    dev_index++;
                 }
-                else
-                {
-                    unsigned char ifaces = dev->config.no_of_if;
-                    while (ifaces--)
-                    {
-                        iface = &dev->config.if_desc[ifaces];
-                        if (iface->driver)
-                        {
-                            dev_types[j] = DEV_TYPE_GENERAL;
-                            break;
-                        }
-                        else
-                        {
-                            dev_types[j] = DEV_TYPE_NODRIVER;
-                        }
-                     }
-                }
-                memset (dev_names[j], 0, 64);
-               if (strlen(dev->mf) == 0 && strlen(dev->prod) == 0 && j != 0)
-               {
-                   strcat(dev_names[j], "NO NAME");
-               }
-               else
-               {
-                   strcat (dev_names[j], dev->mf); /* manufacturer */
-                   if (strlen(dev->mf)) /* For better aligment don't add a blank if mf is empty */
-                       strcat (dev_names[dev_index], " ");
-                   strcat (dev_names[j], dev->prod); /* product */
-               }
-               j++;
             }
         }
-        dev_count = j;
+        dev_count = dev_index;
         if (dev_count == 0)
         {
             dev_types[0] = DEV_TYPE_ERROR;
@@ -238,9 +265,9 @@ void update_text(void)
 
     /* Update info line */
     strncpy(info_line, " ", 2);
-    n_string(n_devices, j);
+    n_string(n_devices, dev_index);
     strcat(info_line, n_devices);
-    strcat(info_line, (j<2)?" device":" devices");
+    strcat(info_line, (dev_index<2)?" device":" devices");
     if (polling_flag == 0)
         strcat(info_line, " (updates when window open)");
     wind_set (text_handle, WF_INFO, (long) info_line >> 16, (long) info_line & 0xffff, 0, 0);
