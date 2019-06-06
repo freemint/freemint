@@ -20,3 +20,5 @@ void hslider(short w_handle, short x, short y, short w, short h);
 void sliders(void);
 void set_clip(short clip_flag, GRECT *area);
 void n_string(char *s, int n);
+void get_device_info(struct usb_device *, int);
+int process_children(struct usb_device *, int);
