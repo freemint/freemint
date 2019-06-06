@@ -2061,8 +2061,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 				usb_disable_asynch(0); /* asynch transfer allowed */
 				return -1;
 			}
-			else
+			else {
+				usb_stor_reset(lun_global_num);
 				continue;
+			}
 		}
 
 		struct us_data *ss;
@@ -2076,6 +2078,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			/* This is a floppy drive, so give it a drive letter ? B ?. */
 			/* Also, we may be better to intercept the TRAP #1 floppy handlers
 			 * and deal with them here. ??? */
+			usb_stor_reset(lun_global_num);
 			continue;
 		}
 
@@ -2090,8 +2093,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		hex_long(usb_dev_desc[lun_global_num].type & 0x1f);
 		c_conws(" not installed\r\n");
 #endif
+			usb_stor_reset(lun_global_num);
 			continue;
 		}
+
 		usb_dev_desc[lun_global_num].usb_phydrv = i;
 		mass_storage_dev[i].usb_dev_desc[lun] = &usb_dev_desc[lun_global_num];
 
