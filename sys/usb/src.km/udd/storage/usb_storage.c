@@ -2005,6 +2005,7 @@ static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
 {
 	long i, r, lun, lun_global_num;
+	bool device_handled = FALSE;
 
 	if(dev == NULL)
 		return -1;
@@ -2055,16 +2056,8 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		r = usb_stor_get_info(dev, &mass_storage_dev[i].usb_stor, &usb_dev_desc[lun_global_num]);
 		if(r < 0) {
 			/* There was an error, invalidate entry */
-			usb_stor_reset(lun_global_num);
-			if (!mass_storage_dev[i].total_lun) {
-			/* We only return an error if the device has a single LUN */
-				usb_disable_asynch(0); /* asynch transfer allowed */
-				return -1;
-			}
-			else {
 				usb_stor_reset(lun_global_num);
 				continue;
-			}
 		}
 
 		struct us_data *ss;
@@ -2103,17 +2096,22 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		if (r > 0) /* Only init partitions when LUN is ready */
 			part_init(lun_global_num, &usb_dev_desc[lun_global_num]);
 
+		device_handled = TRUE;
+
 		do {
 			lun_global_num++;
 		} while (usb_dev_desc[lun_global_num].target != 0xff && lun_global_num < MAX_TOTAL_LUN_NUM);
 	}
 
-	if (mass_storage_dev[i].total_lun > 0)
+	if (mass_storage_dev[i].total_lun > 0 && device_handled)
 		init_polling();
 
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
-	return 0;
+	if (device_handled)
+		return 0;
+	else
+		return -1;
 }
 
 void
