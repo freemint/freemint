@@ -1887,7 +1887,8 @@ isp116x_start(struct isp116x *isp116x)
 
 #ifndef TOSONLY
 	long r;
-	r = kthread_create(NULL, netusbee_hub_poll_thread, NULL, NULL, "hubpoll");
+
+	r = kthread_create(NULL, netusbee_hub_poll_thread, NULL, NULL, "netusbee");
 	if (r)
 	{
 		/* XXX todo -> exit gracefully */

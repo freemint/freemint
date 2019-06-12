@@ -556,7 +556,7 @@ usb_lowlevel_init(void *dummy)
 	/*
 	 * Start the root hub thread.
 	 */
-	r = kthread_create(NULL, sl811_hub_poll_thread, NULL, NULL, "hubpoll");
+	r = kthread_create(NULL, sl811_hub_poll_thread, NULL, NULL, "unicorn");
 	if (r)
 	{
 		return -1;
