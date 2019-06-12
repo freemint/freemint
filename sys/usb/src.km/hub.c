@@ -662,10 +662,11 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 
 #ifndef TOSONLY
 	/* 
-	 * Galvez: While interrupt transfer in isp116x driver isn't supported,
-	 * we poll the hub devices attached to the root hub
+	 * DavidGZ: As long as our Host Controller drivers don't support
+	 * interrupt transfers  we poll the hub devices attached to the
+	 * root hub
 	 */
-	if (dev->devnum > 1)
+	if (dev->parent) /* If we have a parent we're not a root hub */
 	{
 		DEBUG(("Installing poll for hub device"));
 
