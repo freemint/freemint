@@ -111,6 +111,7 @@ typedef char Path[PATH_MAX];
 						 */
 void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
 void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
+long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 
 long	_cdecl _mint_strncmp	(const char *str1, const char *str2, long len);
 char *	_cdecl _mint_strncpy	(char *dst, const char *src, long len);
@@ -124,6 +125,7 @@ long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...) __attribute
 # define strncmp		_mint_strncmp
 # define strncpy		_mint_strncpy
 # define strcat			_mint_strcat
+# define memcmp			_mint_memcmp
 
 #define sprintf			ksprintf
 
