@@ -45,8 +45,10 @@ _run_calibration:
         lea     handle_timer,a0
         move.l  a0,TIMERD_VEC       //set up new TimerD vector
         lea     MFP_IERB,a0
+        move.b  (a0),ierbsave
         bset.b  #4,(a0)             //set interrupt enable bit
         lea     MFP_IMRB,a0
+        move.b  (a0),imrbsave
         bset.b  #4,(a0)             //set interrupt mask bit
 
         lea     MFP_TCDCR,a0        //a0 -> Timer C/D control reg
@@ -75,6 +77,10 @@ cal_loop:                           //just like asm.h inline function
         andi.b  #0xf0,(a0)          //stop TimerD
 #endif
 
+        lea     MFP_IERB,a0         //restore interrupt bits
+        move.b  ierbsave,(a0)
+        lea     MFP_IMRB,a0
+        move.b  imrbsave,(a0)
         move.l  d1,TIMERD_VEC       //restore TimerD vector
         move.l  intsave,d0          //return interrupt count
         rts
@@ -108,3 +114,5 @@ handle_timer:                   //68000:
         .bss
 intcount: .ds.l 1
 intsave:  .ds.l 1
+ierbsave: .ds.b 1
+imrbsave: .ds.b 1
