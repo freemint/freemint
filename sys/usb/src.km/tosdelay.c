@@ -17,6 +17,7 @@
  */
 
 #include "tosdelay.h"
+#include "global.h"
 
 /*
  * initial 1 millisecond delay loop values
@@ -77,26 +78,35 @@ static inline void init_delay(void)
  */
 static inline void calibrate_delay(void)
 {
+	long old_device;
+	ulong old_rate;
 	ulong loopcount, intcount;
 	ulong ret;
+
+	/*
+	 * first, we save the status of the relevant parts of the system.
+	 *
+	 * since TimerD is used by the standard serial port for baud rate
+	 * control, we need to save the current interrupt status and baud
+	 * rate.  the interrupt status must be saved via direct hardware
+	 * access; for the baud rate, we can use a system call.  however,
+	 * since the serial port may have been remapped, we need to map it
+	 * back to the standard device first.
+	 */
+	old_device = Bconmap(6);	/* ok even if Bconmap() doesn't exist */
+	old_rate = Rsconf(-2,-1,-1,-1,-1,-1);
+
 	/*
 	 * disable interrupts then run the calibration
+	 * (the calibration saves & restores the interrupt status)
 	 */
-	Jdisint(MFP_TIMERD);
 	ret = Super(0L);
 	loopcount = CALIBRATION_TIME * loopcount_1_msec;
 	intcount = run_calibration(loopcount);
 	Super(ret);
-	Jenabint(MFP_TIMERD);
 
-	/*
-	 * disable interrupts then restore the RS232
-	 * serial port stuff (in case we're using it)
-	 */
-	//Jdisint(MFP_TIMERD);
-	// TO DO: will need to save and restore values
-	//rsconf1(B9600, 0, 0x88, 1, 1, 0);   /* just like init_serport() */
-	//Jenabint(MFP_TIMERD);
+	Rsconf(old_rate,-1,-1,-1,-1,-1);
+	Bconmap(old_device);
 
 	/*
 	 * intcount is the number of interrupts that occur during 'loopcount'
