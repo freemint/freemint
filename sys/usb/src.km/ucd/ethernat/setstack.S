@@ -1,1 +1,0 @@
-../../tos-common/setstack.S
