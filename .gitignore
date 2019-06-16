@@ -33,6 +33,10 @@ sys/usb/src.km/ucd/netusbee/crtinit.c
 sys/usb/src.km/ucd/netusbee/delayasm.S
 sys/usb/src.km/ucd/netusbee/entry.S
 sys/usb/src.km/ucd/netusbee/setstack.S
+sys/usb/src.km/ucd/ethernat/crtinit.c
+sys/usb/src.km/ucd/ethernat/delayasm.S
+sys/usb/src.km/ucd/ethernat/entry.S
+sys/usb/src.km/ucd/ethernat/setstack.S
 sys/usb/src.km/udd/eth/crtinit.c
 sys/usb/src.km/udd/eth/entry.S
 sys/usb/src.km/udd/eth/setstack.S
