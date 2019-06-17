@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = eth hid keyboard mouse printer storage
+SUBDIRS = eth hid keyboard printer storage
 
 srcdir = .
 top_srcdir = ../../..
