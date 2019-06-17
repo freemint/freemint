@@ -47,9 +47,9 @@ sys/usb/src.km/udd/hid/mouse/hidparse.h
 sys/usb/src.km/udd/hid/mouse-boot/crtinit.c
 sys/usb/src.km/udd/hid/mouse-boot/entry.S
 sys/usb/src.km/udd/hid/mouse-boot/setstack.S
-sys/usb/src.km/udd/keyboard/crtinit.c
-sys/usb/src.km/udd/keyboard/entry.S
-sys/usb/src.km/udd/keyboard/setstack.S
+sys/usb/src.km/udd/hid/keyboard/crtinit.c
+sys/usb/src.km/udd/hid/keyboard/entry.S
+sys/usb/src.km/udd/hid/keyboard/setstack.S
 sys/usb/src.km/udd/printer/crtinit.c
 sys/usb/src.km/udd/printer/entry.S
 sys/usb/src.km/udd/printer/setstack.S

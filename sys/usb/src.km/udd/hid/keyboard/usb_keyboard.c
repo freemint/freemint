@@ -10,10 +10,10 @@
  * This file is distributed under the GPL, version 2 or at your
  * option any later version.  See /COPYING.GPL for details.
  */
-#include "../../global.h"
+#include "../../../global.h"
 
-#include "../../usb.h"
-#include "../../usb_api.h"
+#include "../../../usb.h"
+#include "../../../usb_api.h"
 
 #ifdef TOSONLY
 #define MSG_VERSION "TOS DRIVERS"
