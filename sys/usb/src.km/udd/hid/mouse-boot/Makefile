@@ -1,14 +1,14 @@
 #
-# Makefile for mouse
+# Makefile for mouse (boot protocol)
 #
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
-top_srcdir = ../../../..
-subdir = mouse
-toscommon_srcdir = ../../tos-common
+top_srcdir = ../../../../..
+subdir = mouse-boot
+toscommon_srcdir = ../../../tos-common
 
 default:
 

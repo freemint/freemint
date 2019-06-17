@@ -1,12 +1,12 @@
 #
-# Makefile for mouse
+# Makefile for mouse (boot protocol)
 #
 
 SHELL = /bin/sh
 SUBDIRS =
 
 srcdir = ..
-top_srcdir = ../../../../..
+top_srcdir = ../../../../../..
 subdir = $(compile_dir)
 
 default: all
