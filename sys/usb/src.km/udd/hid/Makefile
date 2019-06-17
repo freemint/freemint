@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = mouse mouse-boot
+SUBDIRS = keyboard mouse mouse-boot
 
 srcdir = .
 top_srcdir = ../../../..

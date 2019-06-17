@@ -6,9 +6,9 @@ SHELL = /bin/sh
 SUBDIRS =
 
 srcdir = .
-top_srcdir = ../../../..
+top_srcdir = ../../../../../..
 subdir = keyboard
-toscommon_srcdir = ../../tos-common
+toscommon_srcdir = ../../../tos-common
 
 default:
 
