@@ -3,11 +3,11 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = eth hid keyboard mouse printer storage
+SUBDIRS = mouse
 
 srcdir = .
-top_srcdir = ../../..
-subdir = udd
+top_srcdir = ../../../..
+subdir = hid
 
 default: all
 

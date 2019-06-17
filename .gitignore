@@ -40,6 +40,10 @@ sys/usb/src.km/ucd/ethernat/setstack.S
 sys/usb/src.km/udd/eth/crtinit.c
 sys/usb/src.km/udd/eth/entry.S
 sys/usb/src.km/udd/eth/setstack.S
+sys/usb/src.km/udd/hid/mouse/hid.c
+sys/usb/src.km/udd/hid/mouse/hid.h
+sys/usb/src.km/udd/hid/mouse/hidparse.c
+sys/usb/src.km/udd/hid/mouse/hidparse.h
 sys/usb/src.km/udd/keyboard/crtinit.c
 sys/usb/src.km/udd/keyboard/entry.S
 sys/usb/src.km/udd/keyboard/setstack.S
