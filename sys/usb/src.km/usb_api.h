@@ -26,7 +26,7 @@
 /*
  * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
  */
-#define USB_API_VERSION 1
+#define USB_API_VERSION 2
 
 /*
  * UCD - USB Controller Driver.

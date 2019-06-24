@@ -166,7 +166,7 @@ struct usb_config {
 
 	unsigned char	no_of_if;	/* number of interfaces */
 	struct usb_interface if_desc[USB_MAXINTERFACES];
-} __attribute__ ((packed));
+};
 
 enum {
 	/* Maximum packet size; encoded as 0,1,2,3 = 8,16,32,64 */
