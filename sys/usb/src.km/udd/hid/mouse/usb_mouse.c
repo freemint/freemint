@@ -118,7 +118,6 @@ void mouse_int (void);
 static long mouse_ioctl (struct uddif *, short, long);
 static long mouse_disconnect (struct usb_device *dev);
 static long mouse_probe (struct usb_device *dev, unsigned int ifnum);
-//static long hid_parser_mouse(unsigned char* buff, long len);
 
 static char lname[] = "USB mouse class driver\0";
 
@@ -142,6 +141,7 @@ struct mse_info
 	long buttons;
 	long x, y;
 	long wheel;
+	long ac_pan;
 };
 
 struct mse_data
@@ -163,6 +163,7 @@ enum hid_data_type {
 	HID_X,
 	HID_Y,
 	HID_WHEEL,
+	HID_AC_PAN,
 	HID_MAX_USAGES
 };
 
@@ -287,7 +288,6 @@ static long hid_parser_mouse(unsigned char* buff, long len)
 	usage.u_page = U_PAGE_BUTTON;
 	usage.usage = 0;
 	if (find_usage(&parser, &usage, &data)) {
-
 		DEBUG(("Number of buttons: %d", (int)parser.report_count));
 		DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
 		DEBUG(("Data size in bits: 0x%02x", (int)data.size));
@@ -345,6 +345,22 @@ static long hid_parser_mouse(unsigned char* buff, long len)
 		DEBUG(("wheel not found."));
 	}
 
+	/* Find ac (application control) pan */
+	DEBUG(("\r\nAC PAN"));
+	memset(&data, 0, sizeof(struct HID_DATA));
+	usage.u_page = U_PAGE_CONSUMER;
+	usage.usage = USAGE_AC_PAN;
+	if (find_usage(&parser, &usage, &data)) {
+		DEBUG(("Logical min: %ld", (long)data.log_min));
+		DEBUG(("Logical max: %ld", (long)data.log_max));
+		DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
+		DEBUG(("Data size in bits: 0x%02x", (int)data.size));
+
+		fill_extract_bits(&usages[HID_AC_PAN], data.offset, data.size, data.log_min < 0, data.report_id_used, data.report_id);
+	} else {
+		DEBUG(("ac pan not found."));
+	}
+
 	/* Mouse needs at least x, y and buttons to be usable. */
 	if (usages[HID_BUTTONS].mask && usages[HID_X].mask && usages[HID_Y].mask) {
 		return 1L;
@@ -367,7 +383,7 @@ static inline char clip_to_s8(long v)
 void
 mouse_int (void)
 {
-	long mouse_change = 0, wheel_change = 0;
+	long mouse_change = 0, wheel_change = 0, ac_pan_change = 0;
 	static long wheel_interval = 0; //time interval between wheel reports (each 20ms)
 	long actlen = 0;
 	long r;
@@ -397,6 +413,7 @@ mouse_int (void)
 		mse_data.new.x = hid_get_data(data, &usages[HID_X]);
 		mse_data.new.y = hid_get_data(data, &usages[HID_Y]);
 		mse_data.new.wheel = hid_get_data(data, &usages[HID_WHEEL]);
+		mse_data.new.ac_pan = hid_get_data(data, &usages[HID_AC_PAN]);
 	} else {
 		/* Boot mode with fixed data format */
 		mse_data.new.buttons = data[0];
@@ -429,6 +446,8 @@ mouse_int (void)
 	if (mse_data.new.wheel != 0)
 		wheel_change = 1;
 
+	if (mse_data.new.ac_pan != 0)
+		ac_pan_change = 1;
 
 	if (mouse_change)
 	{
@@ -481,8 +500,33 @@ mouse_int (void)
 		}
 		wheel_interval = 0;
 	}
+	if (ac_pan_change)
+	{
+		char ac_pan;
+		short i;
+
+		(void) ac_pan;
+
+		ac_pan = mse_data.new.ac_pan;
+		if (ac_pan > 0)
+		{
+			for (i = 0; i < ac_pan; i++)
+			{
+				usb_kbd_send_code (0x4D, 0); //RIGHT press
+				usb_kbd_send_code (0xCD, 0); //RIGHT release
+			}
+		}
+		else if (ac_pan < 0)
+		{
+			for (i = 0; i > ac_pan; i--)
+			{
+				usb_kbd_send_code (0x4B, 0); //LEFT press
+				usb_kbd_send_code (0xCB, 0); //LEFT release
+			}
+		}
+	}
 #endif
-	if (mouse_change || wheel_change)
+	if (mouse_change || wheel_change || ac_pan_change)
 		fake_hwint();
 	if (mouse_change)
 	{

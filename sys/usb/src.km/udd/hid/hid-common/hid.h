@@ -21,6 +21,10 @@
 #define U_PAGE_KEYBOARD		0x07
 #define U_PAGE_LED			0x08
 #define U_PAGE_BUTTON		0x09
+#define U_PAGE_ORDINAL		0x0A
+#define U_PAGE_TELEPHONY	0x0B
+#define U_PAGE_CONSUMER		0x0C
+#define U_PAGE_DIGITIZER	0x0D
 
 /* Desktop usage */
 #define USAGE_UNDEFINED		0x00
@@ -37,6 +41,7 @@
 #define USAGE_DIAL			0x37
 #define USAGE_WHEEL			0x38
 #define USAGE_HAT_SWITCH	0x39
+#define USAGE_AC_PAN		0x238
 
 struct usb_class_hid_descriptor {
 	unsigned char	bLength;
