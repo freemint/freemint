@@ -277,7 +277,7 @@ long len=strlen(variable);
 		ptr=CfgGetLine(ptr);
 		if(strnicmp(cfg_var,variable,len)==0)
 		{
-			strcpy(cfg_var,&cfg_var[len]);
+			memmove(cfg_var,&cfg_var[len],strlen(&cfg_var[len])+1);
 			return(cfg_var);
 		}
 	}while(*ptr);
