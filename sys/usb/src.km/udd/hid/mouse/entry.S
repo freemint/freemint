@@ -1,1 +1,0 @@
-../../../tos-common/entry.S
