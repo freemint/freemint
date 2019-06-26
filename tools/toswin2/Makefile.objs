@@ -3,13 +3,11 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = ../tw-call
+SUBDIRS =
 
 srcdir = ..
 top_srcdir = ../..
 subdir = $(compile_dir)
-
-installdir = /opt/GEM/toswin2
 
 default: all
 
@@ -48,14 +46,6 @@ build: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 
-install: all
-	$(top_srcdir)/mkinstalldirs $(installdir)
-	cp $(TARGET) $(installdir)
-	chmod 755 $(installdir)/$(TARGET)
-	$(STRIP) $(installdir)/$(TARGET)
-
-
 # default dependencies
 # must be included last
 include $(top_srcdir)/DEPENDENCIES
-
