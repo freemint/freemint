@@ -41,7 +41,7 @@ ifneq "$(TARGET)" ""
 	-$(STRIP) $(TARGET)
 endif
 
-install: all-here install-recursive
+install: install-recursive
 
 uninstall: uninstall-recursive
 
