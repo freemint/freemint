@@ -468,6 +468,28 @@ mouse_int (void)
 			usb_kbd_send_code (0x72, 0x0D); /* Numpad ENTER press */
 		else if (! (buttons & 4) && (old_buttons & 4))
 			usb_kbd_send_code (0xF2, 0x0D); /* Numpad ENTER release */
+
+		if ((buttons & 8) && ! (old_buttons & 8))	/* 4th button = Page DOWN */
+		{
+			usb_kbd_send_code(0x2a, 0);		/* Shift press */
+			usb_kbd_send_code(0x50, 0);		/* Arrow Down press */
+		}
+		else if (! (buttons & 8) && (old_buttons & 8))
+		{
+			usb_kbd_send_code(0x50 + 0x80, 0);	/* Arrow Down release */
+			usb_kbd_send_code(0x2a + 0x80, 0);	/* Shift release */
+		}
+
+		if ((buttons & 16) && ! (old_buttons & 16))	/* 5th button = Page UP */
+		{
+			usb_kbd_send_code(0x2a, 0);		/* Shift press */
+			usb_kbd_send_code(0x48, 0);		/* Arrow Up press */
+		}
+		else if (! (buttons & 16) && (old_buttons & 16))
+		{
+			usb_kbd_send_code(0x48 + 0x80, 0);	/* Arrow Up release */
+			usb_kbd_send_code(0x2a + 0x80, 0);	/* Shift release */
+		}
 	}
 
 #ifdef WHEELMOUSE
