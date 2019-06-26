@@ -3,13 +3,11 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = ../hyp ../plain ../dragdrop ../bubble
+SUBDIRS =
 
 srcdir = ..
 top_srcdir = ../..
 subdir = $(compile_dir)
-
-installdir = /opt/GEM/hypview
 
 default: all
 
@@ -58,15 +56,6 @@ endif
 
 hyp/libhyp*.a plain/libplain*.a dragdrop/libdgdp*.a bubble/libbgh*.a: all-recursive
 
-install: all
-	$(top_srcdir)/mkinstalldirs $(installdir)
-	cp $(TARGET) $(srcdir)/hyp_view.rsc $(installdir)
-	cp $(srcdir)/hyp_view/en.rso $(installdir)/hyp_view.rso
-	chmod 755 $(installdir)/$(TARGET)
-	$(STRIP) $(installdir)/$(TARGET)
-
-
 # default dependencies
 # must be included last
 include $(top_srcdir)/DEPENDENCIES
-
