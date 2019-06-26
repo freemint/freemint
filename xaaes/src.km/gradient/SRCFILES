@@ -1,0 +1,23 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+SRCFILES = \
+	autumn.c \
+	default.c \
+	flwrpwr.c \
+	g_blue.c \
+	g_cyan.c \
+	g_green.c \
+	g_purple.c \
+	g_red.c \
+	g_yellow.c \
+	menubar.c \
+	mint.c \
+	n_blue.c \
+	n_cyan.c \
+	n_green.c \
+	n_purple.c \
+	n_red.c \
+	n_yellow.c \
+	n_deflt.c
+
