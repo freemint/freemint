@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <support.h>
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(ifl.ifname,...), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
 
 static int sockfd;
 

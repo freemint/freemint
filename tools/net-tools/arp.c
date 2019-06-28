@@ -22,6 +22,12 @@
 
 static int sockfd;
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
+
 /*
  * structure that can be read from /dev/arp
  */

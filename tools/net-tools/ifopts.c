@@ -25,6 +25,12 @@ static int line = 0;
 static char *file = "<argv>";
 
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
+
 int
 parse_hwaddr (char *hw, char *addr)
 {
