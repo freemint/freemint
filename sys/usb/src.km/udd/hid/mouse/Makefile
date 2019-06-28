@@ -38,6 +38,7 @@ help:
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
+	@echo '# - bakclean'
 	@echo '# - strip'
 	@echo '# - help'
 	@echo '#'
