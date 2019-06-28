@@ -5,9 +5,9 @@
 
 
 ifeq ($(mouse),deb)
-TARGET = mouse.prg
+TARGET = mouse.udd
 CPU = 000
-USBDEFS += -DDEV_DEBUG -DTOSONLY -fno-builtin -DSTACKSIZE=8192
+USBDEFS += -DDEV_DEBUG
 LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
 endif
 
