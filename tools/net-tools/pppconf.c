@@ -25,6 +25,12 @@ static int pppfd;
 
 #define ISSET(m,b) (((m)[(unsigned)(b) >> 5]) & (1L << ((b) & 0x1f)))
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
+
 static char *
 map2char (long *map, int n)
 {

@@ -153,6 +153,12 @@ new_proc(char *progname, char *arg, char *env, char *progdir,
 		Fclose(kidfd);
 		
 # ifndef _OLD_UTMP
+
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
 		if (pw && ((shell_cnt == 0) || gl_allogin))
 		{
 				struct utmp ut;
