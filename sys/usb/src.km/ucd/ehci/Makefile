@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ../../../..
 subdir = ehci
 
-default:
+default: help
 
 include ./EHCIDEFS
 

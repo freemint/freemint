@@ -10,7 +10,7 @@ top_srcdir = ../../..
 subdir = loader
 toscommon_srcdir = ../tos-common
 
-default: all-here
+default: help
 
 include $(srcdir)/USBLOADDEFS
 

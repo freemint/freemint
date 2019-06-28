@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = net-tools
 
-default: all-here
+default: help
 
 include $(srcdir)/NETTOOLSDEFS
 

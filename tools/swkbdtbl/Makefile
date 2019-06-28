@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = swkbdtbl
 
-default: all-here
+default: help
 
 include $(srcdir)/SWKBDTBLDEFS
 

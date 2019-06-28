@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ../..
 subdir = slinkctl
 
-default: all-here
+default: help
 
 include $(srcdir)/SLINKCTLDEFS
 

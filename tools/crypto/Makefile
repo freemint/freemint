@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = crypto
 
-default: all-here
+default: help
 
 include $(srcdir)/CRYPTODEFS
 

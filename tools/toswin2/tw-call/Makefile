@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ../..
 subdir = tw-call
 
-default: all-here
+default: help
 
 include $(srcdir)/TWCALLDEFS
 

@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = cops
 
-default: all-here
+default: help
 
 include $(srcdir)/COPSDEFS
 

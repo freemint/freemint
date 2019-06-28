@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = mgw
 
-default: all-here
+default: help
 
 include $(srcdir)/MGWDEFS
 

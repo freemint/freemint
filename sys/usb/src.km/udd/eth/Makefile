@@ -10,7 +10,7 @@ top_srcdir = ../../../..
 subdir = eth
 toscommon_srcdir = ../../tos-common
 
-default:
+default: help
 
 include ./ETHDEFS
 
