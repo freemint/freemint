@@ -44,7 +44,7 @@ short total_width;             /* Total width in number of characters */
 struct usb_module_api *api = 0;
 short polling_flag = 0;         /* ON=always poll, OFF=poll only when window is opened */
 
-void
+int
 main (void)
 {
     short menuID;
@@ -71,6 +71,7 @@ main (void)
     if (appl_find("USBTOOL ")>= 0)
         polling_flag = 1;
     events (menuID);
+    return 0;
 }
 
 void
