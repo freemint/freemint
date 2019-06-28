@@ -31,6 +31,7 @@ typedef struct
 #define DEFAULT_MILAN  "mintmil.prg"
 #define DEFAULT_ARANYM "mintara.prg"
 
+#ifndef __mcoldfire__
 static long
 get_cookie (long id, unsigned long *ret)
 {
@@ -64,6 +65,7 @@ get_cookie (long id, unsigned long *ret)
 
 		return 0;
 }
+#endif
 
 
 static void
@@ -116,11 +118,15 @@ int loader_init(int argc, char **argv, char **env);
 int
 loader_init(int argc, char **argv, char **env)
 {
-		unsigned long cpu, mch;
 		char path[384];
 		char temp[384];
 		char *name;
-		long fh, r;
+#ifndef __mcoldfire__
+		long r;
+		unsigned long cpu;
+		unsigned long mch;
+#endif
+		long fh;
 
 		(void)Cconws("FreeMiNT loader starting...\r\n");
 
