@@ -24,7 +24,6 @@ compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.km
 SGENFILES = xversion.h
 
-
 help:
 	@echo '#'
 	@echo '# targets:'
@@ -34,8 +33,17 @@ help:
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
+	@echo '# - strip'
 	@echo '# - help'
 	@echo '#'
+
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(xaaestargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.km) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \

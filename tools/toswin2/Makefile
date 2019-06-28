@@ -48,6 +48,14 @@ help:
 	@echo '# make install cpu=<CPU> installdir=<DIR>'
 	@echo '#'
 
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(toswin2targets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.app) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
+
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(toswin2targets); do \
