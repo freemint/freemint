@@ -28,6 +28,30 @@ all-here: all-targets
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.ucd *.prg
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(netusbeetargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
+
+strip:
+	$(STRIP) .compile_prg/*.prg
+	$(STRIP) .compile_prg_000/*.prg
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(netusbeetargets); do \
+		if [ "$$i" = "prg" -o "$$i" = "prg_000" ]; then continue; fi; \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.ucd) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
+
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(netusbeetargets); do \

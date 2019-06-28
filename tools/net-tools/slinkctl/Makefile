@@ -25,6 +25,27 @@ all-here: all-targets
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs)
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(slinkctltargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
+
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(slinkctltargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/slinkctl) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
+
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(slinkctltargets); do \

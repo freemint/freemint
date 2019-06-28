@@ -24,7 +24,6 @@ KERNELSUBDIRS += $(MODULEDIRS)
 # default definitions
 GENFILES = $(compile_all_dirs) mint/*~ sys/*~
 
-
 help:
 	@echo '#'
 	@echo '# targets:'
@@ -37,10 +36,19 @@ help:
 	@echo '# - bakclean'
 	@echo '# - clean'
 	@echo '# - distclean'
+	@echo '# - strip'
 	@echo '# - help'
 	@echo '#'
 	@echo '# example for a Milan kernel: -> make mil'
 	@echo '#'
+
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(kerneltargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.prg) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
 all-kernels:
 	@set fnord $(MAKEFLAGS); amf=$$2; \

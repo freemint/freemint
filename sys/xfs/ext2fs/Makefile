@@ -37,8 +37,17 @@ help:
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
+	@echo '# - strip'
 	@echo '# - help'
 	@echo '#'
+
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(ext2targets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.xfs) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
