@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = fsetter
 
-default: all-here
+default: help
 
 include $(srcdir)/FSETTERDEFS
 

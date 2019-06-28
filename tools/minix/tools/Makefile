@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ../..
 subdir = tools
 
-default: all-here
+default: help
 
 include $(srcdir)/TOOLSDEFS
 

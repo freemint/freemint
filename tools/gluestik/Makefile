@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = gluestik
 
-default: all-here
+default: help
 
 include $(srcdir)/GLUESTIKDEFS
 

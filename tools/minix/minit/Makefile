@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ../..
 subdir = minit
 
-default: all-here
+default: help
 
 include $(srcdir)/MINITDEFS
 

@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = mktbl
 
-default: all-here
+default: help
 
 include $(srcdir)/MKTBLDEFS
 

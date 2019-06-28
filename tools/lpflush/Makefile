@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = lpflush
 
-default: all-here
+default: help
 
 include $(srcdir)/LPFLUSHDEFS
 

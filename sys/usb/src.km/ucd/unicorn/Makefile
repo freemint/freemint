@@ -10,7 +10,7 @@ top_srcdir = ../../../..
 subdir = unicorn
 toscommon_srcdir = ../../tos-common
 
-default:
+default: help
 
 include ./UNICORNDEFS
 

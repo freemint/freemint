@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ../..
 subdir = fsck
 
-default: all-here
+default: help
 
 include $(srcdir)/FSCKDEFS
 

@@ -11,7 +11,7 @@ subdir = mouse
 toscommon_srcdir = ../../../tos-common
 hidcommon_srcdir = ../hid-common
 
-default:
+default: help
 
 include ./MOUSEDEFS
 

@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = xaloader
 
-default: all-here
+default: help
 
 include $(srcdir)/XALOADDEFS
 

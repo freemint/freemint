@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = sysctl
 
-default: all-here
+default: help
 
 include $(srcdir)/SYSCTLDEFS
 

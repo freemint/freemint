@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = fdisk
 
-default: all-here
+default: help
 
 include $(srcdir)/FDISKDEFS
 

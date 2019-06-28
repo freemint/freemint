@@ -10,7 +10,7 @@ top_srcdir = ../../../../..
 subdir = mouse-boot
 toscommon_srcdir = ../../../tos-common
 
-default:
+default: help
 
 include ./MOUSEDEFS
 

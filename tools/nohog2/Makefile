@@ -9,7 +9,7 @@ srcdir = .
 top_srcdir = ..
 subdir = nohog2
 
-default: all-here
+default: help
 
 include $(srcdir)/NOHOG2DEFS
 
