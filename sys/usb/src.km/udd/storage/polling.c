@@ -87,40 +87,41 @@ void storage_int(void)
 		}
 	}
 #ifdef TOSONLY /* TOS driver code for uninstalling polling routine */
-	unsigned long first_etv_timer_int;
-	unsigned long *tmp_etv_timer_int;
-	struct xbra *tmp_xbra;
+	{
+		unsigned long first_etv_timer_int;
+		unsigned long *tmp_etv_timer_int;
+		struct xbra *tmp_xbra;
 
 #define ETV_TIMER 0x400
 #define XBRA 0x58425241
 #define USTR 0x55535452
 
+		/* If there is no devices with more than 1 LUN then uninstall polling routine */
+		if (!num_multilun_dev) {
+			first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
+			tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
 
-	/* If there is no devices with more than 1 LUN then uninstall polling routine */
-	if (!num_multilun_dev) {
-		first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
-		tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
+			if (!first_etv_timer_int || tmp_xbra->xbra != XBRA)
+				return;
 
-	if (!first_etv_timer_int || tmp_xbra->xbra != XBRA)
-		return;
-
-		if (tmp_xbra->xbra == XBRA && tmp_xbra->id == USTR) {
-			*(volatile unsigned long *) ETV_TIMER = (unsigned long) tmp_xbra->oldvec;
-			polling_on = 0;
-			return;
-		}
-
-		tmp_etv_timer_int = (unsigned long *) tmp_xbra->oldvec;
-		tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
-		while (tmp_xbra->xbra == XBRA) {
-			if (tmp_xbra->id == USTR) {
-				*tmp_etv_timer_int = (long)tmp_xbra->oldvec;
+			if (tmp_xbra->xbra == XBRA && tmp_xbra->id == USTR) {
+				*(volatile unsigned long *) ETV_TIMER = (unsigned long) tmp_xbra->oldvec;
 				polling_on = 0;
-				break;
+				return;
 			}
-			else {
-				tmp_etv_timer_int = (unsigned long *) &tmp_xbra->oldvec;
-				tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
+
+			tmp_etv_timer_int = (unsigned long *) tmp_xbra->oldvec;
+			tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
+			while (tmp_xbra->xbra == XBRA) {
+				if (tmp_xbra->id == USTR) {
+					*tmp_etv_timer_int = (long)tmp_xbra->oldvec;
+					polling_on = 0;
+					break;
+				}
+				else {
+					tmp_etv_timer_int = (unsigned long *) &tmp_xbra->oldvec;
+					tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
+				}
 			}
 		}
 	}
