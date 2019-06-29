@@ -18,6 +18,9 @@ include $(top_srcdir)/PHONY
 
 all-here: build
 
+strip:
+	$(STRIP) $(TARGET)
+
 ifneq ($(kernel),)
 
 build: $(compile_dir)

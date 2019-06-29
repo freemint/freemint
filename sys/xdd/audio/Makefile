@@ -20,6 +20,9 @@ include $(top_srcdir)/PHONY
 
 all-here: $(TARGET) actrl
 
+strip:
+	$(STRIP) $(TARGET)
+
 # default overwrites
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__
