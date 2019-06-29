@@ -22,6 +22,9 @@ include $(top_srcdir)/PHONY
 
 all-here: entry
 
+strip:
+	$(STRIP) *.xif
+
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
 XIF_DEFINITIONS = 
@@ -34,7 +37,7 @@ LIBS = $(LIBKERN) -lgcc
 GENFILES = *.xif
 SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c main_020.c 
 
- 
+
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
 
 COMMON_OBJS = $(addsuffix .o, $(basename $(notdir $(COMMON_SRCS))))

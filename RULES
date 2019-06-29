@@ -37,9 +37,6 @@ distclean: distclean-recursive
 	rm -rf .deps $(GENFILES) $(SGENFILES)
 
 strip: strip-recursive
-ifneq "$(TARGET)" ""
-	-$(STRIP) $(TARGET)
-endif
 
 install: install-recursive
 

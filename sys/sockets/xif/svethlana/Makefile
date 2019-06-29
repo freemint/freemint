@@ -22,6 +22,9 @@ include $(top_srcdir)/PHONY
 
 all-here: $(TARGET)
 
+strip:
+	$(STRIP) $(TARGET)
+
 # default overwrites
 INCLUDES = -I../.. -I$(top_srcdir)
 XIF_DEFINITIONS =

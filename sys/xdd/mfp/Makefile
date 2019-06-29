@@ -19,6 +19,9 @@ include $(top_srcdir)/PHONY
 
 all-here: entry
 
+strip:
+	$(STRIP) $(GENFILES)
+
 # default overwrites
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__ $(XDD_DEFINITIONS)
