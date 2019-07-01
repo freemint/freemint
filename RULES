@@ -25,6 +25,7 @@ clean: clean-recursive
 	rm -f core report nohup.out errlog
 	rm -f foobar foo bar baz junk schrott muell
 	rm -f $(compile_all_dirs)/*.o $(compile_all_dirs)/lib*.a
+	rm -rf $(GENFILES)
 
 bakclean: bakclean-recursive
 	rm -f *~ *# *.BAK *.bak
