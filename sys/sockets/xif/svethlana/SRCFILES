@@ -11,4 +11,9 @@ COBJS = \
 SSOBJS = \
 	svethlana_i6.s
 
+COMMON_SRCS = \
+	../main.c
+
+SVETHLANA_SRCS = $(COBJS) $(SSOBJS)
+
 SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
