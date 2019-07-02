@@ -377,7 +377,11 @@ char *spaces(unsigned cnt) {
 	return spaces_buff;
 }
 
-const char usage_type_str[][64] = {
+#define MAX_STRING_LENGTH	64
+/* Macro used to check that we don't go out of array's bounds */
+#define USAGE_TYPE_STR_ARRAY_MEMBERS	(sizeof(usage_type_str)/MAX_STRING_LENGTH)
+
+const char usage_type_str[][MAX_STRING_LENGTH] = {
 	"Undefined", "Generic Desktop", "Simulation", "VR", "Sport", "Game",
 	"Generic Device", "Keyboard/Keypad", "LEDs", "Button", "Ordinal", "Telephony", "Consumer", "Digitizer",
 	"Reserved", "PID Page", "Unicode", "Reserved", "Reserved", "Reserved", "Alphanumeric Display",
@@ -389,9 +393,12 @@ const char usage_type_str[][64] = {
 	"Camera Control Page" , "Arcade Page"
 };
 
-char usage_type_vendor_str[64];
+char usage_type_vendor_str[MAX_STRING_LENGTH];
 
 const char *hid_print_usage_type(unsigned type) {
+	if (type > USAGE_TYPE_STR_ARRAY_MEMBERS)
+		return "usage_type_str array index out of bounds";
+
 	if (type <= 0x14)
 		return usage_type_str[type];
 	else if (type <= 0x3F)
@@ -417,7 +424,7 @@ const char *hid_print_usage_type(unsigned type) {
 	}
 }
 
-const char usage_str_page_1[][64] = {
+const char usage_str_page_1[][MAX_STRING_LENGTH] = {
 	"Undefined", "Pointer", "Mouse", "Reserved", "Joystick", "Game Pad", "Keyboard", "Keypad", "Multi-axis Controller"
 	"Tablet PC System Controls",
 
@@ -438,6 +445,8 @@ const char usage_str_page_1[][64] = {
 const char *hid_print_usage(unsigned page, unsigned type) {
 	if (page >= 0xFF00)
 		return "Vendor Defined";
+	if (type > USAGE_TYPE_STR_ARRAY_MEMBERS)
+		return "usage_type_str array index out of bounds";
 
 	switch (page) {
 		case 1:
@@ -462,7 +471,7 @@ const char *hid_print_usage(unsigned page, unsigned type) {
 	}
 }
 
-const char collection_str[][64] = {
+const char collection_str[][MAX_STRING_LENGTH] = {
 	"Physical", "Application", "Logical", "Report", "Named Array", "Usage Switch", "Usage Modifier"
 };
 
