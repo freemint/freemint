@@ -155,6 +155,7 @@ struct mse_data
 	unsigned char irqmaxp;      /* max packed for irq Pipe */
 	unsigned char irqinterval;  /* Intervall for IRQ Pipe */
 	long old_buttons;
+	long old_ac_pan;
 	struct mse_info new;
 };
 
@@ -420,6 +421,7 @@ mouse_int (void)
 		mse_data.new.x = (signed char)data[1];
 		mse_data.new.y = (signed char)data[2];
 		mse_data.new.wheel = (actlen > 3)?(signed char)data[3]:0;
+		mse_data.new.ac_pan = 0;
 	}
 
 	/* Buttons change */
@@ -443,10 +445,12 @@ mouse_int (void)
 			   mse_data.new.y));
 	}
 
+	/* Wheel change */
 	if (mse_data.new.wheel != 0)
 		wheel_change = 1;
 
-	if (mse_data.new.ac_pan != 0)
+	/* AC Pan change */
+	if (mse_data.new.ac_pan != mse_data.old_ac_pan)
 		ac_pan_change = 1;
 
 	if (mouse_change)
@@ -524,28 +528,24 @@ mouse_int (void)
 	}
 	if (ac_pan_change)
 	{
-		char ac_pan;
-		short i;
+		char ac_pan, old_ac_pan;
 
 		(void) ac_pan;
+		(void) old_ac_pan;
 
 		ac_pan = mse_data.new.ac_pan;
+		old_ac_pan = mse_data.old_ac_pan;
+
+		if (old_ac_pan < 0)
+			usb_kbd_send_code (0xCB, 0); /* Arrow Left release */
+		else if (old_ac_pan > 0)
+			usb_kbd_send_code (0xCD, 0); /* Arrow Right release */
+
 		if (ac_pan > 0)
-		{
-			for (i = 0; i < ac_pan; i++)
-			{
-				usb_kbd_send_code (0x4D, 0); //RIGHT press
-				usb_kbd_send_code (0xCD, 0); //RIGHT release
-			}
-		}
+			usb_kbd_send_code (0x4D, 0); /* Arrow Right press */
 		else if (ac_pan < 0)
-		{
-			for (i = 0; i > ac_pan; i--)
-			{
-				usb_kbd_send_code (0x4B, 0); //LEFT press
-				usb_kbd_send_code (0xCB, 0); //LEFT release
-			}
-		}
+			usb_kbd_send_code (0x4B, 0); /* Arrow Left press */
+
 	}
 #endif
 	if (mouse_change || wheel_change || ac_pan_change)
@@ -555,6 +555,8 @@ mouse_int (void)
 		send_packet (vector->mousevec, mouse_packet, mouse_packet + 3);
 		mse_data.old_buttons = mse_data.new.buttons;
 	}
+	if (ac_pan_change)
+		mse_data.old_ac_pan = mse_data.new.ac_pan;
 }
 
 #ifndef TOSONLY
@@ -691,6 +693,7 @@ mouse_probe (struct usb_device *dev, unsigned int ifnum)
 	mse_data.irqmaxp = usb_maxpacket (dev, mse_data.irqpipe);
 	dev->irq_handle = usb_mouse_irq;
 	mse_data.old_buttons = 0L;
+	mse_data.old_ac_pan = 0L;
 	memset (&mse_data.new, 0, sizeof(mse_data.new));
 
 	usb_set_idle (dev, iface->desc.bInterfaceNumber, 0, 0);     /* report infinite */
