@@ -92,7 +92,7 @@ static char lname[] = "EHCI-PCI USB driver\0";
  */
 
 void		ehci_usb_enable_interrupt	(long);
-void		ehci_show_registers	(struct ehci *, struct devrequest *);
+void		ehci_show_registers	(struct ehci *);
 void		ehci_show_qh		(struct QH *, struct ehci *);
 void		__ehci_powerup_fixup	(unsigned long *, unsigned long *);
 
@@ -184,7 +184,7 @@ static struct descriptor rom_descriptor = {
  * Debug functions
  */
 
-void ehci_show_registers(struct ehci *gehci, struct devrequest *req)
+void ehci_show_registers(struct ehci *gehci)
 {
 	int i = gehci->descriptor->hub.bNbrPorts;
 
