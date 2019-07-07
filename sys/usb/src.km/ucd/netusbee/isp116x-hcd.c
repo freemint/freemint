@@ -1796,7 +1796,7 @@ netusbee_hub_poll_thread(void *dummy)
 {
 	for (;;)
 	{
-		usb_rh_wakeup();
+		usb_rh_wakeup(&netusbee_uif);
 		addtimeout(1000L, netusbee_hub_poll);
 		sleep(WAIT_Q, (long)&netusbee_hub_poll_thread);
 	}

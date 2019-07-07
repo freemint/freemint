@@ -26,7 +26,7 @@
 /*
  * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
  */
-#define USB_API_VERSION 2
+#define USB_API_VERSION 3
 
 /*
  * UCD - USB Controller Driver.
@@ -136,7 +136,7 @@ struct usb_module_api
 	long			_cdecl	(*ucd_register)		(struct ucdif *, struct usb_device **);
 	long			_cdecl	(*ucd_unregister)	(struct ucdif *);
 
-	void			_cdecl	(*usb_rh_wakeup)	(void);
+	void			_cdecl	(*usb_rh_wakeup)	(struct ucdif *);
 	long			_cdecl	(*usb_hub_events)	(struct usb_hub_device *dev);
 	long			_cdecl	(*usb_set_protocol)	(struct usb_device *dev, long ifnum, long protocol);
 	long			_cdecl	(*usb_set_idle)		(struct usb_device *dev, long ifnum, long duration,

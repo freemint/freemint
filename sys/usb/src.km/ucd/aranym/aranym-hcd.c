@@ -229,7 +229,7 @@ int_handle_tophalf (PROC *process, long arg)
 	{
 		if (rh_port_status[i] & RH_PS_CSC)
 		{
-			usb_rh_wakeup();
+			usb_rh_wakeup(&aranym_uif);
 		}
 	}
 }

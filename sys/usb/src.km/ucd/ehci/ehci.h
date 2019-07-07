@@ -179,6 +179,7 @@ struct QH {
 
 struct ehci {
 	void *bus;				/* Inteface with bus/platform. (ex: pci) */
+	struct ucdif *controller;
 	long big_endian;
 	struct ehci_hccr *hccr;		/* R/O registers, not need for volatile */
 	volatile struct ehci_hcor *hcor;
