@@ -214,7 +214,7 @@ long ehci_interrupt_handle(long, long);
 struct ehci_bus {
 	long (*init)(void *);
 	void (*stop)(struct ehci *);
-	long (*probe)(struct ucdif *);
+	long (*probe)(void);
 	long (*reset)(struct ehci *);
 	void (*error)(struct ehci *);
 	unsigned long (*getaddr)(struct ehci *, unsigned long, unsigned long *);
