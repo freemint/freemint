@@ -231,6 +231,7 @@ ehci_pci_probe(void)
 										DEBUG (("%s: ucd register failed!", __FILE__));
 										break;
 									}
+									gehci->controller = ehci_uif;
 									DEBUG (("%s: ucd register ok", __FILE__));
 									break;
 								}
@@ -274,7 +275,7 @@ long ehci_interrupt_handle(long param, long biosparam)
 				ehci_writel(&ehci->hcor->or_portsc[i-1], pstatus);
 			}
 			else if((pstatus & EHCI_PS_CSC))
-				usb_rh_wakeup();
+				usb_rh_wakeup(ehci->controller);
 		}
 	}
 	else /* not our interrupt */

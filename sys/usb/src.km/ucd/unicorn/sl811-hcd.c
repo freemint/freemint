@@ -107,6 +107,33 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 			        void *data, unsigned short buf_len, struct devrequest *cmd);
 
 /*
+ * USB controller interface
+ */
+
+static long sl811_open		(struct ucdif *);
+static long sl811_close		(struct ucdif *);
+static long sl811_ioctl		(struct ucdif *, short, long);
+
+static char lname[] = "Unicorn USB driver\0";
+
+static struct ucdif sl811_uif = 
+{
+	0,			/* *next */
+	USB_API_VERSION,	/* API */
+	USB_CONTRLL,		/* class */
+	lname,			/* lname */
+	"sl811",		/* name */
+	0,			/* unit */
+	0,			/* flags */
+	sl811_open,		/* open */
+	sl811_close,		/* close */
+	0,			/* resrvd1 */
+	sl811_ioctl,		/* ioctl */
+	0,			/* resrvd2 */
+};
+
+
+/*
  * FIXME... Need to read a config file....
  */
 #define ACSI 1
@@ -517,7 +544,7 @@ static long sl811_hc_reset(void)
 static inline void
 int_handle_tophalf(PROC *process, long arg)
 {
-	usb_rh_wakeup();
+	usb_rh_wakeup(&sl811_uif);
 }
 
 long
@@ -540,7 +567,7 @@ usb_lowlevel_init(void *dummy)
 	r = sl811_hc_reset();
 	UNLOCKUSB;
 	if (r)
-		usb_rh_wakeup();
+		usb_rh_wakeup(&sl811_uif);
 	else
 		rh_status.wPortChange = 0;
 
@@ -1268,33 +1295,6 @@ static inline long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long
 #define MSG_GREET	\
 	"Ported, mixed and shaken by Alan Hourihane.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-/*
- * USB controller interface
- */
-
-static long sl811_open		(struct ucdif *);
-static long sl811_close		(struct ucdif *);
-static long sl811_ioctl		(struct ucdif *, short, long);
-
-static char lname[] = "Unicorn USB driver\0";
-
-static struct ucdif sl811_uif = 
-{
-	0,			/* *next */
-	USB_API_VERSION,	/* API */
-	USB_CONTRLL,		/* class */
-	lname,			/* lname */
-	"sl811",		/* name */
-	0,			/* unit */
-	0,			/* flags */
-	sl811_open,		/* open */
-	sl811_close,		/* close */
-	0,			/* resrvd1 */
-	sl811_ioctl,		/* ioctl */
-	0,			/* resrvd2 */
-};
-
 
 /* --- Inteface functions -------------------------------------------------- */
 

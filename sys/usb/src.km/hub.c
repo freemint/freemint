@@ -685,10 +685,10 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 }
 
 void
-usb_rh_wakeup(void)
+usb_rh_wakeup(struct ucdif *controller)
 {
 #ifndef TOSONLY
-	wake(WAIT_Q, (long)usb_hub_thread);
+	wake(WAIT_Q, (long)controller);
 #else
 	/* nothing */
 #endif
@@ -779,8 +779,7 @@ usb_hub_thread(void *ptr)
 	{
 		/* only root hub is interupt driven */
 		usb_hub_events(dev->privptr);
-
-		sleep(WAIT_Q, (long)usb_hub_thread);
+		sleep(WAIT_Q, (long)dev->controller);
 	}
 
 	kthread_exit(0);

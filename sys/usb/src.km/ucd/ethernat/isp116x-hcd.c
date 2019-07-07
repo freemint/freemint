@@ -1814,12 +1814,12 @@ int_handle_tophalf(PROC *process, long arg)
 
 	if (isp116x->rhport[0] & RH_PS_CSC)
 	{
-		usb_rh_wakeup();
+		usb_rh_wakeup(&ethernat_uif);
 	}
 
 	if (isp116x->rhport[1] & RH_PS_CSC)
 	{
-		usb_rh_wakeup();
+		usb_rh_wakeup(&ethernat_uif);
 	}
 
 }
