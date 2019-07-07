@@ -2190,7 +2190,7 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));
-		return 1;
+		return -1;
 	}
 
 	DEBUG (("%s: ucd register ok", __FILE__));
