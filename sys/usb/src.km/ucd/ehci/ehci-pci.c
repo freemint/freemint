@@ -49,7 +49,7 @@ extern void ehci_int_handle_asm(void);
  */
 long ehci_pci_init	(void *);
 void ehci_pci_stop	(struct ehci *);
-long ehci_pci_probe	(struct ucdif *);
+long ehci_pci_probe	(void);
 long ehci_pci_reset	(struct ehci *);
 void ehci_pci_error	(struct ehci *);
 unsigned long ehci_pci_getaddr	(struct ehci *, unsigned long, unsigned long *);
@@ -173,7 +173,7 @@ void ehci_pci_stop(struct ehci *gehci)
 static struct usb_device *root_hub_dev = NULL;
 
 long
-ehci_pci_probe(struct ucdif *ehci_uif)
+ehci_pci_probe(void)
 {
 	short index;
 	long err;
@@ -181,6 +181,7 @@ ehci_pci_probe(struct ucdif *ehci_uif)
 
 	long handle;
 	struct pci_device_id *board;
+	struct ucdif *ehci_uif = NULL;
 
 	if(pcibios_installed == 0)
 	{

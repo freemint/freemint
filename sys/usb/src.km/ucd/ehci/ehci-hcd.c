@@ -1224,14 +1224,12 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	kentry	= k;
 	api = uapi;
 
-	struct ucdif *ehci_uif = NULL;
-
 	if (check_kentry_version())
 	{
 		*reason = fail_kentry;
 		return -1;
 	}
-	ret = ehci_bus_probe(ehci_uif);
+	ret = ehci_bus_probe();
 	if (ret < 0) 
 	{
 		*reason = fail_probe;
