@@ -119,6 +119,9 @@ init(int argc, char **argv, char **env)
 	char path[384];
 	char *name = NULL;
 	long fh, r = 1;
+#ifndef __mcoldfire__
+	long cpu;
+#endif
 
 	/*
 	 *  Go into MiNT domain
@@ -210,7 +213,6 @@ init(int argc, char **argv, char **env)
 #ifdef __mcoldfire__
 		name = "usbv4e.km";
 #else
-		long cpu;
 		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
 		if (r == 0)
 		{
@@ -239,6 +241,13 @@ init(int argc, char **argv, char **env)
 
 	/* check if file exists */
 	fh = Fopen(name, O_RDONLY);
+#ifndef __mcoldfire__
+	if (fh < 0 && (cpu == 30 || cpu == 40 || cpu == 60))
+	{
+		name = "usb02060.km";
+		fh = Fopen(name, O_RDONLY);
+	}
+#endif
 	if (fh < 0)
 	{
 		name = DEFAULT;
