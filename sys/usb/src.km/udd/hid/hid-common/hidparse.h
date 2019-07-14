@@ -23,8 +23,6 @@
 
 #ifndef _HIDPARSE_H_
 
-#pragma pack(1)
-
 /* standard true and false */
 #define TRUE	 1
 #define FALSE	 0
