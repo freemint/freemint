@@ -235,7 +235,7 @@ gs_accept (int fd)
 	if ((ret = getsockname (in_fd, (struct sockaddr *) &addr2, &addr_size)) < 0)
 	{
 		DEBUG (("gs_accept: getsockname() returns %li (%i)", ret, errno));
-		return gs_xlate_error (ret, "gs_accept");
+		return gs_xlate_error (errno, "gs_accept");
 	}
 	
 	gs->cib.protocol = P_TCP;
