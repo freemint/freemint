@@ -32,7 +32,7 @@
 
 extern DRV_LIST stik_driver;
 
-char *	do_get_err_text	(struct get_err_text_param p);
+const char *	do_get_err_text	(struct get_err_text_param p);
 int	init_stik_if	(void);
 void	cleanup_stik_if	(void);
 

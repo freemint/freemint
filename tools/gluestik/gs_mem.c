@@ -59,7 +59,7 @@ static chunk_header *arena;
 int
 init_mem (void)
 {
-	register char *s = gs_getvstr (POOLSIZE_VAR);
+	register const char *s = gs_getvstr (POOLSIZE_VAR);
 	
 	if (s)
 		poolsize = strtoul (s, NULL, 0);

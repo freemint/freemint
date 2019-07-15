@@ -239,10 +239,10 @@ gs_accept (int fd)
 	}
 	
 	gs->cib.protocol = P_TCP;
-	gs->cib.lport = addr2.sin_port;
-	gs->cib.rport = addr.sin_port;
-	gs->cib.rhost = addr.sin_addr.s_addr;
-	gs->cib.lhost = addr2.sin_addr.s_addr;
+	gs->cib.address.lport = addr2.sin_port;
+	gs->cib.address.rport = addr.sin_port;
+	gs->cib.address.rhost = addr.sin_addr.s_addr;
+	gs->cib.address.lhost = addr2.sin_addr.s_addr;
 	
 	/* In STiK, an accept() "eats" the listen()'ed socket; we emulate that by
 	 * closing it and replacing it with the newly accept()'ed socket.
@@ -393,10 +393,10 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	}
 	
 	gs->cib.protocol = P_TCP;
-	gs->cib.rhost = raddr.sin_addr.s_addr;
-	gs->cib.rport = raddr.sin_port;
-	gs->cib.lhost = laddr.sin_addr.s_addr;
-	gs->cib.lport = laddr.sin_port;
+	gs->cib.address.rhost = raddr.sin_addr.s_addr;
+	gs->cib.address.rport = raddr.sin_port;
+	gs->cib.address.lhost = laddr.sin_addr.s_addr;
+	gs->cib.address.lport = laddr.sin_port;
 	
 	gs->sock_fd = sock_fd;
 	if (rhost == 0)
@@ -491,10 +491,10 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	}
 	
 	gs->cib.protocol = P_TCP;
-	gs->cib.lport = addr2.sin_port;
-	gs->cib.rport = addr.sin_port;
-	gs->cib.rhost = addr.sin_addr.s_addr;
-	gs->cib.lhost = addr2.sin_addr.s_addr;
+	gs->cib.address.lport = addr2.sin_port;
+	gs->cib.address.rport = addr.sin_port;
+	gs->cib.address.rhost = addr.sin_addr.s_addr;
+	gs->cib.address.lhost = addr2.sin_addr.s_addr;
 	
 	gs->sock_fd = sock_fd;
 # if 0
@@ -738,7 +738,7 @@ gs_readndb (int fd)
 }
 
 long
-gs_write (int fd, char *buf, long buflen)
+gs_write (int fd, const char *buf, long buflen)
 {
 	GS *gs = gs_get (fd);
 	long r, n;
@@ -868,7 +868,7 @@ gs_read (int fd, char *buf, long buflen)
 }
 
 int
-gs_resolve (char *dn, char **rdn, uint32 *alist, int16 lsize)
+gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 {
 	static char buf [4096];
 	static char lock = 0;

@@ -30,8 +30,8 @@
 # include "gs.h"
 
 
-char *	gs_getvstr		(char *);
-long	gs_setvstr		(char *, char *);
+const char *	gs_getvstr		(const char *);
+long	gs_setvstr		(const char *, const char *);
 int	load_config_file	(void);
 void	cleanup_config		(void);
 
