@@ -37,39 +37,7 @@
 # include "version.h"
 
 
-/* STIK global configuration structure.
- * 
- * STinG's <transprt.h> doesn't
- * define this, so we define it here.
- */
-
-typedef struct config CONFIG;
-struct config
-{
-	uint32	client_ip;	/* IP address of client (local) machine */
-	uint32	provider;	/* IP address of provider, or 0L */
-	uint16	ttl;		/* Default TTL for normal packets */
-	uint16	ping_ttl;	/* Default TTL for 'ping'ing */
-	uint16	mtu;		/* Default MTU (Maximum Transmission Unit) */
-	uint16	mss;		/* Default MSS (Maximum Segment Size) */
-	uint16	df_bufsize; 	/* Size of defragmentation buffer to use */
-	uint16	rcv_window; 	/* TCP receive window */
-	uint16	def_rtt;	/* Initial RTT time in ms */
-	int16 	time_wait_time;	/* How long to wait in 'TIME_WAIT' state */
-	int16 	unreach_resp;	/* Response to unreachable local ports */
-	int32 	cn_time;	/* Time connection was made */
-	int16 	cd_valid;	/* Is Modem CD a valid signal ?? */
-	int16 	line_protocol;	/* What type of connection is this */
-	void	(*old_vec)(void);	/* Old vector address */
-	struct	slip *slp;	/* Slip structure for happiness */
-	char	*cv[101];	/* Space for extra config variables */
-	int16 	reports;	/* Problem reports printed to screen ?? */
-	int16 	max_num_ports;	/* Maximum number of ports supported */
-	uint32	received_data;	/* Counter for data being received */
-	uint32	sent_data;	/* Counter for data being sent */
-};
-
-static char *err_list [E_LASTERROR + 1] =
+static const char *const err_list [E_LASTERROR + 1] =
 {
 /* E_NORMAL       */	"No error occured",
 /* E_OBUFFULL     */	"Output buffer is full",
@@ -102,10 +70,11 @@ static char *err_list [E_LASTERROR + 1] =
 /* E_FRAGMENT     */	"Error during fragmentation",
 /* E_TTLEXCEED    */	"Time To Live of an IP packet exceeded",
 /* E_PARAMETER    */	"Problem with a parameter",
-/* E_BIGBUF       */	"Input buffer is too small for data"
+/* E_BIGBUF       */	"Input buffer is too small for data",
+/* E_FNAVAIL      */	"Function is not available"
 };
 
-char err_unknown [] = "Unrecognized error";
+static char const err_unknown [] = "Unrecognized error";
 
 static int flags [64] =
 {
@@ -140,7 +109,7 @@ do_KRrealloc (struct KRrealloc_param p)
 	return gs_mem_realloc (p.mem, p.newsize);
 }
 
-char *
+const char *
 do_get_err_text (struct get_err_text_param p)
 {
 	if (p.code < 0)
@@ -155,13 +124,13 @@ do_get_err_text (struct get_err_text_param p)
 		return strerror (p.code - 1000);
 	}
 	
-	if (p.code > E_LASTERROR)
+	if (p.code > E_LASTERROR || err_list [p.code] == 0)
 		return err_unknown;
 	
 	return err_list [p.code];
 }
 
-static char *
+static const char *
 do_getvstr (struct getvstr_param p)
 {
 	return gs_getvstr (p.var);
@@ -240,7 +209,7 @@ static int16
 do_TCP_close (struct TCP_close_param p)
 {
 	gs_close (p.fd);
-	return 0;
+	return E_NORMAL;
 }
 
 static int16
@@ -321,14 +290,14 @@ do_CNget_char (struct CNget_char_param p)
 	char c;
 	long ret;
 	
-	ret = gs_read (p.fd, &c, 1L);
+	ret = gs_read (p.fd, &c, 1);
 	if (ret < 0)
 		return ret;
 	
 	if (ret == 0)
 		return E_NODATA;
 	
-	return c;
+	return (unsigned char)c;
 }
 
 static NDB *
@@ -446,6 +415,82 @@ do_CNgets (struct CNgets_param p)
 }
 
 
+static int16 do_ICMP_send(struct ICMP_send_param p)
+{
+	return E_NOROUTINE;
+}
+
+
+static int16 do_ICMP_handler(struct ICMP_handler_param p)
+{
+	return FALSE;
+}
+
+
+static void do_ICMP_discard(struct ICMP_discard_param p)
+{
+}
+
+
+static int16 do_TCP_info(struct TCP_info_param p)
+{
+	return E_BADHANDLE;
+}
+
+
+static int16 do_cntrl_port(struct cntrl_port_param p)
+{
+	return E_NODATA;
+}
+
+
+static int16 do_UDP_info(struct UDP_info_param p)
+{
+	return E_BADHANDLE;
+}
+
+
+static int16 do_RAW_open(struct RAW_open_param p)
+{
+	return E_NOROUTINE;
+}
+
+
+static int16 do_RAW_close(struct RAW_close_param p)
+{
+	return E_BADHANDLE;
+}
+
+
+static int16 do_RAW_out(struct RAW_out_param p)
+{
+	return E_BADHANDLE;
+}
+
+
+static int16 do_CN_setopt(struct CN_setopt_param p)
+{
+	return E_NOROUTINE;
+}
+
+
+static int16 do_CN_getopt(struct CN_getopt_param p)
+{
+	return E_NOROUTINE;
+}
+
+
+static void do_CNfree_NDB(struct CNfree_NDB_param p)
+{
+}
+
+
+static long noop(void)
+{
+	return E_NOROUTINE;
+}
+
+
 static TPL trampoline =
 {
 	TRANSPORT_DRIVER,
@@ -483,13 +528,26 @@ static TPL trampoline =
 	do_setvstr,
 	do_query_port,
 	do_CNgets,
-	NULL /* (int16 (*)(uint32, uint8, uint8, void *, uint16)) */,
-	NULL /* (int16 (*)(int16 (*)(IP_DGRAM *), int16)) */,
-	NULL /* (void (*)(IP_DGRAM *)) */
+	do_ICMP_send,
+	do_ICMP_handler,
+	do_ICMP_discard,
+	do_TCP_info,
+	do_cntrl_port,
+	do_UDP_info,
+	do_RAW_open,
+	do_RAW_close,
+	do_RAW_out,
+	do_CN_setopt,
+	do_CN_getopt,
+	do_CNfree_NDB,
+	noop,
+	noop,
+	noop,
+	noop
 };
 
 static DRV_HDR *
-do_get_dftab (char *tpl_name)
+do_get_dftab (const char *tpl_name)
 {
 	/* we only have the one, so this is pretty easy... ;)
 	 */
@@ -500,19 +558,19 @@ do_get_dftab (char *tpl_name)
 }
 
 static int16
-do_ETM_exec (char *tpl_name)
+do_ETM_exec (const char *tpl_name)
 {
 	/* even easier... ;) */
 	return 0;
 }
 
-static CONFIG stik_cfg;
+static STING_CONFIG sting_cfg;
 DRV_LIST stik_driver =
 {
-	MAGIC,
+	STIK_DRVR_MAGIC,
 	do_get_dftab,
 	do_ETM_exec,
-	&stik_cfg,
+	{ &sting_cfg },
 	NULL
 };
 
@@ -522,11 +580,11 @@ init_stik_if (void)
 	if (Psemaphore (0, FLG_SEM, 0) < 0)
 	{
 		(void) Cconws ("Unable to obtain STiK flag semaphore\r\n");
-		return 0;
+		return FALSE;
 	}
 	
-	stik_cfg.client_ip = INADDR_LOOPBACK;
-	return 1;
+	sting_cfg.client_ip = INADDR_LOOPBACK;
+	return TRUE;
 }
 
 void

@@ -55,9 +55,9 @@ long	gs_wait		(int, int);
 long	gs_canread	(int);
 long	gs_read_delim	(int, char *, int, char);
 NDB *	gs_readndb	(int);
-long	gs_write	(int, char *, long);
+long	gs_write	(int, const char *, long);
 long	gs_read		(int, char *, long);
-int	gs_resolve	(char *dn, char **rdn, uint32 *alist, int16 lsize);
+int	gs_resolve	(const char *dn, char **rdn, uint32 *alist, int16 lsize);
 
 
 # endif /* _gs_func_h */

@@ -33,6 +33,8 @@
 typedef struct xattr		XATTR;
 
 /* structure for Fxattr */
+#ifndef __XATTR
+#define __XATTR
 struct xattr
 {
 	ushort	mode;
@@ -42,7 +44,7 @@ struct xattr
 	ushort	nlink;
 	ushort	uid;
 	ushort	gid;
-	long	size;
+	long	st_size;
 	long	blksize;
 	long	nblocks;
 	ushort	mtime, mdate;
@@ -52,6 +54,7 @@ struct xattr
 	short	reserved2;
 	long	reserved3[2];
 };
+#endif
 
 # include "gs_config.h"
 
@@ -145,7 +148,7 @@ growbuf (GrowBuf *buf, int new_slots)
  * if variable is already present).  Returns 1 on success, 0 on failure.
  */
 static int
-set_var (char *name, char *value)
+set_var (const char *name, const char *value)
 {
 	int i;
 	
@@ -287,7 +290,7 @@ load_config_file (void)
 		return 1;
 	}
 	
-	filesize = xattr.size;
+	filesize = xattr.st_size;
 	(void) Cconws ("Reading config file ");
 	(void) Cconws (cfg_filename);
 	(void) Cconws ("...\r\n");
@@ -396,8 +399,8 @@ setit:
 	return 1;
 }
 
-char *
-gs_getvstr (char *var)
+const char *
+gs_getvstr (const char *var)
 {
 	register int n;
 	
@@ -423,7 +426,7 @@ gs_getvstr (char *var)
 }
 
 long
-gs_setvstr (char *vs, char *value)
+gs_setvstr (const char *vs, const char *value)
 {
 	int n;
 	
