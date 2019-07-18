@@ -280,6 +280,29 @@ static inline void invalidate_dcache(void)
  * EHCI functions
  */
 
+static inline long max_transfer_len(struct ehci *gehci,void *buf)
+{
+	unsigned long maxlen, offset;
+	unsigned long addr;
+	long r;
+
+	r = ehci_bus_getaddr(gehci, (unsigned long)buf, &addr);
+	if (r < 0)
+	{
+		DEBUG(("EHCI_HCD: Unable to get bus address"));
+		return -1;
+	}
+
+	/* One qTD can transfer 5 * 4K, but this is with a perfect 4k aligment,
+	 * note that only the first 4k page is allowed to be unaligned.
+	 */
+
+	offset = addr - (addr & ~4095);
+	maxlen = (5 * 4096) - offset;
+
+	return maxlen;
+}
+
 void __ehci_powerup_fixup(unsigned long *status_reg, unsigned long *reg)
 {
 	mdelay(50);
@@ -1097,12 +1120,46 @@ long usb_lowlevel_stop(void *ucd_priv)
 
 long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length)
 {
+	long ret, done, max;
+	long dir_out = usb_pipeout(pipe);
+
+	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
+
 	if(usb_pipetype(pipe) != PIPE_BULK)
 	{
 		DEBUG(("non-bulk pipe (type=%lu)", usb_pipetype(pipe)));
 		return -1;
 	}
-	return ehci_submit_async(dev, pipe, buffer, length, NULL);
+
+	/* We must to take care about not sending the host controller more data
+	 * than it can digest, in perfect conditions of aligment max is 5 * 4k.
+	 * (See EHCI specification 3.5.3)
+	 */
+	done= 0;
+	while(done < length)
+	{
+		max = max_transfer_len(gehci, (unsigned char *) buffer + done);
+		if (max < 0)
+		{
+			DEBUG(("error getting max transfer length (bulk message)"));
+			return -1;
+		}
+		ret = ehci_submit_async(dev, pipe, (unsigned char *) buffer + done,
+								max > length - done ? length - done : max, NULL);
+		if (ret < 0)
+		{
+			DEBUG(("error on bulk message"));
+			return ret;
+		}
+		done += dev->act_len;
+
+		if (!dir_out && ret < max)	/* short packet */
+			break;
+	}
+	dev->act_len = done;
+
+	return 0;
+
 }
 
 long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length, struct devrequest *setup)
