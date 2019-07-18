@@ -248,6 +248,33 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 	}
 }
 
+/*
+ * Cache functions
+ */
+
+/*
+ * The kernel doesn't export a function in kentry to invalidate
+ * caches, so until then we have our own function here. Also
+ * we're lazy and for now we invalidate the entire data cache.
+ */
+static inline void invalidate_dcache(void)
+{
+#ifdef __mcoldfire__
+	asm (
+		"dc.w	0x4e7a,0x0002;" /* movec cacr,d0 */
+		"or.l #0x01000000,d0;"
+		"movec d0,cacr;"
+		"nop;"
+		:::"d0"
+	);
+#endif
+#if defined(__m68040__) || defined(__m68060__)
+	asm ("cinva dc");
+#endif
+#ifdef __m68030__
+	/* Nothing */
+#endif
+}
 
 /*
  * EHCI functions
@@ -529,9 +556,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	do
 	{
 		/* Invalidate dcache */
-		cpush(&gehci->qh_list, (long)&gehci->qh_list + sizeof(struct QH));
-		cpush(&qh, (long)&qh + sizeof(struct QH));
-		cpush(td, (long)td + sizeof(struct qTD));
+		invalidate_dcache();
 		token = hc32_to_cpu(vtd->qt_token);
 		if(!(token & 0x80))
 			break;
@@ -541,7 +566,14 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	while(ts < timeout);
 
 	/* Invalidate the memory area occupied by buffer */
-	cpush((void *)((ulong)buffer & ~31), ((long)buffer & ~31) + ROUNDUP(length, 32));
+	/* invalidate_dcache(); */
+
+	/* Our function to invalidate the data cache invalidates
+	 * the entire cache so we don't need to invalidate the
+	 * data cache again, as long as we don't invalidate
+	 * "per address" we are good.
+	 */
+
 
 	/* Check that the TD processing happened */
 	if (token & 0x80) {
