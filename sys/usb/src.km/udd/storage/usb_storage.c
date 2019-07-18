@@ -1539,7 +1539,7 @@ usb_bin_fixup(struct usb_device_descriptor descriptor, unsigned char vendor[], u
 }
 #endif /* CONFIG_USB_BIN_FIXUP */
 
-#define USB_MAX_READ_BLK 64
+#define USB_MAX_READ_BLK 65535 /* SCSI command read/write(10) max. block transfer */
 
 unsigned long
 usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buffer)
