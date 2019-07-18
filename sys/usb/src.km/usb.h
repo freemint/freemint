@@ -47,7 +47,7 @@
  * This is the timeout to allow for submitting a message in ms.
  * We allow more time for a BULK device to react - some are slow.
  */
-#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 100)
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
 
 /* String descriptor */
 struct usb_string_descriptor
