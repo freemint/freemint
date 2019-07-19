@@ -70,7 +70,7 @@ void open_console(void)
 	{
 		cfg = get_wincfg("Console");
 		if (cfg->title[0] == '\0')
-			strcpy(str, " Console ");
+			strcpy(str, "Console");
 		else
 			strcpy(str, cfg->title);
 
