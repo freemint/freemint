@@ -180,6 +180,9 @@ static void iconify_win(WINDOW *v, short x, short y, short w, short h)
 #endif
 		GRECT i = (GRECT){x, y, w, h};
 		v->prev = v->work;
+		/* XaAES seems to need that we open the window first */
+		if (w == -1 && h == -1)
+			wind_open(v->handle, -1, -1, -1, -1);
 		wind_xset_grect(v->handle, WF_ICONIFY, &i, &v->work);
 #ifndef ONLY_XAAES
 	}
