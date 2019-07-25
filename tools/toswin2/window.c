@@ -180,9 +180,19 @@ static void iconify_win(WINDOW *v, short x, short y, short w, short h)
 #endif
 		GRECT i = (GRECT){x, y, w, h};
 		v->prev = v->work;
-		/* XaAES seems to need that we open the window first */
+		/* XaAES has a bug and it doesn't draw the iconified
+		 * window after the wind_set(WF_ICONIFY) call, as a
+		 * workaround we open the window first and we do it
+		 * outside of the screen to avoid visual artifacts.
+		 */
 		if (w == -1 && h == -1)
-			wind_open(v->handle, -1, -1, -1, -1);
+		{
+			short x1, y1, w1, h1;
+			/* Get the size of the screen */
+			wind_get(0, WF_WORKXYWH, &x1, &y1, &w1, &h1);
+			/* Draw the window out of the screen boundaries */
+			wind_open(v->handle, x1 + w1 + 1, y1 + h1 + 1, 0, 0);
+		}
 		wind_xset_grect(v->handle, WF_ICONIFY, &i, &v->work);
 #ifndef ONLY_XAAES
 	}
