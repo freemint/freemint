@@ -268,10 +268,10 @@ static inline void invalidate_dcache(void)
 		:::"d0"
 	);
 #endif
-#if defined(__m68040__) || defined(__m68060__)
+#if defined(__mc68040__) || defined(__mc68060__)
 	asm ("cinva dc");
 #endif
-#ifdef __m68030__
+#ifdef __mc68030__
 	/* Nothing */
 #endif
 }
