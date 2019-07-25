@@ -272,7 +272,7 @@ static inline void invalidate_dcache(void)
 	asm ("cinva dc");
 #endif
 #ifdef __mc68030__
-	/* Nothing */
+	/* 68030 is a writethrough data cache, so we're fine */
 #endif
 }
 
