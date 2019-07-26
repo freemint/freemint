@@ -225,7 +225,7 @@ gs_accept (int fd)
 			return E_LISTEN;
 		}
 		
-		return gs_xlate_error (in_fd, "gs_accept");
+		return gs_xlate_error (errno, "gs_accept");
 	}
 	
 	/* Fill in the CIB. Part of the data we need came back from accept();
@@ -243,7 +243,8 @@ gs_accept (int fd)
 	gs->cib.address.rport = addr.sin_port;
 	gs->cib.address.rhost = addr.sin_addr.s_addr;
 	gs->cib.address.lhost = addr2.sin_addr.s_addr;
-	
+	gs->cib.status = 0;
+
 	/* In STiK, an accept() "eats" the listen()'ed socket; we emulate that by
 	 * closing it and replacing it with the newly accept()'ed socket.
 	 */
@@ -327,7 +328,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	if (sock_fd < 0)
 	{
 		DEBUG (("gs_connect: socket() returns %i (%i)", sock_fd, errno));
-		return gs_xlate_error (sock_fd, "gs_connect");
+		return gs_xlate_error (errno, "gs_connect");
 	}
 # if 0
 	/* save flags */
@@ -351,7 +352,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	if (retval < 0)
 	{
 		DEBUG (("gs_connect: bind() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_connect");
+		return gs_xlate_error (errno, "gs_connect");
 	}
 	
 	if (rhost == 0)
@@ -360,14 +361,14 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 		if (retval < 0)
 		{
 			DEBUG (("gs_connect: listen() returns %i (%i)", retval, errno));
-			return gs_xlate_error (retval, "gs_connect");
+			return gs_xlate_error (errno, "gs_connect");
 		}
 	}
 	else
 	{
 		retval = connect (sock_fd, (struct sockaddr *) &raddr, addr_size);
 # if 0
-		if (retval == EINPROGRESS)
+		if (retval < 0 && errno == EINPROGRESS)
 		{
 			pending = 1;
 		}
@@ -376,7 +377,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 		if (retval < 0)
 		{
 			DEBUG (("gs_connect: connect() returns %i (%i)", retval, errno));
-			return gs_xlate_error (retval, "gs_connect");
+			return gs_xlate_error (errno, "gs_connect");
 		}
 	}
 	
@@ -389,7 +390,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	if (retval < 0)
 	{
 		DEBUG (("gs_connect: getsockname() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_connect");
+		return gs_xlate_error (errno, "gs_connect");
 	}
 	
 	gs->cib.protocol = P_TCP;
@@ -397,7 +398,8 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	gs->cib.address.rport = raddr.sin_port;
 	gs->cib.address.lhost = laddr.sin_addr.s_addr;
 	gs->cib.address.lport = laddr.sin_port;
-	
+	gs->cib.status = 0;
+
 	gs->sock_fd = sock_fd;
 	if (rhost == 0)
 	{
@@ -446,7 +448,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	if (sock_fd < 0)
 	{
 		DEBUG (("gs_udp_open: socket() returns %i (%i)", sock_fd, errno));
-		return gs_xlate_error (sock_fd, "gs_udp_open");
+		return gs_xlate_error (errno, "gs_udp_open");
 	}
 	
 # if 0
@@ -467,7 +469,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 
 	retval = connect (sock_fd, (struct sockaddr *) &addr, addr_size);
 # if 0
-	if (retval == EINPROGRESS)
+	if (retval < 0 && errno == EINPROGRESS)
 	{
 		pending = 1;
 	}
@@ -475,8 +477,9 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 # endif
 	if (retval < 0)
 	{
-		DEBUG (("gs_udp_open: connect() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_udp_open");
+		int err = errno;
+		DEBUG (("gs_udp_open: connect() returns %i (%i)", retval, err));
+		return gs_xlate_error (err, "gs_udp_open");
 	}
 	
 	/* Fill in the CIB. Part of the data we need came from our
@@ -487,15 +490,16 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	if (retval < 0)
 	{
 		DEBUG (("gs_udp_open: getsockame() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_udp_open");
+		return gs_xlate_error (errno, "gs_udp_open");
 	}
 	
-	gs->cib.protocol = P_TCP;
+	gs->cib.protocol = P_UDP;
 	gs->cib.address.lport = addr2.sin_port;
 	gs->cib.address.rport = addr.sin_port;
 	gs->cib.address.rhost = addr.sin_addr.s_addr;
 	gs->cib.address.lhost = addr2.sin_addr.s_addr;
-	
+	gs->cib.status = 0;
+
 	gs->sock_fd = sock_fd;
 # if 0
 	gs->flags = pending ? GS_PEND_OPEN : 0;
@@ -588,7 +592,7 @@ gs_canread (int fd)
 	
 	DEBUG (("gs_canread(%i)", fd));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (!gs || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_canread: bad handle"));
 		return E_BADHANDLE;
@@ -637,6 +641,8 @@ gs_read_delim (int fd, char *buf, int len, char delim)
 	
 	DEBUG (("gs_read_delim(%i, %p, %i, %c)", fd, (void *) buf, len, delim));
 	
+	if (len <= 1)
+		return E_BIGBUF;
 	while (n < len - 1)
 	{
 		r = gs_read (fd, buf + n, 1);
@@ -673,7 +679,7 @@ gs_readndb (int fd)
 	
 	DEBUG (("gs_readndb(%i)", fd));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (gs == NULL || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_readndb: bad handle"));
 		return NULL;
@@ -745,7 +751,7 @@ gs_write (int fd, const char *buf, long buflen)
 	
 	DEBUG (("gs_write(%i, %p, %li)", fd, (void *) buf, buflen));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (gs == NULL || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_write: bad handle"));
 		return E_BADHANDLE;
@@ -811,7 +817,7 @@ gs_read (int fd, char *buf, long buflen)
 	
 	DEBUG (("gs_read(%i, %p, %li)", fd, (void *) buf, buflen));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (gs == NULL || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_read: bad handle"));
 		
@@ -871,7 +877,7 @@ int
 gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 {
 	static char buf [4096];
-	static char lock = 0;
+	static volatile char lock = 0;
 	
 	struct hostent *host = NULL;
 	PMSG pmsg;
@@ -884,7 +890,7 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	
 	
 	while (lock)
-		sleep (1);
+		usleep (100000L);
 	
 	lock = 1;
 	
@@ -909,8 +915,6 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	host = (struct hostent *) pmsg.msg2;
 	if (!host)
 	{
-		extern int h_errno;
-		
 		switch (h_errno)
 		{
 			case HOST_NOT_FOUND:
@@ -935,17 +939,22 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 		DEBUG (("gs_resolve: Copying name: \"%s\"", host->h_name));
 		
 		*rdn = gs_mem_alloc (strlen (host->h_name) + 1);
-		strcpy (*rdn, host->h_name);
+		if (*rdn)
+			strcpy (*rdn, host->h_name);
 	}
 	
 	/* BUG:  assumes addresses returned have type struct in_addr
 	 */
-	for (ret = 0, raddr = host->h_addr_list; *raddr && ret < lsize; ret++, raddr++)
+	ret = 0;
+	if (alist)
 	{
-		DEBUG (("gs_resolve: Copying address %d.%d.%d.%d to array element %i",
-			DEBUG_ADDR(((struct in_addr *) (*raddr))->s_addr), ret));
-		
-		alist [ret] = ((struct in_addr *) (*raddr))->s_addr;
+		for (raddr = host->h_addr_list; *raddr && ret < lsize; ret++, raddr++)
+		{
+			DEBUG (("gs_resolve: Copying address %d.%d.%d.%d to array element %i",
+				DEBUG_ADDR(((struct in_addr *) (*raddr))->s_addr), ret));
+
+			alist [ret] = ((struct in_addr *) (*raddr))->s_addr;
+		}
 	}
 	
 out:
