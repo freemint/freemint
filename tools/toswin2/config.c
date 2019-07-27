@@ -301,8 +301,14 @@ static void open_cfgwd(WDIALOG *wd)
 			set_popobjcolor (cfg_wd->tree, WFGCOL, cfg->fg_color);
 			set_popobjcolor (cfg_wd->tree, WBGCOL, cfg->bg_color);
 		} else {
-			set_popobjcolor (cfg_wd->tree, WFGCOL, ansi2vdi[cfg->fg_color]);
-			set_popobjcolor (cfg_wd->tree, WBGCOL, ansi2vdi[cfg->bg_color]);
+			set_popobjcolor (cfg_wd->tree, WFGCOL,
+					 cfg->fg_effects & CE_BOLD ?
+					 ansibright2vdi[cfg->fg_color] :
+					 ansi2vdi[cfg->fg_color]);
+			set_popobjcolor (cfg_wd->tree, WBGCOL,
+					 cfg->bg_effects & CE_BOLD ?
+					 ansibright2vdi[cfg->bg_color] :
+					 ansi2vdi[cfg->bg_color]);
 		}
 		/* FIXME: Set future checkboxes for pseudo effects.  */
 
@@ -310,8 +316,8 @@ static void open_cfgwd(WDIALOG *wd)
 
 		new_id = cfg->font_id;
 		new_pts = cfg->font_pts;
-		new_fg = cfg->vdi_colors ? cfg->fg_color : ansi2vdi[cfg->fg_color & 0x7];
-		new_bg = cfg->vdi_colors ? cfg->bg_color : ansi2vdi[cfg->bg_color & 0x7];
+		new_fg = cfg->vdi_colors ? cfg->fg_color : (cfg->fg_effects & CE_BOLD ? ansibright2vdi[cfg->fg_color & 0x7] : ansi2vdi[cfg->fg_color & 0x7]);
+		new_bg = cfg->vdi_colors ? cfg->bg_color : (cfg->bg_effects & CE_BOLD ? ansibright2vdi[cfg->bg_color & 0x7] : ansi2vdi[cfg->bg_color & 0x7]);
 		new_tab = cfg->char_tab;
 	}
 /*
@@ -451,6 +457,18 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 
 			cfg->fg_color = cfg->vdi_colors ? new_fg : vdi2ansi[new_fg & 0x7];
 			cfg->bg_color = cfg->vdi_colors ? new_bg : vdi2ansi[new_bg & 0x7];
+
+			if (new_fg == VDI_WHITE_BRIGHT || new_fg == VDI_BLACK_BRIGHT
+			    || (new_fg > 1 && new_fg < 8))
+				cfg->fg_effects |= CE_BOLD;
+			else
+				cfg->fg_effects &= ~CE_BOLD;
+
+			if (new_bg == VDI_WHITE_BRIGHT || new_bg == VDI_BLACK_BRIGHT
+			    || (new_bg > 1 && new_bg < 8))
+				cfg->bg_effects |= CE_BOLD;
+			else
+				cfg->bg_effects &= ~CE_BOLD;
 
 			cfg->autoclose = get_state(wd->tree, WCLOSE, OS_SELECTED);
 

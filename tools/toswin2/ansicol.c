@@ -7,8 +7,29 @@
 
 #include "ansicol.h"
 
-const int ansi2vdi[8] = { 1, 2, 3, 6, 4, 7, 5, 0 };
+/*	ANSI<->VDI Color's index table
+ *			ANSI		VDI
+ * Black		0		1
+ * Red			1		10
+ * Green		2		11
+ * Yellow		3		14
+ * Blue			4		12
+ * Magenta		5		15
+ * Cyan			6		13
+ * White		7		8
+ * Black (bright)	0 BOLD		9
+ * Red (bright)		1 BOLD		2
+ * Green (bright)	2 BOLD		3
+ * Yellow (bright)	3 BOLD		6
+ * Blue (bright)	4 BOLD		4
+ * Magenta (bright)	5 BOLD		7
+ * Cyan (bright)	6 BOLD		5
+ * White (bright)	7 BOLD		0
+ */
+
+const int ansi2vdi[8] = { 1, 10, 11, 14, 12, 15, 13, 8 };
 const int vdi2ansi[8] = { 7, 0, 1, 2, 4, 6, 3, 5 };
+const int ansibright2vdi[8] = { 9, 2, 3, 6, 4, 7, 5, 0 };
 
 struct rgb {
 	short int red, green, blue;
