@@ -48,7 +48,7 @@ char* tw100_env = "tw100";
 char* colorterm_env = "1";
 
 static struct rgb ansi_colors[8 * 3] = {
-		{    0,    0,	 0 },	/* Bright black.  */
+		{  500,  500,  500 },	/* Bright black.  */
 		{    0,    0,	 0 },	/* Black.  */
 		{  408,  408,  408 },	/* Half-bright (dimmed) black.  */
 		{ 1000,   94,	94 },	/* Bright red.	*/
@@ -74,10 +74,10 @@ static struct rgb ansi_colors[8 * 3] = {
 		{   94,   94,  698 },	/* Blue.  */
 		{   94,   94,  408 },	/* Half-bright (dimmed) blue.  */
 		{ 1000,   94, 1000 },	/* Bright magenta.  */
-		{  698,   94,  698 },	/* Magenta.  */
+		{  612,   94,  612 },	/* Magenta.  */
 		{  408,   94,  408 },	/* Half-bright (dimmed) magenta.  */
 		{   94, 1000, 1000 },	/* Bright cyan.  */
-		{   94,  698,  698 },	/* Cyan.  */
+		{   94,  578,  578 },	/* Cyan.  */
 		{   94,  408,  408 },	/* Half-bright (dimmed) cyan.  */
 		{ 1000, 1000, 1000 },	/* Bright white.  */
 		{  698,  698,  698 },	/* White.  */
