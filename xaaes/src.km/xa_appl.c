@@ -432,11 +432,13 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			if( p->domain == 0 )
 			{
 				strip_uni_drive( client->home_path );
+#if 0
 				if( isalpha( *client->home_path ) && client->home_path[1] == ':' )
 				{
 					d_setdrv(toupper(*client->home_path) - 'A');
 					d_setpath(client->home_path+2);
 				}
+#endif
 			}
 			add_to_tasklist(client);
 			/* Preserve the pointer to the globl array
