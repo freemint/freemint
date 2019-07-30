@@ -160,7 +160,7 @@ has_opened (SHARED_LIB *sl, int pid)
  * Otherwise: GEMDOS error
  */
 static long
-load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
+load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl, int *continue_search)
 {
 	union { char *c; long *l;} ptr;
 	int new_pid, prot_cookie;
@@ -168,16 +168,19 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	char *fullpath;
 	BASEPAGE *b;
 	MEMREGION *mr;
+	int pathlen;
 
 	/* Construct the full path name of the SLB */
-	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
+	pathlen = (int)strlen(path);
+	fullpath = kmalloc(pathlen + strlen(name) + 2);
 	if (!fullpath)
 	{
 		DEBUG(("Slbopen: Couldn't kmalloc() full pathname"));
 		return(ENOMEM);
 	}
 	strcpy(fullpath, path);
-	strcat(fullpath, "/");
+	if (pathlen && path[pathlen - 1] != '/' && path[pathlen - 1] != '\\')
+		strcat(fullpath, "/");
 	strcat(fullpath, name);
 
 	/* Create the new shared library structure */
@@ -285,6 +288,12 @@ slb_error:
 		DEBUG(("Slbopen: Warning: SLB uses minimum TPA - "
 			"no additional user stack possible"));
 	}
+
+	/*
+	 * we have found it; do not attempt to search further
+	 * if it is just the shared library failing
+	 */
+	*continue_search = 0;
 
 	/* Run the shared library, i.e. call its init() routine.
 	 *
@@ -408,6 +417,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	long r, *usp;
 	ulong i;
 	MEMREGION **mr;
+	int continue_search = 1;
 
 	/* First, ensure the call came from user mode */
 	if (get_curproc()->ctxt[SYSCALL].sr & 0x2000)
@@ -467,9 +477,12 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 
 		r = -1;
 		if (path)
-			r = load_and_init_slb(name, path, min_ver, sl);
+		{
+			r = load_and_init_slb(name, path, min_ver, sl, &continue_search);
+			/* FORCE("Slbopen: search userpath %s/%s: $%08lx", path, name, r); */
+		}
 
-		if (!path || (r < 0))
+		if (r < 0 && continue_search)
 		{
 			char *npath, *np;
 
@@ -526,19 +539,23 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 					path++;		/* skip the separator */
 				*np = 0;
 
-				r = load_and_init_slb(name, npath, min_ver, sl);
-
-			} while (*path && r < 0);
+				r = load_and_init_slb(name, npath, min_ver, sl, &continue_search);
+				/* FORCE("Slbopen: search $SLBPATH %s/%s: $%08lx", npath, name, r); */
+			} while (*path && r < 0 && continue_search);
 
 			kfree(npath);
 
-			if (r < 0)
-				r = load_and_init_slb(name, sysdir, min_ver, sl);
+			if (r < 0 && continue_search)
+			{
+				r = load_and_init_slb(name, sysdir, min_ver, sl, &continue_search);
+				/* FORCE("Slbopen: search $SYSDIR %s/%s: $%08lx", sysdir, name, r); */
+			}
 		}
 
-		if (r < 0L)
+		if (r < 0)
 		{
-			ALERT (MSG_slb_couldnt_open, name);
+			/* ALERT (MSG_slb_couldnt_open, name); */
+			/* FORCE("Slbopen: not found %s: $%08lx", name, r); */
 			return(r); /* DEBUG info already written out */
 		}
 		slb = *sl;
