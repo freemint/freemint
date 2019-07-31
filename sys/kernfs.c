@@ -562,6 +562,42 @@ kern_getdev (fcookie *fc, long *devspecial)
 	return &kern_device;
 }
 
+static long kern_filesize(fcookie *f)
+{
+	PROC *p = NULL;
+	KENTRY *t;
+
+	if (f->index & 0xffff0000)
+	{
+		short pid = f->index >> 16;
+
+		p = pid2proc (pid);
+		if (!p)
+		{
+			return 0;
+		}
+	}
+
+	if (p)	t = search_inode (procdir, f->index & 0xffff);
+	else	t = search_inode (rootdir, f->index);
+
+	if (t && (t->mode & S_IFREG))
+	{
+		SIZEBUF *info = NULL;
+		long ret;
+
+		ret = (*t->get)(&info, p);
+
+		if (ret == 0 && info)
+		{
+			ret = info->len;
+			kfree (info);
+			return ret;
+		}
+	}
+	return 0;
+}
+
 INLINE long
 kern_proc_stat64 (fcookie *file, STAT *stat)
 {
@@ -590,7 +626,7 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->nlink = 1;
 	stat->uid = p->p_cred->ruid;
 	stat->gid = p->p_cred->rgid;
-	stat->size = 0;
+	stat->size = kern_filesize(file);
 	stat->blksize = 1;
 	stat->blocks = 0;
 
@@ -647,7 +683,7 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->nlink = 1;
 	stat->uid = p->p_cred->ruid;
 	stat->gid = p->p_cred->rgid;
-	stat->size = 0;
+	stat->size = kern_filesize(file);
 	stat->blksize = 1;
 	stat->blocks = 0;
 	stat->mtime.time = p->started.tv_sec;
@@ -713,7 +749,7 @@ kern_stat64 (fcookie *file, STAT *stat)
 	stat->nlink = 1;
 	stat->uid = 0;
 	stat->gid = 0;
-	stat->size = 0;
+	stat->size = kern_filesize(file);
 	stat->blocks = 0;
 	stat->blksize = 1;
 	stat->mtime.time = rootproc->started.tv_sec;
@@ -904,8 +940,7 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	else
 		return ENMFILES;
 
-	if (fc->index != ROOTDIR_ROOT)
-		fc->index |= dirh->fc.index << 16;
+	fc->index |= dirh->fc.index & 0xffff0000;
 
 	if (!(dirh->flags & TOS_SEARCH))
 	{

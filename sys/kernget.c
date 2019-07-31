@@ -855,14 +855,14 @@ kern_procdir_get_fname (SIZEBUF **buffer, const struct proc *p)
 	SIZEBUF *info;
 	ulong len;
 
-	len = strlen (p->fname);
+	len = strlen (p->fname) + 1;
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
-	memcpy (info->buf, p->fname, len);
-	info->len = len;
+	strcpy(info->buf, p->fname);
+	info->len = len - 1;
 
 	*buffer = info;
 	return 0;
