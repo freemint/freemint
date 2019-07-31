@@ -36,7 +36,7 @@
 # include "mint/mint.h"
 
 
-long kern_get_cpuinfo (SIZEBUF **buffer);
+long kern_get_cpuinfo (SIZEBUF **buffer, const struct proc *p);
 
 
 # endif	/* _kernfs_mach_h  */

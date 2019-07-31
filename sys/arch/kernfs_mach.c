@@ -45,12 +45,13 @@
 /* This is mostly stolen from linux-m68k and should be adapted to MiNT
  */
 long 
-kern_get_cpuinfo (SIZEBUF **buffer)
+kern_get_cpuinfo (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	int len = 256;
 	ulong clockfreq, clockfactor;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
