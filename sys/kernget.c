@@ -1181,7 +1181,7 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 	// Why is it in 'kmemory.c' and not in 'kmemory.h' ?
 #define PAGESIZE 8192
 
-	ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
+	info->len = ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
 		total / PAGESIZE,
 		resid / PAGESIZE,
 		share / PAGESIZE,
@@ -1190,7 +1190,6 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 		datrs / PAGESIZE,
 		dpage
 	);
-	info->len = len;
 
 	*buffer = info;
 	return 0;
