@@ -215,8 +215,12 @@ typedef MEMREGION **MMAP;
 /* interesting memory constants */
 
 # define ONE_K		0x400L
+# define EIGHT_K	(8L * ONE_K)
 # define ONE_MEG	(ONE_K * ONE_K)
 # define SIXTEEN_MEG	(16L * ONE_K * ONE_K)
+# define LOG2_ONE_MEG	20
+# define LOG2_16_MEG	24
+# define LOG2_EIGHT_K	13
 
 
 /* Constants for mem_prot_flags bitvector */

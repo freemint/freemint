@@ -40,28 +40,28 @@
 
 # if WITH_KERNFS
 
-long kern_get_unimplemented	(SIZEBUF **buffer);
+long kern_get_unimplemented	(SIZEBUF **buffer, const struct proc *p);
 
-long kern_get_bootlog (SIZEBUF **buffer);
-long kern_get_buildinfo		(SIZEBUF **buffer);
-long kern_get_cookiejar		(SIZEBUF **buffer);
-long kern_get_filesystems	(SIZEBUF **buffer);
-long kern_get_hz		(SIZEBUF **buffer);
-long kern_get_loadavg		(SIZEBUF **buffer);
-long kern_get_meminfo		(SIZEBUF **buffer);
-long kern_get_stat              (SIZEBUF **buffer);
-long kern_get_sysdir		(SIZEBUF **buffer);
-long kern_get_time		(SIZEBUF **buffer);
-long kern_get_uptime		(SIZEBUF **buffer);
-long kern_get_version		(SIZEBUF **buffer);
-long kern_get_welcome		(SIZEBUF **buffer);
+long kern_get_bootlog (SIZEBUF **buffer, const struct proc *p);
+long kern_get_buildinfo		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_cookiejar		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_filesystems	(SIZEBUF **buffer, const struct proc *p);
+long kern_get_hz		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_loadavg		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_meminfo		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_stat              (SIZEBUF **buffer, const struct proc *p);
+long kern_get_sysdir		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_time		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_uptime		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_version		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_welcome		(SIZEBUF **buffer, const struct proc *p);
 
 long kern_procdir_get_cmdline	(SIZEBUF **buffer, const struct proc *p);
-long kern_procdir_get_environ	(SIZEBUF **buffer,       struct proc *p);
+long kern_procdir_get_environ	(SIZEBUF **buffer,       const struct proc *p);
 long kern_procdir_get_fname	(SIZEBUF **buffer, const struct proc *p);
 long kern_procdir_get_meminfo	(SIZEBUF **buffer, const struct proc *p);
-long kern_procdir_get_stat	(SIZEBUF **buffer,       struct proc *p);
-long kern_procdir_get_statm     (SIZEBUF **buffer,	 struct proc *p);
+long kern_procdir_get_stat	(SIZEBUF **buffer,       const struct proc *p);
+long kern_procdir_get_statm     (SIZEBUF **buffer,	 const struct proc *p);
 long kern_procdir_get_status	(SIZEBUF **buffer, const struct proc *p);
 
 # endif

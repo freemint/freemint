@@ -78,13 +78,14 @@
 
 
 long
-kern_get_unimplemented (SIZEBUF **buffer)
+kern_get_unimplemented (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 
 # define PATIENCE_PLEEZE "Not yet implemented!\n"
 
+	UNUSED(p);
 	len = sizeof PATIENCE_PLEEZE - 1;
 
 	info = kmalloc (sizeof (*info) + len);
@@ -103,11 +104,12 @@ kern_get_unimplemented (SIZEBUF **buffer)
 
 
 long
-kern_get_buildinfo (SIZEBUF **buffer)
+kern_get_buildinfo (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 512;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -124,17 +126,18 @@ kern_get_buildinfo (SIZEBUF **buffer)
 }
 
 long
-kern_get_bootlog (SIZEBUF **buffer)
+kern_get_bootlog (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = strlen(boot_file) + 1;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
 	strcpy (info->buf, boot_file);
-	info->len = strlen(info->buf);
+	info->len = len - 1;
 
 	*buffer = info;
 	return 0;
@@ -142,7 +145,7 @@ kern_get_bootlog (SIZEBUF **buffer)
 
 
 long
-kern_get_cookiejar (SIZEBUF **buffer)
+kern_get_cookiejar (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
@@ -156,6 +159,7 @@ kern_get_cookiejar (SIZEBUF **buffer)
 	}ut;
 	ulong value;
 
+	UNUSED(p);
 	if (get_cookie (NULL, 0, &slots))
 	{
 		DEBUG (("kern_get_cmdline: get_cookie(0) failed!"));
@@ -222,13 +226,14 @@ kern_get_cookiejar (SIZEBUF **buffer)
 }
 
 long
-kern_get_filesystems (SIZEBUF **buffer)
+kern_get_filesystems (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 	FILESYS *fs;
 	char *crs;
 
+	UNUSED(p);
 	for (fs = active_fs, len = 0; fs != NULL; fs = fs->next, len++)
 		;
 
@@ -291,11 +296,12 @@ kern_get_filesystems (SIZEBUF **buffer)
 }
 
 long
-kern_get_hz (SIZEBUF **buffer)
+kern_get_hz (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 
+	UNUSED(p);
 	/* Enough for a number */
 	len = 16;
 
@@ -317,11 +323,10 @@ kern_get_hz (SIZEBUF **buffer)
 # define LOAD_FRAC(x)	LOAD_INT(((x) & (FIXED_1 - 1)) * 100)
 
 long
-kern_get_loadavg (SIZEBUF **buffer)
+kern_get_loadavg (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	struct proc *p;
 	short tasks = 0;
 	short running = 0;
 	int last_pid = 0; /* ??? */
@@ -362,7 +367,7 @@ kern_get_loadavg (SIZEBUF **buffer)
   Flames, Critics, ... to pralle@informatik.uni-hannover.de
  */
 long
-kern_get_meminfo (SIZEBUF **buffer)
+kern_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 512;
@@ -376,6 +381,7 @@ kern_get_meminfo (SIZEBUF **buffer)
 	ulong mem_total  = core_total + alt_total;
 	ulong mem_free   = core_free + alt_free;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -447,11 +453,10 @@ kern_get_meminfo (SIZEBUF **buffer)
  * Other lines will be introduced as soon as they are needed.
  */
 long
-kern_get_stat (SIZEBUF **buffer)
+kern_get_stat (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	struct proc *p;
 	ulong all_systime = 0, all_usrtime = 0, all_nice = 0;
 
 	info = kmalloc (sizeof (*info) + len);
@@ -485,11 +490,12 @@ kern_get_stat (SIZEBUF **buffer)
  * the configuration.
  */
 long
-kern_get_sysdir (SIZEBUF **buffer)
+kern_get_sysdir (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 
+	UNUSED(p);
 	len = strlen(sysdir) + 1;
 
 	info = kmalloc (sizeof (*info) + len);
@@ -497,7 +503,7 @@ kern_get_sysdir (SIZEBUF **buffer)
 		return ENOMEM;
 
 	strcpy (info->buf, sysdir);
-	info->len = strlen(info->buf);
+	info->len = len - 1;
 
 	*buffer = info;
 	return 0;
@@ -507,11 +513,12 @@ kern_get_sysdir (SIZEBUF **buffer)
  *
  */
 long
-kern_get_time (SIZEBUF **buffer)
+kern_get_time (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -528,12 +535,13 @@ kern_get_time (SIZEBUF **buffer)
 
 
 long
-kern_get_uptime (SIZEBUF **buffer)
+kern_get_uptime (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
 	ulong idle = rootproc->systime + rootproc->usrtime;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -549,7 +557,7 @@ kern_get_uptime (SIZEBUF **buffer)
 }
 
 long
-kern_get_version (SIZEBUF **buffer)
+kern_get_version (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 256;
@@ -565,6 +573,7 @@ kern_get_version (SIZEBUF **buffer)
 	ksprintf (revision, sizeof (revision), ".%lu", (ulong) PATCH_LEVEL);
 # endif
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -585,7 +594,7 @@ kern_get_version (SIZEBUF **buffer)
 }
 
 long
-kern_get_welcome (SIZEBUF **buffer)
+kern_get_welcome (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 0;
@@ -608,6 +617,7 @@ kern_get_welcome (SIZEBUF **buffer)
 	union { const char *cc; unsigned char *c; } from;
 	uchar *to;
 
+	UNUSED(p);
 	for (greet = greets; *greet != NULL; greet++)
 		len += strlen (*greet);
 
@@ -689,7 +699,7 @@ kern_procdir_get_cmdline (SIZEBUF **buffer, const struct proc *p)
  * return value EOF.
  */
 long
-kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
+kern_procdir_get_environ (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info = NULL;
 	MEMREGION *baseregion = NULL;
@@ -886,6 +896,9 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 		return ENOMEM;
 
 	crs = info->buf;
+	crs += ksprintf (crs, len - (crs - info->buf),
+		"Base:%08lx\n",
+		(unsigned long) p->p_mem->base);
 	for (i = 0; i < p->p_mem->num_reg; i++)
 	{
 		MEMREGION *m;
@@ -898,9 +911,9 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 # define M_SHTEXT_T	0x0020	/* XXX */
 
 		crs += ksprintf (crs, len - (crs - info->buf),
-				"%08lx-%08lx %3u %c%c%c%c%c%c %08x %02lu:%02lu %lu\n",
-				(ulong) p->p_mem->addr[i],
-				(ulong) p->p_mem->addr[i] + m->len + 1,
+				"%08lx-%08lx %3u %c%c%c%c%c%c %c %08x %02lu:%02lu %lu\n",
+				(ulong) m->loc,
+				(ulong) m->loc + m->len - 1,
 				(unsigned) m->links,
 				m->mflags & M_KEEP ? 'k' : '-',
 				m->mflags & M_SHARED ? 's' : '-',
@@ -911,6 +924,7 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 				m->mflags & M_ALT ? 'a' :
 				m->mflags & M_SWAP ? 's' :
 				m->mflags & M_KER ? 'k' : '-',
+				"PGSRI"[get_prot_mode(m)],
 				0,
 				0UL,
 				0UL,
@@ -956,7 +970,7 @@ timersub (struct timeval *a, struct timeval *b, struct timeval *result)
 }
 
 long
-kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
+kern_procdir_get_stat (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	long base;
@@ -1039,12 +1053,9 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 
 		for (i = 0; i < p->p_mem->num_reg; i++)
 		{
-			if (p->p_mem->addr[i] == base)
+			MEMREGION *m = p->p_mem->mem[i];
+			if (m && m->loc == base)
 			{
-				MEMREGION *m = p->p_mem->mem[i];
-
-				assert(m && m->loc == base);
-
 				endcode = ((unsigned long)base + m->len);
 				break;
 			}
@@ -1160,7 +1171,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
  *
  */
 long
-kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
+kern_procdir_get_statm( SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
@@ -1178,16 +1189,16 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 		return ENOMEM;
 
 
-	// Why is it in 'kmemory.c' and not in 'kmemory.h' ?
-#define PAGESIZE 8192
+	/* exchange LOG2_EIGHT_K with PAGEBITS. !!! */
+	/* Why is it in 'kmemory.c' and not in 'kmemory.h' ? */
 
 	info->len = ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
-		total / PAGESIZE,
-		resid / PAGESIZE,
-		share / PAGESIZE,
-		txtrs / PAGESIZE,
-		librs / PAGESIZE,
-		datrs / PAGESIZE,
+		total >> LOG2_EIGHT_K,
+		resid >> LOG2_EIGHT_K,
+		share >> LOG2_EIGHT_K,
+		txtrs >> LOG2_EIGHT_K,
+		librs >> LOG2_EIGHT_K,
+		datrs >> LOG2_EIGHT_K,
 		dpage
 	);
 

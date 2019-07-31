@@ -1808,7 +1808,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
  * long memused(p): return total memory allocated to process p
  */
 long
-memused (PROC *p)
+memused (const struct proc *p)
 {
 	struct memspace *mem = p->p_mem;
 	long size;
@@ -1913,7 +1913,7 @@ error:
  * convert an address to the memory region attached to a process
  */
 MEMREGION *
-proc_addr2region (PROC *p, unsigned long addr)
+proc_addr2region (const struct proc *p, unsigned long addr)
 {
 	struct memspace *mem = p->p_mem;
 	int i;
@@ -2001,7 +2001,7 @@ realloc_region (MEMREGION *reg, long newsize)
 
 	SANITY_CHECK (map);
 
-	FORCE("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize);
+	DEBUG(("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize));
 
 // 	if (! (reg == NULL || (reg->mflags & M_CORE)) )
 // 		return 0;
@@ -2021,7 +2021,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		MEMREGION *lastfit = 0;
 		MEMREGION *newm = kmr_get ();
 
-		FORCE("realloc_region: reg is NULL");
+		DEBUG(("realloc_region: reg is NULL"));
 
 		for (m = *map; m; m = m->next)
 		{
@@ -2104,8 +2104,8 @@ realloc_region (MEMREGION *reg, long newsize)
 		{
 			/* add this memory to the previous free region */
 
-			FORCE("reg = %p", reg);
-			FORCE("loc = %lx", reg->loc);
+			DEBUG(("reg = %p", reg));
+			DEBUG(("loc = %lx", reg->loc));
 
 			prevptr->len += oldsize - newsize;
 			reg->loc += oldsize - newsize;
@@ -2368,13 +2368,14 @@ kern_get_memdebug_1 (MMAP map, char *crs, ulong len)
 }
 
 long
-kern_get_memdebug (SIZEBUF **buffer)
+kern_get_memdebug (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 128ul * 1024ul;
 	ulong i;
 	char *crs;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;

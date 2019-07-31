@@ -188,8 +188,12 @@ static DEVDRV kern_device =
  *
  * For the file handles directory:
  *
- * /sys/<PID>/fd/<HANDLE>:	(pid << 16 | 0x100 | handle)
+ * /sys/<PID>/fd/<HANDLE>:	(pid << 16 | PROC_DIRFD_ID | handle)
  */
+#define PROC_DIRFD_MASK 0x3fff
+#define PROC_DIRFD_ID 0x4000
+#define PROC_DIRFD_TO_INDEX(fd) (((fd) & PROC_DIRFD_MASK) | PROC_DIRFD_ID)
+#define PROC_DIRFD_FROM_INDEX(idx)  (((idx) & 0x2000) ? ((idx) | ~PROC_DIRFD_MASK) : ((idx) & PROC_DIRFD_MASK))
 
 
 typedef struct kentry KENTRY;
@@ -198,7 +202,7 @@ struct kentry
 	ulong	inode;
 	ulong	mode;
 	char	*name;
-	long	(*get)();
+	long	(*get)(SIZEBUF **, const struct proc *p);
 };
 
 typedef struct ktab	KTAB;
@@ -455,17 +459,17 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 		*fc = *dir;
 	else if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 		fc->index = (dir->index & 0xffff0000) | PROCDIR_DIR;
-	else if (strtonumber (name, &desc, 0, 0) == 0)
+	else if (strtonumber (name, &desc, 1, 0) == 0)
 	{
-		char cdesc;
+		int cdesc;
 
-		if (desc < 0 || desc > 255)
+		if (desc < MIN_HANDLE || desc > PROC_DIRFD_MASK)
 		{
 			DEBUG (("kern_fd_lookup: pid %d, invalid descriptor name: %d", pid, (int) desc));
 			return ENOENT;
 		}
 
-		cdesc = (desc & 0xff);
+		cdesc = PROC_DIRFD_FROM_INDEX(desc);
 
 		if (!p->p_fd)
 		{
@@ -473,14 +477,14 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return ENOENT;
 		}
 
-		if (cdesc < -5 || cdesc >= p->p_fd->nfiles
+		if (cdesc < MIN_HANDLE || cdesc >= p->p_fd->nfiles
 			|| p->p_fd->ofiles[(int) (cdesc)] == NULL)
 		{
 			DEBUG (("kern_fddir_lookup: pid %d, invalid descriptor: %d", pid, (int) cdesc));
 			return ENOENT;
 		}
 
-		fc->index = (dir->index & 0xffff0000) | 0x100 | (desc & 0xff);
+		fc->index = (dir->index & 0xffff0000) | PROC_DIRFD_TO_INDEX(desc);
 	}
 	else
 	{
@@ -562,21 +566,9 @@ kern_getdev (fcookie *fc, long *devspecial)
 	return &kern_device;
 }
 
-static long kern_filesize(fcookie *f)
+static long kern_filesize(PROC *p, fcookie *f)
 {
-	PROC *p = NULL;
 	KENTRY *t;
-
-	if (f->index & 0xffff0000)
-	{
-		short pid = f->index >> 16;
-
-		p = pid2proc (pid);
-		if (!p)
-		{
-			return 0;
-		}
-	}
 
 	if (p)	t = search_inode (procdir, f->index & 0xffff);
 	else	t = search_inode (rootdir, f->index);
@@ -619,6 +611,8 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 
 	synch_timers ();
 
+	mint_bzero (stat, sizeof (*stat));
+
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
 	stat->mode = t->mode;
@@ -626,9 +620,8 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->nlink = 1;
 	stat->uid = p->p_cred->ruid;
 	stat->gid = p->p_cred->rgid;
-	stat->size = kern_filesize(file);
+	stat->size = kern_filesize(p, file);
 	stat->blksize = 1;
-	stat->blocks = 0;
 
 	stat->atime.high_time = 0;
 	stat->atime.time = xtime.tv_sec;
@@ -645,8 +638,6 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	mint_bzero (stat->res, sizeof (stat->res));
-
 	switch (file->index & 0xffff)
 	{
 		case PROCDIR_DIR:
@@ -655,6 +646,9 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 			break;
 		}
 	}
+
+	/* measured in 512 byte blocks */
+	stat->blocks = (stat->size + 511UL) >> 9;
 
 	return E_OK;
 }
@@ -676,6 +670,8 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 
 	synch_timers ();
 
+	mint_bzero (stat, sizeof (*stat));
+
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
 	stat->mode = S_IFLNK | 0500;
@@ -683,9 +679,8 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->nlink = 1;
 	stat->uid = p->p_cred->ruid;
 	stat->gid = p->p_cred->rgid;
-	stat->size = kern_filesize(file);
+	stat->size = kern_filesize(p, file);
 	stat->blksize = 1;
-	stat->blocks = 0;
 	stat->mtime.time = p->started.tv_sec;
 	stat->mtime.nanoseconds = p->started.tv_usec;
 	stat->atime.time = xtime.tv_sec;
@@ -695,17 +690,15 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	mint_bzero (stat->res, sizeof (stat->res));
-
 	if ((file->index & 0x0000ffff) == PROCDIR_FD)
 		stat->mode = S_IFDIR | 0500;
 	else if ((file->index & 0x0000ffff) == PROCDIR_DIR)
 		stat->mode = S_IFDIR | 0555;
 	else
 	{
-		char desc = (char) file->index;
+		int desc = PROC_DIRFD_FROM_INDEX(file->index);
 
-		if ((file->index & 0x0000ff00) != 0x100)
+		if ((file->index & 0x0000c000) != PROC_DIRFD_ID)
 			return ENOENT;
 
 		if (!p->p_fd)
@@ -714,12 +707,15 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 			return ENOENT;
 		}
 
-		if (desc < -5 || desc >= p->p_fd->nfiles)
+		if (desc < MIN_HANDLE || desc >= p->p_fd->nfiles)
 			return ENOENT;
 
 		if (*(p->p_fd->ofiles + desc) == NULL)
 			return ENOENT;
 	}
+	
+	/* measured in 512 byte blocks */
+	stat->blocks = (stat->size + 511UL) >> 9;
 
 	return E_OK;
 }
@@ -731,7 +727,7 @@ kern_stat64 (fcookie *file, STAT *stat)
 
 	TRACE (("kern_stat64 ([%u:%ld])", file->dev, file->index));
 
-	if ((file->index & 0xffff0000) && (file->index & 0xff00) == 0x100)
+	if ((file->index & 0xffff0000) && (file->index & 0xc000) == PROC_DIRFD_ID)
 		return kern_fddir_stat64 (file, stat);
 
 	if (file->index & 0xffff0000)
@@ -742,6 +738,8 @@ kern_stat64 (fcookie *file, STAT *stat)
 
 	synch_timers ();
 
+	mint_bzero (stat, sizeof (*stat));
+
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
 	stat->rdev = KERNDRV;
@@ -749,8 +747,7 @@ kern_stat64 (fcookie *file, STAT *stat)
 	stat->nlink = 1;
 	stat->uid = 0;
 	stat->gid = 0;
-	stat->size = kern_filesize(file);
-	stat->blocks = 0;
+	stat->size = kern_filesize(NULL, file);
 	stat->blksize = 1;
 	stat->mtime.time = rootproc->started.tv_sec;
 	stat->mtime.nanoseconds = rootproc->started.tv_usec;
@@ -761,27 +758,24 @@ kern_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	mint_bzero (stat->res, sizeof (stat->res));
-
 	switch (file->index)
 	{
 		case ROOTDIR_ROOT:
-		{
 			stat->nlink = 2;
 			stat->mtime.time = procfs_stmp.tv_sec;
 			stat->mtime.nanoseconds = procfs_stmp.tv_usec;
 
 			break;
-		}
 		case ROOTDIR_SELF:
-		{
 			stat->uid = get_curproc()->p_cred->ruid;
 			stat->gid = get_curproc()->p_cred->rgid;
 
 			break;
-		}
 	}
 
+	/* measured in 512 byte blocks */
+	stat->blocks = (stat->size + 511UL) >> 9;
+	
 	return E_OK;
 }
 
@@ -1046,10 +1040,9 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				long desc = ((long) (dirh->index)) - 7;
 				if (p->p_fd->ofiles[desc] != NULL)
 				{
-					ksprintf (buf, sizeof (buf), "%lu", (ulong) (desc & 0xff));
-					fc->index =
-						(dirh->fc.index & 0xffff0000) |
-						0x100 | (desc & 0xff);
+					desc = PROC_DIRFD_FROM_INDEX(desc);
+					ksprintf (buf, sizeof (buf), "%ld", desc);
+					fc->index = (dirh->fc.index & 0xffff0000) | PROC_DIRFD_TO_INDEX(desc);
 					break;
 				}
 
@@ -1387,9 +1380,9 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 		return EACCES;
 
 	/* This cast will preserve the sign */
-	desc = (char) file->index;
+	desc = PROC_DIRFD_FROM_INDEX(file->index);
 
-	if (desc < -5 || desc >= fd->nfiles || (*(fd->ofiles + desc)) == NULL)
+	if (desc < MIN_HANDLE || desc >= fd->nfiles || (*(fd->ofiles + desc)) == NULL)
 	{
 		DEBUG (("kern_fddir_readlink: /sys/%d/fd/%d: Invalid descriptor", pid, (int) desc));
 		return ENOENT;
@@ -1416,7 +1409,7 @@ kern_readlink (fcookie *file, char *name, int namelen)
 {
 	TRACE (("kern_readlink ([%u:%ld])", file->dev, file->index));
 
-	if ((file->index & 0xffff0000) && (file->index & 0xff00) == 0x100)
+	if ((file->index & 0xffff0000) && (file->index & 0xc000) == PROC_DIRFD_ID)
 		return kern_fddir_readlink (file, name, namelen);
 
 	if (file->index & 0xffff0000)
@@ -1457,7 +1450,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "kernfs");
+			strcpy ((char *) arg, "kern");
 			break;;
 		}
 		case FS_INFO:
@@ -1585,8 +1578,7 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 	}
 
 	/* fill the buffer */
-	if (p)	ret = (*t->get)(&info, p);
-	else	ret = (*t->get)(&info);
+	ret = (*t->get)(&info, p);
 
 	if (ret || !info)
 		return ret;
@@ -1617,20 +1609,14 @@ kern_ioctl (FILEPTR *f, int mode, void *buf)
 	switch (mode)
 	{
 		case FIONREAD:
-		{
 			*((long *) buf) = 1;
 			break;
-		}
 		case FIONWRITE:
-		{
 			*((long *) buf) = 0;
 			break;
-		}
 		default:
-		{
 			DEBUG (("kern_ioctl: inode: %lu, invalid opcode: %d",  f->fc.index, mode));
-			return EINVAL;
-		}
+			return ENOSYS;
 	}
 
 	return E_OK;
@@ -1777,11 +1763,11 @@ kern_follow_link (fcookie *fc, int depth)
 	if (!fd || !cwd)
 		return ENOENT;
 
-	if ((fc->index & 0xff00) == 0x100)
+	if ((fc->index & 0xc000) == PROC_DIRFD_ID)
 	{
-		char desc = fc->index & 0xff;
+		int desc = PROC_DIRFD_FROM_INDEX(fc->index);
 
-		if (desc < -5 || desc >= fd->nfiles || *(fd->ofiles + desc) == NULL)
+		if (desc < MIN_HANDLE || desc >= fd->nfiles || *(fd->ofiles + desc) == NULL)
 		{
 			DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
 			return ENOENT;
