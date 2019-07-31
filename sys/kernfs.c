@@ -53,6 +53,7 @@
 # include "mint/ioctl.h"
 # include "mint/pathconf.h"
 # include "mint/stat.h"
+# include "mint/emu_tos.h"
 
 # include "arch/mprot.h"
 # include "arch/kernfs_mach.h"
@@ -826,6 +827,56 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 	return E_OK;
 }
 
+static void copy_tosname(char *dest, const char *src)
+{
+	char c;
+	int i;
+
+	if (src[0] == '.')
+	{
+		if (src[1] == 0)
+		{
+			strcpy(dest, "..");
+			return;
+		}
+
+		if (src[1] == '.' && src[2] == 0)
+		{
+			strcpy(dest, ".");
+			return;
+		}
+	}
+
+	for (i = 0; i < 8; i++)
+	{
+		c = *src++;
+
+		if (!c || c == '.')
+			break;
+		*dest++ = c;
+	}
+
+	i = 0;
+	while (c && c != '.')
+		c = *src++;
+
+	if (c)
+	{
+		*dest++ = '.';
+		for( ;i < 3; i++)
+		{
+			c = *src++;
+
+			if (!c || c == '.')
+				break;
+
+			*dest++ = c;
+		}
+	}
+
+	*dest = 0;
+}
+
 INLINE long
 kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
@@ -864,18 +915,29 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		namelen -= 4;
 	}
 
-	/* The MiNT documentation appendix E states that we always have
-	 * to stuff as many bytes as possible into the buffer.
-	 */
-	strncpy_f (name, src, namelen);
-
-	len = strlen (src);
-	if (len >= namelen)
+	if (dirh->flags == 0)
 	{
-		DEBUG (("kern_pr_readdir, dirh->index: %d, name: %s: name too long", dirh->index, src));
-		return EBADARG;
-	}
+		/* The MiNT documentation appendix E states that we always have
+		 * to stuff as many bytes as possible into the buffer.
+		 */
+		strncpy_f (name, src, namelen);
 
+		len = strlen (src);
+		if (len >= namelen)
+		{
+			DEBUG (("kern_pr_readdir, dirh->index: %d, name: %s: name too long", dirh->index, src));
+			return EBADARG;
+		}
+	} else
+	{
+		if (namelen < TOS_NAMELEN)
+		{
+			DEBUG (("kern_pr_readdir, dirh->index: %d, name: %s: name too long", dirh->index, src));
+			return EBADARG;
+		}
+		copy_tosname(name, src);
+	}
+	
 	TRACE (("kern_pr_readdir, dirh->index: %d, name: %s", dirh->index, name));
 	dirh->index++;
 
@@ -1071,16 +1133,27 @@ kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		namelen -= 4;
 	}
 
-	/* The MiNT documentation appendix E states that we always have
-	 * to stuff as many bytes as possible into the buffer.
-	 */
-	strncpy_f (name, src, namelen);
-
-	len = strlen (src);
-	if (len >= namelen)
+	if (dirh->flags == 0)
 	{
-		DEBUG (("kern_readdir, dirh->index: %d, name: %s, name too long", dirh->index, src));
-		return EBADARG;
+		/* The MiNT documentation appendix E states that we always have
+		 * to stuff as many bytes as possible into the buffer.
+		 */
+		strncpy_f (name, src, namelen);
+
+		len = strlen (src);
+		if (len >= namelen)
+		{
+			DEBUG (("kern_readdir, dirh->index: %d, name: %s, name too long", dirh->index, src));
+			return EBADARG;
+		}
+	} else
+	{
+		if (namelen < TOS_NAMELEN)
+		{
+			DEBUG (("kern_pr_readdir, dirh->index: %d, name: %s: name too long", dirh->index, src));
+			return EBADARG;
+		}
+		copy_tosname(name, src);
 	}
 
 	TRACE (("kern_readdir, dirh->index: %d, name: %s", dirh->index, name));
