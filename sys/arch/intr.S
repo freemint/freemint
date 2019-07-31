@@ -106,12 +106,17 @@ L_frame060:
 	clr.w	10(sp)		// format/vector word
 
 L_novbl:
+	move.w	_uptimetick,d0
+	subq.l	#1,d0
+	tst.w   d0
+	bpl.s   L_nouptime
+	addq.l  #1,_uptime
+	move.w  #200,d0
+L_nouptime:
+	move.w	d0,_uptimetick
 	move.l	(sp)+,d0		// restore register
 	move.l	_old_5ms.w(pc),-(sp)	// push old vector & save a bit of memory
 	move.l	a0,-(sp)
-	move.w	_uptimetick,a0
-	subq.l	#1,a0
-	move.w	a0,_uptimetick
 	move.l	_curproc,a0
 	tst.w	_in_kernel
 	bne.s	L_systime
@@ -145,6 +150,10 @@ L_short_1:
 	move.w	sr,-(sp)
 L_novbl:
 	subq.w	#1,_uptimetick
+	bpl.s   L_nouptime
+	addq.l  #1,_uptime
+	move.w  #200,_uptimetick
+L_nouptime:
 	tst.w	_in_kernel
 	bne.s	L_systime
 	addq.l	#5,([_curproc],P_USRTIME)
@@ -181,6 +190,10 @@ L_novbl:
 	move.l	_old_5ms.w(pc),-(sp)	// push old vector & save a bit of memory
 	move.l	a0,-(sp)
 	subq.w	#1,_uptimetick
+	bpl.s   L_nouptime
+	addq.l  #1,_uptime
+	move.w  #200_uptimetick
+L_nouptime:
 	move.l	_curproc,a0
 	tst.w	_in_kernel
 	bne.s	L_systime
@@ -341,17 +354,6 @@ piramida_hejhopsa:
 #endif
 
 	jsr	_checkbttys_vbl
-	lea	_uptimetick,a0
-	tst.w	(a0)
-	bgt.s	L_no_uptime
-#ifdef __mcoldfire__
-	mvz.w	(a0),d0
-	add.l	#200,d0
-	move.w	d0,(a0)
-#else
-	add.w	#200,(a0)
-#endif
-	addq.l	#0x01,_uptime
 #ifdef __mcoldfire__
 	lea	mod5,a0
 	mvz.w	(a0),d0
