@@ -192,7 +192,7 @@ L_novbl:
 	subq.w	#1,_uptimetick
 	bpl.s   L_nouptime
 	addq.l  #1,_uptime
-	move.w  #200_uptimetick
+	move.w  #200,_uptimetick
 L_nouptime:
 	move.l	_curproc,a0
 	tst.w	_in_kernel
