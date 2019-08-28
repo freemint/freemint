@@ -70,6 +70,11 @@ void storage_int(void)
 		if (usb_dev_desc[i].target == 0xff) {
 			continue;
 		}
+
+		/* If the device has only one LUN we don't poll */
+		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1)
+			continue;
+
 		pccb.lun = usb_dev_desc[i].lun;
 		r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
 		if ((r) && (usb_dev_desc[i].ready)) { /* Card unplugged */
