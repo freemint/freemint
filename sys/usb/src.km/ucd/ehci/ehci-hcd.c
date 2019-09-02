@@ -282,7 +282,7 @@ static inline void invalidate_dcache(void)
 
 static inline long max_transfer_len(struct ehci *gehci,void *buf)
 {
-	unsigned long maxlen, offset;
+	unsigned long maxlen, first_page_offset;
 	unsigned long addr;
 	long r;
 
@@ -296,9 +296,15 @@ static inline long max_transfer_len(struct ehci *gehci,void *buf)
 	/* One qTD can transfer 5 * 4K, but this is with a perfect 4k aligment,
 	 * note that only the first 4k page is allowed to be unaligned.
 	 */
+	maxlen = 5 * 4096;
+	first_page_offset = addr & 4095;
+	maxlen -= first_page_offset;
 
-	offset = addr - (addr & ~4095);
-	maxlen = (5 * 4096) - offset;
+	/*
+	 * In order to keep each USB packet within a qTD transfer,
+	 * align the qTD transfer size to 512 bytes.
+	 */
+	maxlen &= ~(512 - 1);
 
 	return maxlen;
 }
