@@ -571,10 +571,10 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	cmd = ehci_readl(&gehci->hcor->or_usbcmd);
 	cmd |= CMD_ASE;
 	ehci_writel(&gehci->hcor->or_usbcmd, cmd);
-	ret = handshake((unsigned long *)&gehci->hcor->or_usbsts, STD_ASS, STD_ASS, 100L * 1000L);
+	ret = handshake((unsigned long *)&gehci->hcor->or_usbsts, STS_ASS, STS_ASS, 100L * 1000L);
 	if(ret < 0)
 	{
-		ALERT(("EHCI fail timeout STD_ASS set (usbsts=%x)", ehci_readl(&gehci->hcor->or_usbsts)));
+		ALERT(("EHCI fail timeout STS_ASS set (usbsts=%x)", ehci_readl(&gehci->hcor->or_usbsts)));
 		goto fail;
 	}
 
@@ -613,10 +613,10 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	cmd = ehci_readl(&gehci->hcor->or_usbcmd);
 	cmd &= ~CMD_ASE;
 	ehci_writel(&gehci->hcor->or_usbcmd, cmd);
-	ret = handshake((unsigned long *)&gehci->hcor->or_usbsts, STD_ASS, 0, 100L * 1000L);
+	ret = handshake((unsigned long *)&gehci->hcor->or_usbsts, STS_ASS, 0, 100L * 1000L);
 	if(ret < 0)
 	{
-		ALERT(("EHCI fail timeout STD_ASS reset (usbsts=%x)", ehci_readl(&gehci->hcor->or_usbsts)));
+		ALERT(("EHCI fail timeout STS_ASS reset (usbsts=%x)", ehci_readl(&gehci->hcor->or_usbsts)));
 		goto fail;
 	}
 

@@ -68,7 +68,7 @@ struct ehci_hcor {
 #define CMD_RESET	(1UL << 1)		/* reset HC not bus */
 #define CMD_RUN		(1UL << 0)		/* start/stop HC */
 	unsigned long or_usbsts;
-#define STD_ASS		(1UL << 15)
+#define STS_ASS		(1UL << 15)
 #define STS_PSSTAT	(1UL << 14)
 #define STS_RECL	(1UL << 13)
 #define STS_HALT	(1UL << 12)
