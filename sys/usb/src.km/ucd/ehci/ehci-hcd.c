@@ -413,7 +413,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	}
 
 	if (addr & (M68K_CACHE_LINE_SIZE - 1))
-		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)\n", buf));
+		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)", buf));
 
 	cpush(buf, ALIGN((unsigned long)buf + sz, M68K_CACHE_LINE_SIZE));
 
@@ -431,7 +431,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	}
 	if(idx == 5)
 	{
-		DEBUG(("out of buffer pointers (%u bytes left)", sz));
+		DEBUG(("out of buffer pointers (%lu bytes left)", sz));
 		return -1;
 	}
 	return 0;
@@ -606,7 +606,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 
 	/* Check that the TD processing happened */
 	if (token & 0x80) {
-		DEBUG(("EHCI timed out on TD - token=%02lx\n", 0xff & token));
+		DEBUG(("EHCI timed out on TD - token=%02lx", 0xff & token));
 	}
 
 	/* Disable async schedule. */
@@ -858,7 +858,7 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 							gehci->portreset |=
 								1 << le2cpu16(req->index);
 						else
-							ALERT(("port(%d) reset error\n",
+							ALERT(("port(%d) reset error",
 								le2cpu16(req->index) - 1));
 					}
 					break;
