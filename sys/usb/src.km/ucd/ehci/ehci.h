@@ -154,8 +154,11 @@ struct qTD {
 #define	QT_NEXT_TERMINATE	1
 	unsigned long qt_altnext;		/* see EHCI 3.5.2 */
 	unsigned long qt_token;		/* see EHCI 3.5.3 */
-	unsigned long qt_buffer[5];		/* see EHCI 3.5.4 */
+#define QT_BUFFER_CNT	5
+	unsigned long qt_buffer[QT_BUFFER_CNT];		/* see EHCI 3.5.4 */
+	unsigned long qt_buffer_hi[QT_BUFFER_CNT];	/* Appendix B */
 	/* pad struct for 32 byte alignment */
+	unsigned long unused[3];
 };
 
 /* Queue Head (QH). */
