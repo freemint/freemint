@@ -1159,7 +1159,7 @@ long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, l
 		}
 		done += dev->act_len;
 
-		if (!dir_out && ret < max)	/* short packet */
+		if (!dir_out && dev->act_len < max)	/* short packet */
 			break;
 	}
 	dev->act_len = done;
