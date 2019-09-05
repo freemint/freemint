@@ -949,6 +949,36 @@ static void hc_free_buffers(struct ehci *ehci)
 }
 
 /*
+ * Polling functions for the root hub (disable by default)
+ */
+
+/* #define EHCI_POLL */
+#ifdef EHCI_POLL
+static void ehci_hub_poll_thread(void *);
+static void ehci_hub_poll(PROC *proc, long dummy);
+
+static void ehci_hub_poll(PROC *proc, long dummy)
+{
+	wake(WAIT_Q, (long)&ehci_hub_poll_thread);
+}
+
+static void ehci_hub_poll_thread(void *ptr)
+{
+	struct ehci *gehci = (struct ehci *)ptr;
+	struct ucdif *ehci_uif = gehci->controller;
+
+	for (;;)
+	{
+		usb_rh_wakeup(ehci_uif);
+		addtimeout(1000L, ehci_hub_poll);
+		sleep(WAIT_Q, (long)&ehci_hub_poll_thread);
+	}
+
+	kthread_exit(0);
+}
+#endif /* EHCI_POLL */
+
+/*
  * IOCTL functions
  */
 
@@ -1084,9 +1114,17 @@ long usb_lowlevel_init(void *ucd_priv)
 	mdelay(5);
 	reg = HC_VERSION(ehci_readl(&gehci->hccr->cr_capbase));
 
-
+#ifdef EHCI_POLL
+	r = kthread_create(NULL, ehci_hub_poll_thread, gehci, NULL, "ehci");
+	if (r)
+	{
+		/* XXX todo -> exit gracefully */
+		DEBUG(("can't create NetUSBee kernel thread"));
+	}
+#else
 	/* turn on interrupts */
 	ehci_writel(&gehci->hcor->or_usbintr, INTR_PCDE);
+#endif /* EHCI_POLL */
 	gehci->rootdev = 0;
 	gehci->ehci_inited = 1;
 
