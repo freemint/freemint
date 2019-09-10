@@ -292,6 +292,11 @@ kbd_int (void)
 	long r;
 	unsigned char temp, temp2 = 0;
 
+	static int skip_cycle = 0; /* call half the time to save CPU time */
+	skip_cycle = skip_cycle?0:1;
+	if (skip_cycle)
+		return;
+
 	if (kbd_data.pusb_dev == NULL)
 		return;
 
