@@ -194,16 +194,18 @@ ehci_pci_init(void *ucd_priv)
 			default: gehci->slot_name = "generic"; break;
 		}
 	}
-
+#ifndef EHCI_POLL
 	/* hook interrupt handler */
 	Hook_interrupt(((struct ehci_pci *)gehci->bus)->handle, (void *)ehci_int_handle_asm, (unsigned long *)gehci);
-
+#endif
 	return 0;
 }
 
 void ehci_pci_stop(struct ehci *gehci)
 {
+#ifndef EHCI_POLL
 	Unhook_interrupt(((struct ehci_pci *)gehci->bus)->handle);
+#endif
 }
 
 /* temporary, need multiple versions and alloc, but the new ucd_register
