@@ -1262,6 +1262,13 @@ long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, l
 			DEBUG(("error on bulk message"));
 			return ret;
 		}
+		else if (!dev->act_len)
+			/* No data was transfered,
+			 * return and let upper
+			 * layers check why
+			 */
+			return 0;
+
 		done += dev->act_len;
 
 		if (!dir_out && dev->act_len < max)	/* short packet */
