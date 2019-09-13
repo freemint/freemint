@@ -74,6 +74,8 @@
 #ifndef TOSONLY
 struct kentry	*kentry;
 struct ucdinfo	*uinf;
+#else
+extern void cpush(void *base, long size);
 #endif
 struct usb_module_api   *api;
 
@@ -276,6 +278,23 @@ static inline void invalidate_dcache(void)
 #endif
 }
 
+/* Function to flush the entire data cache, MiNT drivers can also
+ * use the functions exported by the kernel in kentry (cpush) to
+ * to flush specific areas of the cache. TOS drivers have support
+ * for that function too.
+ * There is only PCI hardware for machines with a 040, 060 and
+ * ColdFire CPUs, so we use savely the "cpush" instruction.
+ */
+
+static void flush_dcache(void)
+{
+#if defined (__mc68040__) || defined(__mc68060__) || defined(__mcoldfdire__)
+	asm("cpusha dc");
+#else
+	/* Nothing */
+#endif
+}
+
 /*
  * EHCI functions
  */
@@ -415,7 +434,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	if (addr & (M68K_CACHE_LINE_SIZE - 1))
 		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)", buf));
 
-	cpush(buf, ALIGN((unsigned long)buf + sz, M68K_CACHE_LINE_SIZE));
+	cpush(buf, sz);
 
 	idx = 0;
 	while(idx < 5)
@@ -477,7 +496,9 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		DEBUG(("unable to allocate QH"));
 		return -1;
 	}
-
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	toggle = usb_gettoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe));
 
 	qh->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list_busaddr) | QH_LINK_TYPE_QH);
@@ -560,10 +581,8 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	}
 
 	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_busaddr) | QH_LINK_TYPE_QH);
-	/* Flush dcache */
-	cpush(&gehci->qh_list, (long)&gehci->qh_list + sizeof(struct QH));
-	cpush(&qh, (long)&qh + sizeof(struct QH));
-	cpush(td, (long)td + sizeof(struct qTD));
+	/* Flush data cache */
+	flush_dcache();
 	usbsts = ehci_readl(&gehci->hcor->or_usbsts);
 	ehci_writel(&gehci->hcor->or_usbsts, (usbsts & 0x3f));
 
@@ -656,6 +675,9 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		DEBUG(("dev=%ld, usbsts=0x%lx, p[1]=0x%lx, p[2]=0x%lx",
 		 dev->devnum, ehci_readl(&gehci->hcor->or_usbsts), ehci_readl(&gehci->hcor->or_portsc[0]), ehci_readl(&gehci->hcor->or_portsc[1])));
 	}
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	return (dev->status != USB_ST_NOT_PROC) ? 0 : -1;
 fail:
 	td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
@@ -675,6 +697,9 @@ fail:
 		ALERT(("EHCI Host System Error"));
 		ehci_bus_error(gehci);
 	}
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	return -1;
 }
 
