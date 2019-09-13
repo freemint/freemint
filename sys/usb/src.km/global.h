@@ -114,6 +114,7 @@ void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
 long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 
 long	_cdecl _mint_strncmp	(const char *str1, const char *str2, long len);
+char *	_cdecl _mint_strcpy	(char *dst, const char *src);
 char *	_cdecl _mint_strncpy	(char *dst, const char *src, long len);
 char *	_cdecl _mint_strcat	(char *dst, const char *src);
 long	_cdecl _mint_strlen	(const char *s);
@@ -123,6 +124,7 @@ long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...) __attribute
 
 # define strlen			_mint_strlen
 # define strncmp		_mint_strncmp
+# define strcpy			_mint_strcpy
 # define strncpy		_mint_strncpy
 # define strcat			_mint_strcat
 # define memcmp			_mint_memcmp
