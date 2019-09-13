@@ -89,7 +89,7 @@ struct pci_device_id {
 /* the struct definitions
  */
 
-typedef struct				/* structure of resource descriptor    */
+typedef struct pci_rsc_desc			/* structure of resource descriptor    */
 {
 	unsigned short next;			/* length of the following structure   */
 	unsigned short flags;			/* type of resource and misc. flags    */
@@ -99,7 +99,7 @@ typedef struct				/* structure of resource descriptor    */
 	unsigned long dmaoffset;		/* offset for DMA-transfers            */
 } PCI_RSC_DESC;
 
-typedef struct				/* structure of address conversion     */
+typedef struct pci_conv_adr			/* structure of address conversion     */
 {
 	unsigned long adr;			/* calculated address (CPU<->PCI)      */
 	unsigned long len;			/* length of memory range              */
