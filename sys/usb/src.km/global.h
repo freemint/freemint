@@ -61,8 +61,10 @@ typedef char Path[PATH_MAX];
 #endif
 
 #else /* TOSONLY */
-#include <mint/osbind.h> /* Setexc */
+#include <mint/osbind.h> /* Setexc, SuperToUser */
 #include <stdarg.h>
+
+#include "mint/pcibios.h"
 
 /* BIOS */
 

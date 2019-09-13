@@ -13,8 +13,8 @@ endif
 
 ifeq ($(ehci),prg)
 TARGET = ehci.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin
+CPU = 040
+USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
 LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
 endif
 
@@ -63,4 +63,4 @@ endif
 #
 # all default targets
 #
-ehcitargets = 02060 030 040 060 deb 000 col #prg
+ehcitargets = 02060 030 040 060 deb 000 col prg
