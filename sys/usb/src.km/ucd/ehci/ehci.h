@@ -204,6 +204,7 @@ struct ehci {
 	long rootdev;
 	unsigned short portreset;
 	unsigned short companion;
+	char job_in_progress;
 };
 
 /* Functions prototypes */
