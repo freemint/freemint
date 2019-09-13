@@ -255,9 +255,14 @@ long ehci_interrupt_handle(long param, long biosparam)
 	struct ehci *ehci = (struct ehci *)param;
 	unsigned long status;
 
-	/* flush caches */
-	cpush(ehci, -1);
-
+	/* flush data cache */
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
+	cpush(ehci, sizeof(struct ehci));
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	status = ehci_readl(&ehci->hcor->or_usbsts);
 	if(status & STS_PCD) /* port change detect */
 	{
