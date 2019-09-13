@@ -113,50 +113,35 @@ long usb_get_port_status(struct usb_device *dev, long port, void *data)
 			data, sizeof(struct usb_hub_status), USB_CNTL_TIMEOUT);
 }
 
+static void usb_hub_power_cycle(struct usb_device *dev, unsigned pgood_delay)
+{
+	long i;
+
+	DEBUG(("Do a power cycle"));
+
+	for (i = 0; i < dev->maxchild; i++) {
+		usb_clear_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
+		DEBUG(("port %ld returns %lx", i + 1, dev->status));
+	}
+
+	mdelay(2 * MAX(pgood_delay, (unsigned)100));
+
+	for (i = 0; i < dev->maxchild; i++) {
+		usb_set_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
+		DEBUG(("port %ld returns %lx", i + 1, dev->status));
+		mdelay(pgood_delay);
+	}
+
+	/* Wait at least 100 msec for power to become stable */
+	mdelay(MAX(pgood_delay, (unsigned)100));
+}
 
 static void usb_hub_power_on(struct usb_device *dev, unsigned pgood_delay)
 {
 	long i;
-	struct usb_port_status portsts;
-	unsigned short portstatus;
-	long ret;
 
-	/*
-	 * Enable power to the ports:
-	 * Here we Power-cycle the ports: aka,
-	 * turning them off and turning on again.
-	 */
-	DEBUG(("enabling power on all ports\n"));
-	for (i = 0; i < dev->maxchild; i++) {
-		usb_clear_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
-		DEBUG(("port %d returns %lX\n", i + 1, dev->status));
-	}
-
-	/* Wait at least 2*bPwrOn2PwrGood for PP to change */
-	mdelay(pgood_delay);
-
-	for (i = 0; i < dev->maxchild; i++) {
-		ret = usb_get_port_status(dev, i + 1, &portsts);
-		if (ret < 0) {
-			DEBUG(("port %d: get_port_status failed\n", i + 1));
-			return;
-		}
-
-		/*
-		 * Check to confirm the state of Port Power:
-		 * xHCI says "After modifying PP, s/w shall read
-		 * PP and confirm that it has reached the desired state
-		 * before modifying it again, undefined behavior may occur
-		 * if this procedure is not followed".
-		 * EHCI doesn't say anything like this, but no harm in keeping
-		 * this.
-		 */
-		portstatus = le2cpu16(portsts.wPortStatus);
-		if (portstatus & (USB_PORT_STAT_POWER << 1)) {
-			DEBUG(("port %d: Port power change failed\n", i + 1));
-			return;
-		}
-	}
+	/* Enable power to the ports */
+	DEBUG(("enabling power on all ports"));
 
 	for (i = 0; i < dev->maxchild; i++) {
 		usb_set_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
@@ -243,7 +228,7 @@ long hub_port_reset(struct usb_device *dev, long port)
 	struct usb_port_status portsts;
 	unsigned short portstatus, portchange;
 
-	DEBUG(("hub_port_reset: resetting port %ld...", port));
+	DEBUG(("hub_port_reset: resetting port %ld...", port + 1));
 	for (tries = 0; tries < MAX_TRIES; tries++) {
 		usb_set_port_feature(dev, port + 1, USB_PORT_FEAT_RESET);
 		mdelay(150);
@@ -475,7 +460,7 @@ usb_hub_configure(struct usb_device *dev)
 		(le2cpu16(hubsts->wHubStatus) & HUB_STATUS_OVERCURRENT) ? \
 		"" : "no "));
 
-	usb_hub_power_on(dev, hub->desc.bPwrOn2PwrGood * 2);
+	usb_hub_power_cycle(dev, hub->desc.bPwrOn2PwrGood * 2);
 
 	hub->pusb_dev = dev;
 
@@ -587,9 +572,11 @@ usb_hub_events(struct usb_hub_device *hub)
 		hubchange = le2cpu16(hubsts.wHubChange);
 
 		if (hubchange & HUB_CHANGE_LOCAL_POWER) {
+			DEBUG(("HUB_CHANGE_LOCAL_POWER"));
 			usb_clear_hub_feature(dev, C_HUB_LOCAL_POWER);
 		}
 		if (hubchange & HUB_CHANGE_OVERCURRENT) {
+			DEBUG(("HUB_CHANGE_OVERCURRENT"));
 			usb_clear_hub_feature(dev, C_HUB_OVER_CURRENT);
 			mdelay(500);
 			usb_hub_power_on(hub->pusb_dev, hub->desc.bPwrOn2PwrGood * 2);
