@@ -8,7 +8,19 @@ COBJS = \
 	ehci-hcd.c \
 	ehci-pci.c
 
+TOSCOBJS = \
+	crtinit.c \
+	pci_bios.c
+
 SSOBJS = \
 	ehci.S \
+
+TOSSSOBJS = \
+	cache.S \
+	delayasm.S \
+	entry.S \
+	pci_xbios.S \
+	setstack.S
+
 
 SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)

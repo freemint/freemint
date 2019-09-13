@@ -31,18 +31,35 @@
 
 #include "../../global.h"
 
-#include "mint/endian.h"
-#include "mint/mdelay.h"
-#include "../../usb.h"
+#ifndef TOSONLY
 #include "mint/time.h"
 #include "arch/timer.h"
+#include "mint/mdelay.h"
+#endif
+
+#include "mint/endian.h"
+
+#include "../../usb.h"
 #include "../../usb_api.h"
 
 #include "ehci.h"
 
+/*
+ * External definitions
+ */
+
 extern struct usb_module_api   *api;
 
 extern void ehci_int_handle_asm(void);
+
+#ifdef TOSONLY
+extern long pcibios_installed;
+
+extern int pcibios_init(void);
+extern void cpush(const void *, long);
+
+static void is_firebee (void);
+#endif
 
 /*
  * Function prototypes
@@ -77,10 +94,32 @@ struct ehci_bus ehci_bus = {
 	.getaddr = ehci_pci_getaddr,
 };
 
+#ifdef TOSONLY
+machine_type machine;
+
+static void is_firebee (void)
+{
+	long mch = 0, cf = 0;
+
+	/* Get _MCH cookie */
+	if (!getcookie(COOKIE__MCH, &mch))
+	{
+		(void)Cconws("USB: Failed to get _MCH cookie\r\n");
+	}
+
+	/* If _MCH is Falcon and _CF_ present we assume the machine is a FireBee */
+	if ((mch == FALCON) && getcookie(COOKIE__CF_, &cf))
+		machine = machine_firebee;
+}
+#endif
+
 void
 ehci_pci_error(struct ehci *gehci)
 {
 	unsigned short status = Fast_read_config_word(((struct ehci_pci *)gehci->bus)->handle, PCISR);
+#if !defined(DEV_DEBUG) && defined(TOSONLY)
+	UNUSED(status);
+#endif
 	ALERT(("EHCI Host System Error, controller usb-%s disabled\r\n(SR:0x%04x%s%s%s%s%s%s)", gehci->slot_name, status & 0xFFFF,
 	 status & 0x8000 ? ", Parity error" : "", status & 0x4000 ? ", Signaled system error" : "", status & 0x2000 ? ", Received master abort" : "",
 	 status & 0x1000 ? ", Received target abort" : "", status & 0x800 ? ", Signaled target abort" : "", status & 0x100 ? ", Data parity error" : ""));
@@ -183,6 +222,14 @@ ehci_pci_probe(void)
 	struct pci_device_id *board;
 	struct ucdif *ehci_uif = NULL;
 
+#ifdef TOSONLY
+	if (pcibios_init())
+		return -1;
+
+	/* Check if we are in a FireBee */
+	is_firebee();
+#endif
+
 	if(pcibios_installed == 0)
 	{
 		ALERT(("PCI-BIOS not found. You need a PCI-BIOS to use this driver"));
@@ -220,7 +267,7 @@ ehci_pci_probe(void)
 										break;
 
 									struct ehci *gehci = (struct ehci *)ehci_uif->ucd_priv;
-									gehci->bus = kmalloc (sizeof(struct ehci_pci));
+									gehci->bus = (struct ehci_pci *)kmalloc (sizeof(struct ehci_pci));
 									((struct ehci_pci *)gehci->bus)->handle = handle;
 									((struct ehci_pci *)gehci->bus)->ent = board;
 

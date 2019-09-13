@@ -31,17 +31,23 @@
 #endif
 
 #include <stddef.h>
-
+#ifndef TOSONLY
 #include "mint/mint.h"
+#endif
 #include "mint/dcntl.h"
+
+#include "mint/pcibios.h"
 
 #include "../../global.h"
 
-#include "mint/endian.h"
-#include "mint/mdelay.h"
-#include "../../usb.h"
+#ifndef TOSONLY
 #include "mint/time.h"
 #include "arch/timer.h"
+#include "mint/mdelay.h"
+#endif
+
+#include "mint/endian.h"
+#include "../../usb.h"
 #include "../../usb_api.h"
 
 #include "ehci.h"
@@ -51,7 +57,11 @@
 #define VER_MINOR	1
 #define VER_STATUS
 
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
+#ifdef TOSONLY
+#define MSG_VERSION    "TOS"
+#else
+#define MSG_VERSION    "FreeMiNT"
+#endif
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -75,6 +85,7 @@
 struct kentry	*kentry;
 struct ucdinfo	*uinf;
 #else
+extern unsigned long _PgmSize;
 extern void cpush(void *base, long size);
 #endif
 struct usb_module_api   *api;
@@ -373,7 +384,6 @@ static long ehci_reset(struct ehci *gehci)
 	if(ret < 0)
 	{
 		ALERT(("EHCI fail to reset"));
-		FORCE(("EHCI fail to reset"));
 		goto out;
 	}
 	if(ehci_is_TDI())
@@ -977,8 +987,8 @@ static void hc_free_buffers(struct ehci *ehci)
  * Polling functions for the root hub (disable by default)
  */
 
-/* #define EHCI_POLL */
-#ifdef EHCI_POLL
+#define EHCI_POLL
+#if defined(EHCI_POLL) && !defined(TOSONLY)
 static void ehci_hub_poll_thread(void *);
 static void ehci_hub_poll(PROC *proc, long dummy);
 
@@ -1001,7 +1011,7 @@ static void ehci_hub_poll_thread(void *ptr)
 
 	kthread_exit(0);
 }
-#endif /* EHCI_POLL */
+#endif /* EHCI_POLL && !TOSONLY */
 
 /*
  * IOCTL functions
@@ -1139,17 +1149,18 @@ long usb_lowlevel_init(void *ucd_priv)
 	mdelay(5);
 	reg = HC_VERSION(ehci_readl(&gehci->hccr->cr_capbase));
 
-#ifdef EHCI_POLL
+#if defined(EHCI_POLL) && !defined(TOSONLY)
 	r = kthread_create(NULL, ehci_hub_poll_thread, gehci, NULL, "ehci");
 	if (r)
 	{
 		/* XXX todo -> exit gracefully */
 		DEBUG(("can't create NetUSBee kernel thread"));
 	}
-#else
+#endif /* EHCI_POLL && !TOSONLY */
+
 	/* turn on interrupts */
 	ehci_writel(&gehci->hcor->or_usbintr, INTR_PCDE);
-#endif /* EHCI_POLL */
+
 	gehci->rootdev = 0;
 	gehci->ehci_inited = 1;
 
@@ -1341,7 +1352,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 {
 	struct ucdif *ehci_uif;
 
-	if(!(*u = kmalloc(sizeof(struct ucdif))))
+	if(!(*u = (struct ucdif *)kmalloc(sizeof(struct ucdif))))
 		return -1;
 	ehci_uif = *u;
 
@@ -1357,7 +1368,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 	ehci_uif->ioctl = ehci_ioctl;
 	ehci_uif->resrvd2 = 0;
 	strcpy(ehci_uif->name, "ehci-pci");
-	if(!(ehci_uif->ucd_priv = kmalloc(sizeof(struct ehci))))
+	if(!(ehci_uif->ucd_priv = (void *)kmalloc(sizeof(struct ehci))))
 		return -1;
 
 	return 0;
@@ -1378,7 +1389,7 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;
-
+#ifndef TOSONLY
 	kentry	= k;
 	api = uapi;
 
@@ -1387,15 +1398,33 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 		*reason = fail_kentry;
 		return -1;
 	}
+#else
+	/* Get USB cookie */
+	if (!getcookie(_USB, (long *)&api))
+	{
+		(void)Cconws("EHCI: failed to get _USB cookie\r\n");
+		return -1;
+	}
+
+	/* for precise mdelay/udelay relative to CPU power */
+	set_tos_delay();
+#endif
 	ret = ehci_bus_probe();
 	if (ret < 0) 
 	{
+#ifndef TOSONLY
 		*reason = fail_probe;
+#endif
 		return -1;
 	}
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
+
+#ifdef TOSONLY
+	c_conws("EHCI USB driver installed.\r\n");
+	Ptermres(_PgmSize,0);
+#endif
 
 	return 0;
 }

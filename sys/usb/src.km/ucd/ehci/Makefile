@@ -8,6 +8,7 @@ SUBDIRS =
 srcdir = .
 top_srcdir = ../../../..
 subdir = ehci
+toscommon_srcdir = ../../tos-common
 
 default: help
 
@@ -17,6 +18,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+SGENFILES = cache.S crtinit.c delayasm.S entry.S pci_bios.c pci_xbios.S setstack.S
 
 all-here: all-targets
 
@@ -56,8 +58,24 @@ all-targets:
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-$(ehcitargets): 
+$(ehcitargets): $(SGENFILES)
 	$(MAKE) buildehci ehci=$@
+
+# Link common TOS files
+cache.S: $(toscommon_srcdir)/cache.S
+	ln -sf $< $(srcdir)/$@
+crtinit.c: $(toscommon_srcdir)/crtinit.c
+	ln -sf $< $(srcdir)/$@
+delayasm.S: $(toscommon_srcdir)/delayasm.S
+	ln -sf $< $(srcdir)/$@
+entry.S: $(toscommon_srcdir)/entry.S
+	ln -sf $< $(srcdir)/$@
+pci_bios.c: $(toscommon_srcdir)/pci_bios.c
+	ln -sf $< $(srcdir)/$@
+pci_xbios.S: $(toscommon_srcdir)/pci_xbios.S
+	ln -sf $< $(srcdir)/$@
+setstack.S: $(toscommon_srcdir)/setstack.S
+	ln -sf $< $(srcdir)/$@
 
 #
 # multi target stuff
