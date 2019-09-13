@@ -103,6 +103,51 @@ typedef char Path[PATH_MAX];
 #undef f_close
 #define f_close Fclose
 
+/* PCI-BIOS */
+
+long Find_pci_device(unsigned long id, unsigned short index);
+long Find_pci_classcode(unsigned long class, unsigned short index);
+long Read_config_byte(long handle, unsigned short reg, unsigned char *address);
+long Read_config_word(long handle, unsigned short reg, unsigned short *address);
+long Read_config_longword(long handle, unsigned short reg, unsigned long *address);
+unsigned char Fast_read_config_byte(long handle, unsigned short reg);
+unsigned short Fast_read_config_word(long handle, unsigned short reg);
+unsigned long Fast_read_config_longword(long handle, unsigned short reg);
+long Write_config_byte(long handle, unsigned short reg, unsigned short val);
+long Write_config_word(long handle, unsigned short reg, unsigned short val);
+long Write_config_longword(long handle, unsigned short reg, unsigned long val);
+long Hook_interrupt(long handle, unsigned long *routine, unsigned long *parameter);
+long Unhook_interrupt(long handle);
+long Special_cycle(unsigned short bus, unsigned long data);
+long Get_routing(long handle);
+long Set_interrupt(long handle);
+long Get_resource(long handle);
+long Get_card_used(long handle, unsigned long *address);
+long Set_card_used(long handle, unsigned long *callback);
+long Read_mem_byte(long handle, unsigned long offset, unsigned char *address);
+long Read_mem_word(long handle, unsigned long offset, unsigned short *address);
+long Read_mem_longword(long handle, unsigned long offset, unsigned long *address);
+unsigned char Fast_read_mem_byte(long handle, unsigned long offset);
+unsigned short Fast_read_mem_word(long handle, unsigned long offset);
+unsigned long Fast_read_mem_longword(long handle, unsigned long offset);
+long Write_mem_byte(long handle, unsigned long offset, unsigned short val);
+long Write_mem_word(long handle, unsigned long offset, unsigned short val);
+long Write_mem_longword(long handle, unsigned long offset, unsigned long val);
+long Read_io_byte(long handle, unsigned long offset, unsigned char *address);
+long Read_io_word(long handle, unsigned long offset, unsigned short *address);
+long Read_io_longword(long handle, unsigned long offset, unsigned long *address);
+unsigned char Fast_read_io_byte(long handle, unsigned long offset);
+unsigned short Fast_read_io_word(long handle, unsigned long offset);
+unsigned long Fast_read_io_longword(long handle, unsigned long offset);
+long Write_io_byte(long handle, unsigned long offset, unsigned short val);
+long Write_io_word(long handle, unsigned long offset, unsigned short val);
+long Write_io_longword(long handle, unsigned long offset, unsigned long val);
+long Get_machine_id(void);
+long Get_pagesize(void);
+long Virt_to_bus(long handle, unsigned long address, struct pci_conv_adr *pointer);
+long Bus_to_virt(long handle, unsigned long address, struct pci_conv_adr *pointer);
+long Virt_to_phys(unsigned long address, struct pci_conv_adr *pointer);
+long Phys_to_virt(unsigned long address, struct pci_conv_adr *pointer);
 
 /* library declarations from libkern */
 
