@@ -306,6 +306,24 @@ static void flush_dcache(void)
 #endif
 }
 
+
+/* locking functions */
+inline static char lock_usb(char *lock) {
+	char ret = 0;
+
+	__asm("tas %1\n\t"
+	      "seq %0"
+	      : "=d" (ret)   /* outputs */
+	      : "m"  (*lock) /* inputs, note that this really has to be "*lock", not "lock" */
+	      : "cc");       /* clobbers condition codes */
+
+	return ret;
+}
+
+inline static void unlock_usb(char *lock) {
+	*lock = 0;
+}
+
 /*
  * EHCI functions
  */
@@ -494,6 +512,14 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 
 	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 
+	/* Another job in progress */
+	if (!lock_usb(&gehci->job_in_progress))
+	{
+		DEBUG(("Another USB job in progress -- must not happen"));
+		dev->status = USB_ST_BUF_ERR;
+		return -1;
+	}
+
 	DEBUG(("dev=0x%lx, pipe=0x%lx, buffer=0x%lx, length=%ld, req=0x%lx", dev, pipe, buffer, length, req));
 	if(req != NULL)
 		DEBUG(("ehci_submit_async req=%u (0x%x), type=%u (0x%x), value=%u (0x%x), index=%u",
@@ -504,6 +530,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	if(qh == NULL)
 	{
 		DEBUG(("unable to allocate QH"));
+		unlock_usb(&gehci->job_in_progress);
 		return -1;
 	}
 #ifdef TOSONLY
@@ -688,6 +715,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
+	unlock_usb(&gehci->job_in_progress);
 	return (dev->status != USB_ST_NOT_PROC) ? 0 : -1;
 fail:
 	td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
@@ -710,6 +738,7 @@ fail:
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
+	unlock_usb(&gehci->job_in_progress);
 	return -1;
 }
 
@@ -1024,6 +1053,8 @@ long usb_lowlevel_init(void *ucd_priv)
 	unsigned long cmd;
 
 	struct ehci *gehci = (struct ehci*)ucd_priv;
+
+	gehci->job_in_progress = 0;
 
 	gehci->qh_list_unaligned = (struct QH *)kmalloc(sizeof(struct QH) + 32);
 	if(gehci->qh_list_unaligned == NULL)
