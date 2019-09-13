@@ -789,8 +789,8 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 							srclen = 4;
 							break;
 						case 1:	/* Vendor */
-							srcptr = "\16\3u\0-\0b\0o\0o\0t\0";
-							srclen = 14;
+							srcptr = "\16\3N\0E\0C\0";
+							srclen = 8;
 							break;
 						case 2:	/* Product */
 							srcptr = "\52\3E\0H\0C\0I\0 \0H\0o\0s\0t\0 \0C\0o\0n\0t\0r\0o\0l\0l\0e\0r\0";
