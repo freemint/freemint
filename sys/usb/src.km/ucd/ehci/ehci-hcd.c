@@ -382,10 +382,6 @@ static long handshake(unsigned long *ptr, unsigned long mask, unsigned long done
 	return -1;
 }
 
-static void ehci_free(void *p, size_t sz)
-{
-}
-
 static long ehci_reset(struct ehci *gehci)
 {
 	unsigned long cmd;
@@ -569,7 +565,6 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		if(ehci_td_buffer(gehci, td, req, sizeof(*req)) != 0)
 		{
 			DEBUG(("unable construct SETUP td"));
-			ehci_free(td, sizeof(*td));
 			goto fail;
 		}
 		*tdp = cpu_to_hc32((unsigned long)td - td_offset);
@@ -593,7 +588,6 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		if(ehci_td_buffer(gehci, td, buffer, length) != 0)
 		{
 			DEBUG(("unable construct DATA td"));
-			ehci_free(td, sizeof(*td));
 			goto fail;
 		}
 		*tdp = cpu_to_hc32((unsigned long)td - td_offset);
@@ -718,18 +712,6 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	unlock_usb(&gehci->job_in_progress);
 	return (dev->status != USB_ST_NOT_PROC) ? 0 : -1;
 fail:
-	td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
-	if(td != (void *)QT_NEXT_TERMINATE)
-		td = (struct qTD *)(td_offset + (unsigned long)td);
-	while(td != (void *)QT_NEXT_TERMINATE)
-	{
-		qh->qh_overlay.qt_next = td->qt_next;
-		ehci_free(td, sizeof(*td));
-		td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
-		if(td != (void *)QT_NEXT_TERMINATE)
-			td = (struct qTD *)(td_offset + (unsigned long)td);
-	}
-	ehci_free(qh, sizeof(*qh));
 	if(ehci_readl(&gehci->hcor->or_usbsts) & STS_HSE) /* Host System Error */
 	{
 		ALERT(("EHCI Host System Error"));
