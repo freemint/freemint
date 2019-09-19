@@ -510,13 +510,13 @@ parser(FILEPTR *f, long f_size,
 			start = inf->src;  /*--- (2.2) read argument */
 			switch (arg_type & 0x0F)
 			{
-				case 0x01: arg[arg_num] = parse_short  (inf, range); break;
-				case 0x02: arg[arg_num] = parse_long   (inf, range); break;
-				case 0x03: arg[arg_num] = parse_bool   (inf);        break;
-				case 0x04: arg[arg_num] = parse_token  (inf, false); break;
-				case 0x05: arg[arg_num] = parse_line   (inf);        break;
-				case 0x06: arg[arg_num] = parse_drvlst (inf);        break;
-				case 0x07: arg[arg_num] = parse_ushort (inf, range); break;
+				case PI_C_S: arg[arg_num] = parse_short  (inf, range); break;
+				case PI_C_L: arg[arg_num] = parse_long   (inf, range); break;
+				case PI_C_B: arg[arg_num] = parse_bool   (inf);        break;
+				case PI_C_T: arg[arg_num] = parse_token  (inf, false); break;
+				case PI_C_A: arg[arg_num] = parse_line   (inf);        break;
+				case PI_C_D: arg[arg_num] = parse_drvlst (inf);        break;
+				case PI_C_US: arg[arg_num] = parse_ushort (inf, range); break;
 			}
 			if (!inf->dst)     /*--- (2.3) argument failure */
 			{
