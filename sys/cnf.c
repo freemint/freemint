@@ -181,7 +181,8 @@ parse_line(struct parsinf *inf)
 	if (inf->dst == ret.c)
 		inf->dst = ret.c + 1;
 
-	*(inf->dst - 1) = NUL;
+	if (inf->dst)
+		*(inf->dst - 1) = NUL;
 
 	return ret;
 }
