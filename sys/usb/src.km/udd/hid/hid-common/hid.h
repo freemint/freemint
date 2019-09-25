@@ -43,6 +43,14 @@
 #define USAGE_HAT_SWITCH	0x39
 #define USAGE_AC_PAN		0x238
 
+/* Digitizer usage */
+#define USAGE_TIP_PRESSURE	0x30
+#define USAGE_IN_RANGE		0x32
+#define USAGE_QUALITY		0x36
+#define USAGE_FUNCTION_KEYS	0x39
+#define USAGE_TIP_SWITCH	0x42
+#define USAGE_BARREL_SWITCH	0x44
+
 struct usb_class_hid_descriptor {
 	unsigned char	bLength;
 	unsigned char	bbDescriptorType;
