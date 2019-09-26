@@ -60,6 +60,13 @@ sys/usb/src.km/udd/hid/mouse-boot/setstack.S
 sys/usb/src.km/udd/hid/keyboard/crtinit.c
 sys/usb/src.km/udd/hid/keyboard/entry.S
 sys/usb/src.km/udd/hid/keyboard/setstack.S
+sys/usb/src.km/udd/hid/tablet/hid.c
+sys/usb/src.km/udd/hid/tablet/hid.h
+sys/usb/src.km/udd/hid/tablet/hidparse.c
+sys/usb/src.km/udd/hid/tablet/hidparse.h
+sys/usb/src.km/udd/hid/tablet/crtinit.c
+sys/usb/src.km/udd/hid/tablet/entry.S
+sys/usb/src.km/udd/hid/tablet/setstack.S
 sys/usb/src.km/udd/printer/crtinit.c
 sys/usb/src.km/udd/printer/entry.S
 sys/usb/src.km/udd/printer/setstack.S
