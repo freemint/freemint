@@ -1,0 +1,34 @@
+Graphics Tablet Driver for TOS, MagiC & MiNT
+Developed by Claude Labelle - Licensed under GPL
+
+Made for Wacom Intuos S. Should also work with Wacom Intuos M. May work
+with other USB graphics tablets.
+
+The tablet replaces the mouse for precise drawing using a lightweight
+cordless stylus using no battery. A mouse can still co-exist.
+
+Moving the stylus over the tablet (without touching it) moves the mouse
+pointer.
+
+The stylus buttons are programmed as follow:
+
+- Tip (when in contact with tablet) = left mouse button
+
+- Lower barrel button = right mouse button
+
+- Upper barrel button = UNDO key.
+
+The tablet function keys are programmed as follow: 
+
+- 1 = Esc key.
+
+- 2 to 3 = Unassigned
+
+- 4 = Recalibration. To match the screen resolution to the tablet's. Use after
+a resolution change or as needed.
+
+Note that the function keys don't work when the stylus is near or on the tablet surface.
+
+Known problem: If you leave the stylus on the tablet when booting, the
+driver may crash. Solution: Leave the stylus on the function keys, in
+its sleave or away from the tablet while booting.

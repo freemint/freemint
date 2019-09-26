@@ -86,6 +86,8 @@ typedef char Path[PATH_MAX];
 #define b_uiorec Iorec
 #undef b_supexec
 #define b_supexec(x0,x1,x2,x3,x4,x5) Supexec(x0)
+#undef b_getrez
+#define b_getrez Getrez
 
 /* GEMDOS */
 #undef c_conws
