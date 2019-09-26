@@ -5,10 +5,10 @@
 
 
 ifeq ($(tablet),deb)
-TARGET = tablet.prg
+TARGET = tablet.udd
 CPU = 000
-USBDEFS += -DDEV_DEBUG -DTOSONLY -fno-builtin -DSTACKSIZE=8192
-LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+USBDEFS += -DDEV_DEBUG
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(tablet),prg)
