@@ -763,7 +763,7 @@ INLINE long b_drvmap(void)
 //# define _0x001		(*KENTRY->vec_xbios[0x001])
 //# define _0x002		(*KENTRY->vec_xbios[0x002])
 //# define _0x003		(*KENTRY->vec_xbios[0x003])
-//# define _0x004		(*KENTRY->vec_xbios[0x004])
+# define _b_getrez		(*KENTRY->vec_xbios[0x004])
 # define _b_vsetscreen		(*KENTRY->vec_xbios[0x005])
 //# define _0x006		(*KENTRY->vec_xbios[0x006])
 //# define _0x007		(*KENTRY->vec_xbios[0x007])
@@ -809,6 +809,9 @@ INLINE long b_drvmap(void)
 //# define _0x02d		(*KENTRY->vec_xbios[0x02d])
 //# define _0x02e		(*KENTRY->vec_xbios[0x02e])
 //# define _0x02f		(*KENTRY->vec_xbios[0x02f])
+
+INLINE short b_getrez(void)
+{ return ((short _cdecl (*)(void)) _b_getrez)(); }
 
 INLINE long b_kbdvbase(void)
 { return ((long _cdecl (*)(void)) _b_kbdvbase)(); }
