@@ -385,6 +385,7 @@ slb_error:
 	(*sl)->slb_proc = pid2proc(new_pid);
 	assert((*sl)->slb_proc);
 	(*sl)->slb_proc->p_flag |= P_FLAG_SLB;	/* mark as SLB */
+	(*sl)->slb_proc->ppid = 0;	/* have the system adopt it */
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
 	mark_proc_region(get_curproc()->p_mem, mr, PROT_PR, get_curproc()->pid);
@@ -579,7 +580,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	/*
 	 * If curproc is marked as user of this SLB, but as having opened it,
 	 * this is the internal call of s_lbopen (from slb_open in
-	 * slb_util.spp), which means the open() routine has just been
+	 * user_things.S), which means the open() routine has just been
 	 * successfully executed.
 	 */
 	if (is_user(slb, get_curproc()->pid))
@@ -593,7 +594,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 
 	/*
 	 * Otherwise, mark curproc as user and change the context so that upon
-	 * returning from this GEMDOS call, slb_open() in slb_util.spp gets
+	 * returning from this GEMDOS call, slb_open() in user_things.S gets
 	 * called
 	 */
 	mark_users(slb, get_curproc()->pid, 1);
@@ -667,7 +668,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	/*
 	 * If curproc has successfully called open(), unmark it and change the
 	 * context so that upon returning from Slbclose(), slb_close() in
-	 * slb_util.spp will be called
+	 * user_things.S will be called
 	 */
 	mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_G, get_curproc()->pid);
 	if (has_opened(slb, get_curproc()->pid))
@@ -689,7 +690,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 
 	/*
 	 * If we get here, curproc has either never called open() successfully,
-	 * or just called close(). It's now time to remove curproc from the
+	 * or we are just returning from slb_close(). It's now time to remove curproc from the
 	 * list of users, deny any further access to the library's memory, and
 	 * - if no more users remain - remove the library from memory.
 	 */
@@ -706,7 +707,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	}
 	if (slb->slb_used == 0)
 	{
-		short	pid = slb->slb_proc->pid;
+		PROC *slb_proc = slb->slb_proc;
 
 		/*
 		 * Clear the name of the SLB, to prevent further usage as there
@@ -714,9 +715,11 @@ sys_s_lbclose(SHARED_LIB *sl)
 		 * finally removed from memory
 		 */
 		slb->slb_name[0] = 0;
-		slb->slb_proc->p_flag &= ~P_FLAG_SLB;
+		slb_proc->p_flag &= ~P_FLAG_SLB;
 		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
-		sys_p_kill(pid, SIGCONT);
+		post_sig(slb_proc, SIGCONT);
+		slb_proc->sigpending &= ~STOPSIGS;
+		slb_proc->p_flag |= P_FLAG_SLB;
 	}
 	else
 		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
@@ -789,15 +792,17 @@ slb_close_on_exit (int term)
 		}
 		if (slb->slb_used == 0)
 		{
-			short pid = slb->slb_proc->pid;
+			PROC *slb_proc = slb->slb_proc;
 
 			slb->slb_name[0] = 0;
 			mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 
 			/* Unblock the signal deliveries */
-			slb->slb_proc->p_flag &= ~P_FLAG_SLB;
+			slb_proc->p_flag &= ~P_FLAG_SLB;
 
-			sys_p_kill(pid, SIGCONT);
+			post_sig(slb_proc, SIGCONT);
+			slb_proc->sigpending &= ~STOPSIGS;
+			slb_proc->p_flag |= P_FLAG_SLB;
 		}
 		else
 			mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
@@ -806,7 +811,7 @@ slb_close_on_exit (int term)
 
 	/*
 	 * Otherwise, change curproc's context to call slb_close_and_pterm() in
-	 * slb_util.spp upon "returning" from Pterm().
+	 * user_things.S upon "returning" from Pterm().
 	 */
 	ut = get_curproc()->p_mem->tp_ptr;
 

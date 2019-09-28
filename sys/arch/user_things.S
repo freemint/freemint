@@ -149,17 +149,15 @@ failed:	move.l	d0,-(sp)
 // This function is used when a process exited without calling Slbclose().
 
 slb_close_and_pterm:
-	move.l	d0,-(sp)
-	move.l	8(sp),a0
+	move.l	4(sp),a0
 	move.l	SL_HEAD(a0),a0
 	move.l	SH_CLOSE(a0),a0
-	move.l	4(sp),-(sp)
+	move.l	(sp),-(sp)
 	jsr	(a0)
 	addq.l	#4,sp
-	move.l	(sp)+,d0
-	addq.l	#8,sp
-	move.w	d0,-(sp)
-	bsr.s	terminateme		// never returns
+	move.l  4(sp),a0        /* SLB_HANDLE */
+	move.l	SL_HEAD(a0),a0
+	bra		slb_exit		// never returns
 
 // slb_close
 //
@@ -280,7 +278,7 @@ oldfmt:	move.l	a0,-(sp)		// 4 bytes go to the stack
 
 	bsr.s	slb_stop		// Slbopen() will now read the status
 
-	bra.s	exit
+	bra.s	slb_exit
 
 exec:	move.l	SH_INIT(a0),a0
 	jsr	(a0)			// call the slb_init routine
@@ -294,7 +292,8 @@ exec:	move.l	SH_INIT(a0),a0
 	move.l	SH_EXIT(a0),a0
 	jsr	(a0)			// call the slb_exit routine
 
-exit:	clr.w	-(sp)
+slb_exit:
+	clr.w	-(sp)
 	trap	#1
 
 slb_stop:
