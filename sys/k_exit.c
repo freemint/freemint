@@ -208,7 +208,7 @@ terminate(struct proc *pcurproc, short code, short que)
 		}
 	}
 
-	if (wakemint)
+	if (wakemint || (pcurproc->p_flag & P_FLAG_SLB))
 	{
 		ushort sr;
 

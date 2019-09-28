@@ -554,7 +554,7 @@ void _cdecl
 stop (ushort sig)
 {
 	ushort code;
-	ulong oldmask;
+	sigset_t oldmask;
 
 	/* just to be sure */
 	assert (sig < NSIG);
@@ -600,6 +600,11 @@ stop (ushort sig)
 		assert ((1L << sig) & STOPSIGS);
 
 		/* mask out most signals */
+		/*
+		 * ??? why should SIGTERM not be masked?
+		 * and if it should, must be 1L << SIGTERM,
+		 * current code actually masks anything but SIGHUP/SIGINT/SIGQUIT
+		 */
 		get_curproc()->p_sigmask |= ~(UNMASKABLE | SIGTERM);
 	}
 
