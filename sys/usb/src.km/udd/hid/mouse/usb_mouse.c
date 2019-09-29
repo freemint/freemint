@@ -37,6 +37,7 @@
 
 #define WHEELMOUSE
 #define MAX_WHEEL_INTERVAL 10
+#define CPU_SAVER_INTERVAL 3
 
 /****************************************************************************/
 /*
@@ -385,13 +386,29 @@ void
 mouse_int (void)
 {
 	long mouse_change = 0, wheel_change = 0, ac_pan_change = 0;
-	static long wheel_interval = 0; //time interval between wheel reports (each 20ms)
+	static long wheel_interval = 0; /* time interval between wheel reports (each 20ms) */
+	static long cpu_saver_interval = 0; /* time interval between wheel reports (each 20ms) */
+	static long cpu_saver = 1; /* boolean, is cpu saver on */
 	long actlen = 0;
 	long r;
 	static unsigned char data[8];
 
 	if (mse_data.pusb_dev == NULL)
 		return;
+
+	/* CPU saver: Call less often usb_bulk_msg() when report is identical to last report */
+	if (cpu_saver_interval < CPU_SAVER_INTERVAL)
+	{
+		cpu_saver_interval++;
+		if (cpu_saver)
+			return;
+	}
+	else
+	{
+		cpu_saver_interval = 0;
+		if (! cpu_saver)
+			cpu_saver = 1;
+	}
 
 	if (wheel_interval < MAX_WHEEL_INTERVAL)
 		wheel_interval++;
@@ -431,7 +448,6 @@ mouse_int (void)
 	/* x,y change */
 	if (mse_data.new.x != 0 || mse_data.new.y != 0) {
 		mouse_change = 1;
-		//DEBUG(("x, y change: %ld, %ld", mse_data.new.x, mse_data.new.y));
 		DEBUG(("Report 8 bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x X = %ld Y = %ld",
 			   data[0],
 			   data[1],
@@ -549,7 +565,11 @@ mouse_int (void)
 	}
 #endif
 	if (mouse_change || wheel_change || ac_pan_change)
+	{
 		fake_hwint();
+		cpu_saver = 0;
+		cpu_saver_interval = 0;
+	}
 	if (mouse_change)
 	{
 		send_packet (vector->mousevec, mouse_packet, mouse_packet + 3);
