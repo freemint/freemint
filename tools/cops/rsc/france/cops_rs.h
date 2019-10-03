@@ -97,8 +97,8 @@ extern OBJECT *rs_trindex[];
 #define ACCLICK            5 /* BUTTON in tree SET_DIALOG */
 #define ACSORTNAME         6 /* BUTTON in tree SET_DIALOG */
 #define ACTERM             7 /* BUTTON in tree SET_DIALOG */
-#define ACOK               8 /* BUTTON in tree SET_DIALOG */
-#define ACAFTER           10 /* FTEXT in tree SET_DIALOG */ /* max len 2 */
+#define ACAFTER            8 /* FTEXT in tree SET_DIALOG */ /* max len 2 */
+#define ACOK               9 /* BUTTON in tree SET_DIALOG */
 
 #define ICONIFIED_DIALOG   5 /* form/dialog */
 #define ICFDLG_ROOT        0 /* BOX in tree ICONIFIED_DIALOG */

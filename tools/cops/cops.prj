@@ -1,5 +1,7 @@
 cops.app
-.C[-Irsc\english]
+.C[-DENGLISH]
+;.C[-DFRENCH]
+;.C[-DGERMAN]
 .C[-K-]
 .C[-A-]
 .C[-P]
@@ -9,7 +11,7 @@ cstartv.o
 adaptrsc.c
 callback.c
 cops.c
-cops_rsc.c
+cops_rsc.c [-Irsc\english]
 cpx_bind.c [-W-stv]
 fix_rsc.c
 list.c

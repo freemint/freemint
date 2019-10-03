@@ -1,127 +1,114 @@
 ifeq ($(cops),english_000)
 TARGET = ./cops.app
 CPU = 000
-LANGUAGE = english
-CFLAGS += -DENGLISH
+LANG_CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france_000)
 TARGET = ./cops_fr.app
 CPU = 000
-LANGUAGE = france
-CFLAGS += -DFRENCH
+LANG_CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german_000)
 TARGET = ./cops_de.app
 CPU = 000
-LANGUAGE = german
-CFLAGS += -DGERMAN
+LANG_CFLAGS += -DGERMAN
 endif
 
 ifeq ($(cops),english_02060)
 TARGET = ./cops.app
 CPU = 020-60
-LANGUAGE = english
-CFLAGS += -DENGLISH
+LANG_CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france_02060)
 TARGET = ./cops_fr.app
 CPU = 020-60
-LANGUAGE = france
-CFLAGS += -DFRENCH
+LANG_CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german_02060)
 TARGET = ./cops_de.app
 CPU = 020-60
-LANGUAGE = german
-CFLAGS += -DGERMAN
+LANG_CFLAGS += -DGERMAN
 endif
 
 ifeq ($(cops),english_030)
 TARGET = ./cops.app
 CPU = 030
-LANGUAGE = english
-CFLAGS += -DENGLISH
+LANG_CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france_030)
 TARGET = ./cops_fr.app
 CPU = 030
-LANGUAGE = france
-CFLAGS += -DFRENCH
+LANG_CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german_030)
 TARGET = ./cops_de.app
 CPU = 030
-LANGUAGE = german
-CFLAGS += -DGERMAN
+LANG_CFLAGS += -DGERMAN
 endif
 
 ifeq ($(cops),english_040)
 TARGET = ./cops.app
 CPU = 040
-LANGUAGE = english
-CFLAGS += -DENGLISH
+LANG_CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france_040)
 TARGET = ./cops_fr.app
 CPU = 040
-LANGUAGE = france
-CFLAGS += -DFRENCH
+LANG_CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german_040)
 TARGET = ./cops_de.app
 CPU = 040
-LANGUAGE = german
-CFLAGS += -DGERMAN
+LANG_CFLAGS += -DGERMAN
 endif
 
 ifeq ($(cops),english_060)
 TARGET = ./cops.app
 CPU = 060
-LANGUAGE = english
-CFLAGS += -DENGLISH
+LANG_CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france_060)
 TARGET = ./cops_fr.app
 CPU = 060
-LANGUAGE = france
-CFLAGS += -DFRENCH
+LANG_CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german_060)
 TARGET = ./cops_de.app
 CPU = 060
-LANGUAGE = german
-CFLAGS += -DGERMAN
+LANG_CFLAGS += -DGERMAN
 endif
 
 ifeq ($(cops),english_col)
 TARGET = ./cops.app
 CPU = v4e
-LANGUAGE = english
-CFLAGS += -DENGLISH
+LANG_CFLAGS += -DENGLISH
 endif
 
 ifeq ($(cops),france_col)
 TARGET = ./cops_fr.app
 CPU = v4e
-LANGUAGE = france
-CFLAGS += -DFRENCH
+LANG_CFLAGS += -DFRENCH
 endif
 
 ifeq ($(cops),german_col)
 TARGET = ./cops_de.app
 CPU = v4e
-LANGUAGE = german
-CFLAGS += -DGERMAN
+LANG_CFLAGS += -DGERMAN
 endif
 
-copstargets = english_000 france_000 german_000 english_02060 france_02060 german_02060 english_030 france_030 german_030 english_040 france_040 german_040 english_060 france_060 german_060 english_col france_col german_col
+copstargets = english_000 france_000 german_000 \
+	      english_02060 france_02060 german_02060 \
+	      english_030 france_030 german_030 \
+	      english_040 france_040 german_040 \
+	      english_060 france_060 german_060 \
+	      english_col france_col german_col

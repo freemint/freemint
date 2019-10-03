@@ -17,6 +17,8 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+CFLAGS += $(LANG_CFLAGS)
+
 all-here: build
 
 # default overwrites
@@ -24,7 +26,6 @@ all-here: build
 
 # default definitions
 OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
-INCLUDES = -I$(srcdir)/rsc/$(LANGUAGE)
 LIBS += -lgem
 GENFILES = $(TARGET)
 

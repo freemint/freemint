@@ -37,10 +37,26 @@
 #define rs_trindex	tree_addr
 #define rs_object	rsc_rs_object
 
-#include "cops_rs.h"
+/*
+ * FIXME: should not be needed to select language here;
+ * the constants should be the same for all languages
+ */
+#if defined(GERMAN)
+#include "rsc/german/cops_rs.h"
+#elif defined(FRENCH)
+#include "rsc/france/cops_rs.h"
+#else
+#include "rsc/english/cops_rs.h"
+#endif
 
 #ifdef WITH_RSC_DEFINITIONS
-#include "cops_rs.rsh"
+#if defined(GERMAN)
+#include "rsc/german/cops_rs.rsh"
+#elif defined(FRENCH)
+#include "rsc/france/cops_rs.rsh"
+#else
+#include "rsc/english/cops_rs.rsh"
+#endif
 #endif
 
 #ifndef _WORD
