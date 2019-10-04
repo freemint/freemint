@@ -3470,7 +3470,37 @@ fix_popup_strings(OBJECT *obj)
 		while ((obj->ob_flags & OF_LASTOB) == 0);
 	}
 }
+
+/*
+ * replacement for getenv(), because some startup routines
+ * do not setup the environ[] array when run as accessory
+ * (e.g. the one from mintlib)
+ */
+static char *acc_getenv(const char *str)
+{
+	BASEPAGE *bp;
+	char *env;
+	size_t len;
 	
+#if defined(__PUREC__)
+	bp = _BasPag;
+#else
+	bp = _base;
+#endif
+	env = bp->p_env;
+	if (env == 0)
+		return NULL;
+	len = strlen(str);
+	while (*env)
+	{
+		if (strncmp(env, str, len) == 0 && env[len] == '=')
+			return env + len + 1;
+		env += strlen(env) + 1;
+	}
+	return NULL;
+}
+
+
 /*----------------------------------------------------------------------------------------*/
 /* Voreinstellungen setzen, Header der COPS.inf einlesen */
 /* Funktionsresultat:	- */
@@ -3500,7 +3530,7 @@ std_settings(void)
 	no_open_cpx = 0;	/* keine CPXe offen */
 	quit = 0;		/* Programm nicht beenden */
 
-	env = getenv("HOME");	/* Environment suchen */
+	env = acc_getenv("HOME");	/* Environment suchen */
 	if (env)
 	{
 		strcpy(home, env);
