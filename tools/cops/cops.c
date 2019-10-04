@@ -499,6 +499,22 @@ cmp_cpx_id(long id, void *entry)
 	return 0;
 }
 
+static char *mybasename(char *name)
+{
+	char *file_name;
+	char *file_name2;
+
+	file_name = strrchr(name, '\\');
+	file_name2 = strrchr(name, '/');
+	if (file_name == NULL || file_name2 > file_name)
+		file_name = file_name2;
+	if (file_name == NULL)
+		file_name = name;
+	else
+		file_name += 1;
+	return file_name;
+}
+
 /*----------------------------------------------------------------------------------------*/
 /* selektierten CPX-Eintrag suchen */
 /* Funktionsresultat:	0: selektierten Eintrag gefunden 1: nicht gefunden */
@@ -508,15 +524,7 @@ cmp_cpx_id(long id, void *entry)
 static short
 search_cpx_name(long name, void *entry)
 {
-	char *file_name;
-
-	file_name = strrchr((char *)name, '\\');
-	if (file_name == NULL)
-		file_name = (char *)name;
-	else
-		file_name += 1;
-
-	return stricmp(((CPX_DESC *)entry)->file_name, file_name);
+	return stricmp(((CPX_DESC *)entry)->file_name, mybasename((char *)name));
 }
 
 #define	DOPEN_NORMAL	0
@@ -1929,6 +1937,17 @@ do_dialog(OBJECT *tree)
 	return obj;
 }
 
+
+static void append_slash(char *path)
+{
+	size_t len = strlen(path);
+	if (len > 0)
+	{
+		if (path[len - 1] != '\\' && path[len - 1] != '/')
+			strcat(path, "\\");
+	}
+}
+
 static void
 einstellungen(void)
 {
@@ -1978,15 +1997,10 @@ einstellungen(void)
 			char file[128];
 			_WORD btn;
 			_WORD ok;
-
+			
 			file[0] = 0;
 
-			if (strlen(path) > 0)
-			{
-				if (path[strlen(path) - 1] != '\\')
-					strcat(path, "\\");
-			}
-
+			append_slash(path);
 			strcpy(tmp_path, path);
 
 			wind_update(BEG_UPDATE);
@@ -2011,10 +2025,10 @@ einstellungen(void)
 			{
 				char *c;
 
-				c = strrchr(tmp_path, '\\');
+				c = mybasename(tmp_path);
 
-				if (c)
-					c[1] = 0;
+				if (c != tmp_path)
+					c[0] = '\0';
 
 				strcpy(path, tmp_path);
 			}
@@ -3540,12 +3554,6 @@ std_settings(void)
 	if (env)
 	{
 		strcpy(home, env);
-		if (strlen(home) > 0)
-		{
-			if (home[strlen(home) - 1] != '\\')
-				/* Backslash anhaengen */
-				strcat(home, "\\");
-		}
 	}
 	else
 	{
@@ -3554,10 +3562,9 @@ std_settings(void)
 		home[0] = Dgetdrv() + 'A';
 		home[1] = ':';
 		Dgetpath(home + 2, 0);
-		/* kein Backslash am Ende? */
-		if (home[strlen(home) - 1] != '\\')
-			strcat(home, "\\");
 	}
+	/* Backslash anhaengen */
+	append_slash(home);
 
 	strcpy(inf_name, home);
 	strcat(inf_name, "COPS.inf");
@@ -3575,7 +3582,7 @@ std_settings(void)
 			if (header_size != sizeof(struct alphaheader))
 			{
 				if (header_size != sizeof(struct old_alphaheader))
-					settings.magic = 0L;
+					settings.magic = 0;
 			}
 		}
 	}
@@ -3611,11 +3618,7 @@ std_settings(void)
 			settings.sortmode = 1;	/* Sichern neues Format geschrieben wird */
 		}
 
-		if (strlen(settings.cpx_path) > 0)
-		{
-			if (settings.cpx_path[strlen(settings.cpx_path) - 1] != '\\')
-				strcat(settings.cpx_path, "\\");
-		}
+		append_slash(settings.cpx_path);
 		set_termtime();
 		return;
 	}
