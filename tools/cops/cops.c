@@ -2623,6 +2623,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 						if (cpx)
 						{
 							OBJECT *tree;
+							_WORD obj;
 							
 							deselect_all_cpx_draw();
 							cpx->selected = 1;
@@ -2645,7 +2646,9 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 								tree[CP_ENABLE].ob_state |= OS_DISABLED;
 							}
 							
-							switch (form_popup(tree, 0, 0))
+							obj = form_popup(tree, 0, 0);
+							evnt_timer(0);
+							switch (obj)
 							{
 								case CP_OPEN:
 								{
@@ -2676,6 +2679,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 						else
 						{
 							OBJECT *tree;
+							_WORD obj;
 							
 							deselect_all_cpx_draw();
 
@@ -2702,7 +2706,9 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 							else
 								tree[PG_HELP].ob_state |= OS_DISABLED;;
 							
-							switch (form_popup(tree, 0, 0))
+							obj = form_popup(tree, 0, 0);
+							evnt_timer(0);
+							switch (obj)
 							{
 								case PG_ABOUT:
 								{

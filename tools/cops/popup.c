@@ -184,6 +184,7 @@ do_popup(GRECT *button_rect, char **strs, _WORD no_strs, _WORD spaces, _WORD slc
 
 		tree->ob_y -= (slct - scroll_pos) * phchar; /* Popup nach oben verschieben */
 		slct = xfrm_popup(tree, 0, 0, 1, max_strs, no_strs, strs_init, (void *) &popup_par, &scroll_pos);
+		evnt_timer(0);
 
 		if (slct > 0)
 		{
