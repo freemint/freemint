@@ -187,6 +187,9 @@ long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...) __attribute
 /* Debug console output for TOS */
 static char tos_debugbuffer[512];
 
+#define AUX	1	/* Serial */
+#define CON	2	/* Console */
+#define DEV	CON
 
 static void tos_printmsg(const char *fmt, ...) __attribute__((unused));
 
@@ -197,8 +200,15 @@ static void tos_printmsg(const char *fmt, ...)
 	va_start (args, fmt);
 	kvsprintf (tos_debugbuffer, sizeof(tos_debugbuffer)-1, fmt, args);
 	va_end (args);
-	(void)Cconws(tos_debugbuffer);
-	(void)Cconws("\r\n");
+
+	int i = 0;
+
+	do {
+		Bconout(DEV, (short)tos_debugbuffer[i]);
+		i++;
+	} while(tos_debugbuffer[i] != '\0');
+	Bconout(DEV,'\r');
+	Bconout(DEV,'\n');
 }
 
 # define ALERT(x)       tos_printmsg x
