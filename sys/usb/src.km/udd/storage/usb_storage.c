@@ -217,6 +217,8 @@ struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 #ifdef TOSONLY
 /* Semaphore to avoid polling LUN status while transfer is in process */
 int transfer_running;
+/* Are we running on MagiC? */
+int MagiC = 0;
 #endif
 
 #define USB_STOR_TRANSPORT_GOOD	   0
@@ -2288,6 +2290,11 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	}
 	/* for precise mdelay/udelay relative to CPU power */
 	set_tos_delay();
+
+	/* Are we running on MagiC */
+	long val;
+	if (getcookie(MagX_COOKIE, &val))
+		MagiC = 1;
 #endif
 
 	pun_ptr = get_pun();

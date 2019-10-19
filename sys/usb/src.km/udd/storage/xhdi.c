@@ -76,6 +76,9 @@ char *DRIVER_COMPANY = "FreeMiNT list";
 /*--- External variables ---*/
 
 extern char *drv_version;
+#if TOSONLY
+extern int MagiC;
+#endif
 
 /* --- External functions ---*/
 
@@ -117,11 +120,11 @@ sys_XHDOSLimits(ushort which,ulong limit)
 	static int first_time = 1;
 	long old_limit = 0;
 	long unhandled = 0;
-	long i, val;
+	long i;
 
 	if (first_time)
 	{
-		if (getcookie(MagX_COOKIE, &val))
+		if (MagiC)
 		{
 			MX_DOSLIMITS **ptr;
 			ptr = (MX_DOSLIMITS **) Dcntl(KER_DOSLIMITS, 0, 0L);
