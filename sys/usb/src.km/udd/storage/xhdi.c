@@ -620,7 +620,7 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 	if (next_handler) {
 		long ret = next_handler(XHINQTARGET2, major, minor, blocksize,
 					deviceflags, productname, stringlen);
-		if (ret != ENOSYS && ret != ENODEV)
+		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
 	}
 
@@ -667,7 +667,8 @@ XHInqTarget(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 	if (next_handler) {
 		long ret = next_handler(XHINQTARGET, major, minor, blocksize,
 					deviceflags, productname);
-		if (ret != ENOSYS && ret != ENODEV)
+
+		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
 	}
 
@@ -687,7 +688,7 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 	if (next_handler) {
 		long ret = next_handler(XHGETCAPACITY, major, minor, blocks,
 					blocksize);
-		if (ret != ENOSYS && ret != ENODEV)
+		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
 	}
 
@@ -717,7 +718,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	if (next_handler) {
 		ret = next_handler(XHREADWRITE, major, minor, rw, sector,
 				   count, buf);
-		if (ret != ENOSYS && ret != ENODEV)
+		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
 	}
 
