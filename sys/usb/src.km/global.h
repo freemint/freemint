@@ -187,6 +187,9 @@ long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...) __attribute
 /* Debug console output for TOS */
 static char tos_debugbuffer[512];
 
+
+static void tos_printmsg(const char *fmt, ...) __attribute__((unused));
+
 static void tos_printmsg(const char *fmt, ...)
 {
 	va_list args;
