@@ -45,6 +45,9 @@ unsigned long usb_stor_write(long device,unsigned long blknr,
 extern USB_PUN_INFO pun_usb;							//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
 extern long dl_maxdrives;
+#if TOSONLY
+extern int MagiC;
+#endif
 extern long XHDOSLimits(ushort which, ulong limit);
 
 /*
@@ -100,6 +103,7 @@ typedef struct {
 #define GEM		0x0047454dL		/* '\0GEM' */
 #define BGM		0x0042474dL		/* '\0BGM' */
 #define RAW		0x00524157L		/* '\0RAW' */
+#define F32		0x00463332L		/* '\0F32' */
 #define MINIX		0x00004481L
 #define LNX		0x00004483L
 
@@ -168,6 +172,7 @@ static unsigned long getilong(uchar *byte)
  *	any of the following reasons:
  *	1. too many clusters for the current TOS version
  *	2. logical sectors too large for the current TOS version
+ *	3. it's a FAT32 partition
  */
 void usb_build_bpb(BPB *bpbptr, void *bs)
 {
@@ -209,6 +214,13 @@ void usb_build_bpb(BPB *bpbptr, void *bs)
 			sectors = getilong(dosbs->sec2);	/*  so use new sector count */
 
 		clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
+
+		if (clusters > MAX_FAT16_CLUSTERS) {		/* FAT32 */
+			bpbptr->recsiz = 0;			/* mark it for XHDI */
+			bpbptr->clsizb = 0;
+			return;
+		}
+
 		bpbptr->numcl = clusters;
 	}
 
@@ -304,7 +316,13 @@ static int valid_partition(unsigned long type)
 
 	if ((type == GEM) || (type == BGM) || (type == RAW))
 		return 1;
-
+#ifdef TOSONLY
+	if (MagiC && type == F32)
+		return 1;
+#else
+	if (type == F32)
+		return 1;
+#endif
 	return 0;
 }
 
@@ -500,15 +518,13 @@ BPB *usb_getbpb(long logdrv)
 
 	bpbptr = &pun_usb.bpb[logdrv];
 
-#ifdef TOSONLY
  	/*
  	 * ensure that filesystem inside partition is suitable for TOS
- 	 * (paranoia rules)
+	 * (paranoia rules). FAT32 partitions also should return NULL.
  	 */
 	if (bpbptr->clsizb == 0) {
  		return NULL;
 	}
-#endif
 
 	/* clear the media change flag */
 	pun_usb.flags[logdrv] &= ~CHANGE_FLAG;
