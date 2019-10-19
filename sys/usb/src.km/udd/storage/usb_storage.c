@@ -234,6 +234,7 @@ static unsigned char readbuf[DEFAULT_SECTOR_SIZE];
 #define GEM                     0x0047454dL     /* '\0GEM' */
 #define BGM                     0x0042474dL     /* '\0BGM' */
 #define RAW                     0x00524157L     /* '\0RAW' */
+#define F32                     0x00463332L     /* '\0F32' */
 
 
 typedef struct {
@@ -418,7 +419,13 @@ static int is_atari_partition(unsigned long type)
 
 	if ((type == GEM) || (type == XGM) || (type == BGM) || (type == RAW))
 		return 1;
-
+#ifdef TOSONLY
+	if (MagiC && type == F32)
+		return 1;
+#else
+	if (type == F32)
+		return 1;
+#endif
 	return 0;
 }
 
