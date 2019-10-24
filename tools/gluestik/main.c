@@ -72,29 +72,12 @@
 
 static bool opt_force_install = false;
 
-int (*init_funcs [])(void) =
-{
-	init_stik_if,
-	load_config_file,
-	init_mem,
-	NULL
-};
-
-void (*cleanup_funcs [])(void) =
-{
-	cleanup_config,
-	cleanup_mem,
-	cleanup_stik_if,
-	NULL
-};
-
 static void
 cleanup (void)
 {
-	int i;
-	
-	for (i = 0; cleanup_funcs [i]; i++)
-		(*cleanup_funcs [i])();
+	cleanup_config();
+	cleanup_mem();
+	cleanup_stik_if();
 }
 
 /* ------------------
@@ -164,103 +147,104 @@ end (long sig)
    | Remove cookie |
    ------------------ */
 static void 
-parse_cmdline(int argc, char *argv[])
+parse_cmdline(void)
 {
-	int i;
+	BASEPAGE *bp = _base;
+	unsigned char c;
+	
+	c = bp->p_cmdlin[0];
+	if (c == 0 || c >= 0x7f)
+		return;
 
-	for (i = 1; i < argc; i++)
-        {
-        	if (!strncmp(argv[i], "--force", 7) || !strncmp(argv[i], "-f", 2))
-			opt_force_install = true; 
-	}
+  	if (!strncmp(bp->p_cmdlin + 1, "--force", 7) || !strncmp(bp->p_cmdlin + 1, "-f", 2))
+		opt_force_install = true; 
 }
 
 int
-main (int argc, char *argv[])
+main (void)
 {
-	if (fork () == 0)
+	long r;
+	
+	r = Pfork();
+	if (r < 0)
 	{
-		int i;
+		/* fork failed */
+		return 1;
+	}
+	if (r > 0)
+	{
+		/* parent can exit */
+		return 0;
+	}
+	parse_cmdline();
 
-		parse_cmdline(argc, argv);
-
-		(void) Cconws (MSG_BOOT);
-		(void) Cconws (MSG_GREET);
+	(void) Cconws (MSG_BOOT);
+	(void) Cconws (MSG_GREET);
 # ifdef ALPHA
-		(void) Cconws (MSG_ALPHA);
+	(void) Cconws (MSG_ALPHA);
 # endif
-		(void) Cconws ("\r\n");
-		
-		for (i = 0; init_funcs [i]; ++i)
-		{
-			if (!(*init_funcs [i])())
-			{
-				(void) Cconws (MSG_FAILURE);
-				
-				cleanup ();
-				exit (1);
-			}
-		}
-		
-		if (install_cookie ())
-		{
-			(void) Cconws (MSG_FAILURE);
-			
-			cleanup ();
-			exit (1);
-		}
-		
-		Psignal (SIGALRM, nothing);
-		Psignal (SIGTERM, end);
-		Psignal (SIGQUIT, end);
-		Psignal (SIGHUP,  nothing);
-		Psignal (SIGTSTP, nothing);
-		Psignal (SIGINT,  nothing);
-		Psignal (SIGABRT, nothing);
-		Psignal (SIGUSR1, nothing);
-		Psignal (SIGUSR2, nothing);
-		
-		for (;;)
-		{
-			PMSG pmsg;
-			long r;
-			
-			r = Pmsg (0, GS_GETHOSTBYNAME, &pmsg);
-			if (r)
-			{
-				/* printf ("Pmsg wait fail!\n"); */
-				break;
-			}
-			
-			switch (pmsg.msg1)
-			{
-				case 1:
-					pmsg.msg2 = (long) gethostbyname ((char *) pmsg.msg2);
-					break;
-				case 2:
-					pmsg.msg2 = (long) malloc (pmsg.msg2);
-					break;
-				case 3:
-					free ((void *) pmsg.msg2);
-					break;
-				case 4:
-					//pmsg.msg2 = realloc ((void *) pmsg.msg2);
-					break;
-				case 5:
-					
-					break;
-			}
-			
-			r = Pmsg (1, 0xffff0000L | pmsg.pid, &pmsg);
-			if (r)
-			{
-				/* printf ("Pmsg back fail!\n"); */
-			}
-		}
+	(void) Cconws ("\r\n");
+	
+	if (init_stik_if() == 0 ||
+		load_config_file() == 0 ||
+		init_mem() == 0 ||
+		install_cookie() != 0)
+	{
+		(void) Cconws (MSG_FAILURE);
 		
 		cleanup ();
-		uninstall_cookie ();
+		exit (1);
 	}
+	
+	Psignal (SIGALRM, nothing);
+	Psignal (SIGTERM, end);
+	Psignal (SIGQUIT, end);
+	Psignal (SIGHUP,  nothing);
+	Psignal (SIGTSTP, nothing);
+	Psignal (SIGINT,  nothing);
+	Psignal (SIGABRT, nothing);
+	Psignal (SIGUSR1, nothing);
+	Psignal (SIGUSR2, nothing);
+	
+	for (;;)
+	{
+		PMSG pmsg;
+		
+		r = Pmsg (0, GS_GETHOSTBYNAME, &pmsg);
+		if (r)
+		{
+			/* printf ("Pmsg wait fail!\n"); */
+			break;
+		}
+		
+		switch (pmsg.msg1)
+		{
+			case 1:
+				pmsg.msg2 = (long) gethostbyname ((char *) pmsg.msg2);
+				break;
+			case 2:
+				pmsg.msg2 = (long) malloc (pmsg.msg2);
+				break;
+			case 3:
+				free ((void *) pmsg.msg2);
+				break;
+			case 4:
+				/* pmsg.msg2 = realloc ((void *) pmsg.msg2); */
+				break;
+			case 5:
+				
+				break;
+		}
+		
+		r = Pmsg (1, 0xffff0000L | pmsg.pid, &pmsg);
+		if (r)
+		{
+			/* printf ("Pmsg back fail!\n"); */
+		}
+	}
+	
+	cleanup ();
+	uninstall_cookie ();
 	
 	return 0;
 }
