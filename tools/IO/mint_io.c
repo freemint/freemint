@@ -94,6 +94,7 @@ int fstat(int __fd, struct stat *__buf) __THROW;
 int __fstat(int __fd, struct stat *__buf) __THROW;
 
 int stat(const char *filename, struct stat *st) __THROW;
+int __stat(const char *filename, struct stat *st) __THROW;
 
 
 struct device
@@ -520,6 +521,8 @@ out:
 	return done;
 }
 }
+
+#pragma GCC diagnostic ignored "-Wcast-qual"
 
 ssize_t
 write(int fd, const void *_buf, size_t size)
