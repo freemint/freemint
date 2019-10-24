@@ -60,7 +60,7 @@ libkern$(CPU).a: objs asm-files
 		asmobjs=`cat asm/.compile_$(CPU)/asm-files` ; \
 		asmobjs=`for i in $$asmobjs ;  do echo asm/.compile_$(CPU)/$$i ; done` ; \
 		\
-		echo "$(RM) $@; $(AR) rc $@ $$objs $$asmobjs; $(RANLIB) $@;" ; \
+		echo "$(RM) $@; $(AR) rcs $@ $$objs $$asmobjs" ; \
 	  fi \
 	)
 
@@ -73,6 +73,16 @@ ifneq ($(compile_dir),.compile_$(CPU))
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
 endif
+
+clean clean-recursive distclean distclean-recursive bakclean bakclean-recursive::
+	@list='$(cputargets)'; for dir in $$list; do \
+	  subdir=".compile_$${dir}"; \
+	  target=`echo $@ | sed s/-recursive//`; \
+	  test -d $$subdir && { echo "Making $$target in $$subdir"; \
+	  (cd $$subdir && $(MAKE) -r $$target); } || true; \
+	  target="libkern$${dir}.a"; \
+	done
+	$(RM) objs
 
 asm-files:
 	cd asm; $(MAKE) CPU="$(CPU)" asm-files

@@ -40,8 +40,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(AR) cr $@ $(OBJS)
-	$(RANLIB) $@
+	$(AR) rcs $@.$$$$ $(OBJS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 $(OBJS): ../INET4DEFS
 

@@ -36,6 +36,6 @@
 
 
 
-clean:
+clean::
 	rm	-f *.ul? *.uh? udo_hm.gif udo_nohm.gif	udo_nolf.gif udo_norg.gif udo_noup.gif 0*.html indexudo.html
 

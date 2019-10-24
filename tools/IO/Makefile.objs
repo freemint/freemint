@@ -33,8 +33,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(AR) rc $@ $(OBJS)
-	$(RANLIB) $@
+	$(AR) rcs $@.$$$$ $(OBJS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 
 # default dependencies
