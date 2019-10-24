@@ -218,7 +218,7 @@ do_trunc (void)
 	done_trunc = 1;
 	if (ask ("Truncate?", "Truncated"))
 	{
-		truncated = 1;
+		flag_trunc = 1;
 		return 1;
 	}
 	return 0;
