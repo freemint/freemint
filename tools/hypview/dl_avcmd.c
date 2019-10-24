@@ -39,8 +39,9 @@ void DoAV_GETSTATUS(void)
 void DoAV_STATUS(char *string)
 {
 	short msg[8]={AV_STATUS,0,0,0,0,0,0,0};
+	char **pstring = (char **)&msg[3];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=string;
+	*pstring=string;
 	appl_write(server_id,16,msg);
 }
 
@@ -90,9 +91,11 @@ void DoAV_OPENCONSOLE(void)
 void DoAV_OPENWIND(char *path, char *wildcard)
 {
 	short msg[8]={AV_OPENWIND,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
+	char **pwildcard = (char **)&msg[5];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=path;
-	*(char **)&msg[5]=wildcard;
+	*ppath=path;
+	*pwildcard=wildcard;
 	appl_write(server_id,16,msg);
 }
 
@@ -100,9 +103,11 @@ void DoAV_OPENWIND(char *path, char *wildcard)
 void DoAV_STARTPROG(char *path, char *commandline, short id)
 {
 	short msg[8]={AV_STARTPROG,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
+	char **pcommandline = (char **)&msg[5];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=path;
-	*(char **)&msg[5]=commandline;
+	*ppath=path;
+	*pcommandline=commandline;
 	msg[7]=id;
 	appl_write(server_id,16,msg);
 }
@@ -129,9 +134,10 @@ void DoAV_ACCWINDCLOSED(short handle)
 void DoAV_COPY_DRAGGED(short kbd_state, char *path)
 {
 	short msg[8]={AV_COPY_DRAGGED,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[4];
 	msg[1]=ap_id;
 	msg[3]=kbd_state;
-	*(char **)&msg[4]=path;
+	*ppath=path;
 	appl_write(server_id,16,msg);
 }
 
@@ -139,8 +145,9 @@ void DoAV_COPY_DRAGGED(short kbd_state, char *path)
 void DoAV_PATH_UPDATE(char *path)
 {
 	short msg[8]={AV_PATH_UPDATE,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=path;
+	*ppath=path;
 	appl_write(server_id,16,msg);
 }
 
@@ -158,11 +165,12 @@ void DoAV_WHAT_IZIT(short x,short y)
 void DoAV_DRAG_ON_WINDOW(short x,short y, short kbd_state, char *path)
 {
 	short msg[8]={AV_DRAG_ON_WINDOW,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[6];
 	msg[1]=ap_id;
 	msg[3]=x;
 	msg[4]=y;
 	msg[5]=kbd_state;
-	*(char **)&msg[6]=path;
+	*ppath=path;
 	appl_write(server_id,16,msg);
 }
 
@@ -170,8 +178,9 @@ void DoAV_DRAG_ON_WINDOW(short x,short y, short kbd_state, char *path)
 void DoAV_STARTED(char *ptr)
 {
 	short msg[8]={AV_STARTED,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=ptr;
+	*ppath=ptr;
 	appl_write(server_id,16,msg);
 }
 
@@ -179,9 +188,11 @@ void DoAV_STARTED(char *ptr)
 void DoAV_XWIND(char *path, char *wild_card, short bits)
 {
 	short msg[8]={AV_XWIND,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
+	char **pwildcard = (char **)&msg[5];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=path;
-	*(char **)&msg[5]=wild_card;
+	*ppath=path;
+	*pwildcard=wild_card;
 	msg[7]=bits;
 	appl_write(server_id,16,msg);
 }
@@ -190,8 +201,9 @@ void DoAV_XWIND(char *path, char *wild_card, short bits)
 void DoAV_VIEW(char *path)
 {
 	short msg[8]={AV_VIEW,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=path;
+	*ppath=path;
 	appl_write(server_id,16,msg);
 }
 
@@ -199,8 +211,9 @@ void DoAV_VIEW(char *path)
 void DoAV_FILEINFO(char *path)
 {
 	short msg[8]={AV_FILEINFO,0,0,0,0,0,0,0};
+	char **ppath = (char **)&msg[3];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=path;
+	*ppath=path;
 	appl_write(server_id,16,msg);
 }
 
@@ -208,9 +221,11 @@ void DoAV_FILEINFO(char *path)
 void DoAV_COPYFILE(char *file_list, char *dest_path,short bits)
 {
 	short msg[8]={AV_COPYFILE,0,0,0,0,0,0,0};
+	char **pfilelist = (char **)&msg[3];
+	char **pdestpath = (char **)&msg[5];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=file_list;
-	*(char **)&msg[5]=dest_path;
+	*pfilelist=file_list;
+	*pdestpath=dest_path;
 	msg[7]=bits;
 	appl_write(server_id,16,msg);
 }
@@ -219,8 +234,9 @@ void DoAV_COPYFILE(char *file_list, char *dest_path,short bits)
 void DoAV_DELFILE(char *file_list)
 {
 	short msg[8]={AV_DELFILE,0,0,0,0,0,0,0};
+	char **pfilelist = (char **)&msg[3];
 	msg[1]=ap_id;
-	*(char **)&msg[3]=file_list;
+	*pfilelist=file_list;
 	appl_write(server_id,16,msg);
 }
 

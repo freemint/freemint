@@ -118,7 +118,7 @@ reduce(char *addr, long plane_size, short _16to2)
                 "blt rt4loop\n\t"
                 :
                 :"g"(addr),"g"(plane_size),"g"(_16to2)
-                :"d0","d1","d2","d3","d4","d5","d6","d7","a0","a1","a2","a3","a4","memory"
+                :"d0","d1","d2","d3","d4","d5","d6","d7","a0","a1","a2","a3","a4","cc","memory"
         );
 }
 
@@ -209,7 +209,7 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
                 "blt 1b\n\t"
                 :
                 :"g"(src), "g"(dst), "g"(planesize), "g"(color)
-                :"d0","d1","d2","d3","d4","d5","d6","d7","a0","a1","a2","a3","a4","a5","memory"
+                :"d0","d1","d2","d3","d4","d5","d6","d7","a0","a1","a2","a3","a4","a5","cc","memory"
         );
 }
 #endif

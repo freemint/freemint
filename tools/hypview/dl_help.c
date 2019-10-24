@@ -94,7 +94,9 @@ char *help_article;
 		char *command;
 			
 			/*	Allocate global accessible memory for transfer	*/
-			command=(char *)Mxalloc(strlen(help_file)+strlen(help_article)+1, MX_PREFTTRAM|MX_MPROT|MX_READABLE);
+			command=(char *)Mxalloc(strlen(help_file)+strlen(help_article)+1, MX_PREFTTRAM|MX_MPROT|MX_GLOBAL);
+			if (command == (void *)-32l)
+				command=(char *)Malloc(strlen(help_file)+strlen(help_article)+1);
 			if(!command)
 			{
 				/*	Alert user: not enough memory	*/

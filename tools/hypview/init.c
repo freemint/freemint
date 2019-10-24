@@ -103,8 +103,11 @@ void Init(void)
 		if (rsrc_load(skin_path))
 		{
 			RSHDR	*skin_rsh;
-			skin_rsh = *(RSHDR **)&aes_global[7];
-			tree_addr[TOOLBAR] = *(OBJECT **)(((char *)skin_rsh)+skin_rsh->rsh_trindex);
+			RSHDR	**phdr = (RSHDR **)&aes_global[7];
+			OBJECT **pobj;
+			skin_rsh = *phdr;
+			pobj = (OBJECT **)(((char *)skin_rsh)+skin_rsh->rsh_trindex);
+			tree_addr[TOOLBAR] = *pobj;
 		}
 	#if 0
 		if (mt_rsrc_load(skin_path, &skin_global))

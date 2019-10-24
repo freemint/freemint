@@ -111,7 +111,8 @@ void DoUserEvents(EVNT *event)
 		}
 		else if(event->msg[0]==AC_HELP)
 		{
-			char *data = *(char **)&event->msg[3];
+			char **pdata = (char **)&event->msg[3];
+			char *data = *pdata;
 			if(data!=NULL)
 			{
 #if DEBUG==ON

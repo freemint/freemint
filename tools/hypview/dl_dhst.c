@@ -46,17 +46,20 @@ void DhstAddFile(char *path)
 	{
 		short msg[8];
 		char *ptr;
-		long ret;
+		void *ret;
 		DHSTINFO *info;
+		DHSTINFO **pinfo;
 		
-		ret = Mxalloc(sizeof(DHSTINFO) + DL_PATHMAX * 2,  MX_PREFTTRAM|MX_MPROT|MX_READABLE);
+		ret = (void *)Mxalloc(sizeof(DHSTINFO) + DL_PATHMAX * 2,  MX_PREFTTRAM|MX_MPROT|MX_GLOBAL);
+		if ((long)ret == -32)
+			ret = (void *)Malloc(sizeof(DHSTINFO) + DL_PATHMAX * 2);
 		if(!ret)
 		{
 			form_alert(1,tree_addr[DIAL_LIBRARY][DI_MEMORY_ERROR].ob_spec.free_string);
 			return;
 		}
 		info=(DHSTINFO *)ret;
-		info->appname=(char *)(ret+sizeof(DHSTINFO));
+		info->appname=(char *)ret+sizeof(DHSTINFO);
 		strcpy(info->appname,PROGRAM_NAME);
 		info->apppath=&info->appname[strlen(info->appname)+1];
 
@@ -82,7 +85,8 @@ void DhstAddFile(char *path)
 		msg[0]=DHST_ADD;
 		msg[1]=ap_id;
 		msg[2]=0;
-		*(DHSTINFO **)(&msg[3])=info;
+		pinfo = (DHSTINFO **)(&msg[3]);
+		*pinfo=info;
 		msg[5]=0;
 		msg[6]=0;
 		msg[7]=0;

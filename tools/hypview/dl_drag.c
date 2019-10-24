@@ -42,7 +42,8 @@ void DragDrop(short msg[8])
 	unsigned long format[MAX_DDFORMAT], sformat;
 	char *pipe = DD_FNAME, name[DD_NAMEMAX], *data = NULL;
 
-	long size,ret;
+	long size;
+	void *ret;
 	void *old_sig;
 	short pipe_handle,i;
 	CHAIN_DATA *chain_ptr;
@@ -108,7 +109,7 @@ void DragDrop(short msg[8])
 		ddreply(pipe_handle,DD_NAK);
 		ddclose(pipe_handle,old_sig);
 		return;
-	};
+	}
 
 	for (i = 0; i < MAX_DDFORMAT; i++)		/*	Alle moeglichen Formate probieren	*/
 	{
@@ -118,7 +119,7 @@ void DragDrop(short msg[8])
 			ddreply(pipe_handle,DD_EXT);
 		else
 		{
-			ret=Mxalloc(size+1,3);
+			ret=(void *)Mxalloc(size+1,MX_PREFTTRAM);
 			if(ret!=0)
 			{
 				data=(char *)ret;

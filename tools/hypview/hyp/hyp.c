@@ -98,7 +98,10 @@ HypLoad(DOCUMENT *doc, short handle)
 			Mfree(ref);
 		return(F_LOADERROR);
 	}
-	else if ((*(long *)head.magic) != 0x48444f43L) /* 'HDOC' */
+	else if (head.magic[0] != 'H' ||
+		head.magic[1] != 'D' ||
+		head.magic[2] != 'O' ||
+		head.magic[3] != 'C') /* 'HDOC' */
 	{
 		/*	"magischer Wert" nicht im Datei-Header...	*/
 		Debug("ERROR: Wrong file format. Magic value not found.");

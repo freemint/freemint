@@ -1,5 +1,7 @@
 
 /* Sconfig(2) -> */
+#ifndef _DOSVARS
+#define _DOSVARS
 typedef struct
 {
    char      *in_dos;                 /* Address of DOS flags       */
@@ -20,8 +22,11 @@ typedef struct
    long      res9;                    /*                            */
    long      res10;                   /*                            */
 } DOSVARS;
+#endif
 
 /* os_magic -> */
+#ifndef _AESVARS
+#define _AESVARS
 typedef struct
 {
    long magic;                   /* Must be $87654321               */
@@ -39,8 +44,11 @@ typedef struct
    int  version;                 /* e.g. $0201 is V2.1              */
    int  release;                 /* 0=alpha..3=release              */
 } AESVARS;
+#endif
 
 /* Cookie MagX --> */
+#ifndef _MAGX_COOKIE
+#define _MAGX_COOKIE
 typedef struct
 {
    long    config_status;
@@ -50,3 +58,4 @@ typedef struct
    void *hddrv_functions;
    long status_bits;             /* MagiC 3 from 24.5.95 on      */
 } MAGX_COOKIE;
+#endif

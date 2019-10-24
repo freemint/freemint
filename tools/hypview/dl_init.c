@@ -30,13 +30,6 @@
 #include "diallib.h"
 #include "defs.h"
 
-/* Ozk:
- * This belongs in gemlib .. ask Arnaud to add this later...
- */
-#ifndef _AESrshdr
-#define _AESrshdr *(RSHDR **)&aes_global[7]
-#endif
-
 extern short _app;
 
 #if DEBUG_LOG == YES
@@ -83,6 +76,8 @@ void DoExitSystem(void);
 
 short DoAesInit(void)
 {
+	RSHDR **prsh;
+
 #if DEBUG_LOG == YES
 	long ret;
 	ret = Fopen(PROGRAM_NAME ".log",O_WRONLY|O_CREAT|O_APPEND);
@@ -112,7 +107,8 @@ short DoAesInit(void)
 		return(TRUE);
 	}
 	
-	rsh = _AESrshdr;
+	prsh = (RSHDR **)&aes_global[7];
+	rsh = *prsh;
 	
 	tree_addr = (OBJECT **)(((char *)rsh) + rsh->rsh_trindex);
 	tree_count = rsh->rsh_ntree;
