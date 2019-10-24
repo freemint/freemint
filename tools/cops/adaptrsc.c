@@ -441,12 +441,16 @@ check_button(PARMBLK *parmblock)
 	
 	string = (char *) parmblock->pb_parm;
 
-	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
+	/* clipping rectangle... */
+	clip[0] = parmblock->pb_xc;
+	clip[1] = parmblock->pb_yc;
+	clip[2] = parmblock->pb_xc + parmblock->pb_wc - 1;
+	clip[3] = parmblock->pb_yc + parmblock->pb_hc - 1;
 	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
-	*(GRECT *) rect = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
+	/* object rectangle */
+	rect[0] = parmblock->pb_x;
+	rect[1] = parmblock->pb_y;
 	rect[2] = rect[0] + phchar - 2;
 	rect[3] = rect[1] + phchar - 2;
 
@@ -510,9 +514,11 @@ radio_button(PARMBLK *parmblock)
 	_WORD image_colors[2];
 	char *string;
 
-	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
+	/* clipping rectangle... */
+	clip[0] = parmblock->pb_xc;
+	clip[1] = parmblock->pb_yc;
+	clip[2] = parmblock->pb_xc + parmblock->pb_wc - 1;
+	clip[3] = parmblock->pb_yc + parmblock->pb_hc - 1;
 	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschr„nken */
 
 	string = (char *) parmblock->pb_parm;
@@ -570,18 +576,22 @@ group(PARMBLK *parmblock)
 
 	string = (char *) parmblock->pb_parm;
 
-	*(GRECT *) &clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
+	/* clipping rectangle... */
+	clip[0] = parmblock->pb_xc;
+	clip[1] = parmblock->pb_yc;
+	clip[2] = parmblock->pb_xc + parmblock->pb_wc - 1;
+	clip[3] = parmblock->pb_yc + parmblock->pb_hc - 1;
 	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	udef_vswr_mode(vdi_handle, MD_TRANS);
 	udef_vsl_color(vdi_handle, 1);
 	udef_vsl_type(vdi_handle, 1);
 
-	*(GRECT *) obj = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
-	obj[2] += obj[0] - 1;
-	obj[3] += obj[1] - 1;
+	/* object rectangle */
+	obj[0] = parmblock->pb_x;
+	obj[1] = parmblock->pb_y;
+	obj[2] = obj[0] + parmblock->pb_w - 1;
+	obj[3] = obj[1] + parmblock->pb_h - 1;
 
 	xy[0] = obj[0] + pwchar;
 	xy[1] = obj[1] + phchar / 2;
@@ -617,9 +627,11 @@ title(PARMBLK *parmblock)
 
 	string = (char *) parmblock->pb_parm;
 
-	*(GRECT *) &clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
+	/* clipping rectangle... */
+	clip[0] = parmblock->pb_xc;
+	clip[1] = parmblock->pb_yc;
+	clip[2] = parmblock->pb_xc + parmblock->pb_wc - 1;
+	clip[3] = parmblock->pb_yc + parmblock->pb_hc - 1;
 	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	udef_vswr_mode(vdi_handle, MD_TRANS);

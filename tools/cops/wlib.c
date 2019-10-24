@@ -557,9 +557,10 @@ scroll_horizontal(WINDOW *window, short dx)
 					{
 						screen.fd_addr = 0L; /* Bildschirm */
 					
-						*(GRECT *)rect = box;
-						rect[0].x2 += box.g_x - 1;
-						rect[0].y2 += box.g_y - 1;
+						rect[0].x1 = box.g_x;
+						rect[0].y1 = box.g_y;
+						rect[0].x2 = box.g_x + box.g_w - 1;
+						rect[0].y2 = box.g_y + box.g_h - 1;
 		
 						vs_clip(vdi_handle, 1, (_WORD *) rect);	/* Clipping-Rechteck setzen */
 					
@@ -624,9 +625,10 @@ scroll_vertical(WINDOW *window, short dy)
 					{
 						screen.fd_addr = 0L; /* Bildschirm */
 
-						*(GRECT *)rect = box;
-						rect[0].x2 += box.g_x - 1;
-						rect[0].y2 += box.g_y - 1;
+						rect[0].x1 = box.g_x;
+						rect[0].y1 = box.g_y;
+						rect[0].x2 = box.g_x + box.g_w - 1;
+						rect[0].y2 = box.g_y + box.g_h - 1;
 
 						vs_clip(vdi_handle, 1, (_WORD *) rect);	/* Clipping-Rechteck setzen */
 
@@ -913,9 +915,9 @@ full_window(short handle, short max_width, short max_height)
 					max_h = window->h;
 
 				if (area.g_w > max_w)
-					area.g_w = (_WORD)max_w;
+					area.g_w = max_w;
 				if (area.g_h > max_h)
-					area.g_h = (_WORD)max_h;
+					area.g_h = max_h;
 			}
 
 			if (max_width || max_height) /* Fenstergroesse nur so gross wie noetig machen? */

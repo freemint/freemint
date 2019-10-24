@@ -1042,6 +1042,7 @@ call_help(void)
 	if (help_id >= 0)
 	{
 		short msg[8];
+		char **pp;
 
 		strcpy(help_buf, home);
 		strcat(help_buf, "COPS.hyp");
@@ -1049,7 +1050,8 @@ call_help(void)
 		msg[0] = VA_START;
 		msg[1] = app_id;
 		msg[2] = 0;
-		*(char **) &msg[3] = help_buf;
+		pp = (char **)&msg[3];
+		*pp = help_buf;
 		msg[5] = 0;
 		msg[6] = 0;
 		msg[7] = 0;
@@ -1817,6 +1819,7 @@ update_cpx_path(void)
 		msg[3] -= 'A';
 	else
 		msg[3] -= 'a';
+	msg[4] = msg[5] = msg[6] = msg[7] = 0;
 
 	shel_write(SHW_BROADCAST, 0, 0, (char *)msg, 0L); /* andere Prozesse benachrichtigen */
 }
