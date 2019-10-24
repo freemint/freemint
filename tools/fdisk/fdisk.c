@@ -297,6 +297,8 @@ _my_ioctl (int fd, int cmd, void *arg)
 	return -1;
 }
 
+#pragma GCC diagnostic ignored "-Wcast-qual"
+
 static ssize_t
 _my_write (int fd, const void *buf, size_t size)
 {
@@ -527,7 +529,7 @@ ulong_to_chars (ulong u, char *uu)
 }
 
 static ulong
-chars_to_ulong (uchar *uu)
+chars_to_ulong (const uchar *uu)
 {
 	int i;
 	ulong u = 0;
@@ -1527,12 +1529,14 @@ write_partitions (char *dev, int fd, struct disk_desc *z)
 	for (p = partitions; p < partitions + pno; p++)
 	{
 		struct sector *s;
+		struct partition *part;
 		
 		s = get_sector (dev, fd, p->sector);
 		if (!s) return 0;
 		
 		s->to_be_written = 1;
-		*(struct partition *)(&(s->data[p->offset])) = p->p;
+		part = (struct partition *)(&(s->data[p->offset]));
+		*part = p->p;
 	}
 	
 	if (save_sector_file)
@@ -2228,32 +2232,32 @@ static void
 usage (void)
 {
 	version ();
-	printf ("Usage: \
-	" PROGNAME " [options] device ... \
-device: something like /dev/hda or /dev/sda \
-useful options: \
-    -s [or --show-size]: list size of a partition \
-    -c [or --id]:        print or change partition Id \
-    -l [or --list]:      list partitions of each device \
-    -d [or --dump]:      idem, but in a format suitable for later input \
-    -i [or --increment]: number sectors etc. from 1 instead of from 0 \
-    -uS, -uM:            accept/report in units of sectors/MB \
-    -T [or --list-types]:list the known partition types \
-    -R [or --re-read]:   make kernel reread partition table \
-    -N# :                change only the partition with number # \
-    -n :                 do not actually write to disk \
-    -O file :            save the sectors that will be overwritten to file \
-    -I file :            restore these sectors again \
-    -v [or --version]:   print version \
-    -? [or --help]:      print this message \
-dangerous options: \
-    -x [or --show-extended]: also list extended partitions on output \
-                           or expect descriptors for them on input \
-    -q  [or --quiet]:      suppress warning messages \
-    You can override the detected geometry using: \
-    -S# [or --sectors #]:  set the number of sectors to use \
-    You can disable all consistency checking with: \
-    -f  [or --force]:      do what I say, even if it is stupid \
+	printf ("Usage:\n\
+	" PROGNAME " [options] device ...\n\
+device: something like /dev/hda or /dev/sda\n\
+useful options:\n\
+    -s [or --show-size]: list size of a partition\n\
+    -c [or --id]:        print or change partition Id\n\
+    -l [or --list]:      list partitions of each device\n\
+    -d [or --dump]:      idem, but in a format suitable for later input\n\
+    -i [or --increment]: number sectors etc. from 1 instead of from 0\n\
+    -uS, -uM:            accept/report in units of sectors/MB\n\
+    -T [or --list-types]:list the known partition types\n\
+    -R [or --re-read]:   make kernel reread partition table\n\
+    -N# :                change only the partition with number #\n\
+    -n :                 do not actually write to disk\n\
+    -O file :            save the sectors that will be overwritten to file\n\
+    -I file :            restore these sectors again\n\
+    -v [or --version]:   print version\n\
+    -? [or --help]:      print this message\n\
+dangerous options:\n\
+    -x [or --show-extended]: also list extended partitions on output\n\
+                           or expect descriptors for them on input\n\
+    -q  [or --quiet]:      suppress warning messages\n\
+    You can override the detected geometry using:\n\
+    -S# [or --sectors #]:  set the number of sectors to use\n\
+    You can disable all consistency checking with:\n\
+    -f  [or --force]:      do what I say, even if it is stupid\n\
 ");
 	exit(1);
 }
@@ -2261,10 +2265,10 @@ dangerous options: \
 static void
 activate_usage (char *progn)
 {
-	printf ("Usage: \
-  %s device	 	list active partitions on device \
-  %s device n1 n2 ...	activate partitions n1 ..., inactivate the rest \
-  %s device		activate partition n, inactivate the other ones \
+	printf ("Usage:\n\
+  %s device	 	list active partitions on device\n\
+  %s device n1 n2 ...	activate partitions n1 ..., inactivate the rest\n\
+  %s device		activate partition n, inactivate the other ones\n\
 ", progn, progn, PROGNAME " -An");
 	exit (1);
 }
@@ -2325,7 +2329,7 @@ main (int argc, char **argv)
 	if (argc < 1)
 		fatal ("no command?\n");
 	
-	progn = rindex (argv[0], '/');
+	progn = strrchr(argv[0], '/');
 	if (!progn)
 		progn = argv[0];
 	else
