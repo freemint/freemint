@@ -20,17 +20,17 @@ endif
 
 all: all-recursive all-here
 
-clean: clean-recursive
+clean:: clean-recursive
 	rm -f *.o lib*.a *.tmp
 	rm -f core report nohup.out errlog
 	rm -f $(compile_all_dirs)/*.o $(compile_all_dirs)/lib*.a
 	rm -rf $(GENFILES)
 
-bakclean: bakclean-recursive
+bakclean:: bakclean-recursive
 	rm -f *~ *# *.BAK *.bak
 	rm -f *.orig *.rej
 
-distclean: distclean-recursive
+distclean:: distclean-recursive
 	rm -f *.o lib*.a *.tmp *~ *# *.orig *.rej *.BAK *.bak
 	rm -f core report nohup.out errlog
 	rm -rf .deps $(GENFILES) $(SGENFILES)
@@ -66,7 +66,7 @@ distdir: $(DISTFILES) distdir-local
 distdir-local:
 
 all-recursive clean-recursive bakclean-recursive distclean-recursive \
-install-recursive uninstall-recursive dist-recursive strip-recursive:
+install-recursive uninstall-recursive dist-recursive strip-recursive::
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	list='$(SUBDIRS)'; for subdir in $$list; do \
 	  target=`echo $@ | sed s/-recursive//`; \
