@@ -66,10 +66,10 @@ int nosuid = 0;
 #define NFS_MOUNT_VERS 1
 
 
-typedef struct xattr XATTR;
+typedef struct myxattr MYXATTR;
 
 /* structure for getxattr */
-struct xattr
+struct myxattr
 {
 	ushort	mode;
 	long	index;
@@ -93,7 +93,7 @@ typedef struct
 {
 	long	version;
 	fhandle	handle;		/* initial file handle from the server's mountd */
-	XATTR	mntattr;	/* not used yet */
+	MYXATTR	mntattr;	/* not used yet */
 	long	flags;
 	long	rsize;
 	long	wsize;
@@ -148,6 +148,8 @@ make_socket (long maxmsgsize)
 	
 	return fd;
 }
+
+#pragma GCC diagnostic ignored "-Wcast-qual"
 
 long
 do_nfs_mount (const char *remote, const char *localdir)
@@ -241,8 +243,8 @@ do_nfs_mount (const char *remote, const char *localdir)
 	}
 	
 	res = clnt_call (cl, MOUNTPROC_MNT,
-	                (xdrproc_t) xdr_dirpath, (caddr_t) remote,
-	                (xdrproc_t) xdr_fhstatus, (caddr_t) &fh, total_time);
+	                (xdrproc_t) xdr_dirpath, (void *)remote,
+	                (xdrproc_t) xdr_fhstatus, (void *)&fh, total_time);
 	
 	if (res != RPC_SUCCESS)
 	{

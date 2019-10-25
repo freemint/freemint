@@ -1,10 +1,10 @@
 
 #include <stdio.h>
-#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stddef.h>
 
 #define SERVER	"/tmp/dgramd"
 #define OFFSET	offsetof(struct sockaddr_un, sun_path)

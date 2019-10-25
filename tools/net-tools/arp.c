@@ -99,8 +99,7 @@ decode_hw (struct sockaddr_hw *shw)
 }
 
 static char *
-decode_pr (shw)
-	struct sockaddr_hw *shw;
+decode_pr (struct sockaddr_hw *shw)
 {
 	static char strbuf[20];
 	struct in_addr ina;
