@@ -5,7 +5,7 @@
  */
 
 /*
- * Number of Strings:        182
+ * Number of Strings:        183
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 3
@@ -13,11 +13,11 @@
  * Number of Tedinfos:       28
  * Number of Free Strings:   17
  * Number of Free Images:    0
- * Number of Objects:        137
+ * Number of Objects:        138
  * Number of Trees:          10
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          11676
+ * Total file size:          11714
  */
 
 #undef RSC_NAME
@@ -35,7 +35,7 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 182
+#define NUM_STRINGS 183
 #define NUM_FRSTR 17
 #define NUM_UD 0
 #define NUM_IMAGES 0
@@ -44,7 +44,7 @@
 #define NUM_IB 0
 #define NUM_CIB 3
 #define NUM_TI 28
-#define NUM_OBS 137
+#define NUM_OBS 138
 #define NUM_TREE 10
 #endif
 
@@ -123,11 +123,12 @@
 #define WFGCOL            34 /* BOX in tree WINCONFIG */
 #define WBGSTR            35 /* STRING in tree WINCONFIG */
 #define WBGCOL            36 /* BOX in tree WINCONFIG */
-#define WWRAP             38 /* BUTTON in tree WINCONFIG */
-#define WCLOSE            39 /* BUTTON in tree WINCONFIG */
-#define WHELP             40 /* BOXTEXT in tree WINCONFIG */ /* max len 5 */
-#define WOK               41 /* BUTTON in tree WINCONFIG */
-#define WABBRUCH          42 /* BUTTON in tree WINCONFIG */
+#define WBLOCKCURSOR      38 /* BUTTON in tree WINCONFIG */
+#define WWRAP             39 /* BUTTON in tree WINCONFIG */
+#define WCLOSE            40 /* BUTTON in tree WINCONFIG */
+#define WHELP             41 /* BOXTEXT in tree WINCONFIG */ /* max len 5 */
+#define WOK               42 /* BUTTON in tree WINCONFIG */
+#define WABBRUCH          43 /* BUTTON in tree WINCONFIG */
 
 #define WINICON            6 /* form/dialog */
 #define WIBOX              0 /* BOX in tree WINICON */

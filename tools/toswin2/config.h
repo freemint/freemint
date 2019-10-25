@@ -23,6 +23,7 @@ struct _wincfg
 	bool	iconified;
 	bool	wrap;
 	bool	autoclose;
+	bool	blockcursor;
 	int	vt_mode;
 	int	fg_color;
 	int	bg_color;

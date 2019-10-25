@@ -71,6 +71,7 @@ static WINCFG *crt_newcfg(char *prog)
 	new->ypos = -1;
 	new->vt_mode = MODE_VT100;
 	new->autoclose = TRUE;
+	new->blockcursor = FALSE;
 	new->iconified = FALSE;
 	new->fg_color = 7;
 	new->bg_color = 0;
@@ -313,6 +314,7 @@ static void open_cfgwd(WDIALOG *wd)
 		/* FIXME: Set future checkboxes for pseudo effects.  */
 
 		set_state(wd->tree, WCLOSE, OS_SELECTED, cfg->autoclose);
+		set_state(wd->tree, WBLOCKCURSOR, OS_SELECTED, cfg->blockcursor);
 
 		new_id = cfg->font_id;
 		new_pts = cfg->font_pts;
@@ -471,6 +473,7 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 				cfg->bg_effects &= ~CE_BOLD;
 
 			cfg->autoclose = get_state(wd->tree, WCLOSE, OS_SELECTED);
+			cfg->blockcursor = get_state(wd->tree, WBLOCKCURSOR, OS_SELECTED);
 
 			if (cfg_win)
 				reconfig_textwin(cfg_win, cfg);
@@ -676,6 +679,8 @@ static void parse_line(char *zeile)
 				get_bool(value, &p_cfg->iconified);
 			else if (strcmp(var, "WinAutoClose") == 0)
 				get_bool(value, &p_cfg->autoclose);
+			else if (strcmp(var, "WinBlockCursor") == 0)
+				get_bool(value, &p_cfg->blockcursor);
 			else if (strcmp(var, "WinCharTab") == 0)
 				p_cfg->char_tab = atoi(value);
 			else if (strcmp(var, "WinCol") == 0)
@@ -837,6 +842,7 @@ void config_save(void)
 			write_str("WinArg", p->arg);
 			write_bool("WinAsIcon", p->iconified);
 			write_bool("WinAutoClose", p->autoclose);
+			write_bool("WinBlockCursor", p->blockcursor);
 			write_int("WinCharTab", p->char_tab);
 			write_int("WinCol", p->col);
 			write_int("WinColorBg", p->bg_color);

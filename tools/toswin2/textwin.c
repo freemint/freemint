@@ -899,8 +899,7 @@ update_cursor (WINDOW* win, int top)
 		else
 			new_flag &= ~CINVERSE;
 	} else if (tw->curs_drawn) {
-		new_curs.g_y += tw->cheight - 1 -
-			tw->curs_offy - tw->curs_height;
+		new_curs.g_y += tw->curs_offy;
 		new_curs.g_h = tw->curs_height;
 	}
 
@@ -1705,16 +1704,14 @@ static bool text_type(WINDOW *w, short code, short shift)
 				}
 			}
 			else
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				if (do_debug)
 					syslog (LOG_ERR, "Writing code 0x%08x",
 						(unsigned) c);
 #endif
 				(void)Fputchar(t->fd, c, 0);
-#ifdef DEBUG
 			}
-#endif
 			return TRUE;
 		}
 	}
@@ -1780,6 +1777,25 @@ static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, 
 	}
 	return TRUE;
 }
+
+
+static void calc_cursor(TEXTWIN *t, WINCFG *cfg)
+{
+	if (cfg->blockcursor)
+	{
+		t->curs_height = t->cheight;
+		t->curs_offy = 0;
+	} else
+	{
+		t->curs_height = t->cheight >> 3;
+		t->curs_offy = t->cheight - 2 - t->curs_height;
+	}
+	if (t->curs_height < 1)
+		t->curs_height = 1;
+	if (t->curs_offy + t->curs_height > t->cheight)
+		t->curs_offy = 0;
+}
+
 
 /*
  * Create a new text window with title t, w columns, and h rows,
@@ -1951,12 +1967,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->saved_tflags = t->curr_tflags;
 	t->last_cx = t->last_cy = -1;
 
-	t->curs_height = t->cheight >> 3;
-	if (t->curs_height < 1)
-		t->curs_height = 1;
-	t->curs_offy = 1;
-	if (t->curs_offy + t->curs_height > t->cheight)
-		t->curs_offy = 0;
+	calc_cursor(t, cfg);
 
 	return t;
 
@@ -2459,6 +2470,8 @@ void
 reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 {
 	change_window_gadgets(t->win, cfg->kind);
+	t->curs_drawn = FALSE;
+	calc_cursor(t, cfg);
 	if (cfg->title[0] != '\0')
 		title_window(t->win, cfg->title);
 	resize_textwin(t, cfg->col, cfg->row, cfg->scroll);
