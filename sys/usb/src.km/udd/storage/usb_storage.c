@@ -136,13 +136,21 @@ extern long uninstall_usb_stor	(long dev_num);
 extern long install_xhdi_driver(void);                         //xhdi.c
 extern void install_vectors(void);                             //vectors.S
 extern void install_scsidrv(void);                             //usb_scsidrv.c
-#ifdef TOSONLY
-extern void SCSIDRV_MediaChange(long dev_num);
-#endif
-extern long dl_maxdrives;
 extern long XHDOSLimits(ushort which, ulong limit);
 extern void init_polling(void);
+#ifdef TOSONLY
+extern void SCSIDRV_MediaChange(long dev_num);
+extern short InqMagX(void);
+#endif
+
+/*
+ * External variables
+ */
+extern long dl_maxdrives;
 extern short num_multilun_dev;
+#ifdef TOSONLY
+extern short MagiC;
+#endif
 
 /* direction table -- this indicates the direction of the data
  * transfer for each command code -- a 1 indicates input
@@ -217,8 +225,6 @@ struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 #ifdef TOSONLY
 /* Semaphore to avoid polling LUN status while transfer is in process */
 int transfer_running;
-/* Are we running on MagiC? */
-int MagiC = 0;
 #endif
 
 #define USB_STOR_TRANSPORT_GOOD	   0
@@ -420,7 +426,7 @@ static int is_atari_partition(unsigned long type)
 	if ((type == GEM) || (type == XGM) || (type == BGM) || (type == RAW))
 		return 1;
 #ifdef TOSONLY
-	if (MagiC && type == F32)
+	if (MagiC >= 0x610 && type == F32)
 		return 1;
 #else
 	if (type == F32)
@@ -2299,9 +2305,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	set_tos_delay();
 
 	/* Are we running on MagiC */
-	long val;
-	if (getcookie(MagX_COOKIE, &val))
-		MagiC = 1;
+	MagiC = InqMagX();
 #endif
 
 	pun_ptr = get_pun();

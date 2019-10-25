@@ -46,7 +46,7 @@ extern USB_PUN_INFO pun_usb;							//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
 extern long dl_maxdrives;
 #if TOSONLY
-extern int MagiC;
+extern short MagiC;
 #endif
 extern long XHDOSLimits(ushort which, ulong limit);
 
@@ -317,7 +317,7 @@ static int valid_partition(unsigned long type)
 	if ((type == GEM) || (type == BGM) || (type == RAW))
 		return 1;
 #ifdef TOSONLY
-	if (MagiC && type == F32)
+	if (MagiC >= 0x610 && type == F32)
 		return 1;
 #else
 	if (type == F32)

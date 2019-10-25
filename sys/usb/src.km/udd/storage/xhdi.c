@@ -77,7 +77,7 @@ char *DRIVER_COMPANY = "FreeMiNT list";
 
 extern char *drv_version;
 #if TOSONLY
-extern int MagiC;
+extern short MagiC;
 #endif
 
 /* --- External functions ---*/
@@ -124,7 +124,7 @@ sys_XHDOSLimits(ushort which,ulong limit)
 
 	if (first_time)
 	{
-		if (MagiC)
+		if (MagiC >= 0)
 		{
 			MX_DOSLIMITS **ptr;
 			ptr = (MX_DOSLIMITS **) Dcntl(KER_DOSLIMITS, 0, 0L);
@@ -169,7 +169,10 @@ sys_XHDOSLimits(ushort which,ulong limit)
 			dl_maxfat = 2;
 		}
 		dl_clustsiz = dl_secsiz * 2;
-		dl_clusts32 = 0;
+		if (MagiC >= 0x610)
+			dl_clusts32 = 268435455L;
+		else
+			dl_clusts32 = 0;
 		first_time = 0;
 	}
 

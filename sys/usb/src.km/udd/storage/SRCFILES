@@ -19,7 +19,8 @@ SSOBJS = \
 	xhdiasm.S
 
 TOSCOBJS = \
-	crtinit.c
+	crtinit.c \
+	magic.c
 
 TOSSSOBJS = \
 	delayasm.S \
