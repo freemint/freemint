@@ -1,8 +1,14 @@
+@if VERSION >= 6
+@os atari
+@charset atarist
+@inputenc atarist
+@lang "de"
+@endif
 @database "TosWin2"
 @author "Christian Felsch"
-@$VER: 2.6
+@$VER: 2.7
 @subject "Dokumentation/Sonstiges"
-@options "+z-s"
+@options "+z -s"
 
 @node "Titel" "TosWin2: Inhalt"
 
@@ -39,8 +45,8 @@ Christian Felsch
 Adalbert-Stifter-Str 33
 63477 Maintal
 
-email: C.Felsch@gmx.de
-       Christian Felsch @ HH
+email: C.Felsch@@gmx.de
+       Christian Felsch @@ HH
 
 @endnode
 
@@ -502,7 +508,7 @@ als ob die eintreffende CH_EXIT-Meldung von dem TOS-Programm selbst
 stammt und es kann den korrekten RÅckgabewert verarbeiten.
 
 tw-call ist damit derzeit die einzige Mîglichkeit, um unter N.AES die 
-erweiterten Modi von @{"shel_write()" link TOS.HYP/shel_write} (öbergabe von Startverzeichnis und
+erweiterten Modi von @{"shel_write()" link tos.hyp/shel_write} (öbergabe von Startverzeichnis und
 @{Environment ignore}) und korrekte CH_EXIT-Meldungen auch bei TOS-Programmen
 zu realisieren.
 

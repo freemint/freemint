@@ -20,7 +20,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: all-targets
+all-here: all-targets doc/toswin2.hyp
 
 # default overwrites
 
@@ -64,7 +64,15 @@ all-targets:
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-install: $(cpu)
+doc/toswin2.hyp: doc/toswin2.stg
+	@if test "$(HCP)" != ""; then hcp="$(HCP)"; else hcp=hcp; fi; \
+	if test "$$hcp" != "" && $$hcp --version >/dev/null 2>&1; then \
+		$$hcp -o $@ $<; \
+	else \
+		echo "HCP not found, help file not compiled" >&2; \
+	fi
+
+install: $(cpu) doc/toswin2.hyp
 	$(MKDIR) -p $(installdir)
 ifeq ($(cpu), all)
 	@set -x; \
@@ -80,8 +88,6 @@ else
 	chmod 755 $(installdir)/toswin2.app $(installdir)/tw-call.app
 	$(STRIP) $(installdir)/toswin2.app $(installdir)/tw-call.app
 endif
-
-	# TODO: 'doc' need to be compiled as a HYP
 	$(CP) -r $(srcdir)/doc $(installdir)
 	$(CP) $(srcdir)/english/toswin2.rsc $(installdir)
 	$(CP) -r $(srcdir)/screenshots $(installdir)
@@ -128,3 +134,6 @@ realtarget =
 endif
 
 buildtoswin2: $(realtarget)
+
+clean::
+	$(RM) doc/toswin2.hyp doc/toswin2.ref
