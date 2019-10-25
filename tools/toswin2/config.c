@@ -127,12 +127,12 @@ static void open_conwd(WDIALOG *wd)
 {
 	char	s[20];
 
-	set_state(con_wd->tree, CAUTO, OS_SELECTED, gl_con_auto);
-	set_state(con_wd->tree, COUTPUT, OS_SELECTED, gl_con_output);
+	set_state(wd->tree, CAUTO, OS_SELECTED, gl_con_auto);
+	set_state(wd->tree, COUTPUT, OS_SELECTED, gl_con_output);
 
-	set_state(con_wd->tree, CLOGACTIVE, OS_SELECTED, gl_con_log);
+	set_state(wd->tree, CLOGACTIVE, OS_SELECTED, gl_con_log);
 	make_shortpath(gl_con_logname, s, 19);
-	set_string(con_wd->tree, CLOGNAME, s);
+	set_string(wd->tree, CLOGNAME, s);
 
 	strcpy(new_log, gl_con_logname);
 }
@@ -219,7 +219,7 @@ static void open_cfgwd(WDIALOG *wd)
 	char		str[32], title[256] = "";
 	WINCFG	*cfg;
 
-	if (cfg_wd->mode == 0)		/* nur beim ersten Mal */
+	if (wd->mode == 0)		/* nur beim ersten Mal */
 	{
 		if (gl_topwin && !(gl_topwin->flags & WISDIAL)
 		  && !(gl_topwin->flags & WICONIFIED)
@@ -235,7 +235,7 @@ static void open_cfgwd(WDIALOG *wd)
 			}
 			sprintf(title, rsc_string(STRCFGPROG), cfg->progname);
 			title[40] = '\0';
-			set_string(cfg_wd->tree, WPROG, title);
+			set_string(wd->tree, WPROG, title);
 			if (cfg->title[0] != '\0')
 			{
 				strncpy(title, cfg->title, 20);
@@ -250,31 +250,31 @@ static void open_cfgwd(WDIALOG *wd)
 			cfg_win = NULL;
 			cfg = gl_wincfg;
 			sprintf(title, rsc_string(STRCFGPROG), rsc_string(STRCFGSTD));
-			set_string(cfg_wd->tree, WPROG, title);
+			set_string(wd->tree, WPROG, title);
 			title[0] = '\0';
 		}
 
 		_ltoa(cfg->col, str, 10);
-		set_string(cfg_wd->tree, WCOL, str);
+		set_string(wd->tree, WCOL, str);
 
 		_ltoa(cfg->row, str, 10);
-		set_string(cfg_wd->tree, WROW, str);
+		set_string(wd->tree, WROW, str);
 
 		_ltoa(cfg->scroll, str, 10);
-		set_string(cfg_wd->tree, WBUFFER, str);
+		set_string(wd->tree, WBUFFER, str);
 
 		get_fontname(cfg->font_id, str);
-		set_string(cfg_wd->tree, WFNAME, str);
+		set_string(wd->tree, WFNAME, str);
 		_ltoa(cfg->font_pts, str, 10);
-		set_string(cfg_wd->tree, WFSIZE, str);
+		set_string(wd->tree, WFSIZE, str);
 
-		set_state(cfg_wd->tree, WGCLOSER, OS_SELECTED, cfg->kind & CLOSER);
-		set_state(cfg_wd->tree, WGTITLE, OS_SELECTED, cfg->kind & NAME);
-		set_state(cfg_wd->tree, WGSMALLER, OS_SELECTED, cfg->kind & SMALLER);
-		set_state(cfg_wd->tree, WGFULLER, OS_SELECTED, cfg->kind & FULLER);
-		set_state(cfg_wd->tree, WGSLVERT, OS_SELECTED, cfg->kind & VSLIDE);
-		set_state(cfg_wd->tree, WGSIZER, OS_SELECTED, cfg->kind & SIZER);
-		set_string(cfg_wd->tree, WTITLE, title);
+		set_state(wd->tree, WGCLOSER, OS_SELECTED, cfg->kind & CLOSER);
+		set_state(wd->tree, WGTITLE, OS_SELECTED, cfg->kind & NAME);
+		set_state(wd->tree, WGSMALLER, OS_SELECTED, cfg->kind & SMALLER);
+		set_state(wd->tree, WGFULLER, OS_SELECTED, cfg->kind & FULLER);
+		set_state(wd->tree, WGSLVERT, OS_SELECTED, cfg->kind & VSLIDE);
+		set_state(wd->tree, WGSIZER, OS_SELECTED, cfg->kind & SIZER);
+		set_string(wd->tree, WTITLE, title);
 
 		switch (cfg->vt_mode)
 		{
@@ -292,27 +292,27 @@ static void open_cfgwd(WDIALOG *wd)
 				strcpy(str, "???");
 				new_term = 0;
 		}
-		set_string(cfg_wd->tree, WTERM, str);
+		set_string(wd->tree, WTERM, str);
 
 		get_string(popups, TPATARI + cfg->char_tab, str);
-		set_string(cfg_wd->tree, WTAB, str);
+		set_string(wd->tree, WTAB, str);
 
 		if (cfg->vdi_colors) {
-			set_popobjcolor (cfg_wd->tree, WFGCOL, cfg->fg_color);
-			set_popobjcolor (cfg_wd->tree, WBGCOL, cfg->bg_color);
+			set_popobjcolor (wd->tree, WFGCOL, cfg->fg_color);
+			set_popobjcolor (wd->tree, WBGCOL, cfg->bg_color);
 		} else {
-			set_popobjcolor (cfg_wd->tree, WFGCOL,
+			set_popobjcolor (wd->tree, WFGCOL,
 					 cfg->fg_effects & CE_BOLD ?
 					 ansibright2vdi[cfg->fg_color] :
 					 ansi2vdi[cfg->fg_color]);
-			set_popobjcolor (cfg_wd->tree, WBGCOL,
+			set_popobjcolor (wd->tree, WBGCOL,
 					 cfg->bg_effects & CE_BOLD ?
 					 ansibright2vdi[cfg->bg_color] :
 					 ansi2vdi[cfg->bg_color]);
 		}
 		/* FIXME: Set future checkboxes for pseudo effects.  */
 
-		set_state(cfg_wd->tree, WCLOSE, OS_SELECTED, cfg->autoclose);
+		set_state(wd->tree, WCLOSE, OS_SELECTED, cfg->autoclose);
 
 		new_id = cfg->font_id;
 		new_pts = cfg->font_pts;

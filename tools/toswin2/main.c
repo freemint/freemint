@@ -19,6 +19,11 @@
 int do_debug = 0;
 #endif
 
+#ifdef __GNUC__
+long _stksize = 32768;
+#endif
+
+
 static void term_tw(int ret_code)
 {
 	config_term();

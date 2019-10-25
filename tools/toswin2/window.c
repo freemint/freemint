@@ -1,7 +1,7 @@
 /*
  * window.c
  *
- * Basisifunktionen fr Fensterverwaltung.
+ * Basisfunktionen fuer Fensterverwaltung.
  *
  */
 
@@ -27,19 +27,32 @@ int	 gl_winanz = 0;		/* Anzahl der offenen Fenster */
 static void
 timer_expired (WINDOW* w, int topped)
 {
+	(void) w;
+	(void) topped;
 }
 
 static void noslid(WINDOW *w, short m)
 {
+	(void) w;
+	(void) m;
 }
 
 static bool nokey(WINDOW *w, short code, short shft)
 {
+	(void) w;
+	(void) code;
+	(void) shft;
 	return FALSE;
 }
 
 static bool nomouse(WINDOW *w, short clicks, short x, short y, short shift, short mbuttons)
 {
+	(void) w;
+	(void) clicks;
+	(void) x;
+	(void) y;
+	(void) shift;
+	(void) mbuttons;
 	return FALSE;
 }
 
@@ -47,6 +60,7 @@ static void clear_win(WINDOW *v, short x, short y, short w, short h)
 {
 	short temp[4];
 
+	(void) v;
 	set_fillcolor (0);
 	temp[0] = x;
 	temp[1] = y;
@@ -81,6 +95,7 @@ static void ontop_win(WINDOW *w)
 
 static void untop_win(WINDOW *w)
 {
+	(void) w;
 	gl_topwin = get_top();
 }
 					

@@ -171,6 +171,7 @@ popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 	char *sp = s;
 	unsigned char *ep1, *ep2;
 
+	(void) tw;
 	ep2 = ep1 = escbuf;
 	while (*ep1 != '\0' && *ep1 != ';')
 		*sp++ = *ep1++;
@@ -593,7 +594,7 @@ static void reportxy(TEXTWIN* tw, int x, int y)
 static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy, count, ei;
-	unsigned long param1, param2, param3;
+	long param1, param2, param3;
 
 	cx = tw->cx;
 	cy = tw->cy;
@@ -1035,9 +1036,9 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		param1 = popescbuf (tw, tw->escbuf);
 		param2 = popescbuf (tw, tw->escbuf);
 		param3 = popescbuf (tw, tw->escbuf);
-debug ("window modification: %lu %lu %lu\n", param1, param2, param3);
+debug ("window modification: %ld %ld %ld\n", param1, param2, param3);
 
-		switch (param1) {
+		switch ((int) param1) {
 			case 1:  /* De-Iconify.  */
 				(*(tw->win)).uniconify (tw->win,
 						         tw->win->prev.g_x,
@@ -1079,7 +1080,7 @@ debug ("window modification: %lu %lu %lu\n", param1, param2, param3);
 					param3 = tw->win->full_work.g_w;
 					param3 /= tw->cmaxwidth;
 				}
-debug ("resize to %d x %d (%d)\n", param3, param2, SCROLLBACK (tw));
+debug ("resize to %ld x %ld (%d)\n", param3, param2, SCROLLBACK (tw));
 				resize_textwin (tw, param3, param2, 
 						SCROLLBACK (tw));
 				refresh_textwin (tw, 1);
@@ -1637,13 +1638,9 @@ escy_putch (TEXTWIN* tw, unsigned int c)
 void
 vt100_putch (TEXTWIN* tw, unsigned int c)
 {
-	int cy;
-
 #ifdef DUMP
 	dump(c);
 #endif
-
-	cy = tw->cy;
 
 	c &= 0x00ff;
 
@@ -1687,7 +1684,7 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 			
 		/* FIXME: Handle newline mode!  */
 		case '\015':	/* Carriage Return - CR (Ctrl-M).  */
-			gotoxy (tw, 0, cy - RELOFFSET (tw));
+			gotoxy (tw, 0, tw->cy - RELOFFSET (tw));
 			break;
 			
 		case '\016':	/* Shift Out (SO) (Ctrl-N) -> Switch 

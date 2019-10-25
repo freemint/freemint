@@ -194,9 +194,7 @@ set_ansi_bg_color (TEXTWIN* tw, int color)
 
 /* Calculate the difference between two colors.  */
 static unsigned long int
-color_diff (color1, color2)
-	const short int color1[3];
-	const short int color2[3];
+color_diff (const short int color1[3], const short int color2[3])
 {
 	unsigned long int diff = 0;
 	unsigned long int r1 = color1[0];
@@ -205,10 +203,10 @@ color_diff (color1, color2)
 	unsigned long int g2 = color2[1];
 	unsigned long int b1 = color1[2];
 	unsigned long int b2 = color2[2];
-	unsigned long int max1 = 0;
-	unsigned long int max2 = 0;
-	unsigned long int min1 = 1000;
-	unsigned long int min2 = 1000;
+	short max1 = 0;
+	short max2 = 0;
+	short min1 = 1000;
+	short min2 = 1000;
 	unsigned long int s1, s2;
 	int i;
 

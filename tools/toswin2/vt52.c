@@ -391,10 +391,6 @@ static void escy_putch(TEXTWIN *v, unsigned int c)
  */
 void vt52_putch(TEXTWIN *v, unsigned int c)
 {
-	int cy;
-
-	cy = v->cy;
-
 	c &= 0x00ff;
 
 	/* control characters */
@@ -403,7 +399,7 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 		switch (c)
 		{
 			case '\r':
-				gotoxy (v, 0, cy - RELOFFSET (v));
+				gotoxy (v, 0, v->cy - RELOFFSET (v));
 				break;
 
 			case '\n':

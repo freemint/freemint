@@ -783,9 +783,9 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 				 	if (i)
 				 	{
 				 		flushbuf();
-					 }
-					 flag = curflag;
-					 buf[i++] = c;
+					}
+					flag = curflag;
+					buf[i++] = c;
 					bufwidth += (WIDE ? WIDE[c] : t->cmaxwidth);
 				}
 		  	}
@@ -1475,7 +1475,6 @@ static void set_scroll_bars(TEXTWIN *t)
 	short vpos;
 	long height;
 
-	/* width = t->cmaxwidth * NCOLS (t); */
 	height = t->cheight * t->maxy;
 
 	/* see if the new offset is too big for the window */
@@ -1513,16 +1512,29 @@ static void set_scroll_bars(TEXTWIN *t)
  * called when doing a 'paste' operation, so we must watch out for possible
  * deadlock conditions
  */
-#define READBUFSIZ 256
-static char buf[READBUFSIZ];
+
+
+static void text_appl_cursor(TEXTWIN *t, long shiftmask)
+{
+	switch (t->curs_mode)
+	{
+		case CURSOR_NORMAL:
+			(void)Fputchar(t->fd, 0x001a005bL | shiftmask, 0); 	/* '[' */
+			break;
+		case CURSOR_TRANSMIT:
+			(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0); 	/* 'O' */
+			break;
+	}
+}
+
 
 static bool text_type(WINDOW *w, short code, short shift)
 {
 	TEXTWIN	*t = w->extra;
 	WINCFG	*cfg = t->cfg;
 	long offset, height;
-	long c = (code & 0x00ff) | (((long)code & 0x0000ff00L) << 8L) | ((long)shift << 24L);
-	long r;
+	long shiftmask = ((long)shift) << 24;
+	long c = (code & 0x00ff) | (((long)code & 0x0000ff00L) << 8L) | shiftmask;
 	
 	/* Context-sensitive help */
 	if (code == 0x6200)		/* HELP */
@@ -1600,11 +1612,15 @@ static bool text_type(WINDOW *w, short code, short shift)
 	}
 	if (t->fd)
 	{
-		r = Foutstat(t->fd);
+#define READBUFSIZ 256
+		char buf[READBUFSIZ];
+
+		long r = Foutstat(t->fd);
 		if (r <= 0)
 		{
 			r = Fread(t->fd, (long)READBUFSIZ, buf);
-			write_text(t, buf, r);
+			if (r > 0)
+				write_text(t, buf, r);
 			(void)Fselect(500, 0L, 0L, 0L);
 			r = Foutstat(t->fd);
 		}
@@ -1613,99 +1629,79 @@ static bool text_type(WINDOW *w, short code, short shift)
 			/* vt52 -> vt100 cursor/function key remapping */
 			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000 && ((code&0xFF)<=0x20))
 			{
-				(void)Fputchar(t->fd, (long)(0x0001001bL | ((long)shift << 24L)), 0);	  /* 'ESC' */
+				(void)Fputchar(t->fd, 0x0001001bL | shiftmask, 0);	  /* 'ESC' */
 			  	switch (code)
 			  	{
 					case 0x3b00: 	/* F1 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x00180050L | ((long)shift << 24L)), 0);	 /* 'P' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00180050L | shiftmask, 0);	 /* 'P' */
 						break;
 					case 0x3c00: 	/* F2 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x00100051L | ((long)shift << 24L)), 0);	 /* 'Q' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00100051L | shiftmask, 0);	 /* 'Q' */
 						break;
 					case 0x3d00: 	/* F3 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x00130052L | ((long)shift << 24L)), 0);	 /* 'R' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00130052L | shiftmask, 0);	 /* 'R' */
 						break;
 				  	case 0x3e00: 	/* F4 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x001f0053L | ((long)shift << 24L)), 0);	 /* 'S' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x001f0053L | shiftmask, 0);	 /* 'S' */
 						break;
 				  	case 0x3f00: 	/* F5 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x00140054L | ((long)shift << 24L)), 0);	 /* 'T' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00140054L | shiftmask, 0);	 /* 'T' */
 						break;
 				  	case 0x4000: 	/* F6 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x00160055L | ((long)shift << 24L)), 0);	 /* 'U' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00160055L | shiftmask, 0);	 /* 'U' */
 						break;
 				  	case 0x4100: 	/* F7 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x002f0056L | ((long)shift << 24L)), 0);	 /* 'V' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x002f0056L | shiftmask, 0);	 /* 'V' */
 						break;
 				  	case 0x4200: 	/* F8 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x00110057L | ((long)shift << 24L)), 0);	 /* 'W' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00110057L | shiftmask, 0);	 /* 'W' */
 						break;
 				 	case 0x4300: 	/* F9 */
-						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
-						(void)Fputchar(t->fd, (long)(0x002d0058L | ((long)shift << 24L)), 0);	 /* 'X' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x002d0058L | shiftmask, 0);	 /* 'X' */
 						break;
 				  	case 0x4400: 	/* F10 */
- 						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
- 						(void)Fputchar(t->fd, (long)(0x00150059L | ((long)shift << 24L)), 0);	 /* 'Y' */
+						(void)Fputchar(t->fd, 0x0018004fL | shiftmask, 0);	 /* 'O' */
+						(void)Fputchar(t->fd, 0x00150059L | shiftmask, 0);	 /* 'Y' */
  						break;
 				  	case 0x4800: 	/* up arrow */
-						switch (t->curs_mode)
-						{
-							case CURSOR_NORMAL:
-								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
-								break;
-							case CURSOR_TRANSMIT:
-								(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0); 	/* 'O' */
-								break;
-						}
-						(void)Fputchar(t->fd, (long)(0x001e0041L | ((long)shift << 24L)), 0);	 /* 'A' */
+						text_appl_cursor(t, shiftmask);
+						(void)Fputchar(t->fd, 0x001e0041L | shiftmask, 0);	 /* 'A' */
 						break;
 				  	case 0x4b00: 	/* left arrow */
-						switch (t->curs_mode)
-						{
-							case CURSOR_NORMAL:
-								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
-								break;
-							case CURSOR_TRANSMIT:
-								(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0); 	/* 'O' */
-								break;
-						}
-						(void)Fputchar(t->fd, (long)(0x00200044L | ((long)shift << 24L)), 0);	 /* 'D' */
+						text_appl_cursor(t, shiftmask);
+						(void)Fputchar(t->fd, 0x00200044L | shiftmask, 0);	 /* 'D' */
 						break;
 				  	case 0x4d00: 	/* right arrow */
-						switch (t->curs_mode)
-						{
-							case CURSOR_NORMAL:
-								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
-								break;
-							case CURSOR_TRANSMIT:
-								(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0); 	/* 'O' */
-								break;
-						}
-						(void)Fputchar(t->fd, (long)(0x002e0043L | ((long)shift << 24L)), 0);	 /* 'C' */
+						text_appl_cursor(t, shiftmask);
+						(void)Fputchar(t->fd, 0x002e0043L | shiftmask, 0);	 /* 'C' */
 						break;
 				  	case 0x5000: 	/* down arrow */
-						switch (t->curs_mode)
-						{
-							case CURSOR_NORMAL:
-								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
-								break;
-							case CURSOR_TRANSMIT:
-								(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0); 	/* 'O' */
-								break;
-						}
-						(void)Fputchar(t->fd, (long)(0x00300042L | ((long)shift << 24L)), 0);	 /* 'B' */
+						text_appl_cursor(t, shiftmask);
+						(void)Fputchar(t->fd, 0x00300042L | shiftmask, 0);	 /* 'B' */
+						break;
+					case 0x6200: /* help */
+						(void)Fputchar(t->fd, 0x00230048L | shiftmask, 0);	 /* 'H' */
+						break;
+					case 0x4700: /* home */
+						(void)Fputchar(t->fd, 0x001a005bL | shiftmask, 0); 	/* '[' */
+						(void)Fputchar(t->fd, 0x00230048L | shiftmask, 0);	 /* 'H' */
+						break;
+					case 0x4f00: /* end */
+						(void)Fputchar(t->fd, 0x001a005bL | shiftmask, 0); 	/* '[' */
+						(void)Fputchar(t->fd, 0x00210046L | shiftmask, 0);	 /* 'F' */
 						break;
 				  	default:
 						(void)Fputchar(t->fd, c, 0);
+						break;
 				}
 			}
 			else

@@ -38,28 +38,29 @@ int curs_ticks = 0;
 /******************************************************************************/
 #include <stdio.h>
 
+#define STRINGIFY(c) __STRING(c)
+
 static void about_open(WDIALOG *dial)
 {
-	extern char __Ident_gnulib[];
-	extern char __Ident_gem[];
-	extern char __Ident_cflib[];
 	char pl[32];
 
 	set_string (dial->tree, AVERSION, TWVERSION);
 	set_string (dial->tree, ADATUM, __DATE__);
 #if defined(__GNUC__)
 	set_string (dial->tree, ACOMP, "GNU C");
+#elif defined(__AHCC__)
+	set_string (dial->tree, ACOMP, "AHCC");
 #elif defined(__PUREC__)
 	set_string (dial->tree, ACOMP, "PureC");
 #endif
 
-	get_patchlev (__Ident_gnulib, pl);
+	strcpy(pl, STRINGIFY(__MINTLIB_MAJOR__) "." STRINGIFY(__MINTLIB_MINOR__) "." STRINGIFY(__MINTLIB_REVISION__));
 	set_string (dial->tree, AMINT, pl);
 
-	get_patchlev (__Ident_gem, pl);
+	strcpy(pl, STRINGIFY(_GEMLIB_MAJOR__) "." STRINGIFY(__GEMLIB_MINOR__));
 	set_string (dial->tree, AGEM, pl);
 
-	get_patchlev (__Ident_cflib, pl);
+	strcpy(pl, STRINGIFY(__CFLIB_MAJOR__) "." STRINGIFY(__CFLIB_MINOR__));
 	set_string (dial->tree, ACF, pl);
 	
 	wdial_open (dial);
@@ -68,6 +69,7 @@ static void about_open(WDIALOG *dial)
 static int about_close(WDIALOG *dial, short obj)
 {
 	wdial_close(dial);
+	(void) obj;
 
 	return TRUE;
 }
@@ -93,6 +95,7 @@ void menu_help(int title, int item)
 {
 	char *p, str[50], s[50];
 	
+	(void) title;
 	get_string(menu, item, s);
 	/* die fhrenden '  ' berspringen und das letzte auch nicht */
 	strncpy(str, s + 2, strlen(s) - 3);
