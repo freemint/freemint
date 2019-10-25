@@ -457,8 +457,11 @@ update_atari_info(long offset,atari_partition_t *pt, disk_partition_t *info)
 	info->blksz = 512;
 	info->start = offset + be2cpu32(pt->start);
 	info->size = be2cpu32(pt->size);
-	DEBUG(("Atari partition at offset 0x%lx, size 0x%lx, type 0x%x %s", 
-			info->start, info->size, pt->id, is_extended_atari(pt->id)?" Extd":""));
+#ifdef DEV_DEBUG
+	char *extended = is_extended_atari(pt->id)?" Extd" : "";
+#endif
+	DEBUG(("Atari partition at offset 0x%lx, size 0x%lx, type 0x%x",
+			info->start, info->size, pt->id, extended));
 }
 
 /*
@@ -1961,7 +1964,9 @@ usb_stor_eject(long device)
 	bios_part[device].partnum = 0;
 
 	strncpy(product, usb_dev_desc[device].product, PRODUCT_STRING_LENGTH);
+#ifndef TOSONLY
 	ALERT(("USB Mass Storage Device (%ld) LUN (%ld) ejected: %s", usb_phydrv, lun, product));
+#endif
 }
 
 
