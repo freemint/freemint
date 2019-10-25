@@ -186,6 +186,10 @@ struct ctlname
 /*
  * CTL_PROC subtype. Either a PID, or a magic value for the current proc.
  */
+#define	CTL_PROC_NAMES { \
+	{ 0, 0 }, \
+	{ "curproc", CTLTYPE_NODE } \
+}
 
 # define PROC_CURPROC		(~((unsigned long)1UL << 31))
 

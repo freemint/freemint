@@ -64,6 +64,8 @@
 
 #include "scsilink.h"
 
+#undef min
+#define min(a, b)       ((a) < (b) ? (a) : (b))
 
 #define PROGRAM		"slinkctl"
 #define VERSION		"v0.50"
@@ -194,7 +196,7 @@ struct trace_entry *t;
 	stats_length = rc;
 
 	stats = malloc(min(stats_length,sizeof(SCSILINK_STATS)));	/* malloc area for statistics */
-	memset(stats,0x00,sizeof(SCSILINK_STATS));					/* & ensure basic stats are zeroed */
+	memset(stats,0,sizeof(*stats));					/* & ensure basic stats are zeroed */
 
 	ifr.ifr_ifru.ifru_data = (char *)stats;
 	rc = Fcntl(sock,(long)&ifr,SIOCGLNKSTATS);

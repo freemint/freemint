@@ -52,7 +52,7 @@ struct ctlname machdepname[] = CTL_MACHDEP_NAMES;
 #endif
 struct ctlname debugname[CTL_DEBUG_MAXID];
 /* this one is dummy, it's used only for '-a' or '-A' */
-struct ctlname procname[] = { {0, 0}, {"curproc", CTLTYPE_NODE} };
+struct ctlname procname[] = CTL_PROC_NAMES;
 struct ctlname kbdname[] = CTL_KBD_NAMES;
 
 char names[BUFSIZ];
@@ -209,14 +209,22 @@ parse(char *string, int flags)
 	size_t size;
 	struct list *lp;
 	int mib[CTL_MAXNAME];
-	char *cp, *bufp, buf[BUFSIZ];
+	char *cp, *bufp;
+	union {
+		char c[BUFSIZ];
+		short s;
+		long l;
+		long long ll;
+		quad_t q;
+		struct timeval tv;
+	} buf;
 
-	bufp = buf;
-	snprintf(buf, BUFSIZ, "%s", string);
+	bufp = buf.c;
+	snprintf(bufp, BUFSIZ, "%s", string);
 	if ((cp = strchr(string, '=')) != NULL) {
 		if (!wflag)
 			errx(2, "Must specify -w to set variables");
-		*strchr(buf, '=') = '\0';
+		*strchr(buf.c, '=') = '\0';
 		*cp++ = '\0';
 		while (isspace((unsigned char) *cp))
 			cp++;
@@ -320,7 +328,7 @@ parse(char *string, int flags)
 		}
 	}
 	size = BUFSIZ;
-	if (sysctl(mib, len, buf, &size, newsize ? newval : 0, newsize) == -1) {
+	if (sysctl(mib, len, (void *)&buf, &size, newsize ? newval : 0, newsize) == -1) {
 		if (flags == 0)
 			return;
 		switch (errno) {
@@ -341,7 +349,7 @@ parse(char *string, int flags)
 		}
 	}
 	if (special & BOOTTIME) {
-		struct timeval *btp = (struct timeval *)buf;
+		const struct timeval *btp = &buf.tv;
 		time_t boottime;
 
 		if (!nflag) {
@@ -358,10 +366,10 @@ parse(char *string, int flags)
 		if (newsize == 0) {
 			if (!nflag)
 				printf("%s = ", string);
-			printf("%d\n", *(short *)buf);
+			printf("%d\n", buf.s);
 		} else {
 			if (!nflag)
-				printf("%s: %d -> ", string, *(short *)buf);
+				printf("%s: %d -> ", string, buf.s);
 			printf("%d\n", *(short *)newval);
 		}
 		return;
@@ -370,10 +378,10 @@ parse(char *string, int flags)
 		if (newsize == 0) {
 			if (!nflag)
 				printf("%s = ", string);
-			printf("%ld\n", *(long *)buf);
+			printf("%ld\n", buf.l);
 		} else {
 			if (!nflag)
-				printf("%s: %ld -> ", string, *(long *)buf);
+				printf("%s: %ld -> ", string, buf.l);
 			printf("%ld\n", *(long *)newval);
 		}
 		return;
@@ -382,10 +390,10 @@ parse(char *string, int flags)
 		if (newsize == 0) {
 			if (!nflag)
 				printf("%s = ", string);
-			printf("%s\n", buf);
+			printf("%s\n", buf.c);
 		} else {
 			if (!nflag)
-				printf("%s: %s -> ", string, buf);
+				printf("%s: %s -> ", string, buf.c);
 			printf("%s\n", (char *) newval);
 		}
 		return;
@@ -401,11 +409,11 @@ else \
 		if (newsize == 0) {
 			if (!nflag)
 				printf("%s = ", string);
-//			PRINTF_LIMIT((long long)(*(quad_t *)buf));
+//			PRINTF_LIMIT((long long)(buf.q));
 		} else {
 			if (!nflag) {
 				printf("%s: ", string);
-//				PRINTF_LIMIT((long long)(*(quad_t *)buf));
+//				PRINTF_LIMIT((long long)(buf.q));
 				printf(" -> ");
 			}
 //			PRINTF_LIMIT((long long)(*(quad_t *)newval));
@@ -418,11 +426,11 @@ else \
 		if (newsize == 0) {
 			if (!nflag)
 				printf("%s = ", string);
-			printf("%lld\n", (long long)(*(quad_t *)buf));
+			printf("%lld\n", (long long)(buf.q));
 		} else {
 			if (!nflag)
 				printf("%s: %lld -> ", string,
-				    (long long)(*(quad_t *)buf));
+				    (long long)(buf.q));
 			printf("%lld\n", (long long)(*(quad_t *)newval));
 		}
 		return;
