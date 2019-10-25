@@ -17,7 +17,7 @@
  * Number of Trees:          10
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          11676
+ * Total file size:          11518
  */
 
 #undef RSC_NAME
@@ -75,7 +75,7 @@
 #define ABOUT              2 /* form/dialog */
 #define AVERSION           4 /* FTEXT in tree ABOUT */ /* max len 4 */
 #define ADATUM             5 /* TEXT in tree ABOUT */ /* max len 11 */
-#define AVT100             9 /* TEXT in tree ABOUT */ /* max len 34 */
+#define AVT100             9 /* TEXT in tree ABOUT */ /* max len 33 */
 #define ACOMP             11 /* TEXT in tree ABOUT */ /* max len 5 */
 #define AMINT             13 /* TEXT in tree ABOUT */ /* max len 11 */
 #define AGEM              15 /* TEXT in tree ABOUT */ /* max len 11 */
@@ -93,7 +93,7 @@
 #define CLOGACTIVE         6 /* BUTTON in tree CONCONFIG */
 #define CLOGSEL            7 /* BUTTON in tree CONCONFIG */
 #define CLOGNAME           8 /* TEXT in tree CONCONFIG */ /* max len 19 */
-#define CHELP              9 /* BOXTEXT in tree CONCONFIG */ /* max len 5 */
+#define CHELP              9 /* BOXTEXT in tree CONCONFIG */ /* max len 4 */
 #define COK               10 /* BUTTON in tree CONCONFIG */
 #define CABBRUCH          11 /* BUTTON in tree CONCONFIG */
 
@@ -125,7 +125,7 @@
 #define WBGCOL            36 /* BOX in tree WINCONFIG */
 #define WWRAP             38 /* BUTTON in tree WINCONFIG */
 #define WCLOSE            39 /* BUTTON in tree WINCONFIG */
-#define WHELP             40 /* BOXTEXT in tree WINCONFIG */ /* max len 5 */
+#define WHELP             40 /* BOXTEXT in tree WINCONFIG */ /* max len 4 */
 #define WOK               41 /* BUTTON in tree WINCONFIG */
 #define WABBRUCH          42 /* BUTTON in tree WINCONFIG */
 
@@ -151,55 +151,55 @@
 #define TPISO              6 /* STRING in tree POPUPS */
 
 #define NOAES41            0 /* Alert string */
-/* [3][TosWin2 lÑuft nur unter|MiNT und AES 4.1!][Testen|Abbruch] */
+/* [3][TosWin2 needs|MiNT and AES 4.1!][Test|Cancel] */
 
 #define NOSCRAP            1 /* Alert string */
-/* [1][Klemmbrettpfad nicht|gesetzt.][Abbruch] */
+/* [1][Path to clipboard|is not set.][Cancel] */
 
 #define SCRAPERR           2 /* Alert string */
-/* [1][Fehler beim Schreiben|auf Klemmbrett.][Abbruch] */
+/* [1][Error while writing|to clipboard.][Cancel] */
 
 #define SCRAPMEM           3 /* Alert string */
-/* [1][Kein Speicher fÅr|Klemmbrett.][Abbruch] */
+/* [1][Not enough memory|for clipboard.][Cancel] */
 
 #define SCRAPEMPTY         4 /* Alert string */
-/* [1][Klemmbrett ist leer.][OK] */
+/* [1][Clipboard is empty.][OK] */
 
 #define NOXFSL             5 /* Alert string */
-/* [1][Keine Fontauswahl|installiert!][Abbruch] */
+/* [1][No Fontselector|installed!][Cancel] */
 
 #define NOTEXT             6 /* Alert string */
-/* [1][Kein Speicher fÅr|Fenster frei.][Abbruch] */
+/* [1][Not enough memory for|another window.][Cancel] */
 
 #define NOPTY              7 /* Alert string */
-/* [1][Kein PTY mehr frei.][Abbruch] */
+/* [1][No more free PTY.][Cancel] */
 
 #define NOFORK             8 /* Alert string */
-/* [1][Fehler bei fork().][Abbruch] */
+/* [1][Error at fork().][Cancel] */
 
 #define NOPWD              9 /* Alert string */
-/* [1][Keine bzw. fehlerhafte|Userdaten in /etc/passwd.][Abbruch] */
+/* [1][Userdata in/etc/passwd|invalid or not present.][Cancel] */
 
 #define LOADERR           10 /* Alert string */
-/* [1][Fehler beim Lesen der|Parameterdatei.][Abbruch] */
+/* [1][Error while reading|configuration file.][Cancel] */
 
 #define SAVEERR           11 /* Alert string */
-/* [1][Fehler beim Schreiben|der Parameterdatei.][Abbruch] */
+/* [1][Error while writing|configuration file.][Cancel] */
 
 #define XCONERR           12 /* Alert string */
-/* [1][Fehler beim îffnen des|Xconout2-Device.][Abbruch] */
+/* [1][Error while opening|Xconout2-device.][Cancel] */
 
 #define IDERR             13 /* Alert string */
-/* [1][Parameterdatei ungÅltig.|(Falsche ID)][Abbruch] */
+/* [1][Configuration file|invalid (wrong ID).][Cancel] */
 
 #define NOSTGUIDE         14 /* Alert string */
-/* [1][ST-Guide ist nicht|installiert!][OK] */
+/* [1][ST-Guide is not|installed!][OK] */
 
 #define NODDSEND          15 /* Alert string */
-/* [3][Das System kennt WF_OWNER|nicht, Drag&Drop daher nicht|mîglich!][schade] */
+/* [3][WF_OWNER is not handled|correct, Drag&Drop is not|possible.][Shame] */
 
 #define NOTWCALL          16 /* Alert string */
-/* [3][Kommunikationsfehler:|tw-call antwortet nicht!?][Abbruch] */
+/* [3][Communication error:|tw-call don't respond!?][Cancel] */
 
 
 
