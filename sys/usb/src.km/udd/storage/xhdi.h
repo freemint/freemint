@@ -111,7 +111,6 @@ typedef struct usb_pun_info USB_PUN_INFO;
 /*
  * MagiC-specific, used for XHDOSLimits()
  */
-#define MagX_COOKIE    0x4D616758L
 #define KER_DOSLIMITS  0x0101
 
 typedef struct {

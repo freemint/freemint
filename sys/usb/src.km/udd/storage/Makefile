@@ -18,7 +18,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-SGENFILES = crtinit.c delayasm.S entry.S setstack.S
+SGENFILES = crtinit.c delayasm.S entry.S magic.c setstack.S
 
 all-here: all-targets
 
@@ -69,6 +69,8 @@ crtinit.c: $(toscommon_srcdir)/crtinit.c
 delayasm.S: $(toscommon_srcdir)/delayasm.S
 	ln -sf $< $(srcdir)/$@
 entry.S: $(toscommon_srcdir)/entry.S
+	ln -sf $< $(srcdir)/$@
+magic.c: $(toscommon_srcdir)/magic.c
 	ln -sf $< $(srcdir)/$@
 setstack.S: $(toscommon_srcdir)/setstack.S
 	ln -sf $< $(srcdir)/$@
