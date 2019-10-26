@@ -340,18 +340,6 @@ static XA_WIND_ATTR sl_hslide_dep[] =
 	(LFARROW|RTARROW), -1,
 	0
 };
-#if 0
-static XA_WIND_ATTR sl_uparrow1_dep[] =
-{
-	UPARROW, -1,
-	0
-};
-static XA_WIND_ATTR sl_lfarrow1_dep[] =
-{
-	LFARROW, -1,
-	0
-};
-#endif
 static XA_WIND_ATTR sl_border_dep[] =
 {
 	(SIZER|MOVER), -1,
@@ -664,41 +652,21 @@ struct xa_gradient utop_hslider_gradient =
 
 struct xa_gradient otop_title_gradient =
 {
-#if 0
-	NULL,
-	-1, -1,
-	0, 0,
-
-	2, 0,{0},
-	{{500,500,600},{900,900,1000}},
-// 	{{200,500,200},{800,1000,800}},
-#else
 	NULL,
 	 0, -1,
 	16,  0,
 
 	0, 0, {0},
 	{{700,700,900},{500,500,700}},
-#endif
 };
 struct xa_gradient utop_title_gradient =
 {
-#if 0
-	NULL,
-	-1, -1,
-	0, 0,
-
-	2, 0, {0},
-	{{500,500,500},{800,800,800}},
-/*	{{500,500,500},{900,900,900}}, */
-#else
 	NULL,
 	0, -1,
 	16, 0,
 
 	0,0,{0},
 	{{600,600,600},{800,800,800}},
-#endif
 };
 
 struct xa_gradient otop_info_gradient =
@@ -722,17 +690,6 @@ struct xa_gradient utop_info_gradient =
 	{{600,600,600},{800,800,800}},
 };
 
-#if 0
-struct xa_gradient otop_green_gradient =
-{
-	NULL,
-	-1, -1,
-	0, 0,
-
-	2, 0,{0},
-	{{200,500,200},{800,1000,800}},
-};
-#endif
 struct xa_gradient otop_grey_gradient =
 {
 	NULL,
@@ -2420,116 +2377,32 @@ sl_2_pix(long s, long p)
 	return ((s * p) + (SL_RANGE >> 2)) / SL_RANGE;
 }
 
-#if 0
-static void
-draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
-{
-// 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
-	struct xa_vdi_settings *v = wind->vdi_settings;
-	short size;
-// 	RECT r;
-
-	if ((outer->w | outer->h | inner->w | outer->h))
-	{
-		size = -3;
-
-		(*v->api->wr_mode)(v, MD_REPLACE);
-
-		(*v->api->br_hook)(v, 0, outer, G_BLACK);
-		(*v->api->br_hook)(v, -1, outer, G_LBLACK);
-// 		(*v->api->br_hook)(v, -2, outer, G_LWHITE);
-// 		(*v->api->br_hook)(v, -3, outer, G_LWHITE);
-// 		(*v->api->br_hook)(v, -4, outer, G_LWHITE);
-// 		(*v->api->br_hook)(v, -5, outer, G_LWHITE);
-
-
-		(*v->api->tl_hook)(v, 0, outer, G_BLACK);
-		(*v->api->tl_hook)(v, -1, outer, G_WHITE);
-// 		(*v->api->tl_hook)(v, -2, outer, G_LWHITE);
-// 		(*v->api->tl_hook)(v, -3, outer, G_LWHITE);
-// 		(*v->api->tl_hook)(v, -4, outer, G_LWHITE);
-// 		(*v->api->tl_hook)(v, -5, outer, G_LWHITE);
-
-// 		(*v->api->tl_hook)(v, 1, inner, G_LBLACK);
-// 		(*v->api->tl_hook)(v, 2, inner, G_LBLACK);
-// 		(*v->api->tl_hook)(v, 3, inner, G_LWHITE);
-// 		(*v->api->tl_hook)(v, 4, inner, G_LWHITE);
-// 		(*v->api->tl_hook)(v, 5, inner, G_LWHITE);
-// 		(*v->api->tl_hook)(v, 6, inner, G_LWHITE);
-
-// 		(*v->api->br_hook)(v, 1, inner, G_WHITE);
-// 		(*v->api->br_hook)(v, 2, inner, G_LWHITE);
-// 		(*v->api->br_hook)(v, 3, inner, G_LWHITE);
-// 		(*v->api->br_hook)(v, 4, inner, G_LWHITE);
-// 		(*v->api->br_hook)(v, 5, inner, G_LWHITE);
-// 		(*v->api->br_hook)(v, 6, inner, G_LWHITE);
-
-#if 0
-		(*v->api->top_line)(v, 0, outer, G_BLUE);
-		(*v->api->left_line)(v, 0, outer, G_BLUE);
-		(*v->api->bottom_line)(v, 0, outer, G_LBLUE);
-		(*v->api->right_line)(v, 0, outer, G_LBLUE);
-
-		(*v->api->top_line)(v, 1, inner, G_GREEN);
-		(*v->api->left_line)(v, 1, inner, G_GREEN);
-		(*v->api->bottom_line)(v, 1, inner, G_LGREEN);
-		(*v->api->right_line)(v, 1, inner, G_LGREEN);
-
-
-		(*v->api->f_color)(v, G_LBLACK);
-		r.x = outer->x;
-		r.y = outer->y;
-		r.w = outer->w;
-		r.h = inner->y - outer->y;
-		(*v->api->gbar)(v, size, &r);
-
-		r.x = outer->x;
-		r.w = inner->x - outer->x;
-		r.y = inner->y - 2;
-		r.h = inner->h + 4;
-		(*v->api->gbar)(v, size, &r);
-
-		r.x = outer->x;
-		r.y = inner->y + inner->h;
-		r.w = outer->w;
-		r.h = (outer->y + outer->h) - r.y;
-		(*v->api->gbar)(v, size, &r);
-
-		r.x = inner->x + inner->w;
-		r.w = (outer->x + outer->w) - r.x;
-		r.y = inner->y - 2;
-		r.h = inner->h + 4;
-		(*v->api->gbar)(v, size, &r);
-#endif
-	}
-}
-#endif
-
 static void
 draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 {
 // 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
 	struct xa_vdi_settings *v = wind->vdi_settings;
+	struct xa_vdi_api *vapi = v->api;
 // 	RECT r;
 
-	if ((outer->w | outer->h | inner->w | outer->h))
+	if (outer->w || outer->h)
 	{
-		(*v->api->wr_mode)(v, MD_REPLACE);
+		(*vapi->wr_mode)(v, MD_REPLACE);
 		if (MONO)
 		{
-			(*v->api->br_hook)(v, 0, outer, G_BLACK);
-			(*v->api->br_hook)(v, -1, outer, G_WHITE);
+			(*vapi->br_hook)(v, 0, outer, G_BLACK);
+			(*vapi->br_hook)(v, -1, outer, G_WHITE);
 
-			(*v->api->tl_hook)(v, 0, outer, G_BLACK);
-			(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+			(*vapi->tl_hook)(v, 0, outer, G_BLACK);
+			(*vapi->tl_hook)(v, -1, outer, G_WHITE);
 		}
 		else
 		{
-			(*v->api->br_hook)(v, 0, outer, G_BLACK);
-			(*v->api->br_hook)(v, -1, outer, G_LBLACK);
+			(*vapi->br_hook)(v, 0, outer, G_BLACK);
+			(*vapi->br_hook)(v, -1, outer, G_LBLACK);
 
-			(*v->api->tl_hook)(v, 0, outer, G_BLACK);
-			(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+			(*vapi->tl_hook)(v, 0, outer, G_BLACK);
+			(*vapi->tl_hook)(v, -1, outer, G_WHITE);
 		}
 	}
 }
@@ -2544,8 +2417,9 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 	bool sel = state & OS_SELECTED;
 	short f = wcoli->flags, o = 0;
 	RECT r = *wr;
+	struct xa_vdi_api *vapi = v->api;
 
-	(*v->api->wr_mode)(v, wcoli->wrm);
+	(*vapi->wr_mode)(v, wcoli->wrm);
 
 	if (sel)
 		wcol = &wcoli->s;
@@ -2565,34 +2439,34 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 	if (f & WCOL_BOXED)
 	{
 		int i = wcol->box_th;
-		(*v->api->l_color)(v, wcol->box_c);
+		(*vapi->l_color)(v, wcol->box_c);
 		while (i > 0)
-			(*v->api->gbox)(v, o, &r), o--, i--;
+			(*vapi->gbox)(v, o, &r), o--, i--;
 	}
 
 	if (f & WCOL_DRAW3D)
 	{
 		if (sel)
 		{
-			(*v->api->tl_hook)(v, o, &r, wcol->tlc);
-			(*v->api->br_hook)(v, o, &r, wcol->brc);
+			(*vapi->tl_hook)(v, o, &r, wcol->tlc);
+			(*vapi->br_hook)(v, o, &r, wcol->brc);
 		}
 		else
 		{
-			(*v->api->br_hook)(v, o, &r, wcol->brc);
-			(*v->api->tl_hook)(v, o, &r, wcol->tlc);
+			(*vapi->br_hook)(v, o, &r, wcol->brc);
+			(*vapi->tl_hook)(v, o, &r, wcol->tlc);
 		}
 		o -= 1;
 	}
 
 	if (!t && (f & WCOL_DRAWBKG))
 	{
-		(*v->api->f_interior)(v, wcol->i);
+		(*vapi->f_interior)(v, wcol->i);
 		if (wcol->i > 1)
-			(*v->api->f_style)(v, wcol->f);
+			(*vapi->f_style)(v, wcol->f);
 
-		(*v->api->f_color)(v, wcol->c);
-		(*v->api->gbar)(v, o, &r);
+		(*vapi->f_color)(v, wcol->c);
+		(*vapi->gbar)(v, o, &r);
 	}
 
 	if (wext)
@@ -2601,7 +2475,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 		r.y -= o;
 		r.w += o + o;
 		r.h += o + o;
-		(*v->api->draw_texture)(v, wext->body, &r, anch);
+		(*vapi->draw_texture)(v, wext->body, &r, anch);
 	}
 }
 
@@ -2639,6 +2513,7 @@ static void
 d_waframe(struct xa_window *wind, const RECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
+	struct xa_vdi_api *vapi = v->api;
 	RECT wa = (wind->dial & created_for_TOOLBAR) ? wind->rwa : wind->wa;	/*(?)*/
 
 	if (wind->thinwork)
@@ -2648,13 +2523,13 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 			short waframe_col = ((struct window_colours *)wind->colours)->waframe_col;
 
 			if (wind->wa_borders & WAB_LEFT)
-				(*v->api->left_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
+				(*vapi->left_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_RIGHT)
-				(*v->api->right_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
+				(*vapi->right_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_TOP)
-				(*v->api->top_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
+				(*vapi->top_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_BOTTOM)
-				(*v->api->bottom_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
+				(*vapi->bottom_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 		}
 	}
 	/*
@@ -2665,11 +2540,11 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 	{
 		short sc = G_LBLACK, lc = G_WHITE;
 
-		(*v->api->tl_hook)(v, 2, &wa, sc);
-		(*v->api->tl_hook)(v, 1, &wa, lc);
+		(*vapi->tl_hook)(v, 2, &wa, sc);
+		(*vapi->tl_hook)(v, 1, &wa, lc);
 
-		(*v->api->br_hook)(v, 2, &wa, sc);
-		(*v->api->br_hook)(v, 1, &wa, lc);
+		(*vapi->br_hook)(v, 2, &wa, sc);
+		(*vapi->br_hook)(v, 1, &wa, lc);
 
 		/* fill gap between upper toolbar and wa */
 		if( (wind->active_widgets & TOOLBAR) )
@@ -2683,10 +2558,10 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 			wa.y = wind->wa.y;
 			wa.h = wind->wa.h;
 
-			(*v->api->br_hook)(v, 2, &wa, sc);
-			(*v->api->tl_hook)(v, 2, &wa, lc);
-			(*v->api->br_hook)(v, 1, &wa, lc);
-			(*v->api->tl_hook)(v, 1, &wa, sc);
+			(*vapi->br_hook)(v, 2, &wa, sc);
+			(*vapi->tl_hook)(v, 2, &wa, lc);
+			(*vapi->br_hook)(v, 1, &wa, lc);
+			(*vapi->tl_hook)(v, 1, &wa, sc);
 		}
 	}
 }
@@ -2823,16 +2698,6 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	/* Convert relative coords and window location to absolute screen location */
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#if 0
-	if (MONO)
-	{
-		(*v->api->f_color)(v, G_WHITE);
-		(*v->api->t_color)(v, G_BLACK);
-		/* with inside border */
-		(*v->api->p_gbar)(v, 0, &widg->ar);
-	}
-	else
-#endif
 	{
 #if WITH_GRADIENTS
 		if (scrninf->planes > 8)
@@ -2856,61 +2721,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 #endif
 		widg->prevr = widg->ar;
 
-	#if 0
-		if (scrninf->planes > 8 && wci->n.texture->w != widg->ar.w)
-		{
-			struct module *m;
-			struct widg_texture *t;
-			struct rgb_1000 s[2];
-
-			m = wind->active_theme->module; //&((struct module *)wind->active_theme->module)
-
-			if (wc->flags & WCF_TOP)
-			{
-// 				s[0] = (struct rgb_1000){400, 400, 600};
-// 				s[1] = (struct rgb_1000){800, 800, 1000};
-				s[0] = (struct rgb_1000){300, 500, 300};
-				s[1] = (struct rgb_1000){800, 1000, 800};
-			}
-			else
-			{
-				s[0] = (struct rgb_1000){500, 500, 500};
-				s[1] = (struct rgb_1000){900, 900, 900};
-// 				s[0] = (struct rgb_1000){100, 100, 100};
-// 				s[1] = (struct rgb_1000){500, 500, 500};
-			}
-			free_texture(m, wci);
-			t = load_grad(m, s, widg->ar.w, widg->ar.h, 0, 2);
-			set_texture(m, wci, t);
-			wci->n.texture->w = widg->ar.w;
-		}
-	#endif
 		draw_widg_box(v, 0, wci, t, widg->state, &widg->ar, &widg->ar); // &wind->r);
-#if 0
-		/* no move, no 3D */
-		if (wind->active_widgets & MOVER)
-		{
-			draw_widg_box(v, 0, wci, widg->state, &widg->ar, &wind->r);
-		}
-		else
-		{
-			/* XXX - ozk: hack to make mono look ok! */
-			if (MONO)
-			{
-				(*v->api->l_color)(v, G_BLACK);
-				(*v->api->p_gbar)(v, 0, &widg->ar);
-				(*v->api->f_color)(v, G_WHITE);
-				(*v->api->gbar)(v, -1, &widg->ar);
-			}
-			else
-			{
-				(*v->api->l_color)(v, G_BLACK);
-				(*v->api->p_gbar)(v, 0, &widg->ar);
-				(*v->api->f_color)(v, wci->n.c);
-				(*v->api->gbar)(v, -1, &widg->ar);
-			}
-		}
-#endif
 	}
 
 // 	(*v->api->wr_mode)(v, MD_TRANS);
@@ -3516,23 +3327,24 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->title_txt;
 	struct xa_wtxt_inf *wtu = &((struct window_colours *)wind->untop_cols)->title_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
+	struct xa_vdi_api *vapi = v->api;
 	short w, h;
 
 	widg->r.w = widg_w;
 
 	if (!wti->n.f)
 	{
-// 		(*v->api->t_font)(v, wti->n.p, 9912);
+// 		(*vapi->t_font)(v, wti->n.p, 9912);
 // 		if (v->font_rid != v->font_sid)
-// 			(*v->api->t_font)(v, wti->n.p, 9919);
+// 			(*vapi->t_font)(v, wti->n.p, 9919);
 // 		if (v->font_rid != v->font_sid)
-			(*v->api->t_font)(v, wti->n.p, 1);
+			(*vapi->t_font)(v, wti->n.p, 1);
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	}
-	(*v->api->t_font)(v, wti->n.p, wti->n.f);
-	(*v->api->t_effects)(v, wti->n.e);
-	(*v->api->t_extent)(v, "A", &w, &h);
-	(*v->api->t_effects)(v, 0);
+	(*vapi->t_font)(v, wti->n.p, wti->n.f);
+	(*vapi->t_effects)(v, wti->n.e);
+	(*vapi->t_extent)(v, "A", &w, &h);
+	(*vapi->t_effects)(v, 0);
 
 	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
@@ -3547,6 +3359,7 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->info_txt;
 	struct xa_wtxt_inf *wtu = &((struct window_colours *)wind->untop_cols)->info_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
+	struct xa_vdi_api *vapi = v->api;
 	short w, h;
 
 	widg->r.w = widg_w;
@@ -3554,20 +3367,20 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	if (!wti->n.f)
 	{
 
-		(*v->api->t_font)(v, wti->n.p, cfg.font_id); // 103);
+		(*vapi->t_font)(v, wti->n.p, cfg.font_id); // 103);
 // 		if (v->font_rid != v->font_sid)
-// 			(*v->api->t_font)(v, wti->n.p, 13384);
+// 			(*vapi->t_font)(v, wti->n.p, 13384);
 		if (v->font_rid != v->font_sid)
-			(*v->api->t_font)(v, wti->n.p, 1);
+			(*vapi->t_font)(v, wti->n.p, 1);
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	}
 
 //		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
-	(*v->api->t_font)(v, wti->n.p, wti->n.f);
-	(*v->api->t_effects)(v, wti->n.e);
-	(*v->api->text_extent)(v, "X", &wti->n, &w, &h);
-	(*v->api->t_effects)(v, 0);
-	//(*v->api->t_extent)(v, "A", &w, &h);
+	(*vapi->t_font)(v, wti->n.p, wti->n.f);
+	(*vapi->t_effects)(v, wti->n.e);
+	(*vapi->text_extent)(v, "X", &wti->n, &w, &h);
+	(*vapi->t_effects)(v, 0);
+	//(*vapi->t_extent)(v, "A", &w, &h);
  	h += 2;
  	/*************************************************************************
  	{
@@ -3586,12 +3399,13 @@ static void _cdecl
 s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
+	struct xa_vdi_api *vapi = v->api;
 	short w, h;
 	//extern struct xa_screen screen;
 
-	(*v->api->t_font)(v, wind->owner->options.standard_font_point, scrninf->standard_font_id);
-	(*v->api->t_effects)(v, 0);
-	(*v->api->t_extent)(v, "A", &w, &h);
+	(*vapi->t_font)(v, wind->owner->options.standard_font_point, scrninf->standard_font_id);
+	(*vapi->t_effects)(v, 0);
+	(*vapi->t_extent)(v, "A", &w, &h);
 
 	widg->r.h = h + 1 + 1;
 	widg->r.w = wind->r.w;
@@ -3904,36 +3718,6 @@ set_texture(struct module *m, struct xa_wcol_inf *wcol, struct widg_texture *t) 
 		wcol->s.texture = NULL;
 	}
 }
-#if 0
-static void
-free_texture(struct module *m, struct xa_wcol_inf *wcol)
-{
-	struct widg_texture *t;
-	struct xa_wtexture *wtext;
-
-// 	display("free texture");
-	if ((wtext = wcol->h.texture))
-	{
-		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
-		if (t)
-			(*api->deref_xa_data)(&m->allocs, t, 1);
-	}
-	if ((wtext = wcol->n.texture))
-	{
-		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
-		if (t)
-			(*api->deref_xa_data)(&m->allocs, t, 1);
-	}
-	if ((wtext = wcol->s.texture))
-	{
-		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
-		if (t)
-			(*api->deref_xa_data)(&m->allocs, t, 1);
-	}
-	set_texture(m, wcol, NULL);
-// 	display("free texture done");
-}
-#endif
 static void
 ref_colortheme_resources(struct module *m, struct window_colours *wc)
 {
@@ -4390,40 +4174,6 @@ test_img_stuff(struct module *m)
 #endif
 	}
 
-#if 0
-		set_texture(m, &def_otop_cols.win, t);
-		set_texture(m, &def_otop_cols.borders, t);
-// 		set_texture(m, &def_otop_cols.slider, t);
-// 		set_texture(m, &def_otop_cols.slide, t);
-// 		set_texture(m, &def_otop_cols.title, t);
-// 		set_texture(m, &def_otop_cols.info, t);
-		set_texture(m, &def_otop_cols.closer, t);
-		set_texture(m, &def_otop_cols.hider, t);
-		set_texture(m, &def_otop_cols.iconifier, t);
-		set_texture(m, &def_otop_cols.fuller, t);
-		set_texture(m, &def_otop_cols.sizer, t);
-		set_texture(m, &def_otop_cols.uparrow, t);
-		set_texture(m, &def_otop_cols.dnarrow, t);
-		set_texture(m, &def_otop_cols.lfarrow, t);
-		set_texture(m, &def_otop_cols.rtarrow, t);
-
-		set_texture(m, &def_utop_cols.win, t);
-		set_texture(m, &def_utop_cols.borders, t);
-// 		set_texture(m, &def_utop_cols.slider, t);
-// 		set_texture(m, &def_utop_cols.slide, t);
-// 		set_texture(m, &def_utop_cols.title, t);
-// 		set_texture(m, &def_utop_cols.info, t);
-		set_texture(m, &def_utop_cols.closer, t);
-		set_texture(m, &def_utop_cols.hider, t);
-		set_texture(m, &def_utop_cols.iconifier, t);
-		set_texture(m, &def_utop_cols.fuller, t);
-		set_texture(m, &def_utop_cols.sizer, t);
-		set_texture(m, &def_utop_cols.uparrow, t);
-		set_texture(m, &def_utop_cols.dnarrow, t);
-		set_texture(m, &def_utop_cols.lfarrow, t);
-		set_texture(m, &def_utop_cols.rtarrow, t);
-	}
-#endif
 }
 
 /*
@@ -4829,4 +4579,3 @@ main_xa_theme(struct xa_module_widget_theme **ret)
 {
 	*ret = &module;
 }
-
