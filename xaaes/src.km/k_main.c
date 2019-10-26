@@ -1768,10 +1768,14 @@ k_main(void *dummy)
 	if( (r=s_system(S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
 	{
 		//fp = kernel_open("c:/mint/boot.log", O_RDWR|O_CREAT, NULL,NULL);
-		fp = kernel_open(bl, O_RDWR|O_CREAT, NULL,NULL);
-		kernel_lseek(fp, 0, SEEK_END);
-		fo = p->p_fd->ofiles[1];
-		p->p_fd->ofiles[1] = fp;	// f->links++;
+		long err = 0;
+		fp = kernel_open(bl, O_RDWR|O_CREAT, &err,NULL);
+		if (fp)
+		{
+			kernel_lseek(fp, 0, SEEK_END);
+			fo = p->p_fd->ofiles[1];
+			p->p_fd->ofiles[1] = fp;	// f->links++;
+		}
 	}
 	}
 	read_inf();
