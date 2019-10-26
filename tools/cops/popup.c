@@ -297,9 +297,11 @@ draw_arrow(PARMBLK *parmblock)
 	_WORD xy[8];
 	_WORD image_colors[2];
 
-	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
+	/* clipping rectangle... */
+	clip[0] = parmblock->pb_xc;
+	clip[1] = parmblock->pb_yc;
+	clip[2] = parmblock->pb_xc + parmblock->pb_wc - 1;
+	clip[3] = parmblock->pb_yc + parmblock->pb_hc - 1;
 	udef_vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	image = (BITBLK *) parmblock->pb_parm;
