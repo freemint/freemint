@@ -496,7 +496,7 @@ again:
 #else
 	D.debug_file = NULL;
 #endif
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, _CPU);
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, ASCII_ARCH_TARGET);
 #else
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
 #endif

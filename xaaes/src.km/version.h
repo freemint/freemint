@@ -34,6 +34,7 @@
 #define XAAES_MIN_VERSION  6
 #define XAAES_PATCH_LEVEL  4
 
+/* set either of these */
 #define DEV_STATUS	AES_DEVSTATUS_BETA
 //#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 
@@ -79,58 +80,43 @@
 #define ASCII_DEV_STATUS	"Undefined"
 #endif
 
-#ifdef __mcoldfire__
- #define _CPU	"coldfire"
+#if defined(__mcoldfire__)
+ #define ASCII_ARCH_TARGET	"coldfire"
  #define ARCH_TARGET	AES_ARCH_COLDFILRE
-#else
- #ifdef mc68060
-  #ifdef mc68020
-   #define _CPU	"m68020-060"
-   #define ARCH_TARGET	AES_ARCH_M6802060
-  #else
-   #define _CPU	"m68060"
-   #define ARCH_TARGET	AES_ARCH_M68060
-  #endif
+#elif defined(__mc68060__)
+ #ifdef __mc68020__
+  #define ASCII_ARCH_TARGET	"m68020-060"
+  #define ARCH_TARGET	AES_ARCH_M6802060
  #else
-  #ifdef mc68040
-   #define _CPU	"m68040"
-   #define ARCH_TARGET	AES_ARCH_M68040
-  #else
-   #ifdef mc68030
-    #define _CPU	"m68030"
-    #define ARCH_TARGET	AES_ARCH_M68030
-   #else
-    #ifdef mc68020
-     #define _CPU	"m68020"
-     #define ARCH_TARGET	AES_ARCH_M68020
-    #else
-     #ifdef mc68010
-      #define _CPU	"m68010"
-      #define ARCH_TARGET	AES_ARCH_M68010
-     #else
-      #define _CPU	"m68000"
-      #define ARCH_TARGET	AES_ARCH_M68000
-     #endif
-    #endif
-   #endif
-  #endif
+  #define ASCII_ARCH_TARGET	"m68060"
+  #define ARCH_TARGET	AES_ARCH_M68060
  #endif
-#endif
-
-
-
-#ifdef ARCH_TARGET
-#define ASCII_ARCH_TARGET	_CPU
+#elif defined(__mc68040__)
+ #define ASCII_ARCH_TARGET	"m68040"
+ #define ARCH_TARGET	AES_ARCH_M68040
+#elif defined(__mc68030__)
+ #define ASCII_ARCH_TARGET	"m68030"
+ #define ARCH_TARGET	AES_ARCH_M68030
+#elif defined(__mc68020__)
+ #define ASCII_ARCH_TARGET	"m68020"
+ #define ARCH_TARGET	AES_ARCH_M68020
+#elif defined(__mc68010__)
+ #define ASCII_ARCH_TARGET	"m68010"
+ #define ARCH_TARGET	AES_ARCH_M68010
+#elif defined(__mc68000__)
+ #define ASCII_ARCH_TARGET	"m68000"
+ #define ARCH_TARGET	AES_ARCH_M68000
 #else
-#define ASCII_ARCH_TARGET	"Undefined"
+ #error unknown target architecture
 #endif
+
 
 
 #define BDATE		__DATE__
 #define BTIME		__TIME__
 #define BC_MAJ		str (__GNUC__)
 #define BC_MIN 		str (__GNUC_MINOR__)
-#define BCOMPILER	str (__GNUC__) "." str (__GNUC_MINOR__)
+#define BCOMPILER	str (__GNUC__) "." str (__GNUC_MINOR__) "." str (__GNUC_PATCHLEVEL__)
 //"gcc 2.95.3"
 
 // const char BCOMPILER [] = str (__GNUC__) "." str (__GNUC_MINOR__);
