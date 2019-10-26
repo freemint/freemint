@@ -334,16 +334,16 @@ do_callout ( void *f, PARMBLK *p)
 {
 	register long ret __asm__("d0");
 	__asm__ volatile (
-		PUSH_SP("d3-d7/a3-a6", 36)
+		PUSH_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		"move.l %2,-(sp)\n\t"
 		"move.l %1,a0\n\t"
 		"jsr	(a0)\n\t"
 		"lea	4(sp),sp\n\t"
-		POP_SP("d3-d7/a3-a6", 36)
+		POP_SP("%%d3-%%d7/%%a3-%%a6", 36)
 			: "=r"(ret) 				/* outputs */
 			: "g"(f),"g"(p)
 			: __CLOBBER_RETURN("d0")
-			"d1", "d2", "a0", "a1", "a2", 	/* clobbered regs */
+			"d1", "d2", "a0", "a1", "a2", "cc", 	/* clobbered regs */
 			"memory"
 	);
 	return ret;
