@@ -51,6 +51,11 @@
  * allow multiple resource files, I should add some extra calls to support it.
  */
 
+#define is_rsxhdr(hdr) (((hdr)->rsh_vrsn & 3) == 3)
+#define is_exthdr(hdr) (((hdr)->rsh_vrsn & 4) != 0)
+#define rshdr(hdr, field) (is_rsxhdr(hdr) ? ((RSXHDR *)hdr)->field : (hdr)->field)
+#define num_nok(hdr, t) (!(hdr) || (num) < 0 || (num) >= rshdr(hdr, t))
+#define rsc_start(hdr, t) ((char *)(hdr) + (unsigned long)rshdr(hdr, t))
 
 /*
  * Fixup OBJECT coordinates; the lower byte contains a (character-based)
@@ -1160,9 +1165,13 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 
 			obj = *trees;
 			k = 0;
+			do {
+			}
+			while (!(obj[k++].ob_flags & OF_LASTOB));
 
-			if ((obj[3].ob_type & 255) != G_TITLE)
+			if (k < 4 || (obj[3].ob_type & 255) != G_TITLE)
 			{
+				k = 0;
 				/* Not a menu tree */
 				do {
 					/* Fix all object coordinates */
@@ -1337,23 +1346,23 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		if ((client->options.app_opts & XAAO_OBJC_EDIT))
 		{
-			hdr = kmalloc(sizeof(*hdr));
+			hdr = kmalloc(sizeof(RSXHDR));
 			if (!hdr)
 			{
 				DIAG((D_rsrc, client, "LoadResources(): kmalloc failed, out of memory?"));
 				kernel_close(f);
 				return NULL;
 			}
-			size = kernel_read(f, hdr, sizeof(*hdr));
-			if (size != sizeof(*hdr))
+			size = kernel_read(f, hdr, sizeof(RSXHDR));
+			if (size != sizeof(RSXHDR))
 			{
 				DIAG((D_rsrc, client, "LoadResource(): Error reading file '%s'", fname));
 				kernel_close(f);
 				return NULL;
 			}
-			if (hdr->rsh_nted)
+			if (rshdr(hdr, rsh_nted))
 			{
-				extra = sizeof(XTEDINFO) * hdr->rsh_nted;
+				extra = sizeof(XTEDINFO) * rshdr(hdr, rsh_nted);
 			}
 			kfree(hdr);
 			kernel_lseek(f, 0, 0);
@@ -1384,10 +1393,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		hdr = (RSHDR *)base;
 		client->rsrc = hdr;
-		size = (unsigned long)hdr->rsh_rssize;
+		size = (unsigned long)rshdr(hdr, rsh_rssize);
 		osize = (size + 1UL) & 0xfffffffeUL;
 
-		if (hdr->rsh_vrsn & 4)
+		if (is_exthdr(hdr))
 		{
 			size = *(unsigned long *)(base + osize);
 		}
@@ -1446,9 +1455,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			hdr = rshdr;
 			base = (char *)rshdr;
-			size = (unsigned long)hdr->rsh_rssize;
+			size = (unsigned long)rshdr(hdr, rsh_rssize);
 			osize = (size + 1UL) & 0xfffffffeUL;
-			if (hdr->rsh_vrsn & 4)
+			if (is_exthdr(hdr))
 				size = *(unsigned long *)(base + osize);
 
 			/*	no chance to check for correct rsc-size if loaded from memory!
@@ -1500,13 +1509,13 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 
-	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),	 hdr->rsh_nstring, &extra_ptr, rfp );
-	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),	 hdr->rsh_nimages, &extra_ptr, 0);
-	fix_tedarray(client, base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted, &extra_ptr);
-	fix_icnarray(client, base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib, &extra_ptr);
-	fix_bblarray(client, base, (BITBLK *) (base + hdr->rsh_bitblk),  hdr->rsh_nbb, &extra_ptr);
+	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frstr),	 rshdr(hdr, rsh_nstring), &extra_ptr, rfp );
+	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frimg),	 rshdr(hdr, rsh_nimages), &extra_ptr, 0);
+	fix_tedarray(client, base, (TEDINFO *)	rsc_start(hdr, rsh_tedinfo), rshdr(hdr, rsh_nted), &extra_ptr);
+	fix_icnarray(client, base, (ICONBLK *)	rsc_start(hdr, rsh_iconblk), rshdr(hdr, rsh_nib), &extra_ptr);
+	fix_bblarray(client, base, (BITBLK *)	rsc_start(hdr, rsh_bitblk),  rshdr(hdr, rsh_nbb), &extra_ptr);
 
-	if (hdr->rsh_vrsn & 4)
+	if (is_exthdr(hdr))
 	{
 		/* It's an enhanced RSC file */
 		short maxplanes = 0;
@@ -1605,7 +1614,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	/*
 	 * fix_objects MUST run before fix_trees!!!
 	 */
-	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs, rfp );
+	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + rshdr(hdr, rsh_object)), rshdr(hdr, rsh_nobs), rfp );
 
 	if( rfp ){
 		if( client == C.Aes && trans_strings[0] && client->options.rsc_lang )
@@ -1649,7 +1658,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	}
 	if( client == C.Aes )
 		client->options.rsc_lang = 0;	// dont translate other rsc-files
-	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
+	fix_trees(client, base, (OBJECT **)(base + rshdr(hdr, rsh_trindex)), rshdr(hdr, rsh_ntree), designWidth, designHeight);
 
 	return (RSHDR *)base;
 }
@@ -1660,12 +1669,19 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 	if (gl)
 	{
 		OBJECT **o;
-		o = (OBJECT **)((char *)h + h->rsh_trindex);
 
 		/* Fill in the application's global array with a pointer to the resource */
-		gl->ptree = o;
 		gl->rshdr = h;
-		gl->lmem = h->rsh_rssize;
+		if (h != NULL)
+		{
+			o = (OBJECT **)rsc_start(h, rsh_trindex);
+			gl->lmem = rshdr(h, rsh_rssize);
+		} else
+		{
+			gl->lmem = 0;
+			o = NULL;
+		}
+		gl->ptree = o;
 
 		DIAGS(("Resources %ld(%lx) in global[5,6]", o, o));
 		DIAGS(("			and %ld(%lx) in global[7,8]", h, h));
@@ -1726,13 +1742,13 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 					/* free the entry for the freed rsc. */
 					struct xa_rscs *nxt_active = NULL;
 					RSHDR *hdr = cur->rsc;
-					char *base = cur->rsc;
 					OBJECT **trees;
-					short i;
+					short i, ntree;
 
 					/* Free the memory allocated for scroll list objects. */
-					trees = (OBJECT **)(base + hdr->rsh_trindex);
-					for (i = 0; i < hdr->rsh_ntree; i++)
+					trees = (OBJECT **)rsc_start(hdr, rsh_trindex);
+					ntree = rshdr(hdr, rsh_ntree);
+					for (i = 0; i < ntree; i++)
 					{
 						free_obtree_resources(client, trees[i]);
 					}
@@ -1762,7 +1778,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 							nxt_hdr = nxt_active->rsc;
 
 						client->rsrc = nxt_hdr;
-						o = nxt_hdr ? (OBJECT **)((char *)nxt_hdr + nxt_hdr->rsh_trindex) : (OBJECT **)NULL;
+						o = nxt_hdr ? (OBJECT **)rsc_start(nxt_hdr, rsh_trindex) : (OBJECT **)NULL;
 						client->trees = o;
 
 						Rsrc_setglobal(client->rsrc, client->globl_ptr);
@@ -1836,8 +1852,6 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
  * Return = pointer to tree or object or stuff, or NULL on failure
  */
 
-#define num_nok(t) (!hdr || num < 0 || num >= hdr->rsh_ ## t)
-#define start(t) (unsigned long)index = (unsigned long)hdr + hdr->rsh_ ## t
 
 void hide_object_tree( RSHDR *rsc, short tree, short item, int Unhide )
 {
@@ -1856,10 +1870,10 @@ ResourceTree(RSHDR *hdr, long num)
 {
 	OBJECT **index;
 	DIAGS(("ResourceTree: hdr = %lx, num = %ld", hdr, num));
-	if (num_nok(ntree))
+	if (num_nok(hdr, rsh_ntree))
 		return NULL;
 
-	index = (OBJECT **)((char *)hdr + hdr->rsh_trindex);
+	index = (OBJECT **)rsc_start(hdr, rsh_trindex);
 	return index[num];
 }
 
@@ -1869,10 +1883,10 @@ ResourceObject(RSHDR *hdr, int num)
 {
 	OBJECT *index;
 
-	if (num_nok(nobs))
+	if (num_nok(hdr, rsh_nobs))
 		return NULL;
 
-	index = (OBJECT *)((char *)hdr + hdr->rsh_object);//	start(object);
+	index = (OBJECT *)rsc_start(hdr, rsh_object);
 	return index + num;
 }
 
@@ -1882,10 +1896,10 @@ ResourceTedinfo(RSHDR *hdr, int num)
 {
 	TEDINFO *index;
 
-	if (num_nok(nted))
+	if (num_nok(hdr, rsh_nted))
 		return NULL;
 
-	index = (TEDINFO *)((char *)hdr + hdr->rsh_tedinfo); //start(tedinfo);
+	index = (TEDINFO *)rsc_start(hdr, rsh_tedinfo);
 
 	index += num;
 
@@ -1901,10 +1915,10 @@ ResourceIconblk(RSHDR *hdr, int num)
 {
 	ICONBLK *index;
 
-	if (num_nok(nib))
+	if (num_nok(hdr, rsh_nib))
 		return NULL;
 
-	index = (ICONBLK *)((char *)hdr + hdr->rsh_iconblk); //start(iconblk);
+	index = (ICONBLK *)rsc_start(hdr, rsh_iconblk);
 	return index + num;
 }
 
@@ -1914,10 +1928,10 @@ ResourceBitblk(RSHDR *hdr, int num)
 {
 	BITBLK *index;
 
-	if (num_nok(nbb))
+	if (num_nok(hdr, rsh_nbb))
 		return NULL;
 
-	index = (BITBLK *)((char *)hdr + hdr->rsh_bitblk); //start(bitblk);
+	index = (BITBLK *)rsc_start(hdr, rsh_bitblk);
 	return index + num;
 }
 
@@ -1932,16 +1946,10 @@ ResourceString(RSHDR *hdr, int num)
 {
 	char **index;
 
-	if (num_nok(nstring))
+	if (num_nok(hdr, rsh_nstring))
 		return NULL;
 
-	if( hdr->rsh_vrsn == 3 ){
-		index = (char **)((char *)hdr + ((RSXHDR*)hdr)->rsh_frstr);
-	}
-	else
-	{
-		index = (char **)((char *)hdr + hdr->rsh_frstr);
-	}
+	index = (char **)rsc_start(hdr, rsh_frstr);
 
 //	DIAG((D_s, NULL, "Gaddr 5 %lx '%s'", index[num], index[num]));
 	return index[num];
@@ -1957,10 +1965,10 @@ ResourceImage(RSHDR *hdr, int num)
 {
 	void **index;
 
-	if (num_nok(nimages))
+	if (num_nok(hdr, rsh_nimages))
 		return NULL;
 
-	index = (void **)((char *)hdr + hdr->rsh_frimg); //start(frimg);
+	index = (void **)rsc_start(hdr, rsh_frimg);
 	return index[num];
 }
 
@@ -1972,7 +1980,10 @@ ResourceFrstr(RSHDR *hdr, int num)
 {
 	char **index;
 
-	index = (char **)((char *)hdr + hdr->rsh_frstr); //start(frstr);
+	if (num_nok(hdr, rsh_nstring))
+		return NULL;
+
+	index = (char **)rsc_start(hdr, rsh_frstr);
 
 //	DIAG((D_s, NULL, "Gaddr 15 %lx '%s'", index, *index));
 	return index + num;
@@ -1984,7 +1995,10 @@ ResourceFrimg(RSHDR *hdr, int num)
 {
 	void **index;
 
-	index = (void **)((char *)hdr + hdr->rsh_frimg); //start(frimg);
+	if (num_nok(hdr, rsh_nimages))
+		return NULL;
+
+	index = (void **)rsc_start(hdr, rsh_frimg);
 
 //	DIAG((D_s, NULL, "Gaddr 16 %lx", index));
 	return index + num;
@@ -2168,74 +2182,96 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 		switch(type)
 		{
 		default:
+			*addr = 0;
 			pb->intout[0] = 0;
 			break;
 		case R_TREE:
-			if( rsc->rsh_vrsn == 3 && trees )
-			{
-				*addr = trees[index];
-			}
-			else
-				*addr = ResourceTree(client->rsrc, index);
+			*addr = ResourceTree(rsc, index);
 			break;
 		case R_OBJECT:
-			*addr = ResourceObject(client->rsrc, index);
+			*addr = ResourceObject(rsc, index);
 			break;
 		case R_TEDINFO:
-			*addr = ResourceTedinfo(client->rsrc, index);
+			*addr = ResourceTedinfo(rsc, index);
 			break;
 		case R_ICONBLK:
-			*addr = ResourceIconblk(client->rsrc, index);
+			*addr = ResourceIconblk(rsc, index);
 			break;
 		case R_BITBLK:
-			*addr = ResourceBitblk(client->rsrc, index);
+			*addr = ResourceBitblk(rsc, index);
 			break;
-/*!*/ 	case R_STRING:
-			*addr = ResourceString(client->rsrc, index);
+		case R_STRING:
+			*addr = ResourceString(rsc, index);
 			break;
-/*!*/ 	case R_IMAGEDATA:
-			*addr = ResourceImage(client->rsrc, index);
+		case R_IMAGEDATA:
+			*addr = ResourceImage(rsc, index);
 			break;
 		case R_OBSPEC:
-			*addr = (void *)ResourceObject(client->rsrc, index)->ob_spec.index;
+			{
+				OBJECT *o = ResourceObject(rsc, index);
+				*addr = o ? &o->ob_spec.index : 0;
+			}
 			break;
 		case R_TEPTEXT:
-			*addr = ResourceTedinfo(client->rsrc, index)->te_ptext;
+			{
+				TEDINFO *ted = ResourceTedinfo(rsc, index);
+				*addr = ted ? &ted->te_ptext : 0;
+			}
 			break;
 		case R_TEPTMPLT:
-			*addr = ResourceTedinfo(client->rsrc, index)->te_ptmplt;
+			{
+				TEDINFO *ted = ResourceTedinfo(rsc, index);
+				*addr = ted ? &ted->te_ptmplt : 0;
+			}
 			break;
 		case R_TEPVALID:
-			*addr = ResourceTedinfo(client->rsrc, index)->te_pvalid;
+			{
+				TEDINFO *ted = ResourceTedinfo(rsc, index);
+				*addr = ted ? &ted->te_pvalid : 0;
+			}
 			break;
 		case R_IBPMASK:
-			*addr = ResourceIconblk(client->rsrc, index)->ib_pmask;
+			{
+				ICONBLK *ib = ResourceIconblk(rsc, index);
+				*addr = ib ? &ib->ib_pmask : 0;
+			}
 			break;
 		case R_IBPDATA:
-			*addr = ResourceIconblk(client->rsrc, index)->ib_pdata;
+			{
+				ICONBLK *ib = ResourceIconblk(rsc, index);
+				*addr = ib ? &ib->ib_pdata : 0;
+			}
 			break;
 		case R_IBPTEXT:
-			*addr = ResourceIconblk(client->rsrc, index)->ib_ptext;
+			{
+				ICONBLK *ib = ResourceIconblk(rsc, index);
+				*addr = ib ? &ib->ib_ptext : 0;
+			}
 			break;
 		case R_BIPDATA:
-			*addr = ResourceBitblk(client->rsrc, index)->bi_pdata;
+			{
+				BITBLK *bi = ResourceBitblk(rsc, index);
+				*addr = bi ? &bi->bi_pdata : 0;
+			}
 			break;
-/*!*/ 	case R_FRSTR:
-			*addr = ResourceFrstr(client->rsrc, index);
+		case R_FRSTR:
+			*addr = ResourceFrstr(rsc, index);
 			break;
-/*!*/ 	case R_FRIMG:
-			*addr = ResourceFrimg(client->rsrc, index);
+		case R_FRIMG:
+			*addr = ResourceFrimg(rsc, index);
 			break;
 		}
 		DIAG((D_s,client,"	--> %lx",*addr));
 		{
 			char *rsc_end;
-			if (rsc->rsh_vrsn == 3)
-				rsc_end = (char*)rsc + ((RSXHDR*)rsc)->rsh_rssize;
-			else
-				rsc_end = (char*)rsc + rsc->rsh_rssize;
+			unsigned long size;
+			size = rshdr(rsc, rsh_rssize);
+			size = (size + 1UL) & ~1UL;
+			rsc_end = (char*)rsc + size;
+			if (is_exthdr(rsc) && *((unsigned long *)rsc_end) != 0)
+				rsc_end = (char *)rsc + *((unsigned long *)rsc_end);
 
-			if( (char*)*addr < (char*)rsc || (char*)*addr > rsc_end )
+			if( (*addr != 0) && ((char*)*addr < (char*)rsc || (char*)*addr >= rsc_end ))
 			{
 				ALERT((xa_strings[AL_INVALIDP], *addr, rsc, rsc_end, type ));
 				pb->intout[0] = 0;
