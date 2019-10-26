@@ -1008,7 +1008,7 @@ duplicate_fnts_obtree(struct xa_client *client)
 }
 
 static struct xa_fnts_info *
-create_new_fnts(enum locks lock,
+create_new_fnts(int lock,
 		struct xa_client *client,
 		struct xa_window *wind,
 		XA_TREE *wt,
@@ -1126,7 +1126,7 @@ create_new_fnts(enum locks lock,
 extern struct toolbar_handlers wdlg_th;
 
 unsigned long
-XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_create(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts = NULL;
 	struct xa_window *wind = NULL;
@@ -1192,7 +1192,7 @@ memerr:
 }
 
 unsigned long
-XA_fnts_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_delete(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
@@ -1371,7 +1371,7 @@ init_fnts(struct xa_fnts_info *fnts)
 }
 
 unsigned long
-XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_open(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
@@ -1438,7 +1438,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fnts_close(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_close(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
@@ -1458,7 +1458,7 @@ XA_fnts_close(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fnts_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_get(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
@@ -1551,7 +1551,7 @@ XA_fnts_get(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fnts_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_set(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
@@ -1691,7 +1691,7 @@ static int inc_str( char *in, long l, int key, long min, long max )
 }
 
 unsigned long
-XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_evnt(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
@@ -1816,7 +1816,7 @@ static FormKeyInput	Keypress;
 static FormExit		Formexit;
 
 static bool
-Keypress(enum locks lock,
+Keypress(int lock,
 	    struct xa_client *client,
 	    struct xa_window *wind,
 	    struct widget_tree *wt,
@@ -1880,7 +1880,7 @@ static struct toolbar_handlers fnts_th =
  *  Todo: Cursor isnt automatically drawn.
  */
 unsigned long
-XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_do(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;

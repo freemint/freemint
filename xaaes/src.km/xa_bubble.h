@@ -25,13 +25,13 @@ typedef enum{
 
 }BBL_STATUS;
 
-BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short destID );
+BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID );
 void bubble_show( char *str );
 void bubble_request( short pid, short whndl, short x, short y );
 /* d0 */
 #define BBL_EVNT_CLOSE1 0
 #define BBL_EVNT_ENABLE 1
-void XA_bubble_event(enum locks lock, struct c_event *ce, short cancel);
-void display_launched( enum locks lock, char *str );
+void XA_bubble_event(int lock, struct c_event *ce, short cancel);
+void display_launched( int lock, char *str );
 
 

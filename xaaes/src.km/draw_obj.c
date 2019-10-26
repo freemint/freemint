@@ -203,12 +203,6 @@ static char *ob_types[] =
 #endif
 
 
-#if NAES3D
-#define PW (default_options.naes ? 1 : 0)
-#else
-#define PW 0
-#endif
-
 long
 init_client_objcrend(struct xa_client *client)
 {
@@ -700,7 +694,7 @@ static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
  * Display a primitive object
  */
 void
-display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short parent_x, short parent_y, short flags)
+display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short parent_x, short parent_y, short flags)
 {
 	RECT r, o, sr;
 	OBJECT *ob = aesobj_ob(&item);
@@ -901,7 +895,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 /* draw_object_tree */
 short
 draw_object_tree(
-enum locks lock,
+int lock,
 XA_TREE *wt,
 OBJECT *tree,
 struct xa_vdi_settings *v,

@@ -28,17 +28,17 @@
 #include "global.h"
 #include "xa_types.h"
 
-int launch(enum locks lock,
+int launch(int lock,
 	   short mode, short wisgr, short wiscr,
 	   const char *parm, char *tail,
 	   struct xa_client *caller);
 
-char *shell_find(enum locks lock, struct xa_client *client, char *fn);
+char *shell_find(int lock, struct xa_client *client, char *fn);
 
 void init_env(void);
 
-long put_env(enum locks lock, const char *cmd);
-const char *get_env(enum locks lock, const char *name);
+long put_env(int lock, const char *cmd);
+const char *get_env(int lock, const char *name);
 
 // char * const * const get_raw_env(void);
 const char ** get_raw_env(void);

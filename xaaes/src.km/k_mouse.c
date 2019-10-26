@@ -282,7 +282,7 @@ add_client_md(struct xa_client *client, const struct moose_data *md)
 /* HR 050402: WDIAL: split off as a function for use in ExitForm function */
 
 void
-button_event(enum locks lock, struct xa_client *client, const struct moose_data *md)
+button_event(int lock, struct xa_client *client, const struct moose_data *md)
 {
 	bool exiting = client->status & CS_EXITING ? true : false;
 
@@ -340,7 +340,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 }
 
 static void
-dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moose_data *md)
+dispatch_button_event(int lock, struct xa_window *wind, const struct moose_data *md)
 {
 	struct xa_client *target = wind->owner;
 
@@ -376,7 +376,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
  * at the moment widgets is always true.
  */
 STATIC void
-XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
+XA_button_event(int lock, const struct moose_data *md, bool widgets)
 {
 	struct xa_client *client, *locker, *mw_owner;
 	struct xa_window *wind = NULL, *mouse_wind;
@@ -589,7 +589,7 @@ dispatch_mu_event(struct xa_client *client, const struct moose_data *md, bool is
 }
 
 STATIC int
-XA_move_event(enum locks lock, const struct moose_data *md)
+XA_move_event(int lock, const struct moose_data *md)
 {
 	struct xa_client *client;
 	bool chlp_lock = update_locked() == C.Hlp->p;
@@ -634,7 +634,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			return false;
 		}
 
-// 		Sema_Up(clients);
+// 		Sema_Up(LOCK_CLIENTS);
 #if 0
 		{
 			struct xa_window *fw;
@@ -699,14 +699,14 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			client = NEXT_CLIENT(client);
 		}
 	}
-// 	Sema_Dn(clients);
+// 	Sema_Dn(LOCK_CLIENTS);
 
 	return false;
 }
 
 
 STATIC void
-XA_wheel_event(enum locks lock, const struct moose_data *md)
+XA_wheel_event(int lock, const struct moose_data *md)
 {
 	struct xa_window *wind;
 	struct xa_client *client = NULL, *locker = NULL;
@@ -807,7 +807,7 @@ chk_button_waiter(struct moose_data *md)
  * Separeted to make it possible to send moose packets from elsewhere...
  */
 static int
-new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
+new_moose_pkt(int lock, int internal, struct moose_data *md /*imd*/)
 {
 	DIAGA(("new_moose_pkt: internal=%s, state %x, cstate %x, %d/%d - %d/%d, ty=%d",
 		internal ? "yes":"no", md->state, md->cstate, md->x, md->y, md->sx, md->sy, md->ty));

@@ -51,20 +51,18 @@ bool unlock_menustruct(struct proc *proc);
 /*-----------------------------------------------------------------
  * Lock control
  *-----------------------------------------------------------------*/
-enum locks
-{
-	NOLOCKS   = 0x000,
-	appl      = 0x001,
-	winlist   = 0x008,
-	desk      = 0x010,
-	clients   = 0x020,
-	fsel      = 0x040,
-	lck_update  = 0x080,
-	mouse     = 0x100,
-	envstr    = 0x200,
-	pending   = 0x400,
-	NOLOCKING = -1
-};
+
+#define NOLOCKS         0x000
+#define NOLOCKING       -1
+#define LOCK_APPL       0x001
+#define LOCK_WINLIST    0x008
+#define LOCK_DESK       0x010
+#define LOCK_CLIENTS    0x020
+#define LOCK_FSEL       0x040
+#define LOCK_LCK_UPDATE 0x080
+#define LOCK_MOUSE      0x100
+#define LOCK_ENVSTR     0x200
+#define LOCK_PENDING    0x400
 
 #if 1
 
@@ -89,17 +87,17 @@ enum locks
 #define PENDING_SEMA	0x58410200 /* 'XA:P' Semaphore id to guard pending button&keybd events */
 
 
-#define appl_SEMA	APPL_INIT_SEMA
-#define winlist_SEMA	WIN_LIST_SEMA
-#define desk_SEMA	ROOT_SEMA
-#define clients_SEMA	CLIENTS_SEMA
-#define fsel_SEMA	FSELECT_SEMA
-#define envstr_SEMA	ENV_SEMA
+#define LOCK_APPL_SEMA	APPL_INIT_SEMA
+#define LOCK_WINLIST_SEMA	WIN_LIST_SEMA
+#define LOCK_DESK_SEMA	ROOT_SEMA
+#define LOCK_CLIENTS_SEMA	CLIENTS_SEMA
+#define LOCK_FSEL_SEMA	FSELECT_SEMA
+#define LOCK_ENVSTR_SEMA	ENV_SEMA
 
-#define lck_update_SEMA	UPDATE_LOCK
-#define mouse_SEMA	MOUSE_LOCK
+#define LOCK_LCK_UPDATE_SEMA	UPDATE_LOCK
+#define LOCK_MOUSE_SEMA	MOUSE_LOCK
 
-#define pending_SEMA	PENDING_SEMA
+#define LOCK_PENDING_SEMA	PENDING_SEMA
 
 
 #if GENERATE_DIAGS && DEBUG_SEMA

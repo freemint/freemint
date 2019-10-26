@@ -27,7 +27,7 @@
 #include "messages.h"
 #if 0
 void
-cXA_deliver_msg(enum locks lock, struct c_event *ce, bool cancel)
+cXA_deliver_msg(int lock, struct c_event *ce, bool cancel)
 {
 	if (!cancel)
 	{

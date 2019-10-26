@@ -32,7 +32,7 @@ extern RECT about_r;
 extern RECT view_r;
 
 void reset_about(void);
-void open_about(enum locks lock, struct xa_client *client, bool open, char *fn);
+void open_about(int lock, struct xa_client *client, bool open, char *fn);
 void add_keybd_switch(char *k);
 
 enum CtrlAltMd{

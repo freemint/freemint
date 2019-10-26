@@ -72,7 +72,7 @@ void set_menu_width( OBJECT *mnu, XA_TREE *mwt )
  * Install a menu bar onto the desktop window
  */
 unsigned long
-XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 {
 	bool swap = true;
 	XA_TREE *menu_bar;
@@ -129,7 +129,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					if (menu && (client == top_owner || !top_owner->std_menu))
 					{
-						swap_menu(lock|winlist, client, mwt, SWAPM_TOPW);
+						swap_menu(lock|LOCK_WINLIST, client, mwt, SWAPM_TOPW);
 					}
 					else
 					{
@@ -148,7 +148,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 					wt_menu_area(mwt);
 				if (menu && (client == top_owner || !top_owner->std_menu))
 				{
-					swap_menu(lock|winlist, client, NULL, SWAPM_TOPW);
+					swap_menu(lock|LOCK_WINLIST, client, NULL, SWAPM_TOPW);
 				}
 				else
 				{
@@ -169,7 +169,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (menu)
 		{
 			swap_menu(lock, client, NULL, SWAPM_REMOVE);
-			remove_attachments(lock|winlist, client, menu);
+			remove_attachments(lock|LOCK_WINLIST, client, menu);
 			pb->intout[0] = 1;
 		}
 		break;
@@ -188,7 +188,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 static void
-upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bool redraw)
+upd_menu(int lock, struct xa_client *client, OBJECT *tree, short item, bool redraw)
 {
 	XA_TREE *wt;
 
@@ -214,7 +214,7 @@ upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bo
  * ...it's only here for compatibility.
  */
 unsigned long
-XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_tnormal(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
 	short i = pb->intin[0], obj, state;
@@ -256,7 +256,7 @@ XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
  * Enable/Disable a menu item
  */
 unsigned long
-XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_ienable(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
 	short i = pb->intin[0], obj, state;
@@ -294,7 +294,7 @@ XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
  * Check / un-check a menu item
  */
 unsigned long
-XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_icheck(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
 	short i = pb->intin[0], obj, state;
@@ -330,7 +330,7 @@ XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
  * Change a menu item's text
  */
 unsigned long
-XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_text(int lock, struct xa_client *client, AESPB *pb)
 {
 	const char *text = (const char *)pb->addrin[1];
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
@@ -356,7 +356,7 @@ XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
  * Register an apps 'pretty' & 'official' names.
  */
 unsigned long
-XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_register(int lock, struct xa_client *client, AESPB *pb)
 {
 	const char *n = (const char *)pb->addrin[0];
 
@@ -579,7 +579,7 @@ noscroll:
  * All other elements are initialized here.
  */
 int
-menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result, short px, short py, short usr_evnt)
+menu_popup(int lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result, short px, short py, short usr_evnt)
 {
 	if (mn && result)
 	{
@@ -676,7 +676,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
  * pid. Guess the results - total LOCKUP until offending client killed!
 */
 unsigned long
-XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_popup(int lock, struct xa_client *client, AESPB *pb)
 {
 
 	CONTROL(2,1,2)
@@ -705,7 +705,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
  * HR 051101: MagiC popup function.
  */
 unsigned long
-XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *ob = (OBJECT*)pb->addrin[0];
 	CONTROL(2,1,1)
@@ -788,7 +788,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
  * attach with NULL is remove
  */
 unsigned long
-XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_attach(int lock, struct xa_client *client, AESPB *pb)
 {
 	short md;
 	CONTROL(2,1,2)
@@ -880,7 +880,7 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
  * Align a submenu.
  */
 unsigned long
-XA_menu_istart(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_istart(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(1,1,1)
 
@@ -896,7 +896,7 @@ XA_menu_istart(enum locks lock, struct xa_client *client, AESPB *pb)
  *         	1:	set
  */
 unsigned long
-XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_menu_settings(int lock, struct xa_client *client, AESPB *pb)
 {
 	MN_SET *mn = (MN_SET *)pb->addrin[0];
 	CONTROL(1,1,1)

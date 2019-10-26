@@ -27,12 +27,12 @@
 
 #include "global.h"
 
-void	click_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
-void	dclick_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
-void	draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip);
+void	click_scroll_list(int lock, OBJECT *form, int objc, const struct moose_data *md);
+void	dclick_scroll_list(int lock, OBJECT *form, int objc, const struct moose_data *md);
+void	draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip);
 
 SCROLL_INFO *set_slist_object(
-		enum locks lock,
+		int lock,
 		XA_TREE *wt,
 		struct xa_window *parentwind,
 		short item,

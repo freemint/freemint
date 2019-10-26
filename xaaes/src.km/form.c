@@ -103,7 +103,7 @@ Set_form_do(struct xa_client *client,
 }
 
 static struct xa_window *
-create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
+create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
 {
 	struct xa_window *wind = NULL;
 
@@ -165,7 +165,7 @@ Setup_form_do(struct xa_client *client,
 	      struct xa_window **ret_wind,
 	      struct xa_aes_object *ret_edobj)
 {
-	enum locks lock = 0;
+	int lock = 0;
 	XA_WIND_ATTR kind = NAME;
 	XA_TREE *wt = NULL;
 	struct xa_window *wind = NULL;
@@ -1020,7 +1020,7 @@ Exit_form_do( struct xa_client *client,
 	      XA_TREE *wt,
 	      struct fmd_result *fr)
 {
-	enum locks lock = 0;
+	int lock = 0;
 
 	if (wind)
 	{
@@ -1125,7 +1125,7 @@ Exit_form_do( struct xa_client *client,
  * to be reset or not
  */
 bool
-Click_windowed_form_do(	enum locks lock,
+Click_windowed_form_do(	int lock,
 			struct xa_window *wind,
 			struct xa_widget *widg,
 			const struct moose_data *md)
@@ -1153,7 +1153,7 @@ Click_windowed_form_do(	enum locks lock,
  *
  */
 STATIC bool
-Click_form_do(enum locks lock,
+Click_form_do(int lock,
 	      struct xa_client *client,
 	      struct xa_window *wind,
 	      struct widget_tree *wt,
@@ -1267,7 +1267,7 @@ Click_form_do(enum locks lock,
  * to use is wind->toolbar.
  */
 bool
-Key_form_do(enum locks lock,
+Key_form_do(int lock,
 	    struct xa_client *client,
 	    struct xa_window *wind,
 	    struct widget_tree *wt,

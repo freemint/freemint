@@ -33,7 +33,7 @@
 // 			 short edobj);
 #if 0
 struct xa_window *
-	create_fmd_wind	(enum locks lock,
+	create_fmd_wind	(int lock,
 			 struct xa_client *client,
 			 XA_WIND_ATTR kind,
 			 WINDOW_TYPE dial,

@@ -31,11 +31,11 @@
 void	init_client_mdbuff(struct xa_client *client);
 void	client_nicename(struct xa_client *client, const char *n, bool autonice);
 
-struct xa_client *init_client(enum locks lock, bool sysclient);
+struct xa_client *init_client(int lock, bool sysclient);
 
 bool is_client(struct xa_client *client);
-int exit_proc(enum locks lock, struct proc *proc, int code);
-void exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach);
+int exit_proc(int lock, struct proc *proc, int code);
+void exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detach);
 
 extern short info_tab[][4];
 

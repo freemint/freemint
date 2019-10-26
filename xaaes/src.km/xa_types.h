@@ -722,7 +722,7 @@ struct xa_vdi_api
 
 /* A function of the type used for widget behaviours is a
    'WidgetBehaviour'. */
-typedef bool WidgetBehaviour	(enum locks lock,
+typedef bool WidgetBehaviour	(int lock,
 				 struct xa_window *wind,
 				 struct xa_widget *widg,
 				 const struct moose_data *md);
@@ -731,10 +731,10 @@ typedef bool WidgetKeyInput	(struct xa_window *wind,
 				 struct xa_widget *widg,
 				 const struct rawkey *key);
 #if 0
-typedef bool DisplayWidget(enum locks lock, struct xa_window *wind,
+typedef bool DisplayWidget(int lock, struct xa_window *wind,
 			   struct xa_widget *widg);
 #endif
-typedef bool FormKeyInput(enum locks lock,
+typedef bool FormKeyInput(int lock,
 			  struct xa_client *client,
 			  struct xa_window *window,
 			  struct widget_tree *wt,
@@ -742,7 +742,7 @@ typedef bool FormKeyInput(enum locks lock,
 			  /* output */
 			  struct fmd_result *res_fr);
 
-typedef bool FormMouseInput(enum locks lock,
+typedef bool FormMouseInput(int lock,
 			    struct xa_client *client,
 			    struct xa_window *window,
 			    struct widget_tree *wt,
@@ -754,15 +754,15 @@ typedef void FormExit(struct xa_client *client,
 		      struct fmd_result *fr);
 
 
-typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
+typedef int WindowKeypress(int lock, struct xa_window *wind,
 			   struct widget_tree *wt,
 			   unsigned short keycode, unsigned short nkcode, struct rawkey key);
 
 /* Object display function type */
-typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v);
+typedef void ObjectDisplay(int lock, struct widget_tree *wt, struct xa_vdi_settings *v);
 
 /* Object handler function type */
-// typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
+// typedef void ObjectHandler(int lock, struct widget_tree *wt);
 
 #if 0
 struct widget_behaviour
@@ -920,7 +920,7 @@ struct wdlg_evnt_parms
 	EVNT *ev;
 	struct wdlg_info *wdlg;
 	short (*callout)(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback);
-	void  (*redraw)(enum locks lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r);
+	void  (*redraw)(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r);
 
 	struct xa_aes_object obj;
 };
@@ -1230,7 +1230,7 @@ struct fmd
 struct c_event
 {
 	struct c_event		*next;
-	void			(*funct)(enum locks, struct c_event *, short cancel);
+	void			(*funct)(int, struct c_event *, short cancel);
 	struct xa_client	*client;
 	void			*ptr1;
 	void			*ptr2;
@@ -1255,7 +1255,7 @@ struct fselect_result
 	long xfds;
 };
 
-typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
+typedef unsigned long AES_function(int lock, struct xa_client *client, AESPB *pb);
 
 /*-----------------------------------------------------------------
  * Windows & Widgets
@@ -1636,7 +1636,7 @@ typedef struct xa_slider_widget XA_SLIDER_WIDGET;
 #define XAAO_SUPPORTED	(XAAO_WF_SLIDE|XAAO_OBJC_EDIT)
 
 /* Callback for a window's auto-redraw function */
-typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
+typedef int WindowDisplay (int lock, struct xa_window *wind);
 
 typedef void DrawWinElement(struct xa_window *wind);
 
@@ -2172,7 +2172,7 @@ typedef struct scroll_entry SCROLL_ENTRY;
 struct scroll_info
 {
 	struct scroll_info *next;	/* lists in one window linked */
-	enum locks lock;
+	int lock;
 
 	struct xa_window *wi;		/* make the scroll box a real window */
 	struct xa_window *pw;		/* If the listbox is part of a windowed dialogue, we must know that,
@@ -2338,7 +2338,7 @@ struct task_administration_block
 
 	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
-	enum locks lock;
+	int lock;
 	int locker;
 
 	struct xa_client *client;
@@ -2758,7 +2758,7 @@ editfocus(struct objc_edit_info *ei)
 	return ei->o;
 }
 
-typedef void kernkey_action(enum locks lock, struct xa_client *client, short open);
+typedef void kernkey_action(int lock, struct xa_client *client, short open);
 
 struct kernkey_entry
 {
@@ -2838,7 +2838,7 @@ struct common
 	bool f_phys;	// using physical wk
 	unsigned long gdos_version;
 
-	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
+	void (*reschange)(int lock, struct xa_client *client, bool open);
 	struct kernkey_entry *kernkeys;
 
 	short AESpid;			/* The AES's MiNT process ID */
@@ -2929,7 +2929,7 @@ struct common
 	struct xa_client *realmouse_owner;
 
 	struct xa_client	*do_widget_repeat_client;
-	enum locks		 do_widget_repeat_lock;
+	int		 do_widget_repeat_lock;
 	struct proc *boot_focus;
 	short loglvl;
 	char bootlog_path[200];
@@ -3168,7 +3168,7 @@ struct xa_module_api
 
 	void _cdecl	(*load_img)		(char *fname, XAMFDB *result);
 
-	struct xa_window * _cdecl (*create_window)	(enum locks lock,
+	struct xa_window * _cdecl (*create_window)	(int lock,
 							SendMessage *message_handler,
 							DoWinMesag *message_doer,
 							struct xa_client *client,
@@ -3181,22 +3181,22 @@ struct xa_module_api
 							const RECT *max,
 							RECT *remember);
 
-	int _cdecl	(*open_window)		(enum locks lock, struct xa_window *wind, RECT r);
-	bool _cdecl	(*close_window)		(enum locks lock, struct xa_window *wind);
-	void _cdecl	(*move_window)		(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
-	void _cdecl	(*top_window)		(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
-	void _cdecl	(*bottom_window)	(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
+	int _cdecl	(*open_window)		(int lock, struct xa_window *wind, RECT r);
+	bool _cdecl	(*close_window)		(int lock, struct xa_window *wind);
+	void _cdecl	(*move_window)		(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
+	void _cdecl	(*top_window)		(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
+	void _cdecl	(*bottom_window)	(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
 
-	void _cdecl	(*send_wind_to_bottom)	(enum locks lock, struct xa_window *wind);
-	void _cdecl	(*delete_window)	(enum locks lock, struct xa_window *wind);
-	void _cdecl	(*delayed_delete_window)(enum locks lock, struct xa_window *wind);
-
-
+	void _cdecl	(*send_wind_to_bottom)	(int lock, struct xa_window *wind);
+	void _cdecl	(*delete_window)	(int lock, struct xa_window *wind);
+	void _cdecl	(*delayed_delete_window)(int lock, struct xa_window *wind);
 
 
-	struct xa_window * _cdecl (*create_dwind)(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
 
-	void _cdecl	(*redraw_toolbar)	(enum locks lock, struct xa_window *wind, short item);
+
+	struct xa_window * _cdecl (*create_dwind)(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
+
+	void _cdecl	(*redraw_toolbar)	(int lock, struct xa_window *wind, short item);
 
 	void _cdecl	(*dispatch_shutdown)	(short flags);
 };

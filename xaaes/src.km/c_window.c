@@ -41,7 +41,7 @@
 
 #include "mint/signal.h"
 
-STATIC struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
+STATIC struct xa_window *pull_wind_to_top(int lock, struct xa_window *w);
 STATIC void	fitin_root(RECT *r);
 STATIC void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
 
@@ -49,7 +49,7 @@ STATIC void	set_and_update_window(struct xa_window *wind, bool blit, bool only_w
  * Window Stack Management Functions
  */
 
-//static void draw_window(enum locks lock, struct xa_window *wind);
+//static void draw_window(int lock, struct xa_window *wind);
 
 /* HR:
  * I hated the kind of runaway behaviour (return wind_handle++)
@@ -131,14 +131,14 @@ clear_wind_handles(void)
 /* HR: This is an exemple of the use of the lock system.
  *     The function can be called by both server and client.
  *
- *     If called by the server, lock will be preset to winlist,
+ *     If called by the server, lock will be preset to LOCK_WINLIST,
  *     resulting in no locking (not needed).
  *
  *     If called by the signal handler, it is unclear, so the
  *     lock is applied. (doesnt harm).
  */
 static void
-rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
+rw(int lock, struct xa_window *wl, struct xa_client *client)
 {
 	struct xa_window *nwl;
 
@@ -170,7 +170,7 @@ rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
 }
 
 void
-remove_windows(enum locks lock, struct xa_client *client)
+remove_windows(int lock, struct xa_client *client)
 {
 	DIAG((D_wind,client,"remove_windows on open_windows list for %s", c_owner(client)));
 	if( !client )
@@ -181,7 +181,7 @@ remove_windows(enum locks lock, struct xa_client *client)
 }
 
 void
-remove_all_windows(enum locks lock, struct xa_client *client)
+remove_all_windows(int lock, struct xa_client *client)
 {
 	DIAG((D_wind, client,"remove_all_windows for %s", c_owner(client)));
 
@@ -224,7 +224,7 @@ clear_wind_rectlist(struct xa_window *wind)
  * Uses the RECT at wind->t.
  */
 RECT
-free_icon_pos(enum locks lock, struct xa_window *ignore)
+free_icon_pos(int lock, struct xa_window *ignore)
 {
 	RECT ic, r;
 	int i = 0;
@@ -617,7 +617,7 @@ wi_move_belowroot(struct win_base *b, struct xa_window *w)
  *	building, immediately.
  */
 void
-hide_window(enum locks lock, struct xa_window *wind)
+hide_window(int lock, struct xa_window *wind)
 {
 	if (!is_hidden(wind))
 	{
@@ -633,7 +633,7 @@ hide_window(enum locks lock, struct xa_window *wind)
 	}
 }
 void
-unhide_window(enum locks lock, struct xa_window *wind, bool check)
+unhide_window(int lock, struct xa_window *wind, bool check)
 {
 	if (is_hidden(wind))
 	{
@@ -813,7 +813,7 @@ get_window_info(struct xa_window *wind, char *dst)
 }
 #if INCLUDE_UNUSED
 STATIC void
-send_ontop(enum locks lock)
+send_ontop(int lock)
 {
 	struct xa_window *top = TOP_WINDOW;
 	struct xa_client *client = top->owner;
@@ -828,7 +828,7 @@ send_ontop(enum locks lock)
 }
 #endif
 void
-send_topped(enum locks lock, struct xa_window *wind)
+send_topped(int lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 
@@ -838,7 +838,7 @@ send_topped(enum locks lock, struct xa_window *wind)
 				   0, 0, 0, 0);
 }
 void
-send_bottomed(enum locks lock, struct xa_window *wind)
+send_bottomed(int lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 
@@ -849,7 +849,7 @@ send_bottomed(enum locks lock, struct xa_window *wind)
 }
 
 void
-send_moved(enum locks lock, struct xa_window *wind, short amq, RECT *r)
+send_moved(int lock, struct xa_window *wind, short amq, RECT *r)
 {
 	if (wind->send_message)
 	{
@@ -863,7 +863,7 @@ send_moved(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 #define WIND_WMIN	64
 #define WIND_HMIN	64
 void
-send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
+send_sized(int lock, struct xa_window *wind, short amq, RECT *r)
 {
 	if (!(wind->window_status & XAWS_SHADED))
 	{
@@ -882,7 +882,7 @@ send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 }
 
 void
-send_reposed(enum locks lock, struct xa_window *wind, short amq, RECT *r)
+send_reposed(int lock, struct xa_window *wind, short amq, RECT *r)
 {
 	if (wind->send_message)
 	{
@@ -894,7 +894,7 @@ send_reposed(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 }
 
 STATIC void
-send_redraw(enum locks lock, struct xa_window *wind, RECT *r)
+send_redraw(int lock, struct xa_window *wind, RECT *r)
 {
 	if (!(wind->window_status & (XAWS_SHADED|XAWS_HIDDEN)) && wind->send_message)
 	{
@@ -905,7 +905,7 @@ send_redraw(enum locks lock, struct xa_window *wind, RECT *r)
 }
 
 void
-send_vslid(enum locks lock, struct xa_window *wind, short offs)
+send_vslid(int lock, struct xa_window *wind, short offs)
 {
 	if (wind->send_message)
 	{
@@ -915,7 +915,7 @@ send_vslid(enum locks lock, struct xa_window *wind, short offs)
 	}
 }
 void
-send_hslid(enum locks lock, struct xa_window *wind, short offs)
+send_hslid(int lock, struct xa_window *wind, short offs)
 {
 	if (wind->send_message)
 	{
@@ -926,7 +926,7 @@ send_hslid(enum locks lock, struct xa_window *wind, short offs)
 }
 
 void
-send_closed(enum locks lock, struct xa_window *wind)
+send_closed(int lock, struct xa_window *wind)
 {
 	if (wind->send_message)
 	{
@@ -939,7 +939,7 @@ send_closed(enum locks lock, struct xa_window *wind)
 
 void close_window_menu(Tab *tab);
 void
-setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped)
+setwin_untopped(int lock, struct xa_window *wind, bool snd_untopped)
 {
 	struct xa_client *client = wind->owner;
 
@@ -961,7 +961,7 @@ setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped)
 }
 
 void
-setwin_ontop(enum locks lock, struct xa_window *wind, bool snd_ontop)
+setwin_ontop(int lock, struct xa_window *wind, bool snd_ontop)
 {
 	struct xa_client *client = wind->owner;
 
@@ -975,7 +975,7 @@ setwin_ontop(enum locks lock, struct xa_window *wind, bool snd_ontop)
 }
 
 void
-send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
+send_iredraw(int lock, struct xa_window *wind, short xaw, RECT *r)
 {
 	if (wind == root_window)
 	{
@@ -1012,7 +1012,7 @@ send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
 }
 
 void
-generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
+generate_redraws(int lock, struct xa_window *wind, RECT *r, short flags)
 {
 	RECT b;
 
@@ -1046,7 +1046,7 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 	DIAGS(("generate_redraws: !"));
 }
 static void
-remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
+remove_from_iredraw_queue(int lock, struct xa_window *wind)
 {
 	struct xa_aesmsg_list **msg, *free;
 
@@ -1067,7 +1067,7 @@ remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
 }
 
 void
-iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
+iconify_window(int lock, struct xa_window *wind, RECT *r)
 {
 	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h) || (r->y + r->h + cfg.icnfy_b_y != screen.r.h))
 		*r = free_icon_pos(lock, NULL);
@@ -1077,7 +1077,7 @@ iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 }
 
 void
-uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
+uniconify_window(int lock, struct xa_window *wind, RECT *r)
 {
 	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
 	wind->window_status &= ~XAWS_CHGICONIF;
@@ -1113,7 +1113,7 @@ uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 }
 
 void _cdecl
-top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
+top_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 {
 	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
 	if (w == NULL || w == root_window || (S.focus == w) )
@@ -1139,7 +1139,7 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 }
 
 void _cdecl
-bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
+bottom_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 {
 	bool was_top = (is_topped(w) ? true : false);
 	struct xa_window *wl = w->next, *new_focus;
@@ -1218,7 +1218,7 @@ fix_wind_kind(XA_WIND_ATTR tp)
  */
 struct xa_window * _cdecl
 create_window(
-	enum locks lock,
+	int lock,
 	SendMessage *message_handler,
 	DoWinMesag *message_doer,
 	struct xa_client *client,
@@ -1433,7 +1433,7 @@ create_window(
 }
 
 void
-change_window_attribs(enum locks lock,
+change_window_attribs(int lock,
 		struct xa_client *client,
 		struct xa_window *w,
 		XA_WIND_ATTR tp,
@@ -1536,7 +1536,7 @@ change_window_attribs(enum locks lock,
 		*remember = w->r;
 }
 
-void remove_window_widgets(enum locks lock, int full)
+void remove_window_widgets(int lock, int full)
 {
 	struct xa_window *wind = TOP_WINDOW;
 	if( wind && !(wind->window_status & XAWS_ICONIFIED) )
@@ -1574,7 +1574,7 @@ void remove_window_widgets(enum locks lock, int full)
 }
 
 int _cdecl
-open_window(enum locks lock, struct xa_window *wind, RECT r)
+open_window(int lock, struct xa_window *wind, RECT r)
 {
 	struct xa_window *wl = window_list;
 	RECT clip, our_win;
@@ -1593,7 +1593,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		DIAGS(("WARNING: Attempt to open window when it was already open"));
 		set_active_client(lock, wind->owner);
-		swap_menu(lock|desk, wind->owner, NULL, SWAPM_DESK); // | SWAPM_TOPW);
+		swap_menu(lock|LOCK_DESK, wind->owner, NULL, SWAPM_DESK); // | SWAPM_TOPW);
 
 		return 0;
 	}
@@ -1732,7 +1732,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			wl->owner->name, wind->owner->name));
 
 		set_active_client(lock, wind->owner);
-		swap_menu(lock|desk, wind->owner, NULL, SWAPM_DESK );
+		swap_menu(lock|LOCK_DESK, wind->owner, NULL, SWAPM_DESK );
 	}
 	make_rect_list(wind, true, RECT_SYS);
 	/*
@@ -1824,7 +1824,7 @@ bool clip_off_menu( RECT *cl )
 }
 
 void
-draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
+draw_window(int lock, struct xa_window *wind, const RECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	RECT cl = *clip;
@@ -1945,7 +1945,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 }
 
 struct xa_window *
-find_window(enum locks lock, short x, short y, short flags)
+find_window(int lock, short x, short y, short flags)
 {
 	struct xa_window *w = NULL;
 
@@ -1984,7 +1984,7 @@ find_window(enum locks lock, short x, short y, short flags)
 }
 
 struct xa_window *
-get_wind_by_handle(enum locks lock, short h)
+get_wind_by_handle(int lock, short h)
 {
 	struct xa_window *w;
 
@@ -2013,7 +2013,7 @@ get_wind_by_handle(enum locks lock, short h)
 }
 
 bool
-wind_exist(enum locks lock, struct xa_window *wind)
+wind_exist(int lock, struct xa_window *wind)
 {
 	struct xa_window *w;
 
@@ -2044,7 +2044,7 @@ wind_exist(enum locks lock, struct xa_window *wind)
  * Pull this window to the head of the window list
  */
 STATIC struct xa_window *
-pull_wind_to_top(enum locks lock, struct xa_window *w)
+pull_wind_to_top(int lock, struct xa_window *w)
 {
 	struct xa_window *wl, *below, *above;
 	RECT clip, r;
@@ -2103,7 +2103,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 }
 
 void _cdecl
-send_wind_to_bottom(enum locks lock, struct xa_window *w)
+send_wind_to_bottom(int lock, struct xa_window *w)
 {
 	struct xa_window *wl;
 	RECT r, clip;
@@ -2257,7 +2257,7 @@ void set_standard_point(struct xa_client *client)
  * md=-1: on temp.
  * else: set md
  */
-void toggle_menu(enum locks lock, short md)
+void toggle_menu(int lock, short md)
 {
 	struct xa_client *client = menu_owner();
 
@@ -2310,7 +2310,7 @@ void toggle_menu(enum locks lock, short md)
  * Change an open window's coordinates, updating rectangle lists as appropriate
  */
 void _cdecl
-move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short X, short Y, short W, short H)
+move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short X, short Y, short W, short H)
 {
 	IFDIAG(struct xa_client *client = wind->owner;)
 	RECT old, new;
@@ -2447,7 +2447,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
  * - the window will still exist after this call.
  */
 bool _cdecl
-close_window(enum locks lock, struct xa_window *wind)
+close_window(int lock, struct xa_window *wind)
 {
 	struct xa_window *wl, *w = NULL;
 	struct xa_client *client = wind->owner;
@@ -2562,7 +2562,7 @@ close_window(enum locks lock, struct xa_window *wind)
 				{
 					if (w != TOP_WINDOW)
 					{
-						top_window(lock|winlist, true, true, w);
+						top_window(lock|LOCK_WINLIST, true, true, w);
 					}
 					else
 					{
@@ -2643,7 +2643,7 @@ free_standard_widgets(struct xa_window *wind)
 }
 
 static void
-delete_window1(enum locks lock, struct xa_window *wind)
+delete_window1(int lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 
@@ -2673,7 +2673,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 
 		/* Call the window destructor if any */
 		if (wind->destructor)
-			wind->destructor(lock|winlist, wind);
+			wind->destructor(lock|LOCK_WINLIST, wind);
 
 		free_standard_widgets(wind);
 		free_wind_handle(wind->handle);
@@ -2718,7 +2718,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 }
 
 static void
-CE_delete_window(enum locks lock, struct c_event *ce, short cancel)
+CE_delete_window(int lock, struct c_event *ce, short cancel)
 {
 // 	if (!strnicmp(ce->client->proc_name, "gfa_xref", 8))
 // 		display("CE_del_wind %lx", ce->ptr1);
@@ -2732,7 +2732,7 @@ CE_delete_window(enum locks lock, struct c_event *ce, short cancel)
 }
 
 void _cdecl
-delete_window(enum locks lock, struct xa_window *wind)
+delete_window(int lock, struct xa_window *wind)
 {
 	/* We must be sure it is in the correct list. */
 	if ((wind->window_status & XAWS_OPEN))
@@ -2763,7 +2763,7 @@ delete_window(enum locks lock, struct xa_window *wind)
 }
 
 void _cdecl
-delayed_delete_window(enum locks lock, struct xa_window *wind)
+delayed_delete_window(int lock, struct xa_window *wind)
 {
 	DIAG((D_wind, wind->owner, "delayed_delete_window %d for %s: open? %s",
 		wind->handle, w_owner(wind),
@@ -2796,7 +2796,7 @@ delayed_delete_window(enum locks lock, struct xa_window *wind)
 }
 
 void
-do_delayed_delete_window(enum locks lock)
+do_delayed_delete_window(int lock)
 {
 	struct xa_window *wind = S.deleted_windows.first;
 
@@ -2824,7 +2824,7 @@ do_delayed_delete_window(enum locks lock)
  * which unused!
  */
 void
-display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
+display_window(int lock, int which, struct xa_window *wind, RECT *clip)
 {
 	if (!(wind->owner->status & CS_EXITING) && (wind->window_status & XAWS_OPEN))
 	{
@@ -2856,7 +2856,7 @@ display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 }
 
 void
-update_all_windows(enum locks lock, struct xa_window *wl)
+update_all_windows(int lock, struct xa_window *wl)
 {
 	while (wl)
 	{
@@ -2875,10 +2875,10 @@ update_all_windows(enum locks lock, struct xa_window *wl)
  * defines the clip rectangle.
  */
 void
-update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend)
+update_windows_below(int lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend)
 {
 	RECT clip;
-	enum locks wlock = lock | winlist;
+	int wlock = lock | LOCK_WINLIST;
 
 	DIAGS(("update_windows_below: ..."));
 
@@ -2963,7 +2963,7 @@ get_lost_redraw_msg(struct xa_client *client, union msg_buf *buf)
 }
 
 void
-redraw_client_windows(enum locks lock, struct xa_client *client)
+redraw_client_windows(int lock, struct xa_client *client)
 {
 	struct xa_window *wl;
 	struct xa_rect_list *rl;
@@ -3105,7 +3105,7 @@ lookup_wcc_entry(struct xa_client *client, short class, XA_WIND_ATTR tp)
 };
 
 RECT
-calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
+calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
 {
 	struct xa_window *w_temp;
 	struct xa_wc_cache *wcc;

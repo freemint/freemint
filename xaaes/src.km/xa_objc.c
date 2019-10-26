@@ -39,7 +39,7 @@
  * Object Tree Handling Interface
  */
 unsigned long
-XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_draw(int lock, struct xa_client *client, AESPB *pb)
 {
 	const RECT *r = (const RECT *)&pb->intin[2];
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
@@ -94,7 +94,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_wdraw(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	struct xa_vdi_settings *v;
@@ -168,7 +168,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_offset(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_offset(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	CONTROL(1,3,1)
@@ -187,7 +187,7 @@ XA_objc_offset(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_find(int lock, struct xa_client *client, AESPB *pb)
 {
 	short depth;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
@@ -241,7 +241,7 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_change(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 
@@ -279,7 +279,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_wchange(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_wchange(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 0;
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
@@ -319,7 +319,7 @@ XA_objc_wchange(enum locks lock, struct xa_client *client, AESPB *pb)
 
 /* HR 020604: child must be inserted at the END of the list of children!!! */
 unsigned long
-XA_objc_add(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_add(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 0;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
@@ -344,7 +344,7 @@ XA_objc_add(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_delete(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 0;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
@@ -368,7 +368,7 @@ XA_objc_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_order(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_order(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(2,1,1)
@@ -388,7 +388,7 @@ XA_objc_order(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_edit(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(4,2,1)
@@ -436,7 +436,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 unsigned long
-XA_objc_wedit(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_wedit(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 0;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
@@ -502,7 +502,7 @@ XA_objc_wedit(enum locks lock, struct xa_client *client, AESPB *pb)
 */
 
 unsigned long
-XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_sysvar(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 0;
 
@@ -623,7 +623,7 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
 // addrout[0] - mode dependant
 
 unsigned long
-XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 {
 	short what = pb->intin[1] & ~0x8000;
 	short obj = pb->intin[0];

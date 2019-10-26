@@ -1008,7 +1008,7 @@ move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd
 
 
 unsigned long
-XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_lbox_create(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree;
 
@@ -1145,7 +1145,7 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_lbox_update(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_lbox_update(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_lbox_info *lbox;
 	CONTROL(0,0,2)
@@ -1215,7 +1215,7 @@ click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, sho
 }
 
 unsigned long
-XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_lbox_do(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_lbox_info *lbox;
 	CONTROL(1,1,1)
@@ -1506,7 +1506,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_lbox_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_lbox_delete(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_lbox_info *lbox;
 	CONTROL(0,1,1)
@@ -1572,7 +1572,7 @@ get_selected(struct xa_lbox_info *lbox, short start, short *ret_obj, short *ret_
 }
 
 unsigned long
-XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_lbox_get(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_lbox_info *lbox;
 
@@ -1722,7 +1722,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_lbox_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_lbox_set(int lock, struct xa_client *client, AESPB *pb)
 {
 	//XA_TREE *wt;
 	struct xa_lbox_info *lbox;

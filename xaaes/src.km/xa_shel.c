@@ -301,7 +301,7 @@ static bool is_launch_path( char *path )
 }
 
 int
-launch(enum locks lock, short mode, short wisgr, short wiscr,
+launch(int lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
 {
 	char cmd[260]; /* 2 full paths */
@@ -850,7 +850,7 @@ out:
 }
 
 unsigned long
-XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_write(int lock, struct xa_client *client, AESPB *pb)
 {
 	short wdoex = pb->intin[0];
 	short wisgr = pb->intin[1];
@@ -873,9 +873,9 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if ((wdoex & 0xff) < SWM_SHUTDOWN) /* SWM_LANUCH, SWM_LAUNCHNOW or SWM_LAUNCACC */
 	{
-		Sema_Up(envstr);
+		Sema_Up(LOCK_ENVSTR);
 
-		pb->intout[0] = launch(lock|envstr,
+		pb->intout[0] = launch(lock|LOCK_ENVSTR,
 				       wdoex,
 				       wisgr,
 				       wiscr,
@@ -885,7 +885,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if( pb->intout[0] < 0 )
 			pb->intout[0] = 0;
-		Sema_Dn(envstr);
+		Sema_Dn(LOCK_ENVSTR);
 
 		/* let the new process run */
 		yield();
@@ -964,7 +964,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				struct xa_client *cl;
 
-				Sema_Up(clients);
+				Sema_Up(LOCK_CLIENTS);
 
 				FOREACH_CLIENT(cl)
 				{
@@ -972,7 +972,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 						send_a_message(lock, cl, AMQ_NORM, 0, (union msg_buf *)cmd);
 				}
 
-				Sema_Dn(clients);
+				Sema_Dn(LOCK_CLIENTS);
 				pb->intout[0] = 1;
 				break;
 			}
@@ -1070,7 +1070,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
-XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_read(int lock, struct xa_client *client, AESPB *pb)
 {
 	char *name = (char *)pb->addrin[0];
 	char *tail = (char *)pb->addrin[1];
@@ -1255,7 +1255,7 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
  *
  */
 char *
-shell_find(enum locks lock, struct xa_client *client, char *fn)
+shell_find(int lock, struct xa_client *client, char *fn)
 {
 	char *path, pathsep;
 	char cwd[256];
@@ -1413,7 +1413,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 }
 
 unsigned long
-XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_find(int lock, struct xa_client *client, AESPB *pb)
 {
 	char *fn = (char *)(pb->addrin[0]);
 	char *path;
@@ -1435,11 +1435,11 @@ XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 /* This version finds XX & XX= */
 const char *
-get_env(enum locks lock, const char *name)
+get_env(int lock, const char *name)
 {
 	int i;
 
-	Sema_Up(envstr);
+	Sema_Up(LOCK_ENVSTR);
 
 	for (i = 0; strings[i]; i++)
 	{
@@ -1452,7 +1452,7 @@ get_env(enum locks lock, const char *name)
 			{
 				if (*f == '=' && *n == '\0')
 				{
-					Sema_Dn(envstr);
+					Sema_Dn(LOCK_ENVSTR);
 					/* if used XX return pointer to '=' */
 					return f;
 				}
@@ -1462,7 +1462,7 @@ get_env(enum locks lock, const char *name)
 
 			if (*f == '=' && *n == '=')
 			{
-				Sema_Dn(envstr);
+				Sema_Dn(LOCK_ENVSTR);
 				/* if used XX= return pointer after '=' */
 				return f+1;
 			}
@@ -1475,7 +1475,7 @@ get_env(enum locks lock, const char *name)
 		}
 	}
 
-	Sema_Dn(envstr);
+	Sema_Dn(LOCK_ENVSTR);
 	return 0;
 }
 
@@ -1539,11 +1539,11 @@ count_env(char *s[], const char *without)
 }
 
 long
-put_env(enum locks lock, const char *cmd)
+put_env(int lock, const char *cmd)
 {
 	long ret = 0;
 
-	Sema_Up(envstr);
+	Sema_Up(LOCK_ENVSTR);
 
 	if (cmd)
 	{
@@ -1588,7 +1588,7 @@ put_env(enum locks lock, const char *cmd)
 		DIAGS(("putenv"));
 		IFDIAG(display_env(strings, 0);)
 	}
-	Sema_Dn(envstr);
+	Sema_Dn(LOCK_ENVSTR);
 	return ret;
 }
 
@@ -1611,7 +1611,7 @@ init_env(void)
  */
 
 unsigned long
-XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_envrn(int lock, struct xa_client *client, AESPB *pb)
 {
 	char **p = (char **)pb->addrin[0];
 	const char *name = (const char *)pb->addrin[1];
@@ -1655,7 +1655,7 @@ lookup_proc_name(const char *name)
 #endif
 #if INCLUDE_UNUSED
 unsigned long
-XA_shel_help(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_help(int lock, struct xa_client *client, AESPB *pb)
 {
 	short sh_hmode;
 	char *tmp = NULL;

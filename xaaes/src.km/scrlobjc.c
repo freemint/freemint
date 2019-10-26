@@ -702,7 +702,7 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 static short ssel;
 static struct xa_fnt_info owtxt = {0};
 static void
-display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
+display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 	struct xa_vdi_settings *v, RECT *xy, const RECT *clip, short TOP, bool NO_ICONS)
 {
 	bool sel = this->state & OS_SELECTED;
@@ -1126,7 +1126,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 }	// /display_list_element
 
 void
-draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
+draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
 {
 	struct xa_window *wind = list->wi;
 	struct xa_vdi_settings *v = list->vdi_settings;
@@ -4071,7 +4071,7 @@ entry_action(struct scroll_info *list, struct scroll_entry *this, const struct m
 
 /* HR 181201: pass all mouse data to these functions using struct moose_data. */
 void
-click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
+click_scroll_list(int lock, OBJECT *form, int item, const struct moose_data *md)
 {
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *this;
@@ -4185,7 +4185,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 }
 
 void
-dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
+dclick_scroll_list(int lock, OBJECT *form, int item, const struct moose_data *md)
 {
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *this;
@@ -4221,7 +4221,7 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 }
 
 static bool
-drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
+drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 
@@ -4307,7 +4307,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	return true;
 }
 static bool
-drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
+drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 
@@ -4435,7 +4435,7 @@ unset_G_SLIST(struct scroll_info *list)
  * get rid of all those small (confolded) constant value's.
  */
 SCROLL_INFO *
-set_slist_object(enum locks lock,
+set_slist_object(int lock,
 		 XA_TREE *wt,
 		 struct xa_window *parentwind,
 		 short item,
@@ -4668,7 +4668,7 @@ slist_msg_handler(
 	short amq, short qmf,
 	short *msg)
 {
-	//enum locks lock = 0;
+	//int lock = 0;
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *top, *n;
 	OBJECT *ob;

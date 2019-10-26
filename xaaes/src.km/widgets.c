@@ -57,7 +57,7 @@
 // static struct xa_widget_row * get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
 static void rp_2_ap_row(struct xa_window *wind);
 STATIC void free_wt(XA_TREE *wt);
-STATIC short	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state);
+STATIC short	redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 
 //static OBJECT *def_widgets;
 
@@ -909,7 +909,7 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 }
 
 void
-display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
+display_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 {
 // 	RECT r;
 
@@ -950,7 +950,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 }
 
 static void
-CE_redraw_menu(enum locks lock, struct c_event *ce, short cancel)
+CE_redraw_menu(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -992,7 +992,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, short cancel)
  * and draw it in the right context.
  */
 void
-redraw_menu(enum locks lock)
+redraw_menu(int lock)
 {
 	struct xa_client *rc, *mc;
 	struct xa_widget *widg;
@@ -1161,7 +1161,7 @@ iconify_grid(int i)
  * Click & drag on the title bar - does a move window
  */
 static bool
-drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+drag_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	/* You can only move a window if its MOVE attribute is set */
 	if (wind->active_widgets & MOVER)
@@ -1291,7 +1291,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 
 /* This must run in the context of the window owner!! */
 static void
-shade_action(enum locks lock, struct xa_window *wind)
+shade_action(int lock, struct xa_window *wind)
 {
 	if (wind->active_widgets & (MOVER|NAME))
 	{
@@ -1332,7 +1332,7 @@ shade_action(enum locks lock, struct xa_window *wind)
  * Single click title bar sends window to the back
  */
 static bool
-click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	bool nolist = wind->nolist;
 
@@ -1415,12 +1415,12 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	return false;
 }
 static bool
-click_wcontext(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_wcontext(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return false;
 }
 static bool
-click_wappicn(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_wappicn(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return false;
 }
@@ -1434,7 +1434,7 @@ click_wappicn(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
  * owns the window.
  */
 static bool
-click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_close(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	bool ret = false;
 
@@ -1472,7 +1472,7 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 /* Default full widget behaviour - Just send a WM_FULLED message to the client that */
 /* owns the window. */
 static bool
-click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_full(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message)
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
@@ -1486,7 +1486,7 @@ click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 ========================================================*/
 /* Displayed by display_def_widget */
 bool
-iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data *md)
+iconify_action(int lock, struct xa_window *wind, const struct moose_data *md)
 {
 	if (!wind->send_message)
 		return false;
@@ -1507,7 +1507,7 @@ iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data 
 		else
 		{
 			/* Window is open - send request to iconify it */
-			r = free_icon_pos(lock|winlist, NULL);
+			r = free_icon_pos(lock|LOCK_WINLIST, NULL);
 
 			/* Could the whole screen be covered by iconified
 			 * windows? That would be an achievement, wont it?
@@ -1536,7 +1536,7 @@ iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data 
  * click the iconify widget
  */
 static bool
-click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_iconify(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	DIAGS(("click_iconify:"));
 	iconify_action(lock, wind, md);
@@ -1552,7 +1552,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
  * click the hider widget
  */
 static bool
-click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_hide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	hide_app(lock, wind->owner);
 
@@ -1590,7 +1590,7 @@ compass(short d, short x, short y, RECT r)
  *            and use it here for outline sizing.
  */
 static bool
-size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, WidgetBehaviour next, const struct moose_data *md)
+size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, WidgetBehaviour next, const struct moose_data *md)
 {
 	bool move, size;
 	RECT r = wind->r, d;
@@ -1752,12 +1752,12 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 /* HR 150202: make rubber_box omnidirectional. */
 
 static inline bool
-drag_resize(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+drag_resize(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return size_window(lock, wind, widg, true, drag_resize, md);
 }
 static inline bool
-drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+drag_border(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return size_window(lock, wind, widg, false, drag_border, md);
 }
@@ -1917,7 +1917,7 @@ next_wctxt_entry(short item, void **_data)
 }
 
 static void
-CE_shade_action(enum locks lock, struct c_event *ce, short cancel)
+CE_shade_action(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1947,7 +1947,7 @@ cwinctxt(struct c_event *ce, long arg)
 }
 
 void
-cancel_winctxt_popup(enum locks lock, struct xa_window *wind, struct xa_client *client)
+cancel_winctxt_popup(int lock, struct xa_window *wind, struct xa_client *client)
 {
 	void *parms[2];
 
@@ -2149,7 +2149,7 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 }
 
 void
-CE_winctxt(enum locks lock, struct c_event *ce, short cancel)
+CE_winctxt(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2648,7 +2648,7 @@ bailout:
  */
 
 //static struct xa_client *do_widget_repeat_client = NULL;
-//static enum locks do_widget_repeat_lock;
+//static int do_widget_repeat_lock;
 
 void
 do_widget_repeat(void)
@@ -2671,7 +2671,7 @@ do_widget_repeat(void)
 }
 
 static void
-set_widget_repeat(enum locks lock, struct xa_window *wind)
+set_widget_repeat(int lock, struct xa_window *wind)
 {
 	if (!C.do_widget_repeat_client)
 	{
@@ -2685,7 +2685,7 @@ set_widget_repeat(enum locks lock, struct xa_window *wind)
 }
 
 static bool
-click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_scroll(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_WIDGET *slider = &(wind->widgets[widg->slider_type]);
 	bool reverse = md->state == MBS_RIGHT;
@@ -2847,7 +2847,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
  */
 
 static bool
-drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 
@@ -2919,7 +2919,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 }
 
 static bool
-drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 
@@ -4252,7 +4252,7 @@ display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip
  * HR: Direct display of the toolbar widget; HR 260102: over the rectangle list.
  */
 void _cdecl
-redraw_toolbar(enum locks lock, struct xa_window *wind, short item)
+redraw_toolbar(int lock, struct xa_window *wind, short item)
 {
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 	struct xa_vdi_settings *v = wind->vdi_settings;
@@ -4413,7 +4413,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
  */
 
 XA_TREE *
-set_toolbar_widget(enum locks lock,
+set_toolbar_widget(int lock,
 		struct xa_window *wind,
 		struct xa_client *owner,
 		OBJECT *obtree,
@@ -4525,7 +4525,7 @@ set_toolbar_widget(enum locks lock,
 }
 
 void
-remove_widget(enum locks lock, struct xa_window *wind, int tool)
+remove_widget(int lock, struct xa_window *wind, int tool)
 {
 	XA_WIDGET *widg = get_widget(wind, tool);
 
@@ -4643,7 +4643,7 @@ is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
  * return widget-number+1 if found else 0
  */
 short
-checkif_do_widgets(enum locks lock, struct xa_window *w, short x, short y, XA_WIDGET **ret)
+checkif_do_widgets(int lock, struct xa_window *w, short x, short y, XA_WIDGET **ret)
 {
 	XA_WIDGET *widg;
 	int f;
@@ -4692,7 +4692,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, short x, short y, XA_WI
 
 /* HR 161101: possibility to mask out certain widgets. */
 int
-do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md)
+do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md)
 {
 	XA_WIDGET *widg;
 	int f, clicks;
@@ -4881,7 +4881,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 }
 
 STATIC short
-redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state)
+redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state)
 {
 	short ret = widg->state;
 
@@ -4917,7 +4917,7 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short
 }
 
 void
-do_active_widget(enum locks lock, struct xa_client *client)
+do_active_widget(int lock, struct xa_client *client)
 {
 	if (widget_active.widg)
 	{

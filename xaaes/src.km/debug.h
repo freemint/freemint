@@ -180,11 +180,11 @@ void diaga(const char *fmt, ...);
 void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #if DEBUG_CONTROL
-#define CONTROL(a,b,c) {short *co = pb->control; \
-			 if (co[1] != a || co[2] != b || co[3] != c) \
-				diags(D_cl,a,co[1],b,co[2],c,co[3]); }
+#define CONTROL(nintin,nintout,naddrin) {short *co = pb->control; \
+			 if (co[1] != nintin || co[2] != nintout || co[3] != naddrin) \
+				diags(D_cl,nintin,co[1],nintout,co[2],naddrin,co[3]); }
 #else
-#define CONTROL(a,b,c)
+#define CONTROL(nintin,nintout,naddrin)
 #endif
 
 #else /* GENERATE_DIAGS */

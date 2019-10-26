@@ -29,7 +29,7 @@
  */
 
 unsigned long
-XA_scrp_read(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_scrp_read(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,1)
 
@@ -47,7 +47,7 @@ XA_scrp_read(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_scrp_write(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_scrp_write(int lock, struct xa_client *client, AESPB *pb)
 {
 	const char *new_path = (const char *)pb->addrin[0];
 

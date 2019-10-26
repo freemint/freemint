@@ -28,7 +28,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-struct xa_window * _cdecl create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
+struct xa_window * _cdecl create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
 
 struct helpthread_data * get_helpthread_data(struct xa_client *client);
 
@@ -42,7 +42,7 @@ extern struct xa_wtxt_inf desk_txt;
 extern RECT systemalerts_r;
 extern RECT taskman_r;
 
-int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] );
+int xaaes_do_form_alert( int lock, struct xa_client *client, int def_butt, char al_text[] );
 
 short	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list, short *wd, short *hd );
 
@@ -63,32 +63,32 @@ void remove_from_tasklist(struct xa_client *client);
 
 void update_tasklist_entry(int md, void *app, struct helpthread_data *htd, long pid, int redraw);
 
-void ce_quit_all_clients(enum locks lock, struct xa_client *client, bool b);
-void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
+void ce_quit_all_clients(int lock, struct xa_client *client, bool b);
+void quit_all_apps(int lock, struct xa_client *except, short reason);
 
 bool isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev);
 void addto_namelist(struct cfg_name_list **list, char *name);
 void removefrom_namelist(struct cfg_name_list **list, char *name, short nlen);
 void free_namelist(struct cfg_name_list **list);
 
-void send_terminate(enum locks lock, struct xa_client *client, short reason);
+void send_terminate(int lock, struct xa_client *client, short reason);
 
 void CHlp_aesmsg(struct xa_client *client);
-void screen_dump(enum locks lock, struct xa_client *client, short open);
+void screen_dump(int lock, struct xa_client *client, short open);
 
-void force_window_top( enum locks lock, struct xa_window *wind );
+void force_window_top( int lock, struct xa_window *wind );
 void wakeup_client(struct xa_client *client);
-void app_or_acc_in_front( enum locks lock, struct xa_client *client );
+void app_or_acc_in_front( int lock, struct xa_client *client );
 struct xa_client *is_aes_client( struct proc *p );
-void open_taskmanager(enum locks lock, struct xa_client *client, short open);
-void open_systemalerts(enum locks lock, struct xa_client *client, short open);
-void open_launcher(enum locks lock, struct xa_client *client, int what);
-void CE_open_csr(enum locks lock, struct c_event *ce, short cancel);
-void CE_abort_csr(enum locks lock, struct c_event *ce, short cancel);
+void open_taskmanager(int lock, struct xa_client *client, short open);
+void open_systemalerts(int lock, struct xa_client *client, short open);
+void open_launcher(int lock, struct xa_client *client, int what);
+void CE_open_csr(int lock, struct c_event *ce, short cancel);
+void CE_abort_csr(int lock, struct c_event *ce, short cancel);
 void cancel_csr(struct xa_client *running);
 
-void open_imgload(enum locks lock);
+void open_imgload(int lock);
 
-void do_system_menu(enum locks lock, int clicked_title, int menu_item);
+void do_system_menu(int lock, int clicked_title, int menu_item);
 
 #endif /* _taskman_h */

@@ -44,7 +44,6 @@
  */
 #if GENERATE_DIAGS
 
-#define FORCE(x)       KERNEL_FORCE x
 #define ALERT(x)       KERNEL_ALERT x
 #define DEBUG(x)       KERNEL_DEBUG x
 #define TRACE(x)       KERNEL_TRACE x
@@ -52,13 +51,14 @@
 
 #else
 
-#define FORCE(x)       KERNEL_FORCE x
 #define ALERT(x)       KERNEL_ALERT x
 #define DEBUG(x)
 #define TRACE(x)
 #define ASSERT(x)      assert x
 
 #endif
+
+#define FORCE(x)       (*KENTRY->vec_debug.force) x
 
 /*
  * hk:
