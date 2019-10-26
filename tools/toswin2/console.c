@@ -65,10 +65,11 @@ void open_console(void)
 {
 	WINCFG	*cfg;
 	char		str[30];
+	static char const prog[] = "Console";
 
 	if (con_win == NULL)
 	{
-		cfg = get_wincfg("Console");
+		cfg = get_wincfg(prog);
 		if (cfg->title[0] == '\0')
 			strcpy(str, " Console ");
 		else
@@ -85,7 +86,7 @@ void open_console(void)
 			}
 
 			con_win->win->uniconify = uniconify_con;
-			con_win->prog = strdup(str);
+			con_win->prog = strdup(prog);
 			con_win->fd = con_fd;
 
 			/* Cursor mu an, sonst kommt die Ausgabe durcheinander!! */
