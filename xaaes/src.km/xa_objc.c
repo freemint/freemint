@@ -114,14 +114,6 @@ XA_objc_wdraw(int lock, struct xa_client *client, AESPB *pb)
 		if ((wind = get_wind_by_handle(lock, pb->intin[2])))
 		{
 			XA_TREE *wt;
-			if( obtree->ob_x < wind->r.x || obtree->ob_y < wind->r.y
-				|| obtree->ob_x + obtree->ob_width > wind->r.x + wind->r.w
-				|| obtree->ob_y + obtree->ob_height > wind->r.y + wind->r.h
-				)
-			{
-				BLOG((0,"%s:objc_wdraw: object: outside window: %lx", client->name, obtree));
-				return XAC_DONE;
-			}
 
 			if (!(wt = obtree_to_wt(client, obtree)))
 				wt = new_widget_tree(client, obtree);
