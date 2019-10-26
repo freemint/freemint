@@ -135,7 +135,7 @@ static struct adif moose_aif =
 	0,		/* resrvd1 */
 	moose_ioctl,	/* ioctl */
 	moose_timeout,	/* timeout */
-	{ NULL },
+	{ 0, 0, 0, 0, 0, 0 }
 };
 	
 
@@ -557,7 +557,7 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 static long _cdecl
 moose_close (struct adif *a)
 {
-	*VBI_entry = NULL;
+	*VBI_entry = 0;
 	moose_inuse = 0;
 	dc_time = 0;
 
