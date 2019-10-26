@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        183
+ * Number of Strings:        184
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 3
  * Number of Color Icons:    3
  * Number of Tedinfos:       28
- * Number of Free Strings:   17
+ * Number of Free Strings:   23
  * Number of Free Images:    0
- * Number of Objects:        138
- * Number of Trees:          10
+ * Number of Objects:        132
+ * Number of Trees:          9
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          11714
+ * Total file size:          11598
  */
 
 #undef RSC_NAME
@@ -35,8 +35,8 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 183
-#define NUM_FRSTR 17
+#define NUM_STRINGS 184
+#define NUM_FRSTR 23
 #define NUM_UD 0
 #define NUM_IMAGES 0
 #define NUM_BB 0
@@ -44,8 +44,8 @@
 #define NUM_IB 0
 #define NUM_CIB 3
 #define NUM_TI 28
-#define NUM_OBS 138
-#define NUM_TREE 10
+#define NUM_OBS 132
+#define NUM_TREE 9
 #endif
 
 
@@ -136,14 +136,7 @@
 
 #define CONICON            7 /* form/dialog */
 
-#define STRINGS            8 /* form/dialog */
-#define STRPROGSEL         1 /* STRING in tree STRINGS */
-#define STRFONTSEL         2 /* STRING in tree STRINGS */
-#define STRCFGPROG         3 /* STRING in tree STRINGS */
-#define STRCFGSTD          4 /* STRING in tree STRINGS */
-#define STRLOGSEL          5 /* STRING in tree STRINGS */
-
-#define POPUPS             9 /* form/dialog */
+#define POPUPS             8 /* form/dialog */
 #define TERMPOP            1 /* BOX in tree POPUPS */
 #define TP52               2 /* STRING in tree POPUPS */
 #define TP100              3 /* STRING in tree POPUPS */
@@ -201,6 +194,24 @@
 
 #define NOTWCALL          16 /* Alert string */
 /* [3][Kommunikationsfehler:|tw-call antwortet nicht!?][Abbruch] */
+
+#define STRPROGSEL        17 /* Free string */
+/* TOS-Programm starten */
+
+#define STRFONTSEL        18 /* Free string */
+/* Zeichensatz wÑhlen */
+
+#define STRCFGPROG        19 /* Free string */
+/* fÅr: %s */
+
+#define STRCFGSTD         20 /* Free string */
+/* Standard-Fenster */
+
+#define STRLOGSEL         21 /* Free string */
+/* Log-Datei wÑhlen */
+
+#define STRCONSTITLE      22 /* Free string */
+/* Konsole */
 
 
 

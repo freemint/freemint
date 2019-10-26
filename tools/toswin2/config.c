@@ -219,7 +219,7 @@ static void get_fontname(int id, char *name)
 
 static void open_cfgwd(WDIALOG *wd)
 {
-	char		str[32], title[256] = "";
+	char		str[32], title[256];
 	WINCFG	*cfg;
 
 	if (wd->mode == 0)		/* nur beim ersten Mal */
@@ -241,15 +241,18 @@ static void open_cfgwd(WDIALOG *wd)
 			set_string(wd->tree, WPROG, title);
 			if (cfg->title[0] != '\0')
 			{
-				strncpy(title, cfg->title, 20);
-				title[20] = '\0';
-			}
-			else
+				strcpy(title, cfg->title);
+			} else if (strcmp(cfg->progname, "Console") == 0)
+			{
+				strcpy(title, rsc_string(STRCONSTITLE));
+			} else
+			{
 				title[0] = '\0';
+			}
 		}
 		else
 		{
-			/* Default Fenster */
+			/* default window */
 			cfg_win = NULL;
 			cfg = gl_wincfg;
 			sprintf(title, rsc_string(STRCFGPROG), rsc_string(STRCFGSTD));

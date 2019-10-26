@@ -16,8 +16,7 @@
  * Globale Variablen
  */
 OBJECT	*winicon,
-	*conicon,
-	*strings;
+	*conicon;
 int	exit_code;
 int	vdi_handle;
 int	font_anz;
@@ -27,7 +26,7 @@ short	wco;
 /*
  * Lokale Variablen
 */
-static char	**alertarray;
+char	**stringarray;
 static int 	lasttextcolor = -1, 
 		lastfillcolor = -1, 
 		lastwrmode = -1, 
@@ -98,7 +97,7 @@ void set_fillstyle(int style, int nr)
 int alert(int def, int undo, int num)
 {
 	graf_mouse(ARROW, NULL);
-	return do_walert(def, undo, alertarray[num], " TosWin2 ");
+	return do_walert(def, undo, rsc_string(num), " TosWin2 ");
 }
 
 
@@ -108,8 +107,7 @@ void global_init(void)
 	
 	rsrc_gaddr(R_TREE, WINICON, &winicon);
 	rsrc_gaddr(R_TREE, CONICON, &conicon);
-	rsrc_gaddr(R_TREE, STRINGS, &strings);
-	rsrc_gaddr(R_FRSTR, NOAES41, &alertarray);
+	rsrc_gaddr(R_FRSTR, 0, &stringarray);
 	exit_code = 0;
 	
 	vdi_handle = open_vwork(work_out);

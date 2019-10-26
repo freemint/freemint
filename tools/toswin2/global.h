@@ -32,6 +32,7 @@ typedef enum {FALSE, TRUE} bool;
 extern OBJECT	*winicon,
 		*conicon,
 		*strings;
+extern char **stringarray;
 
 extern int	exit_code;		/* Enthlt den Exitcode eines Kindprozesses */
 extern int	vdi_handle;
@@ -46,7 +47,7 @@ extern int	curs_ticks;
  * Hilfsfunktionen
  */
 
-#define	rsc_string(a)	strings[a].ob_spec.free_string
+#define	rsc_string(a)	stringarray[a]
 
 void	set_fillcolor(int col);
 void	set_textcolor(int col);
