@@ -30,7 +30,7 @@
 #include "menuwidg.h"
 
 void
-cXA_fmdkey(enum locks lock, struct c_event *ce, short cancel)
+cXA_fmdkey(int lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	struct rawkey *key = ce->ptr1;
@@ -44,7 +44,7 @@ cXA_fmdkey(enum locks lock, struct c_event *ce, short cancel)
 	kfree(key);
 }
 void
-cXA_keypress(enum locks lock, struct c_event *ce, short cancel)
+cXA_keypress(int lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	struct rawkey *key = ce->ptr1;
@@ -66,7 +66,7 @@ cXA_keypress(enum locks lock, struct c_event *ce, short cancel)
 		kfree(key);
 }
 void
-cXA_keybd_event(enum locks lock, struct c_event *ce, short cancel)
+cXA_keybd_event(int lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	struct rawkey *key = ce->ptr1;
@@ -79,7 +79,7 @@ cXA_keybd_event(enum locks lock, struct c_event *ce, short cancel)
 }
 
 void
-cXA_menu_key(enum locks lock, struct c_event *ce, short cancel)
+cXA_menu_key(int lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	struct rawkey *key = ce->ptr1;
@@ -92,7 +92,7 @@ cXA_menu_key(enum locks lock, struct c_event *ce, short cancel)
 }
 
 void
-cXA_open_menubykbd(enum locks lock, struct c_event *ce, short cancel)
+cXA_open_menubykbd(int lock, struct c_event *ce, short cancel)
 {
 	struct xa_window *wind = ce->ptr1;
 	struct xa_widget *widg = ce->ptr2;

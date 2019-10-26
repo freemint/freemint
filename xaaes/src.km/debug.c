@@ -484,7 +484,6 @@ diags(const char *fmt, ...)
 
 	DEBUG((buf));
 
-//#if GENERATE_DIAGS
 	if (D.debug_file)
 	{
 		buf[l++] = '\n';

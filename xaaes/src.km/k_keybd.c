@@ -199,7 +199,7 @@ unqueue_key(struct xa_client *client, struct rawkey *key)
 }
 
 static void
-XA_keyboard_event(enum locks lock, const struct rawkey *key)
+XA_keyboard_event(int lock, const struct rawkey *key)
 {
 	struct xa_window *keywind;
 	struct xa_client *locked_client;
@@ -328,7 +328,7 @@ static void close_menu_if_move(struct xa_window *wind)
 }
 
 static void
-do_kbd_win( enum locks lock, struct xa_window *wind, RECT *r, int md)
+do_kbd_win( int lock, struct xa_window *wind, RECT *r, int md)
 {
 	if (wind->opts & XAWO_WCOWORK)
 		*r = f2w(&wind->delta, r, true);
@@ -388,7 +388,7 @@ do_kbd_win( enum locks lock, struct xa_window *wind, RECT *r, int md)
 +----------------------------------------------------------------------------------------------------------------------------+
 ********************************************************************************/
 static bool
-kernel_key(enum locks lock, struct rawkey *key)
+kernel_key(int lock, struct rawkey *key)
 {
 #if ALT_CTRL_APP_OPS
 	if ((key->raw.conin.state & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT))
@@ -1002,7 +1002,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 }
 
 void
-keyboard_input(enum locks lock)
+keyboard_input(int lock)
 {
 	/* Did we get some keyboard input? */
 #if EIFFEL_SUPPORT

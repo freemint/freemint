@@ -91,7 +91,7 @@ char *about_lines[] =
 #endif
 
 static int
-about_destructor(enum locks lock, struct xa_window *wind)
+about_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 	if (htd)
@@ -145,7 +145,7 @@ RECT about_r = { 0, 0, 0, 0 };
 RECT view_r = { 0, 0, 0, 0 };
 
 bool
-wind_exist(enum locks lock, struct xa_window *wind);
+wind_exist(int lock, struct xa_window *wind);
 
 static void
 about_form_exit(struct xa_client *client,
@@ -153,7 +153,7 @@ about_form_exit(struct xa_client *client,
 		struct widget_tree *wt,
 		struct fmd_result *fr)
 {
-	enum locks lock = 0;
+	int lock = 0;
 	OBJECT *obtree = wt->tree;
 
 	switch (aesobj_item(&fr->obj))
@@ -511,7 +511,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 #endif
 
 void
-open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
+open_about(int lock, struct xa_client *client, bool open, char *fn)
 {
 	struct helpthread_data *htd;
 	struct xa_window *wind;

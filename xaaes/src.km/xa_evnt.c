@@ -40,12 +40,12 @@
 
 
 static int
-pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
+pending_critical_msgs(int lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	msg = client->crit_msg;
 	if (msg)
@@ -64,17 +64,17 @@ pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *
 		rtn = 1;
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	return rtn;
 }
 
 static int
-pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
+pending_redraw_msgs(int lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 	msg = client->rdrw_msg;
 	if (msg)
 	{
@@ -96,17 +96,17 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 			yield();
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	return rtn;
 }
 
 static int
-pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
+pending_msgs(int lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	msg = client->msg;
 	if (msg)
@@ -125,17 +125,17 @@ pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
 		rtn = 1;
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	return rtn;
 }
 
 static int
-pending_iredraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
+pending_iredraw_msgs(int lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	msg = client->irdrw_msg;
 	if (msg)
@@ -155,11 +155,11 @@ pending_iredraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *b
 //	else if (C.redraws)
 //		yield();
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	return rtn;
 }
 void
-exec_iredraw_queue(enum locks lock, struct xa_client *client)
+exec_iredraw_queue(int lock, struct xa_client *client)
 {
 	struct xa_window *wind;
 	RECT *r;
@@ -579,7 +579,7 @@ cancel_mutimeout(struct xa_client *client)
  * The essential evnt_multi() call
  */
 unsigned long
-XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 {
 	unsigned long events = (unsigned long)pb->intin[0] | XAWAIT_MULTI;
 
@@ -677,7 +677,7 @@ cancel_evnt_multi(struct xa_client *client, int which)
  * AES message handling
  */
 unsigned long
-XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_evnt_mesag(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,1)
 
@@ -700,7 +700,7 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
  * evnt_button() routine
  */
 unsigned long
-XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_evnt_button(int lock, struct xa_client *client, AESPB *pb)
 {
 
 	CONTROL(3,5,1)
@@ -725,7 +725,7 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
  * evnt_keybd() routine
  */
 unsigned long
-XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_evnt_keybd(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
@@ -746,7 +746,7 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
  * Event Mouse
  */
 unsigned long
-XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_evnt_mouse(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(5,5,0)
 
@@ -775,7 +775,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
  * Evnt_timer()
  */
 unsigned long
-XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_evnt_timer(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 

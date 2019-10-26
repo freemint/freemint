@@ -1991,7 +1991,7 @@ ResourceFrimg(RSHDR *hdr, int num)
 }
 
 unsigned long
-XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 {
 	char *path;
 	short ret = 0;
@@ -2071,7 +2071,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
  * depend on 'client' being valid!
  */
 unsigned long
-XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_rsrc_free(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
@@ -2092,7 +2092,7 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT **trees = NULL;
 	RSHDR *rsc = NULL;
@@ -2252,7 +2252,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_rsrc_obfix(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *ob;
 	int item = pb->intin[0];
@@ -2276,7 +2276,7 @@ XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_rsrc_rcfix(int lock, struct xa_client *client, AESPB *pb)
 {
 	RSHDR *rsc;
 	CONTROL(0,1,1)

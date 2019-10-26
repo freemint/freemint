@@ -45,7 +45,7 @@
  * single tasking GEM ones.
  */
 unsigned long
-XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 {
 	const RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *new_window;
@@ -105,7 +105,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_open(int lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r; // = *((const RECT *)&pb->intin[1]);
 	struct xa_window *w;
@@ -148,7 +148,7 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wind_close(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_close(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
 // 	bool d = (!strnicmp("cops", client->proc_name, 4));
@@ -183,7 +183,7 @@ XA_wind_close(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_find(int lock, struct xa_client *client, AESPB *pb)
 {
 	/* Is there a window under the mouse? */
 	struct xa_window *w = find_window(lock, pb->intin[0], pb->intin[1], FNDW_NOLIST|FNDW_NORMAL);
@@ -258,7 +258,7 @@ setget(int i)
 
 
 unsigned long
-XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
 	int wind = pb->intin[0];
@@ -721,7 +721,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				else
 					target = focus_owner();
 
-				app_in_front(lock|winlist, target, true, false, true);
+				app_in_front(lock|LOCK_WINLIST, target, true, false, true);
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
@@ -729,7 +729,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if ( !wind_has_focus(w)) // !is_topped(w))
 			{
-				top_window(lock|winlist, true, false, w);
+				top_window(lock|LOCK_WINLIST, true, false, w);
 			}
 		}
 		else
@@ -1252,7 +1252,7 @@ static short GtoX[] =
  */
 
 unsigned long
-XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
 	XA_SLIDER_WIDGET *slw;
@@ -1740,12 +1740,12 @@ oeps:
 	}
 	case WF_NEWDESK:
 	{
-		Sema_Up(desk);
+		Sema_Up(LOCK_DESK);
 
 		ptr_to_shorts(get_desktop()->tree, o + 1);
 // 		*(OBJECT **)&o[1] = get_desktop()->tree;
 
-		Sema_Dn(desk);
+		Sema_Dn(LOCK_DESK);
 		break;
 	}
 	case WF_ICONIFY:
@@ -1822,7 +1822,7 @@ oeps:
 }
 
 unsigned long
-XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_delete(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
 
@@ -1841,7 +1841,7 @@ XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wind_new(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_new(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,0,0)
 
@@ -1856,7 +1856,7 @@ XA_wind_new(enum locks lock, struct xa_client *client, AESPB *pb)
  * HR: embedded function calc_window()
  */
 unsigned long
-XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 {
 // 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	XA_WIND_ATTR tp;
@@ -1909,7 +1909,7 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
  */
 
 unsigned long
-XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wind_update(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct proc *p;
 

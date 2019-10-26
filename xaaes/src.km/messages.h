@@ -60,13 +60,13 @@ const char *pmsg(short m);
 
 long cancel_aesmsgs(struct xa_aesmsg_list **m);
 long cancel_app_aesmsgs(struct xa_client *client);
-void cancel_do_winmesag(enum locks lock, struct xa_window *wind);
+void cancel_do_winmesag(int lock, struct xa_window *wind);
 
 
-void send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
+void send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 //void clip_all_wm_redraws(RECT *r);
-//void deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
-//void queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
+//void deliver_message(int lock, struct xa_client *dest_client, union msg_buf *msg);
+//void queue_message(int lock, struct xa_client *dest_client, union msg_buf *msg);
 
 struct xa_window;
 struct xa_client;
@@ -85,7 +85,7 @@ struct xa_client;
 #define QMF_NOCOUNT	4	/* If set, do not count */
 typedef void
 SendMessage(
-	enum locks lock,
+	int lock,
 	struct xa_window *wind,
 	struct xa_client *to, /* if different from wind->owner */
 	short amq, short flags,

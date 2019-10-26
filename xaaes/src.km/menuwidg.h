@@ -41,11 +41,11 @@ Tab *	nest_menutask(Tab *tab);
 void	popout(Tab *tab);
 void	start_popup_session(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx, short rdy);
 bool	is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat);
-int	inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
-int	attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn, on_open_attach *cb_open, void *data);
-int	detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item);
+int	inquire_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
+int	attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn, on_open_attach *cb_open, void *data);
+int	detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item);
 void	free_attachments(struct xa_client *client);
-void	remove_attachments(enum locks lock, struct xa_client *client, XA_TREE *wt);
+void	remove_attachments(int lock, struct xa_client *client, XA_TREE *wt);
 void	set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu);
 void	fix_menu(struct xa_client *client, XA_TREE *root, struct xa_window *w, bool do_desk);
 
@@ -59,7 +59,7 @@ INLINE	short get_menu_height(void) { return C.Aes->std_menu->tree->ob_height; }
 INLINE	struct xa_client *menu_owner(void) { return get_menu()->owner; }
 
 void close_window_menu(Tab *tab);
-bool	keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget *widg);
+bool	keyboard_menu_widget(int lock, struct xa_window *wind, struct xa_widget *widg);
 bool	menu_keyboard(Tab *tab, const struct rawkey *key);
 
 #endif /* _menuwidg_h */

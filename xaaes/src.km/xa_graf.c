@@ -333,7 +333,7 @@ drag_box(struct xa_client *client, RECT r,
  */
 
 unsigned long
-XA_graf_dragbox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_dragbox(int lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r, last, dist;
 
@@ -357,7 +357,7 @@ XA_graf_dragbox(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_rubberbox(int lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r, d = {0};
 	short mb, x, y;
@@ -391,7 +391,7 @@ XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_watchbox(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	XA_TREE *wt;
@@ -422,7 +422,7 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
  * MagiC 5.10 extension
  */
 unsigned long
-XA_graf_wwatchbox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_wwatchbox(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 0;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
@@ -456,7 +456,7 @@ XA_graf_wwatchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_slidebox(int lock, struct xa_client *client, AESPB *pb)
 {
 	short d;
 	RECT p, c,				/* parent/child rectangles. */
@@ -496,7 +496,7 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 #if 0
 /* If shrinkbox isnt there, why then growbox? or move_box? */
 unsigned long
-XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_growbox(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(8,1,0)
 
@@ -564,7 +564,7 @@ DIAG((D_graf,client->pid,"_growbox"));
 
 
 unsigned long
-XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_movebox(int lock, struct xa_client *client, AESPB *pb)
 {
 	int w = pb->intin[0];
 	int h = pb->intin[1];
@@ -1157,7 +1157,7 @@ set_client_mouse(struct xa_client *client, short which, short m_shape, MFORM *mf
  */
 #if 1
 unsigned long
-XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 {
 	short m = pb->intin[0];
 
@@ -1250,7 +1250,7 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 #else
 unsigned long
-XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 {
 	short m = pb->intin[0];
 
@@ -1350,7 +1350,7 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
-XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_handle(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,5,0)
 
@@ -1377,7 +1377,7 @@ XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
-XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,5,0)
 

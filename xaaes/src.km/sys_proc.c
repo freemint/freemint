@@ -76,7 +76,7 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 
 	if (!ferr && client->p->pid == p->pid)
 	{
-		enum locks lock = NOLOCKS;
+		int lock = NOLOCKS;
 
 		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
 		exit_client(lock, _client, code, true, false);

@@ -28,6 +28,6 @@
 #include "global.h"
 #include "xa_types.h"
 
-void cXA_deliver_msg(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_deliver_msg(int lock, struct c_event *ce, bool cancel);
 
 #endif /* _c_message_h */

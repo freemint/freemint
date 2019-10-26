@@ -526,7 +526,7 @@ again:
 	if (first)
 	{
 		struct file *check;
-		short flag;
+		bool flag;
 
 		/* look if there is a moose.xdd
 		 * terminate if yes

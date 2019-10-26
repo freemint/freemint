@@ -94,25 +94,24 @@ extern short stack_align;
 #include "c_mouse.h"
 void set_tty_mode( short md );
 
-
 /* ask before shutting down (does not work yet) */
 #define ALERT_SHUTDOWN 0
 #define AESSYS_TIMEOUT	3*2000	/* s/1000 */
 
 void
-ceExecfunc(enum locks lock, struct c_event *ce, short cancel)
+ceExecfunc(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
 		if (ce->d1)
 		{
-			void _cdecl (*f)(enum locks, struct xa_client *, short);
+			void _cdecl (*f)(int, struct xa_client *, short);
 			if ((f = ce->ptr1))
 				(*f)(lock, ce->client, ce->d0);
 		}
 		else
 		{
-			void (*f)(enum locks, struct xa_client *, short);
+			void (*f)(int, struct xa_client *, short);
 			if ((f = ce->ptr1))
 				(*f)(lock, ce->client, ce->d0);
 		}
@@ -220,7 +219,7 @@ cancel_CE(struct xa_client *client,
 
 void
 post_cevent(struct xa_client *client,
-	void (*func)(enum locks, struct c_event *, short cancel),
+	void (*func)(int, struct c_event *, short cancel),
 	void *ptr1, void *ptr2,
 	int d0, int d1, const RECT *r,
 	const struct moose_data *md)
@@ -706,7 +705,7 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 }
 struct display_alert_data
 {
-	enum locks lock;
+	int lock;
 	short len;
 	char buf[0];
 };
@@ -745,7 +744,7 @@ static char *strrpl( char *s, char in, char out, char rep1 )
 }
 
 static void
-CE_fa(enum locks lock, struct c_event *ce, short cancel)
+CE_fa(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -946,7 +945,7 @@ static XA_CONF *xa_config[] = {load_grd, show_bubble, load_config};
 #endif
 #define MAX_ALERTLEN 512
 static void
-alert_input(enum locks lock)
+alert_input(int lock)
 {
 	/* System alert? Alert and add it to the log */
 	long n;
@@ -1210,7 +1209,7 @@ helpthread_entry(void *c)
 }
 
 static void
-CE_at_restoresigs(enum locks lock, struct c_event *ce, short cancel)
+CE_at_restoresigs(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1230,14 +1229,6 @@ static N_AESINFO naes_cookie =
 	0L,
 };
 
-#if MAGX_COOKIE
-#define C_MagX 0x4D616758L     /* MagX */
-static MAGX_COOKIE magx_cookie = {
-	1,
-	0, 0, 0, 0
-};
-static MAGX_COOKIE *c_magx = NULL;
-#endif
 
 #define SD_TIMEOUT	1000	// s/100
 
@@ -1406,7 +1397,7 @@ kick_shutdn_if_last_client(void)
 
 static int in_ce_dispatch_shutdown = 0;
 void _cdecl
-ce_dispatch_shutdown(enum locks lock, struct xa_client *client, short b)
+ce_dispatch_shutdown(int lock, struct xa_client *client, short b)
 {
 	short r = 0, def = 1;
 	char *s;
@@ -1459,13 +1450,13 @@ dispatch_shutdown(short flags)
 	}
 }
 static void
-CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
+CE_start_apps(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
 		Path parms;
 		int i;
-		lock = winlist|envstr|pending;
+		lock = LOCK_WINLIST|LOCK_ENVSTR|LOCK_PENDING;
 
 		/*
 		 * Load Accessories
@@ -1599,7 +1590,7 @@ void load_palette( void *fn )
 	}
 }
 
-static void set_boot_focus(enum locks lock)
+static void set_boot_focus(int lock)
 {
 	if( C.boot_focus )
 	{
@@ -1678,17 +1669,6 @@ k_main(void *dummy)
 
 	if (cfg.naes_cookie)
 	{
-#if MAGX_COOKIE
-		MAGX_DOSVARS magx_dosvars;
-		MAGX_AESVARS magx_aesvars;
-		magx_cookie.dosvars = &magx_dosvars;
-		magx_cookie.aesvars = &magx_aesvars;
-		magx_aesvars.magic = 0x87654321;
-		magx_aesvars.magic2 = 0x4D414758;	/* MAGX */
-		magx_aesvars.version = 0x0403;
-		magx_aesvars.release = 3;
-		install_cookie( (void**)&c_magx, (void*)&magx_cookie, sizeof(*c_magx), C_MagX, true );
-#endif
 		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES, true );
 	}
 	C.reschange = NULL;
@@ -1948,7 +1928,7 @@ k_main(void *dummy)
 		/* how about this? It means that these
 	         * semaphores are not needed and are effectively skipped.
 		 */
-		enum locks lock = winlist|envstr|pending;
+		int lock = LOCK_WINLIST|LOCK_ENVSTR|LOCK_PENDING;
 		unsigned long input_channels;
 		long fs_rtn;
 

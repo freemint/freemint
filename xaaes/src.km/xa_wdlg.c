@@ -146,7 +146,7 @@ cpy_ev2md(EVNT *e, struct moose_data *m)
 }
 
 void
-wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r)
+wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_rect_list *rl;
@@ -212,7 +212,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object sta
  * is handled elsewhere
  */
 static void
-wdlg_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r)
+wdlg_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct wdlg_info *wdlg;
@@ -299,9 +299,9 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start,
 }
 
 static short
-wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
+wdialog_message(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 {
-	enum locks wlock = lock|winlist;
+	int wlock = lock|LOCK_WINLIST;
 	struct xa_window *wind = wep->wind;
 	struct wdlg_info *wdlg = wep->wdlg;
 	EVNT *ev = wep->ev;
@@ -477,7 +477,7 @@ struct toolbar_handlers wdlg_th =
 };
 
 unsigned long
-XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_create(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	XA_TREE *wt;
@@ -560,7 +560,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
@@ -658,7 +658,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_close(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
@@ -687,7 +687,7 @@ XA_wdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_delete(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
@@ -723,7 +723,7 @@ XA_wdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_get(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
@@ -817,7 +817,7 @@ XA_wdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
@@ -1047,7 +1047,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 short
-wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
+wdialog_event(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 {
 	short ret = 1, cont = 1;
 	struct widget_tree *wt;
@@ -1321,7 +1321,7 @@ kbd_done:
 }
 
 unsigned long
-XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_event(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
@@ -1367,7 +1367,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
  *	According to the pdlg sample sources, yes, so we do that here.
  */
 unsigned long
-XA_wdlg_redraw(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_wdlg_redraw(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 	short handle;
@@ -1407,7 +1407,7 @@ XA_wdlg_redraw(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 STATIC bool
-click_wdlg_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_wdlg_widget(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client = wind->owner;
 

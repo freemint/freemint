@@ -46,7 +46,7 @@
 
 #include "mint/signal.h"
 
-STATIC struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short exclude);
+STATIC struct xa_client *	find_menu(int lock, struct xa_client *client, short exclude);
 
 #if INCLUDE_UNUSED
 bool
@@ -512,7 +512,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 	if (new)
 	{
 		struct xa_client *infront = get_app_infront();
-		enum locks lock = 0;
+		int lock = 0;
 		struct xa_widget *widg = get_menu_widg();
 		struct xa_window *top = NULL;
 
@@ -576,7 +576,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
  */
 
 void
-swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, short flags)
+swap_menu(int lock, struct xa_client *new, struct widget_tree *new_menu, short flags)
 {
 	struct proc *p = get_curproc();
 
@@ -663,11 +663,11 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 }
 
 struct xa_client *
-find_desktop(enum locks lock, struct xa_client *client, short exclude)
+find_desktop(int lock, struct xa_client *client, short exclude)
 {
 	struct xa_client *last, *rtn = C.Aes;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	last = APP_LIST_START;
 	while (NEXT_APP(last))
@@ -692,14 +692,14 @@ find_desktop(enum locks lock, struct xa_client *client, short exclude)
 	if (!last)
 		last = C.Aes;
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	return rtn;
 }
 /*
  * Guaranteed to return a client iwth menu
  */
 struct xa_client *
-find_menu(enum locks lock, struct xa_client *client, short exclude)
+find_menu(int lock, struct xa_client *client, short exclude)
 {
 	struct xa_client *mclient = APP_LIST_START;
 
@@ -717,7 +717,7 @@ find_menu(enum locks lock, struct xa_client *client, short exclude)
 }
 
 void
-unhide_app(enum locks lock, struct xa_client *client)
+unhide_app(int lock, struct xa_client *client)
 {
 	struct xa_window *w;
 
@@ -728,7 +728,7 @@ unhide_app(enum locks lock, struct xa_client *client)
 			break;
 
 		if (w->owner == client)
-			unhide_window(lock|winlist, w, false);
+			unhide_window(lock|LOCK_WINLIST, w, false);
 
 		w = w->next;
 	}
@@ -744,7 +744,7 @@ static int rpi_block = 0;
 static void
 repos_iconified(struct proc *p, long arg)
 {
-	enum locks lock = (enum locks)arg;
+	int lock = (int)arg;
 	struct xa_window *w = window_list;
 	RECT ir, r;
 
@@ -832,7 +832,7 @@ repos_iconified(struct proc *p, long arg)
 }
 
 void
-set_reiconify_timeout(enum locks lock)
+set_reiconify_timeout(int lock)
 {
 	if (rpi_to)
 	{
@@ -864,7 +864,7 @@ unblock_reiconify_timeout(void)
 }
 
 void
-hide_app(enum locks lock, struct xa_client *client)
+hide_app(int lock, struct xa_client *client)
 {
 	bool reify = false, hidden = false;
 	struct xa_client *infocus = focus_owner(), *nxtclient;
@@ -912,7 +912,7 @@ hide_app(enum locks lock, struct xa_client *client)
 }
 
 void
-hide_other(enum locks lock, struct xa_client *client)
+hide_other(int lock, struct xa_client *client)
 {
 	struct xa_client *cl;
 
@@ -925,7 +925,7 @@ hide_other(enum locks lock, struct xa_client *client)
 }
 
 void
-unhide_all(enum locks lock, struct xa_client *client)
+unhide_all(int lock, struct xa_client *client)
 {
 	struct xa_client *cl;
 
@@ -938,13 +938,13 @@ unhide_all(enum locks lock, struct xa_client *client)
 }
 
 void
-set_unhidden(enum locks lock, struct xa_client *client)
+set_unhidden(int lock, struct xa_client *client)
 {
 	client->name[1] = ' ';
 }
 
 bool
-any_hidden(enum locks lock, struct xa_client *client, struct xa_window *exclude)
+any_hidden(int lock, struct xa_client *client, struct xa_window *exclude)
 {
 	bool ret = false;
 	struct xa_window *w;
@@ -969,7 +969,7 @@ any_hidden(enum locks lock, struct xa_client *client, struct xa_window *exclude)
 }
 
 static bool
-any_window(enum locks lock, struct xa_client *client)
+any_window(int lock, struct xa_client *client)
 {
 	struct xa_window *w;
 	bool ret = false;
@@ -993,7 +993,7 @@ any_window(enum locks lock, struct xa_client *client)
 }
 
 struct xa_window *
-get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw, bool not, WINDOW_STATUS wsmsk, WINDOW_STATUS wschk)
+get_topwind(int lock, struct xa_client *client, struct xa_window *startw, bool not, WINDOW_STATUS wsmsk, WINDOW_STATUS wschk)
 {
 	struct xa_window *w = startw;
 
@@ -1022,7 +1022,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 
 #if ALT_CTRL_APP_OPS
 struct xa_window *
-next_wind(enum locks lock)
+next_wind(int lock)
 {
 	struct xa_window *wind;
 
@@ -1079,7 +1079,7 @@ next_wind(enum locks lock)
  * for kbd input (MU_KEYBD)
  */
 struct xa_client *
-next_app(enum locks lock, bool wwom, bool no_acc)
+next_app(int lock, bool wwom, bool no_acc)
 {
 	struct xa_client *client;
 
@@ -1130,7 +1130,7 @@ next_app(enum locks lock, bool wwom, bool no_acc)
  * process left
  */
 struct xa_client *
-previous_client(enum locks lock, short exlude)
+previous_client(int lock, short exlude)
 {
 	struct xa_client *client = APP_LIST_START;
 
@@ -1147,7 +1147,7 @@ previous_client(enum locks lock, short exlude)
 }
 
 void
-app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop, bool allwinds)
+app_in_front(int lock, struct xa_client *client, bool snd_untopped, bool snd_ontop, bool allwinds)
 {
 	struct xa_window *wl,*wf,*wp;
 
@@ -1188,7 +1188,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 					{
 						if (is_hidden(wl))
 						{
-							unhide_window(lock|winlist, wl, false);
+							unhide_window(lock|LOCK_WINLIST, wl, false);
 							was_hidden = true;
 						}
 
@@ -1274,7 +1274,7 @@ get_app_by_procname(char *name)
 }
 #endif
 void
-set_active_client(enum locks lock, struct xa_client *client)
+set_active_client(int lock, struct xa_client *client)
 {
 	if (client != APP_LIST_START)
 	{

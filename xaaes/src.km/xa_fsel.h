@@ -32,7 +32,7 @@
 #define NAME_MAX 128
 
 struct fsel_data;
-typedef void fsel_handler(enum locks lock, struct fsel_data *fs, const char *path, const char *file);
+typedef void fsel_handler(int lock, struct fsel_data *fs, const char *path, const char *file);
 struct fsel_data
 {
 	struct xa_window *wind;
@@ -91,12 +91,12 @@ struct fs_data{
 
 extern struct fs_data fs_data;
 
-void open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
+void open_fileselector(int lock, struct xa_client *client, struct fsel_data *fs,
 		       char *path, const char *file, const char *title,
 		       fsel_handler *s, fsel_handler *c, void *data);
 
 void fs_save(struct fsel_data *fs);
-void close_fileselector(enum locks lock, struct fsel_data *fs);
+void close_fileselector(int lock, struct fsel_data *fs);
 
 void init_fsel(void);
 

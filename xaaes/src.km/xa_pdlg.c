@@ -2113,7 +2113,7 @@ change_dither(struct xa_pdlg_info *pdlg, short idx)
 }
 
 static void
-handle_fs(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
+handle_fs(int lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	struct xa_pdlg_info *pdlg = fs->data;
 
@@ -2123,7 +2123,7 @@ handle_fs(enum locks lock, struct fsel_data *fs, const char *path, const char *f
 	pdlg->client->usr_evnt = 2;
 }
 static void
-cancel_fs(enum locks lock, struct fsel_data *fs, const char *p, const char *f)
+cancel_fs(int lock, struct fsel_data *fs, const char *p, const char *f)
 {
 	struct xa_pdlg_info *pdlg = fs->data;
 	close_fileselector(lock, fs);
@@ -2708,7 +2708,7 @@ fail:
 	return pdlg;
 }
 unsigned long
-XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_create(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg = NULL;
 
@@ -2739,7 +2739,7 @@ memerr:
 }
 
 unsigned long
-XA_pdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_delete(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
@@ -3015,7 +3015,7 @@ init_dialog(struct xa_pdlg_info *pdlg)
 }
 
 unsigned long
-XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_open(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
@@ -3084,7 +3084,7 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_pdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_close(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
@@ -3106,7 +3106,7 @@ XA_pdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_get(int lock, struct xa_client *client, AESPB *pb)
 {
 	long *o = (long *)&pb->intout[0];
 
@@ -3148,7 +3148,7 @@ delete_usr_settings(void *_us)
 }
 
 unsigned long
-XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_set(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
@@ -3342,7 +3342,7 @@ static void print_xted( struct xa_aes_object *obj, long l )
 }
 #endif
 unsigned long
-XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_evnt(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
@@ -3419,7 +3419,7 @@ static FormKeyInput	Keypress;
 static FormExit		Formexit;
 
 static bool
-Keypress(enum locks lock,
+Keypress(int lock,
 	 struct xa_client *client,
 	 struct xa_window *wind,
 	 struct widget_tree *wt,
@@ -3476,7 +3476,7 @@ static struct toolbar_handlers pdlg_th =
 };
 
 unsigned long
-XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_pdlg_do(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;

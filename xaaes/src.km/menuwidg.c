@@ -55,7 +55,7 @@ static TASK menu_bar;
 
 static XAMENU desk_popup;
 static XA_TREE desk_wt;
-static bool menu_title(enum locks lock, Tab *tab, short item, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md);
+static bool menu_title(int lock, Tab *tab, short item, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md);
 static XA_TREE *set_popup_widget(Tab *tab, struct xa_window *wind, int item);
 
 
@@ -248,11 +248,11 @@ is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **
  * return information about a attached submenu.
  */
 int
-inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn)
+inquire_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn)
 {
 	int ret = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	DIAG((D_menu,NULL,"inquire_menu for %s on %lx + %d",
 		c_owner(client), wt->tree, item));
@@ -273,7 +273,7 @@ inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, X
 		}
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 
 	return ret;
 }
@@ -282,12 +282,12 @@ inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, X
  * Attach a submenu to a menu entry
  */
 int
-attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn, on_open_attach *on_open, void *data)
+attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn, on_open_attach *on_open, void *data)
 {
 	OBJECT *attach_to;
 	int ret = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	attach_to = wt->tree + item;
 
@@ -341,19 +341,19 @@ attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XA
 		DIAG((D_menu, NULL, "attach no tree(s)"));
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	DIAGS(("attatch_menu exit ok"));
 	return ret;
 }
 
 int
-detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item)
+detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item)
 {
 	OBJECT *attach_to = wt->tree + item;
 	XA_MENU_ATTACHMENT *xt;
 	int ret = 0;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	if (is_attach(client, wt, item, &xt))
 	{
@@ -385,7 +385,7 @@ detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item)
 		ret = 1;
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	return ret;
 }
 
@@ -404,7 +404,7 @@ free_attachments(struct xa_client *client)
 }
 
 void
-remove_attachments(enum locks lock, struct xa_client *client, XA_TREE *wt)
+remove_attachments(int lock, struct xa_client *client, XA_TREE *wt)
 {
 	if (wt->tree)
 	{
@@ -611,14 +611,14 @@ free_desk_popup(void)
 }
 
 static OBJECT *
-built_desk_popup(enum locks lock, short x, short y)
+built_desk_popup(int lock, short x, short y)
 {
 	int n, i, xw, obs, split;
 	OBJECT *ob;
 	struct xa_client *client, *fo;
 	size_t maxclients;
 
-	Sema_Up(clients);
+	Sema_Up(LOCK_CLIENTS);
 
 	maxclients = client_list_size() + 2; /* how many apps do we have */
 	maxclients = (maxclients + 31) & ~31; /* increase by 32 slots */
@@ -735,7 +735,7 @@ built_desk_popup(enum locks lock, short x, short y)
 	if (split == n - 1)		/* dont want to see split when last */
 		n--;
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 	DIAGS(("built_desk_popup: building object.."));
 	obs = n + 1;
 	ob = appmenu_ob;
@@ -1413,7 +1413,7 @@ do_collapse(Tab *tab)
 }
 
 static void
-CE_do_popup(enum locks lock, struct c_event *ce, short cancel)
+CE_do_popup(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1424,7 +1424,7 @@ CE_do_popup(enum locks lock, struct c_event *ce, short cancel)
 		cancel_pop_timeouts();
 }
 static void
-CE_do_collapse(enum locks lock, struct c_event *ce, short cancel)
+CE_do_collapse(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1548,7 +1548,7 @@ cancel_pop_timeouts(void)
 static Tab *
 click_desk_popup(struct task_administration_block *tab, short item)
 {
-	enum locks lock = tab->lock;
+	int lock = tab->lock;
 	MENU_TASK *k = &tab->task_data.menu;
 	struct xa_client *client;
 	struct xa_window *wind = tab->wind;
@@ -1909,7 +1909,7 @@ click_menu_entry(struct task_administration_block *tab, short item)
 	}
 	else
 	{
-		enum locks lock = tab->lock;
+		int lock = tab->lock;
 		XA_TREE *pop_wt = k->p.wt, *men_wt = k->m.wt;
 		struct xa_window *wind = tab->wind;
 		int subm = (NEXT_TAB(tab) != NULL);
@@ -2145,7 +2145,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 }
 
 static void
-CE_display_menu_widg(enum locks lock, struct c_event *ce, short cancel)
+CE_display_menu_widg(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 		Display_menu_widg(ce->ptr1, ce->ptr2, (const RECT *)&ce->r);
@@ -2191,7 +2191,7 @@ display_menu_widget(struct xa_window *wind, struct xa_widget *widg, const RECT *
  * will return false
  */
 static bool
-click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_menu_widget(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client; //, *rc = lookup_extension(NULL, XAAES_MAGIC);
 	struct proc *p = get_curproc();
@@ -2234,7 +2234,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 }
 
 bool
-keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget *widg)
+keyboard_menu_widget(int lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	if (!TAB_LIST_START)
 	{
@@ -2282,7 +2282,7 @@ keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget 
 }
 
 static bool
-menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md)
+menu_title(int lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md)
 {
 	RECT r;
 	MENU_TASK *k;
@@ -2839,7 +2839,7 @@ menu_scroll_down(Tab *tab)
 }
 
 static void
-CE_do_menu_scroll(enum locks lock, struct c_event *ce, short cancel)
+CE_do_menu_scroll(int lock, struct c_event *ce, short cancel)
 {
 	Tab *tab = ce->ptr1;
 	TIMEOUT *t = NULL;

@@ -109,9 +109,9 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 #define TM_CLIENT		0x40L	/* aes-client-entry in taskman-list */
 
 #if 0
-//void ask_and_shutdown( enum locks lock, struct xa_client *client, bool b);
+//void ask_and_shutdown( int lock, struct xa_client *client, bool b);
 
-/*void ask_and_shutdown( enum locks lock, struct xa_client *client, bool b)
+/*void ask_and_shutdown( int lock, struct xa_client *client, bool b)
 {
 	short r = xaaes_do_form_alert( lock, client, 1, ASK_SHUTDOWN_ALERT);
 	if ( r == 2 )
@@ -926,7 +926,7 @@ free_namelist(struct cfg_name_list **list)
 }
 
 static int
-taskmanager_destructor(enum locks lock, struct xa_window *wind)
+taskmanager_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 
@@ -937,7 +937,7 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 }
 
 void
-send_terminate(enum locks lock, struct xa_client *client, short reason)
+send_terminate(int lock, struct xa_client *client, short reason)
 {
 	if (client->type & APP_ACCESSORY)
 	{
@@ -962,7 +962,7 @@ send_terminate(enum locks lock, struct xa_client *client, short reason)
 
 
 void
-quit_all_apps(enum locks lock, struct xa_client *except, short reason)
+quit_all_apps(int lock, struct xa_client *except, short reason)
 {
 	struct xa_client *client;
 #if 0
@@ -980,8 +980,8 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 		return;
 	}
 #endif
-	Sema_Up(clients);
-	lock |= clients;
+	Sema_Up(LOCK_CLIENTS);
+	lock |= LOCK_CLIENTS;
 
 	FOREACH_CLIENT(client)
 	{
@@ -992,17 +992,17 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 		}
 	}
 
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 }
 
 #if ALT_CTRL_APP_OPS && 1	//HOTKEYQUIT
 static void
-quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
+quit_all_clients(int lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
 	struct xa_client *client, *dsk = NULL;
 
-	Sema_Up(clients);
-	lock |= clients;
+	Sema_Up(LOCK_CLIENTS);
+	lock |= LOCK_CLIENTS;
 
 	DIAGS(("quit_all_clients: name_list=%lx, except_client=%lx", except_nl, except_cl));
 	/*
@@ -1028,10 +1028,10 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 			send_terminate(lock, client, reason);
 		}
 	}
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 }
 void
-ce_quit_all_clients(enum locks lock, struct xa_client *client, bool b)
+ce_quit_all_clients(int lock, struct xa_client *client, bool b)
 {
 	struct cfg_name_list *nl = NULL;
 
@@ -1080,7 +1080,7 @@ CHlp_aesmsg(struct xa_client *client)
 
 #if ALT_CTRL_APP_OPS
 void
-screen_dump(enum locks lock, struct xa_client *client, short open)
+screen_dump(int lock, struct xa_client *client, short open)
 {
 	struct xa_client *dest_client;
 	UNUSED(open);
@@ -1252,7 +1252,7 @@ screen_dump(enum locks lock, struct xa_client *client, short open)
 }
 #endif
 
-void force_window_top( enum locks lock, struct xa_window *wind )
+void force_window_top( int lock, struct xa_window *wind )
 {
 	if( S.focus == wind )
 		return;
@@ -1267,7 +1267,7 @@ void force_window_top( enum locks lock, struct xa_window *wind )
 	TOP_WINDOW = 0;
 	screen.standard_font_point = wind->owner->options.standard_font_point;
 	if (is_hidden(wind))
-		unhide_window(lock|winlist, wind, false);
+		unhide_window(lock|LOCK_WINLIST, wind, false);
 	top_window( lock, true, true, wind );
 }
 
@@ -1282,7 +1282,7 @@ void wakeup_client(struct xa_client *client)
 	}
 }
 
-void app_or_acc_in_front( enum locks lock, struct xa_client *client )
+void app_or_acc_in_front( int lock, struct xa_client *client )
 {
 	/* stolen from k_keybd.c#390: made a function for this */
 	if ( client )
@@ -1351,7 +1351,7 @@ static void kill_client( SCROLL_INFO *list )
 	}
 }
 
-static void stop_cont_client( enum locks lock, SCROLL_INFO *list, int sig )
+static void stop_cont_client( int lock, SCROLL_INFO *list, int sig )
 {
 	struct xa_client *client = list->cur->data;
 	if( list->cur->usr_flags & TM_NOAES )
@@ -1375,7 +1375,7 @@ static void stop_cont_client( enum locks lock, SCROLL_INFO *list, int sig )
 	}
 }
 
-static void term_client( enum locks lock, SCROLL_INFO *list )
+static void term_client( int lock, SCROLL_INFO *list )
 {
 	struct xa_client *client = list->cur->data;
 	if( list->cur->usr_flags & TM_NOAES )
@@ -1411,14 +1411,14 @@ taskmanager_form_exit(struct xa_client *Client,
 		      struct widget_tree *wt,
 		      struct fmd_result *fr)
 {
-	enum locks lock = 0;
+	int lock = 0;
 	short item = aesobj_item(&fr->obj);
 	struct xa_client *client = NULL; //cur_client(list);
 	OBJECT *ob;
 	SCROLL_INFO *list;
 
-	Sema_Up(clients);
-	lock |= clients;
+	Sema_Up(LOCK_CLIENTS);
+	lock |= LOCK_CLIENTS;
 
 
 	wt->which = 0;
@@ -1559,7 +1559,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + TM_HALT);
 			redraw_toolbar(lock, wind, TM_HALT);
 			*/
-			Sema_Dn(clients);
+			Sema_Dn(LOCK_CLIENTS);
 #if 0
 			close_window(lock, wind);
 			if ( xaaes_do_form_alert( 0, C.Hlp, 1, xa_strings[ASK_SHUTDOWN_ALERT] ) != 2 )
@@ -1655,7 +1655,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			break;
 		}
 	}
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 }
 
 /*
@@ -1808,7 +1808,7 @@ tm_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ke
 		else if( keystate == 0 )
 		{
 			keycode = 0;
-			term_client( clients, list );
+			term_client(LOCK_CLIENTS, list );
 		}
 	}
 	}
@@ -1816,17 +1816,17 @@ tm_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ke
 	{
 	case 'S': case 's':
 		keycode = 0;
-		stop_cont_client( clients, list, SIGSTOP );
+		stop_cont_client(LOCK_CLIENTS, list, SIGSTOP );
 	break;
 	case 'Q': case 'q':
 		keycode = 0;
-		stop_cont_client( clients, list, SIGCONT );
+		stop_cont_client(LOCK_CLIENTS, list, SIGCONT );
 	break;
 	}
 	return keycode;
 }
 
-static void do_tm_chart(enum locks lock, XA_TREE *wt, struct proc *rootproc, struct xa_window *wind)
+static void do_tm_chart(int lock, XA_TREE *wt, struct proc *rootproc, struct xa_window *wind)
 {
 	if( !( wt->tree[TM_CHART].ob_flags & OF_HIDETREE) )
 	{
@@ -1927,7 +1927,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 RECT taskman_r = { 0, 0, 0, 0 };
 
 void
-open_taskmanager(enum locks lock, struct xa_client *client, short open)
+open_taskmanager(int lock, struct xa_client *client, short open)
 {
 	//RECT remember = { 0,0,0,0 };
 	struct helpthread_data *htd;
@@ -2173,7 +2173,7 @@ fail:
 // static struct xa_window *reschg_win = NULL;
 #if 0
 static int
-reschg_destructor(enum locks lock, struct xa_window *wind)
+reschg_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 	if (htd)
@@ -2184,7 +2184,7 @@ reschg_destructor(enum locks lock, struct xa_window *wind)
 #endif
 
 struct xa_window * _cdecl
-create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
+create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
 {
 	struct xa_window *wind;
 	OBJECT *obtree = wt->tree;
@@ -2230,7 +2230,7 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 // static struct xa_window *csr_win = NULL;
 
 static int
-csr_destructor(enum locks lock, struct xa_window *wind)
+csr_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 	if (htd)
@@ -2245,10 +2245,10 @@ csr_form_exit(struct xa_client *Client,
 		      struct widget_tree *wt,
 		      struct fmd_result *fr)
 {
-	enum locks lock = 0;
+	int lock = 0;
 
-	Sema_Up(clients);
-	lock |= clients;
+	Sema_Up(LOCK_CLIENTS);
+	lock |= LOCK_CLIENTS;
 
 // 	wt->current = fr->obj;
 	wt->which = 0;
@@ -2301,11 +2301,11 @@ csr_form_exit(struct xa_client *Client,
 			break;
 		}
 	}
-	Sema_Dn(clients);
+	Sema_Dn(LOCK_CLIENTS);
 }
 
 static void
-open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
+open_csr(int lock, struct xa_client *client, struct xa_client *running)
 {
 	struct xa_window *wind;
 	struct helpthread_data *htd;
@@ -2381,7 +2381,7 @@ fail:
 }
 
 void
-CE_open_csr(enum locks lock, struct c_event *ce, short cancel)
+CE_open_csr(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2390,7 +2390,7 @@ CE_open_csr(enum locks lock, struct c_event *ce, short cancel)
 }
 
 void
-CE_abort_csr(enum locks lock, struct c_event *ce, short cancel)
+CE_abort_csr(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2422,7 +2422,7 @@ cancel_csr(struct xa_client *running)
 }
 
 static void
-handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
+handle_launcher(int lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	char parms[128], args[128], *p;
 	short len = 0;
@@ -2478,7 +2478,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 static struct fsel_data aes_fsel_data;
 
 void
-open_launcher(enum locks lock, struct xa_client *client, int what)
+open_launcher(int lock, struct xa_client *client, int what)
 {
 	struct fsel_data *fs = &aes_fsel_data;
 	char *path, *text;
@@ -2567,7 +2567,7 @@ sysalerts_form_exit(struct xa_client *Client,
 		    struct widget_tree *wt,
 		    struct fmd_result *fr)
 {
-	enum locks lock = 0;
+	int lock = 0;
 	short item = aesobj_item(&fr->obj);
 
 	switch (item)
@@ -2610,7 +2610,7 @@ sysalerts_form_exit(struct xa_client *Client,
 }
 
 static int
-systemalerts_destructor(enum locks lock, struct xa_window *wind)
+systemalerts_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 	if (htd)
@@ -2889,7 +2889,7 @@ static void add_kerinfo(
 RECT systemalerts_r = { 0, 0, 0, 0 };
 
 void
-open_systemalerts(enum locks lock, struct xa_client *client, short open)
+open_systemalerts(int lock, struct xa_client *client, short open)
 {
 	struct helpthread_data *htd;
 	OBJECT *obtree = NULL;
@@ -3119,7 +3119,7 @@ fail:
  * Handle clicks on the system default menu
  */
 void
-do_system_menu(enum locks lock, int clicked_title, int menu_item)
+do_system_menu(int lock, int clicked_title, int menu_item)
 {
 	switch (menu_item)
 	{

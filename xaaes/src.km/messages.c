@@ -36,7 +36,7 @@
 #include "rectlist.h"
 
 
-static void queue_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
+static void queue_message(int lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 
 #if GENERATE_DIAGS
 static const char *xmsgs[] =
@@ -288,7 +288,7 @@ struct CE_do_winmesag_data
 };
 
 static void
-CE_do_winmesag(enum locks lock, struct c_event *ce, short cancel)
+CE_do_winmesag(int lock, struct c_event *ce, short cancel)
 {
 	struct CE_do_winmesag_data *args = ce->ptr1;
 	if (!cancel)
@@ -323,13 +323,13 @@ cdwm(struct c_event *ce, long arg)
 }
 
 void
-cancel_do_winmesag(enum locks lock, struct xa_window *wind)
+cancel_do_winmesag(int lock, struct xa_window *wind)
 {
 	cancel_CE(wind->owner, CE_do_winmesag, cdwm, (long)wind);
 }
 
 void
-do_winmesag(enum locks lock,
+do_winmesag(int lock,
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
 	short amq, short qmf,
@@ -591,7 +591,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
  * queue a message for dest_client
  */
 static void
-queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, union msg_buf *msg)
+queue_message(int lock, struct xa_client *client, short amq, short qmf, union msg_buf *msg)
 {
 
 	amq &= ~AMQ_ANYCASE;
@@ -671,7 +671,7 @@ add_lost_rect(struct xa_client *client, RECT *r)
  * WM_REDRAW rectangles, etc.).
  */
 void
-send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg)
+send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg)
 {
 	if (dest_client == NULL || (dest_client->status & CS_EXITING))
 	{
@@ -735,7 +735,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
  */
 void
 send_app_message(
-	enum locks lock,
+	int lock,
 	struct xa_window *wind,
 	struct xa_client *to, /* if different from wind->owner */
 	short amq, short qmf,

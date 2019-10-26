@@ -168,7 +168,7 @@ init_client_mdbuff(struct xa_client *client)
  * is about to terminate...
  */
 struct xa_client *
-init_client(enum locks lock, bool sysclient)
+init_client(int lock, bool sysclient)
 {
 	struct xa_client *client;
 	struct proc *p = get_curproc();
@@ -403,7 +403,7 @@ struct file *xconout_dev = 0;
  * Application initialise - appl_init()
  */
 unsigned long
-XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_init(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct aes_global *globl = (struct aes_global *)pb->global;
 	struct proc *p = get_curproc();
@@ -532,7 +532,7 @@ send_ch_exit(struct xa_client *client, short pid, int code)
 }
 
 static void
-CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
+CE_pwaitpid(int lock, struct c_event *ce, short cancel)
 {
 	long r;
 
@@ -581,7 +581,7 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
  * client.
  */
 int
-exit_proc(enum locks lock, struct proc *p, int code)
+exit_proc(int lock, struct proc *p, int code)
 {
 	struct shel_info *info;
 	struct xa_client *clnt = lookup_extension(p, XAAES_MAGIC);
@@ -698,7 +698,7 @@ remove_client_crossrefs(struct xa_client *client)
  * cleanup related to this client.
  */
 void
-exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach)
+exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detach)
 {
 	struct xa_client *top_owner;
 	long redraws;
@@ -939,7 +939,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
  * Application Exit
  */
 unsigned long
-XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_exit(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct aes_global *globl = (struct aes_global *)pb->global;
 	CONTROL(0,1,0)
@@ -984,7 +984,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
  * Free timeslice.
  */
 unsigned long
-XA_appl_yield(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_yield(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
@@ -999,7 +999,7 @@ XA_appl_yield(enum locks lock, struct xa_client *client, AESPB *pb)
  * AES 4.0 compatible appl_search
  */
 unsigned long
-XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_search(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_client *next = NULL;
 	bool lang = false;
@@ -1032,7 +1032,7 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (spec)
 			lang = true;
 
-		Sema_Up(clients);
+		Sema_Up(LOCK_CLIENTS);
 
 		if (cpid == APP_FIRST) {
 			/* simply the first */
@@ -1043,7 +1043,7 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (next)
 				client->nextclient = NEXT_CLIENT(next);
 		}
-		Sema_Dn(clients);
+		Sema_Dn(LOCK_CLIENTS);
 	}
 
 	if (!next) {
@@ -1085,7 +1085,7 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 static void
-handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
+handle_XaAES_msgs(int lock, union msg_buf *msg)
 {
 	union msg_buf m = *msg;
 	struct xa_client *dest_clnt;
@@ -1139,7 +1139,7 @@ handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
  * XaAES's current appl_write() only works for standard 16 byte messages
  */
 unsigned long
-XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_write(int lock, struct xa_client *client, AESPB *pb)
 {
 	int dest_id = pb->intin[0];
 	int len = pb->intin[1];
@@ -1520,7 +1520,7 @@ short info_tab[][4] =
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
-XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_getinfo(int lock, struct xa_client *client, AESPB *pb)
 {
 	unsigned short gi_type = pb->intin[0];
 	int i, n_intout = 5;
@@ -1590,7 +1590,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_appl_options(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_options(int lock, struct xa_client *client, AESPB *pb)
 {
 	short ret = 1, mode = pb->intin[0];
 
@@ -1634,7 +1634,7 @@ ret_aopts:
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
-XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_find(int lock, struct xa_client *client, AESPB *pb)
 {
 	const char *name = (const char *)pb->addrin[0];
 
@@ -1677,7 +1677,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			DIAG((D_appl, client, "   Mode 0xfff%c, convert %i", hi == -1 ? 'f' : 'e', lo));
 
-			Sema_Up(clients);
+			Sema_Up(LOCK_CLIENTS);
 
 			FOREACH_CLIENT(cl)
 			{
@@ -1688,7 +1688,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 
-			Sema_Dn(clients);
+			Sema_Dn(LOCK_CLIENTS);
 
 			break;
 		}
@@ -1733,7 +1733,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 #endif
 
-				Sema_Up(clients);
+				Sema_Up(LOCK_CLIENTS);
 
 				FOREACH_CLIENT(cl)
 				{
@@ -1744,7 +1744,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 					}
 				}
 
-				Sema_Dn(clients);
+				Sema_Dn(LOCK_CLIENTS);
 			}
 			break;
 		}
@@ -1759,7 +1759,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
  * Extended XaAES calls
  */
 unsigned long
-XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_control(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_client *cl = NULL;
 	short pid = pb->intin[0];
@@ -1887,7 +1887,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 #if 0
 unsigned long
-XA_appl_trecord(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_trecord(int lock, struct xa_client *client, AESPB *pb)
 {
 	EVNTREC *ap_tbuffer = (void *)pb->addrin[0];
 	short ap_trcount = pb->intin[0];
@@ -1903,7 +1903,7 @@ XA_appl_trecord(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_appl_tplay(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_appl_tplay(int lock, struct xa_client *client, AESPB *pb)
 {
 	EVNTREC *ap_tpmem = (void *)pb->addrin[0];
 	short ap_tpnum = pb->intin[0];

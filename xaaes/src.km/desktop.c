@@ -51,7 +51,7 @@ get_desktop(void)
 }
 
 STATIC bool
-click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+click_desktop_widget(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *mowner = menu_owner();
 	struct xa_client *client = desktop_owner();
@@ -199,7 +199,7 @@ Set_desktop(XA_TREE *new_desktop)
 	//send_iredraw(0, root_window, 0, NULL);
 }
 static void
-CE_set_desktop(enum locks lock, struct c_event *ce, short cancel)
+CE_set_desktop(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{

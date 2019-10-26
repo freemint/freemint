@@ -28,8 +28,8 @@
 #include "global.h"
 #include "xa_types.h"
 
-int do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert, char *title);
-int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] );
+int do_form_alert(int lock, struct xa_client *client, int default_button, char *alert, char *title);
+int xaaes_do_form_alert( int lock, struct xa_client *client, int def_butt, char al_text[] );
 void release_blocks(struct xa_client *client);
 
 AES_function

@@ -36,11 +36,11 @@
 bool is_bevent(int gotbut, int gotcl, const short *o, int which);
 //bool add_md(struct moose_data *md);
 
-void button_event(enum locks lock, struct xa_client *client, const struct moose_data *md);
+void button_event(int lock, struct xa_client *client, const struct moose_data *md);
 
-//void XA_button_event  (enum locks lock, const struct moose_data *md, bool widgets);
-//int  XA_move_event    (enum locks lock, const struct moose_data *md);
-//void XA_wheel_event   (enum locks lock, const struct moose_data *md);
+//void XA_button_event  (int lock, const struct moose_data *md, bool widgets);
+//int  XA_move_event    (int lock, const struct moose_data *md);
+//void XA_wheel_event   (int lock, const struct moose_data *md);
 
 void kick_mousemove_timeout(void);
 

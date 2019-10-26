@@ -312,7 +312,7 @@ static void bbl_text( struct xa_vdi_settings *v, RECT *ro, unsigned char *str, s
 	}
 }
 
-static int open_bbl_window( enum locks lock, unsigned char *str, short x, short y )
+static int open_bbl_window( int lock, unsigned char *str, short x, short y )
 {
 	int maxl;
 	int np = format_string( str, &maxl );
@@ -377,7 +377,7 @@ struct bbl_arg {
 
 static struct bbl_arg bbl_arg={0};
 
-BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short destID )
+BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID )
 {
 	static BGEM *c_bgem = 0;
 	static int XaBubble = bs_none, OldState = bs_none, XaModal = 0, in_xa_bubble = -1;
@@ -568,7 +568,7 @@ xa_bubble_ret:
  * to be called by post_cevent
  */
 void
-XA_bubble_event(enum locks lock, struct c_event *ce, short cancel)
+XA_bubble_event(int lock, struct c_event *ce, short cancel)
 {
 	switch( ce->d0 )
 	{
@@ -581,7 +581,7 @@ XA_bubble_event(enum locks lock, struct c_event *ce, short cancel)
 	}
 }
 
-static void do_bubble_show(enum locks lock, struct c_event *ce, short cancel)
+static void do_bubble_show(int lock, struct c_event *ce, short cancel)
 //static void do_bubble_show(void)
 {
 	short x, y, b;
@@ -658,7 +658,7 @@ void bubble_show( char *str )
 	bbl_arg.str = str;
 }
 
-void display_launched( enum locks lock, char *str )
+void display_launched( int lock, char *str )
 {
 	union msg_buf m = {{0}};
 	if( xa_bubble( 0, bbl_get_status, 0, 21 ) == bs_open )

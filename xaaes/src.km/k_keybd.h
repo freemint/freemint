@@ -50,12 +50,12 @@ struct key_queue
 extern struct key_queue pending_keys;
 
 short key_conv( struct xa_client *client, short key );
-//void keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key);
+//void keybd_event(int lock, struct xa_client *client, struct rawkey *key);
 void cancel_keyqueue	(struct xa_client *client);
 void queue_key		(struct xa_client *client, const struct rawkey *key);
 bool unqueue_key	(struct xa_client *client, struct rawkey *key);
 
 int switch_keyboard( char *tbname );
-void keyboard_input	(enum locks lock);
+void keyboard_input	(int lock);
 
 #endif /* _k_keybd_h */

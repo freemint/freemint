@@ -41,8 +41,8 @@ void init_objects(void);
 // void init_ob_render(void);
 // void exit_ob_render(void);
 
-void	display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object object, short parent_x, short parent_y, short which);
-short	draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, struct xa_aes_object obj, short depth, short *xy, short flags);
+void	display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object object, short parent_x, short parent_y, short which);
+short	draw_object_tree(int lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, struct xa_aes_object obj, short depth, short *xy, short flags);
 
 /* Internal utility routines */
 void shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *r, short colour, short x, short y);

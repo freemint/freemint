@@ -40,7 +40,7 @@
 #if WDIALOG_FSLX
 
 unsigned long
-XA_fslx_open(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_open(int lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fslx, client, "XA_fslx_open"));
 
@@ -49,7 +49,7 @@ XA_fslx_open(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fslx_close(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_close(int lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fslx, client, "XA_fslx_close"));
 
@@ -58,7 +58,7 @@ XA_fslx_close(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fslx_getnxtfile(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_getnxtfile(int lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fslx, client, "XA_fslx_getnxtfile"));
 
@@ -67,7 +67,7 @@ XA_fslx_getnxtfile(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fslx_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_evnt(int lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fslx, client, "XA_fslx_evnt"));
 
@@ -76,7 +76,7 @@ XA_fslx_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fslx_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_do(int lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fslx, client, "XA_fslx_do"));
 
@@ -85,7 +85,7 @@ XA_fslx_do(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fslx_set_flags(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_set_flags(int lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fslx, client, "XA_fslx_set_flags"));
 

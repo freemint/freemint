@@ -29,15 +29,15 @@
 #include "global.h"
 #include "xa_types.h"
 
-void cXA_button_event(enum locks lock, struct c_event *ce, short cancel);
-void cXA_deliver_button_event(enum locks lock, struct c_event *ce, short cancel);
-void cXA_deliver_rect_event(enum locks lock, struct c_event *ce, short cancel);
-void cXA_form_do(enum locks lock, struct c_event *ce, short cancel);
-void cXA_open_menu(enum locks lock, struct c_event *ce, short cancel);
-void cXA_menu_move(enum locks lock, struct c_event *ce, short cancel);
-void cXA_do_widgets(enum locks lock, struct c_event *ce, short cancel);
-void cXA_active_widget(enum locks lock, struct c_event *ce, short cancel);
-void cXA_widget_click(enum locks lock, struct c_event *ce, short cancel);
-void cXA_wheel_event(enum locks lock, struct c_event *ce, short cancel);
+void cXA_button_event(int lock, struct c_event *ce, short cancel);
+void cXA_deliver_button_event(int lock, struct c_event *ce, short cancel);
+void cXA_deliver_rect_event(int lock, struct c_event *ce, short cancel);
+void cXA_form_do(int lock, struct c_event *ce, short cancel);
+void cXA_open_menu(int lock, struct c_event *ce, short cancel);
+void cXA_menu_move(int lock, struct c_event *ce, short cancel);
+void cXA_do_widgets(int lock, struct c_event *ce, short cancel);
+void cXA_active_widget(int lock, struct c_event *ce, short cancel);
+void cXA_widget_click(int lock, struct c_event *ce, short cancel);
+void cXA_wheel_event(int lock, struct c_event *ce, short cancel);
 
 #endif /* _c_mouse_h */

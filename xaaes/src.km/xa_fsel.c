@@ -168,7 +168,7 @@ enum{
 struct fs_data fs_data = {0};
 
 static void
-refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent);
+refresh_filelist(int lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent);
 
 static void
 add_pattern(char *pattern)
@@ -486,7 +486,7 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 		set_file( fs, "", true );
 		set_dir(list);
 		strcat( fs->root, "*" );
-		refresh_filelist(fsel, fs, NULL);
+		refresh_filelist(LOCK_FSEL, fs, NULL);
 		list->redraw(list, NULL);
 		return;
 	}
@@ -1614,7 +1614,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
  */
 
 static void
-refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
+refresh_filelist(int lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 {
 	OBJECT *form = fs->form->tree;
 	OBJECT *sl;
@@ -1696,7 +1696,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 }
 
 static void
-CE_refresh_filelist(enum locks lock, struct c_event *ce, short cancel)
+CE_refresh_filelist(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1848,7 +1848,7 @@ fs_updir(struct scroll_info *list)
 		if( fs->selected_dir )
 			fs->selected_dir = fs->selected_dir->up;
 		set_dir(list);
-		refresh_filelist(fsel, fs, NULL);
+		refresh_filelist(LOCK_FSEL, fs, NULL);
 		fs_prompt(list, atroot ? fs->file : outof, false);
 	}
 }
@@ -1908,7 +1908,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 		set_file(fs, fs->ofile, false);
 	set_dir(list);
 	fs->selected_file = NULL;
-	refresh_filelist(fsel, fs, fs->treeview ? dir_ent : NULL);
+	refresh_filelist(LOCK_FSEL, fs, fs->treeview ? dir_ent : NULL);
 	if (fs->treeview && dir_ent)
 	{
 		short xs;
@@ -2152,7 +2152,7 @@ change_fontsz( char nk, struct scroll_info *list)
 	struct fsel_data *fs = list->data;
 	nk == '+' ? fs->fntinc++ : fs->fntinc--;
 
-	refresh_filelist(fsel, fs, NULL);
+	refresh_filelist(LOCK_FSEL, fs, NULL);
 	list->redraw(list, NULL);
 	fs_prompt( list, fs->file, true );
 }
@@ -2186,7 +2186,7 @@ fileselector_form_exit(struct xa_client *client,
 					 XA_TREE *wt,
 					 struct fmd_result *fr)
 {
-	enum locks lock = 0;
+	int lock = 0;
 	OBJECT *obtree = wt->tree;
 	struct scroll_info *list = object_get_slist(obtree + FS_LIST);
 	struct fsel_data *fs = list->data;
@@ -2274,7 +2274,7 @@ fileselector_form_exit(struct xa_client *client,
 #endif
 				BLOG((0,"rename '%s' -> '%s' -> %ld", pt2, pt, r ));
 			}
-			refresh_filelist(fsel, fs, 0);//fs->selected_dir->up);
+			refresh_filelist(LOCK_FSEL, fs, 0);//fs->selected_dir->up);
 
 			p.idx = -1;
 			strcpy( pt, fs->path );
@@ -2295,7 +2295,7 @@ fileselector_form_exit(struct xa_client *client,
 		{
 			/* changed filter */
 			strcpy(fs->fs_pattern, filter->te_ptext);
-			refresh_filelist(fsel, fs, NULL);
+			refresh_filelist(LOCK_FSEL, fs, NULL);
 			fs_prompt(list, fs->file, false);
 		}
 #else
@@ -2310,7 +2310,7 @@ fileselector_form_exit(struct xa_client *client,
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
 
 			/* if treeview all gets closed! (todo) */
-			refresh_filelist(fsel, fs, 0 );
+			refresh_filelist(LOCK_FSEL, fs, 0 );
 			list->redraw(list, NULL);
 		}
 		else
@@ -2378,7 +2378,7 @@ find_drive(int a, struct fsel_data *fs)
 #define FS_OFFS	2
 
 static void
-fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
+fs_change(int lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
 {
 	XA_WIDGET *widg = get_widget(fs->wind, XAW_MENU);
 	int bx = d - 1, tlen = FS_PATLEN -1;
@@ -2705,7 +2705,7 @@ fs_msg_handler(
  * FormKeyInput()
  */
 static bool
-fs_key_form_do(enum locks lock,
+fs_key_form_do(int lock,
 				 struct xa_client *client,
 				 struct xa_window *wind,
 				 XA_TREE *wt,
@@ -2764,7 +2764,7 @@ fs_key_form_do(enum locks lock,
 					FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
 			fs->selected_dir = fs->selected_file = NULL;
 			/* apply the change to the filelist */
-			refresh_filelist(fsel, fs, NULL);
+			refresh_filelist(LOCK_FSEL, fs, NULL);
 			fs_prompt(list, fs->file, false);
 		}
 #endif
@@ -2787,7 +2787,7 @@ fs_key_form_do(enum locks lock,
 
 			fsel_filters(fs->menu->tree, fs->fs_pattern);
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
-			refresh_filelist(fsel, fs, NULL);
+			refresh_filelist(LOCK_FSEL, fs, NULL);
 			list->redraw(list, NULL);
 		}
 		else if( nk == 'o' )	// open menu
@@ -2961,7 +2961,7 @@ fs_msg_handler(
 	short amq, short qmf,
 	short *msg)
 {
-	enum locks lock = 0;
+	int lock = 0;
 	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
 	struct fsel_data *fs = list->data;
 
@@ -3007,7 +3007,7 @@ fs_msg_handler(
 					else if( sort == 6 )
 					{
 						fs_data.SortDir = fs_data.SortDir == UP ? DOWN : UP;
-						refresh_filelist(fsel, fs, NULL);
+						refresh_filelist(LOCK_FSEL, fs, NULL);
 						list->redraw(list, NULL);
 						fs_prompt( list, fs->file, true );
 					}
@@ -3178,7 +3178,7 @@ fs_msg_handler(
 }
 
 static int
-fs_destructor(enum locks lock, struct xa_window *wind)
+fs_destructor(int lock, struct xa_window *wind)
 {
 	DIAG((D_fsel,NULL,"fsel destructed"));
 	return true;
@@ -3253,7 +3253,7 @@ static struct proc *fs_mouse_lock;
  * (see http://toshyp.atari.org/008004.htm)
  */
 static bool
-open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *fs,
+open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			 char *path, const char *file, const char *title,
 			 fsel_handler *s, fsel_handler *c, void *data)
 {
@@ -3756,7 +3756,7 @@ void fs_save(struct fsel_data *fs)
 	fs_data.fs_sort = fs->sort;
 }
 void
-close_fileselector(enum locks lock, struct fsel_data *fs)
+close_fileselector(int lock, struct fsel_data *fs)
 {
 	fs_save(fs);
 	if( !fs || !fs->wind )
@@ -3785,7 +3785,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 }
 
 static void
-handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
+handle_fsel(int lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	DIAG((D_fsel, NULL, "fsel OK: path%s, file=%s:%s", path, file, fs->file));
 
@@ -3796,7 +3796,7 @@ handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 }
 
 static void
-cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
+cancel_fsel(int lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	DIAG((D_fsel, NULL, "fsel CANCEL: path=%s, file=%s", path, file));
 
@@ -3806,7 +3806,7 @@ cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 }
 
 void
-open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
+open_fileselector(int lock, struct xa_client *client, struct fsel_data *fs,
 			char *path, const char *file, const char *title,
 			fsel_handler *s, fsel_handler *c, void *data)
 {
@@ -3825,7 +3825,7 @@ open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *f
  * File selector interface routines
  */
 static void
-do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char *text)
+do_fsel_exinput(int lock, struct xa_client *client, AESPB *pb, const char *text)
 {
 	char *path = (char *)(pb->addrin[0]);
 	char *file = (char *)(pb->addrin[1]);
@@ -3847,7 +3847,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			text, path, file, fs));
 
 		client->options.standard_font_point = cfg.standard_font_point;
-		if (open_fileselector1( lock|fsel,
+		if (open_fileselector1( lock|LOCK_FSEL,
 					client,
 					fs,
 					path,
@@ -3889,7 +3889,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 }
 
 unsigned long
-XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fsel_input(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,2,2)
 	short msave;
@@ -3907,7 +3907,7 @@ XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fsel_exinput(int lock, struct xa_client *client, AESPB *pb)
 {
 	const char *t = (const char *)(pb->addrin[2]);
 	short msave;

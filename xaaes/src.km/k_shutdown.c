@@ -48,7 +48,7 @@
 
 
 static void
-CE_at_terminate(enum locks lock, struct c_event *ce, short cancel)
+CE_at_terminate(int lock, struct c_event *ce, short cancel)
 {
 // 	display("at_terminate %d, %lx", cancel, ce->client);
 	if (!cancel)

@@ -32,7 +32,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-void ceExecfunc(enum locks lock, struct c_event *ce, short cancel);
+void ceExecfunc(int lock, struct c_event *ce, short cancel);
 
 struct timeout * set_shutdown_timeout(long delta);
 void kick_shutdn_if_last_client(void);
@@ -41,7 +41,7 @@ void cancel_cevents(struct xa_client *client);
 bool CE_exists(struct xa_client *client, void *f);
 void cancel_CE(struct xa_client *client, void *f, bool(*callback)(struct c_event *ce, long arg), long arg);
 
-void post_cevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, short cancel), void *ptr1, void *ptr2, int d0, int d1, const RECT *r, const struct moose_data *md);
+void post_cevent(struct xa_client *client, void (*func)(int, struct c_event *, short cancel), void *ptr1, void *ptr2, int d0, int d1, const RECT *r, const struct moose_data *md);
 short dispatch_selcevent(struct xa_client *client, void *f, bool cancel);
 
 
@@ -54,13 +54,13 @@ void multi_intout(struct xa_client *client, short *o, int evnt);
 void cancel_evnt_multi(struct xa_client *client, int which);
 
 void TP_entry(void *client);
-void TP_terminate(enum locks lock, struct c_event *ce, bool cancel);
+void TP_terminate(int lock, struct c_event *ce, bool cancel);
 void cancel_tpcevents(struct xa_client *client);
-void post_tpcevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
+void post_tpcevent(struct xa_client *client, void (*func)(int, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
 short dispatch_tpcevent(struct xa_client *client);
 
 void _cdecl dispatch_shutdown(short flags);
-void _cdecl ce_dispatch_shutdown(enum locks l, struct xa_client *client, short b);
+void _cdecl ce_dispatch_shutdown(int l, struct xa_client *client, short b);
 void load_grd( void *fn );
 void load_bkg_img( void *fn );
 void load_palette( void *fn );

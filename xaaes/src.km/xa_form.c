@@ -51,7 +51,7 @@
 
 #if 0
 bool
-key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
+key_alert_widget(int lock, struct xa_client *client, struct xa_window *wind,
 	    struct widget_tree *wt, const struct rawkey *key, struct fmd_result *res_fmd);
 #endif
 /*
@@ -86,7 +86,7 @@ CloneForm(OBJECT *form)
  * Free up a copy of a form template
  */
 static int
-alert_destructor(enum locks lock, struct xa_window *wind)
+alert_destructor(int lock, struct xa_window *wind)
 {
 	DIAG((D_form, NULL, "alert_destructor"));
 	remove_widget(lock, wind, XAW_TOOLBAR);
@@ -241,7 +241,7 @@ max_w(int m, char to[][MAX_X+1], int *tot)
 /*
  * form_alert for XaAES-thread internal
  */
-int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] )
+int xaaes_do_form_alert( int lock, struct xa_client *client, int def_butt, char al_text[] )
 {
 	short intin[8], intout[8];
 	long addrin[8];
@@ -289,7 +289,7 @@ int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt
  * under the alert that is not a window.
  */
 int
-do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert, char *title)
+do_form_alert(int lock, struct xa_client *client, int default_button, char *alert, char *title)
 {
 	XA_WIND_ATTR kind = MOVER|NAME|TOOLBAR|USE_MAX;
 	struct xa_window *alert_window;
@@ -569,7 +569,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
  *
  */
 unsigned long
-XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_center(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	short *o = pb->intout;
@@ -664,7 +664,7 @@ _form_keybd(	struct xa_client *client,
 }
 
 unsigned long
-XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_keybd(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	unsigned short keyout = 0, cont = 0;
@@ -699,7 +699,7 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_wkeybd(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	short cont = 0;
@@ -747,7 +747,7 @@ void release_blocks(struct xa_client *client)
 }
 
 unsigned long
-XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_alert(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(1,1,1)
 
@@ -837,7 +837,7 @@ form_error_msgs[64] =
 };
 
 unsigned long
-XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 {
 	static char error_alert[256]; // XXX
 
@@ -878,7 +878,7 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
  *  in windows, and the windows are created here...
  */
 unsigned long
-XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_dial(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
 
@@ -941,7 +941,7 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
  *   unless the client already locked the screen, or option 'xa_windows none' is set.
  */
 unsigned long
-XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_do(int lock, struct xa_client *client, AESPB *pb)
 {
 // 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
@@ -1009,7 +1009,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_button(int lock, struct xa_client *client, AESPB *pb)
 {
 	XA_TREE *wt;
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
@@ -1064,7 +1064,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
-XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_form_wbutton(int lock, struct xa_client *client, AESPB *pb)
 {
 	XA_TREE *wt;
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];

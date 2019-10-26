@@ -85,6 +85,8 @@ typedef struct
 
 /* Cookie MagX --> */
 
+#ifndef _MAGX_COOKIE
+#define _MAGX_COOKIE
 typedef struct
 {
      long		config_status;
@@ -94,6 +96,7 @@ typedef struct
      void		*hddrv_functions;
      long		status_bits;             /* MagiC 3 from 24.5.95 on      */
 } MAGX_COOKIE;
+#endif
 
 /* TODO: Usage of RECT should be eliminated somehow
          and replaced by the gemlib's GRECT.

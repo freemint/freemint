@@ -1096,7 +1096,7 @@ k_init(unsigned long vm)
 }
 
 void
-init_helpthread(enum locks lock, struct xa_client *client)
+init_helpthread(int lock, struct xa_client *client)
 {
 	open_taskmanager(0, client, 0);
 }

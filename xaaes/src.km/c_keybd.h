@@ -28,10 +28,10 @@
 #include "global.h"
 #include "xa_types.h"
 
-void cXA_fmdkey(enum locks lock, struct c_event *ce, short cancel);
-void cXA_keypress(enum locks lock, struct c_event *ce, short cancel);
-void cXA_keybd_event(enum locks lock, struct c_event *ce, short cancel);
-void cXA_menu_key(enum locks lock, struct c_event *ce, short cancel);
-void cXA_open_menubykbd(enum locks lock, struct c_event *ce, short cancel);
+void cXA_fmdkey(int lock, struct c_event *ce, short cancel);
+void cXA_keypress(int lock, struct c_event *ce, short cancel);
+void cXA_keybd_event(int lock, struct c_event *ce, short cancel);
+void cXA_menu_key(int lock, struct c_event *ce, short cancel);
+void cXA_open_menubykbd(int lock, struct c_event *ce, short cancel);
 
 #endif /* _c_keybd_h */

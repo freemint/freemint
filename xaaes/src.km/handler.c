@@ -624,7 +624,7 @@ XA_handler(void *_pb)
 			 * how about this? It means that these
 			 * semaphores are not needed and are effectively skipped.
 			 */
-			enum locks lock = winlist|envstr|pending;
+			int lock = LOCK_WINLIST|LOCK_ENVSTR|LOCK_PENDING;
 #if GENERATE_DIAGS
 			if (client)
 				client->enter++;

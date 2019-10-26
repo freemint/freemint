@@ -29,7 +29,7 @@
 #include "xa_types.h"
 
 void set_menu_width( OBJECT *mnu, XA_TREE *mwt );
-int menu_popup(enum locks lock, struct xa_client *client, XAMENU *xmn, XAMENU_RESULT *result, short px, short py, short usr_evnt);
+int menu_popup(int lock, struct xa_client *client, XAMENU *xmn, XAMENU_RESULT *result, short px, short py, short usr_evnt);
 
 AES_function
 	XA_menu_bar,

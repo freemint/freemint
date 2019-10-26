@@ -28,8 +28,8 @@
 #include "global.h"
 #include "xa_types.h"
 
-void CE_winctxt(enum locks lock, struct c_event *ce, short cancel);
-void cancel_winctxt_popup(enum locks lock, struct xa_window *wind, struct xa_client *client);
+void CE_winctxt(int lock, struct c_event *ce, short cancel);
+void cancel_winctxt_popup(int lock, struct xa_window *wind, struct xa_client *client);
 
 //void	setup_widget_theme(struct xa_client *client, struct xa_widget_theme *xwt);
 void init_client_widget_theme(struct xa_client *client);
@@ -39,9 +39,9 @@ void exit_client_widget_theme(struct xa_client *client);
 
 //COMPASS compass(short d, short x, short y, RECT r);
 
-void		display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
+void		display_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
 void		standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
-void _cdecl	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
+void _cdecl	redraw_toolbar(int lock, struct xa_window *wind, short item);
 void		set_toolbar_coords(struct xa_window *wind, const RECT *r);
 
 void		set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
@@ -50,9 +50,9 @@ void		set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *
 #define STW_GOC	2 /* Get object coordinates */
 #define STW_COC 4 /* Center object coordinates */
 #define STW_SWC 8 /* Set window coordinates */
-XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, struct xa_aes_object item, short properties, short flags, const struct toolbar_handlers *th, const RECT *r);
+XA_TREE *set_toolbar_widget(int lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, struct xa_aes_object item, short properties, short flags, const struct toolbar_handlers *th, const RECT *r);
 
-void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
+void	remove_widget(int lock, struct xa_window *wind, int tool);
 void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 
@@ -63,18 +63,18 @@ void free_wtlist(struct xa_client *client);
 //void remove_from_wtlist(XA_TREE *wt);
 bool _cdecl	remove_wt(XA_TREE *wt, bool force);
 
-//XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
+//XA_TREE *check_widget_tree(int lock, struct xa_client *client, OBJECT *obtree);
 
 void	calc_work_area(struct xa_window *wind);
-short	checkif_do_widgets(enum locks lock, struct xa_window *w, short x, short y, XA_WIDGET **ret);
-int	do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
+short	checkif_do_widgets(int lock, struct xa_window *w, short x, short y, XA_WIDGET **ret);
+int	do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
 long	pix_to_sl(long p, long s);
 long	sl_to_pix(long s, long p);
 int	XA_slider(struct xa_window *w, int which, long total, long visible, long start);
 bool	m_inside(short x, short y, RECT *o);
-void	redraw_menu(enum locks lock);
+void	redraw_menu(int lock);
 void	done_widget_active(struct xa_window *wind, int i);
-bool iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data *md);
+bool iconify_action(int lock, struct xa_window *wind, const struct moose_data *md);
 
 void	free_xawidget_resources(struct xa_widget *widg);
 
@@ -85,7 +85,7 @@ DrawWidg display_object_widget; /* for desktop */
 void	remove_widget_active(struct xa_client *client);
 
 void	do_widget_repeat(void);
-void	do_active_widget(enum locks lock, struct xa_client *client);
+void	do_active_widget(int lock, struct xa_client *client);
 void	set_winmouse(short x, short y);
 short	wind_mshape(struct xa_window *wind, short x, short y);
 
