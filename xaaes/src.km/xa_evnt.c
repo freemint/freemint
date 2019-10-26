@@ -796,3 +796,43 @@ XA_evnt_timer(int lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
+
+
+/*
+ * evnt_dclick() routine
+ */
+unsigned long
+XA_evnt_dclick(int lock, struct xa_client *client, AESPB *pb)
+{
+	short newval = pb->intin[0];
+	short mode = pb->intin[1];
+
+	CONTROL(2,1,0)
+
+	if (mode != 0)
+	{
+		switch (newval)
+		{
+			case 0: cfg.double_click_time = 200; break;
+			case 1: cfg.double_click_time = 150; break;
+			case 2: cfg.double_click_time = 100; break;
+			default:
+			case 3: cfg.double_click_time =  50; break; /* DOUBLE_CLICK_TIME */
+			case 4: cfg.double_click_time =  25; break;
+		}
+		adi_ioctl(G.adi_mouse, MOOSE_DCLICK, cfg.double_click_time);
+	}
+
+	if (cfg.double_click_time <= 25)
+		pb->intout[0] = 4;
+	else if (cfg.double_click_time <= 50)
+		pb->intout[0] = 3;
+	else if (cfg.double_click_time <= 100)
+		pb->intout[0] = 2;
+	else if (cfg.double_click_time <= 150)
+		pb->intout[0] = 1;
+	else
+		pb->intout[0] = 0;
+	return XAC_DONE;
+}
+

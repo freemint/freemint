@@ -43,6 +43,7 @@ AES_function
 	XA_evnt_mesag,
 	XA_evnt_mouse,
 	XA_evnt_multi,
-	XA_evnt_timer;
+	XA_evnt_timer,
+	XA_evnt_dclick;
 
 #endif /* _xa_evnt_h */
