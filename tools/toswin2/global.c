@@ -98,7 +98,7 @@ void set_fillstyle(int style, int nr)
 int alert(int def, int undo, int num)
 {
 	graf_mouse(ARROW, NULL);
-	return do_walert(def, undo, (char *)alertarray[num], " TosWin2 ");
+	return do_walert(def, undo, alertarray[num], " TosWin2 ");
 }
 
 

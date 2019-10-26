@@ -40,16 +40,34 @@ static OBJECT	*popups;
 /******************************************************************************/
 /* CFG-Liste (FIFO)																				*/
 /******************************************************************************/
-static WINCFG *crt_newcfg(char *prog)
+static WINCFG *crt_newcfg(const char *prog)
 {
 	WINCFG	*new, *p;
 
 	new = (WINCFG*)malloc(sizeof(WINCFG));
 	if (gl_wincfg == NULL)
+	{
 		gl_wincfg = new;
-	else
+		new->kind = 0x4FEF;
+		new->font_id = 1;
+		new->font_pts = 10;
+		new->col = 80;
+		new->row = 24;
+		new->scroll = 0;
+		new->xpos = -1;
+		new->ypos = -1;
+		new->vt_mode = MODE_VT100;
+		new->autoclose = TRUE;
+		new->blockcursor = FALSE;
+		new->iconified = FALSE;
+		new->fg_color = 7;
+		new->bg_color = 0;
+		new->vdi_colors = new->fg_effects = new->bg_effects = 0;
+		new->char_tab = TAB_ATARI;
+	} else
 	{
 		p = gl_wincfg;
+		*new = *p;
 		while (p->next != NULL)
 			p = p->next;
 		p->next = new;
@@ -61,22 +79,6 @@ static WINCFG *crt_newcfg(char *prog)
 	/* Default-Werte */
 	strcpy(new->arg, "");
 	strcpy(new->title, "");
-	new->kind = 0x4FEF;
-	new->font_id = 1;
-	new->font_pts = 10;
-	new->col = 80;
-	new->row = 24;
-	new->scroll = 0;
-	new->xpos = -1;
-	new->ypos = -1;
-	new->vt_mode = MODE_VT100;
-	new->autoclose = TRUE;
-	new->blockcursor = FALSE;
-	new->iconified = FALSE;
-	new->fg_color = 7;
-	new->bg_color = 0;
-	new->vdi_colors = new->fg_effects = new->bg_effects = 0;
-	new->char_tab = TAB_ATARI;
 	return new;
 }
 
