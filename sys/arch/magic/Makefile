@@ -33,8 +33,10 @@ OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
 GENFILES = $(TARGET) magic.i
 
 
+#
+# we may end up here by parallel makes from the top directory for different kernels
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
-	$(LD) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(LD) $(CFLAGS) $(LDFLAGS) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 
 ifeq ($(CROSS),yes)

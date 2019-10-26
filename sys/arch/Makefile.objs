@@ -35,6 +35,9 @@ startup: $(STARTUP)
 objs: $(OBJS)
 	echo $(OBJS) > $@
 
+$(srcdir)/magic/magic.i:
+	$(MAKE) -C $(srcdir)/magic magic.i
+
 # default dependencies
 # must be included last
 include $(top_srcdir)/DEPENDENCIES
