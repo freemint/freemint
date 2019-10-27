@@ -42,6 +42,14 @@ extern short	wco;
 #define MAX_DRAW_TICKS 3
 extern int	curs_ticks;
 
+#ifdef DEBUG
+extern int do_debug;
+# include <syslog.h>
+#define SYSLOG(x) if (do_debug) { syslog x; }
+#else
+#define SYSLOG(x)
+#endif
+
 
 /*
  * Hilfsfunktionen

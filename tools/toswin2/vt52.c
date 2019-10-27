@@ -8,11 +8,6 @@
 #include "ansicol.h"
 #include "console.h"
 
-#ifdef DEBUG
-extern int do_debug;
-# include <syslog.h>
-#endif
-
 /*
  * lokale prototypen
  */
@@ -112,8 +107,7 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			letter[0] = c;
 			printable = letter;
 		}
-		syslog (LOG_ERR, "got escape character %d (%s, 0x%08x)",
-			c, printable, (unsigned) c);
+		SYSLOG((LOG_ERR, "got escape character %d (%s, 0x%08x)", c, printable, c));
 	}
 #endif
 
@@ -123,240 +117,164 @@ static void putesc(TEXTWIN *v, unsigned int c)
 	switch (c)
 	{
 		case '3':		/* GFL: Set ANSI fg color.  */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set ANSI fg");
-#endif
+			SYSLOG((LOG_ERR, "is set ANSI fg"));
 			v->output = ansi_fgcol_putch;
 			return;
 		case '4':		/* GFL: Set ANSI fg color.  */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set ANSI bg");
-#endif
+			SYSLOG((LOG_ERR, "is set ANSI bg"));
 			v->output = ansi_bgcol_putch;
 			return;
 		case 'A':		/* cursor up */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor up");
-#endif
+			SYSLOG((LOG_ERR, "is cursor up"));
 			cuu1 (v);
 			break;
 		case 'B':		/* cursor down */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor down");
-#endif
+			SYSLOG((LOG_ERR, "is cursor down"));
 			cud1 (v);
 			break;
 		case 'C':		/* cursor right */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor right");
-#endif
+			SYSLOG((LOG_ERR, "is cursor right"));
 			cuf1 (v);
 			break;
 		case 'D':		/* cursor left */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor left");
-#endif
+			SYSLOG((LOG_ERR, "is cursor left"));
 			cub1 (v);
 			break;
 		case 'F':		/* smacs, start alternate character set.  */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is smacs");
-#endif
+			SYSLOG((LOG_ERR, "is smacs"));
 			v->curr_tflags = 
 				(v->curr_tflags & ~TCHARSET_MASK) | 1;
 			break;
 
 		case 'G':		/* rmacs, end alternate character set.  */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is rmacs");
-#endif
+			SYSLOG((LOG_ERR, "is rmacs"));
 			v->curr_tflags = v->curr_tflags & ~TCHARSET_MASK;
 			break;
 
 		case 'E':		/* clear home */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is clear");
-#endif
+			SYSLOG((LOG_ERR, "is clear"));
 			clear(v);
 			/* fall through... */
 		case 'H':		/* cursor home */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is home");
-#endif
+			SYSLOG((LOG_ERR, "is home"));
 			gotoxy (v, 0, 0);
 			break;
 		case 'I':		/* cursor up, insert line */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor up, insert line");
-#endif
+			SYSLOG((LOG_ERR, "is cursor up, insert line"));
 			reverse_cr (v);
 			break;
 		case 'J':		/* clear below cursor */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is clear below cursor");
-#endif
+			SYSLOG((LOG_ERR, "is clear below cursor"));
 			clrfrom(v, cx, cy, v->maxx-1, v->maxy-1);
 			break;
 		case 'K':		/* clear remainder of line */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is clear rest of line");
-#endif
+			SYSLOG((LOG_ERR, "is clear rest of line"));
 			clrfrom(v, cx, cy, v->maxx-1, cy);
 			break;
 		case 'L':		/* insert a line */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is insert line");
-#endif
+			SYSLOG((LOG_ERR, "is insert line"));
 			insert_line (v);
 			break;
 		case 'M':		/* delete line */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is delete line");
-#endif
+			SYSLOG((LOG_ERR, "is delete line"));
 			delete_line (v);
 			break;
 		case 'R':		/* TW extension: set window size */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set window size");
-#endif
+			SYSLOG((LOG_ERR, "is set window size"));
 			v->captsiz = 0;
 			v->output = capture;
 			v->callback = set_size;
 			return;
 		case 'S':		/* MW extension: set title bar */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set title bar");
-#endif
+			SYSLOG((LOG_ERR, "is set title bar"));
 			v->captsiz = 0;
 			v->output = capture;
 			v->callback = set_title;
 			return;
 		case 'Y':
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is goto xy");
-#endif
+			SYSLOG((LOG_ERR, "is goto xy"));
 			v->output = escy_putch;
 			return;
 		case 'a':		/* MW extension: delete character */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is delete character");
-#endif
+			SYSLOG((LOG_ERR, "is delete character"));
 			delete_char(v, cx, cy);
 			break;
 		case 'b':		/* set foreground color */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set foreground color");
-#endif
+			SYSLOG((LOG_ERR, "is set foreground color"));
 			v->output = fgcol_putch;
 			return;		/* `return' to avoid resetting v->output */
 		case 'c':		/* set background color */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set background color");
-#endif
+			SYSLOG((LOG_ERR, "is set background color"));
 			v->output = bgcol_putch;
 			return;
 		case 'd':		/* clear to cursor position */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is clear to cursor position");
-#endif
+			SYSLOG((LOG_ERR, "is clear to cursor position"));
 			clrfrom(v, 0, v->miny, cx, cy);
 			break;
 		case 'e':		/* enable cursor */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor on");
-#endif
+			SYSLOG((LOG_ERR, "is cursor on"));
 			v->curr_tflags |= TCURS_ON;
 			break;
 		case 'f':		/* cursor off */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is cursor off");
-#endif
+			SYSLOG((LOG_ERR, "is cursor off"));
 			v->curr_tflags &= ~TCURS_ON;
 			break;
 		case 'h':		/* MW extension: enter insert mode */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is enter insert mode");
-#endif
+			SYSLOG((LOG_ERR, "is enter insert mode"));
 			v->curr_tflags |= TINSERT;
 			break;
 		case 'i':		/* MW extension: leave insert mode */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is leave insert mode");
-#endif
+			SYSLOG((LOG_ERR, "is leave insert mode"));
 			v->curr_tflags &= ~TINSERT;
 			break;
 		case 'j':		/* save cursor position */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is save cursor position");
-#endif
+			SYSLOG((LOG_ERR, "is save cursor position"));
 			v->saved_x = v->cx;
 			v->saved_y = v->cy;
 			break;
 		case 'k':		/* restore saved position */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is restore cursor position");
-#endif
+			SYSLOG((LOG_ERR, "is restore cursor position"));
 			/* FIXME: origin mode!!! */
 			gotoxy (v, v->saved_x, v->saved_y);
 			break;
 		case 'l':		/* clear line */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is clear line");
-#endif
+			SYSLOG((LOG_ERR, "is clear line"));
 			clrline (v, cy);
 			gotoxy (v, 0, cy - RELOFFSET (v));
 			break;
 		case 'o':		/* clear from start of line to cursor */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is clear from start of line to cursor");
-#endif
+			SYSLOG((LOG_ERR, "is clear from start of line to cursor"));
 			clrfrom(v, 0, cy, cx, cy);
 			break;
 		case 'p':		/* reverse video on */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is reverse video on");
-#endif
+			SYSLOG((LOG_ERR, "is reverse video on"));
 			v->curr_cattr |= CINVERSE;
 			break;
 		case 'q':		/* reverse video off */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is reverse video off");
-#endif
+			SYSLOG((LOG_ERR, "is reverse video off"));
 			v->curr_cattr &= ~CINVERSE;
 			break;
 		case 't':		/* backward compatibility for TW 1.x: set cursor timer */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "set cursor timer");
-#endif
+			SYSLOG((LOG_ERR, "set cursor timer"));
 			return;
 		case 'u':		/* original colors */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is original colors");
-#endif
+			SYSLOG((LOG_ERR, "is original colors"));
 			original_colors (v);
 			break;
 		case 'v':		/* wrap on */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is linewrap on");
-#endif
+			SYSLOG((LOG_ERR, "is linewrap on"));
 			v->curr_tflags |= TWRAPAROUND;
 			break;
 		case 'w':
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is linewrap off");
-#endif
+			SYSLOG((LOG_ERR, "is linewrap off"));
 			v->curr_tflags &= ~TWRAPAROUND;
 			break;
 		case 'y':		/* TW extension: set special effects */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is set text effects");
-#endif
+			SYSLOG((LOG_ERR, "is set text effects"));
 			v->output = seffect_putch;
 			return;
 		case 'z':		/* TW extension: clear special effects */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "clear text effects");
-#endif
+			SYSLOG((LOG_ERR, "clear text effects"));
 			v->output = ceffect_putch;
 			return;
 	}

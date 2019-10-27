@@ -3,9 +3,6 @@
  * all rights reserved.
  */
 
-#undef DEBUG_VT
-#undef DUMP
-
 #include <mintbind.h>
 #include <support.h>
 #include <string.h>
@@ -22,6 +19,7 @@ static void vt100_putesc (TEXTWIN* tw, unsigned int c);
 static void clearalltabs (TEXTWIN* tw);
 static void fill_window (TEXTWIN* tw, unsigned int c);
 
+#undef DUMP
 #ifdef DUMP
 static int dump_pos = 1;
 
@@ -34,14 +32,8 @@ static void dump(char c)
 	printf("%c", c);
 	++dump_pos;
 }
-#endif
-
-#if 0
-#define DEBUG_VT
-#ifdef debug
-# undef debug
-#endif
-#define debug printf
+#else
+#define dump(c)
 #endif
 
 /* Move cursor in textwin TW from position (X|Y)
@@ -167,7 +159,7 @@ static int
 popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 {
 	int n = 0;
-	char s[ESCBUFSIZE] = "\0";
+	char s[ESCBUFSIZE];
 	char *sp = s;
 	unsigned char *ep1, *ep2;
 
@@ -182,8 +174,8 @@ popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 	if (s[0] != '\0') {
 		n = atoi(s);
 		return n;
-	} else
-		return -1;
+	}
+	return -1;
 }
 
 /* Discard all keys but l.  */
@@ -224,12 +216,8 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 {
 	int count, ei;
 
-#ifdef DEBUG_VT
-	debug("vt100_esc_mode: %c (%u)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_esc_mode: %c (%u)", c, c));
 	dump(c);
-#endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
@@ -477,9 +465,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 		pushescbuf(tw->escbuf, c);
 		return;
 	default:
-#ifdef DEBUG_VT
-		debug("vt100_esc_mode: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_mode: unknown %c", c));
 		break;
 	}
 	tw->output = vt100_putch;
@@ -576,7 +562,7 @@ void answerback (TEXTWIN* tw)
  */
 static void reportxy(TEXTWIN* tw, int x, int y)
 {
-	char r[ESCBUFSIZE] = "\0";
+	char r[ESCBUFSIZE];
 
 	/* Convert from internal to screen coordinates */
 	x++;
@@ -599,12 +585,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	cx = tw->cx;
 	cy = tw->cy;
 
-#ifdef DEBUG_VT
-	debug("vt100_esc_attr: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_esc_attr: %c (%d)", c, c));
 	dump(c);
-#endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
@@ -1036,7 +1018,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		param1 = popescbuf (tw, tw->escbuf);
 		param2 = popescbuf (tw, tw->escbuf);
 		param3 = popescbuf (tw, tw->escbuf);
-debug ("window modification: %ld %ld %ld\n", param1, param2, param3);
+		SYSLOG((LOG_ERR, "window modification: %ld %ld %ld", param1, param2, param3));
 
 		switch ((int) param1) {
 			case 1:  /* De-Iconify.  */
@@ -1080,7 +1062,7 @@ debug ("window modification: %ld %ld %ld\n", param1, param2, param3);
 					param3 = tw->win->full_work.g_w;
 					param3 /= tw->cmaxwidth;
 				}
-debug ("resize to %ld x %ld (%d)\n", param3, param2, SCROLLBACK (tw));
+				SYSLOG((LOG_ERR, "resize to %ld x %ld (%d)", param3, param2, SCROLLBACK (tw)));
 				resize_textwin (tw, param3, param2, 
 						SCROLLBACK (tw));
 				refresh_textwin (tw, 1);
@@ -1097,10 +1079,7 @@ debug ("resize to %ld x %ld (%d)\n", param3, param2, SCROLLBACK (tw));
 		/* Not yet implemented */
 		break;
 	default:
-#ifdef DEBUG_VT
-		printf("vt100_esc_attr: unknown %c\n", c);
-		debug ("vt100_esc_attr: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_attr: unknown %c", c));
 		break;
 	}
 	tw->output = vt100_putch;
@@ -1110,12 +1089,8 @@ debug ("resize to %ld x %ld (%d)\n", param3, param2, SCROLLBACK (tw));
 static void
 vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
 {
-#ifdef DEBUG_VT
-	debug ("vt100_esc_ansi: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_esc_ansi: %c (%d)", c, c));
 	dump (c);
-#endif
 	switch (c) {
 	case 'F':		/* 7-bit controls (S7C1T).  */
 		/* Not yet implemented.  */
@@ -1136,9 +1111,7 @@ vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
 		/* Not yet implemented.  */
 		break;
 	default:
-#ifdef DEBUG_VT
-		debug ("vt100_esc_ansi: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_ansi: unknown %c", c));
 		break;
 	}
 	tw->output = vt100_putch;
@@ -1150,12 +1123,8 @@ vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
 static void
 vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 {
-#ifdef DEBUG_VT
-	debug("vt100_esc_char_size: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_esc_char_size: %c (%d)", c, c));
 	dump(c);
-#endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
@@ -1197,9 +1166,7 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 		fill_window (tw, 'E');
 		break;
 	default:
-#ifdef DEBUG_VT
-		printf("vt100_esc_char_size: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_char_size: unknown %c", c));
 		break;
 	}
 	tw->output = vt100_putch;
@@ -1209,12 +1176,8 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 static void
 vt100_esc_codeset (TEXTWIN* tw, unsigned int c)
 {
-#ifdef DEBUG_VT
-	debug ("vt100_esc_codeset: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_esc_codeset: %c (%d)", c, c));
 	dump (c);
-#endif
 	switch (c) {
 	case '@':		/* Select default character set,
 				   ISO-8859-1 (ISO 2022).  */
@@ -1225,9 +1188,7 @@ vt100_esc_codeset (TEXTWIN* tw, unsigned int c)
 		tw->cfg->char_tab = TAB_ISO;  /* Better than Atari.  */
 		break;
 	default:
-#ifdef DEBUG_VT
-		debug ("vt100_esc_codeset: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_codeset: unknown %c", c));
 		break;
 	}
 	tw->output = vt100_putch;
@@ -1240,12 +1201,8 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 {
 	int g;
 	
-#ifdef DEBUG_VT
-	debug ("vt100_esc_codeset: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_esc_codeset: %c (%d)", c, c));
 	dump (c);
-#endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
@@ -1282,9 +1239,7 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 	case '=':		/* Swiss.  */
 		break;
 	default:
-#ifdef DEBUG_VT
-		debug ("vt100_esc_codeset: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_codeset: unknown %c", c));
 		tw->output = vt100_putch;
 		return;
 	}
@@ -1306,9 +1261,7 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 		g = 3;
 		break;
 	default:
-#ifdef DEBUG_VT
-		debug ("vt100_esc_codeset: unknown Gn %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_esc_codeset: unknown Gn %c", c));
 		tw->output = vt100_putch;
 		return;
 	}
@@ -1332,12 +1285,8 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	cx = tw->cx;
 	cy = tw->cy;
 
-#ifdef DEBUG_VT
-	debug("vt100_putesc: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "vt100_putesc: %c (%d)", c, c));
 	dump(c);
-#endif
 	switch (c) {
 	case '\010':	/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
@@ -1601,9 +1550,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		/* Not yet implemented */
 		break;
 	default:
-#ifdef DEBUG_VT
-		debug("vt100_putesc: unknown %c\n", c);
-#endif
+		SYSLOG((LOG_ERR, "vt100_putesc: unknown %c", c));
 		break;
 	}
 	tw->output = vt100_putch;
@@ -1613,12 +1560,8 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 static void
 escy1_putch (TEXTWIN* tw, unsigned int c)
 {
-#ifdef DEBUG_VT
-	debug ("escy1_putch: %c (%u)\n", c, c);
-#endif
-#ifdef DUMP
+	SYSLOG((LOG_ERR, "escy1_putch: %c (%u)", c, c));
 	dump (c);
-#endif
 	/* FIXME: Origin mode!!! */
 	gotoxy (tw, c - ' ', tw->miny + tw->escy1 - ' ');
 	tw->output = vt100_putch;
@@ -1638,9 +1581,7 @@ escy_putch (TEXTWIN* tw, unsigned int c)
 void
 vt100_putch (TEXTWIN* tw, unsigned int c)
 {
-#ifdef DUMP
 	dump(c);
-#endif
 
 	c &= 0x00ff;
 
@@ -1707,9 +1648,7 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 			break;
 
 		default:
-#ifdef DEBUG_VT
-			debug("vt100_putch: unknown %c\n", c);
-#endif
+			SYSLOG((LOG_ERR, "vt100_putch: unknown %c", c));
 			break;
 		}
 	} else {

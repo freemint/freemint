@@ -15,7 +15,6 @@
 #include "toswin2.h"
 
 #ifdef DEBUG
-# include <syslog.h>
 int do_debug = 0;
 #endif
 
@@ -55,7 +54,7 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 	if (do_debug) {
 		openlog ("TosWin2", LOG_CONS | LOG_PID, LOG_KERN);
-		syslog (LOG_ERR, "TosWin2 started");
+		SYSLOG((LOG_ERR, "TosWin2 started"));
 	}
 #endif
 

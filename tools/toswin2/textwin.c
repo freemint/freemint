@@ -33,11 +33,6 @@
 #include "av.h"
 #include "drag.h"
 
-#ifdef DEBUG
-extern int do_debug;
-# include <syslog.h>
-#endif
-
 #define CLEARED 2			/* redrawing a cleared area */
 
 /*
@@ -1705,11 +1700,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 			}
 			else
 			{
-#ifdef DEBUG
-				if (do_debug)
-					syslog (LOG_ERR, "Writing code 0x%08x",
-						(unsigned) c);
-#endif
+				SYSLOG((LOG_ERR, "Writing code 0x%08x", (unsigned) c));
 				(void)Fputchar(t->fd, c, 0);
 			}
 			return TRUE;
@@ -1853,9 +1844,9 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->alloc_width = (NCOLS (t) + 15) & 0xfffffff0;
 	t->alloc_height = (t->maxy + 15) & 0xfffffff0;
 
-	t->cdata = malloc(sizeof(char *) * t->alloc_height);
-	t->cflags = malloc(sizeof(void *) * t->alloc_height);
-	t->dirty = malloc((size_t)t->alloc_height);
+	t->cdata = calloc(t->alloc_height, sizeof(t->cdata[0]));
+	t->cflags = calloc(t->alloc_height, sizeof(t->cflags[0]));
+	t->dirty = calloc(t->alloc_height, sizeof(t->dirty[0]));
 
 	if (!t->dirty || !t->cflags || !t->cdata)
 		goto bail_out;
@@ -1874,13 +1865,10 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	original_colors (t);
 	flag = t->curr_cattr;
 
-	memset (t->dirty, 0, (sizeof t->dirty[0]) * t->maxy);
-
 	for (i = 0; i < t->alloc_height; ++i)
 	{
-		t->cdata[i] = malloc ((size_t) t->alloc_width);
-		t->cflags[i] = malloc(sizeof (long) *
-				((size_t) (t->alloc_width)));
+		t->cdata[i] = malloc(sizeof(t->cdata[0][0]) * t->alloc_width);
+		t->cflags[i] = malloc(sizeof(t->cflags[0][0]) * t->alloc_width);
 		if (!t->cflags[i] || !t->cdata[i])
 			goto bail_out;
 
@@ -1897,13 +1885,11 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 #ifndef ONLY_XAAES
 	if (wco)
 	{
-#endif
 		v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos,
 				  cfg->col * t->cmaxwidth, cfg->row * t->cheight,
 				  SHRT_MAX >> 1, SHRT_MAX >> 1, (long)t->x_limit * t->cmaxwidth);
-#ifndef ONLY_XAAES
-	}
-	else
+	} else
+#endif
 	{
 		/* initialize the WINDOW struct */
 		wind_calc (WC_BORDER, cfg->kind, 100, 100,
@@ -1913,12 +1899,9 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 		v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos, 
 				  bwidth, bheight, SHRT_MAX >> 1, SHRT_MAX >> 1, -1L);
 	}
-#endif
 	if (!v)
 	{
-		/* FIXME: Cleanup for dirty, data, and cflag, too.  */
-		free(t);
-		return 0;
+		goto bail_out;
 	}
 
 	v->extra = t;
@@ -1972,22 +1955,16 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	return t;
 
 bail_out:
-#if 0
-	if (t->cdata && t->dirty && t->cflags) {
-		for (i = 0; i < t->maxy; ++i) {
-			if (t->cdata[i])
-				free (t->cdata[i]);
-			if (t->cflags[i])
-				free (t->cflags[i]);
-		}
-	}
-#endif
-	if (t->cdata)
-		free (t->cdata);
-	if (t->dirty)
-		free (t->dirty);
 	if (t->cflags)
-		free (t->cflags);
+		for (i = 0; i < t->maxy; ++i)
+			free (t->cflags[i]);
+	if (t->cdata)
+		for (i = 0; i < t->maxy; ++i)
+			free (t->cdata[i]);
+	free (t->cdata);
+	free (t->dirty);
+	free (t->cflags);
+	free(t);
 	return NULL;
 }
 
@@ -2006,18 +1983,14 @@ void destroy_textwin(TEXTWIN *t)
 		free(t->cdata[i]);
 		free(t->cflags[i]);
 	}
-	if (t->prog)
-		free(t->prog);
-	if (t->cmdlin)
-		free(t->cmdlin);
-	if (t->progdir)
-		free(t->progdir);
+	free(t->prog);
+	free(t->cmdlin);
+	free(t->progdir);
 
 	free(t->cflags);
 	free(t->cdata);
 	free(t->dirty);
-	if (t->cwidths)
-		free(t->cwidths);
+	free(t->cwidths);
 
 	/* Proze korrekt abmelden */
 	term_proc(t);
@@ -2573,7 +2546,7 @@ void write_text(TEXTWIN *t, char *b, long len)
 
 /*
  * Sucht ein Fenster zu handle bzw. talkID.
-*/
+ */
 TEXTWIN *get_textwin(short handle, short talkID)
 {
 	WINDOW *w;
