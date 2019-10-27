@@ -1,6 +1,11 @@
 /* Emulator for DEC VT100 series terminal for MiNT.
  * Copyright (C) 2001, Guido Flohr <guido@freemint.de>,
  * all rights reserved.
+ *
+ * detailed descriptions of vt100-alike control sequences
+ * can be found at:
+ * https://vt100.net/docs/vt100-ug/chapter3.html
+ * https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
  */
 
 #include <mintbind.h>
@@ -237,13 +242,9 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 		return;
 	case 'J':		/* Erase in Display (DECSED).  */
 	case 'K':		/* Erase in Line (DECSEL).  */
+	case 'S':		/* Set or request graphics attribute, xterm */
 		/* Not yet implemented.  */
-		count = 0;
-		do
-		{
-			ei = popescbuf (tw, tw->escbuf);
-			++count;
-		} while (ei >= 0);
+		tw->escbuf[0] = '\0';
 		break;
 	case 'c':		/* Extended private modes.	*/
 		count = 0;
@@ -311,15 +312,13 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 18: /* Print Form Feed (DECPFF).  */
 				/* Not yet implemented */
 				break;				
-			case 19: /* Set print extent to full screen 
-				    (DECPEX).  */
+			case 19: /* Set print extent to full screen (DECPEX).  */
 				/* Not yet implemented */
 				break;				
 			case 25: /* Show Cursor (DECTCEM).  */
 				tw->curr_tflags |= TCURS_ON;
 				break;
-			case 35: /* Enable font-shifting functions
-				    (rxvt).  */
+			case 35: /* Enable font-shifting functions (rxvt).  */
 				/* Not yet implemented */
 				break;
 			case 38: /* Enter Tektronix Mode (DECTEK).  */
@@ -331,8 +330,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 41: /* more(1) fix (xterm?).  */
 				/* Dunno.  */
 				break;
-			case 42: /* Enable Nation Replacement Character
-				    sets (DECNRCM).  */
+			case 42: /* Enable Nation Replacement Character sets (DECNRCM).  */
 				/* Dunno.  */
 				break;
 			case 44: /* Turn On Margin Bell.  */
@@ -341,43 +339,56 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 45: /* Reverse-wraparound Mode (xterm?).  */
 				/* Dunno.  */
 				break;
+			case 46: /* Start logging, xterm */
+				/* Not yet implemented.  */
+				break;
 			case 47: /* Use Alternate Screen Buffer.  */
 				/* Not yet implemented.  */
 				break;
-			case 66: /* Application Keypad (DECNKM).  */
-			case 67: /* Backarrow key sends delete 
-				    (DECBKM).  */
+			case 66:	/* Application Keypad (DECNKM).  */
+			case 67:	/* Backarrow key sends backspace (DECBKM).  */
+			case 69:	/* Enable left and right margin mode (DECLRMM) */
+			case 80:	/* Enable Sixel Scrolling (DECSDM) */
+			case 95:	/* Do not clear screen when DECCOLM is set/reset (DECNCSM) */
+			case 1000:	/* Send Mouse X & Y on button press and release */
+			case 1001:	/* Use Hilite Mouse Tracking.  */
+			case 1002:	/* Use Cell Motion Mouse Tracking.  */
+			case 1003:	/* Use All Motion Mouse Tracking.  */
+			case 1004:	/* Send FocusIn/FocusOut events */
+			case 1005:	/* Enable UTF-8 Mouse Mode */
+			case 1006:	/* Enable SGR Mouse Mode */
+			case 1007:	/* Enable Alternate Scroll Mode */
+			case 1010:	/* Scroll to bottom on tty output (rxvt).  */
+			case 1011:	/* Scroll to bottom on key press (rxvt).  */
+			case 1034:	/* Interpret "meta" key, xterm */
+			case 1035:	/* Enable special modifiers for Alt and NumLock keys.  */
+			case 1036:	/* Send ESC when Meta modifies a key.  */
+			case 1037:	/* Send DEL from the editing-keypad Delete key.  */
+			case 1039:	/* Send ESC when Alt modifies a key, xterm. */
+			case 1040:	/* Keep selection even if not highlighted */
+			case 1041:	/* Use the CLIPBOARD selection, xterm */
+			case 1042:	/* Enable Urgency window manager hint when Control-G is received */
+			case 1043:	/* Enable raising of the window when Control-G is received */
+			case 1044:	/* Reuse the most recent data copied to CLIPBOARD */
+			case 1046:	/* Enable switching to/from Alternate Screen */
+			case 1047:	/* Use Alternate Screen Buffer.  */
+			case 1048:	/* Save cursor as in DECSC.  */
+			case 1049:	/* Save cursor as in DECSC and use Alternate Screen Buffer, clearing it first.  */
+			case 1050:	/* Set terminfo/termcap function-key mode */
+			case 1051:	/* Set Sun function-key mode.  */
+			case 1052:	/* Set HP function-key mode.  */
+			case 1053:	/* Set SCO function-key mode */
+			case 1060:	/* Set legacy keyboard emulation (X11R6).  */
+			case 1061:	/* Set Sun/PC keyboard emulation of VT220 keyboard.  */
+			case 2004:	/* Set bracketed paste mode */
 				/* Not yet implemented.  */
-			case 1001: /* Use Hilite Mouse Tracking.  */
-			case 1002: /* Use Cell Motion Mouse Tracking.  */
-			case 1003: /* Use All Motion Mouse Tracking.  */
-			case 1010: /* Scroll to bottom on tty output
-				      (rxvt).  */
-			case 1011: /* Scroll to bottom on key press
-				      (rxvt).  */
-			case 1035: /* Enable special modifiers for Alt
-				      and NumLock keys.  */
-			case 1036: /* Send ESC when Meta modifies a
-				      key.  */
-			case 1037: /* Send DEL from the editing-keypad
-				      Delete key.  */
-			case 1047: /* Use Alternate Screen Buffer.  */
-			case 1048: /* Save cursor as in DECSC.  */
-			case 1049: /* Save cursor as in DECSC and
-				      use Alternate Screen Buffer, 
-				      clearing it first.  */
-			case 1051: /* Set Sun function-key mode.  */
-			case 1052: /* Set HP function-key mode.  */
-			case 1060: /* Set legacy keyboard emulation 
-				      (X11R6).  */
-			case 1061: /* Set Sun/PC keyboard emulation of 
-				      VT220 keyboard.  */
-			default:
 				break;
 			}
 			count++;
 		}
 		while (ei >= 0);
+		break;
+	case 'i': /* Media Copy (MC), DEC-specific. */
 		break;
 	case 'l':		/* mode reset */
 		count = 0;
@@ -419,26 +430,84 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 8:	/* autorepeat off */
 				/* Not yet implemented */
 				break;
-			case 9:	/* interlace off */
+			case 9:	/* Don't send Mouse X & Y on button press */
 				/* Not yet implemented */
 				break;
-			case 14:	/* deferred operation of ENTER */
+			case 10:	/* Hide toolbar */
+				break;
+			case 12: 	/* Stop Blinking Cursor */
+				break;
+			case 13:	/* Disable Blinking Cursor */
+				break;
+			case 14:	/* Disable XOR of Blinking Cursor control sequence and menu */
 				/* Not yet implemented */
 				break;
 			case 16:	/* edit selection deferred */
 				/* Not yet implemented */
 				break;
+			case 18:	/* Don't print form feed (DECPFF) */
+				break;
+			case 19:	/* Limit print to scrolling region (DECPEX) */
+				break;
 			case 25:	/* cursor off */
 				tw->curr_tflags &= ~TCURS_ON;
+				break;
+			case 30:	/* Don't show scrollbar */
+				break;
+			case 35:	/* Disable font-shifting function */
 				break;
 			case 40:	/* Reset column mode.  */
 				tw->curr_tflags &= ~TDECCOLM;
 				break;
-			/* FIXME: Insert set modes as implemented.  */
+			case 41:	/* No more(1) fix */
+			case 42:	/* Disable National Replacement Character sets (DECNRCM), VT220 */
+			case 44:	/* Turn Off Margin Bell */
+			case 45:	/* No Reverse-wraparound Mode */
+			case 46:	/* Stop Logging */
+			case 47:	/* Use Normal Screen Buffer */
+			case 66:	/* Numeric keypad (DECNKM), VT320 */
+			case 67:	/* Backarrow key sends delete (DECBKM), VT340 */
+			case 69:	/* Disable left and right margin mode (DECLRMM) */
+			case 80:	/* Disable Sixel Scrolling (DECSDM) */
+			case 95:	/* Clear screen when DECCOLM is set/reset (DECNCSM) */
+			case 1000:	/* Don't send Mouse X & Y on button press and release */
+			case 1001:	/* Don't use Hilite Mouse Tracking.  */
+			case 1002:	/* Don't use Cell Motion Mouse Tracking.  */
+			case 1003:	/* Don't use All Motion Mouse Tracking.  */
+			case 1004:	/* Don't send FocusIn/FocusOut events */
+			case 1005:	/* Disable UTF-8 Mouse Mode */
+			case 1006:	/* Disable SGR Mouse Mode */
+			case 1007:	/* Disable Alternate Scroll Mode */
+			case 1010:	/* Don't scroll to bottom on tty output (rxvt).  */
+			case 1011:	/* Don't scroll to bottom on key press (rxvt).  */
+			case 1034:	/* Don't interpret "meta" key, xterm */
+			case 1035:	/* Disable special modifiers for Alt and NumLock keys.  */
+			case 1036:	/* Don't send ESC when Meta modifies a key.  */
+			case 1037:	/* Send VT220 Remove from the editing-keypad Delete key */
+			case 1039:	/* Send ESC when Alt modifies a key, xterm. */
+			case 1040:	/* Keep selection even if not highlighted */
+			case 1041:	/* Use the PRIMARY selection, xterm */
+			case 1042:	/* Disable Urgency window manager hint when Control-G is received */
+			case 1043:	/* Disable raising of the window when Control-G is received */
+			case 1044:	/* Don't reuse the most recent data copied to CLIPBOARD */
+			case 1046:	/* disable switching to/from Alternate Screen */
+			case 1047:	/* Use Normal Screen Buffer.  */
+			case 1048:	/* Restore cursor as in DECSC.  */
+			case 1049:	/* Use Normal Screen Buffer as in DECSC and restore cursor */
+			case 1050:	/* Reset terminfo/termcap function-key mode */
+			case 1051:	/* Reset Sun function-key mode.  */
+			case 1052:	/* Reset HP function-key mode.  */
+			case 1053:	/* Reset SCO function-key mode */
+			case 1060:	/* Reset legacy keyboard emulation (X11R6).  */
+			case 1061:	/* Reset Sun/PC keyboard emulation of VT220 keyboard.  */
+			case 2004:	/* Reset bracketed paste mode */
+				break;
 			}
 			count++;
 		}
 		while (ei >= 0);
+		break;
+	case 'n':		/* Device Status Report (DSR, DEC-specific) */
 		break;
 	case 'r':		/* mode restore */
 		/* Not yet implemented */
@@ -447,9 +516,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 		/* Not yet implemented */
 		break;
 	case 'y':		/* invoke test(s) */
-		if (popescbuf(tw, tw->escbuf) == 2) {
-			/* Not yet implemented */
-		}
+		/* Not yet implemented */
 		break;
 	case '0':
 	case '1':
@@ -472,7 +539,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 }
 
 /*
-* cleartab(tw, x): clear tab at position x
+ * cleartab(tw, x): clear tab at position x
  */
 
 static void cleartab(TEXTWIN* tw, int x)
@@ -604,8 +671,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
 		return;
-	case '!':		/* Maybe Soft terminal reset (DECSTR)
-				   if followed by p.  */
+	case '!':		/* Maybe Soft terminal reset (DECSTR) if followed by p.  */
 		pushescbuf (tw->escbuf, c);
 		return;
 	case '0':
@@ -624,8 +690,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	case '?':		/* DEC Private Mode Set (DECSET).  */
 		tw->output = vt100_esc_mode;
 		return;
-	case '@':		/* Insert Ps (Blank) Character(s)
-				   (default = 1) (ICH).  */
+	case '@':		/* Insert Ps (Blank) Character(s) (default = 1) (ICH).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -636,36 +701,36 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			--count;
 		}
 		break;
-	case 'A':		/* Cursor Up Ps Times (default = 1)
-				   (CUU).  */
+	case 'A':		/* Cursor Up Ps Times (default = 1) (CUU).  */
+	case 'F':		/* Cursor Preceding Line Ps Times (default = 1) (CPL). */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cuu (tw, count);
 		break;
-	case 'B':		/* Cursor Down Ps Times (default = 1)
-				   (CUD).  */
+	case 'B':		/* Cursor Down Ps Times (default = 1) (CUD).  */
+	case 'E':		/* Cursor Next Line Ps Times (default = 1) (CNL). */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cud (tw, count);
 		break;
-	case 'C':		/* Cursor Forward Ps Times (default = 1)
-				   (CUF).  */
+	case 'C':		/* Cursor Forward Ps Times (default = 1) (CUF).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cuf (tw, count);
 		break;
-	case 'D':		/* Cursor Backward Ps Times (default = 1)
-				   (CUD).  */
+	case 'D':		/* Cursor Backward Ps Times (default = 1) (CUD).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cub (tw, count);
 		break;
-	case 'H':		/* Cursor Position [row;column]
-				   (default = [1,1]) (CUP).  */
+	case 'G':		/* Cursor Character Absolute  [column] (default = [row,1]) (CHA). */
+		/* YYY */
+		break;
+	case 'H':		/* Cursor Position [row;column] (default = [1,1]) (CUP).  */
 		cy = popescbuf (tw, tw->escbuf);
 		if (cy < 1)
 			cy = 1;
@@ -673,6 +738,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		if (cx < 1)
 			cx = 1;
 		gotoxy (tw, cx - 1, tw->miny + cy - 1);
+		break;
+	case 'I':		/* Cursor Forward Tabulation Ps tab stops (default = 1) (CHT). */
 		break;
 	case 'J':		/* Erase in Display (ED).  */
 		count = popescbuf (tw, tw->escbuf);
@@ -711,8 +778,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			break;
 		}
 		break;
-	case 'L':		/* Insert Ps line(s) (default = 1)
-				   (IL).  */
+	case 'L':		/* Insert Ps line(s) (default = 1) (IL).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -722,8 +788,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		}
 		tw->do_wrap = 0;
 		break;
-	case 'M':		/* Delete Ps line(s) (default = 1)
-				   (DL).  */
+	case 'M':		/* Delete Ps line(s) (default = 1) (DL).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -732,8 +797,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			--count;
 		}
 		break;
-	case 'P':		/* Delete Ps Character(s) (default = 1)
-				   (DCH).  */
+	case 'P':		/* Delete Ps Character(s) (default = 1) (DCH).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -744,16 +808,17 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		break;
 	case 'R':		/* ??? Cursor position response */
 		break;
-	case 'S':		/* Scroll up Ps (line(s) (default = 1)
-				   (SU).  */
-	case 'T':		/* Scroll down Ps (line(s) (default = 1)
-				   (SD).  */
+	case 'S':		/* Scroll up Ps (line(s) (default = 1) (SU).  */
+	case 'T':		/* Scroll down Ps (line(s) (default = 1) (SD).  */
 		/* Not yet implemented.  */
-		/* If CSI Ps ; Ps ; Ps ; Ps ; Ps T then mouse 
-		   tracking is requested.  */
+		/* If CSI Ps ; Ps ; Ps ; Ps ; Ps T then mouse tracking is requested.  */
 		break;
-	case 'X':		/* Erase Ps character(s) (default = 1)
-				   (ECH).  */
+	case '^':		/* Scroll down Ps lines (default = 1) (SD), ECMA-48. */
+		/* This was a publication error in the original ECMA-48 5th edition */
+		/* (1991) corrected in 2003. */
+		/* YYY */
+		break;
+	case 'X':		/* Erase Ps character(s) (default = 1) (ECH).  */
 		count = popescbuf (tw, tw->escbuf);
 		ei = tw->cx;
 		do {
@@ -763,48 +828,43 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		} while (tw->cx < tw->maxx && count > 1);
 		tw->cx = ei;
 		break;
-	case 'Z':		/* Cursor Backward Tabulation Ps tab 
-				   stops (default = 1) (CBT).  */
+	case 'Z':		/* Cursor Backward Tabulation Ps tab stops (default = 1) (CBT).  */
 		/* Not yet implemented.  */
 		break;
-	case '`':		/* Character Position Absolute [column]
-				   (default = [row,1]) (HPA).  */
+	case '`':		/* Character Position Absolute [column] (default = [row,1]) (HPA).  */
 		count = popescbuf (tw, tw->escbuf);
+		/* YYY */
 		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
 		break;
-	case 'b':		/* Repeat the preceding graphic character
-				   Ps times (REP).  */
-		/* Not yet implemented.  */
-		count = popescbuf (tw, tw->escbuf);
-		do {
-			ei = popescbuf (tw, tw->escbuf);
-			++count;
-		} while (ei >= 0);
+	case 'a':		/* Character Position Relative  [columns] (default = [row,col+1]) (HPR). */
+		/* YYY */
 		break;
-	case 'c':		/* Send Device Attributes 
-				   (Primary DA).  */
+	case 'b':		/* Repeat the preceding graphic character Ps times (REP).  */
+		/* Not yet implemented.  */
+		break;
+	case 'c':		/* Send Device Attributes (Primary DA).  */
 		ei = popescbuf (tw, tw->escbuf);
-		if (ei < 1) {
-			/* 2 = base vt100 with advanced video 
-			   option (AVO) */
+		if (ei <= 0) {
+			/* 2 = base vt100 with advanced video option (AVO) */
 			sendstr (tw, "\033[?1;2c");
 			/* FIXME: Should be configurable.  */
 		}
-		/* FIXME: CSI > Ps c requests Secondary DA.  Insert
-		   into caller ... */
+		/* FIXME: CSI > Ps c requests Secondary DA.  Insert into caller ... */
 		break;
-	case 'd':		/* Line Position Absolute [row]
-				   (default = [1,column]) (VPA).  */
+	case 'd':		/* Line Position Absolute [row] (default = [1,column]) (VPA).  */
 		/* FIXME: Obey origin mode or not?  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
+		/* YYY */
 		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
 		break;
-	case 'f':		/* Horizontal and Vertical Position
-				   [row;column] (default = [1,1]) 
-				   (HVP).  */
+	case 'e':		/* Line Position Relative  [rows] (default = [row+1,column]) (VPR). */
+		/* YYY */
+		break;
+	case 'f':		/* Horizontal and Vertical Position [row;column] (default = [1,1]) (HVP).  */
 		vt100_esc_attr (tw, 'H');
+		/* YYY */
 		break;
 	case 'g':		/* Tab Clear (TBC).  */
 		count = popescbuf(tw, tw->escbuf);
@@ -823,7 +883,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		count = 0;
 		do {
 			ei = popescbuf(tw, tw->escbuf);
-			if (count == 0 && ei == -1)
+			if (count == 0 && ei < 0)
 				ei = 0;
 			switch (ei) {
 			case 2:	/* keyboard locked */
@@ -831,6 +891,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				break;
 			case 4:	/* insert mode */
 				tw->curr_tflags |= TINSERT;
+				break;
+			case 12:	/* Send/receive (SRM). */
 				break;
 			case 20:	/* <return> sends crlf */
 				/* Not yet implemented */
@@ -843,11 +905,13 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		}
 		while (ei >= 0);
 		break;
+	case 'i':		/* Media Copy (MC). */
+		break;
 	case 'l':		/* various keyboard & screen attributes */
 		count = 0;
 		do {
 			ei = popescbuf(tw, tw->escbuf);
-			if (count == 0 && ei == -1)
+			if (count == 0 && ei < 0)
 				ei = 0;
 			switch (ei) {
 			case 2:	/* keyboard unlocked */
@@ -855,6 +919,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				break;
 			case 4:	/* replace/overwrite mode */
 				tw->curr_tflags &= ~TINSERT;
+				break;
+			case 12:	/* Send/receive (SRM). */
 				break;
 			case 20:	/* <return> sends lf */
 				/* Not yet implemented */
@@ -871,16 +937,12 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		count = 0;
 		do {
 			ei = popescbuf (tw, tw->escbuf);
-			if (ei == -1 && count == 0)
+			if (ei < 0 && count == 0)
 				ei = 0;
 			switch (ei) {
-			case 0:	/* All attributes off.  
-				   FIXME: Is this too much?  */
-				tw->curr_cattr &=
-					~(CE_BOLD | CE_LIGHT | 
-					  CE_ITALIC | CE_UNDERLINE | 
-					  CINVERSE | CPROTECTED |
-					  CINVISIBLE);
+			case 0:	/* All attributes off.  */
+				/* FIXME: Is this too much?  */
+				tw->curr_cattr &= ~(CE_BOLD | CE_LIGHT | CE_ITALIC | CE_UNDERLINE | CINVERSE | CPROTECTED | CINVISIBLE);
 				original_colors (tw);
 				break;
 			case 1:		/* bold on (x) */
@@ -888,6 +950,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				break;
 			case 2:		/* light on (x) */
 				set_ansi_fg_color (tw, 'N' + 48);
+				break;
+			case 3:		/* italic on */
 				break;
 			case 4:	/* underline on */
 				tw->curr_cattr |= CE_UNDERLINE;
@@ -899,17 +963,17 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				tw->curr_cattr |= CINVERSE;
 				break;
 			case 8: /* Concealed on.  */
-				tw->curr_cattr =
-					((tw->curr_cattr & CBGCOL) << 4) |
-					 (tw->curr_cattr &
-					  ~(CE_ANSI_EFFECTS |
-						 CFGCOL));
+				tw->curr_cattr = ((tw->curr_cattr & CBGCOL) << 4) | (tw->curr_cattr & ~(CE_ANSI_EFFECTS | CFGCOL));
+				break;
+			case 9:		/* Crossed-out characters, ECMA-48 3rd. */
 				break;
 			case 21:	/* bold off */
 				tw->curr_cattr &= ~CE_BOLD;
 				break;
 			case 22:	/* TW addition - light off */
-				tw->curr_cattr &= ~CE_LIGHT;
+				tw->curr_cattr &= ~CE_LIGHT; /* YYY turns also bold off */
+				break;
+			case 23:	/* Not italicized, ECMA-48 3rd. */
 				break;
 			case 24:	/* underline off */
 				tw->curr_cattr &= ~CE_UNDERLINE;
@@ -920,58 +984,63 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			case 27:	/* reverse video (standout) off */
 				tw->curr_cattr &= ~CINVERSE;
 				break;
-			case 30:	/* white foreground (x) */
+			case 28:	/* Visible, i.e., not hidden, ECMA-48 3rd, VT300. */
+				/* YYY */
+				break;
+			case 29:	/* Not crossed-out, ECMA-48 3rd. */
+				break;
+			case 30:	/* black foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_BLACK + 48);
 				break;
-			case 31:	/* black foreground (x) */
+			case 31:	/* red foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_RED + 48);
 				break;
-			case 32:	/* red foreground (x) */
+			case 32:	/* green foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_GREEN + 48);
 				break;
-			case 33:	/* green foreground (x) */
+			case 33:	/* yellow foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_YELLOW + 48);
 				break;
-			case 34:	/* yellow foreground (x) */
+			case 34:	/* blue foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_BLUE + 48);
 				break;
-			case 35:	/* blue foreground (x) */
+			case 35:	/* magenta foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_MAGENTA + 48);
 				break;
-			case 36:	/* magenta foreground (x) */
+			case 36:	/* cyan foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_CYAN + 48);
 				break;
-			case 37:	/* cyan foreground (x) */
+			case 37:	/* white foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_WHITE + 48);
 				break;
-			case 39:	/* cyan foreground (x) */
+			case 39:	/* default foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_DEFAULT + 48);
 				break;
-			case 40:	/* white background (x) */
+			case 40:	/* black background (x) */
 				set_ansi_bg_color (tw,  ANSI_BLACK + 48);
 				break;
-			case 41:	/* black background (x) */
+			case 41:	/* red background (x) */
 				set_ansi_bg_color (tw,  ANSI_RED + 48);
 				break;
-			case 42:	/* red background (x) */
+			case 42:	/* green background (x) */
 				set_ansi_bg_color (tw,  ANSI_GREEN + 48);
 				break;
-			case 43:	/* green background (x) */
+			case 43:	/* yellow background (x) */
 				set_ansi_bg_color (tw,  ANSI_YELLOW + 48);
 				break;
-			case 44:	/* yellow background (x) */
+			case 44:	/* blue background (x) */
 				set_ansi_bg_color (tw,  ANSI_BLUE + 48);
 				break;
-			case 45:	/* blue background (x) */
+			case 45:	/* magenta background (x) */
 				set_ansi_bg_color (tw,  ANSI_MAGENTA + 48);
 				break;
-			case 46:	/* magenta background (x) */
+			case 46:	/* cyan background (x) */
 				set_ansi_bg_color (tw,  ANSI_CYAN + 48);
 				break;
-			case 47:	/* cyan background (x) */
+			case 47:	/* white background (x) */
 				set_ansi_bg_color (tw,  ANSI_WHITE + 48);
 				break;
-			case 49:	/* cyan background (x) */
+			case 49:	/* default background (x) */
 				set_ansi_bg_color (tw,  ANSI_DEFAULT + 48);
 				break;
 			}
@@ -979,7 +1048,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		}
 		while (ei >= 0);
 		break;
-	case 'n':
+	case 'n':	/* Device Status Report (DSR). */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 0)
 			count = 0;
@@ -1000,6 +1069,10 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		else if (tw->escbuf[0] == '\000')	/* Full terminal reset (RSI).  */
 			vt_reset (tw, TRUE, TRUE);
 		break;
+	case 'q':		/* Load LEDs (DECLL), VT100. */
+					/* if preceded by SP: Set cursor style (DECSCUSR), VT520. */
+		/* Not yet implemented */
+		break;
 	case 'r':		/* set size of scrolling region */
 		param1 = popescbuf (tw, tw->escbuf);
 		param2 = popescbuf (tw, tw->escbuf);
@@ -1014,10 +1087,18 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			gotoxy (tw, 0, 0);
 		}
 		break;
+	case 's':		/* Save cursor, available only when DECLRMM is disabled (SCOSC) */
+					/* Set left and right margins (DECSLRM), VT420 */
+		/* YYY */
+		break;
 	case 't':		/* window modification */
 		param1 = popescbuf (tw, tw->escbuf);
 		param2 = popescbuf (tw, tw->escbuf);
 		param3 = popescbuf (tw, tw->escbuf);
+		if (tw->escbuf[0] == ' ')
+		{
+			/* FIXME: set bell volume */
+		}
 		SYSLOG((LOG_ERR, "window modification: %ld %ld %ld", param1, param2, param3));
 
 		switch ((int) param1) {
@@ -1034,10 +1115,6 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				break;
 			case 3:  /* Position.  */
 				break;
-			case 5:  /* Raise window.  */
-				break; /* Not yet implemented.  */
-			case 6:  /* Lower window.  */
-				break; /* Not yet implemented.  */
 			case 4:  /* Size in pixels.  */
 				/*
 				 * If we have too small but non-zero values
@@ -1051,26 +1128,41 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				param2 /= tw->cheight;
 				param3 /= tw->cmaxwidth;
 				/* FALLTHRU */
+			case 5:  /* Raise window.  */
+				break; /* Not yet implemented.  */
+			case 6:  /* Lower window.  */
+				break; /* Not yet implemented.  */
+			case 7:		/* refresh */
+				/* YYY */
+				break;
 			case 8:  /* Size in characters.  */
-				if (param2 == 0 || param2 > 768)
+				if (param2 <= 0 || param2 > 768)
 				{
 					param2 = tw->win->full_work.g_h;
 					param2 /= tw->cheight;
 				}
-				if (param3 == 0 || param3 > 1024)
+				if (param3 <= 0 || param3 > 1024)
 				{
 					param3 = tw->win->full_work.g_w;
 					param3 /= tw->cmaxwidth;
 				}
 				SYSLOG((LOG_ERR, "resize to %ld x %ld (%d)", param3, param2, SCROLLBACK (tw)));
-				resize_textwin (tw, param3, param2, 
-						SCROLLBACK (tw));
+				resize_textwin (tw, param3, param2, SCROLLBACK (tw));
 				refresh_textwin (tw, 1);
+				break;
+			case 9:	/* maximize/restore */
+				/* YYY */
+				break;
+			case 10:	/* fullscreen */
+				/* YYY */
+				break;
+			case 11:	/* report state */
 				break;
 		}
 		break;
-	case 'q':		/* keyboard light controls */
-		/* Not yet implemented */
+	case 'u':		/* Restore cursor (SCORC, also ANSI.SYS). */
+					/* Set margin-bell volume (DECSMBV), VT520. */
+		/* YYY */
 		break;
 	case 'x':		/* return terminal parameters */
 		/* Not yet implemented */
@@ -1098,16 +1190,13 @@ vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
 	case 'G':		/* 8-bit controls (S8CIT).  */
 		/* Not yet implemented.  */
 		break;
-	case 'L':		/* Set ANSI conformance level 1 
-				   (vt100, 7-bit controls).  */
+	case 'L':		/* Set ANSI conformance level 1 (vt100, 7-bit controls).  */
 		/* Not yet implemented.  */
 		break;
-	case 'M':		/* Set ANSI conformance level 2 
-				   (vt200).  */
+	case 'M':		/* Set ANSI conformance level 2 (vt200).  */
 		/* Not yet implemented.  */
 		break;
-	case 'N':		/* Set ANSI conformance level 3 
-				   (vt300).  */
+	case 'N':		/* Set ANSI conformance level 3 (vt300).  */
 		/* Not yet implemented.  */
 		break;
 	default:
