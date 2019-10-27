@@ -731,6 +731,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		/* YYY */
 		break;
 	case 'H':		/* Cursor Position [row;column] (default = [1,1]) (CUP).  */
+	case 'f':		/* Horizontal and Vertical Position [row;column] (default = [1,1]) (HVP).  */
 		cy = popescbuf (tw, tw->escbuf);
 		if (cy < 1)
 			cy = 1;
@@ -860,10 +861,6 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
 		break;
 	case 'e':		/* Line Position Relative  [rows] (default = [row+1,column]) (VPR). */
-		/* YYY */
-		break;
-	case 'f':		/* Horizontal and Vertical Position [row;column] (default = [1,1]) (HVP).  */
-		vt100_esc_attr (tw, 'H');
 		/* YYY */
 		break;
 	case 'g':		/* Tab Clear (TBC).  */
