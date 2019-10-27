@@ -150,13 +150,25 @@ gotoxy (TEXTWIN* tw, short x, short y)
 		x = tw->maxx - 1;
 
 	y += RELOFFSET (tw);
-	if (y < tw->miny)
-		y = tw->miny;
 	if (tw->curr_tflags & TORIGIN) {
+		/*
+		 * line & column numbers are relativ to the margin,
+		 * and cursor cannot be places outside margins
+		 */
 		if (y < tw->scroll_top)
 			y = tw->scroll_top;
-		else if (y >= tw->scroll_bottom - 1)
+		else if (y >= tw->scroll_bottom)
 			y = tw->scroll_bottom - 1;
+	} else
+	{
+		/*
+		 * line & column numbers are relativ to the upper left
+		 * character position on the screen
+		 */
+		if (y < tw->miny)
+			y = tw->miny;
+		else if (y >= tw->maxy)
+			y = tw->maxy - 1;
 	}
 	
 	tw->cx = x;
