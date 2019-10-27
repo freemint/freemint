@@ -1450,7 +1450,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 			cub1 (tw);
 			break;
 		case MODE_VT100:	/* Index (IND: 0x84).  */
-			cud1 (tw);
+			new_line(tw);
 			break;
 		}
 		break;

@@ -178,8 +178,7 @@ struct textwin
 #define NCOLS(t) 	((t)->maxx)
 
 /* Relative offset for origin mode.  */
-#define RELOFFSET(t)	(((t)->curr_tflags & TORIGIN) ? \
-	((t)->scroll_top - (t)->miny) : 0)
+#define RELOFFSET(t)	(((t)->curr_tflags & TORIGIN) ? ((t)->scroll_top - (t)->miny) : 0)
 
 void	char2pixel (TEXTWIN *t, short col, short row, short *xp, short *yp);
 void 	pixel2char (TEXTWIN *t, short x, short y, short *colp, short *rowp);
