@@ -10,6 +10,8 @@ long con_fd = 0;
 long con_log_fd = 0;
 
 TEXTWIN	*con_win = NULL;
+char const console_progname[] = "Console";
+
 static bool	is_dirty = FALSE;
 
 
@@ -65,11 +67,10 @@ void open_console(void)
 {
 	WINCFG	*cfg;
 	char		str[30];
-	static char const prog[] = "Console";
 
 	if (con_win == NULL)
 	{
-		cfg = get_wincfg(prog);
+		cfg = get_wincfg(console_progname);
 		if (cfg->title[0] == '\0')
 			strcpy(str, rsc_string(STRCONSTITLE));
 		else
@@ -86,7 +87,7 @@ void open_console(void)
 			}
 
 			con_win->win->uniconify = uniconify_con;
-			con_win->prog = strdup(prog);
+			con_win->prog = strdup(console_progname);
 			con_win->fd = con_fd;
 
 			/* Cursor mu an, sonst kommt die Ausgabe durcheinander!! */

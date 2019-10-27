@@ -74,6 +74,8 @@ static WINCFG *crt_newcfg(const char *prog)
 	}
 	new->next = NULL;
 
+	if (strcmp(prog, console_progname) == 0)
+		new->vt_mode = MODE_VT52;
 	strcpy(new->progname, prog);
 
 	/* Default-Werte */
@@ -242,7 +244,7 @@ static void open_cfgwd(WDIALOG *wd)
 			if (cfg->title[0] != '\0')
 			{
 				strcpy(title, cfg->title);
-			} else if (strcmp(cfg->progname, "Console") == 0)
+			} else if (strcmp(cfg->progname, console_progname) == 0)
 			{
 				strcpy(title, rsc_string(STRCONSTITLE));
 			} else

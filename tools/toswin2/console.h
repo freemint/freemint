@@ -11,6 +11,7 @@
 extern long con_fd;		/* Handle der Console oder 0 */
 extern long con_log_fd;		/* Handle des Console-Log oder 0 */
 extern TEXTWIN *con_win;	/* console window */
+extern char const console_progname[];
 
 
 void	open_console	(void);
