@@ -112,10 +112,4 @@ bool	wdial_msg(short *msg);
 
 void 	update_avwin(bool new);
 
-/*
- * Mouse actions.
- */
-void	mouse_show(void);
-short	mouse_hide_if_needed(GRECT *rect);
-
 #endif

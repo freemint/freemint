@@ -563,7 +563,6 @@ void destroy_window(WINDOW *v)
 void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 {
 	GRECT t1, t2;
-	bool off = FALSE;
 	
 	v->redraw = 1;
 	// XXX wind_update (TRUE);
@@ -572,23 +571,25 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 	t2.g_y = yc;
 	t2.g_w = wc;
 	t2.g_h = hc;
-	rc_intersect(&gl_desk, &t2);
-	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
-	while (t1.g_w > 0 && t1.g_h > 0) 
+	if (rc_intersect(&gl_desk, &t2))
 	{
-		if (rc_intersect(&t2, &t1)) 
+		bool off = FALSE;
+		wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
+		while (t1.g_w > 0 && t1.g_h > 0)
 		{
-			if (!off)
-				off = mouse_hide_if_needed(&t1);
-			set_clipping(vdi_handle, t1.g_x, t1.g_y, 
-				     t1.g_w, t1.g_h, TRUE);
-			(*v->draw)(v, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
+			if (rc_intersect(&t2, &t1))
+			{
+				if (!off)
+					off = hide_mouse_if_needed(&t1);
+				set_clipping(vdi_handle, t1.g_x, t1.g_y, t1.g_w, t1.g_h, TRUE);
+				(*v->draw)(v, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
+			}
+			wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
 		}
-		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
+
+		if (off)
+			show_mouse();
 	}
-	
-	if (off)
-		mouse_show();
 	
 	// XXX wind_update (FALSE);
 	v->redraw = 0;
@@ -983,13 +984,12 @@ void draw_winicon(WINDOW *win)
 {
 	OBJECT	*icon;
 	GRECT	t1, t2;
-	bool	off = FALSE;		
 
 	if (is_console(win))
 		icon = get_con_icon();
 	else
 		icon = winicon;
-		
+
 	wind_get_grect(win->handle, WF_WORKXYWH, &t2);
 			
 	icon[0].ob_x = t2.g_x;
@@ -998,21 +998,24 @@ void draw_winicon(WINDOW *win)
 	icon[0].ob_height = t2.g_h;
 	icon[1].ob_x = (t2.g_w - icon[1].ob_width) / 2;
 	icon[1].ob_y = (t2.g_h - icon[1].ob_height) / 2;
-	
-	rc_intersect(&gl_desk, &t2);
-	wind_get_grect(win->handle, WF_FIRSTXYWH, &t1);
-	while (t1.g_w && t1.g_h) 
+
+	if (rc_intersect(&gl_desk, &t2))
 	{
-		if (rc_intersect(&t2, &t1)) 
+		bool	off = FALSE;
+		wind_get_grect(win->handle, WF_FIRSTXYWH, &t1);
+		while (t1.g_w && t1.g_h)
 		{
-			if (!off)
-				off = mouse_hide_if_needed(&t1);
-			objc_draw(icon, ROOT, MAX_DEPTH, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
+			if (rc_intersect(&t2, &t1))
+			{
+				if (!off)
+					off = hide_mouse_if_needed(&t1);
+				objc_draw_grect(icon, ROOT, MAX_DEPTH, &t1);
+			}
+			wind_get_grect(win->handle, WF_NEXTXYWH, &t1);
 		}
-		wind_get_grect(win->handle, WF_NEXTXYWH, &t1);
+		if (off)
+			show_mouse();
 	}
-	if (off)
-		mouse_show();
 }
 
 void update_window_lock(void) {
@@ -1025,12 +1028,4 @@ void update_window_unlock(void) {
 
 void get_window_rect(WINDOW *win, short kind, GRECT *rect) {
 	wind_get_grect( win->handle, kind, rect );
-}
-
-void mouse_show(void) {
-	show_mouse();
-}
-
-short mouse_hide_if_needed(GRECT *rect) {
-	return hide_mouse_if_needed(rect);
 }

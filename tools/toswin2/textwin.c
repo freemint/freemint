@@ -852,8 +852,7 @@ update_cursor (WINDOW* win, int top)
 		return;
 
 	work = win->work;
-	rc_intersect (&gl_desk, &work);
-	if (work.g_w == 0 || work.g_h == 0)
+	if (!rc_intersect (&gl_desk, &work))
 		return;
 
 	/* If the cursor simply flashes there is no need to remove it from
@@ -911,12 +910,11 @@ update_cursor (WINDOW* win, int top)
 		if (rc_intersect (&work, &curr)) {
 			if (old_curs.g_w) {
 				GRECT curr2 = curr;
-				if (curr2.g_w && curr2.g_h &&
-					rc_intersect (&old_curs, &curr2)) {
+				if (rc_intersect (&old_curs, &curr2)) {
 					char buf[2];
 
 					if (!off)
-						off = mouse_hide_if_needed (&curr2);
+						off = hide_mouse_if_needed(&curr2);
 
 					set_clipping (vdi_handle,
 							    curr2.g_x,
@@ -934,7 +932,7 @@ update_cursor (WINDOW* win, int top)
 
 			if (new_curs.g_w && rc_intersect (&new_curs, &curr)) {
 				if (!off)
-					off = mouse_hide_if_needed (&curr);
+					off = hide_mouse_if_needed(&curr);
 
 				if ((tw->curr_tflags & TCURS_VVIS) 
 				    || !tw->curs_drawn) {
@@ -971,7 +969,7 @@ update_cursor (WINDOW* win, int top)
 	}
 
 	if (off)
-		mouse_show();
+		show_mouse();
 
 	update_window_unlock();
 	win->redraw = 0;
@@ -1120,7 +1118,8 @@ void refresh_textwin(TEXTWIN *t, short force)
 		return;
 
 	t2 = v->work;
-	rc_intersect(&gl_desk, &t2);
+	if (!rc_intersect(&gl_desk, &t2))
+		return;
 	
 	if (v->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
@@ -1132,7 +1131,7 @@ void refresh_textwin(TEXTWIN *t, short force)
 		if (rc_intersect(&t2, &t1))
 		{
 			if (!off)
-				off = mouse_hide_if_needed(&t1);
+				off = hide_mouse_if_needed(&t1);
 			set_clipping (vdi_handle, t1.g_x, t1.g_y,
 					  t1.g_w, t1.g_h, TRUE);
 			update_screen (t, t1.g_x, t1.g_y, t1.g_w, t1.g_h,
@@ -1142,7 +1141,7 @@ void refresh_textwin(TEXTWIN *t, short force)
 	}
 	t->scrolled = t->nbytes = t->draw_time = 0;
 	if (off)
-		mouse_show();
+		show_mouse();
 	mark_clean(t);
 	update_window_unlock();
 	v->redraw = 0;
@@ -1356,7 +1355,8 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 		return;
 
 	t2 = v->work;
-	rc_intersect(&gl_desk, &t2);
+	if (!rc_intersect(&gl_desk, &t2))
+		return;
 	
 	if (v->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
@@ -1367,7 +1367,7 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
 			if (!m_off)
-				m_off = mouse_hide_if_needed(&t1);
+				m_off = hide_mouse_if_needed(&t1);
 			set_clipping (vdi_handle, t1.g_x, t1.g_y,
 							t1.g_w, t1.g_h, TRUE);
 
@@ -1406,7 +1406,7 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 		get_window_rect(v, WF_NEXTXYWH, &t1);
 	}
 	if (m_off)
-		mouse_show();
+		show_mouse();
 	update_window_unlock();
 	v->redraw = 0;
 }
