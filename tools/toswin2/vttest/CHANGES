@@ -1,0 +1,748 @@
+-- $Id: CHANGES,v 1.210 2019/07/10 22:01:59 tom Exp $
+-------------------------------------------------------------------------------
+
+20190710
+	+ improve alternate-screen test, with additional cursor-position check.
+
+	+ add extensions found in DEC standard 070 to the primary reponse table.
+
+	+ updated/improved configure macros
+
+	+ update config.guess, config.sub
+
+20190105
+	+ added/updated port-files from pkgsrc for test-builds.
+
+	+ updated port-files from FreeBSD for test-builds.
+
+	+ updated/improved configure macros
+	  CF_CC_ENV_FLAGS, CF_GNU_SOURCE, CF_POSIX_C_SOURCE, CF_XOPEN_SOURCE
+
+	+ update config.guess, config.sub
+
+20181116
+	+ improve mouse-tracking test, logging the decoded button- and
+	  modifier-information as well as fixing a special case for button 6.
+
+20180911
+	+ add "-V" option, for version information.
+	+ ensure logfile is flushed after each command.
+	+ demonstrate DECRQCRA with GR, checked with VT520 screenshot.
+	+ improve DECRQCRA test, demonstrating treatment of whitespace and
+	  video attributes by DEC terminals, seen in VT520 screenshots.
+	+ modify locking-shift test, changing the default GR character set to
+	  match hardware terminals more closely, e.g., setting it to Latin-1.
+	+ add/improve character-set table entries for xterm #336.
+	+ modify CNL test to demonstrate its treatment of zero as default.
+	+ revise DECRQCRA test to match VT520 screenshots from Markus Schmidt
+
+20180811
+	+ recent BSD-make mishandled .1.cat rule; fix
+
+20180728
+	+ update xterm DECRPM table
+
+20180725
+	+ remove obsolete message about diagonal in DECIC/DECDC test; since
+	  xterm #315 the test result is on the margin.
+
+	+ fix an off-by-one in right-margin for ICH/DCH test.
+
+	+ add tests for DECRSPS for xterm #334.
+
+	+ improve formatting of highlighted response-strings, fixing a problem
+	  with wrapping.
+
+20180702
+	+ updated test-packages to use recommended flags.
+
+	+ improved DECRQCRA check, updating to work with xterm #334.
+
+	+ add tests for xterm's extensions to DECSCUSR.
+
+	+ updated/improved configure macros
+
+	+ update config.guess, config.sub
+
+20150706
+	+ add configure option --with-man2html
+
+	+ update config.guess, config.sub
+
+20140305
+	+ save/restore color enable-flag for menu 11.6 in a couple of places
+	  so that the ISO-6429 tests do not reset it unexpectedly.
+
+	+ amend the REP test to not reset colors if it happens to be run via
+	  the menu entry for BCE-related tests.
+
+20140116
+	+ cosmetic changes (suggested by Itay Chamiel):
+
+	  + clear screen just before resetting SCS in menu #3 character sets,
+	    in case a VT100 emulator does not simply ignore VT220 G2/G3
+	    selections when it does not implement them.
+
+	  + add check for maximum operating level before deciding whether
+	    to send a DECSCL to set it to VT100-level.
+
+	  + adjust starting point of items for menu #9 "Test of known bugs"
+	    to avoid overwriting part of the description of the test.
+
+	+ add configure check for -Wlogical-op to gcc-warnings
+
+	+ update config.guess, config.sub
+
+20130915
+	+ when NRCS is active, suppress ISO Latin-1 from menu to avoid
+	  confusion with British NRCS.
+
+	+ do not highlight ISO Latin-1 for NRCS, since it is a 96-character
+	  set, not applicable to NRCS.
+
+	+ correct position of ruler for SD and REP screens, which obscured the
+	  result.
+
+	+ expand menu 11.6.6 to demonstrate bce with top-level menus 1 and 2
+	  in addition to the existing menu 8.
+
+	+ correct description for DA response 24; it denotes VT320.
+
+	+ correct highlighting for French NRC mapping; "`" is not mapped.
+
+	+ add port-files from FreeBSD for test-builds.
+
+	+ add highlighting information for VT320 Portuguese NRC mapping.
+
+	+ add highlighting information for VT220 DEC Supplemental NRC mapping.
+
+	+ updated configure-macros to add msys changes from ncurses 20130907.
+
+	+ update config.guess, config.sub
+
+20130818
+	+ modify character-sets screens to optionally highlight the characters
+	  which do not correspond to ISO-8859-1.  This makes the National
+	  Replacement Characters easier to see.
+
+	+ modify DSR cursor-position report to check if the terminal 
+	  accounts for origin-mode.
+
+	+ support --datarootdir option in makefile.in, to match configure
+	  script updates.
+
+	+ updated configure macros:
+
+	  + change from byacc for autoheader
+
+	  + improved checks for gcc attributes
+
+	  + improved checks for gcc version
+
+	  + miscellaneous fixes in CF_XOPEN_SOURCE
+
+	+ update config.guess, config.sub
+
+20120603
+	+ change cursor-position before IL/DL in 
+	  "Test of VT102-style features with BCE (Insert/Delete Char/Line)"
+	  to demonstrate whether the terminal sets the cursor to the first
+	  column as a side-effect, as noted in VT220 reference manual.
+
+20120506
+	+ build-fix in case compiler does not recognize gcc's __attribute__.
+
+	+ modify vt420 rectangle menu to allow testing with applications which
+	  misreport their operating level, e.g., Reflection which states that
+	  it is a vt340.  The menu title shows "should not work" if the
+	  terminal says its operating level is below VT4xx.
+
+	+ add menu-entries for DECOM/DECLRMM to vt420 rectangle menu.
+
+	+ add menu-entries for DECOM/DECLRMM to vt420 cursor-movement menu.
+
+	+ add menu-entries for DECOM/DECLRMM to vt420 editing-controls menu.
+
+	+ add HPR and VPR test-screens.
+
+	+ add vt520 cursor-movement menu; most of the vt520's new features were
+	  based on ISO-6429 but allow for DECOM and DECLRMM interactions.
+
+	+ implement DECSCPP and DECSLPP test-screens.
+
+	+ add test-screen for DECNCSM.
+
+	+ add "-s" command-line option to initialize the time-delay feature.
+
+	+ add setup-menu feature to control whether a time delay is added in
+	  selected repeated cursor-movement and scrolling operations to make
+	  their behavior easier to see.
+
+	+ correct scanning of DECCKSR response; result is hexadecimal not
+	  decimal.
+
+	+ modify menu functions to provide for multipage menus, e.g., in the
+	  character set choices for vt420 and vt520 on a 24-line screen.
+
+	+ modify tests related to left/right margins to allow color to be set,
+	  as xterm-feature.
+
+	+ add test-screen for index/reverse index with left/right margins.
+
+	+ ensure that status-line is turned off when exiting status-line test.
+
+	+ add test-screen for VT420 & up for ASCII formatting controls with
+	  margins.
+
+	+ modify DECFI/DECBI tests to work with margins.
+
+	+ add menu entries for setting/showing the top/bottom and left/right
+	  margins, to modify the behavior of the DECIC/DECDC tests.
+
+	+ add menu entries for setting/showing DECLRMM state, needed for
+	  DECIC/DECDC tests.
+
+	+ change mnemomic DECVSSM to DECLRMM to reflect the latter's usage in
+	  vt420 and vt510 manuals.
+
+	+ modify DECRQSS test for DECSCUSR to show if the response is as
+	  expected.
+
+20111210
+	+ modify mouse menu's selection of coordinate mode to include xterm's
+	  1006 and urxvt's 1015 controls.
+
+	+ add menu entry to allow miscellaneous ECMA-48 such as SD/SU to
+	  be tested with colors.
+
+20110705
+	+ fill in DEC mnemonics on some menus.
+
+20110516
+	+ fix inchar() function to work properly with big-endian machines
+	  (patch by David Kutalek).
+
+20110506
+	+ add some VT520-level menus, e.g., for DSR, DECRQSS.
+
+	+ add VT220 test for DSR Operating Status Report.
+
+20100830
+	+ modify mouse tests to show DECRPM results for the mouse modes, if
+	  DECRQM is enabled, i.e., level is VT300 and up.
+
+	+ modify mouse tests to work with xterm #262's UTF-8 coordinates.
+
+	+ add menu entries for xterm #224's focus-event and xterm #262's UTF-8
+	  coordinates.
+
+	+ add xterm-specific screen for DECRQM/DECRPM.
+
+	+ modify configure script to support program name-transformation
+	  options.
+
+	+ drop mkdirs.sh, use "mkdir -p".
+
+	+ add RPM and Debian package scripts, for testing.
+
+20100528
+	+ correct check of fflush return code, which interfered with demo of
+	  xterm window-modification controls.
+
+	+ fix most strict compiler warnings, e.g., writable strings.
+
+	+ updated configure macros:
+
+	  + quoting fixes
+
+	  + improve portability for ctags
+
+	  + improve check for gcc version
+
+	  + simplify -D options in CF_XOPEN_SOURCE
+
+	+ update config.guess, config.sub
+
+20100101
+	+ add screen for vt520 features, e.g., DECSCUSR.
+
+	+ cosmetic for querying xterm-fonts.
+
+20091231
+	+ add test-screens for setting/querying xterm fonts.
+
+	+ improve display for 94-item character set tests by assuming that
+	  DEL would be ignored, and writing a blank after it rather than
+	  allowing a ')' to be mapped in the selected character set.
+
+	+ check whether terminal is vt220 or vt320 to decide which Latin-1
+	  flavor to use for initializing the character set tests.
+
+	+ miscellaneous fixes for configure script macros.
+
+	+ updated config.guess, config.sub
+
+20071216
+	+ modify VT420 rectangle tests to provide ANSI/ISO colors and
+	  line-drawing as test-options.
+
+	+ miscellaneous updates to configure script macros.
+
+	+ updated config.guess, config.sub
+	
+20070304
+	+ build-fix for Darwin 8.8 or OS X 10.4.x, (report by David Blanchard).
+
+20070107
+	+ contacted Per Lindberg (2007/1/2), received permission to change his
+	  copyright notice to a BSD-style license.
+
+20061126
+	+ add screen to DECCRA test to demonstrate if video attributes are
+	  copied along with the window, or supplied from the current attributes.
+
+	+ use CF_XOPEN_SOURCE in configure script to get prototype for usleep()
+	  on Linux.
+
+	+ updated config.guess, config.sub
+
+20051020
+	+ add suffix information to configure script to work with cygwin, etc.
+
+	+ modify window-reporting operations to handle result strings that may be
+	  longer than a single line.
+
+	+ improve configure script checks for Intel compiler warning options.
+
+	+ add "%u" format needed in va_out() to work with 20050107 change
+	  to mouse-highlight test.
+
+20050107
+	+ improve test for vt220 locking shifts, showing GL/GR side-by-side to
+	  demonstrate which are modified.
+
+	+ add logging for text which is part of test-screens
+
+20041220
+	+ modify configure script to work with Intel compiler.
+
+	+ improved parameterization of scrolling test for screen sizes other
+	  than 24x80.
+
+	+ add initialization to disable tab/space conversion during menu items
+	  1 and 2, e.g., when "stty tab3" is set (report by Pavel Cahyna).
+
+20041205
+	+ add the ability to redraw the screen for mouse-tests, since some can
+	  produce lots of output, e.g., the any-event tracking.
+
+	+ modify function which reads replies, e.g., from DA, to retry as long
+	  as it has read data.  This is needed for connecting to real VTxxx
+	  terminals vs emulators (report by Pavel Cahyna).
+
+20041107
+	+ modify lib$wait() call to work on IA64, which uses a different default
+	  float format than VAX and Alpha.
+
+	+ update vmsbuild.com and descrip.mms to build on IA64.
+
+	+ fix typo in vmsbuild.com
+
+20040804
+	+ change parameter for ioctl(fd, FIONREAD, &param) to an int.
+
+	+ add a test screen for BCE color behavior with ECH, DCH and scrolling.
+
+	+ add a demo of some of the VT100 autowrap behavior to menu 1.
+
+	+ add xterm's control sequence to disable reverse wraparound to the
+	  initialization (this would conflict with DECGPCS if that were tested,
+	  but eliminates some user confusion in menu-1).
+
+	+ add entries for VT520/VT525 DA2 responses.
+
+	+ decode DA1 response for VT125.
+
+	+ add note in REP test regarding undefined behavior from using two
+	  REP controls in a row (report by Brian Pence).
+
+	+ change SPA test to allow setting/unsetting ERM while running it
+	  (request by Brian Pence).
+
+	+ add VT420, VT520 entries to table for DECRPM test, and split that
+	  into VT320- and VT420-only tests.
+
+	+ add VT520 entries to character-set and keyboard dialect tables.
+
+	+ correct cleanup from menu 3 (see 990120), which left G1-G3 set to
+	  tested character sets rather than resetting to ASCII.
+
+	+ split-out vt320.c, modifying VT220- and VT420-menus to avoid
+	  most duplication by pointing to lower-level terminals in the menu.
+
+	+ correct message from check_rc() in xterm.c (report by Brian Pence).
+
+	+ add --disable-echo option to configure script
+
+	+ update configure script.
+
+20030301
+	+ add tek4014 test menu, for xterm.
+
+20021208
+	+ improved test for cursor-control sequences within escape sequences
+	  (patch by Paul Williams).
+
+20020422
+	+ modify keyboard tests for cursor- and keypad-application modes to
+	  reset the keyboard back to normal mode at the end of each test
+	  (reported by Takashi SHIRAI <shirai@nintendo.co.jp>).
+
+	+ modify test-screen for DEC locator events to add a function that checks
+	  for the screensize, used for XFree86 xterm to scale the pixel reports.
+
+	+ updates to configure script and makefile:  omit dependencies on
+	  config.status and improve list of gcc warning options.
+
+20011130
+	+ add tests for xterm alternate screen
+
+	+ split-out xterm mouse tests into mouse.c menu.
+
+20000208
+	+ change coding of wheel-mouse events, XFree86 xterm patch #126.
+
+991228
+	+ modify to report wheel-mouse events for XFree86 xterm (patch #122).
+
+991025
+	+ clarify top-level reports menu, which mixes tests that apply to various
+	  models (VT100-VT420).
+
+	+ show decoded modifiers for the xterm mouse tests
+
+991014
+	+ modify position of cursor for printer tests, so autoprint tests work
+	  as expected.
+
+	+ correct escape sequence for mc_print_page().
+
+991007
+	+ implement tests for Media Copy, e.g., transparent printing.
+
+	+ add examples for DEC locator events and DSR responses.
+
+	+ add DA responses for VT50 and VT55 (I'd forgotten that I once bought a
+	  DECscope booklet).
+
+990712
+	+ modify menu 3.12 (non-VT100 "Test Keyboard Layout with G0 Selection")
+	  to show numeric codes as well as the actual character.
+
+	+ remove spurious test for SD which indicated that ISO's coding differed
+	  from DEC's.  The difference was a typographical error in ECMA-48
+	  (reported by Paul Williams <paul@celigne.co.uk>).
+
+990120
+	+ correct initialization of G0, for character-set shift-in/shift-out test.
+
+	+ change keyboard layout screen so that, when invoked from the character
+	  set menu, it will display NRC characters properly.
+
+	+ correct logic of reset_charset() function, which used the wrong index
+	  for do_scs() (reported by Jeffrey Altman).
+
+	+ set/restore character set for keyboard layout test in character-set
+	  menu.
+
+990119
+	+ add menu entry for enabling NRC mode, and (for VT220 & up) a menu
+	  entry to allow testing keyboard layout with NRC mode enabled.
+
+	+ remove logic that sets NRC mode from setup for character-set tests,
+	  since that interferes with new menu entry.
+
+	+ change delimiting characters for single-shift test screen from "{" and
+	  "}" to "(" and ")" to avoid confusion (the DECterm program which I have
+	  tested with maps the curly braces even in an unshifted state according
+	  to the state of the NRC mode).
+
+	+ reset character-set of G0 after tst_vt100_charsets
+
+	+ restore terminal modes after answerback test.
+  
+980719
+	+ add tests to illustrate any-event and button-event tracking in XFree86
+	  xterm.
+
+980328
+	+ add logic to ensure we pick up the proper choice (e.g., in Norwegian)
+	  where the choice depends on the terminal id (e.g., VT220 vs VT320).
+
+	+ minor correction for VT220 vs VT320 logic in do_scs for Latin-1 vs
+	  British character set.
+
+980327
+	+ implement test for single-shift (SS2 and SS3).
+
+980326
+	+ implement shift-in/shift-out character-set tests oriented toward VT220.
+
+	+ several corrections to VT220 character-set tests, from reports by
+	  Kenneth R. Robinette <zkrr01@mailbox.neosoft.com>:
+
+	  + move SCS strings to immediately before/after the tests to
+	    avoid conflict with menu selection, and to keep the tests
+	    distinct.
+
+	  + use 96-character control sequences only for character sets
+	    (Latin 1), and 94-character control sequences for the
+	    National Replacement Characters.
+
+	  + add ISO Latin-1 as a font option
+
+	  + add Swiss as a font option
+
+980310
+	+ decode known values for secondary DA response.
+
+	+ make mouse-highlight test a little clearer by putting '+' marks at the
+	  corners of the highlight-region.
+
+970524
+	+ eliminate 'gets()' calls, which can overflow buffer.
+
+970520
+	+ implement CF_FCNTL_VS_IOCTL check to make this build on SCO 3.x and
+	  CLIX, which are both non-POSIX systems.
+
+970518
+	+ add CF_POSIX_VDISABLE test to work around gcc 2.6.2 bug.
+
+970419
+	+ correct sign-extension in xterm mouse-position
+
+961215
+	+ correct err introduced between d960905 and v2_5 that broke test for IRM
+	  mode by using decsclm (reported by Jeffrey Altman).
+
+961125
+	+ add VT220 character-set tests for locking-shifts
+
+VERSION 2.7
+
+961113
+	+ corrected early return from test for DECRPM when badly-formatted
+	  reply is received.
+
+	+ add DA1 codes from VT500 manual (from Jeffrey Altman).
+
+	+ refined test to restore ANSI mode based on VT420 testing.
+
+961029
+	+ extend VT52 test to check operating level when restoring ANSI mode.
+
+961028
+	+ implemented tests for VT220/VT420 function keys, editing keypad.
+
+961027
+	+ set the terminal's default operating level to the maximum rather than
+	  VT100; this is slightly incompatible with VTTEST 1.7 (suggested by
+	  Jeffrey Altman)
+
+960930
+	+ amended reset_colors() to do SGR 0 at the end.
+
+960928
+	+ allow 8-bit input for keyboard (function keys, cursor keys) tests.
+
+	+ correct I/O modes on timeout
+
+	+ added padding, corrected some states on return from VT52 tests.
+
+	+ increase buffer size for DECTSR.
+
+960927
+	+ modified scan_chr (used in DECCIR test) to properly diagnose Pericom's
+	  3.2 emulator.
+
+	+ check in setup-menu for VT52.
+
+	+ modify inputline to retain whitespace
+
+	+ modify 'reset_colors()' to accommodate grossly-nonstandard emulators
+	  that don't reset colors with SGR 0.
+
+	+ added test for SGR 0
+
+960921
+	+ implement REP test
+
+	+ corrected highlighting refresh in function-key test
+
+	+ use raw-mode for VT52 DECID test.
+
+VERSION 2.6
+
+960911
+	+ corrected DECBI, DECFI (documentation from Jeffrey Altman), SRM (on
+	  VT420) tests.
+
+960908
+	+ implement DECDLD tests. Tested with fonts from "The VT200 TOOLKIT" by
+	  Tabik & DiGiantomasso, Professional Software (available via DECUS).
+
+960905
+	+ implement DECCARA, DECRARA, DECSACE, DECSERA tests.
+
+960901
+	+ implement DECBKM, DECCRA, DECERA, DECFRA, DECKBUM, DECKPM, DECNKM,
+	  SRM tests
+
+960830
+	+ implement 2nd, 3rd DA, DECFI, DECBI, DECSNLS, DECRQTSR tests.
+
+960828
+	+ provide analysis of DECCIR
+
+	+ implement tests for DECSASD, DECSSDT
+
+960825
+	+ corrected error (I) introduced in tst_movements (main.c 1.6) that broke
+	  test of cursor-control characters inside ESC sequences (reported by
+	  Albert D. Cahalan).
+
+	+ implement DECDC, DECIC tests.
+
+960825
+	+ added -l (logging) option.
+
+	+ added -p (padding) option.
+
+	+ port to VAX/VMS, for testing VT420
+
+960821
+	+ Corrected test for DECUDK, omitted lock-parameter caused keys to be
+	  locked, so that only the first key definition was used (reported by
+	  Jeffrey Altman).
+
+	+ Corrected test for DECRPM, missing '?' (reported by Jeffrey Altman
+	  <jaltman@watsun.cc.columbia.edu>).
+
+VERSION 2.5
+
+960818
+	+ implements most VT420 report-tests.
+
+	+ make menu-skeleton for VT420 tests (some are needed for xterm tests),
+	  marking the non-implemented entries with an '*'.
+
+960817
+	+ add tests/examples for xterm mouse controls
+
+960816
+	+ remove obsolete support for Sargasso C (TOPS-20)
+
+960813
+	+ use usleep() if the system has it, to make responses faster.
+
+	+ add menu-entry for toggling 7/8-bit input/output controls
+
+	+ split-out keyboard.c, organized by a set of submenus.
+
+	+ split-out reports.c, parameterized to allow testing 8-bit controls.
+	  make submenu for individual reports.
+
+	+ modified menu decoding to accept '*' to step through all submenus.
+
+VERSION 2.4
+
+960807
+	+ Implement test for VT5xx C7C1T and S8C1T
+
+	+ Remove check for scrolling-behavior in CPL and CNL (no one but kermit
+	  seems to consider doing this).
+
+	+ Modified tst_reports() to use raw mode (the original sgtty logic
+	  doesn't do this) so that termios works.  Modified termios settings for
+	  crmod so it doesn't touch INLCR and IGNCR, and for raw mode to leave
+	  c_oflag alone - this works on Linux.
+
+	+ corrected some typos in DECSCA test.
+
+960806
+	+ Testing by Albert D. Cahalan <acahalan@cs.uml.edu> with VT510,
+	  suggested initializing with the 80/132 mode enabled.  Says real
+	  terminals need padding...
+
+960804
+	+ Implement tests for: SL, SD, SU, SR
+
+	+ Modified "Test of screen features with ISO 6429 SGR 22-27 codes"
+	  to test concealed text.
+
+VERSION 2.3
+
+960803
+	+ Implement tests for the following ISO 6429 controls:  CBT, CHA, CHT,
+	  CNL, CPL, ECH, HPA, SL, SPA, SR, VPA.
+
+	+ Implement tests for DEC VT220 controls:  DECSCA, DECTCEM
+
+960802
+	+ Restructure non-VT100 menus, making them separate from the base VT100
+	  tests.
+
+VERSION 2.2
+
+960721
+	+ Initialize terminal with 80/132 switching enabled
+
+	+ Casper Dik <casper@holland.Sun.COM> explained why tests fail on Solaris
+	  2.5 (can workaround with lots of fflush calls ;-)
+
+960716
+	+ Add tests for CDE-compatible xterm
+
+VERSION 2.1
+
+960708
+	+ Change background color to blue for tests (some yellows and greens
+	  are too close together).
+
+960702
+	+ Added extended graphic-rendition tests (ISO 6429)
+
+VERSION 2.0
+
+960624
+	+ Added color/graphic-rendition, and color-scrolling tests.
+
+960623
+	+ Implemented color tests (test-pattern, bce-test, insert/delete lines)
+
+960621
+	+ Implemented auto-config for termios (tested on SunOS 4.1.1, IRIX 5.2,
+	  Solaris 5.4).
+
+960618
+	+ Modified to support nonstandard screen geometry.  For example, you can
+	  test Linux console (which has 25 lines) by typing 'vttest 25'.
+
+	+ Implemented auto-config for termio (tested on SunOS 4.1.1).
+
+960617
+	+ Corrected broken write-to-string-constant in tst_keyboard().
+
+	+ Split-out logic for ttymodes.c
+
+	+ Converted to ANSI C (it's a lot easier to avoid breaking code when all
+	  of the interfaces are fully specified).
+
+	+ Split-out sargasso.h from header.h, to avoid nested-comment syntax.  (I
+	  don't think anyone will be using that again, anyway).
+
+	+ from original version (I've found nothing more recent ;-), marked 1.7b
+	  1985-04-19, begin making changes to support testing for ANSI color
+	  features.
+

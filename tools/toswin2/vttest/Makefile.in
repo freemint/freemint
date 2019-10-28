@@ -1,0 +1,206 @@
+# $Id: makefile.in,v 1.48 2018/08/11 12:02:36 tom Exp $
+# Makefile-template for 'vttest'
+
+THIS = vttest
+
+#### Start of system configuration section. ####
+
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
+x		= @EXEEXT@
+o		= .@OBJEXT@
+
+CC		= @CC@
+CPP		= @CPP@
+LINK		= $(CC)
+INSTALL 	= @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+transform	= @program_transform_name@
+
+LIBS		= @LIBS@
+CFLAGS		= @CFLAGS@ @EXTRA_CFLAGS@
+LDFLAGS 	= @LDFLAGS@
+
+CTAGS 		= @CTAGS@
+ETAGS 		= @ETAGS@
+
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+
+bindir		= @bindir@
+datarootdir	= @datarootdir@
+mandir		= @mandir@
+manext		= 1
+
+BINDIR		= $(DESTDIR)$(bindir)
+MANDIR		= $(DESTDIR)$(mandir)/man$(manext)
+
+#### End of system configuration section. ####
+
+SHELL		= /bin/sh
+
+CPPFLAGS 	= -DHAVE_CONFIG_H -I. -I$(srcdir) @CPPFLAGS@
+
+################################################################################
+.SUFFIXES : $o .i .cat .$(manext)
+
+.c$o:
+	@RULE_CC@
+	@ECHO_CC@$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+
+.c.i :
+	@RULE_CC@
+	@ECHO_CC@$(CPP) -C $(CPPFLAGS) $*.c >$@
+
+.$(manext).cat :
+	- nroff -man $(srcdir)/$< >$@
+
+################################################################################
+
+C_SRC = \
+	charsets.c \
+	color.c \
+	draw.c \
+	esc.c \
+	keyboard.c \
+	main.c \
+	mouse.c \
+	nonvt100.c \
+	printer.c \
+	reports.c \
+	reset.c \
+	setup.c \
+	sixel.c \
+	status.c \
+	tek4014.c \
+	ttymodes.c \
+	unix_io.c \
+	utf8.c \
+	vt220.c \
+	vt320.c \
+	vt420.c \
+	vt52.c \
+	vt520.c \
+	xterm.c
+H_SRC = \
+	vttest.h \
+	draw.h \
+	esc.h \
+	ttymodes.h
+OBJS  = \
+	charsets$o \
+	color$o \
+	draw$o \
+	esc$o \
+	keyboard$o \
+	main$o \
+	mouse$o \
+	nonvt100$o \
+	printer$o \
+	reports$o \
+	reset$o \
+	setup$o \
+	sixel$o \
+	status$o \
+	tek4014$o \
+	ttymodes$o \
+	unix_io$o \
+	utf8$o \
+	vt220$o \
+	vt320$o \
+	vt420$o \
+	vt52$o \
+	vt520$o \
+	xterm$o
+
+SRC =	patchlev.h \
+	CHANGES COPYING README BUGS \
+	$(THIS).1 \
+	$(C_SRC) $(H_SRC) \
+	tech.set \
+	config.hin install.sh makefile.in configure.in
+
+TRANSFORM_BIN = sed 's/$x$$//'         |sed '$(transform)'|sed 's/$$/$x/'
+TRANSFORM_MAN = sed 's/\.$(manext)$$//'|sed '$(transform)'|sed 's/$$/.$(manext)/'
+
+actual_bin = `echo $(THIS)$x        | $(TRANSFORM_BIN)`
+actual_man = `echo $(THIS).$(manext)| $(TRANSFORM_MAN)`
+
+PROG	= $(THIS)$x
+
+DISTFILES = MANIFEST configure $(SRC)
+
+all:	$(PROG)
+
+$(PROG): $(OBJS)
+	@ECHO_LD@$(LINK) $(CFLAGS) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBS)
+
+$(OBJS): config.h $(THIS).h patchlev.h
+
+install: all installdirs
+	$(INSTALL_PROGRAM) $(PROG) $(BINDIR)/$(actual_bin)
+	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(MANDIR)/$(actual_man)
+
+installdirs: $(BINDIR) $(MANDIR)
+
+$(BINDIR) $(MANDIR) :
+	mkdir -p $@
+
+uninstall:
+	rm -f $(BINDIR)/$(actual_bin)
+	rm -f $(MANDIR)/$(actual_man)
+
+mostlyclean ::
+	rm -f *.[oi] core *~ *.cat *.BAK *.trace *.atac
+
+clean :: mostlyclean
+	rm -f $(PROG)
+
+distclean :: clean
+	rm -f makefile config.log config.cache config.status config.h man2html.tmp
+
+realclean :: distclean
+	rm -f tags TAGS # don't remove configure!
+
+@MAKE_LOWER_TAGS@tags:	$(C_SRC) $(HDRS)
+@MAKE_LOWER_TAGS@	$(CTAGS) $(C_SRC) $(HDRS)
+
+@MAKE_UPPER_TAGS@TAGS:	$(C_SRC) $(HDRS)
+@MAKE_UPPER_TAGS@	$(ETAGS) $(C_SRC) $(HDRS)
+
+# I keep my sources in RCS, and assign a symbolic release to the current patch
+# level.  The 'manifest' script knows how to build a list of files for a given
+# revision.
+MANIFEST: patchlev.h
+	manifest -rd`fgrep PATCH_DATE patchlev.h | sed -e s'/^[^0-9]*//'`
+
+dist: MANIFEST
+	- rm -f .fname .files
+	fgrep PATCH_DATE patchlev.h | sed -e 's/[^0-9.]//g' -e 's/^/$(THIS)-/' >.fname
+	cat MANIFEST | grep ' ' | egrep -v ' subdirectory$$' | sed -e 's/\ .*//' | uniq >.files
+	rm -rf `cat .fname`
+	TOP=`cat .fname`; mkdir $$TOP `cat .files | grep / | sed -e 's@/.*@@' | sed -e s@\^@$$TOP/@ | uniq`
+	for file in `cat .files`; do \
+	  ln $(srcdir)/$$file `cat .fname`/$$file \
+	    || { echo copying $$file instead; cp $$file `cat .fname`/$$file; }; \
+	done
+	tar -cf - `cat .fname` | gzip >`cat .fname`.tgz
+	rm -rf `cat .fname` .fname .files
+
+# Some of the output will be uuencoded because the test scripts include
+# <CR><LF> terminated ".bat" files for MS-DOS.
+dist-shar: MANIFEST
+	- rm -f .fname .files
+	fgrep PATCH_DATE patchlev.h | sed -e 's/[^0-9.]//g' -e 's/^/$(THIS)-/' >.fname
+	cat MANIFEST | grep ' ' | egrep -v ' subdirectory$$' | sed -e 's/\ .*//' | uniq >.files
+	shar -M -n`cat .fname` -opart -l50 `cat .files`
+	- rm -f .fname .files
+
+$(THIS)$o:	config.h
+
+################################################################################
+
+check: $(PROG)
+	@echo 'Sorry -- You must run this interactively.'

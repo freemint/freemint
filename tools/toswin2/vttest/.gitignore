@@ -1,0 +1,12 @@
+m4/*.m4
+config.h
+config.log
+config.status
+configure
+aclocal.m4
+Makefile
+config.hin
+autom4te.cache
+stamp-*
+vttest
+vttest.log
