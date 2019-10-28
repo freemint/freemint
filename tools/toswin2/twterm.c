@@ -1007,7 +1007,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				tw->curr_cattr &= ~CINVERSE;
 				break;
 			case 28:	/* Visible, i.e., not hidden, ECMA-48 3rd, VT300. */
-				/* YYY */
+				tw->curr_cattr &= ~CINVISIBLE;
 				break;
 			case 29:	/* Not crossed-out, ECMA-48 3rd. */
 				break;
