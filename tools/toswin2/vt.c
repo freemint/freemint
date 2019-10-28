@@ -64,22 +64,22 @@ void paint(TEXTWIN *v, unsigned int c)
 void
 vt_quote_putch (TEXTWIN* tw, unsigned int c)
 {
+	if (tw->do_wrap && (tw->curr_tflags & TWRAPAROUND) && tw->cx >= tw->maxx - 1)
+	{
+		new_line (tw);
+		tw->cx = 0;
+		tw->do_wrap = 0;
+	}
 	paint (tw, c);
 	++tw->cx;
 
 	if (tw->cx >= tw->maxx)
 	{
+		tw->cx = tw->maxx - 1;
 		/* Character was drawn in last column.  */
-		if (tw->do_wrap && (tw->curr_tflags & TWRAPAROUND))
-		{
-			new_line (tw);
-			tw->cx = 0;
-			tw->do_wrap = 0;
-		} else {
-			tw->cx = tw->maxx - 1;
-		}
-	} else if (tw->cx >= tw->maxx - 1)
-		tw->do_wrap = 1;
+		if (tw->curr_tflags & TWRAPAROUND)
+			tw->do_wrap = 1;
+	}
 }
 
 /* Cursor down one line.  */

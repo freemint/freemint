@@ -49,13 +49,14 @@ static void gototab(TEXTWIN* tw, int x, int y)
 
 	if (tw->tabs)
 	{
-		for (tab = tw->tabs; tab != NULL && tab->tabpos <= x;
-		     tab = tab->nexttab);
+		for (tab = tw->tabs; tab != NULL && tab->tabpos <= x; tab = tab->nexttab)
+			;
 		if (tab != NULL && tab->tabpos > x)
 			x = tab->tabpos;
+		else if (tab == NULL)
+			x = ((x + 8) / 8) * 8;
 		gotoxy (tw, x, y - RELOFFSET (tw));
 	}
-	return;
 }
 
 /* Insert a space at position (X|Y).  Scroll rest of the line
@@ -414,7 +415,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 					gotoxy (tw, 0, 0);
 				}
 				break;
-			case 4:	/* jump scroll */
+			case 4:	/* DECSCLM: jump scroll */
 				/* Not supported since version 2.0 */
 				break;
 			case 5:	/* DECSCNM: inverse video off.  */
@@ -936,8 +937,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			if (count == 0 && ei < 0)
 				ei = 0;
 			switch (ei) {
-			case 2:	/* keyboard unlocked */
-				/* Unlock handled by keylockd() */
+			case 2:	/* keyboard action mode (KAM) */
+				/* Unlock handled by keylocked() */
 				break;
 			case 4:	/* replace/overwrite mode */
 				tw->curr_tflags &= ~TINSERT;
@@ -1149,13 +1150,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 					param3 = tw->cmaxwidth;
 				param2 /= tw->cheight;
 				param3 /= tw->cmaxwidth;
-				/* FALLTHRU */
-			case 5:  /* Raise window.  */
-				break; /* Not yet implemented.  */
-			case 6:  /* Lower window.  */
-				break; /* Not yet implemented.  */
-			case 7:		/* refresh */
-				break;
+				/* fall through */
 			case 8:  /* Size in characters.  */
 				if (param2 <= 0 || param2 > 768)
 				{
@@ -1170,6 +1165,12 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				SYSLOG((LOG_ERR, "resize to %ld x %ld (%d)", param3, param2, SCROLLBACK (tw)));
 				resize_textwin (tw, param3, param2, SCROLLBACK (tw));
 				refresh_textwin (tw, 1);
+				break;
+			case 5:  /* Raise window.  */
+				break; /* Not yet implemented.  */
+			case 6:  /* Lower window.  */
+				break; /* Not yet implemented.  */
+			case 7:		/* refresh */
 				break;
 			case 9:	/* maximize/restore */
 				break;
@@ -1629,22 +1630,19 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'z':		/* TW extension: clear special effects */
 		tw->output = ceffect_putch;
 		return;
-	case '[':		/* Control Sequence Introducer
-				   (CSI: 0x9b).  */
+	case '[':		/* Control Sequence Introducer (CSI: 0x9b).  */
 		tw->output = vt100_esc_attr;
 		return;
 	case '\\':		/* String Terminator (ST: 0x9c).  */
 		/* Not yet implemented.  */
 		break;
-	case ']':		/* Operating System Command 
-				   (OSC: 0x9d).  */
+	case ']':		/* Operating System Command  (OSC: 0x9d).  */
 		/* Not yet implemented.  */
 		break;
 	case '^':		/* Privacy Message (PM: 0x9e).  */
 		/* Not yet implemented.  */
 		break;
-	case '_':		/* Application Program Command 
-				   (APC: 0x9f).  */
+	case '_':		/* Application Program Command (APC: 0x9f).  */
 		/* Not yet implemented.  */
 		/* FIXME: Eat following characters until ST.  */
 		break;
