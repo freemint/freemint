@@ -89,7 +89,7 @@ cud1 (TEXTWIN* tw)
 	gotoxy (tw, tw->cx, tw->cy + 1 - RELOFFSET (tw));
 }
 
-/* Cursor down N lines.  */
+/* Cursor down N lines, no scrolling */
 void
 cud (TEXTWIN* tw, short n)
 {
@@ -185,6 +185,10 @@ reverse_cr (TEXTWIN* tw)
 		insert_line (tw);
 }
 
+/*
+ * Moves cursor down amount lines, scrolls if necessary.
+ * Won't leave scrolling region. No carriage return.
+ */
 void
 new_line (TEXTWIN* tw)
 {

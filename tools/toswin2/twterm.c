@@ -702,14 +702,12 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		}
 		break;
 	case 'A':		/* Cursor Up Ps Times (default = 1) (CUU).  */
-	case 'F':		/* Cursor Preceding Line Ps Times (default = 1) (CPL). */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cuu (tw, count);
 		break;
 	case 'B':		/* Cursor Down Ps Times (default = 1) (CUD).  */
-	case 'E':		/* Cursor Next Line Ps Times (default = 1) (CNL). */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -726,6 +724,26 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		if (count < 1)
 			count = 1;
 		cub (tw, count);
+		break;
+	case 'E':		/* Cursor Next Line Ps Times (default = 1) (CNL). */
+		count = popescbuf (tw, tw->escbuf);
+		if (count < 1)
+			count = 1;
+		while (--count >= 0)
+		{
+			new_line(tw);
+		}
+		gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
+		break;
+	case 'F':		/* Cursor Preceding Line Ps Times (default = 1) (CPL). */
+		count = popescbuf (tw, tw->escbuf);
+		if (count < 1)
+			count = 1;
+		while (--count >= 0)
+		{
+			reverse_cr(tw);
+		}
+		gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
 		break;
 	case 'G':		/* Cursor Character Absolute  [column] (default = [row,1]) (CHA). */
 		/* YYY */
@@ -1458,15 +1476,23 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 			gotoxy (tw, 0, 0);
 			break;
 		case MODE_VT100:	/* Next Line (NEL: 0x85).  */
-			gotoxy (tw, 0, cy + 1 + RELOFFSET (tw));
+			new_line(tw);
+			gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
 			break;
 		}
 		break;
-	case 'F':			/* Cursor to lower left corner
-					   of the screen (for buggy
-					   HP applications).  FIXME:
-					   Should be configurable.  */
+	case 'F':
+#if 0
+		/* Cursor to lower left corner
+		   of the screen (for buggy
+		   HP applications).  FIXME:
+		   Should be configurable.  */
 		gotoxy (tw, 0, tw->maxy - 1);
+#else
+		/* Cursor Preceding Line Ps Times (default = 1) (CPL). */
+		reverse_cr(tw);
+		gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
+#endif
 		break;
 	case 'H':
 		switch (tw->vt_mode) {
@@ -1702,10 +1728,8 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 			break;
 
 		case '\012':	/* Line Feed or New Line (NL) (Ctrl-J).  */
-		case '\013':	/* Vertical Tab (VT) (Ctrl-K)
-				   same as LF.  */
-		case '\014':	/* Form Feed or New Page (NP) (Ctrl-L)
-				   same as LF.  */
+		case '\013':	/* Vertical Tab (VT) (Ctrl-K) same as LF.  */
+		case '\014':	/* Form Feed or New Page (NP) (Ctrl-L) same as LF.  */
 			new_line (tw);
 			break;
 			
