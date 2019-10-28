@@ -746,7 +746,10 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
 		break;
 	case 'G':		/* Cursor Character Absolute  [column] (default = [row,1]) (CHA). */
-		/* YYY */
+		cx = popescbuf(tw, tw->escbuf);
+		if (cx < 1)
+			cx = 1;
+		gotoxy (tw, cx - 1, cy + RELOFFSET (tw));
 		break;
 	case 'H':		/* Cursor Position [row;column] (default = [1,1]) (CUP).  */
 	case 'f':		/* Horizontal and Vertical Position [row;column] (default = [1,1]) (HVP).  */
@@ -851,12 +854,16 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		/* Not yet implemented.  */
 		break;
 	case '`':		/* Character Position Absolute [column] (default = [row,1]) (HPA).  */
-		count = popescbuf (tw, tw->escbuf);
-		/* YYY */
-		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
+		cx = popescbuf(tw, tw->escbuf);
+		if (cx < 1)
+			cx = 1;
+		gotoxy (tw, cx - 1, cy - RELOFFSET (tw));
 		break;
 	case 'a':		/* Character Position Relative  [columns] (default = [row,col+1]) (HPR). */
-		/* YYY */
+		count = popescbuf(tw, tw->escbuf);
+		if (count < 1)
+			count = 1;
+		gotoxy (tw, cx + count, cy - RELOFFSET (tw));
 		break;
 	case 'b':		/* Repeat the preceding graphic character Ps times (REP).  */
 		/* Not yet implemented.  */
@@ -871,15 +878,16 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		/* FIXME: CSI > Ps c requests Secondary DA.  Insert into caller ... */
 		break;
 	case 'd':		/* Line Position Absolute [row] (default = [1,column]) (VPA).  */
-		/* FIXME: Obey origin mode or not?  */
+		cy = popescbuf (tw, tw->escbuf);
+		if (cy < 1)
+			cy = 1;
+		gotoxy (tw, cx, cy - RELOFFSET (tw));
+		break;
+	case 'e':		/* Line Position Relative  [rows] (default = [row+1,column]) (VPR). */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		/* YYY */
-		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
-		break;
-	case 'e':		/* Line Position Relative  [rows] (default = [row+1,column]) (VPR). */
-		/* YYY */
+		gotoxy (tw, cx, cy + count - RELOFFSET (tw));
 		break;
 	case 'g':		/* Tab Clear (TBC).  */
 		count = popescbuf(tw, tw->escbuf);
@@ -1538,8 +1546,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 					   only.  */
 		/* Not yet implemented.  */
 		break;
-	case 'P':			/* Device Control String
-					   (DCS: 0x90).  */
+	case 'P':			/* Device Control String (DCS: 0x90).  */
 		/* Not yet implemented.  */
 		/* FIXME: Eat following characters until ST.  */
 		break;		
@@ -1553,16 +1560,13 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		tw->output = capture;
 		tw->callback = set_title;
 		return;
-	case 'V':			/* Start of Guarded Area
-					   (SPA: 0x96).  */
+	case 'V':			/* Start of Guarded Area (SPA: 0x96).  */
 		/* Not yet implemented.  */
 		break;
-	case 'W':			/* END of Guarded Area
-					   (EPA: 0x97).  */
+	case 'W':			/* END of Guarded Area (EPA: 0x97).  */
 		/* Not yet implemented.  */
 		break;					  
-	case 'X':			/* Start of String
-					   (SOS: 0x98).  */
+	case 'X':			/* Start of String (SOS: 0x98).  */
 		/* Not yet implemented.  */
 		break;
 	case 'Y':		/* cursor motion follows */
