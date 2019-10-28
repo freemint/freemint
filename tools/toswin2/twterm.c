@@ -1111,7 +1111,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		break;
 	case 's':		/* Save cursor, available only when DECLRMM is disabled (SCOSC) */
 					/* Set left and right margins (DECSLRM), VT420 */
-		/* YYY */
+		save_cursor(tw);
 		break;
 	case 't':		/* window modification */
 		param1 = popescbuf (tw, tw->escbuf);
@@ -1155,7 +1155,6 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			case 6:  /* Lower window.  */
 				break; /* Not yet implemented.  */
 			case 7:		/* refresh */
-				/* YYY */
 				break;
 			case 8:  /* Size in characters.  */
 				if (param2 <= 0 || param2 > 768)
@@ -1173,10 +1172,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				refresh_textwin (tw, 1);
 				break;
 			case 9:	/* maximize/restore */
-				/* YYY */
 				break;
 			case 10:	/* fullscreen */
-				/* YYY */
 				break;
 			case 11:	/* report state */
 				break;
@@ -1184,7 +1181,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		break;
 	case 'u':		/* Restore cursor (SCORC, also ANSI.SYS). */
 					/* Set margin-bell volume (DECSMBV), VT520. */
-		/* YYY */
+		restore_cursor(tw);
 		break;
 	case 'x':		/* return terminal parameters */
 		/* Not yet implemented */
