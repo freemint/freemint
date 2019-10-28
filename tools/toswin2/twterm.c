@@ -838,7 +838,6 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	case '^':		/* Scroll down Ps lines (default = 1) (SD), ECMA-48. */
 		/* This was a publication error in the original ECMA-48 5th edition */
 		/* (1991) corrected in 2003. */
-		/* YYY */
 		break;
 	case 'X':		/* Erase Ps character(s) (default = 1) (ECH).  */
 		count = popescbuf (tw, tw->escbuf);
@@ -994,7 +993,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				tw->curr_cattr &= ~CE_BOLD;
 				break;
 			case 22:	/* TW addition - light off */
-				tw->curr_cattr &= ~CE_LIGHT; /* YYY turns also bold off */
+				tw->curr_cattr &= ~(CE_LIGHT|CE_BOLD);
 				break;
 			case 23:	/* Not italicized, ECMA-48 3rd. */
 				break;
