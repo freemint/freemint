@@ -40,16 +40,14 @@ static void capture(TEXTWIN *v, unsigned int c)
 static
 void fgcol_putch (TEXTWIN *v, unsigned int c)
 {
-	v->curr_cattr = (v->curr_cattr & ~CFGCOL) |
-			 ((c & 0xff) << 4);
+	v->curr_cattr = (v->curr_cattr & ~CFGCOL) | ((c & 0x0f) << 4);
 	v->output = vt52_putch;
 }
 
 static
 void bgcol_putch (TEXTWIN *v, unsigned int c)
 {
-	v->curr_cattr = (v->curr_cattr & ~CBGCOL) |
-			 (c & 0xff);
+	v->curr_cattr = (v->curr_cattr & ~CBGCOL) | (c & 0x0f);
 	v->output = vt52_putch;
 }
 
@@ -140,21 +138,19 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			SYSLOG((LOG_ERR, "is cursor left"));
 			cub1 (v);
 			break;
+		case 'E':		/* clear home */
+			SYSLOG((LOG_ERR, "is clear"));
+			clear(v);
+			gotoxy (v, 0, 0);
+			break;
 		case 'F':		/* smacs, start alternate character set.  */
 			SYSLOG((LOG_ERR, "is smacs"));
-			v->curr_tflags = 
-				(v->curr_tflags & ~TCHARSET_MASK) | 1;
+			v->curr_tflags = (v->curr_tflags & ~TCHARSET_MASK) | 1;
 			break;
-
 		case 'G':		/* rmacs, end alternate character set.  */
 			SYSLOG((LOG_ERR, "is rmacs"));
 			v->curr_tflags = v->curr_tflags & ~TCHARSET_MASK;
 			break;
-
-		case 'E':		/* clear home */
-			SYSLOG((LOG_ERR, "is clear"));
-			clear(v);
-			/* fall through... */
 		case 'H':		/* cursor home */
 			SYSLOG((LOG_ERR, "is home"));
 			gotoxy (v, 0, 0);

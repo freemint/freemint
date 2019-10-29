@@ -27,12 +27,12 @@
 #define CLINEDRAW	 0x2000
 
 #define CPROTECTED	 0x4000 /* Character drawn that cannot be erased.  */
-#define CINVISIBLE	 0x8000 /* Invisible character.  */
+#define CINVISIBLE	 0x8000L /* Invisible character.  */
 
-#define CNONSPACE	0x10000 /* For future use: non-zero if a character has
+#define CNONSPACE	0x10000L /* For future use: non-zero if a character has
 				   been drawn here.  */
-#define CSELECTED	0x20000 /* Character has been selected by mouse.  */
-#define CDIRTY		0x40000 /* Character has changed since last redraw.  */
+#define CSELECTED	0x20000L /* Character has been selected by mouse.  */
+#define CDIRTY		0x40000L /* Character has changed since last redraw.  */
 
 #define ATTRIBUTES (CBGCOL | CFGCOL | \
 		    CE_BOLD | CE_LIGHT | CE_ITALIC | CE_UNDERLINE | \

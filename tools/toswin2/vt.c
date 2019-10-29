@@ -7,6 +7,7 @@
 
 #include "vt.h"
 #include "isotost.h"
+#include "ansicol.h"
 
 /*
  * paint(v, c): put character 'c' at the current (x, y) coordinates
@@ -460,7 +461,7 @@ original_colors(TEXTWIN *v)
 	} else {
 		v->curr_cattr = (v->curr_cattr &
 			~(CFGCOL | CBGCOL | CE_ANSI_EFFECTS)) |
-			COLORS (9, 9);
+			COLORS (ANSI_DEFAULT, ANSI_DEFAULT);
 	}
 }
 

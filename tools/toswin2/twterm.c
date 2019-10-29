@@ -104,12 +104,36 @@ capture (TEXTWIN* tw, unsigned int c)
 	}
 }
 
+static void fgcol_putch (TEXTWIN *v, unsigned int c)
+{
+	v->curr_cattr = (v->curr_cattr & ~CFGCOL) | ((c & 0x0f) << 4);
+	v->output = vt100_putch;
+}
+
+static void bgcol_putch (TEXTWIN *v, unsigned int c)
+{
+	v->curr_cattr = (v->curr_cattr & ~CBGCOL) | (c & 0x0f);
+	v->output = vt100_putch;
+}
+
+static void ansi_fgcol_putch (TEXTWIN *v, unsigned int c)
+{
+	set_ansi_fg_color (v, c);
+	v->output = vt100_putch;
+}
+
+static void ansi_bgcol_putch (TEXTWIN *v, unsigned int c)
+{
+	set_ansi_bg_color (v, c);
+	v->output = vt100_putch;
+}
+
 /* Set special effects.  FIXME: A separate function is waste
  * of time for this.  */
 static void
 seffect_putch (TEXTWIN* tw, unsigned int c)
 {
-	tw->curr_cattr |= ((c & 0x1f) << 8);
+	tw->curr_cattr |= (c << 8) & (CEFFECTS | CINVERSE);
 	tw->output = vt100_putch;
 }
 
@@ -117,7 +141,7 @@ seffect_putch (TEXTWIN* tw, unsigned int c)
 static void
 ceffect_putch(TEXTWIN* tw, unsigned int c)
 {
-	tw->curr_cattr &= ~((c & 0x1f) << 8);
+	tw->curr_cattr &= ~((c << 8) & (CEFFECTS | CINVERSE));
 	tw->output = vt100_putch;
 }
 
@@ -1506,9 +1530,6 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 /* Handle the control sequence ESC c
  * additions JC - handle extended escapes,
  * 		e.g. ESC[24;1H is cursor to x1, y24
- *
- * FIXME: Everything not supported by xterm and friends
- * should vanish from here.
  */
 static void
 vt100_putesc (TEXTWIN* tw, unsigned int c)
@@ -1598,6 +1619,22 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		pushescbuf (tw->escbuf, c);
 		tw->output = vt100_esc_charset;
 		return;
+	case '3':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:
+			tw->output = ansi_fgcol_putch;
+			return;
+		}
+		break;
+	case '4':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:
+			tw->output = ansi_bgcol_putch;
+			return;
+		}
+		break;
 	case '7':		/* Save Cursor (DECSC).  */
 		save_cursor (tw);
 		break;
@@ -1642,17 +1679,33 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		}
 		break;
 	case 'F':
+		switch (tw->vt_mode) {
+		case MODE_VT52:
+			SYSLOG((LOG_ERR, "is smacs"));
+			tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK) | 1;
+			break;
+		case MODE_VT100:
 #if 0
-		/* Cursor to lower left corner
-		   of the screen (for buggy
-		   HP applications).  FIXME:
-		   Should be configurable.  */
-		gotoxy (tw, 0, tw->maxy - 1);
+			/* Cursor to lower left corner
+			   of the screen (for buggy
+			   HP applications).  FIXME:
+			   Should be configurable.  */
+			gotoxy (tw, 0, tw->maxy - 1);
 #else
-		/* Cursor Preceding Line Ps Times (default = 1) (CPL). */
-		reverse_cr(tw);
-		gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
+			/* Cursor Preceding Line Ps Times (default = 1) (CPL). */
+			reverse_cr(tw);
+			gotoxy (tw, 0, tw->cy + RELOFFSET (tw));
 #endif
+			break;
+		}
+		break;
+	case 'G':
+		switch (tw->vt_mode) {
+		case MODE_VT52:
+			SYSLOG((LOG_ERR, "is rmacs"));
+			tw->curr_tflags = tw->curr_tflags & ~TCHARSET_MASK;
+			break;
+		}
 		break;
 	case 'H':
 		switch (tw->vt_mode) {
@@ -1732,8 +1785,26 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'a':		/* MW extension: delete character */
 		delete_char(tw, cx, cy);
 		break;
-	case 'c':		/* Full Reset (RIS).  */
-		vt_reset (tw, TRUE, TRUE);
+	case 'b':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:	/* set foreground color */
+			SYSLOG((LOG_ERR, "is set foreground color"));
+			tw->output = fgcol_putch;
+			return;
+		}
+		break;
+	case 'c':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* set background color */
+			SYSLOG((LOG_ERR, "is set background color"));
+			tw->output = bgcol_putch;
+			return;
+		case MODE_VT100:	/* Full Reset (RIS).  */
+			vt_reset (tw, TRUE, TRUE);
+			break;
+		}
 		break;
 	case 'd':		/* clear to cursor position */
 		clrfrom(tw, 0, tw->miny, cx, cy);
@@ -1744,6 +1815,24 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'f':		/* cursor off */
 		tw->curr_tflags &= ~TCURS_ON;
 		break;
+	case 'h':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* MW extension: enter insert mode */
+			SYSLOG((LOG_ERR, "is enter insert mode"));
+			tw->curr_tflags |= TINSERT;
+			break;
+		}
+		break;
+	case 'i':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* MW extension: leave insert mode */
+			SYSLOG((LOG_ERR, "is leave insert mode"));
+			tw->curr_tflags &= ~TINSERT;
+			break;
+		}
+		break;
 	case 'j':		/* save cursor position */
 		tw->saved_x = tw->cx;
 		tw->saved_y = tw->cy;
@@ -1752,9 +1841,18 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		/* FIXME: Obey origin mode!!! */
 		gotoxy (tw, tw->saved_x, tw->saved_y);
 		break;
-	case 'l':		/* HP memory lock.  */
-		if (tw->scroll_bottom > tw->cy)
-			tw->scroll_top = tw->cy;
+	case 'l':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* clear line */
+			clrline (tw, cy);
+			gotoxy (tw, 0, cy - RELOFFSET (tw));
+			break;
+		case MODE_VT100:	/* HP memory lock.  */
+			if (tw->scroll_bottom > tw->cy)
+				tw->scroll_top = tw->cy;
+			break;
+		}
 		break;
 	case 'm':		/* HP memory unlock.  */
 		tw->scroll_top = tw->miny;
@@ -1762,8 +1860,16 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'n':		/* Invoke the G2 Character Set (LS2).  */
 		tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK) | 2;
 		break;
-	case 'o':		/* Invoke the G3 Character Set (LS3).  */
-		tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK) | 3;
+	case 'o':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* clear from start of line to cursor */
+			clrfrom(tw, 0, cy, cx, cy);
+			break;
+		case MODE_VT100:	/* Invoke the G3 Character Set (LS3).  */
+			tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK) | 3;
+			break;
+		}
 		break;
 	case 'p':		/* reverse video on */
 		tw->curr_cattr |= CINVERSE;
@@ -1771,8 +1877,21 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'q':		/* reverse video off */
 		tw->curr_cattr &= ~CINVERSE;
 		break;
-	case 't':		/* backward compatibility for TW 1.x: set cursor timer */
-		return;
+	case 't':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* backward compatibility for TW 1.x: set cursor timer */
+			return;
+		}
+		break;
+	case 'u':
+		switch (tw->vt_mode)
+		{
+		case MODE_VT52:		/* original colors */
+			original_colors (tw);
+			break;
+		}
+		break;
 	case 'v':		/* wrap on */
 		tw->curr_tflags |= TWRAPAROUND;
 		break;

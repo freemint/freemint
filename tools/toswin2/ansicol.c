@@ -168,7 +168,7 @@ set_ansi_fg_color (TEXTWIN* tw, int color)
 {
 	color -= 48;
 
-	if (color == 9) {
+	if (color == ANSI_DEFAULT) {
 		tw->curr_cattr = (tw->curr_cattr & ~CFGCOL) |
 			(tw->cfg->fg_color << 4);
 	} else if (color >= 0 && color < 8) {
@@ -188,7 +188,7 @@ set_ansi_bg_color (TEXTWIN* tw, int color)
 {
 	color -= 48;
 
-	if (color == 9 || (color >= 0 && color < 8))
+	if (color == ANSI_DEFAULT || (color >= 0 && color < 8))
 		tw->curr_cattr = (tw->curr_cattr & ~CBGCOL) | color;
 }
 
@@ -245,7 +245,7 @@ use_ansi_colors (TEXTWIN* tw, unsigned long flag,
 	if (!tw->vdi_colors) {
 		*texteffects &= ~CE_ANSI_EFFECTS;
 
-		if (*fgcolor == 9) {
+		if (*fgcolor == ANSI_DEFAULT) {
 			*fgcolor = tw->cfg->fg_color;
 			if (tw->cfg->fg_effects & CE_BOLD)
 				flag |= CE_BOLD;
@@ -273,7 +273,7 @@ use_ansi_colors (TEXTWIN* tw, unsigned long flag,
 
 		if (*bgcolor >= 0 && *bgcolor <= 7) {
 			*bgcolor = renderer[*bgcolor].normal;
-		} else if (*bgcolor == 9) {
+		} else if (*bgcolor == ANSI_DEFAULT) {
 			*bgcolor = tw->cfg->bg_color & 0x7;
 			if (tw->cfg->bg_effects & CE_BOLD)
 				*bgcolor = renderer[*bgcolor].bright;

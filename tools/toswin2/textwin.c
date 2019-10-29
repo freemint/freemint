@@ -1053,7 +1053,7 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 		if (cfg->vdi_colors) {
 			flag |= cfg->bg_color;
 		} else {
-			flag |= (9 | cfg->bg_effects);
+			flag |= (ANSI_DEFAULT | cfg->bg_effects);
 		}
 		use_ansi_colors (t, flag, &fg_color, &bg_color, &style);
 		set_fillcolor (bg_color);
