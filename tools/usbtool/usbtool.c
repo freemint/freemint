@@ -29,8 +29,9 @@ short dev_count;
 short text_handle;
 short h_line;
 short xf, yf, wf, hf;
-VdiHdl aes_handle, vdi_handle;
-short baseline, w_char, h_char;
+VdiHdl vdi_handle;
+short w_char;
+extern short _app;
 
 /* Main window attributes */
 #define wind_attr NAME|CLOSER|FULLER|MOVER|SIZER|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE|INFO
@@ -48,25 +49,29 @@ int
 main (void)
 {
     short menuID;
-    short attributes[12], work_in[11], work_out[57], dummy;
+    short work_in[11], work_out[57], dummy;
     int i;
+	VdiHdl aes_handle;
+	short h_char;
 
+	if (_app)
+		return 0;
     appl_init ();
     menuID = menu_register (gl_apid, "  USB Utility");
-    vdi_handle = (aes_handle = graf_handle(&w_char, &h_char, &dummy, &dummy));
+    aes_handle = graf_handle(&w_char, &h_char, &dummy, &dummy);
 
     for (i = 0 ; i < 9 ; work_in[i++] = 1)
         ;
     work_in[9] = 0;
     work_in[10] = 2;
-    v_opnvwk(work_in, &aes_handle, work_out);
+    vdi_handle = aes_handle;
     v_opnvwk(work_in, &vdi_handle, work_out);
-
-    vqt_attributes(aes_handle, attributes);
-    baseline = attributes[7];
+    vst_height(vdi_handle, h_char >= 16 ? 13 : 6, &dummy, &dummy, &dummy, &h_char);
+    vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
 
     /* character height + 1, to prevent text lines from touching each other */
     h_line = h_char + 1;
+
     /* if usbtool.acc is renamed, don't always poll */
     if (appl_find("USBTOOL ")>= 0)
         polling_flag = 1;
@@ -104,7 +109,7 @@ events (short menuID)
                     break;
                 case AC_CLOSE:
                     if (buff[3] == menuID)
-                        close_text();
+                        text_handle = 0;
                     break;
                 case WM_REDRAW :
                     redraw(buff[3], buff[4], buff[5], buff[6], buff[7]);
@@ -356,7 +361,7 @@ void redraw(short w_handle, short x, short y, short w, short h)
         {
             v_hide_c(vdi_handle);
             set_clip(1, &r);
-            y_base = yo + baseline + 1; /* Start display at y + 1, to prevent the first line of text from touching the top of the window */
+            y_base = yo + 1; /* Start display at y + 1, to prevent the first line of text from touching the top of the window */
             xo = xo + 4; /* to prevent the first character from touching the side of the window */
             xy[0] = r.g_x;
             xy[1] = r.g_y;
