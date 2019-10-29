@@ -659,14 +659,14 @@ void answerback (TEXTWIN* tw)
 /*
  * reportxy (tw): Report cursor position as ESCy;xR
  */
-static void reportxy(TEXTWIN* tw, int x, int y)
+static void reportxy(TEXTWIN* tw)
 {
 	char r[ESCBUFSIZE];
 
 	/* Convert from internal to screen coordinates */
-	x++;
-	y++;
-	sendstr(tw, "\033");
+	int x = tw->cx + 1;
+	int y = tw->cy + 1 - tw->miny - RELOFFSET(tw);
+	sendstr(tw, "\033[");
 	_ltoa(y, r, 10);
 	sendstr(tw, r);
 	sendstr(tw, ";");
@@ -1143,7 +1143,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			sendstr(tw, "\033[0n");
 			break;
 		case 6:	/* cursor position report */
-			reportxy(tw, cx, cy - tw->miny);
+			reportxy(tw);
 			break;
 		}
 		break;

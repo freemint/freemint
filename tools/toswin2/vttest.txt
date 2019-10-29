@@ -60,7 +60,7 @@ Test Of Terminal Reports
 ========================
 [x] <ENQ> (AnswerBack Message
 [x] Set/Reset Mode - LineFeed/Newline
-[ ] Device Status Report (DSR)
+[x] Device Status Report (DSR)
 [x] Primary Device Attributes (DA)
 [ ] Secondary Device Attributes (DA)
 [ ] Tertiary Device Attributes (DA)
