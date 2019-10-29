@@ -48,9 +48,8 @@ void paint(TEXTWIN *v, unsigned int c)
 
 	if (v->curr_tflags & TINSERT)
 	{
-		memmove (v->cdata[line] + v->cx - 1, v->cdata[line] + v->cx,
-			 NCOLS (v) - v->cx);
-		for (i = v->maxx-1; i > v->cx; --i)
+		memmove (v->cdata[line] + v->cx + 1, v->cdata[line] + v->cx, (NCOLS(v) - v->cx - 1) * sizeof(v->cdata[0][0]));
+		for (i = NCOLS(v) - 1; i > v->cx; --i)
 		{
 			v->cflags[line][i] = v->cflags[line][i-1] | CDIRTY;
 		}
@@ -62,8 +61,7 @@ void paint(TEXTWIN *v, unsigned int c)
 
 /* Unconditionally display character C even if it is a
  * graphic character.  */
-void
-vt_quote_putch (TEXTWIN* tw, unsigned int c)
+void vt_quote_putch (TEXTWIN* tw, unsigned int c)
 {
 	if (tw->do_wrap && (tw->curr_tflags & TWRAPAROUND) && tw->cx >= tw->maxx - 1)
 	{

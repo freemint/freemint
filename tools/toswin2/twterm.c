@@ -64,13 +64,15 @@ static void gototab(TEXTWIN* tw, int x, int y)
 static void insert_char(TEXTWIN* tw, int x, int y)
 {
 	int i;
-	unsigned char *twdata = tw->cdata[y];
-	unsigned long *twcflag = tw->cflags[y];
+	unsigned char *twdata;
+	unsigned long *twcflag;
 
-	if (x < 1 || (NCOLS (tw) - x < 1))
+	if (x < 0 || x >= tw->maxx || y < 0 || y >= tw->maxy)
 		return;
+	twdata = tw->cdata[y];
+	twcflag = tw->cflags[y];
 
-	memmove (twdata + x, twdata + x - 1, NCOLS (tw) - x);
+	memmove (twdata + x + 1, twdata + x, (tw->maxx - x - 1) * sizeof(tw->cdata[0][0]));
 	for (i = NCOLS (tw) - 1; i > x; --i)
 	{
 		twcflag[i] = twcflag[i - 1] | CDIRTY;

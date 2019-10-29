@@ -74,20 +74,20 @@ Test Of VT52 Mode
 
 Test Of VT102 Features
 ======================
-[ ] Screen accordeon test 80
-[ ] AX 80
-[ ] A**B 80
-[ ] Delete character 80
-[ ] Staggered 1 80
-[ ] Staggered 2 80
-[ ] ANSI Insert Character 80
-[ ] Screen accordeon test 132
+[x] Screen accordeon test 80
+[x] AX 80
+[x] A**B 80
+[x] Delete character 80
+[x] Staggered 1 80
+[x] Staggered 2 80
+[x] ANSI Insert Character 80
+[x] Screen accordeon test 132
 [x] AX 132
-[ ] A**B 132
-[ ] Delete character 132
+[x] A**B 132
+[x] Delete character 132
 [x] Staggered 1 132
 [x] Staggered 2 132
-[ ] ANSI Insert Character 132
+[x] ANSI Insert Character 132
 
 Known Bugs
 ==========
