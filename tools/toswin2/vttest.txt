@@ -69,8 +69,8 @@ Test Of Terminal Reports
 Test Of VT52 Mode
 =================
 [x] Full screen
-[ ] Character sets
-[ ] Terminal Response to IDENTIFY COMMAND
+[x] Character sets
+[x] Terminal Response to IDENTIFY COMMAND
 
 Test Of VT102 Features
 ======================

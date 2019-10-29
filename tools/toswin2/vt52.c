@@ -191,6 +191,9 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			SYSLOG((LOG_ERR, "is goto xy"));
 			v->output = escy_putch;
 			return;
+		case 'Z':
+			sendstr(v, "\033/Z");
+			break;
 		case 'a':		/* MW extension: delete character */
 			SYSLOG((LOG_ERR, "is delete character"));
 			delete_char(v, cx, cy);

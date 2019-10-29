@@ -957,8 +957,11 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	case 'c':		/* Send Device Attributes (Primary DA).  */
 		ei = popescbuf (tw, tw->escbuf);
 		if (ei <= 0) {
-			/* 2 = base vt100 with advanced video option (AVO) */
-			sendstr (tw, "\033[?1;2c");
+			if (tw->vt_mode == MODE_VT52)
+				sendstr(tw, "\033/Z");
+			else
+				/* 2 = base vt100 with advanced video option (AVO) */
+				sendstr (tw, "\033[?1;2c");
 			/* FIXME: Should be configurable.  */
 		}
 		/* FIXME: CSI > Ps c requests Secondary DA.  Insert into caller ... */
@@ -1777,8 +1780,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'Y':		/* cursor motion follows */
 		tw->output = escy_putch;
 		return;
-	case 'Z':		/* Return Terminal ID (DECID: 0x91a).
-				   Obsolete form of CSI c (DA).  */
+	case 'Z':		/* Return Terminal ID (DECID: 0x91a). Obsolete form of CSI c (DA).  */
 		tw->escbuf[0] = '\0';
 		vt100_esc_attr(tw, 'c');
 		break;
