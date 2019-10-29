@@ -232,7 +232,7 @@ readnl(void)
     } else {
       ch = (int) one_byte;
     }
-  } while (ch != '\n' && ch != '\r' && !brkrd);
+  } while (ch != '\n' /* && ch != '\r' */ && !brkrd);
   if (brkrd)
     give_up(SIGTERM);
   reading = FALSE;

@@ -1697,10 +1697,13 @@ static bool text_type(WINDOW *w, short code, short shift)
 						(void)Fputchar(t->fd, c, 0);
 						break;
 				}
-			}
-			else
+			} else if (c == 0x001c000dL && (t->curr_tflags & TCRNL))
 			{
-				SYSLOG((LOG_ERR, "Writing code 0x%08x", (unsigned) c));
+				(void)Fputchar(t->fd, c, 0);
+				(void)Fputchar(t->fd, 0x0024000aL, 0);
+			} else
+			{
+				SYSLOG((LOG_ERR, "Writing code 0x%08lx", c));
 				(void)Fputchar(t->fd, c, 0);
 			}
 			return TRUE;

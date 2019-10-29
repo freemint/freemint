@@ -980,7 +980,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			case 12:	/* Send/receive (SRM). */
 				break;
 			case 20:	/* <return> sends crlf */
-				/* Not yet implemented */
+				tw->curr_tflags |= TCRNL;
 				break;
 			case 34:
 				tw->curr_tflags &= ~TCURS_VVIS;
@@ -1008,7 +1008,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			case 12:	/* Send/receive (SRM). */
 				break;
 			case 20:	/* <return> sends lf */
-				/* Not yet implemented */
+				tw->curr_tflags &= ~TCRNL;
 				break;
 			case 34:
 				tw->curr_tflags |= (TCURS_ON | TCURS_VVIS);

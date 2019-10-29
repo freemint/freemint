@@ -100,6 +100,13 @@ main(int argc, char *argv[])
     };
   /* *INDENT-ON* */
 
+#ifdef __MINT__
+  /*
+   * put stdin in binary mode, to prevent
+   * another layer of cr/lf conversion
+   */
+  freopen(ttyname(0), "rb", stdin);
+#endif
   while (argc-- > 1) {
     const char *opt = *++argv;
     if (*opt == '-') {

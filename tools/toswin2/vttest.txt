@@ -54,12 +54,12 @@ Test Of Keyboard
 [x] Cursor keys
 [x] Numeric keypad
 [ ] Answerback
-[ ] Control keys
+[x] Control keys
 
 Test Of Terminal Reports
 ========================
 [x] <ENQ> (AnswerBack Message
-[ ] Set/Reset Mode - LineFeed/Newline
+[x] Set/Reset Mode - LineFeed/Newline
 [ ] Device Status Report (DSR)
 [x] Primary Device Attributes (DA)
 [ ] Secondary Device Attributes (DA)

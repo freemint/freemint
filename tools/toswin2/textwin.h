@@ -51,6 +51,7 @@
 #define TCURS_ON	  0x40 /* Non-zero if cursor visible.  */
 #define TCURS_VVIS	  0x80 /* Non-zero if cursor very visible.  */
 #define TDECSCNM	 0x100 /* Non-zero if in reverse-video mode.  */
+#define TCRNL		 0x200 /* RETURN sends cr/lf  */
 
 /* text->dirty */
 #define SOMEDIRTY	0x01	/* some of the line needs redrawing */
