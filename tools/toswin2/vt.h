@@ -25,6 +25,7 @@ void	delete_line	(TEXTWIN* tw);
 void	insert_line	(TEXTWIN* tw);
 void	reverse_cr	(TEXTWIN* tw);
 void	new_line	(TEXTWIN* tw);
+void	carriage_return(TEXTWIN *tw);
 
 void	cuu		(TEXTWIN* tw, short n);
 void	cuu1		(TEXTWIN* tw);

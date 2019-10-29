@@ -203,6 +203,11 @@ new_line (TEXTWIN* tw)
 	}
 }
 
+void carriage_return(TEXTWIN *tw)
+{
+	gotoxy (tw, 0, tw->cy - RELOFFSET (tw));
+}
+
 /* Delete line at cursor position.  */
 void
 delete_line (TEXTWIN* tw)

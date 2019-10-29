@@ -1393,7 +1393,6 @@ RETSIGTYPE
 onbrk(int sig)
 {
   signal(sig, onbrk);
-  printf("BREAK %d\n", reading);
   fflush(stdout);
   if (reading) {
     brkrd = TRUE;

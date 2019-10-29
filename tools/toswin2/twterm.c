@@ -225,17 +225,48 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 	SYSLOG((LOG_ERR, "vt100_esc_mode: %c (%u)", c, c));
 	dump(c);
 	switch (c) {
+	case '\000':
+	case '\001':
+	case '\002':
+	case '\003':
+	case '\004':
+	case '\006':
+	case '\020':
+	case '\021':
+	case '\022':
+	case '\023':
+	case '\024':
+	case '\025':
+	case '\026':
+	case '\027':
+	case '\030':
+	case '\031':
+	case '\032':
+	case '\034':
+	case '\035':
+	case '\036':
+	case '\037':
+		/* ignore */
+		return;
+	case '\005':
+		/* ENQ */
+		return;
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
+	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
+	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		cud1 (tw);
 		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
+	case '\015':		/* ANSI spec - ^M in middle of ESC (yuck!) */
+		carriage_return(tw);
 		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
+	case '\016':
+		/* SO */
+		return;
+	case '\017':
+		/* SO */
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -656,17 +687,48 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	SYSLOG((LOG_ERR, "vt100_esc_attr: %c (%d)", c, c));
 	dump(c);
 	switch (c) {
+	case '\000':
+	case '\001':
+	case '\002':
+	case '\003':
+	case '\004':
+	case '\006':
+	case '\020':
+	case '\021':
+	case '\022':
+	case '\023':
+	case '\024':
+	case '\025':
+	case '\026':
+	case '\027':
+	case '\030':
+	case '\031':
+	case '\032':
+	case '\034':
+	case '\035':
+	case '\036':
+	case '\037':
+		/* ignore */
+		return;
+	case '\005':
+		/* ENQ */
+		return;
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
+	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
+	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		cud1 (tw);
 		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
+	case '\015':		/* ANSI spec - ^M in middle of ESC (yuck!) */
+		carriage_return(tw);
 		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
+	case '\016':
+		/* SO */
+		return;
+	case '\017':
+		/* SO */
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1235,17 +1297,48 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 	SYSLOG((LOG_ERR, "vt100_esc_char_size: %c (%d)", c, c));
 	dump(c);
 	switch (c) {
+	case '\000':
+	case '\001':
+	case '\002':
+	case '\003':
+	case '\004':
+	case '\006':
+	case '\020':
+	case '\021':
+	case '\022':
+	case '\023':
+	case '\024':
+	case '\025':
+	case '\026':
+	case '\027':
+	case '\030':
+	case '\031':
+	case '\032':
+	case '\034':
+	case '\035':
+	case '\036':
+	case '\037':
+		/* ignore */
+		return;
+	case '\005':
+		/* ENQ */
+		return;
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
+	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
+	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		cud1 (tw);
 		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
+	case '\015':		/* ANSI spec - ^M in middle of ESC (yuck!) */
+		carriage_return(tw);
 		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
+	case '\016':
+		/* SO */
+		return;
+	case '\017':
+		/* SO */
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1313,17 +1406,48 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 	SYSLOG((LOG_ERR, "vt100_esc_codeset: %c (%d)", c, c));
 	dump (c);
 	switch (c) {
+	case '\000':
+	case '\001':
+	case '\002':
+	case '\003':
+	case '\004':
+	case '\006':
+	case '\020':
+	case '\021':
+	case '\022':
+	case '\023':
+	case '\024':
+	case '\025':
+	case '\026':
+	case '\027':
+	case '\030':
+	case '\031':
+	case '\032':
+	case '\034':
+	case '\035':
+	case '\036':
+	case '\037':
+		/* ignore */
+		return;
+	case '\005':
+		/* ENQ */
+		return;
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
+	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
+	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		cud1 (tw);
 		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
+	case '\015':		/* ANSI spec - ^M in middle of ESC (yuck!) */
+		carriage_return(tw);
 		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
+	case '\016':
+		/* SO */
+		return;
+	case '\017':
+		/* SO */
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1397,17 +1521,48 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	SYSLOG((LOG_ERR, "vt100_putesc: %c (%d)", c, c));
 	dump(c);
 	switch (c) {
+	case '\000':
+	case '\001':
+	case '\002':
+	case '\003':
+	case '\004':
+	case '\006':
+	case '\020':
+	case '\021':
+	case '\022':
+	case '\023':
+	case '\024':
+	case '\025':
+	case '\026':
+	case '\027':
+	case '\030':
+	case '\031':
+	case '\032':
+	case '\034':
+	case '\035':
+	case '\036':
+	case '\037':
+		/* ignore */
+		return;
+	case '\005':
+		/* ENQ */
+		return;
 	case '\010':	/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
 		return;
 	case '\012':	/* ANSI spec - ^J in middle of ESC (yuck!) */
+	case '\013':	/* ANSI spec - ^K in middle of ESC (yuck!) */
+	case '\014':	/* ANSI spec - ^L in middle of ESC (yuck!) */
 		cud1 (tw);
 		return;
-	case '\013':	/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
+	case '\015':		/* ANSI spec - ^M in middle of ESC (yuck!) */
+		carriage_return(tw);
 		return;
-	case '\014':	/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
+	case '\016':
+		/* SO */
+		return;
+	case '\017':
+		/* SO */
 		return;
 	case '\033':	/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1733,7 +1888,7 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 			
 		/* FIXME: Handle newline mode!  */
 		case '\015':	/* Carriage Return - CR (Ctrl-M).  */
-			gotoxy (tw, 0, tw->cy - RELOFFSET (tw));
+			carriage_return(tw);
 			break;
 			
 		case '\016':	/* Shift Out (SO) (Ctrl-N) -> Switch 
