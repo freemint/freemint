@@ -121,120 +121,39 @@ display_pset(PRN_SETTINGS *p)
 #define CALL_DO_DLG	1
 #define CALL_RESET_DLG	2
 
-/* call callback-function via SIGUSR2 (what for? this runs in userspace anyway) */
-#define CALLBACK_BY_SIGNAL	0
-
 static long
 callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETTINGS *pset, short obj)
 {
-#if CALLBACK_BY_SIGNAL
-	struct sigaction oact, act;
-	struct xa_callout_head *u;
-	long ret = 0, function;
-#else
 	long ret = 0;
-#endif
 
-#if CALLBACK_BY_SIGNAL
-	switch (which)
+	if (sub->tree)
 	{
-		case CALL_INIT_DLG:
-			function = (long)sub->init_dlg;		break;
-		case CALL_DO_DLG:
-			function = (long)sub->do_dlg;		break;
-		case CALL_RESET_DLG:
-			function = (long)sub->reset_dlg;	break;
-		default:
-			function = 0L;				break;
+		RECT r;
+		obj_rectangle(pdlg->mwt, aesobj(pdlg->mwt->tree, XPDLG_DIALOG), &r);
+		sub->tree->ob_x = r.x;
+		sub->tree->ob_y = r.y;
 	}
-// 	display("function to call at %lx", function);
 
-	if (function)
-#endif
-	if ( *(((long*)&sub->init_dlg)+which) )	/* :) ... */
+	switch( which )
 	{
-#if CALLBACK_BY_SIGNAL
-		long structlen = sizeof(struct co_pdlg_sub_parms);
-#endif
-		if (sub->tree)
+	case CALL_INIT_DLG:
+		if( sub->init_dlg && pdlg->n_printers > 0 )	// 0 would qed or fvdi (and XaAES) crash
+			ret = sub->init_dlg( pset, sub );
+		break;
+	case CALL_DO_DLG:
+		if( sub->do_dlg )
 		{
-			RECT r;
-			obj_rectangle(pdlg->mwt, aesobj(pdlg->mwt->tree, XPDLG_DIALOG), &r);
-			sub->tree->ob_x = r.x;
-			sub->tree->ob_y = r.y;
+			struct PDLG_HNDL_args args;
+			args.settings = pset;
+			args.sub = sub;
+			args.exit_obj = obj;
+			ret = sub->do_dlg(args);
 		}
-
-#if CALLBACK_BY_SIGNAL
-		if (which != CALL_DO_DLG)
-		{
-			structlen -= 2;
-			if (which == CALL_INIT_DLG && pdlg->n_printers <= 0 )
-				return 0;
-		}
-
-		u = umalloc(xa_callout_user.len + structlen);
-		if (u)
-		{
-			struct xa_callout_parms *p;
-			struct co_pdlg_sub_parms *lp;
-
-			bcopy(&xa_callout_user, u, xa_callout_user.len);
-
-			u->sighand_p	+= (long)u;
-			u->parm_p  = (void *)((char *)u->parm_p + (long)u);
-
-			p 	= u->parm_p;
-			p->func	= function;
-			p->plen	= structlen >> 1;
-
-			lp	= (struct co_pdlg_sub_parms *)(&p->parms);
-
-			lp->settings	= (long)pset;
-			lp->sub		= (long)sub;
-
-			if (which == CALL_DO_DLG)
-				lp->obj = obj;
-
-			cpushi(u, xa_callout_user.len);
-
-			act.sa_handler	= u->sighand_p;
-			act.sa_mask	= 0xffffffff;
-			act.sa_flags	= SA_RESETHAND;
-
-			p_sigaction(SIGUSR2, &act, &oact);
-			DIAGS(("raise(SIGUSR2)"));
-			{
-
-			raise(SIGUSR2);
-			DIAGS(("handled SIGUSR2 pdlgsub_xxx callout"));
-			/* restore old handler */
-			p_sigaction(SIGUSR2, &oact, NULL);
-			}
-			ret = p->ret;
-			ufree(u);
-		}
-#else
-		{
-		//BASEPAGE *base = get_curproc()->p_mem->base;
-		//if( pdlg->n_printers <= 0 )
-			//return ret;
-		switch( which )
-		{
-			case CALL_INIT_DLG:
-				if( sub->init_dlg && pdlg->n_printers > 0 )	// 0 would qed or fvdi (and XaAES) crash
-					ret = sub->init_dlg( pset, sub );
-			break;
-			case CALL_DO_DLG:
-				if( sub->do_dlg )
-					ret = sub->do_dlg( pset, sub, obj );
-			break;
-			case CALL_RESET_DLG:
-				if( sub->reset_dlg )
-					ret = sub->reset_dlg( pset, sub );
-			break;
-		}
-		}
-#endif
+		break;
+	case CALL_RESET_DLG:
+		if( sub->reset_dlg )
+			ret = sub->reset_dlg( pset, sub );
+		break;
 	}
 // 	display("function called returns %ld", ret);
 	return ret;

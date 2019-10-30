@@ -599,7 +599,7 @@ XA_objc_sysvar(int lock, struct xa_client *client, AESPB *pb)
 #define OBGET_OBSTATE	0x0009
 #define OBSET_OBSTATE	0x8009
 
-// opcode 66
+// opcode 140
 // objc_data(tree, object, what, size, wh, (void *)data0, (void *)data1, *short, *long);
 // objc_data(tree, obj_idx, what, flags, winhand, clip, ...);
 // intin[0] = obj_idx

@@ -595,7 +595,7 @@ cXA_wheel_event(int lock, struct c_event *ce, short cancel)
 			{
 				switch (wind->wheel_mode)
 				{
-					case WHL_REALWHEEL:
+					case WHEEL_MESAG:
 					{
 						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 								   WM_WHEEL, 0,0, wind->handle,
@@ -604,13 +604,13 @@ cXA_wheel_event(int lock, struct c_event *ce, short cancel)
 								   ((md->state && 0xf) << 12)|((orient & 0xf) << 8)|(md->clicks & 0xff));
 						break;
 					}
-					case WHL_AROWWHEEL:
+					case WHEEL_ARROWED:
 					{
 						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
 						whlarrowed(wind, WA, amount, md);
 						break;
 					}
-					case WHL_SLDRWHEEL:
+					case WHEEL_SLIDER:
 					{
 						short w = -1, s = 0;
 

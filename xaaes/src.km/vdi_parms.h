@@ -25,7 +25,7 @@
 #ifndef _vdi_parms_h_
 #define _vdi_parms_h_
 
-#include "mt_gemx.h"
+#include "xa_aes.h"
 
 struct vdi_xfnt_info_parms
 {

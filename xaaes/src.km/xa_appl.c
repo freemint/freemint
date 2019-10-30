@@ -1486,7 +1486,7 @@ short info_tab[][4] =
 		0,
 		0
 	},
-	/* 20 <-- 98 AES_FUNCTIONS */
+	/* 20 <-- 98 AES_WFORM */
 	{
 		0
 	|	AGI_AOPTS	/* appl_options() present */

@@ -399,7 +399,7 @@ static void configure(void)
 	default_options.xa_nomove = true;
 	default_options.xa_nohide = true;
 	default_options.thinframe = 1;
-	default_options.wheel_mode = WHL_AROWWHEEL;
+	default_options.wheel_mode = DEF_WHLMODE;
 
 	default_options.clwtna = 0;
 	default_options.alt_shortcuts = 3;

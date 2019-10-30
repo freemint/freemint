@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "xa_types.h"
-#include "mt_gem.h"
+#include "xa_aes.h"
 #include "xa_global.h"
 #include "xa_strings.h"
 #include "matchpat.h"	//strmchr
