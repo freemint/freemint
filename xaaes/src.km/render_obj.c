@@ -5254,7 +5254,7 @@ get_g_box_theme(struct widget_tree *wt, struct xa_aes_object obj, OBJECT **ob, b
 	*sel = (*ob)->ob_state & OS_SELECTED;
 	*dis = (*ob)->ob_state & OS_DISABLED;
 
-	fl3d = ((*ob)->ob_flags & FL3DMASK) >> 9;
+	fl3d = ((*ob)->ob_flags & OF_FL3DMASK) >> 9;
 
 	if (wt->is_menu && wt->pop == aesobj_item(&obj))
 		*obt = &theme->popupbkg;
@@ -5306,7 +5306,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 		conv.l = p->obspec;
 		c = conv.c;
 
-		fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+		fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 		selected = ob->ob_state & OS_SELECTED;
 
 		obt = &theme->box;
@@ -5345,7 +5345,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 	else
 	{
 		c = (*api->object_get_spec)(ob)->obspec;
-		fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+		fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 		selected = ob->ob_state & OS_SELECTED;
 
 		obt = NULL;
@@ -5402,7 +5402,7 @@ d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 	bool selected;
 
 	c = (*api->object_get_spec)(ob)->obspec;
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 	selected = ob->ob_state & OS_SELECTED;
 
 	if (ob->ob_state & OS_DISABLED)
@@ -5436,7 +5436,7 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 	bool disabled;
 
 	selected = ob->ob_state & OS_SELECTED;
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
 	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
@@ -5501,7 +5501,7 @@ d_g_boxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	selected = (ob->ob_state & OS_SELECTED);
 
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
 	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
@@ -5559,7 +5559,7 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	selected = (ob->ob_state & OS_SELECTED);
 
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
 	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
@@ -5633,7 +5633,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 	ushort selected = ob->ob_state & OS_SELECTED;
 	char *text = NULL;
 
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
 	if (ob->ob_type == G_POPUP)
 	{
@@ -5733,7 +5733,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 				(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 				(*v->api->t_effects)(v, ct->fnt.e);
 
-				switch ((ob->ob_flags & FL3DMASK) >> 9)
+				switch ((ob->ob_flags & OF_FL3DMASK) >> 9)
 				{
 					case 1:	 undcol = G_GREEN; break;
 					case 2:  undcol = G_BLUE; break;
@@ -5887,7 +5887,7 @@ d_g_image(struct widget_tree *wt, struct xa_vdi_settings *v)
 	MFDB Micon;
 	short fl3d, pxy[8], cols[2], icx, icy;
 
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
 	bitblk = (*api->object_get_spec)(ob)->bitblk;
 
@@ -6164,7 +6164,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 
 	selected = (ob->ob_state & OS_SELECTED);
 
-	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
 	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
@@ -6269,7 +6269,7 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 	/* most AES's allow null string */
 	if (t)
 	{
-		fl3d = (ob->ob_flags & FL3DMASK) >> 9;
+		fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 		strncpy(text, t, 254);
 		text[255] = '\0';
 

@@ -880,7 +880,7 @@ update_slists(struct xa_fnts_info *fnts)
 
 	list_name->get(list_name, NULL, SEGET_WTXT, &wtxt);
 
-	f = fnts->fnts_ring;//list;
+	f = fnts->fnts_ring;
 	if (fnts->dialog_flags & FNTS_DISPLAY)
 		sc.fnt = &wtxt;
 

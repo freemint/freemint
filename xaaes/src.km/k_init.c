@@ -70,7 +70,7 @@
 #include "xa_xtobj.h"
 
 #include "mvdi.h"
-#include "mt_gem.h"
+#include "xa_aes.h"
 /* kernel header */
 #include "mint/ssystem.h"
 #include "cookie.h"

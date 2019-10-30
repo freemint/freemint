@@ -32,6 +32,197 @@
 #include "mt_gem.h"
 #include "mt_gemx.h"
 
+/*
+ * constants that might be missing from current gemlib headers.
+ * Should be removed, once they are known to be available.
+ */
+#ifndef FNTS_DISPLAY
+#define FNTS_DISPLAY	2
+#endif
+#ifndef PDLG_OUTFILES
+#define PDLG_OUTFILES		5
+#endif
+#ifndef PLANE_MASK
+#define PLANE_MASK	(PLANE_BLACK|PLANE_YELLOW|PLANE_MAGENTA|PLANE_CYAN)
+#endif
+#ifndef APC_SYSTEM
+#define APC_SYSTEM			 2
+#endif
+#ifndef AES_FUNCTIONS
+#define AES_FUNCTIONS			98
+#endif
+#ifndef AES_AOPTS
+#define AES_AOPTS		99
+#endif
+#ifndef WO0_WCOWORK
+#define WO0_WCOWORK		0x0020
+#endif
+
+/* appl_getinfo(AES_VERSION) return values */
+#ifndef AES_ARCH_M68000
+#define AES_DEVSTATUS_ALPHA	0
+#define AES_DEVSTATUS_BETA	1
+#define AES_DEVSTATUS_RELEASE	2
+#define AES_FDEVSTATUS_STABLE	0x100
+
+#define AES_ARCH_M68000	    0
+#define AES_ARCH_M68010     1
+#define AES_ARCH_M68020     2
+#define AES_ARCH_M68030    	3
+#define AES_ARCH_M68040    	4
+#define AES_ARCH_M68060  	5
+#define AES_ARCH_M6802060	6
+#define AES_ARCH_COLDFILRE	7
+#endif
+
+/* appl_getinfo(AES_FUNCTIONS) return values */
+#ifndef AGI_WFORM
+#define AGI_WFORM			1
+#define AGI_AOPTS			2
+#endif
+#ifndef AGI_OBJCDATA
+#define AGI_OBJCDATA		4
+#endif
+
+/* appl_options(AES_AOPTS) return values and appl_options() settings */
+#ifndef AO0_WF_SLIDE
+#define AO0_WF_SLIDE		1
+#define AO0_OBJC_EDIT		2
+#endif
+
+#ifndef APP_AESSYS
+#define APP_AESSYS			0x10
+#endif
+#ifndef APP_AESTHREAD
+#define APP_AESTHREAD		0x20
+#endif
+
+#ifndef WHEEL_SLIDER
+#define WHEEL_MESAG			0	/**< AES will send #WM_WHEEL messages */
+#define WHEEL_ARROWED		1   /**< AES will send #WM_ARROWED messages */
+#define WHEEL_SLIDER		2   /**< AES will convert mouse wheel events to slider events */
+#endif
+
+#ifndef WA_RTSCAN
+#define WA_UPSCAN		8	/* XaAES only */
+#define WA_DNSCAN		9	/* XaAES only */
+#define WA_LFSCAN		10	/* XaAES only */
+#define WA_RTSCAN		11	/* XaAES only */
+#endif
+
+#ifndef X_MSET_SHAPE
+#define X_MRESET      1000	/* geneva */
+#define X_MGET        1001	/* geneva */
+#define X_MSET_SHAPE  1100	/* geneva */
+#endif
+
+#ifndef OF_FL3DMASK
+#define OF_FL3DMASK		(OF_FL3DIND|OF_FL3DBAK|OF_FL3DACT)
+#endif
+
+#ifndef ED_CRSROFF
+/* XaAES extensions to objc_edit() */
+#define ED_DISABLE		5
+#define ED_ENABLE		6
+#define ED_CRSRON		7
+#define ED_CRSROFF		8
+
+#define ED_MARK			9
+#define ED_STRING		10
+#define ED_SETPTEXT		11
+#define ED_SETPTMPLT	12
+#define ED_SETPVALID	13
+#define ED_GETPTEXT		14
+#define ED_GETPTMPLT	15
+#define ED_GETPVALID	16
+#endif
+
+#ifndef ED_REDRAW
+#define ED_REDRAW		200		/* XaAES only */
+#define ED_XINIT		201
+#define ED_XCHAR		202
+#define ED_XEND			203		/* Redraw cursor, XaAES only */
+#define ED_CHGTEXTPTR	204
+#define ED_CHGTMPLPTR	205
+#endif
+
+
+#ifndef __RSXHDR
+#define __RSXHDR
+typedef struct rsxhdr
+{
+	unsigned short	rsh_vrsn;     /* should be 3                                 */
+	unsigned short	rsh_extvrsn;  /* not used, initialised to 'IN' for Interface */
+
+	unsigned long	rsh_object;
+	unsigned long	rsh_tedinfo;
+	unsigned long	rsh_iconblk;  /* list of ICONBLKS                            */
+	unsigned long	rsh_bitblk;
+	unsigned long	rsh_frstr;
+	unsigned long	rsh_string;
+	unsigned long	rsh_imdata;   /* image data                                  */
+	unsigned long	rsh_frimg;
+	unsigned long	rsh_trindex;
+
+	unsigned long	rsh_nobs;     /* counts of various structs                   */
+	unsigned long	rsh_ntree;
+	unsigned long	rsh_nted;
+	unsigned long	rsh_nib;
+	unsigned long	rsh_nbb;
+	unsigned long	rsh_nstring;
+	unsigned long	rsh_nimages;
+	unsigned long	rsh_rssize;   /* total bytes in resource                     */
+} RSXHDR;
+#endif
+
+
+/*
+ * end of missing constants
+ */
+
+/* conflicts with mint/mem.h */
+#undef ROUND
+
+#define MAX_WHLMODE	WHEEL_SLIDER
+#define DEF_WHLMODE	WHEEL_ARROWED
+
+
+/* bubble-gem */
+typedef struct
+{
+	long   magic;   /* 'BGEM'                                   */
+	long   size;    /* Größe dieser Struktur, derzeit 18        */
+	short  release; /* derzeit 7, nie kleiner als 5             */
+	short  active;  /* <>0, wenn gerade eine Hilfe angezeigt wird;  0  sonst                               */
+	struct mouse_form *mhelp;   /* Zeiger auf Hilfe-Mausform                */
+	short  dtimer;  /* Dämon-Timer; Default 200ms; ab Release 6 */
+} BGEM;
+
+typedef struct
+{
+#define BGC_FONTCHANGED 0x0001
+#define BGC_NOWINSTYLE  0x0002
+#define BGC_SENDKEY     0x0004
+#define BGC_DEMONACTIVE 0x0008
+#define BGC_TOPONLY     0x0010
+	short flags;
+	short display_time;	/* ms */
+} BHLP;
+
+#define C_BGEM 	0x4247454dL
+
+#define BGS7_USRHIDE 0x0001
+#define BGS7_USRHIDE2 0x0002	/* XaAES */
+#define BGS7_MOUSE   0x0004
+#define BGS7_DISPCL  0x0080	/* display client: XaAES-special */
+
+#define BUBBLEGEM_REQUEST  0xBABA
+#define BUBBLEGEM_SHOW     0xBABB
+#define BUBBLEGEM_ACK      0xBABC
+#define BUBBLEGEM_ASKFONT  0xBABD
+#define BUBBLEGEM_FONT     0xBABE
+#define BUBBLEGEM_HIDE     0xBABF
+
 typedef struct
 {
     unsigned int    version;
@@ -41,62 +232,6 @@ typedef struct
     unsigned long   unused_1;
     unsigned long   unused_2;
 } N_AESINFO;
-
-typedef struct
-{
-   char      *in_dos;                 /* Address of DOS flags       */
-   int       *dos_time;               /* Address of DOS time        */
-   int       *dos_date;               /* Address of DOS date        */
-   long      res1;                    /*                            */
-   long      res2;                    /*                            */
-   long      res3;                    /* Is 0L                      */
-   void      *act_pd;                 /* Running program            */
-   long      res4;                    /*                            */
-   int       res5;                    /*                            */
-   void      *res6;                   /*                            */
-   void      *res7;                   /* Internal DOS-memory list   */
-   void      (*resv_intmem)();        /* Extend DOS memory          */
-   long      (*etv_critic)();         /* etv_critic of GEMDOS       */
-   char *    ((*err_to_str)(char e)); /* Conversion code->plaintext */
-   long      res8;                    /*                            */
-   long      res9;                    /*                            */
-   long      res10;                   /*                            */
-} MAGX_DOSVARS;
-
-/* os_magic -> */
-
-typedef struct
-{
-     long magic;                   /* Must be $87654321               */
-     void *membot;                 /* End of the AES-variables        */
-     void *aes_start;              /* Start address                   */
-     long magic2;                  /* Is 'MAGX'                       */
-     long date;                    /* Creation date ddmmyyyy          */
-     void (*chgres)(int res, int txt);  /* Change resolution          */
-     long (**shel_vector)(void);   /* Resident desktop                */
-     char *aes_bootdrv;            /* Booting took place from here    */
-     int  *vdi_device;             /* VDI-driver used by AES          */
-     void *reservd1;
-     void *reservd2;
-     void *reservd3;
-     int  version;                 /* e.g. $0201 is V2.1              */
-     int  release;                 /* 0=alpha..3=release              */
-} MAGX_AESVARS;
-
-/* Cookie MagX --> */
-
-#ifndef _MAGX_COOKIE
-#define _MAGX_COOKIE
-typedef struct
-{
-     long		config_status;
-     MAGX_DOSVARS	*dosvars;
-     MAGX_AESVARS	*aesvars;
-     void		*res1;
-     void		*hddrv_functions;
-     long		status_bits;             /* MagiC 3 from 24.5.95 on      */
-} MAGX_COOKIE;
-#endif
 
 /* TODO: Usage of RECT should be eliminated somehow
          and replaced by the gemlib's GRECT.
@@ -358,5 +493,12 @@ struct evnt_mu_fselect
   unsigned long ret;
   long reserved[8-4];
 };
+
+struct object;
+typedef struct
+{
+	struct object	*tree;
+	short		obnum;
+} POPINFO;
 
 #endif /* _xa_aes_h */

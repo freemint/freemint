@@ -2466,12 +2466,6 @@ set_defaultpalette(short vdih)
 	set_syspalette(vdih, ptrs.rgb); //(struct rgb_1000 *)&systempalette);
 }
 #endif
-struct color_tab256
-{
-	COLOR_TAB	tab;
-	COLOR_ENTRY	colors[256];
-};
-typedef struct color_tab256 COLOR_TAB256;
 
 
 #if INCLUDE_UNUSED

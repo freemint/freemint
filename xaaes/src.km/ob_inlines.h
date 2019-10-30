@@ -88,7 +88,7 @@ object_get_oblink(OBJECT *ob)
 static inline POPINFO *
 object_get_popinfo(OBJECT *ob)
 {
-	return	(POPINFO *)object_get_spec(ob)->popinfo;
+	return	(POPINFO *)object_get_spec(ob)->index;
 }
 
 static inline char *

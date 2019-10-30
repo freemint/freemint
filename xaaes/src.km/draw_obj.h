@@ -27,7 +27,7 @@
 
 #include "global.h"
 #include "xa_types.h"
-#include "mt_gem.h"
+#include "xa_aes.h"
 
 #define DRW_CURSOR		1
 #define UNDRAW_FOCUS	2
