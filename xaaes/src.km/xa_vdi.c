@@ -275,10 +275,9 @@ xa_t_font(struct xa_vdi_settings *v, short point, short id)
 static void _cdecl
 xa_t_alignment(struct xa_vdi_settings *v, short halign, short valign)
 {
-	if (v->halign != halign || v->valign != valign)
-	{
-		vst_alignment(v->handle, halign, valign, &v->halign, &v->valign);
-	}
+	short dummy;
+
+	vst_alignment(v->handle, halign, valign, &dummy, &dummy);
 }
 
 static void _cdecl
