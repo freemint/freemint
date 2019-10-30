@@ -779,7 +779,6 @@ k_init(unsigned long vm)
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
 	screen.colours = work_out[13];
-	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */

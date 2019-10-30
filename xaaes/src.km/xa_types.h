@@ -358,8 +358,6 @@ struct xa_vdi_settings
 	short	efx[3];
 };
 
-typedef enum { D_LOCAL = 0, D_TCP = 1 } XA_DISPLAY;
-
 struct xa_colour_scheme
 {
 	short bg_col;			/* Colour used for backgrounds */
@@ -376,7 +374,6 @@ struct xa_colour_scheme
 struct xa_screen
 {
 	RECT r;				/* Screen dimensions */
-	XA_DISPLAY display_type;	/* The type of display we are using */
 
 	short colours;			/* Number of colours available */
 	short planes;			/* Number of planes in screen */
