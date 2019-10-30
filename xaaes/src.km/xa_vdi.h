@@ -26,7 +26,6 @@
 #define _xa_vdi_h
 
 #include "xa_types.h"
-// #include "xa_vdi.h"
 
 struct xa_vdi_api * init_xavdi_module(void);
 
