@@ -30,7 +30,7 @@ short text_handle;
 short h_line;
 short xf, yf, wf, hf;
 VdiHdl vdi_handle;
-short w_char;
+short w_char, h_char;
 extern short _app;
 
 /* Main window attributes */
@@ -52,7 +52,6 @@ main (void)
     short work_in[11], work_out[57], dummy;
     int i;
 	VdiHdl aes_handle;
-	short h_char;
 
 	if (_app)
 		return 0;
@@ -304,7 +303,6 @@ void open_text(void)
     static char *title = "USB Utility";
     short workW;
     short workH;
-    short ret;
 
     if (text_handle > 0)                /* If the window is already opened */
         wind_set(text_handle, WF_TOP, 0, 0, 0, 0);    /* We bring it on top */
