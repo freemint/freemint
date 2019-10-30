@@ -200,7 +200,7 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 #endif /* GENERATE_DIAGS */
 
 void _cdecl bootlog(short disp, const char *fmt, ...);
-#if BOOTLOG
+#ifdef BOOTLOG
 #define BLOG(x)	bootlog x
 #define BLOGif(c,x)	if(c)bootlog x
 #define DBG BLOG
@@ -208,7 +208,7 @@ void _cdecl bootlog(short disp, const char *fmt, ...);
 #define KDBG(x) KERNEL_DEBUG x
 #else
 #define BLOG(x)
-#define BLOGif(x)
+#define BLOGif(c, x)
 #define DBG(x)
 #define DBGif(c,x)
 #define KDBG(x)

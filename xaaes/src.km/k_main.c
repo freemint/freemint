@@ -1038,7 +1038,7 @@ extern char XAAESNAME[];
 static void
 sigterm(void)
 {
-#if BOOTLOG
+#ifdef BOOTLOG
 	struct proc *p = get_curproc();
 	BLOG((true, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
 #endif

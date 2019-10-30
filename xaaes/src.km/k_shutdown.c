@@ -241,14 +241,9 @@ k_shutdown(void)
 		}
 
 		BLOG((false, "C.shutdown = 0x%x", C.shutdown));
-#if BOOTLOG
-		if (C.shutdown & HALT_SYSTEM)
-			BLOG((false, "HALT_SYSTEM flag is set"));
-		if (C.shutdown & REBOOT_SYSTEM)
-			BLOG((false, "REBOOT_SYSTEM flag is set"));
-		if (C.shutdown & RESOLUTION_CHANGE)
-			BLOG((false, "RESOLUTION_CHANGE flag is set"));
-#endif
+		BLOGif(C.shutdown & HALT_SYSTEM, (false, "HALT_SYSTEM flag is set"));
+		BLOGif(C.shutdown & REBOOT_SYSTEM, (false, "REBOOT_SYSTEM flag is set"));
+		BLOGif(C.shutdown & RESOLUTION_CHANGE, (false, "RESOLUTION_CHANGE flag is set"));
 
 		/*
 		 * Close the virtual used by XaAES

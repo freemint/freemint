@@ -1328,11 +1328,10 @@ static void kill_client( SCROLL_INFO *list )
 		if( k )
 		{
 			remove_from_tasklist( list->cur->data );
-		}
-#if BOOTLOG
-		else
+		} else
+		{
 			BLOG((0,"taskmanager_form_exit: could not kill %d", pid));
-#endif
+		}
 		return;
 	}
 
