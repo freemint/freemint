@@ -128,7 +128,7 @@ loader_init(int argc, char **argv, char **env)
 #endif
 		long fh;
 
-		(void)Cconws("FreeMiNT loader starting...\r\n");
+		(void)Cconws("\033vFreeMiNT loader starting...\r\n");
 
 		my_strlcpy(path, MINTDIR, sizeof(path));
 
