@@ -29,7 +29,7 @@
 
 #include "k_mouse.h"
 
-#if BOOTLOG
+#ifdef BOOTLOG
 
 static inline void
 write_bootlog(char *t, short l)
@@ -55,7 +55,7 @@ write_bootlog(char *t, short l)
 void _cdecl
 bootlog(short disp, const char *fmt, ...)
 {
-#if BOOTLOG
+#ifdef BOOTLOG
 	char buf[512];
 	va_list args;
 	long l;
@@ -94,6 +94,9 @@ bootlog(short disp, const char *fmt, ...)
 		c_conws(buf);
 	}
 	DEBUG_LEVEL = lvl;
+#else
+	UNUSED(disp);
+	UNUSED(fmt);
 #endif
 }
 
@@ -119,7 +122,7 @@ display(const char *fmt, ...)
 		kernel_write(D.debug_file, buf, l+1);
 	}
 #endif
-#if BOOTLOG
+#ifdef BOOTLOG
 	if( C.loglvl & 1 )
 		write_bootlog(buf, l+1);
 #endif
@@ -150,7 +153,7 @@ ndisplay(const char *fmt, ...)
 		kernel_write(D.debug_file, buf, l);
 	}
 #endif
-#if BOOTLOG
+#ifdef BOOTLOG
 	if( C.loglvl & 1 )
 		write_bootlog(buf, l);
 #endif

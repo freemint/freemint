@@ -459,7 +459,7 @@ again:
 	C.SingleTaskPid = -1;	/* just for sure */
 
 	strcpy(C.start_path, start_path);
-#if BOOTLOG
+#ifdef BOOTLOG
 	if (!C.bootlog_path[0])
 	{
 		strcpy(C.bootlog_path, C.start_path);
@@ -678,9 +678,7 @@ again:
 
 	{
 	short li = 0, p = -1;
-#if !BOOTLOG
 	UNUSED(li);
-#endif
 	if( !cfg.lang[0] )
 	{
 		const char *lang = get_env(0, "LANG=");
@@ -792,11 +790,8 @@ again:
 		default:
 			sd_str = "Quit XaAES";
 		}
-#if BOOTLOG
-		BLOG((1,"AESSYS kthread exited - shutdown = %x(%s).", C.shutdown, sd_str));
-#else
 		UNUSED(sd_str);
-#endif
+		BLOG((1,"AESSYS kthread exited - shutdown = %x(%s).", C.shutdown, sd_str));
 		if( C.shutdown & (RESTART_XAAES | RESOLUTION_CHANGE) )
 		{
 			goto again;

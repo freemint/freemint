@@ -566,20 +566,18 @@ k_init(unsigned long vm)
 		{
 			C.nvdi_version = *p;
 			BLOG((false, "nvdi version = %x", C.nvdi_version));
-		}
-#if BOOTLOG
-		else
+		} else
+		{
 			BLOG((false, "could not determine nvdi version"));
-#endif
+		}
 		if (!(s_system(S_GETCOOKIE, COOKIE_fVDI, (unsigned long)&p)))
 		{
 			C.fvdi_version = *p;
 			BLOG((false, "fvdi version = %x", C.fvdi_version));
-		}
-#if BOOTLOG
-		else
+		} else
+		{
 			BLOG((false, "could not determine fvdi version"));
-#endif
+		}
 	}
 	c_conws("\033E\033f");		/* Clear screen, cursor home (for WongCKs falcon) and cursor off */
 
@@ -864,10 +862,8 @@ k_init(unsigned long vm)
 	screen.c_max_h = v->cell_h;
 	dev2 = calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
-#if !BOOTLOG
 	UNUSED(dev1);
 	UNUSED(dev2);
-#endif
 	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
  		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h, dev2));
 	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",

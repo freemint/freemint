@@ -2269,9 +2269,7 @@ fileselector_form_exit(struct xa_client *client,
 
 				sprintf( pt2, sizeof(pt2)-1, "%s%s", fs->path, fname);
 				r = _f_rename( 0, pt2, pt );
-#if !BOOTLOG
 				UNUSED( r );
-#endif
 				BLOG((0,"rename '%s' -> '%s' -> %ld", pt2, pt, r ));
 			}
 			refresh_filelist(LOCK_FSEL, fs, 0);//fs->selected_dir->up);
