@@ -315,10 +315,11 @@ void open_text(void)
         /* Initial position */
         if (xf == NO_POSITION)
         {
-            graf_handle (&wf, &ret, &ret, &hf);
-            wf *= 64 + 3;
-            hf *= 10;
+            wf = w_char * 64 + 3;
+            hf = h_char * 10 + 3;
             wind_get (0, WF_WORKXYWH, &xf, &yf, &workW, &workH);
+            if (wf > workW)
+                wf = workW;
             xf += (workW - wf) / 2;
             yf += (workH - hf) / 2;
         }
