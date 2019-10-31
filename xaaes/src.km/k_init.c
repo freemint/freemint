@@ -142,9 +142,6 @@ api_obj_rectangle(struct widget_tree *wt, struct xa_aes_object object, RECT *r)
 	obj_rectangle(wt, object, r);
 }
 
-// static short _cdecl
-// api_object_thickness(OBJECT *ob){return object_thickness(ob);}
-
 static void * _cdecl
 api_rp2ap(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 {
@@ -382,7 +379,7 @@ setup_xa_module_api(void)
 	xam_api.object_get_spec	= api_object_get_spec;
 	xam_api.object_set_spec = api_object_set_spec;
 	xam_api.object_get_popinfo = api_object_get_popinfo;
- 	xam_api.object_get_tedinfo = api_object_get_tedinfo;
+	xam_api.object_get_tedinfo = api_object_get_tedinfo;
 	xam_api.object_spec_wh	= api_object_spec_wh;
 
 	xam_api.ob_spec_xywh	= api_ob_spec_xywh;
@@ -487,7 +484,7 @@ set_wrkin(short *in, short dev)
 		in[i] = 0;
 }
 
-static short
+static void
 calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short *dist)
 {
 	short i, j, count = 0, cellw, tmp;
@@ -508,7 +505,6 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 			}
 			w = cellw;
 		}
-// 		display("i=%d, j=%d, count=%d, cellw=%d, totalw=%ld", i, j, count, cellw, wch);
 	}
 	if (count)
 	{
@@ -530,23 +526,14 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	}
 
 	vqt_fontinfo(v->handle, &i, &i, dist, &i, temp);
-
-// 	display("w %d(%d), h %d", *maxw, tmp, *maxh);
-// 	display("dists %d, %d, %d, %d, %d - %d, %d", dist[0], dist[1], dist[2], dist[3], dist[4]);
-// 	display("effex %d, %d, %d", temp[0], temp[1], temp[2]);
-
-	return dev;
 }
 int
 k_init(unsigned long vm)
 {
 	short work_in[16];
 	short work_out[58];
-	short dev1, dev2;
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
-
-// 	display("\033H");		/* cursor home */
 
 	{
 		short f, *t;
@@ -588,8 +575,8 @@ k_init(unsigned long vm)
 	if( C.P_handle > 0 || (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
 	{
 		memset( work_out, 0, sizeof(work_out) );
-		set_wrkin(work_in, 1);	//cfg.videomode);
-		BLOG((0,"1st v_opnvnwk (P_handle=%d)", C.P_handle ));
+		set_wrkin(work_in, 1);
+		BLOG((0,"1st v_opnvwk (P_handle=%d)", C.P_handle ));
 		v_opnvwk(work_in, &v->handle, work_out);
 		BLOG((0,"->%d, wh=%d/%d %d colors", v->handle, work_out[0], work_out[1], work_out[13]));
 		if( !(work_out[0] && work_out[1] && work_out[13]) )
@@ -615,9 +602,8 @@ k_init(unsigned long vm)
 		if ( cfg.videomode)
 		{
 #ifndef ST_ONLY
-			if ((vm & 0x80000000) && mvdi_api.dispatch)
+			if ((vm & 0x80000000UL) && mvdi_api.dispatch)
 			{
-// 				long ret;
 				/* Ozk:  Resolution Change on the Milan;
 				 *
 				 * I'm guessing like never before here; I found out that one can select
@@ -636,27 +622,35 @@ k_init(unsigned long vm)
 				/*
 				 * First try...
 				 */
-// 				vcheckmode(vm & 0xffff);	/* Works on my Milan - 040 w/s3 trio */
+#if 0
+				vcheckmode(vm & 0xffff);	/* Works on my Milan - 040 w/s3 trio */
 								/* Didnt work on Vido's Milan - 060 w/rage. Didnt change res*/
+#endif
 				/*
 				 * Second try...		 * Works on my Milan - 040 w/s3 trio
 				 *				 * Didnt work on Vido's Milan - 060 w/rage. System freeze!
 				 */
-// 				vsetmode(vm & 0xffff);
+#if 0
+				vsetmode(vm & 0xffff);
+#endif
 
 				/*
 				 * Third try...			 * Works with some resolutio on my Milan - VERY unstable. Whe
 				 * This is the same as		 * it freezes, it freezes so good I have to use reset to recover
 				 * on the Falcon		 * Not tested on Vido's 060 w/rage Milan
 				 */
-// 				mode = 5;
-// 				work_out[45] = vm & 0xffffL;
+#if 0
+				mode = 5;
+				work_out[45] = vm & 0xffffL;
+#endif
 
 				/*
 				 * Fourth try...		* This works perfect on _my_ milan. Dont know how it works on
 				 *				* other machines yet... didnt work with nvdi 5.03 installed!
 				 */
-// 				mvdi_device(vm & 0x0000ffff, 0L, DEVICE_SETDEVICE, (long *)&ret);
+#if 0
+				mvdi_device(vm & 0x0000ffffUL, 0L, DEVICE_SETDEVICE, (long *)&ret);
+#endif
 
 				/*
 				 * Fifth try...
@@ -664,17 +658,14 @@ k_init(unsigned long vm)
 				 * only using devid 7 instead of 5.
 				 */
 				mode = 7;
-				work_out[45] = vcheckmode(vm & 0x0000ffff); //vm & 0x0000ffff;
-			}
-			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
+				work_out[45] = vcheckmode(vm & 0x0000ffffUL);
+			} else
 #endif
-#ifdef ST_ONLY
-			if (((vm & 0x80000000) && nova_data && nova_data->valid))
-#endif
+			if ((vm & 0x80000000UL) && nova_data && nova_data->valid)
 			{
 				if (nova_data->valid)
 					nova_data->xcb->resolution = cfg.videomode;
-// 				display("nova change res to %d - %s", cfg.videomode, nova_data->next_res.name);
+				BLOG((false, "nova change res to %d - %s", cfg.videomode, nova_data->next_res.name));
 				nova_data->valid = false;
 				mode = 1;
 			}
@@ -684,10 +675,9 @@ k_init(unsigned long vm)
 				work_out[45] = vcheckmode(cfg.videomode);;
 				mode = 5;
 				BLOG((false, "Falcon video: videomode %d(%x),mode=%d,nvmode=%x", cfg.videomode, cfg.videomode, mode, work_out[45]));
-// 				display("Falcon video: mode %x, %x", cfg.videomode, work_out[45]);
 			}
-			else
 #endif
+			else
 			{
 				if (cfg.videomode >= 1 && cfg.videomode <= 10)
 				{
@@ -703,7 +693,6 @@ k_init(unsigned long vm)
 		{
 			BLOG((false, "Default screenmode"));
 		}
-// 		display("set mode %x", mode);
 
 		BLOG((false, "Screenmode is: %d", mode));
 
@@ -745,18 +734,19 @@ k_init(unsigned long vm)
 			BLOG((/* 00000001 */true, "v_opnwk failed (%i)!", C.P_handle));
 			return -1;
 		}
-// 		_b_ubconout(2, ' ');
 		/*
 		 * We need to get rid of the cursor
 		 */
-		//v_exit_cur(C.P_handle);
+#if 0
+		v_exit_cur(C.P_handle);
+#endif
 
 		/*
 		 * Open us a virtual workstation for XaAES to play with
 		 */
-		//v->handle = C.P_handle;
+		v->handle = C.P_handle;
 
-		set_wrkin(work_in, C.P_handle);
+		set_wrkin(work_in, 1);
 		v_opnvwk(work_in, &v->handle, work_out);
 	}	/* /if ( v->handle <= 0 ) */
 
@@ -773,7 +763,7 @@ k_init(unsigned long vm)
 	if( C.P_handle == 0 && C.f_phys )
 	{
 		BLOG((false, "Guessing phys-handle is 1"));
-		C.P_handle = 1;	// HOPE it's 1 ..
+		C.P_handle = 1;	/* HOPE it's 1 .. */
 	}
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
@@ -795,11 +785,6 @@ k_init(unsigned long vm)
 	(*v->api->set_clip)(v, &screen.r);
 
 	(*v->api->f_perimeter)(v, 0);
-
-// 	v_show_c(C.P_handle, 0);
-// 	hidem();
-// 	xa_graf_mouse(ARROW, NULL, NULL, false);
-// 	showm();
 
 	objc_rend.dial_colours = MONO ? bw_default_colours : default_colours;
 
@@ -825,11 +810,6 @@ k_init(unsigned long vm)
 	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt));
 
-// 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
-// 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
-
-// 	if (screen.planes > 8)
-// 		set_defaultpalette(v->handle);
 	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette, C.Aes->home_path, cfg.palette ) )
 	{
 		set_syspalette(v->handle, screen.palette);
@@ -848,25 +828,38 @@ k_init(unsigned long vm)
 
 	(*v->api->t_alignment)(v, 0, 5);
 	(*v->api->t_font)(v, cfg.small_font_point, cfg.font_id);
-	screen.standard_font_id  = screen.small_font_id = cfg.font_id;	//v->font_rid;
+	screen.standard_font_id  = screen.small_font_id = cfg.font_id;
 	screen.small_font_height = v->font_h;
 	screen.small_font_point  = v->font_rsize;
 	screen.c_min_w = v->cell_w;
 	screen.c_min_h = v->cell_h;
-	dev1 = calc_average_fontsize(v, &screen.c_min_w, &screen.c_min_h, &screen.c_min_dist[0]);
-	(*v->api->t_font)(v, (screen.r.h <= 280) ? (cfg.standard_font_point = cfg.medium_font_point) : cfg.standard_font_point, -1);
+	calc_average_fontsize(v, &screen.c_min_w, &screen.c_min_h, &screen.c_min_dist[0]);
+	if (screen.r.h <= 280)
+	{
+		cfg.standard_font_point = cfg.medium_font_point;
+		if (cfg.xaw_point == STANDARD_FONT_POINT)
+			cfg.xaw_point = cfg.medium_font_point;
+	}
+	(*v->api->t_font)(v, cfg.standard_font_point, -1);
 	screen.standard_font_height = v->font_h;
 	screen.standard_font_point  = v->font_rsize;
 	screen.c_max_w = v->cell_w;
 	screen.c_max_h = v->cell_h;
-	dev2 = calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
+	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
-	UNUSED(dev1);
-	UNUSED(dev2);
-	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
- 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h, dev2));
-	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
-		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h, dev1));
+	default_fnt.n.p = cfg.xaw_point;
+	default_fnt.s.p = cfg.xaw_point;
+	default_fnt.h.p = cfg.xaw_point;
+
+	C.Aes->options.standard_font_point = cfg.standard_font_point;
+
+	if( cfg.info_font_point == -1 )
+		cfg.info_font_point = cfg.standard_font_point;
+
+	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d",
+		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h));
+	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d",
+		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h));
 
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
@@ -880,8 +873,6 @@ k_init(unsigned long vm)
 	BLOG((false, "Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
 	BLOG((false, " size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
-
-// 	get_syspalette(C.P_handle, screen.palette);
 
 	/* Load the system resource files
 	 */
@@ -908,10 +899,9 @@ k_init(unsigned long vm)
 		display(/*00000003*/"ERROR: Can't load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
-// 	set_syspalette(C.P_handle, screen.palette);
-// 	set_syscolor();
+
 	/*
-	 * Version check the aessys resouce
+	 * Version check the aessys resource
 	 */
 	{
 		char *t = 0;
@@ -927,7 +917,7 @@ k_init(unsigned long vm)
 		}
 		if ( (ob_count_objs(about, 0, -1) < RSC_VERSION) || ( gt = strcmp(t, RSCFILE_VERSION)) )
 		{
-			char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
+			const char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
 			display("ERROR: %s resource file (current:%s)(%s) - use version "RSCFILE_VERSION"!", s, t, cfg.rsc_name);
 			return -1;
 		}
@@ -1004,7 +994,6 @@ k_init(unsigned long vm)
 	if( !root_window )
 		return -1;
 	strcpy( root_window->wname, "root" );
-// 	display("Fixing up root menu");
 	/* Tack a menu onto the root_window widget */
 	C.Aes->std_menu = new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYSTEM_MENU));
 	assert(C.Aes->std_menu);
@@ -1071,12 +1060,10 @@ k_init(unsigned long vm)
 
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
-// 	v_show_c(v->handle, 1); /* 0 = reset */
 
 	set_standard_point( C.Aes );
 
 	redraw_menu(NOLOCKING);
-// 	display("all fine - return 0");
 
 	/*
 	 * Setup mn_set for menu_settings()
