@@ -146,9 +146,12 @@ static short systempalette[] =
 
 static const short devtovdi8[256] =
 {
- //0, 2, 3, 6, 4, 7, 5, 8, 9, 10,11,14,12,15,13,255,
-
-/*0  1  2  3  4  5  6  7  8	 9   10 11 12 13 14 15 */
+#if 0
+0, 2, 3, 6, 4, 7, 5, 8, 9, 10,11,14,12,15,13,255,
+#endif
+#if 0
+0  1  2  3  4  5  6  7  8	 9   10 11 12 13 14 15 
+#endif
   0, 2, 3, 6, 4, 7, 5, 8, 9, 10, 11,14,12,15,13,255,
  16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
  48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
@@ -184,7 +187,9 @@ static const short devtovdi4[] = { 0, 2 ,3,6,4,7,5,8,9,10,11,14,12,15,13,1  };
 /*                           0   1  2 3 4 5 6 7 8  9  0  1  2  3  4  5 */
 /*static const short vditodev4[] = { 0,255, 1,2,4,6,3,5,7, 8, 9,10,12,14,11,13 };*/
 
-//  static const short vditodev4[] = { 0,1,2,3,4,5,6,7, 8, 9,8, 9,12,14,11,13 };
+#if 0
+static const short vditodev4[] = { 0,1,2,3,4,5,6,7, 8, 9,8, 9,12,14,11,13 };
+#endif
 
 static const short devtovdi2[] = { 0,2,3,1 };
 
@@ -206,14 +211,13 @@ get_coldist(struct rgb_1000 *src, struct rgb_1000 *dst)
 		src_grey = 1;
 	if( dst->red == dst->green && dst->green == dst->blue )
 		dst_grey = 1;
-	if( src_grey && dst_grey )	// prefer if both grey
+	if( src_grey && dst_grey )	/* prefer if both grey */
 	{
 		return r / 8;
 	}
 	if( src_grey != dst_grey )
-		r *= 4;	// bad if only one grey
+		r *= 4;	/* bad if only one grey */
 
-	//if( src->red < 10 && src->green < 10 && src->blue > 100 )
 	g = dst->green;
 	g -= src->green;
 	g *= g;
@@ -234,9 +238,7 @@ fgetc(struct file *fp, long *count)
 	char ret;
 
 	r = kernel_read(fp, &ret, 1);
-	if (r != 1)
-		display("read error! %lx(%ld)", r, r);
-	else
+	if (r == 1)
 		*count += 1;
 
 	return (volatile char)ret;
@@ -340,14 +342,14 @@ toM16b(struct rgb_1000 *pal, void *img_ptr)
 		r = 31;
 
 	g = pal->green;
-	g <<= 6; 		//*= 64;
+	g <<= 6;
 	g += 500;
 	g /= 1000;
 	if (g > 63)
 		g = 63;
 
 	b = pal->blue;
-	b <<= 5;		//*= 32;
+	b <<= 5;
 	b += 500;
 	b /= 1000;
 	if (b > 31)
@@ -371,24 +373,22 @@ toI16b(struct rgb_1000 *pal, void *img_ptr)
 	unsigned short *img = img_ptr;
 	unsigned long register r, g, b;
 
-// 	img = *img_ptr;
-
 	r = pal->red;
-	r <<= 5;		//*= 32;
+	r <<= 5;
 	r += 500;
 	r /= 1000;
 	if (r > 31)
 		r = 31;
 
 	g = pal->green;
-	g <<= 6;		// 64;
+	g <<= 6;
 	g += 500;
 	g /= 1000;
 	if (g > 63)
 		g = 63;
 
 	b = pal->blue;
-	b <<= 5;		//*= 32;
+	b <<= 5;
 	b += 500;
 	b /= 1000;
 	if (b > 31)
@@ -702,36 +702,29 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 
 /* Vertical replication codes are only allowed in certain places */
 static int
-read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int patlen, unsigned long *vrep, bool allow_vrep, bool planes, bool d, long *rcnt)
+read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int patlen, unsigned long *vrep, bool allow_vrep, bool planes, long *rcnt)
 {
 	unsigned char *l = line, *end = line + scan + 1;
 	unsigned char *endline = line + scan;
 
-	if (d) display("read gem line = %lx, scan = %ld, patlen = %d, vrep = %ld",
-		line, scan, patlen, *vrep);
-
-	do //while (scan)
+	do
 	{
 		short b1 = fgetc(fp, rcnt);
 
 		b1 &= 0xff;
-		if (d) display("read %d", b1);
 
 		if ( b1 == 0x80 )
 		/* Literal run */
 		{
 			short len = fgetc(fp, rcnt) & 0x00ff;
 
-			if (d) display("litteral %d bytes (scan = %ld)", len, scan);
 			if (len > 0)
 			{
 				scan -= len;
 				for (; len > 0; len--)
-// 				while ( len-- > 0 )
 				{
 					if (line > end || line < l)
 					{
-						display("ERROR0 line=%lx, end=%lx", line, end);
 						return 0;
 					}
 					*line++ = (unsigned char)fgetc(fp, rcnt);
@@ -742,30 +735,24 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 		/* Pattern code */
 		{
 			short rep = fgetc(fp, rcnt) & 0x00ff;
-			if (d) display("pattern rep %d, allowed = %s", rep, allow_vrep ? "Yes":"No");
 			if ( rep == 0 && allow_vrep )
 			/* SCANREPEAT Is actually a vertical replication */
 			{
 				if ((unsigned char)fgetc(fp, rcnt) != 0xff)
 				{
-					display("ERROR1 wrong scanrep");
 					return 0;
 				}
 				*vrep = (unsigned long)((unsigned char)fgetc(fp, rcnt) - 1);
-				if (d) display("repeat line %ld times", *vrep);
 			}
 			else if (rep)/* PATTERN REPEAT */
 			{
 				int i;
 
-				if (d) display("repeat pat_len %d %d times (%d bytes) scan %ld", patlen, rep, patlen * rep, scan);
 				scan -= patlen * rep;
-				if (d) display("scan %ld", scan);
 				for ( i = 0; i < patlen; i++ )
 				{
 					if (line > end || line < l)
 					{
-						display("ERROR1 line=%lx, end=%lx", line, end);
 						return 0;
 					}
 					*line++ = (unsigned char)fgetc(fp, rcnt);
@@ -777,7 +764,6 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 						*line = line[-patlen];
 						if (line > end || line < l)
 						{
-							display("ERROR2 line=%lx, end=%lx", line, end);
 							return 0;
 						}
 					}
@@ -792,26 +778,22 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 			short am;
 
 			am = b1 & 0x7f;
-			if (d) display("store %d bytes with %d val", am, store);
 			if (line + am > end || line < l)
 			{
-				display("ERROR3 line=%lx, end=%lx", line, end);
 				return 0;
 			}
 			scan -= am;
 			while (am)
 				*line++ = store, am--;
 		}
-		if (d) display("scan = %ld", scan);
 		allow_vrep = false;
 	}
 	while (line < endline);
 
 	if (line != endline)
-		display("ERROR4: past buffer!");
-
-	if (d) display(" -- scan = %ld line %lx, wrote %ld bytes, vrep = %ld",
-		scan, line, line - l, *vrep);
+	{
+		/* display("ERROR4: past buffer!"); */
+	}
 
 	return 1;
 }
@@ -830,9 +812,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 	UNUSED(s);
 	e = data + (pic->ximg.img_h * stride);
 	UNUSED(e);
-// 	display("scan %ld, wscan %ld, stride %ld", scan, wscan, stride);
 
-// 	display("size of data should be %ld bytes", (pic->ximg.img_h * stride));
 	switch (pic->ximg.planes)
 	{
 		case 1:
@@ -851,7 +831,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 				}
 				else
 				{
-					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, false, rcnt)))
+					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, rcnt)))
 					{
 						ret = -1;
 						break;
@@ -875,22 +855,18 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 					dst = data + (long)((long)y + ((long)i * pic->ximg.img_h)) * wscan;
 
 					readcount = 0;
-// 					if (disp) display("LINE %d, plane %d", y, i);
-					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, false/*disp*/, &readcount)))
+					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, &readcount)))
 					{
-						display("2 ... 8b err0 - read %ld bytes", readcount);
 						*rcnt += readcount;
 						ret = -1;
 						break;
 					}
-// 					if (disp) display("read %ld bytes for this line", readcount);
 					*rcnt += readcount;
 					if (vrep)
 					{
 						long a;
 						if (vrep + y > pic->ximg.img_h)
 							vrep = pic->ximg.img_h - y;
-// 						display("repeat line %ld times", vrep);
 						for (a = 0; a < vrep; a++)
 						{
 							memcpy(dst + wscan, dst, wscan);
@@ -909,16 +885,11 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 		   Of course, my guesswork says that the order is R,G,B and as
 		   GBM used B,G,R, i'll have to reverse the order. */
 		{
-			long y, sl, rsl;	//, remain;
+			long y, sl, rsl;
 			unsigned long vrep = 0L;
 			unsigned char *dst;
-// 			ndisplay("24b img: ");
 			sl = (long)((pic->ximg.img_w + 15) & ~15) * 3;
 			rsl = (long)((pic->ximg.img_w + 7) & ~7) * 3;
-			//remain = sl - rsl;
-			//UNUSED(remain);
-// 			sl = (long)pic->ximg.img_w * 3;
-// 			display("stride %ld, sl %ld, scan %ld, wscan %ld", stride, sl, scan, wscan);
 
 			for (y = 0, dst = data; y < pic->ximg.img_h; y++, dst += sl)
 			{
@@ -929,19 +900,13 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 				}
 				else
 				{
-// 					if (disp) display("LINE #%ld ------------------------------- ", y);
-					if (!(read_gem_line(fp, dst, rsl, pic->ximg.pat_len, &vrep, true, false, false/*disp*/, rcnt)))
+					if (!(read_gem_line(fp, dst, rsl, pic->ximg.pat_len, &vrep, true, false, rcnt)))
 					{
-						display("24b err0");
-						ret = -1; //return -1;
+						ret = -1;
 						break;
 					}
-// 					if (remain && disp) display("got remains %ld bytes", remain);
 				}
 			}
-// 			if (disp)
-// 			display("start = %lx, end %lx(%lx) size = %ld(%ld)",
-// 					s, dst, dst + sl, dst - s, (dst+sl) - s);
 			break;
 		}
 #endif
@@ -951,11 +916,6 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 			break;
 		}
 	}
-
-	if (disp)
-		display("ret %ld bytes from file", *rcnt);
-
-// 	kfree(line);
 
 	return ret;
 }
@@ -1008,11 +968,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			word_aligned <<= 1;
 
 			/* width byte aligned */
-			//width = (pic->ximg.img_w + 7) >> 3;
-			//UNUSED(width);
 			size = (long)((long)word_aligned * pic->ximg.img_h * pic->ximg.planes);
-
-// 			display("depack_img: size = %ld, width=%d", size, width);
 
 			/* if XIMG, read info */
 			if (pic->ximg.planes <= 8 && pic->ximg.length >= ((sizeof(XIMG_header) >> 1) + (3 * (1 << (pic->ximg.planes)))) &&
@@ -1032,7 +988,6 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			if (!(pic->addr = kmalloc(size)))
 				goto end_depack;
 
-			if (disp) display("Seek to %ld", 2L * pic->ximg.length);
 			rcnt = 2L * pic->ximg.length;
 			kernel_lseek(fp, rcnt, SEEK_SET);
 #if 0
@@ -1046,12 +1001,8 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 #endif
 			if (gem_rdata(fp, pic, disp, &rcnt) == -1L)
 			{
-				if (disp) display("read %ld bytes from file", rcnt);
 				goto end_depack;
 			}
-			else if (disp)
-				display("read %ld bytes from file", rcnt);
-
 		}
 	}
 	else
@@ -1110,9 +1061,6 @@ from8b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, 
 	src_ptr = src->fd_addr;
 	planes = src->fd_nplanes;
 
-// 	display("psize = %d, src_ptr = %lx, d_ptr = %lx",
-// 		psize, src_ptr, *d_ptr);
-
 	for (k = 0; k < psize; k++, src_ptr++)
 	{
 		for (i = 0; i < 16; i++)
@@ -1147,9 +1095,8 @@ from8b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, 
 			}
 		}
 	}
-// 	display("dst_ptr start = %lx, dst_ptr end = %lx (size = %ld)",
-// 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
+
 static void
 from24b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
@@ -1188,9 +1135,8 @@ from24b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src,
 			*d_ptr = (*to)(&ppal, *d_ptr);
 		}
 	}
-// 	display("dst_ptr start = %lx, dst_ptr end = %lx (size = %ld)",
-// 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
+
 static void
 from16b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
@@ -1230,10 +1176,9 @@ from16b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src,
 			*d_ptr = (*to)(&ppal, *d_ptr);
 		}
 	}
-// 	display("dst_ptr start = %lx, dst_ptr end = %lx (size = %ld)",
-// 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
 #endif
+
 typedef void * to_x_bit(struct rgb_1000 *pal, void *imgdata);
 #if 0
 		15	moto,
@@ -1353,7 +1298,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 		if (screen.planes > 8)
 		{
 			int i, j, pixelsize;
-			char *data;	//, *ed;
+			char *data;
 			char *d;
 			short wdwidth;
 			long pixel, size, scanlen, red, green, blue, ired=0, igreen=0, iblue=0;
@@ -1362,28 +1307,23 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			struct rgb_1000 col;
 
 			wdwidth = (w + 15) >> 4;
-// 			size = 2L * (long)wdwidth * (long)(screen.planes == 15 ? 16 : screen.planes) * h;
-// 			display("size0 %ld", size);
 			switch (screen.planes)
 			{
 				case 15: to = f_to15[screen.pixel_fmt]; pixelsize = 2; rp = repeat_16bpixel; break;
 				case 16: to = f_to16[screen.pixel_fmt]; pixelsize = 2; rp = repeat_16bpixel; break;
-				case 24: to = f_to24[screen.pixel_fmt]; pixelsize = 3; rp = repeat_24bpixel; break; //toI24b; break;
-				case 32: to = f_to32[screen.pixel_fmt]; pixelsize = 4; rp = repeat_32bpixel; break; //toM32b; break;
+				case 24: to = f_to24[screen.pixel_fmt]; pixelsize = 3; rp = repeat_24bpixel; break;
+				case 32: to = f_to32[screen.pixel_fmt]; pixelsize = 4; rp = repeat_32bpixel; break;
 				default: to = NULL; pixelsize = 0; rp = NULL; break;
 			}
 			scanlen = (long)pixelsize * ((w + 15) & ~15);
 			size = (long)scanlen * h;
-// 			display("size1 %ld, scanlen = %ld", size, scanlen);
 
- 			//DBG((0,"size = %ld, scanlen = %ld, w=%d, h=%d", size, scanlen, w, h));
 			if (!to || !(data = kmalloc(size)))
 				return;
-// 			display("data %lx, size %ld, to = %lx", data, size, to);
 
 			pm->d_w = w;
 			pm->d_h = h;
-			pm->mfdb.fd_addr = data; //(void *)((long)pm + sizeof(*pm));
+			pm->mfdb.fd_addr = data;
 			pm->mfdb.fd_w = (w + 15) & ~15;
 			pm->mfdb.fd_h = h;
 			pm->mfdb.fd_wdwidth = wdwidth;
@@ -1395,8 +1335,6 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 
 
 			data = pm->mfdb.fd_addr;
-			//ed = data + size;
-			//UNUSED(ed);
 
 			switch (method)
 			{
@@ -1414,7 +1352,6 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
 
-// 				d = (void *)&pixel;
 				for (i = 0; i < h; i++)
 				{
 					col.red = red >> 16;
@@ -1489,7 +1426,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				yblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
 
 
-				col = strt = c[0]; //*start;
+				col = strt = c[0];
 				rgb[0] = (long)strt.red << 16;
 				rgb[1] = (long)strt.green << 16;
 				rgb[2] = (long)strt.blue << 16;
@@ -1504,9 +1441,9 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						igreen = ((long)(c[1].green - strt.green) << 16) / w;
 						iblue = ((long)(c[1].blue - strt.blue) << 16) / w;
 					}
-					if( c[3].red )ired += c[3].red;	// chaos!
-					if( c[3].green )igreen += c[3].green;	// chaos!
-					if( c[3].blue )iblue += c[3].blue;	// chaos!
+					if( c[3].red )ired += c[3].red;	/* chaos! */
+					if( c[3].green )igreen += c[3].green;
+					if( c[3].blue )iblue += c[3].blue;
 
 					red = (long)strt.red << 16;
 					green = (long)strt.green << 16;
@@ -1515,11 +1452,11 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					for (j = 0; j < w; j++)
 					{
 						col.red = red >> 16;
-						if( c[2].red )col.red += ((col.green) % c[2].red);	// chaos!
+						if( c[2].red )col.red += ((col.green) % c[2].red);	/* chaos! */
 						col.green = green >> 16;
-						if( c[2].green )col.green += ((col.blue) % c[2].green);	// chaos!
+						if( c[2].green )col.green += ((col.blue) % c[2].green);
 						col.blue = blue >> 16;
-						if( c[2].blue )col.blue += ((col.red) % c[2].blue);	// chaos!
+						if( c[2].blue )col.blue += ((col.red) % c[2].blue);
 						d = (*to)(&col, d);
 
 						red += ired;
@@ -1575,25 +1512,19 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 
 				for (i = 0; i < h1; i++)
 				{
-// 					d = data;
 
 					(*to)(&col, &pixel);
 					(*rp)(&pixel, data, w);
-
-// 					for (j = 0; j < w; j++)
-// 					{
-// 						d = (*to)(&col, d);
-// 					}
 
 					red += ired;
 					green += igreen;
 					blue += iblue;
 					col.red = red >> 16;
-					if( c[3].red )col.red -= ((col.green) % c[3].red);	// chaos!
+					if( c[3].red )col.red -= ((col.green) % c[3].red);
 					col.green = green >> 16;
-					if( c[3].green )col.green -= ((col.blue) % c[3].green);	// chaos!
+					if( c[3].green )col.green -= ((col.blue) % c[3].green);
 					col.blue = blue >> 16;
-					if( c[3].blue )col.blue -= ((col.red) % c[3].blue);	// chaos!
+					if( c[3].blue )col.blue -= ((col.red) % c[3].blue);
 
 					data += scanlen;
 				}
@@ -1616,20 +1547,15 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				{
 					(*to)(&col, &pixel);
 					(*rp)(&pixel, data, w);
-// 					d = data;
-// 					for (j = 0; j < w; j++)
-// 					{
-// 						d = (*to)(&col, d);
-// 					}
 					red += ired;
 					green += igreen;
 					blue += iblue;
 					col.red = red >> 16;
-					if( c[3].red )col.red += ((col.green) % c[3].red);	// chaos!
+					if( c[3].red )col.red += ((col.green) % c[3].red);
 					col.green = green >> 16;
-					if( c[3].green )col.green += ((col.blue) % c[3].green);	// chaos!
+					if( c[3].green )col.green += ((col.blue) % c[3].green);
 					col.blue = blue >> 16;
-					if( c[3].blue )col.blue += ((col.red) % c[3].blue);	// chaos!
+					if( c[3].blue )col.blue += ((col.red) % c[3].blue);
 
 					data += scanlen;
 				}
@@ -1703,13 +1629,11 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				default:;
 				}
 			}
-// 			if (data > ed || d > ed)
-// 				display("end %lx, data = %lx, d = %lx", ed, data, d);
 		}
 	}
 }
-#endif	// ST_ONLY
-#endif	//WITH_GRADIENTS
+#endif	/* ST_ONLY */
+#endif	/* WITH_GRADIENTS */
 
 void
 load_image(char *name, XAMFDB *mimg)
@@ -1718,11 +1642,6 @@ load_image(char *name, XAMFDB *mimg)
 	struct ximg_header *ximg = &xa_img.ximg;
 	long bmsize;
 
-	display("load_img: '%s'", name);
-
-	display("load_img: file %s", name);
-
-	ndisplay("  depacking...");
 	depack_img(name, &xa_img);
 	mimg->mfdb.fd_addr = NULL;
 
@@ -1730,10 +1649,6 @@ load_image(char *name, XAMFDB *mimg)
 	{
 		XAMFDB msrc;
 
-// 		display("version %d\r\n hlen    %d\r\n planes  %d\r\n pat_len %d\r\n pix_w   %d\r\n pix_h   %d\r\n img_w   %d\r\n img_h   %d\r\n magic   %lx\r\n paltype %d",
-// 			ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
-// 			ximg->magic, ximg->paltype);
-		ndisplay("OK!");
 		msrc.mfdb.fd_addr	= xa_img.addr;
 		msrc.mfdb.fd_w		= (ximg->img_w + 15) & ~15;
 		msrc.mfdb.fd_h		= ximg->img_h;
@@ -1746,17 +1661,13 @@ load_image(char *name, XAMFDB *mimg)
 
 		if (xa_img.palette)
 		{
-			ndisplay(", has palette");
 			if (ximg->planes <= 8 && screen.planes == 8)
 			{
 				unsigned char cref[256];
 				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, (1 << msrc.mfdb.fd_nplanes));
 				remap_bitmap_colindexes(&msrc.mfdb, (unsigned char *)&cref, 0);
-				ndisplay("OK!");
 			}
 		}
-		else
-			ndisplay(", no palette");
 
 		if (ximg->planes < 8 && screen.planes == 8)
 		{
@@ -1765,7 +1676,6 @@ load_image(char *name, XAMFDB *mimg)
 
 			newsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * 8;
 			oldsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * msrc.mfdb.fd_nplanes;
-			display("oldsize = %ld, newsize = %ld", oldsize, newsize);
 			if ((newdata = kmalloc(newsize)))
 			{
 				bzero(newdata, newsize);
@@ -1788,8 +1698,6 @@ load_image(char *name, XAMFDB *mimg)
 
 		if ((mimg->mfdb.fd_addr = kmalloc(bmsize)))
 		{
-// 			display("alloc %ld bytes at %lx for bitmap", bmsize, mimg->fd_addr);
-// 			display(" transform into %lx", mimg->fd_addr);
 #ifndef ST_ONLY
 			if (screen.planes > 8)
 			{
@@ -1807,24 +1715,24 @@ load_image(char *name, XAMFDB *mimg)
 					{
 						case 15: to = f_to15[screen.pixel_fmt]; break;
 						case 16: to = f_to16[screen.pixel_fmt]; break;
-						case 24: to = f_to24[screen.pixel_fmt]; break; //toI24b; break;
-						case 32: to = f_to32[screen.pixel_fmt]; break; //toM32b; break;
+						case 24: to = f_to24[screen.pixel_fmt]; break;
+						case 32: to = f_to32[screen.pixel_fmt]; break;
 						default: to = NULL; break;
 					}
 
 					switch (msrc.mfdb.fd_nplanes)
 					{
 						case 1 ... 8: from = from8b;  break;
-// 						case 15: from = from15b; break;
+#if 0
+						case 15: from = from15b; break;
+#endif
  						case 16: from = from16b; break;
 						case 24: from = from24b; break;
 						default: from = NULL;    break;
 					}
 					if (from && to)
 					{
-						ndisplay(", tranform %d -> %d bpp...", msrc.mfdb.fd_nplanes, screen.planes);
 						(*from)(to, (struct rgb_1000 *)xa_img.palette, &msrc.mfdb, &mimg->mfdb);
-						ndisplay("OK!");
 						fail = false;
 					}
 				}
@@ -1844,30 +1752,20 @@ load_image(char *name, XAMFDB *mimg)
 			else
 #endif
 			{
-				ndisplay(", vr_trnfm()...");
 				vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
-				ndisplay("OK!");
 			}
 			kfree(xa_img.addr);
 		}
 		else
 		{
-			ndisplay(", inline vr_trnfm() at %lx...", msrc.mfdb.fd_addr);
 			mimg->mfdb.fd_addr = msrc.mfdb.fd_addr;
 			vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
-			ndisplay("OK!");
 		}
 		mimg->mfdb.fd_stand = 0;
 
 		if (xa_img.palette)
 			kfree(xa_img.palette);
-
-		display("");
-// 		display("  %s!", name, mimg->fd_addr ?"OK":"NotOK");
 	}
- 	else
-		display("no image loaded");
-
 }
 
 static long
@@ -1900,7 +1798,6 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 				unsigned char cref[256];
 				build_pal_xref(src_pal, sys_pal, cref, (1 << src->fd_nplanes));
 				remap_bitmap_colindexes(src, cref, 16);
-				//yield();
 			}
 			newsize = (long)(((src->fd_w + 15) >> 4) << 1) * src->fd_h * dst->fd_nplanes;
 			oldsize = (long)(((src->fd_w + 15) >> 4) << 1) * src->fd_h * src->fd_nplanes;
@@ -1923,7 +1820,6 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 			short i, *s, *d;
 			s = src->fd_addr;
 			d = dst->fd_addr;
-// 			display("copy %d words from %lx to %lx", msrc.fd_wdwidth * msrc.fd_h, s, d);
 			for (i = src->fd_wdwidth * src->fd_h; i > 0; i--)
 				*d++ = *s++;
 		}
@@ -1934,7 +1830,6 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 /* ************************************************* */
 		if (dst->fd_nplanes > 8)
 		{
-// 			bool fail = true;
 			void (*to)(struct rgb_1000 *, void **);
 			void (*from)(void (*)(struct rgb_1000 *, void **), struct rgb_1000 *, MFDB *, MFDB *);
 
@@ -1945,7 +1840,6 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 				unsigned char cref[256];
 				build_pal_xref(src_pal, sys_pal, cref, (1 << src->fd_nplanes));
 				remap_bitmap_colindexes(src, cref, 16);
-// 				yield();
 			}
 			if (screen.pixel_fmt >= 0)
 			{
@@ -1968,11 +1862,9 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 				if (from && to)
 				{
 					src->fd_r1 = 1;
-// 					display("tranform %d -> %d bpp...", src->fd_nplanes, dst->fd_nplanes);
 					(*from)(to, src_pal ? src_pal : sys_pal, src, dst);
-// 					ndisplay("OK!");
 					src->fd_r1 = 0;
-					ret = true; //fail = false;
+					ret = true;
 				}
 			}
 		}
@@ -2025,7 +1917,6 @@ case_88:
 					if( dst_planes == 8 && cref4[255] == 0 )
 						build_pal_xref(src_pal, sys_pal, cref4, 256);
 					build_pal_xref(src_pal, sys_pal, crp, p );
-					//dump_hex( crp, p, 1, 1);
 					C.is_init_icn_pal &= ~src_planes;
 				}
 
@@ -2071,7 +1962,6 @@ case_88:
 		if (!tmp2.fd_addr)
 			tmp2.fd_addr = tmp.fd_addr;
 
-		//bzero(tmp2.fd_addr, map_size(&tmp2, 5));
 		mask = (1 << src_planes) - 1;
 
 		colours[1] = 0;
@@ -2099,7 +1989,6 @@ case_8:
 				if( src_pal )
 				{
 					if( C.is_init_icn_pal & src_planes )
-					//if( clp[0] == CLUT_NI && C.is_init_icn_pal != src_planes )
 					{
 						uchar pal_cref[256];
 						short lut[256];
@@ -2108,7 +1997,6 @@ case_8:
 						memcpy( lut, colour_lut, p* sizeof(short) );
 						for( i = 0; i < p; i++ )
 							clp[i] = pal_cref[lut[i]];
-						//C.is_init_icn_pal = src_planes;
 						C.is_init_icn_pal &= ~src_planes;
 					}
 					colour_lut = clp;
@@ -2137,7 +2025,6 @@ case_8:
 
 			bzero(tmp.fd_addr, map_size(&tmp, 4));
 			bzero(used_colours, sizeof(used_colours));
-			//bzero(words, sizeof(words));
 			for (x = 0; x < msrc.fd_wdwidth; x++)
 			{
 				short *ptr = (short *)((char *)msrc.fd_addr + (y * msrc.fd_wdwidth * 2) + (x << 1));
@@ -2173,9 +2060,7 @@ case_8:
 			/* src fd_stand to device dependent format translation
 			 * (for the current line) */
 			pxy[5] = pxy[7] = y;
-			//static int dd = 0;
 			vr_trnfm( vdih, &tmp, &tmp2 );
-			//memcpy( tmp.fd_addr, tmp2.fd_addr, map_size(&tmp2, 9));
 
 			/* for each color in src MFDB color depth */
 			for (i = 0; i < tmp.fd_h; i++)
@@ -2191,7 +2076,6 @@ case_8:
 					vrt_cpyfm( vdih, MD_TRANS, pxy, &tmp2, &mdest, colours );
 				}
 			}
-			//dd++;
 		}
 
 		if (tmp2.fd_addr != tmp.fd_addr)
@@ -2400,7 +2284,7 @@ int rw_syspalette( int md, struct rgb_1000 *palette, char *path, char *f )
 	if( err != palsz )
 	{
 		BLOG((0,"palette-size wrong:%ld, should be %d", err, palsz));
-		//return 2;
+		/* return 2; */
 	}
 	if( memcmp( (char*)buf, "PA01", 4 ) )
 	{
@@ -2423,10 +2307,8 @@ set_syspalette(short vdih, struct rgb_1000 *palette)
 	else
 		pens = 1 << screen.planes;
 
-// 	display("set syspal - %d pens", pens);
 	for (i = 0; i < pens; i++)
 	{
-		//display("%03d - %04d, %04d, %04d", i, palette[i].red, palette[i].green, palette[i].blue);
 		vs_color(vdih, i, (short *)&(palette[i]));
 	}
 }
@@ -2463,7 +2345,7 @@ set_defaultpalette(short vdih)
 	union { short *sp; struct rgb_1000 *rgb;} ptrs;
 
 	ptrs.sp = systempalette;
-	set_syspalette(vdih, ptrs.rgb); //(struct rgb_1000 *)&systempalette);
+	set_syspalette(vdih, ptrs.rgb);
 }
 #endif
 
@@ -2506,7 +2388,6 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		(*v->api->l_width)(v, 1);
 #if HAVE_VS_COLOR
 		vq_color(v->handle, 0, 1, (short *)&srgb);
-// 		display("saved %04d, %04d, %04d", srgb.red, srgb.green, srgb.blue);
 		rgb.red = 1000;
 		rgb.green = 1000;
 		rgb.blue = 0;
@@ -2550,107 +2431,87 @@ detect_pixel_format(struct xa_vdi_settings *v)
 						/* 12345678.12345678 */
 			case 15:
 			{
-				unsigned short pix = b.w[0]; //*(unsigned short *)(&b[0]);
-				ndisplay("%d bit pixel %x", screen.planes, pix);
+				unsigned short pix = b.w[0];
 				if (pix == ((31 << 2) | (7 << 13) | 3))		/* gggbbbbb.0rrrrrgg */
 				{
 					ret = 1;
-					display(" is intel format");
 				}
 				else if (pix == ((31 << 11) | (31 << 6))) 	/* rrrrrggg.ggobbbbb */
 				{
 					ret = 0;
-					display(" is moto format");
 				}
 				else
 				{
 					ret = -1;
-					display(" unknown format");
 				}
 				break;
 			}
 			case 16:
 			{
-				unsigned short pix = b.w[0]; //*(unsigned short *)(&b[0]);
-				ndisplay("%d bit pixel %x", screen.planes, pix);
+				unsigned short pix = b.w[0];
 				if (pix == ((31 << 3) | (7 << 13) | 7))		/* gggbbbbb.rrrrrggg */
 				{
 					ret = 1;
-					display(" is intel format");
 				}
 				else if (pix == ((31 << 11) | (63 << 5)))	/* rrrrrggg.gggbbbbb */
 				{
 					ret = 0;
-					display(" is moto format");
 				}
 				else if (pix == ((31 << 11) | (31 << 6)))	/* rrrrrggg.ggobbbbb */
 				{
 					ret = 2;
-					display(" is falcon (motorola) 15 bit");
 				}
 				else if (pix == ((31 << 2) | (7 << 13) | 3))	/* gggbbbbb.0rrrrrgg */
 				{
 					ret = 3;
-					display(" is a intel 15 bit");
 				}
 				else
 				{
 					ret = -1;
-					display(" unknown format!");
 				}
 				break;
 			}
 			case 24:
 			{
-				unsigned long pix = b.l[0]; //b[0];
-				ndisplay("%d bit pixel %lx", screen.planes, pix);
+				unsigned long pix = b.l[0];
 				pix >>= 8;
 				if (pix == 0xffff00L)			/* rrrrrrrr.gggggggg.bbbbbbbb  Moto */
 				{
 					ret = 0;
-					display(" is moto format");
 				}
 				else if (pix == 0xffffL)		/* gggggggg.rrrrrrrrbbbbbbbb */
 				{
 					ret = 1;
-					display(" is intel format");
 				}
 				else
 				{
 					ret = -1;
-					display(" unknown format!");
 				}
 				break;
 			}
 			case 32:
 			{
 				unsigned long pix = b.l[0];
-				ndisplay("%d bit pixel %lx", screen.planes, pix);
 				if (pix == 0xffff00L)			/* 00000000.rrrrrrrr.gggggggg.bbbbbbbb */
 				{
 					ret = 0;
-					display(" is moto format");
 				}
 				else if (pix == 0xffff0000L)		/* rrrrrrrr.gggggggg.bbbbbbbb.00000000 */
 				{
 					ret = 1;
-					display(" is intel format");
 				}
 				else if (pix == 0x0000ffffL)		/* 00000000.bbbbbbbb.gggggggg.rrrrrrrr */
 				{
 					ret = 2;
-					display(" is intel byteswapped format");
 				}
 				else
 				{
 					ret = -1;
-					display(" unknown format!");
 				}
 				break;
 			}
 			default:
 			{
-				display("unsupported color depth!");
 				ret = -2;
 				break;
 			}
