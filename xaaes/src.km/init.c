@@ -366,7 +366,7 @@ static void configure(void)
 	strcpy(cfg.rsc_name, RSCNAME);
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
-	cfg.xaw_point = 10;	/* fnt-sz for xaaes-windows */
+	cfg.xaw_point = STANDARD_FONT_POINT;	/* fnt-sz for xaaes-windows */
 	cfg.double_click_time = DOUBLE_CLICK_TIME;
 	cfg.mouse_packet_timegap = MOUSE_PACKET_TIMEGAP;
 	cfg.redraw_timeout = 500;
@@ -704,9 +704,6 @@ again:
 	BLOG((0,"lang='%s' (from %s) code=%d.",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP"), info_tab[3][0] ));
 	}
 
-	if( cfg.info_font_point == -1 )
-		cfg.info_font_point = cfg.standard_font_point;
-
 	/* XaAES-windows */
 	norm_txt.n.f = cfg.font_id;
 	norm_txt.s.f = cfg.font_id;
@@ -732,18 +729,10 @@ again:
 	desk_txt.s.f = cfg.font_id;
 	desk_txt.h.f = cfg.font_id;
 
-		/* scrlobjc */
+	/* scrlobjc */
 	default_fnt.n.f = cfg.font_id;
 	default_fnt.s.f = cfg.font_id;
 	default_fnt.h.f = cfg.font_id;
-
-	default_fnt.n.p = cfg.xaw_point;
-	default_fnt.s.p = cfg.xaw_point;
-	default_fnt.h.p = cfg.xaw_point;
-
-	C.Aes->options.standard_font_point = cfg.standard_font_point;
-	//C.Aes->options = default_options;
-	//C.Aes->options.xa_nomove = false;
 
 	C.aesmouse = -1;
 
