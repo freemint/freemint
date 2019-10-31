@@ -463,8 +463,6 @@ xaaes_sysfile(const char *file)
 
 
 /* Pointer to the widget resource (icons) */
-//static void *widget_resources = NULL;
-//static void *xobj_rsc = NULL;
 extern void *xobj_rshdr;
 extern void *xobj_rsc;
 
@@ -824,7 +822,7 @@ k_init(unsigned long vm)
 	if ((C.gdos_version = vq_gdos()))
 		(*v->api->load_fonts)(v);
 	else
-		cfg.font_id = 1;
+		cfg.font_id = STANDARD_AES_FONTID;
 
 	(*v->api->t_alignment)(v, 0, 5);
 	(*v->api->t_font)(v, cfg.small_font_point, cfg.font_id);
@@ -887,8 +885,8 @@ k_init(unsigned long vm)
 		C.Aes_rsc = LoadResources(C.Aes,
 					  resource_name,
 					  NULL,
-					  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+					  DU_RSX_CONV,
+					  DU_RSY_CONV,
 					  true);
 
 		BLOG((true, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
@@ -980,8 +978,8 @@ k_init(unsigned long vm)
 
 	root_window = create_window(
 				NOLOCKING,
-				NULL, //do_winmesag, //0,			/* No messages */
-				NULL, //do_rootwind_msg,			/* No 'doer' */
+				NULL, /* No messages */
+				NULL, /* No 'doer' */
 				C.Aes,
 				false,
 				XaMENU,			/* menu standard widget */
@@ -1025,7 +1023,7 @@ k_init(unsigned long vm)
 
 	if( cfg.menu_bar == 2 )
 		cfg.menu_ontop = cfg.menu_layout = 0;
-	// ->fix_menu
+
 	if( cfg.menu_ontop )
 	{
 		RECT r = C.Aes->std_menu->area;
@@ -1042,7 +1040,6 @@ k_init(unsigned long vm)
 		if( cfg.menu_bar )
 			open_window(0, menu_window, r);
 	}
-//#define WITH_BBL_HELP 0
 #if WITH_BBL_HELP
 	if( cfg.xa_bubble || cfg.menu_bar != 2 )
 	{
