@@ -889,7 +889,7 @@ k_init(unsigned long vm)
 					  DU_RSY_CONV,
 					  true);
 
-		BLOG((true, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
+		BLOG((true, "system resource = %lx (%s)", (unsigned long)C.Aes_rsc, resource_name));
 		kfree(resource_name);
 	}
 	if (!C.Aes_rsc)

@@ -75,10 +75,9 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 	char *reason = no_reason;
 	long r;
 
-	BLOG((0,"load_adi: enter (0x%lx, 0x%lx, %s)", initfunc, b, name));
-	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
-	DIAGS(("load_adi: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
-// 	display("load_adi: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase);
+	BLOG((0,"load_adi: enter (0x%lx, 0x%lx, %s)", (unsigned long)initfunc, (unsigned long)b, name));
+	DIAGS(("load_adi: enter (0x%lx, %s)", (unsigned long)b, name));
+	DIAGS(("load_adi: init 0x%lx, size %li", (unsigned long)initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
 	/* pass a pointer to the drivers file name on to the
 	 * driver.
@@ -96,7 +95,6 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 		if( !strcmp( reason, "Nothing" ) )
 			s = " (possibly from other kernel)";
 		display("Module %s error, reason: %s%s", name, reason, s);
-// 		display("kentry updated, %s too old! Please update it", name);
 	}
 
 	ai.fname = NULL;
@@ -148,8 +146,8 @@ load_xam(struct basepage *b, const char *name, short *class, short *subclass)
 	long r;
 	char *reason = no_reason;
 
-	DIAGS(("load_xam: enter (0x%lx, %s)", b, name));
-	DIAGS(("load_xam: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DIAGS(("load_xam: enter (0x%lx, %s)", (unsigned long)b, name));
+	DIAGS(("load_xam: init 0x%lx, size %li", (unsigned long)initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 	BLOG((false, "load_xam: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase));
 
 	/* pass a pointer to the drivers file name on to the

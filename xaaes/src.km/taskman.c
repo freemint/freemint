@@ -36,9 +36,6 @@
 #endif
 
 #if USE_Suptime
-#ifdef trap_14_w
-//#undef trap_14_w	/* "redefined" warning */
-#endif
 #include <mintbind.h>	/* Suptime */
 #endif
 
@@ -107,18 +104,6 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 #define TM_PROCINFO	0x10L	/* process-info (if def'd) */
 #define TM_HEADER		0x20L	/* header */
 #define TM_CLIENT		0x40L	/* aes-client-entry in taskman-list */
-
-#if 0
-//void ask_and_shutdown( int lock, struct xa_client *client, bool b);
-
-/*void ask_and_shutdown( int lock, struct xa_client *client, bool b)
-{
-	short r = xaaes_do_form_alert( lock, client, 1, ASK_SHUTDOWN_ALERT);
-	if ( r == 2 )
-			dispatch_shutdown(0);
-}
-*/
-#endif
 
 /*static*/ struct xa_wtxt_inf norm_txt =
 {
@@ -268,7 +253,7 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 		}
 
 		if( h == oldh && w == oldw )
-			return wpp->n.p = oldpt;	// no change
+			return wpp->n.p = oldpt;	/* no change */
 
 		pt = wpp->n.p;
 	}
@@ -300,7 +285,6 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 	if( newh )
 	{
 		*newh = h;
-		//*hd = 1000 * h / oldh;
 	}
 	return pt;
 }
@@ -362,9 +346,9 @@ build_tasklist_string( int md, void *app, long pid)
 		else
 		{
 			p = pid2proc(pid);
-			if( !p )	//|| p != pid2proc(pid) )
+			if( !p )
 			{
-				BLOG((0,"*build_tasklist_string %ld: not found! (p=%lx)", pid, p));
+				BLOG((0,"*build_tasklist_string %ld: not found! (p=%lx)", pid, (unsigned long)p));
 				return NULL;
 			}
 			name = p->name;
@@ -442,7 +426,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 		if (wind && wind != wi)
 		{
 			struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-			OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+			OBJECT *obtree = wt->tree;
 			SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 			struct sesetget_params p = { 0 };
 
@@ -501,7 +485,6 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 					{
 						/* new window */
 						struct scroll_content sc = {{ 0 }};
-						//bool redraw = (wind->window_status & XAWS_OPEN) ? true : false;
 
 						sc.t.text = wi->wname;
 						if( !*sc.t.text )
@@ -534,7 +517,6 @@ add_proc_info( int md, void *app,
 )
 {
 	char path[128];
-	//struct scroll_content sc;
 	struct scroll_entry *to;
 	int pid;
 	if( md == AES_CLIENT )
@@ -568,13 +550,12 @@ add_to_tasklist(struct xa_client *client)
 	if (wind)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+		OBJECT *obtree = wt->tree;
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		OBJECT *icon;
 		char *tx, *cp;
 		struct scroll_content sc = {{ 0 }};
 
-// 		display("add2tl: wt = %lx, obtree = %lx, list =%lx", wt, obtree, list);
 		if (screen.planes < 4)
 			sc.fnt = &norm_txt;
 		else if (client->p->pid == C.DSKpid)
@@ -668,7 +649,7 @@ remove_from_tasklist(struct xa_client *client)
 	if (wind)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+		OBJECT *obtree = wt->tree;
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
 
@@ -678,7 +659,7 @@ remove_from_tasklist(struct xa_client *client)
 			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 			if (p.e)
 			{
-#if 0	//debugging-info: dont delete
+#if 0	/* debugging-info: dont delete */
 				struct scroll_entry *this = p.e;
 				BLOG((0,"remove_from_tasklist:'%s': this=%lx,client=%lx,p=%lx", get_curproc()->name, this, client, client ? client->p : -1 ));
 				BLOGif(this,(0,"remove_from_tasklist: flags=%lx,content=%lx", this->usr_flags, this->content ));
@@ -720,7 +701,7 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 	if (wind)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+		OBJECT *obtree = wt->tree;
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
 		struct scroll_content sc = {{ 0 }};
@@ -800,7 +781,6 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 				sc.data = (void*)pid;
 				sc.xflags = 0;
 				sc.usr_flags = TM_UPDATED | TM_NOAES;
-				//sc.icon = obtree + TM_ICN_MENU;
 				if ((tx = build_tasklist_string(md, 0, pid)))
 					t.text = tx;
 				sc.t.text = t.text;
@@ -815,8 +795,6 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 	}
 }
 
-// static struct xa_window *task_man_win = NULL;
-
 bool
 isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev)
 {
@@ -826,7 +804,7 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 		nlen = strlen(name);
 
 	DIAGS(("isin_namelist: find '%s'(len=%d) in list=%lx (name='%s', len=%d)",
-		name, nlen, list,
+		name, nlen, (unsigned long)list,
 		list ? list->name : "noname",
 		list ? list->nlen : -1));
 
@@ -838,7 +816,7 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 	while (list)
 	{
 		DIAGS((" -- checking list=%lx, name=(%d)'%s'",
-			list, list->nlen, list->name));
+			(unsigned long)list, list->nlen, list->name));
 
 		if (list->nlen == nlen && !strnicmp(list->name, name, nlen))
 		{
@@ -855,7 +833,7 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 		*last = list;
 
 	DIAGS((" -- ret=%s, last=%lx, prev=%lx",
-		ret ? "true":"false", last, prev));
+		ret ? "true":"false", (unsigned long)last, (unsigned long)prev));
 
 	return ret;
 }
@@ -866,7 +844,7 @@ addto_namelist(struct cfg_name_list **list, char *name)
 	struct cfg_name_list *new, *prev;
 	short nlen = strlen(name);
 
-	DIAGS(("addto_namelist: add '%s' to list=%lx(%lx)", name, *list, list));
+	DIAGS(("addto_namelist: add '%s' to list=%lx(%lx)", name, (unsigned long)*list, (unsigned long)list));
 
 	if (nlen && !isin_namelist(*list, name, 0, NULL, &prev))
 	{
@@ -881,12 +859,12 @@ addto_namelist(struct cfg_name_list **list, char *name)
 
 			if (prev)
 			{
-				DIAGS((" -- add new=%lx to prev=%lx", new, prev));
+				DIAGS((" -- add new=%lx to prev=%lx", (unsigned long)new, (unsigned long)prev));
 				prev->next = new;
 			}
 			else
 			{
-				DIAGS((" -- add first=%lx to start=%lx", new, list));
+				DIAGS((" -- add first=%lx to start=%lx", (unsigned long)new, (unsigned long)list));
 				*list = new;
 			}
 			strncpy(new->name, name, nlen);
@@ -920,7 +898,7 @@ free_namelist(struct cfg_name_list **list)
 		struct cfg_name_list *l = *list;
 		*list = (*list)->next;
 		DIAGS(("free_namelist: freeing %lx, next=%lx(%lx) name='%s'",
-			l, *list, list, l->name));
+			(unsigned long)l, (unsigned long)*list, (unsigned long)list, l->name));
 		kfree(l);
 	}
 }
@@ -932,7 +910,6 @@ taskmanager_destructor(int lock, struct xa_window *wind)
 
 	if (htd)
 		htd->w_taskman = NULL;
-// 	task_man_win = NULL;
 	return true;
 }
 
@@ -995,7 +972,7 @@ quit_all_apps(int lock, struct xa_client *except, short reason)
 	Sema_Dn(LOCK_CLIENTS);
 }
 
-#if ALT_CTRL_APP_OPS && 1	//HOTKEYQUIT
+#if ALT_CTRL_APP_OPS && 1	/* HOTKEYQUIT */
 static void
 quit_all_clients(int lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
@@ -1004,7 +981,7 @@ quit_all_clients(int lock, struct cfg_name_list *except_nl, struct xa_client *ex
 	Sema_Up(LOCK_CLIENTS);
 	lock |= LOCK_CLIENTS;
 
-	DIAGS(("quit_all_clients: name_list=%lx, except_client=%lx", except_nl, except_cl));
+	DIAGS(("quit_all_clients: name_list=%lx, except_client=%lx", (unsigned long)except_nl, (unsigned long)except_cl));
 	/*
 	 * '_aes_shell' is special. If it is defined, we lookup the pid of
 	 * the shell (desktop) loaded by the AES and let it continue to run
@@ -1013,7 +990,7 @@ quit_all_clients(int lock, struct cfg_name_list *except_nl, struct xa_client *ex
 	{
 		dsk = pid2client(C.DSKpid);
 		DIAGS((" -- _aes_shell_ defined: pid=%d, client=%lx, name=%s",
-			C.DSKpid, dsk, dsk ? dsk->name : "no shell loaded"));
+			C.DSKpid, (unsigned long)dsk, dsk ? dsk->name : "no shell loaded"));
 	}
 
 	FOREACH_CLIENT(client)
@@ -1058,13 +1035,11 @@ CHlp_aesmsg(struct xa_client *client)
 		{
 			case 0x5354:
 			{
-// 				display("0x5354 gotten");
 				if (m->m[3] == 1)
 				{
 					C.update_lock = NULL;
 					C.updatelock_count--;
 					unlock_screen(client->p);
-// 					do_form_alert(0, client, 1, "[1][Snapper got videodata, screen unlocked][OK]", XAAESNAME);
 				}
 				else if (m->m[3] != 0)
 				{
@@ -1086,7 +1061,6 @@ screen_dump(int lock, struct xa_client *client, short open)
 	UNUSED(open);
 	if ((dest_client = get_app_by_procname("xaaesnap")) || cfg.snapper[0] )
 	{
-// 		display("send dump message to %s", dest_client->proc_name);
 		if (update_locked() != client->p && lock_screen(client->p, true))
 		{
 			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
@@ -1106,9 +1080,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
 #endif
 
-// 			display("intout %d", C.Hlp_pb->intout[0]);
-
-			if (a->intout[0] == 1) //(open)
+			if (a->intout[0] == 1)
 			{
 				xa_graf_mouse(THIN_CROSS, NULL,NULL, false);
 				while (!b)
@@ -1159,7 +1131,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 					else
 					{
 						struct proc *p;
-						long sleep_tm = 1;	//s
+						long sleep_tm = 1;
 						char cmdlin[32] = " 1 0 0\0";
 
 						/* <wait> <key> <verbose>
@@ -1167,8 +1139,6 @@ screen_dump(int lock, struct xa_client *client, short open)
 						 	      2 -> top-window: work-area
 						 	      6 -> top-window: whole-area
 						 */
-						//sprintf( cmdlin, 2, "%2ld", sleep_tm );
-						//cmdlin[2] = ' ';
 
 						if (a->intout[0] == 3)	/* top window */
 							*(cmdlin + 3) = '2';
@@ -1193,7 +1163,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 #endif
 							pid = p->pid;
 							for( sleep_tm *= 1000; sleep_tm; sleep_tm-- )
-								nap(1000);	//ms
+								nap(1000);
 							/* todo: timeout! */
 #if KILL_SNAPPER
 							check_mouse(client, &br, &xm, &ym);
@@ -1208,7 +1178,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 								xm = xr;
 								ym = yr;
 							}
-							if( pr == 0 )	// snapper still there
+							if( pr == 0 )	/* snapper still there */
 							{
 								char s[128];
 								pr = ikill( pid, SIGTERM );
@@ -1289,13 +1259,10 @@ void app_or_acc_in_front( int lock, struct xa_client *client )
 	{
 		if( C.SingleTaskPid > 0 && client->p->pid != C.SingleTaskPid )
 			return;
-		//if( client->name[1] == '*' )
-			//hide_app( lock, client );
 		app_in_front(lock, client, true, true, true);
 
 		if (client->type & APP_ACCESSORY)
 		{
-			//wakeup_client(client);
 			send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
 					 AC_OPEN, 0, 0, 0,
 					 client->p->pid, 0, 0, 0);
@@ -1366,7 +1333,7 @@ static void stop_cont_client( int lock, SCROLL_INFO *list, int sig )
 		DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
 		if (client->type & (APP_AESTHREAD|APP_AESSYS|APP_ACCESSORY))
 		{
-			return;			//ALERT(/*kill_aes_thread*/("Not a good idea, I tell you!"));
+			return;
 		}
 		app_in_front(lock, C.Aes, true, true, true);
 		ikill(client->p->pid, sig);
@@ -1412,7 +1379,7 @@ taskmanager_form_exit(struct xa_client *Client,
 {
 	int lock = 0;
 	short item = aesobj_item(&fr->obj);
-	struct xa_client *client = NULL; //cur_client(list);
+	struct xa_client *client = NULL;
 	OBJECT *ob;
 	SCROLL_INFO *list;
 
@@ -1531,7 +1498,6 @@ taskmanager_form_exit(struct xa_client *Client,
 #else
 			dispatch_shutdown(0);
 #endif
-			//ask_and_shutdown( lock, C.Hlp, 0);
 			force_window_top( lock, wind );
 
 			break;
@@ -1562,7 +1528,7 @@ taskmanager_form_exit(struct xa_client *Client,
 #if 0
 			close_window(lock, wind);
 			if ( xaaes_do_form_alert( 0, C.Hlp, 1, xa_strings[ASK_SHUTDOWN_ALERT] ) != 2 )
-				goto lb_TM_OK;//break;
+				goto lb_TM_OK;
 #endif
 			DIAGS(("taskmanager: halt system"));
 
@@ -1607,7 +1573,6 @@ taskmanager_form_exit(struct xa_client *Client,
 			{
 				TOP_WINDOW = 0;	/* ignore clwtna */
 				/* and release */
-				//close_window(lock, wind);
 
 				if( !(list->cur->usr_flags & TM_WINDOW) )
 				{
@@ -1639,18 +1604,15 @@ taskmanager_form_exit(struct xa_client *Client,
 						}
 					}
 				}
-				//close_window(lock, wind);
 			}
-			//else
-			if( fr->no_exit == false )	//!(item & 0x100) )
+			if( fr->no_exit == false )
 				close_window(lock, wind);
- 			//delayed_delete_window(lock, wind);
 
 			break;
 		}
 		default:
 		{
-			DIAGS(("taskmanager: unhandled event %i", fr->obj));
+			DIAGS(("taskmanager: unhandled event %i", fr->obj.item));
 			break;
 		}
 	}
@@ -1702,7 +1664,7 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short parent, long pinf, lo
 		unsigned long v = (unsigned long)obtree[item].ob_height * 100L / (unsigned long)obtree[parent].ob_height;
 
 		/* mark levels with different colors */
-		if( v > 100UL )	// happens sometimes
+		if( v > 100UL )	/* happens sometimes */
 		{
 			c->fillc = G_MAGENTA;
 			obtree[item].ob_height = obtree[parent].ob_height;
@@ -1717,7 +1679,7 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short parent, long pinf, lo
 		}
 		else if( v > 25 )
 		{
-			c->fillc = G_CYAN;	//G_LBLUE;
+			c->fillc = G_CYAN;
 		}
 		else{
 			c->fillc = G_GREEN;
@@ -1845,7 +1807,7 @@ static void do_tm_chart(int lock, XA_TREE *wt, struct proc *rootproc, struct xa_
 		}
 		else
 			uptime = u;
-		//idle = pinfo[2] * 1000L + pinfo[3];
+		/* idle = pinfo[2] * 1000L + pinfo[3]; */
 #else
 		if( has_new_uptime == -1 )
 		{
@@ -1884,9 +1846,9 @@ static void do_tm_chart(int lock, XA_TREE *wt, struct proc *rootproc, struct xa_
 
 		ker_stat( 0, "meminfo", pinfo);
 
-		calc_tm_bar( wt->tree, TM_MEM, TM_RAM, pinfo[0] - pinfo[1], pinfo[0] );		// total
-		calc_tm_bar( wt->tree, TM_FAST, TM_RAM, pinfo[2] - pinfo[3], pinfo[2] );	// fast
-		calc_tm_bar( wt->tree, TM_CORE, TM_RAM, pinfo[4] - pinfo[5], pinfo[4] );	//core
+		calc_tm_bar( wt->tree, TM_MEM, TM_RAM, pinfo[0] - pinfo[1], pinfo[0] );		/* total */
+		calc_tm_bar( wt->tree, TM_FAST, TM_RAM, pinfo[2] - pinfo[3], pinfo[2] );	/* fast */
+		calc_tm_bar( wt->tree, TM_CORE, TM_RAM, pinfo[4] - pinfo[5], pinfo[4] );	/* core */
 
 		redraw_toolbar( lock, wind, TM_CHART );
 	}
@@ -1909,7 +1871,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 			to = p.e;
 			if( to && to->next )
 			{
-				list->del( list, to, NORMREDRAW );	// meminfo always last
+				list->del( list, to, NORMREDRAW );	/* meminfo always last */
 				to = 0;
 			}
 		}
@@ -1928,7 +1890,6 @@ RECT taskman_r = { 0, 0, 0, 0 };
 void
 open_taskmanager(int lock, struct xa_client *client, short open)
 {
-	//RECT remember = { 0,0,0,0 };
 	struct helpthread_data *htd;
 	struct xa_window *wind;
 	XA_TREE *wt = NULL;
@@ -1981,7 +1942,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		}
 #endif
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
-		minw = obtree[0].ob_width;//  * 2 / 3;
+		minw = obtree[0].ob_width;
 		minh = obtree[0].ob_height;
 		if (taskman_r.w)
 		{
@@ -2027,7 +1988,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		/* Create the window */
 		wind = create_window(lock,
 					do_winmesag, do_formwind_msg,
-					client,//C.Aes,
+					client,
 					false,
 					BACKDROP|BORDER|CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 					created_for_AES,
@@ -2041,7 +2002,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		/* minimum width for this window */
 		wind->min.w = minw;
 
-		wind->sw = 3;	// border for moving objects when resizing
+		wind->sw = 3;	/* border for moving objects when resizing */
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
 
@@ -2073,7 +2034,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		{
 			SCROLL_INFO *list;
 			struct proc *rootproc = pid2proc(0);
-			static int first = 1;	// do full-redraw for correct slider-size
+			static int first = 1;	/* do full-redraw for correct slider-size */
 
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 			list = object_get_slist(wt->tree + TM_LIST);
@@ -2086,8 +2047,6 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 			{
 				struct scroll_entry *this;
 				/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
-				//set_xa_fnt( cfg.xaw_point + fss, wp, wt->tree, objs, list);
-				//set_fnts( list, cfg.xaw_point + fss );
 
 				for( this = list->start; this; this = this->next )
 					this->usr_flags &= ~TM_UPDATED;
@@ -2112,7 +2071,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 							if( isdigit( nm[4] ) )
 							{
 								pid = atol(nm+4);
-								pr = pid2proc( pid );	//copy?
+								pr = pid2proc( pid );
 								if( pr )
 								{
 									if( !is_aes_client(pr) )
@@ -2169,18 +2128,6 @@ fail:
 /* ************************************************************ */
 /*     Common resolution mode change functions/stuff		*/
 /* ************************************************************ */
-// static struct xa_window *reschg_win = NULL;
-#if 0
-static int
-reschg_destructor(int lock, struct xa_window *wind)
-{
-	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
-	if (htd)
-		htd->w_reschg = NULL;
-// 	reschg_win = NULL;
-	return true;
-}
-#endif
 
 struct xa_window * _cdecl
 create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
@@ -2215,10 +2162,10 @@ create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, s
 		set_window_title(wind, title, false);
 
 	wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
-	wt->exit_form = f; //milan_reschg_form_exit;
+	wt->exit_form = f; /* milan_reschg_form_exit; */
 
 	/* Set the window destructor */
-	wind->destructor = d; //reschg_destructor;
+	wind->destructor = d;
 
 	return wind;
 }
@@ -2226,15 +2173,12 @@ create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, s
 /*
  * client still running dialog
  */
-// static struct xa_window *csr_win = NULL;
-
 static int
 csr_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 	if (htd)
 		htd->w_csr = NULL;
-// 	csr_win = NULL;
 	return true;
 }
 
@@ -2249,7 +2193,6 @@ csr_form_exit(struct xa_client *Client,
 	Sema_Up(LOCK_CLIENTS);
 	lock |= LOCK_CLIENTS;
 
-// 	wt->current = fr->obj;
 	wt->which = 0;
 
 	switch (aesobj_item(&fr->obj))
@@ -2524,7 +2467,6 @@ open_launcher(int lock, struct xa_client *client, int what)
 	{
 		struct stat st;
 		long r;
-		//char *p = strchr( path, '*' );
 		char *p = strrchr( path, '\\' ), c=0;
 
 		if( !p )
@@ -2916,7 +2858,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
-		minw = obtree[SYSALERT_LIST].ob_width;//  * 2 / 3;
+		minw = obtree[SYSALERT_LIST].ob_width;
 		minh = obtree[SYSALERT_LIST].ob_height;
 		if (systemalerts_r.w)
 		{
@@ -2967,7 +2909,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		}
 		{
 			struct scroll_entry *this;
-			const char **strings = get_raw_env(); //char * const * const strings = get_raw_env();
+			const char **strings = get_raw_env();
 			int i;
 			char text[255];
 			struct sesetget_params p = { 0 };
@@ -2975,7 +2917,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 			char sstr[1024];
 
 			p.idx = -1;
-			p.arg.txt = e;	// /*txt_environment*/"Environment";
+			p.arg.txt = e;
 			p.level.flags = 0;
 			p.level.curlevel = 0;
 			p.level.maxlevel = 0;
@@ -3010,7 +2952,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 				else
 					fs = pformats[5];
 
-				sprintf( sstr, sizeof(sstr)-1, xa_strings[RS_VIDEO],//"Video:%dx%dx%d,%d colours, format: %s",
+				sprintf( sstr, sizeof(sstr)-1, xa_strings[RS_VIDEO],/* "Video:%dx%dx%d,%d colours, format: %s" */
 					screen.r.w, screen.r.h, screen.planes, screen.colours, fs );
 			}
 

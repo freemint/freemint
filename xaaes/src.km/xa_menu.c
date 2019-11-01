@@ -86,7 +86,7 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	DIAG((D_menu, NULL, "menu_bar for %s, %lx", c_owner(client), mnu));
+	DIAG((D_menu, NULL, "menu_bar for %s, %lx", c_owner(client), (unsigned long)mnu));
 
 	switch (pb->intin[0])
 	{
@@ -114,7 +114,7 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 				fix_menu(client, mwt, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
 
-	// ->fix_menu
+				/* ->fix menu */
 				if( cfg.menu_layout != 0 )
 				{
 					set_menu_width( mnu, mwt );
@@ -235,7 +235,7 @@ XA_menu_tnormal(int lock, struct xa_client *client, AESPB *pb)
 	else
 	{
 		DIAG((D_menu, client, "menu_tnormal: tree=%lx, obj=%d(%d), state=%d",
-			tree, obj, i, pb->intin[1]));
+			(unsigned long)tree, obj, i, pb->intin[1]));
 
 		if (pb->intin[1])
 			state &= ~OS_SELECTED;
@@ -272,7 +272,7 @@ XA_menu_ienable(int lock, struct xa_client *client, AESPB *pb)
 	state = tree[obj].ob_state;
 
 	DIAG((D_menu, client, "menu_ienable: tree=%lx, obj=%d(%d), state=%d",
-		tree, obj, i, pb->intin[1]));
+		(unsigned long)tree, obj, i, pb->intin[1]));
 
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
@@ -308,7 +308,7 @@ XA_menu_icheck(int lock, struct xa_client *client, AESPB *pb)
 	state = tree[obj].ob_state;
 
 	DIAG((D_menu, client, "menu_icheck: tree=%lx, obj=%d(%d), state=%d",
-		tree, obj, i, pb->intin[1]));
+		(unsigned long)tree, obj, i, pb->intin[1]));
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
 		state |= OS_CHECKED;
@@ -436,9 +436,6 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 
 	pi->parent = parent = mn->menu.mn_menu;
 
-// 	display("obtree %lx, parent %d, count %d", wt->tree, pi->parent, pi->count);
-// 	display("mn_menu %d, mn_scroll %d, mn_item %d", mn->mn_menu, mn->mn_scroll, mn->mn_item);
-
 	if (pi->objs && mn->menu.mn_scroll > 1 && mn->menu.mn_scroll < (pop_h - 1) && count > pop_h)
 	{
 		short flag = 0, *objs = pi->objs;
@@ -447,7 +444,6 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 		{
 			if (this == parent || this == -1)
 			{
-// 				display(" premature end of object tree");
 				break;
 			}
 
@@ -468,7 +464,6 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 				}
 				pi->scrl_start_row = i - 1;
 				pi->scrl_height = pop_h - (i - 1);
-// 				display(" set scrl_start_row %d(%d), scrl_height %d", i - 1, this, pop_h - i);
 			}
 			if (mn->menu.mn_item == this)
 			{
@@ -476,19 +471,14 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 				 * mn_item == object number that we want to initiate scroll field with
 				 */
 				flag |= 2;
-// 				display(" set scrl_start_obj %d(%d)", i - 1, this);
 				pi->scrl_start_obj = i - 2;
 			}
 			this = obtree[this].ob_next;
 		}
-// 		display("flag %x, startrow %d, startobj %d",	flag, pi->scrl_start_row, pi->scrl_start_obj);
-// 		display("pop height %d, scroll height %d", pop_h, pi->scrl_height);
-// 		display("Last obj in scrl %d(%d)", pi->scrl_start_row + pi->scrl_height, pi->objs[pi->scrl_start_row + pi->scrl_height]);
 #if 1
 		if (flag != ((1<<1)|1) || pi->scrl_height < 3)
 		{
 noscroll:
-// 			display("no scrolling!");
 			pi->scrl_start_row = -1;
 			kfree(pi->objs);
 			pi->objs = NULL;
@@ -504,10 +494,8 @@ noscroll:
 			{
 				short corr = (pi->scrl_start_obj + pi->scrl_height) - pi->count;
 				pi->scrl_start_obj -= corr;
-// 				display("adjusted start_obj with %d", corr);
 				if (pi->scrl_start_obj < pi->scrl_start_row)
 				{
-// 					display("no scrolling needed");
 					goto noscroll;
 				}
 			}
@@ -547,7 +535,6 @@ noscroll:
 				for (i = first; i < last; i++)
 				{
 					obj = pi->objs[i];
-// 					display("i=%d, obj=%d, y=%d", i, obj, y);
 					obtree[obj].ob_next = pi->objs[i + 1];
 					obtree[obj].ob_y = y;
 					y += obtree[obj].ob_height;
@@ -613,7 +600,7 @@ menu_popup(int lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result
 			result->menu = mn->menu;
 			result->at = NULL;
 
-			DIAG((D_menu,NULL,"_menu_popup %lx + %d",ob, mn->menu.mn_menu));
+			DIAG((D_menu,NULL,"_menu_popup %lx + %d", (unsigned long)ob, mn->menu.mn_menu));
 
 			tab->locker = client->p->pid;
 			tab->client = client;
@@ -634,14 +621,6 @@ menu_popup(int lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result
 				tab->scroll = cfg.menu_settings.mn_set.height;
 			else
 				tab->scroll = 0;
-// 			else if (mn->menu.mn_scroll > 1)
-// 			{
-// 				tab->scroll = (mn->menu.mn_scroll < 8) ? 8 : mn->menu.mn_scroll;
-// 			}
-// 			else
-// 				tab->scroll = 0;
-
-// 			tab->scroll = (mn->menu.mn_scroll == -1) ? 8 : 0;
 
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
@@ -653,7 +632,7 @@ menu_popup(int lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result
 				 py - y);
 
 			client->status |= CS_BLOCK_MENU_NAV;
-			(*client->block)(client, 1); //Block(client, 1);
+			(*client->block)(client, 1);
 			client->status &= ~CS_BLOCK_MENU_NAV;
 
 			ob->ob_x = old_x;
@@ -732,7 +711,7 @@ XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 			if (!wt)
 				return XAC_DONE;
 
-			DIAG((D_menu,NULL,"form_popup %lx",ob));
+			DIAG((D_menu,NULL,"form_popup %lx", (unsigned long)ob));
 
 			tab->locker = client->p->pid;
 			tab->client = client;
@@ -740,7 +719,7 @@ XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;
-			tab->scroll = 0; //false;
+			tab->scroll = 0;
 			tab->data = &pb->intout[0];
 			tab->usr_evnt = 1;
 
@@ -772,7 +751,7 @@ XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 				 y);
 
 			client->status |= CS_BLOCK_MENU_NAV;
-			(*client->block)(client, 1); //Block(client, 1);
+			(*client->block)(client, 1);
 			client->status &= ~CS_BLOCK_MENU_NAV;
 
 			ob->ob_x = old_x;

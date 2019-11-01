@@ -82,7 +82,7 @@ build_rect_list(struct build_rl_parms *p)
 	}
 
 	DIAGS(("build_rect_list: area=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
-		*p->area, nrl->r));
+		p->area->x, p->area->y, p->area->w, p->area->h, nrl->r.x, nrl->r.y, nrl->r.w, nrl->r.h));
 
 	if (nrl)
 	{

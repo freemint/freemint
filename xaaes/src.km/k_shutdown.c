@@ -119,7 +119,7 @@ k_shutdown(void)
 #if WITH_BKG_IMG
 		do_bkg_img( C.Aes, 2, 0 );
 #endif
-		BLOG((false, "shutting down aes thread .. tp=%lx", C.Aes->tp));
+		BLOG((false, "shutting down aes thread .. tp=%lx", (unsigned long)C.Aes->tp));
 
 		if (C.Aes->tp)
 		{

@@ -53,13 +53,9 @@
 
 #include "mint/signal.h"
 
-// static struct xa_widget_row * get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
-// static struct xa_widget_row * get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
 static void rp_2_ap_row(struct xa_window *wind);
 STATIC void free_wt(XA_TREE *wt);
 STATIC short	redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state);
-
-//static OBJECT *def_widgets;
 
 #if GENERATE_DIAGS
 static char *t_widg[] =
@@ -174,7 +170,6 @@ exit_client_widget_theme(struct xa_client *client)
 			theme->links--;
 			if (!theme->links)
 			{
-// 				display("free theme %lx", theme);
 				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->client);
 			}
 		}
@@ -255,7 +250,7 @@ XA_slider(struct xa_window *w, int which, long total, long visible, long start)
 		if (sl->position != old_pos || sl->length != old_len)
 			sl->flags |= SLIDER_UPDATE;
 
-		ret = (sl->flags & SLIDER_UPDATE) ? 1 : 0; //(sl->position != old_pos || sl->length != old_len);
+		ret = (sl->flags & SLIDER_UPDATE) ? 1 : 0;
 	}
 	return ret;
 }
@@ -338,7 +333,6 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 	{
  		if (!(widg->m.properties & WIP_NOTEXT))
  		{
- 			//DBGif(widg->m.r.xaw_idx == XAW_MENU,(0,"rp2ap_obtree:w=%d:%d,%d,wind=%lx,root=%lx", widg->r.w, wind->r.w, wind->wa.w, wind, root_window ));
 			if( wind != root_window || (cfg.menu_layout == 0 && widg->m.r.xaw_idx == XAW_MENU) )
  				widg->r.w = wind->r.w;
  		}
@@ -358,7 +352,6 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 				{
 					obtree->ob_x += wt->ox;
 					obtree->ob_y += wt->oy;
-					//obtree->ob_width -= (wt->ox + wt->ox);
 				}
 			}
 		}
@@ -379,8 +372,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	int frame = wind->frame;
 
 	DIAG((D_form, NULL, "rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
-		t_widg[widg->m.r.xaw_idx], widg, widg->stuff,
-		widg->m.r.xaw_idx == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
+		t_widg[widg->m.r.xaw_idx], (unsigned long)widg, (unsigned long)widg->stuff,
+		widg->m.r.xaw_idx == XAW_TOOLBAR ? (unsigned long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
 	if (widg->m.r.xaw_idx != XAW_TOOLBAR )
 	{
@@ -460,8 +453,8 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	int frame = wind->frame;
 
 	DIAG((D_form, NULL, "rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
-		t_widg[widg->m.r.xaw_idx], widg, widg->stuff,
-		widg->m.r.xaw_idx == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
+		t_widg[widg->m.r.xaw_idx], (unsigned long)widg, (unsigned long)widg->stuff,
+		widg->m.r.xaw_idx == XAW_TOOLBAR ? (unsigned long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
 	if (widg->m.r.xaw_idx != XAW_TOOLBAR)
 	{
@@ -535,7 +528,7 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 	if (!client) client = C.Aes;
 
 	DIAGS(("obtree_to_wt: look for wt with obtree=%lx for %s",
-		obtree, client->name));
+		(unsigned long)obtree, client->name));
 
 	if (client->fmd.wt && obtree == client->fmd.wt->tree)
 	{
@@ -583,7 +576,7 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 #endif
 	}
 	DIAGS((" obtree_to_wt: return %lx for %s",
-		wt, client->name));
+		(unsigned long)wt, client->name));
 
 
 	return wt;
@@ -598,22 +591,15 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 
 	if (!client) client = C.Aes;
 
-	//if (client == C.Hlp || client == C.Aes)
-	//	BLOG((false, " === Init widget tree %lx, for %s",
-	//		wt, client->name));
-
 	bzero(wt, sizeof(*wt));
 
-// 	display("init_widget_tree: tree %lx", obtree);
 	wt->tree = obtree;
 	wt->owner = client;
 
 	wt->objcr_api = client->objcr_api;
-// 	client->objcr_api->h.links++;
 
 	h = client->objcr_theme;
 	wt->objcr_theme = h;
-// 	h->links++;
 
 	clear_focus(wt);
 	clear_edit(&wt->e);
@@ -624,7 +610,6 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	obtree->ob_x = 100;
 	obtree->ob_y = 100;
 
-// 	ob_area(obtree, aesobj(obtree, 0), &r);
 	obj_area(wt, aesobj(obtree, 0), &r);
 
 	wt->ox = obtree->ob_x - r.x;
@@ -656,14 +641,14 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 	new = kmalloc(sizeof(*new));
 
 	DIAGS((" === Create new widget tree - obtree=%lx, for %s",
-		obtree, client->name));
+		(unsigned long)obtree, client->name));
 
 	if (new)
 	{
 		init_widget_tree(client, new, obtree);
 		new->flags |= WTF_ALLOC;
 	}
-	DIAGS((" return new wt=%lx", new));
+	DIAGS((" return new wt=%lx", (unsigned long)new));
 	return new;
 }
 
@@ -704,7 +689,7 @@ remove_from_wtlist(XA_TREE *wt)
 	if (wt->flags & WTF_STATIC)
 	{
 		DIAGS(("remove_from_wtlist: wt=%lx declared as static - not removed",
-			wt));
+			(unsigned long)wt));
 		return;
 	}
 
@@ -718,84 +703,65 @@ remove_from_wtlist(XA_TREE *wt)
 			wt->next = NULL;
 
 			DIAGS(("remove_from_wtlist: removed wt=%lx from %s list",
-				wt, wt->owner->name));
-			//if (wt->owner == C.Hlp) BLOG((false, "remove_from_wtlist: removed wt=%lx from %s list",
-				//wt, wt->owner->name));
+				(unsigned long)wt, wt->owner->name));
 
 			return;
 		}
 		nwt = &(*nwt)->next;
 	}
 
-	//if (wt->owner == C.Hlp)
-	//	BLOG((false, "remove_from_wtlist: wt=%lx not in %s wtlist",
-	//		wt, wt->owner->name));
-
 	DIAGS(("remove_from_wtlist: wt=%lx not in %s wtlist",
-		wt, wt->owner->name));
+		(unsigned long)wt, wt->owner->name));
 }
 
 STATIC void
 free_wt(XA_TREE *wt)
 {
-	//bool tst = (wt->owner == C.Hlp || wt->owner == C.Aes);
-
-	DIAGS(("free_wt: wt=%lx", wt));
-	//if (tst) BLOG((false, "free_wt: wt=%lx", wt));
+	DIAGS(("free_wt: wt=%lx", (unsigned long)wt));
 #if 0
 	if (wt->links)
 	{
-		BLOG(( 0, "free_wt: links not NULL!! on wt %lx", wt));
+		BLOG(( 0, "free_wt: links not NULL!! on wt %lx", (unsigned long)wt));
 		BLOG((0, "free_wt: links=%d, flags=%lx, ismenu=%s, menuline=%s, owner=%s",
 			wt->links, wt->flags,
 			wt->is_menu ? "Yes" : "No",
 			wt->menu_line ? "Yes" : "No",
 			wt->owner->name));
-		BLOG((0, "free_wt: C.Aes = %lx, C.Hlp = %lx", C.Aes, C.Hlp));
+		BLOG((0, "free_wt: C.Aes = %lx, C.Hlp = %lx", (unsigned long)C.Aes, (unsigned long)C.Hlp));
 	}
 #endif
 	if (wt->flags & WTF_STATIC)
 	{
 		DIAGS(("free_wt: Declared as static!"));
-		//if (tst) BLOG((false, "free_wt: Declared as static!"));
 		return;
 	}
 
 	if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
 	{
-		DIAGS(("  --- freed extra %lx", wt->extra));
-		//if (tst) BLOG((false, "  --- freed extra %lx", wt->extra));
+		DIAGS(("  --- freed extra %lx", (unsigned long)wt->extra));
 		kfree(wt->extra);
 	}
-// #if GENERATE_DIAGS
 	else {
 		DIAGS(("  --- extra not alloced"));
-		//if (tst) BLOG((false, "  --- extra not alloced"));
 	}
-// #endif
 	if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
 	{
 		if (wt->flags & WTF_TREE_CALLOC)
 		{
-			DIAGS(("  --- kfreed obtree %lx", wt->tree));
-			//if (tst) BLOG((false, "  --- kfreed obtree %lx", wt->tree));
+			DIAGS(("  --- kfreed obtree %lx", (unsigned long)wt->tree));
 
 			free_object_tree(wt->owner, wt->tree);
 		}
 		else
 		{
-			DIAGS(("  --- ufreed obtree %lx", wt->tree));
-			//if (tst) BLOG((false, "  --- ufreed obtree %lx", wt->tree));
+			DIAGS(("  --- ufreed obtree %lx", (unsigned long)wt->tree));
 			free_object_tree(C.Aes, wt->tree);
 		}
 		wt->tree = NULL;
 	}
-// #if GENERATE_DIAGS
 	else {
 		DIAGS(("  --- obtree not alloced"));
-		//if (tst) BLOG((false, "  --- obtree not alloced"));
 	}
-// #endif
 	if (wt->lbox)
 	{
 		kfree(wt->lbox);
@@ -803,15 +769,12 @@ free_wt(XA_TREE *wt)
 	}
 	if (wt->flags & WTF_ALLOC)
 	{
-		DIAGS(("  --- freed wt=%lx", wt));
-		//if (tst) BLOG((false, "  --- freed wt=%lx", wt));
+		DIAGS(("  --- freed wt=%lx", (unsigned long)wt));
 	#if 0
 		if (wt->objcr_api)
 		{
 			struct xa_data_hdr *h = wt->objcr_theme;
 
-// 			wt->objcr_api->h.links--;
-// 			h->links--;
 		}
 	#endif
 		kfree(wt);
@@ -820,11 +783,9 @@ free_wt(XA_TREE *wt)
 	{
 		struct xa_client *client = wt->owner;
 		void *s[2];
-		DIAGS(("  --- wt=%lx not alloced", wt));
-		//if (tst) BLOG((false, "  --- wt=%lx not alloced", wt));
+		DIAGS(("  --- wt=%lx not alloced", (unsigned long)wt));
 		s[0] = wt->objcr_api;
 		s[1] = wt->objcr_theme;
-		//bzero(wt, sizeof(*wt));
 		wt->next = NULL;
 		wt->objcr_api = s[0];
 		wt->objcr_theme = s[1];
@@ -840,16 +801,11 @@ remove_wt(XA_TREE *wt, bool force)
 	{
 		if (force || wt->links == 0)
 		{
-			//display("remove_wt: removing %lx (links=%d, force = %d)", wt, wt->links, force);
 			remove_from_wtlist(wt);
 			free_wt(wt);
 			return true;
 		}
-		//else
-		//	display("remove_wt: links = %d", wt->links);
 	}
-	//else
-	//	display("remove_wt: flags =%lx, links = %d", wt->flags, wt->links);
 
 	return false;
 }
@@ -867,7 +823,7 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 	RECT r;
 
 	DIAG((D_wind, wind->owner, "draw_widget: wind handle %d, widget %d (func=%lx)",
-		wind->handle, widg->m.r.xaw_idx, widg->m.r.draw));
+		wind->handle, widg->m.r.xaw_idx, (unsigned long)widg->m.r.draw));
 
 	if (!rl)
 		rl = wind->rect_list.start;
@@ -911,8 +867,6 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 void
 display_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 {
-// 	RECT r;
-
 	if (!(wind->window_status & widg->m.statusmask) && wdg_is_inst(widg))
 	{
 		draw_widget(wind, widg, rl);
@@ -966,8 +920,8 @@ CE_redraw_menu(int lock, struct c_event *ce, short cancel)
 		if (ce->client == mc)
 		{
 			struct xa_rect_list rl = {0, {0, 0, 0, 0} };
-			rl.r.w = get_menu_widg()->r.w;	//C.Aes->std_menu->tree->ob_width;
-			rl.r.h = get_menu_widg()->r.h;	//get_menu_height();
+			rl.r.w = get_menu_widg()->r.w;
+			rl.r.h = get_menu_widg()->r.h;
 			display_widget(lock, root_window, widg, &rl);
 		}
 	#if 1
@@ -1005,10 +959,10 @@ redraw_menu(int lock)
 	if (!rc)
 		rc = C.Aes;
 
-	DIAGS(("redraw_menu: rc = %lx, %s", rc, rc->name));
+	DIAGS(("redraw_menu: rc = %lx, %s", (unsigned long)rc, rc->name));
 
 	widg = get_menu_widg();
-	DIAGS(("redaw_menu: widg = %lx", widg));
+	DIAGS(("redaw_menu: widg = %lx", (unsigned long)widg));
 	mc = ((XA_TREE *)widg->stuff)->owner;
 	if( !mc )
 	{
@@ -1027,7 +981,7 @@ redraw_menu(int lock)
 		{
 			return;
 		}
-		// menubar always top
+		/* menubar always top */
 		rl.r.w = get_menu_widg()->r.w;
 		rl.r.h = get_menu_widg()->r.h;
 
@@ -1035,7 +989,7 @@ redraw_menu(int lock)
 	}
 	else
 	{
-		DIAGS(("redraw_menu: post cevnt (%lx) to owner %s by %s", CE_redraw_menu, mc->name, rc->name));
+		DIAGS(("redraw_menu: post cevnt (%lx) to owner %s by %s", (unsigned long)CE_redraw_menu, mc->name, rc->name));
 		post_cevent(mc,
 			    CE_redraw_menu,
 			    NULL,
@@ -1063,7 +1017,7 @@ iconify_grid(int i)
 	short v_num = (root_window->wa.w - cfg.icnfy_l_x - cfg.icnfy_r_x) / cfg.icnfy_w;
 	short h_num = (root_window->wa.h - cfg.icnfy_t_y - cfg.icnfy_b_y) / cfg.icnfy_h;
 	short start_x, start_y, column, row;
-	RECT ic = {0,0,cfg.icnfy_w, cfg.icnfy_h}; //ICONIFIED_W,ICONIFIED_H};
+	RECT ic = {0,0,cfg.icnfy_w, cfg.icnfy_h};
 
 	switch ((cfg.icnfy_orient & 0xff))
 	{
@@ -1087,7 +1041,6 @@ iconify_grid(int i)
 		case 1:
 		{
 			ic.x = start_x = root_window->wa.w - cfg.icnfy_w - cfg.icnfy_r_x;
-// 			ic.y = start_y = root_window->wa.y + cfg.icnfy_t_y;
 
 			column = i / h_num;
 
@@ -1113,12 +1066,10 @@ iconify_grid(int i)
 			if ((cfg.icnfy_orient & 0x100))
 			{
 				ic.x = ((root_window->wa.x + root_window->wa.w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
-// 				ic.x -= (column * cfg.icnfy_w);
 			}
 			else
 			{
 				ic.x = start_x = root_window->wa.x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
-// 				ic.x += (column * cfg.icnfy_w);
 			}
 			row = i / v_num;
 			if (row)
@@ -1241,7 +1192,6 @@ drag_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 			{
 				pmx = widget_active.m.x;
 				pmy = widget_active.m.y;
-				//mb  = widget_active.m.cstate;
 				rect_dist_xy(wind->owner, pmx, pmy, &r, &d);
 				widget_active.m.x = md->sx;
 				widget_active.m.y = md->sy;
@@ -1354,9 +1304,7 @@ click_title(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 				{
 					if (wind_has_focus(wind)) {
 						send_bottomed(lock, wind);
-// 						display("bottomed nolist");
 					} else {
-// 						display("topped nolist");
 						send_topped(lock, wind);
 					}
 				}
@@ -1599,7 +1547,7 @@ size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, Widge
 	    || wind->send_message == NULL
 	    || wind->owner->options.nolive)
 	{
-		int xy = sizer ? SE : compass(16, md->x, md->y, r); //compass(16, widg->mx, widg->my, r);
+		int xy = sizer ? SE : compass(16, md->x, md->y, r);
 		short maxw, maxh;
 
 		if (wind->active_widgets & USE_MAX)
@@ -1617,8 +1565,8 @@ size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, Widge
 			   rect_dist_xy(wind->owner, md->x, md->y, &r, &d),
 			   wind->min.w,
 			   wind->min.h,
-			   maxw, //wind->max.w,
-			   maxh, //wind->max.h,
+			   maxw,
+			   maxh,
 			   &r);
 		if (!(wind->owner->status & CS_NO_SCRNLOCK))
 			unlock_screen(wind->owner->p);
@@ -1702,8 +1650,8 @@ size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, Widge
 				check_wh_cp(&r, xy,
 					    wind->min.w,
 					    wind->min.h,
-					    maxw, //wind->max.w,
-					    maxh); //wind->max.h);
+					    maxw,
+					    maxh);
 			}
 
 			size = r.w != wind->r.w || r.h != wind->r.h;
@@ -1938,10 +1886,8 @@ cwinctxt(struct c_event *ce, long arg)
 	struct xa_window *ctxtwin = ce->ptr1;
 
 	if ((wind && wind == ctxtwin) || (client && ctxtwin && ctxtwin->owner == client)) {
-// 		display("deleting pending winctxt popup");
 		return true;
 	} else {
-// 		display("skipping pending winctxt popup");
 		return false;
 	}
 }
@@ -1959,17 +1905,8 @@ cancel_winctxt_popup(int lock, struct xa_window *wind, struct xa_client *client)
 
 	cancel_CE(C.Hlp, CE_winctxt, cwinctxt, (long)&parms);
 
-// 	display("cancel_winctxt_popup: wind = %d(%lx), owner = '%s', client '%s'",
-// 		wind ? wind->handle : -2, wind, wind ? wind->owner->proc_name : "None",
-// 		client ? client->proc_name : "none");
-
-// 	display("Ctxtwin = %lx, owner = %s", Ctxtwin, Ctxtwin ? Ctxtwin->owner->proc_name : "none");
-// 	if (Ctxtwin && Ctxtwin == wind)
-// 		display(" MATCHING WINDOWS");
-
 	if (Ctxtwin && ((Ctxtwin == wind) || (client && client == Ctxtwin->owner)))
 	{
-// 		display("poping out winctxt popup on wind %d for %s", wind->handle, wind->owner->proc_name);
 		Ctxtwin = NULL;
 		popout(TAB_LIST_START);
 		C.Hlp->usr_evnt = 2;
@@ -2069,14 +2006,12 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 			wind = window_list;
 			while (wind && wind != root_window)
 			{
-				//d1 = 0;
 				if (wind->window_status & XAWS_OPEN)
 				{
 					s = wind->owner->name;
 					while (*s == ' ') s++;
 					if( *s )
 					{
-						//if( *!isalnum( *s ) )
 						pu->titles[i] = d;
 						pu->winds[i] = wind;
 						*d++ = ' ';
@@ -2084,7 +2019,6 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 						{
 							if (*s)
 							{
-								//d1 = d;
 								*d++ = *s++;
 							}
 							else *d++ = ' ';
@@ -2217,7 +2151,6 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 						{
 							if (*t[0] == (char)i)
 							{
-// 								display("attach %d to %d-'%s'", i, attachto, (*t)+1);
 								attach_menu(0, ce->client, wct->wt[0], attachto, &wct->xmn[i], onopen_wctxt[attachto], wind);
 							}
 							t++;
@@ -2249,29 +2182,20 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 			{
 				if (result.menu.mn_item > 0)
 				{
-// 					ndisplay(" selected object %d in %lx", result.menu.mn_item, result.menu.mn_tree);
-
 					if (result.at)
 					{
-// 						display(" which is attached to %d in %lx", result.at->to_item, result.at->to);
 						obnum = result.at->to_item;
 						dowhat = result.menu.mn_item;
 					}
 					else
 					{
 						obnum = result.menu.mn_item;
-// 						display(" --");
 					}
-// 					display("selection of object %d was done", result.mn_item);
 				}
-// 				else display("no selection made");
 			}
-// 			else
-// 				display(" hmmm...");
 
 			if (TAB_LIST_START && TAB_LIST_START->client == ce->client)
 			{
-// 				display("whoopsiedaisies!");
 				popout(TAB_LIST_START);
 			}
 
@@ -2301,8 +2225,10 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 
 								if (wind)
 								{
-									//S.focus = 0;
-									//if( wind != TOP_WINDOW )	/* would untop */
+#if 0
+									S.focus = 0;
+									if( wind != TOP_WINDOW )	/* would untop */
+#endif
 										top_window(0, true, true, wind);
 								}
 								else
@@ -2462,7 +2388,6 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 									{
 										if (wind->owner == cl && !is_iconified(wind))
 										{
-// 											display("iconify %d", wind->handle);
 											iconify_action(0, wind, NULL);
 											wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
 										}
@@ -2497,7 +2422,6 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 									{
 										if (wind->owner != cl && !is_iconified(wind))
 										{
-// 											display("iconify %d", wind->handle);
 											iconify_action(0, wind, NULL);
 											wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
 										}
@@ -2602,7 +2526,6 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 					}
 				}
 			}
-// 			display(" CE_winctxt clear Ctxtwin - obnum = %d", obnum);
 			Ctxtwin = NULL;
 		}
 bailout:
@@ -2646,9 +2569,6 @@ bailout:
  * HR 181201: use widg->state (right/left click) to determine the direction of the arrow effect.
  *            double click on an arrow sends WM_xSLIDE with the apropriate limit.
  */
-
-//static struct xa_client *do_widget_repeat_client = NULL;
-//static int do_widget_repeat_lock;
 
 void
 do_widget_repeat(void)
@@ -2715,7 +2635,7 @@ click_scroll(int lock, struct xa_window *wind, struct xa_widget *widg, const str
 					x = slider->ar.y;
 					mp = my;
 				}
-				else //if( dir == 2 )
+				else
 				{
 					w = slider->ar.w;
 					x = slider->ar.x;
@@ -3005,7 +2925,7 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 #if GENERATE_DIAGS
 	OBJECT *root = rp_2_ap(wind, widg, NULL);
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d, form: %d/%d",
-		wind->handle, wt, edit_item(&wt->e), wt->e.pos, root->ob_x, root->ob_y));
+		wind->handle, (unsigned long)wt, edit_item(&wt->e), wt->e.pos, root->ob_x, root->ob_y));
 #endif
 
 	if (wind->nolist && (wind->dial & created_for_POPUP))
@@ -3033,15 +2953,11 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 void
 calc_work_area(struct xa_window *wind)
 {
-// 	struct xa_widget_row *rows = wind->widg_rows;
-// 	RECT r = wind->rc;
 	int thin = wind->thinwork;
 	int frame = wind->frame;
 	int t_margin, b_margin, l_margin, r_margin;
 	short wa_borders = 0;
 	bool shaded = wind->window_status & XAWS_SHADED;
-
-// 	wind->wa = r;
 
 	/* a colour work area frame is larger to allow for the
 	 * fancy borders :-) unless thinwork has been specified
@@ -3150,7 +3066,7 @@ calc_work_area(struct xa_window *wind)
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
 	 */
-	DIAG((D_widg, wind->owner, "workarea %d: %d/%d,%d/%d", wind->handle, wind->wa));
+	DIAG((D_widg, wind->owner, "workarea %d: %d/%d,%d/%d", wind->handle, wind->wa.x, wind->wa.y, wind->wa.w, wind->wa.h));
 }
 
 /*
@@ -3159,7 +3075,7 @@ calc_work_area(struct xa_window *wind)
 void
 free_xawidget_resources(struct xa_widget *widg)
 {
-	DIAGS(("free_xawidget_resources: widg=%lx", widg));
+	DIAGS(("free_xawidget_resources: widg=%lx", (unsigned long)widg));
 	if (widg->stuff)
 	{
 		switch (widg->stufftype)
@@ -3168,11 +3084,9 @@ free_xawidget_resources(struct xa_widget *widg)
 			{
 				XA_TREE *wt = widg->stuff;
 				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
-					wt, widg));
+					(unsigned long)wt, (unsigned long)widg));
 
 				wt->links--;
-// 				if (d) display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
-// 					wt, wt->links, widg);
 
 				if (!remove_wt(wt, false))
 				{
@@ -3193,7 +3107,7 @@ free_xawidget_resources(struct xa_widget *widg)
 				if (widg->flags & XAWF_STUFFKMALLOC)
 				{
 					DIAGS(("  --- release stuff=%lx in widg=%lx",
-						widg->stuff, widg));
+						(unsigned long)widg->stuff, (unsigned long)widg));
 					kfree(widg->stuff);
 					widg->stuff = NULL;
 				}
@@ -3204,7 +3118,7 @@ free_xawidget_resources(struct xa_widget *widg)
 #if GENERATE_DIAGS
 	else
 		DIAGS(("  --- stuff=%lx not alloced in widg=%lx",
-			widg->stuff, widg));
+			(unsigned long)widg->stuff, (unsigned long)widg));
 #endif
 	widg->stufftype = 0;
 	widg->stuff = NULL;
@@ -3231,7 +3145,9 @@ stdl_iconify = {RT,			XAW_ICONIFY, ICONIFIER, 0,				WIDG_ICONIFY,WIP_ACTIVE, fre
 stdl_hide    = {RT,			XAW_HIDE,    HIDER,     XAWS_ICONIFIED,			WIDG_HIDE,   WIP_ACTIVE, free_xawidget_resources },
 stdl_title   = {LT | R_VARIABLE,	XAW_TITLE,   NAME,      0,				0,           WIP_ACTIVE, free_xawidget_resources },
 stdl_notitle = {LT | R_VARIABLE,	XAW_TITLE,   NAME,      0,				0,                    0, free_xawidget_resources },
-//stdl_resize  = {RB,			XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
+#if 0
+stdl_resize  = {RB,			XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
+#endif
 stdl_resize  = {RB,			XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
 stdl_nresize = {RT/*RB*/,		XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,            0, free_xawidget_resources },
 stdl_uscroll = {LT/*RT*/,		XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_UP,     WIP_ACTIVE, free_xawidget_resources },
@@ -3243,7 +3159,9 @@ stdl_dscroll = {RT/*RB*/,		XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	W
 stdl_lscroll = {LB,			XAW_LFLN,    LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_LEFT,   WIP_ACTIVE, free_xawidget_resources },
 stdl_lpage   = {NO,			XAW_LFPAGE,  LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
 stdl_hslide  = {LB | R_VARIABLE,	XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-//stdl_nhslide = {LB | R_VARIABLE,	XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                    0, free_xawidget_resources },
+#if 0
+stdl_nhslide = {LB | R_VARIABLE,	XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                    0, free_xawidget_resources },
+#endif
 stdl_rpage   = {NO,			XAW_RTPAGE,  RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
 stdl_rscroll = {RB,			XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_RIGHT,  WIP_ACTIVE, free_xawidget_resources },
 stdl_info    = {LT | R_VARIABLE,	XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
@@ -3260,7 +3178,9 @@ static XA_WIDGET_LOCATION *stdl[] =
 	&stdl_hide,
 	&stdl_title,
 	&stdl_notitle,
-	//stdl_resize
+#if 0
+	&stdl_resize
+#endif
 	&stdl_resize,
 	&stdl_nresize,
 	&stdl_uscroll,
@@ -3272,7 +3192,9 @@ static XA_WIDGET_LOCATION *stdl[] =
 	&stdl_lscroll,
 	&stdl_lpage,
 	&stdl_hslide,
-	//stdl_nhslid
+#if 0
+	&stdl_nhslid
+#endif
 	&stdl_rpage,
 	&stdl_rscroll,
 	&stdl_info,
@@ -3489,7 +3411,7 @@ rp_2_ap_row(struct xa_window *wind)
 					widg = row->start;
 					while (widg)
 					{
-						if (widg->m.r.pos_in_row & R_VARIABLE) //widg->loc.relative_type & R_VARIABLE)
+						if (widg->m.r.pos_in_row & R_VARIABLE)
 						{
 							widg->ar.w = widg->r.w = (l - widg->ar.x);
 						}
@@ -3516,10 +3438,10 @@ rp_2_ap_row(struct xa_window *wind)
 				l = y2 - row->rxy;
 				while (widg)
 				{
-					if (widg->m.r.pos_in_row & R_VARIABLE) //widg->loc.relative_type & R_VARIABLE)
+					if (widg->m.r.pos_in_row & R_VARIABLE)
 						v++;
 
-					switch ((widg->m.r.pos_in_row & (R_RIGHT|R_BOTTOM|R_CENTER))) //((widg->loc.relative_type & (R_RIGHT|R_BOTTOM|R_CENTER)))
+					switch ((widg->m.r.pos_in_row & (R_RIGHT|R_BOTTOM|R_CENTER)))
 					{
 						case 0:
 						{
@@ -3560,7 +3482,7 @@ rp_2_ap_row(struct xa_window *wind)
 					widg = row->start;
 					while (widg)
 					{
-						if (widg->m.r.pos_in_row & R_VARIABLE) //widg->loc.relative_type & R_VARIABLE)
+						if (widg->m.r.pos_in_row & R_VARIABLE)
 						{
 							widg->ar.h = widg->r.h = (l - widg->ar.y);
 						}
@@ -3608,7 +3530,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		short diff;
 		short orient = rows->rel & XAR_VERT;
 		short placement = rows->rel & XAR_PM;
-// 		bool d = (!strnicmp(wind->owner->proc_name, "ergo_hlp", 8) && !(wind->dial & created_for_CALC));
 
 		/*
 		 * See if this widget is already in this row
@@ -3618,8 +3539,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 
 		if (nxt_w && (nxt_w != widg))
 		{
-// 			if (d) display("adding %lx to rownr %d", widg->m.r.tp, rows->rownr);
-
 			/*
 			 * Widget not in row, link it in
 			 */
@@ -3637,7 +3556,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		}
 		else if (!nxt_w)
 		{
-// 			if (d) display("row %d, tp = %lx", rows->rownr, widg->m.r.tp);
 			/*
 			 * This is the first widget in this row, and thus we also init its Y
 			 */
@@ -3656,8 +3574,10 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						else
 						{
 							rows->r.y = offsets->y;
-// 							wind->bd.y -= offsets->y;
-// 							wind->bd.h -= offsets->h;
+#if 0
+							wind->bd.y -= offsets->y;
+							wind->bd.h -= offsets->h;
+#endif
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
 							rows->r.x = nxt_r->r.x + nxt_r->r.w;
@@ -3678,7 +3598,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						else
 						{
 							rows->r.y = offsets->h;
-// 							wind->bd.h -= offsets->h;
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
 							rows->r.x = nxt_r->r.x + nxt_r->r.w;
@@ -3705,8 +3624,10 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						else
 						{
 							rows->r.x = offsets->x;
-// 							wind->bd.x -= offsets->x;
-// 							wind->bd.w -= offsets->w;
+#if 0
+							wind->bd.x -= offsets->x;
+							wind->bd.w -= offsets->w;
+#endif
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
 							rows->r.y = nxt_r->r.y + nxt_r->r.h;
@@ -3726,7 +3647,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						else
 						{
 							rows->r.x = offsets->w;
-// 							wind->bd.w -= offsets->w;
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
 							rows->r.y = nxt_r->r.y + nxt_r->r.h;
@@ -3754,8 +3674,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		 */
 		else
 		{
-			widg->r.w = screen.c_max_w; //cfg.widg_w;
-			widg->r.h = screen.c_max_h; //cfg.widg_h;
+			widg->r.w = screen.c_max_w;
+			widg->r.h = screen.c_max_h;
 		}
 		/*
 		 * If Widget height is larger than largest one in this row,
@@ -3815,7 +3735,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 			else
 				widg->r.h = rows->r.h;
 
-// 			if (d) display("rownr %d, %d/%d/%d/%d", rows->rownr, rows->r);
 		}
 		else
 		{
@@ -3923,7 +3842,6 @@ create_widg_layout(struct xa_window *wind)
 {
 	XA_WIND_ATTR tp;
 	struct nwidget_row *rows;
-// 	struct xa_widget_theme *theme = wind->widget_theme;
 	struct widget_theme *theme = wind->active_theme;
 	int nrows;
 	struct xa_widget_row *xa_rows, *ret = NULL;
@@ -4062,7 +3980,6 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
  * Setup the required 'standard' widgets for a window. These are the ordinary GEM
  * behaviours. These can be changed for any given window if you want special behaviours.
  */
-//position_widget(struct xa_widget *w, struct xa_widget_row *strt_rows, void(*widg_size)(struct xa_widget *widg))
 void
 standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 {
@@ -4212,8 +4129,6 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 							dm.r.draw = unused->draw;
 							widg = make_widget(wind, &dm, NULL, offsets);
 							this_tp = 0;
-// 							if (!(wind->dial & created_for_CALC))
-// 								display("install notused widget-drawing for %lx", this_tp);
 						}
 						tp_deps += 2;
 					}
@@ -4241,7 +4156,7 @@ display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip
 	rp_2_ap(wind, widg, NULL);
 
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d",
-		wind->handle, wt, edit_item(&wt->e), wt->e.pos));
+		wind->handle, (unsigned long)wt, edit_item(&wt->e), wt->e.pos));
 
 	draw_object_tree(0, wt, NULL, wind->vdi_settings, aesobj(wt->tree, widg->start), 100, NULL, 0);
 
@@ -4429,7 +4344,7 @@ set_toolbar_widget(int lock,
 	RECT or,wr;
 
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
-		wind->handle, wind->owner->name, obtree, edobj.item));
+		wind->handle, wind->owner->name, (unsigned long)obtree, edobj.item));
 
 	if (widg->stuff)
 	{
@@ -4440,7 +4355,6 @@ set_toolbar_widget(int lock,
 		owt->wind = NULL;
 		owt->zen  = false;
 		owt->links--;
-	//	display("set_toolbar_widg: links-- on %lx (links=%d)", owt, owt->links);
 	}
 
 	if (owner)
@@ -4481,8 +4395,6 @@ set_toolbar_widget(int lock,
 
 	if (flags & (STW_COC))
 		center_rect(&or);
-
-	//display("set_toolbar_widg: link++ on %lx (links=%d)", wt, wt->links);
 
 	/*
 	 * Ozk: if edobj == -2, we want to look for an editable and place the
@@ -4529,8 +4441,7 @@ remove_widget(int lock, struct xa_window *wind, int tool)
 {
 	XA_WIDGET *widg = get_widget(wind, tool);
 
-	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
-	//display("remove_widget %d: 0x%lx", tool, widg->stuff);
+	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, (unsigned long)widg->stuff));
 
 	if (widg->m.r.freepriv)
 		(*widg->m.r.freepriv)(wind, widg);
@@ -5028,7 +4939,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 					if( f == (XAW_TOOLBAR+1) )
 					{
-						struct widget_tree *wt = hwidg->stuff;	//get_widget(wind, XAW_TOOLBAR)->stuff;
+						struct widget_tree *wt = hwidg->stuff;
 
 						if( wt->extra && (wt->flags & WTF_EXTRA_ISLIST) )
 						{
@@ -5049,7 +4960,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 					}
 					if( (hwidg && !hwidg->owner)
 #if WITH_BBL_HELP
-						&& wind != bgem_window	// ? root_window,menu_window ?
+						&& wind != bgem_window	/* ? root_window,menu_window ? */
 #endif
 						)
 					{

@@ -65,26 +65,23 @@ static char *accex[ 8] = { ".acc", NULL };
 static void
 display_env(char **env, int which)
 {
-	//if (D.debug_level > 2 && D.point[D_shel])
+	if (which == 1)
 	{
-		if (which == 1)
+		const char *e = *env;
+		BLOG((0,"Environment as superstring:\n"));
+		while (*e)
 		{
-			const char *e = *env;
-			BLOG((0,"Environment as superstring:\n"));
-			while (*e)
-			{
-				BLOG((0," -- %lx='%s'", e, e));
-				e += strlen(e)+1;
-			}
+			BLOG((0," -- %lx='%s'", (unsigned long)e, e));
+			e += strlen(e)+1;
 		}
-		else
+	}
+	else
+	{
+		BLOG((0,"Environment as row of pointers:"));
+		while (*env)
 		{
-			BLOG((0,"Environment as row of pointers:"));
-			while (*env)
-			{
-				BLOG((0," -- %lx='%s'", *env, *env));
-				env++;
-			}
+			BLOG((0," -- %lx='%s'", (unsigned long)*env, *env));
+			env++;
 		}
 	}
 }
@@ -148,7 +145,7 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 	long l;
 	char *argtail;
 
-	DIAGS(("make_argv: %lx, %ld, %lx, %lx", p_tail, tailsize, command, argvtail));
+	DIAGS(("make_argv: %lx, %ld, %lx, %lx", (unsigned long)p_tail, tailsize, (unsigned long)command, (unsigned long)argvtail));
 
 	l = count_env(strings, 0);
 	DIAG((D_shel, NULL, "count_env: %ld", l));
@@ -173,7 +170,6 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 
 		argvtail[0] = 0x7f;
 		DIAGS(("ARGV constructed"));
-		//display_env(strings, 0);
 	}
 	else
 		DIAGS(("ARGV: out of memory"));
@@ -240,8 +236,6 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
 	if (!(cpopts->mode & CREATE_PROCESS_OPTS_DEFDIR))
 	{
-	//	display("defdir '%s'", defdir);
-	//	display("apphom '%s'", caller->home_path);
 		if (caller == C.Aes || (drv >= 0 &&
 							    ((d_pathconf(caller->home_path, DP_CASE) || d_pathconf(defdir, DP_CASE)) ?
 								!stricmp(caller->home_path, defdir) : !strcmp(caller->home_path, defdir))))
@@ -249,13 +243,10 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 			defdir[0] = drv + 'a';
 			defdir[1] = ':';
 			strcpy(defdir + 2, path);
-	//		display("use path in cmd as defdir '%s'", defdir);
 		}
 
 		cpopts->mode |= CREATE_PROCESS_OPTS_DEFDIR;
 		cpopts->defdir = defdir;
-	//	display("Set defdir to '%s' for %s", defdir, caller ? caller->name : "no caller");
-	//	display("defdir caller '%s'", caller ? caller->home_path : "no caller");
 	}
 	return drv;
 }
@@ -316,7 +307,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 	char *tail = argvtail, *t;
 	int ret = 0;
 	int drv = 0;
-	Path path, name, defdir;//, cur;
+	Path path, name, defdir;
 	struct proc *p = NULL;
 	int type = 0, follow = 0;
 
@@ -324,13 +315,13 @@ launch(int lock, short mode, short wisgr, short wiscr,
 	if (caller)
 	{
 		DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
-			c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
-		DIAG((D_shel, caller, " --- parm=%lx, tail=%lx", parm, tail));
+			c_owner(caller), mode, wisgr, wiscr, (unsigned long)parm, (unsigned long)p_tail));
+		DIAG((D_shel, caller, " --- parm=%lx, tail=%lx", (unsigned long)parm, (unsigned long)tail));
 	}
 	else
 	{
 		DIAG((D_shel, caller, "launch for non AES process (pid %ld): 0x%x,%d,%d,%lx,%lx",
-			p_getpid(), mode, wisgr, wiscr, parm, p_tail));
+			p_getpid(), mode, wisgr, wiscr, (unsigned long)parm, (unsigned long)p_tail));
 	}
 #endif
 
@@ -365,7 +356,6 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		}
 		if (x_mode & SW_DEFDIR)
 		{
-		//	display("x_modedefdir '%s' for %s", x_shell.defdir, caller ? caller->name : "no caller");
 			cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
 			cpopts.defdir = x_shell.defdir;
 		}
@@ -418,7 +408,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 			DIAG((D_shel, NULL, " -- longtailsize=%ld", longtail));
 			tailsize = longtail;
 			tail = kmalloc(tailsize + 2);
-			DIAG((D_shel, NULL, " -- ltail=%lx", tail));
+			DIAG((D_shel, NULL, " -- ltail=%lx", (unsigned long)tail));
 			if (!tail)
 				return 0;
 			strncpy(tail + 1, p_tail + 1, tailsize);
@@ -430,8 +420,8 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		{
 			tailsize = (unsigned long)(unsigned char)p_tail[0];
 			DIAG((D_shel, NULL, " -- tailsize1 = %ld", tailsize));
-			tail = kmalloc(126); //tail = kmalloc(tailsize + 2);
-			DIAG((D_shel, NULL, " -- tail=%lx", tail));
+			tail = kmalloc(126);
+			DIAG((D_shel, NULL, " -- tail=%lx", (unsigned long)tail));
 			if (!tail)
 				return 0;
 			if (tailsize > 124)
@@ -726,7 +716,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 			/* accsize */
 			size = 256 + b->p_tlen + b->p_dlen + b->p_blen;
 
-			DIAGS(("Copy accstart to 0x%lx, size %lu", (char *)b + size, (long)accend - (long)accstart));
+			DIAGS(("Copy accstart to 0x%lx, size %lu", (unsigned long)b + size, (long)accend - (long)accstart));
 			memcpy((char *)b + size, accstart, (long)accend - (long)accstart);
 			cpushi((char *)b + size, (long)accend - (long)accstart);
 
@@ -766,7 +756,9 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		 * TODO: add XaAES extension that don't do this.
 		 */
 
-// 		p->ppid = C.Aes->p->pid;
+#if 0
+		p->ppid = C.Aes->p->pid;
+#endif
 
 		if (x_mode & SW_PRENICE)
 		{
@@ -788,13 +780,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		 */
 		DIAGS((" -- attaching extension"));
 		info = attach_extension(p, XAAES_MAGIC_SH, PEXT_COPYONSHARE | PEXT_SHAREONCE, sizeof(*info),
-					&info_cb); //xaaes_cb_vector_sh_info);
-
-// 		if (!(strnicmp(p->name, "qed", 3)))
-// 		{
-// 			struct module_callback *cb = &info_cb; //xaaes_cb_vector_sh_info;
-// 			disp_cb(cb);
-// 		}
+					&info_cb);
 
 		if (info)
 		{
@@ -838,7 +824,7 @@ out:
 		kfree(save_tail);
 
 	DIAG((D_shel, 0, "Launch for %s returns child %d (bp 0x%lx)",
-		c_owner(caller), ret, p ? p->p_mem->base : NULL));
+		c_owner(caller), ret, (unsigned long)(p ? p->p_mem->base : NULL)));
 	DIAG((D_shel, 0, "Remove ARGV"));
 
 	/* Remove ARGV */
@@ -985,7 +971,7 @@ XA_shel_write(int lock, struct xa_client *client, AESPB *pb)
 					case ENVIRON_SIZE:
 					{
 						long ct = count_env(strings, NULL);
-						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 0) -- count = %d", ct));
+						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 0) -- count = %ld", ct));
 						pb->intout[0] = ct;
 						break;
 					}
@@ -1018,7 +1004,7 @@ XA_shel_write(int lock, struct xa_client *client, AESPB *pb)
 			{
 				if (client)
 				{
-					client->swm_newmsg |= wisgr; //client->apterm = (wisgr & 1) != 0;
+					client->swm_newmsg |= wisgr;
 				}
 				pb->intout[0] = 1;
 				break;
@@ -1112,7 +1098,7 @@ XA_shel_read(int lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = 0;
 
 	DIAG((D_shel, client, "shel_read: n='%s', t=%d'%s'",
-		pb->addrin[0], *(char *)pb->addrin[1], (char *)pb->addrin[1]+1));
+		(char *)pb->addrin[0], *(char *)pb->addrin[1], (char *)pb->addrin[1]+1));
 
 	return XAC_DONE;
 }
@@ -1365,7 +1351,6 @@ shell_find(int lock, struct xa_client *client, char *fn)
 							cwd[n-1] = '\0';
 						cwd[n] = '\0';
 
-	// 					sprintf(path, sizeof(path), "%s\\%s", cwd + f, fn);
 						r = wc_stat64(0, cwd + f, fn, &st, result);
 						DIAGS(("[3]  --   try: '%s\\%s' :: %ld", cwd + f, fn, r));
 						if (r == 0)
@@ -1408,7 +1393,7 @@ shell_find(int lock, struct xa_client *client, char *fn)
 		path = NULL;
 	}
 
-	DIAGS((" - %lx", path));
+	DIAGS((" - %lx", (unsigned long)path));
 	return path;
 }
 
@@ -1653,6 +1638,7 @@ lookup_proc_name(const char *name)
 	return client;
 }
 #endif
+
 #if INCLUDE_UNUSED
 unsigned long
 XA_shel_help(int lock, struct xa_client *client, AESPB *pb)
@@ -1750,11 +1736,11 @@ XA_shel_help(int lock, struct xa_client *client, AESPB *pb)
 			server = lookup_proc_name(help->name);
 			if (server)
 			{
-				// if running send VA_START with sh_hfile/sh_hkey
+				/* if running send VA_START with sh_hfile/sh_hkey */
 			}
 			else if (help->path)
 			{
-				// if not running start helpserver, argv with sh_hfile/sh_hkey
+				/* if not running start helpserver, argv with sh_hfile/sh_hkey */
 			}
 		}
 		else

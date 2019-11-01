@@ -67,7 +67,7 @@ cXA_button_event(int lock, struct c_event *ce, short cancel)
 
 	DIAG((D_button, client, "cXA_button_event for %s - %d/%d, state=%d, clicks=%d - ptr1=%lx, ptr2=%lx, %lx/%lx",
 		client->name, md->x, md->y, md->state, md->clicks,
-		ce->ptr1, ce->ptr2, wind, md));
+		(unsigned long)ce->ptr1, (unsigned long)ce->ptr2, (unsigned long)wind, (unsigned long)md));
 
 	if (!wind)
 	{
@@ -189,7 +189,7 @@ cXA_deliver_button_event(int lock, struct c_event *ce, short cancel)
 			widg = get_widget(wind, XAW_ICONIFY);
 
 		DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s (wind=%lx, widg=%lx)",
-			ce->client->name, wind, widg));
+			ce->client->name, (unsigned long)wind, (unsigned long)widg));
 
 		/*
 		 * Double click on a iconified window will uniconify

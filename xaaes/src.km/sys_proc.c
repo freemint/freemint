@@ -55,13 +55,13 @@ struct module_callback xaaes_cb_vector =
 static void _cdecl
 xaaes_share(void *_client, struct proc *from, struct proc *to)
 {
-	DIAGS(("xaaes_share: %lx", _client));
+	DIAGS(("xaaes_share: %lx", (unsigned long)_client));
 }
 
 static void _cdecl
 xaaes_release(void *_client)
 {
-	DIAGS(("xaaes_release: %lx", _client));
+	DIAGS(("xaaes_release: %lx", (unsigned long)_client));
 }
 
 
@@ -160,7 +160,6 @@ info_share(void *_info, struct proc *from, struct proc *to)
 		info->rppid = from->pid;
 		info->shel_write = false;
 	}
-// 	display("info_share %lx", _info);
 }
 
 
@@ -171,8 +170,7 @@ info_release(void *_info)
 	struct shel_info *info = _info;
 	struct proc *p = get_curproc();
 
-	DIAGS(("info_release: releasing 0x%lx", info));
-// 	display("info_release: releasing 0x%lx", info);
+	DIAGS(("info_release: releasing 0x%lx", (unsigned long)info));
 
 	if (info->tail_is_heap && info->cmd_tail && !(p->p_flag & P_FLAG_SLB << 8))
 	{
@@ -187,7 +185,7 @@ info_release(void *_info)
 
 		if( !(*x == 0x7f || *(x-1) < 130 ) || *(x-1) > MAX_CMDLEN || !p || p->pid != info->reserved )
 		{
-			BLOG((0,"info_release:kfree(%lx)->%lx:%ld): pid=%d:%d: error", x, *x, *(x-1), info->reserved, p ? p->pid : -1 ));
+			BLOG((0,"info_release:kfree(%lx)->%lx:%ld): pid=%d:%d: error", (unsigned long)x, *x, *(x-1), info->reserved, p ? p->pid : -1 ));
 			return;
 		}
 		kfree(info->cmd_tail);
@@ -199,7 +197,6 @@ info_on_exit(void *_info, struct proc *p, int nr)
 {
  	struct xa_client *c = lookup_extension(p, XAAES_MAGIC);
 
-// 	display("info_on_exit: nr=%d, c=%lx, %s", nr, c, p ? p->name : "What?");
 	DIAGS(("info_on_exit for %u (signal %u)", p->pid, nr));
 
 	/* Ozk:
@@ -215,22 +212,30 @@ info_on_exit(void *_info, struct proc *p, int nr)
 static void _cdecl
 info_on_exec(void *_info, struct proc *p)
 {
-// 	display("info_on_exec: (info = %lx) %d", _info, p->pid);
+	(void)_info;
+	(void)p;
 }
 
 static void _cdecl
 info_on_fork(void *_info, struct proc *p, long flags, struct proc *child)
 {
-// 	display("info_on_fork: (info = %lx) %d forks to %d (new = %lx)", _info, p->pid, child->pid, new);
+	(void)_info;
+	(void)p;
+	(void)flags;
+	(void)child;
 }
 
 static void _cdecl
 info_on_stop(void *_info, struct proc *p, unsigned short nr)
 {
-// 	display("info_on_stop: (info = %lx) pid: %d", _info, p->pid);
+	(void)_info;
+	(void)p;
+	(void)nr;
 }
 static void _cdecl
 info_on_signal(void *_info, struct proc *p, unsigned short nr)
 {
-// 	display("info_on_signal: (info = %lx) pid: %d", _info, p->pid);
+	(void)_info;
+	(void)p;
+	(void)nr;
 }

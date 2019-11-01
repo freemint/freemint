@@ -60,7 +60,7 @@ bootlog(short disp, const char *fmt, ...)
 	va_list args;
 	long l;
 	int lvl;
-	short dlvl = disp >> 1, llvl = C.loglvl;	// >> 1;
+	short dlvl = disp >> 1, llvl = C.loglvl;
 	disp = (disp & 1) | (C.loglvl & 2);
 
 	if( !disp && llvl <= dlvl )
@@ -75,8 +75,6 @@ bootlog(short disp, const char *fmt, ...)
 
 	if( llvl > dlvl )
 	{
-		//DEBUG((buf));
-
 		buf[l] = '\n';
 #if GENERATE_DIAGS
 		if (D.debug_file)
@@ -192,7 +190,7 @@ struct pr_info{
  *
  */
 #define N_PRINF	32
-int prof_acc( char *name, enum prof_cmd cmd, int rv )
+int prof_acc( const char *name, enum prof_cmd cmd, int rv )
 {
 	static struct pr_info PrInfo[N_PRINF];
 	static struct pr_info MePrInfo;
@@ -235,8 +233,6 @@ int prof_acc( char *name, enum prof_cmd cmd, int rv )
 
 	break;
 	case 2:	/* start name, init if new */
-		//profile( "prof_acc: start: %s(%lx) f=%d i=%d", name, name, f, i );
-
 		if( f == -1 ){
 
 			for( i = 0; i < N_PRINF && PrInfo[i].name; i++ );
@@ -254,17 +250,14 @@ int prof_acc( char *name, enum prof_cmd cmd, int rv )
 			f = i;
 		}
 		if( f >= 0 ){
-			//Tgettimeofday( &tv, 0 );
 			PrInfo[f].sms = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
 		}
 	break;
 	case 3:	/* stop name */
 		if( f >= 0 ){
-			//Tgettimeofday( &tv, 0 );
 			ms = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
 			PrInfo[f].ms += ms - PrInfo[f].sms;
 			PrInfo[f].calls++;
-			//profile( "prof_acc: stop: %s ms=%ld", PrInfo[f].name, PrInfo[f].ms );
 		}
 	break;
 	case 4:	/* print all */
@@ -313,7 +306,7 @@ int prof_acc( char *name, enum prof_cmd cmd, int rv )
  * t = 0 closes the file
  */
 void
-profile( char *t, ...)
+profile( const char *t, ...)
 {
   static struct timeval tv1 = {0,0};
   struct timeval tv2;
@@ -382,7 +375,7 @@ profile( char *t, ...)
 
 }
 
-#endif	//PROFILING
+#endif	/* PROFILING*/
 
 #if GENERATE_DIAGS
 
@@ -396,7 +389,6 @@ const char *D_cl = "CONTROL: %d::%d, %d::%d, %d::%d\n";
 const char *D_fl = "%s,%d: ";
 const char *D_flu = "%ld,%d - %s,%d: ";
 
-// #endif
 void
 show_bits(unsigned short data, char *prf, char *t[], char *x)
 {
@@ -420,51 +412,42 @@ show_bits(unsigned short data, char *prf, char *t[], char *x)
 			x[i] = ',';
 	}
 }
-// #if GENERATE_DIAGS
 
-char *
+const char *
 w_owner(struct xa_window *w)
 {
-	static char buf[128];
-
 	if (w)
+	{
 		if (w->owner)
-			sprintf(buf, sizeof(buf), "'%s'", w->owner->name);
-		else
-			sprintf(buf, sizeof(buf), "->NULL");
-	else
-		sprintf(buf, sizeof(buf), "NULL");
-
-	return buf;
+			return c_owner(w->owner);
+		return "->NULL";
+	}
+	return "NULL";
 }
 
-char *
+const char *
 c_owner(struct xa_client *c)
 {
 	static char buf[512];
 
 	if (c)
+	{
 		sprintf(buf, sizeof(buf), "'%s'", c->name);
-	else
-		sprintf(buf, sizeof(buf), "NULL");
-
-	return buf;
+		return buf;
+	}
+	return "NULL";
 }
 
-char *
+const char *
 t_owner(XA_TREE *t)
 {
-	static char buf[512];
-
 	if (t)
+	{
 		if (t->owner)
-			sprintf(buf, sizeof(buf), "'%s'", t->owner->name);
-		else
-			sprintf(buf, sizeof(buf), "->NULL");
-	else
-		sprintf(buf, sizeof(buf), "NULL");
-
-	return buf;
+			return c_owner(t->owner);
+		return "->NULL";
+	}
+	return "NULL";
 }
 
 void
@@ -516,19 +499,9 @@ diaga(const char *fmt, ...)
 	}
 #endif
 }
-#if 0
-/* HR: once used to debug a window_list corruption.
-       also a example of how to use this trace facility. */
-long
-xa_trace(char *t)
-{
-	long l = 0;
-	return l;
-}
-#endif
 
 void
-diag(enum debug_item item, struct xa_client *client, char *t, ...)
+diag(enum debug_item item, struct xa_client *client, const char *t, ...)
 {
 	enum debug_item *point = client ? client->options.point : D.point;
 	short b, x, y;
@@ -548,14 +521,6 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 
 		va_start(argpoint, t);
 
-#if 0
-		/* HR: xa_trace can by anything, anywhere.
-		 *	Making debug a function, made a very primitive variable tracer
-		 *	possible. Found some very nasty bugs by pinpointing the
-		 *	offence between 2 debug call's.
-		 */
-		l += xa_trace(line);
-#endif
 		if (D.point[D_v])
 		{
 			check_mouse(client, &b, &x, &y);
@@ -603,4 +568,3 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 }
 
 #endif /* GENERATE_DIAGS */
-

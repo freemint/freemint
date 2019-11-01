@@ -34,14 +34,14 @@
 #define WAIT_SEEi(i)			{int _i;for( _i = 0; _i < i; _i++ )nap( 60000 );}
 
 
-void _cdecl display(const char *fmt, ...);
-void _cdecl ndisplay(const char *fmt, ...);
+void _cdecl display(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void _cdecl ndisplay(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 enum prof_cmd{ P_Init_All = 0, P_Init = 1, P_Start = 2, P_Stop = 3, P_Print_All = 4,
 	P_Drop_Name = 5};
 
-int prof_acc( char *name, enum prof_cmd cmd, int rv );
-void profile( char *t, ...);
+int prof_acc( const char *name, enum prof_cmd cmd, int rv );
+void profile( const char *t, ...) __attribute__((format(printf, 1, 2)));
 
 
 #define STRING(x)	# x
@@ -162,9 +162,9 @@ struct xa_window;
 struct widget_tree;
 
 void show_bits(unsigned short, char *prf, char *t[], char *x);
-char *w_owner(struct xa_window *w);
-char *c_owner(struct xa_client *c);
-char *t_owner(struct widget_tree *t);
+const char *w_owner(struct xa_window *w);
+const char *c_owner(struct xa_client *c);
+const char *t_owner(struct widget_tree *t);
 
 #define DIAGS(x) if (D.debug_level) diags x
 #define DIAGA(x) if (D.debug_level) diaga x
@@ -175,9 +175,9 @@ char *t_owner(struct widget_tree *t);
 extern struct debugger D;
 
 
-void diags(const char *fmt, ...);
-void diaga(const char *fmt, ...);
-void diag(enum debug_item item, struct xa_client *client, char *t, ...);
+void diags(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void diaga(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void diag(enum debug_item item, struct xa_client *client, const char *t, ...) __attribute__((format(printf, 3, 4)));
 
 #if DEBUG_CONTROL
 #define CONTROL(nintin,nintout,naddrin) {short *co = pb->control; \
@@ -199,7 +199,7 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #endif /* GENERATE_DIAGS */
 
-void _cdecl bootlog(short disp, const char *fmt, ...);
+void _cdecl bootlog(short disp, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 #ifdef BOOTLOG
 #define BLOG(x)	bootlog x
 #define BLOGif(c,x)	if(c)bootlog x

@@ -77,7 +77,7 @@ pid2client(short pid)
 		client = C.Aes;
 
 	DIAGS(("pid2client(%i) -> p %lx client %s",
-		pid, p, client ? client->name : "NULL"));
+		pid, (unsigned long)p, client ? client->name : "NULL"));
 
 	return client;
 }
@@ -161,8 +161,6 @@ add_xa_data(struct xa_data_hdr **list, void *_data, long id, char *name, void (*
 
 	if (name)
 	{
-// 		display("add_xa_data with name '%s'", name);
-
 		for (i = 0; i < 15 && (data->name[i] = *name++); i++)
 			;
 	}
@@ -197,7 +195,6 @@ void
 delete_xa_data(struct xa_data_hdr **list, void *_data)
 {
 	struct xa_data_hdr *data = _data;
-// 	display("delete_xa_data: %lx (destruct=%lx)", data, (long)data->destruct);
 
 	remove_xa_data(list, data);
 
@@ -209,7 +206,6 @@ void
 ref_xa_data(struct xa_data_hdr **list, void *_data, short count)
 {
 	struct xa_data_hdr *data = _data;
-// 	display("ref_xa_data %lx - links = %ld, count = %d", data, data->links, count);
 	data->links += (long)count;
 }
 
@@ -219,29 +215,22 @@ deref_xa_data(struct xa_data_hdr **list, void *_data, short flags)
 	long ret;
 	struct xa_data_hdr *data = _data;
 
-// 	ndisplay("deref_xa_data %lx - links = %ld", data, data->links);
 	data->links--;
-	//if (data->links < 0)
-		//display("deref_xa_data: negative links!!");
 	if (!(ret = data->links) && (flags & 1))
 	{
-// 		display("deref_xa_data - deleting!");
 		delete_xa_data(list, data);
 	}
 	return ret;
-// 	display("");
 }
 
 void
 free_xa_data_list(struct xa_data_hdr **list)
 {
 	struct xa_data_hdr *l = *list;
-// 	display("free_xa_data_list:");
 	while (l)
 	{
 		struct xa_data_hdr *n = l->next;
 		l->next = NULL;
-// 		display(" --- Calling xa_data_destruct: %lx (destruct=%lx)", l, (long)l->destruct);
 		if (l->destruct)
 			(*l->destruct)(l);
 		l = n;
@@ -386,10 +375,11 @@ dump_devstuff(XVDIPB *vpb, short handle)
 			for (j = 0; j < vpb->control[4] && j < 200 && vpb->intout[j]; j++)
 				fn[j] = (char)vpb->intout[j], fn[j + 1] = '\0';
 
-			display("driver %d is %s, name %s, file %s", i, vpb->ptsout[0] ? "Open" : "Closed", rn, fn);
+			DIAGS(("driver %d is %s, name %s, file %s", i, vpb->ptsout[0] ? "Open" : "Closed", rn, fn));
+		} else
+		{
+			DIAGS(("No driver at ID %d", i));
 		}
-		else
-			display("No driver at ID %d", i);
 	}
 }
 /* ***************************************************** */

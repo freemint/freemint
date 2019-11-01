@@ -145,26 +145,25 @@ rw(int lock, struct xa_window *wl, struct xa_client *client)
 	while (wl)
 	{
 		DIAGS(("-- RW: %lx, next=%lx, prev=%lx",
-			wl, wl->next, wl->prev));
+			(unsigned long)wl, (unsigned long)wl->next, (unsigned long)wl->prev));
 
 		nwl = wl->next;
 		if (wl != root_window && wl != menu_window)
 		{
 			if (!client || wl->owner == client)
 			{
-				if ((wl->window_status & XAWS_OPEN))
+				if (wl->window_status & XAWS_OPEN)
 				{
-					DIAGS(("-- RW: closing %lx, client=%lx", wl, client));
+					DIAGS(("-- RW: closing %lx, client=%lx", (unsigned long)wl, (unsigned long)client));
 					close_window(lock, wl);
 				}
-				DIAGS(("-- RW: deleting %lx", wl));
+				DIAGS(("-- RW: deleting %lx", (unsigned long)wl));
 				delete_window(lock, wl);
 			}
-		}
-#if GENERATE_DIAGS
-		else
+		} else
+		{
 			DIAGS((" -- RW: skipping root window"));
-#endif
+		}
 		wl = nwl;
 	}
 }
@@ -1910,7 +1909,7 @@ draw_window(int lock, struct xa_window *wind, const RECT *clip)
 				if( wdg_is_inst(widg) )
 				{
 					DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
-						wind->handle, f, widg->m.r.draw));
+						wind->handle, f, (unsigned long)widg->m.r.draw));
 
 					if (widg->m.properties & WIP_WACLIP)
 					{
@@ -2348,21 +2347,17 @@ move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate,
 				{
 					DIAGS(("move_window: Clear iconified"));
 					standard_widgets(wind, wind->save_widgets, true);
-#if GENERATE_DIAGS
-					if ((wind->window_status & XAWS_SHADED))
+					if (wind->window_status & XAWS_SHADED)
 					{
 						DIAGS(("move_window: %d/%d/%d/%d - uniconify shaded window",
-							new));
+							new.x, new.y, new.w, new.h));
 					}
-#endif
 				}
 			}
-#if GENERATE_DIAGS
 			if (!(newstate & XAWS_SHADED))
 			{
 				DIAGS(("move_window: clear shaded"));
 			}
-#endif
 			if (newstate == ~XAWS_FULLED)
 			{
 				blit = false;
@@ -2485,7 +2480,7 @@ close_window(int lock, struct xa_window *wind)
 	if (wind->nolist)
 	{
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
-			wind->handle, wind->background));
+			wind->handle, (unsigned long)wind->background));
 
 
 		cancel_do_winmesag(lock, wind);
@@ -2684,7 +2679,7 @@ delete_window1(int lock, struct xa_window *wind)
 	}
 	else
 	{
-		DIAGS(("delete_window1: nolist window %d, bgk=%lx", wind->handle, wind->background));
+		DIAGS(("delete_window1: nolist window %d, bgk=%lx", wind->handle, (unsigned long)wind->background));
 		if (wind->destructor)
 			wind->destructor(lock, wind);
 
@@ -2951,7 +2946,7 @@ get_lost_redraw_msg(struct xa_client *client, union msg_buf *buf)
 		*buf = msg->message;
 
 		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
-			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
+			(unsigned long)msg, buf->m[3], buf->m[4], buf->m[5], buf->m[6], buf->m[7], c_owner(client) ));
 
 		kfree(msg);
 		rtn = 1;
@@ -3111,7 +3106,7 @@ calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WI
 	struct xa_wc_cache *wcc;
 	short class;
 	RECT o;
-	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
+	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r.x, r.y, r.w, r.h));
 	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
@@ -3811,7 +3806,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					nrl->r.y += new->y;
 					//DIAGS(("redrawing area (%lx) %d/%d/%d/%d",
 					//	nrl, nrl->r));
-					DIAGS(("redrawing area (%lx) %d/%d/%d/%d",nrl, nrl->r));
+					DIAGS(("redrawing area (%lx) %d/%d/%d/%d", (unsigned long)nrl, nrl->r.x, nrl->r.y, nrl->r.w, nrl->r.h));
 					/*
 					 * we only redraw window borders here if wind moves
 					 */

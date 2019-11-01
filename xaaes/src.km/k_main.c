@@ -127,7 +127,7 @@ cancel_cevents(struct xa_client *client)
 	{
 		struct c_event *nxt;
 
-		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",ce, ce->next, client->name));
+		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s", (unsigned long)ce, (unsigned long)ce->next, client->name));
 
 		(*ce->funct)(0, ce, true);
 
@@ -176,7 +176,7 @@ cancel_CE(struct xa_client *client,
 {
 	struct c_event *ce = client->cevnt_head, *p = NULL;
 
-	DIAG((D_evnt, client, "cancel_CE: find function %lx in client events for %s", f, client->name));
+	DIAG((D_evnt, client, "cancel_CE: find function %lx in client events for %s", (unsigned long)f, client->name));
 
 	while (ce)
 	{
@@ -184,7 +184,7 @@ cancel_CE(struct xa_client *client,
 
 		if (ce->funct == f)
 		{
-			DIAGS((" --- Found func==%lx, calling callback=%lx", f, callback));
+			DIAGS((" --- Found func==%lx, calling callback=%lx", (unsigned long)f, (unsigned long)callback));
 			if (callback(ce, arg))
 			{
 				struct c_event *nce;
@@ -199,7 +199,7 @@ cancel_CE(struct xa_client *client,
 					client->cevnt_tail = p;
 
 				client->cevnt_count--;
-				DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
+				DIAGS(("---------- freeing CE %lx with function %lx", (unsigned long)ce, (unsigned long)f));
 				kfree(ce);
 				ce = nce;
 				removed = true;
@@ -259,13 +259,13 @@ post_cevent(struct xa_client *client,
 			client->cevnt_count++;
 
 			DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-				c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
+				(unsigned long)c, client->cevnt_count, (unsigned long)client->cevnt_head, (unsigned long)client->cevnt_tail,
 				client->name));
 
 		}
 		else
 		{
-			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
+			DIAGS(("kmalloc(%ld) failed, out of memory?", (long)sizeof(*c)));
 		}
 		Unblock(client, 1, 3);
 	}
@@ -276,14 +276,14 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 {
 	struct c_event *ce = client->cevnt_head, *p = NULL;
 
-	DIAG((D_evnt, client, "dispatch_selcevent: function %lx in client events for %s", f, client->name));
+	DIAG((D_evnt, client, "dispatch_selcevent: function %lx in client events for %s", (unsigned long)f, client->name));
 
 	while (ce)
 	{
 		if (ce->funct == f)
 		{
 			struct c_event *nce;
-			DIAGS((" --- Found func==%lx, dispatching...", f));
+			DIAGS((" --- Found func==%lx, dispatching...", (unsigned long)f));
 			DIAGS((" --- delete client event!"));
 
 			if (p)
@@ -298,7 +298,7 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 
 			(*ce->funct)(0, ce, cancel);
 
-			DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
+			DIAGS(("---------- freeing CE %lx with function %lx", (unsigned long)ce, (unsigned long)f));
 			kfree(ce);
 			ce = nce;
 			return (volatile short)client->cevnt_count;
@@ -321,7 +321,7 @@ dispatch_cevent(struct xa_client *client)
 		struct c_event *nxt;
 
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
-			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
+			(unsigned long)ce, (unsigned long)client->cevnt_head, (unsigned long)client->cevnt_tail, client->cevnt_count, client->name));
 
 
 		if (!(nxt = ce->next))
@@ -962,7 +962,7 @@ alert_input(int lock)
 
 		if (!data)
 		{
-			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
+			DIAGS(("kmalloc(%ld) failed, out of memory?", (long)sizeof(*data)));
 			return;
 		}
 		data->lock = lock;
@@ -1474,8 +1474,8 @@ CE_start_apps(int lock, struct c_event *ce, short cancel)
 			if (cfg.cnf_run[i])
 			{
 				int pid;
-				BLOG((false, "autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
-				BLOG((false, "   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
+				BLOG((false, "autorun[%d]: cmd=(%lx) '%s'", i, (unsigned long)cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
+				BLOG((false, "   args[%d]:    =(%lx) '%s'", i, (unsigned long)cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
 				parms[0] = '\0';
 				if (cfg.cnf_run_arg[i])
 					parms[0] = sprintf(parms+1, sizeof(parms)-2, "%s", cfg.cnf_run_arg[i]);
@@ -1946,7 +1946,7 @@ k_main(void *dummy)
 			aessys_timeout = AESSYS_TIMEOUT;
 		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);
 
-		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d(%s), mouse_lock %d(%s)",
+		DIAG((D_kern, NULL,">>Fselect -> %ld, channels: 0x%08lx, update_lock %d(%s), mouse_lock %d(%s)",
 			fs_rtn,
 			input_channels,
 			update_locked() ? update_locked()->pid : 0,

@@ -25,7 +25,7 @@
 #include "xa_aes.h"
 #include "xa_global.h"
 #include "xa_strings.h"
-#include "matchpat.h"	//strmchr
+#include "matchpat.h"
 
 #include "draw_obj.h"
 #include "trnfm.h"
@@ -132,7 +132,9 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 
 	DIAG((D_s, client, "icon_len %ld, new_len %ld", icon_len, new_len));
 
-//  if (planes < screen.planes)
+#if 0
+	if (planes < screen.planes)
+#endif
 	{
 		DIAG((D_x, client, "alloc of %ld bytes", new_len));
 
@@ -158,8 +160,6 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 			ra->addr = new_data;
 			ra->next = rscs->ra;
 			rscs->ra = ra;
-
-//      memcpy(new_data, map, icon_len);
 		}
 		else
 			return map;
@@ -168,7 +168,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	src.fd_addr = map;
 	src.fd_w = icon->monoblk.ib_wicon; /* Transform MFDB's */
 	src.fd_h = icon->monoblk.ib_hicon;
-	src.fd_wdwidth = (src.fd_w + 15) >> 4; // / 16; /* round up */
+	src.fd_wdwidth = (src.fd_w + 15) >> 4;
 	src.fd_stand = 1;
 	src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
 	src.fd_nplanes = planes;
@@ -243,7 +243,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		src.fd_addr = tmp;
 		src.fd_w	= icon->monoblk.ib_wicon; /* Transform MFDB's */
 		src.fd_h	= icon->monoblk.ib_hicon;
-		src.fd_wdwidth	= (src.fd_w + 15) >> 4; // / 16; /* round up */
+		src.fd_wdwidth	= (src.fd_w + 15) >> 4; /* round up */
 		src.fd_stand	= 1;
 		src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
 		src.fd_nplanes	= screen.planes;
@@ -267,7 +267,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 				if( !C.is_init_icn_pal )
 				{
 					if( !C.icn_pal )
-						C.icn_pal = kmalloc( 256 * sizeof(*C.icn_pal) );	// free!
+						C.icn_pal = kmalloc( 256 * sizeof(*C.icn_pal) );
 					if( C.icn_pal && !rw_syspalette( READ, C.icn_pal, C.Aes->home_path, client->options.icn_pal_name ) )
 					{
 						if( icn_pal_name )
@@ -304,7 +304,8 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	return new_data;
 }
 #endif
-#if 0	// debugging!
+
+#if 0	/* debugging! */
 void dump_hex( void *data, long len, int bpw, int doit )
 {
 	union{
@@ -380,7 +381,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	c = icon->mainlist;
 	while (c)
 	{
-		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
+		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", (unsigned long)c));
 
 		if (c->num_planes <= screen.planes
 				&& (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
@@ -428,7 +429,7 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 	}
 	while (n)
 	{
-		DIAG((D_rsrc, NULL, " -- %lx, value %lx", p, *p));
+		DIAG((D_rsrc, NULL, " -- %lx, value %lx", (unsigned long)p, (unsigned long)*p));
 		*p += (unsigned long)b;
 		if( rfp )
 		{
@@ -436,7 +437,7 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 				rsc_trans_rw( client, rfp, p, 0 );
 		}
 
-		DIAG((D_rsrc, NULL, " -- to %lx", *p));
+		DIAG((D_rsrc, NULL, " -- to %lx", (unsigned long)*p));
 
 		p++;
 		n--;
@@ -468,9 +469,9 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ti++;
 			ei++;
 			n--;
-			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ei->ti.te_ptext));
+			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", (unsigned long)ti, ei->ti.te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
-				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
+				(unsigned long)ti->te_ptext, (unsigned long)ti->te_ptmplt, (unsigned long)ti->te_pvalid));
 		}
 		*extra = (char *)ei;
 	}
@@ -482,9 +483,9 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ti->te_ptmplt += (long)b;
 			ti->te_pvalid += (long)b;
 
-			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
+			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", (unsigned long)ti, ti->te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
-				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
+				(unsigned long)ti->te_ptext, (unsigned long)ti->te_ptmplt, (unsigned long)ti->te_pvalid));
 
 			ti++;
 			n--;
@@ -504,7 +505,7 @@ fix_icnarray(struct xa_client *client, void *b, ICONBLK *ib, unsigned long n, ch
 		ib->ib_ptext += (long)b;
 
 		DIAG((D_rsrc, NULL, "fix_icnarray: ib=%lx, ib->ib_pmask=%lx, ib->ib_pdata=%lx, ib->ib_ptext=%lx",
-			ib, ib->ib_pmask, ib->ib_pdata, ib->ib_ptext));
+			(unsigned long)ib, (unsigned long)ib->ib_pmask, (unsigned long)ib->ib_pdata, (unsigned long)ib->ib_ptext));
 
 		ib++;
 		n--;
@@ -522,7 +523,7 @@ fix_bblarray(struct xa_client *client, void *b, BITBLK *bb, unsigned long n, cha
 		bb->bi_pdata = (void *)((char *)bb->bi_pdata + (long)b);
 
 		DIAG((D_rsrc, NULL, "fix_bblarray: bb=%lx, pdata=%lx",
-			bb, bb->bi_pdata));
+			(unsigned long)bb, (unsigned long)bb->bi_pdata));
 		bb++;
 		n--;
 	}
@@ -546,7 +547,7 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 	while (*cp++ != (CICONBLK *) -1L)
 		numCibs++;
 
-	DIAG((D_rsrc, NULL, "fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]));
+	DIAG((D_rsrc, NULL, "fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, (unsigned long)cibh, (unsigned long)cibh[0]));
 
 	/*
 	 * Pointer to the first CICONBLK (went past the -1L above)
@@ -574,16 +575,16 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 		 * when longer than 12 bytes.
 		 */
 		DIAG((D_rsrc, NULL, "cibh[%d]=%lx, isize=%ld, addr=%lx, numRez=%d",
-			i, cibh[i], isize, addr, numRez));
+			i, (unsigned long)cibh[i], isize, (unsigned long)addr, numRez));
 		DIAG((D_rsrc, NULL, "ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
-			ib, ib->ib_pdata, ib->ib_pmask));
+			(unsigned long)ib, (unsigned long)ib->ib_pdata, (unsigned long)ib->ib_pmask));
 
 		if (ib->ib_wtext && ib->ib_ptext)
 		{
 			short l = ib->ib_wtext/6;
 			/* fix some resources */
 			ib->ib_ptext += (long)base;
-			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", ib->ib_ptext));
+			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", (unsigned long)ib->ib_ptext));
 			if (strlen(ib->ib_ptext) > l)
 				*(ib->ib_ptext + l) = 0;
 		}
@@ -654,7 +655,7 @@ static int make_rscl_name( char *in, char *out )
 }
 
 
-static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
+static int rsl_errors = 0;	/* maximum alerts for invalid rsl-file */
 static int reported_skipped = 0;
 static long rsl_lno = 1;
 
@@ -700,7 +701,6 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 
 			if( l > 0 )
 				chgl = (short*)l;
-			// BLOG((0,"trans: looking '%s'", in ));
 			if( chgl && *chgl == 2 )
 			{
 				strip = false;
@@ -709,10 +709,8 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 			if( !len )
 				return 0;
 			/* strip trailing blanks */
-			for( clen = len - 1; clen && in[clen] == ' '; clen-- );
-			/*if( clen == 0 && *in == ' ' )	// blank line
-				return (XA_FILE*)(long)len;
-			*/
+			for( clen = len - 1; clen && in[clen] == ' '; clen-- )
+				;
 			clen++;
 
 			for( found = NOT_FOUND, lbuf[0] = 0; found == NOT_FOUND && lbuf[0] != -1; )
@@ -755,9 +753,9 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 							if( (*p == '-' && *in == '-') || !strncmp( p, in, cmplen ) )
 							{
 								found = OFOUND;
-								if( lbuf[LF_OFFS-1] == ';')	// dont translate this
+								if( lbuf[LF_OFFS-1] == ';')	/* dont translate this */
 									break;
-								if( lbuf[LF_OFFS-1] == '+' )	// realloc
+								if( lbuf[LF_OFFS-1] == '+' )	/* realloc */
 									strip = false;
 							}
 							else if( reported_skipped == 0 )
@@ -773,12 +771,12 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 						if( blen > len && strip == true )
 							blen = len;
 						found = TFOUND;
-						break;	// translation found
+						break;	/* translation found */
 					}
 				}
 			}
 
-			if( found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	// found
+			if( found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	/* found */
 			{
 				if( blen > len && strip == false )
 				{
@@ -811,7 +809,6 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 			{
 				*chgl = (strip == false);
 			}
-			// BLOGif(!found,(0,"rsc_lang_file:'%s' not found/%d", in, len ));
 			switch( found )
 			{
 			case TFOUND:
@@ -838,7 +835,7 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 	for( blen = j = 0; j < 2 && !blen; j++ )
 	{
 		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, (char*)p, i)))
-			break;	//found
+			break;	/* found */
 		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
 		{
 			 BLOG((0,"translate:'%s':rewind", *p ));
@@ -847,11 +844,10 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 			reported_skipped = -1;
 		}
 		else
-			break;	// give up
+			break;	/* give up */
 	}
 	if( !blen )
 	{
-		//ALERT(("translate: item '%s' not found", *p ));
 		BLOG((0, "%s:translate: item '%s': not found", client->name, *p ));
 	}
 	return blen;
@@ -915,7 +911,7 @@ fix_objects(struct xa_client *client,
 	memset( &scan, 0, sizeof(scan) );
 
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
-		b, cibh, obj, n));
+		(unsigned long)b, (unsigned long)cibh, (unsigned long)obj, n));
 
 	if( client->options.rsc_lang == WRITE && n && rfp)
 	{
@@ -986,30 +982,29 @@ fix_objects(struct xa_client *client,
 					{
 						if( client->options.rsc_lang == READ )
 						{
-							if( blen > 0 )	// orig and trans found
+							if( blen > 0 )	/* orig and trans found */
 							{
 								if( obj->ob_type == G_BUTTON && (obj->ob_flags & OF_SELECTABLE) )
 								{
-									obj->ob_state &= (0x80ff);	// make own shortcuts
+									obj->ob_state &= (0x80ff);	/* make own shortcuts */
 								}
 							}
 							else
-								blen = -blen;		// only orig found
+								blen = -blen;		/* only orig found */
 
-							if( obj->ob_type == G_STRING )	//&& ( scan.title > 0 && scan.change_lo[scan.title-1]) )
+							if( obj->ob_type == G_STRING )
 							{
 								if( **p != '-' )
 								{
 									if( *(*p + blen - 1) != ' ' )
 										blen++;
 									if( obj->ob_x > 0 )
-										scan.keep_w = 1;	// more than one obj in one line -> don't adjust width
+										scan.keep_w = 1;	/* more than one obj in one line -> don't adjust width */
 									if( blen + obj->ob_x > scan.mwidth )
 									{
 										scan.mwidth = blen + obj->ob_x;
 									}
 								}
-
 							}
 							else if( obj->ob_type == G_TITLE && scan.n_titles >= 0 )
 							{
@@ -1035,9 +1030,9 @@ fix_objects(struct xa_client *client,
 								}
 								scan.n_titles++;
 							}
-						}	// /if( client->options.rsc_lang == READ )
-					}	// /if( blen )
-				}	// /if( client->options.rsc_lang && !(type == G_IMAGE) )
+						}
+					}
+				}
 				break;
 			}
 			case G_ICON:
@@ -1064,7 +1059,7 @@ fix_objects(struct xa_client *client,
 					FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
 					obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
 					DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
-						idx, cibh[idx], obj->ob_spec.ciconblk));
+						idx, (unsigned long)cibh[idx], (unsigned long)obj->ob_spec.ciconblk));
 				}
 			#if GENERATE_DIAGS
 				else
@@ -1095,7 +1090,7 @@ fix_objects(struct xa_client *client,
 				}
 				else if( client->options.rsc_lang == READ && scan.title >= 0 )
 				{
-					if( scan.mwidth && scan.lastbox > 0 )	// last entry in menu-box
+					if( scan.mwidth && scan.lastbox > 0 )	/* last entry in menu-box */
 					{
 						OBJECT *o = (obj - i + scan.lastbox);
 						o->ob_width = scan.mwidth;
@@ -1135,7 +1130,7 @@ fix_objects(struct xa_client *client,
 			}
 		}
 	}
-	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, obj));
+	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, (unsigned long)obj));
 }
 
 #define resWidth (screen.c_max_w)
@@ -1154,14 +1149,14 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 	y_fact = (long)screen.c_max_h << 16;
 	y_fact /= designHeight;
 
-	DIAG((D_rsrc, NULL, "fix_trees: trees=%lx (%lx)", trees, trees[0]));
+	DIAG((D_rsrc, NULL, "fix_trees: trees=%lx (%lx)", (unsigned long)trees, (unsigned long)trees[0]));
 	for (i = 0; i < n; i++, trees++)
 	{
 		if (*trees != (OBJECT *)-1)
 		{
 			*trees = (OBJECT *)(*(char **)trees + (long)b);
 
-			DIAGS((" -- tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
+			DIAGS((" -- tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, (unsigned long)*trees));
 
 			obj = *trees;
 			k = 0;
@@ -1196,10 +1191,10 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 							if (ted->te_ptext == (char *)-1L)
 							{
 								((XTEDINFO *)ted->te_ptmplt)->o = aesobj(*trees, k);
-//								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k); //->index = k;
+#if 0
+								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k);
+#endif
 							}
-							//else
-								//bootlog((0,"%d:%s", obj->ob_type, ted->te_ptmplt));
 							break;
 						}
 						default:;
@@ -1244,7 +1239,6 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 				if ( (client->options.alt_shortcuts & ALTSC_DIALOG) && !((*trees)->ob_state & OS_WHITEBAK) )
 				{
 					ob_fix_shortcuts(*trees, false, 0);
-					//sc_exit();
 				}
 			}
 			else
@@ -1272,12 +1266,12 @@ list_resource(struct xa_client *client, void *resource, short flags)
 	else
 		new = umalloc(sizeof(*new));
 
-	DIAG((D_x, client, "XA_alloc 2 %ld, at %lx", sizeof(*new), new));
+	DIAG((D_x, client, "XA_alloc 2 %ld, at %lx", sizeof(*new), (unsigned long)new));
 
 	if (new)
 	{
-		DIAG((D_rsrc, client, "list_resource %ld(%lx) for %s rsc:%ld(%lx) rscs %lx",
-			new, new, c_owner(client), resource, resource, client->resources));
+		DIAG((D_rsrc, client, "list_resource %lx for %s rsc:%lx rscs %lx",
+			(unsigned long)new, c_owner(client), (unsigned long)resource, (unsigned long)client->resources));
 
 		/* hook it to the chain (double linked list) */
 		new->next = client->resources;
@@ -1314,7 +1308,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	CICONBLK **cibh = NULL;
 	unsigned long osize = 0, size = 0, extra = 0;
 	unsigned long sz;
-	char *base = NULL;	//, *end = NULL;
+	char *base = NULL;
 	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL;
 	short vdih;
@@ -1325,7 +1319,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 	vdih = client->vdi_settings->handle;
 
-	// BLOG((0,"%s:LoadResources,fname=%s,designWidth=%d, designHeight=%d", client->name, fname?fname:"", designWidth, designHeight));
+	DIAGS(("%s:LoadResources,fname=%s,designWidth=%d, designHeight=%d", client->name, fname?fname:"", designWidth, designHeight));
 	if (fname)
 	{
 		struct file *f;
@@ -1429,7 +1423,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				return NULL;
 			}
 		}
-		//end = base + size;
 		/*
 		 * Ozk: Added 'flags' to xa_rscs structure, so we know
 		 * if the resource associated with it was allocated by
@@ -1450,7 +1443,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	}
 	else
 	{
-		DIAG((D_rsrc, client, "LoadResources %ld(%lx)", rshdr, rshdr));
+		DIAG((D_rsrc, client, "LoadResources %lx", (unsigned long)rshdr));
 		if (rshdr)
 		{
 			hdr = rshdr;
@@ -1469,7 +1462,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			*/
 			client->rsct++;
 			rscs = list_resource(client, base, 0);
-			//end = base + size;
 		}
 	}
 
@@ -1519,7 +1511,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	{
 		/* It's an enhanced RSC file */
 		short maxplanes = 0;
-		unsigned long *earray; //, *addr;
+		unsigned long *earray;
 
 		DIAG((D_rsrc, client, "Enhanced resource file"));
 
@@ -1628,7 +1620,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			}
 			for(i = 0; trans_strings[i]; i++)
 			{
-				//char *t_1 = 0;
 				for( t = trans_strings[i]; *t; t++)
 				{
 					if( **t )
@@ -1648,16 +1639,15 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 							}
 
 						rsc_trans_rw( client, rfp, t, ptr_seen );
-						//t_1 = *t;
 					}
 				}
 			}
-			trans_strings[0] = 0;	// no further translation possible
+			trans_strings[0] = 0;	/* no further translation possible */
 		}
 		rsc_lang_file( CLOSE, rfp, 0, 0 );
 	}
 	if( client == C.Aes )
-		client->options.rsc_lang = 0;	// dont translate other rsc-files
+		client->options.rsc_lang = 0;	/* dont translate other rsc-files */
 	fix_trees(client, base, (OBJECT **)(base + rshdr(hdr, rsh_trindex)), rshdr(hdr, rsh_ntree), designWidth, designHeight);
 
 	return (RSHDR *)base;
@@ -1683,8 +1673,8 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 		}
 		gl->ptree = o;
 
-		DIAGS(("Resources %ld(%lx) in global[5,6]", o, o));
-		DIAGS(("			and %ld(%lx) in global[7,8]", h, h));
+		DIAGS(("Resources %lx in global[5,6]", (unsigned long)o));
+		DIAGS(("      and %lx in global[7,8]", (unsigned long)h));
 	}
 }
 
@@ -1722,14 +1712,13 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 
 	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx",
-		cur, client->p->pid, client->rsct, rsc));
+		(unsigned long)cur, client->p->pid, client->rsct, (unsigned long)rsc));
 #endif
 	if (cur && client->rsct)
 	{
 		/* Put older rsrc back, and the pointer in global */
 		while (cur)
 		{
-			//bool have = rsc && (rsc == cur->rsc);
 			struct xa_rscs *nx = cur->next;
 
 			if (!rsrc || rsrc == cur)
@@ -1737,7 +1726,6 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 				DIAG((D_rsrc, client, "Free: test cur %lx", (long)cur));
 				DIAG((D_rsrc, client, "Free: test cur handle %d", cur->handle));
 
-				//if (have || (!rsc && cur->handle == client->rsct))
 				{
 					/* free the entry for the freed rsc. */
 					struct xa_rscs *nxt_active = NULL;
@@ -1798,17 +1786,17 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 						{
 							ra = cur->ra;
 							cur->ra = ra->next;
-							DIAG((D_rsrc, client, "kFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
+							DIAG((D_rsrc, client, "kFreeRa: addr=%lx, ra=%lx", (unsigned long)ra->addr, (unsigned long)ra));
 							kfree(ra->addr);
 							kfree(ra);
 						}
 
 						if (cur->flags & RSRC_ALLOC)
 						{
-							DIAG((D_rsrc, client, "kFree: cur->rsc %lx", cur->rsc));
+							DIAG((D_rsrc, client, "kFree: cur->rsc %lx", (unsigned long)cur->rsc));
 							kfree(cur->rsc);
 						}
-						DIAG((D_rsrc, client, "kFree: cur %lx", cur));
+						DIAG((D_rsrc, client, "kFree: cur %lx", (unsigned long)cur));
 
 						kfree(cur);
 					}
@@ -1820,16 +1808,16 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 						{
 							ra = cur->ra;
 							cur->ra = ra->next;
-							DIAG((D_rsrc, client, "uFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
+							DIAG((D_rsrc, client, "uFreeRa: addr=%lx, ra=%lx", (unsigned long)ra->addr, (unsigned long)ra));
 							ufree(ra->addr);
 							kfree(ra);
 						}
 						if (cur->flags & RSRC_ALLOC)
 						{
-							DIAG((D_rsrc, client, "uFree: cur->rsc %lx", cur->rsc));
+							DIAG((D_rsrc, client, "uFree: cur->rsc %lx", (unsigned long)cur->rsc));
 							ufree(cur->rsc);
 						}
-						DIAG((D_rsrc, client, "uFree: cur %lx", cur));
+						DIAG((D_rsrc, client, "uFree: cur %lx", (unsigned long)cur));
 
 						ufree(cur);
 					}
@@ -1869,7 +1857,7 @@ OBJECT * _cdecl
 ResourceTree(RSHDR *hdr, long num)
 {
 	OBJECT **index;
-	DIAGS(("ResourceTree: hdr = %lx, num = %ld", hdr, num));
+	DIAGS(("ResourceTree: hdr = %lx, num = %ld", (unsigned long)hdr, num));
 	if (num_nok(hdr, rsh_ntree))
 		return NULL;
 
@@ -1951,7 +1939,6 @@ ResourceString(RSHDR *hdr, int num)
 
 	index = (char **)rsc_start(hdr, rsh_frstr);
 
-//	DIAG((D_s, NULL, "Gaddr 5 %lx '%s'", index[num], index[num]));
 	return index[num];
 }
 
@@ -1985,7 +1972,6 @@ ResourceFrstr(RSHDR *hdr, int num)
 
 	index = (char **)rsc_start(hdr, rsh_frstr);
 
-//	DIAG((D_s, NULL, "Gaddr 15 %lx '%s'", index, *index));
 	return index + num;
 }
 
@@ -2000,7 +1986,6 @@ ResourceFrimg(RSHDR *hdr, int num)
 
 	index = (void **)rsc_start(hdr, rsh_frimg);
 
-//	DIAG((D_s, NULL, "Gaddr 16 %lx", index));
 	return index + num;
 }
 
@@ -2052,14 +2037,16 @@ XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 					Rsrc_setglobal(rsc, client->globl_ptr);
 
 				DIAG((D_rsrc,client,"pb %lx, gl %lx, gl->rsc %lx, gl->ptree %lx",
-					pb, pb->global, ((struct aes_global *)pb->global)->rshdr, ((struct aes_global *)pb->global)->ptree));
+					(unsigned long)pb,
+					(unsigned long)pb->global,
+					(unsigned long)((struct aes_global *)pb->global)->rshdr,
+					(unsigned long)((struct aes_global *)pb->global)->ptree));
 
 				if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
 					/* Fill it out in the global of the rsrc_load. */
 					Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
 
-				ret = 1; //pb->intout[0] = 1;
-//				return XAC_DONE;
+				ret = 1;
 			}
 			kfree(path);
 		}
@@ -2068,7 +2055,7 @@ XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 	{
 		/* inform user what's going on */
 		ALERT((xa_strings[AL_NOGLOBPTR], "rsrc_load: ", client->name));
-		//exit_client(lock, client, -1, true, true);
+		/* exit_client(lock, client, -1, true, true); */
 		raise(SIGKILL);
 		yield();
 		return 0;
@@ -2076,7 +2063,7 @@ XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 
 	DIAGS(("ERROR: rsrc_load '%s' %s", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~", ret ? "suceeded":"failed"));
 
-	pb->intout[0] = ret; //0;
+	pb->intout[0] = ret;
 	return XAC_DONE;
 }
 /*
@@ -2117,10 +2104,10 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 
 	if (pb == NULL || client == NULL)
 	{
-		DIAGS(("rsrc_gaddr NULL %lx, %lx", pb, client));
+		DIAGS(("rsrc_gaddr NULL %lx, %lx", (unsigned long)pb, (unsigned long)client));
 	}
 
-	DIAG((D_s,client,"rsrc_gaddr type %d, index %d pb %lx", type, index, pb));
+	DIAG((D_s,client,"rsrc_gaddr type %d, index %d pb %lx", type, index, (unsigned long)pb));
 
 	/* For multiple resource, first look at the supplied global ptr. */
 	if (pb->global)
@@ -2128,7 +2115,7 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 		trees = ((struct aes_global *)pb->global)->ptree;
-		DIAG((D_rsrc,client,"  --  pb->gl  rsc %lx, ptree %lx", rsc, trees));
+		DIAG((D_rsrc,client,"  --  pb->gl  rsc %lx, ptree %lx", (unsigned long)rsc, (unsigned long)trees));
 	}
 
 	/* The below represents the last resource loaded */
@@ -2138,7 +2125,7 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 
 		rsc = client->rsrc;
 		trees = client->trees;
-		DIAG((D_rsrc,client,"  --  client->gl  rsc %lx, ptree %lx", rsc, trees));
+		DIAG((D_rsrc,client,"  --  client->gl  rsc %lx, ptree %lx", (unsigned long)rsc, (unsigned long)trees));
 	}
 
 	if (!rsc && trees)
@@ -2156,7 +2143,7 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 					*addr = trees[index];
 					break;
 			}
-			DIAG((D_s,client,"	from pb->global --> %ld",*addr));
+			DIAG((D_s,client,"	from pb->global --> %ld", (unsigned long)*addr));
 			pb->intout[0] = 1;
 		}
 		else
@@ -2261,7 +2248,7 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 			*addr = ResourceFrimg(rsc, index);
 			break;
 		}
-		DIAG((D_s,client,"	--> %lx",*addr));
+		DIAG((D_s,client,"	--> %lx", (unsigned long)*addr));
 		{
 			char *rsc_end;
 			unsigned long size;
@@ -2298,7 +2285,7 @@ XA_rsrc_obfix(int lock, struct xa_client *client, AESPB *pb)
 	ob = (OBJECT*)pb->addrin[0];
 
 	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d",
-		c_owner(client), ob, item));
+		c_owner(client), (unsigned long)ob, item));
 
 	if (validate_obtree(client, ob, "XA_rsrc_fix:"))
 	{
@@ -2317,8 +2304,8 @@ XA_rsrc_rcfix(int lock, struct xa_client *client, AESPB *pb)
 	RSHDR *rsc;
 	CONTROL(0,1,1)
 
-	DIAG((D_rsrc, client, "rsrc_rcfix for %s on %ld(%lx)",
-		c_owner(client), pb->addrin[0], pb->addrin[0]));
+	DIAG((D_rsrc, client, "rsrc_rcfix for %s on %lx",
+		c_owner(client), (unsigned long)pb->addrin[0]));
 
 	if (client->globl_ptr)
 	{
@@ -2329,8 +2316,8 @@ XA_rsrc_rcfix(int lock, struct xa_client *client, AESPB *pb)
 #if GENERATE_DIAGS
 			if (client->globl_ptr != (struct aes_global *)pb->global)
 			{
-				DIAGS(("WARNING: rsrc_rcfix global %ld(%lx) is different from appl_init's global %ld(%lx)",
-					pb->global, pb->global, client->globl_ptr, client->globl_ptr));
+				DIAGS(("WARNING: rsrc_rcfix global %lx is different from appl_init's global %lx",
+					(unsigned long)pb->global, (unsigned long)client->globl_ptr));
 			}
 #endif
 			Rsrc_setglobal(client->rsrc, client->globl_ptr);
@@ -2345,7 +2332,7 @@ XA_rsrc_rcfix(int lock, struct xa_client *client, AESPB *pb)
 	{
 		/* inform user what's going on */
 		ALERT(( xa_strings[AL_NOGLOBPTR]/*"XaAES: rsrc_rcfix: %s, client with no globl_ptr, killing it"*/, client->name));
-		//exit_client(lock, client, -1, true, true); //get_curproc());
+		/* exit_client(lock, client, -1, true, true); */
 		raise(SIGKILL);
 		yield();
 		return 0;
