@@ -116,6 +116,25 @@
 #endif
 
 
+#ifndef WDIALOG_WDLG
+#define WDIALOG_WDLG 1	/* wdlg_xx() extensions */
+#endif
+#ifndef WDIALOG_LBOX
+#define WDIALOG_LBOX 1	/* lbox_xx() extensions */
+#endif
+#ifndef WDIALOG_FNTS
+#define WDIALOG_FNTS 1	/* fnts_xx() extensions */
+#endif
+#ifndef WDIALOG_FSLX
+#define WDIALOG_FSLX 0	/* fslx_xx() extensions */
+#endif
+#ifndef WDIALOG_PDLG
+#define WDIALOG_PDLG 1	/* pdlg_xx() extensions */
+#endif
+#ifndef WDIALOG_EDIT
+#define WDIALOG_EDIT 0	/* edit_xx() extensions */
+#endif
+
 /* check stack-alignment for all xaaes-threads and display the result in the
  * system-window
  */
