@@ -83,7 +83,7 @@ bootmessage(void)
 	BLOG((true, "Supports mouse wheels"));
 	BLOG((true, "Compile time switches enabled:"));
 
-#if GENERATE_DIAGNOSTICS
+#if GENERATE_DIAGS
 	BLOG((true, " - Diagnostics"));
 #endif
 

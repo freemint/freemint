@@ -58,23 +58,20 @@
 #define SCM_SAVE 2
 
 
-enum window_type
-{
-	created_for_CLIENT	= 0x0000,
+#define created_for_CLIENT		0x0000
 /* All of the following flags indicate at least that a windows workarea is compleyely
    occupied by (part of) the dialoge root object. */
-	created_for_FMD_START	= 0x0001,
-	created_for_FORM_DO	= 0x0002,
-	created_for_POPUP	= 0x0004,
-	created_for_WDIAL	= 0x0008,
-	created_for_TOOLBAR	= 0x0010,
-	created_for_SLIST	= 0x0020,
-	created_for_AES		= 0x0100,
-	created_for_ALERT	= 0x0200,
-	created_for_CALC	= 0x0400,
-	created_for_MENUBAR = 0x800	// don't draw anything
-};
-typedef enum window_type WINDOW_TYPE;
+#define created_for_FMD_START	0x0001
+#define created_for_FORM_DO		0x0002
+#define created_for_POPUP		0x0004
+#define created_for_WDIAL		0x0008
+#define created_for_TOOLBAR		0x0010
+#define created_for_SLIST		0x0020
+#define created_for_AES			0x0100
+#define created_for_ALERT		0x0200
+#define created_for_CALC		0x0400
+#define created_for_MENUBAR 	0x0800	/* don't draw anything */
+typedef unsigned short WINDOW_TYPE;
 
 
 enum xa_window_class
@@ -86,28 +83,25 @@ enum xa_window_class
 };
 typedef enum xa_window_class WINDOW_CLASS;
 
-enum window_status
-{
-	XAWS_OPEN	 = 0x00000001L,
-	XAWS_ICONIFIED	 = 0x00000002L,
-	XAWS_CHGICONIF	 = 0x00000004L,
-	XAWS_SHADED	 = 0x00000008L,
-	XAWS_ZWSHADED	 = 0x00000010L,
-	XAWS_HIDDEN	 = 0x00000020L,
-	XAWS_FULLED	 = 0x00000040L,
-	XAWS_NODELETE	 = 0x00000080L,
-	XAWS_NOFOCUS	 = 0x00000100L,
-	XAWS_STICKYFOCUS = 0x00000200L,
-	XAWS_FLOAT	 = 0x00000400L,
-	XAWS_SINK	 = 0x00000800L,
-	XAWS_BINDFOCUS	 = 0x00001000L,
-	XAWS_BELOWROOT	 = 0x00002000L,
-	XAWS_FIRST	 = 0x00004000L,
-	XAWS_RESIZED	 = 0x00008000L,		/* if WM_SIZED to XaAES-(list-)window, evaluate in draw_object_tree() */
-	XAWS_RM_WDG = 0x00010000L,
-	XAWS_SEMA	 = 0x80000000L,
-};
-typedef enum window_status WINDOW_STATUS;
+#define XAWS_OPEN			0x00000001UL
+#define XAWS_ICONIFIED		0x00000002UL
+#define XAWS_CHGICONIF		0x00000004UL
+#define XAWS_SHADED			0x00000008UL
+#define XAWS_ZWSHADED		0x00000010UL
+#define XAWS_HIDDEN			0x00000020UL
+#define XAWS_FULLED			0x00000040UL
+#define XAWS_NODELETE		0x00000080UL
+#define XAWS_NOFOCUS		0x00000100UL
+#define XAWS_STICKYFOCUS	0x00000200UL
+#define XAWS_FLOAT			0x00000400UL
+#define XAWS_SINK			0x00000800UL
+#define XAWS_BINDFOCUS		0x00001000UL
+#define XAWS_BELOWROOT		0x00002000UL
+#define XAWS_FIRST			0x00004000UL
+#define XAWS_RESIZED		0x00008000UL		/* if WM_SIZED to XaAES-(list-)window, evaluate in draw_object_tree() */
+#define XAWS_RM_WDG			0x00010000UL
+#define XAWS_SEMA			0x80000000UL
+typedef unsigned long WINDOW_STATUS;
 
 /* forward declarations */
 struct task_administration_block;
@@ -440,8 +434,7 @@ struct options
 	bool nolive;			/* Live moving and sizing of windows. */
 	bool wheel_reverse;		/* Do you want move the slider in the wheel direction,
 					 * or rather the window content? */
-	//bool naes;			/* N.Aes 3d compatability */
-	//bool naes12;
+	bool naes;			/* N.Aes 3d compatability */
 	bool naes_ff;			/**/
 	bool inhibit_hide;
 
@@ -528,20 +521,10 @@ struct mbs
  *   the extra XAWAIT_MULTI bit to indicate we are waiting from evnt_multi()
  *   as opposed to one of the individual routines (as return values are different).
  */
-#if 0
-enum waiting_for
-{
-	XAWAIT_MULTI	= 0x0200,	/* Waiting for an evnt_multi() */
-	XAWAIT_WDLG	= 0x0400,	/* Waiting for a wdlg_xxx event to occur */
-	XAWAIT_MOUSE	= 0x0800,	/* XaAES private; exclusive mouse event */
-	XAWAIT_MENU	= 0x1000,	/* XaAES private; menu rectangle event */
-	XAWAIT_NTO	= 0x2000,	/* XaAES private; timeout value NULL */
-};
-#endif
-#define XAWAIT_MULTI	0x00010000UL
-#define XAWAIT_MOUSE	0x00020000UL
-#define XAWAIT_MENU	0x00040000UL
-#define XAWAIT_NTO	0x00080000UL
+#define XAWAIT_MULTI	0x00010000UL	/* Waiting for an evnt_multi() */
+#define XAWAIT_MOUSE	0x00020000UL	/* XaAES private; exclusive mouse event */
+#define XAWAIT_MENU		0x00040000UL	/* XaAES private; menu rectangle event */
+#define XAWAIT_NTO		0x00080000UL	/* XaAES private; timeout value NULL */
 
 typedef struct task_administration_block * TASK(struct task_administration_block *tab, short item);
 
@@ -616,9 +599,6 @@ typedef int WindowKeypress(int lock, struct xa_window *wind,
 
 /* Object display function type */
 typedef void ObjectDisplay(int lock, struct widget_tree *wt, struct xa_vdi_settings *v);
-
-/* Object handler function type */
-// typedef void ObjectHandler(int lock, struct widget_tree *wt);
 
 #if 0
 struct widget_behaviour
@@ -907,9 +887,8 @@ struct objc_edit_info
 {
 	TEDINFO *p_ti;
 
-	struct xa_aes_object o;
+	struct xa_aes_object o;	/* Index of editable object */
 
-// 	short obj;	/* Index of editable object */
 	short pos;	/* Cursor (char) position, relative to edstart */
 	short c_state;	/* Cursor state */
 
@@ -990,8 +969,10 @@ struct widget_tree
 	ushort *state_mask;
 
 	RECT r_parent;
-// 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
-// 	short parent_y;
+#if 0
+	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
+	short parent_y;
+#endif
 
 	struct xa_aes_object focus;
 
@@ -1002,7 +983,6 @@ struct widget_tree
 	short which;			/* kind of event for use by WDIAL exit handler. */
 
 	short rdx, rdy;
-// 	short puobj;
 	short pdx, pdy;
 	short pop;
 	bool is_menu;			/* true when the tree is a menu or part of it. */
@@ -1201,7 +1181,7 @@ enum xa_widgets
   * and must be processed via client events.
   * Furthermore, remember to change XA_MAX_CF_WIDGETS below if you
   * put insert a new context dependant widget before XAW_TOOLBAR!
- */
+  */
 	XAW_TOOLBAR,			/* 18 ( was 14) Extended XaAES widget */
 	XAW_MENU,			/* 19 ( was 15) Extended XaAES widget, must be drawn last. */
 
@@ -1303,7 +1283,9 @@ struct widget_theme
 
 struct xa_widget_theme
 {
-// 	struct widget_theme *active;
+#if 0
+	struct widget_theme *active;
+#endif
 	struct widget_theme *client;
 	struct widget_theme *popup;
 	struct widget_theme *alert;
@@ -1509,7 +1491,6 @@ struct xa_wc_cache;
 struct xa_wc_cache
 {
 	struct xa_wc_cache *next;
-// 	void  *wtheme_handle;
 	short	class;
 	XA_WIND_ATTR tp;
 	RECT delta;
@@ -1554,7 +1535,6 @@ struct xa_window
 	void *untop_cols;
 	struct xa_vdi_settings *vdi_settings;
 	struct widget_theme *active_theme;
-// 	struct xa_widget_theme *widget_theme;
 
 	long rect_lock;
 	unsigned long opts;			/* Window options. XAWO_xxx */
@@ -1649,38 +1629,28 @@ extern struct xa_window *root_window;
 struct scroll_info;
 
 /* Directory entry flags */
-enum scroll_entry_type
-{
-	SETYP_STATIC	= 0x8000,
+#define SETYP_STATIC	0x8000
+typedef unsigned short SCROLL_ENTRY_TYPE;
 
-};
-typedef enum scroll_entry_type SCROLL_ENTRY_TYPE;
+#define SEF_WTXTALLOC 0x0001
+#define SEF_WCOLALLOC 0x0002
+typedef unsigned short SCROLL_ENTRY_FLAGS;
 
-enum scroll_entry_flags
-{
-	SEF_WTXTALLOC = 0x0001,
-	SEF_WCOLALLOC = 0x0002,
-};
-typedef enum scroll_entry_flags SCROLL_ENTRY_FLAGS;
-
-enum scroll_info_flags
-{
-	SIF_KMALLOC	= 0x0001,
-	SIF_SELECTABLE	= 0x0002,
-	SIF_ICONINDENT	= 0x0004,
-	SIF_MULTISELECT = 0x0008,
-	SIF_MULTIBOXED  = 0x0010,
-	SIF_AUTOSLIDERS = 0x0020,
-	SIF_AUTOSELECT  = 0x0040,
-	SIF_TREEVIEW	= 0x0080,
-	SIF_AUTOOPEN	= 0x0100,
-	SIF_KEYBDACT	= 0x0200,
-	SIF_DIRTY			= 0x0400,
-	SIF_INLINE_EFFECTS	=	0x800,
-	SIF_NO_ICONS	=	0x1000,
-	SIF_ICONS_HAVE_NO_TEXT = 0x2000
-};
-typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
+#define SIF_KMALLOC		0x0001
+#define SIF_SELECTABLE	0x0002
+#define SIF_ICONINDENT	0x0004
+#define SIF_MULTISELECT 0x0008
+#define SIF_MULTIBOXED  0x0010
+#define SIF_AUTOSLIDERS 0x0020
+#define SIF_AUTOSELECT  0x0040
+#define SIF_TREEVIEW	0x0080
+#define SIF_AUTOOPEN	0x0100
+#define SIF_KEYBDACT	0x0200
+#define SIF_DIRTY		0x0400
+#define SIF_INLINE_EFFECTS	0x0800
+#define SIF_NO_ICONS	0x1000
+#define SIF_ICONS_HAVE_NO_TEXT 0x2000
+typedef unsigned short SCROLL_INFO_FLAGS;
 
 #define SETAB_RJUST		0x0001
 #define SETAB_CJUST		0x0002
@@ -1698,15 +1668,6 @@ struct se_tab
 	short widest;
 	short highest;
 };
-#if 0
-struct se_text_tabulator
-{
-	short flags;
-	RECT r;
-	short widest;
-	short highest;
-};
-#endif
 
 #define SETEXT_TXTSTR	1
 #define SETEXT_ALLOC	2
@@ -1718,7 +1679,6 @@ struct se_icon
 struct se_text;
 struct se_text
 {
-// 	struct se_text *next;
 	short flags;
 	unsigned short tblen, slen;
 	char *text;
@@ -1795,21 +1755,6 @@ struct se_content
 		struct se_icon icon;
 	}c;
 };
-
-#if 0
-struct scroll_entry_content
-{
-	short type;
-	long usr_flags;
-	void *data;
-	OBJECT *icon;
-	struct xa_wcol_inf *col;
-	union
-	{
-		struct scroll_content_text text;
-	}td;
-};
-#endif
 
 typedef	bool	scrl_compare	(struct scroll_info *list, struct scroll_entry *new_ent, struct scroll_entry *cur_ent);
 typedef int 	scrl_click	(struct scroll_info *list, struct scroll_entry *e, const struct moose_data *md);
@@ -1975,7 +1920,6 @@ struct sesetget_params
 		struct se_arg_flags usr_flags;
 		char *txt;
 		void *data;
-// 		long usr_flag;
 	}arg;
 
 	union
@@ -2008,7 +1952,6 @@ struct scroll_entry
 	short level;
 	short indent;
 	short num_content;
-// 	short icon_w, icon_h;
 	RECT r;
 	SCROLL_ENTRY_TYPE  type; 	/* type flags */
 	SCROLL_ENTRY_FLAGS iflags;	/* internal flags */
@@ -2019,8 +1962,6 @@ struct scroll_entry
 	long usr_flags;
 	void *data;
 	void (*data_destruct)(void *);
-
-// 	struct scroll_entry_content c;
 };
 typedef struct scroll_entry SCROLL_ENTRY;
 
@@ -2043,7 +1984,6 @@ struct scroll_info
 	short indent_upto;
 	short num_tabs;
 	struct se_tab *tabs;
-// 	struct se_text_tabulator *tabs;
 	short rel_x, rel_y;
 
 	SCROLL_ENTRY *start;		/* Pointer to first element */
@@ -2065,7 +2005,6 @@ struct scroll_info
 	long total_w;
 	long total_h;
 
-	//short state;			/* Extended status info for scroll list */
 	short char_width;		/* remember char-width for this list */
 
 	scrl_click *dclick;		/* Callback function for double click behaviour */
@@ -2299,8 +2238,7 @@ struct xa_client
 
 	long status;
 
-// 	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
-	unsigned long waiting_for;
+	unsigned long waiting_for;	/* What types of event(s) the client is waiting for */
 	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
 	short *waiting_short;		/* */
 
@@ -2364,7 +2302,6 @@ struct xa_client
 /*
  * This part is for Client event dispatching
 */
-// 	struct	xa_rectlist_entry *lost_redraws;
 
 #define MAX_KEYQUEUE	4
 	int	kq_count;
@@ -2540,7 +2477,7 @@ clear_focus(struct widget_tree *wt)
 inline static void
 set_focus(struct widget_tree *wt, OBJECT *tree, short item)
 {
-	wt->focus = aesobj(tree, item); //set_aesobj(&wt->focus, tree ? tree : wt->tree, item);
+	wt->focus = aesobj(tree, item);
 }
 
 inline static bool
@@ -2690,7 +2627,7 @@ struct common
 	Path	start_path;
 	unsigned short nvdi_version;
 	unsigned short fvdi_version;
-	bool f_phys;	// using physical wk
+	bool f_phys;	/* using physical wk */
 	unsigned long gdos_version;
 
 	void (*reschange)(int lock, struct xa_client *client, bool open);
@@ -2708,7 +2645,6 @@ struct common
 	struct xa_client *Aes;		/* */
 	struct xa_client *Hlp;
 	void 	*Hlp_pb;
-// 	enum waiting_for Aes_waiting_for;
 	unsigned long	Aes_waiting_for;
 
 	short move_block;		/* 0 = movement allowed
@@ -2745,8 +2681,6 @@ struct common
 #define EXIT_MAINLOOP		0x8000
 	short shutdown_step;
 	struct timeout *sdt;		/* Shutdown Timeout */
-
-	//bool mvalidate;
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
@@ -2844,8 +2778,10 @@ struct config
 
 	short next_active;		/* 0 = set previous active client active upon client termination */
 					/* 1 = set owner of previous topped (or only) window upon client termination */
-//	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
-//					/* 1 = Keep client whose last window was closed infront. */
+#if 0
+	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
+					/* 1 = Keep client whose last window was closed infront. */
+#endif
 
 #if WITH_BBL_HELP
 	short xa_bubble;	/* use XaAES for bubble-help: 1: tooltip-style, 2: ballon-style */
@@ -2884,9 +2820,6 @@ struct config
 
 	enum menu_behave menu_behave;	/* pull, push or leave */
 
-//	short widg_w, widg_h;
-//	short widg_dw, widg_dh;		/* flexible widget object types. */
-
 	short ted_filler;
 	short font_id;			/* Font id to use (buttons, menus) */
 	short xaw_point;	/* Font id to use (XaAES-window-content) */
@@ -2908,7 +2841,6 @@ struct config
 	short ver_wheel_amount;
 	short hor_wheel_id;		/* ID of vertical wheel */
 	short hor_wheel_amount;
-	//short wheel_amount;		/* amount of lines for a wheel click. */
 
 	short icnfy_orient;
 	short icnfy_l_x;
