@@ -83,7 +83,8 @@ do_usrcall (void)
 long _cdecl
 sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 {
-	CONTEXT *syscall = &get_curproc()->ctxt[SYSCALL];
+	PROC *p = get_curproc();
+	CONTEXT *syscall = &p->ctxt[SYSCALL];
 	ushort savesr;
 
 	if (funcptr == NULL)
@@ -95,7 +96,7 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	 * mode.
 	 */
 
-	if ((secure_mode > 1) && !suser (get_curproc()->p_cred->ucr))
+	if ((secure_mode > 1) && !suser (p->p_cred->ucr))
 	{
 		DEBUG (("Supexec: user call"));
 		raise (SIGSYS);
@@ -106,7 +107,7 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	 * function.
 	 */
 	
-	assert (get_curproc()->p_sigacts);
+	assert (p->p_sigacts);
 	
 	usrcall = funcptr;
 	usrarg1 = arg1;
@@ -114,7 +115,7 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	usrarg3 = arg3;
 	usrarg4 = arg4;
 	usrarg5 = arg5;
-	SIGACTION(get_curproc(), 0).sa_handler = (long) do_usrcall;
+	SIGACTION(p, 0).sa_handler = (long) do_usrcall;
 	savesr = syscall->sr;	/* save old super/user mode flag */
 	syscall->sr |= 0x2000;	/* set supervisor mode */
 
@@ -210,16 +211,19 @@ sys_b_uiorec (int dev)
 
 	if (dev == 0 && has_bconmap)
 	{
+		PROC *p;
+
 		// ALERT ("Iorec(%d) -> NULL", dev);
 		return 0;
 
 		/* get around another BIOS Bug:
 		 * in (at least) TOS 2.05 Iorec(0) is broken
 		 */
-		if ((unsigned) get_curproc()->p_fd->bconmap - 6 < btty_max)
-			return (long) MAPTAB[get_curproc()->p_fd->bconmap-6].iorec;
+		p = get_curproc();
+		if ((unsigned) p->p_fd->bconmap - 6 < btty_max)
+			return (long) MAPTAB[p->p_fd->bconmap-6].iorec;
 
-		mapin (get_curproc()->p_fd->bconmap);
+		mapin (p->p_fd->bconmap);
 	}
 
 	return (long) ROM_Iorec (dev);
@@ -228,6 +232,7 @@ sys_b_uiorec (int dev)
 long _cdecl
 rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
+	PROC *p = get_curproc();
 	long rsval;
 #ifdef MFP_DEBUG_DIRECT
 	static int oldbaud = 0;
@@ -241,7 +246,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 
 	if (has_bconmap)
 	{
-		b = get_curproc()->p_fd->bconmap - 6;
+		b = p->p_fd->bconmap - 6;
 		if (b < btty_max)
 			t += b;
 		else
@@ -304,7 +309,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	else
 	{
 		if (has_bconmap)
-			mapin (get_curproc()->p_fd->bconmap);
+			mapin (p->p_fd->bconmap);
 
 		if (intr_done)
 			rsval = ROM_Rsconf (baud, flow, uc, rs, ts, sc);
@@ -354,7 +359,8 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 long _cdecl
 sys_b_bconmap (int dev)
 {
-	int old = get_curproc()->p_fd->bconmap;
+	PROC *p = get_curproc();
+	int old = p->p_fd->bconmap;
 
 	TRACE (("Bconmap(%d)", dev));
 
@@ -382,13 +388,13 @@ sys_b_bconmap (int dev)
 			return 0;
 		}
 
-		if (set_auxhandle (get_curproc(), dev) == 0)
+		if (set_auxhandle (p, dev) == 0)
 		{
 			DEBUG (("Bconmap: Couldn't change AUX:"));
 			return 0;
 		}
 
-		get_curproc()->p_fd->bconmap = dev;
+		p->p_fd->bconmap = dev;
 		return old;
 	}
 
@@ -651,21 +657,22 @@ static void
 init_bconmap (void)
 {
 	int i, oldmap;
+	PROC *p = get_curproc();
 
 	curbconmap = (has_bconmap) ? (int) TRAP_Bconmap (-1) : 1;
 
-	oldmap = get_curproc()->p_fd->bconmap = curbconmap;
+	oldmap = p->p_fd->bconmap = curbconmap;
 	for (i = 0; i < btty_max; i++)
 	{
 		int r;
 		if (has_bconmap)
-			get_curproc()->p_fd->bconmap = i + 6;
+			p->p_fd->bconmap = i + 6;
 
 		r = (int) rsconf (-2, -1, -1, -1, -1, -1);
 		if (r < 0)
 		{
 			if (has_bconmap)
-				mapin (get_curproc()->p_fd->bconmap);
+				mapin (p->p_fd->bconmap);
 			TRAP_Rsconf ((r = 0), -1, -1, -1, -1, -1);
 		}
 
@@ -673,7 +680,7 @@ init_bconmap (void)
 	}
 
 	if (has_bconmap)
-		mapin (get_curproc()->p_fd->bconmap = oldmap);
+		mapin (p->p_fd->bconmap = oldmap);
 }
 
 void
