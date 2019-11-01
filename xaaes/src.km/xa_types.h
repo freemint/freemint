@@ -902,33 +902,6 @@ struct objc_edit_info
 };
 typedef struct objc_edit_info XTEDINFO;
 
-struct xated
-{
-	long	id;			// char		*te_ptext;
-	struct objc_edit_info *ei;	// char		*te_ptmplt;	/**< ptr to template */
-	void *p1;			// char		*te_pvalid;	/**< ptr to validation chrs. */
-
-	short flags;			// short	te_font; 	/**< font */
-	short res0;			// short	te_fontid;	/**< font id */
-	short resrvd1;			// short	te_just; 	/**< justification */
-	short resrvd2;			// short	te_color;	/**< color information word */
-	short resrvd3;			// short	te_fontsize;	/**< font size */
-	short resrvd4;			// short	te_thickness;	/**< border thickness */
-	short resrvd5;			// short	te_txtlen;	/**< length of text string */
-	short resrvd6;			// short	te_tmplen;	/**< length of template string */
-};
-typedef struct xated XATED;
-
-struct xa_tedinfo
-{
-	union
-	{
-		TEDINFO ted;
-		struct xated xated;
-	}x;
-};
-typedef struct xa_tedinfo XATEDINFO;
-
 struct widget_tree
 {
 	struct widget_tree *next;	/* Next widget tree */
@@ -2071,12 +2044,6 @@ struct xa_popinfo
 
 	XA_MENU_ATTACHMENT *at_up;
 	XA_MENU_ATTACHMENT *at_down;
-
-// 	short	attach_parent;		/* Object number of object in parent popup that has 'this' popup attached */
-
-// 	XA_TREE	*attach_wt;
-// 	short	attach_item;
-// 	short	attached_to;
 
 	char	*save_start_txt;
 	char	*save_end_txt;
