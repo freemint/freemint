@@ -73,13 +73,13 @@ typedef struct xa_mfdb XAMFDB;
 
 struct xa_fnt_info
 {
-	long		f;	/* Font ID */
-	short		p;	/* Point size */
+	long		font_id;	/* Font ID */
+	short		font_point;	/* Point size */
 	unsigned short	flags;
-	short		wrm;
-	short		e;	/* Effects */
-	short		fgc;	/* Foreground colour */
-	short		bgc;	/* Background colour (used to obtain 3-d effect) */
+	short		wr_mode;
+	short		effects;	/* Effects */
+	short		fg;			/* Foreground colour */
+	short		bg;			/* Background colour (used to obtain 3-d effect) */
 	short		bannercol;
 
 	short		x_3dact;
@@ -95,11 +95,10 @@ struct xa_fnt_info
 #define WTXT_DRAWBNR	0x0010
 struct xa_wtxt_inf
 {
-
 	short	flags;	/* Flags */
-	struct xa_fnt_info n;	/* normal */
-	struct xa_fnt_info s;	/* selected */
-	struct xa_fnt_info h;	/* highlighted? */
+	struct xa_fnt_info normal;		/* normal */
+	struct xa_fnt_info selected;	/* selected */
+	struct xa_fnt_info highlighted;	/* highlighted? */
 };
 
 struct xa_vdi_api

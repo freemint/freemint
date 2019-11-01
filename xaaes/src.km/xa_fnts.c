@@ -763,7 +763,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 				{
 					if( !**sp || !strcmp( f->f.style_name, *sp ) )
 					{
-						wtxt.n.f = wtxt.s.f = wtxt.h.f = f->f.id;
+						wtxt.normal.font_id = wtxt.selected.font_id = wtxt.highlighted.font_id = f->f.id;
 						sc.t.text = f->f.style_name;
 						sc.data = f;
 						p.arg.data = f;
@@ -883,7 +883,7 @@ update_slists(struct xa_fnts_info *fnts)
 		char *t;
 		long id = get_disp_style( f );
 
-		wtxt.n.f = wtxt.s.f = wtxt.h.f = id;
+		wtxt.normal.font_id = wtxt.selected.font_id = wtxt.highlighted.font_id = id;
 
 		sc.t.text = t = f->f.outline ? f->f.family_name : f->f.full_name;
 

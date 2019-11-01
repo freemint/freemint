@@ -85,10 +85,10 @@ static void entry_action(struct scroll_info *list, struct scroll_entry *this, co
 /*static*/ struct xa_wtxt_inf default_fnt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  1,  10, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,    NULL},	/* Normal */
- {  1,  10, 0,   MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE,   0,      0,    NULL},	/* Selected */
- {  1,  10, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,    NULL},	/* Highlighted */
+/* id  pnts flags wr_mode   efx  fg       bg   banner x_3dact y_3dact texture */
+ {  1,  10, 0,    MD_TRANS, 0,   G_BLACK, G_WHITE, G_WHITE,   0,      0,    NULL},	/* Normal */
+ {  1,  10, 0,    MD_TRANS, 0,   G_WHITE, G_BLACK, G_WHITE,   0,      0,    NULL},	/* Selected */
+ {  1,  10, 0,    MD_TRANS, 0,   G_BLACK, G_WHITE, G_WHITE,   0,      0,    NULL},	/* Highlighted */
 
 };
 static struct xa_wcol_inf default_col =
@@ -502,7 +502,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				if( !c->c.text.h || !list->char_width )
 				{
 					short w;
-					struct xa_fnt_info *f = c->fnt ? &c->fnt->n : &this->fnt->n;
+					struct xa_fnt_info *f = c->fnt ? &c->fnt->normal : &this->fnt->normal;
 					PROFRECp(
 					*list->vdi_settings->api->,text_extent,(list->vdi_settings, s,
 							f, &w, &c->c.text.h));
@@ -859,15 +859,15 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							f = this->fnt->flags;
 
 							if (sel)
-								wtxt = c->fnt ? &c->fnt->s : &this->fnt->s;
+								wtxt = c->fnt ? &c->fnt->selected : &this->fnt->selected;
 							else
-								wtxt = c->fnt ? &c->fnt->n : &this->fnt->n;
+								wtxt = c->fnt ? &c->fnt->normal : &this->fnt->normal;
 
 							if( !(list->flags & SIF_ICONS_HAVE_NO_TEXT) || (list->flags & SIF_TREEVIEW) || memcmp( wtxt, &owtxt, sizeof(owtxt) ) )
 							{
-								(*v->api->wr_mode)(v, wtxt->wrm);
-								(*v->api->t_font)(v, wtxt->p, wtxt->f);
-								(*v->api->t_effects)(v, wtxt->e);
+								(*v->api->wr_mode)(v, wtxt->wr_mode);
+								(*v->api->t_font)(v, wtxt->font_point, wtxt->font_id);
+								(*v->api->t_effects)(v, wtxt->effects);
 								owtxt = *wtxt;
 							}
 
@@ -894,7 +894,7 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							/* on some systems the last letter is cut off if italic */
 							if( C.fvdi_version > 0 )
 							{
-								if( (wtxt->e & ITALIC) && c->c.text.slen < sizeof(t)-1 )
+								if( (wtxt->effects & ITALIC) && c->c.text.slen < sizeof(t)-1 )
 								{
 									t[c->c.text.slen] = ' ';
 									t[c->c.text.slen+1] = 0;
@@ -956,13 +956,13 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 
 							dy += ((this->r.h - th) >> 1);
 
-							(*v->api->t_color)(v, wtxt->fgc);
+							(*v->api->t_color)(v, wtxt->fg);
 
 							if( list->flags & SIF_INLINE_EFFECTS )
 							{
 								bool cont = true;
 								char *tpp = tp, cp = 0;
-								short te = wtxt->e, wd, h, tabsz = TABSZ * list->char_width, dx0 = dx;
+								short te = wtxt->effects, wd, h, tabsz = TABSZ * list->char_width, dx0 = dx;
 
 								while( cont )
 								{
@@ -1046,7 +1046,7 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							}
 							else
 							{
-								if( (wtxt->e & ITALIC) )
+								if( (wtxt->effects & ITALIC) )
 									dx -= list->char_width / 2;	/* looks nicer */
 
 								if (f & WTXT_DRAW3D)
@@ -1054,7 +1054,7 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 									if (sel && (f & WTXT_ACT3D))
 										dx++, dy++;
 
-									(*v->api->t_color)(v, wtxt->bgc);
+									(*v->api->t_color)(v, wtxt->bg);
 									dx++;
 									dy++;
 									v_gtext(v->handle, dx, dy, t);
@@ -1540,35 +1540,35 @@ static void
 set_font(struct xa_fnt_info *src, struct xa_fnt_info *dst, struct xa_fnt_info *def)
 {
 
-	if (src->f != -1)
-		dst->f = src->f;
+	if (src->font_id >= 0)
+		dst->font_id = src->font_id;
 	else if (def)
-		dst->f = def->f;
+		dst->font_id = def->font_id;
 
-	if (src->p != -1)
-		dst->p = src->p;
+	if (src->font_point >= 0)
+		dst->font_point = src->font_point;
 	else if (def)
-		dst->p = def->p;
+		dst->font_point = def->font_point;
 
-	if (src->wrm != -1)
-		dst->wrm = src->wrm;
+	if (src->wr_mode >= 0)
+		dst->wr_mode = src->wr_mode;
 	else if (def)
-		dst->wrm = def->wrm;
+		dst->wr_mode = def->wr_mode;
 
-	if (src->e != -1)
-		dst->e = src->e;
+	if (src->effects >= 0)
+		dst->effects = src->effects;
 	else if (def)
-		dst->e = def->e;
+		dst->effects = def->effects;
 
-	if (src->fgc != -1)
-		dst->fgc = src->fgc;
+	if (src->fg >= 0)
+		dst->fg = src->fg;
 	else if (def)
-		dst->fgc = def->fgc;
+		dst->fg = def->fg;
 
-	if (src->bgc != -1)
-		dst->bgc = src->bgc;
+	if (src->bg >= 0)
+		dst->bg = src->bg;
 	else if (def)
-		dst->bgc = def->bgc;
+		dst->bg = def->bg;
 };
 /*
  * Check if entry has its own wtxt structure or if its using the global
@@ -1590,9 +1590,9 @@ alloc_entry_wtxt(struct scroll_entry *entry, struct xa_wtxt_inf *newwtxt)
 			if (newwtxt)
 			{
 				entry->fnt->flags = newwtxt->flags;
-				set_font(&newwtxt->n, &entry->fnt->n, &default_fnt.n);
-				set_font(&newwtxt->s, &entry->fnt->s, &default_fnt.s);
-				set_font(&newwtxt->h, &entry->fnt->h, &default_fnt.h);
+				set_font(&newwtxt->normal, &entry->fnt->normal, &default_fnt.normal);
+				set_font(&newwtxt->selected, &entry->fnt->selected, &default_fnt.selected);
+				set_font(&newwtxt->highlighted, &entry->fnt->highlighted, &default_fnt.highlighted);
 
 			}
 			else if (old)
@@ -2077,7 +2077,7 @@ m_state_done:
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				set_font(f, &entry->fnt->n, NULL);
+				set_font(f, &entry->fnt->normal, NULL);
 			}
 				else ret = 0;
 			break;
@@ -2088,7 +2088,7 @@ m_state_done:
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				set_font(f, &entry->fnt->s, NULL);
+				set_font(f, &entry->fnt->selected, NULL);
 			}
 				else ret = 0;
 			break;
@@ -2099,7 +2099,7 @@ m_state_done:
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				set_font(f, &entry->fnt->h, NULL);
+				set_font(f, &entry->fnt->highlighted, NULL);
 			}
 				else ret = 0;
 			break;
@@ -2460,19 +2460,19 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_NFNT:
 			{
 				struct xa_fnt_info *f = arg;
-				*f = entry->fnt->n;
+				*f = entry->fnt->normal;
 				break;
 			}
 			case SEGET_SFNT:
 			{
 				struct xa_fnt_info *f = arg;
-				*f = entry->fnt->s;
+				*f = entry->fnt->selected;
 				break;
 			}
 			case SEGET_HFNT:
 			{
 				struct xa_fnt_info *f = arg;
-				*f = entry->fnt->h;
+				*f = entry->fnt->highlighted;
 				break;
 			}
 			case SEGET_WTXT:
@@ -5044,6 +5044,6 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	break;
 	default:
 		return keycode;
-	}	/* switch */
+	}
 	return 0;
 }

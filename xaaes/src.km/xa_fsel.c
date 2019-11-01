@@ -123,40 +123,37 @@ static char *faccess[] =
 static struct xa_wtxt_inf fs_norm_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
- {	-1,  -1,	0,	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL}, /* Normal */
- {	-1,  -1,	0,	MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE, 0,			0,		 NULL},/* Selected */
- {	-1,  -1,	0,	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL}, /* Highlighted */
-
+/* id  pnts  flags  wr_mode   efx  fg       bg       banner x_3dact y_3dact texture */
+ {	-1,  -1,	0,	MD_TRANS, 0,   G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL}, /* Normal */
+ {	-1,  -1,	0,	MD_TRANS, 0,   G_WHITE, G_BLACK, G_WHITE, 0,			0,		 NULL},/* Selected */
+ {	-1,  -1,	0,	MD_TRANS, 0,   G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL}, /* Highlighted */
 };
 
 static struct xa_wtxt_inf exe_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_RED, 	 G_WHITE, G_WHITE, 0, 		 0, 		NULL},	/* Normal */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_YELLOW, G_WHITE, G_WHITE, 0, 		 0, 		NULL},/* Selected */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK,  G_WHITE, G_WHITE, 0, 		 0, 		NULL},	/* Highlighted */
-
+/* id  pnts  flags  wr_mode   efx  fg        bg       banner x_3dact y_3dact texture */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_RED, 	 G_WHITE, G_WHITE, 0, 		 0, 		NULL},	/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_YELLOW, G_WHITE, G_WHITE, 0, 		 0, 		NULL},/* Selected */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_BLACK,  G_WHITE, G_WHITE, 0, 		 0, 		NULL},	/* Highlighted */
 };
+
 static struct xa_wtxt_inf dexe_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_RED,	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Normal */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_LRED, 	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Selected */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Highlighted */
-
+/* id  pnts  flags  wr_mode   efx  fg        bg       banner x_3dact y_3dact texture */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_RED,	 G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_LRED, 	 G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Selected */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_BLACK,  G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Highlighted */
 };
 
 static struct xa_wtxt_inf dir_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_BLUE, G_WHITE, G_WHITE, 0,			0,		 NULL },/* Normal */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_CYAN,	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Selected */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Highlighted */
-
+/* id  pnts  flags  wr_mode   efx  fg       bg        banner x_3dact y_3dact texture */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_BLUE,  G_WHITE,  G_WHITE, 0,			0,		 NULL },/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_CYAN,	G_WHITE,  G_WHITE, 0,			0,		 NULL },	/* Selected */
+ {	-1,  -1, 0, 	MD_TRANS, 0,   G_BLACK, G_WHITE,  G_WHITE, 0,			0,		 NULL },	/* Highlighted */
 };
 
 
@@ -232,8 +229,8 @@ init_fsel(void)
 
 #if SKEWED_TEXT_SCRAMBLED
 	else{
-		dir_txt.n.fgc = G_BLACK;
-		dir_txt.s.fgc = G_WHITE;
+		dir_txt.normal.fg = G_BLACK;
+		dir_txt.selected.fg = G_WHITE;
 	}
 #endif
 }
@@ -1441,13 +1438,13 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					}
 					if (sln)
 					{
-						sc.fnt->n.e |= ITALIC;
-						sc.fnt->s.e |= ITALIC;
+						sc.fnt->normal.effects |= ITALIC;
+						sc.fnt->selected.effects |= ITALIC;
 					}
 					else
 					{
-						sc.fnt->n.e &= ~ITALIC;
-						sc.fnt->s.e &= ~ITALIC;
+						sc.fnt->normal.effects &= ~ITALIC;
+						sc.fnt->selected.effects &= ~ITALIC;
 					}
 
 					if (!dir)
@@ -3167,23 +3164,21 @@ fs_init_menu(struct fsel_data *fs)
 	obtree[FSM_SORTBYNAME + fs->sort].ob_state |= OS_CHECKED;
 
 	fs->rtbuild = fs_data.rtbuild;
-	fs_norm_txt.n.f = cfg.font_id;
-	fs_norm_txt.s.f = cfg.font_id;
-	fs_norm_txt.h.f = cfg.font_id;
+	fs_norm_txt.normal.font_id = cfg.font_id;
+	fs_norm_txt.selected.font_id = cfg.font_id;
+	fs_norm_txt.highlighted.font_id = cfg.font_id;
 
-	exe_txt.n.f = cfg.font_id;
-	exe_txt.s.f = cfg.font_id;
-	exe_txt.h.f = cfg.font_id;
+	exe_txt.normal.font_id = cfg.font_id;
+	exe_txt.selected.font_id = cfg.font_id;
+	exe_txt.highlighted.font_id = cfg.font_id;
 
-	dexe_txt.n.f = cfg.font_id;
-	dexe_txt.s.f = cfg.font_id;
-	dexe_txt.h.f = cfg.font_id;
+	dexe_txt.normal.font_id = cfg.font_id;
+	dexe_txt.selected.font_id = cfg.font_id;
+	dexe_txt.highlighted.font_id = cfg.font_id;
 
-	dir_txt.n.f = cfg.font_id;
-	dir_txt.s.f = cfg.font_id;
-	dir_txt.h.f = cfg.font_id;
-
-
+	dir_txt.normal.font_id = cfg.font_id;
+	dir_txt.selected.font_id = cfg.font_id;
+	dir_txt.highlighted.font_id = cfg.font_id;
 }
 
 /* ignore updatelocks for fsel (does not work) */

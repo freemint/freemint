@@ -302,15 +302,15 @@ xa_text_extent(struct xa_vdi_settings *v, const char *t, struct xa_fnt_info *f, 
 	PRDEF( xa_text_extent, effects );
 	PRDEF( xa_text_extent, t_extent);
 
-	PROFRECv( xa_t_font,(v, f->p, f->f));
+	PROFRECv( xa_t_font,(v, f->font_point, f->font_id));
 
-	if( f->e ){
-		PROFRECv( vst_effects,(v->handle, f->e));
+	if( f->effects ){
+		PROFRECv( vst_effects,(v->handle, f->effects));
 	}
 
 	PROFRECv( xa_t_extent,(v, t, w, h));
 
-	if( f->e ){
+	if( f->effects ){
 		PROFRECv( vst_effects,(v->handle, 0));
 	}
 }
@@ -435,14 +435,14 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 	char t[200];
 
 	if (sel)
-		wtxt = &wtxti->s;
+		wtxt = &wtxti->selected;
 	else
-		wtxt = &wtxti->n;
+		wtxt = &wtxti->normal;
 
-	xa_wr_mode(v, wtxt->wrm);
-	xa_t_font(v, wtxt->p, wtxt->f);
+	xa_wr_mode(v, wtxt->wr_mode);
+	xa_t_font(v, wtxt->font_point, wtxt->font_id);
 
-	xa_t_effects(v, wtxt->e);
+	xa_t_effects(v, wtxt->effects);
 
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));
@@ -466,14 +466,14 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 		if (sel && (f & WTXT_ACT3D))
 			x++, y++;
 
-		xa_t_color(v, wtxt->bgc);
+		xa_t_color(v, wtxt->bg);
 		x++;
 		y++;
 		v_gtext(v->handle, x, y, t);
 		x--;
 		y--;
 	}
-	xa_t_color(v, wtxt->fgc);
+	xa_t_color(v, wtxt->fg);
 	v_gtext(v->handle, x, y, t);
 
 	/* normal */

@@ -391,7 +391,6 @@ struct xa_wcol
 
 struct xa_wcol_inf
 {
-
 #define WCOL_ACT3D			0x0001	/* Draw 3D action when selected */
 #define WCOL_DRAW3D			0x0002	/* Draw 3D borders */
 #define WCOL_DRAWBKG		0x0004	/* Draw background */
@@ -403,11 +402,11 @@ struct xa_wcol_inf
 #define WCOL_GRADIENT		0x0100
 #define WCOL_BOXRND			0x0200	/* Draw Rounded BOX */
 
-	short	flags;	/* */
-	short	wrm;	/* wrmode */
-	struct xa_wcol n; /* normal */
-	struct xa_wcol s; /* Selected */
-	struct xa_wcol h; /* Highlighted */
+	short	flags;
+	short	wr_mode;	/* wrmode */
+	struct xa_wcol normal; /* normal */
+	struct xa_wcol selected; /* Selected */
+	struct xa_wcol highlighted; /* Highlighted */
 };
 
 /*-----------------------------------------------------------------
