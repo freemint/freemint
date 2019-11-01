@@ -288,7 +288,7 @@ button_event(int lock, struct xa_client *client, const struct moose_data *md)
 
 	DIAG((D_button, NULL, "button_event: for %s, exiting? %s", c_owner(client), exiting ? "Yes" : "No"));
 	DIAG((D_button, NULL, "button_event: md: clicks=%d, head=%lx, tail=%lx, end=%lx",
-		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+		client->md_head->clicks, (unsigned long)client->md_head, (unsigned long)client->md_tail, (unsigned long)client->md_end));
 
 	if (!exiting)
 	{
@@ -311,7 +311,7 @@ button_event(int lock, struct xa_client *client, const struct moose_data *md)
 	}
 
 	DIAG((D_button, NULL, "button_event: md: clicks=%d, head=%lx, tail=%lx, end=%lx !",
-		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+		client->md_head->clicks, (unsigned long)client->md_head, (unsigned long)client->md_tail, (unsigned long)client->md_end));
 }
 /*
  * When a client is delivered a button event, we store the event
@@ -597,7 +597,7 @@ XA_move_event(int lock, const struct moose_data *md)
 	DIAG((D_mouse, NULL, "XA_move_event: menulocker = %s, ce_open_menu = %s, tablist = %lx, actwidg = %lx",
 		menustruct_locked() ? menustruct_locked()->name : "NONE",
 		C.ce_open_menu ? C.ce_open_menu->name : "NONE",
-		TAB_LIST_START, widget_active.widg));
+		(unsigned long)TAB_LIST_START, (unsigned long)widget_active.widg));
 
 
 	/* Ozk 040503: Moved the continuing handling of widgets actions here

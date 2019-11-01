@@ -270,7 +270,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 	w = get_wind_by_handle(lock, wind);
 
 	DIAG((D_wind, client, "wind_set for %s  w%lx, h%d, %s", c_owner(client),
-		w, w ? w->handle : -1, setget(cmd)));
+		(unsigned long)w, w ? w->handle : -1, setget(cmd)));
 
 // 	if (d) display(" wind_set for %s  w%lx, h%d, %s", w ? w->owner->proc_name : client->proc_name,
 // 		w, w ? w->handle : -1, setget(cmd));
@@ -286,7 +286,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		case WF_OPTS:
 			break;
 		default:
-			DIAGS(("WARNING:wind_set for %s: Invalid window handle %d", c_owner(client), w));
+			DIAGS(("WARNING:wind_set for %s: Invalid window handle %d", c_owner(client), wind));
 			pb->intout[0] = 0;	/* Invalid window handle, return error */
 			return XAC_DONE;
 		}
@@ -512,7 +512,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->pr, true);
 				else
 					*(RECT *)(pb->intout + 1) = w->pr;
-				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
+				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 			}
 			break;
 		}
@@ -528,7 +528,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->max, true);
 				else
 					*(RECT *)(pb->intout + 1) = w->max;
-				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
+				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 			}
 			break;
 		}
@@ -551,8 +551,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			}
 
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
-				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
-
+				pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], blit ? "yes":"no", (unsigned long)ir));
 
 			if( !(cfg.menu_bar & 1) || w->rc.y >= root_window->wa.y )
 			{
@@ -671,7 +670,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			}
 		#endif
 
-			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
+			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %lx", pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], status));
 
 // 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
 			move_window(lock, w, blit, status, m.x, m.y, m.w, m.h);
@@ -685,7 +684,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			if (!ir)
 				ir = (RECT *)&w->rc;
 			*(RECT *)(pb->intout + 1) = *ir;
-			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", *ir));
+			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", ir->x, ir->y, ir->w, ir->h));
 		}
 		break;
 	}
@@ -787,7 +786,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = 0;
 		else
 		{
-			RECT in; // = *((const RECT *)(pb->intin+2));
+			RECT in;
 
 			if (w->opts & XAWO_WCOWORK)
 				in = w2f(&w->delta, (const RECT *)(pb->intin + 2), true);
@@ -803,7 +802,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			else
 				*(RECT *)(pb->intout + 1) = w->rc;
 
-			DIAGS(("wind_set: WF_ICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
+			DIAGS(("wind_set: WF_ICONIFY return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 		}
 		break;
 	}
@@ -829,14 +828,11 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				if (w->opts & XAWO_WCOWORK)
 				{
 					in = w2f(&w->save_delta, (const RECT *)(pb->intin + 2), true);
-// 					display(" --- translated to  ----    %d/%d/%d/%d", in);
 				}
 				else
 					in = *((const RECT *)(pb->intin + 2));
 			}
 			uniconify_window(lock, w, &in);
-// 			display("uniconified to %d/%d/%d/%d", w->rwa);
-// 			display("               %d/%d/%d/%d\r\n", w->rc);
 		}
 		if (pb->control[N_INTOUT] >= 5)
 		{
@@ -845,8 +841,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			else
 				*(RECT *)(pb->intout + 1) = w->rc;
 
-// 			display("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1));
-			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
+			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 		}
 		break;
 	}
@@ -866,7 +861,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
 // 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 
-		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",ob, widg->stuff));
+		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx", (unsigned long)ob, (unsigned long)widg->stuff));
 // 		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
 // 			ob, widg->stuff);
 
@@ -876,7 +871,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			short vslw = 0;
 			long vsl = 0;
 
-			/*if (wt || !widg->stuff)*/	/* new or changed toolbar */
+			/* if (wt || !widg->stuff)*/	/* new or changed toolbar */
 			{
 				RECT or;
 				int md = widg->stuff ? 1 : 0;
@@ -1117,7 +1112,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			}
 		}
 
-		DIAGS(("wind_set: WF_SHADE, wind %d, status %x for %s",
+		DIAGS(("wind_set: WF_SHADE, wind %d, status %lx for %s",
 			w->handle, status, client->name));
 
 		if (msg != -1)
@@ -1266,7 +1261,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	w = get_wind_by_handle(lock, wind);
 
 	DIAG((D_wind, client, "wind_get for %s  w=%lx, h:%d, %s",
-		c_owner(client), w,wind, setget(cmd)));
+		c_owner(client), (unsigned long)w, wind, setget(cmd)));
 
 	if (w == 0)
 	{
@@ -1334,7 +1329,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		struct xa_rect_list *rl;
 
 		DIAG((D_wind, client, "wind_xget: N_INTIN=%d, (%d/%d/%d/%d) on wind=%d for %s",
-			pb->control[N_INTIN], *(const RECT *)(pb->intin+2), w->handle, client->name));
+			pb->control[N_INTIN], pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], w->handle, client->name));
 
 		if (is_shaded(w))
 			ro->x = ro->y = ro->w = ro->h = 0;
@@ -1694,7 +1689,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			client->half_screen_buffer = umalloc(client->half_screen_size);
 			DIAGS(("half_screen_buffer for %s: 0x%lx size %ld use %ld",
 				c_owner(client),
-				client->half_screen_buffer,
+				(unsigned long)client->half_screen_buffer,
 				client->half_screen_size,
 				client->options.half_screen));
 		}

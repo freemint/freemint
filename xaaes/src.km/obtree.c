@@ -258,7 +258,6 @@ sizeof_tedinfo(TEDINFO *ted)
 
 	size = (size + 1) & 0xfffffffe;
 	DIAGS(("sizeof_tedinfo: %ld", size));
-// 	display("sizeof_tedinfo: %ld", size);
 	return size;
 }
 static long
@@ -267,7 +266,6 @@ sizeof_bitblk(BITBLK *bb)
 	long size = sizeof(BITBLK);
 	size += 2L * bb->bi_wb * bb->bi_hl;
 	DIAGS(("sizeof_bitblk: %ld", size));
-// 	display("sizeof_bitblk: %ld", size);
 	return size;
 }
 static long
@@ -281,7 +279,6 @@ sizeof_iconblk(ICONBLK *ib)
 
 	size = (size + 1) & 0xfffffffe;
 	DIAGS(("sizeof_iconblk: %ld", size));
-// 	display("sizeof_iconblk: %ld", size);
 	return size;
 }
 
@@ -339,8 +336,7 @@ sizeof_ciconblk(CICONBLK *cb, CICON *i)
 
 	size = (size + 1) & 0xfffffffe;
 
-	DIAGS(("sizeof_ciconblk: %lx, %ld", cb, size));
-// 	display("sizeof_ciconblk: %lx, %ld", cb, size);
+	DIAGS(("sizeof_ciconblk: %lx, %ld", (unsigned long)cb, size));
 	return size;
 }
 static short
@@ -375,7 +371,7 @@ ob_count_objs(OBJECT *obtree, short parent, short depth)
 {
 	short objs = 0, start = obtree[parent].ob_head;
 
-	DIAG((D_rsrc, NULL, "ob_count_objs: tree %lx, parent %d", obtree, parent));
+	DIAG((D_rsrc, NULL, "ob_count_objs: tree %lx, parent %d", (unsigned long)obtree, parent));
 
 	DIAGS((" -- parent = %d", parent));
 
@@ -397,8 +393,7 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 	object = ob_get_parent(obtree, aesobj(obtree, start));
 	parent = object.item;
 
-	DIAGS(("obtree_len: tree = %lx, start = %d, parent = %d", obtree, start, parent));
-// 	display("obtree_len: tree = %lx, start = %d, parent = %d", obtree, start, parent);
+	DIAGS(("obtree_len: tree = %lx, start = %d, parent = %d", (unsigned long)obtree, start, parent));
 
 	size = 0;
 	do
@@ -407,7 +402,6 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 		short type = ob->ob_type & 0x00ff;
 
 		DIAGS((" -- ob %d, type = %d", curr, type));
-// 		display(" -- ob %d, type = %d", curr, type);
 		size += sizeof(OBJECT);
 		objs++;
 
@@ -476,7 +470,6 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 	} while ((curr = obtree[curr].ob_next) != parent);
 
 	DIAGS(("return obtreelen = %ld, objs = %d", size, objs));
-// 	display("return obtreelen = %ld, objs = %d", size, objs);
 
 	if (num_objs)
 		*num_objs = objs;
@@ -488,8 +481,7 @@ copy_tedinfo(OBJECT *root_tree, TEDINFO *src, TEDINFO *dst)
 {
 	char *s = (char *)dst + sizeof(TEDINFO);
 
- 	DIAGS(("copy_tedinfo: copy from %lx, to %lx", src, dst));
-//  	display("copy_tedinfo: copy from %lx, to %lx", src, dst);
+ 	DIAGS(("copy_tedinfo: copy from %lx, to %lx", (unsigned long)src, (unsigned long)dst));
 
 	*dst = *src;
 	if (src->te_ptext == (char *)-1L)
@@ -520,7 +512,6 @@ copy_tedinfo(OBJECT *root_tree, TEDINFO *src, TEDINFO *dst)
 	s += strlen(src->te_pvalid) + 1;
 
  	DIAGS((" --- return %lx", ((long)s + 1) & 0xfffffffe));
-//  	display(" --- return %lx", ((long)s + 1) & 0xfffffffe);
 
 	return (void *)(((long)s + 1) & 0xfffffffe);
 }
@@ -530,8 +521,7 @@ copy_bitblk(BITBLK *src, BITBLK *dst)
 	int i;
 	short *s, *d;
 
-	DIAGS(("copy_bitblk: from %lx, to %lx", src, dst));
-// 	display("copy_bitblk: from %lx, to %lx", src, dst);
+	DIAGS(("copy_bitblk: from %lx, to %lx", (unsigned long)src, (unsigned long)dst));
 
 	*dst = *src;
 
@@ -541,8 +531,7 @@ copy_bitblk(BITBLK *src, BITBLK *dst)
 	for (i = 0; i < (src->bi_wb * src->bi_hl); i ++)
 		*d++ = *s++;
 
-	DIAGS((" --- return %lx", d));
-// 	display(" --- return %lx", d);
+	DIAGS((" --- return %lx", (unsigned long)d));
 
 	return (void *)d;
 }
@@ -552,14 +541,12 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 	char *d;
 	int words, i;
 
-	DIAGS(("copy_iconblk: copy from %lx to %lx", src, dst));
-// 	display("copy_iconblk: copy from %lx to %lx", src, dst);
+	DIAGS(("copy_iconblk: copy from %lx to %lx", (unsigned long)src, (unsigned long)dst));
 
 	*dst = *src;
 
 	d = (char *)dst + sizeof(ICONBLK);
 	words = ((src->ib_wicon + 15) >> 4) * src->ib_hicon;
-// 	display("words = %d", words);
 	{
 		short *fr, *dr = (short *)d;
 
@@ -584,7 +571,6 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 	}
 
 	DIAGS((" --- return %lx", ((long)d + 1) & 0xfffffffe));
-// 	display(" --- return %lx", ((long)d + 1) & 0xfffffffe);
 
 	return (void *)(((long)d + 1) & 0xfffffffe);
 }
@@ -595,8 +581,7 @@ copy_cicon(CICON *src, CICON *dst, long words)
 	short *fr, *d = (short *)((char *)dst + sizeof(CICON));
 	long w, cwords;
 
-	DIAGS(("copy_cicon: from %lx to %lx(%lx), words %ld, planes %d", src, dst, d, words, src->num_planes));
-// 	display("copy_cicon: from %lx to %lx(%lx), words %ld, planes %d", src, dst, d, words, src->num_planes);
+	DIAGS(("copy_cicon: from %lx to %lx(%lx), words %ld, planes %d", (unsigned long)src, (unsigned long)dst, (unsigned long)d, words, src->num_planes));
 
 	dst->num_planes	= src->num_planes;
 	cwords = words * src->num_planes;
@@ -643,8 +628,7 @@ copy_cicon(CICON *src, CICON *dst, long words)
 
 	dst->next_res = NULL;
 
-	DIAGS(("copy_cicon: return %lx", d));
-// 	display("copy_cicon: return %lx", d);
+	DIAGS(("copy_cicon: return %lx", (unsigned long)d));
 
 	return (void *)d;
 }
@@ -655,8 +639,7 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 	char *d;
 	int words, i;
 
-	DIAGS(("copy_ciconblk: from %lx to %lx - cicon=%lx", dst, src, cicon));
-// 	display("copy_ciconblk: from %lx to %lx - cicon=%lx", dst, src, cicon);
+	DIAGS(("copy_ciconblk: from %lx to %lx - cicon=%lx", (unsigned long)dst, (unsigned long)src, (unsigned long)cicon));
 
 	*dst = *src;
 
@@ -738,8 +721,7 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 		}
 	}
 
-	DIAGS((" --- return %lx", d));
-// 	display(" --- return %lx", d);
+	DIAGS((" --- return %lx", (unsigned long)d));
 
 	return (void *)d;
 }
@@ -753,7 +735,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 	object = ob_get_parent(obtree, aesobj(obtree, start));
 	parent = object.item;
 
-	DIAGS(("copy_obtree: tree = %lx, start = %d, parent = %d, data=%lx/%lx", obtree, start, parent, data, *data));
+	DIAGS(("copy_obtree: tree = %lx, start = %d, parent = %d, data=%lx/%lx", (unsigned long)obtree, start, parent, (unsigned long)data, (unsigned long)*data));
 
 	do
 	{
@@ -762,7 +744,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 
 		short type = ob->ob_type & 0x00ff;
 
-		DIAGS((" -- ob %d, type = %d, old=%lx, new=%lx", curr, type, ob, on));
+		DIAGS((" -- ob %d, type = %d, old=%lx, new=%lx", curr, type, (unsigned long)ob, (unsigned long)on));
 		*on = *ob;
 		switch (type)
 		{
@@ -813,22 +795,18 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 			}
 			case G_ICON:
 			{
-// 				long before = *(long *)data;
 				on->ob_spec.iconblk = (ICONBLK *)*data;
 				*data = copy_iconblk(object_get_spec(ob)->iconblk, *data);
-// 				display("ICONCPY %ld bytes", *(long *)data - before);
 				break;
 			}
 			case G_CICON:
 			{
-// 				long before = *(long *)data;
 				CICON *i;
 
-				i = NULL; //getbest_cicon(object_get_spec(ob)->ciconblk);
+				i = NULL;
 
 				on->ob_spec.ciconblk = *data;
 				*data = copy_ciconblk(object_get_spec(ob)->ciconblk, *data, i);
-// 				display("CICONCPY %ld bytes", *(long *)data - before);
 				break;
 			}
 			case G_SLIST:
@@ -863,7 +841,6 @@ duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 	size = obtree_len(obtree, start, &objs);
 
 	DIAGS(("final obtreelen with %d objs is %ld\n", objs, size));
-// 	display("final obtreelen with %d objs is %ld\n", objs, size);
 
 	if (!client)
 		client = C.Aes;
@@ -880,9 +857,10 @@ duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 		data = (char *)new + ((long)objs * sizeof(OBJECT));
 
 		copy_obtree(obtree, 0, new, &data);
-// 		display("calc end %lx, real end %lx", (long)new + size, (long)data);
 		if ((long)data > (long)new + size)
-			display("end should be %lx, is %lx -- should return FAIL!!!", (long)new + size , (long)data);
+		{
+			DIAGS(("end should be %lx, is %lx -- should return FAIL!!!", (long)new + size, (long)data));
+		}
 	}
 	return new;
 }
@@ -940,7 +918,7 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 				p = (struct extbox_parms *)object_get_spec(ob)->index;
 				object_set_spec(ob, p->obspec);
 				ob->ob_type = p->type;
-				DIAG((D_rsrc, client, "Free extbox parameter bloc %lx", p));
+				DIAG((D_rsrc, client, "Free extbox parameter bloc %lx", (unsigned long)p));
 				kfree(p);
 				break;
 			}
@@ -968,7 +946,7 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 {
 	if (obtree)
 	{
-		DIAG((D_objc, client, "free_object_tree: %lx for %s", obtree, client->name));
+		DIAG((D_objc, client, "free_object_tree: %lx for %s", (unsigned long)obtree, client->name));
 		free_obtree_resources(client, obtree);
 		if (client == C.Aes || client == C.Hlp)
 		{
@@ -1083,10 +1061,6 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 						*this++ = ' ';
 						*this++ = '\0';
 						(*v->api->t_extent)(v, entry/*this*/, &w, &h);
-
-// 						this += strlen(entry) + 2;
-// 						*this++ = ' ';
-// 						*this++ = '\0';
 					}
 					if (new->ob_width < w)
 						new->ob_width = w;
@@ -1546,7 +1520,7 @@ downlink:
 	}
 
 	DIAG((D_rsrc, NULL, "ob_get_parent: parent of %d in %lx is %d in %lx",
-		aesobj_item(&obj), aesobj_tree(&obj), aesobj_item(&curr), aesobj_tree(&curr)));
+		aesobj_item(&obj), (unsigned long)aesobj_tree(&obj), aesobj_item(&curr), (unsigned long)aesobj_tree(&curr)));
 
 	clean_aesobj_links(&oblink);
 
@@ -1739,7 +1713,7 @@ ob_find_type(OBJECT *tree, short t )
 	return d.ret_object;
 }
 
-// set top/untop-rendering (for list-windows)
+/* set top/untop-rendering (for list-windows) */
 static bool
 set_wind(OBJECT *tree, short o, void *_data)
 {
@@ -1786,7 +1760,7 @@ void ob_set_wind(OBJECT *tree, short f, short t )
 }
 
 
-#define SY_TOL	4	// sloppy y-coord-matching
+#define SY_TOL	4	/* sloppy y-coord-matching */
 
 struct xa_aes_object
 ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
@@ -1797,7 +1771,6 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 	short x, y, w, h, ax, cx, cy, cf, flg;
 	bool dothings = false;
 	OBJECT *tree = wt->tree, *this;
-// 	bool d = false;
 	struct oblink_spec *oblink = NULL;
 	struct xa_aes_object curr, next, stop, co;
 	RECT r;
@@ -1806,8 +1779,6 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 
 	co = stop = inv_aesobj();
 	cf = 0;
-
-// 	if (d) display(" ob_find_any_next_flagstate, parent %d, start %d", aesobj_item(&parent), aesobj_item(&start));
 
 	DIAG((D_rsrc, NULL,"ob_find_any_next_flagstate, parent %d, start %d", aesobj_item(&parent), aesobj_item(&start)));
 
@@ -1824,7 +1795,6 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 
 	if (aesobj_head(&parent) == -1)
 	{
-// 		if (d) display("parent head -1");
 		return co;
 	}
 
@@ -1838,7 +1808,6 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 		r.w = r.h = 1;
 		flags &= ~(OBFIND_HOR|OBFIND_DOWN|OBFIND_NOWRAP);
 		flags |= OBFIND_DOWN;
-// 		if (d) display(" FIND FIRST");
 	}
 	else if ((flags & OBFIND_LAST))
 	{
@@ -1848,12 +1817,9 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 		r.w = r.h = 1;
 		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN|OBFIND_NOWRAP);
 		flags |= OBFIND_HOR|OBFIND_UP;
-// 		if (d) display(" FIND LAST");
 	}
 	else
 		obj_rectangle(wt/*tree*/, start, &r);
-
-// 	if (d) display("  realstart %d (%d/%d/%d/%d)", aesobj_item(&start), r);
 
 	do
 	{
@@ -1863,7 +1829,6 @@ uplink:
 		{
 			if (!dothings)
 			{
-// 				if (d) display("start doing things at obj %d, x=%d,y=%d", aesobj_item(&curr), x, y);
 				dothings = true;
 				rel_depth = 0;
 				stop = parent;
@@ -1872,12 +1837,6 @@ uplink:
 
 		if (set_aesobj_uplink(&tree, &curr, &stop, &oblink))
 		{
-// 			if (d)
-// 			{
-// 				display("uplink from %d in %lx to %d in %lx",
-// 					oblink->from.item, oblink->from.tree,
-// 					oblink->to.item, oblink->to.tree);
-// 			}
 			goto uplink;
 		}
 
@@ -2058,7 +2017,6 @@ uplink:
 
 		if (aesobj_head(&curr) != -1 && (!aesobj_hidden(&curr) || (flags & OBFIND_HIDDEN)))
 		{
-// 			if (d) display(" parent %d, head = %d", aesobj_item(&curr), aesobj_ob(&curr)->ob_head);
 			x += aesobj_getx(&curr);
 			y += aesobj_gety(&curr);
 			curr = aesobj(aesobj_tree(&curr), aesobj_head(&curr));
@@ -2074,7 +2032,6 @@ downlink:
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
-// 					if (d) display(" children of %d done", aesobj_item(&curr));
 					curr = next;
 					x -= aesobj_getx(&curr);
 					y -= aesobj_gety(&curr);
@@ -2086,29 +2043,23 @@ downlink:
 			}
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
 			{
-// 				if (d) display("downlink to %d in %lx", curr.item, curr.tree);
-
 				x -= aesobj_getx(&curr);
 				y -= aesobj_gety(&curr);
 				goto downlink;
 			}
 			curr = next;
 
-// 			if (d) display(" next %d", aesobj_item(&curr));
 		}
 	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop) && rel_depth > 0);
 
 	if (!cf && (flags & OBFIND_NOWRAP))
 	{
-// 		if (d) display(" nowrap !");
-
 		co = inv_aesobj();
 	}
 
 done:
 	clean_aesobj_links(&oblink);
 
-// 	if (d) display("return %d", aesobj_item(&co));
 	return co;
 }
 
@@ -2256,7 +2207,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp)
 	short objs;
 	char nk;
 
-	DIAG((D_rsrc, NULL, "ob_fix_shortcuts: tree=%lx)", obtree));
+	DIAG((D_rsrc, NULL, "ob_fix_shortcuts: tree=%lx)", (unsigned long)obtree));
 
 	if( !scp )
 	{
@@ -2268,7 +2219,6 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp)
 			BLOG((0,"ob_fix_shortcuts:kmalloc(%ld) failed.", len));
 			return;
 		}
-		//bzero(sc, len);
 	}
 	else
 	{
@@ -2384,7 +2334,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp)
 												nc--;		/* if searched and found nc is 1 char too far */
 										if (nc < slen)
 										{
-											ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8) | OS_WHITEBAK;// | 0x8000;
+											ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8) | OS_WHITEBAK;
 										}
 										else
 										{
@@ -2449,9 +2399,7 @@ ob_find_shortcut(OBJECT *tree, ushort nk, short stop_type)
 					}
 				}
 			}
-			//else DBG((0,"ob_find_shortcut:i=%d, ob_state=%x, ob_flags=%x, next=%d,head=%d,tail=%d", i, ob->ob_state, ob->ob_flags, ob->ob_next, ob->ob_head, ob->ob_tail));
 		}
-		//else DBG((0,"ob_find_shortcut:i=%d, ob_type=%d, ob_state=%x, ob_flags=%x, next=%d,head=%d,tail=%d", i, ob->ob_type, ob->ob_state, ob->ob_flags, ob->ob_next, ob->ob_head, ob->ob_tail));
 
 		if( (tree[i].ob_flags & OF_LASTOB) )
 			break;
@@ -2488,9 +2436,7 @@ obj_init_focus(XA_TREE *wt, short flags)
 		o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
 		if (valid_aesobj(&o))
 		{
-			//print_xted( &wt->e.o, __LINE__ );
 			wt->e.o = wt->focus = o;
-			//print_xted( &wt->e.o, __LINE__ );
 		}
 		else if (!(flags & OB_IF_ONLY_EDITS))
 		{
@@ -2599,7 +2545,6 @@ set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 
-		//*(RECT*)&tree->ob_x = *(RECT*)&(*oblink)->save_to_r.x;
 		tree->ob_x = (*oblink)->save_to_r.x;
 		tree->ob_y = (*oblink)->save_to_r.y;
 		tree->ob_width = (*oblink)->save_to_r.w;
@@ -2648,7 +2593,7 @@ obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my)
 	short x = -wt->dx, y = -wt->dy;
 
 	DIAG((D_objc, NULL, "obj_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
-		obtree, aesobj_item(&object), mx, my));
+		(unsigned long)obtree, aesobj_item(&object), (unsigned long)mx, (unsigned long)my));
 	DIAG((D_objc, NULL, " ---- --  : dx=%d, dy=%d", wt->dx, wt->dy));
 
 	do
@@ -2728,7 +2673,7 @@ ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my)
 	short x = 0, y = 0;
 
 	DIAG((D_objc, NULL, "ob_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
-		obtree, aesobj_item(&object), mx, my));
+		(unsigned long)obtree, aesobj_item(&object), (unsigned long)mx, (unsigned long)my));
 
 	do
 	{
@@ -2825,7 +2770,6 @@ obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	}
 	c->w = aesobj_getw(&obj);
 	c->h = aesobj_geth(&obj);
-// 	display("obj_orect: %d/%d/%d/%d", *c);
 }
 #endif
 bool
@@ -2842,7 +2786,7 @@ obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	}
 	c->w = aesobj_getw(&obj);
 	c->h = aesobj_geth(&obj);
-	(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&obj), &r); //object_offsets(aesobj_ob(&obj), &r);
+	(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&obj), &r);
 	c->x += r.x;
 	c->y += r.y;
 	c->w -= r.w;
@@ -2960,7 +2904,7 @@ obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short 
 	RECT r, or = (RECT){0,0,0,0};
 
 	DIAG((D_objc, NULL, "obj_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
-		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
+		object.item, depth, (unsigned long)obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
 		mx, my));
 	do {
 
@@ -3209,18 +3153,21 @@ obj_change(XA_TREE *wt,
 
 	if (draw && redraw) {
 #if 1
-		// "sysinfo"-fix
-		if( obj.ob->ob_type == G_USERDEF && !clip /*&& obj.ob->ob_x == 0*/ )
+		RECT r;
+		/* "sysinfo"-fix */
+		if( obj.ob->ob_type == G_USERDEF && !clip)
 		{
-			RECT r;
-			r = *(RECT*)&obj.ob->ob_x;
+			r.x = obj.ob->ob_x;
+			r.y = obj.ob->ob_y;
+			r.w = obj.ob->ob_width;
+			r.h = obj.ob->ob_height;
 			clip = &r;
 		}
 #endif
 
 		if( obj.ob->ob_y == 0 && (aesobj_type(&obj) == G_TITLE || aesobj_type(&obj) == G_USERDEF) )
 			rl = 0;
-		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);	// of y=0 and G_TITLE it's a menu-title (don't clip)
+		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);	/* of y=0 and G_TITLE it's a menu-title (don't clip) */
 	}
 }
 
@@ -3230,7 +3177,6 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 	struct xa_aes_object start = obj;
 	RECT or;
 	bool pd = false;
-// 	struct xa_aes_object object;
 
 	if (!obj_area(wt, obj, &or))
 	{
@@ -3635,7 +3581,7 @@ obj_ed_char(
 		key = keycode & 0xff;
 
 		if( key == 0 )
-			return false;	// bug #0000168
+			return false;
 
 		if ((n = strlen(ted->te_pvalid) - 1) < 0)
 		{
@@ -3737,9 +3683,8 @@ obj_ed_char(
 		update = true;
 
 		break;
-	}	/*/default*/
-	}	/*/switch (keycode)*/
-// 	ei->pos = cursor_pos;
+	}
+	}
 	return update;
 }
 
@@ -3809,11 +3754,6 @@ obj_xED_INIT(struct widget_tree *wt,
 		 */
 		/* --- */
 
-// 		display("xED_INIT: ei=%lx", ei);
-// 		display(" -- ted %lx, xted %lx, oted %lx", ted, ei, ei->p_ti);
-// 		display(" -- ptext %lx, txtlen %d", ted->te_ptext, ted->te_txtlen);
-// 		display(" -- text '%s'", ted->te_ptext);
-
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 
@@ -3838,7 +3778,6 @@ obj_xED_INIT(struct widget_tree *wt,
 			wt->ei = ei;
 		}
 		DIAGS(("xED_INIT: te_ptext='%s', %lx", ted->te_ptext, (long)ted->te_ptext));
-// 		display("xED_INIT: te_ptext='%s', %lx", ted->te_ptext, (long)ted->te_ptext);
 	}
 }
 
@@ -3916,7 +3855,7 @@ obj_ED_INIT(struct widget_tree *wt,
 	}
 
 	DIAGS(("ED_INIT: return ted=%lx, old_ed=%d",
-		ted, old_ed_obj));
+		(unsigned long)ted, old_ed_obj.item));
 
 	if (ted_ret)
 		*ted_ret = ted;
@@ -3962,7 +3901,6 @@ obj_ED_END(struct widget_tree *wt,
 		showm();
 	}
 	wt->e.c_state ^= OB_CURS_EOR;
-// 	display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, edit_item(&wt->e), wt->owner->name);
 }
 /*
  * Returns 1 if successful (character eaten), or 0 if not.
@@ -3992,13 +3930,13 @@ obj_edit(XA_TREE *wt,
 #if GENERATE_DIAGS
 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
 	DIAG((D_form,wt->owner,"  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
-	      funcstr, wt, obtree, aesobj_item(&obj), keycode, pos));
+	      funcstr, (unsigned long)wt, (unsigned long)obtree, aesobj_item(&obj), keycode, pos));
 #endif
 
 	if (valid_aesobj(&obj))
 		ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 
-	if (!xted) //(!(wt->flags & WTF_OBJCEDIT)) //!(wt->owner->options.app_opts & XAAO_OBJC_EDIT))
+	if (!xted)
 	{
 		short last = 0;
 		while (!(obtree[last].ob_flags & OF_LASTOB))
@@ -4086,7 +4024,7 @@ obj_edit(XA_TREE *wt,
 						ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
 						ei = &wt->e;
 
-						DIAGS((" -- obj_edit: ted=%lx", ted));
+						DIAGS((" -- obj_edit: ted=%lx", (unsigned long)ted));
 
 						if (redraw)
 						{
@@ -4106,12 +4044,6 @@ obj_edit(XA_TREE *wt,
 			}
 			case ED_STRING:
 			{
-// 				if (!string)
-// 					break;
-
-// 				if (!keycode)
-// 					obj_ED_INIT(wt, &wt->e, obj.item, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
-// 				else
 				if (string)
 				{
 					hidem();
@@ -4164,7 +4096,7 @@ obj_edit(XA_TREE *wt,
 						ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
 						ei = &wt->e;
 
-						DIAGS((" -- obj_edit: ted=%lx", ted));
+						DIAGS((" -- obj_edit: ted=%lx", (unsigned long)ted));
 
 						if (redraw)
 						{
@@ -4269,11 +4201,9 @@ obj_edit(XA_TREE *wt,
 					else
 					{
 						ei = xted;
-						//ei = wt->ei;
 
 						obj_xED_INIT(wt, ei, pos, SETMARKS|SETACTIVE);
 						(*wt->objcr_api->set_cursor)(wt, v, ei);
-// 						enable_objcursor(wt, v);
 						if (redraw)
 						{
 							obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
@@ -4346,7 +4276,7 @@ obj_edit(XA_TREE *wt,
 
 				if (!ei || ei != xted)
 				{
-					DIAGS((" -- obj_edit: on object=%d without cursor focus", obj));
+					DIAGS((" -- obj_edit: on object=%d without cursor focus", obj.item));
 
 					if ((ei = xted))
 					{
@@ -4355,7 +4285,7 @@ obj_edit(XA_TREE *wt,
 					}
 				}
 				else
-					drwcurs = true; //redraw;
+					drwcurs = true;
 
 				if (ei)
 				{
@@ -4371,7 +4301,6 @@ obj_edit(XA_TREE *wt,
 					{
 						if (redraw)
 						{
- 							//DBG((0,"ED_CHAR:obj_draw,ei=%d", editfocus(ei).item));
 							obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
 						}
 					}
@@ -4408,7 +4337,7 @@ obj_edit(XA_TREE *wt,
 						obj_xED_INIT(wt, ei, -1, CLRMARKS);
 				}
 				else
-					drwcurs = true; //redraw;
+					drwcurs = true;
 
 				if (ei)
 				{
@@ -4465,7 +4394,7 @@ obj_edit(XA_TREE *wt,
 				else
 					drwcurs = true;
 
-				DIAGS((" -- obj_edit: ted=%lx", ted));
+				DIAGS((" -- obj_edit: ted=%lx", (unsigned long)ted));
 				if (ei)
 				{
 					hidem();
@@ -4609,7 +4538,7 @@ obj_set_radio_button(XA_TREE *wt,
 	parent = ob_get_parent(obtree, obj);
 
 	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, obj=%d, parent=%d",
-		wt, obtree, obj, parent));
+		(unsigned long)wt, (unsigned long)obtree, obj.item, parent.item));
 
 	if (valid_aesobj(&parent))
 	{
@@ -4619,7 +4548,7 @@ obj_set_radio_button(XA_TREE *wt,
 		{
 			if ( (aesobj_flags(&o) & OF_RBUTTON) && aesobj_sel(&o) )
 			{
-				DIAGS(("radio: change obj %d", o));
+				DIAGS(("radio: change obj %d", o.item));
 				if (!same_aesobj(&o, &obj))
 				{
 					obj_change(wt,
@@ -4634,7 +4563,7 @@ obj_set_radio_button(XA_TREE *wt,
 			}
 			o = aesobj(aesobj_tree(&o), aesobj_next(&o));
 		}
-		DIAGS(("radio: set obj %d", obj));
+		DIAGS(("radio: set obj %d", obj.item));
 		obj_change(wt,
 			   v,
 			   obj, -1,
@@ -4653,7 +4582,7 @@ obj_get_radio_button(XA_TREE *wt,
 	struct xa_aes_object o = parent;
 
 	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, parent=%d",
-		wt, aesobj_tree(&parent), aesobj_item(&parent)));
+		(unsigned long)wt, (unsigned long)aesobj_tree(&parent), aesobj_item(&parent)));
 
 	if (valid_aesobj(&parent))
 	{
@@ -4678,8 +4607,6 @@ obj_watch(XA_TREE *wt,
 	   const RECT *clip,
 	   struct xa_rect_list *rl)
 {
-// 	OBJECT *focus = wt->tree + obj;
-// 	short pobf = -2;
 	struct xa_aes_object obf = obj, pobf = aesobj(wt->tree, -2);
 	short mx, my, mb, x, y, omx, omy;
 	short flags = aesobj_flags(&obj);

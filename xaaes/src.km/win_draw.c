@@ -3659,7 +3659,7 @@ fix_default_widgets(void *rsc)
 	int i;
 
 	def_widgets = (*api->resource_tree)(rsc, WIDGETS);
-	DIAGS(("widget set at %lx", def_widgets));
+	DIAGS(("widget set at %lx", (unsigned long)def_widgets));
 
 	for (i = 1; i < WIDG_CFG; i++)
 		fix_widg(def_widgets + i);
@@ -3702,19 +3702,19 @@ ref_colortheme_resources(struct module *m, struct window_colours *wc)
 		{
 			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
-			else BLOG((1,"ref_colortheme_resources(h):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
+			else BLOG((1,"ref_colortheme_resources(h):t=0(wtexure=%lx,m=%lx,i=%d)", (unsigned long)wtexture, (unsigned long)m, i));
 		}
 		if ((wtexture = wci[i].n.texture))
 		{
 			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
-			else BLOG((1,"ref_colortheme_resources(n):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
+			else BLOG((1,"ref_colortheme_resources(n):t=0(wtexure=%lx,m=%lx,i=%d)", (unsigned long)wtexture, (unsigned long)m, i));
 		}
 		if ((wtexture = wci[i].s.texture))
 		{
 			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
-			else BLOG((1,"ref_colortheme_resources(s):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
+			else BLOG((1,"ref_colortheme_resources(s):t=0(wtexure=%lx,m=%lx,i=%d)", (unsigned long)wtexture, (unsigned long)m, i));
 		}
 	}
 }
@@ -3738,7 +3738,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 			{
 				(*api->deref_xa_data)(&m->allocs, t, 1);
 			}
-			else BLOG((1,"deref_colortheme_resources(h):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
+			else BLOG((1,"deref_colortheme_resources(h):t=0(wtexure=%lx,m=%lx,i=%d)", (unsigned long)wtexture, (unsigned long)m, i));
 		}
 		if ((wtexture = wci[i].n.texture))
 		{
@@ -3747,7 +3747,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 			{
 				(*api->deref_xa_data)(&m->allocs, t, 1);
 			}
-			else BLOG((1,"deref_colortheme_resources(n):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
+			else BLOG((1,"deref_colortheme_resources(n):t=0(wtexure=%lx,m=%lx,i=%d)", (unsigned long)wtexture, (unsigned long)m, i));
 		}
 		if ((wtexture = wci[i].s.texture))
 		{
@@ -3756,7 +3756,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 			{
 				(*api->deref_xa_data)(&m->allocs, t, 1);
 			}
-			else BLOG((1,"deref_colortheme_resources(s):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
+			else BLOG((1,"deref_colortheme_resources(s):t=0(wtexure=%lx,m=%lx,i=%d)", (unsigned long)wtexture, (unsigned long)m, i));
 		}
 	}
 }
@@ -4163,7 +4163,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		else
 		{
 			rsc = (*api->load_resource)(NULL, rscfile, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
-			DIAGS(("widget_resources = %lx (%s)", rsc, widg_name));
+			DIAGS(("widget_resources = %lx (%s)", (unsigned long)rsc, widg_name));
 			(*api->kfree)(rscfile);
 		}
 		if (!rsc)

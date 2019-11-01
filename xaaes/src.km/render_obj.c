@@ -31,7 +31,6 @@
 #include "mscall.h"
 
 #define RASTER_HDL	v->handle
-//#define RASTER_HDL	api->C->raster_handle
 
 #define MONO (screen->colours < 16)
 #define done(x) (*wt->state_mask &= ~(x))
@@ -65,7 +64,7 @@ static void _cdecl obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c);
 
 static bool use_gradients = true;
 #if WITH_BKG_IMG || WITH_GRADIENTS
-static bool box2_status = false;	// have box_gradient2?
+static bool box2_status = false;	/* have box_gradient2? */
 #endif
 struct texture
 {
@@ -168,7 +167,9 @@ static struct xa_gradient menu_gradient =
 	16,  0,
 
 	0, 0, {0},
-// 	{{750,750,750},{900,900,900}},
+#if 0
+	{{750,750,750},{900,900,900}},
+#endif
 	{{900,900,900},{600,600,600}},
 };
 static struct xa_gradient sel_title_gradient =
@@ -3292,7 +3293,7 @@ d3_pushbutton(struct xa_vdi_settings *v, struct theme *theme, short d, RECT *r, 
 	outline = j;
 
 #ifdef REND_NAES3D
-	if ((theme->rflags & NAES3D) && !(mode & 2)) //default_options.naes && !(mode & 2))
+	if ((theme->rflags & NAES3D) && !(mode & 2))
 	{
 		(*v->api->l_color)(v, theme->normal.c.box_c);
 
@@ -3350,8 +3351,6 @@ d3_pushbutton(struct xa_vdi_settings *v, struct theme *theme, short d, RECT *r, 
 	}
 
 	shadow_object(v, outline, state, r, theme->shadow_col, thick);
-
-// 	(*v->api->l_color)(v, objc_rend.dial_colours.border_col);
 }
 #endif
 #if 0
@@ -3382,7 +3381,7 @@ set_colours(OBJECT *ob, struct xa_vdi_settings *v, struct theme *t, BFOBSPEC *co
 
 			/* Object inherits default dialog background colour? */
 			if ((colourword->interiorcol == 0) && obj_is_3d(ob))
-				c = t->button.norm.n[4].col.c; //background.norm.n.col.c; //normal.c.c;
+				c = t->button.norm.n[4].col.c;
 			else
 				c = G_WHITE;
 
@@ -3564,17 +3563,17 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 	long sz = 0;
 	struct xa_vdi_settings *v = client->vdi_settings;
 	static void *background = 0;
-	static int ierr = -1;	// 0: ok
+	static int ierr = -1;	/* 0: ok */
 	static char bfn[PATH_MAX];
 
 	if( md == 4 )
 		return ierr;
-	if( ierr == 1 )	// no memory
+	if( ierr == 1 )	/* no memory */
 		return 3;
-	if( md == 0 && ierr == 2 )	// wrong file
+	if( md == 0 && ierr == 2 )	/* wrong file */
 		return 3;
 
-	if( md == 2 )	//free
+	if( md == 2 )	/* free */
 	{
 		if( ierr == 0 && background )
 			kfree(background);
@@ -3588,7 +3587,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 		{
 			long l = make_bkg_img_path( bfn, sizeof(bfn)-16 );
 			long err = _d_create( bfn );
-			if( err == -33 )	// could not mkdir
+			if( err == -33 )	/* could not mkdir */
 			{
 				BLOG((0,"do_bkg_img:could not create %s", bfn ));
 				ierr = 2;
@@ -3712,7 +3711,7 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 	bool selected = (wt->current.ob->ob_state & OS_SELECTED);
 	const short *sc;
 	bool ind = (selected && obj_is_indicator(wt->current.ob));
-	bool use_cw = (cw && (cw->fillpattern != IP_HOLLOW || cw->interiorcol)); // || !obj_is_3d(wt->current.ob)));
+	bool use_cw = (cw && (cw->fillpattern != IP_HOLLOW || cw->interiorcol));
 
 	(*v->api->wr_mode)(v, ct->col.wrm);
 
@@ -3743,16 +3742,16 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 		d = -d;
 		j += d;
 	}
-	if (j) //((j += d3_thick  + /*bthick +*/ d))
+	if (j)
 	{
 		r.x -= j;
 		r.y -= j;
-		j += j; //<<= 1;
+		j += j;
 		r.w += j;
 		r.h += j;
 	}
 
-	if (use_cw) // (cw && !(cw->fillpattern == IP_HOLLOW && cw->interiorcol == 0 && obj_is_3d(wt->current.ob)))
+	if (use_cw)
 	{
 		/* Display a border? */
 		if (box_thick)
@@ -3863,15 +3862,15 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 				if (flags & DRAW_BOX)
 				{
 					int i = box_thick;
-					(*v->api->l_color)(v, box_col); //ct->col.box_c);
+					(*v->api->l_color)(v, box_col);
 					(*v->api->rgbox)(v, o, 1, &r);
 					i--;
 					o--;
 
 					while (i > 0)
 					{
-						(*v->api->br_hook)(v, o, &r, box_col); //ct->col.box_c);
-						(*v->api->tl_hook)(v, o, &r, box_col); //ct->col.box_c);
+						(*v->api->br_hook)(v, o, &r, box_col);
+						(*v->api->tl_hook)(v, o, &r, box_col);
 						i--;
 						o--;
 					}
@@ -3920,7 +3919,7 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 			{
 				short y = r.y;
 				(*v->api->draw_texture)(v, wgrad->body, &r, wr == anch ? &r : anch);
-				r.y = y;	//?
+				r.y = y;
 				flags &= ~(DRAW_BKG|DRAW_TEXTURE);
 			}
 		}
@@ -3965,7 +3964,7 @@ button_colours(struct theme *theme)
 	c.framesize = 0;
 
 	c.framecol = theme->normal.c.box_c;
-	c.textcol  = theme->normal.t.fgc; //G_BLACK;
+	c.textcol  = theme->normal.t.fgc;
 	c.textmode = 1;
 	c.fillpattern = IP_HOLLOW;
 	c.interiorcol = theme->normal.c.c;
@@ -3992,12 +3991,10 @@ ob_text(XA_TREE *wt,
 	short flags,
 	short und, short undcol)
 {
-// 	struct theme *theme = wt->objcr_theme;
-
 	if (t && *t)
 	{
 		OBJECT *ob = wt->current.ob;
-		bool fits = true; // !o || ((o->h >= r->h - (obj_is_foreground(ob) ? 4 : 0)));
+		bool fits = true;
 		bool drw3d = (!MONO && ((ct->fnt.flags & WTXT_DRAW3D) || ((flags & OF_FL3DIND) && !(state & OS_DISABLED))));
 
 
@@ -4012,7 +4009,7 @@ ob_text(XA_TREE *wt,
 			    && (     c->fillpattern == IP_HOLLOW
 			         || (c->fillpattern == IP_SOLID && c->interiorcol == G_WHITE)))
 			{
-				(*v->api->f_color)(v, ct->col.c); //theme->normal.c.c);
+				(*v->api->f_color)(v, ct->col.c);
 				(*v->api->wr_mode)(v, MD_REPLACE);
 				(*v->api->gbar)(v, 0, o ? o : r);
 				(*v->api->wr_mode)(v, MD_TRANS);
@@ -4069,7 +4066,6 @@ ob_text(XA_TREE *wt,
 
 			start = ei->m_start + ei->edstart;
 			end = ei->m_end + ei->edstart;
-// 			tc = v->text_color;
 			if (start)
 			{
 				strncpy(s, t, start);
@@ -4088,7 +4084,7 @@ ob_text(XA_TREE *wt,
 			s[end - start] = '\0';
 			(*v->api->t_extent)(v, s, &w, &h);
 			br.x = x, br.w = w;
-			(*v->api->f_color)(v, markbg); //G_BLUE);
+			(*v->api->f_color)(v, markbg);
 			(*v->api->wr_mode)(v, MD_REPLACE);
 			(*v->api->gbar)(v, 0, &br);
 			(*v->api->wr_mode)(v, MD_TRANS);
@@ -4099,13 +4095,10 @@ ob_text(XA_TREE *wt,
 				v_gtext(v->handle, x, y, s);
 			}
 			(*v->api->t_color)(v, mfgc);
-// 			(*v->api->t_color)(v, G_WHITE);
 			v_gtext(v->handle, x, y, s);
 
-// 			(*v->api->t_color)(v, tc);
 			if (sl > end)
 			{
-// 				(*v->api->t_extent)(v, s, &w, &h);
 				x += w;
 				strncpy(s, t + end, sl - end);
 				s[sl - end] = '\0';
@@ -4172,11 +4165,7 @@ ob_text(XA_TREE *wt,
 					else
 						undcol++;
 				}
-				//(*v->api->wr_mode)(v, MD_REPLACE);
-				//(*v->api->l_width)(v, 2 );
 				(*v->api->line)(v, x, y, x + w, y, undcol);
-				//(*v->api->l_width)(v, 1 );
-				//(*v->api->wr_mode)(v, MD_TRANS);
 			}
 		}
 		else if (und == -2)
@@ -4226,12 +4215,9 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 	 * filled, edit_index was indeterminate. :-)
 	 */
 	short edit_index = max;
-// 	char *to = text_out;
 	bool aap = *text_in == '@';
 
 	DIAG((D_o, NULL, "format_dialog_text edit_pos %d", edit_pos));
-// 	display("t  in '%s'", text_in);
-// 	display("tmplt '%s'", template);
 	while (*template)
 	{
 		if (*template != '_')
@@ -4260,7 +4246,7 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 					*text_out++ = *text_in++;
 			}
 			else
-				*text_out++ = '_'; // XXX cfg.ted_filler;
+				*text_out++ = '_';
 
 			tpos++;
 		}
@@ -4279,8 +4265,6 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 	/* keep visible at end */
 	if (edit_index > max)
 		edit_index--;
-
-// 	display("t out '%s'", to);
 
 	return edit_index;
 }
@@ -4343,11 +4327,8 @@ set_text(OBJECT *ob,
 
 	if (ted->te_ptext == (char *)0xffffffffL)
 	{
-// 		ndisplay("ted %lx, just %d", ted, ted->te_just);
 		xted = (XTEDINFO *)ted->te_ptmplt;
 		ted = &xted->ti;
-// 		display("ted %lx, just %d", ted, ted->te_just);
-// 		display("xted %lx, te_ptext %lx, text '%s'", xted, ted->te_ptext, ted->te_ptext);
 		if (ret_ei)
 			*ret_ei = xted;
 	}
@@ -4358,11 +4339,13 @@ set_text(OBJECT *ob,
 
 	col.jc[0] = ted->te_just;
 	col.jc[1] = ted->te_color;
-	*colours = col.bfobspec; //*(BFOBSPEC*)&ted->te_just;
+	*colours = col.bfobspec;
 
-        // FIXME: gemlib problem: hacked a bit need only "ted->te_color" word;
-	//	  -> cleaning the information that would not be taken if
-	//	     properly used:
+    /*
+     * FIXME: gemlib problem: hacked a bit need only "ted->te_color" word;
+	 *	  -> cleaning the information that would not be taken if
+	 *	     properly used:
+	 */
 	colours->character = 0;
 	colours->framesize = 0;
 
@@ -4475,8 +4458,7 @@ set_text(OBJECT *ob,
 		temp_text[cur_x] = sc;
 
 		*cr = cur;
-		display("add %d to curs", tw);
-		cr->x += tw; //cur_x * cur.w;	/* non prop font only */
+		cr->x += tw;
 		cr->w = 1;
 	}
 
@@ -4484,7 +4466,6 @@ set_text(OBJECT *ob,
 	cur.h = h;
 	*gr = cur;
 
-// 	display(" -- '%s'", temp_text);
 	if (ret_edstart)
 		*ret_edstart = start_tpos;
 }
@@ -4546,7 +4527,7 @@ set_obtext(TEDINFO *ted,
 	else
 		strncpy(temp_text, ted->te_ptext, 255);
 
-	(*v->api->t_effects)(v, 0);	// use normal style
+	(*v->api->t_effects)(v, 0);	/* use normal style */
 
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 
@@ -4659,8 +4640,9 @@ draw_outline(struct widget_tree *wt, struct xa_vdi_settings *v, short d, RECT *r
 
 	done(OS_OUTLINED);
 }
+
 #include "desktop.h"
-// draw_objc_bkg(struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short d, short d3_thick, short box_thick, short btlc, short bbrc, short state, RECT *wr, RECT *anch)
+
 static void
 draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *c, short flags, RECT *area)
 {
@@ -4683,7 +4665,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 		out += 2;
 	}
 	else if (!c && (ct->col.flags & WCOL_DRAW3D) && (flags & DRAW_3D))
-		d3t--; //, d++;
+		d3t--;
 
 	draw_objc_bkg(wt, v, ct, c, flags, -1, c ? c->framecol : -1, d, d3t, thick, thick, &r, (flags & ANCH_PARENT) ? (RECT *)&wt->current.tree->ob_x : &r, area);
 
@@ -4871,7 +4853,7 @@ draw_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_li
 				r.y += wt->tree->ob_y;
 				rl_xor(v, &r, rl);
 			}
-			ei->c_state |= OB_CURS_ENABLED; //OB_CURS_DRAWN;
+			ei->c_state |= OB_CURS_ENABLED;
 		}
 	}
 }
@@ -5018,7 +5000,7 @@ objc_sysvar(void *_theme, short mode, short what, short *val1, short *val2, shor
 			{
 				if (mode == SV_INQUIRE)
 				{
-					*val1 = theme->button.norm.n[IND].col.c; //but_ind.norm.n.col.c;
+					*val1 = theme->button.norm.n[IND].col.c;
 					ret = 1;
 				}
 				else if (mode == SV_SET)
@@ -5223,7 +5205,7 @@ setup_render_api(struct object_render_api *rapi)
 	objc_jump_table[G_TEXT    ] = d_g_text;
 	objc_jump_table[G_BOXTEXT ] = d_g_boxtext;
 	objc_jump_table[G_IMAGE   ] = d_g_image;
-// 	objc_jump_table[G_PROGDEF ] = d_g_progdef;
+/*	objc_jump_table[G_PROGDEF ] = d_g_progdef; */
 	objc_jump_table[G_IBOX    ] = d_g_ibox;
 	objc_jump_table[G_BUTTON  ] = d_g_button;
 	objc_jump_table[G_BOXCHAR ] = d_g_boxchar;
@@ -5234,13 +5216,13 @@ setup_render_api(struct object_render_api *rapi)
 	objc_jump_table[G_TITLE   ] = d_g_title;
 	objc_jump_table[G_CICON   ] = d_g_cicon;
 
-// 	objc_jump_table[G_SWBUTTON] = d_g_swbutton;
+/*	objc_jump_table[G_SWBUTTON] = d_g_swbutton; */
 	objc_jump_table[G_POPUP   ] = d_g_button;
-// 	objc_jump_table[G_WINTITLE] = d_g_wintitle;
-// 	objc_jump_table[G_EDIT    ] = d_g_edit;
+/*	objc_jump_table[G_WINTITLE] = d_g_wintitle; */
+/*	objc_jump_table[G_EDIT    ] = d_g_edit; */
 
 	objc_jump_table[G_SHORTCUT] = d_g_string;
-// 	objc_jump_table[G_SLIST   ] = d_g_slist;
+/*	objc_jump_table[G_SLIST   ] = d_g_slist; */
 	objc_jump_table[G_EXTBOX  ] = d_g_box;
 }
 #if 0
@@ -5278,7 +5260,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct color_theme *ct;
 	BFOBSPEC c;
 	short fl3d, bkg_flags;
-	bool selected; //, disabled;
+	bool selected;
 
 #if 0
 	fl3d = get_g_box_theme(wt, wt->current, &ob, &selected, &disabled, &obt, &ct);
@@ -5302,7 +5284,6 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 		struct extbox_parms *p = (struct extbox_parms *)(*api->object_get_spec)(ob)->index;
 		short ty = ob->ob_type;
 
-// 		c = *(BFOBSPEC *)&p->obspec;
 		conv.l = p->obspec;
 		c = conv.c;
 
@@ -5311,7 +5292,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		obt = &theme->box;
 
-		if (fl3d && (c.fillpattern == IP_HOLLOW && !c.interiorcol)) // && c.textcol == G_BLACK))
+		if (fl3d && (c.fillpattern == IP_HOLLOW && !c.interiorcol))
 			bkg_flags = DRAW_ALL|DRAW_TEXTURE|ONLY_TEXTURE;
 		else
 			bkg_flags = DRAW_ALL;
@@ -5366,7 +5347,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 		{
 			obt = &theme->box;
 
-			if (fl3d && (c.fillpattern == IP_HOLLOW && !c.interiorcol)) // && c.textcol == G_BLACK))
+			if (fl3d && (c.fillpattern == IP_HOLLOW && !c.interiorcol))
 				bkg_flags |= DRAW_TEXTURE|ONLY_TEXTURE;
 		}
 		if (ob->ob_state & OS_DISABLED)
@@ -5388,7 +5369,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 static void _cdecl
 d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-// !! TEST!
+/* !! TEST! */
 #if 1
 	done(OS_SELECTED|OS_DISABLED);
 	return;
@@ -5551,7 +5532,7 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 	RECT r = wt->r;
 	OBJECT *ob = wt->current.ob;
 	TEDINFO *ted;
-	RECT gr; //,cr;
+	RECT gr;
 	BFOBSPEC c;
 	struct objc_edit_info *ei;
 	bool selected, disabled;
@@ -5608,10 +5589,9 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 		else
 		{
 			f_fg = c.textcol;
-			f_bg = G_WHITE; //selected3D_colour[f_fg];
+			f_bg = G_WHITE;
 		}
 
-// 		c.textmode = 0;
 		ob_text(wt, v, ei, ct, &gr, &r, &c, -1, f_fg, f_bg, -1, G_WHITE, G_LBLUE, G_BLUE, temp_text, ob->ob_state, 0, -1, G_BLACK);
 		done(OS_SELECTED|OS_DISABLED);
 	}
@@ -5628,7 +5608,6 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct color_theme *ct;
 	RECT r = wt->r, gr = r;
 	OBJECT *ob = wt->current.ob;
-// 	BFOBSPEC colours;
 	short thick = obj_thickness(wt, ob), d3t, d, fl3d;
 	ushort selected = ob->ob_state & OS_SELECTED;
 	char *text = NULL;
@@ -5789,7 +5768,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 				thick--;
 		}
 		else if (ob->ob_flags & OF_EXIT)
-			thick--; //d3t ? d3t-- : thick--;
+			thick--;
 
 		draw_objc_bkg(wt, v, ct, NULL, DRAW_ALL | (fl3d ? DRAW_TEXTURE|ONLY_TEXTURE : 0), -1, -1, d, d3t, thick, 2, &r, &r, NULL);
 
@@ -5841,7 +5820,6 @@ icon_characters(struct xa_vdi_settings *v, struct theme *theme, ICONBLK *iconblk
 				col = G_BLACK;
 			(*v->api->wr_mode)(v, MD_TRANS);
 			(*v->api->t_color)(v, col);
-// 			display("disp icontext without banner");
 		}
 		else
 		{
@@ -5869,7 +5847,6 @@ icon_characters(struct xa_vdi_settings *v, struct theme *theme, ICONBLK *iconblk
 	if (state & OS_SELECTED)
 		(*v->api->f_color)(v, G_WHITE);
 
-	//t_font(screen->standard_font_point, screen->standard_font_id);
 	(*v->api->t_effects)(v, 0);
 	(*v->api->wr_mode)(v, MD_TRANS);
 }
@@ -5880,7 +5857,6 @@ icon_characters(struct xa_vdi_settings *v, struct theme *theme, ICONBLK *iconblk
 static void _cdecl
 d_g_image(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-// 	struct theme *theme = wt->objcr_theme;
 	OBJECT *ob = wt->current.ob;
 	BITBLK *bitblk;
 	MFDB Mscreen;
@@ -6006,7 +5982,7 @@ d_g_icon(struct widget_tree *wt, struct xa_vdi_settings *v)
 		unsigned short *s, *d, m;
 		unsigned long sm = 0xAAAA5555L;
 
-		s = (unsigned short *)iconblk->ib_pmask; //Micon.fd_addr;
+		s = (unsigned short *)iconblk->ib_pmask;
 		d = (unsigned short *)Mddm.fd_addr;
 		sc = Mddm.fd_wdwidth - Micon.fd_wdwidth;
 
@@ -6056,7 +6032,6 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	/* No matching icon, so use the mono one instead */
 	if (!best_cicon)
 	{
-		//DIAG((D_o, wt->owner, "cicon !best_cicon", c));
 		d_g_icon(wt, v);
 		return;
 	}
@@ -6081,11 +6056,7 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	Mscreen.fd_addr = NULL;
 
 	Mmask = Micon;
-	//have_sel = c->sel_data != NULL;
-	have_sel = best_cicon->sel_data ? true : false;
-
-	//DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
-
+	have_sel = best_cicon->sel_data != NULL;
 
 	/* check existence of selection. */
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
@@ -6294,7 +6265,6 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 			short d = 0, d3t, thick;
 			if (selected)
 			{
-// 				d = -1;
 				d3t = 1;
 			}
 			else
@@ -6326,8 +6296,8 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 			else
 			{
 				r.x += 2, r.w -= 4;
-				(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     ct->col.bottom); //ct->fnt.fgc); // theme->normal.c.brc);
-				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, ct->col.top); //ct->fnt.bgc); //theme->normal.c.tlc);
+				(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     ct->col.bottom);
+				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, ct->col.top);
 			}
 			done(OS_DISABLED);
 		}
@@ -6394,7 +6364,6 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 #if 1
 		if (selected)
 		{
-// 			d = -1;
 			d3t = 1;
 		}
 		else
@@ -6420,10 +6389,6 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 			und = (state >> 8) & 0x7f;
 
 		ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, text, ob->ob_state, OF_FL3DBAK, und, G_BLACK);
-
-// 		if (ob->ob_state & OS_SELECTED && wt->menu_line)
-			/* very special!!! */
-// 			write_selection(v, 0, &r);
 	}
 	done(OS_SELECTED);
 }
@@ -6499,7 +6464,6 @@ set_texture(struct texture *t, struct ob_theme *ot, short n, short s, short h)
 			if (n & 1)
 			{
 				ct->col.texture = &t->t;
-// 				ct->col.flags &= ~WCOL_DRAWBKG;
 			}
 			n >>= 1;
 		}
@@ -6512,7 +6476,6 @@ set_texture(struct texture *t, struct ob_theme *ot, short n, short s, short h)
 			if (s & 1)
 			{
 				ct->col.texture = &t->t;
-// 				ct->col.flags &= ~WCOL_DRAWBKG;
 			}
 			s >>= 1;
 		}
@@ -6525,7 +6488,6 @@ set_texture(struct texture *t, struct ob_theme *ot, short n, short s, short h)
 			if (h & 1)
 			{
 				ct->col.texture = &t->t;
-// 				ct->col.flags &= ~WCOL_DRAWBKG;
 			}
 			h >>= 1;
 		}
@@ -6550,8 +6512,6 @@ install_texture(char *fn, struct texture *texture, struct object_theme *obt, sho
 static void
 load_textures(struct theme *theme)
 {
-// 	struct texture *t;
-
 	if (screen->planes >= 8)
 	{
 		install_texture("dbox.img"/*steel3.img"*/, NULL, &theme->box, ST_ALL, ST_ALL, 0, 0, 0, 0);
@@ -6609,7 +6569,7 @@ void load_gradients( char *path, char *fn )
 #if WITH_BKG_IMG
 	if( (no_img = do_bkg_img( 0, 4, 0 )) )
 	{
-		hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );	// show
+		hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );
 	}
 #endif
 	box2_status = false;
@@ -6627,7 +6587,7 @@ void load_gradients( char *path, char *fn )
 		if( err == BOX_GRADIENT2 && gpp->n_steps >= 0 )
 		{
 			if( no_img )
-				hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 0 );	// hide
+				hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 0 );
 			box2_status = true;
 		}
 		**gp++ = *gpp++;
@@ -6652,7 +6612,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	 */
 	if (!(resource_name = (*api->sysfile)(xobj_name)))
 	{
-		display("ERROR: Can't find extended AES objects resource file '%s'", xobj_name);
+		DIAGS(("ERROR: Can't find extended AES objects resource file '%s'", xobj_name));
 		return NULL;
 	}
 	else
@@ -6662,7 +6622,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	}
 	if (!xobj_rshdr)
 	{
-		display("ERROR: Can't load extended AES objects resource file '%s'", xobj_name);
+		DIAGS(("ERROR: Can't load extended AES objects resource file '%s'", xobj_name));
 		return NULL;
 	}
 
@@ -6775,7 +6735,7 @@ free_theme_resources(struct theme *theme)
 static void _cdecl
 delete_rendapi(void *_render)
 {
-	DIAGS(("deleting rapi %lx", _render));
+	DIAGS(("deleting rapi %lx", (unsigned long)_render));
 	(*api->kfree)(_render);
 }
 
@@ -6814,8 +6774,7 @@ static long _cdecl
 close(struct object_render_api *rapi)
 {
 	long ret = E_OK;
-	DIAGS(("close: %lx", rapi));
-// 	display("close: %lx", rapi);
+	DIAGS(("close: %lx", (unsigned long)rapi));
 	if (rapi)
 	{
 		struct object_render_api *r = (*api->lookup_xa_data)(&allocs, rapi);
@@ -6823,14 +6782,10 @@ close(struct object_render_api *rapi)
 		if (r)
 		{
 			r->h.links--;
-			//if (r->h.links < 0)
-				//display(" objcr_api links less than 0 (%ld)!!!!!!!!!!!!", r->h.links);
-// 			display(" --- links = %ld", r->h.links);
 			if (!r->h.links)
 			{
 
-				DIAGS((" --- free api %lx", r));
-// 				display(" --- free api %lx", r);
+				DIAGS((" --- free api %lx", (unsigned long)r));
 			#if 1
 				if (r == current_render_api)
 					current_render_api = NULL;
@@ -6852,7 +6807,7 @@ delete_theme(void *_theme)
 {
 	struct theme *theme = _theme;
 
-	DIAGS(("deleting theme %lx", _theme));
+	DIAGS(("deleting theme %lx", (unsigned long)_theme));
 
 	free_theme_resources(theme);
 
@@ -6898,8 +6853,7 @@ static long _cdecl
 free_theme(void *theme)
 {
 	long ret = E_OK;
-	DIAGS(("free_theme: %lx", theme));
-// 	display("free_theme: %lx", theme);
+	DIAGS(("free_theme: %lx", (unsigned long)theme));
 	if (theme)
 	{
 		struct theme *t = (*api->lookup_xa_data)(&allocs, theme);
@@ -6907,14 +6861,10 @@ free_theme(void *theme)
 		if (t)
 		{
 			t->h.links--;
-			//if (t->h.links < 0)
-				//display(" theme links less than 0 (%ld)!!!!!!!!!!!!", t->h.links);
 			DIAGS((" --- links = %ld", t->h.links));
-// 			display(" --- links = %ld", t->h.links);
 			if (!t->h.links)
 			{
-				DIAGS((" --- links 0, free theme %lx", t));
-// 				display(" ---- links 0, free theme %lx", t);
+				DIAGS((" --- links 0, free theme %lx", (unsigned long)t));
 			#if 1
 				if (t == current_theme)
 					current_theme = NULL;

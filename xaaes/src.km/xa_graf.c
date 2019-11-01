@@ -476,7 +476,7 @@ XA_graf_slidebox(int lock, struct xa_client *client, AESPB *pb)
 		rect_dist(client, &c, &dist); 	/* relative position of mouse in child rectangle */
 
 		DIAG((D_graf,client,"XA_graf_slidebox dx:%d, dy:%d, p:%d/%d,%d/%d c:%d/%d,%d/%d",
-			dist.x, dist.y, p, c));
+			dist.x, dist.y, p.x, p.y, p.w, p.h, c.x, c.y, c.w, c.h));
 
 		drag_box(client, c, &p, &dist, &last);
 
@@ -488,7 +488,7 @@ XA_graf_slidebox(int lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = d < 0 ? 0 : (d > SL_RANGE ? SL_RANGE : d);
 
 		DIAG((D_graf,client," 	 -- 		d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d",
-			d, last.x, last.y, p, c));
+			d, last.x, last.y, p.x, p.y, p.w, p.h, c.x, c.y, c.w, c.h));
 	}
 	return XAC_DONE;
 }
@@ -1084,18 +1084,15 @@ xa_graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
 		return;
 	case USER_DEF:
 		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, client, aesm);
-		//set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
 		break;
 	case X_MRESET:
 	case M_FORCE:
 		forcem();
 		return;
 	default:
-	{
-		if ((mf = get_mform(m_shape)))	//case X_MGET??
+		if ((mf = get_mform(m_shape)))
 			set_mouse_shape(m_shape, mf, client, aesm);
 		break;
-	}
 	}
 }
 
@@ -1107,7 +1104,6 @@ set_client_mouse(struct xa_client *client, short which, short m_shape, MFORM *mf
 	bool set = which & 0x8000;
 
 	which &= ~0x8000;
-//	display("set client mouse %x, set=%s", which, set ? "true":"false");
 	switch (which)
 	{
 		case SCM_MAIN:
@@ -1193,7 +1189,6 @@ XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 			 * it is correct
 			 */
 			set_client_mouse(client, SCM_PREV, client->save_mouse, client->save_mouse_form);
-//			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			set_client_mouse(client, SCM_MAIN|0x8000, client->save_mouse, client->save_mouse_form);
 		}
@@ -1207,7 +1202,6 @@ XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
 			 * will then toggle between the two last used mouse shapes.
 			 */
-//			xa_graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			pm			= client->mouse;
 			pmf 		= client->mouse_form;
@@ -1225,9 +1219,8 @@ XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 			}
 
 			set_client_mouse(client, SCM_PREV, client->mouse, client->mouse_form);
-//			xa_graf_mouse(m, ud, client, false);
 			set_client_mouse(client, SCM_MAIN|0x8000, m, ud);
-			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
+			DIAG((D_f,client,"mouse_form to %d(%lx)", m, (unsigned long)ud));
 		}
 	}
 	else if( m == X_MGET )
@@ -1315,7 +1308,7 @@ XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-			MFORM *ud = NULL; //(MFORM *)pb->addrin[0];
+			MFORM *ud = NULL;
 
 			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
 			{
@@ -1391,35 +1384,16 @@ XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 		 * Why, oh WHY! cannot programmers use the OS's functions!?
 		 */
 
-//		while (dispatch_selcevent(client, cXA_deliver_button_event))
-//			;
-#if 1
 		if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
 		{
 			if (!dispatch_selcevent(client, cXA_deliver_button_event, false))
 				dispatch_selcevent(client, cXA_button_event, false);
-
-//			if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
-//				check_mouse(client, &client->md_head->cstate, NULL,NULL);
-
-//			check_mouse(client, &pb->intout[3], &pb->intout[1], &pb->intout[2]);
-//			vq_key_s(C.P_handle, &pb->intout[4]);
 		}
-//		else
-//		{
 		get_mbstate(client, &mbs);
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
 		pb->intout[3] = mbs.b;
 		pb->intout[4] = mbs.ks;
-//		}
-#else
-		get_mbstate(client, &mbs);
-		pb->intout[1] = mbs.x;
-		pb->intout[2] = mbs.y;
-		pb->intout[3] = mbs.b;
-		pb->intout[4] = mbs.ks;
-#endif
 	}
 	else
 		multi_intout(NULL, pb->intout, 0);

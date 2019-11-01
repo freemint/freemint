@@ -428,7 +428,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 		if (msg)
 		{
 			new_msg = kmalloc(sizeof(*new_msg));
-			DIAG((D_m, NULL, "new WM_REDRAW message %lx for %s", new_msg, client->name));
+			DIAG((D_m, NULL, "new WM_REDRAW message %lx for %s", (unsigned long)new_msg, client->name));
 			if (new_msg)
 			{
 				*next = new_msg;

@@ -515,7 +515,7 @@ XA_handler(void *_pb)
 	}
 #if GENERATE_DIAGS
 	DIAGS((" -- pb=%lx, control=%lx, intin=%lx, intout=%lx, addrin=%lx, addrout=%lx",
-		pb, pb->control, pb->intin, pb->intout, pb->addrin, pb->addrout));
+		(unsigned long)pb, (unsigned long)pb->control, (unsigned long)pb->intin, (unsigned long)pb->intout, (unsigned long)pb->addrin, (unsigned long)pb->addrout));
 #endif
 
 	cmd = pb->control[0];
@@ -549,7 +549,15 @@ XA_handler(void *_pb)
 					add_to_tasklist(client);
 					client->forced_init_client = true;
 				}
-				BLOG((0,"non-AES-process '%s' (%d:(%s)) did AES-call %d (%sfixed),globl_ptr=%lx,status=%lx,modeflags=%x", p->name, p->pid, C.SingleTaskPid == p->pid ? "SingleTask" : "", cmd, client ? "": "not ", client->globl_ptr, client->status, p->modeflags ));
+				BLOG((0,"non-AES-process '%s' (%d:(%s)) did AES-call %d (%sfixed),globl_ptr=%lx,status=%lx,modeflags=%x",
+					p->name,
+					p->pid,
+					C.SingleTaskPid == p->pid ? "SingleTask" : "",
+					cmd,
+					client ? "": "not ",
+					(unsigned long)client->globl_ptr,
+					client->status,
+					p->modeflags ));
 				if( !client )
 				{
 					ALERT(("XaAES: non-AES process issued AES system call %i, ignored", cmd));
@@ -567,7 +575,7 @@ XA_handler(void *_pb)
 			pb->intout[0] = 0;
 
 			DIAGS(("XaAES: AES trap (cmd %i) for non AES process (pid %ld, pb 0x%lx)\n",
-				cmd, p_getpid(), pb));
+				cmd, p_getpid(), (unsigned long)pb));
 
 			/* inform user what's going on */
 			if( !(p->p_flag & (P_FLAG_SLB | (P_FLAG_SLB << 8))) )
@@ -696,7 +704,7 @@ XA_handler(void *_pb)
 					break;
 				}
 				default:
-					BLOG((0,"Xa_handler:unknown cmd_rtn:%d", client ? client->name : "-", cmd_rtn));
+					BLOG((0,"Xa_handler:%s:unknown cmd_rtn:%ld", client ? client->name : "-", cmd_rtn));
 			}
 #if GENERATE_DIAGS
 			if (client)

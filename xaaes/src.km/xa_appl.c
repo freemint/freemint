@@ -50,9 +50,7 @@
 #include "version.h"
 #include "mint/fcntl.h"
 #include "mint/stat.h"
-	//#include "mint/ioctl.h"	/*f_cntl*/
 #include "mint/signal.h"
-//#include "mint/ssystem.h"
 
 
 bool
@@ -288,12 +286,9 @@ init_client(int lock, bool sysclient)
 			 */
 			client->rppid = info->rppid;
 			client->cmd_tail = info->cmd_tail;
-			//info->tail_is_heap = false;
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
 		}
-// 		else if (d)
-// 			display("no shel_info");
 	}
 
 	/* use loader-pgrp for keyboard-access for clients */
@@ -419,7 +414,6 @@ XA_appl_init(int lock, struct xa_client *client, AESPB *pb)
 		globl->id =	pb->intout[0] = pp->pid;
 		return XAC_DONE;
 	}
-// 	if (d) display("appl_init: client = %lx, globl = %lx for %d", client, globl, p->pid);
 
 	if (client) {
 		if (client->forced_init_client) {
@@ -557,10 +551,10 @@ CE_pwaitpid(int lock, struct c_event *ce, short cancel)
 			{
 				BLOG((0,"continue %s(%d)", c->name, c->p->pid));
 				ikill(c->p->pid, SIGCONT);
-			 	yield();	// mouse ?
+			 	yield();	/* mouse ? */
 			}
 		}
-		BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, k));
+		BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, (unsigned long)k));
 		k->modeflags &= ~M_SINGLE_TASK;
 		C.SingleTaskPid = -1;
 
@@ -659,17 +653,13 @@ exit_proc(int lock, struct proc *p, int code)
 		if (client) {
 			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
 				client->p->pid, client->name, p->pid, p->name));
-// 			display("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
-// 				client->p->pid, client->name, p->pid, p->name);
 		} else {
 			DIAGS(("No real parent client"));
-// 			display("No real parent client");
 		}
 #endif
 
 	}
 
-	//update_windows_below(NOLOCKS, &screen.r, NULL, window_list, NULL);
 	return ret;
 }
 
@@ -703,8 +693,6 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 	struct xa_client *top_owner;
 	long redraws;
 	bool was_infront = false;
-	//int really_exited;
-// 	bool d = (client == C.Hlp) ? true : false; //(!strnicmp(client->proc_name, "xasys", 6)) ? true : false;
 
 	DIAG((D_appl, NULL, "exit_client: %s", c_owner(client)));
 
@@ -712,8 +700,6 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 	if( C.SingleTaskPid > 0 )
 		toggle_menu( lock, 0 );
 
-// 	display("info=%lx for %s", info, client->name);
-// 	if (d) display(" exit C.HLP");
 	S.clients_exiting++;
 
 	client->pexit = pexit;
@@ -828,8 +814,6 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 	 * sending CH_EXIT is done by proc_exit()
 	 */
 
-//	app_in_front(lock, top_owner, true, true);
-
 	/*
 	 * remove any references
 	 */
@@ -904,7 +888,7 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 
 
 	/* zero out; just to be sure */
-	//bzero(client, sizeof(*client));
+	/* bzero(client, sizeof(*client)); */
 
 	remove_client_crossrefs(client);
 
@@ -916,7 +900,7 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 		kfree(C.Hlp_pb);
 		C.Hlp_pb = NULL;
 		C.Hlp = NULL;
-		display("attempt to restart XaSYS");
+		DIAGS(("attempt to restart XaSYS"));
 		wakeselect(C.Aes->p);
 	}
 
@@ -974,7 +958,7 @@ XA_appl_exit(int lock, struct xa_client *client, AESPB *pb)
 	}
 
 	/* and decouple from process context */
-	//detach_extension(NULL, XAAES_MAGIC);
+	/* detach_extension(NULL, XAAES_MAGIC); */
 
 	return XAC_DONE;
 
@@ -1096,7 +1080,7 @@ handle_XaAES_msgs(int lock, union msg_buf *msg)
 
 	switch (mt) {
 		case XA_M_DESK: {
-			DIAGS(("Desk %d, '%s'", m.s.m3, m.s.p2 ? m.s.p2 : "~~~"));
+			DIAGS(("Desk %d, '%s'", m.s.m3, m.s.p2 ? (const char *)m.s.p2 : "~~~"));
 			if (m.s.p2 && m.s.m3) {
 				strcpy(C.desk, m.s.p2);
 				C.DSKpid = m.s.m3;
@@ -1364,28 +1348,31 @@ short info_tab[][4] =
 		0
 	|	AGI_WF_TOP
 	|	AGI_WF_NEWDESK
-	//|	AGI_WF_COLOR
-	//|	AGI_WF_DCOLOR
+#if 0
+	|	AGI_WF_COLOR
+	|	AGI_WF_DCOLOR
+#endif
 	|	AGI_WF_OWNER
 	|	AGI_WF_BEVENT
 	|	AGI_WF_BOTTOM
 	|	AGI_WF_ICONIFY
 	|	AGI_WF_UNICONIFY
-	|	AGI_WF_WHEEL		/*01763, see above */
+	|	AGI_WF_WHEEL		/* 01763, see above */
 	|	AGI_WF_FIRSTAREAXYWH
 	|	AGI_WF_OPTS
 	|	AGI_WF_MENU
 	|	AGI_WF_WORKXYWH
-	|	AGI_WF_CALC
-		,
-		0
-		,
+	|	AGI_WF_CALC,
+		0,
 		0
 	|	AGI_ICONIFIER
-	//|	AGI_BACKDROP
-	|	AGI_BDSHIFTCLICK
-	//|	AGI_HOTCLOSER		/*5,	window behaviours iconifier & click for bottoming */
-		,
+#if 0
+	|	AGI_BACKDROP
+#endif
+#if 0
+	|	AGI_HOTCLOSER		/* 5,	window behaviours iconifier & click for bottoming */
+#endif
+	|	AGI_BDSHIFTCLICK,
 		0
 	|	AGI_WINDUPD_CAS		/*1	wind_update(): check and set available (mode + 0x100) */
 	},
@@ -1393,9 +1380,9 @@ short info_tab[][4] =
 #define AGI_WM_NEWTOP		0x0001
 #define AGI_WM_UNTOPPED		0x0002
 #define AGI_WM_ONTOP		0x0004
-#define AGI_AP_TERM		0x0008
-#define AGI_CHRES		0x0010
-#define AGI_CH_EXIT		0x0020
+#define AGI_AP_TERM			0x0008
+#define AGI_CHRES			0x0010
+#define AGI_CH_EXIT			0x0020
 #define AGI_WM_BOTTOMED		0x0040
 #define AGI_WM_ICONIFY		0x0080
 #define AGI_WM_UNICONIFY	0x0100
@@ -1408,11 +1395,15 @@ short info_tab[][4] =
 	 */
 	{
 		0
-	//|	AGI_WM_NEWTOP
+#if 0
+	|	AGI_WM_NEWTOP
+#endif
 	|	AGI_WM_UNTOPPED
 	|	AGI_WM_ONTOP
 	|	AGI_AP_TERM
-	//|	AGI_CHRES
+#if 0
+	|	AGI_CHRES
+#endif
 	|	AGI_CH_EXIT
 	|	AGI_WM_BOTTOMED
 	|	AGI_WM_ICONIFY
@@ -1437,7 +1428,9 @@ short info_tab[][4] =
 		1,		/* objc_sysvar */
 		0,		/* GDOS fonts */
 		0		/* Extended objects */
-	//|	AGI_G_SWBUTTON
+#if 0
+	|	AGI_G_SWBUTTON
+#endif
 	|	AGI_G_POPUP
 	|	AGI_OS_WHITEBAK
 	|	AGI_G_SHORTCUT
@@ -1644,7 +1637,7 @@ XA_appl_find(int lock, struct xa_client *client, AESPB *pb)
 	if (client)
 		DIAG((D_appl, client, "appl_find for %s", c_owner(client)));
 	else
-		DIAG((D_appl, NULL, "appl_find for non AES process (pid %ld)", c_owner(client), p_getpid()));
+		DIAG((D_appl, NULL, "appl_find for non AES process %s (pid %ld)", c_owner(client), p_getpid()));
 #endif
 
 	/* default to error */

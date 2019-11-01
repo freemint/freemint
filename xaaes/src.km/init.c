@@ -517,7 +517,14 @@ again:
 	else
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
 #endif
-	BLOG((0,"PRG: km=%lx, base=%lx, text=%lx -> %lx(%ld), kentry:%d.%d,dos_version=%lx", km, km->b, km->b->p_tbase, km->b->p_tbase + km->b->p_tlen, km->b->p_tlen, KENTRY_MAJ_VERSION, KENTRY_MIN_VERSION, kentry->dos_version));
+	BLOG((0,"PRG: km=%lx, base=%lx, text=%lx -> %lx(%ld), kentry:%d.%d,dos_version=%lx",
+		(unsigned long)km,
+		(unsigned long)km->b,
+		km->b->p_tbase,
+		km->b->p_tbase + km->b->p_tlen,
+		km->b->p_tlen,
+		KENTRY_MAJ_VERSION, KENTRY_MIN_VERSION,
+		kentry->dos_version));
 
 #if 0
 	/* do some sanity checks of the installation

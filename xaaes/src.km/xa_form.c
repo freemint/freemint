@@ -70,7 +70,7 @@ CloneForm(OBJECT *form)
 		;
 
 	new_form = kmalloc(sizeof(OBJECT) * num_objs);
-	DIAGS(("CloneForm: new obtree at %lx", new_form));
+	DIAGS(("CloneForm: new obtree at %lx", (unsigned long)new_form));
 	if (new_form)
 	{
 		int o;
@@ -146,7 +146,6 @@ static int
 lstr(char *w, char *s)
 {
 	int i = 0, c = *ln, sl = strlen(s), j;
-	//char *s = (char *)&lim;
 
 	while (i < mc)
 	{
@@ -293,7 +292,6 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 {
 	XA_WIND_ATTR kind = MOVER|NAME|TOOLBAR|USE_MAX;
 	struct xa_window *alert_window;
-	//XA_WIDGET *widg;
 	XA_TREE *wt;
 	OBJECT *alert_form;
 	OBJECT *alert_icons;
@@ -319,7 +317,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 	{
 		kfree(alert_form);
 
-		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*alertxt)));
+		DIAGS(("kmalloc(%lu) failed, out of memory?", (unsigned long)sizeof(*alertxt)));
 		return 0;
 	}
 
@@ -354,7 +352,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 	n_buttons = get_parts(ALERT_BUTTONS, alertxt->button, &retv);
 
 	w = max_w(n_lines,   alertxt->text, NULL);
-  max_w(n_buttons, alertxt->button, &m_butt_w);
+	max_w(n_buttons, alertxt->button, &m_butt_w);
 
 	if (m_butt_w > w)
 		w = m_butt_w;
@@ -381,9 +379,9 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 
 		(alert_form + ALERT_D_ICON)->ob_spec = (alert_icons + icon)->ob_spec;
 	}
-	else	//bug#154
+	else
 	{
-		alert_form->ob_width -= 48;	//?
+		alert_form->ob_width -= 48;
 		(alert_form + ALERT_D_ICON)->ob_flags |= OF_HIDETREE;
 	}
 
@@ -399,7 +397,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 			if( f )
 				alert_form[ALERT_T1 + f].ob_y = alert_form[ALERT_T1 + f-1].ob_y + screen.c_max_h;
 			if( !icon )
-				alert_form[ALERT_T1 + f].ob_x -= 48;	//?
+				alert_form[ALERT_T1 + f].ob_x -= 48;
 		}
 	}
 
@@ -408,12 +406,10 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 	b = x / (n_buttons + 1);
 	x = b;
 	if( !icon )
-		x -= 48 / 2;	//?
+		x -= 48 / 2;
 
-	//set_standard_point(client);
 	h = screen.c_max_h;
 
-	//(*v->api->t_extent)(client->vdi_settings, "W", &w, &h );
 	/* Fill in & show buttons */
 	for (f = 0; f < n_buttons; f++)
 	{
@@ -506,20 +502,17 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 		obj_rectangle(wt, aesobj(alert_form, 0), &or);
 		center_rect(&or);
 
-		if (update_locked() == client->p) //(C.update_lock && C.update_lock == client->p)
+		if (update_locked() == client->p)
 		{
 			kind |= STORE_BACK;
 			nolist = true;
 		}
 
-		//if (client->fmd.lock)
-		//	kind |= STORE_BACK;
-
 		r = calc_window(lock, client, WC_BORDER,
 				kind, created_for_AES,
 				client->options.thinframe,
 				client->options.thinwork,
-				*(RECT *)&or); //*(RECT *)&alert_form->ob_x);
+				or);
 
 		alert_window = create_window(lock,
 					     do_winmesag,
@@ -534,9 +527,6 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 		if (alert_window)
 		{
 			alert_window->window_status |= XAWS_FLOAT;
-
-			//widg = get_widget(alert_window, XAW_TOOLBAR);
-			//UNUSED(widg);
 
 			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or);
 			wt->extra = alertxt;
@@ -577,7 +567,7 @@ XA_form_center(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(0,5,1)
 
 	DIAG((D_form, client, "XA_form_center for %s ob=%lx o=%lx",
-		c_owner(client), obtree, o));
+		c_owner(client), (unsigned long)obtree, (unsigned long)o));
 
 	if (validate_obtree(client, obtree, "XA_form_center:") && o)
 	{
@@ -608,7 +598,7 @@ XA_form_center(int lock, struct xa_client *client, AESPB *pb)
 		*o++ = 1;
 		*(RECT *)o = r;
 
-		DIAG((D_form, client, "   -->    %d/%d,%d/%d", r));
+		DIAG((D_form, client, "   -->    %d/%d,%d/%d", r.x, r.y, r.w, r.h));
 	}
 
 	return XAC_DONE;
@@ -673,7 +663,7 @@ XA_form_keybd(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(3,3,1)
 
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
-		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
+		c_owner(client), (unsigned long)obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
 	/*BLOG((0, "XA_form_keybd %lx: obj:%d, k:%x, nob:%d",
 		obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
 */
@@ -683,8 +673,6 @@ XA_form_keybd(int lock, struct xa_client *client, AESPB *pb)
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
-
-// 	 	display("XA_form_keybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
 
 		newobj = aesobj(wt->tree, pb->intin[0]);
 		keyout = pb->intin[1];
@@ -709,7 +697,7 @@ XA_form_wkeybd(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(4,3,1)
 
 	DIAG((D_keybd, client, "XA_form_wkeybd for %s %lx: obj:%d, k:%x, nob:%d",
-		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
+		c_owner(client), (unsigned long)obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
 
 	cont = keyout = 0;
 
@@ -723,7 +711,6 @@ XA_form_wkeybd(int lock, struct xa_client *client, AESPB *pb)
 			if (!(wt = obtree_to_wt(client, obtree)))
 				wt = new_widget_tree(client, obtree);
 
-// 		 	display("XA_form_wkeybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
 			newobj = aesobj(obtree, pb->intin[0]);
 			keyout = pb->intin[1];
 			cont = _form_keybd(client, wt, wind, aesobj(obtree, pb->intin[2]), &keyout, &newobj);
@@ -757,7 +744,7 @@ XA_form_alert(int lock, struct xa_client *client, AESPB *pb)
 	client->status |= CS_FORM_ALERT;
 	release_blocks(client);
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
-	(*client->block)(client, 0); //Block(client, 0);
+	(*client->block)(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
 	return XAC_DONE;
@@ -839,7 +826,7 @@ form_error_msgs[64] =
 unsigned long
 XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 {
-	static char error_alert[256]; // XXX
+	static char error_alert[256];
 
 	const char *msg = "Unknown error.";
 	char icon = '0';
@@ -866,7 +853,7 @@ XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "alert_err %s", error_alert));
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, 1, error_alert, NULL);
-	(*client->block)(client, 0); //Block(client, 0);
+	(*client->block)(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
 	return XAC_DONE;
@@ -943,11 +930,10 @@ XA_form_dial(int lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_form_do(int lock, struct xa_client *client, AESPB *pb)
 {
-// 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(1,1,1)
 
-	DIAG((D_form, client, "XA_form_do() for %s. obtree %lx", client->name, obtree));
+	DIAG((D_form, client, "XA_form_do() for %s. obtree %lx", client->name, (unsigned long)obtree));
 
 	if (validate_obtree(client, obtree, "XA_form_do:"))
 	{
@@ -984,10 +970,8 @@ XA_form_do(int lock, struct xa_client *client, AESPB *pb)
 				}
 				client->status &= ~CS_CALLED_EVNT;
 			}
-// 			display("wait for form_do...");
-			(*client->block)(client, 0); //Block(client, 0);
+			(*client->block)(client, 0);
 			client->status &= ~CS_FORM_DO;
-// 			display(" ... return from form_do");
 			return XAC_DONE;
 		}
 		/* XXX - Ozk:
@@ -1019,7 +1003,7 @@ XA_form_button(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(2,2,1)
 
 	DIAG((D_form, client, "XA_form_button %lx: obj:%d, clks:%d",
-		obtree, pb->intin[0], pb->intin[1]));
+		(unsigned long)obtree, pb->intin[0], pb->intin[1]));
 
 	if (validate_obtree(client, obtree, "XA_form_button:"))
 	{
@@ -1076,7 +1060,7 @@ XA_form_wbutton(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(3,2,1)
 
 	DIAG((D_form, client, "XA_form_button %lx: obj:%d, clks:%d",
-		obtree, obj, pb->intin[1]));
+		(unsigned long)obtree, obj, pb->intin[1]));
 
 	if (validate_obtree(client, obtree, "XA_form_button:"))
 	{

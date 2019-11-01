@@ -196,8 +196,6 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 			short x, y, w, h, ch;
 			short c[16], ptr, p = pt >> 16;
 
-			//pt >>= 16;
-
 			vst_color(vdih, 1);
 			vs_clip(vdih, 1, (short *)clip);
 			vst_alignment(vdih, TA_LEFT, TA_ASCENT, &x, &x);
@@ -336,7 +334,7 @@ delete_fnts_info(void *_fnts)
 	if (fnts)
 	{
 		struct xa_fnts_item *f = fnts->fnts_ring;
-		DIAG((D_fnts, NULL, "delete_fnts_info: fnts=%lx", fnts));
+		DIAG((D_fnts, NULL, "delete_fnts_info: fnts=%lx", (unsigned long)fnts));
 
 		/*
 		 * Release all fnt items...
@@ -344,7 +342,7 @@ delete_fnts_info(void *_fnts)
 		while (f)
 		{
 			struct xa_fnts_item *n = f->link;
-			DIAG((D_fnts, NULL, " --- deleting fnts_item=%lx (%s)", f, f->f.full_name));
+			DIAG((D_fnts, NULL, " --- deleting fnts_item=%lx (%s)", (unsigned long)f, f->f.full_name));
 			kfree(f);
 			f = n;
 		}
@@ -548,7 +546,7 @@ unlink_fnts_item(struct xa_fnts_item **list, struct xa_fnts_item *f)
 		if (*list == f)
 		{
 			*list = f->link;
-			DIAG((D_fnts, NULL, "unlink_fnts_item: freeing %lx (%s)", f, f->f.full_name));
+			DIAG((D_fnts, NULL, "unlink_fnts_item: freeing %lx (%s)", (unsigned long)f, f->f.full_name));
 			kfree(f);
 			break;
 		}
@@ -562,7 +560,7 @@ add_fnts_item(struct xa_fnts_item **list, struct xa_fnts_item *f, short flags)
 	struct xa_fnts_item *fl = *list, *last = NULL;
 
 	f->nxt_family = f->nxt_kin = NULL;
-	DIAG((D_fnts, NULL, "add_fnts_item: list=%lx, f=%lx, flags=%x", *list, f, flags));
+	DIAG((D_fnts, NULL, "add_fnts_item: list=%lx, f=%lx, flags=%x", (unsigned long)*list, (unsigned long)f, flags));
 
 	if ((!(flags & FNTS_BTMP) && !f->f.outline) ||
 	    (!(flags & FNTS_OUTL) && f->f.outline) ||
@@ -601,7 +599,7 @@ add_fnts_item(struct xa_fnts_item **list, struct xa_fnts_item *f, short flags)
 			break;
 		}
 		last = fl;
-		fl = fl->link;//nxt_family;
+		fl = fl->link;
 	}
 
 	if (!fl)
@@ -623,7 +621,7 @@ get_font_items(struct xa_fnts_info *fnts)
 
 	DIAGS(("get_font_items:"));
 	vpb = create_vdipb();
-	DIAGS(("get_font_items: create vdipb=%lx", vpb));
+	DIAGS(("get_font_items: create vdipb=%lx", (unsigned long)vpb));
 
 	if (fnts->vdi_handle && !fnts->fnts_loaded)
 	{
@@ -632,7 +630,6 @@ get_font_items(struct xa_fnts_info *fnts)
 		if (C.gdos_version)
 		{
 			fnts->fnts_loaded += xvst_load_fonts(vpb, 0, fnts->vdi_handle);
-// 			fnts->fnts_loaded += vst_load_fonts(fnts->vdi_handle, 0);
 		}
 		DIAGS(("get_font_items: loaded %d fonts", fnts->fnts_loaded));
 	}
@@ -658,7 +655,7 @@ get_font_items(struct xa_fnts_info *fnts)
 		}
 	}
 
-	DIAGS(("get_font_items: free vdipb at %lx, returning fitem=%lx", vpb, fitem));
+	DIAGS(("get_font_items: free vdipb at %lx, returning fitem=%lx", (unsigned long)vpb, (unsigned long)fitem));
 
 	kfree(vpb);
 
@@ -727,9 +724,6 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	fnts->fnts_selected = f;
 	select_edsize(fnts);
 
-	//list->redraw(list, NULL);
-
-	//fnts_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
 	wdialog_redraw(0, fnts->wind, aesobj(obtree, FNTS_SHOW), 1, NULL);
 	redraw_ratio( fnts );
 }
@@ -804,8 +798,6 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 				list_type->vis(list_type, s, NORMREDRAW);
 				list_type->cur = s;
 			}
-//			else
-//				list_type->slider(list_type, true);
 		}
 		if (!list_type->cur)
 			list_type->cur = list_type->top;
@@ -835,7 +827,7 @@ sort_names(struct scroll_info *list, struct scroll_entry *new, struct scroll_ent
 	list->get(list, this, SEGET_TEXTPTR, &p);
 	s2 = p.ret.ptr;
 
-	return (stricmp(s1, s2) > 0) ? true : false; // stricmp(new->content->c.text.text, this->content->c.text.text) > 0) ? true : false;
+	return (stricmp(s1, s2) > 0) ? true : false;
 }
 
 static long get_disp_style( struct xa_fnts_item *f )
@@ -898,14 +890,13 @@ update_slists(struct xa_fnts_info *fnts)
 		sc.data = f;
 		p.arg.txt = t;
 		p.idx = -1;
-		//id = f->f.id;
 		list_name->get(list_name, 0, SEGET_ENTRYBYTEXT, &p);
 		if( !p.e )
 		{
 			list_name->add(list_name, NULL, sort_names, &sc, false, 0, NORMREDRAW);
 		}
 
-		f = f->link;//nxt_family;
+		f = f->link;
 	}
 
 	list_name->slider(list_name, true);
@@ -955,7 +946,7 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 		OBJECT *obtree = list->wt->tree;
 		struct xa_fnts_info *fnts = list->data;
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE, NULL);
-		struct sesetget_params p; //seget_entrybyarg p;
+		struct sesetget_params p;
 		struct xa_aes_object object;
 
 		fnts->wt->e.o = object = aesobj(fnts->wt->tree, FNTS_EDSIZE);
@@ -1256,7 +1247,6 @@ update(struct xa_fnts_info *fnts, short bf)
 	set_but(obtree, FNTS_XSET, (bf & FNTS_BSET));
 	set_but(obtree, FNTS_XMARK, (bf & FNTS_BMARK));
 
-	//fnts_redraw(0, fnts->wind, 0, 10, NULL);
 	wdialog_redraw(0, fnts->wind, aesobj(obtree, 0), 10, NULL);
 	redraw_ratio( fnts );
 }
@@ -1266,7 +1256,7 @@ find_fitembyid(struct xa_fnts_info *fnts, unsigned long id, struct xa_fnts_item 
 {
 	struct xa_fnts_item *fl, *family = NULL, *style = NULL;
 
-	fl = fnts->fnts_ring;//list;
+	fl = fnts->fnts_ring;
 
 	if( id == 0 )
 		id = 1;
@@ -1288,7 +1278,7 @@ find_fitembyid(struct xa_fnts_info *fnts, unsigned long id, struct xa_fnts_item 
 				style = style->nxt_kin;
 			}
 		}
-		fl = fl->link;//nxt_family;
+		fl = fl->link;
 	}
 
 	if (ret_family)
@@ -1349,14 +1339,14 @@ init_fnts(struct xa_fnts_info *fnts)
 
 		find_fitembyid(fnts, fnts->fnt_id, &family, &style);
 
-		DIAG((D_fnts, NULL, " --- set family=%lx (%s)", family, family ? family->f.full_name : "Not found"));
-		DIAG((D_fnts, NULL, " --- set style =%lx (%s)", style,  style  ? style->f.full_name  : "Not found"));
+		DIAG((D_fnts, NULL, " --- set family=%lx (%s)", (unsigned long)family, family ? family->f.full_name : "Not found"));
+		DIAG((D_fnts, NULL, " --- set style =%lx (%s)", (unsigned long)style,  style  ? style->f.full_name  : "Not found"));
 
 		if (family)
 		{
 			list = object_get_slist(obtree + FNTS_FNTLIST);
 			ent = list->search(list, NULL, SEFM_BYDATA, family);
-			DIAG((D_fnts, NULL, " --- search found family entry %lx", ent));
+			DIAG((D_fnts, NULL, " --- search found family entry %lx", (unsigned long)ent));
 			if (ent)
 			{
 				list->cur = ent;
@@ -1592,7 +1582,7 @@ XA_fnts_set(int lock, struct xa_client *client, AESPB *pb)
 
 						link_fnts_item(&fnts->fnts_ring, xf);
 						add_fnts_item(&fnts->fnts_list, xf, fnts->font_flags);
-						DIAG((D_fnts, client, " --- copy %lx into %lx", f, xf));
+						DIAG((D_fnts, client, " --- copy %lx into %lx", (unsigned long)f, (unsigned long)xf));
 					}
 					f = f->next;
 				}
@@ -1641,8 +1631,6 @@ check_internal_objects(struct xa_fnts_info *fnts, struct xa_aes_object obj)
 	switch (aesobj_item(&obj))
 	{
 	case FNTS_XDISPLAY:
-		//fnts->dialog_flags ^= FNTS_DISPLAY;
-
 		if (aesobj_sel(&obj))
 			fnts->dialog_flags |= FNTS_DISPLAY;
 		else
@@ -1703,7 +1691,6 @@ XA_fnts_evnt(int lock, struct xa_client *client, AESPB *pb)
 	fnts = (struct xa_fnts_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (fnts && (wind = get_fnts_wind(client, fnts)))
 	{
-// 		OBJECT *obtree = fnts->wt->tree;
 		long val;
 		struct wdlg_evnt_parms wep;
 		struct xa_aes_object size_obj;
@@ -1734,7 +1721,7 @@ XA_fnts_evnt(int lock, struct xa_client *client, AESPB *pb)
 				wep.wt->focus = size_obj;
 			}*/
 			wep.wt->focus = size_obj;
-			wep.ev->key = 0x4d00;	//SC_RTARROW;
+			wep.ev->key = 0x4d00;
 			wep.obj = size_obj;
 			ret = wdialog_event(lock, client, &wep);
 			wep.ev->key = k;
@@ -1810,8 +1797,6 @@ XA_fnts_evnt(int lock, struct xa_client *client, AESPB *pb)
  * Return is used by do_widgets() to check if state of obj is
  * to be reset or not
  */
-//static WidgetBehaviour fnts_th_click;
-//static FormMouseInput	fntsClick_form_do;
 static FormKeyInput	Keypress;
 static FormExit		Formexit;
 
@@ -1839,7 +1824,6 @@ Keypress(int lock,
 		if (val != fnts->fnt_pt)
 		{
 			fnts->fnt_pt = val;
-			//fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
 			wdialog_redraw(0, wind, aesobj(fnts->wt->tree, FNTS_SHOW), 1, NULL);
 
 			select_edsize(fnts);
@@ -1921,7 +1905,7 @@ XA_fnts_do(int lock, struct xa_client *client, AESPB *pb)
 		open_window(lock, wind, wind->rc);
 
 		client->status |= CS_FORM_DO;
-		(*client->block)(client, 0); //Block(client, 0);
+		(*client->block)(client, 0);
 		client->status &= ~CS_FORM_DO;
 		wt->flags &= ~WTF_FBDO_SLIST;
 		close_window(lock, wind);

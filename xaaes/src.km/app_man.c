@@ -624,7 +624,7 @@ swap_menu(int lock, struct xa_client *new, struct widget_tree *new_menu, short f
 		{
 			struct proc *update_lock = C.update_lock;
 			DIAG((D_appl, NULL, "swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
-				new->std_menu, new_menu, new->nxt_menu, new->name));
+				(unsigned long)new->std_menu, (unsigned long)new_menu, (unsigned long)new->nxt_menu, new->name));
 
 			if (new_menu)
 				new->nxt_menu = new_menu;
@@ -642,7 +642,7 @@ swap_menu(int lock, struct xa_client *new, struct widget_tree *new_menu, short f
 			 * and does a "delayed menu swap"
 			 */
 			DIAG((D_appl, NULL, "swap_menu: later. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
-				new->std_menu, new_menu, new->nxt_menu, new->name));
+				(unsigned long)new->std_menu, (unsigned long)new_menu, (unsigned long)new->nxt_menu, new->name));
 
 			if (new_menu)
 				new->nxt_menu = new_menu;
@@ -656,7 +656,7 @@ swap_menu(int lock, struct xa_client *new, struct widget_tree *new_menu, short f
 	    && new->desktop->tree != get_desktop()->tree
 	    && new->desktop->tree != get_xa_desktop())
 	{
-		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
+		DIAG((D_appl, NULL, "  --   with desktop=%lx", (unsigned long)new->desktop));
 		set_desktop(new, false);
 	}
 	DIAG((D_appl, NULL, "exit ok"));
@@ -681,7 +681,7 @@ find_desktop(int lock, struct xa_client *client, short exclude)
 			     !((exclude & 1) && (last == C.Aes)) )
 			{
 				rtn = last;
-				DIAGS(("found desktop %lx", rtn));
+				DIAGS(("found desktop %lx", (unsigned long)rtn));
 				break;
 			}
 		}

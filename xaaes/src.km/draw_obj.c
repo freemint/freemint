@@ -208,11 +208,11 @@ init_client_objcrend(struct xa_client *client)
 {
 	long ret = E_OK;
 
-	DIAGS(("init_client_objcrend: moduleapi=%lx, %s", client->objcr_module, client->name));
+	DIAGS(("init_client_objcrend: moduleapi=%lx, %s", (unsigned long)client->objcr_module, client->name));
 	if (!client->objcr_api)
 	{
 		ret = (*client->objcr_module->open)(&client->objcr_api);
-		DIAGS((" -- open: ret %lx, objcr_api = %lx", ret, client->objcr_api));
+		DIAGS((" -- open: ret %lx, objcr_api = %lx", ret, (unsigned long)client->objcr_api));
 		if (!ret && client->objcr_api)
 		{
 			client->objcr_api->drawers[G_PROGDEF] = d_g_progdef;
@@ -222,7 +222,7 @@ init_client_objcrend(struct xa_client *client)
 	if (!ret && !client->objcr_theme)
 	{
 		ret = (*client->objcr_module->new_theme)(&client->objcr_theme);
-		DIAGS((" -- theme: ret = %lx, theme = %lx", ret, client->objcr_theme));
+		DIAGS((" -- theme: ret = %lx, theme = %lx", ret, (unsigned long)client->objcr_theme));
 	}
 	return ret;
 }
@@ -970,7 +970,7 @@ short flags)
 	DIAG((D_objc, wt->owner, "dx = %d, dy = %d", x, y));
 	DIAG((D_objc, wt->owner, "draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
 		t_owner(wt), x + tree->ob_x, y + tree->ob_y,
-		tree->ob_width, tree->ob_height, tree, item.item, depth));
+		tree->ob_width, tree->ob_height, (unsigned long)tree, item.item, depth));
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
 		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : " no zen"));
 

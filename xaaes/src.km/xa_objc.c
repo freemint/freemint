@@ -201,7 +201,9 @@ XA_objc_find(int lock, struct xa_client *client, AESPB *pb)
 
 		assert(wt);
 
-// 		if (wt)
+#if 0
+ 		if (wt)
+#endif
 		{
 			o = obj_find(
 				 wt,
@@ -212,7 +214,7 @@ XA_objc_find(int lock, struct xa_client *client, AESPB *pb)
 				 NULL);
 			pb->intout[0] = aesobj_item(&o);
 		}
-	#if 0
+#if 0
 		else
 		{
 			pb->intout[0] = ob_find(obtree,
@@ -221,7 +223,7 @@ XA_objc_find(int lock, struct xa_client *client, AESPB *pb)
 						pb->intin[2],
 						pb->intin[3]);
 		}
-	#endif
+#endif
 	}
 	else
 		pb->intout[0] = -1;
@@ -319,10 +321,7 @@ XA_objc_add(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(2,1,1)
 
 	DIAG((D_form, client, "xa_objc_add: obtree=%lx, parent=%d, child=%d",
-		obtree, pb->intin[0], pb->intin[1]));
-
-// 	display("xa_objc_add: %s, obtree=%lx, parent=%d, child=%d",
-// 		client->name, obtree, pb->intin[0], pb->intin[1]);
+		(unsigned long)obtree, pb->intin[0], pb->intin[1]));
 
 	if (validate_obtree(client, obtree, "XA_objc_add:"))
 	{
@@ -343,9 +342,6 @@ XA_objc_delete(int lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(1,1,1)
 
-// 	display("xa_objc_delete: %s, obtree=%lx, obj=%d",
-// 		client->name, obtree, pb->intin[0]);
-
 	if (validate_obtree(client, obtree, "XA_objc_delete:"))
 	{
 		ret = ob_remove(obtree, pb->intin[0]);
@@ -364,9 +360,6 @@ XA_objc_order(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(2,1,1)
-
-// 	display("xa_objc_add: %s, obtree=%lx, obj=%d, pos=%d",
-// 		client->name, obtree, pb->intin[0], pb->intin[1]);
 
 	if (validate_obtree(client, obtree, "XA_objc_order:"))
 	{
@@ -387,10 +380,6 @@ XA_objc_edit(int lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_form, client, "objc_edit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
-
-
-// 	display("objc_edit (%d %d %d %d) for %s",
-// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], client->name);
 
 	if (validate_obtree(client, obtree, "XA_objc_edit:"))
 	{
@@ -423,10 +412,9 @@ XA_objc_edit(int lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
-// 	display("xa_objc_edit: exit (%d %d %d %d)\n",
-// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]);
 	return XAC_DONE;
 }
+
 unsigned long
 XA_objc_wedit(int lock, struct xa_client *client, AESPB *pb)
 {
@@ -436,10 +424,6 @@ XA_objc_wedit(int lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_form, client, "objc_edit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
-
-
-// 	display("objc_edit (%d %d %d %d) for %s",
-// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], client->name);
 
 	if (validate_obtree(client, obtree, "XA_objc_edit:"))
 	{
@@ -478,8 +462,6 @@ XA_objc_wedit(int lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
-// 	display("xa_objc_edit: exit (%d %d %d %d)\n",
-// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]);
 	return XAC_DONE;
 }
 
@@ -599,21 +581,22 @@ XA_objc_sysvar(int lock, struct xa_client *client, AESPB *pb)
 #define OBGET_OBSTATE	0x0009
 #define OBSET_OBSTATE	0x8009
 
-// opcode 140
-// objc_data(tree, object, what, size, wh, (void *)data0, (void *)data1, *short, *long);
-// objc_data(tree, obj_idx, what, flags, winhand, clip, ...);
-// intin[0] = obj_idx
-// intin[1] = what
-// intin[2] = flags
-// intin[3] = winhand
-//
-// addrin[0] = tree
-// addrin[1] = clip RECT ptr
-//
-// intout[0] - 1 = OK, 0 = error
-//
-// addrout[0] - mode dependant
-
+/*
+ * opcode 140
+ * objc_data(tree, object, what, size, wh, (void *)data0, (void *)data1, *short, *long);
+ * objc_data(tree, obj_idx, what, flags, winhand, clip, ...);
+ * intin[0] = obj_idx
+ * intin[1] = what
+ * intin[2] = flags
+ * intin[3] = winhand
+ *
+ * addrin[0] = tree
+ * addrin[1] = clip RECT ptr
+ *
+ * intout[0] - 1 = OK, 0 = error
+ *
+ * addrout[0] - mode dependant
+ */
 unsigned long
 XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 {
@@ -622,7 +605,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 	short ret0 = 0, ret1 = 0;
 	bool set = pb->intin[1] & 0x8000;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-// 	display("XA_objc_data: obtree=%lx, obj=%d, what=%x", pb->addrin[0], pb->intin[0], pb->intin[1]);
+
 	if (validate_obtree(client, obtree, "XA_objc_data:"))
 	{
 		struct widget_tree *wt;
@@ -656,7 +639,6 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			case OBGET_OBTYPE:
 			{
 				/* objc_get_type(tree, obj_idx, what, &type); */
-// 				display(" OBGET_OBTYPE:");
 				pb->intout[1] = obtree[obj].ob_type;
 				if (set)
 					obtree[obj].ob_type = pb->intin[4];
@@ -665,20 +647,22 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_STRING:
 			{
-				// objc_data(tree, obj_idx, what, flags, winhand, clip, ...);
-				// objc_[s/g]et_string(tree, obj_idx, wh, blen, text, clip);
-				// intin[0] = obj_idx
-				// intin[1] = what
-				// intin[2] = flags
-				// intin[3] = winhand
-				// intin[4] = blen
-				//
-				// addrin[0] = tree
-				// addrin[1] = clip RECT ptr
-				// addrin[2] = strbuf
+				/*
+				 * objc_data(tree, obj_idx, what, flags, winhand, clip, ...);
+				 * objc_[s/g]et_string(tree, obj_idx, wh, blen, text, clip);
+				 * intin[0] = obj_idx
+				 * intin[1] = what
+				 * intin[2] = flags
+				 * intin[3] = winhand
+				 * intin[4] = blen
+				 *
+				 * addrin[0] = tree
+				 * addrin[1] = clip RECT ptr
+				 * addrin[2] = strbuf
 
-				// intout[0] 1 = sucess - 0 = error
-				// intout[1] = strlen when mode == get
+				 * intout[0] 1 = sucess - 0 = error
+				 * intout[1] = strlen when mode == get
+				 */
 			/*
 			 * ozk: REMEMBER to CHANGE to object_get_string() usage!!!
 			 */
@@ -688,7 +672,6 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				char *s;
 				struct xa_aes_object object;
 
-// 				display(" OBGET_STRING:");
 				object = aesobj(obtree, obj);
 
 				if (object_has_tedinfo(obtree + obj))
@@ -697,8 +680,6 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 					XTEDINFO *xted;
 
 					ted = object_get_tedinfo(obtree + obj, &xted);
-// 					display(" -- TED = %lx, XTED = %lx", ted, xted);
-// 					display(" -- d = %lx, '%s'", d, d);
 					if (ted && d)
 					{
 						sl = strlen(ted->te_ptext) + 1;
@@ -723,8 +704,6 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				else if (object_has_freestr(obtree + obj))
 				{
 					s = object_get_freestr(obtree + obj);
-// 					display(" -- obj has freestr at %lx(%s)", s, s);
-// 					display(" -- d = %lx(%s)", d, d);
 					if (s && d)
 					{
 						sl = strlen(s) + 1;
@@ -773,19 +752,20 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			case OBGET_OBSPEC:
 			{
 				long *obs = (long *)pb->addrin[2];
-// 				display(" OBGET_OBSPEC:");
-				// objc_get_spec(handle, obj_idx, wh, &spec, clip);
-				// intin[0] = obj_idx
-				// intin[1] = what
-				// intin[2] = flags
-				// intin[3] = winhand
-				//
-				// addrin[0] = tree
-				// addrin[1] = clip RECT ptr
-				// addrin[2] = obspec
-				//
-				// intout[0] 1 = sucess - 0 = error
-				// intout[1]
+				/*
+				 * objc_get_spec(handle, obj_idx, wh, &spec, clip);
+				 * intin[0] = obj_idx
+				 * intin[1] = what
+				 * intin[2] = flags
+				 * intin[3] = winhand
+				 *
+				 * addrin[0] = tree
+				 * addrin[1] = clip RECT ptr
+				 * addrin[2] = obspec
+				 *
+				 * intout[0] 1 = sucess - 0 = error
+				 * intout[1]
+				 */
 				if (obs)
 				{
 					long tmp;
@@ -812,18 +792,19 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			{
 				BFOBSPEC tmp;
 				BFOBSPEC *o  = (BFOBSPEC *)pb->addrin[2];
-// 				display(" OBGET_BFOBSPEC:");
-				// objc_get_bfobspec(handle, obj_idx, wh, clip, &bfobspec);
-				// intin[0] = obj_idx
-				// intin[1] = what
-				// intin[2] = flags
-				// intin[3] = winhand
-				//
-				// addrin[0] = tree
-				// addrin[1] = clip RECT ptr
-				// addrin[2] = obspec ptr
-				//
-				// intout[0] 1 = sucess - 0 = error
+				/*
+				 * objc_get_bfobspec(handle, obj_idx, wh, clip, &bfobspec);
+				 * intin[0] = obj_idx
+				 * intin[1] = what
+				 * intin[2] = flags
+				 * intin[3] = winhand
+				 *
+				 * addrin[0] = tree
+				 * addrin[1] = clip RECT ptr
+				 * addrin[2] = obspec ptr
+				 *
+				 * intout[0] 1 = sucess - 0 = error
+				 */
 
 				if (o)
 				{
@@ -837,20 +818,21 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_OBFLAGS:
 			{
-// 				display(" OBGET_OBFLAGS:");
-				//objc_get_obflags(handle, obj_idx, wh, clip, flags);
-				//objc_set_obflags(handle, obj_idx, wh, clip, flags);
-				// intin[0] = obj_idx
-				// intin[1] = what
-				// intin[2] = flags
-				// intin[3] = winhand
-				// intin[4] = obflags
-				//
-				// addrin[0] = tree
-				// addrin[1] = clip RECT ptr
-				//
-				// intout[0] 1 = sucess - 0 = error
-				// intout[1] = obflags
+				/*
+				 * objc_get_obflags(handle, obj_idx, wh, clip, flags);
+				 * objc_set_obflags(handle, obj_idx, wh, clip, flags);
+				 * intin[0] = obj_idx
+				 * intin[1] = what
+				 * intin[2] = flags
+				 * intin[3] = winhand
+				 * intin[4] = obflags
+				 *
+				 * addrin[0] = tree
+				 * addrin[1] = clip RECT ptr
+				 *
+				 * intout[0] 1 = sucess - 0 = error
+				 * intout[1] = obflags
+				 */
 				ret1 = obtree[obj].ob_flags;
 				if (set)
 				{
@@ -872,21 +854,22 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_OBSTATE:
 			{
-// 				display(" OBGET_OBSTATE:");
-
-				//objc_get_obstate(handle, obj_idx, wh, clip, flags);
-				//objc_set_obstate(handle, obj_idx, wh, clip, flags);
-				// intin[0] = obj_idx
-				// intin[1] = what
-				// intin[2] = flags
-				// intin[3] = winhand
-				// intin[4] = obstate
-				//
-				// addrin[0] = tree
-				// addrin[1] = clip RECT ptr
-				//
-				// intout[0] 1 = sucess - 0 = error
-				// intout[1] = obstate
+				/*
+				 * objc_get_obstate(handle, obj_idx, wh, clip, flags);
+				 * objc_set_obstate(handle, obj_idx, wh, clip, flags);
+				 *
+				 * intin[0] = obj_idx
+				 * intin[1] = what
+				 * intin[2] = flags
+				 * intin[3] = winhand
+				 * intin[4] = obstate
+				 *
+				 * addrin[0] = tree
+				 * addrin[1] = clip RECT ptr
+				 *
+				 * intout[0] 1 = sucess - 0 = error
+				 * intout[1] = obstate
+				 */
 				ret1 = obtree[obj].ob_state;
 				if (set)
 				{

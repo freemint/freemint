@@ -38,7 +38,7 @@ int install_cookie( void **addr, void *buff, size_t sz, long magic, bool readonl
 			memcpy(*addr, buff, sz );
 		if ( (r=s_system(S_SETCOOKIE, magic, (long)*addr)) != 0)
 		{
-			BLOG((false, "Installing '%s' cookie failed (%ld,addr=%lx)!", mstr, r, *addr));
+			BLOG((false, "Installing '%s' cookie failed (%ld,addr=%lx)!", mstr, r, (unsigned long)*addr));
 			m_free(*addr);
 			*addr= NULL;
 			return 1;

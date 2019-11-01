@@ -652,7 +652,7 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 	psize = map->fd_wdwidth * map->fd_h;
 	data = map->fd_addr;
 
-	DIAGS(("remap_bitmap_colindex: planes = %d, psize = %d, data = %lx",planes, psize, data));
+	DIAGS(("remap_bitmap_colindex: planes = %d, psize = %d, data = %lx", planes, psize, (unsigned long)data));
 
 	if( md && planes >= 4 )
 		lut = tovdilut[planes];
@@ -1744,7 +1744,7 @@ load_image(char *name, XAMFDB *mimg)
 						display("\r\n  cannot handle %d bpp screen modes!", screen.planes);
 					if (screen.pixel_fmt < 0)
 						display("\r\n unknown pixel format:screen:planes=%d pixel-format=%d src:%d- cannot transform from=%lx to=%lx",
-							screen.planes, screen.pixel_fmt, msrc.mfdb.fd_nplanes, from, to);
+							screen.planes, screen.pixel_fmt, msrc.mfdb.fd_nplanes, (unsigned long)from, (unsigned long)to);
 					kfree(mimg->mfdb.fd_addr);
 					mimg->mfdb.fd_addr = NULL;
 				}

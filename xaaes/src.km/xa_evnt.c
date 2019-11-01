@@ -85,7 +85,7 @@ pending_redraw_msgs(int lock, struct xa_client *client, union msg_buf *buf)
 		*buf = msg->message;
 
 		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
-			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
+			(unsigned long)msg, buf->m[3], buf->m[4], buf->m[5], buf->m[6], buf->m[7], c_owner(client) ));
 
 		kfree(msg);
 		rtn = 1;
@@ -147,13 +147,11 @@ pending_iredraw_msgs(int lock, struct xa_client *client, union msg_buf *buf)
 		*buf = msg->message;
 
 		DIAG((D_m, NULL, "Got pending WM_iREDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
-			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
+			(unsigned long)msg, buf->m[3], buf->m[4], buf->m[5], buf->m[6], buf->m[7], c_owner(client) ));
 
 		kfree(msg);
 		rtn = 1;
 	}
-//	else if (C.redraws)
-//		yield();
 
 	Sema_Dn(LOCK_CLIENTS);
 	return rtn;
@@ -302,7 +300,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	struct moose_data *md;
 
 	DIAG((D_button, NULL, "get_mbstate:  md: clicks=%d, head=%lx, tail=%lx, end=%lx",
-		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+		client->md_head->clicks, (unsigned long)client->md_head, (unsigned long)client->md_tail, (unsigned long)client->md_end));
 
 	md = client->md_head;
 	clicks = md->clicks;
@@ -341,8 +339,6 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	}
 }
 
-//unsigned long wevents = 0xffffffff;
-//char *wclientname = 0;	/* for debugging output only */
 bool
 check_queued_events(struct xa_client *client)
 {
@@ -354,23 +350,8 @@ check_queued_events(struct xa_client *client)
 	union msg_buf *m;
 	bool multi, to_yield = false;
 	unsigned long wevents;
-#if 0
-	if( !(wevents = client->waiting_for) )
-	{
-		wclientname = client->name;
-	}
-#else
 	wevents = client->waiting_for;
-#endif
 	multi = wevents & XAWAIT_MULTI ? true : false;
-// 	bool d = (strnicmp(client->proc_name, "atarirc", 7)) ? false : true;
-
-// 	if (d)
-// 	{
-// 		char evtxt[128];
-// 		show_bits(wevents, "evnt=", xev, evtxt);
-// 		display("multi=%s, wevent=%s for %s", multi ? "Yes":"No", evtxt, client->proc_name);
-// 	}
 
 	if (!(pb = client->waiting_pb)) {
 		DIAG((D_appl, NULL, "WARNING: Invalid target message buffer for %s", client->name));
@@ -397,7 +378,7 @@ check_queued_events(struct xa_client *client)
 			}
 		} else {
 			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", client->name));
-			display("MU_MESAG and NO PB! for %s", client->name);
+			DIAGS(("MU_MESAG and NO PB! for %s", client->name));
 			return false;
 		}
 	}
@@ -410,10 +391,10 @@ check_queued_events(struct xa_client *client)
 			"%x,%x, lock %d, Mbase %lx, active.widg %lx",
 			pb->intin[1], pb->intin[3],
 			mouse_locked() ? mouse_locked()->pid : 0,
-			TAB_LIST_START, widget_active.widg));
+			(unsigned long)TAB_LIST_START, (unsigned long)widget_active.widg));
 
 		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
-			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+			client->md_head->clicks, (unsigned long)client->md_head, (unsigned long)client->md_tail, (unsigned long)client->md_end));
 
 		bev = is_bevent(mbs.b, mbs.c, in, 1);
 		if (bev) {
@@ -442,9 +423,7 @@ check_queued_events(struct xa_client *client)
 				key = keys.aes;
 
 			DIAGS((" -- kbstate=%x", mbs.ks));
-// 			if (d) display(" -- kbstate=%x", mbs.ks);
 			mbs.ks = keys.raw.conin.state;
-// 			if (d) display(" -- kbstate=%x, key = %x", mbs.ks, key);
 
 			if (multi)
 				events |= (wevents & (MU_NORM_KEYBD|MU_KEYBD));
@@ -500,7 +479,6 @@ check_queued_events(struct xa_client *client)
 	 *	Check for MU_TIMER must come last!!
 	*/
 	if ((wevents & MU_TIMER) && !client->timeout) {
-// 		if (d) display("mu_timer %lx (val=%ld", client->timeout, client->timer_val);
 		if (multi) {
 			if (!events && (wevents & XAWAIT_NTO))
 				to_yield = true;
@@ -519,7 +497,7 @@ check_queued_events(struct xa_client *client)
 			DIAG((D_multi,client,"check_queued_events for %s, %s clks=0x%x, msk=0x%x, bst=0x%x T:%d",
 				c_owner(client),
 				evtxt,pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1));
-			DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
+			DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, (unsigned long)client->rdrw_msg, C.redraws));
 			DIAG((D_multi, client, " -- %x, %x, %x, %x, %x, %x, %x",
 				events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c));
 		}
@@ -549,8 +527,6 @@ static void
 wakeme_timeout(struct proc *p, long arg)
 {
 	struct xa_client *client = (struct xa_client *)arg;
-// 	if (!strnicmp(client->proc_name, "sprite", 6))
-// 		display("wake");
 
 	client->timeout = NULL;
 
@@ -564,14 +540,12 @@ void
 cancel_mutimeout(struct xa_client *client)
 {
 	if (client->timeout) {
-// 		if (!strnicmp(client->proc_name, "sprite", 6))
-// 			display("cancel mutimeout");
-
 		canceltimeout(client->timeout);
 		client->timeout = NULL;
 		client->timer_val = 0;
 	}
 }
+
 /* HR 070601: We really must combine events. especially for the button still down situation.
 */
 
@@ -592,7 +566,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_multi,client,"evnt_multi for %s, %s clks=0x%x, msk=0x%x, bst=0x%x T:%d",
 				c_owner(client),
 				evtxt,pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1));
-		DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
+		DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, (unsigned long)client->rdrw_msg, C.redraws));
 	}
 #endif
 	if (client->status & (CS_LAGGING | CS_MISS_RDRW)) {
@@ -630,7 +604,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",	client->timer_val, pb->intin[15], pb->intin[14]));
 #if SKIP_TEXEL_INTRO
 		if( events == 0x10023 && TOP_WINDOW->owner != client && !strcmp( client->name, "  Texel " ) )
-			client->timer_val = 0;	// fake for texel-demo
+			client->timer_val = 0;	/* fake for texel-demo */
 #endif
 		if (client->timer_val > MIN_TIMERVAL )
 		{
@@ -653,7 +627,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 
 	client->waiting_for = events | XAWAIT_MULTI;
 	client->waiting_pb = pb;
-	(*client->block)(client, 1); //Block(client, 1);
+	(*client->block)(client, 1);
 	return XAC_DONE;
 }
 
@@ -667,8 +641,7 @@ cancel_evnt_multi(struct xa_client *client, int which)
 	if (client != C.Aes && client != C.Hlp) {
 		client->waiting_for = 0;
 		client->em.flags = 0;
-// 		if (client != C.Hlp)
-			client->waiting_pb = NULL;
+		client->waiting_pb = NULL;
 	}
 	DIAG((D_kern,NULL,"[%d]cancel_evnt_multi for %s", which, c_owner(client)));
 }
@@ -691,7 +664,7 @@ XA_evnt_mesag(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		(*client->block)(client, 2); //Block(client, 1);
+		(*client->block)(client, 2);
 
 	return XAC_DONE;
 }
@@ -717,7 +690,7 @@ XA_evnt_button(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_BUTTON;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		(*client->block)(client, 3); //Block(client, 1);
+		(*client->block)(client, 3);
 	return XAC_DONE;
 }
 
@@ -738,7 +711,7 @@ XA_evnt_keybd(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_KEYBD;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		(*client->block)(client, 4); //Block(client, 1);
+		(*client->block)(client, 4);
 	return XAC_DONE;
 }
 
@@ -766,7 +739,7 @@ XA_evnt_mouse(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		(*client->block)(client, 5); //Block(client, 1);
+		(*client->block)(client, 5);
 
 	return XAC_DONE;
 }

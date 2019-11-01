@@ -64,7 +64,7 @@ Set_form_do(struct xa_client *client,
 		wt = new_widget_tree(client, obtree);
 	}
 	DIAG((D_form, client, "Set_form_do: wt=%lx, obtree=%lx, edobj=%d for %s",
-		wt, obtree, edobj.item, client->name));
+		(unsigned long)wt, (unsigned long)obtree, edobj.item, client->name));
 
 
 	/* XXX - We should perhaps check if the form really have an EXIT or
@@ -279,7 +279,7 @@ okexit:
 		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, DRW_CURSOR);
 	}
 #endif
-	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx", edit_item(ei), wind));
+	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx", edit_item(ei), (unsigned long)wind));
 
 	if (ret_edobj)
 		*ret_edobj = editfocus(ei); //edit_item(ei);
@@ -344,7 +344,7 @@ Form_Button(XA_TREE *wt,
 		rl = &lrl;
 
 	DIAG((D_form, NULL, "Form_Button: wt=%lx, obtree=%lx, obj=%d",
-		wt, wt->tree, aesobj_item(&obj)));
+		(unsigned long)wt, (unsigned long)wt->tree, aesobj_item(&obj)));
 
 // 	display("Form_Button: wt=%lx, obtree=%lx, obj=%d",
 // 		wt, wt->tree, obj);
@@ -585,7 +585,7 @@ Form_Cursor(XA_TREE *wt,
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
 	UNUSED(last_ob);
 	DIAG((D_form, NULL, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
-		wt, obtree, obj.item, keycode, last_ob, edcnt));
+		(unsigned long)wt, (unsigned long)obtree, obj.item, keycode, last_ob, edcnt));
 
 	if (ret_focus)
 		*ret_focus = inv_aesobj();
@@ -772,7 +772,7 @@ Form_Cursor(XA_TREE *wt,
 		*keyout = kout;
 
 	DIAGS(("Form_Cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
-		obj.item, o, edit_item(&wt->e), wt->e.pos));
+		obj.item, o.item, edit_item(&wt->e), wt->e.pos));
 
 	/* At last this piece of code is on the right spot.
 	 * This is important! Now I know that bug fixes in here are good enough for all cases.
@@ -808,7 +808,8 @@ Form_Keyboard(XA_TREE *wt,
 	if (!rl) rl = &lrl;
 
 	DIAG((D_form, NULL, "Form_Keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
-		wt, wt->tree, wt->owner, client, aesobj_item(&obj), keycode, key->aes, key->norm, wt->owner->name));
+		(unsigned long)wt, (unsigned long)wt->tree, (unsigned long)wt->owner, (unsigned long)client,
+		aesobj_item(&obj), keycode, key->aes, key->norm, wt->owner->name));
 
 	ei = (wt->wind->dial & created_for_TOOLBAR) && wt->ei ? wt->ei : &wt->e;
 
@@ -1136,7 +1137,7 @@ Click_windowed_form_do(	int lock,
 	wt = widg->stuff;
 
 	DIAG((D_form, client, "Click_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
-		client, wind, wt));
+		(unsigned long)client, (unsigned long)wind, (unsigned long)wt));
 
 // 	display("Click_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
 // 		client, wind, wt);
@@ -1437,7 +1438,7 @@ do_formwind_msg(
 	bool draw = false;
 
 	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, widg=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
-		wind->owner->name, to_client->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
+		wind->owner->name, to_client->name, (unsigned long)widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
 
 	if (widg)
 	{

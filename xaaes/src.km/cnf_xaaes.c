@@ -624,7 +624,7 @@ pCB_app_options(char *line)
 		}
 
 		DIAGS(("opts = %lx (aesys=%lx, default=%lx)",
-			opts, (long)&C.Aes->options, (long)&default_options));
+			(unsigned long)opts, (unsigned long)&C.Aes->options, (unsigned long)&default_options));
 
 		while ((s = get_commadelim_string(&line)))
 		{
@@ -728,7 +728,7 @@ isolate_strarg(char **str)
 {
 	char *s, *e, *ret = NULL;
 
-	DIAGS(("isolate_strarg: start=%lx", *str));
+	DIAGS(("isolate_strarg: start=%lx", (unsigned long)*str));
 
 	s = *str;
 
@@ -760,7 +760,7 @@ isolate_strarg(char **str)
 #if GENERATE_DIAGS
 		if (ret)
 		{
-			DIAGS((" -- got quoted string = '%s', start of next = %lx", ret, e));
+			DIAGS((" -- got quoted string = '%s', start of next = %lx", ret, (unsigned long)e));
 		}
 		else
 			DIAGS((" -- some error"));
@@ -785,7 +785,7 @@ isolate_strarg(char **str)
 #if GENERATE_DIAGS
 		if (ret)
 		{
-			DIAGS((" -- got unquoted string = '%s', start of next = %lx", ret, e));
+			DIAGS((" -- got unquoted string = '%s', start of next = %lx", ret, (unsigned long)e));
 		}
 		else
 			DIAGS((" -- some unquote error"));
@@ -965,8 +965,8 @@ pCB_run(const char *path, const char *line, struct parsinf *inf)
 			{
 				strcpy(cfg.cnf_run[i], path);
 				strcpy(cfg.cnf_run_arg[i], line);
-				DIAGS(("pCB_run[%i]:(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i]));
-				DIAGS(("pCB_run[%i]:(%lx) args '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i]));
+				DIAGS(("pCB_run[%i]:(%lx) '%s'", i, (unsigned long)cfg.cnf_run[i], cfg.cnf_run[i]));
+				DIAGS(("pCB_run[%i]:(%lx) args '%s'", i, (unsigned long)cfg.cnf_run_arg[i], cfg.cnf_run_arg[i]));
 			}
 			else
 			{

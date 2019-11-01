@@ -259,7 +259,7 @@ xa_t_font(struct xa_vdi_settings *v, short point, short id)
 	/*
 	 * Ozk: Hmm... have to reset point size when changing fonts!!??
 	 */
-	if (point != -1 )	//&& (!id || v->font_rsize != point))
+	if (point != -1 )
 	{
 		v->font_rsize = point;
 		v->font_ssize = vst_point(v->handle, point, &v->font_w, &v->font_h, &v->cell_w, &v->cell_h);
@@ -439,10 +439,10 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 	else
 		wtxt = &wtxti->n;
 
-	xa_wr_mode(v, wtxt->wrm); //MD_TRANS);
+	xa_wr_mode(v, wtxt->wrm);
 	xa_t_font(v, wtxt->p, wtxt->f);
 
-	xa_t_effects(v, wtxt->e); //vst_effects(v->handle, wtxt->e);
+	xa_t_effects(v, wtxt->e);
 
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));
@@ -512,22 +512,6 @@ xa_f_perimeter(struct xa_vdi_settings *v, short m)
 static void _cdecl
 xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 {
-#if 0
-	XVDIPB *pb = create_vdipb();
-	if (pb) {
-		pb->ptsin[0] = pb->ptsin[6] = pb->ptsin[8] = r->x - d;
-		pb->ptsin[1] = pb->ptsin[3] = r->y - d;
-		pb->ptsin[2] = pb->ptsin[4] = pb->ptsin[0] + r->w + d+d;
-// 		pb->ptsin[3] = pb->ptsin[1];
-// 		pb->ptsin[4] = pb->ptsin[2];
-		pb->ptsin[5] = pb->ptsin[7] = pb->ptsin[1] + r->h + d+d;
-// 		pb->ptsin[6] = pb->ptsin[0];
-// 		pb->ptsin[7] = pb->ptsin[5];
-// 		pb->ptsin[8] = pb->ptsin[0];
-		pb->ptsin[9] = pb->ptsin[1] + 1;
-		VDI(pb, 6, 5, 0, 0, v->handle);
-	}
-#else
 	short l[10];
 	short x = r->x - d;
 	short y = r->y - d;
@@ -544,7 +528,6 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 	l[8] = x;
 	l[9] = y + 1;			/* for Xor mode :-) */
 	v_pline(v->handle, 5, l);
-#endif
 }
 
 static void _cdecl
@@ -626,7 +609,6 @@ xa_p_gbar(struct xa_vdi_settings *v, short d, const RECT *r)	/* for perimeter = 
 	l[1] = y+1;
 	l[2] = x+w-2;
 	l[3] = y+h-2;
-//	BLOG((0,"xa_p_gbar:%d/%d/%d/%d", l[0], l[1], l[2], l[3] ));
  	v_bar(v->handle, l);
 	l[0] = x;
 	l[1] = y;
@@ -721,10 +703,10 @@ xa_tl_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 	short h = r->h + (d+d);
 	xa_l_color(v, col);
 	pnt[0] = x;
-	pnt[1] = y + h - 1; // - PW;
+	pnt[1] = y + h - 1;
 	pnt[2] = x;
 	pnt[3] = y;
-	pnt[4] = x + w - 1; // - PW;
+	pnt[4] = x + w - 1;
 	pnt[5] = y;
 	v_pline(v->handle, 3, pnt);
 }
@@ -738,12 +720,12 @@ xa_br_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 	short w = r->w + (d+d);
 	short h = r->h + (d+d);
 	xa_l_color(v, col);
-	pnt[0] = x; // + PW;
+	pnt[0] = x;
 	pnt[1] = y + h - 1;
 	pnt[2] = x + w - 1;
 	pnt[3] = y + h - 1;
 	pnt[4] = x + w - 1;
-	pnt[5] = y; // + PW;
+	pnt[5] = y;
 	v_pline(v->handle, 3, pnt);
 }
 
@@ -787,9 +769,7 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 		height = r->h;
 		while (height > 0)
 		{
-			//pnt[0] = x;
 			pnt[1] = y;
-			//pnt[4] = r.x;
 			pnt[5] = r->y;
 
 			height -= h;
@@ -874,14 +854,13 @@ xa_form_save(short d, RECT r, void **area)
 
 		if (*area)
 		{
-			DIAG((D_menu, NULL, "form_save: to %lx", *area));
+			DIAG((D_menu, NULL, "form_save: to %lx", (unsigned long)*area));
 			Mpreserve.fd_addr = *area;
 			hidem();
 			vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
 
 			showm();
 		}
-		//else
 	}
 }
 
@@ -922,7 +901,7 @@ xa_form_restore(short d, RECT r, void **area)
 			rtopxy(pnt+4, &r);
 			ritopxy(pnt,0,0,r.w,r.h);
 
-			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.x, r.y, r.w, r.h, *area));
+			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.x, r.y, r.w, r.h, (unsigned long)*area));
 
 			Mpreserve.fd_w = r.w;
 			Mpreserve.fd_h = r.h;

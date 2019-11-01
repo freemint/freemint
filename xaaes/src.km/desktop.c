@@ -70,7 +70,7 @@ click_desktop_widget(int lock, struct xa_window *wind, struct xa_widget *widg, c
 
 		item = obj_find(get_desktop(), aesobj(get_desktop()->tree, 0), 1, md->x, md->y, NULL);
 
-		DIAG((D_button, NULL, "  --  item %d", item));
+		DIAG((D_button, NULL, "  --  item %d", aesobj_item(&item)));
 
 		/* button must be released on the root object. */
 
@@ -99,7 +99,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	struct xa_widget_methods *m = &widg->m;
 
 	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
-		wind->handle, desktop));
+		wind->handle, (unsigned long)desktop));
 
 	if (widg->stuff)
 	{
@@ -180,7 +180,7 @@ Set_desktop(XA_TREE *new_desktop)
          *     The desktop can of course be handled by tool_bar widget stuff!!!
 	 */
 
-	DIAGS(("desktop: %d/%d,%d/%d",*(RECT *)&ob->ob_x));
+	DIAGS(("desktop: %d/%d,%d/%d", ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
 
 
 	/* HR 010501: general fix */
@@ -205,7 +205,7 @@ CE_set_desktop(int lock, struct c_event *ce, short cancel)
 	{
 		XA_TREE *newdesk = ce->ptr1;
 		DIAGS((" CE_set_desktop: newdesk = %lx (obtree = %lx, owner %s) for %s",
-			newdesk, newdesk->tree, newdesk->owner->name, ce->client->name));
+			(unsigned long)newdesk, (unsigned long)newdesk->tree, newdesk->owner->name, ce->client->name));
 
 		Set_desktop(newdesk);
 		send_iredraw(0, root_window, 0, NULL);
