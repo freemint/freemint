@@ -24,11 +24,12 @@
 
 
 #define PROFILING	0
-#include RSCHNAME
 
 #include "xa_types.h"
 #include "xa_global.h"
 #include "xa_strings.h"
+
+#include "xaaes.h"
 
 #include "c_window.h"
 #include "form.h"

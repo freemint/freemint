@@ -22,11 +22,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
-
 #include "xa_fnts.h"
 #include "xa_wdlg.h"
 #include "xa_global.h"
+
+#include "xaaes.h"
 
 #include "k_main.h"
 #include "k_mouse.h"

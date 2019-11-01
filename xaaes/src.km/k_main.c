@@ -24,8 +24,6 @@
 #define PROFILING	0
 
 
-#include "xaaes.h" /*RSCHNAME*/
-
 #define MX_STRAM
 #include "version.h"
 #include "xa_defs.h"
@@ -44,6 +42,8 @@
 
 #include "xa_global.h"
 #include "xa_strings.h"
+
+#include "xaaes.h"
 
 #include "about.h"
 #include "app_man.h"

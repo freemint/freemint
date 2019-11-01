@@ -22,10 +22,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
-
 #include "k_shutdown.h"
 #include "xa_global.h"
+
+#include "xaaes.h"
 
 #include "app_man.h"
 #include "cnf_xaaes.h"

@@ -22,12 +22,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
-
 #include "k_keybd.h"
 #include "c_keybd.h"
 #include "xa_global.h"
 #include "xa_strings.h"
+
+#include "xaaes.h"
 
 //#include "debug.h"
 #include "about.h"
