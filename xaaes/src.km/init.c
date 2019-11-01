@@ -364,7 +364,7 @@ static void configure(void)
 	 */
 	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
 
-	strcpy(cfg.rsc_name, RSCNAME);
+	strcpy(cfg.rsc_name, "xaaes.rsc");
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
 	cfg.xaw_point = STANDARD_FONT_POINT;	/* fnt-sz for xaaes-windows */
