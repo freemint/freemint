@@ -77,7 +77,7 @@ bootmessage(void)
 	BLOG((true, "Using Harald Siegmunds NKCC"));
 	BLOG((true, ""));
 #else
-	BLOG((true,"Part of freemint ("SPAREMINT_URL")." ));
+	BLOG((true,"Part of freemint ("FREEMINT_URL")." ));
 #endif
 
 #if 0

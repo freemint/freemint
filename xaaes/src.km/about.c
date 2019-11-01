@@ -47,9 +47,9 @@
 
 
 #if 1
-extern char *about_lines[];
+extern const char *const about_lines[];
 #else
-char *about_lines[] =
+const char *const about_lines[] =
 {
   /*          1         2         3         4         5         6
      123456789012345678901234567890123456789012345678901234567890 */
@@ -700,7 +700,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 #endif
 	if (!list->start)
 	{
-		char **t = about_lines;
+		const char *const *t = about_lines;
 		struct scroll_content sc = {{ 0 }};
 
 		sc.t.strings = 1;
@@ -708,7 +708,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 		{
 			while (*t)
 			{
-				sc.t.text = *t;
+				sc.t.text = (char *)*t;
 				list->add(list, NULL, NULL, &sc, false, 0, false);
 				t++;
 			}

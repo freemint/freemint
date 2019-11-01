@@ -160,4 +160,4 @@ temporaire (Ctrl-Alt-Espace).
 
 Documentation suppl‚mentaire :
 
-http://wiki.sparemint.org/index.php/XaAES
+https://github.com/freemint/freemint/wiki/XaAES

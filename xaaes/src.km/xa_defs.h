@@ -146,7 +146,7 @@
 
 /*----------------------------------------------------------------- */
 
-#define SPAREMINT_URL	"http://sparemint.org"
+#define FREEMINT_URL	"https://freemint.github.io/"
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		64
 
