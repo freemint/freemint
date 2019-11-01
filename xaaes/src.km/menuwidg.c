@@ -457,12 +457,6 @@ clear_popinfo(struct xa_popinfo *pi)
 	pi->current = -1;
 
 	pi->at_up = pi->at_down = NULL;
-#if 0
-	pi->attach_parent = -1;
-	pi->attach_wt = NULL;
-	pi->attach_item = -1;
-	pi->attached_to = -1;
-#endif
 }
 
 static void
@@ -559,11 +553,9 @@ nest_menutask(Tab *tab)
 		else
 			new_tab->ty = NO_TASK;
 
-// 		new_mt->p.attach_wt	= NULL;
-// 		new_mt->p.attach_item	= -1;
-// 		new_mt->p.attached_to	= -1;
-// 		new_mt->p.current	= -1;
-// 		new_mt->p.attach_parent	= -1;
+#if 0
+		new_mt->p.current	= -1;
+#endif
 	}
 	return new_tab;
 }
@@ -1385,14 +1377,6 @@ do_timeout_popup(Tab *tab)
 	new->task_data.menu.p.at_down = at;
 	if (at->on_open)
 		(*at->on_open)(at);
-#if 0
-	k->p.attach_wt		= new_wt;
-	k->p.attach_item	= at->item;
-	k->p.attached_to	= k->p.current;
-
-	new = nest_menutask(tab);
-	new->task_data.menu.p.attach_parent = k->p.attached_to;
-#endif
 
 	do_popup(new, new_wt, at->item, asel, click, rdx, rdy);
 }
