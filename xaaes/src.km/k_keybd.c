@@ -264,11 +264,10 @@ XA_keyboard_event(int lock, const struct rawkey *key)
 				else if (client->waiting_pb)
 				{
 					post_cevent(client, cXA_keybd_event, rk, NULL, 0,0, NULL,NULL);
-				}
-#if GENERATE_DIAGS
-				else
+				} else
+				{
 					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));
-#endif
+				}
 			}
 		}
 	}
@@ -418,7 +417,6 @@ kernel_key(int lock, struct rawkey *key)
 			return true;
 		}
 #if 0
-//#if GENERATE_DIAGS
 		/* CTRL|ALT|number key is emulate wheel. */
 		if (   nk=='U' || nk=='N'
 		    || nk=='H' || nk=='J')
@@ -452,7 +450,6 @@ kernel_key(int lock, struct rawkey *key)
 			XA_wheel_event(lock, &md);
 			return true;
 		}
-//#endif
 #endif
 
 		if( (nk == cfg.keyboards.c && (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))) || (tolower(nk) == cfg.keyboards.c) )
@@ -511,7 +508,6 @@ kernel_key(int lock, struct rawkey *key)
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
-		{
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
 			{
 				client = APP_LIST_START;
@@ -526,77 +522,76 @@ kernel_key(int lock, struct rawkey *key)
 				client = next_app(lock, true, false);  /* including the AES for its menu bar. */
 			app_or_acc_in_front( lock, client );
 			return true;
-		}
+
 		case '0':	// toggle main-menubar
 			toggle_menu(lock, -1);
-		return true;
+			return true;
+
 		case '+':
 			C.loglvl++;
-		return true;
+			return true;
+
 		case '-':
 			if( --C.loglvl < 0 )
 				C.loglvl = 0;
-		return true;
+			return true;
 		case ' ':
-		{
-			struct xa_window *wind;
-			struct xa_widget *widg;
-			short mb = cfg.menu_bar;
-
-//			if (nk == NK_ESC && !TAB_LIST_START)
-//				goto otm;
-
-			client = NULL;
-			widg = NULL;
-
-			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
 			{
-				client = find_focus(true, NULL, NULL, &wind);
-				if (client)
+				struct xa_window *wind;
+				struct xa_widget *widg;
+				short mb = cfg.menu_bar;
+	
+	//			if (nk == NK_ESC && !TAB_LIST_START)
+	//				goto otm;
+	
+				client = NULL;
+				widg = NULL;
+	
+				if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
 				{
-					if (wind)
+					client = find_focus(true, NULL, NULL, &wind);
+					if (client)
 					{
-						widg = get_widget(wind, XAW_MENU);
-						if (!wdg_is_act(widg))
+						if (wind)
+						{
+							widg = get_widget(wind, XAW_MENU);
+							if (!wdg_is_act(widg))
+								client = NULL;
+						}
+						else
 							client = NULL;
 					}
-					else
-						client = NULL;
-				}
-			}
-			else
-				toggle_menu(lock, 1);
-
-			if (!client)
-			{
-				if (TAB_LIST_START)
-				{
-					client = TAB_LIST_START->client;
-					widg = TAB_LIST_START->widg;
-					wind = TAB_LIST_START->wind;
 				}
 				else
+					toggle_menu(lock, 1);
+	
+				if (!client)
 				{
-					widg = get_menu_widg();
-					client = menu_owner();
-					wind = root_window;
+					if (TAB_LIST_START)
+					{
+						client = TAB_LIST_START->client;
+						widg = TAB_LIST_START->widg;
+						wind = TAB_LIST_START->wind;
+					}
+					else
+					{
+						widg = get_menu_widg();
+						client = menu_owner();
+						wind = root_window;
+					}
 				}
+				if (client)
+					post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
+				if( !mb )
+					cfg.menu_bar = -1;
 			}
-			if (client)
-				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
-			if( !mb )
-				cfg.menu_bar = -1;
 			return true;
-		}
 #if GENERATE_DIAGS == 0
 		case 'D':	/* screen-dump */
-		{
 			post_cevent(C.Hlp, ceExecfunc, screen_dump, NULL, 1, 0, NULL,NULL);
 			return true;
-		}
 #endif
 		case 'R':				/* attempt to recover a hung system */
-		{
 			if ((key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
 			{
 				if (C.reschange )
@@ -607,32 +602,37 @@ kernel_key(int lock, struct rawkey *key)
 				recover();
 			}
 			return true;
-		}
-		//case 'F':				/* open the task manager */
-#if !GENERATE_DIAGS
+
 		case 'L':				/* open the task manager */
-#endif
-		if( !C.update_lock )
-		{
-			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
+#if GENERATE_DIAGS
+			D.debug_level = 4;
+			return true;
+#else
+			if( !C.update_lock )
+			{
+				if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
 					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LOAD_CFG, 0, NULL,NULL);
-			else
-				post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1, 0, NULL,NULL);
-		}
-		return true;
+				else
+					post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1, 0, NULL,NULL);
+			}
+			return true;
+#endif
 
 		case 'I':	/* (un-)iconify window */
 			return 	iconify_action(lock, TOP_WINDOW, 0);
+
 		case NK_INS:
 			TOP_WINDOW->send_message(lock, TOP_WINDOW, NULL, AMQ_NORM, QMF_CHKDUP,
 			   WM_FULLED, 0, 0, TOP_WINDOW->handle, 0, 0, 0, 0);
-		return true;
+			return true;
+
 #if TST_BE
 		case NK_ENTER:
 			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
 				bus_error();
-		break;
+			break;
 #endif
+
 #define WGROW	16
 		case NK_UP:
 		case NK_DOWN:
@@ -720,7 +720,8 @@ kernel_key(int lock, struct rawkey *key)
 				if( memcmp(&r, &wind->r, sizeof(RECT)) )
 					do_kbd_win( lock, wind, &r, s ? WM_MOVED : WM_SIZED);
 			}
-		return true;
+			return true;
+
 		case NK_RIGHT:
 		case NK_LEFT:
 			if( TOP_WINDOW )
@@ -789,89 +790,88 @@ kernel_key(int lock, struct rawkey *key)
 
 				}
 			}
-		return true;
+			return true;
+
 		case 'E':	/* open windows-submenu on top-window */
+	
+			if( TOP_WINDOW && !C.update_lock )
+			{
+				struct moose_data md;
+	
+				/* init moose_data */
+				memset( &md, 0, sizeof(md) );
+				md.x = TOP_WINDOW->r.x + TOP_WINDOW->r.w/2;
+				md.y = TOP_WINDOW->r.y + TOP_WINDOW->r.h/2;
+				md.state = 1;//MBS_RIGHT;
+				post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
+			}
+			return true;
 
-		if( TOP_WINDOW && !C.update_lock )
-		{
-			struct moose_data md;
-
-			/* init moose_data */
-			memset( &md, 0, sizeof(md) );
-			md.x = TOP_WINDOW->r.x + TOP_WINDOW->r.w/2;
-			md.y = TOP_WINDOW->r.y + TOP_WINDOW->r.h/2;
-			md.state = 1;//MBS_RIGHT;
-			post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
-		}
-		return true;
 		case 'B':	/* system-window */
-		if( !C.update_lock )
-		{
-			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1, 0, NULL,NULL);
-		}
-		return true;
+			if( !C.update_lock )
+			{
+				post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1, 0, NULL,NULL);
+			}
+			return true;
 		case NK_HELP:	/* about-window */
-		if( !C.update_lock )
-		{
-			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 1,0, NULL,NULL);
-		}
-		return true;
+			if( !C.update_lock )
+			{
+				post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 1,0, NULL,NULL);
+			}
+			return true;
 		case 'K':	/* launcher */
-		if( !C.update_lock )
-		{
-			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LAUNCH, 0, NULL, NULL);
-		}
-		return true;
+			if( !C.update_lock )
+			{
+				post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LAUNCH, 0, NULL, NULL);
+			}
+			return true;
 		case 'S':	/* save inf */
 			write_inf();
-		return true;
-		//case 'T':				/* ctrl+alt+T    Tidy screen */
+			return true;
 		case NK_HOME:				/*     "    Home       "     */
-		{
 			if( C.update_lock )
 				return true;
 			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
 			redraw_menu(lock);
 			return true;
-		}
 		case 'M':				/* ctrl+alt+M  recover mouse */
-		{
 			forcem();
 			return true;
-		}
+
 #if WITH_GRADIENTS || WITH_BKG_IMG
 		case 'N':	/* load gradients */
-		if( !C.update_lock )
-		{
-			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, (key->raw.conin.state & (K_RSHIFT|K_LSHIFT)) ? HL_LOAD_IMG : HL_LOAD_GRAD, 0, NULL,NULL);
-		}
-		return true;
+			if( !C.update_lock )
+			{
+				post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, (key->raw.conin.state & (K_RSHIFT|K_LSHIFT)) ? HL_LOAD_IMG : HL_LOAD_GRAD, 0, NULL,NULL);
+			}
+			return true;
 #endif
+
 #if WITH_BKG_IMG
 		case ':':	// .: make background-image
 			//if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
 			{
 				do_bkg_img( C.Aes, 1, 0 );
 			}
-		return true;
+			return true;
 #endif
+
 		case '.':	// .: remove widgets and display top-window full-screen, todo: restore
 			remove_window_widgets(lock, 1);
-		return true;
+			return true;
+
 		case ',':	// ,: remove widgets
 			remove_window_widgets(lock, 0);
-		return true;
+			return true;
 
 #if HOTKEYQUIT
 		case 'A':
-		{
 			DIAGS(("Quit all clients by CtlAlt A"));
 			post_cevent(C.Hlp, ceExecfunc, ce_quit_all_clients, NULL, !(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)),0, NULL, NULL);
 			return true;
-		}
 #endif
+
 		case 'P':
-		{
 			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
 			{
 				if( !C.update_lock )
@@ -888,69 +888,64 @@ kernel_key(int lock, struct rawkey *key)
 				}
 			}
 			return true;
-		}
+
 #if HOTKEYQUIT
 		case 'J':
 			sdmd = RESTART_XAAES;
+			/* fall through */
 		case 'H':
 			if( !sdmd )
 				sdmd = HALT_SYSTEM;
-		//case 'G':
+			/* fall through */
 		case 'Q':
-		{
-			struct proc *p;
-			const char *sdmaster = sdmd == RESTART_XAAES ? 0 : get_env(0, "SDMASTER=");
-
-			if (sdmaster)
 			{
-				int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
-				//sdmaster = "xaz";
-				if (ret < 0)
+				struct proc *p;
+				const char *sdmaster = sdmd == RESTART_XAAES ? 0 : get_env(0, "SDMASTER=");
+	
+				if (sdmaster)
 				{
-					if( strlen(sdmaster) > 12 )
-						sdmaster += (strlen(sdmaster) - 12);	// ->fix ALERT!
-					ALERT((xa_strings[AL_SDMASTER], sdmaster));
+					int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
+					//sdmaster = "xaz";
+					if (ret < 0)
+					{
+						if( strlen(sdmaster) > 12 )
+							sdmaster += (strlen(sdmaster) - 12);	// ->fix ALERT!
+						ALERT((xa_strings[AL_SDMASTER], sdmaster));
+					}
+					else
+						return true;
 				}
-				else
-					return true;
+				else	/* the ALERT comes after ce_dispatch_shutdown, so the else must stay for now */
+				{
+					post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
+				}
 			}
-			else	/* the ALERT comes after ce_dispatch_shutdown, so the else must stay for now */
-			{
-				post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
-			}
-
 			return true;
-		}
 #endif
 		case 'Y':				/* ctrl+alt+Y, hide current app. */
-		{
 			hide_app(lock, focus_owner());
 			return true;
-		}
+
 		case 'X':				/* ctrl+alt+X, hide all other apps. */
-		{
 			hide_other(lock, focus_owner());
 			return true;
-		}
 		case 'U':
-		{
-			struct xa_window *wind;
-			wind = TOP_WINDOW;
-			if( wind )
 			{
-				if( wind->send_message )
-					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-							   WM_CLOSED, 0, 0, wind->handle, 0,0,0,0);
+				struct xa_window *wind;
+				wind = TOP_WINDOW;
+				if( wind )
+				{
+					if( wind->send_message )
+						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+								   WM_CLOSED, 0, 0, wind->handle, 0,0,0,0);
+				}
 			}
 			return true;
-		}
 		case 'V':				/* ctrl+alt+V, unhide all. */
-		{
 			unhide_all(lock, focus_owner());
 			return true;
-		}
+
 		case 'W':
-		{
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
 			{
 				if( TOP_WINDOW )
@@ -980,24 +975,15 @@ kernel_key(int lock, struct rawkey *key)
 				}
 				return true;
 			}
-		}
-#if GENERATE_DIAGS
-		case 'L':				/* ctrl+alt+L, turn on debugging output */
-		{
-			D.debug_level = 4;
-			return true;
-		}
-#endif
+
 #if GENERATE_DIAGS
 		case 'O':
-		{
 			cfg.menu_locking ^= true;
 			return true;
-		}
 #endif
 		}
 	}
-#endif	/*/ALT_CTRL_APP_OPS	*/
+#endif	/* ALT_CTRL_APP_OPS	*/
 	return false;
 }
 

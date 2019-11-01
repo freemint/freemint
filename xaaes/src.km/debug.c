@@ -390,7 +390,7 @@ const char *D_fl = "%s,%d: ";
 const char *D_flu = "%ld,%d - %s,%d: ";
 
 void
-show_bits(unsigned short data, char *prf, char *t[], char *x)
+show_bits(unsigned short data, const char *prf, const char *const t[], char *x)
 {
 	int i = 0;
 	*x = '\0';
@@ -457,12 +457,6 @@ diags(const char *fmt, ...)
 	char buf[512];
 	va_list args;
 	long l;
-#if 1
-	struct proc *p = get_curproc();
-
-	if ((strnicmp(p->name, "thing", 5)))
-		return;
-#endif
 
 	va_start(args, fmt);
 	l = vsprintf(buf, sizeof(buf), fmt, args);
@@ -505,12 +499,7 @@ diag(enum debug_item item, struct xa_client *client, const char *t, ...)
 {
 	enum debug_item *point = client ? client->options.point : D.point;
 	short b, x, y;
-#if 1
-	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "thing", 5)))
-		return;
-#endif
 	if (D.debug_level == 4
 	    || (    (D.debug_level >= 2 && point[item])
 	        && !(D.debug_level == 3 && client == NULL)))

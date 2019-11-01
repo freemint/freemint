@@ -1203,7 +1203,6 @@ display_popup(Tab *tab, short rdx, short rdy)
 		k->pdy = obtree->ob_y + (k->drop.y - or.y);
 		wt->pdx = k->drop.x;
 		wt->pdy = k->drop.y;
-// 		wt->puobj = pi->parent;
 
 		k->p.wind = wind;
 
@@ -1212,20 +1211,15 @@ display_popup(Tab *tab, short rdx, short rdy)
 		/* top menu-owner-window */
 		if( tab->wind && tab->wind != TOP_WINDOW && tab->wind != root_window )
 			top_window(tab->lock, true, true, tab->wind);
-#if GENERATE_DIAGS
 		if (!cfg.menu_locking)
 		{
 			DIAG((D_menu, tab->client, "nolocking pop window %lx + %d", (unsigned long)obtree, pi->parent));
-			open_window(tab->lock, wind, r);
 		}
 		else
 		{
 			DIAG((D_menu, tab->client, "locking pop window %lx + %d", (unsigned long)obtree, pi->parent));
-			open_window(tab->lock, wind, r);
 		}
-#else
 		open_window(tab->lock, wind, r);
-#endif
 	}
 }
 

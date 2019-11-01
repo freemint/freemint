@@ -203,11 +203,10 @@ cancel_CE(struct xa_client *client,
 				kfree(ce);
 				ce = nce;
 				removed = true;
-			}
-#if GENERATE_DIAGS
-			else
+			} else
+			{
 				DIAGS((" --- dont delete client event"));
-#endif
+			}
 		}
 		if (!removed)
 		{
@@ -1018,8 +1017,8 @@ ignore(int sig)
 	if( sig == SIGINT )
 		recover();
 }
-#if !GENERATE_DIAGS
 
+#if !GENERATE_DIAGS
 static void
 fatal(int sig)
 {

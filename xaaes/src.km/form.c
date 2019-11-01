@@ -1245,17 +1245,12 @@ Click_form_do(int lock,
 				(*wt->exit_form)(client, wind, wt, &fr);
 			}
 		}
-	}
-#if GENERATE_DIAGS
-	else
+	} else
 	{
 		DIAGS(("Click_form_do: NO OBTREE!!"));
-// 		display("Click_form_do: NO OBTREE!!");
 	}
-#endif
 
 	DIAGS(("Click_form_do: return"));
-// 	display("Click_form_do: return");
 	return false;
 }
 

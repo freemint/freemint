@@ -209,33 +209,11 @@ exec_iredraw_queue(int lock, struct xa_client *client)
 
 #if GENERATE_DIAGS
 
-static char *xev[] =
+static const char *const xev[] =
 {
 	"KBD", "BUT", "M1", "M2", "MSG", "TIM", "WHL", "MX", "NKBD",
 	"9", "10", "11", "12", "13", "14", "15"
 };
-
-
-#if 0
-static char *
-em_flag(int f)
-{
-	static char *mo[6] = { "into", "outof", "into", "outof" };
-	return mo[f & 3];
-}
-#endif
-
-#else /* GENERATE_DIAGS */
-
-#if 0
-static char *xev[] =
-{
-	"KBD", "BUT", "M1", "M2", "MSG", "TIM", "WHL", "MX", "NKBD",
-	"9", "10", "11", "12", "13", "14", "15"
-};
-#endif
-
-#define diag_out(x,c,y)
 
 #endif
 

@@ -58,7 +58,7 @@ STATIC void free_wt(XA_TREE *wt);
 STATIC short	redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 
 #if GENERATE_DIAGS
-static char *t_widg[] =
+static const char *const t_widg[] =
 {
 	"XAW_BORDER",			/* Extended XaAES widget, used for border sizing. */
 	"XAW_TITLE",
@@ -570,10 +570,10 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 				break;
 			wt = wt->next;
 		}
-#if GENERATE_DIAGS
 		if (!wt)
+		{
 			DIAGS((" -- lookup failed"));
-#endif
+		}
 	}
 	DIAGS((" obtree_to_wt: return %lx for %s",
 		(unsigned long)wt, client->name));
@@ -3100,10 +3100,9 @@ free_xawidget_resources(struct xa_widget *widg)
 					if (wt->wind == widg->wind)
 						wt->wind = NULL;
 				}
-				break;
 			}
+				break;
 			default:
-			{
 				if (widg->flags & XAWF_STUFFKMALLOC)
 				{
 					DIAGS(("  --- release stuff=%lx in widg=%lx",
@@ -3111,15 +3110,13 @@ free_xawidget_resources(struct xa_widget *widg)
 					kfree(widg->stuff);
 					widg->stuff = NULL;
 				}
-			}
+				break;
 		}
-		widg->flags    &= ~XAWF_STUFFKMALLOC;
+		widg->flags &= ~XAWF_STUFFKMALLOC;
+	} else
+	{
+		DIAGS(("  --- stuff=%lx not alloced in widg=%lx", (unsigned long)widg->stuff, (unsigned long)widg));
 	}
-#if GENERATE_DIAGS
-	else
-		DIAGS(("  --- stuff=%lx not alloced in widg=%lx",
-			(unsigned long)widg->stuff, (unsigned long)widg));
-#endif
 	widg->stufftype = 0;
 	widg->stuff = NULL;
  	widg->m.r.draw = NULL;
@@ -3137,37 +3134,37 @@ free_xawidget_resources(struct xa_widget *widg)
 /* eliminated both margin and shadow sizes from this table */
 /* put some extra data there as well. */
 static XA_WIDGET_LOCATION
-/*             defaults              index        mask	     status				rsc	      properties  destruct */
-/*							      mask									 */
-stdl_close   = {LT,			XAW_CLOSE,   CLOSER,    XAWS_ICONIFIED,			WIDG_CLOSER, WIP_ACTIVE, free_xawidget_resources },
-stdl_full    = {RT,			XAW_FULL,    FULLER,    XAWS_ICONIFIED,			WIDG_FULL,   WIP_ACTIVE, free_xawidget_resources },
-stdl_iconify = {RT,			XAW_ICONIFY, ICONIFIER, 0,				WIDG_ICONIFY,WIP_ACTIVE, free_xawidget_resources },
-stdl_hide    = {RT,			XAW_HIDE,    HIDER,     XAWS_ICONIFIED,			WIDG_HIDE,   WIP_ACTIVE, free_xawidget_resources },
-stdl_title   = {LT | R_VARIABLE,	XAW_TITLE,   NAME,      0,				0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_notitle = {LT | R_VARIABLE,	XAW_TITLE,   NAME,      0,				0,                    0, free_xawidget_resources },
+/*             defaults              index        mask       status                          rsc          properties  destruct */
+/*                                                           mask                                                                        */
+stdl_close   = {LT,                  XAW_CLOSE,   CLOSER,    XAWS_ICONIFIED,                 WIDG_CLOSER, WIP_ACTIVE, free_xawidget_resources },
+stdl_full    = {RT,                  XAW_FULL,    FULLER,    XAWS_ICONIFIED,                 WIDG_FULL,   WIP_ACTIVE, free_xawidget_resources },
+stdl_iconify = {RT,                  XAW_ICONIFY, ICONIFIER, 0,                              WIDG_ICONIFY,WIP_ACTIVE, free_xawidget_resources },
+stdl_hide    = {RT,                  XAW_HIDE,    HIDER,     XAWS_ICONIFIED,                 WIDG_HIDE,   WIP_ACTIVE, free_xawidget_resources },
+stdl_title   = {LT | R_VARIABLE,     XAW_TITLE,   NAME,      0,                              0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_notitle = {LT | R_VARIABLE,     XAW_TITLE,   NAME,      0,                              0,                    0, free_xawidget_resources },
 #if 0
-stdl_resize  = {RB,			XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
+stdl_resize  = {RB,                  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,     WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
 #endif
-stdl_resize  = {RB,			XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
-stdl_nresize = {RT/*RB*/,		XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,            0, free_xawidget_resources },
-stdl_uscroll = {LT/*RT*/,		XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_UP,     WIP_ACTIVE, free_xawidget_resources },
-stdl_upage   = {NO,			XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_vslide  = {LT | R_VARIABLE/*RT*/,	XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED, 	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_nvslide = {LT | R_VARIABLE/*RT*/,	XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED, 	0,                    0, free_xawidget_resources },
-stdl_dpage   = {NO,			XAW_DNPAGE,  DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_dscroll = {RT/*RB*/,		XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_DOWN,   WIP_ACTIVE, free_xawidget_resources },
-stdl_lscroll = {LB,			XAW_LFLN,    LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_LEFT,   WIP_ACTIVE, free_xawidget_resources },
-stdl_lpage   = {NO,			XAW_LFPAGE,  LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_hslide  = {LB | R_VARIABLE,	XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_resize  = {RB,                  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,     WIDG_SIZE,   WIP_ACTIVE, free_xawidget_resources },
+stdl_nresize = {RT,                  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,     WIDG_SIZE,            0, free_xawidget_resources },
+stdl_uscroll = {LT,                  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,     WIDG_UP,     WIP_ACTIVE, free_xawidget_resources },
+stdl_upage   = {NO,                  XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_vslide  = {LT | R_VARIABLE,     XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_nvslide = {LT | R_VARIABLE,     XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,     0,                    0, free_xawidget_resources },
+stdl_dpage   = {NO,                  XAW_DNPAGE,  DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_dscroll = {RT,                  XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,     WIDG_DOWN,   WIP_ACTIVE, free_xawidget_resources },
+stdl_lscroll = {LB,                  XAW_LFLN,    LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,     WIDG_LEFT,   WIP_ACTIVE, free_xawidget_resources },
+stdl_lpage   = {NO,                  XAW_LFPAGE,  LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_hslide  = {LB | R_VARIABLE,     XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
 #if 0
-stdl_nhslide = {LB | R_VARIABLE,	XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                    0, free_xawidget_resources },
+stdl_nhslide = {LB | R_VARIABLE,     XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,     0,                    0, free_xawidget_resources },
 #endif
-stdl_rpage   = {NO,			XAW_RTPAGE,  RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_rscroll = {RB,			XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_RIGHT,  WIP_ACTIVE, free_xawidget_resources },
-stdl_info    = {LT | R_VARIABLE,	XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_menu    = {LT | R_VARIABLE,	XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_pop     = {LT,			XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources },
-stdl_border  = {0,			XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,	0,           WIP_ACTIVE, free_xawidget_resources }
+stdl_rpage   = {NO,                  XAW_RTPAGE,  RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_rscroll = {RB,                  XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,     WIDG_RIGHT,  WIP_ACTIVE, free_xawidget_resources },
+stdl_info    = {LT | R_VARIABLE,     XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_menu    = {LT | R_VARIABLE,     XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_pop     = {LT,                  XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources },
+stdl_border  = {0,                   XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,     0,           WIP_ACTIVE, free_xawidget_resources }
 ;
 
 static XA_WIDGET_LOCATION *stdl[] =

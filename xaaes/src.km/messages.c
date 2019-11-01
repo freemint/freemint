@@ -370,11 +370,10 @@ do_winmesag(int lock,
 				post_cevent(wo, CE_do_winmesag, p, NULL, 0,0, NULL, NULL);
 			}
 		}
-	}
-#if GENERATE_DIAGS
-	else
+	} else
+	{
 		DIAGS((" --==-- do_winmesag: no do_message!"));
-#endif
+	}
 }
 
 static void
@@ -599,50 +598,40 @@ queue_message(int lock, struct xa_client *client, short amq, short qmf, union ms
 	switch (amq)
 	{
 		case AMQ_NORM:
-		{
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->msg, msg, qmf);
 #else
 			add_msg_2_queue(&client->msg, msg, qmf);
 #endif
 			break;
-		}
 		case AMQ_REDRAW:
-		{
-
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->rdrw_msg, msg, qmf);
 #else
 			add_msg_2_queue(&client->rdrw_msg, msg, qmf);
 #endif
 			break;
-		}
 		case AMQ_LOSTRDRW:
-		{
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->lost_rdrw_msg, msg, qmf);
 #else
 			add_msg_2_queue(&client->lost_rdrw_msg, msg, qmf);
 #endif
 			break;
-		}
 		case AMQ_CRITICAL:
-		{
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->crit_msg, msg, qmf);
 #else
 			add_msg_2_queue(&client->crit_msg, msg, qmf);
 #endif
 			break;
-		}
 		case AMQ_IREDRAW:
-		{
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->irdrw_msg, msg, qmf);
 #else
 			add_msg_2_queue(&client->irdrw_msg, msg, qmf);
 #endif
-		}
+			break;
 	}
 }
 
@@ -713,16 +702,16 @@ send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, un
 				queue_message(lock, dest_client, amq, qmf, msg);
 			}
 
-// 			display("send_a_message: client status %lx %s", dest_client->status, dest_client->name);
-#if GENERATE_DIAGS
 			if (dest_client->status & CS_FORM_ALERT)
+			{
 				DIAG((D_appl, dest_client, "send_a_message: Client %s is in form_alert "
 					"- AES message discarded!", dest_client->name));
-
+			}
 			if (dest_client->status & CS_LAGGING)
+			{
 				DIAG((D_appl, dest_client, "send_a_message: Client %s is lagging - "
 					"AES message discarded!", dest_client->name));
-#endif
+			}
 			return;
 		}
 	}

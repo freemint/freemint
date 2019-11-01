@@ -1163,12 +1163,13 @@ XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
 		xa_graf_mouse(m, NULL, NULL, false);
-#if GENERATE_DIAGS
 		if (client)
+		{
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
-		else
+		} else
+		{
 			DIAG((D_f,NULL,"mouse (non AES process (pid %ld)) %s", p_getpid(), m == M_ON ? "on" : "off"));
-#endif
+		}
 	}
 	/*
 	 * Ozk: For now we ignore modes other than M_OFF & M_ON
@@ -1253,12 +1254,13 @@ XA_xa_graf_mouse(int lock, struct xa_client *client, AESPB *pb)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
 		xa_graf_mouse(m, NULL, NULL, false);
-#if GENERATE_DIAGS
 		if (client)
+		{
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
-		else
+		} else
+		{
 			DIAG((D_f,NULL,"mouse (non AES process (pid %ld)) %s", p_getpid(), m == M_ON ? "on" : "off"));
-#endif
+		}
 	}
 	/*
 	 * Ozk: For now we ignore modes other than M_OFF & M_ON
@@ -1354,12 +1356,13 @@ XA_graf_handle(int lock, struct xa_client *client, AESPB *pb)
 	pb->intout[3] = screen.c_max_w + 2;
 	pb->intout[4] = screen.c_max_h + 2;
 
-#if GENERATE_DIAGS
 	if (client)
+	{
 		DIAG((D_graf,client,"_handle %d", pb->intout[0]));
-	else
+	} else
+	{
 		DIAG((D_graf,NULL,"_handle %d for non AES process", pb->intout[0]));
-#endif
+	}
 
 	return XAC_DONE;
 }
@@ -1400,7 +1403,6 @@ XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 
 	pb->intout[0] = 1;
 
-#if GENERATE_DIAGS
 	if (client)
 	{
 		DIAG((D_mouse,client,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
@@ -1411,6 +1413,5 @@ XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_mouse,NULL,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
 			mainmd.x, mainmd.y, mainmd.state, mainmd.kstate));
 	}
-#endif
 	return XAC_DONE;
 }

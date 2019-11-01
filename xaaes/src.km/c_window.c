@@ -365,7 +365,7 @@ inside_minmax(RECT *r, struct xa_window *wind)
 }
 
 #if GENERATE_DIAGS
-static char *stacks[] =
+static const char *const stacks[] =
 {
 	"HUH!!",
 	"Open windows",
@@ -1237,7 +1237,6 @@ create_window(
 	r = R;
 
 
-#if GENERATE_DIAGS
 	if (max)
 	{
 		DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  max:%d,%d/%d,%d",
@@ -1248,8 +1247,6 @@ create_window(
 		DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  no max",
 			c_owner(client), r.x,r.y,r.w,r.h));
 	}
-
-#endif
 
 	w = kmalloc(sizeof(*w));
 	if (!w)	/* Unable to allocate memory for window? */
@@ -2380,12 +2377,10 @@ move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate,
 					wind->ro = wind->rc;
 				}
 			}
-#if GENERATE_DIAGS
-			if ((newstate & XAWS_SHADED))
+			if (newstate & XAWS_SHADED)
 			{
 				DIAGS(("move_window: set shaded"));
 			}
-#endif
 			if (newstate == XAWS_FULLED)
 			{
 				blit = false;
@@ -2397,12 +2392,10 @@ move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate,
 	}
 	else
 	{
-#if GENERATE_DIAGS
-		if ((wind->window_status & XAWS_SHADED))
+		if (wind->window_status & XAWS_SHADED)
 		{
 			DIAGS(("move_window: win is shaded"));
 		}
-#endif
 		wind->pr = wind->rc;
 	}
 
@@ -2715,15 +2708,14 @@ delete_window1(int lock, struct xa_window *wind)
 static void
 CE_delete_window(int lock, struct c_event *ce, short cancel)
 {
-// 	if (!strnicmp(ce->client->proc_name, "gfa_xref", 8))
-// 		display("CE_del_wind %lx", ce->ptr1);
-
 	/*
 	 * Since the window in this event already have been removed from
 	 * all stacks, we perform  this deletion even when cancel flag is set
 	 */
-	//if (!cancel)
+#if 0
+	if (!cancel)
 		delete_window1(lock, ce->ptr1);
+#endif
 }
 
 void _cdecl

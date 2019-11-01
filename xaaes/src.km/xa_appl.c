@@ -649,15 +649,13 @@ exit_proc(int lock, struct proc *p, int code)
 			}
 		}
 
-#if GENERATE_DIAGS
-		if (client) {
+		if (client)
+		{
 			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
 				client->p->pid, client->name, p->pid, p->name));
 		} else {
 			DIAGS(("No real parent client"));
 		}
-#endif
-
 	}
 
 	return ret;
@@ -1520,13 +1518,14 @@ XA_appl_getinfo(int lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(1,5,0)
 
-#if GENERATE_DIAGS
 	/* Extremely curious to who's asking what. */
 	if (client)
+	{
 		DIAG((D_appl, client, "appl_getinfo %d for %s", gi_type, c_owner(client)));
-	else
+	} else
+	{
 		DIAG((D_appl, client, "appl_getinfo %d for non AES process (pid %ld)", gi_type, p_getpid()));
-#endif
+	}
 	if (gi_type > 14) {
 		switch (gi_type) {
 			case 64:
@@ -1633,12 +1632,13 @@ XA_appl_find(int lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(0,1,1)
 
-#if GENERATE_DIAGS
 	if (client)
+	{
 		DIAG((D_appl, client, "appl_find for %s", c_owner(client)));
-	else
+	} else
+	{
 		DIAG((D_appl, NULL, "appl_find for non AES process %s (pid %ld)", c_owner(client), p_getpid()));
-#endif
+	}
 
 	/* default to error */
 	pb->intout[0] = -1;

@@ -3689,7 +3689,7 @@ obj_ed_char(
 }
 
 #if GENERATE_DIAGS
-char *edfunc[] =
+static const char *const edfunc[] =
 {
 	"ED_START",
 	"ED_INIT",
@@ -3928,7 +3928,7 @@ obj_edit(XA_TREE *wt,
 	short old_ed_obj = -1;
 
 #if GENERATE_DIAGS
-	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
+	const char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
 	DIAG((D_form,wt->owner,"  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 	      funcstr, (unsigned long)wt, (unsigned long)obtree, aesobj_item(&obj), keycode, pos));
 #endif

@@ -1372,7 +1372,6 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 void
 check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 {
-#if GENERATE_DIAGS
 	if (client)
 	{
 		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
@@ -1383,7 +1382,6 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for non AES process (pid %ld)",
 			mainmd.cstate, x_mouse, y_mouse, p_getpid()));
 	}
-#endif
 	if (br)
 		*br = mainmd.cstate;
 	if (xr)

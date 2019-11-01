@@ -97,11 +97,11 @@ static struct xa_ftab aes_tab[220] =
 	/*   9 */ { NULL,                      0,        DESCR(NULL)              },
 
 	/*  10 */ { XA_appl_init,              NOCLIENT, DESCR("appl_init")       },
-	/*  11 */ { NULL,                      0,        DESCR("appl_read")       }, // unimplemented
+	/*  11 */ { NULL,                      0,        DESCR("appl_read")       }, /* unimplemented */
 	/*  12 */ { XA_appl_write,             0,        DESCR("appl_write")      },
 	/*  13 */ { XA_appl_find,              NOCLIENT, DESCR("appl_find")       },
-	/*  14 */ { NULL,                      0,        DESCR("appl_tplay")      }, // unimplemented
-	/*  15 */ { NULL,                      0,        DESCR("appl_trecord")    }, // unimplemented
+	/*  14 */ { NULL,                      0,        DESCR("appl_tplay")      }, /* unimplemented */
+	/*  15 */ { NULL,                      0,        DESCR("appl_trecord")    }, /* unimplemented */
 	/*  16 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  17 */ { XA_appl_yield,             0,        DESCR("appl_yield")      },
 	/*  18 */ { XA_appl_search,            0,        DESCR("appl_search")     },
@@ -151,31 +151,31 @@ static struct xa_ftab aes_tab[220] =
 	/*  58 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  59 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/*  60 */ { XA_objc_wdraw,             0,        DESCR("objc_wdraw")      }, // MagiC 5.10 extension
-	/*  61 */ { XA_objc_wchange,           0,        DESCR("objc_wchange")    }, // MagiC 5.10 extension
-	/*  62 */ { XA_graf_wwatchbox,         0,        DESCR("graf_wwatchbox")  }, // MagiC 5.10 extension
-	/*  63 */ { XA_form_wbutton,           0,        DESCR("form_wbutton")    }, // MagiC 5.10 extension
-	/*  64 */ { XA_form_wkeybd,            0,        DESCR("form_wkeybd")     }, // MagiC 5.10 extension
-	/*  65 */ { XA_objc_wedit,             0,        DESCR("objc_wedit")      }, // MagiC 5.10 extension
+	/*  60 */ { XA_objc_wdraw,             0,        DESCR("objc_wdraw")      }, /* MagiC 5.10 extension */
+	/*  61 */ { XA_objc_wchange,           0,        DESCR("objc_wchange")    }, /* MagiC 5.10 extension */
+	/*  62 */ { XA_graf_wwatchbox,         0,        DESCR("graf_wwatchbox")  }, /* MagiC 5.10 extension */
+	/*  63 */ { XA_form_wbutton,           0,        DESCR("form_wbutton")    }, /* MagiC 5.10 extension */
+	/*  64 */ { XA_form_wkeybd,            0,        DESCR("form_wkeybd")     }, /* MagiC 5.10 extension */
+	/*  65 */ { XA_objc_wedit,             0,        DESCR("objc_wedit")      }, /* MagiC 5.10 extension */
 	/*  66 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  67 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  68 */ { NULL,                      0,        DESCR(NULL)              },
-	/*  69 */ { NULL,                      0,        DESCR("graf_multirubber")}, // N.AES extension
+	/*  69 */ { NULL,                      0,        DESCR("graf_multirubber")}, /* N.AES extension */
 
 	/*  70 */ { XA_graf_rubberbox,         0,        DESCR("graf_rubberbox")  },
 	/*  71 */ { XA_graf_dragbox,           0,        DESCR("graf_dragbox")    },
-	/*  72 */ { NULL,                      0,        DESCR("graf_movebox")    }, // unimplemented
-	/*  73 */ { NULL,                      0,        DESCR("graf_growbox")    }, // unimplemented
-	/*  74 */ { NULL,                      0,        DESCR("graf_shrinkbox")  }, // unimplemented
+	/*  72 */ { NULL,                      0,        DESCR("graf_movebox")    }, /* unimplemented */
+	/*  73 */ { NULL,                      0,        DESCR("graf_growbox")    }, /* unimplemented */
+	/*  74 */ { NULL,                      0,        DESCR("graf_shrinkbox")  }, /* unimplemented */
 	/*  75 */ { XA_graf_watchbox,          0,        DESCR("graf_watchbox")   },
 	/*  76 */ { XA_graf_slidebox,          0,        DESCR("graf_slidebox")   },
 	/*  77 */ { XA_graf_handle,            NOCLIENT, DESCR("graf_hand")       },
-	/*  78 */ { XA_xa_graf_mouse,             NOCLIENT, DESCR("xa_graf_mouse")      },
+	/*  78 */ { XA_xa_graf_mouse,          NOCLIENT, DESCR("graf_mouse")      },
 	/*  79 */ { XA_graf_mkstate,           NOCLIENT, DESCR("graf_mkstate")    },
 
 	/*  80 */ { XA_scrp_read,              0,        DESCR("scrp_read")       },
 	/*  81 */ { XA_scrp_write,             0,        DESCR("scrp_write")      },
-	/*  82 */ { NULL,                      0,        DESCR("scrp_clear")      }, // unimplemented
+	/*  82 */ { NULL,                      0,        DESCR("scrp_clear")      }, /* unimplemented */
 	/*  83 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  84 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  85 */ { NULL,                      0,        DESCR(NULL)              },
@@ -209,7 +209,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 110 */ { XA_rsrc_load,              0,        DESCR("rsrc_load")       },
 	/* 111 */ { XA_rsrc_free,              NOCLIENT, DESCR("rsrc_free")       },
 	/* 112 */ { XA_rsrc_gaddr,             0,        DESCR("rsrc_gaddr")      },
-	/* 113 */ { NULL,                      0,        DESCR("rsrc_saddr")      }, // unimplemented
+	/* 113 */ { NULL,                      0,        DESCR("rsrc_saddr")      }, /* unimplemented */
 	/* 114 */ { XA_rsrc_obfix,             0,        DESCR("rsrc_obfix")      },
 	/* 115 */ { XA_rsrc_rcfix,             0,        DESCR("rsrc_rcfix")      },
 	/* 116 */ { NULL,                      0,        DESCR(NULL)              },
@@ -219,22 +219,22 @@ static struct xa_ftab aes_tab[220] =
 
 	/* 120 */ { XA_shel_read,              NOCLIENT, DESCR("shel_read")       },
 	/* 121 */ { XA_shel_write,             0,        DESCR("shel_write")      },
-	/* 122 */ { NULL,                      0,        DESCR("shel_get")        }, // not supported
-	/* 123 */ { NULL,                      0,        DESCR("shel_put")        }, // not supported
+	/* 122 */ { NULL,                      0,        DESCR("shel_get")        }, /* not supported */
+	/* 123 */ { NULL,                      0,        DESCR("shel_put")        }, /* not supported */
 	/* 124 */ { XA_shel_find,              0,        DESCR("shel_find")       },
 	/* 125 */ { XA_shel_envrn,             NOCLIENT, DESCR("shel_envrn")      },
-	/* 126 */ { NULL,                      0,        DESCR("shel_rdef")       }, // unimplemented
-	/* 127 */ { NULL,                      0,        DESCR("shel_wdef")       }, // unimplemented
-	/* 128 */ { NULL,                      0,        DESCR("shel_help")       }, // unimplemented
+	/* 126 */ { NULL,                      0,        DESCR("shel_rdef")       }, /* unimplemented */
+	/* 127 */ { NULL,                      0,        DESCR("shel_wdef")       }, /* unimplemented */
+	/* 128 */ { NULL,                      0,        DESCR("shel_help")       }, /* unimplemented */
 	/* 129 */ { XA_appl_control,           0,        DESCR("appl_control")    },
 
 	/* 130 */ { XA_appl_getinfo,           NOCLIENT, DESCR("appl_getinfo")    },
-	/* 131 */ { NULL,                      0,        DESCR(NULL)              }, // XaAES only
+	/* 131 */ { NULL,                      0,        DESCR(NULL)              }, /* XaAES only */
 	/* 132 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 133 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 134 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 135 */ { XA_form_popup,             0,        DESCR("form_popup")      },
-	/* 136 */ { NULL,                      0,        DESCR("form_xerr")       }, // unimplemented
+	/* 136 */ { NULL,                      0,        DESCR("form_xerr")       }, /* unimplemented */
 	/* 137 */ { XA_appl_options,           0,        DESCR("appl_options")    },
 	/* 138 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 139 */ { NULL,                      0,        DESCR(NULL)              },
@@ -261,69 +261,69 @@ static struct xa_ftab aes_tab[220] =
 	/* 158 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 159 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 160 */ { NULL,                      0,        DESCR("wdlg_create")     }, // MagiC extension
-	/* 161 */ { NULL,                      0,        DESCR("wdlg_open")       }, // MagiC extension
-	/* 162 */ { NULL,                      0,        DESCR("wdlg_close")      }, // MagiC extension
-	/* 163 */ { NULL,                      0,        DESCR("wdlg_delete")     }, // MagiC extension
-	/* 164 */ { NULL,                      0,        DESCR("wdlg_get")        }, // MagiC extension
-	/* 165 */ { NULL,                      0,        DESCR("wdlg_set")        }, // MagiC extension
-	/* 166 */ { NULL,                      0,        DESCR("wdlg_event")      }, // MagiC extension
-	/* 167 */ { NULL,                      0,        DESCR("wdlg_redraw")     }, // MagiC extension
+	/* 160 */ { NULL,                      0,        DESCR("wdlg_create")     }, /* MagiC extension */
+	/* 161 */ { NULL,                      0,        DESCR("wdlg_open")       }, /* MagiC extension */
+	/* 162 */ { NULL,                      0,        DESCR("wdlg_close")      }, /* MagiC extension */
+	/* 163 */ { NULL,                      0,        DESCR("wdlg_delete")     }, /* MagiC extension */
+	/* 164 */ { NULL,                      0,        DESCR("wdlg_get")        }, /* MagiC extension */
+	/* 165 */ { NULL,                      0,        DESCR("wdlg_set")        }, /* MagiC extension */
+	/* 166 */ { NULL,                      0,        DESCR("wdlg_event")      }, /* MagiC extension */
+	/* 167 */ { NULL,                      0,        DESCR("wdlg_redraw")     }, /* MagiC extension */
 	/* 168 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 169 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 170 */ { NULL,                      0,        DESCR("lbox_create")     }, // MagiC extension
-	/* 171 */ { NULL,                      0,        DESCR("lbox_update")     }, // MagiC extension
-	/* 172 */ { NULL,                      0,        DESCR("lbox_do")         }, // MagiC extension
-	/* 173 */ { NULL,                      0,        DESCR("lbox_delete")     }, // MagiC extension
-	/* 174 */ { NULL,                      0,        DESCR("lbox_get")        }, // MagiC extension
-	/* 175 */ { NULL,                      0,        DESCR("lbox_set")        }, // MagiC extension
+	/* 170 */ { NULL,                      0,        DESCR("lbox_create")     }, /* MagiC extension */
+	/* 171 */ { NULL,                      0,        DESCR("lbox_update")     }, /* MagiC extension */
+	/* 172 */ { NULL,                      0,        DESCR("lbox_do")         }, /* MagiC extension */
+	/* 173 */ { NULL,                      0,        DESCR("lbox_delete")     }, /* MagiC extension */
+	/* 174 */ { NULL,                      0,        DESCR("lbox_get")        }, /* MagiC extension */
+	/* 175 */ { NULL,                      0,        DESCR("lbox_set")        }, /* MagiC extension */
 	/* 176 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 177 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 178 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 179 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 180 */ { NULL,                      0,        DESCR("fnts_create")     }, // MagiC extension
-	/* 181 */ { NULL,                      0,        DESCR("fnts_delete")     }, // MagiC extension
-	/* 182 */ { NULL,                      0,        DESCR("fnts_open")       }, // MagiC extension
-	/* 183 */ { NULL,                      0,        DESCR("fnts_close")      }, // MagiC extension
-	/* 184 */ { NULL,                      0,        DESCR("fnts_get")        }, // MagiC extension
-	/* 185 */ { NULL,                      0,        DESCR("fnts_set")        }, // MagiC extension
-	/* 186 */ { NULL,                      0,        DESCR("fnts_evnt")       }, // MagiC extension
-	/* 187 */ { NULL,                      0,        DESCR("fnts_do")         }, // MagiC extension
+	/* 180 */ { NULL,                      0,        DESCR("fnts_create")     }, /* MagiC extension */
+	/* 181 */ { NULL,                      0,        DESCR("fnts_delete")     }, /* MagiC extension */
+	/* 182 */ { NULL,                      0,        DESCR("fnts_open")       }, /* MagiC extension */
+	/* 183 */ { NULL,                      0,        DESCR("fnts_close")      }, /* MagiC extension */
+	/* 184 */ { NULL,                      0,        DESCR("fnts_get")        }, /* MagiC extension */
+	/* 185 */ { NULL,                      0,        DESCR("fnts_set")        }, /* MagiC extension */
+	/* 186 */ { NULL,                      0,        DESCR("fnts_evnt")       }, /* MagiC extension */
+	/* 187 */ { NULL,                      0,        DESCR("fnts_do")         }, /* MagiC extension */
 	/* 188 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 189 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 190 */ { NULL,                      0,        DESCR("fslx_open")       }, // MagiC extension
-	/* 191 */ { NULL,                      0,        DESCR("fslx_close")      }, // MagiC extension
-	/* 192 */ { NULL,                      0,        DESCR("fslx_getnxtfile") }, // MagiC extension
-	/* 193 */ { NULL,                      0,        DESCR("fslx_evnt")       }, // MagiC extension
-	/* 194 */ { NULL,                      0,        DESCR("fslx_do")         }, // MagiC extension
-	/* 195 */ { NULL,                      0,        DESCR("fslx_set_flags")  }, // MagiC extension
+	/* 190 */ { NULL,                      0,        DESCR("fslx_open")       }, /* MagiC extension */
+	/* 191 */ { NULL,                      0,        DESCR("fslx_close")      }, /* MagiC extension */
+	/* 192 */ { NULL,                      0,        DESCR("fslx_getnxtfile") }, /* MagiC extension */
+	/* 193 */ { NULL,                      0,        DESCR("fslx_evnt")       }, /* MagiC extension */
+	/* 194 */ { NULL,                      0,        DESCR("fslx_do")         }, /* MagiC extension */
+	/* 195 */ { NULL,                      0,        DESCR("fslx_set_flags")  }, /* MagiC extension */
 	/* 196 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 197 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 198 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 199 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 200 */ { NULL,                      0,        DESCR("pdlg_create")     }, // MagiC extension
-	/* 201 */ { NULL,                      0,        DESCR("pdlg_delete")     }, // MagiC extension
-	/* 202 */ { NULL,                      0,        DESCR("pdlg_open")       }, // MagiC extension
-	/* 203 */ { NULL,                      0,        DESCR("pdlg_close")      }, // MagiC extension
-	/* 204 */ { NULL,                      0,        DESCR("pdlg_get")        }, // MagiC extension
-	/* 205 */ { NULL,                      0,        DESCR("pdlg_set")        }, // MagiC extension
-	/* 206 */ { NULL,                      0,        DESCR("pdlg_evnt")       }, // MagiC extension
-	/* 207 */ { NULL,                      0,        DESCR("pdlg_do")         }, // MagiC extension
+	/* 200 */ { NULL,                      0,        DESCR("pdlg_create")     }, /* MagiC extension */
+	/* 201 */ { NULL,                      0,        DESCR("pdlg_delete")     }, /* MagiC extension */
+	/* 202 */ { NULL,                      0,        DESCR("pdlg_open")       }, /* MagiC extension */
+	/* 203 */ { NULL,                      0,        DESCR("pdlg_close")      }, /* MagiC extension */
+	/* 204 */ { NULL,                      0,        DESCR("pdlg_get")        }, /* MagiC extension */
+	/* 205 */ { NULL,                      0,        DESCR("pdlg_set")        }, /* MagiC extension */
+	/* 206 */ { NULL,                      0,        DESCR("pdlg_evnt")       }, /* MagiC extension */
+	/* 207 */ { NULL,                      0,        DESCR("pdlg_do")         }, /* MagiC extension */
 	/* 208 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 209 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 210 */ { NULL,                      0,        DESCR("edit_create")     }, // MagiC extension
-	/* 211 */ { NULL,                      0,        DESCR("edit_open")       }, // MagiC extension
-	/* 212 */ { NULL,                      0,        DESCR("edit_close")      }, // MagiC extension
-	/* 213 */ { NULL,                      0,        DESCR("edit_delete")     }, // MagiC extension
-	/* 214 */ { NULL,                      0,        DESCR("edit_cursor")     }, // MagiC extension
-	/* 215 */ { NULL,                      0,        DESCR("edit_evnt")       }, // MagiC extension
-	/* 216 */ { NULL,                      0,        DESCR("edit_get")        }, // MagiC extension
-	/* 217 */ { NULL,                      0,        DESCR("edit_set")        }, // MagiC extension
+	/* 210 */ { NULL,                      0,        DESCR("edit_create")     }, /* MagiC extension */
+	/* 211 */ { NULL,                      0,        DESCR("edit_open")       }, /* MagiC extension */
+	/* 212 */ { NULL,                      0,        DESCR("edit_close")      }, /* MagiC extension */
+	/* 213 */ { NULL,                      0,        DESCR("edit_delete")     }, /* MagiC extension */
+	/* 214 */ { NULL,                      0,        DESCR("edit_cursor")     }, /* MagiC extension */
+	/* 215 */ { NULL,                      0,        DESCR("edit_evnt")       }, /* MagiC extension */
+	/* 216 */ { NULL,                      0,        DESCR("edit_get")        }, /* MagiC extension */
+	/* 217 */ { NULL,                      0,        DESCR("edit_set")        }, /* MagiC extension */
 	/* 218 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 219 */ { NULL,                      0,        DESCR(NULL)              },
 };

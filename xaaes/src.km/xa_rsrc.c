@@ -1053,18 +1053,15 @@ fix_objects(struct xa_client *client,
 				 */
 				if (cibh)
 				{
-			#if GENERATE_DIAGS
 					long idx = obj->ob_spec.index;
-			#endif
-					FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
-					obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
+					FixColourIconData(client, cibh[idx], rscs, vdih);
+					obj->ob_spec.ciconblk = cibh[idx];
 					DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
 						idx, (unsigned long)cibh[idx], (unsigned long)obj->ob_spec.ciconblk));
-				}
-			#if GENERATE_DIAGS
-				else
+				} else
+				{
 					DIAG((D_rsrc, client, "No cicons but G_CICON object???"));
-			#endif
+				}
 				break;
 			}
 			case G_PROGDEF:
@@ -2027,12 +2024,11 @@ XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 				o = (OBJECT **)((char *)rsc + rsc->rsh_trindex);
 				client->trees = o;
 
-#if GENERATE_DIAGS
 				if (client->globl_ptr != (struct aes_global *)pb->global)
 				{
 					DIAGS(("WARNING: rsrc_load global is different from appl_init's global"));
 				}
-#endif
+
 				if (client->globl_ptr)
 					Rsrc_setglobal(rsc, client->globl_ptr);
 
@@ -2313,13 +2309,11 @@ XA_rsrc_rcfix(int lock, struct xa_client *client, AESPB *pb)
 		if (rsc)
 		{
 			client->rsrc = rsc;
-#if GENERATE_DIAGS
 			if (client->globl_ptr != (struct aes_global *)pb->global)
 			{
 				DIAGS(("WARNING: rsrc_rcfix global %lx is different from appl_init's global %lx",
 					(unsigned long)pb->global, (unsigned long)client->globl_ptr));
 			}
-#endif
 			Rsrc_setglobal(client->rsrc, client->globl_ptr);
 			if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
 				Rsrc_setglobal(client->rsrc, (struct aes_global *)pb->global);
