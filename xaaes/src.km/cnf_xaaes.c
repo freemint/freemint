@@ -685,12 +685,10 @@ pCB_app_options(char *line)
 			{
 				get_argument(s + 19, &a);
 				opts->standard_font_point = a;
-			}
-
-#if GENERATE_DIAGS
-			else
+			} else
+			{
 				DIAGS(("pCB_app_options: unknown keyword %s", s));
-#endif
+			}
 		}
 	}
 }
@@ -757,14 +755,13 @@ isolate_strarg(char **str)
 			}
 			e++;
 		}
-#if GENERATE_DIAGS
 		if (ret)
 		{
 			DIAGS((" -- got quoted string = '%s', start of next = %lx", ret, (unsigned long)e));
-		}
-		else
+		} else
+		{
 			DIAGS((" -- some error"));
-#endif
+		}
 	}
 	else
 	{
@@ -782,14 +779,13 @@ isolate_strarg(char **str)
 				*e++ = 0;
 		}
 
-#if GENERATE_DIAGS
 		if (ret)
 		{
 			DIAGS((" -- got unquoted string = '%s', start of next = %lx", ret, (unsigned long)e));
-		}
-		else
+		} else
+		{
 			DIAGS((" -- some unquote error"));
-#endif
+		}
 	}
 
 	if (ret)
@@ -1000,8 +996,7 @@ pCB_run(const char *path, const char *line, struct parsinf *inf)
 #endif
 
 #if GENERATE_DIAGS
-static void
-diags_opts(struct options *o)
+static void diags_opts(struct options *o)
 {
 	DIAGS(("        windowner  = %s", o->windowner ? "true" : "false"));
 	DIAGS(("        nohide     = %s", o->nohide    ? "true" : "false"));
@@ -1015,8 +1010,10 @@ diags_opts(struct options *o)
 	DIAGS(("        nolive     = %s", o->nolive    ? "true" : "false"));
 	DIAGS(("        winframe   = %d", o->thinframe));
 }
-
+#else
+#define diags_opts(o)
 #endif
+
 void
 load_config(void *path )
 {

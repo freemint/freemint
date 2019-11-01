@@ -62,8 +62,7 @@ static char *accex[ 8] = { ".acc", NULL };
 
 #if GENERATE_DIAGS
 
-static void
-display_env(char **env, int which)
+static void display_env(char **env, int which)
 {
 	if (which == 1)
 	{
@@ -85,6 +84,8 @@ display_env(char **env, int which)
 		}
 	}
 }
+#else
+#define display_env(e, w)
 #endif
 
 static bool
@@ -176,8 +177,7 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 }
 
 #if GENERATE_DIAGS
-static void
-print_x_shell(short x_mode, struct xshelw *x_shell)
+static void print_x_shell(short x_mode, struct xshelw *x_shell)
 {
 	if (x_mode & SW_PSETLIMIT)
 		/* memory limit */
@@ -212,6 +212,8 @@ print_x_shell(short x_mode, struct xshelw *x_shell)
 		display_env(env, 1);
 	}
 }
+#else
+#define print_x_shell(m, s)
 #endif
 
 static int
@@ -311,7 +313,6 @@ launch(int lock, short mode, short wisgr, short wiscr,
 	struct proc *p = NULL;
 	int type = 0, follow = 0;
 
-#if GENERATE_DIAGS
 	if (caller)
 	{
 		DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
@@ -323,7 +324,6 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		DIAG((D_shel, caller, "launch for non AES process (pid %ld): 0x%x,%d,%d,%lx,%lx",
 			p_getpid(), mode, wisgr, wiscr, (unsigned long)parm, (unsigned long)p_tail));
 	}
-#endif
 
 	if (!parm)
 		return -1;
@@ -334,9 +334,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 	{
 		x_shell = *(const struct xshelw *)parm;
 
-#if GENERATE_DIAGS
 		print_x_shell(x_mode, &x_shell);
-#endif
 		/* Do some checks before allocating anything. */
 		if (!x_shell.newcmd)
 			return -1;
@@ -435,13 +433,11 @@ launch(int lock, short mode, short wisgr, short wiscr,
 	DIAG((D_shel, NULL, "Launch(0x%x): wisgr:%d, wiscr:%d\r\n cmd='%s'\r\n tail=%d'%s'",
 		mode, wisgr, wiscr, pcmd, *tail, tail+1));
 
-#if GENERATE_DIAGS
 	if (wiscr == 1)
 	{
 		DIAGS(("wiscr == 1"));
 		display_env(strings, 0);
 	}
-#endif
 
 	/* Keep a copy of original for in client structure */
 	strcpy(save_cmd, pcmd);
@@ -844,7 +840,6 @@ XA_shel_write(int lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,1,2)
 
-#if GENERATE_DIAGS
 	if (client)
 	{
 		DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for %s",
@@ -855,7 +850,6 @@ XA_shel_write(int lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for non AES process (pid %ld)",
 			wdoex, wisgr, wiscr, p_getpid()));
 	}
-#endif
 
 	if ((wdoex & 0xff) < SWM_SHUTDOWN) /* SWM_LANUCH, SWM_LAUNCHNOW or SWM_LAUNCACC */
 	{

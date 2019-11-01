@@ -132,12 +132,10 @@ reset_focus(struct xa_window **new_focus, short flags)
 					if (get_desktop()->owner != topcl) {
 						DIAGA(("reset_focus: Only root_wind present, app ontop have no wind- no focused"));
 						fw = NULL;
-					}
-#if GENERATE_DIAGS
-					else {
+					} else
+					{
 						DIAGA(("reset_focus: Suggest root_window to get focus"));
 					}
-#endif
 					break;
 				} else if (fw->owner == topcl && !(fw->window_status & XAWS_NOFOCUS)) {
 					DIAGA(("reset_focus: suggest %d of %s as new focus", fw->handle, fw->owner->name));
@@ -212,14 +210,12 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 					if (S.focus == wind) {
 						DIAGA(("setnew_focus: taking NOFOCUS window out of focus!"));
 						S.focus = NULL;
-					}
-#if GENERATE_DIAGS
-					else if (S.focus) {
+					} else if (S.focus)
+					{
 						DIAGA(("setnew_focus: Keep focus on %d of %s", S.focus->handle, S.focus->owner->name));
 					} else {
 						DIAGA(("setnew_focus: Keeping no focused window state"));
 					}
-#endif
 				}
 				return;
 			}
@@ -385,14 +381,12 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 						*keywind = top;
 					else if (S.focus && S.focus->owner == client)
 						*keywind = S.focus;
-#if GENERATE_DIAGS
 					if (*keywind) {
 						DIAGA(("find_focus: keywind handle %d, type %s",
 							(*keywind)->handle, (*keywind)->nolist ? "nolist":"normal"));
 					} else {
 						DIAGA(("find_focus: no window with focus"));
 					}
-#endif
 				}
 				DIAGA(("-= 3 =-"));
 				return client;
@@ -1063,13 +1057,14 @@ next_wind(int lock)
 		wind = wind->prev;
 	}
 
-#if GENERATE_DIAGS
 	if (wind)
+	{
 		DIAG((D_appl, NULL, "  --  return %d, owner %s",
 			wind->handle, wind->owner->name));
-	else
+	} else
+	{
 		DIAG((D_appl, NULL, " -- no next window"));
-#endif
+	}
 	return wind;
 }
 #endif

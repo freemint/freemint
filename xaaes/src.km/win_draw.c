@@ -4211,12 +4211,12 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 
 		if (scrninf->r.h <= 280)
 		{
-			def_otop_cols.title_txt.normal.font_point = 9;
-			def_otop_cols.title_txt.selected.font_point = 9;
-			def_otop_cols.title_txt.highlighted.font_point = 9;
-			def_utop_cols.title_txt.normal.font_point = 9;
-			def_utop_cols.title_txt.selected.font_point = 9;
-			def_utop_cols.title_txt.highlighted.font_point = 9;
+			def_otop_cols.title_txt.normal.font_point = MEDIUM_FONT_POINT;
+			def_otop_cols.title_txt.selected.font_point = MEDIUM_FONT_POINT;
+			def_otop_cols.title_txt.highlighted.font_point = MEDIUM_FONT_POINT;
+			def_utop_cols.title_txt.normal.font_point = MEDIUM_FONT_POINT;
+			def_utop_cols.title_txt.selected.font_point = MEDIUM_FONT_POINT;
+			def_utop_cols.title_txt.highlighted.font_point = MEDIUM_FONT_POINT;
 		}
 
 		/* set window-title and info-font-id */

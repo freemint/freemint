@@ -161,7 +161,7 @@ struct xa_client;
 struct xa_window;
 struct widget_tree;
 
-void show_bits(unsigned short, char *prf, char *t[], char *x);
+void show_bits(unsigned short, const char *prf, const char *const t[], char *x);
 const char *w_owner(struct xa_window *w);
 const char *c_owner(struct xa_client *c);
 const char *t_owner(struct widget_tree *t);
@@ -188,7 +188,6 @@ void diag(enum debug_item item, struct xa_client *client, const char *t, ...) __
 #endif
 
 #else /* GENERATE_DIAGS */
-// void show_bits(unsigned short, char *prf, char *t[], char *x);
 
 #define MAX_NAMED_DIAG 0
 #define DIAGS(x)

@@ -50,7 +50,6 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 	const RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *new_window;
 	XA_WIND_ATTR kind = (unsigned short)pb->intin[0];
-// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(5,1,0)
 
@@ -80,8 +79,6 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 
 	if (new_window)
 	{
-// 		if (d) display("xa_wind_create: new window %d", new_window->handle);
-
 		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (new_window->opts & XAWO_WCOWORK)
@@ -107,7 +104,7 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_open(int lock, struct xa_client *client, AESPB *pb)
 {
-	RECT r; // = *((const RECT *)&pb->intin[1]);
+	RECT r;
 	struct xa_window *w;
 
 	CONTROL(5,1,0)
@@ -121,7 +118,7 @@ XA_wind_open(int lock, struct xa_client *client, AESPB *pb)
 	else
 	{
 		if (w->opts & XAWO_WCOWORK)
-			r = w2f(&w->delta, (const RECT *)(pb->intin + 1), true); //&r, true);
+			r = w2f(&w->delta, (const RECT *)(pb->intin + 1), true);
 		else
 			r = *(const RECT *)(pb->intin + 1);
 
@@ -151,7 +148,6 @@ unsigned long
 XA_wind_close(int lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
-// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(1,1,0)
 
@@ -162,7 +158,6 @@ XA_wind_close(int lock, struct xa_client *client, AESPB *pb)
 	if (w == 0)
 	{
 		DIAGS(("WARNING:wind_close for %s: Invalid window handle %d", c_owner(client), pb->intin[0]));
-// 		if (d) display("WARNING:wind_close for %s: Invalid window handle %d", client->proc_name, pb->intin[0]);
 		pb->intout[0] = 1;
 		return XAC_DONE;
 	}
@@ -171,11 +166,9 @@ XA_wind_close(int lock, struct xa_client *client, AESPB *pb)
 	if (w->owner != client)
 	{
 		DIAGS(("WARNING: %s cannot close window %d (not owner)", c_owner(client), w->handle));
-// 		if (d) display("WARNING: %s cannot close window %d (not owner)", client->proc_name, w->handle);
 		pb->intout[0] = 1;
 		return XAC_DONE;
 	}
-// 	if (d) display("closing %d", w->handle);
 	close_window(lock, w);
 	pb->intout[0] = 1;
 
@@ -199,11 +192,10 @@ XA_wind_find(int lock, struct xa_client *client, AESPB *pb)
 
 
 #if GENERATE_DIAGS
-static char *
-setget(int i)
+static const char *setget(int i)
 {
 	/* Want to see quickly what app's are doing. */
-	static char *setget_names[] =
+	static const char *const setget_names[] =
 	{
 	"0",
 	"WF_KIND(1)",
@@ -263,7 +255,6 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *w;
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
-// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(6,1,0)
 
@@ -271,9 +262,6 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_wind, client, "wind_set for %s  w%lx, h%d, %s", c_owner(client),
 		(unsigned long)w, w ? w->handle : -1, setget(cmd)));
-
-// 	if (d) display(" wind_set for %s  w%lx, h%d, %s", w ? w->owner->proc_name : client->proc_name,
-// 		w, w ? w->handle : -1, setget(cmd));
 
 	/* wind 0 is the root window */
 	if (!w || wind == 0)
@@ -498,7 +486,6 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		RECT *ir;
 		RECT r;
 		RECT m;
-// 		short mx, my, mw, mh;
 		WINDOW_STATUS status = -1L, msg = -1;
 
 		if (cmd == WF_PREVXYWH)
@@ -672,7 +659,6 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %lx", pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], status));
 
-// 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
 			move_window(lock, w, blit, status, m.x, m.y, m.w, m.h);
 
 			if (msg != -1 && w->send_message)
@@ -726,7 +712,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
-			if ( !wind_has_focus(w)) // !is_topped(w))
+			if ( !wind_has_focus(w))
 			{
 				top_window(lock|LOCK_WINLIST, true, false, w);
 			}
@@ -815,16 +801,12 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			RECT in;
-// 			display("uniconify in %d/%d/%d/%d", *(const RECT *)(pb->intin + 2));
 			if (pb->intin[4] == -1 || pb->intin[5] == -1 || !(pb->intin[4] | pb->intin[5]))
 			{
-// 				display("uniconify using prev rect %d/%d/%d/%d", w->ro);
 				in = w->ro;
 			}
 			else
 			{
-// 				display("uniconify using passed rect %d/%d/%d/%d", *(const RECT *)(pb->intin + 2));
-
 				if (w->opts & XAWO_WCOWORK)
 				{
 					in = w2f(&w->save_delta, (const RECT *)(pb->intin + 2), true);
@@ -859,11 +841,8 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 	{
 		OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
-// 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 
 		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx", (unsigned long)ob, (unsigned long)widg->stuff));
-// 		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
-// 			ob, widg->stuff);
 
 		if (ob)
 		{
@@ -905,8 +884,6 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					vsl = w->active_widgets & (VS_WIDGETS|SIZER);
 					w->active_widgets &= ~(VS_WIDGETS|SIZER);
 
-					//if( o == ob )
-						//d = -ob->ob_height;
 					widg2->r.h += d;
 					widg2->ar.h += d;
 					widg2->r.y -= d;
@@ -927,7 +904,6 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					w->wa.h += 2;
 				}
 				w->wa.x = w->r.x;
-				//w->wa.w -= 2;
 
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
@@ -937,10 +913,10 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
 				widg->ar.x = ob->ob_x = w->r.x;
 
-				//if( md == 1 )	/* changed */
+				/* if( md == 1 ) */	/* changed */
 				{
 					/* send redraw for wa anyway! */
-					//w->active_widgets &= ~TOOLBAR;
+					/* w->active_widgets &= ~TOOLBAR; */
 					/* redraw window without toolbar&vslider */
 					generate_redraws(lock, w, &w->r, RDRW_ALL);
 				}
@@ -980,7 +956,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 				if( vsl )	/* restore vslider */
 				{
-					w->active_widgets |= vsl;//VS_WIDGETS;
+					w->active_widgets |= vsl;
 					w->wa.w -= vslw;
 					w->rwa.w -= vslw;
 				}
@@ -992,7 +968,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM, WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
 			}
-		}	/*/if (ob)*/
+		}
 		else if (widg->stuff)	/* remove toolbar */
 		{
 			w->min.h -= widg->ar.h;
@@ -1042,7 +1018,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				{
 
 					DIAGS(("  --- install new menu"));
-					//fix_menu(client, ob, false);
+					/* fix_menu(client, ob, false); */
 					if (!wt)
 						wt = new_widget_tree(client, ob);
 					assert(wt);
@@ -1051,8 +1027,8 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					rp_2_ap_cs(w, widg, NULL);
 					if (wt && wt->tree)
 					{
-						wt->tree->ob_x = wt->rdx = widg->ar.x; //w->wa.x;
-						wt->tree->ob_y = wt->rdx = widg->ar.y; //w->wa.y;
+						wt->tree->ob_x = wt->rdx = widg->ar.x;
+						wt->tree->ob_y = wt->rdx = widg->ar.y;
 						if (!wt->zen)
 						{
 							wt->tree->ob_x += wt->ox;
@@ -1507,8 +1483,6 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			ro->y = root_window->wa.y;
 			ro->w = root_window->wa.w;
 			ro->h = root_window->wa.h;
-// 			if (!taskbar(client))
-// 				ro->h -= 24;
 			DIAG((D_w, NULL, "get max full: %d/%d,%d/%d",
 				ro->x,ro->y,ro->w,ro->h));
 		}
@@ -1565,11 +1539,10 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 					DIAG((D_w, client, " -- top window=%d, owner='%s' has focus", w->handle, w->owner->name));
 					o[1] = w->handle;
 					o[2] = w->owner->p->pid;
-				}
-#if GENERATE_DIAGS
-				else
+				} else
+				{
 					DIAG((D_w, client, " -- top window=%d, owner='%s' NOT in focus", w->handle, w->owner->name));
-#endif
+				}
 				if (w->next && w->next != root_window)
 				{
 					o[3] = w->next->handle;
@@ -1738,7 +1711,6 @@ oeps:
 		Sema_Up(LOCK_DESK);
 
 		ptr_to_shorts(get_desktop()->tree, o + 1);
-// 		*(OBJECT **)&o[1] = get_desktop()->tree;
 
 		Sema_Dn(LOCK_DESK);
 		break;
@@ -1853,12 +1825,9 @@ XA_wind_new(int lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 {
-// 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	XA_WIND_ATTR tp;
 
 	CONTROL(6,5,0)
-
-// 	if (d) 	display("wind_calc: req=%d, kind=%d", pb->intin[0], pb->intin[1]);
 
 	DIAG((D_wind, client, "wind_calc: req=%d, kind=%d",
 		pb->intin[0], pb->intin[1]));
@@ -1883,7 +1852,6 @@ XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 				    *(const RECT *)&pb->intin[2]);
 	}
 	pb->intout[0] = 1;
-// 	if (d) display("return %d/%d/%d/%d", *(RECT *)(pb->intout + 1));
 	return XAC_DONE;
 }
 

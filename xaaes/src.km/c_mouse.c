@@ -279,11 +279,10 @@ cXA_open_menu(int lock, struct c_event *ce, short cancel)
 				}
 				widg->m.click(lock, root_window, widg, &ce->md);
 			}
-		}
-#if GENERATE_DIAGS
-		else
+		} else
+		{
 			DIAG((D_mouse, ce->client, "cXA_open_menu skipped for %s - menu changed before cevent.", ce->client->name));
-#endif
+		}
 	}
 	C.ce_open_menu = NULL;
 }

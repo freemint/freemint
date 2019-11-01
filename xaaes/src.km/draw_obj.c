@@ -57,7 +57,7 @@ static struct widget_tree nil_wt;
 
 
 #if GENERATE_DIAGS
-static char *pstates[] =
+static const char *const pstates[] =
 {
 	"SEL",
 	"CROSS",
@@ -77,7 +77,7 @@ static char *pstates[] =
 	"15"
 };
 #if 0
-static char *pflags[] =
+static const char *const pflags[] =
 {
 	"S",
 	"DEF",
@@ -98,7 +98,7 @@ static char *pflags[] =
 };
 #endif
 #if 0
-static char *ob_types[] =
+static const char *const ob_types[] =
 {
 	"box",
 	"text",
@@ -123,6 +123,7 @@ static char *ob_types[] =
 	"40"
 };
 #endif
+
 #if 0
 static char *
 object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glance */
@@ -153,7 +154,7 @@ object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glanc
 	return nother;
 }
 
-static char *
+static const char *
 object_type(OBJECT *tree, short t)
 {
 	static char other[80];
@@ -175,7 +176,7 @@ object_type(OBJECT *tree, short t)
 #endif
 #else
 #if 0
-static char *ob_types[] =
+static const char *const ob_types[] =
 {
 	"box",
 	"text",
@@ -734,9 +735,6 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 	/* Get display routine for this type of object from jump table */
 	if (t <= G_UNKNOWN)
 		drawer = wt->objcr_api->drawers[t];
-
-//	if (t >= G_SWBUTTON && t <= G_SHORTCUT)
-//		display("display %s(%d) for %s", ob_types[t], t, wt->owner->name);
 
 	if (!drawer)
 	{
