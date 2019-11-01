@@ -87,7 +87,7 @@ struct gradient
 struct bcol
 {
 	short flags;
-	short wrm;
+	short wr_mode;
 	short c;
 	short i;
 	short f;
@@ -332,9 +332,9 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 		/* no */	{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_BLACK, G_BLACK, G_BLACK, G_BLACK, NULL},
-                               /* id  pnts flags wrm,     efx  fgc      bgc      banner  x_3dact y_3dact texture */
+                               /* id  pnts flags wr_mode  efx  fg       bg       banner  x_3dact y_3dact texture */
 				 { 0, 0,   0,   MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0,      0,      NULL }},
 		/* ind */	{{   WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL  }},
@@ -344,7 +344,7 @@ static struct theme stdtheme =
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL }},
 #else
 		/* no */	{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_BLACK, G_BLACK, G_BLACK, G_BLACK, NULL, NULL},
-                               /* id  pnts flags wrm,     efx  fgc      bgc      banner  x_3dact y_3dact texture */
+                               /* id  pnts flags wr_mode  efx  fg       bg       banner  x_3dact y_3dact texture */
 				 { 0, 0,   0,   MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0,      0,      NULL }},
 		/* ind */	{{   WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &indbutt_gradient},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL  }},
@@ -401,7 +401,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -411,7 +411,7 @@ static struct theme stdtheme =
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, WTXT_DRAW3D, MD_TRANS, 0, G_LBLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 #else
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, NULL},
@@ -475,7 +475,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -485,7 +485,7 @@ static struct theme stdtheme =
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, WTXT_DRAW3D, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 #else
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, NULL},
@@ -543,7 +543,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, WTXT_DRAW3D, MD_TRANS, 0, G_LBLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -615,7 +615,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags            wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -682,7 +682,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -754,7 +754,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags                         wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG,               MD_REPLACE, G_WHITE, FIS_SOLID,  0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG,               MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -821,7 +821,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode             color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -893,7 +893,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color    interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -960,7 +960,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1032,7 +1032,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags         wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{ WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{ WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1099,7 +1099,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags          wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, WTXT_DRAW3D, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1171,7 +1171,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags        wr_mode       color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK, 1, G_LWHITE, G_WHITE, G_WHITE, G_LWHITE, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{ WCOL_DRAWBKG,                        MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,  1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1238,7 +1238,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode            color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, WTXT_DRAW3D, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1310,7 +1310,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags  wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1377,7 +1377,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_LBLACK, G_WHITE, G_WHITE, 1, 1, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1449,7 +1449,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1516,7 +1516,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, WTXT_DRAW3D, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1588,7 +1588,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1655,7 +1655,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, WTXT_DRAW3D, MD_TRANS, 0, G_LBLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1727,7 +1727,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1794,7 +1794,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags  wr_mode   color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, WTXT_DRAW3D, MD_TRANS, 0, G_LBLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1866,7 +1866,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags                         wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -1933,7 +1933,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -2005,7 +2005,7 @@ static struct theme stdtheme =
 		{ /* normal */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags                         wr_mode     color    interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -2072,7 +2072,7 @@ static struct theme stdtheme =
 		{ /* disabled */
 	/* normal */	{
 #if !WITH_GRADIENTS
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags   wr_mode             color     interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_LWHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
@@ -2160,9 +2160,8 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags                          wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 		/* no */	{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_BLACK, G_BLACK, G_BLACK, G_BLACK, NULL},
-                               /* id  pnts flags wrm,     efx  fgc      bgc      banner  x_3dact y_3dact texture */
 				 { 0, 0,   0,   MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0,      0,      NULL }},
 		/* ind */	{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL  }},
@@ -2195,7 +2194,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags                      wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2235,7 +2234,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2269,7 +2268,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags  wr_mode   color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2308,7 +2307,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2342,7 +2341,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2381,7 +2380,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2415,7 +2414,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2454,7 +2453,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2488,7 +2487,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2527,7 +2526,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags         wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{ WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{ WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2561,7 +2560,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags          wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2600,7 +2599,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags                                wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK,   1, G_WHITE, G_BLACK, G_WHITE, G_WHITE, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK,   1, G_WHITE, G_BLACK, G_WHITE, G_WHITE, NULL},
@@ -2634,7 +2633,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags          wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2673,7 +2672,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2707,7 +2706,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_BLACK, 1, 1, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2746,7 +2745,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2780,7 +2779,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2819,7 +2818,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2853,7 +2852,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2892,7 +2891,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2926,7 +2925,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags wr_mode    color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   0, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2965,7 +2964,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -2999,7 +2998,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -3038,7 +3037,7 @@ static struct theme mono_stdtheme =
 	{
 		{ /* normal */
 	/* normal */	{
-				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_BLACK, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -3072,7 +3071,7 @@ static struct theme mono_stdtheme =
 		},
 		{ /* disabled */
 	/* normal */	{
-				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
+				/* flags           wr_mode     color   interior  fill frame_c frame_th top     bottom     left     right texture */
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, FAINT, G_BLACK, G_WHITE, G_WHITE, 0, 0, NULL}},
 				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_BLACK, G_WHITE, G_BLACK, NULL},
@@ -3213,7 +3212,7 @@ chiseled_gbox(struct xa_vdi_settings *v, short d, short litecol, short shadowcol
 }
 
 static void
-d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fgc, short bgc)
+d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fg, short bg)
 {
 	short x, y, w;
 
@@ -3229,11 +3228,11 @@ d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fgc, short bg
 		y = r->y + r->h;
 		w = r->w;
 	}
-	(*v->api->line)(v, x, y, x + w, y, fgc);
+	(*v->api->line)(v, x, y, x + w, y, fg);
 	if (l3d)
 	{
 		y++;
-		(*v->api->line)(v, x + 1, y, x + w + 1, y, bgc);
+		(*v->api->line)(v, x + 1, y, x + w + 1, y, bg);
 	}
 }
 static void
@@ -3700,7 +3699,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 #endif
 
 static void
-draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short flags, short fgc, short box_col, short d, short d3_thick, short box_thick, short shadow_thick, RECT *wr, RECT *anch, RECT *area)
+draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short flags, short fg, short box_col, short d, short d3_thick, short box_thick, short shadow_thick, RECT *wr, RECT *anch, RECT *area)
 {
 #if WITH_GRADIENTS
 	struct xa_wtexture *wgrad = NULL;
@@ -3713,7 +3712,7 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 	bool ind = (selected && obj_is_indicator(wt->current.ob));
 	bool use_cw = (cw && (cw->fillpattern != IP_HOLLOW || cw->interiorcol));
 
-	(*v->api->wr_mode)(v, ct->col.wrm);
+	(*v->api->wr_mode)(v, ct->col.wr_mode);
 
 	if (ind)
 		sc = selected3D_colour;
@@ -3926,15 +3925,15 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 #endif
 		if ((flags & DRAW_BKG) && (f & WCOL_DRAWBKG))
 		{
-			if (fgc == -1)
-				fgc = ct->col.c;
+			if (fg == -1)
+				fg = ct->col.c;
 			else if (ind)
-				fgc = sc[fgc];
+				fg = sc[fg];
 
 			(*v->api->f_interior)(v, ct->col.i);
 			if (ct->col.i > 1)
 				(*v->api->f_style)(v, ct->col.f);
-			(*v->api->f_color)(v, fgc);
+			(*v->api->f_color)(v, fg);
 			(*v->api->gbar)(v, 0, &r);
 		}
 
@@ -3964,7 +3963,7 @@ button_colours(struct theme *theme)
 	c.framesize = 0;
 
 	c.framecol = theme->normal.c.box_c;
-	c.textcol  = theme->normal.t.fgc;
+	c.textcol  = theme->normal.t.fg;
 	c.textmode = 1;
 	c.fillpattern = IP_HOLLOW;
 	c.interiorcol = theme->normal.c.c;
@@ -3979,9 +3978,9 @@ ob_text(XA_TREE *wt,
 	struct color_theme *ct,
 	RECT *r, RECT *o,
 	BFOBSPEC *c,
-	short wrm,
-	short fgc,	/* foreground */
-	short bgc,	/* 3d effect */
+	short wr_mode,
+	short fg,	/* foreground */
+	short bg,	/* 3d effect */
 	short bcol,	/* banner color */
 	short mfgc,
 	short mbgc,
@@ -4016,31 +4015,31 @@ ob_text(XA_TREE *wt,
 			}
 			else
 		#endif
-			if (wrm == -1)
-				wrm = c->textmode ? MD_REPLACE : MD_TRANS;
+			if (wr_mode < 0)
+				wr_mode = c->textmode ? MD_REPLACE : MD_TRANS;
 		}
-		else if (wrm == -1)
-			wrm = ct->fnt.wrm;
+		else if (wr_mode < 0)
+			wr_mode = ct->fnt.wr_mode;
 
-		(*v->api->t_effects)(v, ct->fnt.e);
-		if (fgc == -1)
+		(*v->api->t_effects)(v, ct->fnt.effects);
+		if (fg == -1)
 		{
-			fgc = ct->fnt.fgc;
-			if (bgc == -1)
-				bgc = ct->fnt.bgc;
+			fg = ct->fnt.fg;
+			if (bg == -1)
+				bg = ct->fnt.bg;
 		}
-		else if (bgc == -1)
-			bgc = efx3d_colour[fgc];
+		else if (bg == -1)
+			bg = efx3d_colour[fg];
 
-		if (wrm == MD_REPLACE)
+		if (wr_mode == MD_REPLACE)
 		{
 			RECT br;
 
 			if (bcol == -1)
 				bcol = ct->fnt.bannercol;
 
-			if (bcol == fgc)
-				bcol = selected3D_colour[fgc];
+			if (bcol == fg)
+				bcol = selected3D_colour[fg];
 
 			br.x = r->x, br.y = r->y - v->dists[5];
 			(*v->api->t_extent)(v, t, &br.w, &br.h);
@@ -4072,10 +4071,10 @@ ob_text(XA_TREE *wt,
 				s[start] = '\0';
 				if (drw3d)
 				{
-					(*v->api->t_color)(v, bgc);
+					(*v->api->t_color)(v, bg);
 					v_gtext(v->handle, x+1, y+1, s);
 				}
-				(*v->api->t_color)(v, fgc);
+				(*v->api->t_color)(v, fg);
 				v_gtext(v->handle, x, y, s);
 				(*v->api->t_extent)(v, s, &w, &h);
 				x += w;
@@ -4104,10 +4103,10 @@ ob_text(XA_TREE *wt,
 				s[sl - end] = '\0';
 				if (drw3d)
 				{
-					(*v->api->t_color)(v, bgc);
+					(*v->api->t_color)(v, bg);
 					v_gtext(v->handle, x+1, y+1, s);
 				}
-				(*v->api->t_color)(v, fgc);
+				(*v->api->t_color)(v, fg);
 				v_gtext(v->handle, x, y, s);
 			}
 		}
@@ -4117,10 +4116,10 @@ ob_text(XA_TREE *wt,
 			{
 				if (!MONO && ((ct->fnt.flags & WTXT_DRAW3D) || ((flags & OF_FL3DIND) && !(state & OS_DISABLED))))
 				{
-					(*v->api->t_color)(v, bgc);
+					(*v->api->t_color)(v, bg);
 					v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
 				}
-				(*v->api->t_color)(v, fgc);
+				(*v->api->t_color)(v, fg);
 				v_gtext(v->handle, r->x, r->y - v->dists[5], t);
 			}
 		}
@@ -4735,9 +4734,9 @@ write_selection(struct xa_vdi_settings *v, short d, RECT *r)
 }
 
 static void
-write_selected(struct xa_vdi_settings *v, RECT *r, short wrm, short colour)
+write_selected(struct xa_vdi_settings *v, RECT *r, short wr_mode, short colour)
 {
-	(*v->api->wr_mode)(v, wrm);
+	(*v->api->wr_mode)(v, wr_mode);
 	(*v->api->f_color)(v, colour);
 	(*v->api->f_interior)(v, FIS_SOLID);
 	(*v->api->gbar)(v, 0, r);
@@ -5433,7 +5432,7 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 
 	draw_g_box(wt, v, ct, &c, DRAW_ALL, &gr);
-	(*v->api->t_effects)(v, ct->fnt.e);
+	(*v->api->t_effects)(v, ct->fnt.effects);
 	(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 	gr.x += (gr.w - w) >> 1;
@@ -5495,7 +5494,7 @@ d_g_boxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	get_tedinformation(ob, &ted, &c, &ei);
 	draw_g_box(wt, v, ct, &c, DRAW_ALL|DRAW_TEXTURE|ONLY_TEXTURE, &gr);
-	(*v->api->t_effects)(v, ct->fnt.e);
+	(*v->api->t_effects)(v, ct->fnt.effects);
 	set_obtext(ted, v, &gr, NULL, false, -1, temp_text, NULL, gr);
 
 	if (!disabled)
@@ -5560,7 +5559,7 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if (fl3d && (c.fillpattern == IP_HOLLOW && !c.interiorcol && c.textcol == G_BLACK))
 	{
 		draw_g_box(wt, v, ct, NULL, DRAW_ALL, &gr);
-		(*v->api->t_effects)(v, ct->fnt.e);
+		(*v->api->t_effects)(v, ct->fnt.effects);
 		set_obtext(ted, v, &gr, NULL, true, -1, temp_text, NULL, gr);
 		ob_text(wt, v, ei, ct, &gr, &r, NULL, -1, -1, -1, -1, G_WHITE, G_LBLUE, G_BLUE, temp_text, ob->ob_state, 0, -1, G_BLACK);
 		done(OS_SELECTED|OS_DISABLED);
@@ -5568,7 +5567,7 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 	else
 	{
 		draw_g_box(wt, v, ct, &c, DRAW_ALL, &gr);
-		(*v->api->t_effects)(v, ct->fnt.e);
+		(*v->api->t_effects)(v, ct->fnt.effects);
 		set_obtext(ted, v, &gr, NULL, true, -1, temp_text, NULL, gr);
 
 		if (selected)
@@ -5644,8 +5643,8 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 			if (text && *text)
 			{
-				(*v->api->t_color)(v, ct->fnt.fgc);
-				(*v->api->t_effects)(v, ct->fnt.e);
+				(*v->api->t_color)(v, ct->fnt.fg);
+				(*v->api->t_effects)(v, ct->fnt.effects);
 				if (ob->ob_state & OS_SHADOWED)
 					(*v->api->t_font)(v, screen->small_font_point, screen->small_font_id);
 				else
@@ -5706,11 +5705,11 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 			if (text)
 			{
 				short undcol;
-				(*v->api->t_color)(v, ct->fnt.fgc);
+				(*v->api->t_color)(v, ct->fnt.fg);
 				r.x += (w + 2);
 				(*v->api->wr_mode)(v, MD_TRANS);
 				(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
-				(*v->api->t_effects)(v, ct->fnt.e);
+				(*v->api->t_effects)(v, ct->fnt.effects);
 
 				switch ((ob->ob_flags & OF_FL3DMASK) >> 9)
 				{
@@ -5743,10 +5742,10 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 		if (text)
 		{
 			short fi, fp;
-			(*v->api->t_color)(v, ct->fnt.fgc);
-			(*v->api->t_effects)(v, ct->fnt.e);
-			fi = ct->fnt.f ? ct->fnt.f : screen->standard_font_id;
-			fp = ct->fnt.p ? ct->fnt.p : screen->standard_font_point;
+			(*v->api->t_color)(v, ct->fnt.fg);
+			(*v->api->t_effects)(v, ct->fnt.effects);
+			fi = ct->fnt.font_id ? ct->fnt.font_id : screen->standard_font_id;
+			fp = ct->fnt.font_point ? ct->fnt.font_point : screen->standard_font_point;
 			(*v->api->t_font)(v, fp, fi);
 			(*v->api->t_extent)(v, text, &tw, &th);
 			gr.y += (r.h - th) / 2;
@@ -6122,7 +6121,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 	struct theme *theme = wt->objcr_theme;
 	struct object_theme *obt;
 	struct color_theme *ct;
-	short fl3d, f_fg, boxflags, fwrm;
+	short fl3d, f_fg, boxflags, fwr_mode;
 	OBJECT *ob = wt->current.ob;
 	TEDINFO *ted;
 	RECT r = wt->r, gr;
@@ -6158,7 +6157,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 		/* CONFIG: Draw background or not here */
 		draw_g_box(wt, v, ct, NULL, boxflags, &gr);
 		c.textmode = 0;
-		fwrm = -1;
+		fwr_mode = -1;
 	}
 	else
 	{
@@ -6171,9 +6170,9 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 			writesel = selected;
 		}
 	}
-	fwrm = disabled ? -1 : (c.textmode ? MD_REPLACE : MD_TRANS);
+	fwr_mode = disabled ? -1 : (c.textmode ? MD_REPLACE : MD_TRANS);
 
-	(*v->api->t_effects)(v, ct->fnt.e);
+	(*v->api->t_effects)(v, ct->fnt.effects);
 	set_obtext(ted, v, &gr, NULL, ftext, -1, temp_text, NULL, r);
 
 	if (disabled)
@@ -6198,7 +6197,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 		f_fg = c.textcol;
 	}
 
-	ob_text(wt, v, ei, ct, &gr, &r, disabled ? NULL : &c, fwrm, f_fg, -1, -1, G_WHITE, G_LBLUE, G_BLUE, temp_text, ob->ob_state, 0, -1, G_BLACK);
+	ob_text(wt, v, ei, ct, &gr, &r, disabled ? NULL : &c, fwr_mode, f_fg, -1, -1, G_WHITE, G_LBLUE, G_BLUE, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 	if (writedis)
 		write_disable(v, &r, G_WHITE);
@@ -6324,8 +6323,8 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 				}
 			}
 			(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
-			(*v->api->t_color)(v, ct->fnt.fgc);
-			(*v->api->t_effects)(v, ct->fnt.e);
+			(*v->api->t_color)(v, ct->fnt.fg);
+			(*v->api->t_effects)(v, ct->fnt.effects);
 			ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, t, state, flags, und, G_BLACK);
 		}
 	}
@@ -6382,8 +6381,8 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 #endif
 		/* most AES's allow null string */
 		(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
-		(*v->api->t_color)(v, ct->fnt.fgc);
-		(*v->api->t_effects)(v, ct->fnt.e);
+		(*v->api->t_color)(v, ct->fnt.fg);
+		(*v->api->t_effects)(v, ct->fnt.effects);
 
 		if (state & 0x8000)
 			und = (state >> 8) & 0x7f;

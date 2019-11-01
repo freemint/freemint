@@ -108,60 +108,60 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 /*static*/ struct xa_wtxt_inf norm_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL},	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE,   0,      0,     NULL},	/* Selected */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL},	/* Highlighted */
+/* id  pnts  flags wr_mode   efx   fg       bg        banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL},	/* Normal */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_WHITE, G_BLACK, G_WHITE,   0,      0,     NULL},	/* Selected */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL},	/* Highlighted */
 
 };
 
 /*static*/ struct xa_wtxt_inf acc_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLUE, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_WHITE/*BLUE*/, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Selected */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
+/* id  pnts  flags wr_mode   efx   fg       bg   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLUE,  G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_WHITE, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 /*static*/ struct xa_wtxt_inf prg_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_RED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_WHITE/*RED*/, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
+/* id  pnts  flags wr_mode   efx   fg       bg    banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_RED,   G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_WHITE, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 /*static*/ struct xa_wtxt_inf sys_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1,  0, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1,  0, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
- {  -1,  -1,  0, MD_TRANS, 0, G_BLACK, G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
+/* id  pnts  flags wr_mode   efx   fg        bg        banner x_3dact y_3dact texture */
+ {  -1,  -1,  0,   MD_TRANS, 0,    G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1,  0,   MD_TRANS, 0,    G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1,  0,   MD_TRANS, 0,    G_BLACK,  G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 /*static*/ struct xa_wtxt_inf sys_thrd =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_LWHITE, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLACK,  G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
+/* id  pnts  flags wr_mode   efx   fg        bg        banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_LWHITE, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLACK,  G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 /*static*/ struct xa_wtxt_inf desk_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_LRED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_MAGENTA,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
+/* id  pnts  flags wr_mode   efx   fg        bg    banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_LRED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_MAGENTA,G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0,    MD_TRANS, 0,    G_BLACK,  G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
@@ -227,43 +227,43 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 	if( newh )
 		*newh = 0;
 
-	if( wpp->n.p < 0 )
-		wpp->n.p = pt;
+	if( wpp->normal.font_point < 0 )
+		wpp->normal.font_point = pt;
 
 	vdih = C.Aes->vdi_settings->handle;
-	vst_point(vdih, wpp->n.p, &w, &h, &oldw, &oldh);
+	vst_point(vdih, wpp->normal.font_point, &w, &h, &oldw, &oldh);
 
-	oldpt = wpp->n.p;
+	oldpt = wpp->normal.font_point;
 
-	if( wpp->n.p != pt )
+	if( wpp->normal.font_point != pt )
 	{
-		if( pt > wpp->n.p )
+		if( pt > wpp->normal.font_point )
 			i = 1;
 		else
 			i = -1;
 
-		wpp->n.p += i;
-		for( vst_point(vdih, wpp->n.p, &x, &x, &w, &h);
-				wpp->n.p < 65 && wpp->n.p > 0;)
+		wpp->normal.font_point += i;
+		for( vst_point(vdih, wpp->normal.font_point, &x, &x, &w, &h);
+				wpp->normal.font_point < 65 && wpp->normal.font_point > 0;)
 		{
 			if( oldh != h || w != oldw )
 				break;
-			wpp->n.p += i;
-			vst_point(vdih, wpp->n.p, &x, &x, &w, &h);
+			wpp->normal.font_point += i;
+			vst_point(vdih, wpp->normal.font_point, &x, &x, &w, &h);
 		}
 
 		if( h == oldh && w == oldw )
-			return wpp->n.p = oldpt;	/* no change */
+			return wpp->normal.font_point = oldpt;	/* no change */
 
-		pt = wpp->n.p;
+		pt = wpp->normal.font_point;
 	}
 	if( wp )
 		for( i = 0; wp[i]; i++ )
 		{
-			wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
+			wp[i]->normal.font_point = wp[i]->selected.font_point = wp[i]->highlighted.font_point = pt;
 		}
 
-	vst_point(vdih, wpp->n.p, &x, &x, &w, &h);
+	vst_point(vdih, wpp->normal.font_point, &x, &x, &w, &h);
 
 	/* todo: need smaller/greater icons */
 	if( objs && obtree )

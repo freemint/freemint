@@ -712,34 +712,34 @@ again:
 	}
 
 	/* XaAES-windows */
-	norm_txt.n.f = cfg.font_id;
-	norm_txt.s.f = cfg.font_id;
-	norm_txt.h.f = cfg.font_id;
+	norm_txt.normal.font_id = cfg.font_id;
+	norm_txt.selected.font_id = cfg.font_id;
+	norm_txt.highlighted.font_id = cfg.font_id;
 
-	acc_txt.n.f = cfg.font_id;
-	acc_txt.s.f = cfg.font_id;
-	acc_txt.h.f = cfg.font_id;
+	acc_txt.normal.font_id = cfg.font_id;
+	acc_txt.selected.font_id = cfg.font_id;
+	acc_txt.highlighted.font_id = cfg.font_id;
 
-	prg_txt.n.f = cfg.font_id;
-	prg_txt.s.f = cfg.font_id;
-	prg_txt.h.f = cfg.font_id;
+	prg_txt.normal.font_id = cfg.font_id;
+	prg_txt.selected.font_id = cfg.font_id;
+	prg_txt.highlighted.font_id = cfg.font_id;
 
-	sys_txt.n.f = cfg.font_id;
-	sys_txt.s.f = cfg.font_id;
-	sys_txt.h.f = cfg.font_id;
+	sys_txt.normal.font_id = cfg.font_id;
+	sys_txt.selected.font_id = cfg.font_id;
+	sys_txt.highlighted.font_id = cfg.font_id;
 
-	sys_thrd.n.f = cfg.font_id;
-	sys_thrd.s.f = cfg.font_id;
-	sys_thrd.h.f = cfg.font_id;
+	sys_thrd.normal.font_id = cfg.font_id;
+	sys_thrd.selected.font_id = cfg.font_id;
+	sys_thrd.highlighted.font_id = cfg.font_id;
 
-	desk_txt.n.f = cfg.font_id;
-	desk_txt.s.f = cfg.font_id;
-	desk_txt.h.f = cfg.font_id;
+	desk_txt.normal.font_id = cfg.font_id;
+	desk_txt.selected.font_id = cfg.font_id;
+	desk_txt.highlighted.font_id = cfg.font_id;
 
 	/* scrlobjc */
-	default_fnt.n.f = cfg.font_id;
-	default_fnt.s.f = cfg.font_id;
-	default_fnt.h.f = cfg.font_id;
+	default_fnt.normal.font_id = cfg.font_id;
+	default_fnt.selected.font_id = cfg.font_id;
+	default_fnt.highlighted.font_id = cfg.font_id;
 
 	C.aesmouse = -1;
 

@@ -845,9 +845,9 @@ k_init(unsigned long vm)
 	screen.c_max_h = v->cell_h;
 	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
-	default_fnt.n.p = cfg.xaw_point;
-	default_fnt.s.p = cfg.xaw_point;
-	default_fnt.h.p = cfg.xaw_point;
+	default_fnt.normal.font_point = cfg.xaw_point;
+	default_fnt.selected.font_point = cfg.xaw_point;
+	default_fnt.highlighted.font_point = cfg.xaw_point;
 
 	C.Aes->options.standard_font_point = cfg.standard_font_point;
 
