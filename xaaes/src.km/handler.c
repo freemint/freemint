@@ -229,7 +229,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 129 */ { XA_appl_control,           0,        DESCR("appl_control")    },
 
 	/* 130 */ { XA_appl_getinfo,           NOCLIENT, DESCR("appl_getinfo")    },
-	/* 131 */ { NULL,                      0,        DESCR(NULL)              }, /* XaAES only */
+	/* 131 */ { NULL,                      0,        DESCR("appl_getcicon")   }, /* MyAES only */
 	/* 132 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 133 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 134 */ { NULL,                      0,        DESCR(NULL)              },
@@ -366,9 +366,6 @@ setup_handler_table(void)
 	//aes_tab[135].flags |= DO_LOCKSCREEN; /* XA_FORM_POPUP */
 
 
-#ifndef WDIALOG_WDLG
-#define WDIALOG_WDLG 0
-#endif
 #if WDIALOG_WDLG
 	/*
 	 * optional wdlg_? class functions
@@ -394,9 +391,6 @@ setup_handler_table(void)
 	aes_tab[167].flags	|= DO_LOCKSCREEN;
 #endif
 
-#ifndef WDIALOG_LBOX
-#define WDIALOG_LBOX 0
-#endif
 #if WDIALOG_LBOX
 	/*
 	 * optional lbox_? class functions
@@ -409,9 +403,6 @@ setup_handler_table(void)
 	aes_tab[175].f = XA_lbox_set;
 #endif
 
-#ifndef WDIALOG_FNTS
-#define WDIALOG_FNTS 0
-#endif
 #if WDIALOG_FNTS
 	/*
 	 * optional fnts_? class functions
@@ -426,9 +417,6 @@ setup_handler_table(void)
 	aes_tab[187].f = XA_fnts_do;
 #endif
 
-#ifndef WDIALOG_FSLX
-#define WDIALOG_FSLX 0
-#endif
 #if WDIALOG_FSLX
 	/*
 	 * optional fslx_? class functions
@@ -441,9 +429,6 @@ setup_handler_table(void)
 	aes_tab[195].f = XA_fslx_set_flags;
 #endif
 
-#ifndef WDIALOG_PDLG
-#define WDIALOG_PDLG 0
-#endif
 #if WDIALOG_PDLG
 	/*
 	 * optional pdlg_? class functions
@@ -457,9 +442,7 @@ setup_handler_table(void)
 	aes_tab[206].f = XA_pdlg_evnt;
 	aes_tab[207].f = XA_pdlg_do;
 #endif
-#ifndef WDIALOG_EDIT
-#define WDIALOG_EDIT 0
-#endif
+
 #if WDIALOG_EDIT
 	/*
 	 * optional edit_? class functions
