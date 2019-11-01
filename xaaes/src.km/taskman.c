@@ -28,8 +28,6 @@
  * System menu handling
  */
 
-#include RSCHNAME
-
 #define NEWLOAD 1
 #ifndef USE_Suptime
 #define USE_Suptime 1
@@ -44,6 +42,8 @@
 #include "xa_global.h"
 #include "xa_strings.h"
 #include "keycodes.h"
+
+#include "xaaes.h"
 
 #include "about.h"
 #include "app_man.h"

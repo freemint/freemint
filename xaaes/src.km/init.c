@@ -22,12 +22,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
 #include "util.h"
 
 #include "init.h"
 #include "xa_global.h"
 #include "adiload.h"
+
+#include "xaaes.h"
 
 #include "c_window.h"
 #include "cnf_xaaes.h"

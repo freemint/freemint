@@ -22,8 +22,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
-
 #include "util.h"
 
 #include "k_main.h"
@@ -32,6 +30,8 @@
 #include "k_init.h"
 #include "xa_global.h"
 #include "xa_strings.h"
+
+#include "xaaes.h"
 
 #include "app_man.h"
 #include "c_window.h"

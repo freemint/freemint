@@ -40,11 +40,11 @@
 	/* experentimental */
 #define BEAUTY_ROOT_NAME	1
 
-#include RSCHNAME
-
 #include "xa_fsel.h"
 #include "xa_global.h"
 #include "xa_strings.h"
+
+#include "xaaes.h"
 
 #include "c_keybd.h"
 #include "k_keybd.h"

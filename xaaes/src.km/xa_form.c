@@ -26,11 +26,11 @@
  * FORM HANDLERS INTERFACE
  */
 
-#include RSCHNAME
-
 #include "xa_form.h"
 #include "xa_global.h"
 #include "xa_appl.h"
+
+#include "xaaes.h"
 
 #include "form.h"
 #include "c_window.h"

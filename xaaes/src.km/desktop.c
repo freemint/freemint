@@ -26,10 +26,10 @@
  * Desktop Handling Routines
  */
 
-#include RSCHNAME
-
 #include "desktop.h"
 #include "xa_global.h"
+
+#include "xaaes.h"
 
 #include "app_man.h"
 #include "xa_appl.h"

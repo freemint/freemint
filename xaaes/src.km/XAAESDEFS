@@ -2,7 +2,6 @@ XAAESDEFS += -DRSCNAME="\"xaaes016.rsc\""
 XAAESDEFS += -DRSCFILE_VERSION=\"0.1.6\"
 
 XAAESDEFS += -DWIDGNAME="\"xaaeswdg.rsc\""
-XAAESDEFS += -DRSCHNAME="\"xaaes.h\""
 XAAESDEFS += -DWIDGHNAME="\"xaaeswdg.h\""
 
 XAAESDEFS += -DWDIALOG_WDLG=1	# wdlg_xx() extensions
