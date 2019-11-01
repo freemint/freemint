@@ -128,4 +128,4 @@ temporalmente (Crtl-Alt-blank).
 
 Documentaci¢n adicional en:
 
-http://wiki.sparemint.org/index.php/XaAES
+https://github.com/freemint/freemint/wiki/XaAES

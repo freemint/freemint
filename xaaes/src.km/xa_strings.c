@@ -94,8 +94,6 @@ char *wctxt_main_txt[] =
 	0
 };
 
-//const char mnu_clientlistname[] =
-
 
 #if XAAES_RELEASE
 #define FN_CRED	0
@@ -103,7 +101,7 @@ char *wctxt_main_txt[] =
 #define FN_CRED	0
 #endif
 
-char *about_lines[] =
+const char *const about_lines[] =
 {
   /*          1         2         3         4         5         6
      123456789012345678901234567890123456789012345678901234567890 */
@@ -113,7 +111,7 @@ char *about_lines[] =
 	"<u>                                                                  </u>",
 #endif
 	"",
-	"Part of FreeMiNT ("SPAREMINT_URL").       ",
+	"Part of FreeMiNT ("FREEMINT_URL").       ",
 	"",
 	"The terms of the <b>GPL version 2</b> or later apply.            ",
 	"",
@@ -169,7 +167,7 @@ char *WidgNames[] = {
 };
 
 char **trans_strings[] = {
-	about_lines,
+	(char **)about_lines,
 	wctxt_main_txt,
 	xa_strings,
 	KeyNames,

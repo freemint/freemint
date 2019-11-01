@@ -75,4 +75,4 @@ aktivuje editaèní pole, tak¾e výbìr mù¾e být upraven.
 
 Dal¹í dokumentace:
 
-http://wiki.sparemint.org/index.php/XaAES
+https://github.com/freemint/freemint/wiki/XaAES

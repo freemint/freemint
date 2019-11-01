@@ -895,13 +895,13 @@ ru:Ïå÷àòü:
 cs:Tisk:
 _
 ### Internal strings ###
-NN:Part of FreeMiNT (http://sparemint.org).       @
-de:Teil von FreeMiNT (http://sparemint.org).
-fr:Fait partie de FreeMiNT (http://sparemint.org).
-es:Parte de FreeMiNT (http://sparemint.org).
-it:Parte di FreeMiNT (http://sparemint.org).
-hu:FreeMiNT r‚sze (http://sparemint.org).
-ru:×àñòü FreeMiNT (http://sparemint.org).
+NN:Part of FreeMiNT (https://freemint.github.io/).            @
+de:Teil von FreeMiNT (https://freemint.github.io/).
+fr:Fait partie de FreeMiNT (https://freemint.github.io/).
+es:Parte de FreeMiNT (https://freemint.github.io/).
+it:Parte di FreeMiNT (https://freemint.github.io/).
+hu:FreeMiNT r‚sze (https://freemint.github.io/).
+ru:×àñòü FreeMiNT (https://freemint.github.io/).
 _
 NN:The terms of the <b>GPL version 2</b> or later apply.            @
 de:Es gilt die <b>GPL version 2</b> oder sp„ter.
