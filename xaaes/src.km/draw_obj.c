@@ -877,7 +877,7 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 	{
 		if (wt->e.c_state || wt->wind )		/* wt->wind is for wdialogs */
 		{
-			enum window_type dial = created_for_CLIENT;
+			WINDOW_TYPE dial = created_for_CLIENT;
 			if( wt->wind )
 				dial = wt->wind->dial;
 			do_object_cursor(v, &sr, (dial & created_for_TOOLBAR) ? 3 : 1);
