@@ -75,6 +75,8 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
+#define RSCFILE_VERSION "0.1.6"
+
 #ifndef COOKIE_fVDI
 # define COOKIE_fVDI	0x66564449L
 #endif
