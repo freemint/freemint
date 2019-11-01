@@ -172,7 +172,6 @@ static unsigned long getilong(uchar *byte)
  *	any of the following reasons:
  *	1. too many clusters for the current TOS version
  *	2. logical sectors too large for the current TOS version
- *	3. it's a FAT32 partition
  */
 void usb_build_bpb(BPB *bpbptr, void *bs)
 {
@@ -215,9 +214,12 @@ void usb_build_bpb(BPB *bpbptr, void *bs)
 
 		clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
 
-		if (clusters > MAX_FAT16_CLUSTERS) {		/* FAT32 */
-			bpbptr->recsiz = 0;			/* mark it for XHDI */
-			bpbptr->clsizb = 0;
+		if (clusters > MAX_FAT16_CLUSTERS) {		/* FAT32 doesn't have a BPB */
+		/*
+		 * Mark clsizb as non-zero, otherwise usb_rwabs()
+		 * would think it's an unavailable partition.
+		 */
+			bpbptr->clsizb = -1;
 			return;
 		}
 
@@ -513,19 +515,21 @@ BPB *usb_getbpb(long logdrv)
 	 * We allow the partition through to get a drive letter, but stop
 	 * access to the drives BPB as there isn't one.
 	 */
-	if ((type == LNX) || (type == MINIX) || (type == RAW))
-		return NULL;
+	if ((type == LNX) || (type == MINIX) || (type == RAW)  || (type == F32)) {
+		bpbptr = NULL;
+		goto exit;
+	}
 
 	bpbptr = &pun_usb.bpb[logdrv];
 
  	/*
  	 * ensure that filesystem inside partition is suitable for TOS
-	 * (paranoia rules). FAT32 partitions also should return NULL.
+	 * (paranoia rules).
  	 */
 	if (bpbptr->clsizb == 0) {
- 		return NULL;
+		bpbptr = NULL;
 	}
-
+exit:
 	/* clear the media change flag */
 	pun_usb.flags[logdrv] &= ~CHANGE_FLAG;
 
