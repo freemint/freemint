@@ -1,6 +1,3 @@
-XAAESDEFS += -DWIDGNAME="\"xaaeswdg.rsc\""
-XAAESDEFS += -DWIDGHNAME="\"xaaeswdg.h\""
-
 XAAESDEFS += -DWDIALOG_WDLG=1	# wdlg_xx() extensions
 XAAESDEFS += -DWDIALOG_LBOX=1	# lbox_xx() extensions
 XAAESDEFS += -DWDIALOG_FNTS=1	# fnts_xx() extensions
