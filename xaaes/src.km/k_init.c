@@ -948,10 +948,10 @@ k_init(unsigned long vm)
 	}
 
 #if WITH_GRADIENTS
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients[0] != 0)))
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, cfg.widg_name, cfg.gradients[0] != 0)))
 		if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, WIDGNAME, cfg.gradients[0] != 0)))
 #else
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, 0 )))
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, cfg.widg_name, 0 )))
 		if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, WIDGNAME, 0 )))
 #endif
 	{
