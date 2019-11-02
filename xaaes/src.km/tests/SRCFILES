@@ -1,0 +1,33 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADERS = aestests.h
+
+COBJS = \
+	apgetinf.c \
+	applfind.c \
+	applsrch.c \
+	colricon.c \
+	evnt_msg.c \
+	evnt_mul.c \
+	graf_hnd.c \
+	msg_ovl.c \
+	rsc_load.c \
+	scrp_rea.c \
+	shel_fnd.c \
+	shel_sht.c \
+	shel_wrm.c \
+	shel_wrx.c \
+	tfail.c \
+	wind_get.c \
+	windcre2.c \
+	windcre3.c \
+	windcre4.c \
+	windcrea.c \
+	wu_term.c \
+	$(empty)
+
+SOBJS = \
+	$(empty)
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)

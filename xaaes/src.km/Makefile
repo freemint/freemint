@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = adi xaloader gradient
+SUBDIRS = adi xaloader gradient tests
 
 srcdir = .
 top_srcdir = .
@@ -59,6 +59,9 @@ $(xaaestargets): xversion.h
 
 xversion.h: $(SRCFILES)
 	$(SHELL) xversion.sh $@ $?
+
+check test::
+	test ! -f tests/Makefile || $(MAKE) -C tests $@
 
 #
 # multi target stuff
