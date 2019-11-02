@@ -159,119 +159,6 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 	return ret;
 }
 
-static DRV_INFO *
-xv_create_driver_info(XVDIPB *vpb, short handle, short id)
-{
-	DRV_INFO *d;
-
-	V_CREATE_DRIVER_INFO(vpb, handle, id, d);	/* macro! */
-	return d;
-
-#if 0
-	vpb->intin[0] = id;
-	vpb->control[V_N_PTSOUT] = 0;
-	vpb->control[V_N_INTOUT] = 0;
-	VDI(vpb, 180, 0, 1, 0, handle);
-	if (vpb->control[V_N_INTOUT] >= 2)
-		d = ptr_from_shorts(vpb->intout[0], vpb->intout[1]);
-	return d;
-#endif
-}
-
-static short
-xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
-{
-	ptr_to_shorts(d, vpb->intin);
-	VDI(vpb, 181, 0, 2, 0, handle);
-	return vpb->intout[0];
-}
-
-static short
-xv_read_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
-{
-	ptr_to_shorts(p, vpb->intin);
-	vpb->control[V_N_PTSOUT] = 0;
-	vpb->control[V_N_INTOUT] = 0;
-	VDI(vpb, 182, 0, 2, 0, handle);
-	if (vpb->control[V_N_INTOUT] >= 1)
-		return vpb->intout[0];
-	return 0;
-}
-
-#if 1
-static short
-xv_write_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
-{
-	ptr_to_shorts(p, vpb->intin);
-	vpb->control[V_N_PTSOUT] = 0;
-	vpb->control[V_N_INTOUT] = 0;
-	VDI(vpb, 182, 0, 2, 1, handle);
-	if (vpb->control[V_N_INTOUT] >= 1)
-		return vpb->intout[0];
-	return 0;
-}
-#endif
-
-#if 0
-static short
-xvq_devinfo(XVDIPB *vpb, short handle, short dev_id)
-{
-	vpb->intin[0] = dev_id;
-	VDI(vpb, 248, 0, 1, 0, handle);
-	return vpb->intout[0];
-}
-#endif
-
-static short
-xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, char *dname)
-{
-	vpb->intin[0] = id;
-	ptr_to_shorts(path, vpb->intin  + 1);
-	ptr_to_shorts(fname, vpb->intin + 3);
-	ptr_to_shorts(dname, vpb->intin + 5);
-	VDI(vpb, 248, 0, 7, 4242, handle);
-	return vpb->intout[0];
-}
-#if 0
-static short
-xv_trays(XVDIPB *vpb, short handle, short in, short out, short *r_in, short *r_out)
-{
-	short ret = 0;
-
-	vpb->intin[0] = in;
-	vpb->intin[1] = out;
-	vpb->control[V_N_PTSOUT] = 0;
-	vpb->control[V_N_INTOUT] = 0;
-	VDI(vpb, 5, 0, 2, 29, handle);
-	if (vpb->control[V_N_INTOUT] == 0)
-	{
-		*r_in = vpb->intout[0];
-		*r_out = vpb->intout[1];
-		ret = 1;
-	}
-	return ret;
-}
-
-static short
-xvq_tray_names(XVDIPB *vpb, short handle, PRN_TRAY *in, PRN_TRAY *out)
-{
-	short ret = 0;
-
-	ptr_to_shorts(in->name, vpb->intin);
-	ptr_to_shorts(out->name, vpb->intin + 2);
-	vpb->control[V_N_PTSOUT] = 0;
-	vpb->control[V_N_INTOUT] = 0;
-	VDI(vpb, 5, 0, 4, 36, handle);
-	if (vpb->control[V_N_INTOUT] != 0)
-	{
-		in->tray_id = (long)vpb->intout[0];
-		out->tray_id = (long)vpb->intout[1];
-		ret = 1;
-	}
-	return ret;
-}
-#endif
-
 static void
 delete_driver_list(struct xa_pdlg_info *pdlg)
 {
@@ -281,7 +168,7 @@ delete_driver_list(struct xa_pdlg_info *pdlg)
 		pdlg->drivers = p->next;
 
 		if (!(p->flags & DRVINFO_KMALLOC))
-			xv_delete_driver_info(pdlg->vpb, C.P_handle, p->d);
+			v_delete_driver_info(C.P_handle, p->d);
 		else
 		{
 			kfree(p->d);
@@ -365,10 +252,10 @@ static void
 get_driver_list(struct xa_pdlg_info *pdlg)
 {
 	int i;
-	XVDIPB *vpb = pdlg->vpb;
 	char path[128], fname[32], dname[128];
 	DRV_INFO *drvinf;
 	struct xa_prndrv_info *start, *prev, *xad;
+	short exists;
 
 	delete_driver_list(pdlg);
 	start = prev = xad = NULL;
@@ -376,11 +263,12 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 
 	for (i = 21; i < 100; i++)
 	{
-		if (xvq_ext_devinfo(vpb, C.P_handle, i, path, fname, dname))
+		vq_ext_devinfo(C.P_handle, i, &exists, path, fname, dname);
+		if (exists)
 		{
 			long flags = 0L;
 
-			drvinf = xv_create_driver_info(vpb, C.P_handle, i);
+			drvinf = v_create_driver_info(C.P_handle, i);
 
 			if (!drvinf && i == 31)	/* Metafile */
 			{
@@ -460,11 +348,6 @@ delete_pdlg_info(void *_pdlg)
 			pdlg->mwt->links--;
 			remove_wt(pdlg->mwt, false);
 			pdlg->mwt = NULL;
-		}
-		if (pdlg->vpb)
-		{
-			kfree(pdlg->vpb);
-			pdlg->vpb = NULL;
 		}
 
 		if (pdlg->drv_wt)
@@ -2480,9 +2363,6 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp)
 
 		bzero(pdlg, sizeof(*pdlg));
 
-		if (!(pdlg->vpb = create_vdipb()))
-			goto fail;
-
 		mtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, WDLG_PDLG), 0);
 
 		if (mtree)
@@ -2608,8 +2488,6 @@ fail:
 
 			if (pdlg)
 			{
-				if (pdlg->vpb)
-					kfree(pdlg->vpb);
 				kfree(pdlg);
 				pdlg = NULL;
 			}
@@ -3053,150 +2931,140 @@ XA_pdlg_set(int lock, struct xa_client *client, AESPB *pb)
 	switch (pb->intin[0])
 	{
 		case 6:		/* pdlg_free_settings	*/
-		{
-			struct xa_usr_prn_settings *us;
-			PRN_SETTINGS *s = (PRN_SETTINGS *)pb->addrin[0];
-
-			us = lookup_xa_data_byid(&client->xa_data, (long)s);
-
-			ret = 0;
-
-			if (us)
 			{
-				delete_xa_data(&client->xa_data, us);
-				ret = 1;
+				struct xa_usr_prn_settings *us;
+				PRN_SETTINGS *s = (PRN_SETTINGS *)pb->addrin[0];
+	
+				us = lookup_xa_data_byid(&client->xa_data, (long)s);
+	
+				ret = 0;
+	
+				if (us)
+				{
+					delete_xa_data(&client->xa_data, us);
+					ret = 1;
+				}
+	
 			}
-
 			break;
-		}
 		default:;
 	}
 
 	if (ret == -1)
 	{
 		pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
-		if (pdlg && (wind = get_pdlg_wind(client, pdlg)))
+		if (pdlg && (wind = get_pdlg_wind(client, pdlg)) != 0)
 		{
 			switch (pb->intin[0])
 			{
 				case 0:		/* pdlg_add_printers	*/
-				{
 					ret = 0;
 					break;
-				}
 				case 1:		/* pdlg_remove_printers	*/
-				{
 					ret = 0;
 					break;
-				}
 				case 2:		/* Update		*/
-				{
 					get_document_name(pdlg, (const char *)pb->addrin[2]);
 					set_window_title(pdlg->wind, pdlg->document_name, true);
 					ret = 1;
 					break;
-				}
 				case 3:		/* pdlg_add_dialogs	*/
-				{
-					PDLG_SUB *sub;
-
-					sub = (PDLG_SUB *)pb->addrin[1];
-
-					while (sub)
 					{
-						char *txt = object_get_string(sub->sub_icon);
-						char t[14];
-
-						strncpy(t, txt, 14);
-
-						add_dialog(pdlg, sub, t/*"App added"*/, NULL, 0);
-						sub = sub->next;
+						PDLG_SUB *sub;
+	
+						sub = (PDLG_SUB *)pb->addrin[1];
+	
+						while (sub)
+						{
+							char *txt = object_get_string(sub->sub_icon);
+							char t[14];
+	
+							strncpy(t, txt, 14);
+	
+							add_dialog(pdlg, sub, t/*"App added"*/, NULL, 0);
+							sub = sub->next;
+						}
+						ret = 1;
 					}
-					ret = 1;
 					break;
-				}
 				case 4:		/* pdlg_remove_dialogs	*/
-				{
 					remove_app_dialogs(pdlg);
 					ret = 1;
 					break;
-				}
 				case 5:		/* pdlg_new_settings	*/
-				{
-					struct xa_usr_prn_settings *us;
-					PRN_SETTINGS *new;
-
-					us = kmalloc(sizeof(*us));
-					new = umalloc(sizeof(*new));
-					if (us && new)
 					{
-						us->flags = 1;
-						us->settings = new;
-
-						memcpy(new, &pdlg->current_settings, sizeof(PRN_SETTINGS));
-
-						add_xa_data(&client->xa_data, us, (long)new, "pdlg_usersett", delete_usr_settings);
+						struct xa_usr_prn_settings *us;
+						PRN_SETTINGS *new;
+	
+						us = kmalloc(sizeof(*us));
+						new = umalloc(sizeof(*new));
+						if (us && new)
+						{
+							us->flags = 1;
+							us->settings = new;
+	
+							*new = pdlg->current_settings;
+	
+							add_xa_data(&client->xa_data, us, (long)new, "pdlg_usersett", delete_usr_settings);
+						}
+						else if (us)
+						{
+							kfree(us);
+							us = NULL;
+						}
+						else if (new)
+						{
+							ufree(new);
+							new = NULL;
+						}
+						pb->addrout[0] = (long)new;
 					}
-					else if (us)
-					{
-						kfree(us);
-						us = NULL;
-					}
-					else if (new)
-					{
-						ufree(new);
-						new = NULL;
-					}
-					pb->addrout[0] = (long)new;
 					break;
-				}
 				case 7:		/* pdlg_dflt_settings	*/
-				{
-
-					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-
-					xv_read_default_settings(pdlg->vpb, C.P_handle, pset);
+					{
+						PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
+	
+						v_read_default_settings(C.P_handle, pset);
+					}
 					break;
-				}
 				case 8:		/* pdlg_validate_settings */
-				{
-					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-
-					validate_settings(pdlg, pset);
-					ret = 1;
+					{
+						PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
+	
+						validate_settings(pdlg, pset);
+						ret = 1;
+					}
 					break;
-				}
 				case 9:		/* pdlg_use_settings	*/
-				{
-					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-
-					if (pset)
 					{
-						validate_settings(pdlg, pset);
-						xv_write_default_settings(pdlg->vpb, C.P_handle, pset);
-						ret = 1;
+						PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
+	
+						if (pset)
+						{
+							validate_settings(pdlg, pset);
+							v_write_default_settings(C.P_handle, pset);
+							ret = 1;
+						}
+						else
+							ret = 1;
 					}
-					else
-						ret = 1;
 					break;
-				}
 				case 10:	/* pdlg_save_default_settings */
-				{
-					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-
-					if (pset)
 					{
-						validate_settings(pdlg, pset);
-						xv_write_default_settings(pdlg->vpb, C.P_handle, pset);
-						ret = 1;
+						PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
+	
+						if (pset)
+						{
+							validate_settings(pdlg, pset);
+							v_write_default_settings(C.P_handle, pset);
+							ret = 1;
+						}
+						else
+							ret = 0;
 					}
-					else
-						ret = 0;
-				}
-				default:
-				{
 					break;
-				}
+				default:
+					break;
 			}
 		}
 		else
@@ -3205,16 +3073,13 @@ XA_pdlg_set(int lock, struct xa_client *client, AESPB *pb)
 			{
 				case 0 ... 4:
 				case 7 ... 10:
-				{
 					ret = 0;
 					break;
-				}
 				case 5:
-				{
-					pb->addrout[0] = 0L;
+					pb->addrout[0] = 0;
 					break;
-				}
-				default:;
+				default:
+					break;
 			}
 		}
 	}

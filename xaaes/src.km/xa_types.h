@@ -797,7 +797,6 @@ struct xa_pdlg_info
 	struct	widget_tree *mwt;
 	struct	widget_tree *dwt;
 	struct	scroll_info *list;
-	XVDIPB	*vpb;
 
 	short	min_w, min_h;
 

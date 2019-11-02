@@ -48,14 +48,4 @@ struct vdi_xfnt_info_parms
 	VDI(vpb, 107, 0, 1, 0, handle);			\
 	_ret = _vpb->intout[0];
 
-#define V_CREATE_DRIVER_INFO(_vpb, _handle, _id, _result)		\
-	_vpb->intin[0] = _id;						\
-	_vpb->control[V_N_PTSOUT] = 0;					\
-	_vpb->control[V_N_INTOUT] = 0;					\
-	VDI(_vpb, 180, 0, 1, 0, _handle);				\
-	if (_vpb->control[V_N_INTOUT] >= 2)				\
-		_result = ptr_from_shorts(vpb->intout[0], vpb->intout[1]);	\
-	else								\
-		_result = NULL;
-
 #endif /* _vdi_parms_h_ */
