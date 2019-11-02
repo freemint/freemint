@@ -137,6 +137,9 @@ usb*.km
 *.acc
 *.app
 *.prg
+*.gtp
+*.tos
+*.ttp
 *.exe
 *.ucd
 *.udd
