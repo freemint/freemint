@@ -527,8 +527,8 @@ add_fnts_item(struct xa_fnts_item **list, struct xa_fnts_item *f, short flags)
 
 	if ((!(flags & FNTS_BTMP) && !f->f.outline) ||
 	    (!(flags & FNTS_OUTL) && f->f.outline) ||
-	    (!(flags & FNTS_MONO) && !f->f.mono) ||
-	    (!(flags & FNTS_PROP) && f->f.mono))
+	    (!(flags & FNTS_MONO) && f->f.mono) ||
+	    (!(flags & FNTS_PROP) && !f->f.mono))
 	{
 		DIAG((D_fnts, NULL, " --- ignoring - outline=%s, mono=%s",
 			f->f.outline ? "Yes":"No", f->f.mono ? "Yes":"No"));
