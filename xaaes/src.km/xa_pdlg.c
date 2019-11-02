@@ -28,7 +28,6 @@
 
 #include "xaaes.h"
 
-#include "vdi_parms.h"
 #include "xa_pdlg.h"
 #include "xa_wdlg.h"
 #include "xa_fsel.h"

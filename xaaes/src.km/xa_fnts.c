@@ -129,14 +129,6 @@ struct co_display_parms
 	char	*txt;
 };
 
-static short
-xvst_load_fonts(XVDIPB *vpb, short select, short handle)
-{
-	vpb->intin[0] = select;
-	VDI(vpb, 119, 0, 1, 0, handle);
-	return vpb->intout[0];
-}
-
 static long
 callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt, short *fw, short *fh)
 {
@@ -296,20 +288,6 @@ fnts_extb_callout(struct extbox_parms *p)
 	}
 }
 
-static struct speedo_header *
-xvqt_fontheader(XVDIPB *vpb, short handle)
-{
-	struct speedo_header *hdr;
-
-	hdr = kmalloc(sizeof (*hdr));
-	if (hdr)
-	{
-		*(struct speedo_header **)&vpb->intin[0] = hdr;
-		VDI(vpb, 232, 0, 2, 0, handle);
-	}
-	return hdr;
-}
-
 static struct xa_fnts_info *
 new_fnts(void)
 {
@@ -386,7 +364,7 @@ get_fnts_wind(struct xa_client *client, void *fnts_ptr)
 }
 
 
-static short pt_sizes[] =
+static short const pt_sizes[] =
 {
 	4,   5,  6,  7,  8,  9, 10, 11, 12, 13,
 	14, 15, 16, 18, 20, 24, 28, 36, 48, 72
@@ -416,72 +394,57 @@ add_point(struct xa_fnts_item *f, short point)
  * Fill 'fitem' with info about 'index' font
  */
 static void
-xvqt_name(struct xa_fnts_info *fnts, XVDIPB *vpb, short index, struct xa_fnts_item *fitem)
+xvqt_name(struct xa_fnts_info *fnts, short index, struct xa_fnts_item *fitem)
 {
 	int i;
+	char pathname[128];
+	short font_format, flags;
+	short dummy;
 
 	/*
 	 * vqt_name()
 	 */
-	vpb->intin[0] = index;
-	VDI(vpb, 130, 0, 2, 1, fnts->vdi_handle);
-
-	fitem->f.id	= vpb->intout[0];
+	fitem->f.id	= vqt_ext_name(fnts->vdi_handle, index, fitem->f.full_name, &font_format, &flags);
 	fitem->f.index	= index;
 
-	get_vdistr(fitem->f.full_name, &vpb->intout[1], 32);
 	*fitem->f.family_name = '\0';
 	*fitem->f.style_name = '\0';
 
-	if (vpb->control[4] <= 33)
-	{
-		fitem->f.outline = 0;
-		fitem->f.mono = 1;
-	}
-	else if (vpb->control[4] == 34)
-	{
-		struct speedo_header *hdr;
+	fitem->f.outline = font_format != 0;
+	fitem->f.mono = font_format == 0 || (flags & 1); /* FIXME: bitmap font does not mean it is monospaced */
 
-		fitem->f.outline = vpb->intout[33] ? 1 : 0;
-		fitem->f.mono = 1;
-
-		xvst_font(vpb, fnts->vdi_handle, fitem->f.id);
-
-		if ((hdr = xvqt_fontheader(vpb, fnts->vdi_handle)))
-		{
-			fitem->f.mono = hdr->flags & 1 ? 1 : 0;
-			kfree(hdr);
-		}
-	}
-	else
+	if (font_format == 1)
 	{
-		fitem->f.outline = ((vpb->intout[34] & 0xff) != 1)  ? 1 : 0;
-		fitem->f.mono = (vpb->intout[34] & 0xff00) ? 1 : 0;
+		struct speedo_header hdr;
+
+		vst_font(fnts->vdi_handle, fitem->f.id);
+
+		vqt_fontheader(fnts->vdi_handle, (void *)&hdr, pathname);
+		fitem->f.mono = hdr.flags & 1; /* FIXME: should that be class_flags? */
 	}
 
 	/*
 	 * Scan for available point sizes
 	 */
 	fitem->f.npts = 0;
-	xvst_font(vpb, fnts->vdi_handle, fitem->f.id);
+	vst_font(fnts->vdi_handle, fitem->f.id);
 	for (i = 0; i < (sizeof(pt_sizes) / sizeof(pt_sizes[0])); i++)
 	{
-		add_point(fitem, xvst_point(vpb, fnts->vdi_handle, pt_sizes[i]));
+		add_point(fitem, vst_point(fnts->vdi_handle, pt_sizes[i], &dummy, &dummy, &dummy, &dummy));
 	}
 
 	/*
 	 * Get family/style names -- only possible when vqt_xfntinfo() is available.
 	 */
-	if (C.nvdi_version >= 0x0302)
+	if (C.nvdi_version >= 0x0302) /* FIXME: maybe unneeded */
 	{
-		XFNT_INFO *x;
+		XFNT_INFO x;
 
-		if ((x = xvqt_xfntinfo(vpb, fnts->vdi_handle, 0xffff/*((1<<1)|(1<<2)|(1<<8))*/, fitem->f.id, 0)))
-		{
-			strcpy(fitem->f.family_name, x->family_name);
-			strcpy(fitem->f.style_name, x->style_name);
-			kfree(x);
-		}
+		x.family_name[0] = '\0';
+		x.style_name[0] = '\0';
+		vqt_xfntinfo(fnts->vdi_handle, 0xffff, fitem->f.id, 0, &x);
+		strcpy(fitem->f.family_name, x.family_name);
+		strcpy(fitem->f.style_name, x.style_name);
 	}
 	/*
 	 * Sort the point sizes..
@@ -616,12 +579,9 @@ get_font_items(struct xa_fnts_info *fnts)
 {
 	short i;
 	long id;
-	XVDIPB *vpb;
 	struct xa_fnts_item *fitem = NULL, *last = NULL, *new;
 
 	DIAGS(("get_font_items:"));
-	vpb = create_vdipb();
-	DIAGS(("get_font_items: create vdipb=%lx", (unsigned long)vpb));
 
 	if (fnts->vdi_handle && !fnts->fnts_loaded)
 	{
@@ -629,7 +589,7 @@ get_font_items(struct xa_fnts_info *fnts)
 		fnts->fnts_loaded = 1;
 		if (C.gdos_version)
 		{
-			fnts->fnts_loaded += xvst_load_fonts(vpb, 0, fnts->vdi_handle);
+			fnts->fnts_loaded += vst_load_fonts(fnts->vdi_handle, 0);
 		}
 		DIAGS(("get_font_items: loaded %d fonts", fnts->fnts_loaded));
 	}
@@ -640,7 +600,7 @@ get_font_items(struct xa_fnts_info *fnts)
 		if (!(new = new_fnts_item()))
 			break;
 
-		xvqt_name(fnts, vpb, i, new);
+		xvqt_name(fnts, i, new);
 
 		if( id == new->f.id )	/* fvdi reports 6x6 on 0 and 1 */
 			continue;
@@ -654,10 +614,6 @@ get_font_items(struct xa_fnts_info *fnts)
 			last = new;
 		}
 	}
-
-	DIAGS(("get_font_items: free vdipb at %lx, returning fitem=%lx", (unsigned long)vpb, (unsigned long)fitem));
-
-	kfree(vpb);
 
 	return fitem;
 }

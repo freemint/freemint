@@ -203,40 +203,4 @@ void	ref_xa_data		(struct xa_data_hdr **list, void *_data, short count);
 long	deref_xa_data		(struct xa_data_hdr **list, void *_data, short flags);
 void	free_xa_data_list	(struct xa_data_hdr **list);
 
-/* Global VDI calls */
-XVDIPB *	create_vdipb(void);
-// void		do_vdi_trap (XVDIPB * vpb);
-// void		VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6);
-void		get_vdistr(char *d, short *s, short len);
-void		xvst_font(XVDIPB *vpb, short handle, short id);
-XFNT_INFO *	xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index);
-short		xvst_point(XVDIPB *vpb, short handle, short point);
-
-static inline void
-do_vdi_trap (XVDIPB * vpb)
-{
-	__asm__ volatile
-	(
-		"movea.l	%0,a0\n\t" 		\
-		"move.l		a0,d1\n\t"		\
-		"move.w		#115,d0\n\t"		\
-		"trap		#2\n\t"			\
-		:
-		: "a"(vpb)
-		: "a0", "d0", "d1", "memory"
-	);
-}
-
-static inline void
-VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
-{
-	vpb->control[V_OPCODE   ] = c0;
-	vpb->control[V_N_PTSIN  ] = c1;
-	vpb->control[V_N_INTIN  ] = c3;
-	vpb->control[V_SUBOPCODE] = c5;
-	vpb->control[V_HANDLE   ] = c6;
-
-	do_vdi_trap(vpb);
-}
-
 #endif /* _xa_global_h */
