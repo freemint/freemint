@@ -513,7 +513,7 @@ XA_handler(void *_pb)
 		 * I dont know how I like this! However, we test force-init/attaching client structure
 		 * to a process calling the AES wihtout prior appl_init() call.
 		 */
-		if ((!(client = lookup_extension(NULL, XAAES_MAGIC)) ) && cmd != 10)	// 10:XA_appl_init
+		if ((!(client = lookup_extension(NULL, XAAES_MAGIC)) ) && cmd != 10)	/* 10:XA_appl_init */
 		{
 #if INSERT_APPL_INIT
 			if (!(aes_tab[cmd].flags & NOCLIENT) && !(p->modeflags & M_XA_CLIENT_EXIT ) )
@@ -602,6 +602,7 @@ XA_handler(void *_pb)
 		}
 #endif
 #if DBG_CALLS
+		/* 25:XA_evnt_multi */
 		BLOGif(cmd!=25,(0, "%s[%d:%x] made by %lx:%s(%s:%d),status=%lx",	aes_tab[cmd].descr, cmd, aes_tab[cmd].flags, client, client ? client->name : "", get_curproc()->name, get_curproc()->pid, client->status));
 #endif
 		cmd_routine = aes_tab[cmd].f;
@@ -643,13 +644,13 @@ XA_handler(void *_pb)
 #if GENERATE_DIAGS
 			if (client)
 			{
-				DIAG((D_trap, client, " %s[%d] returned %ld for %s",
-					aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
+				DIAG((D_trap, client, " %s[%d] returned %d for %s",
+					aes_tab[cmd].descr, cmd, pb->intout[0], p->name));
 			}
 			else
 			{
-				DIAG((D_trap, client, " %s[%d] returned %ld for non AES process (pid %ld)",
-					aes_tab[cmd].descr, cmd, cmd_rtn, p_getpid()));
+				DIAG((D_trap, client, " %s[%d] returned %d for non AES process (pid %ld)",
+					aes_tab[cmd].descr, cmd, pb->intout[0], p_getpid()));
 			}
 #endif
 #if DBG_CALLS
@@ -659,7 +660,7 @@ XA_handler(void *_pb)
 			 * Now we check if circumstances under which we check if process started/ended
 			 * being a AES client
 			 */
-			if (!client || cmd == 10 || cmd == 19)	// XA_appl_init || XA_appl_exit
+			if (!client || cmd == 10 || cmd == 19)	/* XA_appl_init || XA_appl_exit */
 			{
 				client = lookup_extension(NULL, XAAES_MAGIC);
 #if GENERATE_DIAGS
@@ -677,15 +678,13 @@ XA_handler(void *_pb)
 
 				/* block indefinitly */
 				case XAC_BLOCK:
-				{
 					if (client)
 					{
 						DIAG((D_trap, client, "XA_Hand: Block client %s", client->name));
-						(*client->block)(client, 1); //Block(client, 1);
+						(*client->block)(client, 1);
 						DIAG((D_trap, client, "XA_Hand: Unblocked %s", client->name));
 					}
 					break;
-				}
 				default:
 					BLOG((0,"Xa_handler:%s:unknown cmd_rtn:%ld", client ? client->name : "-", cmd_rtn));
 			}
