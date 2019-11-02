@@ -167,23 +167,6 @@ struct xa_ximg_head
 };
 typedef struct xa_ximg_head XA_XIMG_HEAD;
 
-#define V_OPCODE	0
-#define V_N_PTSIN	1
-#define V_N_PTSOUT	2
-#define V_N_INTIN	3
-#define V_N_INTOUT	4
-#define V_SUBOPCODE	5
-#define V_HANDLE	6
-
-typedef struct
-{
-	short	*control;	/**< TODO */
-	short	*intin;		/**< TODO */
-	short	*ptsin;		/**< TODO */
-	short	*intout;	/**< TODO */
-	short	*ptsout;	/**< TODO */
-} XVDIPB;
-
 typedef struct
 {
 	short	*control;   /**< aes_control[] array */

@@ -43,7 +43,6 @@ HEADER = \
 	util.h \
 	vaproto.h \
 	version.h \
-	vdi_parms.h \
 	widgets.h \
 	win_draw.h \
 	xa_aes.h \
