@@ -101,10 +101,10 @@ static int show_dialog(void)
 
 	form_center_grect(tree, &gr);
 	wind_update(BEG_UPDATE);
-	form_dial_grect(FMD_START, &gr, &gr);
+	form_dial(FMD_START, gr.g_x, gr.g_y, gr.g_w, gr.g_h, gr.g_x, gr.g_y, gr.g_w, gr.g_h);
 	objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
 	form_do(tree, ROOT);
-	form_dial_grect(FMD_FINISH, &gr, &gr);
+	form_dial(FMD_FINISH, gr.g_x, gr.g_y, gr.g_w, gr.g_h, gr.g_x, gr.g_y, gr.g_w, gr.g_h);
 	wind_update(END_UPDATE);
 	return TRUE;
 }
