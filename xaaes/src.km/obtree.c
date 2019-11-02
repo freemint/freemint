@@ -78,7 +78,7 @@ object_set_spec(OBJECT *ob, unsigned long cl)
 		ob->ob_spec.index = cl;
 }
 
-STATIC inline void
+static inline void
 aesobj_set_spec(struct xa_aes_object *o, unsigned long cl) { object_set_spec(aesobj_ob(o),cl); }
 
 inline bool
@@ -100,7 +100,7 @@ object_has_tedinfo(OBJECT *ob)
 	}
 }
 
-STATIC inline bool
+static inline bool
 aesobj_has_tedinfo(struct xa_aes_object *o) { return object_has_tedinfo(aesobj_ob(o)); }
 
 inline bool
@@ -122,7 +122,7 @@ object_has_freestr(OBJECT *ob)
 	}
 }
 
-STATIC inline bool
+static inline bool
 aesobj_has_freestr(struct xa_aes_object *o) { return object_has_freestr(aesobj_ob(o)); }
 
 bool
@@ -169,7 +169,7 @@ object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 	return ted;
 }
 
-STATIC inline TEDINFO *
+static inline TEDINFO *
 aesobj_get_tedinfo(struct xa_aes_object *o, XTEDINFO **x) { return object_get_tedinfo(aesobj_ob(o), x); }
 
 
@@ -1301,7 +1301,7 @@ ob_order(OBJECT *root, short object, ushort pos)
 	}
 }
 
-STATIC void
+static void
 foreach_object(OBJECT *tree,
 		struct xa_aes_object parent,
 		struct xa_aes_object start,
@@ -1527,6 +1527,7 @@ downlink:
 	return curr;
 
 }
+
 #if 0
 struct xa_aes_object
 ob_get_parent(OBJECT *obtree, struct xa_aes_object obj)
@@ -1552,6 +1553,7 @@ ob_get_parent(OBJECT *obtree, struct xa_aes_object obj)
 	return obj;
 }
 #endif
+
 #if INCLUDE_UNUSED
 /*
  * Find object whose flags is set to 'f', state set to 's' and
@@ -1583,7 +1585,8 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	return d.ret_object;
 }
 #endif
-STATIC struct xa_aes_object
+
+static struct xa_aes_object
 ob_find_any_flag(OBJECT *tree, short f, short mf)
 {
 	struct anyflst_parms d;
@@ -1599,6 +1602,7 @@ ob_find_any_flag(OBJECT *tree, short f, short mf)
 	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), anyflst, &d);
 	return d.ret_object;
 }
+
 /*
  * Count objects whose flags equals those in 'f',
  * and have none of the flags in 'mf' set.
@@ -1626,6 +1630,7 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 		*count = d.ret;
 	return d.ret1;
 }
+
 #if INCLUDE_UNUSED
 /*
  * Count objects who has any 'f' bit(s) set,
@@ -1656,6 +1661,7 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	return d.ret1;
 }
 #endif
+
 struct xa_aes_object
 ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms/*, short stopf, short stops*/)
 {
@@ -1746,6 +1752,7 @@ set_wind(OBJECT *tree, short o, void *_data)
 	}
 	return false;
 }
+
 /*
  *
  */
@@ -2063,7 +2070,7 @@ done:
 	return co;
 }
 
-STATIC struct xa_aes_object
+static struct xa_aes_object
 ob_find_next_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
@@ -2104,6 +2111,7 @@ ob_find_next_any_flag(OBJECT *tree, short start, short f)
 	}
 	return aesobj(tree, o);
 }
+
 #if INCLUDE_UNUSED
 short
 ob_find_prev_any_flag(OBJECT *tree, short start, short f)
@@ -2142,6 +2150,7 @@ ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 	return -1;
 }
 #endif
+
 struct xa_aes_object
 ob_find_cancel(OBJECT *ob)
 {
@@ -2353,6 +2362,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp)
 	}
 	DIAGS((" -- ob_fix_shortcuts: done"));
 }
+
 /* follow  G_OBLINK
  * todo: same in fix_shortcuts
  */
@@ -2407,13 +2417,7 @@ ob_find_shortcut(OBJECT *tree, ushort nk, short stop_type)
 
 	return inv_aesobj();
 }
-/*
-static void print_xted( struct xa_aes_object *obj, long l )
-{
-	XTEDINFO *xted;
-	object_get_tedinfo(aesobj_ob(obj), &xted);
-}
-*/
+
 void
 obj_init_focus(XA_TREE *wt, short flags)
 {

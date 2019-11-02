@@ -45,7 +45,7 @@ is_inside(const RECT *r, const RECT *o)
 	return true;
 }
 
-STATIC struct xa_rect_list *
+static struct xa_rect_list *
 build_rect_list(struct build_rl_parms *p)
 {
 	struct xa_rect_list *rl, *nrl, *rl_next, *rl_prev;

@@ -54,8 +54,8 @@
 #include "mint/signal.h"
 
 static void rp_2_ap_row(struct xa_window *wind);
-STATIC void free_wt(XA_TREE *wt);
-STATIC short	redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state);
+static void free_wt(XA_TREE *wt);
+static short	redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 
 #if GENERATE_DIAGS
 static const char *const t_widg[] =
@@ -681,7 +681,7 @@ free_wtlist(struct xa_client *client)
 }
 /* Unhook a widget_tree from its owners wtlist
  */
-STATIC void
+static void
 remove_from_wtlist(XA_TREE *wt)
 {
 	XA_TREE **nwt;
@@ -714,7 +714,7 @@ remove_from_wtlist(XA_TREE *wt)
 		(unsigned long)wt, wt->owner->name));
 }
 
-STATIC void
+static void
 free_wt(XA_TREE *wt)
 {
 	DIAGS(("free_wt: wt=%lx", (unsigned long)wt));
@@ -1507,7 +1507,7 @@ click_hide(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 	/* Redisplay.... (Unselect basically.) */
 	return true;
 }
-STATIC COMPASS
+static COMPASS
 compass(short d, short x, short y, RECT r)
 {
 	r.x += d;
@@ -3881,7 +3881,7 @@ create_widg_layout(struct xa_window *wind)
 	return ret;
 }
 
-STATIC struct xa_widget_methods def_methods[] =
+static struct xa_widget_methods def_methods[] =
 {
 /*Properties, statusmask           render_widget click		drag		release	wheel	key		destruct	*/
  {0,0,					{0},	NULL,		NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* Dummy */
@@ -4788,7 +4788,7 @@ do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_
 	return false;
 }
 
-STATIC short
+static short
 redisplay_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, short state)
 {
 	short ret = widg->state;

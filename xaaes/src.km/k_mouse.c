@@ -163,7 +163,7 @@ modify_md(struct moose_data *md)
 	}
 }
 
-STATIC bool
+static bool
 add_md(struct moose_data *md)
 {
 	struct moose_data *n = md_tail;
@@ -375,7 +375,7 @@ dispatch_button_event(int lock, struct xa_window *wind, const struct moose_data 
 /*
  * at the moment widgets is always true.
  */
-STATIC void
+static void
 XA_button_event(int lock, const struct moose_data *md, bool widgets)
 {
 	struct xa_client *client, *locker, *mw_owner;
@@ -588,7 +588,7 @@ dispatch_mu_event(struct xa_client *client, const struct moose_data *md, bool is
 		post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
 }
 
-STATIC int
+static int
 XA_move_event(int lock, const struct moose_data *md)
 {
 	struct xa_client *client;
@@ -705,7 +705,7 @@ XA_move_event(int lock, const struct moose_data *md)
 }
 
 
-STATIC void
+static void
 XA_wheel_event(int lock, const struct moose_data *md)
 {
 	struct xa_window *wind;

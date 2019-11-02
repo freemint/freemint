@@ -308,7 +308,7 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 	return 0;
 }
 
-STATIC short
+static short
 dispatch_cevent(struct xa_client *client)
 {
 	struct c_event *ce;

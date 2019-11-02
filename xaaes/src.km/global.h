@@ -62,11 +62,6 @@
 
 /*
  * hk:
- * STATIC used for all previously global symbols used (and defined) in one file
- */
-#define STATIC static
-/*
- * hk:
  * define 1 to inlude symbols never used anywhere
  */
 #define INCLUDE_UNUSED 0

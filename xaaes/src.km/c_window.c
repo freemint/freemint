@@ -41,9 +41,9 @@
 
 #include "mint/signal.h"
 
-STATIC struct xa_window *pull_wind_to_top(int lock, struct xa_window *w);
-STATIC void	fitin_root(RECT *r);
-STATIC void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
+static struct xa_window *pull_wind_to_top(int lock, struct xa_window *w);
+static void	fitin_root(RECT *r);
+static void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
 
 /*
  * Window Stack Management Functions
@@ -209,7 +209,7 @@ calc_shade_height(struct xa_window *wind)
 	}
 }
 
-STATIC void
+static void
 clear_wind_rectlist(struct xa_window *wind)
 {
 	DIAGS(("clear_wind_rectlist: on %d of %s", wind->handle, wind->owner->name));
@@ -330,7 +330,7 @@ inside_root(RECT *r, bool noleft)
 	return ret;
 }
 
-STATIC void
+static void
 fitin_root(RECT *r)
 {
 	RECT *w = &root_window->wa;
@@ -378,7 +378,7 @@ static const char *const stacks[] =
 };
 #endif
 
-STATIC void
+static void
 wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus)
 {
 #if GENERATE_DIAGS
@@ -428,7 +428,7 @@ wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus)
 	}
 }
 
-STATIC void
+static void
 wi_put_first(struct win_base *b, struct xa_window *w)
 {
 	struct xa_window **wind;
@@ -588,7 +588,7 @@ wi_move_first(struct win_base *b, struct xa_window *w)
 	DIAGA(("wi_move_first: !"));
 }
 
-STATIC void
+static void
 wi_move_blast(struct win_base *b, struct xa_window *w)
 {
 	DIAGA(("wi_move_blast: %d of %s", w->handle, w->owner->name));
@@ -600,7 +600,7 @@ wi_move_blast(struct win_base *b, struct xa_window *w)
 		wi_put_blast(b, w, false, false);
 	DIAGA(("wi_move_blast: !"));
 }
-STATIC void
+static void
 wi_move_belowroot(struct win_base *b, struct xa_window *w)
 {
 	DIAGA(("wi_move_belowroot: %d of %s", w->handle, w->owner->name));
@@ -811,7 +811,7 @@ get_window_info(struct xa_window *wind, char *dst)
 	}
 }
 #if INCLUDE_UNUSED
-STATIC void
+static void
 send_ontop(int lock)
 {
 	struct xa_window *top = TOP_WINDOW;
@@ -892,7 +892,7 @@ send_reposed(int lock, struct xa_window *wind, short amq, RECT *r)
 	}
 }
 
-STATIC void
+static void
 send_redraw(int lock, struct xa_window *wind, RECT *r)
 {
 	if (!(wind->window_status & (XAWS_SHADED|XAWS_HIDDEN)) && wind->send_message)
@@ -1181,7 +1181,7 @@ bottom_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 	}
 }
 
-STATIC XA_WIND_ATTR
+static XA_WIND_ATTR
 fix_wind_kind(XA_WIND_ATTR tp)
 {
 	/* avoid confusion: if only 1 specified, give both (fail safe!) */
@@ -2039,7 +2039,7 @@ wind_exist(int lock, struct xa_window *wind)
 /*
  * Pull this window to the head of the window list
  */
-STATIC struct xa_window *
+static struct xa_window *
 pull_wind_to_top(int lock, struct xa_window *w)
 {
 	struct xa_window *wl, *below, *above;
@@ -3168,7 +3168,7 @@ static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_li
 	return false;
 }
 
-STATIC void
+static void
 set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new)
 {
 	short dir, resize, xmove, ymove, wlock = 0;

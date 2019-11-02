@@ -571,14 +571,14 @@ static struct appmenu *appmenu = NULL;
 static OBJECT *appmenu_ob = NULL;
 static size_t appmenusize = 0;
 
-STATIC const OBJECT drop_box =
+static const OBJECT drop_box =
 {
 	-1, 1, 2,			/* Object 0  */
 	G_BOX, OF_NONE, OS_SHADOWED,
 	{ 0x00FF1100L },
 	0, 0, 12, 2
 };
-STATIC const OBJECT drop_choice =	/* Object 1 to n */
+static const OBJECT drop_choice =	/* Object 1 to n */
 {
 	0,-1,-1,
 	G_STRING, OF_NONE, OS_NORMAL,
