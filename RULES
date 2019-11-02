@@ -23,8 +23,8 @@ all: all-recursive all-here
 clean:: clean-recursive
 	rm -f *.o lib*.a *.tmp
 	rm -f core report nohup.out errlog
-	rm -f $(compile_all_dirs)/*.o $(compile_all_dirs)/lib*.a
-	rm -rf $(GENFILES)
+	test "$(compile_all_dirs)" = "" || rm -f $(compile_all_dirs)/*.o $(compile_all_dirs)/lib*.a
+	test "$(GENFILES)" = "" || rm -rf $(GENFILES)
 
 bakclean:: bakclean-recursive
 	rm -f *~ *# *.BAK *.bak
@@ -33,7 +33,9 @@ bakclean:: bakclean-recursive
 distclean:: distclean-recursive
 	rm -f *.o lib*.a *.tmp *~ *# *.orig *.rej *.BAK *.bak
 	rm -f core report nohup.out errlog
-	rm -rf .deps $(GENFILES) $(SGENFILES)
+	test "$(GENFILES)" = "" || rm -rf $(GENFILES)
+	test "$(SGENFILES)" = "" || rm -rf $(SGENFILES)
+	rm -rf .deps
 
 strip: strip-recursive
 
