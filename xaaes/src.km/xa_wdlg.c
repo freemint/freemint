@@ -48,7 +48,7 @@
 #include "k_keybd.h"
 #include "mint/signal.h"
 
-STATIC WidgetBehaviour click_wdlg_widget;
+static WidgetBehaviour click_wdlg_widget;
 
 
 
@@ -1398,7 +1398,7 @@ XA_wdlg_redraw(int lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-STATIC bool
+static bool
 click_wdlg_widget(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client = wind->owner;

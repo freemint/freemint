@@ -42,7 +42,7 @@
 #include "keycodes.h"
 #include "k_keybd.h"
 
-STATIC FormMouseInput	Click_form_do;
+static FormMouseInput	Click_form_do;
 /*
  * Attatch a MODAL form_do session to a client.
  * client->wt (XA_TREE) is used for modal form_do.
@@ -1154,7 +1154,7 @@ Click_windowed_form_do(	int lock,
  * when a click happened. Also called by windowed form_do() sessions.
  *
  */
-STATIC bool
+static bool
 Click_form_do(int lock,
 	      struct xa_client *client,
 	      struct xa_window *wind,

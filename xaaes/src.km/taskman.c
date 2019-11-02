@@ -1644,7 +1644,6 @@ struct xa_client *is_aes_client( struct proc *p )
 
 static bool calc_tm_bar( OBJECT *obtree, short item, short parent, long pinf, long max )
 {
-
 	TEDINFO *t = object_get_tedinfo(&obtree[item], NULL);
 
 	if( max == 0L )

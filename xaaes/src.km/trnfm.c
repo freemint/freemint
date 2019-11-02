@@ -586,7 +586,7 @@ toIbs32b(struct rgb_1000 *pal, void *img_ptr)
  * index into the destination palette where the color closest to the one
  * in the src palette was found.
  */
-STATIC void
+static void
 build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens)
 {
 	struct rgb_1000 *dst, *src;
@@ -638,7 +638,7 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
  * Remap the bitmap palette referances.
  * md == 1: bitmap, else img
  */
-STATIC void
+static void
 remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 {
 	int planes, psize;
@@ -922,7 +922,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 
 /* Loads & depacks IMG (0 if succeded, else error). */
 /* Bitplanes are one after another in address IMG_HEADER.addr. */
-STATIC void
+static void
 depack_img(char *name, XA_XIMG_HEAD *pic)
 {
 	int /*width, */word_aligned, pal_size;

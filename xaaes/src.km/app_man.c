@@ -46,7 +46,7 @@
 
 #include "mint/signal.h"
 
-STATIC struct xa_client *	find_menu(int lock, struct xa_client *client, short exclude);
+static struct xa_client *	find_menu(int lock, struct xa_client *client, short exclude);
 
 #if INCLUDE_UNUSED
 bool
@@ -846,12 +846,12 @@ cancel_reiconify_timeout(void)
 		rpi_to = NULL;
 	}
 }
-STATIC void
+static void
 block_reiconify_timeout(void)
 {
 	rpi_block++;
 }
-STATIC void
+static void
 unblock_reiconify_timeout(void)
 {
 	rpi_block--;
