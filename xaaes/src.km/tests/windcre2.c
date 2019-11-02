@@ -41,7 +41,7 @@ int main(void)
 			break;
 		} else if (message[0] == WM_TOPPED)
 		{
-			wind_set_int(hdl, WF_TOP, 0);
+			wind_set(hdl, WF_TOP, 0, 0, 0, 0);
 		} else if (message[0] == WM_REDRAW)
 		{
 			redraw((GRECT *) (message + 4));
