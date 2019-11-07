@@ -46,8 +46,8 @@ _new_acia:
 	movem.l	d0-d3/a0-a3,-(sp)
 #endif
 again:	move.l	_syskey,a3
-//	move.l	VMIDISYS(a3),a0
-//	jsr	(a0)
+	move.l	VMIDISYS(a3),a0
+	jsr	(a0)
 	move.l	VIKBDSYS(a3),a0
 	jsr	(a0)
 #ifdef __mcoldfire__
@@ -117,20 +117,8 @@ no_error:
 	bne.s	mid_multiple
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
-#ifdef __mcoldfire__
-	and.l	#0xff,d0
-#else
-	and.w	#0xff,d0
-#endif
-	move.l	_keyrec,-(sp)
-	move.w	d0,-(sp)
-	jsr	_ikbd_scan
-	addq.l	#6,sp
-	rts
-
-//	jmp	_newkeys
-//	move.l	KBDVEC(a3),a1
-//	jmp	(a1)
+	move.l	KBDVEC(a3),a1
+	jmp	(a1)
 
 not_keyboard:
 #ifdef __mcoldfire__
