@@ -94,17 +94,7 @@ init_intr (void)
 	oldkey = *syskey;
 
 # ifndef NO_AKP_KEYBOARD
-	/* Hook the keyboard interrupt to call ikbd_scan() on keyboard data */
-	if (machine == machine_milan || machine == machine_unknown)
-	{
-		/* Assume that TOS >= 2.0. In this case, there is an undocumented
-		 * vector just before the KBDVEC structure. This vector is called
-		 * by the TOS ikbdsys routine to process keyboard-only data.
-		 * It is exactly what we need to hook. */
-		long *kbdvec = ((long *)syskey)-1;
-		new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
-	}
-	else
+	if (tosvers < 0x0200) /* TOS versions without the KBDVEC vector */
 	{
 		/* We need to hook the ikbdsys vector. Our handler will have to deal
 		 * with ACIA registers, and to call the appropriate KBDVEC vectors
@@ -117,6 +107,15 @@ init_intr (void)
 		/* Also hook the whole ACIA interrupt (why??) */
 		new_xbra_install(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
+	}
+	else /* Hook the keyboard interrupt to call ikbd_scan() on keyboard data */
+	{
+		/* Assume that TOS >= 2.0. In this case, there is an undocumented
+		 * vector just before the KBDVEC structure. This vector is called
+		 * by the TOS ikbdsys routine to process keyboard-only data.
+		 * It is exactly what we need to hook. */
+		long *kbdvec = ((long *)syskey)-1;
+		new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
 	}
 # endif
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
@@ -241,14 +240,14 @@ restr_intr (void)
 	*syskey = oldkey;	/* restore keyboard vectors */
 
 # ifndef NO_AKP_KEYBOARD
-	if (machine == machine_milan || machine == machine_unknown)
+	if (tosvers < 0x0200)
 	{
-		long *kbdvec = ((long *)syskey)-1;
-		*kbdvec = (long) oldkeys;
+		*((long *) 0x0118L) = old_acia;
 	}
 	else
 	{
-		*((long *) 0x0118L) = old_acia;
+		long *kbdvec = ((long *)syskey)-1;
+		*kbdvec = (long) oldkeys;
 	}
 # endif
 
