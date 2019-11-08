@@ -58,9 +58,11 @@ short check_stack_alignment( long e );
 long loader_pid = 0;
 long loader_pgrp = 0;
 
-//char version[] = ASCII_VERSION;
-
-static char Aes_display_name[32];
+#if GENERATE_DIAGS
+static char const Aes_display_name[] = "  XaAES(dbg) v" AES_ASCII_VERSION_VERBOSE " (" ASCII_ARCH_TARGET ")";
+#else
+static char const Aes_display_name[] = "  XaAES v" AES_ASCII_VERSION_VERBOSE;
+#endif
 
 static void
 bootmessage(void)
@@ -484,9 +486,6 @@ again:
 	//get_curproc()->pgrp = 0;
 	loader_pgrp = p_getpgrp();
 
-	sprintf(version, sizeof(version), "%i.%i.%i", XAAES_MAJ_VERSION, XAAES_MIN_VERSION, XAAES_PATCH_LEVEL);
-	sprintf(vversion, sizeof(vversion), "%s %s%s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable " : "", ASCII_DEV_STATUS);
-
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
@@ -497,9 +496,6 @@ again:
 #else
 	D.debug_file = NULL;
 #endif
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, ASCII_ARCH_TARGET);
-#else
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
 #endif
 
 	/* Print a text boot message */

@@ -630,7 +630,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 
 		if( !view_file )
 		{
-			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
+			(obtree + ABOUT_VERSION)->ob_spec.free_string = (char *)aes_version_verbose;
 			/* Set version date */
 #if !XAAES_RELEASE
 			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
