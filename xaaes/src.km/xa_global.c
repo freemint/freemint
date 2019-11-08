@@ -30,8 +30,8 @@ struct cookie_mvdi mvdi_api;
 
 unsigned short next_res = 0;
 
-char version[32];
-char vversion[128];
+char const aes_version[] = AES_ASCII_VERSION;
+char const aes_version_verbose[] = AES_ASCII_VERSION_VERBOSE;
 char arch_target[] = ASCII_ARCH_TARGET;
 char long_name[] = LONG_NAME;
 char aes_id[] = AES_ID;

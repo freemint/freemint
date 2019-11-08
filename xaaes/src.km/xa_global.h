@@ -40,8 +40,8 @@ extern struct cookie_mvdi mvdi_api;
 
 extern unsigned short next_res;
 
-extern char version[32];
-extern char vversion[128];
+extern char const aes_version[];
+extern char const aes_version_verbose[];
 
 extern char arch_target[];
 extern char long_name[];

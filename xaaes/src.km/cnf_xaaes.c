@@ -1159,7 +1159,7 @@ void write_inf(void)
 
 	fs_save(0);	/* update fs_data */
 
-	l = sprintf( buf, sizeof(buf), "### %s: written by %s ###", inf_fname, vversion );
+	l = sprintf( buf, sizeof(buf), "### %s: written by %s ###", inf_fname, aes_version_verbose);
 	if( xa_writeline( buf, l, of ) <= 0 )
 		goto Ret;
 

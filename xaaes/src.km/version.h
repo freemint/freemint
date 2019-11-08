@@ -117,8 +117,13 @@
 #define BC_MAJ		str (__GNUC__)
 #define BC_MIN 		str (__GNUC_MINOR__)
 #define BCOMPILER	str (__GNUC__) "." str (__GNUC_MINOR__) "." str (__GNUC_PATCHLEVEL__)
-//"gcc 2.95.3"
 
-// const char BCOMPILER [] = str (__GNUC__) "." str (__GNUC_MINOR__);
+#define AES_ASCII_VERSION str(XAAES_MAJ_VERSION) "." str(XAAES_MIN_VERSION) "." str(XAAES_PATCH_LEVEL)
+#if DEV_STATUS & AES_FDEVSTATUS_STABLE
+#define AES_ASCII_STABLE "Stable "
+#else
+#define AES_ASCII_STABLE ""
+#endif
+#define AES_ASCII_VERSION_VERBOSE AES_ASCII_VERSION " " AES_ASCII_STABLE ASCII_DEV_STATUS
 
 #endif /* _xaaes_version_h */
