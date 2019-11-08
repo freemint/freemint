@@ -512,7 +512,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 				kind, created_for_AES,
 				client->options.thinframe,
 				client->options.thinwork,
-				or);
+				&or);
 
 		alert_window = create_window(lock,
 					     do_winmesag,
@@ -523,7 +523,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 					     created_for_AES|created_for_ALERT,
 					     client->options.thinframe,
 					     client->options.thinwork,
-					     r, NULL, NULL);
+					     &r, NULL, NULL);
 		if (alert_window)
 		{
 			alert_window->window_status |= XAWS_FLOAT;

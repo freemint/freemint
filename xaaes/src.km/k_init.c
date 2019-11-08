@@ -987,7 +987,7 @@ k_init(unsigned long vm)
 				XaMENU,			/* menu standard widget */
 				created_for_AES,
 				-1, false, /*false,false,*/
-				screen.r,		/* current size */
+				&screen.r,		/* current size */
 				&screen.r,		/* maximum size (NB default would be rootwindow->wa) */
 				0);			/* need no remembrance */
 
@@ -1035,7 +1035,7 @@ k_init(unsigned long vm)
 			r.w = screen.r.w;
 		else
 			r.w += C.Aes->std_menu->area.x;
-		menu_window = create_window(0, NULL, NULL, C.Aes, true, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, false, false, r, 0,0);
+		menu_window = create_window(0, NULL, NULL, C.Aes, true, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, false, false, &r, 0,0);
 		if( !menu_window )
 			return -1;
 		strcpy( menu_window->wname, "menubar" );
@@ -1048,7 +1048,7 @@ k_init(unsigned long vm)
 		RECT r = {0,0,420,420};
 		bool nolist = false;
 
-		bgem_window = create_window(0, 0, 0, C.Aes, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, r, 0,0);
+		bgem_window = create_window(0, 0, 0, C.Aes, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, &r, 0,0);
 		if( !bgem_window )
 			return -1;
 		strcpy( bgem_window->wname, "bgem" );

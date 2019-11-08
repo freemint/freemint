@@ -582,7 +582,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 				BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 				created_for_AES,
 				C.Aes->options.thinframe,
-				C.Aes->options.thinwork, *(RECT *)&or);
+				C.Aes->options.thinwork, &or);
 		}
 		else
 		{
@@ -602,7 +602,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 					BACKDROP|BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 					created_for_AES,
 					C.Aes->options.thinframe, C.Aes->options.thinwork,
-					*rem, 0, NULL);
+					rem, 0, NULL);
 
 		if (!wind) goto fail;
 		wind->parent = TOP_WINDOW;

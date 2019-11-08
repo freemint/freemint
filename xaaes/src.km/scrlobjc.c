@@ -4489,7 +4489,7 @@ set_slist_object(int lock,
 				 true,			/* nolist */
 				 wkind,
 				 created_for_AES | created_for_SLIST,
-				 0, true/*false*/, r, NULL, NULL);
+				 0, true/*false*/, &r, NULL, NULL);
 	if (list->wi)
 	{
 		int dh;

@@ -104,7 +104,7 @@ Set_form_do(struct xa_client *client,
 }
 
 static struct xa_window *
-create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
+create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, const RECT *r)
 {
 	struct xa_window *wind = NULL;
 
@@ -128,7 +128,7 @@ create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TY
 			     dial,
 			     0, /* frame size */
 			     C.Aes->options.thinwork,
-			     *r,
+			     r,
 			     NULL,
 			     NULL);
 
@@ -140,7 +140,7 @@ calc_fmd_wind(struct widget_tree *wt, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT 
 {
 	DIAG((D_form, wt->owner, "Setup_form_do: Create window for %s", wt->owner->name));
 
-	obj_area(wt, aesobj(wt->tree, 0), r); //ob_rectangle(obtree, 0, r);
+	obj_area(wt, aesobj(wt->tree, 0), r);
 
 
 	*r = calc_window(0,
@@ -149,7 +149,7 @@ calc_fmd_wind(struct widget_tree *wt, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT 
 			 kind, dial,
 			 0,
 			 C.Aes->options.thinwork,
-			 *r);
+			 r);
 
 }
 
@@ -219,7 +219,7 @@ Setup_form_do(struct xa_client *client,
 			wt = new_widget_tree(client, obtree);
 		}
 		assert(wt);
-		calc_fmd_wind(wt, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, (RECT *)&client->fmd.r);
+		calc_fmd_wind(wt, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r);
 
 		if (!client->options.xa_nomove)
 		{

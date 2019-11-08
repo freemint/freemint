@@ -506,14 +506,14 @@ XA_wdlg_create(int lock, struct xa_client *client, AESPB *pb)
 				tp, created_for_WDIAL,
 				client->options.thinframe,
 				client->options.thinwork,
-				*(RECT *)&or);
+				&or);
 
 		wind = create_window(lock, send_app_message, NULL, client, false,
 				     tp,
 				     created_for_WDIAL,
 				     client->options.thinframe,
 				     client->options.thinwork,
-				     r, NULL, NULL);
+				     &r, NULL, NULL);
 
 		if (wind)
 		{
@@ -895,7 +895,7 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 							wind->active_widgets, wind->dial,
 							client->options.thinframe,
 							client->options.thinwork,
-							*(RECT *)&or);
+							&or);
 
 						r.x = wind->r.x;
 						r.y = wind->r.y;

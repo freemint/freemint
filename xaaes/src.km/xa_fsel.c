@@ -3534,7 +3534,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 						kind, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT*)&or);
+						&or);
 			if( fs_data.fs_width )
 			{
 				short dw = remember.w - fs_data.fs_width;
@@ -3580,7 +3580,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 						created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						remember,
+						&remember,
 						NULL,
 						NULL);
 

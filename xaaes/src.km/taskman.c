@@ -1977,7 +1977,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 						BORDER|CLOSER|NAME|TOOLBAR, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT *)&or);
+						&or);
 		}
 		else
 		{
@@ -1993,7 +1993,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 					created_for_AES,
 					C.Aes->options.thinframe,
 					C.Aes->options.thinwork,
-					taskman_r, NULL, NULL);
+					&taskman_r, NULL, NULL);
 
 		if (!wind) goto fail;
 		/* minimum height for this window */
@@ -2143,7 +2143,7 @@ create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, s
 			CLOSER|NAME, created_for_AES,
 			client->options.thinframe,
 			client->options.thinwork,
-			*(RECT *)&or);
+			&or);
 
 	/* Create the window */
 	wind = create_window(lock,
@@ -2154,7 +2154,7 @@ create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, s
 				created_for_AES,
 				client->options.thinframe,
 				client->options.thinwork,
-				r, NULL, NULL);
+				&r, NULL, NULL);
 
 	/* Set the window title */
 	if (title)
@@ -2988,7 +2988,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 						created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT *)&or);
+						&or);
 		}
 		else
 		{
@@ -3005,7 +3005,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 					created_for_AES,
 					C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						systemalerts_r,
+						&systemalerts_r,
 					NULL, NULL);
 		if (!wind) goto fail;
 

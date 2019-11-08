@@ -73,7 +73,7 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 				   created_for_CLIENT,
 				   client->options.thinframe,
 				   client->options.thinwork,
-				   r,
+				   &r,
 				   &r,
 				   NULL);
 
@@ -1849,7 +1849,7 @@ XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 				    created_for_CLIENT,
 				    client->options.thinframe,
 				    client->options.thinwork,
-				    *(const RECT *)&pb->intin[2]);
+				    (const RECT *)&pb->intin[2]);
 	}
 	pb->intout[0] = 1;
 	return XAC_DONE;

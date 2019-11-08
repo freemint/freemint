@@ -1226,7 +1226,7 @@ create_window(
 	WINDOW_TYPE dial,
 	int frame,
 	bool thinwork,
-	const RECT R,
+	const RECT *R,
 	const RECT *max,
 	RECT *remember)
 {
@@ -1234,8 +1234,7 @@ create_window(
 	struct xa_widget_theme *wtheme;
 	RECT r;
 
-	r = R;
-
+	r = *R;
 
 	if (max)
 	{
@@ -1453,7 +1452,7 @@ change_window_attribs(int lock,
 				 tp, w->dial,
 				 client->options.thinframe,
 				 client->options.thinwork,
-				 *(RECT *)&r);
+				 &r);
 	}
 	else
 		w->r = r;
@@ -3092,13 +3091,13 @@ lookup_wcc_entry(struct xa_client *client, short class, XA_WIND_ATTR tp)
 };
 
 RECT
-calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
+calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, const RECT *r)
 {
 	struct xa_window *w_temp;
 	struct xa_wc_cache *wcc;
 	short class;
 	RECT o;
-	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r.x, r.y, r.w, r.h));
+	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r->x, r->y, r->w, r->h));
 	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
@@ -3123,19 +3122,19 @@ calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WI
 		{
 			case WC_BORDER:
 			{
-				o = w2f(&wcc->delta, &r, false);
+				o = w2f(&wcc->delta, r, false);
 				break;
 			}
 			default:
 			{
-				o = f2w(&wcc->delta, &r, false);
+				o = f2w(&wcc->delta, r, false);
 				break;
 			}
 		}
 	}
 	else
 	{
-		o = r;
+		o = *r;
 	}
 	return o;
 }
