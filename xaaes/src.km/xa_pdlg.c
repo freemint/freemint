@@ -2394,7 +2394,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp)
 					tp, created_for_WDIAL,
 					client->options.thinframe,
 					client->options.thinwork,
-					*(RECT *)&or);
+					&or);
 
 			if (!(wind = create_window(0,
 					     send_app_message,
@@ -2405,7 +2405,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp)
 					     created_for_WDIAL,
 					     client->options.thinframe,
 					     client->options.thinwork,
-					     r, NULL, NULL)))
+					     &r, NULL, NULL)))
 				goto fail;
 
 			/* set a default-name */

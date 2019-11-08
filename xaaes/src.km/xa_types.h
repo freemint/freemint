@@ -2912,7 +2912,7 @@ struct xa_module_api
 							WINDOW_TYPE dial,
 							int frame,
 							bool thinwork,
-							const RECT R,
+							const RECT *R,
 							const RECT *max,
 							RECT *remember);
 

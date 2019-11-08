@@ -1095,7 +1095,7 @@ XA_fnts_create(int lock, struct xa_client *client, AESPB *pb)
 				tp, created_for_WDIAL,
 				client->options.thinframe,
 				client->options.thinwork,
-				*(RECT *)&or);
+				&or);
 
 		if (!(wind = create_window(lock,
 				     send_app_message,
@@ -1106,7 +1106,7 @@ XA_fnts_create(int lock, struct xa_client *client, AESPB *pb)
 				     created_for_WDIAL,
 				     client->options.thinframe,
 				     client->options.thinwork,
-				     r, NULL, NULL)))
+				     &r, NULL, NULL)))
 			goto memerr;
 
 

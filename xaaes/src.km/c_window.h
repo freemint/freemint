@@ -43,7 +43,7 @@ struct xa_window * _cdecl create_window(int lock,
 				WINDOW_TYPE dial,
 				int thinframe,
 				bool thinwork,
-				const RECT r, const RECT *max, RECT *rem);
+				const RECT *r, const RECT *max, RECT *rem);
 
 void change_window_attribs(int lock,
 			   struct xa_client *client,
@@ -93,7 +93,7 @@ RECT	f2w(RECT *delta, const RECT *in, bool chkwh);
 void	delete_wc_cache(struct xa_wc_cache **wcc);
 RECT	calc_window(int lock, struct xa_client *client, int request,
 		    XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
-		    RECT r);
+		    const RECT *r);
 
 void _cdecl	top_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	bottom_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);

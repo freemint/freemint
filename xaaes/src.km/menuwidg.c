@@ -1138,7 +1138,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 /* ************ */
 	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", (unsigned long)tab, r.x, r.y, r.w, r.h));
 
-	r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+	r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, &r);
 
 	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d (%d/%d/%d/%d)",
 		rdx, rdy, r.x, r.y, r.w, r.h));
@@ -1171,11 +1171,11 @@ display_popup(Tab *tab, short rdx, short rdy)
 	if (mod_h)
 	{
 
-		r = calc_window(tab->lock, tab->client, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
+		r = calc_window(tab->lock, tab->client, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, &r);
 
 		tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW;
 
-		r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+		r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, &r);
 	}
 
 	r = popup_inside(tab, r);
@@ -1190,7 +1190,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 				tp,
 				created_for_AES|created_for_POPUP,
 				mg, true,
-				r,
+				&r,
 				&r, NULL);
 
 	if (wind)
