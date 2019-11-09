@@ -43,242 +43,250 @@
 
 #define LF_OFFS 3
 #define LF_SEPCH	'_'
-#define LF_COMMCH '#'
-#define LF_SEPSTR "_"
+#define LF_COMMCH	'#'
+#define LF_SEPSTR	"_"
 #define LF_COMMSTR	"#"
 
-#define RSL_MAX_ERRORS	10	/* maximum number of errors before translator gives up */
+#define RSL_MAX_ERRORS	10				/* maximum number of errors before translator gives up */
 
 
-static int rsl_errors = 0;	/* maximum alerts for invalid rsl-file */
+static int rsl_errors = 0;				/* maximum alerts for invalid rsl-file */
 static int reported_skipped = 0;
 static long rsl_lno = 1;
 
-enum{
+enum
+{
 	NOT_FOUND = 0,
 	OFOUND = -1,
 	TFOUND = 1
 };
-
-static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p, long i )
-{
-	short blen, j;
-
-	if( !p )
-		return 0;
-
-	for( blen = j = 0; j < 2 && !blen; j++ )
-	{
-		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, (char*)p, i)))
-			break;	/* found */
-		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
-		{
-			 BLOG((0,"translate:'%s':rewind", *p ));
-			xa_rewind( rfp );
-			rsl_lno = 1;
-			reported_skipped = -1;
-		}
-		else
-			break;	/* give up */
-	}
-	if( !blen )
-	{
-		BLOG((0, "%s:translate: item '%s': not found", client->name, *p ));
-	}
-	return blen;
-}
-
-
-short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **txt, long l )
-{
-	short blen = 0;
-	char buf[256];
-
-	if( !rfp || !txt || !*txt || !**txt )
-		return 0;
-
-	if( client->options.rsc_lang == WRITE )
-	{
-		int len = sprintf( buf, sizeof(buf), "nn:%s", *txt);
-
-		if( *(buf + len - 1) == ' ' )
-		{
-			*(buf + len) = '@';
-			len++;
-			*(buf + len) = 0;
-		}
-		blen = len;
-		rsc_lang_file( WRITE, rfp, buf, len );
-		rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
-
-	}
-	else if( client->options.rsc_lang == READ )
-	{
-		blen = translate_string( client, rfp, txt, l );
-	}
-
-	return blen;
-}
-
 
 
 /*
  * md=REPLACE buf is char**
  *            l=-1: don't translate
  */
-XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
+static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 {
-	switch( md )
+	char lbuf[256];
+	char *p = 0;
+	char *in = *buf;
+	bool strip = true;
+	int len = strlen(in);
+	int found;
+	short blen = 0;
+	short clen;
+	short cmplen;
+
+	if (chgl && *chgl == 2)
 	{
-		case OREAD:
-			rsl_errors = 0;
-			rsl_lno = 1;
-			reported_skipped = 0;
-			BLOG((0,"open lang-file '%s'", buf ));
-		return xa_fopen( buf, O_RDONLY );
-		case OWRITE:
-		return xa_fopen( buf, O_WRONLY|O_CREAT|O_TRUNC);
-		case READ:
+		strip = false;
+	}
+
+	if (!len)
 		return 0;
-		case WRITE:
-			if (fp)
-			{
-				xa_writeline( buf, l, fp );
-			}
-		return 0;
-		case CLOSE:
-			xa_fclose(fp);
-		return 0;
-		case REPLACE:
+	/* ignore trailing blanks for comparison */
+	for (clen = len - 1; clen && in[clen] == ' '; clen--)
+		;
+	clen++;
+
+	for (found = NOT_FOUND, lbuf[0] = 0; found == NOT_FOUND && lbuf[0] != -1;)
+	{
+		for (lbuf[0] = 0; lbuf[0] != LF_SEPCH;)
 		{
-			char lbuf[256], *p = 0, *in = *((char**)buf);
-			bool strip = true;
-			int len = strlen(in), found;
-			short blen = 0, clen, cmplen, *chgl = 0;
-
-			if( l > 0 )
-				chgl = (short*)l;
-			if( chgl && *chgl == 2 )
+			if (!xa_readline(lbuf, sizeof(lbuf) - 1, fp))
 			{
-				strip = false;
+				lbuf[0] = -1;
+				break;
 			}
+			rsl_lno++;
+			if (lbuf[0] == LF_COMMCH)
+				continue;
+			if (lbuf[0] == '\0')
+				continue;
 
-			if( !len )
-				return 0;
-			/* strip trailing blanks */
-			for( clen = len - 1; clen && in[clen] == ' '; clen-- )
-				;
-			clen++;
-
-			for( found = NOT_FOUND, lbuf[0] = 0; found == NOT_FOUND && lbuf[0] != -1; )
+			if (lbuf[0] == LF_SEPCH)
+				break;
+			if (lbuf[1] == '\0' ||
+				(lbuf[LF_OFFS - 1] != ':' && lbuf[LF_OFFS - 1] != '+' && lbuf[LF_OFFS - 1] != ';'))
 			{
-				for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
-				{
-					if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
-						lbuf[0] = -1;
-						break;
-					}
-					rsl_lno++;
-					if( lbuf[0] == LF_COMMCH )
-						continue;
-
-					if( lbuf[0] == LF_SEPCH )
-						break;
-
-					cmplen = clen;
-
-					p = lbuf + LF_OFFS;
-					blen = strlen( p );
-
-					/* input-length */
-					if( lbuf[blen+LF_OFFS-1] == '@' && lbuf[blen+LF_OFFS-2] == ' ' )
-					{
-						blen--;
-						cmplen = len;
-					}
-					lbuf[blen+LF_OFFS] = 0;
-
-					if( found == 0 )
-					{
-						if( l == -1 )
-						{
-							found = OFOUND;
-							break;
-						}
-						if( !strnicmp( lbuf, "nn", 2 ) )
-						{
-							if( (*p == '-' && *in == '-') || !strncmp( p, in, cmplen ) )
-							{
-								found = OFOUND;
-								if( lbuf[LF_OFFS-1] == ';')	/* dont translate this */
-									break;
-								if( lbuf[LF_OFFS-1] == '+' )	/* realloc */
-									strip = false;
-							}
-							else if( reported_skipped == 0 )
-							{
-								BLOG((0,"%ld:'%s' skipped (expected:'%s')", rsl_lno-1, p, in ));
-								reported_skipped = 1;
-							}
-						}
-					}
-					else if( !strncmp( lbuf, cfg.lang, 2 ) )
-					{
-						/* copy shorter length */
-						if( blen > len && strip == true )
-							blen = len;
-						found = TFOUND;
-						break;	/* translation found */
-					}
-				}
+				BLOG((0, "%ld:'%s': language id expected", rsl_lno, lbuf));
+				continue;
 			}
+			cmplen = clen;
 
-			if( found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	/* found */
+			p = lbuf + LF_OFFS;
+			blen = strlen(p);
+
+			/* input-length */
+			if (lbuf[blen + LF_OFFS - 1] == '@' && lbuf[blen + LF_OFFS - 2] == ' ')
 			{
-				if( blen > len && strip == false )
-				{
-					in = xa_strdup( p );
-					*((char**)buf) = in;
-				}
-				else
-				{
-					if( blen > 0 )
-					{
-						in[blen] = 0;
-						memcpy( in, p, blen );
-					}
-					else
-						blen = len;
-				}
+				blen--;
+				cmplen = len;
 			}
-			else
-				blen = clen;
+			lbuf[blen + LF_OFFS] = 0;
 
-			while( lbuf[0] != LF_SEPCH )
+			if (found == NOT_FOUND)
 			{
-				if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) )
+				if (chgl && *chgl == -1)
 				{
+					found = OFOUND;
 					break;
 				}
-				rsl_lno++;
-			}
-			if( chgl && *chgl != 2 )
+				if (strncmp(lbuf, "nn", 2) == 0)
+				{
+					if ((*p == '-' && *in == '-') || strncmp(p, in, cmplen) == 0)
+					{
+						found = OFOUND;
+						if (lbuf[LF_OFFS - 1] == ';')	/* dont translate this */
+							break;
+						if (lbuf[LF_OFFS - 1] == '+')	/* realloc */
+							strip = false;
+					} else if (reported_skipped == 0)
+					{
+						BLOG((0, "%ld:'%s' skipped (expected:'%s')", rsl_lno, p, in));
+						reported_skipped = 1;
+					}
+				}
+			} else if (strncmp(lbuf, cfg.lang, 2) == 0)
 			{
-				*chgl = (strip == false);
+				/* copy shorter length */
+				if (blen > len && strip)
+					blen = len;
+				found = TFOUND;
+				break;					/* translation found */
 			}
-			switch( found )
-			{
-			case TFOUND:
-				return (XA_FILE*)(long)blen;
-			case OFOUND:
-				return (XA_FILE*)(long)-blen;
-			default:
-				return 0;
-			}
-
 		}
-		default:
+	}
+
+	if (found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH)	/* found */
+	{
+		if (blen > len && strip == false)
+		{
+			in = xa_strdup(p);
+			*buf = in;
+		} else
+		{
+			if (blen > 0)
+			{
+				in[blen] = 0;
+				memcpy(in, p, blen);
+			} else
+			{
+				blen = len;
+			}
+		}
+	} else
+	{
+		blen = clen;
+	}
+
+	while (lbuf[0] != LF_SEPCH)
+	{
+		if (!xa_readline(lbuf, sizeof(lbuf) - 1, fp))
+		{
+			break;
+		}
+		rsl_lno++;
+	}
+	if (chgl && *chgl != 2)
+	{
+		*chgl = strip == false;
+	}
+	switch (found)
+	{
+	case TFOUND:
+		return blen;
+	case OFOUND:
+		return -blen;
+	default:
 		return 0;
+	}
+}
+
+
+static short translate_string(struct xa_client *client, XA_FILE * rfp, char **p, short *chgl)
+{
+	short blen;
+	short j;
+
+	UNUSED(client);
+	if (!p)
+		return 0;
+
+	for (blen = j = 0; j < 2 && !blen; j++)
+	{
+		if ((blen = rsc_lang_file_replace(rfp, p, chgl)))
+			break;						/* found */
+		if (1 || rsl_errors++ < RSL_MAX_ERRORS)
+		{
+			BLOG((0, "translate:'%s':rewind", *p));
+			xa_rewind(rfp);
+			rsl_lno = 1;
+			reported_skipped = -1;
+		} else
+			break;						/* give up */
+	}
+	if (!blen)
+	{
+		BLOG((0, "%s:translate: item '%s': not found", client->name, *p));
+	}
+	return blen;
+}
+
+
+short rsc_trans_rw(struct xa_client *client, XA_FILE *rfp, char **txt, short *chgl)
+{
+	short blen = 0;
+	char buf[256];
+
+	if (!rfp || !txt || !*txt || !**txt)
+		return 0;
+
+	if (client->options.rsc_lang == WRITE)
+	{
+		int len = sprintf(buf, sizeof(buf), "nn:%s", *txt);
+
+		if (*(buf + len - 1) == ' ')
+		{
+			*(buf + len) = '@';
+			len++;
+			*(buf + len) = 0;
+		}
+		blen = len;
+		rsc_lang_file_write(rfp, buf, len);
+		rsc_lang_file_write(rfp, LF_SEPSTR, 1);
+	} else if (client->options.rsc_lang == READ)
+	{
+		blen = translate_string(client, rfp, txt, chgl);
+	}
+
+	return blen;
+}
+
+
+
+XA_FILE *rsc_lang_file_open(const char *name)
+{
+	rsl_errors = 0;
+	rsl_lno = 1;
+	reported_skipped = 0;
+	BLOG((0, "open lang-file '%s'", name));
+	return xa_fopen(name, O_RDONLY);
+}
+
+
+XA_FILE *rsc_lang_file_create(const char *name)
+{
+	return xa_fopen(name, O_WRONLY | O_CREAT | O_TRUNC);
+}
+
+
+void rsc_lang_file_write(XA_FILE *fp, const char *buf, long l)
+{
+	if (fp)
+	{
+		xa_writeline(buf, l, fp);
 	}
 }
 
@@ -290,15 +298,15 @@ void rsc_lang_translate_xaaes_strings(struct xa_client *client, XA_FILE *rfp)
 
 	if (trans_strings[0] == 0 || client->options.rsc_lang == 0)
 		return;
-	if( client->options.rsc_lang == WRITE )
+	if (client->options.rsc_lang == WRITE)
 	{
-		rsc_lang_file( WRITE, rfp, "# - Internal Strings -", 22 );
+		rsc_lang_file_write(rfp, "# - Internal Strings -", 22);
 	}
-	for(i = 0; trans_strings[i]; i++)
+	for (i = 0; trans_strings[i]; i++)
 	{
-		for( t = trans_strings[i]; *t; t++)
+		for (t = trans_strings[i]; *t; t++)
 		{
-			if( **t )
+			if (**t)
 			{
 				char **t_2;
 				short ptr_seen = 0;
@@ -307,111 +315,115 @@ void rsc_lang_translate_xaaes_strings(struct xa_client *client, XA_FILE *rfp)
 				 * gcc4 puts all strings in the same order in the out-file as they are in the source
 				 * gcc2 (and maybe also others) uses another order, so a search for the current string is done
 				 */
-				for( t_2 = trans_strings[i]; t_2 < t; t_2++)
-					if( *t_2 == *t )
+				for (t_2 = trans_strings[i]; t_2 < t; t_2++)
+					if (*t_2 == *t)
 					{
 						ptr_seen = -1;
 						break;
 					}
 
-				rsc_trans_rw( client, rfp, t, ptr_seen );
+				rsc_trans_rw(client, rfp, t, &ptr_seen);
 			}
 		}
 	}
-	trans_strings[0] = 0;	/* no further translation possible */
+	trans_strings[0] = 0;				/* no further translation possible */
 }
 
 
 void rsc_lang_translate_object(struct xa_client *client, XA_FILE *rfp, OBJECT *obj, struct rsc_scan *scan)
 {
 	char **p = 0;
-	short blen, chgl;
+	short blen;
+	short chgl = 0;
 
-	if( object_has_tedinfo(obj) )
+	if (object_has_tedinfo(obj))
 	{
 		TEDINFO *ted = object_get_tedinfo(obj, NULL);
-		if( ted )
-		{
-			p = &ted->te_ptext; /* FIXME: must translate template, not text for FTEXT/FBOXTEXT */
-		}
-	}
-	else
-		p = &obj->ob_spec.free_string;
 
-	if( !p || !*p || !**p || strchr(*p, '\r') != 0 || strchr(*p, '\n') != 0)
+		if (ted)
+		{
+			p = &ted->te_ptext;			/* FIXME: must translate template, not text for FTEXT/FBOXTEXT */
+		}
+	} else
+	{
+		p = &obj->ob_spec.free_string;
+	}
+
+	if (!p || !*p || !**p || strchr(*p, '\r') != 0 || strchr(*p, '\n') != 0)
 		return;
 
-	if( client->options.rsc_lang == WRITE )
+	if (client->options.rsc_lang == WRITE)
 	{
-		if( obj->ob_type == G_TITLE )
+		if (obj->ob_type == G_TITLE)
 		{
-			if( scan->n_titles == 0 )
-				rsc_lang_file( WRITE, rfp, "### Menubar ###", 15 );
+			if (scan->n_titles == 0)
+				rsc_lang_file_write(rfp, "### Menubar ###", 15);
 
 			scan->titles[scan->n_titles++] = *p;
 			scan->title = 0;
-		}
-		else if( obj->ob_type == G_STRING && scan->title > 0 && scan->titles[scan->title-1] )
+		} else if (obj->ob_type == G_STRING && scan->title > 0 && scan->titles[scan->title - 1])
 		{
 			char buf[256];
-			int l = sprintf( buf, sizeof(buf)-1, "### - \"%s\"-menu - ###", scan->titles[scan->title-1] );
-			rsc_lang_file( WRITE, rfp, buf, l );
-			scan->titles[scan->title-1] = 0;
-		}
+			int l = sprintf(buf, sizeof(buf) - 1, "### - \"%s\"-menu - ###", scan->titles[scan->title - 1]);
 
+			rsc_lang_file_write(rfp, buf, l);
+			scan->titles[scan->title - 1] = 0;
+		}
 	}
 
-	blen = rsc_trans_rw( client, rfp, p, obj->ob_type == G_TITLE ? (long)&chgl : (scan->title > 0 ? (long)&scan->change_lo[scan->title-1] : 0) );
+	blen = rsc_trans_rw(client, rfp, p,
+			 obj->ob_type == G_TITLE ? &chgl :
+			 scan->title > 0 ? &scan->change_lo[scan->title - 1] : 0);
 
-	if( blen )
+	if (blen)
 	{
-		if( client->options.rsc_lang == READ )
+		if (client->options.rsc_lang == READ)
 		{
-			if( blen > 0 )	/* orig and trans found */
+			if (blen > 0)				/* orig and trans found */
 			{
-				if( obj->ob_type == G_BUTTON && (obj->ob_flags & OF_SELECTABLE) )
+				if (obj->ob_type == G_BUTTON && (obj->ob_flags & OF_SELECTABLE))
 				{
 					obj->ob_state &= 0x80ff;	/* make own shortcuts */
 				}
-			}
-			else
-				blen = -blen;		/* only orig found */
-
-			if( obj->ob_type == G_STRING )
+			} else
 			{
-				if( **p != '-' )
+				blen = -blen;			/* only orig found */
+			}
+
+			if (obj->ob_type == G_STRING)
+			{
+				if (**p != '-')
 				{
-					if( *(*p + blen - 1) != ' ' )
+					if (*(*p + blen - 1) != ' ')
 						blen++;
-					if( obj->ob_x > 0 )
+					if (obj->ob_x > 0)
 						scan->keep_w = 1;	/* more than one obj in one line -> don't adjust width */
-					if( blen + obj->ob_x > scan->mwidth )
+					if (blen + obj->ob_x > scan->mwidth)
 					{
 						scan->mwidth = blen + obj->ob_x;
 					}
 				}
-			}
-			else if( obj->ob_type == G_TITLE && scan->n_titles >= 0 )
+			} else if (obj->ob_type == G_TITLE && scan->n_titles >= 0)
 			{
 				short s;
 
-				if( *(*p + blen - 1) != ' ' )
+				if (*(*p + blen - 1) != ' ')
 					blen++;
 				s = blen - obj->ob_width;
 				scan->title = 0;
-				if( scan->n_titles > 0 )
-					obj->ob_x += scan->shift[scan->n_titles-1];
+				if (scan->n_titles > 0)
+					obj->ob_x += scan->shift[scan->n_titles - 1];
 
-				if( s && chgl == true )
+				if (s && chgl == true)
 				{
 					obj->ob_width = blen;
 					scan->shift[scan->n_titles] = s;
 				}
 				scan->change_lo[scan->n_titles] = chgl * 2;
 
-				if( scan->n_titles > 0 && scan->n_titles < MAX_TITLES )
+				if (scan->n_titles > 0 && scan->n_titles < MAX_TITLES)
 				{
-					scan->shift[scan->n_titles] += scan->shift[scan->n_titles-1];
+					scan->shift[scan->n_titles] += scan->shift[scan->n_titles - 1];
 				}
 				scan->n_titles++;
 			}

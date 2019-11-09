@@ -117,7 +117,6 @@ void add_keybd_switch(char *k)
 		return;
 
 	lang_from_akp( lang, 1 );
-	lang[2] = 0;
 	sprintf( buf, sizeof(buf), "%c             %s %s(%s)", cfg.keyboards.c, xa_strings[SW_KEYBD], k, lang );
 	if( athis[0] )
 	{
