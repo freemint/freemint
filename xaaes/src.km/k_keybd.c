@@ -29,7 +29,6 @@
 
 #include "xaaes.h"
 
-//#include "debug.h"
 #include "about.h"
 #include "app_man.h"
 #include "xa_appl.h"
@@ -84,7 +83,6 @@ short key_conv( struct xa_client *client, short key )
 /* Keystrokes must be put in a queue if no apps are waiting yet.
  * There also may be an error in the timer event code.
  */
-//struct key_queue pending_keys;
 
 /*
  * Keyboard input handler
@@ -148,7 +146,7 @@ cancel_keyqueue(struct xa_client *client)
 	client->kq_count = 0;
 }
 
-//#include "mint/filedesc.h"
+
 void
 queue_key(struct xa_client *client, const struct rawkey *key)
 {
@@ -227,10 +225,6 @@ XA_keyboard_event(int lock, const struct rawkey *key)
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
 
-
-// 	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s, waiting_pb=%lx",
-// 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
-// 		client->name, keywind ? keywind->owner->name : "no keywind", client->waiting_pb);
 
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
@@ -311,11 +305,11 @@ int switch_keyboard( char *tbname )
 static void bus_error(void)
 {
 	long *sp = (long*)get_sp();
-	 DBG((1,"%s:BUS-ERROR at bus_error:%lx,sp=%lx:%lx", get_curproc()->name, bus_error, sp, *sp));
-	 KDBG(("BUS-ERROR at bus_error:%lx", bus_error));
+	BLOG((1,"%s:BUS-ERROR at bus_error:%lx,sp=%lx:%lx", get_curproc()->name, bus_error, sp, *sp));
+	KDBG(("BUS-ERROR at bus_error:%lx", bus_error));
 	*(long*)-3L = 44;
-	 KDBG(("BUS-ERROR OK"));
-	 DBG((1,"BUS-ERROR at bus_error OK"));
+	KDBG(("BUS-ERROR OK"));
+	BLOG((1,"BUS-ERROR at bus_error OK"));
 }
 #endif
 
@@ -423,7 +417,7 @@ kernel_key(int lock, struct rawkey *key)
 		{
 			short  wheel = 0;
 			short  click = 0;
-			struct moose_data md = mainmd; //{ 0, 0, 0, 0, 0, 0, 0, 0 };
+			struct moose_data md = mainmd;
 
 			md.x = md.sx;
 			md.y = md.sy;
@@ -500,7 +494,7 @@ kernel_key(int lock, struct rawkey *key)
 		}
 
 #if WITH_BBL_HELP
-		if( nk != 'D' )	// allow screenshot
+		if( nk != 'D' )	/* allow screenshot */
 		{
 			xa_bubble( lock, bbl_close_bubble2, 0, 0 );
 		}
@@ -523,7 +517,7 @@ kernel_key(int lock, struct rawkey *key)
 			app_or_acc_in_front( lock, client );
 			return true;
 
-		case '0':	// toggle main-menubar
+		case '0':	/* toggle main-menubar */
 			toggle_menu(lock, -1);
 			return true;
 
@@ -541,9 +535,10 @@ kernel_key(int lock, struct rawkey *key)
 				struct xa_widget *widg;
 				short mb = cfg.menu_bar;
 	
-	//			if (nk == NK_ESC && !TAB_LIST_START)
-	//				goto otm;
-	
+#if 0
+				if (nk == NK_ESC && !TAB_LIST_START)
+					goto otm;
+#endif
 				client = NULL;
 				widg = NULL;
 	
@@ -802,7 +797,7 @@ kernel_key(int lock, struct rawkey *key)
 				memset( &md, 0, sizeof(md) );
 				md.x = TOP_WINDOW->r.x + TOP_WINDOW->r.w/2;
 				md.y = TOP_WINDOW->r.y + TOP_WINDOW->r.h/2;
-				md.state = 1;//MBS_RIGHT;
+				md.state = MBS_LEFT;
 				post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
 			}
 			return true;
@@ -848,19 +843,19 @@ kernel_key(int lock, struct rawkey *key)
 #endif
 
 #if WITH_BKG_IMG
-		case ':':	// .: make background-image
-			//if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
+		case ':':	/* .: make background-image */
+			/* if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) ) */
 			{
 				do_bkg_img( C.Aes, 1, 0 );
 			}
 			return true;
 #endif
 
-		case '.':	// .: remove widgets and display top-window full-screen, todo: restore
+		case '.':	/* .: remove widgets and display top-window full-screen, todo: restore */
 			remove_window_widgets(lock, 1);
 			return true;
 
-		case ',':	// ,: remove widgets
+		case ',':	/* ,: remove widgets */
 			remove_window_widgets(lock, 0);
 			return true;
 
@@ -882,7 +877,7 @@ kernel_key(int lock, struct rawkey *key)
 			else
 			{
 				DIAGS(("Recover palette"));
-				//if (screen.planes <= 8)
+				/* if (screen.planes <= 8) */
 				{
 					set_syspalette( C.Aes->vdi_settings->handle, screen.palette);
 				}
@@ -905,11 +900,10 @@ kernel_key(int lock, struct rawkey *key)
 				if (sdmaster)
 				{
 					int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
-					//sdmaster = "xaz";
 					if (ret < 0)
 					{
 						if( strlen(sdmaster) > 12 )
-							sdmaster += (strlen(sdmaster) - 12);	// ->fix ALERT!
+							sdmaster += (strlen(sdmaster) - 12);	/* ->fix ALERT! */
 						ALERT((xa_strings[AL_SDMASTER], sdmaster));
 					}
 					else
@@ -999,10 +993,7 @@ keyboard_input(int lock)
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
 
- 		//DBG((0,"f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
-// 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
-
-	// this produces wheel-events on some F-keys (eg. S-F10)
+		/* this produces wheel-events on some F-keys (eg. S-F10) */
 #if EIFFEL_SUPPORT
 		if ( !key.raw.conin.state && cfg.eiffel_support && eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
 		{
@@ -1015,8 +1006,6 @@ keyboard_input(int lock)
 		/* Translate the BIOS raw data into AES format */
 		key.aes = (key.raw.conin.scan << 8) | key.raw.conin.code;
 		key.norm = 0;
-
-// 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
 		if (kernel_key(lock, &key) == false )
 		{
