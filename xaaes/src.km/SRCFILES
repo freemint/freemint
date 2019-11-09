@@ -62,6 +62,7 @@ HEADER = \
 	xa_objc.h \
 	xa_pdlg.h \
 	xa_rsrc.h \
+	xa_rsc_lang.h \
 	xa_scrp.h \
 	xa_shel.h \
 	xa_strings.h \
@@ -127,6 +128,7 @@ COBJS = \
 	xa_objc.c \
 	xa_pdlg.c \
 	xa_rsrc.c \
+	xa_rsc_lang.c \
 	xa_scrp.c \
 	xa_shel.c \
 	xa_strings.c \

@@ -181,7 +181,6 @@
 #define CASCADE			16	/* Max depth of cascading menus */
 
 #define MAX_KEYBOARDS 4     /* maximum number of keytables to cycle */
-#define RSL_MAX_ERRORS	10	/* maximum number of errors before translator gives up */
 
 /* Maximum number of windows that can be created concurrently */
 #define MAX_WINDOWS 		4096	/* should this be enough? */

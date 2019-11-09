@@ -1157,7 +1157,6 @@ add_slash(char *p, char *to)
 		strcat(pl, to);
 }
 #if 0
-char *strmrchr( char *s, char *p );
 /*
  * remove last item from a path
  */

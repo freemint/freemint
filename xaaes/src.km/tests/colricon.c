@@ -20,6 +20,7 @@ static int aes_supports_coloricons(void)
 {
 	OBJECT *tree = NULL;
 	OBJECT *obj;
+	long *lp;
 
 	if (!rsrc_gaddr(R_TREE, 0, &tree) || tree == NULL)
 		return FALSE;
@@ -39,7 +40,8 @@ static int aes_supports_coloricons(void)
 	{
 		return FALSE;
 	}
-	if (obj->ob_spec.index == ((*((long *)&aes_global[7]))))
+	lp = (long *)&aes_global[7];
+	if (obj->ob_spec.index == *lp)
 	{
 		return FALSE;
 	}
