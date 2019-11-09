@@ -50,9 +50,9 @@
 #define RSL_MAX_ERRORS	10				/* maximum number of errors before translator gives up */
 
 
-static int rsl_errors = 0;				/* maximum alerts for invalid rsl-file */
-static int reported_skipped = 0;
-static long rsl_lno = 1;
+static int rsl_errors;					/* maximum alerts for invalid rsl-file */
+static int reported_skipped;
+static long rsl_lno;
 
 enum
 {
@@ -163,7 +163,7 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 	{
 		if (blen > len && strip == false)
 		{
-			in = xa_strdup(p);
+			in = xa_strdup(p); /* FIXME: will be leaked */
 			*buf = in;
 		} else
 		{
@@ -269,7 +269,7 @@ short rsc_trans_rw(struct xa_client *client, XA_FILE *rfp, char **txt, short *ch
 XA_FILE *rsc_lang_file_open(const char *name)
 {
 	rsl_errors = 0;
-	rsl_lno = 1;
+	rsl_lno = 0;
 	reported_skipped = 0;
 	BLOG((0, "open lang-file '%s'", name));
 	return xa_fopen(name, O_RDONLY);
