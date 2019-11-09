@@ -25,7 +25,6 @@
 #include "xa_aes.h"
 #include "xa_global.h"
 #include "xa_strings.h"
-#include "matchpat.h"
 
 #include "draw_obj.h"
 #include "trnfm.h"
@@ -39,6 +38,9 @@
 #include "mint/fcntl.h"
 #include "mint/stat.h"
 #include "mint/signal.h"
+
+#include "xa_rsc_lang.h"
+
 
 /*
  * RESOURCE FILE HANDLER
@@ -186,7 +188,6 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 }
 #else
 
-extern int init_pal_cref;
 #define RECALC_REMAP_LUT 127
 static short *
 transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *icon, short *map, long len, int planes, short vdih)
@@ -411,15 +412,6 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	}
 }
 
-#define LF_OFFS 3
-#define LF_SEPCH	'_'
-#define LF_COMMCH '#'
-#define LF_SEPSTR "_"
-#define LF_COMMSTR	"#"
-
-static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **buf, long l );
-static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l );
-
 static void
 fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char **extra, XA_FILE *rfp)
 {
@@ -433,7 +425,7 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 		*p += (unsigned long)b;
 		if( rfp )
 		{
-			if( !strmchr(*p, "\r\n") )
+			if (strchr(*p, '\r') == 0 && strchr(*p, '\n') == 0)
 				rsc_trans_rw( client, rfp, p, 0 );
 		}
 
@@ -448,7 +440,7 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 static void
 fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, char **extra)
 {
-	if ((client->options.app_opts & XAAO_OBJC_EDIT))
+	if (client->options.app_opts & XAAO_OBJC_EDIT)
 	{
 		XTEDINFO *ei;
 
@@ -655,244 +647,6 @@ static int make_rscl_name( char *in, char *out )
 }
 
 
-static int rsl_errors = 0;	/* maximum alerts for invalid rsl-file */
-static int reported_skipped = 0;
-static long rsl_lno = 1;
-
-enum{
-	NOT_FOUND=0,
-	OFOUND=-1,
-	TFOUND=1
-};
-
-/*
- * md=REPLACE buf is char**
- *            l=-1: don't translate
- */
-static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
-{
-	switch( md )
-	{
-		case OREAD:
-			rsl_errors = 0;
-			rsl_lno = 1;
-			reported_skipped = 0;
-			BLOG((0,"open lang-file '%s'", buf ));
-		return xa_fopen( buf, O_RDONLY );
-		case OWRITE:
-		return xa_fopen( buf, O_WRONLY|O_CREAT|O_TRUNC);
-		case READ:
-		return 0;
-		case WRITE:
-			if (fp)
-			{
-				xa_writeline( buf, l, fp );
-			}
-		return 0;
-		case CLOSE:
-			xa_fclose(fp);
-		return 0;
-		case REPLACE:
-		{
-			char lbuf[256], *p = 0, *in = *((char**)buf);
-			bool strip = true;
-			int len = strlen(in), found;
-			short blen = 0, clen, cmplen, *chgl = 0;
-
-			if( l > 0 )
-				chgl = (short*)l;
-			if( chgl && *chgl == 2 )
-			{
-				strip = false;
-			}
-
-			if( !len )
-				return 0;
-			/* strip trailing blanks */
-			for( clen = len - 1; clen && in[clen] == ' '; clen-- )
-				;
-			clen++;
-
-			for( found = NOT_FOUND, lbuf[0] = 0; found == NOT_FOUND && lbuf[0] != -1; )
-			{
-				for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
-				{
-					if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
-						lbuf[0] = -1;
-						break;
-					}
-					rsl_lno++;
-					if( lbuf[0] == LF_COMMCH )
-						continue;
-
-					if( lbuf[0] == LF_SEPCH )
-						break;
-
-					cmplen = clen;
-
-					p = lbuf + LF_OFFS;
-					blen = strlen( p );
-
-					/* input-length */
-					if( lbuf[blen+LF_OFFS-1] == '@' && lbuf[blen+LF_OFFS-2] == ' ' )
-					{
-						blen--;
-						cmplen = len;
-					}
-					lbuf[blen+LF_OFFS] = 0;
-
-					if( found == 0 )
-					{
-						if( l == -1 )
-						{
-							found = OFOUND;
-							break;
-						}
-						if( !strnicmp( lbuf, "nn", 2 ) )
-						{
-							if( (*p == '-' && *in == '-') || !strncmp( p, in, cmplen ) )
-							{
-								found = OFOUND;
-								if( lbuf[LF_OFFS-1] == ';')	/* dont translate this */
-									break;
-								if( lbuf[LF_OFFS-1] == '+' )	/* realloc */
-									strip = false;
-							}
-							else if( reported_skipped == 0 )
-							{
-								BLOG((0,"%ld:'%s' skipped (expected:'%s')", rsl_lno-1, p, in ));
-								reported_skipped = 1;
-							}
-						}
-					}
-					else if( !strncmp( lbuf, cfg.lang, 2 ) )
-					{
-						/* copy shorter length */
-						if( blen > len && strip == true )
-							blen = len;
-						found = TFOUND;
-						break;	/* translation found */
-					}
-				}
-			}
-
-			if( found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	/* found */
-			{
-				if( blen > len && strip == false )
-				{
-					in = xa_strdup( p );
-					*((char**)buf) = in;
-				}
-				else
-				{
-					if( blen > 0 )
-					{
-						in[blen] = 0;
-						memcpy( in, p, blen );
-					}
-					else
-						blen = len;
-				}
-			}
-			else
-				blen = clen;
-
-			while( lbuf[0] != LF_SEPCH )
-			{
-				if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) )
-				{
-					break;
-				}
-				rsl_lno++;
-			}
-			if( chgl && *chgl != 2 )
-			{
-				*chgl = (strip == false);
-			}
-			switch( found )
-			{
-			case TFOUND:
-				return (XA_FILE*)(long)blen;
-			case OFOUND:
-				return (XA_FILE*)(long)-blen;
-			default:
-				return 0;
-			}
-
-		}
-		default:
-		return 0;
-	}
-}
-
-static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p, long i )
-{
-	short blen, j;
-
-	if( !p )
-		return 0;
-
-	for( blen = j = 0; j < 2 && !blen; j++ )
-	{
-		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, (char*)p, i)))
-			break;	/* found */
-		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
-		{
-			 BLOG((0,"translate:'%s':rewind", *p ));
-			xa_rewind( rfp );
-			rsl_lno = 1;
-			reported_skipped = -1;
-		}
-		else
-			break;	/* give up */
-	}
-	if( !blen )
-	{
-		BLOG((0, "%s:translate: item '%s': not found", client->name, *p ));
-	}
-	return blen;
-}
-
-static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **txt, long l )
-{
-	short blen = 0;
-	char buf[256];
-
-	if( !rfp || !txt || !*txt || !**txt )
-		return 0;
-
-	if( client->options.rsc_lang == WRITE )
-	{
-		int len = sprintf( buf, sizeof(buf), "nn:%s", *txt);
-
-		if( *(buf + len - 1) == ' ' )
-		{
-			*(buf + len) = '@';
-			len++;
-			*(buf + len) = 0;
-		}
-		blen = len;
-		rsc_lang_file( WRITE, rfp, buf, len );
-		rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
-
-	}
-	else if( client->options.rsc_lang == READ )
-	{
-		blen = translate_string( client, rfp, txt, l );
-	}
-
-	return blen;
-}
-
-
-#define MAX_TITLES 32
-
-struct rsc_scan
-{
-	short n_titles, title, lastbox, mwidth, keep_w, change_lo[MAX_TITLES], shift[MAX_TITLES];
-	char *titles[MAX_TITLES];
-};
-
 static void
 fix_objects(struct xa_client *client,
 			struct xa_rscs *rscs,
@@ -935,118 +689,22 @@ fix_objects(struct xa_client *client,
 			case G_STRING:
 			case G_SHORTCUT:
 			case G_TITLE:
-			{
 				obj->ob_spec.free_string += (long)b;
-				if( client->options.rsc_lang && !(type == G_IMAGE) )
+				if (client->options.rsc_lang && type != G_IMAGE)
+					rsc_lang_translate_object(client, rfp, obj, &scan);
+				break;
+
+			case G_ICON:
 				{
-					char **p = 0;
-					short blen, chgl;
-
-					if( object_has_tedinfo(obj) )
-					{
-						TEDINFO *ted = object_get_tedinfo(obj, NULL);
-						if( ted )
-						{
-							p = &ted->te_ptext;
-						}
-					}
-					else
-						p = &obj->ob_spec.free_string;
-
-					if( !p || !*p || !**p || strmchr(*p, "\r\n") )
-						break;
-
-					if( client->options.rsc_lang == WRITE )
-					{
-						if( obj->ob_type == G_TITLE )
-						{
-							if( scan.n_titles == 0 )
-								rsc_lang_file( WRITE, rfp, "### Menubar ###", 15 );
-
-							scan.titles[scan.n_titles++] = *p;
-							scan.title = 0;
-						}
-						else if( obj->ob_type == G_STRING && scan.title > 0 && scan.titles[scan.title-1] )
-						{
-							char buf[256];
-							int l = sprintf( buf, sizeof(buf)-1, "### - \"%s\"-menu - ###", scan.titles[scan.title-1] );
-							rsc_lang_file( WRITE, rfp, buf, l );
-							scan.titles[scan.title-1] = 0;
-						}
-
-					}
-
-					blen = rsc_trans_rw( client, rfp, p, obj->ob_type == G_TITLE ? (long)&chgl : (scan.title > 0 ? (long)&scan.change_lo[scan.title-1] : 0) );
-
-					if( blen )
-					{
-						if( client->options.rsc_lang == READ )
-						{
-							if( blen > 0 )	/* orig and trans found */
-							{
-								if( obj->ob_type == G_BUTTON && (obj->ob_flags & OF_SELECTABLE) )
-								{
-									obj->ob_state &= (0x80ff);	/* make own shortcuts */
-								}
-							}
-							else
-								blen = -blen;		/* only orig found */
-
-							if( obj->ob_type == G_STRING )
-							{
-								if( **p != '-' )
-								{
-									if( *(*p + blen - 1) != ' ' )
-										blen++;
-									if( obj->ob_x > 0 )
-										scan.keep_w = 1;	/* more than one obj in one line -> don't adjust width */
-									if( blen + obj->ob_x > scan.mwidth )
-									{
-										scan.mwidth = blen + obj->ob_x;
-									}
-								}
-							}
-							else if( obj->ob_type == G_TITLE && scan.n_titles >= 0 )
-							{
-								short s;
-
-								if( *(*p + blen - 1) != ' ' )
-									blen++;
-								s = blen - obj->ob_width;
-								scan.title = 0;
-								if( scan.n_titles > 0 )
-									obj->ob_x += scan.shift[scan.n_titles-1];
-
-								if( s && chgl == true )
-								{
-									obj->ob_width = blen;
-									scan.shift[scan.n_titles] = s;
-								}
-								scan.change_lo[scan.n_titles] = chgl * 2;
-
-								if( scan.n_titles > 0 && scan.n_titles < MAX_TITLES )
-								{
-									scan.shift[scan.n_titles] += scan.shift[scan.n_titles-1];
-								}
-								scan.n_titles++;
-							}
-						}
-					}
+					ICONBLK *ib;
+					obj->ob_spec.free_string += (long)b;
+					ib = obj->ob_spec.iconblk;
+	
+					if( client != C.Aes && screen.c_max_h < 16 )
+						ib->ib_hicon /= (160 / (screen.c_max_h * 10));
 				}
 				break;
-			}
-			case G_ICON:
-			{
-				ICONBLK *ib;
-				obj->ob_spec.free_string += (long)b;
-				ib = obj->ob_spec.iconblk;
-
-				if( client != C.Aes && screen.c_max_h < 16 )
-					ib->ib_hicon /= (160 / (screen.c_max_h * 10));
-				break;
-			}
 			case G_CICON:
-			{
 				/*
 				 * Ozk: Added xa_rsc * parameter to FixColourIconData(),
 				 * since its needed to remember memory allocs.
@@ -1063,12 +721,9 @@ fix_objects(struct xa_client *client,
 					DIAG((D_rsrc, client, "No cicons but G_CICON object???"));
 				}
 				break;
-			}
 			case G_PROGDEF:
-			{
 				obj->ob_spec.userblk = NULL;
 				break;
-			}
 			case G_BOX:
 				if( client->options.rsc_lang == WRITE )
 				{
@@ -1110,21 +765,19 @@ fix_objects(struct xa_client *client,
 					scan.title = -1;
 					scan.n_titles = -1;
 				}
+				/* fall through */
 
 			case G_IBOX:
 				if( i > 0 && (obj-1)->ob_type == G_BOX && i + 1 < n && (obj+1)->ob_type == G_TITLE )
 				{
 					memset( &scan, 0, sizeof(scan) );
 				}
-			case G_BOXCHAR:
-			{
 				break;
-			}
+			case G_BOXCHAR:
+				break;
 			default:
-			{
 				DIAG((D_rsrc, client, "Unknown object type %d", type));
 				break;
-			}
 		}
 	}
 	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, (unsigned long)obj));
@@ -1606,40 +1259,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + rshdr(hdr, rsh_object)), rshdr(hdr, rsh_nobs), rfp );
 
 	if( rfp ){
-		if( client == C.Aes && trans_strings[0] && client->options.rsc_lang )
+		if( client == C.Aes)
 		{
-			int i;
-			char **t;
-
-			if( client->options.rsc_lang == WRITE )
-			{
-				rsc_lang_file( WRITE, rfp, "# - Internal Strings -", 22 );
-			}
-			for(i = 0; trans_strings[i]; i++)
-			{
-				for( t = trans_strings[i]; *t; t++)
-				{
-					if( **t )
-					{
-						char **t_2;
-						short ptr_seen = 0;
-
-						/* strings might be merged
-						 * gcc4 puts all strings in the same order in the out-file as they are in the source
-						 * gcc2 (and maybe also others) uses another order, so a search for the current string is done
-						 */
-						for( t_2 = trans_strings[i]; t_2 < t; t_2++)
-							if( *t_2 == *t )
-							{
-								ptr_seen = -1;
-								break;
-							}
-
-						rsc_trans_rw( client, rfp, t, ptr_seen );
-					}
-				}
-			}
-			trans_strings[0] = 0;	/* no further translation possible */
+			rsc_lang_translate_xaaes_strings(client, rfp);
 		}
 		rsc_lang_file( CLOSE, rfp, 0, 0 );
 	}

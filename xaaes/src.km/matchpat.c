@@ -63,8 +63,6 @@
 
 #define PATSEP	'|'
 
-char *strmrchr( char *s, char *p );
-
 /*
  * search for any character of p in s
  *
