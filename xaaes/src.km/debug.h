@@ -202,14 +202,10 @@ void _cdecl bootlog(short disp, const char *fmt, ...) __attribute__((format(prin
 #ifdef BOOTLOG
 #define BLOG(x)	bootlog x
 #define BLOGif(c,x)	if(c)bootlog x
-#define DBG BLOG
-#define DBGif BLOGif
 #define KDBG(x) KERNEL_DEBUG x
 #else
 #define BLOG(x)
 #define BLOGif(c, x)
-#define DBG(x)
-#define DBGif(c,x)
 #define KDBG(x)
 #endif
 

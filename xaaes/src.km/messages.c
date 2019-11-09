@@ -350,7 +350,7 @@ do_winmesag(int lock,
 
 			if (mp0 == WM_REDRAW)
 			{
-				//	DBGif( mp3 < 50 && mp3 >= 0,(0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7));
+				/* BLOGif( mp3 < 50 && mp3 >= 0,(0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7)); */
 				C.redraws++, C.move_block = 3;
 			}
 
@@ -433,7 +433,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 				*next = new_msg;
 				new_msg->message = *msg;
 				new_msg->next = NULL;
-				//  DBGif( new[3] < 50 && new[3] >= 0, (0, "add_msg_2_queue:WM_REDRAW added for %d rect %d/%d,%d/%d", new_msg->message.m[3], new_msg->message.m[4], new_msg->message.m[5], new_msg->message.m[6], new[7]));
+				/* BLOGif( new[3] < 50 && new[3] >= 0, (0, "add_msg_2_queue:WM_REDRAW added for %d rect %d/%d,%d/%d", new_msg->message.m[3], new_msg->message.m[4], new_msg->message.m[5], new_msg->message.m[6], new[7])); */
 				if (!(qmflags & QMF_NOCOUNT))
 				{
 					C.redraws++;
@@ -541,7 +541,6 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 							old[5] = new[5];
 							old[6] = new[6];
 							old[7] = new[7];
-// 							display("replace old WM_ARROWED old_a %d, new_a %d, sum %d", old_a, new_a-new_a, new_a);
 						}
 						msg = NULL;
 						break;
@@ -670,18 +669,20 @@ send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, un
 
 	if (amq != AMQ_IREDRAW  && !(amq & AMQ_ANYCASE))
 	{
-		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT)) // | CS_BLOCK_MENU_NAV))
+		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT))
 		{
 			if (msg->m[0] == WM_REDRAW)
 			{
 				struct xa_vdi_settings *v = dest_client->vdi_settings;
 				RECT *r = (RECT *)&msg->m[4];
 
-// 				add_lost_rect(client, r);
+#if 0
+				add_lost_rect(client, r);
+#endif
 				queue_message(lock, dest_client, AMQ_LOSTRDRW, qmf|QMF_NOCOUNT|QMF_CHKDUP, msg);
 
 				dest_client->status |= CS_MISS_RDRW;
-// 				if (dest_client->status & (CS_LAGGING))
+ 				/* if (dest_client->status & (CS_LAGGING)) */
 				{
 					hidem();
 					(*v->api->set_clip)(v, r);
