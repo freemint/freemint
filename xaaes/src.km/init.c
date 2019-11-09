@@ -184,7 +184,7 @@ sysfile_exists(const char *sd, char *fn)
  * 39 = Korea       47 = Indonesia
  */
 #define MaX_COUNTRYCODE 48
-static char countrycodes[] =
+static char const countrycodes[] =
   "endefrukesitsefsgstrfinodksanlczhuplltrueebyuaskrobgslhrcscsmkgrlvilzaptbejpcnkpvninirmnnplakhidbd";
 /* 0 1 2 3 4 5 6 7 8 9 1 1 2 3 4 5 6 7 8 9 2 1 2 3 4 5 6 7 8 9 3 1 2 3 4 5 6 7 8 9 4 1 2 3 4 5 6 7 8 */
 static short search_code( char *lang )
@@ -192,96 +192,9 @@ static short search_code( char *lang )
 	short i;
 	for( i = 0; i < sizeof( countrycodes ); i += 2 )
 		if( lang[0] == countrycodes[i] && lang[1] == countrycodes[i+1] )
-			return i/2;
+			return i >> 1;
 	return -1;
 }
-#if 0
-struct aes_string {
-	int lang;
-	union { char c[2]; short w; } ccode;
-	int nlen;
-	int slen;
-	char data[0];
-};
-
-static char *
-eol(char *b)
-{
-	char c;
-
-	while ((c = *b++) && c != '\n' || c != '\r')
-		;
-	if (!c)
-		b--;
-	else if (c == '\r' && *b == '\n')
-		b++;
-	return b;
-}
-
-static int
-cpytochr(char tochr, char *s, char *d)
-{
-	int chrs = 0;
-	char c, *t;
-
-	while (*s) {
-		t = to;
-		c = *s++;
-		while (*t) {
-			if (c == *t)
-				goto end;
-			t++;
-		}
-		*d++ = c;
-		chrs++;
-	}
-end:
-	*d++ = '\0';
-	return chrs;
-}
-
-static bool
-load_text(int cc)
-{
-	char *fn;
-	union { char chr[2]; short code; } c1, c2;
-
-	if (cc > MAX_COUNTRYCODE)
-		return false;
-	cc <<= 1;
-	c1.chr[0] = countrycodes[cc++];
-	c1.chr[1] = countrycodes[cc];
-
-	fn = xaaes_sysfile("strings.aes");
-	if (fn) {
-		bool success = true;
-		char *buf = NULL, *s, *d, c;
-		struct file *fp;
-		long err;
-		XATTR x;
-
-		fp = kernel_open(fn, O_RDONLY, &r, &x);
-		if (fp) buf = kmalloc(x.size);
-		if (fp && buf) {
-			r = kernel_read(f, buf, x.size);
-			if (r != x.size)
-				goto fail;
-			kernel_close(fp);
-			fp = NULL;
-
-			{
-				char nstart[] = "[", nend[] = "]";
-
-			}
-		}
-fail:		if (buf) kfree(buf);
-		if (fp) kernel_close(fp);
-		kfree(fn);
-		return false;
-	}
-	return false;
-}
-#endif
 
 #if CHECK_STACK
 /*
@@ -323,6 +236,7 @@ short lang_from_akp( char lang[], int md )
 		lang[0] = countrycodes[li];
 		lang[1] = countrycodes[li+1];
 	}
+	lang[2] = 0;
 	return ret;
 }
 
@@ -705,7 +619,7 @@ again:
 	{
 		info_tab[3][0] = p;
 	}
-	BLOG((0,"lang='%s' (from %s) code=%d.",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP"), info_tab[3][0] ));
+	BLOG((0,"lang='%s' (from %s) code=%d.",cfg.lang, li == 0 ? "config" : li == 1 ? "Environ" : "AKP", info_tab[3][0] ));
 	}
 
 	/* XaAES-windows */

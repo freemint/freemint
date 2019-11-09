@@ -47,9 +47,5 @@ AES_function
 /* constants for rsc-translation */
 #define READ	1
 #define WRITE 2
-#define OREAD 3
-#define OWRITE	4
-#define CLOSE 5
-#define REPLACE 6
 
 #endif /* _xa_rsrc_h */

@@ -534,7 +534,8 @@ k_init(unsigned long vm)
 	short work_out[58];
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
-
+	struct xa_client *client;
+	
 	{
 		short f, *t;
 
@@ -780,7 +781,8 @@ k_init(unsigned long vm)
 	}
 	screen.planes = work_out[4];		/* number of planes in the screen */
 
-	C.Aes->vdi_settings = v;
+	client = C.Aes;
+	client->vdi_settings = v;
 	vs_clip(/*C.P_*/v->handle, 1, (short *)&screen.r);
 	(*v->api->set_clip)(v, &screen.r);
 
@@ -810,7 +812,7 @@ k_init(unsigned long vm)
 	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt));
 
-	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette, C.Aes->home_path, cfg.palette ) )
+	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette, client->home_path, cfg.palette ) )
 	{
 		set_syspalette(v->handle, screen.palette);
 	}
@@ -851,7 +853,7 @@ k_init(unsigned long vm)
 	default_fnt.selected.font_point = cfg.xaw_point;
 	default_fnt.highlighted.font_point = cfg.xaw_point;
 
-	C.Aes->options.standard_font_point = cfg.standard_font_point;
+	client->options.standard_font_point = cfg.standard_font_point;
 
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
@@ -876,7 +878,7 @@ k_init(unsigned long vm)
 
 	/* Load the system resource files
 	 */
-	BLOG((false, "Loading system resource file '%s'", cfg.rsc_name));
+	BLOG((false, "Loading system resource file '%s' lang='%s'(%d) trans=%d", cfg.rsc_name, cfg.lang, info_tab[3][0], client->options.rsc_lang));
 	if ( !(resource_name = xaaes_sysfile(cfg.rsc_name) ) )
 	{
 		display(/* 00000002 */"ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
@@ -884,7 +886,7 @@ k_init(unsigned long vm)
 	}
 	else
 	{
-		C.Aes_rsc = LoadResources(C.Aes,
+		C.Aes_rsc = LoadResources(client,
 					  resource_name,
 					  NULL,
 					  DU_RSX_CONV,
@@ -894,6 +896,7 @@ k_init(unsigned long vm)
 		BLOG((true, "system resource = %lx (%s)", (unsigned long)C.Aes_rsc, resource_name));
 		kfree(resource_name);
 	}
+	client->options.rsc_lang = 0;	/* dont translate other rsc-files */
 	if (!C.Aes_rsc)
 	{
 		display(/*00000003*/"ERROR: Can't load system resource file '%s'", cfg.rsc_name);
@@ -927,32 +930,32 @@ k_init(unsigned long vm)
 	 *  ---------        prepare the window widgets renderer module  --------------
 	 */
 
-	main_xa_theme(&C.Aes->xmwt);
-	main_object_render(&C.Aes->objcr_module);
+	main_xa_theme(&client->xmwt);
+	main_object_render(&client->objcr_module);
 
 #if WITH_GRADIENTS
 	if( cfg.gradients[0] == '0' && cfg.gradients[1] == 0 )
 		cfg.gradients[0] = 0;
-	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients[0] != 0))
+	if (!(*client->objcr_module->init_module)(&xam_api, &screen, cfg.gradients[0] != 0))
 #else
-	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, 0 ) )
+	if (!(*client->objcr_module->init_module)(&xam_api, &screen, 0 ) )
 #endif
 	{
 		BLOG((true, "object render returned NULL"));
 		return -1;
 	}
-	if (init_client_objcrend(C.Aes))
+	if (init_client_objcrend(client))
 	{
 		BLOG((true, "Opening object theme failed"));
 		return -1;
 	}
 
 #if WITH_GRADIENTS
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, cfg.widg_name, cfg.gradients[0] != 0)))
-		if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, WIDGNAME, cfg.gradients[0] != 0)))
+	if (!(client->wtheme_handle = (*client->xmwt->init_module)(&xam_api, &screen, cfg.widg_name, cfg.gradients[0] != 0)))
+		if (!(client->wtheme_handle = (*client->xmwt->init_module)(&xam_api, &screen, WIDGNAME, cfg.gradients[0] != 0)))
 #else
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, cfg.widg_name, 0 )))
-		if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, WIDGNAME, 0 )))
+	if (!(client->wtheme_handle = (*client->xmwt->init_module)(&xam_api, &screen, cfg.widg_name, 0 )))
+		if (!(client->wtheme_handle = (*client->xmwt->init_module)(&xam_api, &screen, WIDGNAME, 0 )))
 #endif
 	{
 		BLOG((true,"Window widget module returned NULL"));
@@ -966,13 +969,13 @@ k_init(unsigned long vm)
 	/*
 	 * Setup default widget theme
 	 */
-	init_client_widget_theme(C.Aes);
+	init_client_widget_theme(client);
 
 #if FILESELECTOR
 	/* Do some itialisation */
 	init_fsel();
 #endif
-	init_client_mdbuff(C.Aes);		/* In xa_appl.c */
+	init_client_mdbuff(client);		/* In xa_appl.c */
 
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
@@ -982,7 +985,7 @@ k_init(unsigned long vm)
 				NOLOCKING,
 				NULL, /* No messages */
 				NULL, /* No 'doer' */
-				C.Aes,
+				client,
 				false,
 				XaMENU,			/* menu standard widget */
 				created_for_AES,
@@ -995,17 +998,17 @@ k_init(unsigned long vm)
 		return -1;
 	strcpy( root_window->wname, "root" );
 	/* Tack a menu onto the root_window widget */
-	C.Aes->std_menu = new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYSTEM_MENU));
-	assert(C.Aes->std_menu);
-	wt_menu_area(C.Aes->std_menu);
-	set_rootmenu_area(C.Aes);
+	client->std_menu = new_widget_tree(client, ResourceTree(C.Aes_rsc, SYSTEM_MENU));
+	assert(client->std_menu);
+	wt_menu_area(client->std_menu);
+	set_rootmenu_area(client);
 
-	C.Aes->mnu_clientlistname = kmalloc(strlen(xa_strings[MNU_CLIENTS]) + 1);
-	assert(C.Aes->mnu_clientlistname);
-	strcpy(C.Aes->mnu_clientlistname, xa_strings[MNU_CLIENTS]);
-	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
-	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
-	set_menu_width( C.Aes->std_menu->tree, C.Aes->std_menu );
+	client->mnu_clientlistname = kmalloc(strlen(xa_strings[MNU_CLIENTS]) + 1);
+	assert(client->mnu_clientlistname);
+	strcpy(client->mnu_clientlistname, xa_strings[MNU_CLIENTS]);
+	fix_menu(client, client->std_menu, root_window, true);
+	set_menu_widget(root_window, client, client->std_menu);
+	set_menu_width( client->std_menu->tree, client->std_menu );
 
 	/* Set a default desktop */
 	{
@@ -1015,10 +1018,10 @@ k_init(unsigned long vm)
 		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
 		if( cfg.back_col != -1 )
 			(ob + DESKTOP)->ob_spec.obspec.interiorcol = cfg.back_col;
-		C.Aes->desktop = new_widget_tree(C.Aes, ob);
+		client->desktop = new_widget_tree(client, ob);
 
-		set_desktop_widget(root_window, C.Aes->desktop);
-		set_desktop(C.Aes, false);
+		set_desktop_widget(root_window, client->desktop);
+		set_desktop(client, false);
 	}
 	open_window(NOLOCKING, root_window, screen.r);
 	S.open_windows.root = root_window;
@@ -1028,14 +1031,14 @@ k_init(unsigned long vm)
 
 	if( cfg.menu_ontop )
 	{
-		RECT r = C.Aes->std_menu->area;
+		RECT r = client->std_menu->area;
 
 		r.x = 0;
 		if( cfg.menu_layout == 0 )
 			r.w = screen.r.w;
 		else
-			r.w += C.Aes->std_menu->area.x;
-		menu_window = create_window(0, NULL, NULL, C.Aes, true, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, false, false, &r, 0,0);
+			r.w += client->std_menu->area.x;
+		menu_window = create_window(0, NULL, NULL, client, true, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, false, false, &r, 0,0);
 		if( !menu_window )
 			return -1;
 		strcpy( menu_window->wname, "menubar" );
@@ -1048,7 +1051,7 @@ k_init(unsigned long vm)
 		RECT r = {0,0,420,420};
 		bool nolist = false;
 
-		bgem_window = create_window(0, 0, 0, C.Aes, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, &r, 0,0);
+		bgem_window = create_window(0, 0, 0, client, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, &r, 0,0);
 		if( !bgem_window )
 			return -1;
 		strcpy( bgem_window->wname, "bgem" );
@@ -1060,7 +1063,7 @@ k_init(unsigned long vm)
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
 
-	set_standard_point( C.Aes );
+	set_standard_point(client);
 
 	redraw_menu(NOLOCKING);
 
@@ -1097,7 +1100,7 @@ dont_load(const char *name)
 	return 0;
 }
 
-static char accpath[] = "ACCPATH=";
+static char const accpath[] = "ACCPATH=";
 
 void
 load_accs(void)

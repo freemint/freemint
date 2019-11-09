@@ -39,11 +39,11 @@ void strnupr(char *s, int n);
 
 typedef struct xa_file XA_FILE;
 
-XA_FILE *xa_fopen( char *fn, int rwmd );
+XA_FILE *xa_fopen(const char *fn, int rwmd);
 void xa_fclose( XA_FILE *fp );
 long xa_rewind( XA_FILE *fp );
-int xa_writeline( char *buf, long l, XA_FILE *fp );
-char *xa_readline( char *buf, long size, XA_FILE *fp );
+int xa_writeline(const char *buf, long l, XA_FILE *fp);
+char *xa_readline(char *buf, long size, XA_FILE *fp);
 #if 0
 bool xa_invalid(int which, int pid, void *addr, long size, bool allownil);
 #endif

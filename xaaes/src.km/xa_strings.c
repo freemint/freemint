@@ -138,14 +138,14 @@ char *KeyNames[] = {
 };
 
 char *WidgNames[] = {
-	"Resize           ",	// Border
+	"Resize           ",	/* Border */
 	"Move       ",
-	"",	// Wcontext
-	"",	// Wappicn
+	"",	/* Wcontext */
+	"",	/* Wappicn */
 	"Close    ",
 	"Full      ",
 	"Info        ",
-	"Resize           ",	// Sizer
+	"Resize           ",	/* Sizer */
 	"Scroll up         ",
 	"Scroll up         ",
 	"Scroll down      ",
@@ -156,9 +156,9 @@ char *WidgNames[] = {
 	"Horizontal slide         ",
 	"Iconify      ",
 	"Hide      ",
-	"",	//Toolbar
-	"",	//Menu
-	"",	//Mover
+	"",	/* Toolbar */
+	"",	/* Menu */
+	"",	/* Mover */
 	"Page up       ",
 	"Page down    ",
 	"Page left       ",

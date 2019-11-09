@@ -417,7 +417,7 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 {
 	if( client->options.rsc_lang == WRITE && n && rfp)
 	{
-		rsc_lang_file( WRITE, rfp, "# - Strings -", 13 );
+		rsc_lang_file_write(rfp, "# - Strings -", 13);
 	}
 	while (n)
 	{
@@ -669,7 +669,7 @@ fix_objects(struct xa_client *client,
 
 	if( client->options.rsc_lang == WRITE && n && rfp)
 	{
-		rsc_lang_file( WRITE, rfp, "# - Objects -", 13 );
+		rsc_lang_file_write(rfp, "# - Objects -", 13);
 	}
 	/* fixup all objects' ob_spec pointers */
 	for (i = 0; i < n; i++, obj++)
@@ -736,7 +736,7 @@ fix_objects(struct xa_client *client,
 					{
 						if( obj->ob_next == -1 )
 						{
-							rsc_lang_file( WRITE, rfp, "### - TREE - ###", 16 );
+							rsc_lang_file_write(rfp, "### - TREE - ###", 16);
 						}
 					}
 				}
@@ -953,7 +953,6 @@ list_resource(struct xa_client *client, void *resource, short flags)
 RSHDR * _cdecl
 LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal)
 {
-
 	RSHDR *hdr = NULL;
 	CICONBLK **cibh = NULL;
 	unsigned long osize = 0, size = 0, extra = 0;
@@ -1128,12 +1127,15 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			if( client->options.rsc_lang == READ )
 			{
-				if( !( rfp = rsc_lang_file( OREAD, 0, rscl_name, 0)) )
+				if ((rfp = rsc_lang_file_open(rscl_name)) == NULL)
 					client->options.rsc_lang = WRITE;
+				else
+					BLOG((0,"%s: Translating %s to %s", client->name, fname, cfg.lang ));
 			}
 			if( client->options.rsc_lang == WRITE )
 			{
-				if( !(rfp = rsc_lang_file( OWRITE, 0, rscl_name, 0)) ){
+				if ((rfp = rsc_lang_file_create(rscl_name)) == NULL)
+				{
 					BLOG((0,"LoadResources: could not open to write:%s.", rscl_name));
 					client->options.rsc_lang = 0;
 				}
@@ -1141,8 +1143,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				{
 					char buf[256];
 					int l = sprintf( buf, sizeof(buf)-1, "#%s: Language-File for %s\n# %s", rscl_name, client->name, C.Aes->name );
-					rsc_lang_file( WRITE, rfp, buf, l );
-					BLOG((0,"%s: Language-File for %s created", rscl_name, client->name ));
+					BLOG((0,"%s: Creating Language-File %s", client->name, rscl_name ));
+					rsc_lang_file_write(rfp, buf, l);
 				}
 			}
 		}
@@ -1263,10 +1265,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			rsc_lang_translate_xaaes_strings(client, rfp);
 		}
-		rsc_lang_file( CLOSE, rfp, 0, 0 );
+		xa_fclose(rfp);
 	}
-	if( client == C.Aes )
-		client->options.rsc_lang = 0;	/* dont translate other rsc-files */
 	fix_trees(client, base, (OBJECT **)(base + rshdr(hdr, rsh_trindex)), rshdr(hdr, rsh_ntree), designWidth, designHeight);
 
 	return (RSHDR *)base;

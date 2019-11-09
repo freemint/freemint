@@ -215,7 +215,7 @@ struct xa_file{
 	unsigned char *p, *p1;
 };
 
-XA_FILE *xa_fopen( char *fn, int rwmd )
+XA_FILE *xa_fopen(const char *fn, int rwmd)
 {
 	XA_FILE *ret;
 	long err;
@@ -255,7 +255,7 @@ long xa_rewind( XA_FILE *fp )
 /*
  * simple version!
  */
-int xa_writeline( char *buf, long l, XA_FILE *fp )
+int xa_writeline(const char *buf, long l, XA_FILE *fp )
 {
 	if( l <= 0 || buf == 0 || (kernel_write( fp->k_fp, buf, l ) <= 0) )
 		return 0;
