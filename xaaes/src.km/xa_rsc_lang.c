@@ -40,6 +40,10 @@
 
 #include "xa_rsc_lang.h"
 
+#ifndef OF_NOTRANS
+# define OF_NOTRANS 0x8000
+#endif
+
 
 #define LF_OFFS 3
 #define LF_SEPCH	'_'
@@ -335,13 +339,18 @@ void rsc_lang_translate_object(struct xa_client *client, XA_FILE *rfp, OBJECT *o
 	short blen;
 	short chgl = 0;
 
+	if (obj->ob_flags & OF_NOTRANS)
+		return;
 	if (object_has_tedinfo(obj))
 	{
 		TEDINFO *ted = object_get_tedinfo(obj, NULL);
 
 		if (ted)
 		{
-			p = &ted->te_ptext;			/* FIXME: must translate template, not text for FTEXT/FBOXTEXT */
+			if ((obj->ob_type & 0xff) == G_FTEXT || (obj->ob_type & 0xff) == G_FBOXTEXT)
+				p = &ted->te_ptmplt;
+			else
+				p = &ted->te_ptext;
 		}
 	} else
 	{

@@ -23,19 +23,7 @@ hu:  XaAES n‚vjegye  ^Help @
 ru:  Î XaAES  ^Help @
 cs:  O XaAES  ^Help @
 _
-nn:---------------------
-_
-nn:  Desk Accessory 1 @
-_
-nn:  Desk Accessory 2 @
-_
-nn:  Desk Accessory 3 @
-_
-nn:  Desk Accessory 4 @
-_
-nn:  Desk Accessory 5 @
-_
-nn:  Desk Accessory 6 @
+nn:----------------------
 _
 ### - " Process"-menu - ###
 nn:  Launch Program...  ^K
@@ -56,7 +44,7 @@ hu:  Desktop ind¡t sa
 ru:  Çàïóñòèòü äåñêòîï
 cs:  Spustit plochu
 _
-nn:-----------------------------
+nn:--------------------------
 _
 nn:  Task Manager       ^L
 de:  Task Manager         ^L
@@ -76,7 +64,7 @@ hu:  Rendszer...          ^B
 ru:  Ñèñòåìà...              ^B
 cs:  Systém...                 ^B
 _
-nn:-----------------------------
+nn:--------------------------
 _
 nn:  Quit all Apps      ^A
 de:  Alle Apps beenden    ^A
@@ -105,10 +93,6 @@ ru:  Âûéòè èç XaAES          ^Q
 cs:  Ukonèit XaAES             ^Q
 _
 ### Menubar ###
-nn: C:
-_
-nn: *.[CHS]********
-_
 nn+ Options
 de: Optionen
 fr: Options
@@ -125,126 +109,6 @@ es: Fichero
 it: File
 hu: F jl
 ru: Ôàéë
-_
-### - " C:"-menu - ###
-nn:  A: @
-_
-nn:  B: @
-_
-nn:  C: @
-_
-nn:  D: @
-_
-nn:  E: @
-_
-nn:  F: @
-_
-nn:  G: @
-_
-nn:  H: @
-_
-nn:  I: @
-_
-nn:  J: @
-_
-nn:  K: @
-_
-nn:  L: @
-_
-nn:  M: @
-_
-nn:  N: @
-_
-nn:  O: @
-_
-nn:  P: @
-_
-nn:  Q: @
-_
-nn:  R: @
-_
-nn:  S: @
-_
-nn:  T: @
-_
-nn:  U: @
-_
-nn:  V: @
-_
-nn:  W: @
-_
-nn:  X: @
-_
-nn:  Y: @
-_
-nn:  Z: @
-_
-nn:  0: @
-_
-nn:  1: @
-_
-nn:  2: @
-_
-nn:  3: @
-_
-nn:  4: @
-_
-nn:  5: @
-_
-nn:  6: @
-_
-nn:  7: @
-_
-nn:  8: @
-_
-nn:  9: @
-_
-### - " *.[CHS]********"-menu - ###
-nn:  *************** @
-_
-nn:  *.*             @
-_
-nn:  *.C*            @
-_
-nn:  *.H*            @
-_
-nn:  *.S*            @
-_
-nn:  *.[CHS]*        @
-_
-nn:  *.[ATPG]*       @
-_
-nn:  *.I*            @
-_
-nn:  *.O*            @
-_
-nn:  *.P*            @
-_
-nn:  *.T*            @
-_
-nn:  *.APP           @
-_
-nn:  *.PRG           @
-_
-nn:  *.TTP           @
-_
-nn:  *.TOS           @
-_
-nn:  *.TXT           @
-_
-nn:  *.DOC           @
-_
-nn:  *.RSC           @
-_
-nn:  *.PAS           @
-_
-nn:  *.CPP           @
-_
-nn:  *.PAP           @
-_
-nn:  *.HTM           @
-_
-nn:  *.HTML          @
 _
 ### - " Options"-menu - ###
 nn:  Realtime build directories  ^B
@@ -265,7 +129,7 @@ hu:  Fa szer megjelen¡t‚s       ^T
 ru:  Â âèäå äåğåâà                  ^T
 cs:  Stromovı pohled          ^T
 _
-nn:--------------------------------
+nn:---------------------------------
 _
 nn:  Sort by Name                ^N
 de:  Nach Namen sortiert      ^N
@@ -323,14 +187,14 @@ hu:  Ford¡tott sorrend       ^SPACE
 ru:  Îáğàòíûé ïîğÿäîê           ^SPACE
 _
 ### - " File"-menu - ###
-nn:  Copy path/filename      ^C
+nn:  Copy path/filename  ^C
 de:  Pfad/Dateiname kopieren  ^C
 fr:  Copie chemin/nom        ^C
 es:  Copiar ruta/marcado     ^C
 it:  Copia percorso/nome     ^C
 ru:  Êîïèğîâàòü ïóòü/èìÿ ôàéëà  ^C
 _
-nn:  Create new folder       ^F
+nn:  Create new folder   ^F
 de:  Neuer Ordner             ^F
 fr:  Nouveau dossier         ^F
 es:  Crear ventana           ^F
@@ -338,14 +202,14 @@ it:  Nuova cartella          ^F
 hu:  Mappa l‚trehoz sa
 ru:  Ñîçäàòü ïàïêó              ^F
 _
-nn:  Rename                  ^R
+nn:  Rename              ^R
 de:  Umbenennen               ^R
 fr:  Renommer                ^R
 es:  Renombrar               ^R
 it:  Rinomina                ^R
 ru:  Ïåğåèìåíîâàòü              ^R
 _
-nn:  View                    ^V
+nn:  View                ^V
 de:  Anzeigen                 ^V
 fr:  Voir                    ^V
 es:  Visualizar              ^V
@@ -353,34 +217,13 @@ it:  Visione                 ^V
 hu:  Mutat sa
 ru:  Ïğîñìîòğåòü                ^V
 _
-nn:  Delete              DELETE
-de:  L”schen              DELETE
-fr:  Effacer             DELETE
-es:  Borrar              DELETE
-it:  Cancella            DELETE
-hu:  T”rl‚se             DELETE
-ru:  Óäàëèòü                DELETE
-_
-### - TREE - ###
-nn:Alert box template-----------------------------------------------
-_
-nn:Alert box template-----------------------------------------------
-_
-nn:Alert box template-----------------------------------------------
-_
-nn:Alert box template-----------------------------------------------
-_
-nn:Alert box template-----------------------------------------------
-_
-nn:Alert box template-----------------------------------------------
-_
-nn:Button1-------------
-_
-nn:Button2-------------
-_
-nn:Button3-------------
-_
-nn:Button4-------------
+nn:  Delete             DEL
+de:  L”schen                 DEL
+fr:  Effacer                DEL
+es:  Borrar                 DEL
+it:  Cancella               DEL
+hu:  T”rl‚se                DEL
+ru:  Óäàëèòü                   DEL
 _
 ### - TREE - ###
 nn:XaAES Ain't the AES
@@ -403,8 +246,6 @@ hu:Verzi¢ :
 ru:Âåğñèÿ :
 cs:Verze  :
 _
-nn:.
-_
 nn:Date   :
 de:Datum  :
 fr:Date   :
@@ -413,8 +254,6 @@ it:Data   :
 hu:D tum  :
 ru:Äàòà   :
 cs:Datum  :
-_
-nn:.
 _
 nn:OK
 ru:ÎÊ
@@ -427,10 +266,6 @@ it:Sistema:
 hu:C‚l    :
 ru:Öåëü   :
 cs:Systém :
-_
-nn:.
-_
-nn:0.1.6
 _
 ### Task Manager ###
 nn:  Quit all Apps  @
@@ -537,16 +372,12 @@ _
 nn:OK
 ru:ÎÊ
 _
-nn:-
-_
-nn: Font
+nn: Font @
 de: Font
 fr:Corps
 es:Fuente
 it:Fonte
 ru:Øğèôòà
-_
-nn:+
 _
 ### Shutdown dialog ###
 nn:  is still running. Action?  @
@@ -636,10 +467,6 @@ hu:Szabadon be ll.
 ru:Âûáèğàåìûé ïîëüçîâàòåëåì
 cs:Nastavitelné
 _
-nn:1234
-_
-nn:1234
-_
 nn:Point: @
 de:Gr”e:
 fr:Point:
@@ -658,7 +485,7 @@ hu:Sz‚/Ma
 ru:Ø/Â
 cs:©/V:
 _
-nn:Display style@
+nn:Display style
 de:Stil anzeigen
 fr:Afficher
 es:Mostrar
@@ -667,10 +494,6 @@ hu:K‚perny”
 ru:Ïîêàçàòü
 cs:Obrazovka
 _
-nn:ID:
-_
-nn:1234567890
-_
 nn:W:
 de:B:
 fr:L:
@@ -678,20 +501,12 @@ it:L:
 ru:Ø:
 cs:©:
 _
-nn:123
-_
 nn:H:
 de:H:
 fr:H:
 it:A:
 ru:Â:
 cs:V:
-_
-nn:123
-_
-nn:-
-_
-nn:+
 _
 ### Printer dialog ###
 nn:Driver:      @
@@ -733,10 +548,6 @@ hu:t¢l
 ru:èç
 cs:od
 _
-nn:9999
-_
-nn:9999
-_
 nn:Even  @
 de:gerade
 fr:Paires
@@ -754,8 +565,6 @@ it:Dispari
 hu:P ratlan
 ru:íå÷åòíûå
 cs:Liché
-_
-nn:9999
 _
 nn:Quality: @
 de:Qualit„t:
@@ -802,8 +611,6 @@ hu:ig
 ru: â
 cs:do
 _
-nn:100
-_
 nn:Scale:  @
 de:Gr”e:
 fr:Echelle:
@@ -840,15 +647,6 @@ hu:Adagol¢ t lca:
 ru:Âõîäíàÿ ïîäà÷à:
 cs:Podavaè:
 _
-nn:C
-_
-nn:M
-_
-nn:Y
-_
-nn:K
-_
-#???
 nn:Raster:    @
 de:Raster:
 fr:Bitmap:
