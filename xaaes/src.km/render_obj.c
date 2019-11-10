@@ -28,6 +28,13 @@
 #include "mint/stat.h"
 #include "render_obj.h"
 #include "xa_xtobj.h"
+#undef NUM_STRINGS
+#undef NUM_IMAGES
+#undef NUM_IB
+#undef NUM_CIB
+#undef NUM_TI
+#undef NUM_OBS
+#undef NUM_TREE
 #include "mscall.h"
 
 #define RASTER_HDL	v->handle
