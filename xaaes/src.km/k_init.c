@@ -67,8 +67,6 @@
 #include "win_draw.h"
 #include "render_obj.h"
 
-#include "xa_xtobj.h"
-
 #include "mvdi.h"
 #include "xa_aes.h"
 /* kernel header */

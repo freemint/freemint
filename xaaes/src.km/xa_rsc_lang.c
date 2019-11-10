@@ -45,7 +45,6 @@
 #define LF_SEPCH	'_'
 #define LF_COMMCH	'#'
 #define LF_SEPSTR	"_"
-#define LF_COMMSTR	"#"
 
 #define RSL_MAX_ERRORS	10				/* maximum number of errors before translator gives up */
 
