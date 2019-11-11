@@ -24,11 +24,11 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "c_window.h"
 #include "xa_appl.h"
 #include "xa_shel.h"
+#include "xaaes.h"
 
 #include "accstart.h"
 #include "init.h"
@@ -654,7 +654,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 						if( C.SingleTaskPid > 0 )
 						{
 							struct proc *s = pid2proc(C.SingleTaskPid);
-							ALERT((xa_strings[AL_STMD]/*"launch: cannot enter single-task-mode: already in single-task-mode: %s(%d)."*/,
+							ALERT((xa_strings(AL_SINGLETASK)/*"launch: cannot enter single-task-mode: already in single-task-mode: %s(%d)."*/,
 								s->name, s->pid));
 						}
 					}

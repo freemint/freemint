@@ -30,11 +30,15 @@
 #include "xa_xtobj.h"
 #undef NUM_STRINGS
 #undef NUM_IMAGES
+#undef NUM_UD
+#undef NUM_BB
 #undef NUM_IB
 #undef NUM_CIB
 #undef NUM_TI
 #undef NUM_OBS
 #undef NUM_TREE
+#undef NUM_FRSTR
+#undef NUM_FRIMG
 #include "mscall.h"
 
 #define RASTER_HDL	v->handle

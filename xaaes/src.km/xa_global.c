@@ -36,6 +36,7 @@ char arch_target[] = ASCII_ARCH_TARGET;
 char long_name[] = LONG_NAME;
 char aes_id[] = AES_ID;
 char info_string[256];
+char **xa_strings;
 
 struct config cfg;
 struct options default_options;

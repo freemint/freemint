@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "xa_strings.h"
+#include "xa_global.h"
 #include "draw_obj.h"
 #include "obtree.h"
 #include "c_window.h"
@@ -32,6 +32,8 @@
 #include "k_mouse.h"
 #include "keycodes.h"
 #include "util.h"
+
+#include "xaaes.h"
 
 #include "mint/signal.h"
 
@@ -54,12 +56,12 @@ object_have_spec(OBJECT *ob)
 	return false;
 }
 bool
-validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
+validate_obtree(struct xa_client *client, OBJECT *obtree, const char *fdesc)
 {
 	if (obtree <= (OBJECT *)0x1000L)
 	{
 			/* inform user what's going on */
-		ALERT((xa_strings[AL_VALOBTREE]/*"%s: validate OBTREE for %s failed, object ptr = %lx, killing it!"*/, fdesc, client->proc_name, obtree));
+		ALERT((xa_strings(AL_VALOBTREE)/*"%s: validate OBTREE for %s failed, object ptr = %lx, killing it!"*/, fdesc, client->proc_name, obtree));
 		raise(SIGKILL);
 		return false;
 	}

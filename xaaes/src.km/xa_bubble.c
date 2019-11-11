@@ -25,10 +25,10 @@ static void set_bbl_vdi( struct xa_vdi_settings *v )
 	v->api->t_effects(v, 0);
 }
 
-static short skip_trailing_blanks( unsigned char *str )
+static short skip_trailing_blanks( char *str )
 {
-	unsigned char *p;
-	short ret = strlen((char*)str);
+	char *p;
+	short ret = strlen(str);
 	for( p = str + ret-1; *p == ' '; p-- )
 		ret--;
 	*(p+1) = 0;
@@ -57,14 +57,14 @@ static BGEM bgem =
  *
  * todo: skip trailing blanks on every line (?)
  */
-static int format_string( unsigned char *str, int *maxl )
+static int format_string( char *str, int *maxl )
 {
-	int ret = 1, cnt, l, ml, hasnop = !strchr( (char*)str, '|' );
-	unsigned char *lastbl = 0;
-	unsigned char *start = str;
+	int ret = 1, cnt, l, ml, hasnop = !strchr(str, '|' );
+	char *lastbl = 0;
+	char *start = str;
 	for( cnt = ml = l = 0; cnt < BBL_MAXLEN; str++, l++, cnt++ )
 	{
-		if( !*str || *str == '|' || (hasnop && l > BBL_LLEN && *str <= ' ') )
+		if( !*str || *str == '|' || (hasnop && l > BBL_LLEN && (unsigned char)*str <= ' ') )
 		{
 			if( hasnop )
 			{
@@ -287,7 +287,7 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 	}
 }
 
-static void bbl_text( struct xa_vdi_settings *v, RECT *ro, unsigned char *str, short np )
+static void bbl_text( struct xa_vdi_settings *v, RECT *ro, char *str, short np )
 {
 	short yt = ro->y, rx = ro->x, h = ro->h, to;
 	if( Style == 2 )
@@ -300,11 +300,11 @@ static void bbl_text( struct xa_vdi_settings *v, RECT *ro, unsigned char *str, s
 	v->api->t_font( v, C.Aes->options.standard_font_point, cfg.font_id);
 	for( ; np; np--, yt += h )
 	{
-		unsigned char *s = (unsigned char *)strchr( (char*)str, '|' );
+		char *s = strchr(str, '|' );
 		if( s )
 			*s = 0;
 		skip_trailing_blanks(str);
-		v_gtext(v->handle, rx, yt + to, (char*)str);
+		v_gtext(v->handle, rx, yt + to, str);
 		if( s )
 			str = s + 1;
 		else
@@ -312,7 +312,7 @@ static void bbl_text( struct xa_vdi_settings *v, RECT *ro, unsigned char *str, s
 	}
 }
 
-static int open_bbl_window( int lock, unsigned char *str, short x, short y )
+static int open_bbl_window( int lock, char *str, short x, short y )
 {
 	int maxl;
 	int np = format_string( str, &maxl );
@@ -359,23 +359,12 @@ static int open_bbl_window( int lock, unsigned char *str, short x, short y )
 
 	return 0;
 }
-#if 0
-static void xstrncpy( unsigned char *dst, unsigned char *src, long len )
-{
-	while( *src && len-- )
-	{
-		*dst++ = *src++;
-	}
-	if( len )
-		*dst = 0;
-}
-#endif
 
 struct bbl_arg {
-	char *str;
+	const char *str;
 };
 
-static struct bbl_arg bbl_arg={0};
+static struct bbl_arg bbl_arg;
 
 BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID )
 {
@@ -452,8 +441,8 @@ BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID )
 			}
 			if( XaBubble == bs_closed )
 			{
-				unsigned char bbl_buf[BBL_MAXLEN+1], *bp = bbl_buf;
-				unsigned char *str = m.sb.p56;
+				char bbl_buf[BBL_MAXLEN+1], *bp = bbl_buf;
+				char *str = m.sb.p56;
 				if( !str || !*str )
 				{
 					ret = -2;
@@ -471,7 +460,7 @@ BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID )
 				else
 					Style = cfg.xa_bubble;
 
-				strncpy( (char*)bp, (char*)str, BBL_MAXLEN );
+				strncpy(bp, str, BBL_MAXLEN );
 
 				bbl_buf[BBL_MAXLEN] = 0;
 				c_bgem->active = 1;
@@ -582,7 +571,6 @@ XA_bubble_event(int lock, struct c_event *ce, short cancel)
 }
 
 static void do_bubble_show(int lock, struct c_event *ce, short cancel)
-//static void do_bubble_show(void)
 {
 	short x, y, b;
 	if( bbl_arg.str == 0 )
@@ -606,7 +594,7 @@ static void do_bubble_show(int lock, struct c_event *ce, short cancel)
 	m.m[2] = cfg.describe_widgets;
 	m.m[3] = x;
 	m.m[4] = y + 4;
-	m.sb.p56 = bbl_arg.str;
+	m.sb.p56 = (void *)bbl_arg.str;
 	m.m[7] = BGS7_USRHIDE2;
 
 	xa_bubble( 0, bbl_process_event, &m, C.AESpid );
@@ -618,13 +606,12 @@ void bubble_request( short pid, short whndl, short x, short y )
 	if( bbl_arg.str != 0 )
 	{
 		static short cnt = 0;
-		static char *str = 0;
+		static const char *str = 0;
 		if( cnt == 1 )
 		{
 			if( bbl_arg.str == str )
 			{
 				post_cevent(C.Aes, do_bubble_show, NULL, NULL, 0, 0, NULL, NULL);
-				//do_bubble_show();
 			}
 			cnt = 0;
 		}
@@ -645,13 +632,13 @@ void bubble_request( short pid, short whndl, short x, short y )
 		m.m[3] = whndl;
 		m.m[4] = x;
 		m.m[5] = y;
-		m.m[6] = 0;	//kbshift
+		m.m[6] = 0;	/* kbshift */
 		m.m[7] = 0;
 		xa_bubble( 0, bbl_send_request, &m, pid );
 	}
 }
 
-void bubble_show( char *str )
+void bubble_show( const char *str )
 {
 	if( bbl_arg.str && str == NULL )
 		xa_bubble( 0, bbl_close_bubble2, 0, 22 );

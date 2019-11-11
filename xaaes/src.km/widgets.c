@@ -24,9 +24,9 @@
 
 #include "widgets.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "xaaeswdg.h"
+#include "xaaes.h"
 
 #include "app_man.h"
 #include "c_window.h"
@@ -1738,8 +1738,6 @@ drag_border(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 #define WCHIDE_OTHER	3
 #define WCHIDE_UNHIDEOTH 4
 
-extern char *wctxt_main_txt[];
-
 #if 0
 static bool
 onopen_windows(XA_MENU_ATTACHMENT *at)
@@ -1961,9 +1959,6 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 			while (*t == ' ') t++;
 			if( *t )
 			{
-				/*if( !isalnum( *t ) )
-					BLOG((0,"build_windlist_pu: owner:t='%s':'%s':'%s' wind:'%s'", t, wind->owner->cmd_name, wind->owner->cmd_tail?wind->owner->cmd_tail:"-", wind->wname ));
-					*/
 				len = strlen(t) + 1;
 				if (len > an_len)
 					an_len = len;
@@ -2034,9 +2029,6 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 
 						*d++ = '\0';
 						i++;
-						/*if( d1 && *d1 && !isalnum( *d1 ) )
-							BLOG((0,"build_windlist_pu: owner:d='%s':'%s':'%s'", d, wind->owner->cmd_name, wind->owner->cmd_tail?wind->owner->cmd_tail:"-" ));
-							*/
 					}
 				}
 				wind = wind->next;
@@ -2085,474 +2077,442 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 void
 CE_winctxt(int lock, struct c_event *ce, short cancel)
 {
-	if (!cancel)
+	struct winctxt *wct;
+	OBJECT *obtree;
+	int i, n_entries;
+	short x, y;
+	struct xa_window *wind = ce->ptr1;
+	struct windlist_pu *wlpu = NULL;
+	struct parm p;
+	const short *txt;
+	XAMENU_RESULT result;
+	short obnum;
+	short dowhat;
+
+	static short const wctxt_main_txt[] = {
+		WCTXT_WINDOWS, WCTXT_ADVANCED, WCTXT_TODESK, WCTXT_CLOSE, WCTXT_HIDE, WCTXT_ICONIFY, WCTXT_SHADE, WCTXT_MOVE, WCTXT_RESIZE, WCTXT_QUIT, WCTXT_KILL, -1,
+		WCTXT_KEEPABOVE, WCTXT_KEEPBELOW, WCTXT_TOOLBOX, WCTXT_DENY_KEYBOARD, -1,
+		WCTXT_CLOSE_THIS, WCTXT_CLOSE_ALL, WCTXT_CLOSE_OTHERS, WCTXT_RESTORE_ALL, WCTXT_RESTORE_OTHERS, -1,
+		WCTXT_HIDE_THIS, WCTXT_HIDE_APP, WCTXT_HIDE_OTHERS, WCTXT_HIDE_SHOW_OTHERS, -1
+	};
+
+	if (cancel)
+		return;
+	if (!wind || wind == root_window)
+		return;
+
+	wct = kmalloc(sizeof(*wct));
+	if (!wct) return;
+	bzero(wct, sizeof(*wct));
+
+	txt = wctxt_main_txt;
+
+	for (i = 0; i < WCTXT_POPUPS; i++)
 	{
-		struct winctxt *wct;
-		OBJECT *obtree;
-		int i, n_entries;
-		short x, y;
-		char **txt;
-		struct xa_window *wind = ce->ptr1;
-		struct windlist_pu *wlpu = NULL;
-		struct parm p;
+		struct widget_tree *wt;
 
-		if (!wind || wind == root_window)
-			return;
+		n_entries = 0;
+		p.start = wct->text[i] = &xa_strings[*txt];
+		while (txt[n_entries] >= 0)
+			n_entries++;
 
+		txt += n_entries + 1;
+		p.num = wct->entries[i] = n_entries;
 
-		wct = kmalloc(sizeof(*wct));
-		if (!wct) return;
-		bzero(wct, sizeof(*wct));
+		obtree = create_popup_tree(ce->client, 0, n_entries, 16,16, next_wctxt_entry, (void *)&p);
 
-		txt = wctxt_main_txt;
+		if (obtree == NULL)
+			goto bailout;
+		wt = new_widget_tree(ce->client, obtree);
 
-		for (i = 0; i < WCTXT_POPUPS && txt && *txt; i++)
+		if (wt == NULL)
 		{
-			n_entries = 0;
-			p.start = wct->text[i] = txt;
-			while (*txt[n_entries])
-				n_entries++;
-
-			txt += n_entries + 1;
-			p.num = wct->entries[i] = n_entries;
-
-			obtree = create_popup_tree(ce->client, 0, n_entries, 16,16, next_wctxt_entry, (void *)&p);
-
-			if (obtree)
-			{
-				struct widget_tree *wt;
-
-				wt = new_widget_tree(ce->client, obtree);
-
-				if (wt)
-				{
-					wct->wt[i] = wt;
-
-					wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-					wct->xmn[i].wt = wt;
-					wct->xmn[i].menu.mn_tree = wt->tree;
-					wct->xmn[i].menu.mn_menu = ROOT;
-					wct->xmn[i].menu.mn_item = 1;
-					wct->xmn[i].menu.mn_scroll = 1;
-					wct->xmn[i].mn_selected = -1;
-
-					if (!i)
-					{
-						obtree->ob_x = ce->md.x;
-						obtree->ob_y = ce->md.y;
-						obj_offset(wt, aesobj(obtree, 0), &x, &y);
-					}
-					else
-					{
-						short attachto = 1;
-						char **t = wct->text[0];
-
-						while (*t[0])
-						{
-							if (*t[0] == (char)i)
-							{
-								attach_menu(0, ce->client, wct->wt[0], attachto, &wct->xmn[i], onopen_wctxt[attachto], wind);
-							}
-							t++;
-							attachto++;
-						}
-					}
-				}
-				else
-				{
-					free_object_tree(ce->client, obtree);
-					goto bailout;
-				}
-			}
-			else goto bailout;
+			free_object_tree(ce->client, obtree);
+			goto bailout;
 		}
-		/* */
-		if (wct)
-		{
-			XAMENU_RESULT result;
-			short obnum = -1, dowhat = -1;
+		wct->wt[i] = wt;
 
-			wlpu = build_windlist_pu(ce->client, &ce->md);
-			if (wlpu)
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		wct->xmn[i].wt = wt;
+		wct->xmn[i].menu.mn_tree = wt->tree;
+		wct->xmn[i].menu.mn_menu = ROOT;
+		wct->xmn[i].menu.mn_item = 1;
+		wct->xmn[i].menu.mn_scroll = 1;
+		wct->xmn[i].mn_selected = -1;
+
+		if (i == 0)
+		{
+			obtree->ob_x = ce->md.x;
+			obtree->ob_y = ce->md.y;
+			obj_offset(wt, aesobj(obtree, 0), &x, &y);
+		}
+	}
+
+	/* attach advanced menu */
+	attach_menu(0, ce->client, wct->wt[0], 2, &wct->xmn[1], onopen_wctxt[2], wind);
+	/* attach close menu */
+	attach_menu(0, ce->client, wct->wt[0], 4, &wct->xmn[2], onopen_wctxt[4], wind);
+	/* attach hide menu */
+	attach_menu(0, ce->client, wct->wt[0], 5, &wct->xmn[3], onopen_wctxt[5], wind);
+	/* attach iconify menu */
+	attach_menu(0, ce->client, wct->wt[0], 6, &wct->xmn[2], onopen_wctxt[6], wind);
+	/* attach shade menu */
+	attach_menu(0, ce->client, wct->wt[0], 7, &wct->xmn[2], onopen_wctxt[7], wind);
+
+	obnum = -1;
+	dowhat = -1;
+
+	wlpu = build_windlist_pu(ce->client, &ce->md);
+	if (wlpu)
+	{
+		attach_menu(0, ce->client, wct->wt[0], 1, &wlpu->xmn, NULL, NULL);
+	}
+	Ctxtwin = wind;
+	if (menu_popup(0, wct->wt[0]->owner, &wct->xmn[0], &result, x, y, 2))
+	{
+		if (result.menu.mn_item > 0)
+		{
+			if (result.at)
 			{
-				attach_menu(0, ce->client, wct->wt[0], 1, &wlpu->xmn, NULL, NULL);
+				obnum = result.at->to_item;
+				dowhat = result.menu.mn_item;
 			}
-			Ctxtwin = wind;
-			if (menu_popup(0, wct->wt[0]->owner, &wct->xmn[0], &result, x, y, 2))
+			else
 			{
-				if (result.menu.mn_item > 0)
+				obnum = result.menu.mn_item;
+			}
+		}
+	}
+
+	if (TAB_LIST_START && TAB_LIST_START->client == ce->client)
+	{
+		popout(TAB_LIST_START);
+	}
+
+	if (obnum > 0)
+	{
+		switch (obnum)
+		{
+		case MWCTXT_WINDOWS:
+			if (dowhat > 0)
+			{
+				struct xa_window *wl;
+				if ((wl = wlpu->winds[dowhat - 1]))
 				{
-					if (result.at)
+					wind = window_list;
+					while (wind)
 					{
-						obnum = result.at->to_item;
-						dowhat = result.menu.mn_item;
+						if (wind == wl)
+							break;
+						else if (wind == root_window)
+						{
+							wind = NULL;
+							break;
+						}
+						wind = wind->next;
+					}
+
+					if (wind)
+					{
+#if 0
+						S.focus = 0;
+						if( wind != TOP_WINDOW )	/* would untop */
+#endif
+							top_window(0, true, true, wind);
 					}
 					else
-					{
-						obnum = result.menu.mn_item;
-					}
+						wlpu->winds[dowhat - 1] = NULL;
 				}
 			}
+			break;
 
-			if (TAB_LIST_START && TAB_LIST_START->client == ce->client)
+		case MWCTXT_ADVANCED:
+			switch (dowhat)
 			{
-				popout(TAB_LIST_START);
+				case ADVWC_FLOAT: /* Keep over others */
+					wind->window_status &= ~XAWS_SINK;
+					wind->window_status ^= XAWS_FLOAT;
+					top_window(0, true, true, wind);
+					break;
+
+				case ADVWC_SINK: /* Keep under others */
+					wind->window_status &= ~XAWS_FLOAT;
+					wind->window_status ^= XAWS_SINK;
+					if (is_topped(wind))
+						top_window(0, true, true, wind);
+					else
+						bottom_window(0, true, true, wind);
+					break;
+
+				case ADVWC_TOOLBOX:
+					wind->window_status ^= XAWS_BINDFOCUS;
+					if ((wind->window_status & XAWS_BINDFOCUS))
+					{
+						if (get_app_infront() != wind->owner)
+							hide_toolboxwindows(wind->owner);
+						else
+							top_window(0, true, false, wind);
+					}
+					else
+						top_window(0, true, true, wind);
+					break;
+
+				case ADVWC_NOFOCUS:
+					{
+						struct xa_window *fw;
+						wind->window_status ^= XAWS_NOFOCUS;
+						reset_focus(&fw, 0);
+						setnew_focus(fw, NULL, true, true, true);
+					}
+					break;
 			}
+			break;
 
-			if (obnum > 0)
+		case MWCTXT_TODESK:
+			break;
+
+		case MWCTXT_CLOSE:
+			switch (dowhat)
 			{
-				switch (obnum)
+			case WCACT_THIS:
+				send_closed(0, wind);
+				break;
+
+			case WCACT_ALL:
 				{
-					case MWCTXT_WINDOWS:
-					{
-						if (dowhat > 0)
-						{
-							struct xa_window *wl;
-							if ((wl = wlpu->winds[dowhat - 1]))
-							{
-								wind = window_list;
-								while (wind)
-								{
-									if (wind == wl)
-										break;
-									else if (wind == root_window)
-									{
-										wind = NULL;
-										break;
-									}
-									wind = wind->next;
-								}
+					struct xa_client *cl = wind->owner;
+					struct xa_window *nxt;
 
-								if (wind)
-								{
-#if 0
-									S.focus = 0;
-									if( wind != TOP_WINDOW )	/* would untop */
-#endif
-										top_window(0, true, true, wind);
-								}
-								else
-									wlpu->winds[dowhat - 1] = NULL;
-							}
-						}
-						break;
-					}
-					case MWCTXT_ADVANCED:
+					wind = window_list;
+					while (wind)
 					{
-						switch (dowhat)
-						{
-							case ADVWC_FLOAT: /* Keep over others */
-							{
-								wind->window_status &= ~XAWS_SINK;
-								wind->window_status ^= XAWS_FLOAT;
-								top_window(0, true, true, wind);
-								break;
-							}
+						nxt = wind->next;
+						if (wind->owner == cl && (wind->window_status & XAWS_OPEN))
+							send_closed(0, wind);
+						wind = nxt;
+					}
+				}
+				break;
+			case WCACT_OTHERS:
+				{
+					struct xa_client *cl = wind->owner;
+					struct xa_window *nxt;
 
-							case ADVWC_SINK: /* Keep under others */
-							{
-								wind->window_status &= ~XAWS_FLOAT;
-								wind->window_status ^= XAWS_SINK;
-								if (is_topped(wind))
-									top_window(0, true, true, wind);
-								else
-									bottom_window(0, true, true, wind);
-								break;
-							}
-							case ADVWC_TOOLBOX:
-							{
-								wind->window_status ^= XAWS_BINDFOCUS;
-								if ((wind->window_status & XAWS_BINDFOCUS))
-								{
-									if (get_app_infront() != wind->owner)
-										hide_toolboxwindows(wind->owner);
-									else
-										top_window(0, true, false, wind);
-								}
-								else
-									top_window(0, true, true, wind);
-								break;
-							}
-							case ADVWC_NOFOCUS:
-							{
-								struct xa_window *fw;
-								wind->window_status ^= XAWS_NOFOCUS;
-								reset_focus(&fw, 0);
-								setnew_focus(fw, NULL, true, true, true);
-								break;
-							}
-							default:;
-						}
-						break;
-					}
-					case MWCTXT_TODESK:
+					wind = window_list;
+					while (wind)
 					{
-						break;
+						nxt = wind->next;
+						if (wind->owner != cl && (wind->window_status & XAWS_OPEN))
+							send_closed(0, wind);
+						wind = nxt;
 					}
-					case MWCTXT_CLOSE:
-					{
-						switch (dowhat)
-						{
-							case WCACT_THIS:
-							{
-								send_closed(0, wind);
-								break;
-							}
-							case WCACT_ALL:
-							{
-								struct xa_client *cl = wind->owner;
-								struct xa_window *nxt;
+				}
+				break;
+			}
+			break;
 
-								wind = window_list;
-								while (wind)
-								{
-									nxt = wind->next;
-									if (wind->owner == cl && (wind->window_status & XAWS_OPEN))
-										send_closed(0, wind);
-									wind = nxt;
-								}
-								break;
-							}
-							case WCACT_OTHERS:
-							{
-								struct xa_client *cl = wind->owner;
-								struct xa_window *nxt;
+		case MWCTXT_HIDE:
+			switch (dowhat)
+			{
+			case -1:
+			case WCHIDE_THIS:
+				if ((wind->window_status & XAWS_HIDDEN))
+					unhide_window(0, wind, false);
+				else
+					hide_window(0, wind);
+				break;
 
-								wind = window_list;
-								while (wind)
-								{
-									nxt = wind->next;
-									if (wind->owner != cl && (wind->window_status & XAWS_OPEN))
-										send_closed(0, wind);
-									wind = nxt;
-								}
-								break;
-							}
-							default:;
-						}
-						break;
-					}
-					case MWCTXT_HIDE:
+			case WCHIDE_APP:
+				hide_app(0, wind->owner);
+				break;
+
+			case WCHIDE_OTHER:
+				hide_other(0, wind->owner);
+				break;
+
+			case WCHIDE_UNHIDEOTH:
+				unhide_all(0, wind->owner);
+				break;
+			}
+			break;
+
+		case MWCTXT_ICONIFY:
+			switch (dowhat)
+			{
+			case -1:
+			case WCACT_THIS:
+				iconify_action(0, wind, NULL);
+				break;
+
+			case WCACT_ALL:
+			case WCACT_RALL:
+				{
+					struct xa_client *cl = wind->owner;
+					struct xa_window *nxt;
+
+					wind = window_list;
+					while (wind && wind != root_window)
 					{
-						switch (dowhat)
+						nxt = wind->next;
+						if (dowhat == WCACT_ALL)
 						{
-							case -1:
-							case WCHIDE_THIS:
-							{
-								if ((wind->window_status & XAWS_HIDDEN))
-									unhide_window(0, wind, false);
-								else
-									hide_window(0, wind);
-								break;
-							}
-							case WCHIDE_APP:
-							{
-								hide_app(0, wind->owner);
-								break;
-							}
-							case WCHIDE_OTHER:
-							{
-								hide_other(0, wind->owner);
-								break;
-							}
-							case WCHIDE_UNHIDEOTH:
-							{
-								unhide_all(0, wind->owner);
-								break;
-							}
-							default:;
-						}
-						break;
-					}
-					case MWCTXT_ICONIFY:
-					{
-						switch (dowhat)
-						{
-							case -1:
-							case WCACT_THIS:
+							if (wind->owner == cl && !is_iconified(wind))
 							{
 								iconify_action(0, wind, NULL);
-								break;
+								wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
 							}
-							case WCACT_ALL:
-							case WCACT_RALL:
-							{
-								struct xa_client *cl = wind->owner;
-								struct xa_window *nxt;
-
-								wind = window_list;
-								while (wind && wind != root_window)
-								{
-									nxt = wind->next;
-									if (dowhat == WCACT_ALL)
-									{
-										if (wind->owner == cl && !is_iconified(wind))
-										{
-											iconify_action(0, wind, NULL);
-											wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
-										}
-									}
-									else
-									{
-										if (wind->owner == cl && is_iconified(wind))
-											iconify_action(0, wind, NULL);
-									}
-									wind = nxt;
-								}
-								wind = window_list;
-								while (wind && wind != root_window)
-								{
-									if (wind->owner == cl && (wind->window_status & XAWS_SEMA))
-										wind->window_status &= ~(XAWS_ICONIFIED|XAWS_SEMA);
-									wind = wind->next;
-								}
-								break;
-							}
-							case WCACT_OTHERS:
-							case WCACT_ROTHERS:
-							{
-								struct xa_client *cl = wind->owner;
-								struct xa_window *nxt;
-
-								wind = window_list;
-								while (wind && wind != root_window)
-								{
-									nxt = wind->next;
-									if (dowhat == WCACT_OTHERS)
-									{
-										if (wind->owner != cl && !is_iconified(wind))
-										{
-											iconify_action(0, wind, NULL);
-											wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
-										}
-									}
-									else
-									{
-										if (wind->owner != cl && is_iconified(wind))
-											iconify_action(0, wind, NULL);
-									}
-									wind = nxt;
-								}
-								wind = window_list;
-								while (wind && wind != root_window)
-								{
-									if (wind->owner != cl && (wind->window_status & XAWS_SEMA))
-										wind->window_status &= ~(XAWS_ICONIFIED|XAWS_SEMA);
-									wind = wind->next;
-								}
-								break;
-
-							}
-							default:;
-						}
-						break;
-					}
-					case MWCTXT_SHADE:
-					{
-						switch (dowhat)
-						{
-						case WCACT_THIS: /* Shade window */
-						{
-							post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL,&ce->md);
-							break;
-						}
-						case WCACT_ALL:
-						case WCACT_RALL:
-						{
-							struct xa_client *owner = wind->owner;
-							wind = window_list;
-							while (wind && wind != root_window)
-							{
-								if (wind->owner == owner)
-								{
-									if ( (dowhat == WCACT_ALL && !(wind->window_status & XAWS_SHADED)) ||
-									   ( (dowhat == WCACT_RALL && (wind->window_status & XAWS_SHADED))))
-										post_cevent(owner, CE_shade_action, wind,NULL, 0,0, NULL, &ce->md);
-								}
-								wind = wind->next;
-							}
-							break;
-						}
-						case WCACT_OTHERS:
-						case WCACT_ROTHERS:
-						{
-							struct xa_client *owner = wind->owner;
-
-							wind = window_list;
-							while (wind && wind != root_window)
-							{
-								if (wind->owner != owner)
-								{
-									if ( (dowhat == WCACT_OTHERS && !(wind->window_status & XAWS_SHADED)) ||
-									   ( (dowhat == WCACT_ROTHERS && (wind->window_status & XAWS_SHADED))))
-									{
-										post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL, &ce->md);
-									}
-								}
-								wind = wind->next;
-							}
-							break;
-						}
-						}
-						break;
-					}
-					case MWCTXT_MOVE:
-					{
-						break;
-					}
-					case MWCTXT_SIZE:
-					{
-						break;
-					}
-					case MWCTXT_QUIT:
-					{
-						if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
-						{
-							ALERT((xa_strings[AL_TERMAES]/*"Cannot terminate AES system proccesses!"*/));
 						}
 						else
-							send_terminate(lock, wind->owner, AP_TERM);
-						break;
-					}
-					case MWCTXT_KILL:
-					{
-						if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
 						{
-							ALERT((xa_strings[AL_KILLAES]/*"Not a good idea, I tell you!"*/));
+							if (wind->owner == cl && is_iconified(wind))
+								iconify_action(0, wind, NULL);
 						}
-						else
-							ikill(wind->owner->p->pid, SIGKILL);
-						break;
+						wind = nxt;
+					}
+					wind = window_list;
+					while (wind && wind != root_window)
+					{
+						if (wind->owner == cl && (wind->window_status & XAWS_SEMA))
+							wind->window_status &= ~(XAWS_ICONIFIED|XAWS_SEMA);
+						wind = wind->next;
 					}
 				}
-			}
-			Ctxtwin = NULL;
-		}
-bailout:
-		if (wct)
-		{
-			if (wct->wt[0])
-			{
-				for (i = 1; i < wct->entries[0] + 1; i++)
+				break;
+
+			case WCACT_OTHERS:
+			case WCACT_ROTHERS:
 				{
-					if (is_attach(ce->client, wct->wt[0], i, NULL))
-						detach_menu(0, ce->client, wct->wt[0], i);
+					struct xa_client *cl = wind->owner;
+					struct xa_window *nxt;
+
+					wind = window_list;
+					while (wind && wind != root_window)
+					{
+						nxt = wind->next;
+						if (dowhat == WCACT_OTHERS)
+						{
+							if (wind->owner != cl && !is_iconified(wind))
+							{
+								iconify_action(0, wind, NULL);
+								wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
+							}
+						}
+						else
+						{
+							if (wind->owner != cl && is_iconified(wind))
+								iconify_action(0, wind, NULL);
+						}
+						wind = nxt;
+					}
+					wind = window_list;
+					while (wind && wind != root_window)
+					{
+						if (wind->owner != cl && (wind->window_status & XAWS_SEMA))
+							wind->window_status &= ~(XAWS_ICONIFIED|XAWS_SEMA);
+						wind = wind->next;
+					}
 				}
+				break;
 			}
+			break;
 
-			for (i = 0; i < WCTXT_POPUPS; i++)
+		case MWCTXT_SHADE:
+			switch (dowhat)
 			{
-				remove_wt(wct->wt[i], false);
-			}
+			case WCACT_THIS: /* Shade window */
+				post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL,&ce->md);
+				break;
 
-			kfree(wct);
+			case WCACT_ALL:
+			case WCACT_RALL:
+				{
+					struct xa_client *owner = wind->owner;
+
+					wind = window_list;
+					while (wind && wind != root_window)
+					{
+						if (wind->owner == owner)
+						{
+							if ( (dowhat == WCACT_ALL && !(wind->window_status & XAWS_SHADED)) ||
+							   ( (dowhat == WCACT_RALL && (wind->window_status & XAWS_SHADED))))
+								post_cevent(owner, CE_shade_action, wind,NULL, 0,0, NULL, &ce->md);
+						}
+						wind = wind->next;
+					}
+				}
+				break;
+
+			case WCACT_OTHERS:
+			case WCACT_ROTHERS:
+				{
+					struct xa_client *owner = wind->owner;
+
+					wind = window_list;
+					while (wind && wind != root_window)
+					{
+						if (wind->owner != owner)
+						{
+							if ( (dowhat == WCACT_OTHERS && !(wind->window_status & XAWS_SHADED)) ||
+							   ( (dowhat == WCACT_ROTHERS && (wind->window_status & XAWS_SHADED))))
+							{
+								post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL, &ce->md);
+							}
+						}
+						wind = wind->next;
+					}
+				}
+				break;
+			}
+			break;
+
+		case MWCTXT_MOVE:
+			break;
+
+		case MWCTXT_SIZE:
+			break;
+
+		case MWCTXT_QUIT:
+			if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
+			{
+				ALERT((xa_strings(AL_TERMAES)/*"Cannot terminate AES system proccesses!"*/));
+			}
+			else
+				send_terminate(lock, wind->owner, AP_TERM);
+			break;
+
+		case MWCTXT_KILL:
+			if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
+			{
+				ALERT((xa_strings(AL_KILLAES)/*"Not a good idea, I tell you!"*/));
+			}
+			else
+				ikill(wind->owner->p->pid, SIGKILL);
+			break;
 		}
-		if (wlpu)
+	}
+	Ctxtwin = NULL;
+
+bailout:
+	if (wct->wt[0])
+	{
+		for (i = 1; i < wct->entries[0] + 1; i++)
 		{
-			detach_menu(0, ce->client, wct->wt[0], 1);
-			remove_wt(wlpu->xmn.wt, false);
-			kfree(wlpu);
+			if (is_attach(ce->client, wct->wt[0], i, NULL))
+				detach_menu(0, ce->client, wct->wt[0], i);
 		}
+	}
+
+	for (i = 0; i < WCTXT_POPUPS; i++)
+	{
+		remove_wt(wct->wt[i], false);
+	}
+	kfree(wct);
+
+	if (wlpu)
+	{
+		detach_menu(0, ce->client, wct->wt[0], 1);
+		remove_wt(wlpu->xmn.wt, false);
+		kfree(wlpu);
 	}
 }
 
@@ -4976,7 +4936,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 									xa_bubble( 0, bbl_close_bubble2, 0, 0 );
 									bbl_closed = 1;
 								}
-								bubble_show( WidgNames[f-1] );
+								bubble_show(xa_strings(f - 1 + BBL_RESIZE));
 							}
 #endif
 							C.hover_wind = wind;

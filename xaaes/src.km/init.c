@@ -381,7 +381,6 @@ again:
 	{
 		strcpy(C.bootlog_path, C.start_path);
 		strcat(C.bootlog_path, "xa_boot.log");
-		//display("bootlog '%s'", C.bootlog_path);
 	}
 
 	if (first)

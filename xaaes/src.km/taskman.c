@@ -40,7 +40,6 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 #include "keycodes.h"
 
 #include "xaaes.h"
@@ -1013,7 +1012,7 @@ ce_quit_all_clients(int lock, struct xa_client *client, bool b)
 	struct cfg_name_list *nl = NULL;
 
 
-	if ( xaaes_do_form_alert( lock, C.Hlp, 1, xa_strings[ASK_QUITALL_ALERT] ) != 2 )
+	if ( xaaes_do_form_alert( lock, C.Hlp, 1, xa_strings(ASK_QUITALL_ALERT)) != 2 )
 	{
 		return;
 	}
@@ -1043,7 +1042,7 @@ CHlp_aesmsg(struct xa_client *client)
 				}
 				else if (m->m[3] != 0)
 				{
-					sprintf(alert, sizeof(alert), /*scrn_snap_serr*/xa_strings[SNAP_ERR1], m->m[3]);
+					sprintf(alert, sizeof(alert), /*scrn_snap_serr*/xa_strings(SNAP_ERR1), m->m[3]);
 					do_form_alert(0, client, 1, alert, XAAESNAME);
 				}
 				break;
@@ -1074,7 +1073,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 			C.update_lock = client->p;
 			C.updatelock_count++;
 
-			do_form_alert(lock, client, 4, xa_strings[SDALERT], XAAESNAME);
+			do_form_alert(lock, client, 4, xa_strings(SDALERT), XAAESNAME);
 			Block(client, 0);
 #if WITH_BBL_HELP
 			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
@@ -1108,7 +1107,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 					C.updatelock_count--;
 					C.update_lock = NULL;
 					unlock_screen(client->p);
-					do_form_alert(lock, client, 1, xa_strings[SNAP_ERR2], XAAESNAME);
+					do_form_alert(lock, client, 1, xa_strings(SNAP_ERR2), XAAESNAME);
 					doit = false;
 				}
 			}
@@ -1218,7 +1217,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 		}
 	}
 	else
-		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/ xa_strings[SNAP_ERR3],	XAAESNAME);
+		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/ xa_strings(SNAP_ERR3), XAAESNAME);
 }
 #endif
 
@@ -1527,7 +1526,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			Sema_Dn(LOCK_CLIENTS);
 #if 0
 			close_window(lock, wind);
-			if ( xaaes_do_form_alert( 0, C.Hlp, 1, xa_strings[ASK_SHUTDOWN_ALERT] ) != 2 )
+			if ( xaaes_do_form_alert( 0, C.Hlp, 1, xa_strings(ASK_SHUTDOWN_ALERT)) != 2 )
 				goto lb_TM_OK;
 #endif
 			DIAGS(("taskmanager: halt system"));
@@ -1962,7 +1961,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, tm_slist_key,
 				 NULL, NULL, NULL, NULL,
-         xa_strings[RS_APPLST], "      name            pid ppid pgrp pri DOM  STATE       SZ         CPU  % args", NULL, 255);
+         xa_strings(RS_APPLST), "      name            pid ppid pgrp pri DOM  STATE       SZ         CPU  % args", NULL, 255);
 
 		if (!list) goto fail;
 
@@ -2006,7 +2005,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		wind->window_status |= XAWS_NODELETE;
 
 		/* Set the window title */
-		set_window_title(wind, xa_strings[RS_TM], false);
+		set_window_title(wind, xa_strings(RS_TASKMANAGER), false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
@@ -2431,30 +2430,30 @@ open_launcher(int lock, struct xa_client *client, int what)
 			if( !cfg.gradients[0] )
 				return;
 			path = pbuf;
-			text = xa_strings[RS_LDGRAD];
+			text = xa_strings(RS_LDGRAD);
 			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "gradient\\*.grd" );
 		break;
 #endif
 		case 1:
 			path = cfg.launch_path;
-			text = xa_strings[RS_LAUNCH];
+			text = xa_strings(RS_LAUNCH);
 		break;
 #if WITH_BKG_IMG
 		case 2:
 			path = pbuf;
 			make_bkg_img_path( path, sizeof(pbuf)-16 );
 			strcat( path, "\\*."BKGIMG_EXT );
-			text = xa_strings[RS_LDIMG];
+			text = xa_strings(RS_LDIMG);
 		break;
 #endif
 		case 3:
 			path = pbuf;
-			text = xa_strings[RS_LDPAL];
+			text = xa_strings(RS_LDPAL);
 			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "pal\\*.pal" );
 		break;
 		case 4:
 			path = pbuf;
-			text = xa_strings[RS_LDCNF];
+			text = xa_strings(RS_LDCNF);
 			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "*.cnf" );
 		break;
 		default:
@@ -2530,7 +2529,7 @@ sysalerts_form_exit(struct xa_client *Client,
 			struct scroll_info *list = object_get_slist(wt->tree + SYSALERT_LIST);
 			struct sesetget_params p = { 0 };
 
-			p.arg.txt = xa_strings[RS_ALERTS];
+			p.arg.txt = xa_strings(RS_ALERTS);
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
 				list->empty(list, p.e, 0);
@@ -2715,11 +2714,11 @@ static void add_os_features(struct scroll_info *list, struct scroll_entry *this,
 
 #if CHECK_STACK
 	extern unsigned short stack_align;
-	int l = sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], (features & 1) ? xa_strings[RS_ON] : xa_strings[RS_OFF] );
+	int l = sprintf( s, sizeof(s)-1, xa_strings(RS_MEMPROT), (features & 1) ? xa_strings(RS_ON) : xa_strings(RS_OFF));
 	sprintf( s+l, sizeof(s)-1-l, ", Stack: %x", stack_align );
 	BLOG((0,s));
 #else
-	sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], (features & 1) ? xa_strings[RS_ON] : xa_strings[RS_OFF]);
+	sprintf( s, sizeof(s)-1, xa_strings(RS_MEMPROT), (features & 1) ? xa_strings(RS_ON) : xa_strings[(RS_OFF));
 #endif
 	sc->t.text = s;
 
@@ -2845,9 +2844,9 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		struct scroll_info *list;
 		RECT or;
 		short minw, minh;
-		char *a = xa_strings[RS_ALERTS];
-		char *e = xa_strings[RS_ENV];
-		char *s = xa_strings[RS_SYSTEM];
+		char *a = xa_strings(RS_ALERTS);
+		char *e = xa_strings(RS_ENV);
+		char *s = xa_strings(RS_SYSTEM);
 		int objs[] = {SALERT_IC1, SALERT_IC2, 0};
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
@@ -2951,7 +2950,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 				else
 					fs = pformats[5];
 
-				sprintf( sstr, sizeof(sstr)-1, xa_strings[RS_VIDEO],/* "Video:%dx%dx%d,%d colours, format: %s" */
+				sprintf( sstr, sizeof(sstr)-1, xa_strings(RS_VIDEO),/* "Video:%dx%dx%d,%d colours, format: %s" */
 					screen.r.w, screen.r.h, screen.planes, screen.colours, fs );
 			}
 
@@ -3017,7 +3016,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 
 		/* Set the window title */
-		set_window_title(wind, xa_strings[RS_SYS], false);
+		set_window_title(wind, xa_strings(RS_SYS), false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0, STW_ZEN, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
@@ -3111,9 +3110,9 @@ do_system_menu(int lock, int clicked_title, int menu_item)
 		case SYS_MN_DESK:
 		{
 			if (C.DSKpid >= 0)
-				ALERT((xa_strings[AL_SHELLRUNS]));
+				ALERT((xa_strings(AL_SHELLRUNS)));
 			else if (!*C.desk)
-				ALERT((xa_strings[AL_NOSHELL]));
+				ALERT((xa_strings(AL_NOSHELL)));
 			else
 				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;

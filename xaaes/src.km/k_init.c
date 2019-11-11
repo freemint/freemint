@@ -29,7 +29,6 @@
 #include "form.h"
 #include "k_init.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "xaaes.h"
 
@@ -876,6 +875,7 @@ k_init(unsigned long vm)
 
 	/* Load the system resource files
 	 */
+	xa_strings = NULL;
 	BLOG((false, "Loading system resource file '%s' lang='%s'(%d) trans=%d", cfg.rsc_name, cfg.lang, info_tab[3][0], client->options.rsc_lang));
 	if ( !(resource_name = xaaes_sysfile(cfg.rsc_name) ) )
 	{
@@ -1001,9 +1001,9 @@ k_init(unsigned long vm)
 	wt_menu_area(client->std_menu);
 	set_rootmenu_area(client);
 
-	client->mnu_clientlistname = kmalloc(strlen(xa_strings[MNU_CLIENTS]) + 1);
+	client->mnu_clientlistname = kmalloc(strlen(xa_strings(MNU_CLIENTS)) + 1);
 	assert(client->mnu_clientlistname);
-	strcpy(client->mnu_clientlistname, xa_strings[MNU_CLIENTS]);
+	strcpy(client->mnu_clientlistname, xa_strings(MNU_CLIENTS));
 	fix_menu(client, client->std_menu, root_window, true);
 	set_menu_widget(root_window, client, client->std_menu);
 	set_menu_width( client->std_menu->tree, client->std_menu );

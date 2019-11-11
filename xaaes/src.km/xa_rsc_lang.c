@@ -24,7 +24,6 @@
 #include "xa_types.h"
 #include "xa_aes.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "draw_obj.h"
 #include "trnfm.h"
@@ -291,45 +290,6 @@ void rsc_lang_file_write(XA_FILE *fp, const char *buf, long l)
 	{
 		xa_writeline(buf, l, fp);
 	}
-}
-
-
-void rsc_lang_translate_xaaes_strings(struct xa_client *client, XA_FILE *rfp)
-{
-	int i;
-	char **t;
-
-	if (trans_strings[0] == 0 || client->options.rsc_lang == 0)
-		return;
-	if (client->options.rsc_lang == WRITE)
-	{
-		rsc_lang_file_write(rfp, "# - Internal Strings -", 22);
-	}
-	for (i = 0; trans_strings[i]; i++)
-	{
-		for (t = trans_strings[i]; *t; t++)
-		{
-			if (**t)
-			{
-				char **t_2;
-				short ptr_seen = 0;
-
-				/* strings might be merged
-				 * gcc4 puts all strings in the same order in the out-file as they are in the source
-				 * gcc2 (and maybe also others) uses another order, so a search for the current string is done
-				 */
-				for (t_2 = trans_strings[i]; t_2 < t; t_2++)
-					if (*t_2 == *t)
-					{
-						ptr_seen = -1;
-						break;
-					}
-
-				rsc_trans_rw(client, rfp, t, &ptr_seen);
-			}
-		}
-	}
-	trans_strings[0] = 0;				/* no further translation possible */
 }
 
 
