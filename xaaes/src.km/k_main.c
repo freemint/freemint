@@ -41,7 +41,6 @@
 #endif
 
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "xaaes.h"
 
@@ -869,7 +868,7 @@ CE_fa(int lock, struct c_event *ce, short cancel)
 					sc.t.strings = 1;
 					sc.fnt = &norm_txt;
 					p.idx = -1;
-					p.arg.txt = xa_strings[RS_ALERTS];
+					p.arg.txt = xa_strings(RS_ALERTS);
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 					if( p.e )
 					{
@@ -1238,7 +1237,7 @@ sshutdown_timeout(struct proc *p, long arg)
 
 	C.sdt = NULL;
 #if ALERT_SHUTDOWN
-	if ( xaaes_do_form_alert( 0, 1, xa_strings[ASK_SHUTDOWN_ALERT], XAAESNAME ) != 2 )
+	if ( xaaes_do_form_alert( 0, 1, xa_strings(ASK_SHUTDOWN_ALERT), XAAESNAME ) != 2 )
 		return;
 #endif
 
@@ -1408,17 +1407,17 @@ ce_dispatch_shutdown(int lock, struct xa_client *client, short b)
 	switch( b & (RESTART_XAAES | HALT_SYSTEM | RESTART_AFTER_BOMB) )
 	{
 	case RESTART_XAAES:
-		s = xa_strings[ASK_RESTART_ALERT];
+		s = xa_strings(ASK_RESTART_ALERT);
 	break;
 	case RESTART_AFTER_BOMB:
-		s = xa_strings[HAD_A_PROBLEM];
+		s = xa_strings(HAD_A_PROBLEM);
 		def = 2;
 	break;
 	case HALT_SYSTEM:
-		s = xa_strings[ASK_SHUTDOWN_ALERT];
+		s = xa_strings(ASK_SHUTDOWN_ALERT);
 	break;
 	default:
-		s = xa_strings[ASK_QUIT_ALERT];
+		s = xa_strings(ASK_QUIT_ALERT);
 	}
 	if( !(b & RESOLUTION_CHANGE) )
 		next_res = 0;

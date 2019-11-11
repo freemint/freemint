@@ -48,7 +48,15 @@ extern char long_name[];
 extern char aes_id[];
 
 extern char info_string[256];
-
+extern char **xa_strings;
+#if 0 /* for tests */
+#define xa_strings(i) \
+	(xa_strings == NULL || i < 0 || i >= NUM_FRSTR || xa_strings[i] == NULL ? \
+	 (BLOG((0, "%s:%d:xa_strings(%d) is null", __FILE__, __LINE__, i)), "null") : \
+	 (BLOG((0, "%s:%d:xa_strings(%d): '%s'", __FILE__, __LINE__, i, xa_strings[i])), xa_strings[i]))
+#else
+#define xa_strings(i) xa_strings[i]
+#endif
 
 /* Area's shared between server and client, subject to locking. */
 extern struct shared S;

@@ -25,7 +25,6 @@
 #include "k_keybd.h"
 #include "c_keybd.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "xaaes.h"
 
@@ -280,7 +279,7 @@ XA_keyboard_event(int lock, const struct rawkey *key)
 	}
 }
 
-int switch_keyboard( char *tbname )
+int switch_keyboard( const char *tbname )
 {
 			long out;
 			unsigned long dummy;
@@ -295,7 +294,7 @@ int switch_keyboard( char *tbname )
 			out = s_system(S_LOADKBD, tbname ? (unsigned long)tblpath : 0L, (unsigned long)&dummy);
 			if( out )
 			{
-				ALERT((xa_strings[AL_KBD], tbname, sysdir, out));
+				ALERT((xa_strings(AL_KBD), tbname, sysdir, out));
 				return 1;
 			}
 			return 0;
@@ -469,7 +468,7 @@ kernel_key(int lock, struct rawkey *key)
 						{
 							switch_keyboard(0);
 						}
-						tbname = xa_strings[UNKNOWN];
+						tbname = xa_strings(SW_DEFAULT);
 					}
 					add_keybd_switch(tbname);
 					break;
@@ -904,7 +903,7 @@ kernel_key(int lock, struct rawkey *key)
 					{
 						if( strlen(sdmaster) > 12 )
 							sdmaster += (strlen(sdmaster) - 12);	/* ->fix ALERT! */
-						ALERT((xa_strings[AL_SDMASTER], sdmaster));
+						ALERT((xa_strings(AL_SDMASTER), sdmaster));
 					}
 					else
 						return true;

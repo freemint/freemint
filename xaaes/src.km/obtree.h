@@ -29,7 +29,7 @@
 #include "xa_aes.h"
 #include "ob_inlines.h"
 
-bool			validate_obtree(struct xa_client *c, OBJECT *o, char *f);
+bool			validate_obtree(struct xa_client *c, OBJECT *o, const char *f);
 bool			object_have_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);
 //void			aesobj_set_spec(struct xa_aes_object *o, unsigned long cl);

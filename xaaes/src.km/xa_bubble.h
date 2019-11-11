@@ -26,7 +26,7 @@ typedef enum{
 }BBL_STATUS;
 
 BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID );
-void bubble_show( char *str );
+void bubble_show( const char *str );
 void bubble_request( short pid, short whndl, short x, short y );
 /* d0 */
 #define BBL_EVNT_CLOSE1 0

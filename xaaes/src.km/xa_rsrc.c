@@ -24,7 +24,8 @@
 #include "xa_types.h"
 #include "xa_aes.h"
 #include "xa_global.h"
-#include "xa_strings.h"
+
+#include "xaaes.h"
 
 #include "draw_obj.h"
 #include "trnfm.h"
@@ -1053,7 +1054,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			else
 			{
 				DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-				sprintf( s, 255, xa_strings[RS_RSCSZ], fname, sz, size );
+				sprintf( s, sizeof(s)-1, xa_strings(AL_RSCSZ), fname, sz, size );
 
 				if ( !client->options.ignore_rsc_size && (xaaes_do_form_alert( 0, client, 2, s ) == 1) )
 					client->options.ignore_rsc_size = 1;
@@ -1114,10 +1115,14 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 
-
 	if (!rscs)
 	{
 		return NULL;
+	}
+
+	if (client == C.Aes && xa_strings == NULL)
+	{
+		xa_strings = (char **)rsc_start(hdr, rsh_frstr);
 	}
 
 	if( client->options.rsc_lang && (client != C.Aes || info_tab[3][0]) )
@@ -1153,8 +1158,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 
-	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frstr),	 rshdr(hdr, rsh_nstring), &extra_ptr, rfp );
-	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frimg),	 rshdr(hdr, rsh_nimages), &extra_ptr, 0);
 	fix_tedarray(client, base, (TEDINFO *)	rsc_start(hdr, rsh_tedinfo), rshdr(hdr, rsh_nted), &extra_ptr);
 	fix_icnarray(client, base, (ICONBLK *)	rsc_start(hdr, rsh_iconblk), rshdr(hdr, rsh_nib), &extra_ptr);
 	fix_bblarray(client, base, (BITBLK *)	rsc_start(hdr, rsh_bitblk),  rshdr(hdr, rsh_nbb), &extra_ptr);
@@ -1260,11 +1263,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + rshdr(hdr, rsh_object)), rshdr(hdr, rsh_nobs), rfp );
 
+	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frstr),	 rshdr(hdr, rsh_nstring), &extra_ptr, rfp );
+	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frimg),	 rshdr(hdr, rsh_nimages), &extra_ptr, 0);
+
 	if( rfp ){
-		if( client == C.Aes)
-		{
-			rsc_lang_translate_xaaes_strings(client, rfp);
-		}
 		xa_fclose(rfp);
 	}
 	fix_trees(client, base, (OBJECT **)(base + rshdr(hdr, rsh_trindex)), rshdr(hdr, rsh_ntree), designWidth, designHeight);
@@ -1672,7 +1674,7 @@ XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 	else
 	{
 		/* inform user what's going on */
-		ALERT((xa_strings[AL_NOGLOBPTR], "rsrc_load: ", client->name));
+		ALERT((xa_strings(AL_NOGLOBPTR), "rsrc_load: ", client->name));
 		/* exit_client(lock, client, -1, true, true); */
 		raise(SIGKILL);
 		yield();
@@ -1878,7 +1880,7 @@ XA_rsrc_gaddr(int lock, struct xa_client *client, AESPB *pb)
 
 			if( (*addr != 0) && ((char*)*addr < (char*)rsc || (char*)*addr >= rsc_end ))
 			{
-				ALERT((xa_strings[AL_INVALIDP], *addr, rsc, rsc_end, type ));
+				ALERT((xa_strings(AL_INVALIDP), *addr, rsc, rsc_end, type ));
 				pb->intout[0] = 0;
 				*addr = 0;
 			}
@@ -1947,7 +1949,7 @@ XA_rsrc_rcfix(int lock, struct xa_client *client, AESPB *pb)
 	else
 	{
 		/* inform user what's going on */
-		ALERT(( xa_strings[AL_NOGLOBPTR]/*"XaAES: rsrc_rcfix: %s, client with no globl_ptr, killing it"*/, client->name));
+		ALERT(( xa_strings(AL_NOGLOBPTR)/*"XaAES: rsrc_rcfix: %s, client with no globl_ptr, killing it"*/, client->name));
 		/* exit_client(lock, client, -1, true, true); */
 		raise(SIGKILL);
 		yield();

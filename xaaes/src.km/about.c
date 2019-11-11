@@ -27,7 +27,6 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "xaaes.h"
 
@@ -46,9 +45,13 @@
 #include "mint/stat.h"
 
 
-#if 1
-extern const char *const about_lines[];
+#if XAAES_RELEASE
+#define FN_CRED	0
 #else
+#define FN_CRED	0
+#endif
+
+#if 0
 const char *const about_lines[] =
 {
   /*          1         2         3         4         5         6
@@ -117,7 +120,7 @@ void add_keybd_switch(char *k)
 		return;
 
 	lang_from_akp( lang, 1 );
-	sprintf( buf, sizeof(buf), "%c             %s %s(%s)", cfg.keyboards.c, xa_strings[SW_KEYBD], k, lang );
+	sprintf( buf, sizeof(buf), "%c             %s %s(%s)", cfg.keyboards.c, xa_strings(SW_KEYBD), k, lang );
 	if( athis[0] )
 	{
 		struct setcontent_text t = { 0 };
@@ -216,22 +219,20 @@ enum PState
 static int IsKeyName( unsigned char **p, unsigned char *p1, long *lp, long l, int shift )
 {
 	int i;
-	for( i = 0; KeyNames[i]; i++ )
+	for (i = XS_KEY_CURSOR_UP; i <= XS_KEY_UNDO; i++ )
 	{
-		if( !strncmp( (const char*)*p, KeyNames[i], l ) )
-			break;
-	}
-	if( KeyNames[i] )
-	{
-		*p = p1;
-		*lp = l + (shift ? 6 : 0);
-		if( i == 4 )
-			i = ' ';
-		else if( i == 5 )
-			i = 0x1b;	//NK_ESC;
-		else
-			i++;
-		return i + shift;
+		if (strncmp((const char*)*p, xa_strings(i), l) == 0)
+		{
+			*p = p1;
+			*lp = l + (shift ? 6 : 0);
+			if (i == XS_KEY_SPACE)
+				i = ' ';
+			else if (i == XS_KEY_ESC)
+				i = 0x1b;
+			else
+				i = i + 1 - XS_KEY_CURSOR_UP;
+			return i + shift;
+		}
 	}
 	return 0;
 }
@@ -467,7 +468,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 					{
 					case '1':
 						if( open && cfg.keyboards.c )
-							add_keybd_switch(xa_strings[UNKNOWN]);
+							add_keybd_switch(xa_strings(SW_DEFAULT));
 					break;
 					}
 				continue;
@@ -668,8 +669,8 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 	}
 	else
 	{
-		sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings[XA_HELP_FILE] );
-		set_window_title(wind, xa_strings[RS_ABOUT], true);
+		sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings(XA_HELP_FILE));
+		set_window_title(wind, xa_strings(RS_ABOUT), true);
 		alist = list;
 	}
 
@@ -699,17 +700,18 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 #endif
 	if (!list->start)
 	{
-		const char *const *t = about_lines;
 		struct scroll_content sc = {{ 0 }};
+		int i;
 
 		sc.t.strings = 1;
 		if( view_file == false )
 		{
-			while (*t)
+			for (i = ABOUT_LINE0; i <= ABOUT_LINE7; i++)
 			{
-				sc.t.text = (char *)*t;
+				if (!FN_CRED && i <= ABOUT_LINE2)
+					continue;
+				sc.t.text = xa_strings(i);
 				list->add(list, NULL, NULL, &sc, false, 0, false);
-				t++;
 			}
 		}
 #if HELPINABOUT

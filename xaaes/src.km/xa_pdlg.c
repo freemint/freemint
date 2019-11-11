@@ -23,7 +23,6 @@
  */
 
 #include "global.h"
-#include "xa_strings.h"
 #include "xa_global.h"
 
 #include "xaaes.h"
@@ -2513,7 +2512,7 @@ memerr:
 	if (pdlg)
 	{
 		if (pdlg == (void *)-1L)
-			ALERT((xa_strings[AL_PDLG]/*"XaAES: Print dialogs unavailable with current VDI"*/));
+			ALERT((xa_strings(AL_PDLG)/*"XaAES: Print dialogs unavailable with current VDI"*/));
 		else
 			kfree(pdlg);
 	}

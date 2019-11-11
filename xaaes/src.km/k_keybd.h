@@ -53,7 +53,7 @@ void cancel_keyqueue	(struct xa_client *client);
 void queue_key		(struct xa_client *client, const struct rawkey *key);
 bool unqueue_key	(struct xa_client *client, struct rawkey *key);
 
-int switch_keyboard( char *tbname );
+int switch_keyboard( const char *tbname );
 void keyboard_input	(int lock);
 
 #endif /* _k_keybd_h */

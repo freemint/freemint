@@ -42,7 +42,6 @@
 
 #include "xa_fsel.h"
 #include "xa_global.h"
-#include "xa_strings.h"
 
 #include "xaaes.h"
 
@@ -2800,7 +2799,7 @@ fs_key_form_do(int lock,
 					{
 						if( *(t+2) <= ' ' )
 							l = *(t+1);
-						else if( !strnicmp( t+1, xa_strings[MNU_KEY_SPACE], 5 ) )
+						else if( !strnicmp( t+1, xa_strings(XS_KEY_SPACE), 5 ) )
 							l = ' ';
 						if( l == k )
 						{
