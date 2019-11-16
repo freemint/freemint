@@ -358,8 +358,6 @@ nn:OK
 ru:ÎÊ
 _
 ### Fileselector buttons ###
-nn:___________________________________________________________
-_
 nn: Cancel @
 de:Abbruch
 fr:Annuler
@@ -406,8 +404,6 @@ it:Terminare
 hu:Kil”v‚s
 ru:Îñòàíîâèòü
 cs:Zabít
-_
-nn:A very long application name.
 _
 nn:Shutting down @
 de:   Shutdown
