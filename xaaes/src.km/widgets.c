@@ -260,19 +260,13 @@ bool
 m_inside(short x, short y, RECT *o)
 {
 	if( x != MI_IGN && y != MI_IGN )
-		return (   x >= o->x
-		&& y >= o->y
-		&& x <  o->x+o->w
-		&& y <  o->y+o->h);
+		return x >= o->x && y >= o->y && x < o->x+o->w && y < o->y+o->h;
 
-	else if( y != MI_IGN )
-		return (
-		y >= o->y
-		&& y <  o->y+o->h);
+	if( y != MI_IGN )
+		return y >= o->y && y < o->y+o->h;
 
-	else if( x != MI_IGN )
-		return ( x >= o->x
-		&& x <  o->x+o->w );
+	if( x != MI_IGN )
+		return x >= o->x && x < o->x+o->w;
 
 	return false;
 }
@@ -1859,7 +1853,7 @@ next_wctxt_entry(short item, void **_data)
 		p->num = 0;
 	ret = p->start[p->num++];
 
-	return ret + 1;
+	return ret;
 }
 
 static void
@@ -2009,7 +2003,6 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 					{
 						pu->titles[i] = d;
 						pu->winds[i] = wind;
-						*d++ = ' ';
 						for (j = 0; j < an_len; j++)
 						{
 							if (*s)
