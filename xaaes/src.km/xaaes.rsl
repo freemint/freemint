@@ -711,221 +711,221 @@ ru:Óäîâëåòâîğÿåò óñëîâèÿì <b>GPL âåğñèè 2</b>.
 cs:Øídí se ustanoveními <b>GPL verze 2</b> nebo novìj¹í.
 _
 ### Window context menu ###
-nn:­Windows     @
-de:­Fenster     @
-fr:­Fenˆtres    @
-es:­Ventanas    @
-it:­Finestre    @
-hu:­Ablakok     @
-ru:­Îêíà        @
-cs:­Okna        @
+nn:Windows     @
+de:Fenster     @
+fr:Fenˆtres    @
+es:Ventanas    @
+it:Finestre    @
+hu:Ablakok     @
+ru:Îêíà        @
+cs:Okna        @
 _
-nn:Advanced    @
-de:Erweitert   @
-fr:Avanc‚      @
-es:Avanzado    @
-it:Avanzato    @
-hu:B”vebb      @
-ru:Äîïîëíèò.   @
-cs:Pokroèilé   @
+nn:Advanced    @
+de:Erweitert   @
+fr:Avanc‚      @
+es:Avanzado    @
+it:Avanzato    @
+hu:B”vebb      @
+ru:Äîïîëíèò.   @
+cs:Pokroèilé   @
 _
-nn:­To desktop  @
-de:­Zum Desktop @
-fr:­Au bureau   @
-es:­Escritorio  @
-it:­->Scrivania @
-hu:­Desktop-hoz @
-ru:­Ê äåñêòîïó  @
-cs:­Na plochu   @
+nn:To desktop  @
+de:Zum Desktop @
+fr:Au bureau   @
+es:Escritorio  @
+it:->Scrivania @
+hu:Desktop-hoz @
+ru:Ê äåñêòîïó  @
+cs:Na plochu   @
 _
-nn:Close       @
-de:Schliessen  @
-fr:Fermer      @
-es:Cerrar      @
-it:Chiudi      @
-hu:Bez r       @
-ru:Çàêğûòü     @
-cs:Zavøít      @
+nn:Close       @
+de:Schliessen  @
+fr:Fermer      @
+es:Cerrar      @
+it:Chiudi      @
+hu:Bez r       @
+ru:Çàêğûòü     @
+cs:Zavøít      @
 _
-nn:Hide        @
-de:Verstecken  @
-fr:Cacher      @
-es:Ocultar     @
-it:Nascondi    @
-hu:Elrejt      @
-ru:Ñêğûòü      @
-cs:Skrıt       @
+nn:Hide        @
+de:Verstecken  @
+fr:Cacher      @
+es:Ocultar     @
+it:Nascondi    @
+hu:Elrejt      @
+ru:Ñêğûòü      @
+cs:Skrıt       @
 _
-nn:Iconify     @
-de:Als Icon    @
-fr:Ic“nifier   @
-es:Minimizar   @
-it:Iconizza    @
-hu:Kicsiny¡t‚s @
-ru:Èêîíèçèğ.   @
-cs:Ikonifikovat@
+nn:Iconify     @
+de:Als Icon    @
+fr:Ic“nifier   @
+es:Minimizar   @
+it:Iconizza    @
+hu:Kicsiny¡t‚s @
+ru:Èêîíèçèğ.   @
+cs:Ikonifikovat@
 _
-nn:Shade       @
-de:Einklappen  @
-fr:Masquer     @
-es:Ensombrecer @
-it:Ombreggia   @
-hu:µrny‚kol s  @
-ru:Çàòåíèòü    @
-cs:Zarolovat   @
+nn:Shade       @
+de:Einklappen  @
+fr:Masquer     @
+es:Ensombrecer @
+it:Ombreggia   @
+hu:µrny‚kol s  @
+ru:Çàòåíèòü    @
+cs:Zarolovat   @
 _
-nn:­Move        @
-de:­Verschieben @
-fr:­D‚placer    @
-es:­Mover       @
-it:­Sposta      @
-hu:­Mozgat s    @
-ru:­Ïåğåìåñòèòü @
-cs:­Pøesunout   @
+nn:Move        @
+de:Verschieben @
+fr:D‚placer    @
+es:Mover       @
+it:Sposta      @
+hu:Mozgat s    @
+ru:Ïåğåìåñòèòü @
+cs:Pøesunout   @
 _
-nn:­Resize      @
-de:­Gr”e „ndern@
-fr:­Redimension.@
-es:­Dimensionar @
-it:­Ridimens.   @
-hu:­M‚retez‚s   @
-ru:­Èçì. ğàçìåğ @
-cs:­Zmìna velik.@
+nn:Resize      @
+de:Gr”e „ndern@
+fr:Redimension.@
+es:Dimensionar @
+it:Ridimens.   @
+hu:M‚retez‚s   @
+ru:Èçì. ğàçìåğ @
+cs:Zmìna velik.@
 _
-nn:­Quit        @
-de:­Beenden     @
-fr:­Quitter     @
-es:­Terminar    @
-it:­Esci        @
-hu:­Kil‚p‚s     @
-ru:­Âûéòè       @
-cs:­Ukonèit     @
+nn:Quit        @
+de:Beenden     @
+fr:Quitter     @
+es:Terminar    @
+it:Esci        @
+hu:Kil‚p‚s     @
+ru:Âûéòè       @
+cs:Ukonèit     @
 _
-nn:­Kill        @
-de:­Terminieren @
-fr:­Terminer    @
-es:­Kill        @
-it:­Termina     @
-hu:­Kil”v‚s     @
-ru:­Ïğåğâàòü    @
-cs:­Zabít       @
+nn:Kill        @
+de:Terminieren @
+fr:Terminer    @
+es:Kill        @
+it:Termina     @
+hu:Kil”v‚s     @
+ru:Ïğåğâàòü    @
+cs:Zabít       @
 _
-nn:­Keep above others           @
-de:­šber den anderen
-fr:­Maintenir au-dessus
-es:­Mantener delante
-it:­Tieni al di sopra
-hu:­T”bbiek el”tt
-ru:­Ïîâåğõ âñåõ îêîí
-cs:­Dr¾et nad ostatními
+nn:Keep above others           @
+de:šber den anderen
+fr:Maintenir au-dessus
+es:Mantener delante
+it:Tieni al di sopra
+hu:T”bbiek el”tt
+ru:Ïîâåğõ âñåõ îêîí
+cs:Dr¾et nad ostatními
 _
-nn:­Keep below others           @
-de:­Unter den anderen
-fr:­Maintenir en dessous
-es:­Mantener detras
-it:­Tieni al di sotto
-hu:­T”bbiek m”g”tt
-ru:­Çà âñåìè îêíàìè
-cs:­Dr¾et pod ostatními
+nn:Keep below others           @
+de:Unter den anderen
+fr:Maintenir en dessous
+es:Mantener detras
+it:Tieni al di sotto
+hu:T”bbiek m”g”tt
+ru:Çà âñåìè îêíàìè
+cs:Dr¾et pod ostatními
 _
-nn:­Toolbox attribute           @
-de:­Toolbox Attribut
-fr:­Attribut toolbox
-es:­Atributo Toolbox
-it:­Attributi Toolbox
-hu:­Toolbox tulajd.
-ru:­Àòğèáóòû ïàíåëè èíñòğóìåíòîâ
-cs:­Jako okno nástrojù
+nn:Toolbox attribute           @
+de:Toolbox Attribut
+fr:Attribut toolbox
+es:Atributo Toolbox
+it:Attributi Toolbox
+hu:Toolbox tulajd.
+ru:Àòğèáóòû ïàíåëè èíñòğóìåíòîâ
+cs:Jako okno nástrojù
 _
-nn:­Deny keyboard focus         @
-de:­Kein Tastatur-Fokus
-fr:­Interdire entr‚es clavier
-es:­Sin foco de teclado
-it:­Focus tastiera interdetto
-hu:­Nem kaphat f¢kuszt
-ru:­Çàïğåò ôîêóñà êëàâèàòóğû
-cs:­Neovládat klávesnicí
+nn:Deny keyboard focus         @
+de:Kein Tastatur-Fokus
+fr:Interdire entr‚es clavier
+es:Sin foco de teclado
+it:Focus tastiera interdetto
+hu:Nem kaphat f¢kuszt
+ru:Çàïğåò ôîêóñà êëàâèàòóğû
+cs:Neovládat klávesnicí
 _
-nn:­This                      @
-de:­Dieses Fenster
-fr:­Celle-ci
-es:­Este
-it:­Questo
-hu:­Ez
-ru:­İòî
-cs:­Toto
+nn:This                      @
+de:Dieses Fenster
+fr:Celle-ci
+es:Este
+it:Questo
+hu:Ez
+ru:İòî
+cs:Toto
 _
-nn:­All                       @
-de:­Alle
-fr:­Toutes
-es:­Todos
-it:­Tutti
-hu:­Mind
-ru:­Âñå
-cs:­V¹echny
+nn:All                       @
+de:Alle
+fr:Toutes
+es:Todos
+it:Tutti
+hu:Mind
+ru:Âñå
+cs:V¹echny
 _
-nn:­All others                @
-de:­Alle anderen
-fr:­Toutes les autres
-es:­Todos los dem s
-it:­Tutti gli altri
-hu:­T”bbi
-ru:­Âñå îñòàëüíûå
-cs:­V¹echny ostatní
+nn:All others                @
+de:Alle anderen
+fr:Toutes les autres
+es:Todos los dem s
+it:Tutti gli altri
+hu:T”bbi
+ru:Âñå îñòàëüíûå
+cs:V¹echny ostatní
 _
-nn:­Restore all               @
-de:­Alle hervorholen
-fr:­Tout restaurer
-es:­Restaurar todos
-it:­Ripristina tutto
-hu:­Mind vissza ll¡t sa
-ru:­Âîññòàíîâèòü âñå
-cs:­Obnovit v¹echny
+nn:Restore all               @
+de:Alle hervorholen
+fr:Tout restaurer
+es:Restaurar todos
+it:Ripristina tutto
+hu:Mind vissza ll¡t sa
+ru:Âîññòàíîâèòü âñå
+cs:Obnovit v¹echny
 _
-nn:­Restore all others        @
-de:­Andere hervorholen
-fr:­R‚tablir les autres
-es:­Restaurar todos los dem s
-it:­Ripristina altro
-hu:­T”bbi vissza ll¡t sa
-ru:­Âîññòàíîâèòü âñå îñòàëüíûå
-cs:­Obnovit v¹echny ostatní
+nn:Restore all others        @
+de:Andere hervorholen
+fr:R‚tablir les autres
+es:Restaurar todos los dem s
+it:Ripristina altro
+hu:T”bbi vissza ll¡t sa
+ru:Âîññòàíîâèòü âñå îñòàëüíûå
+cs:Obnovit v¹echny ostatní
 _
-nn:­This window               @
-de:­Dieses Fenster
-fr:­Cette fenˆtre
-es:­Esta ventana
-it:­Questa finestra
-hu:­Ez az ablak
-ru:­İòî îêíî
-cs:­Toto okno
+nn:This window               @
+de:Dieses Fenster
+fr:Cette fenˆtre
+es:Esta ventana
+it:Questa finestra
+hu:Ez az ablak
+ru:İòî îêíî
+cs:Toto okno
 _
-nn:­Application               @
-de:­Anwendung
-fr:­Application
-es:­Aplicaci¢n
-it:­Applicazione
-hu:­Alkalmaz s
-ru:­Ïğîãğàììà
-cs:­Aplikaci
+nn:Application               @
+de:Anwendung
+fr:Application
+es:Aplicaci¢n
+it:Applicazione
+hu:Alkalmaz s
+ru:Ïğîãğàììà
+cs:Aplikaci
 _
-nn:­Other apps                @
-de:­Andere Anwendungen
-fr:­Autres applications
-es:­Otras aplicaciones
-it:­Altre applicazioni
-hu:­T”bbi alkalmaz s
-ru:­Äğóãèå ïğîãğàììû
-cs:­Ostatní aplikace
+nn:Other apps                @
+de:Andere Anwendungen
+fr:Autres applications
+es:Otras aplicaciones
+it:Altre applicazioni
+hu:T”bbi alkalmaz s
+ru:Äğóãèå ïğîãğàììû
+cs:Ostatní aplikace
 _
-nn:­Show other apps           @
-de:­Zeige and. Anwendungen
-fr:­Montrer les autres
-es:­Mostrar otras aplicaciones
-it:­Mostra altre applicazioni
-hu:­T”bbi alk. megj.
-ru:­Ïîêàçàòü äğóãèå ïğîãğàììû
-cs:­Ukázat ostatní aplikace
+nn:Show other apps           @
+de:Zeige and. Anwendungen
+fr:Montrer les autres
+es:Mostrar otras aplicaciones
+it:Mostra altre applicazioni
+hu:T”bbi alk. megj.
+ru:Ïîêàçàòü äğóãèå ïğîãğàììû
+cs:Ukázat ostatní aplikace
 _
 ### Window titles & system strings ###
 nn+About
