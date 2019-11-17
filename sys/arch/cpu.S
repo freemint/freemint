@@ -225,10 +225,10 @@ _ccw_set:
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
 #else
-	beq.s	clq
+	beq	clq
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
-	bsr.s	_ccw_get		// get the current CCW
+	bsr	_ccw_get		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
 	move.l	28(sp),d1		// user specified CCW
 	move.l	32(sp),d2		// user specified CCM
@@ -249,8 +249,7 @@ _ccw_set:
 	move.l	(sp)+,d2		// restore new CCW
 	move.l	(sp)+,d1		// restore old CCW
 #ifdef __mcoldfire__
-	move.w	_mcpu+2,a0
-	cmpa.l	#40,a0			// the following is only necessary
+	bra.s write_cacr		// If ColdFire we're done
 #else
 	cmpi.w	#40,_mcpu+2		// the following is only necessary
 #endif
@@ -269,14 +268,33 @@ no_icache:
 	btst	#1,d2			// same as above, but for the data cache
 	beq.s	dc_off
 	btst	#1,d1
-	bne.s	lt040
+	bne.s	write_cacr
 	dc.w	0xF458			// cinva dc
 	bra.s	lt040
 dc_off:
 	btst	#1,d1
-	beq.s	lt040
+	beq.s	write_cacr
 	dc.w	0xF478			// cpusha dc
-lt040:
+lt040:					// 020/030 have write-through cache but we
+#ifdef __mcoldfire__			// need to invalidate it before enable it
+	move.w	_mcpu+2,a0
+	cmpa.l	#30,a0			// it's a 68020?
+#else
+	cmpi.w	#30,_mcpu+2		// it's a 68020?
+#endif
+	blt.s	inv_020ic		// 68020 has only intruction cache
+	btst	#1,d2			// 030 data cache going to be enabled?
+	jbeq	inv_020ic
+	btst	#1,d1			// if yes, is it currently disabled?
+	bne.s	inv_020ic
+	or.l	#0b100000000000,d0	// cd bit (clear d-cache)
+inv_020ic:				// invalidate 020 or 030 instruction cache
+	btst	#0,d2			// 020/030 instruction cache going to be enabled?
+	jbeq	write_cacr
+	btst	#0,d1			// if yes, is it currently disabled?
+	bne.s	write_cacr
+	or.l	#0b000000001000,d0	// ci bit (clear i-cache)
+write_cacr:
 	movec	d0,cacr			// write CACR
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
