@@ -144,4 +144,5 @@ usb*.km
 *.ucd
 *.udd
 *.grd
+*.gmo
 *~

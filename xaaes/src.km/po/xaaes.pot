@@ -1,0 +1,760 @@
+msgid  ""
+msgstr ""
+"Project-Id-Version: XaAES HEAD\n"
+"Report-Msgid-Bugs-To: https://github.com/freemint/freemint/issues\n"
+"POT-Creation-Date: 2019-11-17 00:35+0100\n"
+"PO-Revision-Date: 2019-11-16 15:56+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CP1252\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: SYSTEM_MENU:3
+msgid  " XaAES"
+msgstr ""
+
+#: SYSTEM_MENU:4
+msgid  " Process"
+msgstr ""
+
+#: SYSTEM_MENU:7
+msgid  "  About XaAES  ^\007Help"
+msgstr ""
+
+#: SYSTEM_MENU:16
+msgid  "  Launch Program...  ^\007K"
+msgstr ""
+
+#: SYSTEM_MENU:17
+msgid  "  Launch Desk"
+msgstr ""
+
+#: SYSTEM_MENU:19
+msgid  "  Task Manager       ^\007L"
+msgstr ""
+
+#: SYSTEM_MENU:20
+msgid  "  System             ^\007B"
+msgstr ""
+
+#: SYSTEM_MENU:22
+msgid  "  Quit all Apps      ^\007A"
+msgstr ""
+
+#: SYSTEM_MENU:23
+msgid  "  Restart XaAES      ^\007J"
+msgstr ""
+
+#: SYSTEM_MENU:24
+msgid  "  Quit XaAES         ^\007Q"
+msgstr ""
+
+#: FSEL_MENU:5
+msgid  " Options"
+msgstr ""
+
+#: FSEL_MENU:6
+msgid  " File"
+msgstr ""
+
+#: FSEL_MENU:70
+msgid  "  Realtime build directories  ^B"
+msgstr ""
+
+#: FSEL_MENU:71
+msgid  "  Tree view                   ^T"
+msgstr ""
+
+#: FSEL_MENU:73
+msgid  "  Sort by Name                ^N"
+msgstr ""
+
+#: FSEL_MENU:74
+msgid  "  Sort by Date                ^D"
+msgstr ""
+
+#: FSEL_MENU:75
+msgid  "  Sort by Size                ^S"
+msgstr ""
+
+#: FSEL_MENU:76
+msgid  "  Sort by Ext                 ^E"
+msgstr ""
+
+#: FSEL_MENU:77
+msgid  "  No sorting                  ^X"
+msgstr ""
+
+#: FSEL_MENU:79
+msgid  "  Reverse sort order      ^SPACE"
+msgstr ""
+
+#: FSEL_MENU:81
+msgid  "  Copy path/filename  ^C"
+msgstr ""
+
+#: FSEL_MENU:82
+msgid  "  Create new folder   ^F"
+msgstr ""
+
+#: FSEL_MENU:83
+msgid  "  Rename              ^R"
+msgstr ""
+
+#: FSEL_MENU:84
+msgid  "  View                ^V"
+msgstr ""
+
+#: FSEL_MENU:85
+msgid  "  Delete             DEL"
+msgstr ""
+
+#: ABOUT_XAAES:1
+msgid  "XaAES Ain't the AES"
+msgstr ""
+
+#: ABOUT_XAAES:4
+msgid  "The GEM\277 compatible AES for FreeMiNT"
+msgstr ""
+
+#: ABOUT_XAAES:6
+msgid  "Version:"
+msgstr ""
+
+#: ABOUT_XAAES:8
+msgid  "Date   :"
+msgstr ""
+
+#: ABOUT_XAAES:10
+#: TASK_MANAGER:18
+#: SYS_ERROR:8
+#: FILE_SELECT:10
+#: WDLG_FNTS:2
+#: WDLG_PDLG:5
+msgid  "OK"
+msgstr ""
+
+#: ABOUT_XAAES:11
+msgid  "Target :"
+msgstr ""
+
+#: TASK_MANAGER:14
+msgid  "  Quit all Apps  "
+msgstr ""
+
+#: TASK_MANAGER:15
+msgid  "   Reboot    "
+msgstr ""
+
+#: TASK_MANAGER:16
+msgid  "  Quit XaAES  "
+msgstr ""
+
+#: TASK_MANAGER:17
+msgid  "   Halt   "
+msgstr ""
+
+#: TASK_MANAGER:19
+msgid  "   Coldboot   "
+msgstr ""
+
+#: TASK_MANAGER:20
+msgid  "    Toggle load    "
+msgstr ""
+
+#: TASK_MANAGER:22
+msgid  "SYSTEM-LOAD"
+msgstr ""
+
+#: TASK_MANAGER:31
+msgid  "CPU"
+msgstr ""
+
+#: TASK_MANAGER:33
+msgid  "C"
+msgstr ""
+
+#: TASK_MANAGER:34
+msgid  "F"
+msgstr ""
+
+#: TASK_MANAGER:35
+msgid  "T"
+msgstr ""
+
+#: TASK_MANAGER:36
+msgid  "RAM"
+msgstr ""
+
+#: SYS_ERROR:7
+msgid  "  Clear  "
+msgstr ""
+
+#: FILE_SELECT:9
+#: WDLG_FNTS:1
+#: WDLG_PDLG:6
+msgid  " Cancel "
+msgstr ""
+
+#: FILE_SELECT:13
+msgid  " Font "
+msgstr ""
+
+#: KILL_OR_WAIT:2
+msgid  "  is still running. Action?  "
+msgstr ""
+
+#: KILL_OR_WAIT:3
+msgid  "   Wait   "
+msgstr ""
+
+#: KILL_OR_WAIT:4
+msgid  "   Kill   "
+msgstr ""
+
+#: KILL_OR_WAIT:6
+msgid  "Shutting down "
+msgstr ""
+
+#: KILL_OR_WAIT:7
+msgid  " Kill'em All "
+msgstr ""
+
+#: WDLG_FNTS:3
+msgid  "    Set    "
+msgstr ""
+
+#: WDLG_FNTS:4
+msgid  "   Mark   "
+msgstr ""
+
+#: WDLG_FNTS:5
+msgid  "     User definable     "
+msgstr ""
+
+#: WDLG_FNTS:12
+msgid  "Point: "
+msgstr ""
+
+#: WDLG_FNTS:13
+msgid  "W/H:   "
+msgstr ""
+
+#: WDLG_FNTS:18
+msgid  "Display style"
+msgstr ""
+
+#: WDLG_FNTS:21
+msgid  "W:"
+msgstr ""
+
+#: WDLG_FNTS:23
+msgid  "H:"
+msgstr ""
+
+#: WDLG_PDLG:2
+msgid  "Driver:      "
+msgstr ""
+
+#: PDLG_DIALOGS:4
+msgid  "all   "
+msgstr ""
+
+#: PDLG_DIALOGS:5
+msgid  "from "
+msgstr ""
+
+#: PDLG_DIALOGS:8
+msgid  "Even  "
+msgstr ""
+
+#: PDLG_DIALOGS:9
+msgid  "Odd     "
+msgstr ""
+
+#: PDLG_DIALOGS:11
+msgid  "Quality: "
+msgstr ""
+
+#: PDLG_DIALOGS:12
+msgid  "Color:   "
+msgstr ""
+
+#: PDLG_DIALOGS:13
+msgid  "Pages:   "
+msgstr ""
+
+#: PDLG_DIALOGS:14
+msgid  "Copies:   "
+msgstr ""
+
+#: PDLG_DIALOGS:15
+msgid  "to "
+msgstr ""
+
+#: PDLG_DIALOGS:24
+msgid  "Scale:  "
+msgstr ""
+
+#: PDLG_DIALOGS:25
+msgid  "Paper: "
+msgstr ""
+
+#: PDLG_DIALOGS:26
+msgid  "Output tray:      "
+msgstr ""
+
+#: PDLG_DIALOGS:27
+msgid  "Input tray:         "
+msgstr ""
+
+#: PDLG_DIALOGS:34
+msgid  "Raster:    "
+msgstr ""
+
+#: PDLG_DIALOGS:37
+msgid  "Port:      "
+msgstr ""
+
+#: PDLG_DIALOGS:38
+msgid  "in the background"
+msgstr ""
+
+#: PDLG_DIALOGS:39
+msgid  "in the foreground"
+msgstr ""
+
+#: PDLG_DIALOGS:40
+msgid  "Print:    "
+msgstr ""
+
+#: ABOUT_LINE1:1
+msgid  "           <u>Dedicated to <i>Frank Naumann </i></u>\273"
+msgstr ""
+
+#: ABOUT_LINE2:2
+msgid  "<u>                                                                  </u>"
+msgstr ""
+
+#: ABOUT_LINE4:4
+msgid  "Part of FreeMiNT (https://freemint.github.io/)."
+msgstr ""
+
+#: ABOUT_LINE6:6
+msgid  "The terms of the <b>GPL version 2</b> or later apply."
+msgstr ""
+
+#: WCTXT_WINDOWS:8
+msgid  "Windows     "
+msgstr ""
+
+#: WCTXT_ADVANCED:9
+msgid  "Advanced    "
+msgstr ""
+
+#: WCTXT_TODESK:10
+msgid  "To desktop  "
+msgstr ""
+
+#: WCTXT_CLOSE:11
+msgid  "Close       "
+msgstr ""
+
+#: WCTXT_HIDE:12
+msgid  "Hide        "
+msgstr ""
+
+#: WCTXT_ICONIFY:13
+msgid  "Iconify     "
+msgstr ""
+
+#: WCTXT_SHADE:14
+msgid  "Shade       "
+msgstr ""
+
+#: WCTXT_MOVE:15
+msgid  "Move        "
+msgstr ""
+
+#: WCTXT_RESIZE:16
+msgid  "Resize      "
+msgstr ""
+
+#: WCTXT_QUIT:17
+msgid  "Quit        "
+msgstr ""
+
+#: WCTXT_KILL:18
+msgid  "Kill        "
+msgstr ""
+
+#: WCTXT_KEEPABOVE:19
+msgid  "Keep above others           "
+msgstr ""
+
+#: WCTXT_KEEPBELOW:20
+msgid  "Keep below others           "
+msgstr ""
+
+#: WCTXT_TOOLBOX:21
+msgid  "Toolbox attribute           "
+msgstr ""
+
+#: WCTXT_DENY_KEYBOARD:22
+msgid  "Deny keyboard focus         "
+msgstr ""
+
+#: WCTXT_CLOSE_THIS:23
+msgid  "This                      "
+msgstr ""
+
+#: WCTXT_CLOSE_ALL:24
+msgid  "All                       "
+msgstr ""
+
+#: WCTXT_CLOSE_OTHERS:25
+msgid  "All others                "
+msgstr ""
+
+#: WCTXT_RESTORE_ALL:26
+msgid  "Restore all               "
+msgstr ""
+
+#: WCTXT_RESTORE_OTHERS:27
+msgid  "Restore all others        "
+msgstr ""
+
+#: WCTXT_HIDE_THIS:28
+msgid  "This window               "
+msgstr ""
+
+#: WCTXT_HIDE_APP:29
+msgid  "Application               "
+msgstr ""
+
+#: WCTXT_HIDE_OTHERS:30
+msgid  "Other apps                "
+msgstr ""
+
+#: WCTXT_HIDE_SHOW_OTHERS:31
+msgid  "Show other apps           "
+msgstr ""
+
+#: RS_ABOUT:32
+msgid  "About"
+msgstr ""
+
+#: RS_TASKMANAGER:33
+msgid  "Task Manager"
+msgstr ""
+
+#: RS_SYS:34
+msgid  "System window & Alerts log"
+msgstr ""
+
+#: RS_APPLST:35
+msgid  "Applications"
+msgstr ""
+
+#: RS_ALERTS:36
+msgid  "Alerts"
+msgstr ""
+
+#: RS_ENV:37
+msgid  "Environment"
+msgstr ""
+
+#: RS_SYSTEM:38
+msgid  "System"
+msgstr ""
+
+#: RS_VIDEO:39
+msgid  "Video:%dx%dx%d,%d colors, format: %s"
+msgstr ""
+
+#: RS_MEMPROT:40
+msgid  "MEMPROT:%s"
+msgstr ""
+
+#: RS_OFF:41
+msgid  "OFF"
+msgstr ""
+
+#: RS_ON:42
+msgid  "ON"
+msgstr ""
+
+#: SW_KEYBD:43
+msgid  "Switch keyboard layout, current:"
+msgstr ""
+
+#: SW_DEFAULT:44
+msgid  "default"
+msgstr ""
+
+#: ASK_QUITALL_ALERT:45
+msgid  "[2][Quit All][Cancel|OK]"
+msgstr ""
+
+#: ASK_QUIT_ALERT:46
+msgid  "[2][Leave XaAES][Cancel|OK]"
+msgstr ""
+
+#: ASK_RESTART_ALERT:47
+msgid  "[2][Restart XaAES][Cancel|OK]"
+msgstr ""
+
+#: ASK_SHUTDOWN_ALERT:48
+msgid  "[2][Halt System][Cancel|OK]"
+msgstr ""
+
+#: HAD_A_PROBLEM:49
+msgid  "[2][XaAES had a problem][Continue|Halt]"
+msgstr ""
+
+#: SNAP_ERR1:50
+msgid  "[1][Snapper could not save snap!|ERROR: %d][OK]"
+msgstr ""
+
+#: SNAP_ERR2:51
+msgid  "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]"
+msgstr ""
+
+#: SNAP_ERR3:52
+msgid  "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]"
+msgstr ""
+
+#: SDALERT:53
+msgid  "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]"
+msgstr ""
+
+#: AL_RSCSZ:54
+msgid  "[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]"
+msgstr ""
+
+#: RS_LAUNCH:55
+msgid  "Launch Program     "
+msgstr ""
+
+#: RS_LDGRAD:56
+msgid  "Load Gradient     "
+msgstr ""
+
+#: RS_LDIMG:57
+msgid  "Load Image        "
+msgstr ""
+
+#: RS_LDPAL:58
+msgid  "Load Palette     "
+msgstr ""
+
+#: RS_LDCNF:59
+msgid  "Load Config           "
+msgstr ""
+
+#: AL_SDMASTER:60
+msgid  "$SDMASTER is not a valid program: %s (use the taskmanager)"
+msgstr ""
+
+#: AL_KBD:61
+msgid  "Could not load %s.tbl from %s (%ld)"
+msgstr ""
+
+#: AL_TERMAES:62
+msgid  "Cannot terminate AES system proccesses!"
+msgstr ""
+
+#: AL_KILLAES:63
+msgid  "Cannot kill XaAES!"
+msgstr ""
+
+#: AL_NOPB:64
+msgid  "XaAES: No AES Parameter Block, returning."
+msgstr ""
+
+#: AL_NOAESPR:65
+msgid  "XaAES: Non-AES process issued AES system call %i, killing it!"
+msgstr ""
+
+#: AL_VALOBTREE:66
+msgid  "%s: Validate OBTREE for %s failed, object ptr = %lx, killing it!"
+msgstr ""
+
+#: AL_ATTACH:67
+msgid  "attach_extension for %u failed, out of memory?"
+msgstr ""
+
+#: AL_MEM:68
+msgid  "umalloc for %u failed, out of memory?"
+msgstr ""
+
+#: AL_PDLG:69
+msgid  "XaAES: Print dialogs unavailable with current VDI."
+msgstr ""
+
+#: AL_SINGLETASK:70
+msgid  "launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d)."
+msgstr ""
+
+#: AL_NOGLOBPTR:71
+msgid  "XaAES: %s%s, client with no globl_ptr, killing it!"
+msgstr ""
+
+#: AL_INVALIDP:72
+msgid  "rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d"
+msgstr ""
+
+#: AL_SHELLRUNS:73
+msgid  "XaAES: AES shell already running!"
+msgstr ""
+
+#: AL_NOSHELL:74
+msgid  "XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf."
+msgstr ""
+
+#: MNU_CLIENTS:75
+msgid  "  Clients \003"
+msgstr ""
+
+#: XA_HELP_FILE:76
+msgid  "xa_help.txt"
+msgstr ""
+
+#: XS_KEY_CURSOR_UP:77
+msgid  "CURSOR-UP    "
+msgstr ""
+
+#: XS_KEY_CURSOR_DOWN:78
+msgid  "CURSOR-DOWN  "
+msgstr ""
+
+#: XS_KEY_CURSOR_RIGHT:79
+msgid  "CURSOR-RIGHT "
+msgstr ""
+
+#: XS_KEY_CURSOR_LEFT:80
+msgid  "CURSOR-LEFT  "
+msgstr ""
+
+#: XS_KEY_SPACE:81
+msgid  "SPACE  "
+msgstr ""
+
+#: XS_KEY_ESC:82
+msgid  "ESC"
+msgstr ""
+
+#: XS_KEY_DOT:83
+msgid  "."
+msgstr ""
+
+#: XS_KEY_BACKSPACE:84
+msgid  "BACKSPACE"
+msgstr ""
+
+#: XS_KEY_TAB:85
+msgid  "TAB"
+msgstr ""
+
+#: XS_KEY_ENTER:86
+msgid  "ENTER"
+msgstr ""
+
+#: XS_KEY_INSERT:87
+msgid  "INSERT"
+msgstr ""
+
+#: XS_KEY_HOME:88
+msgid  "HOME"
+msgstr ""
+
+#: XS_KEY_RETURN:89
+msgid  "RETURN"
+msgstr ""
+
+#: XS_KEY_DELETE:90
+msgid  "DELETE"
+msgstr ""
+
+#: XS_KEY_HELP:91
+msgid  "HELP"
+msgstr ""
+
+#: XS_KEY_UNDO:92
+msgid  "UNDO"
+msgstr ""
+
+#: BBL_BORDER:93
+#: BBL_RESIZE:100
+msgid  "Resize"
+msgstr ""
+
+#: BBL_MOVE:94
+msgid  "Move"
+msgstr ""
+
+#: BBL_CLOSE:97
+msgid  "Close"
+msgstr ""
+
+#: BBL_FULL:98
+msgid  "Full"
+msgstr ""
+
+#: BBL_INFO:99
+msgid  "Info"
+msgstr ""
+
+#: BBL_UPLN:101
+#: BBL_UPLN1:102
+msgid  "Scroll up"
+msgstr ""
+
+#: BBL_DNLN:103
+msgid  "Scroll down"
+msgstr ""
+
+#: BBL_VSLIDE:104
+msgid  "Vertical slide"
+msgstr ""
+
+#: BBL_LFLN:105
+#: BBL_LFLN1:106
+msgid  "Scroll left"
+msgstr ""
+
+#: BBL_RTLN:107
+msgid  "Scroll right"
+msgstr ""
+
+#: BBL_HSLIDE:108
+msgid  "Horizontal slide"
+msgstr ""
+
+#: BBL_ICONIFY:109
+msgid  "Iconify"
+msgstr ""
+
+#: BBL_HIDE:110
+msgid  "Hide"
+msgstr ""
+
+#: BBL_UPPAGE:114
+msgid  "Page up"
+msgstr ""
+
+#: BBL_DNPAGE:115
+msgid  "Page down"
+msgstr ""
+
+#: BBL_LFPAGE:116
+msgid  "Page left"
+msgstr ""
+
+#: BBL_RTPAGE:117
+msgid  "Page right"
+msgstr ""
+

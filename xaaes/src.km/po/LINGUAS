@@ -1,0 +1,18 @@
+#
+# This file contains the name of languages that are
+# supported by translations.
+# Each line should be of the form
+#
+#   xy
+#
+# Where xy is a lowercase two-letter language name.
+#
+# Please keep this list sorted alphabetically.
+#
+cs
+de
+es
+fr
+hu
+it
+ru
