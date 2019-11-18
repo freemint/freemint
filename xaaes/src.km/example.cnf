@@ -310,20 +310,22 @@ naes_cookie = yes
 usehome = yes
 
 #####################################################################
-# dc_time = <time in ms>        (default is 50)
+# dc_time = <time in timer ticks>        (default is 50 = 250ms)
+# where a tick is 5ms
 #
-# double click time (ms)
+# double click time
 #
 #dc_time = 35
 
 #####################################################################
-# mp_timegap = <time in ms>     (default is 3)
+# mp_timegap = <time in timer ticks>     (default is 3 = 15ms)
+# where a tick is 5ms
 #
 # Mouse packet time-gap. This is the time (in 200hz timer ticks) that
 # must pass after a button-release event before a new button-press
 # event is accepted by moose.adi. Because of unstable mouse-buttons,
 # a button-press may follow immediately after a button-release, creating
-# and "extra" mouse-click. This is especially annoying when releasing
+# an "extra" mouse-click. This is especially annoying when releasing
 # the right-button after a drag-session (Thing's directory-window, for
 # example), and the "extra-click" fires some unwanted action.
 #

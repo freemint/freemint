@@ -764,23 +764,23 @@ XA_evnt_dclick(int lock, struct xa_client *client, AESPB *pb)
 	{
 		switch (newval)
 		{
-			case 0: cfg.double_click_time = 200; break;
-			case 1: cfg.double_click_time = 150; break;
-			case 2: cfg.double_click_time = 100; break;
+			case 0: cfg.double_click_time = 450 / 5; break;
+			case 1: cfg.double_click_time = 330 / 5; break;
+			case 2: cfg.double_click_time = 275 / 5; break;
 			default:
-			case 3: cfg.double_click_time =  50; break; /* DOUBLE_CLICK_TIME */
-			case 4: cfg.double_click_time =  25; break;
+			case 3: cfg.double_click_time = 220 / 5; break; /* DOUBLE_CLICK_TIME */
+			case 4: cfg.double_click_time = 165 / 5; break;
 		}
 		adi_ioctl(G.adi_mouse, MOOSE_DCLICK, cfg.double_click_time);
 	}
 
-	if (cfg.double_click_time <= 25)
+	if (cfg.double_click_time <= 165 / 5)
 		pb->intout[0] = 4;
-	else if (cfg.double_click_time <= 50)
+	else if (cfg.double_click_time <= 220 / 5)
 		pb->intout[0] = 3;
-	else if (cfg.double_click_time <= 100)
+	else if (cfg.double_click_time <= 275 / 5)
 		pb->intout[0] = 2;
-	else if (cfg.double_click_time <= 150)
+	else if (cfg.double_click_time <= 330 / 5)
 		pb->intout[0] = 1;
 	else
 		pb->intout[0] = 0;
