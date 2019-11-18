@@ -114,7 +114,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  23 */ { XA_evnt_mesag,             0,        DESCR("evnt_mesag")      },
 	/*  24 */ { XA_evnt_timer,             0,        DESCR("evnt_timer")      },
 	/*  25 */ { XA_evnt_multi,             0,        DESCR("evnt_multi")      },
-	/*  26 */ { NULL,                      0,        DESCR("evnt_dclick")     },
+	/*  26 */ { XA_evnt_dclick,            0,        DESCR("evnt_dclick")     },
 	/*  27 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  28 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  29 */ { NULL,                      0,        DESCR(NULL)              },

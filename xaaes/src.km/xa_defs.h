@@ -210,7 +210,7 @@
 #define ICONIFIED_W		80	/* Size of an iconified window */
 #define ICONIFIED_H		80
 
-#define DOUBLE_CLICK_TIME	50	/* Default double click time in milliseconds (0-200) */
+#define DOUBLE_CLICK_TIME	(250 / 5)	/* Default double click time in timer ticks (0-200) */
 #define MOUSE_PACKET_TIMEGAP	 3	/* Amount of time that have to pass between two packets received from the VDI */
 #define RT_SCROLL_STEP		10	/* Step when doing a real-time scroll (0-1000) */
 

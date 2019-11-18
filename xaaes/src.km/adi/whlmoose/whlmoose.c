@@ -184,8 +184,10 @@ static union {
 	char chars[16];
 	unsigned long ulongs[4];
 } clicks;
-//static short l_clicks;
-//static short r_clicks;
+#if 0
+static short l_clicks;
+static short r_clicks;
+#endif
 
 static short timeout;
 static short dc_time;
@@ -284,7 +286,7 @@ cbutv(void)
 	pak_tail->t.but.time	= (short)t;
 	pak_tail->x		= sample_x;
 	pak_tail->y		= sample_y;
-	pak_tail->dbg		= t1; //0;
+	pak_tail->dbg		= t1;
 
 	pak_tail++;
 
@@ -303,9 +305,9 @@ cwhlv(void)
 	md.ty		= MOOSE_WHEEL_PREFIX;
 	md.x = md.sx	= sample_x;
 	md.y = md.sy	= sample_y;
-	md.state	= (unsigned char)sample_wheel; //pak_head->t.whl.wheel;
+	md.state	= (unsigned char)sample_wheel;
 	md.cstate	= md.state;
-	md.clicks	= sample_wclicks; //pak_head->t.whl.clicks;
+	md.clicks	= sample_wclicks;
 	md.kstate	= 0;
 	md.dbg1		= 0;
 	md.dbg2		= 0;
@@ -342,7 +344,7 @@ timer_handler(void)
 
 		if (!inbuf)
 		{
-			chk_but_timeout(*(short*)(SYSTIMER+2));
+			chk_but_timeout(*(long*)(SYSTIMER));
 		}
 		else
 		{
@@ -481,10 +483,11 @@ moose_open (struct adif *a)
 	halve		= 4;
 
 	moose_inuse	= 0;
-	dc_time		= 50;
-	pkt_timegap	= 3;
+	dc_time		= 50; /* DOUBLE_CLICK_TIME */
+	pkt_timegap	= 3;  /* MOUSE_PACKET_TIMEGAP */
 	click_count	= 0;
-	for (i = 0; i < 16; i++) clicks.chars[i] = 0;
+	for (i = 0; i < 16; i++)
+		clicks.chars[i] = 0;
 
 	timeout		= 0;
 
@@ -510,12 +513,11 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 {
 	switch (cmd)
 	{
-		case FS_INFO:
-		{
-			*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
-			break;
-		}
-		case MOOSE_READVECS:
+	case FS_INFO:
+		*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
+		break;
+
+	case MOOSE_READVECS:
 		{
 			struct moose_vecsbuf *vecs = (struct moose_vecsbuf *)arg;
 			
@@ -527,29 +529,24 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 #else
 			vecs->whlv = (vdi_vec *) 0;
 #endif
-			break;
 		}
-		case MOOSE_DCLICK :
-		{
-			if (arg > MAX_DC_TIME)
-				dc_time = MAX_DC_TIME;
-			else
-				dc_time = arg;
-			break;
-		}
-		case MOOSE_PKT_TIMEGAP :
-		{
-			if (arg > MAX_TIMEGAP)
-				pkt_timegap = MAX_TIMEGAP;
-			else
-				pkt_timegap = arg;
+		break;
+	case MOOSE_DCLICK:
+		if (arg > MAX_DC_TIME)
+			dc_time = MAX_DC_TIME;
+		else
+			dc_time = arg;
+		break;
 
-			break;
-		}
-		default:
-		{
-			return ENOSYS;
-		}
+	case MOOSE_PKT_TIMEGAP:
+		if (arg > MAX_TIMEGAP)
+			pkt_timegap = MAX_TIMEGAP;
+		else
+			pkt_timegap = arg;
+		break;
+
+	default:
+		return ENOSYS;
 	}	
 	return E_OK;
 }
@@ -581,8 +578,10 @@ init (struct kentry *k, struct adiinfo *ainfo, char **reason)
 	if (check_kentry_version())
 		return -1;
 
-	//c_conws (MSG_BOOT);
-	//c_conws (MSG_GREET);
+#if 0
+	c_conws (MSG_BOOT);
+	c_conws (MSG_GREET);
+#endif
 	DEBUG (("%s: enter init", __FILE__));
 
 	ret = (*ainf->adi_register)(&moose_aif);
@@ -594,6 +593,7 @@ init (struct kentry *k, struct adiinfo *ainfo, char **reason)
 	DEBUG (("%s: init ok", __FILE__));
 	return 0;
 }
+
 #if 0
 static long _cdecl
 moose_unregister(struct adif *a)
