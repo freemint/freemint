@@ -1,0 +1,774 @@
+msgid  ""
+msgstr ""
+"Project-Id-Version: XaAES HEAD\n"
+"Report-Msgid-Bugs-To: https://github.com/freemint/freemint/issues\n"
+"POT-Creation-Date: 2019-11-17 00:35+0100\n"
+"PO-Revision-Date: 2019-11-16 15:56+0100\n"
+"Last-Translator: Lodovico\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CP1252\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Output-Encoding: atarist\n"
+
+#: SYSTEM_MENU:3
+msgid  " XaAES"
+msgstr " XaAES"
+
+#: SYSTEM_MENU:4
+msgid  " Process"
+msgstr " Processo"
+
+#: SYSTEM_MENU:7
+msgid  "  About XaAES  ^\007Help"
+msgstr "  Circa XaAES  ^\007Help"
+
+#: SYSTEM_MENU:16
+msgid  "  Launch Program...  ^\007K"
+msgstr "  Avvia Programma...    ^\007K"
+
+#: SYSTEM_MENU:17
+msgid  "  Launch Desk"
+msgstr "  Avvia Scrivania"
+
+#: SYSTEM_MENU:19
+msgid  "  Task Manager       ^\007L"
+msgstr "  Task Manager          ^\007L"
+
+#: SYSTEM_MENU:20
+msgid  "  System             ^\007B"
+msgstr "  Sistema...            ^\007B"
+
+#: SYSTEM_MENU:22
+msgid  "  Quit all Apps      ^\007A"
+msgstr "  Chiudi tutte le app.  ^\007A"
+
+#: SYSTEM_MENU:23
+msgid  "  Restart XaAES      ^\007J"
+msgstr "  Riavvia XaAES         ^\007J"
+
+#: SYSTEM_MENU:24
+msgid  "  Quit XaAES         ^\007Q"
+msgstr "  Chiudi XaAES          ^\007Q"
+
+#: FSEL_MENU:5
+msgid  " Options"
+msgstr " Opzioni"
+
+#: FSEL_MENU:6
+msgid  " File"
+msgstr " File"
+
+#: FSEL_MENU:70
+msgid  "  Realtime build directories  ^B"
+msgstr "  Directory in tempo reale  ^B"
+
+#: FSEL_MENU:71
+msgid  "  Tree view                   ^T"
+msgstr "  Vista ad albero           ^T"
+
+#: FSEL_MENU:73
+msgid  "  Sort by Name                ^N"
+msgstr "  Ordina per nome           ^N"
+
+#: FSEL_MENU:74
+msgid  "  Sort by Date                ^D"
+msgstr "  Ordina per data           ^D"
+
+#: FSEL_MENU:75
+msgid  "  Sort by Size                ^S"
+msgstr "  Ordina per dimensioni     ^S"
+
+#: FSEL_MENU:76
+msgid  "  Sort by Ext                 ^E"
+msgstr "  Ordina per tipo           ^E"
+
+#: FSEL_MENU:77
+msgid  "  No sorting                  ^X"
+msgstr "  Nessun ordine             ^X"
+
+#: FSEL_MENU:79
+msgid  "  Reverse sort order      ^SPACE"
+msgstr "  Inverti l'ordine      ^SPACE"
+
+#: FSEL_MENU:81
+msgid  "  Copy path/filename  ^C"
+msgstr "  Copia percorso/nome     ^C"
+
+#: FSEL_MENU:82
+msgid  "  Create new folder   ^F"
+msgstr "  Nuova cartella          ^F"
+
+#: FSEL_MENU:83
+msgid  "  Rename              ^R"
+msgstr "  Rinomina                ^R"
+
+#: FSEL_MENU:84
+msgid  "  View                ^V"
+msgstr "  Visione                 ^V"
+
+#: FSEL_MENU:85
+msgid  "  Delete             DEL"
+msgstr "  Cancella               DEL"
+
+#: ABOUT_XAAES:1
+msgid  "XaAES Ain't the AES"
+msgstr "L'AES compatibile GEM\277 per FreeMiNT"
+
+#: ABOUT_XAAES:4
+msgid  "The GEM\277 compatible AES for FreeMiNT"
+msgstr "The GEM\277 compatible AES for FreeMiNT"
+
+#: ABOUT_XAAES:6
+msgid  "Version:"
+msgstr "it"
+
+#: ABOUT_XAAES:8
+msgid  "Date   :"
+msgstr "Data   :"
+
+#: ABOUT_XAAES:10
+#: TASK_MANAGER:18
+#: SYS_ERROR:8
+#: FILE_SELECT:10
+#: WDLG_FNTS:2
+#: WDLG_PDLG:5
+msgid  "OK"
+msgstr "OK"
+
+#: ABOUT_XAAES:11
+msgid  "Target :"
+msgstr "Sistema:"
+
+#: TASK_MANAGER:14
+msgid  "  Quit all Apps  "
+msgstr "Chiudi tutto"
+
+#: TASK_MANAGER:15
+msgid  "   Reboot    "
+msgstr "Riavvia"
+
+#: TASK_MANAGER:16
+msgid  "  Quit XaAES  "
+msgstr "Arresto XaAES"
+
+#: TASK_MANAGER:17
+msgid  "   Halt   "
+msgstr "Arresto"
+
+#: TASK_MANAGER:19
+msgid  "   Coldboot   "
+msgstr "Avvio a freddo"
+
+#: TASK_MANAGER:20
+msgid  "    Toggle load    "
+msgstr "Utilizzo Si/No"
+
+#: TASK_MANAGER:22
+msgid  "SYSTEM-LOAD"
+msgstr "UTILIZZO"
+
+#: TASK_MANAGER:31
+msgid  "CPU"
+msgstr "CPU"
+
+#: TASK_MANAGER:33
+msgid  "C"
+msgstr "C"
+
+#: TASK_MANAGER:34
+msgid  "F"
+msgstr "F"
+
+#: TASK_MANAGER:35
+msgid  "T"
+msgstr "T"
+
+#: TASK_MANAGER:36
+msgid  "RAM"
+msgstr "RAM"
+
+#: SYS_ERROR:7
+msgid  "  Clear  "
+msgstr "Pulizia"
+
+#: FILE_SELECT:9
+#: WDLG_FNTS:1
+#: WDLG_PDLG:6
+msgid  " Cancel "
+msgstr "Annulla"
+
+#: FILE_SELECT:13
+msgid  " Font "
+msgstr "Fonte"
+
+#: KILL_OR_WAIT:2
+msgid  "  is still running. Action?  "
+msgstr "  è in esecuzione. Azioni?"
+
+#: KILL_OR_WAIT:3
+msgid  "   Wait   "
+msgstr "Attendere"
+
+#: KILL_OR_WAIT:4
+msgid  "   Kill   "
+msgstr "Terminare"
+
+#: KILL_OR_WAIT:6
+msgid  "Shutting down "
+msgstr "   Arresto"
+
+#: KILL_OR_WAIT:7
+msgid  " Kill'em All "
+msgstr "Termina tutto"
+
+#: WDLG_FNTS:3
+msgid  "    Set    "
+msgstr "Applica"
+
+#: WDLG_FNTS:4
+msgid  "   Mark   "
+msgstr "Marca"
+
+#: WDLG_FNTS:5
+msgid  "     User definable     "
+msgstr "Definito dall'utente"
+
+#: WDLG_FNTS:12
+msgid  "Point: "
+msgstr "Punto:"
+
+#: WDLG_FNTS:13
+msgid  "W/H:   "
+msgstr "L/A:"
+
+#: WDLG_FNTS:18
+msgid  "Display style"
+msgstr "Visione"
+
+#: WDLG_FNTS:21
+msgid  "W:"
+msgstr "L:"
+
+#: WDLG_FNTS:23
+msgid  "H:"
+msgstr "A:"
+
+#: WDLG_PDLG:2
+msgid  "Driver:      "
+msgstr "Dispositivo:"
+
+#: PDLG_DIALOGS:4
+msgid  "all   "
+msgstr "tutto"
+
+#: PDLG_DIALOGS:5
+msgid  "from "
+msgstr "da"
+
+#: PDLG_DIALOGS:8
+msgid  "Even  "
+msgstr "Pari"
+
+#: PDLG_DIALOGS:9
+msgid  "Odd     "
+msgstr "Dispari"
+
+#: PDLG_DIALOGS:11
+msgid  "Quality: "
+msgstr "Qualità:"
+
+#: PDLG_DIALOGS:12
+msgid  "Color:   "
+msgstr "Colore:"
+
+#: PDLG_DIALOGS:13
+msgid  "Pages:   "
+msgstr "Pagine:"
+
+#: PDLG_DIALOGS:14
+msgid  "Copies:   "
+msgstr "Copie:"
+
+#: PDLG_DIALOGS:15
+msgid  "to "
+msgstr " a"
+
+#: PDLG_DIALOGS:24
+msgid  "Scale:  "
+msgstr "Scala:"
+
+#: PDLG_DIALOGS:25
+msgid  "Paper: "
+msgstr "Carta:"
+
+#: PDLG_DIALOGS:26
+msgid  "Output tray:      "
+msgstr "Vassoio di uscita:"
+
+#: PDLG_DIALOGS:27
+msgid  "Input tray:         "
+msgstr "Vassoio di ingresso:"
+
+#: PDLG_DIALOGS:34
+msgid  "Raster:    "
+msgstr "Trama:"
+
+#: PDLG_DIALOGS:37
+msgid  "Port:      "
+msgstr "Porta:"
+
+#: PDLG_DIALOGS:38
+msgid  "in the background"
+msgstr "in secondo piano"
+
+#: PDLG_DIALOGS:39
+msgid  "in the foreground"
+msgstr "in primo piano"
+
+#: PDLG_DIALOGS:40
+msgid  "Print:    "
+msgstr "Stampa:"
+
+#: ABOUT_LINE1:1
+msgid  "           <u>Dedicated to <i>Frank Naumann </i></u>\273"
+msgstr "           <u>Dedicated to <i>Frank Naumann </i></u>\273"
+
+#: ABOUT_LINE2:2
+msgid  "<u>                                                                  </u>"
+msgstr "<u>                                                                  </u>"
+
+#: ABOUT_LINE4:4
+msgid  "Part of FreeMiNT (https://freemint.github.io/)."
+msgstr "Parte di FreeMiNT (https://freemint.github.io/)."
+
+#: ABOUT_LINE6:6
+msgid  "The terms of the <b>GPL version 2</b> or later apply."
+msgstr "Si applicano i termini <b>GPL versione 2</b> o successivi."
+
+#: WCTXT_WINDOWS:8
+msgid  "Windows     "
+msgstr "Finestre"
+
+#: WCTXT_ADVANCED:9
+msgid  "Advanced    "
+msgstr "Avanzato"
+
+#: WCTXT_TODESK:10
+msgid  "To desktop  "
+msgstr "->Scrivania"
+
+#: WCTXT_CLOSE:11
+msgid  "Close       "
+msgstr "Chiudi"
+
+#: WCTXT_HIDE:12
+msgid  "Hide        "
+msgstr "Nascondi"
+
+#: WCTXT_ICONIFY:13
+msgid  "Iconify     "
+msgstr "Iconizza"
+
+#: WCTXT_SHADE:14
+msgid  "Shade       "
+msgstr "Ombreggia"
+
+#: WCTXT_MOVE:15
+msgid  "Move        "
+msgstr "Sposta"
+
+#: WCTXT_RESIZE:16
+msgid  "Resize      "
+msgstr "Ridimens."
+
+#: WCTXT_QUIT:17
+msgid  "Quit        "
+msgstr "Esci"
+
+#: WCTXT_KILL:18
+msgid  "Kill        "
+msgstr "Termina"
+
+#: WCTXT_KEEPABOVE:19
+msgid  "Keep above others           "
+msgstr "Tieni al di sopra"
+
+#: WCTXT_KEEPBELOW:20
+msgid  "Keep below others           "
+msgstr "Tieni al di sotto"
+
+#: WCTXT_TOOLBOX:21
+msgid  "Toolbox attribute           "
+msgstr "Attributi Toolbox"
+
+#: WCTXT_DENY_KEYBOARD:22
+msgid  "Deny keyboard focus         "
+msgstr "Focus tastiera interdetto"
+
+#: WCTXT_CLOSE_THIS:23
+msgid  "This                      "
+msgstr "Questo"
+
+#: WCTXT_CLOSE_ALL:24
+msgid  "All                       "
+msgstr "Tutti"
+
+#: WCTXT_CLOSE_OTHERS:25
+msgid  "All others                "
+msgstr "Tutti gli altri"
+
+#: WCTXT_RESTORE_ALL:26
+msgid  "Restore all               "
+msgstr "Ripristina tutto"
+
+#: WCTXT_RESTORE_OTHERS:27
+msgid  "Restore all others        "
+msgstr "Ripristina altro"
+
+#: WCTXT_HIDE_THIS:28
+msgid  "This window               "
+msgstr "Questa finestra"
+
+#: WCTXT_HIDE_APP:29
+msgid  "Application               "
+msgstr "Applicazione"
+
+#: WCTXT_HIDE_OTHERS:30
+msgid  "Other apps                "
+msgstr "Altre applicazioni"
+
+#: WCTXT_HIDE_SHOW_OTHERS:31
+msgid  "Show other apps           "
+msgstr "Mostra altre applicazioni"
+
+#: RS_ABOUT:32
+msgid  "About"
+msgstr "Circa XaAES"
+
+#: RS_TASKMANAGER:33
+msgid  "Task Manager"
+msgstr "Task-Manager"
+
+#: RS_SYS:34
+msgid  "System window & Alerts log"
+msgstr "Finestra sistema & registro avvisi"
+
+#: RS_APPLST:35
+msgid  "Applications"
+msgstr "Applicazioni"
+
+#: RS_ALERTS:36
+msgid  "Alerts"
+msgstr "Avvisi"
+
+#: RS_ENV:37
+msgid  "Environment"
+msgstr "Ambiente"
+
+#: RS_SYSTEM:38
+msgid  "System"
+msgstr "Sistema"
+
+#: RS_VIDEO:39
+#, c-format
+msgid  "Video:%dx%dx%d,%d colors, format: %s"
+msgstr "Video:%dx%dx%d,%d colori, formato: %s"
+
+#: RS_MEMPROT:40
+#, c-format
+msgid  "MEMPROT:%s"
+msgstr "PROTMEM:%s"
+
+#: RS_OFF:41
+msgid  "OFF"
+msgstr "Inattivo"
+
+#: RS_ON:42
+msgid  "ON"
+msgstr "Attivo"
+
+#: SW_KEYBD:43
+msgid  "Switch keyboard layout, current:"
+msgstr "Cambia lingua tastiera, attuale:"
+
+#: SW_DEFAULT:44
+msgid  "default"
+msgstr "standard"
+
+#: ASK_QUITALL_ALERT:45
+msgid  "[2][Quit All][Cancel|OK]"
+msgstr "[2][Chiudi tutto][Annulla|OK]"
+
+#: ASK_QUIT_ALERT:46
+msgid  "[2][Leave XaAES][Cancel|OK]"
+msgstr "[2][Uscita da XaAES][Annulla|OK]"
+
+#: ASK_RESTART_ALERT:47
+msgid  "[2][Restart XaAES][Cancel|OK]"
+msgstr "[2][Riavvia XaAES][Annulla|OK]"
+
+#: ASK_SHUTDOWN_ALERT:48
+msgid  "[2][Halt System][Cancel|OK]"
+msgstr "[2][Arresto sistema][Annulla|OK]"
+
+#: HAD_A_PROBLEM:49
+msgid  "[2][XaAES had a problem][Continue|Halt]"
+msgstr "[2][XaAES ha avuto un problema][Continua|Arresta]"
+
+#: SNAP_ERR1:50
+#, c-format
+msgid  "[1][Snapper could not save snap!|ERROR: %d][OK]"
+msgstr "[1][Impossibile salvare l'immagine!|ERRORE: %d][OK]"
+
+#: SNAP_ERR2:51
+msgid  "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]"
+msgstr "[1][Impossibile catturare la|finestra superiore. Si trova|parzialmente fuori dallo schermo!][OK]"
+
+#: SNAP_ERR3:52
+msgid  "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]"
+msgstr "[1][Processo 'xaaesnap' non trovato.|Avvia 'xaaesnap.prg' e prova ancora|o definisci lo snapshot in xaaes.cnf][OK]"
+
+#: SDALERT:53
+msgid  "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]"
+msgstr "[2][Cosa vuoi catturare?][Blocco|Schermo intero|Finestra superiore|Annulla]"
+
+#: AL_RSCSZ:54
+#, c-format
+msgid  "[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]"
+msgstr "[1][%s: dimensioni errate|(file:%ld,header:%ld)][Continua|Annulla]"
+
+#: RS_LAUNCH:55
+msgid  "Launch Program     "
+msgstr "Avvio Programma"
+
+#: RS_LDGRAD:56
+msgid  "Load Gradient     "
+msgstr "Carica gradiente"
+
+#: RS_LDIMG:57
+msgid  "Load Image        "
+msgstr "Carica immagine"
+
+#: RS_LDPAL:58
+msgid  "Load Palette     "
+msgstr "Carica palleta"
+
+#: RS_LDCNF:59
+msgid  "Load Config           "
+msgstr "Carica configurazione"
+
+#: AL_SDMASTER:60
+#, c-format
+msgid  "$SDMASTER is not a valid program: %s (use the taskmanager)"
+msgstr "$SDMASTER non è un programma valido: %s (usare il taskmanager)"
+
+#: AL_KBD:61
+#, c-format
+msgid  "Could not load %s.tbl from %s (%ld)"
+msgstr "Impossibile caricare %s.tbl da %s (%ld)"
+
+#: AL_TERMAES:62
+msgid  "Cannot terminate AES system proccesses!"
+msgstr "Impossibile chiudere i processi del sistema AES!"
+
+#: AL_KILLAES:63
+msgid  "Cannot kill XaAES!"
+msgstr "Impossibile forzare la chiusura di XaAES!"
+
+#: AL_NOPB:64
+msgid  "XaAES: No AES Parameter Block, returning."
+msgstr "XaAES: Nessun blocco parametri AES. Ritorno."
+
+#: AL_NOAESPR:65
+#, c-format
+msgid  "XaAES: Non-AES process issued AES system call %i, killing it!"
+msgstr "XaAES: AES system call %i emessa da processo non AES. Chiusura forzata !"
+
+#: AL_VALOBTREE:66
+#, c-format
+msgid  "%s: Validate OBTREE for %s failed, object ptr = %lx, killing it!"
+msgstr "%s: Validazione OBTREE di %s fallita, oggetto ptr = %lx. Chiusura forzata!"
+
+#: AL_ATTACH:67
+#, c-format
+msgid  "attach_extension for %u failed, out of memory?"
+msgstr "attach_extension per %u fallita, memoria esaurita?"
+
+#: AL_MEM:68
+#, c-format
+msgid  "umalloc for %u failed, out of memory?"
+msgstr "umalloc per %u fallito, memoria esaurita?"
+
+#: AL_PDLG:69
+msgid  "XaAES: Print dialogs unavailable with current VDI."
+msgstr "XaAES: Pannello di stampa non disponibile con questo VDI."
+
+#: AL_SINGLETASK:70
+#, c-format
+msgid  "launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d)."
+msgstr "launch: Impossibile passare in modo single-task. Modo già in uso: %s(%d)."
+
+#: AL_NOGLOBPTR:71
+#, c-format
+msgid  "XaAES: %s%s, client with no globl_ptr, killing it!"
+msgstr "XaAES: %s%s, cliente senza globl_ptr, Chiusura forzata!"
+
+#: AL_INVALIDP:72
+#, c-format
+msgid  "rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d"
+msgstr "rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d"
+
+#: AL_SHELLRUNS:73
+msgid  "XaAES: AES shell already running!"
+msgstr "XaAES: Shell AES già in esecuzione!"
+
+#: AL_NOSHELL:74
+msgid  "XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf."
+msgstr "XaAES: Nessuna shell AES definita, vedi variabile di configurazione 'shell =' in xaaes.cnf."
+
+#: MNU_CLIENTS:75
+msgid  "  Clients \003"
+msgstr "  Clienti "
+
+#: XA_HELP_FILE:76
+msgid  "xa_help.txt"
+msgstr "xa_help.it"
+
+#: XS_KEY_CURSOR_UP:77
+msgid  "CURSOR-UP    "
+msgstr "CURSOR-UP"
+
+#: XS_KEY_CURSOR_DOWN:78
+msgid  "CURSOR-DOWN  "
+msgstr "CURSOR-DOWN"
+
+#: XS_KEY_CURSOR_RIGHT:79
+msgid  "CURSOR-RIGHT "
+msgstr "CURSOR-RIGHT"
+
+#: XS_KEY_CURSOR_LEFT:80
+msgid  "CURSOR-LEFT  "
+msgstr "CURSOR-LEFT"
+
+#: XS_KEY_SPACE:81
+msgid  "SPACE  "
+msgstr "SPACE"
+
+#: XS_KEY_ESC:82
+msgid  "ESC"
+msgstr "ESC"
+
+#: XS_KEY_DOT:83
+msgid  "."
+msgstr "."
+
+#: XS_KEY_BACKSPACE:84
+msgid  "BACKSPACE"
+msgstr "BACKSPACE"
+
+#: XS_KEY_TAB:85
+msgid  "TAB"
+msgstr "TAB"
+
+#: XS_KEY_ENTER:86
+msgid  "ENTER"
+msgstr "ENTER"
+
+#: XS_KEY_INSERT:87
+msgid  "INSERT"
+msgstr "INSERT"
+
+#: XS_KEY_HOME:88
+msgid  "HOME"
+msgstr "HOME"
+
+#: XS_KEY_RETURN:89
+msgid  "RETURN"
+msgstr "RETURN"
+
+#: XS_KEY_DELETE:90
+msgid  "DELETE"
+msgstr "DELETE"
+
+#: XS_KEY_HELP:91
+msgid  "HELP"
+msgstr "HELP"
+
+#: XS_KEY_UNDO:92
+msgid  "UNDO"
+msgstr "UNDO"
+
+#: BBL_BORDER:93
+#: BBL_RESIZE:100
+msgid  "Resize"
+msgstr "Ridimensiona"
+
+#: BBL_MOVE:94
+msgid  "Move"
+msgstr "Sposta"
+
+#: BBL_CLOSE:97
+msgid  "Close"
+msgstr "Chiudi"
+
+#: BBL_FULL:98
+msgid  "Full"
+msgstr "Massimizza"
+
+#: BBL_INFO:99
+msgid  "Info"
+msgstr "Informazione"
+
+#: BBL_UPLN:101
+#: BBL_UPLN1:102
+msgid  "Scroll up"
+msgstr "Scorri in alto"
+
+#: BBL_DNLN:103
+msgid  "Scroll down"
+msgstr "Scorri in basso"
+
+#: BBL_VSLIDE:104
+msgid  "Vertical slide"
+msgstr "Scorrimento verticale"
+
+#: BBL_LFLN:105
+#: BBL_LFLN1:106
+msgid  "Scroll left"
+msgstr "Scorri a sinistra"
+
+#: BBL_RTLN:107
+msgid  "Scroll right"
+msgstr "Scorri a destra"
+
+#: BBL_HSLIDE:108
+msgid  "Horizontal slide"
+msgstr "Scorrimento orizzontale"
+
+#: BBL_ICONIFY:109
+msgid  "Iconify"
+msgstr "Iconizza"
+
+#: BBL_HIDE:110
+msgid  "Hide"
+msgstr "Nascondi"
+
+#: BBL_UPPAGE:114
+msgid  "Page up"
+msgstr "Pagina su"
+
+#: BBL_DNPAGE:115
+msgid  "Page down"
+msgstr "Pagina giù"
+
+#: BBL_LFPAGE:116
+msgid  "Page left"
+msgstr "Pagina sinistra"
+
+#: BBL_RTPAGE:117
+msgid  "Page right"
+msgstr "Pagina destra"
+
