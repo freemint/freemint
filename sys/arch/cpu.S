@@ -249,7 +249,8 @@ _ccw_set:
 	move.l	(sp)+,d2		// restore new CCW
 	move.l	(sp)+,d1		// restore old CCW
 #ifdef __mcoldfire__
-	bra.s write_cacr		// If ColdFire we're done
+	move.w	_mcpu+2,a0
+	cmpa.l	#40,a0			// the following is only necessary
 #else
 	cmpi.w	#40,_mcpu+2		// the following is only necessary
 #endif
