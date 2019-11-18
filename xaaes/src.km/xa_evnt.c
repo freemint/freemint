@@ -577,7 +577,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 
 	if (events & MU_TIMER) {
 		/* The Intel ligent format */
-		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
+		client->timer_val = ((unsigned long)(unsigned short)pb->intin[15] << 16) | (unsigned long)(unsigned short)pb->intin[14];
 
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",	client->timer_val, pb->intin[15], pb->intin[14]));
 #if SKIP_TEXEL_INTRO
@@ -730,7 +730,7 @@ XA_evnt_timer(int lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 
-	if ((client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]) <= MIN_TIMERVAL	) {
+	if ((client->timer_val = ((unsigned long)(unsigned short)pb->intin[1] << 16) | (unsigned long)(unsigned short)pb->intin[0]) <= MIN_TIMERVAL	) {
 		client->timer_val = 0;
 		yield();
 	} else {

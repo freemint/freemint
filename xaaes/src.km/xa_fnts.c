@@ -233,7 +233,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 			if( fh )
 				*fh = h;
 
-			ratio = (((long)w << 16L) ) / (long)h;
+			ratio = (((long)w << 16) ) / (long)h;
 		}
 	}
 	return ratio;
@@ -890,7 +890,7 @@ static unsigned long
 get_edpoint(struct xa_fnts_info *fnts)
 {
 	unsigned long val = atol(object_get_tedinfo(fnts->wt->tree + FNTS_EDSIZE, NULL)->te_ptext);
-	return (val << 16);
+	return val << 16;
 }
 
 

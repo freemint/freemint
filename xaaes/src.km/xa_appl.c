@@ -1593,14 +1593,14 @@ XA_appl_options(int lock, struct xa_client *client, AESPB *pb)
 	{
 		case 0:
 		{
-			unsigned long ao = (unsigned long)pb->intin[1] << 16 | pb->intin[2];
+			unsigned long ao = ((unsigned long)(unsigned short)pb->intin[1] << 16) | (unsigned long)(unsigned short)pb->intin[2];
 
 			client->options.app_opts &= ~ao;
 			goto ret_aopts;
 		}
 		case 1:
 		{
-			unsigned long ao = (unsigned long)pb->intin[1] << 16 | pb->intin[2];
+			unsigned long ao = ((unsigned long)(unsigned short)pb->intin[1] << 16) | (unsigned long)(unsigned short)pb->intin[2];
 
 			client->options.app_opts |= ao;
 ret_aopts:

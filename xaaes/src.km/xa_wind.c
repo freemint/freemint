@@ -55,7 +55,7 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 
 	if (pb->control[N_INTIN] >= 6)
 	{
-		kind |= (long)pb->intin[5] << 16;
+		kind |= (unsigned long)(unsigned short)pb->intin[5] << 16;
 	}
 
 	if (!client->options.nohide)
@@ -1112,7 +1112,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			optr = &client->options.wind_opts;
 
 		mode = pb->intin[2];
- 		opts = (unsigned long)pb->intin[3] << 16 | pb->intin[4];
+		opts = ((unsigned long)(unsigned short)pb->intin[3] << 16) | (unsigned long)(unsigned short)pb->intin[4];
 
 		if (!mode)
 			*optr &= ~opts;
