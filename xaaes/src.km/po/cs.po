@@ -1,10 +1,14 @@
+# Czech translation for XaAES
+#
+# Bohdan Milar <milarb at volny.cz>
+#
 msgid  ""
 msgstr ""
 "Project-Id-Version: XaAES HEAD\n"
 "Report-Msgid-Bugs-To: https://github.com/freemint/freemint/issues\n"
 "POT-Creation-Date: 2019-11-17 00:35+0100\n"
 "PO-Revision-Date: 2019-11-16 15:56+0100\n"
-"Last-Translator: Bohdan\n"
+"Last-Translator: Jan Krupka <krupkaj@centrum.cz>\n"
 "Language-Team: Czech\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"

@@ -1,10 +1,12 @@
+# Hungarian translation for XaAES
+#
 msgid  ""
 msgstr ""
 "Project-Id-Version: XaAES HEAD\n"
 "Report-Msgid-Bugs-To: https://github.com/freemint/freemint/issues\n"
 "POT-Creation-Date: 2019-11-17 00:35+0100\n"
 "PO-Revision-Date: 2019-11-16 15:56+0100\n"
-"Last-Translator: Joszef\n"
+"Last-Translator: Vas József <vas.jozsef@karatnet.hu>\n"
 "Language-Team: Hungarian\n"
 "Language: hu\n"
 "MIME-Version: 1.0\n"
