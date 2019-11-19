@@ -1,3 +1,5 @@
+# German translation for XaAES
+#
 msgid  ""
 msgstr ""
 "Project-Id-Version: XaAES HEAD\n"

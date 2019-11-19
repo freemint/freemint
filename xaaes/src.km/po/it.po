@@ -1,10 +1,12 @@
+# Italian translation for XaAES
+#
 msgid  ""
 msgstr ""
 "Project-Id-Version: XaAES HEAD\n"
 "Report-Msgid-Bugs-To: https://github.com/freemint/freemint/issues\n"
 "POT-Creation-Date: 2019-11-17 00:35+0100\n"
 "PO-Revision-Date: 2019-11-16 15:56+0100\n"
-"Last-Translator: Lodovico\n"
+"Last-Translator: Lodovico Zanier <ldv958@gmail.com>\n"
 "Language-Team: Italian\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
