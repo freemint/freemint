@@ -430,7 +430,7 @@ XA_appl_init(int lock, struct xa_client *client, AESPB *pb)
 #if 0
 				if( isalpha( *client->home_path ) && client->home_path[1] == ':' )
 				{
-					d_setdrv(toupper(*client->home_path) - 'A');
+					d_setdrv(drive_from_letter(*client->home_path));
 					d_setpath(client->home_path+2);
 				}
 #endif

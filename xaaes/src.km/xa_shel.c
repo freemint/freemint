@@ -242,7 +242,7 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 							    ((d_pathconf(caller->home_path, DP_CASE) || d_pathconf(defdir, DP_CASE)) ?
 								!stricmp(caller->home_path, defdir) : !strcmp(caller->home_path, defdir))))
 		{
-			defdir[0] = drv + 'a';
+			defdir[0] = letter_from_drive(drv);
 			defdir[1] = ':';
 			strcpy(defdir + 2, path);
 		}
@@ -376,7 +376,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		defdir[0] = 0;
 	else
 	{
-		defdir[0] = d_getdrv() + 'a';
+		defdir[0] = letter_from_drive(d_getdrv());
 		defdir[1] = ':';
 		d_getpath(defdir + 2, 0);
 	}
@@ -475,7 +475,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 		{
 			int driv = d_getdrv();
 
-			cmd[0] = (char)driv + 'A';
+			cmd[0] = letter_from_drive(driv);
 			cmd[1] = ':';
 			d_getcwd(cmd + 2, driv + 1, sizeof(cmd) - 3);
 
@@ -664,7 +664,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 			/* restore cwd for XaAES */
 			if( caller == C.Aes )
 			{
-				d_setdrv(toupper(*C.Aes->home_path) - 'A' );
+				d_setdrv(drive_from_letter(*C.Aes->home_path));
 				d_setpath(C.Aes->home_path);
 			}
 			break;
@@ -799,7 +799,7 @@ launch(int lock, short mode, short wisgr, short wiscr,
 
 			if( !path[0] || path[1] != ':' )
 			{
-				*(info->home_path) = drv + 'a';
+				*(info->home_path) = letter_from_drive(drv);
 				*(info->home_path + 1) = ':';
 				i = 2;
 			}
@@ -1359,12 +1359,12 @@ shell_find(int lock, struct xa_client *client, char *fn)
 			}
 
 			/* Try clients current path: */
-			sprintf(cwd, sizeof(cwd), "%c:%s", client->xdrive + 'a', client->xpath);
+			sprintf(cwd, sizeof(cwd), "%c:%s", letter_from_drive(client->xdrive), client->xpath);
 			r = wc_stat64(0, cwd, fn, &st, result);
 			DIAGS(("[4]  --   try: '%s\\%s' :: %ld", cwd, fn, r));
 			if (r == 0)
 			{
-				sprintf(path, len, "%c:%s\\%s", client->xdrive + 'a', client->xpath, result);
+				sprintf(path, len, "%c:%s\\%s", letter_from_drive(client->xdrive), client->xpath, result);
 				return path;
 			}
 		}

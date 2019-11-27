@@ -27,6 +27,8 @@
 
 #include "global.h"
 
+int drive_from_letter(int c);
+int letter_from_drive(int d);
 int get_drv(const char *p);
 void fix_path(char *path);
 void strip_fname(const char *filename, char *pn, char *fn);

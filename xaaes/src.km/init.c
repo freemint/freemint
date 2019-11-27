@@ -264,7 +264,7 @@ static void configure(void)
 	d_getpath(C.Aes->xpath, 0);
 	/* home_path is no full path - make one */
 	if( *(C.Aes->home_path + 2) != ':' )
-		sprintf( C.Aes->home_path, sizeof(C.Aes->home_path), "%c:%s\\", C.Aes->xdrive + 'a', C.Aes->xpath);
+		sprintf( C.Aes->home_path, sizeof(C.Aes->home_path), "%c:%s\\", letter_from_drive(C.Aes->xdrive), C.Aes->xpath);
 	BLOG((true, "home_path: '%s'", C.Aes->home_path));
 
 	/*
