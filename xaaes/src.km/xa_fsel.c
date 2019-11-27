@@ -1706,23 +1706,32 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 			if (drv == drive)
 				m[d].ob_state |= OS_CHECKED;
 
+			/* fix up the width from adjusting last entry, below */
+			m[d].ob_width = m[(FSEL_DRVA + 1)].ob_width;
 			/* The " "" is to prevent some stupid program from replacing 2 blanks by "\t" */
-			sprintf(m[d++].ob_spec.free_string, 32, " "" %c:", letter_from_drive(drv));
+			sprintf(m[d].ob_spec.free_string, 32, " "" %c:", letter_from_drive(drv));
+			d = m[d].ob_next;
 			drvs++;
 		}
 		dmap >>= 1;
 		drv++;
 	}
 
+	/*
+	 * the menu has 2 columns;
+	 * make the last entry the total width if
+	 * number of drives is odd
+	 */
 	if (drvs & 1)
 		m[d-1].ob_width = m[FSEL_DRVBOX].ob_width;
 
-	do {
+	while (d != FSEL_DRVBOX)
+	{
 		m[d].ob_flags |= OF_HIDETREE;
 		/* prevent finding those. */
 		*(m[d].ob_spec.free_string + 2) = '~';
+		d = m[d].ob_next;
 	}
-	while (m[d++].ob_next != FSEL_DRVBOX);
 
 	m[FSEL_DRVBOX].ob_height = ((drvs + 1) / 2) * screen.c_max_h;
 
