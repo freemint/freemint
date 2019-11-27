@@ -69,6 +69,7 @@
 #include "xa_rsrc.h"
 #include "xa_fsel.h"
 #include "trnfm.h"
+#include "util.h"
 
 #include "mvdi.h"
 
@@ -2483,7 +2484,7 @@ open_launcher(int lock, struct xa_client *client, int what)
 	}
 	if (!*path)
 	{
-		path[0] = d_getdrv() + 'a';
+		path[0] = letter_from_drive(d_getdrv());
 		path[1] = ':';
 		path[2] = '\\';
 		path[3] = '*';

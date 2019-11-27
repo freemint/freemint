@@ -26,21 +26,29 @@
 #include "util.h"
 #include "debug.h"
 
+int drive_from_letter(int c)
+{
+	if (c >= 'a' && c <= 'z')
+		return c - 'a';
+	if (c >= 'A' && c <= 'Z')
+		return c - 'A';
+	if (c >= '1' && c <= '6')
+		return c - '1' + 26;
+	return -1;
+}
+
+int letter_from_drive(int d)
+{
+	return d + ((d < 26) ? 'A' : '1' - 26);
+}
+
 int
 get_drv(const char *p)
 {
 	if( *p == '/' )
 		return 0;
 	if (*(p + 1) == ':')
-	{
-		int c = *p;
-		if (c >= 'a' && c <= 'z')
-			return c - 'a';
-		if (c >= 'A' && c <= 'Z')
-			return c - 'A';
-		if (c >= '0' && c <= '9')
-			return (c - '0') + ('z' - ('a' - 1));
-	}
+		return drive_from_letter(*p);
 	return -1;
 }
 
@@ -170,7 +178,7 @@ get_drive_and_path(char *path, short plen)
 	int drv;
 
 	drv = d_getdrv();
-	path[0] = (char)drv + 'a';
+	path[0] = letter_from_drive(drv);
 	path[1] = ':';
 	d_getpath(path + 2, 0);
 	drv = strlen(path);

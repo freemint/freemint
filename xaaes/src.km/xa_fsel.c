@@ -1688,7 +1688,6 @@ CE_refresh_filelist(int lock, struct c_event *ce, short cancel)
 	}
 }
 
-#define DRIVELETTER(i)	(i + ((i < 26) ? 'A' : '1' - 26))
 static int
 fsel_drives(OBJECT *m, int drive, long *dmapp)
 {
@@ -1708,7 +1707,7 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 				m[d].ob_state |= OS_CHECKED;
 
 			/* The " "" is to prevent some stupid program from replacing 2 blanks by "\t" */
-			sprintf(m[d++].ob_spec.free_string, 32, " "" %c:", DRIVELETTER(drv));
+			sprintf(m[d++].ob_spec.free_string, 32, " "" %c:", letter_from_drive(drv));
 			drvs++;
 		}
 		dmap >>= 1;
@@ -1727,7 +1726,7 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 
 	m[FSEL_DRVBOX].ob_height = ((drvs + 1) / 2) * screen.c_max_h;
 
-	sprintf(m[FSEL_DRV].ob_spec.free_string, 32, " %c:", DRIVELETTER(drive));
+	sprintf(m[FSEL_DRV].ob_spec.free_string, 32, " %c:", letter_from_drive(drive));
 	return drvs;
 }
 
@@ -2138,11 +2137,11 @@ static void fs_set_shortcut_letter( OBJECT *o, long dmap )
 {
 	char *text = o->ob_spec.free_string;
 	int b;
-	long dmask;
 
-	for( ; *text == ' '; text++ );
-	for( b = 0, dmask = 1; *text; text++, b++, dmask <<= 1 )
-		if( !( ( 1 << (tolower(*text) - 'a') ) & dmap) )
+	for ( ; *text == ' '; text++ )
+		;
+	for( b = 0; *text; text++, b++ )
+		if( !( ( 1UL << drive_from_letter(*text)) & dmap) )
 			break;
 	if( !*text )
 		o->ob_state &= (~OS_WHITEBAK & 0x80ff);
@@ -2698,7 +2697,7 @@ fs_key_form_do(int lock,
 	/* HR 310501: alt + letter :: select drive */
 	if (key->raw.conin.state == K_ALT)
 	{
-		if ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9'))
+		if (drive_from_letter(nk) >= 0)
 		{
 			int drive_object_index = find_drive(nk, fs);
 			if (drive_object_index >= FSEL_DRVA){
@@ -3288,7 +3287,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			char *p, *p1;
 
 			if( *path == '/' ){
-				int drv = d_getdrv() + 'a';
+				int drv = letter_from_drive(d_getdrv());
 				sprintf( fs->root, PATH_MAX, "%c:%s", drv, path );
 			}
 			else
@@ -3338,7 +3337,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 
 			pat = path;
 
-			fs->root[0] = drv + 'a';
+			fs->root[0] = letter_from_drive(drv);
 			fs->root[1] = ':';
 			d_getcwd(fs->root + 2, drv + 1, sizeof(fs->root));
 			if( fs->root[1] == ':' && fs->root[2] == 0 )
@@ -3597,7 +3596,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 		set_menu_widget(dialog_window, client, fs->menu);
 
 		fs->drives = fsel_drives(fs->menu->tree,
-					*(fs->root+1) == ':' ? tolower(*fs->root) - 'a' : d_getdrv(), &dmap);
+					*(fs->root+1) == ':' ? drive_from_letter(*fs->root) : d_getdrv(), &dmap);
 
 		fs->curr_longest = 0;
 
@@ -3825,7 +3824,7 @@ do_fsel_exinput(int lock, struct xa_client *client, AESPB *pb, const char *text)
 					if( *p == '/' )
 						*p = '\\';
 				}
-				if( *fs->path == '/' && (drv = (d_getdrv() + 'a')) != 'u' )
+				if( *fs->path == '/' && (drv = letter_from_drive(d_getdrv())) != 'U' )
 					sprintf( path, PATH_MAX, "/%c%s", drv, fs->path );
 				else
 #endif
