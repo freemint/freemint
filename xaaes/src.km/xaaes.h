@@ -1,7 +1,7 @@
 /*
  * resource set indices for xaaes
  *
- * created by ORCS 2.16
+ * created by ORCS 2.17
  */
 
 /*
@@ -17,7 +17,7 @@
  * Number of Trees:          13
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          74864
+ * Total file size:          74782
  */
 
 #undef RSC_NAME
@@ -252,7 +252,7 @@
 /*  */
 
 #define ABOUT_LINE1                        1 /* Free string */
-/*            <u>Dedicated to <i>Frank Naumann </i></u>› */
+/*            <u>Dedicated to <i>Frank Naumann </i></u>» */
 
 #define ABOUT_LINE2                        2 /* Free string */
 /* <u>                                                                  </u> */
@@ -273,76 +273,76 @@
 /*  */
 
 #define WCTXT_WINDOWS                      8 /* Free string */
-/* ­Windows      */
+/* Windows      */
 
 #define WCTXT_ADVANCED                     9 /* Free string */
-/* Advanced     */
+/* Advanced     */
 
 #define WCTXT_TODESK                      10 /* Free string */
-/* ­To desktop   */
+/* To desktop   */
 
 #define WCTXT_CLOSE                       11 /* Free string */
-/* Close        */
+/* Close        */
 
 #define WCTXT_HIDE                        12 /* Free string */
-/* Hide         */
+/* Hide         */
 
 #define WCTXT_ICONIFY                     13 /* Free string */
-/* Iconify      */
+/* Iconify      */
 
 #define WCTXT_SHADE                       14 /* Free string */
-/* Shade        */
+/* Shade        */
 
 #define WCTXT_MOVE                        15 /* Free string */
-/* ­Move         */
+/* Move         */
 
 #define WCTXT_RESIZE                      16 /* Free string */
-/* ­Resize       */
+/* Resize       */
 
 #define WCTXT_QUIT                        17 /* Free string */
-/* ­Quit         */
+/* Quit         */
 
 #define WCTXT_KILL                        18 /* Free string */
-/* ­Kill         */
+/* Kill         */
 
 #define WCTXT_KEEPABOVE                   19 /* Free string */
-/* ­Keep above others            */
+/* Keep above others            */
 
 #define WCTXT_KEEPBELOW                   20 /* Free string */
-/* ­Keep below others            */
+/* Keep below others            */
 
 #define WCTXT_TOOLBOX                     21 /* Free string */
-/* ­Toolbox attribute            */
+/* Toolbox attribute            */
 
 #define WCTXT_DENY_KEYBOARD               22 /* Free string */
-/* ­Deny keyboard focus          */
+/* Deny keyboard focus          */
 
 #define WCTXT_CLOSE_THIS                  23 /* Free string */
-/* ­This                       */
+/* This                       */
 
 #define WCTXT_CLOSE_ALL                   24 /* Free string */
-/* ­All                        */
+/* All                        */
 
 #define WCTXT_CLOSE_OTHERS                25 /* Free string */
-/* ­All others                 */
+/* All others                 */
 
 #define WCTXT_RESTORE_ALL                 26 /* Free string */
-/* ­Restore all                */
+/* Restore all                */
 
 #define WCTXT_RESTORE_OTHERS              27 /* Free string */
-/* ­Restore all others         */
+/* Restore all others         */
 
 #define WCTXT_HIDE_THIS                   28 /* Free string */
-/* ­This window                */
+/* This window                */
 
 #define WCTXT_HIDE_APP                    29 /* Free string */
-/* ­Application                */
+/* Application                */
 
 #define WCTXT_HIDE_OTHERS                 30 /* Free string */
-/* ­Other apps                 */
+/* Other apps                 */
 
 #define WCTXT_HIDE_SHOW_OTHERS            31 /* Free string */
-/* ­Show other apps            */
+/* Show other apps            */
 
 #define RS_ABOUT                          32 /* Free string */
 /* About */
