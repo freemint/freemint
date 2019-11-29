@@ -274,28 +274,31 @@ static inline int setcookie (long tag, long value)
 	if (oldssp)
 		SuperToUser((void *)oldssp);
 
-	while (cjar->tag)
+	if (cjar)
 	{
-		n++;
-		if (cjar->tag == tag)
+		while (cjar->tag)
 		{
+			n++;
+			if (cjar->tag == tag)
+			{
+				cjar->value = value;
+				return 1;
+			}
+			cjar++;
+		}
+
+		n++;
+		if (n < cjar->value)
+		{
+			n = cjar->value;
+			cjar->tag = tag;
 			cjar->value = value;
+
+			cjar++;
+			cjar->tag = 0L;
+			cjar->value = n;
 			return 1;
 		}
-		cjar++;
-	}
-
-	n++;
-	if (n < cjar->value)
-	{
-		n = cjar->value;
-		cjar->tag = tag;
-		cjar->value = value;
-
-		cjar++;
-		cjar->tag = 0L;
-		cjar->value = n;
-		return 1;
 	}
 
 	return 0;
