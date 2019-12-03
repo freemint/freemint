@@ -475,7 +475,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_CTRLCACHE:
 		{
+#ifdef __mcoldfire__
+			if (arg1 == -1 && arg2 == -1 && coldfire_68k_emulation)
+				r = E_OK;
+			else if (arg1 == -1 && arg2 == -1)
+				r = ENOSYS;
+#else
 			if (arg1 == -1 && arg2 == -1)	r = E_OK;
+#endif
 # ifndef M68000
 			else if (arg1 == -1)		r = ccw_get ();
 			else if (arg2 == -1)		r = ccw_getdmask ();

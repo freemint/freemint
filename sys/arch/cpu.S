@@ -91,6 +91,13 @@ c2lv:	dc.l	clq			// CACR -> CCW
 hascaches:
 	dc.w	0x00
 
+#ifdef __mcoldfire__
+// this is a variable to save the cacr value in the ColdFire
+// initial value with BaS GCC          0xA4088020
+// initial value with BaS Code Warrior 0xA008A020
+// (values in November 2019)
+cacr_saved:	dc.l	0xA4088020
+#endif
 	.text
 
 // init cache routines
@@ -108,8 +115,8 @@ _init_cache:
 
 	lea	_cache_coldfire,a0
 	movea.l	a0,a3
-	lea	clq,a1
-	movea.l	a1,a2
+	lea	l2cv4e,a1
+	lea	c2lv4e,a2
 
 	bra.s	icset
 init_cache_68k:
@@ -215,17 +222,12 @@ ccw_dmasks:
 // Set the CACR according to the Cache Control Word and Mask
 
 _ccw_set:
-#ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
-	beq	clq			// currently unsupported
-#endif
 	tst.w	hascaches
-#ifdef __mcoldfire__
 	beq	clq
+#ifdef __mcoldfire__
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
 #else
-	beq	clq
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
 	bsr	_ccw_get		// get the current CCW
@@ -249,6 +251,31 @@ _ccw_set:
 	move.l	(sp)+,d2		// restore new CCW
 	move.l	(sp)+,d1		// restore old CCW
 #ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne	cf_68K_emu
+	btst	#0,d2			// instruction cache going to be enabled?
+	beq.s	ic_off_cf
+	btst	#0,d1			// if yes, is it currently disabled?
+	bne.s	no_icache_cf
+	or.l	#0x00000100,d0		// yes, so invalidate it (cinva ic)
+	jbra	no_icache_cf
+ic_off_cf:
+	btst	#0,d1			// if it's going to be disabled,
+	beq.s	no_icache_cf		// is it currently enabled?
+	jbsr	_cpusha_ic_cf		// yes, so write it back (cpusha ic)
+no_icache_cf:
+	btst	#1,d2			// same as above, but for the data cache
+	beq.s	dc_off_cf
+	btst	#1,d1
+	jbne	write_cacr
+	or.l	#0x01000000,d0		// cinva dc
+	jbra	write_cacr
+dc_off_cf:
+	btst	#1,d1
+	jbeq	write_cacr
+	jbsr	_cpusha_dc_cf		// cpusha dc
+	jbra	write_cacr
+cf_68K_emu:
 	move.w	_mcpu+2,a0
 	cmpa.l	#40,a0			// the following is only necessary
 #else
@@ -300,6 +327,10 @@ write_cacr:
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
 	lea	20(sp),sp
+	tst.w	_coldfire_68k_emulation
+	bne clq
+	and.l	#0xfefffeff,d0		// clear cinva bits before saving
+	move.l	d0,cacr_saved		// save new CACR value
 #else
 	movem.l	(sp)+,d1-d2/a0-a2
 #endif
@@ -309,22 +340,21 @@ clq:	clr.l	d0			// E_OK
 // Extract Cache Control Word from the CACR
 
 _ccw_get:
-#ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
-	bne.s	ccw_get_68k
-	moveq	#0x0007,d0		// rough approximation
-	rts
-ccw_get_68k:
-#endif
 	tst.w	hascaches
 	beq.s	clq
 #ifdef __mcoldfire__
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
+	tst.w	_coldfire_68k_emulation
+	bne.s	ccw_get_cacr
+	move.l	cacr_saved,d0
+	bra.s	ccw_get_ccw
 #else
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
+ccw_get_cacr:
 	dc.w	0x4e7a,0x0002		// movec cacr,d0
+ccw_get_ccw:
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
 	move.w	d0,d1
@@ -349,7 +379,7 @@ _ccw_getdmask:
 #ifdef __mcoldfire__
 	tst.w	_coldfire_68k_emulation
 	bne.s	ccw_getdmask_68k
-	moveq	#0x0007,d0		// rough approximation
+	move.w	#0xd007,d0
 	rts
 ccw_getdmask_68k:
 #endif
@@ -592,6 +622,63 @@ s61:	addq.l	#0x02,a0
 	rts
 
 #endif
+
+// ColdFire v4e
+#ifdef __mcoldfire__
+cacrv4e:dc.l	0x00008000,0x80000000,0x00080000,0x00000000
+	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
+	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
+	dc.l	0x00040000,0x00000000,0x10000000,0x20000000
+
+ccwv4e:	dc.w	0x0000,0x0000,0x0000,0x0000
+	dc.w	0x0000,0x0000,0x0000,0x0000
+	dc.w	0x0000,0x0000,0x0000,0x0001
+	dc.w	0x0000,0x0000,0x1000,0x0004
+	dc.w	0x0000,0x0000,0x0000,0x0000
+	dc.w	0x0000,0x0000,0x0000,0x0000
+	dc.w	0x4000,0x8000,0x0000,0x0002
+
+l2cv4e:
+	lea	cacrv4e,a0
+	clr.l	d1
+	moveq	#0x0f,d2
+lv4e:
+	lsr.l	#0x01,d0
+	bcc.s	sv4e
+	or.l	(a0),d1
+sv4e:
+	addq.l	#0x04,a0
+	subq.l	#1,d2
+	bpl.s	lv4e
+
+	move.l	d1,d0
+	eori.l	#0x10000000,d0		// adjust reverted bits
+	or.l	#0x00000020,d0		// always set EUSP bit
+	rts
+
+c2lv4e:
+	move.l	d3,-(sp)
+	lea	ccwv4e,a0
+	lsr.l	#0x04,d0		// first 4 bits of CACR aren't used
+	clr.l	d1
+	moveq	#0x1c,d2
+cv4e:
+	lsr.l	#0x01,d0
+	bcc.s	ssv4e
+	mvz.w	(a0),d3
+	or.l	d3,d1
+
+ssv4e:	addq.l	#0x02,a0
+	subq.l	#1,d2
+	bpl.s	cv4e
+
+	move.l	d1,d0
+	eor.l	#0x4000,d0		// adjust reverted bits
+	move.l	(sp)+,d3
+
+	rts
+#endif
+
 	.globl	_cpush
 	.globl	_cpushi
 
