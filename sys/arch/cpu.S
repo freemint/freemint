@@ -774,7 +774,7 @@ do040i:
 	// crosses a page boundary, but I don't think the gain this could mean
 	// would be enough to judge the additional overhead needed.
 	move.l	a1,a0
-	bsr.s	log2phys
+	jbsr	log2phys
 	cmpa.l	#-1,a0
 	beq.s	abc040i			// if there's no physical address, flush all
 	dc.w	0xF468			// this is "cpushl dc,(a0)"
@@ -843,6 +843,54 @@ setloop:
 	move.l	d0,a0		// set = 0, way = d0
 	cmpi.l	#4,d0		// flushed all the ways?
 	bne.s	setloop
+	rts
+
+_cpusha_dc_cf:
+	nop			// synchronize/flush store buffer
+	lea	-12(sp),sp
+	movem.l	d0-d1/a0,(sp)
+	moveq.l #0,d0		// initialize way counter
+	moveq.l #0,d1		// initialize set counter
+	move.l  d0,a0		// initialize cpushl pointer
+
+setloop_dc:
+	cpushl	dc,(a0) 	// push cache line a0
+	add.l	#0x0010,a0	// increment set index by 1
+	addq.l	#1,d1		// increment set counter
+	cmpi.l	#512,d1 	// are sets for this way done?
+	bne.s	setloop_dc
+
+	moveq.l #0,d1		// set counter to zero again
+	addq.l	#1,d0		// increment to next way
+	move.l	d0,a0		// set = 0, way = d0
+	cmpi.l	#4,d0		// flushed all the ways?
+	bne.s	setloop_dc
+	movem.l	(sp),d0-d1/a0
+	lea	12(sp),sp
+	rts
+
+_cpusha_ic_cf:
+	nop			// synchronize/flush store buffer
+	lea	-12(sp),sp
+	movem.l	d0-d1/a0,(sp)
+	moveq.l #0,d0		// initialize way counter
+	moveq.l #0,d1		// initialize set counter
+	move.l  d0,a0		// initialize cpushl pointer
+
+setloop_ic:
+	cpushl	ic,(a0) 	// push cache line a0
+	add.l	#0x0010,a0	// increment set index by 1
+	addq.l	#1,d1		// increment set counter
+	cmpi.l	#512,d1 	// are sets for this way done?
+	bne.s	setloop_ic
+
+	moveq.l #0,d1		// set counter to zero again
+	addq.l	#1,d0		// increment to next way
+	move.l	d0,a0		// set = 0, way = d0
+	cmpi.l	#4,d0		// flushed all the ways?
+	bne.s	setloop_ic
+	movem.l	(sp),d0-d1/a0
+	lea	12(sp),sp
 	rts
 #endif
 
