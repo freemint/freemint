@@ -22,7 +22,9 @@ The tablet function keys are programmed as follow:
 
 - 1 = Esc key.
 
-- 2 to 3 = Unassigned
+- 2 = Unassigned
+
+- 3 = Tip pressure detection on/off. Sends CTRL-1 to CTRL-9 according to pressure. The graphics program VISION supports these keyboard shortcuts to vary the line thickness.
 
 - 4 = Recalibration. To match the screen resolution to the tablet's. Use after
 a resolution change or as needed.

@@ -141,7 +141,7 @@ struct tblt_info
 	long sec_barrel;			/* secondary barrel switch, assigned to UNDO */
 	long in_range;
 	long x, y;
-	/* long pressure; */
+	long pressure;
 	long function_keys;
 };
 
@@ -157,6 +157,7 @@ struct tblt_data
 	struct tblt_info new;
 	long tablet_w;
 	long tablet_h;
+	long max_pressure;
 };
 
 
@@ -168,6 +169,7 @@ enum hid_data_type {
 	HID_X,
 	HID_Y,
 	HID_FUNCTION_KEYS,
+	HID_TIP_PRESSURE,
 	HID_MAX_USAGES
 };
 
@@ -424,7 +426,8 @@ static long hid_parser_tablet(unsigned char* buff, long len)
 		DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
 		DEBUG(("Data size in bits: 0x%02x", (int)data.size));
 
-		fill_extract_bits(&usages[HID_X], data.offset, data.size * parser.report_count, FALSE, data.report_id_used, data.report_id);
+		fill_extract_bits(&usages[HID_X], data.offset, data.size, data.log_min < 0, data.report_id_used, data.report_id);
+		tblt_data.tablet_w = (long) data.log_max;
 	}
 	else
 	{
@@ -458,7 +461,8 @@ static long hid_parser_tablet(unsigned char* buff, long len)
 		DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
 		DEBUG(("Data size in bits: 0x%02x", (int)data.size));
 
-		fill_extract_bits(&usages[HID_Y], data.offset, data.size * parser.report_count, FALSE, data.report_id_used, data.report_id);
+		fill_extract_bits(&usages[HID_Y], data.offset, data.size, data.log_min < 0, data.report_id_used, data.report_id);
+		tblt_data.tablet_h = (long) data.log_max;
 	}
 	else
 	{
@@ -510,23 +514,39 @@ static long hid_parser_tablet(unsigned char* buff, long len)
 		}
 	}
 
-	/* Find tip pressure (future use) */
-	/*
+	/* Find tip pressure */
 	DEBUG(("\r\nTIP PRESSURE"));
 	memset(&data, 0, sizeof(struct HID_DATA));
-	usage.u_page = 0xFF0D;
+	/* Generic tablet as per example in USB HID Usage Tables v.1.12 document at usb.org */
+	usage.u_page = U_PAGE_DIGITIZER;
 	usage.usage = USAGE_TIP_PRESSURE;
 	if (find_usage(&parser, &usage, &data)) {
 		DEBUG(("Logical min: %ld", (long)data.log_min));
 		DEBUG(("Logical max: %ld", (long)data.log_max));
 		DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
 		DEBUG(("Data size in bits: 0x%02x", (int)data.size));
-
-		fill_extract_bits(&usages[HID_TIP_PRESSURE], data.offset, data.size * parser.report_count, FALSE, data.report_id_used, data.report_id);
-	} else {
-		DEBUG(("Tip pressure not found."));
+		
+		fill_extract_bits(&usages[HID_TIP_PRESSURE], data.offset, data.size, data.log_min < 0, data.report_id_used, data.report_id);
+		tblt_data.max_pressure = (long) data.log_max;
 	}
-	 */
+	else
+	{
+		/* Wacom Intuos S */
+		memset(&data, 0, sizeof(struct HID_DATA));
+		usage.u_page = 0xFF0D;
+		usage.usage = USAGE_TIP_PRESSURE;
+		if (find_usage(&parser, &usage, &data)) {
+			DEBUG(("Logical min: %ld", (long)data.log_min));
+			DEBUG(("Logical max: %ld", (long)data.log_max));
+			DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
+			DEBUG(("Data size in bits: 0x%02x", (int)data.size));
+			
+			fill_extract_bits(&usages[HID_TIP_PRESSURE], data.offset, data.size, data.log_min < 0, data.report_id_used, data.report_id);
+			tblt_data.max_pressure = (long) data.log_max;
+		} else {
+			DEBUG(("Tip pressure not found."));
+		}
+	}
 
 	return 1L;
 }
@@ -582,6 +602,7 @@ tablet_int (void)
 	static unsigned char data[64];
 	static long track_x = 0L;
 	static long track_y = 0L;
+	static int tip_pressure_recognition = 0;
 
 	if (tblt_data.pusb_dev == NULL)
 		return;
@@ -605,7 +626,7 @@ tablet_int (void)
 		tblt_data.new.in_range = hid_get_data(data, &usages[HID_IN_RANGE]);
 		tblt_data.new.x = hid_get_data(data, &usages[HID_X]);
 		tblt_data.new.y = hid_get_data(data, &usages[HID_Y]);
-		/* tblt_data.new.pressure = hid_get_data(data, &usages[HID_TIP_PRESSURE]); */
+		tblt_data.new.pressure = hid_get_data(data, &usages[HID_TIP_PRESSURE]);
 
 		if (tblt_data.new.in_range)
 		{
@@ -649,6 +670,27 @@ tablet_int (void)
 				usb_kbd_send_code (0x61, 0); /* Undo press */
 			else if (! (tblt_data.new.sec_barrel) && (tblt_data.old.sec_barrel))
 				usb_kbd_send_code (0x61 + 0x80, 0); /* Undo release */
+			
+			/* tip pressure, convert to CTRL-1 to CTRL-9 for Vision */
+			if (tip_pressure_recognition)
+			{
+				static long old_ctrl_value = 0;
+				static unsigned short scancode = 0;
+				long ctrl_value = MIN(9, tblt_data.new.pressure * 9L / tblt_data.max_pressure);
+				if (ctrl_value != old_ctrl_value && scancode == 0)
+				{
+					scancode = (ctrl_value == 0L)?0x0b : 0x01 + (unsigned short) ctrl_value;
+					usb_kbd_send_code(0x1d, 0);		/* Ctrl press */;
+					usb_kbd_send_code(scancode, 0);
+					old_ctrl_value = ctrl_value;
+				}
+				else if (scancode)
+				{
+					usb_kbd_send_code(scancode + 0x80, 0);
+					usb_kbd_send_code(0x1d + 0x80, 0);		/* Ctrl release */;
+					scancode = 0;
+				}
+			}
 		}
 	}
 	else if (usages[HID_FUNCTION_KEYS].report_id_used && usages[HID_FUNCTION_KEYS].report_id == data[0])
@@ -656,11 +698,17 @@ tablet_int (void)
 		/* When the stylus report is received, the function keys report is not. To receive the report, we must move the stylus out of range. */
 		tblt_data.new.function_keys = hid_get_data(data, &usages[HID_FUNCTION_KEYS]);
 
-		/* Function key 0 assigned to ESC, 3 assigned to get_rez(), 1 and 2 inactive for now */
+		/* Function key 0 assigned to ESC, 1 inactive, 2 to toggle tip pressure recognition, 3 assigned to get_rez(),  */
 		if ((tblt_data.new.function_keys & 1) && ! (tblt_data.old.function_keys & 1))
 			usb_kbd_send_code (0x01, 0); /* ESC press */
 		else if (! (tblt_data.new.function_keys & 1) && (tblt_data.old.function_keys & 1))
 			usb_kbd_send_code (0x01 + 0x80, 0); /* ESC release */
+		
+		if ((tblt_data.new.function_keys & 4) && ! (tblt_data.old.function_keys & 4))
+		{
+			tip_pressure_recognition = ! tip_pressure_recognition;
+			Cconout(7); /* ping */
+		}
 
 		if ((tblt_data.new.function_keys & 8) && ! (tblt_data.old.function_keys & 8))
 		{
