@@ -707,7 +707,7 @@ tablet_int (void)
 		if ((tblt_data.new.function_keys & 4) && ! (tblt_data.old.function_keys & 4))
 		{
 			tip_pressure_recognition = ! tip_pressure_recognition;
-			Cconout(7); /* ping */
+			c_conout(7); /* ping */
 		}
 
 		if ((tblt_data.new.function_keys & 8) && ! (tblt_data.old.function_keys & 8))
