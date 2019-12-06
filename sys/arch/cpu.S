@@ -178,22 +178,32 @@ icquit:
 // is automatically converted to and from physical CACR register.
 // Bits of the CCW are defined as follows:
 //
-// 0 - instruction cache enable
-// 1 - data cache enable
-// 2 - branch cache enable
-// 3 - instruction cache freeze
-// 4 - data cache freeze
-// 5 - instruction burst enable
-// 6 - data burst enable
-// 7 - data write allocate enable
-// 8 - instruction cache full mode enable
-// 9 - instruction cache read/write allocate
-// 10 - data cache full mode enable
-// 11 - data cache read/write allocate enable
-// 12 - branch cache invalidate all
-// 13 - branch cache invalidate user entries
-// 14 - CPUSH invalidate enable
-// 15 - store buffer enable
+//                                                 020  030  040  060  CFv4e
+// 0 - instruction cache enable                     x    x    x    x     x
+// 1 - data cache enable                            -    x    x    x     x
+// 2 - branch cache enable                          -    -    -    x     x
+// 3 - instruction cache freeze                     x    x    -    -     -
+// 4 - data cache freeze                            -    x    -    -     -
+// 5 - instruction burst enable                     -    x    -    -     -
+// 6 - data burst enable                            -    x    -    -     -
+// 7 - data write allocate enable                   -    x    -    -     -
+// 8 - instruction cache full mode enable           -    -    -    x     -
+// 9 - instruction cache read/write allocate        -    -    -    x     -
+// 10 - data cache full mode enable                 -    -    -    x     -
+// 11 - data cache read/write allocate enable       -    -    -    x     -
+// 12 - branch cache invalidate all                 -    -    -    x     x
+// 13 - branch cache invalidate user entries        -    -    -    x     -
+// 14 - CPUSH invalidate enable (data)              -    -    -    x     x
+// 15 - store buffer enable                         -    -    -    x     x
+// 16 - instruction cache invalidate all            -    -    -    -     x
+// 17 - instruction cache mode default              -    -    -    -     x
+// 18 - instruction cache half lock enable          -    -    -    -     x
+// 19 - CPUSH invalidate enable (instruction)       -    -    -    -     x
+// 20 - default cache-inhibited fill buffer         -    -    -    -     x
+// 21 - data cache invalidate all                   -    -    -    -     x
+// 22 - default data cache mode (bit 0)             -    -    -    -     x
+// 23 - default data cache mode (bit 1)             -    -    -    -     x
+// 24 - data cache half lock enable                 -    -    -    -     x
 //
 // This is translated into the physical CACR
 // independently for each processor (as they differ).
@@ -207,13 +217,13 @@ icquit:
 // table of default CCW masks for processors
 
 ccw_dmasks:
-	dc.w	0x0000			// 68000
-	dc.w	0x0000			// 68010
-	dc.w	0x0009			// 68020
-	dc.w	0x00fb			// 68030
-	dc.w	0x0003			// 68040
-	dc.w	0x0000			// 68050 (does not exist)
-	dc.w	0xff07			// 68060
+	dc.l	0x00000000			// 68000
+	dc.l	0x00000000			// 68010
+	dc.l	0x00000009			// 68020
+	dc.l	0x000000fb			// 68030
+	dc.l	0x00000003			// 68040
+	dc.l	0x00000000			// 68050 (does not exist)
+	dc.l	0x0000ff07			// 68060
 
 	.globl	_ccw_getdmask
 	.globl	_ccw_get
@@ -244,7 +254,6 @@ _ccw_set:
 #else
 	and.w	d1,d0
 #endif
-	and.l	#0x0000ffff,d0
 	move.l	d0,-(sp)		// save new CCW
 	move.l	l2cv,a0			// convert new CCW ...
 	jsr	(a0)
@@ -357,14 +366,9 @@ ccw_get_cacr:
 ccw_get_ccw:
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
-	move.w	d0,d1
+	move.l	d0,d1
 	bsr.s	_ccw_getdmask
-#ifdef __mcoldfire__
 	and.l	d1,d0
-#else
-	and.w	d1,d0
-#endif
-	and.l	#0x0000ffff,d0
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
 	lea	20(sp),sp
@@ -379,18 +383,19 @@ _ccw_getdmask:
 #ifdef __mcoldfire__
 	tst.w	_coldfire_68k_emulation
 	bne.s	ccw_getdmask_68k
-	move.w	#0xd007,d0
+	move.l	#0x01ffd007,d0		// ColdFire CCW mask
 	rts
 ccw_getdmask_68k:
 #endif
 	move.l	_mcpu,d0		// high word assumed 0
 	divu.w	#5,d0
 	and.l	#0x0000ffff,d0		// better to be safe...
+	lsl.l	#1,d0
 	lea	ccw_dmasks,a0
 #ifdef __mcoldfire__
-	move.w	0(a0,d0.l),d0		// _not_ a (a0,d0.w*2), see divu
+	move.l	0(a0,d0.l),d0		// _not_ a (a0,d0.w*2), see divu
 #else
-	move.w	0(a0,d0.w),d0		// _not_ a (a0,d0.w*2), see divu
+	move.l	0(a0,d0.w),d0		// _not_ a (a0,d0.w*2), see divu
 #endif
 	rts
 
@@ -629,19 +634,23 @@ cacrv4e:dc.l	0x00008000,0x80000000,0x00080000,0x00000000
 	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
 	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
 	dc.l	0x00040000,0x00000000,0x10000000,0x20000000
+	dc.l	0x00000100,0x00000400,0x00000800,0x00001000
+	dc.l	0x00002000,0x01000000,0x02000000,0x04000000
+	dc.l	0x08000000,0x00000000,0x00000000,0x00000000
+	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
 
-ccwv4e:	dc.w	0x0000,0x0000,0x0000,0x0000
-	dc.w	0x0000,0x0000,0x0000,0x0000
-	dc.w	0x0000,0x0000,0x0000,0x0001
-	dc.w	0x0000,0x0000,0x1000,0x0004
-	dc.w	0x0000,0x0000,0x0000,0x0000
-	dc.w	0x0000,0x0000,0x0000,0x0000
-	dc.w	0x4000,0x8000,0x0000,0x0002
+ccwv4e:	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
+	dc.l	0x00010000,0x00000000,0x00020000,0x00040000
+	dc.l	0x00080000,0x00100000,0x00000000,0x00000001
+	dc.l	0x00000000,0x00000000,0x00001000,0x00000004
+	dc.l	0x00000000,0x00000000,0x00000000,0x00000000
+	dc.l	0x00200000,0x00400000,0x00800000,0x01000000
+	dc.l	0x00004000,0x00008000,0x00000000,0x00000002
 
 l2cv4e:
 	lea	cacrv4e,a0
 	clr.l	d1
-	moveq	#0x0f,d2
+	moveq	#0x1f,d2
 lv4e:
 	lsr.l	#0x01,d0
 	bcc.s	sv4e
@@ -652,7 +661,7 @@ sv4e:
 	bpl.s	lv4e
 
 	move.l	d1,d0
-	eori.l	#0x10000000,d0		// adjust reverted bits
+	eori.l	#0x10001000,d0		// adjust reverted bits
 	or.l	#0x00000020,d0		// always set EUSP bit
 	rts
 
@@ -665,15 +674,15 @@ c2lv4e:
 cv4e:
 	lsr.l	#0x01,d0
 	bcc.s	ssv4e
-	mvz.w	(a0),d3
+	mov.l	(a0),d3
 	or.l	d3,d1
 
-ssv4e:	addq.l	#0x02,a0
+ssv4e:	addq.l	#0x04,a0
 	subq.l	#1,d2
 	bpl.s	cv4e
 
 	move.l	d1,d0
-	eor.l	#0x4000,d0		// adjust reverted bits
+	eor.l	#0x00084000,d0		// adjust reverted bits
 	move.l	(sp)+,d3
 
 	rts
