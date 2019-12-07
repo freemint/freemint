@@ -46,6 +46,7 @@ strip:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(ehcitargets); do \
 		(set -x; \
+        if [ "$$i" = "prg" ]; then ($(STRIP) .compile_$$i/*.prg);continue; fi; \
 		($(STRIP) .compile_$$i/*.ucd) \
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
 	done && test -z "$$fail"
