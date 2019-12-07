@@ -35,7 +35,7 @@
 #include "mint/mint.h"
 #endif
 #include "mint/dcntl.h"
-
+#include "mint/ssystem.h"
 #include "mint/pcibios.h"
 
 #include "../../global.h"
@@ -273,13 +273,7 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 static inline void invalidate_dcache(void)
 {
 #ifdef __mcoldfire__
-	asm (
-		"dc.w	0x4e7a,0x0002;" /* movec cacr,d0 */
-		"or.l #0x01000000,d0;"
-		"movec d0,cacr;"
-		"nop;"
-		:::"d0"
-	);
+	s_system(S_CTRLCACHE,0x00200000L,0x00200000L);
 #endif
 #if defined(__mc68040__) || defined(__mc68060__)
 	asm ("cinva dc");
