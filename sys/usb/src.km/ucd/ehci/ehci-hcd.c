@@ -273,7 +273,7 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 static inline void invalidate_dcache(void)
 {
 #ifdef __mcoldfire__
-	s_system(S_CTRLCACHE,0x00200000L,0x00200000L);
+	s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA);
 #endif
 #if defined(__mc68040__) || defined(__mc68060__)
 	asm ("cinva dc");

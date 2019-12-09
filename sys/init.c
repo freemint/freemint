@@ -21,6 +21,7 @@
 # include "mint/filedesc.h"
 # include "mint/basepage.h"
 # include "mint/xbra.h"
+# include "mint/ssystem.h"
 
 # include "arch/cpu.h"		/* init_cache, cpush, setstack */
 # include "arch/context.h"	/* restore_context */
@@ -77,6 +78,15 @@
 # endif
 
 # define EXEC_OS	0x4feL
+
+# define CACHE_OFF	0x00000000L
+# define CACHE_ON	CTRLCACHE_EIC | CTRLCACHE_EDC | CTRLCACHE_EBC | CTRLCACHE_IBE | \
+			CTRLCACHE_DBE | CTRLCACHE_FIC | CTRLCACHE_FOC | CTRLCACHE_DPI | \
+			CTRLCACHE_ESB
+# define CCW_MASK	CTRLCACHE_EIC | CTRLCACHE_EDC | CTRLCACHE_EBC | CTRLCACHE_FI  | \
+			CTRLCACHE_FD  | CTRLCACHE_IBE | CTRLCACHE_DBE | CTRLCACHE_FIC | \
+			CTRLCACHE_FOC | CTRLCACHE_DPI |	CTRLCACHE_ESB
+
 
 long _cdecl mint_criticerr (long);
 void _cdecl do_exec_os (register long basepage);
@@ -484,7 +494,8 @@ init (void)
 
 	/* Disable all CPU caches */
 # ifndef M68000
-	ccw_set(0x00000000L, 0x0000c57fL);
+	ccw_set(CACHE_OFF, CCW_MASK);
+
 	DEBUG (("ccw_set() ok!"));
 # endif
 
@@ -507,7 +518,7 @@ init (void)
 	 * Don't touch the write/allocate bits, though.
 	 */
 # ifndef M68000
-	ccw_set(0x0000c567L, 0x0000c57fL);
+	ccw_set(CACHE_ON, CCW_MASK);
 # endif
 
 # ifdef _xx_KMEMDEBUG
