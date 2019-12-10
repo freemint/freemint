@@ -137,7 +137,12 @@ hw_halt(void)
 	long r;
 	long key;
 	int scan;
-	
+	int coldfire_native = 0;
+
+#ifdef __mcoldfire__
+	if (!coldfire_68k_emulation)
+		coldfire_native = 1;
+#endif
 	DEBUG(("halt() called, system halting...\r\n"));
 	debug_ws(MSG_system_halted);
 	
@@ -147,7 +152,7 @@ hw_halt(void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
@@ -167,7 +172,7 @@ hw_halt(void)
 	{
 		debug_ws(MSG_system_halted);
 		
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
@@ -185,7 +190,12 @@ HALT (void)
 	long r;
 	long key;
 	int scan;
-	
+	int coldfire_native = 1;
+
+#ifdef __mcoldfire__
+	if (coldfire_68k_emulation)
+		coldfire_native = 0;
+#endif
 	DEBUG(("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
 	debug_ws(MSG_fatal_reboot);
 	
@@ -195,7 +205,7 @@ HALT (void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
@@ -215,7 +225,7 @@ HALT (void)
 	{
 		debug_ws(MSG_fatal_reboot);
 
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
