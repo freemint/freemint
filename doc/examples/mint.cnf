@@ -86,10 +86,12 @@
 # The higher the level, the more stuff MiNT will spew about about
 # what it's doing.
 #
-# The average user doesn't want to hear about this stuff, so the
-# default is 1, i.e. display ALERT messages only. Note that you need
-# a debug kernel to get more: normal kernels do not contain so much
-# debug information.
+# The default level is TRACE, but note that you need
+# a debug kernel to get more: normal kernels do not contain
+# so much debug information.
+# To reduce the amount of debugging information to the strict
+# minimum, you should set KERN_DEBUG_LEVEL to 1, i.e. display
+# ALERT messages only.
 #
 # KERN_DEBUG_DEVNO is the BIOS device number to which the info
 # should be sent.
@@ -99,7 +101,7 @@
 #
 # The default is the console.
 
-#KERN_DEBUG_LEVEL=1
+#KERN_DEBUG_LEVEL=3
 #KERN_DEBUG_DEVNO=2
 
 # KERN_BIOSBUF controls how BIOS I/O is performed. Normally, MiNT
