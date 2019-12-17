@@ -257,7 +257,7 @@ init (void)
 	 */
 	boot_print (greet1);
 	boot_print (greet2);
-	debug_level = TRACE_LEVEL;
+	debug_level = ALERT_LEVEL;
 	/*
 	 * Initialize sysdir
 	 *
