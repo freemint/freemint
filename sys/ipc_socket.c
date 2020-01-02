@@ -85,7 +85,7 @@ f_pipe (short *usrh)
 		out->links--;
 		FP_FREE (out);
 		
-		DEBUG (("Fpipe: error %d", r));
+		DEBUG (("Fpipe: error %ld", r));
 		return r;
 	}
 	
@@ -103,7 +103,7 @@ f_pipe (short *usrh)
 		in->links--;
 		FP_FREE (in);
 		
-		DEBUG (("Fpipe: in side of pipe not opened (error %d)", r));
+		DEBUG (("Fpipe: in side of pipe not opened (error %ld)", r));
 		return r;
 	}
 	
