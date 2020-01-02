@@ -1324,7 +1324,7 @@ This list shows the name, return type, and argument types of the new
 MiNT system calls, and the corresponding function number for Trap #1.
 
 word Syield()                                       [ 0x0ff ]
-word Fpipe( word *ptr )                             [ 0x100 ]
+long Fpipe( word *ptr )                             [ 0x100 ]
 word Fcntl( word f, long arg, word cmd)             [ 0x104 ]
 long Finstat( word f )                              [ 0x105 ]
 long Foutstat( word f )                             [ 0x106 ]
@@ -1352,7 +1352,7 @@ long Pfork()                                        [ 0x11b ]
 long Pwait3(word flag, long *rusage)                [ 0x11c ]
 word Fselect( word timeout, long *rfds, long *wfds, long *xfds )
                                                     [ 0x11d ]
-void Prusage( long r[8] )                           [ 0x11e ]
+long Prusage( long r[8] )                           [ 0x11e ]
 long Psetlimit(word lim, long value )               [ 0x11f ]
 long Talarm( long secs )                            [ 0x120 ]
 void Pause()                                        [ 0x121 ]
