@@ -178,6 +178,12 @@ handle_modifiers(unsigned char val, unsigned char offset)
 		SEND_SCAN(0x38 + offset);
 }
 
+/*
+ * Key mappings below are for US keyboard.
+ * For notes on other languages mappings, refer to
+ * the HID Usage Tables 1.12 document at
+ * https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
+ */
 static unsigned char
 translate_key(unsigned char usbkey)
 {
@@ -224,18 +230,18 @@ translate_key(unsigned char usbkey)
 	case 0x2a: return 0x0e; // Backspace
 	case 0x2b: return 0x0f; // TAB
 	case 0x2c: return 0x39; // Space
-	case 0x2d: return 0x0c; // - (right of to 0)
-	case 0x2e: return 0x0d; // = (right of minus)
-	case 0x2f: return 0x1a; // [ (right of P, Ü in Germany)
-	case 0x30: return 0x1b; // ] (right of ], + in Germany)
-	case 0x31: return   43; // US \ (below delete, ~ in Germany) ????
-	case 0x32: return   43; // non-US equivalent of \ (below delete, ~ in Germany) ????
-	case 0x33: return 0x27; // ; (right of L, Ö in Germany)
-	case 0x34: return 0x28; // ' (right of L, Ä in Germany)
-	case 0x35: return   41; // ` (left of backspace, # in Germany)
-	case 0x36: return 0x33; // , (right of M)
-	case 0x37: return 0x34; // . (right of ,)
-	case 0x38: return 0x35; // / (right of ., - in Germany)
+	case 0x2d: return 0x0c; // - and _
+	case 0x2e: return 0x0d; // = and +
+	case 0x2f: return 0x1a; // [ and {
+	case 0x30: return 0x1b; // ] and }
+	case 0x31: return 0x2b; // \ and |
+	case 0x32: return 0x2b; // Non-US # and ~
+	case 0x33: return 0x27; // ; and :
+	case 0x34: return 0x28; // ' and "
+	case 0x35: return 0x29; // ` and ~
+	case 0x36: return 0x33; // ,
+	case 0x37: return 0x34; // .
+	case 0x38: return 0x35; // / and ?
 	case 0x39: return 0x3a; // Caps-Lock
 	case 0x3a: return 0x3b; // F1
 	case 0x3b: return 0x3c; // F2
@@ -247,40 +253,39 @@ translate_key(unsigned char usbkey)
 	case 0x41: return 0x42; // F8
 	case 0x42: return 0x43; // F9
 	case 0x43: return 0x44; // F10
-	case 0x44: return   98; // F11 -> Help
-	case 0x45: return   97; // F12 -> Undo
-	case 0x46: return   99; // PrintScreen -> KP (
+	case 0x44: return 0x62; // F11 -> Help
+	case 0x45: return 0x61; // F12 -> Undo
+	case 0x47: return 0x63; // Scroll Lock -> KP (
+	case 0x48: return 0x64; // Pause -> KP )
+	case 0x49: return 0x52; // Insert
+	case 0x4a: return 0x47; // Home -> ClrHome
+	case 0x4c: return 0x53; // Delete
 
-	case 0x48: return  100; // Pause -> KP )
-	case 0x49: return   82; // Insert
-	case 0x4a: return   71; // Home -> ClrHome
-	//case 0x4b: return   99; // PageUp -> KP (
-	case 0x4c: return   83; // Delete
-
-	//case 0x4e: return  100; // PageDn -> KP )
 	case 0x4f: return 0x4d; // Right arrow
 	case 0x50: return 0x4b; // Left arrow
 	case 0x51: return 0x50; // Down arrow
 	case 0x52: return 0x48; // Up arrow
 
-	case 0x54: return 0x65; // KP /
-	case 0x55: return 0x66; // KP *
-	case 0x56: return 0x4a; // KP +
-	case 0x57: return 0x4e; // KP -
-	case 0x58: return 0x72; // KP Enter
-	case 0x59: return 0x6d; // KP 1
-	case 0x5a: return 0x6e; // KP 2
-	case 0x5b: return 0x6f; // KP 3
-	case 0x5c: return 0x6a; // KP 4
-	case 0x5d: return 0x6b; // KP 5
-	case 0x5e: return 0x6c; // KP 6
-	case 0x5f: return 0x67; // KP 7
-	case 0x60: return 0x68; // KP 8
-	case 0x61: return 0x69; // KP 9
-	case 0x62: return 0x70; // KP 0
-	case 0x63: return 0x71; // KP .
-	case 0x64: return   96; // non-US equivalent of \ (left of Y, < in Germany)
-	default: return 0;
+	case 0x54: return 0x65; // Keypad /
+	case 0x55: return 0x66; // Keypad *
+	case 0x56: return 0x4a; // Keypad -
+	case 0x57: return 0x4e; // Keypad +
+	case 0x58: return 0x72; // Keypad Enter
+	case 0x59: return 0x6d; // Keypad 1
+	case 0x5a: return 0x6e; // Keypad 2
+	case 0x5b: return 0x6f; // Keypad 3
+	case 0x5c: return 0x6a; // Keypad 4
+	case 0x5d: return 0x6b; // Keypad 5
+	case 0x5e: return 0x6c; // Keypad 6
+	case 0x5f: return 0x67; // Keypad 7
+	case 0x60: return 0x68; // Keypad 8
+	case 0x61: return 0x69; // Keypad 9
+	case 0x62: return 0x70; // Keypad 0
+	case 0x63: return 0x71; // Keypad .
+	case 0x64: return 0x60; // Non-US \ and |
+
+	default:
+		return 0;
 	}
 }
 
