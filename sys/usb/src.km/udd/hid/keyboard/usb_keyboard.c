@@ -87,13 +87,13 @@ static struct uddif kbd_uif = {
 	USB_API_VERSION,            /* API */
 	USB_DEVICE,                 /* class */
 	lname,                      /* lname */
-	"keyboard",                    /* name */
+	"keyboard",                 /* name */
 	0,                          /* unit */
 	0,                          /* flags */
-	kbd_probe,                /* probe */
-	kbd_disconnect,           /* disconnect */
+	kbd_probe,                  /* probe */
+	kbd_disconnect,             /* disconnect */
 	0,                          /* resrvd1 */
-	kbd_ioctl,                /* ioctl */
+	kbd_ioctl,                  /* ioctl */
 	0,                          /* resrvd2 */
 };
 
@@ -106,11 +106,11 @@ struct kbd_report
 
 struct kbd_data
 {
-	struct usb_device *pusb_dev;        /* this usb_device */
+	struct usb_device *pusb_dev;/* this usb_device */
 	unsigned char ep_in;        /* in endpoint */
 	unsigned char ep_out;       /* out ....... */
 	unsigned char ep_int;       /* interrupt . */
-	long *irq_handle;            /* for USB int requests */
+	long *irq_handle;           /* for USB int requests */
 	unsigned long irqpipe;      /* pipe for release_irq */
 	unsigned long outpipe;      /* pipe for output */
 	unsigned char irqmaxp;      /* max packed for irq Pipe */
@@ -535,9 +535,9 @@ kbd_probe (struct usb_device *dev, unsigned int ifnum)
 	memset (&kbd_data.newdata, 0, sizeof(kbd_data.newdata));
 	memset (&kbd_data.olddata, 0, sizeof(kbd_data.olddata));
 
-	usb_set_idle (dev, iface->desc.bInterfaceNumber, 0, 0);     /* report
-																 * infinite
-																 */
+	usb_set_idle (dev, iface->desc.bInterfaceNumber, 0, 0);	/* report
+								 * infinite
+								 */
 	usb_set_protocol(dev, iface->desc.bInterfaceNumber, 0); /* boot */
 
 #ifndef TOSONLY
