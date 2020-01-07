@@ -19,7 +19,8 @@ Page up -> Shift arrow up
 Page down -> Shift arrow down
 Home -> Clr Home
 End -> Shift Clr Home
-PrintScr -> Keypad (
+PrintScr -> Alt Help
+Scroll Lock -> Keypad (
 Pause -> Keypad )
 
 Caps lock is implemented, however currently the LED on the keyboard just toggles ON/OFF, 
