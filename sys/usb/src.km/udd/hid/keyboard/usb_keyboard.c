@@ -340,23 +340,29 @@ kbd_int (void)
 
 		/* Key from olddata not found in newdata =>  handle release */
 		if (j == sizeof(kbd_data.newdata.keys)) {
-			/* Special cases */
-			if (temp == 0x4d) {			// End
-				SEND_SCAN(0x47 + 0x80); // Home release
-				SEND_SCAN(0x2a + 0x80);	// Shift release
-			}
-			else if (temp == 0x4b) {	// Page Up
-				SEND_SCAN(0x48 + 0x80); // Arrow Up release
-				SEND_SCAN(0x2a + 0x80);	// Shift release
-			}
-			else if (temp == 0x4e) {	// Page Down
-				SEND_SCAN(0x50 + 0x80); // Arrow Down release
-				SEND_SCAN(0x2a + 0x80);	// Shift release
-			}
-			else {
-				temp2 = translate_key(temp);
-				if (temp2)
-					SEND_SCAN(temp2 + 0x80);
+			switch(temp)
+			{
+				case 0x4d :			// End
+					SEND_SCAN(0x47 + 0x80); // Home release
+					SEND_SCAN(0x2a + 0x80);	// Shift release
+					break;
+				case 0x4b :			// Page Up
+					SEND_SCAN(0x48 + 0x80); // Arrow Up release
+					SEND_SCAN(0x2a + 0x80);	// Shift release
+					break;
+				case 0x4e :			// Page Down
+					SEND_SCAN(0x50 + 0x80); // Arrow Down release
+					SEND_SCAN(0x2a + 0x80);	// Shift release
+					break;
+				case 0x46 :			// Print Screen
+					SEND_SCAN(0x62 + 0x80); // Help release
+					SEND_SCAN(0x38 + 0x80);	// Alt release
+					break;
+				default :
+					temp2 = translate_key(temp);
+					if (temp2)
+						SEND_SCAN(temp2 + 0x80);
+					break;
 			}
 		}
 	}
@@ -377,25 +383,32 @@ kbd_int (void)
 		if (j == sizeof(kbd_data.olddata.keys)) {
 			DEBUG(("p: %02x -> %02x", temp, temp2));
 			/* Special cases */
-			if (temp == 0x4d) {			// End
-				SEND_SCAN(0x2a);		// Shift press
-				SEND_SCAN(0x47); 		// Home
+			switch(temp)
+			{
+				case 0x4d : 			// End
+					SEND_SCAN(0x2a);	// Shift press
+					SEND_SCAN(0x47); 	// Home
+					break;
+				case 0x4b : 			// Page Up
+					SEND_SCAN(0x2a);	// Shift press
+					SEND_SCAN(0x48); 	// Arrow Up
+					break;
+				case 0x4e :			// Page Down
+					SEND_SCAN(0x2a);	// Shift press
+					SEND_SCAN(0x50); 	// Arrow Down
+					break;
+				case 0x46 :			// Print Screen
+					SEND_SCAN(0x38);	// Alt press
+					SEND_SCAN(0x62); 	// Help Down
+					break;
+				case 0x39 :			// Caps Lock
+					set_led();
+				default:
+					temp2 = translate_key(temp);
+					if (temp2)
+						SEND_SCAN(temp2);
+					break;
 			}
-			else if (temp == 0x4b) {	// Page Up
-				SEND_SCAN(0x2a);		// Shift press
-				SEND_SCAN(0x48); 		// Arrow Up
-			}
-			else if (temp == 0x4e) {	// Page Down
-				SEND_SCAN(0x2a);		// Shift press
-				SEND_SCAN(0x50); 		// Arrow Down
-			}
-			else {
-				temp2 = translate_key(temp);
-				if (temp2)
-					SEND_SCAN(temp2);
-			}
-			if (temp == 0x39)			// Caps Lock
-				set_led();
 		}
 	}
 
