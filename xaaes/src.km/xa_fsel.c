@@ -2354,7 +2354,7 @@ find_drive(int a, struct fsel_data *fs)
 	return -1;
 }
 
-#define FS_OFFS	2
+#define FS_OFFS	1
 
 static void
 fs_change(int lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
