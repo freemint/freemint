@@ -1760,7 +1760,7 @@ fsel_filters(OBJECT *m, char *pattern)
 				m[d].ob_state |= OS_CHECKED;
 			}
 			m[d].ob_flags &= ~OF_HIDETREE;	/* may be a new pattern */
-			l = sprintf(m[d].ob_spec.free_string, P_free_string_len, " %s", fs_data.fs_patterns[i++]);
+			l = sprintf(m[d].ob_spec.free_string, P_free_string_len, " "" %s", fs_data.fs_patterns[i++]);
 			l *= screen.c_max_w;
 			if( m[FSEL_PATBOX].ob_width < l )
 				m[d].ob_width = m[FSEL_PATBOX].ob_width = l;
@@ -2354,7 +2354,7 @@ find_drive(int a, struct fsel_data *fs)
 	return -1;
 }
 
-#define FS_OFFS	1
+#define FS_OFFS	2
 
 static void
 fs_change(int lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
