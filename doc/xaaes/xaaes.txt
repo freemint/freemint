@@ -73,9 +73,9 @@ there.
 
 You may find additional information here:
 
-   . http://wiki.sparemint.org/index.php/XaAES
+   . https://github.com/freemint/freemint/wiki/XaAES
 
-   . http://xaaes.atariforge.net/docs.php
+   . http://xaaes.gokmase.com/docs.php
 
 
 

@@ -70,8 +70,8 @@ new to the user since version 0.998 should be mostly there.
 You may find additional information here:
 
 !begin_itemize
-!item (!weblink [the spamint-wiki] [http://wiki.sparemint.org/index.php/XaAES])
-!item (!weblink [Unofficial XaAES] [http://xaaes.atariforge.net/docs.php])
+!item (!weblink [the spamint-wiki] [https://github.com/freemint/freemint/wiki/XaAES])
+!item (!weblink [Unofficial XaAES] [http://xaaes.gokmase.com/docs.php])
 !end_itemize
 
 !node Installation
