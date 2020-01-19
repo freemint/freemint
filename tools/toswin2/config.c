@@ -435,8 +435,8 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 			cfg->scroll = atoi(str);
 			if (cfg->scroll < 0)
 				cfg->scroll = 0;
-			else if (cfg->scroll > 99999)
-				cfg->scroll = 99999;
+			else if (cfg->scroll > 999)
+				cfg->scroll = 999;
 
 			if (new_id != -1)
 				cfg->font_id = new_id;
