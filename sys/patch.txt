@@ -1,0 +1,54 @@
+diff --git a/sys/arch/cpu.S b/sys/arch/cpu.S
+index 4572172c..d52af100 100644
+--- a/sys/arch/cpu.S
++++ b/sys/arch/cpu.S
+@@ -225,10 +225,10 @@ _ccw_set:
+ 	lea	-20(sp),sp
+ 	movem.l	d1-d2/a0-a2,(sp)
+ #else
+-	beq.s	clq
++	beq	clq
+ 	movem.l	d1-d2/a0-a2,-(sp)
+ #endif
+-	bsr.s	_ccw_get		// get the current CCW
++	bsr	_ccw_get		// get the current CCW
+ 	move.l	d0,-(sp)		// save it for later reference
+ 	move.l	28(sp),d1		// user specified CCW
+ 	move.l	32(sp),d2		// user specified CCM
+@@ -269,14 +269,33 @@ no_icache:
+ 	btst	#1,d2			// same as above, but for the data cache
+ 	beq.s	dc_off
+ 	btst	#1,d1
+-	bne.s	lt040
++	bne.s	write_cacr
+ 	dc.w	0xF458			// cinva dc
+ 	bra.s	lt040
+ dc_off:
+ 	btst	#1,d1
+-	beq.s	lt040
++	beq.s	write_cacr
+ 	dc.w	0xF478			// cpusha dc
+-lt040:
++lt040:					// Although 030 has writethrough cache we still
++#ifdef __mcoldfire__			// need to inavlidate caches before enable them
++	move.w	_mcpu+2,a0
++	cmpa.l	#30,a0			// it's a 68030?
++#else
++	cmpi.w	#30,_mcpu+2		// it's a 68030?
++#endif
++	blt.s	write_cacr
++	btst	#0,d2			// 030 instruction cache going to be enabled?
++	beq.s	inv_030dc
++	btst	#0,d1			// if yes, is it currently disabled?
++	bne.s	inv_030dc
++	or.l	#0b000000001000,d0	// ci bit (clear i-cache)
++inv_030dc:
++	btst	#1,d2			// same as above, but for the data cache
++	beq.s	write_cacr
++	btst	#1,d1
++	bne.s	write_cacr
++	or.l	#0b100000000000,d0	// cd bit (clear d-cache)
++write_cacr:
+ 	movec	d0,cacr			// write CACR
+ #ifdef __mcoldfire__
+ 	movem.l	(sp),d1-d2/a0-a2
