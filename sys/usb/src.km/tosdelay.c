@@ -103,7 +103,7 @@ static inline void calibrate_delay(void)
 	ret = Super(0L);
 	loopcount = CALIBRATION_TIME * loopcount_1_msec;
 	intcount = run_calibration(loopcount);
-	Super(ret);
+	SuperToUser(ret);
 
 	Rsconf(old_rate,-1,-1,-1,-1,-1);
 	Bconmap(old_device);
