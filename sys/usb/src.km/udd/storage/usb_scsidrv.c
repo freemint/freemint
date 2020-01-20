@@ -52,7 +52,7 @@ findcookie (void)
 		stack = Super (0L);
 	p = *(COOKIE **) 0x5a0;
 	if (stack)
-		Super ((void *) stack);
+		SuperToUser ((void *) stack);
 	if (!p)
 		return ((COOKIE *) 0);
 	return (p);
