@@ -305,7 +305,7 @@ static inline int setcookie (long tag, long value)
 }
 
 /* Precise delays functions for TOS USB drivers */
-#include "tosdelay.c"
+#include "tos-common/tosdelay.c"
 
 #endif /* TOSONLY */
 
