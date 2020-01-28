@@ -23,8 +23,8 @@ PrintScr -> Alt Help
 Scroll Lock -> Keypad (
 Pause -> Keypad )
 
-Caps lock is implemented, however currently the LED on the keyboard just toggles ON/OFF, 
-without checking for the real caps lock state. 
+Caps lock is implemented and the LED works. If the caps lock state is changed by
+the Atari keyboard, the LED will turn on or off accordingly.
 
 Keys without an equivalent on the Atari are without function.
 
