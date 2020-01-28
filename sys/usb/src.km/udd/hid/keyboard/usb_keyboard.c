@@ -15,6 +15,10 @@
 #include "../../../usb.h"
 #include "../../../usb_api.h"
 
+#include <mint/sysvars.h>   /* OSHEADER */
+#define sysbase	((OSHEADER **)0x4f2L)
+#define Kbstate() *p_kbshift
+
 #ifdef TOSONLY
 #define MSG_VERSION "TOS DRIVERS"
 #else
@@ -29,7 +33,6 @@
 #define MSG_GREET	\
 	"By Christian Zietz.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
 
 /****************************************************************************/
 /*
@@ -57,13 +60,16 @@ extern void interrupt_ikbd (void);
 
 long *vector;
 void *iokbd;
+char *p_kbshift;
 void _cdecl send_data (long func, long iorec, long data);
 void _cdecl fake_hwint(void);
 
 struct usb_module_api *api;
 
 void kbd_int (void);
-void set_led (void);
+static void set_led (long);
+static long get_capslock_state(void);
+static long p_kbshift_init(void);
 
 /*
  * END kernel interface
@@ -79,7 +85,7 @@ static long kbd_disconnect (struct usb_device *dev);
 static long kbd_probe (struct usb_device *dev, unsigned int ifnum);
 
 static unsigned int if_no;
-
+static long led_state;				/* caps lock LED state */
 static char lname[] = "USB keyboard class driver\0";
 
 static struct uddif kbd_uif = {
@@ -296,11 +302,28 @@ kbd_int (void)
 	long actlen = 0;
 	long r;
 	unsigned char temp, temp2 = 0;
+	static long capslock_interval = 0L; /* time interval between CAPS LOCK state check (in 40ms slices) */
+	static int skip_cycle = 0; /* call half the time to save CPU time (normally called each 20ms, now 40ms) */
+	long capslock_state;
 
-	static int skip_cycle = 0; /* call half the time to save CPU time */
 	skip_cycle = skip_cycle?0:1;
 	if (skip_cycle)
 		return;
+
+	/* Synchronize caps lock state with caps lock LED, every second, in case another keyboard changed the state */
+	if (capslock_interval < 25L)
+	{
+		capslock_interval++;
+	}
+	else
+	{
+		capslock_state = get_capslock_state();
+		if (capslock_state == 0L && led_state == 1L)
+			set_led(0L);
+		else if (capslock_state == 1L && led_state == 0L)
+			set_led(1L);
+		capslock_interval = 0L;
+	}
 
 	if (kbd_data.pusb_dev == NULL)
 		return;
@@ -407,7 +430,7 @@ kbd_int (void)
 					SEND_SCAN(0x62); 	// Help Down
 					break;
 				case 0x39 :			// Caps Lock
-					set_led();
+					set_led(led_state?0L:1L);
 				default:
 					temp2 = translate_key(temp);
 					if (temp2)
@@ -424,15 +447,28 @@ kbd_int (void)
 
 /* Set Caps Lock LED */
 #define CAPS_LOCK 0x02
-void
-set_led (void)
+static void
+set_led (long state)
 {
-	static unsigned char led_keys = 0;
-	led_keys = (led_keys)?0:CAPS_LOCK;
-	usb_control_msg(kbd_data.pusb_dev, usb_sndctrlpipe(kbd_data.pusb_dev, 0),
+	long rc;
+	unsigned char led_keys = (state)?CAPS_LOCK:0;
+
+	rc = usb_control_msg(kbd_data.pusb_dev, usb_sndctrlpipe(kbd_data.pusb_dev, 0),
 					USB_REQ_SET_REPORT,
 					USB_TYPE_CLASS | USB_RECIP_INTERFACE,
 					0x0200, if_no, &led_keys, 1, USB_CNTL_TIMEOUT * 5);
+
+	if (rc != -1L)
+		led_state = state;
+}
+
+/* Returns 1 if engaged */
+static long get_capslock_state(void)
+{
+	if (Kbstate() & 0x10L)
+		return 1L;
+	else
+		return 0L;
 }
 
 #ifndef TOSONLY
@@ -539,6 +575,7 @@ kbd_probe (struct usb_device *dev, unsigned int ifnum)
 								 * infinite
 								 */
 	usb_set_protocol(dev, iface->desc.bInterfaceNumber, 0); /* boot */
+	set_led(0L);
 
 #ifndef TOSONLY
 	long r = kthread_create (get_curproc (), kbd_poll_thread, NULL, NULL,
@@ -549,7 +586,21 @@ kbd_probe (struct usb_device *dev, unsigned int ifnum)
 		return -1;
 	}
 #endif
+
 	return 0;
+}
+
+static long
+p_kbshift_init(void)
+{
+	OSHEADER *os_header = (*sysbase)->os_beg;
+
+	if (os_header->os_version == 0x0100)
+		p_kbshift = (char *)0xe1bL;
+	else
+		p_kbshift = (char *)(os_header->pkbshift);
+
+	return 0L;
 }
 
 #ifdef TOSONLY
@@ -616,6 +667,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	vector = (long *) b_kbdvbase ();
 	iokbd = (void *) b_uiorec (1);
+	b_supexec(p_kbshift_init, 0L, 0L, 0L, 0L, 0L);
 #ifdef TOSONLY
 #if 0
 	old_ikbd_int = Setexc (0x114/4, (long) interrupt_ikbd);
