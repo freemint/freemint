@@ -149,6 +149,5 @@ ara:: 040
 col:
 	$(MAKE) CPU=v4e
 
-
-clean::
+clean distclean::
 	$(RM) *.tos *.prg *.gtp *.app
