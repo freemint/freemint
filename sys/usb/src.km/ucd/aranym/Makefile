@@ -32,7 +32,7 @@ LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions
-SGENFILES = $(TARGET)
+GENFILES = $(TARGET)
 OBJS = $(SSOBJS:.S=.o) $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
