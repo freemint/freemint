@@ -50,6 +50,7 @@
 #define USAGE_FUNCTION_KEYS	0x39
 #define USAGE_TIP_SWITCH	0x42
 #define USAGE_BARREL_SWITCH	0x44
+#define USAGE_ERASER		0x45
 
 struct usb_class_hid_descriptor {
 	unsigned char	bLength;

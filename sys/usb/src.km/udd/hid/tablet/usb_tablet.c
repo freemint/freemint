@@ -36,6 +36,10 @@
 	"by Claude Labelle.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
+/* tablet product (model) */
+#define PROD_DEFAULT		0
+#define PROD_PF1209		1
+
 /****************************************************************************/
 /*
  * BEGIN kernel interface
@@ -148,6 +152,7 @@ struct tblt_info
 struct tblt_data
 {
 	struct usb_device *pusb_dev;		/* this usb_device */
+	unsigned char product;			/* type of tablet */
 	unsigned char ep_int;			/* interrupt endpoint */
 	long *irq_handle;			/* for USB int requests */
 	unsigned long irqpipe;			/* pipe for release_irq */
@@ -361,23 +366,40 @@ static long hid_parser_tablet(unsigned char* buff, long len)
 		}
 	}
 
-	/* Find secondary barrel switch */
+	/* Find secondary barrel switch (eraser) */
 	DEBUG(("\r\nSECONDARY BARREL SWITCH"));
-	/* Wacom Intuos S */
 	memset(&data, 0, sizeof(struct HID_DATA));
-	usage.u_page = 0xFF0D;
-	usage.usage = 0x5A;
+	/* Generic tablet as per example in USB HID Usage Tables v.1.12 document at usb.org */
+	usage.u_page = U_PAGE_DIGITIZER;
+	usage.usage = USAGE_ERASER;
 	if (find_usage(&parser, &usage, &data)) {
 		DEBUG(("Logical min: %ld", (long)data.log_min));
 		DEBUG(("Logical max: %ld", (long)data.log_max));
 		DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
 		DEBUG(("Data size in bits: 0x%02x", (int)data.size));
-		DEBUG(("Report ID: 0x%02x", (int)data.report_id));
-		DEBUG(("Report ID Used: 0x%02x", (int)data.report_id_used));
 
 		fill_extract_bits(&usages[HID_SEC_BARREL_SWITCH], data.offset, data.size * parser.report_count, FALSE, data.report_id_used, data.report_id);
-	} else {
-		DEBUG(("Secondary barrel switch not found."));
+	}
+	else
+	{
+		/* Wacom Intuos S */
+		memset(&data, 0, sizeof(struct HID_DATA));
+		usage.u_page = 0xFF0D;
+		usage.usage = 0x5A;
+		if (find_usage(&parser, &usage, &data)) {
+			DEBUG(("Logical min: %ld", (long)data.log_min));
+			DEBUG(("Logical max: %ld", (long)data.log_max));
+			DEBUG(("Data offset in bits: 0x%02x", (int)data.offset));
+			DEBUG(("Data size in bits: 0x%02x", (int)data.size));
+			DEBUG(("Report ID: 0x%02x", (int)data.report_id));
+			DEBUG(("Report ID Used: 0x%02x", (int)data.report_id_used));
+
+			fill_extract_bits(&usages[HID_SEC_BARREL_SWITCH], data.offset,
+					  data.size * parser.report_count, FALSE,
+					  data.report_id_used, data.report_id);
+		} else {
+			DEBUG(("Secondary barrel switch not found."));
+		}
 	}
 
 	/* Find stylus in-range boolean */
@@ -548,6 +570,17 @@ static long hid_parser_tablet(unsigned char* buff, long len)
 		}
 	}
 
+	/* PF1209 adjustments */
+	if (tblt_data.product == PROD_PF1209)
+	{
+		usages[HID_TIP_SWITCH].report_id = usages[HID_BARREL_SWITCH].report_id
+						 = usages[HID_SEC_BARREL_SWITCH].report_id
+						 = usages[HID_X].report_id = usages[HID_Y].report_id
+						 = usages[HID_TIP_PRESSURE].report_id = 0x09;
+		tblt_data.tablet_h = 32767L;
+		tblt_data.tablet_w = 32767L;
+	}
+
 	return 1L;
 }
 
@@ -623,7 +656,8 @@ tablet_int (void)
 		tblt_data.new.tip = hid_get_data(data, &usages[HID_TIP_SWITCH]);
 		tblt_data.new.barrel = hid_get_data(data, &usages[HID_BARREL_SWITCH]);
 		tblt_data.new.sec_barrel = hid_get_data(data, &usages[HID_SEC_BARREL_SWITCH]);
-		tblt_data.new.in_range = hid_get_data(data, &usages[HID_IN_RANGE]);
+		tblt_data.new.in_range = (tblt_data.product == PROD_PF1209)
+					  ? 1L : hid_get_data(data, &usages[HID_IN_RANGE]);
 		tblt_data.new.x = hid_get_data(data, &usages[HID_X]);
 		tblt_data.new.y = hid_get_data(data, &usages[HID_Y]);
 		tblt_data.new.pressure = hid_get_data(data, &usages[HID_TIP_PRESSURE]);
@@ -888,6 +922,7 @@ tablet_probe (struct usb_device *dev, unsigned int ifnum)
 
 	long hid_report_desc_len;
 	unsigned char *hid_report_desc_buf;
+	tblt_data.product = (strncmp(dev->prod, "Tablet PF1209", 13) == 0)?PROD_PF1209:PROD_DEFAULT;
 
 	hid_report_desc_len = hid_get_report_desc_len(dev, ifnum);
 	if (hid_report_desc_len > 0) {
