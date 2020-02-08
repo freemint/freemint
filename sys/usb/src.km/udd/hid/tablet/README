@@ -1,8 +1,8 @@
-Graphics Tablet Driver for TOS, MagiC & MiNT
-Developed by Claude Labelle - Licensed under GPL
+Graphics Tablet Driver for TOS, MagiC & MiNT Developed by Claude Labelle -
+Licensed under GPL
 
-Made for Wacom Intuos S. Should also work with Wacom Intuos M. May work
-with other USB graphics tablets.
+Supports the Wacom Intuos S and the PF1209 tablets. Should also work with
+Wacom Intuos M. May work with other USB graphics tablets.
 
 The tablet replaces the mouse for precise drawing using a lightweight
 cordless stylus using no battery. A mouse can still co-exist.
@@ -18,19 +18,22 @@ The stylus buttons are programmed as follow:
 
 - Upper barrel button = UNDO key.
 
-The tablet function keys are programmed as follow: 
+The tablet function keys are programmed as follow (Wacom Intuos only):
 
 - 1 = Esc key.
 
 - 2 = Unassigned
 
-- 3 = Tip pressure detection on/off. Sends CTRL-1 to CTRL-9 according to pressure. The graphics program VISION supports these keyboard shortcuts to vary the line thickness.
+- 3 = Tip pressure detection on/off. Sends CTRL-1 to CTRL-9 according to
+pressure. The graphics program VISION supports these keyboard shortcuts to
+vary the line thickness.
 
-- 4 = Recalibration. To match the screen resolution to the tablet's. Use after
-a resolution change or as needed.
+- 4 = Recalibration. To match the screen resolution to the tablet's. Use
+after a resolution change or as needed.
 
-Note that the function keys don't work when the stylus is near or on the tablet surface.
+Note that the function keys don't work when the stylus is near or on the
+tablet surface.
 
-Known problem: If you leave the stylus on the tablet when booting, the
-driver may crash. Solution: Leave the stylus on the function keys, in
-its sleave or away from the tablet while booting.
+Known problem: If you leave the stylus on the tablet when booting, the driver
+may crash. Solution: Leave the stylus on the function keys, in its sleave or
+away from the tablet while booting.
