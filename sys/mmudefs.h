@@ -354,8 +354,6 @@ typedef unsigned long cpuaddr;
 #define MMU060_PCR_VALID_MASK		(MMU060_PCR_ESS | MMU060_PCR_DFP | MMU060_PCR_DEBUG)
 
 struct mmuinfo {
-	long cpu;
-	long fpu;
 	bool mmu_enabled;
 	bool mmu_valid;
 	unsigned int page_size_shift;
