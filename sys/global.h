@@ -42,6 +42,7 @@ extern struct global global;
 
 #define machine		global.machine
 #define fputype		global.fputype
+#define sfptype		global.sfptype
 #define tosvers		global.tosvers
 #define gl_lang		global.gl_lang
 #define gl_kbd		global.gl_kbd

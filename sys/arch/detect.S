@@ -311,22 +311,23 @@ exit:	move.l	a1,sp
 // FPU type detection, experimental (draco@atari.org).
 //
 // This can only detect the hardware FPU, any software emulation
-// will be ignored (a non-zero low word indicates the presence of software
-// floating point support; no specific values have yet been assigned).
+// will be ignored.
 //
 // Return value is cookie value for _FPU slot or a zero if no FPU
 // is present:
 //
 // 0x00000000, no FPU
-// 0x00010000, SFP-004 or compatible FPU-card (6888x as a peripheral component) [unused]
 // 0x00020000, 68881 or 68882 [unused]
-// 0x00030000, 68881 or 68882 and SFP-004 [unused]
 // 0x00040000, 68881
-// 0x00050000, 68881 and SFP-004
 // 0x00060000, 68882
-// 0x00070000, 68882 and SFP-004
 // 0x00080000, 68040 internal FPU
 // 0x00100000, 68060 internal FPU
+//
+// The low word is supposed to have following meaning:
+//
+// 0x0000, no Line-F emulator is present
+// other, version number of Line-F emulation (assigned by Atari);
+//        high bit set means it is aware of 040/060 native instructions
 //
 // The detection algorithm goes as follows:
 //
@@ -356,7 +357,7 @@ _detect_fpu:
 
 	move.l	_mcpu,d1	// check if 68000 or 68010
 	cmpi.w	#20,d1
-	bmi.s	sfp
+	bmi.s	fexit
 
 	cmpi.w	#60,d1		// enable FPU on 68060 before the check
 	bmi.s	no60
@@ -383,14 +384,42 @@ no60:	fnop
 	moveq	#0x08,d0	// if not 060, maybe a 040 (cookie 0x00080000)
 	cmpi.w	#40,d1
 	beq.s	fexit
-	clr.l	d0
-x688x:	move.b	1(sp),d1	// if neither, maybe a 68881 or 68882
+	moveq	#0x04,d0	// assume 68881 (cookie 0x00040000)
+	move.b	1(sp),d1
 	cmpi.b	#0x18,d1
-	bne.s	no6881
-	ori.w	#0x04,d0	// 68881 (cookie 0x00040000)
-	bne.s	fexit
-no6881:	ori.w	#0x06,d0	// must be 68882 (cookie 0x00060000)
-	bra.s	fexit
+	beq.s	fexit
+	moveq	#0x06,d0	// must be 68882 (cookie 0x00060000)
+
+fexit:	move.l	a1,(0x2c).w	// restore Line-F
+	move.l	a2,(0x08).w
+	move.l	a0,sp
+	nop			// flush pipelines
+	swap	d0
+	movem.l	(sp)+,a0-a2/d1
+#endif
+	rts
+
+// Software FPU emulation detection (SFP-004 or compatible)
+//
+// Return value is compatible with _FPU cookie in coprocessor mode:
+//
+// 0x00000000, no FPU
+// 0x00020000, 68881 or 68882 [unused]
+// 0x00040000, 68881
+// 0x00060000, 68882
+
+	.globl	_detect_sfp
+
+_detect_sfp:
+#ifdef __mcoldfire__
+	moveq	#0,d0		// there is no ColdFire SFP emulation
+#else
+	movem.l	a0-a1/d1,-(sp)
+	move.l	sp,a0		// save the ssp
+	clr.l	d0		// assume no FPU
+	move.l	(0x08).w,a1	// save the bus error vector
+	move.l	#sexit,(0x08).w	// install temporary bus error
+	nop			// flush pipelines
 
 sfp:	move.w	(0xfa44).w,d0	// read the save register
 	move.w	d0,d1
@@ -399,17 +428,18 @@ sfp:	move.w	(0xfa44).w,d0	// read the save register
 	cmpi.w	#0x0100,d1	// if the coprocessor busy
 	beq.s	sfp		// keep checking until CP is finished processing
 sfp_store:
-	swap	d0		// place the format word in the upper 16 bits
-	move.l	d0,-(sp)	// store format word on the stack
-	moveq	#0x01,d0	// memory mapped FPU
-	bra.s	x688x
+	move.w	d0,d1
 
-fexit:	move.l	a1,(0x2c).w	// restore Line-F
-	move.l	a2,(0x08).w
+	moveq	#0x04,d0	// 68881 (cookie 0x00040000) by default
+	cmpi.b	#0x18,d1	// compare stack frame size
+	beq.s	sexit
+	moveq	#0x06,d0	// must be 68882 (cookie 0x00060000)
+
+sexit:	move.l	a1,(0x08).w	// restore bus error
 	move.l	a0,sp
 	nop			// flush pipelines
 	swap	d0
-	movem.l	(sp)+,a0-a2/d1
+	movem.l	(sp)+,a0-a1/d1
 #endif
 	rts
 
