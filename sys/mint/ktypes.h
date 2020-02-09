@@ -131,12 +131,13 @@ typedef enum
 struct global
 {
 	machine_type machine;	/* machine we are are running */
-	long  fputype;		/* fpu type, value for cookie jar */
+	long fputype;		/* fpu type, value for cookie jar */
+	long sfptype;		/* fpu type available via SFP-004 */
 
 	short tosvers;		/* the underlying TOS version */
 
 	short gl_lang;		/* language preference */
-	short	gl_kbd;		/* default keyboard layout */
+	short gl_kbd;		/* default keyboard layout */
 
 	/* The path to the system directory
 	 */

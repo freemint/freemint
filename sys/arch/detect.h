@@ -21,6 +21,7 @@ long detect_hardware (void);
 
 long detect_cpu (void);
 long detect_fpu (void);
+long detect_sfp (void);
 short detect_pmmu (void);
 
 long _cdecl test_byte_rd(long addr);

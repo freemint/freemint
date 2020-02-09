@@ -34,7 +34,7 @@
 
 struct global global =
 {
-	machine_unknown, 0, 0, -1, 0, 0, "", ""
+	machine_unknown, 0, 0, 0, -1, 0, 0, "", ""
 };
 
 long mcpu = 0;
