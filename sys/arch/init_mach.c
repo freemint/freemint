@@ -203,11 +203,16 @@ _getmch (void)
 	}
 
 	/* own CPU test */
-	mcpu = detect_cpu ();
+	mcpu = detect_cpu();
 	/* own FPU test; this must be done after the CPU detection */
-	fputype = detect_fpu ();
+	fputype = detect_fpu();
+	/* own SFP-004 test */
+	sfptype = detect_sfp();
+	
+	if ((sfptype >> 16) > 1)
+	    fputype |= 0x00010000;	// update _FPU cookie with the SFP-004 bit
 
-	if ((fputype >> 16) > 1 && ((fputype >> 16) & 0x01) == 0)	// coprocessor mode only
+	if ((fputype >> 16) > 1)	// coprocessor mode only
 		fpu = 1;
 
 #ifdef WITH_MMU_SUPPORT
@@ -311,6 +316,7 @@ identify (long mch, enum special_hw info)
 {
 	char buf[64];
 	char *_cpu, *_mmu, *_fpu;
+	short sfp = (short)(sfptype >> 16);
 
 	switch (info)
 	{
@@ -361,42 +367,51 @@ identify (long mch, enum special_hw info)
 # endif
 	}
 
-	_fpu = " no ";
+	_fpu = " no FPU";
 
 #ifdef __mcoldfire__
 	if (!coldfire_68k_emulation)
 	{
 		fpu_type = "ColdFire V4e";
-		_fpu = "/";
+		_fpu = "/FPU";
 	}
 	else
 #endif
-	switch (fputype >> 16)
+	if (fpu)
 	{
-		case 0x04:
-			fpu_type = "68881";
-			_fpu = " 68881 ";
-			break;
-		case 0x05:
-			fpu_type = "68881 (SFP-004)";
-			_fpu = " 68881 ";
-			break;
-		case 0x06:
-			fpu_type = "68882";
-			_fpu = " 68882 ";
-			break;
-		case 0x07:
-			fpu_type = "68882 (SFP-004)";
-			_fpu = " 68882 ";
-			break;
-		case 0x08:
-			fpu_type = "68040";
-			_fpu = "/";
-			break;
-		case 0x10:
-			fpu_type = "68060";
-			_fpu = "/";
-			break;
+		switch (fputype >> 16)
+		{
+			case 0x04:
+				fpu_type = !sfp ? "68881" : (sfp == 0x04 ?  "68881 & 68881 (SFP-004)" : "68881 & 68882 (SFP-004)");
+				_fpu = !sfp ? " 68881 FPU" : (sfp == 0x04 ?  " 68881 & 68881 (SFP-004) FPU" : " 68881 & 68882 (SFP-004) FPU");
+				break;
+			case 0x06:
+				fpu_type = !sfp ? "68882" : (sfp == 0x04 ?  "68882 & 68881 (SFP-004)" : "68882 & 68882 (SFP-004)");
+				_fpu = !sfp ? " 68882 FPU" : (sfp == 0x04 ?  " 68882 & 68881 (SFP-004) FPU" : " 68882 & 68882 (SFP-004) FPU");
+				break;
+			case 0x08:
+				fpu_type = !sfp ? "68040" : (sfp == 0x04 ?  "68040 & 68881 (SFP-004)" : "68040 & 68882 (SFP-004)");
+				_fpu = !sfp ? "/FPU" : (sfp == 0x04 ?  "/FPU & 68881 (SFP-004) FPU" : "/FPU & 68882 (SFP-004) FPU");
+				break;
+			case 0x10:
+				fpu_type = !sfp ? "68060" : (sfp == 0x04 ?  "68060 & 68881 (SFP-004)" : "68060 & 68882 (SFP-004)");
+				_fpu = !sfp ? "/FPU" : (sfp == 0x04 ?  "/FPU & 68881 (SFP-004) FPU" : "/FPU & 68882 (SFP-004) FPU");
+				break;
+		}
+	}
+	else if (sfp)
+	{
+		switch (sfptype >> 16)
+		{
+			case 0x04:
+				fpu_type = "68881 (SFP-004)";
+				_fpu = " 68881 (SFP-004) FPU";
+				break;
+			case 0x06:
+				fpu_type = "68882 (SFP-004)";
+				_fpu = " 68882 (SFP-004) FPU";
+				break;
+		}
 	}
 
 #ifdef __mcoldfire__
@@ -439,7 +454,7 @@ identify (long mch, enum special_hw info)
 				if (pmmu)
 				{
 					mmu_type = cpu_type;
-				_mmu = "/MMU";
+					_mmu = "/MMU";
 				}
 				break;
 			case 40:
@@ -448,7 +463,7 @@ identify (long mch, enum special_hw info)
 				if (pmmu)
 				{
 					mmu_type = cpu_type;
-				_mmu = "/MMU";
+					_mmu = "/MMU";
 				}
 				break;
 			case 60:
@@ -473,14 +488,14 @@ identify (long mch, enum special_hw info)
 				if (pmmu)
 				{
 					mmu_type = cpu_type;
-				_mmu = "/MMU";
+					_mmu = "/MMU";
 				}
 				break;
 			}
 		}
 	}
 
-	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU) (_MCH 0x%lx)",
+	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%s) (_MCH 0x%lx)",
 			machine_str(), _cpu, _mmu, _fpu, mch);
 
 	boot_printf ("%s\r\n\r\n", cpu_model);
