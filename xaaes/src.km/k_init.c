@@ -570,7 +570,7 @@ k_init(unsigned long vm)
 	 */
 	v->handle = 0;
 
-	if( C.P_handle > 0 || (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
+	if( C.P_handle > 0 )
 	{
 		memset( work_out, 0, sizeof(work_out) );
 		set_wrkin(work_in, 1);
@@ -693,6 +693,15 @@ k_init(unsigned long vm)
 		}
 
 		BLOG((false, "Screenmode is: %d", mode));
+		
+		/*
+		 * When opening the physical workstation, NVDI/ET4000 (and perhaps other
+		 * drivers, too) tries to load some files from disk needed for the correct
+		 * settings of the respective graphics card. NVDI loads these files from the
+		 * current drive, expecting it to be the boot drive. However, this drive is
+		 * always set to U: in xaloader's loader_init().
+		 */
+		d_setdrv(sysdrv);
 
 #ifndef ST_ONLY
 		/*
@@ -726,6 +735,9 @@ k_init(unsigned long vm)
 		v_opnwk(work_in, &(C.P_handle), work_out);
 #endif
 		BLOG((false, "Physical work station opened: %d", C.P_handle));
+		
+		/* set back to U: */
+		d_setdrv('u' - 'a');
 
 		if (C.P_handle == 0)
 		{
