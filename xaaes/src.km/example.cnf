@@ -124,13 +124,6 @@
 # 2: allow all
 #
 #####################################################################
-# et4000_hack (default:0)
-# if XaAES is run with NVDI and an ET4000-graphics-card, it cannot open
-# the physical workstation. Either start from ROM-desktop or open the
-# physical workstation before MiNT by another program. In that case this
-# has to be set.
-#et4000_hack = 1
-#####################################################################
 # xa_bubble (default:0)
 # if you want to use the XaAES-builtin bubble-help (since 1.1.21) set
 # this. You can deactivate any external bubble-app if you use xa_bubble.
