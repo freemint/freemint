@@ -167,7 +167,7 @@ static void
 refresh_filelist(int lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent);
 
 static void
-add_pattern(char *pattern)
+add_pattern(const char *pattern)
 {
 	int i;
 
@@ -1739,20 +1739,36 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 	return drvs;
 }
 
-#define P_free_string_len	18
+/*
+ * length of the free strings in the popup menu
+ * of the resource file,
+ * including terminating zero, but not counting the 2
+ * leading spaces.
+ * Must also match the length of FSEL_FILTER.
+ * Note that these strings are shorter than FS_PATLEN.
+ */
+#define P_free_string_len 16
+/*
+ * number of leading spaces in those free strings
+ */
+#define FS_OFFS	2
+
 
 static void
-fsel_filters(OBJECT *m, char *pattern)
+fsel_filters(OBJECT *m, const char *pattern)
 {
-	char p[16];
-	int d = FSEL_PATA;
-	int i = 0, l;
+	char p[P_free_string_len];
+	short box = FSEL_PATBOX;
+	short d;
+	int i, l;
 
 	add_pattern(pattern);
 
 	if (pattern && *pattern && fs_data.fs_patterns[0][0])
 	{
-		while (i < FS_NPATTERNS && fs_data.fs_patterns[i][0])
+		int maxl;
+
+		for (i = 0, maxl = 0, d = m[box].ob_head; i < FS_NPATTERNS && fs_data.fs_patterns[i][0] && d != box; i++, d = m[d].ob_next)
 		{
 			m[d].ob_state &= ~OS_CHECKED;
 			if (strcmp(pattern, fs_data.fs_patterns[i]) == 0)
@@ -1760,26 +1776,29 @@ fsel_filters(OBJECT *m, char *pattern)
 				m[d].ob_state |= OS_CHECKED;
 			}
 			m[d].ob_flags &= ~OF_HIDETREE;	/* may be a new pattern */
-			l = sprintf(m[d].ob_spec.free_string, P_free_string_len, " "" %s", fs_data.fs_patterns[i++]);
+			strncpy(p, fs_data.fs_patterns[i], sizeof(p)-1);
+			p[sizeof(p)-1] = 0;
+			l = (int)strlen(p) + FS_OFFS + 1;
+			strcpy(m[d].ob_spec.free_string + FS_OFFS, p);
 			l *= screen.c_max_w;
-			if( m[FSEL_PATBOX].ob_width < l )
-				m[d].ob_width = m[FSEL_PATBOX].ob_width = l;
-
-
-			d++;
+			if (l > maxl)
+				maxl = l;
 		}
 
-		m[FSEL_PATBOX].ob_height = i * screen.c_max_h;
+		m[box].ob_height = i * screen.c_max_h;
 
-		for( ; i < FS_NPATTERNS; i++ )
+		while (d != box)
 		{
-			m[d++].ob_flags |= OF_HIDETREE;
+			m[d].ob_flags |= OF_HIDETREE;
+			d = m[d].ob_next;
 		}
-
+		for (d = m[box].ob_head; d != box; d = m[d].ob_next)
+			m[d].ob_width = maxl;
+		m[box].ob_width = maxl;
 	}
 	strncpy(p, pattern, sizeof(p)-1);
 	p[sizeof(p)-1] = 0;
-	sprintf(m[FSEL_FILTER].ob_spec.free_string, 128, " %s", p);
+	strcpy(m[FSEL_FILTER].ob_spec.free_string + 1, p);
 }
 
 /* HR: a little bit more exact. */
@@ -2353,8 +2372,6 @@ find_drive(int a, struct fsel_data *fs)
 
 	return -1;
 }
-
-#define FS_OFFS	2
 
 static void
 fs_change(int lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
