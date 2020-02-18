@@ -448,7 +448,7 @@ cpx_Sl_x(OBJECT *tree, short base, short slider, short value,
 		if (value > max)
 			value = max;
 
-		tree[slider].ob_x = (short)(((long) w * value) / max);
+		tree[slider].ob_x = max == 0 ? 0 : (short)(((long) w * value) / max);
 	}
 	else /* Slider hat links Maximalwert und rechts Minimalwert */
 	{
@@ -505,7 +505,7 @@ cpx_Sl_y(OBJECT *tree, short base, short slider, short value,
 		if (value > max)
 			value = max;
 
-		tree[slider].ob_y = h - (short)(((long) h * value) / max);
+		tree[slider].ob_y = h - (max == 0 ? 0 : (short)(((long) h * value) / max));
 	}
 	else /* Slider hat oben Minimalwert und unten Maximalwert */
 	{
