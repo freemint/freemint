@@ -107,10 +107,12 @@ decode_pr (struct sockaddr_hw *shw)
 	strcpy (strbuf, "unknown");
 	if (shw->shw_family == AF_LINK) switch (shw->shw_type) {
 	case ETHERTYPE_IP:
-		if (shw->shw_len != 4)
-			break;
-		ina.s_addr = *(long *)shw->shw_addr;
-		strcpy (strbuf, inet_ntoa (ina));
+		if (shw->shw_len == 4)
+		{
+			long *p = (long *)shw->shw_addr;
+			ina.s_addr = *p;
+			strcpy (strbuf, inet_ntoa (ina));
+		}
 		break;
 	}
 
