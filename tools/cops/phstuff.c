@@ -163,39 +163,35 @@ void *
 load_cpx(CPX_DESC *cpx_desc, const char *cpx_path, long *cmplt_size, short load_header)
 {
 	char name[256];
-	struct xattr xattr;
 	void *addr = NULL;
+	long handle;
+	long filesize;
 
 	strcpy(name, cpx_path);
 	strcat(name, cpx_desc->file_name);
 
-	if (Fxattr(0, name, &xattr) == 0)
+	handle = Fopen(name, O_RDONLY);
+	if (handle > 0)
 	{
-		long handle;
+		struct program_header phead;
 
-		handle = Fopen(name, O_RDONLY);
-		if (handle > 0)
+		if (load_header)
+			/* load CPX header */
+			Fread((short)handle, sizeof(struct cpxhead), &(cpx_desc->old.header));
+
+		filesize = Fseek(0, (short)handle, SEEK_END) - sizeof(struct cpxhead);
+
+		Fseek(sizeof(struct cpxhead), (short)handle, SEEK_SET);
+
+		/* load program header */
+		if (Fread((short)handle, sizeof(phead), &phead) == sizeof(phead))
 		{
-			struct program_header phead;
-
-			if (load_header)
-				/* load CPX header */
-				Fread((short)handle, sizeof(struct cpxhead), &(cpx_desc->old.header));
-			else
-				Fseek(sizeof(struct cpxhead), (short)handle, 0);
-
-			xattr.st_size -= sizeof(struct cpxhead);
-
-			/* load program header */
-			if (Fread((short)handle, sizeof(phead), &phead) == sizeof(phead))
-			{
-				/* bra.s am Anfang? */
-				if (phead.ph_branch == PH_MAGIC)
-					/* load and relocate */
-					addr = load_and_reloc(cpx_desc, handle, xattr.st_size, &phead, cmplt_size);
-			}
-			Fclose((short)handle);
+			/* bra.s am Anfang? */
+			if (phead.ph_branch == PH_MAGIC)
+				/* load and relocate */
+				addr = load_and_reloc(cpx_desc, handle, filesize, &phead, cmplt_size);
 		}
+		Fclose((short)handle);
 	}
 
 	return addr;
