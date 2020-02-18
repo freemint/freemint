@@ -28,7 +28,7 @@
 #include "global.h"
 #include "cpx.h"
 
-void *load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header);
+void *load_cpx(CPX_DESC *cpx_desc, const char *cpx_path, long *cmplt_size, short load_header);
 short unload_cpx(void *addr);
 
 #endif /* _phstuff_h */

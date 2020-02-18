@@ -364,7 +364,7 @@ remove_cpx(CPX_DESC *cpx_desc)
 }
 
 static void
-init_cpx(char *file_path, char *file_name, short inactive)
+init_cpx(const char *file_path, const char *file_name, short inactive)
 {
 	size_t cpx_desc_len = sizeof(CPX_DESC) + strlen(file_name) + 1;
 	CPX_DESC *cpx_desc;
@@ -529,6 +529,76 @@ search_cpx_name(long name, void *entry)
 
 #define	DOPEN_NORMAL	0
 
+static short handle_entry(const char *name, short changes)
+{
+	CPX_DESC *cpx_desc;
+	long	len;
+	char tmp[128];
+
+	/* "." oder ".."? */
+	if ((name[0] == '.') && ((name[1] == 0) || ((name[1] == '.') && (name[2] == 0))))
+		return changes;
+
+	len = strlen(name);
+
+	if (len <= 4)
+		return changes;
+
+	strcpy(tmp, name + len - 4); /* die letzten 4 Zeichen kopieren */
+	strupr(tmp);
+
+	cpx_desc = list_search(cpx_desc_list, (long) name, offsetof(CPX_DESC, next), search_cpx_name);
+
+	/* CPX bereits vorhanden? */
+	if (cpx_desc)
+		/* Eintrag ist gueltig */
+		cpx_desc->flags &= ~CPXD_INVALID;
+	else
+	{
+		/* aktives CPX? */
+		if (strcmp(".CPX", tmp) == 0)
+		{
+			strcpy(tmp, name);
+			tmp[len - 1] = 'Z';
+
+			cpx_desc = list_search(cpx_desc_list, (long)tmp,
+					       offsetof(CPX_DESC, next),
+					       search_cpx_name);
+
+			if (cpx_desc)
+				/* alten Eintrag entfernen */
+				remove_cpx(cpx_desc);
+
+			init_cpx(settings.cpx_path, name, 0);
+			changes++;
+		}
+		else if (strcmp(".CPZ", tmp) == 0) /* inaktives CPX? */
+		{
+			strcpy(tmp, name);
+			tmp[len - 1] = 'X';
+
+			cpx_desc = list_search(cpx_desc_list, (long)tmp,
+					       offsetof(CPX_DESC, next),
+					       search_cpx_name);
+
+			if (cpx_desc)
+			{
+				cpx_desc->file_name[len - 1] += 'Z' - 'X';
+				/* CPX demnaechst inaktiv */
+				cpx_desc->flags |= CPXD_INACTIVE;
+				/* Eintrag ist gueltig */
+				cpx_desc->flags &= ~CPXD_INVALID;
+			}
+			else
+				init_cpx(settings.cpx_path, name, 1);
+
+			changes++;
+		}
+	}
+
+	return changes;
+}
+
 static short
 update_cpx_list(void)
 {
@@ -563,72 +633,7 @@ update_cpx_list(void)
 
 			if (err == 0)
 			{
-				/* "." oder ".."? */
-				if ((name[0] == '.') && ((name[1] == 0) || ((name[1] == '.') && (name[2] == 0))))
-					continue;
-				else
-				{
-					long	len;
-					
-					len = strlen(name);
-					
-					if (len > 4)
-					{
-						char tmp[256];
-
-						strcpy(tmp, name + len - 4); /* die letzten 4 Zeichen kopieren */
-						strupr(tmp);
-						
-						cpx_desc = list_search(cpx_desc_list, (long) name, offsetof(CPX_DESC, next), search_cpx_name);
-
-						/* CPX bereits vorhanden? */
-						if (cpx_desc)
-							/* Eintrag ist gueltig */
-							cpx_desc->flags &= ~CPXD_INVALID;
-						else
-						{
-							/* aktives CPX? */
-							if (strcmp(".CPX", tmp) == 0)
-							{
-								strcpy(tmp, name);
-								tmp[len - 1] = 'Z';
-
-								cpx_desc = list_search(cpx_desc_list, (long)tmp,
-										       offsetof(CPX_DESC, next),
-										       search_cpx_name);
-
-								if (cpx_desc)
-									/* alten Eintrag entfernen */
-									remove_cpx(cpx_desc);
-
-								init_cpx(settings.cpx_path, name, 0);
-								changes++;
-							}
-							else if (strcmp(".CPZ", tmp) == 0) /* inaktives CPX? */
-							{
-								strcpy(tmp, name);
-								tmp[len - 1] = 'X';
-
-								cpx_desc = list_search(cpx_desc_list, (long)tmp,
-										       offsetof(CPX_DESC, next),
-										       search_cpx_name);
-
-								if (cpx_desc)
-								{
-									cpx_desc->file_name[len - 1] += 'Z' - 'X';
-									/* CPX demnaechst inaktiv */
-									cpx_desc->flags |= CPXD_INACTIVE;
-									/* Eintrag ist gueltig */
-									cpx_desc->flags &= ~CPXD_INVALID;
-								}
-								else
-									init_cpx(settings.cpx_path, name, 1);
-
-								changes++;
-							}
-						}
-					}
-				}
+				changes = handle_entry(name, changes);
 			}
 
 			#undef	name
@@ -636,7 +641,25 @@ update_cpx_list(void)
 		while (err == 0);
 
 		Dclosedir(dir_handle);
-	}	
+	} else if (dir_handle == -32)
+	{
+		_DTA *olddta;
+		_DTA dta;
+		char tmp_path[256];
+		int err;
+
+		strcat(strcpy(tmp_path, settings.cpx_path), "*.CP?");
+		olddta = Fgetdta();
+		Fsetdta(&dta);
+
+		err = Fsfirst(tmp_path, FA_RDONLY|FA_HIDDEN|FA_SYSTEM);
+		while (err == 0)
+		{
+			changes = handle_entry(dta.dta_name, changes);
+			err = Fsnext();
+		}
+		Fsetdta(olddta);
+	}
 
 	cpx_desc = cpx_desc_list;
 

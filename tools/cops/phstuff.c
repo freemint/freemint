@@ -160,7 +160,7 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 }
 
 void *
-load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header)
+load_cpx(CPX_DESC *cpx_desc, const char *cpx_path, long *cmplt_size, short load_header)
 {
 	char name[256];
 	struct xattr xattr;

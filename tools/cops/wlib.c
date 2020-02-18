@@ -915,9 +915,9 @@ full_window(short handle, short max_width, short max_height)
 					max_h = window->h;
 
 				if (area.g_w > max_w)
-					area.g_w = max_w;
+					area.g_w = (_WORD)max_w;
 				if (area.g_h > max_h)
-					area.g_h = max_h;
+					area.g_h = (_WORD)max_h;
 			}
 
 			if (max_width || max_height) /* Fenstergroesse nur so gross wie noetig machen? */
