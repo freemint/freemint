@@ -68,22 +68,16 @@ enum
  * md=REPLACE buf is char**
  *            l=-1: don't translate
  */
-static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
+static short rsc_lang_file_replace(XA_FILE *fp, char **buf, bool *strip)
 {
 	char lbuf[256];
 	char *p = 0;
 	char *in = *buf;
-	bool strip = true;
 	int len = strlen(in);
 	int found;
 	short blen = 0;
 	short clen;
 	short cmplen;
-
-	if (chgl && *chgl == 2)
-	{
-		strip = false;
-	}
 
 	if (!len)
 		return 0;
@@ -130,11 +124,6 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 
 			if (found == NOT_FOUND)
 			{
-				if (chgl && *chgl == -1)
-				{
-					found = OFOUND;
-					break;
-				}
 				if (strncmp(lbuf, "nn", 2) == 0)
 				{
 					if ((*p == '-' && *in == '-') || strncmp(p, in, cmplen) == 0)
@@ -143,7 +132,7 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 						if (lbuf[LF_OFFS - 1] == ';')	/* dont translate this */
 							break;
 						if (lbuf[LF_OFFS - 1] == '+')	/* realloc */
-							strip = false;
+							*strip = false;
 					} else if (reported_skipped == 0)
 					{
 						BLOG((0, "%ld:'%s' skipped (expected:'%s')", rsl_lno, p, in));
@@ -153,7 +142,7 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 			} else if (strncmp(lbuf, cfg.lang, 2) == 0)
 			{
 				/* copy shorter length */
-				if (blen > len && strip)
+				if (blen > len && *strip)
 					blen = len;
 				found = TFOUND;
 				break;					/* translation found */
@@ -163,7 +152,7 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 
 	if (found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH)	/* found */
 	{
-		if (blen > len && strip == false)
+		if (blen > len && *strip == false)
 		{
 			in = xa_strdup(p); /* FIXME: will be leaked */
 			*buf = in;
@@ -191,10 +180,6 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 		}
 		rsl_lno++;
 	}
-	if (chgl && *chgl != 2)
-	{
-		*chgl = strip == false;
-	}
 	switch (found)
 	{
 	case TFOUND:
@@ -207,7 +192,7 @@ static short rsc_lang_file_replace(XA_FILE *fp, char **buf, short *chgl)
 }
 
 
-static short translate_string(struct xa_client *client, XA_FILE * rfp, char **p, short *chgl)
+static short translate_string(struct xa_client *client, XA_FILE * rfp, char **p, bool *strip)
 {
 	short blen;
 	short j;
@@ -218,7 +203,7 @@ static short translate_string(struct xa_client *client, XA_FILE * rfp, char **p,
 
 	for (blen = j = 0; j < 2 && !blen; j++)
 	{
-		if ((blen = rsc_lang_file_replace(rfp, p, chgl)))
+		if ((blen = rsc_lang_file_replace(rfp, p, strip)))
 			break;						/* found */
 		if (1 || rsl_errors++ < RSL_MAX_ERRORS)
 		{
@@ -237,7 +222,7 @@ static short translate_string(struct xa_client *client, XA_FILE * rfp, char **p,
 }
 
 
-short rsc_trans_rw(struct xa_client *client, XA_FILE *rfp, char **txt, short *chgl)
+short rsc_trans_rw(struct xa_client *client, XA_FILE *rfp, char **txt, bool *strip)
 {
 	short blen = 0;
 	char buf[256];
@@ -260,7 +245,7 @@ short rsc_trans_rw(struct xa_client *client, XA_FILE *rfp, char **txt, short *ch
 		rsc_lang_file_write(rfp, LF_SEPSTR, 1);
 	} else if (client->options.rsc_lang == READ)
 	{
-		blen = translate_string(client, rfp, txt, chgl);
+		blen = translate_string(client, rfp, txt, strip);
 	}
 
 	return blen;
@@ -293,11 +278,10 @@ void rsc_lang_file_write(XA_FILE *fp, const char *buf, long l)
 }
 
 
-void rsc_lang_translate_object(struct xa_client *client, XA_FILE *rfp, OBJECT *obj, struct rsc_scan *scan)
+void rsc_lang_translate_object(struct xa_client *client, XA_FILE *rfp, OBJECT *obj, bool *strip)
 {
 	char **p = 0;
 	short blen;
-	short chgl = 0;
 
 	if (obj->ob_flags & OF_NOTRANS)
 		return;
@@ -320,28 +304,7 @@ void rsc_lang_translate_object(struct xa_client *client, XA_FILE *rfp, OBJECT *o
 	if (!p || !*p || !**p || strchr(*p, '\r') != 0 || strchr(*p, '\n') != 0)
 		return;
 
-	if (client->options.rsc_lang == WRITE)
-	{
-		if (obj->ob_type == G_TITLE)
-		{
-			if (scan->n_titles == 0)
-				rsc_lang_file_write(rfp, "### Menubar ###", 15);
-
-			scan->titles[scan->n_titles++] = *p;
-			scan->title = 0;
-		} else if (obj->ob_type == G_STRING && scan->title > 0 && scan->titles[scan->title - 1])
-		{
-			char buf[256];
-			int l = sprintf(buf, sizeof(buf) - 1, "### - \"%s\"-menu - ###", scan->titles[scan->title - 1]);
-
-			rsc_lang_file_write(rfp, buf, l);
-			scan->titles[scan->title - 1] = 0;
-		}
-	}
-
-	blen = rsc_trans_rw(client, rfp, p,
-			 obj->ob_type == G_TITLE ? &chgl :
-			 scan->title > 0 ? &scan->change_lo[scan->title - 1] : 0);
+	blen = rsc_trans_rw(client, rfp, p, strip);
 
 	if (blen)
 	{
@@ -357,44 +320,120 @@ void rsc_lang_translate_object(struct xa_client *client, XA_FILE *rfp, OBJECT *o
 			{
 				blen = -blen;			/* only orig found */
 			}
-
-			if (obj->ob_type == G_STRING)
-			{
-				if (**p != '-')
-				{
-					if (*(*p + blen - 1) != ' ')
-						blen++;
-					if (obj->ob_x > 0)
-						scan->keep_w = 1;	/* more than one obj in one line -> don't adjust width */
-					if (blen + obj->ob_x > scan->mwidth)
-					{
-						scan->mwidth = blen + obj->ob_x;
-					}
-				}
-			} else if (obj->ob_type == G_TITLE && scan->n_titles >= 0)
-			{
-				short s;
-
-				if (*(*p + blen - 1) != ' ')
-					blen++;
-				s = blen - obj->ob_width;
-				scan->title = 0;
-				if (scan->n_titles > 0)
-					obj->ob_x += scan->shift[scan->n_titles - 1];
-
-				if (s && chgl == true)
-				{
-					obj->ob_width = blen;
-					scan->shift[scan->n_titles] = s;
-				}
-				scan->change_lo[scan->n_titles] = chgl * 2;
-
-				if (scan->n_titles > 0 && scan->n_titles < MAX_TITLES)
-				{
-					scan->shift[scan->n_titles] += scan->shift[scan->n_titles - 1];
-				}
-				scan->n_titles++;
-			}
 		}
 	}
+}
+
+
+void rsc_lang_fix_menu(struct xa_client *client, OBJECT *menu, XA_FILE *rfp)
+{
+	short the_bar;
+	short the_active;
+	short title, menubox, index;
+	short x;
+	bool strip, tstrip;
+	
+	the_bar = menu[ROOT].ob_head;
+	if (the_bar < 0 || (menu[the_bar].ob_type & 0xff) != G_BOX)
+		return;
+	the_active = menu[the_bar].ob_head;
+	if (the_active < 0 || (menu[the_active].ob_type & 0xff) != G_IBOX)
+		return;
+	menubox = menu[menu[ROOT].ob_tail].ob_head;
+	if (menubox < 0 || (menu[menubox].ob_type & 0xff) != G_BOX)
+		return;
+	title = menu[the_active].ob_head;
+	if (title < 0 || (menu[title].ob_type & 0xff) != G_TITLE)
+		return;
+	x = menu[title].ob_x;
+	do
+	{
+		char *str;
+		short l;
+		short maxw;
+		short keep_w;
+		
+		tstrip = true;
+		switch (menu[title].ob_type & 0xff)
+		{
+		case G_TEXT:
+		case G_BOXTEXT:
+		case G_FTEXT:
+		case G_FBOXTEXT:
+		case G_BUTTON:
+		case G_STRING:
+		case G_SHORTCUT:
+		case G_TITLE:
+			if (client->options.rsc_lang)
+			{
+				rsc_lang_translate_object(client, rfp, &menu[title], &tstrip);
+			}
+			break;
+		}
+		if ((menu[title].ob_type & 0xff) == G_TITLE)
+		{
+			str = menu[title].ob_spec.free_string;
+			l = (short)strlen(str);
+			while (l > 0 && str[l - 1] == ' ')
+				l--;
+			l++;
+			menu[title].ob_width = l;
+		}
+		menu[title].ob_x = x;
+		menu[menubox].ob_x = x + menu[the_active].ob_x;
+		index = menu[menubox].ob_head;
+		maxw = 0;
+		keep_w = 0;
+		do
+		{
+			switch (menu[index].ob_type & 0xff)
+			{
+			case G_TEXT:
+			case G_BOXTEXT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
+			case G_BUTTON:
+			case G_STRING:
+			case G_SHORTCUT:
+			case G_TITLE:
+				if (client->options.rsc_lang)
+				{
+					strip = tstrip;
+					rsc_lang_translate_object(client, rfp, &menu[index], &strip);
+				}
+				break;
+			}
+			if ((menu[index].ob_type & 0xff) == G_STRING)
+			{
+				str = menu[index].ob_spec.free_string;
+				if (*str != '-')
+				{
+					l = (short)strlen(str);
+					while (l > 0 && str[l - 1] == ' ')
+						l--;
+					l++;
+					if (l > maxw)
+						maxw = l;
+					if (menu[index].ob_x > 0)
+						keep_w = 1;	/* more than one obj in one line -> don't adjust width */
+				}
+			}
+			index = menu[index].ob_next;
+		} while (index != menubox);
+		if (!keep_w)
+		{
+			menu[menubox].ob_width = maxw;
+			index = menu[menubox].ob_head;
+			do
+			{
+				menu[index].ob_width = maxw;
+				index = menu[index].ob_next;
+			} while (index != menubox);
+		}
+		
+		menubox = menu[menubox].ob_next;
+
+		x += menu[title].ob_width;
+		title = menu[title].ob_next;
+	} while (title != the_active);
 }

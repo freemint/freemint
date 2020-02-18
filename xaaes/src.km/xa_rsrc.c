@@ -427,7 +427,10 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 		if( rfp )
 		{
 			if (strchr(*p, '\r') == 0 && strchr(*p, '\n') == 0)
-				rsc_trans_rw( client, rfp, p, 0 );
+			{
+				bool strip = true;
+				rsc_trans_rw(client, rfp, p, &strip);
+			}
 		}
 
 		DIAG((D_rsrc, NULL, " -- to %lx", (unsigned long)*p));
@@ -655,23 +658,15 @@ fix_objects(struct xa_client *client,
 			short vdih,
 			void *b,
 			OBJECT *obj,
-			unsigned long n,
-			XA_FILE *rfp
+			unsigned long n
 )
 {
 	unsigned long i;
 	short type;
-	struct rsc_scan scan;
-
-	memset( &scan, 0, sizeof(scan) );
 
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
 		(unsigned long)b, (unsigned long)cibh, (unsigned long)obj, n));
 
-	if( client->options.rsc_lang == WRITE && n && rfp)
-	{
-		rsc_lang_file_write(rfp, "# - Objects -", 13);
-	}
 	/* fixup all objects' ob_spec pointers */
 	for (i = 0; i < n; i++, obj++)
 	{
@@ -680,120 +675,75 @@ fix_objects(struct xa_client *client,
 		/* What kind of object is it? */
 		switch (type)
 		{
-			case G_IMAGE:
-			case G_BOXTEXT:
-			case G_FBOXTEXT:
-			case G_TEXT:
-			case G_FTEXT:
+		case G_IMAGE:
+		case G_BOXTEXT:
+		case G_FBOXTEXT:
+		case G_TEXT:
+		case G_FTEXT:
 
-			case G_BUTTON:
-			case G_STRING:
-			case G_SHORTCUT:
-			case G_TITLE:
+		case G_BUTTON:
+		case G_STRING:
+		case G_SHORTCUT:
+		case G_TITLE:
+			obj->ob_spec.free_string += (long)b;
+			break;
+
+		case G_ICON:
+			{
+				ICONBLK *ib;
 				obj->ob_spec.free_string += (long)b;
-				if (client->options.rsc_lang && type != G_IMAGE)
-					rsc_lang_translate_object(client, rfp, obj, &scan);
-				break;
+				ib = obj->ob_spec.iconblk;
 
-			case G_ICON:
-				{
-					ICONBLK *ib;
-					obj->ob_spec.free_string += (long)b;
-					ib = obj->ob_spec.iconblk;
-	
-					if( client != C.Aes && screen.c_max_h < 16 )
-						ib->ib_hicon /= (160 / (screen.c_max_h * 10));
-				}
-				break;
-			case G_CICON:
-				/*
-				 * Ozk: Added xa_rsc * parameter to FixColourIconData(),
-				 * since its needed to remember memory allocs.
-				 */
-				if (cibh)
-				{
-					long idx = obj->ob_spec.index;
-					FixColourIconData(client, cibh[idx], rscs, vdih);
-					obj->ob_spec.ciconblk = cibh[idx];
-					DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
-						idx, (unsigned long)cibh[idx], (unsigned long)obj->ob_spec.ciconblk));
-				} else
-				{
-					DIAG((D_rsrc, client, "No cicons but G_CICON object???"));
-				}
-				break;
-			case G_PROGDEF:
-				obj->ob_spec.userblk = NULL;
-				break;
-			case G_BOX:
-				if( client->options.rsc_lang == WRITE )
-				{
-					if( scan.title >= 0 )
-					{
-						if( scan.title < MAX_TITLES )
-							scan.title++;
-					}
-					else
-					{
-						if( obj->ob_next == -1 )
-						{
-							rsc_lang_file_write(rfp, "### - TREE - ###", 16);
-						}
-					}
-				}
-				else if( client->options.rsc_lang == READ && scan.title >= 0 )
-				{
-					if( scan.mwidth && scan.lastbox > 0 )	/* last entry in menu-box */
-					{
-						OBJECT *o = (obj - i + scan.lastbox);
-						o->ob_width = scan.mwidth;
-						if( scan.title > 1 )
-							o->ob_x += scan.shift[scan.title-2];
-
-						if( scan.keep_w == 0 )
-							for( o++; o < obj && o->ob_type == G_STRING; o++ )
-							{
-								o->ob_width = scan.mwidth;
-							}
-
-						scan.mwidth = scan.keep_w = 0;
-					}
-					scan.title++;
-				}
-				scan.lastbox = i;
-				if( scan.n_titles > 0 && scan.title > scan.n_titles )
-				{
-					scan.title = -1;
-					scan.n_titles = -1;
-				}
-				/* fall through */
-
-			case G_IBOX:
-				if( i > 0 && (obj-1)->ob_type == G_BOX && i + 1 < n && (obj+1)->ob_type == G_TITLE )
-				{
-					memset( &scan, 0, sizeof(scan) );
-				}
-				break;
-			case G_BOXCHAR:
-				break;
-			default:
-				DIAG((D_rsrc, client, "Unknown object type %d", type));
-				break;
+				if( client != C.Aes && screen.c_max_h < 16 )
+					ib->ib_hicon /= (160 / (screen.c_max_h * 10));
+			}
+			break;
+		case G_CICON:
+			/*
+			 * Ozk: Added xa_rsc * parameter to FixColourIconData(),
+			 * since its needed to remember memory allocs.
+			 */
+			if (cibh)
+			{
+				long idx = obj->ob_spec.index;
+				FixColourIconData(client, cibh[idx], rscs, vdih);
+				obj->ob_spec.ciconblk = cibh[idx];
+				DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
+					idx, (unsigned long)cibh[idx], (unsigned long)obj->ob_spec.ciconblk));
+			} else
+			{
+				DIAG((D_rsrc, client, "No cicons but G_CICON object???"));
+			}
+			break;
+		case G_PROGDEF:
+			obj->ob_spec.userblk = NULL;
+			break;
+		case G_BOX:
+		case G_IBOX:
+		case G_BOXCHAR:
+			break;
+		default:
+			DIAG((D_rsrc, client, "Unknown object type %d", type));
+			break;
 		}
 	}
 	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, (unsigned long)obj));
 }
 
-#define resWidth (screen.c_max_w)
-#define resHeight (screen.c_max_h)
 
 static void
-fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight)
+fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight, XA_FILE *rfp)
 {
 	unsigned long i;
 	unsigned long x_fact, y_fact;
 	int j, k;
 	OBJECT *obj;
+	bool strip;
+
+	if( client->options.rsc_lang == WRITE && n && rfp)
+	{
+		rsc_lang_file_write(rfp, "# - Objects -", 13);
+	}
 
 	x_fact = (long)screen.c_max_w << 16;
 	x_fact /= designWidth;
@@ -808,6 +758,9 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 			*trees = (OBJECT *)(*(char **)trees + (long)b);
 
 			DIAGS((" -- tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, (unsigned long)*trees));
+
+			if (client->options.rsc_lang == WRITE)
+				rsc_lang_file_write(rfp, "### - TREE - ###", 16);
 
 			obj = *trees;
 			k = 0;
@@ -831,10 +784,10 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 
 					switch (obj->ob_type & 0xff)
 					{
-						case G_TEXT:
-						case G_BOXTEXT:
-						case G_FTEXT:
-						case G_FBOXTEXT:
+					case G_TEXT:
+					case G_BOXTEXT:
+					case G_FTEXT:
+					case G_FBOXTEXT:
 						{
 							TEDINFO *ted;
 
@@ -846,9 +799,20 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k);
 #endif
 							}
-							break;
 						}
-						default:;
+						/* fall through */
+					case G_BUTTON:
+					case G_STRING:
+					case G_SHORTCUT:
+					case G_TITLE:
+						if (client->options.rsc_lang)
+						{
+							strip = true;
+							rsc_lang_translate_object(client, rfp, obj, &strip);
+						}
+						break;
+					default:
+						break;
 					}
 					/*
 					 * Coordinates: arranged as number of chars in low byte,
@@ -895,6 +859,8 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 			else
 			{
 				/* Standard AES menu */
+				if (client->options.rsc_lang == READ)
+					rsc_lang_fix_menu(client, *trees, rfp);
 				j = 0;
 				do {
 					obfix(obj, j, designWidth, designHeight);
@@ -1261,15 +1227,15 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	/*
 	 * fix_objects MUST run before fix_trees!!!
 	 */
-	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + rshdr(hdr, rsh_object)), rshdr(hdr, rsh_nobs), rfp );
+	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + rshdr(hdr, rsh_object)), rshdr(hdr, rsh_nobs));
 
 	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frstr),	 rshdr(hdr, rsh_nstring), &extra_ptr, rfp );
 	fix_chrarray(client, base, (char **)	rsc_start(hdr, rsh_frimg),	 rshdr(hdr, rsh_nimages), &extra_ptr, 0);
 
+	fix_trees(client, base, (OBJECT **)(base + rshdr(hdr, rsh_trindex)), rshdr(hdr, rsh_ntree), designWidth, designHeight, rfp);
 	if( rfp ){
 		xa_fclose(rfp);
 	}
-	fix_trees(client, base, (OBJECT **)(base + rshdr(hdr, rsh_trindex)), rshdr(hdr, rsh_ntree), designWidth, designHeight);
 
 	return (RSHDR *)base;
 }
