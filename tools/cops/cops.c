@@ -138,9 +138,9 @@ _WORD quit;
 GRECT desk_grect;
 WINDOW *main_window = NULL;
 
-char help_buf[128];
-char home[128];
-char inf_name[128];
+static char *help_buf;
+static char home[128];
+static char inf_name[128];
 
 struct alphaheader settings;
 
@@ -1062,13 +1062,10 @@ call_help(void)
 	short help_id;
 
 	help_id = get_help_id();
-	if (help_id >= 0)
+	if (help_id >= 0 && help_buf)
 	{
 		short msg[8];
 		char **pp;
-
-		strcpy(help_buf, home);
-		strcat(help_buf, "COPS.hyp");
 
 		msg[0] = VA_START;
 		msg[1] = app_id;
@@ -3592,10 +3589,18 @@ std_settings(void)
 	/* Backslash anhaengen */
 	append_slash(home);
 
+	help_buf = (char *)Mxalloc(sizeof("*:\\COPS.hyp"), MX_PREFTTRAM | MX_GLOBAL);
+	if (help_buf == (char *)-32)
+		help_buf = (char *)Malloc(sizeof("*:\\COPS.hyp"));
+	if (help_buf)
+	{
+		strcpy(help_buf, "*:\\COPS.hyp");
+	}
+
 	strcpy(inf_name, home);
 	strcat(inf_name, "COPS.inf");
 
-	header_size = read_file(inf_name, &settings, 0L, sizeof(struct alphaheader));
+	header_size = read_file(inf_name, &settings, 0, sizeof(struct alphaheader));
 	if (header_size != sizeof(struct alphaheader))
 	{
 		/* war auch keine alte INF-Datei ohne CPX-Eintraege... */
