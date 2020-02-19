@@ -39,6 +39,10 @@
 #define	GAI_CICN	0x0800	/* Color-Icons supported */
 #define	GAI_APTERM	0x1000	/* AP_TERM supported */
 #define	GAI_GSHORTCUT	0x2000	/* object type G_SHORTCUT supported */
+#define	GAI_FLYDIAL	0x4000	/* form_xdo/form_xdial supported */
+#define	GAI_MOUSE	0x8000	/* graf_mouse(M_SAVE/M_RESTORE) supported */
+
+short get_cookie(long cookie, long *p_value);
 
 _WORD get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d);
 void adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, _WORD hor_3d, _WORD ver_3d);

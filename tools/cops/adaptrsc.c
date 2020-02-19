@@ -123,8 +123,7 @@ _WORD get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver
 	if (_AESversion >= 0x0401)	/* mindestens AES 4.01? */
 		flags |= GAI_INFO;
 
-	if (Getcookie(C_MagX, (long *)(&magic)) != 0)
-		magic = NULL;
+	get_cookie(C_MagX, (long *)&magic);
 	magic_version = 0;
 
 	if (magic)			/* MagiC vorhanden? */

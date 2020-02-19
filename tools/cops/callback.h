@@ -36,6 +36,8 @@ extern struct xcpb xctrl_pb;
 /* lookup cpx descriptor with addr */
 CPX_DESC *find_cpx_by_addr(const long *sp);
 
+short get_cookie(long cookie, long *p_value);
+
 short _cdecl save_header(struct cpxlist *header);
 void cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, _WORD edit_obj, _WORD *msg);
 

@@ -31,7 +31,38 @@
 #include "cops_rsc.h"
 #include "phstuff.h"
 
-extern long clear_cpu_caches(void);
+extern long clear_cpu_cf(void);
+extern long clear_cpu_030(void);
+extern long clear_cpu_040(void);
+
+short get_cookie(long cookie, long *p_value)
+{
+	long *cookiejar;
+
+	cookiejar = (long *)Setexc(0x5a0 / 4, (void (*)(void))-1);
+	if (p_value != NULL)
+		*p_value = 0;
+	if (cookiejar == NULL)
+		return 0;
+
+	/* Use do/while here so you can match the zero entry itself */
+	do
+	{
+		if (*cookiejar == cookie)
+		{
+			/* found it! */
+			if (p_value != NULL)
+				*p_value = *(cookiejar + 1);
+
+			/* return nonzero for success */
+			return 1;
+		}
+		cookiejar += 2;
+	} while (*cookiejar != 0);
+
+	/* return 0 (failed ) */
+	return 0;
+}
 
 /*----------------------------------------------------------------------------------------*/ 
 /* CPX-Datei laden und relozieren */
@@ -152,7 +183,17 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 		}
 		else
 		{
-			Supexec(clear_cpu_caches);
+			long cpu;
+
+			get_cookie(0x5F435055L, &cpu);
+			if (cpu >= 40)
+				Supexec(clear_cpu_040);
+			else if (cpu >= 20)
+				Supexec(clear_cpu_030);
+#ifdef __mcoldfire__
+			else
+				Supexec(clear_cpu_cf);
+#endif
 		}
 	}
 

@@ -32,6 +32,7 @@
 #include <mint/mintbind.h>
 
 #include "cops_rsc.h"
+#include "adaptrsc.h"
 #include "callback.h"
 #include "cops.h"
 #include "cpx_bind.h"
@@ -63,8 +64,23 @@ static void    _cdecl Sl_dragy(struct Sl_dragxy_args);
 static short   _cdecl XGen_Alert(struct XGen_Alert_args);
        short   _cdecl CPX_Save_wrap(void *ptr, long bytes);
        void *  _cdecl Get_Buffer_wrap(void);
-static short   _cdecl getcookie(long cookie, long *p_value);
 static void    _cdecl MFsave(struct MFsave_args);
+
+
+/*----------------------------------------------------------------------------------------*/ 
+/* Cookie suchen									*/
+/* Funktionsresultat: 0: nicht vorhanden 1: Cookie gefunden				*/
+/*	cookie: Cookietyp								*/
+/*	p_value: hier wird der Cookiewert zurueckgeliefert				*/
+/*----------------------------------------------------------------------------------------*/ 
+#if defined(__PUREC__) || defined(__FASTCALL__)
+static short _cdecl getcookie(long cookie, long *p_value)
+{
+	DEBUG(("getcookie(0x%lx, %p)\n", cookie, p_value));
+
+	return get_cookie(cookie, p_value);
+}
+#endif
 
 /* 
  * exported cpx support functions
@@ -100,7 +116,11 @@ struct xcpb xctrl_pb =
 
 	CPX_Save_wrap,
 	Get_Buffer_wrap,
+#if defined(__PUREC__) || defined(__FASTCALL__)
 	getcookie,
+#else
+	get_cookie,
+#endif
 
 #if defined(GERMAN)
 	1,
@@ -1022,24 +1042,6 @@ void * _cdecl Get_Buffer(const long *sp)
 		return cpx->old.header.buffer;
 
 	return NULL;
-}
-
-/*----------------------------------------------------------------------------------------*/ 
-/* Cookie suchen									*/
-/* Funktionsresultat: 0: nicht vorhanden 1: Cookie gefunden				*/
-/*	cookie: Cookietyp								*/
-/*	p_value: hier wird der Cookiewert zurueckgeliefert				*/
-/*----------------------------------------------------------------------------------------*/ 
-static short _cdecl getcookie(long cookie, long *p_value)
-{
-	short ret;
-
-	DEBUG(("getcookie(0x%lx, %p)\n", cookie, p_value));
-
-	ret = Getcookie(cookie, p_value) == C_FOUND;
-	if (!ret && p_value)
-		*p_value = 0;
-	return ret;
 }
 
 /*----------------------------------------------------------------------------------------*/ 
