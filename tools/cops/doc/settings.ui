@@ -1,0 +1,34 @@
+!code_source [tos]
+
+# Target
+!ifdest [stg]
+  !code_target [tos]
+  !parwidth 75
+!else
+  !code_target [utf-8]
+!endif
+
+#special preamble for dvipdfm, dvips
+!no_preamble [tex]
+
+#!use_label_inside_index [html]
+#!use_udo_index           [all]
+
+!use_nodes_inside_index  [all]
+!use_label_inside_index  [all]
+!use_alias_inside_index  [all]
+
+!no_headlines [html]
+!html_merge_nodes
+!html_merge_subnodes
+!html_merge_subsubnodes
+
+#
+!tex_tetex
+!tex_2e
+
+#!use_auto_subtocs    [info,html,stg,tvh,win,aqv]
+#!use_auto_subsubtocs [info,html,stg,tvh,win,aqv]
+!no_effects          [asc]
+!use_justification   [asc]
+

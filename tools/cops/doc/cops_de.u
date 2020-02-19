@@ -1,0 +1,644 @@
+########################################
+# @(#) COPS-userguide
+# @(#) Thorsten Otto, Feb 19 2020
+# @(#)  (reconstructed from hypertext)
+########################################
+!language german
+
+!include "settings.ui"
+
+#####################################################
+
+!docinfo [title]   Die Onlinehilfe zu
+!docinfo [program] COPS
+!docinfo [date]    25. April 1998
+!docinfo [version] Version 1.08
+!docinfo [author]  Thomas Much, Sven & Wilfried Behne
+!docinfo [programimage] cops.img
+
+!ifdest [stg]
+!begin_raw
+@options "+i +z -t3"
+@subject "Dokumentation/Utilities"
+!end_raw
+!endif
+
+########################################
+
+!begin_document
+
+!maketitle
+!tableofcontents
+
+!begin_node Einleitung
+
+COPS ist ein Server fÅr Kontrollfelder (CPX-Module), die vielen
+modernen Programmpaketen beiliegen. COPS ersetzt das neueren
+TOS-Versionen bei!-liegende XCONTROL.ACC von ATARI.
+
+COPS zeichnet sich durch folgende Eigenschaften aus:
+
+!begin_itemize
+!item Es kînnen beliebig viele Kontrollfelder gleichzeitig geîffnet
+werden (solange das System Fenster zur VerfÅgung stellen kann).
+
+!item COPS merkt sich die Position der einzelnen Kontrollfelder.
+
+!item Es kînnen auch Kontrollfelder mit grîûerer ArbeitsflÑche benutzt
+werden - COPS paût die Fenstergrîûe an das Resource an.
+
+!item COPS unterstÅtzt lange Dateinamen: Kontrollfelder kînnen z.B. im
+Ordner "Kontrollfelder" abgelegt werden. Sowohl Ordner- als auch
+Dateinamen kînnen Leerzeichen enthalten (!nl)
+(z.B. "MagiC Konfiguration.cpx"). (!link [*] [filename_spaces])
+
+!item Geringer Speicherverbrauch.
+
+!item COPS funktioniert auch auf 68040-Prozessoren (mit eingeschaltetem
+Copyback-Cache) oder Prozessoren mit groûem Code- und Datencache
+(68k-Emulation auf PowerPC-Rechnern).
+
+!end_itemize
+
+!begin_pnode* filename_spaces
+Beachten Sie bitte, daû nicht jeder Desktop mit Leerzeichen im
+Dateinamen umgehen kann (mit MAGXDESK funktioniert es, mit der EASE
+nicht).
+!end_node
+
+!end_node
+
+
+!begin_node Konditionen
+
+COPS ist Freeware. Das Programm darf nur komplett und unverÑndert mit
+allen dazugehîrigen Dateien weitergegeben werden. Der entgeldliche
+Vertrieb ist untersagt.
+
+Zum COPS-Paket gehîren:
+
+!begin_itemize
+!item COPS.ACC (Programm)
+
+!item COPS.HYP (Hypertext)
+
+!item COPS.REF (Referenz des Hypertextes)
+
+!item COPSICN.RSC (Farb- und SW-Icon fÅr COPS).
+
+!item WDIALOG.PRG (Systemerweiterung)
+
+!item COPS.HTM (Hypertext im HTML-Format)
+!end_itemize
+
+Copyright Ω 1996 - 1998 Behne & Behne Systemsoftware GbR. Alle Rechte
+vorbehalten.
+
+Behne & Behne Systemsoftware GbR (!nl)
+Lindenkamp 2a (!nl)
+31515 Wunstorf
+
+Tel: 05031-914120 (!nl)
+Fax: 05031-914121 (!nl)
+WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
+
+!end_node
+
+
+!begin_node Rechtliches
+
+Trotz sorgfÑltiger Entwicklung und umfangreicher Tests kînnen wir keine
+GewÑhr Åbernehmen, daû die Software unterbrechungs- und fehlerfrei
+lÑuft. Die Haftung fÅr unmittelbare SchÑden, FolgeschÑden und
+DrittschÑden ist ausgeschlossen. Die Benutzung von COPS erfolgt auf
+eigene Gefahr.
+
+Die in diesem Hypertext erwÑhnten Produkte sind in der Regel durch
+Waren!-zeichen geschÅtzt. Das Fehlen gesonderter Hinweise bedeutet
+nicht, daû diese Produkte frei von Rechten Dritter sind.
+
+Der Hypertext wurde mit UDO und ST-Guide erstellt.
+
+!end_node
+
+
+!begin_node Installation
+
+!begin_itemize
+!item Kopieren Sie COPS in das Wurzelverzeichnis (oberste Ebene) Ihres
+Startlaufwerkes.
+
+!item Wenn Sie in den Environment-Variablen ein HOME-Verzeichnis fÅr
+COPS setzen, wird die INF-Datei im HOME-Verzeichnis gespeichert,
+andern!-falls im Startpfad von COPS.
+
+!item Falls kein MagiC 4 (oder neuer), MagiCMac 1.2.7 (oder neuer) oder
+MagiC-PC installiert ist, kopieren Sie beiliegendes WDIALOG.PRG
+in den AUTO-Ordner.
+
+!item Falls der verwendete Desktop die VA_START-Nachricht versenden
+kann, melden Sie COPS fÅr den Dateityp "*.CPX" an.
+
+!item Kopieren Sie COPS.HYP und COPS.REF in den ST-Guide "GUIDES"-
+Ordner.
+
+!item Kopieren Sie das beiliegende CLOCK.CPX in den CPX-Ordner. (!link [*] [clock_cpx])
+
+!item Wenn Sie MagiC, MagiCMac oder MagiC-PC verwenden, so starten Sie
+COPS durch Doppelklick nach (COPS trÑgt sich in der ACC-Leiste
+ein). Andernfalls fÅhren Sie einen Neustart des Rechners aus.
+
+!end_itemize
+
+COPS sucht die Kontrollfelder im Pfad "C:\CPX\", solange Sie keinen
+anderen Pfad vorgeben. Sie kînnen den Pfad fÅr die Kontrollfelder
+Ñndern, indem Sie das COPS-Popup aufrufen.
+
+(!I)Hinweis:(!i)
+
+COPS kann auch als Applikation gestartet werden. Im Abschnitt
+Installations!-beispiele finden Sie einige praxisnahe Beispiele, die
+Ihnen diese und andere Konfigurationsmîglich!-keiten zeigen.
+
+!begin_pnode* clock_cpx
+CLOCK.CPX ist "PlÅschware" und wurde freundlicherweise von Daniel Hîpfl
+zur VerfÅgung gestellt. Beachten Sie bitte den beiliegenden Hypertext.
+!end_node
+
+!end_node
+
+
+!begin_node Bedienung
+
+Wenn COPS als Accessory lÑuft, finden Sie in der ACC-Leiste den
+Eintrag "Kontrollfelder". Klicken Sie diesen Eintrag an. Es îffnet
+sich das COPS- Fenster mit den Icons der verfÅgbaren Kontrollfelder.
+Mit der Maus kînnen Sie im Fenster folgende Aktionen auslîsen:
+
+!begin_itemize
+
+!item Einfachklick links auf Icon: Icon Selektieren (auch mit Shift)
+
+!item Gummiband (auch mit Shift)
+
+!item Einfachklick rechts auf Icon: CPX-Popup
+
+!item Einfachklick rechts auf weiûen Bereich des Fensters: COPS-Popup
+
+!item Die aktuellen Fenster- und Iconpositionen werden beim Schlieûen
+des Fensters gesichert.
+!end_itemize
+
+(!I)Hinweis:(!i)
+
+Wenn Ihr Desktop die VA_START-Nachricht versenden kann und
+COPS fÅr "*.CPX"-Mo!-du!-le angemeldet wurde, kînnen Sie die
+Kontrollfelder direkt aus dem Desktop per Doppelklick
+starten.
+
+!begin_node CPX-Popup
+
+Im COPS-Fenster îffnet der Rechtsklick auf ein Icon ein Popup mit
+folgenden EintrÑgen:
+
+!begin_itemize
+!item (!B)ôffnen:(!b) ôffnet das Kontrollfeld und bringt es in den Vordergrund.
+
+!item (!B)Deaktivieren:(!b) éndert den Dateityp in CPZ.
+
+!item (!B)Aktivieren:(!b) éndert den Dateityp in CPX.
+
+!item (!B)Info:(!b) Zeigt den Dateinamen, die Kennung, Version und die
+Kon!-fi!-gu!-ra!-tions!-flags des Kontrollfelds an.
+!end_itemize
+
+!end_node
+
+
+!begin_node COPS-Popup
+
+Im COPS-Fenster îffnet der Rechtsklick auf den weiûen Bereich des
+Fensters ein Popup mit folgenden EintrÑgen:
+
+!begin_itemize
+!item (!B)öber COPS:(!b) Versions- und Copyright-Info.
+
+!item (!B)Einstellungen:(!b) Hier legen Sie den Ordner fÅr die Kontrollfelder
+(CPX-Module) und verschiedene Optionen fest.
+
+!item (!B)Neuladen:(!b) Durchsucht den Ordner fÅr die Kontrollfelder
+und ak!-tu!-ali!-siert das COPS-Fenster.
+
+!item (!B)AufrÑumen:(!b) Sortiert alle Icons im COPS-Fenster.
+
+!item (!B)Alles markieren:(!b) Selektiert alle Icons im COPS-Fenster.
+
+!item (!B)HILFE:(!b) ôffnet diese Online-Hilfe.
+!end_itemize
+
+
+!begin_node Einstellungen
+
+!begin_itemize
+!item (!B)CPX-Pfad:(!b) BetÑtigen Sie diesen Knopf, um mit der Dateiauswahl den
+Suchpfad fÅr die Kontrollfelder festzulegen.
+
+!item (!B)Beim Start ikonifiziert:(!b) Beim Start von COPS wird das Fenster
+ikoni!-fi!-ziert. Beim Doppelklick auf das ikoni!-fi!-zier!-te Fenster
+îffnet sich das COPS-Fenster.
+
+!item (!B)Doppelklick aktiviert CPZ:(!b) Deaktivierte Kontrollfelder (Endung
+"CPZ") werden durch Doppelklick aktiviert (Endung wird auf "CPX"
+geÑndert) und geîffnet.
+
+!item (!B)CPXe nach Namen ordnen:(!b) Beim AufrÑumen der CPXe im COPS-Fenster
+werden die Icons nach Namen sortiert.
+
+!item (!B)Beenden nach xx Minuten:(!b) COPS startet, îffnet ggf.
+Kontrollfelder (z.B. zum Setzen der Farbpalette oder der seriellen
+Schnittstelle) und beendet sich entsprechend Ihrer Vorgabe. Diese
+Option ist nur in einem Multitaskingsystem nutzbar - MagiC-Anwender
+kopieren COPS.APP oder legen einen symbolischen Link (mit EASE nicht
+mîglich) von COPS.APP in den APPS bzw. START-Ordner an.
+
+!end_itemize
+
+!end_node
+
+!end_node
+
+!end_node
+
+
+!begin_node Installationsbeispiele
+
+Da COPS viele Konfigurationsmîglichkeiten besitzt, haben wir einige
+sinn!-vol!-le Kombinationen aufgelistet:
+
+(!B)COPS unter TOS mit ATARI-Desktop:(!b)
+
+!begin_itemize
+
+!item Verwenden Sie COPS als Accessory (Endung ".ACC"). Die
+System!-er!-wei!-te!-rung WDIALOG.PRG muû installiert sein.
+
+!end_itemize
+
+(!B)COPS unter TOS mit VA_START-fÑhigem-Desktop(!b) (Gemini, Thing, ...):
+
+!begin_itemize
+
+!item Verwenden Sie COPS als Accessory (Endung ".ACC"). Die
+System!-er!-wei!-te!-rung WDIALOG.PRG muû installiert sein. Melden Sie COPS fÅr
+Dateien mit der Endung "*.CPX" an. Sie kînnen jetzt die Kontroll!-fel!-der
+direkt aus dem Desktop per Doppelklick starten.
+
+!end_itemize
+
+(!B)COPS unter MagiC / MagiCMac / MagiC-PC:(!b)
+
+!begin_itemize
+!item Wenn Sie (!I)Speicherplatz sparen(!i) wollen, dann benennen Sie COPS.ACC
+in COPS.APP um und kopieren Sie es in den APPS bzw. START- Ordner
+von MagiC. Starten Sie COPS, rufen Sie das COPS-Popup auf und
+wÑhlen Sie im Dialog Einstellungen den Punkt "Beenden nach xx
+Minuten" an. Verlassen Sie COPS.
+
+Anschlieûend melden Sie Åber den MenÅpunkt "Anwendung anmelden" des
+Desktops COPS als Programm fÅr Dateien mit der Endung "*.CPX" an und
+bestÑtigen, daû COPS die VA_START-Nachricht versteht. In MAGXDESK
+kînnen Sie nun jedem Kontrollfeld ein eigenes (Farb)-Icon zuweisen.
+
+COPS wird jetzt beim Start Ihres Rechners hochgefahren, startet
+die Kontrollfelder (die dann die notwendigen Initialisierungen
+vornehmen kînnen) und beendet sich entsprechend Ihrer Vorgabe.
+Falls Sie eines der Kontrollfelder spÑter noch einmal aufrufen
+wollen, kînnen Sie es direkt vom Desktop aus per Doppelklick
+starten.
+
+!item Verwenden Sie COPS als Accessory, dann melden Sie dieses Åber den
+MenÅpunkt "Anwendung anmelden" fÅr Dateien mit der Endung "*.CPX"
+an und bestÑtigen, daû COPS die VA_START-Nachricht versteht.
+
+Auch in diesem Fall kînnen Sie auf Wunsch jedem Kontrollfeld ein
+eigenes (Farb)-Icon zuweisen und die Kontrollfelder direkt vom
+Desktop aus per Doppelklick starten.
+!end_itemize
+
+!end_node
+
+
+!begin_node Bekannte Probleme
+
+!begin_itemize
+!item Mangels Iconmaske in CPX-Modulen (von ATARI nicht vorgesehen...)
+schauen selektierte Icons im Kontrollfeldfenster etwas unschîn
+aus.
+
+(!I)Alternative:(!i)
+
+In MagiC, MagiCMac und MagiC-PC kînnen Sie auf Wunsch
+fÅr jedes CPX- Modul ein eigenes (Farb)-Icon anmelden
+und die Kontrollfelder direkt vom Desktop aus starten.
+Siehe auch Abschnitt Installationsbeispiele.
+
+!item éltere Versionen des AUTO-Ordner-Programms ALICE verursachen u.U.
+AbstÅrze. Wenn ALICE installiert ist und COPS (oder auch andere
+Programmen wie FONTNAME oder MAKEPRN) abstÅrzen, so deaktivieren
+Sie bitte ALICE.
+
+(!I)Anmerkung:(!i)
+
+Tests mit Wincom-Version 1.6 und WDIALOG 1.93 verliefen
+ohne Probleme.
+
+!item Das SPOOL.CPX erscheint nicht mit den erwarteten Fenstergrîûe von
+256 * 176 Pixeln (CPX-Standard), sondern mit 280 * 128 Pixeln, da
+das RSC dieses CPXes fehlerhafte Eintragungen enthÑlt.
+
+!item Im Zusammenspiel von WDIALOG und CHAMELON kommt es beim
+Systemstart zu einem Absturz innerhalb von CHAMELON (wahrscheinlich ein
+Problem bei der "?AGI"-Erkennung).
+
+!label MAGXCONF.ACC-Fehler
+!item Aufgrund eines Bugs im MAGXCONF.ACC (fehlende Registersicherung)
+konnte im Zusammenhang mit Ñlteren WDIALOG-Versionen ein Adress- fehler
+oder Speicherschieûer auftreten.
+
+Die neue WDIALOG-Version 1.93 enthÑlt einen Workaround fÅr diesen
+Fehler. Da MAGXCONF.ACC diese Probleme auch im Zusammenhang mit
+anderen Systemerweiterungen produzieren kînnte, sollten Sie
+MAGXCONF!-.ACC lîschen und das MagiC beiliegende MAGXCONF.CPX
+einsetzen.
+
+!item Wenn Sie Ñltere TOS-Versionen verwenden, dann schlieûen Sie bitte
+(!I)vor(!i) dem Start eines neuen Programmes oder (!I)vor(!i) dem Beenden eines
+laufenden Programmes alle Kontrollfelder. Aufgrund eines Fehlers
+im TOS kann COPS sonst u.U. die notwendigen Strukturen nicht mehr
+freigeben, was dann frÅher oder spÑter einen Absturz nach sich
+zieht.
+
+(!I)Abhilfe:(!i)
+
+Verwenden Sie MagiC, MagiCMac oder MagiC-PC. Hier kann
+der Fehler nicht auftreten.
+
+!item Unter TOS 2.06 und 3.06 erfolgt beim Klick auf die Scrollpfeile
+des COPS-Fensters keine Reaktion, wenn COPS als Accessory lÑuft.
+Dies ist ein bekannter Fehler von TOS 2.06 und 3.06.
+
+!item Wenn Sie einen Falcon mit TOS 4.01 verwenden, dann stimmen die
+Sli!-der!-grî!-ûen des COPS-Fensters nicht. Dies ist ein bekannter Fehler von
+TOS 4.01.
+
+!item Wenn Sie einen Falcon mit TOS 4.01, 4.02 oder 4.04 verwenden,
+dann îffnen Sie bitte nicht mehr als (!I)insgesamt(!i) sieben Fenster
+gleichzeitig. Beim ôffnen von mehr als sieben Fenster gibt TOS
+keine Fehlermeldung aus, zerstîrt dafÅr aber interne Strukturen.
+
+(!I)Abhilfe:(!i)
+
+Verwenden Sie MagiC als Betriebssystem.
+
+!end_itemize
+
+!end_node
+
+!begin_appendix
+
+!begin_node History
+
+!begin_itemize
+
+(!B)Version 0.10 - 0.11 (!b) (08.02.96 - 10.02.96)
+
+!item Idee und Konzeption durch Thomas
+
+(!B)Version 0.12 - 0.75 (!b) (22.08.96 - 12.09.96)
+
+!item "Das schaff' ich in einer Woche" - Sven legt los...
+
+(!B)Version 0.80 - 0.99 (!b) (13.09.96 - 15.09.96)
+
+!item Anpassung an BeschrÑnkungen und Fehler von TOS
+
+(!B)Version 1.00 (!b) (16.09.96)
+
+!item Erste îffentliche Version.
+
+(!B)Version 1.01 (!b) (17.09.96)
+
+!item Korrektur fÅr Filesysteme ohne Dxreaddir() aber mit Dreaddir().
+
+!item Korrektur fÅr Dateiauswahl, falls nur eine Dateimaske Åbergeben
+werden kann.
+
+(!B)Version 1.02 (!b) (19.09.96)
+
+!item Fehler aus MT_AES-Bibliothek entfernt, der dazu fÅhrte, daû die
+nicht scrollende Variante von xfrm_popup() (MagiC-Versionen vor 5.03)
+u.U. das falsche Objekt zurÅckmeldete. Neue MT_AES-Bibliothek liegt ab
+heute auch in der ASH-Mailbox.
+
+!item Flag "RAM-resident" wird jetzt im Kontrollfeld gesichert.
+
+!item "Kontextbezogener" Startpunkt (Mausposition) der Grow- und
+Shrinkboxen beim ôffnen von Dialogen im COPS-Fenster.
+
+!item Wenn ein $HOME-"defaults"-Verzeichnis vorhanden ist, dann wird
+die INF-Datei dort auch erstellt.
+
+!item RÅckgabewert von CPX_Save() stimmt jetzt.
+
+!item Falls Kontrollfelder mit derselben ID und derselben
+Versionsnummer mit der Endung "CPX" (!I)und(!i) der Endung "CPZ"
+vorlagen, wurde die Position des Icons im COPS-Fenster nicht korrekt
+gespeichert. Korrigiert und Einleseroutine beschleunigt (trotzdem
+doppelte Module bitte aus dem Ordner entfernen).
+
+!item Englische Version verfÅgbar.
+
+(!B)Version 1.03 (!b) (23.09.96)
+
+!item Stack fÅr CPX-Module vergrîûert. Damit sollten (insbesondere auf
+Power-Macs) Probleme mit CPX-Modulen, die in den Supervisormodus
+schalten und dann Dateioperationen ausfÅhren, der Vergangenheit
+angehîren.
+
+!item Vertipper bei vertikalem Slider-Handling entfernt.
+
+(!B)Version 1.04 (!b) (01.10.96)
+
+!item Das Iconify-Icon wird jetzt unter MTOS und MagiC 4 korrekt
+dargestellt.
+
+!item Die Popup-Routine stellt bei Aufruf ohne selektiertes Objekt kein
+HÑkchen mehr dar.
+
+!item Anpassung fÅr residente CPXe, die rsh_fix() nutzen.
+
+!item Korrektur der Option "Automatisch Starten", wenn COPS als
+Accessory lÑuft.
+
+!item COPS bleibt unter TOS in der Event-Schleife, falls kein WDIALOG
+gefunden wurde.
+
+!item Fehler aus WDIALOG (V1.10) entfernt, der Texel oder Artworx zum
+AbstÅrzen bringen konnte. Neues WDIALOG V1.11 liegt bei.
+
+(!B)Version 1.05 (!b) (09.11.96)
+
+!item Doppelte Unterstriche in Dialogen durch "Let 'em fly" verhindert.
+
+!item rsh_fix() fÅr ST-Niedrig und ST-Mittel korrigiert.
+
+!item Sicherheitsabfrage bei CTRL-Q, wenn COPS unter MagiC als
+Accessory lÑuft.
+
+!item Darstellungsfehler von Radiobuttons und Checkboxen unter WINX
+beseitigt.
+
+!item Franzîsische Version verfÅgbar.
+
+!item Bei RÅckfragen bitte die neue Telefon- und Fax-Nummer beachten.
+
+(!B)Version 1.06 (!b) (26.02.97)
+
+!item Verhalten des Hauptfensters beim Window-Shading korrigiert.
+
+!item Probleme mit prellenden MÑusen entschÑrft.
+
+!item Aktivierung des Cursors verÑndert.
+
+!item Probleme mit der Relokation von CPXen eines bestimmten Modula-
+Com!-pilers beseitigt.
+
+!item COPS beachtet vor dem ersten ôffnen eines CPX-Moduls bereits die
+gewÅnschte Verkleinerung/Vergrîûerung des CPX-Fensters und
+vermeidet damit unnîtige Redraws.
+
+!item CPX-Icons werden optional nach Namen geordnet, andernfalls nur
+eingerastet.
+
+!item Workaround fÅr MAGXCONF.ACC-Fehler in WDIALOG eingebaut.
+
+(!B)Version 1.07 (!b) (15.07.97)
+
+!item Anzahl der Plattenzugriffe in Multitaskingsystemen verringert,
+indem die COPS.INF-Datei nur noch beim AP_TERM gesichert wird.
+
+!item Undokumentierten Seiteneffekt von rsh_obfix() auf <SkipRshFix>
+fÅr ram-residente CPXe nachgebaut.
+
+!item Mîgliche Division durch Null in Fensterbibliothek abgefangen.
+
+!item Workaround fÅr Fopen()-Fehler von TOS 1.0 - 3.06.
+
+!item Umbau der AES-Init- & Exit-Sequenzen in WDIALOG 1.97 und Einbau
+zusÑtzlicher PrÅffunktionen, um so die Verwirrung von WDIALOG
+durch appl_exit()-Aufrufe mit falscher ID zu vermeiden.
+
+(!B)Version 1.08 (!b) (25.04.98)
+
+!item Neue Fensterbibliothek mit verbessertem Redraw beim
+Echtzeitscrolling eingebaut.
+
+!end_itemize
+
+!end_node
+
+
+!begin_node Allgemeine Fragen
+
+!label Dateityp CPX
+(!B)WofÅr steht der Dateityp "CPX"(!b)
+
+"CPX" ist die AbkÅrzung fÅr (!B)C(!b)ontrol (!B)P(!b)anel e(!B)X(!b)tension (Åbersetzt:
+Kontroll!-feld-!-Er!-wei!-te!-rung). Aktivierte Kontrollfelder erkennen Sie
+an der Endung "CPX", deaktiverte an der Endung "CPZ".
+
+!label COPS - der Name
+(!B)Wieso heiût COPS "COPS"?(!b)
+
+"COPS" ist die AbkÅrzung fÅr (!B)CO(!b)ntrol (!B)P(!b)anel (!B)S(!b)erver.
+
+!label VA_START-Nachricht
+(!B)Was ist eine "VA_START-Nachricht"?(!b)
+
+Das Betriebssystem und Programme kommunzieren mit Nachrichten:
+Wenn Sie z.B. mit einem Mausklick diese Seite aufrufen, so wird
+das Betriebssystem das Anzeigeprogramm mit einer Nachricht
+("Mausklick eingetroffen") Åber den Mausklick informieren.
+
+Mit der "VA_START-Nachricht" kann ein bereits geladenes Programm
+auf!-ge!-for!-dert werden eine Datei zu laden. Mehr zu dieser Nachricht
+und dem AV-Protokoll finden Interessierte in der Dokumentation
+zum alternativen Desktop GEMINI.
+
+!label WDIALOG.PRG
+(!B)Welche Funktion hat "WDIALOG.PRG"?(!b)
+
+WDIALOG ist eine kompakte Systemerweiterung, die neben Fensterdialogen,
+Popup und Listboxen auch eine sehr leistungsfÑhige Zeichensatzauswahl
+enthÑlt. Diese Funktionen sind im Multitaskingsystem MagiC seit der
+Version 4 integriert. Seit Version 1.90 enthÑlt WDIALOG auch
+Druckdialoge, mit denen VDI-Druckertreiber konfiguriert und
+angesteuert werden kînnen.
+
+WDIALOG stellt diese Funktionen auch unter Ñlteren
+Betriebssystemversionen zur VerfÅgung. Neben COPS nutzen z.B. die NVDI-
+Tools "FONTNAME" und "ShowMe" sowie die Programme "Texel", "ArtWorx",
+"Papillon", "Papyrus", "Kandinsky" und "PhotoLine" WDIALOG-Funktionen.
+
+Interessierte Programmierer finden auf unserer (!url [Homepage] [http://home.t-online.de/home/ToBeHome/]), in der
+ASH-Mailbox und in vielen MÑusen die Programmierdokumentation
+sowie zahlreiche Bei!-spiel!-quellen zu WDIALOG.
+
+!end_node
+
+
+!begin_node Programmierdoku
+
+!label COPS erkennen
+(!B)Wie erkenne ich COPS?(!b)
+
+Wer cpx_init() als
+
+!begin_sourcecode
+CPX_INFO * cdecl cpx_init( XCPB *xcpb, LONG magic, LONG version);
+!end_sourcecode
+
+definiert, kann anhand der Parameter <magic> und <version>
+feststellen, ob das CPX unter COPS oder XCONTROL lÑuft:
+
+!begin_sourcecode
+WORD is_COPS( LONG magic, LONG version )
+{
+   if ((magic == 'COPS') && (version >= 0x10000L)) /* COPS? */
+      return( 1 );
+
+   return( 0 );                                 /* XCONTROL */
+}
+!end_sourcecode
+
+Wenn COPS erkannt wurde, kann das CPX einen bis zu 512 * 384
+Pixel groûen Objektbaum zeichnen und bei Xform_do() Åbergeben.
+
+Wenn COPS vorhanden ist, gilt auûerdem folgende Erweiterung fÅr
+cpx_call():
+
+!begin_sourcecode
+WORD cdecl cpx_call( GRECT *work, DIALOG *dialog );
+!end_sourcecode
+
+Dabei enthÑlt <dialog> den Zeiger auf die Fensterdialogstruktur.
+Der Fen!-ster!-dia!-log wird von COPS nach cpx_init() mit wdlg_create()
+und wdlg_open() geîffnet. Das GRECT <work> und der Objektbaum
+liegen bis zum ersten Aufruf von Xform_do() bzw. bis zur RÅckkehr
+aus cpx_call() auûerhalb des sicht!-ba!-ren Bildschirms.
+
+!end_node
+
+!end_appendix
+
+!end_document

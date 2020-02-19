@@ -1,0 +1,517 @@
+########################################
+# @(#) COPS-userguide
+# @(#) Thorsten Otto, Feb 19 2020
+# @(#)  (reconstructed from hypertext)
+########################################
+!language english
+
+!include "settings.ui"
+
+#####################################################
+
+!docinfo [title]   The Online Help file for
+!docinfo [program] COPS
+!docinfo [date]    25. April 1998
+!docinfo [version] Version 1.08
+!docinfo [author]  Thomas Much, Sven & Wilfried Behne
+!docinfo [programimage] cops.img
+
+!ifdest [stg]
+!begin_raw
+@options "+i +z -t3"
+@subject "Documentation/Utilities"
+!end_raw
+!endif
+
+########################################
+
+!begin_document
+
+!maketitle
+!tableofcontents
+
+!begin_node Introduction
+
+COPS is a server for control panel extensions (CPX) found with many
+recent Atari applications. COPS is a replacement for the original
+XCONTROL.ACC which is included in more recent TOS versions.
+
+COPS has the following features:
+
+!begin_itemize
+!item You can simultaneously display as many CPX modules as there are.
+
+!item COPS remembers the position of each individual CPX module.
+
+!item CPX modules can have larger windows - COPS adjusts window sizes
+to suit the resource.
+
+!item COPS supports long file names: CPX modules can, for example, be
+loaded from a folder named "Control Panels". Spaces can be used
+in folder and file names (e.g. "MagiC configuration.cpx"). (!link [*] [filename_spaces])
+
+!item Low Memory requirements.
+
+!item COPS runs on 68040 processors (with copyback cache switched on)
+or on any processors with relatively large code and data caches
+(e.g. 68k emulation on PowerPC computers).
+
+!end_itemize
+
+!begin_pnode* filename_spaces
+Please note that standard or alternative desktops may not support
+space characters in file names ( MAGXDESK does, EASE doesn't).
+!end_node
+
+!end_node
+
+
+!begin_node Licence Conditions
+
+COPS is Freeware. The program may only be copied and passed on freely
+if it is left unchanged and contains all relevant files. Commercial
+sale of COPS is strictly prohibited.
+
+The COPS package contains:
+
+!begin_itemize
+!item COPS.ACC (Program)
+
+!item COPS.HYP (Hypertext)
+
+!item COPS.REF (Reference to the Hypertext)
+
+!item COPSICN.RSC (Colour and B/W icons for COPS)
+
+!item WDIALOG.PRG (System extension)
+
+!item COPS.HTM (Hypertext in HTML format)
+!end_itemize
+
+Copyright ½ 1996 - 1998 by Behne & Behne Systemsoftware GbR. All
+rights reserved. Translation by Howard Scarr.
+
+Behne & Behne Systemsoftware GbR (!nl)
+Lindenkamp 2a (!nl)
+D - 31515 Wunstorf
+
+Tel: +49-(0)5031-914120 (!nl)
+Fax: +49-(0)5031-914121 (!nl)
+WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
+
+!end_node
+
+
+!begin_node Legal Notice
+
+Despite careful development and comprehensive testing, we do not
+guarantee that this software will always run without any errors
+whatsoever. We do not accept liabiblity for immediate or subsequent
+damage. Use COPS at your own risk!
+
+Many products mentioned in this Hypertext are registered trademarks of
+the respective companies. The fact that these are printed without
+special reference to the manufacturers does not imply that the
+products are free of third-party rights.
+
+This Online Help was generated using UDO and ST-Guide.
+
+!end_node
+
+
+!begin_node Installation
+
+!begin_itemize
+!item Copy COPS into the root directory of your boot partition/drive.
+
+!item If you set the environment variable HOME, the INF file will be
+saved in this directory, otherwise it will be saved in the
+directory from which COPS has been loaded.
+
+!item If neither MagiC 4 (or higher), MagiCMac 1.2.7 (or higher) or
+MagiC-PC is installed in your system, you should copy the file
+WDIALOG.PRG into your AUTO folder.
+
+!item If your desktop program is able to send VA_START messages you
+should register COPS for the file type "*.CPX".
+
+!item Copy COPS.HYP and COPS.REF into the ST-Guide "GUIDES" folder.
+
+!item If you use MagiC, MagiCMac or MagiC-PC you can start COPS at any
+time by double clicking on the icon (COPS then registers itself
+in the ACC list). If this doesn't work you will have to reboot
+the system.
+!end_itemize
+
+COPS expects (!link [] [CPX files]) to be in the path "C:\CPX\" by default.
+However, you can designate a different path (e.g. "Control Panels")
+from within the COPS Popup.
+
+(!I)Note:(!i)
+
+COPS can be started as a normal program. You will find
+several practical examples in the section "Configuration
+Examples" - these illustrate how to configure COPS for your
+requirements.
+
+!end_node
+
+
+!begin_node Operation
+
+If you are running COPS as an accessory, you will see the words
+"Control Panels" in the accessory list. Clicking on this opens the
+COPS window containing icons which represent all the CPX modules which
+are currently available. Operation with the mouse:
+
+!begin_itemize
+!item Single click left on an icon: Select the icon (also with Shift)
+
+!item Rubber band (also with Shift)
+
+!item Single click right on an icon: CPX Popup
+
+!item Single click right within the window: COPS Popup
+
+!item The current positions of windows and icons are saved on exit.
+!end_itemize
+
+(!I)Note:(!i)
+
+If your desktop can send the VA_START message and COPS has
+been registered as application for "*.CPX" modules, you can
+start any CPX modules directly from the desktop by double-
+clicking on the icons.
+
+!begin_node CPX Popup
+
+Clicking right on an icon within the COPS window opens a popup menu
+contain!-ing the following:
+
+!begin_itemize
+!item (!B)Open:(!b) Opens and "tops" the corresponding control panel.
+
+!item (!B)Deactivate:(!b) Changes the extension of the file to CPZ.
+
+!item (!B)Activate:(!b) Changes CPZ files back to CPX.
+
+!item (!B)Info:(!b) Displays the file name, ID, version and configuration flags
+of modules.
+!end_itemize
+
+!end_node
+
+
+!begin_node COPS Popup
+
+Clicking right within the (white area of the) COPS window opens a
+popup containing the following:
+
+!begin_itemize
+!item (!B)About COPS:(!b) Version and copyright information.
+
+!item (!B)Settings:(!b) Used for setting the CPX path and other options.
+
+!item (!B)Reload:(!b) Searches the designated folder for CPX modules and
+redraws the COPS window accordingly.
+
+!item (!B)Tidy Up:(!b) Sorts all the icons in the COPS window.
+
+!item (!B)Select All(!b) Selects all icons in the COPS window.
+
+!item (!B)Help:(!b) Opens this online help.
+!end_itemize
+
+
+!begin_node Settings
+
+!begin_itemize
+!item (!B)CPX Path:(!b) Pressing this button opens a file selector with which
+you can find the path where you keep all your CPX modules.
+
+!item (!B)Iconify at start:(!b) Causes COPS to appear only as an icon on the
+desktop after it is loaded. Double clicking on this icon opens
+the usual COPS window.
+
+!item (!B)Double click activates CPZ:(!b) Deactivated modules (those with the
+extension "CPZ") will be activated by double clicking on the
+icon. The extension will change to "CPX" and the module will be
+loaded.
+
+!item (!B)Terminate after xx minutes:(!b) COPS starts modules (e.g. for the
+colours or the serial port settings) and terminates according to
+your speci!-fi!-cations. This option is only useful within a
+multitasking environment - MagiC users copy COPS.APP itself or
+create a symbolic link (not possible with EASE) in the APPS or
+START folder.
+!end_itemize
+
+!end_node
+
+!end_node
+
+!end_node
+
+
+!begin_node Configuration Examples
+
+Here is a list of tips on how to configure COPS sensibly under
+different conditions:
+
+(!B)COPS under TOS with standard ATARI desktops:(!b)
+
+!begin_itemize
+!item Run COPS as an accessory (".ACC"). You will need to install the
+system extension WDIALOG.PRG.
+!end_itemize
+
+(!B)COPS under TOS with desktops which are able to send the VA_START
+message(!b) (Gemini, Thing, ...):
+
+!begin_itemize
+!item Run COPS as an accessory (".ACC"). As above, WDIALOG.PRG must be
+installed. Register COPS for files with the extension "*.CPX".
+You can now start modules from the desktop by double clicking on
+them.
+!end_itemize
+
+(!B)COPS under MagiC / MagiCMac / MagiC-PC:(!b)
+
+!begin_itemize
+!item If your system is (!I)short of memory(!i) you should rename the file
+COPS.ACC as COPS.APP and copy it into the APPS or START
+directory. Start COPS, call the COPS popup and select the entry
+"Terminate after xx minutes" from the Settings dialog. Quit COPS.
+
+Register COPS as application for "*.CPX" files and confirm that
+COPS recognizes the VA_START message. You can now assign an icon
+for each module in MAGXDESK.
+
+COPS will be loaded every time the system loads, CPX modules are
+started (which can carry out the required initialisation
+routines) and terminated according to your specifications. You
+can start any CPX files directly from the desktop by simply
+double clicking on the icons.
+
+!item If you want to run COPS as an accessory you should register it
+for "*.CPX" files in the desktop and also confirm that COPS can
+handle the VA_START message.
+
+Again, control panels can be assigned icons which allows you to
+start modules from the desktop.
+!end_itemize
+
+!end_node
+
+
+!begin_node Common problems
+
+!begin_itemize
+!item Selected icons don't look very nice because the icon mask is
+missing in the CPX modules (Atari thought they would be
+unnecessary?).
+
+(!I)Alternative:(!i)
+
+You can assign a (colour) icon in MagiC, MagiCMac or
+MagiC-PC for each CPX module and start the control
+panels from the desktop. See also "Configuration
+Examples" above.
+
+!item The AUTO folder application ALICE sometimes causes the system to
+crash. If ALICE is installed and COPS (or other programs such as
+FONTNAME or MAKEPRN) crash, you should deactivate ALICE.
+
+!item If you are running an older TOS version then you should close all
+modules (!I)before(!i) you start a new program or terminate a program.
+For the technically-minded: An error in TOS prevents COPS from
+being able to deallocate some structures, which in the long run
+is a sure candidate for crashes.
+
+(!I)Solution:(!i)
+
+Use MagiC, MagiCMac or MagiC-PC!
+
+!item Clicking on a scroll arrow in the COPS window (running as an
+accessory under TOS 3.06) doesn't do anything. This is a well-
+known bug in TOS 3.06.
+
+!item If you have a Falcon and run TOS 4.01, you will see that the size
+of the sliders in the COPS window is wrong. This is a well-known
+bug in TOS 4.01.
+
+!item If you are running TOS 4.01 on your Falcon you shouldn't attempt
+to open more than seven windows at the same time, otherwise TOS
+destroys some internal structures without comment. (!link [**] [tos401])
+
+(!I)Solution:(!i)
+
+Use MagiC as operating system.
+!end_itemize
+
+
+!begin_pnode* tos401
+It is not yet known whether this fault is restricted to TOS
+version 4.xx!
+!end_node
+
+!end_node
+
+!begin_appendix
+
+!begin_node History
+
+!begin_itemize
+
+(!B)Version 0.10 - 0.11 (!b) (08.02.96 - 10.02.96)
+
+!item Idea and Conception (Thomas)
+
+(!B)Version 0.12 - 0.75 (!b) (22.08.96 - 12.09.96)
+
+!item "It should only take about a week" - Sven gets down to
+business...
+
+(!B)Version 0.80 - 0.99 (!b) (13.09.96 - 15.09.96)
+
+!item Adjusted to restrictions and faults in TOS
+
+(!B)Version 1.00 (!b) (16.09.96)
+
+!item First version let loose on the general public.
+
+(!B)Version 1.02 (!b) (19.09.96)
+
+!item Release of english COPS version.
+
+(!B)Version 1.03 (!b) (23.09.96)
+
+!item Increased stack size to avoid problems with the Mac file system
+(esp. on Power Macs).
+
+(!B)Version 1.04 (!b) (01.10.96)
+
+!item Some bug fixes...
+
+!item Fixed supervisor bug in WDIALOG (version 1.10). New version
+(1.11) included in this archive.
+
+(!B)Version 1.05 (!b) (09.11.96)
+
+!item Minor bug fixes...
+
+!item French version avaiable.
+
+(!B)Version 1.06 (!b) (26.2.97)
+
+!item Minor bug fixes...
+
+!item Redraw optimized.
+
+!item New switch to sort CPX icons by name.
+
+(!B)Version 1.07 (!b) (15.7.97)
+
+!item Minimized access to COPS.INF file (when using a multitasking OS).
+
+!item Workaround for TOS 1.0 - 3.06 Fopen() bug.
+
+!item New WDIALOG version (1.97).
+
+(!B)Version 1.08 (!b) (25.4.98)
+
+!item Real time redraw accelerated.
+
+!end_itemize
+
+!end_node
+
+
+!begin_node Questions
+
+!label CPX files
+(!B)What does "CPX" stand for?(!b)
+
+"CPX" is short for (!B)C(!b)ontrol (!B)P(!b)anel e(!B)X(!b)tension. Activated control
+panels have the extension "CPX" and deactivated ones "CPZ".
+
+!label COPS - the name
+(!B)Why is COPS called "COPS"?(!b)
+
+"COPS" is short for (!B)CO(!b)ntrol (!B)P(!b)anel (!B)S(!b)erver.
+
+!label VA_START message
+(!B)What is this "VA_START" message?(!b)
+
+The operating system and other programs communicate via
+"messages": If, for instance, you called this page with a mouse-
+click, the operating system has sent a message to the display
+program, informing it that "the left mouse button has been
+pressed".
+
+A program already in memory can be requested via "VA_START" to
+load a file. If you are interested, you can read more about this
+message and the AV-Protocol in the GEMINI (alternative) desktop
+manual.
+
+!label WDIALOG.PRG
+(!B)What does "WDIALOG.PRG" do?(!b)
+
+WDIALOG is a compact system extension which, apart from window
+dialogs, popups and listboxes, also contains a comprehensive
+selection of fonts. These functions are integrated into the
+multitasking system MagiC since version 4.
+
+WDIALOG allows users of older operating systems access to these
+features. COPS isn't the only program which uses WDIALOG - the
+NVDI tools "FONTNAME" and "ShowMe", the spreadsheet program
+"Texel", "Papillon", "Kandinsky", "Photoline" and also "ArtWorx"
+make use of WDIALOG functions.
+
+!end_node
+
+
+!begin_node For Programmers
+
+!label Recognize COPS
+(!B)How do I recognize COPS?(!b)
+
+If you define cpx_init() as
+
+!begin_sourcecode
+CPX_INFO * cdecl cpx_init(XCPB *xcpb, LONG magic, LONG version);
+!end_sourcecode
+
+you can determine whether the CPX is running under COPS or
+XCONTROL by way of the parameters <magic> und <version>:
+
+!begin_sourcecode
+WORD is_COPS( LONG magic, LONG version )
+{
+   if ((magic == 'COPS') && (version >= 0x10000L)) /* COPS? */
+      return( 1 );
+
+   return( 0 );                                 /* XCONTROL */
+}
+!end_sourcecode
+
+If COPS has been recognized, the CPX can draw a 512 * 384 pixel
+object tree and send it to Xform_do().
+
+Also, you have the following extension for cpx_call():
+
+!begin_sourcecode
+WORD cdecl cpx_call( GRECT *work, DIALOG *dialog );
+!end_sourcecode
+
+<dialog> is a pointer to the window dialog structure. The window
+dialog is opened by COPS after cpx_init() with wdlg_create() and
+wdlg_open(). The GRECT <work> and the object tree are outside the
+visible area of the screen until the first call to Xform_do() or
+until returning from cpx_call().
+
+!end_node
+
+!end_appendix
+
+!end_document
