@@ -1,19 +1,21 @@
 UDO = udo
 HCP = hcp
 
-LANGUAGES = en de
+LANGUAGES = en de fr
 
 IMAGES = cops.img
 
-all: cops_en.hyp cops_de.hyp
+.SUFFIXES: .hyp .u
 
-cops_en.hyp: cops_en.u $(IMAGES)
-	$(UDO) --stg -o cops_en.stg $<
-	$(HCP) -o$@ cops_en.stg
+ALL_HYPS = $(addprefix cops_, $(addsuffix .hyp, $(LANGUAGES)))
 
-cops_de.hyp: cops_de.u $(IMAGES)
-	$(UDO) --stg -o cops_de.stg $<
-	$(HCP) -o$@ cops_de.stg
+all: $(ALL_HYPS)
+
+.u.hyp:
+	$(UDO) --stg -o $(notdir $(basename $@)).stg $<
+	$(HCP) -o $@ $(notdir $(basename $@)).stg
+
+$(ALL_HYPS): $(IMAGES)
 
 clean::
 	$(RM) *.hyp *.ref *.stg *.uls *.uhs
