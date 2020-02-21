@@ -489,7 +489,7 @@ XA_wdlg_create(int lock, struct xa_client *client, AESPB *pb)
 	if (pb->addrin[0] && validate_obtree(client, (OBJECT *)pb->addrin[1], "XA_wdlg_create:") && pb->addrout)
 	{
 		short swtflags = STW_ZEN|STW_GOC|STW_SWC;
-		XA_WIND_ATTR tp = MOVER|NAME;
+		XA_WIND_ATTR tp = 0;
 		RECT r, or = (RECT){100,100,100,100};
 		OBJECT *obtree = (OBJECT*)pb->addrin[1];
 
@@ -583,8 +583,12 @@ XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIND_ATTR tp = (unsigned short)pb->intin[0];
 		char *s;
 
-		tp &= ~STD_WIDGETS;
-		tp |= MOVER|NAME;
+		/*
+		 * work around a bug in ArcView: if you close a dialog,
+		 * then open it again, the 2nd time it is created without a NAME widget
+		 */
+		if (wind->active_widgets & NAME)
+			tp |= NAME;
 
 		/* The following if is a result of the clumsiness of the
 		 * WDIALOG interface. So dont blame me. */
@@ -604,18 +608,6 @@ XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 		else
 			r.y = (root_window->wa.h - r.h) >> 1;
 
-	#if 0
-		if (pb->intin[1] == -1 || pb->intin[2] == -1)
-		{
-			r.x = (root_window->wa.w - r.w) / 2;
-			r.y = (root_window->wa.h - r.h) / 2;
-		}
-		else
-		{
-			r.x = pb->intin[1];
-			r.y = pb->intin[2];
-		}
-	#endif
 		{
 			RECT or;
 
