@@ -522,7 +522,7 @@ usb_hub_events(struct usb_hub_device *hub)
 			     (portstatus & USB_PORT_STAT_CONNECTION) &&
 			     ((dev->children[i])))
 			{
-				DEBUG(("already running port %i "  \
+				DEBUG(("already running port %li "  \
 						"disabled by hub (EMI?), " \
 						"re-enabling...", i + 1));
 
@@ -705,7 +705,7 @@ fatal(short sig)
 static void
 sigterm(void)
 {
-	DEBUG(("%s(%ld:USB: ): sigterm received", get_curproc()->name, get_curproc()->pid));
+	DEBUG(("%s(%d:USB: ): sigterm received", get_curproc()->name, get_curproc()->pid));
 	DEBUG(("shutdown USB" ));
 
 	kthread_exit(0);

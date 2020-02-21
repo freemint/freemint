@@ -265,7 +265,7 @@ struct kentry_proc
 	 * ...  - printf args
 	 */
 	long _cdecl (*kthread_create)(struct proc *p, void _cdecl (*func)(void *), void *arg,
-				      struct proc **np, const char *fmt, ...);
+				      struct proc **np, const char *fmt, ...) __attribute__((format(printf, 5, 6)));
 	/*
 	 * leave kernel thread previously created by kthread_create
 	 *
@@ -600,11 +600,11 @@ struct kentry_debug
 	 * force - always prints, even with debug level 0
 	 */
 	int *debug_level;
-	void	_cdecl (*trace)(const char *, ...);
-	void	_cdecl (*debug)(const char *, ...);
-	void	_cdecl (*alert)(const char *, ...);
-	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
-	void	_cdecl (*force)(const char *, ...);
+	void	_cdecl (*trace)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*debug)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*alert)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*force)(const char *, ...) __attribute__((format(printf, 1, 2)));
 };
 extern int debug_level;
 #define DEFAULTS_kentry_debug \

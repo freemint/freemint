@@ -482,7 +482,7 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 				dev->status));
 		else
 			DEBUG(("config descriptor too short " \
-				"(expected %i, got %i)", USB_DT_CONFIG_SIZE, result));
+				"(expected %i, got %li)", USB_DT_CONFIG_SIZE, result));
 		return -1;
 	}
 
@@ -783,7 +783,7 @@ usb_disconnect(struct usb_device *dev)
 		{
 			DEBUG(("Disconnect children %ld", dev->children[i]->devnum));
 			struct usb_device *child = dev->children[i];
-			DEBUG(("child %lx", child));
+			DEBUG(("child %lx", (unsigned long)child));
 			usb_disconnect(child);
 			dev->children[i] = NULL;
 		}

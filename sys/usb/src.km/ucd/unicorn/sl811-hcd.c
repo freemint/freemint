@@ -757,7 +757,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long done = 0;
 
 	DEBUG(("dev = %ld pipe = %ld buf = 0x%lx size = 0x%lx dir_out = %d",
-	       usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
+	       usb_pipedevice(pipe), usb_pipeendpoint(pipe), (unsigned long)buffer, len, dir_out));
 
 	dev->status = -1;
 	dev->act_len = 0;
@@ -823,8 +823,8 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		return -1;
 	}
 
-	DEBUG(("dev = 0x%lx pipe = %ld buf = 0x%lx size = 0x%x rt = 0x%x req = 0x%x bus = %i",
-	       devnum, ep, buffer, len, setup->requesttype,
+	DEBUG(("dev = 0x%x pipe = %d buf = 0x%lx size = 0x%x rt = 0x%x req = 0x%x bus = %i",
+	       devnum, ep, (unsigned long)buffer, len, setup->requesttype,
 	       setup->request, sl811_read(SL811_SOFCNTDIV)*64));
 
 	LOCKUSB;
@@ -921,8 +921,8 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long max = usb_maxpacket(dev, pipe);
 	long done = 0;
 
-	DEBUG(("dev = 0x%lx pipe = %#lx buf = 0x%lx size = %ld int = %d", dev, pipe,
-	       buffer, len, interval));
+	DEBUG(("dev = 0x%lx pipe = %#lx buf = 0x%lx size = %ld int = %ld", (unsigned long)dev, pipe,
+	       (unsigned long)buffer, len, interval));
 
 	LOCKUSB;
 	sl811_write(SL811_DEV_A, devnum);
@@ -1274,7 +1274,7 @@ static inline long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long
 	if (data != bufp)
 		memcpy(data, bufp, len);
 
-	DEBUG(("len = %d, status = %d", len, status));
+	DEBUG(("len = %d, status = %ld", len, status));
 
 	usb_dev->status = status;
 	usb_dev->act_len = (long)len;

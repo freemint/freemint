@@ -47,8 +47,8 @@ load_ucd(struct basepage *b, const char *name, short *class, short *subclass)
 	char *reason = no_reason;
 	long r;
 
-	DEBUG(("load_ucd: enter (0x%lx, %s)", b, name));
-	DEBUG(("load_ucd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_ucd: enter (0x%lx, %s)", (unsigned long)b, name));
+	DEBUG(("load_ucd: init 0x%lx, size %li", (unsigned long)initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
 	*class = MODCLASS_KMDEF;
 	*subclass = 0;

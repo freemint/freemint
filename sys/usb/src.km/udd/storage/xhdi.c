@@ -393,7 +393,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 		memcpy(partid, &pun_usb.ptype[drv], sizeof(long));
 
 		if (partid[0] == '\0') /* DOS partitiopn */
-			DEBUG(("XHInqDev2(%c:) major=%d, partid=%08lx",
+			DEBUG(("XHInqDev2(%c:) major=%d, partid=%08lx, type=0x%lx",
 				'A' + drv, *major, *((long *)partid),
 				pun_usb.ptype[drv]));
 		else
@@ -716,7 +716,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	long ret;
 
 	DEBUG(("XH%s(device=%d.%d, sector=%ld, count=%d, buf=%lx)",
-		rw ? "Write" : "Read", major, minor, sector, count, buf));
+		rw ? "Write" : "Read", major, minor, sector, count, (unsigned long)buf));
 
 	if (next_handler) {
 		ret = next_handler(XHREADWRITE, major, minor, rw, sector,

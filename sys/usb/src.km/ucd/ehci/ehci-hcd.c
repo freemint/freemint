@@ -235,14 +235,14 @@ void ehci_show_registers(struct ehci *gehci)
 void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 {
 	DEBUG(("--- QUEUE HEAD ---"));
-	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 0, hc32_to_cpu(qh->qh_link)));
-	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 1, hc32_to_cpu(qh->qh_endpt1)));
-	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 2, hc32_to_cpu(qh->qh_endpt2)));
-	DEBUG(("[0x%08lx] %08lx - current qTD", ((unsigned long *)qh) + 3, hc32_to_cpu(qh->qh_curtd)));
-	DEBUG(("[0x%08lx] %08lx - next qtd", ((unsigned long *)qh) + 4, hc32_to_cpu(qh->qh_overlay.qt_next)));
-	DEBUG(("[0x%08lx] %08lx", ((unsigned long *)qh) + 5, hc32_to_cpu(qh->qh_overlay.qt_altnext)));
-	DEBUG(("[0x%08lx] %08lx - token", ((unsigned long *)qh) + 6, hc32_to_cpu(qh->qh_overlay.qt_token)));
-	DEBUG(("[0x%08lx] %08lx - buffer", ((unsigned long *)qh) + 7, hc32_to_cpu(qh->qh_overlay.qt_buffer[0])));
+	DEBUG(("[0x%08lx] %08lx", ((unsigned long)qh) + 0, hc32_to_cpu(qh->qh_link)));
+	DEBUG(("[0x%08lx] %08lx", ((unsigned long)qh) + 4, hc32_to_cpu(qh->qh_endpt1)));
+	DEBUG(("[0x%08lx] %08lx", ((unsigned long)qh) + 8, hc32_to_cpu(qh->qh_endpt2)));
+	DEBUG(("[0x%08lx] %08lx - current qTD", ((unsigned long)qh) + 12, hc32_to_cpu(qh->qh_curtd)));
+	DEBUG(("[0x%08lx] %08lx - next qtd", ((unsigned long)qh) + 16, hc32_to_cpu(qh->qh_overlay.qt_next)));
+	DEBUG(("[0x%08lx] %08lx", ((unsigned long)qh) + 20, hc32_to_cpu(qh->qh_overlay.qt_altnext)));
+	DEBUG(("[0x%08lx] %08lx - token", ((unsigned long)qh) + 24, hc32_to_cpu(qh->qh_overlay.qt_token)));
+	DEBUG(("[0x%08lx] %08lx - buffer", ((unsigned long)qh) + 28, hc32_to_cpu(qh->qh_overlay.qt_buffer[0])));
 
 	if (qh->qh_curtd != 0) {
 		DEBUG(("--- current qTD ---"));
@@ -250,13 +250,13 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 					hc32_to_cpu(qh->qh_curtd + gehci->dma_offset), 
 					hc32_to_cpu(qh->qh_curtd)));
 		DEBUG(("[0x%08lx] %08lx", 
-					(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 1), 
+					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 4), 
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 1))));
 		DEBUG(("[0x%08lx] %08lx - token", 
-					(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 2), 
+					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 8), 
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 2))));
 		DEBUG(("[0x%08lx] %08lx - buffer", 
-					(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3), 
+					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 12), 
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3))));
 	}
 }
@@ -450,7 +450,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	}
 
 	if (addr & (M68K_CACHE_LINE_SIZE - 1))
-		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)", buf));
+		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)", (unsigned long)buf));
 
 	cpush(buf, sz);
 
@@ -510,7 +510,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		return -1;
 	}
 
-	DEBUG(("dev=0x%lx, pipe=0x%lx, buffer=0x%lx, length=%ld, req=0x%lx", dev, pipe, buffer, length, req));
+	DEBUG(("dev=0x%lx, pipe=0x%lx, buffer=0x%lx, length=%ld, req=0x%lx", (unsigned long)dev, pipe, (unsigned long)buffer, length, (unsigned long)req));
 	if(req != NULL)
 		DEBUG(("ehci_submit_async req=%u (0x%x), type=%u (0x%x), value=%u (0x%x), index=%u",
 		req->request, req->request, req->requesttype, req->requesttype,
@@ -618,7 +618,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	ret = handshake((unsigned long *)&gehci->hcor->or_usbsts, STS_ASS, STS_ASS, 100L * 1000L);
 	if(ret < 0)
 	{
-		ALERT(("EHCI fail timeout STS_ASS set (usbsts=%x)", ehci_readl(&gehci->hcor->or_usbsts)));
+		ALERT(("EHCI fail timeout STS_ASS set (usbsts=%lx)", ehci_readl(&gehci->hcor->or_usbsts)));
 		goto fail;
 	}
 
@@ -660,7 +660,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	ret = handshake((unsigned long *)&gehci->hcor->or_usbsts, STS_ASS, 0, 100L * 1000L);
 	if(ret < 0)
 	{
-		ALERT(("EHCI fail timeout STS_ASS reset (usbsts=%x)", ehci_readl(&gehci->hcor->or_usbsts)));
+		ALERT(("EHCI fail timeout STS_ASS reset (usbsts=%lx)", ehci_readl(&gehci->hcor->or_usbsts)));
 		goto fail;
 	}
 
@@ -1276,7 +1276,7 @@ long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer
 
 long submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length, long interval)
 {
-	DEBUG(("submit_int_msg dev=%p, pipe=%lu, buffer=%p, length=%d, interval=%d", dev, pipe, buffer, length, interval));
+	DEBUG(("submit_int_msg dev=%p, pipe=%lu, buffer=%p, length=%ld, interval=%ld", dev, pipe, buffer, length, interval));
 	return -1;
 }
 

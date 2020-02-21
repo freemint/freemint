@@ -458,9 +458,9 @@ update_atari_info(long offset,atari_partition_t *pt, disk_partition_t *info)
 	info->start = offset + be2cpu32(pt->start);
 	info->size = be2cpu32(pt->size);
 #ifdef DEV_DEBUG
-	char *extended = is_extended_atari(pt->id)?" Extd" : "";
+	const char *extended = is_extended_atari(pt->id)?" Extd" : "";
 #endif
-	DEBUG(("Atari partition at offset 0x%lx, size 0x%lx, type 0x%x",
+	DEBUG(("Atari partition at offset 0x%lx, size 0x%lx, type 0x%lx%s",
 			info->start, info->size, pt->id, extended));
 }
 
@@ -485,7 +485,7 @@ get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long par
 	{
 		if (dev_desc->block_read(dev_desc->usb_logdrv, xgm_start+offset, 1, (unsigned long *)buffer) != 1)
 		{
-			DEBUG(("Can't read subpartition table on %ld:%ld", dev_desc->usb_logdrv, xgm_start+offset));
+			DEBUG(("Can't read subpartition table on %d:%ld", dev_desc->usb_logdrv, xgm_start+offset));
 			return -1;
 		}
 
@@ -535,14 +535,14 @@ get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, d
 
 	if (dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read partition table on %ld:0", dev_desc->usb_logdrv));
+		DEBUG(("Can't read partition table on %d:0", dev_desc->usb_logdrv));
 		return -1;
 	}
 
 	pt = (atari_partition_t *)(buffer + ATARI_PART_TBL_OFFSET);
 	if (is_active_atari(pt->id) && is_extended_atari(pt->id))
 	{
-		DEBUG(("Error: extended partition in slot0 of partition table on %ld:0", dev_desc->usb_logdrv));
+		DEBUG(("Error: extended partition in slot0 of partition table on %d:0", dev_desc->usb_logdrv));
 		return -1;
 	}
 
@@ -595,7 +595,7 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
 
 	if(dev_desc->block_read(dev_desc->usb_logdrv, ext_part_sector, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read partition table on %ld:%ld", dev_desc->usb_logdrv, ext_part_sector));
+		DEBUG(("Can't read partition table on %d:%ld", dev_desc->usb_logdrv, ext_part_sector));
 		return -1;
 	}
 	
@@ -651,7 +651,7 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 
 	if(dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read boot sector from device %ld", dev_desc->usb_logdrv));
+		DEBUG(("Can't read boot sector from device %d", dev_desc->usb_logdrv));
 		return -1;
 	}
 
@@ -695,7 +695,7 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 	/* no MBR, check for PBR */
 	if(dev_desc->block_read(dev_desc->usb_logdrv, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read boot sector from device %ld", dev_desc->usb_logdrv));
+		DEBUG(("Can't read boot sector from device %d", dev_desc->usb_logdrv));
 		return -1;
 	}
 
@@ -708,7 +708,7 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 		return 0;
 	}
 
-	DEBUG(("Partition %ld not valid on device %ld", part_no, dev_desc->usb_logdrv));
+	DEBUG(("Partition %ld not valid on device %d", part_no, dev_desc->usb_logdrv));
 	return -1;
 }
 
@@ -819,7 +819,7 @@ us_one_transfer(struct us_data *us, long pipe, char *buf, long length)
 		do
 		{
 			/* transfer the data */
-			DEBUG(("Bulk xfer 0x%xl(%ld) try #%ld", (unsigned long)buf, this_xfer, 11 - maxtry));
+			DEBUG(("Bulk xfer 0x%lx(%ld) try #%ld", (unsigned long)buf, this_xfer, 11 - maxtry));
 			result = usb_bulk_msg(us->pusb_dev, pipe, buf, this_xfer, &partial, USB_CNTL_TIMEOUT * 5, 0);
 			DEBUG(("bulk_msg returned %ld xferred %ld/%ld", result, partial, this_xfer));
 			if(us->pusb_dev->status != 0)
@@ -854,7 +854,7 @@ us_one_transfer(struct us_data *us, long pipe, char *buf, long length)
 					return 0;
 				}
 				/* if our try counter reaches 0, bail out */
-				DEBUG((" %lx, data %d", us->pusb_dev->status, partial));
+				DEBUG((" %lx, data %ld", us->pusb_dev->status, partial));
 				if(!maxtry--)
 					return result;
 			}
@@ -903,7 +903,7 @@ usb_stor_BBB_reset(struct us_data *us)
 	result = usb_clear_halt(us->pusb_dev, pipe);
 	/* long wait for reset */
 	mdelay(150);
-	DEBUG(("BBB_reset result %d: status %lx clearing IN endpoint", result, us->pusb_dev->status));
+	DEBUG(("BBB_reset result %ld: status %lx clearing IN endpoint", result, us->pusb_dev->status));
 	/* long wait for reset */
 	pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
 	result = usb_clear_halt(us->pusb_dev, pipe);
@@ -1043,7 +1043,7 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 		if(srb->datalen)
 		{
 			result = us_one_transfer(us, pipe, (char *)srb->pdata, srb->datalen);
-			DEBUG(("CBI attempted to transfer data, result is %ld status %lx, len %d", result, us->pusb_dev->status, us->pusb_dev->act_len));
+			DEBUG(("CBI attempted to transfer data, result is %ld status %lx, len %ld", result, us->pusb_dev->status, us->pusb_dev->act_len));
 			if(!(us->pusb_dev->status & USB_ST_NAK_REC))
 				break;
 		} /* if(srb->datalen) */
@@ -1251,7 +1251,7 @@ again:
 	}
 	else if(data_actlen > srb->datalen)
 	{
-		DEBUG(("transferred %dB instead of %ldB", data_actlen, srb->datalen));
+		DEBUG(("transferred %ldB instead of %ldB", data_actlen, srb->datalen));
 		result = USB_STOR_TRANSPORT_FAILED;
 		goto out;
 	}
@@ -2041,7 +2041,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 	/* if storage device */
 	if(i == USB_MAX_STOR_DEV)
 	{
-		ALERT(("Max USB Storage Device reached: %ld stopping", USB_MAX_STOR_DEV));
+		ALERT(("Max USB Storage Device reached: %d stopping", USB_MAX_STOR_DEV));
 		return -1;
 	}
 
