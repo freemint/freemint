@@ -1589,8 +1589,8 @@ long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long len, long interval)
 {
-	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
-		dev, pipe, buffer, len, interval));
+	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%ld int=%ld",
+		(unsigned long)dev, pipe, (unsigned long)buffer, len, interval));
 
 	return -1;
 }
@@ -1622,7 +1622,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				 setup, sizeof(struct devrequest), 0);
 	if (ret < 0)
 	{
-		DEBUG(("control setup phase error (ret = %d", ret));
+		DEBUG(("control setup phase error (ret = %ld", ret));
 		return -1;
 	}
 
@@ -1638,7 +1638,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 					 max > len - done ? len - done : max, 0);
 		if (ret < 0)
 		{
-			DEBUG(("control data phase error (ret = %d)", ret));
+			DEBUG(("control data phase error (ret = %ld)", ret));
 			return -1;
 		}
 		done += ret;
@@ -1654,7 +1654,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0, 0);
 	if (ret < 0)
 	{
-		DEBUG(("control status phase error (ret = %d", ret));
+		DEBUG(("control status phase error (ret = %ld", ret));
 		return -1;
 	}
 
@@ -1674,8 +1674,8 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long done, ret;
 
 	DEBUG(("--- BULK ---------------------------------------"));
-	DEBUG(("dev=%ld pipe=%ld buf=0x%lx size=%d dir_out=%d",
-		usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
+	DEBUG(("dev=%ld pipe=%ld buf=0x%lx size=%ld dir_out=%ld",
+		usb_pipedevice(pipe), usb_pipeendpoint(pipe), (unsigned long)buffer, len, dir_out));
 	done = 0;
 	while (done < len)
 	{
@@ -1687,7 +1687,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 		if (ret < 0)
 		{
-			DEBUG(("error on bulk message (ret = %d)", ret));
+			DEBUG(("error on bulk message (ret = %ld)", ret));
 			return -1;
 		}
 

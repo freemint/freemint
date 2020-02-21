@@ -148,7 +148,7 @@ BOOL hid_parse(struct HID_PARSER *parser, struct HID_DATA *data) {
 
 				/* TODO: is usage_min and max done this way, and are they bit32s or smaller? */
 				parser->usage_min = format_value(parser->value, item_size[parser->item & SIZE_MASK]);
-				DEBUG(("%sUsage min (%i)", spaces(space_cnt), parser->usage_min));
+				DEBUG(("%sUsage min (%li)", spaces(space_cnt), parser->usage_min));
 			break;
 
 			case ITEM_USAGE_MAX:
@@ -159,7 +159,7 @@ BOOL hid_parse(struct HID_PARSER *parser, struct HID_DATA *data) {
 					parser->usage_table[parser->usage_size].u_page = parser->u_page;
 
 				parser->usage_max = format_value(parser->value, item_size[parser->item & SIZE_MASK]);
-				DEBUG(("%sUsage max (%i)", spaces(space_cnt), parser->usage_max));
+				DEBUG(("%sUsage max (%li)", spaces(space_cnt), parser->usage_max));
 			break;
 
 			case ITEM_COLLECTION:
@@ -300,27 +300,27 @@ BOOL hid_parse(struct HID_PARSER *parser, struct HID_DATA *data) {
 				if (parser->data.unit == 0)
 					DEBUG(("%sUnit (none)", spaces(space_cnt)));
 				else
-					DEBUG(("%sUnit (0x%02X)", spaces(space_cnt), parser->data.unit));
+					DEBUG(("%sUnit (0x%02lX)", spaces(space_cnt), parser->data.unit));
 			break;
 
 			case ITEM_LOG_MIN:
 				parser->data.log_min = format_value(parser->value, item_size[parser->item & SIZE_MASK]);
-				DEBUG(("%sLogical Min (%i)", spaces(space_cnt), parser->data.log_min));
+				DEBUG(("%sLogical Min (%li)", spaces(space_cnt), parser->data.log_min));
 			break;
 
 			case ITEM_LOG_MAX:
 				parser->data.log_max = format_value(parser->value, item_size[parser->item & SIZE_MASK]);
-				DEBUG(("%sLogical Max (%i)", spaces(space_cnt), parser->data.log_max));
+				DEBUG(("%sLogical Max (%li)", spaces(space_cnt), parser->data.log_max));
 			break;
 
 			case ITEM_PHY_MIN:
 				parser->data.phy_min = format_value(parser->value, item_size[parser->item & SIZE_MASK]);
-				DEBUG(("%sPhysical Min (%i)", spaces(space_cnt), parser->data.phy_min));
+				DEBUG(("%sPhysical Min (%li)", spaces(space_cnt), parser->data.phy_min));
 			break;
 
 			case ITEM_PHY_MAX:
 				parser->data.phy_max = format_value(parser->value, item_size[parser->item & SIZE_MASK]);
-				DEBUG(("%sPhysical Max (%i)", spaces(space_cnt), parser->data.phy_max));
+				DEBUG(("%sPhysical Max (%li)", spaces(space_cnt), parser->data.phy_max));
 			break;
 
 			default:

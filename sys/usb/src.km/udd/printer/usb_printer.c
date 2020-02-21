@@ -346,7 +346,7 @@ printer_transfer(long xfer_len)
 				return -1L;
 			}
 			/* if our try counter reaches 0, bail out */
-			DEBUG((" %lx, data %d", prn_data.pusb_dev->status, act_len));
+			DEBUG((" %lx, data %ld", prn_data.pusb_dev->status, act_len));
 			if(!maxtry--)
 				return 0L;
 		}

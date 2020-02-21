@@ -526,7 +526,7 @@ BBL_STATUS xa_bubble( int lock, BBL_MD md, union msg_buf *msg, short destID )
 	case bbl_close_bubble2:
 		if( msg )
 		{
-			ALERT(( "xa_bubble:msg=%lx,destID=%d (md=%d)", msg, destID, md));
+			ALERT(( "xa_bubble:msg=%lx,destID=%d (md=%d)", (unsigned long)msg, destID, md));
 			ret = -3;
 			goto xa_bubble_ret;
 		}

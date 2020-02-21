@@ -46,8 +46,8 @@ load_udd(struct basepage *b, const char *name, short *class, short *subclass)
 	long r;
 	char *reason = no_reason;
 
-	DEBUG(("load_udd: enter (0x%lx, %s)", b, name));
-	DEBUG(("load_udd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_udd: enter (0x%lx, %s)", (unsigned long)b, name));
+	DEBUG(("load_udd: init 0x%lx, size %li", (unsigned long)initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 	DEBUG(("load_udd: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase));
 
 	/* pass a pointer to the drivers file name on to the
