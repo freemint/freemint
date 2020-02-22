@@ -38,7 +38,7 @@ extern _WORD pwbox;
 extern _WORD phbox;
 
 extern _WORD menu_id;
-extern _WORD aes_flags;
+extern unsigned long aes_flags;
 extern _WORD aes_font;
 extern _WORD aes_height;
 extern _WORD quit;

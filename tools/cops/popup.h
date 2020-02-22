@@ -27,7 +27,12 @@
 #include <gem.h>
 #include "global.h"
 
-_WORD do_obj_popup(OBJECT *parent_tree, _WORD parent_obj, char **strs, _WORD no_strs, _WORD no_spaces, _WORD slct);
 _WORD do_popup(GRECT *button_rect, char **strs, _WORD no_strs, _WORD no_spaces, _WORD slct);
+_WORD do_form_popup(OBJECT *tree,
+	_WORD x, _WORD y,
+	_WORD firstscrlob, _WORD lastscrlob, _WORD nlines,
+	void __CDECL (*init)(struct POPUP_INIT_args),
+	void *param,
+	_WORD *offset);
 
 #endif /* _popup_h */

@@ -35,7 +35,7 @@ WINDOW *create_window(short kind, GRECT *border, short *handle, char *name, char
 void	set_slpos(WINDOW *window);
 void	set_slsize(WINDOW *window);
 void	redraw_window(short handle, GRECT *area);
-void	delete_window(short handle);
+void	delete_window(short handle, short delete);
 void	move_window(short handle, GRECT *area);
 void	arr_window(short handle, short command);
 void	up_window(WINDOW *window, long dy);

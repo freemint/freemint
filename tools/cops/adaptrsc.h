@@ -27,27 +27,29 @@
 #include <gem.h>
 #include "global.h"
 
-#define	GAI_WDLG	0x0001	/* wdlg_xx()-functions available */
-#define	GAI_LBOX	0x0002	/* lbox_xx()-functions available */
-#define	GAI_FNTS	0x0004	/* fnts_xx()-functions available */
-#define	GAI_FSEL	0x0008	/* new file selector (fslx_xx) available */
-#define	GAI_PDLG	0x0010	/* pdlg_xx()-functions available */
+#define	GAI_WDLG	0x0001UL	/* wdlg_xx()-functions available */
+#define	GAI_LBOX	0x0002UL	/* lbox_xx()-functions available */
+#define	GAI_FNTS	0x0004UL	/* fnts_xx()-functions available */
+#define	GAI_FSEL	0x0008UL	/* new file selector (fslx_xx) available */
+#define	GAI_PDLG	0x0010UL	/* pdlg_xx()-functions available */
 
-#define	GAI_MAGIC	0x0100	/* MagiC-AES present */
-#define	GAI_INFO	0x0200	/* appl_getinfo() supported */
-#define	GAI_3D		0x0400	/* 3D-Look supported */
-#define	GAI_CICN	0x0800	/* Color-Icons supported */
-#define	GAI_APTERM	0x1000	/* AP_TERM supported */
-#define	GAI_GSHORTCUT	0x2000	/* object type G_SHORTCUT supported */
-#define	GAI_FLYDIAL	0x4000	/* form_xdo/form_xdial supported */
-#define	GAI_MOUSE	0x8000	/* graf_mouse(M_SAVE/M_RESTORE) supported */
+#define	GAI_MAGIC	0x0100UL	/* MagiC-AES present */
+#define	GAI_INFO	0x0200UL	/* appl_getinfo() supported */
+#define	GAI_3D		0x0400UL	/* 3D-Look supported */
+#define	GAI_CICN	0x0800UL	/* Color-Icons supported */
+#define	GAI_APTERM	0x1000UL	/* AP_TERM supported */
+#define	GAI_GSHORTCUT	0x2000UL	/* object type G_SHORTCUT supported */
+#define	GAI_FLYDIAL	0x4000UL	/* form_xdo/form_xdial supported */
+#define	GAI_MOUSE	0x8000UL	/* graf_mouse(M_SAVE/M_RESTORE) supported */
+#define GAI_POPUP	0x10000UL	/* form_popup() supported */
+#define GAI_SCROLLPOPUP	0x20000UL	/* xfrm_popup() supported */
 
 short get_cookie(long cookie, long *p_value);
 
-_WORD get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d);
+unsigned long get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d);
 void adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, _WORD hor_3d, _WORD ver_3d);
 void no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext);
-void substitute_objects(OBJECT *objs, unsigned short no_objs, short aes_flags, OBJECT *rslct, OBJECT *rdeslct);
+void substitute_objects(OBJECT *objs, unsigned short no_objs, unsigned long aes_flags, OBJECT *rslct, OBJECT *rdeslct);
 void substitute_free(void);
 char *is_userdef_title(OBJECT *obj);
 

@@ -1,7 +1,7 @@
 /*
  * GEM resource C output of cops_rs
  *
- * created by ORCS 2.16
+ * created by ORCS 2.17
  */
 
 #if !defined(__GNUC__) || !defined(__mc68000__)
@@ -19,7 +19,7 @@
 #  endif
 #else
 #  ifdef __TURBOC__
-#    include <portaes.h>
+#    include <aes.h>
 #    define CP (_WORD *)
 #  endif
 #endif
@@ -266,10 +266,10 @@
 extern _BOOL W_Cicon_Setpalette(_WORD *_palette);
 #endif
 #ifndef hrelease_objs
-extern _VOID hrelease_objs(OBJECT *_ob, _WORD _num_objs);
+extern void hrelease_objs(OBJECT *_ob, _WORD _num_objs);
 #endif
 #ifndef hfix_objs
-extern _VOID *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
+extern void *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #endif
 #endif
 
@@ -303,13 +303,13 @@ extern _VOID *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #undef NUM_OBS
 #undef NUM_TREE
 #undef NUM_UD
-#define NUM_STRINGS 68
+#define NUM_STRINGS 67
 #define NUM_BB		2
 #define NUM_IB		1
 #define NUM_CIB     1
 #define NUM_CIC     1
 #define NUM_TI		4
-#define NUM_FRSTR	14
+#define NUM_FRSTR	13
 #define NUM_FRIMG	0
 #define NUM_OBS     60
 #define NUM_TREE	9
@@ -377,14 +377,13 @@ static char cops_rs_string_56[] = "[2][Sauver r\202glages ?][Oui|Non]";
 static char cops_rs_string_57[] = "[3][M\202moire insuffisante !][OK]";
 static char cops_rs_string_58[] = "[3][Erreur de lecture |ou d\'\202criture !][OK]";
 static char cops_rs_string_59[] = "[1][Fichier introuvable !][OK]";
-static char cops_rs_string_60[] = "[1][Veuillez lancer l\'ajout syst\212me|WDIALOG, fourni avec NVDI|ou utilisez MagiC \205 partir de|la version 4.][OK]";
-static char cops_rs_string_61[] = "[1][Erreur lors de l\'ouverture|du panneau de contr\223le.][OK]";
-static char cops_rs_string_62[] = "[2][Quitter COPS?][Oui|Non]";
-static char cops_rs_string_63[] = "AES pas encore activ.";
-static char cops_rs_string_64[] = "Choisir chemin CPX";
-static char cops_rs_string_65[] = "  Panneaux contr\223le ";
-static char cops_rs_string_66[] = " COPS ";
-static char cops_rs_string_67[] = "[1][ | Le son st\202r\202o | n\'est pas | disponible. ][ CONFIRME ]";
+static char cops_rs_string_60[] = "[1][Erreur lors de l\'ouverture|du panneau de contr\223le.][OK]";
+static char cops_rs_string_61[] = "[2][Quitter COPS?][Oui|Non]";
+static char cops_rs_string_62[] = "AES pas encore activ.";
+static char cops_rs_string_63[] = "Choisir chemin CPX";
+static char cops_rs_string_64[] = "  Panneaux contr\223le ";
+static char cops_rs_string_65[] = " COPS ";
+static char cops_rs_string_66[] = "[1][ | Le son st\202r\202o | n\'est pas | disponible. ][ CONFIRME ]";
 
 
 static _UBYTE cops_rs_IMAGE0[] = {
@@ -532,8 +531,7 @@ char *rs_frstr[NUM_FRSTR] = {
 	cops_rs_string_63,
 	cops_rs_string_64,
 	cops_rs_string_65,
-	cops_rs_string_66,
-	cops_rs_string_67
+	cops_rs_string_66
 };
 
 
@@ -1133,8 +1131,8 @@ _WORD cops_rs_rsc_free()
 #endif /* RSC_NAMED_FUNCTIONS */
 
 #else /* !RSC_STATIC_FILE */
-_WORD rs_numstrings = 68;
-_WORD rs_numfrstr = 14;
+_WORD rs_numstrings = 67;
+_WORD rs_numfrstr = 13;
 
 _WORD rs_nuser = 0;
 _WORD rs_numimages = 4;

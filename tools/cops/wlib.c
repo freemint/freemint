@@ -67,7 +67,7 @@ short
 reset_wlib(void)
 {
 	while (window_list)
-		delete_window(window_list->handle); /* Fenster loeschen */
+		delete_window(window_list->handle, 1); /* Fenster loeschen */
 
 	return 1;
 }
@@ -251,7 +251,7 @@ search_struct(short handle)
 /* handle:		Fensterhandle */
 /*----------------------------------------------------------------------------------------*/
 void
-delete_window(short handle)
+delete_window(short handle, short delete)
 {
 	WINDOW *window;
 
@@ -260,8 +260,11 @@ delete_window(short handle)
 	{
 		list_remove((void **) &window_list, window, offsetof(WINDOW, next));
 
-		wind_close(window->handle);
-		wind_delete(window->handle);
+		if (delete)
+		{
+			wind_close(window->handle);
+			wind_delete(window->handle);
+		}
 		free(window);
 	}
 }
@@ -804,7 +807,7 @@ set_slpos(WINDOW *window)
 			window->hslide = (short)(window->x * 1000 / (window->w - window->workarea.g_w));
 
 		if (old_pos != window->hslide) /* Sliderposition veraendert? */
-			wind_set(window->handle, WF_HSLIDE, window->hslide, 0, 0, 0);
+			wind_set_int(window->handle, WF_HSLIDE, window->hslide);
 	}
 	
 	if (window->kind & VSLIDE) /* vertikaler Slider vorhanden? */
@@ -817,7 +820,7 @@ set_slpos(WINDOW *window)
 			window->vslide = (short)(window->y * 1000 / (window->h - window->workarea.g_h));
 
 		if (old_pos != window->vslide) /* Sliderposition veraendert? */
-			wind_set(window->handle, WF_VSLIDE, window->vslide, 0, 0, 0);
+			wind_set_int(window->handle, WF_VSLIDE, window->vslide);
 	}
 }
 
@@ -844,7 +847,7 @@ set_slsize(WINDOW *window)
 			window->hslsize = 1000;
 			
 		if (old_size != window->hslsize) /* Slidergroesse veraendert? */
-			wind_set(window->handle, WF_HSLSIZE, window->hslsize, 0, 0, 0);
+			wind_set_int(window->handle, WF_HSLSIZE, window->hslsize);
 	}
 	
 	if (window->kind & VSLIDE) /* vertikaler Slider vorhanden? */
@@ -862,7 +865,7 @@ set_slsize(WINDOW *window)
 			window->vslsize = 1000;
 			
 		if (old_size != window->vslsize) /* Slidergroesse veraendert? */
-			wind_set(window->handle, WF_VSLSIZE, window->vslsize, 0, 0, 0);
+			wind_set_int(window->handle, WF_VSLSIZE, window->vslsize);
 	}
 }
 
@@ -989,7 +992,7 @@ iconify_window(short handle, GRECT *size)
 		if (window->iconified_name)
 			wind_set_str(window->handle, WF_NAME, window->iconified_name);
 
-		wind_set(window->handle, WF_BOTTOM, 0, 0, 0, 0); /* nach hinten legen */
+		wind_set_int(window->handle, WF_BOTTOM, 0); /* nach hinten legen */
 		window->wflags.iconified = 1;
 	}
 }
@@ -1020,7 +1023,7 @@ uniconify_window(short handle, GRECT *size)
 		if (window->name)
 			wind_set_str(window->handle, WF_NAME, window->name);
 
-		wind_set(window->handle, WF_TOP, 0, 0, 0, 0);
+		wind_set_int(window->handle, WF_TOP, 0);
 		window->wflags.iconified = 0;
 	}
 }
@@ -1035,7 +1038,7 @@ switch_window(void)
 	_WORD handle, buf[8];
 	WINDOW *change;
 
-	wind_get(0, WF_TOP, &handle, 0, 0, 0);
+	wind_get_int(0, WF_TOP, &handle);
 
 	/* liegt ein Fenster des eigenen Programms vorne? */
 	change = search_struct(handle);

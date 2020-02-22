@@ -97,10 +97,10 @@ struct cpxhead
 /* Mausparameter */
 typedef struct
 {
-	short x;
-	short y;
-	short buttons;
-	short kstate;
+	_WORD x;
+	_WORD y;
+	_WORD buttons;
+	_WORD kstate;
 } MRETS;
 
 /* Struktur zur Verwaltung von CPX-Modulen */
@@ -279,6 +279,10 @@ typedef	struct cpx_desc
 	short	is_evnt_cpx;	/* 0: Form-CPX 1: Event-CPX */
 	_WORD	button;		/* wird von handle_form_cpx() zurueckgeliefert */
 	_WORD	*msg;		/* Zeiger auf den bei Xform_do() uebergebenen Messagebuffer */
+
+	_WORD	edit_obj;
+	_WORD	cursor_idx;
+	BOOLEAN	cursor;
 
 	short	obfix_cnt;
 	_WORD	box_width;

@@ -90,6 +90,35 @@ static _WORD _cdecl group(PARMBLK *parmblock);
 static _WORD _cdecl title(PARMBLK *parmblock);
 static void userdef_text(_WORD x, _WORD y, char *string);
 
+short get_cookie(long cookie, long *p_value)
+{
+	long *cookiejar;
+
+	cookiejar = (long *)Setexc(0x5a0 / 4, (void (*)(void))-1);
+	if (p_value != NULL)
+		*p_value = 0;
+	if (cookiejar == NULL)
+		return 0;
+
+	/* Use do/while here so you can match the zero entry itself */
+	do
+	{
+		if (*cookiejar == cookie)
+		{
+			/* found it! */
+			if (p_value != NULL)
+				*p_value = *(cookiejar + 1);
+
+			/* return nonzero for success */
+			return 1;
+		}
+		cookiejar += 2;
+	} while (*cookiejar != 0);
+
+	/* return 0 (failed ) */
+	return 0;
+}
+
 /*----------------------------------------------------------------------------------------*/
 /* Informationen ueber die AES-Funktionen zurueckliefern                                  */
 /* Funktionsergebnis:   diverse Flags                                                     */
@@ -98,13 +127,13 @@ static void userdef_text(_WORD x, _WORD y, char *string);
 /*  hor_3d:         zusaetzlicher horizontaler beidseitiger Rand fuer 3D-Objekte          */
 /*  ver_3d:         zusaetzlicher vertikaler beidseitiger Rand fuer 3D-Objekte            */
 /*----------------------------------------------------------------------------------------*/
-_WORD get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d)
+unsigned long get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver_3d)
 {
 	MAGX_COOKIE *magic;
 	_WORD work_out[57];
 	_WORD attrib[10];
 	_WORD pens;
-	_WORD flags;
+	unsigned long flags;
 	
 	vq_extnd(vdi_handle, 0, work_out);
 	vqt_attributes(vdi_handle, attrib);
@@ -154,8 +183,31 @@ _WORD get_aes_info(_WORD *font_id, _WORD *font_height, _WORD *hor_3d, _WORD *ver
 		if (appl_getinfo(7, &ag1, &ag2, &ag3, &ag4))		/* Unterfunktion 7 */
 			flags |= ag1 & (GAI_WDLG|GAI_LBOX|GAI_FNTS|GAI_FSEL);
 
+		if (appl_getinfo(AES_MOUSE, &ag1, &ag2, &ag3, &ag4) && (ag1 & 1))		/* graf_mouse(M_SAVE/M_RESTORE) supported? */
+			flags |= GAI_MOUSE;
+
+		if (appl_getinfo(9, &ag1, &ag2, &ag3, &ag4))		/* form_popup() supported? */
+		{
+			if (ag2 & 1)
+			{
+				flags |= GAI_POPUP;
+				if (ag3 & 1)
+				{
+					/*
+					 * XaAES has scrollable menus, but not scrollable popups :(
+					 */
+					/* FIXME: find a better way to detect whether xfrm_popup is supported */
+					if (flags & GAI_MAGIC)
+						flags |= GAI_SCROLLPOPUP;
+				}
+			}
+		}
+
 		if (appl_getinfo(12, &ag1, &ag2, &ag3, &ag4) && (ag1 & 8)) /* AP_TERM? */
 			flags |= GAI_APTERM;
+
+		if (appl_getinfo(14, &ag1, &ag2, &ag3, &ag4) && (ag1 & 1)) /* Flydials? */
+			flags |= GAI_FLYDIAL;
 
 		if (appl_getinfo(13, &ag1, &ag2, &ag3, &ag4))		/* Unterfunktion 13, Objekte */
 		{
@@ -275,7 +327,7 @@ char *is_userdef_title(OBJECT *obj)
 /*  rslct:      Zeiger auf Image fuer selektierten Radio-Button                           */
 /*  rdeslct:    Zeiger auf Image fuer deselektierten Radio-Button                         */
 /*----------------------------------------------------------------------------------------*/
-void substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT *rslct, OBJECT *rdeslct)
+void substitute_objects(OBJECT *objs, unsigned short no_objs, unsigned long aesflags, OBJECT *rslct, OBJECT *rdeslct)
 {
 	OBJECT *obj;
 	unsigned short i;

@@ -1,7 +1,7 @@
 /*
  * GEM resource C output of cops_rs
  *
- * created by ORCS 2.16
+ * created by ORCS 2.17
  */
 
 #if !defined(__GNUC__) || !defined(__mc68000__)
@@ -19,7 +19,7 @@
 #  endif
 #else
 #  ifdef __TURBOC__
-#    include <portaes.h>
+#    include <aes.h>
 #    define CP (_WORD *)
 #  endif
 #endif
@@ -266,10 +266,10 @@
 extern _BOOL W_Cicon_Setpalette(_WORD *_palette);
 #endif
 #ifndef hrelease_objs
-extern _VOID hrelease_objs(OBJECT *_ob, _WORD _num_objs);
+extern void hrelease_objs(OBJECT *_ob, _WORD _num_objs);
 #endif
 #ifndef hfix_objs
-extern _VOID *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
+extern void *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #endif
 #endif
 
@@ -303,13 +303,13 @@ extern _VOID *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #undef NUM_OBS
 #undef NUM_TREE
 #undef NUM_UD
-#define NUM_STRINGS 68
+#define NUM_STRINGS 67
 #define NUM_BB		2
 #define NUM_IB		1
 #define NUM_CIB     1
 #define NUM_CIC     1
 #define NUM_TI		4
-#define NUM_FRSTR	14
+#define NUM_FRSTR	13
 #define NUM_FRIMG	0
 #define NUM_OBS     60
 #define NUM_TREE	9
@@ -377,14 +377,13 @@ static char cops_rs_string_56[] = "[2][Voreinstellungen sichern?][Ja|Nein]";
 static char cops_rs_string_57[] = "[3][Nicht gen\201gend Speicher!][OK]";
 static char cops_rs_string_58[] = "[3][Schreib- oder Lesefehler.][OK]";
 static char cops_rs_string_59[] = "[1][Datei nicht gefunden.][OK]";
-static char cops_rs_string_60[] = "[1][Bitte starten Sie die NVDI|beiliegende Systemerweiterung|WDIALOG oder verwenden Sie|MagiC 4 oder neuer.][OK]";
-static char cops_rs_string_61[] = "[1][Beim \231ffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK]";
-static char cops_rs_string_62[] = "[2][COPS beenden?][Ja|Nein]";
-static char cops_rs_string_63[] = "AES noch nicht aktiv.";
-static char cops_rs_string_64[] = "CPX-Pfad ausw\204hlen";
-static char cops_rs_string_65[] = "  Kontrollfelder  ";
-static char cops_rs_string_66[] = " COPS ";
-static char cops_rs_string_67[] = "[1][ | Stereo-Sound  | nicht m\224glich!  ][ OK ]";
+static char cops_rs_string_60[] = "[1][Beim \231ffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK]";
+static char cops_rs_string_61[] = "[2][COPS beenden?][Ja|Nein]";
+static char cops_rs_string_62[] = "AES noch nicht aktiv.";
+static char cops_rs_string_63[] = "CPX-Pfad ausw\204hlen";
+static char cops_rs_string_64[] = "  Kontrollfelder  ";
+static char cops_rs_string_65[] = " COPS ";
+static char cops_rs_string_66[] = "[1][ | Stereo-Sound  | nicht m\224glich!  ][ OK ]";
 
 
 static _UBYTE cops_rs_IMAGE0[] = {
@@ -532,8 +531,7 @@ char *rs_frstr[NUM_FRSTR] = {
 	cops_rs_string_63,
 	cops_rs_string_64,
 	cops_rs_string_65,
-	cops_rs_string_66,
-	cops_rs_string_67
+	cops_rs_string_66
 };
 
 
@@ -1133,8 +1131,8 @@ _WORD cops_rs_rsc_free()
 #endif /* RSC_NAMED_FUNCTIONS */
 
 #else /* !RSC_STATIC_FILE */
-_WORD rs_numstrings = 68;
-_WORD rs_numfrstr = 14;
+_WORD rs_numstrings = 67;
+_WORD rs_numfrstr = 13;
 
 _WORD rs_nuser = 0;
 _WORD rs_numimages = 4;

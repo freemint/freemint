@@ -30,39 +30,11 @@
 
 #include "cops_rsc.h"
 #include "phstuff.h"
+#include "adaptrsc.h"
 
 extern long clear_cpu_cf(void);
 extern long clear_cpu_030(void);
 extern long clear_cpu_040(void);
-
-short get_cookie(long cookie, long *p_value)
-{
-	long *cookiejar;
-
-	cookiejar = (long *)Setexc(0x5a0 / 4, (void (*)(void))-1);
-	if (p_value != NULL)
-		*p_value = 0;
-	if (cookiejar == NULL)
-		return 0;
-
-	/* Use do/while here so you can match the zero entry itself */
-	do
-	{
-		if (*cookiejar == cookie)
-		{
-			/* found it! */
-			if (p_value != NULL)
-				*p_value = *(cookiejar + 1);
-
-			/* return nonzero for success */
-			return 1;
-		}
-		cookiejar += 2;
-	} while (*cookiejar != 0);
-
-	/* return 0 (failed ) */
-	return 0;
-}
 
 /*----------------------------------------------------------------------------------------*/ 
 /* CPX-Datei laden und relozieren */
@@ -87,7 +59,7 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 	{
 		long relo_len;
 
-		DEBUG(("%s: malloc(%lu) -> %p\n", __FUNCTION__, TDB_len, addr));
+		DEBUG((DEBUG_FMT ": malloc(%lu) -> %p\n", DEBUG_ARGS, TDB_len, addr));
 
 		cpx_desc->segm.text_seg = addr;
 		cpx_desc->segm.len_text = phead->ph_tlen;
@@ -242,7 +214,7 @@ short
 unload_cpx(void *addr)
 {
 	free(addr);
-	DEBUG(("%s: free(%p)\n", __FUNCTION__, addr));
+	DEBUG((DEBUG_FMT ": free(%p)\n", DEBUG_ARGS, addr));
 
 	return 1;
 }

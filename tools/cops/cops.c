@@ -46,6 +46,7 @@
 #include "cops_rsc.h"
 #include "adaptrsc.h"
 #include "callback.h"
+#include "popup.h"
 #include "cops.h"
 #include "cpx_bind.h"
 #include "key_map.h"
@@ -124,7 +125,7 @@ struct auto_start
 _WORD app_id;
 _WORD vdi_handle;
 _WORD aes_handle;
-_WORD aes_flags;
+unsigned long aes_flags;
 _WORD aes_font;
 _WORD aes_height;
 _WORD pwchar;
@@ -211,7 +212,7 @@ read_file(char *name, void *dest, long offset, long len)
 /* Service-Routine fuer CPX-Fensterdialog */
 /* Funktionsergebnis:	0: Dialog schliessen 1: weitermachen */
 /*	dialog:		Zeiger auf die Dialog-Struktur */
-/*	events:		Zeiger auf EVNT-Struktur oder 0L */
+/*	events:		Zeiger auf EVNT-Struktur oder NULL */
 /*	obj:		Nummer des Objekts oder Ereignisnummer */
 /*	clicks:		Anzahl der Mausklicks */
 /*	data:		Zeiger auf zusaetzliche Daten */
@@ -219,7 +220,7 @@ read_file(char *name, void *dest, long offset, long len)
 static _WORD _cdecl
 handle_form_cpx(struct HNDL_OBJ_args args)
 {
-	DEBUG(("%s: %s\n", __FUNCTION__, ((CPX_DESC *)args.data)->file_name));
+	DEBUG((DEBUG_FMT ": %s\n", DEBUG_ARGS, ((CPX_DESC *)args.data)->file_name));
 
 	/* Ereignis oder Objektnummer? */
 	if (args.obj < 0)
@@ -231,10 +232,10 @@ handle_form_cpx(struct HNDL_OBJ_args args)
 	}
 	else
 	{
-		/* ein Objekt ist angewaehlt worden */
+		/* an object was selected */
 		CPX_DESC *cpx_desc = (CPX_DESC *)args.data;
 
-		/* Doppelklick? */
+		/* double-click? */
 		if (args.clicks == 2)
 		{
 			if (is_obj_TOUCHEXIT(cpx_desc->tree, args.obj))
@@ -242,7 +243,7 @@ handle_form_cpx(struct HNDL_OBJ_args args)
 				args.obj |= 0x8000;
 		}
 
-		/* Objektnummer zurueckliefern */
+		/* return object number */
 		cpx_desc->button = args.obj;
 	}
 
@@ -259,30 +260,35 @@ static _WORD
 cpx_open_window(CPX_DESC *cpx_desc)
 {
 	OBJECT *tree;
+	_WORD kind = NAME | CLOSER | MOVER;
 
 	DEBUG(("cpx_open_window\n"));
 
-	cpx_desc->tree = 0L;
-	cpx_desc->empty_tree[0] = tree_addr[EMPTY_TREE][0];	/* leere IBOX fuer anfaenglichen Objektbaum */
-	cpx_desc->empty_tree[1] = tree_addr[EMPTY_TREE][1];	/* leere IBOX fuer anfaenglichen Objektbaum */
-	cpx_desc->empty_tree->ob_width = 256;			/* Grundausmasse eintragen */
-	cpx_desc->empty_tree->ob_height = 176;
-
-	if (cpx_desc->box_width != -1)
-	{
-		cpx_desc->empty_tree->ob_width = cpx_desc->box_width;
-		cpx_desc->empty_tree->ob_height = cpx_desc->box_height;
-	}
+	cpx_desc->tree = NULL;
 
 	tree = &cpx_desc->empty_tree[0];
 
+	tree[0] = tree_addr[EMPTY_TREE][0];	/* leere IBOX fuer anfaenglichen Objektbaum */
+	tree[1] = tree_addr[EMPTY_TREE][1];	/* leere IBOX fuer anfaenglichen Objektbaum */
+	tree[0].ob_width = 256;			/* Grundausmasse eintragen */
+	tree[0].ob_height = 176;
+
+	if (cpx_desc->box_width != -1)
+	{
+		tree->ob_width = cpx_desc->box_width;
+		tree->ob_height = cpx_desc->box_height;
+	}
+
 	/* Dialog-Struktur initialisieren */
-	cpx_desc->dialog = wdlg_create(handle_form_cpx, tree, cpx_desc, 0, 0L, 0);
+	if (aes_flags & GAI_WDLG)
+		cpx_desc->dialog = wdlg_create(handle_form_cpx, tree, cpx_desc, 0, NULL, 0);
+	else
+		cpx_desc->dialog = NULL;
 	if (cpx_desc->dialog)
 	{
 		cpx_desc->whdl = wdlg_open(cpx_desc->dialog, cpx_desc->old.header.title_txt,
-					   NAME + CLOSER + MOVER,
-					   cpx_desc->window_x, cpx_desc->window_y, 0, 0L);
+					   kind,
+					   cpx_desc->window_x, cpx_desc->window_y, 0, NULL);
 
 		/* Dialogfenster geoeffnet? */
 		if (cpx_desc->whdl)
@@ -299,6 +305,43 @@ cpx_open_window(CPX_DESC *cpx_desc)
 			wdlg_delete(cpx_desc->dialog);
 			cpx_desc->dialog = NULL;
 		}
+	} else
+	{
+		cpx_desc->whdl = wind_create_grect(kind, &desk_grect);
+		if (cpx_desc->whdl > 0)
+		{
+			GRECT gr;
+
+			gr.g_x = cpx_desc->window_x;
+			gr.g_y = cpx_desc->window_y;
+			gr.g_w = tree[ROOT].ob_width;
+			gr.g_h = tree[ROOT].ob_height;
+			if (gr.g_x < 0 || gr.g_y < 0)
+			{
+				gr.g_x = ((desk_grect.g_w - gr.g_w) >> 1) + desk_grect.g_x;
+				gr.g_y = ((desk_grect.g_h - gr.g_h) >> 1) + desk_grect.g_y;
+			}
+			wind_calc_grect(WC_WORK, kind, &gr, &gr);
+			tree[ROOT].ob_x = gr.g_x;
+			tree[ROOT].ob_y = gr.g_y;
+			gr.g_w = tree->ob_width;
+			gr.g_h = tree->ob_height;
+			wind_calc_grect(WC_BORDER, kind, &gr, &gr);
+			if (gr.g_x < desk_grect.g_x)
+				gr.g_x = desk_grect.g_x;
+			if (gr.g_y < desk_grect.g_y)
+				gr.g_y = desk_grect.g_y;
+			wind_set_str(cpx_desc->whdl, WF_NAME, cpx_desc->old.header.title_txt);
+			wind_open_grect(cpx_desc->whdl, &gr);
+			wind_get_grect(cpx_desc->whdl, WF_WORKXYWH, &cpx_desc->size);
+			tree[ROOT].ob_x = cpx_desc->size.g_x;
+			tree[ROOT].ob_y = cpx_desc->size.g_y;
+
+			/* Anzahl der offenen CPXe erhoehen */
+			no_open_cpx++;
+
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -309,7 +352,7 @@ cpx_open_window(CPX_DESC *cpx_desc)
 /*	cpx_desc:	CPX-Beschreibung */
 /*----------------------------------------------------------------------------------------*/
 static short
-cpx_close_window(CPX_DESC *cpx_desc)
+cpx_close_window(CPX_DESC *cpx_desc, short msg)
 {
 	DEBUG(("cpx_close_window\n"));
 
@@ -322,7 +365,22 @@ cpx_close_window(CPX_DESC *cpx_desc)
 		wdlg_delete(cpx_desc->dialog);
 		/* Fenster geschlossen */
 		cpx_desc->dialog = NULL;
+		cpx_desc->whdl = 0;
 		/* Anzahl der offenen CPXe verringern */
+		no_open_cpx--;
+
+		return 1;
+	} else if (cpx_desc->whdl > 0)
+	{
+		cpx_desc->window_x = cpx_desc->size.g_x;
+		cpx_desc->window_y = cpx_desc->size.g_y;
+		if (msg == WM_CLOSED)
+		{
+			wind_close(cpx_desc->whdl);
+			wind_delete(cpx_desc->whdl);
+		}
+		cpx_desc->whdl = 0;
+
 		no_open_cpx--;
 
 		return 1;
@@ -340,7 +398,7 @@ top_whdl(void)
 {
 	_WORD whdl;
 
-	if (wind_get(0, WF_TOP, &whdl, 0, 0, 0) == 0) /* Fehler? */
+	if (wind_get_int(0, WF_TOP, &whdl) == 0) /* Fehler? */
 		return -1;
 
 	if (whdl < 0) /* liegt ein Fenster einer anderen Applikation vorne? */
@@ -360,7 +418,7 @@ remove_cpx(CPX_DESC *cpx_desc)
 		unload_cpx(cpx_desc->start_of_cpx);
 
 	free(cpx_desc);
-	DEBUG(("%s: free(%p)\n", __FUNCTION__, cpx_desc));
+	DEBUG((DEBUG_FMT": free(%p)\n", DEBUG_ARGS, cpx_desc));
 }
 
 static void
@@ -375,7 +433,7 @@ init_cpx(const char *file_path, const char *file_name, short inactive)
 		void *addr;
 		long size;
 
-		DEBUG(("%s: malloc(%lu) -> %p\n", __FUNCTION__, cpx_desc_len, cpx_desc));
+		DEBUG((DEBUG_FMT ": malloc(%lu) -> %p\n", DEBUG_ARGS, cpx_desc_len, cpx_desc));
 		memset(cpx_desc, 0, cpx_desc_len);
 
 		cpx_desc->button = -1;
@@ -393,6 +451,10 @@ init_cpx(const char *file_path, const char *file_name, short inactive)
 		cpx_desc->box_width = -1;
 		cpx_desc->box_height = -1;
 
+		cpx_desc->edit_obj = 0;
+		cpx_desc->cursor_idx = -1;
+		cpx_desc->cursor = FALSE;
+
 		strcpy(cpx_desc->file_name, file_name);
 
 		cpx_desc->xctrl_pb = xctrl_pb; /* Parameterblock fuer CPX kopieren */
@@ -400,7 +462,7 @@ init_cpx(const char *file_path, const char *file_name, short inactive)
 		cpx_desc->xctrl_pb.SkipRshFix = 0;
 		cpx_desc->xctrl_pb.booting = 0;
 
-		cpx_desc->old.next = 0L;
+		cpx_desc->old.next = NULL;
 		strncpy(cpx_desc->old.f_name, file_name, 13); /* aus Kompatibilitaetsgruenden */
 		cpx_desc->old.segm = &cpx_desc->segm;						
 
@@ -459,7 +521,7 @@ init_cpx(const char *file_path, const char *file_name, short inactive)
 		else
 		{
 			free(cpx_desc);
-			DEBUG(("%s: free(%p)\n", __FUNCTION__, cpx_desc));
+			DEBUG((DEBUG_FMT ": free(%p)\n", DEBUG_ARGS, cpx_desc));
 		}
 	}
 }
@@ -966,7 +1028,7 @@ read_inf(void)
 					y = cpxpos.icon_y;
 
 				/* automatisch starten? */
-				if (cpxpos.autostart && (cpx_desc->dialog == 0L))
+				if (cpxpos.autostart && cpx_desc->whdl <= 0)
 				{
 					struct auto_start *auto_start;
 
@@ -999,20 +1061,20 @@ save_inf(void)
 	long ret;
 
 	ret = Fcreate(inf_name, 0);
-	if (ret < 0L)
+	if (ret < 0)
 	{
 		strcpy(inf_name, home);
 		strcat(inf_name, "COPS.inf");		
 		ret = Fcreate(inf_name, 0);
 
-		if (ret < 0L)
+		if (ret < 0)
 		{
 			strcpy(inf_name, "COPS.inf");		
 			ret = Fcreate(inf_name, 0);
 		}
 	}
 
-	if (ret > 0L)
+	if (ret > 0)
 	{
 		short handle = (short)ret;
 
@@ -1083,7 +1145,7 @@ call_help(void)
 static void
 open_main_window(void)
 {
-	if (main_window == 0L)
+	if (main_window == NULL)
 	{
 		WINDOW *window;
 		short handle;
@@ -1142,7 +1204,7 @@ open_main_window(void)
 			set_slsize(window); /* Slidergroesse berechnen */
 			set_slpos(window); /* Sliderposition berechnen */
 
-			wind_set(handle, WF_BEVENT, 1, 0, 0, 0); /* Fenster auch im Hintergrund bedienbar */
+			wind_set_int(handle, WF_BEVENT, 1); /* Fenster auch im Hintergrund bedienbar */
 
 			graf_growbox_grect(&null, &settings.mw);
 
@@ -1154,14 +1216,14 @@ open_main_window(void)
 	else
 	{
 		if (main_window->wflags.iconified)
-			uniconify_window(main_window->handle, 0L);
+			uniconify_window(main_window->handle, NULL);
 		else
-			wind_set(main_window->handle, WF_TOP, 0, 0, 0, 0);
+			wind_set_int(main_window->handle, WF_TOP, 0);
 	}
 }
 
 static void
-close_main_window(void)
+close_main_window(_WORD msg)
 {
 	if (main_window)
 	{
@@ -1175,7 +1237,7 @@ close_main_window(void)
 		settings.whslide = (short) main_window->x;
 		settings.wvslide = (short) main_window->y;
 
-		delete_window(main_window->handle);
+		delete_window(main_window->handle, msg != AC_CLOSE);
 		main_window = NULL;
 	}
 }
@@ -1247,8 +1309,8 @@ cpx_to_end(CPX_DESC *cpx_desc)
 	list_remove((void **) &cpx_desc_list, cpx_desc, offsetof(CPX_DESC, next));
 	list_remove((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
 
-	cpx_desc->next = 0L;
-	cpx_desc->old.next = 0L;
+	cpx_desc->next = NULL;
+	cpx_desc->old.next = NULL;
 
 	list_append((void **) &cpx_desc_list, cpx_desc, offsetof(CPX_DESC, next));
 	list_append((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
@@ -1366,7 +1428,7 @@ redraw_main_window(WINDOW *w, GRECT *area)
 		vsf_interior(vdi_handle, 1);
 		vr_recfl(vdi_handle, clip); /* Fensterhintergrund weiss */
 
-		des.fd_addr = 0L;
+		des.fd_addr = NULL;
 
 		vst_point(vdi_handle, 8, &dummy, &dummy, &dummy, &dummy);
 		vst_alignment(vdi_handle, 1, 5, &dummy, &dummy);
@@ -1492,7 +1554,7 @@ draw_cpx_frames(int xof, int yof)
 	CPX_DESC *cpx_desc;
 	_WORD xy[10];
 
-	graf_mouse(M_OFF, 0L);
+	graf_mouse(M_OFF, NULL);
 
 	xy[0] = desk_grect.g_x;
 	xy[1] = desk_grect.g_y;
@@ -1534,7 +1596,7 @@ draw_cpx_frames(int xof, int yof)
 		cpx_desc = cpx_desc->next;
 	}
 
-	graf_mouse(M_ON, 0L);
+	graf_mouse(M_ON, NULL);
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1546,9 +1608,9 @@ static void
 open_cpx(CPX_DESC *cpx_desc)
 {
 	/* CPX schon offen? */
-	if (cpx_desc->dialog)
+	if (cpx_desc->whdl > 0)
 	{
-		wind_set(cpx_desc->whdl, WF_TOP, 0, 0, 0, 0);
+		wind_set_int(cpx_desc->whdl, WF_TOP, 0);
 		return;
 	}
 
@@ -1605,7 +1667,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 
 				/* Form-CPX? */
 				if (cpx_call(cpx_desc, &cpx_desc->size) == 0)
-					cpx_close_window(cpx_desc);
+					cpx_close_window(cpx_desc, WM_CLOSED);
 				else
 				{
 					cpx_desc->is_evnt_cpx = 1;
@@ -1629,7 +1691,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 		cpx_desc->start_of_cpx = load_cpx(cpx_desc, settings.cpx_path, &size, 0);
 
 		/* Fehler beim Laden? */
-		if (cpx_desc->start_of_cpx == 0L)
+		if (cpx_desc->start_of_cpx == NULL)
 		{
 			long id;
 
@@ -1679,7 +1741,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 
 					/* Form-CPX? */
 					if (cpx_call(cpx_desc, &cpx_desc->size) == 0)
-						cpx_close_window(cpx_desc);
+						cpx_close_window(cpx_desc, WM_CLOSED);
 					else
 					{
 						cpx_desc->is_evnt_cpx = 1;
@@ -1696,8 +1758,8 @@ open_cpx_context(CPX_DESC *cpx_desc)
 			if (cpx_desc->is_evnt_cpx == 0)
 			{
 				unload_cpx(cpx_desc->start_of_cpx);
-				cpx_desc->start_of_cpx = 0L;
-				cpx_desc->end_of_cpx = 0L;
+				cpx_desc->start_of_cpx = NULL;
+				cpx_desc->end_of_cpx = NULL;
 			}
 		}
 	}
@@ -1753,7 +1815,7 @@ activate_cpx(CPX_DESC *cpx_desc)
 					if (cpx_desc->old.header.flags & CPX_BOOTINIT)
 					{
 						cpx_desc->xctrl_pb.booting = 1;
-						if (cpx_init(cpx_desc, &cpx_desc->xctrl_pb) == 0L)
+						if (cpx_init(cpx_desc, &cpx_desc->xctrl_pb) == NULL)
 						{
 							remove_cpx(cpx_desc);
 							return 0;
@@ -1764,8 +1826,8 @@ activate_cpx(CPX_DESC *cpx_desc)
 					if (!(cpx_desc->old.header.flags & CPX_RESIDENT))
 					{
 						unload_cpx(addr); /* Speicher fuer CPX freigeben */
-						cpx_desc->start_of_cpx = 0L;
-						cpx_desc->end_of_cpx = 0L;
+						cpx_desc->start_of_cpx = NULL;
+						cpx_desc->end_of_cpx = NULL;
 					}
 				}
 			}
@@ -1799,11 +1861,11 @@ deactivate_cpx(CPX_DESC *cpx_desc)
 		new[strlen(new) - 1] += 'Z' - 'X';
 
 		/* CPX resident im Speicher und Dialog nicht geoeffnet? */
-		if (cpx_desc->start_of_cpx && (cpx_desc->dialog == 0L))
+		if (cpx_desc->start_of_cpx && cpx_desc->whdl <= 0)
 		{
 			unload_cpx(cpx_desc->start_of_cpx); /* Speicher freigeben */
-			cpx_desc->start_of_cpx = 0L;
-			cpx_desc->end_of_cpx = 0L;
+			cpx_desc->start_of_cpx = NULL;
+			cpx_desc->end_of_cpx = NULL;
 		}
 
 		/* laesst sich das CPX umbenennen? */
@@ -1841,7 +1903,7 @@ update_cpx_path(void)
 		msg[3] -= 'a';
 	msg[4] = msg[5] = msg[6] = msg[7] = 0;
 
-	shel_write(SHW_BROADCAST, 0, 0, (char *)msg, 0L); /* andere Prozesse benachrichtigen */
+	shel_write(SHW_BROADCAST, 0, 0, (char *)msg, NULL); /* andere Prozesse benachrichtigen */
 }
 
 static void
@@ -1857,7 +1919,7 @@ cpx_info(CPX_DESC *cpx_desc)
 	
 	str = is_userdef_title(cpxinfo + CITITLE);
 
-	if (str == 0L)
+	if (str == NULL)
 		str = cpxinfo[CITITLE].ob_spec.free_string;
 
 	strcpy(str, cpx->header.title_txt);
@@ -1929,7 +1991,6 @@ do_dialog(OBJECT *tree)
 	EVNTDATA mouse;
 	GRECT start;
 	GRECT center;
-	void *flyinf;
 	_WORD dummy;
 	_WORD obj;
 
@@ -1944,12 +2005,24 @@ do_dialog(OBJECT *tree)
 
 	form_center_grect(tree, &center);
 	graf_growbox_grect(&start, &center);
-	form_xdial_grect(FMD_START, &center, &center, &flyinf);
 
-	objc_draw_grect(tree, ROOT,MAX_DEPTH, &center);
-	obj = form_xdo(tree, 0, &dummy, 0L, flyinf) & 0x7fff;
+	if (aes_flags & GAI_FLYDIAL)
+	{
+		void *flyinf = NULL;
+		form_xdial_grect(FMD_START, &center, &center, &flyinf);
 
-	form_xdial_grect(FMD_FINISH, &center, &center, &flyinf);
+		objc_draw_grect(tree, ROOT,MAX_DEPTH, &center);
+		obj = form_xdo(tree, 0, &dummy, NULL, flyinf) & 0x7fff;
+		form_xdial_grect(FMD_FINISH, &center, &center, &flyinf);
+	} else
+	{
+		form_dial_grect(FMD_START, &center, &center);
+
+		objc_draw_grect(tree, ROOT,MAX_DEPTH, &center);
+		obj = form_do(tree, 0) & 0x7fff;
+		form_dial_grect(FMD_FINISH, &center, &center);
+	}
+
 	graf_shrinkbox_grect(&start, &center);
 
 	wind_update(END_MCTRL);
@@ -2274,7 +2347,7 @@ handle_keyboard(short kstate, short key)
 							/* COPS laeuft als Applikation */
 							return 1; /* Beenden moeglich */
 				
-						if ((_app == 0) && (aes_flags & GAI_MAGIC)) /* Accessory und MagiC als OS?  */
+						if (_app == 0 && aes_global[1] != 1) /* Accessory and Multitasking AES? */
 						{
 							if (form_alert(1, fstring_addr[QUIT_ALERT]) == 1)
 								return 1;
@@ -2312,9 +2385,9 @@ handle_keyboard(short kstate, short key)
 						if (main_window && (top_whdl() == main_window->handle))
 						{
 							if (main_window->wflags.iconified)
-								uniconify_window(main_window->handle, 0L);
+								uniconify_window(main_window->handle, NULL);
 							else
-								iconify_window(main_window->handle, 0L);
+								iconify_window(main_window->handle, NULL);
 						}
 						break;
 					}
@@ -2370,7 +2443,7 @@ drag_icons(void)
 		n = m;
 
 		/* Mausform umschalten */
-		graf_mouse(FLAT_HAND, 0L);
+		graf_mouse(FLAT_HAND, NULL);
 
 		/* Maustaste gedrueckt? */
 		while (n.bstate == 1)
@@ -2483,7 +2556,7 @@ drag_icons(void)
 			}
 	
 		}
-		graf_mouse(ARROW, 0L);
+		graf_mouse(ARROW, NULL);
 	}
 
 	wind_update(END_MCTRL);
@@ -2511,7 +2584,7 @@ select_icons(void)
 		area.g_x = mevnt.x;
 		area.g_y = mevnt.y;
 
-		graf_mouse(POINT_HAND, 0L);
+		graf_mouse(POINT_HAND, NULL);
 
 		/* Gummiband aufgezogen? */
 		if (graf_rubbox(area.g_x, area.g_y, -32767, -32767, &w, &h))
@@ -2553,7 +2626,7 @@ select_icons(void)
 				}
 			}
 		}
-		graf_mouse(ARROW, 0L);
+		graf_mouse(ARROW, NULL);
 	}
 	wind_update(END_MCTRL);
 }
@@ -2570,7 +2643,7 @@ handle_bt1(CPX_DESC *cpx_desc, int kstate, int clicks)
 				if (cpx_desc->selected)
 				{
 					/* Shift gedrueckt? */
-					if (kstate & KsSHIFT)
+					if (kstate & K_SHIFT)
 					{
 						cpx_desc->selected = 0;
 						redraw_cpximg(cpx_desc);
@@ -2581,7 +2654,7 @@ handle_bt1(CPX_DESC *cpx_desc, int kstate, int clicks)
 				else /* CPX selektieren */
 				{
 					/* Shift nicht gedrueckt? */
-					if ((kstate & KsSHIFT) == 0)
+					if ((kstate & K_SHIFT) == 0)
 						deselect_all_cpx_draw();
 
 					cpx_desc->selected = 1;
@@ -2592,11 +2665,11 @@ handle_bt1(CPX_DESC *cpx_desc, int kstate, int clicks)
 			else /* Mausklick ging nicht auf ein CPX-Icon */
 			{
 				if (top_whdl() != main_window->handle)
-					wind_set(main_window->handle, WF_TOP, 0, 0, 0, 0);
+					wind_set_int(main_window->handle, WF_TOP, 0);
 				else
 				{
 					/* Shift nicht gedrueckt? */
-					if ((kstate & KsSHIFT) == 0)
+					if ((kstate & K_SHIFT) == 0)
 						deselect_all_cpx_draw();
 
 					/* Gummiband aufziehen und Icons selektieren */
@@ -2623,7 +2696,7 @@ handle_bt1(CPX_DESC *cpx_desc, int kstate, int clicks)
 static void
 handle_button(int mx, int my, int bstate, int kstate, int clicks)
 {
-	if (main_window == 0L)
+	if (main_window == NULL)
 		return;
 
 	/* Mausklick in ein anderes Fenster? */
@@ -2633,14 +2706,14 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 	if (main_window->wflags.iconified && (bstate==1))
 	{
 		if (clicks == 2)
-			uniconify_window(main_window->handle, 0L);
+			uniconify_window(main_window->handle, NULL);
 	}
 	else
 	{
 		CPX_DESC *cpx;
 
 		if (main_window->wflags.iconified)
-			cpx = 0L;
+			cpx = NULL;
 		else
 			cpx = find_cpx(mx, my);
 
@@ -2683,7 +2756,10 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 								tree[CP_ENABLE].ob_state |= OS_DISABLED;
 							}
 							
-							obj = form_popup(tree, 0, 0);
+							if (aes_flags & GAI_POPUP)
+								obj = form_popup(tree, 0, 0);
+							else
+								obj = do_form_popup(tree, 0, 0, 0, 0, 0, 0, 0, 0);
 							evnt_timer(0);
 							switch (obj)
 							{
@@ -2743,7 +2819,10 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 							else
 								tree[PG_HELP].ob_state |= OS_DISABLED;;
 							
-							obj = form_popup(tree, 0, 0);
+							if (aes_flags & GAI_POPUP)
+								obj = form_popup(tree, 0, 0);
+							else
+								obj = do_form_popup(tree, 0, 0, 0, 0, 0, 0, 0, 0);
 							evnt_timer(0);
 							switch (obj)
 							{
@@ -2801,13 +2880,14 @@ handle_message(_WORD msg[8])
 			redraw_window(msg[3], (GRECT *)&msg[4]);
 			break;
 		case WM_TOPPED:
-			wind_set(msg[3], WF_TOP, 0, 0, 0, 0);
+		case WM_NEWTOP:
+			wind_set_int(msg[3], WF_TOP, 0);
 			break;
 		case WM_CLOSED:
 		{
 			if (main_window && (main_window->handle == msg[3]))
 				/* Hauptfenster schliessen */
-				close_main_window();
+				close_main_window(WM_CLOSED);
 
 			/* Accessory? */
 			if (_app == 0)
@@ -2863,7 +2943,7 @@ handle_message(_WORD msg[8])
 			/* Accessory schliessen */
 
 			/* Hauptfenster schliessen */
-			close_main_window();
+			close_main_window(AC_CLOSE);
 			if (no_open_cpx > 0)
 			{
 				/* OS liefert kein AP_TERM */
@@ -3012,7 +3092,7 @@ top_cpx(void)
 	while (cpx_desc)
 	{
 		/* Fenster geoeffnet? */
-		if (cpx_desc->dialog)
+		if (cpx_desc->whdl > 0)
 		{
 			/* CPX-Fenster gefunden? */
 			if (cpx_desc->whdl == top_window)
@@ -3020,7 +3100,7 @@ top_cpx(void)
 		}
 		cpx_desc = cpx_desc->next;
 	}
-	return 0L;
+	return NULL;
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -3028,7 +3108,7 @@ top_cpx(void)
 /* Funktionsergebnis:	- */
 /*----------------------------------------------------------------------------------------*/
 static void
-close_all_cpx(void)
+close_all_cpx(short msg)
 {
 	CPX_DESC *cpx_desc;
 
@@ -3039,18 +3119,18 @@ close_all_cpx(void)
 	while (cpx_desc)
 	{
 		/* CPX geoeffnet? */
-		if (cpx_desc->dialog)
+		if (cpx_desc->whdl > 0)
 		{
 			/* Event-CPX? */
 			if (cpx_desc->is_evnt_cpx)
 			{
 				cpx_close(cpx_desc, 1); /* CPX benachrichtigen */
-				cpx_close_window(cpx_desc); /* Fenster schliessen */
+				cpx_close_window(cpx_desc, msg); /* Fenster schliessen */
 				if (!(cpx_desc->old.header.flags & CPX_RESIDENT))
 				{
 					unload_cpx(cpx_desc->start_of_cpx);
-					cpx_desc->start_of_cpx = 0L;
-					cpx_desc->end_of_cpx = 0L;
+					cpx_desc->start_of_cpx = NULL;
+					cpx_desc->end_of_cpx = NULL;
 				}
 			}
 			else
@@ -3069,6 +3149,148 @@ close_all_cpx(void)
 	}
 
 	wind_update(END_UPDATE);
+}
+
+
+/*
+ * like form_button, used for form-CPX when no window dialogs are available
+ */
+static int fm_button(OBJECT *tree, _WORD obj, _WORD clicks, _WORD *pobj, const GRECT *work)
+{
+	_WORD state;
+	_WORD flags;
+	_WORD parent;
+	_WORD tobj;
+	BOOLEAN cont;
+	MRETS m;
+
+	cont = TRUE;
+	flags = tree[obj].ob_flags;
+	state = tree[obj].ob_state;
+
+	if (flags & OF_TOUCHEXIT)				/* don't wait for button up */
+		cont = FALSE;
+
+	/* handle selectable case */
+	if ((flags & OF_SELECTABLE) && !(state & OS_DISABLED))
+	{
+		/* if it's a radio button */
+		if ((flags & OF_RBUTTON) && obj > 0)
+		{
+			parent = obj;
+			do
+			{
+				tobj = parent;
+				parent = tree[tobj].ob_next;
+			} while (tree[parent].ob_tail != tobj);
+
+			for (tobj = tree[parent].ob_head; tobj != parent; tobj = tree[tobj].ob_next)
+			{
+				state = tree[tobj].ob_state;
+				if ((tree[tobj].ob_flags & OF_RBUTTON) && ((state & OS_SELECTED) || tobj == obj))
+				{
+					if (tobj == obj)
+						state |= OS_SELECTED;
+					else
+						state &= ~OS_SELECTED;
+					objc_change_grect(tree, tobj, MAX_DEPTH, work, state, TRUE);
+				}
+			}
+		} else
+		{
+			/* turn on new object */
+			graf_watchbox(tree, obj, state ^ OS_SELECTED, state);
+		}
+
+		/* if not touchexit then wait for button up */
+		if (cont && (flags & (OF_SELECTABLE | OF_EDITABLE)))
+			evnt_button(1, 1, 0, &m.x, &m.y, &m.buttons, &m.kstate);
+	}
+
+	/* see if this selection gets us out */
+	if ((tree[obj].ob_state & OS_SELECTED) && (flags & OF_EXIT))
+		cont = FALSE;
+	/* handle click on another editable field */
+	if (cont && !(flags & OF_EDITABLE))
+		obj = 0;
+	/* handle touchexit case; if double click, then set high bit */
+	if ((flags & OF_TOUCHEXIT) && clicks == 2)
+		obj |= 0x8000;
+
+	*pobj = obj;
+	return cont;
+}
+
+
+static _WORD handle_wdlg_evnt(CPX_DESC *cpx_desc, EVNT *events)
+{
+	if (cpx_desc->dialog)
+		return wdlg_evnt(cpx_desc->dialog, events);
+	if ((events->mwhich & MU_MESAG) && events->msg[3] == cpx_desc->whdl)
+	{
+		switch (events->msg[0])
+		{
+		case WM_CLOSED:
+		case AC_CLOSE:
+			return 0;
+		case WM_MOVED:
+		case WM_SIZED:
+			wind_set_grect(cpx_desc->whdl, WF_CURRXYWH, (GRECT *)&events->msg[4]);
+			wind_get_grect(cpx_desc->whdl, WF_WORKXYWH, &cpx_desc->size);
+			if (cpx_desc->tree)
+			{
+				cpx_desc->tree[ROOT].ob_x = cpx_desc->size.g_x;
+				cpx_desc->tree[ROOT].ob_y = cpx_desc->size.g_y;
+			}
+			break;
+		}
+	}
+	if ((events->mwhich & MU_BUTTON) &&
+		cpx_desc->whdl == wind_find(events->mx, events->my) &&
+		cpx_desc->tree)
+	{
+		_WORD obj = objc_find(cpx_desc->tree, ROOT, MAX_DEPTH, events->mx, events->my);
+		if (obj >= 0)
+		{
+			if (!fm_button(cpx_desc->tree, obj, events->mclicks, &obj, &cpx_desc->size))
+			{
+				/* return object number */
+				cpx_desc->button = obj;
+			} else if ((cpx_desc->tree[obj].ob_flags & OF_EDITABLE) && obj != cpx_desc->edit_obj)
+			{
+				if (cpx_desc->cursor)
+					objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_END);
+				cpx_desc->cursor = FALSE;
+				cpx_desc->edit_obj = obj;
+			}
+		}
+	}
+	return 1;
+}
+
+/* do_redraw()
+ *==========================================================================
+ * redraw object tree redraw for form-CPX
+ */
+static void do_redraw(CPX_DESC *cpx_desc, GRECT *prect)
+{
+	GRECT rect;
+
+	if (cpx_desc->tree == NULL || cpx_desc->whdl <= 0)
+		return;
+	if (cpx_desc->cursor)
+		objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_END);
+	wind_get_grect(cpx_desc->whdl, WF_FIRSTXYWH, &rect);
+	while (rect.g_w > 0 && rect.g_h > 0)
+	{
+		if (rc_intersect(prect, &rect))
+		{
+			objc_draw_grect(cpx_desc->tree, ROOT, MAX_DEPTH, &rect);
+		}
+		wind_get_grect(cpx_desc->whdl, WF_NEXTXYWH, &rect);
+	}
+	if (cpx_desc->cursor)
+		objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_INIT);
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -3103,7 +3325,7 @@ cpx_main_loop(void)
 		/* CPXe neuladen? */
 		if (do_reload)
 		{
-			close_all_cpx();
+			close_all_cpx(WM_CLOSED);
 			unload_all_cpx(); /* CPXe aus dem Speicher entfernen */
 			update_cpx_list(); /* CPXe neu einlesen */
 			tidy_up_icons(); /* Icons anordnen */
@@ -3113,8 +3335,8 @@ cpx_main_loop(void)
 		/* AC_CLOSE, alle CPXe und das Hauptfenster schliessen? */
 		if (do_close)
 		{
-			close_all_cpx(); /* alle CPXe schliessen */
-			close_main_window();/* Hauptfenster schliessen */
+			close_all_cpx(AC_CLOSE); /* alle CPXe schliessen */
+			close_main_window(AC_CLOSE);/* Hauptfenster schliessen */
 
 			if (no_open_cpx > 0)
 			{
@@ -3127,7 +3349,7 @@ cpx_main_loop(void)
 		}
 
 		/* Applikation und alle Fenster geschlossen? */
-		if (_app && (main_window == 0L) && (no_open_cpx == 0))
+		if (_app && main_window == NULL && no_open_cpx == 0)
 		{
 			quit = 1;
 			break;
@@ -3139,19 +3361,27 @@ cpx_main_loop(void)
 		/* liegt ein CPX-Fenster oben (wg. Event-CPX mit Mausrechteck oder Timer)? */
 		if (cpx_desc)
 		{
-			EVNT_multi((MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER) | cpx_desc->mask,
+			if (!cpx_desc->is_evnt_cpx &&
+				cpx_desc->dialog == NULL &&
+				cpx_desc->edit_obj &&
+				!cpx_desc->cursor)
+			{
+				objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_INIT);
+				cpx_desc->cursor = TRUE;
+			}
+			EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER | cpx_desc->mask,
 				   258, 3, 0,
 				   &cpx_desc->m1, &cpx_desc->m2, cpx_desc->time, &events);
 		}
 		else
 		{
 			/* kein CPX oben */
-			EVNT_multi((MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER),
+			EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER,
 				   258, 3, 0,
-				   0L, 0L, 30000L, &events);
+				   NULL, NULL, 30000L, &events);
 		}
 
-		if ((events.mwhich & MU_MESAG) && (events.msg[0] == AC_CLOSE))
+		if ((events.mwhich & MU_MESAG) && events.msg[0] == AC_CLOSE)
 		{
 			do_close = 1;
 			wind_update(BEG_UPDATE); /* Taskwechsel unter TOS blockieren */
@@ -3164,11 +3394,12 @@ cpx_main_loop(void)
 		while (cpx_desc)
 		{
 			/* CPX geoeffnet? */
-			if (cpx_desc->dialog)
+			if (cpx_desc->whdl > 0)
 			{
 				OBJECT	*dummy;
 				
-				wdlg_get_tree(cpx_desc->dialog, &dummy, &cpx_desc->size);
+				if (cpx_desc->dialog)
+					wdlg_get_tree(cpx_desc->dialog, &dummy, &cpx_desc->size);
 
 				/* Event-CPX? */
 				if (cpx_desc->is_evnt_cpx)
@@ -3177,13 +3408,13 @@ cpx_main_loop(void)
 					if (handle_evnt_cpx(cpx_desc, &events) == 0)
 					{
 						cpx_close(cpx_desc, 1); /* CPX benachrichtigen */
-						cpx_close_window(cpx_desc); /* Fenster schliessen */
+						cpx_close_window(cpx_desc, WM_CLOSED); /* Fenster schliessen */
 
 						if (!(cpx_desc->old.header.flags & CPX_RESIDENT))
 						{
 							unload_cpx(cpx_desc->start_of_cpx);
-							cpx_desc->start_of_cpx = 0L;
-							cpx_desc->end_of_cpx = 0L;
+							cpx_desc->start_of_cpx = NULL;
+							cpx_desc->end_of_cpx = NULL;
 						}
 					}
 				}
@@ -3196,13 +3427,15 @@ cpx_main_loop(void)
 					mwhich = events.mwhich;
 
 					/* weitermachen? */
-					if (wdlg_evnt(cpx_desc->dialog, &events))
+					if (handle_wdlg_evnt(cpx_desc, &events))
 					{
 						/* wurde ein Button gedrueckt? */
 						if (cpx_desc->button != -1)
+						{
 							/* CPX-Kontext aufrufen */
 							switch_context(cpx_desc);
-
+						}
+						
 						/* Tastendruck? */
 						if (mwhich & MU_KEYBD)
 						{
@@ -3212,9 +3445,61 @@ cpx_main_loop(void)
 								short key;
 								
 								key = MapKey(events.kstate, events.key);
-	
+								
+								if (cpx_desc->dialog == NULL && cpx_desc->tree)
+								{
+									DIRS direction = NODIR;
+
+									switch (events.key & 0xff00)
+									{
+									case KbRETURN << 8:
+									case KbNumENTER << 8:
+										direction = DEFAULTDIR;
+										break;
+
+									case KbTAB << 8:
+										direction = events.kstate & K_SHIFT ? BACKWARD : FORWARD;
+										break;
+
+									case KbUP << 8:
+										direction = BACKWARD;
+										break;
+
+									case KbDOWN << 8:
+										direction = FORWARD;
+										break;
+									}
+						
+									if (direction != NODIR)
+									{
+										_WORD next_obj;
+
+										key = 0;
+										next_obj = find_obj(cpx_desc->tree, cpx_desc->edit_obj, direction);
+										if (direction == DEFAULTDIR && next_obj != 0)
+										{
+											objc_change_grect(cpx_desc->tree, next_obj, MAX_DEPTH, &cpx_desc->size, cpx_desc->tree[next_obj].ob_state | OS_SELECTED, TRUE);
+											cpx_desc->button = next_obj;
+											switch_context(cpx_desc);
+										}
+										if (next_obj != cpx_desc->edit_obj)
+										{
+											if (cpx_desc->cursor)
+											{
+												objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_END);
+											}
+											cpx_desc->edit_obj = next_obj;
+											cpx_desc->cursor = FALSE;
+										}
+									}
+									if (key && cpx_desc->edit_obj)
+									{
+										objc_edit(cpx_desc->tree, cpx_desc->edit_obj, events.key, &cpx_desc->cursor_idx, ED_CHAR);
+									}
+								}
+								
 								/* ALT-Kombination oder nicht druckbaren Scancode auswerten? */
-								if (key & (KbSCAN + KbALT))
+								if (key & (KbSCAN | KbALT))
 								{
 									cpx_desc->msg[0] = CT_KEY;
 									cpx_desc->msg[1] = app_id;
@@ -3241,20 +3526,22 @@ cpx_main_loop(void)
 
 							switch (events.msg[0])
 							{
-								case AC_CLOSE:
+							case AC_CLOSE:
+								/* CPX-Kontext aufrufen */
+								switch_context(cpx_desc);
+								break;
+							case WM_REDRAW:
+								/* fuer dieses Fenster? */
+								if (events.msg[3] == cpx_desc->whdl)
 								{
+									if (cpx_desc->dialog == NULL)
+									{
+										do_redraw(cpx_desc, (GRECT *)&events.msg[4]);
+									}
 									/* CPX-Kontext aufrufen */
 									switch_context(cpx_desc);
-									break;
 								}
-								case WM_REDRAW:
-								{
-									/* fuer dieses Fenster? */
-									if (events.msg[3] == cpx_desc->whdl)
-										/* CPX-Kontext aufrufen */
-										switch_context(cpx_desc);
-									break;
-								}
+								break;
 							}
 						}
 					}
@@ -3283,7 +3570,7 @@ cpx_main_loop(void)
 			
 				key = MapKey(events.kstate, events.key);
 				/* Tastaturbehandlung fuer das Hauptfenster */
-				quit |= handle_keyboard(key & 0xff00,key & 0x00ff);
+				quit |= handle_keyboard(key & 0xff00, key & 0x00ff);
 			}
 		}
 
@@ -3292,10 +3579,10 @@ cpx_main_loop(void)
 			handle_button(events.mx, events.my, events.mbutton & 3, events.kstate, events.mclicks);
 
 		/* automatisch terminieren? */
-		if (settings.term && (time(0L) > termtime))
+		if (settings.term && time(NULL) > termtime)
 		{
 			/* Applikation oder MagiC als OS? */
-			if (_app || (aes_flags & GAI_MAGIC))
+			if (_app || aes_global[1] != 1)
 				quit = 1;
 		}
 
@@ -3310,12 +3597,12 @@ cpx_main_loop(void)
 		}
 	}
 
-	DEBUG(("%s: leave with NULL\n", __FUNCTION__));
+	DEBUG((DEBUG_FMT ": leave with NULL\n", DEBUG_ARGS));
 	a_call_return();
 
 	/* never reached */
 	assert(0);
-}	
+}
 
 static short
 MapKey(short keystate, short key)
@@ -3327,22 +3614,22 @@ MapKey(short keystate, short key)
 
 	scancode = (key >> 8) & 0xff;
 
-	if ((keystate & KsALT) && (scancode >= KbAlt1) && (scancode <= KbAltAPOSTR))
+	if ((keystate & K_ALT) && scancode >= KbAlt1 && scancode <= KbAltAPOSTR)
 		/* als 1 bis ' ummappen */
 		scancode -= KbAlt1 - KbN1;
 
 	/* CAPS gedrueckt? */
-	if (keystate & KsCAPS)
+	if (keystate & K_CAPSLOCK)
 	{
 		ret = ((char *)kt->caps)[scancode];
 	}
 	else
 	{
 		/* Shift? */
-		if (keystate & KsSHIFT)
+		if (keystate & K_SHIFT)
 		{
-			if ((scancode >= KbF11) && (scancode <= KbF20))
-				ret = ((char *)kt->shift)[scancode - 0x19];
+			if (scancode >= KbF11 && scancode <= KbF20)
+				ret = ((char *)kt->shift)[scancode - (KbF11 - KbF1)];
 			else
 				ret = ((char *)kt->shift)[scancode];
 		}
@@ -3353,10 +3640,12 @@ MapKey(short keystate, short key)
 	/* Scancode auswerten? */
 	if (ret == 0)
 		ret = scancode | KbSCAN;
-	else if ((scancode == KbNumMINUS) || (scancode == KbNumPLUS) ||	((scancode >= KbNumBrOPEN) && (scancode <= KbNumENTER)))
+	else if (scancode == KbNumMINUS ||
+		     scancode == KbNumPLUS ||
+		     (scancode >= KbNumBrOPEN && scancode <= KbNumENTER))
 		ret |= KbNUM;
 
-	return (ret | (keystate << 8));
+	return ret | (keystate << 8);
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -3374,12 +3663,15 @@ handle_evnt_cpx(CPX_DESC *cpx_desc, EVNT *events)
 	/* angefallene Ereignisse merken */
 	mwhich = events->mwhich;
 	/* ggf. Dummydialog verschieben */
-	wdlg_evnt(cpx_desc->dialog, events);
+	handle_wdlg_evnt(cpx_desc, events);
 	/* Dialogposition fuer Redraw etc. */
-	wdlg_get_tree(cpx_desc->dialog, &tree, &cpx_desc->size);
+	if (cpx_desc->dialog)
+		wdlg_get_tree(cpx_desc->dialog, &tree, &cpx_desc->size);
+	else
+		tree = cpx_desc->tree;
 
 	if (top_whdl() != cpx_desc->whdl)
-		mwhich &= ~(MU_KEYBD + MU_M1 + MU_M2 + MU_TIMER);
+		mwhich &= ~(MU_KEYBD | MU_M1 | MU_M2 | MU_TIMER);
 
 	/* Mausclicks? */
 	if (mwhich & MU_BUTTON)
@@ -3562,7 +3854,7 @@ std_settings(void)
 
 	aes_flags = get_aes_info(&aes_font, &aes_height, &hor_3d, &ver_3d);
 	if (aes_flags & GAI_APTERM)
-		shel_write(SHW_INFRECGN, 1, 0, 0L, 0L); /* Programm versteht AP_TERM */
+		shel_write(SHW_INFRECGN, 1, 0, NULL, NULL); /* Programm versteht AP_TERM */
 
 	wind_get_grect(0, WF_WORKXYWH, &desk_grect);
 
@@ -3608,7 +3900,7 @@ std_settings(void)
 		{
 			strcpy(inf_name, home);
 			strcat(inf_name, "defaults\\COPS.inf");
-			header_size =  read_file(inf_name, &settings, 0L, sizeof(struct alphaheader));
+			header_size =  read_file(inf_name, &settings, 0, sizeof(struct alphaheader));
 			
 			if (header_size != sizeof(struct alphaheader))
 			{
@@ -3686,7 +3978,7 @@ init_rsrc(void)
 	fix_popup_strings(tree_addr[GNL_POPUP]);
 	fix_popup_strings(tree_addr[CPX_POPUP]);
 	
-	if ((aes_flags & GAI_CICN) && (aes_flags & GAI_MAGIC)
+	if ((aes_flags & GAI_CICN) /* && (aes_flags & GAI_MAGIC) */
 		&& (aes_global[10] > 1)/* XXX */)
 	{
 		/* Farbicons, unter MagiC */
@@ -3772,7 +4064,7 @@ main(int argc, char *argv[])
 		}
 		else
 			/* als Applikation gestartet */
-			graf_mouse(ARROW, 0L);
+			graf_mouse(ARROW, NULL);
 		
 		aes_handle = graf_handle(&pwchar, &phchar, &pwbox, &phbox);
 
@@ -3782,117 +4074,91 @@ main(int argc, char *argv[])
 			std_settings();
 			init_rsrc();
 			/* Checkboxen und šberschriften anpassen */
-			substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, 0L, 0L);
+			substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, NULL, NULL);
 
 			/* Fensterdialoge vorhanden? */
-			if (aes_flags & GAI_WDLG)
+			if (init_wlib(app_id))
 			{
-				if (init_wlib(app_id))
+				/* Applikation oder ikonifiziertes Accessory? */
+				if (_app || settings.booticon)
 				{
-					/* Applikation oder ikonifiziertes Accessory? */
-					if (_app || settings.booticon)
+					/* kein Kontrollfeld sondern das Hauptfenster oeffnen? */
+					if (argc <= 1)
 					{
-						/* kein Kontrollfeld sondern das Hauptfenster oeffnen? */
-						if (argc <= 1)
-						{
-							/* OS liefert AP_TERM */
-							if ((aes_flags & GAI_APTERM))
-								/* INF-Datei muss einmal eingelesen werden */
-								must_read_inf = 1;
+						/* OS liefert AP_TERM */
+						if ((aes_flags & GAI_APTERM))
+							/* INF-Datei muss einmal eingelesen werden */
+							must_read_inf = 1;
 
-							/* Hauptfenster oeffnen */
-							open_main_window();
+						/* Hauptfenster oeffnen */
+						open_main_window();
 
-							/* und ikonifizieren? */
-							if (settings.booticon && main_window)
-								iconify_window(main_window->handle, 0L);
-						}
+						/* und ikonifizieren? */
+						if (settings.booticon && main_window)
+							iconify_window(main_window->handle, NULL);
 					}
-					
-					/* Fenster noch nicht offen und CPXe noch nicht gescannt? */
-					if (main_window == NULL)
+				}
+
+				/* Fenster noch nicht offen und CPXe noch nicht gescannt? */
+				if (main_window == NULL)
+				{
+					/* CPXe suchen, ggf. cpx_init() aufrufen */
+					update_cpx_list();
+					/* COPS.inf laden, CPXe im Hauptfenster positionieren */
+					read_inf();
+				}
+
+				/* Kontrollfelder direkt starten? */
+				while (argc > 1)
+				{
+					char *path;
+					argc--;
+
+					path = argv[argc];
+
+					if (path)
 					{
-						/* CPXe suchen, ggf. cpx_init() aufrufen */
-						update_cpx_list();
-						/* COPS.inf laden, CPXe im Hauptfenster positionieren */
-						read_inf();
-					}
+						CPX_DESC *cpx_desc;
 
-					/* Kontrollfelder direkt starten? */
-					while (argc > 1)
-					{
-						char *path;
-						argc--;
-
-						path = argv[argc];
-
-						if (path)
+						cpx_desc = list_search(cpx_desc_list,
+								       (long)path,
+								       offsetof(CPX_DESC, next), search_cpx_name);
+						if (cpx_desc)
 						{
-							CPX_DESC *cpx_desc;
+							struct auto_start *auto_start;
 							
-							cpx_desc = list_search(cpx_desc_list,
-									       (long)path,
-									       offsetof(CPX_DESC, next), search_cpx_name);
-							if (cpx_desc)
+							auto_start = malloc(sizeof(*auto_start));
+							if (auto_start)
 							{
-								struct auto_start *auto_start;
-								
-								auto_start = malloc(sizeof(*auto_start));
-								if (auto_start)
-								{
-									auto_start->next = NULL;
-									auto_start->cpx_desc = cpx_desc;
+								auto_start->next = NULL;
+								auto_start->cpx_desc = cpx_desc;
 
-									list_append((void **) &auto_start_list,
-										    (void *)auto_start,
-										    offsetof(struct auto_start, next));
-								}
+								list_append((void **) &auto_start_list,
+									    (void *)auto_start,
+									    offsetof(struct auto_start, next));
 							}
 						}
 					}
-
-					/* Accessory? */
-					if (_app == 0)
-						/* Taskwechsel unter TOS wieder zulassen */
-						wind_update(END_UPDATE);
-
-					/* Kontext sichern und Hauptschleife aufrufen */
-					a_call_main();
-					DEBUG(("%s: a_call_main returned\n", __FUNCTION__));
-
-					/* Hauptfenster schliessen */
-					close_main_window();
-					/* Einstellungen sichern */
-					save_inf();
-					/* Speicher fuer CPXe freigeben */
-					unload_all_cpx();
-
-					/* Fensterstrukturen freigeben */
-					reset_wlib();
 				}
-			}
-			else
-			{			
+
 				/* Accessory? */
-				if (_app)
-				{
-					form_alert(1, fstring_addr[NOWDIALOG_ALERT]);
-				} else
-				{
+				if (_app == 0)
 					/* Taskwechsel unter TOS wieder zulassen */
 					wind_update(END_UPDATE);
 
-					/* Endlosschleife */
-					while (1)
-					{
-						_WORD	msg[8];
+				/* Kontext sichern und Hauptschleife aufrufen */
+				a_call_main();
+				DEBUG((DEBUG_FMT ": a_call_main returned\n", DEBUG_ARGS));
 
-						evnt_mesag(msg);
+				/* Hauptfenster schliessen */
+				close_main_window(WM_CLOSED);
+				/* Einstellungen sichern */
+				save_inf();
+				/* Speicher fuer CPXe freigeben */
+				unload_all_cpx();
 
-						if ((msg[0] == AC_OPEN) && (msg[4] == menu_id))
-							form_alert(1, fstring_addr[NOWDIALOG_ALERT]);
-					}
-				}	
+				/* Fensterstrukturen freigeben */
+				reset_wlib();
 			}
 
 			/* Speicher fuer ersetzte Objekttypen freigeben */
@@ -3902,8 +4168,15 @@ main(int argc, char *argv[])
 
 		/* Accessory? */
 		if (_app == 0)
+		{
 			/* Taskwechsel unter TOS wieder zulassen */
 			wind_update(END_UPDATE);
+			if (aes_global[1] == 1)
+			{
+				for (;;)
+					evnt_mesag((_WORD *)home);
+			}
+		}
 
 		appl_exit();
 	}
@@ -3912,3 +4185,83 @@ main(int argc, char *argv[])
 
 	return 0;
 }
+
+
+#if 0
+/*
+ * Dummy routines for debugging, to check that wdialog is not required
+ */
+DIALOG *wdlg_create(HNDL_OBJ handle_exit, OBJECT *tree, void *user_data, _WORD code, void *data, _WORD flags)
+{
+	(void)handle_exit;
+	(void)tree;
+	(void)user_data;
+	(void)code;
+	(void)data;
+	(void)flags;
+	return 0;
+}
+
+_WORD wdlg_close(DIALOG *dialog, _WORD *x, _WORD *y)
+{
+	(void)dialog;
+	(void)x;
+	(void)y;
+	return 0;
+}
+
+_WORD wdlg_delete(DIALOG *dialog)
+{
+	(void)dialog;
+	return 0;
+}
+
+
+_WORD wdlg_open(DIALOG *dialog, const char *title, _WORD kind, _WORD x, _WORD y, _WORD code, void *data)
+{
+	(void)dialog;
+	(void)title;
+	(void)kind;
+	(void)x;
+	(void)y;
+	(void)code;
+	(void)data;
+	return 0;
+}
+
+_WORD wdlg_get_tree(DIALOG *dialog, OBJECT **tree, GRECT *r)
+{
+	(void)dialog;
+	*tree = 0;
+	(void)r;
+	return 0;
+}
+
+_WORD wdlg_set_tree(DIALOG *dialog, OBJECT *new_tree)
+{
+	(void)dialog;
+	(void)new_tree;
+	return 0;
+}
+
+_WORD wdlg_set_edit(DIALOG *dialog, _WORD obj)
+{
+	(void)dialog;
+	(void)obj;
+	return 0;
+}
+
+_WORD wdlg_get_edit(DIALOG *dialog, _WORD *cursor)
+{
+	(void)dialog;
+	(void)cursor;
+	return 0;
+}
+
+_WORD wdlg_evnt(DIALOG *dialog, EVNT *events)
+{
+	(void)dialog;
+	(void)events;
+	return 0;
+}
+#endif

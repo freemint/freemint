@@ -48,7 +48,7 @@
 #endif
 
 
-#define DEBUG_CALLBACK(cpx) DEBUG(("%s(%s)\n", __FUNCTION__, cpx->file_name))
+#define DEBUG_CALLBACK(cpx) DEBUG((DEBUG_FMT "(%s)\n", DEBUG_ARGS, cpx->file_name))
 
 
 void
@@ -65,7 +65,7 @@ cpx_userdef(void __CDECL (*userdef)(void))
 			: "a"(userdef)
 			: "d2", "a2", "cc" AND_MEMORY
 			);
-#elif defined (__PUREC__)
+#elif defined (__PUREC__) || defined(__AHCC__)
 	(*userdef)();
 #else
 	you loose

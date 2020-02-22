@@ -24,21 +24,17 @@
 #ifndef _key_map_h
 #define _key_map_h
 
-#define	KsCAPS		0x10
-#define	KsALT		0x08
-#define	KsCONTROL	0x04
-#define	KsSHIFT		0x03
-#define	KsLSHIFT	0x02
-#define	KsRSHIFT	0x01
-#define	KsNORMAL	0x00
+#ifndef K_SHIFT
+#define K_SHIFT (K_LSHIFT | K_RSHIFT)
+#endif
 
 #define	KbSCAN		0x8000
 #define	KbNUM		0x4000
-#define	KbALT		0x0800
-#define	KbCONTROL	0x0400
-#define	KbSHIFT		0x0300
-#define	KbLSHIFT	0x0200
-#define	KbRSHIFT	0x0100
+#define	KbALT		(K_ALT << 8)
+#define	KbCONTROL	(K_CTRL << 8)
+#define	KbSHIFT		(K_SHIFT << 8)
+#define	KbLSHIFT	(K_LSHIFT << 8)
+#define	KbRSHIFT	(K_RSHIFT << 8)
 #define	KbNORMAL	0x0000
 
 #define	KbISO		0x37
@@ -66,6 +62,8 @@
 #define	KbF19		0x5c
 #define	KbF20		0x5d
 
+#define KbRETURN	0x1c
+#define KbTAB		0x0f
 #define	KbUNDO		0x61
 #define	KbHELP		0x62
 #define	KbINSERT	0x52

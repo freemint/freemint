@@ -27,10 +27,6 @@
 # include <sys/types.h>
 # include <mint/mintbind.h>
 
-# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
-# error Require at least MiNTLib 0.57
-# endif
-
 # ifndef _cdecl
 # define _cdecl __CDECL
 # endif
@@ -45,6 +41,16 @@
 
 #if 0
 #define DEBUG(x) printf x, fflush(stdout)
+#undef DEBUG
+#include <mint/arch/nf_ops.h>
+#define DEBUG(x) nf_debugprintf x
+#if defined(__GNUC__)
+#define DEBUG_FMT "%s"
+#define DEBUG_ARGS __FUNCTION__
+#else
+#define DEBUG_FMT "%s:%d"
+#define DEBUG_ARGS __FILE__, __LINE__
+#endif
 #else
 #define DEBUG(x)
 #endif
@@ -71,6 +77,15 @@ struct xattr
 	short res1;		/* reserved for future kernel use */
 	long res2[2];
 };
+#endif
+
+#ifndef BOOLEAN
+#define BOOLEAN int
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#define TRUE  1
 #endif
 
 # endif /* _global_h */

@@ -1,7 +1,7 @@
 /*
  * GEM resource C output of cops_rs
  *
- * created by ORCS 2.16
+ * created by ORCS 2.17
  */
 
 #if !defined(__GNUC__) || !defined(__mc68000__)
@@ -19,7 +19,7 @@
 #  endif
 #else
 #  ifdef __TURBOC__
-#    include <portaes.h>
+#    include <aes.h>
 #    define CP (_WORD *)
 #  endif
 #endif
@@ -266,10 +266,10 @@
 extern _BOOL W_Cicon_Setpalette(_WORD *_palette);
 #endif
 #ifndef hrelease_objs
-extern _VOID hrelease_objs(OBJECT *_ob, _WORD _num_objs);
+extern void hrelease_objs(OBJECT *_ob, _WORD _num_objs);
 #endif
 #ifndef hfix_objs
-extern _VOID *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
+extern void *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #endif
 #endif
 
@@ -303,13 +303,13 @@ extern _VOID *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #undef NUM_OBS
 #undef NUM_TREE
 #undef NUM_UD
-#define NUM_STRINGS 68
+#define NUM_STRINGS 67
 #define NUM_BB		2
 #define NUM_IB		1
 #define NUM_CIB     1
 #define NUM_CIC     1
 #define NUM_TI		4
-#define NUM_FRSTR	14
+#define NUM_FRSTR	13
 #define NUM_FRIMG	0
 #define NUM_OBS     60
 #define NUM_TREE	9
@@ -377,14 +377,13 @@ static char cops_rs_string_56[] = "[2][Save Defaults?][Yes|No]";
 static char cops_rs_string_57[] = "[3][Not enough memory!][OK]";
 static char cops_rs_string_58[] = "[3][File error.][OK]";
 static char cops_rs_string_59[] = "[1][File not found.][OK]";
-static char cops_rs_string_60[] = "[1][Please run the system extension|WDIALOG, which is supplied with|NVDI, or use the multitasking|system MagiC 4.][Quit]";
-static char cops_rs_string_61[] = "[1][Cannot open the control panel.][OK]";
-static char cops_rs_string_62[] = "[2][Terminate COPS?][Yes|No]";
-static char cops_rs_string_63[] = "AES is inactive.";
-static char cops_rs_string_64[] = "Select CPX Path";
-static char cops_rs_string_65[] = "  Control Panels  ";
-static char cops_rs_string_66[] = " COPS ";
-static char cops_rs_string_67[] = "[1][ | Stereo Sound   |    Is Not|  Available.][ OK ]";
+static char cops_rs_string_60[] = "[1][Cannot open the control panel.][OK]";
+static char cops_rs_string_61[] = "[2][Terminate COPS?][Yes|No]";
+static char cops_rs_string_62[] = "AES is inactive.";
+static char cops_rs_string_63[] = "Select CPX Path";
+static char cops_rs_string_64[] = "  Control Panels  ";
+static char cops_rs_string_65[] = " COPS ";
+static char cops_rs_string_66[] = "[1][ | Stereo Sound   |    Is Not|  Available.][ OK ]";
 
 
 static _UBYTE cops_rs_IMAGE0[] = {
@@ -532,8 +531,7 @@ char *rs_frstr[NUM_FRSTR] = {
 	cops_rs_string_63,
 	cops_rs_string_64,
 	cops_rs_string_65,
-	cops_rs_string_66,
-	cops_rs_string_67
+	cops_rs_string_66
 };
 
 
@@ -842,24 +840,24 @@ OBJECT rs_object[NUM_OBS] = {
 
 	{ -1, 1, 10, G_BOX, OF_FL3DBAK, OS_SHADOWED, C_UNION(0xFF1100L), 0,0, 22,10 },
 	{ 2, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_0), 0,0, 22,1 }, /* PG_ABOUT */
-	{ 3, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_1), 0,1, 22,1 },
+	{ 3, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_1), 0,1, 22,1 }, /* PG_DIS1 */
 	{ 4, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_2), 0,2, 22,1 }, /* PG_SETTINGS */
-	{ 5, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_3), 0,3, 22,1 },
+	{ 5, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_3), 0,3, 22,1 }, /* PG_DIS2 */
 	{ 6, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_4), 0,4, 22,1 }, /* PG_RELOAD */
 	{ 7, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_5), 0,5, 22,1 }, /* PG_TIDY_UP */
-	{ 8, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_6), 0,6, 22,1 },
+	{ 8, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_6), 0,6, 22,1 }, /* PG_DIS3 */
 	{ 9, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_7), 0,7, 22,1 }, /* PG_SELECT_ALL */
-	{ 10, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_8), 0,8, 22,1 },
+	{ 10, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_8), 0,8, 22,1 }, /* PG_DIS4 */
 	{ 0, -1, -1, G_STRING, 0x421, OS_NORMAL, C_UNION(cops_rs_string_9), 0,9, 22,1 }, /* PG_HELP */
 
 /* CPX_POPUP */
 
 	{ -1, 1, 6, G_BOX, OF_FL3DBAK, OS_SHADOWED, C_UNION(0xFF1100L), 0,0, 18,6 },
 	{ 2, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_10), 0,0, 18,1 }, /* CP_OPEN */
-	{ 3, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_11), 0,1, 18,1 },
+	{ 3, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_11), 0,1, 18,1 }, /* CP_DIS1 */
 	{ 4, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_12), 0,2, 18,1 }, /* CP_DISABLE */
 	{ 5, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_13), 0,3, 18,1 }, /* CP_ENABLE */
-	{ 6, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_14), 0,4, 18,1 },
+	{ 6, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_14), 0,4, 18,1 }, /* CP_DIS2 */
 	{ 0, -1, -1, G_STRING, 0x421, OS_NORMAL, C_UNION(cops_rs_string_15), 0,5, 18,1 }, /* CP_INFO */
 
 /* ABOUT_DIALOG */
@@ -1133,8 +1131,8 @@ _WORD cops_rs_rsc_free()
 #endif /* RSC_NAMED_FUNCTIONS */
 
 #else /* !RSC_STATIC_FILE */
-_WORD rs_numstrings = 68;
-_WORD rs_numfrstr = 14;
+_WORD rs_numstrings = 67;
+_WORD rs_numfrstr = 13;
 
 _WORD rs_nuser = 0;
 _WORD rs_numimages = 4;

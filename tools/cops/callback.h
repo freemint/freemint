@@ -33,13 +33,21 @@
 
 extern struct xcpb xctrl_pb;
 
+typedef enum
+{
+	NODIR = -1,
+	FORWARD,
+	BACKWARD,
+	DEFAULTDIR
+} DIRS;
+
+
 /* lookup cpx descriptor with addr */
 CPX_DESC *find_cpx_by_addr(const long *sp);
 
-short get_cookie(long cookie, long *p_value);
-
 short _cdecl save_header(struct cpxlist *header);
 void cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, _WORD edit_obj, _WORD *msg);
+_WORD find_obj(OBJECT *tree, _WORD startob, DIRS direction);
 
 /* used by the asm wrapper */
 void    _cdecl rsh_fix(const long *sp);

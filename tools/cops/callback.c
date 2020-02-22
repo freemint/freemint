@@ -43,7 +43,7 @@
 #undef min
 #undef max
 
-#define DEBUG_CALLBACK(cpx) DEBUG(("%s(%s)\n", __FUNCTION__, cpx ? cpx->file_name : "not found"))
+#define DEBUG_CALLBACK(cpx) DEBUG((DEBUG_FMT "(%s)\n", DEBUG_ARGS, cpx ? cpx->file_name : "not found"))
 
 
 static struct cpxlist *_cdecl get_cpx_list(void) { return cpxlist; }
@@ -73,7 +73,7 @@ static void    _cdecl MFsave(struct MFsave_args);
 /*	cookie: Cookietyp								*/
 /*	p_value: hier wird der Cookiewert zurueckgeliefert				*/
 /*----------------------------------------------------------------------------------------*/ 
-#if defined(__PUREC__) || defined(__FASTCALL__)
+#if defined(__PUREC__) || defined(__AHCC__) || defined(__FASTCALL__)
 static short _cdecl getcookie(long cookie, long *p_value)
 {
 	DEBUG(("getcookie(0x%lx, %p)\n", cookie, p_value));
@@ -116,7 +116,7 @@ struct xcpb xctrl_pb =
 
 	CPX_Save_wrap,
 	Get_Buffer_wrap,
-#if defined(__PUREC__) || defined(__FASTCALL__)
+#if defined(__PUREC__) || defined(__AHCC__) || defined(__FASTCALL__)
 	getcookie,
 #else
 	get_cookie,
@@ -368,10 +368,10 @@ Popup(struct Popup_args args)
 static void
 redraw_obj(OBJECT *tree, short obj)
 {
-	GRECT r = *(GRECT *) &tree->ob_x; /* Dialog-Rechteck */
+	GRECT *r = (GRECT *) &tree->ob_x; /* Dialog-Rechteck */
 
 	wind_update(BEG_UPDATE);
-	objc_draw(tree, obj, MAX_DEPTH, r.g_x, r.g_y, r.g_w, r.g_h);
+	objc_draw_grect(tree, obj, MAX_DEPTH, r);
 	wind_update(END_UPDATE);
 }
 
@@ -726,6 +726,56 @@ is_edit_obj_hidden(OBJECT *tree, short obj)
 	return 0;
 }
 
+
+_WORD find_obj(OBJECT *tree, _WORD startob, DIRS direction)
+{
+	_WORD obj;
+	_WORD searchflag;
+	_WORD curflag;
+	_WORD inc;
+
+	obj = 0;
+	searchflag = OF_EDITABLE;
+	inc = 1;
+
+	switch (direction)
+	{
+	case BACKWARD:
+		inc = -1;
+		obj = startob + inc;
+		break;
+
+	case FORWARD:
+		if (!(tree[startob].ob_flags & OF_LASTOB))
+			obj = startob + inc;
+		else
+			obj = -1;
+		break;
+
+	case DEFAULTDIR:
+		searchflag = OF_DEFAULT;
+		break;
+	case NODIR:
+		return startob;
+	}
+
+	while (obj >= 0)
+	{
+		curflag = tree[obj].ob_flags;
+
+		if (searchflag & curflag)
+			return obj;
+
+		if (curflag & OF_LASTOB)
+			obj = -1;
+		else
+			obj += inc;
+	}
+	return startob;
+}
+
+
+
 /*----------------------------------------------------------------------------------------*/ 
 /* (Xform_do) form_do() fuer CPX-Fenster simulieren					  */
 /* Funktionsergebnis:	CPX_DESC des neuen Kontexts					  */
@@ -739,7 +789,6 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, _WORD edit_obj, _WORD *msg)
 {
 	DIALOG *dialog;
 	_WORD last_edit_obj;
-	_WORD cursor;
 
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -747,29 +796,55 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, _WORD edit_obj, _WORD *msg)
 
 	if (tree != cpx_desc->tree)				/* Objektbaum geaendert? */
 	{
-		if (cpx_desc->tree == 0L)
+		if (cpx_desc->tree == NULL)
 			cpx_desc->size.g_y -= desk_grect.g_h;	/* CPX-Rechteck wieder innerhalb des Schirms */
 
 		cpx_desc->tree = tree;
 		obj_HIDDEN(tree, ROOT);				/* Baum nicht zeichnen! */
-		wdlg_set_tree(dialog, tree);			/* neuen Objektbaum setzen */
+		if (dialog)
+			wdlg_set_tree(dialog, tree);			/* neuen Objektbaum setzen */
+		tree[ROOT].ob_x = cpx_desc->size.g_x;
+		tree[ROOT].ob_y = cpx_desc->size.g_y;
 		obj_VISIBLE(tree, ROOT);
+
+		if (edit_obj == 0)
+			edit_obj = find_obj(tree, 0, FORWARD);
+	
+		cpx_desc->edit_obj = edit_obj;
+		cpx_desc->cursor_idx = -1;
+		cpx_desc->cursor = FALSE;
 	}
 
-	last_edit_obj = wdlg_get_edit(dialog, &cursor);		/* Editobjekt erfragen */
+	if (dialog)
+	{
+		last_edit_obj = wdlg_get_edit(dialog, &cpx_desc->cursor_idx);		/* Editobjekt erfragen */
+	} else
+	{
+		last_edit_obj = 0;
+	}
 
 	if (last_edit_obj > 0)					/* Editobjekt aktiv? */
 	{
-		if (is_edit_obj_hidden(tree, last_edit_obj))	/* Editobjekt unsichtbar? */
+		if (dialog)
 		{
-			obj_HIDDEN(tree, ROOT);			/* Baum nicht zeichnen! */
-			wdlg_set_tree(dialog, tree);		/* Objektbaum nochmals setzen, Cursorzustand zuruecksetzen */
-			obj_VISIBLE(tree, ROOT);
+			if (is_edit_obj_hidden(tree, last_edit_obj))	/* Editobjekt unsichtbar? */
+			{
+				obj_HIDDEN(tree, ROOT);			/* Baum nicht zeichnen! */
+				wdlg_set_tree(dialog, tree);		/* Objektbaum nochmals setzen, Cursorzustand zuruecksetzen */
+				obj_VISIBLE(tree, ROOT);
+			}
 		}
 	} 
 
 	if (edit_obj)
-		wdlg_set_edit(dialog, edit_obj);		/* Editobjekt setzen */
+	{
+		if (dialog)
+		{
+			wdlg_set_edit(dialog, edit_obj);		/* Editobjekt setzen */
+		} else
+		{
+		}
+	}
 
 	cpx_desc->button = -1;					/* noch kein Button gedrueckt */
 	cpx_desc->msg = msg;
@@ -1052,31 +1127,18 @@ void * _cdecl Get_Buffer(const long *sp)
 /*----------------------------------------------------------------------------------------*/ 
 static void _cdecl MFsave(struct MFsave_args args) /* contributed by Arnaud */
 {
-	static short has_mouse = 0;
-
 	DEBUG(("MFsave\n"));
-
-	if (has_mouse == 0)
-	{
-		_WORD parm1, dum;
-
-		if (appl_getinfo(AES_MOUSE, &parm1, &dum, &dum, &dum) == 1
-		    && parm1 == 1)
-			has_mouse = 1;
-		else
-			has_mouse = -1;
-	}
 
 	if (args.flag)
 	{
-		if (has_mouse > 0)
+		if (aes_flags & GAI_MOUSE)
 			graf_mouse(M_SAVE, args.mf);
 		else
 			/* nothing */ ;
 	}
 	else
 	{
-		if (has_mouse > 0)
+		if (aes_flags & GAI_MOUSE)
 			graf_mouse(M_RESTORE, args.mf);
 		else
 			graf_mouse(ARROW, NULL);

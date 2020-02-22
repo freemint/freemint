@@ -1,23 +1,23 @@
 /*
  * resource set indices for cops_rs
  *
- * created by ORCS 2.16
+ * created by ORCS 2.17
  */
 
 /*
- * Number of Strings:        68
+ * Number of Strings:        67
  * Number of Bitblks:        2
  * Number of Iconblks:       1
  * Number of Color Iconblks: 1
  * Number of Color Icons:    1
  * Number of Tedinfos:       4
- * Number of Free Strings:   14
+ * Number of Free Strings:   13
  * Number of Free Images:    0
  * Number of Objects:        60
  * Number of Trees:          9
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          6890
+ * Total file size:          6774
  */
 
 #undef RSC_NAME
@@ -35,8 +35,8 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 68
-#define NUM_FRSTR 14
+#define NUM_STRINGS 67
+#define NUM_FRSTR 13
 #define NUM_UD 0
 #define NUM_IMAGES 4
 #define NUM_BB 2
@@ -92,12 +92,12 @@ extern OBJECT *rs_trindex[];
 
 #define SET_DIALOG         4 /* form/dialog */
 #define ACSELPATH          2 /* BUTTON in tree SET_DIALOG */
-#define ACPATH             3 /* FTEXT in tree SET_DIALOG */ /* max len 20 */
+#define ACPATH             3 /* FTEXT in tree SET_DIALOG */
 #define ACBOOT             4 /* BUTTON in tree SET_DIALOG */
 #define ACCLICK            5 /* BUTTON in tree SET_DIALOG */
 #define ACSORTNAME         6 /* BUTTON in tree SET_DIALOG */
 #define ACTERM             7 /* BUTTON in tree SET_DIALOG */
-#define ACAFTER            8 /* FTEXT in tree SET_DIALOG */ /* max len 2 */
+#define ACAFTER            8 /* FTEXT in tree SET_DIALOG */
 #define ACOK               9 /* BUTTON in tree SET_DIALOG */
 
 #define ICONIFIED_DIALOG   5 /* form/dialog */
@@ -107,53 +107,37 @@ extern OBJECT *rs_trindex[];
 #define EMPTY_TREE         6 /* form/dialog */
 
 #define ICON_DIALOG        7 /* form/dialog */
-#define COPS_ICON          1 /* ICON in tree ICON_DIALOG */ /* max len 1 */
+#define COPS_ICON          1 /* ICON in tree ICON_DIALOG */
 #define INACTIVE_IMG       2 /* IMAGE in tree ICON_DIALOG */
 
 #define CICON_DIALOG       8 /* form/dialog */
-#define COPS_CICON         1 /* CICON in tree CICON_DIALOG */ /* max len 1 */
+#define COPS_CICON         1 /* CICON in tree CICON_DIALOG */
 
 #define NOWINDOW_ALERT     0 /* Alert string */
-/* [1][Keine weiteren Fenster.][Abbruch] */
 
 #define RELOAD_ALERT       1 /* Alert string */
-/* [2][Alle Kontrollfelder neuladen?][Ja|Nein] */
 
 #define SAVE_DFLT_ALERT    2 /* Alert string */
-/* [2][Voreinstellungen sichern?][Ja|Nein] */
 
 #define MEM_ERR_ALERT      3 /* Alert string */
-/* [3][Nicht genÅgend Speicher!][OK] */
 
 #define FILE_ERR_ALERT     4 /* Alert string */
-/* [3][Schreib- oder Lesefehler.][OK] */
 
 #define FNF_ERR_ALERT      5 /* Alert string */
-/* [1][Datei nicht gefunden.][OK] */
 
-#define NOWDIALOG_ALERT    6 /* Alert string */
-/* [1][Bitte starten Sie die NVDI|beiliegende Systemerweiterung|WDIALOG oder verwenden Sie|MagiC 4 oder neuer.][OK] */
+#define CPXLOAD_ALERT      6 /* Alert string */
 
-#define CPXLOAD_ALERT      7 /* Alert string */
-/* [1][Beim ôffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK] */
+#define QUIT_ALERT         7 /* Alert string */
 
-#define QUIT_ALERT         8 /* Alert string */
-/* [2][COPS beenden?][Ja|Nein] */
+#define NOAES_STR          8 /* Free string */
 
-#define NOAES_STR          9 /* Free string */
-/* AES noch nicht aktiv. */
+#define CPXPATH_STR        9 /* Free string */
 
-#define CPXPATH_STR       10 /* Free string */
-/* CPX-Pfad auswÑhlen */
+#define MENUTITLE_STR     10 /* Free string */
 
-#define MENUTITLE_STR     11 /* Free string */
-/*   Kontrollfelder   */
+#define ICNFTITLE_STR     11 /* Free string */
 
-#define ICNFTITLE_STR     12 /* Free string */
-/*  COPS  */
-
-#define AL_NO_SOUND_DMA   13 /* Alert string */
-/* [1][ | Stereo-Sound  | nicht mîglich!  ][ OK ] */
+#define AL_NO_SOUND_DMA   12 /* Alert string */
 
 
 
