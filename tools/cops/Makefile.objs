@@ -19,6 +19,10 @@ include $(top_srcdir)/PHONY
 
 CFLAGS += $(LANG_CFLAGS)
 
+ifneq ($(BINTRAY_API_KEY),)
+CFLAGS += -DBROKEN_GEMLIB
+endif
+
 all-here: build
 
 # default overwrites
