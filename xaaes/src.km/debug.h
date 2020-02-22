@@ -183,8 +183,10 @@ void diag(enum debug_item item, struct xa_client *client, const char *t, ...) __
 #define CONTROL(nintin,nintout,naddrin) {short *co = pb->control; \
 			 if (co[1] != nintin || co[2] != nintout || co[3] != naddrin) \
 				diags(D_cl,nintin,co[1],nintout,co[2],naddrin,co[3]); }
-#else
-#define CONTROL(nintin,nintout,naddrin)
+#define CONTROL2(nintin,nintout,naddrin, nintin2,nintout2,naddrin2) {short *co = pb->control; \
+			 if ((co[1] != nintin || co[2] != nintout || co[3] != naddrin) &&
+			     (co[1] != nintin2 || co[2] != nintout2 || co[3] != naddrin2))\
+				diags(D_cl,nintin,co[1],nintout,co[2],naddrin,co[3]); }
 #endif
 
 #else /* GENERATE_DIAGS */
@@ -194,9 +196,13 @@ void diag(enum debug_item item, struct xa_client *client, const char *t, ...) __
 #define DIAGA(x)
 #define DIAG(x)
 #define IFDIAG(x)
-#define CONTROL(a,b,c)
 
 #endif /* GENERATE_DIAGS */
+
+#ifndef CONTROL
+#define CONTROL(a,b,c)
+#define CONTROL2(a,b,c,d,e,f)
+#endif
 
 void _cdecl bootlog(short disp, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 #ifdef BOOTLOG

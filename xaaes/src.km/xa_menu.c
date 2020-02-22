@@ -687,9 +687,11 @@ unsigned long
 XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *ob = (OBJECT*)pb->addrin[0];
-	CONTROL(2,1,1)
+	CONTROL2(2,1,1, 6,2,3)
 
 	pb->intout[0] = -1;
+	if (pb->control[2] >= 2 && pb->control[1] >= 6)
+		pb->intout[1] = pb->intin[5];
 
 	if (validate_obtree(client, ob, "XA_form_popup:"))
 	{
