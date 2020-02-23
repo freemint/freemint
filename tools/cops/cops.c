@@ -183,14 +183,13 @@ static void _cdecl sig_handler(long sig);
 static long
 read_file(char *name, void *dest, long offset, long len)
 {
-	long read = 0;
+	long read;
 	short fh;
 
 	fh = (short)Fopen(name, O_RDONLY);
 	if (fh >= 0)
 	{
-		if (offset)
-			read = Fseek(offset, fh, SEEK_SET);
+		read = Fseek(offset, fh, SEEK_SET);
 
 		if (read == offset)
 		{
@@ -2044,6 +2043,14 @@ static void append_slash(char *path)
 	}
 }
 
+
+static void dosify(char *path)
+{
+	char *p;
+	while ((p = strchr(path, '/')) != NULL)
+		*p = '\\';
+}
+
 static void
 einstellungen(void)
 {
@@ -2096,6 +2103,7 @@ einstellungen(void)
 			
 			file[0] = 0;
 
+			dosify(path);
 			append_slash(path);
 			strcpy(tmp_path, path);
 
@@ -3869,6 +3877,7 @@ std_settings(void)
 	if (env)
 	{
 		strcpy(home, env);
+		dosify(home);
 	}
 	else
 	{
