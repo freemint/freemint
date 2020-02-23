@@ -90,7 +90,7 @@ struct xattr
 
 #if defined(BROKEN_GEMLIB)
 #define wind_get_int(a,b,c) wind_get(a,b,c,NULL,NULL,NULL)
-#define wind_set_int(a,b,c) wind_get(a,b,c,0,0,0)
+#define wind_set_int(a,b,c) wind_set(a,b,c,0,0,0)
 #define form_dial_grect(a,b,c) form_dial(a, (b)->g_x, (b)->g_y, (b)->g_w, (b)->g_h, (c)->g_x, (c)->g_y, (c)->g_w, (c)->g_h)
 #define objc_change_grect(a,b,c,d,e,f) objc_change(a,b,c,(d)->g_x, (d)->g_y, (d)->g_w, (d)->g_h, e,f)
 #endif
