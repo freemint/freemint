@@ -21,7 +21,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -83,7 +82,6 @@ cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 	DEBUG_CALLBACK(cpx_desc);
 
 	init = cpx_desc->start_of_cpx;
-	assert(init);
 
 	/*
 	 * COPS extensions:
@@ -105,7 +103,8 @@ cpx_call(CPX_DESC *cpx_desc, GRECT *work)
 	DEBUG_CALLBACK(cpx_desc);
 	DEBUG(("calling out cpx_call at %p\n", cpx_desc->info->cpx_call));
 
-	assert(cpx_desc->info->cpx_call);
+	if (cpx_desc->info->cpx_call == 0)
+		return 0;
 	ret = (*cpx_desc->info->cpx_call)(work, cpx_desc->dialog);
 
 	DEBUG(("cpx_call -> %d\n", ret));
@@ -292,7 +291,7 @@ a_call_main(void)
 	longjmp(jb, 1);
 
 	/* never reached */
-	assert(0);
+	__builtin_unreachable();
 }
 void
 a_call_return(void)
@@ -301,7 +300,7 @@ a_call_return(void)
 	longjmp(alpha_context, 1);
 
 	/* never reached */
-	assert(0);
+	__builtin_unreachable();
 }
 
 #if 0
@@ -354,7 +353,7 @@ call_cpx_form_do(void)
 		    call_cpx_form_do_args.msg);
 
 	/* never reached */
-	assert(0);
+	__builtin_unreachable();
 }
 short _cdecl
 Xform_do(const long *sp)
@@ -391,7 +390,7 @@ Xform_do(const long *sp)
 		longjmp(jb, 1);
 
 		/* never reached */
-		assert(0);
+		__builtin_unreachable();
 	}
 
 	*(((const struct Xform_do_args *)(++sp))->msg) = AC_CLOSE;
@@ -486,7 +485,7 @@ new_context(CPX_DESC *cpx_desc)
 		longjmp(jb, 1);
 
 		/* never reached */
-		assert(0);
+		__builtin_unreachable();
 	}
 
 	return 0;

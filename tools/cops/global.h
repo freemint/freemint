@@ -88,6 +88,10 @@ struct xattr
 #define TRUE  1
 #endif
 
+#ifndef __GNUC__
+#define __builtin_unreachable()
+#endif
+
 #if defined(BROKEN_GEMLIB)
 #define wind_get_int(a,b,c) wind_get(a,b,c,NULL,NULL,NULL)
 #define wind_set_int(a,b,c) wind_set(a,b,c,0,0,0)

@@ -21,7 +21,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -118,7 +117,11 @@ create_window(short kind, GRECT *border, short *handle, char *name, char *iconif
 			size = sizeof(WINDOW);
 			
 		new = malloc(size);
-		assert(new);
+		if (new == NULL)
+		{
+			wind_delete(*handle);
+			return NULL;
+		}
 
 		new->handle = *handle;		/* Fensterhandle */
 		new->kind = kind;		/* Fensterattribute */
@@ -177,7 +180,7 @@ create_window(short kind, GRECT *border, short *handle, char *name, char *iconif
 		new->hslsize = 0;		/* Groesse des hor. Sliders in Promille */
 		new->vslsize = 0;		/* Groesse des ver. Sliders in Promille */
 
-		new->next = 0L;			/* keine Folgestruktur vorhanden */
+		new->next = NULL;		/* keine Folgestruktur vorhanden */
 	
 		list_insert((void **) &window_list, new, offsetof(WINDOW, next));
 	}

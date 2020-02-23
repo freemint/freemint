@@ -33,7 +33,6 @@
  *   interpretiert das COPS als Anweisung kein Fenster zu oeffnen (fuer NPRNCONF)
  */
 
-#include <assert.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -3609,7 +3608,7 @@ cpx_main_loop(void)
 	a_call_return();
 
 	/* never reached */
-	assert(0);
+	__builtin_unreachable();
 }
 
 static short
