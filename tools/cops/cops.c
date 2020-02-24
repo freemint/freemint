@@ -3043,7 +3043,7 @@ do_args(char *args)
 					/* folgt darauf noch ein Hochkomma? */
 					if (*args == '\'')
 					{
-						memcpy(path + 1, path, args - path - 1); /* Bereich verschieben */
+						memmove(path + 1, path, args - path - 1); /* Bereich verschieben */
 						path++;
 						args++;
 						len--;
