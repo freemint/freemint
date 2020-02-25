@@ -67,6 +67,7 @@ struct cpxhead
 #define CPX_SETONLY		0x0001		/* Set Only CPX Flag 		*/
 #define CPX_BOOTINIT	0x0002		/* Boot Initialization Flag	*/
 #define CPX_RESIDENT	0x0004		/* RAM Resident Flag		*/
+#define CPX_WAS_RESIDENT 0x8000		/* used internally by config.cpx */
 
 	long cpx_id;
 	unsigned short cpx_version;
@@ -211,24 +212,18 @@ struct xcpb
  * 32bit clean
  */
 
-/* helper structs for 16bit argument alignment */
-struct cpx_key_args { short kstate; short key; short *quit; };
-struct cpx_button_args { MRETS *mrets; short nclicks; short *quit; };
-struct cpx_hook_args { _WORD event; _WORD *msg; MRETS *mrets; _WORD *key; _WORD *nclicks; };
-struct cpx_close_args { short flag; };
-
 typedef struct
 {
 	short _cdecl (*cpx_call)(GRECT *rect, DIALOG * /* COPS extension */);
 	void  _cdecl (*cpx_draw)(GRECT *clip);
 	void  _cdecl (*cpx_wmove)(GRECT *work);
 	void  _cdecl (*cpx_timer)(short *quit);
-	void  _cdecl (*cpx_key)(struct cpx_key_args);
-	void  _cdecl (*cpx_button)(struct cpx_button_args);
+	void  _cdecl (*cpx_key)(short kstate, short key, short *quit);
+	void  _cdecl (*cpx_button)(MRETS *mrets, short nclicks, short *quit);
 	void  _cdecl (*cpx_m1)(MRETS *mrets, short *quit);
 	void  _cdecl (*cpx_m2)(MRETS *mrets, short *quit);
-	short _cdecl (*cpx_hook)(struct cpx_hook_args);
-	void  _cdecl (*cpx_close)(struct cpx_close_args);
+	short _cdecl (*cpx_hook)(_WORD event, _WORD *msg, MRETS *mrets, _WORD *key, _WORD *nclicks);
+	void  _cdecl (*cpx_close)(short flag);
 } CPXINFO;
 
 

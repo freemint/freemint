@@ -50,6 +50,142 @@
 #define DEBUG_CALLBACK(cpx) DEBUG((DEBUG_FMT "(%s)\n", DEBUG_ARGS, cpx->file_name))
 
 
+#if defined(__GNUC__)
+static inline void *cpx_void(void *_f)
+{
+	register void *retvalue __asm__("d0");
+	register void *f __asm__("a0") = _f;
+	__asm__ __volatile__(
+			"\tjsr (%1)\n"
+		: "=d"(retvalue)
+		: "a"(f)
+		: "d2", "a2", "cc" AND_MEMORY
+		);
+	return retvalue;
+}
+static inline void *cpx_pll(void *_f, void *_p, long _l1, long _l2)
+{
+	register void *retvalue __asm__("d0");
+	register void *f __asm__("a0") = _f;
+	register void *p __asm__("a1") = _p;
+	register long l1 __asm__("d0") = _l1;
+	register long l2 __asm__("d1") = _l2;
+	__asm__ __volatile__(
+			"\tmove.l %4,-(%%sp)\n"
+			"\tmove.l %3,-(%%sp)\n"
+			"\tmove.l %2,-(%%sp)\n"
+			"\tjsr (%1)\n"
+			"\tlea 12(%%sp),%%sp\n"
+		: "=d"(retvalue)
+		: "a"(f), "a"(p), "d"(l1), "d"(l2)
+		: "d2", "a2", "cc" AND_MEMORY
+		);
+	return retvalue;
+}
+static inline long cpx_pp(void *_f, void *_p1, void *_p2)
+{
+	register long retvalue __asm__("d0");
+	register void *f __asm__("a0") = _f;
+	register void *p1 __asm__("a1") = _p1;
+	register void *p2 __asm__("d0") = _p2;
+	__asm__ __volatile__(
+			"\tmove.l %3,-(%%sp)\n"
+			"\tmove.l %2,-(%%sp)\n"
+			"\tjsr (%1)\n"
+			"\taddq.l #8,%%sp\n"
+		: "=d"(retvalue)
+		: "a"(f), "a"(p1), "d"(p2)
+		: "d2", "a2", "cc" AND_MEMORY
+		);
+	return retvalue;
+}
+static inline void cpx_psp(void *_f, void *_p1, short _s, void *_p2)
+{
+	register void *f __asm__("a0") = _f;
+	register void *p1 __asm__("a1") = _p1;
+	register short s __asm__("d0") = _s;
+	register void *p2 __asm__("d1") = _p2;
+	__asm__ __volatile__(
+			"\tmove.l %3,-(%%sp)\n"
+			"\tmove.w %2,-(%%sp)\n"
+			"\tmove.l %1,-(%%sp)\n"
+			"\tjsr (%0)\n"
+			"\tlea 10(%%sp),%%sp\n"
+		:
+		: "a"(f), "a"(p1), "d"(s), "d"(p2)
+		: "d2", "a2", "cc" AND_MEMORY
+		);
+}
+static inline void cpx_ssp(void *f, unsigned short s1, unsigned short s2, void *p)
+{
+	cpx_pp(f, (void *)(((unsigned long)s1 << 16) | s2), p);
+}
+static inline long cpx_p(void *_f, void *_p1)
+{
+	register long retvalue __asm__("d0");
+	register void *f __asm__("a0") = _f;
+	register void *p1 __asm__("a1") = _p1;
+	__asm__ __volatile__(
+			"\tmove.l %2,-(%%sp)\n"
+			"\tjsr (%1)\n"
+			"\taddq.l #4,%%sp\n"
+		: "=d"(retvalue)
+		: "a"(f), "a"(p1)
+		: "d2", "a2", "cc" AND_MEMORY
+		);
+	return retvalue;
+}
+static inline long cpx_spppp(void *_f, short _s, void *_p1, void *_p2, void *_p3, void *_p4)
+{
+	register long retvalue __asm__("d0");
+	register void *f __asm__("a0") = _f;
+	register short s __asm__("d0") = _s;
+	register void *p1 __asm__("a1") = _p1;
+	register void *p2 __asm__("d1") = _p2;
+	register void *p3 __asm__("d2") = _p3;
+	register void *p4 __asm__("a2") = _p4;
+	__asm__ __volatile__(
+			"\tmove.l %6,-(%%sp)\n"
+			"\tmove.l %5,-(%%sp)\n"
+			"\tmove.l %4,-(%%sp)\n"
+			"\tmove.l %3,-(%%sp)\n"
+			"\tmove.w %2,-(%%sp)\n"
+			"\tjsr (%1)\n"
+			"\tlea 18(%%sp),%%sp\n"
+		: "=d"(retvalue)
+		: "a"(f), "d"(s), "a"(p1), "d"(p2), "d"(p3), "a"(p4)
+		: "cc" AND_MEMORY
+		);
+	return retvalue;
+}
+static inline void cpx_s(void *_f, short _s)
+{
+	register void *f __asm__("a0") = _f;
+	register short s __asm__("d0") = _s;
+	__asm__ __volatile__(
+			"\tmove.w %1,-(%%sp)\n"
+			"\tjsr (%0)\n"
+			"\taddq.l #2,%%sp\n"
+		:
+		: "a"(f), "d"(s)
+		: "d2", "a2", "cc" AND_MEMORY
+		);
+}
+#elif defined (__PUREC__) || defined(__AHCC__)
+#define cpx_void(f) (*f)()
+#define cpx_pll(f, p, l1, l2) (*f)(p, l1, l2)
+#define cpx_pp(f, p1, p2) (*f)(p1, p2)
+#define cpx_ssp(f, s1, s2, p) (*f)(s1, s2, p)
+#define cpx_p(f, p1) (*f)(p1)
+#define cpx_psp(f, p1, s, p2) (*f)(p1, s, p2)
+#define cpx_spppp(f, s, p1, p2, p3, p4) (*f)(s, p1, p2, p3, p4)
+#define cpx_s(f, s) (*f)(s)
+#else
+you loose
+#endif
+
+
+
 void
 cpx_userdef(void __CDECL (*userdef)(void))
 {
@@ -57,18 +193,7 @@ cpx_userdef(void __CDECL (*userdef)(void))
 
 	if (userdef)
 	{
-#if defined(__GNUC__)
-		__asm__ __volatile__(
-				"\tjsr (%0)\n"
-			:
-			: "a"(userdef)
-			: "d2", "a2", "cc" AND_MEMORY
-			);
-#elif defined (__PUREC__) || defined(__AHCC__)
-	(*userdef)();
-#else
-	you loose
-#endif
+		cpx_void(userdef);
 	}
 }
 
@@ -76,8 +201,8 @@ cpx_userdef(void __CDECL (*userdef)(void))
 CPXINFO	*
 cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 {
-	register CPXINFO *_cdecl (*init)(struct xcpb *, long, long);
-	register CPXINFO *ret;
+	CPXINFO *_cdecl (*init)(struct xcpb *, long, long);
+	CPXINFO *ret;
 
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -89,7 +214,7 @@ cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 	 * - then hex value 0x10001 (whatever it means, taken from
 	 *   original assembler bindings)
 	 */
-	ret = (*init)(xcpb, 0x434F5053L, 0x10001L);
+	ret = cpx_pll(init, xcpb, 0x434F5053L, 0x10001L);
 
 	DEBUG(("cpx_init -> %p\n", ret));
 	return ret;
@@ -98,14 +223,14 @@ cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 short
 cpx_call(CPX_DESC *cpx_desc, GRECT *work)
 {
-	register short ret;
+	short ret;
 
 	DEBUG_CALLBACK(cpx_desc);
 	DEBUG(("calling out cpx_call at %p\n", cpx_desc->info->cpx_call));
 
 	if (cpx_desc->info->cpx_call == 0)
 		return 0;
-	ret = (*cpx_desc->info->cpx_call)(work, cpx_desc->dialog);
+	ret = cpx_pp(cpx_desc->info->cpx_call, work, cpx_desc->dialog);
 
 	DEBUG(("cpx_call -> %d\n", ret));
 	return ret;
@@ -117,7 +242,7 @@ cpx_draw(CPX_DESC *cpx_desc, GRECT *clip)
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_draw)
-		(*cpx_desc->info->cpx_draw)(clip);
+		cpx_p(cpx_desc->info->cpx_draw, clip);
 }
 
 void
@@ -126,7 +251,7 @@ cpx_wmove(CPX_DESC *cpx_desc, GRECT *work)
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_wmove)
-		(*cpx_desc->info->cpx_wmove)(work);
+		cpx_p(cpx_desc->info->cpx_wmove, work);
 }
 
 short
@@ -137,7 +262,7 @@ cpx_timer(CPX_DESC *cpx_desc)
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_timer)
-		(*cpx_desc->info->cpx_timer)(&ret);
+		cpx_p(cpx_desc->info->cpx_timer, &ret);
 	else
 		ret = 0;
 
@@ -153,11 +278,7 @@ cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 
 	if (cpx_desc->info->cpx_key)
 	{
-		struct cpx_key_args args;
-		args.kstate = kstate;
-		args.key = key;
-		args.quit = &ret;
-		(*cpx_desc->info->cpx_key)(args);
+		cpx_ssp(cpx_desc->info->cpx_key, kstate, key, &ret);
 	}
 	else
 		ret = 0;
@@ -174,11 +295,7 @@ cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 
 	if (cpx_desc->info->cpx_button)
 	{
-		struct cpx_button_args args;
-		args.mrets = mrets;
-		args.nclicks = nclicks;
-		args.quit = &ret;
-		(*cpx_desc->info->cpx_button)(args);
+		cpx_psp(cpx_desc->info->cpx_button, mrets, nclicks, &ret);
 	}
 	else
 		ret = 0;
@@ -194,7 +311,7 @@ cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets)
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_m1)
-		(*cpx_desc->info->cpx_m1)(mrets, &ret);
+		cpx_pp(cpx_desc->info->cpx_m1, mrets, &ret);
 	else
 		ret = 0;
 
@@ -209,7 +326,7 @@ cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_m2)
-		(*cpx_desc->info->cpx_m2)(mrets, &ret);
+		cpx_pp(cpx_desc->info->cpx_m2, mrets, &ret);
 	else
 		ret = 0;
 
@@ -219,19 +336,13 @@ cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 short
 cpx_hook(CPX_DESC *cpx_desc, _WORD event, _WORD *msg, MRETS *mrets, _WORD *key, _WORD *nclicks)
 {
-	register short ret;
+	short ret;
 
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_hook)
 	{
-		struct cpx_hook_args args;
-		args.event = event;
-		args.msg = msg;
-		args.mrets = mrets;
-		args.key = key;
-		args.nclicks = nclicks;
-		ret = (*cpx_desc->info->cpx_hook)(args);
+		ret = cpx_spppp(cpx_desc->info->cpx_hook, event, msg, mrets, key, nclicks);
 	}
 	else
 		ret = 0;
@@ -246,9 +357,7 @@ cpx_close(CPX_DESC *cpx_desc, _WORD flag)
 
 	if (cpx_desc->info->cpx_close)
 	{
-		struct cpx_close_args args;
-		args.flag = flag;
-		(*cpx_desc->info->cpx_close)(args);
+		cpx_s(cpx_desc->info->cpx_close, flag);
 	}
 }
 
@@ -358,7 +467,7 @@ call_cpx_form_do(void)
 short _cdecl
 Xform_do(const long *sp)
 {
-	register CPX_DESC *cpx;
+	CPX_DESC *cpx;
 
 	cpx = find_cpx_by_addr(sp);
 	DEBUG_CALLBACK(cpx);

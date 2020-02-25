@@ -182,7 +182,7 @@ static void _cdecl sig_handler(long sig);
 static long
 read_file(char *name, void *dest, long offset, long len)
 {
-	long read;
+	long read = 0;
 	short fh;
 
 	fh = (short)Fopen(name, O_RDONLY);
