@@ -29,6 +29,30 @@ all-here: all-targets
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.udd *.prg
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(tablettargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - bakclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
+
+strip:
+	$(STRIP) .compile_prg/*.prg
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(tablettargets); do \
+		if [ "$$i" = "prg" ]; then continue; fi; \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.udd) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
+
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(tablettargets); do \
