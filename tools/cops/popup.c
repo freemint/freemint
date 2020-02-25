@@ -50,7 +50,7 @@ static _WORD dn_arrow_data[] = { 0x0000, 0x3FF8, 0x1FF0, 0x0FE0, 0x07C0, 0x0380,
 static BITBLK up_arrow = { up_arrow_data, 2, 8, 0, 0, 0x0001 };
 static BITBLK dn_arrow = { dn_arrow_data, 2, 8, 0, 0, 0x0001 };
 
-#define	MAX_STRS 5
+#define	MAX_STRS 20
 
 typedef struct
 {
