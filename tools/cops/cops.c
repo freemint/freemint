@@ -3231,8 +3231,39 @@ static int fm_button(OBJECT *tree, _WORD obj, _WORD clicks, _WORD *pobj, const G
 
 static _WORD handle_wdlg_evnt(CPX_DESC *cpx_desc, EVNT *events)
 {
+	_WORD edit_obj = 0;
+
 	if (cpx_desc->dialog)
-		return wdlg_evnt(cpx_desc->dialog, events);
+	{
+		_WORD ret;
+		_WORD edit_obj2;
+		_WORD dummy;
+
+		if (events->mwhich & MU_BUTTON)
+		{
+			edit_obj = wdlg_get_edit(cpx_desc->dialog, &cpx_desc->cursor_idx);
+			if (edit_obj)
+				objc_wedit(cpx_desc->tree, edit_obj, 0, &cpx_desc->cursor_idx, ED_END, cpx_desc->whdl);
+		}
+		ret = wdlg_evnt(cpx_desc->dialog, events);
+		if (ret && edit_obj)
+		{
+			edit_obj2 = wdlg_get_edit(cpx_desc->dialog, &dummy);
+			if (edit_obj2)
+			{
+				if (edit_obj2 == edit_obj)
+				{
+					objc_wedit(cpx_desc->tree, edit_obj, 0, &cpx_desc->cursor_idx, ED_INIT, cpx_desc->whdl);
+					edit_obj2 = 0;
+				}
+				edit_obj = edit_obj2;
+			}
+			if (edit_obj)
+				wdlg_set_edit(cpx_desc->dialog, edit_obj);
+		}
+		return ret;
+	}
+
 	if ((events->mwhich & MU_MESAG) && events->msg[3] == cpx_desc->whdl)
 	{
 		switch (events->msg[0])
@@ -3259,15 +3290,19 @@ static _WORD handle_wdlg_evnt(CPX_DESC *cpx_desc, EVNT *events)
 		_WORD obj = objc_find(cpx_desc->tree, ROOT, MAX_DEPTH, events->mx, events->my);
 		if (obj >= 0)
 		{
+			edit_obj = cpx_desc->edit_obj;
+
+			if (edit_obj && cpx_desc->cursor)
+			{
+				objc_edit(cpx_desc->tree, edit_obj, 0, &cpx_desc->cursor_idx, ED_END);
+				cpx_desc->cursor = FALSE;
+			}
 			if (!fm_button(cpx_desc->tree, obj, events->mclicks, &obj, &cpx_desc->size))
 			{
 				/* return object number */
 				cpx_desc->button = obj;
-			} else if ((cpx_desc->tree[obj].ob_flags & OF_EDITABLE) && obj != cpx_desc->edit_obj)
+			} else if ((cpx_desc->tree[obj].ob_flags & OF_EDITABLE))
 			{
-				if (cpx_desc->cursor)
-					objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_END);
-				cpx_desc->cursor = FALSE;
 				cpx_desc->edit_obj = obj;
 			}
 		}

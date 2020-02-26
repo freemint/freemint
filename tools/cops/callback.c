@@ -173,7 +173,7 @@ save_header(struct cpxlist *cpx_list)
 {
 	char name[256];
 	CPX_DESC *cpx_desc;
-	long handle;
+	short handle;
 	short result = 0;
 
 	DEBUG(("save_header\n"));
@@ -182,16 +182,16 @@ save_header(struct cpxlist *cpx_list)
 	strcpy(name, settings.cpx_path);
 	strcat(name, cpx_desc->file_name);
 
-	handle = Fopen(name, O_WRONLY);
+	handle = (short)Fopen(name, O_WRONLY);
 	if (handle > 0)
 	{
 		long ret;
 
-		ret = Fwrite((short)handle, sizeof(cpx_list->header), &(cpx_list->header));
+		ret = Fwrite(handle, sizeof(cpx_list->header), &(cpx_list->header));
 		if (ret == sizeof(cpx_list->header))
 			result = 1;
 
-		Fclose((short)handle);
+		Fclose(handle);
 	}
 
 	return result;
@@ -982,7 +982,7 @@ cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long tim
 	if (mask & MU_TIMER)		/* Timer? */
 		cpx_desc->time = time;												
 	else
-		cpx_desc->time = 0L;
+		cpx_desc->time = 0;
 
 	cpx_desc->mask = mask;		/* zusaetzliche Ereignismaske */
 }
