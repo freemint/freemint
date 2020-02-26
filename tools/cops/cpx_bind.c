@@ -257,14 +257,12 @@ cpx_wmove(CPX_DESC *cpx_desc, GRECT *work)
 short
 cpx_timer(CPX_DESC *cpx_desc)
 {
-	short ret;
+	short ret = 0;
 
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_timer)
 		cpx_p(cpx_desc->info->cpx_timer, &ret);
-	else
-		ret = 0;
 
 	return ret;	
 }
@@ -272,7 +270,7 @@ cpx_timer(CPX_DESC *cpx_desc)
 short
 cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 {
-	short ret;
+	short ret = 0;
 
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -280,8 +278,6 @@ cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 	{
 		cpx_ssp(cpx_desc->info->cpx_key, kstate, key, &ret);
 	}
-	else
-		ret = 0;
 
 	return ret;
 }
@@ -289,7 +285,7 @@ cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 short
 cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 {
-	short ret;
+	short ret = 0;
 
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -297,8 +293,6 @@ cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 	{
 		cpx_psp(cpx_desc->info->cpx_button, mrets, nclicks, &ret);
 	}
-	else
-		ret = 0;
 
 	return ret;
 }
@@ -306,14 +300,12 @@ cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 short
 cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets)
 {
-	short ret;
+	short ret = 0;
 
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_m1)
 		cpx_pp(cpx_desc->info->cpx_m1, mrets, &ret);
-	else
-		ret = 0;
 
 	return ret;
 }
@@ -321,14 +313,12 @@ cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets)
 short
 cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 {
-	short ret;
+	short ret = 0;
 
 	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_m2)
 		cpx_pp(cpx_desc->info->cpx_m2, mrets, &ret);
-	else
-		ret = 0;
 
 	return ret;
 }
@@ -336,7 +326,7 @@ cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 short
 cpx_hook(CPX_DESC *cpx_desc, _WORD event, _WORD *msg, MRETS *mrets, _WORD *key, _WORD *nclicks)
 {
-	short ret;
+	short ret = 0;
 
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -344,8 +334,6 @@ cpx_hook(CPX_DESC *cpx_desc, _WORD event, _WORD *msg, MRETS *mrets, _WORD *key, 
 	{
 		ret = cpx_spppp(cpx_desc->info->cpx_hook, event, msg, mrets, key, nclicks);
 	}
-	else
-		ret = 0;
 
 	return ret;
 }
