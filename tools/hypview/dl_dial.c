@@ -48,7 +48,9 @@ DIALOG_DATA *find_dialog_by_whandle(short handle);
 
 DIALOG *OpenDialog(HNDL_OBJ proc,OBJECT *tree,char *title,short x, short y)
 {
-	DIALOG_DATA *ptr=NULL;
+	DIALOG_DATA *ptr;
+	short kind=CLOSER|MOVER|NAME|SMALLER;
+
 	ptr = find_dialog_by_obj(tree);
 	
 	if(ptr)
@@ -106,7 +108,7 @@ DIALOG *OpenDialog(HNDL_OBJ proc,OBJECT *tree,char *title,short x, short y)
 			ptr->title=title;
 
 			graf_growbox_grect(&small, &big);
-			whandle=wdlg_open(ptr->dial,ptr->title,CLOSER|MOVER|SMALLER,ptr->last.g_x,ptr->last.g_y,0,NULL);
+			whandle=wdlg_open(ptr->dial,ptr->title,kind,ptr->last.g_x,ptr->last.g_y,0,NULL);
 			if(whandle)
 			{
 				ptr->whandle=whandle;
@@ -127,7 +129,6 @@ DIALOG *OpenDialog(HNDL_OBJ proc,OBJECT *tree,char *title,short x, short y)
 		ptr->dial=wdlg_create(proc,tree,ptr,0,NULL,WDLG_BKGD);
 		if(ptr->dial)
 		{
-		short kind=CLOSER|MOVER|NAME|SMALLER;
 		GRECT big,small={0,0,0,0};
 
 #if MAGIC_ONLY==NO
