@@ -13,8 +13,8 @@
 
 !docinfo [title]   L(!apos)aide en ligne de
 !docinfo [program] COPS
-!docinfo [date]    25. Avril 1998
-!docinfo [version] Version 1.08
+!docinfo [date]    26. Februar 2020
+!docinfo [version] Version 1.09
 !docinfo [author]  Thomas Much, Sven & Wilfried Behne
 !docinfo [programimage] cops.img
 
@@ -98,9 +98,9 @@ Behne & Behne Systemsoftware GbR (!nl)
 Lindenkamp 2a (!nl)
 31515 Wunstorf
 
-Tel: 05031-914120 (!nl)
-Fax: 05031-914121 (!nl)
-WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
+# Tel: 05031-914120 (!nl)
+# Fax: 05031-914121 (!nl)
+# WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
 
 !end_node
 
@@ -380,46 +380,46 @@ Utilisez MagiC en tant que systŠme d(!apos)exploitation.
 
 !begin_itemize
 
-(!B)Version 0.10 - 0.11 (!b) (08.02.96 - 10.02.96)
+(!B)Version 0.10 - 0.11 (!b) (08.02.1996 - 10.02.1996)
 
 !item Id‚e et conception (Thomas)
 
-(!B)Version 0.12 - 0.75 (!b) (22.08.96 - 12.09.96)
+(!B)Version 0.12 - 0.75 (!b) (22.08.1996 - 12.09.1996)
 
 !item "Cela ne prendra qu(!apos)une semaine" - Sven commence le
 travail...
 
-(!B)Version 0.80 - 0.99 (!b) (13.09.96 - 15.09.96)
+(!B)Version 0.80 - 0.99 (!b) (13.09.1996 - 15.09.1996)
 
 !item Ajustement aux restrictions et erreurs du TOS
 
-(!B)Version 1.00 (!b) (16.09.96)
+(!B)Version 1.00 (!b) (16.09.1996)
 
 !item PremiŠre version disponible au public.
 
-(!B)Version 1.02 (!b) (19.09.96)
+(!B)Version 1.02 (!b) (19.09.1996)
 
 !item Sortie de la version anglaise de COPS.
 
-(!B)Version 1.03 (!b) (23.09.96)
+(!B)Version 1.03 (!b) (23.09.1996)
 
 !item Augmentation de la taille de la pile pour ‚viter les problŠmes avec
 le systŠme de fichier du Mac (notamment sur les Power Macs).
 
-(!B)Version 1.04 (!b) (01.10.96)
+(!B)Version 1.04 (!b) (01.10.1996)
 
 !item Correction de bugs...
 
 !item Correction du bug superviseur de WDIALOG (version 1.10). Nouvelle
 version (1.11) incluse dans l(!apos)archive.
 
-(!B)Version 1.05 (!b) (09.11.96)
+(!B)Version 1.05 (!b) (09.11.1996)
 
 !item Correction de bugs mineurs...
 
 !item Version fran‡aise disponible.
 
-(!B)Version 1.06 (!b) (26.2.97)
+(!B)Version 1.06 (!b) (26.2.1997)
 
 !item Correction de bugs mineurs...
 
@@ -427,7 +427,7 @@ version (1.11) incluse dans l(!apos)archive.
 
 !item Nouveau bouton pour trier les ic“nes des CPX icons par leur nom.
 
-(!B)Version 1.07 (!b) (15.7.97)
+(!B)Version 1.07 (!b) (15.7.1997)
 
 !item Minimise l(!apos)accŠs au fichier COPS.INF (en utilisant un OS multitƒche).
 
@@ -435,10 +435,14 @@ version (1.11) incluse dans l(!apos)archive.
 
 !item Nouvelle version de WDIALOG (1.97).
 
-(!B)Version 1.08 (!b) (25.04.98)
+(!B)Version 1.08 (!b) (25.04.1998)
 
 !item Nouvelle bibliothŠque de fenˆtres avec affichage am‚lior‚ pour le
 d‚filement en temps r‚el.
+
+(!B)Version 1.09 (!b) (26.2.2020)
+
+!item COPS devrait désormais fonctionner également sans WDIALOG
 
 !end_itemize
 

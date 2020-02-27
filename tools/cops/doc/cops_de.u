@@ -11,8 +11,8 @@
 
 !docinfo [title]   Die Onlinehilfe zu
 !docinfo [program] COPS
-!docinfo [date]    25. April 1998
-!docinfo [version] Version 1.08
+!docinfo [date]    26. Februar 2020
+!docinfo [version] Version 1.09
 !docinfo [author]  Thomas Much, Sven & Wilfried Behne
 !docinfo [programimage] cops.img
 
@@ -98,9 +98,9 @@ Behne & Behne Systemsoftware GbR (!nl)
 Lindenkamp 2a (!nl)
 31515 Wunstorf
 
-Tel: 05031-914120 (!nl)
-Fax: 05031-914121 (!nl)
-WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
+# Tel: 05031-914120 (!nl)
+# Fax: 05031-914121 (!nl)
+# WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
 
 !end_node
 
@@ -280,7 +280,7 @@ sinn!-vol!-le Kombinationen aufgelistet:
 !begin_itemize
 
 !item Verwenden Sie COPS als Accessory (Endung ".ACC"). Die
-System!-er!-wei!-te!-rung WDIALOG.PRG muû installiert sein.
+System!-er!-wei!-te!-rung WDIALOG.PRG sollte installiert sein.
 
 !end_itemize
 
@@ -289,7 +289,7 @@ System!-er!-wei!-te!-rung WDIALOG.PRG muû installiert sein.
 !begin_itemize
 
 !item Verwenden Sie COPS als Accessory (Endung ".ACC"). Die
-System!-er!-wei!-te!-rung WDIALOG.PRG muû installiert sein. Melden Sie COPS fÅr
+System!-er!-wei!-te!-rung WDIALOG.PRG sollte installiert sein. Melden Sie COPS fÅr
 Dateien mit der Endung "*.CPX" an. Sie kînnen jetzt die Kontroll!-fel!-der
 direkt aus dem Desktop per Doppelklick starten.
 
@@ -458,7 +458,7 @@ doppelte Module bitte aus dem Ordner entfernen).
 
 !item Englische Version verfÅgbar.
 
-(!B)Version 1.03 (!b) (23.09.96)
+(!B)Version 1.03 (!b) (23.09.1996)
 
 !item Stack fÅr CPX-Module vergrîûert. Damit sollten (insbesondere auf
 Power-Macs) Probleme mit CPX-Modulen, die in den Supervisormodus
@@ -467,7 +467,7 @@ angehîren.
 
 !item Vertipper bei vertikalem Slider-Handling entfernt.
 
-(!B)Version 1.04 (!b) (01.10.96)
+(!B)Version 1.04 (!b) (01.10.1996)
 
 !item Das Iconify-Icon wird jetzt unter MTOS und MagiC 4 korrekt
 dargestellt.
@@ -486,7 +486,7 @@ gefunden wurde.
 !item Fehler aus WDIALOG (V1.10) entfernt, der Texel oder Artworx zum
 AbstÅrzen bringen konnte. Neues WDIALOG V1.11 liegt bei.
 
-(!B)Version 1.05 (!b) (09.11.96)
+(!B)Version 1.05 (!b) (09.11.1996)
 
 !item Doppelte Unterstriche in Dialogen durch "Let 'em fly" verhindert.
 
@@ -502,7 +502,7 @@ beseitigt.
 
 !item Bei RÅckfragen bitte die neue Telefon- und Fax-Nummer beachten.
 
-(!B)Version 1.06 (!b) (26.02.97)
+(!B)Version 1.06 (!b) (26.02.1997)
 
 !item Verhalten des Hauptfensters beim Window-Shading korrigiert.
 
@@ -522,7 +522,7 @@ eingerastet.
 
 !item Workaround fÅr MAGXCONF.ACC-Fehler in WDIALOG eingebaut.
 
-(!B)Version 1.07 (!b) (15.07.97)
+(!B)Version 1.07 (!b) (15.07.1997)
 
 !item Anzahl der Plattenzugriffe in Multitaskingsystemen verringert,
 indem die COPS.INF-Datei nur noch beim AP_TERM gesichert wird.
@@ -538,10 +538,14 @@ fÅr ram-residente CPXe nachgebaut.
 zusÑtzlicher PrÅffunktionen, um so die Verwirrung von WDIALOG
 durch appl_exit()-Aufrufe mit falscher ID zu vermeiden.
 
-(!B)Version 1.08 (!b) (25.04.98)
+(!B)Version 1.08 (!b) (25.04.1998)
 
 !item Neue Fensterbibliothek mit verbessertem Redraw beim
 Echtzeitscrolling eingebaut.
+
+(!B)Version 1.09 (!b) (26.2.2020)
+
+!item COPS sollte jetzt auch ohne WDIALOG laufen.
 
 !end_itemize
 

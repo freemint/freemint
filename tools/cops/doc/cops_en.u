@@ -11,8 +11,8 @@
 
 !docinfo [title]   The Online Help file for
 !docinfo [program] COPS
-!docinfo [date]    25. April 1998
-!docinfo [version] Version 1.08
+!docinfo [date]    26. Februar 2020
+!docinfo [version] Version 1.09
 !docinfo [author]  Thomas Much, Sven & Wilfried Behne
 !docinfo [programimage] cops.img
 
@@ -95,9 +95,9 @@ Behne & Behne Systemsoftware GbR (!nl)
 Lindenkamp 2a (!nl)
 D - 31515 Wunstorf
 
-Tel: +49-(0)5031-914120 (!nl)
-Fax: +49-(0)5031-914121 (!nl)
-WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
+# Tel: +49-(0)5031-914120 (!nl)
+# Fax: +49-(0)5031-914121 (!nl)
+# WWW: (!url [] [http://home.t-online.de/home/ToBeHome/])
 
 !end_node
 
@@ -261,7 +261,7 @@ different conditions:
 (!B)COPS under TOS with standard ATARI desktops:(!b)
 
 !begin_itemize
-!item Run COPS as an accessory (".ACC"). You will need to install the
+!item Run COPS as an accessory (".ACC"). You should install the
 system extension WDIALOG.PRG.
 !end_itemize
 
@@ -269,7 +269,7 @@ system extension WDIALOG.PRG.
 message(!b) (Gemini, Thing, ...):
 
 !begin_itemize
-!item Run COPS as an accessory (".ACC"). As above, WDIALOG.PRG must be
+!item Run COPS as an accessory (".ACC"). As above, WDIALOG.PRG should be
 installed. Register COPS for files with the extension "*.CPX".
 You can now start modules from the desktop by double clicking on
 them.
@@ -363,46 +363,46 @@ version 4.xx!
 
 !begin_itemize
 
-(!B)Version 0.10 - 0.11 (!b) (08.02.96 - 10.02.96)
+(!B)Version 0.10 - 0.11 (!b) (08.02.1996 - 10.02.1996)
 
 !item Idea and Conception (Thomas)
 
-(!B)Version 0.12 - 0.75 (!b) (22.08.96 - 12.09.96)
+(!B)Version 0.12 - 0.75 (!b) (22.08.1996 - 12.09.1996)
 
 !item "It should only take about a week" - Sven gets down to
 business...
 
-(!B)Version 0.80 - 0.99 (!b) (13.09.96 - 15.09.96)
+(!B)Version 0.80 - 0.99 (!b) (13.09.1996 - 15.09.1996)
 
 !item Adjusted to restrictions and faults in TOS
 
-(!B)Version 1.00 (!b) (16.09.96)
+(!B)Version 1.00 (!b) (16.09.1996)
 
 !item First version let loose on the general public.
 
-(!B)Version 1.02 (!b) (19.09.96)
+(!B)Version 1.02 (!b) (19.09.1996)
 
 !item Release of english COPS version.
 
-(!B)Version 1.03 (!b) (23.09.96)
+(!B)Version 1.03 (!b) (23.09.1996)
 
 !item Increased stack size to avoid problems with the Mac file system
 (esp. on Power Macs).
 
-(!B)Version 1.04 (!b) (01.10.96)
+(!B)Version 1.04 (!b) (01.10.1996)
 
 !item Some bug fixes...
 
 !item Fixed supervisor bug in WDIALOG (version 1.10). New version
 (1.11) included in this archive.
 
-(!B)Version 1.05 (!b) (09.11.96)
+(!B)Version 1.05 (!b) (09.11.1996)
 
 !item Minor bug fixes...
 
 !item French version avaiable.
 
-(!B)Version 1.06 (!b) (26.2.97)
+(!B)Version 1.06 (!b) (26.2.1997)
 
 !item Minor bug fixes...
 
@@ -410,7 +410,7 @@ business...
 
 !item New switch to sort CPX icons by name.
 
-(!B)Version 1.07 (!b) (15.7.97)
+(!B)Version 1.07 (!b) (15.7.1997)
 
 !item Minimized access to COPS.INF file (when using a multitasking OS).
 
@@ -418,9 +418,13 @@ business...
 
 !item New WDIALOG version (1.97).
 
-(!B)Version 1.08 (!b) (25.4.98)
+(!B)Version 1.08 (!b) (25.4.1998)
 
 !item Real time redraw accelerated.
+
+(!B)Version 1.09 (!b) (26.2.2020)
+
+!item COPS should now run also without WDIALOG.
 
 !end_itemize
 
