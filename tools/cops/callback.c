@@ -965,7 +965,7 @@ GRECT * _cdecl GetNextRect(const long *sp)
 /*	time:		Timerintervall							*/
 /*----------------------------------------------------------------------------------------*/ 
 static void
-cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long time)
+cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long timeout)
 {
 	DEBUG_CALLBACK(cpx_desc);
 
@@ -980,7 +980,7 @@ cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long tim
 		mask &= ~MU_M2;
 
 	if (mask & MU_TIMER)		/* Timer? */
-		cpx_desc->time = time;												
+		cpx_desc->time = timeout;
 	else
 		cpx_desc->time = 0;
 

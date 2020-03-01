@@ -29,22 +29,47 @@
 #include "cpx_bind.h"
 #include "cops.h"
 
-#if defined(__GNUC__) && defined(__MINTLIB__)
-#  ifdef _BITS_SETJMP_H
-     /* using new definition with array of struct */
-#    define JUMPBUF_RET_PC(jb) (jb)[0].__jmpbuf[0].ret_pc
-#    define JUMPBUF_RET_SP(jb) (jb)[0].__jmpbuf[0].regs[11]
-#  else
-     /* using old definition with array of longs */
-#    define JUMPBUF_RET_PC(jb) (jb)[0]
-#    define JUMPBUF_RET_SP(jb) (jb)[12]
-#  endif
+#if defined(__GNUC__)
+static __inline long get_sp(void)
+{
+	register long sp __asm__("d0");
+	__asm__ volatile("\tmove.l %%a7,%0\n" : "=d"(sp) : : "cc");
+	return sp;
+}
+static __inline __attribute__((noreturn)) void jumpto(void (*_f)(void), long sp)
+{
+	register void (*f)(void) __asm__("a0") = _f;
+	__asm__ volatile(
+		"\tmove.l %1,%%a7\n"
+		"\tjmp (%0)\n"
+	:
+	: "a"(f), "r"(sp)
+	/* does not return, so no need to declare any clobbered regs */
+	);
+	__builtin_unreachable();
+}
 #endif
 
-#if defined(__PUREC__) || defined(__AHCC__)
-#  define JUMPBUF_RET_PC(jb) ((long *)(jb))[5]
-#  define JUMPBUF_RET_SP(jb) ((long *)(jb))[11]
+#if defined(__PUREC__)
+static long get_sp(void) 0x200f; /* move.l a7,d0 */
+static void *jumpto_0(void (*f)(void), long) 0x2e40; /* move.l d0,a7 */
+static void jumpto_1(void *) 0x4ed0; /* jmp (a0) */
+#define jumpto(f, sp) jumpto_1(jumpto_0(f, sp))
 #endif
+
+#if defined(__AHCC__)
+static long __asm__ get_sp(void)
+{
+	move.l a7,d0
+	addq.l #4,d0
+}
+static void __asm__ jumpto(void (*f)(void), long sp)
+{
+	move.l d0,a7
+	jmp (a0)
+}
+#endif
+
 
 
 #define DEBUG_CALLBACK(cpx) DEBUG((DEBUG_FMT "(%s)\n", DEBUG_ARGS, cpx->file_name))
@@ -368,9 +393,11 @@ static long kernel_stack;
 void
 a_call_main(void)
 {
-	jmp_buf jb;
-
 	DEBUG(("a_call_main: enter\n"));
+
+	/* remember current stack */
+	kernel_stack = get_sp();
+	DEBUG(("a_call_main: kernel_stack 0x%lx\n", kernel_stack));
 
 	if (setjmp(alpha_context))
 	{
@@ -378,14 +405,7 @@ a_call_main(void)
 		return;
 	}
 
-	/* remember current stack */
-	kernel_stack = JUMPBUF_RET_SP(alpha_context);
-	DEBUG(("a_call_main: kernel_stack 0x%lx\n", kernel_stack));
-
-	JUMPBUF_RET_PC(jb) = (long)cpx_main_loop;
-	JUMPBUF_RET_SP(jb) = kernel_stack;
-
-	longjmp(jb, 1);
+	jumpto(cpx_main_loop, kernel_stack);
 
 	/* never reached */
 	__builtin_unreachable();
@@ -462,8 +482,6 @@ Xform_do(const long *sp)
 
 	if (cpx)
 	{
-		jmp_buf jb;
-
 		/*
 		 * save arguments
 		 */
@@ -481,10 +499,7 @@ Xform_do(const long *sp)
 		 * switch stack and call out form_do
 		 */
 
-		JUMPBUF_RET_PC(jb) = (long)call_cpx_form_do;
-		JUMPBUF_RET_SP(jb) = kernel_stack;
-
-		longjmp(jb, 1);
+		jumpto(call_cpx_form_do, kernel_stack);
 
 		/* never reached */
 		__builtin_unreachable();
@@ -532,34 +547,17 @@ new_context_err:
 static CPX_DESC *call_open_cpx_context_desc = NULL;
 
 static void
-new_context_done(void)
+call_open_cpx_context(void)
 {
-	jmp_buf jb;
-
-	DEBUG(("new_context_done\n"));
+	DEBUG(("call_open_cpx_context(%s)\n", call_open_cpx_context_desc->file_name));
+	open_cpx_context(call_open_cpx_context_desc);
 
 	free(call_open_cpx_context_desc->stack);
 	call_open_cpx_context_desc->stack = NULL;
 
-	JUMPBUF_RET_PC(jb) = (long)cpx_main_loop;
-	JUMPBUF_RET_SP(jb) = kernel_stack;
-
-	longjmp(jb, 1);
-}
-static void
-call_open_cpx_context(void)
-{
-	jmp_buf jb;
-
-	DEBUG(("call_open_cpx_context(%s)\n", call_open_cpx_context_desc->file_name));
-	open_cpx_context(call_open_cpx_context_desc);
-
 	DEBUG(("call_open_cpx_context(%s) -> go back\n", call_open_cpx_context_desc->file_name));
 
-	JUMPBUF_RET_PC(jb) = (long)new_context_done;
-	JUMPBUF_RET_SP(jb) = kernel_stack;
-
-	longjmp(jb, 1);
+	jumpto(cpx_main_loop, kernel_stack);
 }
 short
 new_context(CPX_DESC *cpx_desc)
@@ -569,17 +567,12 @@ new_context(CPX_DESC *cpx_desc)
 	cpx_desc->stack = malloc(16384);
 	if (cpx_desc->stack)
 	{
-		jmp_buf jb;
-
 		DEBUG(("new_context: stack %p\n", cpx_desc->stack));
 		DEBUG(("new_context -> call_open_cpx_context\n"));
 
 		call_open_cpx_context_desc = cpx_desc;
 
-		JUMPBUF_RET_PC(jb) = (long)call_open_cpx_context;
-		JUMPBUF_RET_SP(jb) = (long)cpx_desc->stack + 16380;
-
-		longjmp(jb, 1);
+		jumpto(call_open_cpx_context, (long)cpx_desc->stack + 16380);
 
 		/* never reached */
 		__builtin_unreachable();
