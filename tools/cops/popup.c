@@ -59,6 +59,7 @@ typedef struct
 	short max_strs;		/* number of visible strings in popup */
 	short spaces;
 	short slct;
+	short max_width;
 	char *buf_str[MAX_STRS];
 } PSTRS;
 
@@ -134,6 +135,7 @@ strs_init(struct POPUP_INIT_args args)
 	PSTRS *popup_par;
 	short max_strs;
 	short i;
+	const char *str;
 
 	popup_par = (PSTRS *)args.param; /* Zeiger auf Parameterstruktur */
 	max_strs = popup_par->max_strs; /* Anzahl der sichtbaren Eintraege */
@@ -154,11 +156,8 @@ strs_init(struct POPUP_INIT_args args)
 
 		obj->ob_head = -1;
 		obj->ob_tail = -1;
-		obj->ob_type = G_STRING;
+		obj->ob_type = aes_flags & GAI_GSHORTCUT ? G_SHORTCUT : G_STRING;
 		obj->ob_flags = OF_SELECTABLE;
-
-		if (i == max_strs) /* letzter Eintrag? */
-			obj->ob_flags |= OF_LASTOB;
 
 		obj->ob_state = OS_NORMAL;
 		if ((i + args.scrollpos - 1) == popup_par->slct) /* ausgewaehlter Eintrag? */
@@ -171,13 +170,23 @@ strs_init(struct POPUP_INIT_args args)
 		obj->ob_width = args.tree->ob_width;
 		obj->ob_height = phchar;
 
-		for (j = 0; j < popup_par->spaces; j++) /* Anfang mit Leerzeichen auffuellen */
-			*tmp++ = ' ';
+		str = popup_par->strs[args.scrollpos + i - 1];
+		if (*str == '-')
+		{
+			for (j = 0; j < popup_par->max_width; j++)
+				*tmp++ = '-';
+			*tmp = '\0';
+			obj->ob_state |= OS_DISABLED;
+		} else
+		{
+			for (j = 0; j < popup_par->spaces; j++) /* Anfang mit Leerzeichen auffuellen */
+				*tmp++ = ' ';
 
-		strcpy(tmp, popup_par->strs[args.scrollpos + i - 1]); /* String kopieren */
-
+			strcpy(tmp, str); /* String kopieren */
+		}
 		obj++;
 	}
+	obj[-1].ob_flags |= OF_LASTOB;
 
 	if (popup_par->no_strs > MAX_STRS) /* scrollendes Popup? */
 	{
@@ -238,6 +247,7 @@ do_popup(GRECT *button_rect, char **strs, _WORD no_strs, _WORD spaces, _WORD slc
 	}
 
 	max_width += spaces; /* maximale Stringbreite in Zeichen */
+	popup_par.max_width = max_width;
 	tree_size = sizeof(OBJECT) * (1 + max_strs); /* Laenge des Objektbaums */
 
 	tree = (void *)Malloc(tree_size + (max_strs * (max_width + 1)));

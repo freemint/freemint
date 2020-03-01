@@ -4022,7 +4022,7 @@ init_rsrc(void)
 	fix_popup_strings(tree_addr[CPX_POPUP]);
 	
 	if ((aes_flags & GAI_CICN) /* && (aes_flags & GAI_MAGIC) */
-		&& (aes_global[10] > 1)/* XXX */)
+		&& aes_global[10] >= 4)
 	{
 		/* Farbicons, unter MagiC */
 
