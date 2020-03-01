@@ -43,19 +43,10 @@ typedef enum
 
 
 /* lookup cpx descriptor with addr */
-CPX_DESC *find_cpx_by_addr(const long *sp);
+CPX_DESC *find_cpx_by_addr(void *pc);
 
 short _cdecl save_header(struct cpxlist *header);
 void cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, _WORD edit_obj, _WORD *msg);
 _WORD find_obj(OBJECT *tree, _WORD startob, DIRS direction);
-
-/* used by the asm wrapper */
-void    _cdecl rsh_fix(const long *sp);
-void    _cdecl rsh_obfix(const long *sp);
-GRECT * _cdecl GetFirstRect(const long *sp);
-GRECT * _cdecl GetNextRect(const long *sp);
-void    _cdecl Set_Evnt_Mask(const long *sp);
-short   _cdecl CPX_Save(const long *sp);
-void *  _cdecl Get_Buffer(const long *sp);
 
 #endif /* _callback_h */

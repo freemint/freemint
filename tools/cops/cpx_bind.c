@@ -29,6 +29,8 @@
 #include "cpx_bind.h"
 #include "cops.h"
 
+#define CPX_STACKSIZE 16384
+
 #if defined(__GNUC__)
 static __inline long get_sp(void)
 {
@@ -473,11 +475,12 @@ call_cpx_form_do(void)
 	__builtin_unreachable();
 }
 short _cdecl
-Xform_do(const long *sp)
+Xform_do(struct Xform_do_args args)
 {
 	CPX_DESC *cpx;
+	void *pc = ((void **)&args)[-1];
 
-	cpx = find_cpx_by_addr(sp);
+	cpx = find_cpx_by_addr(pc);
 	DEBUG_CALLBACK(cpx);
 
 	if (cpx)
@@ -486,7 +489,7 @@ Xform_do(const long *sp)
 		 * save arguments
 		 */
 		call_cpx_form_do_cpx = cpx;
-		call_cpx_form_do_args = *(const struct Xform_do_args *)(++sp);
+		call_cpx_form_do_args = args;
 
 		/* save for later return */
 		if (setjmp(cpx->jb))
@@ -505,7 +508,7 @@ Xform_do(const long *sp)
 		__builtin_unreachable();
 	}
 
-	*(((const struct Xform_do_args *)(++sp))->msg) = AC_CLOSE;
+	args.msg[0] = AC_CLOSE;
 	return -1;
 }
 
@@ -564,7 +567,7 @@ new_context(CPX_DESC *cpx_desc)
 {
 	DEBUG(("new_context(%s)\n", cpx_desc->file_name));
 
-	cpx_desc->stack = malloc(16384);
+	cpx_desc->stack = malloc(CPX_STACKSIZE);
 	if (cpx_desc->stack)
 	{
 		DEBUG(("new_context: stack %p\n", cpx_desc->stack));
@@ -572,7 +575,7 @@ new_context(CPX_DESC *cpx_desc)
 
 		call_open_cpx_context_desc = cpx_desc;
 
-		jumpto(call_open_cpx_context, (long)cpx_desc->stack + 16380);
+		jumpto(call_open_cpx_context, (long)cpx_desc->stack + CPX_STACKSIZE - 4);
 
 		/* never reached */
 		__builtin_unreachable();
