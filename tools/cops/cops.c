@@ -1904,6 +1904,25 @@ update_cpx_path(void)
 	shel_write(SHW_BROADCAST, 0, 0, (char *)msg, NULL); /* andere Prozesse benachrichtigen */
 }
 
+static char *myitoa(unsigned int value, char *buffer, unsigned int radix)
+{
+	char *p;
+	char tmpbuf[12];
+	short i = 0;
+	static char const __atoi_numstr[] = "0123456789ABCDEF";
+
+	do {
+		tmpbuf[i++] = __atoi_numstr[value % radix];
+	} while ((value /= radix) != 0);
+
+	p = buffer;
+	while (--i >= 0)	/* reverse it back  */
+		*p++ = tmpbuf[i];
+	*p = '\0';
+
+	return buffer;
+}
+
 static void
 cpx_info(CPX_DESC *cpx_desc)
 {
@@ -1930,13 +1949,7 @@ cpx_info(CPX_DESC *cpx_desc)
 	else
 		strcpy(cpxinfo[CIFILE].ob_spec.free_string, cpx_desc->file_name);
 
-	/*
-	 * XXX
-	 * is this replacement correct?
-	 * 
-	 * ltoa(cpx->header.cpx_version, txt, 16);
-	 */
-	sprintf(txt, "%x", cpx->header.cpx_version);
+	myitoa(cpx->header.cpx_version, txt, 16);
 	strrev(txt);
 	while (strlen(txt) < 3)
 		strcat(txt,"0");
@@ -2064,13 +2077,7 @@ einstellungen(void)
 	strcpy(path, settings.cpx_path);
 
 	alphaconf[ACPATH].ob_spec.tedinfo->te_ptext = path;
-	/*
-	 * XXX
-	 * is this replacement correct?
-	 *
-	 * itoa(settings.after, alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, 10);
-	 */
-	sprintf(alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, "%d", settings.after);
+	myitoa(settings.after, alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, 10);
 
 	if (settings.booticon)
 		obj_SELECTED(alphaconf, ACBOOT);
