@@ -303,13 +303,13 @@ extern void *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #undef NUM_OBS
 #undef NUM_TREE
 #undef NUM_UD
-#define NUM_STRINGS 280
+#define NUM_STRINGS 328
 #define NUM_BB		2
 #define NUM_IB		1
 #define NUM_CIB     1
 #define NUM_CIC     1
 #define NUM_TI		5
-#define NUM_FRSTR	239
+#define NUM_FRSTR	287
 #define NUM_FRIMG	0
 #define NUM_OBS     43
 #define NUM_TREE	7
@@ -597,6 +597,54 @@ static char cops_rs_string_276[] = "Il doppio clic attiva CPZ";
 static char cops_rs_string_277[] = "Ordina le icone per nome";
 static char cops_rs_string_278[] = "Terminare dopo";
 static char cops_rs_string_279[] = "__ minuti";
+static char cops_rs_string_280[] = " Kontrollpanel ";
+static char cops_rs_string_281[] = "  Kontrollpanel";
+static char cops_rs_string_282[] = "V\204l CPX-s\224kv\204g";
+static char cops_rs_string_283[] = "AES \204r inaktiv.";
+static char cops_rs_string_284[] = "[1][Inga fler f\224nster.][ Avbryt ]";
+static char cops_rs_string_285[] = "[2][ | Spara f\224rval? ][ OK | AVBRYT ]";
+static char cops_rs_string_286[] = "[1][ | Fel vid minnes-  | tilldelning! ][ OK ]";
+static char cops_rs_string_287[] = "[1][ | Fel vid | filoperation! ][ OK ]";
+static char cops_rs_string_288[] = "[1][ | Filen ej funnen! ][ OK ]";
+static char cops_rs_string_289[] = "[2][ | L\204s in CPXer p\206 nytt? ][ OK | AVBRYT ]";
+static char cops_rs_string_290[] = "[2][ | Spara CPX- | inst\204llningar? ][ OK | AVBRYT ]";
+static char cops_rs_string_291[] = "[1][ | Stereoljud ej   | tillg\204ngligt.   ][ OK ]";
+static char cops_rs_string_292[] = "[1][Kan inte \224ppna kontrollpanelen.][OK]";
+static char cops_rs_string_293[] = "[2][ | St\204nga av | kontrollpanelen? ][ OK | AVBRYT ]";
+static char cops_rs_string_294[] = "OK";
+static char cops_rs_string_295[] = "Avbryt";
+static char cops_rs_string_296[] = "Om COPS...";
+static char cops_rs_string_297[] = "-";
+static char cops_rs_string_298[] = "Inst\204llningar...  ^E";
+static char cops_rs_string_299[] = "-";
+static char cops_rs_string_300[] = "Ladda om";
+static char cops_rs_string_301[] = "St\204da upp";
+static char cops_rs_string_302[] = "-";
+static char cops_rs_string_303[] = "V\204lj alla         ^A";
+static char cops_rs_string_304[] = "-";
+static char cops_rs_string_305[] = "Hj\204lp           HELP";
+static char cops_rs_string_306[] = "\231ppen        ^O";
+static char cops_rs_string_307[] = "-";
+static char cops_rs_string_308[] = "Deaktivera";
+static char cops_rs_string_309[] = "Activera";
+static char cops_rs_string_310[] = "-";
+static char cops_rs_string_311[] = "Info...      ^I";
+static char cops_rs_string_312[] = "av";
+static char cops_rs_string_313[] = "  Filnamn  :";
+static char cops_rs_string_314[] = "  Version  :";
+static char cops_rs_string_315[] = "       ID  :";
+static char cops_rs_string_316[] = " Konfiguration ";
+static char cops_rs_string_317[] = "RAM permanent";
+static char cops_rs_string_318[] = "St\204ll bara in";
+static char cops_rs_string_319[] = "Starta init";
+static char cops_rs_string_320[] = "Auto Boot";
+static char cops_rs_string_321[] = "Inst\204llningar";
+static char cops_rs_string_322[] = "S\224kv\204g:";
+static char cops_rs_string_323[] = "Ikonifiera i b\224rjan";
+static char cops_rs_string_324[] = "Dubbelklick aktiverar CPZ";
+static char cops_rs_string_325[] = "Sortera ikoner efter namn";
+static char cops_rs_string_326[] = "Avsluta efter";
+static char cops_rs_string_327[] = "__ minut(er)";
 
 
 static _UBYTE cops_rs_IMAGE0[] = {
@@ -971,7 +1019,55 @@ char *rs_frstr[NUM_FRSTR] = {
 	cops_rs_string_276,
 	cops_rs_string_277,
 	cops_rs_string_278,
-	cops_rs_string_279
+	cops_rs_string_279,
+	cops_rs_string_280,
+	cops_rs_string_281,
+	cops_rs_string_282,
+	cops_rs_string_283,
+	cops_rs_string_284,
+	cops_rs_string_285,
+	cops_rs_string_286,
+	cops_rs_string_287,
+	cops_rs_string_288,
+	cops_rs_string_289,
+	cops_rs_string_290,
+	cops_rs_string_291,
+	cops_rs_string_292,
+	cops_rs_string_293,
+	cops_rs_string_294,
+	cops_rs_string_295,
+	cops_rs_string_296,
+	cops_rs_string_297,
+	cops_rs_string_298,
+	cops_rs_string_299,
+	cops_rs_string_300,
+	cops_rs_string_301,
+	cops_rs_string_302,
+	cops_rs_string_303,
+	cops_rs_string_304,
+	cops_rs_string_305,
+	cops_rs_string_306,
+	cops_rs_string_307,
+	cops_rs_string_308,
+	cops_rs_string_309,
+	cops_rs_string_310,
+	cops_rs_string_311,
+	cops_rs_string_312,
+	cops_rs_string_313,
+	cops_rs_string_314,
+	cops_rs_string_315,
+	cops_rs_string_316,
+	cops_rs_string_317,
+	cops_rs_string_318,
+	cops_rs_string_319,
+	cops_rs_string_320,
+	cops_rs_string_321,
+	cops_rs_string_322,
+	cops_rs_string_323,
+	cops_rs_string_324,
+	cops_rs_string_325,
+	cops_rs_string_326,
+	cops_rs_string_327
 };
 
 
@@ -1547,8 +1643,8 @@ _WORD cops_rs_rsc_free()
 #endif /* RSC_NAMED_FUNCTIONS */
 
 #else /* !RSC_STATIC_FILE */
-_WORD rs_numstrings = 280;
-_WORD rs_numfrstr = 239;
+_WORD rs_numstrings = 328;
+_WORD rs_numfrstr = 287;
 
 _WORD rs_nuser = 0;
 _WORD rs_numimages = 4;

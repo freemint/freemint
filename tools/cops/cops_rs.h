@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        280
+ * Number of Strings:        328
  * Number of Bitblks:        2
  * Number of Iconblks:       1
  * Number of Color Iconblks: 1
  * Number of Color Icons:    1
  * Number of Tedinfos:       5
- * Number of Free Strings:   239
+ * Number of Free Strings:   287
  * Number of Free Images:    0
  * Number of Objects:        43
  * Number of Trees:          7
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          11136
+ * Total file size:          12214
  */
 
 #undef RSC_NAME
@@ -35,8 +35,8 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 280
-#define NUM_FRSTR 239
+#define NUM_STRINGS 328
+#define NUM_FRSTR 287
 #define NUM_UD 0
 #define NUM_IMAGES 4
 #define NUM_BB 2
@@ -583,6 +583,102 @@ extern OBJECT *rs_trindex[];
 #define SET_TERM_IT                      237 /* Free string */
 
 #define SET_TERMAFTER_IT                 238 /* Free string */
+
+#define WINDOWTITLE_STR_SV               239 /* Free string */
+
+#define MENUTITLE_STR_SV                 240 /* Free string */
+
+#define CPXPATH_STR_SV                   241 /* Free string */
+
+#define NOAES_STR_SV                     242 /* Free string */
+
+#define NOWINDOW_ALERT_SV                243 /* Alert string */
+
+#define SAVE_DFLT_ALERT_SV               244 /* Alert string */
+
+#define MEM_ERR_ALERT_SV                 245 /* Alert string */
+
+#define FILE_ERR_ALERT_SV                246 /* Alert string */
+
+#define FNF_ERR_ALERT_SV                 247 /* Alert string */
+
+#define RELOAD_ALERT_SV                  248 /* Alert string */
+
+#define AL_SAVE_HEADER_SV                249 /* Alert string */
+
+#define AL_NO_SOUND_DMA_SV               250 /* Alert string */
+
+#define CPXLOAD_ALERT_SV                 251 /* Alert string */
+
+#define QUIT_ALERT_SV                    252 /* Alert string */
+
+#define OK_SV                            253 /* Free string */
+
+#define CANCEL_SV                        254 /* Free string */
+
+#define COPS_POPUP_ABOUT_SV              255 /* Free string */
+
+#define COPS_POPUP_DIS1_SV               256 /* Free string */
+
+#define COPS_POPUP_SETTINGS_SV           257 /* Free string */
+
+#define COPS_POPUP_DIS2_SV               258 /* Free string */
+
+#define COPS_POPUP_RELOAD_SV             259 /* Free string */
+
+#define COPS_POPUP_TIDY_UP_SV            260 /* Free string */
+
+#define COPS_POPUP_DIS3_SV               261 /* Free string */
+
+#define COPS_POPUP_SELECT_ALL_SV         262 /* Free string */
+
+#define COPS_POPUP_DIS4_SV               263 /* Free string */
+
+#define COPS_POPUP_HELP_SV               264 /* Free string */
+
+#define CPX_POPUP_OPEN_SV                265 /* Free string */
+
+#define CPX_POPUP_DIS1_SV                266 /* Free string */
+
+#define CPX_POPUP_DISABLE_SV             267 /* Free string */
+
+#define CPX_POPUP_ENABLE_SV              268 /* Free string */
+
+#define CPX_POPUP_DIS2_SV                269 /* Free string */
+
+#define CPX_POPUP_INFO_SV                270 /* Free string */
+
+#define ABOUT_BY_SV                      271 /* Free string */
+
+#define INFO_FILENAME_SV                 272 /* Free string */
+
+#define INFO_VERSION_SV                  273 /* Free string */
+
+#define INFO_ID_SV                       274 /* Free string */
+
+#define INFO_FRAME_SV                    275 /* Free string */
+
+#define INFO_RAM_SV                      276 /* Free string */
+
+#define INFO_SETONLY_SV                  277 /* Free string */
+
+#define INFO_BOOTINIT_SV                 278 /* Free string */
+
+#define INFO_AUTOBOOT_SV                 279 /* Free string */
+
+#define SET_SETTINGS_SV                  280 /* Free string */
+
+#define SET_SELPATH_SV                   281 /* Free string */
+
+#define SET_ICONIFY_SV                   282 /* Free string */
+
+#define SET_DCLICK_SV                    283 /* Free string */
+
+#define SET_SORTNAME_SV                  284 /* Free string */
+
+#define SET_TERM_SV                      285 /* Free string */
+
+#define SET_TERMAFTER_SV                 286 /* Free string */
 
 
 

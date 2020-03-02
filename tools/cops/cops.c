@@ -245,7 +245,7 @@ static void set_texts(_WORD country)
 {
 	const _WORD *p;
 	OBJECT *tree;
-	static _WORD const trans_table[5][36] = {
+	static _WORD const trans_table[6][36] = {
 		{
 			/* english */
 			WINDOWTITLE_STR_EN,
@@ -441,6 +441,45 @@ static void set_texts(_WORD country)
 			OK_IT,
 			CANCEL_IT,
 		},
+		{
+			/* swedish */
+			WINDOWTITLE_STR_SV,
+			MENUTITLE_STR_SV,
+			CPXPATH_STR_SV,
+			NOAES_STR_SV,
+			NOWINDOW_ALERT_SV,
+			SAVE_DFLT_ALERT_SV,
+			MEM_ERR_ALERT_SV,
+			FILE_ERR_ALERT_SV,
+			FNF_ERR_ALERT_SV,
+			RELOAD_ALERT_SV,
+			AL_SAVE_HEADER_SV,
+			AL_NO_SOUND_DMA_SV,
+			CPXLOAD_ALERT_SV,
+			QUIT_ALERT_SV,
+			COPS_POPUP_ABOUT_SV,
+			CPX_POPUP_OPEN_SV,
+			ABOUT_BY_SV,
+			OK_SV,
+			INFO_FILENAME_SV,
+			INFO_VERSION_SV,
+			INFO_ID_SV,
+			INFO_RAM_SV,
+			INFO_SETONLY_SV,
+			INFO_BOOTINIT_SV,
+			INFO_AUTOBOOT_SV,
+			OK_SV,
+			CANCEL_SV,
+			SET_SETTINGS_SV,
+			SET_SELPATH_SV,
+			SET_ICONIFY_SV,
+			SET_DCLICK_SV,
+			SET_SORTNAME_SV,
+			SET_TERM_SV,
+			SET_TERMAFTER_SV,
+			OK_SV,
+			CANCEL_SV,
+		},
 	};
 
 	switch (country)
@@ -462,6 +501,9 @@ static void set_texts(_WORD country)
 		break;
 	case COUNTRY_IT:
 		p = trans_table[4];
+		break;
+	case COUNTRY_SE:
+		p = trans_table[5];
 		break;
 	}
 
@@ -2572,7 +2614,7 @@ handle_keyboard(unsigned short kstate, unsigned short key)
 				/* for testing translations */
 				do
 				{
-					xctrl_pb.Country_Code = (xctrl_pb.Country_Code + 1) % 6;
+					xctrl_pb.Country_Code = (xctrl_pb.Country_Code + 1) % 9;
 				} while (xctrl_pb.Country_Code == COUNTRY_UK || xctrl_pb.Country_Code == COUNTRY_SF || xctrl_pb.Country_Code == COUNTRY_SG);
 				set_texts(xctrl_pb.Country_Code);
 				wind_set_str(main_window->handle, WF_NAME, fstring_addr[windowtitle_str]);
