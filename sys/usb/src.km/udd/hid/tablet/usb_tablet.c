@@ -614,8 +614,7 @@ get_rez()
 	short work_in[11], work_out[57];
 	int i;
 
-	work_in[0] = b_getrez() + 2;
-	for (i = 1 ; i < 10 ; work_in[i++] = 1)
+	for (i = 0 ; i < 10 ; work_in[i++] = 1)
 		;
 	work_in[10] = 2;
 	v_opnvwk(work_in, &handle, work_out);
