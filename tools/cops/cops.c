@@ -245,7 +245,7 @@ static void set_texts(_WORD country)
 {
 	const _WORD *p;
 	OBJECT *tree;
-	static _WORD const trans_table[3][36] = {
+	static _WORD const trans_table[4][36] = {
 		{
 			/* english */
 			WINDOWTITLE_STR_EN,
@@ -363,6 +363,45 @@ static void set_texts(_WORD country)
 			OK_EN, /* no translation needed */
 			CANCEL_FR,
 		},
+		{
+			/* spanish */
+			WINDOWTITLE_STR_ES,
+			MENUTITLE_STR_ES,
+			CPXPATH_STR_ES,
+			NOAES_STR_ES,
+			NOWINDOW_ALERT_ES,
+			SAVE_DFLT_ALERT_ES,
+			MEM_ERR_ALERT_ES,
+			FILE_ERR_ALERT_ES,
+			FNF_ERR_ALERT_ES,
+			RELOAD_ALERT_ES,
+			AL_SAVE_HEADER_ES,
+			AL_NO_SOUND_DMA_ES,
+			CPXLOAD_ALERT_ES,
+			QUIT_ALERT_ES,
+			COPS_POPUP_ABOUT_ES,
+			CPX_POPUP_OPEN_ES,
+			ABOUT_BY_ES,
+			OK_ES,
+			INFO_FILENAME_ES,
+			INFO_VERSION_ES,
+			INFO_ID_ES,
+			INFO_RAM_ES,
+			INFO_SETONLY_ES,
+			INFO_BOOTINIT_ES,
+			INFO_AUTOBOOT_ES,
+			OK_ES,
+			CANCEL_ES,
+			SET_SETTINGS_ES,
+			SET_SELPATH_ES,
+			SET_ICONIFY_ES,
+			SET_DCLICK_ES,
+			SET_SORTNAME_ES,
+			SET_TERM_ES,
+			SET_TERMAFTER_ES,
+			OK_ES,
+			CANCEL_ES,
+		},
 	};
 
 	switch (country)
@@ -378,6 +417,9 @@ static void set_texts(_WORD country)
 	case COUNTRY_FR:
 	case COUNTRY_SF:
 		p = trans_table[2];
+		break;
+	case COUNTRY_ES:
+		p = trans_table[3];
 		break;
 	}
 
@@ -2486,9 +2528,12 @@ handle_keyboard(unsigned short kstate, unsigned short key)
 			case KbHELP:
 #if DEBUG_TRANSLATIONS
 				/* for testing translations */
-				xctrl_pb.Country_Code = (xctrl_pb.Country_Code + 1) % 3;
+				do
+				{
+					xctrl_pb.Country_Code = (xctrl_pb.Country_Code + 1) % 5;
+				} while (xctrl_pb.Country_Code == COUNTRY_UK || xctrl_pb.Country_Code == COUNTRY_SF || xctrl_pb.Country_Code == COUNTRY_SG);
 				set_texts(xctrl_pb.Country_Code);
-				wind_set_str(main_window->handle, WF_NAME, fstring_addr[windowtitle_str]));
+				wind_set_str(main_window->handle, WF_NAME, fstring_addr[windowtitle_str]);
 #else
 				call_help();
 #endif

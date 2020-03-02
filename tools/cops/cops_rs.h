@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        181
+ * Number of Strings:        232
  * Number of Bitblks:        2
  * Number of Iconblks:       1
  * Number of Color Iconblks: 1
  * Number of Color Icons:    1
- * Number of Tedinfos:       4
- * Number of Free Strings:   143
+ * Number of Tedinfos:       5
+ * Number of Free Strings:   191
  * Number of Free Images:    0
- * Number of Objects:        42
+ * Number of Objects:        43
  * Number of Trees:          7
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          8826
+ * Total file size:          9974
  */
 
 #undef RSC_NAME
@@ -35,16 +35,16 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 181
-#define NUM_FRSTR 143
+#define NUM_STRINGS 232
+#define NUM_FRSTR 191
 #define NUM_UD 0
 #define NUM_IMAGES 4
 #define NUM_BB 2
 #define NUM_FRIMG 0
 #define NUM_IB 1
 #define NUM_CIB 1
-#define NUM_TI 4
-#define NUM_OBS 42
+#define NUM_TI 5
+#define NUM_OBS 43
 #define NUM_TREE 7
 #endif
 
@@ -63,8 +63,8 @@ extern OBJECT *rs_trindex[];
 
 #define ABOUT_DIALOG                       0 /* form/dialog */
 #define ABOUT_OK                           1 /* BUTTON in tree ABOUT_DIALOG */
-#define ABOUT_BY                           2 /* TEXT in tree ABOUT_DIALOG */
 #define ABOUT_ICON                         4 /* BOX in tree ABOUT_DIALOG */
+#define ABOUT_BY                           7 /* TEXT in tree ABOUT_DIALOG */
 
 #define INFO_DIALOG                        1 /* form/dialog */
 #define CITITLE                            1 /* STRING in tree INFO_DIALOG */
@@ -106,11 +106,11 @@ extern OBJECT *rs_trindex[];
 #define CICON_DIALOG                       6 /* form/dialog */
 #define COPS_CICON                         1 /* CICON in tree CICON_DIALOG */
 
-#define WINDOWTITLE_STR_EN                 0 /* Free string */
+#define ICNFTITLE_STR                      0 /* Free string */
 
-#define MENUTITLE_STR_EN                   1 /* Free string */
+#define WINDOWTITLE_STR_EN                 1 /* Free string */
 
-#define ICNFTITLE_STR                      2 /* Free string */
+#define MENUTITLE_STR_EN                   2 /* Free string */
 
 #define CPXPATH_STR_EN                     3 /* Free string */
 
@@ -391,6 +391,102 @@ extern OBJECT *rs_trindex[];
 #define SET_TERM_FR                      141 /* Free string */
 
 #define SET_TERMAFTER_FR                 142 /* Free string */
+
+#define WINDOWTITLE_STR_ES               143 /* Free string */
+
+#define MENUTITLE_STR_ES                 144 /* Free string */
+
+#define CPXPATH_STR_ES                   145 /* Free string */
+
+#define NOAES_STR_ES                     146 /* Free string */
+
+#define NOWINDOW_ALERT_ES                147 /* Alert string */
+
+#define SAVE_DFLT_ALERT_ES               148 /* Alert string */
+
+#define MEM_ERR_ALERT_ES                 149 /* Alert string */
+
+#define FILE_ERR_ALERT_ES                150 /* Alert string */
+
+#define FNF_ERR_ALERT_ES                 151 /* Alert string */
+
+#define RELOAD_ALERT_ES                  152 /* Alert string */
+
+#define AL_SAVE_HEADER_ES                153 /* Alert string */
+
+#define AL_NO_SOUND_DMA_ES               154 /* Alert string */
+
+#define CPXLOAD_ALERT_ES                 155 /* Alert string */
+
+#define QUIT_ALERT_ES                    156 /* Alert string */
+
+#define OK_ES                            157 /* Free string */
+
+#define CANCEL_ES                        158 /* Free string */
+
+#define COPS_POPUP_ABOUT_ES              159 /* Free string */
+
+#define COPS_POPUP_DIS1_ES               160 /* Free string */
+
+#define COPS_POPUP_SETTINGS_ES           161 /* Free string */
+
+#define COPS_POPUP_DIS2_ES               162 /* Free string */
+
+#define COPS_POPUP_RELOAD_ES             163 /* Free string */
+
+#define COPS_POPUP_TIDY_UP_ES            164 /* Free string */
+
+#define COPS_POPUP_DIS3_ES               165 /* Free string */
+
+#define COPS_POPUP_SELECT_ALL_ES         166 /* Free string */
+
+#define COPS_POPUP_DIS4_ES               167 /* Free string */
+
+#define COPS_POPUP_HELP_ES               168 /* Free string */
+
+#define CPX_POPUP_OPEN_ES                169 /* Free string */
+
+#define CPX_POPUP_DIS1_ES                170 /* Free string */
+
+#define CPX_POPUP_DISABLE_ES             171 /* Free string */
+
+#define CPX_POPUP_ENABLE_ES              172 /* Free string */
+
+#define CPX_POPUP_DIS2_ES                173 /* Free string */
+
+#define CPX_POPUP_INFO_ES                174 /* Free string */
+
+#define ABOUT_BY_ES                      175 /* Free string */
+
+#define INFO_FILENAME_ES                 176 /* Free string */
+
+#define INFO_VERSION_ES                  177 /* Free string */
+
+#define INFO_ID_ES                       178 /* Free string */
+
+#define INFO_FRAME_ES                    179 /* Free string */
+
+#define INFO_RAM_ES                      180 /* Free string */
+
+#define INFO_SETONLY_ES                  181 /* Free string */
+
+#define INFO_BOOTINIT_ES                 182 /* Free string */
+
+#define INFO_AUTOBOOT_ES                 183 /* Free string */
+
+#define SET_SETTINGS_ES                  184 /* Free string */
+
+#define SET_SELPATH_ES                   185 /* Free string */
+
+#define SET_ICONIFY_ES                   186 /* Free string */
+
+#define SET_DCLICK_ES                    187 /* Free string */
+
+#define SET_SORTNAME_ES                  188 /* Free string */
+
+#define SET_TERM_ES                      189 /* Free string */
+
+#define SET_TERMAFTER_ES                 190 /* Free string */
 
 
 
