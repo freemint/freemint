@@ -24,7 +24,9 @@
 #define COUNTRY_DK	12	/* da_DK Denmark */
 #define COUNTRY_SA	13	/* ar_SA Saudi Arabia */
 #define COUNTRY_NL	14	/* nl_NL Netherlands */
-#define COUNTRY_CZ	15	/* cs_CZ Czech Republic */#define COUNTRY_HU	16	/* hu_HU Hungary */#define COUNTRY_PL	17	/* pl_PL Poland */
+#define COUNTRY_CZ	15	/* cs_CZ Czech Republic */
+#define COUNTRY_HU	16	/* hu_HU Hungary */
+#define COUNTRY_PL	17	/* pl_PL Poland */
 
 #define COUNTRY_LT	18	/* lt_LT Lithuania */
 #define COUNTRY_RU	19	/* ru_RU Russia */
