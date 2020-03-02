@@ -173,9 +173,16 @@ strs_init(struct POPUP_INIT_args args)
 		str = popup_par->strs[args.scrollpos + i - 1];
 		if (*str == '-')
 		{
-			for (j = 0; j < popup_par->max_width; j++)
-				*tmp++ = '-';
-			*tmp = '\0';
+			if (str[1] == '\0')
+			{
+				for (j = 0; j < popup_par->max_width; j++)
+					*tmp++ = '-';
+				*tmp = '\0';
+			} else
+			{
+				*tmp++ = ' ';
+				strcpy(tmp, str + 1); /* String kopieren */
+			}
 			obj->ob_state |= OS_DISABLED;
 		} else
 		{

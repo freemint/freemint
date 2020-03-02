@@ -39,8 +39,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <sys/signal.h>
 #include <time.h>
+#include <mint/sysvars.h>
+#undef etv_critic
+#include "include/country.h"
 
 #include "cops_rsc.h"
 #include "adaptrsc.h"
@@ -57,6 +59,10 @@
 
 /* XXX from mintlib */
 extern short _app;
+
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
 
 /* magic mt_aes -> gemlib wrapper */
 #ifndef __EVNTDATA
@@ -84,6 +90,8 @@ typedef struct {
 #undef SIGQUIT
 #define SIGTERM		15		/* software termination signal */
 #define SIGQUIT		3		/* quit signal */
+
+#define DEBUG_TRANSLATIONS 0
 
 /*----------------------------------------------------------------------------------------*/
 
@@ -157,8 +165,24 @@ static _KEYTAB *kt = NULL;
 static short no_open_cpx;
 static short do_reload;
 static short do_close;
-static short must_read_inf = 0;
+static short must_read_inf;
 static time_t termtime;
+static _WORD windowtitle_str = WINDOWTITLE_STR_EN;
+static _WORD menutitle_str = MENUTITLE_STR_EN;
+static _WORD cops_popup = COPS_POPUP_ABOUT_EN;
+static _WORD cpx_popup = CPX_POPUP_OPEN_EN;
+static _WORD cpxpath_str = CPXPATH_STR_EN;
+static _WORD noaes_str = NOAES_STR_EN;
+static _WORD nowindow_alert = NOWINDOW_ALERT_EN;
+_WORD save_dflt_alert = SAVE_DFLT_ALERT_EN;
+_WORD mem_err_alert = MEM_ERR_ALERT_EN;
+_WORD file_err_alert = FILE_ERR_ALERT_EN;
+_WORD fnf_err_alert = FNF_ERR_ALERT_EN;
+_WORD reload_alert = RELOAD_ALERT_EN;
+_WORD al_save_header = AL_SAVE_HEADER_EN;
+_WORD al_no_sound_dma = AL_NO_SOUND_DMA_EN;
+static _WORD cpxload_alert = CPXLOAD_ALERT_EN;
+static _WORD quit_alert = QUIT_ALERT_EN;
 
 /* internal functions */
 
@@ -176,6 +200,279 @@ static void set_termtime(void);
 static short MapKey(short keystate, short key);
 static short handle_evnt_cpx(CPX_DESC *cpx_desc, EVNT *events);
 static void _cdecl sig_handler(long sig);
+
+/*----------------------------------------------------------------------------------------*/
+
+static _WORD pop_handle(_WORD mx, _WORD my, char **items, _WORD num_items, _WORD default_item, unsigned short disabled)
+{
+	GRECT gr;
+	char popup_strs[12][30];
+	char *popup_items[12];
+	_WORD i;
+
+	for (i = 0; i < num_items; i++)
+	{
+		popup_items[i] = popup_strs[i];
+		if (disabled & 1)
+		{
+			strcpy(popup_items[i], "- ");
+			strcat(popup_items[i], items[i]);
+			strcat(popup_items[i], " ");
+		} else if (items[i][0] == '-')
+		{
+			strcpy(popup_items[i], "-");
+		} else
+		{
+			strcpy(popup_items[i], "  ");
+			strcat(popup_items[i], items[i]);
+			strcat(popup_items[i], " ");
+		}
+		disabled >>= 1;
+	}
+	gr.g_x = mx;
+	gr.g_y = my;
+	gr.g_w = 0;
+	gr.g_h = 0;
+	return do_popup(&gr, popup_items, num_items, 0, default_item);
+}
+
+/*----------------------------------------------------------------------------------------*/
+
+/*
+ * Set translatable text fields in resource
+ */
+static void set_texts(_WORD country)
+{
+	const _WORD *p;
+	OBJECT *tree;
+	static _WORD const trans_table[3][36] = {
+		{
+			/* english */
+			WINDOWTITLE_STR_EN,
+			MENUTITLE_STR_EN,
+			CPXPATH_STR_EN,
+			NOAES_STR_EN,
+			NOWINDOW_ALERT_EN,
+			SAVE_DFLT_ALERT_EN,
+			MEM_ERR_ALERT_EN,
+			FILE_ERR_ALERT_EN,
+			FNF_ERR_ALERT_EN,
+			RELOAD_ALERT_EN,
+			AL_SAVE_HEADER_EN,
+			AL_NO_SOUND_DMA_EN,
+			CPXLOAD_ALERT_EN,
+			QUIT_ALERT_EN,
+			COPS_POPUP_ABOUT_EN,
+			CPX_POPUP_OPEN_EN,
+			ABOUT_BY_EN,
+			OK_EN,
+			INFO_FILENAME_EN,
+			INFO_VERSION_EN,
+			INFO_ID_EN,
+			INFO_RAM_EN,
+			INFO_SETONLY_EN,
+			INFO_BOOTINIT_EN,
+			INFO_AUTOBOOT_EN,
+			OK_EN,
+			CANCEL_EN,
+			SET_SETTINGS_EN,
+			SET_SELPATH_EN,
+			SET_ICONIFY_EN,
+			SET_DCLICK_EN,
+			SET_SORTNAME_EN,
+			SET_TERM_EN,
+			SET_TERMAFTER_EN,
+			OK_EN,
+			CANCEL_EN,
+		},
+		{
+			/* german */
+			WINDOWTITLE_STR_DE,
+			MENUTITLE_STR_DE,
+			CPXPATH_STR_DE,
+			NOAES_STR_DE,
+			NOWINDOW_ALERT_DE,
+			SAVE_DFLT_ALERT_DE,
+			MEM_ERR_ALERT_DE,
+			FILE_ERR_ALERT_DE,
+			FNF_ERR_ALERT_DE,
+			RELOAD_ALERT_DE,
+			AL_SAVE_HEADER_DE,
+			AL_NO_SOUND_DMA_DE,
+			CPXLOAD_ALERT_DE,
+			QUIT_ALERT_DE,
+			COPS_POPUP_ABOUT_DE,
+			CPX_POPUP_OPEN_DE,
+			ABOUT_BY_DE,
+			OK_EN, /* no translation needed */
+			INFO_FILENAME_DE,
+			INFO_VERSION_DE,
+			INFO_ID_DE,
+			INFO_RAM_DE,
+			INFO_SETONLY_DE,
+			INFO_BOOTINIT_DE,
+			INFO_AUTOBOOT_DE,
+			OK_EN, /* no translation needed */
+			CANCEL_DE,
+			SET_SETTINGS_DE,
+			SET_SELPATH_DE,
+			SET_ICONIFY_DE,
+			SET_DCLICK_DE,
+			SET_SORTNAME_DE,
+			SET_TERM_DE,
+			SET_TERMAFTER_DE,
+			OK_EN, /* no translation needed */
+			CANCEL_DE,
+		},
+		{
+			/* french */
+			WINDOWTITLE_STR_FR,
+			MENUTITLE_STR_FR,
+			CPXPATH_STR_FR,
+			NOAES_STR_FR,
+			NOWINDOW_ALERT_FR,
+			SAVE_DFLT_ALERT_FR,
+			MEM_ERR_ALERT_FR,
+			FILE_ERR_ALERT_FR,
+			FNF_ERR_ALERT_FR,
+			RELOAD_ALERT_FR,
+			AL_SAVE_HEADER_FR,
+			AL_NO_SOUND_DMA_FR,
+			CPXLOAD_ALERT_FR,
+			QUIT_ALERT_FR,
+			COPS_POPUP_ABOUT_FR,
+			CPX_POPUP_OPEN_FR,
+			ABOUT_BY_FR,
+			OK_EN, /* no translation needed */
+			INFO_FILENAME_FR,
+			INFO_VERSION_FR,
+			INFO_ID_FR,
+			INFO_RAM_FR,
+			INFO_SETONLY_FR,
+			INFO_BOOTINIT_FR,
+			INFO_AUTOBOOT_FR,
+			OK_EN, /* no translation needed */
+			CANCEL_FR,
+			SET_SETTINGS_FR,
+			SET_SELPATH_FR,
+			SET_ICONIFY_FR,
+			SET_DCLICK_FR,
+			SET_SORTNAME_FR,
+			SET_TERM_FR,
+			SET_TERMAFTER_FR,
+			OK_EN, /* no translation needed */
+			CANCEL_FR,
+		},
+	};
+
+	switch (country)
+	{
+	default:
+		/* Default case is USA/UK */
+		p = trans_table[0];
+		break;
+	case COUNTRY_DE:
+	case COUNTRY_SG:
+		p = trans_table[1];
+		break;
+	case COUNTRY_FR:
+	case COUNTRY_SF:
+		p = trans_table[2];
+		break;
+	}
+
+#define XText(obj) tree[obj].ob_spec.tedinfo->te_ptext = fstring_addr[*p++]
+#define XTemplate(obj) tree[obj].ob_spec.tedinfo->te_ptmplt = fstring_addr[*p++]
+#if DEBUG_TRANSLATIONS
+#define XString(obj) \
+	if ((tree[obj].ob_type & 0xff) == G_USERDEF) \
+		tree[obj].ob_spec.userblk->ub_parm = (long)fstring_addr[*p++]; \
+	else \
+		tree[obj].ob_spec.free_string = fstring_addr[*p++]
+#else
+#define XString(obj) tree[obj].ob_spec.free_string = fstring_addr[*p++]
+#endif
+
+	windowtitle_str = *p++;
+	menutitle_str = *p++;
+	cpxpath_str = *p++;
+	noaes_str = *p++;
+	nowindow_alert = *p++;
+	save_dflt_alert = *p++;
+	mem_err_alert = *p++;
+	file_err_alert = *p++;
+	fnf_err_alert = *p++;
+	reload_alert = *p++;
+	al_save_header= *p++;
+	al_no_sound_dma = *p++;
+	cpxload_alert = *p++;
+	quit_alert = *p++;
+	cops_popup = *p++;
+	cpx_popup = *p++;
+	
+	tree = tree_addr[ABOUT_DIALOG];
+	XText(ABOUT_BY);
+	XString(ABOUT_OK);
+
+	tree = tree_addr[INFO_DIALOG];
+	XString(INFO_FILENAME);
+	XString(INFO_VERSION);
+	XString(INFO_ID);
+	XString(INFO_RAM);
+	XString(INFO_SETONLY);
+	XString(INFO_BOOTINIT);
+	XString(INFO_AUTOBOOT);
+	XString(INFO_OK);
+	XString(INFO_CANCEL);
+	
+	tree = tree_addr[SET_DIALOG];
+	XString(SET_SETTINGS);
+	XString(SET_SELPATH);
+	XString(SET_ICONIFY);
+	XString(SET_DCLICK);
+	XString(SET_SORTNAME);
+	XString(SET_TERM);
+	XTemplate(SET_TERMAFTER);
+	XString(SET_OK);
+	XString(SET_CANCEL);
+
+#undef XText
+#undef XTemplate
+#undef XString
+
+}
+
+/*----------------------------------------------------------------------------------------*/
+
+/*
+ * select default language
+ */
+static long get_syshdr(void)
+{
+	OSHEADER *syshdr;
+	
+	syshdr = *((OSHEADER **)0x4f2);
+	return (long)syshdr->os_beg;
+}
+
+static _WORD select_language(void)
+{
+	_WORD ag1, dummy;
+	long akp;
+	unsigned char nvram;
+	OSHEADER *syshdr;
+	_WORD os_conf;
+	
+	if ((aes_flags & GAI_INFO) && appl_getinfo(3, &ag1, &dummy, &dummy, &dummy) != 0)
+		return ag1;
+	if (get_cookie(0x5F414B50L, &akp))
+		return ((unsigned short)akp) >> 8;
+	if (NVMaccess(0, 6, 1, &nvram) == 0)
+		return nvram;
+	syshdr = (OSHEADER *)Supexec(get_syshdr);
+	os_conf = (syshdr->os_conf >> 1) & 0x7f;
+	return os_conf;
+}
 
 /*----------------------------------------------------------------------------------------*/
 
@@ -1148,7 +1445,7 @@ open_main_window(void)
 		WINDOW *window;
 		short handle;
 		short tidy_up;
-
+		
 		/* CPX-Ordner durchsuchen, CPX-Liste aktualisieren */
 		tidy_up = update_cpx_list();
 
@@ -1164,7 +1461,7 @@ open_main_window(void)
 			tidy_up_icons();
 			
 		window = create_window(MAINWINDOWSTYLE, &settings.mw, &handle,
-				       fstring_addr[MENUTITLE_STR], fstring_addr[ICNFTITLE_STR]);
+				       fstring_addr[windowtitle_str], fstring_addr[ICNFTITLE_STR]);
 
 		/* Fenster angelegt? */
 		if (window)
@@ -1209,7 +1506,7 @@ open_main_window(void)
 			wind_open_grect(handle, &window->border);
 		}
 		else
-			form_alert(1, fstring_addr[NOWINDOW_ALERT]);
+			form_alert(1, fstring_addr[nowindow_alert]);
 	}
 	else
 	{
@@ -1764,7 +2061,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 
 	/* Fehler beim Oeffnen? */
 	if (err)
-		form_alert(1, fstring_addr[CPXLOAD_ALERT]);
+		form_alert(1, fstring_addr[cpxload_alert]);
 
 	DEBUG(("open_cpx_context: done (err = %d)\n", err));
 }
@@ -1961,33 +2258,33 @@ cpx_info(CPX_DESC *cpx_desc)
 	strncpy(cpxinfo[CIID].ob_spec.free_string, (char *) &(cpx->header.cpx_id), 4);
 
 	if (cpx->header.flags & CPX_RESIDENT)
-		cpxinfo[CIRAM].ob_state |= OS_SELECTED;
+		cpxinfo[INFO_RAM].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CIRAM].ob_state &= ~OS_SELECTED;
+		cpxinfo[INFO_RAM].ob_state &= ~OS_SELECTED;
 
 	if (cpx->header.flags & CPX_SETONLY)
-		cpxinfo[CISET].ob_state |= OS_SELECTED;
+		cpxinfo[INFO_SETONLY].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CISET].ob_state &= ~OS_SELECTED;
+		cpxinfo[INFO_SETONLY].ob_state &= ~OS_SELECTED;
 
 	if (cpx->header.flags & CPX_BOOTINIT)
-		cpxinfo[CIBOOT].ob_state |= OS_SELECTED;
+		cpxinfo[INFO_BOOTINIT].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CIBOOT].ob_state &= ~OS_SELECTED;
+		cpxinfo[INFO_BOOTINIT].ob_state &= ~OS_SELECTED;
 
 	if (cpx_desc->flags & CPXD_AUTOSTART)
-		cpxinfo[CIAUTO].ob_state |= OS_SELECTED;
+		cpxinfo[INFO_AUTOBOOT].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CIAUTO].ob_state &= ~OS_SELECTED;
+		cpxinfo[INFO_AUTOBOOT].ob_state &= ~OS_SELECTED;
 
-	if (do_dialog(cpxinfo) == CIOK)
+	if (do_dialog(cpxinfo) == INFO_OK)
 	{
-		if (is_obj_SELECTED(cpxinfo, CIAUTO))
+		if (is_obj_SELECTED(cpxinfo, INFO_AUTOBOOT))
 			cpx_desc->flags |= CPXD_AUTOSTART;
 		else
 			cpx_desc->flags &= ~CPXD_AUTOSTART;
 	
-		if (is_obj_SELECTED(cpxinfo, CIRAM))
+		if (is_obj_SELECTED(cpxinfo, INFO_RAM))
 			cpx->header.flags |= CPX_RESIDENT;
 		else
 			cpx->header.flags &= ~CPX_RESIDENT;
@@ -2072,35 +2369,35 @@ einstellungen(void)
 	short button;
 
 	alphaconf = tree_addr[SET_DIALOG];
-	save_ptext = alphaconf[ACPATH].ob_spec.tedinfo->te_ptext;
+	save_ptext = alphaconf[SET_PATH].ob_spec.tedinfo->te_ptext;
 
 	strcpy(path, settings.cpx_path);
 
-	alphaconf[ACPATH].ob_spec.tedinfo->te_ptext = path;
-	myitoa(settings.after, alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext, 10);
+	alphaconf[SET_PATH].ob_spec.tedinfo->te_ptext = path;
+	myitoa(settings.after, alphaconf[SET_TERMAFTER].ob_spec.tedinfo->te_ptext, 10);
 
 	if (settings.booticon)
-		obj_SELECTED(alphaconf, ACBOOT);
+		obj_SELECTED(alphaconf, SET_ICONIFY);
 	else
-		obj_DESELECTED(alphaconf, ACBOOT);
+		obj_DESELECTED(alphaconf, SET_ICONIFY);
 
 	if (settings.clickact)
-		obj_SELECTED(alphaconf, ACCLICK);
+		obj_SELECTED(alphaconf, SET_DCLICK);
 	else
-		obj_DESELECTED(alphaconf, ACCLICK);
+		obj_DESELECTED(alphaconf, SET_DCLICK);
 
 	if (settings.sortmode)
-		obj_SELECTED(alphaconf, ACSORTNAME);
+		obj_SELECTED(alphaconf, SET_SORTNAME);
 	else
-		obj_DESELECTED(alphaconf, ACSORTNAME);
+		obj_DESELECTED(alphaconf, SET_SORTNAME);
 
 	if (settings.term)
-		obj_SELECTED(alphaconf, ACTERM);
+		obj_SELECTED(alphaconf, SET_TERM);
 	else
-		obj_DESELECTED(alphaconf, ACTERM);
+		obj_DESELECTED(alphaconf, SET_TERM);
 
 	do {
-		if ((button = do_dialog(alphaconf)) == ACSELPATH)
+		if ((button = do_dialog(alphaconf)) == SET_SELPATH)
 		{
 			char tmp_path[128];
 			char file[128];
@@ -2118,13 +2415,13 @@ einstellungen(void)
 			if (aes_flags & GAI_MAGIC)
 			{
 				strcat(tmp_path, "*.CPX,*.CPZ");
-				ok = fsel_exinput(tmp_path, file, &btn, fstring_addr[CPXPATH_STR]);
+				ok = fsel_exinput(tmp_path, file, &btn, fstring_addr[cpxpath_str]);
 			}
 			else
 			{
 				strcat(tmp_path, "*.CP?");
 				if (_AESversion >= 0x140)
-					ok = fsel_exinput(tmp_path, file, &btn, fstring_addr[CPXPATH_STR]);
+					ok = fsel_exinput(tmp_path, file, &btn, fstring_addr[cpxpath_str]);
 				else
 					ok = fsel_input(tmp_path, file, &btn);
 			}
@@ -2144,18 +2441,18 @@ einstellungen(void)
 			}
 		}
 	}
-	while (button == ACSELPATH);
+	while (button == SET_SELPATH);
 
-	alphaconf[ACPATH].ob_spec.tedinfo->te_ptext = save_ptext;
+	alphaconf[SET_PATH].ob_spec.tedinfo->te_ptext = save_ptext;
 
-	if (button == ACOK)
+	if (button == SET_OK)
 	{
-		settings.booticon = is_obj_SELECTED(alphaconf, ACBOOT);
-		settings.clickact = is_obj_SELECTED(alphaconf, ACCLICK);
-		settings.sortmode = is_obj_SELECTED(alphaconf, ACSORTNAME);
-		settings.term = is_obj_SELECTED(alphaconf, ACTERM);
+		settings.booticon = is_obj_SELECTED(alphaconf, SET_ICONIFY);
+		settings.clickact = is_obj_SELECTED(alphaconf, SET_DCLICK);
+		settings.sortmode = is_obj_SELECTED(alphaconf, SET_SORTNAME);
+		settings.term = is_obj_SELECTED(alphaconf, SET_TERM);
 
-		settings.after = max(1, atoi(alphaconf[ACAFTER].ob_spec.tedinfo->te_ptext));
+		settings.after = max(1, atoi(alphaconf[SET_TERMAFTER].ob_spec.tedinfo->te_ptext));
 		set_termtime();
 
 		/* unterschiedlicher Pfad? */
@@ -2174,85 +2471,70 @@ about(void)
 }
 
 static short
-handle_keyboard(short kstate, short key)
+handle_keyboard(unsigned short kstate, unsigned short key)
 {
 	DEBUG(("handle_keyboard 0x%x 0x%x\n", kstate, key));
 
 	/* Scancode auswerten? */
 	if (kstate & KbSCAN)
 	{
-
 		switch (kstate & ~KbSCAN)
 		{
-			case KbNORMAL: /* keine Umschalttaste gedrueckt */
+		case KbNORMAL: /* keine Umschalttaste gedrueckt */
+			switch (key)
 			{
+			case KbHELP:
+#if DEBUG_TRANSLATIONS
+				/* for testing translations */
+				xctrl_pb.Country_Code = (xctrl_pb.Country_Code + 1) % 3;
+				set_texts(xctrl_pb.Country_Code);
+				wind_set_str(main_window->handle, WF_NAME, fstring_addr[windowtitle_str]));
+#else
+				call_help();
+#endif
+				break;
+			case KbUP: /* darueberliegendes Icon anwaehlen */
+				break;
+			case KbDOWN: /* darunterliegendes Icon anwaehlen */
+				break;
+			case KbLEFT: /* linksliegendes Icon anwaehlen */
+				break;
+			case KbRIGHT: /* rechtsliegendes Icon anwaehlen */
+				break;
+			}
+			break;
+
+		case KbCONTROL: /* Control */
+			if (main_window && (main_window->wflags.iconified == 0))
+			{
+				_WORD msg[8];
+
+				msg[0] = WM_ARROWED;
+				msg[1] = app_id;
+				msg[2] = 0;
+				msg[3] = main_window->handle;
+				msg[4] = -1;
+
 				switch (key)
 				{
-					case KbHELP:
-					{
-						call_help();
-						break;
-					}
-					case KbUP: /* darueberliegendes Icon anwaehlen */
-					{
-						break;
-					}
-					case KbDOWN: /* darunterliegendes Icon anwaehlen */
-					{
-						break;
-					}
-					case KbLEFT: /* linksliegendes Icon anwaehlen */
-					{
-						break;
-					}
-					case KbRIGHT: /* rechtsliegendes Icon anwaehlen */
-					{
-						break;
-					}
+				case KbUP: /* nach oben scrollen */
+					msg[4] = WA_UPLINE;
+					break;
+				case KbDOWN: /* nach unten scrollen */
+					msg[4] = WA_DNLINE;
+					break;
+				case KbCtrlLEFT: /* nach links scrollen */
+					msg[4] = WA_LFLINE;
+					break;
+				case KbCtrlRIGHT: /* nach rechts scrollen */
+					msg[4] = WA_RTLINE;
+					break;
 				}
-				break;
-			}
-			case KbCONTROL: /* Control */
-			{
-				if (main_window && (main_window->wflags.iconified == 0))
-				{
-					_WORD msg[8];
 
-					msg[0] = WM_ARROWED;
-					msg[1] = app_id;
-					msg[2] = 0;
-					msg[3] = main_window->handle;
-					msg[4] = -1;
-	
-					switch (key)
-					{
-						case KbUP: /* nach oben scrollen */
-						{
-							msg[4] = WA_UPLINE;
-							break;
-						}
-						case KbDOWN: /* nach unten scrollen */
-						{
-							msg[4] = WA_DNLINE;
-							break;
-						}
-						case KbCtrlLEFT: /* nach links scrollen */
-						{
-							msg[4] = WA_LFLINE;
-							break;
-						}
-						case KbCtrlRIGHT: /* nach rechts scrollen */
-						{
-							msg[4] = WA_RTLINE;
-							break;
-						}
-					}
-	
-					if (msg[4] >= 0)
-						handle_message(msg);
-				}
-				break;
+				if (msg[4] >= 0)
+					handle_message(msg);
 			}
+			break;
 		}
 	}
 	else
@@ -2260,169 +2542,148 @@ handle_keyboard(short kstate, short key)
 		/* ASCII-Codes auswerten */
 		switch (kstate)
 		{
-			case KbNORMAL:
+		case KbNORMAL:
+			if ((key == 13) && (main_window->wflags.iconified == 0))
 			{
-				if ((key == 13) && (main_window->wflags.iconified == 0))
+				CPX_DESC *cpx_desc;
+
+				cpx_desc = list_search(cpx_desc_list, 1, offsetof(CPX_DESC, next), search_cpx_selected);
+				if (cpx_desc)
+					open_cpx(cpx_desc);
+			}
+			break;
+
+		case KbLSHIFT:
+		case KbRSHIFT:
+			if (main_window && (main_window->wflags.iconified == 0))
+			{
+				_WORD	msg[8];
+
+				msg[0] = WM_ARROWED;
+				msg[1] = app_id;
+				msg[2] = 0;
+				msg[3] = main_window->handle;
+				msg[4] = -1;
+
+				switch (key)
+				{
+					case 56: /* Seite nach oben scrollen */
+					{
+						msg[4] = WA_UPPAGE;
+						break;
+					}	
+					case 50: /* Seite nach unten scrollen */
+					{
+						msg[4] = WA_DNPAGE;
+						break;
+					}
+					case 52: /* Seite nach links scrollen */
+					{
+						msg[4] = WA_LFPAGE;
+						break;
+					}
+					case 54: /* Seite nach rechts scrollen */
+					{
+						msg[4] = WA_RTPAGE;
+						break;
+					}
+				}
+
+				if (msg[4] >= 0)
+					handle_message(msg);
+			}
+			break;
+
+		case KbCONTROL: /* Ctrl-Shortcut */
+			switch (key)
+			{
+			case 'i': /* Info... */
+				if (main_window->wflags.iconified == 0)
 				{
 					CPX_DESC *cpx_desc;
 
-					cpx_desc = list_search(cpx_desc_list, 1, offsetof(CPX_DESC, next), search_cpx_selected);
+					cpx_desc = list_search(cpx_desc_list, 1,
+							offsetof(CPX_DESC, next), search_cpx_selected);
+					if (cpx_desc)
+						cpx_info(cpx_desc);
+				}
+				break;
+			case 'a': /* alles markieren */
+				if (main_window->wflags.iconified == 0)
+					select_all_cpx();
+				break;
+			case 'e': /* Einstellungen */
+				einstellungen();
+				break;
+			case 'o': /* Oeffnen */
+				if (main_window->wflags.iconified == 0)
+				{
+					CPX_DESC *cpx_desc;
+
+					cpx_desc = list_search(cpx_desc_list, 1,
+							offsetof(CPX_DESC, next), search_cpx_selected);
 					if (cpx_desc)
 						open_cpx(cpx_desc);
 				}
 				break;
-			}
-			case KbLSHIFT:
-			case KbRSHIFT:
-			{
-				if (main_window && (main_window->wflags.iconified == 0))
+			case 'q':
+				if (_app)
+					/* COPS laeuft als Applikation */
+					return 1; /* Beenden moeglich */
+		
+				if (_app == 0 && aes_global[1] != 1) /* Accessory and Multitasking AES? */
 				{
-					_WORD	msg[8];
-	
-					msg[0] = WM_ARROWED;
+					if (form_alert(1, fstring_addr[quit_alert]) == 1)
+						return 1;
+				}
+
+				break;
+			case 'u':
+				if (main_window)
+				{
+					_WORD msg[8];
+					
+					msg[0] = WM_CLOSED;
 					msg[1] = app_id;
 					msg[2] = 0;
 					msg[3] = main_window->handle;
-					msg[4] = -1;
-	
-					switch (key)
-					{
-						case 56: /* Seite nach oben scrollen */
-						{
-							msg[4] = WA_UPPAGE;
-							break;
-						}	
-						case 50: /* Seite nach unten scrollen */
-						{
-							msg[4] = WA_DNPAGE;
-							break;
-						}
-						case 52: /* Seite nach links scrollen */
-						{
-							msg[4] = WA_LFPAGE;
-							break;
-						}
-						case 54: /* Seite nach rechts scrollen */
-						{
-							msg[4] = WA_RTPAGE;
-							break;
-						}
-					}
-	
-					if (msg[4] >= 0)
-						handle_message(msg);
+
+					return handle_message(msg);
 				}
 				break;
+			case 'w':
+				/* cycle */
+				break;
 			}
-			case KbCONTROL: /* Ctrl-Shortcut */
+			break;
+
+		case KbCONTROL|KbALT:
+			switch (key)
 			{
-				switch (key)
+			case ' ':
+				if (main_window && (top_whdl() == main_window->handle))
 				{
-					case 'i': /* Info... */
-					{
-						if (main_window->wflags.iconified == 0)
-						{
-							CPX_DESC *cpx_desc;
+					if (main_window->wflags.iconified)
+						uniconify_window(main_window->handle, NULL);
+					else
+						iconify_window(main_window->handle, NULL);
+				}
+				break;
+			case '+':
+				if (main_window && (main_window->wflags.iconified == 0))
+				{
+					_WORD msg[8];
+					
+					msg[0] = WM_FULLED;
+					msg[1] = app_id;
+					msg[2] = 0;
+					msg[3] = main_window->handle;
 
-							cpx_desc = list_search(cpx_desc_list, 1,
-									offsetof(CPX_DESC, next), search_cpx_selected);
-							if (cpx_desc)
-								cpx_info(cpx_desc);
-						}
-						break;
-					}	
-					case 'a': /* alles markieren */
-					{
-						if (main_window->wflags.iconified == 0)
-							select_all_cpx();
-						break;
-					}
-					case 'e': /* Einstellungen */
-					{
-						einstellungen();
-						break;
-					}
-					case 'o': /* Oeffnen */
-					{
-						if (main_window->wflags.iconified == 0)
-						{
-							CPX_DESC *cpx_desc;
-
-							cpx_desc = list_search(cpx_desc_list, 1,
-									offsetof(CPX_DESC, next), search_cpx_selected);
-							if (cpx_desc)
-								open_cpx(cpx_desc);
-						}
-						break;
-					}
-					case 'q':
-					{
-						if (_app)
-							/* COPS laeuft als Applikation */
-							return 1; /* Beenden moeglich */
-				
-						if (_app == 0 && aes_global[1] != 1) /* Accessory and Multitasking AES? */
-						{
-							if (form_alert(1, fstring_addr[QUIT_ALERT]) == 1)
-								return 1;
-						}
-
-						break;
-					}
-					case 'u':
-					{
-						if (main_window)
-						{
-							_WORD msg[8];
-							
-							msg[0] = WM_CLOSED;
-							msg[1] = app_id;
-							msg[2] = 0;
-							msg[3] = main_window->handle;
-
-							return handle_message(msg);
-						}
-						break;
-					}
-					case 'w':
-						/* cycle */
-						break;
+					handle_message(msg);
 				}
 				break;
 			}
-			case KbCONTROL|KbALT:
-			{
-				switch (key)
-				{
-					case ' ':
-					{
-						if (main_window && (top_whdl() == main_window->handle))
-						{
-							if (main_window->wflags.iconified)
-								uniconify_window(main_window->handle, NULL);
-							else
-								iconify_window(main_window->handle, NULL);
-						}
-						break;
-					}
-					case '+':
-					{
-						if (main_window && (main_window->wflags.iconified == 0))
-						{
-							_WORD msg[8];
-							
-							msg[0] = WM_FULLED;
-							msg[1] = app_id;
-							msg[2] = 0;
-							msg[3] = main_window->handle;
-
-							handle_message(msg);
-						}
-						break;
-					}
-				}
-				break;
-			}
+			break;
 		}
 	}
 
@@ -2746,132 +3007,91 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 					{
 						if (cpx)
 						{
-							OBJECT *tree;
+							char **items;
 							_WORD obj;
+							unsigned short disabled = 0;
 							
 							deselect_all_cpx_draw();
 							cpx->selected = 1;
 							redraw_cpximg(cpx);
 
-							tree = tree_addr[CPX_POPUP];
-							tree->ob_x = mx;
-							tree->ob_y = my;
+							items = &fstring_addr[cpx_popup];
 
 							if (cpx->flags & CPXD_INACTIVE)
 							{
-								tree[CP_OPEN].ob_state |= OS_DISABLED;
-								tree[CP_DISABLE].ob_state |= OS_DISABLED;
-								tree[CP_ENABLE].ob_state &= ~OS_DISABLED;
+								disabled |= 1 << (CPX_POPUP_OPEN_EN - CPX_POPUP_OPEN_EN);
+								disabled |= 1 << (CPX_POPUP_DISABLE_EN - CPX_POPUP_OPEN_EN);
 							}
 							else
 							{
-								tree[CP_OPEN].ob_state &= ~OS_DISABLED;
-								tree[CP_DISABLE].ob_state &= ~OS_DISABLED;
-								tree[CP_ENABLE].ob_state |= OS_DISABLED;
+								disabled |= 1 << (CPX_POPUP_ENABLE_EN - CPX_POPUP_OPEN_EN);
 							}
 							
-							if (aes_flags & GAI_POPUP)
-								obj = form_popup(tree, 0, 0);
-							else
-								obj = do_form_popup(tree, 0, 0, 0, 0, 0, 0, 0, 0);
+							obj = pop_handle(mx, my, items, CPX_POPUP_INFO_EN - CPX_POPUP_OPEN_EN + 1, -1, disabled);
 							evnt_timer(0);
 							switch (obj)
 							{
-								case CP_OPEN:
-								{
-									open_cpx(cpx);
-									break;
-								}
-								case CP_DISABLE:
-								{
-									deactivate_cpx(cpx);
-									/* den Desktop ueber Veraenderungen informieren */
-									update_cpx_path();
-									break;
-								}	
-								case CP_ENABLE:
-								{
-									activate_cpx(cpx);
-									/* den Desktop ueber Veraenderungen informieren */
-									update_cpx_path();
-									break;
-								}
-								case CP_INFO:
-								{
-									cpx_info(cpx);
-									break;
-								}
+							case CPX_POPUP_OPEN_EN - CPX_POPUP_OPEN_EN:
+								open_cpx(cpx);
+								break;
+							case CPX_POPUP_DISABLE_EN - CPX_POPUP_OPEN_EN:
+								deactivate_cpx(cpx);
+								/* den Desktop ueber Veraenderungen informieren */
+								update_cpx_path();
+								break;
+							case CPX_POPUP_ENABLE_EN - CPX_POPUP_OPEN_EN:
+								activate_cpx(cpx);
+								/* den Desktop ueber Veraenderungen informieren */
+								update_cpx_path();
+								break;
+							case CPX_POPUP_INFO_EN - CPX_POPUP_OPEN_EN:
+								cpx_info(cpx);
+								break;
 							}
 						}
 						else
 						{
-							OBJECT *tree;
+							char **items;
 							_WORD obj;
+							unsigned short disabled = 0;
 							
 							deselect_all_cpx_draw();
 
-							tree = tree_addr[GNL_POPUP];
+							items = &fstring_addr[cops_popup];
 							
-							tree->ob_x = mx;
-							tree->ob_y = my;
-
 							if (main_window->wflags.iconified)
 							{
-								tree[PG_TIDY_UP].ob_state |= OS_DISABLED;
-								tree[PG_RELOAD].ob_state |= OS_DISABLED;
-								tree[PG_SELECT_ALL].ob_state |= OS_DISABLED;
-							}
-							else
-							{
-								tree[PG_TIDY_UP].ob_state &= ~OS_DISABLED;
-								tree[PG_RELOAD].ob_state &= ~OS_DISABLED;
-								tree[PG_SELECT_ALL].ob_state &= ~OS_DISABLED;
+								disabled |= 1 << (COPS_POPUP_TIDY_UP_EN - COPS_POPUP_ABOUT_EN);
+								disabled |= 1 << (COPS_POPUP_RELOAD_EN - COPS_POPUP_ABOUT_EN);
+								disabled |= 1 << (COPS_POPUP_SELECT_ALL_EN - COPS_POPUP_ABOUT_EN);
 							}
 
 							if (get_help_id() >= 0)
-								tree[PG_HELP].ob_state &= ~OS_DISABLED;
-							else
-								tree[PG_HELP].ob_state |= OS_DISABLED;;
+								disabled |= 1 << (COPS_POPUP_HELP_EN - COPS_POPUP_ABOUT_EN);
 							
-							if (aes_flags & GAI_POPUP)
-								obj = form_popup(tree, 0, 0);
-							else
-								obj = do_form_popup(tree, 0, 0, 0, 0, 0, 0, 0, 0);
+							obj = pop_handle(mx, my, items, COPS_POPUP_HELP_EN - COPS_POPUP_ABOUT_EN + 1, -1, disabled);
 							evnt_timer(0);
 							switch (obj)
 							{
-								case PG_ABOUT:
-								{
-									about();
-									break;
-								}
-								case PG_SETTINGS:
-								{
-									einstellungen();
-									break;
-								}
-								case PG_RELOAD:
-								{
-									if (form_alert(1, fstring_addr[RELOAD_ALERT]) == 1)
-										do_reload = 1;
-
-									break;
-								}
-								case PG_TIDY_UP:
-								{
-									tidy_up_icons();
-									break;
-								}
-								case PG_SELECT_ALL:
-								{
-									select_all_cpx();
-									break;
-								}
-								case PG_HELP:
-								{
-									call_help();
-									break;
-								}
+							case COPS_POPUP_ABOUT_EN - COPS_POPUP_ABOUT_EN:
+								about();
+								break;
+							case COPS_POPUP_SETTINGS_EN - COPS_POPUP_ABOUT_EN:
+								einstellungen();
+								break;
+							case COPS_POPUP_RELOAD_EN - COPS_POPUP_ABOUT_EN:
+								if (form_alert(1, fstring_addr[reload_alert]) == 1)
+									do_reload = 1;
+								break;
+							case COPS_POPUP_TIDY_UP_EN - COPS_POPUP_ABOUT_EN:
+								tidy_up_icons();
+								break;
+							case COPS_POPUP_SELECT_ALL_EN - COPS_POPUP_ABOUT_EN:
+								select_all_cpx();
+								break;
+							case COPS_POPUP_HELP_EN - COPS_POPUP_ABOUT_EN:
+								call_help();
+								break;
 							}
 						}
 						break;
@@ -3615,7 +3835,7 @@ cpx_main_loop(void)
 		{
 			if (main_window && (top_whdl() == main_window->handle))	/* liegt das Hauptfenster oben? */
 			{
-				short key;			
+				unsigned short key;
 			
 				key = MapKey(events.kstate, events.key);
 				/* Tastaturbehandlung fuer das Hauptfenster */
@@ -3834,27 +4054,6 @@ fix_tree(OBJECT *obj)
 	while ((obj->ob_flags & OF_LASTOB) == 0);
 }
 
-/*----------------------------------------------------------------------------------------*/
-/* Objekttyp STRING in Popups (wg. Proportionalschrift) in G_SHORTCUT umsetzen */
-/*----------------------------------------------------------------------------------------*/
-static void
-fix_popup_strings(OBJECT *obj)
-{
-	if (aes_flags & GAI_GSHORTCUT)
-	{
-		/* G_SHORTCUT-Objekt (z.Zt. nur unter MagiC) vorhanden */
-		obj--;
-	
-		do {
-			obj++;
-	
-			if (obj->ob_type == G_STRING)
-				obj->ob_type = G_SHORTCUT;
-		}
-		while ((obj->ob_flags & OF_LASTOB) == 0);
-	}
-}
-
 /*
  * replacement for getenv(), because some startup routines
  * do not setup the environ[] array when run as accessory
@@ -4025,9 +4224,6 @@ init_rsrc(void)
 	for (i = 0; i < NUM_TREE; i++)
 		fix_tree(tree_addr[i]);
 
-	fix_popup_strings(tree_addr[GNL_POPUP]);
-	fix_popup_strings(tree_addr[CPX_POPUP]);
-	
 	if ((aes_flags & GAI_CICN) /* && (aes_flags & GAI_MAGIC) */
 		&& aes_global[10] >= 4)
 	{
@@ -4066,6 +4262,7 @@ init_rsrc(void)
 
 }
 
+
 static void _cdecl
 sig_handler(long sig)
 {
@@ -4092,6 +4289,7 @@ init_vwork(void)
 	return vdi_handle;
 }
 
+
 int
 main(int argc, char *argv[])
 {
@@ -4109,8 +4307,6 @@ main(int argc, char *argv[])
 		{
 			/* Taskwechsel unter TOS blockieren */
 			wind_update(BEG_UPDATE);
-			/* als Accessory registrieren */
-			menu_id = menu_register(app_id, fstring_addr[MENUTITLE_STR]);
 		}
 		else
 			/* als Applikation gestartet */
@@ -4122,7 +4318,14 @@ main(int argc, char *argv[])
 		{
 			/* Voreinstellungen vornehmen */
 			std_settings();
+			xctrl_pb.Country_Code = select_language();
 			init_rsrc();
+			set_texts(xctrl_pb.Country_Code);
+			if (_app == 0)
+			{
+				/* als Accessory registrieren */
+				menu_id = menu_register(app_id, fstring_addr[menutitle_str]);
+			}
 			/* Checkboxen und šberschriften anpassen */
 			substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, NULL, NULL);
 
@@ -4231,7 +4434,7 @@ main(int argc, char *argv[])
 		appl_exit();
 	}
 	else
-		(void) Cconws(fstring_addr[NOAES_STR]);
+		(void) Cconws(fstring_addr[noaes_str]);
 
 	return 0;
 }

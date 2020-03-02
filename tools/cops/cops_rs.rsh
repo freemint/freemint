@@ -303,87 +303,201 @@ extern void *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #undef NUM_OBS
 #undef NUM_TREE
 #undef NUM_UD
-#define NUM_STRINGS 67
+#define NUM_STRINGS 181
 #define NUM_BB		2
 #define NUM_IB		1
 #define NUM_CIB     1
 #define NUM_CIC     1
 #define NUM_TI		4
-#define NUM_FRSTR	13
+#define NUM_FRSTR	143
 #define NUM_FRIMG	0
-#define NUM_OBS     60
-#define NUM_TREE	9
+#define NUM_OBS     42
+#define NUM_TREE	7
 #define NUM_UD		0
 #endif
 
 
-static char cops_rs_string_0[] = "  \232ber COPS...";
-static char cops_rs_string_1[] = "----------------------";
-static char cops_rs_string_2[] = "  Einstellungen... ^E";
-static char cops_rs_string_3[] = "----------------------";
-static char cops_rs_string_4[] = "  Neuladen";
-static char cops_rs_string_5[] = "  Aufr\204umen";
-static char cops_rs_string_6[] = "----------------------";
-static char cops_rs_string_7[] = "  Alles markieren  ^A";
-static char cops_rs_string_8[] = "----------------------";
-static char cops_rs_string_9[] = "  Hilfe          HELP";
-static char cops_rs_string_10[] = "  \231ffnen       ^O";
-static char cops_rs_string_11[] = "------------------";
-static char cops_rs_string_12[] = "  Deaktivieren";
-static char cops_rs_string_13[] = "  Aktivieren";
-static char cops_rs_string_14[] = "------------------";
-static char cops_rs_string_15[] = "  Info...      ^I";
-static char cops_rs_string_16[] = "OK";
-static char cops_rs_string_17[] = "von Thomas Much, Sven & Wilfried Behne";
-static char cops_rs_string_18[] = "";
-static char cops_rs_string_19[] = "";
-static char cops_rs_string_20[] = "Control Panel Server \372 Version 1.09";
-static char cops_rs_string_21[] = "";
-static char cops_rs_string_22[] = "";
-static char cops_rs_string_23[] = " ";
+static char cops_rs_string_0[] = "OK";
+static char cops_rs_string_1[] = "by Thomas Much, Sven & Wilfried Behne";
+static char cops_rs_string_2[] = "";
+static char cops_rs_string_3[] = "";
+static char cops_rs_string_4[] = "Control Panel Server \372 Version 1.09";
+static char cops_rs_string_5[] = "";
+static char cops_rs_string_6[] = "";
+static char cops_rs_string_7[] = " ";
+static char cops_rs_string_8[] = "01234567890123456789";
+static char cops_rs_string_9[] = "File name  :";
+static char cops_rs_string_10[] = "01234567890123456789";
+static char cops_rs_string_11[] = "  Version  :";
+static char cops_rs_string_12[] = "01234";
+static char cops_rs_string_13[] = "       ID  :";
+static char cops_rs_string_14[] = "0123";
+static char cops_rs_string_15[] = " Configuration ";
+static char cops_rs_string_16[] = "RAM resident";
+static char cops_rs_string_17[] = "Set Only";
+static char cops_rs_string_18[] = "Boot Init";
+static char cops_rs_string_19[] = "Auto Boot";
+static char cops_rs_string_20[] = "OK";
+static char cops_rs_string_21[] = "Cancel";
+static char cops_rs_string_22[] = "Settings";
+static char cops_rs_string_23[] = "CPX Path:";
 static char cops_rs_string_24[] = "01234567890123456789";
-static char cops_rs_string_25[] = "Dateiname:";
-static char cops_rs_string_26[] = "01234567890123456789";
-static char cops_rs_string_27[] = "Version:";
-static char cops_rs_string_28[] = "01234";
-static char cops_rs_string_29[] = "Kennung:";
-static char cops_rs_string_30[] = "0123";
-static char cops_rs_string_31[] = " Konfiguration ";
-static char cops_rs_string_32[] = "RAM-resident";
-static char cops_rs_string_33[] = "Nur setzen";
-static char cops_rs_string_34[] = "Boot-Init";
-static char cops_rs_string_35[] = "Automatisch starten";
-static char cops_rs_string_36[] = "OK";
-static char cops_rs_string_37[] = "Abbruch";
-static char cops_rs_string_38[] = "Einstellungen";
-static char cops_rs_string_39[] = "CPX-Pfad:";
-static char cops_rs_string_40[] = "01234567890123456789";
-static char cops_rs_string_41[] = "____________________";
-static char cops_rs_string_42[] = "XXXXXXXXXXXXXXXXXXXX";
-static char cops_rs_string_43[] = "Beim Start ikonifizieren";
-static char cops_rs_string_44[] = "Doppelklick aktiviert CPZ";
-static char cops_rs_string_45[] = "CPXe nach Namen ordnen";
-static char cops_rs_string_46[] = "Beenden nach";
-static char cops_rs_string_47[] = "01";
-static char cops_rs_string_48[] = "__ Minute(n)";
-static char cops_rs_string_49[] = "XX";
-static char cops_rs_string_50[] = "OK";
-static char cops_rs_string_51[] = "Abbruch";
-static char cops_rs_string_52[] = "";
-static char cops_rs_string_53[] = "";
-static char cops_rs_string_54[] = "[1][Keine weiteren Fenster.][Abbruch]";
-static char cops_rs_string_55[] = "[2][Alle Kontrollfelder neuladen?][Ja|Nein]";
-static char cops_rs_string_56[] = "[2][Voreinstellungen sichern?][Ja|Nein]";
-static char cops_rs_string_57[] = "[3][Nicht gen\201gend Speicher!][OK]";
-static char cops_rs_string_58[] = "[3][Schreib- oder Lesefehler.][OK]";
-static char cops_rs_string_59[] = "[1][Datei nicht gefunden.][OK]";
-static char cops_rs_string_60[] = "[1][Beim \231ffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK]";
-static char cops_rs_string_61[] = "[2][COPS beenden?][Ja|Nein]";
-static char cops_rs_string_62[] = "AES noch nicht aktiv.";
-static char cops_rs_string_63[] = "CPX-Pfad ausw\204hlen";
-static char cops_rs_string_64[] = "  Kontrollfelder  ";
-static char cops_rs_string_65[] = " COPS ";
-static char cops_rs_string_66[] = "[1][ | Stereo-Sound  | nicht m\224glich!  ][ OK ]";
+static char cops_rs_string_25[] = "____________________";
+static char cops_rs_string_26[] = "X";
+static char cops_rs_string_27[] = "Iconify at start";
+static char cops_rs_string_28[] = "Double click activates CPZ";
+static char cops_rs_string_29[] = "Sort Icons by Name";
+static char cops_rs_string_30[] = "Terminate after";
+static char cops_rs_string_31[] = "01";
+static char cops_rs_string_32[] = "__ minute(s)";
+static char cops_rs_string_33[] = "9";
+static char cops_rs_string_34[] = "OK";
+static char cops_rs_string_35[] = "Cancel";
+static char cops_rs_string_36[] = "";
+static char cops_rs_string_37[] = "";
+static char cops_rs_string_38[] = " Control Panels ";
+static char cops_rs_string_39[] = "  Control Panels";
+static char cops_rs_string_40[] = " COPS ";
+static char cops_rs_string_41[] = "Select CPX Path";
+static char cops_rs_string_42[] = "AES is inactive.";
+static char cops_rs_string_43[] = "[1][No more windows.][Cancel]";
+static char cops_rs_string_44[] = "[2][Save Defaults?][Yes|No]";
+static char cops_rs_string_45[] = "[3][Not enough memory!][OK]";
+static char cops_rs_string_46[] = "[3][File error.][OK]";
+static char cops_rs_string_47[] = "[1][File not found.][OK]";
+static char cops_rs_string_48[] = "[2][Reload Control Panels?][Yes|No]";
+static char cops_rs_string_49[] = "[2][ | Save the CPX| configuration?][ OK | Cancel ]";
+static char cops_rs_string_50[] = "[1][ | Stereo Sound   |    Is Not|  Available.][ OK ]";
+static char cops_rs_string_51[] = "[1][Cannot open the control panel.][OK]";
+static char cops_rs_string_52[] = "[2][Terminate COPS?][Yes|No]";
+static char cops_rs_string_53[] = "OK";
+static char cops_rs_string_54[] = "Cancel";
+static char cops_rs_string_55[] = "About COPS...";
+static char cops_rs_string_56[] = "-";
+static char cops_rs_string_57[] = "Settings...      ^E";
+static char cops_rs_string_58[] = "-";
+static char cops_rs_string_59[] = "Reload";
+static char cops_rs_string_60[] = "Tidy Up";
+static char cops_rs_string_61[] = "-";
+static char cops_rs_string_62[] = "Select All       ^A";
+static char cops_rs_string_63[] = "-";
+static char cops_rs_string_64[] = "Help           HELP";
+static char cops_rs_string_65[] = "Open         ^O";
+static char cops_rs_string_66[] = "-";
+static char cops_rs_string_67[] = "Deactivate";
+static char cops_rs_string_68[] = "Activate";
+static char cops_rs_string_69[] = "-";
+static char cops_rs_string_70[] = "Info...      ^I";
+static char cops_rs_string_71[] = "by Thomas Much, Sven & Wilfried Behne";
+static char cops_rs_string_72[] = "File name  :";
+static char cops_rs_string_73[] = "  Version  :";
+static char cops_rs_string_74[] = "       ID  :";
+static char cops_rs_string_75[] = " Configuration ";
+static char cops_rs_string_76[] = "RAM resident";
+static char cops_rs_string_77[] = "Set Only";
+static char cops_rs_string_78[] = "Boot Init";
+static char cops_rs_string_79[] = "Auto Boot";
+static char cops_rs_string_80[] = "Settings";
+static char cops_rs_string_81[] = "CPX Path:";
+static char cops_rs_string_82[] = "Iconify at start";
+static char cops_rs_string_83[] = "Double click activates CPZ";
+static char cops_rs_string_84[] = "Sort Icons by Name";
+static char cops_rs_string_85[] = "Terminate after";
+static char cops_rs_string_86[] = "__ minute(s)";
+static char cops_rs_string_87[] = " Kontrollfelder ";
+static char cops_rs_string_88[] = "  Kontrollfelder";
+static char cops_rs_string_89[] = "CPX-Pfad ausw\204hlen";
+static char cops_rs_string_90[] = "AES noch nicht aktiv.";
+static char cops_rs_string_91[] = "[1][Keine weiteren Fenster.][Abbruch]";
+static char cops_rs_string_92[] = "[2][Voreinstellungen sichern?][Ja|Nein]";
+static char cops_rs_string_93[] = "[3][Nicht gen\201gend Speicher!][OK]";
+static char cops_rs_string_94[] = "[3][Schreib- oder Lesefehler.][OK]";
+static char cops_rs_string_95[] = "[1][Datei nicht gefunden.][OK]";
+static char cops_rs_string_96[] = "[2][Alle Kontrollfelder neuladen?][Ja|Nein]";
+static char cops_rs_string_97[] = "[2][ | CPX-Konfiguration | sichern? ][ OK | Abbruch ]";
+static char cops_rs_string_98[] = "[1][ | Stereo-Sound  | nicht m\224glich!  ][ OK ]";
+static char cops_rs_string_99[] = "[1][Beim \231ffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK]";
+static char cops_rs_string_100[] = "[2][COPS beenden?][Ja|Nein]";
+static char cops_rs_string_101[] = "Abbruch";
+static char cops_rs_string_102[] = "\232ber COPS...";
+static char cops_rs_string_103[] = "-";
+static char cops_rs_string_104[] = "Einstellungen... ^E";
+static char cops_rs_string_105[] = "-";
+static char cops_rs_string_106[] = "Neuladen";
+static char cops_rs_string_107[] = "Aufr\204umen";
+static char cops_rs_string_108[] = "-";
+static char cops_rs_string_109[] = "Alles markieren  ^A";
+static char cops_rs_string_110[] = "-";
+static char cops_rs_string_111[] = "Hilfe          HELP";
+static char cops_rs_string_112[] = "\231ffnen       ^O";
+static char cops_rs_string_113[] = "-";
+static char cops_rs_string_114[] = "Deaktivieren";
+static char cops_rs_string_115[] = "Aktivieren";
+static char cops_rs_string_116[] = "-";
+static char cops_rs_string_117[] = "Info...      ^I";
+static char cops_rs_string_118[] = "von Thomas Much, Sven & Wilfried Behne";
+static char cops_rs_string_119[] = "Dateiname  :";
+static char cops_rs_string_120[] = "  Version  :";
+static char cops_rs_string_121[] = "  Kennung  :";
+static char cops_rs_string_122[] = " Konfiguration ";
+static char cops_rs_string_123[] = "RAM-resident";
+static char cops_rs_string_124[] = "Nur setzen";
+static char cops_rs_string_125[] = "Boot-Init";
+static char cops_rs_string_126[] = "Automatisch starten";
+static char cops_rs_string_127[] = "Einstellungen";
+static char cops_rs_string_128[] = "CPX-Pfad:";
+static char cops_rs_string_129[] = "Beim Start ikonifizieren";
+static char cops_rs_string_130[] = "Doppelklick aktiviert CPZ";
+static char cops_rs_string_131[] = "CPXe nach Namen ordnen";
+static char cops_rs_string_132[] = "Beenden nach";
+static char cops_rs_string_133[] = "__ Minute(n)";
+static char cops_rs_string_134[] = " Panneaux contr\223le ";
+static char cops_rs_string_135[] = "  Panneaux contr\223le";
+static char cops_rs_string_136[] = "Choisir chemin CPX";
+static char cops_rs_string_137[] = "AES pas encore activ.";
+static char cops_rs_string_138[] = "[1][Plus des fen\210tres !][Abandon]";
+static char cops_rs_string_139[] = "[2][Sauver r\202glages ?][Oui|Non]";
+static char cops_rs_string_140[] = "[3][M\202moire insuffisante !][OK]";
+static char cops_rs_string_141[] = "[3][Erreur de lecture |ou d\'\202criture !][OK]";
+static char cops_rs_string_142[] = "[1][Fichier introuvable !][OK]";
+static char cops_rs_string_143[] = "[2][Recharger toutes les CPX ?][Oui|Non]";
+static char cops_rs_string_144[] = "[2][ | Sauver la | configuration? ][ CONFIRME | Annule ]";
+static char cops_rs_string_145[] = "[1][ | Le son st\202r\202o | n\'est pas | disponible. ][ CONFIRME ]";
+static char cops_rs_string_146[] = "[1][Erreur lors de l\'ouverture|du panneau de contr\223le.][OK]";
+static char cops_rs_string_147[] = "[2][Quitter COPS?][Oui|Non]";
+static char cops_rs_string_148[] = "Abandon";
+static char cops_rs_string_149[] = "\266 propos de COPS...";
+static char cops_rs_string_150[] = "-";
+static char cops_rs_string_151[] = "R\202glages...       ^E";
+static char cops_rs_string_152[] = "-";
+static char cops_rs_string_153[] = "Recharger";
+static char cops_rs_string_154[] = "Ranger";
+static char cops_rs_string_155[] = "-";
+static char cops_rs_string_156[] = "Tous s\202lectionner ^A";
+static char cops_rs_string_157[] = "-";
+static char cops_rs_string_158[] = "Aide            HELP";
+static char cops_rs_string_159[] = "Ouvrir       ^O";
+static char cops_rs_string_160[] = "-";
+static char cops_rs_string_161[] = "D\202sactiver";
+static char cops_rs_string_162[] = "Activer";
+static char cops_rs_string_163[] = "-";
+static char cops_rs_string_164[] = "Info...      ^I";
+static char cops_rs_string_165[] = "de Thomas Much, Sven & Wilfried Behne";
+static char cops_rs_string_166[] = "Nom fichier:";
+static char cops_rs_string_167[] = "    Version:";
+static char cops_rs_string_168[] = "  Indicatif:";
+static char cops_rs_string_169[] = " Configuration ";
+static char cops_rs_string_170[] = "RAM-r\202sidente";
+static char cops_rs_string_171[] = "Appliquer uniquement";
+static char cops_rs_string_172[] = "Init-boot";
+static char cops_rs_string_173[] = "Lancement automatique";
+static char cops_rs_string_174[] = "R\202glages";
+static char cops_rs_string_175[] = "Chemin CPX:";
+static char cops_rs_string_176[] = "Ic\223nifier au demarrage";
+static char cops_rs_string_177[] = "Double-clique active CPZ";
+static char cops_rs_string_178[] = "Classer Ic\223nes par nom";
+static char cops_rs_string_179[] = "Terminer apr\212s";
+static char cops_rs_string_180[] = "__ minute(s)";
 
 
 static _UBYTE cops_rs_IMAGE0[] = {
@@ -459,7 +573,7 @@ static _UBYTE cops_rs_RS0_MMASK[] = {
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE};
+0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
 /* data of COPS_CICON */
 static _UBYTE cops_rs_RS0_MDATA[] = {
@@ -470,7 +584,7 @@ static _UBYTE cops_rs_RS0_MDATA[] = {
 0x40, 0x00, 0x05, 0x16, 0x40, 0x00, 0x05, 0xFE, 0x40, 0x00, 0x04, 0xF6, 0x40, 0x00, 0x04, 0xA6, 
 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0xE6, 
 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0x06, 
-0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE};
+0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
 /* color data of COPS_CICON */
 static _UBYTE cops_rs_RS0_4CDATA[] = {
@@ -481,30 +595,31 @@ static _UBYTE cops_rs_RS0_4CDATA[] = {
 0x6A, 0xAA, 0xAD, 0xF2, 0x55, 0x55, 0x55, 0xA2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 
-0x6A, 0xAA, 0xAC, 0xAA, 0x40, 0x00, 0x00, 0x02, 0x3F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFC, 
-0x7F, 0xFF, 0xFF, 0xFA, 0x40, 0x00, 0x00, 0x02, 0x7F, 0xFF, 0xFF, 0xFA, 0x6A, 0xAA, 0xAC, 0xAA, 
-0x55, 0x55, 0x55, 0x12, 0x6A, 0xAA, 0xAC, 0xEA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 
-0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 
-0x55, 0x55, 0x55, 0xF2, 0x6A, 0xAA, 0xAD, 0xB2, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAD, 0xF2, 
-0x55, 0x55, 0x55, 0xA2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 
-0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 
-0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAC, 0xAA, 
-0x40, 0x00, 0x00, 0x02, 0x3F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFA, 
-0x40, 0x00, 0x00, 0x02, 0x7F, 0xFF, 0xFF, 0xFA, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x12, 
-0x6A, 0xAA, 0xAC, 0xEA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
-0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xF2, 
-0x6A, 0xAA, 0xAD, 0xB2, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAD, 0xF2, 0x55, 0x55, 0x55, 0xA2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x40, 0x00, 0x00, 0x02, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00, 
+0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFA, 0x40, 0x00, 0x00, 0x02, 0x7F, 0xFF, 0xFF, 0xFA, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x12, 0x6A, 0xAA, 0xAC, 0xEA, 0x55, 0x55, 0x55, 0xB2, 
 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
-0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 
-0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAC, 0xAA, 0x40, 0x00, 0x00, 0x02, 
-0x3F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFC, 0x40, 0x00, 0x00, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x46, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xF2, 0x6A, 0xAA, 0xAD, 0xB2, 0x55, 0x55, 0x55, 0x52, 
+0x6A, 0xAA, 0xAD, 0xF2, 0x55, 0x55, 0x55, 0xA2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x40, 0x00, 0x00, 0x02, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00, 
+0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFA, 0x40, 0x00, 0x00, 0x02, 0x7F, 0xFF, 0xFF, 0xFA, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x12, 0x6A, 0xAA, 0xAC, 0xEA, 0x55, 0x55, 0x55, 0xB2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xF2, 0x6A, 0xAA, 0xAD, 0xB2, 0x55, 0x55, 0x55, 0x52, 
+0x6A, 0xAA, 0xAD, 0xF2, 0x55, 0x55, 0x55, 0xA2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0xB2, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x52, 
+0x6A, 0xAA, 0xAC, 0xAA, 0x40, 0x00, 0x00, 0x02, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00, 
+0x7F, 0xFF, 0xFF, 0xFC, 0x40, 0x00, 0x00, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
+0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0xE6, 
 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 
-0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x05, 0xF6, 0x40, 0x00, 0x05, 0x1E, 
-0x40, 0x00, 0x05, 0x1E, 0x40, 0x00, 0x05, 0xFE, 0x40, 0x00, 0x04, 0xFE, 0x40, 0x00, 0x04, 0xF6, 
+0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x05, 0xF6, 0x40, 0x00, 0x05, 0x1E, 0x40, 0x00, 0x05, 0x1E, 
+0x40, 0x00, 0x05, 0xFE, 0x40, 0x00, 0x04, 0xFE, 0x40, 0x00, 0x04, 0xF6, 0x40, 0x00, 0x04, 0xE6, 
 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 
-0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0x06, 
-0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x3F, 0xFF, 0xFF, 0xFE};
+0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 
+0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
 /* color mask of COPS_CICON */
 static _UBYTE cops_rs_RS0_4CMASK[] = {
@@ -515,10 +630,26 @@ static _UBYTE cops_rs_RS0_4CMASK[] = {
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x3F, 0xFF, 0xFF, 0xFE};
+0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
 
 char *rs_frstr[NUM_FRSTR] = {
+	cops_rs_string_38,
+	cops_rs_string_39,
+	cops_rs_string_40,
+	cops_rs_string_41,
+	cops_rs_string_42,
+	cops_rs_string_43,
+	cops_rs_string_44,
+	cops_rs_string_45,
+	cops_rs_string_46,
+	cops_rs_string_47,
+	cops_rs_string_48,
+	cops_rs_string_49,
+	cops_rs_string_50,
+	cops_rs_string_51,
+	cops_rs_string_52,
+	cops_rs_string_53,
 	cops_rs_string_54,
 	cops_rs_string_55,
 	cops_rs_string_56,
@@ -531,7 +662,121 @@ char *rs_frstr[NUM_FRSTR] = {
 	cops_rs_string_63,
 	cops_rs_string_64,
 	cops_rs_string_65,
-	cops_rs_string_66
+	cops_rs_string_66,
+	cops_rs_string_67,
+	cops_rs_string_68,
+	cops_rs_string_69,
+	cops_rs_string_70,
+	cops_rs_string_71,
+	cops_rs_string_72,
+	cops_rs_string_73,
+	cops_rs_string_74,
+	cops_rs_string_75,
+	cops_rs_string_76,
+	cops_rs_string_77,
+	cops_rs_string_78,
+	cops_rs_string_79,
+	cops_rs_string_80,
+	cops_rs_string_81,
+	cops_rs_string_82,
+	cops_rs_string_83,
+	cops_rs_string_84,
+	cops_rs_string_85,
+	cops_rs_string_86,
+	cops_rs_string_87,
+	cops_rs_string_88,
+	cops_rs_string_89,
+	cops_rs_string_90,
+	cops_rs_string_91,
+	cops_rs_string_92,
+	cops_rs_string_93,
+	cops_rs_string_94,
+	cops_rs_string_95,
+	cops_rs_string_96,
+	cops_rs_string_97,
+	cops_rs_string_98,
+	cops_rs_string_99,
+	cops_rs_string_100,
+	cops_rs_string_101,
+	cops_rs_string_102,
+	cops_rs_string_103,
+	cops_rs_string_104,
+	cops_rs_string_105,
+	cops_rs_string_106,
+	cops_rs_string_107,
+	cops_rs_string_108,
+	cops_rs_string_109,
+	cops_rs_string_110,
+	cops_rs_string_111,
+	cops_rs_string_112,
+	cops_rs_string_113,
+	cops_rs_string_114,
+	cops_rs_string_115,
+	cops_rs_string_116,
+	cops_rs_string_117,
+	cops_rs_string_118,
+	cops_rs_string_119,
+	cops_rs_string_120,
+	cops_rs_string_121,
+	cops_rs_string_122,
+	cops_rs_string_123,
+	cops_rs_string_124,
+	cops_rs_string_125,
+	cops_rs_string_126,
+	cops_rs_string_127,
+	cops_rs_string_128,
+	cops_rs_string_129,
+	cops_rs_string_130,
+	cops_rs_string_131,
+	cops_rs_string_132,
+	cops_rs_string_133,
+	cops_rs_string_134,
+	cops_rs_string_135,
+	cops_rs_string_136,
+	cops_rs_string_137,
+	cops_rs_string_138,
+	cops_rs_string_139,
+	cops_rs_string_140,
+	cops_rs_string_141,
+	cops_rs_string_142,
+	cops_rs_string_143,
+	cops_rs_string_144,
+	cops_rs_string_145,
+	cops_rs_string_146,
+	cops_rs_string_147,
+	cops_rs_string_148,
+	cops_rs_string_149,
+	cops_rs_string_150,
+	cops_rs_string_151,
+	cops_rs_string_152,
+	cops_rs_string_153,
+	cops_rs_string_154,
+	cops_rs_string_155,
+	cops_rs_string_156,
+	cops_rs_string_157,
+	cops_rs_string_158,
+	cops_rs_string_159,
+	cops_rs_string_160,
+	cops_rs_string_161,
+	cops_rs_string_162,
+	cops_rs_string_163,
+	cops_rs_string_164,
+	cops_rs_string_165,
+	cops_rs_string_166,
+	cops_rs_string_167,
+	cops_rs_string_168,
+	cops_rs_string_169,
+	cops_rs_string_170,
+	cops_rs_string_171,
+	cops_rs_string_172,
+	cops_rs_string_173,
+	cops_rs_string_174,
+	cops_rs_string_175,
+	cops_rs_string_176,
+	cops_rs_string_177,
+	cops_rs_string_178,
+	cops_rs_string_179,
+	cops_rs_string_180
 };
 
 
@@ -542,7 +787,7 @@ BITBLK rs_bitblk[NUM_BB] = {
 
 
 ICONBLK rs_iconblk[] = {
-	{ CW cops_rs_IMAGE1, CW cops_rs_IMAGE2, cops_rs_string_52, 0x1000,0,0, 0,0,32,32, 0,-1,6,8 }
+	{ CW cops_rs_IMAGE1, CW cops_rs_IMAGE2, cops_rs_string_36, 0x1000,0,0, 0,0,32,32, 0,-1,0,8 }
 };
 
 
@@ -552,7 +797,7 @@ CICON rs_cicon[] = {
 
 
 CICONBLK rs_ciconblk[] = {
-	{ { (_WORD *) cops_rs_RS0_MMASK, (_WORD *) cops_rs_RS0_MDATA, cops_rs_string_53, 4096,0,0, 0,0,32,31, 0,-1,6,8 }, &rs_cicon[0] } /* COPS_CICON */
+	{ { (_WORD *) cops_rs_RS0_MMASK, (_WORD *) cops_rs_RS0_MDATA, cops_rs_string_37, 4096,0,0, 0,0,32,32, 0,-1,6,8 }, &rs_cicon[0] } /* COPS_CICON */
 };
 
 
@@ -828,79 +1073,55 @@ _WORD rgb_palette[][4] = {
 
 
 TEDINFO rs_tedinfo[NUM_TI] = {
-	{ cops_rs_string_17, cops_rs_string_18, cops_rs_string_19, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 39,1 },
-	{ cops_rs_string_20, cops_rs_string_21, cops_rs_string_22, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 36,1 },
-	{ cops_rs_string_40, cops_rs_string_41, cops_rs_string_42, IBM, 6, TE_CNTR, 0x1180, 0x0, -2, 21,21 }, /* ACPATH */
-	{ cops_rs_string_47, cops_rs_string_48, cops_rs_string_49, IBM, 6, TE_CNTR, 0x1180, 0x0, -2, 3,13 } /* ACAFTER */
+	{ cops_rs_string_1, cops_rs_string_2, cops_rs_string_3, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 38,1 }, /* ABOUT_BY */
+	{ cops_rs_string_4, cops_rs_string_5, cops_rs_string_6, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 36,1 },
+	{ cops_rs_string_24, cops_rs_string_25, cops_rs_string_26, IBM, 6, TE_CNTR, 0x1180, 0x0, -2, 21,21 }, /* SET_PATH */
+	{ cops_rs_string_31, cops_rs_string_32, cops_rs_string_33, IBM, 6, TE_LEFT, 0x1180, 0x0, -2, 3,13 } /* SET_TERMAFTER */
 };
 
 
 OBJECT rs_object[NUM_OBS] = {
-/* GNL_POPUP */
-
-	{ -1, 1, 10, G_BOX, OF_FL3DBAK, OS_SHADOWED, C_UNION(0xFF1100L), 0,0, 22,10 },
-	{ 2, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_0), 0,0, 22,1 }, /* PG_ABOUT */
-	{ 3, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_1), 0,1, 22,1 },
-	{ 4, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_2), 0,2, 22,1 }, /* PG_SETTINGS */
-	{ 5, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_3), 0,3, 22,1 },
-	{ 6, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_4), 0,4, 22,1 }, /* PG_RELOAD */
-	{ 7, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_5), 0,5, 22,1 }, /* PG_TIDY_UP */
-	{ 8, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_6), 0,6, 22,1 },
-	{ 9, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_7), 0,7, 22,1 }, /* PG_SELECT_ALL */
-	{ 10, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_8), 0,8, 22,1 },
-	{ 0, -1, -1, G_STRING, 0x421, OS_NORMAL, C_UNION(cops_rs_string_9), 0,9, 22,1 }, /* PG_HELP */
-
-/* CPX_POPUP */
-
-	{ -1, 1, 6, G_BOX, OF_FL3DBAK, OS_SHADOWED, C_UNION(0xFF1100L), 0,0, 18,6 },
-	{ 2, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_10), 0,0, 18,1 }, /* CP_OPEN */
-	{ 3, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_11), 0,1, 18,1 },
-	{ 4, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_12), 0,2, 18,1 }, /* CP_DISABLE */
-	{ 5, -1, -1, G_STRING, 0x401, OS_NORMAL, C_UNION(cops_rs_string_13), 0,3, 18,1 }, /* CP_ENABLE */
-	{ 6, -1, -1, G_STRING, OF_FL3DBAK, OS_DISABLED, C_UNION(cops_rs_string_14), 0,4, 18,1 },
-	{ 0, -1, -1, G_STRING, 0x421, OS_NORMAL, C_UNION(cops_rs_string_15), 0,5, 18,1 }, /* CP_INFO */
-
 /* ABOUT_DIALOG */
 
-	{ -1, 1, 6, (113<<8)+G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 44,7 },
-	{ 2, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_16), 33,5, 9,257 },
-	{ 3, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[0]), 2,6, 1052,1536 },
+	{ -1, 1, 6, G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 44,7 },
+	{ 2, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_0), 33,5, 9,257 }, /* ABOUT_OK */
+	{ 3, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[0]), 2,6, 30,1536 }, /* ABOUT_BY */
 	{ 4, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[1]), 2,5, 538,1536 },
 	{ 5, -1, -1, G_BOX, OF_NONE, OS_NORMAL, C_UNION(0x1141L), 2,513, 4,2 }, /* ABOUT_ICON */
 	{ 6, -1, -1, G_IMAGE, OF_NONE, OS_NORMAL, C_UNION(&rs_bitblk[0]), 7,1, 28672,8960 },
-	{ 0, -1, -1, G_STRING, 0x420, 0xFF40, C_UNION(cops_rs_string_23), 1045,768, 20,1 },
+	{ 0, -1, -1, G_STRING, 0x420, 0xFF40, C_UNION(cops_rs_string_7), 1045,768, 20,1 },
 
 /* INFO_DIALOG */
 
-	{ -1, 1, 14, (113<<8)+G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 35,17 },
-	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_24), 2,1, 31,769 }, /* CITITLE */
-	{ 3, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_25), 2,3, 10,1 },
-	{ 4, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_26), 13,3, 20,1 }, /* CIFILE */
-	{ 5, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_27), 4,4, 8,1 },
-	{ 6, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_28), 13,4, 5,1 }, /* CIVER */
-	{ 7, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_29), 4,5, 8,1 },
-	{ 8, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_30), 13,5, 4,1 }, /* CIID */
-	{ 13, 9, 12, G_BUTTON, OF_FL3DBAK, 0xFE40, C_UNION(cops_rs_string_31), 2,7, 31,7 },
-	{ 10, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_32), 2,2, 24,1 }, /* CIRAM */
-	{ 11, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8048, C_UNION(cops_rs_string_33), 2,3, 23,1 }, /* CISET */
-	{ 12, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8048, C_UNION(cops_rs_string_34), 2,4, 18,1 }, /* CIBOOT */
-	{ 8, -1, -1, G_BUTTON, 0x401, 0x8C40, C_UNION(cops_rs_string_35), 2,5, 19,1 }, /* CIAUTO */
-	{ 14, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_36), 13,15, 9,257 }, /* CIOK */
-	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_37), 24,15, 9,257 }, /* CICANCEL */
+	{ -1, 1, 14, G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 37,17 },
+	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_8), 2,1, 33,1 }, /* CITITLE */
+	{ 3, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_9), 2,3, 12,1 }, /* INFO_FILENAME */
+	{ 4, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_10), 15,3, 20,1 }, /* CIFILE */
+	{ 5, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_11), 2,4, 12,1 }, /* INFO_VERSION */
+	{ 6, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_12), 15,4, 5,1 }, /* CIVER */
+	{ 7, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_13), 2,5, 12,1 }, /* INFO_ID */
+	{ 8, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_14), 15,5, 4,1 }, /* CIID */
+	{ 13, 9, 12, G_BUTTON, OF_FL3DBAK, 0xFE40, C_UNION(cops_rs_string_15), 2,7, 33,7 },
+	{ 10, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_16), 2,2, 30,1 }, /* INFO_RAM */
+	{ 11, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8048, C_UNION(cops_rs_string_17), 2,3, 30,1 }, /* INFO_SETONLY */
+	{ 12, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8548, C_UNION(cops_rs_string_18), 2,4, 30,1 }, /* INFO_BOOTINIT */
+	{ 8, -1, -1, G_BUTTON, 0x401, 0x8540, C_UNION(cops_rs_string_19), 2,5, 30,1 }, /* INFO_AUTOBOOT */
+	{ 14, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_20), 15,15, 9,257 }, /* INFO_OK */
+	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_21), 26,15, 9,257 }, /* INFO_CANCEL */
 
 /* SET_DIALOG */
 
-	{ -1, 1, 10, (113<<8)+G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 37,14 },
-	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_38), 2,1, 33,769 },
-	{ 3, -1, -1, G_BUTTON, 0x605, 0x440, C_UNION(cops_rs_string_39), 2,3, 11,257 }, /* ACSELPATH */
-	{ 4, -1, -1, G_FTEXT, 0x408, OS_NORMAL, C_UNION(&rs_tedinfo[2]), 15,3, 20,1 }, /* ACPATH */
-	{ 5, -1, -1, G_BUTTON, 0x401, 0x8540, C_UNION(cops_rs_string_43), 2,6, 27,1 }, /* ACBOOT */
-	{ 6, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_44), 2,7, 28,1 }, /* ACCLICK */
-	{ 7, -1, -1, G_BUTTON, 0x401, 0x8A40, C_UNION(cops_rs_string_45), 2,8, 28,1 }, /* ACSORTNAME */
-	{ 8, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_46), 2,10, 15,1 }, /* ACTERM */
-	{ 9, -1, -1, G_FTEXT, 0x408, OS_NORMAL, C_UNION(&rs_tedinfo[3]), 18,10, 12,1 }, /* ACAFTER */
-	{ 10, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_50), 15,12, 9,257 }, /* ACOK */
-	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_51), 26,12, 9,257 },
+	{ -1, 1, 10, G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 37,14 },
+	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_22), 2,1, 33,769 }, /* SET_SETTINGS */
+	{ 3, -1, -1, G_BUTTON, 0x605, 0x440, C_UNION(cops_rs_string_23), 2,3, 11,257 }, /* SET_SELPATH */
+	{ 4, -1, -1, G_FTEXT, 0x408, OS_NORMAL, C_UNION(&rs_tedinfo[2]), 15,3, 20,1 }, /* SET_PATH */
+	{ 5, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_27), 2,6, 33,1 }, /* SET_ICONIFY */
+	{ 6, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_28), 2,7, 33,1 }, /* SET_DCLICK */
+	{ 7, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_29), 2,8, 33,1 }, /* SET_SORTNAME */
+	{ 8, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_30), 2,10, 18,1 }, /* SET_TERM */
+	{ 9, -1, -1, G_FTEXT, 0x408, OS_NORMAL, C_UNION(&rs_tedinfo[3]), 21,10, 14,1 }, /* SET_TERMAFTER */
+	{ 10, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_34), 15,12, 9,257 }, /* SET_OK */
+	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_35), 26,12, 9,257 }, /* SET_CANCEL */
 
 /* ICONIFIED_DIALOG */
 
@@ -921,20 +1142,18 @@ OBJECT rs_object[NUM_OBS] = {
 /* CICON_DIALOG */
 
 	{ -1, 1, 1, G_BOX, OF_NONE, OS_NORMAL, C_UNION(0x21100L), 0,0, 52,9 },
-	{ 0, -1, -1, G_CICON, OF_LASTOB, OS_NORMAL, C_UNION(&rs_ciconblk[0]), 2,1, 8192,7936 } /* COPS_CICON */
+	{ 0, -1, -1, G_CICON, OF_LASTOB, OS_NORMAL, C_UNION(&rs_ciconblk[0]), 2,1, 8192,8192 } /* COPS_CICON */
 };
 
 
 OBJECT *rs_trindex[NUM_TREE] = {
-	&rs_object[0], /* GNL_POPUP */
-	&rs_object[11], /* CPX_POPUP */
-	&rs_object[18], /* ABOUT_DIALOG */
-	&rs_object[25], /* INFO_DIALOG */
-	&rs_object[40], /* SET_DIALOG */
-	&rs_object[51], /* ICONIFIED_DIALOG */
-	&rs_object[53], /* EMPTY_TREE */
-	&rs_object[55], /* ICON_DIALOG */
-	&rs_object[58] /* CICON_DIALOG */
+	&rs_object[0], /* ABOUT_DIALOG */
+	&rs_object[7], /* INFO_DIALOG */
+	&rs_object[22], /* SET_DIALOG */
+	&rs_object[33], /* ICONIFIED_DIALOG */
+	&rs_object[35], /* EMPTY_TREE */
+	&rs_object[37], /* ICON_DIALOG */
+	&rs_object[40] /* CICON_DIALOG */
 };
 
 
@@ -1131,8 +1350,8 @@ _WORD cops_rs_rsc_free()
 #endif /* RSC_NAMED_FUNCTIONS */
 
 #else /* !RSC_STATIC_FILE */
-_WORD rs_numstrings = 67;
-_WORD rs_numfrstr = 13;
+_WORD rs_numstrings = 181;
+_WORD rs_numfrstr = 143;
 
 _WORD rs_nuser = 0;
 _WORD rs_numimages = 4;
@@ -1141,8 +1360,8 @@ _WORD rs_numfrimg = 0;
 _WORD rs_numib = 1;
 _WORD rs_numcib = 1;
 _WORD rs_numti = 4;
-_WORD rs_numobs = 60;
-_WORD rs_numtree = 9;
+_WORD rs_numobs = 42;
+_WORD rs_numtree = 7;
 
 char rs_name[] = "cops_rs.rsc";
 

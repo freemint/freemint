@@ -17,8 +17,6 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-CFLAGS += $(LANG_CFLAGS)
-
 ifneq ($(BINTRAY_API_KEY),)
 CFLAGS += -DBROKEN_GEMLIB
 endif

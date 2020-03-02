@@ -1,114 +1,27 @@
-ifeq ($(cops),english_000)
 TARGET = ./cops.app
+
+ifeq ($(cops),000)
 CPU = 000
-LANG_CFLAGS += -DENGLISH
 endif
 
-ifeq ($(cops),france_000)
-TARGET = ./cops_fr.app
-CPU = 000
-LANG_CFLAGS += -DFRENCH
-endif
-
-ifeq ($(cops),german_000)
-TARGET = ./cops_de.app
-CPU = 000
-LANG_CFLAGS += -DGERMAN
-endif
-
-ifeq ($(cops),english_02060)
-TARGET = ./cops.app
+ifeq ($(cops),02060)
 CPU = 020-60
-LANG_CFLAGS += -DENGLISH
 endif
 
-ifeq ($(cops),france_02060)
-TARGET = ./cops_fr.app
-CPU = 020-60
-LANG_CFLAGS += -DFRENCH
-endif
-
-ifeq ($(cops),german_02060)
-TARGET = ./cops_de.app
-CPU = 020-60
-LANG_CFLAGS += -DGERMAN
-endif
-
-ifeq ($(cops),english_030)
-TARGET = ./cops.app
+ifeq ($(cops),030)
 CPU = 030
-LANG_CFLAGS += -DENGLISH
 endif
 
-ifeq ($(cops),france_030)
-TARGET = ./cops_fr.app
-CPU = 030
-LANG_CFLAGS += -DFRENCH
-endif
-
-ifeq ($(cops),german_030)
-TARGET = ./cops_de.app
-CPU = 030
-LANG_CFLAGS += -DGERMAN
-endif
-
-ifeq ($(cops),english_040)
-TARGET = ./cops.app
+ifeq ($(cops),040)
 CPU = 040
-LANG_CFLAGS += -DENGLISH
 endif
 
-ifeq ($(cops),france_040)
-TARGET = ./cops_fr.app
-CPU = 040
-LANG_CFLAGS += -DFRENCH
-endif
-
-ifeq ($(cops),german_040)
-TARGET = ./cops_de.app
-CPU = 040
-LANG_CFLAGS += -DGERMAN
-endif
-
-ifeq ($(cops),english_060)
-TARGET = ./cops.app
+ifeq ($(cops),060)
 CPU = 060
-LANG_CFLAGS += -DENGLISH
 endif
 
-ifeq ($(cops),france_060)
-TARGET = ./cops_fr.app
-CPU = 060
-LANG_CFLAGS += -DFRENCH
-endif
-
-ifeq ($(cops),german_060)
-TARGET = ./cops_de.app
-CPU = 060
-LANG_CFLAGS += -DGERMAN
-endif
-
-ifeq ($(cops),english_col)
-TARGET = ./cops.app
+ifeq ($(cops),col)
 CPU = v4e
-LANG_CFLAGS += -DENGLISH
 endif
 
-ifeq ($(cops),france_col)
-TARGET = ./cops_fr.app
-CPU = v4e
-LANG_CFLAGS += -DFRENCH
-endif
-
-ifeq ($(cops),german_col)
-TARGET = ./cops_de.app
-CPU = v4e
-LANG_CFLAGS += -DGERMAN
-endif
-
-copstargets = english_000 france_000 german_000 \
-	      english_02060 france_02060 german_02060 \
-	      english_030 france_030 german_030 \
-	      english_040 france_040 german_040 \
-	      english_060 france_060 german_060 \
-	      english_col france_col german_col
+copstargets = 000 02060 030 040 060 col

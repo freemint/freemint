@@ -121,13 +121,7 @@ struct xcpb xctrl_pb =
 	get_cookie,
 #endif
 
-#if defined(GERMAN)
-	1,
-#elif defined(FRENCH)
-	2,
-#else
-	0,
-#endif
+	0, /* country; will be changed by initialization */
 
 	MFsave
 };
@@ -1010,37 +1004,49 @@ static void _cdecl Set_Evnt_Mask(struct Set_Evnt_Mask_args args)
 static short _cdecl
 XGen_Alert(struct XGen_Alert_args args)
 {
+	_WORD id;
+	
 	DEBUG(("XGen_Alert\n"));
 
 	switch (args.alert_id)
 	{
 	/* Voreinstellungen sichern? */
 	case XAL_SAVE_DEFAULTS:
-		if (form_alert(1, fstring_addr[SAVE_DFLT_ALERT]) == 1)
-			return 1;
+		id = save_dflt_alert;
 		break;
 
 	/* nicht genuegend Speicher */
 	case XAL_MEM_ERR:
-		form_alert(1, fstring_addr[MEM_ERR_ALERT]);
-		return 0;
+		id = mem_err_alert;
+		break;
 
 	/* Schreib- oder Lesefehler */
 	case XAL_FILE_ERR:
-		form_alert(1, fstring_addr[FILE_ERR_ALERT]);
-		return 0;
+		id = file_err_alert;
+		break;
 
 	/* Datei nicht gefunden */
 	case XAL_FILE_NOT_FOUND:
-		form_alert(1, fstring_addr[FNF_ERR_ALERT]);
-		return 0;
+		id = fnf_err_alert;
+		break;
+
+	case XAL_RELOAD_CPXS:
+		id = reload_alert;
+		break;
+
+	case XAL_SAVE_HEADER:
+		id = al_save_header;
+		break;
 
 	case XAL_NO_SOUND_DMA:
-		form_alert(1, fstring_addr[AL_NO_SOUND_DMA]);
+		id = al_no_sound_dma;
+		break;
+	
+	default:
 		return 0;
 	}
 
-	return 0;
+	return form_alert(1, fstring_addr[id]) == 1;
 }
 
 /*----------------------------------------------------------------------------------------*/ 
