@@ -303,348 +303,347 @@ extern void *hfix_objs(RSHDR *_hdr, OBJECT *_ob, _WORD _num_objs);
 #undef NUM_OBS
 #undef NUM_TREE
 #undef NUM_UD
-#define NUM_STRINGS 328
+#define NUM_STRINGS 327
 #define NUM_BB		2
-#define NUM_IB		1
+#define NUM_IB		0
 #define NUM_CIB     1
 #define NUM_CIC     1
 #define NUM_TI		5
 #define NUM_FRSTR	287
 #define NUM_FRIMG	0
-#define NUM_OBS     43
-#define NUM_TREE	7
+#define NUM_OBS     40
+#define NUM_TREE	6
 #define NUM_UD		0
 #endif
 
 
-static char cops_rs_string_0[] = "OK";
-static char cops_rs_string_1[] = "Thomas Much, Sven & Wilfried Behne";
+static char cops_rs_string_0[] = " ";
+static char cops_rs_string_1[] = "Control Panel Server \372 Version 1.09";
 static char cops_rs_string_2[] = "";
 static char cops_rs_string_3[] = "";
-static char cops_rs_string_4[] = "Control Panel Server \372 Version 1.09";
-static char cops_rs_string_5[] = "";
+static char cops_rs_string_4[] = "OK";
+static char cops_rs_string_5[] = "by";
 static char cops_rs_string_6[] = "";
-static char cops_rs_string_7[] = " ";
-static char cops_rs_string_8[] = "by";
+static char cops_rs_string_7[] = "";
+static char cops_rs_string_8[] = "Thomas Much, Sven & Wilfried Behne";
 static char cops_rs_string_9[] = "";
 static char cops_rs_string_10[] = "";
-static char cops_rs_string_11[] = "01234567890123456789";
-static char cops_rs_string_12[] = "File name  :";
-static char cops_rs_string_13[] = "01234567890123456789";
-static char cops_rs_string_14[] = "  Version  :";
-static char cops_rs_string_15[] = "01234";
-static char cops_rs_string_16[] = "       ID  :";
-static char cops_rs_string_17[] = "0123";
-static char cops_rs_string_18[] = " Configuration ";
-static char cops_rs_string_19[] = "RAM resident";
-static char cops_rs_string_20[] = "Set Only";
-static char cops_rs_string_21[] = "Boot Init";
-static char cops_rs_string_22[] = "Auto Boot";
-static char cops_rs_string_23[] = "OK";
-static char cops_rs_string_24[] = "Cancel";
-static char cops_rs_string_25[] = "Settings";
-static char cops_rs_string_26[] = "CPX Path:";
-static char cops_rs_string_27[] = "01234567890123456789";
-static char cops_rs_string_28[] = "____________________";
-static char cops_rs_string_29[] = "X";
-static char cops_rs_string_30[] = "Iconify at start";
-static char cops_rs_string_31[] = "Double click activates CPZ";
-static char cops_rs_string_32[] = "Sort Icons by Name";
-static char cops_rs_string_33[] = "Terminate after";
-static char cops_rs_string_34[] = "01";
-static char cops_rs_string_35[] = "__ minute(s)";
-static char cops_rs_string_36[] = "9";
-static char cops_rs_string_37[] = "OK";
-static char cops_rs_string_38[] = "Cancel";
-static char cops_rs_string_39[] = "";
-static char cops_rs_string_40[] = "";
-static char cops_rs_string_41[] = " COPS ";
-static char cops_rs_string_42[] = " Control Panels ";
-static char cops_rs_string_43[] = "  Control Panels";
-static char cops_rs_string_44[] = "Select CPX Path";
-static char cops_rs_string_45[] = "AES is inactive.";
-static char cops_rs_string_46[] = "[1][No more windows.][Cancel]";
-static char cops_rs_string_47[] = "[2][Save Defaults?][Yes|No]";
-static char cops_rs_string_48[] = "[3][Not enough memory!][OK]";
-static char cops_rs_string_49[] = "[3][File error.][OK]";
-static char cops_rs_string_50[] = "[1][File not found.][OK]";
-static char cops_rs_string_51[] = "[2][Reload Control Panels?][Yes|No]";
-static char cops_rs_string_52[] = "[2][ | Save the CPX| configuration?][ OK | Cancel ]";
-static char cops_rs_string_53[] = "[1][ | Stereo Sound   |    Is Not|  Available.][ OK ]";
-static char cops_rs_string_54[] = "[1][Cannot open the control panel.][OK]";
-static char cops_rs_string_55[] = "[2][Terminate COPS?][Yes|No]";
-static char cops_rs_string_56[] = "OK";
-static char cops_rs_string_57[] = "Cancel";
-static char cops_rs_string_58[] = "About COPS...";
-static char cops_rs_string_59[] = "-";
-static char cops_rs_string_60[] = "Settings...      ^E";
-static char cops_rs_string_61[] = "-";
-static char cops_rs_string_62[] = "Reload";
-static char cops_rs_string_63[] = "Tidy Up";
-static char cops_rs_string_64[] = "-";
-static char cops_rs_string_65[] = "Select All       ^A";
-static char cops_rs_string_66[] = "-";
-static char cops_rs_string_67[] = "Help           HELP";
-static char cops_rs_string_68[] = "Open         ^O";
-static char cops_rs_string_69[] = "-";
-static char cops_rs_string_70[] = "Deactivate";
-static char cops_rs_string_71[] = "Activate";
-static char cops_rs_string_72[] = "-";
-static char cops_rs_string_73[] = "Info...      ^I";
-static char cops_rs_string_74[] = "by";
-static char cops_rs_string_75[] = "File name  :";
-static char cops_rs_string_76[] = "  Version  :";
-static char cops_rs_string_77[] = "       ID  :";
-static char cops_rs_string_78[] = " Configuration ";
-static char cops_rs_string_79[] = "RAM resident";
-static char cops_rs_string_80[] = "Set Only";
-static char cops_rs_string_81[] = "Boot Init";
-static char cops_rs_string_82[] = "Auto Boot";
-static char cops_rs_string_83[] = "Settings";
-static char cops_rs_string_84[] = "CPX Path:";
-static char cops_rs_string_85[] = "Iconify at start";
-static char cops_rs_string_86[] = "Double click activates CPZ";
-static char cops_rs_string_87[] = "Sort Icons by Name";
-static char cops_rs_string_88[] = "Terminate after";
-static char cops_rs_string_89[] = "__ minute(s)";
-static char cops_rs_string_90[] = " Kontrollfelder ";
-static char cops_rs_string_91[] = "  Kontrollfelder";
-static char cops_rs_string_92[] = "CPX-Pfad ausw\204hlen";
-static char cops_rs_string_93[] = "AES noch nicht aktiv.";
-static char cops_rs_string_94[] = "[1][Keine weiteren Fenster.][Abbruch]";
-static char cops_rs_string_95[] = "[2][Voreinstellungen sichern?][Ja|Nein]";
-static char cops_rs_string_96[] = "[3][Nicht gen\201gend Speicher!][OK]";
-static char cops_rs_string_97[] = "[3][Schreib- oder Lesefehler.][OK]";
-static char cops_rs_string_98[] = "[1][Datei nicht gefunden.][OK]";
-static char cops_rs_string_99[] = "[2][Alle Kontrollfelder neuladen?][Ja|Nein]";
-static char cops_rs_string_100[] = "[2][ | CPX-Konfiguration | sichern? ][ OK | Abbruch ]";
-static char cops_rs_string_101[] = "[1][ | Stereo-Sound  | nicht m\224glich!  ][ OK ]";
-static char cops_rs_string_102[] = "[1][Beim \231ffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK]";
-static char cops_rs_string_103[] = "[2][COPS beenden?][Ja|Nein]";
-static char cops_rs_string_104[] = "Abbruch";
-static char cops_rs_string_105[] = "\232ber COPS...";
-static char cops_rs_string_106[] = "-";
-static char cops_rs_string_107[] = "Einstellungen... ^E";
-static char cops_rs_string_108[] = "-";
-static char cops_rs_string_109[] = "Neuladen";
-static char cops_rs_string_110[] = "Aufr\204umen";
-static char cops_rs_string_111[] = "-";
-static char cops_rs_string_112[] = "Alles markieren  ^A";
-static char cops_rs_string_113[] = "-";
-static char cops_rs_string_114[] = "Hilfe          HELP";
-static char cops_rs_string_115[] = "\231ffnen       ^O";
-static char cops_rs_string_116[] = "-";
-static char cops_rs_string_117[] = "Deaktivieren";
-static char cops_rs_string_118[] = "Aktivieren";
-static char cops_rs_string_119[] = "-";
-static char cops_rs_string_120[] = "Info...      ^I";
-static char cops_rs_string_121[] = "von";
-static char cops_rs_string_122[] = "Dateiname  :";
-static char cops_rs_string_123[] = "  Version  :";
-static char cops_rs_string_124[] = "  Kennung  :";
-static char cops_rs_string_125[] = " Konfiguration ";
-static char cops_rs_string_126[] = "RAM-resident";
-static char cops_rs_string_127[] = "Nur setzen";
-static char cops_rs_string_128[] = "Boot-Init";
-static char cops_rs_string_129[] = "Automatisch starten";
-static char cops_rs_string_130[] = "Einstellungen";
-static char cops_rs_string_131[] = "CPX-Pfad:";
-static char cops_rs_string_132[] = "Beim Start ikonifizieren";
-static char cops_rs_string_133[] = "Doppelklick aktiviert CPZ";
-static char cops_rs_string_134[] = "CPXe nach Namen ordnen";
-static char cops_rs_string_135[] = "Beenden nach";
-static char cops_rs_string_136[] = "__ Minute(n)";
-static char cops_rs_string_137[] = " Panneaux contr\223le ";
-static char cops_rs_string_138[] = "  Panneaux contr\223le";
-static char cops_rs_string_139[] = "Choisir chemin CPX";
-static char cops_rs_string_140[] = "AES pas encore activ.";
-static char cops_rs_string_141[] = "[1][Plus des fen\210tres !][Abandon]";
-static char cops_rs_string_142[] = "[2][Sauver r\202glages ?][Oui|Non]";
-static char cops_rs_string_143[] = "[3][M\202moire insuffisante !][OK]";
-static char cops_rs_string_144[] = "[3][Erreur de lecture |ou d\'\202criture !][OK]";
-static char cops_rs_string_145[] = "[1][Fichier introuvable !][OK]";
-static char cops_rs_string_146[] = "[2][Recharger toutes les CPX ?][Oui|Non]";
-static char cops_rs_string_147[] = "[2][ | Sauver la | configuration? ][ CONFIRME | Annule ]";
-static char cops_rs_string_148[] = "[1][ | Le son st\202r\202o | n\'est pas | disponible. ][ CONFIRME ]";
-static char cops_rs_string_149[] = "[1][Erreur lors de l\'ouverture|du panneau de contr\223le.][OK]";
-static char cops_rs_string_150[] = "[2][Quitter COPS?][Oui|Non]";
-static char cops_rs_string_151[] = "Abandon";
-static char cops_rs_string_152[] = "\266 propos de COPS...";
-static char cops_rs_string_153[] = "-";
-static char cops_rs_string_154[] = "R\202glages...       ^E";
-static char cops_rs_string_155[] = "-";
-static char cops_rs_string_156[] = "Recharger";
-static char cops_rs_string_157[] = "Ranger";
-static char cops_rs_string_158[] = "-";
-static char cops_rs_string_159[] = "Tous s\202lectionner ^A";
-static char cops_rs_string_160[] = "-";
-static char cops_rs_string_161[] = "Aide            HELP";
-static char cops_rs_string_162[] = "Ouvrir       ^O";
-static char cops_rs_string_163[] = "-";
-static char cops_rs_string_164[] = "D\202sactiver";
-static char cops_rs_string_165[] = "Activer";
-static char cops_rs_string_166[] = "-";
-static char cops_rs_string_167[] = "Info...      ^I";
-static char cops_rs_string_168[] = "de";
-static char cops_rs_string_169[] = "Nom fichier:";
-static char cops_rs_string_170[] = "    Version:";
-static char cops_rs_string_171[] = "  Indicatif:";
-static char cops_rs_string_172[] = " Configuration ";
-static char cops_rs_string_173[] = "RAM-r\202sidente";
-static char cops_rs_string_174[] = "Appliquer uniquement";
-static char cops_rs_string_175[] = "Init-boot";
-static char cops_rs_string_176[] = "Lancement automatique";
-static char cops_rs_string_177[] = "R\202glages";
-static char cops_rs_string_178[] = "Chemin CPX:";
-static char cops_rs_string_179[] = "Ic\223nifier au demarrage";
-static char cops_rs_string_180[] = "Double-clique active CPZ";
-static char cops_rs_string_181[] = "Classer Ic\223nes par nom";
-static char cops_rs_string_182[] = "Terminer apr\212s";
-static char cops_rs_string_183[] = "__ minute(s)";
-static char cops_rs_string_184[] = " Panel de Control ";
-static char cops_rs_string_185[] = "  Panel de Control";
-static char cops_rs_string_186[] = "Seleccione carpeta CPX";
-static char cops_rs_string_187[] = "AES est\240 inactiva.";
-static char cops_rs_string_188[] = "[1][No mas ventanas][Cancelar]";
-static char cops_rs_string_189[] = "[2][ | Grabar valores por | defecto?   ][CONFIRMAR| Anular ]";
-static char cops_rs_string_190[] = "[1][ | Error de     | ubicaci\242n de    | memoria!   ][ CONFIRMAR ]";
-static char cops_rs_string_191[] = "[1][ | Error en  | fichero E/S!   ][ CONFIRMAR ]";
-static char cops_rs_string_192[] = "[1][ | Fichero no   | encontrado! ][ CONFIRMAR ]";
-static char cops_rs_string_193[] = "[2][ | Cargar CPXs? ][CONFIRMAR| Anular ]";
-static char cops_rs_string_194[] = "[2][ | Grabar la Configuraci\242n | del CPX?   ][CONFIRMAR| Anular ]";
-static char cops_rs_string_195[] = "[1][ | Sonido Est\202reo  | no disponible.   ][ CONFIRMAR ]";
-static char cops_rs_string_196[] = "[1][No se puede abrir el panel de control.][OK]";
-static char cops_rs_string_197[] = "[2][ | Suprimir el COPS?][CONFIRMAR| Anular ]";
-static char cops_rs_string_198[] = "OK";
-static char cops_rs_string_199[] = "Anular";
-static char cops_rs_string_200[] = "Acerca de COPS...";
-static char cops_rs_string_201[] = "-";
-static char cops_rs_string_202[] = "Configuraciones   ^E";
-static char cops_rs_string_203[] = "-";
-static char cops_rs_string_204[] = "Recargar";
-static char cops_rs_string_205[] = "Ordena";
-static char cops_rs_string_206[] = "-";
-static char cops_rs_string_207[] = "Seleccionar todo  ^A";
-static char cops_rs_string_208[] = "-";
-static char cops_rs_string_209[] = "Ayuda           HELP";
-static char cops_rs_string_210[] = "Abrir          ^O";
-static char cops_rs_string_211[] = "-";
-static char cops_rs_string_212[] = "Desactivar";
-static char cops_rs_string_213[] = "Activar";
-static char cops_rs_string_214[] = "-";
-static char cops_rs_string_215[] = "Informacion... ^I";
-static char cops_rs_string_216[] = "Por";
-static char cops_rs_string_217[] = "  Fichero  :";
-static char cops_rs_string_218[] = "  Versi\242n  :";
-static char cops_rs_string_219[] = "       ID  :";
-static char cops_rs_string_220[] = " Configuraci\242n ";
-static char cops_rs_string_221[] = "RAM residente";
-static char cops_rs_string_222[] = "Solo set";
-static char cops_rs_string_223[] = "Arranque init";
-static char cops_rs_string_224[] = "Arranque autom\240tico";
-static char cops_rs_string_225[] = "Configuraciones";
-static char cops_rs_string_226[] = "Ruta CPX:";
-static char cops_rs_string_227[] = "Iconify al inicio";
-static char cops_rs_string_228[] = "Doble clic activa CPZ";
-static char cops_rs_string_229[] = "Ordenar iconos por nombre";
-static char cops_rs_string_230[] = "Terminar despu\202s";
-static char cops_rs_string_231[] = "__ minuto(s)";
-static char cops_rs_string_232[] = " Pannello di controllo ";
-static char cops_rs_string_233[] = "  Control Panel";
-static char cops_rs_string_234[] = "Seleziona il percorso CPX";
-static char cops_rs_string_235[] = "AES \212 inattivo.";
-static char cops_rs_string_236[] = "[1][Niente pi\227 finestre.][Annulla]";
-static char cops_rs_string_237[] = "[2][ |  Salvo i parametri? ][ OK | Annulla ]";
-static char cops_rs_string_238[] = "[1][ |  Errore di   |  allocazione   |  in memoria!   ][ OK ]";
-static char cops_rs_string_239[] = "[3][   ||      Errore nel file!][SALTA|Riprova|Annulla]";
-static char cops_rs_string_240[] = "[1][ | File non trovato! ][ OK ]";
-static char cops_rs_string_241[] = "[2][ | Ricarico i CPX? ][ OK | Annulla ]";
-static char cops_rs_string_242[] = "[2][ | Salvo la | configurazione | dei file CPX? ][ OK | Annulla ]";
-static char cops_rs_string_243[] = "[1][ | Audio stereo non | disponibile. ][ OK ]";
-static char cops_rs_string_244[] = "[1][Impossibile aprire il|pannello di controllo.][ OK ]";
-static char cops_rs_string_245[] = "[2][Termina la COPS?][ OK | Annulla ]";
-static char cops_rs_string_246[] = "OK";
-static char cops_rs_string_247[] = "Annulla";
-static char cops_rs_string_248[] = "Informazioni...";
-static char cops_rs_string_249[] = "-";
-static char cops_rs_string_250[] = "Installazione...  ^E";
-static char cops_rs_string_251[] = "-";
-static char cops_rs_string_252[] = "Ricaricare";
-static char cops_rs_string_253[] = "Riordinare";
-static char cops_rs_string_254[] = "-";
-static char cops_rs_string_255[] = "Seleziona tutto   ^A";
-static char cops_rs_string_256[] = "-";
-static char cops_rs_string_257[] = "Aiuto           HELP";
-static char cops_rs_string_258[] = "Aperto       ^O";
-static char cops_rs_string_259[] = "-";
-static char cops_rs_string_260[] = "Disattivo";
-static char cops_rs_string_261[] = "Attivo";
-static char cops_rs_string_262[] = "-";
-static char cops_rs_string_263[] = "Info...      ^I";
-static char cops_rs_string_264[] = "da";
-static char cops_rs_string_265[] = "Nome file  :";
-static char cops_rs_string_266[] = " Versione  :";
-static char cops_rs_string_267[] = "       ID  :";
-static char cops_rs_string_268[] = " Configurazione ";
-static char cops_rs_string_269[] = "RAM residente";
-static char cops_rs_string_270[] = "Imposta solo";
-static char cops_rs_string_271[] = "Boot Init";
-static char cops_rs_string_272[] = "Avvio automatico";
-static char cops_rs_string_273[] = "Impostazioni";
-static char cops_rs_string_274[] = "Percorso:";
-static char cops_rs_string_275[] = "Iconify all\'inizio";
-static char cops_rs_string_276[] = "Il doppio clic attiva CPZ";
-static char cops_rs_string_277[] = "Ordina le icone per nome";
-static char cops_rs_string_278[] = "Terminare dopo";
-static char cops_rs_string_279[] = "__ minuti";
-static char cops_rs_string_280[] = " Kontrollpanel ";
-static char cops_rs_string_281[] = "  Kontrollpanel";
-static char cops_rs_string_282[] = "V\204l CPX-s\224kv\204g";
-static char cops_rs_string_283[] = "AES \204r inaktiv.";
-static char cops_rs_string_284[] = "[1][Inga fler f\224nster.][ Avbryt ]";
-static char cops_rs_string_285[] = "[2][ | Spara f\224rval? ][ OK | AVBRYT ]";
-static char cops_rs_string_286[] = "[1][ | Fel vid minnes-  | tilldelning! ][ OK ]";
-static char cops_rs_string_287[] = "[1][ | Fel vid | filoperation! ][ OK ]";
-static char cops_rs_string_288[] = "[1][ | Filen ej funnen! ][ OK ]";
-static char cops_rs_string_289[] = "[2][ | L\204s in CPXer p\206 nytt? ][ OK | AVBRYT ]";
-static char cops_rs_string_290[] = "[2][ | Spara CPX- | inst\204llningar? ][ OK | AVBRYT ]";
-static char cops_rs_string_291[] = "[1][ | Stereoljud ej   | tillg\204ngligt.   ][ OK ]";
-static char cops_rs_string_292[] = "[1][Kan inte \224ppna kontrollpanelen.][OK]";
-static char cops_rs_string_293[] = "[2][ | St\204nga av | kontrollpanelen? ][ OK | AVBRYT ]";
-static char cops_rs_string_294[] = "OK";
-static char cops_rs_string_295[] = "Avbryt";
-static char cops_rs_string_296[] = "Om COPS...";
-static char cops_rs_string_297[] = "-";
-static char cops_rs_string_298[] = "Inst\204llningar...  ^E";
-static char cops_rs_string_299[] = "-";
-static char cops_rs_string_300[] = "Ladda om";
-static char cops_rs_string_301[] = "St\204da upp";
-static char cops_rs_string_302[] = "-";
-static char cops_rs_string_303[] = "V\204lj alla         ^A";
-static char cops_rs_string_304[] = "-";
-static char cops_rs_string_305[] = "Hj\204lp           HELP";
-static char cops_rs_string_306[] = "\231ppen        ^O";
-static char cops_rs_string_307[] = "-";
-static char cops_rs_string_308[] = "Deaktivera";
-static char cops_rs_string_309[] = "Activera";
-static char cops_rs_string_310[] = "-";
-static char cops_rs_string_311[] = "Info...      ^I";
-static char cops_rs_string_312[] = "av";
-static char cops_rs_string_313[] = "  Filnamn  :";
-static char cops_rs_string_314[] = "  Version  :";
-static char cops_rs_string_315[] = "       ID  :";
-static char cops_rs_string_316[] = " Konfiguration ";
-static char cops_rs_string_317[] = "RAM permanent";
-static char cops_rs_string_318[] = "St\204ll bara in";
-static char cops_rs_string_319[] = "Starta init";
-static char cops_rs_string_320[] = "Auto Boot";
-static char cops_rs_string_321[] = "Inst\204llningar";
-static char cops_rs_string_322[] = "S\224kv\204g:";
-static char cops_rs_string_323[] = "Ikonifiera i b\224rjan";
-static char cops_rs_string_324[] = "Dubbelklick aktiverar CPZ";
-static char cops_rs_string_325[] = "Sortera ikoner efter namn";
-static char cops_rs_string_326[] = "Avsluta efter";
-static char cops_rs_string_327[] = "__ minut(er)";
+static char cops_rs_string_11[] = "";
+static char cops_rs_string_12[] = "01234567890123456789";
+static char cops_rs_string_13[] = "File name  :";
+static char cops_rs_string_14[] = "01234567890123456789";
+static char cops_rs_string_15[] = "  Version  :";
+static char cops_rs_string_16[] = "01234";
+static char cops_rs_string_17[] = "       ID  :";
+static char cops_rs_string_18[] = "0123";
+static char cops_rs_string_19[] = " Configuration ";
+static char cops_rs_string_20[] = "RAM resident";
+static char cops_rs_string_21[] = "Set Only";
+static char cops_rs_string_22[] = "Boot Init";
+static char cops_rs_string_23[] = "Auto Boot";
+static char cops_rs_string_24[] = "OK";
+static char cops_rs_string_25[] = "Cancel";
+static char cops_rs_string_26[] = "Settings";
+static char cops_rs_string_27[] = "CPX Path:";
+static char cops_rs_string_28[] = "01234567890123456789";
+static char cops_rs_string_29[] = "____________________";
+static char cops_rs_string_30[] = "X";
+static char cops_rs_string_31[] = "Iconify at start";
+static char cops_rs_string_32[] = "Double click activates CPZ";
+static char cops_rs_string_33[] = "Sort Icons by Name";
+static char cops_rs_string_34[] = "Terminate after";
+static char cops_rs_string_35[] = "01";
+static char cops_rs_string_36[] = "__ minute(s)";
+static char cops_rs_string_37[] = "9";
+static char cops_rs_string_38[] = "OK";
+static char cops_rs_string_39[] = "Cancel";
+static char cops_rs_string_40[] = " COPS ";
+static char cops_rs_string_41[] = " Control Panels ";
+static char cops_rs_string_42[] = "  Control Panels";
+static char cops_rs_string_43[] = "Select CPX Path";
+static char cops_rs_string_44[] = "AES is inactive.";
+static char cops_rs_string_45[] = "[1][No more windows.][Cancel]";
+static char cops_rs_string_46[] = "[2][Save Defaults?][Yes|No]";
+static char cops_rs_string_47[] = "[3][Not enough memory!][OK]";
+static char cops_rs_string_48[] = "[3][File error.][OK]";
+static char cops_rs_string_49[] = "[1][File not found.][OK]";
+static char cops_rs_string_50[] = "[2][Reload Control Panels?][Yes|No]";
+static char cops_rs_string_51[] = "[2][ | Save the CPX| configuration?][ OK | Cancel ]";
+static char cops_rs_string_52[] = "[1][ | Stereo Sound   |    Is Not|  Available.][ OK ]";
+static char cops_rs_string_53[] = "[1][Cannot open the control panel.][OK]";
+static char cops_rs_string_54[] = "[2][Terminate COPS?][Yes|No]";
+static char cops_rs_string_55[] = "OK";
+static char cops_rs_string_56[] = "Cancel";
+static char cops_rs_string_57[] = "About COPS...";
+static char cops_rs_string_58[] = "-";
+static char cops_rs_string_59[] = "Settings...      ^E";
+static char cops_rs_string_60[] = "-";
+static char cops_rs_string_61[] = "Reload";
+static char cops_rs_string_62[] = "Tidy Up";
+static char cops_rs_string_63[] = "-";
+static char cops_rs_string_64[] = "Select All       ^A";
+static char cops_rs_string_65[] = "-";
+static char cops_rs_string_66[] = "Help           HELP";
+static char cops_rs_string_67[] = "Open         ^O";
+static char cops_rs_string_68[] = "-";
+static char cops_rs_string_69[] = "Deactivate";
+static char cops_rs_string_70[] = "Activate";
+static char cops_rs_string_71[] = "-";
+static char cops_rs_string_72[] = "Info...      ^I";
+static char cops_rs_string_73[] = "by";
+static char cops_rs_string_74[] = "File name  :";
+static char cops_rs_string_75[] = "  Version  :";
+static char cops_rs_string_76[] = "       ID  :";
+static char cops_rs_string_77[] = " Configuration ";
+static char cops_rs_string_78[] = "RAM resident";
+static char cops_rs_string_79[] = "Set Only";
+static char cops_rs_string_80[] = "Boot Init";
+static char cops_rs_string_81[] = "Auto Boot";
+static char cops_rs_string_82[] = "Settings";
+static char cops_rs_string_83[] = "CPX Path:";
+static char cops_rs_string_84[] = "Iconify at start";
+static char cops_rs_string_85[] = "Double click activates CPZ";
+static char cops_rs_string_86[] = "Sort Icons by Name";
+static char cops_rs_string_87[] = "Terminate after";
+static char cops_rs_string_88[] = "__ minute(s)";
+static char cops_rs_string_89[] = " Kontrollfelder ";
+static char cops_rs_string_90[] = "  Kontrollfelder";
+static char cops_rs_string_91[] = "CPX-Pfad ausw\204hlen";
+static char cops_rs_string_92[] = "AES noch nicht aktiv.";
+static char cops_rs_string_93[] = "[1][Keine weiteren Fenster.][Abbruch]";
+static char cops_rs_string_94[] = "[2][Voreinstellungen sichern?][Ja|Nein]";
+static char cops_rs_string_95[] = "[3][Nicht gen\201gend Speicher!][OK]";
+static char cops_rs_string_96[] = "[3][Schreib- oder Lesefehler.][OK]";
+static char cops_rs_string_97[] = "[1][Datei nicht gefunden.][OK]";
+static char cops_rs_string_98[] = "[2][Alle Kontrollfelder neuladen?][Ja|Nein]";
+static char cops_rs_string_99[] = "[2][ | CPX-Konfiguration | sichern? ][ OK | Abbruch ]";
+static char cops_rs_string_100[] = "[1][ | Stereo-Sound  | nicht m\224glich!  ][ OK ]";
+static char cops_rs_string_101[] = "[1][Beim \231ffnen des Kontrollfelds|ist ein Fehler aufgetreten.][OK]";
+static char cops_rs_string_102[] = "[2][COPS beenden?][Ja|Nein]";
+static char cops_rs_string_103[] = "Abbruch";
+static char cops_rs_string_104[] = "\232ber COPS...";
+static char cops_rs_string_105[] = "-";
+static char cops_rs_string_106[] = "Einstellungen... ^E";
+static char cops_rs_string_107[] = "-";
+static char cops_rs_string_108[] = "Neuladen";
+static char cops_rs_string_109[] = "Aufr\204umen";
+static char cops_rs_string_110[] = "-";
+static char cops_rs_string_111[] = "Alles markieren  ^A";
+static char cops_rs_string_112[] = "-";
+static char cops_rs_string_113[] = "Hilfe          HELP";
+static char cops_rs_string_114[] = "\231ffnen       ^O";
+static char cops_rs_string_115[] = "-";
+static char cops_rs_string_116[] = "Deaktivieren";
+static char cops_rs_string_117[] = "Aktivieren";
+static char cops_rs_string_118[] = "-";
+static char cops_rs_string_119[] = "Info...      ^I";
+static char cops_rs_string_120[] = "von";
+static char cops_rs_string_121[] = "Dateiname  :";
+static char cops_rs_string_122[] = "  Version  :";
+static char cops_rs_string_123[] = "  Kennung  :";
+static char cops_rs_string_124[] = " Konfiguration ";
+static char cops_rs_string_125[] = "RAM-resident";
+static char cops_rs_string_126[] = "Nur setzen";
+static char cops_rs_string_127[] = "Boot-Init";
+static char cops_rs_string_128[] = "Automatisch starten";
+static char cops_rs_string_129[] = "Einstellungen";
+static char cops_rs_string_130[] = "CPX-Pfad:";
+static char cops_rs_string_131[] = "Beim Start ikonifizieren";
+static char cops_rs_string_132[] = "Doppelklick aktiviert CPZ";
+static char cops_rs_string_133[] = "CPXe nach Namen ordnen";
+static char cops_rs_string_134[] = "Beenden nach";
+static char cops_rs_string_135[] = "__ Minute(n)";
+static char cops_rs_string_136[] = " Panneaux contr\223le ";
+static char cops_rs_string_137[] = "  Panneaux contr\223le";
+static char cops_rs_string_138[] = "Choisir chemin CPX";
+static char cops_rs_string_139[] = "AES pas encore activ.";
+static char cops_rs_string_140[] = "[1][Plus des fen\210tres !][Abandon]";
+static char cops_rs_string_141[] = "[2][Sauver r\202glages ?][Oui|Non]";
+static char cops_rs_string_142[] = "[3][M\202moire insuffisante !][OK]";
+static char cops_rs_string_143[] = "[3][Erreur de lecture |ou d\'\202criture !][OK]";
+static char cops_rs_string_144[] = "[1][Fichier introuvable !][OK]";
+static char cops_rs_string_145[] = "[2][Recharger toutes les CPX ?][Oui|Non]";
+static char cops_rs_string_146[] = "[2][ | Sauver la | configuration? ][ CONFIRME | Annule ]";
+static char cops_rs_string_147[] = "[1][ | Le son st\202r\202o | n\'est pas | disponible. ][ CONFIRME ]";
+static char cops_rs_string_148[] = "[1][Erreur lors de l\'ouverture|du panneau de contr\223le.][OK]";
+static char cops_rs_string_149[] = "[2][Quitter COPS?][Oui|Non]";
+static char cops_rs_string_150[] = "Abandon";
+static char cops_rs_string_151[] = "\266 propos de COPS...";
+static char cops_rs_string_152[] = "-";
+static char cops_rs_string_153[] = "R\202glages...       ^E";
+static char cops_rs_string_154[] = "-";
+static char cops_rs_string_155[] = "Recharger";
+static char cops_rs_string_156[] = "Ranger";
+static char cops_rs_string_157[] = "-";
+static char cops_rs_string_158[] = "Tous s\202lectionner ^A";
+static char cops_rs_string_159[] = "-";
+static char cops_rs_string_160[] = "Aide            HELP";
+static char cops_rs_string_161[] = "Ouvrir       ^O";
+static char cops_rs_string_162[] = "-";
+static char cops_rs_string_163[] = "D\202sactiver";
+static char cops_rs_string_164[] = "Activer";
+static char cops_rs_string_165[] = "-";
+static char cops_rs_string_166[] = "Info...      ^I";
+static char cops_rs_string_167[] = "de";
+static char cops_rs_string_168[] = "Nom fichier:";
+static char cops_rs_string_169[] = "    Version:";
+static char cops_rs_string_170[] = "  Indicatif:";
+static char cops_rs_string_171[] = " Configuration ";
+static char cops_rs_string_172[] = "RAM-r\202sidente";
+static char cops_rs_string_173[] = "Appliquer uniquement";
+static char cops_rs_string_174[] = "Init-boot";
+static char cops_rs_string_175[] = "Lancement automatique";
+static char cops_rs_string_176[] = "R\202glages";
+static char cops_rs_string_177[] = "Chemin CPX:";
+static char cops_rs_string_178[] = "Ic\223nifier au demarrage";
+static char cops_rs_string_179[] = "Double-clique active CPZ";
+static char cops_rs_string_180[] = "Classer Ic\223nes par nom";
+static char cops_rs_string_181[] = "Terminer apr\212s";
+static char cops_rs_string_182[] = "__ minute(s)";
+static char cops_rs_string_183[] = " Panel de Control ";
+static char cops_rs_string_184[] = "  Panel de Control";
+static char cops_rs_string_185[] = "Seleccione carpeta CPX";
+static char cops_rs_string_186[] = "AES est\240 inactiva.";
+static char cops_rs_string_187[] = "[1][No mas ventanas][Cancelar]";
+static char cops_rs_string_188[] = "[2][ | Grabar valores por | defecto?   ][CONFIRMAR| Anular ]";
+static char cops_rs_string_189[] = "[1][ | Error de     | ubicaci\242n de    | memoria!   ][ CONFIRMAR ]";
+static char cops_rs_string_190[] = "[1][ | Error en  | fichero E/S!   ][ CONFIRMAR ]";
+static char cops_rs_string_191[] = "[1][ | Fichero no   | encontrado! ][ CONFIRMAR ]";
+static char cops_rs_string_192[] = "[2][ | Cargar CPXs? ][CONFIRMAR| Anular ]";
+static char cops_rs_string_193[] = "[2][ | Grabar la Configuraci\242n | del CPX?   ][CONFIRMAR| Anular ]";
+static char cops_rs_string_194[] = "[1][ | Sonido Est\202reo  | no disponible.   ][ CONFIRMAR ]";
+static char cops_rs_string_195[] = "[1][No se puede abrir el panel de control.][OK]";
+static char cops_rs_string_196[] = "[2][ | Suprimir el COPS?][CONFIRMAR| Anular ]";
+static char cops_rs_string_197[] = "OK";
+static char cops_rs_string_198[] = "Anular";
+static char cops_rs_string_199[] = "Acerca de COPS...";
+static char cops_rs_string_200[] = "-";
+static char cops_rs_string_201[] = "Configuraciones   ^E";
+static char cops_rs_string_202[] = "-";
+static char cops_rs_string_203[] = "Recargar";
+static char cops_rs_string_204[] = "Ordena";
+static char cops_rs_string_205[] = "-";
+static char cops_rs_string_206[] = "Seleccionar todo  ^A";
+static char cops_rs_string_207[] = "-";
+static char cops_rs_string_208[] = "Ayuda           HELP";
+static char cops_rs_string_209[] = "Abrir          ^O";
+static char cops_rs_string_210[] = "-";
+static char cops_rs_string_211[] = "Desactivar";
+static char cops_rs_string_212[] = "Activar";
+static char cops_rs_string_213[] = "-";
+static char cops_rs_string_214[] = "Informacion... ^I";
+static char cops_rs_string_215[] = "Por";
+static char cops_rs_string_216[] = "  Fichero  :";
+static char cops_rs_string_217[] = "  Versi\242n  :";
+static char cops_rs_string_218[] = "       ID  :";
+static char cops_rs_string_219[] = " Configuraci\242n ";
+static char cops_rs_string_220[] = "RAM residente";
+static char cops_rs_string_221[] = "Solo set";
+static char cops_rs_string_222[] = "Arranque init";
+static char cops_rs_string_223[] = "Arranque autom\240tico";
+static char cops_rs_string_224[] = "Configuraciones";
+static char cops_rs_string_225[] = "Ruta CPX:";
+static char cops_rs_string_226[] = "Iconify al inicio";
+static char cops_rs_string_227[] = "Doble clic activa CPZ";
+static char cops_rs_string_228[] = "Ordenar iconos por nombre";
+static char cops_rs_string_229[] = "Terminar despu\202s";
+static char cops_rs_string_230[] = "__ minuto(s)";
+static char cops_rs_string_231[] = " Pannello di controllo ";
+static char cops_rs_string_232[] = "  Control Panel";
+static char cops_rs_string_233[] = "Seleziona il percorso CPX";
+static char cops_rs_string_234[] = "AES \212 inattivo.";
+static char cops_rs_string_235[] = "[1][Niente pi\227 finestre.][Annulla]";
+static char cops_rs_string_236[] = "[2][ |  Salvo i parametri? ][ OK | Annulla ]";
+static char cops_rs_string_237[] = "[1][ |  Errore di   |  allocazione   |  in memoria!   ][ OK ]";
+static char cops_rs_string_238[] = "[3][   ||      Errore nel file!][SALTA|Riprova|Annulla]";
+static char cops_rs_string_239[] = "[1][ | File non trovato! ][ OK ]";
+static char cops_rs_string_240[] = "[2][ | Ricarico i CPX? ][ OK | Annulla ]";
+static char cops_rs_string_241[] = "[2][ | Salvo la | configurazione | dei file CPX? ][ OK | Annulla ]";
+static char cops_rs_string_242[] = "[1][ | Audio stereo non | disponibile. ][ OK ]";
+static char cops_rs_string_243[] = "[1][Impossibile aprire il|pannello di controllo.][ OK ]";
+static char cops_rs_string_244[] = "[2][Termina la COPS?][ OK | Annulla ]";
+static char cops_rs_string_245[] = "OK";
+static char cops_rs_string_246[] = "Annulla";
+static char cops_rs_string_247[] = "Informazioni...";
+static char cops_rs_string_248[] = "-";
+static char cops_rs_string_249[] = "Installazione...  ^E";
+static char cops_rs_string_250[] = "-";
+static char cops_rs_string_251[] = "Ricaricare";
+static char cops_rs_string_252[] = "Riordinare";
+static char cops_rs_string_253[] = "-";
+static char cops_rs_string_254[] = "Seleziona tutto   ^A";
+static char cops_rs_string_255[] = "-";
+static char cops_rs_string_256[] = "Aiuto           HELP";
+static char cops_rs_string_257[] = "Aperto       ^O";
+static char cops_rs_string_258[] = "-";
+static char cops_rs_string_259[] = "Disattivo";
+static char cops_rs_string_260[] = "Attivo";
+static char cops_rs_string_261[] = "-";
+static char cops_rs_string_262[] = "Info...      ^I";
+static char cops_rs_string_263[] = "da";
+static char cops_rs_string_264[] = "Nome file  :";
+static char cops_rs_string_265[] = " Versione  :";
+static char cops_rs_string_266[] = "       ID  :";
+static char cops_rs_string_267[] = " Configurazione ";
+static char cops_rs_string_268[] = "RAM residente";
+static char cops_rs_string_269[] = "Imposta solo";
+static char cops_rs_string_270[] = "Boot Init";
+static char cops_rs_string_271[] = "Avvio automatico";
+static char cops_rs_string_272[] = "Impostazioni";
+static char cops_rs_string_273[] = "Percorso:";
+static char cops_rs_string_274[] = "Iconify all\'inizio";
+static char cops_rs_string_275[] = "Il doppio clic attiva CPZ";
+static char cops_rs_string_276[] = "Ordina le icone per nome";
+static char cops_rs_string_277[] = "Terminare dopo";
+static char cops_rs_string_278[] = "__ minuti";
+static char cops_rs_string_279[] = " Kontrollpanel ";
+static char cops_rs_string_280[] = "  Kontrollpanel";
+static char cops_rs_string_281[] = "V\204l CPX-s\224kv\204g";
+static char cops_rs_string_282[] = "AES \204r inaktiv.";
+static char cops_rs_string_283[] = "[1][Inga fler f\224nster.][ Avbryt ]";
+static char cops_rs_string_284[] = "[2][ | Spara f\224rval? ][ OK | AVBRYT ]";
+static char cops_rs_string_285[] = "[1][ | Fel vid minnes-  | tilldelning! ][ OK ]";
+static char cops_rs_string_286[] = "[1][ | Fel vid | filoperation! ][ OK ]";
+static char cops_rs_string_287[] = "[1][ | Filen ej funnen! ][ OK ]";
+static char cops_rs_string_288[] = "[2][ | L\204s in CPXer p\206 nytt? ][ OK | AVBRYT ]";
+static char cops_rs_string_289[] = "[2][ | Spara CPX- | inst\204llningar? ][ OK | AVBRYT ]";
+static char cops_rs_string_290[] = "[1][ | Stereoljud ej   | tillg\204ngligt.   ][ OK ]";
+static char cops_rs_string_291[] = "[1][Kan inte \224ppna kontrollpanelen.][OK]";
+static char cops_rs_string_292[] = "[2][ | St\204nga av | kontrollpanelen? ][ OK | AVBRYT ]";
+static char cops_rs_string_293[] = "OK";
+static char cops_rs_string_294[] = "Avbryt";
+static char cops_rs_string_295[] = "Om COPS...";
+static char cops_rs_string_296[] = "-";
+static char cops_rs_string_297[] = "Inst\204llningar...  ^E";
+static char cops_rs_string_298[] = "-";
+static char cops_rs_string_299[] = "Ladda om";
+static char cops_rs_string_300[] = "St\204da upp";
+static char cops_rs_string_301[] = "-";
+static char cops_rs_string_302[] = "V\204lj alla         ^A";
+static char cops_rs_string_303[] = "-";
+static char cops_rs_string_304[] = "Hj\204lp           HELP";
+static char cops_rs_string_305[] = "\231ppen        ^O";
+static char cops_rs_string_306[] = "-";
+static char cops_rs_string_307[] = "Deaktivera";
+static char cops_rs_string_308[] = "Activera";
+static char cops_rs_string_309[] = "-";
+static char cops_rs_string_310[] = "Info...      ^I";
+static char cops_rs_string_311[] = "av";
+static char cops_rs_string_312[] = "  Filnamn  :";
+static char cops_rs_string_313[] = "  Version  :";
+static char cops_rs_string_314[] = "       ID  :";
+static char cops_rs_string_315[] = " Konfiguration ";
+static char cops_rs_string_316[] = "RAM permanent";
+static char cops_rs_string_317[] = "St\204ll bara in";
+static char cops_rs_string_318[] = "Starta init";
+static char cops_rs_string_319[] = "Auto Boot";
+static char cops_rs_string_320[] = "Inst\204llningar";
+static char cops_rs_string_321[] = "S\224kv\204g:";
+static char cops_rs_string_322[] = "Ikonifiera i b\224rjan";
+static char cops_rs_string_323[] = "Dubbelklick aktiverar CPZ";
+static char cops_rs_string_324[] = "Sortera ikoner efter namn";
+static char cops_rs_string_325[] = "Avsluta efter";
+static char cops_rs_string_326[] = "__ minut(er)";
 
 
 static _UBYTE cops_rs_IMAGE0[] = {
@@ -681,37 +680,6 @@ static _UBYTE cops_rs_IMAGE0[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xE0, 0x00};
 
 /* mask of COPS_ICON */
-static _UBYTE cops_rs_IMAGE1[] = {
-0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
-
-/* data of COPS_ICON */
-static _UBYTE cops_rs_IMAGE2[] = {
-0x7F, 0xFF, 0xFF, 0xFC, 0x40, 0x00, 0x00, 0x04, 0x55, 0x55, 0x55, 0x56, 0x40, 0x00, 0x00, 0x06, 
-0x7F, 0xFF, 0xFF, 0xFE, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x46, 
-0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 
-0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x05, 0xF6, 0x40, 0x00, 0x05, 0x1E, 
-0x40, 0x00, 0x05, 0x16, 0x40, 0x00, 0x05, 0xFE, 0x40, 0x00, 0x04, 0xF6, 0x40, 0x00, 0x04, 0xA6, 
-0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0xE6, 
-0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0x06, 
-0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
-
-/* data of INACTIVE_IMG */
-static _UBYTE cops_rs_IMAGE3[] = {
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 
-0x00, 0x00, 0x0F, 0xFE, 0xFF, 0x00, 0x7F, 0xFC, 0x7F, 0xF9, 0xFF, 0xF0, 0x1F, 0xFF, 0xFF, 0xC0, 
-0x03, 0xFF, 0xFE, 0x00, 0x00, 0x7F, 0xFC, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x03, 0xFF, 0xFF, 0xC0, 
-0x07, 0xFC, 0xFF, 0xF0, 0x1F, 0xF0, 0x1F, 0xF8, 0x3F, 0xC0, 0x07, 0xFC, 0x7F, 0x00, 0x01, 0xFE, 
-0xFC, 0x00, 0x00, 0x7F, 0xF8, 0x00, 0x00, 0x1F, 0xE0, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x03, 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-/* mask of COPS_CICON */
 static _UBYTE cops_rs_RS0_MMASK[] = {
 0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
@@ -722,7 +690,7 @@ static _UBYTE cops_rs_RS0_MMASK[] = {
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
-/* data of COPS_CICON */
+/* data of COPS_ICON */
 static _UBYTE cops_rs_RS0_MDATA[] = {
 0x7F, 0xFF, 0xFF, 0xFC, 0x40, 0x00, 0x00, 0x04, 0x55, 0x55, 0x55, 0x56, 0x40, 0x00, 0x00, 0x06, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x46, 
@@ -733,7 +701,7 @@ static _UBYTE cops_rs_RS0_MDATA[] = {
 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0xA6, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0x06, 
 0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x1F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
-/* color data of COPS_CICON */
+/* color data of COPS_ICON */
 static _UBYTE cops_rs_RS0_4CDATA[] = {
 0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFA, 0x40, 0x00, 0x00, 0x02, 0x7F, 0xFF, 0xFF, 0xFA, 
 0x6A, 0xAA, 0xAC, 0xAA, 0x55, 0x55, 0x55, 0x12, 0x6A, 0xAA, 0xAC, 0xEA, 0x55, 0x55, 0x55, 0xB2, 
@@ -768,7 +736,7 @@ static _UBYTE cops_rs_RS0_4CDATA[] = {
 0x40, 0x00, 0x04, 0xE6, 0x40, 0x00, 0x04, 0x46, 0x40, 0x00, 0x04, 0x06, 0x40, 0x00, 0x04, 0x06, 
 0x40, 0x00, 0x04, 0x06, 0x7F, 0xFF, 0xFF, 0xFE, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
-/* color mask of COPS_CICON */
+/* color mask of COPS_ICON */
 static _UBYTE cops_rs_RS0_4CMASK[] = {
 0x7F, 0xFF, 0xFF, 0xFC, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
@@ -779,8 +747,18 @@ static _UBYTE cops_rs_RS0_4CMASK[] = {
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 
 0x7F, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF, 0xFF, 0xFE, 0x3F, 0xFF, 0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00};
 
+/* data of INACTIVE_IMG */
+static _UBYTE cops_rs_IMAGE1[] = {
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 
+0x00, 0x00, 0x0F, 0xFE, 0xFF, 0x00, 0x7F, 0xFC, 0x7F, 0xF9, 0xFF, 0xF0, 0x1F, 0xFF, 0xFF, 0xC0, 
+0x03, 0xFF, 0xFE, 0x00, 0x00, 0x7F, 0xFC, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x03, 0xFF, 0xFF, 0xC0, 
+0x07, 0xFC, 0xFF, 0xF0, 0x1F, 0xF0, 0x1F, 0xF8, 0x3F, 0xC0, 0x07, 0xFC, 0x7F, 0x00, 0x01, 0xFE, 
+0xFC, 0x00, 0x00, 0x7F, 0xF8, 0x00, 0x00, 0x1F, 0xE0, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x03, 
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
 
 char *rs_frstr[NUM_FRSTR] = {
+	cops_rs_string_40,
 	cops_rs_string_41,
 	cops_rs_string_42,
 	cops_rs_string_43,
@@ -1066,19 +1044,13 @@ char *rs_frstr[NUM_FRSTR] = {
 	cops_rs_string_323,
 	cops_rs_string_324,
 	cops_rs_string_325,
-	cops_rs_string_326,
-	cops_rs_string_327
+	cops_rs_string_326
 };
 
 
 BITBLK rs_bitblk[NUM_BB] = {
 	{ CP cops_rs_IMAGE0, 14, 35, 0, 0, 1 },
-	{ CP cops_rs_IMAGE3, 4, 24, 0, 0, 1 }
-};
-
-
-ICONBLK rs_iconblk[] = {
-	{ CW cops_rs_IMAGE1, CW cops_rs_IMAGE2, cops_rs_string_39, 0x1000,0,0, 0,0,32,32, 0,-1,0,8 }
+	{ CP cops_rs_IMAGE1, 4, 24, 0, 0, 1 }
 };
 
 
@@ -1088,7 +1060,7 @@ CICON rs_cicon[] = {
 
 
 CICONBLK rs_ciconblk[] = {
-	{ { (_WORD *) cops_rs_RS0_MMASK, (_WORD *) cops_rs_RS0_MDATA, cops_rs_string_40, 4096,0,0, 0,0,32,32, 0,-1,6,8 }, &rs_cicon[0] } /* COPS_CICON */
+	{ { (_WORD *) cops_rs_RS0_MMASK, (_WORD *) cops_rs_RS0_MDATA, cops_rs_string_11, 4096,0,0, 0,0,32,32, 0,-1,0,8 }, &rs_cicon[0] } /* COPS_ICON */
 };
 
 
@@ -1364,11 +1336,11 @@ _WORD rgb_palette[][4] = {
 
 
 TEDINFO rs_tedinfo[NUM_TI] = {
-	{ cops_rs_string_1, cops_rs_string_2, cops_rs_string_3, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 35,1 },
-	{ cops_rs_string_4, cops_rs_string_5, cops_rs_string_6, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 36,1 },
-	{ cops_rs_string_8, cops_rs_string_9, cops_rs_string_10, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 3,1 }, /* ABOUT_BY */
-	{ cops_rs_string_27, cops_rs_string_28, cops_rs_string_29, IBM, 6, TE_CNTR, 0x1180, 0x0, -2, 21,21 }, /* SET_PATH */
-	{ cops_rs_string_34, cops_rs_string_35, cops_rs_string_36, IBM, 6, TE_LEFT, 0x1180, 0x0, -2, 3,13 } /* SET_TERMAFTER */
+	{ cops_rs_string_1, cops_rs_string_2, cops_rs_string_3, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 36,1 },
+	{ cops_rs_string_5, cops_rs_string_6, cops_rs_string_7, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 3,1 }, /* ABOUT_BY */
+	{ cops_rs_string_8, cops_rs_string_9, cops_rs_string_10, SMALL, 6, TE_LEFT, 0x1100, 0x0, -1, 35,1 },
+	{ cops_rs_string_28, cops_rs_string_29, cops_rs_string_30, IBM, 6, TE_CNTR, 0x1180, 0x0, -2, 21,21 }, /* SET_PATH */
+	{ cops_rs_string_35, cops_rs_string_36, cops_rs_string_37, IBM, 6, TE_LEFT, 0x1180, 0x0, -2, 3,13 } /* SET_TERMAFTER */
 };
 
 
@@ -1376,45 +1348,45 @@ OBJECT rs_object[NUM_OBS] = {
 /* ABOUT_DIALOG */
 
 	{ -1, 1, 7, G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 44,7 },
-	{ 2, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_0), 33,5, 9,257 }, /* ABOUT_OK */
-	{ 3, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[0]), 4,6, 1049,1536 },
-	{ 4, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[1]), 2,5, 538,1536 },
-	{ 5, -1, -1, G_BOX, OF_NONE, OS_NORMAL, C_UNION(0x1141L), 2,513, 4,2 }, /* ABOUT_ICON */
-	{ 6, -1, -1, G_IMAGE, OF_NONE, OS_NORMAL, C_UNION(&rs_bitblk[0]), 7,1, 28672,8960 },
-	{ 7, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_7), 1045,768, 20,1 },
-	{ 0, -1, -1, G_TEXT, OF_LASTOB, OS_NORMAL, C_UNION(&rs_tedinfo[2]), 1,6, 3,1536 }, /* ABOUT_BY */
+	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_0), 1045,768, 20,1 },
+	{ 3, -1, -1, G_IMAGE, OF_NONE, OS_NORMAL, C_UNION(&rs_bitblk[0]), 7,1, 28672,8960 },
+	{ 4, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[0]), 2,5, 538,1536 },
+	{ 5, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_4), 33,5, 9,257 }, /* ABOUT_OK */
+	{ 6, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[1]), 1,6, 3,1536 }, /* ABOUT_BY */
+	{ 7, -1, -1, G_TEXT, OF_NONE, OS_NORMAL, C_UNION(&rs_tedinfo[2]), 4,6, 1049,1536 },
+	{ 0, -1, -1, G_CICON, OF_LASTOB, OS_NORMAL, C_UNION(&rs_ciconblk[0]), 2,1, 8192,8192 }, /* COPS_ICON */
 
 /* INFO_DIALOG */
 
 	{ -1, 1, 14, G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 37,17 },
-	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_11), 2,1, 33,1 }, /* CITITLE */
-	{ 3, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_12), 2,3, 12,1 }, /* INFO_FILENAME */
-	{ 4, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_13), 15,3, 20,1 }, /* CIFILE */
-	{ 5, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_14), 2,4, 12,1 }, /* INFO_VERSION */
-	{ 6, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_15), 15,4, 5,1 }, /* CIVER */
-	{ 7, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_16), 2,5, 12,1 }, /* INFO_ID */
-	{ 8, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_17), 15,5, 4,1 }, /* CIID */
-	{ 13, 9, 12, G_BUTTON, OF_FL3DBAK, 0xFE40, C_UNION(cops_rs_string_18), 2,7, 33,7 },
-	{ 10, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_19), 2,2, 30,1 }, /* INFO_RAM */
-	{ 11, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8048, C_UNION(cops_rs_string_20), 2,3, 30,1 }, /* INFO_SETONLY */
-	{ 12, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8548, C_UNION(cops_rs_string_21), 2,4, 30,1 }, /* INFO_BOOTINIT */
-	{ 8, -1, -1, G_BUTTON, 0x401, 0x8540, C_UNION(cops_rs_string_22), 2,5, 30,1 }, /* INFO_AUTOBOOT */
-	{ 14, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_23), 15,15, 9,257 }, /* INFO_OK */
-	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_24), 26,15, 9,257 }, /* INFO_CANCEL */
+	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_12), 2,1, 33,1 }, /* CITITLE */
+	{ 3, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_13), 2,3, 12,1 }, /* INFO_FILENAME */
+	{ 4, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_14), 15,3, 20,1 }, /* CIFILE */
+	{ 5, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_15), 2,4, 12,1 }, /* INFO_VERSION */
+	{ 6, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_16), 15,4, 5,1 }, /* CIVER */
+	{ 7, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_17), 2,5, 12,1 }, /* INFO_ID */
+	{ 8, -1, -1, G_STRING, OF_NONE, OS_NORMAL, C_UNION(cops_rs_string_18), 15,5, 4,1 }, /* CIID */
+	{ 13, 9, 12, G_BUTTON, OF_FL3DBAK, 0xFE40, C_UNION(cops_rs_string_19), 2,7, 33,7 },
+	{ 10, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_20), 2,2, 30,1 }, /* INFO_RAM */
+	{ 11, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8048, C_UNION(cops_rs_string_21), 2,3, 30,1 }, /* INFO_SETONLY */
+	{ 12, -1, -1, G_BUTTON, OF_FL3DBAK, 0x8548, C_UNION(cops_rs_string_22), 2,4, 30,1 }, /* INFO_BOOTINIT */
+	{ 8, -1, -1, G_BUTTON, 0x401, 0x8540, C_UNION(cops_rs_string_23), 2,5, 30,1 }, /* INFO_AUTOBOOT */
+	{ 14, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_24), 15,15, 9,257 }, /* INFO_OK */
+	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_25), 26,15, 9,257 }, /* INFO_CANCEL */
 
 /* SET_DIALOG */
 
 	{ -1, 1, 10, G_BOX, OF_FL3DBAK, OS_OUTLINED, C_UNION(0x21100L), 0,0, 37,14 },
-	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_25), 2,1, 33,769 }, /* SET_SETTINGS */
-	{ 3, -1, -1, G_BUTTON, 0x605, 0x440, C_UNION(cops_rs_string_26), 2,3, 11,257 }, /* SET_SELPATH */
+	{ 2, -1, -1, G_STRING, OF_FL3DBAK, 0xFF40, C_UNION(cops_rs_string_26), 2,1, 33,769 }, /* SET_SETTINGS */
+	{ 3, -1, -1, G_BUTTON, 0x605, 0x440, C_UNION(cops_rs_string_27), 2,3, 11,257 }, /* SET_SELPATH */
 	{ 4, -1, -1, G_FTEXT, 0x408, OS_NORMAL, C_UNION(&rs_tedinfo[3]), 15,3, 20,1 }, /* SET_PATH */
-	{ 5, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_30), 2,6, 33,1 }, /* SET_ICONIFY */
-	{ 6, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_31), 2,7, 33,1 }, /* SET_DCLICK */
-	{ 7, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_32), 2,8, 33,1 }, /* SET_SORTNAME */
-	{ 8, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_33), 2,10, 18,1 }, /* SET_TERM */
+	{ 5, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_31), 2,6, 33,1 }, /* SET_ICONIFY */
+	{ 6, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_32), 2,7, 33,1 }, /* SET_DCLICK */
+	{ 7, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_33), 2,8, 33,1 }, /* SET_SORTNAME */
+	{ 8, -1, -1, G_BUTTON, 0x401, 0x8040, C_UNION(cops_rs_string_34), 2,10, 18,1 }, /* SET_TERM */
 	{ 9, -1, -1, G_FTEXT, 0x408, OS_NORMAL, C_UNION(&rs_tedinfo[4]), 21,10, 14,1 }, /* SET_TERMAFTER */
-	{ 10, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_37), 15,12, 9,257 }, /* SET_OK */
-	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_38), 26,12, 9,257 }, /* SET_CANCEL */
+	{ 10, -1, -1, G_BUTTON, 0x607, OS_WHITEBAK, C_UNION(cops_rs_string_38), 15,12, 9,257 }, /* SET_OK */
+	{ 0, -1, -1, G_BUTTON, 0x625, OS_WHITEBAK, C_UNION(cops_rs_string_39), 26,12, 9,257 }, /* SET_CANCEL */
 
 /* ICONIFIED_DIALOG */
 
@@ -1428,14 +1400,8 @@ OBJECT rs_object[NUM_OBS] = {
 
 /* ICON_DIALOG */
 
-	{ -1, 1, 2, G_BOX, OF_NONE, OS_NORMAL, C_UNION(0x21100L), 0,0, 52,9 },
-	{ 2, -1, -1, G_ICON, OF_NONE, OS_NORMAL, C_UNION(&rs_iconblk[0]), 2,1, 8192,8192 }, /* COPS_ICON */
-	{ 0, -1, -1, G_IMAGE, OF_LASTOB, OS_NORMAL, C_UNION(&rs_bitblk[1]), 19,2, 8192,6144 }, /* INACTIVE_IMG */
-
-/* CICON_DIALOG */
-
 	{ -1, 1, 1, G_BOX, OF_NONE, OS_NORMAL, C_UNION(0x21100L), 0,0, 52,9 },
-	{ 0, -1, -1, G_CICON, OF_LASTOB, OS_NORMAL, C_UNION(&rs_ciconblk[0]), 2,1, 8192,8192 } /* COPS_CICON */
+	{ 0, -1, -1, G_IMAGE, OF_LASTOB, OS_NORMAL, C_UNION(&rs_bitblk[1]), 19,2, 8192,6144 } /* INACTIVE_IMG */
 };
 
 
@@ -1445,8 +1411,7 @@ OBJECT *rs_trindex[NUM_TREE] = {
 	&rs_object[23], /* SET_DIALOG */
 	&rs_object[34], /* ICONIFIED_DIALOG */
 	&rs_object[36], /* EMPTY_TREE */
-	&rs_object[38], /* ICON_DIALOG */
-	&rs_object[41] /* CICON_DIALOG */
+	&rs_object[38] /* ICON_DIALOG */
 };
 
 
@@ -1643,18 +1608,18 @@ _WORD cops_rs_rsc_free()
 #endif /* RSC_NAMED_FUNCTIONS */
 
 #else /* !RSC_STATIC_FILE */
-_WORD rs_numstrings = 328;
+_WORD rs_numstrings = 327;
 _WORD rs_numfrstr = 287;
 
 _WORD rs_nuser = 0;
-_WORD rs_numimages = 4;
+_WORD rs_numimages = 2;
 _WORD rs_numbb = 2;
 _WORD rs_numfrimg = 0;
-_WORD rs_numib = 1;
+_WORD rs_numib = 0;
 _WORD rs_numcib = 1;
 _WORD rs_numti = 5;
-_WORD rs_numobs = 43;
-_WORD rs_numtree = 7;
+_WORD rs_numobs = 40;
+_WORD rs_numtree = 6;
 
 char rs_name[] = "cops_rs.rsc";
 

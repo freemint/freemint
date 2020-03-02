@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        328
+ * Number of Strings:        327
  * Number of Bitblks:        2
- * Number of Iconblks:       1
+ * Number of Iconblks:       0
  * Number of Color Iconblks: 1
  * Number of Color Icons:    1
  * Number of Tedinfos:       5
  * Number of Free Strings:   287
  * Number of Free Images:    0
- * Number of Objects:        43
- * Number of Trees:          7
+ * Number of Objects:        40
+ * Number of Trees:          6
  * Number of Userblks:       0
- * Number of Images:         4
- * Total file size:          12214
+ * Number of Images:         2
+ * Total file size:          11846
  */
 
 #undef RSC_NAME
@@ -35,17 +35,17 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 328
+#define NUM_STRINGS 327
 #define NUM_FRSTR 287
 #define NUM_UD 0
-#define NUM_IMAGES 4
+#define NUM_IMAGES 2
 #define NUM_BB 2
 #define NUM_FRIMG 0
-#define NUM_IB 1
+#define NUM_IB 0
 #define NUM_CIB 1
 #define NUM_TI 5
-#define NUM_OBS 43
-#define NUM_TREE 7
+#define NUM_OBS 40
+#define NUM_TREE 6
 #endif
 
 
@@ -62,9 +62,9 @@ extern OBJECT *rs_trindex[];
 
 
 #define ABOUT_DIALOG                       0 /* form/dialog */
-#define ABOUT_OK                           1 /* BUTTON in tree ABOUT_DIALOG */
-#define ABOUT_ICON                         4 /* BOX in tree ABOUT_DIALOG */
-#define ABOUT_BY                           7 /* TEXT in tree ABOUT_DIALOG */
+#define ABOUT_OK                           4 /* BUTTON in tree ABOUT_DIALOG */
+#define ABOUT_BY                           5 /* TEXT in tree ABOUT_DIALOG */
+#define COPS_ICON                          7 /* CICON in tree ABOUT_DIALOG */
 
 #define INFO_DIALOG                        1 /* form/dialog */
 #define CITITLE                            1 /* STRING in tree INFO_DIALOG */
@@ -100,11 +100,7 @@ extern OBJECT *rs_trindex[];
 #define EMPTY_TREE                         4 /* form/dialog */
 
 #define ICON_DIALOG                        5 /* form/dialog */
-#define COPS_ICON                          1 /* ICON in tree ICON_DIALOG */
-#define INACTIVE_IMG                       2 /* IMAGE in tree ICON_DIALOG */
-
-#define CICON_DIALOG                       6 /* form/dialog */
-#define COPS_CICON                         1 /* CICON in tree CICON_DIALOG */
+#define INACTIVE_IMG                       1 /* IMAGE in tree ICON_DIALOG */
 
 #define ICNFTITLE_STR                      0 /* Free string */
 

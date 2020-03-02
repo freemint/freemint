@@ -4357,38 +4357,20 @@ init_rsrc(void)
 		&& aes_global[10] >= 4)
 	{
 		/* Farbicons, unter MagiC */
-
-		obj = tree_addr[CICON_DIALOG] + COPS_CICON;
-		obj->ob_spec.iconblk->ib_char = 0xf000; 	/* Zeichen nicht anzeigen */
-		obj->ob_spec.iconblk->ib_wtext = 0;
-		obj->ob_spec.iconblk->ib_htext = 0;
-
-		obj = tree_addr[ABOUT_DIALOG] + ABOUT_ICON;
-		obj->ob_type = G_CICON;
-		obj->ob_spec.ciconblk = tree_addr[CICON_DIALOG][COPS_CICON].ob_spec.ciconblk;
-
 		obj = tree_addr[ICONIFIED_DIALOG] + ICFDLG_ICON;
-		obj->ob_type = G_CICON;
-		obj->ob_spec.ciconblk = tree_addr[CICON_DIALOG][COPS_CICON].ob_spec.ciconblk;
+		obj->ob_type = tree_addr[ABOUT_DIALOG][COPS_ICON].ob_type;
+		obj->ob_spec.ciconblk = tree_addr[ABOUT_DIALOG][COPS_ICON].ob_spec.ciconblk;
 	}
 	else
 	{
 		/* keine Farbicons */
-
-		obj = tree_addr[ICON_DIALOG] + COPS_ICON;
-		obj->ob_spec.iconblk->ib_char = 0xf000; /* Zeichen nicht anzeigen */
-		obj->ob_spec.iconblk->ib_wtext = 0;
-		obj->ob_spec.iconblk->ib_htext = 0;
-
-		obj = tree_addr[ABOUT_DIALOG] + ABOUT_ICON;
+		obj = tree_addr[ABOUT_DIALOG] + COPS_ICON;
 		obj->ob_type = G_ICON;
-		obj->ob_spec.iconblk = tree_addr[ICON_DIALOG][COPS_ICON].ob_spec.iconblk;
 
 		obj = tree_addr[ICONIFIED_DIALOG] + ICFDLG_ICON;
 		obj->ob_type = G_ICON;
-		obj->ob_spec.iconblk = tree_addr[ICON_DIALOG][COPS_ICON].ob_spec.iconblk;
+		obj->ob_spec.iconblk = &tree_addr[ABOUT_DIALOG][COPS_ICON].ob_spec.ciconblk->monoblk;
 	}
-
 }
 
 
