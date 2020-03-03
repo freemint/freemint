@@ -31,6 +31,8 @@
 enum { false, true };
 #endif
 
+long _stksize = 2048;
+
 char alert_running[] = "[1][ NoHog2 ][ Ok ]";
 char alert_no_mint[] = "[1][ NoHog2 only needed | with MiNT. ][ Ok ]";
 char alert_mtask[]   = "[1][ NoHog2 only needed | with ROM AES. ][ Ok ]";

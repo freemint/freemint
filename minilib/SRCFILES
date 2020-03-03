@@ -43,6 +43,7 @@ COMMON_SRCS = \
 	ctype.c \
 	ctype2.c \
 	free.c \
+	getcookie.c \
 	isalnum.c \
 	isalpha.c \
 	isascii.c \

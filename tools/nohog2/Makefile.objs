@@ -11,6 +11,8 @@ subdir = $(compile_dir)
 
 default: all
 
+MINILIB = yes
+
 include $(srcdir)/NOHOG2DEFS
 
 include $(top_srcdir)/CONFIGVARS
@@ -26,6 +28,26 @@ OBJS = $(COBJS:.c=.o)
 LIBS += -lgem
 GENFILES = $(TARGET)
 
+ifeq ($(MINILIB),yes)
+INCLUDES = -I$(LIBMINI_INCPATH)
+#MSHORT=-mshort
+CFLAGS += $(MSHORT)
+LIBS := -L$(LIBMINI_LIBPATH) $(LIBS) -lmini -lgcc
+CRT0 = $(MINILIB_DIR)/minicrt0.o
+LDFLAGS += -nostdlib
+OPTS := -Os -fomit-frame-pointer
+
+else
+
+ifeq ($(LIBCMINI),yes)
+INCLUDES = -I$(LIBCMINI_INCPATH)
+LDFLAGS += -nostdlib
+LIBS := -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc
+CRT0 = $(LIBCMINI_STARTUP)
+OPTS := -Os -fomit-frame-pointer
+endif
+endif
+
 
 VPATH = ..
 
@@ -34,15 +56,9 @@ VPATH = ..
 #
 build: $(TARGET)
 
-ifneq (yes,$(LIBCMINI))
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(CRT0) $(OBJS) $(LIBS)
 	$(STRIP) $@
-else
-$(TARGET): $(OBJS)
-	$(CC) -I$(LIBCMINI_INCPATH) -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(OBJS) -L$(LIBCMINI_LIBPATH) -lcmini $(LIBS) -lgcc
-	$(STRIP) $@
-endif
 
 
 # default dependencies
