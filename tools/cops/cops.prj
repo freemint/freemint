@@ -2,6 +2,7 @@ cops.app
 ;c:\cops.acc
 .C[-K-]
 .C[-A-]
+.C[-G]
 .C[-P]
 .L[-S=16384]
 =

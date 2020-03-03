@@ -26,6 +26,7 @@
 /* LIST_ENTRY * ist immer ein Zeiger auf die nachfolgende Struktur, z.B. &FONT->next */
 /*----------------------------------------------------------------------------------------*/
 
+#include <stddef.h>
 #include "list.h"
 
 #define	NEXT(ptr, offset)	(*(void **) ((char *)ptr + offset))

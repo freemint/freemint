@@ -11,6 +11,8 @@ subdir = $(compile_dir)
 
 default: all
 
+LIBCMINI = no
+
 include $(srcdir)/COPSDEFS
 
 include $(top_srcdir)/CONFIGVARS
@@ -31,6 +33,14 @@ OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 LIBS += -lgem
 GENFILES = $(TARGET)
 
+ifeq ($(LIBCMINI),yes)
+INCLUDES = -I$(LIBCMINI_INCPATH)
+LDFLAGS += -nostdlib
+LIBS := -L$(LIBCMINI_LIBPATH) $(LIBS) -lcmini -lgcc
+CRT0 = $(LIBCMINI_STARTUP)
+OPTS := -Os -fomit-frame-pointer
+endif
+
 VPATH = ..
 
 #
@@ -39,7 +49,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(CRT0) $(OBJS) $(LIBS)
 	$(STRIP) $@
 
 
