@@ -5,8 +5,6 @@
 # upper/lowercase don't matter for all keywords
 # bool values can be expressed as 1/0, y/n, yes/no, true/false
 #
-# Ozk: The values enabled resembles the xaaes.cnf file I use on my
-#      Milan 040.
 ######################################################################
 #  include <file>
 #
@@ -15,24 +13,22 @@
 #include u:/c/video.cnf
 #include c:\video.cnf
 #include C:\video.cnf
+
 ######################################################################
-#
 # eiffel_support [true|false]
 #
 # if set F-keys > 10 cause eiffel-wheel-events
 #
 #eiffel_support = true
-#
+
 ######################################################################
-#
 # back_col [0-15]
 #
 # set XaAES-background-colour
 #
 #back_col = 13
-#
+
 #####################################################################
-#
 # menubar [0|1|2]
 #
 # hideable menubar
@@ -41,29 +37,28 @@
 # 2: always on (default)
 #
 #menubar=1
-#
+
 ####################
-#
 # menu_layout[0|1]
 #
 # use short[1] or long[0] menu
 #
 #menu_layout=1
-#
+
 ####################
-#
 # menu_ontop[0|1]
 #
 # menubar may be overwritten [0] or not[1]
 #
 #menu_ontop=1
-#
+
 #####################################################################
+#
 # leave_top_border
 # define if windows are allowed to move over top of screen (crashes some VDI)
 #leave_top_border = 1
+
 #####################################################################
-#
 # logfile <filename> (default xa_boot.log in the xaaes-startup-directory)
 #
 # set the name of the logfile
@@ -74,17 +69,14 @@
 #logfile = ""
 #logfile = C:\xaaes.log
 #logfile = my.log
-#
+
 #####################################################################
-#
 # save_windows  = <bool>          (default is 'no')
 #
 # save XaAES-windows-setting when exiting XaAES
 # windows are saved in <XaAES-home>/xaaes.inf
-#
+
 #####################################################################
-#
-#
 # loglvl <positive number> (default: 1 in snapshot, 0 in release)
 #
 # set verbosity of debug-output
@@ -102,9 +94,8 @@
 #loglvl = 3
 # no debug-output
 #loglvl = 0
-#
+
 #####################################################################
-#
 # focus <program>
 #
 # set first focus.
@@ -113,16 +104,15 @@
 # and have the menu and top-window if any.
 # The special name 'shell' sets the focus to the desktop given by the
 # shell-directive.
-#
+
 #####################################################################
-#
 # allow_setexc (default:-1)
 # restrict calls to Setexc by programs started after XaAES.
 # -1: no change
 # 0: deny all
 # 1: deny trap-changes (numbers 0-15)
 # 2: allow all
-#
+
 #####################################################################
 # xa_bubble (default:0)
 # if you want to use the XaAES-builtin bubble-help (since 1.1.21) set
@@ -130,6 +120,7 @@
 # 1: windows-tooltip-style
 # 2: apple-ballon-help-style
 #xa_bubble = 1
+
 #####################################################################
 # describe_widgets (default:0)
 # if set not 0 display name/function of a widget when the mouse is
@@ -137,9 +128,9 @@
 # 1: windows-tooltip-style (recommended)
 # 2: apple-ballon-help-style
 # describe_widgets = 1
-#####################################################################
 
-## video mode select
+#####################################################################
+# video mode select
 # -----------------
 #
 # Selects the video mode that XaAES will boot into. If not set mode = 1
@@ -197,8 +188,8 @@
 #   9-14    unused
 #
 #   15               Additive mode bit for non standard resolutions
-#                    If set, use the default screen resolution as preset by
-#                    CentScreen.
+#                    If set, use the default screen resolution as
+#                    preset by CentScreen.
 #
 # For example:
 #
@@ -274,7 +265,7 @@ setenv ACCPATH		C:\
 setenv ACCEXT		ACC,ACX
 setenv GEMEXT		PRG,APP,GTP,OVL,SYS
 setenv TOSEXT		TOS,TTP
-setenv TOSRUN		u:\usr\gem\toswin2\tw-call.app
+setenv TOSRUN		u:\c\mint\1-19-cur\sys-root\opt\GEM\toswin2\tw-call.app
 #setenv GEMJINGPATH	u:\d\sound\gemjing\gemjing.prg
 setenv SDL_VIDEODRIVER	gem
 
@@ -432,13 +423,6 @@ redraw_timeout = 2000
 #popout_timeout = 1000
 
 #####################################################################
-# toppage = bold or faint
-#
-# NO EFFECT
-#
-#toppage = faint
-
-#####################################################################
 # alert_windows = <value>       (default is 0xffff)
 #
 # THE IMPLEMENTATION IS NOT DEFINATE AND ONLY PARTIAL AS OF NOW!!!
@@ -537,24 +521,6 @@ redraw_timeout = 2000
 # should be set active upon client termination.
 #
 #next_active = client
-
-#####################################################################
-#- DEPRECIATED - OBSOLETE
-#-
-#- close_lastwind = 'client' or 'window' (default is 'window')
-#-
-#- Selects what to do when the last window of a client is closed.
-#-
-#-   Setting to 'client' will keep the application whose
-#-   last window is closed as the top application. This prevents
-#-   XaAES from putting infront another application when the last
-#-   window of the application currently infront is closed.
-#-
-#-   Setting to 'window' will make XaAES put the application
-#-   who owns the foremost window infront, making it active.
-#-   This is the normal behaviour done by other AES's we thinks.
-#-
-#- close_lastwind = client
 
 #####################################################################
 # app_options = appname,argument1,argument2,...
@@ -795,7 +761,7 @@ app_options = DESKTOP, alt_shortcuts = 1
 # The following will keep the desktop, taskbar and toswin2 running after
 # a ctrl-alt-a action;
 #
-#cltalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
+#ctlalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
 #
 #ctlalta_survivors = "toswin2 ", "strngsrv", "_aes_shell_", "taskbar "
 
@@ -847,10 +813,19 @@ launchpath  = u:\usr\gem
 #widgets = widgets/magicwdg.rsc
 
 #####################################################################
+# Set resource palette
+# --------------------
+#
+# set_rsc_palette <bool> (default is false)
+# Use the palette defined in the resource as the screen palette.
+#
+#set_rsc_palette = true
+
+#####################################################################
 # Language selection
 # ------------------
 #
-# lang = <two character language-code>     (default from $LANG or AKP-cookie)
+# lang = <two character language-code> (default from $LANG or AKP-cookie)
 #
 # Set your preferred language for XaAES here.
 # currently supported two-character language-codes are:
@@ -860,7 +835,6 @@ launchpath  = u:\usr\gem
 # Comment the following line to get your computer's native language
 # or set one of the above codes.
 lang = en
-
 
 #####################################################################
 # Switch keyboard tables
@@ -878,6 +852,7 @@ lang = en
 #keyboards = <, british, german, french
 
 #####################################################################
+# Remap cicons
 #
 # Icon-colours for the app will be mapped according to the rsc-palette
 # (if given in the rsc-file or defined by icn_pal_name).
@@ -918,6 +893,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 # medium_point   - The same, but for low resolution screens
 # small_point    - Size of the 'small' AES font
 # infoline_point - Fontsize for window infoline
+# xaw_point      - Fontsize for XaAES windows
 #
 # defaults:
 #
@@ -926,6 +902,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #medium_point=9
 #small_point=8
 #infoline_point=10
+#xaw_point=10
 
 #####################################################################
 # start any other programs with run
@@ -934,7 +911,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #run u:\opt\taskbar\taskbar.prg
 #run u:\c\system\strngsrv\strngsrv.prg
 
-run c:\tools\toswin2.app
+run u:\c\mint\1-19-cur\sys-root\opt\GEM\toswin2\toswin2.app
 
 #####################################################################
 # system shell
