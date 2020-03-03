@@ -27,7 +27,6 @@
 #include <string.h>
 #include <gem.h>
 
-#include <fcntl.h>
 #include <mint/cookie.h>
 #include <mint/mintbind.h>
 

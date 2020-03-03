@@ -33,7 +33,6 @@
  *   interpretiert das COPS als Anweisung kein Fenster zu oeffnen (fuer NPRNCONF)
  */
 
-#include <fcntl.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
