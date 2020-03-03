@@ -11,6 +11,7 @@ subdir = $(compile_dir)
 
 default: all
 
+MINILIB = yes
 LIBCMINI = no
 
 include $(srcdir)/COPSDEFS
@@ -32,6 +33,16 @@ all-here: build
 OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 LIBS += -lgem
 GENFILES = $(TARGET)
+
+ifeq ($(MINILIB),yes)
+INCLUDES = -I$(LIBMINI_INCPATH)
+#MSHORT=-mshort
+CFLAGS += $(MSHORT)
+LIBS := -L$(LIBMINI_LIBPATH) $(LIBS) -lmini -lgcc
+CRT0 = $(LIBMINI_STARTUP)
+LDFLAGS += -nostdlib
+OPTS := -Os -fomit-frame-pointer
+endif
 
 ifeq ($(LIBCMINI),yes)
 INCLUDES = -I$(LIBCMINI_INCPATH)
