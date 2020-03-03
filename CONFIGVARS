@@ -61,6 +61,26 @@ LIBCMINI_LIBPATH := $(LIBCMINI_PATH)/lib/$(LIBCMINI_CPU)
 LIBCMINI_STARTUP := $(LIBCMINI_LIBPATH)/startup.o
 endif
 
+#
+# similar to libcmini, but use a custom version instead.
+#
+ifeq ($(MINILIB),yes)
+MINILIB_DIR = ../$(top_srcdir)/minilib
+ifeq (v4e,$(CPU))
+MINILIB_CPU := m5475
+else ifeq (000,$(CPU))
+MINILIB_CPU := .
+else
+MINILIB_CPU := m68020-60
+endif
+ifeq (-mshort,$(MSHORT))
+MINILIB_CPU := $(MINILIB_CPU)/mshort
+endif
+LIBMINI_LIBPATH := $(MINILIB_DIR)/$(MINILIB_CPU)
+LIBMINI_INCPATH = $(MINILIB_DIR)/include
+LIBMINI_STARTUP = $(MINILIB_DIR)/crt0.o
+endif
+
 CC = $(CROSSPREFIX)gcc
 AS = $(CC)
 AR = $(CROSSPREFIX)ar

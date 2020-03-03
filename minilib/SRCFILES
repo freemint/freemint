@@ -1,0 +1,111 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	include/assert.h \
+	include/ctype.h \
+	include/errno.h \
+	include/ext.h \
+	include/features.h \
+	include/getopt.h \
+	include/limits.h \
+	include/setjmp.h \
+	include/stdarg.h \
+	include/stddef.h \
+	include/stdio.h \
+	include/stdlib.h \
+	include/string.h \
+	include/time.h \
+	include/unistd.h \
+	\
+	include/mint/basepage.h \
+	include/mint/cookie.h \
+	include/mint/mintbind.h \
+	include/mint/osbind.h \
+	include/mint/ostruct.h \
+	include/mint/sysvars.h \
+	\
+	include/mint/arch/nf_ops.h \
+	\
+	include/sys/cdefs.h \
+	include/sys/stat.h \
+	include/sys/time.h \
+	include/sys/types.h \
+	$(empty)
+
+#
+# common sources, usable also for Pure-C
+#
+COMMON_SRCS = \
+	atoi.c \
+	atol.c \
+	calloc.c \
+	ctype.c \
+	ctype2.c \
+	free.c \
+	isalnum.c \
+	isalpha.c \
+	isascii.c \
+	isblank.c \
+	iscntrl.c \
+	isdigit.c \
+	isgraph.c \
+	islower.c \
+	ispunct.c \
+	isspace.c \
+	isupper.c \
+	isxdigit.c \
+	isatty.c \
+	itoa.c \
+	ltoa.c \
+	malloc.c \
+	memcpy.c \
+	memset.c \
+	mktime.c \
+	qsort.c \
+	realloc.c \
+	strcat.c \
+	strchr.c \
+	strcmp.c \
+	strcpy.c \
+	stricmp.c \
+	strlen.c \
+	strlwr.c \
+	strncmp.c \
+	strncpy.c \
+	strnicmp.c \
+	strrchr.c \
+	strrev.c \
+	strupr.c \
+	time.c \
+	timeoday.c \
+	tolower.c \
+	toupper.c \
+	$(empty)
+
+#
+# GNU-C specific sources, mainly related to startup code
+#
+CSRCS = \
+	$(COMMON_SRCS) \
+	stksiz.c \
+	globals.c \
+	main.c \
+	accmain.c \
+	minimain.c \
+	__main.c \
+	exit.c \
+	setjmp.c \
+	$(empty)
+
+ASRCS = \
+	setstack.S \
+	$(empty)
+
+OBJS = $(CSRCS:.c=.o) $(ASRCS:.S=.o)
+
+%.o: $(srcdir)/%.c
+	$(CC) $(CFLAGS) $(WARN) $(OPTS) $(CPPFLAGS) -c -o $@ $<
+
+%.o: $(srcdir)/%.S
+	$(CC) $(CFLAGS) $(WARN) $(OPTS) $(CPPFLAGS) -c -o $@ $<

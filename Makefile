@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = shared sys xaaes tools
+SUBDIRS = shared sys xaaes minilib tools
 
 srcdir = .
 top_srcdir = .
