@@ -1,6 +1,6 @@
 @database "XaAES"
 @default "Title"
-@options "-i"
+@options "-i+z"
 @$VER: @:"__DATE__"
 @subject "System"
 @width 80
