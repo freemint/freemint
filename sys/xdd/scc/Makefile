@@ -12,7 +12,7 @@ subdir = scc
 
 default: all
 
-CPU = 020-60
+CPU = 000
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
