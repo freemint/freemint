@@ -38,7 +38,7 @@ before_install:
   - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
 
 install:
-  - if [ -x .travis/install.sh ]; then ./.travis/install.sh; else true; fi
+  - if [ -x .travis/install.sh ]; then . ./.travis/install.sh; else true; fi
 
 before_script:
   - if [ -x .travis/before_script.sh ]; then ./.travis/before_script.sh; else true; fi
