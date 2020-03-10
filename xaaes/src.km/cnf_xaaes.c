@@ -647,10 +647,6 @@ pCB_app_options(char *line)
 				get_boolarg(s + 13, &opts->wheel_reverse);
 			else if (!strnicmp(s, "naesff", 6))
 				get_boolarg(s + 7, &opts->naes_ff);
-			//else if (!strnicmp(s, "naes12", 6))
-				//get_boolarg(s + 6, &opts->naes12);
-			//else if (!strnicmp(s, "naes", 4))
-				//get_boolarg(s + 4, &opts->naes);
 			else if (!strnicmp(s, "rsc_lang", 8))
 				get_argument(s + 8, &opts->rsc_lang);
 			else if (!strnicmp(s, "ignore_rsc_size", 15))
@@ -999,8 +995,7 @@ static void diags_opts(struct options *o)
 {
 	DIAGS(("        windowner  = %s", o->windowner ? "true" : "false"));
 	DIAGS(("        nohide     = %s", o->nohide    ? "true" : "false"));
-	//DIAGS(("        naes       = %s", o->naes      ? "true" : "false"));
-	//DIAGS(("        naes12     = %s", o->naes12    ? "true" : "false"));
+	DIAGS(("        naesff     = %s", o->naes_ff   ? "true" : "false"));
 
 	DIAGS(("        xa_nohide  = %s", o->xa_nohide ? "true" : "false"));
 	DIAGS(("        xa_nomove  = %s", o->xa_nomove ? "true" : "false"));
