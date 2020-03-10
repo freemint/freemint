@@ -33,6 +33,12 @@ endif
 000 020 030 040 060 deb mil col ara hat all-kernels::
 	$(MAKE) -C xaaes $@
 
+all-recursive::
+	$(MAKE) -C doc/xaaes
+
+clean::
+	$(MAKE) -C doc/xaaes $@
+
 help:
 	@echo '#'
 	@echo '# targets:'
