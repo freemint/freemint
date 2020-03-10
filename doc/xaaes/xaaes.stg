@@ -200,19 +200,14 @@ load time.
 @toc "Files"
 @{0U}Resource files                                                            XaAES@{0}
 
-There are 3 mandatory resource-files located in the xaaes-startup-
+There are 3 mandatory resource-files located in the xaaes startup-
 directory:
 
- @{0B}xaaes[n].rsc@{0} - Standard resource file. n is the resource version,
-                currently 016.
+ @{0B}xaaes.rsc@{0} - Standard resource file for XaAES.
 
  @{0B}xaaeswdg.rsc@{0} - Special resource file for widgets.
 
  @{0B}xa_xtobj.rsc@{0} - Resource containing the extended AES object icons.
-
-The system resource file has a version number (currently 0.1.6), which gives
-"xaaes016.rsc". If this file is not found the name defined in xaaes.cnf
-is used if present. If not, "xaaes.rsc" is used.
 
 There is also a resource file for monochrome display (xa_mono.rsc) that
 reportedly saves memory, but it has not yet been updated for the
@@ -450,7 +445,7 @@ See Mouse Configuration for more details on setting specific options.
 
  @{0B}SET_RSC_PALETTE <bool> (default false)@{0}
  - Use the palette defined in the resource as the screen palette.
-   E.g. set_rsc_pallete = true
+   E.g. set_rsc_palette = true
 
  @{0B}WIDGET_AUTO_HIGHLIGHT <bool> (default false)@{0}
  - When true, standard window widget are automatically highlighted when the
