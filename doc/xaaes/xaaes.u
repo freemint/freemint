@@ -45,7 +45,7 @@
 !docinfo [program] XaAES
 !docinfo [date]    (!today)
 !docinfo [version] Version 1.6.4 beta
-!docinfo [author]  Helmut Karlowski, Lars Schmidbauer et.al.
+!docinfo [author]  Helmut Karlowski, Latzmaster et.al.
 !docinfo [stgdatabase] XaAES
 
 !ifdest [stg]
@@ -63,6 +63,9 @@
 ########################################
 
 !begin_document
+
+!raw [stg] @$VER: 1.1 (@:"__DATE__")
+
 !maketitle
 !tableofcontents
 
@@ -96,7 +99,7 @@ There are three common ways of starting XaAES.
 XaAES can be started by running the XaAES loader from any of the
 following locations:
 
-!begin_description !compressed
+!begin_xlist [From the command line] !compressed
 !item [From mint.cnf] - The keyword GEM or keyword INIT points to xaloader.prg.
                  FreeMiNT will now start XaAES automatically. (!nl)
                  Examples: GEM = <sysdir>\xaaes\xaloader.prg or (!nl)
@@ -109,7 +112,7 @@ following locations:
                          taskmanager to return to the commandline.
 
 !item [By the TOS desktop] - Sometimes quitting XaAES also works here.
-!end_description
+!end_xlist
 
 XALOADER.PRG will then load and runs the appropriate kernel module, (!nl)
 <sysdir>/xaaes/xaaes.km by default.
@@ -2469,8 +2472,8 @@ event = evnt_multi(events|MU_WHEEL, 2,3,1,
        all cases.
 
        Currently only on available MILAN's running the latest version
-       of TOS 4.08 which includes the VDI function 'vex_wheel_v'.
-       (!url [] [http://www.ccac.rwth-aachen.de/~michaels/index.php/milan])
+       of TOS 4.08 which includes the VDI function 'vex_wheel_v'. (!nl)
+       (!url [] [http://www.ccac.rwth-aachen.de/!~michaels/index.php/milan])
 
        Of course, when MU_BUTTON is received, the wheel_number and
        wheel_amount replies must be interpreted as button number
@@ -3113,8 +3116,7 @@ https://freemint.github.io/#snapshots.
 !end_itemize
 
 If you find errors, bad english or want to contribute to this document,
-feel free to contact me or even better join the @{"MiNT-mailinglist" system "https://sourceforge.net/p/freemint/mailman/freemint-discuss"}
-https://sourceforge.net/p/freemint/mailman/freemint-discuss.
+feel free to contact me or even better join the (!url [MiNT-mailinglist] [https://sourceforge.net/p/freemint/mailman/freemint-discuss]).
 
 Edited 2020 by (!link [Latzmaster] [Adresse]).
 

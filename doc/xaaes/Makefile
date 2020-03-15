@@ -29,6 +29,7 @@ xaaes.stg: xaaes.u
 	@if $(UDO) --version >/dev/null 2>&1; then \
 		echo $(UDO) --stg -o $@ $<; \
 		$(UDO) --stg --no-warningslines -o $@ $<; \
+		sed -i 's/ RX / SYSTEM /' $@; \
 	else \
 		echo "UDO not found, help file not compiled" >&2; \
 	fi
