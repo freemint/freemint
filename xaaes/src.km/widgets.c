@@ -26,6 +26,17 @@
 #include "xa_global.h"
 
 #include "xaaeswdg.h"
+#undef NUM_STRINGS
+#undef NUM_IMAGES
+#undef NUM_UD
+#undef NUM_BB
+#undef NUM_IB
+#undef NUM_CIB
+#undef NUM_TI
+#undef NUM_OBS
+#undef NUM_TREE
+#undef NUM_FRSTR
+#undef NUM_FRIMG
 #include "xaaes.h"
 
 #include "app_man.h"
