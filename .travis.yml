@@ -8,7 +8,12 @@ addons:
     sources:
       - sourceline: 'ppa:vriviere/ppa'
     packages:
-      - cross-mint-essential
+      - binutils-m68k-atari-mint
+      - gcc-m68k-atari-mint
+      - mintbin-m68k-atari-mint
+      # TODO: replace with snapshots
+      - mintlib-m68k-atari-mint
+      - gemlib-m68k-atari-mint
       - cflib-m68k-atari-mint
       - gemma-m68k-atari-mint
 
@@ -16,6 +21,9 @@ env:
   global:
     - BINTRAY_USER="mikrosk"
     # BINTRAY_API_KEY is defined in Travis Settings of freemint/freemint
+    - HCP="/tmp/hcp/bin/hcp"
+    - UDO="/tmp/udo/udo"
+
   matrix:
     # unversioned archives
     - CPU_TARGET=000
@@ -38,7 +46,7 @@ before_install:
   - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
 
 install:
-  - if [ -x .travis/install.sh ]; then . ./.travis/install.sh; else true; fi
+  - if [ -x .travis/install.sh ]; then ./.travis/install.sh; else true; fi
 
 before_script:
   - if [ -x .travis/before_script.sh ]; then ./.travis/before_script.sh; else true; fi
