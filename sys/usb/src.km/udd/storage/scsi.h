@@ -39,6 +39,7 @@ typedef struct SCSI_cmd_block
 	unsigned char		sensecmd[6];			/* Sense command			*/
 	unsigned long		contr_stat;				/* Controller Status	*/
 	unsigned long		trans_bytes;			/* tranfered bytes		*/
+	unsigned char		direction;			/* direction of data (out/in) */
 
 	unsigned long		priv;
 } ccb;
@@ -137,6 +138,14 @@ typedef struct SCSI_cmd_block
 #define SCSI_SEND_DIAG	0x1D		/* Send Diagnostic (O) */
 #define SCSI_TST_U_RDY	0x00		/* Test Unit Ready (MANDATORY) */
 #define SCSI_WRITE_BUFF	0x3B		/* Write Buffer (O) */
+
+/*
+ **	Direction
+ */
+
+#define USB_CMD_DIRECTION_OUT		0
+#define USB_CMD_DIRECTION_IN		1
+
 /***************************************************************************
  *			  %%% Commands Unique to Direct Access Devices %%%
  ***************************************************************************/

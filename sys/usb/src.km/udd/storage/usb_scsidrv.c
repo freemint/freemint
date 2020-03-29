@@ -225,6 +225,7 @@ SCSIDRV_In (SCSICMD *parms)
 			srb.datalen = parms->transferlen;
 			srb.pdata = parms->buf;
 			srb.lun = (parms->cmd[1] & 0xE0) >> 5;
+			srb.direction = USB_CMD_DIRECTION_IN;
 
 #if 0
 			c_conws ("SCSIPACKET\r\n");
@@ -410,6 +411,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			srb.datalen = parms->transferlen;
 			srb.pdata = parms->buf;
 			srb.lun = (parms->cmd[1] & 0xE0) >> 5;
+			srb.direction = USB_CMD_DIRECTION_OUT;
 
 			/* promote write6 to write10 */
 			if (srb.cmd[0] == SCSI_WRITE6)

@@ -152,18 +152,6 @@ extern short num_multilun_dev;
 extern short MagiC;
 #endif
 
-/* direction table -- this indicates the direction of the data
- * transfer for each command code -- a 1 indicates input
- */
-unsigned char us_direction[256/8] = {
-	0x28, 0x81, 0x14, 0x14, 0x20, 0x01, 0x90, 0x77,
-	0x0C, 0x20, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-#define US_DIRECTION(x) ((us_direction[x>>3] >> (x & 7)) & 1)
-
-
 /*
  * CBI style
  */
@@ -948,11 +936,9 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 {
 	long result;
 	long actlen;
-	long dir_in;
 	unsigned long pipe;
 	umass_bbb_cbw_t cbw;
-	dir_in = US_DIRECTION(srb->cmd[0]);
-	DEBUG(("usb_stor_BBB_comdat: dir_in: %ld",dir_in));
+	DEBUG(("usb_stor_BBB_comdat: srb->direction: %d", srb->direction));
 #ifdef BBB_COMDAT_TRACE
 
 	char buf[srb->cmdlen * 64];
@@ -960,7 +946,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 
 	sprintf(buf, sizeof(buf), "\0");
 
-	DEBUG(("dir %ld lun %d cmdlen %d cmd %lx datalen %ld pdata %lx", dir_in, srb->lun, srb->cmdlen, srb->cmd, srb->datalen, srb->pdata));
+	DEBUG(("dir %d lun %d cmdlen %d cmd %lx datalen %ld pdata %lx", srb->direction, srb->lun, srb->cmdlen, srb->cmd, srb->datalen, srb->pdata));
 	if(srb->cmdlen)
 	{
 		for(result = 0; result < srb->cmdlen; result++) 
@@ -984,7 +970,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	cbw.dCBWSignature = cpu2le32(CBWSIGNATURE);
 	cbw.dCBWTag = cpu2le32(CBWTag++);
 	cbw.dCBWDataTransferLength = cpu2le32(srb->datalen);
-	cbw.bCBWFlags = (dir_in ? CBWFLAGS_IN : CBWFLAGS_OUT);
+	cbw.bCBWFlags = (srb->direction == USB_CMD_DIRECTION_IN? CBWFLAGS_IN : CBWFLAGS_OUT);
 	cbw.bCBWLUN = srb->lun;
 	cbw.bCDBLength = srb->cmdlen;
 	/* copy the command data into the CBW command data buffer */
@@ -1006,12 +992,11 @@ static long
 usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 {
 	long result = 0;
-	long dir_in, retry;
+	long retry;
 	unsigned long pipe;
 	unsigned long status;
 	retry = 5;
-	dir_in = US_DIRECTION(srb->cmd[0]);
-	if(dir_in)
+	if(srb->direction == USB_CMD_DIRECTION_IN)
 		pipe = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
 	else
 		pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
@@ -1039,7 +1024,7 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 			return result;
 		}
 		/* transfer the data payload for this command, if one exists*/
-		DEBUG(("CB_transport: control msg returned %ld, direction is %s to go 0x%lx", result, dir_in ? "IN" : "OUT", srb->datalen));
+		DEBUG(("CB_transport: control msg returned %ld, direction is %s to go 0x%lx", result, srb->direction == USB_CMD_DIRECTION_IN ? "IN" : "OUT", srb->datalen));
 		if(srb->datalen)
 		{
 			result = us_one_transfer(us, pipe, (char *)srb->pdata, srb->datalen);
@@ -1108,7 +1093,6 @@ static long
 usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 {
 	long result, retry;
-	long dir_in;
 	long actlen, data_actlen;
 	unsigned long pipe, pipein, pipeout;
 #ifdef BBB_XPORT_TRACE
@@ -1121,7 +1105,6 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	transfer_running = 1;
 #endif
 
-	dir_in = US_DIRECTION(srb->cmd[0]);
 	/* COMMAND phase */
 	DEBUG(("COMMAND phase"));
 	result = usb_stor_BBB_comdat(srb, us);
@@ -1142,7 +1125,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	if(srb->datalen == 0)
 		goto st;
 	DEBUG(("DATA phase"));
-	if(dir_in)
+	if(srb->direction == USB_CMD_DIRECTION_IN)
 		pipe = pipein;
 	else
 		pipe = pipeout;
@@ -1154,7 +1137,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	{
 		DEBUG(("DATA:stall"));
 		/* clear the STALL on the endpoint */
-		result = usb_stor_BBB_clear_endpt_stall(us, dir_in ? us->ep_in : us->ep_out);
+		result = usb_stor_BBB_clear_endpt_stall(us, srb->direction == USB_CMD_DIRECTION_IN ? us->ep_in : us->ep_out);
 		if(result >= 0)
 			/* continue on to STATUS phase */
 			goto st;
@@ -1339,6 +1322,7 @@ do_retry:
 	reqsrb.datalen = 18;
 	reqsrb.pdata = &srb->sense_buf[0];
 	reqsrb.cmdlen = 12;
+	reqsrb.direction = USB_CMD_DIRECTION_IN;
 	/* issue the command */
 	result = usb_stor_CB_comdat(&reqsrb, us);
 	DEBUG(("auto request returned %ld", result));
@@ -1422,6 +1406,7 @@ usb_inquiry(ccb *srb, struct us_data *ss)
 		srb->cmd[4] = 36;
 		srb->datalen = 36;
 		srb->cmdlen = 12;
+		srb->direction = USB_CMD_DIRECTION_IN;
 		i = ss->transport(srb, ss);
 		DEBUG(("inquiry returns %ld", i));
 		if(i == 0)
@@ -1448,6 +1433,7 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	srb->datalen = 18;
 	srb->pdata = &srb->sense_buf[0];
 	srb->cmdlen = 12;
+	srb->direction = USB_CMD_DIRECTION_IN;
 	ss->transport(srb, ss);
 	DEBUG(("Request Sense returned %02x %02x %02x", srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
 	srb->pdata = (unsigned char *)ptr;
@@ -1466,6 +1452,7 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 		srb->cmd[1] = srb->lun << 5;
 		srb->datalen = 0;
 		srb->cmdlen = 12;
+		srb->direction = USB_CMD_DIRECTION_IN;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
 			return 0;
 		}
@@ -1493,6 +1480,7 @@ usb_read_capacity(ccb *srb, struct us_data *ss)
 		srb->cmd[1] = srb->lun << 5;
 		srb->datalen = 8;
 		srb->cmdlen = 12;
+		srb->direction = USB_CMD_DIRECTION_IN;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
 			return 0;
 	}
@@ -1513,6 +1501,7 @@ usb_read_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short bl
 	srb->cmd[7] = ((unsigned char) (blocks >> 8)) & 0xff;
 	srb->cmd[8] = (unsigned char) blocks & 0xff;
 	srb->cmdlen = 12;
+	srb->direction = USB_CMD_DIRECTION_IN;
 	DEBUG(("read10: start %lx blocks %x", start, blocks));
 	return ss->transport(srb, ss);
 }
@@ -1530,6 +1519,7 @@ usb_write_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short b
 	srb->cmd[7] = ((unsigned char) (blocks >> 8)) & 0xff;
 	srb->cmd[8] = (unsigned char) blocks & 0xff;
 	srb->cmdlen = 12;
+	srb->direction = USB_CMD_DIRECTION_OUT;
 	DEBUG(("write10: start %lx blocks %x", start, blocks));
 	return ss->transport(srb, ss);
 }
