@@ -120,6 +120,10 @@ typedef struct SCSI_cmd_block
 #define SENSE_VOLUME_OVERFLOW		0xD
 #define SENSE_MISCOMPARE		0xE
 
+/*
+ * Commands
+ */
+
 #define SCSI_REPORT_LUN 0xA0		/* Report LUN information HDDR 10.x */
 #define SCSI_GET_CONFIG 0x46		/* HDDRUTIL tries to do this. */
 #define SCSI_CHANGE_DEF	0x40		/* Change Definition (Optional) */
