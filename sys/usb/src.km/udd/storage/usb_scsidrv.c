@@ -13,6 +13,7 @@
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
 extern void usb_stor_eject (long);
+extern long usb_request_sense (ccb *srb, struct us_data *ss);
 
 #define USBNAME "USB Mass Storage"
 
@@ -207,12 +208,12 @@ SCSIDRV_In (SCSICMD *parms)
 			long r, dev = i;
 
 			if (parms->cmdlen > 16) {
-				return -1;
+				return STATUSERROR;
 			}
 
 			/* Filter commands for non existent LUNs */
 			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
-				return -1;
+				return SELECTERROR;
 			}
 
 			memset (&srb, 0, sizeof (srb));
@@ -250,6 +251,12 @@ SCSIDRV_In (SCSICMD *parms)
 			if (srb.cmd[0] == SCSI_INQUIRY)
 				retries = 3;
 
+			if (srb.cmd[0] == SCSI_REQ_SENSE) {
+				usb_request_sense(&srb, ss);
+				memcpy(parms->sense, srb.sense_buf, 18);
+				return NOSCSIERROR;
+			}
+
 			if (srb.cmd[0] == SCSI_RD_CAPAC ||
 			    srb.cmd[0] == SCSI_RD_CAPAC16) {
 				ccb pccb;
@@ -260,17 +267,29 @@ SCSIDRV_In (SCSICMD *parms)
 				pccb.cmd[0] = SCSI_TST_U_RDY;
 				pccb.datalen = 0;
 				pccb.cmdlen = 12;
-				if(ss->transport(&pccb, ss) != 0) {
-					return -1;
+				r = ss->transport(&pccb, ss);
+				if (r == USB_STOR_TRANSPORT_FAILED
+					|| r == USB_STOR_TRANSPORT_DATA_FAILED
+					|| r == USB_STOR_TRANSPORT_ERROR)
+					return STATUSERROR;
+				else if(r == USB_STOR_TRANSPORT_SENSE) {
+					usb_request_sense(&srb, ss);
+					memcpy(parms->sense, srb.sense_buf, 18);
+					return S_CHECK_COND;
 				}
 			}
+			
+			/* an EJECT command? */
+			if (srb.cmd[0] == SCSI_START_STP &&
+				srb.cmd[4] & SCSI_START_STP_LOEJ &&
+				!(srb.cmd[4] & SCSI_START_STP_START) &&
+				!(srb.cmd[4] & SCSI_START_STP_PWCO))
+			{
+				usb_stor_eject(mass_storage_dev[dev].usb_dev_desc[srb.lun]->usb_logdrv);
+			}
 
-			if (srb.cmd[0] == SCSI_TST_U_RDY)
+			if (srb.cmd[0] == SCSI_TST_U_RDY) {
 				retries = 10;
-
-			/* HDDRUTIL does this and locks up my USB CDROM */
-			if (srb.cmd[0] == SCSI_GET_CONFIG) {
-				return -1;
 			}
 
 			/* promote read6 to read10 */
@@ -292,29 +311,51 @@ SCSIDRV_In (SCSICMD *parms)
 				srb.cmdlen = 10;
 			}
 
-			if (srb.cmd[0] == SCSI_MODE_SEN6 ||
-				srb.cmd[0] == SCSI_MODE_SEN10) {
-				/* fail for now - but may need special handling */
-				return -1;
-			}
-
 			/* XXXX: Needs verification !!!!!
 			 */
 			if (srb.cmd[0] == SCSI_TST_U_RDY && priv->changed) {
 				/* Report Media Change sense key */
-				parms->sense[2] = 0x06;
+				/* 2 = sense key (bits 0 to 3) */
+				/* 12 = ASC. 28h = media was inserted. */
+				/* 13 = ASCQ. Set to 00h */
+				parms->sense[2] = SENSE_UNIT_ATTENTION;
 				parms->sense[12] = 0x28;
+				parms->sense[13] = 0x00;
 				priv->changed = FALSE;
-				return 2;
+				return S_CHECK_COND;
 			}
+
 
 retry:
 			r = ss->transport (&srb, ss);
-			if (r !=0 && retries--) {
+			
+			if (r == USB_STOR_TRANSPORT_SENSE) {
+				usb_request_sense(&srb, ss);
+				memcpy(parms->sense, srb.sense_buf, 18);
+				return S_CHECK_COND;
+			}
+			
+			if (r != USB_STOR_TRANSPORT_GOOD && retries--) {
 				goto retry;
 			}
-
-			/* Fix up INQUIRY NUL bytes to spaces. */
+			
+			switch(r)
+			{
+				case USB_STOR_TRANSPORT_GOOD :
+					return NOSCSIERROR;
+				case USB_STOR_TRANSPORT_DATA_FAILED :
+					return TRANSERROR;
+				case USB_STOR_TRANSPORT_PHASE_ERROR :
+					return PHASEERROR;
+				case USB_STOR_TRANSPORT_TIMEOUT :
+					return TIMEOUTERROR;
+				default:
+					return STATUSERROR;
+			}
+			
+#if 0		/* Fix up INQUIRY NUL bytes to spaces. */
+			/* Doesn't seem to be needed. */
+			/* If so, move higher, this code isn't executed. */
 			if (srb.cmd[0] == SCSI_INQUIRY)
 			{
 				for (i = 8; i < ((srb.datalen < 44) ? srb.datalen : 44); i++)
@@ -325,37 +366,9 @@ retry:
 					}
 				}
 			}
-
-			/* 
-			 * If we failed, get the sense data.
-			 */
-			if (r != 0)
-			{
-#if 0 /* ss->transport does this for us */
-				char *ptr = (char *) srb.pdata;
-				memset (&srb.cmd[0], 0, 12);
-				srb.cmd[0] = SCSI_REQ_SENSE;
-				srb.cmd[4] = 18;
-				srb.datalen = 18;
-				srb.pdata = (unsigned char *) &parms->sense[0];
-				srb.cmdlen = 12;
-				ss->transport (&srb, ss);
-				srb.pdata = (unsigned char *) ptr;
 #endif
-				return -1;
-			}
-
-			/* an EJECT command? */
-			if (srb.cmd[0] == SCSI_START_STP &&
-			    srb.cmd[4] & SCSI_START_STP_LOEJ &&
-			  !(srb.cmd[4] & SCSI_START_STP_START) &&
-			  !(srb.cmd[4] & SCSI_START_STP_PWCO))
-			{
-				usb_stor_eject(mass_storage_dev[dev].usb_dev_desc[srb.lun]->usb_logdrv);
-			}
-			return 0;
 		}
-		return -1;
+		return SELECTERROR;
 	}
 	else
 	{
@@ -365,7 +378,7 @@ retry:
 		}
 	}
 
-	return -1;
+	return SELECTERROR;
 }
 
 static long
@@ -389,16 +402,17 @@ SCSIDRV_Out (SCSICMD *parms)
 		if (mass_storage_dev[i].target != 0xff)
 		{
 			struct us_data *ss = &mass_storage_dev[i].usb_stor;
+			long retries = 0;
 			ccb srb;
 			long r;
 
 			if (parms->cmdlen > 16) {
-				return -1;
+				return STATUSERROR;
 			}
 
 			/* Filter commands for non existent LUNs */
 			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
-				return -1;
+				return SELECTERROR;
 			}
 
 			memset (&srb, 0, sizeof (srb));
@@ -433,26 +447,37 @@ SCSIDRV_Out (SCSICMD *parms)
 				srb.cmdlen = 10;
 			}
 
+retry:
 			r = ss->transport (&srb, ss);
-
-			if (r != 0)
-			{
-#if 0 /* ss->transport does this for us */
-				char *ptr = (char *) srb.pdata;
-				memset (&srb.cmd[0], 0, 12);
-				srb.cmd[0] = SCSI_REQ_SENSE;
-				srb.cmd[4] = 18;
-				srb.datalen = 18;
-				srb.pdata = (unsigned char *) &parms->sense[0];
-				srb.cmdlen = 12;
-				ss->transport (&srb, ss);
-				srb.pdata = (unsigned char *) ptr;
-#endif
-				return -1;
+			
+			if (r == USB_STOR_TRANSPORT_SENSE) {
+				usb_request_sense(&srb, ss);
+				memcpy(parms->sense, srb.sense_buf, 18);
+				return S_CHECK_COND;
 			}
-			return 0;
+
+			if (r != USB_STOR_TRANSPORT_GOOD && retries--) {
+				goto retry;
+			}
+			
+			switch(r)
+			{
+				case USB_STOR_TRANSPORT_GOOD :
+					return NOSCSIERROR;
+				case USB_STOR_TRANSPORT_DATA_FAILED :
+					return TRANSERROR;
+				case USB_STOR_TRANSPORT_PHASE_ERROR :
+					return PHASEERROR;
+				case USB_STOR_TRANSPORT_TIMEOUT :
+					return TIMEOUTERROR;
+				default:
+					return STATUSERROR;
+			}
 		}
-		return -1;
+		else
+		{
+			return SELECTERROR;
+		}
 	}
 	else
 	{
@@ -461,7 +486,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			return oldscsi.Out (parms);
 		}
 	}
-	return -1;
+	return SELECTERROR;
 }
 
 static long
@@ -622,8 +647,8 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 		{
 			struct us_data *ss = &mass_storage_dev[Id->lo].usb_stor;
 
-			/* We only allow SCSI compliant USB devices */
-			if (ss->subclass != US_SC_SCSI) {
+			/* We only allow SCSI compliant USB devices and CD/DVD class */
+			if ((ss->subclass != US_SC_SCSI) && (ss->subclass != US_SC_8020)) {
 				return -1;
 			}
 		} else {

@@ -215,10 +215,6 @@ struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 int transfer_running;
 #endif
 
-#define USB_STOR_TRANSPORT_GOOD	   0
-#define USB_STOR_TRANSPORT_FAILED -1
-#define USB_STOR_TRANSPORT_ERROR  -2
-
 #define DEFAULT_SECTOR_SIZE 2048
 
 static unsigned char readbuf[DEFAULT_SECTOR_SIZE];
@@ -284,7 +280,7 @@ static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
-
+long 		usb_request_sense	(ccb *srb, struct us_data *ss);
 void		part_init		(long dev_num, block_dev_desc_t *stor_dev);
 
 /* --- Interface functions -------------------------------------------------- */
@@ -1149,7 +1145,10 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
-		return USB_STOR_TRANSPORT_FAILED;
+		if (us->pusb_dev->status == USB_ST_CRC_ERR)
+			return USB_STOR_TRANSPORT_TIMEOUT;
+		else
+			return USB_STOR_TRANSPORT_DATA_FAILED;
 	}
 #ifdef BBB_XPORT_TRACE
 	char build_str[32];
@@ -1229,7 +1228,7 @@ again:
 	{
 		DEBUG(("=PHASE"));
 		usb_stor_BBB_reset(us);
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_PHASE_ERROR;
 		goto out;
 	}
 	else if(data_actlen > srb->datalen)
@@ -1241,7 +1240,7 @@ again:
 	else if(csw.bCSWStatus == CSWSTATUS_FAILED)
 	{
 		DEBUG(("FAILED"));
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_SENSE;
 		goto out;
 	}
 out:
@@ -1420,7 +1419,7 @@ usb_inquiry(ccb *srb, struct us_data *ss)
 	return 0;
 }
 
-static long
+long
 usb_request_sense(ccb *srb, struct us_data *ss)
 {
 	DEBUG(("usb_request_sense()"));
@@ -1785,6 +1784,7 @@ usb_stor_probe(struct usb_device *dev, unsigned int ifnum, struct us_data *ss)
 	 */
 	if(ss->subclass != US_SC_UFI && 
 		ss->subclass != US_SC_SCSI && 
+		ss->subclass != US_SC_8020 && 
 		ss->subclass != US_SC_8070)
 	{
 		DEBUG(("Sorry, protocol %d not yet supported.", ss->subclass));
@@ -2085,8 +2085,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			continue;
 		}
 
-		/* Skip everything apart from HARDDISKS */
-		if((usb_dev_desc[lun_global_num].type & 0x1f) != DEV_TYPE_HARDDISK) {
+		/* Skip everything apart from HARDDISKS and CDROM */
+		if((usb_dev_desc[lun_global_num].type & 0x1f) != DEV_TYPE_HARDDISK
+		   && (usb_dev_desc[lun_global_num].type & 0x1f) != DEV_TYPE_CDROM) {
 #if 0
 		c_conws(usb_dev_desc[lun_global_num].vendor);
 		c_conout(' ');

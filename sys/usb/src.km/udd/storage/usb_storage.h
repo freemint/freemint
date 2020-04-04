@@ -41,3 +41,11 @@ struct mass_storage_dev {
 	block_dev_desc_t *usb_dev_desc[MAX_LUN_NUM_PER_DEV];	/* LUNs structs */
 	char total_lun;						/* Total LUNs number in this device */
 };
+
+#define USB_STOR_TRANSPORT_GOOD         0
+#define USB_STOR_TRANSPORT_FAILED      -1
+#define USB_STOR_TRANSPORT_ERROR       -2
+#define USB_STOR_TRANSPORT_SENSE       -3
+#define USB_STOR_TRANSPORT_DATA_FAILED -4
+#define USB_STOR_TRANSPORT_PHASE_ERROR -5
+#define USB_STOR_TRANSPORT_TIMEOUT     -6
