@@ -92,7 +92,7 @@
 
 /* --- ISP116x address registers in Netusbee --------------------------------*/
 
-#define ISP116X_LSB_WRITE	0x00FA0000
+#define ISP116X_LSB_WRITE	0x00FA8000
 #define ISP116X_DATA_READ	0x00FA8000
 #define ISP116X_MSB_DATA_WRITE	0x00FB8000
 #define ISP116x_MSB_CMD_WRITE	0x00FBC000
