@@ -331,7 +331,7 @@ extern struct kerinfo *KERNEL;
 # define _f_pipe		(*KERNEL->dos_tab[0x100])
 # define _f_fchown		(*KERNEL->dos_tab[0x101])	/* 1.15.2 */
 # define _f_fchmod		(*KERNEL->dos_tab[0x102])	/* 1.15.2 */
-# define _0x103			(*KERNEL->dos_tab[0x103]) 	/* f_sync */
+# define _f_sync		(*KERNEL->dos_tab[0x103]) 	/* f_sync */
 # define _f_cntl		(*KERNEL->dos_tab[0x104])
 # define _f_instat		(*KERNEL->dos_tab[0x105])
 # define _f_outstat		(*KERNEL->dos_tab[0x106])
@@ -396,8 +396,8 @@ extern struct kerinfo *KERNEL;
 # define _p_sigintr		(*KERNEL->dos_tab[0x13e])
 # define _s_uptime		(*KERNEL->dos_tab[0x13f])
 
-# define _0x140			(*KERNEL->dos_tab[0x140])	/* s_trapatch */
-# define _0x141			(*KERNEL->dos_tab[0x141])
+# define _0x140			(*KERNEL->dos_tab[0x140])	/* s_ptrace */
+# define _m_validate		(*KERNEL->dos_tab[0x141])
 # define _d_xreaddir		(*KERNEL->dos_tab[0x142])
 # define _p_seteuid		(*KERNEL->dos_tab[0x143])
 # define _p_setegid		(*KERNEL->dos_tab[0x144])
@@ -420,7 +420,7 @@ extern struct kerinfo *KERNEL;
 # define _s_system		(*KERNEL->dos_tab[0x154])
 # define _t_gettimeofday	(*KERNEL->dos_tab[0x155])
 # define _t_settimeofday	(*KERNEL->dos_tab[0x156])
-# define _0x157			(*KERNEL->dos_tab[0x157])	/* t_adjtime */
+# define _t_adjtime		(*KERNEL->dos_tab[0x157])	/* t_adjtime */
 # define _p_getpriority		(*KERNEL->dos_tab[0x158])
 # define _p_setpriority		(*KERNEL->dos_tab[0x159])
 # define _f_poll		(*KERNEL->dos_tab[0x15a])
@@ -461,8 +461,8 @@ extern struct kerinfo *KERNEL;
 # define _p_msgrcv		(*KERNEL->dos_tab[0x17b])
 # define _0x17c			(*KERNEL->dos_tab[0x17c])
 # define _m_access		(*KERNEL->dos_tab[0x17d])
-# define _0x17e			(*KERNEL->dos_tab[0x17e])
-# define _0x17f			(*KERNEL->dos_tab[0x17f])
+# define _0x17e			(*KERNEL->dos_tab[0x17e]) /* _m_map */
+# define _0x17f			(*KERNEL->dos_tab[0x17f]) /* _m_unmap */
 
 # define _f_chown16		(*KENTRY->dos_tab[0x180])
 # define _f_chdir		(*KENTRY->dos_tab[0x181])
