@@ -1184,7 +1184,7 @@ check_kentry_version(void)
 #define Virt_to_phys			(*KENTRY->vec_pcibios.Virt_to_phys)
 #define Phys_to_virt			(*KENTRY->vec_pcibios.Phys_to_virt)
 
-typedef long (*wrap0)();
+typedef long (*wrap0)(void);
 typedef long (*wrap1)(long);
 typedef long (*wrap2)(long, long);
 typedef long (*wrap3)(long, long, long);
