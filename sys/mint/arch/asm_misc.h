@@ -24,9 +24,9 @@
 #if __GNUC__ > 2 || __GNUC_MINOR__ > 5
 # if __GNUC__ >= 3
    /* gcc 3 does not want a clobbered register to be input or output */
-#  define MINT_CLOBBER_LIST	"d1", "d2", "d3", "d4", "a0", "a1", "a2", "a3"
+#  define MINT_CLOBBER_LIST	"d1", "d2", "d3", "d4", "a0", "a1", "a2", "a3", "cc"
 # else	
-#  define MINT_CLOBBER_LIST	"d0", "d1", "d2", "d3", "d4", "a0", "a1", "a2", "a3"
+#  define MINT_CLOBBER_LIST	"d0", "d1", "d2", "d3", "d4", "a0", "a1", "a2", "a3", "cc"
 /* old version
 	__CLOBBER_RETURN("d0")		\
 	  "d1", "d2", "d3", "d4",		\
@@ -39,23 +39,26 @@
 
 /* Macros for ColdFire compatibility. */
 
+#undef POP_SP
+#undef PUSH_SP
+
 #ifdef __mcoldfire__
 
 #define PUSH_SP(regs,size)						\
-	"lea	sp@(-" #size "),sp\n\t"					\
-	"movml	" regs ",sp@\n\t"
+	"lea	%%sp@(-" #size "),%%sp\n\t"					\
+	"movml	" regs ",%%sp@\n\t"
 
 #define POP_SP(regs,size)						\
-	"movml	sp@," regs "\n\t"					\
-	"lea	sp@(" #size "),sp\n\t"
+	"movml	%%sp@," regs "\n\t"					\
+	"lea	%%sp@(" #size "),sp\n\t"
 
 #else
 
 #define PUSH_SP(regs,size)						\
-	"movml	" regs ",sp@-\n\t"
+	"movml	" regs ",%%sp@-\n\t"
 
 #define POP_SP(regs,size)						\
-	"movml	sp@+," regs "\n\t"
+	"movml	%%sp@+," regs "\n\t"
 
 #endif
 
@@ -70,13 +73,13 @@
 	short _a = (short)(a);			\
 						\
 	__asm__ volatile			\
-	(   PUSH_SP("d5-d7/a4-a6", 24)		\
-	    "movew	%2,sp@-\n\t"		\
-	    "movel	%1,a0\n\t"		\
-	    "subal	a5,a5\n\t"		\
-	    "jsr	a0@\n\t"		\
-	    "addql	#2,sp\n\t"		\
-	    POP_SP("d5-d7/a4-a6", 24)		\
+	(   PUSH_SP("%%d5-%%d7/%%a4-%%a6", 24)		\
+	    "movew	%2,%%sp@-\n\t"		\
+	    "movel	%1,%%a0\n\t"		\
+	    "subal	%%a5,%%a5\n\t"		\
+	    "jsr	%%a0@\n\t"		\
+	    "addql	#2,%%sp\n\t"		\
+	    POP_SP("%%d5-%%d7/%%a4-%%a6", 24)		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a)	/* inputs */	\
 	:  MINT_CLOBBER_LIST /* clobbered regs */ \
@@ -92,14 +95,14 @@
 	short _b = (short)(b);			\
 						\
 	__asm__ volatile			\
-	(   PUSH_SP("d5-d7/a4-a6", 24)		\
-	    "movew	%3,sp@-\n\t"		\
-	    "movew	%2,sp@-\n\t"		\
-	    "movel	%1,a0\n\t"		\
-	    "subal	a5,a5\n\t"		\
-	    "jsr	a0@\n\t"		\
-	    "addql	#4,sp\n\t"		\
-	    POP_SP("d5-d7/a4-a6", 24)		\
+	(   PUSH_SP("%%d5-%%d7/%%a4-%%a6", 24)		\
+	    "movew	%3,%%sp@-\n\t"		\
+	    "movew	%2,%%sp@-\n\t"		\
+	    "movel	%1,%%a0\n\t"		\
+	    "subal	%%a5,%%a5\n\t"		\
+	    "jsr	%%a0@\n\t"		\
+	    "addql	#4,%%sp\n\t"		\
+	    POP_SP("%%d5-%%d7/%%a4-%%a6", 24)		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a), "r"(_b) /* inputs */ \
 	: MINT_CLOBBER_LIST /* clobbered regs */ \

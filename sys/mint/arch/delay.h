@@ -54,7 +54,7 @@ extern ulong loops_per_sec;
 # define	HZSCALE			(268435456 / (1000000 / HZ)) /* 268435456 = 2^28 */
 # define	loops_per_jiffy		(loops_per_sec / HZ)
 
-INLINE void
+static inline void
 __delay (register ulong loops)
 {
 # ifdef __mcoldfire__
@@ -86,7 +86,7 @@ __delay (register ulong loops)
 # endif /* (__mcoldfire__) */
 }
 
-INLINE void
+static inline void
 udelay (register ulong usecs)
 {
 /*
@@ -176,7 +176,7 @@ udelay (register ulong usecs)
 
 #define ndelay_loops(x) __delay(x)
 
-INLINE ulong
+static inline ulong
 getloops4ns (register ulong nsecs)
 {
 	return (DIV_ROUND_UP((nsecs) * ((((HZSCALE) >> 11) * (loops_per_jiffy >> 11)) >> 6), 1000));

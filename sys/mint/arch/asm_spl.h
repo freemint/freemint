@@ -88,8 +88,8 @@ splhigh (void)
 		"movew   %1,sr"
 		: "=d" (sr), "=d" (tempo)
 #else
-		"movew   sr,%0\n\t"
-		"oriw    #0x0700,sr"
+		"movew   %%sr,%0\n\t"
+		"oriw    #0x0700,%%sr"
 		: "=d" (sr)
 #endif
 	);
