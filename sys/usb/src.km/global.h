@@ -94,8 +94,14 @@ typedef char Path[PATH_MAX];
 #define c_conws (void)Cconws
 #undef c_conout
 #define c_conout (void)Cconout
+#undef d_getdrv
+#define d_getdrv Dgetdrv
 #undef d_setdrv
-#define d_setdrv (void)Dsetdrv
+#define d_setdrv Dsetdrv
+#undef d_getpath
+#define d_getpath Dgetpath
+#undef d_setpath
+#define d_setpath Dsetpath
 #undef kmalloc
 #define kmalloc Malloc
 #undef kfree
