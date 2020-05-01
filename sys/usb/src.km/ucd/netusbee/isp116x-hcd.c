@@ -126,6 +126,7 @@ static long got_rhsc;		/* root hub status change */
 struct usb_device *devgone;	/* device which was disconnected */
 static long rh_devnum;		/* address of Root Hub endpoint */
 static char job_in_progress = 0;
+static char oc_protection_on = 0;
 
 /*
  *Function prototypes
@@ -1840,16 +1841,37 @@ isp116x_start(struct isp116x *isp116x)
 
 	/* --- Root hub configuration */
 	val = (25L << 24) & RH_A_POTPGT;
-	/* AN10003_1.pdf recommends RH_A_NPS (no power switching) to
-	   be always set. Yet, instead, we request individual port
-	   power switching. */
-	/* For NetUSBee ports are always powered */
-	val |= RH_A_NPS;
-//	val |= RH_A_PSM;
-	/* Report overcurrent per port */
-//	val |= RH_A_OCPM;
-	/* Overcurrent protection disable */
-	val |= RH_A_NOCP;
+
+	/* There are small design differences between NetUSBees depending on the
+	 * manufacturer. The NetUSBees made from the original design have a
+	 * problem that causes one of the ports to be disabled as soon as the
+	 * host controller becomes operational. With those cards the driver
+	 * must turn off the overcurrent protection mode for the card
+	 * to work properly.
+	 * We allow the user to turn on the overcurrent protection by creating
+	 * a file in the driver's directory (MiNT) or the root directory (TOS)
+	 * named "netusbee.ocp"
+	 */
+	if (oc_protection_on)
+	{
+		/* Ports are power switched */
+//		val |= RH_A_NPS;
+		/* Eeach port is powered individually */
+		val |= RH_A_PSM;
+		/* Overcurrent reporting supported */
+//		val |= RH_A_NOCP;
+		/* Report overcurrent per port */
+		val |= RH_A_OCPM;
+	} else {
+		/* Ports are always powered */
+		val |= RH_A_NPS;
+		/* All ports are powered at the same time */
+//		val |= RH_A_PSM;
+		/* No overcurrent reporting */
+		val |= RH_A_NOCP;
+		/* Overcurrent status is reported collectively */
+//		val |= RH_A_OCPM;
+	}
 
 	isp116x_write_reg32(isp116x, HCRHDESCA, val);
 	isp116x->rhdesca = isp116x_read_reg32(isp116x, HCRHDESCA);
@@ -2068,6 +2090,8 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;
+	short handle;
+
 #ifndef TOSONLY
 	kentry	= k;
 	api     = uapi;
@@ -2075,9 +2099,31 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	if (check_kentry_version())
 		return -1;
 #endif
+
+	/* Check if the user wants to enable the overcurrent protection */
+#ifdef TOSONLY
+	char path[128];
+
+	d_getpath(path, 0); /* In current drive */
+	d_setpath("\\");
+#endif
+	if ((handle = f_open("netusbee.ocp",0)) > 0)
+	{
+		oc_protection_on = 1;
+		f_close(handle);
+	}
+#ifdef TOSONLY
+	d_setpath(path);
+#endif
+
 	c_conws (MSG_BOOT);
+	if (oc_protection_on)
+		c_conws ("Overcurrent protection \033p\33b2 ON \33b?\033q\r\n");
+	else
+		c_conws ("Overcurrent protection \033p\33b1 OFF \33b?\033q\r\n");
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
+
 #ifdef TOSONLY
 	/* Get USB cookie */
 	if (!getcookie(_USB, (long *)&api))
