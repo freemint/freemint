@@ -217,6 +217,7 @@ static void tos_printmsg(const char *fmt, ...)
 	Bconout(DEV,'\n');
 }
 
+# define FORCE(x)       tos_printmsg x
 # define ALERT(x)       tos_printmsg x
 # define DEBUG(x)       tos_printmsg x
 # define TRACE(x)
@@ -224,6 +225,7 @@ static void tos_printmsg(const char *fmt, ...)
 
 #else /* !DEV_DEBUG */
 
+# define FORCE(x)
 # define ALERT(x)
 # define DEBUG(x)
 # define TRACE(x)
