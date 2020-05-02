@@ -92,7 +92,14 @@
 
 /* --- ISP116x address registers in Netusbee --------------------------------*/
 
-#define ISP116X_LSB_WRITE	0x00FA8000
+/* NetUSBee programmer documentation states that Least Signifant Byte data
+ * writes must be added to the 0x00FA8000 address, for some reason this doesn't
+ * work with NetUSBees that were produced using the original design, AFAIK
+ * those are Lyndon's and Tuxie's. With those cards the address 0x00FA000 works
+ * instead. After testing seems that Lotharek's cards work fine with both
+ * addresses.
+ */
+#define ISP116X_LSB_WRITE	0x00FA0000
 #define ISP116X_DATA_READ	0x00FA8000
 #define ISP116X_MSB_DATA_WRITE	0x00FB8000
 #define ISP116x_MSB_CMD_WRITE	0x00FBC000
