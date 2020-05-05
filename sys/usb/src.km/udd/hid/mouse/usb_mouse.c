@@ -36,8 +36,9 @@
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 #define WHEELMOUSE
-#define MAX_WHEEL_INTERVAL 10
-#define CPU_SAVER_INTERVAL 3
+#define MAX_WHEEL_INTERVAL	10
+#define CPU_SAVER_INTERVAL	3
+#define MAX_KEYPRESSES		6
 
 /****************************************************************************/
 /*
@@ -516,28 +517,25 @@ mouse_int (void)
 	if (wheel_change)
 	{
 		char wheel;
-		short i, j;
+		short i, no_of_keypresses;
 
 		(void) wheel;
 
 		wheel = mse_data.new.wheel;
-		for (j = 0; j < (MAX_WHEEL_INTERVAL - wheel_interval + 1); j++)
+		no_of_keypresses = (MAX_WHEEL_INTERVAL - wheel_interval + 1) * wheel;
+		no_of_keypresses = (no_of_keypresses < 0)? -no_of_keypresses:no_of_keypresses;
+		no_of_keypresses = (no_of_keypresses > MAX_KEYPRESSES)? MAX_KEYPRESSES:no_of_keypresses;
+		for (i = 0; i < no_of_keypresses; i++)
 		{
 			if (wheel > 0)
 			{
-				for (i = 0; i < wheel; i++)
-				{
-					usb_kbd_send_code (0x48, 0); //UP press
-					usb_kbd_send_code (0xC8, 0); //UP release
-				}
+				usb_kbd_send_code (0x48, 0); //UP press
+				usb_kbd_send_code (0xC8, 0); //UP release
 			}
 			else if (wheel < 0)
 			{
-				for (i = 0; i > wheel; i--)
-				{
-					usb_kbd_send_code (0x50, 0); //DOWN press
-					usb_kbd_send_code (0xD0, 0); //DOWN release
-				}
+				usb_kbd_send_code (0x50, 0); //DOWN press
+				usb_kbd_send_code (0xD0, 0); //DOWN release
 			}
 		}
 		wheel_interval = 0;
