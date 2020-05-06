@@ -38,6 +38,12 @@ IKBDTODO	=	IKBDSTATE+1
 _old_acia:
 	dc.l	0
 
+// We have disabled now the use of our own ACIA handler, the main reason is
+// because we don't have a midisys vector handler and using the one from ROM
+// crashes the system. Some ROM kbdvecs interrupt hadlers expect to have in an
+// address register a value to reference its internal variables, they expect
+// ROM's ACIA handler to put that adrress there for them. So while we depend
+// on calling those vectors handlers we can't use our own ACIA routine.
 _new_acia:
 #ifdef __mcoldfire__
 	lea	-32(sp),sp
@@ -48,6 +54,7 @@ _new_acia:
 again:	move.l	_syskey,a3
 	move.l	VMIDISYS(a3),a0
 	jsr	(a0)
+//	move.l	_syskey,a3	// if midisys is from ROM perhaps a3 changed
 	move.l	VIKBDSYS(a3),a0
 	jsr	(a0)
 #ifdef __mcoldfire__
@@ -91,6 +98,7 @@ todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 // We only replace ikbdsys, midisys will be handled in ROM.
 
 _ikbdsys_handler:
+	move.l	_syskey,a3		// if ACIA handler is from ROM get syskey
 	move.b	(0xfc00).w,d1		// ACIA control
 	move.l	_keyrec,a0
 	btst	#0x07,d1		// interrupt request

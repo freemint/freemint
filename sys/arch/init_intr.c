@@ -104,8 +104,6 @@ init_intr (void)
 #ifndef M68000
 		cpush(&syskey->ikbdsys, sizeof(long));
 #endif
-		/* Also hook the whole ACIA interrupt (why??) */
-		new_xbra_install(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
 	}
 	/* Hook the keyboard interrupt to call ikbd_scan() on keyboard data.
