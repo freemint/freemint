@@ -123,32 +123,17 @@ KERNELDEFS = -DM68000 -DOLDTOSFS -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
+# Example for a custom build:
+# Add my1 to "kerneltargets" below
+# Type in your shell "make my1"
 ifeq ($(kernel),my1)
-MINT = mintnp.prg
-CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
-endif
-
-ifeq ($(kernel),my2)
-MINT = mint040.prg
+MINT = mintmy1.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 KERNELDEFS += -DMFP_DEBUG_DIRECT
 #KERNELDEFS += -DPROFILING
 #kernel_cflags = -pg
 #kernel_nocflags = -fomit-frame-pointer
-endif
-
-ifeq ($(kernel),my3)
-MINT = mint030.prg
-CPU  = 030
-KERNELDEFS = -DDEBUG_INFO -DM68030
-endif
-
-ifeq ($(kernel),my4)
-MINT = mintmdbg.prg
-CPU = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 endif
 
 #
