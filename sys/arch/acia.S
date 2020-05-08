@@ -133,6 +133,8 @@ no_error:
 	bne.s	mid_multiple
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
+	tst.w	_tos_1			// if TOS 1 call new_keys directly
+	bne	_newkeys
 	move.l	KBDVEC(a3),a1
 	jmp	(a1)
 

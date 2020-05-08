@@ -38,6 +38,8 @@ long old_term;
 long old_resval;	/* old reset validation */
 long olddrvs;		/* BIOS drive map */
 
+int tos_1 = FALSE;
+
 /* table of processor frame sizes in _words_ (not used on MC68000) */
 uchar framesizes[16] =
 {
@@ -105,16 +107,21 @@ init_intr (void)
 		cpush(&syskey->ikbdsys, sizeof(long));
 #endif
 		spl(savesr);
+
+		tos_1 = TRUE;
 	}
-	/* Hook the keyboard interrupt to call ikbd_scan() on keyboard data.
-	 * There is an undocumented vector just before the KBDVEC structure.
-	 * This vector is called by the TOS ikbdsys routine to process
-	 * keyboard-only data. It is exactly what we need to hook.
-	 * TOS < 2.00 doesn't know about this vector but the new ikdsys
-	 * hadler hooked above if we're running over TOS < 2.00 will call it.
-	 */
-	long *kbdvec = ((long *)syskey)-1;
-	new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
+	else
+	{
+		/* Hook the keyboard interrupt to call ikbd_scan() on keyboard data.
+		 * There is an undocumented vector just before the KBDVEC structure.
+		 * This vector is called by the TOS ikbdsys routine to process
+		 * keyboard-only data. It is exactly what we need to hook.
+		 * TOS < 2.00 doesn't know about this vector but the new ikdsys
+		 * hadler hooked above if we're running over TOS < 2.00 will call it.
+		 */
+		long *kbdvec = ((long *)syskey)-1;
+		new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
+	}
 
 	/* Workaround for FireTOS and CT60 TOS 2.xx.
 	 * Needed because those TOS doesn't call the undocumented kbdvec vector
