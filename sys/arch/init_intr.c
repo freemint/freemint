@@ -116,7 +116,33 @@ init_intr (void)
 	long *kbdvec = ((long *)syskey)-1;
 	new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
 
-# endif
+	/* Workaround for FireTOS and CT60 TOS 2.xx.
+	 * Needed because those TOS doesn't call the undocumented kbdvec vector
+	 * from their ikbdsys vector handler, besides they install the ikbdsys
+	 * routine as a ACIA interrupt handler, so we can't simply replace their
+	 * ikbdsys handler by ours. We need to hook a new ACIA handler which
+	 * will call our ikbdsys.
+	 */
+	unsigned short version = 0;
+#ifdef __mcoldfire__
+	const unsigned short *FT_TOS_VERSION_ADDR = (unsigned short *)0x00e80000;
+	if (coldfire_68k_emulation)
+		version = *FT_TOS_VERSION_ADDR;
+#else
+	const unsigned short *CT60_TOS_VERSION_ADDR = (unsigned short *)0xffe80000;
+	if (machine == machine_ct60)
+		version = *CT60_TOS_VERSION_ADDR;
+#endif
+	if (version >= 2)
+	{
+		savesr = splhigh();
+		syskey->ikbdsys = (long)ikbdsys_handler;
+		cpush(&syskey->ikbdsys, sizeof(long));
+		spl(savesr);
+		new_xbra_install(&old_acia, 0x0118L, new_acia);
+	}
+# endif /* NO_AKP_KEYBOARD */
+
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
 	savesr = splhigh();
