@@ -47,7 +47,7 @@ extern ulong pcibios_installed;
 /* exported functions
  */
 
-long	pcibios_init		(void);
+long	init_pcibios		(void);
 
 long	_cdecl sys_pcibios	(ushort op,
 				     long a1, long a2, long a3, long a4,

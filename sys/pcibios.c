@@ -98,7 +98,7 @@ PCIBIOS pcibios_ct60tos;
 void *tab_funcs_pci;
 
 long
-pcibios_init (void)
+init_pcibios (void)
 {
 	long r;
 	unsigned long t = 0, dummy = 0;

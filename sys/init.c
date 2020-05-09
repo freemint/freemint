@@ -490,7 +490,7 @@ init (void)
 
 	/* initalize PCI-BIOS interface */
 #ifdef PCI_BIOS
-	if (pcibios_init())
+	if (init_pcibios())
 		DEBUG (("No PCI-BIOS found"));
 #endif
 
