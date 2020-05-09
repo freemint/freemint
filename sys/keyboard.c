@@ -152,6 +152,8 @@ short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
+int	has_kbdvec = false;	/* true if kbdvec present */
+
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
@@ -1917,6 +1919,9 @@ init_keybd(void)
 	boot_printf("\r\n");
 # endif
 
+	/* Check and flag undocumented KBDVEC vector */
+	if ((tosvers >= 0x200) || emutos)
+		has_kbdvec = true;
 }
 
 # else

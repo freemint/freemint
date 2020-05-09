@@ -393,6 +393,8 @@ init (void)
 	boot_printf(MSG_init_tosver_kbshft, (tosvers >> 8) & 0xff, tosvers & 0xff, \
 			falcontos ? " (FalconTOS)" : "", (long)kbshft);
 # endif
+	/* Check and flag if we're running on EmuTOS */
+	emutos = (os->p_rsv2 == 0x45544f53 ? TRUE : FALSE); /* 'ETOS' */
 
 #ifndef __mcoldfire__
 	/* Currently, ColdFire machines have trouble with Bconmap() */

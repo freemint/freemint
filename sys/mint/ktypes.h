@@ -135,6 +135,7 @@ struct global
 	long sfptype;		/* fpu type available via SFP-004 */
 
 	short tosvers;		/* the underlying TOS version */
+	bool   emutos;		/* true if undelaying TOS is EmuTOS */
 
 	short gl_lang;		/* language preference */
 	short gl_kbd;		/* default keyboard layout */

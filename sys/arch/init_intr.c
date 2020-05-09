@@ -26,6 +26,7 @@
 
 # include "global.h"
 # include "cookie.h"
+# include "keyboard.h"		/* has_kbdvec */
 
 /* magic number to show that we have captured the reset vector */
 # define RES_MAGIC	0x31415926L
@@ -38,7 +39,6 @@ long old_term;
 long old_resval;	/* old reset validation */
 long olddrvs;		/* BIOS drive map */
 
-int tos_1 = FALSE;
 
 /* table of processor frame sizes in _words_ (not used on MC68000) */
 uchar framesizes[16] =
@@ -96,7 +96,7 @@ init_intr (void)
 	oldkey = *syskey;
 
 # ifndef NO_AKP_KEYBOARD
-	if (tosvers < 0x0200) /* TOS versions without the KBDVEC vector */
+	if (!has_kbdvec) /* TOS versions without the KBDVEC vector */
 	{
 		/* We need to hook the ikbdsys vector. Our handler will have to deal
 		 * with ACIA registers, and to call the appropriate KBDVEC vectors
@@ -107,8 +107,6 @@ init_intr (void)
 		cpush(&syskey->ikbdsys, sizeof(long));
 #endif
 		spl(savesr);
-
-		tos_1 = TRUE;
 	}
 	else
 	{
