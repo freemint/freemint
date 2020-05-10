@@ -109,7 +109,7 @@ void		ehci_show_registers	(struct ehci *);
 void		ehci_show_qh		(struct QH *, struct ehci *);
 void		__ehci_powerup_fixup	(unsigned long *, unsigned long *);
 
-long		submit_bulk_msg		(struct usb_device *, unsigned long, void *, long);
+long		submit_bulk_msg		(struct usb_device *, unsigned long, void *, long, long, unsigned long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *, long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
@@ -486,7 +486,7 @@ static inline unsigned char ehci_encode_speed(enum usb_device_speed speed)
 	return QH_FULL_SPEED;
 }
 
-static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer, long length, struct devrequest *req)
+static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer, long length, struct devrequest *req, unsigned long timeout)
 {
 	struct QH *qh;
 	struct qTD *td;
@@ -496,7 +496,6 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	unsigned long endpt, token, usbsts;
 	unsigned long c, toggle;
 	unsigned long cmd;
-	int timeout;
 	long ret = 0;
 	unsigned long td_offset = 0;	/* make compiler happy */
 
@@ -624,7 +623,6 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 
 	/* Wait for TDs to be processed. */
 	ts = 0;
-	timeout = USB_TIMEOUT_MS(pipe);
 	vtd = td;
 	do
 	{
@@ -1205,7 +1203,7 @@ long usb_lowlevel_stop(void *ucd_priv)
 	return(0);
 }
 
-long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length)
+long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length, long flags, unsigned long timeout)
 {
 	long ret, done, max;
 	long dir_out = usb_pipeout(pipe);
@@ -1232,7 +1230,8 @@ long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer, l
 			return -1;
 		}
 		ret = ehci_submit_async(dev, pipe, (unsigned char *) buffer + done,
-								max > length - done ? length - done : max, NULL);
+					max > length - done ? length - done : max,
+					NULL, timeout);
 		if (ret < 0)
 		{
 			DEBUG(("error on bulk message"));
@@ -1271,7 +1270,7 @@ long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer
 			dev->speed = USB_SPEED_HIGH;
 		return ehci_submit_root(dev, pipe, buffer, length, setup);
 	}
-	return ehci_submit_async(dev, pipe, buffer, length, setup);
+	return ehci_submit_async(dev, pipe, buffer, length, setup, 5 * USB_CNTL_TIMEOUT);
 }
 
 long submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer, long length, long interval)
@@ -1332,7 +1331,8 @@ ehci_ioctl(struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-					       bulk_msg->data, bulk_msg->len);
+					       bulk_msg->data, bulk_msg->len,
+					       bulk_msg->flags, bulk_msg->timeout);
 
 			break;
 		}
