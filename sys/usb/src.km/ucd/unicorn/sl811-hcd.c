@@ -93,7 +93,7 @@ void unicorn_int (void);
 /* END kernel interface */
 /****************************************************************************/
 
-long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
+long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long, unsigned long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 unsigned short, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
@@ -747,7 +747,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, unsign
 
 long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		long len, long flags)
+		long len, long flags, unsigned long timeout)
 {
 	int devnum = usb_pipedevice(pipe);
 	int dir_out = usb_pipeout(pipe);
@@ -1341,7 +1341,7 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
 				         bulk_msg->data, bulk_msg->len, 
-					 bulk_msg->flags);			
+					 bulk_msg->flags, bulk_msg->timeout);
 
 			break;
 		}
