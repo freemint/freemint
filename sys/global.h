@@ -44,7 +44,6 @@ extern struct global global;
 #define fputype		global.fputype
 #define sfptype		global.sfptype
 #define tosvers		global.tosvers
-#define emutos		global.emutos
 #define gl_lang		global.gl_lang
 #define gl_kbd		global.gl_kbd
 #define sysdrv		global.sysdrv

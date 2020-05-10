@@ -108,6 +108,7 @@ extern short kbd_mpixels;
 extern short kbd_mpixels_fine;
 extern struct cad_def cad[3];
 extern int has_kbdvec;
+extern bool emutos;
 
 /* Interrupt routines */
 void _cdecl ikbd_scan(ushort scancode, IOREC_T *rec);

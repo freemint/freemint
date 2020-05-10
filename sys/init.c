@@ -244,6 +244,7 @@ typedef struct _osheader
 
 short write_boot_file = 0;
 char boot_file[48+12] = { 0 };
+bool emutos = FALSE;
 
 void
 init (void)
