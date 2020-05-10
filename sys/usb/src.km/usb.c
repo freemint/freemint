@@ -226,6 +226,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	arg.data = data;
 	arg.len = len;
 	arg.flags = flags;
+	arg.timeout = timeout;
 
 	r = (*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
 

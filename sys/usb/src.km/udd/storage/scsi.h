@@ -40,6 +40,7 @@ typedef struct SCSI_cmd_block
 	unsigned long		contr_stat;				/* Controller Status	*/
 	unsigned long		trans_bytes;			/* tranfered bytes		*/
 	unsigned char		direction;			/* direction of data (out/in) */
+	unsigned long		timeout;			/* timeout in milliseconds */
 
 	unsigned long		priv;
 } ccb;

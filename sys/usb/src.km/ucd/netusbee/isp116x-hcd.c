@@ -133,7 +133,7 @@ static char oc_protection_on = 0;
  */
 static long	isp116x_check_id	(struct isp116x *);
 static long	isp116x_reset		(struct isp116x *);
-static long	submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
+static long	submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long, unsigned long);
 static long	submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 static long	submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
@@ -922,7 +922,7 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
  */
 static long
 isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
-			      long dir, void *buffer, long len, long flags)
+			      long dir, void *buffer, long len, long flags, unsigned long time_out)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 	long type = usb_pipetype(pipe);
@@ -934,12 +934,12 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 
 	/*
 	 * For non-interrupt transfers, if the function is busy and we receive a NAK,
-	 * we retry up to 500 frames (0.5s timeout).
+	 * we retry up to the timeout specified.
 	 * For interrupt transfers (e.g. mouse/keyboard), we expect to receive a NAK
 	 * most of the time.  So we don't retry, we just report an error and let the
 	 * upper level driver retry the transfer at regular intervals.
 	 */
-	short retries = ((type==PIPE_INTERRUPT) || (flags&USB_BULK_FLAG_EARLY_TIMEOUT)) ? 0 : 500;
+	short retries = ((type==PIPE_INTERRUPT) || (flags&USB_BULK_FLAG_EARLY_TIMEOUT)) ? 0 : time_out;
 	short set_extra_delay = 0;
 	short poll_interrupts = 0;
 
@@ -1605,7 +1605,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 	ret = isp116x_submit_job(dev, pipe,
 				PTD_DIR_SETUP,
-				 setup, sizeof(struct devrequest), 0);
+				 setup, sizeof(struct devrequest), 0, USB_CNTL_TIMEOUT * 5);
 	if (ret < 0)
 	{
 		DEBUG(("control setup phase error (ret = %ld", ret));
@@ -1621,7 +1621,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ret = isp116x_submit_job(dev, pipe,
 					 dir_in ? PTD_DIR_IN : PTD_DIR_OUT,
 					 (unsigned char *) buffer + done,
-					 max > len - done ? len - done : max, 0);
+					 max > len - done ? len - done : max, 0, USB_CNTL_TIMEOUT * 5);
 		if (ret < 0)
 		{
 			DEBUG(("control data phase error (ret = %ld)", ret));
@@ -1637,7 +1637,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	DEBUG(("--- STATUS PHASE -------------------------------"));
 	usb_settoggle(dev, epnum, !dir_in, 1);
 	ret = isp116x_submit_job(dev, pipe,
-				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0, 0);
+				 !dir_in ? PTD_DIR_IN : PTD_DIR_OUT, NULL, 0, 0, USB_CNTL_TIMEOUT * 5);
 	if (ret < 0)
 	{
 		DEBUG(("control status phase error (ret = %ld", ret));
@@ -1653,7 +1653,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 static long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		long len, long flags)
+		long len, long flags, unsigned long timeout)
 {
 	long dir_out = usb_pipeout(pipe);
 	long max = max_transfer_len(dev, pipe);
@@ -1669,7 +1669,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ret = isp116x_submit_job(dev, pipe,
 					 !dir_out ? PTD_DIR_IN : PTD_DIR_OUT,
 					 (unsigned char *) buffer + done,
-					 max > len - done ? len - done : max, flags);
+					 max > len - done ? len - done : max, flags, timeout);
 
 		if (ret < 0)
 		{
@@ -1977,7 +1977,7 @@ netusbee_ioctl(struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-					       bulk_msg->data, bulk_msg->len, bulk_msg->flags);
+					       bulk_msg->data, bulk_msg->len, bulk_msg->flags, bulk_msg->timeout);
 
 			break;
 		}

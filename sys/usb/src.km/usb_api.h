@@ -26,7 +26,7 @@
 /*
  * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
  */
-#define USB_API_VERSION 3
+#define USB_API_VERSION 4
 
 /*
  * UCD - USB Controller Driver.
@@ -52,6 +52,7 @@ struct bulk_msg
 	void				*data;
 	long				len;
 	long				flags;
+	unsigned long		timeout;
 };
 
 struct control_msg

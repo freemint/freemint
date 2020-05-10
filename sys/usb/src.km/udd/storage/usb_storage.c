@@ -973,7 +973,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	/* DST SRC LEN!!! */
 	memcpy(cbw.CBWCDB, srb->cmd, srb->cmdlen);
 
-	result = usb_bulk_msg(us->pusb_dev, pipe, &cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5, 0);
+	result = usb_bulk_msg(us->pusb_dev, pipe, &cbw, UMASS_BBB_CBW_SIZE, &actlen, srb->timeout, 0);
 	if(result < 0)
 	{
 		DEBUG(("usb_stor_BBB_comdat:usb_bulk_msg error"));
@@ -1126,7 +1126,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	else
 		pipe = pipeout;
 	
-	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen, &data_actlen, USB_CNTL_TIMEOUT * 5, 0);
+	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen, &data_actlen, srb->timeout, 0);
 	
 	/* special handling of STALL in DATA phase */
 	if((result < 0) && (us->pusb_dev->status & USB_ST_STALLED))
@@ -1167,7 +1167,7 @@ st:
 	retry = 0;
 	DEBUG(("STATUS phase"));
 again:
-	result = usb_bulk_msg(us->pusb_dev, pipein, &csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5, 0);
+	result = usb_bulk_msg(us->pusb_dev, pipein, &csw, UMASS_BBB_CSW_SIZE, &actlen, srb->timeout, 0);
 	/* special handling of STALL in STATUS phase */
 
 	if((result < 0) && (retry < 1) && (us->pusb_dev->status & USB_ST_STALLED))
@@ -1322,6 +1322,7 @@ do_retry:
 	reqsrb.pdata = &srb->sense_buf[0];
 	reqsrb.cmdlen = 12;
 	reqsrb.direction = USB_CMD_DIRECTION_IN;
+	reqsrb.timeout = USB_CNTL_TIMEOUT * 5;
 	/* issue the command */
 	result = usb_stor_CB_comdat(&reqsrb, us);
 	DEBUG(("auto request returned %ld", result));
@@ -1406,6 +1407,7 @@ usb_inquiry(ccb *srb, struct us_data *ss)
 		srb->datalen = 36;
 		srb->cmdlen = 12;
 		srb->direction = USB_CMD_DIRECTION_IN;
+		srb->timeout = USB_CNTL_TIMEOUT * 5;
 		i = ss->transport(srb, ss);
 		DEBUG(("inquiry returns %ld", i));
 		if(i == 0)
@@ -1433,6 +1435,7 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	srb->pdata = &srb->sense_buf[0];
 	srb->cmdlen = 12;
 	srb->direction = USB_CMD_DIRECTION_IN;
+	srb->timeout = USB_CNTL_TIMEOUT * 5;
 	ss->transport(srb, ss);
 	DEBUG(("Request Sense returned %02x %02x %02x", srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
 	srb->pdata = (unsigned char *)ptr;
@@ -1452,6 +1455,7 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 		srb->datalen = 0;
 		srb->cmdlen = 12;
 		srb->direction = USB_CMD_DIRECTION_IN;
+		srb->timeout = USB_CNTL_TIMEOUT * 5;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
 			return 0;
 		}
@@ -1480,6 +1484,7 @@ usb_read_capacity(ccb *srb, struct us_data *ss)
 		srb->datalen = 8;
 		srb->cmdlen = 12;
 		srb->direction = USB_CMD_DIRECTION_IN;
+		srb->timeout = USB_CNTL_TIMEOUT * 5;
 		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
 			return 0;
 	}
@@ -1501,6 +1506,7 @@ usb_read_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short bl
 	srb->cmd[8] = (unsigned char) blocks & 0xff;
 	srb->cmdlen = 12;
 	srb->direction = USB_CMD_DIRECTION_IN;
+	srb->timeout = USB_CNTL_TIMEOUT * 5;
 	DEBUG(("read10: start %lx blocks %x", start, blocks));
 	return ss->transport(srb, ss);
 }
@@ -1519,6 +1525,7 @@ usb_write_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short b
 	srb->cmd[8] = (unsigned char) blocks & 0xff;
 	srb->cmdlen = 12;
 	srb->direction = USB_CMD_DIRECTION_OUT;
+	srb->timeout = USB_CNTL_TIMEOUT * 5;
 	DEBUG(("write10: start %lx blocks %x", start, blocks));
 	return ss->transport(srb, ss);
 }
