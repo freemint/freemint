@@ -25,7 +25,7 @@
 /* if you change anything in the enum {} below you have to increase 
    this NFUSBHOST_NFAPI_VERSION!
 */
-#define USBHOST_NFAPI_VERSION	0x00000003
+#define USBHOST_NFAPI_VERSION	0x00000004
 
 enum {
 	GET_VERSION = 0,	/* no parameters, return NFAPI_VERSION in d0 */
