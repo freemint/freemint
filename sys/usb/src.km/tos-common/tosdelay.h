@@ -52,8 +52,8 @@ static inline int getmCPU(void);
 			"0:\n\t"                               \
 			"subq.l #1,%0\n\t"                     \
 			"jpl    0b"                            \
-			:                   /* outputs */      \
-			: "d"(_count)       /* inputs  */      \
+			: "=d"(_count)      /* outputs */      \
+			: "0"(_count)       /* inputs  */      \
 			: "cc", "memory"    /* clobbered */    \
 		);                                             \
 	})
