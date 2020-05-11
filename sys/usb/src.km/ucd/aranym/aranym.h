@@ -126,7 +126,7 @@ typedef struct {
 			        int len, struct devrequest *setup)
 
 	int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-					int len, long len, long flags, unsigned long timeout)
+					long len, long flags, unsigned long timeout)
 */
 
 #endif /* _ARANYM_H */
