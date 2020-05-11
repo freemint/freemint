@@ -120,13 +120,13 @@ typedef struct {
 	int usb_lowlevel_stop(void *ucd_priv)
 
 	int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-				int len, int interval)
+			   long len, int interval)
 
 	int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-			        int len, struct devrequest *setup)
+			       long len, struct devrequest *setup)
 
 	int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-					long len, long flags, unsigned long timeout)
+			    long len, long flags, unsigned long timeout)
 */
 
 #endif /* _ARANYM_H */
