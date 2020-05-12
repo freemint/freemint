@@ -34,7 +34,7 @@
 /* debug section
  */
 
-# if 1
+# if 0			/* disable debug diagnostics */
 # define NFS_DEBUG	1
 # endif
 

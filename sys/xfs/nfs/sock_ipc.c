@@ -225,13 +225,15 @@ setup_auth (ulong stamp)
 # define NGROUPS_MAX	8
 	int suppgrps [2 * NGROUPS_MAX];
 	long ngrp;
-	
+
 	*p_stamp = stamp;
 	*p_uid = (ulong) p_geteuid ();
 	*p_gid = (ulong) p_getegid ();
 
 	{
 		char *p = (char *) & the_xdr_auth[0];
+
+		(void) p; /* suppress warning */
 		DEBUG (("setup_auth: machine name has len %ld, `%c%c%c...'",
 		          *(long*)(p+sizeof(long)), (p+2*sizeof(long))[0],
 		          (p+2*sizeof(long))[1], (p+2*sizeof(long))[2]));
