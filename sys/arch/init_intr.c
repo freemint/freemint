@@ -143,8 +143,8 @@ init_intr (void)
 		savesr = splhigh();
 		syskey->ikbdsys = (long)ikbdsys_handler;
 		cpush(&syskey->ikbdsys, sizeof(long));
-		spl(savesr);
 		new_xbra_install(&old_acia, 0x0118L, new_acia);
+		spl(savesr);
 	}
 # endif /* NO_AKP_KEYBOARD */
 
