@@ -11,11 +11,6 @@ addons:
       - binutils-m68k-atari-mint
       - gcc-m68k-atari-mint
       - mintbin-m68k-atari-mint
-      # TODO: replace with snapshots
-      - mintlib-m68k-atari-mint
-      - gemlib-m68k-atari-mint
-      - cflib-m68k-atari-mint
-      - gemma-m68k-atari-mint
 
 env:
   global:
@@ -42,6 +37,8 @@ env:
 
 # If before_install, install or before_script return a non-zero exit code, the build is errored and stops immediately.
 before_install:
+  # get rid of possibly outdated dependencies
+  - sudo dpkg --remove --force-depends mintlib-m68k-atari-mint pml-m68k-atari-mint
   - git clone --depth=1 --branch=freemint-master https://github.com/freemint/travis-scripts.git .travis
   - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
 
