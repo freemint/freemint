@@ -17,12 +17,10 @@ _old_ikbd_int:
 _interrupt_ikbd:
 	tas	lock
 	bne	skip
-	movem.l	a0-a7/d0-d7,-(sp)
-	move.l	a7,oldSP
+	movem.l	a0-a7/d0-d7,registersave
 	lea	ourSP,a7
 	bsr	_kbd_int
-	move.l	oldSP,a7
-	movem.l	(sp)+,a0-a7/d0-d7
+	movem.l	registersave,a0-a7/d0-d7
 	clr.w	lock
 skip:	move.l	_old_ikbd_int(PC),-(sp)
 	rts
@@ -37,6 +35,7 @@ _send_data:
 	move.l	64(sp),a2
 	move.l	68(sp),a0
 	move.l	72(sp),d0
+	suba.l	a5,a5 		| needed for TOS 1.x
 	jsr	(a2)
 	movem.l	(sp),d0-a6
 	lea	60(sp),sp
@@ -57,7 +56,8 @@ retaddr:
 
 	.bss
 lock:	ds.w 1
-oldSP:	ds.l 1
 	ds.l 1024
 ourSP:
+registersave:
+	ds.l 8+8
 	.end
