@@ -73,9 +73,8 @@ void storage_int(void)
 			continue;
 		}
 
-		/* If the device has only one LUN and is not a floppy drive we don't poll */
-		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1 &&
-			mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass != US_SC_UFI)
+		/* If the device has only one LUN we don't poll */
+		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1)
 			continue;
 
 		pccb.lun = usb_dev_desc[i].lun;

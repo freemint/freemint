@@ -699,7 +699,7 @@ is_fat_filesystem(const unsigned char* bootsector)
 	/* sectors per cluster must be a power of 2 */
 	temp = bootsector[0xd];
 	if ((temp != 1) && (temp != 2) && (temp != 4) && (temp != 8) &&
-		(temp != 16) && (temp != 32) && (temp != 64) && (temp != 128))
+	    (temp != 16) && (temp != 32) && (temp != 64) && (temp != 128))
 		return 0;
 
 	/* number of FATs must be 1 or 2 */
@@ -2234,6 +2234,11 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	mass_storage_dev[i].total_lun = usb_get_max_lun(&mass_storage_dev[i].usb_stor);
 
+#if 0
+	struct us_data *ss;
+	ss = (struct us_data *)dev->privptr;
+#endif
+
 	for (lun = 0;
 		lun <= mass_storage_dev[i].total_lun &&
 		lun < MAX_LUN_NUM_PER_DEV &&
@@ -2249,7 +2254,6 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 				usb_stor_reset(lun_global_num);
 				continue;
 		}
-
 
 		//dev_print(&usb_dev_desc[lun_global_num]);
 #if 0
@@ -2292,10 +2296,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		} while (usb_dev_desc[lun_global_num].target != 0xff && lun_global_num < MAX_TOTAL_LUN_NUM);
 	}
 
-	/* Poll multi-LUN device and floppy drive */
-	if ((mass_storage_dev[i].total_lun > 0 ||
-		 mass_storage_dev[i].usb_stor.subclass == US_SC_UFI) && device_handled)
+	if (mass_storage_dev[i].total_lun > 0 && device_handled) {
 		init_polling();
+	}
 
 	usb_disable_asynch(0); /* asynch transfer allowed */
 

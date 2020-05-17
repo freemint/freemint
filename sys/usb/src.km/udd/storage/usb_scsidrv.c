@@ -118,7 +118,7 @@ typedef struct SCSIDRV_Data
 	short changed;
 } SCSIDRV_Data;
 
-static SCSIDRV_Data private[USB_MAX_STOR_DEV];
+static SCSIDRV_Data* private = NULL;
 static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
 static unsigned short USBbus = 3; /* default */
@@ -132,7 +132,9 @@ void SCSIDRV_PerformMediaChange(long dev);
 void
 SCSIDRV_MediaChange(long dev)
 {
-	private[dev].changed = TRUE;
+	// On TOS this is called during boot, before install_scsidrv() has the chance to allocate 'private'.
+	if (private)
+		private[dev].changed = TRUE;
 }
 
 void
@@ -822,6 +824,17 @@ install_scsidrv (void)
 	scsidrv.SendMsg = SCSIDRV_SendMsg;
 	scsidrv.GetMsg = SCSIDRV_GetMsg;
 	scsidrv.ReqData = &reqdata;
+	
+	/* Allocate globally accessible memory for SCSIDRV handles.
+	 * As per SCSIDRV spec the caller is allowed to read the memory pointed to by the handle.
+	 */
+#ifndef TOSONLY
+	private = (SCSIDRV_Data*)m_xalloc(USB_MAX_STOR_DEV * sizeof(SCSIDRV_Data), 0x20|0);
+#else
+	private = (SCSIDRV_Data*)Malloc(USB_MAX_STOR_DEV * sizeof(SCSIDRV_Data));
+#endif
+	if (private == NULL)
+		return;
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
