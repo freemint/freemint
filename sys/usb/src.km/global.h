@@ -60,6 +60,8 @@ typedef char Path[PATH_MAX];
 
 #endif
 
+#define getcookie(x,y) get_toscookie(x,(long unsigned int*)y)
+
 #else /* TOSONLY */
 #include <mint/osbind.h> /* Setexc, SuperToUser */
 #include <stdarg.h>
@@ -168,6 +170,7 @@ void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
 void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
 long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 
+long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 long	_cdecl _mint_strncmp	(const char *str1, const char *str2, long len);
 char *	_cdecl _mint_strcpy	(char *dst, const char *src);
 char *	_cdecl _mint_strncpy	(char *dst, const char *src, long len);
@@ -342,5 +345,62 @@ static inline void hex_long(ulong n)
 	hex_word(n>>16);
 	hex_word(n&0xffff);
 };
+
+/* 
+ * Returns TOS version from OS header. 
+ * Additionally, MSB will be for EmuTOS.
+ */
+
+typedef struct _usb_osheader
+{
+	ushort    os_entry;       /* BRAnch instruction to Reset-handler  */
+  ushort    os_version;     /* TOS version number                   */
+  void       *reseth;         /* Pointer to Reset-handler             */
+  struct _osheader *os_beg;   /* Base address of the operating system */
+  void       *os_end;         /* First byte not used by the OS        */
+  ulong     os_rsvl;        /* Reserved                             */
+ 	void/*GEM_MUPB*/   *os_magic;       /* GEM memory-usage parameter block     */
+  long     os_date;        /* TOS date (English !) in BCD format   */
+  ushort    os_conf;        /* Various configuration bits           */
+  ushort    os_dosdate;     /* TOS date in GEMDOS format            */
+
+    /* The following components are available only as of TOS Version
+       1.02 (Blitter-TOS)               */
+  uchar    **p_root;         /* Base address of the GEMDOS pool      */
+  uchar    **pkbshift;       /* Pointer to BIOS Kbshift variable
+                                  (for TOS 1.00 see Kbshift)           */
+  BASEPAGE  **p_run;          /* Address of the variables containing
+                                 a pointer to the current GEMDOS
+                                 process.                             */
+  ulong     p_rsv2;         /* Reserved, always 'ETOS', if EmuTOS present     */
+} _USB_OSHEADER;
+
+static inline unsigned short get_tos_version(void)
+{
+	unsigned short version;
+	_USB_OSHEADER *osheader;
+	long *sysbase = (long *)0x4f2;
+
+#ifdef TOSONLY
+	long oldssp;
+	if (Super((void *)1L) == 0L)
+		oldssp = Super(0L);
+	else
+		oldssp = 0;
+#endif
+
+	osheader = (_USB_OSHEADER *)*sysbase;
+	version = osheader->os_version;
+
+	if (0x45544F53L == (long)osheader->p_rsv2) /* ETOS */
+		version |= 0x8000;
+
+#ifdef TOSONLY
+	if (oldssp)
+		SuperToUser((void *)oldssp);
+#endif
+
+	return version;
+}
 
 #endif /* _global_h */

@@ -19,6 +19,14 @@ LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
 OBJS += 
 endif
 
+ifeq ($(usb),plm)
+TARGET = usb_lmem.prg
+CPU = 000
+USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=65536 -DUSB_CONFIG_BUFFER_SIZE=16384 -DUSB_MAX_DEVICE=8
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+OBJS += 
+endif
+
 ifeq ($(usb),000)
 TARGET = usb000.km
 CPU = 000
@@ -64,4 +72,4 @@ endif
 #
 # all default targets
 #
-usbtargets = 02060 030 040 060 deb 000 col prg
+usbtargets = 02060 030 040 060 deb 000 col prg plm

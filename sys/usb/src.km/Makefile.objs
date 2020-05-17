@@ -45,6 +45,9 @@ else
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
 STRIPEX =
 endif
+ifeq ($(TARGET),usb_lmem.prg)
+OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
+endif
 
 VPATH = ..
 
