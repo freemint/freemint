@@ -296,8 +296,14 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 
 		/* bug # x+1:  at least up to TOS 2.05 SCC Rsconf forgets to or #0x700,sr...
 		 * use MAPTAB to call it directly, at ipl7 if it points to ROM
+		 *
+		 * Note that FireTOS maps ColdFire's PSC0 serial port to BIOS device 7, and
+		 * it will hit the condition below, it should be no problem but just in case.
 		 */
 		if (baud > -2
+#ifdef __mcoldfire__
+			&& !coldfire_68k_emulation
+#endif
 			&& (b == 1 || t->tty == &scca_tty)
 			&& (b = 1, rsval > 0xe00000L) && rsval < 0xefffffL)
 		{
