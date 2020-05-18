@@ -662,6 +662,20 @@ init_xrandom (void)
 static void
 init_bconmap (void)
 {
+#ifdef __mcoldfire__
+	/* We don't support Bconmap() for ColdFire targets. EmuTOS doesn't
+	 * implement Bconmap() for ColdFire targets, FireTOS does it but has
+	 * the problem describe below.
+	 *
+	 * This function calls Rsconf() and there are some bugs in FireTOS
+	 * and EmuTOS Rsconf() implementations. FireTOS returns always the value
+	 * 5 when inquiring for the baud rate (Rsconf(-2,....)). And EmuTOS
+	 * doesn't set the values for the deafult serial port (PSC0) but for
+	 * the faulty FireBee's MFP.
+	 */
+
+	return;
+#else
 	int i, oldmap;
 	PROC *p = get_curproc();
 
@@ -687,6 +701,7 @@ init_bconmap (void)
 
 	if (has_bconmap)
 		mapin (p->p_fd->bconmap = oldmap);
+#endif /* __mcoldfire__ */
 }
 
 void
