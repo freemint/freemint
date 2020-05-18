@@ -40,11 +40,23 @@
 # include "xdd/mfp/kgdb_mfp.c"
 # endif
 
+/* There is an issue with FireTOS Bconout() function, for some reason between
+ * 2 consecutive Bconout() calls a delay must be set otherwise system hangs.
+ * We must deal direcly with the PSC0 port ourselves. EmuTOS is fine regarding
+ * this but we keep the direct approach for it nevertheless.
+ */
+# ifdef __mcoldfire__
+# include "arch/psc0.h"
+# endif
+
 static void VDEBUGOUT(const char *, va_list, int alert_flag, int nl);
 
 
 int debug_level = ALERT_LEVEL;	/* how much debugging info should we print? */
-# if MFP_DEBUG_DIRECT
+
+# ifdef __mcoldfire__
+int out_device = 8;
+# elif MFP_DEBUG_DIRECT
 int out_device = 0;
 # else
 int out_device = 2;	/* BIOS device to write errors to */
@@ -91,6 +103,14 @@ int logptr = 0;
 static void
 safe_Bconout(short dev, int c)
 {
+#ifdef __mcoldfire__
+	if (dev == 8)
+	{
+		board_putchar((char)c);
+		return;
+	}
+#endif
+
 #ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
 		mfp_kgdb_putc(c);
@@ -104,6 +124,13 @@ safe_Bconout(short dev, int c)
 static short
 safe_Bconstat(short dev)
 {
+#ifdef __mcoldfire__
+	if (dev == 8)
+	{
+		return (short)board_getchar_present();
+	}
+#endif
+
 #ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
 		return mfp_kgdb_instat();
@@ -120,6 +147,13 @@ safe_Bconstat(short dev)
 static long
 safe_Bconin(short dev)
 {
+#ifdef __mcoldfire__
+	if (dev == 8)
+	{
+		return (uint8)board_getchar();
+	}
+#endif
+
 #ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
 		return mfp_kgdb_getc();

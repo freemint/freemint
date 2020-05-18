@@ -15,6 +15,7 @@ COBJS = \
 	mprot030.c \
 	mprot040.c \
 	process_reg.c \
+	psc0.c \
 	sig_mach.c \
 	timer.c
 
