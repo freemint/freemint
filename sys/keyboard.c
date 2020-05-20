@@ -1610,7 +1610,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				quickmovb(kbuf, kbuf + sizeof(short), size - sizeof(short) + 2);
+				_mint_bcopy(kbuf + sizeof(short), kbuf, size - sizeof(short) + 2);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -1626,7 +1626,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
 					gl_kbd = sbuf[1];
 
-				quickmovb(kbuf, kbuf + sizeof(long), size - sizeof(long) + 2);
+				_mint_bcopy(kbuf + sizeof(long), kbuf, size - sizeof(long) + 2);
 				break;
 			}
 			case 0x2773:		/* the ISO format (as of 30.VII.2004) */
@@ -1644,8 +1644,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[3] > 0) && (sbuf[3] <= 10))
 				{
 					iso_8859_code = (long)sbuf[3];
-					quickmovb(kbuf, kbuf + (sizeof(long)*2), \
-							size - (sizeof(long)*2) + 2);
+					_mint_bcopy(kbuf + (sizeof(long)*2), kbuf, size - (sizeof(long)*2) + 2);
 				}
 				else
 				{
