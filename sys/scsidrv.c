@@ -179,8 +179,8 @@ sys_scsidrv (ushort op,
 		/* InquireBus */
 		case 4:
 		{
-			wrap2 f = (wrap2) scsidrv_InquireBus;
-			return (*f)(a1, a2);
+			wrap3 f = (wrap3) scsidrv_InquireBus;
+			return (*f)(a1, a2, a3);
 		}
 		/* CheckDev */
 		case 5:
@@ -209,8 +209,8 @@ sys_scsidrv (ushort op,
 		/* Error */
 		case 9:
 		{
-			wrap2 f = (wrap2) scsidrv_Error;
-			return (*f)(a1, a2);
+			wrap3 f = (wrap3) scsidrv_Error;
+			return (*f)(a1, a2, a3);
 		}
 
 		/* target interface
