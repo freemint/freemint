@@ -22,6 +22,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "xa_types.h"
+
 #include "widgets.h"
 #include "xa_global.h"
 
@@ -63,6 +65,11 @@
 #include "win_draw.h"
 
 #include "mint/signal.h"
+
+/* The active widgets are intimately connected to the mouse.
+ * There is only 1 mouse, so there is only need for 1 global structure.
+ */
+XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
 
 static void rp_2_ap_row(struct xa_window *wind);
 static void free_wt(XA_TREE *wt);
@@ -821,7 +828,7 @@ remove_wt(XA_TREE *wt, bool force)
  * SLIST windows, for example, that are considered to be objects along
  * the lines of AES Object trees,
  */
-static inline void
+static void
 draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;

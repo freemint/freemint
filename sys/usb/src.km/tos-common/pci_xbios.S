@@ -466,6 +466,3 @@ _x_Phys_to_virt:
 	jsr (A1)
 	move.l (SP)+,D2
 	rts
-
-	.lcomm _tab_funcs_pci,4
-

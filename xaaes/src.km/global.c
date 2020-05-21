@@ -108,9 +108,6 @@ short my_global_aes[GL_AES_SZ];
 /*
  * global data
  */
-/* The screen descriptor */
-struct xa_screen screen;
-
 struct xa_window *root_window = 0, *menu_window = 0;
 #if WITH_BBL_HELP
 struct xa_window *bgem_window = 0;

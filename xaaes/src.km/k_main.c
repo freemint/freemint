@@ -681,11 +681,6 @@ init_moose(void)
 }
 
 
-/* The active widgets are intimately connected to the mouse.
- * There is only 1 mouse, so there is only need for 1 global structure.
- */
-XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
-
 /*
  * Ozk: multi_intout() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
