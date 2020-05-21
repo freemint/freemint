@@ -1044,8 +1044,8 @@ detach_ext(struct proc *p, long ident)
 			}
 		}
 
-		for ( ; i < p_ext->used; i++)
-			p_ext->ext[i] = p_ext->ext[i+1];
+		if (i < p_ext->used)
+			_mint_bcopy(&p_ext->ext[i+1], p_ext->ext[i], (p_ext->used - i - 1) * sizeof(struct proc_ext));
 
 		if (!p_ext->used)
 		{

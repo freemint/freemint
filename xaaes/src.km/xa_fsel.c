@@ -70,7 +70,6 @@
 #include "mint/pathconf.h"
 #include "mint/stat.h"
 
-
 #define FLAG_FILLED 0x00000001
 #define FLAG_DIR	0x00000002
 #define FLAG_EXE	0x00000004
@@ -2692,6 +2691,10 @@ fs_msg_handler(
 	short amq, short qmf,
 	short *msg);
 
+#if __GNUC_PREREQ(10,0)
+#pragma GCC push_options
+#pragma GCC optimize "-O1"
+#endif
 /*
  * FormKeyInput()
  */
@@ -2771,7 +2774,9 @@ fs_key_form_do(int lock,
 			else
 			{
 				for( cp = fs->fs_pattern + l, *(cp+1) = 0; cp > fs->fs_pattern; cp-- )
-					*cp = *(cp-1);
+				{
+					*cp = cp[-1];
+				}
 				*cp = '|';
 			}
 
@@ -2930,6 +2935,9 @@ fs_key_form_do(int lock,
 	}
 	return true;
 }
+#if __GNUC_PREREQ(10,0)
+#pragma GCC pop_options
+#endif
 
 static void set_edit_width( OBJECT *obtree )
 {

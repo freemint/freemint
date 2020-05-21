@@ -673,6 +673,11 @@ static ushort rsvfmax = 0;
 static char *freepool = NULL;
 static ushort freesize = 0;
 
+#if __GNUC_PREREQ(10, 0)
+/* avoid a library call to memmove which we don't have */
+#pragma GCC optimize "-Os"
+#endif
+
 long
 add_rsvfentry (char *name, char portflags, char bdev)
 {
