@@ -31,10 +31,13 @@
 //#define COOKIE_CPU		0x5f435055L
 
 /*
- * global variables
+ * We can't define global variables here without triggering
+ * a "multiple definition" error from the linker with -fno-common.
+ * Move the the definition to the driver's source file.
+ *
+ * ulong loopcount_1_msec;
+ * ulong delay_1usec;
  */
-ulong loopcount_1_msec;
-ulong delay_1usec;
 
 /*
  * function prototypes (functions in delayasm.S)

@@ -187,6 +187,14 @@ static struct descriptor rom_descriptor = {
 	},
 };
 
+#ifdef TOSONLY
+/* Global variables for tosdelay.c. Should be defined here to avoid
+ * "multiple definition" errors from the linker with -fno-common.
+ */
+unsigned long loopcount_1_msec;
+unsigned long delay_1usec;
+#endif
+
 #if defined(CONFIG_EHCI_IS_TDI)
 #define ehci_is_TDI()	(1)
 #else

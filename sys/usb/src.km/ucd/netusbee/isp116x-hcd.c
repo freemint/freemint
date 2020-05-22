@@ -127,6 +127,13 @@ struct usb_device *devgone;	/* device which was disconnected */
 static long rh_devnum;		/* address of Root Hub endpoint */
 static char job_in_progress = 0;
 static char oc_protection_on = 0;
+#ifdef TOSONLY
+/* Global variables for tosdelay.c. Should be defined here to avoid
+ * "multiple definition" errors from the linker with -fno-common.
+ */
+unsigned long loopcount_1_msec;
+unsigned long delay_1usec;
+#endif
 
 /*
  *Function prototypes

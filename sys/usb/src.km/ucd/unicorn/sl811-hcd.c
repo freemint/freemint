@@ -102,6 +102,13 @@ static struct usb_port_status rh_status = { 0, 0 };
 static struct usb_device *root_hub_dev = NULL;
 static unsigned short root_address = 0;
 static int intr = 0;
+#ifdef TOSONLY
+/* Global variables for tosdelay.c. Should be defined here to avoid
+ * "multiple definition" errors from the linker with -fno-common.
+ */
+unsigned long loopcount_1_msec;
+unsigned long delay_1usec;
+#endif
 
 static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 			        void *data, unsigned short buf_len, struct devrequest *cmd);

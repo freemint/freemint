@@ -213,6 +213,12 @@ struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 #ifdef TOSONLY
 /* Semaphore to avoid polling LUN status while transfer is in process */
 int transfer_running;
+
+/* Global variables for tosdelay.c. Should be defined here to avoid
+ * "multiple definition" errors from the linker with -fno-common.
+ */
+unsigned long loopcount_1_msec;
+unsigned long delay_1usec;
 #endif
 
 #define DEFAULT_SECTOR_SIZE 2048

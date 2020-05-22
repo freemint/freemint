@@ -33,6 +33,14 @@
 long loader_pid = 0;
 long loader_pgrp = 0;
 
+#ifdef TOSONLY
+/* Global variables for tosdelay.c. Should be defined here to avoid
+ * "multiple definition" errors from the linker with -fno-common.
+ */
+unsigned long loopcount_1_msec;
+unsigned long delay_1usec;
+#endif
+
 struct usb_module_api usb_api;
 
 #define MSG_BUILDDATE	__DATE__

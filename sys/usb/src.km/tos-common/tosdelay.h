@@ -30,6 +30,8 @@
  */
 extern ulong loopcount_1_msec;
 
+extern ulong delay_1usec;
+
 /*
  * function prototypes
  */
