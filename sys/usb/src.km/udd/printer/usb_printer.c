@@ -146,7 +146,6 @@ printer_bconout(ushort dev, ushort ch)
 {
 	long chunk_len = TRANSFER_SIZE;
 	static int i = 0;
-	int j;
 	static int type = TYPE_UNKNOWN;
 	static char last9[10] = "         ";
 	static int jpg_count = 0; //to count jpg codes, some jpg files may have several
@@ -157,10 +156,14 @@ printer_bconout(ushort dev, ushort ch)
 	/* Remember last 9 characters */
 	register char *c0 = last9;
 	register char *c1 = &last9[1];
-	for (j=0;j<8;j++)
-	{
-		*c0++ = *c1++;
-	}
+	*c0++ = *c1++;
+	*c0++ = *c1++;
+	*c0++ = *c1++;
+	*c0++ = *c1++;
+	*c0++ = *c1++;
+	*c0++ = *c1++;
+	*c0++ = *c1++;
+	*c0++ = *c1++;
 	*c0 = c2;
 	
 	/* Detect end of job according to type (text, PJL, PCL, PDF, JPG) */
