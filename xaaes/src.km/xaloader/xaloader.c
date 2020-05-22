@@ -1,4 +1,3 @@
-
 #include <mint/cookie.h>
 #include <mint/mintbind.h>
 #include <mint/ssystem.h>
@@ -106,8 +105,19 @@ static void d2a( int r, char e[] )
 		r /= 10;
 	}
 
+#if __GNUC_PREREQ(10, 0)
+	if( i >= 0 )
+		e[i--] = ' ';
+	if( i >= 0 )
+		e[i--] = ' ';
+	if( i >= 0 )
+		e[i--] = ' ';
+	if( i >= 0 )
+		e[i--] = ' ';
+#else
 	while( i >= 0 )
 		e[i--] = ' ';
+#endif
 }
 
 int
