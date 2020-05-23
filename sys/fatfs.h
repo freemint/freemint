@@ -53,6 +53,11 @@ extern FILESYS fatfs_filesys;
 void fatfs_init (void);
 long fatfs_config (const ushort drv, const long config, const long mode);
 
+/* Defines used to identity partition's Fat type */
+
+#define MAX_FAT12_CLUSTERS	4084
+#define MAX_FAT16_CLUSTERS	65524
+
 /* config: */
 
 # define FATFS_VFAT	1	/* enable/disable VFAT extension [on drv]

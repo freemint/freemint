@@ -5223,7 +5223,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: GEM/BGM detected"));
 
 		xbpb->ftype = FAT_TYPE_16;
-		fvi = (void *) (u->data + sizeof (*fbs));
 	}
 	else
 
@@ -5236,7 +5235,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: F32 detected"));
 
 		xbpb->ftype = FAT_TYPE_32;
-		fvi = (void *) (u->data + sizeof (*f32bs));
 	}
 	else
 
@@ -5253,7 +5251,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			case 0x01:
 			{
 				xbpb->ftype = FAT_TYPE_12;
-				fvi = (void *) (u->data + sizeof (*fbs));
 				break;
 			}
 			case 0x04:
@@ -5261,14 +5258,12 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			case 0x0e: /* FAT16, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_16;
-				fvi = (void *) (u->data + sizeof (*fbs));
 				break;
 			}
 			case 0x0b:
 			case 0x0c: /* FAT32, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_32;
-				fvi = (void *) (u->data + sizeof (*f32bs));
 				break;
 			}
 			default:
@@ -5316,6 +5311,16 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 */
 		return EMEDIUMTYPE;
 
+	/* Don't trust only in the partition ID to identify the FAT's type,
+	 * "Total Logical Sectors" field in the BPB (0x08 offset) must be
+	 * 0 in the FAT32 partitions */
+	if (xbpb->ftype == FAT_TYPE_32 && WPEEK_INTEL (fbs->dir_entries))
+	{
+		/* This must be in reality a FAT12 or FAT16. We assume FAT16
+		 * and we'll confirm it later checking the number of clusters.
+		 */
+		xbpb->ftype = FAT_TYPE_16;
+	}
 
 	xbpb->recsiz = WPEEK_INTEL (fbs->sector_size);
 	xbpb->clsiz = fbs->cluster_size;
@@ -5379,6 +5384,26 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 	xbpb->numcl -= xbpb->datrec;
 	xbpb->numcl /= xbpb->clsiz;
+
+	/* Now that we know the number of clusters, we can confirm that we've
+	 * identified the correct partition's FAT type. Microsoft documentation
+	 * states that this is the method that must be used.
+	 */
+	if (xbpb->numcl <= MAX_FAT12_CLUSTERS)
+	{
+		xbpb->ftype = FAT_TYPE_12;
+		fvi = (void *) (u->data + sizeof (*fbs));
+	}
+	else if (xbpb->numcl <= MAX_FAT16_CLUSTERS)
+	{
+		xbpb->ftype = FAT_TYPE_16;
+		fvi = (void *) (u->data + sizeof (*fbs));
+	}
+	else
+	{
+		xbpb->ftype = FAT_TYPE_32;
+		fvi = (void *) (u->data + sizeof (*f32bs));
+	}
 
 	if (xbpb->ftype == FAT_TYPE_32)
 	{
