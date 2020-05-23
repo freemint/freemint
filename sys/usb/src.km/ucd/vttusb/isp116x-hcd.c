@@ -201,6 +201,14 @@ extern short max_xfer_len;	/* maximum transfer length, configurable via config b
 extern short enable_ocp;	/* enable/disable overcurrent proection, configurable via config block */
 extern short use_blitter;	/* use Blitter if available, configurable via config block */
 
+#ifdef TOSONLY
+/* Global variables for tosdelay.c. Should be defined here to avoid
+ * "multiple definition" errors from the linker with -fno-common.
+ */
+unsigned long loopcount_1_msec;
+unsigned long delay_1usec;
+#endif
+
 #ifdef VTTUSB_HW_INT
 /*
  * interrupt handling - bottom half
