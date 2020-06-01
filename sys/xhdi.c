@@ -208,7 +208,7 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			
 			/* maximal clustersize */
 			case XH_DL_CLSIZB:
-				return 65536L;
+				return 32768L; /* This should be the value MIN_BLOCK in block_IO.c */
 			
 			/* maximal (bpb->rdlen * bpb->recsiz / 32) */
 			case XH_DL_RDLEN:
