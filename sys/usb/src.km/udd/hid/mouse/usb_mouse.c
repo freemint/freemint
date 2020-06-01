@@ -383,6 +383,20 @@ static inline char clip_to_s8(long v)
 	}
 }
 
+/*
+ * Wireless mice using MosArt Semiconductor chips are strange: They unconditionally
+ * NAK every second USB transaction. They do this under Windows, too, so it's not
+ * a driver issue. Furthermore, they seem to have a FIFO. Even after the user stops
+ * moving the mouse, the cursor continues to move while the FIFO is being emptied.
+ * This results in a perceived lagging/trailing of the mouse cursor.
+ * To empty the FIFO quicker, the driver polls a MosArt mouse up to *four* times
+ * during a single call. Two of these polls are NAKed, see above.
+ * Because this takes additional CPU time, this "hack" is only enabled when the
+ * MosArt vendor ID is detected.
+ */
+#define USB_VID_MOSART (0x062a)
+int mosart_hack = 0;
+
 void
 mouse_int (void)
 {
@@ -414,167 +428,181 @@ mouse_int (void)
 	if (wheel_interval < MAX_WHEEL_INTERVAL)
 		wheel_interval++;
 
-	r = usb_bulk_msg (mse_data.pusb_dev,
-					  mse_data.irqpipe,
-					  data,
-					  mse_data.irqmaxp > 8 ? 8 : mse_data.irqmaxp,
-					  &actlen, USB_CNTL_TIMEOUT * 5, 1);
+	/* See above for an explanation of 'mosart_hack'. */
+	int k;
+	for(k=0; k<=mosart_hack; k++) {
+		r = usb_bulk_msg (mse_data.pusb_dev,
+						  mse_data.irqpipe,
+						  data,
+						  mse_data.irqmaxp > 8 ? 8 : mse_data.irqmaxp,
+						  &actlen, USB_CNTL_TIMEOUT * 5, 1);
 
-	/* actlen is actual length of the mouse report */
+		/* actlen is actual length of the mouse report */
 
-	if ((r != 0) || (actlen < 3))
-	{
-		return;
-	}
-
-	if (hid_mode) {
-		mse_data.new.buttons = hid_get_data(data, &usages[HID_BUTTONS]);
-		mse_data.new.x = hid_get_data(data, &usages[HID_X]);
-		mse_data.new.y = hid_get_data(data, &usages[HID_Y]);
-		mse_data.new.wheel = hid_get_data(data, &usages[HID_WHEEL]);
-		mse_data.new.ac_pan = hid_get_data(data, &usages[HID_AC_PAN]);
-	} else {
-		/* Boot mode with fixed data format */
-		mse_data.new.buttons = data[0];
-		mse_data.new.x = (signed char)data[1];
-		mse_data.new.y = (signed char)data[2];
-		mse_data.new.wheel = (actlen > 3)?(signed char)data[3]:0;
-		mse_data.new.ac_pan = 0;
-	}
-
-	/* Buttons change */
-	if (mse_data.new.buttons != mse_data.old_buttons)
-		mouse_change = 1;
-
-	/* x,y change */
-	if (mse_data.new.x != 0 || mse_data.new.y != 0) {
-		mouse_change = 1;
-		DEBUG(("Report 8 bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x X = %ld Y = %ld",
-			   data[0],
-			   data[1],
-			   data[2],
-			   data[3],
-			   data[4],
-			   data[5],
-			   data[6],
-			   data[7],
-			   mse_data.new.x,
-			   mse_data.new.y));
-	}
-
-	/* Wheel change */
-	if (mse_data.new.wheel != 0)
-		wheel_change = 1;
-
-	/* AC Pan change */
-	if (mse_data.new.ac_pan != mse_data.old_ac_pan)
-		ac_pan_change = 1;
-
-	if (mouse_change)
-	{
-		char buttons, old_buttons;
-
-		(void) buttons;
-		(void) old_buttons;
-
-		buttons = (char)mse_data.new.buttons;
-		old_buttons = (char)mse_data.old_buttons;
-		mouse_packet[0] =
-			((buttons & 1) << 1) +
-			((buttons & 2) >> 1) + 0xF8;
-		mouse_packet[1] = clip_to_s8(mse_data.new.x);
-		mouse_packet[2] = clip_to_s8(mse_data.new.y);
-
-		if ((buttons & 4) && ! (old_buttons & 4)) /* 3rd button */
-			usb_kbd_send_code (0x72, 0x0D); /* Numpad ENTER press */
-		else if (! (buttons & 4) && (old_buttons & 4))
-			usb_kbd_send_code (0xF2, 0x0D); /* Numpad ENTER release */
-
-		if ((buttons & 8) && ! (old_buttons & 8))	/* 4th button = Page DOWN */
+		if (mosart_hack && ((r != 0) || (actlen < 3)))
 		{
-			usb_kbd_send_code(0x2a, 0);		/* Shift press */
-			usb_kbd_send_code(0x50, 0);		/* Arrow Down press */
+			/* Retry NAKed transaction on MosArt mouse. */
+			r = usb_bulk_msg (mse_data.pusb_dev,
+							  mse_data.irqpipe,
+							  data,
+							  mse_data.irqmaxp > 8 ? 8 : mse_data.irqmaxp,
+							  &actlen, USB_CNTL_TIMEOUT * 5, 1);
 		}
-		else if (! (buttons & 8) && (old_buttons & 8))
+		if ((r != 0) || (actlen < 3))
 		{
-			usb_kbd_send_code(0x50 + 0x80, 0);	/* Arrow Down release */
-			usb_kbd_send_code(0x2a + 0x80, 0);	/* Shift release */
+			return;
 		}
 
-		if ((buttons & 16) && ! (old_buttons & 16))	/* 5th button = Page UP */
-		{
-			usb_kbd_send_code(0x2a, 0);		/* Shift press */
-			usb_kbd_send_code(0x48, 0);		/* Arrow Up press */
+
+		if (hid_mode) {
+			mse_data.new.buttons = hid_get_data(data, &usages[HID_BUTTONS]);
+			mse_data.new.x = hid_get_data(data, &usages[HID_X]);
+			mse_data.new.y = hid_get_data(data, &usages[HID_Y]);
+			mse_data.new.wheel = hid_get_data(data, &usages[HID_WHEEL]);
+			mse_data.new.ac_pan = hid_get_data(data, &usages[HID_AC_PAN]);
+		} else {
+			/* Boot mode with fixed data format */
+			mse_data.new.buttons = data[0];
+			mse_data.new.x = (signed char)data[1];
+			mse_data.new.y = (signed char)data[2];
+			mse_data.new.wheel = (actlen > 3)?(signed char)data[3]:0;
+			mse_data.new.ac_pan = 0;
 		}
-		else if (! (buttons & 16) && (old_buttons & 16))
-		{
-			usb_kbd_send_code(0x48 + 0x80, 0);	/* Arrow Up release */
-			usb_kbd_send_code(0x2a + 0x80, 0);	/* Shift release */
+
+		/* Buttons change */
+		if (mse_data.new.buttons != mse_data.old_buttons)
+			mouse_change = 1;
+
+		/* x,y change */
+		if (mse_data.new.x != 0 || mse_data.new.y != 0) {
+			mouse_change = 1;
+			DEBUG(("Report 8 bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x X = %ld Y = %ld",
+				   data[0],
+				   data[1],
+				   data[2],
+				   data[3],
+				   data[4],
+				   data[5],
+				   data[6],
+				   data[7],
+				   mse_data.new.x,
+				   mse_data.new.y));
 		}
-	}
 
-#ifdef WHEELMOUSE
-	if (wheel_change)
-	{
-		char wheel;
-		short i, no_of_keypresses;
+		/* Wheel change */
+		if (mse_data.new.wheel != 0)
+			wheel_change = 1;
 
-		(void) wheel;
+		/* AC Pan change */
+		if (mse_data.new.ac_pan != mse_data.old_ac_pan)
+			ac_pan_change = 1;
 
-		wheel = mse_data.new.wheel;
-		no_of_keypresses = (MAX_WHEEL_INTERVAL - wheel_interval + 1) * wheel;
-		no_of_keypresses = (no_of_keypresses < 0)? -no_of_keypresses:no_of_keypresses;
-		no_of_keypresses = (no_of_keypresses > MAX_KEYPRESSES)? MAX_KEYPRESSES:no_of_keypresses;
-		for (i = 0; i < no_of_keypresses; i++)
+		if (mouse_change)
 		{
-			if (wheel > 0)
+			char buttons, old_buttons;
+
+			(void) buttons;
+			(void) old_buttons;
+
+			buttons = (char)mse_data.new.buttons;
+			old_buttons = (char)mse_data.old_buttons;
+			mouse_packet[0] =
+				((buttons & 1) << 1) +
+				((buttons & 2) >> 1) + 0xF8;
+			mouse_packet[1] = clip_to_s8(mse_data.new.x);
+			mouse_packet[2] = clip_to_s8(mse_data.new.y);
+
+			if ((buttons & 4) && ! (old_buttons & 4)) /* 3rd button */
+				usb_kbd_send_code (0x72, 0x0D); /* Numpad ENTER press */
+			else if (! (buttons & 4) && (old_buttons & 4))
+				usb_kbd_send_code (0xF2, 0x0D); /* Numpad ENTER release */
+
+			if ((buttons & 8) && ! (old_buttons & 8))	/* 4th button = Page DOWN */
 			{
-				usb_kbd_send_code (0x48, 0); //UP press
-				usb_kbd_send_code (0xC8, 0); //UP release
+				usb_kbd_send_code(0x2a, 0);		/* Shift press */
+				usb_kbd_send_code(0x50, 0);		/* Arrow Down press */
 			}
-			else if (wheel < 0)
+			else if (! (buttons & 8) && (old_buttons & 8))
 			{
-				usb_kbd_send_code (0x50, 0); //DOWN press
-				usb_kbd_send_code (0xD0, 0); //DOWN release
+				usb_kbd_send_code(0x50 + 0x80, 0);	/* Arrow Down release */
+				usb_kbd_send_code(0x2a + 0x80, 0);	/* Shift release */
+			}
+
+			if ((buttons & 16) && ! (old_buttons & 16))	/* 5th button = Page UP */
+			{
+				usb_kbd_send_code(0x2a, 0);		/* Shift press */
+				usb_kbd_send_code(0x48, 0);		/* Arrow Up press */
+			}
+			else if (! (buttons & 16) && (old_buttons & 16))
+			{
+				usb_kbd_send_code(0x48 + 0x80, 0);	/* Arrow Up release */
+				usb_kbd_send_code(0x2a + 0x80, 0);	/* Shift release */
 			}
 		}
-		wheel_interval = 0;
+
+	#ifdef WHEELMOUSE
+		if (wheel_change)
+		{
+			char wheel;
+			short i, no_of_keypresses;
+
+			(void) wheel;
+
+			wheel = mse_data.new.wheel;
+			no_of_keypresses = (MAX_WHEEL_INTERVAL - wheel_interval + 1) * wheel;
+			no_of_keypresses = (no_of_keypresses < 0)? -no_of_keypresses:no_of_keypresses;
+			no_of_keypresses = (no_of_keypresses > MAX_KEYPRESSES)? MAX_KEYPRESSES:no_of_keypresses;
+			for (i = 0; i < no_of_keypresses; i++)
+			{
+				if (wheel > 0)
+				{
+					usb_kbd_send_code (0x48, 0); //UP press
+					usb_kbd_send_code (0xC8, 0); //UP release
+				}
+				else if (wheel < 0)
+				{
+					usb_kbd_send_code (0x50, 0); //DOWN press
+					usb_kbd_send_code (0xD0, 0); //DOWN release
+				}
+			}
+			wheel_interval = 0;
+		}
+		if (ac_pan_change)
+		{
+			char ac_pan, old_ac_pan;
+
+			(void) ac_pan;
+			(void) old_ac_pan;
+
+			ac_pan = mse_data.new.ac_pan;
+			old_ac_pan = mse_data.old_ac_pan;
+
+			if (old_ac_pan < 0)
+				usb_kbd_send_code (0xCB, 0); /* Arrow Left release */
+			else if (old_ac_pan > 0)
+				usb_kbd_send_code (0xCD, 0); /* Arrow Right release */
+
+			if (ac_pan > 0)
+				usb_kbd_send_code (0x4D, 0); /* Arrow Right press */
+			else if (ac_pan < 0)
+				usb_kbd_send_code (0x4B, 0); /* Arrow Left press */
+
+		}
+	#endif
+		if (mouse_change || wheel_change || ac_pan_change)
+		{
+			fake_hwint();
+			cpu_saver = 0;
+			cpu_saver_interval = 0;
+		}
+		if (mouse_change)
+		{
+			send_packet (vector->mousevec, mouse_packet, mouse_packet + 3);
+			mse_data.old_buttons = mse_data.new.buttons;
+		}
+		if (ac_pan_change)
+			mse_data.old_ac_pan = mse_data.new.ac_pan;
 	}
-	if (ac_pan_change)
-	{
-		char ac_pan, old_ac_pan;
-
-		(void) ac_pan;
-		(void) old_ac_pan;
-
-		ac_pan = mse_data.new.ac_pan;
-		old_ac_pan = mse_data.old_ac_pan;
-
-		if (old_ac_pan < 0)
-			usb_kbd_send_code (0xCB, 0); /* Arrow Left release */
-		else if (old_ac_pan > 0)
-			usb_kbd_send_code (0xCD, 0); /* Arrow Right release */
-
-		if (ac_pan > 0)
-			usb_kbd_send_code (0x4D, 0); /* Arrow Right press */
-		else if (ac_pan < 0)
-			usb_kbd_send_code (0x4B, 0); /* Arrow Left press */
-
-	}
-#endif
-	if (mouse_change || wheel_change || ac_pan_change)
-	{
-		fake_hwint();
-		cpu_saver = 0;
-		cpu_saver_interval = 0;
-	}
-	if (mouse_change)
-	{
-		send_packet (vector->mousevec, mouse_packet, mouse_packet + 3);
-		mse_data.old_buttons = mse_data.new.buttons;
-	}
-	if (ac_pan_change)
-		mse_data.old_ac_pan = mse_data.new.ac_pan;
 }
 
 #ifndef TOSONLY
@@ -717,6 +745,17 @@ mouse_probe (struct usb_device *dev, unsigned int ifnum)
 	usb_set_idle (dev, iface->desc.bInterfaceNumber, 0, 0);     /* report infinite */
 
 	usb_set_protocol(dev, iface->desc.bInterfaceNumber, hid_mode); // report/HID or boot
+
+	/* See above for an explanation of 'mosart_hack'. */
+	if (dev->descriptor.idVendor == USB_VID_MOSART)
+	{
+		DEBUG(("mouse_probe: MosArt hack enabled"));
+		mosart_hack = 1;
+	}
+	else
+	{
+		mosart_hack = 0;
+	}
 
 #ifndef TOSONLY
 	long r = kthread_create (get_curproc (), mouse_poll_thread, NULL, NULL,
