@@ -72,7 +72,9 @@
 #define AES_ARCH_M68040    	4
 #define AES_ARCH_M68060  	5
 #define AES_ARCH_M6802060	6
-#define AES_ARCH_COLDFILRE	7
+#endif
+#ifndef AES_ARCH_COLDFIRE
+#define AES_ARCH_COLDFIRE	7
 #endif
 
 /* appl_getinfo(AES_FUNCTIONS) return values */

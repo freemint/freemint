@@ -82,7 +82,7 @@
 
 #if defined(__mcoldfire__)
  #define ASCII_ARCH_TARGET	"coldfire"
- #define ARCH_TARGET	AES_ARCH_COLDFILRE
+ #define ARCH_TARGET	AES_ARCH_COLDFIRE
 #elif defined(__mc68060__)
  #ifdef __mc68020__
   #define ASCII_ARCH_TARGET	"m68020-060"
