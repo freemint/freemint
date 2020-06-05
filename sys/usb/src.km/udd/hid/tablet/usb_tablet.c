@@ -733,9 +733,10 @@ tablet_int (void)
 
 		/* Function key 0 assigned to ESC, 1 inactive, 2 to toggle tip pressure recognition, 3 assigned to get_rez(),  */
 		if ((tblt_data.new.function_keys & 1) && ! (tblt_data.old.function_keys & 1))
+		{
 			usb_kbd_send_code (0x01, 0); /* ESC press */
-		else if (! (tblt_data.new.function_keys & 1) && (tblt_data.old.function_keys & 1))
 			usb_kbd_send_code (0x01 + 0x80, 0); /* ESC release */
+		}
 		
 		if ((tblt_data.new.function_keys & 4) && ! (tblt_data.old.function_keys & 4))
 		{
