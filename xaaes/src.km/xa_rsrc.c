@@ -462,12 +462,13 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ti->te_ptext	= (char *)-1L;
 			ti->te_ptmplt = (char *)ei;
 
-			ti++;
-			ei++;
-			n--;
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", (unsigned long)ti, ei->ti.te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				(unsigned long)ti->te_ptext, (unsigned long)ti->te_ptmplt, (unsigned long)ti->te_pvalid));
+
+			ti++;
+			ei++;
+			n--;
 		}
 		*extra = (char *)ei;
 	}
