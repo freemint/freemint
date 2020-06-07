@@ -281,7 +281,14 @@ sys_XHDOSLimits(ushort which,ulong limit)
 
 	return old_limit;
 #else
-	return xhdoslimits(which, limit);
+	if (limit == 0)
+		/* We call the kernel to show its limits */
+		return xhdoslimits(which, limit);
+	else
+		/* This should never happen, MiNT never will set new limit values as
+		 * long as the kernel doesn't have loadable/unloadable files systems.
+		 */
+		return ENOSYS;
 #endif /* TOSONLY */
 }
 
