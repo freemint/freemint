@@ -444,6 +444,8 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 static void
 fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, char **extra)
 {
+	unsigned long num_tedinfos = n;
+
 	if (client->options.app_opts & XAAO_OBJC_EDIT)
 	{
 		XTEDINFO *ei;
@@ -488,13 +490,15 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			n--;
 		}
 	}
-	DIAG((D_rsrc, NULL, "fixed up %ld tedinfo's", n));
+	DIAG((D_rsrc, NULL, "fixed up %ld tedinfo's", num_tedinfos));
 }
 
 /* fixup all iconblk field pointers */
 static void
 fix_icnarray(struct xa_client *client, void *b, ICONBLK *ib, unsigned long n, char **extra)
 {
+	unsigned long num_iconblks = n;
+
 	while (n)
 	{
 		ib->ib_pmask = (void *)((char *)ib->ib_pmask + (long)b);
@@ -508,13 +512,15 @@ fix_icnarray(struct xa_client *client, void *b, ICONBLK *ib, unsigned long n, ch
 		n--;
 	}
 
-	DIAG((D_rsrc, NULL, "fixed up %ld iconblk's", n));
+	DIAG((D_rsrc, NULL, "fixed up %ld iconblk's", num_iconblks));
 }
 
 /* fixup all bitblk data pointers */
 static void
 fix_bblarray(struct xa_client *client, void *b, BITBLK *bb, unsigned long n, char **extra)
 {
+	unsigned long num_bitblks = n;
+
 	while (n)
 	{
 		bb->bi_pdata = (void *)((char *)bb->bi_pdata + (long)b);
@@ -524,7 +530,7 @@ fix_bblarray(struct xa_client *client, void *b, BITBLK *bb, unsigned long n, cha
 		bb++;
 		n--;
 	}
-	DIAG((D_rsrc, NULL, "fixed up %ld bitblk's", n));
+	DIAG((D_rsrc, NULL, "fixed up %ld bitblk's", num_bitblks));
 }
 
 static short
