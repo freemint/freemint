@@ -2337,6 +2337,21 @@ remove_app_dialogs(struct xa_pdlg_info *pdlg)
 }
 
 
+bool pdlg_available(void)
+{
+	/*
+	 * FIXME: should try v_read_seetings(), but for that
+	 * we need a printer handle first
+	 */
+	if (C.nvdi_version < 0x0410)
+	{
+		DIAGS((" -- VDI not capable of PRN_SETTINGS!"));
+		return false;
+	}
+	return true;
+}
+
+
 static struct xa_pdlg_info *
 create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp)
 {
@@ -2345,9 +2360,8 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp)
 
 	DIAG((D_pdlg, client, "create_new_pdlg"));
 
-	if (C.nvdi_version < 0x0410)
+	if (!pdlg_available())
 	{
-		DIAGS((" -- VDI not capable of PRN_SETTINGS!"));
 		return (void *)-1L;
 	}
 
@@ -2502,20 +2516,9 @@ XA_pdlg_create(int lock, struct xa_client *client, AESPB *pb)
 	pb->addrout[0] = 0L;
 	pdlg = create_new_pdlg(client, MOVER|NAME);
 	if (!pdlg || pdlg == (void *)-1L)
-		goto memerr;
+		return XAC_DONE;
 
 	pb->addrout[0] = (long)pdlg->handle;
-
-	return XAC_DONE;
-
-memerr:
-	if (pdlg)
-	{
-		if (pdlg == (void *)-1L)
-			ALERT((xa_strings(AL_PDLG)/*"XaAES: Print dialogs unavailable with current VDI"*/));
-		else
-			kfree(pdlg);
-	}
 
 	return XAC_DONE;
 }

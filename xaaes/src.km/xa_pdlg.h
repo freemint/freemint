@@ -42,4 +42,6 @@ AES_function
 	XA_pdlg_do;
 #endif
 
+bool pdlg_available(void);
+
 #endif /* _xa_pdlg_h */

@@ -47,6 +47,7 @@
 #include "xa_types.h"
 #include "xa_evnt.h"
 #include "xa_rsrc.h"
+#include "xa_pdlg.h"
 #include "xa_user_things.h"
 #include "version.h"
 #include "mint/fcntl.h"
@@ -1573,6 +1574,10 @@ XA_appl_getinfo(int lock, struct xa_client *client, AESPB *pb)
 		for (i = 1; i < n_intout; i++)
 			pb->intout[i] = info_tab[gi_type][i-1];
 
+#if WDIALOG_PDLG
+		if (gi_type == 7 && !pdlg_available())
+			intout[0] &= ~0x10;
+#endif
 		gi_type = 1;
 	} else
 		gi_type = 0;
