@@ -1576,7 +1576,7 @@ XA_appl_getinfo(int lock, struct xa_client *client, AESPB *pb)
 
 #if WDIALOG_PDLG
 		if (gi_type == 7 && !pdlg_available())
-			intout[0] &= ~0x10;
+			pb->intout[1] &= ~0x10;
 #endif
 		gi_type = 1;
 	} else
