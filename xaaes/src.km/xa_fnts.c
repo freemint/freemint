@@ -436,12 +436,12 @@ xvqt_name(struct xa_fnts_info *fnts, short index, struct xa_fnts_item *fitem)
 	/*
 	 * Get family/style names -- only possible when vqt_xfntinfo() is available.
 	 */
-	if (C.nvdi_version >= 0x0302) /* FIXME: maybe unneeded */
 	{
 		XFNT_INFO x;
 
 		x.family_name[0] = '\0';
 		x.style_name[0] = '\0';
+		x.size = sizeof(x);
 		vqt_xfntinfo(fnts->vdi_handle, 0xffff, fitem->f.id, 0, &x);
 		strcpy(fitem->f.family_name, x.family_name);
 		strcpy(fitem->f.style_name, x.style_name);
