@@ -1085,43 +1085,76 @@ install_xhdi_driver(void)
 	return xhnewcookie(usbxhdi);
 #else
 	long r = 0;
+
+	/* For querying a limit with XHDOSLimit(), the limit parameter
+	 * must be set to 0, if we place 0 as value in the functions
+	 * below the compiler will push it to the satck as a short
+	 * and the limit parameter must be a long. We use a long
+	 * variable to avoid this.
+	 */
+	long query = 0;
+
 	cookie_fun XHDI = get_fun_ptr ();
 
 	if (XHDI) {
 		long tmp;
 
-		/* Tell the underlying XHDI driver of our limits. */
+		/* According to the XHDI specification if there
+		 * is a XHDI driver already installed query from
+		 * it the limit values and save them.
+		 */
+		tmp = XHDI(XHDOSLIMITS, XH_DL_SECSIZ, query);
+		sys_XHDOSLimits(XH_DL_SECSIZ, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_MINFAT, query);
+		sys_XHDOSLimits(XH_DL_MINFAT, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_MAXFAT, query);
+		sys_XHDOSLimits(XH_DL_MAXFAT, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_MINSPC, query);
+		sys_XHDOSLimits(XH_DL_MINSPC, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_MAXSPC, query);
+		sys_XHDOSLimits(XH_DL_MAXSPC, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_CLUSTS, query);
+		sys_XHDOSLimits(XH_DL_CLUSTS, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_MAXSEC, query);
+		sys_XHDOSLimits(XH_DL_MAXSEC, tmp);
+		/* We keep dl_maxdrives as 32 although we were
+		 * running on TOS, we handle a extended PUN_INFO
+		 * struct that can keep that number of partitions.
+		 *
+		 * tmp = XHDI(XHDOSLIMITS, XH_DL_DRIVES, query);
+		 * sys_XHDOSLimits(XH_DL_DRIVES, tmp);
+		 */
+		tmp = XHDI(XHDOSLIMITS, XH_DL_CLSIZB, query);
+		sys_XHDOSLimits(XH_DL_CLSIZB, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_RDLEN, query);
+		sys_XHDOSLimits(XH_DL_RDLEN, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_CLUSTS12, query);
+		sys_XHDOSLimits(XH_DL_CLUSTS12, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_CLUSTS32, query);
+		sys_XHDOSLimits(XH_DL_CLUSTS32, tmp);
+		tmp = XHDI(XHDOSLIMITS, XH_DL_BFLAGS, query);
+		sys_XHDOSLimits(XH_DL_BFLAGS, tmp);
 
-		tmp = sys_XHDOSLimits(XH_DL_SECSIZ, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_SECSIZ, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_MINFAT, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_MINFAT, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_MAXFAT, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_MAXFAT, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_MINSPC, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_MINSPC, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_MAXSPC, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_MAXSPC, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_CLUSTS, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_MAXSEC, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_MAXSEC, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_DRIVES, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_DRIVES, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_CLSIZB, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_CLSIZB, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_RDLEN, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_RDLEN, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_CLUSTS12, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS12, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_CLUSTS32, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_CLUSTS32, tmp);
-		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
-		(void)XHDI(XHDOSLIMITS, XH_DL_BFLAGS, tmp);
-
+		/* HDDRIVER marks a media change internally when XHDOSLimits()
+		 * is called for setting new limits. Then when the BPB is
+		 * requested re-evaluates the boot sector data based on the new
+		 * limit for the drives handled by it. I guess the code below was
+		 * put here for that reason. Now we don't set the limits instead
+		 * we query them, so this code shouldn't be necessary any more,
+		 * but because I'm not 100% sure I leave it for now.
+		 */
 		if (Mediach(2)) (void)Getbpb(2);
 
 		next_handler = XHDI;
+	}
+	else
+	{
+		/* If we're the first XHDI driver installed call
+		 * sys_XHDOSLimits() querying any value so it has
+		 * the opportunity to guess and set the limit
+		 * values depending on the OS we're running on.
+		 */
+		sys_XHDOSLimits(0, 0);
 	}
 
 	setcookie(COOKIE_XHDI, (long)&usbxhdi);
