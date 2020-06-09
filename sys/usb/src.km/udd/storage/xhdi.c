@@ -508,7 +508,7 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 		ushort *ahdi_version, ushort *max_IPL)
 {
 	if (next_handler) {
-		long ret = next_handler(XHSTOP, dev, name, version, company,
+		long ret = next_handler(XHINQDRIVER, dev, name, version, company,
 					ahdi_version, max_IPL);
 		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
 			return ret;
