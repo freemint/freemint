@@ -179,8 +179,8 @@ long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		   long len, long interval)
 {
-	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
-	    dev, pipe, buffer, len, interval));
+	DEBUG(("dev=0x%ld pipe=%lx buf=0x%lx size=%ld int=%ld",
+	       dev->devnum, pipe, (unsigned long)buffer, len, interval));
 	
 	long r;
 #ifdef TOSONLY
