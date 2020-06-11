@@ -21,7 +21,7 @@
 
 /*--- Debug section ---*/
 
-#if 1
+#if 0
 # define DEV_DEBUG	1
 #endif
 
