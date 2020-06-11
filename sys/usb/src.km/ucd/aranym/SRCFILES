@@ -8,7 +8,16 @@ HEADER = \
 COBJS = \
 	aranym-hcd.c
 
+TOSCOBJS = \
+	crtinit.c \
+	natfeat.c
+
 SSOBJS = \
 	nfusbasm.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+TOSSSOBJS = \
+	entry.S \
+	natfeat_asm.S \
+	setstack.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)

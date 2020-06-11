@@ -27,6 +27,11 @@ sys/usb/src.km/tosdelay.c
 sys/usb/src.km/loader/crtinit.c
 sys/usb/src.km/loader/entry.S
 sys/usb/src.km/loader/setstack.S
+sys/usb/src.km/ucd/aranym/crtinit.c
+sys/usb/src.km/ucd/aranym/entry.S
+sys/usb/src.km/ucd/aranym/natfeat.c
+sys/usb/src.km/ucd/aranym/natfeat_asm.S
+sys/usb/src.km/ucd/aranym/setstack.S
 sys/usb/src.km/ucd/unicorn/crtinit.c
 sys/usb/src.km/ucd/unicorn/delayasm.S
 sys/usb/src.km/ucd/unicorn/entry.S

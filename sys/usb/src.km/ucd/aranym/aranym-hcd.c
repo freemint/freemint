@@ -19,10 +19,22 @@
  *
  */
 
-#include "mint/mint.h"
-#include "mint/dcntl.h"
+/*--- Debug section ---*/
+
+#if 1
+# define DEV_DEBUG	1
+#endif
+
+/*--- Includes ---*/
 #include "mint/arch/nf_ops.h"
+#include "mint/dcntl.h"
+
+#ifndef TOSONLY
+#include "mint/mint.h"
 #include "libkern/libkern.h"
+#endif
+
+#include "../../global.h"
 
 #include "aranym.h"
 #include "usbhost_nfapi.h"
@@ -30,12 +42,17 @@
 #include "../../usb.h"
 #include "../../usb_api.h"
 
-
+/*--- Defines ---*/
 #define VER_MAJOR	0
 #define VER_MINOR	2
 #define VER_STATUS	
 
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+#ifdef TOSONLY
+#define MSG_VERSION    "TOS"
+#else
+#define MSG_VERSION    "FreeMiNT"
+#endif
+
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -45,31 +62,6 @@
 	"(c) 2012-2014 by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
-/*--- Debug section ---*/
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-
-# define FORCE(x)	KERNEL_FORCE x
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-
-#else
-
-# define FORCE(x)	KERNEL_FORCE x
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
-# define ASSERT(x)	assert x
-
-#endif
-
-
 /*--- Global variables ---*/
 
 static const char hcd_name[] = "aranym-hcd";
@@ -77,7 +69,12 @@ static char lname[] = "Aranym USB driver\0";
 
 /* BEGIN kernel interface */
 
+#ifndef TOSONLY
 struct kentry	*kentry;
+struct kentry	*kentry;
+#else
+extern unsigned long _PgmSize;
+#endif
 struct usb_module_api *api;
 
 /* END kernel interface */
@@ -104,8 +101,6 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
-
 /* USB controller interface */
 static long _cdecl	aranym_open		(struct ucdif *);
 static long _cdecl	aranym_close		(struct ucdif *);
@@ -128,10 +123,13 @@ static struct ucdif aranym_uif =
 	0,			/* resrvd2 */
 };
 
-/* ================================================================ */
+
+/* Native features */
 static unsigned long nfUsbHostID;
 long __CDECL (*nf_call)(long id, ...) = 0UL;
-/* ================================================================ */
+#ifdef TOSONLY
+struct nf_ops *nf_init(void);
+#endif
 
 
 /*--- Functions ---*/
@@ -139,21 +137,39 @@ long __CDECL (*nf_call)(long id, ...) = 0UL;
 static inline unsigned long
 get_nfapi_version()
 {
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	return nf_call(USBHOST(GET_VERSION));
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 }
 
 
 static inline unsigned long
 get_int_level()
 {
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	return nf_call(USBHOST(USBHOST_INTLEVEL));
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 }
 
 
 static inline unsigned long
 get_rh_port_status(unsigned long *rhportstatus)
 {
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	return nf_call(USBHOST(USBHOST_RH_PORT_STATUS), rh_port_status);
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 }
 
 
@@ -167,9 +183,13 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	    dev, pipe, buffer, len, interval));
 	
 	long r;
-
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	r = nf_call(USBHOST(USBHOST_SUBMIT_INT_MSG), pipe, buffer, len, interval);
-
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	if(r >= 0) {
 		dev->status = 0;
 		dev->act_len = r;
@@ -185,9 +205,13 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		       long len, struct devrequest *setup)
 {
 	long r;
-
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	r = nf_call(USBHOST(USBHOST_SUBMIT_CONTROL_MSG), pipe, buffer, len, setup);
-
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	if(r >= 0) {
 		dev->status = 0;
 		dev->act_len = r;
@@ -203,9 +227,13 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		    long len, long flags, unsigned long timeout)
 {
 	long r;
-
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	r = nf_call(USBHOST(USBHOST_SUBMIT_BULK_MSG), pipe, buffer, len, flags, timeout);
-
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	if(r >= 0) {
 		dev->status = 0;
 		dev->act_len = r;
@@ -219,7 +247,11 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 /* --- Interrupt functions ----------------------------------------------------- */
 
 static void
+#ifdef TOSONLY
+int_handle_tophalf(void)
+#else
 int_handle_tophalf (PROC *process, long arg)
+#endif
 {
 	unsigned char i;
 
@@ -238,7 +270,11 @@ int_handle_tophalf (PROC *process, long arg)
 void _cdecl
 nfusb_interrupt(void)
 {	
+#ifdef TOSONLY
+	int_handle_tophalf();
+#else
 	addroottimeout (0L, int_handle_tophalf, 0x1);
+#endif
 }
 
 
@@ -338,22 +374,50 @@ long
 usb_lowlevel_stop(void *dummy)
 {
 	int r;
-
+#ifdef TOSONLY
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	r = nf_call(USBHOST(USBHOST_LOWLEVEL_STOP));
-
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	return r;
 }
 
 
 /* Entry function */
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long _cdecl init (struct kentry *, struct usb_module_api *, char **);
+
 long _cdecl
-init (struct kentry *k, struct usb_module_api *uapi, char **reason)
+init(struct kentry *k, struct usb_module_api *uapi, char **reason)
+#endif
 {
 	long ret;
 	char message[100];
-
+#ifndef TOSONLY
 	kentry	= k;
+	api	= uapi;
 
+	if (check_kentry_version())
+		return -1;
+#else
+	const struct nf_ops *nf_ops;
+
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+	nf_ops = nf_init();
+	if (oldmode) SuperToUser(oldmode);
+	if (!nf_ops)
+	{
+		c_conws("Native Features not present on this system\r\n");
+		return NULL;
+	}
+#endif
 	/* get the USBHost NatFeat ID */
 	nfUsbHostID = 0;
 
@@ -376,16 +440,18 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 		return 1;
 	}
 
-
-	api	= uapi;
-
-	if (check_kentry_version())
-		return -1;
-
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
+#ifdef TOSONLY
+	/* Get USB cookie */
+	if (!getcookie(_USB, (long *)&api))
+	{
+		(void)Cconws("NetUSBee failed to get _USB cookie\r\n");
+		return -1;
+	}
+#endif
 	ret = ucd_register(&aranym_uif, &root_hub_dev);
 	if (ret)
 	{
@@ -398,6 +464,11 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	/* Set handler and interrupt for Root Hub Status Change */
 # define vector(x)      (x / 4)
 	old_interrupt = (void(*)()) b_setexc(vector(0x60) + get_int_level(), (long) my_interrupt);
+
+#ifdef TOSONLY
+	c_conws("Aranym USB driver installed.\r\n");
+	Ptermres(_PgmSize,0);
+#endif
 	
 	return 0;
 }
