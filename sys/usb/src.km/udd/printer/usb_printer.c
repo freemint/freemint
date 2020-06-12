@@ -71,7 +71,7 @@ static void setup_printer_module_api(void);
 /*
  * USB device interface
  */
-#define TRANSFER_SIZE	64
+#define TRANSFER_SIZE	1024
 static long printer_transfer(long);
 static long printer_ioctl (struct uddif *, short, long);
 static long printer_disconnect (struct usb_device *dev);
@@ -290,7 +290,7 @@ printer_transfer(long xfer_len)
 					  buf_ptr,
 					  xfer_len,
 					  &act_len, // actual length of data transferred
-					  USB_CNTL_TIMEOUT * 5, 0); // is 100ms * 5, eg. half-second, but actually not used
+					  60000L, 0); // 60 seconds timeout
 		if (prn_data.pusb_dev->status != 0)
 		{
 #ifdef DEBUGTOS
