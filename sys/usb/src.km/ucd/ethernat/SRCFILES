@@ -19,4 +19,4 @@ TOSSSOBJS = \
 	setstack.S \
 	delayasm.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)
