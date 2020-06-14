@@ -1131,6 +1131,11 @@ restart_mount:
 		else if (r)
 		{
 			release_cookie (&dir);
+			/*
+			 * TOS programs might expect ENOTDIR
+			 */
+			if (r == ENOENT && dolast == 0 && p->domain == DOM_TOS)
+				r = ENOTDIR;
 			break;
 		}
 
