@@ -171,6 +171,8 @@ usb_kbd_irq (struct usb_device *dev)
 static void
 handle_modifiers(unsigned char val, unsigned char offset)
 {
+	static long old_capslock_state = 0L;
+
 	if ((val & 1) || (val & 0x10)) /* Left or right control */
 		SEND_SCAN(0x1d + offset);
 
@@ -180,8 +182,19 @@ handle_modifiers(unsigned char val, unsigned char offset)
 	if (val & 0x20) /* Right shift */
 		SEND_SCAN(0x36 + offset);
 
-	if ((val & 4) || (val & 0x40)) /* Left or right alt */
+	if (val & 4) /* Left alt */
 		SEND_SCAN(0x38 + offset);
+
+	if (val & 0x40) /* Right Alt (Alt Gr), assign to Caps Lock */
+	{
+		if (offset == 0x00)
+			old_capslock_state = get_capslock_state();
+		if (old_capslock_state == 0L)
+		{
+				SEND_SCAN(0x3a + 0x00);
+				SEND_SCAN(0x3a + 0x80);
+		}
+	}
 }
 
 /*
