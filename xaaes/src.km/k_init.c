@@ -783,11 +783,8 @@ k_init(unsigned long vm)
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 
-	if( !(work_out[0] == 4 || work_out[0] == 1) )
-	{
-		BLOG((0,"invalid screen-type:%d", work_out[0] ));
-		return -1;
-	}
+	BLOG((0,"screen-type:%d", work_out[0] ));
+
 	screen.planes = work_out[4];		/* number of planes in the screen */
 
 	client = C.Aes;
