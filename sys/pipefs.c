@@ -359,7 +359,7 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 		ptr->blocks = ptr->size / 1024L;
 
 		/* adjust to 512 byte block base size */
-		ptr->blocks <<= 2;
+		ptr->blocks <<= 1;
 	}
 
 	return E_OK;
