@@ -1,8 +1,11 @@
-Graphics Tablet Driver for TOS, MagiC & MiNT Developed by Claude Labelle -
-Licensed under GPL
+Graphics Tablet Driver for TOS, MagiC & MiNT
 
-Supports the Wacom Intuos S and the PF1209 tablets. Should also work with
-Wacom Intuos M. May work with other USB graphics tablets.
+Developed by Claude Labelle -Licensed under GPL
+
+Supports the Wacom Intuos S (model CTL-4100) and the PF1209 tablets.
+May work on  Wacom Intuos M (model CTL-6100WL). Does not work with Wacom
+Bamboo CTH-470, CTH-670, Intuos M CTH-680. May work with other USB graphics
+tablets.
 
 The tablet replaces the mouse for precise drawing using a lightweight
 cordless stylus using no battery. A mouse can still co-exist.
