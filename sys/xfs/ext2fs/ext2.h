@@ -2,8 +2,8 @@
  * Filename:     ext2.h
  * Project:      ext2 file system driver for MiNT
  *
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list (mint@fishpool.com).
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
  *
  * Copying:      Copyright 1999 Frank Naumann (fnaumann@freemint.de)
  *
@@ -27,6 +27,8 @@
 
 # ifndef _ext2_h
 # define _ext2_h
+
+# include "global.h"
 
 /*
  * The second extended filesystem constants/structures
@@ -184,10 +186,23 @@ struct ext2_group_desc
 # define EXT2_ECOMPR_FL			0x00000800 /* Compression error */
 /* End compression flags --- maybe not all used */
 # define EXT2_BTREE_FL			0x00001000 /* btree format dir */
+# define EXT2_INDEX_FL			0x00001000 /* hash-indexed directory */
+# define EXT2_IMAGIC_FL			0x00002000
+# define EXT3_JOURNAL_DATA_FL	0x00004000 /* file data should be journaled */
+# define EXT2_NOTAIL_FL			0x00008000 /* file tail should not be merged */
+# define EXT2_DIRSYNC_FL 		0x00010000 /* Synchronous directory modifications */
+# define EXT2_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
+# define EXT4_HUGE_FILE_FL               0x00040000 /* Set to each huge file */
+# define EXT4_EXTENTS_FL 		0x00080000 /* Inode uses extents */
+# define EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
+# define EXT4_EOFBLOCKS_FL		0x00400000 /* Blocks allocated beyond EOF */
+# define EXT4_SNAPFILE_FL		0x01000000  /* Inode is a snapshot */
+# define EXT4_SNAPFILE_DELETED_FL	0x04000000  /* Snapshot is being deleted */
+# define EXT4_SNAPFILE_SHRUNK_FL		0x08000000  /* Snapshot shrink has completed */
 # define EXT2_RESERVED_FL		0x80000000 /* reserved for ext2 lib */
 
-# define EXT2_FL_USER_VISIBLE		0x00001FFF /* User visible flags */
-# define EXT2_FL_USER_MODIFIABLE	0x000000FF /* User modifiable flags */
+# define EXT2_FL_USER_VISIBLE		0x004BDFFF /* User visible flags */
+# define EXT2_FL_USER_MODIFIABLE	0x004B80FF /* User modifiable flags */
 
 
 # if 0 /* moved to our global dcntl.h */

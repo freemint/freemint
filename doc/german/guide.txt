@@ -17,7 +17,7 @@ Korrekturen bin ich jederzeit sehr dankbar.
 
 Rckmeldungen am besten per e-Mail. Bei allgemeinen Problemen oder
 Fragen zu FreeMiNT ist die MiNT-liste auch eine sehr gute Anlaufstelle.
-Man kann sich unter mint-request@fishpool.com und dem Betreff "subscribe"
+Man kann sich unter freemint-discuss-request@@lists.sourceforge.net und dem Betreff "subscribe"
 in diese Internet Mailingliste eintragen lassen. ACHTUNG: die ist eine
 internationale Mailingliste, alle Postings sind in Englisch!
 
