@@ -934,7 +934,8 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	else
 		return ENMFILES;
 
-	fc->index |= dirh->fc.index & 0xffff0000;
+	if (fc->index != ROOTDIR_ROOT)
+		fc->index |= dirh->fc.index << 16;
 
 	if (!(dirh->flags & TOS_SEARCH))
 	{
@@ -944,7 +945,7 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		namelen -= 4;
 	}
 
-	if (dirh->flags == 0)
+	if (!(dirh->flags & TOS_SEARCH))
 	{
 		/* The MiNT documentation appendix E states that we always have
 		 * to stuff as many bytes as possible into the buffer.
@@ -1161,7 +1162,7 @@ kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		namelen -= 4;
 	}
 
-	if (dirh->flags == 0)
+	if (!(dirh->flags & TOS_SEARCH))
 	{
 		/* The MiNT documentation appendix E states that we always have
 		 * to stuff as many bytes as possible into the buffer.
@@ -1234,7 +1235,7 @@ kern_pathconf (fcookie *dir, int which)
 	}
 
 	DEBUG (("kern_pathconf: unknown opcode 0x%04x", (unsigned) which));
-	return ENOSYS;
+	return EINVAL;
 }
 
 static long _cdecl
@@ -1471,7 +1472,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		default:
 		{
 			DEBUG (("kern_fscntl: unknown opcode 0x%04x", (unsigned) cmd));
-			return ENOSYS;
+			return EINVAL;
 		}
 	}
 

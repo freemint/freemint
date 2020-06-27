@@ -1044,13 +1044,13 @@ tos_opendir(DIR *dirh, int flags)
 {
 	long r;
 	struct tindex *t = (struct tindex *)dirh->fc.index;
-	DTABUF *dta = (DTABUF *)(dirh->fsstuff + 2);
+	DTABUF *dta = DIR_DTA(dirh);
 
 	UNUSED(flags);
 
 	(void)tfullpath(tmpbuf, t, "*.*");
 
-	do_setdta(DIR_DTA(dirh));
+	do_setdta(dta);
 
 	r = ROM_Fsfirst(tmpbuf, FILEORDIR);
 	/* TB: Filter VFAT-Entries
@@ -1151,10 +1151,10 @@ tos_rewinddir(DIR *dirh)
 {
 	struct tindex *ti = (struct tindex *)dirh->fc.index;
 	long r;
-	DTABUF *dta = (DTABUF *)(dirh->fsstuff + 2);
+	DTABUF *dta = DIR_DTA(dirh);
 
 	(void)tfullpath(tmpbuf, ti, "*.*");
-	do_setdta(DIR_DTA(dirh));
+	do_setdta(dta);
 	r = ROM_Fsfirst(tmpbuf, FILEORDIR);
 	/* TB: Filter VFAT entries
 	 */

@@ -27,6 +27,7 @@
 # include "mint/stat.h"
 
 # include "filesys.h"
+# include "unifs.h"
 # include "memory.h"
 # include "kerinfo.h"
 # include "kmemory.h"
@@ -36,6 +37,7 @@
 # include "time.h"
 # include "tty.h"
 
+# define ROOT_INODE  1  /* inode number for root directory */
 
 static long	_cdecl pipe_root	(int drv, fcookie *fc);
 static long	_cdecl pipe_lookup	(fcookie *dir, const char *name, fcookie *fc);
@@ -65,6 +67,8 @@ static long	_cdecl pipe_datime	(FILEPTR *f, ushort *time, int flag);
 static long	_cdecl pipe_close	(FILEPTR *f, int pid);
 static long	_cdecl pipe_select	(FILEPTR *f, long p, int mode);
 static void	_cdecl pipe_unselect	(FILEPTR *f, long p, int mode);
+
+static fs_ino_t pipe_ino = ROOT_INODE + 1;
 
 
 FILESYS pipe_filesys =
@@ -166,7 +170,7 @@ pipe_root (int drv, fcookie *fc)
 	{
 		fc->fs = &pipe_filesys;
 		fc->dev = drv;
-		fc->index = 0L;
+		fc->index = ROOT_INODE;
 		return E_OK;
 	}
 
@@ -181,7 +185,7 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 
 	TRACE (("pipe_lookup(%s)", name));
 
-	if (dir->index != 0)
+	if (dir->index != ROOT_INODE)
 	{
 		DEBUG (("pipe_lookup(%s): bad directory", name));
 		return ENOTDIR;
@@ -193,6 +197,7 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 	if (!*name || (name[0] == '.' && name[1] == 0))
 	{
 		*fc = *dir;
+		fc->index = ROOT_INODE;
 		return E_OK;
 	}
 
@@ -209,7 +214,7 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 		if (!strnicmp (b->name, name, NAME_MAX))
 		{
 			fc->fs = &pipe_filesys;
-			fc->index = (long) b;
+			fc->index = b->ino;
 			fc->dev = dir->dev;
 			return E_OK;
 		}
@@ -217,6 +222,17 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 
 	DEBUG (("pipe_lookup: name `%s' not found", name));
 	return ENOENT;
+}
+
+
+static struct fifo *pipe_lookupi(fs_ino_t ino)
+{
+	struct fifo *this;
+	
+	for (this = piperoot; this; this = this->next)
+		if (this->ino == ino)
+			return this;
+	return NULL;
 }
 
 static long _cdecl
@@ -229,6 +245,8 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->blksize = 1024L;
 
 	if (fc->index == 0)
+		return ENOENT;
+	if (fc->index == ROOT_INODE)
 	{
 		/* root directory */
 
@@ -237,27 +255,20 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 		SET_XATTR_TD(xattr,m,pipestamp.tv_sec);
 		SET_XATTR_TD(xattr,a,xtime.tv_sec);
 		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
-#if 0
-		*(long *) &xattr->mtime = pipestamp.tv_sec;
-		*(long *) &xattr->atime = xtime.tv_sec;
-		*(long *) &xattr->ctime = rootproc->started.tv_sec;
-#endif
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
 		xattr->size = xattr->nblocks = 0;
+		xattr->nlink = 2;
 	}
 	else
 	{
-		struct fifo *this = (struct fifo *) fc->index;
+		struct fifo *this = pipe_lookupi(fc->index);
 
+		if (this == NULL)
+			return ENOENT;
 		SET_XATTR_TD(xattr,m,this->mtime.tv_sec);
 		SET_XATTR_TD(xattr,a,xtime.tv_sec);
 		SET_XATTR_TD(xattr,c,this->ctime.tv_sec);
-#if 0
-		*(long *) &xattr->mtime = this->mtime.tv_sec;
-		*(long *) &xattr->atime = xtime.tv_sec;
-		*(long *) &xattr->ctime = this->ctime.tv_sec;
-#endif
 		xattr->uid = this->uid;
 		xattr->gid = this->gid;
 		xattr->mode = this->mode;
@@ -300,6 +311,8 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 	ptr->blksize = 1024L;
 
 	if (fc->index == 0)
+		return ENOENT;
+	if (fc->index == ROOT_INODE)
 	{
 		/* root directory */
 
@@ -316,10 +329,14 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 		ptr->ctime.high_time = 0;
 		ptr->ctime.time = rootproc->started.tv_sec;
 		ptr->ctime.nanoseconds = 0;
+		ptr->nlink = 2;
 	}
 	else
 	{
-		struct fifo *this = (struct fifo *) fc->index;
+		struct fifo *this = pipe_lookupi(fc->index);
+
+		if (this == NULL)
+			return ENOENT;
 
 		ptr->uid = this->uid;
 		ptr->gid = this->gid;
@@ -368,9 +385,9 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 static long _cdecl
 pipe_chown (fcookie *fc, int uid, int gid)
 {
-	struct fifo *this = (struct fifo *) fc->index;
+	struct fifo *this = pipe_lookupi(fc->index);
 
-	if (!this)
+	if (this == 0)
 		return EACCES;
 
 	if (uid != -1) this->uid = uid;
@@ -382,9 +399,9 @@ pipe_chown (fcookie *fc, int uid, int gid)
 static long _cdecl
 pipe_chmode (fcookie *fc, unsigned int mode)
 {
-	struct fifo *this = (struct fifo *) fc->index;
+	struct fifo *this = pipe_lookupi(fc->index);
 
-	if (!this)
+	if (this == 0)
 		return EACCES;
 
 	this->mode = (this->mode & S_IFMT) | (mode & ~S_IFMT);
@@ -400,11 +417,14 @@ pipe_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 
 	if (size <= 0)
 		return EBADARG;
-	if (dir->index == 0)
+	if (dir->index == 0 || dir->index == ROOT_INODE)
 		*pathname = '\0';
 	else
 	{
-		pipe_name = ((struct fifo *) dir->index)->name;
+		struct fifo *this = pipe_lookupi(dir->index);
+		if (this == NULL)
+			return ENOENT;
+		pipe_name = this->name;
 		if (strlen (pipe_name) < size)
 			strcpy (pathname, pipe_name);
 		else
@@ -419,7 +439,7 @@ pipe_opendir (DIR *dirh, int flags)
 {
 	UNUSED (flags);
 
-	if (dirh->fc.index != 0)
+	if (dirh->fc.index != ROOT_INODE)
 	{
 		DEBUG (("pipe_opendir: bad directory"));
 		return ENOTDIR;
@@ -432,34 +452,48 @@ pipe_opendir (DIR *dirh, int flags)
 static long _cdecl
 pipe_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
-	struct fifo *this = piperoot;
 	int i = dirh->index++;
+	const char *thisname;
 
-	while (i && this)
+	if (i == 0)
 	{
-		i--;
-		this = this->next;
+		thisname = ".";
+		fc->index = ROOT_INODE;
+	} else if (i == 1)
+	{
+		thisname = "..";
+		fc->index = dirh->fc.index;
+	} else
+	{
+		struct fifo *this = piperoot;
+		i -= 2;
+		while (i && this)
+		{
+			i--;
+			this = this->next;
+		}
+
+		if (!this)
+			return ENMFILES;
+		thisname = this->name;
+		fc->index = this->ino;
 	}
 
-	if (!this)
-		return ENMFILES;
-
 	fc->fs = &pipe_filesys;
-	fc->index = (long) this;
 	fc->dev = dirh->fc.dev;
 
-	if (dirh->flags == 0)
+	if (!(dirh->flags & TOS_SEARCH))
 	{
 		namelen -= 4;
 		if (namelen <= 0)
 			return EBADARG;
 
-		*((long *) name) = (long) this;
+		*((long *) name) = fc->index;
 		name += 4;
 	}
 
-	if (strlen (this->name) < namelen)
-		strcpy (name, this->name);
+	if (strlen (thisname) < namelen)
+		strcpy (name, thisname);
 	else
 		return EBADARG;
 
@@ -617,6 +651,9 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	b->mode = ((attrib & FA_SYSTEM) ? S_IFCHR : S_IFIFO) | (mode & ~S_IFMT);
 	b->uid = get_curproc()->p_cred->ucr->euid;
 	b->gid = get_curproc()->p_cred->ucr->egid;
+	b->ino = pipe_ino++;
+	if (pipe_ino == 0)
+		pipe_ino = ROOT_INODE + 1;
 
 	/* the O_HEAD flag indicates that the file hasn't actually been opened
 	 * yet; the next open gets to be the pty master. pipe_open will
@@ -632,7 +669,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 
 	/* we have to return a file cookie as well */
 	fc->fs = &pipe_filesys;
-	fc->index = (long)b;
+	fc->index = b->ino;
 	fc->dev = dir->dev;
 
 	/* update time/date stamps for u:\pipe */
@@ -644,10 +681,10 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 static DEVDRV * _cdecl
 pipe_getdev (fcookie *fc, long *devsp)
 {
-	struct fifo *b = (struct fifo *)fc->index;
+	struct fifo *b = pipe_lookupi(fc->index);
 
 	UNUSED (devsp);
-	return (b->flags & O_TTY) ? &pty_device : &pipe_device;
+	return b && (b->flags & O_TTY) ? &pty_device : &pipe_device;
 }
 
 static long _cdecl
@@ -678,7 +715,12 @@ pipe_open (FILEPTR *f)
 	struct fifo *p;
 	int rwmode = f->flags & O_RWMODE;
 
-	p = (struct fifo *) f->fc.index;
+	p = pipe_lookupi(f->fc.index);
+	if (!p)
+	{
+		DEBUG(("pipe_open: no such file"));
+		return EACCES;
+	}
 	f->flags |= p->flags;
 
 	/* if this is the first open for this file, then the O_HEAD flag is
@@ -782,7 +824,13 @@ pipe_write (FILEPTR *f, const char *buf, long nbytes)
 	long bytes_written = 0;
 	long r;
 
-	this = (struct fifo *)f->fc.index;
+	this = pipe_lookupi(f->fc.index);
+	if (!this)
+	{
+		DEBUG(("pipe_write: no such file"));
+		return EBADF;
+	}
+
 	p = (f->flags & O_HEAD) ? this->inp : this->outp;
 	if (!p)
 	{
@@ -914,7 +962,13 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 	long bytes_read = 0;
 	char *pbuf;
 
-	this = (struct fifo *)f->fc.index;
+	this = pipe_lookupi(f->fc.index);
+	if (!this)
+	{
+		DEBUG(("pipe_read: no such file"));
+		return EBADF;
+	}
+
 	p = (f->flags & O_HEAD) ? this->outp : this->inp;
 	if (!p)
 	{
@@ -1037,9 +1091,9 @@ pty_writeb (FILEPTR *f, const char *buf, long nbytes)
 static long _cdecl
 pty_readb (FILEPTR *f, char *buf, long nbytes)
 {
-	struct fifo *this = (struct fifo *) f->fc.index;
+	struct fifo *this = pipe_lookupi(f->fc.index);
 
-	if (!nbytes)
+	if (!this || !nbytes)
 		return 0;
 
 	if (!(f->flags & O_HEAD))
@@ -1083,10 +1137,11 @@ pty_readb (FILEPTR *f, char *buf, long nbytes)
 static long _cdecl
 pipe_ioctl (FILEPTR *f, int mode, void *buf)
 {
-	struct fifo *this = (struct fifo *) f->fc.index;
-
+	struct fifo *this = pipe_lookupi(f->fc.index);
 	long r;
 
+	if (!this)
+		return EBADF;
 	switch (mode)
 	{
 		case FIONREAD:
@@ -1412,8 +1467,10 @@ pipe_lseek (FILEPTR *f, long where, int whence)
 static long _cdecl
 pipe_datime (FILEPTR *f, ushort *timeptr, int flag)
 {
-	struct fifo *this = (struct fifo *)f->fc.index;
+	struct fifo *this = pipe_lookupi(f->fc.index);
 
+	if (!this)
+		return EBADF;
 	switch (flag)
 	{
 		case 0:
@@ -1436,12 +1493,14 @@ pipe_datime (FILEPTR *f, ushort *timeptr, int flag)
 static long _cdecl
 pipe_close (FILEPTR *f, int pid)
 {
-	struct fifo *this = (struct fifo *) f->fc.index;
+	struct fifo *this = pipe_lookupi(f->fc.index);
 	struct fifo *old;
 	struct pipe *p;
 	int rwmode;
 	FILEPTR **old_x, *x;
 
+	if (!this)
+		return EBADF;
 	if (f->links <= 0)
 	{
 		/* wake any processes waiting on this pipe */
@@ -1587,9 +1646,11 @@ pipe_close (FILEPTR *f, int pid)
 static long _cdecl
 pipe_select (FILEPTR *f, long proc, int mode)
 {
-	struct fifo *this = (struct fifo *) f->fc.index;
+	struct fifo *this = pipe_lookupi(f->fc.index);
 	struct pipe *p;
 
+	if (!this)
+		return EBADF;
 	if (mode == O_RDONLY)
 	{
 		p = (f->flags & O_HEAD) ? this->outp : this->inp;
@@ -1653,9 +1714,11 @@ pipe_select (FILEPTR *f, long proc, int mode)
 static void _cdecl
 pipe_unselect (FILEPTR *f, long proc, int mode)
 {
-	struct fifo *this = (struct fifo *)f->fc.index;
+	struct fifo *this = pipe_lookupi(f->fc.index);
 	struct pipe *p;
 
+	if (!this)
+		return;
 	if (mode == O_RDONLY)
 	{
 		p = (f->flags & O_HEAD) ? this->outp : this->inp;
