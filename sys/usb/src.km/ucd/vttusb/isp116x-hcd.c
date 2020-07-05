@@ -2279,9 +2279,12 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 		max_xfer_len = 1023; /* maximum supported by ISP1160 */
 	}
 	DEBUG(("Max. USB transfer size = %d", max_xfer_len));
-	
+
+	/* Check for Blitter */
+	use_blitter = use_blitter && HAS_BLITTER && ((Blitmode(-1) & 2)?1:0);
+
 	DEBUG (("%s: enter init", __FILE__));
-	
+
 #ifdef TOSONLY
 	api = get_usb_cookie();
 	if (!api) {
@@ -2311,9 +2314,6 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	}
 
 	DEBUG (("%s: ucd register ok", __FILE__));
-
-	/* Check for Blitter */
-	use_blitter = use_blitter && HAS_BLITTER && ((Blitmode(-1) & 2)?1:0);
 
 #ifdef TOSONLY
 	c_conws("vTTusb driver installed.\r\n");
