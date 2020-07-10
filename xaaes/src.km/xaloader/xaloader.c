@@ -326,7 +326,7 @@ again:
 			if( er )
 			{
 				char e[6];
-				d2a( r, e );
+				d2a( er, e );
 				ConsoleWrite( "\r\nXaAES loader: KM_FREE failed: ");
 				ConsoleWrite( e );
 				ConsoleWrite( "press key ...\r\n");
