@@ -15,11 +15,26 @@
 # include "device.h"
 
 
-static long	lmc_ioctl (short cmd, void *arg);
-static long	nomix_ioctl (short cmd, void *arg);
+static long lmc_ioctl (short cmd, void *arg);
+static long nomix_ioctl (short cmd, void *arg);
 
 long lmc_init(struct device *dev);
 long nomix_init (struct device *dev);
+
+static void MWwrite(unsigned short data)
+{
+	/*
+	 * Use LSB as 'stop' bit. It is not shifted out because of MICROWIRE_MASK.
+	 */
+	MWdata = (data<<1) | MW_DEV | 1; \
+
+	/*
+	 * Wait for data transfer to finish: since the LSB is always 1, the data
+	 * register can only become 0 after everything has been shifted out.
+	 */
+	while (MWdata != 0)
+		/* wait */ ;
+}
 
 long
 lmc_init (struct device *dev)
@@ -34,7 +49,7 @@ lmc_init (struct device *dev)
 		 */
 		return 1;
 	}
-	MWmask = MW_VAL;
+	MWmask = MW_MASK;
 	MWwrite (MW_VOL  | MW_SCALE (100, MW_VOL_VALS));
 	MWwrite (MW_LVOL | MW_SCALE (100, MW_BAL_VALS));
 	MWwrite (MW_RVOL | MW_SCALE (100, MW_BAL_VALS));
@@ -46,9 +61,7 @@ lmc_init (struct device *dev)
 }
 
 static long
-lmc_ioctl (mode, buf)
-	short mode;
-	void *buf;
+lmc_ioctl (short mode, void *buf)
 {
 	long arg = (long)buf;
 
@@ -97,9 +110,7 @@ nomix_init (struct device *dev)
 }
 
 static long
-nomix_ioctl (mode, buf)
-	short mode;
-	void *buf;
+nomix_ioctl (short mode, void *buf)
 {
 	return ENOSYS;
 }

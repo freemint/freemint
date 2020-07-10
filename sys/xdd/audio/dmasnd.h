@@ -46,8 +46,8 @@
 # define MWdata	(*(volatile unsigned short *)0xffff8922)
 # define MWmask	(*(volatile unsigned short *)0xffff8924)
 
-# define MW_DEV		0x0400	/* LMC device # */
-# define MW_VAL		0x07ff	/* mask for 9 bit commands */
+# define MW_DEV		0x0800	/* LMC device # */
+# define MW_MASK    0x0ffe	/* mask for 9 bit commands */
 
 # define MW_VOL		0x00c0	/* set volume */
 # define  MW_VOL_VALS	40
@@ -67,11 +67,5 @@
 
 # define MW_SCALE(v,n)	((v)*(n)/100)
 # define MW_CHECK(v)	((v) >= 0 && (v) <= 100)
-
-# define MWwrite(v) \
-	{ \
-		while (MWmask != MW_VAL); \
-		MWdata = (v) | MW_DEV; \
-	}
 
 # endif /* _dmasnd_h */
