@@ -267,15 +267,26 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 	cmp.w	#40,d0
 	beq.s	x040
 
+	movec	cacr,d1		/* d1 = get cache control register */
+	move.l	d1,d2		/* hold a copy for later */
+	ori.w	#0x0101,d1	/* enable '020 instr. and '030 data caches */
+	movec	d1,cacr		/* set new cache controls from d1 */
+	movec	cacr,d1		/*   & read it back again to check */
+	movec	d2,cacr		/* restore original CACR */
+	btst	#0,d1		/* if '020 instr. cache was not enabled, this is a 68040+ */
+	beq.s	x040
+	btst	#8,d1		/* check if 68030 data cache was enabled */
+	beq.s	exit		/* a zero here means no data cache, i.e. 68020 */
+
 // this idea is borrowed from Linux/m68k, following the suggestion
 // of Petr Stehlik <joy@sophics.cz>.
 //
 // By the way: gas accepts `pmove tt0,d1' which is illegal. Why?
 //
-
-	clr.l	-(sp)		// make some room on the stack
-	pmove	tt0,(sp)	// 68030 only
-	moveq	#30,d0
+	clr.l	-(sp)		/* make some room on the stack */
+	move.l  #0x0001001e,d0 /* data cache enabled means 68030 - assume 68ec030 */
+	pmove	tc,(a7)		/* try to access the TC register */
+	moveq	#30,d0		/* no fault -> this is a 68030 */
 
 	bra.s	exit
 

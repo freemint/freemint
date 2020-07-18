@@ -223,13 +223,16 @@ _getmch (void)
 		no_mem_prot = 0;
 	}
 
-	pmmu = detect_pmmu ();
+	if (!(mcpu & 0x10000UL))
+		pmmu = detect_pmmu ();
 	if (!no_mem_prot && !pmmu)
 	{
 		FORCE ("WARNING: PMMU is requested but not present, disabling.\r\n");
 		no_mem_prot = 1;
 	}
 #endif
+
+	mcpu &= 0xffffUL;
 
 # ifndef M68000
 
