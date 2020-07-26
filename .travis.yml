@@ -1,7 +1,4 @@
 language: c
-os: linux
-dist: xenial
-sudo: false
 
 addons:
   apt:
@@ -17,7 +14,7 @@ env:
     - BINTRAY_USER="mikrosk"
     # BINTRAY_API_KEY is defined in Travis Settings of freemint/freemint
     - HCP="/tmp/hcp/bin/hcp"
-    - UDO="/tmp/udo/udo"
+    - UDO="/tmp/udo/bin/udo"
 
   matrix:
     # unversioned archives
