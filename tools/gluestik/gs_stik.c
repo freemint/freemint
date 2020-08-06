@@ -281,7 +281,14 @@ do_CNkick (struct CNkick_param p)
 static int16
 do_CNbyte_count (struct CNbyte_count_param p)
 {
-	return gs_canread (p.fd);
+	long n = gs_canread (p.fd);
+	/*
+	 * limit the return value to a signed 16bit value,
+	 * to avoid it being misinterpreted as error.
+	 */
+	if (n <= 32767L)
+		return n;
+	return 32767;
 }
 
 static int16
