@@ -62,12 +62,25 @@
 
 ; Alternate
 
-	dc.b	$1a,'@',$27,'[',$28,']',$00
+	dc.b	$1a,'@'
+	dc.b	$27,'['
+	dc.b	$28,']'
+	dc.b	$00
 
 ; Alternate shifted
 
-	dc.b	$1a,$5c,$27,'{',$28,'}',$00
+	dc.b	$1a,$5c
+	dc.b	$27,'{'
+	dc.b	$28,'}'
+	dc.b	$00
 
 ; Alternate Caps
 
-	dc.b	$1a,'@',$27,'[',$28,']',$00
+	dc.b	$1a,'@'
+	dc.b	$27,'['
+	dc.b	$28,']'
+	dc.b	$00
+
+; AltGr
+
+	dc.b	$00

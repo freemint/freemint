@@ -71,4 +71,7 @@
 ; Alternate Caps
 
 	dc.b	$00
-	
+
+; AltGr
+
+	dc.b	$00

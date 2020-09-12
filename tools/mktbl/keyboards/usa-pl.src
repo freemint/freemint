@@ -63,20 +63,43 @@
 
 ; Alternate
 
-	dc.b	$1e,$b1,$2e,$e6,$12,$ea,$26,$b3
-	dc.b	$31,$f1,$18,$f3,$1f,$b6,$2d,$bc
-	dc.b	$2c,$bf,$00
+	dc.b	$12,$ea
+	dc.b	$18,$f3
+	dc.b	$1e,$b1
+	dc.b	$1f,$b6
+	dc.b	$26,$b3
+	dc.b	$2c,$bf
+	dc.b	$2d,$bc
+	dc.b	$2e,$e6
+	dc.b	$31,$f1
+	dc.b	$00
 
 ; Alt + shift
 
-	dc.b	$1e,$a1,$2e,$c6,$12,$ca,$26,$a3
-	dc.b	$31,$d1,$18,$d3,$1f,$a6,$2d,$ac
-	dc.b	$2c,$af,$00
+	dc.b	$12,$ca
+	dc.b	$18,$d3
+	dc.b	$1e,$a1
+	dc.b	$1f,$a6
+	dc.b	$26,$a3
+	dc.b	$2c,$af
+	dc.b	$2d,$ac
+	dc.b	$2e,$c6
+	dc.b	$31,$d1
+	dc.b	$00
 
 ; Alt + caps
 
-	dc.b	$1e,$a1,$2e,$c6,$12,$ca,$26,$a3
-	dc.b	$31,$d1,$18,$d3,$1f,$a6,$2d,$ac
-	dc.b	$2c,$af,$00
+	dc.b	$12,$ca
+	dc.b	$18,$d3
+	dc.b	$1e,$a1
+	dc.b	$1f,$a6
+	dc.b	$26,$a3
+	dc.b	$2c,$af
+	dc.b	$2d,$ac
+	dc.b	$2e,$c6
+	dc.b	$31,$d1
+	dc.b	$00
 
-	END
+; AltGr
+
+	dc.b	$00

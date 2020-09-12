@@ -76,7 +76,3 @@
 ;	altgr
 
 	dc.b $00
-
-;	deadkeys
-
-$00
