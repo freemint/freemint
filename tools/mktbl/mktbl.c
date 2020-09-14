@@ -93,6 +93,7 @@ static unsigned char deadkeys[MAX_DEADKEYS];
 static int tabsize[N_KEYTBL + 1];
 static int copyfrom[N_KEYTBL];
 static const char *tblname = "xx";
+static const char *progname;
 
 static const char *const labels[N_KEYTBL + 1] = {
 	"tab_unshift:",
@@ -128,6 +129,11 @@ static unsigned char const possible_dead_keys[] = {
 	0
 };
 
+#define FORMAT_NONE     0
+#define FORMAT_MAGIC    1
+#define FORMAT_MINT     2
+#define FORMAT_C_SOURCE 3
+
 /* Own getdelim(). The `n' buffer size must definitely be bigger than 0!
  */
 static int mktbl_getdelim(char **lineptr, size_t *n, FILE *stream)
@@ -141,6 +147,7 @@ static int mktbl_getdelim(char **lineptr, size_t *n, FILE *stream)
 		if ((len + 1) >= *n)
 		{
 			buf = realloc(buf, len + 256L);
+			assert(buf);
 			*n += 256L;
 			*lineptr = buf;
 		}
@@ -197,11 +204,54 @@ static void write_alttab(FILE *out, int tab)
 }
 
 
-static void write_c_tbl(FILE *out, int tab, const char *suffix)
+static int is_deadkey(unsigned char c, int deadkeys_format)
+{
+	int i;
+	unsigned char deadchars[256 + 1];
+	int n_deadchars;
+
+	switch (deadkeys_format)
+	{
+	case FORMAT_MINT:
+		n_deadchars = 0;
+		deadchars[0] = 0;
+		for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
+		{
+			if (strchr((char *) deadchars, deadkeys[i]) == NULL)
+			{
+				deadchars[n_deadchars++] = deadkeys[i];
+				deadchars[n_deadchars] = 0;
+			}
+		}
+		for (i = 0; i < n_deadchars; i++)
+			if (c == deadchars[i])
+				return i;
+		break;
+	case FORMAT_MAGIC:
+		for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i++)
+			if (c == deadkeys[i])
+				return i;
+		break;
+	}
+	return -1;
+}
+
+
+static void print_char(FILE *out, unsigned char c)
+{
+	if (c >= 0x20 && c < 0x7f && c != 0x27 && c != 0x5c)
+		fprintf(out, " '%c'", c);
+	else
+		fprintf(out, "0x%02x", c);
+}
+
+
+static void write_c_tbl(FILE *out, int tab, const char *suffix, int deadkeys_format)
 {
 	int i;
 	unsigned char c;
-	
+	int d;
+
 	fprintf(out, "static const UBYTE keytbl_%s_%s[] = {\n", tblname, suffix);
 	for (i = 0; i < MAX_SCANCODE; )
 	{
@@ -210,10 +260,10 @@ static void write_c_tbl(FILE *out, int tab, const char *suffix)
 			fprintf(out, "    ");
 		if (c == 0)
 			fprintf(out, "   0");
-		else if (c >= 0x20 && c < 0x7f && c != 0x27 && c != 0x5c)
-			fprintf(out, " '%c'", c);
+		else if (deadkeys_format != FORMAT_NONE && (d = is_deadkey(c, deadkeys_format)) >= 0)
+			fprintf(out, "DEAD(%d)", d);
 		else
-			fprintf(out, "0x%02x", c);
+			fputc(' ', out), print_char(out, c);
 		++i;
 		if (i != MAX_SCANCODE)
 			fputc(',', out);
@@ -230,7 +280,7 @@ static void write_c_alt(FILE *out, int tab, const char *suffix)
 {
 	int i;
 	unsigned char c;
-	
+
 	fprintf(out, "static const UBYTE keytbl_%s_%s[] = {\n", tblname, suffix);
 
 	for (i = 0; i < tabsize[tab]; i++)
@@ -239,10 +289,7 @@ static void write_c_alt(FILE *out, int tab, const char *suffix)
 		if (c == 0)
 			continue;
 		fprintf(out, "    0x%02x, ", i);
-		if (c >= 0x20 && c < 0x7f && c != 0x27 && c != 0x5c)
-			fprintf(out, "'%c'", c);
-		else
-			fprintf(out, "0x%02x", c);
+		print_char(out, c);
 		fprintf(out, ",\n");
 	}
 	fprintf(out, "    0\n");
@@ -250,15 +297,108 @@ static void write_c_alt(FILE *out, int tab, const char *suffix)
 }
 
 
-static void write_c_src(FILE *out)
+static void write_deadkeys(FILE *out, int deadkeys_format)
 {
-	write_c_tbl(out, TAB_UNSHIFT, "norm");
-	write_c_tbl(out, TAB_SHIFT, "shft");
-	write_c_tbl(out, TAB_CAPS, "caps");
+	int i, j;
+	char deadchars[256 + 1];
+	int n_deadchars;
+
+	switch (deadkeys_format)
+	{
+	case FORMAT_MINT:
+		n_deadchars = 0;
+		deadchars[0] = 0;
+		for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
+		{
+			if (strchr(deadchars, deadkeys[i]) == NULL)
+			{
+				deadchars[n_deadchars++] = deadkeys[i];
+				deadchars[n_deadchars] = 0;
+			}
+		}
+		for (j = 0; j < n_deadchars; j++)
+		{
+			fprintf(out, "static const UBYTE keytbl_%s_dead%d[] = {\n", tblname, j);
+			for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
+			{
+				if (deadkeys[i] == deadchars[j])
+				{
+					fprintf(out, "    ");
+					print_char(out, deadkeys[i + 1]);
+					fprintf(out, ", ");
+					print_char(out, deadkeys[i + 2]);
+					fprintf(out, ",\n");
+				}
+			}
+			/* deadkey + space always gives deadkey */
+			fprintf(out, "    ' ', ");
+			print_char(out, deadchars[j]);
+			fprintf(out, ",\n");
+			/* deadkey + deadkey always gives deadkey */
+			fprintf(out, "    DEAD(%d), ", j);
+			print_char(out, deadchars[j]);
+			fprintf(out, ",\n");
+			fprintf(out, "    0\n");
+			fprintf(out, "};\n\n");
+		}
+		break;
+	case FORMAT_MAGIC:
+		n_deadchars = 0;
+		deadchars[0] = 0;
+		for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i++)
+		{
+			deadchars[n_deadchars++] = deadkeys[i];
+		}
+		i++;
+		for (j = 0; j < n_deadchars; j++)
+		{
+			fprintf(out, "static const UBYTE keytbl_%s_dead%d[] = {\n", tblname, j);
+			for (; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 2)
+			{
+				fprintf(out, "    ");
+				print_char(out, deadkeys[i + 1]);
+				fprintf(out, ", ");
+				print_char(out, deadkeys[i + 2]);
+				fprintf(out, ",\n");
+			}
+			/* deadkey + space always gives deadkey */
+			fprintf(out, "    ' ', ");
+			print_char(out, deadchars[j]);
+			fprintf(out, ",\n");
+			/* deadkey + deadkey always gives deadkey */
+			fprintf(out, "    DEAD(%d), ", j);
+			print_char(out, deadchars[j]);
+			fprintf(out, ",\n");
+			fprintf(out, "    0\n");
+			fprintf(out, "};\n\n");
+			i++;
+		}
+		break;
+	default:
+		n_deadchars = 0;
+		break;
+	}
+
+	fprintf(out, "static const UBYTE * keytbl_%s_dead[] = {\n", tblname);
+	for (j = 0; j < n_deadchars; j++)
+	{
+		fprintf(out, "    keytbl_%s_dead%d%s\n", tblname, j, j + 1 < n_deadchars ? "," : "");
+	}
+	fprintf(out, "};\n\n");
+}
+
+
+static void write_c_src(FILE *out, int deadkeys_format)
+{
+	write_c_tbl(out, TAB_UNSHIFT, "norm", deadkeys_format);
+	write_c_tbl(out, TAB_SHIFT, "shft", deadkeys_format);
+	write_c_tbl(out, TAB_CAPS, "caps", deadkeys_format);
 	write_c_alt(out, TAB_ALT, "altnorm");
 	write_c_alt(out, TAB_SHALT, "altshft");
 	write_c_alt(out, TAB_CAPSALT, "altcaps");
-	
+	if (deadkeys_format != FORMAT_NONE)
+		write_deadkeys(out, deadkeys_format);
+
 	fprintf(out, "\n");
 	fprintf(out, "static const struct keytbl keytbl_%s = {\n", tblname);
 	fprintf(out, "    keytbl_%s_norm,\n", tblname);
@@ -267,9 +407,18 @@ static void write_c_src(FILE *out)
 	fprintf(out, "    keytbl_%s_altnorm,\n", tblname);
 	fprintf(out, "    keytbl_%s_altshft,\n", tblname);
 	fprintf(out, "    keytbl_%s_altcaps,\n", tblname);
-	fprintf(out, "    NULL,\n"); /* deadkeys; TODO */
+	if (deadkeys_format != FORMAT_NONE)
+		fprintf(out, "    keytbl_%s_dead,\n", tblname);
+	else
+		fprintf(out, "    NULL,\n");
 	fprintf(out, "    0\n");
 	fprintf(out, "};\n");
+}
+
+
+static void usage(void)
+{
+	printf("Usage: %s [-c] src-file [tbl-file]\n", progname);
 }
 
 
@@ -294,43 +443,52 @@ int main(int argc, char **argv)
 	int is_mint = 0;
 	int mint_expected = 0;
 	short mint_magics[4];
-#define FORMAT_NONE 0
-#define FORMAT_MAGIC 1
-#define FORMAT_MINT 2
-#define FORMAT_C_SOURCE 3
 	int output_format = FORMAT_NONE;
 	int deadkeys_format;
 
 	/*
 	 * very minimalistic option processing
 	 */
-	if (argc >= 2 && strcmp(argv[1], "-c") == 0)
+	argc--;
+	progname = *argv++;
+	while (argc > 0 && argv[0][0] == '-')
 	{
-		output_format = 1;
-		argv++;
-		argc--;
-	}
-
-	if (argc <= 2)
-	{
-		if (argc < 2 || (argc >= 2 && (strcmp(argv[1], "--help") == 0)))
+		if (strcmp(argv[0], "-c") == 0)
 		{
-			printf("Usage: %s src-file [tbl-file]\n", argv[0]);
-
+			output_format = FORMAT_C_SOURCE;
+			argv++;
+			argc--;
+		} else if (strcmp(argv[0], "--help") == 0)
+		{
+			usage();
+			return 0;
+		} else
+		{
+			fprintf(stderr, "%s: unknown option %s\n", progname, argv[0]);
 			return 1;
 		}
+	}
 
-		filename = argv[1];
+	if (argc == 0)
+	{
+		usage();
+		return 1;
+	} else if (argc == 1)
+	{
+		filename = argv[0];
+	} else if (argc == 2)
+	{
+		filename = argv[0];
+		outname = argv[1];
 	} else
 	{
-		filename = argv[1];
-		outname = argv[2];
+		fprintf(stderr, "%s: too many arguments\n", progname);
+		return 1;
 	}
 
 	buf = 1024;
 	line = malloc(buf);					/* should be plenty */
-	if (!line)
-		return 2;
+	assert(line);
 
 	fd = fopen(filename, "r");
 	if (!fd)
@@ -405,7 +563,7 @@ int main(int argc, char **argv)
 			continue;
 		} else
 		{
-			fprintf(stderr, "%s: warning: unknown statement in line %ld: %s\n", filename, lineno, line);
+			fprintf(stderr, "%s:%ld: warning: unknown statement: %s\n", filename, lineno, line);
 			continue;
 		}
 		
@@ -430,7 +588,7 @@ int main(int argc, char **argv)
 			{
 				if (ln[2] != '\'')
 				{
-					fprintf(stderr, "%s: error: unmatched quotes in line %ld: %s\n", filename, lineno, line);
+					fprintf(stderr, "%s:%ld: error: unmatched quotes: %s\n", filename, lineno, line);
 					r = 5;
 					goto error;
 				}
@@ -440,7 +598,7 @@ int main(int argc, char **argv)
 			{
 				if (!isxdigit(ln[1]))
 				{
-					fprintf(stderr, "%s: error: '%c' is not a hex number in line %ld: %s\n", filename, ln[1], lineno, line);
+					fprintf(stderr, "%s:%ld: error: '%c' is not a hex number: %s\n", filename, lineno, ln[1], line);
 					r = 6;
 					goto error;
 				}
@@ -451,7 +609,7 @@ int main(int argc, char **argv)
 			{
 				if (!isxdigit(ln[3]))
 				{
-					fprintf(stderr, "%s: error: '%c' is not a hex number in line %ld: %s\n", filename, ln[3], lineno, line);
+					fprintf(stderr, "%s:%ld: error: '%c' is not a hex number: %s\n", filename, lineno, ln[3], line);
 					r = 7;
 					goto error;
 				}
@@ -483,7 +641,7 @@ int main(int argc, char **argv)
 				ln += 3;
 			} else
 			{
-				fprintf(stderr, "%s: error: unexpected '%c' in line %ld: %s\n", filename, ln[0], lineno, line);
+				fprintf(stderr, "%s:%ld: error: unexpected '%c': %s\n", filename, lineno, ln[0], line);
 				r = 8;
 				goto error;
 			}
@@ -495,13 +653,13 @@ int main(int argc, char **argv)
 				 */
 				if (num > 65535L)
 				{
-					fprintf(stderr, "%s: error: number %ld in line %ld is too big\n", filename, num, lineno);
+					fprintf(stderr, "%s:%ld: error: number %ld is too big\n", filename, lineno, num);
 					r = 1;
 					goto error;
 				}
 				if (tab >= 0)
 				{
-					fprintf(stderr, "%s: error: too late for magics in line %ld: %s\n", filename, lineno, line);
+					fprintf(stderr, "%s:%ld: error: too many magics: %s\n", filename, lineno, line);
 					r = 1;
 					goto error;
 				}
@@ -511,6 +669,7 @@ int main(int argc, char **argv)
 					{
 					case 0x2771:
 						mint_expected = 1;
+						fprintf(stderr, "%s:%ld: warning: old format without AKP code: %s\n", filename, lineno, line);
 						break;
 					case 0x2772:
 						mint_expected = 2;
@@ -519,7 +678,7 @@ int main(int argc, char **argv)
 						mint_expected = 4;
 						break;
 					default:
-						fprintf(stderr, "%s: error: invalid magic in line %ld: %s\n", filename, lineno, line);
+						fprintf(stderr, "%s:%ld: error: invalid magic: %s\n", filename, lineno, line);
 						r = 1;
 						goto error;
 					}
@@ -529,7 +688,7 @@ int main(int argc, char **argv)
 					/*
 					 * MinT keyboard tables start with 1, 2 or 4 words
 					 */
-					fprintf(stderr, "%s: error: too late for magics in line %ld: %s\n", filename, lineno, line);
+					fprintf(stderr, "%s:%ld: error: too many magics: %s\n", filename, lineno, line);
 					r = 1;
 					goto error;
 				}
@@ -540,10 +699,10 @@ int main(int argc, char **argv)
 			} else
 			{
 				if (num > 255)
-					fprintf(stderr, "%s: warning: number %ld in line %ld is too big\n", filename, num, lineno);
+					fprintf(stderr, "%s:%ld: warning: number %ld is too big\n", filename, lineno, num);
 				if (tab < 0)
 				{
-					fprintf(stderr, "%s: error: no table in line %ld: %s\n", filename, lineno, line);
+					fprintf(stderr, "%s:%ld: error: no table: %s\n", filename, lineno, line);
 					r = 1;
 					goto error;
 				}
@@ -551,7 +710,7 @@ int main(int argc, char **argv)
 				{
 					if (tabsize[tab] >= MAX_DEADKEYS)
 					{
-						fprintf(stderr, "%s: error: too many dead keys in line %ld: %s\n", filename, lineno, line);
+						fprintf(stderr, "%s:%ld: error: too many dead keys: %s\n", filename, lineno, line);
 						r = 1;
 						goto error;
 					}
@@ -559,7 +718,7 @@ int main(int argc, char **argv)
 					tabsize[tab]++;
 				} else if (tab > TAB_DEADKEYS)
 				{
-					fprintf(stderr, "%s: error: too many tables in line %ld: %s\n", filename, lineno, line);
+					fprintf(stderr, "%s:%ld: error: too many tables: %s\n", filename, lineno, line);
 					r = 1;
 					goto error;
 				} else
@@ -574,7 +733,7 @@ int main(int argc, char **argv)
 								tab = TAB_ALT;
 						} else if (!is_mint || tab <= TAB_CAPS)
 						{
-							fprintf(stderr, "%s: error: too many keys in line %ld: %s\n", filename, lineno, line);
+							fprintf(stderr, "%s:%ld: error: too many keys: %s\n", filename, lineno, line);
 							r = 1;
 							goto error;
 						}
@@ -618,7 +777,7 @@ int main(int argc, char **argv)
 								}
 							} else if (num <= 0 || num >= MAX_SCANCODE)
 							{
-								fprintf(stderr, "%s: error: illegal scancode $%02x in line %ld: %s\n", filename, (int)num, lineno, line);
+								fprintf(stderr, "%s:%ld: error: illegal scancode $%02x: %s\n", filename, lineno, (int)num, line);
 								r = 1;
 								goto error;
 							}
@@ -629,7 +788,7 @@ int main(int argc, char **argv)
 							 */
 							if (num == 0)
 							{
-								fprintf(stderr, "%s: error: illegal ascii code $%02x in line %ld: %s\n", filename, (int)num, lineno, line);
+								fprintf(stderr, "%s:%ld: error: illegal ascii code $%02x: %s\n", filename, lineno, (int)num, line);
 								r = 1;
 								goto error;
 							}
@@ -637,7 +796,7 @@ int main(int argc, char **argv)
 								tabsize[tab] = scancode + 1;
 							if (keytab[tab][scancode] != 0)
 							{
-								fprintf(stderr, "%s: warning: duplicate scancode $%02x in line %ld: %s\n", filename, (int)scancode, lineno, line);
+								fprintf(stderr, "%s:%ld: warning: duplicate scancode $%02x: %s\n", filename, lineno, (int)scancode, line);
 							}
 							keytab[tab][scancode] = num;
 							scancode = 0;
@@ -672,13 +831,23 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	/*
+	 * the altgr table is missing from a lot of sources
+	 */
+	if (is_mint && tabsize[TAB_ALTGR] == 0)
+	{
+		keytab[TAB_ALTGR][0] = 0;
+		tabsize[TAB_ALTGR] = 1;
+	}
+
 	for (tab = 0; tab < N_KEYTBL; tab++)
 	{
 		if (tab <= TAB_CAPS || is_mint == 0)
 		{
 			if (tabsize[tab] == 0)
 				fprintf(stderr, "%s: warning: missing table for %s\n", filename, labels[tab]);
-			else if (tabsize[tab] != MAX_SCANCODE)
+			else if (tab <= TAB_CAPS && tabsize[tab] != MAX_SCANCODE)
 				fprintf(stderr, "%s: warning: incomplete table for %s\n", filename, labels[tab]);
 		}
 	}
@@ -716,7 +885,7 @@ int main(int argc, char **argv)
 		const char *ext = output_format == FORMAT_C_SOURCE ? ".h" : output_format == FORMAT_MINT ? ".tbl" : ".sys";
 
 		flen = strlen(filename);
-		outname = malloc(flen + 5);
+		outname = malloc(flen + 6);
 		if (!outname)
 		{
 			fprintf(stderr, "Out of RAM\n");
@@ -744,7 +913,7 @@ int main(int argc, char **argv)
 	switch (output_format)
 	{
 	case FORMAT_C_SOURCE:
-		write_c_src(out);
+		write_c_src(out, deadkeys_format);
 		break;
 
 	case FORMAT_MINT:
