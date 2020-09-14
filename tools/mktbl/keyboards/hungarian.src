@@ -1,0 +1,118 @@
+; Hungarian keyboard, AKP code 16
+;
+; Unshifted
+
+	dc.w	$2772
+	dc.w	$0010
+
+	dc.b	$00,$1b,'1','2','3','4','5','6'
+	dc.b	'7','8','9','0',$f6,$fc,$08,$09
+	dc.b	'q','w','e','r','t','z','u','i'
+	dc.b	'o','p',$f5,$fa,$0d,$00,'a','s'
+	dc.b	'd','f','g','h','j','k','l',$e9
+	dc.b	$e1,$f3,$00,$fb,'y','x','c','v'
+	dc.b	'b','n','m',',','.','-',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,'-',$00,$00,$00,'+',$00
+	dc.b	$00,$00,$00,$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$ed,$00,$00,'(',')','/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0',',',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Shifted
+
+	dc.b	$00,$1b,'º','"','+','!','%','/'
+	dc.b	'=','(',')',$a7,$d6,$dc,$08,$09
+	dc.b	'Q','W','E','R','T','Z','U','I'
+	dc.b	'O','P',$d5,$da,$0d,$00,'A','S'
+	dc.b	'D','F','G','H','J','K','L',$c9
+	dc.b	$c1,$d3,$00,$db,'Y','X','C','V'
+	dc.b	'B','N','M',';',':','_',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,'7'
+	dc.b	'8',$00,'-','4',$00,'6','+',$00
+	dc.b	'2',$00,'0',$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$cd,$00,$00,'(',')','/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0',',',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Caps
+
+	dc.b	$00,$1b,'1','2','3','4','5','6'
+	dc.b	'7','8','9','0','ž',$fc,$08,$09
+	dc.b	'Q','W','E','R','T','Z','U','I'
+	dc.b	'O','P',$d5,$da,$0d,$00,'A','S'
+	dc.b	'D','F','G','H','J','K','L',$c9
+	dc.b	$c1,$d3,$00,$db,'Y','X','C','V'
+	dc.b	'B','N','M',',','.','-',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,'-',$00,$00,$00,'+',$00
+	dc.b	$00,$00,$00,$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$cd,$00,$00,'(',')','/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0',',',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Alternate
+
+	dc.b	$02,'~' ; U+007E: Ascii tilde
+	dc.b	$03,$b7 ; U+02C7: Caron
+	dc.b	$04,'^' ; U+005E: Circumflex accent
+	dc.b	$05,$a2 ; U+02D8: Breve
+	dc.b	$06,$b0 ; U+00B0: Degree sign
+	dc.b	$07,$b2 ; U+02DB: Ogonek
+	dc.b	$08,$60 ; U+0060: Grave accent
+	dc.b	$09,$ff ; U+02D9: Dot above
+	dc.b	$0a,$b4 ; U+00B4: Acute accent
+	dc.b	$0c,$bd ; U+02DD: Double acute accent
+	dc.b	$0d,$a8 ; U+00A8: Diaresis
+	dc.b	$10,$5c ; U+005C: Reverse solidus
+	dc.b	$11,$7c ; U+007C: Vertical line
+	dc.b	$12,$c4 ; U+00C4: Latin capital letter A with diaresis
+	dc.b	$16,$80 ; U+20AC: Euro sign
+	dc.b	$17,$cd ; U+00CD: Latin capital letter I with acute
+	dc.b	$1a,$f7 ; U+00F7: Division sign
+	dc.b	$1b,$d7 ; U+00D7: Multiplication sign
+	dc.b	$1e,$e4 ; U+00E4: Latin small letter a with diaresis
+	dc.b	$1f,$f0 ; U+0111: Latin small letter d with stroke
+	dc.b	$20,$d0 ; U+0110: Latin capital letter D with stroke
+	dc.b	$21,'[' ; U+005B: Left square bracket
+	dc.b	$22,']' ; U+005D: Right square bracket
+	dc.b	$24,$ed ; U+00ED: Latin small letter i with acute
+	dc.b	$25,$b3 ; U+0142: Latin small letter l with stroke
+	dc.b	$26,$a3 ; U+0141: Latin capital letter L with stroke
+	dc.b	$27,'$' ; U+0024: Dollar sign
+	dc.b	$28,$df ; U+00DF: Latin small letter sharp s
+	dc.b	$29,$b8 ; U+00B8: Cedilla
+	dc.b	$2b,$a4 ; U+00A4: Currency sign
+	dc.b	$2c,'>' ; U+003E: Greater than sign
+	dc.b	$2d,'#' ; U+0023: Number sign
+	dc.b	$2e,'&' ; U+0026: Ampersand
+	dc.b	$2f,'@' ; U+0040: Commercial at
+	dc.b	$30,'{' ; U+007B: Left curly bracket
+	dc.b	$31,'}' ; U+007D: Right curly bracket
+	dc.b	$32,'<' ; U+003C: Less than sign
+	dc.b	$33,';' ; U+003B: Semicolon
+	dc.b	$34,'>' ; U+003E: Greater than sign
+	dc.b	$35,'*' ; U+002A: Asterisk
+	dc.b	$60,'<' ; U+003C: Less than sign
+	dc.b	$00
+
+; Alternate shifted
+
+	dc.b	$00
+
+; Alternate Caps
+
+	dc.b	$00
+
+; AltGr
+
+	dc.b	$00
