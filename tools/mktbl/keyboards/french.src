@@ -73,6 +73,7 @@
 	dc.b	$1a,'{'
 	dc.b	$1b,'}'
 	dc.b	$28,$5c
+	dc.b	$2b,'~'
 	dc.b	$00
 
 ; Alternate Caps

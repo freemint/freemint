@@ -931,7 +931,7 @@ int main(int argc, char **argv)
 		}
 		for (tab = 0; tab <= TAB_CAPS; tab++)
 			if (fwrite(keytab[tab], MAX_SCANCODE, 1, out) != 1)
-				;
+				{}
 		write_alttab(out, TAB_ALT);
 		write_alttab(out, TAB_SHALT);
 		write_alttab(out, TAB_CAPSALT);
@@ -952,7 +952,7 @@ int main(int argc, char **argv)
 			tabsize[TAB_DEADKEYS] = 2;
 		for (tab = 0; tab < N_KEYTBL; tab++)
 			if (fwrite(keytab[tab], MAX_SCANCODE, 1, out) != 1)
-				;
+				{}
 		if (deadkeys_format != FORMAT_NONE)
 		{
 			if (deadkeys_format != FORMAT_MAGIC)
@@ -968,7 +968,7 @@ int main(int argc, char **argv)
 	 * deadkeys are interpreted differently, but are just written as is
 	 */
 	if (tabsize[TAB_DEADKEYS] != 0 && fwrite(deadkeys, tabsize[TAB_DEADKEYS], 1, out) != 1)
-		;
+		{}
 
 error:
 	fclose(fd);
