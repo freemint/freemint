@@ -1657,7 +1657,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 			}
 			default:
 			{
-				DEBUG(("%s(): unknown format 0x%p", __FUNCTION__, (ushort *)kbuf));
+				DEBUG(("%s(): unknown format 0x%04x", __FUNCTION__, *(ushort *)kbuf));
 
 				ret = EFTYPE;	/* wrong format */
 				break;
