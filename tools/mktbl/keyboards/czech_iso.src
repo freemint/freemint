@@ -2,8 +2,9 @@
 ;
 ; Unshifted
 
-	dc.w	$2772
+	dc.w	$2773
 	dc.w	$000F
+	dc.w 0,2 ; uses iso-8859-2
 
 	dc.b	$00,$1b,$f3,$ec,$b9,$e8,$f8,$be
 	dc.b	$fd,$e1,$ed,$e9,'=',$27,$08,$09
