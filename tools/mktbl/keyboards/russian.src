@@ -1,8 +1,9 @@
 ; Country:	 Russia       
 ; AKP code:	19
 
-	dc.w	$2772
+	dc.w	$2773
 	dc.w	$0013
+	dc.w	1,1251 ; uses cp1251, with atari modifications
 
 ;	unshifted
 

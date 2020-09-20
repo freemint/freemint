@@ -1154,7 +1154,7 @@ static void write_c_deadkeys(FILE *out)
 					fprintf(out, ", ");
 					print_char(out, deadkeys[i + 2], TRUE);
 					unicode = atari_to_unicode[keytab_codeset][deadkeys[i + 2]];
-					fprintf(out, ",    /* U+%04x %s *\n", unicode, unicode_name(unicode));
+					fprintf(out, ",    /* U+%04x %s */\n", unicode, unicode_name(unicode));
 				}
 			}
 			/* deadkey + space always gives deadkey */
@@ -1187,7 +1187,7 @@ static void write_c_deadkeys(FILE *out)
 				fprintf(out, ", ");
 				print_char(out, deadkeys[i + 1], TRUE);
 				unicode = atari_to_unicode[keytab_codeset][deadkeys[i + 1]];
-				fprintf(out, ",    /* U+%04x %s *\n", unicode, unicode_name(unicode));
+				fprintf(out, ",    /* U+%04x %s */\n", unicode, unicode_name(unicode));
 			}
 			/* deadkey + space always gives deadkey */
 			fprintf(out, "     ' ', ");
@@ -1207,7 +1207,7 @@ static void write_c_deadkeys(FILE *out)
 		break;
 	}
 
-	fprintf(out, "static const UBYTE * keytbl_%s_dead[] = {\n", tblname);
+	fprintf(out, "static const UBYTE * const keytbl_%s_dead[] = {\n", tblname);
 	for (j = 0; j < n_deadchars; j++)
 	{
 		fprintf(out, "    keytbl_%s_dead%d%s\n", tblname, j, j + 1 < n_deadchars ? "," : "");
@@ -1219,6 +1219,8 @@ static void write_c_deadkeys(FILE *out)
 
 void mktbl_write_c_src(FILE *out)
 {
+	int dual_keyboard = 0;
+
 	if (deadkeys_format == FORMAT_MAGIC)
 		conv_magic_deadkeys(deadkeys);
 	if (deadkeys_format != FORMAT_NONE)
@@ -1247,7 +1249,7 @@ void mktbl_write_c_src(FILE *out)
 		case COUNTRY_HU: tblname = "hu"; break;
 		case COUNTRY_PL: tblname = "pl"; break;
 		case COUNTRY_LT: tblname = "lt"; break;
-		case COUNTRY_RU: tblname = "ru"; break;
+		case COUNTRY_RU: tblname = "ru"; dual_keyboard = 1; break;
 		case COUNTRY_EE: tblname = "ee"; break;
 		case COUNTRY_BY: tblname = "by"; break;
 		case COUNTRY_UA: tblname = "ua"; break;
@@ -1259,7 +1261,7 @@ void mktbl_write_c_src(FILE *out)
 		case COUNTRY_RS: tblname = "rs"; break;
 		case COUNTRY_ME: tblname = "me"; break;
 		case COUNTRY_MK: tblname = "mk"; break;
-		case COUNTRY_GR: tblname = "gr"; break;
+		case COUNTRY_GR: tblname = "gr"; dual_keyboard = 1; break;
 		case COUNTRY_LV: tblname = "lv"; break;
 		case COUNTRY_IL: tblname = "il"; break;
 		case COUNTRY_ZA: tblname = "za"; break;
@@ -1288,9 +1290,17 @@ void mktbl_write_c_src(FILE *out)
 	write_c_tbl(out, TAB_UNSHIFT, "norm");
 	write_c_tbl(out, TAB_SHIFT, "shft");
 	write_c_tbl(out, TAB_CAPS, "caps");
-	write_c_alt(out, TAB_ALT, "altnorm");
-	write_c_alt(out, TAB_ALTSHIFT, "altshft");
-	write_c_alt(out, TAB_ALTCAPS, "altcaps");
+	if (dual_keyboard)
+	{
+		write_c_tbl(out, TAB_ALT, "altnorm");
+		write_c_tbl(out, TAB_ALTSHIFT, "altshft");
+		write_c_tbl(out, TAB_ALTCAPS, "altcaps");
+	} else
+	{
+		write_c_alt(out, TAB_ALT, "altnorm");
+		write_c_alt(out, TAB_ALTSHIFT, "altshft");
+		write_c_alt(out, TAB_ALTCAPS, "altcaps");
+	}
 	if (deadkeys_format != FORMAT_NONE)
 		write_c_deadkeys(out);
 
@@ -1306,7 +1316,7 @@ void mktbl_write_c_src(FILE *out)
 		fprintf(out, "    keytbl_%s_dead,\n", tblname);
 	else
 		fprintf(out, "    NULL,\n");
-	fprintf(out, "    0\n");
+	fprintf(out, "    %s\n", dual_keyboard ? "DUAL_KEYBOARD" : "0");
 	fprintf(out, "};\n");
 	if (deadkeys_format != FORMAT_NONE)
 	{
