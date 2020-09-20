@@ -69,17 +69,28 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <errno.h>
 #include <assert.h>
 #ifdef WITH_GUI
+#ifdef __PUREC__
+#include <aes.h>
+#else
 #include <gem.h>
 #endif
+#endif
+#ifdef __GNUC__
+#include <unistd.h>
+#endif
 #include "mktbl.h"
+#include "country.h"
 
 #ifndef FALSE
 #  define FALSE 0
 #  define TRUE  1
+#endif
+
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
 #endif
 
 
@@ -121,10 +132,36 @@ static unsigned char const possible_dead_keys[] = {
 	0xbd,  /* U+02DD Double acute accent (latin-2) */
 	0xb9,  /* U+00A8 Diaresis (latin-1) */
 	0xa8,  /* U+00A8 Diaresis (latin-2) */
+	0xba,  /* U+00b4 Acute accent (greek-atarist) */
 	0xb8,  /* U+00b8 Cedilla (latin-2) */
 	0xb7,  /* U+00b7 Middle dot (latin-1) */
 	       /* U+201a Single low-9 quotation mark */
 	0
+};
+
+#include "unitable.h"
+
+/*
+ * If you add entries here,
+ * also add tables to atari_toupper[] and atari_to_unicode[]
+ * (and maybe also missing glyphs to unifont.txt).
+ * The values here are the ones that are specified in the definition
+ * files, and must not be changed.
+ */
+unsigned short const keytab_codesets[] = {
+	0, /* atarist */
+	1, /* iso8859-1 */
+	2, /* iso8859-2 */
+	3, /* iso8859-3 */
+	4, /* iso8859-4 */
+	5, /* iso8859-5 */
+	6, /* iso8859-6 */
+	7, /* iso8859-7 */
+	8, /* iso8859-8 */
+	9, /* iso8859-9 */
+	10, /* iso8859-10 */
+	737, /* cp737, with atari-specific changes */
+	1251, /* cp1251, with atari-specific changes */
 };
 
 /******************************************************************************/
@@ -233,12 +270,25 @@ static unsigned char *tbl_scan_fwd(int tab, const unsigned char *src)
 
 /* -------------------------------------------------------------------------- */
 
+int lookup_codeset(unsigned short magic)
+{
+	unsigned int i;
+	
+	for (i = 0; i < ARRAY_SIZE(keytab_codesets); i++)
+		if (magic == keytab_codesets[i])
+			return i;
+	return -1;
+}
+
+/* -------------------------------------------------------------------------- */
+
 static int mktbl_load_mint(FILE *fd, const char *filename)
 {
 	long size;
 	const unsigned char *src;
 	unsigned short magic;
 	long consumed;
+	int codeset;
 
 	/*
 	 * the deadkeys buffer should be large enough to hold the normal tables
@@ -288,12 +338,12 @@ static int mktbl_load_mint(FILE *fd, const char *filename)
 		if (magic <= MAXAKP)
 			keytab_ctry_code = magic;
 		magic = (src[6] << 8) | src[7];
-		if (magic == 0 || magic > MAXISO)
+		if (magic == 0 || (codeset = lookup_codeset(magic)) < 0)
 		{
-			error_in_line(filename, 0, 1, "invalid ISO header");
+			error_in_line(filename, 0, 1, "invalid ISO code %u", magic);
 			return FALSE;
 		}
-		keytab_codeset = magic;
+		keytab_codeset = codeset;
 		src += 8;
 		break;
 	default:
@@ -388,7 +438,7 @@ static int mktbl_parse_source(FILE *fd, const char *filename)
 	long lineno;
 	int r;
 	int loop;
-	long num;
+	unsigned long num;
 	int copyfrom[N_KEYTBL];
 
 	for (tab = 0; tab < N_KEYTBL; tab++)
@@ -595,11 +645,20 @@ static int mktbl_parse_source(FILE *fd, const char *filename)
 				}
 				if (is_mint == 1)
 				{
-					keytab_ctry_code = (int)num;
+					if (num > MAXAKP)
+						error_in_line(filename, lineno, 0, "unknown country code %ld", num);
+					else
+						keytab_ctry_code = (int)num;
 				}
 				if (is_mint == 3)
 				{
-					keytab_codeset = (int)num;
+					int codeset = lookup_codeset((unsigned short) num);
+					if (num == 0 || codeset < 0)
+					{
+						error_in_line(filename, lineno, 1, "invalid ISO code %u", (unsigned short) num);
+						return FALSE;
+					}
+					keytab_codeset = codeset;
 				}
 				is_mint++;
 				if (is_mint == mint_expected)
@@ -622,6 +681,8 @@ static int mktbl_parse_source(FILE *fd, const char *filename)
 						free(line);
 						return FALSE;
 					}
+					if (atari_to_unicode[keytab_codeset][(unsigned char) num] == UNDEF)
+						error_in_line(filename, lineno, 0, "character $%02x is undefined", (unsigned char) num);
 					deadkeys[tabsize[tab]] = num;
 					tabsize[tab]++;
 				} else if (tab > TAB_DEADKEYS)
@@ -683,7 +744,7 @@ static int mktbl_parse_source(FILE *fd, const char *filename)
 									assert(0);
 									break;
 								}
-							} else if (num <= 0 || num >= MAX_SCANCODE)
+							} else if (num >= MAX_SCANCODE)
 							{
 								error_in_line(filename, lineno, 1, "illegal scancode $%02x", (int)num);
 								free(line);
@@ -706,11 +767,15 @@ static int mktbl_parse_source(FILE *fd, const char *filename)
 							{
 								error_in_line(filename, lineno, 0, "duplicate scancode $%02x", (int)scancode);
 							}
+							if (atari_to_unicode[keytab_codeset][(unsigned char) num] == UNDEF)
+								error_in_line(filename, lineno, 0, "character $%02x for scancode $%02x is undefined", (unsigned char) num, scancode);
 							keytab[tab][scancode] = num;
 							scancode = 0;
 						}
 					} else
 					{
+						if (atari_to_unicode[keytab_codeset][(unsigned char) num] == UNDEF)
+							error_in_line(filename, lineno, 0, "character $%02x for scancode $%02x is undefined", (unsigned char) num, tabsize[tab]);
 						keytab[tab][tabsize[tab]] = num;
 						tabsize[tab]++;
 					}
@@ -845,7 +910,93 @@ int mktbl_parse(FILE *fd, const char *filename)
 
 	if (keytab_ctry_code < 0)
 	{
+		static unsigned char const keytbl_us_norm[] = {
+		       0, 0x1b,  '1',  '2',  '3',  '4',  '5',  '6',
+		     '7',  '8',  '9',  '0',  '-',  '=',    8, 0x09,
+		     'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',
+		     'o',  'p',  '[',  ']', 0x0d,    0,  'a',  's',
+		     'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',
+		    '\'',  '`',    0, '\\',  'z',  'x',  'c',  'v',
+		     'b',  'n',  'm',  ',',  '.',  '/',    0,    0,
+		       0,  ' ',    0,    0,    0,    0,    0,    0,
+		       0,    0,    0,    0,    0,    0,    0,    0,
+		       0,    0,  '-',    0,    0,    0,  '+',    0,
+		       0,    0,    0, 0x7f,    0,    0,    0,    0,
+		       0,    0,    0,    0,    0,    0,    0,    0,
+		       0,    0,    0,  '(',  ')',  '/',  '*',  '7',
+		     '8',  '9',  '4',  '5',  '6',  '1',  '2',  '3',
+		     '0',  '.', 0x0d,    0,    0,    0,    0,    0,
+		       0,    0,    0,    0,    0,    0,    0,    0,
+		};
+
+		/*
+		 * MagiC does not have a country code. Guess one.
+		 */
+		if (keytab[TAB_UNSHIFT][0x2b] == 0xf2 || keytab[TAB_UNSHIFT][0x28] == 0x9f)
+		{
+			keytab_ctry_code = COUNTRY_CZ;
+			keytab_codeset = lookup_codeset(2);
+		} else if (keytab[TAB_UNSHIFT][0x1a] == 0x81 && keytab[TAB_UNSHIFT][0x1b] == 0x2b)
+		{
+			keytab_ctry_code = COUNTRY_DE;
+		} else if (keytab[TAB_UNSHIFT][0x1a] == 0x81 && keytab[TAB_UNSHIFT][0x1b] == 0xb9)
+		{
+			keytab_ctry_code = COUNTRY_SG;
+		} else if (keytab[TAB_UNSHIFT][0x1a] == 0x8a && keytab[TAB_UNSHIFT][0x1b] == 0xb9)
+		{
+			keytab_ctry_code = COUNTRY_SF;
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0x97)
+		{
+			keytab_ctry_code = COUNTRY_FR;
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0x85)
+		{
+			keytab_ctry_code = COUNTRY_IT;
+		} else if (keytab[TAB_UNSHIFT][0x27] == 0xa4)
+		{
+			keytab_ctry_code = COUNTRY_ES;
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0xb3)
+		{
+			keytab_ctry_code = COUNTRY_DK;
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0x84)
+		{
+			keytab_ctry_code = COUNTRY_FI; /* or swedish; they are identical */
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0x91)
+		{
+			keytab_ctry_code = COUNTRY_NO;
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0xa7)
+		{
+			keytab_ctry_code = COUNTRY_TR;
+		} else if (keytab[TAB_UNSHIFT][0x28] == 0xe1)
+		{
+			keytab_ctry_code = COUNTRY_HU;
+			keytab_codeset = lookup_codeset(2);
+		} else if (keytab[TAB_SHIFT][0x04] == 0x9c)
+		{
+			keytab_ctry_code = COUNTRY_UK; /* or dutch; they are identical */
+		} else if (keytab[TAB_ALT][0x18] == 0xf3)
+		{
+			keytab_ctry_code = COUNTRY_PL;
+			keytab_codeset = lookup_codeset(2);
+		} else if (keytab[TAB_ALT][0x28] == 0xfd || keytab[TAB_UNSHIFT][0x28] == 0xfd)
+		{
+			keytab_ctry_code = COUNTRY_RU;
+			keytab_codeset = lookup_codeset(1251);
+		} else if (keytab[TAB_ALT][0x30] == 0x99 || keytab[TAB_UNSHIFT][0x30] == 0x99)
+		{
+			keytab_ctry_code = COUNTRY_GR;
+			keytab_codeset = lookup_codeset(737);
+		} else if (memcmp(keytab[TAB_UNSHIFT], keytbl_us_norm, sizeof(keytbl_us_norm)) == 0)
+		{
+			keytab_ctry_code = COUNTRY_US;
+		}
 	}
+
+	if (keytab_ctry_code == COUNTRY_GR && keytab_codeset == 0)
+		keytab_codeset = lookup_codeset(737);
+	if (keytab_ctry_code == COUNTRY_RU && keytab_codeset == 0)
+		keytab_codeset = lookup_codeset(1251);
+	if (keytab_codeset < 0)
+		keytab_codeset = 0;
 
 	return TRUE;
 }
@@ -854,7 +1005,7 @@ int mktbl_parse(FILE *fd, const char *filename)
 /* -------------------------------------------------------------------------- */
 /******************************************************************************/
 
-static int is_deadkey(unsigned char c)
+int is_deadkey(unsigned char c)
 {
 	int i;
 	unsigned char deadchars[256 + 1];
@@ -868,8 +1019,8 @@ static int is_deadkey(unsigned char c)
 		 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 		 * Where dd is the deadkey character, aa is the base
 		 * character and aa the accented character.
-		 * So '^','a','ƒ' means that '^' followed by 'a' results
-		 * in an 'ƒ'.
+		 * So '^','a',$83 means that '^' followed by 'a' results
+		 * in $83.
 		 */
 		n_deadchars = 0;
 		deadchars[0] = 0;
@@ -896,12 +1047,17 @@ static int is_deadkey(unsigned char c)
 
 /* -------------------------------------------------------------------------- */
 
-static void print_char(FILE *out, unsigned char c)
+static void print_char(FILE *out, unsigned char c, int space)
 {
 	if (c >= 0x20 && c < 0x7f && c != 0x27 && c != 0x5c)
-		fprintf(out, " '%c'", c);
-	else
+	{
+		if (space)
+			putc(' ', out);
+		fprintf(out, "'%c'", c);
+	} else
+	{
 		fprintf(out, "0x%02x", c);
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -912,61 +1068,6 @@ static void write_c_tbl(FILE *out, int tab, const char *suffix)
 	unsigned char c;
 	int d;
 
-	switch (keytab_ctry_code)
-	{
-		case 0: tblname = "us"; break;
-		case 1: tblname = "de"; break;
-		case 2: tblname = "fr"; break;
-		case 3: tblname = "uk"; break;
-		case 4: tblname = "es"; break;
-		case 5: tblname = "it"; break;
-		case 6: tblname = "se"; break;
-		case 7: tblname = "sf"; break;
-		case 8: tblname = "sg"; break;
-		case 9: tblname = "tr"; break;
-		case 10: tblname = "fi"; break;
-		case 11: tblname = "no"; break;
-		case 12: tblname = "dk"; break;
-		case 13: tblname = "sa"; break;
-		case 14: tblname = "nl"; break;
-		case 15: tblname = "cz"; break;
-		case 16: tblname = "hu"; break;
-		case 17: tblname = "pl"; break;
-		case 18: tblname = "lt"; break;
-		case 19: tblname = "ru"; break;
-		case 20: tblname = "ee"; break;
-		case 21: tblname = "by"; break;
-		case 22: tblname = "ua"; break;
-		case 23: tblname = "sk"; break;
-		case 24: tblname = "ro"; break;
-		case 25: tblname = "bg"; break;
-		case 26: tblname = "si"; break;
-		case 27: tblname = "hr"; break;
-		case 28: tblname = "rs"; break;
-		case 29: tblname = "me"; break;
-		case 30: tblname = "mk"; break;
-		case 31: tblname = "gr"; break;
-		case 32: tblname = "lv"; break;
-		case 33: tblname = "il"; break;
-		case 34: tblname = "za"; break;
-		case 35: tblname = "pt"; break;
-		case 36: tblname = "be"; break;
-		case 37: tblname = "jp"; break;
-		case 38: tblname = "cn"; break;
-		case 39: tblname = "kr"; break;
-		case 40: tblname = "vn"; break;
-		case 41: tblname = "in"; break;
-		case 42: tblname = "ir"; break;
-		case 43: tblname = "mn"; break;
-		case 44: tblname = "np"; break;
-		case 45: tblname = "la"; break;
-		case 46: tblname = "kh"; break;
-		case 47: tblname = "id"; break;
-		case 48: tblname = "bd"; break;
-		default:
-			error_in_line(NULL, 0, 0, "unknown country code %d", keytab_ctry_code);
-			break;
-	}
 	fprintf(out, "static const UBYTE keytbl_%s_%s[] = {\n", tblname, suffix);
 	for (i = 0; i < MAX_SCANCODE; )
 	{
@@ -976,9 +1077,9 @@ static void write_c_tbl(FILE *out, int tab, const char *suffix)
 		if (c == 0)
 			fprintf(out, "   0");
 		else if (deadkeys_format != FORMAT_NONE && (d = is_deadkey(c)) >= 0)
-			fprintf(out, "DEAD(%d)", d);
+			fprintf(out, "D(%d)", d);
 		else
-			fputc(' ', out), print_char(out, c);
+			print_char(out, c, TRUE);
 		++i;
 		if (i != MAX_SCANCODE)
 			fputc(',', out);
@@ -996,6 +1097,7 @@ static void write_c_alt(FILE *out, int tab, const char *suffix)
 {
 	int i;
 	unsigned char c;
+	unsigned short unicode;
 
 	fprintf(out, "static const UBYTE keytbl_%s_%s[] = {\n", tblname, suffix);
 
@@ -1005,8 +1107,14 @@ static void write_c_alt(FILE *out, int tab, const char *suffix)
 		if (c == 0)
 			continue;
 		fprintf(out, "    0x%02x, ", i);
-		print_char(out, c);
-		fprintf(out, ",\n");
+		print_char(out, c, TRUE);
+		fputc(',', out);
+		/* if (c >= 0x80) */
+		{
+			unicode = atari_to_unicode[keytab_codeset][c];
+			fprintf(out, "    /* U+%04x %s */", unicode, unicode_name(unicode));
+		}
+		fputc('\n', out);
 	}
 	fprintf(out, "    0\n");
 	fprintf(out, "};\n\n");
@@ -1019,6 +1127,7 @@ static void write_c_deadkeys(FILE *out)
 	int i, j;
 	unsigned char deadchars[256 + 1];
 	int n_deadchars;
+	unsigned short unicode;
 
 	switch (deadkeys_format)
 	{
@@ -1041,19 +1150,20 @@ static void write_c_deadkeys(FILE *out)
 				if (deadkeys[i] == deadchars[j])
 				{
 					fprintf(out, "    ");
-					print_char(out, deadkeys[i + 1]);
+					print_char(out, deadkeys[i + 1], TRUE);
 					fprintf(out, ", ");
-					print_char(out, deadkeys[i + 2]);
-					fprintf(out, ",\n");
+					print_char(out, deadkeys[i + 2], TRUE);
+					unicode = atari_to_unicode[keytab_codeset][deadkeys[i + 2]];
+					fprintf(out, ",    /* U+%04x %s *\n", unicode, unicode_name(unicode));
 				}
 			}
 			/* deadkey + space always gives deadkey */
-			fprintf(out, "    ' ', ");
-			print_char(out, deadchars[j]);
+			fprintf(out, "     ' ', ");
+			print_char(out, deadchars[j], TRUE);
 			fprintf(out, ",\n");
 			/* deadkey + deadkey always gives deadkey */
-			fprintf(out, "    DEAD(%d), ", j);
-			print_char(out, deadchars[j]);
+			fprintf(out, "    D(%d), ", j);
+			print_char(out, deadchars[j], TRUE);
 			fprintf(out, ",\n");
 			fprintf(out, "    0\n");
 			fprintf(out, "};\n\n");
@@ -1073,18 +1183,19 @@ static void write_c_deadkeys(FILE *out)
 			for (; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 2)
 			{
 				fprintf(out, "    ");
-				print_char(out, deadkeys[i + 1]);
+				print_char(out, deadkeys[i + 0], TRUE);
 				fprintf(out, ", ");
-				print_char(out, deadkeys[i + 2]);
-				fprintf(out, ",\n");
+				print_char(out, deadkeys[i + 1], TRUE);
+				unicode = atari_to_unicode[keytab_codeset][deadkeys[i + 1]];
+				fprintf(out, ",    /* U+%04x %s *\n", unicode, unicode_name(unicode));
 			}
 			/* deadkey + space always gives deadkey */
-			fprintf(out, "    ' ', ");
-			print_char(out, deadchars[j]);
+			fprintf(out, "     ' ', ");
+			print_char(out, deadchars[j], TRUE);
 			fprintf(out, ",\n");
 			/* deadkey + deadkey always gives deadkey */
-			fprintf(out, "    DEAD(%d), ", j);
-			print_char(out, deadchars[j]);
+			fprintf(out, "    D(%d), ", j);
+			print_char(out, deadchars[j], TRUE);
 			fprintf(out, ",\n");
 			fprintf(out, "    0\n");
 			fprintf(out, "};\n\n");
@@ -1110,6 +1221,70 @@ void mktbl_write_c_src(FILE *out)
 {
 	if (deadkeys_format == FORMAT_MAGIC)
 		conv_magic_deadkeys(deadkeys);
+	if (deadkeys_format != FORMAT_NONE)
+	{
+		fprintf(out, "#define D(i) DEAD(i)\n\n");
+	}
+
+	switch (keytab_ctry_code)
+	{
+		case COUNTRY_US: tblname = "us"; break;
+		case COUNTRY_DE: tblname = "de"; break;
+		case COUNTRY_FR: tblname = "fr"; break;
+		case COUNTRY_UK: tblname = "uk"; break;
+		case COUNTRY_ES: tblname = "es"; break;
+		case COUNTRY_IT: tblname = "it"; break;
+		case COUNTRY_SE: tblname = "se"; break;
+		case COUNTRY_SF: tblname = "sf"; break;
+		case COUNTRY_SG: tblname = "sg"; break;
+		case COUNTRY_TR: tblname = "tr"; break;
+		case COUNTRY_FI: tblname = "fi"; break;
+		case COUNTRY_NO: tblname = "no"; break;
+		case COUNTRY_DK: tblname = "dk"; break;
+		case COUNTRY_SA: tblname = "sa"; break;
+		case COUNTRY_NL: tblname = "nl"; break;
+		case COUNTRY_CZ: tblname = "cz"; break;
+		case COUNTRY_HU: tblname = "hu"; break;
+		case COUNTRY_PL: tblname = "pl"; break;
+		case COUNTRY_LT: tblname = "lt"; break;
+		case COUNTRY_RU: tblname = "ru"; break;
+		case COUNTRY_EE: tblname = "ee"; break;
+		case COUNTRY_BY: tblname = "by"; break;
+		case COUNTRY_UA: tblname = "ua"; break;
+		case COUNTRY_SK: tblname = "sk"; break;
+		case COUNTRY_RO: tblname = "ro"; break;
+		case COUNTRY_BG: tblname = "bg"; break;
+		case COUNTRY_SI: tblname = "si"; break;
+		case COUNTRY_HR: tblname = "hr"; break;
+		case COUNTRY_RS: tblname = "rs"; break;
+		case COUNTRY_ME: tblname = "me"; break;
+		case COUNTRY_MK: tblname = "mk"; break;
+		case COUNTRY_GR: tblname = "gr"; break;
+		case COUNTRY_LV: tblname = "lv"; break;
+		case COUNTRY_IL: tblname = "il"; break;
+		case COUNTRY_ZA: tblname = "za"; break;
+		case COUNTRY_PT: tblname = "pt"; break;
+		case COUNTRY_BE: tblname = "be"; break;
+		case COUNTRY_JP: tblname = "jp"; break;
+		case COUNTRY_CN: tblname = "cn"; break;
+		case COUNTRY_KR: tblname = "kr"; break;
+		case COUNTRY_VN: tblname = "vn"; break;
+		case COUNTRY_IN: tblname = "in"; break;
+		case COUNTRY_IR: tblname = "ir"; break;
+		case COUNTRY_MN: tblname = "mn"; break;
+		case COUNTRY_NP: tblname = "np"; break;
+		case COUNTRY_LA: tblname = "la"; break;
+		case COUNTRY_KH: tblname = "kh"; break;
+		case COUNTRY_ID: tblname = "id"; break;
+		case COUNTRY_BD: tblname = "bd"; break;
+		case -1:
+			error_in_line(NULL, 0, 0, "country code could not be determined");
+			break;
+		default:
+			error_in_line(NULL, 0, 0, "unknown country code %d", keytab_ctry_code);
+			break;
+	}
+
 	write_c_tbl(out, TAB_UNSHIFT, "norm");
 	write_c_tbl(out, TAB_SHIFT, "shft");
 	write_c_tbl(out, TAB_CAPS, "caps");
@@ -1133,6 +1308,10 @@ void mktbl_write_c_src(FILE *out)
 		fprintf(out, "    NULL,\n");
 	fprintf(out, "    0\n");
 	fprintf(out, "};\n");
+	if (deadkeys_format != FORMAT_NONE)
+	{
+		fprintf(out, "\n#undef D\n");
+	}
 }
 
 /******************************************************************************/
@@ -1177,7 +1356,7 @@ int mktbl_write_mint(FILE *out)
 		fputm(0x2773, out);
 		fputm(keytab_ctry_code, out);
 		fputm(0, out);
-		fputm(keytab_codeset, out);
+		fputm(keytab_codesets[keytab_codeset], out);
 	} else
 	{
 		fputm(0x2772, out);
@@ -1202,40 +1381,11 @@ int mktbl_write_magic(FILE *out)
 	int tab;
 	const unsigned char *dead;
 	int deadsize;
+	unsigned char tmp[MAX_DEADKEYS];
 
 	if (deadkeys_format == FORMAT_MINT)
 	{
-		unsigned char tmp[MAX_DEADKEYS];
-		int i, j;
-		int n_deadchars;
-
-		/*
-		 * collect a set of unique dead keys
-		 */
-		deadsize = 0;
-		tmp[0] = 0;
-		for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
-		{
-			if (strchr((char *) tmp, deadkeys[i]) == NULL)
-			{
-				tmp[deadsize++] = deadkeys[i];
-				tmp[deadsize] = 0;
-			}
-		}
-		n_deadchars = deadsize;
-		tmp[deadsize++] = 0;
-		for (j = 0; j < n_deadchars; j++)
-		{
-			for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
-			{
-				if (deadkeys[i] == tmp[j])
-				{
-					tmp[deadsize++] = deadkeys[i + 1];
-					tmp[deadsize++] = deadkeys[i + 2];
-				}
-			}
-			tmp[deadsize++] = 0;
-		}
+		deadsize = conv_mint_deadkeys(tmp);
 		dead = tmp;
 	} else if (deadkeys_format == FORMAT_MAGIC)
 	{
@@ -1258,6 +1408,211 @@ int mktbl_write_magic(FILE *out)
 	if (deadsize != 0 && fwrite(dead, deadsize, 1, out) != 1)
 		return FALSE;
 	return TRUE;
+}
+
+/******************************************************************************/
+/* -------------------------------------------------------------------------- */
+/******************************************************************************/
+
+static void print_asm_char(FILE *out, unsigned char c)
+{
+	if (c >= 0x20 && c < 0x7f && c != 0x27 && c != 0x5c)
+	{
+		fprintf(out, "'%c'", c);
+	} else
+	{
+		fprintf(out, "$%02x", c);
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+static void write_asm_tbl(FILE *out, int tab, const char *name)
+{
+	int i;
+	unsigned char c;
+
+	fprintf(out, "%s\n", name);
+	for (i = 0; i < MAX_SCANCODE; )
+	{
+		c = keytab[tab][i];
+		if ((i % 8) == 0)
+			fprintf(out, "\tdc.b\t");
+		else
+			fputc(',', out);
+		print_asm_char(out, c);
+		++i;
+		if ((i % 8) == 0)
+			fputc('\n', out);
+	}
+	fprintf(out, "\n");
+}
+
+/* -------------------------------------------------------------------------- */
+
+static void write_asm_alt(FILE *out, int tab, const char *name)
+{
+	int i;
+	unsigned char c;
+	unsigned short unicode;
+
+	fprintf(out, "%s\n", name);
+	for (i = 0; i < tabsize[tab]; i++)
+	{
+		c = keytab[tab][i];
+		if (c == 0)
+			continue;
+		fprintf(out, "\tdc.b\t$%02x,", i);
+		print_asm_char(out, c);
+		/* if (c >= 0x80) */
+		{
+			unicode = atari_to_unicode[keytab_codeset][c];
+			fprintf(out, "    ; U+%04x %s", unicode, unicode_name(unicode));
+		}
+		fputc('\n', out);
+	}
+	fprintf(out, "\tdc.b\t0\n");
+	fprintf(out, "\n");
+}
+
+/* -------------------------------------------------------------------------- */
+
+static void write_asm_deadkeys(FILE *out, const char *name, int format, const unsigned char *src, int size)
+{
+	int i, j;
+	int n_deadchars;
+	unsigned char deadchars[256 + 1];
+	unsigned short unicode;
+
+	fprintf(out, "%s\n", name);
+	switch (format)
+	{
+	case FORMAT_MINT:
+		n_deadchars = 0;
+		deadchars[0] = 0;
+		for (i = 0; i < size && src[i] != 0; i += 3)
+		{
+			if (strchr((char *) deadchars, src[i]) == NULL)
+			{
+				deadchars[n_deadchars++] = src[i];
+				deadchars[n_deadchars] = 0;
+			}
+		}
+		for (j = 0; j < n_deadchars; j++)
+		{
+			for (i = 0; i < size && src[i] != 0; i += 3)
+			{
+				if (src[i] == deadchars[j])
+				{
+					fprintf(out, "\tdc.b\t");
+					print_asm_char(out, src[i + 0]);
+					fprintf(out, ",");
+					print_asm_char(out, src[i + 1]);
+					fprintf(out, ",");
+					print_asm_char(out, src[i + 2]);
+					unicode = atari_to_unicode[keytab_codeset][src[i + 2]];
+					fprintf(out, "    ; U+%04x %s\n", unicode, unicode_name(unicode));
+				}
+			}
+			fprintf(out, "\n");
+		}
+		fprintf(out, "\tdc.b\t0\n");
+		break;
+	case FORMAT_MAGIC:
+		n_deadchars = 0;
+		fprintf(out, "\tdc.b\t");
+		for (i = 0; i < size && src[i] != 0; i++)
+		{
+			print_asm_char(out, src[i + 0]);
+			fprintf(out, ",");
+			n_deadchars++;
+		}
+		fprintf(out, "0\n");
+		i++;
+		for (j = 0; j < n_deadchars; j++)
+		{
+			fprintf(out, "\n");
+			for (; i < size && src[i] != 0; i += 2)
+			{
+				fprintf(out, "\tdc.b\t");
+				print_asm_char(out, src[i + 0]);
+				fprintf(out, ",");
+				print_asm_char(out, src[i + 1]);
+				unicode = atari_to_unicode[keytab_codeset][src[i + 1]];
+				fprintf(out, "    ; U+%04x %s\n", unicode, unicode_name(unicode));
+			}
+			fprintf(out, "\tdc.b\t0\n");
+			i++;
+		}
+		break;
+	default:
+		n_deadchars = 0;
+		break;
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+int mktbl_write_mint_source(FILE *out)
+{
+	if (deadkeys_format == FORMAT_MAGIC)
+		conv_magic_deadkeys(deadkeys);
+	fprintf(out, "; AKP %d\n", keytab_ctry_code);
+	fprintf(out, "\n");
+	if (keytab_codeset > 0)
+	{
+		fprintf(out, "\tdc.w\t$%04x\n", 0x2773);
+		fprintf(out, "\tdc.w\t$%04x\n", keytab_ctry_code);
+		fprintf(out, "\tdc.w\t%u,%u\n", 0, keytab_codesets[keytab_codeset]);
+	} else
+	{
+		fprintf(out, "\tdc.w\t$%04x\n", 0x2772);
+		fprintf(out, "\tdc.w\t$%04x\n", keytab_ctry_code);
+	}
+	fprintf(out, "\n");
+	write_asm_tbl(out, TAB_UNSHIFT, "; Unshifted\n");
+	write_asm_tbl(out, TAB_SHIFT, "; Shifted\n");
+	write_asm_tbl(out, TAB_CAPS, "; Caps\n");
+	write_asm_alt(out, TAB_ALT, "; Alternate\n");
+	write_asm_alt(out, TAB_ALTSHIFT, "; Alt + shift\n");
+	write_asm_alt(out, TAB_ALTCAPS, "; Alt + caps\n");
+	write_asm_alt(out, TAB_ALTCAPS, "; AltGr\n");
+	if (deadkeys_format != FORMAT_NONE)
+		write_asm_deadkeys(out, "; Deadkeys\n", deadkeys_format, deadkeys, tabsize[TAB_DEADKEYS]);
+
+	return TRUE;
+}
+
+/******************************************************************************/
+/* -------------------------------------------------------------------------- */
+/******************************************************************************/
+
+int mktbl_write_magic_source(FILE *out)
+{
+	int tab;
+	unsigned char tmp[MAX_DEADKEYS];
+	int deadsize;
+
+	fprintf(out, "; AKP %d\n", keytab_ctry_code);
+	fprintf(out, "\n");
+	for (tab = 0; tab < N_KEYTBL; tab++)
+		write_asm_tbl(out, tab, labels[tab]);
+	fprintf(out, " IFNE DEADKEYS\n");
+	if (deadkeys_format == FORMAT_MINT)
+	{
+		deadsize = conv_mint_deadkeys(tmp);
+		write_asm_deadkeys(out, labels[TAB_DEADKEYS], FORMAT_MAGIC, tmp, deadsize);
+	} else if (deadkeys_format == FORMAT_MAGIC)
+	{
+		write_asm_deadkeys(out, labels[TAB_DEADKEYS], deadkeys_format, deadkeys, tabsize[TAB_DEADKEYS]);
+	} else
+	{
+		tmp[0] = 0;
+		write_asm_deadkeys(out, labels[TAB_DEADKEYS], FORMAT_MAGIC, tmp, 1);
+	}
+	fprintf(out, " ENDC\n");
+
+	return FALSE;
 }
 
 /******************************************************************************/
@@ -1300,6 +1655,7 @@ void conv_magic_deadkeys(const unsigned char *src)
 	deadkey_chars = src;
 	while (*src != 0)
 		src++;
+	src++;
 	while (*deadkey_chars != 0)
 	{
 		while (*src != 0)
@@ -1316,6 +1672,48 @@ void conv_magic_deadkeys(const unsigned char *src)
 	}
 	*table++ = 0;
 	tabsize[TAB_DEADKEYS] = (int)(table - deadkeys);
+	deadkeys_format = FORMAT_MINT;
+}
+
+/* -------------------------------------------------------------------------- */
+
+/*
+ * convert deadkeys from MiNT format to MagiC
+ */
+int conv_mint_deadkeys(unsigned char *tmp)
+{
+	int i, j;
+	int n_deadchars;
+	int deadsize;
+
+	/*
+	 * collect a set of unique dead keys
+	 */
+	deadsize = 0;
+	tmp[0] = 0;
+	for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
+	{
+		if (strchr((char *) tmp, deadkeys[i]) == NULL)
+		{
+			tmp[deadsize++] = deadkeys[i];
+			tmp[deadsize] = 0;
+		}
+	}
+	n_deadchars = deadsize;
+	tmp[deadsize++] = 0;
+	for (j = 0; j < n_deadchars; j++)
+	{
+		for (i = 0; i < tabsize[TAB_DEADKEYS] && deadkeys[i] != 0; i += 3)
+		{
+			if (deadkeys[i] == tmp[j])
+			{
+				tmp[deadsize++] = deadkeys[i + 1];
+				tmp[deadsize++] = deadkeys[i + 2];
+			}
+		}
+		tmp[deadsize++] = 0;
+	}
+	return deadsize;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1346,19 +1744,20 @@ void copy_mint_deadkeys(const unsigned char *src)
 
 static char const progname[] = "mktbl";
 
-static void usage(void)
+static void usage(FILE *fp)
 {
-	printf("Usage: %s [-c] src-file [tbl-file]\n", progname);
+	fprintf(fp, "Usage: %s [-c|-m|-M|-a|-A] src-file [tbl-file]\n", progname);
 }
 
 
 int main(int argc, char **argv)
 {
 	char *outname = NULL;
-	FILE *fd;
+	FILE *infile;
 	FILE *out;
 	const char *filename;
 	int output_format = FORMAT_NONE;
+	int r;
 
 	/*
 	 * very minimalistic option processing
@@ -1367,14 +1766,46 @@ int main(int argc, char **argv)
 	argv++;
 	while (argc > 0 && argv[0][0] == '-')
 	{
-		if (strcmp(argv[0], "-c") == 0)
+		if (argv[0][1] == '\0')
+		{
+			break;
+		} else if (strcmp(argv[0], "-c") == 0)
 		{
 			output_format = FORMAT_C_SOURCE;
 			argv++;
 			argc--;
+		} else if (strcmp(argv[0], "-m") == 0)
+		{
+			output_format = FORMAT_MINT;
+			argv++;
+			argc--;
+		} else if (strcmp(argv[0], "-M") == 0)
+		{
+			output_format = FORMAT_MINT_SOURCE;
+			argv++;
+			argc--;
+		} else if (strcmp(argv[0], "-a") == 0)
+		{
+			output_format = FORMAT_MAGIC;
+			argv++;
+			argc--;
+		} else if (strcmp(argv[0], "-A") == 0)
+		{
+			output_format = FORMAT_MAGIC_SOURCE;
+			argv++;
+			argc--;
+#ifdef WITH_CHECKS
+		} else if (strcmp(argv[0], "--check") == 0)
+		{
+			int ret = unitable_selfcheck();
+#if WITH_CHECKS >= 2
+			ret &= unifont_check();
+#endif
+			return ret ? EXIT_SUCCESS : EXIT_FAILURE;
+#endif
 		} else if (strcmp(argv[0], "--help") == 0)
 		{
-			usage();
+			usage(stdout);
 			return EXIT_SUCCESS;
 		} else
 		{
@@ -1385,7 +1816,7 @@ int main(int argc, char **argv)
 
 	if (argc == 0)
 	{
-		usage();
+		usage(stderr);
 		return EXIT_FAILURE;
 	} else if (argc == 1)
 	{
@@ -1400,34 +1831,49 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	fd = fopen(filename, "rb");
-	if (!fd)
+	if (strcmp(filename, "-") == 0)
+	{
+		infile = stdin;
+		filename = "<stdin>";
+	} else
+	{
+		infile = fopen(filename, "rb");
+	}
+	if (infile == NULL)
 	{
 		fprintf(stderr, "%s: %s\n", filename, strerror(errno));
 		return EXIT_FAILURE;
 	}
 
-	if (mktbl_parse(fd, filename) == FALSE)
+	r = mktbl_parse(infile, filename);
+	if (infile != stdin)
+		fclose(infile);
+
+	if (r == FALSE)
 	{
-		fclose(fd);
 		return EXIT_FAILURE;
 	}
-	fclose(fd);
 
 	if (output_format == FORMAT_NONE)
 	{
 		output_format = keytab_format;
 	}
 
-	if (outname == NULL)
+	if (outname == NULL && infile != stdin)
 	{
-		const char *ext = output_format == FORMAT_C_SOURCE ? ".h" : output_format == FORMAT_MINT ? ".tbl" : ".sys";
+		const char *ext =
+			output_format == FORMAT_C_SOURCE ? ".h" : 
+			output_format == FORMAT_MINT ? ".tbl" :
+			output_format == FORMAT_MINT_SOURCE ? ".src" :
+			output_format == FORMAT_MAGIC ? ".sys" :
+			output_format == FORMAT_MAGIC_SOURCE ? ".inc" :
+			".xxx";
 		char *o;
 		long flen;
 
 		flen = strlen(filename);
 		outname = malloc(flen + 6);
-		if (!outname)
+		if (outname == NULL)
 		{
 			fprintf(stderr, "%s\n", strerror(errno));
 			return EXIT_FAILURE;
@@ -1442,8 +1888,20 @@ int main(int argc, char **argv)
 		printf("%s: output to %s\n", filename, outname);
 	}
 
-	out = fopen(outname, "wb");
-	if (!out)
+	if (outname == NULL || strcmp(outname, "-") == 0)
+	{
+		out = stdout;
+		if ((output_format == FORMAT_MINT || output_format == FORMAT_MAGIC) &&
+			isatty(fileno(out)))
+		{
+			fprintf(stderr, "%s: refusing to output binary data to a terminal\n", progname);
+			return EXIT_FAILURE;
+		}
+	} else
+	{
+		out = fopen(outname, "wb");
+	}
+	if (out == NULL)
 	{
 		fprintf(stderr, "%s: %s\n", outname, strerror(errno));
 		return EXIT_FAILURE;
@@ -1462,9 +1920,19 @@ int main(int argc, char **argv)
 	case FORMAT_MAGIC:
 		mktbl_write_magic(out);
 		break;
+
+	case FORMAT_MINT_SOURCE:
+		mktbl_write_mint_source(out);
+		break;
+
+	case FORMAT_MAGIC_SOURCE:
+		mktbl_write_magic_source(out);
+		break;
 	}
 
-	fclose(out);
+	fflush(out);
+	if (out != stdout)
+		fclose(out);
 
 	return EXIT_SUCCESS;
 }

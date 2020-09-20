@@ -89,7 +89,7 @@ compile-tables:
 	for dir in Britain Czech Netherlands Finland France Germany Hungary Norway Italy Russian Spain Sweden Switzerland USA Poland; do \
 		mkdir -p $(TBLDIR)/$$dir || exit 1; \
 	done
-	$(NATIVECC) $(NATIVECFLAGS) -DMAIN -o mktbl mktbl.c
+	$(NATIVECC) $(NATIVECFLAGS) -DMAIN -o mktbl mktbl.c unitable.c
 	./mktbl keyboards/british.src $(TBLDIR)/Britain/british.tbl
 	./mktbl keyboards/czech_iso.src $(TBLDIR)/Czech/czech_iso.tbl
 	./mktbl keyboards/czech_kam.src $(TBLDIR)/Czech/czech_kam.tbl

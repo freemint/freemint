@@ -22,7 +22,7 @@ all-here: build
 # default overwrites
 
 # default definitions
-OBJS = $(TARGET).o
+OBJS = $(TARGET).o unitable.o
 GENFILES = $(TARGET)
 
 VPATH = ..
