@@ -51,7 +51,7 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *new_window;
 	XA_WIND_ATTR kind = (unsigned short)pb->intin[0];
 
-	CONTROL(5,1,0)
+	CONTROL3(5,1,0, 5,5,0, 6,5,0)
 
 	if (pb->control[N_INTIN] >= 6)
 	{
