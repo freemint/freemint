@@ -397,6 +397,7 @@ static int mktbl_load_mint(FILE *fd, const char *filename)
 static int mktbl_load_magic(FILE *fd, const char *filename)
 {
 	long size;
+	int tab;
 
 	size = fread(keytab, 1, N_KEYTBL * MAX_SCANCODE, fd);
 	if (size != N_KEYTBL * MAX_SCANCODE)
@@ -415,6 +416,8 @@ static int mktbl_load_magic(FILE *fd, const char *filename)
 		deadkeys[size] = 0;
 		size++;
 	}
+	for (tab = 0; tab < N_KEYTBL; tab++)
+		tabsize[tab] = MAX_SCANCODE;
 	tabsize[TAB_DEADKEYS] = (int)size;
 
 	keytab_format = FORMAT_MAGIC;
