@@ -427,7 +427,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			srb.pdata = parms->buf;
 			srb.lun = (parms->cmd[1] & 0xE0) >> 5;
 			srb.direction = USB_CMD_DIRECTION_OUT;
-			srb.timeout = parms->timeout * 5;
+			srb.timeout = parms->timeout * 10;
 
 			/* promote write6 to write10 */
 			if (srb.cmd[0] == SCSI_WRITE6)
