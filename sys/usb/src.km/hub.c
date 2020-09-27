@@ -598,19 +598,26 @@ usb_hub_events(struct usb_hub_device *hub)
 void
 usb_hub_poll(PROC *p, long device)
 {
-	wake(WAIT_Q, (long)&usb_hub_poll_thread);
+	/* Device address is used as wakeup condition. */
+	wake(WAIT_Q, device);
 }
 
 void 
 usb_hub_poll_thread(void *ptr)
 {
 	struct usb_device *dev = (struct usb_device *)ptr;
+	TIMEOUT *t;
 
 	while (dev->maxchild)
 	{
 		(void)usb_hub_events(dev->privptr);
-		addtimeout(1000L, usb_hub_poll);
-		sleep(WAIT_Q, (long)&usb_hub_poll_thread);
+		t = addtimeout(1000L, usb_hub_poll);
+		/*
+		 * The address of the device is used as wakeup condition and
+		 * thus also needs to be passed to the timeout handler.
+		 */
+		t->arg = (long)dev;
+		sleep(WAIT_Q, (long)dev);
 	}
 
 	kthread_exit(0);
