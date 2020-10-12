@@ -123,12 +123,11 @@
 
 # if 0
 # define WITHOUT_TOS
+# endif
 # define KBD_USA
-# endif
 
-# ifdef WITHOUT_TOS
 #  include "key_tables.h"
-# endif
+
 
 static const uchar modifiers[] =
 {
@@ -180,11 +179,8 @@ static	TIMEOUT *k_to;
 static	ushort mouse_step;
 
 /* keyboard table pointers */
-# ifdef WITHOUT_TOS
-static struct keytab *tos_keytab = &sys_keytab;		/* see key_tables.h */
-# else
-static struct keytab *tos_keytab = NULL;		/* see init_keybd() */
-# endif
+static struct keytab *tos_keytab = &sys_keytab;		/* see key_tables.h provide full table for any configuration */
+
 static struct keytab *user_keytab = NULL;
 static char *keytab_buffer = NULL;
 static long keytab_size = 0;
@@ -1286,8 +1282,8 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','ƒ' means that '^' followed by 'a' results
-			 * in an 'ƒ'.
+			 * So '^','a','Âƒ' means that '^' followed by 'a' results
+			 * in an 'Âƒ'.
 			 */
 			uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
@@ -1695,33 +1691,17 @@ load_internal_table(void)
 
 	size = 128 + 128 + 128;
 
-# ifndef WITHOUT_TOS
-
-	if (tosvers >= 0x0400)
-	{
-		size += strlen((char *)tos_keytab->alt) + 1;
-		size += strlen((char *)tos_keytab->altshift) + 1;
-		size += strlen((char *)tos_keytab->altcaps) + 1;
-		if (machine == machine_milan)
-			size += strlen((char *)tos_keytab->altgr) + 1;
-		else
-			size += 2;
-		size += 2; /* For the empty deadkey table */
-	}
-	else
-		size += 16; /* a byte for each missing part plus a NUL plus some space */
-# else
 	/* Our default keyboard table (see key_table.h) is always
 	 * a complete one.
 	 */
-	size += strlen(tos_keytab->alt) + 1;
-	size += strlen(tos_keytab->altshift) + 1;
-	size += strlen(tos_keytab->altcaps) + 1;
-	size += strlen(tos_keytab->altgr) + 1;
-	size += strlen(tos_keytab->deadkeys) + 1;
+	size += strlen((char *)tos_keytab->alt) + 1;
+	size += strlen((char *)tos_keytab->altshift) + 1;
+	size += strlen((char *)tos_keytab->altcaps) + 1;
+	size += strlen((char *)tos_keytab->altgr) + 1;
+	size += strlen((char *)tos_keytab->deadkeys) + 1;
 
 	size += 8; /* add some space */
-# endif
+
 
 	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */
@@ -1754,30 +1734,7 @@ load_internal_table(void)
 	quickmovb(p, tos_keytab->caps, 128);
 	p += 128;
 
-# ifndef WITHOUT_TOS
 
-	if (tosvers >= 0x0400)
-	{
-		len = strlen((char *)tos_keytab->alt) + 1;
-		quickmovb(p, tos_keytab->alt, len);
-		p += len;
-
-		len = strlen((char *)tos_keytab->altshift) + 1;
-		quickmovb(p, tos_keytab->altshift, len);
-		p += len;
-
-		len = strlen((char *)tos_keytab->altcaps) + 1;
-		quickmovb(p, tos_keytab->altcaps, len);
-		p += len;
-
-		if (machine == machine_milan)
-		{
-			len = strlen((char *)tos_keytab->altgr) + 1;
-			quickmovb(p, tos_keytab->altgr, len);
-		}
-	}
-
-# else
 	/* Our default keyboard table (see key_table.h) is always
 	 * a complete one.
 	 */
@@ -1802,7 +1759,7 @@ load_internal_table(void)
 	quickmovb(p, tos_keytab->deadkeys, len);
 
 	gl_kbd = default_akp;
-# endif
+
 
 	keytab_buffer = (char *)kbuf;
 	keytab_size = size;
@@ -1883,18 +1840,31 @@ void
 init_keybd(void)
 {
 	ushort delayrate;
+	struct keytab *local_keytab;
 
 	/* Call the underlying XBIOS to get some defaults.
 	 *
-	 * On WITHOUT_TOS, the tos_keytab is defined as
-	 * static pointer to an initialized struct in
-	 * key_tables.h
 	 */
 
 # ifndef WITHOUT_TOS
-	tos_keytab = TRAP_Keytbl(-1, -1, -1);
+	local_keytab = TRAP_Keytbl(-1, -1, -1);
 # endif
-
+	/* redefining keyboard with TOS tables when exist */
+	if(local_keytab)
+	{
+		tos_keytab->unshift = local_keytab->unshift;
+		tos_keytab->shift = local_keytab->shift;
+		tos_keytab->caps = local_keytab->caps;
+		if (tosvers >= 0x0400)
+		{
+			tos_keytab->alt=local_keytab->alt;
+			tos_keytab->altshift=local_keytab->altshift;
+			tos_keytab->altcaps=local_keytab->altcaps;
+			if (machine == machine_milan)
+				tos_keytab->altgr=local_keytab->altgr;
+		
+		}
+	}
 	TRACE(("%s(): BIOS keyboard table at 0x%p", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
