@@ -293,6 +293,10 @@ SCSIDRV_In (SCSICMD *parms)
 				retries = 10;
 			}
 
+			if (srb.cmd[0] == SCSI_REPORT_LUN) {
+				return -1;
+			}
+
 			/* promote read6 to read10 */
 			if (srb.cmd[0] == SCSI_READ6)
 			{
