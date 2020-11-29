@@ -1,14 +1,5 @@
 language: c
 
-addons:
-  apt:
-    sources:
-      - sourceline: 'ppa:vriviere/ppa'
-    packages:
-      - binutils-m68k-atari-mint
-      - gcc-m68k-atari-mint
-      - mintbin-m68k-atari-mint
-
 env:
   global:
     - BINTRAY_USER="mikrosk"
@@ -34,8 +25,6 @@ env:
 
 # If before_install, install or before_script return a non-zero exit code, the build is errored and stops immediately.
 before_install:
-  # get rid of possibly outdated dependencies
-  - sudo dpkg --remove --force-depends mintlib-m68k-atari-mint pml-m68k-atari-mint
   - git clone --depth=1 --branch=freemint-master https://github.com/freemint/travis-scripts.git .travis
   - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
 
