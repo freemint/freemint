@@ -117,8 +117,6 @@ newmsg(WINDIAL *wd, short vec, short *msg)
 	return 0;
 }
 
-static char file1[PATH_MAX];
-static char file2[PATH_MAX];
 static short secperc;
 static const short option[] = 	{ SETVOLUMELABEL, BADBLOCKFILENAME, SETVOLUMEID,
 			  BOOTMESSAGE, SETROOTENTRIES, SETSPC,
@@ -326,7 +324,6 @@ do_window(WINDIAL *wd)
 					f = file_select((char *)FSELTIT1, (char *)FSELMASK, 0);
 					if ((long)f && (strlen(f) < 512))
 					{
-						strcpy(file1, f);
 						argfdd[1] = (long)f;
 						if (ob[CHECKFAT].ob_state & OS_SELECTED)
 							objc_xchange(wd, CHECKFAT, ob[CHECKFAT].ob_state & ~OS_SELECTED, 1);
@@ -341,7 +338,6 @@ do_window(WINDIAL *wd)
 					f = file_select((char *)FSELTIT2, (char *)FSELMASK, 0);
 					if ((long)f && (strlen(f) < 512))
 					{
-						strcpy(file2, f);
 						argfdd[3] = (long)f;
 					}
 					else
