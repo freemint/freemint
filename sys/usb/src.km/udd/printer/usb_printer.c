@@ -11,7 +11,7 @@
  * For thorough testing: Kroll
  * For idea of parallel port capture: simonsunnyboy
  */
-#include "usb_printer_api.h"
+#include "usb_printer.h"
 #include "../../global.h"
 
 #include "../../usb.h"
@@ -57,12 +57,6 @@ volatile unsigned long original_bconout;
 static long printer_bcostat(ushort dev);
 static long printer_bconout(ushort dev, ushort ch);
 
-/* for future api */
-/*
-struct printer_module_api printer_api;
-struct printer_module_api *printer_api;
-static void setup_printer_module_api(void);
- */
 /*
  * END kernel interface
  */
@@ -73,6 +67,9 @@ static void setup_printer_module_api(void);
  */
 #define TRANSFER_SIZE	1024
 static long printer_transfer(long);
+long printer_reset(void);
+long printer_status(void);
+
 static long printer_ioctl (struct uddif *, short, long);
 static long printer_disconnect (struct usb_device *dev);
 static long printer_probe (struct usb_device *dev, unsigned int ifnum);
@@ -109,15 +106,6 @@ static struct prn_data prn_data;
 
 /*
  * -------------------------------------------------------------------------
- */
-
-/*
-static void
-setup_printer_module_api (void)
-{
-	printer_api.printer_reset = &printer_reset;
-	printer_api.printer_spool = &printer_spool;
-}
  */
 
 /* returns -1 if successful and 0 if not */
@@ -387,7 +375,7 @@ printer_reset (void)
 	return rc;
 }
 
-/* gets the printer status. Returns -1 if error */
+/* gets the printer status. Returns the status or -1 if error */
 long
 printer_status (void)
 {
@@ -398,81 +386,16 @@ printer_status (void)
 								  USB_REQ_GET_PORT_STATUS,
 								  USB_TYPE_CLASS | USB_RECIP_INTERFACE,
 								  0, prn_data.if_no, &status, 1, USB_CNTL_TIMEOUT * 5);
-		/* 0x10, Select, means "printer online". */
+		if (rc == -1L)
+			return -1L;
 #ifdef DEBUGTOS
-		c_conws ("\r\n Printer status: 0x"); //was 0x18 on xerox 6022 (select & no error)
+		c_conws ("\r\n Printer status: 0x"); //was 0x18 on xerox 6022 (online & no error)
 		hex_byte(status);
 #endif
-		if (rc == -1)
-			return -1L;
-		if (status & 0x08)
-			return PRINTER_NO_ERROR;
-		if (status & 0x20)
-			return PRINTER_PAPER_EMPTY;
+		return (long) status;
 	}
 
-	return PRINTER_NO_ERROR; //will need to handle protocol 3 eventually.
-}
-
-/* send print job to printer
- * TO DO, return error codes
- * under construction for API
- */
-void
-printer_spool (char *filename)
-{
-	long fh;
-	long bytes_read;
-	long rc;
-	long actlen = 0;
-	long chunk_len = prn_data.max_packet_size * 16; // length of data chunks to transfer
-	char buf[TRANSFER_SIZE]; // pointer to buffer where the read data will be stored
-
-	memset (buf, 0, sizeof(chunk_len)); // needed? it just fills with 0 the array.
-
-	fh = f_open(filename, 0);
-	if (fh < 0)
-	{
-		c_conws ("\r\n error opening printer file.");
-		return; // TO DO, return error codes
-	}
-
-	while ((bytes_read = f_read(fh, chunk_len, buf)))
-	{
-		if (bytes_read < 0)
-		{
-			c_conws ("\r\n Fread GEMDOS error code: ");
-			hex_long(bytes_read);
-			break;
-		}
-		if (bytes_read == 0)
-		{
-			c_conws ("\r\n print job successful. ");
-			break;
-		}
-		rc = usb_bulk_msg (prn_data.pusb_dev,
-						   prn_data.bulk_out_pipe,
-						   buf,
-						   bytes_read,
-						   &actlen, // actual length of data transferred
-						   USB_CNTL_TIMEOUT * 5, 0);
-		if (rc == -1)
-		{
-			c_conws ("\r\n usb_bulk_msg return code (0 if OK, -1 if error): ");
-			hex_long(rc);
-			break; //error
-		}
-		if (bytes_read < chunk_len)
-		{
-			c_conws ("\r\n print job successful. ");
-			break; // all done, EOF hit.
-		}
-	}
-
-	c_conws ("\r\n usb_bulk_msg actual length: ");
-	hex_long(actlen);
-
-	f_close(fh);
+	return -1L; //will need to handle protocol 3 eventually
 }
 
 /*
@@ -642,6 +565,17 @@ printer_probe (struct usb_device *dev, unsigned int ifnum)
 	else
 		c_conws ("\r\n printer reset OK");
 	c_conws ("\r\n printer probe successful. ");
+	long status;
+	status = printer_status();
+	c_conws ("\r\n printer status: ");
+	if (ret != -1L)
+	{
+		c_conws(status&PRINTER_NO_ERROR?"No error; ":"Error; ");
+		c_conws(status&PRINTER_PAPER_EMPTY?"Paper empty; ":"Paper loaded; ");
+		c_conws(status&PRINTER_ONLINE?"Online.":"Offline.");
+	} else {
+		c_conws("could not get status");
+	}
 	c_conws ("\r\n press a key... \r\n");
 	Cconin();
 #endif
