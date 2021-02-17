@@ -211,9 +211,28 @@ SCSIDRV_In (SCSICMD *parms)
 				return STATUSERROR;
 			}
 
+			/* Note for SCSI_REQ_SENSE command: Last sense data will be in the */
+			/* data buffer. Sense data for the command itself, if it failed, */
+			/* will be in the sense buffer, */
+
 			/* Filter commands for non existent LUNs */
 			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
-				return SELECTERROR;
+				parms->sense[0] = 0x70;
+				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
+				parms->sense[7] = 0x0A;
+				parms->sense[12] = 0x25;
+				parms->sense[13] = 0x00;
+				if (parms->cmd[0] == SCSI_REQ_SENSE) {
+					char *buffer = (char *) parms->buf;
+					for (i = 0; i < parms->transferlen; i++)
+					{
+						buffer[i] = parms->sense[i];
+					}
+					parms->sense[2] = parms->sense[12] = 0x00;
+					return NOSCSIERROR;
+				} else {
+					return S_CHECK_COND;
+				}
 			}
 
 			memset (&srb, 0, sizeof (srb));
@@ -252,12 +271,6 @@ SCSIDRV_In (SCSICMD *parms)
 			if (srb.cmd[0] == SCSI_INQUIRY)
 				retries = 3;
 
-			if (srb.cmd[0] == SCSI_REQ_SENSE) {
-				usb_request_sense(&srb, ss);
-				memcpy(parms->sense, srb.sense_buf, 18);
-				return NOSCSIERROR;
-			}
-
 			if (srb.cmd[0] == SCSI_RD_CAPAC ||
 			    srb.cmd[0] == SCSI_RD_CAPAC16) {
 				ccb pccb;
@@ -294,7 +307,10 @@ SCSIDRV_In (SCSICMD *parms)
 			}
 
 			if (srb.cmd[0] == SCSI_REPORT_LUN) {
-				return -1;
+				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
+				parms->sense[12] = 0x20;
+				parms->sense[13] = 0x00;
+				return S_CHECK_COND;
 			}
 
 			/* promote read6 to read10 */
@@ -318,6 +334,10 @@ SCSIDRV_In (SCSICMD *parms)
 
 			/* XXXX: Needs verification !!!!!
 			 */
+			/* This failed sdrvtest on a USB key. */
+			/* priv->changed is set in part_init() in usb_storage.c */
+			/* by SCSIDRV_MediaChange but is not need to detect media changes */
+#if 0
 			if (srb.cmd[0] == SCSI_TST_U_RDY && priv->changed) {
 				/* Report Media Change sense key */
 				/* 2 = sense key (bits 0 to 3) */
@@ -329,6 +349,7 @@ SCSIDRV_In (SCSICMD *parms)
 				priv->changed = FALSE;
 				return S_CHECK_COND;
 			}
+#endif
 
 
 retry:
@@ -417,7 +438,22 @@ SCSIDRV_Out (SCSICMD *parms)
 
 			/* Filter commands for non existent LUNs */
 			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
-				return SELECTERROR;
+				parms->sense[0] = 0x70;
+				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
+				parms->sense[7] = 0x0A;
+				parms->sense[12] = 0x25;
+				parms->sense[13] = 0x00;
+				if (parms->cmd[0] == SCSI_REQ_SENSE) {
+					char *buffer = (char *) parms->buf;
+					for (i = 0; i < parms->transferlen; i++)
+					{
+						buffer[i] = parms->sense[i];
+					}
+					parms->sense[2] = parms->sense[12] = 0x00;
+					return NOSCSIERROR;
+				} else {
+					return S_CHECK_COND;
+				}
 			}
 
 			memset (&srb, 0, sizeof (srb));
