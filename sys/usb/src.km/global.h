@@ -197,7 +197,7 @@ static char tos_debugbuffer[512];
 #define CON	2	/* Console */
 #define DEV	CON
 
-static void tos_printmsg(const char *fmt, ...) __attribute__((unused));
+static void tos_printmsg(const char *fmt, ...) __attribute__((unused)) __attribute__((format(printf, 1, 2)));
 
 static void tos_printmsg(const char *fmt, ...)
 {

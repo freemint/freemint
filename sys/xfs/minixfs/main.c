@@ -88,7 +88,7 @@ init (struct kerinfo *k)
 		minix_filesys.fsflags &= ~FS_EXT_3;
 	}
 	
-	DEBUG (("Minix-FS: loaded and ready (k = %lx).", k));
+	DEBUG (("Minix-FS: loaded and ready (k = %lx).", (unsigned long)k));
 	return &minix_filesys;
 }
 

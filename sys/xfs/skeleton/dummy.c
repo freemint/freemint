@@ -376,7 +376,7 @@ init (struct kerinfo *k)
 		ftab.fsflags &= ~FS_EXT_3;
 	}
 	
-	KERNEL_DEBUG ("dummy: loaded and ready (k = %lx) -> %lx.", k, (long) &ftab);
+	KERNEL_DEBUG ("dummy: loaded and ready (k = %lx) -> %lx.", (unsigned long)k, (long) &ftab);
 	return &ftab;
 }
 

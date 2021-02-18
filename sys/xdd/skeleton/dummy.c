@@ -366,7 +366,7 @@ dummy_open (FILEPTR *f)
 {
 //	ushort dev = f->fc.aux;
 	
-	DEBUG (("dummy_open [%i]: enter (%lx)", f->fc.aux, f->flags));
+	DEBUG (("dummy_open [%i]: enter (%x)", f->fc.aux, f->flags));
 	
 # if 0
 	if (dev >= IOVAR_REAL_MAX)
@@ -460,7 +460,7 @@ dummy_write (FILEPTR *f, const char *buf, long bytes)
 {
 	long done = 0;
 	
-	DEBUG (("dummy_write [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("dummy_write [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	
 	DEBUG (("dummy_write: leave (%ld)", done));
@@ -472,7 +472,7 @@ dummy_read (FILEPTR *f, char *buf, long bytes)
 {
 	long done = 0;
 	
-	DEBUG (("dummy_read [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("dummy_read [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	
 	DEBUG (("dummy_read: leave (%ld)", done));
@@ -492,7 +492,7 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	long r = E_OK;
 	
-	DEBUG (("dummy_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), buf));
+	DEBUG (("dummy_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), (unsigned long)buf));
 	
 	switch (mode)
 	{
@@ -626,7 +626,7 @@ dummy_unselect (FILEPTR *f, long proc, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
 	
-	DEBUG (("dummy_unselect [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, tty));
+	DEBUG (("dummy_unselect [%i]: enter (0x%lx, %i, 0x%lx)", f->fc.aux, proc, mode, (unsigned long)tty));
 	
 	if (tty)
 	{

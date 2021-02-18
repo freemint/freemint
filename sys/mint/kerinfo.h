@@ -86,8 +86,8 @@ struct kerinfo
 	 * alert - really serious errors
 	 * fatal - fatal errors
 	 */
-	void	_cdecl (*trace)(const char *, ...);
-	void	_cdecl (*debug)(const char *, ...);
+	void	_cdecl (*trace)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*debug)(const char *, ...) __attribute__((format(printf, 1, 2)));
 	void	_cdecl (*alert)(const char *, ...);
 	EXITING _cdecl (*fatal)(const char *, ...) NORETURN;
 

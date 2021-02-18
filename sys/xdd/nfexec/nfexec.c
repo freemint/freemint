@@ -227,7 +227,7 @@ failure:
 static long _cdecl
 nfexec_open (FILEPTR *f)
 {
-	DEBUG (("nfexec_open [%i]: enter (%lx)", f->fc.aux, f->flags));
+	DEBUG (("nfexec_open [%i]: enter (%x)", f->fc.aux, f->flags));
 
 	return E_OK;
 }
@@ -253,7 +253,7 @@ nfexec_write (FILEPTR *f, const char *buf, long bytes)
 {
 	long done = 0;
 
-	DEBUG (("nfexec_write [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("nfexec_write [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 
 	done = nf_call(nf_id | 1, buf, bytes);
 
@@ -266,7 +266,7 @@ nfexec_read (FILEPTR *f, char *buf, long bytes)
 {
 	long done = 0;
 
-	DEBUG (("nfexec_read [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("nfexec_read [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 
 
 	DEBUG (("nfexec_read: leave (%ld)", done));
@@ -286,7 +286,7 @@ nfexec_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	long r = E_OK;
 
-	DEBUG (("nfexec_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), buf));
+	DEBUG (("nfexec_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), (unsigned long)buf));
 
 	switch (mode)
 	{
@@ -374,7 +374,7 @@ nfexec_unselect (FILEPTR *f, long proc, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
 
-	DEBUG (("nfexec_unselect [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, tty));
+	DEBUG (("nfexec_unselect [%i]: enter (0x%lx, %i, 0x%lx)", f->fc.aux, proc, mode, (unsigned long)tty));
 
 	if (tty)
 	{

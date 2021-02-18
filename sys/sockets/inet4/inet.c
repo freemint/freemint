@@ -638,7 +638,7 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 			break;
 		
 		default:
-			DEBUG (("inet_setsockopt: %d: invalid option", optval));
+			DEBUG (("inet_setsockopt: %d: invalid option", optname));
 			return EOPNOTSUPP;
 	}
 	

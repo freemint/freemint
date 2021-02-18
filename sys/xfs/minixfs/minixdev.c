@@ -302,7 +302,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 		}
 		else
 		{
-			DEBUG (("Minix-FS (%c): __fio: len = %li (mode %i)", f->fc.dev+'A', f->fc.dev+'A', len, mode));
+			DEBUG (("Minix-FS (%c): __fio: len = %li (mode %i)", f->fc.dev+'A', len, mode));
 			return 0;
 		}
 	}

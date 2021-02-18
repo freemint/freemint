@@ -101,6 +101,6 @@ init (struct kerinfo *k)
 		ext2_filesys.fsflags &= ~FS_EXT_3;
 	}
 	
-	KERNEL_DEBUG ("ext2 (%s): loaded and ready (k = %lx) -> %lx.", __FILE__, k, (long) &ext2_filesys);
+	KERNEL_DEBUG ("ext2 (%s): loaded and ready (k = %lx) -> %lx.", __FILE__, (unsigned long)k, (long) &ext2_filesys);
 	return &ext2_filesys;
 }

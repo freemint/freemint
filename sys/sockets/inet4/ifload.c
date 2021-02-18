@@ -96,8 +96,8 @@ load_xif (struct basepage *b, const char *name, short *class, short *subclass)
 #endif
 	long r;
 	
-	DEBUG (("load_xif: enter (0x%lx, %s)", b, name));
-	DEBUG (("load_xif: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG (("load_xif: enter (0x%lx, %s)", (unsigned long)b, name));
+	DEBUG (("load_xif: init 0x%lx, size %li", (unsigned long) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 	
 	/* pass a pointer to the drivers file name on to the
 	 * driver.

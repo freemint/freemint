@@ -681,7 +681,7 @@ tcp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 		
 		if (isleep (IO_Q, (long)data->sock))
 		{
-			DEBUG (("tcp_recv: interrupted -> %li", EINTR));
+			DEBUG (("tcp_recv: interrupted -> %d", EINTR));
 			return EINTR;
 		}
 		
