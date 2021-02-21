@@ -225,6 +225,9 @@ unsigned long delay_1usec;
 
 static unsigned char readbuf[DEFAULT_SECTOR_SIZE];
 
+/* A copy of the BPBs in globally accessible memory. */
+BPB *usb_global_bpb = NULL;
+
 #define ATARI_PART_TBL_OFFSET   0x1c6
 #define XGM                     0x0058474dL     /* '\0XGM' */
 #define GEM                     0x0047454dL     /* '\0GEM' */
@@ -598,6 +601,17 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
 	/* Process all primary/logical partitions */
 	memcpy(part,buffer+DOS_PART_TBL_OFFSET,4*sizeof(dos_partition_t));
 
+	/* Even with the 0x55aa signature (see above), this can still be NOT an MBR but a FAT boot sector.
+	   Do it like Linux: Check the boot indicator and reject it if not 0x00 or 0x80 for all partitions. */
+	for(i = 0, pt = part; i < 4; i++, pt++)
+	{
+		if ((pt->boot_ind != 0x00) && (pt->boot_ind != 0x80))
+		{
+			DEBUG(("bad MBR boot indicator 0x%02x for part %ld", pt->boot_ind, (long) i));
+			return -1;
+		}
+	}
+
 	for(i = 0, pt = part; i < 4; i++, pt++)
 	{
 		/* fdisk does not show the extended partitions that are not in the MBR */
@@ -663,6 +677,36 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 	return -1;
 }
 
+/* Heuristic to determine if we have a FAT12/FAT16 boot sector.
+   Ideas from NT's fastfat.sys, though we're more lenient, because of Atari floppys. */
+static long
+is_fat_filesystem(const unsigned char* bootsector)
+{
+	unsigned char temp;
+
+	/* bytes per sector must not be null */
+	if (0 == (bootsector[0xb] | bootsector[0xc]))
+		return 0;
+
+	/* reserved sectors must not be null */
+	if (0 == (bootsector[0xe] | bootsector[0xf]))
+		return 0;
+
+	/* sectors per cluster must be a power of 2 */
+	temp = bootsector[0xd];
+	if ((temp != 1) && (temp != 2) && (temp != 4) && (temp != 8) &&
+		(temp != 16) && (temp != 32) && (temp != 64) && (temp != 128))
+		return 0;
+
+	/* number of FATs must be 1 or 2 */
+	temp = bootsector[0x10];
+	if ((temp != 1) && (temp != 2))
+		return 0;
+
+	/* accept this as a FAT FS */
+	return 1;
+}
+
 long
 fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *part_type, unsigned long *part_offset, unsigned long *part_size)
 {
@@ -689,7 +733,7 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 		return -1;
 	}
 
-	if(!strncmp((char *)&buffer[DOS_FS_TYPE_OFFSET], "FAT", 3))
+	if((part_no == 1) && is_fat_filesystem(buffer))
 	{
 		/* ok, we assume we are on a PBR only */
 		*part_type = 0;
@@ -1696,9 +1740,8 @@ usb_stor_probe(struct usb_device *dev, unsigned int ifnum, struct us_data *ss)
 	/* Patch devices....
 	*/
 
-	/* TEAC Floppy should use US_PR_CB not US_PR_CBI */
-	if (dev->descriptor.idVendor == 0x0644 && 
-		dev->descriptor.idProduct == 0x0000)
+	/* Floppy drives seem to cause problems with CBI transport. Use CB instead. */
+	if ((iface->desc.bInterfaceProtocol == US_PR_CBI) && (iface->desc.bInterfaceSubClass == US_SC_UFI))
 	{
 		protocol = US_PR_CB;
 		subclass = US_SC_UFI;
@@ -2083,25 +2126,23 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 				continue;
 		}
 
-		struct us_data *ss;
-		ss = (struct us_data *)dev->privptr;
 
 		//dev_print(&usb_dev_desc[lun_global_num]);
-
+#if 0
 		if(ss->subclass == US_SC_UFI)
 		{
 			DEBUG(("detected USB floppy not supported at this time\r\n"));
 			/* This is a floppy drive, so give it a drive letter ? B ?. */
 			/* Also, we may be better to intercept the TRAP #1 floppy handlers
 			 * and deal with them here. ??? */
-			usb_stor_reset(lun_global_num);
-			continue;
+			//usb_stor_reset(lun_global_num);
+			//continue;
 		}
 
 		/* Skip everything apart from HARDDISKS and CDROM */
 		if((usb_dev_desc[lun_global_num].type & 0x1f) != DEV_TYPE_HARDDISK
 		   && (usb_dev_desc[lun_global_num].type & 0x1f) != DEV_TYPE_CDROM) {
-#if 0
+/*
 		c_conws(usb_dev_desc[lun_global_num].vendor);
 		c_conout(' ');
 		c_conws(usb_dev_desc[lun_global_num].product);
@@ -2109,11 +2150,11 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		c_conws(", type : ");
 		hex_long(usb_dev_desc[lun_global_num].type & 0x1f);
 		c_conws(" not installed\r\n");
-#endif
-			usb_stor_reset(lun_global_num);
-			continue;
+*/
+			//usb_stor_reset(lun_global_num);
+			//continue;
 		}
-
+#endif
 		usb_dev_desc[lun_global_num].usb_phydrv = i;
 		mass_storage_dev[i].usb_dev_desc[lun] = &usb_dev_desc[lun_global_num];
 
@@ -2127,7 +2168,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		} while (usb_dev_desc[lun_global_num].target != 0xff && lun_global_num < MAX_TOTAL_LUN_NUM);
 	}
 
-	if (mass_storage_dev[i].total_lun > 0 && device_handled)
+	/* Poll multi-LUN device and floppy drive */
+	if ((mass_storage_dev[i].total_lun > 0 ||
+		 mass_storage_dev[i].usb_stor.subclass == US_SC_UFI) && device_handled)
 		init_polling();
 
 	usb_disable_asynch(0); /* asynch transfer allowed */
@@ -2338,6 +2381,14 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		pun_usb.max_sect_siz = pun_ptr->max_sect_siz;
 		memset(pun_usb.pun,0xff,dl_maxdrives); /* mark all puns invalid */
 	}
+
+	/* Allocate memory for copy of BPBs in globally accessible memory. */
+	/* Note: usb_get_bpb will check for NULL prior to using this. */
+#ifndef TOSONLY
+	usb_global_bpb = (BPB*)m_xalloc(MAX_LOGICAL_DRIVE * sizeof(BPB), 0x20|0);
+#else
+	usb_global_bpb = NULL;
+#endif
 
 	usb_storage_init();
 

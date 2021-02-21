@@ -50,6 +50,8 @@ extern short MagiC;
 #endif
 extern long XHDOSLimits(ushort which, ulong limit);
 
+extern BPB* usb_global_bpb;
+
 /*
  * end of stuff for other headers
  */
@@ -363,7 +365,8 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 #endif
 		return -1L;
 	}
-	if (!valid_partition(part_type)) {
+	/* superfloppy-type devices will have a part_type of 0 */
+	if (!valid_partition(part_type) && (part_type != 0)) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"invalid partition type");
@@ -412,6 +415,18 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	pun_usb.psize[logdrv] = part_size;
 	pun_usb.flags[logdrv] = CHANGE_FLAG;
 	usb_build_bpb(&pun_usb.bpb[logdrv],(FAT16_BS *)boot_sector);
+
+	/* For superfloppy-type devices update the "partition" size & type from the boot sector / BPB */
+	if (part_type == 0) {
+		unsigned long sectors;
+		FAT16_BS *dos_bs = (FAT16_BS *)boot_sector;
+		sectors = getiword(dos_bs->sec);
+		if (!sectors)
+			sectors = getilong(dos_bs->sec2);
+		pun_usb.psize[logdrv] = sectors;
+		/* fake partition type according to FAT16/FAT12 */
+		pun_usb.ptype[logdrv] = pun_usb.bpb[logdrv].bflags?0x00440600L:0x00440100L;
+	}
 
 	/*
 	 * update drive bits etc
@@ -520,7 +535,14 @@ BPB *usb_getbpb(long logdrv)
 		goto exit;
 	}
 
-	bpbptr = &pun_usb.bpb[logdrv];
+	/* Make a copy of the BPB in globally accessible memory. */
+	if (usb_global_bpb != NULL) {
+		usb_global_bpb[logdrv] = pun_usb.bpb[logdrv];
+		bpbptr = &(usb_global_bpb[logdrv]);
+	} else {
+		/* Fall back to using protected kernel memory */
+		bpbptr = &pun_usb.bpb[logdrv];
+	}
 
  	/*
  	 * ensure that filesystem inside partition is suitable for TOS

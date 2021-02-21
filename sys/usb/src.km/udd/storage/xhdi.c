@@ -365,8 +365,8 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	if (bpb)
 		bpb->recsiz = 0;
 
-	if (!pstart)
-		return EBUSY;
+	//if (!pstart)
+		//return EBUSY;
 
 	if (start) {
 		*start = pstart;

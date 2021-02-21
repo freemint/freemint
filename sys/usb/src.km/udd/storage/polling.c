@@ -11,6 +11,7 @@
 #include "mint/mint.h"
 #endif
 #include "../../global.h"
+#include "../../usb.h"
 
 #include "part.h"
 #include "scsi.h"
@@ -71,8 +72,9 @@ void storage_int(void)
 			continue;
 		}
 
-		/* If the device has only one LUN we don't poll */
-		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1)
+		/* If the device has only one LUN and is not a floppy drive we don't poll */
+		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1 &&
+			mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass != US_SC_UFI)
 			continue;
 
 		pccb.lun = usb_dev_desc[i].lun;
@@ -84,8 +86,8 @@ void storage_int(void)
 			usb_dev_desc[i].sw_ejected = 0;
 		}
 		else if ((!r) && (!usb_dev_desc[i].ready)) { /* Card plugged */
-			usb_stor_get_info(usb_dev_desc[i].priv, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor, &usb_dev_desc[i]);
-			part_init(i, &usb_dev_desc[i]);
+			if (usb_stor_get_info(usb_dev_desc[i].priv, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor, &usb_dev_desc[i]) > 0)
+				part_init(i, &usb_dev_desc[i]);
 
 			ALERT(("USB Mass Storage Device (%d) LUN (%d) inserted %s",
 				usb_dev_desc[i].usb_phydrv, usb_dev_desc[i].lun, usb_dev_desc[i].product));
