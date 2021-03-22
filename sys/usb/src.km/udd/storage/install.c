@@ -416,7 +416,10 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	pun_usb.flags[logdrv] = CHANGE_FLAG;
 	usb_build_bpb(&pun_usb.bpb[logdrv],(FAT16_BS *)boot_sector);
 
-	/* For superfloppy-type devices update the "partition" size & type from the boot sector / BPB */
+	/* For superfloppy-type devices update the "partition" size & type from the
+	 * boot sector / BPB. Superfloppy support taken from the Lightning VME
+	 * driver by Ingo Uhlemann/Christian Zietz.
+	 */
 	if (part_type == 0) {
 		unsigned long sectors;
 		FAT16_BS *dos_bs = (FAT16_BS *)boot_sector;
@@ -535,7 +538,9 @@ BPB *usb_getbpb(long logdrv)
 		goto exit;
 	}
 
-	/* Make a copy of the BPB in globally accessible memory. */
+	/* Make a copy of the BPB in globally accessible memory.
+	 * Taken from the Lightning VME driver by Ingo Uhlemann/Christian Zietz.
+	 */
 	if (usb_global_bpb != NULL) {
 		usb_global_bpb[logdrv] = pun_usb.bpb[logdrv];
 		bpbptr = &(usb_global_bpb[logdrv]);

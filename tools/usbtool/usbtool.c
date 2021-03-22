@@ -25,8 +25,8 @@
 /* USB_MAX_DEVICE is 32 */
 char dev_names[USB_MAX_DEVICE][64];
 short dev_types[USB_MAX_DEVICE];
-short dev_count;
-short text_handle;
+short dev_count = 0;
+short text_handle = 0;
 short h_line;
 short xf, yf, wf, hf;
 VdiHdl vdi_handle;
@@ -86,6 +86,7 @@ events (short menuID)
 	short ret;
 	unsigned long timer = 1000; /* Wake USB hub events every second. */
 	int i;
+	long changed;
 
 	xf = NO_POSITION;
 
@@ -153,11 +154,16 @@ events (short menuID)
 					for (i = 0; i < api->max_hubs; i++)
 					{
 						struct usb_hub_device *hub = usb_get_hub_index (i);
-						if (hub && usb_hub_events (hub))
-						/* when there is a change reported by usb_hub_events */
+						if (hub)
 						{
-							if (text_handle > 0)
-								update_text();
+							changed = usb_hub_events(hub);
+							if (changed & USB_PORT_STAT_C_CONNECTION)
+							/* when there is a port connection change reported by usb_hub_events */
+							{
+								if (text_handle > 0) {
+									update_text();
+								}
+							}
 						}
 					}
 				}

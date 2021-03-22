@@ -24,14 +24,14 @@ _interrupt_storage:
 	bsr	_storage_int
 	move.l	oldSP,a7
 	movem.l	(sp)+,a0-a7/d0-d7
-	move.w	#200,count
+	move.w	#100,count
 	clr.w	lock
 skip:	move.l	_old_etv_timer_int(PC),-(sp)
 	rts
 #endif
 
 	.data
-count:	dc.w 200
+count:	dc.w 100
 	.bss
 lock:	ds.w 1
 oldSP:	ds.l 1

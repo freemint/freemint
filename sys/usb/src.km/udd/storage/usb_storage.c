@@ -678,7 +678,9 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 }
 
 /* Heuristic to determine if we have a FAT12/FAT16 boot sector.
-   Ideas from NT's fastfat.sys, though we're more lenient, because of Atari floppys. */
+ * Ideas from NT's fastfat.sys, though we're more lenient, because of Atari
+ * floppys. Taken from the Lightning VME driver by Ingo Uhlemann/Christian Zietz.
+ */
 static long
 is_fat_filesystem(const unsigned char* bootsector)
 {
@@ -1040,8 +1042,7 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 	long result = 0;
 	long retry;
 	unsigned long pipe;
-	unsigned long status;
-	retry = 5;
+	retry = 3;
 	if(srb->direction == USB_CMD_DIRECTION_IN)
 		pipe = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
 	else
@@ -1054,10 +1055,13 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 #endif
 		/* let's send the command via the control pipe */
 		result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev , 0),
-		 US_CBI_ADSC, USB_TYPE_CLASS | USB_RECIP_INTERFACE, 0, us->ifnum, srb->cmd, srb->cmdlen, USB_CNTL_TIMEOUT * 5);
+		 US_CBI_ADSC, USB_TYPE_CLASS | USB_RECIP_INTERFACE, 0, us->ifnum, srb->cmd, srb->cmdlen, srb->timeout);
 		DEBUG(("CB_transport: control msg returned %ld, status %lx", result, us->pusb_dev->status));
 		/* check the return code for the command */
 		if(result < 0)
+			return result;
+		/* Do not clear control endpoint */
+#if 0
 		{
 			if(us->pusb_dev->status & USB_ST_STALLED)
 			{
@@ -1069,6 +1073,7 @@ usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 			DEBUG((" error during command %02x Stat = %lx", srb->cmd[0], us->pusb_dev->status));
 			return result;
 		}
+#endif
 		/* transfer the data payload for this command, if one exists*/
 		DEBUG(("CB_transport: control msg returned %ld, direction is %s to go 0x%lx", result, srb->direction == USB_CMD_DIRECTION_IN ? "IN" : "OUT", srb->datalen));
 		if(srb->datalen)
@@ -1120,9 +1125,6 @@ usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 	}
 	return USB_STOR_TRANSPORT_ERROR;
 }
-
-#define USB_TRANSPORT_UNKNOWN_RETRY 5
-#define USB_TRANSPORT_NOT_READY_RETRY 10
 
 /* clear a stall on an endpoint - special for BBB devices */
 static long
@@ -1305,15 +1307,11 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 {
 	long result, status;
 	ccb reqsrb;
-	long retry, notready;
 	status = USB_STOR_TRANSPORT_GOOD;
-	retry = 0;
-	notready = 0;
 #ifdef TOSONLY
 	transfer_running = 1;
 #endif
 	/* issue the command */
-do_retry:
 	result = usb_stor_CB_comdat(srb, us);
 	DEBUG(("command / Data returned %ld, status %lx", result, us->pusb_dev->status));
 	/* if this is an CBI Protocol, get IRQ */
@@ -1363,6 +1361,16 @@ do_retry:
 #endif
 		return USB_STOR_TRANSPORT_GOOD;
 	}
+	if ((result < 0) && (srb->cmd[0] == SCSI_TST_U_RDY))
+	{
+		/* do not issue an autorequest after TEST_UNIT_READY failure
+		 because usb_test_unit_ready() will request sense. */
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
+		return USB_STOR_TRANSPORT_FAILED;
+	}
+
 	/* issue an request_sense */
 	memset(&reqsrb.cmd[0], 0, 12);
 	reqsrb.cmd[0] = SCSI_REQ_SENSE;
@@ -1403,37 +1411,25 @@ do_retry:
 	{
 		case 0x01:
 			/* Recovered Error */
+#ifdef TOSONLY
+			transfer_running = 0;
+#endif
 			return USB_STOR_TRANSPORT_GOOD;
 		case 0x02: /* Not Ready */
-			if(notready++ > USB_TRANSPORT_NOT_READY_RETRY)
-			{
-				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)", 
-						srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
+			DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)",
+					srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
 #ifdef TOSONLY
-				transfer_running = 0;
+			transfer_running = 0;
 #endif
-				return USB_STOR_TRANSPORT_FAILED;
-			}
-			else
-			{
-				mdelay(100);
-				goto do_retry;
-			}
-			break;
+			return USB_STOR_TRANSPORT_FAILED;
 		default:
-			if(retry++ > USB_TRANSPORT_UNKNOWN_RETRY)
-			{
-				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x", 
-					       srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2],
-					       srb->sense_buf[12], srb->sense_buf[13]));
+			DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x",
+					srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2],
+					srb->sense_buf[12], srb->sense_buf[13]));
 #ifdef TOSONLY
-				transfer_running = 0;
+			transfer_running = 0;
 #endif
-				return USB_STOR_TRANSPORT_FAILED;
-			}
-			else
-				goto do_retry;
-			break;
+			return USB_STOR_TRANSPORT_FAILED;
 	}
 #ifdef TOSONLY
 	transfer_running = 0;
