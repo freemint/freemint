@@ -1491,6 +1491,24 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	return 0;
 }
 
+static long
+usb_start_stop_unit(ccb *srb, struct us_data *ss, unsigned char start)
+{
+	DEBUG(("usb_start_stop_unit()"));
+	memset(&srb->cmd[0], 0, 12);
+	srb->cmd[0] = SCSI_START_STP;
+	srb->cmd[4] = start;
+	srb->datalen = 0;
+	srb->cmdlen = 12;
+	srb->direction = USB_CMD_DIRECTION_OUT;
+	srb->timeout = USB_CNTL_TIMEOUT * 5;
+	if (ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
 long
 usb_test_unit_ready(ccb *srb, struct us_data *ss)
 {
@@ -1509,9 +1527,15 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 			return 0;
 		}
 		usb_request_sense(srb, ss);
+		/* Not Ready - medium not present */
 		if ((srb->sense_buf[2] == 0x02) &&
 			(srb->sense_buf[12] == 0x3a))
 				return -1;
+		/* Not Ready - need initialise command (start unit) */
+		if ((srb->sense_buf[2] == 0x02) &&
+			(srb->sense_buf[12] == 0x04) &&
+			(srb->sense_buf[13] == 0x02))
+				usb_start_stop_unit(srb, ss, 1);
 		mdelay(100);
 	}
 	while(retries--);
