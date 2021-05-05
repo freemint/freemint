@@ -296,6 +296,7 @@ SCSIDRV_In (SCSICMD *parms)
 				pccb.cmd[0] = SCSI_TST_U_RDY;
 				pccb.datalen = 0;
 				pccb.cmdlen = 12;
+				pccb.lun = srb.lun;
 				r = ss->transport(&pccb, ss);
 				if (r == USB_STOR_TRANSPORT_FAILED
 					|| r == USB_STOR_TRANSPORT_DATA_FAILED
