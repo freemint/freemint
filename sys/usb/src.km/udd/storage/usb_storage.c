@@ -285,7 +285,7 @@ block_dev_desc_t *	usb_stor_get_dev	(long);
 static long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CBI_get_status	(ccb *, struct us_data *);
-static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char);
+static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char, bool out);
 static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
@@ -1130,12 +1130,19 @@ usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 
 /* clear a stall on an endpoint - special for BBB devices */
 static long
-usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt)
+usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt, bool out)
 {
 	long result;
 	/* ENDPOINT_HALT = 0, so set value to 0 */
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 	 			USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0, endpt, 0, 0, USB_CNTL_TIMEOUT * 5);
+
+	/* 
+	 * USB standard: "For endpoints using data toggle, regardless of whether an endpoint has the
+	 * Halt feature set, a ClearFeature(ENDPOINT_HALT) request always results in the data toggle
+	 * being reinitialized to DATA0
+	 */
+	usb_settoggle(us->pusb_dev, endpt, out?1:0, 0);
 	return result;
 }
 
@@ -1187,7 +1194,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	{
 		DEBUG(("DATA:stall"));
 		/* clear the STALL on the endpoint */
-		result = usb_stor_BBB_clear_endpt_stall(us, srb->direction == USB_CMD_DIRECTION_IN ? us->ep_in : us->ep_out);
+		result = usb_stor_BBB_clear_endpt_stall(us, srb->direction == USB_CMD_DIRECTION_IN ? us->ep_in : us->ep_out, srb->direction == USB_CMD_DIRECTION_OUT);
 		if(result >= 0)
 			/* continue on to STATUS phase */
 			goto st;
@@ -1228,7 +1235,7 @@ again:
 	{
 		DEBUG(("STATUS:stall"));
 		/* clear the STALL on the endpoint */
-		result = usb_stor_BBB_clear_endpt_stall(us, us->ep_in);
+		result = usb_stor_BBB_clear_endpt_stall(us, us->ep_in, FALSE);
 		if(result >= 0 && (retry++ < 1))
 			/* do a retry */
 			goto again;
