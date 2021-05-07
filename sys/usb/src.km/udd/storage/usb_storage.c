@@ -1543,6 +1543,31 @@ usb_mode_sense_10(ccb *srb, struct us_data *ss, unsigned char pagecode, unsigned
 }
 
 static long
+usb_mode_sense_6(ccb *srb, struct us_data *ss, unsigned char pagecode, unsigned char subpagecode, unsigned char len)
+{
+	long retry;
+	/* XXX retries */
+	retry = 3;
+	DEBUG(("usb_mode_sense_6()"));
+	do
+	{
+		memset(&srb->cmd[0], 0, 12);
+		srb->cmd[0] = SCSI_MODE_SEN6;
+		srb->cmd[2] = pagecode;
+		srb->cmd[3] = subpagecode;
+		srb->cmd[4] = len;
+		srb->datalen = (unsigned long) len;
+		srb->cmdlen = 12;
+		srb->direction = USB_CMD_DIRECTION_IN;
+		srb->timeout = USB_CNTL_TIMEOUT * 5;
+		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
+			return 0;
+	}
+	while(retry--);
+	return -1;
+}
+
+static long
 usb_read_capacity(ccb *srb, struct us_data *ss)
 {
 	long retry;
@@ -1983,8 +2008,15 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	/* request 8 bytes, the size of the mode parameter header
 	 * write protection support is enabled just by getting the header
 	 * bit 7 of byte 3 set to 1 indicate write protected
+	 *
+	 * like Linux we use MODE SENSE (6) if the subclass is Transparent SCSI
+	 * as some USB sticks are known to fail otherwise
+	 * in contrast, USB floppy drives (UFI subclass) want MODE SENSE (10)
 	 */
-	usb_mode_sense_10(&pccb, ss, 0x3F, 0x00, 8);
+	if ((dev_desc->type == DEV_TYPE_HARDDISK) && (ss->subclass == US_SC_SCSI))
+		usb_mode_sense_6(&pccb, ss, 0x3F, 0x00, 8);
+	else
+		usb_mode_sense_10(&pccb, ss, 0x3F, 0x00, 8);
 
 #if 0 /* Why? */
 	init_part(dev_desc);
