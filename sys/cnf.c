@@ -660,9 +660,9 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 }
 
 long
-parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
+parse_cnf(const char *path, struct parser_item *parser_tab, void *data, unsigned long options)
 {
-	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, data };
+	struct parsinf inf  = { options, NULL, 1, NULL, NULL, data };
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;

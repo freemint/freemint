@@ -1024,7 +1024,7 @@ load_config(void *path )
 
 	DIAGS(("Loading config %s", cpath));
 	BLOG((0,"Loading config %s", cpath));
-	parse_cnf(cpath, parser_tab, &mydata);
+	parse_cnf(cpath, parser_tab, &mydata, SET('Q'));
 
 
 #if GENERATE_DIAGS
@@ -1227,7 +1227,7 @@ void read_inf(void)
 	struct cnfdata mydata;
 	char buf[256];
 	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
-	BLOG((1,"%s:read_inf:%s", get_curproc()->name, buf));
-	parse_cnf(buf, inf_tab, &mydata);
+	BLOG((0,"%s:read_inf:%s", get_curproc()->name, buf));
+	parse_cnf(buf, inf_tab, &mydata, SET('Q'));
 }
 

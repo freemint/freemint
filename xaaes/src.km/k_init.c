@@ -900,7 +900,7 @@ k_init(unsigned long vm)
 					  DU_RSY_CONV,
 					  true);
 
-		BLOG((true, "system resource = %lx (%s)", (unsigned long)C.Aes_rsc, resource_name));
+		BLOG((0, "system resource = %lx (%s)", (unsigned long)C.Aes_rsc, resource_name));
 		kfree(resource_name);
 	}
 	client->options.rsc_lang = 0;	/* dont translate other rsc-files */
