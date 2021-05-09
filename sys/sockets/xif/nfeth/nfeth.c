@@ -59,14 +59,6 @@ unsigned long inet_aton(const char *cp, long *addr);
  */
 static struct netif ifaces[MAX_ETH];
 
-/*
- * Prototypes for our service functions
- */
-static long	neth_open	(struct netif *);
-static long	neth_close	(struct netif *);
-static long	neth_output	(struct netif *, BUF *, const char *, short, short);
-static long	neth_ioctl	(struct netif *, short, long);
-static long	neth_config	(struct netif *, struct ifopt *);
 
 
 /* ================================================================ */
@@ -75,14 +67,12 @@ long __CDECL (*nf_call)(long id, ...) = 0UL;
 
 /* ================================================================ */
 
-static inline unsigned long
-get_nfapi_version()
+static inline unsigned long get_nfapi_version(void)
 {
 	return nf_call(ETH(GET_VERSION));
 }
 
-static inline unsigned long
-get_int_level()
+static inline unsigned long get_int_level(void)
 {
 	return nf_call(ETH(XIF_INTLEVEL));
 }
@@ -129,8 +119,7 @@ nfeth_install_int(void)
  * This gets called when someone makes an 'ifconfig up' on this interface
  * and the interface was down before.
  */
-static long
-neth_open(struct netif *nif)
+static long neth_open(struct netif *nif)
 {
 	int ethX = nif->unit;
 	DEBUG (("nfeth: open (nif = %08lx)", (long)nif));
@@ -141,8 +130,7 @@ neth_open(struct netif *nif)
  * Opposite of neth_open(), is called when 'ifconfig down' on this interface
  * is done and the interface was up before.
  */
-static long
-neth_close(struct netif *nif)
+static long neth_close(struct netif *nif)
 {
 	int ethX = nif->unit;
 	return nf_call(ETH(XIF_STOP), (unsigned long)ethX);
@@ -262,8 +250,7 @@ neth_close(struct netif *nif)
  *	addroottimeout (..., ..., 1);
  */
 
-static long
-neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
+static long neth_output(struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	BUF *nbuf;
 
@@ -316,59 +303,6 @@ neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
 	return 0;
 }
 
-/*
- * MintNet notifies you of some noteable IOCLT's. Usually you don't
- * need to act on them because MintNet already has done so and only
- * tells you that an ioctl happened.
- *
- * One useful thing might be SIOCGLNKFLAGS and SIOCSLNKFLAGS for setting
- * and getting flags specific to your driver. For an example how to use
- * them look at slip.c
- */
-static long
-neth_ioctl (struct netif *nif, short cmd, long arg)
-{
-	char buffer[128];
-	struct ifreq *ifr = (struct ifreq *)arg;
-	long *data = ifr->ifru.data;
-	int ethX = nif->unit;
-
-	DEBUG (("nfeth: ioctl cmd = %d \"('%c'<<8)|%d\" bytes", cmd, cmd>>8, cmd&0xff));
-
-	switch (cmd)
-	{
-		case SIOCGLNKSTATS:
-			nf_call(ETH(XIF_GET_IPATARI), (unsigned long)ethX, buffer, sizeof(buffer));
-			inet_aton(buffer, data++);
-			nf_call(ETH(XIF_GET_IPHOST), (unsigned long)ethX, buffer, sizeof(buffer));
-			inet_aton(buffer, data++);
-			nf_call(ETH(XIF_GET_NETMASK), (unsigned long)ethX, buffer, sizeof(buffer));
-			inet_aton(buffer, data++);
-			return 0;
-
-		case SIOCSIFNETMASK:
-		case SIOCSIFFLAGS:
-		case SIOCSIFADDR:
-			return 0;
-
-		case SIOCSIFMTU:
-			/*
-			 * Limit MTU to 1500 bytes. MintNet has already set nif->mtu
-			 * to the new value, we only limit it here.
-			 */
-			if (nif->mtu > ETH_MAX_DLEN)
-				nif->mtu = ETH_MAX_DLEN;
-			return 0;
-
-		case SIOCSIFOPT:
-			/*
-			 * Interface configuration, handled by neth_config()
-			 */
-			return neth_config (nif, ifr->ifru.data);
-	}
-
-	return ENOSYS;
-}
 
 /*
  * Interface configuration via SIOCSIFOPT. The ioctl is passed a
@@ -384,8 +318,7 @@ neth_ioctl (struct netif *nif, short cmd, long arg)
  * ENOENT		invalid option value
  * 0			Ok
  */
-static long
-neth_config (struct netif *nif, struct ifopt *ifo)
+static long neth_config(struct netif *nif, struct ifopt *ifo)
 {
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
 
@@ -438,6 +371,61 @@ neth_config (struct netif *nif, struct ifopt *ifo)
 
 	return ENOSYS;
 }
+
+
+/*
+ * MintNet notifies you of some noteable IOCLT's. Usually you don't
+ * need to act on them because MintNet already has done so and only
+ * tells you that an ioctl happened.
+ *
+ * One useful thing might be SIOCGLNKFLAGS and SIOCSLNKFLAGS for setting
+ * and getting flags specific to your driver. For an example how to use
+ * them look at slip.c
+ */
+static long neth_ioctl(struct netif *nif, short cmd, long arg)
+{
+	char buffer[128];
+	struct ifreq *ifr = (struct ifreq *)arg;
+	long *data = ifr->ifru.data;
+	int ethX = nif->unit;
+
+	DEBUG (("nfeth: ioctl cmd = %d \"('%c'<<8)|%d\" bytes", cmd, cmd>>8, cmd&0xff));
+
+	switch (cmd)
+	{
+		case SIOCGLNKSTATS:
+			nf_call(ETH(XIF_GET_IPATARI), (unsigned long)ethX, buffer, sizeof(buffer));
+			inet_aton(buffer, data++);
+			nf_call(ETH(XIF_GET_IPHOST), (unsigned long)ethX, buffer, sizeof(buffer));
+			inet_aton(buffer, data++);
+			nf_call(ETH(XIF_GET_NETMASK), (unsigned long)ethX, buffer, sizeof(buffer));
+			inet_aton(buffer, data++);
+			return 0;
+
+		case SIOCSIFNETMASK:
+		case SIOCSIFFLAGS:
+		case SIOCSIFADDR:
+			return 0;
+
+		case SIOCSIFMTU:
+			/*
+			 * Limit MTU to 1500 bytes. MintNet has already set nif->mtu
+			 * to the new value, we only limit it here.
+			 */
+			if (nif->mtu > ETH_MAX_DLEN)
+				nif->mtu = ETH_MAX_DLEN;
+			return 0;
+
+		case SIOCSIFOPT:
+			/*
+			 * Interface configuration, handled by neth_config()
+			 */
+			return neth_config (nif, ifr->ifru.data);
+	}
+
+	return ENOSYS;
+}
+
 
 /*
  * Initialization. This is called when the driver is loaded. If you

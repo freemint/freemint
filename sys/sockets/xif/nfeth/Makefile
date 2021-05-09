@@ -41,7 +41,7 @@ main.o:	../main.c
 
 # generic driver target
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(LD) $(CFLAGS) -s -o $@ $(OBJS) $(LIBS)
 
 
 include $(top_srcdir)/DEPENDENCIES
