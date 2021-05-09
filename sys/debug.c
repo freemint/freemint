@@ -198,7 +198,7 @@ debug_ws(const char *s)
 	int scan;
 	int stopped;
 	
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	if (nf_debug(s))
 		return;
 # endif

@@ -58,7 +58,7 @@ enum special_hw
 	hades,
 	ct2,
 	ct60
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	,
 	aranym
 # endif
@@ -171,13 +171,14 @@ _getmch (void)
 					break;
 				}
 
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 				case COOKIE_NF:
 				{
 					kernelinfo.nf_ops = nf_init();
 					kentry.vec_mch.nf_ops = nf_init();
 
-					add_info = aranym;
+					if (kernelinfo.nf_ops)
+						add_info = aranym;
 					break;
 				}
 # endif
@@ -363,7 +364,7 @@ identify (long mch, enum special_hw info)
 		case ct60:
 			machine = machine_ct60;
 			break;
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 		case aranym:
 			machine = machine_aranym;
 			break;

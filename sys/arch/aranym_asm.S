@@ -29,7 +29,7 @@
  * 
  */
 
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 
 	.text
 

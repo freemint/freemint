@@ -28,6 +28,7 @@
 # include "arch/intr.h"		/* new_mediach, new_rwabs, new_getbpb, same for old_ */
 # include "arch/init_intr.h"	/* init_intr() */
 # include "arch/init_mach.h"	/* */
+# include "arch/info_mach.h"	/* machine_str() */
 # include "arch/mmu.h"		/* save_mmu */
 # include "arch/mprot.h"	/* */
 # include "arch/syscall.h"	/* call_aes */
@@ -616,9 +617,11 @@ init (void)
 			case machine_firebee:
 				mch_str = "firebee";
 				break;
-#ifdef ARANYM
+#if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+			/* only when really running on aranym */
 			case machine_aranym:
-				mch_str = "aranym";
+				if (strcmp(machine_str(), "ARAnyM") == 0)
+					mch_str = "aranym";
 				break;
 #endif
 			case machine_unknown:

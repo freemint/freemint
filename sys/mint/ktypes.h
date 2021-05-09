@@ -122,7 +122,7 @@ typedef enum
 	machine_ct2,
 	machine_ct60,
 	machine_firebee
-#ifdef ARANYM
+#if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	,
 	machine_aranym
 #endif

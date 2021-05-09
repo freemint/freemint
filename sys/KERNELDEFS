@@ -68,7 +68,7 @@ endif
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DM68030
+KERNELDEFS = -DM68030 -DWITH_NATIVE_FEATURES
 endif
 
 ifeq ($(kernel),040)

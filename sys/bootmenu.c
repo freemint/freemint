@@ -134,7 +134,7 @@ static const char *debug_devices[] =
 
 static const char *write_boot_levels[] =
 {
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	"(none)",
 	"(File)",
 	"(File/Host-Console)"

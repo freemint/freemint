@@ -79,7 +79,7 @@ firebee_pic_write_byte(uchar b)
 void
 hw_poweroff(void)
 {
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	nf_shutdown();
 # else
 	/* CT60 poweroff */

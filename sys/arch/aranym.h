@@ -39,7 +39,7 @@
 # include "mint/mint.h"
 # include "mint/arch/nf_ops.h"
 
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 
 struct nf_ops *nf_init(void);
 
