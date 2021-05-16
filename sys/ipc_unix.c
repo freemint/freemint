@@ -36,7 +36,7 @@ static long	unix_dup	(struct socket *, struct socket *);
 static long	unix_abort	(struct socket *, enum so_state);
 static long	unix_detach	(struct socket *);
 static long	unix_bind	(struct socket *, struct sockaddr *, short);
-static long	unix_connect	(struct socket *, struct sockaddr *, short, short);
+static long	unix_connect	(struct socket *, const struct sockaddr *, short, short);
 static long	unix_socketpair	(struct socket *, struct socket *);
 static long	unix_accept	(struct socket *, struct socket *, short);
 static long	unix_getname	(struct socket *, struct sockaddr *, short *, short);
@@ -254,7 +254,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 }
 
 static long
-unix_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+unix_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	switch (so->type)
 	{
@@ -698,7 +698,7 @@ un_resize (struct un_data *un, long newsize)
 
 /* Convert a file name to a index. */
 long
-un_namei (struct sockaddr *addr, short addrlen, long *index)
+un_namei (const struct sockaddr *addr, short addrlen, long *index)
 {
 	struct sockaddr_un un;
 

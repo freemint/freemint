@@ -26,7 +26,7 @@
 static long	rip_attach	(struct in_data *);
 static long	rip_abort	(struct in_data *, short);
 static long	rip_detach	(struct in_data *, short);
-static long	rip_connect	(struct in_data *, struct sockaddr_in *, short, short);
+static long	rip_connect	(struct in_data *, const struct sockaddr_in *, short, short);
 static long	rip_accept	(struct in_data *, struct in_data *, short);
 static long	rip_ioctl	(struct in_data *, short, void *);
 static long	rip_select	(struct in_data *, short, long);
@@ -98,7 +98,7 @@ rip_detach (struct in_data *data, short wait)
 }
 
 static long
-rip_connect (struct in_data *data, struct sockaddr_in *addr, short addrlen, short nonblock)
+rip_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
 	data->dst.addr = ip_dst_addr (addr->sin_addr.s_addr);
 	data->dst.port = 0;

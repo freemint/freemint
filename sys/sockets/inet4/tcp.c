@@ -33,7 +33,7 @@
 static long	tcp_attach	(struct in_data *);
 static long	tcp_abort	(struct in_data *, short);
 static long	tcp_detach	(struct in_data *, short);
-static long	tcp_connect	(struct in_data *, struct sockaddr_in *, short, short);
+static long	tcp_connect	(struct in_data *, const struct sockaddr_in *, short, short);
 static long	tcp_listen	(struct in_data *);
 static long	tcp_accept	(struct in_data *, struct in_data *, short);
 static long	tcp_ioctl	(struct in_data *, short, void *);
@@ -160,7 +160,7 @@ tcp_detach (struct in_data *data, short wait)
 }
 
 static long
-tcp_connect (struct in_data *data, struct sockaddr_in *addr, short addrlen, short nonblock)
+tcp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
 	struct in_data *data2;
 	struct tcb *tcb = data->pcb;

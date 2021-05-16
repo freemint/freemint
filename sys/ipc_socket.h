@@ -48,7 +48,7 @@ long _cdecl sys_socketpair (long domain, long type, long protocol, short fds[2])
 long _cdecl sys_bind (short fd, struct sockaddr *addr, long addrlen);
 long _cdecl sys_listen (short fd, long backlog);
 long _cdecl sys_accept (short fd, struct sockaddr *addr, long *addrlen);
-long _cdecl sys_connect (short fd, struct sockaddr *addr, long addrlen);
+long _cdecl sys_connect (short fd, const struct sockaddr *addr, long addrlen);
 long _cdecl sys_getsockname (short fd, struct sockaddr *addr, long *addrlen);
 long _cdecl sys_getpeername (short fd, struct sockaddr *addr, long *addrlen);
 long _cdecl sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long addrlen);

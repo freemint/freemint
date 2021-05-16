@@ -25,7 +25,7 @@
 static long	udp_attach	(struct in_data *);
 static long	udp_abort	(struct in_data *, short);
 static long	udp_detach	(struct in_data *, short);
-static long	udp_connect	(struct in_data *, struct sockaddr_in *, short, short);
+static long	udp_connect	(struct in_data *, const struct sockaddr_in *, short, short);
 static long	udp_accept	(struct in_data *, struct in_data *, short);
 static long	udp_ioctl	(struct in_data *, short, void *);
 static long	udp_select	(struct in_data *, short, long);
@@ -83,7 +83,7 @@ udp_detach (struct in_data *data, short wait)
 }
 
 static long
-udp_connect (struct in_data *data, struct sockaddr_in *addr, short addrlen, short nonblock)
+udp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
 	if (addr->sin_port == 0)
 	{

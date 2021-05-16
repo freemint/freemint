@@ -34,7 +34,7 @@ unix_dgram_socketpair (struct socket *so1, struct socket *so2)
 }
 
 long
-unix_dgram_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+unix_dgram_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	struct un_data *undata = so->data;
 	long r;

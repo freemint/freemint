@@ -26,7 +26,7 @@ static long	inet_dup	(struct socket *, struct socket *);
 static long	inet_abort	(struct socket *, enum so_state);
 static long	inet_detach	(struct socket *);
 static long	inet_bind	(struct socket *, struct sockaddr *, short);
-static long	inet_connect	(struct socket *, struct sockaddr *, short, short);
+static long	inet_connect	(struct socket *, const struct sockaddr *, short, short);
 static long	inet_socketpair	(struct socket *, struct socket *);
 static long	inet_accept	(struct socket *, struct socket *, short);
 static long	inet_getname	(struct socket *, struct sockaddr *, short *, short);
@@ -277,7 +277,7 @@ inet_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 }
 
 static long
-inet_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+inet_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	struct in_data *data = so->data;
 	
@@ -301,7 +301,7 @@ inet_connect (struct socket *so, struct sockaddr *addr, short addrlen, short non
 		return EAFNOSUPPORT;
 	}
 	inet_autobind (data);
-	return (*data->proto->soops.connect) (data, (struct sockaddr_in *)addr,
+	return (*data->proto->soops.connect) (data, (const struct sockaddr_in *)addr,
 		addrlen, nonblock);
 }
 

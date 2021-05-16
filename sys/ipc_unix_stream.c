@@ -28,7 +28,7 @@ unix_stream_socketpair (struct socket *so1, struct socket *so2)
 }
 
 long
-unix_stream_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+unix_stream_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	struct un_data *server_data;
 	long r, index;

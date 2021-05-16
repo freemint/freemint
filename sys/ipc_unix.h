@@ -128,7 +128,7 @@ struct un_data *	un_lookup (long, enum so_type);
 void			un_put (struct un_data *);
 void			un_remove (struct un_data *);
 long			un_resize (struct un_data *, long);
-long			un_namei (struct sockaddr *, short, long *);	
+long			un_namei (const struct sockaddr *, short, long *);
 
 
 extern struct dom_ops unix_ops;

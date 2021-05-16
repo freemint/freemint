@@ -96,7 +96,7 @@ struct dom_ops
 	long	(*bind)		(struct socket *s, struct sockaddr *addr,
 				 short addrlen);
 	
-	long	(*connect)	(struct socket *s, struct sockaddr *addr,
+	long	(*connect)	(struct socket *s, const struct sockaddr *addr,
 				 short addrlen, short flags);
 	
 	long	(*socketpair)	(struct socket *s1, struct socket *s2);

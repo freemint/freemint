@@ -468,7 +468,7 @@ error1:
 }
 
 long _cdecl
-sys_connect (short fd, struct sockaddr *addr, long addrlen)
+sys_connect (short fd, const struct sockaddr *addr, long addrlen)
 {
 	PROC *p = get_curproc();
 	FILEPTR *fp;

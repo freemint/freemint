@@ -37,7 +37,7 @@
 
 
 long	unix_dgram_socketpair	(struct socket *, struct socket *);
-long	unix_dgram_connect	(struct socket *, struct sockaddr *, short, short);
+long	unix_dgram_connect	(struct socket *, const struct sockaddr *, short, short);
 long	unix_dgram_send		(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
 long	unix_dgram_recv		(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 long	unix_dgram_select	(struct socket *, short, long);

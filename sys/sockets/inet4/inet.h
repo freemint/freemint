@@ -47,7 +47,7 @@ struct in_sock_ops
 	long	(*attach)	(struct in_data *);
 	long	(*abort)	(struct in_data *, short ostate);
 	long	(*detach)	(struct in_data *, short wait);
-	long	(*connect)	(struct in_data *, struct sockaddr_in *,
+	long	(*connect)	(struct in_data *, const struct sockaddr_in *,
 				 short addrlen, short flags);
 	long	(*listen)	(struct in_data *);
 	long	(*accept)	(struct in_data *, struct in_data *,
