@@ -931,69 +931,108 @@ ip_defrag (BUF *buf)
 long
 ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval, long optlen)
 {
-	if (level != IPPROTO_IP)
+	long val = 0;
+
+	if (level != IPPROTO_IP) /* SOL_IP */
 		return EOPNOTSUPP;
 	
 	switch (optname)
 	{
-		case IP_OPTIONS:
-			break;
-		
-		case IP_HDRINCL:
-			if (optlen != sizeof (long) || !optval)
-				return EINVAL;
-			opts->hdrincl = *(long *) optval ? 1 : 0;
-			return 0;
-		
-		case IP_TOS:
-			if (optlen != sizeof (long) || !optval)
-				return EINVAL;
-			opts->tos = (char) *(long *) optval;
-			return 0;
-		
-		case IP_TTL:
-			if (optlen != sizeof (long) || !optval)
-				return EINVAL;
-			opts->ttl = (char) *(long *) optval;
-			return 0;
-		
-		case IP_RECVOPTS:
-		case IP_RECVRETOPTS:
-		case IP_RECVDSTADDR:
-		case IP_RETOPTS:
-			break;
+	case IP_HDRINCL:
+	case IP_TOS:
+	case IP_TTL:
+	case IP_RECVOPTS:
+	case IP_RECVRETOPTS:
+	case IP_RECVDSTADDR:
+	case IP_RETOPTS:
+	case IP_MULTICAST_TTL:
+		if (optlen >= sizeof(long))
+		{
+			if (optval == NULL)
+				return EFAULT;
+			val = *((long *)optval);
+		} else if (optlen >= sizeof(short))
+		{
+			if (optval == NULL)
+				return EFAULT;
+			val = *((short *)optval);
+		} else if (optlen >= sizeof(char))
+		{
+			if (optval == NULL)
+				return EFAULT;
+			val = *((unsigned char *)optval);
+		}
+		break;
+	}
 
-		case IP_MULTICAST_TTL:
-			if (optlen != sizeof (long) || !optval)
-				return EINVAL;
-			opts->ttl = (char) *(long *) optval;
-			return 0;
-		case IP_MULTICAST_IF:
+	/* If optlen==0, it is equivalent to val == 0 */
+
+	switch (optname)
+	{
+	case IP_OPTIONS:
+		break;
+	
+	case IP_HDRINCL:
+		opts->hdrincl = val != 0;
+		return 0;
+	
+	case IP_TOS:
+		opts->tos = val;
+		return 0;
+	
+	case IP_TTL:
+		if (optlen < 1)
+			return EINVAL;
+		if (val != -1 && (val < 1 || val > 255))
+			return EINVAL;
+		opts->ttl = val;
+		return 0;
+	
+	case IP_RECVOPTS:
+	case IP_RECVRETOPTS:
+	case IP_RECVDSTADDR:
+	case IP_RETOPTS:
+		break;
+
+	case IP_MULTICAST_TTL:
+		if (optlen < 1)
+			return EINVAL;
+		if (val == -1)
+			val = 1;
+		if (val < 0 || val > 255)
+			return EINVAL;
+		opts->ttl = val; /* FIXME: TTL and MULTICAST_TTL are not the same */
+		return 0;
+
+	case IP_MULTICAST_IF:
 		{
 			struct in_addr *addr = (struct in_addr *)optval;
-		 	opts->multicast_ip = ip_dst_addr(addr->s_addr);
-			return 0;
-		}
-		case IP_MULTICAST_LOOP:
-			if (optlen != sizeof (char) || !optval)
+			if (optlen < sizeof (*addr) || !optval)
 				return EINVAL;
-			opts->multicast_loop = (char) *(long *)optval;
-			return 0;
-		case IP_ADD_MEMBERSHIP:
-		case IP_DROP_MEMBERSHIP:
+		 	opts->multicast_ip = ip_dst_addr(addr->s_addr);
+		}
+		return 0;
+
+	case IP_MULTICAST_LOOP:
+		if (optlen < 1)
+			return EINVAL;
+		opts->multicast_loop = val;
+		return 0;
+
+	case IP_ADD_MEMBERSHIP:
+	case IP_DROP_MEMBERSHIP:
 		{
 			struct ip_mreq *imr = (struct ip_mreq *)optval;
 			ulong if_addr;
 			ulong multi_addr;
+			if (optlen < sizeof (*imr) || !optval)
+				return EINVAL;
 			if_addr = ip_dst_addr(imr->imr_interface.s_addr);
 			multi_addr = ip_dst_addr(imr->imr_multiaddr.s_addr);
 			if (optname == IP_ADD_MEMBERSHIP)
 				return igmp_joingroup(if_addr, multi_addr);
 			else
 				return igmp_leavegroup(if_addr, multi_addr);
-
-			/* shouldn't happen */
-			break;
 		}
 	}
 	
@@ -1003,60 +1042,73 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 long
 ip_getsockopt (struct ip_options *opts, short level, short optname, char *optval, long *optlen)
 {
-	if (level != IPPROTO_IP)
+	long val;
+	long len;
+
+	if (level != IPPROTO_IP) /* SOL_IP */
 		return EOPNOTSUPP;
-	
+
+	if (!optlen)
+		return EFAULT;
+	len = *optlen;
+	if (len < 0)
+		return EINVAL;
+	if (len > 0 && !optval)	
+		return EFAULT;
+
 	switch (optname)
 	{
-		case IP_OPTIONS:
-			break;
-		
-		case IP_HDRINCL:
-			if (!optval || !optlen || *optlen < sizeof (long))
-				return EINVAL;
-			*(long *) optval = !!opts->hdrincl;
-			*optlen = sizeof (long);
-			return 0;
-		
-		case IP_TOS:
-			if (!optval || !optlen || *optlen < sizeof (long))
-				return EINVAL;
-			*(long *) optval = (ulong) opts->tos;
-			*optlen = sizeof (long);
-			return 0;
-		
-		case IP_TTL:
-			if (!optval || !optlen || *optlen < sizeof (long))
-				return EINVAL;
-			*(long *) optval = (ulong) opts->ttl;
-			*optlen = sizeof (long);
-			return 0;
-		
-		case IP_RECVOPTS:
-		case IP_RECVRETOPTS:
-		case IP_RECVDSTADDR:
-		case IP_RETOPTS:
-			break;
+	case IP_HDRINCL:
+		val = opts->hdrincl;
+		break;
+	
+	case IP_TOS:
+		val = opts->tos;
+		break;
+	
+	case IP_TTL:
+		val = opts->ttl;
+		break;
+	
+	case IP_MULTICAST_TTL:
+		val = opts->ttl; /* FIXME: TTL and MULTICAST_TTL are not the same */
+		break;
 
-		case IP_MULTICAST_TTL:
-			if (!optval || !optlen || *optlen < sizeof (long))
-				return EINVAL;
-			*(long *) optval = (ulong) opts->ttl;
-			*optlen = sizeof (long);
-			return 0;
-		case IP_MULTICAST_IF:
-			if (!optval || !optlen || *optlen < sizeof (long))
-				return EINVAL;
-			*(long *) optval = (ulong) opts->multicast_ip;
-			*optlen = sizeof (long);
-			return 0;
-		case IP_MULTICAST_LOOP:
-			if (!optval || !optlen || *optlen < sizeof (char))
-				return EINVAL;
-			*(char *) optval = opts->multicast_loop;
-			*optlen = sizeof (char);
-			return 0;
+	case IP_MULTICAST_IF:
+		if (len < sizeof(long))
+			return EINVAL;
+		val = opts->multicast_ip;
+		break;
+
+	case IP_MULTICAST_LOOP:
+		val = opts->multicast_loop;
+		break;
+
+	case IP_RECVOPTS:
+	case IP_RECVRETOPTS:
+	case IP_RECVDSTADDR:
+	case IP_RETOPTS:
+	case IP_OPTIONS:
+	default:
+		return EOPNOTSUPP; /* should be ENOPROTOOPT? */
 	}
 	
-	return EOPNOTSUPP;
+	if (len == sizeof(short))
+	{
+		*((short *)optval) = val;
+		*optlen = sizeof(short);
+	} else if (len < sizeof(long) && len > 0 && val >= 0 && val <= 255)
+	{
+		*((unsigned char *)optval) = val;
+		*optlen = sizeof(char);
+	} else
+	{
+		if (len > sizeof(long))
+			len = sizeof(long);
+		*optlen = len;
+		if (len > 0)
+			*((long *)optval) = val;
+	}
+
+	return 0;
 }

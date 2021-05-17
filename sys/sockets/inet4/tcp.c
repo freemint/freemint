@@ -797,21 +797,41 @@ static long
 tcp_setsockopt (struct in_data *data, short level, short optname, char *optval, long optlen)
 {
 	struct tcb *tcb = data->pcb;
-	
+	long val = 0;
+
 	if (level != IPPROTO_TCP)
 		return EOPNOTSUPP;
 	
-	if (optlen != sizeof (long) || !optval)
-		return EINVAL;
+	if (!optval)
+		return EFAULT;
 	
 	switch (optname)
 	{
-		case TCP_NODELAY:
-			if (*(long *)optval)
-				tcb->flags |= TCBF_NDELAY;
-			else
-				tcb->flags &= ~TCBF_NDELAY;
-			return 0;
+	case TCP_NODELAY:
+		if (optlen >= sizeof(long))
+		{
+			val = *((long *)optval);
+		} else if (optlen >= sizeof(short))
+		{
+			val = *((short *)optval);
+		} else if (optlen >= sizeof(char))
+		{
+			val = *((unsigned char *)optval);
+		} else
+		{
+			return EINVAL;
+		}
+		break;
+	}
+
+	switch (optname)
+	{
+	case TCP_NODELAY:
+		if (val)
+			tcb->flags |= TCBF_NDELAY;
+		else
+			tcb->flags &= ~TCBF_NDELAY;
+		return 0;
 	}
 	
 	return EOPNOTSUPP;
@@ -821,28 +841,46 @@ static long
 tcp_getsockopt (struct in_data *data, short level, short optname, char *optval, long *optlen)
 {
 	struct tcb *tcb = data->pcb;
+	long val;
+	long len;
+
+	if (!optlen || !optval)
+		return EFAULT;
+	len = *optlen;
 
 	if ((level == SOL_SOCKET) && (optname == SO_ACCEPTCONN)) {
-		*(long *)optval = (tcb->state == TCBS_LISTEN);
-		*optlen = sizeof(long);
-		return 0;
+		val = (tcb->state == TCBS_LISTEN);
+	} else
+	{
+		if (level != IPPROTO_TCP)
+			return EOPNOTSUPP;
+		
+		switch (optname)
+		{
+		case TCP_NODELAY:
+			val = !!(tcb->flags & TCBF_NDELAY);
+			break;
+		
+		default:
+			return EOPNOTSUPP;
+		}
 	}
 
-	if (level != IPPROTO_TCP)
-		return EOPNOTSUPP;
-	
-	if (!optval || !optlen || *optlen < sizeof (long))
-		return EINVAL;
-	
-	switch (optname)
+	if (len == sizeof(short))
 	{
-		case TCP_NODELAY:
-			*(long *)optval = !!(tcb->flags & TCBF_NDELAY);
-			*optlen = sizeof (long);
-			return 0;
+		*((short *)optval) = val;
+	} else if (len == sizeof(char))
+	{
+		*((unsigned char *)optval) = val;
+	} else if (len == sizeof(long))
+	{
+		*((long *)optval) = val;
+	} else
+	{
+		return EINVAL;
 	}
-	
-	return EOPNOTSUPP;
+
+	return 0;
 }
 
 static long

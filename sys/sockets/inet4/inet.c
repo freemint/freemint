@@ -534,7 +534,7 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 	
 	switch (level)
 	{
-		case IPPROTO_IP:
+		case IPPROTO_IP: /* SOL_IP */
 			return ip_setsockopt (&data->opts, level, optname, optval,
 				optlen);
 		
@@ -546,13 +546,25 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 				optval, optlen);
 	}
 	
-	if (!optval || optlen < sizeof (long))
+	if (optval == NULL)
+	{
+		DEBUG (("inet_setsockopt: invalid optval"));
+		return EFAULT;
+	}
+	if (optlen >= sizeof(long))
+	{
+		val = *((long *)optval);
+	} else if (optlen >= sizeof(short))
+	{
+		val = *((short *)optval);
+	} else if (optlen >= sizeof(char))
+	{
+		val = *((unsigned char *)optval);
+	} else
 	{
 		DEBUG (("inet_setsockopt: invalid optval/optlen"));
 		return EINVAL;
 	}
-	
-	val = *(long *) optval;
 	
 	switch (optname)
 	{
@@ -753,14 +765,20 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 			return EOPNOTSUPP;
 	}
 	
-	if (*optlen < sizeof (long))
+	if (*optlen == sizeof(short))
+	{
+		*((short *)optval) = val;
+	} else if (*optlen == sizeof(char))
+	{
+		*((unsigned char *)optval) = val;
+	} else if (*optlen == sizeof(long))
+	{
+		*((long *)optval) = val;
+	} else
 	{
 		DEBUG (("inet_getsockopt: optlen < sizeof long"));
 		return EINVAL;
 	}
-	
-	*(long *) optval = val;
-	*optlen = sizeof (long);
 	
 	return 0;
 }
