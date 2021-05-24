@@ -295,7 +295,7 @@ long		usb_find_interface_driver(struct usb_device *dev, unsigned ifnum);
 		((x_ & 0xFF000000UL) >> 24)); \
 	})
 
-#ifdef __LITTLE_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 # define swap_16(x) (x)
 # define swap_32(x) (x)
 #else
