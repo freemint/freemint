@@ -130,7 +130,7 @@ gs_open (void)
 			
 			gs = gs_mem_alloc (sizeof (*gs));
 			if (!gs)
-				return ENOMEM;
+				return E_NOMEM;
 			
 			bzero (gs, sizeof (*gs));
 			gs->flags = GS_NOSOCKET;
@@ -141,7 +141,7 @@ gs_open (void)
 		}
 	}
 	
-	return EMFILE;
+	return E_NOCCB;
 }
 
 void
