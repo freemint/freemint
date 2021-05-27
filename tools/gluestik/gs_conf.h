@@ -1,5 +1,5 @@
 /*
- * Filename:     gs_config.h
+ * Filename:     gs_conf.h
  * Project:      GlueSTiK
  * 
  * Note:         Please send suggestions, patches or bug reports to

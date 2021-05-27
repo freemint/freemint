@@ -1,7 +1,7 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-HEADER = gs.h gs_config.h gs_func.h gs_mem.h gs_stik.h version.h
-COBJS = gs_config.c gs_func.c gs_mem.c gs_stik.c main.c
+HEADER = gs.h gs_conf.h gs_func.h gs_mem.h gs_stik.h version.h
+COBJS = gs_conf.c gs_func.c gs_mem.c gs_stik.c main.c
 
 SRCFILES = $(HEADER) $(COBJS)

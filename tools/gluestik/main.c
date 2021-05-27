@@ -39,7 +39,7 @@
 
 # include "gs.h"
 
-# include "gs_config.h"
+# include "gs_conf.h"
 # include "gs_func.h"
 # include "gs_mem.h"
 # include "gs_stik.h"

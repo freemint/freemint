@@ -29,7 +29,7 @@
 # include <mintbind.h>
 
 # include "gs_mem.h"
-# include "gs_config.h"
+# include "gs_conf.h"
 
 
 # define POOLSIZE_DEFAULT	50000L
