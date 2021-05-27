@@ -736,7 +736,7 @@ gs_readndb (int fd)
 	}
 	
 	ndb->ndata = ndb->ptr;
-	ndb->len = n;
+	ndb->len = ret;
 	ndb->next = 0;
 	
 	DEBUG (("gs_readndb: read %li bytes, returns %p", n, (void *) ndb));
