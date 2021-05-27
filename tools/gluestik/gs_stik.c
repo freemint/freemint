@@ -112,22 +112,24 @@ do_KRrealloc (struct KRrealloc_param p)
 const char *
 do_get_err_text (struct get_err_text_param p)
 {
-	if (p.code < 0)
-		p.code = -p.code;
+	int16 code = p.code;
+
+	if (code < 0)
+		code = -p.code;
 	
-	if (p.code > 2000)
+	if (code > 2000)
 		return err_unknown;
 	
-	if (p.code > 1000)
+	if (code > 1000)
 	{
 		/* Encoded GEMDOS errors */
-		return strerror (p.code - 1000);
+		return strerror (code - 1000);
 	}
 	
-	if (p.code > E_LASTERROR || err_list [p.code] == 0)
+	if (p.code > E_LASTERROR || err_list [code] == 0)
 		return err_unknown;
 	
-	return err_list [p.code];
+	return err_list [code];
 }
 
 static const char *
