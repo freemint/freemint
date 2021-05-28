@@ -472,6 +472,7 @@ typedef struct tpl
 	int16	cdecl (* setvstr) (const char *name, const char *value);
 	int16	cdecl (* query_port) (const char *portname);
 	int16	cdecl (* CNgets) (int16 handle, char *buffer, int16 length, char delim);
+	/* STinG extensions mid-??? (not present in gluestik 1.13) */
 	int16	cdecl (* ICMP_send) (uint32 dest_host, uint8 type, uint8 code, const void *data, uint16 length);
 	int16	cdecl (* ICMP_handler) (int16 cdecl (*handler) (IP_DGRAM *), int16 install_code);
 	void	cdecl (* ICMP_discard) (IP_DGRAM *datagram);
@@ -507,12 +508,12 @@ struct KRgetfree_param { int16 flag; void *dummy; };
 struct KRrealloc_param { void *mem; int32 newsize; };
 struct get_err_text_param { int16 code; void *dummy; };
 struct getvstr_param { const char *var; };
-struct TCP_open_param { uint32 rhost; int16 rport; int16 tos; uint16 obsize; };
+struct TCP_open_param { uint32 rhost; uint16 rport; uint16 tos; uint16 obsize; };
 struct TCP_close_param { int16 fd; int16 timeout; int16 *result; };
 struct TCP_send_param { int16 fd; const void *buf; int16 len; };
 struct TCP_wait_state_param { int16 fd; int16 state; int16 timeout; };
 struct TCP_ack_wait_param { int16 fd; int16 timeout; };
-struct UDP_open_param { uint32 rhost; int16 rport; };
+struct UDP_open_param { uint32 rhost; uint16 rport; };
 struct UDP_close_param { int16 fd; void *dummy; };
 struct UDP_send_param { int16 fd; const void *buf; int16 len; };
 struct CNkick_param { int16 fd; void *dummy; };
@@ -578,6 +579,7 @@ typedef  struct tpl  {
     int16      cdecl  (* setvstr) (struct setvstr_param p);
     int16      cdecl  (* query_port) (struct query_port_param p);
     int16      cdecl  (* CNgets) (struct CNgets_param p);
+    /* STinG extensions mid-??? (not present in gluestik 1.13) */
     int16      cdecl  (* ICMP_send) (struct ICMP_send_param p);
     int16      cdecl  (* ICMP_handler) (struct ICMP_handler_param p);
     void       cdecl  (* ICMP_discard) (struct ICMP_discard_param p);
