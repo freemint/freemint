@@ -85,6 +85,9 @@ static int flags [64] =
 };
 
 
+#define UNUSED(x) ((void)(x))
+
+
 static void *
 do_KRmalloc (struct KRmalloc_param p)
 {
@@ -232,6 +235,7 @@ do_TCP_wait_state (struct TCP_wait_state_param p)
 static int16
 do_TCP_ack_wait (struct TCP_ack_wait_param p)
 {
+	UNUSED(p);
 	return E_NORMAL;
 }
 
@@ -277,6 +281,7 @@ do_UDP_send (struct UDP_send_param p)
 static int16
 do_CNkick (struct CNkick_param p)
 {
+	UNUSED(p);
 	return E_NORMAL;
 }
 
@@ -397,12 +402,14 @@ do_CNgetinfo (struct CNgetinfo_param p)
 static int16
 do_on_port (struct on_port_param p)
 {
+	UNUSED(p);
 	return E_NOROUTINE;
 }
 
 static void
 do_off_port (struct off_port_param p)
 {
+	UNUSED(p);
 }
 
 static int16
@@ -414,6 +421,7 @@ do_setvstr (struct setvstr_param p)
 static int16
 do_query_port (struct query_port_param p)
 {
+	UNUSED(p);
 	return E_NOROUTINE;
 }
 
@@ -426,71 +434,83 @@ do_CNgets (struct CNgets_param p)
 
 static int16 do_ICMP_send(struct ICMP_send_param p)
 {
+	UNUSED(p);
 	return E_NOROUTINE;
 }
 
 
 static int16 do_ICMP_handler(struct ICMP_handler_param p)
 {
+	UNUSED(p);
 	return FALSE;
 }
 
 
 static void do_ICMP_discard(struct ICMP_discard_param p)
 {
+	UNUSED(p);
 }
 
 
 static int16 do_TCP_info(struct TCP_info_param p)
 {
+	UNUSED(p);
 	return E_BADHANDLE;
 }
 
 
 static int16 do_cntrl_port(struct cntrl_port_param p)
 {
+	UNUSED(p);
 	return E_NODATA;
 }
 
 
 static int16 do_UDP_info(struct UDP_info_param p)
 {
+	UNUSED(p);
 	return E_BADHANDLE;
 }
 
 
 static int16 do_RAW_open(struct RAW_open_param p)
 {
+	UNUSED(p);
 	return E_NOROUTINE;
 }
 
 
 static int16 do_RAW_close(struct RAW_close_param p)
 {
+	UNUSED(p);
 	return E_BADHANDLE;
 }
 
 
 static int16 do_RAW_out(struct RAW_out_param p)
 {
+	UNUSED(p);
 	return E_BADHANDLE;
 }
 
 
 static int16 do_CN_setopt(struct CN_setopt_param p)
 {
+	UNUSED(p);
 	return E_NOROUTINE;
 }
 
 
 static int16 do_CN_getopt(struct CN_getopt_param p)
 {
+	UNUSED(p);
 	return E_NOROUTINE;
 }
 
 
 static void do_CNfree_NDB(struct CNfree_NDB_param p)
 {
+	UNUSED(p);
 }
 
 
@@ -569,6 +589,7 @@ do_get_dftab (const char *tpl_name)
 static int16
 do_ETM_exec (const char *tpl_name)
 {
+	UNUSED(tpl_name);
 	/* even easier... ;) */
 	return 0;
 }

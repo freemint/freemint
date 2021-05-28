@@ -152,8 +152,8 @@ set_var (const char *name, const char *value)
 {
 	int i;
 	
-	if (!GROWBUF (gvars, 1, vars)
-		|| !GROWBUF (gdata, strlen (name) + strlen (value) + 2, data))
+	if (!GROWBUF (gvars, 1, vars) ||
+		!GROWBUF (gdata, (int)(strlen (name) + strlen (value) + 2), data))
 	{
 		return 0;
 	}
@@ -164,7 +164,7 @@ set_var (const char *name, const char *value)
 		{
 			vars[i].val_off = gdata.n_entries;
 			strcpy (data + gdata.n_entries, value);
-			gdata.n_entries += strlen (value) + 1;
+			gdata.n_entries += (int)strlen (value) + 1;
 			
 			return 1;
 		}
@@ -173,10 +173,10 @@ set_var (const char *name, const char *value)
 	i = gvars.n_entries++;
 	vars[i].name_off = gdata.n_entries;
 	strcpy (data + gdata.n_entries, name);
-	gdata.n_entries += strlen (name) + 1;
+	gdata.n_entries += (int)strlen (name) + 1;
 	vars[i].val_off = gdata.n_entries;
 	strcpy (data + gdata.n_entries, value);
-	gdata.n_entries += strlen (value) + 1;
+	gdata.n_entries += (int)strlen (value) + 1;
 	
 	return 1;
 }
@@ -194,10 +194,10 @@ kill_tws (char *s)
 }
 
 
-static int
+static long
 get_bootdrive (void)
 {
-	return (int) SYSVAR_bootdev;
+	return SYSVAR_bootdev;
 }
 
 static int
@@ -207,7 +207,7 @@ find_config_file (void)
 	register int n, fd, boot;
 	register char *s;
 	
-	boot = Supexec (get_bootdrive);
+	boot = (int)Supexec (get_bootdrive);
 	if (boot < 0 || boot > 31)
 	{
 		(void) Cconws ("Failed to determine boot device!\r\n");
@@ -220,18 +220,18 @@ find_config_file (void)
 	if ((l = Fopen (stikdir_dat, 0)) < 0)
 		return 1;
 	
-	fd = l;
-	if ((n = Fread (fd, sizeof (cfg_filename), cfg_filename)) < 0)
+	fd = (int)l;
+	if ((n = (int)Fread (fd, sizeof (cfg_filename), cfg_filename)) < 0)
 	{
 		Fclose (fd);
 		(void) Cconws ("Error reading STIK_DIR.DAT; using default path\r\n");
 		return 1;
 	}
 	
-	if (n >= sizeof (cfg_filename))
-		n = sizeof (cfg_filename) - 1;
+	if ((unsigned int)n >= sizeof (cfg_filename))
+		n = (int)sizeof (cfg_filename) - 1;
 	
-	if (!(s = strchr (cfg_filename, '\n')))
+	if ((s = strchr (cfg_filename, '\n')) == NULL)
 		s = cfg_filename + n;
 	
 	if (s [-1] == '\r')
@@ -310,10 +310,10 @@ load_config_file (void)
 		(void) Cconws ("\r\n");
 		return 0;
 	}
-	fd = l;
+	fd = (int)l;
 	
 	s = file_data;
-	while ((n = Fread (fd, filesize, s)) > 0)
+	while ((n = (int)Fread (fd, filesize, s)) > 0)
 		s += n;
 	
 	if (n < 0)
@@ -356,7 +356,7 @@ load_config_file (void)
 			while (*s) s++;
 			continue;
 		}
-		
+
 		/* If no '=', variable is "true"
 		 */
 		t = strchr(s, '=');
@@ -384,7 +384,8 @@ load_config_file (void)
 setit:
 		if (set_var (s, t))
 		{
-			while (*s) s++;
+			while (*s)
+				s++;
 			continue;
 		}
 		

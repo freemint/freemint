@@ -50,6 +50,7 @@ gs_xlate_error (int err, const char *funcname)
 {
 	int ret;
 	
+	(void)funcname;
 	switch (err)
 	{
 		case ENOSYS:
@@ -181,9 +182,9 @@ gs_accept (int fd)
 	
 	DEBUG (("gs_accept(%i)", fd));
 	
-	if (!gs
-		|| gs->flags & GS_NOSOCKET
-		|| !(gs->flags & GS_LISTENING))
+	if (!gs ||
+		(gs->flags & GS_NOSOCKET) ||
+		!(gs->flags & GS_LISTENING))
 	{
 		DEBUG (("gs_accept: bad handle"));
 		return E_BADHANDLE;
@@ -266,7 +267,7 @@ gs_establish (int fd)
 	
 	DEBUG (("gs_establish(%i)", fd));
 	
-	if (!gs || gs->flags & GS_NOSOCKET || !(gs->flags & GS_PEND_OPEN))
+	if (!gs || (gs->flags & GS_NOSOCKET) || !(gs->flags & GS_PEND_OPEN))
 	{
 		DEBUG (("gs_establish: bad handle"));
 		return E_BADHANDLE;
@@ -531,6 +532,7 @@ gs_wait (int fd, int timeout)
 	 */
 	timeout *= 1000;
 	
+	/* FIXME: can only use Fselect with sock_fd < 32 */
 	rfs = wfs = 1L << gs->sock_fd;
 	
 	if ((gs->flags & (GS_LISTENING
@@ -706,8 +708,8 @@ gs_readndb (int fd)
 		return NULL;
 	}
 	
-	if (n > 65535)
-		n = 65535;
+	if (n > 65535L)
+		n = 65535L;
 	
 	ndb = gs_mem_alloc (sizeof (*ndb));
 	if (!ndb)
@@ -803,8 +805,10 @@ gs_write (int fd, const char *buf, long buflen)
 	 * write everything; warn if we didn't.
 	 */
 	if (r < buflen)
+	{
 		DEBUG (("gs_write: only got %li of %li bytes", r, buflen));
-	
+	}
+
 	DEBUG (("gs_write: returns E_NORMAL [%x]", gs->flags));
 	return E_NORMAL;
 }
@@ -867,8 +871,10 @@ gs_read (int fd, char *buf, long buflen)
 	 * fill the entire buffer; warn if we didn't.
 	 */
 	if (r < buflen)
+	{
 		DEBUG (("gs_read: unable to read all %li bytes", buflen));
-	
+	}
+
 	DEBUG (("gs_read: returns %li (%li)", buflen, r));
 	return buflen;
 }

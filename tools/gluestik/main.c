@@ -128,12 +128,13 @@ install_cookie (void)
 static void
 nothing (long sig)
 {
-	;
+	(void)sig;
 }
 
 static void
 end (long sig)
 {
+	(void)sig;
 	Psigreturn ();
 	
 	cleanup ();

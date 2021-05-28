@@ -209,7 +209,9 @@ gs_mem_free (void *mem)
 		for (H2 = arena; H2 && H2->next != H; H2 = H2->next)
 		{
 			if (!is_freed(H2) && !is_alloced(H2))
+			{
 				DEBUG (("gs_mem_free: possible arena corruption at %p", H2));
+			}
 			continue;
 		}
 		
