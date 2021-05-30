@@ -46,10 +46,6 @@
 # define DEBUG_ADDR(x) (unsigned int)((x) >> 24) & 0xff, (unsigned int)((x) >> 16) & 0xff, (unsigned int)((x) >> 8) & 0xff, (unsigned int)((x)) & 0xff
 # endif
 
-# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
-# error Require at least MiNTLib 0.57
-# endif
-
 typedef unsigned char	uchar;
 
 # ifndef _cdecl

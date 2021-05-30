@@ -34,7 +34,6 @@
 # include <signal.h>
 # include <unistd.h>
 # include <netdb.h>
-# include <stdbool.h>
 # include <string.h>
 
 # include "gs.h"
@@ -70,7 +69,7 @@
 # define MSG_FAILURE	\
 	"\7Sorry, driver NOT installed - initialization failed!\r\n\r\n"
 
-static bool opt_force_install = false;
+static int opt_force_install = 0;
 
 static void
 cleanup (void)
@@ -107,7 +106,7 @@ install_cookie (void)
 		return 1;
 	}
 
-	if (opt_force_install == true) {
+	if (opt_force_install) {
 		uninstall_cookie();
 	}
 	if (Ssystem (S_GETCOOKIE, C_STiK, &dummy) == 0)
@@ -158,7 +157,7 @@ parse_cmdline(void)
 		return;
 
   	if (!strncmp(bp->p_cmdlin + 1, "--force", 7) || !strncmp(bp->p_cmdlin + 1, "-f", 2))
-		opt_force_install = true; 
+		opt_force_install = 1; 
 }
 
 int

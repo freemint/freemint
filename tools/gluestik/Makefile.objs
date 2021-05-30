@@ -17,6 +17,13 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+WARN = \
+	-Wall -W \
+	-Wmissing-prototypes \
+	-Wshadow \
+	-Wpointer-arith \
+	-Waggregate-return
+
 all-here: build
 
 # default overwrites
