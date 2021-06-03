@@ -29,7 +29,7 @@ static long	udp_connect	(struct in_data *, const struct sockaddr_in *, short, sh
 static long	udp_accept	(struct in_data *, struct in_data *, short);
 static long	udp_ioctl	(struct in_data *, short, void *);
 static long	udp_select	(struct in_data *, short, long);
-static long	udp_send	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short);
+static long	udp_send	(struct in_data *, const struct iovec *, short, short, short, const struct sockaddr_in *, short);
 static long	udp_recv	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short *);
 static long	udp_shutdown	(struct in_data *, short);
 static long	udp_setsockopt	(struct in_data *, short, short, char *, long);
@@ -160,7 +160,7 @@ udp_select (struct in_data *data, short mode, long proc)
 
 static long
 udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonblock,
-		short  flags, struct sockaddr_in *addr, short addrlen)
+		short  flags, const struct sockaddr_in *addr, short addrlen)
 {
 	struct udp_dgram *uh;
 	BUF *buf;

@@ -33,7 +33,7 @@ static long	inet_getname	(struct socket *, struct sockaddr *, short *, short);
 static long	inet_select	(struct socket *, short, long);
 static long	inet_ioctl	(struct socket *, short, void *);
 static long	inet_listen	(struct socket *, short);
-static long	inet_send	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+static long	inet_send	(struct socket *, const struct iovec *, short, short, short, const struct sockaddr *, short);
 static long	inet_recv	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 static long	inet_shutdown	(struct socket *, short);
 static long	inet_setsockopt	(struct socket *, short, short, char *, long);
@@ -435,7 +435,7 @@ inet_listen (struct socket *so, short backlog)
 
 static long
 inet_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-		short flags, struct sockaddr *addr, short addrlen)
+		short flags, const struct sockaddr *addr, short addrlen)
 {
 	struct in_data *data = so->data;
 	long r;
@@ -477,7 +477,7 @@ inet_send (struct socket *so, const struct iovec *iov, short niov, short nonbloc
 	
 	inet_autobind (data);
 	return (*data->proto->soops.send) (data, iov, niov, nonblock, flags,
-		(struct sockaddr_in *)addr, addrlen);
+		(const struct sockaddr_in *)addr, addrlen);
 }
 
 static long

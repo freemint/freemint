@@ -43,7 +43,7 @@ static long	unix_getname	(struct socket *, struct sockaddr *, short *, short);
 static long	unix_select	(struct socket *, short, long);
 static long	unix_ioctl	(struct socket *, short, void *);
 static long	unix_listen	(struct socket *, short);
-static long	unix_send	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+static long	unix_send	(struct socket *, const struct iovec *, short, short, short, const struct sockaddr *, short);
 static long	unix_recv	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 static long	unix_shutdown	(struct socket *, short);
 static long	unix_setsockopt	(struct socket *, short, short, char *, long);
@@ -389,7 +389,7 @@ unix_listen (struct socket *so, short backlog)
 
 static long
 unix_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-		short flags, struct sockaddr *addr, short addrlen)
+		short flags, const struct sockaddr *addr, short addrlen)
 {
 	if (flags)
 	{

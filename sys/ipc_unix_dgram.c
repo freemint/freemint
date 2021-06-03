@@ -51,7 +51,7 @@ unix_dgram_connect (struct socket *so, const struct sockaddr *addr, short addrle
 
 long
 unix_dgram_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-			short flags, struct sockaddr *addr, short addrlen)
+			short flags, const struct sockaddr *addr, short addrlen)
 {
 	struct un_data *dstdata, *srcdata = so->data;
 	struct dgram_hdr header;

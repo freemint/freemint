@@ -580,7 +580,7 @@ sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 }
 
 long _cdecl
-sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long addrlen)
+sys_sendto (short fd, char *buf, long buflen, long flags, const struct sockaddr *addr, long addrlen)
 {
 	PROC *p = get_curproc();
 	FILEPTR *fp;
@@ -601,7 +601,7 @@ sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr,
 }
 
 long _cdecl
-sys_sendmsg (short fd, struct msghdr *msg, long flags)
+sys_sendmsg (short fd, const struct msghdr *msg, long flags)
 {
 	PROC *p = get_curproc();
 	FILEPTR *fp;
@@ -618,10 +618,12 @@ sys_sendmsg (short fd, struct msghdr *msg, long flags)
 	if (so->state == SS_VIRGIN)
 		return EINVAL;
 	
+#if 0
 	if (msg->msg_accrights || msg->msg_accrightslen) {
 		msg->msg_accrights = NULL;
 		msg->msg_accrightslen = 0;
 	}
+#endif
 	
 	return (*so->ops->send)(so, msg->msg_iov, msg->msg_iovlen,
 				fp->flags & O_NDELAY, flags,

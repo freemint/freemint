@@ -113,7 +113,7 @@ struct dom_ops
 	
 	long	(*send)		(struct socket *s, const struct iovec *iov,
 				 short niov, short block, short flags,
-				 struct sockaddr *addr, short addrlen);
+				 const struct sockaddr *addr, short addrlen);
 	
 	long	(*recv)		(struct socket *s, const struct iovec *iov,
 				 short niov, short block, short flags,

@@ -48,6 +48,13 @@
 # include "proc.h"
 # include "time.h"
 
+#ifndef NO_CONST
+#  ifdef __GNUC__
+#    define NO_CONST(p) __extension__({ union { const void *cs; void *s; } x; x.cs = p; x.s; })
+#  else
+#    define NO_CONST(p) ((void *)(p))
+#  endif
+#endif
 
 /*
  * debugging stuff
@@ -658,7 +665,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SEND_CMD:
 		{
 			struct send_cmd *c = buf;
-			struct iovec iov[1] = {{ c->buf, c->buflen }};
+			struct iovec iov[1] = {{ NO_CONST(c->buf), c->buflen }};
 
 			if (so->state == SS_VIRGIN)
 				return EINVAL;
@@ -668,7 +675,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SENDTO_CMD:
 		{
 			struct sendto_cmd *c = buf;
-			struct iovec iov[1] = {{ c->buf, c->buflen }};
+			struct iovec iov[1] = {{ NO_CONST(c->buf), c->buflen }};
 
 			if (so->state == SS_VIRGIN)
 				return EINVAL;
@@ -678,15 +685,17 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SENDMSG_CMD:
 		{
 			struct sendmsg_cmd *c = buf;
-			struct msghdr *msg = c->msg;
+			const struct msghdr *msg = c->msg;
 
 				if (so->state == SS_VIRGIN)
 			return EINVAL;
 
+#if 0
 			if (msg->msg_accrights || msg->msg_accrightslen) {
 				msg->msg_accrights = NULL;
 				msg->msg_accrightslen = 0;
 			}
+#endif
 
 			return (*so->ops->send)(so, msg->msg_iov, msg->msg_iovlen,
 						f->flags & O_NDELAY, c->flags,

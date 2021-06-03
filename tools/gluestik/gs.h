@@ -55,7 +55,6 @@ typedef unsigned char	uchar;
 # define str(x)		_stringify (x)
 # define _stringify(x)	#x
 
-# define SOCKDEV	"u:\\dev\\socket"
 # define FREECOOKIE	0x46524545L	/* FREE */
 # define JAR		0x5A0
 

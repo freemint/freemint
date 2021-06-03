@@ -5,16 +5,19 @@
  *	09/24/93, kay roemer.
  */
 
-# ifndef _sockets_mintsock_h
-# define _sockets_mintsock_h
+#ifndef _sockets_mintsock_h
+#define _sockets_mintsock_h
+
+
+#define SOCKDEV "U:\\dev\\socket"
+#define UN_OFFSET ((short)(int)((struct sockaddr_un *)0)->sun_path)
 
 
 /* perform a socket system call, via ioctl() */
-# define SOCKETCALL	(('S' << 8) | 100)
+#define SOCKETCALL	(('S' << 8) | 100)
 
 /* socket call command names, passed in the `cmd' field of *_cmd structs */
-enum so_cmd
-{
+enum so_cmd {
 	SOCKET_CMD = 0,
 	SOCKETPAIR_CMD,
 	BIND_CMD,
@@ -35,108 +38,94 @@ enum so_cmd
 };
 
 /* used to extract the `cmd' field from the *_cmd structs */
-struct generic_cmd
-{
+struct generic_cmd {
 	short	cmd;
 	char	data[10];
 };
 
 /* structures passed to the SOCKETCALL ioctl() as an argument */
-struct socket_cmd
-{
+struct socket_cmd {
 	short	cmd;
 	short	domain;
 	short	type;
 	short	protocol;
 };
 
-struct socketpair_cmd
-{
+struct socketpair_cmd {
 	short	cmd;
 	short	domain;
 	short	type;
 	short	protocol;
 };
 
-struct bind_cmd
-{
+struct bind_cmd {
 	short	cmd;
 	void	*addr;
 	short	addrlen;
 };
 		
-struct listen_cmd
-{
+struct listen_cmd {
 	short	cmd;
 	short	backlog;
 };
 
-struct accept_cmd
-{
+struct accept_cmd {
 	short	cmd;
 	void	*addr;
 	short	*addrlen;
 };
 
-struct connect_cmd
-{
+struct connect_cmd {
 	short	cmd;
 	void	*addr;
 	short	addrlen;
 };
 
-struct getsockname_cmd
-{
+struct getsockname_cmd {
 	short	cmd;
 	void	*addr;
 	short	*addrlen;
 };
 
-struct getpeername_cmd
-{
+struct getpeername_cmd {
 	short	cmd;
 	void	*addr;
 	short	*addrlen;
 };
 
-struct send_cmd
-{
+struct send_cmd {
 	short	cmd;
-	char	*buf;
+	const void *buf;
 	long	buflen;
 	short	flags;
 };
 
-struct sendto_cmd
-{
+struct sendto_cmd {
 	short	cmd;
-	char	*buf;
+	const void *buf;
 	long	buflen;
 	short	flags;
-	void	*addr;
+	const void *addr;
 	short	addrlen;
 };
 
-struct recv_cmd
-{
+struct recv_cmd {
 	short	cmd;
-	char	*buf;
+	void	*buf;
 	long	buflen;	
 	short	flags;
 };
 
-struct recvfrom_cmd
-{
+struct recvfrom_cmd {
 	short	cmd;
-	char	*buf;
+	void	*buf;
 	long	buflen;
 	short	flags;
 	void	*addr;
 	short	*addrlen;
 };
 
-struct setsockopt_cmd
-{
+struct setsockopt_cmd {
 	short	cmd;
 	short	level;
 	short	optname;
@@ -144,8 +133,7 @@ struct setsockopt_cmd
 	long	optlen;
 };
 
-struct getsockopt_cmd
-{
+struct getsockopt_cmd {
 	short	cmd;
 	short	level;
 	short	optname;
@@ -153,25 +141,22 @@ struct getsockopt_cmd
 	long	*optlen;
 };
 
-struct shutdown_cmd
-{
+struct shutdown_cmd {
 	short	cmd;
 	short	how;
 };
 
-struct sendmsg_cmd
-{
+struct sendmsg_cmd {
+	short	cmd;
+	const void *msg;
+	short	flags;
+};
+
+struct recvmsg_cmd {
 	short	cmd;
 	void	*msg;
 	short	flags;
 };
 
-struct recvmsg_cmd
-{
-	short	cmd;
-	void	*msg;
-	short	flags;
-};
 
-
-# endif /* _sockets_mintsock_h */
+#endif /* _sockets_mintsock_h */

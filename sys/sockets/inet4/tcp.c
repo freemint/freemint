@@ -38,7 +38,7 @@ static long	tcp_listen	(struct in_data *);
 static long	tcp_accept	(struct in_data *, struct in_data *, short);
 static long	tcp_ioctl	(struct in_data *, short, void *);
 static long	tcp_select	(struct in_data *, short, long);
-static long	tcp_send	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short);
+static long	tcp_send	(struct in_data *, const struct iovec *, short, short, short, const struct sockaddr_in *, short);
 static long	tcp_recv	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short *);
 static long	tcp_shutdown	(struct in_data *, short);
 static long	tcp_setsockopt	(struct in_data *, short, short, char *, long);
@@ -449,7 +449,7 @@ tcp_select (struct in_data *data, short mode, long proc)
 
 static long
 tcp_send (struct in_data *data, const struct iovec *iov, short niov, short nonblock,
-		short flags, struct sockaddr_in *addr, short addrlen)
+		short flags, const struct sockaddr_in *addr, short addrlen)
 {
 	struct tcb *tcb = data->pcb;
 	long size, offset, avail, r, seq_write = tcb->seq_write;

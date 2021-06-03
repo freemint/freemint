@@ -73,7 +73,6 @@
 /*
  *	other definitions required for SLINKCTL
  */
-#define SOCKDEV		"u:\\dev\\socket"
 #define O_RDWR		0x02
 
 /*
@@ -81,8 +80,7 @@
  */
 static void display_statistics(SCSILINK_STATS *stats);
 static void display_trace(struct trace_entry *trace_table,long trace_entries,long current_entry);
-static void quit(char *s);
-//static int socket(int domain,int type,int proto);
+static void quit(const char *s);
 static void usage(void);
 
 /*
@@ -303,44 +301,15 @@ int i;
 /*
  *	utility routines
  */
-static void quit(char *s)
+static void quit(const char *s)
 {
 	if (s)
 		fprintf(stderr,"%s: %s\n",PROGRAM,s);
-	exit(-1);
+	exit(1);
 }
 
-/*
- *	the following function is stolen from lib/socket.c
- */
-/*
-static int socket(int domain,int type,int proto)
-{
-struct socket_cmd cmd;
-short sockfd;
-long rc;
 
-	rc = Fopen(SOCKDEV,O_RDWR);
-	if (rc < 0L)
-		return -1;
-	sockfd = (short)rc;
-
-	cmd.cmd = SOCKET_CMD;
-	cmd.domain = domain;
-	cmd.type = type;
-	cmd.protocol = proto;
-
-	rc = Fcntl(sockfd,(long)&cmd,SOCKETCALL);
-	if (rc < 0L) {
-		Fclose(sockfd);
-		return -1;
-	}
-
-	return sockfd;
-}
-*/
-
-static void usage()
+static void usage(void)
 {
 	fprintf(stderr,"%s [-c] [-r] [-tN] <interface> [filename]\n",PROGRAM);
 	fprintf(stderr,"   default: report statistics for <interface>\n");

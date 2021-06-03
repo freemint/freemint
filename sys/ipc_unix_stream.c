@@ -58,7 +58,7 @@ unix_stream_connect (struct socket *so, const struct sockaddr *addr, short addrl
 
 long
 unix_stream_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-			short flags, struct sockaddr *addr, short addrlen)
+			short flags, const struct sockaddr *addr, short addrlen)
 {
 	struct un_data *undata;
 	long nbytes;

@@ -56,7 +56,7 @@ struct in_sock_ops
 	long	(*select)	(struct in_data *, short, long);
 	long	(*send)		(struct in_data *, const struct iovec *,
 				 short niov, short block, short flags,
-				 struct sockaddr_in *addr, short addrlen);
+				 const struct sockaddr_in *addr, short addrlen);
 	long	(*recv)		(struct in_data *, const struct iovec *,
 				 short niov, short block, short flags,
 				 struct sockaddr_in *addr, short *addrlen);
