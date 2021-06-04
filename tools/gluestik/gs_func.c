@@ -25,24 +25,29 @@
  */
 
 # include <string.h>
-# include <unistd.h>
-# include <osbind.h>
-# include <mintbind.h>
+# include <stdio.h>
 # include <fcntl.h>
 # include <sys/socket.h>
 # include <sys/ioctl.h>
+# ifdef __PUREC__
+# include <tos.h>
+#else
+# include <mint/mintbind.h>
+#endif
 
 # include <netdb.h>
 # include <netinet/in.h>
 
-
-# include <errno.h>
-extern int errno;
+# include "../socklib/pcerrno.h"
 
 # include "gs_func.h"
 
 # include "gs_mem.h"
 # include "gs_stik.h"
+
+/* no matter what the library says, we need the MiNT definition here */
+#undef O_NDELAY
+#define O_NDELAY 0x100
 
 
 int
@@ -58,15 +63,24 @@ gs_xlate_error (int err, const char *funcname)
 			ret = E_NOROUTINE;
 			break;
 		
+#ifdef __PUREC__
+		case 24: /* original EMFILE */
+#endif
 		case EMFILE:
 			ret = E_NOCCB;
 			break;
 		
+#ifdef __PUREC__
+		case 9: /* original EBADF */
+#endif
 		case EBADF:
 		case ENOTSOCK:
 			ret = E_BADHANDLE;
 			break;
 		
+#ifdef __PUREC__
+		case 12: /* original ENOMEM */
+#endif
 		case ENOMEM:
 		case ESBLOCK:
 			ret = E_NOMEM;
@@ -98,7 +112,10 @@ gs_xlate_error (int err, const char *funcname)
 			break;
 		
 		default:
-			ret = -1000 + err;
+			/* Encoded GEMDOS errors; used in get_err_text() */
+			if (err < 0)
+				err = -err;
+			ret = -1000 - err;
 			break;
 	}
 	
@@ -195,7 +212,7 @@ gs_accept (int fd)
 	if (fdflags < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_GETFL) returns %li", fdflags));
-		return gs_xlate_error (-fdflags, "gs_accept");
+		return gs_xlate_error (-(int)fdflags, "gs_accept");
 	}
 	
 	/* switch to non-blocking mode */
@@ -203,7 +220,7 @@ gs_accept (int fd)
 	if (ret < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_SETFL) returns %li", ret));
-		return gs_xlate_error (-ret, "gs_accept");
+		return gs_xlate_error (-(int)ret, "gs_accept");
 	}
 	
 	in_fd = accept (gs->sock_fd, (struct sockaddr *) &addr, &addr_size);
@@ -213,7 +230,7 @@ gs_accept (int fd)
 	if (ret < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_SETFL) returns %li", ret));
-		return gs_xlate_error (-ret, "gs_accept");
+		return gs_xlate_error (-(int)ret, "gs_accept");
 	}
 	
 	if (in_fd < 0)
@@ -583,7 +600,7 @@ gs_wait (int fd, int timeout)
 	}
 	
 	DEBUG (("gs_wait: Fselect() returns %li", n));
-	return gs_xlate_error (n, "gs_wait");
+	return gs_xlate_error ((int)n, "gs_wait");
 }
 
 long
@@ -622,7 +639,7 @@ gs_canread (int fd)
 	if (r < 0)
 	{
 		DEBUG (("gs_canread: Fcntl(FIONREAD) returns %li", r));
-		return gs_xlate_error (-r, "gs_canread");
+		return gs_xlate_error (-(int)r, "gs_canread");
 	}
 	
 	if (n == 0x7FFFFFFFUL)
@@ -783,7 +800,7 @@ gs_write (int fd, const char *buf, long buflen)
 	if (r < 0)
 	{
 		DEBUG (("gs_write: Fcntl(FIONWRITE) returned %li", r));
-		return gs_xlate_error (-r, "gs_write");
+		return gs_xlate_error (-(int)r, "gs_write");
 	}
 	
 	if (n < buflen)
@@ -798,7 +815,7 @@ gs_write (int fd, const char *buf, long buflen)
 	if (r < 0)
 	{
 		DEBUG (("gs_write: Fwrite() returned %li", r));
-		return gs_xlate_error (-r, "gs_write");
+		return gs_xlate_error (-(int)r, "gs_write");
 	}
 	
 	/* Okay, according to the Fcntl(), we should have been able to
@@ -864,7 +881,7 @@ gs_read (int fd, char *buf, long buflen)
 	if (r < 0)
 	{
 		DEBUG (("gs_read: Fread() returns %li", r));
-		return gs_xlate_error (-r, "gs_read");
+		return gs_xlate_error (-(int)r, "gs_read");
 	}
 	
 	/* Okay, according to the Fcntl(), we should have been able to
@@ -913,7 +930,7 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	{
 		DEBUG (("gs_resolve: Pmsg() returns %li", r));
 		
-		ret = gs_xlate_error (-r, "gs_resolve");
+		ret = gs_xlate_error (-(int)r, "gs_resolve");
 		goto out;
 	}
 	

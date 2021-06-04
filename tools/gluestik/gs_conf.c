@@ -26,35 +26,19 @@
 
 # include <string.h>
 # include <ctype.h>
+# ifdef __PUREC__
+# include <tos.h>
+# ifdef __TOS /* using original header file */
+# define __XATTR
+# define st_size size
+# endif
+# else
 # include <osbind.h>
 # include <mintbind.h>
 # include <sys/stat.h>
+# endif
 
-/* structure for Fxattr */
-#ifndef __XATTR
-#define __XATTR
-typedef struct xattr		XATTR;
-
-struct xattr
-{
-	ushort	mode;
-	long	index;
-	ushort	dev;
-	ushort	rdev;		/* "real" device */
-	ushort	nlink;
-	ushort	uid;
-	ushort	gid;
-	long	st_size;
-	long	blksize;
-	long	nblocks;
-	ushort	mtime, mdate;
-	ushort	atime, adate;
-	ushort	ctime, cdate;
-	short	attr;
-	short	reserved2;
-	long	reserved3[2];
-};
-#endif
+# include "../socklib/fxattr.h"
 
 # include "gs_conf.h"
 
@@ -228,7 +212,7 @@ find_config_file (void)
 		return 1;
 	}
 	
-	if ((unsigned int)n >= sizeof (cfg_filename))
+	if ((int)n >= (int)sizeof (cfg_filename))
 		n = (int)sizeof (cfg_filename) - 1;
 	
 	if ((s = strchr (cfg_filename, '\n')) == NULL)

@@ -25,8 +25,6 @@
  */
 
 # include <string.h>
-# include <osbind.h>
-# include <mintbind.h>
 
 # include "gs_mem.h"
 # include "gs_conf.h"

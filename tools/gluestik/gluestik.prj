@@ -1,0 +1,24 @@
+gluestik.prg
+.C[-A-]
+.C[-P-]
+.C[-M-]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=16384]
+
+=
+pcstart.s
+gs_conf.c
+gs_func.c
+gs_mem.c
+gs_stik.c
+main.c
+
+..\socklib\socklib.prj
+
+pcstdlib.lib
+pctoslib.lib

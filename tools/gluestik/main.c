@@ -24,17 +24,22 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+# include <stdio.h>
+# include <netdb.h>
+# include <string.h>
+
+# ifdef __PUREC__
+# include <tos.h>
+#define C_MagX 0x4D616758L     /* MagX */
+#define C_MiNT 0x4D694E54L     /* Mint/MultiTOS */
+#define C_STiK 0x5354694BL     /* ST Internet Kit */
+# else
 # include <mint/osbind.h>
 # include <mint/mintbind.h>
 # include <mint/basepage.h>
-# include <mint/ssystem.h>
 # include <mint/cookie.h>
-
-# include <stdio.h>
-# include <signal.h>
-# include <unistd.h>
-# include <netdb.h>
-# include <string.h>
+#endif
+#include <mint/ssystem.h>
 
 # include "gs.h"
 
@@ -43,6 +48,29 @@
 # include "gs_mem.h"
 # include "gs_stik.h"
 # include "version.h"
+
+
+/*
+ * We need the MiNT definitions here, not any library definitions
+ */
+#undef SIGHUP
+#define SIGHUP 1
+#undef SIGINT
+#define SIGINT 2
+#undef SIGQUIT
+#define SIGQUIT 3
+#undef SIGABRT
+#define SIGABRT 6
+#undef SIGALRM
+#define SIGALRM 14
+#undef SIGTERM
+#define SIGTERM 15
+#undef SIGTSTP
+#define SIGTSTP 18
+#undef SIGUSR1
+#define SIGUSR1 29
+#undef SIGUSR2
+#define SIGUSR2 30
 
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR)
@@ -109,7 +137,7 @@ install_cookie (void)
 	if (opt_force_install) {
 		uninstall_cookie();
 	}
-	if (Ssystem (S_GETCOOKIE, C_STiK, &dummy) == 0)
+	if (Ssystem (S_GETCOOKIE, C_STiK, (long)&dummy) == 0)
 	{
 		(void) Cconws (MSG_ALREADY);
 		return 1;
@@ -124,13 +152,13 @@ install_cookie (void)
 }
 
 
-static void
+static void __CDECL
 nothing (long sig)
 {
 	(void)sig;
 }
 
-static void
+static void __CDECL
 end (long sig)
 {
 	(void)sig;
@@ -217,7 +245,7 @@ main (void)
 			break;
 		}
 		
-		switch (pmsg.msg1)
+		switch ((int)pmsg.msg1)
 		{
 			case 1:
 				pmsg.msg2 = (long) gethostbyname ((char *) pmsg.msg2);
