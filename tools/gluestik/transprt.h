@@ -90,6 +90,24 @@ typedef unsigned long  uint32;        /* Unsigned 32 bit                    */
 #endif
 #endif
 
+/*--------------------------------------------------------------------------
+ * Whether to declare the arguments for the callbacks as member of a struct,
+ * or as single parameters.
+ * For Pure-C, we can use single parameters, which generates better
+ * code both in the driver and in the applications.
+ * For GNU-C, we *must* use structures, because shorts would be promoted
+ * to int (32-bit) otherwise. Even when compiling with --mshort,
+ * we cannot use parameters, because byte-sized values are passed differently
+ * (this only affects CNgets() here).
+ *--------------------------------------------------------------------------*/
+#ifndef TPL_STRUCT_ARGS
+#  if defined(__PUREC__)
+#    define TPL_STRUCT_ARGS 0
+#  else
+#    define TPL_STRUCT_ARGS 1
+#  endif
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*	STiK/STinG driver access structure / functions.							*/
 /*--------------------------------------------------------------------------*/
@@ -434,7 +452,7 @@ typedef struct cib			/* Connection Information Block					*/
 /*	Transport structure / functions.										*/
 /*--------------------------------------------------------------------------*/
 
-#if !defined TPL_STRUCT_ARGS
+#if !TPL_STRUCT_ARGS
 typedef struct tpl
 {
 	const char *	module;		/* Specific string that can be searched for	*/

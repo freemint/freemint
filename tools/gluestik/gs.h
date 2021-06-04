@@ -31,7 +31,6 @@
 # include <stdio.h>
 # include <sys/types.h>
 
-# define TPL_STRUCT_ARGS 1
 # include "transprt.h"
 
 

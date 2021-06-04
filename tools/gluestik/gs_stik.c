@@ -85,40 +85,64 @@ static int flags [64] =
 };
 
 
+#if TPL_STRUCT_ARGS
+#define P(x) p.x
+#else
+#define P(x) x
+#endif
+
 #define UNUSED(x) ((void)(x))
 
 
-static void *
-do_KRmalloc (struct KRmalloc_param p)
+#if TPL_STRUCT_ARGS
+static void * __CDECL do_KRmalloc (struct KRmalloc_param p)
+#else
+static void * __CDECL do_KRmalloc (int32 size)
+#endif
 {
-	return gs_mem_alloc (p.size);
+	return gs_mem_alloc (P(size));
 }
 
-static void
-do_KRfree (struct KRfree_param p)
+#if TPL_STRUCT_ARGS
+static void __CDECL do_KRfree (struct KRfree_param p)
+#else
+static void __CDECL do_KRfree (void *mem)
+#endif
 {
-	gs_mem_free (p.mem);
+	gs_mem_free (P(mem));
 }
 
-static int32
-do_KRgetfree (struct KRgetfree_param p)
+#if TPL_STRUCT_ARGS
+static int32 __CDECL do_KRgetfree (struct KRgetfree_param p)
+#else
+static int32 __CDECL do_KRgetfree (int16 flag)
+#endif
 {
-	return gs_mem_getfree (p.flag);
+	return gs_mem_getfree (P(flag));
 }
 
-static void *
-do_KRrealloc (struct KRrealloc_param p)
+#if TPL_STRUCT_ARGS
+static void *__CDECL do_KRrealloc (struct KRrealloc_param p)
+#else
+static void *__CDECL do_KRrealloc (void *mem, int32 newsize)
+#endif
 {
-	return gs_mem_realloc (p.mem, p.newsize);
+	return gs_mem_realloc (P(mem), P(newsize));
 }
 
-const char *
-do_get_err_text (struct get_err_text_param p)
+
+#if TPL_STRUCT_ARGS
+const char *__CDECL do_get_err_text (struct get_err_text_param p)
+#else
+const char *__CDECL do_get_err_text (int16 code)
+#endif
 {
-	int16 code = p.code;
+#if TPL_STRUCT_ARGS
+	int16 code = P(code);
+#endif
 
 	if (code < 0)
-		code = -p.code;
+		code = -code;
 	
 	if (code > 2000)
 		return err_unknown;
@@ -129,16 +153,19 @@ do_get_err_text (struct get_err_text_param p)
 		return strerror (code - 1000);
 	}
 	
-	if (p.code > E_LASTERROR || err_list [code] == 0)
+	if (code > E_LASTERROR || err_list [code] == 0)
 		return err_unknown;
 	
 	return err_list [code];
 }
 
-static const char *
-do_getvstr (struct getvstr_param p)
+#if TPL_STRUCT_ARGS
+static const char *__CDECL do_getvstr (struct getvstr_param p)
+#else
+static const char *__CDECL do_getvstr (const char *var)
+#endif
 {
-	return gs_getvstr (p.var);
+	return gs_getvstr (P(var));
 }
 
 /* Incompatibility:  Does nothing.
@@ -146,42 +173,47 @@ do_getvstr (struct getvstr_param p)
  * since MiNTnet transparently supports multiple modems, as well as
  * non-modem methods of connections, such as local networks
  */
-static int16
+static int16 __CDECL
 do_carrier_detect (void)
 {
 	return 0;
 }
 
-static int16
-do_TCP_open (struct TCP_open_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_TCP_open (struct TCP_open_param p)
+#else
+static int16 __CDECL do_TCP_open (uint32 rhost, uint16 rport, uint16 tos, uint16 obsize)
+#endif
 {
 	uint32 lhost; int16 lport;
 	int fd;
 	long ret;
 	
-	DEBUG (("do_TCP_open: rhost = %d.%d.%d.%d, rport = %i", DEBUG_ADDR(p.rhost), p.rport));
+	UNUSED(P(tos));
+	UNUSED(P(obsize));
+	DEBUG (("do_TCP_open: rhost = %d.%d.%d.%d, rport = %i", DEBUG_ADDR(P(rhost)), P(rport)));
 	
-	if (p.rhost == 0)
+	if (P(rhost) == 0)
 	{
 		/*
 		 * STiK-compatible, passive connection;
 		 * 2nd parameter (rport) is used as local port,
 		 * connection from any port/host will be accepted
 		 */
-		p.rhost = 0;
+		P(rhost) = 0;
 		lhost = INADDR_ANY;
-		lport = p.rport;
-		p.rport = 0;
+		lport = P(rport);
+		P(rport) = 0;
 	}
-	else if (p.rport == TCP_ACTIVE || p.rport == TCP_PASSIVE)
+	else if (P(rport) == TCP_ACTIVE || P(rport) == TCP_PASSIVE)
 	{
-		CAB *cab = (CAB *) p.rhost;
+		CAB *cab = (CAB *) P(rhost);
 		
 		/*
 		 * STinG: rhost gives all parameters
 		 */
-		p.rhost = cab->rhost;
-		p.rport = cab->rport;
+		P(rhost) = cab->rhost;
+		P(rport) = cab->rport;
 		lhost = cab->lhost;
 		lport = cab->lport;
 	}
@@ -199,7 +231,7 @@ do_TCP_open (struct TCP_open_param p)
 	/* The TCP_OPEN_CMD command transmogrifies this descriptor into an
 	 * actual connection.
 	 */
-	ret = gs_connect (fd, p.rhost, p.rport, lhost, lport);
+	ret = gs_connect (fd, P(rhost), P(rport), lhost, lport);
 	if (ret < 0)
 	{
 		gs_close(fd);
@@ -210,37 +242,56 @@ do_TCP_open (struct TCP_open_param p)
 	return fd;
 }
 
-static int16
-do_TCP_close (struct TCP_close_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_TCP_close (struct TCP_close_param p)
+#else
+static int16 __CDECL do_TCP_close (int16 fd, int16 timeout, int16 *result)
+#endif
 {
-	gs_close (p.fd);
+	UNUSED(P(timeout));
+	UNUSED(P(result));
+	gs_close (P(fd));
 	return E_NORMAL;
 }
 
-static int16
-do_TCP_send (struct TCP_send_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_TCP_send (struct TCP_send_param p)
+#else
+static int16 __CDECL do_TCP_send (int16 fd, const void *buf, int16 len)
+#endif
 {
-	return gs_write (p.fd, p.buf, p.len);
+	return gs_write (P(fd), P(buf), P(len));
 }
 
-static int16
-do_TCP_wait_state (struct TCP_wait_state_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_TCP_wait_state (struct TCP_wait_state_param p)
+#else
+static int16 __CDECL do_TCP_wait_state (int16 fd, int16 state, int16 timeout)
+#endif
 {
-	return gs_wait (p.fd, p.timeout);
+	UNUSED(P(state));
+	return gs_wait (P(fd), P(timeout));
 }
 
 /* Incompatibility:  Does nothing.
  * MiNTnet handles this internally.
  */
-static int16
-do_TCP_ack_wait (struct TCP_ack_wait_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_TCP_ack_wait (struct TCP_ack_wait_param p)
+#else
+static int16 __CDECL do_TCP_ack_wait (int16 fd, int16 timeout)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(fd));
+	UNUSED(P(timeout));
 	return E_NORMAL;
 }
 
-static int16
-do_UDP_open (struct UDP_open_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_UDP_open (struct UDP_open_param p)
+#else
+static int16 __CDECL do_UDP_open (uint32 rhost, uint16 rport)
+#endif
 {
 	int fd;
 	int ret;
@@ -252,7 +303,7 @@ do_UDP_open (struct UDP_open_param p)
 	/* The UDP_OPEN_CMD command transmogrifies this descriptor into an
 	 * actual connection.
 	 */
-	ret = gs_udp_open (fd, p.rhost, p.rport);
+	ret = (int)gs_udp_open (fd, P(rhost), P(rport));
 	if (ret < 0)
 	{
 		gs_close(fd);
@@ -262,33 +313,45 @@ do_UDP_open (struct UDP_open_param p)
 	return fd;
 }
 
-static int16
-do_UDP_close (struct UDP_close_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_UDP_close (struct UDP_close_param p)
+#else
+static int16 __CDECL do_UDP_close (int16 fd)
+#endif
 {
-	gs_close (p.fd);
+	gs_close (P(fd));
 	return 0;
 }
 
-static int16
-do_UDP_send (struct UDP_send_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_UDP_send (struct UDP_send_param p)
+#else
+static int16 __CDECL do_UDP_send (int16 fd, const void *buf, int16 len)
+#endif
 {
-	return gs_write (p.fd, p.buf, p.len);
+	return gs_write (P(fd), P(buf), P(len));
 }
 
 /* Incompatibility:  Does nothing.
  * MiNTnet handles its own "kicking"
  */
-static int16
-do_CNkick (struct CNkick_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CNkick (struct CNkick_param p)
+#else
+static int16 __CDECL do_CNkick (int16 fd)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(fd));
 	return E_NORMAL;
 }
 
-static int16
-do_CNbyte_count (struct CNbyte_count_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CNbyte_count (struct CNbyte_count_param p)
+#else
+static int16 __CDECL do_CNbyte_count (int16 fd)
+#endif
 {
-	long n = gs_canread (p.fd);
+	long n = gs_canread (P(fd));
 	/*
 	 * limit the return value to a signed 16bit value,
 	 * to avoid it being misinterpreted as error.
@@ -298,13 +361,16 @@ do_CNbyte_count (struct CNbyte_count_param p)
 	return 32767;
 }
 
-static int16
-do_CNget_char (struct CNget_char_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CNget_char (struct CNget_char_param p)
+#else
+static int16 __CDECL do_CNget_char (int16 fd)
+#endif
 {
 	char c;
 	long ret;
 	
-	ret = gs_read (p.fd, &c, 1);
+	ret = gs_read (P(fd), &c, 1);
 	if (ret < 0)
 		return ret;
 	
@@ -314,48 +380,57 @@ do_CNget_char (struct CNget_char_param p)
 	return (unsigned char)c;
 }
 
-static NDB *
-do_CNget_NDB (struct CNget_NDB_param p)
+#if TPL_STRUCT_ARGS
+static NDB * __CDECL do_CNget_NDB (struct CNget_NDB_param p)
+#else
+static NDB * __CDECL do_CNget_NDB (int16 fd)
+#endif
 {
-	return gs_readndb (p.fd);
+	return gs_readndb (P(fd));
 }
 
-static int16
-do_CNget_block (struct CNget_block_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CNget_block (struct CNget_block_param p)
+#else
+static int16 __CDECL do_CNget_block (int16 fd, void *buf, int16 len)
+#endif
 {
-	return gs_read (p.fd, p.buf, p.len);
+	return gs_read (P(fd), P(buf), P(len));
 }
 
-static void
-do_housekeep (void)
-{
-	/* does nothing */
-}
-
-static int16
-do_resolve (struct resolve_param p)
-{
-	return gs_resolve (p.dn, p.rdn, p.alist, p.lsize);
-}
-
-static void
-do_ser_disable (void)
+static void __CDECL do_housekeep (void)
 {
 	/* does nothing */
 }
 
-static void
-do_ser_enable (void)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_resolve (struct resolve_param p)
+#else
+static int16 __CDECL do_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
+#endif
+{
+	return gs_resolve (P(dn), P(rdn), P(alist), P(lsize));
+}
+
+static void __CDECL do_ser_disable (void)
 {
 	/* does nothing */
 }
 
-static int16
-do_set_flag (struct set_flag_param p)
+static void __CDECL do_ser_enable (void)
+{
+	/* does nothing */
+}
+
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_set_flag (struct set_flag_param p)
+#else
+static int16 __CDECL do_set_flag (int16 flag)
+#endif
 {
 	int flg_val;
 	
-	if (p.flag < 0 || p.flag >= 64)
+	if (P(flag) < 0 || P(flag) >= 64)
 		return E_PARAMETER;
 	
 	/* This is probably not necessary, since a MiNT process currently
@@ -363,17 +438,20 @@ do_set_flag (struct set_flag_param p)
 	 * chances...
 	 */
 	Psemaphore (2, FLG_SEM, -1);
-	flg_val = flags [p.flag];
-	flags [p.flag] = 1;
+	flg_val = flags [P(flag)];
+	flags [P(flag)] = 1;
 	Psemaphore (3, FLG_SEM, 0);
 	
 	return flg_val;
 }
 
-static void
-do_clear_flag (struct clear_flag_param p)
+#if TPL_STRUCT_ARGS
+static void __CDECL do_clear_flag (struct clear_flag_param p)
+#else
+static void __CDECL do_clear_flag (int16 flag)
+#endif
 {
-	if (p.flag < 0 || p.flag >= 64)
+	if (P(flag) < 0 || P(flag) >= 64)
 		return;
 	
 	/* This is probably not necessary, since a MiNT process currently
@@ -381,14 +459,17 @@ do_clear_flag (struct clear_flag_param p)
 	 * chances...
 	 */
 	Psemaphore (2, FLG_SEM, -1);
-	flags [p.flag] = 0;
+	flags [P(flag)] = 0;
 	Psemaphore (3, FLG_SEM, 0);
 }
 
-static CIB *
-do_CNgetinfo (struct CNgetinfo_param p)
+#if TPL_STRUCT_ARGS
+static CIB * __CDECL do_CNgetinfo (struct CNgetinfo_param p)
+#else
+static CIB * __CDECL do_CNgetinfo (int16 fd)
+#endif
 {
-	GS *gs = gs_get (p.fd);
+	GS *gs = gs_get (P(fd));
 	
 	if (!gs)
 		return (CIB *) E_BADHANDLE;
@@ -399,118 +480,200 @@ do_CNgetinfo (struct CNgetinfo_param p)
 /* Incompatibility: None of the *_port() commands do anything.
  * Don't use a STiK dialer with GlueSTiK, gods know what will happen!
  */
-static int16
-do_on_port (struct on_port_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_on_port (struct on_port_param p)
+#else
+static int16 __CDECL do_on_port (const char *port)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(port));
 	return E_NOROUTINE;
 }
 
-static void
-do_off_port (struct off_port_param p)
+#if TPL_STRUCT_ARGS
+static void __CDECL do_off_port (struct off_port_param p)
+#else
+static void __CDECL do_off_port (const char *port)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(port));
 }
 
-static int16
-do_setvstr (struct setvstr_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_setvstr (struct setvstr_param p)
+#else
+static int16 __CDECL do_setvstr (const char *vs, const char *value)
+#endif
 {
-	return gs_setvstr (p.vs, p.value);
+	return gs_setvstr (P(vs), P(value));
 }
 
-static int16
-do_query_port (struct query_port_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_query_port (struct query_port_param p)
+#else
+static int16 __CDECL do_query_port (const char *port)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(port));
 	return E_NOROUTINE;
 }
 
-static int16
-do_CNgets (struct CNgets_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CNgets (struct CNgets_param p)
+#else
+static int16 __CDECL do_CNgets (int16 fd, char *buf, int16 len, char delim)
+#endif
 {
-	return gs_read_delim (p.fd, p.buf, p.len, p.delim);
+	return gs_read_delim (P(fd), P(buf), P(len), P(delim));
 }
 
 
-static int16 do_ICMP_send(struct ICMP_send_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_ICMP_send(struct ICMP_send_param p)
+#else
+static int16 __CDECL do_ICMP_send(uint32 dest_host, uint8 type, uint8 code, const void *data, uint16 length)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(dest_host));
+	UNUSED(P(type));
+	UNUSED(P(code));
+	UNUSED(P(data));
+	UNUSED(P(length));
 	return E_NOROUTINE;
 }
 
 
-static int16 do_ICMP_handler(struct ICMP_handler_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_ICMP_handler(struct ICMP_handler_param p)
+#else
+static int16 __CDECL do_ICMP_handler(int16 cdecl (*handler) (IP_DGRAM *), int16 install_code)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handler));
+	UNUSED(P(install_code));
 	return FALSE;
 }
 
 
-static void do_ICMP_discard(struct ICMP_discard_param p)
+#if TPL_STRUCT_ARGS
+static void __CDECL do_ICMP_discard(struct ICMP_discard_param p)
+#else
+static void __CDECL do_ICMP_discard(IP_DGRAM *datagram)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(datagram));
 }
 
 
-static int16 do_TCP_info(struct TCP_info_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_TCP_info(struct TCP_info_param p)
+#else
+static int16 __CDECL do_TCP_info(int16 handle, TCPIB *buffer)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
+	UNUSED(P(buffer));
 	return E_BADHANDLE;
 }
 
 
-static int16 do_cntrl_port(struct cntrl_port_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_cntrl_port(struct cntrl_port_param p)
+#else
+static int16 __CDECL do_cntrl_port(const char *name, uint32 arg, int16 code)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(name));
+	UNUSED(P(arg));
+	UNUSED(P(code));
 	return E_NODATA;
 }
 
 
-static int16 do_UDP_info(struct UDP_info_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_UDP_info(struct UDP_info_param p)
+#else
+static int16 __CDECL do_UDP_info(int16 handle, UDPIB *buffer)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
+	UNUSED(P(buffer));
 	return E_BADHANDLE;
 }
 
 
-static int16 do_RAW_open(struct RAW_open_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_RAW_open(struct RAW_open_param p)
+#else
+static int16 __CDECL do_RAW_open(uint32 rhost)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(rhost));
 	return E_NOROUTINE;
 }
 
 
-static int16 do_RAW_close(struct RAW_close_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_RAW_close(struct RAW_close_param p)
+#else
+static int16 __CDECL do_RAW_close(int16 handle)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
 	return E_BADHANDLE;
 }
 
 
-static int16 do_RAW_out(struct RAW_out_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_RAW_out(struct RAW_out_param p)
+#else
+static int16 __CDECL do_RAW_out(int16 handle, const void *data, int16 dlen, uint32 dest_ip)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
+	UNUSED(P(data));
+	UNUSED(P(dlen));
+	UNUSED(P(dest_ip));
 	return E_BADHANDLE;
 }
 
 
-static int16 do_CN_setopt(struct CN_setopt_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CN_setopt(struct CN_setopt_param p)
+#else
+static int16 __CDECL do_CN_setopt(int16 handle, int16 opt_id, const void *optval, int16 optlen)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
+	UNUSED(P(opt_id));
+	UNUSED(P(optval));
+	UNUSED(P(optlen));
 	return E_NOROUTINE;
 }
 
 
-static int16 do_CN_getopt(struct CN_getopt_param p)
+#if TPL_STRUCT_ARGS
+static int16 __CDECL do_CN_getopt(struct CN_getopt_param p)
+#else
+static int16 __CDECL do_CN_getopt(int16 handle, int16 opt_id, void *optval, int16 *optlen)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
+	UNUSED(P(opt_id));
+	UNUSED(P(optval));
+	UNUSED(P(optlen));
 	return E_NOROUTINE;
 }
 
 
-static void do_CNfree_NDB(struct CNfree_NDB_param p)
+#if TPL_STRUCT_ARGS
+static void __CDECL do_CNfree_NDB(struct CNfree_NDB_param p)
+#else
+static void __CDECL do_CNfree_NDB(int16 handle, NDB *block)
+#endif
 {
-	UNUSED(p);
+	UNUSED(P(handle));
+	UNUSED(P(block));
 }
 
 
@@ -575,7 +738,7 @@ static TPL trampoline =
 	noop
 };
 
-static DRV_HDR *
+static DRV_HDR *__CDECL
 do_get_dftab (const char *tpl_name)
 {
 	/* we only have the one, so this is pretty easy... ;)
@@ -586,7 +749,7 @@ do_get_dftab (const char *tpl_name)
 	return (DRV_HDR *) &trampoline;
 }
 
-static int16
+static int16 __CDECL
 do_ETM_exec (const char *tpl_name)
 {
 	UNUSED(tpl_name);
