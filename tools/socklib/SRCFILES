@@ -1,0 +1,39 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = fxattr.h pcerrno.h stsocket.
+COBJS = \
+	herror.c \
+	accept.c \
+	bind.c \
+	connect.c \
+	sockglob.c \
+	gethost.c \
+	sockname.c \
+	peername.c \
+	inetaddr.c \
+	makeaddr.c \
+	listen.c \
+	res_comp.c \
+	recv.c \
+	res_init.c \
+	res_mkq.c \
+	res_quer.c \
+	res_send.c \
+	send.c \
+	sendmsg.c \
+	sendto.c \
+	socket.c \
+	hostname.c \
+	recvfrom.c \
+	recvmsg.c \
+	shutdown.c \
+	setsock.c \
+	getsock.c \
+	poll.c \
+	select.c \
+	sncpy.c \
+	unx2dos.c \
+	$(empty)
+
+SRCFILES = $(HEADER) $(COBJS)
