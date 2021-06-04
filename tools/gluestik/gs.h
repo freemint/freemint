@@ -54,9 +54,6 @@ typedef unsigned char	uchar;
 # define str(x)		_stringify (x)
 # define _stringify(x)	#x
 
-# define FREECOOKIE	0x46524545L	/* FREE */
-# define JAR		0x5A0
-
 /* struct for Pmsg() */
 typedef struct
 {
@@ -68,5 +65,6 @@ typedef struct
 # define FLG_SEM		0x4753464CUL	/* 'GSFL' */
 # define GS_GETHOSTBYNAME	0x6d676d11UL
 
+extern short magix;
 
 # endif /* _gs_h */

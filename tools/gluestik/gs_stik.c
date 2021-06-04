@@ -25,9 +25,12 @@
  */
 
 # include <string.h>
-# include <osbind.h>
-# include <mintbind.h>
 # include <netinet/in.h>
+# ifdef __PUREC__
+# include <tos.h>
+#else
+# include <mint/mintbind.h>
+#endif
 
 # include "gs_stik.h"
 
@@ -686,8 +689,8 @@ static long noop(void)
 static TPL trampoline =
 {
 	TRANSPORT_DRIVER,
-	"Scott Bigham, Frank Naumann (GlueSTiK\277 v" str (VER_MAJOR) "." str (VER_MINOR) ")",
-	"01.13",
+	"S. Bigham, F.N. V.P. T.O. (GlueSTiK\277 v" str(VER_MAJOR) "." str(VER_MINOR) ")",
+	"01." str (VER_MINOR),
 	do_KRmalloc,
 	do_KRfree,
 	do_KRgetfree,

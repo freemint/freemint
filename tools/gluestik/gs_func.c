@@ -216,7 +216,22 @@ gs_accept (int fd)
 	}
 	
 	/* switch to non-blocking mode */
-	ret = Fcntl (gs->sock_fd, fdflags | O_NDELAY, F_SETFL);
+	fdflags |= O_NDELAY;
+	if (magix)
+	{
+		/*
+		 * original code from gluestik for MagicNet,
+		 * passing the address of the flags instead of the value.
+		 * Has to be verified whether that is a bug,
+		 * or whether sockets.dev really works this way.
+		 */
+		ret = Fcntl (gs->sock_fd, (long)&fdflags, F_SETFL);
+		if (ret >= 0)
+			ret = Fcntl (gs->sock_fd, 0L, F_GETFL);
+	} else
+	{
+		ret = Fcntl (gs->sock_fd, fdflags, F_SETFL);
+	}
 	if (ret < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_SETFL) returns %li", ret));
@@ -226,7 +241,15 @@ gs_accept (int fd)
 	in_fd = accept (gs->sock_fd, (struct sockaddr *) &addr, &addr_size);
 	
 	/* restore flags */
-	ret = Fcntl (gs->sock_fd, fdflags, F_SETFL);
+	fdflags &= ~O_NDELAY;
+	if (magix)
+	{
+		/* see comment above */
+		ret = Fcntl (gs->sock_fd, (long)&fdflags, F_SETFL);
+	} else
+	{
+		ret = Fcntl (gs->sock_fd, fdflags, F_SETFL);
+	}
 	if (ret < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_SETFL) returns %li", ret));
@@ -375,7 +398,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	
 	if (rhost == 0)
 	{
-		retval = listen (sock_fd, 5);
+		retval = listen (sock_fd, magix ? 1 : 5);
 		if (retval < 0)
 		{
 			DEBUG (("gs_connect: listen() returns %i (%i)", retval, errno));
@@ -649,6 +672,11 @@ gs_canread (int fd)
 	}
 	
 	DEBUG (("gs_canread: returns %li", n));
+	/*
+	 * seems to be a precaution to not overflow range of a short?
+	 */
+	if (magix && n > 8192)
+		return 8192;
 	return n;
 }
 
@@ -903,9 +931,7 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	static volatile char lock = 0;
 	
 	struct hostent *host = NULL;
-	PMSG pmsg;
 	char **raddr;
-	long r;
 	int ret;
 	
 	
@@ -919,23 +945,34 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	
 	
 	strcpy (buf, dn);
-	pmsg.msg1 = 1;
-	pmsg.msg2 = (long) buf;
-	
-	DEBUG (("gs_resolve: Wait for Pmsg receive on [%s]!", buf));
-	r = Pmsg (2, GS_GETHOSTBYNAME, &pmsg);
-	DEBUG (("gs_resolve: Pmsg received = %li, %lx!", r, pmsg.msg2));
-	
-	if (r != 0)
+	if (magix)
 	{
-		DEBUG (("gs_resolve: Pmsg() returns %li", r));
-		
-		ret = gs_xlate_error (-(int)r, "gs_resolve");
-		goto out;
+		/* MagiCNet: running as a TSR; do the query right away */
+		host = (struct hostent *) gethostbyname(buf);
+	} else
+	{
+		/* MiNTNet: wake up the daemon to do the work */
+		PMSG pmsg;
+		long r;
+
+		pmsg.msg1 = 1;
+		pmsg.msg2 = (long) buf;
+
+		DEBUG (("gs_resolve: Wait for Pmsg receive on [%s]!", buf));
+		r = Pmsg (2, GS_GETHOSTBYNAME, &pmsg);
+		DEBUG (("gs_resolve: Pmsg received = %li, %lx!", r, pmsg.msg2));
+
+		if (r != 0)
+		{
+			DEBUG (("gs_resolve: Pmsg() returns %li", r));
+
+			ret = gs_xlate_error (-(int)r, "gs_resolve");
+			goto out;
+		}
+		host = (struct hostent *) pmsg.msg2;
 	}
-	
-	DEBUG (("gs_resolve: gethostbyname() returns %lx", pmsg.msg2));
-	host = (struct hostent *) pmsg.msg2;
+
+	DEBUG (("gs_resolve: gethostbyname() returns %lx", (unsigned long)host));
 	if (!host)
 	{
 		switch (h_errno)

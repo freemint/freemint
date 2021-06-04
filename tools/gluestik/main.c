@@ -77,19 +77,25 @@
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
-	"\033p GlueSTiK\277 STiK emulator for MiNTnet version " \
+	"\033p GlueSTiK\277 STiK emulator for MiNTnet/MagiCNet version " \
 	MSG_VERSION " \033q\r\n"
 
+/*
+ * If you change anything here,
+ * also take a look at the TPL trampoline in gs_stik.c
+ */
 # define MSG_GREET	\
 	"Redirect Daemon\r\n" \
 	"\275 1996-98 Scott Bigham.\r\n" \
-	"\275 2000-2010 Frank Naumann.\r\n"
+	"\275 2000-2010 Frank Naumann.\r\n" \
+	"\275 Mar 22 2002 Vassilis Papathanassiou.\r\n" \
+	"\275 2021 Thorsten Otto.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - alpha! \033q\7\r\n"
 
-# define MSG_MINT	\
-	"\7This program requires FreeMiNT!\r\n"
+# define MSG_MINT_OR_MAGIC	\
+	"\7This program requires FreeMiNT or MagicNet!\r\n"
 
 # define MSG_ALREADY	\
 	"\7There is an active STiK Cookie!\r\n"
@@ -98,6 +104,8 @@
 	"\7Sorry, driver NOT installed - initialization failed!\r\n\r\n"
 
 static int opt_force_install = 0;
+short magix;
+
 
 static void
 cleanup (void)
@@ -108,16 +116,72 @@ cleanup (void)
 }
 
 /* ------------------
+   | Get cookie |
+   ------------------ */
+static long *get_jar(void)
+{
+	return (long *)Setexc(0x5a0 / 4, (void (*)(void))-1);
+}
+
+
+static int get_cookie(long id, long *value)
+{
+	long ret;
+
+	ret = Ssystem (S_GETCOOKIE, id, (long)value);
+	if (ret == 0)
+		return 1;
+	if (ret == -32)
+	{
+		/* have to do it the hard way */
+		long *jar;
+
+		jar = get_jar();
+		if (jar != NULL)
+		{
+			while (jar[0] != 0)
+			{
+				if (jar[0] == id)
+				{
+					if (value)
+						*value = *++jar;
+					return 1;
+				}
+				jar += 2;
+			}
+		}
+	}
+	return 0;
+}
+
+
+/* ------------------
    | Remove cookie |
    ------------------ */
 static void
 uninstall_cookie (void)
 {
-# ifndef S_DELCOOKIE
-# define S_DELCOOKIE	26
-# endif
+	if (Ssystem(S_DELCOOKIE, C_STiK, 0L) == -32)
+	{
+		/* have to do it the hard way */
+		long *jar;
 
-	Ssystem(S_DELCOOKIE, C_STiK, 0L);
+		jar = get_jar();
+		while (jar[0] != 0)
+		{
+			if (jar[0] == C_STiK)
+			{
+				while (jar[0] != 0)
+				{
+					jar[0] = jar[2];
+					jar[1] = jar[3];
+					jar += 2;
+				}
+				return;
+			}
+			jar += 2;
+		}
+	}
 }
 
 /* ------------------
@@ -127,28 +191,46 @@ static int
 install_cookie (void)
 {
 	long dummy;
-	
-	if (Ssystem (-1, 0, 0) == -32)
-	{
-		(void) Cconws (MSG_MINT);
-		return 1;
-	}
+	long ret;
+	long *jar;
+	int size;
 
 	if (opt_force_install) {
 		uninstall_cookie();
 	}
-	if (Ssystem (S_GETCOOKIE, C_STiK, (long)&dummy) == 0)
+	if (get_cookie(C_STiK, &dummy))
 	{
 		(void) Cconws (MSG_ALREADY);
 		return 1;
 	}
 	
-	if (Ssystem (S_SETCOOKIE, C_STiK, (long) &stik_driver) != 0)
-	{
+	ret = Ssystem (S_SETCOOKIE, C_STiK, (long) &stik_driver);
+	if (ret == 0)
+		return 0;
+	if (ret != -32)
 		return 1;
+
+	/* have to do it the hard way */
+	jar = get_jar();
+	if (jar == NULL)
+		return 1;
+	size = 1;
+	while (jar[0] != 0)
+	{
+		jar += 2;
+		size++;
 	}
-	
-	return 0;
+	if ((unsigned long)size < jar[1])
+	{
+		jar[2] = 0;
+		jar[3] = jar[1];
+		jar[0] = C_STiK;
+		jar[1] = (long) &stik_driver;
+		return 0;
+	}
+
+	/* Note: no attempt made here to enlarge the cookiejar */
+	return 1;
 }
 
 
@@ -171,9 +253,6 @@ end (long sig)
 }
 
 
-/* ------------------
-   | Remove cookie |
-   ------------------ */
 static void 
 parse_cmdline(void)
 {
@@ -192,18 +271,8 @@ int
 main (void)
 {
 	long r;
+	long value;
 	
-	r = Pfork();
-	if (r < 0)
-	{
-		/* fork failed */
-		return 1;
-	}
-	if (r > 0)
-	{
-		/* parent can exit */
-		return 0;
-	}
 	parse_cmdline();
 
 	(void) Cconws (MSG_BOOT);
@@ -212,7 +281,35 @@ main (void)
 	(void) Cconws (MSG_ALPHA);
 # endif
 	(void) Cconws ("\r\n");
-	
+
+	if (get_cookie(C_MiNT, &value))
+	{
+		magix = 0;
+	} else if (get_cookie(C_MagX, &value))
+	{
+		magix = 1;
+	} else
+	{
+		(void) Cconws(MSG_MINT_OR_MAGIC);
+		return 1;
+	}
+
+	if (!magix)
+	{
+		/* for MiNT, daemonize */
+		r = Pfork();
+		if (r < 0)
+		{
+			/* fork failed */
+			return 1;
+		}
+		if (r > 0)
+		{
+			/* parent can exit */
+			return 0;
+		}
+	}
+
 	if (init_stik_if() == 0 ||
 		load_config_file() == 0 ||
 		init_mem() == 0 ||
@@ -221,9 +318,21 @@ main (void)
 		(void) Cconws (MSG_FAILURE);
 		
 		cleanup ();
-		exit (1);
+		return 1;
 	}
 	
+	if (magix)
+	{
+		/* for MagiC, run as TSR */
+		Ptermres(-1, 0);
+		/* not reached */
+		return 1;
+	}
+
+	/*
+	 * daemon process for MiNT.
+	 * All we do here is to wait for gethostbyname requests
+	 */
 	Psignal (SIGALRM, nothing);
 	Psignal (SIGTERM, end);
 	Psignal (SIGQUIT, end);
