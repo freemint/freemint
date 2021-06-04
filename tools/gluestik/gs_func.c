@@ -133,7 +133,7 @@ gs_open (void)
 			if (!gs)
 				return E_NOMEM;
 			
-			bzero (gs, sizeof (*gs));
+			memset(gs, 0, sizeof (*gs));
 			gs->flags = GS_NOSOCKET;
 			
 			table [fd] = gs;
@@ -896,7 +896,7 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	
 	
 	while (lock)
-		usleep (100000L);
+		Syield();
 	
 	lock = 1;
 	
