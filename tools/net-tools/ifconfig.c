@@ -514,7 +514,6 @@ main (int argc, char *argv[])
 				struct ifreq ifr;
 				struct sockaddr_hw *shw = (struct sockaddr_hw *) &ifr.ifr_ifru.ifru_hwaddr;
 				char hwaddr[6];
-				int res;
 
 				NEXTARG(i);
 
@@ -527,9 +526,9 @@ main (int argc, char *argv[])
 							(unsigned char) hwaddr[3], (unsigned char) hwaddr[4], (unsigned char) hwaddr[5]);
 					strcpy (ifr.ifr_name, ifname);
 					ifr.ifr_addr.sa_family = AF_INET;
-					shw->shw_len = sizeof(hwaddr);
+					shw->shw_len = (unsigned short)sizeof(hwaddr);
 					memcpy(shw->shw_addr, hwaddr, sizeof(hwaddr));
-					if ((res = ioctl (sock, SIOCSIFHWADDR, &ifr)) < 0)
+					if (ioctl (sock, SIOCSIFHWADDR, &ifr) < 0)
 						fprintf(stderr, "interface does not support SIOCSIFHWADDR ioctl\n");
 				}
 			}
