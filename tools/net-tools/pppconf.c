@@ -67,7 +67,7 @@ map2char (long *map, int n)
 	return buf;
 }
 
-static char *
+static const char *
 flags2char (long flags)
 {
 	static char buf[200];
@@ -94,8 +94,8 @@ flags2char (long flags)
 	return buf;
 }
 
-static char *
-getdev (char *ifname)
+static const char *
+getdev (const char *ifname)
 {
 	extern int __libc_unix_names;  /* Secret MiNTLib feature.  */
 	struct iflink ifl;
@@ -116,20 +116,20 @@ getdev (char *ifname)
 	if (!__libc_unix_names)
 		_dos2unx (ifl.device, device, PATH_MAX);
 	else
-		strcpy (ifl.device, device);
+		strcpy (device, ifl.device);
 
 	close (sock);
 	return device;
 }
 
 static void
-printconf (char *ifname)
+printconf (const char *ifname)
 {
 	long mtu, mru;
 	long flags;
 	long xmap[8];
 	long rmap[1];
-	char *device;
+	const char *device;
 
 	ioctl (pppfd, PPPIOCGMTU, &mtu);
 	ioctl (pppfd, PPPIOCGMRU, &mru);
