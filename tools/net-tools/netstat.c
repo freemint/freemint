@@ -60,7 +60,7 @@ static short show_all_opt = 0;
  *	UNIX domain stuff.
  */
 
-static char *
+static const char *
 un_decode_state (short state)
 {
 	switch (state)
@@ -87,7 +87,7 @@ un_decode_state (short state)
 	return "UNKNOWN";
 }
 
-static char *
+static const char *
 un_decode_type (short type)
 {
 	switch (type)
@@ -111,7 +111,7 @@ un_decode_type (short type)
 	return "UNKNOWN";
 }
 
-static char *
+static const char *
 un_decode_flags (short flags)
 {
 	static char strflags[20];
@@ -134,7 +134,7 @@ static void
 show_unix (void)
 {
 	struct unix_info info;
-	char *proto;
+	const char *proto;
 	int fd, r;
 
 	fd = open (UNIX_DEVICE, O_RDONLY);
@@ -187,7 +187,7 @@ show_unix (void)
  * INET domain stuff.
  */
 
-static char *
+static const char *
 in_decode_state (short state)
 {
 	switch (state)
@@ -230,34 +230,37 @@ in_decode_state (short state)
 }
 
 static char *
-in_decode_addr (struct sockaddr_in *in, char *proto)
+in_decode_addr (struct sockaddr_in *in, const char *proto)
 {
 	char buf[40];
 	struct servent *sent;
 
 	if (in->sin_port == 0)
-		return "*:*";
-
-	sent = getservbyport (in->sin_port, proto);
-	if (sent)
 	{
-		sprintf (buf, "%s:%s",
-			in->sin_addr.s_addr == INADDR_ANY
-				? "*" : inet_ntoa (in->sin_addr),
-			sent->s_name);
-	}
-	else
+		strcpy(buf, "*:*");
+	} else
 	{
-		sprintf (buf, "%s:%d",
-			in->sin_addr.s_addr == INADDR_ANY
-				? "*" : inet_ntoa (in->sin_addr),
-			in->sin_port);
+		sent = getservbyport (in->sin_port, proto);
+		if (sent)
+		{
+			sprintf (buf, "%s:%s",
+				in->sin_addr.s_addr == INADDR_ANY
+					? "*" : inet_ntoa (in->sin_addr),
+				sent->s_name);
+		}
+		else
+		{
+			sprintf (buf, "%s:%d",
+				in->sin_addr.s_addr == INADDR_ANY
+					? "*" : inet_ntoa (in->sin_addr),
+				in->sin_port);
+		}
 	}
 
 	return strdup (buf);
 }
 
-static char *
+static const char *
 in_decode_proto (short proto)
 {
 	switch (proto)
