@@ -625,7 +625,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 				}
 				case SS_ISCONNECTED:
 				{
-					/* Connectionless sockets can be connected serveral
+					/* Connectionless sockets can be connected several
 					 * times. So their state must always be
 					 * SS_ISUNCONNECTED.
 					 */

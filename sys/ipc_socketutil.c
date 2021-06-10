@@ -109,7 +109,7 @@ so_create (struct socket **resultso, short domain, short type, short protocol)
 
 	if (!ops)
 	{
-		DEBUG (("sp_create: domain %i not supported", domain));
+		DEBUG (("so_create: domain %i not supported", domain));
 		return EAFNOSUPPORT;
 	}
 
