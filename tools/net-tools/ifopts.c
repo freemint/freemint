@@ -154,6 +154,7 @@ opt_set (char *ifname, struct ifopt *ifo, int sock)
 		switch (errno)
 		{
 		case EINVAL:
+		case ENOSYS:
 			fprintf (stderr, "%s:%d: option '%s' not supported on "
 				"interface %s\n",
 				file, line, ifo->option, ifname);
