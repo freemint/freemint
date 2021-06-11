@@ -33,7 +33,7 @@
 #endif
 
 #ifndef MIN
-#define MIN(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
 #define ETH_CRC_LEN     (4)
