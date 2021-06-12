@@ -19,8 +19,6 @@
 # include "timer.h"
 
 
-static void	inet_autobind	(struct in_data *);
-
 static long	inet_attach	(struct socket *, short);
 static long	inet_dup	(struct socket *, struct socket *);
 static long	inet_abort	(struct socket *, enum so_state);

@@ -275,59 +275,58 @@ short
 chksum (void *buf, short nwords)
 {
 	ulong sum = 0;
-	
-	__asm__
-	(
-		"clrl	d0		\n\t"
+
+	__asm__(
+		"\tclrl	d0\n"
 #ifdef __mcoldfire__
-		"mvzw	%2, d1		\n\t"
-		"lsrl	#1, d1		\n\t"	/* # of longs in buf */
+		"\tmvzw	%2, d1\n"
+		"\tlsrl	#1, d1\n"	/* # of longs in buf */
 #else
-		"movew	%2, d1		\n\t"
-		"lsrw	#1, d1		\n\t"	/* # of longs in buf */
+		"\tmovew	%2, d1\n"
+		"\tlsrw	#1, d1\n"	/* # of longs in buf */
 #endif
-		"bcc	l1		\n\t"	/* multiple of 4 ? */
+		"\tbcc	l1\n"		/* multiple of 4 ? */
 #ifdef __mcoldfire__
-		"mvz.w	%1@+, d2	\n\t"
-		"addl	d2, %0		\n\t"	/* no, add in extra word */
-		"addxl	d0, %0		\n"
+		"\tmvz.w	%1@+, d2\n"
+		"\taddl	d2, %0\n"	/* no, add in extra word */
+		"\taddxl	d0, %0\n"
 #else
-		"addw	%1@+, %0	\n\t"	/* no, add in extra word */
-		"addxw	d0, %0		\n"
+		"\taddw	%1@+, %0\n"	/* no, add in extra word */
+		"\taddxw	d0, %0\n"
 #endif
-		"l1:			\n\t"
+		"l1:\n"
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n\t"	/* decrement for dbeq */
+		"\tsubql	#1, d1\n"	/* decrement for dbeq */
 #else
-		"subqw	#1, d1		\n\t"	/* decrement for dbeq */
+		"\tsubqw	#1, d1\n"	/* decrement for dbeq */
 #endif
-		"bmi	l3		\n"
-		"l2:			\n\t"
-		"addl	%1@+, %0	\n\t"
-		"addxl	d0, %0		\n\t"
+		"\tbmi	l3\n"
+		"l2:\n"
+		"\taddl	%1@+, %0\n"
+		"\taddxl	d0, %0\n"
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n\t"
-		"bpls	l2		\n"	/* loop over all longs */
+		"\tsubql	#1, d1\n"
+		"\tbpls	l2\n"	/* loop over all longs */
 #else
-		"dbra	d1, l2		\n"	/* loop over all longs */
+		"\tdbra	d1, l2\n"		/* loop over all longs */
 #endif
-		"l3:			\n\t"
+		"l3:\n"
 #ifdef __mcoldfire__
-		"swap	%0		\n\t"	/* convert to short */
-		"mvzw	%0, d1		\n\t"
-		"clr.w	%0		\n\t"
-		"swap	%0		\n\t"
-		"addl	d1, %0		\n\t"
-		"swap	%0		\n\t"
-		"mvzw	%0, d1		\n\t"
-		"clr.w	%0		\n\t"
-		"swap	%0		\n\t"
-		"addl	d1, %0		\n\t"
+		"\tswap	%0\n"		/* convert to short */
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+		"\tswap	%0\n"
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
 #else
-		"movel	%0, d1		\n\t"	/* convert to short */
-		"swap	d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+		"\tmovel	%0, d1\n"	/* convert to short */
+		"\tswap	d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
 #endif
 		: "=d"(sum), "=a"(buf)
 		: "g"(nwords), "1"(buf), "0"(sum)
@@ -336,7 +335,7 @@ chksum (void *buf, short nwords)
 #else
 		: "d0", "d1"
 #endif
-	);
+		);
 	
 	return (short)(~sum & 0xffff);
 }

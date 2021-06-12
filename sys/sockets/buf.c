@@ -26,8 +26,6 @@
 # define BUF_SIZE(b)		(BUF_BLOCK_SIZE >> (b))
 
 
-static void	gc		(PROC *proc, long arg);
-static void	addmem		(PROC *proc, long arg);
 static short	buf_add_block	(void);
 static short	buf_free_block	(void);
 

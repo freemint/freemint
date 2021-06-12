@@ -12,11 +12,6 @@
 # include "mint/time.h"
 
 
-static void	update_head	(void);
-static void	check_events	(PROC *proc, long arg2);
-static void	event_insert	(struct event *, long);
-static short	event_remove	(struct event *);
-
 static struct event *allevents = 0;
 static struct timeout *nexttimeout = 0;
 

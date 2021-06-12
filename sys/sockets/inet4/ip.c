@@ -17,9 +17,6 @@
 # include "timer.h"
 
 
-static BUF *	ip_brdcst_copy	(BUF *, struct netif *, struct route *, short);
-static long	ip_do_opts	(struct ip_dgram *);
-
 static long	ip_frag		(BUF *, struct netif *, ulong, short);
 
 

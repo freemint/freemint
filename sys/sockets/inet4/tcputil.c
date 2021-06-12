@@ -14,8 +14,6 @@
 # include "tcpout.h"
 
 
-static void tcb_deltimers (struct tcb *);
-
 long
 tcp_isn (void)
 {
