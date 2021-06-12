@@ -518,157 +518,151 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	/*
 	 * Pseudo IP header checksum
 	 */
-	__asm__
-	(
-		"moveq	#0, d0		\n\t"
-		"movel	%3, %0		\n\t"
-		"addl	%1, %0		\n\t"
-		"addxl	%2, %0		\n\t"
+	__asm__(
+		"\tmoveq	#0, d0		\n"
+		"\tmovel	%3, %0		\n"
+		"\taddl	%1, %0		\n"
+		"\taddxl	%2, %0		\n"
 #ifdef __mcoldfire__
-		"mvzw	%4, d1		\n\t"
-		"addxl	d1, %0		\n\t"
-		"addxl	d0, %0		\n\t"
+		"\tmvzw	%4, d1		\n"
+		"\taddxl	d1, %0		\n"
+		"\taddxl	d0, %0		\n"
 #else
-		"addxw	%4, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+		"\taddxw	%4, %0		\n"
+		"\taddxw	d0, %0		\n"
 #endif
-		: "=d"(sum)
-		: "g"(srcadr), "d"(dstadr), "i"(IPPROTO_UDP),
-		  "d"(len), "0"(sum)
+		: "=d"(sum):"g"(srcadr),
+		    "d"(dstadr), "i"(IPPROTO_UDP), "d"(len), "0"(sum)
 #ifdef __mcoldfire__
-		: "d0", "d1"
+		: "d0", "d1", "cc"
 #else
-		: "d0"
+		: "d0", "cc"
 #endif
-	);
-	
+		);
+
 	/*
 	 * UDP datagram & header checksum
 	 */
-	__asm__
-	(
-		"clrl	d0		\n\t"
+	__asm__(
+		"\tclrl	d0		\n"
 #ifdef __mcoldfire__
-		"mvzw	%2, d1		\n\t"
-		"lsrl	#4, d1		\n\t"
+		"\tmvzw	%2, d1		\n"
+		"\tlsrl	#4, d1		\n"
 #else
-		"movew	%2, d1		\n\t"
-		"lsrw	#4, d1		\n\t"
+		"\tmovew	%2, d1	\n"
+		"\tlsrw	#4, d1		\n"
 #endif
-		"beq	4f		\n\t"
+		"\tbeq	4f		\n"
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n"	/* clears X bit */
+		"\tsubql	#1, d1\n"	/* clears X bit */
 #else
-		"subqw	#1, d1		\n"	/* clears X bit */
+		"\tsubqw	#1, d1\n"		/* clears X bit */
 #endif
-		"1:			\n\t"
+		"1:\n"
 #ifdef __mcoldfire__
-		"moveml	%4@, d0/d2-d4	\n\t"	/* 16 byte loop */
-		"lea	%4@(16), %4	\n\t"
+		"\tmoveml	%4@, d0/d2-d4\n"	/* 16 byte loop */
+		"\tlea	%4@(16), %4	\n"
 #else
-		"moveml	%4@+, d0/d2-d4	\n\t"	/* 16 byte loop */
+		"\tmoveml	%4@+, d0/d2-d4\n"	/* 16 byte loop */
 #endif
-		"addxl	d0, %0		\n\t"	/* ~5 clock ticks per byte */
-		"addxl	d2, %0		\n\t"
-		"addxl	d3, %0		\n\t"
-		"addxl	d4, %0		\n\t"
+		"\taddxl	d0, %0\n"	/* ~5 clock ticks per byte */
+		"\taddxl	d2, %0\n"
+		"\taddxl	d3, %0\n"
+		"\taddxl	d4, %0\n"
 #ifdef __mcoldfire__
-		"moveq	#0, d0		\n\t"   /* X not affected */
-		"addxl	d0, %0		\n\t"
-		"subql	#1, d1		\n\t"   /* X cloberred */
-		"bpls	1b		\n\t"   /* X not affected */
+		"\tmoveq	#0, d0\n"	/* X not affected */
+		"\taddxl	d0, %0\n"
+		"\tsubql	#1, d1\n"	/* X cloberred */
+		"\tbpls	1b		\n"		/* X not affected */
 #else
-		"dbra	d1, 1b		\n\t"
-		"clrl	d0		\n\t"
-		"addxl	d0, %0		\n"
+		"\tdbra	d1, 1b\n"
+		"\tclrl	d0\n"
+		"\taddxl	d0, %0\n"
 #endif
-		"4:			\n\t"
-		"movew	%2, d1		\n\t"
+		"4:\n"
+		"\tmovew	%2, d1\n"
 #ifdef __mcoldfire__
-		"andil	#0xf, d1	\n\t"
-		"lsrl	#2, d1		\n\t"
+		"\tandil	#0xf, d1\n"
+		"\tlsrl	#2, d1\n"
 #else
-		"andiw	#0xf, d1	\n\t"
-		"lsrw	#2, d1		\n\t"
+		"\tandiw	#0xf, d1\n"
+		"\tlsrw	#2, d1\n"
 #endif
-		"beq	2f		\n\t"
+		"\tbeq	2f\n"
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n"
+		"\tsubql	#1, d1\n"
 #else
-		"subqw	#1, d1		\n"
+		"\tsubqw	#1, d1\n"
 #endif
-		"3:			\n\t"
-		"addl	%4@+, %0	\n\t"	/* 4 byte loop */
-		"addxl	d0, %0		\n\t"	/* ~10 clock ticks per byte */
+		"3:\n"
+		"\taddl	%4@+, %0\n"	/* 4 byte loop */
+		"\taddxl	d0, %0\n"	/* ~10 clock ticks per byte */
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n\t"
-		"bpls	3b		\n\t"
+		"\tsubql	#1, d1\n" "bpls	3b		\n\t"
 #else
-		"dbra	d1, 3b		\n"
+		"\tdbra	d1, 3b\n"
 #endif
-		"2:			\n\t"
+		"2:\n"
 		: "=d"(sum), "=a"(dgram)
 		: "g"(len), "0"(sum), "1"(dgram)
-		: "d0", "d1", "d2", "d3", "d4"
-	);
-	
+		: "d0", "d1", "d2", "d3", "d4", "cc");
+
 	/*
 	 * Add in extra word, byte (if len not multiple of 4).
 	 * Convert to short
 	 */
-	__asm__
-	(
-		"clrl	d0		\n\t"
-		"btst	#1, %2		\n\t"
-		"beq	5f		\n\t"
+	__asm__(
+		"\tclrl	d0\n"
+		"\tbtst	#1, %2\n"
+		"\tbeq	5f\n"
 #ifdef __mcoldfire__
-		"mvz.w	%4@+, d2	\n\t"
-		"addl	d2, %0		\n\t"	/* no, add in extra word */
-		"addxl	d0, %0		\n"
+		"\tmvz.w	%4@+, d2\n"
+		"\taddl	d2, %0\n"	/* no, add in extra word */
+		"\taddxl	d0, %0\n"
 #else
-		"addw	%4@+, %0	\n\t"	/* extra word */
-		"addxw	d0, %0		\n"
+		"\taddw	%4@+, %0\n"	/* extra word */
+		"\taddxw	d0, %0\n"
 #endif
-		"5:			\n\t"
-		"btst	#0, %2		\n\t"
-		"beq	6f		\n\t"
+		"5:\n"
+		"\tbtst	#0, %2\n"
+		"\tbeq	6f\n"
 #ifdef __mcoldfire__
-		"mvzb	%4@+, d1	\n\t"	/* extra byte */
-		"lsll	#8, d1		\n\t"
-		"addl	d1, %0		\n\t"
-		"addxl	d0, %0		\n"
+		"\tmvzb	%4@+, d1\n"	/* extra byte */
+		"\tlsll	#8, d1\n"
+		"\taddl	d1, %0\n"
+		"\taddxl	d0, %0\n"
 #else
-		"moveb	%4@+, d1	\n\t"	/* extra byte */
-		"lslw	#8, d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n"
+		"\tmoveb	%4@+, d1\n"	/* extra byte */
+		"\tlslw	#8, d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
 #endif
-		"6:			\n\t"
+		"6:\n\t"
 #ifdef __mcoldfire__
-		"swap	%0		\n\t"	/* convert to short */
-		"mvzw	%0, d1		\n\t"
-		"clr.w	%0		\n\t"
-		"swap	%0		\n\t"
-		"addl	d1, %0		\n\t"
-		"swap	%0		\n\t"
-		"mvzw	%0, d1		\n\t"
-		"clr.w	%0		\n\t"
-		"swap	%0		\n\t"
-		"addl	d1, %0		\n\t"
+		"\tswap	%0		\n"		/* convert to short */
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+		"\tswap	%0\n"
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
 #else
-		"movel	%0, d1		\n\t"	/* convert to short */
-		"swap	d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+		"\tmovel	%0, d1\n"	/* convert to short */
+		"\tswap	d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
 #endif
 		: "=d"(sum), "=a"(dgram)
 		: "d"(len), "0"(sum), "1"(dgram)
 #ifdef __mcoldfire__
-		: "d0", "d1", "d2"
+		: "d0", "d1", "d2", "cc"
 #else
-		: "d0", "d1"
+		: "d0", "d1", "cc"
 #endif
-	);
-	
+		);
+
 	return (short)(~sum & 0xffff);
 }

@@ -45,6 +45,7 @@ build: $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET) $(LIBINET4TARGET)
 	$(CC) $(LD) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
+	$(STRIP) $@
 
 $(OBJS): ../INET4DEFS
 
