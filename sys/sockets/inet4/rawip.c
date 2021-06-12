@@ -87,6 +87,8 @@ rip_attach (struct in_data *data)
 static long
 rip_abort (struct in_data *data, short ostate)
 {
+	UNUSED(data);
+	UNUSED(ostate);
 	return 0;
 }
 
@@ -100,6 +102,8 @@ rip_detach (struct in_data *data, short wait)
 static long
 rip_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
+	UNUSED(addrlen);
+	UNUSED(nonblock);
 	data->dst.addr = ip_dst_addr (addr->sin_addr.s_addr);
 	data->dst.port = 0;
 	data->flags |= IN_ISCONNECTED;
@@ -109,6 +113,9 @@ rip_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen
 static long
 rip_accept (struct in_data *data, struct in_data *newdata, short nonblock)
 {
+	UNUSED(data);
+	UNUSED(newdata);
+	UNUSED(nonblock);
 	return EOPNOTSUPP;
 }
 
@@ -121,7 +128,7 @@ rip_ioctl (struct in_data *data, short cmd, void *buf)
 	{
 		case FIONREAD:
 		{
-			if (data->sock->flags & SO_CANTRCVMORE || data->err)
+			if ((data->sock->flags & SO_CANTRCVMORE) || data->err)
 			{
 				*(long *) buf = UNLIMITED;
 				return 0;
@@ -157,7 +164,7 @@ rip_select (struct in_data *data, short mode, long proc)
 			return 1;
 		
 		case O_RDONLY:
-			if (data->sock->flags & SO_CANTRCVMORE || data->err)
+			if ((data->sock->flags & SO_CANTRCVMORE) || data->err)
 				return 1;
 			
 			return (data->rcv.qfirst ? 1 : so_rselect (data->sock, proc));
@@ -174,6 +181,8 @@ rip_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	short ipflags = 0;
 	BUF *buf;
 	
+	UNUSED(nonblock);
+	UNUSED(addrlen);
 	if (flags & ~MSG_DONTROUTE)
 	{
 		DEBUG (("rip_send: invalid flags"));
@@ -222,7 +231,7 @@ rip_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	if (data->flags & IN_BROADCAST)
 		ipflags |= IP_BROADCAST;
 	
-	if (data->flags & IN_DONTROUTE || flags & MSG_DONTROUTE)
+	if ((data->flags & IN_DONTROUTE) || flags & MSG_DONTROUTE)
 		ipflags |= IP_DONTROUTE;
 	
 	if (data->opts.hdrincl || data->protonum == IPPROTO_RAW)
@@ -313,7 +322,7 @@ rip_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	{
 		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (struct sockaddr_in));
+		*addrlen = MIN ((ushort)*addrlen, sizeof (struct sockaddr_in));
 		in.sin_family = AF_INET;
 		in.sin_addr.s_addr = IP_SADDR (buf);
 		in.sin_port = 0;
@@ -343,18 +352,30 @@ rip_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 static long
 rip_shutdown (struct in_data *data, short how)
 {
+	UNUSED(data);
+	UNUSED(how);
 	return 0;
 }
 
 static long
 rip_setsockopt (struct in_data *data, short level, short optname, char *optval, long optlen)
 {
+	UNUSED(data);
+	UNUSED(level);
+	UNUSED(optname);
+	UNUSED(optval);
+	UNUSED(optlen);
 	return EOPNOTSUPP;
 }
 
 static long
 rip_getsockopt (struct in_data *data, short level, short optname, char *optval, long *optlen)
 {
+	UNUSED(data);
+	UNUSED(level);
+	UNUSED(optname);
+	UNUSED(optval);
+	UNUSED(optlen);
 	return EOPNOTSUPP;
 }
 
@@ -381,6 +402,7 @@ rip_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 	long pktlen;
 	BUF *nbuf;
 	
+	UNUSED(iface);
 	pktlen = buf->dend - buf->dstart;
 	d = rip_proto.datas;
 	proto = IP_PROTO (buf);
@@ -439,6 +461,10 @@ rip_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 static long
 rip_error (short type, short code, BUF *buf, ulong saddr, ulong daddr)
 {
+	UNUSED(type);
+	UNUSED(code);
+	UNUSED(saddr);
+	UNUSED(daddr);
 	buf_deref (buf, BUF_NORMAL);
 	return 0;
 }

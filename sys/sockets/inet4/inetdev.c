@@ -106,7 +106,7 @@ inetdev_read (FILEPTR *fp, char *buf, long nbytes)
 	struct in_data *inp = NULL;
 	struct inet_info info, *infop = (struct inet_info *) buf;
 	struct _datas *datap;
-	long space;
+	ulong space;
 	int i;
 	
 	for (space = nbytes; space >= sizeof (info); fp->pos++)

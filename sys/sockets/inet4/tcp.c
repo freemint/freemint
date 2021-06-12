@@ -166,6 +166,7 @@ tcp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen
 	struct tcb *tcb = data->pcb;
 	ulong laddr, faddr;
 	
+	UNUSED(addrlen);
 	if (tcb->state != TCBS_CLOSED)
 	{
 		DEBUG (("tcp_connect: already connected"));
@@ -454,6 +455,8 @@ tcp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	struct tcb *tcb = data->pcb;
 	long size, offset, avail, r, seq_write = tcb->seq_write;
 	
+	UNUSED(addr);
+	UNUSED(addrlen);
 	offset = 0;
 	size = iov_size (iov, niov);
 	if (size == 0)
@@ -762,7 +765,7 @@ tcp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	{
 		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (in));
+		*addrlen = MIN ((ushort)*addrlen, sizeof (in));
 		in.sin_family = AF_INET;
 		in.sin_addr.s_addr = data->dst.addr;
 		in.sin_port = data->dst.port;
@@ -808,13 +811,13 @@ tcp_setsockopt (struct in_data *data, short level, short optname, char *optval, 
 	switch (optname)
 	{
 	case TCP_NODELAY:
-		if (optlen >= sizeof(long))
+		if ((unsigned long)optlen >= sizeof(long))
 		{
 			val = *((long *)optval);
-		} else if (optlen >= sizeof(short))
+		} else if ((unsigned long)optlen >= sizeof(short))
 		{
 			val = *((short *)optval);
-		} else if (optlen >= sizeof(char))
+		} else if ((unsigned long)optlen >= sizeof(char))
 		{
 			val = *((unsigned char *)optval);
 		} else
@@ -848,7 +851,7 @@ tcp_getsockopt (struct in_data *data, short level, short optname, char *optval, 
 		return EFAULT;
 	len = *optlen;
 
-	if ((level == SOL_SOCKET) && (optname == SO_ACCEPTCONN)) {
+	if ((level == (short)SOL_SOCKET) && (optname == SO_ACCEPTCONN)) {
 		val = (tcb->state == TCBS_LISTEN);
 	} else
 	{
@@ -889,8 +892,9 @@ tcp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 	struct tcp_dgram *tcph = (struct tcp_dgram *) IP_DATA (buf);
 	struct in_data *data;
 	struct tcb *tcb;
-	long pktlen;
+	ulong pktlen;
 	
+	UNUSED(iface);
 	pktlen = (long)buf->dend - (long)tcph;
 	if (pktlen < TCP_MINLEN)
 	{

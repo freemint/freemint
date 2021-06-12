@@ -72,6 +72,8 @@ udp_attach (struct in_data *data)
 static long
 udp_abort (struct in_data *data, short ostate)
 {
+	UNUSED(data);
+	UNUSED(ostate);
 	return 0;
 }
 
@@ -85,6 +87,8 @@ udp_detach (struct in_data *data, short wait)
 static long
 udp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
+	UNUSED(addrlen);
+	UNUSED(nonblock);
 	if (addr->sin_port == 0)
 	{
 		DEBUG (("udp_connect: port == 0."));
@@ -102,6 +106,9 @@ udp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen
 static long
 udp_accept (struct in_data *data, struct in_data *newdata, short nonblock)
 {
+	UNUSED(data);
+	UNUSED(newdata);
+	UNUSED(nonblock);
 	return EOPNOTSUPP;
 }
 
@@ -114,7 +121,7 @@ udp_ioctl (struct in_data *data, short cmd, void *buf)
 		{
 			struct udp_dgram *uh;
 			
-			if (data->sock->flags & SO_CANTRCVMORE || data->err)
+			if ((data->sock->flags & SO_CANTRCVMORE) || data->err)
 			{
 				*(long *)buf = UNLIMITED;
 				return 0;
@@ -150,7 +157,7 @@ udp_select (struct in_data *data, short mode, long proc)
 			return 1;
 		
 		case O_RDONLY:
-			if (data->sock->flags & SO_CANTRCVMORE || data->err)
+			if ((data->sock->flags & SO_CANTRCVMORE) || data->err)
 				return 1;
 			return (data->rcv.qfirst ? 1 : so_rselect (data->sock, proc));
 	}
@@ -169,6 +176,8 @@ udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	ushort dstport;
 	short ipflags = 0;
 	
+	UNUSED(nonblock);
+	UNUSED(addrlen);
 	if (flags & ~MSG_DONTROUTE)
 	{
 		DEBUG (("udp_send: invalid flags"));
@@ -242,7 +251,7 @@ udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	if (data->flags & IN_BROADCAST)
 		ipflags |= IP_BROADCAST;
 	
-	if (data->flags & IN_DONTROUTE || flags & MSG_DONTROUTE)
+	if ((data->flags & IN_DONTROUTE) || (flags & MSG_DONTROUTE))
 		ipflags |= IP_DONTROUTE;
 	
 	DEBUG (("udp_send: dstaddr = 0x%lx", dstaddr));
@@ -324,7 +333,7 @@ udp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	{
 		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (in));
+		*addrlen = MIN ((ushort)*addrlen, sizeof (in));
 		in.sin_family = AF_INET;
 		in.sin_addr.s_addr = IP_SADDR (buf);
 		in.sin_port = uh->srcport;
@@ -354,6 +363,8 @@ udp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 static long
 udp_shutdown (struct in_data *data, short how)
 {
+	UNUSED(data);
+	UNUSED(how);
 	return 0;
 }
 
@@ -363,6 +374,11 @@ udp_setsockopt (struct in_data *data, short level, short optname, char *optval, 
 	/*
 	 * No special UDP socket options
 	 */
+	UNUSED(data);
+	UNUSED(level);
+	UNUSED(optname);
+	UNUSED(optval);
+	UNUSED(optlen);
 	return EOPNOTSUPP;
 }
 
@@ -372,6 +388,11 @@ udp_getsockopt (struct in_data *data, short level, short optname, char *optval, 
 	/*
 	 * No special UDP socket options
 	 */
+	UNUSED(data);
+	UNUSED(level);
+	UNUSED(optname);
+	UNUSED(optval);
+	UNUSED(optlen);
 	return EOPNOTSUPP;
 }
 
@@ -384,8 +405,9 @@ udp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 {
 	struct udp_dgram *uh = (struct udp_dgram *) IP_DATA (buf);
 	struct in_data *data;
-	long pktlen;
+	ulong pktlen;
 	
+	UNUSED(iface);
 	pktlen = (long)buf->dend - (long)uh;
 	if (pktlen < UDP_MINLEN || pktlen != uh->length)
 	{
@@ -423,7 +445,7 @@ udp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 		return -1;
 	}
 	pktlen -= sizeof (struct udp_dgram);
-	if (pktlen + data->rcv.curdatalen > data->rcv.maxdatalen)
+	if (pktlen + data->rcv.curdatalen > (ulong)data->rcv.maxdatalen)
 	{
 		DEBUG (("udp_input: Input queue full"));
 		buf_deref (buf, BUF_NORMAL);

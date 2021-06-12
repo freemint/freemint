@@ -73,7 +73,7 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 	long space, t;
 	int i, j;
 	
-	for (space = nbytes; space >= sizeof (info); fp->pos++)
+	for (space = nbytes; (unsigned long)space >= sizeof (info); fp->pos++)
 	{
 		i = fp->pos;
 		for (j = 0; j < ARP_HASHSIZE && i >= 0; j++)

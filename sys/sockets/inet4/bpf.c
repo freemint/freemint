@@ -328,6 +328,8 @@ bpf_handler (PROC *proc, long arg)
 {
 	struct bpf *bpf;
 	
+	UNUSED(proc);
+	UNUSED(arg);
 	have_tmout = 0;
 	for (bpf = allbpfs; bpf; bpf = bpf->link)
 	{
@@ -582,6 +584,9 @@ bpf_read (FILEPTR *fp, char *buf, long nbytes)
 static long
 bpf_lseek (FILEPTR *fp, long where, int whence)
 {
+	UNUSED(fp);
+	UNUSED(where);
+	UNUSED(whence);
 	return EACCES;
 }
 
@@ -713,6 +718,7 @@ bpf_ioctl (FILEPTR *fp, int cmd, void *arg)
 static long
 bpf_datime (FILEPTR *fp, ushort *timeptr, int mode)
 {
+	UNUSED(fp);
 	if (mode == 0)
 	{
 		timeptr[0] = t_gettime ();
@@ -729,6 +735,7 @@ bpf_close (FILEPTR *fp, int pid)
 {
 	struct bpf *bpf = (struct bpf *) fp->devinfo;
 	
+	UNUSED(pid);
 	if (bpf->rsel)
 		wakeselect (bpf->rsel);
 	

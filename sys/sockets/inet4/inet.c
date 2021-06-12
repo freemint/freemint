@@ -308,6 +308,8 @@ inet_connect (struct socket *so, const struct sockaddr *addr, short addrlen, sho
 static long
 inet_socketpair (struct socket *so1, struct socket *so2)
 {
+	UNUSED(so1);
+	UNUSED(so2);
 	return EOPNOTSUPP;
 }
 
@@ -353,7 +355,7 @@ inet_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short pe
 				: INADDR_ANY);
 	}
 	
-	todo = MIN (*addrlen, sizeof (in));
+	todo = MIN ((ushort)*addrlen, sizeof (in));
 	mint_bzero (in.sin_zero, sizeof (in.sin_zero));
 	memcpy (addr, &in, todo);
 	*addrlen = todo;
@@ -538,7 +540,7 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 			return ip_setsockopt (&data->opts, level, optname, optval,
 				optlen);
 		
-		case SOL_SOCKET:
+		case (short)SOL_SOCKET:
 			break;
 		
 		default:
@@ -551,13 +553,13 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 		DEBUG (("inet_setsockopt: invalid optval"));
 		return EFAULT;
 	}
-	if (optlen >= sizeof(long))
+	if ((unsigned long)optlen >= sizeof(long))
 	{
 		val = *((long *)optval);
-	} else if (optlen >= sizeof(short))
+	} else if ((unsigned long)optlen >= sizeof(short))
 	{
 		val = *((short *)optval);
-	} else if (optlen >= sizeof(char))
+	} else if ((unsigned long)optlen >= sizeof(char))
 	{
 		val = *((unsigned char *)optval);
 	} else
@@ -628,7 +630,7 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 		{
 			struct linger l;
 			
-			if (optlen < sizeof (struct linger))
+			if ((unsigned long)optlen < sizeof (struct linger))
 			{
 				DEBUG (("inet_setsockopt: optlen to small"));
 				return EINVAL;
@@ -669,7 +671,7 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 			return ip_getsockopt (&data->opts, level, optname, optval,
 				optlen);
 		
-		case SOL_SOCKET:
+		case (short)SOL_SOCKET:
 			break;
 		
 		default:
@@ -714,7 +716,7 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 		{
 			struct linger l;
 			
-			if (*optlen < sizeof (struct linger))
+			if ((unsigned long)*optlen < sizeof (struct linger))
 			{
 				DEBUG (("inet_setsockopt: optlen < sizeof linger"));
 				return EINVAL;

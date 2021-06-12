@@ -83,6 +83,7 @@ masq_ip_input (struct netif *nif, BUF *buf)
 	short addrtype;
 	struct sockaddr_in *in;
 	
+	UNUSED(nif);
 	if (!(masq.flags & MASQ_ENABLED))
 		return buf;
 	
@@ -458,10 +459,11 @@ new_port_record (void)
 				record->num = i;
 				
 				masq.port_db[i] = record;
-			}
-			else
+			} else
+			{
 				MBDEBUG	(("masq_ip_input: ALERT: could not allocate storage for new record"));
-			
+			}
+
 			return record;
 		}
 	}
@@ -472,7 +474,7 @@ new_port_record (void)
 void
 delete_port_record (PORT_DB_RECORD *record)
 {
-	if (record->num >= 0 && record->num < MASQ_NUM_PORTS)
+	if (/* record->num >= 0 && */ record->num < MASQ_NUM_PORTS)
 		masq.port_db[record->num] = NULL;
 	kfree (record);
 }

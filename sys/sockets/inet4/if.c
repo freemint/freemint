@@ -193,10 +193,12 @@ if_flushq (struct ifq *q)
 static void
 if_doinput (PROC *proc, long arg)
 {
-	register struct netif *nif;
-	register char *sp;
+	struct netif *nif;
+	char *sp;
 	short comeagain = 0;
 	
+	UNUSED(proc);
+	UNUSED(arg);
 	tmout = 0;
 	sp = setstack (stack + sizeof (stack));
 	
@@ -281,6 +283,8 @@ if_slowtimeout (PROC *proc, long arg)
 {
 	struct netif *nif;
 	
+	UNUSED(proc);
+	UNUSED(arg);
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (nif->flags & IFF_UP && nif->timeout)
@@ -1096,7 +1100,7 @@ if_config (struct ifconf *ifconf)
 	struct ifreq *ifr;
 	struct ifaddr *ifa;
 	char name[100];
-	long len;
+	ulong len;
 	
 	if (!ifconf->ifcu.buf) {
 		/* count interfaces when no buffer! */

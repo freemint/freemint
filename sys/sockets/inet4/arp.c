@@ -183,10 +183,11 @@ arp_alloc (void)
 	{
 		mint_bzero (are, sizeof (*are));
 		are->outq.maxqlen = IF_MAXQ;
-	}
-	else
+	} else
+	{
 		DEBUG (("arp_alloc: out of memory"));
-	
+	}
+
 	return are;
 }
 
@@ -338,7 +339,7 @@ arp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 	for (are = arptab[idx]; are; are = are->prnext)
 	{
 		if (are->flags & ATF_PRCOM &&
-		    are->prtype == type &&
+		    are->prtype == (ushort)type &&
 		    (!nif || are->nif == nif) &&
 		    !memcmp (addr, are->praddr.adr.bytes, len))
 			break;
@@ -382,11 +383,12 @@ rarp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 	struct arp_entry *are;
 	short idx;
 	
+	UNUSED(flags);
 	idx = arp_hash ((unsigned char *)addr, len);
 	for (are = rarptab[idx]; are; are = are->hwnext)
 	{
 		if (are->flags & ATF_HWCOM
-			&& are->hwtype == type
+			&& are->hwtype == (ushort)type
 			&& (!nif || are->nif == nif)
 			&& !memcmp (addr, are->hwaddr.adr.bytes, len))
 		{
@@ -433,7 +435,7 @@ arp_input (struct netif *nif, BUF *buf)
 	struct arp_dgram *arphdr;
 	struct arp_entry *are;
 	short forme;
-	long len;
+	unsigned long len;
 	
 	len = buf->dend - buf->dstart;
 	arphdr = (struct arp_dgram *)buf->dstart;
@@ -453,9 +455,9 @@ arp_input (struct netif *nif, BUF *buf)
 	 * Check if we can handle this packet, if not discard.
 	 */
 	myaddr = arp_myaddr (nif, arphdr->prtype);
-	if (arphdr->hwtype != nif->hwtype
+	if (arphdr->hwtype != (ushort)nif->hwtype
 		|| arphdr->hwlen != nif->hwlocal.len
-		|| nif->flags & IFF_NOARP
+		|| (nif->flags & IFF_NOARP)
 		|| myaddr == 0)
 	{
 	    	DEBUG (("arp_input: not for me..."));
@@ -544,7 +546,7 @@ rarp_input (struct netif *nif, BUF *buf)
 	struct arp_dgram *arphdr;
 	struct arp_entry *are;
 	char *myaddr;
-	long len;
+	unsigned long len;
 	
 	len = buf->dend - buf->dstart;
 	arphdr = (struct arp_dgram *) buf->dstart;
@@ -565,8 +567,8 @@ rarp_input (struct netif *nif, BUF *buf)
 	myaddr = arp_myaddr (nif, arphdr->prtype);
 	if (arphdr->op != AROP_RARPREQ
 		|| arphdr->hwlen != nif->hwlocal.len
-		|| arphdr->hwtype != nif->hwtype
-		|| nif->flags & IFF_NOARP
+		|| arphdr->hwtype != (ushort)nif->hwtype
+		|| (nif->flags & IFF_NOARP)
 		|| myaddr == 0)
 	{
 		buf_deref (buf, BUF_NORMAL);
@@ -673,7 +675,7 @@ put_hwaddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short type)
 	shw->shw_family = AF_LINK;
 	shw->shw_type = type;
 	shw->shw_len = hwaddr->len;
-	memcpy (shw->shw_adr.bytes, hwaddr->adr.bytes, MIN (sizeof (shw->shw_adr), hwaddr->len));
+	memcpy (shw->shw_adr.bytes, hwaddr->adr.bytes, MIN (sizeof (shw->shw_adr), (unsigned short)hwaddr->len));
 	
 	return 0;
 }

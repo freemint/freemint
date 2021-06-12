@@ -105,6 +105,7 @@ deleteme (long arg)
 	struct tcb *tcb = (struct tcb *) arg;
 	struct in_data *data = tcb->data;
 	
+	UNUSED(arg);
 	tcb->state = TCBS_CLOSED;
 	if (data->sock == 0)
 	{
@@ -151,7 +152,7 @@ tcb_reset (struct tcb *tcb, long err)
 		if (tcb->data->sock)
 		{
 			if (tcb->state == TCBS_SYNRCVD
-				&& tcb->flags & TCBF_PASSIVE)
+				&& (tcb->flags & TCBF_PASSIVE))
 			{
 				so_wakersel (tcb->data->sock->conn);
 				wake (IO_Q, (long)tcb->data->sock->conn);
@@ -299,13 +300,13 @@ tcp_valid (struct tcb *tcb, BUF *buf)
 		if (seglen)
 			--seqlast;
 		
-		if (tcph->flags & TCPF_SYN && SEQLT (seq, tcb->rcv_nxt))
+		if ((tcph->flags & TCPF_SYN) && SEQLT (seq, tcb->rcv_nxt))
 		{
 			tcph->flags &= ~TCPF_SYN;
 			++tcph->seq;
 		}
 		
-		if (tcph->flags & TCPF_FIN && SEQGE (seqlast, wndlast))
+		if ((tcph->flags & TCPF_FIN) && SEQGE (seqlast, wndlast))
 			tcph->flags &= ~TCPF_FIN;
 		
 		if (SEQLE (tcb->rcv_nxt, seqlast) && SEQLT (seq, wndlast))
@@ -324,6 +325,7 @@ tcp_options (struct tcb *tcb, struct tcp_dgram *tcph)
 	uchar *cp;
 	long mss = TCP_MSS;
 	
+	UNUSED(tcb);
 	optlen = tcph->hdrlen*4 - TCP_MINLEN;
 	cp = (unsigned char *)tcph->data;
 	for (i = 0; i < optlen; i += len)
@@ -361,19 +363,20 @@ long
 tcp_mss (struct tcb *tcb, ulong faddr, long maxmss)
 {
 	struct route *rt;
-	long win, mss = TCP_MSS;
+	long win;
+	long mss = TCP_MSS;
 	
 	rt = route_get (faddr);
 	if (rt)
 	{
-		mss = MIN (rt->nif->mtu-20, maxmss+20) - TCP_MINLEN;
+		mss = MIN (rt->nif->mtu-20, (ulong)maxmss+20) - TCP_MINLEN;
 		
 		/*
 		 * If destination not on directly attached network then
 		 * used default MSS. Otherwise make it as big as mtu
 		 * allows.
 		 */
-		if ((rt->metric > 0 || rt->flags & RTF_GATEWAY) && mss > TCP_MSS)
+		if ((rt->metric > 0 || (rt->flags & RTF_GATEWAY)) && mss > TCP_MSS)
 			mss = TCP_MSS;
 		if (mss < 32)
 			mss = 32;

@@ -57,88 +57,90 @@ masqdev_read (FILEPTR *fp, char *buf, long nbytes)
 	switch (fp->pos)
 	{
 		case 0:
-			if (nbytes >= sizeof (masq.magic))
+			if ((ulong)nbytes >= sizeof (masq.magic))
 			{
 				memcpy (buf, &masq.magic, sizeof (masq.magic));
 				return sizeof (masq.magic);
 			}
 			break;
 		case 1:
-			if (nbytes >= sizeof (masq.version))
+			if ((ulong)nbytes >= sizeof (masq.version))
 			{
 				memcpy (buf, &masq.version, sizeof (masq.version));
 				return sizeof (masq.version);
 			}
 			break;
 		case 2:
-			if (nbytes >= sizeof (masq.addr))
+			if ((ulong)nbytes >= sizeof (masq.addr))
 			{
 				memcpy (buf, &masq.addr, sizeof (masq.addr));
 				return sizeof (masq.addr);
 			}
 			break;
 		case 3:
-			if (nbytes >= sizeof (masq.mask))
+			if ((ulong)nbytes >= sizeof (masq.mask))
 			{
 				memcpy (buf, &masq.mask, sizeof (masq.mask));
 				return sizeof (masq.mask);
 			}
 			break;
 		case 4:
-			if (nbytes >= sizeof (masq.flags))
+			if ((ulong)nbytes >= sizeof (masq.flags))
 			{
 				memcpy (buf, &masq.flags, sizeof (masq.flags));
 				return sizeof (masq.flags);
 			}
 			break;
 		case 5:
-			if (nbytes >= sizeof (masq.tcp_first_timeout))
+			if ((ulong)nbytes >= sizeof (masq.tcp_first_timeout))
 			{
 				memcpy (buf, &masq.tcp_first_timeout, sizeof (masq.tcp_first_timeout));
 				return sizeof (masq.tcp_first_timeout);
 			}
 			break;
 		case 6:
-			if (nbytes >= sizeof (masq.tcp_ack_timeout))
+			if ((ulong)nbytes >= sizeof (masq.tcp_ack_timeout))
 			{
 				memcpy (buf, &masq.tcp_ack_timeout, sizeof (masq.tcp_ack_timeout));
 				return sizeof (masq.tcp_ack_timeout);
 			}
 			break;
 		case 7:
-			if (nbytes >= sizeof (masq.tcp_fin_timeout))
+			if ((ulong)nbytes >= sizeof (masq.tcp_fin_timeout))
 			{
 				memcpy (buf, &masq.tcp_fin_timeout, sizeof (masq.tcp_fin_timeout));
 				return sizeof (masq.tcp_fin_timeout);
 			}
 			break;
 		case 8:
-			if (nbytes >= sizeof (masq.udp_timeout))
+			if ((ulong)nbytes >= sizeof (masq.udp_timeout))
 			{
 				memcpy (buf, &masq.udp_timeout, sizeof (masq.udp_timeout));
 				return sizeof (masq.udp_timeout);
 			}
 			break;
 		case 9:
-			if (nbytes >= sizeof (masq.icmp_timeout))
+			if ((ulong)nbytes >= sizeof (masq.icmp_timeout))
 			{
 				memcpy (buf, &masq.icmp_timeout, sizeof (masq.icmp_timeout));
 				return sizeof (masq.icmp_timeout);
 			}
 			break;
 		case 50:
-			if (nbytes >= sizeof (ulong))
+			if ((ulong)nbytes >= sizeof (ulong))
 			{
 				ulong time;
 				time = MASQ_TIME;
 				memcpy (buf, &time, sizeof (ulong));
 				return sizeof (ulong);
 			}
+			/* fall through */
 		case 100:
 			record = 0;
 			fp->pos += 1;
+			/* fall through */
 		case 101:
-			if (nbytes >= sizeof (PORT_DB_RECORD))
+			if ((ulong)nbytes >= sizeof (PORT_DB_RECORD))
 			{
 				while (record < MASQ_NUM_PORTS && !masq.port_db[record])
 					record += 1;
@@ -152,8 +154,9 @@ masqdev_read (FILEPTR *fp, char *buf, long nbytes)
 		case 200:
 			redirection = masq.redirection_db;
 			fp->pos += 1;
+			/* fall through */
 		case 201:
-			if (nbytes >= sizeof (PORT_DB_RECORD))
+			if ((ulong)nbytes >= sizeof (PORT_DB_RECORD))
 			{
 				if (!redirection)
 					return 0;

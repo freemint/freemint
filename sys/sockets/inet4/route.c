@@ -91,7 +91,10 @@ route_get (ulong daddr)
 			rt = netrt;
 		} else {
 			rt = defroute;
-			if (rt) DEBUG (("route_get: using 0x%lx via '%s': defroute", (unsigned long)defroute, defroute ? defroute->nif->name : "??"));
+			if (rt)
+			{
+				DEBUG (("route_get: using 0x%lx via '%s': defroute", (unsigned long)defroute, defroute ? defroute->nif->name : "??"));
+			}
 		}
 	}
 

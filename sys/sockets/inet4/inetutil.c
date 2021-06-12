@@ -27,6 +27,7 @@ struct in_proto *allinetprotos = NULL;
 void
 in_proto_register (short protonum, struct in_proto *proto)
 {
+	UNUSED(protonum);
 	proto->next = allinetprotos;
 	allinetprotos = proto;
 	ip_register (&proto->ipops);

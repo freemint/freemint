@@ -257,6 +257,7 @@ ip_brdcst_copy (BUF *buf, struct netif *nif, struct route *rt, short addrtype)
 static long
 ip_do_opts (struct ip_dgram *iph)
 {
+	UNUSED(iph);
 	return 0;
 }
 
@@ -332,7 +333,7 @@ ip_output (BUF *buf)
 }
 
 short ip_dgramid = 0;
-static struct ip_options def_opts = { 0, IP_DEFAULT_TTL, IP_DEFAULT_TOS, 0 };
+static struct ip_options def_opts = { 0, IP_DEFAULT_TTL, IP_DEFAULT_TOS, 0, 0, 0 };
 
 long
 ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip_options *_opts)
@@ -448,7 +449,7 @@ ip_input (struct netif *nif, BUF *buf)
 	struct ip_dgram *iph = (struct ip_dgram *) buf->dstart;
 	struct route *rt;
 	short addrtype;
-	short pktlen;
+	unsigned short pktlen;
 	
 	/*
 	 * Validate incoming datagram
@@ -666,7 +667,13 @@ static long
 ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short addrtype)
 {
 	struct ip_dgram *fragiph, *iph = (struct ip_dgram *)buf->dstart;
-	long fraglen, datalen, offset, fragoff, hdrlen, todo, r;
+	long fraglen;
+	long datalen;
+	long offset;
+	long fragoff;
+	unsigned long hdrlen;
+	long todo;
+	long r;
 	BUF *fragbuf;
 	char *data;
 	
@@ -902,7 +909,7 @@ ip_defrag (BUF *buf)
 	{
 		if (frag->buf)
 		{
-			if (iph->id == frag->id && iph->saddr == frag->saddr)
+			if (iph->id == (ushort)frag->id && iph->saddr == frag->saddr)
 			{
 				frag_insert (frag, buf);
 				return frag_pullup (frag);
@@ -946,17 +953,17 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 	case IP_RECVDSTADDR:
 	case IP_RETOPTS:
 	case IP_MULTICAST_TTL:
-		if (optlen >= sizeof(long))
+		if ((unsigned long)optlen >= sizeof(long))
 		{
 			if (optval == NULL)
 				return EFAULT;
 			val = *((long *)optval);
-		} else if (optlen >= sizeof(short))
+		} else if ((unsigned long)optlen >= sizeof(short))
 		{
 			if (optval == NULL)
 				return EFAULT;
 			val = *((short *)optval);
-		} else if (optlen >= sizeof(char))
+		} else if ((unsigned long)optlen >= sizeof(char))
 		{
 			if (optval == NULL)
 				return EFAULT;
@@ -1007,7 +1014,7 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 	case IP_MULTICAST_IF:
 		{
 			struct in_addr *addr = (struct in_addr *)optval;
-			if (optlen < sizeof (*addr) || !optval)
+			if ((unsigned long)optlen < sizeof (*addr) || !optval)
 				return EINVAL;
 		 	opts->multicast_ip = ip_dst_addr(addr->s_addr);
 		}
@@ -1025,7 +1032,7 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 			struct ip_mreq *imr = (struct ip_mreq *)optval;
 			ulong if_addr;
 			ulong multi_addr;
-			if (optlen < sizeof (*imr) || !optval)
+			if ((unsigned long)optlen < sizeof (*imr) || !optval)
 				return EINVAL;
 			if_addr = ip_dst_addr(imr->imr_interface.s_addr);
 			multi_addr = ip_dst_addr(imr->imr_multiaddr.s_addr);
@@ -1075,7 +1082,7 @@ ip_getsockopt (struct ip_options *opts, short level, short optname, char *optval
 		break;
 
 	case IP_MULTICAST_IF:
-		if (len < sizeof(long))
+		if ((unsigned long)len < sizeof(long))
 			return EINVAL;
 		val = opts->multicast_ip;
 		break;
@@ -1093,17 +1100,17 @@ ip_getsockopt (struct ip_options *opts, short level, short optname, char *optval
 		return EOPNOTSUPP; /* should be ENOPROTOOPT? */
 	}
 	
-	if (len == sizeof(short))
+	if ((unsigned long)len == sizeof(short))
 	{
 		*((short *)optval) = val;
 		*optlen = sizeof(short);
-	} else if (len < sizeof(long) && len > 0 && val >= 0 && val <= 255)
+	} else if ((unsigned long)len < sizeof(long) && len > 0 && val >= 0 && val <= 255)
 	{
 		*((unsigned char *)optval) = val;
 		*optlen = sizeof(char);
 	} else
 	{
-		if (len > sizeof(long))
+		if ((unsigned long)len > sizeof(long))
 			len = sizeof(long);
 		*optlen = len;
 		if (len > 0)

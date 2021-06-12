@@ -59,6 +59,7 @@ void (*tcb_state[])(struct tcb *, BUF *) =
 static void
 tcbs_closed (struct tcb *tcb, BUF *buf)
 {
+	UNUSED(tcb);
 	tcp_sndrst (buf);
 	buf_deref (buf, BUF_NORMAL);
 }
@@ -192,7 +193,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 	struct tcp_dgram *tcph = (struct tcp_dgram *) IP_DATA (buf);
 	long r;
 	
-	if (tcph->flags & TCPF_ACK
+	if ((tcph->flags & TCPF_ACK)
 		&& (SEQLE (tcph->ack, tcb->snd_isn)
 			|| SEQGT (tcph->ack, tcb->snd_max)))
 	{
@@ -714,7 +715,7 @@ tcp_rcvdata (struct tcb *tcb, BUF *buf)
 		}
 		acknow |= (nxt - onxt != datalen);
 	}
-	if (tcb->flags & TCBF_FIN && SEQEQ (tcb->seq_fin, nxt))
+	if ((tcb->flags & TCBF_FIN) && SEQEQ (tcb->seq_fin, nxt))
 	{
 		acknow = 1;
 		nxt++;
@@ -722,14 +723,14 @@ tcp_rcvdata (struct tcb *tcb, BUF *buf)
 		 * Do FIN processing
 		 */
 	}
-	if (tcb->flags & TCBF_PSH && SEQLE (tcb->seq_psh, nxt))
+	if ((tcb->flags & TCBF_PSH) && SEQLE (tcb->seq_psh, nxt))
 	{
 		/*
 		 * Do PUSH processing
 		 */
 	}
 	tcb->rcv_nxt = nxt;
-	if (datalen > 0 || flags & TCPF_FIN)
+	if (datalen > 0 || (flags & TCPF_FIN))
 	{
 		if (tcb->state == TCBS_ESTABLISHED && !acknow)
 			tcp_delack (tcb);
@@ -987,7 +988,7 @@ tcp_rcvurg (struct tcb *tcb, BUF *buf)
 	 */
 	if (tcb->state < TCBS_SYNRCVD
 		|| tcb->state > TCBS_CLOSEWAIT
-		|| tcph->flags & TCPF_SYN)
+		|| (tcph->flags & TCPF_SYN))
 	{
 		tcph->flags &= ~TCPF_URG;
 		return 0;
@@ -1071,10 +1072,11 @@ tcp_rcvurg (struct tcb *tcb, BUF *buf)
 				wake (IO_Q, (long)tcb->data->sock);
 			}
 		}
-	}
-	else
+	} else
+	{
 		DEBUG (("tcp_rcvurg: no space for urgent data"));
-	
+	}
+
 	/*
 	 * Adjust the original segment
 	 */

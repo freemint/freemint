@@ -148,6 +148,8 @@ igmp_input (struct netif *nif, BUF *buf, ulong saddr, ulong daddr)
 	struct igmp_dgram *igmph;
 	short datalen;
 	
+	UNUSED(saddr);
+	UNUSED(daddr);
 	igmph = (struct igmp_dgram *) IP_DATA (buf);
 	
 	datalen = (long) buf->dend - (long)igmph;
@@ -228,6 +230,10 @@ igmp_input (struct netif *nif, BUF *buf, ulong saddr, ulong daddr)
 static long
 igmp_error (short type, short code, BUF *buf, ulong saddr, ulong daddr)
 {
+	UNUSED(type);
+	UNUSED(code);
+	UNUSED(saddr);
+	UNUSED(daddr);
 	TRACE (("igmp_error: cannot send igmp error message to %lx", daddr));
 	buf_deref (buf, BUF_NORMAL);
 	return 0;
@@ -385,6 +391,8 @@ igmp_tmr (PROC *proc, long arg)
 {
 	struct igmp_group *group = igmp_group_list;
 
+	UNUSED(proc);
+	UNUSED(arg);
 	while (group) 
 	{
 		if (group->timer > 0) 

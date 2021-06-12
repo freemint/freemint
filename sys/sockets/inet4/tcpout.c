@@ -551,7 +551,7 @@ tcp_sndseg (struct tcb *tcb, BUF *b, short nretrans, long wnd1st, long wndnxt)
 	 * the mss by adding up to TCP_MAXRETRY bytes to the segment.
 	 */
 	if (nretrans > 0 && !(cut & TCPF_FIN) && (b2 = b->next)
-		&& (nretrans = MIN (DATLEN(b2), nretrans)) > 0
+		&& (nretrans = MIN (DATLEN(b2), (ushort)nretrans)) > 0
 		&& ((tcph2 = TH(b2)), 1)
 		&& ((seqnxt = tcph2->seq + nretrans), 1)
 		&& SEQLE (seqnxt, tcb->snd_wndack + tcb->snd_wnd)
@@ -888,10 +888,11 @@ tcp_probe (struct tcb *tcb)
 		
 		ip_send (tcb->data->src.addr, tcb->data->dst.addr, b,
 			IPPROTO_TCP, 0, &tcb->data->opts);
-	}
-	else
+	} else
+	{
 		DEBUG (("do_probe: no memory to probe"));
-	
+	}
+
 	tcb->persist_tmo = MIN (TCP_MAXPROBE, tcb->persist_tmo << 1);
 	if (tcb->persist_tmo < TCP_MINRETRANS)
 	{
@@ -1196,7 +1197,7 @@ tcp_output (struct tcb *tcb, const struct iovec *iov, short niov, long len,
 long
 tcp_timeout (struct tcb *tcb)
 {
-	long tmout;
+	ulong tmout;
 	
 	tmout = (tcb->rtt >> 3) + tcb->rttdev;
 	if (tmout > (0x7ffffffful >> TCP_MAXRETRY))

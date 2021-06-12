@@ -41,6 +41,8 @@ icmp_input (struct netif *nif, BUF *buf, ulong saddr, ulong daddr)
 	struct icmp_dgram *icmph;
 	short datalen;
 	
+	UNUSED(saddr);
+	UNUSED(daddr);
 	icmph = (struct icmp_dgram *) IP_DATA (buf);
 	
 	datalen = (long) buf->dend - (long)icmph;
@@ -129,6 +131,10 @@ icmp_input (struct netif *nif, BUF *buf, ulong saddr, ulong daddr)
 static long
 icmp_error (short type, short code, BUF *buf, ulong saddr, ulong daddr)
 {
+	UNUSED(type);
+	UNUSED(code);
+	UNUSED(saddr);
+	UNUSED(daddr);
 	TRACE (("icmp_error: cannot send icmp error message to %lx", daddr));
 	buf_deref (buf, BUF_NORMAL);
 	return 0;
@@ -270,6 +276,7 @@ do_send (short type, short code, BUF *buf1, BUF *buf2)
 	BUF *nbuf;
 	struct icmp_dgram *icmph;
 	
+	UNUSED(code);
 	switch (type)
 	{
 		case ICMPT_ECHORP:
@@ -336,7 +343,8 @@ do_unreach (BUF *buf, struct netif *nif, long len)
 	struct icmp_dgram *icmph;
 	struct ip_dgram *iph;
 	
-	if (len < sizeof (*icmph) + sizeof (*iph) + 2*sizeof (long))
+	UNUSED(nif);
+	if ((ulong)len < sizeof (*icmph) + sizeof (*iph) + 2*sizeof (long))
 	{
 		DEBUG (("do_unreach: packet too short"));
 		return -1;
@@ -370,7 +378,7 @@ do_redir (BUF *b, struct netif *nif, long len)
 	struct route *rt;
 	long mask;
 
-	if (len < sizeof (*icmph) + sizeof (*iph) + 2*sizeof (long))
+	if ((ulong)len < sizeof (*icmph) + sizeof (*iph) + 2*sizeof (long))
 	{
 		DEBUG (("do_redir: packet too short"));
 		return -1;
@@ -385,7 +393,7 @@ do_redir (BUF *b, struct netif *nif, long len)
     	 * validate new gw address
 	 */
 	rt = route_get (icmph->u.redir_gw);
-	if (!rt || rt->flags & RTF_GATEWAY)
+	if (!rt || (rt->flags & RTF_GATEWAY))
 	{
 		DEBUG (("do_redir: bad new gway 0x%lx", icmph->u.redir_gw));
 		if (rt) route_deref (rt);
@@ -442,7 +450,8 @@ do_time (BUF *b, struct netif *nif, long len)
 	struct icmp_dgram *icmph;
 	long tm;
 	
-	if (len < sizeof (*icmph) + 3*sizeof (long))
+	UNUSED(nif);
+	if ((ulong)len < sizeof (*icmph) + 3*sizeof (long))
 	{
 		DEBUG (("do_redir: packet too short"));
 		return -1;
@@ -468,7 +477,8 @@ do_time (BUF *b, struct netif *nif, long len)
 static long
 do_echo (BUF *b, struct netif *nif, long len)
 {
-	if (len < sizeof (struct icmp_dgram))
+	UNUSED(nif);
+	if ((ulong)len < sizeof (struct icmp_dgram))
 	{
 		DEBUG (("do_echo: packet too short"));
 		return -1;
@@ -488,7 +498,7 @@ do_mask (BUF *b, struct netif *nif, long len)
 	struct icmp_dgram *icmph;
 	struct ifaddr *ifa;
 	
-	if (len < sizeof (*icmph) + sizeof (long))
+	if ((ulong)len < sizeof (*icmph) + sizeof (long))
 	{
 		DEBUG (("do_mask: packet too short"));
 		return -1;
@@ -514,7 +524,8 @@ do_mask (BUF *b, struct netif *nif, long len)
 static long
 do_info (BUF *b, struct netif *nif, long len)
 {
-	if (len < sizeof (struct icmp_dgram))
+	UNUSED(nif);
+	if ((ulong)len < sizeof (struct icmp_dgram))
 	{
 		DEBUG (("do_info: packet too short"));
 		return -1;
@@ -536,7 +547,8 @@ do_erreport (BUF *b, struct netif *nif, long len)
 	struct ip_dgram *iph;
 	BUF *buf;
 	
-	if (len < sizeof (*icmph) + sizeof (*iph) + 2*sizeof (long))
+	UNUSED(nif);
+	if ((ulong)len < sizeof (*icmph) + sizeof (*iph) + 2*sizeof (long))
 	{
 		DEBUG (("do_erreport: packet too short"));
 		return -1;
