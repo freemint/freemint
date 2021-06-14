@@ -417,8 +417,8 @@ checkalarms (void)
 		 * need a cast and have to place it in t->arg themselves but
 		 * that way everything else still works without change -nox
 		 */
-		register long args = tlist->arg;
-		register PROC *p = tlist->proc;
+		register long args __asm__("d0") = tlist->arg;
+		register PROC *p __asm__("a0") = tlist->proc;
 		to_func *evnt = tlist->func;
 		register TIMEOUT *old = tlist;
 		
@@ -444,7 +444,23 @@ checkalarms (void)
 		TRACE (("doing timeout code for pid %d", p->pid));
 		
 		/* call the timeout function */
-		(*evnt)(p, args);
+		/*
+		 * take care to call it in a way that works both for cdecl
+		 * and Pure-C calling conventions, since there seem
+		 * to be drivers around that were compiled by it.
+		 */
+		__asm__ __volatile__(
+			"\tmove.l %1,-(%%a7)\n"
+			"\tmove.l %0,-(%%a7)\n"
+			"\tjsr (%2)\n"
+#ifdef __mcoldfire__
+			"\taddq.l #8,%%a7\n"
+#else
+			"\taddq.w #8,%%a7\n"
+#endif
+		: /* no outputs */
+		: "a"(p), "d"(args), "a"(evnt)
+		: "d1", "d2", "a1", "a2", "cc", "memory");
 		
 		sr = spl7 ();
 	}
