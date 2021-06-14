@@ -18,7 +18,7 @@ static struct netif if_loopback =
 {
 	name:		"lo",
 	unit:		0,
-	flags:		IFF_LOOPBACK | IFF_BROADCAST | IFF_IGMP,
+	flags:		IFF_LOOPBACK | IFF_IGMP,
 	metric:		0,
 	mtu:		2 * 8192,
 	timer:		0,
