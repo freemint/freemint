@@ -113,8 +113,12 @@ tcbos_idle (struct tcb *tcb, short event)
 static void
 tcbos_xmit (struct tcb *tcb, short event)
 {
-	long tmout, delay, inq = 0;
-	
+	long tmout;
+#ifdef DEV_DEBUG
+	long delay;
+	long inq = 0;
+#endif
+
 	switch (event)
 	{
 		case TCBOE_SEND:
@@ -144,7 +148,9 @@ tcbos_xmit (struct tcb *tcb, short event)
 		}
 		case TCBOE_ACKRCVD:
 		{
+#ifdef DEV_DEBUG
 	  		delay = DIFTIME(tcb->data->snd.qfirst->info, GETTIME());
+#endif
 			
 			tcp_dropdata (tcb);
 			if (SEQGE (tcb->snd_una, tcb->seq_write))
@@ -166,7 +172,9 @@ tcbos_xmit (struct tcb *tcb, short event)
 						  GETTIME());
 				if (tmout < atmout)
 					tmout = atmout;
+#ifdef DEV_DEBUG
 				inq = DIFTIME (tcb->data->snd.qfirst->info, GETTIME());
+#endif
 			}
 			
 			DEBUG (("a %4ld ms; t %4ld ms; q %4ld ms; mt %4ld ms",
@@ -181,7 +189,9 @@ tcbos_xmit (struct tcb *tcb, short event)
 			DEBUG (("tcpout: port %d: XMIT -> RETRANS",
 					tcb->data->src.port));
 			
+#ifdef DEV_DEBUG
 	  		delay = DIFTIME (tcb->data->snd.qfirst->info, GETTIME());
+#endif
 			DEBUG (("tcpout: timeout after %4ld ms", delay*EVTGRAN));
 			
 			tcb->ostate = TCBOS_RETRANS;
@@ -195,9 +205,6 @@ tcbos_xmit (struct tcb *tcb, short event)
 			break;
 		}
 	}
-
-	UNUSED (inq);
-	UNUSED (delay);
 }
 
 static void
