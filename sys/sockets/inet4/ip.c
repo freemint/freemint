@@ -560,7 +560,7 @@ ip_input (struct netif *nif, BUF *buf)
 	buf_deref (buf, BUF_NORMAL);
 	route_deref (buf, BUF_NORMAL);
 # else
-	KAYDEBUG (("ip_input: forwarding to dst 0x%lx from 0x%lx",
+	DEBUG (("ip_input: forwarding to dst 0x%lx from 0x%lx",
 		iph->daddr, iph->saddr));
 	/*
 	 * See if the packets times out

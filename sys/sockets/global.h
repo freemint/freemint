@@ -46,8 +46,6 @@
 # define TRACE(x)	KERNEL_TRACE x
 # define ASSERT(x)	assert x
 
-# define KAYDEBUG(x)	KERNEL_DEBUG x
-
 # else
 
 # define FORCE(x)	
@@ -55,8 +53,6 @@
 # define DEBUG(x)	
 # define TRACE(x)	
 # define ASSERT(x)	assert x
-
-# define KAYDEBUG(a)	
 
 # endif
 

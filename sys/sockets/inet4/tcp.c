@@ -945,7 +945,7 @@ tcp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 	}
 	DEBUG (("tcp_input: port %d:state %d: not acceptable input segment",
 		data->src.port, tcb->state));
-	KAYDEBUG (("tcp_input: w %ld, s %ld, snxt %ld, wlast %ld",
+	DEBUG (("tcp_input: w %ld, s %ld, snxt %ld, wlast %ld",
 		tcb->rcv_nxt, tcph->seq,
 		tcph->seq + tcp_seglen (buf, tcph),
 		tcb->rcv_nxt + tcp_rcvwnd (tcb, 0)));

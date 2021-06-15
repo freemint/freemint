@@ -497,7 +497,7 @@ udp_error (short type, short code, BUF *buf, ulong saddr, ulong daddr)
 		buf_deref (buf, BUF_NORMAL);
 		return 0;
 	}
-	KAYDEBUG (("udp_error: destination (%lx, %x) unreachable",
+	DEBUG (("udp_error: destination (%lx, %x) unreachable",
 		daddr, uh->dstport));
 	
 	data->err = icmp_errno (type, code);
