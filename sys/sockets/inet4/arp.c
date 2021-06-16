@@ -13,26 +13,7 @@
 # include "mint/sockio.h"
 
 
-static struct arp_entry	*arp_alloc (void);
-static short	arp_hash (uchar *, short);
-static void	arp_remove (struct arp_entry *);
-static void	rarp_remove (struct arp_entry *);
-static void	rarp_put (struct arp_entry *);
-static char *	arp_myaddr (struct netif *, short);
-static void	arp_sendreq (struct arp_entry *);
 static void	arp_timeout (long);
-static void	arp_dosend (struct netif *, BUF *, short);
-static void	arp_sendq (struct arp_entry *);
-
-static long	get_praddr (struct hwaddr *, struct sockaddr *, short *);
-static long	get_hwaddr (struct hwaddr *, struct sockaddr *, short *);
-static long	put_hwaddr (struct hwaddr *, struct sockaddr *, short);
-
-# ifdef notused
-static void	arp_put (struct arp_entry *);
-static void	arp_dump (struct arp_entry *);
-static long	put_praddr (struct hwaddr *, struct sockaddr *, short);
-# endif
 
 /*
  * Hash tables for ARP and RARP.
@@ -41,7 +22,7 @@ struct arp_entry *arptab[ARP_HASHSIZE];
 struct arp_entry *rarptab[ARP_HASHSIZE];
 
 
-INLINE short
+static short
 arp_hash (uchar *addr, short len)
 {
 	ulong v;
@@ -804,7 +785,7 @@ arp_init (void)
  * Debugging stuff
  */
 # ifdef notused
-void
+static void
 arp_dump (struct arp_entry *are)
 {
 	uchar *cp;
