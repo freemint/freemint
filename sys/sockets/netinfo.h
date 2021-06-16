@@ -32,7 +32,10 @@ struct netinfo
 	/* added for hotplug, i.e. USB */
 	long	(*_if_deregister) (struct netif *);
 
-	long	reserved[4];
+	/* used by MagiCNet */
+	void *slip_pd;
+
+	long	reserved[3];
 };
 
 # ifndef NETINFO

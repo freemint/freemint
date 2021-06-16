@@ -691,6 +691,7 @@ bpf_ioctl (FILEPTR *fp, int cmd, void *arg)
 			 * get read timeout
 			 */
 			*(long *)arg = bpf->tmout * EVTGRAN;
+			return 0;
 			
 		case BIOCGSTATS:
 			((struct bpf_stat *)arg)->bs_recv = bpf->in_pkts;
