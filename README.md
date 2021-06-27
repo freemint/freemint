@@ -1,6 +1,8 @@
-[![Build Status](https://travis-ci.org/freemint/freemint.svg?branch=master)](https://travis-ci.org/freemint/freemint)
+[![Build Status](https://github.com/freemint/freemint/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/freemint/freemint/actions) 
 
-[![Download](https://api.bintray.com/packages/freemint/freemint/snapshots/images/download.svg)](https://bintray.com/freemint/freemint/snapshots/_latestVersion) (bootable builds) [![Download](https://api.bintray.com/packages/freemint/freemint/snapshots-cpu/images/download.svg)](https://bintray.com/freemint/freemint/snapshots-cpu/_latestVersion) (per-cpu builds) [![Download](https://api.bintray.com/packages/freemint/freemint/snapshots-usb4tos/images/download.svg)](https://bintray.com/freemint/freemint/snapshots-usb4tos/_latestVersion) (TOS USB drivers)
+Bootable builds: [Download](https://tho-otto.de/snapshots/freemint/bootable/)
+Per CPU builds: [Download](https://tho-otto.de/snapshots/freemint/cpu/)
+TOS USB drivers: [Download](https://tho-otto.de/snapshots/freemint/usb4tos/)
 
 This is FreeMiNT. Please see the file `COPYING` for licensing conditions. Please send electronic mail to <freemint-discuss@lists.sourceforge.net> for further information.
 

@@ -1,0 +1,1 @@
+coreutils 8.21 compiled by Vincent Rivière: http://vincent.riviere.free.fr/soft/m68k-atari-mint/archives/mint/coreutils/

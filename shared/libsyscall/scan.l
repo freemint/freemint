@@ -39,6 +39,8 @@ int yylinecount = 1;
 
 %option noinput
 %option nounput
+%option nointeractive never-interactive
+%option noyywrap
 
 digit		[0-9]
 nonzerodigit	[1-9]
