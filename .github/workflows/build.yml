@@ -23,6 +23,8 @@ jobs:
           CPU_TARGET: ${{ matrix.cpu_target }}
         run: ./.scripts/setup_env.sh
       - name: Install packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SYSROOT_DIR="/" ./.scripts/install-freemint.sh binutils gcc mintbin
           ./.scripts/install-freemint.sh mintlib fdlibm gemlib cflib gemma

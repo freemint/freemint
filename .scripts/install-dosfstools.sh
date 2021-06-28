@@ -3,8 +3,7 @@
 # -u: Treat unset variables as an error when substituting.
 # -x: Display expanded script commands
 
-#CURL_HEADER="Authorization: token $GITHUB_OATH_TOKEN"
-CURL_HEADER=
+CURL_HEADER="Authorization: Bearer $GITHUB_TOKEN"
 
 if [ "$CPU_TARGET" = "000" -o "$CPU_TARGET" = "prg" ]
 then
