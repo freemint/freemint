@@ -83,13 +83,21 @@
 
 #define MSG_BUILDDATE	__DATE__
 
+#ifdef TOSONLY
 #define MSG_BOOT	\
-	"\033p NetUSBee USB controller driver for " MSG_VERSION " \033q\r\n"
-
+		"\r\n\033p NetUSBee USB controller driver for " MSG_VERSION " \033q\r\n"
 #define MSG_GREET	\
-	"Ported, mixed and shaken by David Galvez.\r\n" \
-	"Brought to TOS by Claude Labelle & Roger Burrows.\r\n" \
-	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+		"Ported, mixed and shaken by David Galvez.\r\n" \
+		"Brought to TOS by Claude Labelle & Roger Burrows.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n"
+#else
+#define MSG_BOOT	\
+		"\033p NetUSBee USB controller driver for " MSG_VERSION " \033q\r\n"
+#define MSG_GREET	\
+		"Ported, mixed and shaken by David Galvez.\r\n" \
+		"Brought to TOS by Claude Labelle & Roger Burrows.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+#endif
 
 /*
  * Enable the following defines if you wish enable extra debugging messages.
@@ -106,6 +114,7 @@
 struct kentry	*kentry;
 #else
 extern unsigned long _PgmSize;
+int isHddriverModule(void); /* in entry.S */
 #endif
 #if defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 static ulong delay_150ns;
@@ -917,6 +926,15 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
 	return 1023 / mpck * mpck;
 }
 
+/* Returns the current interrupt level of the CPU.
+ * Must only be called in supervisor mode.
+ */
+static inline unsigned int get_int_lvl() {
+	unsigned int sr;
+	__asm("move sr,%0" : "=d" (sr) : /* no inputs */);
+	return (sr >> 8) & 7;
+}
+
 /* Do an USB transfer
  *
  * If we are in supervisor state, we poll for ikbd interrupts on the
@@ -958,7 +976,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	 * set flag if we need to poll for ikbd interrupts
 	 */
 #ifdef TOSONLY
-	if (Super(1L))
+	if (Super(1L) && (get_int_lvl() >= 6))
 #endif
 		poll_interrupts = 1;
 
@@ -2105,22 +2123,31 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 
 	if (check_kentry_version())
 		return -1;
-#endif
 
 	/* Check if the user wants to enable the overcurrent protection */
-#ifdef TOSONLY
-	char path[128];
-
-	d_getpath(path, 0); /* In current drive */
-	d_setpath("\\");
-#endif
 	if ((handle = f_open("netusbee.ocp",0)) > 0)
 	{
 		oc_protection_on = 1;
 		f_close(handle);
 	}
+#endif
+
+	/* Check if the user wants to enable the overcurrent protection */
 #ifdef TOSONLY
-	d_setpath(path);
+	if (isHddriverModule())
+		oc_protection_on = 1;
+	else {
+		char path[128];
+
+		d_getpath(path, 0); /* In current drive */
+		d_setpath("\\");
+		if ((handle = f_open("netusbee.ocp",0)) > 0)
+		{
+			oc_protection_on = 1;
+			f_close(handle);
+		}
+		d_setpath(path);
+	}
 #endif
 
 	c_conws (MSG_BOOT);
@@ -2162,8 +2189,15 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 
 	DEBUG (("%s: ucd register ok", __FILE__));
 #ifdef TOSONLY
-	c_conws("NetUSBee USB driver installed.\r\n");
-	Ptermres(_PgmSize,0);
+	c_conws("NetUSBee USB driver installed");
+	/* terminate and stay resident */
+	if (isHddriverModule()) {
+		c_conws(" as HDDRIVER module.\r\n");
+		return 0;
+	} else {
+		c_conws(".\r\n");
+		Ptermres(_PgmSize, 0);
+	}
 #endif
 	return 0;
 }

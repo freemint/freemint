@@ -103,10 +103,14 @@ static inline void calibrate_delay(void)
 	 * disable interrupts then run the calibration
 	 * (the calibration saves & restores the interrupt status)
 	 */
-	ret = Super(0L);
+	if (Super((void *)1L) == 0L)
+		ret = Super(0L);
+	else
+		ret = 0;
 	loopcount = CALIBRATION_TIME * loopcount_1_msec;
 	intcount = run_calibration(loopcount);
-	SuperToUser(ret);
+	if (ret)
+		SuperToUser((void *)ret);
 
 	Rsconf(old_rate,-1,-1,-1,-1,-1);
 	Bconmap(old_device);

@@ -12,6 +12,7 @@ SSOBJS = \
 TOSCOBJS = \
         crtinit.c
 
+# for HDDRIVER modules to work, entry.S must be first in TOSSSOBJS
 TOSSSOBJS = \
         entry.S \
         setstack.S \

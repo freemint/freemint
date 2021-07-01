@@ -29,9 +29,10 @@ SOBJS =
 
 SSOBJS =
 
+# for HDDRIVER modules to work, entry.S must be first in TOSSSOBJS
 TOSSSOBJS = \
-	delayasm.S \
 	entry.S \
+	delayasm.S \
 	setstack.S
 
 SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)

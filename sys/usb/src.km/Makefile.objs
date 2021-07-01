@@ -37,9 +37,11 @@ STRIPFLAGS =
 
 # default definitions
 GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
 ifeq ($(TARGET),usb.prg)
-OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
+# for HDDRIVER modules to work, TOSSSOBJS must be first in OBJS
+OBJS = $(TOSSSOBJS:.S=.o) $(TOSCOBJS:.c=.o) $(SSOBJS:.S=.o) $(COBJS:.c=.o) $(SOBJS:.s=.o)
+else
+OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
 endif
 
 VPATH = ..

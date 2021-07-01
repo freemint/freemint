@@ -27,12 +27,19 @@
 
 #define MSG_BUILDDATE	__DATE__
 
+#ifdef TOSONLY
 #define MSG_BOOT	\
-	"\033p USB keyboard class driver " MSG_VERSION " \033q\r\n"
-
+		"\r\n\033p USB keyboard class driver " MSG_VERSION " \033q\r\n"
 #define MSG_GREET	\
-	"By Christian Zietz.\r\n" \
-	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+		"By Christian Zietz.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n"
+#else
+#define MSG_BOOT	\
+		"\033p USB keyboard class driver " MSG_VERSION " \033q\r\n"
+#define MSG_GREET	\
+		"By Christian Zietz.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+#endif
 
 /****************************************************************************/
 /*
@@ -46,6 +53,7 @@ void kbd_poll_thread (void *);
 void kbd_poll (PROC * proc, long dummy);
 #else
 extern unsigned long _PgmSize;
+int isHddriverModule(void); /* in entry.S */
 
 /*
  * old handler
@@ -686,15 +694,26 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	old_ikbd_int = Setexc (0x114/4, (long) interrupt_ikbd);
 #else
 	{
-		ret = Super (0L);
+		if (Super((void *)1L) == 0L)
+			ret = Super(0L);
+		else
+			ret = 0;
 		old_ikbd_int = (void *) *(volatile unsigned long *) 0x400;
 		*(volatile unsigned long *) 0x400 = (unsigned long) interrupt_ikbd;
-		SuperToUser (ret);
+		if (ret)
+			SuperToUser((void *)ret);
 	}
 #endif
-	c_conws ("USB keyboard driver installed.\r\n");
+	c_conws ("USB keyboard driver installed");
+	/* terminate and stay resident */
+	if (isHddriverModule()) {
+		c_conws(" as HDDRIVER module.\r\n");
+		return 0;
+	} else {
+		c_conws(".\r\n");
+		Ptermres(_PgmSize, 0);
+	}
 
-	Ptermres (_PgmSize, 0);
 #endif
 
 	return 0;

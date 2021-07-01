@@ -25,12 +25,19 @@
 
 #define MSG_BUILDDATE	__DATE__
 
+#ifdef TOSONLY
 #define MSG_BOOT	\
-	"\033p USB printer class driver " MSG_VERSION " \033q\r\n"
-
+		"\r\n\033p USB printer class driver " MSG_VERSION " \033q\r\n"
 #define MSG_GREET	\
-	"by Claude Labelle.\r\n" \
-	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+		"by Claude Labelle.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n"
+#else
+#define MSG_BOOT	\
+		"\033p USB printer class driver " MSG_VERSION " \033q\r\n"
+#define MSG_GREET	\
+		"by Claude Labelle.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+#endif
 
 //#define TEST
 //#define DEBUGTOS
@@ -44,6 +51,7 @@
 struct kentry *kentry;
 #else
 extern unsigned long _PgmSize;
+int isHddriverModule(void); /* in entry.S */
 #endif
 
 struct usb_module_api *api;
@@ -422,12 +430,16 @@ printer_disconnect (struct usb_device *dev)
 		/* Restablish original bcostat/bconout to allow printing to parallel port. */
 #ifdef TOSONLY
 		long ret;
-		ret = Super (0L);
+		if (Super((void *)1L) == 0L)
+			ret = Super(0L);
+		else
+			ret = 0;
 #endif
 		*BCOSTAT0 = original_bcostat;
 		*BCONOUT0 = original_bconout;
 #ifdef TOSONLY
-		SuperToUser (ret);
+		if (ret)
+			SuperToUser((void *)ret);
 #endif
 	}
 
@@ -549,14 +561,18 @@ printer_probe (struct usb_device *dev, unsigned int ifnum)
 	/* to intercept all parallel port traffic and direct it to USB printer */
 #ifdef TOSONLY
 	long ret;
-	ret = Super (0L);
+	if (Super((void *)1L) == 0L)
+		ret = Super(0L);
+	else
+		ret = 0;
 #endif
 	original_bcostat = *BCOSTAT0;
 	original_bconout = *BCONOUT0;
 	*BCOSTAT0 = (long) printer_bcostat;
 	*BCONOUT0 = (long) printer_bconout;
 #ifdef TOSONLY
-	SuperToUser (ret);
+	if (ret)
+		SuperToUser((void *)ret);
 #endif
 #ifdef DEBUGTOS
 	c_conws ("\r\n test of printer reset... ");
@@ -618,10 +634,14 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	}
 
 #ifdef TEST
-	ret = Super (0L);
+	if (Super((void *)1L) == 0L)
+		ret = Super(0L);
+	else
+		ret = 0;
 	*BCOSTAT0 = (long) printer_bcostat;
 	*BCONOUT0 = (long) printer_bconout;
-	SuperToUser (ret);
+	if (ret)
+		SuperToUser((void *)ret);
 #endif
 
 #endif
@@ -637,8 +657,15 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
-	c_conws ("USB printer driver installed.\r\n");
-	Ptermres (_PgmSize, 0);
+	c_conws ("USB printer driver installed");
+	/* terminate and stay resident */
+	if (isHddriverModule()) {
+		c_conws(" as HDDRIVER module.\r\n");
+		return 0;
+	} else {
+		c_conws(".\r\n");
+		Ptermres(_PgmSize, 0);
+	}
 #endif
 
 	return 0;

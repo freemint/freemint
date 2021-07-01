@@ -47,17 +47,20 @@ struct usb_module_api usb_api;
 
 #ifdef TOSONLY
 #define MSG_BOOT		\
-		"\033p USB core API driver for TOS \033q\r\n" \
+		"\r\n\033p USB core API driver for TOS \033q\r\n" \
 		"Brought to TOS by Alan Hourihane.\r\n"
+#define MSG_GREET		\
+		"David Galvez 2010-2014.\r\n" \
+		"Alan Hourihane 2013-2014.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n"
 #else
 #define MSG_BOOT	\
 		"\033p USB core API driver for FreeMiNT \033q\r\n"
-#endif
-
 #define MSG_GREET		\
-	"David Galvez 2010-2014.\r\n" \
-	"Alan Hourihane 2013-2014.\r\n" \
-	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+		"David Galvez 2010-2014.\r\n" \
+		"Alan Hourihane 2013-2014.\r\n" \
+		"Compiled " MSG_BUILDDATE ".\r\n\r\n"
+#endif
 
 static void
 bootmessage(void)
@@ -80,6 +83,7 @@ static const struct kernel_module *self = NULL;
 #else
 
 extern unsigned long _PgmSize;
+int isHddriverModule(void); /* in entry.S */
 #endif
 
 long			udd_register		(struct uddif *u);
@@ -199,10 +203,16 @@ init(struct kentry *k, const struct kernel_module *km)
 			return 0;
 		}
 
-		c_conws("USB core installed.\r\n");
+		c_conws("USB core installed");
 
 		/* terminate and stay resident */
-		Ptermres(_PgmSize, 0);
+		if (isHddriverModule()) {
+			c_conws(" as HDDRIVER module.\r\n");
+			return 0;
+		} else {
+			c_conws(".\r\n");
+			Ptermres(_PgmSize, 0);
+		}
 	}
 
 
