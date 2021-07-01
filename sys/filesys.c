@@ -678,7 +678,16 @@ disk_changed (ushort d)
 		 * Note that ENODEV must be tested for drives A-C, or else
 		 * booting may not work properly.
 		 */
+#ifdef OLDTOSFS
+		/* The kernel for the Hatari emulator (minthat.prg) is compiled
+		 * with OLDTOSFS to enable access to hard drives emulated only on
+		 * GEMDOS level. However, in that case there is no BIOS device
+		 * for drive C:, either, and we must ignore ENODEV.
+		 */
+		if (d >= 2 && r == ENODEV)
+#else
 		if (d > 2 && r == ENODEV)
+#endif
 			return 0;	/* assume no change */
 		else
 			return r;
