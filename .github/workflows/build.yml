@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install SSH keys
+        if: ${{ github.event_name == 'push' }}
         env:
           SSH_ID: ${{ secrets.SSH_ID }}
         run: ./.scripts/install_ssh_id.sh
