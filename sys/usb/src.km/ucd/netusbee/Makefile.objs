@@ -59,7 +59,7 @@ $(STRIPEX): $(top_srcdir)/usb/src.km/tos-common/stripex.c
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 	@if [ "$(TARGET)" = *".prg" ]; then \
-		$(STRIPEX) $(TARGET); \
+		./$(STRIPEX) $(TARGET); \
 		echo $(STRIPEX) $(TARGET); \
 	fi
 	
