@@ -327,6 +327,9 @@ kbd_int (void)
 	static int skip_cycle = 0; /* call half the time to save CPU time (normally called each 20ms, now 40ms) */
 	long capslock_state;
 
+	if (kbd_data.pusb_dev == NULL)
+		return;
+
 	skip_cycle = skip_cycle?0:1;
 	if (skip_cycle)
 		return;
@@ -345,9 +348,6 @@ kbd_int (void)
 			set_led(1L);
 		capslock_interval = 0L;
 	}
-
-	if (kbd_data.pusb_dev == NULL)
-		return;
 
 	r = usb_bulk_msg (kbd_data.pusb_dev,
 					  kbd_data.irqpipe,
