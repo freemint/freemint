@@ -966,7 +966,9 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					move_window(lock, w, true, -1L, w->r.x, w->r.y, w->r.w, w->min.h);
 				}
 
+#if 0 /* see issue #230 */
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM, WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
+#endif
 			}
 		}
 		else if (widg->stuff)	/* remove toolbar */
