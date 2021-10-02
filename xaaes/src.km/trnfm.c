@@ -180,20 +180,21 @@ static const short devtovdi8[256] =
 #define G_LYELLOW		14
 #define G_LMAGENTA		15
 #endif
-/*                                                  1  1  1  1  1  1 */
-/*                           0  1  2 3 4 5 6 7 8  9 0  1  2  3  4  5 */
-static const short devtovdi4[] = { 0, 2 ,3,6,4,7,5,8,9,10,11,14,12,15,13,1  };
-
-/*                           0   1  2 3 4 5 6 7 8  9  0  1  2  3  4  5 */
-/*static const short vditodev4[] = { 0,255, 1,2,4,6,3,5,7, 8, 9,10,12,14,11,13 };*/
+/*                                                                         1   1   1   1   1   1 */
+/*                                 0   1   2   3   4   5   6   7   8   9   0   1   2   3   4   5 */
+static const short devtovdi4[] = { 0,  2,  3,  6,  4,  7,  5,  8,  9, 10, 11, 14, 12, 15, 13,  1 };
 
 #if 0
-static const short vditodev4[] = { 0,1,2,3,4,5,6,7, 8, 9,8, 9,12,14,11,13 };
+/*                                                                         1   1   1   1   1   1 */
+/*                                 0   1   2   3   4   5   6   7   8   9   0   1   2   3   4   5 */
+static const short vditodev4[] = { 0,255,  1,  2,  4,  6,  3,  5,  7,  8,  9, 10, 12, 14, 11, 13 };
+
+static const short vditodev4[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  8,  9, 12, 14, 11, 13 };
 #endif
 
-static const short devtovdi2[] = { 0,2,3,1 };
+static const short devtovdi2[] = { 0, 2, 3, 1 };
 
-static const short devtovdi1[] = { 0,1 };
+static const short devtovdi1[] = { 0, 1 };
 
 static const short *tovdilut[] = { 0, devtovdi1, devtovdi2, 0, devtovdi4, 0, 0, 0, devtovdi8 };
 
