@@ -184,11 +184,11 @@ static const short devtovdi8[256] =
 /*                                 0   1   2   3   4   5   6   7   8   9   0   1   2   3   4   5 */
 static const short devtovdi4[] = { 0,  2,  3,  6,  4,  7,  5,  8,  9, 10, 11, 14, 12, 15, 13,  1 };
 
-#if 0
 /*                                                                         1   1   1   1   1   1 */
 /*                                 0   1   2   3   4   5   6   7   8   9   0   1   2   3   4   5 */
 static const short vditodev4[] = { 0,255,  1,  2,  4,  6,  3,  5,  7,  8,  9, 10, 12, 14, 11, 13 };
 
+#if 0
 static const short vditodev4[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  8,  9, 12, 14, 11, 13 };
 #endif
 
@@ -622,13 +622,12 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 				c = j;
 			}
 		}
-		if( screen.planes == 8 )
+		if (c < 16 && screen.planes == 8)
 		{
-			/* ?? */
-			if (c == 9)
-				c = 8;
-			if( c == 1 )
-				c = 255;
+			/* We need to convert from vdi to dev here so vr_trnfm() converts
+			 * back to what we already know here...
+			 */
+			c = vditodev4[c];
 		}
 
 		cref[i] = c;
