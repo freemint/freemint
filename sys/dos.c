@@ -578,7 +578,7 @@ sys_s_ysconf (int which)
 {
 	switch (which)
 	{
-		case -1:	return 4;
+		case -1:	return 9;
 		case  0:	return UNLIMITED;
 		case  1:	return 32767; /* matches ARG_MAX */
 		case  2:	return NDFILE;
