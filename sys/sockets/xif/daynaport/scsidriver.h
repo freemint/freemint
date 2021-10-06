@@ -112,6 +112,6 @@ LONG SCSI_Close(tHandle handle);
 LONG SCSI_Error(tHandle handle,LONG rwflag,LONG ErrNo);
 
 LONG SCSI_Inquiry(LONG BusNo,const DLONG *SCSIId,LONG lun,char *inqdata);
-LONG SCSI_Options(LONG options);
+LONG SCSI_Modeswitch(LONG required);
 
 #endif

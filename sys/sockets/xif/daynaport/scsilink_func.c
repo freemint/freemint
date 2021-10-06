@@ -57,6 +57,14 @@
  *
  *	v2.2	august/2007	rfb
  *		. code cleanup for release
+ *
+ *	v3.0	november/2007	rfb
+ *		. add scsilink_get_macaddr() to retrieve MAC address
+ *		. remove scsilink_set_broadcast(): this function is now
+ *		  performed automagically after each reset completes
+ *		. rename scsilink_modetest() to scsilink_modeswitch()
+ *		  for clarity; it now uses the new SCSIDRV library call
+ *		  SCSI_Modeswitch()
  */
 #include <osbind.h>
 
@@ -70,7 +78,7 @@
 
 #include "mint/time.h"
 
-#define VERSION			"v2.2"	/* of my code */
+#define VERSION			"v3.0"	/* of my code */
 
 #define MANUFACTURER	"Dayna   "
 #define PRODUCT			"SCSI/Link       "
@@ -83,7 +91,7 @@ typedef struct {
 } ILONG;
 
 struct cmd09_data {		/* returned by 0x09 SCSI command */
-	char macaddr[6];
+	char macaddr[ETH_ALEN];
 	ILONG counter1;			/* these 3 counters are possibly (in no order): crc_errors, frame_errors, missed_errors, */
 	ILONG counter2;			/* overruns, collisions, carrier, heartbeat, window ... */
 	ILONG counter3;
@@ -103,6 +111,8 @@ static struct {
 	long resets;
 } devtab[MAX_SCSILINK_DEVICES];
 
+static BYTE sense[18];					/* global to reduce stack requirements (precautionary) */
+
 /*
  *	function prototypes
  */
@@ -110,6 +120,10 @@ static long check_device(long bus,long id);
 static long get_device_data(long devnum,struct cmd09_data *data);
 static long get_ticks(void);
 static unsigned long getulong(ILONG *p);
+static long set_broadcast_mode(long devnum);
+
+long scsilink_modeswitch(long required);
+long scsilink_get_macaddr(long devnum,char *macaddr);
 
 
 /********************************************
@@ -129,7 +143,6 @@ unsigned long busses, b;
 long i, j;
 
 	busses = SCSI_Init(NULL);
-	
 	if (!busses)
 		return -1L;
 
@@ -176,8 +189,10 @@ ULONG maxlen, rc;
 		devtab[devnum].handle = NULL;
 		return -1L;
 	}
+	memcpy(macaddr,temp.macaddr,ETH_ALEN);
 
-	memcpy(macaddr,temp.macaddr,6);
+	set_broadcast_mode(devnum);
+
 	return 0L;
 }
 
@@ -195,12 +210,9 @@ long scsilink_busid(long devnum)
 /*
  *	inform SCSIDRV if mode switch is required
  */
-long scsilink_modetest(long required)
+long scsilink_modeswitch(long required)
 {
-long rc;
-
-	rc = SCSI_Options(required?USE_SUPER:DONT_SWITCH);
-	return (rc>=0L)?0L:-1L;
+	return SCSI_Modeswitch(required);
 }
 
 /*
@@ -211,7 +223,25 @@ long scsilink_status(long devnum)
 	if (*(_hz_200) < devtab[devnum].next_io)
 		return RESET_IN_PROGRESS;
 
-	return devtab[devnum].status;	/* NEED_BROADCAST or NORMAL */
+	return NORMAL;
+}
+
+/*
+ *	get MAC address
+ */
+long scsilink_get_macaddr(long devnum,char *macaddr)
+{
+struct cmd09_data temp;
+long rc;
+
+	if ((devnum < 0L) || (devnum >= num_devices))
+		return -1L;
+
+	if ((rc=get_device_data(devnum,&temp)) != 0L)
+		return rc;
+
+	memcpy(macaddr,temp.macaddr,ETH_ALEN);
+	return 0L;
 }
 
 /*
@@ -251,11 +281,13 @@ long scsilink_read(long devnum,char *buf)
 {
 tSCSICmd scsi;
 static BYTE cmd[6] = { 0x08, 0, 0, MAX_SCSI_READ>>8, MAX_SCSI_READ&0xff, 0x80 };
-BYTE sense[18];
 long rc;
 
 	if ((devnum < 0L) || (devnum >= num_devices))
 		return -1L;
+
+	if (devtab[devnum].status == NEED_BROADCAST)
+		set_broadcast_mode(devnum);
 
 	scsi.Handle = devtab[devnum].handle;
 	scsi.Cmd = cmd;
@@ -282,7 +314,6 @@ long scsilink_reset(long devnum,long type)
 {
 tSCSICmd scsi;
 static BYTE cmd[6] = { 0x0e, 0, 0, 0, 0, 0 };
-BYTE sense[18];
 long rc, t;
 
 	if ((devnum < 0L) || (devnum >= num_devices))
@@ -325,7 +356,6 @@ long scsilink_set_macaddr(long devnum,char *macaddr)
 {
 tSCSICmd scsi;
 static BYTE cmd[6] = { 0x0c, 0, 0, 0, 0x04, 0x40 };
-BYTE sense[18];
 
 	if ((devnum < 0L) || (devnum >= num_devices))
 		return -1L;
@@ -335,32 +365,7 @@ BYTE sense[18];
 	scsi.Cmd = cmd;
 	scsi.CmdLen = 6;
 	scsi.Buffer = macaddr;
-	scsi.TransferLen = 6;
-	scsi.SenseBuffer = sense;
-	scsi.Timeout = SCSI_TIMEOUT;
-	scsi.Flags = 0;
-
-	return SCSI_Out(&scsi);
-}
-
-/*
- *	enable broadcast messages
- */
-long scsilink_set_broadcast(long devnum)
-{
-tSCSICmd scsi;
-static BYTE cmd[6] = { 0x0c, 0, 0, 0, 0x04, 0x80 };
-BYTE sense[18];
-
-	if ((devnum < 0L) || (devnum >= num_devices))
-		return -1L;
-	devtab[devnum].status = NORMAL;
-
-	scsi.Handle = devtab[devnum].handle;
-	scsi.Cmd = cmd;
-	scsi.CmdLen = 6;
-	scsi.Buffer = NULL;
-	scsi.TransferLen = 0;
+	scsi.TransferLen = ETH_ALEN;
 	scsi.SenseBuffer = sense;
 	scsi.Timeout = SCSI_TIMEOUT;
 	scsi.Flags = 0;
@@ -375,11 +380,13 @@ long scsilink_write(long devnum,char *buf,long length)
 {
 tSCSICmd scsi;
 static BYTE cmd[6] = { 0x0a, 0, 0, 0, 0, 0 };
-BYTE sense[18];
 long rc;
 
 	if ((devnum < 0L) || (devnum >= num_devices))
 		return -1L;
+
+	if (devtab[devnum].status == NEED_BROADCAST)
+		set_broadcast_mode(devnum);
 
 	cmd[3] = length >> 8;
 	cmd[4] = length & 0xff;
@@ -435,7 +442,6 @@ static long get_device_data(long devnum,struct cmd09_data *data)
 {
 tSCSICmd scsi;
 static BYTE cmd[6] = { 0x09, 0, 0, 0, 18, 0 };
-BYTE sense[18];
 long rc;
 
 	if ((devnum < 0L) || (devnum >= num_devices))
@@ -468,4 +474,28 @@ static long get_ticks()
 static unsigned long getulong(ILONG *p)
 {
 	return ((ULONG)p->byte[3]<<24) + ((ULONG)p->byte[2]<<16) + ((ULONG)p->byte[1]<<8) + (ULONG)p->byte[0];
+}
+
+/*
+ *	enable broadcast messages
+ */
+static long set_broadcast_mode(long devnum)
+{
+tSCSICmd scsi;
+static BYTE cmd[6] = { 0x0c, 0, 0, 0, 0x04, 0x80 };
+
+	if ((devnum < 0L) || (devnum >= num_devices))
+		return -1L;
+	devtab[devnum].status = NORMAL;
+
+	scsi.Handle = devtab[devnum].handle;
+	scsi.Cmd = cmd;
+	scsi.CmdLen = 6;
+	scsi.Buffer = NULL;
+	scsi.TransferLen = 0;
+	scsi.SenseBuffer = sense;
+	scsi.Timeout = SCSI_TIMEOUT;
+	scsi.Flags = 0;
+
+	return SCSI_Out(&scsi);
 }

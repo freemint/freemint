@@ -30,21 +30,25 @@
  *	additional driver statistics
  *	these are retrieved by SIOCGLNKSTATS & cleared by SIOCGLNKFLAGS
  */
-#define MAX_TRACE_ENTRIES	10000
-struct trace_entry {
+#define MAX_TRACE_ENTRIES	1000
+#define SLINK_TRACE_LEN		52
+typedef struct {
+	long time;
+	long rc;
 	char type;
-#define TRACE_RESET		'Z'
+#define TRACE_CLOSE		'C'
+#define TRACE_IOCTL		'I'
+#define TRACE_OPEN		'O'
 #define TRACE_READ_1	'R'
 #define TRACE_READ_2	'r'
+#define TRACE_STATS		'S'
 #define TRACE_WRITE_1	'W'
 #define TRACE_WRITE_2	'w'
+#define TRACE_RESET		'Z'
 	char reserved;
-	short len;
-	long ticks;
-	long rc;
-	short uid;
-	short euid;
-};
+	short length;
+	char data[SLINK_TRACE_LEN];
+} SLINK_TRACE;
 
 struct scsilink_counts {
 	long input_calls;
@@ -80,7 +84,7 @@ typedef struct {				/* data returned by SIOCGLNKSTATS */
 	struct scsilink_counts count;
 	long trace_entries;				/* number of entries in trace table */
 	long current_entry;
-	struct trace_entry trace_table[0];	/* trace table (variable length) */
+	SLINK_TRACE trace_table[0];		/* trace table (variable length) */
 } SCSILINK_STATS;
 
 #define STATS_MAGIC		0x18670701
@@ -96,4 +100,5 @@ typedef struct {				/* data returned by SIOCGLNKSTATS */
 #define SL_GET_VERSION	0x00000001L	/* get driver version number */
 #define SL_STATS_LENGTH	0x00000002L	/* get length of statistics+trace */
 #define SL_CLEAR_COUNTS	0x00000003L	/* clear internal counts */
+#define SL_GET_MACADDR	0x00000004L	/* get MAC address */
 #define SL_RESET_DEVICE	0x000000ffL	/* reset device */
