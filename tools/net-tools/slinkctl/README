@@ -7,35 +7,44 @@ very meaningful to the end user; however, if you have a problem, we may
 ask you to run it and send the results to Anodyne Software.  SLINKCTL
 has the following syntax:
 
-	slinkctl [-c] [-r] [-tN] <interface> [filename]
+    slinkctl [-c] [-r] [-tN] <interface>
 
-By default (i.e. with no parameters) it reports internal statistics
+By default (i.e. with no optional parameters) it reports internal statistics
 including the trace for the interface named <interface>.  If one or more
 of the options is set, the appropriate actions are carried out but no
 report is created.
 
 Available options:
-	-c	clears the statistics counters
-	-r	resets the interface (useful if it seems to be hung)
-	-tN	sets the number of entries in the trace table to N; N must
-		be between 0 & 10000 inclusive.  NOTE: the trace table was
-		created to investigate a particular problem during driver
-		development, and is unlikely to be of general use.  It's
-		recommended that you leave the number of entries at zero
-		(the default).
+    -c    clears the statistics counters
+    -r    resets the interface (useful if it seems to be hung)
+    -tN   sets the number of entries in the trace table to N; N must
+          be between 0 & 10000 inclusive.  NOTE: the trace table is
+          mostly for use during development, and is not likely to
+          mean much to the casual user.  It's recommended that you
+          leave the number of entries at zero (the default).
 
-Output is to stdout, unless a filename is specified, in which case
-all output will be written to it instead.
+Output is to stdout.
 
 Examples:
-   slinkctl.ttp en0 stats.txt
-      writes the statistics for port 'en0' to file stats.txt
+   slinkctl.ttp en0
+      writes the statistics for port 'en0' to stdout
    slinkctl.ttp -c en0
       clears the statistics for port 'en0'
    slinkctl.ttp -r en1
       resets the SCSI/Link device at port 'en1'
 
 
+REVISION HISTORY
+================
+Version
+-------
+  0.50        First public beta release
+
+  0.60      . SLINKCTL now displays the MAC address of the device
+            . SLINKCTL now only writes to stdout (you may of course use
+              the shell to redirect output to a file)
+
+
 Roger Burrows
 Anodyne Software
-11/March/2007
+20/November/2007
