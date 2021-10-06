@@ -53,6 +53,19 @@
  *		. add SCSI_Options() function: initially it is used to specify how
  *		  the supervisor mode requirement is handled
  *
+ *	version 2.0		rfb (november 2007)
+ *		. rename SCSI_Options() function to SCSI_Modeswitch() for clarity;
+ *		  change SCSI_In() and SCSI_Out() to only do a direct call or a
+ *		  Supexec() (no Super()).
+ *
+ *	version 2.1		rfb (september 2015)
+ *		the following changes accommodate Uwe Seimet's SCSIDRV driver for
+ *		Hatari/Aranym under Linux
+ *		. all routines now assume that the underlying driver must be called
+ *		  in supervisor mode, and therefore check the value of 'Modeswitch'
+ *		. fix bug in SCSI_Init(): if a bus had an id > 15, it was not included
+ *		  in the returned bitmap
+ *
  */
 #include <osbind.h>
 
@@ -69,17 +82,24 @@
 #define	ERROR	-1L
 #define	OK		0L
 
-char *version = "SCSIDRV.LIB v1.5 by Roger Burrows, Anodyne Software";
+char *version = "SCSIDRV.LIB v2.1 by Roger Burrows, Anodyne Software";
 
-tpScsiCall scsi = NULL;
-tpSCSICmd Inparms, Outparms;
-LONG Options = 0L;
+static tpScsiCall scsi = NULL;
+static LONG Modeswitch = TRUE;
+
 
 /*
  *	function prototypes
  */
 static LONG call_SCSI_In(void);
 static LONG call_SCSI_Out(void);
+static LONG call_SCSI_InquireSCSI(void);
+static LONG call_SCSI_InquireBus(void);
+static LONG call_SCSI_CheckDev(void);
+static LONG call_SCSI_RescanBus(void);
+static LONG call_SCSI_Open(void);
+static LONG call_SCSI_Close(void);
+static LONG call_SCSI_Error(void);
 
 /*
  *	initialise interface
@@ -91,7 +111,7 @@ ULONG busses = 0L;
 int i, what;
 
 	if (s_system (S_GETCOOKIE, COOKIE_SCSI, (long)&scsi) == 1)	/* if no cookie, no SCSIDRV */
-		return -1L;
+		return 0L;
 		
 	if (busnames)
 		for (i = 0; i < NUMBUSES; i++)
@@ -100,173 +120,29 @@ int i, what;
 	for (what = cInqFirst; ; what = cInqNext) {
 		if (SCSI_InquireSCSI(what,&info) < 0)
 			break;
-		busses |= (1<<info.BusNo);
+		busses |= (1L<<info.BusNo);
 		if (busnames)
 			strcpy(busnames[info.BusNo],info.BusName);
 	}
-	
+
 	return busses;
 }
 
-LONG SCSI_Options(LONG options)
-{
-long save = Options;
-int mode;
-
-	if (options < 0L)
-		return save;
-
-	if (options&~VALIDBITS_MASK)
-		return ERROR;
-
-	mode = (int)(options&MODESWITCH_MASK);
-	switch(mode) {
-	case USE_SUPER:
-	case USE_SUPEXEC:
-	case DONT_SWITCH:
-		Options &= ~MODESWITCH_MASK;
-		Options |= mode;
-		break;
-	default:
-		return ERROR;
-	}
-
-	return save;
-}
-
 /*
- *	interface routines
+ *	call this routine to set the Modeswitch flag to TRUE or FALSE
+ *
+ *	if TRUE (default), the library will switch to supervisor mode
+ *	before calling SCSIDRV
  */
-LONG SCSI_In(tpSCSICmd parms)
+LONG SCSI_Modeswitch(LONG required)
 {
-LONG rc, is_super;
-LONG oldstack = 1L;
+	Modeswitch = required?TRUE:FALSE;
 
-	if (!scsi)
-		return ERROR;
-
-	switch((int)(Options&MODESWITCH_MASK)) {
-	case USE_SUPER:
-		is_super = (long) Super(1L);	/* remember current mode */
-		if (!is_super)
-			oldstack = Super(0L);
-		rc = scsi->In(parms);
-		if (!is_super)
-			Super(oldstack);
-		break;
-	case USE_SUPEXEC:
-		Inparms = parms;			/* make a copy for called routine */
-		rc = Supexec(call_SCSI_In);
-		break;
-	case DONT_SWITCH:
-		rc = scsi->In(parms);
-		break;
-	default:
-		rc = ERROR;
-	}
-
-	return rc;
-}
-
-static LONG call_SCSI_In()
-{
-	return scsi->In(Inparms);
-}
-
-LONG SCSI_Out(tpSCSICmd parms)
-{
-LONG rc, is_super;
-LONG oldstack = 1L;
-
-	if (!scsi)
-		return ERROR;
-
-	switch((int)(Options&MODESWITCH_MASK)) {
-	case USE_SUPER:
-		is_super = (long) Super(1L);	/* remember current mode */
-		if (!is_super)
-			oldstack = Super(0L);
-		rc = scsi->Out(parms);
-		if (!is_super)
-			Super(oldstack);
-		break;
-	case USE_SUPEXEC:
-		Outparms = parms;			/* make a copy for called routine */
-		rc = Supexec(call_SCSI_Out);
-		break;
-	case DONT_SWITCH:
-		rc = scsi->Out(parms);
-		break;
-	default:
-		rc = ERROR;
-	}
-
-	return rc;
-}
-
-static LONG call_SCSI_Out()
-{
-	return scsi->Out(Outparms);
-}
-
-LONG SCSI_InquireSCSI(LONG what,tBusInfo *Info)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->InquireSCSI((WORD)what,Info);
-}
-
-LONG SCSI_InquireBus(LONG what,LONG BusNo,tDevInfo *Dev)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->InquireBus((WORD)what,(WORD)BusNo,Dev);
-}
-
-LONG SCSI_CheckDev(LONG BusNo,const DLONG *SCSIId,char *name,UWORD *features)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->CheckDev((WORD)BusNo,SCSIId,name,features);
-}
-
-LONG SCSI_RescanBus(LONG BusNo)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->RescanBus((WORD)BusNo);
-}
-
-LONG SCSI_Open(LONG BusNo,const DLONG *SCSIId,ULONG *MaxLen)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->Open((WORD)BusNo,SCSIId,MaxLen);
-}
-
-LONG SCSI_Close(tHandle handle)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->Close(handle);
-}
-
-LONG SCSI_Error(tHandle handle,LONG rwflag,LONG ErrNo)
-{
-	if (!scsi)
-		return ERROR;
-
-	return scsi->Error(handle,(WORD)rwflag,(WORD)ErrNo);
+	return 0L;
 }
 
 /*
- *	derived routines
+ *	SCSI_Inquiry() - a derived routine
  */
 LONG SCSI_Inquiry(LONG BusNo,const DLONG *scsiid,LONG lun,char *inqdata)
 {
@@ -300,4 +176,235 @@ WORD reqbuff[18/2];	/* even alignment for safety */
 		return ERROR;
 
 	return OK;
+}
+
+/*
+ *	low-level routines
+ */
+
+/*
+ ********** SCSI_In() **********
+ */
+static tpSCSICmd Inparms;
+
+static LONG call_SCSI_In()
+{
+	return scsi->In(Inparms);
+}
+
+LONG SCSI_In(tpSCSICmd parms)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		Inparms = parms;			/* make a copy for called routine */
+		return Supexec(call_SCSI_In);
+	}
+
+	return scsi->In(parms);
+}
+
+/*
+ ********** SCSI_Out() **********
+ */
+static tpSCSICmd Outparms;
+
+static LONG call_SCSI_Out()
+{
+	return scsi->Out(Outparms);
+}
+
+LONG SCSI_Out(tpSCSICmd parms)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		Outparms = parms;			/* make a copy for called routine */
+		return Supexec(call_SCSI_Out);
+	}
+
+	return scsi->Out(parms);
+}
+
+/*
+ ********** SCSI_InquireSCSI() **********
+ */
+static WORD ISwhat;
+static tBusInfo *ISinfo;
+
+static LONG call_SCSI_InquireSCSI()
+{
+	return scsi->InquireSCSI(ISwhat,ISinfo);
+}
+
+LONG SCSI_InquireSCSI(LONG what,tBusInfo *Info)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		ISwhat = (WORD)what;		/* make copies for called routine */
+		ISinfo = Info;
+		return Supexec(call_SCSI_InquireSCSI);
+	}
+
+	return scsi->InquireSCSI((WORD)what,Info);
+}
+
+/*
+ ********** SCSI_InquireBus() **********
+ */
+static WORD IBwhat;
+static WORD IBbusno;
+static tDevInfo *IBdev;
+
+static LONG call_SCSI_InquireBus()
+{
+	return scsi->InquireBus(IBwhat,IBbusno,IBdev);
+}
+
+LONG SCSI_InquireBus(LONG what,LONG BusNo,tDevInfo *Dev)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		IBwhat = (WORD)what;		/* make copies for called routine */
+		IBbusno = (WORD)BusNo;
+		IBdev = Dev;
+		return Supexec(call_SCSI_InquireBus);
+	}
+
+	return scsi->InquireBus((WORD)what,(WORD)BusNo,Dev);
+}
+
+/*
+ ********** SCSI_CheckDev() **********
+ */
+static WORD CDbusno;
+static const DLONG *CDscsiid;
+static char *CDname;
+static UWORD *CDfeatures;
+
+static LONG call_SCSI_CheckDev()
+{
+	return scsi->CheckDev(CDbusno,CDscsiid,CDname,CDfeatures);
+}
+
+LONG SCSI_CheckDev(LONG BusNo,const DLONG *SCSIId,char *name,UWORD *features)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		CDbusno = (WORD)BusNo;		/* make copies for called routine */
+		CDscsiid = SCSIId;
+		CDname = name;
+		CDfeatures = features;
+		return Supexec(call_SCSI_CheckDev);
+	}
+
+	return scsi->CheckDev((WORD)BusNo,SCSIId,name,features);
+}
+
+/*
+ ********** SCSI_RescanBus() **********
+ */
+static WORD RBbusno;
+
+static LONG call_SCSI_RescanBus()
+{
+	return scsi->RescanBus(RBbusno);
+}
+
+LONG SCSI_RescanBus(LONG BusNo)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		RBbusno = (WORD)BusNo;		/* make copies for called routine */
+		return Supexec(call_SCSI_RescanBus);
+	}
+
+	return scsi->RescanBus((WORD)BusNo);
+}
+
+/*
+ ********** SCSI_Open() **********
+ */
+static WORD SObusno;
+static const DLONG *SOscsiid;
+static ULONG *SOmaxlen;
+
+static LONG call_SCSI_Open()
+{
+	return scsi->Open(SObusno,SOscsiid,SOmaxlen);
+}
+
+LONG SCSI_Open(LONG BusNo,const DLONG *SCSIId,ULONG *MaxLen)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		SObusno = (WORD)BusNo;		/* make copies for called routine */
+		SOscsiid = SCSIId;
+		SOmaxlen = MaxLen;
+		return Supexec(call_SCSI_Open);
+	}
+
+	return scsi->Open((WORD)BusNo,SCSIId,MaxLen);
+}
+
+/*
+ ********** SCSI_Close() **********
+ */
+static tHandle SChandle;
+
+static LONG call_SCSI_Close()
+{
+	return scsi->Close(SChandle);
+}
+
+LONG SCSI_Close(tHandle handle)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		SChandle = handle;			/* make copies for called routine */
+		return Supexec(call_SCSI_Close);
+	}
+
+	return scsi->Close(handle);
+}
+
+/*
+ ********** SCSI_Error() **********
+ */
+static tHandle SEhandle;
+static WORD SErwflag;
+static WORD SEerrno;
+
+static LONG call_SCSI_Error()
+{
+	return scsi->Error(SEhandle,SErwflag,SEerrno);
+}
+
+LONG SCSI_Error(tHandle handle,LONG rwflag,LONG ErrNo)
+{
+	if (!scsi)
+		return ERROR;
+
+	if (Modeswitch) {
+		SEhandle = handle;			/* make copies for called routine */
+		SErwflag = (WORD)rwflag;
+		SEerrno = (WORD)ErrNo;
+		return Supexec(call_SCSI_Error);
+	}
+
+	return scsi->Error(handle,(WORD)rwflag,(WORD)ErrNo);
 }

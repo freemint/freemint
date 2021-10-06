@@ -175,7 +175,7 @@ typedef struct {
  *	function prototypes
  */
 long scsilink_busid(long devnum);
-long scsilink_modetest(long required);
+long scsilink_modeswitch(long required);
 long scsilink_open(long devnum,char *macaddr);
 long scsilink_probe(void);
 long scsilink_read(long devnum,char *buf);

@@ -20,7 +20,7 @@ Hardware installation
 
 Software installation
 ---------------------
-1. Make sure that you have a SCSIDRV driver on your system; recent 
+1. Make sure that you have a SCSIDRV driver on your system; recent
    versions of HDDRIVER provide this function.
 2. Make sure that arbitration is enabled for the SCSIDRV driver, and
    that the id of the SCSI/Link device is being controlled by SCSIDRV.
@@ -37,8 +37,8 @@ Software installation
    distribution!
 5. Reboot MiNT.  You should see two 'sign-on' messages from the driver
    during initialisation; they should look something like this:
-      DaynaPORT SCSI/Link driver v0.50 initialising ...
-      DaynaPORT SCSI/Link driver v0.50 (en0) (xx:xx:xx:xx:xx:xx) on bus id 1/4
+      DaynaPORT SCSI/Link driver v0.60 initialising ...
+      DaynaPORT SCSI/Link driver v0.60 (en0) (xx:xx:xx:xx:xx:xx) on bus id 1/4
 
 
 PERFORMANCE
@@ -64,6 +64,8 @@ Version
 -------
   0.50        First public beta release
 
+  0.60      . Fix problem with ARP when using Daynaport firmware v1.4a
+
 
 NOTES
 =====
@@ -85,4 +87,4 @@ NOTES
 
 Roger Burrows
 Anodyne Software
-11/March/2007
+20/November/2007
