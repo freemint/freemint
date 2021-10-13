@@ -756,7 +756,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	}
 
 	if (ret < 0)
-		return EERROR;
+		return ret;
 
 	return E_OK;
 }

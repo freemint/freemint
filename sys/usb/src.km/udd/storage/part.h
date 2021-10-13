@@ -49,8 +49,8 @@ typedef struct block_dev_desc
 	char		vendor[VENDOR_STRING_LENGTH];		/* IDE model, SCSI Vendor */
 	char		product[PRODUCT_STRING_LENGTH];		/* IDE Serial no, SCSI product */
 	char		revision[REVISION_STRING_LENGTH];	/* firmware revision */
-	unsigned long	(*block_read)(long dev, unsigned long start, lbaint_t blkcnt, void *buffer);
-	unsigned long	(*block_write)(long dev, unsigned long start, lbaint_t blkcnt, void *buffer);
+	long		(*block_read)(long dev, unsigned long start, lbaint_t blkcnt, void *buffer);
+	long		(*block_write)(long dev, unsigned long start, lbaint_t blkcnt, void *buffer);
 	void		*priv;		/* driver private struct pointer */
 } block_dev_desc_t;
 

@@ -568,7 +568,7 @@ exit:
  */
 long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 {
-	unsigned long rc;
+	long rc;
 	long physdev;				/* physical device */
 
 	if (count == 0L)
@@ -615,7 +615,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	else 
 		rc = usb_stor_read(physdev,start,count,buffer);
 
-	return (rc==count) ? 0 : EIO;
+	return (rc==count) ? 0 : rc;
 }
 
 /*

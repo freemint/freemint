@@ -276,8 +276,9 @@ typedef struct disk_partition
 /* Functions prototypes */
 long 		usb_stor_get_info	(struct usb_device *, struct us_data *, block_dev_desc_t *);
 long 		usb_stor_probe		(struct usb_device *, unsigned int, struct us_data *);
-unsigned long 	usb_stor_read		(long, unsigned long, unsigned long, void *);
-unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, void *);
+static long			error_no(unsigned char asc);
+long 		usb_stor_read		(long, unsigned long, unsigned long, void *);
+long 		usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
 void		usb_stor_reset		(long);
 block_dev_desc_t *	usb_stor_get_dev	(long);
@@ -1421,7 +1422,8 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 			transfer_running = 0;
 #endif
-			return USB_STOR_TRANSPORT_FAILED;
+			return USB_STOR_TRANSPORT_SENSE;
+
 		default:
 			DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x",
 					srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2],
@@ -1429,7 +1431,7 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 			transfer_running = 0;
 #endif
-			return USB_STOR_TRANSPORT_FAILED;
+			return USB_STOR_TRANSPORT_SENSE;
 	}
 #ifdef TOSONLY
 	transfer_running = 0;
@@ -1651,9 +1653,28 @@ usb_bin_fixup(struct usb_device_descriptor descriptor, unsigned char vendor[], u
 }
 #endif /* CONFIG_USB_BIN_FIXUP */
 
-#define USB_MAX_READ_BLK 65535 /* SCSI command read/write(10) max. block transfer */
+static long
+error_no(unsigned char asc)
+{
+	switch (asc) {
+		case 0x00 : return 0;
+		case 0x02 : return ESPIPE;
+		case 0x03 : return EWRITE;
+		case 0x04 : return EBUSY;
+		case 0x0C : return EWRITE;
+		case 0x10 : return ECRC;
+		case 0x11 : return EREAD;
+		case 0x20 : return EUKCMD;
+		case 0x27 : return EROFS;
+		case 0x28 : return ECHMEDIA;
+		case 0x3A : return ENOMEDIUM;
+		default : return EIO;
+	}
+}
 
-unsigned long
+#define USB_MAX_READ_BLK 65535 /* SCSI command read/write(10) max. block transfer */
+/* returns block count or negative error code */
+long
 usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buffer)
 {
 	unsigned long start, blks;
@@ -1662,6 +1683,7 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	struct us_data *ss;
 	struct usb_device *dev;
 	long retry;
+	long error_code = 0;
 	ccb srb;
 
 
@@ -1694,9 +1716,14 @@ retry_it:
 		if(usb_read_10(&srb, ss, start, smallblks))
 		{
 			DEBUG(("Read ERROR"));
-			usb_request_sense(&srb, ss);
-			if(retry--)
+
+			if (ss->protocol != US_PR_CB)
+				usb_request_sense(&srb, ss);
+			error_code = error_no(srb.sense_buf[12]);
+
+			if (retry-- && ! error_code)
 				goto retry_it;
+
 			memset(srb.pdata, 0xaa, srb.datalen);
 			blkcnt -= blks;
 			break;
@@ -1708,10 +1735,10 @@ retry_it:
 	while(blks != 0);
 	DEBUG(("usb_read: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
-	return blkcnt;
+	return (error_code)?error_code:blkcnt;
 }
 
-unsigned long
+long
 usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, void *buffer)
 {
 	unsigned long start, blks;
@@ -1720,6 +1747,7 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, void *buf
 	struct us_data *ss;
 	struct usb_device *dev;
 	long retry;
+	long error_code = 0;
 	ccb srb;
 	
 	if(blkcnt == 0)
@@ -1751,9 +1779,14 @@ retry_it:
 		if(usb_write_10(&srb, ss, start, smallblks))
 		{
 			DEBUG(("Write ERROR"));
-			usb_request_sense(&srb, ss);
-			if(retry--)
+
+			if (ss->protocol != US_PR_CB)
+				usb_request_sense(&srb, ss);
+			error_code = error_no(srb.sense_buf[12]);
+
+			if (retry-- && ! error_code)
 				goto retry_it;
+
 			memset(srb.pdata, 0xaa, srb.datalen);
 			blkcnt -= blks;
 			break;
@@ -1766,7 +1799,7 @@ retry_it:
 	DEBUG(("usb_write: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
-	return blkcnt;
+	return (error_code)?error_code:blkcnt;
 }
 
 /* Probe to see if a new device is actually a Storage device */
