@@ -290,6 +290,7 @@ static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
+long		poll_floppy_ready(ccb *srb, struct us_data *ss);
 long 		usb_request_sense	(ccb *srb, struct us_data *ss);
 void		part_init		(long dev_num, block_dev_desc_t *stor_dev);
 
@@ -1353,7 +1354,7 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
-	if((us->protocol == US_PR_CBI) && ((srb->cmd[0] == SCSI_REQ_SENSE) || (srb->cmd[0] == SCSI_INQUIRY)))
+	if (srb->cmd[0] == SCSI_REQ_SENSE)
 	{
 		/* do not issue an autorequest after request sense */
 		DEBUG(("No auto request and good"));
@@ -1362,14 +1363,14 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #endif
 		return USB_STOR_TRANSPORT_GOOD;
 	}
-	if ((result < 0) && (srb->cmd[0] == SCSI_TST_U_RDY))
+	if (srb->cmd[0] == SCSI_TST_U_RDY)
 	{
-		/* do not issue an autorequest after TEST_UNIT_READY failure
-		 because usb_test_unit_ready() will request sense. */
+		/* do not issue an autorequest after TEST_UNIT_READY.
+		 usb_test_unit_ready() will request sense in case of failure. */
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
-		return USB_STOR_TRANSPORT_FAILED;
+		return (result < 0)?USB_STOR_TRANSPORT_FAILED:USB_STOR_TRANSPORT_GOOD;
 	}
 
 	/* issue an request_sense */
@@ -1515,6 +1516,33 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 	}
 	while(retries--);
 	return -1;
+}
+
+/* Limit floppy polling to one command per cycle, because of the time it takes. */
+long
+poll_floppy_ready(ccb *srb, struct us_data *ss)
+{
+	static short request_sense = 0;
+
+	if (! request_sense) {
+		memset(&srb->cmd[0], 0, 12);
+		srb->cmd[0] = SCSI_TST_U_RDY;
+		srb->cmd[1] = srb->lun << 5;
+		srb->datalen = 0;
+		srb->cmdlen = 12;
+		srb->direction = USB_CMD_DIRECTION_IN;
+		srb->timeout = USB_CNTL_TIMEOUT * 5;
+		ss->transport(srb, ss);
+		request_sense = 1;
+		return 1;
+	}else {
+		usb_request_sense(srb, ss);
+		request_sense = 0;
+		if (srb->sense_buf[12] == 0x00 || srb->sense_buf[12] == 0x28)
+			return 0;
+		else
+			return -1;
+	}
 }
 
 static long

@@ -35,6 +35,7 @@ extern block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];;
 
 extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
+extern long poll_floppy_ready(ccb *srb, struct us_data *ss);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
 extern void part_init(long dev_num, block_dev_desc_t *stor_dev);
@@ -78,7 +79,14 @@ void storage_int(void)
 			continue;
 
 		pccb.lun = usb_dev_desc[i].lun;
-		r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
+		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass == US_SC_UFI) {
+			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
+			if (r > 0)
+				continue;
+		}
+		else {
+			r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
+		}
 		if ((r) && (usb_dev_desc[i].ready)) { /* Card unplugged */
 			if (!usb_dev_desc[i].sw_ejected)
 				usb_stor_eject(i);
