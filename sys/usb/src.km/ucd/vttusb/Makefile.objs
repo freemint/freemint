@@ -36,30 +36,42 @@ STRIPFLAGS =
 
 # default definitions
 GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
+OBJS =
 ifeq ($(TARGET),blitz.prg)
-OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
+OBJS += $(TOSSSOBJS:.S=.o) $(TOSCOBJS:.c=.o)
+STRIPEX = stripex
 endif
 ifeq ($(TARGET),blitz030.prg)
-OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
+OBJS += $(TOSSSOBJS:.S=.o) $(TOSCOBJS:.c=.o)
+STRIPEX = stripex
 endif
 ifeq ($(TARGET),blitz_st.prg)
-OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
+OBJS += $(TOSSSOBJS:.S=.o) $(TOSCOBJS:.c=.o)
+STRIPEX = stripex
 endif
-
+OBJS += $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
 
 VPATH = ..
 
 #
 # main target
 #
-build: $(TARGET)
+build: $(STRIPEX) $(TARGET)
+
+$(STRIPEX): $(top_srcdir)/usb/src.km/tos-common/stripex.c
+	cp $(top_srcdir)/usb/src.km/tos-common/stripex.c .
+	gcc stripex.c -o  $(STRIPEX)
+
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 ifndef NOSTRIP
 	$(STRIP) $(STRIPFLAGS) $@
 endif
+	@if [ "$(TARGET)" = *".prg" ]; then \
+		./$(STRIPEX) $(TARGET); \
+		echo $(STRIPEX) $(TARGET); \
+	fi
 	
 $(OBJS): ../VTTUSBDEFS
 

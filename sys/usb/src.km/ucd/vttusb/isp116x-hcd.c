@@ -141,6 +141,7 @@ static void my_printmsg(const char *fmt, ...)
 #define RESTORE_SUPER(x) {if (x) SuperToUser(x); }
 
 extern unsigned long _PgmSize;
+int isHddriverModule(void); /* in entry.S */
 
 /* replacement functions */
 #undef c_conws
@@ -2316,10 +2317,15 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	DEBUG (("%s: ucd register ok", __FILE__));
 
 #ifdef TOSONLY
-	c_conws("vTTusb driver installed.\r\n");
-
-	Ptermres(_PgmSize,0);
+	c_conws("vTTusb driver installed");
+	/* terminate and stay resident */
+	if (isHddriverModule()) {
+		c_conws(" as HDDRIVER module.\r\n");
+		return 0;
+	} else {
+		c_conws(".\r\n");
+		Ptermres(_PgmSize, 0);
+	}
 #endif
-	
 	return 0;
 }
