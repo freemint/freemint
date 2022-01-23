@@ -45,6 +45,8 @@ extern void interrupt_storage (void);
 extern int transfer_running;
 #endif
 
+extern int enable_flop_mediach; /* in storage_int.S */
+
 /* Functions prototypes */
 void init_polling(void);
 void storage_int(void);
@@ -73,8 +75,10 @@ void storage_int(void)
 			continue;
 		}
 
-		/* If the device has only one LUN we don't poll */
-		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1)
+		/* If the device has only one LUN and is not a floppy drive or floppy drive mediach is disabled we don't poll */
+		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1 &&
+			(!enable_flop_mediach ||
+			mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass != US_SC_UFI))
 			continue;
 
 		pccb.lun = usb_dev_desc[i].lun;
