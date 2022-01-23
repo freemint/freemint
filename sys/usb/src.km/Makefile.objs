@@ -41,12 +41,13 @@ ifeq ($(TARGET),usb.prg)
 # for HDDRIVER modules to work, TOSSSOBJS must be first in OBJS
 OBJS = $(TOSSSOBJS:.S=.o) $(TOSCOBJS:.c=.o) $(SSOBJS:.S=.o) $(COBJS:.c=.o) $(SOBJS:.s=.o)
 STRIPEX = stripex
+else ($(TARGET),usb_lmem.prg)
+# for HDDRIVER modules to work, TOSSSOBJS must be first in OBJS
+OBJS = $(TOSSSOBJS:.S=.o) $(TOSCOBJS:.c=.o) $(SSOBJS:.S=.o) $(COBJS:.c=.o) $(SOBJS:.s=.o)
+STRIPEX = stripex
 else
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
 STRIPEX =
-endif
-ifeq ($(TARGET),usb_lmem.prg)
-OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
 endif
 
 VPATH = ..
