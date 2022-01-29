@@ -750,12 +750,11 @@ XA_form_alert(int lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-struct
+static struct
 {
 	const char *msg;
 	char icon;
-}
-form_error_msgs[64] =
+} const form_error_msgs[64] =
 {
 /*   0 -     -              */ { NULL },
 /*   1 -  32 - ENOSYS       */ { "Function not implemented",             '5' },
@@ -837,7 +836,7 @@ XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 	num = pb->intin[0];
 	if( num < 0 )
-		num = -num;
+		num = ~num - 30;
 
 	if (num >= 0 && num < (sizeof(form_error_msgs) / sizeof(form_error_msgs[0])))
 	{
