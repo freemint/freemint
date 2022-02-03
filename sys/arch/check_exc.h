@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 1983, 1992, 1993
  *      The Regents of the University of California.  All rights reserved.
  *
@@ -289,6 +287,16 @@ struct mc68060_bus_frame
 	} bottom;
 };
 
+/* ColdFire exception stack frame */
+struct coldfire_frame
+{
+	ulong data_reg[8];
+	ulong addr_reg[7];
+	ushort format_word;
+	ushort sr;
+	ushort *pc;
+};
+
 struct m68k_stack_frames
 {
 	union {
@@ -300,6 +308,7 @@ struct m68k_stack_frames
 		struct mc68030_bus_frame_long		m68030_lbus;
 		struct mc68040_bus_frame		m68040_bus;
 		struct mc68060_bus_frame		m68060_bus;
+		struct coldfire_frame			coldfire;
 	} type;
 };
 

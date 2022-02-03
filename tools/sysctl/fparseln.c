@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * Copyright (c) 1997 Christos Zoulas.  All rights reserved.
  *

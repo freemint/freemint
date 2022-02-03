@@ -14,8 +14,6 @@
 # include "tcpout.h"
 
 
-static void tcb_deltimers (struct tcb *);
-
 long
 tcp_isn (void)
 {
@@ -105,6 +103,7 @@ deleteme (long arg)
 	struct tcb *tcb = (struct tcb *) arg;
 	struct in_data *data = tcb->data;
 	
+	UNUSED(arg);
 	tcb->state = TCBS_CLOSED;
 	if (data->sock == 0)
 	{
@@ -151,7 +150,7 @@ tcb_reset (struct tcb *tcb, long err)
 		if (tcb->data->sock)
 		{
 			if (tcb->state == TCBS_SYNRCVD
-				&& tcb->flags & TCBF_PASSIVE)
+				&& (tcb->flags & TCBF_PASSIVE))
 			{
 				so_wakersel (tcb->data->sock->conn);
 				wake (IO_Q, (long)tcb->data->sock->conn);
@@ -299,13 +298,13 @@ tcp_valid (struct tcb *tcb, BUF *buf)
 		if (seglen)
 			--seqlast;
 		
-		if (tcph->flags & TCPF_SYN && SEQLT (seq, tcb->rcv_nxt))
+		if ((tcph->flags & TCPF_SYN) && SEQLT (seq, tcb->rcv_nxt))
 		{
 			tcph->flags &= ~TCPF_SYN;
 			++tcph->seq;
 		}
 		
-		if (tcph->flags & TCPF_FIN && SEQGE (seqlast, wndlast))
+		if ((tcph->flags & TCPF_FIN) && SEQGE (seqlast, wndlast))
 			tcph->flags &= ~TCPF_FIN;
 		
 		if (SEQLE (tcb->rcv_nxt, seqlast) && SEQLT (seq, wndlast))
@@ -324,6 +323,7 @@ tcp_options (struct tcb *tcb, struct tcp_dgram *tcph)
 	uchar *cp;
 	long mss = TCP_MSS;
 	
+	UNUSED(tcb);
 	optlen = tcph->hdrlen*4 - TCP_MINLEN;
 	cp = (unsigned char *)tcph->data;
 	for (i = 0; i < optlen; i += len)
@@ -361,19 +361,20 @@ long
 tcp_mss (struct tcb *tcb, ulong faddr, long maxmss)
 {
 	struct route *rt;
-	long win, mss = TCP_MSS;
+	long win;
+	long mss = TCP_MSS;
 	
 	rt = route_get (faddr);
 	if (rt)
 	{
-		mss = MIN (rt->nif->mtu-20, maxmss+20) - TCP_MINLEN;
+		mss = MIN (rt->nif->mtu-20, (ulong)maxmss+20) - TCP_MINLEN;
 		
 		/*
 		 * If destination not on directly attached network then
 		 * used default MSS. Otherwise make it as big as mtu
 		 * allows.
 		 */
-		if ((rt->metric > 0 || rt->flags & RTF_GATEWAY) && mss > TCP_MSS)
+		if ((rt->metric > 0 || (rt->flags & RTF_GATEWAY)) && mss > TCP_MSS)
 			mss = TCP_MSS;
 		if (mss < 32)
 			mss = 32;
@@ -409,83 +410,151 @@ tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 	/*
 	 * Pseudo IP header checksum
 	 */
-	__asm__
-	(
-		"clrw	d0		\n\t"
-		"movel	%3, %0		\n\t"
-		"addl	%1, %0		\n\t"
-		"addxl	%2, %0		\n\t"
-		"addxw	%4, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+	__asm__(
+		"\tmoveq	#0, d0\n"
+		"\tmovel	%3, %0\n"
+		"\taddl	%1, %0\n"
+		"\taddxl	%2, %0\n"
+#ifdef __mcoldfire__
+		"\tmvz.w	%4, d1\n"	/* X not affected */
+		"\taddxl	d1, %0\n"
+		"\taddxl	d0, %0\n"
+#else
+		"\taddxw	%4, %0\n"
+		"\taddxw	d0, %0\n"
+#endif
 		: "=d"(sum)
-		: "g"(srcadr), "d"(dstadr), "i"(IPPROTO_TCP),
-		  "d"(len), "0"(sum)
-		: "d0"
-	);
-	
+		:"g"(srcadr), "d"(dstadr), "i"(IPPROTO_TCP), "d"(len), "0"(sum)
+#ifdef __mcoldfire__
+		: "d0", "d1", "cc"
+#else
+		: "d0", "cc"
+#endif
+		);
+
 	/*
 	 * TCP datagram & header checksum
 	 */
-	__asm__
-	(
-		"clrl	d0		\n\t"
-		"movew	%2, d1		\n\t"
-		"lsrw	#4, d1		\n\t"
-		"beq	4f		\n\t"
-		"subqw	#1, d1		\n"	/* clears X bit */
-		"1:			\n\t"
-		"moveml	%4@+, d0/d2-d4	\n\t"	/* 16 byte loop */
-		"addxl	d0, %0		\n\t"	/* ~5 clock ticks per byte */
-		"addxl	d2, %0		\n\t"
-		"addxl	d3, %0		\n\t"
-		"addxl	d4, %0		\n\t"
-		"dbra	d1, 1b		\n\t"
-		"clrl	d0		\n\t"
-		"addxl	d0, %0		\n"
-		"4:			\n\t"
-		"movew	%2, d1		\n\t"
-		"andiw	#0xf, d1	\n\t"
-		"lsrw	#2, d1		\n\t"
-		"beq	2f		\n\t"
-		"subqw	#1, d1		\n"
-		"3:			\n\t"
-		"addl	%4@+, %0	\n\t"	/* 4 byte loop */
-		"addxl	d0, %0		\n\t"	/* ~10 clock ticks per byte */
-		"dbra	d1, 3b		\n"
-		"2:			\n\t"
+	__asm__(
+		"\tclrl	d0\n"
+#ifdef __mcoldfire__
+		"\tmvzw	%2, d1\n"
+		"\tlsrl	#4, d1\n"
+#else
+		"\tmovew	%2, d1\n"
+		"\tlsrw	#4, d1\n"
+#endif
+		"\tbeq	4f\n"
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"		/* clears X bit */
+#else
+		"\tsubqw	#1, d1\n"		/* clears X bit */
+#endif
+		"1:\n"
+#ifdef __mcoldfire__
+		"\tmoveml	%4@, d0/d2-d4\n"	/* 16 byte loop */
+		"\tlea	%4@(16), %4\n"
+#else
+		"\tmoveml	%4@+, d0/d2-d4\n"	/* 16 byte loop */
+#endif
+		"\taddxl	d0, %0\n"	/* ~5 clock ticks per byte */
+		"\taddxl	d2, %0\n"
+		"\taddxl	d3, %0\n"
+		"\taddxl	d4, %0\n"
+#ifdef __mcoldfire__
+		"\tmoveq	#0, d0\n"	/* X not affected */
+		"\taddxl	d0, %0\n" "subql	#1, d1		\n\t"	/* X cloberred */
+		"\tbpls	1b\n"		/* X not affected */
+#else
+		"\tdbra	d1, 1b\n"
+		"\tclrl	d0\n"
+		"\taddxl	d0, %0\n"
+#endif
+		"4:\n"
+		"\tmovew	%2, d1\n"
+#ifdef __mcoldfire__
+		"\tandil	#0xf, d1\n"
+		"\tlsrl	#2, d1\n"
+#else
+		"\tandiw	#0xf, d1\n"
+		"\tlsrw	#2, d1\n"
+#endif
+		"\tbeq	2f\n"
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"
+#else
+		"\tsubqw	#1, d1\n"
+#endif
+		"3:\n"
+		"\taddl	%4@+, %0\n"	/* 4 byte loop */
+		"\taddxl	d0, %0\n"	/* ~10 clock ticks per byte */
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"
+		"\tbpls	3b\n"
+#else
+		"\tdbra	d1, 3b\n"
+#endif
+		"2:\n"
 		: "=d"(sum), "=a"(dgram)
-		: "g"(len), "0"(sum), "1"(dgram)
-		: "d0", "d1", "d2", "d3", "d4"
-	);
-	
+		: "g"(len), "0"(sum), "1"(dgram):"d0", "d1", "d2", "d3", "d4", "cc");
+
 	/*
 	 * Add in extra word, byte (if len not multiple of 4).
 	 * Convert to short
 	 */
-	__asm__
-	(
-		"clrl	d0		\n\t"
-		"btst	#1, %2		\n\t"
-		"beq	5f		\n\t"
-		"addw	%4@+, %0	\n\t"	/* extra word */
-		"addxw	d0, %0		\n"
-		"5:			\n\t"
-		"btst	#0, %2		\n\t"
-		"beq	6f		\n\t"
-		"moveb	%4@+, d1	\n\t"	/* extra byte */
-		"lslw	#8, d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n"
-		"6:			\n\t"
-		"movel	%0, d1		\n\t"	/* convert to short */
-		"swap	d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+	__asm__(
+		"\tclrl	d0\n"
+		"\tbtst	#1, %2\n"
+		"\tbeq	5f\n"
+#ifdef __mcoldfire__
+		"\tmvzw	%4@+, d2\n"
+		"\taddl	d2, %0\n"	/* no, add in extra word */
+		"\taddxl	d0, %0\n"
+#else
+		"\taddw	%4@+, %0\n"	/* extra word */
+		"\taddxw	d0, %0\n"
+#endif
+		"5:	\n"
+		"\tbtst	#0, %2\n"
+		"\tbeq	6f\n"
+#ifdef __mcoldfire__
+		"\tmvzb	%4@+, d1\n"	/* extra byte */
+		"\tlsll	#8, d1\n"
+		"\taddl	d1, %0\n"
+		"\taddxl	d0, %0\n"
+#else
+		"\tmoveb	%4@+, d1\n"	/* extra byte */
+		"\tlslw	#8, d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
+#endif
+		"6:\n"
+#ifdef __mcoldfire__
+		"\tswap	%0\n"		/* convert to short */
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+		"\tswap	%0\n"
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+#else
+		"\tmovel	%0, d1\n"	/* convert to short */
+		"\tswap	d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
+#endif
 		: "=d"(sum), "=a"(dgram)
 		: "d"(len), "0"(sum), "1"(dgram)
+#ifdef __mcoldfire__
+		: "d0", "d1", "d2"
+#else
 		: "d0", "d1"
-	);
-	
+#endif
+		);
+
 	return (short)(~sum & 0xffff);
 }
 
@@ -496,6 +565,7 @@ tcp_dump (BUF *buf)
 	long datalen;
 	
 	datalen = (long) buf->dend - (long) TCP_DATA (tcph);
+	UNUSED (datalen);
 	
 	DEBUG (("tcpdump: srcport = %d, dstport = %d, hdrlen = %d",
 		tcph->srcport, tcph->dstport, tcph->hdrlen*4));

@@ -25,7 +25,13 @@ static int line = 0;
 static char *file = "<argv>";
 
 
-static int
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
+
+int
 parse_hwaddr (char *hw, char *addr)
 {
 	static char str[128];
@@ -36,7 +42,7 @@ parse_hwaddr (char *hw, char *addr)
 	cp = strtok (str, ":");
 	for (i = 0; i < 6 && cp; ++i, cp = strtok (NULL, ":"))
 	{
-		if (sscanf (cp, "%i", &x) != 1 || x > 255)
+		if (sscanf (cp, "%02x", &x) != 1 || x > 255)
 			return -1;
 		hw[i] = (char)x;
 	}
@@ -148,6 +154,7 @@ opt_set (char *ifname, struct ifopt *ifo, int sock)
 		switch (errno)
 		{
 		case EINVAL:
+		case ENOSYS:
 			fprintf (stderr, "%s:%d: option '%s' not supported on "
 				"interface %s\n",
 				file, line, ifo->option, ifname);
@@ -161,7 +168,7 @@ opt_set (char *ifname, struct ifopt *ifo, int sock)
 		default:
 			fprintf (stderr, "%s:%d: option '%s': %s\n",
 				file, line, ifo->option, strerror (errno));
-			break;	
+			break;
 		}
 
 		return -1;

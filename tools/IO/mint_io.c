@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -96,6 +94,7 @@ int fstat(int __fd, struct stat *__buf) __THROW;
 int __fstat(int __fd, struct stat *__buf) __THROW;
 
 int stat(const char *filename, struct stat *st) __THROW;
+int __stat(const char *filename, struct stat *st) __THROW;
 
 
 struct device
@@ -411,7 +410,7 @@ rwabs_xhdi(struct device *mydev, ushort rw, void *buf, ulong size, ulong recno)
 # define max(a,b)	(a > b ? a : b)
 # define min(a,b)	(a > b ? b : a)
 
-int
+ssize_t
 read(int fd, void *_buf, size_t size)
 {
 	struct device *mydev = get_device(fd);
@@ -523,7 +522,9 @@ out:
 }
 }
 
-int
+#pragma GCC diagnostic ignored "-Wcast-qual"
+
+ssize_t
 write(int fd, const void *_buf, size_t size)
 {
 	struct device *mydev = get_device(fd);
@@ -598,7 +599,7 @@ write(int fd, const void *_buf, size_t size)
 		ulong data = (todo / mydev->xhdi_blocksize) * mydev->xhdi_blocksize;
 		long ret;
 		
-		ret = rwabs_xhdi(mydev, 1, buf, data, recno);
+		ret = rwabs_xhdi(mydev, 1, (void *)buf, data, recno);
 		if (ret)
 		{
 			DEBUG(("write: full blocks: write failure (r = %li, errno = %i)\n", ret, errno));

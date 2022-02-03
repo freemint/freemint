@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -199,8 +197,8 @@
 	"\033p SCC serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� 1998, 1999 by Rainer Mannigel.\r\n" \
-	"� " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"\275 1998, 1999 by Rainer Mannigel.\r\n" \
+	"\275 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -1150,8 +1148,6 @@ init_scc (void)
 	init_SCC (&iovar_sccb, sccb);
 	if (iovar_sccb)
 	{
-		void *old;
-		
 		if (flag_14_7456_mhz)
 			iovar_sccb->table = baudtable_14_7456_mhz;
 		else if (mch == FALCON)
@@ -1167,10 +1163,10 @@ init_scc (void)
 		
 # define vector(x)	(x / 4)
 		
-		old = Setexc (vector (0x180), sccb_txempty);
-		old = Setexc (vector (0x188), sccb_stchange);
-		old = Setexc (vector (0x190), sccb_rxavail);
-		old = Setexc (vector (0x198), sccb_special);
+		(void) Setexc (vector (0x180), sccb_txempty);
+		(void) Setexc (vector (0x188), sccb_stchange);
+		(void) Setexc (vector (0x190), sccb_rxavail);
+		(void) Setexc (vector (0x198), sccb_special);
 		
 # undef vector
 	}
@@ -1178,8 +1174,6 @@ init_scc (void)
 	init_SCC (&iovar_scca, scca);
 	if (iovar_scca)
 	{
-		void *old;
-		
 		if (flag_14_7456_mhz)
 			iovar_scca->table = baudtable_14_7456_mhz;
 		/* else if (mch == FALCON)
@@ -1215,10 +1209,10 @@ init_scc (void)
 		
 # define vector(x)	(x / 4)
 		
-		old = Setexc (vector (0x1a0), scca_txempty);
-		old = Setexc (vector (0x1a8), scca_stchange);
-		old = Setexc (vector (0x1b0), scca_rxavail);
-		old = Setexc (vector (0x1b8), scca_special);
+		(void) Setexc (vector (0x1a0), scca_txempty);
+		(void) Setexc (vector (0x1a8), scca_stchange);
+		(void) Setexc (vector (0x1b0), scca_rxavail);
+		(void) Setexc (vector (0x1b8), scca_special);
 		
 # undef vector
 	}
@@ -1613,7 +1607,6 @@ scc_special (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
-	uchar ctlreg;
 	
 	asm volatile
 	(
@@ -1627,8 +1620,8 @@ scc_special (void)
 	DEBUG (("scc_special: %lx", regs));
 	
 	
-	ctlreg = ZS_READ (regs, RR1);
-	ctlreg = ZS_READ (regs, RR8);
+	ZS_READ (regs, RR1);
+	ZS_READ (regs, RR8);
 	
 	ZS_WRITE_0 (regs, ERRRES);
 	ZS_WRITE_0 (regs, RHIUS);
@@ -2562,7 +2555,7 @@ scc_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 		flags &= ~TF_STOPBITS;
 		flags |= (ucr & 0x18) >> 3;
 		
-		if ((flags & TF_CHARBITS) == TF_15STOP)
+		if ((flags & TF_STOPBITS) == TF_15STOP)
 		{
 			flags &= ~TF_STOPBITS;
 			flags |= TF_1STOP;

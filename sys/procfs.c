@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  * 
@@ -283,15 +281,11 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->nlink = 1;
 		xattr->uid = xattr->gid = 0;
 		xattr->size = xattr->nblocks = 0;
+		xattr->nlink = 2;
 
 		SET_XATTR_TD(xattr,a,xtime.tv_sec);
 		SET_XATTR_TD(xattr,m,procfs_stmp.tv_sec);
 		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
-#if 0		
-		*((long *) &(xattr->atime)) = xtime.tv_sec;
-		*((long *) &(xattr->mtime)) = procfs_stmp.tv_sec;
-		*((long *) &(xattr->ctime)) = rootproc->started.tv_sec;
-#endif	
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
 		
@@ -308,11 +302,6 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 	SET_XATTR_TD(xattr,a,xtime.tv_sec);
 	SET_XATTR_TD(xattr,m,p->started.tv_sec);
 	SET_XATTR_TD(xattr,c,p->started.tv_sec);
-#if 0
-	*(long *) &xattr->atime = xtime.tv_sec;
-	*(long *) &xattr->mtime = 
-	*(long *) &xattr->ctime = p->started.tv_sec;
-#endif
 	xattr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 	xattr->attr = p_attr[p->wait_q];
 	
@@ -360,6 +349,7 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 		ptr->ctime.high_time = 0;	
 		ptr->ctime.time = rootproc->started.tv_sec;
 		ptr->ctime.nanoseconds = 0;	
+		ptr->nlink = 2;
 		
 		return E_OK;
 	}
@@ -424,7 +414,7 @@ static long _cdecl
 proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 {
 	PROC *p;
-	char buffer[20]; /* enough if proc names no longer than 8 chars */
+	char buffer[PNAMSIZ + 5]; /* enough if proc names no longer than 8 chars */
 	
 	UNUSED (root);
 	
@@ -437,7 +427,7 @@ proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 		p = getproc (dir->index);
 		if (!p) return EBADARG;
 		
-		ksprintf (buffer, sizeof (buffer), "%s.03d", p->name, p->pid);
+		ksprintf (buffer, sizeof (buffer), "%s.%03d", p->name, p->pid);
 	}
 	
 	if (strlen (buffer) < size)
@@ -482,44 +472,64 @@ proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	PROC *p;
 	int i;
-	
-	do {
+	short pid;
+	char namebuf[PNAMSIZ + 4 + 1];
+
+	pid = 0;
+	for (;;)
+	{
 		i = dirh->index++;
 		
+		if (i == 0)
+		{
+			strcpy(namebuf, ".");
+			p = 0;
+			break;
+		}
+		if (i == 1)
+		{
+			strcpy(namebuf, "..");
+			p = 0;
+			break;
+		}
 		/* BUG: we shouldn't have the magic value "MAXPID" for
 		 * maximum proc pid
 		 */
 		if (i >= MAXPID)
 		{
-			p = 0;
-			break;
+			return ENMFILES;
 		}
 		
 		p = pid2proc (i);
+		if (p)
+		{
+			pid = p->pid;
+			ksprintf (namebuf, sizeof(namebuf), "%s.%03d", p->name, pid);
+			break;
+		}
 	}
-	while (!p);
 
-	if (!p)
-		return ENMFILES;
-	
 	fc->index = (long) p;
 	fc->fs = &proc_filesys;
-	fc->dev = PROC_RDEV_BASE | p->pid;
+	fc->dev = PROC_RDEV_BASE | pid;
 	
-	if (dirh->flags == 0)
+	if (!(dirh->flags & TOS_SEARCH))
 	{
 		namelen -= 4;
 		if (namelen <= 0)
 			return EBADARG;
 		
-		*((long *) name) = (long) p->pid;
+		*((long *) name) = (long) pid;
 		name += 4;
 	}
 	
-	if (namelen < strlen (p->name) + 5)
+	/* The MiNT documentation appendix E states that we always have
+	 * to stuff as many bytes as possible into the buffer.
+	 */
+	strncpy_f (name, namebuf, namelen);
+	if (strlen (namebuf) >= namelen)
 		return EBADARG;
 	
-	ksprintf (name, namelen, "%s.%03d", p->name, p->pid);
 	return E_OK;
 }
 
@@ -606,7 +616,7 @@ proc_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "proc-xfs");
+			strcpy ((char *) arg, "proc");
 			return E_OK;
 		}
 	}
@@ -1012,7 +1022,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				return EBADF;
 			}
 			
-			pfd = (*(ushort *) buf);
+			pfd = (*(short *) buf);
 			if ((pfd < MIN_HANDLE) || (pfd >= fd->nfiles)
 				|| ((pf = fd->ofiles[pfd]) == 0))
 			{

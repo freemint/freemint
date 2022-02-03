@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -60,7 +58,7 @@
 
 # define RWABS		*((long *) 0x476L)
 # define MEDIACH	*((long *) 0x47eL)
-# define GETBPB		*((long *) 0x472L)
+# define GETBPB 	*((long *) 0x472L)
 
 
 /* tickcal: return milliseconds per system clock tick
@@ -116,7 +114,6 @@ long _cdecl
 sys_b_getbpb (int dev)
 {
 	union { long r; short *ptr; } r;
-// 	long r;
 
 	/* we can't trust the Getbpb routine to accurately save all registers,
 	 * so we do it ourselves
@@ -187,8 +184,8 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 			 * bother saving registers, whereas our compiler
 			 * expects politeness. So we go via callout(), which
 			 * will save registers for us.
-	 		 */
-			TRACE (("calling RWABS buffer:%lx",buffer));
+			 */
+			TRACE (("calling RWABS buffer:%p",buffer));
 			r = callout (RWABS, rwflag, buffer, number, recno, dev, lrecno);
 			TRACE (("returning from RWABS"));
 		}
@@ -200,7 +197,7 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 	}
 	else
 	{
-		TRACE (("calling RWABS buffer:%lx",buffer));
+		TRACE (("calling RWABS buffer:%p",buffer));
 		r = callout (RWABS, rwflag, buffer, number, recno, dev, lrecno);
 		TRACE (("returning from RWABS"));
 	}
@@ -236,6 +233,17 @@ sys_b_setexc (int number, long vector)
 		secure_mode && p->in_dos == 0)
 # endif
 	{
+# ifdef WITH_SINGLE_TASK_SUPPORT
+		if( !(get_curproc()->modeflags & M_SINGLE_TASK) )
+# endif
+			if( vector != -1 && allow_setexc < 2 && !(get_curproc()->pid <= 1 || get_curproc()->ppid == 0) )
+			{
+				if( allow_setexc == 0 || number <= 15 )
+				{
+					DEBUG (("Setexc (%d,%lx) not permitted", number,vector));
+					return EPERM;
+				}
+			}
 		if (!suser (p->p_cred->ucr))
 		{
 			DEBUG (("Setexc by non privileged process!"));
@@ -252,7 +260,7 @@ sys_b_setexc (int number, long vector)
 			 *
 			 * Unfortunately some programs go Super() then change
 			 * vectors directly. Common practice in games/demos :(
-	 		 */
+			 */
 			if ((p->p_mem->memflags & F_OS_SPECIAL) == 0)
 			{
 				if (((p->p_mem->memflags & F_PROTMODE) == F_PROT_P) ||
@@ -294,10 +302,10 @@ sys_b_setexc (int number, long vector)
 		 * access to the memory
 		 *
 		 * XXX fna: this *NOT* the recommended way to terminate a
-		 *          process from kernel
+		 *	    process from kernel
 		 *
-		 *          rewrite to check if the address is inside a
-		 *          memregion of the process
+		 *	    rewrite to check if the address is inside a
+		 *	    memregion of the process
 		 */
 		if (*((long *) vector) == 0xDEADBEEFL)
 			return old;
@@ -314,7 +322,7 @@ sys_b_setexc (int number, long vector)
 		{
 			/* problem:
 			 * lots of TSR's look for the Setexc (0x101,...)
-	 		 * that the AES does at startup time; so we have
+			 * that the AES does at startup time; so we have
 			 * to pass it along.
 			 */
 			long mintcerr;
@@ -387,15 +395,15 @@ void
 init_bios(void)
 {
 	int i;
-	
+
 	keyrec = (IOREC_T *)TRAP_Iorec(1);
-	
+
 	for (i = 0; i < BDEVMAP_MAX; i++)
 	{
 		BDEVMAP *map = &(bdevmap[i]);
 
 		map->instat	= _ubconstat;
-		map->in		= _ubconin;
+		map->in 	= _ubconin;
 		map->outstat	= _ubcostat;
 		map->out	= _ubconout;
 		map->rsconf	= NULL;
@@ -517,7 +525,7 @@ sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 
 		if ((ushort) dev < BDEVMAP_MAX)
 		{
-			DEBUG (("rsconf: %i -> %lx", dev, bdevmap [dev].rsconf));
+			DEBUG (("rsconf: %i -> %p", dev, bdevmap [dev].rsconf));
 
 			if (bdevmap [dev].rsconf)
 				return (*bdevmap [dev].rsconf)(dev, baud, flow, uc, rs, ts, sc);
@@ -528,10 +536,10 @@ sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 }
 
 /* BIOS device definitions */
-#define CONSDEV	2
+#define CONSDEV 2
 #define AUXDEV	1
 #define PRNDEV	0
-#define	SERDEV	6	/* First serial port */
+#define SERDEV	6	/* First serial port */
 
 /* BIOS devices 0..MAX_BHANDLE-1 can be redirected to GEMDOS files */
 # define MAX_BHANDLE	4
@@ -547,7 +555,7 @@ const short boutput[MAX_BHANDLE] = { -3, -2, -1, -5 };
  */
 
 # define xconstat	((long *) 0x51eL)
-# define xconin		((long *) 0x53eL)
+# define xconin 	((long *) 0x53eL)
 # define xcostat	((long *) 0x55eL)
 # define xconout	((long *) 0x57eL)
 
@@ -579,7 +587,7 @@ const short boutput[MAX_BHANDLE] = { -3, -2, -1, -5 };
 		callout1(MAPTAB[dev-SERDEV].bconin, dev) : ROM_Bconin(dev)))
 
 /* variables for monitoring the keyboard */
-IOREC_T	*keyrec;		/* keyboard i/o record pointer */
+IOREC_T *keyrec;		/* keyboard i/o record pointer */
 BCONMAP2_T *bconmap2;		/* bconmap struct */
 short	kintr = 0;		/* keyboard interrupt pending (see intr.s) */
 
@@ -605,8 +613,16 @@ isonline (struct bios_tty *b)
 	{
 		/* modem1 */
 
-		/* CD is !bit 1 on the 68901 GPIP port */
-		return (1 << 1) & ~(_mfpregs->gpip);
+		if (machine == machine_unknown)
+		{
+			/* unknown hardware, assume CD always on. */
+			return 1;
+		}
+		else
+		{
+			/* CD is !bit 1 on the 68901 GPIP port */
+			return (1 << 1) & ~(_mfpregs->gpip);
+		}
 	}
 	else if (b->tty == &sccb_tty)
 	{
@@ -662,8 +678,16 @@ isbrk (struct bios_tty *b)
 	{
 		/* modem1 */
 
-		/* break is bit 3 in the 68901 RSR */
-		return (1 << 3) & _mfpregs->rsr;
+		if (machine == machine_unknown)
+		{
+			/* unknown hardware, cannot detect breaks... */
+			return 0;
+		}
+		else
+		{
+			/* break is bit 3 in the 68901 RSR */
+			return (1 << 3) & _mfpregs->rsr;
+		}
 	}
 	else if (b->tty == &sccb_tty)
 	{
@@ -710,8 +734,8 @@ isbrk (struct bios_tty *b)
 	else if (b->tty == &ttmfp_tty)
 	{
 # ifndef MILAN
- 		/* serial1 */
- 		return ((1 << 3) & _ttmfpregs->rsr);
+		/* serial1 */
+		return ((1 << 3) & _ttmfpregs->rsr);
 # endif
 	}
 
@@ -1035,7 +1059,8 @@ bconin (int dev)
 again:
 		while (k->tail == k->head)
 		{
-			sleep (IO_Q, (long) &console_in);
+			if (sleep (IO_Q, (long) &console_in))
+			   return EINTR;
 		}
 
 		if (checkkeys ())
@@ -1072,14 +1097,18 @@ again:
 				/* help the compiler... :) */
 				long *statc;
 
-				while (!callout1 (*(statc = &MAPTAB [dev - SERDEV].bconstat), dev))
-					sleep (IO_Q, (long) &bttys [h]);
+				while (!callout1 (*(statc = &MAPTAB [dev - SERDEV].bconstat), dev)) {
+					if (sleep (IO_Q, (long) &bttys [h]))
+						return EINTR;
+				}
 
 				return callout1 (statc[1], dev);
 			}
 
-			while (!BCONSTAT (dev))
-				sleep (IO_Q, (long) (dev == 3 ? &midi_btty : &bttys[h]));
+			while (!BCONSTAT (dev)) {
+				if (sleep (IO_Q, (long) (dev == 3 ? &midi_btty : &bttys[h])))
+					return EINTR;
+			}
 		}
 		else if (dev > 0)
 		{
@@ -1166,7 +1195,7 @@ bconout (int dev, int c)
 
 	/* compensate for a known BIOS bug: MIDI and IKBD are switched
 	 */
-	if      (dev == 3)	statdev = 4;
+	if	(dev == 3)	statdev = 4;
 	else if (dev == 4)	statdev = 3;
 	else			statdev = dev;
 
@@ -1292,7 +1321,7 @@ short bconbdev = -1;	/* BIOS device for which the buffer is valid */
 long _cdecl
 bflush (void)
 {
-	long ret, bsiz;
+	long ret = 0, bsiz;
 	char *s;
 	FILEPTR *f;
 	short dev;
@@ -1373,7 +1402,11 @@ bflush (void)
 				if ((ret = (*f->dev->writeb)(f, (char *)s, bsiz)) != ENODEV) {
 					f->flags = oldflags;
 					bconbdev = 0;
-					return ret;
+					if (ret < E_OK)
+					{
+						return 0;
+					}
+					return -1;
 				}
 			    }
 #endif
@@ -1382,15 +1415,27 @@ bflush (void)
 			    where = lbconbuf;
 			    nbytes = 0;
 			    while (--bsiz > 0) {
-				*where++ = *s++; nbytes+=4;
+						*where++ = *s++; nbytes+=4;
 			    }
-			    if (nbytes)
-				(*f->dev->write)(f, (char *)lbconbuf, nbytes);
+			    if (nbytes) {
+						ret = (*f->dev->write)(f, (char *)lbconbuf, nbytes);
+			    }
 			}
+			if (ret < E_OK)
+			{
+				/* some bytes not successfully flushed */
+				ret = 0;
+			}
+			/* all bytes flush */
 			ret = -1;
 			f->flags = oldflags;
 		} else {
 			ret = (*f->dev->write)(f, (char *)bconbuf, bsiz);
+			if (ret < E_OK)
+			{
+				ret = 0;
+			}
+			ret = -1;
 		}
 		bconbdev = 0;
 		return ret;
@@ -1464,11 +1509,20 @@ do_bconin(int dev)
 		nread = 0;
 		(void)(*f->dev->ioctl)(f, FIONREAD, &nread);
 		if (!nread) return WOULDBLOCK;	/* data not ready */
-		if (is_terminal(f))
+		if (is_terminal(f)) {
 			r = tty_getchar(f, RAW);
+		}
 		else
 		{
 			r = (*f->dev->read)(f, (char *)&c, 1L);
+			if (r == ENODEV)
+			{
+				return MiNTEOF;
+			}
+			else if (r < E_OK)
+			{
+				return r;
+			}
 			r = (r == 1) ? c : MiNTEOF;
 		}
 	}
@@ -1515,7 +1569,7 @@ checkkeys (void)
  * ^S/^Q
  * XXX: so what?
  */
- 		/* Ozk:
+		/* Ozk:
 		 * Guessing wildly here, but shouldn't jobcontrol
 		 * be skipped when T_RAW is set?
 		 */
@@ -1544,14 +1598,14 @@ checkkeys (void)
 				keyrec->head = oldktail;
 				continue;
 			}
-			
+
 			if (sig)
 			{
 				tty->state &= ~TS_HOLD;
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 				    oldktail = keyrec->head = keyrec->tail;
-				
-				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig, 1));
+
+				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig));
 				killgroup(tty->pgrp, sig, 1);
 				ret = 1;
 			}

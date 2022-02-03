@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  * 
@@ -133,7 +131,7 @@
 # include "mmu.h"
 
 
-#if defined(M68040) || defined(M68060)
+#if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
 
 #define MP_DEBUG_INFO DEBUG_INFO
 
@@ -193,8 +191,8 @@ static ulong pagesize;
 static ulong root_descriptors, pointer_descriptors, page_descriptors;
 
 /* mint_top_* get used in mem.c also */
-ulong mint_top_tt;
-ulong mint_top_st;
+static ulong mint_top_tt;
+static ulong mint_top_st;
 
 /* number of megabytes of TT RAM (rounded up, if necessary) */
 int tt_mbytes;
@@ -224,7 +222,7 @@ static unsigned char *global_mode_table = 0L;
 #define RESIDENT	0x01UL
 #define PROTECTIONBITS	(SUPERBIT | READONLYBIT | PAGETYPEBITS)
 
-ulong mode_descriptors[PROT_MAX_MODE+1] =
+static ulong mode_descriptors[PROT_MAX_MODE+1] =
 	{
 		INVALID,		/* private */
 		RESIDENT,		/* global */
@@ -233,7 +231,7 @@ ulong mode_descriptors[PROT_MAX_MODE+1] =
 		INVALID			/* invalid/free */
 	};
 
-ulong cmode_descriptors[CM_MAX_MODE+1] =
+static ulong cmode_descriptors[CM_MAX_MODE+1] =
 	{
 		0,
 		NOCACHE,
@@ -708,6 +706,7 @@ init_tables(void)
 		tt_mbytes = 0;
 
 	n_megabytes = (int) ((mint_top_st / ONE_MEG) + tt_mbytes);
+	UNUSED(n_megabytes);
 
     /*
      * Get the page table size. This is done by traversing the current MMU
@@ -725,7 +724,7 @@ init_tables(void)
 	if (page_table_size == 0L)
 	{
 init_tables_fatal:
-		FATAL("Couldn't initialize memory protection. Please run MINTNP.PRG instead.");
+		FATAL("Couldn't initialize memory protection.");
 	}
 
 	rounded_table_size = (long)ROUND512(page_table_size);
@@ -1688,7 +1687,7 @@ BIG_MEM_DUMP_1 (int bigone, PROC *proc, MMAP which)
 	*buf = '\0';
 	for (mp = *map; mp; mp = mp->next)
 	{
-		for (loc = mp->loc; loc < (mp->loc + mp->len); loc += EIGHT_K)
+		for (loc = mp->loc; loc < (mp->loc + mp->len); loc += QUANTUM)
 		{
 			if (first || ((loc & 0x1ffffL) == 0))
 			{
@@ -1702,7 +1701,7 @@ BIG_MEM_DUMP_1 (int bigone, PROC *proc, MMAP which)
 			
 			if (loc == mp->loc)
 			{
-				*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
+				*lp++ = modesym[global_mode_table[loc / QUANTUM]];
 				
 				for (p = proclist; p; p = p->gl_next)
 				{
@@ -1744,7 +1743,7 @@ gotowner:
 	{
 		ulong *table = proc->p_mem->page_table;
 		
-		FORCE ("MMU tree for PID %d, logical address: %08lx", proc->pid, table);
+		FORCE ("MMU tree for PID %d, logical address: %08lx", proc->pid, (unsigned long)table);
 		FORCE ("\rST-RAM:                                  ");
 		
 		dump_area (table, membot, mint_top_st, buf, buflen);
@@ -1759,11 +1758,7 @@ gotowner:
 # endif
 
 void
-#ifdef DEBUG_INFO
 BIG_MEM_DUMP (int bigone, PROC *proc)
-#else
-BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unused)))
-#endif
 {
 # ifdef DEBUG_INFO
 	BIG_MEM_DUMP_1 (bigone, proc, core);
@@ -1774,4 +1769,4 @@ BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unus
 # endif /* DEBUG_INFO */
 }
 
-# endif /* M68040 || M68060 */
+#endif

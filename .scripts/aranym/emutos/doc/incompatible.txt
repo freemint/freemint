@@ -1,0 +1,367 @@
+Programs incompatible with EmuTOS
+=================================
+This is a list of programs that have been found to contain bugs or
+shortcomings that prevent them from running properly with EmuTOS, and
+whose problem has been definitively identified.  It is mainly intended
+to prevent these programs from being added to 'bugs.txt' in the future.
+If you're an OS programmer, you may also find it slightly amusing to see
+the weird and wonderful ways some programmers have found to abuse an OS.
+
+Note: in many cases, programs that run on TOS 1.x but not on EmuTOS don't
+run on Atari TOS 2.06 either.  Sometimes they might run on one language
+version but not another (e.g. ok on TOS 2.06UK, not on TOS 2.06US).  This
+is invariably caused by the use of undocumented addresses or interfaces,
+or trying to find some 'private' TOS address by the use of heuristics.
+
+
+Common issues
+=============
+
+Category: STOS program
+----------------------
+Error 1: joystick and/or keyboard input doesn't work.
+
+Bug analysis:
+STOS Basic compiler routines check for input using undocumented and
+TOS-specific locations.  Programs using these routines work only with
+specific TOS versions, and not with EmuTOS.
+
+Workaround:
+Use version of the program that has been fixed to work with modern TOS
+versions.
+
+Error 2: STOS error message "Error #046, press any key" during startup.
+
+Bug analysis:
+This is caused by a divide-by-zero error in vsm_height() when the
+program is run from the AUTO folder.  VDI initialisation does not occur
+until after AUTO-folder programs have been run, so if a VDI function is
+called by an AUTO-folder program, internal variables have not been
+initialised.  STOS tries to initialise these variables itself, based on
+a built-in table of TOS-specific locations.  These locations are invalid
+for EmuTOS, so the required variables remain zero, causing the error.
+
+Workaround:
+Move the program from the AUTO folder to the root of the drive, and run
+it from there.  While STOS programs will then start, most of them will
+remain unusable due to error 1 above.
+
+Note: STOS programs can often be identified by the presence of *.MBK
+files (STOS memory bank files).
+
+
+Category: old game using fixed addresses
+----------------------------------------
+Error: panic or hang during game startup.
+
+Bug analysis:
+Several old, floppy-only games load their data into fixed memory
+addresses, which won't work when EmuTOS has loaded something else
+there.  This can be detected by tracing programs' OS calls with Hatari
+(--trace os_all) and checking the used addresses. For example, under
+older EmuTOS versions, the Gods game demo (from an ST Format cover disk)
+overwrote itself with its game data because of this, and crashed.  Some
+games (e.g. Turrican) use very low memory areas that are also used by
+TOS, but choose those areas carefully.  This can never work with EmuTOS.
+
+Workarounds:
+In some games this can be worked around by either using the cartridge
+version of EmuTOS (which uses less memory) or by using a custom high-RAM
+build of EmuTOS, that uses higher RAM addresses for loading programs and
+for memory allocation:
+make 512 UNIQUE=uk DEF="-DSTATIC_ALT_RAM_ADDRESS=0x00080000 -DCONF_WITH_FRB=0"
+
+However, this doesn't help with programs which also expect undocumented,
+OS internal functions and variables to be at certain locations.  The
+best workaround is to use a version of the game that has been fixed to
+run from HD and with modern TOS versions.
+
+
+Program: old game using undocumented addresses for joystick/keyboard data
+-------------------------------------------------------------------------
+Error: joystick and/or keyboard is ignored.
+
+Bug analysis:
+Some old games monitor the joystick and/or keyboard by looking at words
+that are at offsets 0x3c/0x6c (respectively) from the address returned by
+Kbdvbase().  That was never documented by Atari, but is apparently true in
+all versions of TOS 1.  However it is not true for TOS 2/3/4 (or EmuTOS).
+
+Some guilty programs:
+. Joystick monitoring:
+    Douglas Rockmoor, Space Invaders, Crystal Cave, Macro War, Brain Blasters
+. Keyboard monitoring:
+    (VDI) Invaders, Anduril, Brain Blasters
+
+
+
+Unique issues
+=============
+
+Program: Art for Kids
+---------------------
+Error: crash during program startup, before anything is displayed, when
+using 512K ROMs
+
+Bug analysis:
+The program uses the TOS version in the OS header to decide how to
+interpret the country code in os_conf.  If the version is not 4, the
+program assumes a valid country code and uses it as an index into an
+array of pointers.  EmuTOS 512K ROMs use a TOS version of 2, but set
+os_conf to 0xff to indicate multilanguage.  This causes a crash when the
+program indexes beyond the end of the array and loads a garbage pointer.
+
+Workaround:
+This is an STe program: use an EmuTOS 256K ROM.
+
+
+Program: Awele v1.01
+--------------------
+Error: mono desktop colours are inverted after exiting program.
+
+Bug analysis:
+This version of Awele was compiled with PureC and linked with a very
+early version of Windform.  During WinDOM initialisation, malloc() is
+called to allocate an area to save the palette in.  However, although
+malloc() returns the pointer in A0, the WinDOM code assumes it is in D0.
+As a result, an area of low memory is pointed to, which is overwritten
+during Awele execution.  At program termination, the palette is restored
+from the overwritten area, resulting in the error seen.
+
+Workaround:
+Use v1.02 of the game.
+
+
+Program: Cameleon
+-----------------
+Error 1: program exits immediately when 'Start game' is selected.
+
+Bug analysis:
+The program requires an STe.  In order to determine whether it is
+running on an STe, it checks the contents of location 0x995 (hardcoded).
+On Atari TOS, this is where TOS initialisation happens to store the _MCH
+cookie but this is *not* how Atari says you should locate it (and it's
+not where EmuTOS stores it).
+
+Error 2: program crashes with a Trace exception on any exit.
+
+Bug analysis:
+During startup, the program switches to supervisor state via the Super()
+system call.  Subsequently, the supervisor stack overwrites the program's
+user stack.  On exit, the user stack pointer is restored and during this
+a corrupted value is loaded into the SR, causing a trace excpetion.
+
+
+Program: CP/M-Z80 Emulator by SoftDesign
+----------------------------------------
+Error: Crashes with bus error when loading CP/M-Z80 disk.
+
+Bug analysis:
+The program expects to find the initial environment at the fixed memory
+address 0x840. This address is used by Atari TOS 1.00 - 2.06 but it is
+undocumented. The initial environment of EmuTOS is located elsewhere in
+RAM.
+
+
+Program: CTRL.ACC/CONTROL.ACC (from ST/STe Language Disks)
+----------------------------------------------------------
+Error: hangs on startup; eventually crashes with bus error
+
+Bug analysis:
+The program searches the buffer returned by shel_read() for lines
+beginning with '#a', '#b' and '#c' and never tests for buffer end.
+EmuTOS does not use these lines and only fakes the '#a' line for
+compatibility with EMULATOR.ACC.
+
+Workaround:
+Use a less-buggy control panel, e.g. XCONTROL.ACC from the TT or
+Falcon Language Disk.
+
+
+Program: Cubase v2 & Lite
+-------------------------
+Error: panic
+
+Bug analysis:
+On TOS (v1.62) etv_timer vector is a delegate to an internal private
+function.  Cubase tries to guess the address of that private function
+in an undocumented way, which crashes on EmuTOS. If that is patched,
+crash happens on next private function which Cubase tries to search
+for.
+
+
+Program: Luftschloss
+--------------------
+Error: Fails to load with an error message about the MPB variable.
+
+Bug analysis:
+Luftschloss is a reset resident RAM disk originally distributed with
+the German book "Scheibenkleister". It does its memory management
+itself, without using GEMDOS functions. For that, it needs to
+determine the location of an undocumented system variable, the memory
+parameter block (MPB). The heuristic it uses to find the memory
+address of that variable only works with Atari TOS.
+
+
+Program: OMIKRON.BASIC V3.01 (interpreter)
+------------------------------------------
+Error: Panic (bus error) during start
+
+Bug analysis:
+The program relies on undocumented internal TOS variables at several
+points.  First, it expects A0 upon return from Mediach (BIOS function)
+to point to wplatch (floppy write protect latch variable).  On EmuTOS
+A0 is 0 and hence a bus error occurs when the program wants to modify
+that variable.  Second, it parses the bytes of the 0xA00A (hide cursor)
+line-A routine to get the address of a variable reflecting the internal
+state of the mouse cursor.  This is done with the same code used in
+"Ramses" (see above).  This also fails on EmuTOS, resulting in another
+bus error.  There may be more accesses to undocumented variables.
+
+
+Program: Protracker v2 STE (Equinox version)
+--------------------------------------------
+Error: crash when "DISK OP." button is selected
+
+Bug analysis:
+The program relies on a TOS-specific code sequence, as follows:
+1. it searches the ROM (pointed to by location 4) for the first word
+   equal to 0x47e
+2. when found, it uses the longword immediately before as a pointer to
+   an address; in TOS2, this is a pointer to the mediachange handler
+3. it stores the long at offset 0x1c from that address in its data
+   segment; in TOS2, this is a pointer to (I think) two bytes of
+   status for the floppy drives
+Subsequently, when "DISK OP." is selected, the stored long is used as a
+pointer.  In TOS2, the value stored is $4216; in EmuTOS, it's zero,
+resulting in a crash.
+
+Workaround:
+Use an alternate tracker program.  There are many Protracker variants and
+other module tracker programs which work fine with EmuTOS.
+
+
+Program: Ramses
+---------------
+Error: panic
+
+Bug analysis:
+Program calls the Line A initialization $A00A and gets the routine
+vectors in a2.  It gets the address of _v_hide_c, then starts doing
+undocumented things with the bytes of the actual routine:
+    https://sourceforge.net/p/emutos/mailman/message/30605378/
+
+
+Program: Reservoir Gods game (Bugger, Bunion, SkyFall, Sworm)
+-------------------------------------------------------------
+Error: panic
+
+Bug analysis:
+Games use an undocumented TOS4 vector for keyboard input instead of
+accessing kbdvec correctly.  This causes EmuTOS to panic.
+
+Workaround:
+This can be worked around with the following hack.prg:
+    https://sourceforge.net/p/emutos/mailman/message/26841274/
+
+
+Program: Spectrum 512
+---------------------
+Error: crash during program initialisation
+
+Bug analysis:
+The program relies on a TOS-specific code sequence, as follows:
+1. it searches the VBL handler (pointed to by location $70) for the
+   first word containing a value of 0x6100
+2. when found, it uses the word immediately following as an index to
+   generate an address, and starts searching at that address for a
+   word containing a value of 0x8606
+Under EmuTOS, the address generated is a nonsense address which happens
+to be odd, causing an immediate address error.
+
+
+Program: Striker9
+-----------------
+Error: Cannot exit from startup screen
+
+Bug analysis:
+In its joystick vector handler, the program looks at the contents of
+register d1, which in Atari TOS 1 is an address within the joystick
+buffer, and ignores the interrupt if d1 bit 0 is 0.  In EmuTOS, d1 is
+not an address and it is always even.  This program does not work in
+TOS 2.06.
+
+
+Program: STSpeech v2.0
+----------------------
+Error: panics due to stack corruption
+
+Bug analysis:
+The program installs a custom Timer A interrupt handler, and calls the
+XBIOS from it.  If the Timer A interrupt happens to occur just when an
+unrelated BIOS/XBIOS call is manipulating _savptr (saving registers),
+then the nested XBIOS call inside the Timer A handler will trash that
+BIOS/XBIOS save area, possibly modifying the stack pointer. In the
+"Hitchhiker's Guide to the BIOS", Atari documented a workaround for this,
+but STSpeech does not use it.
+
+Workaround:
+Because this problem is timing-dependent, it does not show up on Atari
+TOS, and only shows up in EmuTOS if BigDOS is installed (BigDOS issues
+many XBIOS calls).  Use program without BigDOS, or anything else doing
+a lot of XBIOS calls.
+
+
+Program: STVidPlay
+------------------
+Error: "Error in getting file location"
+
+Bug analysis:
+Program looks for a specific 2-byte sequence in the hard disk driver
+code pointed to by hdv_rw ($476).  If it doesn't find that sequence
+within bytes 6-48 (or thereabouts) of the start of the driver, it
+gives the error message.
+
+
+Program: Super Cauldron demo
+----------------------------
+Error: Cannot exit from startup screen
+
+Bug analysis:
+Program gets the address of the IKBD handler, then inserts jumps to
+various fixed offsets within that handler into its own code.  The fact
+that it does not crash is pure chance; when run under TOS 2.06, it does
+crash.
+
+
+Program: Turbo ST 1.8 (and possibly other versions)
+---------------------------------------------------
+Error: Screen drawing errors
+
+Bug analysis:
+The program modifies internal VDI variables, presumably to speed up
+the VDI. The internal data structures of EmuTOS VDI differ from
+Atari's VDI implementation in TOS.
+Note: Turbo ST is known to cause drawing errors and to crash under
+Atari TOS, too.
+
+Workaround:
+Use NVDI.
+
+
+Program: Warp9 v3.80 (and probably all other versions)
+------------------------------------------------------
+Errors: Crash during EmuDesk startup (512K versions of EmuTOS)
+        EmuDesk screen drawing errors (other versions)
+
+Bug analysis:
+The crash is caused because Warp9 implicitly assumes that VDI's physical
+workstation structure is in the first 32K of memory.  This is not true
+for the 512K versions of EmuTOS.  The screen drawing errors are under
+investigation, but may be caused by assumptions about the contents of
+internal VDI structures.
+NOTE: under EmuTOS releases prior to 1.0, Warp9 fails to install and
+therefore no errors are seen.
+
+Workaround:
+Use NVDI.

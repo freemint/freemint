@@ -676,6 +676,7 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 	XATTR xattr;
 	long r;
 	
+	(void) ni;		/* suppress warning */
 	DEBUG (("nfs_getxattr(%s)", (ni) ? ni->name : "root"));
 	
 	r = nfs_getxattr (fc, &xattr);
@@ -999,6 +1000,8 @@ nfs_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 	NFS_INDEX *ni, *oni, *reli;
 	int len, copy_name;
 	
+	(void) reli;		/* suppress warning */
+
 	if (size < 0)
 		return EBADARG;
 	if (size == 0)
@@ -1848,7 +1851,7 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "nfs-xfs");
+			strcpy ((char *) arg, "nfs");
 			return E_OK;
 		}
 		case FS_INFO:

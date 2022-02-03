@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -47,19 +45,31 @@
 /* This is mostly stolen from linux-m68k and should be adapted to MiNT
  */
 long 
-kern_get_cpuinfo (SIZEBUF **buffer)
+kern_get_cpuinfo (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	int len = 256;
 	ulong clockfreq, clockfactor;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
 	clockfactor = 0;
 
-	switch (mcpu)
+#ifdef __mcoldfire__
+	if (!coldfire_68k_emulation)
+	{
+		clockfactor = 2; // Experimentally almost accurate
+	}
+	else
+#endif	
+	if (is_apollo_68080)
+	{
+		clockfactor = 2; // Experimentally almost accurate
+	}
+	else switch (mcpu)
 	{
 		case 20:
 			clockfactor = 8;

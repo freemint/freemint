@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * The Host OS filesystem access driver - NF API definitions.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
@@ -42,7 +40,7 @@
  * general XFS driver version
  */
 #define HOSTFS_XFS_VERSION       0
-#define BETA
+#undef BETA
 
 /* if you change anything in the enum {} below you have to increase
    this HOSTFS_NFAPI_VERSION!

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -182,7 +180,7 @@
 	"\033p dynamic RAM filesystem driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"\275 " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"\275 2000-2010 by Frank Naumann.\r\n"
 
 /*
  * default settings
@@ -1067,7 +1065,7 @@ ram_lookup (fcookie *dir, const char *name, fcookie *fc)
 	}
 
 	/* 1 - itself */
-	if (!name || (name[0] == '.' && name[1] == '\0'))
+	if (!name || (name[0] == '.' && name[1] == '\0') || (name[0] == '\0'))
 	{
 		c->links++;
 		*fc = *dir;
@@ -1150,11 +1148,6 @@ ram_getxattr (fcookie *fc, XATTR *xattr)
 	SET_XATTR_TD(xattr,m,c->stat.mtime.time);
 	SET_XATTR_TD(xattr,a,c->stat.atime.time);
 	SET_XATTR_TD(xattr,c,c->stat.ctime.time);
-#if 0
-	*((long *) &(xattr->mtime))	= c->stat.mtime.time;
-	*((long *) &(xattr->atime))	= c->stat.atime.time;
-	*((long *) &(xattr->ctime))	= c->stat.ctime.time;
-#endif
 
 	/* fake attr field a little bit */
 	if (S_ISDIR (xattr->mode))
@@ -1448,9 +1441,11 @@ ram_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 static long _cdecl
 ram_opendir (DIR *dirh, int flags)
 {
-	union { char *c; DIRLST **d; } ptr; ptr.c = dirh->fsstuff;
+	union { char *c; DIRLST **d; } ptr;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
+
+	ptr.c = dirh->fsstuff;
 
 	if (!IS_DIR (c))
 	{
@@ -1472,9 +1467,11 @@ ram_opendir (DIR *dirh, int flags)
 static long _cdecl
 ram_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
-	union { char *c; DIRLST **d;} ptr; ptr.c = dirh->fsstuff;
+	union { char *c; DIRLST **d;} ptr;
 	DIRLST *l;
 	long r = ENMFILES;
+
+	ptr.c = dirh->fsstuff;
 
 	l = *ptr.d; // *(DIRLST **) (&dirh->fsstuff);
 	if (l)
@@ -1668,7 +1665,7 @@ ram_symlink (fcookie *dir, const char *name, const char *to)
 	if (IS_IMMUTABLE (c))
 		return EACCES;
 
-	r = __creat (c, name, &new, S_IFLNK, 0);
+	r = __creat (c, name, &new, 0777 | S_IFLNK, 0);
 	if (r == E_OK)
 	{
 		ushort len = strlen (to) + 1;
@@ -1678,6 +1675,7 @@ ram_symlink (fcookie *dir, const char *name, const char *to)
 		if (new->data.symlnk.name)
 		{
 			strcpy (new->data.symlnk.name, to);
+			new->stat.size = len - 1;
 		}
 		else
 		{
@@ -1770,7 +1768,7 @@ ram_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "ram-xfs");
+			strcpy ((char *) arg, "ramfs");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -2095,7 +2093,6 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 	long size = c->data.data.size;
 
 	long todo;
-	long temp = c->stat.size - f->pos;
 	long offset;
 
 	/* POSIX: mtime/ctime may not change for 0 count */
@@ -2136,7 +2133,8 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 
 	while (todo > 0)
 	{
-		temp = f->pos >> BLOCK_SHIFT;
+		long temp = f->pos >> BLOCK_SHIFT;
+
 		if (temp >= size)
 		{
 			RAM_DEBUG (("ramfs: ram_write: resize block array!"));
@@ -2408,7 +2406,7 @@ ram_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 
-	if ((where < 0) || (where > c->stat.size))
+	if (where < 0)
 	{
 		RAM_DEBUG (("ramfs: ram_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
@@ -2431,7 +2429,10 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 	{
 		case FIONREAD:
 		{
-			*(long *) buf = c->stat.size - f->pos;
+			if (c->stat.size - f->pos < 0) 
+				*(long *) buf = 0;
+			else
+				*(long *) buf = c->stat.size - f->pos;
 			return E_OK;
 		}
 		case FIONWRITE:
@@ -2536,8 +2537,10 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == cpid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
@@ -2577,7 +2580,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			lck = kmalloc (sizeof (*lck));
 			if (!lck)
 			{
-				RAM_ALERT (("ramfs: kmalloc fail in: ram_ioctl (%lx)", c));
+				RAM_ALERT (("ramfs: kmalloc fail in: ram_ioctl (%p)", c));
 				return ENOMEM;
 			}
 

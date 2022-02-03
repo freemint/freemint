@@ -21,6 +21,8 @@
 
 #define SIN(x)			((struct sockaddr_in *)x)
 
+#pragma GCC diagnostic ignored "-Waggregate-return"
+
 #define _PATH_DEV_ROUTE		"/dev/route"
 
 

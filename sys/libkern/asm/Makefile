@@ -20,14 +20,17 @@ all-here:
 # default overwrites
 
 # default definitions
-GENFILES = .cpu_*
+GENFILES = .compile_*
 
 #
 # main target
 #
-asm-files: .cpu_$(CPU)
-	cd .cpu_$(CPU); $(MAKE)
+asm-files: .compile_$(CPU)
+	cd .compile_$(CPU); $(MAKE)
 
-.cpu_$(CPU): Makefile.objs
+# prevent overriding the same recipe from RULES
+ifneq ($(compile_dir),.compile_$(CPU))
+.compile_$(CPU): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
+endif

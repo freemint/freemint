@@ -1,0 +1,12 @@
+It currently supports the ASIX chipsets. I've been using a DLINK DUB-E100 Rev B1, although there are some others listed in the driver that could be used.
+
+You need the ETH.UDD module installed in the USB/ directory with your STORAGE.UDD, and USBXXX.KM as well as UNICORN.UCD.
+
+Then the ASIX.XIF is installed alongside other XIF's in the normal MINT directory. You should ensure you install a new INET4.XDD as well.
+
+After bootup you should get a new 'asx0' device that can be configured as usual with ifconfig/route.
+
+Unicorn is basically an ACSI->USB adapter with a single USB port.
+
+Alan Hourihane,
+20/03/2014

@@ -2,8 +2,8 @@
  * Filename:     gs_mem.c
  * Project:      GlueSTiK
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
  * 
  * Copying:      Copyright 1999 Frank Naumann <fnaumann@freemint.de>
  * 
@@ -25,11 +25,9 @@
  */
 
 # include <string.h>
-# include <osbind.h>
-# include <mintbind.h>
 
 # include "gs_mem.h"
-# include "gs_config.h"
+# include "gs_conf.h"
 
 
 # define POOLSIZE_DEFAULT	50000L
@@ -59,14 +57,14 @@ static chunk_header *arena;
 int
 init_mem (void)
 {
-	register char *s = gs_getvstr (POOLSIZE_VAR);
+	register const char *s = gs_getvstr (POOLSIZE_VAR);
 	
 	if (s)
 		poolsize = strtoul (s, NULL, 0);
 	
 	if (poolsize <= MIN_CHUNK)
 	{
-		Cconws ("alloc pool size too small - using default size\r\n");
+		(void) Cconws ("alloc pool size too small - using default size\r\n");
 		poolsize = POOLSIZE_DEFAULT;
 	}
 	
@@ -78,7 +76,7 @@ init_mem (void)
 	pool = malloc (poolsize);
 	if (!pool)
 	{
-		Cconws ("Unable to allocate alloc pool\r\n");
+		(void) Cconws ("Unable to allocate alloc pool\r\n");
 		return 0;
 	}
 	
@@ -209,7 +207,9 @@ gs_mem_free (void *mem)
 		for (H2 = arena; H2 && H2->next != H; H2 = H2->next)
 		{
 			if (!is_freed(H2) && !is_alloced(H2))
+			{
 				DEBUG (("gs_mem_free: possible arena corruption at %p", H2));
+			}
 			continue;
 		}
 		

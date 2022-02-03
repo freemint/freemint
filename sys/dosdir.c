@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -274,6 +272,11 @@ bailout:
 		DEBUG(("Ddelete: %s is not a directory", path));
 		r = ENOTDIR;
 	}
+	else if (strlen (temp1) == 1 && temp1[0] == '.')
+	{
+		DEBUG(("Ddelete: %s is not allowed to be deleted", path));
+		r = EINVAL;
+	}
 	else
 	{
 		struct proc *p;
@@ -492,7 +495,7 @@ sys_d_getcwd (char *path, int drv, int size)
 			int len = strlen (cwd->root_dir);
 
 			DEBUG (("root_dir detected = %i, (%s), %s", len, path, cwd->root_dir));
-			DEBUG (("strncmp = %i", (long) strncmp (cwd->root_dir, path, len)));
+			DEBUG (("strncmp = %i", (int)strncmp (cwd->root_dir, path, len)));
 
 			if (!strncmp (cwd->root_dir, path, len))
 			{
@@ -521,7 +524,7 @@ sys_f_setdta (DTABUF *dta)
 {
 	struct proc *p = get_curproc();
 
-	TRACE(("Fsetdta: %lx", dta));
+	TRACE(("Fsetdta: %p", dta));
 	p->p_fd->dta = dta;
 	p->p_mem->base->p_dta = (char *) dta;
 
@@ -576,7 +579,7 @@ sys_f_sfirst (const char *path, int attrib)
 	s = temp1;
 	while (*s)
 	{
-		if (*s == '\\')
+		if (*s == '\\' || *s == '/')
 			slash = s;
 		s++;
 	}
@@ -815,20 +818,20 @@ sys_f_snext (void)
 
 	if (dta->magic == EVALID)
 	{
-		DEBUG (("Fsnext(%lx): DTA marked a failing search", dta));
+		DEBUG (("Fsnext(%p): DTA marked a failing search", dta));
 		return ENMFILES;
 	}
 
 	if (dta->magic != SVALID)
 	{
-		DEBUG (("Fsnext(%lx): dta incorrectly set up", dta));
+		DEBUG (("Fsnext(%p): dta incorrectly set up", dta));
 		return ENOSYS;
 	}
 
 	i = dta->index;
 	if (i >= NUM_SEARCH)
 	{
-		DEBUG (("Fsnext(%lx): DTA has invalid index", dta));
+		DEBUG (("Fsnext(%p): DTA has invalid index", dta));
 		return EBADARG;
 	}
 
@@ -839,7 +842,7 @@ sys_f_snext (void)
 	if (!fs)
 	{
 		/* oops -- the directory got closed somehow */
-		DEBUG (("Fsnext(%lx): invalid filesystem", dta));
+		DEBUG (("Fsnext(%p): invalid filesystem", dta));
 		return EINTERNAL;
 	}
 
@@ -1904,7 +1907,7 @@ sys_d_lock (int mode, int _dev)
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
 			f = fd->ofiles[i];
-			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == dev))
+			if (f && (f != (FILEPTR *) 1) && (f->fc.fs && f->fc.dev == dev))
 			{
 				DEBUG (("Dlock: process %d (%s) has an open "
 					"handle on the drive", p->pid, p->name));
@@ -2106,8 +2109,8 @@ sys_d_chroot (const char *path)
 	cwd->rootdir = dir;
 
 	DEBUG (("Dchroot(%s): ok [%lx,%i]", cwd->root_dir, dir.index, dir.dev));
-	DEBUG (("Dchroot: [%lx,%lx]", cwd->curdir[dir.dev].index, cwd->curdir[dir.dev].fs));
-	DEBUG (("Dchroot: [%lx,%lx]", cwd->root[dir.dev].index, cwd->root[dir.dev].fs));
+	DEBUG (("Dchroot: [%lx,%p]", cwd->curdir[dir.dev].index, cwd->curdir[dir.dev].fs));
+	DEBUG (("Dchroot: [%lx,%p]", cwd->root[dir.dev].index, cwd->root[dir.dev].fs));
 	return E_OK;
 
 error:
@@ -2174,18 +2177,21 @@ sys_f_chdir (short fd)
 	if (r)
 	{
 		DEBUG (("Ffchdir(%i): couldn't get directory attributes", fd));
+		release_cookie (&(f->fc));
 		return r;
 	}
 
 	if (!(xattr.attr & FA_DIR))
 	{
 		DEBUG (("Ffchdir(%i): not a directory", fd));
+		release_cookie (&(f->fc));
 		return ENOTDIR;
 	}
 
 	if (denyaccess (p->p_cred->ucr, &xattr, S_IXOTH))
 	{
 		DEBUG (("Ffchdir(%i): access denied", fd));
+		release_cookie (&(f->fc));
 		return EACCES;
 	}
 
@@ -2263,6 +2269,7 @@ sys_f_opendir (short fd)
 	if (r)
 	{
 		DEBUG (("Ffdopendir(%i): fdopendir returned %ld", fd, r));
+		release_cookie (&dirh->fc);
 		kfree (dirh);
 		return r;
 	}
@@ -2329,28 +2336,22 @@ sys_f_dirfd (long handle)
 	r = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (r) goto error;
 
-	r = FP_ALLOC (p, &fp);
-	if (r) goto error;
-
 	if (dev == &fakedev)
 	{
 		/* fake BIOS devices */
-		FILEPTR *fpfake;
-
 		assert (p->p_fd);
 
-		fpfake = p->p_fd->ofiles[devsp];
-		if (!fpfake || fpfake == (FILEPTR *) 1) {
-			r = EBADF;
-			goto error;
+		fp = p->p_fd->ofiles[devsp];
+		if (!fp || fp == (FILEPTR *) 1) {
+			FD_REMOVE (p, fd);
+			return EBADF;
 		}
 
-		fpfake->links--;
-		FP_FREE (fp);
-
-		fp = fpfake;
-		fpfake->links++;
+		fp->links++;
 	} else {
+		r = FP_ALLOC (p, &fp);
+		if (r) goto error;
+
 		fp->links = 1;
 		fp->flags = O_RDONLY;
 		fp->pos = 0;

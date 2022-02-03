@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -8,7 +9,7 @@
 
 #define SERVER	"/tmp/dgramd"
 #define CLIENT	"/tmp/dgram"
-#define OFFSET	((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	offsetof(struct sockaddr_un, sun_path)
 
 int
 main (void)

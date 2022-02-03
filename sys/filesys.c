@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -54,6 +52,9 @@
 # include "xfs/hostfs/hostfs_xfs.h"
 # include "xfs/hostfs/hostfs.h"
 # endif
+# ifdef WITH_ARANYMFS
+# include "xfs/aranym/aranym_fsdev.h"
+# endif
 
 
 #if 1
@@ -62,6 +63,9 @@
 #define PATH2COOKIE_DB(x) DEBUG(x)
 #endif
 
+
+static void
+xfs_dismiss (FILESYS *fs);
 
 static void
 xfs_blocking_init (FILESYS *fs)
@@ -180,14 +184,14 @@ init_drive (int i)
 
 	for (fs = active_fs; fs; fs = fs->next)
 	{
-		DEBUG(("init_drive: fs %lx, drv %d", fs, i));
+		DEBUG(("init_drive: fs %p, drv %d", fs, i));
 
 		r = xfs_root (fs, i, &root_dir);
 		if (r == 0)
 		{
 			drives[i] = root_dir.fs;
 			release_cookie (&root_dir);
-			DEBUG(("init_drive: drv %d is fs %lx", i, fs));
+			DEBUG(("init_drive: drv %d is fs %p", i, fs));
 			break;
 		}
 	}
@@ -265,8 +269,23 @@ init_filesys (void)
 		FILESYS *fs = hostfs_init ();
 		if ( fs )
 			hostfs_mount_drives( fs );
+		else
+			xfs_dismiss( &hostfs_filesys );
 	}
 # endif
+
+# ifdef WITH_ARANYMFS
+	/* initialize the arafs file system */
+	{
+		FILESYS *fs = aranymfs_init ();
+		if ( fs )
+			arafs_mount_drives( fs );
+		else
+			xfs_dismiss( &arafs_filesys );
+	}
+# endif
+
+	UNUSED (xfs_dismiss); /* Maybe */
 }
 
 # ifdef DEBUG_INFO
@@ -278,16 +297,16 @@ xfs_name (fcookie *fc)
 
 	buf [0] = '\0';
 
-	TRACE(("xfs_name: call xfs_fscntl.. buf = %lx, fc %lx, fs %lx", &buf, fc, (long)fc->fs));
+	TRACE(("xfs_name: call xfs_fscntl.. buf = %p, fc %p, fs %p", &buf, fc, fc->fs));
 	if (fc->fs)
 		r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long)&buf);
 	else {
 		r = 0;
-		ksprintf(buf, sizeof(buf), "unknown fs (%lx)", fc->fs);
+		ksprintf(buf, sizeof(buf), "unknown fs (%p)", fc->fs);
 	}
 	TRACE(("xfs_name: xfs_fctnl returned %lx", r));
 	if (r)
-		ksprintf (buf, sizeof (buf), "unknown (%lx -> %li)", fc->fs, r);
+		ksprintf (buf, sizeof (buf), "unknown (%p -> %li)", fc->fs, r);
 
 	return buf;
 }
@@ -356,6 +375,24 @@ xfs_add (FILESYS *fs)
 
 		fs->next = active_fs;
 		active_fs = fs;
+	}
+}
+
+/* dismiss a file system which failed to initialize */
+static void
+xfs_dismiss (FILESYS *fs)
+{
+	FILESYS **p;
+
+	for (p = &active_fs; *p; p = &(*p)->next)
+	{
+		if (*p == fs)
+		{
+			*p = (*p)->next;
+			fs->next = NULL;
+
+			return;
+		}
 	}
 }
 
@@ -641,7 +678,16 @@ disk_changed (ushort d)
 		 * Note that ENODEV must be tested for drives A-C, or else
 		 * booting may not work properly.
 		 */
+#ifdef OLDTOSFS
+		/* The kernel for the Hatari emulator (minthat.prg) is compiled
+		 * with OLDTOSFS to enable access to hard drives emulated only on
+		 * GEMDOS level. However, in that case there is no BIOS device
+		 * for drive C:, either, and we must ignore ENODEV.
+		 */
+		if (d >= 2 && r == ENODEV)
+#else
 		if (d > 2 && r == ENODEV)
+#endif
 			return 0;	/* assume no change */
 		else
 			return r;
@@ -654,7 +700,7 @@ disk_changed (ushort d)
 		if (r != ECHMEDIA)
 		{
 			/* nope, no change */
-			TRACE (("rwabs returned %d", r));
+			TRACE (("rwabs returned %ld", r));
 
 			return (r < 0) ? r : 0;
 		}
@@ -706,7 +752,7 @@ long _cdecl
 relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	       fcookie *res, int depth)
 {
-	static char newpath[16] = "U:\\DEV\\";
+	char newpath[16];
 
 	struct cwd *cwd = p->p_cwd;
 
@@ -745,7 +791,7 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 
 	*lastname = '\0';
 
-	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %lx, %i])",
+	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %p, %i])",
 		path, dolast, depth, relto->fs, relto->dev));
 
 	if (depth > MAX_LINKS)
@@ -763,7 +809,31 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	if (strlen (path) == 4 && path[3] == ':')
 # endif
 	{
-		strncpy (newpath+7, path, 3);
+		strcpy(newpath, "U:\\DEV\\");
+		newpath[7] = path[0];
+		newpath[8] = path[1];
+		newpath[9] = path[2];
+
+		if ((path[0] == 'N' || path[0] == 'n') &&
+		    (path[1] == 'U' || path[1] == 'u') &&
+		    (path[2] == 'L' || path[2] == 'l'))
+		{
+			/* the device file is u:\dev\null */
+			newpath[10] = 'l';
+			newpath[11] = '\0';
+		} else
+		if ((path[0] == 'M' || path[0] == 'm') &&
+		    (path[1] == 'I' || path[1] == 'i') &&
+		    (path[2] == 'D' || path[2] == 'd'))
+		{
+			/* the device file is u:\dev\midi */
+			newpath[10] = 'i';
+			newpath[11] = '\0';
+		} else {
+			/* add the NULL terminator */
+			newpath[10] = '\0';
+		}
+
 		path = newpath;
 	}
 
@@ -834,7 +904,7 @@ nodrive:
 		}
 		else
 		{
-			PATH2COOKIE_DB (("relpath2cookie: using relto (%lx, %li, %i) for dir", relto->fs, relto->index, relto->dev));
+			PATH2COOKIE_DB (("relpath2cookie: using relto (%p, %li, %i) for dir", relto->fs, relto->index, relto->dev));
 			dup_cookie (&dir, relto);
 		}
 	}
@@ -869,7 +939,7 @@ restart_mount:
 		if (r > 0)
 			r = ECHMEDIA;
 
-		PATH2COOKIE_DB (("relpath2cookie: returning %d", r));
+		PATH2COOKIE_DB (("relpath2cookie(1): returning %ld", r));
 		return r;
 	}
 
@@ -932,7 +1002,7 @@ restart_mount:
 			release_cookie (&dir);
 		}
 
-		PATH2COOKIE_DB (("relpath2cookie: returning %ld", r));
+		PATH2COOKIE_DB (("relpath2cookie(2): returning %ld", r));
 		return r;
 	}
 
@@ -1013,7 +1083,7 @@ restart_mount:
 			if (!*s) {
 				PATH2COOKIE_DB (("relpath2cookie: no more path, breaking"));
 				*res = dir;
-				PATH2COOKIE_DB (("relpath2cookie: *res = [%lx, %i]", res->fs, res->dev));
+				PATH2COOKIE_DB (("relpath2cookie: *res = [%p, %i]", res->fs, res->dev));
 				break;
 			}
 		}
@@ -1070,6 +1140,11 @@ restart_mount:
 		else if (r)
 		{
 			release_cookie (&dir);
+			/*
+			 * TOS programs might expect ENOTDIR
+			 */
+			if (r == ENOENT && dolast == 0 && p->domain == DOM_TOS)
+				r = ENOTDIR;
 			break;
 		}
 
@@ -1136,7 +1211,7 @@ restart_mount:
 		}
 	}
 
-	PATH2COOKIE_DB (("relpath2cookie: returning %ld", r));
+	PATH2COOKIE_DB (("relpath2cookie(3): returning %ld", r));
 	return r;
 }
 

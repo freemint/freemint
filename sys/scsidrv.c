@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -57,7 +55,7 @@
 # include "k_prot.h"
 
 # include "proc.h"
-
+# include "block_IO.h"	/* bio_sync_all */
 
 static REQDATA emu_scsidrv_ReqData;
 
@@ -102,6 +100,9 @@ ushort scsidrv_installed = 0;
 
 static SCSIDRV *scsidrv = NULL;
 
+# ifdef SCSIDRV_MON
+static void init_scsidrv_mon(void);
+# endif
 
 long
 scsidrv_init (void)
@@ -110,7 +111,6 @@ scsidrv_init (void)
 	unsigned long t = 0;
 
 # ifdef SCSIDRV_MON
-	static void init_scsidrv_mon(void);
 	init_scsidrv_mon();
 # endif
 	r = get_toscookie(COOKIE_SCSI, &t);
@@ -179,8 +179,8 @@ sys_scsidrv (ushort op,
 		/* InquireBus */
 		case 4:
 		{
-			wrap2 f = (wrap2) scsidrv_InquireBus;
-			return (*f)(a1, a2);
+			wrap3 f = (wrap3) scsidrv_InquireBus;
+			return (*f)(a1, a2, a3);
 		}
 		/* CheckDev */
 		case 5:
@@ -209,8 +209,8 @@ sys_scsidrv (ushort op,
 		/* Error */
 		case 9:
 		{
-			wrap2 f = (wrap2) scsidrv_Error;
-			return (*f)(a1, a2);
+			wrap3 f = (wrap3) scsidrv_Error;
+			return (*f)(a1, a2, a3);
 		}
 
 		/* target interface
@@ -232,10 +232,50 @@ sys_scsidrv (ushort op,
 
 
 long
+scsidrv_InstallNewDriver (SCSIDRV *newdrv)
+{
+	long olddrv = 0;
+
+	if (!scsidrv)
+	{
+		scsidrv = newdrv;
+		scsidrv_installed = scsidrv->version;
+
+		emu_scsidrv.version = scsidrv_installed;
+		if (emu_scsidrv.version > 0x0101)
+			emu_scsidrv.version = 0x0101;
+
+		set_cookie (NULL, COOKIE_SCSI, (long) &emu_scsidrv);
+	}
+	else
+	{
+		if (newdrv->version < 0x0101)
+			emu_scsidrv.version = newdrv->version;
+
+		olddrv = (long) scsidrv;
+		scsidrv = newdrv;
+	}
+	return olddrv;
+}
+
+long
 scsidrv_In (SCSICMD *par)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_In (%lx)", par));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	/* Catch eject command to sync disk caches */
+	if (par->cmd[0] == SCSI_START_STP &&
+	    par->cmd[4] & SCSI_START_STP_LOEJ &&
+	  !(par->cmd[4] & SCSI_START_STP_START) &&
+	  !(par->cmd[4] & SCSI_START_STP_PWCO))
+	{
+		bio_sync_all ();
+	}
+
+	SCSIDRV_DEBUG (("scsidrv_In (%p)", par));
 	ret = (*scsidrv->In)(par);
 	SCSIDRV_DEBUG (("scsidrv_In (...) -> %li", ret));
 	return ret;
@@ -245,7 +285,11 @@ long
 scsidrv_Out (SCSICMD *par)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_Out (%lx)", par));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_Out (%p)", par));
 	ret = (*scsidrv->Out)(par);
 	SCSIDRV_DEBUG (("scsidrv_Out (...) -> %li", ret));
 	return ret;
@@ -255,7 +299,11 @@ long
 scsidrv_InquireSCSI (short what, BUSINFO *info)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (%i, %lx)", what, info));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (%i, %p)", what, info));
 	ret = (*scsidrv->InquireSCSI)(what, info);
 	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (...) -> %li", ret));
 	return ret;
@@ -265,7 +313,11 @@ long
 scsidrv_InquireBus (short what, short busno, DEVINFO *dev)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_InquireBUS (%i, %i, %lx)", what, busno, dev));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_InquireBUS (%i, %i, %p)", what, busno, dev));
 	ret = (*scsidrv->InquireBus)(what, busno, dev);
 	SCSIDRV_DEBUG (("scsidrv_InquireBUS (...) -> %li", ret));
 	return ret;
@@ -275,7 +327,11 @@ long
 scsidrv_CheckDev (short busno, const DLONG *SCSIId, char *name, ushort *features)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_CheckDev (%i, %lx, %lx, %lx)", busno, SCSIId, name, features));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_CheckDev (%i, %p, %p, %p)", busno, SCSIId, name, features));
 	ret = (*scsidrv->CheckDev)(busno, SCSIId, name, features);
 	SCSIDRV_DEBUG (("scsidrv_CheckDev (...) -> %li", ret));
 	return ret;
@@ -285,6 +341,10 @@ long
 scsidrv_RescanBus (short busno)
 {
 	register long ret;
+
+	if (!scsidrv)
+		return ENOSYS;
+
 	SCSIDRV_DEBUG (("scsidrv_RescanBus (%i)", busno));
 	ret = (*scsidrv->RescanBus)(busno);
 	SCSIDRV_DEBUG (("scsidrv_RescanBus (...) -> %li", ret));
@@ -295,7 +355,11 @@ long
 scsidrv_Open (short busno, const DLONG *SCSIId, ulong *maxlen)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_Open (%i, %lx, %lx)", busno, SCSIId, maxlen));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_Open (%i, %p, %p)", busno, SCSIId, maxlen));
 	ret = (*scsidrv->Open)(busno, SCSIId, maxlen);
 	SCSIDRV_DEBUG (("scsidrv_Open (...) -> %li", ret));
 	return ret;
@@ -305,7 +369,11 @@ long
 scsidrv_Close (short *handle)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_Close (%lx)", handle));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_Close (%p)", handle));
 	ret = (*scsidrv->Close)(handle);
 	SCSIDRV_DEBUG (("scsidrv_Close (...) -> %li", ret));
 	return ret;
@@ -315,7 +383,11 @@ long
 scsidrv_Error (short *handle, short rwflag, short ErrNo)
 {
 	register long ret;
-	SCSIDRV_DEBUG (("scsidrv_Error (%lx, %i, %i)", handle, rwflag, ErrNo));
+
+	if (!scsidrv)
+		return ENOSYS;
+
+	SCSIDRV_DEBUG (("scsidrv_Error (%p, %i, %i)", handle, rwflag, ErrNo));
 	ret = (*scsidrv->Error)(handle, rwflag, ErrNo);
 	SCSIDRV_DEBUG (("scsidrv_Error (...) -> %li", ret));
 	return ret;
@@ -325,48 +397,72 @@ scsidrv_Error (short *handle, short rwflag, short ErrNo)
 long
 scsidrv_Install (ushort bus, TARGET *handler)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->Install)(bus, handler);
 }
 
 long
 scsidrv_Deinstall (ushort bus, TARGET *handler)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->Deinstall)(bus, handler);
 }
 
 long
 scsidrv_GetCmd (ushort bus, char *cmd)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->GetCmd)(bus, cmd);
 }
 
 long
 scsidrv_SendData (ushort bus, char *buf, ulong len)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->SendData)(bus, buf, len);
 }
 
 long
 scsidrv_GetData (ushort bus, void *buf, ulong len)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->GetData)(bus, buf, len);
 }
 
 long
 scsidrv_SendStatus (ushort bus, ushort status)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->SendStatus)(bus, status);
 }
 
 long
 scsidrv_SendMsg (ushort bus, ushort msg)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->SendMsg)(bus, msg);
 }
 
 long
 scsidrv_GetMsg (ushort bus, ushort *msg)
 {
+	if (!scsidrv)
+		return ENOSYS;
+
 	return (*scsidrv->GetMsg)(bus, msg);
 }
 
@@ -471,7 +567,7 @@ installHandler(void)
 	while (!r)
 	{
 		if (busInfo.features & cTarget)
-			if (!scsiCall->Install(busInfo.BusNo, &targetHandler))
+			if (!scsiCall->Install(busInfo.busno, &targetHandler))
 				installed = 1;
 
 		r = scsiCall->InquireSCSI(cInqNext, &busInfo);
@@ -485,7 +581,7 @@ init_scsidrv_mon(void)
 {
 	long r;
 
-	r = get_toscookie (COOKIE_SCSI, (long *) &scsiCall);
+	r = get_toscookie (COOKIE_SCSI, (unsigned long *) &scsiCall);
 	if (r == 0 && scsiCall)
 	{
 		installHandler();
@@ -504,7 +600,7 @@ scsidrv_mon_In(SCSICMD *parms)
 {
 	long res;
 
-	SCSIDRV_DEBUG(("In    tpSCSICmd $%lx", parms));
+	SCSIDRV_DEBUG(("In    tpSCSICmd $%p", parms));
 	scsidrv_mon_prparms(parms);
 
 	res = oldScsiCall.In(parms);
@@ -521,7 +617,7 @@ scsidrv_mon_Out(SCSICMD *parms)
 {
 	long res;
 
-	SCSIDRV_DEBUG(("Out    tpSCSICmd $%lx", parms));
+	SCSIDRV_DEBUG(("Out    tpSCSICmd $%p", parms));
 	scsidrv_mon_prparms(parms);
 
 	res = oldScsiCall.Out(parms);
@@ -548,7 +644,7 @@ scsidrv_mon_InquireSCSI(short what, BUSINFO *info)
 		char buf[256];
 		char s[32];
 
-		ksprintf(buf, sizeof(buf), "-> BusName \"%s\"  BusNo %d  Features", info->BusName, info->BusNo);
+		ksprintf(buf, sizeof(buf), "-> BusName \"%s\"  BusNo %d  Features", info->busname, info->busno);
 
 		if (!(info->features & 0x3f))
 		{
@@ -562,7 +658,7 @@ scsidrv_mon_InquireSCSI(short what, BUSINFO *info)
 		if (info->features & 0x10) strcat(buf, " cCanDisconnect");
 		if (info->features & 0x20) strcat(buf, " cScatterGather");
 
-		ksprintf(s, sizeof(s), "  MaxLen %ld", info->MaxLen);
+		ksprintf(s, sizeof(s), "  MaxLen %ld", info->maxlen);
 		strcat(buf, s);
 
 		SCSIDRV_DEBUG(("%s", buf));
@@ -650,7 +746,7 @@ scsidrv_mon_Open(short busno, const DLONG *id, ulong *maxlen)
 		char s[32];
 		short *handle = (short *) res;
 
-		ksprintf(buf, sizeof(buf), "-> Handle $%lx  Features", handle);
+		ksprintf(buf, sizeof(buf), "-> Handle $%p  Features", handle);
 
 		if (!(*handle & 0x3f))
 		{
@@ -676,7 +772,7 @@ scsidrv_mon_Open(short busno, const DLONG *id, ulong *maxlen)
 static long _cdecl
 scsidrv_mon_Close(short *handle)
 {
-	SCSIDRV_DEBUG(("Close    Handle $%lx", handle));
+	SCSIDRV_DEBUG(("Close    Handle $%p", handle));
 
 	return scsidrv_mon_result(oldScsiCall.Close(handle));
 }
@@ -689,7 +785,7 @@ scsidrv_mon_Error(short *handle, short rwflag, short errno)
 
 	if (rwflag)
 	{
-		ksprintf(buf, sizeof(buf), "Error    Handle $%lx  rwflag cErrWrite  ErrNo", handle);
+		ksprintf(buf, sizeof(buf), "Error    Handle $%p  rwflag cErrWrite  ErrNo", handle);
 
 		if (!(errno & 0x03))
 		{
@@ -704,7 +800,7 @@ scsidrv_mon_Error(short *handle, short rwflag, short errno)
 		SCSIDRV_DEBUG(("%s", buf));
 	}
 	else
-		SCSIDRV_DEBUG(("Error    Handle $%lx  rwflag cErrRead", handle));
+		SCSIDRV_DEBUG(("Error    Handle $%p  rwflag cErrRead", handle));
 
 	res = oldScsiCall.Error(handle, rwflag, errno);
 
@@ -719,7 +815,7 @@ scsidrv_mon_Error(short *handle, short rwflag, short errno)
 static long _cdecl
 scsidrv_mon_Install(ushort bus, TARGET *handler)
 {
-	SCSIDRV_DEBUG(("Install    Bus %d  Handler %lx", bus, handler));
+	SCSIDRV_DEBUG(("Install    Bus %d  Handler %p", bus, handler));
 
 	return oldScsiCall.Install(bus, handler);
 }
@@ -728,7 +824,7 @@ scsidrv_mon_Install(ushort bus, TARGET *handler)
 static long _cdecl
 scsidrv_mon_Deinstall(ushort bus, TARGET *handler)
 {
-	SCSIDRV_DEBUG(("Deinstall    Bus %d  Handler %lx", bus, handler));
+	SCSIDRV_DEBUG(("Deinstall    Bus %d  Handler %p", bus, handler));
 
 	return oldScsiCall.Deinstall(bus, handler);
 }
@@ -1016,7 +1112,7 @@ scsidrv_mon_prparms(SCSICMD *parms)
 	char *s = buf;
 	int i; long j;
 
-	SCSIDRV_DEBUG(("  Handle $%lx", parms->handle));
+	SCSIDRV_DEBUG(("  Handle $%p", parms->handle));
 
 	ksprintf(s, buflen, "  CmdLen %d  Cmd $", parms->cmdlen);
 	j = strlen(s);
@@ -1034,8 +1130,8 @@ scsidrv_mon_prparms(SCSICMD *parms)
 	}
 	SCSIDRV_DEBUG(("%s", buf));
 
-	SCSIDRV_DEBUG(("  Buffer $%lx  TransferLen %ld", parms->buf, parms->transferlen));
-	SCSIDRV_DEBUG(("  SenseBuffer $%lx  Timeout %ld", parms->sense, parms->timeout));
+	SCSIDRV_DEBUG(("  Buffer $%p  TransferLen %ld", parms->buf, parms->transferlen));
+	SCSIDRV_DEBUG(("  SenseBuffer $%p  Timeout %ld", parms->sense, parms->timeout));
 
 	if (parms->flags & 0x10)
 		SCSIDRV_DEBUG(("  Flags Disconnect"));

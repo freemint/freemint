@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -69,12 +67,6 @@ static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
 { return _dmabuf_alloc (size, cm, "xfs/xdd"); }
 #endif
 
-static LOCK * _cdecl
-denylock_curproc(LOCK *list, LOCK *newlock)
-{
-	return denylock(get_curproc()->pid, list, newlock);
-}
-
 static long _cdecl
 old_kthread_create(void _cdecl (*func)(void *), void *arg,
 		   struct proc **np, const char *fmt, ...)
@@ -97,7 +89,7 @@ struct kerinfo kernelinfo =
 	MINT_MAJ_VERSION,
 	MINT_MIN_VERSION,
 	DEFAULT_MODE,
-	2,
+	2, /* MINT_KVERSION */
 	bios_tab, dos_tab,
 	m_changedrv,
 	Trace, Debug, ALERT, FATAL,
@@ -112,7 +104,7 @@ struct kerinfo kernelinfo =
 	ksprintf_old,
 	ms_time, unixtime, dostime,
 	nap, sleep, wake, (void _cdecl (*)(long)) wakeselect,
-	denyshare, denylock_curproc,
+	denyshare, denylock,
 	addtimeout_curproc, canceltimeout,
 	addroottimeout, cancelroottimeout,
 	ikill, iwake,

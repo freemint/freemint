@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  * 
@@ -42,11 +40,23 @@
 # include "xdd/mfp/kgdb_mfp.c"
 # endif
 
-static void VDEBUGOUT(const char *, va_list, int);
+/* There is an issue with FireTOS Bconout() function, for some reason between
+ * 2 consecutive Bconout() calls a delay must be set otherwise system hangs.
+ * We must deal direcly with the PSC0 port ourselves. EmuTOS is fine regarding
+ * this but we keep the direct approach for it nevertheless.
+ */
+# ifdef __mcoldfire__
+# include "arch/psc0.h"
+# endif
+
+static void VDEBUGOUT(const char *, va_list, int alert_flag, int nl);
 
 
-int debug_level = 1;	/* how much debugging info should we print? */
-# if MFP_DEBUG_DIRECT
+int debug_level = ALERT_LEVEL;	/* how much debugging info should we print? */
+
+# ifdef __mcoldfire__
+int out_device = 8;
+# elif MFP_DEBUG_DIRECT
 int out_device = 0;
 # else
 int out_device = 2;	/* BIOS device to write errors to */
@@ -93,6 +103,14 @@ int logptr = 0;
 static void
 safe_Bconout(short dev, int c)
 {
+#ifdef __mcoldfire__
+	if (dev == 8)
+	{
+		board_putchar((char)c);
+		return;
+	}
+#endif
+
 #ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
 		mfp_kgdb_putc(c);
@@ -106,6 +124,13 @@ safe_Bconout(short dev, int c)
 static short
 safe_Bconstat(short dev)
 {
+#ifdef __mcoldfire__
+	if (dev == 8)
+	{
+		return (short)board_getchar_present();
+	}
+#endif
+
 #ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
 		return mfp_kgdb_instat();
@@ -122,6 +147,13 @@ safe_Bconstat(short dev)
 static long
 safe_Bconin(short dev)
 {
+#ifdef __mcoldfire__
+	if (dev == 8)
+	{
+		return (uint8)board_getchar();
+	}
+#endif
+
 #ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
 		return mfp_kgdb_getc();
@@ -166,7 +198,7 @@ debug_ws(const char *s)
 	int scan;
 	int stopped;
 	
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	if (nf_debug(s))
 		return;
 # endif
@@ -175,7 +207,7 @@ debug_ws(const char *s)
 	{
 		safe_Bconout(out_device, *s);
 		
-		while (*s == '\n' && safe_Bconstat(out_device))
+		while (out_device != 0 && *s == '\n' && safe_Bconstat(out_device))
 		{
 			stopped = 0;
 			while (1)
@@ -233,7 +265,7 @@ cont:
  */
 
 int
-_ALERT(char *s)
+_ALERT(const char *s)
 {
 	FILEPTR *fp;
 	long ret;
@@ -244,19 +276,20 @@ _ALERT(char *s)
 	int olddebug = debug_level;
 	int oldlogging = debug_logging;
 	
-	debug_level = 0;
+	debug_level = FORCE_LEVEL;
 	debug_logging = 0;
 	
 	ret = FP_ALLOC(rootproc, &fp);
-	if (!ret)
+	if (!ret){
 		ret = do_open(&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
+	}
 	
 	debug_level = olddebug;
 	debug_logging = oldlogging;
 	
 	if (!ret)
 	{		
-		char *alert;
+		const char *alert;
 		
 		/* format the string into an alert box
 		 */
@@ -267,13 +300,14 @@ _ALERT(char *s)
 		}
 		else
 		{
-			char alertbuf[SPRINTF_MAX + 10];
-			char *ptr;
+			char alertbuf[SPRINTF_MAX + 32];
+			char *ptr, *end = alertbuf+sizeof(alertbuf)-8;	/* strlen "][ OK ]" +1 */
 			char *lastspace;
 			int counter;
 			
 			alert = alertbuf;
-			ksprintf(alertbuf, sizeof(alertbuf), "[1][%s", s);
+			ksprintf(alertbuf, end-alertbuf, "[1][%s", s);
+			*end = 0;
 			
 			/* make sure no lines exceed 30 characters;
 			 * also, filter out any reserved characters
@@ -320,9 +354,20 @@ _ALERT(char *s)
 				ptr++;
 			}
 			
-			strcpy(ptr, "][  OK  ]");
+			strcpy(ptr, "][ OK ]");
 		}
 		
+		if( !fp->dev )
+		{
+			DEBUG(("_ALERT:fp->dev=0! (%s:%ld)", __FILE__, (long)__LINE__));
+			return 0;
+		}
+
+		if( !fp->dev->write )
+		{
+			DEBUG(("_ALERT:fp->dev->write=0! (%s:%ld)", __FILE__, (long)__LINE__));
+			return 0;
+		}
 		(*fp->dev->write)(fp, alert, strlen(alert) + 1);
 		do_close(rootproc, fp);
 		
@@ -333,7 +378,7 @@ _ALERT(char *s)
 }
 
 static void
-VDEBUGOUT(const char *s, va_list args, int alert_flag)
+VDEBUGOUT(const char *s, va_list args, int alert_flag, int nl)
 {
 	char *lp;
 	char *lptemp;
@@ -346,11 +391,11 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	if (++logptr == LBSIZE)
 		logptr = 0;
 	
-	if (get_curproc())
+	if (nl && get_curproc())
 	{
-		ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
-		lptemp += strlen(lp);
-		len -= strlen(lp);
+		int splen = ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
+		lptemp += splen;
+		len -= splen;
 	}
 	
 	kvsprintf(lptemp, len, s, args);
@@ -360,7 +405,8 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 		return;
 	
 	debug_ws(lp);
-	debug_ws("\r\n");
+	if (nl)
+		debug_ws("\r\n");
 }
 
 void _cdecl
@@ -377,7 +423,7 @@ Tracelow(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}
 }
@@ -396,7 +442,7 @@ Trace(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}
 }
@@ -408,7 +454,7 @@ display(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}	
 }
@@ -427,7 +473,7 @@ Debug(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
 		va_end(args);
 	}
 	
@@ -447,7 +493,7 @@ ALERT(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 1);
+		VDEBUGOUT(s, args, 1, 1);
 		va_end(args);
 	}
 	
@@ -463,7 +509,22 @@ FORCE(const char *s, ...)
 		va_list args;
 		
 		va_start(args, s);
-		VDEBUGOUT(s, args, 0);
+		VDEBUGOUT(s, args, 0, 1);
+		va_end(args);
+	}
+	
+	/* don't dump log here - hardly ever what you mean to do. */
+}
+
+void _cdecl
+FORCENONL(const char *s, ...)
+{
+	if (debug_level >= FORCE_LEVEL)
+	{
+		va_list args;
+		
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0, 0);
 		va_end(args);
 	}
 	
@@ -514,7 +575,7 @@ FATAL(const char *s, ...)
 	va_list args;
 	
 	va_start(args, s);
-	VDEBUGOUT(s, args, 0);
+	VDEBUGOUT(s, args, 0, 1);
 	va_end(args);
 	
 	if (debug_logging)
@@ -624,7 +685,7 @@ do_func_key(int scan)
 		/* F6: always print MiNT basepage */
 		case 0x40:
 		{
-			FORCE("MiNT base %lx (%lx)", rootproc->p_mem->base, _base);
+			FORCE("MiNT base %lx (%lx)", (unsigned long)rootproc->p_mem->base, (unsigned long)_base);
 			break;
 		}
 # endif

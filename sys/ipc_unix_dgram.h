@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -39,8 +37,8 @@
 
 
 long	unix_dgram_socketpair	(struct socket *, struct socket *);
-long	unix_dgram_connect	(struct socket *, struct sockaddr *, short, short);
-long	unix_dgram_send		(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+long	unix_dgram_connect	(struct socket *, const struct sockaddr *, short, short);
+long	unix_dgram_send		(struct socket *, const struct iovec *, short, short, short, const struct sockaddr *, short);
 long	unix_dgram_recv		(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 long	unix_dgram_select	(struct socket *, short, long);
 long	unix_dgram_ioctl	(struct socket *, short, void *);

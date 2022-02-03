@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -162,23 +160,27 @@ has_opened (SHARED_LIB *sl, int pid)
  * Otherwise: GEMDOS error
  */
 static long
-load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
+load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl, int *continue_search)
 {
+	union { char *c; long *l;} ptr;
 	int new_pid, prot_cookie;
 	long r, hitpa, oldsigint, oldsigquit, oldcmdlin, *exec_longs;
 	char *fullpath;
 	BASEPAGE *b;
 	MEMREGION *mr;
+	int pathlen;
 
 	/* Construct the full path name of the SLB */
-	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
+	pathlen = (int)strlen(path);
+	fullpath = kmalloc(pathlen + strlen(name) + 2);
 	if (!fullpath)
 	{
 		DEBUG(("Slbopen: Couldn't kmalloc() full pathname"));
 		return(ENOMEM);
 	}
 	strcpy(fullpath, path);
-	strcat(fullpath, "/");
+	if (pathlen && path[pathlen - 1] != '/' && path[pathlen - 1] != '\\')
+		strcat(fullpath, "/");
 	strcat(fullpath, name);
 
 	/* Create the new shared library structure */
@@ -228,7 +230,12 @@ slb_error:
 
 	/* Test for the new program format */
 	exec_longs = (long *) b->p_tbase;
-	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+	if (
+	     /* Original binutils */
+	     (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+	     /* binutils >= 2.18-mint-20080209 */
+	     || (exec_longs[0] == 0x203a001aL && exec_longs[1] == 0x4efb08faL)
+	   )
 	{
 		(*sl)->slb_head = (SLB_HEAD *)(b->p_tbase + 228);
 	}
@@ -282,6 +289,12 @@ slb_error:
 			"no additional user stack possible"));
 	}
 
+	/*
+	 * we have found it; do not attempt to search further
+	 * if it is just the shared library failing
+	 */
+	*continue_search = 0;
+
 	/* Run the shared library, i.e. call its init() routine.
 	 *
 	 * exec_region() called by sys_pexec() recognizes the
@@ -295,7 +308,6 @@ slb_error:
 	 * to be executed by a program with ordinary Pexec().
 	 */
 
-	union { char *c; long *l;} ptr;
 	ptr.c = b->p_cmdlin;
 	
 	oldcmdlin = *ptr.l;
@@ -373,6 +385,7 @@ slb_error:
 	(*sl)->slb_proc = pid2proc(new_pid);
 	assert((*sl)->slb_proc);
 	(*sl)->slb_proc->p_flag |= P_FLAG_SLB;	/* mark as SLB */
+	(*sl)->slb_proc->ppid = 0;	/* have the system adopt it */
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
 	mark_proc_region(get_curproc()->p_mem, mr, PROT_PR, get_curproc()->pid);
@@ -405,6 +418,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	long r, *usp;
 	ulong i;
 	MEMREGION **mr;
+	int continue_search = 1;
 
 	/* First, ensure the call came from user mode */
 	if (get_curproc()->ctxt[SYSCALL].sr & 0x2000)
@@ -464,9 +478,12 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 
 		r = -1;
 		if (path)
-			r = load_and_init_slb(name, path, min_ver, sl);
+		{
+			r = load_and_init_slb(name, path, min_ver, sl, &continue_search);
+			/* FORCE("Slbopen: search userpath %s/%s: $%08lx", path, name, r); */
+		}
 
-		if (!path || (r < 0))
+		if (r < 0 && continue_search)
 		{
 			char *npath, *np;
 
@@ -523,19 +540,23 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 					path++;		/* skip the separator */
 				*np = 0;
 
-				r = load_and_init_slb(name, npath, min_ver, sl);
-
-			} while (*path && r < 0);
+				r = load_and_init_slb(name, npath, min_ver, sl, &continue_search);
+				/* FORCE("Slbopen: search $SLBPATH %s/%s: $%08lx", npath, name, r); */
+			} while (*path && r < 0 && continue_search);
 
 			kfree(npath);
 
-			if (r < 0)
-				r = load_and_init_slb(name, sysdir, min_ver, sl);
+			if (r < 0 && continue_search)
+			{
+				r = load_and_init_slb(name, sysdir, min_ver, sl, &continue_search);
+				/* FORCE("Slbopen: search $SYSDIR %s/%s: $%08lx", sysdir, name, r); */
+			}
 		}
 
-		if (r < 0L)
+		if (r < 0)
 		{
-			ALERT (MSG_slb_couldnt_open, name);
+			/* ALERT (MSG_slb_couldnt_open, name); */
+			/* FORCE("Slbopen: not found %s: $%08lx", name, r); */
 			return(r); /* DEBUG info already written out */
 		}
 		slb = *sl;
@@ -559,7 +580,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	/*
 	 * If curproc is marked as user of this SLB, but as having opened it,
 	 * this is the internal call of s_lbopen (from slb_open in
-	 * slb_util.spp), which means the open() routine has just been
+	 * user_things.S), which means the open() routine has just been
 	 * successfully executed.
 	 */
 	if (is_user(slb, get_curproc()->pid))
@@ -573,7 +594,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 
 	/*
 	 * Otherwise, mark curproc as user and change the context so that upon
-	 * returning from this GEMDOS call, slb_open() in slb_util.spp gets
+	 * returning from this GEMDOS call, slb_open() in user_things.S gets
 	 * called
 	 */
 	mark_users(slb, get_curproc()->pid, 1);
@@ -647,7 +668,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	/*
 	 * If curproc has successfully called open(), unmark it and change the
 	 * context so that upon returning from Slbclose(), slb_close() in
-	 * slb_util.spp will be called
+	 * user_things.S will be called
 	 */
 	mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_G, get_curproc()->pid);
 	if (has_opened(slb, get_curproc()->pid))
@@ -669,7 +690,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 
 	/*
 	 * If we get here, curproc has either never called open() successfully,
-	 * or just called close(). It's now time to remove curproc from the
+	 * or we are just returning from slb_close(). It's now time to remove curproc from the
 	 * list of users, deny any further access to the library's memory, and
 	 * - if no more users remain - remove the library from memory.
 	 */
@@ -686,7 +707,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	}
 	if (slb->slb_used == 0)
 	{
-		short	pid = slb->slb_proc->pid;
+		PROC *slb_proc = slb->slb_proc;
 
 		/*
 		 * Clear the name of the SLB, to prevent further usage as there
@@ -694,9 +715,11 @@ sys_s_lbclose(SHARED_LIB *sl)
 		 * finally removed from memory
 		 */
 		slb->slb_name[0] = 0;
-		slb->slb_proc->p_flag &= ~P_FLAG_SLB;
+		slb_proc->p_flag &= ~P_FLAG_SLB;
 		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
-		sys_p_kill(pid, SIGCONT);
+		post_sig(slb_proc, SIGCONT);
+		slb_proc->sigpending &= ~STOPSIGS;
+		slb_proc->p_flag |= P_FLAG_SLB;
 	}
 	else
 		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
@@ -769,15 +792,17 @@ slb_close_on_exit (int term)
 		}
 		if (slb->slb_used == 0)
 		{
-			short pid = slb->slb_proc->pid;
+			PROC *slb_proc = slb->slb_proc;
 
 			slb->slb_name[0] = 0;
 			mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 
 			/* Unblock the signal deliveries */
-			slb->slb_proc->p_flag &= ~P_FLAG_SLB;
+			slb_proc->p_flag &= ~P_FLAG_SLB;
 
-			sys_p_kill(pid, SIGCONT);
+			post_sig(slb_proc, SIGCONT);
+			slb_proc->sigpending &= ~STOPSIGS;
+			slb_proc->p_flag |= P_FLAG_SLB;
 		}
 		else
 			mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
@@ -786,7 +811,7 @@ slb_close_on_exit (int term)
 
 	/*
 	 * Otherwise, change curproc's context to call slb_close_and_pterm() in
-	 * slb_util.spp upon "returning" from Pterm().
+	 * user_things.S upon "returning" from Pterm().
 	 */
 	ut = get_curproc()->p_mem->tp_ptr;
 

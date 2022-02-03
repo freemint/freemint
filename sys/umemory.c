@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -148,8 +146,10 @@ umem_verify(MEMREGION *m, struct umem_descriptor *descr)
 static struct umem_descriptor *
 umem_split(struct umem_descriptor *descr, unsigned long n, unsigned long size)
 {
-	union { char *c; struct umem_descriptor *d; } ptr; ptr.d = descr;
+	union { char *c; struct umem_descriptor *d; } ptr;
 	struct umem_descriptor *descr1;
+
+	ptr.d = descr;
 
 	descr1 = (void *)(ptr.c + (n - size));
 
@@ -171,7 +171,10 @@ static int
 umem_lookup(struct proc *p, MEMREGION *m, unsigned long size, void **result)
 {
 	struct umem_descriptor *descr;
-	union { char **c; void **v; } resultptr; resultptr.v = result;
+	union { char **c; void **v; } resultptr; 
+	
+	resultptr.v = result;
+
 	/* default is nothing found */
 	*resultptr.v = NULL;
 
@@ -262,7 +265,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: found %lx in managed region %i", ptr, i));
+				DEBUG(("umalloc: found %p in managed region %i", ptr, i));
 				return ptr;
 			}
 		}
@@ -291,7 +294,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: allocated new region %i, return %lx", i, ptr));
+				DEBUG(("umalloc: allocated new region %i, return %p", i, ptr));
 				return ptr;
 			}
 		}
@@ -306,11 +309,13 @@ _umalloc(unsigned long size, const char *func)
 void _cdecl
 _ufree(void *plac, const char *func)
 {
-	union { char *c; void *v; long l; struct umem_descriptor *descr; } placeptr; placeptr.v = plac;
+	union { char *c; void *v; long l; struct umem_descriptor *descr; } placeptr; 
 	struct proc *p = get_curproc();
 	MEMREGION *m;
 
-	DEBUG(("ufree(0x%lx, %s)", plac, func));
+	placeptr.v = plac;
+
+	DEBUG(("ufree(0x%p, %s)", plac, func));
 
 	m = proc_addr2region(p, placeptr.l);
 	if (m)

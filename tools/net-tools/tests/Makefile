@@ -1,26 +1,6 @@
 #
 # Makefile for test tools
 #
-TARGETS = \
-	client \
-	dgram \
-	dgramd \
-	hostlookup \
-	oobcl \
-	oobsv \
-	pipes \
-	protolookup \
-	server \
-	servlookup \
-	sockname \
-	sockpair \
-	speed \
-	speed2 \
-	speedd \
-	tcpcl \
-	tcpsv \
-	udpclnt \
-	udpserv
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -29,96 +9,82 @@ srcdir = .
 top_srcdir = ../..
 subdir = tests
 
-default: all
+default: help
+
+include $(srcdir)/TESTSDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGETS)
+all-here: all-targets
+
+# default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-GENFILES = $(TARGETS)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(teststargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - bakclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
 
-CLIENTOBJS      = client.o
-DGRAMOBJS       = dgram.o
-DGRAMDOBJS      = dgramd.o
-HOSTLOOKUPOBJS  = hostlookup.o
-OOBCLOBJS       = oobcl.o
-OOBSVOBJS       = oobsv.o
-PIPESOBJS       = pipes.o
-PROTOLOOKUPOBJS = protolookup.o
-SERVEROBJS      = server.o
-SERVLOOKUPOBJS  = servlookup.o
-SOCKNAMEOBJS    = sockname.o
-SOCKPAIROBJS    = sockpair.o
-SPEEDOBJS       = speed.o
-SPEED2OBJS      = speed2.o
-SPEEDDOBJS      = speedd.o
-TCPCLOBJS       = tcpcl.o
-TCPSVOBJS       = tcpsv.o
-UDPCLNTOBJS     = udpclnt.o
-UDPSERVOBJS     = udpserv.o
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(teststargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/client .compile_$$i/dgram .compile_$$i/dgramd \
+		.compile_$$i/hostlookup .compile_$$i/oobcl .compile_$$i/oobsv \
+		.compile_$$i/pipes .compile_$$i/protolookup .compile_$$i/server \
+		.compile_$$i/servlookup .compile_$$i/sockname .compile_$$i/sockpair \
+		.compile_$$i/speed .compile_$$i/speed2 .compile_$$i/speedd \
+		.compile_$$i/tcpcl .compile_$$i/tcpsv .compile_$$i/udpclnt \
+		.compile_$$i/udpserv ) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(teststargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-client: $(CLIENTOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+$(teststargets):
+	$(MAKE) buildtests tests=$@
 
-dgram: $(DGRAMOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+#
+# multi target stuff
+#
 
-dgramd: $(DGRAMDOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+ifneq ($(tests),)
 
-hostlookup: $(HOSTLOOKUPOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+compile_dir = .compile_$(tests)
+teststarget = _stmp_$(tests)
+realtarget = $(teststarget)
 
-oobcl: $(OOBCLOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+$(teststarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
 
-oobsv: $(OOBSVOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
 
-pipes: $(PIPESOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+else
 
-protolookup: $(PROTOLOOKUPOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+realtarget =
 
-server: $(SERVEROBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+endif
 
-servlookup: $(SERVLOOKUPOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-sockname: $(SOCKNAMEOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-sockpair: $(SOCKPAIROBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-speed: $(SPEEDOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-speed2: $(SPEED2OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-speedd: $(SPEEDDOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-tcpcl: $(TCPCLOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-tcpsv: $(TCPSVOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-udpclnt: $(UDPCLNTOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-udpserv: $(UDPSERVOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-
-
-include $(top_srcdir)/DEPENDENCIES
+buildtests: $(realtarget)

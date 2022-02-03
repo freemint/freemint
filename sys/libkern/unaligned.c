@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -34,7 +32,7 @@
 void
 unaligned_putl(char *addr, long value)
 {
-#if defined(__M68000__)
+#if !defined(__mc68020__) && !defined(__mc68030__) && !defined(__mc68040__) && !defined(__mc68060__) && !defined(__mcoldfire__)
 	if ((long)addr & 1)
 	{
 		addr[0] = (value >> 24) & 0xff;
@@ -43,10 +41,6 @@ unaligned_putl(char *addr, long value)
 		addr[3] = (value      ) & 0xff;
 	}
 	else
-#else
-#ifndef __M68020__
-#warning Does this cpu support unaligned memory accesses?
-#endif
 #endif
 	*(long *)addr = value;
 }

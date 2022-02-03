@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -84,14 +82,16 @@ typedef void	(PCB_ATK) (const char *, const char *, long            );
 enum pitype
 {
 	PI_C__   = 0x0000, /* --- command callbacks */
+	PI_C_S   = 0x0001, /*     command gets short */
 	PI_C_L   = 0x0002, /*     command gets long */
 	PI_C_B   = 0x0003, /*     command gets bool */
 	PI_C_T   = 0x0004, /*     command gets path (or token) e.g. cd */
+	PI_C_A   = 0x0005, /*     command gets line as string, e.g. echo */
+	PI_C_D   = 0x0006, /*     command gets drive list */
+	PI_C_US  = 0x0007, /*     command gets ushort */
 	PI_C_TT  = 0x0044, /*     command gets two pathes */
 	PI_C_0TT = 0x0144, /*     command gets zero and two pathes */
-	PI_C_A   = 0x0005, /*     command gets line as string, e.g. echo */
 	PI_C_TA  = 0x0054, /*     command gets path and line, e.g. exec */
-	PI_C_D   = 0x0006, /*     command gets drive list */
 	PI_V__   = 0x1000, /* --- variable callbacks */
 	PI_V_L   = 0x1002, /*     variable gets long */
 	PI_V_B   = 0x1003, /*     variable gets bool */
@@ -125,8 +125,8 @@ struct parser_item
 
 void parser_msg(struct parsinf *, const char *msg);
 
-void parse_include(const char *path, struct parsinf *, struct parser_item *);
-void parse_cnf(const char *path, struct parser_item *, void *);
+long parse_include(const char *path, struct parsinf *, struct parser_item *);
+long parse_cnf(const char *path, struct parser_item *, void *, unsigned long options);
 
 # endif
 

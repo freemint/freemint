@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -107,6 +105,15 @@ typedef struct fileheader FILEHEAD;
 # define F_KEEP		0x4000
 
 # define F_OS_SPECIAL	0x8000		/* mark as a special process */
+
+# define F_SINGLE_TASK	0x0010000		/* XaAES: if set (in p_flags) it's "single-task-mode" */
+# define F_DONT_STOP	0x0020000		/* XaAES: if set do not stop when entering single-task-mode */
+
+#define F_XALLOCMODE 0x03
+#define F_STONLY     0
+#define F_ALTONLY    1
+#define F_STPREF     2
+#define F_ALTPREF    (F_ALTONLY|F_STPREF)
 
 /* flags for curproc->memflags (that is, PRGFLAGS) and also Mxalloc mode.  */
 /* (Actually, when users call Mxalloc, they add 0x10 to what you see here) */
@@ -221,7 +228,3 @@ typedef MEMREGION **MMAP;
 
 
 # endif /* _mint_mem_h */
-
-
-
-

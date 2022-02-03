@@ -1,17 +1,6 @@
 #
 # Makefile for net-tools
 #
-TARGETS = \
-	arp \
-	diald \
-	ifconfig \
-	iflink \
-	ifstats \
-	masqconf \
-	netstat \
-	pppconf \
-	route \
-	slattach
 
 SHELL = /bin/sh
 SUBDIRS = slinkctl tests
@@ -20,59 +9,79 @@ srcdir = .
 top_srcdir = ..
 subdir = net-tools
 
-default: all
+default: help
+
+include $(srcdir)/NETTOOLSDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGETS)
+all-here: all-targets
+
+# default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-GENFILES = $(TARGETS)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
-ARPOBJS       = arp.o
-DIALDOBJS     = diald.o
-IFCONFIGOBJS  = ifconfig.o ifopts.o
-IFLINKOBJS    = iflink.o
-IFSTATSOBJS   = ifstats.o
-MASQCONFOBJS  = masqconf.o
-NETSTATOBJS   = netstat.o
-PPPCONFOBJS   = pppconf.o
-ROUTEOBJS     = route.o
-SLATTACHOBJS  = slattach.o
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(nettoolstargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - bakclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
 
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(nettoolstargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/arp .compile_$$i/diald .compile_$$i/ifconfig \
+		.compile_$$i/iflink .compile_$$i/ifstats .compile_$$i/masqconf \
+		.compile_$$i/netstat .compile_$$i/pppconf .compile_$$i/route \
+		.compile_$$i/slattach) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
-arp: $(ARPOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(nettoolstargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-diald: $(DIALDOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+$(nettoolstargets):
+	$(MAKE) buildnettools nettools=$@
 
-ifconfig: $(IFCONFIGOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+#
+# multi target stuff
+#
 
-iflink: $(IFLINKOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+ifneq ($(nettools),)
 
-ifstats: $(IFSTATSOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+compile_dir = .compile_$(nettools)
+nettoolstarget = _stmp_$(nettools)
+realtarget = $(nettoolstarget)
 
-masqconf: $(MASQCONFOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+$(nettoolstarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
 
-netstat: $(NETSTATOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
 
-pppconf: $(PPPCONFOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+else
 
-route: $(ROUTEOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+realtarget =
 
-slattach: $(SLATTACHOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
+endif
 
-
-include $(top_srcdir)/DEPENDENCIES
+buildnettools: $(realtarget)

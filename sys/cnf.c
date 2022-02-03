@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -74,7 +72,7 @@ parser_msg(struct parsinf *inf, const char *msg)
 		boot_printf ("[%s:%i] ", inf->file, inf->line);
 	else if (!msg)
 		msg = MSG_cnf_parser_skipped;
-	
+
 	if (msg)
 	{
 		boot_print (msg);
@@ -100,12 +98,12 @@ parse_token(struct parsinf *inf, bool upcase)
 	char delim = NUL;
 	char c;
 	union genarg ret;
-	
+
 	ret.c = inf->dst;
 
 	do {
 		c = *(src++);
-		
+
 		if (c == NUL)
 		{
 			/* correct overread zero */
@@ -168,7 +166,7 @@ static union genarg
 parse_line(struct parsinf *inf)
 {
 	union genarg ret;
-	
+
 	ret.c = inf->dst;
 
 	while (*(inf->src) && *(inf->src) != EOL)
@@ -183,7 +181,8 @@ parse_line(struct parsinf *inf)
 	if (inf->dst == ret.c)
 		inf->dst = ret.c + 1;
 
-	*(inf->dst - 1) = NUL;
+	if (inf->dst)
+		*(inf->dst - 1) = NUL;
 
 	return ret;
 }
@@ -247,7 +246,7 @@ parse_long(struct parsinf *inf, const struct range *range)
 
 		while ( isdigit(c) || (c >= 'A' && c <= 'F'))
 		{
-			ret.l <<= 4;			
+			ret.l <<= 4;
 			if (c < 'A')
 				ret.l |= c - '0';
 			else
@@ -512,13 +511,13 @@ parser(FILEPTR *f, long f_size,
 			start = inf->src;  /*--- (2.2) read argument */
 			switch (arg_type & 0x0F)
 			{
-				case 0x01: arg[arg_num] = parse_short  (inf, range); break;
-				case 0x02: arg[arg_num] = parse_long   (inf, range); break;
-				case 0x03: arg[arg_num] = parse_bool   (inf);        break;
-				case 0x04: arg[arg_num] = parse_token  (inf, false); break;
-				case 0x05: arg[arg_num] = parse_line   (inf);        break;
-				case 0x06: arg[arg_num] = parse_drvlst (inf);        break;
-				case 0x07: arg[arg_num] = parse_ushort (inf, range); break;
+				case PI_C_S: arg[arg_num] = parse_short  (inf, range); break;
+				case PI_C_L: arg[arg_num] = parse_long   (inf, range); break;
+				case PI_C_B: arg[arg_num] = parse_bool   (inf);        break;
+				case PI_C_T: arg[arg_num] = parse_token  (inf, false); break;
+				case PI_C_A: arg[arg_num] = parse_line   (inf);        break;
+				case PI_C_D: arg[arg_num] = parse_drvlst (inf);        break;
+				case PI_C_US: arg[arg_num] = parse_ushort (inf, range); break;
 			}
 			if (!inf->dst)     /*--- (2.3) argument failure */
 			{
@@ -588,7 +587,12 @@ parser(FILEPTR *f, long f_size,
 				case PI_R_T:
 				{
 					if (strlen(arg[0].c) < item->dat.dat)
-						strcpy((char *)(cb._v), arg[0].c); 
+						strcpy((char *)(cb._v), arg[0].c);
+					else
+					{
+						parser_msg(inf, NULL);
+						boot_printf( MSG_cnf_string_too_long, arg[0].c, item->dat.dat);
+					}
 					break;
 				}
 
@@ -617,7 +621,7 @@ parser(FILEPTR *f, long f_size,
 	kfree(buf);
 }
 
-void
+long
 parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_tab)
 {
 	XATTR xattr;
@@ -625,7 +629,7 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	long ret;
 
 	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
+	if (ret) return ret;
 
 	ret = do_open(&fp, path, O_RDONLY, 0, &xattr);
 	if (!ret)
@@ -647,23 +651,24 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	{
 		fp->links = 0;
 		FP_FREE(fp);
-		
+
 		parser_msg(inf, NULL);
 		boot_printf(MSG_cnf_cannot_include, path);
 		parser_msg(NULL, NULL);
 	}
+	return ret;
 }
 
-void
-parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
+long
+parse_cnf(const char *path, struct parser_item *parser_tab, void *data, unsigned long options)
 {
-	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, data };
+	struct parsinf inf  = { options, NULL, 1, NULL, NULL, data };
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
 
 	ret = FP_ALLOC (rootproc, &fp);
-	if (ret) return;
+	if (ret) return ret;
 
 	ret = do_open(&fp, inf.file = path, O_RDONLY, 0, &xattr);
 	if (!ret)
@@ -678,4 +683,5 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 
 		ALERT(MSG_cnf_cant_open, path);
 	}
+	return ret;
 }

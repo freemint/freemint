@@ -65,7 +65,7 @@ static void	bpf_release	(struct bpf *);
 static long	bpf_attach	(struct bpf *, struct ifreq *);
 static void	bpf_reset	(struct bpf *);
 static long	bpf_sfilter	(struct bpf *, struct bpf_program *);
-static void	bpf_handler	(long);
+static void	bpf_handler	(PROC *, long arg);
 
 static struct devdrv bpf_dev =
 {
@@ -324,10 +324,12 @@ static volatile short have_tmout;
  * top half input handler.
  */
 static void
-bpf_handler (long proc)
+bpf_handler (PROC *proc, long arg)
 {
 	struct bpf *bpf;
 	
+	UNUSED(proc);
+	UNUSED(arg);
 	have_tmout = 0;
 	for (bpf = allbpfs; bpf; bpf = bpf->link)
 	{
@@ -353,7 +355,7 @@ long
 bpf_input (struct netif *nif, BUF *buf)
 {
 	struct bpf *bpf;
-	long caplen, pktlen, snaplen, ticks, align;
+	ulong caplen, pktlen, snaplen, ticks, align;
 	struct bpf_hdr *hp;
 	BUF *buf2;
 	ushort sr;
@@ -582,6 +584,9 @@ bpf_read (FILEPTR *fp, char *buf, long nbytes)
 static long
 bpf_lseek (FILEPTR *fp, long where, int whence)
 {
+	UNUSED(fp);
+	UNUSED(where);
+	UNUSED(whence);
 	return EACCES;
 }
 
@@ -686,6 +691,7 @@ bpf_ioctl (FILEPTR *fp, int cmd, void *arg)
 			 * get read timeout
 			 */
 			*(long *)arg = bpf->tmout * EVTGRAN;
+			return 0;
 			
 		case BIOCGSTATS:
 			((struct bpf_stat *)arg)->bs_recv = bpf->in_pkts;
@@ -713,6 +719,7 @@ bpf_ioctl (FILEPTR *fp, int cmd, void *arg)
 static long
 bpf_datime (FILEPTR *fp, ushort *timeptr, int mode)
 {
+	UNUSED(fp);
 	if (mode == 0)
 	{
 		timeptr[0] = t_gettime ();
@@ -729,6 +736,7 @@ bpf_close (FILEPTR *fp, int pid)
 {
 	struct bpf *bpf = (struct bpf *) fp->devinfo;
 	
+	UNUSED(pid);
 	if (bpf->rsel)
 		wakeselect (bpf->rsel);
 	

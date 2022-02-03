@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <net/if_arp.h>
+#include <net/ethernet.h>
 #include <netinet/if_ether.h>
 #include <sockios.h>
 #include <stdlib.h>
@@ -20,6 +21,12 @@
 #define _PATH_DEV_ARP	"/dev/arp"
 
 static int sockfd;
+
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
 
 /*
  * structure that can be read from /dev/arp
@@ -92,8 +99,7 @@ decode_hw (struct sockaddr_hw *shw)
 }
 
 static char *
-decode_pr (shw)
-	struct sockaddr_hw *shw;
+decode_pr (struct sockaddr_hw *shw)
 {
 	static char strbuf[20];
 	struct in_addr ina;
@@ -101,10 +107,12 @@ decode_pr (shw)
 	strcpy (strbuf, "unknown");
 	if (shw->shw_family == AF_LINK) switch (shw->shw_type) {
 	case ETHERTYPE_IP:
-		if (shw->shw_len != 4)
-			break;
-		ina.s_addr = *(long *)shw->shw_addr;
-		strcpy (strbuf, inet_ntoa (ina));
+		if (shw->shw_len == 4)
+		{
+			long *p = (long *)shw->shw_addr;
+			ina.s_addr = *p;
+			strcpy (strbuf, inet_ntoa (ina));
+		}
 		break;
 	}
 

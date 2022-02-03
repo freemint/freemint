@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -12,8 +10,9 @@
  *
  */
 
-#ifdef M68030
+#if defined(WITH_MMU_SUPPORT) && defined(M68030)
 
+	.arch	68030
 	.data
 nulltc:
 	dc.l	0
@@ -68,8 +67,8 @@ copy_st_ram:
 normal_set:
 	movem.l	(sp)+,d0-d2/a0-a2
 	pmove	(nulltc).l,tc		// turn off mmu
-	dc.l	0xf0390800,nulltc	// pmove nulltc,tt0
-	dc.l	0xf0390c00,nulltc	// pmove nulltc,tt1
+	pmove	nulltc,tt0
+	pmove	nulltc,tt1
 	pmove	4(sp),crp		// caution: crp is 8 bytes
 	pflusha
 	pmove	0xc(sp),tc
@@ -111,8 +110,8 @@ oldtt1:	dc.l	0
 
 _save_mmu:
 	pmove	tc,oldcrp+8		// oldtc
-	dc.l	0xf0390a00,oldtt0	// pmove	tt0,oldtt0
-	dc.l	0xf0390e00,oldtt1	// pmove	tt1,oldtt1
+	pmove	tt0,oldtt0
+	pmove	tt1,oldtt1
 	pmove	crp,oldcrp
 	rts
 
@@ -121,8 +120,8 @@ _save_mmu:
 
 _restr_mmu:
 	pmove	(nulltc).l,tc
-	dc.l	0xf0390800,oldtt0	// pmove	oldtt0,tt0
-	dc.l	0xf0390c00,oldtt1	// pmove	oldtt1,tt1
+	pmove	oldtt0,tt0
+	pmove	oldtt1,tt1
 	pmove	oldcrp,crp
 	pmove	oldtc,tc
 	rts

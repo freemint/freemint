@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -45,7 +43,7 @@ profil_counter (void *pc)
 {
 	ulong i;
 	
-	i = (pc - pc_offset - (void *) 0) / 2;
+	i = ((ulong)pc - pc_offset) / 2UL;
 	i = i / 65536 * pc_scale + i % 65536 * pc_scale / 65536;
 	
 	if (i < nsamples)

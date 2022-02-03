@@ -91,7 +91,7 @@ PUTS (char *p, long *cnt, const char *s, int width)
 }
 
 static long
-PUTL (char *p, long *cnt, ulong u, int base, int width, int fill_char)
+PUTL (char *p, long *cnt, ulong u, int base, int width, int fill_char, int minus)
 {
 	char obuf[32];
 	char *t = obuf;
@@ -111,6 +111,12 @@ PUTL (char *p, long *cnt, ulong u, int base, int width, int fill_char)
 		*cnt -= 1;
 	}
 	
+	if( minus )
+	{
+		*p++ = '-';
+		*cnt -= 1;
+		put++;
+	}
 	while (*cnt > 0 && t != obuf)
 	{
 		*p++ = *--t;
@@ -190,6 +196,7 @@ kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 			case 'i':
 			case 'd':
 			{
+				int minus = 0;
 				if (long_flag)
 					l_arg = va_arg (args, long);
 				else
@@ -197,12 +204,12 @@ kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 				
 				if (l_arg < 0)
 				{
-					p += PUTC (p, &cnt, '-', 1);
 					width--;
 					l_arg = -l_arg;
+					minus = 1;
 				}
 				
-				p += PUTL (p, &cnt, l_arg, 10, width, fill_char);
+				p += PUTL (p, &cnt, l_arg, 10, width, fill_char, minus);
 				break;
 			}
 			case 'o':
@@ -212,7 +219,7 @@ kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 				else
 					l_arg = va_arg (args, unsigned int);
 				
-				p += PUTL (p, &cnt, l_arg, 8, width, fill_char);
+				p += PUTL (p, &cnt, l_arg, 8, width, fill_char, 0);
 				break;
 			}
 			case 'x':
@@ -222,7 +229,14 @@ kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 				else
 					l_arg = va_arg (args, unsigned int);
 				
-				p += PUTL (p, &cnt, l_arg, 16, width, fill_char);
+				p += PUTL (p, &cnt, l_arg, 16, width, fill_char, 0);
+				break;
+			}
+			case 'p':
+			{
+				l_arg = (long)va_arg (args, void *);
+
+				p += PUTL (p, &cnt, l_arg, 16, width, fill_char, 0);
 				break;
 			}
 			case 'u':
@@ -232,7 +246,7 @@ kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 				else
 					l_arg = va_arg (args, unsigned);
 				
-				p += PUTL (p, &cnt, l_arg, 10, width, fill_char);
+				p += PUTL (p, &cnt, l_arg, 10, width, fill_char, 0);
 				break;
 			}
 		}

@@ -16,14 +16,14 @@ main(void)
 	fp = Fopen(DEVNAME, 0);
 	if (fp < 0)
 	{
-		Cconws("lpflush: can't open \"" DEVNAME "\"\r\n");
+		(void) Cconws("lpflush: can't open \"" DEVNAME "\"\r\n");
 		return fp;
 	}
 	
 	ret = Fcntl(fp, 0L, TIOCFLUSH);
 	if (ret < 0)
 	{
-		Cconws("lpflush: can't flush \"" DEVNAME "\"\r\n");
+		(void) Cconws("lpflush: can't flush \"" DEVNAME "\"\r\n");
 		return ret;
 	}
 	

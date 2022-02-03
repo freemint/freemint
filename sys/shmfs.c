@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  * 
@@ -483,7 +481,7 @@ shm_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "shm-xfs");
+			strcpy ((char *) arg, "shmfs");
 			return E_OK;
 		}
 	}
@@ -580,7 +578,7 @@ shm_write(FILEPTR *f, const char *buf, long nbytes)
 	
 	/* BUG: memory read/writes should check for valid addresses */
 	
-	TRACE(("shm_write: %ld bytes to %lx", nbytes, where));
+	TRACE(("shm_write: %ld bytes to %p", nbytes, where));
 	
 	while (nbytes-- > 0)
 	{
@@ -609,7 +607,7 @@ shm_read (FILEPTR *f, char *buf, long nbytes)
 	
 	where = (char *) s->reg->loc + f->pos;
 	
-	TRACE (("shm_read: %ld bytes from %lx", nbytes, where));
+	TRACE (("shm_read: %ld bytes from %p", nbytes, where));
 	
 	while (nbytes-- > 0)
 	{
@@ -679,7 +677,7 @@ shm_ioctl (FILEPTR *f, int mode, void *buf)
 			m = addr2mem (get_curproc(), (long) buf);
 			if (!m || !buf)
 			{
-				DEBUG(("Fcntl: SHMSETBLK: bad address %lx", buf));
+				DEBUG(("Fcntl: SHMSETBLK: bad address %p", buf));
 				return EFAULT;
 			}
 			

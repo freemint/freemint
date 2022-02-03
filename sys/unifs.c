@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -31,6 +29,7 @@
 # include "kerinfo.h"
 # include "kmemory.h"
 # include "time.h"
+# include "dev-null.h"
 
 # include "biosfs.h"
 # include "kernfs.h"
@@ -103,6 +102,21 @@ FILESYS uni_filesys =
 
 	0, 0, 0, 0, 0,
 	NULL, NULL
+};
+
+DEVDRV uni_device =
+{
+	open:		null_open,
+	write:		null_write,
+	read:		null_read,
+	lseek:		null_lseek,
+	ioctl:		null_ioctl,
+	datime:		null_datime,
+	close:		null_close,
+	select:		null_select,
+	unselect:	null_unselect,
+	writeb:		NULL,
+	readb:		NULL
 };
 
 /*
@@ -238,12 +252,14 @@ uni_lookup (fcookie *dir, const char *name, fcookie *fc)
 static long
 do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 {
-	union { const char *cc; char *c; short *s; } nameptr; nameptr.cc = nam;
+	union { const char *cc; char *c; } nameptr;
 	UNIFILE *u;
 	long drvs;
 	FILESYS *fs;
 	fcookie *tmp;
 	long changed;
+	
+	nameptr.cc = nam;
 
 	TRACE (("uni_lookup(%s)", nam));
 
@@ -710,8 +726,11 @@ uni_getdev (fcookie *fc, long *devsp)
 {
 	UNUSED (fc);
 
+	if (fc->fs == &uni_filesys) return &uni_device;
+
 	*devsp = EACCES;
-	return E_OK;
+
+	return NULL;
 }
 
 static long _cdecl
@@ -824,7 +843,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 		case MX_KER_XFSNAME:
 		{
 			char *n = (char *)arg;
-			strcpy (n/*(char *) arg*/, "uni-xfs");
+			strcpy (n/*(char *) arg*/, "unifs");
 			return E_OK;
 		}
 		case FS_INSTALL: /* install a new filesystem */
@@ -965,7 +984,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				/* cannot unmount the builtin drive */
 				if (u->dev < UNI_NUM_DRVS || u->dev != d->dev_no) {
 					/* this should never happen, only sanity check */
-					DEBUG (("uni_remove: an attempt to remove builtin mountpoint '%s'", name, u->dev));
+					DEBUG (("uni_remove: an attempt to remove builtin mountpoint '%s', dev_no = %d", name, u->dev));
 					return ENOTDIR;
 				}
 
@@ -1077,4 +1096,26 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 
 	DEBUG (("uni_fscntl(%s, cmd %x, arg %lx) fail!", name, cmd, arg));
 	return ENOSYS;
+}
+
+
+const char *fsname(FILESYS *fs)
+{
+	if (fs == &bios_filesys)
+		return "dev";
+	if (fs == &pipe_filesys)
+		return "pipe";
+	if (fs == &proc_filesys)
+		return "proc";
+#ifndef NO_RAMFS
+	if (fs == &ramfs_filesys)
+		return "ram";
+#endif
+	if (fs == &shm_filesys)
+		return "shm";
+#if WITH_KERNFS
+	if (fs == &kern_filesys)
+		return "kern";
+#endif
+	return "???";
 }

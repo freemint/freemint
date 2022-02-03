@@ -1,0 +1,49 @@
+name: Linux build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara" ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install SSH keys
+        if: ${{ github.event_name == 'push' }}
+        env:
+          SSH_ID: ${{ secrets.SSH_ID }}
+        run: ./.scripts/install_ssh_id.sh
+      - name: Setup environment
+        env:
+          CPU_TARGET: ${{ matrix.cpu_target }}
+        run: ./.scripts/setup_env.sh
+      - name: Install packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SYSROOT_DIR="/" ./.scripts/install-freemint.sh binutils gcc mintbin
+          ./.scripts/install-freemint.sh mintlib fdlibm gemlib cflib gemma
+          ./.scripts/install-hcp.sh
+          ./.scripts/install-udo.sh
+          ./.scripts/install-dosfstools.sh
+      - name: Install Applications
+        if: ${{ github.event_name == 'push' }}
+        run: ./.scripts/install-apps.sh
+      - name: libcmini
+        run: ./.scripts/install-libcmini.sh
+      - name: build
+        run: |
+          ./.scripts/before_script.sh
+          ./.scripts/build.sh
+      - name: deploy
+        if: ${{ github.event_name == 'push' }}
+        env:
+          COMMITER_NAME: ${{ github.event.commits[0].author.name }}
+          COMMITER_EMAIL: ${{ github.event.commits[0].author.email }}
+        run: ./.scripts/deploy.sh

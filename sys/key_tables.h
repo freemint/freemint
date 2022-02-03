@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Keyboard definition tables (ripped off TOS 4.04, with fixes)
  *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
@@ -48,7 +46,7 @@
 
 /* Unshifted */
 
-static const uchar usa_kbd[] =
+static uchar usa_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,

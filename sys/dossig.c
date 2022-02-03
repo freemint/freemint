@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -148,7 +146,7 @@ sys_p_signal (short sig, long handler)
 	struct sigaction *sigact;
 	long ret;
 
-	TRACE (("Psignal(%u, %lx [%lx])", sig, handler, p->p_sigacts));
+	TRACE (("Psignal(%u, %lx [%p])", sig, handler, p->p_sigacts));
 	assert (p->p_sigacts && p->p_sigacts->links > 0);
 
 	if (sig < 1 || sig >= NSIG)
@@ -164,7 +162,7 @@ sys_p_signal (short sig, long handler)
 	}
 
 	sigact = & SIGACTION(p, sig);
-	TRACE (("Psignal() sigact = %lx", sigact));
+	TRACE (("Psignal() sigact = %p", sigact));
 
 	/* save old value for return */
 	ret = sigact->sa_handler;

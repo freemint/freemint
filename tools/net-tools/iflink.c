@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <support.h>
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(ifl.ifname,...), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
 
 static int sockfd;
 
@@ -57,7 +61,7 @@ get_device (char *ifname)
 	r = ioctl (sockfd, SIOCGIFNAME, &ifl);
 	if (r < 0)
 	{
-		if (errno == EINVAL)
+		if (errno == EINVAL || errno == ENOSYS)
 			fprintf (stderr, "%s: not linked to any device\n",
 				ifname);
 		else

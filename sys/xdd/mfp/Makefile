@@ -11,11 +11,16 @@ subdir = mfp
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 all-here: entry
+
+strip:
+	$(STRIP) $(GENFILES)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
@@ -24,10 +29,10 @@ XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
-SGENFILES = mfp.xdd mfp_mil.xdd
+GENFILES = mfp.xdd mfp_mil.xdd
+SGENFILES = mfp_mil.c
 OBJS = $(COBJS:.c=.o)
 
 entry:

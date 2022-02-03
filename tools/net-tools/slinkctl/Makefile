@@ -1,7 +1,6 @@
 #
 # Makefile for the scsi bus test tool
 #
-TARGET = slinkctl
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,23 +9,76 @@ srcdir = .
 top_srcdir = ../..
 subdir = slinkctl
 
-default: all
+default: help
+
+include $(srcdir)/SLINKCTLDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(slinkctltargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - bakclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $@
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(slinkctltargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/slinkctl) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(slinkctltargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(slinkctltargets):
+	$(MAKE) buildslinkctl slinkctl=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(slinkctl),)
+
+compile_dir = .compile_$(slinkctl)
+slinkctltarget = _stmp_$(slinkctl)
+realtarget = $(slinkctltarget)
+
+$(slinkctltarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildslinkctl: $(realtarget)

@@ -2,11 +2,11 @@
 # Makefile for 
 #
 TARGET = 
-DRIVERS = rtl8012 rtl8012st dial slip plip dummy de600 lance pamsdma biodma \
-	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt
+DRIVERS = rtl8012 rtl8012st rtl8012ct60 dial plip dummy de600 lance pamsdma biodma \
+	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139
 
 SHELL = /bin/sh
-SUBDIRS = nfeth daynaport ethernat
+SUBDIRS = nfeth daynaport ethernat fec svethlana
 
 srcdir = .
 top_srcdir = ../..
@@ -14,11 +14,16 @@ subdir = xif
 
 default: all
 
+CPU = 000
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 all-here: entry
+
+strip:
+	$(STRIP) *.xif
 
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
@@ -27,12 +32,12 @@ DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 000
 
 # default definitions
 GENFILES = *.xif
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c main_020.c 
 
- 
+
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
 
 COMMON_OBJS = $(addsuffix .o, $(basename $(notdir $(COMMON_SRCS))))
@@ -51,7 +56,10 @@ RIEBL_TT_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_TT_SRCS))))
 PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
 BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
 RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
-RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir rtl8012st.c rtl8012_vblint.s)))
+RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012ST_SRCS))))
+RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
+RTL8139_OBJS = $(addsuffix .o, $(basename $(notdir rtl8139.c)))
+ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
 
 # entry point
 entry: $(DRIVERS)
@@ -61,6 +69,11 @@ entry: $(DRIVERS)
 $(TARGET): $(XOBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(XOBJS) $(LIBS)
 
+
+asix:
+	$(MAKE) asix.xif \
+		"TARGET=asix.xif" \
+		"XOBJS=$(COMMON_OBJS) $(ASIX_OBJS)"
 
 dial:
 	$(MAKE) dial.xif \
@@ -165,16 +178,36 @@ biodma:
 rtl8012:
 	$(MAKE) rtl8012.xif \
 		"TARGET=rtl8012.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
+		"XOBJS=main_020.o $(RTL8012_OBJS)" \
 		CPU=020-60
+main_020.o: main_020.c
 
 rtl8012st:
 	$(MAKE) rtl8012st.xif \
 		"TARGET=rtl8012st.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)"
+		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)" \
+		"XIF_DEFINITIONS=-DNO_DELAY"
 
 rtl8012st.c:
 	ln -s rtl8012.c $@
 
+rtl8012ct60:
+	$(MAKE) rtl8012ct60.xif \
+		"TARGET=rtl8012ct60.xif" \
+		"XOBJS=main_020.o $(RTL8012CT60_OBJS)" \
+		CPU=060
+
+rtl8012ct60.c:
+	ln -s rtl8012.c $@
+
+rtl8139:
+	$(MAKE) rtl8139.xif \
+		"TARGET=rtl8139.xif" \
+		"XOBJS=main_020.o $(RTL8139_OBJS)" \
+		CPU=060
+
+
+main_020.c: main.c
+	ln -s $< $@
 
 include $(top_srcdir)/DEPENDENCIES

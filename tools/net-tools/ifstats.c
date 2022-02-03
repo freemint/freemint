@@ -56,7 +56,7 @@ ppp_stats (unsigned long *l, char *name)
 }
 
 static void
-slip_stats (long *l, char *name)
+slip_stats (unsigned long *l, char *name)
 {
 	printf ("Statistics for SLIP interface %s:\n", name);
 	printf ("%10lu input packets\n", *l++);
@@ -99,7 +99,7 @@ main (int argc, char *argv[])
 	ifr.ifr_data = (caddr_t) stats;
 	if (ioctl (sockfd, SIOCGLNKSTATS, &ifr) < 0)
 	{
-		if (errno == EINVAL)
+		if (errno == EINVAL || errno == ENOSYS)
 			fprintf (stderr, "no statistics for %s available\n",
 				argv[1]);
 		else

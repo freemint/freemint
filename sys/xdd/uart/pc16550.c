@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -276,8 +274,8 @@
 	"\033p Milan UART serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� 1998, 1999 by Rainer Mannigel, Michael Schwingen.\r\n" \
-	"� " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"\275 1998, 1999 by Rainer Mannigel, Michael Schwingen.\r\n" \
+	"\275 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -428,14 +426,12 @@ INLINE void	pc16550_read_x	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read_o	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_write	(IOVAR *iovar, UART *regs);
-static void	pc16550_int	(void) USED;
 
-static void	pc16550_intx	(void) USED;
-       void	pc16550_int0	(void);
-       void	pc16550_int1	(void);
-       void	pc16550_int2	(void);
-       void	pc16550_int3	(void);
-       void	pc16550_int4	(void);
+static void	pc16550_int0	(void);
+static void	pc16550_int1	(void);
+static void	pc16550_int2	(void);
+static void	pc16550_int3	(void);
+static void	pc16550_int4	(void);
 
 
 /*
@@ -1380,12 +1376,10 @@ init_pc16550 (void)
 		}
 		else if (intr_num < MAX_INTS)
 		{
-			void *old;
-			
 			DEBUG (("allocating new int handler %d to iovar %d, INT %d", intr_num, i, IOVARS (i)->intr));
 			
 			intr_iovar[intr_num] = IOVARS (i);
-			old = Setexc (80 + IOVARS (i)->intr, intr_handler[intr_num]);
+			(void) Setexc (80 + IOVARS (i)->intr, intr_handler[intr_num]);
 			DEBUG (("old int handler = %lx", old));
 			
 			intr_num++;
@@ -1687,20 +1681,11 @@ pc16550_write (IOVAR *iovar, UART *regs)
  * HACK: Der IOVAR-Zeiger wird in A0 uebergeben!
  */
 static void
-pc16550_int (void)
+pc16550_int (IOVAR *iovar)
 {
-	IOVAR *iovar;
 	UART *regs;
 	ushort sr;
 	uchar event;
-	
-	asm volatile
-	(
-		"move.l %%a0,%0"
-		: "=da" (iovar)		/* output register */
-		: 			/* input registers */
-		: "cc"			/* clobbered */
-	);
 	
 next_uart:
 	
@@ -1839,76 +1824,34 @@ next_uart:
 
 /* Interrupt-Routinen fuer PC16550 - rufen die eigentlichen C-Routinen auf
  */
-static void
-pc16550_intx (void)
+static void __attribute__((interrupt))
+pc16550_int0 (void)
 {
-	(void) pc16550_int;
-	(void) pc16550_intx;
-	
-	asm volatile
-	(
-		"_pc16550_int0:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _intr_iovar,%%a0\n\t" \
-		 "bsr     _pc16550_int\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int1:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _intr_iovar+4,%%a0\n\t" \
-		 "bsr     _pc16550_int\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int2:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _intr_iovar+8,%%a0\n\t" \
-		 "bsr     _pc16550_int\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int3:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _intr_iovar+12,%%a0\n\t" \
-		 "bsr     _pc16550_int\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_pc16550_int4:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _intr_iovar+16,%%a0\n\t" \
-		 "bsr     _pc16550_int\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
+	pc16550_int(intr_iovar[0]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int1 (void)
+{
+	pc16550_int(intr_iovar[1]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int2 (void)
+{
+	pc16550_int(intr_iovar[2]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int3 (void)
+{
+	pc16550_int(intr_iovar[3]);
+}
+
+static void __attribute__((interrupt))
+pc16550_int4 (void)
+{
+	pc16550_int(intr_iovar[4]);
 }
 
 /* END interrupt handling - bottom half */
@@ -2674,7 +2617,7 @@ uart_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr
 		flags &= ~TF_STOPBITS;
 		flags |= (ucr & 0x18) >> 3;
 		
-		if ((flags & TF_CHARBITS) == TF_15STOP)
+		if ((flags & TF_STOPBITS) == TF_15STOP)
 		{
 			flags &= ~TF_STOPBITS;
 			flags |= TF_1STOP;

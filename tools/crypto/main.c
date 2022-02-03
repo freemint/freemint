@@ -109,7 +109,6 @@ char *myname = NULL;
 
 static int simulate = 0;
 static int quiet = 0;
-static int noninteractive = 0;
 static int auto_passphrase_set = 1;
 
 static int drv = -1;
@@ -127,7 +126,7 @@ static void *oldkey = NULL;
 static char *buf = NULL;
 static int32_t bufsize = 1024L * 128;
 
-static FILE *log = NULL;
+static FILE *logfile = NULL;
 static int save_file = -1;
 static int fh = -1;
 
@@ -156,14 +155,14 @@ emergency_exit (char *msg, ...)
 	if (save_file >= 0)
 		close (save_file);
 	
-	if (log)
+	if (logfile)
 	{
-		fflush (log);
+		fflush (logfile);
 		
-		fprintf (log, "emergency exit\n");
-		fflush (log);
+		fprintf (logfile, "emergency exit\n");
+		fflush (logfile);
 		
-		fclose (log);
+		fclose (logfile);
 	}
 	
 	if (fh >= 0)
@@ -647,8 +646,8 @@ main (int argc, char **argv)
 static void
 default_sig_handler (int signum)
 {
-	if (log)
-		fprintf (log, "got signal %i\n", signum);
+	if (logfile)
+		fprintf (logfile, "got signal %i\n", signum);
 	
 	emergency_exit ("got fatal signal %i, terminating.\n", signum);
 }
@@ -903,26 +902,26 @@ doit (const char *rescuefile)
 		rescue.p_size = p_size;
 		
 		/* open logfile */
-		log = fopen (LOGFILE, "w");
-		if (!log)
+		logfile = fopen (LOGFILE, "w");
+		if (!logfile)
 		{
-			perror ("fopen (log)");
+			perror ("fopen (logfile)");
 			safe_exit ("abort.\n");
 		}
 		
-		logfile_writeheader (log);
+		logfile_writeheader (logfile);
 		
-		fprintf (log, "# %scrypting drive %c: [%i]\n", action_pre, 'A'+drv, drv);
-		fprintf (log, "# using cipher %s\n", ciphers[cipher]);
-		fprintf (log, "# \n");
-		fprintf (log, "# -- partition info --\n");
-		fprintf (log, "# sectorsize: %i\n", p_secsize);
-		fprintf (log, "# startsector: %i\n", p_start);
-		fprintf (log, "# sectors: %i\n", p_size);
-		fprintf (log, "# \n");
-		fprintf (log, "# run from offset %qi to %qi\n", start_pos, end_pos);
-		fprintf (log, "# \n\n");
-		fflush (log);
+		fprintf (logfile, "# %scrypting drive %c: [%i]\n", action_pre, 'A'+drv, drv);
+		fprintf (logfile, "# using cipher %s\n", ciphers[cipher]);
+		fprintf (logfile, "# \n");
+		fprintf (logfile, "# -- partition info --\n");
+		fprintf (logfile, "# sectorsize: %i\n", p_secsize);
+		fprintf (logfile, "# startsector: %i\n", p_start);
+		fprintf (logfile, "# sectors: %i\n", p_size);
+		fprintf (logfile, "# \n");
+		fprintf (logfile, "# run from offset %qi to %qi\n", start_pos, end_pos);
+		fprintf (logfile, "# \n\n");
+		fflush (logfile);
 	}
 	
 	/* transformation loop */
@@ -940,7 +939,7 @@ doit (const char *rescuefile)
 			emergency_exit ("io_seek failed, abort.\n");
 		
 		if (mode == ROBUST)
-			fprintf (log, "off %10qi  size %7i  - reading ", pos, left);
+			fprintf (logfile, "off %10qi  size %7i  - reading ", pos, left);
 		
 		ret = io_read (fh, buf, left);
 		if (ret < 0)
@@ -948,9 +947,9 @@ doit (const char *rescuefile)
 		
 		if (mode == ROBUST)
 		{
-			fputs ("ok - ", log);
-			fputs (action_pre, log);
-			fputs ("cipher ", log);
+			fputs ("ok - ", logfile);
+			fputs (action_pre, logfile);
+			fputs ("cipher ", logfile);
 			
 			rescue.pos = pos;
 			rescue.size = left;
@@ -964,7 +963,7 @@ doit (const char *rescuefile)
 		do_cipher (recno, p_secsize);
 		
 		if (mode == ROBUST)
-			fputs ("ok", log);
+			fputs ("ok", logfile);
 		
 		if (!simulate)
 		{
@@ -973,20 +972,20 @@ doit (const char *rescuefile)
 				emergency_exit ("io_seek failed, abort.\n");
 			
 			if (mode == ROBUST)
-				fputs (" - write ", log);
+				fputs (" - write ", logfile);
 			
 			ret = io_write (fh, buf, left);
 			if (ret < 0)
 				emergency_exit ("io_write failed, abort.\n");
 			
 			if (mode == ROBUST)
-				fputs ("ok", log);
+				fputs ("ok", logfile);
 		}
 		
 		if (mode == ROBUST)
 		{
-			fputs ("\n", log);
-			// fflush (log);
+			fputs ("\n", logfile);
+			/* fflush (logfile); */
 		}
 		
 		todo -= left;
@@ -1010,8 +1009,8 @@ doit (const char *rescuefile)
 	
 	if (mode == ROBUST)
 	{
-		fputs ("\n", log);
-		fclose (log);
+		fputs ("\n", logfile);
+		fclose (logfile);
 		
 		close (save_file);
 		unlink (SAVEFILE);

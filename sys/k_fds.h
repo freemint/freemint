@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -59,7 +57,7 @@ long fp_get1	(struct proc *p, short fd, FILEPTR **fp, const char *func);
 # define FP_GET1(p, fd, fp)        fp_get1    (p, fd, fp, __FUNCTION__)
 # define GETFILEPTR(p, fd, fp)	   fp_get     (p, fd, fp, __FUNCTION__)
 
-long do_dup	(short fd, short min);
+long do_dup	(short fd, short min, int cmd);
 long do_open	(FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x);
 long do_close	(struct proc *p, FILEPTR *f);
 

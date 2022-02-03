@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -63,7 +61,7 @@ static struct dom_ops *alldomains = NULL;
 void
 so_register (short domain, struct dom_ops *ops)
 {
-	DEBUG (("sockets: registering domain %i (ops %lx)", domain, ops));
+	DEBUG (("sockets: registering domain %i (ops %p)", domain, ops));
 
 	ops->domain = domain;
 	ops->next = alldomains;
@@ -111,7 +109,7 @@ so_create (struct socket **resultso, short domain, short type, short protocol)
 
 	if (!ops)
 	{
-		DEBUG (("sp_create: domain %i not supported", domain));
+		DEBUG (("so_create: domain %i not supported", domain));
 		return EAFNOSUPPORT;
 	}
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  * 
@@ -1046,17 +1044,18 @@ tos_opendir(DIR *dirh, int flags)
 {
 	long r;
 	struct tindex *t = (struct tindex *)dirh->fc.index;
+	DTABUF *dta = DIR_DTA(dirh);
 
 	UNUSED(flags);
 
 	(void)tfullpath(tmpbuf, t, "*.*");
 
-	do_setdta(DIR_DTA(dirh));
+	do_setdta(dta);
 
 	r = ROM_Fsfirst(tmpbuf, FILEORDIR);
 	/* TB: Filter VFAT-Entries
 	 */
-	while ((r == E_OK) && (DIR_DTA(dirh)->dta_attrib == FA_VFAT))
+	while ((r == E_OK) && (dta->dta_attrib == FA_VFAT))
 		r = ROM_Fsnext();
 
 	if (r == E_OK) {
@@ -1119,11 +1118,12 @@ again:
 	fc->index = (long)ti;
 
 	if (giveindex) {
-		namelen -= (int) sizeof(long);
+		namelen -= (int) sizeof(index);
 		if (namelen <= 0)
 			return EBADARG;
-		*((long *)name) = index++;
-		name += sizeof(long);
+		memcpy( name, &index, sizeof(index));
+		index++;
+		name += sizeof(index);
 	}
 	if (strlen(DIR_NAME(dirh)) < namelen) {
 		strcpy(name, DIR_NAME(dirh));
@@ -1151,13 +1151,14 @@ tos_rewinddir(DIR *dirh)
 {
 	struct tindex *ti = (struct tindex *)dirh->fc.index;
 	long r;
+	DTABUF *dta = DIR_DTA(dirh);
 
 	(void)tfullpath(tmpbuf, ti, "*.*");
-	do_setdta(DIR_DTA(dirh));
+	do_setdta(dta);
 	r = ROM_Fsfirst(tmpbuf, FILEORDIR);
 	/* TB: Filter VFAT entries
 	 */
-	while ((r == E_OK) && (DIR_DTA(dirh)->dta_attrib == FA_VFAT))
+	while ((r == E_OK) && (dta->dta_attrib == FA_VFAT))
 		r = ROM_Fsnext();
 	if (r == E_OK) {
 		DIR_FLAG(dirh) = STARTSEARCH;
@@ -1311,7 +1312,7 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "tos-xfs");
+			strcpy ((char *) arg, "tos");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -1319,17 +1320,12 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			struct fs_info *info = (struct fs_info *) arg;
 			if (info)
 			{
-				char *dst = info->type_asc;
-				
 				strcpy (info->name, "tos-xfs");
 				info->version = (gemdos_version & 0xf) << 8;
 				info->version |= gemdos_version >> 8;
 				info->type = FS_OLDTOS;
 				
-				*dst++ = 't';
-				*dst++ = 'o';
-				*dst++ = 's';
-				*dst++ = '\0';
+				strcpy(info->type_asc, "tos");
 			}
 			
 			return E_OK;
@@ -1539,8 +1535,10 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 			lck = *old;
 			while (lck) {
 				if (lck->l.l_pid == get_curproc()->pid &&
-				    lck->l.l_start == t.l.l_start &&
-				    lck->l.l_len == t.l.l_len) {
+				    ((lck->l.l_start == t.l.l_start &&
+				      lck->l.l_len == t.l.l_len) ||
+				     (lck->l.l_start >= t.l.l_start &&
+				      t.l.l_len == 0))) {
 		/* found it -- remove the lock */
 					*old = lck->next;
 					TRACE(("tosfs: unlocked %s: %ld + %ld",

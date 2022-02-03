@@ -12,11 +12,17 @@ subdir = skeleton
 
 default: all
 
+CPU = 000
+# CPU = 020-60
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 all-here: $(TARGET)
+
+strip:
+	$(STRIP) $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
@@ -24,8 +30,6 @@ DEFINITIONS = -D__KERNEL_XDD__
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 000
-# CPU = 020-60
 
 # default definitions
 GENFILES = $(TARGET)

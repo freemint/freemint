@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -46,9 +44,6 @@ extern const ulong MiNT_version;
 extern const ulong MiNT_date;
 extern const ulong MiNT_time;
 
-extern const char  build_user   [];
-extern const char  build_host   [];
-extern const char  build_domain [];
 extern const char  build_ctime  [];
 extern const ulong build_serial;
 
@@ -127,6 +122,7 @@ extern const char *MSG_cnf_argument_for;
 extern const char *MSG_cnf_missed;
 extern const char *MSG_cnf_must_be_a_num;
 extern const char *MSG_cnf_out_of_range;
+extern const char *MSG_cnf_string_too_long;
 extern const char *MSG_cnf_must_be_a_bool;
 extern const char *MSG_cnf_missing_quotation;
 extern const char *MSG_cnf_junk;
@@ -148,10 +144,6 @@ extern const char *ERR_dma_deblock_on_inv_handle;
 extern const char *ERR_dma_addroottimeout;
 
 /* dosfile.c */
-# if O_GLOBAL
-extern const char *MSG_oglobal_denied;
-extern const char *MSG_global_handle;
-# endif
 
 /* filesys.c */
 extern const char *ERR_fsys_inv_fdcwd;
@@ -177,13 +169,15 @@ extern const char *MSG_init_must_be_auto;
 extern const char *MSG_init_no_mint_folder;
 extern const char *MSG_init_delay_loop;
 # ifdef VERBOSE_BOOT
+# ifdef WITH_MMU_SUPPORT
 extern const char *MSG_init_mp;
 extern const char *MSG_init_mp_enabled;
 extern const char *MSG_init_mp_disabled;
+extern const char *MSG_init_saving_mmu;
+# endif
 extern const char *MSG_init_kbd_desktop_nationality;
 extern const char *MSG_init_supermode;
 extern const char *MSG_init_sysdrv_is;
-extern const char *MSG_init_saving_mmu;
 extern const char *MSG_init_tosver_kbshft;
 extern const char *MSG_init_bconmap;
 extern const char *MSG_init_system;

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -281,29 +279,6 @@ static DEVDRV devtab =
 };
 
 
-/*
- * debugging stuff
- */
-
-# ifndef FS_DEBUG
-
-# define RAM_ASSERT(x)
-# define RAM_FORCE(x)		FORCE x
-# define RAM_ALERT(x)		ALERT x
-# define RAM_DEBUG(x)
-# define RAM_TRACE(x)
-
-# else
-
-# define RAM_ASSERT(x)		{ assert x; }
-# define RAM_FORCE(x)		KERNEL_FORCE x
-# define RAM_ALERT(x)		KERNEL_ALERT x
-# define RAM_DEBUG(x)		KERNEL_DEBUG x
-# define RAM_TRACE(x)		KERNEL_TRACE x
-
-# endif
-
-
 /* directory manipulation */
 
 INLINE long	__dir_empty	(COOKIE *root);
@@ -375,13 +350,16 @@ __dir_search (COOKIE *dir, const char *name)
 {
 	register DIRLST *tmp = dir->data.dir.start;
 
-	RAM_DEBUG (("arafs: __dir_search: search: %s!", name));
+	DEBUG (("arafs: __dir_search: search: '%s'", name));
 
+	/* fix trailing pathsep (appends an empty name, so return found) */
+	if(!name[0])
+		return tmp;
 	while (tmp)
 	{
-		RAM_DEBUG (("arafs: __dir_search: compare with: %s!", tmp->name));
+		DEBUG (("arafs: __dir_search: compare '%s' with: '%s',next=%lx", name, tmp->name, tmp->next));
 
-		if (stricmp (tmp->name, name) == 0)
+		if ( stricmp (tmp->name, name) == 0)
 		{
 			return tmp;
 		}
@@ -578,25 +556,25 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 	DIRLST *f;
 	long r;
 
-	RAM_DEBUG (("arafs: __creat: enter"));
+	DEBUG (("arafs: __creat: enter"));
 
 	if (!IS_DIR (d))
 	{
-		RAM_DEBUG (("arafs: __creat: dir not a DIR!"));
+		DEBUG (("arafs: __creat: dir not a DIR!"));
 		return EACCES;
 	}
 
 	r = __validate_name (name);
 	if (r)
 	{
-		RAM_DEBUG (("arafs: __creat: not a valid name!"));
+		DEBUG (("arafs: __creat: not a valid name!"));
 		return r;
 	}
 
 	f = __dir_search (d, name);
 	if (f)
 	{
-		RAM_DEBUG (("arafs: __creat: object already exist"));
+		DEBUG (("arafs: __creat: object already exist"));
 		return EACCES;
 	}
 
@@ -646,13 +624,13 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 
 		if (r)
 		{
-			RAM_DEBUG (("arafs: __creat: __dir_insert fail!"));
+			DEBUG (("arafs: __creat: __dir_insert fail!"));
 			kfree (*new, sizeof (**new));
 		}
 	}
 	else
 	{
-		RAM_DEBUG (("arafs: __creat: kmalloc fail!"));
+		DEBUG (("arafs: __creat: kmalloc fail!"));
 		r = ENOMEM;
 	}
 
@@ -665,17 +643,17 @@ __unlink_cookie (COOKIE *c)
 	/* if no references left, free the memory */
 	if (c->stat.nlink > 0)
 	{
-		RAM_DEBUG (("arafs: __unlink_cookie: nlink > 0, inode not deleted"));
+		DEBUG (("arafs: __unlink_cookie: nlink > 0, inode not deleted"));
 	}
 	else
 	{
 		if (c->links > 0)
 		{
-			RAM_DEBUG (("arafs: __unlink_cookie: inode in use (%li), not deleted", c->links));
+			DEBUG (("arafs: __unlink_cookie: inode in use (%li), not deleted", c->links));
 		}
 		else
 		{
-			RAM_DEBUG (("arafs: __unlink_cookie: deleting unlinked inode"));
+			DEBUG (("arafs: __unlink_cookie: deleting unlinked inode"));
 
 			if (IS_REG (c))
 			{
@@ -705,23 +683,24 @@ __unlink (COOKIE *d, const char *name)
 	register COOKIE *t;
 	long r;
 
+	DEBUG (("arafs: __unlink: %s", name));
 	if (!IS_DIR (d))
 	{
-		RAM_DEBUG (("arafs: __unlink: dir not a DIR!"));
+		DEBUG (("arafs: __unlink: dir not a DIR!"));
 		return EACCES;
 	}
 
 	f = __dir_search (d, name);
 	if (!f)
 	{
-		RAM_DEBUG (("arafs: __unlink: object not found!"));
+		DEBUG (("arafs: __unlink: object not found!"));
 		return EACCES;
 	}
 
 	t = f->cookie;
 
 	if (IS_PERSISTENT (t)) {
-		RAM_DEBUG (("arafs: __unlink: object is persistent!"));
+		DEBUG (("arafs: __unlink: object is persistent!"));
 		return EACCES;
 	}
 
@@ -729,7 +708,7 @@ __unlink (COOKIE *d, const char *name)
 	{
 		if (!__dir_empty (t))
 		{
-			RAM_DEBUG (("arafs: __unlink: directory not clear!"));
+			DEBUG (("arafs: __unlink: directory not clear!"));
 			return EACCES;
 		}
 	}
@@ -756,11 +735,11 @@ __unlink (COOKIE *d, const char *name)
 
 short arafs_init(short dev)
 {
-	char initial [] = "dynamic ara-xfs � by [fn]";
+	char initial [] = "dynamic ara-xfs \275 by [fn]";
 	STAT *s;
 
 
-	RAM_DEBUG (("arafs.c: init"));
+	DEBUG (("arafs.c: init"));
 
 
 	/*
@@ -808,7 +787,7 @@ short arafs_init(short dev)
 		FATAL ("arafs: out of memory");
 	}
 
-	RAM_DEBUG (("arafs: ok (dev_no = %i)", root->stat.dev));
+	DEBUG (("arafs: ok (dev_no = %i)", root->stat.dev));
 	return dev;
 }
 
@@ -823,7 +802,7 @@ ara_root (int drv, fcookie *fc)
 {
 	if (drv == root->stat.dev)
 	{
-		RAM_DEBUG (("arafs: ara_root E_OK (%i)", drv));
+		DEBUG (("arafs: ara_root E_OK (%i)", drv));
 
 		fc->fs = &arafs_filesys;
 		fc->dev = root->stat.dev;
@@ -844,10 +823,11 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	COOKIE *c = (COOKIE *) dir->index;
 
+	DEBUG (("arafs: ara_lookup: '%s'", name));
 	/* sanity checks */
 	if (!c || !IS_DIR (c))
 	{
-		RAM_DEBUG (("arafs: ara_lookup: bad directory"));
+		DEBUG (("arafs: ara_lookup: bad directory"));
 		return ENOTDIR;
 	}
 
@@ -857,7 +837,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 		c->links++;
 		*fc = *dir;
 
-		RAM_DEBUG (("arafs: ara_lookup: leave ok, (name = \".\")"));
+		DEBUG (("arafs: ara_lookup: leave ok, (name = \".\")"));
 		return E_OK;
 	}
 
@@ -881,7 +861,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 		/* no parent, ROOT */
 
 		*fc = *dir;
-		RAM_DEBUG (("arafs: ara_lookup: leave ok, EMOUNT, (name = \"..\")"));
+		DEBUG (("arafs: ara_lookup: leave ok, EMOUNT, (name = \"..\")"));
 		return EMOUNT;
 	}
 
@@ -902,7 +882,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 		}
 	}
 
-	RAM_DEBUG (("arafs: ara_lookup fail (name = %s, return ENOENT)", name));
+	DEBUG (("arafs: ara_lookup fail (name = %s, return ENOENT)", name));
 	return ENOENT;
 }
 
@@ -963,7 +943,7 @@ ara_stat64 (fcookie *fc, STAT *stat)
 		c->cops->stat( fc, stat) : 0;
 	if (r < 0)
 	{
-		RAM_DEBUG (("arafs: arafs_stat: returned = %ld", r));
+		DEBUG (("arafs: arafs_stat: returned = %ld", r));
 		return r;
 	}
 
@@ -1054,6 +1034,7 @@ ara_rmdir (fcookie *dir, const char *name)
 {
 	COOKIE *c = (COOKIE *) dir->index;
 
+	DEBUG (("arafs: ara_rmdir '%s' enter,flags=%lx,IS_IMMUTABLE=%lx", name, c->s->flags & MS_RDONLY, IS_IMMUTABLE (c) ));
 	if (c->s->flags & MS_RDONLY)
 		return EROFS;
 
@@ -1061,7 +1042,9 @@ ara_rmdir (fcookie *dir, const char *name)
 		return EACCES;
 
 	/* check for an empty dir is in __unlink */
-	return __unlink (c, name);
+	long r = __unlink (c, name);
+	DEBUG (("arafs: ara_rmdir '%s' return %ld", name, r));
+	return r;
 }
 
 static long _cdecl
@@ -1097,6 +1080,7 @@ ara_remove (fcookie *dir, const char *name)
 	COOKIE *c = (COOKIE *) dir->index;
 	long r;
 
+	DEBUG (("arafs: ara_remove '%s' enter", name));
 	if (c->s->flags & MS_RDONLY)
 		return EROFS;
 
@@ -1105,6 +1089,7 @@ ara_remove (fcookie *dir, const char *name)
 
 	r = __unlink (c, name);
 
+	DEBUG (("arafs: ara_remove '%s' return %ld", name, r));
 	return r;
 }
 
@@ -1114,19 +1099,19 @@ ara_getname (fcookie *rootc, fcookie *dir, char *pathname, int size)
 	COOKIE *r = (COOKIE *) rootc->index;
 	COOKIE *d = (COOKIE *) dir->index;
 
-	RAM_DEBUG (("arafs: ara_getname enter"));
+	DEBUG (("arafs: ara_getname enter"));
 
 	pathname [0] = '\0';
 
 	/* sanity checks */
 	if (!r || !IS_DIR (r))
 	{
-		RAM_DEBUG (("arafs: ara_getname: root not a DIR!"));
+		DEBUG (("arafs: ara_getname: root not a DIR!"));
 		return EACCES;
 	}
 	if (!d || !IS_DIR (d))
 	{
-		RAM_DEBUG (("arafs: ara_getname: dir not a DIR!"));
+		DEBUG (("arafs: ara_getname: dir not a DIR!"));
 		return EACCES;
 	}
 
@@ -1139,21 +1124,21 @@ ara_getname (fcookie *rootc, fcookie *dir, char *pathname, int size)
 		{
 			strrev (pathname);
 
-			RAM_DEBUG (("arafs: ara_getname: leave E_OK: %s", pathname));
+			DEBUG (("arafs: ara_getname: leave E_OK: %s", pathname));
 			return E_OK;
 		}
 
 		f = __dir_searchI (d->parent, d);
 		if (!f)
 		{
-			RAM_DEBUG (("arafs: ara_getname: __dir_searchI failed!"));
+			DEBUG (("arafs: ara_getname: __dir_searchI failed!"));
 			return EACCES;
 		}
 
 		name = kmalloc (f->len + 1);
 		if (!name)
 		{
-			RAM_ALERT (("arafs: kmalloc fail in ara_getname!"));
+			ALERT (("arafs: kmalloc fail in ara_getname!"));
 			return ENOMEM;
 		}
 
@@ -1164,7 +1149,7 @@ ara_getname (fcookie *rootc, fcookie *dir, char *pathname, int size)
 		size -= f->len - 1;
 		if (size <= 0)
 		{
-			RAM_DEBUG (("arafs: ara_getname: name to long"));
+			DEBUG (("arafs: ara_getname: name to long"));
 			return EBADARG;
 		}
 
@@ -1176,7 +1161,7 @@ ara_getname (fcookie *rootc, fcookie *dir, char *pathname, int size)
 
 	pathname [0] = '\0';
 
-	RAM_DEBUG (("arafs: ara_getname: path not found?"));
+	DEBUG (("arafs: ara_getname: path not found?"));
 	return ENOTDIR;
 }
 
@@ -1190,12 +1175,12 @@ ara_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	DIRLST *new;
 	long r;
 
-	RAM_DEBUG (("arafs: ara_rename: enter (old = %s, new = %s)", oldname, newname));
+	DEBUG (("arafs: ara_rename: enter (old = %s, new = %s)", oldname, newname));
 
 	/* on same device? */
 	if (olddir->dev != newdir->dev)
 	{
-		RAM_DEBUG (("arafs: ara_rename: cross device rename: [%c] -> [%c]!", olddir->dev+'A', newdir->dev+'A'));
+		DEBUG (("arafs: ara_rename: cross device rename: [%c] -> [%c]!", olddir->dev+'A', newdir->dev+'A'));
 		return EXDEV;
 	}
 
@@ -1212,7 +1197,7 @@ ara_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 		/* check for rename same file (casepreserving) */
 		if (!((oldc == newc) && (stricmp (oldname, newname) == 0)))
 		{
-			RAM_DEBUG (("arafs: ara_rename: newname already exist!"));
+			DEBUG (("arafs: ara_rename: newname already exist!"));
 			return EACCES;
 		}
 	}
@@ -1221,7 +1206,7 @@ ara_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	old = __dir_search (oldc, oldname);
 	if (!old)
 	{
-		RAM_DEBUG (("arafs: ara_rename: oldfile not found!"));
+		DEBUG (("arafs: ara_rename: oldfile not found!"));
 		return ENOENT;
 	}
 
@@ -1249,7 +1234,7 @@ ara_opendir (DIR *dirh, int flags)
 
 	if (!IS_DIR (c))
 	{
-		RAM_DEBUG (("arafs: ara_opendir: dir not a DIR!"));
+		DEBUG (("arafs: ara_opendir: dir not a DIR!"));
 		return EACCES;
 	}
 
@@ -1267,14 +1252,25 @@ ara_opendir (DIR *dirh, int flags)
 static long _cdecl
 ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
-	union { char *c; DIRLST **dir; } dirptr; dirptr.c = dirh->fsstuff;
+	union { char *c; DIRLST **dir; } dirptr;
 	DIRLST *l;
 	long r = ENMFILES;
 
+	if (!dirh)
+	{
+		DEBUG (("arafs: ara_readdir: ERROR: dirh=0"));
+		return r;
+	}
+	dirptr.c = dirh->fsstuff;
+	if (!dirptr.dir)
+	{
+		DEBUG (("arafs: ara_readdir: ERROR: dirptr.dir=0"));
+		return r;
+	}
 	l = *dirptr.dir;
 	if (l)
 	{
-		RAM_DEBUG (("arafs: ara_readdir: %s", l->name));
+		DEBUG (("arafs: ara_readdir: %s", l->name));
 
 		l->lock = 0;
 
@@ -1287,7 +1283,7 @@ ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 		}
 		else
 		{
-			RAM_DEBUG (("arafs: ara_readdir: TOS_SEARCH!"));
+			DEBUG (("arafs: ara_readdir: TOS_SEARCH!"));
 		}
 
 		if (l->len <= nmlen)
@@ -1301,7 +1297,7 @@ ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 
 			l->cookie->links++;
 
-			RAM_DEBUG (("arafs: ara_readdir: leave ok: %s", nm));
+			DEBUG (("arafs: ara_readdir: leave ok: %s", nm));
 
 			r = E_OK;
 		}
@@ -1397,7 +1393,7 @@ ara_dfree (fcookie *dir, long *buf)
 	long memfree;
 	long memused;
 
-	RAM_DEBUG (("arafs: ara_dfree called"));
+	DEBUG (("arafs: ara_dfree called"));
 
 	memfree = FreeMemory;
 	memused = memory + BLOCK_SIZE - 1;
@@ -1469,7 +1465,7 @@ ara_symlink (fcookie *dir, const char *name, const char *to)
 		}
 		else
 		{
-			RAM_ALERT (("arafs: ara_symlink: kmalloc fail!"));
+			ALERT (("arafs: ara_symlink: kmalloc fail!"));
 
 			(void) __unlink (c, name);
 			r = ENOMEM;
@@ -1510,12 +1506,12 @@ ara_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char
 	DIRLST *to;
 	long r;
 
-	RAM_DEBUG (("arafs: ara_hardlink: enter (from = %s, to = %s)", fromname, toname));
+	DEBUG (("arafs: ara_hardlink: enter (from = %s, to = %s)", fromname, toname));
 
 	/* on same device? */
 	if (fromdir->dev != todir->dev)
 	{
-		RAM_DEBUG (("arafs: ara_hardlink: leave failure (cross device hardlink)!"));
+		DEBUG (("arafs: ara_hardlink: leave failure (cross device hardlink)!"));
 		return EACCES;
 	}
 
@@ -1529,7 +1525,7 @@ ara_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char
 	to = __dir_search (toc, toname);
 	if (to)
 	{
-		RAM_DEBUG (("arafs: ara_hardlink: toname already exist!"));
+		DEBUG (("arafs: ara_hardlink: toname already exist!"));
 		return EACCES;
 	}
 
@@ -1537,7 +1533,7 @@ ara_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char
 	from = __dir_search (fromc, fromname);
 	if (!from)
 	{
-		RAM_DEBUG (("arafs: ara_hardlink: fromname not found!"));
+		DEBUG (("arafs: ara_hardlink: fromname not found!"));
 		return ENOENT;
 	}
 
@@ -1558,7 +1554,7 @@ ara_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "ara-xfs");
+			strcpy ((char *) arg, "arafs");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -1598,14 +1594,14 @@ ara_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if (!(s->flags & MS_RDONLY))
 			{
 				s->flags |= MS_RDONLY;
-				RAM_ALERT (("Ext2-FS [%i]: remounted read-only!", dir->dev));
+				ALERT (("arafs [%i]: remounted read-only!", dir->dev));
 
 				r = E_OK;
 			}
 			else if (s->flags & MS_RDONLY)
 			{
 				s->flags &= ~MS_RDONLY;
-				RAM_ALERT (("Ext2-FS [%i]: remounted read/write!", dir->dev));
+				ALERT (("arafs [%i]: remounted read/write!", dir->dev));
 
 				r = E_OK;
 			}
@@ -1773,7 +1769,7 @@ __FTRUNCATE (COOKIE * c, long newsize)
 {
 	char **table = c->data.data.table;
 
-	RAM_DEBUG (("arafs: __FTRUNCATE: enter (%li)", newsize));
+	DEBUG (("arafs: __FTRUNCATE: enter (%li)", newsize));
 
 	/* sanity checks */
 	if (!IS_REG (c))
@@ -1828,11 +1824,11 @@ ara_open (FILEPTR *f)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 
-	RAM_DEBUG (("arafs: ara_open: enter"));
+	DEBUG (("arafs: ara_open: enter"));
 
 	if (!IS_REG (c))
 	{
-		RAM_DEBUG (("arafs: ara_open: leave failure, not a valid file"));
+		DEBUG (("arafs: ara_open: leave failure, not a valid file"));
 		return EACCES;
 	}
 
@@ -1848,7 +1844,7 @@ ara_open (FILEPTR *f)
 
 	if (c->open && denyshare (c->open, f))
 	{
-		RAM_DEBUG (("arafs: ara_open: file sharing denied"));
+		DEBUG (("arafs: ara_open: file sharing denied"));
 		return EACCES;
 	}
 
@@ -1867,7 +1863,7 @@ ara_open (FILEPTR *f)
 			 c->cops->dev_ops->open( f) : 0;
 		if (r < 0)
 		{
-			RAM_DEBUG (("arafs: arafs_open: failed (flags = %i)", f->flags));
+			DEBUG (("arafs: arafs_open: failed (flags = %i)", f->flags));
 			return r;
 		}
 	}
@@ -1879,7 +1875,7 @@ ara_open (FILEPTR *f)
 
 	c->links++;
 
-	RAM_DEBUG (("arafs: ara_open: leave ok"));
+	DEBUG (("arafs: ara_open: leave ok"));
 	return E_OK;
 }
 
@@ -1891,13 +1887,12 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 	long size = c->data.data.size;
 
 	long todo;
-	long temp = c->stat.size - f->pos;
 	long offset;
 
 	/* POSIX: mtime/ctime may not change for 0 count */
 	if (bytes <= 0)
 	{
-		RAM_DEBUG (("arafs: ara_write: ERROR (bytes = %li, return 0)", bytes));
+		DEBUG (("arafs: ara_write: ERROR (bytes = %li, return 0)", bytes));
 		return 0;
 	}
 
@@ -1908,7 +1903,7 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 
 	if (!table)
 	{
-		RAM_DEBUG (("arafs: ara_write: set up start table!"));
+		DEBUG (("arafs: ara_write: set up start table!"));
 
 		size = bytes >> BLOCK_SHIFT;
 		size += size >> 1;
@@ -1925,17 +1920,17 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 		}
 		else
 		{
-			RAM_ALERT (("arafs: ara_write: kmalloc fail in (1)!"));
+			ALERT (("arafs: ara_write: kmalloc fail in (1)!"));
 			return 0;
 		}
 	}
 
 	while (todo > 0)
 	{
-		temp = f->pos >> BLOCK_SHIFT;
+		long temp = f->pos >> BLOCK_SHIFT;
 		if (temp >= size)
 		{
-			RAM_DEBUG (("arafs: ara_write: resize block array!"));
+			DEBUG (("arafs: ara_write: resize block array!"));
 
 			size <<= 1;
 			table = kmalloc (size * sizeof (*table));
@@ -1955,7 +1950,7 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 			}
 			else
 			{
-				RAM_DEBUG (("arafs: ara_write: kmalloc fail in resize array (2)!"));
+				DEBUG (("arafs: ara_write: kmalloc fail in resize array (2)!"));
 				goto leave;
 			}
 		}
@@ -1966,14 +1961,14 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 		{
 			char *ptr = table [temp];
 
-			RAM_DEBUG (("arafs: ara_write: aligned (temp = %li)", temp));
+			DEBUG (("arafs: ara_write: aligned (temp = %li)", temp));
 
 			if (!ptr)
 			{
 				ptr = kmalloc (BLOCK_SIZE);
 				if (!ptr)
 				{
-					RAM_DEBUG (("arafs: ara_write: kmalloc fail (3)!"));
+					DEBUG (("arafs: ara_write: kmalloc fail (3)!"));
 					goto leave;
 				}
 
@@ -1997,7 +1992,7 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 			char *ptr = table [temp];
 			long data;
 
-			RAM_DEBUG (("arafs: ara_write: BYTES (todo = %li, pos = %li)", todo, f->pos));
+			DEBUG (("arafs: ara_write: BYTES (todo = %li, pos = %li)", todo, f->pos));
 
 			data = BLOCK_SIZE - offset;
 			data = MIN (todo, data);
@@ -2085,7 +2080,7 @@ ara_read (FILEPTR *f, char *buf, long bytes)
 
 	if (!table)
 	{
-		RAM_DEBUG (("arafs: ara_read: table doesn't exist!"));
+		DEBUG (("arafs: ara_read: table doesn't exist!"));
 		return 0;
 	}
 
@@ -2094,7 +2089,7 @@ ara_read (FILEPTR *f, char *buf, long bytes)
 	/* At or past EOF */
 	if (bytes <= 0)
 	{
-		RAM_DEBUG (("arafs: ara_read: At or past EOF (bytes = %li)", bytes));
+		DEBUG (("arafs: ara_read: At or past EOF (bytes = %li)", bytes));
 		return 0;
 	}
 
@@ -2111,7 +2106,7 @@ ara_read (FILEPTR *f, char *buf, long bytes)
 		data = BLOCK_SIZE - off;
 		data = MIN (bytes, data);
 
-		RAM_DEBUG (("arafs: ara_read: partial to align!"));
+		DEBUG (("arafs: ara_read: partial to align!"));
 
 		if (!ptr)
 			ptr = c->data.data.small;
@@ -2136,7 +2131,7 @@ ara_read (FILEPTR *f, char *buf, long bytes)
 		{
 			char *ptr = table [chunk++];
 
-			RAM_DEBUG (("arafs: ara_read: aligned transfer!"));
+			DEBUG (("arafs: ara_read: aligned transfer!"));
 
 			if (!ptr)
 				ptr = c->data.data.small;
@@ -2160,7 +2155,7 @@ ara_read (FILEPTR *f, char *buf, long bytes)
 	{
 		char *ptr = table [chunk];
 
-		RAM_DEBUG (("arafs: ara_read: small transfer!"));
+		DEBUG (("arafs: ara_read: small transfer!"));
 
 		if (!ptr)
 			ptr = c->data.data.small;
@@ -2190,7 +2185,7 @@ ara_lseek (FILEPTR *f, long where, int whence)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 
-	RAM_DEBUG (("arafs: ara_lseek: enter (where = %li, whence = %i)", where, whence));
+	DEBUG (("arafs: ara_lseek: enter (where = %li, whence = %i)", where, whence));
 
 	switch (whence)
 	{
@@ -2200,15 +2195,15 @@ ara_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 
-	if ((where < 0) || (where > c->stat.size))
+	if (where < 0)
 	{
-		RAM_DEBUG (("arafs: ara_lseek: leave failure EBADARG (where = %li)", where));
+		DEBUG (("arafs: ara_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
 	}
 
 	f->pos = where;
 
-	RAM_DEBUG (("arafs: ara_lseek: leave ok (f->pos = %li)", f->pos));
+	DEBUG (("arafs: ara_lseek: leave ok (f->pos = %li)", f->pos));
 	return where;
 }
 
@@ -2217,13 +2212,17 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 
-	RAM_DEBUG (("arafs: ara_ioctl: enter (mode = %i)", mode));
+	DEBUG (("arafs: ara_ioctl: enter (mode = %i)", mode));
 
 	switch (mode)
 	{
 		case FIONREAD:
 		{
-			*(long *) buf = c->stat.size - f->pos;
+			if (c->stat.size - f->pos < 0) 
+				*(long *) buf = 0;
+			else
+				*(long *) buf = c->stat.size - f->pos;
+
 			return E_OK;
 		}
 		case FIONWRITE:
@@ -2298,7 +2297,7 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 				}
 				default:
 				{
-					RAM_DEBUG (("ara_ioctl: invalid value for l_whence\r\n"));
+					DEBUG (("ara_ioctl: invalid value for l_whence\r\n"));
 					return ENOSYS;
 				}
 			}
@@ -2306,9 +2305,11 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 
+			cpid = p_getpid ();
+
 			if (mode == F_GETLK)
 			{
-				lck = denylock (c->locks, &t);
+				lck = denylock (cpid, c->locks, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -2316,8 +2317,6 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 
 				return E_OK;
 			}
-
-			cpid = p_getpid ();
 
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -2328,13 +2327,15 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == cpid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
 
-						RAM_DEBUG (("ara_ioctl: unlocked %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
+						DEBUG (("ara_ioctl: unlocked %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 						/* wake up anyone waiting on the lock */
 						wake (IO_Q, (long) lck);
@@ -2350,12 +2351,12 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 				return ENSLOCK;
 			}
 
-			RAM_DEBUG (("ara_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
+			DEBUG (("ara_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 			/* see if there's a conflicting lock */
-			while ((lck = denylock (c->locks, &t)) != 0)
+			while ((lck = denylock (cpid, c->locks, &t)) != 0)
 			{
-				RAM_DEBUG (("ara_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
+				DEBUG (("ara_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 				if (mode == F_SETLKW)
 				{
 					/* sleep a while */
@@ -2369,7 +2370,7 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 			lck = kmalloc (sizeof (*lck));
 			if (!lck)
 			{
-				RAM_ALERT (("arafs: kmalloc fail in: ara_ioctl (%lx)", c));
+				ALERT (("arafs: kmalloc fail in: ara_ioctl (%lx)", c));
 				return ENOMEM;
 			}
 
@@ -2434,14 +2435,14 @@ ara_close (FILEPTR *f, int pid)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 
-	RAM_DEBUG (("arafs: ara_close: enter (f->links = %i)", f->links));
+	DEBUG (("arafs: ara_close: enter (f->links = %i)", f->links));
 
 	{
 		long r = c->cops && c->cops->dev_ops->close ? 
 			 c->cops->dev_ops->close( f, pid) : 0;
 		if (r < 0)
 		{
-			RAM_DEBUG (("arafs: arafs_close: cannot close the file (pid = %i)", pid));
+			DEBUG (("arafs: arafs_close: cannot close the file (pid = %i)", pid));
 			return r;
 		}
 	}
@@ -2452,7 +2453,7 @@ ara_close (FILEPTR *f, int pid)
 		LOCK *lock;
 		LOCK **oldlock;
 
-		RAM_DEBUG (("arafs: ara_close: remove lock (pid = %i)", pid));
+		DEBUG (("arafs: ara_close: remove lock (pid = %i)", pid));
 
 		oldlock = &c->locks;
 		lock = *oldlock;
@@ -2495,13 +2496,13 @@ ara_close (FILEPTR *f, int pid)
 
 		if (flag)
 		{
-			RAM_ALERT (("arafs: ara_close: remove open FILEPTR failed"));
+			ALERT (("arafs: ara_close: remove open FILEPTR failed"));
 		}
 
 		c->links--;
 	}
 
-	RAM_DEBUG (("arafs: ara_close: leave ok"));
+	DEBUG (("arafs: ara_close: leave ok"));
 	return E_OK;
 }
 

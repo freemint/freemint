@@ -24,7 +24,7 @@ static void	tcbos_xmit	(struct tcb *, short);
 static void	tcbos_retrans	(struct tcb *, short);
 static void	tcbos_persist	(struct tcb *, short);
 
-static BUF *	tcp_mkseg	(struct tcb *, long);
+static BUF *	tcp_mkseg	(struct tcb *, ulong);
 static long	tcp_sndseg	(struct tcb *, BUF *, short, long w1, long w2);
 static short	tcp_retrans	(struct tcb *);
 static short	tcp_probe	(struct tcb *);
@@ -102,7 +102,7 @@ tcbos_idle (struct tcb *tcb, short event)
 			
 			event_add (&tcb->timer_evt, tmout, wakeme, (long)tcb);
 			
-			KAYDEBUG (("tcpout: port %d: IDLE -> %s", tcb->data->src.port,
+			DEBUG (("tcpout: port %d: IDLE -> %s", tcb->data->src.port,
 					ostate_names[tcb->ostate]));
 			
 			break;
@@ -113,8 +113,12 @@ tcbos_idle (struct tcb *tcb, short event)
 static void
 tcbos_xmit (struct tcb *tcb, short event)
 {
-	long tmout, delay, inq = 0;
-	
+	long tmout;
+#ifdef DEV_DEBUG
+	long delay;
+	long inq = 0;
+#endif
+
 	switch (event)
 	{
 		case TCBOE_SEND:
@@ -137,14 +141,16 @@ tcbos_xmit (struct tcb *tcb, short event)
 				tcb->ostate = TCBOS_PERSIST;
 				tcb->flags &= ~(TCBF_DORTT|TCBF_ACKVALID);
 				
-				KAYDEBUG (("tcpout: port %d: XMIT -> PERSIST",
+				DEBUG (("tcpout: port %d: XMIT -> PERSIST",
 						tcb->data->src.port));
 			}
 			break;
 		}
 		case TCBOE_ACKRCVD:
 		{
+#ifdef DEV_DEBUG
 	  		delay = DIFTIME(tcb->data->snd.qfirst->info, GETTIME());
+#endif
 			
 			tcp_dropdata (tcb);
 			if (SEQGE (tcb->snd_una, tcb->seq_write))
@@ -153,7 +159,7 @@ tcbos_xmit (struct tcb *tcb, short event)
 				tcb->ostate = TCBOS_IDLE;
 				tcb->flags &= ~TCBF_ACKVALID;
 				
-				KAYDEBUG (("tcpout: port %d: XMIT -> IDLE",
+				DEBUG (("tcpout: port %d: XMIT -> IDLE",
 						tcb->data->src.port));
 				break;
 			}
@@ -166,10 +172,12 @@ tcbos_xmit (struct tcb *tcb, short event)
 						  GETTIME());
 				if (tmout < atmout)
 					tmout = atmout;
+#ifdef DEV_DEBUG
 				inq = DIFTIME (tcb->data->snd.qfirst->info, GETTIME());
+#endif
 			}
 			
-			KAYDEBUG (("a %4ld ms; t %4ld ms; q %4ld ms; mt %4ld ms",
+			DEBUG (("a %4ld ms; t %4ld ms; q %4ld ms; mt %4ld ms",
 					delay*EVTGRAN, tmout*EVTGRAN, inq*EVTGRAN,
 					tcp_atimeout (tcb) * EVTGRAN));
 			
@@ -178,11 +186,13 @@ tcbos_xmit (struct tcb *tcb, short event)
 		}
 		case TCBOE_TIMEOUT:
 		{
-			KAYDEBUG (("tcpout: port %d: XMIT -> RETRANS",
+			DEBUG (("tcpout: port %d: XMIT -> RETRANS",
 					tcb->data->src.port));
 			
+#ifdef DEV_DEBUG
 	  		delay = DIFTIME (tcb->data->snd.qfirst->info, GETTIME());
-			KAYDEBUG (("tcpout: timeout after %4ld ms", delay*EVTGRAN));
+#endif
+			DEBUG (("tcpout: timeout after %4ld ms", delay*EVTGRAN));
 			
 			tcb->ostate = TCBOS_RETRANS;
 			tcb->flags &= ~(TCBF_DORTT|TCBF_ACKVALID);
@@ -201,7 +211,7 @@ static void
 tcbos_retrans (struct tcb *tcb, short event)
 {
 	struct in_dataq *q;
-	short nsegs;
+	long nsegs;
 	long tmout;
 	
 	switch (event)
@@ -221,7 +231,7 @@ tcbos_retrans (struct tcb *tcb, short event)
 				tcb->persist_tmo = tcb->retrans_tmo;
 				tcb->ostate = TCBOS_PERSIST;
 				
-				KAYDEBUG (("tcpout: port %d: RETRANS -> PERSIST",
+				DEBUG (("tcpout: port %d: RETRANS -> PERSIST",
 						tcb->data->src.port));
 			}
 			break;
@@ -265,7 +275,7 @@ tcbos_retrans (struct tcb *tcb, short event)
 				event_del (&tcb->timer_evt);
 				tcb->ostate = TCBOS_IDLE;
 				
-				KAYDEBUG (("tcpout: port %d: RETRANS -> IDLE",
+				DEBUG (("tcpout: port %d: RETRANS -> IDLE",
 						tcb->data->src.port));
 				break;
 			}
@@ -302,7 +312,7 @@ tcbos_retrans (struct tcb *tcb, short event)
 				if (SEQLT (tcb->snd_nxt, tcb->seq_write))
 					tcp_sndhead (tcb);
 				
-				KAYDEBUG (("tcpout: port %d: RETRANS -> XMIT",
+				DEBUG (("tcpout: port %d: RETRANS -> XMIT",
 						tcb->data->src.port));
 				
 				tcb->ostate = TCBOS_XMIT;
@@ -342,7 +352,7 @@ tcbos_persist (struct tcb *tcb, short event)
 			 */
 			if (tcb->snd_wnd > 0)
 			{
-				KAYDEBUG (("tcbos_persists: SSWS override timeout"));
+				DEBUG (("tcbos_persists: SSWS override timeout"));
 				
 				tcb->snd_wndmax = tcb->snd_wnd;
 				tcp_sndhead (tcb);
@@ -353,7 +363,7 @@ tcbos_persist (struct tcb *tcb, short event)
 					event_add (&tcb->timer_evt, tcb->retrans_tmo,
 						wakeme, (long)tcb);
 					
-					KAYDEBUG (("tcpout: port %d: PERSIST -> XMIT",
+					DEBUG (("tcpout: port %d: PERSIST -> XMIT",
 							tcb->data->src.port));
 					break;
 				}
@@ -374,7 +384,7 @@ tcbos_persist (struct tcb *tcb, short event)
 				event_del (&tcb->timer_evt);
 				tcb->ostate = TCBOS_IDLE;
 				
-				KAYDEBUG (("tcpout: port %d: PERSIST -> IDLE",
+				DEBUG (("tcpout: port %d: PERSIST -> IDLE",
 						tcb->data->src.port));
 			}
 			break;
@@ -386,7 +396,7 @@ tcbos_persist (struct tcb *tcb, short event)
 			
 			if (canretrans (tcb))
 			{
-				KAYDEBUG (("tcpout: port %d: PERSIST -> XMIT",
+				DEBUG (("tcpout: port %d: PERSIST -> XMIT",
 						tcb->data->src.port));
 				
 				tcb->ostate = TCBOS_XMIT;
@@ -408,7 +418,7 @@ tcbos_persist (struct tcb *tcb, short event)
  * Make a TCP segment of size 'size' an fill in some header fields.
  */
 static BUF *
-tcp_mkseg (struct tcb *tcb, long size)
+tcp_mkseg (struct tcb *tcb, ulong size)
 {
 	struct tcp_dgram *tcph;
 	BUF *b;
@@ -442,11 +452,12 @@ static long
 tcp_sndseg (struct tcb *tcb, BUF *b, short nretrans, long wnd1st, long wndnxt)
 {
 	struct tcp_dgram *tcph, *tcph2;
-	long seq1st, seqnxt = 0, todo, offs;
+	long seq1st, seqnxt = 0, offs;
+	ulong todo;
 	BUF *nb, *b2;
 	short cut = 0;
 	
-	todo = b->dend - b->dstart;
+	todo = (ulong)(b->dend - b->dstart);
 	nb = buf_alloc (TCP_RESERVE + todo, TCP_RESERVE/2, BUF_NORMAL);
 	if (!nb)
 	{
@@ -458,10 +469,12 @@ tcp_sndseg (struct tcb *tcb, BUF *b, short nretrans, long wnd1st, long wndnxt)
 	seq1st = SEQ1ST (b);
 	seqnxt = seq1st + tcp_seglen (b, TH (b));
 	
+#if 0
 	if (SEQLE (wndnxt, seq1st) || SEQLE (seqnxt, wnd1st))
 		FATAL ("tcp_sndseg: seg (%ld %ld) outside wnd (%ld %ld)",
 			seq1st, seqnxt, wnd1st, wndnxt);
-	
+#endif
+
 	if (!SEQLT (seq1st, wnd1st))
 	{
 		/*
@@ -545,7 +558,7 @@ tcp_sndseg (struct tcb *tcb, BUF *b, short nretrans, long wnd1st, long wndnxt)
 	 * the mss by adding up to TCP_MAXRETRY bytes to the segment.
 	 */
 	if (nretrans > 0 && !(cut & TCPF_FIN) && (b2 = b->next)
-		&& (nretrans = MIN (DATLEN(b2), nretrans)) > 0
+		&& (nretrans = MIN (DATLEN(b2), (ushort)nretrans)) > 0
 		&& ((tcph2 = TH(b2)), 1)
 		&& ((seqnxt = tcph2->seq + nretrans), 1)
 		&& SEQLE (seqnxt, tcb->snd_wndack + tcb->snd_wnd)
@@ -759,6 +772,10 @@ tcp_sndhead (struct tcb *tcb)
 	{
 		seqnxt = SEQ1ST (b) + tcp_seglen (b, TH (b));
 		stamp = GETTIME ();
+
+		if (SEQLE (wndnxt, SEQ1ST(b)) || SEQLE (seqnxt, tcb->snd_nxt))
+			break;
+
 		/*
 		 * See if the segment should be sent:
 		 * 1) send whole seg if it fits into window
@@ -802,7 +819,7 @@ tcp_sndhead (struct tcb *tcb)
 		b->info = stamp;
 	}
 	
-	KAYDEBUG (("sw %5ld; cw %5ld; ew %5ld; uw %5ld; av %5ld",
+	DEBUG (("sw %5ld; cw %5ld; ew %5ld; uw %5ld; av %5ld",
 			tcb->snd_wnd, tcb->snd_cwnd,
 			wndnxt - tcb->snd_wndack,
 			tcb->snd_nxt - tcb->snd_wndack,
@@ -829,7 +846,7 @@ tcp_probe (struct tcb *tcb)
 	struct tcp_dgram *tcph;
 	BUF *b;
 	
-	KAYDEBUG (("tcp_probe: port %d: sending probe", tcb->data->src.port));
+	DEBUG (("tcp_probe: port %d: sending probe", tcb->data->src.port));
 	
 	/*
 	 * If peer does not respond then close connection
@@ -872,17 +889,17 @@ tcp_probe (struct tcb *tcb)
 					(SEQ1ST(buf) + DATLEN(buf) - tcph->seq);
 			}
 		}
-		tcph->chksum = 0;
 		tcph->chksum = tcp_checksum (tcph, TCP_MINLEN+1,
 			tcb->data->src.addr,
 			tcb->data->dst.addr);
 		
 		ip_send (tcb->data->src.addr, tcb->data->dst.addr, b,
 			IPPROTO_TCP, 0, &tcb->data->opts);
-	}
-	else
+	} else
+	{
 		DEBUG (("do_probe: no memory to probe"));
-	
+	}
+
 	tcb->persist_tmo = MIN (TCP_MAXPROBE, tcb->persist_tmo << 1);
 	if (tcb->persist_tmo < TCP_MINRETRANS)
 	{
@@ -904,7 +921,7 @@ tcp_retrans (struct tcb *tcb)
 	long r;
 	BUF *b;
 	
-	KAYDEBUG (("tcp_retrans: port %d: sending %dnd retransmit",
+	DEBUG (("tcp_retrans: port %d: sending %dnd retransmit",
 			tcb->data->src.port, tcb->nretrans+1));
 	
 	if (++tcb->nretrans > TCP_MAXRETRY)
@@ -1187,7 +1204,7 @@ tcp_output (struct tcb *tcb, const struct iovec *iov, short niov, long len,
 long
 tcp_timeout (struct tcb *tcb)
 {
-	long tmout;
+	ulong tmout;
 	
 	tmout = (tcb->rtt >> 3) + tcb->rttdev;
 	if (tmout > (0x7ffffffful >> TCP_MAXRETRY))

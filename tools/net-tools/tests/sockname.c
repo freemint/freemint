@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stddef.h>
 
 # if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
 typedef size_t socklen_t;
@@ -11,7 +12,7 @@ typedef size_t socklen_t;
 
 #define SOCK_TYPE	SOCK_STREAM
 
-#define OFFSET	((size_t)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	offsetof(struct sockaddr_un, sun_path)
 
 static struct sockaddr_un
 	sun1 = { AF_UNIX, "/tmp/name1" }, sun2;

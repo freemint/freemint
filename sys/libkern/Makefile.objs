@@ -7,7 +7,7 @@ SUBDIRS =
 
 srcdir = ..
 top_srcdir = ../..
-subdir = .cpu_$(CPU)
+subdir = .compile_$(CPU)
 
 default: all
 
@@ -16,9 +16,6 @@ include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 all-here: objs
-
-NOCFLAGS-md5.c = $(MODEL)
-CFLAGS-md5.c = -m68000
 
 # default overwrites
 DEFINITIONS = -D__KERNEL__

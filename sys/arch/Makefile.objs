@@ -21,53 +21,6 @@ all-here: startup objs
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 
-ifneq ($(CPU),030)
-NOCFLAGS-context.S = $(MODEL)
-endif
-CFLAGS-context.S = -m68030
-ifneq ($(CPU),030)
-NOCFLAGS-cpu.S = $(MODEL)
-endif
-CFLAGS-cpu.S = -m68030
-ifneq ($(CPU),030)
-NOCFLAGS-detect.S = $(MODEL)
-endif
-CFLAGS-detect.S = -m68030
-ifneq ($(CPU),030)
-NOCFLAGS-intr.S = $(MODEL)
-endif
-CFLAGS-intr.S = -m68030
-ifneq ($(CPU),030)
-NOCFLAGS-mmu030.S = $(MODEL)
-endif
-CFLAGS-mmu030.S = -m68030
-ifneq ($(CPU),040)
-NOCFLAGS-mmu040.S = $(MODEL)
-endif
-CFLAGS-mmu040.S = -m68040
-
-ifneq ($(CPU),020-60)
-NOCFLAGS-syscall.S = $(MODEL)
-endif
-CFLAGS-syscall.S = -m68020-60
-ifneq ($(CPU),020)
-NOCFLAGS-user_things.S = $(MODEL)
-endif
-CFLAGS-user_things.S = -m68020
-ifneq ($(CPU),000)
-NOCFLAGS-kernel.S = $(MODEL)
-endif
-CFLAGS-kernel.S = -m68000
-
-NOCFLAGS-mprot030.c = $(MODEL)
-NOCFLAGS-mprot040.c = $(MODEL)
-CFLAGS-mprot030.c = -m68030
-CFLAGS-mprot040.c = -m68060
-NOCFLAGS-init_intr.c = $(MODEL)
-CFLAGS-init_intr.c = -m68000
-NOCFLAGS-sig_mach.c = $(MODEL)
-CFLAGS-sig_mach.c = -m68000
-
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
@@ -81,6 +34,9 @@ startup: $(STARTUP)
 
 objs: $(OBJS)
 	echo $(OBJS) > $@
+
+$(srcdir)/magic/magic.i:
+	$(MAKE) -C $(srcdir)/magic magic.i
 
 # default dependencies
 # must be included last

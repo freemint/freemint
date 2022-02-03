@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -378,7 +376,7 @@ init (struct kerinfo *k)
 		ftab.fsflags &= ~FS_EXT_3;
 	}
 	
-	KERNEL_DEBUG ("dummy: loaded and ready (k = %lx) -> %lx.", k, (long) &ftab);
+	KERNEL_DEBUG ("dummy: loaded and ready (k = %lx) -> %lx.", (unsigned long)k, (long) &ftab);
 	return &ftab;
 }
 
@@ -729,7 +727,7 @@ dummy_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "dummy-xfs");
+			strcpy ((char *) arg, "dummy");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -877,7 +875,7 @@ dummy_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 	
-//	if ((where < 0) || (where > c->stat.size))
+	if (where < 0)
 	{
 		DEBUG (("dummy: dummy_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
@@ -956,9 +954,11 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 			
+			cpid = p_getpid ();
+			
 			if (mode == F_GETLK)
 			{
-				lck = denylock (c->locks, &t);
+				lck = denylock (cpid, c->locks, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -966,8 +966,6 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 				
 				return E_OK;
 			}
-			
-			cpid = p_getpid ();
 			
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -978,8 +976,10 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == cpid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
@@ -1003,7 +1003,7 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 			DEBUG (("dummy_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 			
 			/* see if there's a conflicting lock */
-			while ((lck = denylock (c->locks, &t)) != 0)
+			while ((lck = denylock (cpid, c->locks, &t)) != 0)
 			{
 				DEBUG (("dummy_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 				if (mode == F_SETLKW)

@@ -115,7 +115,7 @@ _emu_scsidrv_SendMsg:
 
 _emu_scsidrv_GetMsg:
 	moveq	#17,d0
- 	bra.s	_do_trap
+ 	/* bra.s	_do_trap */
 
 _do_trap:
 	move.l	sp,a0

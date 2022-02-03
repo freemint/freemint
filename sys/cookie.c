@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -55,6 +53,7 @@
 # include "libkern/libkern.h"
 # include "mint/rsvf.h"
 
+//# include "dos.h"	/* s_s_uper */
 # include "biosfs.h"	/* rsvf */
 # include "memory.h"	/* get_region, attach_region */
 
@@ -184,20 +183,26 @@ init_cookies (void)
 	newcookie = (struct cookie *) attach_region (rootproc, newjar_region);
 # endif
 
-	/* set the hardware detected CPU and FPU rather
-	 * than trust the TOS
-	 */
-	TRACE(("_CPU cookie = %08lx", mcpu));
+#ifdef __mcoldfire__
+	/* do not set _CPU and _FPU on native ColdFire */
+	if (coldfire_68k_emulation)
+#endif
+	{
+		/* set the hardware detected CPU and FPU rather
+		 * than trust the TOS
+		 */
+		TRACE(("_CPU cookie = %08lx", mcpu));
 
-	newcookie[i].tag = COOKIE__CPU;
-	newcookie[i].value = mcpu;
-	i++;
+		newcookie[i].tag = COOKIE__CPU;
+		newcookie[i].value = mcpu;
+		i++;
 
-	TRACE(("_FPU cookie = %08lx", fputype));
+		TRACE(("_FPU cookie = %08lx", fputype));
 
-	newcookie[i].tag = COOKIE__FPU;
-	newcookie[i].value = fputype;
-	i++;
+		newcookie[i].tag = COOKIE__FPU;
+		newcookie[i].value = fputype;
+		i++;
+	}
 
 	/* We install basic Atari cookies, if these ain't
 	 * there, assuming we're on an old ST.
@@ -320,7 +325,7 @@ init_cookies (void)
 
 	/* jr: install PMMU cookie if memory protection is used
 	 */
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 	{
 		TRACE(("PMMU cookie = %08lx", (long)0L));
@@ -419,7 +424,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	struct user_things *ut;
 	struct cookie *cjar;
 # else
-	struct cookie *cjar = *CJAR;
+	struct cookie *cjar;
 # endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
@@ -428,14 +433,18 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	asc.a[4] = '\0';
 # endif
 
-	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc.a, ret));
+	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%p", tag, asc.a, ret));
 
+	if( !cj )
+	{
 # ifdef JAR_PRIVATE
-	ut = get_curproc()->p_mem->tp_ptr;
-	cjar = ut->user_jar_p;
+		ut = get_curproc()->p_mem->tp_ptr;
+		cjar = ut->user_jar_p;
+# else
+		cjar = *CJAR;
 # endif
-
-	if (cj)
+	}
+	else
 		cjar = cj;
 
 	/* If tag == 0, we return the value of NULL slot
@@ -451,7 +460,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 		 */
 		if (ret != 0)
 		{
-			DEBUG (("exit get_cookie(): NULL value written to %08lx", ret));
+			DEBUG (("exit get_cookie(): NULL value written to %p", ret));
 			*ret = cjar->value;
 			return E_OK;
 		}
@@ -468,7 +477,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	 */
 	if ((tag & 0xffff0000UL) == 0)
 	{
-		DEBUG (("get_cookie(): looking for entry number %d", tag));
+		DEBUG (("get_cookie(): looking for entry number %ld", tag));
 		while (cjar->tag)
 		{
 			cjar++;
@@ -492,7 +501,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 
 		if (ret)
 		{
-			DEBUG (("get_cookie(): tag %08lx returned at %08lx", cjar->tag, ret));
+			DEBUG (("get_cookie(): cjar=%p, tag %08lx returned at %p", cjar, cjar->tag, ret));
 			*ret = cjar->tag;
 			return E_OK;
 		}
@@ -512,7 +521,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 		{
 			if (ret)
 			{
-				DEBUG (("get_cookie(): value %08lx returned at %08lx", cjar->value, ret));
+				DEBUG (("get_cookie(): value %08lx returned at %p", cjar->value, ret));
 				*ret = cjar->value;
 				return E_OK;
 			}
@@ -578,7 +587,7 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 		if (cjar->tag == tag)
 		{
 			cjar->value = val;
-			TRACE (("set_cookie(): old entry %08lx (%s) updated", tag, asc));
+			TRACE (("set_cookie(): old entry %08lx (%s) updated", tag, asc.a));
 			return E_OK;
 		}
 		cjar++;
@@ -663,6 +672,11 @@ static ushort rsvfmax = 0;
 
 static char *freepool = NULL;
 static ushort freesize = 0;
+
+#if __GNUC_PREREQ(10, 0)
+/* avoid a library call to memmove which we don't have */
+#pragma GCC optimize "-Os"
+#endif
 
 long
 add_rsvfentry (char *name, char portflags, char bdev)

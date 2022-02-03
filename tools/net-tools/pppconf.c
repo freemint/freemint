@@ -25,6 +25,12 @@ static int pppfd;
 
 #define ISSET(m,b) (((m)[(unsigned)(b) >> 5]) & (1L << ((b) & 0x1f)))
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
+
 static char *
 map2char (long *map, int n)
 {
@@ -61,7 +67,7 @@ map2char (long *map, int n)
 	return buf;
 }
 
-static char *
+static const char *
 flags2char (long flags)
 {
 	static char buf[200];
@@ -88,8 +94,8 @@ flags2char (long flags)
 	return buf;
 }
 
-static char *
-getdev (char *ifname)
+static const char *
+getdev (const char *ifname)
 {
 	extern int __libc_unix_names;  /* Secret MiNTLib feature.  */
 	struct iflink ifl;
@@ -107,27 +113,23 @@ getdev (char *ifname)
 		return NULL;
 	}
 
-#ifndef PATH_MAX
-#define PATH_MAX 1024
-#endif
-
 	if (!__libc_unix_names)
 		_dos2unx (ifl.device, device, PATH_MAX);
 	else
-		strcpy (ifl.device, device);
+		strcpy (device, ifl.device);
 
 	close (sock);
 	return device;
 }
 
 static void
-printconf (char *ifname)
+printconf (const char *ifname)
 {
 	long mtu, mru;
 	long flags;
 	long xmap[8];
 	long rmap[1];
-	char *device;
+	const char *device;
 
 	ioctl (pppfd, PPPIOCGMTU, &mtu);
 	ioctl (pppfd, PPPIOCGMRU, &mru);

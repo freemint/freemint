@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -18,12 +16,14 @@
 # include "ktypes.h"
 
 
+typedef long fs_ino_t;
+
 struct fcookie
 {
 	FILESYS	*fs;		/* filesystem that knows about this cookie */
 	ushort	dev;		/* device info (e.g. Rwabs device number) */
 	ushort	aux;		/* extra data that the file system may want */
-	long	index;		/* this+dev uniquely identifies a file */
+	fs_ino_t	index;		/* this+dev uniquely identifies a file */
 };
 
 /* structure for opendir/readdir/closedir */

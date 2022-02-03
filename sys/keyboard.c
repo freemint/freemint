@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Keyboard handling stuff
  *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
@@ -50,8 +48,6 @@
  *
  */
 
-# ifndef NO_AKP_KEYBOARD
-
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
 # include "mint/asm.h"		/* spl7() */
@@ -72,7 +68,7 @@
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
-# include "global.h"		/* tosver, mch, *sysdir */
+# include "global.h"		/* tosver, machine, *sysdir */
 # include "init.h"		/* boot_printf() */
 # include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
@@ -84,6 +80,8 @@
 # include "random.h"		/* add_keyboard_randomness() */
 # include "signal.h"		/* killgroup() */
 # include "timeout.h"		/* addroottimeout() */
+
+# ifndef NO_AKP_KEYBOARD
 
 /* The _AKP cookie value consists of:
  *
@@ -100,13 +98,13 @@
  *  0 = USA          8 = Ger.Suisse    16 = Hungary    24 = Romania
  *  1 = Germany      9 = Turkey        17 = Poland     25 = Bulgaria
  *  2 = France      10 = Finnland      18 = Lituania   26 = Slovenia
- *  3 = England     11 = Norway        19 = Latvia     27 = Croatia
+ *  3 = England     11 = Norway        19 = Russia     27 = Croatia
  *  4 = Spain       12 = Danmark       20 = Estonia    28 = Serbia
  *  5 = Italy       13 = S. Arabia     21 = Bialorus   29 = Montenegro
  *  6 = Sweden      14 = Netherlands   22 = Ukraina    30 = Macedonia
  *  7 = Fr.Suisse   15 = Czech         23 = Slovakia   31 = Greece
  *
- * 32 = Russia      40 = Vietnam       48 = Bangladesh
+ * 32 = Latvia      40 = Vietnam       48 = Bangladesh
  * 33 = Israel      41 = India
  * 34 = Sou. Africa 42 = Iran
  * 35 = Portugal    43 = Mongolia
@@ -117,7 +115,7 @@
  *
  * The rest of codes are reserved for future extensions. Add ones,
  * if you find a missing one. Consider there are various countries
- * which all speak the same language, like all the South America
+ * which all speak the same language, like all South America
  * speaks Spanish or Portughese, the North America English or French
  * etc.
  *
@@ -125,12 +123,11 @@
 
 # if 0
 # define WITHOUT_TOS
+# endif
 # define KBD_USA
-# endif
 
-# ifdef WITHOUT_TOS
 #  include "key_tables.h"
-# endif
+
 
 static const uchar modifiers[] =
 {
@@ -153,8 +150,8 @@ short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
 short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
-#define MAKES_BLEN	16
-static char makes[MAKES_BLEN + 1 * 2];
+
+int	has_kbdvec = false;	/* true if kbdvec present */
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -182,11 +179,8 @@ static	TIMEOUT *k_to;
 static	ushort mouse_step;
 
 /* keyboard table pointers */
-# ifdef WITHOUT_TOS
-static struct keytab *tos_keytab = &sys_keytab;		/* see key_tables.h */
-# else
-static struct keytab *tos_keytab = NULL;		/* see init_keybd() */
-# endif
+static struct keytab *tos_keytab = &sys_keytab;		/* see key_tables.h provide full table for any configuration */
+
 static struct keytab *user_keytab = NULL;
 static char *keytab_buffer = NULL;
 static long keytab_size = 0;
@@ -210,15 +204,19 @@ static MEMREGION *user_keytab_region = NULL;
 static short keep_sending;		/* flag for mouse packets auto-repetition */
 static char mouse_packet[6];
 
+static char mbuttons_state;
+#define MOUSE_RBUTTON_DOWN	0x01
+#define MOUSE_LBUTTON_DOWN	0x02
+
 /* Mouse movements in four directions */
 static void
 mouse_up(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = -pixels;	/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;		/* header */
+	mouse_packet[1] = 0;					/* X axis */
+	mouse_packet[2] = -pixels;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -232,7 +230,7 @@ mouse_up(PROC *p, long pixels)
 		else
 			to = 10;
 
-		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_up, 0);
+		m_to = addroottimeout(to, mouse_up, 0);
 		if (m_to) m_to->arg = pixels;
 	}
 	else
@@ -244,9 +242,9 @@ mouse_down(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = pixels;	/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = pixels;			/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -260,7 +258,7 @@ mouse_down(PROC *p, long pixels)
 		else
 			to = 10; //krpdel;
 
-		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_down, 0);
+		m_to = addroottimeout(to, mouse_down, 0);
 		if (m_to) m_to->arg = pixels;
 	}
 	else
@@ -272,9 +270,9 @@ mouse_left(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = -pixels;	/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = -pixels;			/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -288,7 +286,7 @@ mouse_left(PROC *p, long pixels)
 		else
 			to = 10; //krpdel;
 
-		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_left, 0);
+		m_to = addroottimeout(to, mouse_left, 0);
 		if (m_to) m_to->arg = pixels;
 	}
 	else
@@ -301,9 +299,9 @@ mouse_right(PROC *p, long pixels)
 {
 	long to;
 
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = pixels;	/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = pixels;			/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
@@ -317,7 +315,7 @@ mouse_right(PROC *p, long pixels)
 		else
 			to = 10; //krpdel;
 
-		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_right, 0);
+		m_to = addroottimeout(to, mouse_right, 0);
 		if (m_to) m_to->arg = pixels;
 	}
 	else
@@ -328,9 +326,9 @@ mouse_right(PROC *p, long pixels)
 static void
 mouse_noclick(PROC *p, long arg)
 {
-	mouse_packet[0] = 0xf8;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 }
@@ -343,32 +341,30 @@ mouse_noclick(PROC *p, long arg)
 static void
 mouse_rclick(PROC *p, long arg)
 {
-	mouse_packet[0] = 0xf9;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	*kbshft &= ~MM_ALTERNATE;
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
-	/* Generate "release" packet */
-	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
+	*kbshft |= MM_ALTERNATE;
 }
 
 /* Generate left click */
 static void
 mouse_lclick(PROC *p, long arg)
 {
-	mouse_packet[0] = 0xfa;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
+	mouse_packet[0] = 0xf8 + mbuttons_state;	/* header */
+	mouse_packet[1] = 0;				/* X axis */
+	mouse_packet[2] = 0;				/* Y axis */
 
 	*kbshft &= ~MM_ALTERNATE;
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
-	/* Generate "release" packet */
-	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
+	*kbshft |= MM_ALTERNATE;
 }
 
 /* Generate double left click */
@@ -376,11 +372,16 @@ static void
 mouse_dclick(PROC *p, long arg)
 {
 	mouse_lclick(p, arg);
-	addroottimeout(MOUSE_TIMEOUT + 20, (void _cdecl (*)(PROC *))mouse_lclick, 0);
+
+	mbuttons_state &= ~MOUSE_LBUTTON_DOWN;
+	mouse_noclick(p, arg);
+
+	mbuttons_state |= MOUSE_LBUTTON_DOWN;
+	addroottimeout(MOUSE_TIMEOUT, mouse_lclick, 0);
 }
 
 static void
-set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
+set_mouse_timeout( void _cdecl (*f)(PROC *, long arg), short make, short delta, long to)
 {
 	if (make)
 	{
@@ -399,13 +400,23 @@ set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
 	}
 }
 
+
+static bool
+is_eiffel_mouse_key(ushort scan)
+{
+	return ((scan >= 0x59 && scan <= 0x5f) && scan != 0x5b)
+		|| scan == 0x37;
+}
+
+
 # ifndef MILAN
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
 kbd_repeat(PROC *p, long arg)
 {
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
-	k_to = addroottimeout(keyrep_time, (void _cdecl (*)(PROC *))kbd_repeat, 1);
+	kbdclick(last_key[1]);
+	k_to = addroottimeout(keyrep_time, kbd_repeat, 1);
 }
 
 static void
@@ -416,7 +427,7 @@ set_keyrepeat_timeout(short make)
 		if (k_to)
 			cancelroottimeout(k_to);
 
-		k_to = addroottimeout(keydel_time, (void _cdecl(*)(PROC *))kbd_repeat, 1);
+		k_to = addroottimeout(keydel_time, kbd_repeat, 1);
 	}
 	else if (k_to)
 	{
@@ -435,28 +446,28 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 	{
 		case UP_ARROW:
 		{
-			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_up, make, delta, ROOT_TIMEOUT);
+			set_mouse_timeout(mouse_up, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
 			return -1;
 		}
 		case DOWN_ARROW:
 		{
-			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_down, make, delta, ROOT_TIMEOUT);
+			set_mouse_timeout(mouse_down, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
 			return -1;
 		}
 		case RIGHT_ARROW:
 		{
-			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_right, make, delta, ROOT_TIMEOUT);
+			set_mouse_timeout(mouse_right, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
 			return -1;
 		}
 		case LEFT_ARROW:
 		{
-			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_left, make, delta, ROOT_TIMEOUT);
+			set_mouse_timeout(mouse_left, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
 			return -1;
@@ -465,12 +476,20 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 		{
 			if (make)
 			{
-				if (shift & MM_ESHIFT)
-					addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_dclick, 1);
+				mbuttons_state |= MOUSE_LBUTTON_DOWN;
+
+				if (shift & MM_RSHIFT)
+					addroottimeout(ROOT_TIMEOUT, mouse_dclick, 1);
 				else
-					addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_lclick, 1);
+					addroottimeout(ROOT_TIMEOUT, mouse_lclick, 1);
 
 				kbdclick(scan);
+			}
+			else
+			{
+				/* Generate "release" packet */
+				mbuttons_state &= ~MOUSE_LBUTTON_DOWN;
+				addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 			}
 
 			return -1;
@@ -479,9 +498,16 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 		{
 			if (make)
 			{
-				addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_rclick, 1);
+				mbuttons_state |= MOUSE_RBUTTON_DOWN;
+				addroottimeout(ROOT_TIMEOUT, mouse_rclick, 1);
 
 				kbdclick(scan);
+			}
+			else
+			{
+				/* Generate "release" packet */
+				mbuttons_state &= ~MOUSE_RBUTTON_DOWN;
+				addroottimeout(MOUSE_TIMEOUT, mouse_noclick, 0);
 			}
 
 			return -1;
@@ -549,7 +575,7 @@ ctrl_alt_Fxx (PROC *p, long arg)
  *
  */
 static void
-alt_help(void)
+alt_help(PROC *p, long arg)
 {
 	char pname[32], cmdln[32];
 
@@ -600,8 +626,6 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		last_key[1] = c1;
 		last_key[2] = c2;
 		last_key[3] = c3;
-
-		kbdclick((ushort)c2);
 	}
 
 	kintr = 1;
@@ -856,7 +880,7 @@ scan2asc(uchar scancode)
 
 	/* Ctrl key works as this regardless of the Alt/AltGr state.
 	 * Otherwise the keyboard shortcuts (like Ctrl/Alt/Q) don't work
-	 * anymore in N.AES. 
+	 * anymore in N.AES.
 	 */
 	if (shift & MM_CTRL)
 	{
@@ -910,16 +934,29 @@ void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
-	
+
 	if (tail != scanb_head)
 	{
 		scanb[scanb_tail].iorec = rec;
 		scanb[scanb_tail].scan = scancode;
 		scanb_tail = tail;
 	}
+
+# ifdef WITH_SINGLE_TASK_SUPPORT
+	if( curproc->modeflags & M_SINGLE_TASK )
+	{
+# ifdef DEBUG_INFO
+		extern short in_kernel;
+		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx slices=%d in_kernel=%x", curproc->name, scanb_head, curproc->p_mem->base->p_flags, curproc->slices, in_kernel ));
+# endif
+		IkbdScan( curproc, 1);
+	}
+	else
+# endif
+
 	if (!ikbd_to)
 	{
-		ikbd_to = addroottimeout(0L, (void _cdecl(*)(PROC *))IkbdScan, 1);
+		ikbd_to = addroottimeout(0L, IkbdScan, 1);
 	}
 }
 
@@ -932,28 +969,21 @@ IkbdScan(PROC *p, long arg)
 		ushort scancode;
 		ushort mod = 0, clk = 0, x = 0, scan, make;
 		uchar shift = *kbshft, ascii;
-	
+
 		iorec      = scanb[scanb_head].iorec;
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
-	
-		DEBUG(("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
-// 		display("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
-	
+
+		TRACE(("ikbd_scan: scancode=%x, rec=%p, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
+
 		scan = scancode & 0xff;
 
-		switch (scan)
+		if (is_eiffel_mouse_key(scan))
 		{
-			case 0x59:		/* Eiffel - mousewheel up */
-			case 0x5a:		/* Eiffel - mousewheel down */
-			case 0x5c:		/* Eiffel - mousewheel left */
-			case 0x5d:		/* Eiffel - mousewheel right */
-			{
-				put_key_into_buf(iorec, shift, (uchar)scan, 0, 0);
-				continue; //goto again;
-			}
+			put_key_into_buf(iorec, shift, (uchar)scan, 0, 0);
+			continue; //goto again;
 		}
-			
+
 		/* This is set during various keyboard table initializations
 		 * e.g. when the user calls Bioskeys(), to prevent processing
 		 * go according to incomplete keyboard translation tables.
@@ -1028,6 +1058,7 @@ IkbdScan(PROC *p, long arg)
 						numin[0] = 0;
 
 						put_key_into_buf(iorec, 0, 0, 0, (uchar)ascii_c);
+						kbdclick(0);
 					}
 				}
 				break;
@@ -1050,11 +1081,7 @@ IkbdScan(PROC *p, long arg)
 			 * ClrHome and Insert must be handled as other keys.
 			 */
 			if ((scan != CLRHOME) && (scan != INSERT))
-#ifndef MILAN
-				goto keepscan;
-#else
 				continue;
-#endif
 		}
 
 		/* Here we handle keys of `system wide' meaning. These are:
@@ -1094,7 +1121,7 @@ IkbdScan(PROC *p, long arg)
 						{
 							TIMEOUT *t;
 
-							t = addroottimeout (ROOT_TIMEOUT, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
+							t = addroottimeout (ROOT_TIMEOUT, ctrl_alt_del, 1);
 							if (t)
 							{
 								t->arg = cad_lock = 1;
@@ -1118,13 +1145,7 @@ IkbdScan(PROC *p, long arg)
 							}
 						}
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 				/* Function keys */
 				case 0x003b ... 0x0044:
@@ -1136,18 +1157,12 @@ IkbdScan(PROC *p, long arg)
 						if (shift & MM_ESHIFT)
 							scan += 0x0019;		/* emulate F11-F20 */
 
-						t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+						t = addroottimeout(ROOT_TIMEOUT, ctrl_alt_Fxx, 1);
 						if (t) t->arg = scan;
 
 						kbdclick(scan);
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 				/* This is in case the keyboard has real F11-F20 keys on it */
 				case 0x0054 ... 0x005d:
@@ -1156,18 +1171,13 @@ IkbdScan(PROC *p, long arg)
 
 					if (make)
 					{
-						t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+						t = addroottimeout(ROOT_TIMEOUT, ctrl_alt_Fxx, 1);
 						if (t) t->arg = scan;
 
 						kbdclick(scan);
 					}
 
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 			}
 		}
@@ -1183,7 +1193,7 @@ IkbdScan(PROC *p, long arg)
 			/* Ozk:
 			 * Scan codes between 0x02 -> 0x0d are modified by 0x76
 			 */
-			if (scan >= 0x02 && scan <= 0x0d)	
+			if (scan >= 0x02 && scan <= 0x0d)
 				scan += 0x76;
 		}
 
@@ -1217,16 +1227,10 @@ IkbdScan(PROC *p, long arg)
 				{
 					if (make)
 					{
-						addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
+						addroottimeout(ROOT_TIMEOUT, alt_help, 1);
 						kbdclick(scan);
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 				/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
 				 */
@@ -1278,12 +1282,12 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','ƒ' means that '^' followed by 'a' results
-			 * in an 'ƒ'.
+			 * So '^','a','Âƒ' means that '^' followed by 'a' results
+			 * in an 'Âƒ'.
 			 */
 			uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
-	
+
 			if (vec)
 			{
 				static unsigned int last_deadkey_scan = 0;
@@ -1296,20 +1300,20 @@ IkbdScan(PROC *p, long arg)
 					deadkey = *vec++;
 					base = *vec++;
 					accented = *vec++;
-					
+
 					if (ascii == deadkey)
 					{
 						is_deadkey = 1;
 						accented = 0;
 						break;
 					}
-					
+
 					if (deadkey == last_deadkey && ascii == base)
 						break;
-					
+
 					accented = 0;
 				}
-				
+
 				if (last_deadkey)
 				{
 					if (accented)
@@ -1321,7 +1325,7 @@ IkbdScan(PROC *p, long arg)
 						if (ascii && ascii != ' ' && ascii != '\t' && (ascii == last_deadkey ? 0:1))
 							put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
 					}
-					
+
 					last_deadkey = 0;
 				}
 				else
@@ -1337,44 +1341,12 @@ IkbdScan(PROC *p, long arg)
 			}
 			else
 				put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+
+			kbdclick(scan);
 		}
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
-keepscan:
 #endif
-#ifndef MILAN
-		if (make)
-		{
-			int i;
-			for (i = 0; i < 32; i += 2)
-			{
-				if (!makes[i])
-				{
-					makes[i    ] = 1;
-					makes[i + 1] = scan;
-					break;
-				}
-			}
-		}
-		else
-		{
-			int i;
-			for (i = 0; i < MAKES_BLEN * 2; i += 2)
-			{
-				if (makes[i] && makes[i+1] == scan)
-				{
-					do
-					{
-						makes[i]   = makes[i+2];
-						makes[i+1] = makes[i+3];
-						i += 2;
-					} while (i < MAKES_BLEN);
-				}
-			}
-		}
-#endif
-// again:
-
 	} while (scanb_head != scanb_tail);
 
 	ikbd_to = NULL;
@@ -1424,7 +1396,7 @@ set_kbrate_ms(short delay, short rate)
 	if (rate >= 0)
 		keyrep_time = rate ? ((long)((long)(rate & 0x00ff) * 1000) / 50) : 20;
 }
-	
+
 /*
  * The XBIOS' Kbrate() function
  */
@@ -1446,7 +1418,7 @@ sys_b_kbrate(short delay, short rate)
 	ret |= (mrate = (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff);
 #else
 	ret |= (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff;
-#endif	
+#endif
 	set_kbrate_ms(delay, rate);
 
 #ifdef MILAN
@@ -1468,11 +1440,32 @@ tbl_scan_fwd(uchar *tmp)
 
 	return ++tmp;		/* skip the ending NULL */
 }
+typedef struct
+{
+  unsigned int bootpref;
+  char reserved[4];
+  unsigned char language;
+  unsigned char keyboard;
+  unsigned char datetime;
+  char separator;
+  unsigned char bootdelay;
+  char reserved2[3];
+  unsigned int vmode;
+  unsigned char scsi;
+} NVM;
+
+static short get_NVM_lang(void)
+{
+	NVM nvm;
+	if( !TRAP_NVMaccess( 0, 0, sizeof(NVM), &nvm ) )
+		return nvm.language;
+	return -1;
+}
 
 void _cdecl
 sys_b_bioskeys(void)
 {
-	long akp_val = 0;
+	long akp_val = 0, r;
 	unsigned char *buf, *tables;
 	struct keytab *pointers;
 
@@ -1490,17 +1483,18 @@ sys_b_bioskeys(void)
 		free_region(user_keytab_region);
 	}
 
-	/* Reserve one region for both keytable and its vectors */
-	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
+	/* Reserve one region for both keytable and its vectors (globally accessible!) */
+	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_G);
 
 	buf = (unsigned char *)attach_region(rootproc, user_keytab_region);
+
 	pointers = (struct keytab *)buf;
 	tables = buf + sizeof(struct keytab);
 
 	assert(pointers);
 
 	/* Copy the master table over */
-	quickmove(tables, keytab_buffer, keytab_size);
+	quickmovb(tables, keytab_buffer, keytab_size);
 
 	/* Setup the standard vectors */
 	pointers->unshift = tables;
@@ -1522,18 +1516,31 @@ sys_b_bioskeys(void)
 	 */
 
 	/* _AKP specifies the hardware keyboard layout */
-	get_cookie(NULL, COOKIE__AKP, (unsigned long *)&akp_val);
-	akp_val &= 0xffffff00L;
-	akp_val |= (gl_kbd & 0x000000ff);
-	set_cookie(NULL, COOKIE__AKP, akp_val);
+	r = get_cookie(NULL, COOKIE__AKP, (unsigned long *)&akp_val);
+	if( r )
+	{
+		r = get_NVM_lang();
+		if( r < 0 )
+		{
+			if( gl_lang < 127 )
+				r = gl_lang;
+			else
+				r = 0;	/* ERROR! */
+		}
+		gl_lang = r;
+	}
+	akp_val &= 0xffff0000L;
+	akp_val |= (gl_kbd & 0x000000ff) | (gl_lang << 8);
+	r = set_cookie(NULL, COOKIE__AKP, akp_val);
 
 	/* _ISO specifies the real keyboard/font nationality */
 	set_cookie(NULL, COOKIE__ISO, iso_8859_code);
 
 	user_keytab = pointers;
-
 	/* Done! */
 	kbd_lock = 0;
+
+	DEBUG(("*sys_b_bioskeys:return"));
 }
 
 /* Kbdvbase() */
@@ -1584,14 +1591,14 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return EFTYPE;
 	}
 
-	kbuf = kmalloc(size+2); /* Append a zero (if the table is missing the altgr + deadkey part) */
+	kbuf = kmalloc(size+2); /* Append two zeros in case the altgr + deadkey tables are missing from the file. */
 	if (!kbuf)
 	{
 		DEBUG(("%s(): out of memory", __FUNCTION__));
 		return ENOMEM;
 	}
 
-	mint_bzero(kbuf, size+1);
+	mint_bzero(kbuf, size+2); /* Don't forget to clear the buffer in case the file is missing any tables. */
 
 	if ((*fp->dev->read)(fp, (char *)kbuf, size) == size)
 	{
@@ -1599,7 +1606,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 1);
+				_mint_bcopy(kbuf + sizeof(short), kbuf, size - sizeof(short) + 2);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -1615,7 +1622,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
 					gl_kbd = sbuf[1];
 
-				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 1);
+				_mint_bcopy(kbuf + sizeof(long), kbuf, size - sizeof(long) + 2);
 				break;
 			}
 			case 0x2773:		/* the ISO format (as of 30.VII.2004) */
@@ -1633,8 +1640,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[3] > 0) && (sbuf[3] <= 10))
 				{
 					iso_8859_code = (long)sbuf[3];
-					quickmove(kbuf, kbuf + (sizeof(long)*2), \
-							size - (sizeof(long)*2) + 1);
+					_mint_bcopy(kbuf + (sizeof(long)*2), kbuf, size - (sizeof(long)*2) + 2);
 				}
 				else
 				{
@@ -1647,7 +1653,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 			}
 			default:
 			{
-				DEBUG(("%s(): unknown format 0x%04x", __FUNCTION__, (ushort *)kbuf));
+				DEBUG(("%s(): unknown format 0x%04x", __FUNCTION__, *(ushort *)kbuf));
 
 				ret = EFTYPE;	/* wrong format */
 				break;
@@ -1667,7 +1673,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		kfree(keytab_buffer);
 
 	keytab_buffer = (char *)kbuf;
-	keytab_size = size+1;
+	keytab_size = size+2;
 
 	TRACE(("%s(): keytab_size %ld", __FUNCTION__, keytab_size));
 
@@ -1685,33 +1691,17 @@ load_internal_table(void)
 
 	size = 128 + 128 + 128;
 
-# ifndef WITHOUT_TOS
-
-	if (tosvers >= 0x0400)
-	{
-		size += strlen((char *)tos_keytab->alt) + 1;
-		size += strlen((char *)tos_keytab->altshift) + 1;
-		size += strlen((char *)tos_keytab->altcaps) + 1;
-		if (mch == MILAN_C)
-			size += strlen((char *)tos_keytab->altgr) + 1;
-		else
-			size += 2;
-		size += 2; /* For the empty deadkey table */
-	}
-	else
-		size += 16; /* a byte for each missing part plus a NUL plus some space */
-# else
 	/* Our default keyboard table (see key_table.h) is always
 	 * a complete one.
 	 */
-	size += strlen(tos_keytab->alt) + 1;
-	size += strlen(tos_keytab->altshift) + 1;
-	size += strlen(tos_keytab->altcaps) + 1;
-	size += strlen(tos_keytab->altgr) + 1;
-	size += strlen(tos_keytab->deadkeys) + 1;
+	size += strlen((char *)tos_keytab->alt) + 1;
+	size += strlen((char *)tos_keytab->altshift) + 1;
+	size += strlen((char *)tos_keytab->altcaps) + 1;
+	size += strlen((char *)tos_keytab->altgr) + 1;
+	size += strlen((char *)tos_keytab->deadkeys) + 1;
 
 	size += 8; /* add some space */
-# endif
+
 
 	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */
@@ -1735,64 +1725,41 @@ load_internal_table(void)
 	p = kbuf;
 	mint_bzero(p, size);
 
-	quickmove(p, tos_keytab->unshift, 128);
+	quickmovb(p, tos_keytab->unshift, 128);
 	p += 128;
 
-	quickmove(p, tos_keytab->shift, 128);
+	quickmovb(p, tos_keytab->shift, 128);
 	p += 128;
 
-	quickmove(p, tos_keytab->caps, 128);
+	quickmovb(p, tos_keytab->caps, 128);
 	p += 128;
 
-# ifndef WITHOUT_TOS
 
-	if (tosvers >= 0x0400)
-	{
-		len = strlen((char *)tos_keytab->alt) + 1;
-		quickmove(p, tos_keytab->alt, len);
-		p += len;
-
-		len = strlen((char *)tos_keytab->altshift) + 1;
-		quickmove(p, tos_keytab->altshift, len);
-		p += len;
-
-		len = strlen((char *)tos_keytab->altcaps) + 1;
-		quickmove(p, tos_keytab->altcaps, len);
-		p += len;
-
-		if (mch == MILAN_C)
-		{
-			len = strlen((char *)tos_keytab->altgr) + 1;
-			quickmove(p, tos_keytab->altgr, len);
-		}
-	}
-
-# else
 	/* Our default keyboard table (see key_table.h) is always
 	 * a complete one.
 	 */
 
 	len = strlen((char *)tos_keytab->alt) + 1;
-	quickmove(p, tos_keytab->alt, len);
+	quickmovb(p, tos_keytab->alt, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->altshift) + 1;
-	quickmove(p, tos_keytab->altshift, len);
+	quickmovb(p, tos_keytab->altshift, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->altcaps) + 1;
-	quickmove(p, tos_keytab->altcaps, len);
+	quickmovb(p, tos_keytab->altcaps, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->altgr) + 1;
-	quickmove(p, tos_keytab->altgr, len);
+	quickmovb(p, tos_keytab->altgr, len);
 	p += len;
-	
+
 	len = strlen((char *)tos_keytab->deadkeys) + 1;
-	quickmove(p, tos_keytab->deadkeys, len);
+	quickmovb(p, tos_keytab->deadkeys, len);
 
 	gl_kbd = default_akp;
-# endif
+
 
 	keytab_buffer = (char *)kbuf;
 	keytab_size = size;
@@ -1872,32 +1839,40 @@ load_keyboard_table(const char *path, short flag)
 void
 init_keybd(void)
 {
-	int i;
 	ushort delayrate;
+	struct keytab *local_keytab;
 
 	/* Call the underlying XBIOS to get some defaults.
 	 *
-	 * On WITHOUT_TOS, the tos_keytab is defined as
-	 * static pointer to an initialized struct in
-	 * key_tables.h
 	 */
 
-	i = 0;
-	while (i < MAKES_BLEN)
-		makes[i++] = 0, makes[i++] = 0;
-
 # ifndef WITHOUT_TOS
-	tos_keytab = TRAP_Keytbl(-1, -1, -1);
+	local_keytab = TRAP_Keytbl(-1, -1, -1);
 # endif
-
-	TRACE(("%s(): BIOS keyboard table at 0x%08lx", __FUNCTION__, tos_keytab));
+	/* redefining keyboard with TOS tables when exist */
+	if(local_keytab)
+	{
+		tos_keytab->unshift = local_keytab->unshift;
+		tos_keytab->shift = local_keytab->shift;
+		tos_keytab->caps = local_keytab->caps;
+		if (tosvers >= 0x0400)
+		{
+			tos_keytab->alt=local_keytab->alt;
+			tos_keytab->altshift=local_keytab->altshift;
+			tos_keytab->altcaps=local_keytab->altcaps;
+			if (machine == machine_milan)
+				tos_keytab->altgr=local_keytab->altgr;
+		
+		}
+	}
+	TRACE(("%s(): BIOS keyboard table at 0x%p", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
-	delayrate = TRAP_Kbrate(-1, -1);	
+	delayrate = TRAP_Kbrate(-1, -1);
 # else
 	delayrate = 0x0f02;	/* this is what TRAP_Kbrate() normally returns */
 # endif
-	
+
 	set_kbrate_ms(delayrate >> 8, delayrate & 0x00ff);
 
 	TRACE(("%s(): delay 0x%04ld, rate 0x%04ld", __FUNCTION__, keydel_time, keyrep_time));
@@ -1912,32 +1887,36 @@ init_keybd(void)
 	boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
 	boot_printf("\r\n");
 # endif
+
+	/* Check and flag undocumented KBDVEC vector */
+	if ((tosvers >= 0x200) || emutos)
+		has_kbdvec = true;
 }
 
 # else
 
-long
-sys_keytbl(char *unshift, char *shift, char *caps)
+struct keytab * _cdecl
+sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
-	return ROM_Keytbl(unshift, shift, caps);
+	return ROM_Keytbl(unshifted, shifted, caps);
 }
 
-long
-sys_bioskeys(void)
+void _cdecl
+sys_b_bioskeys(void)
 {
-	return ROM_Bioskeys();
+	ROM_Bioskeys();
 }
 
-long
-sys_kbrate(ushort del, ushort rep)
+ushort _cdecl
+sys_b_kbrate(short delay, short rate)
 {
-	return ROM_Kbrate(del, rep);
+	return ROM_Kbrate(delay, rate);
 }
 
-long
-sys_kbdvbase(void)
+KBDVEC * _cdecl
+sys_b_kbdvbase(void)
 {
-	return ROM_Kbdvbase();
+	return (KBDVEC * _cdecl)ROM_Kbdvbase();
 }
 
 # endif	/* NO_AKP_KEYBOARD */

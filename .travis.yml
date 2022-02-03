@@ -1,0 +1,65 @@
+language: c
+
+env:
+  global:
+    - BINTRAY_USER="mikrosk"
+    # BINTRAY_API_KEY is defined in Travis Settings of freemint/freemint
+    - HCP="/tmp/hcp/bin/hcp"
+    - UDO="/tmp/udo/bin/udo"
+
+  matrix:
+    # unversioned archives
+    - CPU_TARGET=000
+    - CPU_TARGET=02060
+    - CPU_TARGET=030
+    - CPU_TARGET=040    # includes aranym build
+    - CPU_TARGET=060
+    - CPU_TARGET=col
+    # versioned archives
+    - CPU_TARGET=000 VERSIONED="-st_ste"
+    - CPU_TARGET=02060 VERSIONED="-tt_falcon_clones"
+    - CPU_TARGET=col VERSIONED="-firebee"
+    - CPU_TARGET=ara VERSIONED="-aranym"
+    # USB4TOS
+    - CPU_TARGET=prg
+
+# If before_install, install or before_script return a non-zero exit code, the build is errored and stops immediately.
+before_install:
+  - git clone --depth=1 --branch=freemint-master https://github.com/freemint/travis-scripts.git .travis
+  - if [ -x .travis/before_install.sh ]; then ./.travis/before_install.sh; else true; fi
+
+install:
+  - if [ -x .travis/install.sh ]; then ./.travis/install.sh; else true; fi
+
+before_script:
+  - if [ -x .travis/before_script.sh ]; then ./.travis/before_script.sh; else true; fi
+
+# If script returns a non-zero exit code, the build is failed, but continues to run before being marked as failed.
+script:
+  - if [ -x .travis/script.sh ]; then ./.travis/script.sh; else true; fi
+# The exit code of after_success, after_failure, after_script and subsequent stages do not affect the build result.
+# However, if one of these stages times out, the build is marked as a failure.
+after_success:
+  - if [ -x .travis/after_success.sh ]; then ./.travis/after_success.sh; else true; fi
+after_failure:
+  - if [ -x .travis/after_failure.sh ]; then ./.travis/after_failure.sh; else true; fi
+
+# A non-zero exit code in this phase will mark the build as errored.
+before_deploy:
+  - if [ -x .travis/before_deploy.sh ]; then ./.travis/before_deploy.sh; else true; fi
+
+deploy:
+  provider: bintray
+  file: ".travis/bintray.desc"
+  user: "${BINTRAY_USER}"
+  key: "${BINTRAY_API_KEY}"
+  skip_cleanup: true
+  on:
+    branch: master
+    repo: freemint/freemint
+
+after_deploy:
+  - if [ -x .travis/after_deploy.sh ]; then ./.travis/after_deploy.sh; else true; fi
+
+after_script:
+  - if [ -x .travis/after_script.sh ]; then ./.travis/after_script.sh; else true; fi

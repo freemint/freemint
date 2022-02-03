@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -85,7 +83,7 @@ struct sigaction
 # define SA_NOCLDWAIT	0x0002		/* do not generate zombies on unwaited child */
 # define SA_ALLBITS	0x007f
 
-# define SAUSER		(SA_NOCLDSTOP | SA_RESETHAND)	/* XXX signal flags which the process may set */
+# define SAUSER		(SA_NODEFER | SA_NOCLDSTOP | SA_RESETHAND)	/* XXX signal flags which the process may set */
 # define SAPARENT	(0)		/* XXX signal flags which the parent (of ptraced) processes may set */
 # define SAKERNEL	(0)	/* XXX kernel only flags */
 

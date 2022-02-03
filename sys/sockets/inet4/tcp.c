@@ -33,12 +33,12 @@
 static long	tcp_attach	(struct in_data *);
 static long	tcp_abort	(struct in_data *, short);
 static long	tcp_detach	(struct in_data *, short);
-static long	tcp_connect	(struct in_data *, struct sockaddr_in *, short, short);
+static long	tcp_connect	(struct in_data *, const struct sockaddr_in *, short, short);
 static long	tcp_listen	(struct in_data *);
 static long	tcp_accept	(struct in_data *, struct in_data *, short);
 static long	tcp_ioctl	(struct in_data *, short, void *);
 static long	tcp_select	(struct in_data *, short, long);
-static long	tcp_send	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short);
+static long	tcp_send	(struct in_data *, const struct iovec *, short, short, short, const struct sockaddr_in *, short);
 static long	tcp_recv	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short *);
 static long	tcp_shutdown	(struct in_data *, short);
 static long	tcp_setsockopt	(struct in_data *, short, short, char *, long);
@@ -160,12 +160,13 @@ tcp_detach (struct in_data *data, short wait)
 }
 
 static long
-tcp_connect (struct in_data *data, struct sockaddr_in *addr, short addrlen, short nonblock)
+tcp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
 	struct in_data *data2;
 	struct tcb *tcb = data->pcb;
 	ulong laddr, faddr;
 	
+	UNUSED(addrlen);
 	if (tcb->state != TCBS_CLOSED)
 	{
 		DEBUG (("tcp_connect: already connected"));
@@ -449,11 +450,13 @@ tcp_select (struct in_data *data, short mode, long proc)
 
 static long
 tcp_send (struct in_data *data, const struct iovec *iov, short niov, short nonblock,
-		short flags, struct sockaddr_in *addr, short addrlen)
+		short flags, const struct sockaddr_in *addr, short addrlen)
 {
 	struct tcb *tcb = data->pcb;
 	long size, offset, avail, r, seq_write = tcb->seq_write;
 	
+	UNUSED(addr);
+	UNUSED(addrlen);
 	offset = 0;
 	size = iov_size (iov, niov);
 	if (size == 0)
@@ -681,7 +684,7 @@ tcp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 		
 		if (isleep (IO_Q, (long)data->sock))
 		{
-			DEBUG (("tcp_recv: interrupted -> %li", EINTR));
+			DEBUG (("tcp_recv: interrupted -> %d", EINTR));
 			return EINTR;
 		}
 		
@@ -762,7 +765,7 @@ tcp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	{
 		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (in));
+		*addrlen = MIN ((ushort)*addrlen, sizeof (in));
 		in.sin_family = AF_INET;
 		in.sin_addr.s_addr = data->dst.addr;
 		in.sin_port = data->dst.port;
@@ -797,21 +800,41 @@ static long
 tcp_setsockopt (struct in_data *data, short level, short optname, char *optval, long optlen)
 {
 	struct tcb *tcb = data->pcb;
-	
+	long val = 0;
+
 	if (level != IPPROTO_TCP)
 		return EOPNOTSUPP;
 	
-	if (optlen != sizeof (long) || !optval)
-		return EINVAL;
+	if (!optval)
+		return EFAULT;
 	
 	switch (optname)
 	{
-		case TCP_NODELAY:
-			if (*(long *)optval)
-				tcb->flags |= TCBF_NDELAY;
-			else
-				tcb->flags &= ~TCBF_NDELAY;
-			return 0;
+	case TCP_NODELAY:
+		if ((unsigned long)optlen >= sizeof(long))
+		{
+			val = *((long *)optval);
+		} else if ((unsigned long)optlen >= sizeof(short))
+		{
+			val = *((short *)optval);
+		} else if ((unsigned long)optlen >= sizeof(char))
+		{
+			val = *((unsigned char *)optval);
+		} else
+		{
+			return EINVAL;
+		}
+		break;
+	}
+
+	switch (optname)
+	{
+	case TCP_NODELAY:
+		if (val)
+			tcb->flags |= TCBF_NDELAY;
+		else
+			tcb->flags &= ~TCBF_NDELAY;
+		return 0;
 	}
 	
 	return EOPNOTSUPP;
@@ -821,22 +844,46 @@ static long
 tcp_getsockopt (struct in_data *data, short level, short optname, char *optval, long *optlen)
 {
 	struct tcb *tcb = data->pcb;
+	long val;
+	long len;
 
-	if (level != IPPROTO_TCP)
-		return EOPNOTSUPP;
-	
-	if (!optval || !optlen || *optlen < sizeof (long))
-		return EINVAL;
-	
-	switch (optname)
+	if (!optlen || !optval)
+		return EFAULT;
+	len = *optlen;
+
+	if ((level == (short)SOL_SOCKET) && (optname == SO_ACCEPTCONN)) {
+		val = (tcb->state == TCBS_LISTEN);
+	} else
 	{
+		if (level != IPPROTO_TCP)
+			return EOPNOTSUPP;
+		
+		switch (optname)
+		{
 		case TCP_NODELAY:
-			*(long *)optval = !!(tcb->flags & TCBF_NDELAY);
-			*optlen = sizeof (long);
-			return 0;
+			val = !!(tcb->flags & TCBF_NDELAY);
+			break;
+		
+		default:
+			return EOPNOTSUPP;
+		}
 	}
-	
-	return EOPNOTSUPP;
+
+	if (len == sizeof(short))
+	{
+		*((short *)optval) = val;
+	} else if (len == sizeof(char))
+	{
+		*((unsigned char *)optval) = val;
+	} else if (len == sizeof(long))
+	{
+		*((long *)optval) = val;
+	} else
+	{
+		return EINVAL;
+	}
+
+	return 0;
 }
 
 static long
@@ -845,8 +892,9 @@ tcp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 	struct tcp_dgram *tcph = (struct tcp_dgram *) IP_DATA (buf);
 	struct in_data *data;
 	struct tcb *tcb;
-	long pktlen;
+	ulong pktlen;
 	
+	UNUSED(iface);
 	pktlen = (long)buf->dend - (long)tcph;
 	if (pktlen < TCP_MINLEN)
 	{
@@ -897,7 +945,7 @@ tcp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 	}
 	DEBUG (("tcp_input: port %d:state %d: not acceptable input segment",
 		data->src.port, tcb->state));
-	KAYDEBUG (("tcp_input: w %ld, s %ld, snxt %ld, wlast %ld",
+	DEBUG (("tcp_input: w %ld, s %ld, snxt %ld, wlast %ld",
 		tcb->rcv_nxt, tcph->seq,
 		tcph->seq + tcp_seglen (buf, tcph),
 		tcb->rcv_nxt + tcp_rcvwnd (tcb, 0)));

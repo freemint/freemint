@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -191,7 +189,16 @@
 # define HASHSIZE	(1UL << HASHBITS)
 # define HASHMASK	(HASHSIZE - 1)
 
-# define MIN_BLOCK	8192UL		/* minimal block size */
+/* note the following constraint for MIN_BLOCK: the FATFS requires that
+ * a cluster fit into a block, so MIN_BLOCK must be at least the size of
+ * the largest possible cluster.
+ *
+ * MiNT previously attempted to determine this dynamically by doubling
+ * the size of the current largest logical sector (obtained from the
+ * AHDI PUN_INFO structure).  however, this does not work for DOS-style
+ * FAT filesystems with more than 2 logical sectors per cluster.
+ */
+# define MIN_BLOCK	32768UL		/* minimal block size */
 # define CHUNK_SIZE	512UL		/* minimal chunk size */
 # define CHUNK_SHIFT	9		/* shift value */
 
@@ -209,7 +216,7 @@
 # endif
 
 # ifndef DEV_RANDOM
-# define add_blkdev_randomness (drv)
+# define add_blkdev_randomness(drv)
 # endif
 
 /****************************************************************************/
@@ -293,8 +300,6 @@ struct cbl
 
 static long	_cdecl rwabs_log	(DI *di, ushort rw, void *buf, ulong size, ulong rec);
 static long	_cdecl rwabs_log_lrec	(DI *di, ushort rw, void *buf, ulong size, ulong rec);
-/*static long	_cdecl rwabs_phy	(DI *di, ushort rw, void *buf, ulong size, ulong rec);*/
-/*static long	_cdecl rwabs_phy_lrec	(DI *di, ushort rw, void *buf, ulong size, ulong rec);*/
 static long	_cdecl rwabs_xhdi	(DI *di, ushort rw, void *buf, ulong size, ulong rec);
 
 
@@ -442,80 +447,6 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 	return sys_b_rwabs (rw, buf, n, -1, di->drv, recno);
 }
-
-# if 0
-static long _cdecl
-rwabs_phy (DI *di, ushort rw, void *buf, ulong size, ulong rec)
-{
-	register ulong n;
-	register ulong recno;
-
-	add_blkdev_randomness (di->drv);
-
-//	if (rw && (di->mode & BIO_WP_MODE))
-//	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
-//		return EROFS;
-//	}
-
-	n = size >> di->pshift;
-	recno = rec << di->lshift;
-
-	if (!n || n > 65535UL)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy: n outside range (%li)", di->drv+'A', n));
-		return ESECTOR;
-	}
-
-# if 0
-	if ((recno + n) > di->size)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy: access outside partition", di->drv));
-		return ESECTOR;
-	}
-# endif
-
-	BIO_FORCE (("block_IO [%i]: rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
-	return sys_b_rwabs (rw | 8, buf, n, (recno + di->start), di->major, 0L);
-}
-# endif
-
-# if 0
-static long _cdecl
-rwabs_phy_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
-{
-	register ulong n;
-	register ulong recno;
-
-	add_blkdev_randomness (di->drv);
-
-//	if (rw && (di->mode & BIO_WP_MODE))
-//	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
-//		return EROFS;
-//	}
-
-	n = size >> di->pshift;
-	recno = rec << di->lshift;
-
-	if (!n || n > 65535UL)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy_lrec: n outside range (%li)", di->drv+'A', n));
-		return ESECTOR;
-	}
-
-# if 0
-	if ((recno + n) > di->size)
-	{
-		BIO_ALERT (("block_IO [%c]: rwabs_phy_lrec: access outside partition", di->drv));
-		return ESECTOR;
-	}
-# endif
-
-	BIO_FORCE (("block_IO [%i]: rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
-	return sys_b_rwabs (rw | 8, buf, n, -1, di->major, (recno + di->start));
-}
-# endif
 
 static long _cdecl
 rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
@@ -803,7 +734,7 @@ bio_readin (DI *di, void *buffer, ulong size, ulong sector)
 INLINE long
 bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 {
-	union { const void *cvb; void *b;} ptr; ptr.cvb = buffer;
+	union { const void *cvb; void *b;} ptr = {buffer};	// ptr.cvb = buffer;
 	register long r;
 
 /* NASTY HACK, FIXME */
@@ -1395,22 +1326,11 @@ static DI bio_di [NUM_DRIVES];
 void
 init_block_IO (void)
 {
-	PUN_INFO *pun;
 	long i;
 
 
 	/* set up aligned buffer */
 	buffer = (char *) (((long) _buffer + 15) & ~15);
-
-
-	/* validate AHDI minimum version */
-	pun = get_pun ();
-	if (!pun)
-	{
-		BIO_FORCE(("PUN cookie (from AHDI >=3.0) not found on this system."));
-		BIO_FORCE(("System may have problems with the maximum sector size calculation."));
-	}
-
 
 	/* initalize SCSIDRV interface */
 	scsidrv_init ();
@@ -1439,13 +1359,7 @@ init_block_IO (void)
 	 */
 
 	cache.percentage = 0;
-
-	if (pun)
-		cache.max_size = pun->max_sect_siz * 2L;
-	else
-		cache.max_size = 0;
-
-	cache.max_size = MAX (cache.max_size, MIN_BLOCK);
+	cache.max_size = MIN_BLOCK;
 	cache.chunks = cache.max_size >> CHUNK_SHIFT;
 	cache.count = 0;
 	cache.blocks = NULL;
@@ -1474,7 +1388,7 @@ bio_set_cache_size (long size)
 	count = (size * 1024L) / cache.max_size;
 	if (!count)
 	{
-		BIO_ALERT (("block_IO []: %s, %ld: Specified cache size too small (%li).", __FILE__, __LINE__, size));
+		BIO_ALERT (("block_IO []: %s, %ld: Specified cache size too small (%li).", __FILE__, (long)__LINE__, size));
 		return EBADARG;
 	}
 
@@ -1488,7 +1402,7 @@ bio_set_cache_size (long size)
 	data = kmalloc (count * cache.max_size);
 	if ((long) data & 15)
 	{
-		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long) __LINE__, data));
+		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long)__LINE__, (unsigned long)data));
 	}
 
 	if (!blocks || !data)
@@ -2506,7 +2420,7 @@ bio_invalidate (DI *di)
 
 	if (di->lock > 1)
 	{
-		BIO_FORCE (("block_IO [%c]: invalidate on LOCKED di", di->drv+'A'));
+		BIO_DEBUG (("block_IO [%c]: invalidate on LOCKED di", di->drv+'A'));
 	}
 
 restart:
@@ -2531,7 +2445,7 @@ restart:
 				u->dirty = 0;
 
 				/* inform user */
-				BIO_ALERT (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", di->drv+'A', u->sector, u->size));
+				BIO_DEBUG (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", di->drv+'A', u->sector, u->size));
 			}
 
 			/* remove from table */
@@ -2731,11 +2645,11 @@ bio_dump_cache (void)
 				for (j = 0; j < HASHSIZE; j++)
 				{
 					UNIT *t = table [j];
-					ksprintf (buf, buflen, "nr: %li\tptr = %lx", j, t);
+					ksprintf (buf, buflen, "nr: %li\tptr = %p", j, t);
 					(*fp->dev->write)(fp, buf, strlen (buf));
 					for (; t; t = t->next)
 					{
-						ksprintf (buf, buflen, "\r\n\thnext = %lx\tlock = %i\tdirty = %i"
+						ksprintf (buf, buflen, "\r\n\thnext = %p\tlock = %i\tdirty = %i"
 							"\tsector = %li\tdev = %i\r\n",
 							t->next, t->lock, t->dirty, t->sector, t->di->drv
 						);
@@ -2750,11 +2664,11 @@ bio_dump_cache (void)
 		for (i = 0; i < cache.count; i++)
 		{
 			ulong j;
-			ksprintf (buf, buflen, "buffer = %lx, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
+			ksprintf (buf, buflen, "buffer = %p, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (j = 0; j < cache.chunks; j++)
 			{
-				ksprintf (buf, buflen, "\tused = %u\tstat = %li\tactive = %lx\r\n", b[i].used[j], b[i].active[j] ? b[i].active[j]->stat : -1, b[i].active[j]);
+				ksprintf (buf, buflen, "\tused = %u\tstat = %li\tactive = %p\r\n", b[i].used[j], b[i].active[j] ? b[i].active[j]->stat : -1, b[i].active[j]);
 				(*fp->dev->write)(fp, buf, strlen (buf));
 			}
 			(*fp->dev->write)(fp, "\r\n", 2);

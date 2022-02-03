@@ -55,6 +55,7 @@ COBJS = \
 	mis.c \
 	module.c \
 	nullfs.c \
+	pcibios.c \
 	pipefs.c \
 	proc.c \
 	proc_help.c \

@@ -59,6 +59,7 @@ void (*tcb_state[])(struct tcb *, BUF *) =
 static void
 tcbs_closed (struct tcb *tcb, BUF *buf)
 {
+	UNUSED(tcb);
 	tcp_sndrst (buf);
 	buf_deref (buf, BUF_NORMAL);
 }
@@ -179,7 +180,7 @@ tcbs_listen (struct tcb *tcb, BUF *buf)
 	r = tcp_options (ntcb, tcph);
 	ntcb->snd_mss =
 	ntcb->snd_cwnd = tcp_mss (ntcb, data->dst.addr, r);
-	if (ntcb->snd_thresh < 2*ntcb->snd_cwnd);
+	if (ntcb->snd_thresh < 2*ntcb->snd_cwnd)
 		ntcb->snd_thresh = 2*ntcb->snd_cwnd;
 	
 	tcp_rcvdata (ntcb, buf);
@@ -192,7 +193,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 	struct tcp_dgram *tcph = (struct tcp_dgram *) IP_DATA (buf);
 	long r;
 	
-	if (tcph->flags & TCPF_ACK
+	if ((tcph->flags & TCPF_ACK)
 		&& (SEQLE (tcph->ack, tcb->snd_isn)
 			|| SEQGT (tcph->ack, tcb->snd_max)))
 	{
@@ -239,7 +240,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 	{
 		/* SYN is acked */
 		
-		KAYDEBUG (("tcp port %d: SYNSENT -> ESTABLISHED",
+		DEBUG (("tcp port %d: SYNSENT -> ESTABLISHED",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_ESTABLISHED;
@@ -256,7 +257,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 	{
 		/* SYN not acked */
 		
-		KAYDEBUG (("tcp port %d: SYNSENT -> SYNRCVD",
+		DEBUG (("tcp port %d: SYNSENT -> SYNRCVD",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_SYNRCVD;
@@ -265,7 +266,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 	r = tcp_options (tcb, tcph);
 	tcb->snd_mss =
 	tcb->snd_cwnd = tcp_mss (tcb, tcb->data->dst.addr, r);
-	if (tcb->snd_thresh < 2*tcb->snd_cwnd);
+	if (tcb->snd_thresh < 2*tcb->snd_cwnd)
 		tcb->snd_thresh = 2*tcb->snd_cwnd;
 	
 	tcp_rcvdata (tcb, buf);
@@ -320,7 +321,7 @@ tcbs_synrcvd (struct tcb *tcb, BUF *buf)
 		return;
 	}
 	
-	KAYDEBUG (("tcp port %d: SYNRCVD -> ESTABLISHED",
+	DEBUG (("tcp port %d: SYNRCVD -> ESTABLISHED",
 			tcb->data->src.port));
 	
 	tcb->state = TCBS_ESTABLISHED;
@@ -343,7 +344,7 @@ tcbs_synrcvd (struct tcb *tcb, BUF *buf)
 	
 	if (tcp_finished (tcb))
 	{
-		KAYDEBUG (("tcp port %d: ESTABLISHED -> CLOSEWAIT",
+		DEBUG (("tcp port %d: ESTABLISHED -> CLOSEWAIT",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_CLOSEWAIT;
@@ -384,7 +385,7 @@ tcbs_established (struct tcb *tcb, BUF *buf)
 	tcp_rcvdata (tcb, buf);
 	if (tcp_finished (tcb))
 	{
-		KAYDEBUG (("tcp port %d: ESTABLISHED -> CLOSEWAIT",
+		DEBUG (("tcp port %d: ESTABLISHED -> CLOSEWAIT",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_CLOSEWAIT;
@@ -426,14 +427,14 @@ tcbs_finwait1 (struct tcb *tcb, BUF *buf)
 			 * FIN is not acked
 			 */
 			
-			KAYDEBUG (("tcp port %d: FINWAIT1 -> CLOSING",
+			DEBUG (("tcp port %d: FINWAIT1 -> CLOSING",
 					tcb->data->src.port));
 			
 			tcb->state = TCBS_CLOSING;
 		}
 		else
 		{
-			KAYDEBUG (("tcp port %d: FINWAIT1 -> TIMEWAIT",
+			DEBUG (("tcp port %d: FINWAIT1 -> TIMEWAIT",
 					tcb->data->src.port));
 			
 			tcb->state = TCBS_TIMEWAIT;
@@ -447,7 +448,7 @@ tcbs_finwait1 (struct tcb *tcb, BUF *buf)
 		 * FIN is acked
 		 */
 		
-		KAYDEBUG (("tcp port %d: FINWAIT1 -> FINWAIT2",
+		DEBUG (("tcp port %d: FINWAIT1 -> FINWAIT2",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_FINWAIT2;
@@ -481,7 +482,7 @@ tcbs_finwait2 (struct tcb *tcb, BUF *buf)
 	
 	if (tcp_finished (tcb))
 	{
-		KAYDEBUG (("tcp port %d: FINWAIT2 -> TIMEWAIT",
+		DEBUG (("tcp port %d: FINWAIT2 -> TIMEWAIT",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_TIMEWAIT;
@@ -531,7 +532,7 @@ tcbs_lastack (struct tcb *tcb, BUF *buf)
 		/*
 		 * FIN is acked
 		 */
-		KAYDEBUG (("tcp port %d: LASTACK -> CLOSED",
+		DEBUG (("tcp port %d: LASTACK -> CLOSED",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_CLOSED;
@@ -561,7 +562,7 @@ tcbs_closing (struct tcb *tcb, BUF *buf)
 	if (SEQLE (tcb->seq_write, tcb->snd_una))
 	{
 		/* FIN is acked */
-		KAYDEBUG (("tcp port %d: CLOSING -> TIMEWAIT",
+		DEBUG (("tcp port %d: CLOSING -> TIMEWAIT",
 				tcb->data->src.port));
 		
 		tcb->state = TCBS_TIMEWAIT;
@@ -714,7 +715,7 @@ tcp_rcvdata (struct tcb *tcb, BUF *buf)
 		}
 		acknow |= (nxt - onxt != datalen);
 	}
-	if (tcb->flags & TCBF_FIN && SEQEQ (tcb->seq_fin, nxt))
+	if ((tcb->flags & TCBF_FIN) && SEQEQ (tcb->seq_fin, nxt))
 	{
 		acknow = 1;
 		nxt++;
@@ -722,14 +723,14 @@ tcp_rcvdata (struct tcb *tcb, BUF *buf)
 		 * Do FIN processing
 		 */
 	}
-	if (tcb->flags & TCBF_PSH && SEQLE (tcb->seq_psh, nxt))
+	if ((tcb->flags & TCBF_PSH) && SEQLE (tcb->seq_psh, nxt))
 	{
 		/*
 		 * Do PUSH processing
 		 */
 	}
 	tcb->rcv_nxt = nxt;
-	if (datalen > 0 || flags & TCPF_FIN)
+	if (datalen > 0 || (flags & TCPF_FIN))
 	{
 		if (tcb->state == TCBS_ESTABLISHED && !acknow)
 			tcp_delack (tcb);
@@ -804,7 +805,13 @@ tcp_addseg (struct in_dataq *q, BUF *buf)
 		 * (partially) filled by the new segment.
 		 * Search backwards for efficiency reasons.
 		 */
-		for (b = q->qlast; b->prev; b = b->prev)
+		b = q->qlast;
+		if (b == NULL)
+		{
+			buf_deref (buf, BUF_NORMAL);
+			return -1;
+		}
+		for (; b->prev; b = b->prev)
 		{
 			if (SEQLT (SEQNXT (b->prev), SEQ1ST (b))
 				&& SEQLT (seq1st, SEQ1ST (b))
@@ -923,7 +930,7 @@ tcp_ack (struct tcb *tcb, BUF *buf, short update_sndwnd)
 		 */
 		DEBUG (("tcp_ack(%d): state %d: ack for data not yet sent",
 			tcb->data->src.port, tcb->state));
-		KAYDEBUG (("tcp_ack: sndmax %ld, ack %ld",
+		DEBUG (("tcp_ack: sndmax %ld, ack %ld",
 				tcb->snd_max, tcph->ack));
 		if (tcb->state == TCBS_SYNRCVD)
 			tcp_sndrst (buf);
@@ -987,7 +994,7 @@ tcp_rcvurg (struct tcb *tcb, BUF *buf)
 	 */
 	if (tcb->state < TCBS_SYNRCVD
 		|| tcb->state > TCBS_CLOSEWAIT
-		|| tcph->flags & TCPF_SYN)
+		|| (tcph->flags & TCPF_SYN))
 	{
 		tcph->flags &= ~TCPF_URG;
 		return 0;
@@ -1071,10 +1078,11 @@ tcp_rcvurg (struct tcb *tcb, BUF *buf)
 				wake (IO_Q, (long)tcb->data->sock);
 			}
 		}
-	}
-	else
+	} else
+	{
 		DEBUG (("tcp_rcvurg: no space for urgent data"));
-	
+	}
+
 	/*
 	 * Adjust the original segment
 	 */

@@ -302,7 +302,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 		}
 		else
 		{
-			DEBUG (("Minix-FS (%c): __fio: len = %li (mode %i)", f->fc.dev+'A', f->fc.dev+'A', len, mode));
+			DEBUG (("Minix-FS (%c): __fio: len = %li (mode %i)", f->fc.dev+'A', len, mode));
 			return 0;
 		}
 	}
@@ -527,7 +527,7 @@ m_seek (FILEPTR *f, long where, int whence)
 		default:	return ENOSYS;
 	}
 	
-	if (where > rip.i_size || where < 0)
+	if (where < 0)
 	{
 		DEBUG (("Minix-FS: m_lseek: leave failure EBADARG (where = %li, size = %li)", where, rip.i_size));
 		return EBADARG;
@@ -607,9 +607,11 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 			
+			cpid = p_getpid ();
+			
 			if (mode == F_GETLK)
 			{
-				lck = denylock (*fch->lfirst, &t);
+				lck = denylock (cpid, *fch->lfirst, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -617,8 +619,6 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				
 				return E_OK;
 			}
-			
-			cpid = p_getpid ();
 			
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -629,8 +629,10 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == cpid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						*lckptr = lck->next;
 						
@@ -648,7 +650,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				return ENSLOCK;
 			}
 			
-			while (lck = denylock (*fch->lfirst, &t), lck != 0)
+			while (lck = denylock (cpid, *fch->lfirst, &t), lck != 0)
 			{
 				if (mode == F_SETLKW)
 					/* sleep a while */
@@ -808,4 +810,3 @@ m_unselect (FILEPTR *f, long int proc, int mode)
 {
 	/* Do nothing */
 }
-

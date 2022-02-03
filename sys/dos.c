@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -272,7 +270,7 @@ sys_p_pause (void)
  * off, and raises SIGALRM
  */
 static void _cdecl
-alarmme (PROC *p)
+alarmme (PROC *p, long arg)
 {
 	p->alarmtim = 0;
 	post_sig (p, SIGALRM);
@@ -353,7 +351,7 @@ foundalarm:
  * timer goes off
  */
 static void _cdecl
-itimer_real_me (PROC *p)
+itimer_real_me (PROC *p, long arg)
 {
 	if (p->itimer[ITIMER_REAL].interval)
 		p->itimer[ITIMER_REAL].timeout = addtimeout (p, p->itimer[ITIMER_REAL].interval, itimer_real_me);
@@ -368,7 +366,7 @@ itimer_real_me (PROC *p)
  * timer goes off
  */
 static void _cdecl
-itimer_virtual_me (PROC *p)
+itimer_virtual_me (PROC *p, long arg)
 {
 	long timeleft;
 
@@ -401,7 +399,7 @@ itimer_virtual_me (PROC *p)
  * timer goes off
  */
 static void _cdecl
-itimer_prof_me (PROC *p)
+itimer_prof_me (PROC *p, long arg)
 {
 	long timeleft;
 
@@ -445,7 +443,7 @@ sys_t_setitimer (int which, long *interval, long *value, long *ointerval, long *
 	PROC *p = get_curproc();
 	long oldtimer;
 	TIMEOUT *t;
-	void _cdecl (*handler)() = 0;
+	void _cdecl (*handler)(PROC *p, long arg) = 0;
 	long tmpold;
 
 	if ((which != ITIMER_REAL)
@@ -557,7 +555,7 @@ foundtimer:
  * "which" specifies which aspect of the system configuration is to
  * be returned:
  *	-1	max. value of "which" allowed
- *	 0	max. number of memory regions per proc
+ *	 0	max. number of memory regions per proc	{MEMR_MAX}
  *	 1	max. length of Pexec() execution string {ARG_MAX}
  *	 2	max. number of open files per process	{OPEN_MAX}
  *	 3	number of supplementary group id's	{NGROUPS_MAX}
@@ -565,6 +563,8 @@ foundtimer:
  *	 5	HZ					{CLK_TCK}
  *	 6	pagesize				{PAGE_SIZE}
  *	 7	phys pages				{PHYS_PAGES}
+ *	 8      passwd buffer size			{GETPW_R_SIZE}
+ *	 9      group buffer size			{GETGR_R_SIZE}
  *
  * unlimited values (e.g. CHILD_MAX) are returned as 0x7fffffffL
  *
@@ -576,19 +576,19 @@ foundtimer:
 long _cdecl
 sys_s_ysconf (int which)
 {
-	PROC *p = get_curproc();
-
 	switch (which)
 	{
-		case -1:	return 4;
+		case -1:	return 9;
 		case  0:	return UNLIMITED;
 		case  1:	return 32767; /* matches ARG_MAX */
-		case  2:	return p->p_fd->nfiles;
-		case  3:	return p->p_cred->ucr->ngroups;
+		case  2:	return NDFILE;
+		case  3:	return NGROUPS_MAX;
 		case  4:	return UNLIMITED;
 		case  5:	return HZ;
 		case  6:	return PAGESIZE;
 		case  7:	return freephysmem() / PAGESIZE;
+		case  8:	return 1024;
+		case  9:	return 1024;
 		default:	return ENOSYS;
 	}
 }
@@ -627,6 +627,7 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 	return E_OK;
 }
 
+#define GEM 0x47454D00L	/* "GEM" */
 /*
  * shut down processes; this involves waking them all up, and sending
  * them SIGTERM to give them a chance to clean up after themselves.
@@ -637,6 +638,7 @@ shutdown(void)
 	struct proc *p;
 	int posts = 0;
 	int i;
+	union { long l; char *s; } ls;
 
 	DEBUG(("shutdown() entered"));
 	assert(get_curproc()->p_sigacts);
@@ -650,8 +652,10 @@ shutdown(void)
 
 	for (p = proclist; p; p = p->gl_next)
 	{
-		/* Skip MiNT, curproc and AES */
-		if (p->pid && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0))
+		ls.s = p->name;
+		FORCE("p->name=%s:%lx pgrp=%d", p->name, ls.l, p->pgrp);
+		/* Skip MiNT, curproc and AES, and GEM */
+		if (p->pgrp && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0) && ls.l != GEM )
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
@@ -663,7 +667,7 @@ shutdown(void)
 					spl(sr);
 				}
 
-				DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
+				FORCE("SIGTERM -> %s (pid %i)", p->name, p->pid);
 				post_sig(p, SIGTERM);
 
 				posts++;
@@ -677,13 +681,13 @@ shutdown(void)
 
 	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;
 
-	DEBUG(("Close open files ..."));
+	FORCE("Close open files ...");
 	close_filesys();
-	DEBUG(("done"));
+	FORCE("done");
 
-	DEBUG(("Syncing file systems ..."));
+	FORCE("Syncing file systems ...");
 	sys_s_ync();
-	DEBUG(("done"));
+	FORCE("done");
 
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
@@ -693,7 +697,7 @@ shutdown(void)
 		{
 			if (fs->fsflags & FS_EXT_1)
 			{
-				DEBUG(("Unmounting %c: ...", 'A'+i));
+				FORCE("Unmounting %c: ...", 'A'+i);
 				xfs_unmount(fs, i);
 			}
 			else
@@ -704,9 +708,9 @@ shutdown(void)
 		}
 	}
 
-	DEBUG(("Syncing file systems ..."));
+	FORCE("Syncing file systems ...");
 	sys_s_ync();
-	DEBUG(("done"));
+	FORCE("done");
 
 	/* Wait for the disks to flush their write cache */
 	delay_seconds(2);
@@ -724,10 +728,18 @@ shutdown(void)
 long _cdecl
 sys_s_hutdown(long restart)
 {
+	static short shutting_down = 0;
 	PROC *p = get_curproc();
 
+	if( shutting_down == 1 )
+	{
+		FORCE( "sys_s_hutdown reentered!");
+		return EPERM;
+	}
+	shutting_down = 1;
+	DEBUG(("sys_s_hutdown: %ld", restart));
 	/* only root may shut down the system */
-	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
+	if (suser(p->p_cred->ucr) || (p->p_cred->ruid == 0))
 	{
 		shutdown();
 
@@ -757,6 +769,7 @@ sys_s_hutdown(long restart)
 
 		/* not reached */
 	}
+	shutting_down = 0;
 
 	return EPERM;
 }

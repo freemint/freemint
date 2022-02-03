@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -40,17 +38,49 @@ IKBDTODO	=	IKBDSTATE+1
 _old_acia:
 	dc.l	0
 
+// This handler is installed only when running on FireTOS and CT60 TOS 2, this
+// is needed to workaround a problem with keyboard handling. Those TOS install
+// directly in the ACIA vector the ikbdsys handler which never calls the
+// undocumented kbdvec vector handler which take care of the keyboard scancode
+// processing.
+//
+// For the rest of architectures this handler is disabled, the main reason is
+// because we don't have a midisys vector handler and using the one from ROM
+// crashes the system. Some ROM kbdvecs interrupt hadlers expect to have in an
+// address register a value to reference its internal variables, they expect
+// ROM's ACIA handler to put that adrress there for them. So while we depend
+// on calling those ROM vectors handlers we can't use our own ACIA routine.
+// FireTOS and CT60 TOS 2 ACIA handler doesn't process MIDI data so this
+// problem doesn't occur with them, midisys handler in those TOS just return.
+
 _new_acia:
+#ifdef __mcoldfire__
+	lea	-32(sp),sp
+	movem.l	d0-d3/a0-a3,(sp)
+#else
 	movem.l	d0-d3/a0-a3,-(sp)
+#endif
 again:	move.l	_syskey,a3
-//	move.l	VMIDISYS(a3),a0
-//	jsr	(a0)
+	move.l	VMIDISYS(a3),a0
+	jsr	(a0)
 	move.l	VIKBDSYS(a3),a0
 	jsr	(a0)
+#ifdef __mcoldfire__
+	moveq.l	#04,d0
+	btst	d0,0xfa01.w	//(0xfa01).w
+#else
 	btst	#04,0xfa01.w	//(0xfa01).w
+#endif
 	beq.s	again
+#ifdef __mcoldfire__
+	moveq.l	#6,d0
+	bclr	d0,0xfa11.w	//move.b	#0xbf,(0xfa11).w
+	movem.l	(sp),d0-d3/a0-a3
+	lea	32(sp),sp
+#else
 	movem.l	(sp)+,d0-d3/a0-a3
 	bclr	#6,0xfa11.w	//move.b	#0xbf,(0xfa11).w
+#endif
 #ifdef M68000
 	nop				// see intr.S and syscall.S
 #endif
@@ -76,10 +106,15 @@ todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 // We only replace ikbdsys, midisys will be handled in ROM.
 
 _ikbdsys_handler:
+	move.l	_syskey,a3		// if ACIA handler is from ROM get syskey
 	move.b	(0xfc00).w,d1		// ACIA control
 	move.l	_keyrec,a0
 	btst	#0x07,d1		// interrupt request
+#ifdef __mcoldfire__
+	beq	return
+#else
 	beq.s	return
+#endif
 	btst	#0x00,d1		// Receiver full
 	beq.s	skip
 	move.l	d1,-(sp)
@@ -98,28 +133,37 @@ no_error:
 	bne.s	mid_multiple
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
-	and.w	#0xff,d0
-	move.l	_keyrec,-(sp)
-	move.w	d0,-(sp)
-	jsr	_ikbd_scan
-	addq.l	#6,sp
-	rts
-
-//	jmp	_newkeys
-//	move.l	KBDVEC(a3),a1
-//	jmp	(a1)
+	tst.w	_has_kbdvec		// if kvdvec not present call new_keys directly
+	beq	_newkeys
+	move.l	KBDVEC(a3),a1
+	jmp	(a1)
 
 not_keyboard:
+#ifdef __mcoldfire__
+	sub.l	#0xf6,d0
+#else
 	sub.b	#0xf6,d0
+#endif
 
 // unlike some documentation states, syskey->ikbdstate contains
 // the type of the packet, and not the number of bytes transmitted.
 
 	lea	type,a1
+#ifdef __mcoldfire__
+	move.b	(a1,d0.l),d1
+	move.b	d1,IKBDSTATE(a3)	
+#else
 	move.b	(a1,d0.w),IKBDSTATE(a3)	
+#endif
 	lea	todo,a1
+#ifdef __mcoldfire__
+	move.b	(a1,d0.l),d1
+	move.b	d1,IKBDTODO(a3)
+	add.l	#0xf6,d0
+#else
 	move.b	(a1,d0.w),IKBDTODO(a3)
 	add.b	#0xf6,d0
+#endif
 	cmp.b	#0xf8,d0
 	blt.s	joy
 	cmp.b	#0xfb,d0
@@ -133,8 +177,14 @@ joy:	cmp.b	#0xfd,d0
 ret:	rts
 
 mid_multiple:
+#ifdef __mcoldfire__
+	moveq.l	#0x06,d1
+	cmp.b	IKBDSTATE(a3),d1
+	bcc.s	nostk
+#else
 	cmp.b	#0x06,IKBDSTATE(a3)
 	bcs.s	nostk
+#endif
 
 	clr.l	d1
 	move.b	IKBDSTATE(a3),d1
@@ -151,6 +201,18 @@ nostk:	lea	buffers,a2
 	clr.l	d2
 	move.b	IKBDSTATE(a3),d2
 
+#ifdef __mcoldfire__
+	subq.l	#1,d2
+
+	move.l	d2,d3
+	lsl.l	#3,d2			// multiply by 8
+	lsl.l	#2,d3			// multiply by 4
+	add.l	d3,d2			// multiply by 12
+
+	move.l	(a2,d2.l),a0		// get buffer address for packet
+	move.l	4(a2,d2.l),a1		// get buffer end for packet
+	move.l	8(a2,d2.l),d3		// routine to call
+#else
 	subq.w	#1,d2
 
 	move.w	d2,d3
@@ -161,13 +223,21 @@ nostk:	lea	buffers,a2
 	move.l	(a2,d2.w),a0		// get buffer address for packet
 	move.l	4(a2,d2.w),a1		// get buffer end for packet
 	move.l	8(a2,d2.w),d3		// routine to call
+#endif
 	move.l	(a3,d3.l),a2
 
 	clr.l	d2
 	move.b	IKBDTODO(a3),d2
 	sub.l	d2,a1
 	move.b	d0,(a1)
+#ifdef __mcoldfire__
+	moveq.l	#0,d0
+	move.b	IKBDTODO(a3),d0
+	subq.l	#1,d0
+	move.b	d0,IKBDTODO(a3)
+#else
 	subq.b	#1,IKBDTODO(a3)
+#endif
 	tst.b	IKBDTODO(a3)
 	bne.s	xret
 

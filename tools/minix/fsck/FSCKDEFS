@@ -1,0 +1,31 @@
+ifeq ($(fsck),000)
+TARGET = ./fsck.minix
+CPU = 000
+endif
+
+ifeq ($(fsck),02060)
+TARGET = ./fsck.minix
+CPU = 020-60
+endif
+
+ifeq ($(fsck),030)
+TARGET = ./fsck.minix
+CPU = 030
+endif
+
+ifeq ($(fsck),040)
+TARGET = ./fsck.minix
+CPU = 040
+endif
+
+ifeq ($(fsck),060)
+TARGET = ./fsck.minix
+CPU = 060
+endif
+
+ifeq ($(fsck),col)
+TARGET = ./fsck.minix
+CPU = v4e
+endif
+
+fscktargets = 000 02060 030 040 060 col

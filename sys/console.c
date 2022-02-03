@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -19,11 +17,14 @@
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 
+# include "init.h"
 # include "dosfile.h"
 # include "filesys.h"
 # include "tty.h"
 # include "proc.h"
-
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# include "arch/aranym.h"
+# endif
 
 /*
  * These routines are what Cconout, Cauxout, etc. ultimately call.
@@ -75,22 +76,21 @@ file_outstat (FILEPTR *f)
 long
 file_getchar (FILEPTR *f, int mode)
 {
+	char c;
+	long r;
+
 	if (!f)
 		return EBADF;
 
 	if (is_terminal (f))
 		return tty_getchar (f, mode);
 
-	{
-		char c;
-		long r;
-
-		r = xdd_read (f, &c, 1L);
-		if (r != 1)
-			return MiNTEOF;
-		else
-			return ((long) c) & 0xff;
+	r = xdd_read (f, &c, 1L);
+	if (r < 0) {
+		return r;
 	}
+
+	return (r == 1) ? (((long) c) & 0xff) : MiNTEOF;
 }
 
 long
@@ -158,7 +158,7 @@ sys_c_rawio (int c)
 			return 0;
 
 		r = file_getchar (p->p_fd->ofiles[0], RAW);
-		if (r <= E_OK)
+		if (r < E_OK)
 			return 0;
 
 		return r;
@@ -188,6 +188,10 @@ sys_c_conws (const char *str)
 	while (*p++)
 		cnt++;
 
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+	if( write_boot_file == 2 )
+		nf_debug(str);
+# endif
 	return sys_f_write (1, cnt, str);
 }
 
@@ -204,11 +208,13 @@ sys_c_conrs (char *buf)
 		 */
 		r = sys_f_read (0, size, buf + 2);
 		if (r < E_OK)
+		{
 			buf [1] = 0;
-		else
-			buf [1] = (char) r;
+			return r;
+		}
 
-		return (r < E_OK) ? r : E_OK;
+		buf [1] = (char) r;
+		return E_OK;
 	}
 
 	/* TB: In all other cases, we must read character by character, breaking
@@ -296,29 +302,17 @@ sys_c_auxos (void)
 	return -(!!file_outstat (get_curproc()->p_fd->ofiles[2]));
 }
 
-
 /* Extended GEMDOS routines
  */
 
 long _cdecl
-sys_f_instat (int h)
+sys_f_instat (int fh)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Finstat: bad handle %d", h));
+		DEBUG (("Finstat: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -326,24 +320,13 @@ sys_f_instat (int h)
 }
 
 long _cdecl
-sys_f_outstat (int h)
+sys_f_outstat (int fh)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Foutstat: bad handle %d", h));
+		DEBUG (("Foutstat: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -351,24 +334,13 @@ sys_f_outstat (int h)
 }
 
 long _cdecl
-sys_f_getchar (int h, int mode)
+sys_f_getchar (int fh, int mode)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Fgetchar: bad handle %d", h));
+		DEBUG (("Fgetchar: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -376,24 +348,13 @@ sys_f_getchar (int h, int mode)
 }
 
 long _cdecl
-sys_f_putchar (int h, long c, int mode)
+sys_f_putchar (int fh, long c, int mode)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Fputchar: bad handle %d", h));
+		DEBUG (("Fputchar: bad handle %d", fh));
 		return EBADF;
 	}
 

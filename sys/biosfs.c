@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -175,14 +173,12 @@ static struct bios_file BDEV [] =
 	 * are present on all machines (except for modem1, which does however
 	 * have a different device number on TTs and STs)
 	 */
-#ifndef COLDFIRE
 	{ "modem1",	&bios_tdevice,	 6,       O_TTY, &aux_tty, NULL},
 #ifndef MILAN/* these do not really work on Milan, so it is best to use the UART
 	   XDD instead of this // rincewind */
 	{ "modem2",	&bios_tdevice,	 7,       O_TTY, &sccb_tty, NULL},
 	{ "serial1",	&bios_tdevice,	 8,       O_TTY, &ttmfp_tty, NULL},
 	{ "serial2",	&bios_tdevice,	 9,       O_TTY, &scca_tty, NULL},
-#endif
 #endif
 	{"", 0, 0, 0, 0, 0}
 };
@@ -220,7 +216,7 @@ scc_set5 (volatile char *control, int setp, unsigned int bits, IOREC_T *iorec)
 	if (!(((char *) iorec)[0x1d] & 8))
 	{
 		spl(sr);
-		ALERT ("scc_set5: iorec %lx w5 copy has sender enable bit off, w5 not changed", iorec);
+		ALERT ("scc_set5: iorec %p w5 copy has sender enable bit off, w5 not changed", iorec);
 		return;
 	}
 # endif
@@ -298,7 +294,7 @@ rsvf_close (int f)
 	if (f != ENODEV)
 	{
 		r = ROM_Fclose (f);
-		if (r) ALERT ("rsvf_close(%d): ROM_Fclose %x returned %lx", f, r);
+		if (r) ALERT ("rsvf_close(%d): ROM_Fclose returned %lx", f, r);
 	}
 
 	return r;
@@ -408,7 +404,7 @@ biosfs_init (void)
 		/* SERIAL1(!) is not present on the Mega STe or Falcon,
 		 * device 8 is SCC channel A
 		 */
-		if (mch != TT && b->private == 8)
+		if (machine != machine_tt && b->private == 8)
 		{
 			b->name[6] = '2';	/* "serial2" */
 			b->tty = &scca_tty;
@@ -1002,7 +998,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 	if (cmd == MX_KER_XFSNAME)
 	{
-		strcpy ((char *) arg, "bios-xfs");
+		strcpy ((char *) arg, "biosfs");
 		return E_OK;
 	}
 
@@ -1287,11 +1283,13 @@ bios_topen (FILEPTR *f)
 static long _cdecl
 bios_twrite (FILEPTR *f, const char *buf, long bytes)
 {
-	union { const char *b; long *l;} ptr; ptr.b = buf;
 	long *r;
 	long ret = 0;
 	int bdev = f->fc.aux;
 	struct bios_file *b = (struct bios_file *) f->fc.index;
+	union { const char *b; long *l;} ptr;
+
+	ptr.b = buf;
 
 	r = ptr.l;// (long *) buf;
 
@@ -1384,7 +1382,7 @@ bios_tread (FILEPTR *f, char *buf, long bytes)
  */
 
 static void _cdecl
-wakewrite (PROC *p)
+wakewrite (PROC *p, long arg)
 {
 	short s;
 
@@ -1565,7 +1563,10 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 				if (t)
 				{
 					TRACE (("sleeping in iwrite"));
-					sleep (IO_Q|0x100, (long) &tty->state);
+					if (sleep (IO_Q|0x100, (long) &tty->state)) {
+						canceltimeout(t);
+						return EINTR;
+					}
 					canceltimeout (t);
 				}
 			}
@@ -1728,9 +1729,10 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 			    (bdev == 3 ? ionread (ior) : btty_ionread (t)) < (long)t->tty->vmin)
 			 : !(int) callout1 (*cinstat, bdev))
 		{
-			if (t)
-				sleep (IO_Q, (long) t);
-			else
+			if (t) {
+				if (sleep (IO_Q, (long) t))
+					return EINTR;
+			} else
 				nap (60);
 		}
 	}
@@ -2354,7 +2356,8 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 		if (!tty)
 			return ENOSYS;
 		while (tty->state & TS_BLIND)
-			sleep (IO_Q, (long)&tty->state);
+			if (sleep (IO_Q, (long)&tty->state))
+				return EINTR;
 		return E_OK;
 	    }
 	case TCURSOFF:
@@ -2384,9 +2387,10 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 
 		b = (struct bios_file *)f->fc.index;
 		while (b->lockpid && b->lockpid != get_curproc()->pid) {
-			if (mode == F_SETLKW && lck->l_type != F_UNLCK)
-				sleep(IO_Q, (long)b);
-			else
+			if (mode == F_SETLKW && lck->l_type != F_UNLCK) {
+				if (sleep(IO_Q, (long)b))
+					return EINTR;
+			} else
 				return ELOCKED;
 		}
 		if (lck->l_type == F_UNLCK) {
@@ -2605,7 +2609,8 @@ found_device:
 			tty->use_cnt++;
 			while (tty->hup_ospeed)
 			{
-				sleep (IO_Q, (long) &tty->state);
+				if (sleep (IO_Q, (long) &tty->state))
+					return EINTR;
 			}
 
 			/* first open for this device? */

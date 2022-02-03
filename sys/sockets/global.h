@@ -46,8 +46,6 @@
 # define TRACE(x)	KERNEL_TRACE x
 # define ASSERT(x)	assert x
 
-# define KAYDEBUG(x)	KERNEL_DEBUG x
-
 # else
 
 # define FORCE(x)	
@@ -55,8 +53,6 @@
 # define DEBUG(x)	
 # define TRACE(x)	
 # define ASSERT(x)	assert x
-
-# define KAYDEBUG(a)	
 
 # endif
 
@@ -101,7 +97,7 @@ so_xselect (struct socket *so, long proc)
 	return 0;
 }
 
-static inline __attribute__((always_inline)) void
+INLINE void
 so_wakersel (struct socket *so)
 {
 	if (so->rsel)

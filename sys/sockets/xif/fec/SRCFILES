@@ -1,0 +1,20 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+FECDMA_SRCS = \
+    dma.c \
+    am79c874.c \
+    bcm5222.c \
+    fec.c
+
+COMMON_SRCS = \
+	../main.c
+
+HEADER = \
+
+
+COBJS = \
+	$(COMMON_SRCS) \
+	$(FECDMA_SRCS)
+
+SRCFILES = $(HEADER) $(COBJS)

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -42,15 +40,6 @@
 # define SYSUPDATE_DAEMON
 
 /*
- * use GEMDOS FS instead of real FAT XFS
- */
-# undef OLDTOSFS
-
-# ifdef COLDFIRE
-# define OLDTOSFS  // else the TFTP Ram-Disk is destroyed
-# endif
-
-/*
  * include old style socket device emulation
  */
 # define OLDSOCKDEVEMU
@@ -70,7 +59,12 @@
 /*
  * add /dev/random and /dev/urandom
  */
+
+#ifdef NO_DEV_RANDOM
+# undef DEV_RANDOM
+#else
 # define DEV_RANDOM
+#endif
 
 /*
  * MAXPID is the maxium PID MiNT will generate
@@ -86,7 +80,7 @@
  * (This is slowly changing, actually... fewer and fewer places use
  *  PATH_MAX, and eventually we should get rid of it)
  */
-# define PATH_MAX 128
+# define PATH_MAX 255
 
 /*
  * maximum length of a string passed to ksprintf_old

@@ -2,8 +2,9 @@
 ;
 ; Unshifted
 
-	dc.w	$2772
+	dc.w	$2773
 	dc.w	$0005
+	dc.w 0,2 ; uses iso-8859-2
 
 	dc.b	$00,$1b,'1','2','3','4','5','6'
 	dc.b	'7','8','9','0',$27,$8d,$08,$09
@@ -62,21 +63,55 @@
 
 ; Alternate
 
-	dc.b	$1a,'[',$1b,']',$2b,$f8,$60,$60
-	dc.b	$1e,$b1,$2e,$e6,$12,$ea,$26,$b3
-	dc.b	$31,$f1,$18,$f3,$1f,$b6,$2d,$bc
-	dc.b	$2c,$bf,$00
+	dc.b	$12,$ea
+	dc.b	$18,$f3
+	dc.b	$1a,'['
+	dc.b	$1b,']'
+	dc.b	$1e,$b1
+	dc.b	$1f,$b6
+	dc.b	$26,$b3
+	dc.b	$2b,$f8
+	dc.b	$2c,$bf
+	dc.b	$2d,$bc
+	dc.b	$2e,$e6
+	dc.b	$31,$f1
+	dc.b	$60,$60
+	dc.b	$00
 
 ; Alternate shifted
 
-	dc.b	$1a,'{',$1b,'}',$2b,'~',$60,$60
-	dc.b	$1e,$a1,$2e,$c6,$12,$ca,$26,$a3
-	dc.b	$31,$d1,$18,$d3,$1f,$a6,$2d,$ac
-	dc.b	$2c,$af,$00
+	dc.b	$12,$ca
+	dc.b	$18,$d3
+	dc.b	$1a,'{'
+	dc.b	$1b,'}'
+	dc.b	$1e,$a1
+	dc.b	$1f,$a6
+	dc.b	$26,$a3
+	dc.b	$2b,'~'
+	dc.b	$2c,$af
+	dc.b	$2d,$ac
+	dc.b	$2e,$c6
+	dc.b	$31,$d1
+	dc.b	$60,$60
+	dc.b	$00
 
 ; Alternate Caps
 
-	dc.b	$1a,'[',$1b,']',$2b,$f8,$60,$60
-	dc.b	$1e,$a1,$2e,$c6,$12,$ca,$26,$a3
-	dc.b	$31,$d1,$18,$d3,$1f,$a6,$2d,$ac
-	dc.b	$2c,$af,$00
+	dc.b	$12,$ca
+	dc.b	$18,$d3
+	dc.b	$1a,'['
+	dc.b	$1b,']'
+	dc.b	$1e,$a1
+	dc.b	$1f,$a6
+	dc.b	$26,$a3
+	dc.b	$2b,$f8
+	dc.b	$2c,$af
+	dc.b	$2d,$ac
+	dc.b	$2e,$c6
+	dc.b	$31,$d1
+	dc.b	$60,$60
+	dc.b	$00
+
+; AltGr
+
+	dc.b	$00

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -60,7 +58,7 @@ struct __bb
 	long		*counts;
 	long		ncounts;
 	struct __bb	*next;
-	const ulong	*addresses;
+	/*const*/ ulong	*addresses;
 };
 
 extern struct __bb *__bb_head;
@@ -130,12 +128,6 @@ struct rawarc
 	ulong	raw_selfpc;
 	long	raw_count;
 };
-
-/*
- * general rounding functions.
- */
-# define ROUNDDOWN(x,y)	(((x)/(y))*(y))
-# define ROUNDUP(x,y)	((((x)+(y)-1)/(y))*(y))
 
 /*
  * The profiling data structures are housed in this structure.

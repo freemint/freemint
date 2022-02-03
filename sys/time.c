@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -35,6 +33,7 @@
  */
 
 # include "time.h"
+# include "global.h"
 
 # include "libkern/libkern.h"
 # include "mint/arch/mfp.h"
@@ -215,7 +214,7 @@ do_gettimeofday (struct timeval* tv)
 long _cdecl
 sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 {
-	TRACE (("Tgettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
+	TRACE (("Tgettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
 
 	if (tz != NULL)
 		memcpy (tz, &sys_tz, sizeof (sys_tz));
@@ -264,7 +263,7 @@ do_settimeofday (struct timeval* tv)
 long _cdecl
 sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 {
-	TRACE (("Tsettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
+	TRACE (("Tsettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
@@ -297,7 +296,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 			 * instant below but that doesn't hurt.  If a time
 			 * was supplied it was really in UTC.
 			 */
-			xtime.tv_sec += (old_timezone + timezone);
+			xtime.tv_sec += (old_timezone - timezone);
 		}
 
 		/* Update timestamp and datestamp */
@@ -323,7 +322,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 long _cdecl
 sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 {
-	TRACE (("Tadjtime (delta = 0x%x, olddelta = 0x%x)", delta, olddelta));
+	TRACE (("Tadjtime (delta = 0x%p, olddelta = 0x%p)", delta, olddelta));
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
@@ -366,11 +365,12 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 void
 init_time (void)
 {
-# ifdef COLDFIRE
-	long value = 0;
-# else
-	long value = _mfpregs->tbdr;
-# endif
+	long value;
+
+	if (machine == machine_unknown)
+		value = 0;
+	else
+		value = _mfpregs->tbdr;
 
 # if 0
 	/* See, a piece of code is a function, not just a long integer */
@@ -457,11 +457,11 @@ quick_synch (void)
 			 * to care to much about overflows.
 			 */
 
-# ifdef COLDFIRE
-	timerc = 0;
-# else
-	timerc = _mfpregs->tbdr;
-# endif
+	if (machine == machine_unknown)
+		timerc = 0;
+	else
+		timerc = _mfpregs->tbdr;
+
 	current_ticks = *hz_200;
 
 	/* Make sure that the clock runs monotonic.  */

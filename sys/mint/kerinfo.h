@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -88,8 +86,8 @@ struct kerinfo
 	 * alert - really serious errors
 	 * fatal - fatal errors
 	 */
-	void	_cdecl (*trace)(const char *, ...);
-	void	_cdecl (*debug)(const char *, ...);
+	void	_cdecl (*trace)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*debug)(const char *, ...) __attribute__((format(printf, 1, 2)));
 	void	_cdecl (*alert)(const char *, ...);
 	EXITING _cdecl (*fatal)(const char *, ...) NORETURN;
 
@@ -206,7 +204,7 @@ struct kerinfo
 	 * min_version >= 94. Otherwise, it will be a null pointer.
 	 */
 	int	_cdecl (*denyshare)(FILEPTR *, FILEPTR *);
-	LOCK *	_cdecl (*denylock)(LOCK *, LOCK *);
+	LOCK *	_cdecl (*denylock)(ushort pid, LOCK *, LOCK *);
 
 
 	/* functions for adding/cancelling timeouts
@@ -251,9 +249,9 @@ struct kerinfo
 	 *
 	 * same as canceltimeout() but for root timeouts
 	 */
-	TIMEOUT * _cdecl (*addtimeout)(long, void _cdecl (*)());
+	TIMEOUT * _cdecl (*addtimeout)(long, void _cdecl (*)(PROC *, long arg));
 	void	_cdecl (*canceltimeout)(TIMEOUT *);
-	TIMEOUT * _cdecl (*addroottimeout)(long, void _cdecl (*)(), ushort);
+	TIMEOUT * _cdecl (*addroottimeout)(long, void _cdecl (*)(PROC *, long arg), ushort);
 	void	_cdecl (*cancelroottimeout)(TIMEOUT *);
 
 

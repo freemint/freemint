@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -46,9 +44,11 @@ sys_m_addalt (long start, long size)
 	if (!suser (p->p_cred->ucr))
 		return EPERM;
 
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 		/* pretend to succeed */
 		return E_OK;
+# endif
 
 	for (x = 0; x < size; x += 0x2000)
 	{
@@ -141,6 +141,29 @@ _do_malloc (MMAP map, long size, int mode)
 	return (long) v;
 }
 
+/*
+F_XALLOCMODE:0-2	Treatment of the TT-RAM	0 =	Allocate ST-RAM only
+F_ALTONLY:     1 =	Allocate Alternative-RAM only
+F_STPREF:      2 =	Allocate either, ST-RAM preferred
+F_ALTPREF:     3 =	Allocate either, Alternative-RAM preferred
+
+3	Reserved
+F_PROTMODE: 4-7	Protection mode	0 =	Default (from your PRGFLAGS)
+F_PROT_P: 1 =	Private
+F_PROT_G: 2 =	Global
+F_PROT_S: 3 =	Supervisor-mode-only access
+F_PROT_PR:4 =	World-readable access
+
+
+ Other values are undefined and reserved.
+F_KEEP: 14	No-Free modus
+
+ When set, this bit means "if the owner of this block terminates, don't
+free this block. Instead, let MiNT inherit it, so it'll never be freed."
+This is a special mode meant for the OS only, and may not remain
+available to user processes.
+*/
+
 long _cdecl
 sys_m_xalloc (long size, int mode)
 {
@@ -161,7 +184,7 @@ sys_m_xalloc (long size, int mode)
 		&& (get_curproc()->ctxt[SYSCALL].pc > 0x00e00000L)
 		&& (get_curproc()->ctxt[SYSCALL].pc < 0x00efffffL))
 	{
-		mode |= (F_PROT_S + 0x10) | F_KEEP;
+		mode |= (F_PROT_PR) | F_KEEP;
 		TRACE(("m_xalloc: VDI special (call from ROM)"));
 	}
 
@@ -205,15 +228,15 @@ sys_m_xalloc (long size, int mode)
 	protmode |= (mode & F_KEEP);
 
 	/* mask off all but the ST/alternative RAM bits before further use */
-	mode &= 3;
+	mode &= F_XALLOCMODE;
 
 	if (size == -1)
 	{
 		switch (mode)
 		{
 			/* modes 2 and 3 are the same for for size -1 */
-			case 3:
-			case 2:
+			case F_ALTPREF:
+			case F_STPREF:
 			{
 				long r1;
 
@@ -222,12 +245,12 @@ sys_m_xalloc (long size, int mode)
 				if (r1 > r) r = r1;
 				break;
 			}
-			case 1:
+			case F_ALTONLY:
 			{
 				r = _do_malloc (alt, -1L, PROT_P);
 				break;
 			}
-			case 0:
+			case F_STONLY:
 			{
 				r = _do_malloc (core, -1L, PROT_P);
 				break;
@@ -238,24 +261,24 @@ sys_m_xalloc (long size, int mode)
 	{
 		switch (mode)
 		{
-			case 3:
+			case F_ALTPREF:
 			{
 				r = _do_malloc (alt, size, protmode);
 				if (r == 0) r = _do_malloc (core, size, protmode);
 				break;
 			}
-			case 2:
+			case F_STPREF:
 			{
 				r = _do_malloc (core, size, protmode);
 				if (r == 0) r = _do_malloc (alt, size, protmode);
 				break;
 			}
-			case 1:
+			case F_ALTONLY:
 			{
 				r = _do_malloc (alt, size, protmode);
 				break;
 			}
-			case 0:
+			case F_STONLY:
 			{
 				r = _do_malloc (core, size, protmode);
 				break;
@@ -421,7 +444,7 @@ sys_m_validate (int pid, unsigned long addr, long size, long *flags)
 	struct proc *p = NULL;
 	MEMREGION *m;
 
-	TRACE (("Mvalidate(%i, %lx, %li, %lx)", pid, addr, size, flags));
+	TRACE (("Mvalidate(%i, %lx, %li, %p)", pid, addr, size, flags));
 
 	if (pid == 0)
 		p = get_curproc();

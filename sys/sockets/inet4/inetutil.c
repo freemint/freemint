@@ -27,6 +27,7 @@ struct in_proto *allinetprotos = NULL;
 void
 in_proto_register (short protonum, struct in_proto *proto)
 {
+	UNUSED(protonum);
 	proto->next = allinetprotos;
 	allinetprotos = proto;
 	ip_register (&proto->ipops);
@@ -274,31 +275,67 @@ short
 chksum (void *buf, short nwords)
 {
 	ulong sum = 0;
-	
-	__asm__
-	(
-		"clrl	d0		\n\t"
-		"movew	%2, d1		\n\t"
-		"lsrw	#1, d1		\n\t"	/* # of longs in buf */
-		"bcc	l1		\n\t"	/* multiple of 4 ? */
-		"addw	%1@+, %0	\n\t"	/* no, add in extra word */
-		"addxw	d0, %0		\n"
-		"l1:			\n\t"
-		"subqw	#1, d1		\n\t"	/* decrement for dbeq */
-		"bmi	l3		\n"
-		"l2:			\n\t"
-		"addl	%1@+, %0	\n\t"
-		"addxl	d0, %0		\n\t"
-		"dbra	d1, l2		\n"	/* loop over all longs */
-		"l3:			\n\t"
-		"movel	%0, d1		\n\t"	/* convert to short */
-		"swap	d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+
+	__asm__(
+		"\tclrl	d0\n"
+#ifdef __mcoldfire__
+		"\tmvzw	%2, d1\n"
+		"\tlsrl	#1, d1\n"	/* # of longs in buf */
+#else
+		"\tmovew	%2, d1\n"
+		"\tlsrw	#1, d1\n"	/* # of longs in buf */
+#endif
+		"\tbcc	l1\n"		/* multiple of 4 ? */
+#ifdef __mcoldfire__
+		"\tmvz.w	%1@+, d2\n"
+		"\taddl	d2, %0\n"	/* no, add in extra word */
+		"\taddxl	d0, %0\n"
+#else
+		"\taddw	%1@+, %0\n"	/* no, add in extra word */
+		"\taddxw	d0, %0\n"
+#endif
+		"l1:\n"
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"	/* decrement for dbeq */
+#else
+		"\tsubqw	#1, d1\n"	/* decrement for dbeq */
+#endif
+		"\tbmi	l3\n"
+		"l2:\n"
+		"\taddl	%1@+, %0\n"
+		"\taddxl	d0, %0\n"
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"
+		"\tbpls	l2\n"	/* loop over all longs */
+#else
+		"\tdbra	d1, l2\n"		/* loop over all longs */
+#endif
+		"l3:\n"
+#ifdef __mcoldfire__
+		"\tswap	%0\n"		/* convert to short */
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+		"\tswap	%0\n"
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+#else
+		"\tmovel	%0, d1\n"	/* convert to short */
+		"\tswap	d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
+#endif
 		: "=d"(sum), "=a"(buf)
 		: "g"(nwords), "1"(buf), "0"(sum)
+#ifdef __mcoldfire__
+		: "d0", "d1", "d2"
+#else
 		: "d0", "d1"
-	);
+#endif
+		);
 	
 	return (short)(~sum & 0xffff);
 }

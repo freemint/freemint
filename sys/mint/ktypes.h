@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -90,7 +88,7 @@ typedef struct stat		STAT;
 typedef struct file		FILEPTR;
 typedef struct ilock		LOCK;
 typedef struct filesys		FILESYS;
-typedef struct devdrv		DEVDRV;	
+typedef struct devdrv		DEVDRV;
 typedef struct tty		TTY;
 
 /* forward declarations: proc.h
@@ -110,21 +108,42 @@ typedef struct sizebuf		SIZEBUF;	/* sized buffer */
 
 
 /* global data */
+
+typedef enum
+{
+	machine_unknown,
+	machine_st,
+	machine_ste,
+	machine_megaste,
+	machine_tt,
+	machine_falcon,
+	machine_milan,
+	machine_hades,
+	machine_ct2,
+	machine_ct60,
+	machine_firebee
+#if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+	,
+	machine_aranym
+#endif
+} machine_type;
+
 struct global
 {
-	long  mch;		/* machine we are are running */
-	long  fputype;		/* fpu type, value for cookie jar */
+	machine_type machine;	/* machine we are are running */
+	long fputype;		/* fpu type, value for cookie jar */
+	long sfptype;		/* fpu type available via SFP-004 */
 
 	short tosvers;		/* the underlying TOS version */
 
 	short gl_lang;		/* language preference */
-# define MAXLANG 6		/* languages supported */
-	short reserved;
+	short gl_kbd;		/* default keyboard layout */
 
 	/* The path to the system directory
 	 */
 	short sysdrv;
 	char  sysdir[32];
+	char  mchdir[48];	/* sysdir/<machine>, derived from machine type */
 };
 
 /* BIOS device map */
@@ -144,7 +163,7 @@ struct dma
 	long	_cdecl (*free_channel)	(ulong);
 	void	_cdecl (*dma_start)	(ulong);
 	void	_cdecl (*dma_end)	(ulong);
-	void *	_cdecl (*block)		(ulong, ulong, void _cdecl (*)(PROC *p));
+	void *	_cdecl (*block)		(ulong, ulong, void _cdecl (*)(PROC *p, long arg));
 	void	_cdecl (*deblock)	(ulong, void *);
 };
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -38,7 +36,7 @@
 # include "mint/mint.h"
 
 
-long kern_get_cpuinfo (SIZEBUF **buffer);
+long kern_get_cpuinfo (SIZEBUF **buffer, const struct proc *p);
 
 
 # endif	/* _kernfs_mach_h  */

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -13,6 +11,7 @@
 
 # include "memory.h"
 # include "global.h"
+# include "cookie.h"
 
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
@@ -37,6 +36,9 @@
 
 # include "proc.h"
 
+# ifdef __mcoldfire__
+extern void patch_memset_purec(BASEPAGE *b);
+# endif
 
 struct screen
 {
@@ -226,14 +228,12 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	// Just for testing the lose of Memory
 	ulong dp_diff = size;
 
-	TRACELOW(("add_region(map=%lx,place=%lx,size=%lx,flags=%x)",
+	TRACELOW(("add_region(map=%p,place=%lx,size=%lx,flags=%x)",
 		map,place,size,mflags));
 
 	m = kmr_get ();
 	if (!m)
 		return 0;	/* failure */
-
-	mint_bzero(m, sizeof (*m));
 
 	if (place & MASKBITS)
 	{
@@ -249,6 +249,23 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	/* now trim size DOWN to a multiple of pages */
 	if (size & MASKBITS)
 		size &= ~MASKBITS;
+
+	/*
+	 * we don't want to end up beyond 2GB
+	 */
+	if (place >= 0x80000000UL)
+		return 0;
+	if ((place + size) > 0x80000000UL)
+	{
+		FORCE("add_region: ommitting last %lu KB of memory", (place + size - 0x80000000UL) >> 10);
+		size = 0x80000000UL - place;
+		/* ramtop might also be wrong in this case */
+		if (*(unsigned long *)0x05a4L > 0x80000000UL)
+		{
+			FORCE("ramtop adjusted");
+			*(unsigned long *)0x05a4L = 0x80000000UL;
+		}
+	}
 
 	/* only add if there's anything left */
 	if (size)
@@ -391,7 +408,7 @@ init_core (void)
 	boot_printf (MSG_mem_core, size);
 # endif
 
-       	while (size > 0) {
+	while (size > 0) {
 		place = (ulong) core_malloc (size, 0);
 		if (!scrndone && (place + size == scrnplace)) {
 			size += scrnsize;
@@ -778,7 +795,7 @@ win:
 		n->mflags |= M_KEEP;
 
 	SANITY_CHECK (map);
-	TRACELOW (("get_region: return %lx", n));
+	TRACELOW (("get_region: return %p", n));
 	return n;
 }
 
@@ -936,7 +953,7 @@ free_region (MEMREGION *reg)
 
 	if (m == NULL)
 		FATAL ("couldn't find region %lx: loc: %lx len: %ld",
-			reg, reg->loc, reg->len);
+			(unsigned long)reg, reg->loc, reg->len);
 
 	if (reg->len == 0)
 	{
@@ -999,7 +1016,7 @@ shrink_region (MEMREGION *reg, unsigned long nsize)
 
 	newsize = ROUND(nsize);
 
-	DEBUG(("shrink_region: reg %lx, nsize %ld, newsize %ld", reg, nsize, newsize));
+	DEBUG(("shrink_region: reg %p, nsize %ld, newsize %ld", reg, nsize, newsize));
 
 	assert(reg->links > 0);
 
@@ -1164,7 +1181,31 @@ tot_rsize (MMAP map, short flag)
 	for (m = *map; m; m = m->next)
 	{
 		if (flag || ISFREE(m) || (m->links == -1/*0xffff*/))
-			size += m->len;
+		{
+			/* Shadowed regions occupy the same address space,
+			 * so they must be counted only once.
+			 */
+			bool already_counted = false;
+
+			if (m->shadow)
+			{
+				/* This region shadows another one.
+				 * Check if the shadow has already been counted.
+				 */
+				MEMREGION *m2;
+				for (m2 = *map; m2 && m2 != m; m2 = m2->next)
+				{
+					if (m2 == m->shadow)
+					{
+						already_counted = true;
+						break;
+					}
+				}
+			}
+			
+			if (!already_counted)
+				size += m->len;
+		}
 	}
 
 	return size;
@@ -1319,14 +1360,14 @@ create_env (const char *env, unsigned long flags)
 	MEMREGION *m;
 	long size;
 
-	TRACELOW (("create_env: %lx, %lx", env, flags));
+	TRACELOW (("create_env: %p, %lx", env, flags));
 
 	if (!env)
 	{
 		/* duplicate parent's environment */
 		assert(get_curproc()->p_mem);
 		env = get_curproc()->p_mem->base->p_env;
-		TRACELOW (("create_env: using parents env: %lx", env));
+		TRACELOW (("create_env: using parents env: %p", env));
 	}
 
 	/* calculate environment size */
@@ -1364,7 +1405,7 @@ create_env (const char *env, unsigned long flags)
 		assert(m);
 	}
 
-	TRACE(("copying environment: from %lx to %lx", env, m->loc));
+	TRACE(("copying environment: from %p to %lx", env, m->loc));
 	memcpy((void *) m->loc, env, size);
 	TRACE(("finished copying environment"));
 
@@ -1608,9 +1649,32 @@ failed:
 
 	do_close (get_curproc(), f);
 
-	DEBUG (("load_region: return region = %lx", reg));
+	DEBUG (("load_region: return region = %p", reg));
 
 	SANITY_CHECK_MAPS ();
+
+#ifdef __mcoldfire__
+	if (coldfire_68k_emulation)
+	{
+		/* Unfortunately, a few 680x0 user instructions can't be
+		 * emulated via illegal instruction handler on ColdFire,
+		 * so they require to be dynamically patched.
+		 */
+		static void (*coldfire_purec_patcher)(BASEPAGE*) = NULL;
+
+		if (coldfire_purec_patcher == NULL)
+		{
+			ulong pexe = 0;
+			if (get_toscookie(0x50455845L, &pexe) == 0 && pexe != 0)
+				coldfire_purec_patcher = (void (*)(BASEPAGE*))pexe;  // Patcher exported from FireTOS.
+			else
+				coldfire_purec_patcher = patch_memset_purec; // Fallback to internal MiNT patcher.
+		}
+
+		coldfire_purec_patcher(b);
+	}
+#endif
+
 	return reg;
 }
 
@@ -1634,7 +1698,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 	long reloc;
 
 
-	TRACE (("load_and_reloc: %ld to %ld at %lx", start, nbytes+start, where));
+	TRACE (("load_and_reloc: %ld to %ld at %p", start, nbytes+start, where));
 
 	r = xdd_lseek(f, start + sizeof(FILEHEAD), SEEK_SET);
 	if (r < E_OK) return r;
@@ -1744,7 +1808,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
  * long memused(p): return total memory allocated to process p
  */
 long
-memused (PROC *p)
+memused (const struct proc *p)
 {
 	struct memspace *mem = p->p_mem;
 	long size;
@@ -1849,7 +1913,7 @@ error:
  * convert an address to the memory region attached to a process
  */
 MEMREGION *
-proc_addr2region (PROC *p, unsigned long addr)
+proc_addr2region (const struct proc *p, unsigned long addr)
 {
 	struct memspace *mem = p->p_mem;
 	int i;
@@ -1937,7 +2001,7 @@ realloc_region (MEMREGION *reg, long newsize)
 
 	SANITY_CHECK (map);
 
-	FORCE("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize);
+	DEBUG(("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize));
 
 // 	if (! (reg == NULL || (reg->mflags & M_CORE)) )
 // 		return 0;
@@ -1957,7 +2021,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		MEMREGION *lastfit = 0;
 		MEMREGION *newm = kmr_get ();
 
-		FORCE("realloc_region: reg is NULL");
+		DEBUG(("realloc_region: reg is NULL"));
 
 		for (m = *map; m; m = m->next)
 		{
@@ -2040,8 +2104,8 @@ realloc_region (MEMREGION *reg, long newsize)
 		{
 			/* add this memory to the previous free region */
 
-			FORCE("reg = %lx", reg);
-			FORCE("loc = %lx", reg->loc);
+			DEBUG(("reg = %p", reg));
+			DEBUG(("loc = %lx", reg->loc));
 
 			prevptr->len += oldsize - newsize;
 			reg->loc += oldsize - newsize;
@@ -2254,16 +2318,16 @@ DUMPMEM (MMAP map)
 	MEMREGION *m;
 
 	m = *map;
-	FORCE ("%s memory dump: starting at region %lx",
+	FORCE ("%s memory dump: starting at region %p",
 		(map == core ? "core" : "alt"), m);
 
 	while (m)
 	{
-		FORCE ("%8ld bytes at %lx: next %lx [%d links, mflags %x]",
+		FORCE ("%8ld bytes at %lx: next %p [%ld links, mflags %x]",
 			m->len, m->loc, m->next, m->links, m->mflags);
 
 		if (m->shadow)
-			FORCE ("\t\tshadow %lx, save %lx", m->shadow, m->save);
+			FORCE ("\t\tshadow %p, save %p", m->shadow, m->save);
 
 		m = m->next;
 	}
@@ -2279,20 +2343,20 @@ kern_get_memdebug_1 (MMAP map, char *crs, ulong len)
 	ulong i;
 
 	i = ksprintf (crs, len,
-		      "%s memory dump: starting at region %lx\n",
+		      "%s memory dump: starting at region %p\n",
 		      (map == core ? "core" : "alt"), m);
 	crs += i; len -= i;
 
 	while (m)
 	{
 		i = ksprintf (crs, len,
-			      "%9ld bytes at %8lx: next %8lx [%d links, mflags %4x]\n",
+			      "%9ld bytes at %8lx: next %p [%ld links, mflags %4x]\n",
 			      m->len, m->loc, m->next, m->links, m->mflags);
 		crs += i; len -= i;
 
 		if (m->shadow)
 		{
-			i = ksprintf (crs, len, "\t\tshadow %lx, save %lx\n",
+			i = ksprintf (crs, len, "\t\tshadow %p, save %p\n",
 				      m->shadow, m->save);
 			crs += i; len -= i;
 		}
@@ -2304,13 +2368,14 @@ kern_get_memdebug_1 (MMAP map, char *crs, ulong len)
 }
 
 long
-kern_get_memdebug (SIZEBUF **buffer)
+kern_get_memdebug (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 128ul * 1024ul;
 	ulong i;
 	char *crs;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -2372,8 +2437,9 @@ sanity_check (MMAP map, ulong line)
 			else if (end == next->loc && ISFREE (m) && ISFREE (next))
 			{
 				DEBUG (("%lu: Contiguous memory regions not merged!", line));
-				DEBUG (("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next));
+				DEBUG (("  m %p, loc %lx, len %lx, links %lu, next %p", m, m->loc, m->len, m->links, m->next));
 			}
+# ifdef WITH_MMU_SUPPORT
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
 			{
 				ALERT ("%lu: Memory region unaligned", line);
@@ -2384,6 +2450,7 @@ sanity_check (MMAP map, ulong line)
 				ALERT ("%lu: Memory region length unaligned", line);
 				DEBUG (("%lu: Memory region length unaligned", line));
 			}
+# endif
 
 			if (m->save && !(m->mflags & M_FSAVED) && !m->shadow)
 			{

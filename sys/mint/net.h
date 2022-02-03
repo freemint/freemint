@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -98,7 +96,7 @@ struct dom_ops
 	long	(*bind)		(struct socket *s, struct sockaddr *addr,
 				 short addrlen);
 	
-	long	(*connect)	(struct socket *s, struct sockaddr *addr,
+	long	(*connect)	(struct socket *s, const struct sockaddr *addr,
 				 short addrlen, short flags);
 	
 	long	(*socketpair)	(struct socket *s1, struct socket *s2);
@@ -115,7 +113,7 @@ struct dom_ops
 	
 	long	(*send)		(struct socket *s, const struct iovec *iov,
 				 short niov, short block, short flags,
-				 struct sockaddr *addr, short addrlen);
+				 const struct sockaddr *addr, short addrlen);
 	
 	long	(*recv)		(struct socket *s, const struct iovec *iov,
 				 short niov, short block, short flags,

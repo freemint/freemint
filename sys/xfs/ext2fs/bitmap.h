@@ -2,8 +2,8 @@
  * Filename:     bitmap.h
  * Project:      ext2 file system driver for MiNT
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list (mint@fishpool.com).
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
  * 
  * Copying:      Copyright 1999 Frank Naumann (fnaumann@freemint.de)
  * 
@@ -36,7 +36,7 @@ ulong	ext2_count_free	(char *map, ulong numchars);
 
 /* Bitmap functions for the ext2 filesystem. */
 
-# ifdef __mc68020__
+# if defined(__mc68020__) || defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 
 INLINE long
 ext2_set_bit (long nr, void *vaddr)

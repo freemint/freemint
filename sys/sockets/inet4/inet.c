@@ -19,21 +19,19 @@
 # include "timer.h"
 
 
-static void	inet_autobind	(struct in_data *);
-
 static long	inet_attach	(struct socket *, short);
 static long	inet_dup	(struct socket *, struct socket *);
 static long	inet_abort	(struct socket *, enum so_state);
 static long	inet_detach	(struct socket *);
 static long	inet_bind	(struct socket *, struct sockaddr *, short);
-static long	inet_connect	(struct socket *, struct sockaddr *, short, short);
+static long	inet_connect	(struct socket *, const struct sockaddr *, short, short);
 static long	inet_socketpair	(struct socket *, struct socket *);
 static long	inet_accept	(struct socket *, struct socket *, short);
 static long	inet_getname	(struct socket *, struct sockaddr *, short *, short);
 static long	inet_select	(struct socket *, short, long);
 static long	inet_ioctl	(struct socket *, short, void *);
 static long	inet_listen	(struct socket *, short);
-static long	inet_send	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+static long	inet_send	(struct socket *, const struct iovec *, short, short, short, const struct sockaddr *, short);
 static long	inet_recv	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 static long	inet_shutdown	(struct socket *, short);
 static long	inet_setsockopt	(struct socket *, short, short, char *, long);
@@ -215,7 +213,8 @@ inet_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	saddr = inaddr->sin_addr.s_addr;
 	if (saddr != INADDR_ANY)
 	{
-		if (!ip_is_local_addr (saddr))
+		/* Allow bind to local broadcast address. Fixes samba's nmbd. */
+		if (!ip_is_local_addr (saddr) && !ip_is_brdcst_addr (saddr))
 		{
 			DEBUG (("inet_bind: %lx: no such local IP address",
 				saddr));
@@ -276,7 +275,7 @@ inet_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 }
 
 static long
-inet_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+inet_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	struct in_data *data = so->data;
 	
@@ -300,13 +299,15 @@ inet_connect (struct socket *so, struct sockaddr *addr, short addrlen, short non
 		return EAFNOSUPPORT;
 	}
 	inet_autobind (data);
-	return (*data->proto->soops.connect) (data, (struct sockaddr_in *)addr,
+	return (*data->proto->soops.connect) (data, (const struct sockaddr_in *)addr,
 		addrlen, nonblock);
 }
 
 static long
 inet_socketpair (struct socket *so1, struct socket *so2)
 {
+	UNUSED(so1);
+	UNUSED(so2);
 	return EOPNOTSUPP;
 }
 
@@ -352,7 +353,7 @@ inet_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short pe
 				: INADDR_ANY);
 	}
 	
-	todo = MIN (*addrlen, sizeof (in));
+	todo = MIN ((ushort)*addrlen, sizeof (in));
 	mint_bzero (in.sin_zero, sizeof (in.sin_zero));
 	memcpy (addr, &in, todo);
 	*addrlen = todo;
@@ -398,6 +399,7 @@ inet_ioctl (struct socket *so, short cmd, void *buf)
 		case SIOCGIFSTATS:
 		case SIOCGLNKFLAGS:
 		case SIOCSLNKFLAGS:
+		case SIOCSIFHWADDR:
 		case SIOCGIFHWADDR:
 		case SIOCGLNKSTATS:
 		case SIOCSIFOPT:
@@ -433,7 +435,7 @@ inet_listen (struct socket *so, short backlog)
 
 static long
 inet_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-		short flags, struct sockaddr *addr, short addrlen)
+		short flags, const struct sockaddr *addr, short addrlen)
 {
 	struct in_data *data = so->data;
 	long r;
@@ -475,7 +477,7 @@ inet_send (struct socket *so, const struct iovec *iov, short niov, short nonbloc
 	
 	inet_autobind (data);
 	return (*data->proto->soops.send) (data, iov, niov, nonblock, flags,
-		(struct sockaddr_in *)addr, addrlen);
+		(const struct sockaddr_in *)addr, addrlen);
 }
 
 static long
@@ -532,11 +534,11 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 	
 	switch (level)
 	{
-		case IPPROTO_IP:
+		case IPPROTO_IP: /* SOL_IP */
 			return ip_setsockopt (&data->opts, level, optname, optval,
 				optlen);
 		
-		case SOL_SOCKET:
+		case (short)SOL_SOCKET:
 			break;
 		
 		default:
@@ -544,13 +546,25 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 				optval, optlen);
 	}
 	
-	if (!optval || optlen < sizeof (long))
+	if (optval == NULL)
+	{
+		DEBUG (("inet_setsockopt: invalid optval"));
+		return EFAULT;
+	}
+	if ((unsigned long)optlen >= sizeof(long))
+	{
+		val = *((long *)optval);
+	} else if ((unsigned long)optlen >= sizeof(short))
+	{
+		val = *((short *)optval);
+	} else if ((unsigned long)optlen >= sizeof(char))
+	{
+		val = *((unsigned char *)optval);
+	} else
 	{
 		DEBUG (("inet_setsockopt: invalid optval/optlen"));
 		return EINVAL;
 	}
-	
-	val = *(long *) optval;
 	
 	switch (optname)
 	{
@@ -614,7 +628,7 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 		{
 			struct linger l;
 			
-			if (optlen < sizeof (struct linger))
+			if ((unsigned long)optlen < sizeof (struct linger))
 			{
 				DEBUG (("inet_setsockopt: optlen to small"));
 				return EINVAL;
@@ -636,7 +650,7 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 			break;
 		
 		default:
-			DEBUG (("inet_setsockopt: %d: invalid option", optval));
+			DEBUG (("inet_setsockopt: %d: invalid option", optname));
 			return EOPNOTSUPP;
 	}
 	
@@ -655,7 +669,7 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 			return ip_getsockopt (&data->opts, level, optname, optval,
 				optlen);
 		
-		case SOL_SOCKET:
+		case (short)SOL_SOCKET:
 			break;
 		
 		default:
@@ -700,7 +714,7 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 		{
 			struct linger l;
 			
-			if (*optlen < sizeof (struct linger))
+			if ((unsigned long)*optlen < sizeof (struct linger))
 			{
 				DEBUG (("inet_setsockopt: optlen < sizeof linger"));
 				return EINVAL;
@@ -742,18 +756,29 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 			val = (data->flags & IN_CHECKSUM) ? 1 : 0;
 			break;
 		
+		case SO_ACCEPTCONN:
+			return (*data->proto->soops.getsockopt) (data, level, optname,
+				optval, optlen);
+			break;
+
 		default:
 			return EOPNOTSUPP;
 	}
 	
-	if (*optlen < sizeof (long))
+	if (*optlen == sizeof(short))
+	{
+		*((short *)optval) = val;
+	} else if (*optlen == sizeof(char))
+	{
+		*((unsigned char *)optval) = val;
+	} else if (*optlen == sizeof(long))
+	{
+		*((long *)optval) = val;
+	} else
 	{
 		DEBUG (("inet_getsockopt: optlen < sizeof long"));
 		return EINVAL;
 	}
-	
-	*(long *) optval = val;
-	*optlen = sizeof (long);
 	
 	return 0;
 }

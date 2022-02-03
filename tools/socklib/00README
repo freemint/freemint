@@ -1,0 +1,71 @@
+This directory contains ports of the socket functions from
+MiNTLib. It needs header files which are not normally present
+for Pure-C. They are deliberately not included here, to avoid
+duplication. The complete list is:
+
+arpa/inet.h
+arpa/nameser.h
+bits/byteswap.h
+bits/endian.h
+bits/fcntl.h
+bits/in.h
+bits/poll.h
+bits/select.h
+bits/sigset.h
+bits/sockaddr.h
+bits/socket.h
+bits/time.h
+bits/types/sigset_t.h
+bits/types.h
+bits/uintn-id.h
+compiler.h
+endian.h
+fcntl.h
+features.h
+iovec.h
+mint/version.h
+net/if.h
+net/route.h
+netdb.h
+netinet/in.h
+resolv.h
+sockios.h
+stdint.h
+sys/cdefs.h
+sys/ioctl.h
+sys/param.h
+sys/poll.h
+sys/select.h
+sys/socket.h
+sys/sysmacro.h
+sys/time.h
+sys/types.h
+sys/uio.h
+sys/un.h
+
+You can take them from recent versions of mintlib,
+or from https://github.com/th-otto/magxnet/tree/master/include/purec
+
+If you have similar files already in your standard include directory,
+make sure they are identical. Or alternatively, change the project
+files to add your standard include path *last*, then remove
+that path from your shell options. This is important because otherwise
+Pure-C picks the files in that standard path first, not our fixed
+versions.
+
+Also, unless you plan to use also the rest of mintlib (which IMHO is
+currently not possible), be sure not to mess up your standard include
+files with the ones from mintlib, like stdio.h. They are not compatible.
+
+Known quirks:
+- to be compatible with older magicnet libraries, the functions here follow
+  mintlibs behaviour of setting errno to the (negative) return code from
+  GEMDOS calls. These have completely different values than the ones defined
+  in errno.h, so be careful when checking for concrete values, or calling
+  functions like perror() and strerror.
+
+- unlike mintlib, functions that may return a path (like getsockname) when
+  called on a unix domain socket, do *not* convert that path back to unix
+  style, since the rest of the library function (like open) may not be prepared
+  for that. It does however the opposite, ie. calling sendto() with a unix-style
+  path should work.

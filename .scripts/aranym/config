@@ -1,0 +1,208 @@
+[GLOBAL]
+FastRAM = 64
+FixedMemoryOffset = 0
+Floppy =
+TOS = ROM
+EmuTOS = emutos/emutos-aranym.img
+Bootstrap = mintara.prg
+BootstrapArgs = MEM_PROT=YES DEBUG_LEVEL=1
+BootDrive = C
+GMTime = No
+EpsEnabled = No
+EpsMax = 20
+
+[STARTUP]
+GrabMouse = Yes
+Debugger = No
+
+[IKBD]
+WheelEiffel = No
+AltGr = Yes
+
+[JIT]
+JIT = Yes
+JITFPU = Yes
+JITCacheSize = 8192
+JITLazyFlush = 1
+JITBlackList =
+JITInline = No
+
+[VIDEO]
+FullScreen = No
+BootColorDepth = -1
+VidelRefresh = 2
+VidelMonitor = -1
+SingleBlitComposing = No
+SingleBlitRefresh = No
+WindowPos =
+
+[TOS]
+Cookie_MCH = 50000
+RedirConsole = No
+
+[IDE0]
+Present = No
+IsCDROM = No
+ByteSwap = No
+ReadOnly = No
+Path =
+Cylinders = 0
+Heads = 0
+SectorsPerTrack = 0
+ModelName = Master
+
+[IDE1]
+Present = No
+IsCDROM = No
+ByteSwap = No
+ReadOnly = No
+Path =
+Cylinders = 0
+Heads = 0
+SectorsPerTrack = 0
+ModelName = Slave
+
+[PARTITION0]
+Path =
+Present = No
+PartID = BGM
+ByteSwap = No
+ReadOnly = No
+
+[HOSTFS]
+symlinks = posix
+A =
+B =
+C = drive_c
+D = ~/
+E =
+F =
+G =
+H =
+I =
+J =
+K =
+L =
+M =
+N =
+O =
+P =
+Q =
+R =
+S =
+T =
+U =
+V =
+W =
+X =
+Y =
+Z =
+0 =
+1 =
+2 =
+3 =
+4 =
+5 =
+
+[OPENGL]
+Enabled = No
+Filtered = No
+Library = libGL.so:libGL.so.1
+
+[ETH0]
+Type = ptp
+Tunnel = tap0
+HostIP = 192.168.0.1
+AtariIP = 192.168.0.2
+Netmask = 255.255.255.0
+MAC = 00:41:45:54:48:30
+
+[LILO]
+Kernel = linux.bin
+Args = root=/dev/ram video=atafb:vga16
+Ramdisk = root.bin
+LoadToFastRam = No
+
+[MIDI]
+Type = none
+File =
+Sequencer = /dev/sequencer
+Enabled = No
+
+[CDROMS]
+A = -1
+B = -1
+C = -1
+D = -1
+E = -1
+F = -1
+G = -1
+H = -1
+I = -1
+J = -1
+K = -1
+L = -1
+M = -1
+N = -1
+O = -1
+P = -1
+Q = -1
+R = -1
+S = -1
+T = -1
+U = -1
+V = -1
+W = -1
+X = -1
+Y = -1
+Z = -1
+0 = -1
+1 = -1
+2 = -1
+3 = -1
+4 = -1
+5 = -1
+
+[AUTOZOOM]
+Enabled = No
+IntegerCoefs = No
+FixedSize = No
+Width = 640
+Height = 480
+
+[NFOSMESA]
+ChannelSize = 0
+LibGL = libGL.so:libGL.so.1
+LibOSMesa = libOSMesa.so:libOSMesa.8.so:libOSMesa.7.so:libOSMesa.6.so
+
+[PARALLEL]
+Type = file
+File = stderr
+Parport = /dev/parport0
+Enabled = No
+
+[SERIAL]
+Serport = /dev/ttyS0
+Enabled = No
+
+[NATFEATS]
+CDROM = sdl
+Vdi = soft
+
+[NFVDI]
+UseHostMouseCursor = No
+
+[AUDIO]
+Frequency = 49170
+Channels = 2
+Bits = 16
+Samples = 1024
+Enabled = Yes
+
+[JOYSTICKS]
+Ikbd0 = -1
+Ikbd1 = 0
+JoypadA = -1
+JoypadAButtons = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+JoypadB = -1
+JoypadBButtons = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16

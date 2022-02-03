@@ -63,6 +63,12 @@
 # define mdelay(x)	/* on 68000 we don't need to delay */
 # endif
 
+# ifdef __mc68060__
+# define UDELAY_060(x)	udelay(x)
+# else
+# define UDELAY_060(x)
+# endif
+
 # define wait5ms	mdelay (5)
 
 
@@ -102,8 +108,8 @@ volatile long *hz_200 = _hz_200;
 	"\033p RTL8012 ethernet romport driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� 2000 by Vassilis Papathanassiou.\r\n" \
-	"� " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"\275 2000 by Vassilis Papathanassiou.\r\n" \
+	"\275 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -143,6 +149,7 @@ static void rtl8012_install_int		(void);
 INLINE void rtl8012_recv_packet		(struct netif *);
 
 void rtl8012_int (void);
+static void int_handle_tophalf	(PROC *p, long arg);
 
 
 /* hardware NIC address */
@@ -182,6 +189,8 @@ RdNib (ushort rreg)
 	*(volatile uchar *) (0xfa0000 + Table[EOC+rreg]);
 	*(volatile uchar *) (0xfa0000 + Table[RdAddr+rreg]);
 	
+	UDELAY_060(1);
+
 	/* Read nib */
 # if 1
 	//*(volatile ushort *) 0xfa0000;
@@ -190,6 +199,7 @@ RdNib (ushort rreg)
 	*(volatile uchar *) 0xfa0001;
 	c = *(volatile uchar *) 0xfa0001;
 # endif
+	UDELAY_060(1);
 	
 	*(volatile uchar *) (0xfa0000 + Table[EOC+rreg]);
 	
@@ -251,10 +261,13 @@ RdBytEP (void)
 	
 	c = x & 0x0f;
 	
+	UDELAY_060(1);
+
 	/* CLK down */
 	*(volatile uchar *) 0xfb0000;
 	
 	//nop
+	UDELAY_060(1);
 	
 	/* get hi nib */
 	//x = *(volatile ushort *) 0xfa0000;
@@ -337,9 +350,9 @@ rtl8012_doreset (void)
 	/* Clear ISR */
 	WrNib (ISR, EPLC_ROK+EPLC_TER+EPLC_TOK);
 	WrNib (ISR+HNib, HNib+EPLC_RBER);
-	
-	//udelay (10);
-	
+
+	UDELAY_060(10);
+
 	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
 	DEBUG (("rtl8012: reset -> 2: %i [expected 2]", i));
 	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
@@ -1083,7 +1096,7 @@ driver_init (void)
 	}
 	
 	if ((s_system (S_GETCOOKIE, COOKIE__CPU, (long) &cpu) != 0)
-# ifdef __M68020__
+# if defined(__mc68020__) || defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 		|| (cpu < 20))
 	{
 		c_conws (MSG_CPU_020);
@@ -1259,8 +1272,8 @@ buf_empty (void)
 /*
  * Busy (vbl for now) interrupt routine
  */
-void _cdecl
-rtl8012_int (void)
+static void
+int_handle_tophalf(PROC *process, long arg)
 {
 	if (in_use)
 		return;
@@ -1271,4 +1284,10 @@ rtl8012_int (void)
 		rtl8012_recv_packet (&if_RTL12);
 	
 	in_use = 0;
+}
+
+void _cdecl
+rtl8012_int (void)
+{
+	addroottimeout (0L, int_handle_tophalf, 0x1);
 }

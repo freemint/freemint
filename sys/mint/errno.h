@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * mint/errno.h -- MiNTLib.
  * Copyright (C) 1999 Guido Flohr <guido@freemint.de>
  * 

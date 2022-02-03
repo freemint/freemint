@@ -20,7 +20,7 @@ all-here: all-libs
 # default overwrites
 
 # default definitions
-GENFILES = .cpu_* libkern*.a
+GENFILES = .compile_* libkern*.a
 
 
 help:
@@ -51,25 +51,38 @@ $(cputargets):
 libkern$(CPU).a: objs asm-files
 	$(shell \
 	  if [ ! -e $@ \
-	         -o .cpu_$(CPU)/objs -nt $@ \
-	         -o asm/.cpu_$(CPU)/asm-files -nt $@ ] ; \
+	         -o .compile_$(CPU)/objs -nt $@ \
+	         -o asm/.compile_$(CPU)/asm-files -nt $@ ] ; \
 	  then \
-		objs=`cat .cpu_$(CPU)/objs` ; \
-		objs=`for i in $$objs ; do echo .cpu_$(CPU)/$$i ; done` ; \
+		objs=`cat .compile_$(CPU)/objs` ; \
+		objs=`for i in $$objs ; do echo .compile_$(CPU)/$$i ; done` ; \
 		\
-		asmobjs=`cat asm/.cpu_$(CPU)/asm-files` ; \
-		asmobjs=`for i in $$asmobjs ;  do echo asm/.cpu_$(CPU)/$$i ; done` ; \
+		asmobjs=`cat asm/.compile_$(CPU)/asm-files` ; \
+		asmobjs=`for i in $$asmobjs ;  do echo asm/.compile_$(CPU)/$$i ; done` ; \
 		\
-		echo "$(RM) $@; $(AR) rc $@ $$objs $$asmobjs; $(RANLIB) $@;" ; \
+		echo "$(RM) $@; $(AR) rcs $@ $$objs $$asmobjs" ; \
 	  fi \
 	)
 
-objs: .cpu_$(CPU)
-	cd .cpu_$(CPU); $(MAKE)
+objs: .compile_$(CPU)
+	cd .compile_$(CPU); $(MAKE)
 
-.cpu_$(CPU): Makefile.objs
+# prevent overriding the same recipe from RULES
+ifneq ($(compile_dir),.compile_$(CPU))
+.compile_$(CPU): Makefile.objs
 	$(MKDIR) -p $@
 	$(CP) $< $@/Makefile
+endif
+
+clean clean-recursive distclean distclean-recursive bakclean bakclean-recursive::
+	@list='$(cputargets)'; for dir in $$list; do \
+	  subdir=".compile_$${dir}"; \
+	  target=`echo $@ | sed s/-recursive//`; \
+	  test -d $$subdir && { echo "Making $$target in $$subdir"; \
+	  (cd $$subdir && $(MAKE) -r $$target); } || true; \
+	  target="libkern$${dir}.a"; \
+	done
+	$(RM) objs
 
 asm-files:
 	cd asm; $(MAKE) CPU="$(CPU)" asm-files

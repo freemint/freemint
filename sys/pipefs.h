@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -27,6 +25,7 @@ struct fifo
 	short	dosflags;	/* DOS flags, e.g. FA_RDONLY, FA_HIDDEN */
 	ushort	mode;		/* file access mode, for XATTR */
 	ushort	uid, gid;	/* file owner; uid and gid */
+	fs_ino_t ino;
 	short	flags;		/* various other flags (e.g. O_TTY) */
 	short	lockpid;	/* pid of locking process */
 	short	cursrate;	/* cursor flash rate for pseudo TTY's */

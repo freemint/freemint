@@ -2,8 +2,8 @@
  * Filename:     gs_func.c
  * Project:      GlueSTiK
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
  * 
  * Copying:      Copyright 1999 Frank Naumann <fnaumann@freemint.de>
  * 
@@ -25,24 +25,29 @@
  */
 
 # include <string.h>
-# include <unistd.h>
-# include <osbind.h>
-# include <mintbind.h>
+# include <stdio.h>
 # include <fcntl.h>
 # include <sys/socket.h>
 # include <sys/ioctl.h>
+# ifdef __PUREC__
+# include <tos.h>
+#else
+# include <mint/mintbind.h>
+#endif
 
 # include <netdb.h>
 # include <netinet/in.h>
 
-
-# include <errno.h>
-extern int errno;
+# include "../socklib/pcerrno.h"
 
 # include "gs_func.h"
 
 # include "gs_mem.h"
 # include "gs_stik.h"
+
+/* no matter what the library says, we need the MiNT definition here */
+#undef O_NDELAY
+#define O_NDELAY 0x100
 
 
 int
@@ -50,6 +55,7 @@ gs_xlate_error (int err, const char *funcname)
 {
 	int ret;
 	
+	(void)funcname;
 	switch (err)
 	{
 		case ENOSYS:
@@ -57,15 +63,24 @@ gs_xlate_error (int err, const char *funcname)
 			ret = E_NOROUTINE;
 			break;
 		
+#ifdef __PUREC__
+		case 24: /* original EMFILE */
+#endif
 		case EMFILE:
 			ret = E_NOCCB;
 			break;
 		
+#ifdef __PUREC__
+		case 9: /* original EBADF */
+#endif
 		case EBADF:
 		case ENOTSOCK:
 			ret = E_BADHANDLE;
 			break;
 		
+#ifdef __PUREC__
+		case 12: /* original ENOMEM */
+#endif
 		case ENOMEM:
 		case ESBLOCK:
 			ret = E_NOMEM;
@@ -97,7 +112,10 @@ gs_xlate_error (int err, const char *funcname)
 			break;
 		
 		default:
-			ret = -1000 + err;
+			/* Encoded GEMDOS errors; used in get_err_text() */
+			if (err < 0)
+				err = -err;
+			ret = -1000 - err;
 			break;
 	}
 	
@@ -130,9 +148,9 @@ gs_open (void)
 			
 			gs = gs_mem_alloc (sizeof (*gs));
 			if (!gs)
-				return ENOMEM;
+				return E_NOMEM;
 			
-			bzero (gs, sizeof (*gs));
+			memset(gs, 0, sizeof (*gs));
 			gs->flags = GS_NOSOCKET;
 			
 			table [fd] = gs;
@@ -141,13 +159,13 @@ gs_open (void)
 		}
 	}
 	
-	return EMFILE;
+	return E_NOCCB;
 }
 
 void
 gs_close (int fd)
 {
-	GS *gs = table [fd];
+	GS *gs = gs_get(fd);
 	
 	if (gs)
 	{
@@ -181,9 +199,9 @@ gs_accept (int fd)
 	
 	DEBUG (("gs_accept(%i)", fd));
 	
-	if (!gs
-		|| gs->flags & GS_NOSOCKET
-		|| !(gs->flags & GS_LISTENING))
+	if (!gs ||
+		(gs->flags & GS_NOSOCKET) ||
+		!(gs->flags & GS_LISTENING))
 	{
 		DEBUG (("gs_accept: bad handle"));
 		return E_BADHANDLE;
@@ -194,25 +212,48 @@ gs_accept (int fd)
 	if (fdflags < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_GETFL) returns %li", fdflags));
-		return gs_xlate_error (-fdflags, "gs_accept");
+		return gs_xlate_error (-(int)fdflags, "gs_accept");
 	}
 	
 	/* switch to non-blocking mode */
-	ret = Fcntl (gs->sock_fd, fdflags | O_NDELAY, F_SETFL);
+	fdflags |= O_NDELAY;
+	if (magix)
+	{
+		/*
+		 * original code from gluestik for MagicNet,
+		 * passing the address of the flags instead of the value.
+		 * Has to be verified whether that is a bug,
+		 * or whether sockets.dev really works this way.
+		 */
+		ret = Fcntl (gs->sock_fd, (long)&fdflags, F_SETFL);
+		if (ret >= 0)
+			ret = Fcntl (gs->sock_fd, 0L, F_GETFL);
+	} else
+	{
+		ret = Fcntl (gs->sock_fd, fdflags, F_SETFL);
+	}
 	if (ret < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_SETFL) returns %li", ret));
-		return gs_xlate_error (-ret, "gs_accept");
+		return gs_xlate_error (-(int)ret, "gs_accept");
 	}
 	
 	in_fd = accept (gs->sock_fd, (struct sockaddr *) &addr, &addr_size);
 	
 	/* restore flags */
-	ret = Fcntl (gs->sock_fd, fdflags, F_SETFL);
+	fdflags &= ~O_NDELAY;
+	if (magix)
+	{
+		/* see comment above */
+		ret = Fcntl (gs->sock_fd, (long)&fdflags, F_SETFL);
+	} else
+	{
+		ret = Fcntl (gs->sock_fd, fdflags, F_SETFL);
+	}
 	if (ret < 0)
 	{
 		DEBUG (("gs_accept: Fcntl(F_SETFL) returns %li", ret));
-		return gs_xlate_error (-ret, "gs_accept");
+		return gs_xlate_error (-(int)ret, "gs_accept");
 	}
 	
 	if (in_fd < 0)
@@ -225,7 +266,7 @@ gs_accept (int fd)
 			return E_LISTEN;
 		}
 		
-		return gs_xlate_error (in_fd, "gs_accept");
+		return gs_xlate_error (errno, "gs_accept");
 	}
 	
 	/* Fill in the CIB. Part of the data we need came back from accept();
@@ -235,15 +276,16 @@ gs_accept (int fd)
 	if ((ret = getsockname (in_fd, (struct sockaddr *) &addr2, &addr_size)) < 0)
 	{
 		DEBUG (("gs_accept: getsockname() returns %li (%i)", ret, errno));
-		return gs_xlate_error (ret, "gs_accept");
+		return gs_xlate_error (errno, "gs_accept");
 	}
 	
 	gs->cib.protocol = P_TCP;
-	gs->cib.lport = addr2.sin_port;
-	gs->cib.rport = addr.sin_port;
-	gs->cib.rhost = addr.sin_addr.s_addr;
-	gs->cib.lhost = addr2.sin_addr.s_addr;
-	
+	gs->cib.address.lport = addr2.sin_port;
+	gs->cib.address.rport = addr.sin_port;
+	gs->cib.address.rhost = addr.sin_addr.s_addr;
+	gs->cib.address.lhost = addr2.sin_addr.s_addr;
+	gs->cib.status = 0;
+
 	/* In STiK, an accept() "eats" the listen()'ed socket; we emulate that by
 	 * closing it and replacing it with the newly accept()'ed socket.
 	 */
@@ -265,7 +307,7 @@ gs_establish (int fd)
 	
 	DEBUG (("gs_establish(%i)", fd));
 	
-	if (!gs || gs->flags & GS_NOSOCKET || !(gs->flags & GS_PEND_OPEN))
+	if (!gs || (gs->flags & GS_NOSOCKET) || !(gs->flags & GS_PEND_OPEN))
 	{
 		DEBUG (("gs_establish: bad handle"));
 		return E_BADHANDLE;
@@ -307,8 +349,8 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	int pending = 0;
 # endif
 	
-	DEBUG (("gs_connect(%i, {%lu, %i}, {%lu, %i}) [%x]",
-		fd, rhost, rport, lhost, lport, gs ? gs->flags : 0xffff));
+	DEBUG (("gs_connect(%i, {%d.%d.%d.%d, %i}, {%d.%d.%d.%d, %i}) [%x]",
+		fd, DEBUG_ADDR(rhost), rport, DEBUG_ADDR(lhost), lport, gs ? gs->flags : 0xffff));
 	
 	if (!gs || !(gs->flags & GS_NOSOCKET))
 	{
@@ -327,7 +369,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	if (sock_fd < 0)
 	{
 		DEBUG (("gs_connect: socket() returns %i (%i)", sock_fd, errno));
-		return gs_xlate_error (sock_fd, "gs_connect");
+		return gs_xlate_error (errno, "gs_connect");
 	}
 # if 0
 	/* save flags */
@@ -351,23 +393,23 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	if (retval < 0)
 	{
 		DEBUG (("gs_connect: bind() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_connect");
+		return gs_xlate_error (errno, "gs_connect");
 	}
 	
 	if (rhost == 0)
 	{
-		retval = listen (sock_fd, 5);
+		retval = listen (sock_fd, magix ? 1 : 5);
 		if (retval < 0)
 		{
 			DEBUG (("gs_connect: listen() returns %i (%i)", retval, errno));
-			return gs_xlate_error (retval, "gs_connect");
+			return gs_xlate_error (errno, "gs_connect");
 		}
 	}
 	else
 	{
 		retval = connect (sock_fd, (struct sockaddr *) &raddr, addr_size);
 # if 0
-		if (retval == EINPROGRESS)
+		if (retval < 0 && errno == EINPROGRESS)
 		{
 			pending = 1;
 		}
@@ -376,7 +418,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 		if (retval < 0)
 		{
 			DEBUG (("gs_connect: connect() returns %i (%i)", retval, errno));
-			return gs_xlate_error (retval, "gs_connect");
+			return gs_xlate_error (errno, "gs_connect");
 		}
 	}
 	
@@ -389,15 +431,16 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	if (retval < 0)
 	{
 		DEBUG (("gs_connect: getsockname() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_connect");
+		return gs_xlate_error (errno, "gs_connect");
 	}
 	
 	gs->cib.protocol = P_TCP;
-	gs->cib.rhost = raddr.sin_addr.s_addr;
-	gs->cib.rport = raddr.sin_port;
-	gs->cib.lhost = laddr.sin_addr.s_addr;
-	gs->cib.lport = laddr.sin_port;
-	
+	gs->cib.address.rhost = raddr.sin_addr.s_addr;
+	gs->cib.address.rport = raddr.sin_port;
+	gs->cib.address.lhost = laddr.sin_addr.s_addr;
+	gs->cib.address.lport = laddr.sin_port;
+	gs->cib.status = 0;
+
 	gs->sock_fd = sock_fd;
 	if (rhost == 0)
 	{
@@ -430,7 +473,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	int pending = 0;
 # endif
 	
-	DEBUG (("gs_udp_open(%i, %lu, %i)", fd, rhost, rport));
+	DEBUG (("gs_udp_open(%i, %d.%d.%d.%d, %i)", fd, DEBUG_ADDR(rhost), rport));
 	
 	if (!gs || !(gs->flags & GS_NOSOCKET))
 	{
@@ -446,7 +489,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	if (sock_fd < 0)
 	{
 		DEBUG (("gs_udp_open: socket() returns %i (%i)", sock_fd, errno));
-		return gs_xlate_error (sock_fd, "gs_udp_open");
+		return gs_xlate_error (errno, "gs_udp_open");
 	}
 	
 # if 0
@@ -467,7 +510,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 
 	retval = connect (sock_fd, (struct sockaddr *) &addr, addr_size);
 # if 0
-	if (retval == EINPROGRESS)
+	if (retval < 0 && errno == EINPROGRESS)
 	{
 		pending = 1;
 	}
@@ -475,8 +518,9 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 # endif
 	if (retval < 0)
 	{
-		DEBUG (("gs_udp_open: connect() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_udp_open");
+		int err = errno;
+		DEBUG (("gs_udp_open: connect() returns %i (%i)", retval, err));
+		return gs_xlate_error (err, "gs_udp_open");
 	}
 	
 	/* Fill in the CIB. Part of the data we need came from our
@@ -487,15 +531,16 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 	if (retval < 0)
 	{
 		DEBUG (("gs_udp_open: getsockame() returns %i (%i)", retval, errno));
-		return gs_xlate_error (retval, "gs_udp_open");
+		return gs_xlate_error (errno, "gs_udp_open");
 	}
 	
-	gs->cib.protocol = P_TCP;
-	gs->cib.lport = addr2.sin_port;
-	gs->cib.rport = addr.sin_port;
-	gs->cib.rhost = addr.sin_addr.s_addr;
-	gs->cib.lhost = addr2.sin_addr.s_addr;
-	
+	gs->cib.protocol = P_UDP;
+	gs->cib.address.lport = addr2.sin_port;
+	gs->cib.address.rport = addr.sin_port;
+	gs->cib.address.rhost = addr.sin_addr.s_addr;
+	gs->cib.address.lhost = addr2.sin_addr.s_addr;
+	gs->cib.status = 0;
+
 	gs->sock_fd = sock_fd;
 # if 0
 	gs->flags = pending ? GS_PEND_OPEN : 0;
@@ -527,6 +572,7 @@ gs_wait (int fd, int timeout)
 	 */
 	timeout *= 1000;
 	
+	/* FIXME: can only use Fselect with sock_fd < 32 */
 	rfs = wfs = 1L << gs->sock_fd;
 	
 	if ((gs->flags & (GS_LISTENING
@@ -577,7 +623,7 @@ gs_wait (int fd, int timeout)
 	}
 	
 	DEBUG (("gs_wait: Fselect() returns %li", n));
-	return gs_xlate_error (n, "gs_wait");
+	return gs_xlate_error ((int)n, "gs_wait");
 }
 
 long
@@ -588,7 +634,7 @@ gs_canread (int fd)
 	
 	DEBUG (("gs_canread(%i)", fd));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (!gs || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_canread: bad handle"));
 		return E_BADHANDLE;
@@ -616,7 +662,7 @@ gs_canread (int fd)
 	if (r < 0)
 	{
 		DEBUG (("gs_canread: Fcntl(FIONREAD) returns %li", r));
-		return gs_xlate_error (-r, "gs_canread");
+		return gs_xlate_error (-(int)r, "gs_canread");
 	}
 	
 	if (n == 0x7FFFFFFFUL)
@@ -626,6 +672,11 @@ gs_canread (int fd)
 	}
 	
 	DEBUG (("gs_canread: returns %li", n));
+	/*
+	 * seems to be a precaution to not overflow range of a short?
+	 */
+	if (magix && n > 8192)
+		return 8192;
 	return n;
 }
 
@@ -637,6 +688,8 @@ gs_read_delim (int fd, char *buf, int len, char delim)
 	
 	DEBUG (("gs_read_delim(%i, %p, %i, %c)", fd, (void *) buf, len, delim));
 	
+	if (len <= 1)
+		return E_BIGBUF;
 	while (n < len - 1)
 	{
 		r = gs_read (fd, buf + n, 1);
@@ -673,7 +726,7 @@ gs_readndb (int fd)
 	
 	DEBUG (("gs_readndb(%i)", fd));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (gs == NULL || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_readndb: bad handle"));
 		return NULL;
@@ -700,8 +753,8 @@ gs_readndb (int fd)
 		return NULL;
 	}
 	
-	if (n > 65535)
-		n = 65535;
+	if (n > 65535L)
+		n = 65535L;
 	
 	ndb = gs_mem_alloc (sizeof (*ndb));
 	if (!ndb)
@@ -730,7 +783,7 @@ gs_readndb (int fd)
 	}
 	
 	ndb->ndata = ndb->ptr;
-	ndb->len = n;
+	ndb->len = ret;
 	ndb->next = 0;
 	
 	DEBUG (("gs_readndb: read %li bytes, returns %p", n, (void *) ndb));
@@ -738,14 +791,14 @@ gs_readndb (int fd)
 }
 
 long
-gs_write (int fd, char *buf, long buflen)
+gs_write (int fd, const char *buf, long buflen)
 {
 	GS *gs = gs_get (fd);
 	long r, n;
 	
 	DEBUG (("gs_write(%i, %p, %li)", fd, (void *) buf, buflen));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (gs == NULL || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_write: bad handle"));
 		return E_BADHANDLE;
@@ -775,7 +828,7 @@ gs_write (int fd, char *buf, long buflen)
 	if (r < 0)
 	{
 		DEBUG (("gs_write: Fcntl(FIONWRITE) returned %li", r));
-		return gs_xlate_error (-r, "gs_write");
+		return gs_xlate_error (-(int)r, "gs_write");
 	}
 	
 	if (n < buflen)
@@ -790,15 +843,17 @@ gs_write (int fd, char *buf, long buflen)
 	if (r < 0)
 	{
 		DEBUG (("gs_write: Fwrite() returned %li", r));
-		return gs_xlate_error (-r, "gs_write");
+		return gs_xlate_error (-(int)r, "gs_write");
 	}
 	
 	/* Okay, according to the Fcntl(), we should have been able to
 	 * write everything; warn if we didn't.
 	 */
 	if (r < buflen)
+	{
 		DEBUG (("gs_write: only got %li of %li bytes", r, buflen));
-	
+	}
+
 	DEBUG (("gs_write: returns E_NORMAL [%x]", gs->flags));
 	return E_NORMAL;
 }
@@ -811,7 +866,7 @@ gs_read (int fd, char *buf, long buflen)
 	
 	DEBUG (("gs_read(%i, %p, %li)", fd, (void *) buf, buflen));
 	
-	if (gs->flags & GS_NOSOCKET)
+	if (gs == NULL || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_read: bad handle"));
 		
@@ -854,29 +909,29 @@ gs_read (int fd, char *buf, long buflen)
 	if (r < 0)
 	{
 		DEBUG (("gs_read: Fread() returns %li", r));
-		return gs_xlate_error (-r, "gs_read");
+		return gs_xlate_error (-(int)r, "gs_read");
 	}
 	
 	/* Okay, according to the Fcntl(), we should have been able to
 	 * fill the entire buffer; warn if we didn't.
 	 */
 	if (r < buflen)
+	{
 		DEBUG (("gs_read: unable to read all %li bytes", buflen));
-	
+	}
+
 	DEBUG (("gs_read: returns %li (%li)", buflen, r));
 	return buflen;
 }
 
 int
-gs_resolve (char *dn, char **rdn, uint32 *alist, int16 lsize)
+gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 {
 	static char buf [4096];
-	static char lock = 0;
+	static volatile char lock = 0;
 	
 	struct hostent *host = NULL;
-	PMSG pmsg;
 	char **raddr;
-	long r;
 	int ret;
 	
 	
@@ -884,33 +939,42 @@ gs_resolve (char *dn, char **rdn, uint32 *alist, int16 lsize)
 	
 	
 	while (lock)
-		sleep (1);
+		Syield();
 	
 	lock = 1;
 	
 	
 	strcpy (buf, dn);
-	pmsg.msg1 = 1;
-	pmsg.msg2 = (long) buf;
-	
-	DEBUG (("gs_resolve: Wait for Pmsg receive on [%s]!", buf));
-	r = Pmsg (2, GS_GETHOSTBYNAME, &pmsg);
-	DEBUG (("gs_resolve: Pmsg received = %li, %lx!", r, pmsg.msg2));
-	
-	if (r != 0)
+	if (magix)
 	{
-		DEBUG (("gs_resolve: Pmsg() returns %li", r));
-		
-		ret = gs_xlate_error (-r, "gs_resolve");
-		goto out;
+		/* MagiCNet: running as a TSR; do the query right away */
+		host = (struct hostent *) gethostbyname(buf);
+	} else
+	{
+		/* MiNTNet: wake up the daemon to do the work */
+		PMSG pmsg;
+		long r;
+
+		pmsg.msg1 = 1;
+		pmsg.msg2 = (long) buf;
+
+		DEBUG (("gs_resolve: Wait for Pmsg receive on [%s]!", buf));
+		r = Pmsg (2, GS_GETHOSTBYNAME, &pmsg);
+		DEBUG (("gs_resolve: Pmsg received = %li, %lx!", r, pmsg.msg2));
+
+		if (r != 0)
+		{
+			DEBUG (("gs_resolve: Pmsg() returns %li", r));
+
+			ret = gs_xlate_error (-(int)r, "gs_resolve");
+			goto out;
+		}
+		host = (struct hostent *) pmsg.msg2;
 	}
-	
-	DEBUG (("gs_resolve: gethostbyname() returns %lx", pmsg.msg2));
-	host = (struct hostent *) pmsg.msg2;
+
+	DEBUG (("gs_resolve: gethostbyname() returns %lx", (unsigned long)host));
 	if (!host)
 	{
-		extern int h_errno;
-		
 		switch (h_errno)
 		{
 			case HOST_NOT_FOUND:
@@ -935,17 +999,22 @@ gs_resolve (char *dn, char **rdn, uint32 *alist, int16 lsize)
 		DEBUG (("gs_resolve: Copying name: \"%s\"", host->h_name));
 		
 		*rdn = gs_mem_alloc (strlen (host->h_name) + 1);
-		strcpy (*rdn, host->h_name);
+		if (*rdn)
+			strcpy (*rdn, host->h_name);
 	}
 	
 	/* BUG:  assumes addresses returned have type struct in_addr
 	 */
-	for (ret = 0, raddr = host->h_addr_list; *raddr && ret < lsize; ret++, raddr++)
+	ret = 0;
+	if (alist)
 	{
-		DEBUG (("gs_resolve: Copying address %p to array element %i",
-			(void *) ((struct in_addr *) (*raddr))->s_addr, ret));
-		
-		alist [ret] = ((struct in_addr *) (*raddr))->s_addr;
+		for (raddr = host->h_addr_list; *raddr && ret < lsize; ret++, raddr++)
+		{
+			DEBUG (("gs_resolve: Copying address %d.%d.%d.%d to array element %i",
+				DEBUG_ADDR(((struct in_addr *) (*raddr))->s_addr), ret));
+
+			alist [ret] = ((struct in_addr *) (*raddr))->s_addr;
+		}
 	}
 	
 out:

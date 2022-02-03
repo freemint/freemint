@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -130,7 +128,7 @@ sys_p_msg(int mode, long mbid, char *ptr)
     int noblock;
     PROC *p;
 
-    TRACELOW(("Pmsg(%d,%lx,%lx)",mode,mbid,ptr));
+    TRACELOW(("Pmsg(%d,%lx,%p)",mode,mbid,ptr));
 
     noblock = (mode & 0x8000);
     mode &= ~0x8000;
@@ -301,7 +299,7 @@ dosleep:
  */
 
 static void _cdecl
-unsemame(struct proc *p)
+unsemame(struct proc *p, long arg)
 {
 	ushort sr;
 

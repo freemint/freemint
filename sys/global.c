@@ -1,34 +1,32 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1998, 1999, 2000, 2001 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1998-07-02
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- *  
+ *
  */
 
 # include "global.h"
@@ -36,18 +34,20 @@
 
 struct global global =
 {
-	0, 0, 0, 0, 0, 0, ""
+	machine_unknown, 0, 0, 0, -1, 0, 0, "", ""
 };
 
 long mcpu = 0;
-long pmmu = 0;
+bool is_apollo_68080 = false;
+short pmmu = 0;
 short fpu = 0;
+#ifdef __mcoldfire__
+bool coldfire_68k_emulation = false;
+#endif
 short secure_mode = 0;
 unsigned long c20ms = 0;
 
 BASEPAGE *_base;
-
-short	gl_kbd;			/* default keyboard layout */
 
 /*
  * special flags for workarounds
@@ -72,3 +72,10 @@ short ste_video = 0;
  * vectors from userspace accesses
  */
 short protect_page0 = 0;
+
+/* On Atari hardware, the 200 Hz system timer is implemented with the MFP
+ * Timer C. On non-Atari hardware supported by EmuTOS, the 200 Hz system
+ * timer may be implemented differently. In that case, the _5MS cookie
+ * indicates the address of the vector used by the 200 Hz system timer
+ */
+long *p5msvec = (long *)0x114L; /* Default to Timer C vector */

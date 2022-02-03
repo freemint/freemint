@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  */
@@ -114,7 +112,7 @@ struct timezone
 };
 
 
-typedef void _cdecl to_func (PROC *);
+typedef void _cdecl to_func (PROC *, long arg);
 /**
  * Representation of an timeout event.
  * The timeout events are stored in a callout list (single linked).

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -27,6 +25,8 @@
 # include "arch/init_intr.h"
 
 # include "global.h"
+# include "cookie.h"
+# include "keyboard.h"		/* has_kbdvec */
 
 /* magic number to show that we have captured the reset vector */
 # define RES_MAGIC	0x31415926L
@@ -38,6 +38,7 @@ static KBDVEC oldkey;
 long old_term;
 long old_resval;	/* old reset validation */
 long olddrvs;		/* BIOS drive map */
+
 
 /* table of processor frame sizes in _words_ (not used on MC68000) */
 uchar framesizes[16] =
@@ -95,25 +96,58 @@ init_intr (void)
 	oldkey = *syskey;
 
 # ifndef NO_AKP_KEYBOARD
+	if (!has_kbdvec) /* TOS versions without the KBDVEC vector */
 	{
-#ifndef MILAN
+		/* We need to hook the ikbdsys vector. Our handler will have to deal
+		 * with ACIA registers, and to call the appropriate KBDVEC vectors
+		 * for keyboard, mouse, joystick, status and time packets. */
 		savesr = splhigh();
 		syskey->ikbdsys = (long)ikbdsys_handler;
 #ifndef M68000
 		cpush(&syskey->ikbdsys, sizeof(long));
 #endif
+		spl(savesr);
+	}
+	else
+	{
+		/* Hook the keyboard interrupt to call ikbd_scan() on keyboard data.
+		 * There is an undocumented vector just before the KBDVEC structure.
+		 * This vector is called by the TOS ikbdsys routine to process
+		 * keyboard-only data. It is exactly what we need to hook.
+		 * TOS < 2.00 doesn't know about this vector but the new ikdsys
+		 * hadler hooked above if we're running over TOS < 2.00 will call it.
+		 */
+		long *kbdvec = ((long *)syskey)-1;
+		new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
+	}
+
+	/* Workaround for FireTOS and CT60 TOS 2.xx.
+	 * Needed because those TOS doesn't call the undocumented kbdvec vector
+	 * from their ikbdsys vector handler, besides they install the ikbdsys
+	 * routine as a ACIA interrupt handler, so we can't simply replace their
+	 * ikbdsys handler by ours. We need to hook a new ACIA handler which
+	 * will call our ikbdsys.
+	 */
+	unsigned short version = 0;
+#ifdef __mcoldfire__
+	const unsigned short *FT_TOS_VERSION_ADDR = (unsigned short *)0x00e80000;
+	if (coldfire_68k_emulation)
+		version = *FT_TOS_VERSION_ADDR;
+#else
+	const unsigned short *CT60_TOS_VERSION_ADDR = (unsigned short *)0xffe80000;
+	if (machine == machine_ct60)
+		version = *CT60_TOS_VERSION_ADDR;
+#endif
+	if (version >= 2)
+	{
+		savesr = splhigh();
+		syskey->ikbdsys = (long)ikbdsys_handler;
+		cpush(&syskey->ikbdsys, sizeof(long));
 		new_xbra_install(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
-#else
-		long *syskey_aux;
-
-		syskey_aux = (long *)syskey;
-		syskey_aux--;
-
-		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
-#endif
 	}
-# endif
+# endif /* NO_AKP_KEYBOARD */
+
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
 	savesr = splhigh();
@@ -155,7 +189,15 @@ init_intr (void)
 	}
 
 	new_xbra_install (&old_criticerr, 0x404L, new_criticerr);
-	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
+
+	/* Hook the 200 Hz system timer. Our handler will do its job,
+	 * then call the previous handler. Every four interrupts, our handler will
+	 * push a fake additional exception stack frame, so when the previous
+	 * 200 Hz handler returns with RTE, it will actually call _mint_vbl
+	 * to mimic a 50 Hz VBL interrupt.
+	 */
+
+	new_xbra_install (&old_5ms, (long)p5msvec, mint_5ms);
 
 #if 0	/* this should really not be necessary ... rincewind */
 	new_xbra_install (&old_resvec, 0x042aL, reset);
@@ -228,16 +270,14 @@ restr_intr (void)
 	*syskey = oldkey;	/* restore keyboard vectors */
 
 # ifndef NO_AKP_KEYBOARD
+	if (tosvers < 0x0200)
 	{
-#ifdef MILAN
-		long *syskey_aux;
-
-		syskey_aux = (long *)syskey;
-		syskey_aux--;
-		*syskey_aux = (long) oldkeys;
-#else
 		*((long *) 0x0118L) = old_acia;
-#endif
+	}
+	else
+	{
+		long *kbdvec = ((long *)syskey)-1;
+		*kbdvec = (long) oldkeys;
 	}
 # endif
 
@@ -275,7 +315,7 @@ restr_intr (void)
 	*((long *) 0x0b8L) = old_xbios;
 	*((long *) 0x408L) = old_term;
 	*((long *) 0x404L) = old_criticerr;
-	*((long *) 0x114L) = old_5ms;
+	*p5msvec = old_5ms;
 #if 0	//
 	*((long *) 0x426L) = old_resval;
 	*((long *) 0x42aL) = old_resvec;

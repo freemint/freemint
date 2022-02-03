@@ -5,21 +5,23 @@
 SHELL = /bin/sh
 SUBDIRS = \
 	IO \
-	cops \
 	crypto \
 	fdisk \
 	fsetter \
 	gluestik \
-	hypview \
 	lpflush \
 	mgw \
 	minix \
+	mintload \
 	mkfatfs \
 	mktbl \
 	net-tools \
 	nfs \
+	nohog2 \
+	strace \
+	swkbdtbl \
 	sysctl \
-	toswin2
+	usbtool
 
 srcdir = .
 top_srcdir = .

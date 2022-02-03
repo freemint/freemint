@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -38,6 +36,11 @@ int yylex (void);
 int yylinecount = 1;
 
 %}
+
+%option noinput
+%option nounput
+%option nointeractive never-interactive
+%option noyywrap
 
 digit		[0-9]
 nonzerodigit	[1-9]

@@ -11,6 +11,7 @@
 # include "ip.h"
 # include "loopback.h"
 # include "route.h"
+# include "igmp.h"
 
 # include "mint/asm.h"
 # include "mint/sockio.h"
@@ -190,12 +191,14 @@ if_flushq (struct ifq *q)
 }
 
 static void
-if_doinput (long proc)
+if_doinput (PROC *proc, long arg)
 {
-	register struct netif *nif;
-	register char *sp;
+	struct netif *nif;
+	char *sp;
 	short comeagain = 0;
 	
+	UNUSED(proc);
+	UNUSED(arg);
 	tmout = 0;
 	sp = setstack (stack + sizeof (stack));
 	
@@ -276,10 +279,12 @@ if_input (struct netif *nif, BUF *buf, long delay, short type)
 }
 
 static void
-if_slowtimeout (long proc)
+if_slowtimeout (PROC *proc, long arg)
 {
 	struct netif *nif;
 	
+	UNUSED(proc);
+	UNUSED(arg);
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (nif->flags & IFF_UP && nif->timeout)
@@ -290,11 +295,33 @@ if_slowtimeout (long proc)
 }
 
 long
+if_deregister (struct netif *nif)
+{
+	struct netif *ifp, *ifpb = NULL;
+
+	for (ifp = allinterfaces; ifp; ifp = ifp->next)
+	{
+		if (ifp == nif) {
+			/* HEAD REMOVAL */
+			if (ifpb == NULL) {
+				allinterfaces = ifp->next;
+			} else {
+				ifpb->next = ifp->next;
+			}
+			return 1; /* indicating removed */
+		}
+		ifpb = ifp;
+	}
+
+	return 0; /* not removed */
+}
+
+long
 if_register (struct netif *nif)
 {
 	static short have_timeout = 0;
 	short i;
-	
+
 	nif->addrlist = 0;
 	nif->snd.qlen = 0;
 	nif->rcv.qlen = 0;
@@ -398,6 +425,10 @@ if_open (struct netif *nif)
 	 * This is usefull to broadcast packets.
 	 */
 	rt_primary.nif = nif;
+
+	igmp_start(nif);
+	igmp_report_groups(nif);
+	nif->flags |= (IFF_IGMP);
 	
 	DEBUG (("if_open: primary_nif = %s", rt_primary.nif->name));
 
@@ -420,6 +451,7 @@ if_close (struct netif *nif)
 	if_flushq (&nif->snd);
 	if_flushq (&nif->rcv);
 	
+	igmp_stop (nif);
 	route_flush (nif);
 	arp_flush (nif);
 	
@@ -430,7 +462,7 @@ if_close (struct netif *nif)
 	if (nif->flags & IFF_LOOPBACK)
 		route_del (0x7f000000L, IN_CLASSA_NET);
 	
-	nif->flags &= ~(IFF_UP|IFF_RUNNING);
+	nif->flags &= ~(IFF_UP|IFF_IGMP|IFF_RUNNING);
 	
 	/*
 	 * Want a running primary interface
@@ -453,7 +485,7 @@ if_close (struct netif *nif)
 }
 
 long
-if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
+if_send (struct netif *nif, BUF *buf, ulong nexthop, short addrtype)
 {
 	struct arp_entry *are;
 	long ret;
@@ -482,15 +514,31 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 	{
 		case HWTYPE_ETH:
 		{
-			DEBUG (("if_send(%s): HWTYPE_ETH (brcst=%d)",
-				nif->name, isbrcst));
+			DEBUG (("if_send(%s): HWTYPE_ETH (addrtype=%d)",
+				nif->name, addrtype));
 
 			/*
 			 * When broadcast then use interface's broadcast address
 			 */
-			if (isbrcst)
+			if (addrtype == IPADDR_BRDCST)
 				return (*nif->output) (nif, buf, (char *)nif->hwbrcst.adr.bytes,
 					nif->hwbrcst.len, PKTYPE_IP);
+			else if (addrtype == IPADDR_MULTICST) {
+				struct ip_dgram *iph = (struct ip_dgram *) buf->dstart;
+				struct hwaddr hwmcast;
+
+				hwmcast.adr.bytes[0] = 0x01;
+				hwmcast.adr.bytes[1] = 0x00;
+				hwmcast.adr.bytes[2] = 0x5e;
+				hwmcast.adr.bytes[3] = (iph->daddr & 0xFF0000) >> 16;
+				hwmcast.adr.bytes[4] = (iph->daddr & 0x00FF00) >> 8;
+				hwmcast.adr.bytes[5] = (iph->daddr & 0x0000FF) >> 0;
+				hwmcast.len = ETH_ALEN;
+
+				return (*nif->output) (nif, buf, (char *)hwmcast.adr.bytes,
+					hwmcast.len, PKTYPE_IP);
+			}
+
 			/*
 			 * Here we must first resolve the IP address into a hardware
 			 * address using ARP.
@@ -568,6 +616,15 @@ if_ioctl (short cmd, long arg)
 	
 	switch (cmd)
 	{
+		case SIOCSIFHWADDR:
+		{
+			struct sockaddr_hw *shw = &ifr->ifru.adr.hw;
+
+			memcpy(nif->hwlocal.adr.bytes, shw->shw_adr.bytes, MIN (shw->shw_len, sizeof (shw->shw_adr)));
+
+			return 0;
+		}
+
 		case SIOCGIFHWADDR:
 		{
 			struct sockaddr_hw *shw = &ifr->ifru.adr.hw;
@@ -685,7 +742,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.dstaddr.sa_family));
+					ifr->ifru.dstadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -707,7 +764,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.dstaddr.sa_family));
+					ifr->ifru.dstadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -739,7 +796,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.addr.sa_family));
+					ifr->ifru.dstadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -767,7 +824,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.broadaddr.sa_family));
+					ifr->ifru.broadadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -789,7 +846,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.broadaddr.sa_family));
+					ifr->ifru.broadadr.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -817,7 +874,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.netmask.sa_family));
+					ifr->ifru.netmsk.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -836,7 +893,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.netmask.sa_family));
+					ifr->ifru.netmsk.sa.sa_family));
 				return EINVAL;
 			}
 			
@@ -1043,12 +1100,20 @@ if_config (struct ifconf *ifconf)
 	struct ifreq *ifr;
 	struct ifaddr *ifa;
 	char name[100];
-	long len;
+	ulong len;
 	
+	if (!ifconf->ifcu.buf) {
+		/* count interfaces when no buffer! */
+		for (nif = allinterfaces; nif; nif = nif->next) {
+			ifconf->len += sizeof(*ifr); /* AF_INET */
+			ifconf->len += sizeof(*ifr); /* AF_LINK */
+		}
+		return 0;
+	}
+
 	len = ifconf->len;
 	ifr = ifconf->ifcu.req;
-	nif = allinterfaces;
-	for (; len >= sizeof (*ifr) && nif; nif = nif->next)
+	for (nif = allinterfaces; len >= sizeof (*ifr) && nif; nif = nif->next)
 	{
 		ksprintf (name, "%s%d", nif->name, nif->unit);
 		ifa = nif->addrlist;
@@ -1073,6 +1138,18 @@ if_config (struct ifconf *ifconf)
 				len -= sizeof (*ifr);
 				ifr++;
 			}
+		}
+		{
+			struct sockaddr_hw shw;
+			
+			shw.shw_family = AF_LINK;
+			shw.shw_type = nif->hwtype;
+			shw.shw_len = nif->hwlocal.len;
+			memcpy (shw.shw_adr.bytes, nif->hwlocal.adr.bytes, MIN (shw.shw_len, sizeof (shw.shw_adr)));
+			strncpy (ifr->ifr_name, name, IF_NAMSIZ);
+			sa_copy ((struct sockaddr *)&ifr->ifru.adr.hw, (struct sockaddr *)&shw);
+			len -= sizeof (*ifr);
+			ifr++;
 		}
 	}
 	ifconf->len -= len;
@@ -1115,6 +1192,7 @@ if_init (void)
 			if_lo = rt_primary.nif = nif;
 			break;
 		}
+		nif->igmp_mac_filter = NULL;
 	}
 	
 	if (!if_lo)

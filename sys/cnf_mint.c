@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -214,12 +212,15 @@ static struct parser_item parser_tab[] =
 	{ "KERN_BIOSBUF",		PI_V_B,	pCB_biosbuf			},
 	{ "KERN_DEBUG_DEVNO",		PI_R_S,	& out_device, Range(0, 9) 	},
 	{ "KERN_DEBUG_LEVEL",		PI_R_S,	& debug_level, Range(0, 9) 	},
+# ifdef WITH_MMU_SUPPORT
 	{ "KERN_MPFLAGS",		PI_R_L,	& mem_prot_flags		},
+# endif
 	{ "KERN_SECURITY_LEVEL",	PI_V_L,	pCL_securelevel, Range(0, 2)	},
 	{ "KERN_SLICES",		PI_R_S,	& time_slice			},
 	{ "PROC_MAXMEM",		PI_V_L,	pCB_maxmem			},
 	{ "TPA_FASTLOAD",		PI_R_B,	& forcefastload			},
 	{ "TPA_INITIALMEM",		PI_R_L,	& initialmem			},
+	{ "ALLOW_SETEXC",	PI_R_B,	& allow_setexc },
 	{ "FDC_HIDE_B",			PI_V_B,	pCB_hide_b			},
 # ifndef NO_AKP_KEYBOARD
 	{ "KBD_AT_CAPS",		PI_R_B,	& kbd_pc_style_caps		},
@@ -243,7 +244,9 @@ static struct parser_item parser_tab[] =
 	{ "HIDE_B",		PI_V_B,   pCB_hide_b			},
 	{ "INITIALMEM",		PI_R_L,   & initialmem			},
 	{ "MAXMEM",		PI_V_L,   pCB_maxmem			},
+# ifdef WITH_MMU_SUPPORT
 	{ "MPFLAGS",		PI_R_L,   & mem_prot_flags		},
+# endif
 	{ "PRN",		PI_V_T,   pCB_prn			},
 	{ "SECURELEVEL",	PI_V_L,   pCL_securelevel, Range(0, 2)	},
 	{ "SLICES",		PI_R_S,   & time_slice			},
@@ -270,8 +273,14 @@ load_config(void)
 
 	strcpy(cnf_path, sysdir);
 	strcat(cnf_path, "mint.cnf");
+	if (parse_cnf(cnf_path, parser_tab, &mydata, 0) != 0 && strlen(mchdir) > 0)
+	{
+		/* sysdir/mint.cnf not found, try mchdir/mint.cnf */
+		strcpy(cnf_path, mchdir);
+		strcat(cnf_path, "mint.cnf");
 
-	parse_cnf(cnf_path, parser_tab, &mydata);
+		parse_cnf(cnf_path, parser_tab, &mydata, 0);
+	}
 }
 
 /*============================================================================*/
@@ -407,9 +416,11 @@ pCB_echo(char *line)
 static void
 pCB_exec(const char *path, const char *line, struct parsinf *inf)
 {
-	union { const char *cc; char *c;} pathptr; pathptr.cc = path;
 	char cmdline[128];
 	int i;
+	union { const char *cc; char *c;} pathptr;
+
+	pathptr.cc = path;
 
 	i = strlen(line);
 	if (i > 126) i = 126;
@@ -434,7 +445,7 @@ pCB_gem_init(const char *path, const char *line, long val)
 {
 	init_is_gem = val;
 
-	boot_printf("GEM '%s' '%s'\r\n", path, line);
+	boot_printf("%s '%s' '%s'\r\n", init_is_gem ? "GEM" : "INIT", path, line);
 	if (stricmp(path,"ROM") == 0)
 	{
 		init_prg = 0;

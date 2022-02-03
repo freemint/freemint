@@ -36,36 +36,42 @@
  *	Version history
  *	---------------
  *	version 0.10	february/2007 (roger burrows, anodyne software)
- *		based on v0.52 of defunct MagxNet driver
+ *	  .	based on v0.52 of defunct MagxNet driver
  *
  *	version 0.15	february/2007 (roger burrows, anodyne software)
- *		the i/o wrapper method does not work with the current MiNT system,
+ *	  .	the i/o wrapper method does not work with the current MiNT system,
  *		so change to use addroottimeout(), thereby avoiding doing I/O out
  *		of an interrupt handler.
  *		as a precaution, we avoid actual i/o for now ...
  *
  *	version 0.20	february/2007 (roger burrows, anodyne software)
- *		enable open, close, ioctl (no i/o);input, output are still disabled ...
+ *	  .	enable open, close, ioctl (no i/o);input, output are still disabled ...
  *
  *	version 0.25	february/2007 (roger burrows, anodyne software)
- *		enable ioctl i/o & output;input is still disabled ...
+ *	  .	enable ioctl i/o & output;input is still disabled ...
  *
  *	version 0.30	february/2007 (roger burrows, anodyne software)
- *		enable input ...
+ *	  .	enable input ...
  *
  *	version 0.34	february/2007 (roger burrows, anodyne software)
- *		enable mode switching in SCSIDRV library
+ *	  .	enable mode switching in SCSIDRV library
  *
  *	version 0.35	february/2007 (roger burrows, anodyne software)
- *		add trace
+ *	  .	add trace
  *
  *	version 0.40	march/2007 (roger burrows, anodyne software)
- *		add code to bypass ftpd wart: ftpd runs under a non-root euid while
+ *	  .	add code to bypass ftpd wart: ftpd runs under a non-root euid while
  *		issuing login messages, causing calls to scsidrv to fail with EPERM
  *
  *	version 0.50	march/2007 (roger burrows, anodyne software)
- *		rework trace to allow it to be started dynamically (via SLINKCTL)
- *		set maxpackets to zero 
+ *	  .	rework trace to allow it to be started dynamically (via SLINKCTL)
+ *	  .	set maxpackets to zero 
+ *
+ *	version 0.60	november/2007 (roger burrows, anodyne software)
+ *	  .	add ioctl to return MAC address of device
+ *	  .	update trace recording
+ *	  .	relink with updated SCSILINK.LIB to fix ARP problem with Dayna
+ *		firmware 1.4a - broadcast mode has to be enabled explicitly
  *
  *
  *	future: consider removing option -y and adding __saveds to:
@@ -94,7 +100,7 @@
 
 
 #define MAJOR_VERSION	0
-#define MINOR_VERSION	50
+#define MINOR_VERSION	60
 
 #define DRIVER_DESC		"DaynaPORT SCSI/Link driver"
 #define DRIVER			"SCSILINK.XIF"
@@ -110,7 +116,7 @@ struct sl_device {
 	struct scsilink_counts count;
 	long trace_entries;					/* total number of entries */
 	long current_entry;					/* current entry number */
-	struct trace_entry *trace_table;	/* trace table */
+	SLINK_TRACE *trace_table;			/* trace table */
 };
 
 
@@ -144,7 +150,7 @@ int set_lock(FASTLOCK *lockptr);
 int release_lock(FASTLOCK *lockptr);
 int test_lock(FASTLOCK *lockptr);
 
-#define trace(dev,type,len,rc)	if ((dev)->trace_entries) add_trace_entry(dev,type,len,rc)
+#define trace(dev,type,rc,len,data)	if ((dev)->trace_entries) add_trace_entry(dev,type,rc,len,data)
 
 /*
  *	function prototypes
@@ -154,19 +160,19 @@ static long	_cdecl sl_close(struct netif *);
 static long _cdecl sl_output(struct netif *,BUF *,const char *,short,short);
 static long	_cdecl sl_ioctl(struct netif *,short,long);
 
-static void add_trace_entry(struct sl_device *dev,char type,short len,long rc);
+static void add_trace_entry(struct sl_device *dev,char type,long rc,short length,char *data);
 static void get_waiting_packets(struct netif *nif);
-static void handle_all_input(void);
+static void handle_all_input(PROC *proc, long arg);
 static void handle_input(struct netif *nif);
 static long queue_output(struct netif *nif,BUF *nbuf);
 static long read_packet(struct sl_device *dev,char *packet);
 static int receive_packet(struct netif *nif);
 static long write_packet(struct sl_device *dev,BUF *nbuf,int len);
 
-extern void install_interrupts(void);		/* in lowlevel.s */
-extern void interrupt_handler(void);		/* referenced by lowlevel.s */
+void install_interrupts(void);		/* in lowlevel.s */
+void interrupt_handler(void);		/* referenced by lowlevel.s */
 
-extern long driver_init(void);				/* from main.c */
+long driver_init(void);
 
 /********************************************************
 *														*
@@ -174,7 +180,6 @@ extern long driver_init(void);				/* from main.c */
 *														*
 ********************************************************/
 
-long driver_init(void);
 long driver_init(void)
 {
 char message[200], macaddr[ETH_ALEN];
@@ -185,18 +190,18 @@ int i, bus, id;
 
 	ksprintf(message,"%s v%d.%02d initialising ...\r\n",DRIVER_DESC,MAJOR_VERSION,MINOR_VERSION);
 	c_conws(message);
-	
+
 	/*
 	 *	validate system
 	 */
-	if (s_system (S_GETCOOKIE, COOKIE_MiNT, NULL) == 1) {
+	if (s_system (S_GETCOOKIE, COOKIE_MiNT, 0L) == 1) {
 		ksprintf(message,"%s: must run under MiNT\r\n",DRIVER);
 		c_conws(message);
 		return 1L;
 	}
-	
-	if (scsilink_modetest(FALSE) < 0L) {
-		ksprintf(message,"%s: can't disable mode testing\r\n",DRIVER);
+
+	if (scsilink_modeswitch(FALSE) < 0L) {
+		ksprintf(message,"%s: can't disable mode switch\r\n",DRIVER);
 		c_conws(message);
 		return 1L;
 	}
@@ -229,7 +234,7 @@ int i, bus, id;
 		memset(nif,0,sizeof(struct netif));			/* must do this! */
 		memset(dev,0,sizeof(struct sl_device));
 		strcpy(nif->name,ETHERNET_NAME);
-		nif->unit = if_getfreeunit(ETHERNET_NAME);
+		nif->unit = if_getfreeunit((char *)ETHERNET_NAME);
 		nif->flags = IFF_BROADCAST;
 		nif->mtu = ETH_MAX_DLEN;
 		nif->hwtype = HWTYPE_ETH;
@@ -309,7 +314,7 @@ long rc;
 		return ENOENT;
 
 	rc = scsilink_reset(dev->devnum,1);
-	trace(dev,TRACE_RESET,1,rc);
+	trace(dev,TRACE_OPEN,rc,0,NULL);
 
 	release_lock(&dev->active);
 
@@ -332,7 +337,7 @@ long rc;
 		return ENOENT;
 
 	rc = scsilink_reset(dev->devnum,0);
-	trace(dev,TRACE_RESET,2,rc);
+	trace(dev,TRACE_CLOSE,rc,0,NULL);
 
 	release_lock(&dev->active);
 
@@ -428,7 +433,8 @@ static long _cdecl sl_ioctl(struct netif *nif,short cmd,long argument)
 struct sl_device *dev = nif->data;
 struct ifreq *ifr;
 SCSILINK_STATS *user;
-long n, rc;
+char *p;
+long n, rc = 0L;
 unsigned long option;
 
 	switch(cmd) {
@@ -447,9 +453,10 @@ unsigned long option;
 
 	case SIOCGLNKSTATS:				/* returns statistics (plus trace if active) */
 		/* first we retrieve the latest hardware statistics */
-		if (set_lock(&dev->active)) {								/* precautionary */
-			scsilink_statistics(dev->devnum,dev->count.sl_count);	/* update struct with hardware stats */
+		if (set_lock(&dev->active)) {									/* precautionary */
+			rc = scsilink_statistics(dev->devnum,dev->count.sl_count);	/* update struct with hardware stats */
 			release_lock(&dev->active);
+			trace(dev,TRACE_STATS,rc,6*sizeof(long),(char *)(dev->count.sl_count));
 		}
 		ifr = (struct ifreq *)argument;
 		user = (SCSILINK_STATS *)ifr->ifru.data;			/* point to user area */
@@ -461,7 +468,7 @@ unsigned long option;
 		user->trace_entries = dev->trace_entries;
 		user->current_entry = dev->current_entry;
 		if (dev->trace_entries && dev->trace_table)
-			memcpy(user->trace_table,dev->trace_table,dev->trace_entries*sizeof(struct trace_entry));
+			memcpy(user->trace_table,dev->trace_table,dev->trace_entries*sizeof(SLINK_TRACE));
 		break;
 	case SIOCGLNKFLAGS:				/* misuse, but should work ... */
 		ifr = (struct ifreq *)argument;
@@ -476,10 +483,10 @@ unsigned long option;
 				dev->trace_table = NULL;
 			}
 			if (n) {								/* allocate any requested new trace */
-				dev->trace_table = kmalloc(n*sizeof(struct trace_entry));
+				dev->trace_table = kmalloc(n*sizeof(SLINK_TRACE));
 				if (!dev->trace_table)
 					return ENOMEM;
-				memset(dev->trace_table,0,n*sizeof(struct trace_entry));
+				memset(dev->trace_table,0,n*sizeof(SLINK_TRACE));
 				dev->trace_entries = n;
 				dev->current_entry = 0L;
 			}
@@ -490,7 +497,7 @@ unsigned long option;
 			return (MAJOR_VERSION<<8) | MINOR_VERSION;
 
 		if (option == SL_STATS_LENGTH)			/*** return length of statistics data ***/
-			return sizeof(SCSILINK_STATS) + dev->trace_entries*sizeof(struct trace_entry);
+			return sizeof(SCSILINK_STATS) + dev->trace_entries*sizeof(SLINK_TRACE);
 			
 		if (option == SL_CLEAR_COUNTS) {		/*** clear counts ***/
 			/*
@@ -501,11 +508,17 @@ unsigned long option;
 			break;
 		}
 
+		if (option == SL_GET_MACADDR) {			/*** get MAC address */
+			p = (char *)&ifr->ifru.data;
+			memcpy(p,nif->hwlocal.adr.bytes,ETH_ALEN);
+			break;
+		}
+
 		if (option == SL_RESET_DEVICE) {		/*** reset device ***/
 			if (set_lock(&dev->active) == 0L)
 				return ELOCKED;
 			rc = scsilink_reset(dev->devnum,dev->interface_up?1:0);
-			trace(dev,TRACE_RESET,3,rc);
+			trace(dev,TRACE_RESET,rc,sizeof(long),(char *)(dev->interface_up?1L:0L));
 			release_lock(&dev->active);
 			if (rc)
 				return EINTERNAL;
@@ -528,7 +541,7 @@ unsigned long option;
 /*
  *	interrupt handler
  */
-void interrupt_handler()
+void interrupt_handler(void)
 {
 	addroottimeout(0,handle_all_input,1);
 }
@@ -539,7 +552,7 @@ void interrupt_handler()
 *											*
 ********************************************/
 
-static void handle_all_input()
+static void handle_all_input(PROC *proc, long arg)
 {
 int i;
 
@@ -682,15 +695,15 @@ BUF *b;
  */
 static long read_packet(struct sl_device *dev,char *packet)
 {
+SCSI_PACKET *sp = (SCSI_PACKET *)packet;
 long rc;
-WORD len, euid;
+WORD euid;
 
 	rc = scsilink_read(dev->devnum,packet);
 	dev->count.scsi_reads++;
 
-	len = ((SCSI_PACKET *)packet)->length;
-	if ((len != 0) || (rc != 0L))			/* avoid useless tracing */
-		trace(dev,TRACE_READ_1,len,rc);
+	if ((sp->length != 0) || (rc != 0L))	/* avoid useless tracing */
+		trace(dev,TRACE_READ_1,rc,sp->length-4,(char *)&sp->enet);
 
 	if (rc == EPERM) {		/* try to bypass problem with ftpd ... */
 		euid = p_geteuid();		/* remember current euid */
@@ -698,8 +711,7 @@ WORD len, euid;
 			p_seteuid(0);		/* try to set to super-user */
 			rc = scsilink_read(dev->devnum,packet);	/* retry */
 			p_setuid(euid);
-			len = ((SCSI_PACKET *)packet)->length;
-			trace(dev,TRACE_READ_2,len,rc);
+			trace(dev,TRACE_READ_2,rc,sp->length-4,(char *)&sp->enet);
 			if (rc == 0L)					/* ok, so */
 				dev->count.read_fixups++;	/* count it */
 		}
@@ -717,7 +729,7 @@ long rc;
 WORD euid;
 
 	rc = scsilink_write(dev->devnum,nbuf->dstart,len);
-	trace(dev,TRACE_WRITE_1,len,rc);
+	trace(dev,TRACE_WRITE_1,rc,len,nbuf->dstart);
 	dev->count.scsi_writes++;
 
 	if (rc == EPERM) {		/* try to bypass problem with ftpd ... */
@@ -726,7 +738,7 @@ WORD euid;
 			p_seteuid(0);		/* try to set to super-user */
 			rc = scsilink_write(dev->devnum,nbuf->dstart,len); /* retry */
 			p_seteuid(euid);
-			trace(dev,TRACE_WRITE_2,len,rc);
+			trace(dev,TRACE_WRITE_2,rc,len,nbuf->dstart);
 			if (rc == 0L)					/* ok, so */
 				dev->count.write_fixups++;	/* count it */
 		}
@@ -738,20 +750,20 @@ WORD euid;
 /*
  *	make entry in internal trace
  */
-static void add_trace_entry(struct sl_device *dev,char type,short len,long rc)
+static void add_trace_entry(struct sl_device *dev,char type,long rc,short length,char *data)
 {
-struct trace_entry *t;
+SLINK_TRACE *t;
 
 	if (!dev->trace_table)		/* paranoia */
 		return;
 
 	t = &dev->trace_table[dev->current_entry];
-	t->type = type;
-	t->len = len;
-	t->ticks = *_hz_200;
+	t->time = *_hz_200;
 	t->rc = rc;
-	t->uid = p_getuid();
-	t->euid = p_geteuid();
+	t->type = type;
+	t->length = length;
+	if (length > 0)
+		memcpy(t->data,data,min(SLINK_TRACE_LEN,length));
 
 	if (++dev->current_entry >= dev->trace_entries)
 		dev->current_entry = 0;

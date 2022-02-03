@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -188,10 +186,20 @@ overflow:
 	return;
 }
 
-void _mcount (void);
+/* exp./todo: gcc -fprofile calls mcount (no _!) so provide it here
+ * but the kernel crashes, so only -DPROFILE works
+ */
+__asm__
+(
+	".globl	mcount\n\t"
+"mcount:\n\t"
+	"bra _mcount\n\t"
+);
+
+void mcount (void);
 
 void
-_mcount (void)
+mcount (void)
 {
 	mcount_internal ((ulong) __builtin_return_address (1),
 				(ulong) __builtin_return_address (0));

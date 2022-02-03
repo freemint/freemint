@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -61,8 +59,8 @@
 	"Redirect Daemon\r\n"
 
 # define MSG_GREET	\
-	"½ " MSG_BUILDDATE " Jens Heitmann.\r\n" \
-	"½ " MSG_BUILDDATE " Frank Naumann.\r\n\r\n"
+	"½ 2000-2010 Jens Heitmann.\r\n" \
+	"½ 2000-2010 Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\7This program requires FreeMiNT!\r\n"
@@ -92,13 +90,13 @@ install_cookie (void)
 	
 	if (Ssystem (-1, 0, 0) == -32)
 	{
-		Cconws (MSG_MINT);
+		(void) Cconws (MSG_MINT);
 		return 1;
 	}
 	
 	if (Ssystem (S_GETCOOKIE, TCPCOOKIE, &dummy) == 0)
 	{
-		Cconws (MSG_ALREADY);
+		(void) Cconws (MSG_ALREADY);
 		return 1;
 	}
 	
@@ -278,12 +276,12 @@ main (int argc, char *argv[])
 		/* Try installation */
 	if (fork () == 0)
 	{
-		Cconws (MSG_BOOT);
-		Cconws (MSG_GREET);
+		(void) Cconws (MSG_BOOT);
+		(void) Cconws (MSG_GREET);
 		
 		if (install_cookie ())
 		{
-			Cconws (MSG_FAILURE);
+			(void) Cconws (MSG_FAILURE);
 			exit (1);
 		}
 		

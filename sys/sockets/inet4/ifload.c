@@ -18,6 +18,7 @@
 # include "mint/basepage.h"
 # include "mint/config.h"
 # include "mint/emu_tos.h"
+# include "mint/arch/asm.h"
 
 
 struct netinfo netinfo =
@@ -41,14 +42,15 @@ struct netinfo netinfo =
 	
 	fname:			NULL,
 	
-	_bpf_input:		bpf_input
+	_bpf_input:		bpf_input,
+
+	_if_deregister:         if_deregister
 };
 
 #if 0
 /*
- * BUG??? this doesn't work?!
- * why do the registers need to be preserved?
- * all the modules are gcc compiled too ...
+ * This doesn't work for non-GCC compiled modules. i.e. enec.xif.
+ * Looks like these modules smash other registers.
  *
  * Note: the same hack as for other kernel modules
  *       module_init() in sys/module.c
@@ -69,13 +71,13 @@ xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 
 	__asm__ volatile
 	(
-		"moveml	d3-d7/a3-a6,sp@-;"
-		"movl	%3,sp@-;"
-		"movl	%2,sp@-;"
-		"movl	%1,a0;"
-		"jsr	a0@;"
-		"addqw	#8,sp;"
-		"moveml	sp@+,d3-d7/a3-a6;"
+		PUSH_SP("d3-d7/a3-a6", 36)
+		"movl	%3,sp@-\n\t"
+		"movl	%2,sp@-\n\t"
+		"movl	%1,a0\n\t"
+		"jsr	a0@\n\t"
+		"addql	#8,sp\n\t"
+		POP_SP("d3-d7/a3-a6", 36)
 		: "=r"(ret)				/* outputs */
 		: "g"(initfunc), "g"(k), "g"(n)		/* inputs  */
 		: __CLOBBER_RETURN("d0")
@@ -94,8 +96,8 @@ load_xif (struct basepage *b, const char *name, short *class, short *subclass)
 #endif
 	long r;
 	
-	DEBUG (("load_xif: enter (0x%lx, %s)", b, name));
-	DEBUG (("load_xif: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG (("load_xif: enter (0x%lx, %s)", (unsigned long)b, name));
+	DEBUG (("load_xif: init 0x%lx, size %li", (unsigned long) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 	
 	/* pass a pointer to the drivers file name on to the
 	 * driver.

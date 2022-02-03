@@ -1,7 +1,9 @@
 
 #include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/time.h>
@@ -13,7 +15,7 @@
 #define NONBLOCK
 
 #define SERVER	"/tmp/fort"
-#define OFFSET ((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET offsetof(struct sockaddr_un, sun_path)
 
 static int run = 1;
 static int fd = 0;

@@ -35,6 +35,6 @@ long do_nfs_mount(const char *remote, const char *local);
 long do_nfs_unmount(const char *remote, const char *local);
 
 
-char *commandname;
+extern char *commandname;
 
 # endif

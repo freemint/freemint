@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -57,7 +55,7 @@
 void
 init_page_table_ptr (struct memspace *m)
 {
-# ifdef M68000
+# ifndef WITH_MMU_SUPPORT
 	m->page_table = NULL;
 	m->pt_mem = NULL;
 # else
@@ -68,9 +66,8 @@ init_page_table_ptr (struct memspace *m)
 	}
 	else
 	{
-# if defined (M68040) || defined (M68060)
-		extern int page_ram_type;	/* mprot040.c */
 		MEMREGION *pt = NULL;
+# if defined (M68040) || defined (M68060)
 		
 // 		FORCE("init_page_table_ptr: p_mem->mem = %lx", curproc->p_mem->mem);
 		if (page_ram_type & 2)
@@ -82,16 +79,18 @@ init_page_table_ptr (struct memspace *m)
 		m->page_table = pt ? ROUND512 (pt->loc) : NULL;
 		m->pt_mem = pt;
 # else /* M68040 || M68060 */
-		void *pt;
-		
-		pt = kmalloc (page_table_size + 16);
-		
+
+		if (tt_mbytes)
+			pt = get_region (alt, page_table_size + 16, PROT_S);
+		if (!pt && !tt_mbytes)
+			pt = get_region (core, page_table_size + 16, PROT_S);
+
 		/* page tables must be on 16 byte boundaries, so we
 		 * round off by 16 for that; however, we will want to
-		 * kfree that memory at some point, so we squirrel
+		 * free that memory at some point, so we squirrel
 		 * away the original address for later use
 		 */
-		m->page_table = pt ? ROUND16 (pt) : NULL;
+		m->page_table = pt ? ROUND16 (pt->loc) : NULL;
 		m->pt_mem = pt;
 # endif /* M68040 || M68060 */
 		
@@ -103,10 +102,10 @@ init_page_table_ptr (struct memspace *m)
 static void
 free_page_table_ptr (struct memspace *m)
 {
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 	{
-# if defined(M68040) || defined(M68060)
+# if defined(M68030) || defined(M68040) || defined(M68060)
 		MEMREGION *pt;
 		
 		pt = m->pt_mem;
@@ -115,13 +114,6 @@ free_page_table_ptr (struct memspace *m)
 		pt->links--;
 		if (!pt->links)
 			free_region(pt);
-# else
-		void *pt;
-		
-		pt = m->pt_mem;
-		m->pt_mem = NULL;
-		
-		kfree(pt);
 # endif
 	}
 # endif
@@ -135,7 +127,7 @@ copy_mem (struct proc *p)
 	union { char *c; void *v; } ptr;
 	int i;
 	
-	TRACE (("copy_mem: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_mem: pid %i (%p)", p->pid, p));
 	assert (p && p->p_mem && p->p_mem->links > 0);
 	
 	m = kmalloc (sizeof (*m));
@@ -176,9 +168,15 @@ copy_mem (struct proc *p)
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	
-	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg, no_mem_prot ? "off":"on"));
+	TRACE(("copy_mem: ptr=%p, m->pt_mem = %p, m->tp_reg = %p, mp=%s", ptr.v, m->pt_mem, m->tp_reg,
+#ifdef WITH_MMU_SUPPORT
+		no_mem_prot
+#else
+		true
+#endif
+		? "off":"on"));
 
-#ifdef M68000
+#ifndef WITH_MMU_SUPPORT
 	if (!ptr.c || !m->tp_reg)
 #else
 	if ((!no_mem_prot && !m->pt_mem) || !ptr.c || !m->tp_reg)
@@ -259,7 +257,7 @@ copy_mem (struct proc *p)
 #endif
 	detach_region(get_curproc(), m->tp_reg);
 	
-	TRACE (("copy_mem: ok (%lx)", m));
+	TRACE (("copy_mem: ok (%p)", m));
 	return m;
 	
 nomem:
@@ -407,7 +405,7 @@ copy_fd (struct proc *p)
 	struct filedesc *fd;
 	long i;
 	
-	TRACE (("copy_fd: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_fd: pid %i (%p)", p->pid, p));
 	assert (p && p->p_fd && p->p_fd->links > 0);
 	org_fd = p->p_fd;
 	
@@ -465,7 +463,7 @@ copy_fd (struct proc *p)
 	mint_bzero (fd->srchdir, sizeof (fd->srchdir));
 	fd->searches = NULL;
 	
-	TRACE (("copy_fd: ok (%lx)", fd));
+	TRACE (("copy_fd: ok (%p)", fd));
 	return fd;
 }
 
@@ -596,7 +594,7 @@ copy_cwd (struct proc *p)
 	struct cwd *cwd;
 	int i;
 	
-	TRACE (("copy_cwd: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_cwd: pid %i (%p)", p->pid, p));
 	assert (p && p->p_cwd && p->p_cwd->links > 0);
 	org_cwd = p->p_cwd;
 	
@@ -634,7 +632,7 @@ copy_cwd (struct proc *p)
 		dup_cookie (&cwd->curdir[i], &org_cwd->curdir[i]);
 	}
 	
-	TRACE (("copy_cwd: ok (%lx)", cwd));
+	TRACE (("copy_cwd: ok (%p)", cwd));
 	return cwd;
 }
 
@@ -682,7 +680,7 @@ copy_sigacts (struct proc *p)
 {
 	struct sigacts *p_sigacts;
 	
-	TRACE (("copy_sigacts: pid %i (%lx)", p->pid, p));
+	TRACE (("copy_sigacts: pid %i (%p)", p->pid, p));
 	assert (p && p->p_sigacts && p->p_sigacts->links > 0);
 	
 	p_sigacts = kmalloc (sizeof (*p_sigacts));
@@ -695,7 +693,7 @@ copy_sigacts (struct proc *p)
 	bcopy (p->p_sigacts, p_sigacts, sizeof (*p_sigacts));
 	p_sigacts->links = 1;
 	
-	TRACE (("copy_sigacts: ok (%lx)", p_sigacts));
+	TRACE (("copy_sigacts: ok (%p)", p_sigacts));
 	return p_sigacts;
 }
 
@@ -1046,8 +1044,8 @@ detach_ext(struct proc *p, long ident)
 			}
 		}
 
-		for ( ; i < p_ext->used; i++)
-			p_ext->ext[i] = p_ext->ext[i+1];
+		if (i < p_ext->used)
+			_mint_bcopy(&p_ext->ext[i+1], p_ext->ext[i], (p_ext->used - i - 1) * sizeof(struct proc_ext));
 
 		if (!p_ext->used)
 		{

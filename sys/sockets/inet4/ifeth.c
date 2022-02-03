@@ -18,7 +18,7 @@ eth_build_hdr (BUF *buf, struct netif *nif, const char *addr, short type)
 	BUF *nbuf;
 	long len;
 
-	DEBUG (("eth_build_hdr( buf=0x%lx, nif='%s', type=%d )", buf, nif->name, type));
+	DEBUG (("eth_build_hdr( buf=0x%lx, nif='%s', type=%d )", (unsigned long)buf, nif->name, type));
 	
 	len = buf->dend - buf->dstart;
 	if (len > ETH_MAX_DLEN)
@@ -53,7 +53,7 @@ eth_remove_hdr (BUF *buf)
 	type = (ep->proto >= 1536) ? ep->proto : ETHPROTO_8023;
 	buf->dstart += sizeof (*ep);
 	
-	DEBUG (("eth_remove_hdr( buf=0x%lx, type=%d )", buf, type));
+	DEBUG (("eth_remove_hdr( buf=0x%lx, type=%d )", (unsigned long)buf, type));
 
 	/*
 	 * Correct packet length for to short packets. (Ethernet

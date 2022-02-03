@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file implements the UNIX communication domain.
  * Neither MSG_OOB nor MSG_PEEK flags for send/recv
  * work on UNIX sockets. The getsockname/getpeername calls
@@ -38,14 +36,14 @@ static long	unix_dup	(struct socket *, struct socket *);
 static long	unix_abort	(struct socket *, enum so_state);
 static long	unix_detach	(struct socket *);
 static long	unix_bind	(struct socket *, struct sockaddr *, short);
-static long	unix_connect	(struct socket *, struct sockaddr *, short, short);
+static long	unix_connect	(struct socket *, const struct sockaddr *, short, short);
 static long	unix_socketpair	(struct socket *, struct socket *);
 static long	unix_accept	(struct socket *, struct socket *, short);
 static long	unix_getname	(struct socket *, struct sockaddr *, short *, short);
 static long	unix_select	(struct socket *, short, long);
 static long	unix_ioctl	(struct socket *, short, void *);
 static long	unix_listen	(struct socket *, short);
-static long	unix_send	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+static long	unix_send	(struct socket *, const struct iovec *, short, short, short, const struct sockaddr *, short);
 static long	unix_recv	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 static long	unix_shutdown	(struct socket *, short);
 static long	unix_setsockopt	(struct socket *, short, short, char *, long);
@@ -174,13 +172,12 @@ static long
 unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 {
 	struct un_data *undata = so->data;
-	XATTR attrib;
 	long r, fd, index;
 
 	if (!addr)
 		return EDESTADDRREQ;
 
-	if (addrlen <= UN_PATH_OFFSET || addrlen >= UN_ADDR_SIZE)
+	if (addrlen <= UN_PATH_OFFSET || addrlen > UN_ADDR_SIZE)
 	{
 		DEBUG (("unix: unix_bind: invalid addrlen %d", addrlen));
 		return EINVAL;
@@ -191,8 +188,10 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 		DEBUG (("unix: unix_bind: already bound"));
 		return EINVAL;
 	}
+
 	memcpy (&undata->addr, addr, addrlen);
-	undata->addr.sun_path[addrlen - UN_PATH_OFFSET] = '\0';
+	undata->addr.sun_path[
+		MIN(sizeof(struct sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
 
 	if (undata->addr.sun_family != AF_UNIX)
 	{
@@ -200,12 +199,11 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 		return EAFNOSUPPORT;
 	}
 
-	/* Lets first see, if the file exists. */
-	r = sys_f_xattr (0, undata->addr.sun_path, &attrib);
-	if (!r) return EADDRINUSE;
-
 	/* Invalidate cache entries referring to the same file. */
-	un_cache_remove (undata->addr.sun_path);
+	r = un_cache_remove (undata->addr.sun_path);
+	if (r < 0) {
+		return r;
+	}
 
 	/* To do the creat(), the user must have write access for the
 	 * directory containing the file.
@@ -215,6 +213,8 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	{
 		DEBUG (("unix: unix_bind: could not create file %s",
 			undata->addr.sun_path));
+		if (fd == EEXIST) 
+			return EADDRINUSE;
 		return fd;
 	}
 
@@ -254,7 +254,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 }
 
 static long
-unix_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+unix_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	switch (so->type)
 	{
@@ -389,7 +389,7 @@ unix_listen (struct socket *so, short backlog)
 
 static long
 unix_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-		short flags, struct sockaddr *addr, short addrlen)
+		short flags, const struct sockaddr *addr, short addrlen)
 {
 	if (flags)
 	{
@@ -698,21 +698,22 @@ un_resize (struct un_data *un, long newsize)
 
 /* Convert a file name to a index. */
 long
-un_namei (struct sockaddr *addr, short addrlen, long *index)
+un_namei (const struct sockaddr *addr, short addrlen, long *index)
 {
 	struct sockaddr_un un;
 
 	if (!addr)
 		return EDESTADDRREQ;
 
-	if (addrlen <= UN_PATH_OFFSET || addrlen >= UN_ADDR_SIZE)
+	if (addrlen <= UN_PATH_OFFSET || addrlen > UN_ADDR_SIZE)
 	{
 		DEBUG (("unix: un_namei: invalid addrlen %d", addrlen));
 		return EINVAL;
 	}
 
 	memcpy (&un, addr, addrlen);
-	un.sun_path[addrlen - UN_PATH_OFFSET] = '\0';
+	un.sun_path[
+		MIN(sizeof(struct sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
 
 	if (un.sun_family != AF_UNIX)
 	{

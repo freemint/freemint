@@ -1,0 +1,161 @@
+; French PC keyboard, AKP code 2
+; By Vincent Riviere, 2013.
+;
+; Supported Atari hardware:
+; - ARAnyM with French PC keyboard attached to the host
+; - Eiffel adapter with French PS/2 keyboard
+; - FireBee with FireTOS and French USB keyboard
+;
+; The "squared" key on top of Tab has the scancode $29 on ARAnyM,
+; but scancode $5b on Eiffel. While $5b is the left Win key on ARAnyM.
+; So I didn't map that key, which is rarely used, anyway.
+;
+; The Alt and AltGr tables are equal because:
+; - On ARAnyM for Windows, the AltGr key can't be typed, due to strange
+;   behavior of the French keyboard driver (which simulates Ctrl+Alt)
+;   and lack of support for that special case in SDL.
+;   So you need to use left Alt to type characters such as # @ [ ] etc.
+;   You will hear the host bell when typing Alt+key, but that's another
+;   bug of SDL for Windows.
+; - On Eiffel, by default, AltGr generates the Alt scancode.
+;   So you can use the keyboard as usual.
+
+; Unshifted
+
+	dc.w	$2772
+	dc.w	$0002
+
+	dc.b	$00,$1b,'&',$82,'"',$27,'(','-'
+	dc.b	$8a,'_',$87,$85,')','=',$08,$09
+	dc.b	'a','z','e','r','t','y','u','i'
+	dc.b	'o','p','^','$',$0d,$00,'q','s'
+	dc.b	'd','f','g','h','j','k','l','m'
+	dc.b	$97,$00,$00,'*','w','x','c','v'
+	dc.b	'b','n',',',';',':','!',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,'-',$00,$00,$00,'+',$00
+	dc.b	$00,$00,$00,$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	'<',$00,$00,$00,$00,'/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0','.',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Shifted
+
+	dc.b	$00,$1b,'1','2','3','4','5','6'
+	dc.b	'7','8','9','0',$f8,'+',$08,$09
+	dc.b	'A','Z','E','R','T','Y','U','I'
+	dc.b	'O','P',$b9,$9c,$0d,$00,'Q','S'
+	dc.b	'D','F','G','H','J','K','L','M'
+	dc.b	'%',$00,$00,$e6,'W','X','C','V'
+	dc.b	'B','N','?','.','/',$dd,$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,'7'
+	dc.b	'8',$00,'-','4',$00,'6','+',$00
+	dc.b	'2',$00,'0',$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	'>',$00,$00,$00,$00,'/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0','.',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Caps
+
+	dc.b	$00,$1b,'&',$90,'"',$27,'(','-'
+	dc.b	$8a,'_',$80,$b6,')','=',$08,$09
+	dc.b	'A','Z','E','R','T','Y','U','I'
+	dc.b	'O','P','^','$',$0d,$00,'Q','S'
+	dc.b	'D','F','G','H','J','K','L','M'
+	dc.b	$97,$00,$00,'*','W','X','C','V'
+	dc.b	'B','N',',',';',':','!',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,'-',$00,$00,$00,'+',$00
+	dc.b	$00,$00,$00,$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	'<',$00,$00,$00,$00,'/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0','.',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Alternate
+
+	dc.b	$79,'~'
+	dc.b	$7a,'#'
+	dc.b	$7b,'{'
+	dc.b	$7c,'['
+	dc.b	$7d,'|'
+	dc.b	$7e,'`'
+	dc.b	$7f,$5c
+;	dc.b	$80,'^'
+;	dc.b	$81,'@'
+;	dc.b	$82,']'
+;	dc.b	$83,'}'
+	dc.b	$00
+
+; Alternate shifted
+
+	dc.b	$00
+
+; Alternate Caps
+
+	dc.b	$79,'~'
+	dc.b	$7a,'#'
+	dc.b	$7b,'{'
+	dc.b	$7c,'['
+	dc.b	$7d,'|'
+	dc.b	$7e,'`'
+	dc.b	$7f,$5c
+;	dc.b	$80,'^'
+;	dc.b	$81,'@'
+;	dc.b	$82,']'
+;	dc.b	$83,'}'
+	dc.b	$00
+
+; AltGr
+
+	dc.b	$03,'~'
+	dc.b	$04,'#'
+	dc.b	$05,'{'
+	dc.b	$06,'['
+	dc.b	$07,'|'
+	dc.b	$08,'`'
+	dc.b	$09,$5C
+	dc.b	$0A,'^'
+	dc.b	$0B,'@'
+	dc.b	$0C,']'
+	dc.b	$0D,'}'
+	dc.b	$79,'~'
+	dc.b	$7a,'#'
+	dc.b	$7b,'{'
+	dc.b	$7c,'['
+	dc.b	$7d,'|'
+	dc.b	$7e,'`'
+	dc.b	$7f,$5c
+;	dc.b	$80,'^'
+;	dc.b	$81,'@'
+;	dc.b	$82,']'
+;	dc.b	$83,'}'
+	dc.b	$00
+
+; Deadkeys
+
+	dc.b	'^','a',$83
+	dc.b	'^','e',$88
+	dc.b	'^','i',$8c
+	dc.b	'^','o',$93
+	dc.b	'^','u',$96
+
+	dc.b	$b9,'a',$84
+	dc.b	$b9,'e',$89
+	dc.b	$b9,'i',$8b
+	dc.b	$b9,'o',$94
+	dc.b	$b9,'u',$81
+
+	dc.b	$b9,'A',$8e
+	dc.b	$b9,'O',$99
+	dc.b	$b9,'U',$9a
+
+	dc.b	$00

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -33,9 +31,10 @@
  */
 
 # include "info.h"
+# include "init.h"
 
 # include "buildinfo/build.h"
-# include "buildinfo/cdef.h"
+# include "cdef.h"
 # include "buildinfo/version.h"
 
 # include "libkern/libkern.h"
@@ -69,9 +68,6 @@ const ulong MiNT_time =
 	| ((ulong) BUILD_MIN << 8)
 	| ((ulong) BUILD_SEC);
 
-const char  build_user    [] = BUILD_USER;
-const char  build_host    [] = BUILD_HOST;
-const char  build_domain  [] = BUILD_DOMAIN;
 const char  build_ctime   [] = BUILD_CTIME;
 const ulong build_serial     = BUILD_SERIAL;
 
@@ -156,7 +152,7 @@ const char *greet2 =
 
 # ifndef M68000
 const char *memprot_warning =
-	"\007\033p"
+	"\033p"
 	"             *** WARNING ***              \033q\r\n"
 	"You have turned off the memory protection.\r\n"
 	"This is not recommended and may not be\r\n"
@@ -242,12 +238,13 @@ const char *MSG_init_bootmenu =
 	"<2> Load external XFS: %s"
 	"<3> Load external XDD: %s"
 	"<4> Execute AUTO PRGs: %s"
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	"<5> Memory protection: %s"
 # endif
 	"<6> Init step by step: %s"
 	"<7> Debug/trace level: %d %s\r\n"
 	"<8> Debug output dev.: %d %s\r\n"
+	"<9> Write bootlog:     %d %s\r\n"
 	"<0> Remember settings: %s\r\n"
 	"[Return] accept,\r\n"
 	"[Ctrl-C] cancel.\r\n"
@@ -298,6 +295,7 @@ const char *MSG_cnf_argument_for = "argument %i for '%s' ";
 const char *MSG_cnf_missed = "missed";
 const char *MSG_cnf_must_be_a_num = "must be a number";
 const char *MSG_cnf_out_of_range = "out of range";
+const char *MSG_cnf_string_too_long = "'%s': string too long (max.: %ld) (ignored)";
 const char *MSG_cnf_must_be_a_bool = "must be of type boolean (y/n)";
 const char *MSG_cnf_missing_quotation = "missing quotation";
 const char *MSG_cnf_junk = "junk at end of line ignored.";
@@ -329,11 +327,6 @@ const char *ERR_dma_addroottimeout = "dma_block: addroottimeout failed!";
 
 /* --------- dosfile.c --------- */
 
-# if O_GLOBAL
-const char *MSG_oglobal_denied = "O_GLOBAL for sockets denied; update your network tools";
-const char *MSG_global_handle = "Opening global handle (%s)";
-# endif
-
 /* -------- filesys.c --------- */
 
 const char *ERR_fsys_inv_fdcwd = "In changedrv() called from %s, invalid fd/cwd";
@@ -364,7 +357,7 @@ const char *MSG_init_no_mint_folder = "No <boot>/mint or <boot>/mint/%s folder f
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 # ifdef VERBOSE_BOOT
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 const char *MSG_init_mp = "Memory protection %s\r\n";
 const char *MSG_init_mp_enabled = "enabled";
 const char *MSG_init_mp_disabled = "disabled";

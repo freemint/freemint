@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -50,6 +48,13 @@
 # include "proc.h"
 # include "time.h"
 
+#ifndef NO_CONST
+#  ifdef __GNUC__
+#    define NO_CONST(p) __extension__({ union { const void *cs; void *s; } x; x.cs = p; x.s; })
+#  else
+#    define NO_CONST(p) ((void *)(p))
+#  endif
+#endif
 
 /*
  * debugging stuff
@@ -117,9 +122,13 @@ sock_open (FILEPTR *f)
 static long
 sock_write (FILEPTR *f, const char *buf, long buflen)
 {
-	union { const char *cc; char *c; } bufptr; bufptr.cc = buf;
+	union { const char *cc; char *c; } bufptr;
 	struct socket *so = (struct socket *) f->devinfo;
-	struct iovec iov[1] = {{ bufptr.c, buflen }};
+	struct iovec iov[1];
+
+	bufptr.cc = buf;
+	iov[0].iov_base = bufptr.c;
+	iov[0].iov_len = buflen;
 
 	SOCKDEV_ASSERT ((so));
 
@@ -616,7 +625,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 				}
 				case SS_ISCONNECTED:
 				{
-					/* Connectionless sockets can be connected serveral
+					/* Connectionless sockets can be connected several
 					 * times. So their state must always be
 					 * SS_ISUNCONNECTED.
 					 */
@@ -656,7 +665,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SEND_CMD:
 		{
 			struct send_cmd *c = buf;
-			struct iovec iov[1] = {{ c->buf, c->buflen }};
+			struct iovec iov[1] = {{ NO_CONST(c->buf), c->buflen }};
 
 			if (so->state == SS_VIRGIN)
 				return EINVAL;
@@ -666,7 +675,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SENDTO_CMD:
 		{
 			struct sendto_cmd *c = buf;
-			struct iovec iov[1] = {{ c->buf, c->buflen }};
+			struct iovec iov[1] = {{ NO_CONST(c->buf), c->buflen }};
 
 			if (so->state == SS_VIRGIN)
 				return EINVAL;
@@ -676,15 +685,17 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SENDMSG_CMD:
 		{
 			struct sendmsg_cmd *c = buf;
-			struct msghdr *msg = c->msg;
+			const struct msghdr *msg = c->msg;
 
 				if (so->state == SS_VIRGIN)
 			return EINVAL;
 
+#if 0
 			if (msg->msg_accrights || msg->msg_accrightslen) {
 				msg->msg_accrights = NULL;
 				msg->msg_accrightslen = 0;
 			}
+#endif
 
 			return (*so->ops->send)(so, msg->msg_iov, msg->msg_iovlen,
 						f->flags & O_NDELAY, c->flags,

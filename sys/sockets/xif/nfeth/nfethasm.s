@@ -1,6 +1,4 @@
 |
-|  $Id$
-| 
 |  Interrupt routine for the Native Features Ethernet driver
 | 
 |  This file belongs to FreeMiNT. It's not in the original MiNT 1.12
@@ -30,7 +28,7 @@
 	.text
 
 	dc.l	0x58425241		| XBRA
-	dc.l	0x505a4950		| ARAe
+	dc.l	0x41524165		| ARAe
 _old_interrupt:
 	ds.l	1
 _my_interrupt:

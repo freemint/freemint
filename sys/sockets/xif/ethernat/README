@@ -3,8 +3,8 @@ Installation
 At the time of writing only drivers for MiNTNet exist.
 
 To install the EtherNat driver for MiNTNet, copy the file called 
-"ethernat.xif" to your MINT-directory and then create a file in the root 
-of your boot drive called "ethernat.inf". Then edit "ethernat.inf" so that 
+"ethernat.xif" to your MINT-directory and then create a file called 
+"ethernat.inf" in there too. Then edit "ethernat.inf" so that 
 it contains the MAC-address for your EtherNat board. We have for example 
 chosen this one:
 

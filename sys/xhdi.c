@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -52,7 +50,7 @@
 # include "info.h"		/* messages */
 # include "init.h"		/* boot_printf */
 # include "k_prot.h"		/* suser */
-
+# include "block_IO.h"		/* bio_sync_all */
 # include "proc.h"
 
 
@@ -72,8 +70,11 @@ XHDIfail (ushort opcode, ...)
 /* XHDI handler function */
 static long (*XHDI)(ushort opcode, ...) = XHDIfail;
 
+static long sys_XHDOSLimits (ushort which, ulong limit);
+
 ushort XHDI_installed = 0;
 
+#define XHDOSLIMITS 17
 
 long
 XHDI_init (void)
@@ -102,6 +103,36 @@ XHDI_init (void)
 	/* we need at least XHDI 1.10 */
 	if (XHDI_installed >= 0x110)
 	{
+		long tmp;
+
+		/* Tell the underlying XHDI driver of our limits. */
+		tmp = sys_XHDOSLimits(XH_DL_SECSIZ, 0);
+		XHDOSLimits(XH_DL_SECSIZ, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MINFAT, 0);
+		XHDOSLimits(XH_DL_MINFAT, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXFAT, 0);
+		XHDOSLimits(XH_DL_MAXFAT, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MINSPC, 0);
+		XHDOSLimits(XH_DL_MINSPC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXSPC, 0);
+		XHDOSLimits(XH_DL_MAXSPC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS, 0);
+		XHDOSLimits(XH_DL_CLUSTS, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_MAXSEC, 0);
+		XHDOSLimits(XH_DL_MAXSEC, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_DRIVES, 0);
+		XHDOSLimits( XH_DL_DRIVES, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLSIZB, 0);
+		XHDOSLimits(XH_DL_CLSIZB, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_RDLEN, 0);
+		XHDOSLimits(XH_DL_RDLEN, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS12, 0);
+		XHDOSLimits(XH_DL_CLUSTS12, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_CLUSTS32, 0);
+		XHDOSLimits(XH_DL_CLUSTS32, tmp);
+		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
+		XHDOSLimits(XH_DL_BFLAGS, tmp);
+
 # ifdef NONBLOCKING_DMA
 		r = XHMiNTInfo (XH_MI_SETKERINFO, &kernelinfo);
 # else
@@ -177,7 +208,7 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			
 			/* maximal clustersize */
 			case XH_DL_CLSIZB:
-				return 65536L;
+				return 32768L; /* This should be the value MIN_BLOCK in block_IO.c */
 			
 			/* maximal (bpb->rdlen * bpb->recsiz / 32) */
 			case XH_DL_RDLEN:
@@ -193,7 +224,7 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			
 			/* supported bits in bpb->bflags */
 			case XH_DL_BFLAGS:
-				return XHDOSLimits (XH_DL_BFLAGS, 0UL);
+				return XHDI (XHDOSLIMITS, XH_DL_BFLAGS, 0UL);
 		}
 	}
 	
@@ -212,7 +243,14 @@ sys_xhdi (ushort op,
 	/* version information */
 	if (op == 0)
 		return XHDI_installed;
-	
+
+	/* XHEject */
+	/* a2 contains do_eject parameter */
+	if (op == 5 && (a2 >> 16) == 1)
+	{
+		bio_sync_all ();
+	}
+
 	/* XHDrvMap */
 	if (op == 6)
 		return XHDI (6);
@@ -279,6 +317,9 @@ XHStop (ushort major, ushort minor, ushort do_stop, ushort key)
 long
 XHEject (ushort major, ushort minor, ushort do_eject, ushort key)
 {
+	if (do_eject == 1)
+		bio_sync_all ();
+
 	return XHDI (5, major, minor, do_eject, key);
 }
 
@@ -317,7 +358,7 @@ XHInqTarget2 (ushort major, ushort minor, ulong *block_size, ulong *device_flags
 {
 	return XHDI (11, major, minor, block_size, device_flags, product_name, stringlen);
 }
-          
+
 long
 XHInqDev2 (ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb, ulong *blocks, char *partid)
 {
@@ -351,6 +392,9 @@ XHMiNTInfo (ushort opcode, struct kerinfo *data)
 long
 XHDOSLimits (ushort which, ulong limit)
 {
+	if (limit == 0)
+		return sys_XHDOSLimits(which, limit);
+
 	return XHDI (17, which, limit);
 }
 

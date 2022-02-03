@@ -21,11 +21,9 @@ all-here: build
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 WARN =  -Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
-	-Wcast-qual \
-	-Werror
+	-Wcast-qual
 LDFLAGS = -nostdlib
 LDFLAGS += -Wl,-Map -Wl,map.txt
 # XXX should be come from arch/
@@ -46,43 +44,10 @@ NOCFLAGS-mcount.c = -pg
 NOCFLAGS-profil.c = -pg
 NOCFLAGS-update.c = -pg
 
-NOCFLAGS-bios.c = $(MODEL)
-CFLAGS-bios.c = -m68000
-NOCFLAGS-biosfs.c = $(MODEL)
-CFLAGS-biosfs.c = -m68000
-NOCFLAGS-dos.c = $(MODEL)
-CFLAGS-dos.c = -m68000
-NOCFLAGS-dosfile.c = $(MODEL)
-CFLAGS-dosfile.c = -m68000
-NOCFLAGS-fatfs.c = $(MODEL)
-CFLAGS-fatfs.c = -m68000
-NOCFLAGS-k_exec.c = $(MODEL)
-CFLAGS-k_exec.c = -m68000
-NOCFLAGS-k_exit.c = $(MODEL)
-CFLAGS-k_exit.c = -m68000
-NOCFLAGS-k_fork.c = $(MODEL)
-CFLAGS-k_fork.c = -m68000
-NOCFLAGS-module.c = $(MODEL)
-CFLAGS-module.c = -m68000
-NOCFLAGS-proc.c = $(MODEL)
-CFLAGS-proc.c = -m68000
-NOCFLAGS-procfs.c = $(MODEL)
-CFLAGS-procfs.c = -m68000
-NOCFLAGS-ptrace.c = $(MODEL)
-CFLAGS-ptrace.c = -m68000
-NOCFLAGS-random.c = $(MODEL)
-CFLAGS-random.c = -m68000
-NOCFLAGS-rendez.c = $(MODEL)
-CFLAGS-rendez.c = -m68000
-NOCFLAGS-signal.c = $(MODEL)
-CFLAGS-signal.c = -m68000
-NOCFLAGS-timeout.c = $(MODEL)
-CFLAGS-timeout.c = -m68000
-NOCFLAGS-xbios.c = $(MODEL)
-CFLAGS-xbios.c = -m68000
-
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
+
+CFLAGS-info.c = -I$(srcdir)/$(compile_dir)
 
 # default definitions
 GENFILES = $(BUILDINFO) $(MINT)
@@ -98,13 +63,13 @@ VPATH = ..
 build: $(MINT)
 
 $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ \
+	$(CC) $(CFLAGS) $(LDFLAGS) -s -o $@ -Wl,-Map=mint.map \
 		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/startup` ; \
 			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
 		$(OBJS) $(BUILDINFO) \
 		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/objs` ; \
 			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
-		$(shell for mdir in '$(MODULEDIRS)'; do \
+		$(shell for mdir in $(MODULEDIRS); do \
 				for file in `cat $(srcdir)/$$mdir/$(compile_dir)/objs` ; \
 					do echo $(srcdir)/$$mdir/$(compile_dir)/$$file ; \
 				done; \
@@ -112,14 +77,13 @@ $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
 		$(LIBS)
 
 $(BUILDINFO): compiler buildheader buildserial
-	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/$(BUILD).c
 
 compiler:
-	cd $(srcdir)/buildinfo; \
+	(cd $(srcdir)/buildinfo; \
 	CC="$(CC)" \
-	OPTS="$(GENERAL) $(MODEL) $(OPTS)" \
-	DEFS="$(DEFINITIONS)" \
-	sh cdef.sh
+	OPTS="$(filter-out $(nocflags), $(MODEL) $(GENERAL) $(OPTS))" \
+	DEFS="$(filter-out $(nocflags), $(DEFINITIONS))" \
+	sh cdef.sh) > $(srcdir)/$(compile_dir)/cdef.h
 
 buildheader:
 	cd $(srcdir)/buildinfo; ./mkbuild

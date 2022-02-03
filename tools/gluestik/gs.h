@@ -2,8 +2,8 @@
  * Filename:     gs.h
  * Project:      GlueSTiK
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
  * 
  * Copying:      Copyright 1999 Frank Naumann <fnaumann@freemint.de>
  * 
@@ -41,11 +41,8 @@
 # ifndef GS_DEBUG
 # define DEBUG(x)
 # else
-# define DEBUG(x)	{ printf x; printf ("\n"); fflush (stdout); }
-# endif
-
-# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
-# error Require at least MiNTLib 0.57
+# define DEBUG(x)	{ printf x; printf ("\r\n"); fflush (stdout); }
+# define DEBUG_ADDR(x) (unsigned int)((x) >> 24) & 0xff, (unsigned int)((x) >> 16) & 0xff, (unsigned int)((x) >> 8) & 0xff, (unsigned int)((x)) & 0xff
 # endif
 
 typedef unsigned char	uchar;
@@ -56,10 +53,6 @@ typedef unsigned char	uchar;
 
 # define str(x)		_stringify (x)
 # define _stringify(x)	#x
-
-# define SOCKDEV	"u:\\dev\\socket"
-# define FREECOOKIE	0x46524545L	/* FREE */
-# define JAR		0x5A0
 
 /* struct for Pmsg() */
 typedef struct
@@ -72,5 +65,6 @@ typedef struct
 # define FLG_SEM		0x4753464CUL	/* 'GSFL' */
 # define GS_GETHOSTBYNAME	0x6d676d11UL
 
+extern short magix;
 
 # endif /* _gs_h */

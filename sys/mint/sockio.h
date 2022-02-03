@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -76,6 +74,7 @@
 # define SIOCGARP	(('S' << 8) | 41)	/* get ARP table entry */
 # define SIOCSARP	(('S' << 8) | 42)	/* set ARP table entry */
 
+# define SIOCSIFHWADDR	(('S' << 8) | 49)	/* set hardware address */
 # define SIOCGIFHWADDR	(('S' << 8) | 50)	/* get hardware address */
 # define SIOCGLNKSTATS	(('S' << 8) | 51)	/* get link statistics */
 # define SIOCSIFOPT	(('S' << 8) | 52)	/* set interface option */

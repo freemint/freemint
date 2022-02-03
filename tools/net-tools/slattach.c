@@ -45,6 +45,11 @@
 
 #define FLOW_HARD	2
 
+#if __GNUC_PREREQ(8, 1)
+/* ignore warnings from strncpy(), we *do* want to truncate these */
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
 
 struct bauds
 {
@@ -145,7 +150,7 @@ do_link (char *device, char *name)
 	}
 
 	close (sockfd);
-	strncpy (ifname, ifl.ifname, sizeof (ifl.ifname));
+	strncpy (ifname, ifl.ifname, sizeof (ifname));
 }
 
 /*

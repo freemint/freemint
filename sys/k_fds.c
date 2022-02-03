@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -74,15 +72,15 @@ fd_alloc (struct proc *p, short *fd, short min, const char *func)
 	}
 
 	DEBUG (("%s: process out of handles", func));
-# if 1
+# ifdef DEBUG_INFO
 	for (i = min; i < p->p_fd->nfiles; i++)
 	{
 		FILEPTR *f = p->p_fd->ofiles[i];
 
 		if (f && (f != (FILEPTR *) 1))
-			DEBUG (("%i -> %lx, links %i, flags %x, dev = %lx", i, f, f->links, f->flags, f->dev));
+			DEBUG (("%i -> %p, links %i, flags %x, dev = %p", i, f, f->links, f->flags, f->dev));
 		else
-			DEBUG (("%i -> %lx", i, f));
+			DEBUG (("%i -> %p", i, f));
 	}
 # endif
 	return EMFILE;
@@ -118,7 +116,7 @@ fp_alloc (struct proc *p, FILEPTR **resultfp, const char *func)
 
 	*resultfp = fp;
 
-	TRACE (("%s: fp_alloc: kmalloc %lx", func, fp));
+	TRACE (("%s: fp_alloc: kmalloc %p", func, fp));
 	return 0;
 }
 
@@ -144,24 +142,17 @@ fp_free (FILEPTR *fp, const char *func)
 	// later
 	// free_cred (fp->cred);
 
-	TRACE (("%s: fp_free: kfree %lx", func, fp));
+	TRACE (("%s: fp_free: kfree %p", func, fp));
 	kfree (fp);
 }
 
 long
 fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 {
-# if O_GLOBAL
-	if (*fd >= 100)
-	{
-		*fd -= 100;
-		*p = rootproc;
-	}
-# endif
-
-	assert ((*p) && (*p)->p_fd);
+	assert ((*p));
 
 	if ((*fd < MIN_HANDLE)
+		|| !(*p)->p_fd
 	    || (*fd >= (*p)->p_fd->nfiles)
 	    || !(*fp = (*p)->p_fd->ofiles[*fd])
 	    || (*fp == (FILEPTR *) 1))
@@ -176,9 +167,10 @@ fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 long
 fp_get1 (struct proc *p, short fd, FILEPTR **fp, const char *func)
 {
-	assert (p && p->p_fd);
+	assert (p);
 
 	if ((fd < MIN_HANDLE)
+			|| !p->p_fd
 	    || (fd >= p->p_fd->nfiles)
 	    || !(*fp = p->p_fd->ofiles[fd])
 	    || (*fp == (FILEPTR *) 1))
@@ -196,7 +188,7 @@ fp_get1 (struct proc *p, short fd, FILEPTR **fp, const char *func)
  */
 
 long
-do_dup (short fd, short min)
+do_dup (short fd, short min, int cmd)
 {
 	PROC *p = get_curproc();
 	FILEPTR *fp;
@@ -215,7 +207,7 @@ do_dup (short fd, short min)
 		return ret;
 	}
 
-	FP_DONE (get_curproc(), fp, newfd, ((newfd >= MIN_OPEN) ? FD_CLOEXEC : 0));
+	FP_DONE (get_curproc(), fp, newfd, cmd ? FD_CLOEXEC : 0);
 
 	fp->links++;
 	return newfd;
@@ -223,7 +215,7 @@ do_dup (short fd, short min)
 
 /* do_open(f, name, rwmode, attr, x)
  *
- * f      - pointer to FIELPTR *
+ * f      - pointer to FILEPTR *
  * name   - file name
  * rwmode - file access mode
  * attr   - TOS attributes for created files (if applicable)
@@ -235,7 +227,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	struct proc *p = get_curproc();
 
 	fcookie dir, fc;
-	long devsp;
+	long devsp = 0;
 	DEVDRV *dev;
 	long r;
 	XATTR xattr;
@@ -254,6 +246,16 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	{
 		DEBUG (("do_open(%s): error %ld", name, r));
 		return r;
+	}
+
+	/*
+	 * If temp1 is a NULL string, then use the name again.
+	 *
+	 * This can occur when trying to open the ROOT directory of a
+	 * drive. i.e. /, or C:/ or D:/ etc.
+	 */
+	if (*temp1 == '\0') {
+		strncpy(temp1, name, PATH_MAX);
 	}
 
 	/*

@@ -4,9 +4,10 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stddef.h>
 
 #define SERVER	"/tmp/dgramd"
-#define OFFSET	((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	offsetof(struct sockaddr_un, sun_path)
 
 /*#define CONNECT*/
 
@@ -53,7 +54,7 @@ main (void)
 	for (;;)
 	{
 		char scratch[1];
-		size_t addrlen = sizeof (sun);
+		socklen_t addrlen = sizeof (sun);
 		int i;
 		
 		r = recvfrom (fd, scratch, sizeof (scratch), 0,

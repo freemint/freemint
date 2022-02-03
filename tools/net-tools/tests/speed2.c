@@ -1,5 +1,6 @@
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -16,9 +17,11 @@ typedef size_t socklen_t;
 #define SENDING	10000000
 
 #define SERVER	"/tmp/fort"
-#define OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
+#define OFFSET	offsetof(struct sockaddr_un, sun_path)
 
+#if 0
 static int run = 1;
+#endif
 static int fd = 0;
 
 static void
@@ -98,7 +101,7 @@ main (int argc, char *argv[])
 		signal (SIGTERM, sig_handler);
 		signal (SIGHUP, sig_handler);
 		
-		// while (run)
+		/* while (run) */
 		{
 			int client;
 			long nbytes;
@@ -214,7 +217,7 @@ main (int argc, char *argv[])
 			printf ("received %qd bytes (%qd kb) total in %li ticks\n",
 				nbytes, nbytes / 1024, (long)(end - start));
 			
-			bytes_per_second = nbytes * CLK_TCK / (end - start);
+			bytes_per_second = nbytes * CLOCKS_PER_SEC / (end - start);
 			printf ("%qd bytes per second (%qd kb/s)\n",
 				bytes_per_second, bytes_per_second / 1024);
 		}

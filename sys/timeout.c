@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  * 
@@ -157,7 +155,7 @@ inserttimeout (TIMEOUT *t, long delta)
  */
 
 static TIMEOUT *
-__addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
+__addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *, long arg), ushort flags)
 {
 	TIMEOUT *t;
 	
@@ -198,13 +196,13 @@ __addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
 }
 
 TIMEOUT * _cdecl
-addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
+addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *, long arg))
 {
 	return __addtimeout (p, delta, func, 0);
 }
 
 TIMEOUT * _cdecl
-addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
+addtimeout_curproc (long delta, void _cdecl (*func)(PROC *, long arg))
 {
 	return __addtimeout (get_curproc(), delta, func, 0);
 }
@@ -229,7 +227,7 @@ addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
  */
 
 TIMEOUT * _cdecl
-addroottimeout (long delta, void _cdecl (*func)(PROC *), ushort flags)
+addroottimeout (long delta, void _cdecl (*func)(PROC *, long arg), ushort flags)
 {
 	return __addtimeout (rootproc, delta, func, flags);
 }
@@ -415,13 +413,13 @@ checkalarms (void)
 	/* see if there are outstanding timeout requests to do */
 	while (tlist && ((delta = tlist->when) <= 0))
 	{
-		/* hack: pass an extra long as arg, those intrested in it will
+		/* hack: pass an extra long as args, those intrested in it will
 		 * need a cast and have to place it in t->arg themselves but
 		 * that way everything else still works without change -nox
 		 */
-		register long arg = tlist->arg;
-		register PROC *p = tlist->proc;
-		void (*evnt)(PROC *, long arg) = (void (*)(PROC *, long)) tlist->func;
+		register long args __asm__("d0") = tlist->arg;
+		register PROC *p __asm__("a0") = tlist->proc;
+		to_func *evnt = tlist->func;
 		register TIMEOUT *old = tlist;
 		
 		tlist = tlist->next;
@@ -446,7 +444,23 @@ checkalarms (void)
 		TRACE (("doing timeout code for pid %d", p->pid));
 		
 		/* call the timeout function */
-		(*evnt)(p, arg);
+		/*
+		 * take care to call it in a way that works both for cdecl
+		 * and Pure-C calling conventions, since there seem
+		 * to be drivers around that were compiled by it.
+		 */
+		__asm__ __volatile__(
+			"\tmove.l %1,-(%%a7)\n"
+			"\tmove.l %0,-(%%a7)\n"
+			"\tjsr (%2)\n"
+#ifdef __mcoldfire__
+			"\taddq.l #8,%%a7\n"
+#else
+			"\taddq.w #8,%%a7\n"
+#endif
+		: /* no outputs */
+		: "a"(p), "d"(args), "a"(evnt)
+		: "d1", "d2", "a1", "a2", "cc", "memory");
 		
 		sr = spl7 ();
 	}
@@ -467,7 +481,7 @@ checkalarms (void)
  */
 
 static void _cdecl
-unnapme (PROC *p)
+unnapme (PROC *p, long arg)
 {
 	register short sr = spl7 ();
 	

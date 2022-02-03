@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -23,17 +21,20 @@
 # include "mint/filedesc.h"
 # include "mint/basepage.h"
 # include "mint/xbra.h"
+# include "mint/ssystem.h"
 
 # include "arch/cpu.h"		/* init_cache, cpush, setstack */
 # include "arch/context.h"	/* restore_context */
 # include "arch/intr.h"		/* new_mediach, new_rwabs, new_getbpb, same for old_ */
 # include "arch/init_intr.h"	/* init_intr() */
 # include "arch/init_mach.h"	/* */
+# include "arch/info_mach.h"	/* machine_str() */
 # include "arch/mmu.h"		/* save_mmu */
 # include "arch/mprot.h"	/* */
 # include "arch/syscall.h"	/* call_aes */
 # include "arch/timer.h"	/* delay_seconds() */
 # include "arch/tosbind.h"
+# include "arch/aranym.h"
 
 # include "bios.h"		/* */
 # include "block_IO.h"		/* init_block_IO */
@@ -55,12 +56,13 @@
 # include "ipc_socketutil.h"	/* domaininit() */
 # include "k_exec.h"		/* sys_pexec */
 # include "k_exit.h"		/* sys_pwaitpid */
-# include "k_fds.h"		/* do_open/do_pclose */
+# include "k_fds.h"		/* do_open/do_close */
 # include "keyboard.h"		/* init_keytbl() */
 # include "kmemory.h"		/* kmalloc */
 # include "memory.h"		/* init_mem, get_region, attach_region, restr_screen */
 # include "mis.h"		/* startup_shell */
 # include "module.h"		/* load_all_modules */
+# include "pcibios.h"		/* pcibios_init() */
 # include "proc.h"		/* init_proc, add_q, rm_q */
 # include "signal.h"		/* post_sig */
 # include "syscall_vectors.h"
@@ -78,6 +80,15 @@
 
 # define EXEC_OS	0x4feL
 
+# define CACHE_OFF	0x00000000L
+# define CACHE_ON	CTRLCACHE_EIC | CTRLCACHE_EDC | CTRLCACHE_EBC | CTRLCACHE_IBE | \
+			CTRLCACHE_DBE | CTRLCACHE_FIC | CTRLCACHE_FOC | CTRLCACHE_DPI | \
+			CTRLCACHE_ESB
+# define CCW_MASK	CTRLCACHE_EIC | CTRLCACHE_EDC | CTRLCACHE_EBC | CTRLCACHE_FI  | \
+			CTRLCACHE_FD  | CTRLCACHE_IBE | CTRLCACHE_DBE | CTRLCACHE_FIC | \
+			CTRLCACHE_FOC | CTRLCACHE_DPI |	CTRLCACHE_ESB
+
+
 long _cdecl mint_criticerr (long);
 void _cdecl do_exec_os (register long basepage);
 
@@ -86,7 +97,6 @@ void mint_thread(void *arg);
 /* print an additional boot message
  */
 short intr_done = 0;
-
 void
 boot_print (const char *s)
 {
@@ -110,7 +120,7 @@ boot_printf (const char *fmt, ...)
 }
 
 /* Stop and ask the user for confirmation to continue */
-short step_by_step;
+short step_by_step = 0;
 
 void
 stop_and_ask(void)
@@ -206,20 +216,50 @@ check_for_gem (void)
 	return aes_globl[0];
 }
 
-static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
+static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS_SPECIAL /*?*/;
 extern int debug_level;
+
+typedef struct _osheader
+{
+	ushort    os_entry;       /* BRAnch instruction to Reset-handler  */
+  ushort    os_version;     /* TOS version number                   */
+  void       *reseth;         /* Pointer to Reset-handler             */
+  struct _osheader *os_beg;   /* Base address of the operating system */
+  void       *os_end;         /* First byte not used by the OS        */
+  ulong     os_rsvl;        /* Reserved                             */
+ 	void/*GEM_MUPB*/   *os_magic;       /* GEM memory-usage parameter block     */
+  long     os_date;        /* TOS date (English !) in BCD format   */
+  ushort    os_conf;        /* Various configuration bits           */
+  ushort    os_dosdate;     /* TOS date in GEMDOS format            */
+
+    /* The following components are available only as of TOS Version
+       1.02 (Blitter-TOS)               */
+  uchar    **p_root;         /* Base address of the GEMDOS pool      */
+  uchar    **pkbshift;       /* Pointer to BIOS Kbshift variable
+                                  (for TOS 1.00 see Kbshift)           */
+  BASEPAGE  **p_run;          /* Address of the variables containing
+                                 a pointer to the current GEMDOS
+                                 process.                             */
+  ulong     p_rsv2;         /* Reserved, always 'ETOS', if EmuTOS present     */
+} OSHEADER;
+
+short write_boot_file = 0;
+char boot_file[48+12] = { 0 };
+bool emutos = FALSE;
+
 void
 init (void)
 {
 	long r, *sysbase;
+	OSHEADER *os;
 	FILEPTR *f;
-	
+
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
 	boot_print (greet1);
 	boot_print (greet2);
-	debug_level = 3;
+	debug_level = ALERT_LEVEL;
 	/*
 	 * Initialize sysdir
 	 *
@@ -231,8 +271,8 @@ init (void)
 	 */
 	if (TRAP_Dsetpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
-// 	else if (TRAP_Dsetpath("\\mint\\") == 0)
-// 		strcpy(sysdir, "\\mint\\");
+ 	else if (TRAP_Dsetpath("\\mint\\") == 0)
+ 		strcpy(sysdir, "\\mint\\");
 # ifndef BOOTSTRAPABLE
 	else
 	{
@@ -255,6 +295,14 @@ init (void)
 		TRAP_Pterm0();
 	}
 
+	/* Read user defined defaults before anything else so we can override them later */
+	read_ini();
+
+	/* Ask the user if s/he wants to boot MiNT */
+	pause_and_ask();
+
+	boot_print("\r\n");
+
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
 	 * - also sets no_mem_prot
@@ -267,14 +315,6 @@ init (void)
 		TRAP_Pterm0();
 	}
 
-	/* Read user defined defaults */
-	read_ini();
-
-	/* Ask the user if s/he wants to boot MiNT */
-	pause_and_ask();
-
-	boot_print("\r\n");
-
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */
 	gemdos_version = TRAP_Sversion ();
@@ -282,17 +322,13 @@ init (void)
 
 	get_my_name();
 
-# ifndef M68000
 # ifdef VERBOSE_BOOT
+# ifdef WITH_MMU_SUPPORT
 	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
 # endif
-# endif
-# ifdef VERBOSE_BOOT
 	/* These are set inside getmch() */
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
-# endif
 
-# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_supermode);
 # endif
 
@@ -310,7 +346,7 @@ init (void)
 		usp = get_usp();
 		ssp = get_ssp();
 
-		DEBUG(("Kernel BASE: 0x%08lx", _base));
+		DEBUG(("Kernel BASE: 0x%08lx", (unsigned long)_base));
 		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
 		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
 		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
@@ -324,7 +360,7 @@ init (void)
 	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
 # endif
 
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_saving_mmu);
 # endif
@@ -347,8 +383,11 @@ init (void)
 	 */
 	sysbase = *((long **)(0x4f2L));	/* gets the RAM OS header */
 	sysbase = (long *)sysbase[2];	/* gets the ROM one */
+	os = (OSHEADER*)sysbase;
 
 	tosvers = (short)(sysbase[0] & 0x0000ffff);
+	if( gl_lang == -1 )	// no _AKP found
+		gl_lang = os->os_conf >> 1;
 	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
 
@@ -356,7 +395,11 @@ init (void)
 	boot_printf(MSG_init_tosver_kbshft, (tosvers >> 8) & 0xff, tosvers & 0xff, \
 			falcontos ? " (FalconTOS)" : "", (long)kbshft);
 # endif
+	/* Check and flag if we're running on EmuTOS */
+	emutos = (os->p_rsv2 == 0x45544f53 ? TRUE : FALSE); /* 'ETOS' */
 
+#ifndef __mcoldfire__
+	/* Currently, ColdFire machines have trouble with Bconmap() */
 	if (falcontos)
 	{
 		bconmap2 = (BCONMAP2_T *) TRAP_Bconmap (-2);
@@ -380,13 +423,14 @@ init (void)
 		 */
 		if (has_bconmap)
 		{
-			if (mch == ST || mch == STE || mch == MEGASTE)
+			if (machine == machine_st || machine == machine_ste || machine == machine_megaste)
 				has_bconmap = 0;
 		}
 
 		if (has_bconmap)
 			bconmap2 = (BCONMAP2_T *) TRAP_Bconmap (-2);
 	}
+#endif
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_bconmap, has_bconmap ? MSG_init_present : MSG_init_not_present);
@@ -432,7 +476,7 @@ init (void)
 
 	/* initialize processes */
 	init_proc();
-	DEBUG (("init_proc() ok! (base = %lx)", _base));
+	DEBUG (("init_proc() ok! (base = %p)", _base));
 
 	/* initialize system calls */
 	init_bios ();
@@ -446,21 +490,28 @@ init (void)
 	DEBUG (("init_keybd() ok!"));
 # endif
 
+	/* initalize PCI-BIOS interface */
+#ifdef PCI_BIOS
+	if (init_pcibios())
+		DEBUG (("No PCI-BIOS found"));
+#endif
+
 	/* Disable all CPU caches */
 # ifndef M68000
-	ccw_set(0x00000000L, 0x0000c57fL);
+	ccw_set(CACHE_OFF, CCW_MASK);
+
 	DEBUG (("ccw_set() ok!"));
 # endif
 
 	/* initialize interrupt vectors */
 	init_intr ();
-	DEBUG (("init_intr() ok!"));
 
 	/* after init_intr we are in kernel
 	 * trapping isn't allowed anymore; use direct calls
 	 * from now on
 	 */
 	intr_done = 1;
+	DEBUG (("init_intr() ok!"));
 
 	/* Enable superscalar dispatch on 68060 */
 # ifndef M68000
@@ -471,7 +522,7 @@ init (void)
 	 * Don't touch the write/allocate bits, though.
 	 */
 # ifndef M68000
-	ccw_set(0x0000c567L, 0x0000c57fL);
+	ccw_set(CACHE_ON, CCW_MASK);
 # endif
 
 # ifdef _xx_KMEMDEBUG
@@ -489,6 +540,102 @@ init (void)
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
 
+# ifdef BOOTSTRAPABLE
+	/* Bootstrapped kernel (executed directly by some loader) does
+	 * not have any drive access until the init_filesys() is called.
+	 * To be able to boot from a kernel built-in filesystem we check
+	 * for the sysdir here again. */
+
+	/* the sysdrv to check for the sysdir folder */
+	sys_d_setdrv(sysdrv);
+
+
+	if (sys_d_setpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
+		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
+	else if (sys_d_setpath("\\mint\\") == 0)
+		strcpy(sysdir, "\\mint\\");
+	else
+	{
+		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
+		step_by_step = -1; stop_and_ask(); /* wait for a key */
+		sys_s_hutdown(SHUT_HALT);
+	}
+
+# endif
+
+	/* Make the sysdir MiNT-style */
+	{
+		char temp[32];
+		short sdx = 0;
+
+		while (sysdir[sdx])
+		{
+			if (sysdir[sdx] == '\\')
+				sysdir[sdx] = '/';
+			sdx++;
+		}
+
+		ksprintf(temp, sizeof(temp), "u:/a%s", sysdir);
+		temp[3] = (char)(sysdrv + 'a');
+
+		strcpy(sysdir, temp);
+	}
+
+	/* create mchdir */
+	{
+		char *mch_str = NULL;
+
+		switch (machine)
+		{
+			case machine_st:
+				mch_str = "st";
+				break;
+			case machine_ste:
+				mch_str = "ste";
+				break;
+			case machine_megaste:
+				mch_str = "megaste";
+				break;
+			case machine_tt:
+				mch_str = "tt";
+				break;
+			case machine_falcon:
+				mch_str = "falcon";
+				break;
+			case machine_milan:
+				mch_str = "milan";
+				break;
+			case machine_hades:
+				mch_str = "hades";
+				break;
+			case machine_ct2:
+				mch_str = "ct2";
+				break;
+			case machine_ct60:
+				mch_str = "ct60";
+				break;
+			case machine_firebee:
+				mch_str = "firebee";
+				break;
+#if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+			/* only when really running on aranym */
+			case machine_aranym:
+				if (strcmp(machine_str(), "ARAnyM") == 0)
+					mch_str = "aranym";
+				break;
+#endif
+			case machine_unknown:
+			default:
+				/* nothing to do */
+				break;
+		}
+
+		if (mch_str != NULL)
+		{
+			ksprintf (mchdir, sizeof(mchdir), "%s%s/", sysdir, mch_str);
+		}
+	}
+
 	/* set up standard file handles for the current process
 	 * do this here, *after* init_intr has set the Rwabs vector,
 	 * so that AHDI doesn't get upset by references to drive U:
@@ -503,9 +650,43 @@ init (void)
 
 	rootproc->p_fd->control = f;
 	rootproc->p_fd->ofiles[0] = f; f->links++;
-	rootproc->p_fd->ofiles[1] = f; f->links++;
+	if( !write_boot_file )
+	{
+		rootproc->p_fd->ofiles[1] = f;
+		f->links++;
+	}
+	else
+	{
+		FILEPTR *fb;
 
-#ifndef COLDFIRE
+		r = FP_ALLOC(rootproc, &fb);
+		if (r) FATAL("Can't allocate fp for bootlog!");
+
+		r = ENOENT;	/* file not found */
+		if (strlen(mchdir) > 0)
+		{
+			ksprintf (boot_file, sizeof(boot_file), "%s%s", mchdir, "boot.log");
+			r = do_open( &fb, boot_file, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		}
+
+		if (r)
+		{
+			ksprintf (boot_file, sizeof(boot_file), "%s%s", sysdir, "boot.log");
+			r = do_open( &fb, boot_file, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		}
+
+		if (!r)
+		{
+			rootproc->p_fd->ofiles[1] = fb;
+		}
+		else
+		{
+			boot_print("could not open bootlog file\r\n");
+			(void)TRAP_Cconin();
+			rootproc->p_fd->ofiles[1] = f;
+			f->links++;
+		}
+	}
 
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
@@ -559,57 +740,12 @@ init (void)
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
 
-#endif
-
-# ifdef BOOTSTRAPABLE
-	/* Bootstrapped kernel (executed directly by some loader) does
-	 * not have any drive access until the init_filesys() is called.
-	 * To be able to boot from a kernel built-in filesystem we check
-	 * for the sysdir here again. */
-
-	/* the sysdrv to check for the sysdir folder */
-	sys_d_setdrv(sysdrv);
-
-
-	if (sys_d_setpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
-		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
-	else if (sys_d_setpath("\\mint\\") == 0)
-		strcpy(sysdir, "\\mint\\");
-	else 
-	{
-		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
-		step_by_step = -1; stop_and_ask(); /* wait for a key */
-		sys_s_hutdown(SHUT_HALT);
-	}
-
-# endif
-
-	/* Make the sysdir MiNT-style */
-	{
-		char temp[32];
-		short sdx = 0;
-
-		while (sysdir[sdx])
-		{
-			if (sysdir[sdx] == '\\')
-				sysdir[sdx] = '/';
-			sdx++;
-		}
-
-		ksprintf(temp, sizeof(temp), "u:/a%s", sysdir);
-		temp[3] = (char)(sysdrv + 'a');
-
-		strcpy(sysdir, temp);
-	}
-
 	/* print the warning message if MP is turned off */
-# ifndef COLDFIRE
-# ifndef M68000
-	if (no_mem_prot && mcpu > 20)
+# ifdef WITH_MMU_SUPPORT
+	if (no_mem_prot && mcpu > 20 && !is_apollo_68080)
 		boot_print(memprot_warning);
 
 	stop_and_ask();
-# endif
 # endif
 
 	/* initialize delay */
@@ -647,6 +783,8 @@ init (void)
 	boot_print(MSG_init_loading_modules);
 # endif
 
+	/* set cwd to sysdir for modules */
+	sys_d_setpath(sysdir);
 	/* load the kernel modules */
 	load_all_modules((load_xdd_f | (load_xfs_f << 1)));
 
@@ -973,7 +1111,16 @@ mint_thread(void *arg)
 	 */
 	{
 		unsigned short i;
-		char cwd[PATH_MAX] = "X:";
+		char *cwd;
+
+                cwd = (char *)sys_m_xalloc(PATH_MAX, 0x0003);
+                if (!cwd)
+                {
+			FATAL ("Can't allocate OLDTOSFS cwd!");
+                }
+
+		memset(cwd, 0, PATH_MAX);
+		cwd[1] = ':';
 
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
@@ -995,6 +1142,8 @@ mint_thread(void *arg)
 				}
 			}
 		}
+
+		(void) sys_m_free((long)cwd);
 	}
 # endif
 
@@ -1017,11 +1166,26 @@ mint_thread(void *arg)
 		stop_and_ask();
 	}
 
-	/* we default to U:\ before starting init */
-	sys_d_setdrv('u' - 'a');
+	/* If we are starting the GEM, default to the boot drive,
+	 * so it can properly load the accessories.
+	 * Otherwise, default to U:\ before starting INIT.
+	 */
+	sys_d_setdrv(init_is_gem ? sysdrv : 'u' - 'a');
  	sys_d_setpath("/");
 	stop_and_ask();
 
+	DEBUG(( "closing bootlog, fd=%p\r\n",rootproc->p_fd->ofiles[0] ));
+
+	if( write_boot_file )
+	{
+		//boot_printf( "closing bootlog, fd=%lx\r\n",rootproc->p_fd->ofiles[1] );
+		r = do_close( rootproc, rootproc->p_fd->ofiles[1] );
+		if( r )
+			DEBUG(( "error closing bootlog:%ld\r\n", r));
+		rootproc->p_fd->ofiles[1] = rootproc->p_fd->ofiles[0];
+		rootproc->p_fd->ofiles[0]->links++;
+		write_boot_file = 0;
+	}
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();
 
@@ -1075,16 +1239,16 @@ mint_thread(void *arg)
 	  	if (init_is_gem)
 	  	{
 	  		BASEPAGE *bp;
-			long entry;
+				long entry;
 # ifdef VERBOSE_BOOT
-			boot_print(MSG_init_rom_AES);
+				boot_print(MSG_init_rom_AES);
 # endif
-			entry = *((long *) EXEC_OS);
-			bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
-			bp->p_tbase = entry;
+				entry = *((long *) EXEC_OS);
+				bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
+				bp->p_tbase = entry;
 
-			r = sys_pexec(106, (char *) "GEM", bp, 0L);
-			DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
+				r = sys_pexec(106, (char *) "GEM", bp, 0L);
+				DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
 	  	}
 	  	else
 	  	{
@@ -1130,11 +1294,13 @@ mint_thread(void *arg)
 # endif
 
 # ifdef BUILTIN_SHELL
-# ifdef VERBOSE_BOOT
-		boot_print(MSG_init_starting_internal_shell);
-# endif
 		if (r <= 0)
+		{
+# ifdef VERBOSE_BOOT
+			boot_print(MSG_init_starting_internal_shell);
+# endif
 			r = startup_shell();	/* r is the shell's pid */
+		}
 # endif
 	}
 
@@ -1152,7 +1318,6 @@ mint_thread(void *arg)
 	if (pid > 0)
 	{
 		do {
-# if 1
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
 			{
@@ -1163,10 +1328,6 @@ mint_thread(void *arg)
 				 * else */
 					cpu_stop();	/* stop and wait for an interrupt */
 			}
-# else
-			r = sys_pwaitpid(-1, 0, NULL);
-			TRACE(("%s(): sys_pwaitpid() done -> %li (%li)", __FUNCTION__, r, ((r & 0xffff0000L) >> 16)));
-# endif
 		}
 		while (pid != ((r & 0xffff0000L) >> 16));
 	}
@@ -1177,10 +1338,12 @@ mint_thread(void *arg)
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
 	 */
+	FORCE("init:sys_s_hutdown:COLD");
 	(void) sys_s_hutdown(SHUT_COLD);	/* cold reboot is more efficient ;-) */
 # else
 	/* With debug kernels, always halt
 	 */
+	FORCE("init:sys_s_hutdown:HALT");
 	(void) sys_s_hutdown(SHUT_HALT);
 # endif
 

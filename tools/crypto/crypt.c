@@ -132,7 +132,7 @@ blow_doblock (BF_KEY *bfk,
 	count = 0;
 	blocksize = p_secsize;
 	
-# ifdef __M68000__
+# if !defined(__mc68020__) && !defined(__mc68030__) && !defined(__mc68040__) && !defined(__mc68060__) && !defined(__mcoldfire__)
 	if (((ulong) buf & 1L) /* && (mcpu < 20) */)
 	{
 		/* Unfortunately, the block isn't word aligned ...
@@ -191,10 +191,10 @@ static void
 blow_keyinit (BF_KEY *key, char *passphrase)
 {
 	struct MD5Context md5sum;
-	char hash [16];
+	uchar hash [16];
 	
 	MD5Init (&md5sum);
-	MD5Update (&md5sum, passphrase, strlen (passphrase));
+	MD5Update (&md5sum, (uchar *) passphrase, strlen (passphrase));
 	MD5Final (hash, &md5sum);
 	
 	InitializeBlowfish (key, hash, 16);

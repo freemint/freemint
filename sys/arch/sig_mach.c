@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  * 
@@ -134,11 +132,7 @@ sendsig(ushort sig)
 	
 	/* set a new system stack, with a bit of buffer space */
 	oldstack = curproc->sysstack;
-# ifdef COLDFIRE
 	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# else
-	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# endif	
 	if (newstack < (unsigned long) curproc->stack + ISTKSIZE + 256)
 	{
 		ALERT("stack overflow");
@@ -287,7 +281,7 @@ top:
 	}
 	if (frame[1] == 0)
 	{
-		DEBUG (("Psigreturn: frame at %lx points to 0", frame-1));
+		DEBUG (("Psigreturn: frame at %p points to 0", frame-1));
 		return E_OK;
 	}
 	unwound_stack = curproc->sysstack;
@@ -307,11 +301,7 @@ top:
 	else
 	{
 		unwound_stack = 0;
-# ifdef COLDFIRE	
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
-# else
-		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
-# endif
 		if (oldctxt->regs[0] != CTXT_MAGIC)
 		{
 			FATAL ("p_sigreturn: corrupted context");
@@ -401,18 +391,20 @@ bombs(ushort sig)
 	long *procinfo = (long *)0x380L;
 	int i;
 	CONTEXT *crash;
-	
+
 	if (sig >= NSIG)
 	{
 		ALERT("bombs(%d): sig out of range", sig);
 	}
 	else if (signames[sig])
 	{
+# ifdef WITH_MMU_SUPPORT
 		if (!no_mem_prot && sig == SIGBUS)
 		{
 		    /* already reported by report_buserr */
 		}
 		else
+# endif
 		{
 			/* uk: give some more information in case of a crash, so that a
 			 *     progam which shared text can be debugged better.
@@ -435,14 +427,14 @@ bombs(ushort sig)
 				ALERT("%s: User PC=%lx, Address: %lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc, curproc->exception_addr,
-					base, ptext, pdata, pbss);
+					(unsigned long)base, ptext, pdata, pbss);
 			}
 			else
 			{
 				ALERT("%s: User PC=%lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc,
-					base, ptext, pdata, pbss);
+					(unsigned long)base, ptext, pdata, pbss);
 			}
 		}
 		
@@ -463,7 +455,7 @@ bombs(ushort sig)
 		*procinfo++ = curproc->exception_ssp;
 		*procinfo++ = ((long)excep_num[sig]) << 24L;
 		*procinfo = crash->usp;
-		
+
 		/* we're also supposed to save some info from the supervisor
 		 * stack. it's not clear what we should do for MiNT, since
 		 * most of the stuff that used to be on the stack has been
@@ -546,10 +538,8 @@ sigfpe(void)
 	{
 		CONTEXT *ctxt = &curproc->ctxt[SYSCALL];
 		
-		/* 0x1f38 is a Motorola magic cookie to detect a 68882 idle
-		 * state frame
-		 */
-		if (ctxt->fstate.words[0] == 0x1f38
+		/* 0x38 is the stack frame size value for 68882 */
+		if ((ctxt->fstate.words[0] & 0xff) == 0x38
 			&& ((ctxt->sfmt & 0xfff) >= 0xc0L)
 			&& ((ctxt->sfmt & 0xfff) <= 0xd8L))
 		{

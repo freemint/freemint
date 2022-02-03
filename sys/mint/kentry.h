@@ -1,35 +1,39 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 # ifndef _mint_kentry_h
 # define _mint_kentry_h
+
+/* Force mass storage support on so that kernel modules are built correctly for
+ * all targets. Affects *.km modules, but not xif, xdd, xfs etc.
+ *
+ * Do not remove unless you know what you are doing.
+ */
 
 # ifndef __KERNEL__
 # error not a KERNEL source
@@ -43,26 +47,35 @@
 /* forward declarations */
 struct basepage;
 struct bio;
+struct bpb;
+struct businfo;
 struct create_process_opts;
+struct devinfo;
 struct dirstruct;
+struct dlong;
 struct dma;
 struct file;
 struct global;
 struct ilock;
+struct kerinfo;
 struct memregion;
 struct mfp;
 struct module_callback;
 struct nf_ops;
 struct parser_item;
 struct parsinf;
+struct pci_conv_adr;
+struct scsicmd;
+struct scsidrv;
 struct semaphore;
+struct target;
 struct timeout;
 struct timeval;
 
 
 /* kentry - kernel entry vector
  * ----------------------------
- * 
+ *
  * New kernel entry interface. This is a replacement for the existing
  * kerinfo interface for xdd and xfs modules. It's better sorted and include
  * much, much more useful kernel routines that are exported to the new kernel
@@ -71,26 +84,26 @@ struct timeval;
  * It also have a seperate version number (major and minor version). A module
  * must check the major version and only if the major version match against
  * the major version the module was compiled the module can be loaded.
- * 
- * 
+ *
+ *
  * All functions should be called using the GCC calling conventions:
  * -----------------------------------------------------------------
- * 
+ *
  * (1) parameters are passed on the stack, aligned on 16 bit boundaries
  * (2) registers d0-d1 and a0-a1 are scratch registers and may be modified
  *     by the called functions
  * (3) if the function returns a value, it will be returned in register
  *     d0
- * 
+ *
  * data types:
  * -----------
  * int   is 16bit
- * 
+ *
  * short is 16bit
  * long  is 32bit
- * 
+ *
  * and unsigned
- * 
+ *
  */
 
 /* ATTENTION!
@@ -102,8 +115,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	16
-
+#define KENTRY_MIN_VERSION	22
 
 /* hardware dependant vector
  */
@@ -225,9 +237,9 @@ struct kentry_proc
 	 *
 	 * same as canceltimeout() but for root timeouts
 	 */
-	struct timeout *_cdecl (*addtimeout)(long, void (*)());
+	struct timeout *_cdecl (*addtimeout)(long, void (*)(PROC *, long arg));
 	void _cdecl (*canceltimeout)(struct timeout *);
-	struct timeout *_cdecl (*addroottimeout)(long, void (*)(), unsigned short);
+	struct timeout *_cdecl (*addroottimeout)(long, void (*)(PROC *, long arg), unsigned short);
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
 	/* create a new process */
@@ -235,28 +247,28 @@ struct kentry_proc
 				      struct proc **pret, long stack,
 				      struct create_process_opts *);
 
-	/* 
+	/*
 	 * fork a kernel thread for process p
-	 * 
+	 *
 	 * arguments:
 	 * ----------
 	 * p    - the process context for which the kernel thread is created;
 	 *        can be NULL, in this case a kernel thread of rootproc is created
 	 *        NOTE: Anything except the signal handler is shared!
-	 * 
+	 *
 	 * func - the function where the thread starts
-	 * 
+	 *
 	 * arg  - additional argument passed to func
-	 * 
+	 *
 	 * fmt  - printf format string for the process name
-	 * 
+	 *
 	 * ...  - printf args
 	 */
 	long _cdecl (*kthread_create)(struct proc *p, void _cdecl (*func)(void *), void *arg,
-				      struct proc **np, const char *fmt, ...);
+				      struct proc **np, const char *fmt, ...) __attribute__((format(printf, 5, 6)));
 	/*
 	 * leave kernel thread previously created by kthread_create
-	 * 
+	 *
 	 * NOTE: can only be called from INSIDE the thread
 	 */
 	void _cdecl (*kthread_exit)(short code);
@@ -334,7 +346,7 @@ struct kentry_mem
 	void *_cdecl (*kcore)(unsigned long size, const char *func);
 	void *_cdecl (*kmalloc)(unsigned long size, const char *func);
 	void  _cdecl (*kfree)(void *place, const char *func);
-	
+
 	void *_cdecl (*dmabuf_alloc)(unsigned long size, short cmode, const char *func);
 
 	void *_cdecl (*umalloc)(unsigned long size, const char *func);
@@ -499,15 +511,15 @@ struct kentry_module
 				    long _cdecl (*loader)(struct basepage *, const char *, short *, short *));
 
 	/* register VDI or AES trap handler
-	 * 
+	 *
 	 * mode = 0 -> install
 	 * mode = 1 -> remove
-	 * 
+	 *
 	 * flag = 0 -> AES dispatcher
 	 * flag = 1 -> VDI dispatcher
-	 * 
+	 *
 	 * return 0 on success
-	 * or error number for a failure 
+	 * or error number for a failure
 	 */
 	long _cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
 };
@@ -522,8 +534,8 @@ struct kentry_module
  */
 struct kentry_cnf
 {
-	void _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
-	void _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
+	long _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *, unsigned long);
+	long _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
 	void _cdecl (*parser_msg)(struct parsinf *, const char *msg);
 };
 #define DEFAULTS_kentry_cnf \
@@ -574,7 +586,6 @@ struct kentry_misc
 	trap_14_emu, \
 }
 
-
 /* debug support
  */
 struct kentry_debug
@@ -586,12 +597,14 @@ struct kentry_debug
 	 * debug - error messages
 	 * alert - really serious errors
 	 * fatal - fatal errors
+	 * force - always prints, even with debug level 0
 	 */
 	int *debug_level;
-	void	_cdecl (*trace)(const char *, ...);
-	void	_cdecl (*debug)(const char *, ...);
-	void	_cdecl (*alert)(const char *, ...);
-	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
+	void	_cdecl (*trace)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*debug)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*alert)(const char *, ...) __attribute__((format(printf, 1, 2)));
+	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN __attribute__((format(printf, 1, 2)));
+	void	_cdecl (*force)(const char *, ...) __attribute__((format(printf, 1, 2)));
 };
 extern int debug_level;
 #define DEFAULTS_kentry_debug \
@@ -601,6 +614,7 @@ extern int debug_level;
 	Debug, \
 	ALERT, \
 	FATAL, \
+	FORCE, \
 }
 
 
@@ -623,8 +637,8 @@ struct kentry_libkern
 	 * vsprintf, sprintf: floating point formats are not supported!
 	 */
 
-	long	_cdecl (*vsprintf)(char *buf, long buflen, const char *fmt, va_list args);
-	long	_cdecl (*sprintf)(char *dst, long buflen, const char *fmt, ...);
+	long	_cdecl (*vsprintf)(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
+	long	_cdecl (*sprintf)(char *dst, long buflen, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
 	char *	_cdecl (*getenv)(struct basepage *bp, const char *var);
 
@@ -752,8 +766,8 @@ struct kentry_libkern
 
 struct kentry_xfs
 {
-	void _cdecl (*block) (FILESYS *fs, ushort dev, const char *func);
-	void _cdecl (*deblock) (FILESYS *fs, ushort dev, const char *func);
+	void _cdecl (*block)(FILESYS *fs, ushort dev, const char *func);
+	void _cdecl (*deblock)(FILESYS *fs, ushort dev, const char *func);
 
 
 	long _cdecl (*root)(FILESYS *fs, int drv, fcookie *fc);
@@ -866,6 +880,190 @@ struct kentry_xdd
 	xdd_close, \
 }
 
+struct kentry_pcibios
+{
+	unsigned long *pcibios_installed;
+	long _cdecl (*Find_pci_device)(unsigned long id, unsigned short index);
+	long _cdecl (*Find_pci_classcode)(unsigned long class, unsigned short index);
+	long _cdecl (*Read_config_byte)(long handle, unsigned short reg, unsigned char *address);
+	long _cdecl (*Read_config_word)(long handle, unsigned short reg, unsigned short *address);
+	long _cdecl (*Read_config_longword)(long handle, unsigned short reg, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_config_byte)(long handle, unsigned short reg);
+	unsigned short _cdecl (*Fast_read_config_word)(long handle, unsigned short reg);
+	unsigned long _cdecl (*Fast_read_config_longword)(long handle, unsigned short reg);
+	long _cdecl (*Write_config_byte)(long handle, unsigned short reg, unsigned short val);
+	long _cdecl (*Write_config_word)(long handle, unsigned short reg, unsigned short val);
+	long _cdecl (*Write_config_longword)(long handle, unsigned short reg, unsigned long val);
+	long _cdecl (*Hook_interrupt)(long handle, unsigned long *routine, unsigned long *parameter);
+	long _cdecl (*Unhook_interrupt)(long handle);
+	long _cdecl (*Special_cycle)(unsigned short bus, unsigned long data);
+	long _cdecl (*Get_routing)(long handle);
+	long _cdecl (*Set_interrupt)(long handle);
+	long _cdecl (*Get_resource)(long handle);
+	long _cdecl (*Get_card_used)(long handle, unsigned long *address);
+	long _cdecl (*Set_card_used)(long handle, unsigned long *callback);
+	long _cdecl (*Read_mem_byte)(long handle, unsigned long offset, unsigned char *address);
+	long _cdecl (*Read_mem_word)(long handle, unsigned long offset, unsigned short *address);
+	long _cdecl (*Read_mem_longword)(long handle, unsigned long offset, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_mem_byte)(long handle, unsigned long offset);
+	unsigned short _cdecl (*Fast_read_mem_word)(long handle, unsigned long offset);
+	unsigned long _cdecl (*Fast_read_mem_longword)(long handle, unsigned long offset);
+	long _cdecl (*Write_mem_byte)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_mem_word)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_mem_longword)(long handle, unsigned long offset, unsigned long val);
+	long _cdecl (*Read_io_byte)(long handle, unsigned long offset, unsigned char *address);
+	long _cdecl (*Read_io_word)(long handle, unsigned long offset, unsigned short *address);
+	long _cdecl (*Read_io_longword)(long handle, unsigned long offset, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_io_byte)(long handle, unsigned long offset);
+	unsigned short _cdecl (*Fast_read_io_word)(long handle, unsigned long offset);
+	unsigned long _cdecl (*Fast_read_io_longword)(long handle, unsigned long offset);
+	long _cdecl (*Write_io_byte)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_io_word)(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_io_longword)(long handle, unsigned long offset, unsigned long val);
+	long _cdecl (*Get_machine_id)(void);
+	long _cdecl (*Get_pagesize)(void);
+	long _cdecl (*Virt_to_bus)(long handle, unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Bus_to_virt)(long handle, unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Virt_to_phys)(unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Phys_to_virt)(unsigned long address, struct pci_conv_adr *pointer);
+};
+#define DEFAULTS_kentry_pcibios \
+{ \
+	&pcibios_installed, \
+	Find_pci_device, \
+	Find_pci_classcode, \
+	Read_config_byte, \
+	Read_config_word, \
+	Read_config_longword, \
+	Fast_read_config_byte, \
+	Fast_read_config_word, \
+	Fast_read_config_longword, \
+	Write_config_byte, \
+	Write_config_word, \
+	Write_config_longword, \
+	Hook_interrupt, \
+	Unhook_interrupt, \
+	Special_cycle, \
+	Get_routing, \
+	Set_interrupt, \
+	Get_resource, \
+	Get_card_used, \
+	Set_card_used, \
+	Read_mem_byte, \
+	Read_mem_word, \
+	Read_mem_longword, \
+	Fast_read_mem_byte, \
+	Fast_read_mem_word, \
+	Fast_read_mem_longword, \
+	Write_mem_byte, \
+	Write_mem_word, \
+	Write_mem_longword, \
+	Read_io_byte, \
+	Read_io_word, \
+	Read_io_longword, \
+	Fast_read_io_byte, \
+	Fast_read_io_word, \
+	Fast_read_io_longword, \
+	Write_io_byte, \
+	Write_io_word, \
+	Write_io_longword, \
+	Get_machine_id, \
+	Get_pagesize, \
+	Virt_to_bus, \
+	Bus_to_virt, \
+	Virt_to_phys, \
+	Phys_to_virt, \
+}
+
+struct kentry_xhdi
+{
+long _cdecl (*XHGetVersion)(void);
+long _cdecl (*XHInqTarget)(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name);
+long _cdecl (*XHReserve)(ushort major, ushort minor, ushort do_reserve, ushort key);
+long _cdecl (*XHLock)(ushort major, ushort minor, ushort do_lock, ushort key);
+long _cdecl (*XHStop)(ushort major, ushort minor, ushort do_stop, ushort key);
+long _cdecl (*XHEject)(ushort major, ushort minor, ushort do_eject, ushort key);
+long _cdecl (*XHDrvMap)(void);
+long _cdecl (*XHInqDev)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, struct bpb *bpb);
+long _cdecl (*XHInqDriver)(ushort bios_device, char *name, char *ver, char *company, ushort *ahdi_version, ushort *maxIPL);
+long _cdecl (*XHNewCookie)(void *newcookie);
+long _cdecl (*XHReadWrite)(ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf);
+long _cdecl (*XHInqTarget2)(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen);
+long _cdecl (*XHInqDev2)(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, struct bpb *bpb, ulong *blocks, char *partid);
+long _cdecl (*XHDriverSpecial)(ulong key1, ulong key2, ushort subopcode, void *data);
+long _cdecl (*XHGetCapacity)(ushort major, ushort minor, ulong *blocks, ulong *bs);
+long _cdecl (*XHMediumChanged)(ushort major, ushort minor);
+long _cdecl (*XHMiNTInfo)(ushort opcode, struct kerinfo *data);
+long _cdecl (*XHDOSLimits)(ushort which, ulong limit);
+long _cdecl (*XHLastAccess)(ushort major, ushort minor, ulong *ms);
+long _cdecl (*XHReaccess)(ushort major, ushort minor);
+};
+#define DEFAULTS_kentry_xhdi \
+{ \
+	XHGetVersion, \
+	XHInqTarget, \
+	XHReserve, \
+	XHLock, \
+	XHStop, \
+	XHEject, \
+	XHDrvMap, \
+	XHInqDev, \
+	XHInqDriver, \
+	XHNewCookie, \
+	XHReadWrite, \
+	XHInqTarget2, \
+	XHInqDev2, \
+	XHDriverSpecial, \
+	XHGetCapacity, \
+	XHMediumChanged, \
+	XHMiNTInfo, \
+	XHDOSLimits, \
+	XHLastAccess, \
+	XHReaccess, \
+}
+
+struct kentry_scsidrv
+{
+long _cdecl (*scsidrv_In)(struct scsicmd *par);
+long _cdecl (*scsidrv_Out)(struct scsicmd *par);
+long _cdecl (*scsidrv_InquireSCSI)(short what, struct businfo *info);
+long _cdecl (*scsidrv_InquireBus)(short what, short BusNo, struct devinfo *dev);
+long _cdecl (*scsidrv_CheckDev)(short BusNo, const struct dlong *SCSIId, char *Name, ushort *Features);
+long _cdecl (*scsidrv_RescanBus)(short BusNo);
+long _cdecl (*scsidrv_Open)(short BusNo, const struct dlong *SCSIId, ulong *MaxLen);
+long _cdecl (*scsidrv_Close)(short *handle);
+long _cdecl (*scsidrv_Error)(short *handle, short rwflag, short ErrNo);
+long _cdecl (*scsidrv_Install)(ushort bus, struct target *handler);
+long _cdecl (*scsidrv_Deinstall)(ushort bus, struct target *handler);
+long _cdecl (*scsidrv_GetCmd)(ushort bus, char *cmd);
+long _cdecl (*scsidrv_SendData)(ushort bus, char *buf, ulong len);
+long _cdecl (*scsidrv_GetData)(ushort bus, void *buf, ulong len);
+long _cdecl (*scsidrv_SendStatus)(ushort bus, ushort status);
+long _cdecl (*scsidrv_SendMsg)(ushort bus, ushort msg);
+long _cdecl (*scsidrv_GetMsg)(ushort bus, ushort *msg);
+long _cdecl (*scsidrv_InstallNewDriver)(struct scsidrv *newdrv);
+};
+#define DEFAULTS_kentry_scsidrv \
+{ \
+	scsidrv_In, \
+	scsidrv_Out, \
+	scsidrv_InquireSCSI, \
+	scsidrv_InquireBus, \
+	scsidrv_CheckDev, \
+	scsidrv_RescanBus, \
+	scsidrv_Open, \
+	scsidrv_Close, \
+	scsidrv_Error, \
+	scsidrv_Install, \
+	scsidrv_Deinstall, \
+	scsidrv_GetCmd, \
+	scsidrv_SendData, \
+	scsidrv_GetData, \
+	scsidrv_SendStatus, \
+	scsidrv_SendMsg, \
+	scsidrv_GetMsg, \
+	scsidrv_InstallNewDriver, \
+}
 
 /* the complete kernel entry
  */
@@ -875,11 +1073,11 @@ struct kentry
 	unsigned char	minor;		/* FreeMiNT minor version */
 	unsigned char	patchlevel;	/* FreeMiNT patchlevel */
 	unsigned char	beta;		/* FreeMiNT beta ident */
-	
+
 	unsigned char	version_major;	/* kentry major version */
 	unsigned char	version_minor;	/* kentry minor version */
 	unsigned short	status;		/* FreeMiNT status */
-	
+
 	unsigned long	dos_version;	/* running GEMDOS version */
 
 	/* OS functions */
@@ -901,6 +1099,10 @@ struct kentry
 
 	struct kentry_xfs vec_xfs;
 	struct kentry_xdd vec_xdd;
+
+	struct kentry_pcibios vec_pcibios;
+	struct kentry_xhdi vec_xhdi;
+	struct kentry_scsidrv vec_scsidrv;
 };
 # define DEFAULTS_kentry \
 { \
@@ -930,7 +1132,10 @@ struct kentry
 	DEFAULTS_kentry_debug, \
 	DEFAULTS_kentry_libkern, \
 	DEFAULTS_kentry_xfs, \
-	DEFAULTS_kentry_xdd \
+	DEFAULTS_kentry_xdd, \
+	DEFAULTS_kentry_pcibios, \
+	DEFAULTS_kentry_xhdi, \
+	DEFAULTS_kentry_scsidrv, \
 }
 
 # endif /* _mint_kentry_h */

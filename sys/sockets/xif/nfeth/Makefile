@@ -14,11 +14,16 @@ subdir = nfeth
 
 default: all
 
+CPU = 020-60
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 all-here: $(TARGET)
+
+strip:
+	$(STRIP) $(TARGET)
 
 # default overwrites
 INCLUDES = -I../.. -I$(top_srcdir)
@@ -27,7 +32,6 @@ DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
 
 # default definitions
 OBJS = $(addsuffix .o, $(basename $(notdir $(HOSTETH_SRCS) $(COMMON_SRCS))))
@@ -37,7 +41,7 @@ main.o:	../main.c
 
 # generic driver target
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(LD) $(CFLAGS) -s -o $@ $(OBJS) $(LIBS)
 
 
 include $(top_srcdir)/DEPENDENCIES

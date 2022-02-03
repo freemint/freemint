@@ -45,7 +45,7 @@ static void	plip_send_pkt	(struct plip_private *);
 static void	plip_recv_pkt	(struct plip_private *);
 static void	plip_reset	(struct plip_private *);
 static void	plip_kick	(struct plip_private *);
-static void	plip_dosend	(long);
+static void	plip_dosend	(PROC *proc, long arg);
 static void	inc_timeout	(struct plip_private *);
 static short	plip_collision	(struct plip_private *);
 extern void	plip_int	(short);
@@ -287,7 +287,7 @@ plip_reset (struct plip_private *plp)
 }
 
 static void
-plip_dosend (long proc)
+plip_dosend (PROC *proc, long arg)
 {
 	struct plip_private *plp;
 	short i;

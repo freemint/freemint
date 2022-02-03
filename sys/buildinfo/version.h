@@ -22,7 +22,7 @@
  * main version macros
  */
 #define MINT_MAJ_VERSION	1
-#define MINT_MIN_VERSION	17
+#define MINT_MIN_VERSION	19
 #define MINT_PATCH_LEVEL	0
 
 /*

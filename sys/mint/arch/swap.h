@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -40,7 +38,7 @@ __asm_swap32 (register __u32 x)
 {
 	__asm__
 	(
-		"swap %0;"
+		"swap    %0"
 		: "=d" (x)
 		: "0" (x)
 	);

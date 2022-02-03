@@ -14,11 +14,16 @@ subdir = daynaport
 
 default: all
 
+CPU = 020-60
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 all-here: $(TARGET)
+
+strip:
+	$(STRIP) $(TARGET)
 
 # default overwrites
 INCLUDES = -I../.. -I$(top_srcdir)
@@ -27,7 +32,6 @@ DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 020-60
 
 # default definitions
 OBJS = $(addsuffix .o, $(basename $(notdir $(SCSILINK_SRCS) $(COMMON_SRCS))))

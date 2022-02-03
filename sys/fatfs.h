@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -54,6 +52,11 @@ extern FILESYS fatfs_filesys;
 
 void fatfs_init (void);
 long fatfs_config (const ushort drv, const long config, const long mode);
+
+/* Defines used to identity partition's Fat type */
+
+#define MAX_FAT12_CLUSTERS	4084
+#define MAX_FAT16_CLUSTERS	65524
 
 /* config: */
 

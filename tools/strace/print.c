@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -37,10 +35,10 @@
 
 /* XXX -> mintlib */
 typedef long long llong;
-#include "../../sys/mint/socket.h"
+
 #include "../../sys/mint/stat.h"
 #include "../../sys/mint/un.h"
-#include "../../sys/sockets/inet4/in.h"
+#include <netinet/in.h>
 
 #include "print.h"
 
@@ -178,7 +176,7 @@ print_struct_timeval(pid_t pid, const void *data)
 {
 	struct timeval tv;
 	
-	copy_bytes(pid, data, (char *)(&tv), sizeof(tv));
+	copy_bytes(pid, data, (unsigned char *)(&tv), sizeof(tv));
 	
 	printf("struct timeval { %li, %li }", tv.tv_sec, tv.tv_usec);
 }

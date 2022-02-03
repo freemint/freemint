@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -94,16 +92,18 @@ report_buserr(void)
 	short mode;
 	ulong aa, pc;
 	char alertbuf[256];	/* enough for an alert */
-	
+	PROC *p;
+
 	if (no_mem_prot)
 		return;
 	
-	aa = curproc->exception_addr;
-	pc = curproc->exception_pc;
+	p = curproc;
+	aa = p->exception_addr;
+	pc = p->exception_pc;
 	
 	if ((mint_top_tt && aa < mint_top_tt) || (aa < mint_top_st))
 	{
-		mode = global_mode_table[(curproc->exception_addr >> 13)];
+		mode = global_mode_table[(p->exception_addr >> 13)];
 		if (mode == PROT_G)
 		{
 			/* page is global: obviously a hardware bus error */
@@ -117,7 +117,7 @@ report_buserr(void)
 	}
 	
 	type = berr_msg[mode];
-	rw = rw_msg[curproc->exception_access];
+	rw = rw_msg[p->exception_access];
 	
 	/* construct an AES alert box for this error:
 	 * | PROCESS  "buserrxx"  KILLED: |
@@ -133,27 +133,30 @@ report_buserr(void)
 		 " Type: %s PC: %08lx |"
 		 " Addr: %08lx  BP: %08lx |"
 		 "                 OS: %08lx][ OK ]",
-		 curproc->name,
-		 curproc->pid,
+		 p->name,
+		 p->pid,
 		 type, pc,
-		 aa, curproc->p_mem->base,
-		 pc - ((ulong)curproc->p_mem->base + 256));
+		 aa, (ulong)p->p_mem->base,
+		 pc - ((ulong)p->p_mem->base + 256));
 	
 	DEBUG((alertbuf));
 	
-	if (!_ALERT (alertbuf))
+	if (p->debug_level >= ALERT_LEVEL)
 	{
-		/* this will call _alert again, but it will just fail again */
-		ALERT ("MEMORY VIOLATION: type=%s RW=%s AA=%lx PC=%lx BP=%lx",
-			type, rw, aa, pc, curproc->p_mem->base);
-		
+		if (!_ALERT (alertbuf))
+		{
+			/* this will call _alert again, but it will just fail again */
+			ALERT ("MEMORY VIOLATION: type=%s RW=%s AA=%lx PC=%lx BP=%lx",
+				type, rw, aa, pc, (ulong)p->p_mem->base);
+
 #ifdef SPECIAL_DEBUG
-		lookup_addr(aa, "AA");
-		lookup_addr(pc, "PC");
+			lookup_addr(aa, "AA");
+			lookup_addr(pc, "PC");
 #endif
+		}
 	}
-	
-	if (curproc->pid == 0 || curproc->p_mem->memflags & F_OS_SPECIAL)
+
+	if (p->pid == 0 || (p->p_mem->memflags & F_OS_SPECIAL))
 	{
 		/* the system is so thoroughly hosed that anything we try will
 		 * likely cause another bus error; so let's just hang up

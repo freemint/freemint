@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -272,7 +270,7 @@ copy_cred(struct ucred *ucr)
 {
 	struct ucred *n;
 	
-	TRACE(("copy_cred: %lx links %li", ucr, ucr->links));
+	TRACE(("copy_cred: %p links %i", ucr, ucr->links));
 	assert(ucr->links > 0);
 	
 	if (ucr->links == 1)

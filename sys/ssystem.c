@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -22,6 +20,7 @@
 
 # include "ssystem.h"
 # include "global.h"
+# include "init.h"
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
@@ -49,8 +48,9 @@
 
 # if 0
 short run_level = 1;		/* default runlevel */
-# endif
 short disallow_single = 0;
+# endif
+short allow_setexc = 2;		/* if 0 only kernel-processes may change sys-vectors */
 
 
 long _cdecl
@@ -148,6 +148,16 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 # ifdef M68030
 			r = 0x0000001eL;	/* 030 kernel */
 # endif
+/* Kernel for the ColdFire:
+ * Major CPU ID is 0x01
+ * Minor CPU ID is 0x00 for isa_a
+ *                 0x01 for isa_a+
+ *                 0x02 for isa_b
+ *                 0x03 for isa_c
+ */
+# ifdef __mcfisab__
+			r = 0x00000102L;	/* ColdFire isa_b kernel */
+#endif
 			break;			/* generic 68000 */
 		}
 
@@ -162,10 +172,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
  */
 		case S_OSFEATURES:
 		{
+			r = 0;
+
+# ifdef WITH_MMU_SUPPORT
+			if (!no_mem_prot)
+				r |= 0x01;
+# endif
 # ifdef CRYPTO_CODE
-			r =  ((!no_mem_prot) & 0x01) | 0x04;
-# else
-			r = ((!no_mem_prot) & 0x01);
+			r |= 0x04;
 # endif
 			break;
 		}
@@ -274,7 +288,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		case S_GETCOOKIE:
 		{
 			r = get_cookie (NULL, arg1, (unsigned long *) arg2);
-			DEBUG (("GET_COOKIE: return %lx", *(long*)arg2));
+			DEBUG (("GET_COOKIE($%lx): r=%ld, val=$%lx", arg1, r, *(long*)arg2));
 			break;
 		}
 		case S_SETCOOKIE:
@@ -370,6 +384,29 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 			break;
 		}
+		case S_GETBOOTLOG:
+		{
+			if (isroot == 0)
+				r = EPERM;
+			else if (arg1 && arg2 > 0)
+			{
+				strncpy_f ((char *) arg1, boot_file, arg2);
+				r = 0;
+			}
+			else
+				r = EBADARG;
+			break;
+		}
+		case S_SETEXC:
+		{
+			if (isroot == 0)	r = EPERM;
+			else if (arg1 == (ulong)-1)
+				r = allow_setexc;
+			else if (arg1 > 2)	r = EBADARG;
+			else allow_setexc = arg1;
+
+			break;
+		}
 # if 0 /* bogus concept & code */
 		case RUN_LEVEL:
 		{
@@ -438,7 +475,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_CTRLCACHE:
 		{
+#ifdef __mcoldfire__
+			if (arg1 == -1 && arg2 == -1 && coldfire_68k_emulation)
+				r = E_OK;
+			else if (arg1 == -1 && arg2 == -1)
+				r = ENOSYS;
+#else
 			if (arg1 == -1 && arg2 == -1)	r = E_OK;
+#endif
 # ifndef M68000
 			else if (arg1 == -1)		r = ccw_get ();
 			else if (arg2 == -1)		r = ccw_getdmask ();
@@ -647,7 +691,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			break;
 		}
 #endif
-#if MINT_STATUS_CVS
+#ifdef MINT_STATUS_CVS
 		/* XXX only for testing */
 		case 3000:
 		{

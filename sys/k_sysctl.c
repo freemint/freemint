@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -241,7 +239,7 @@ hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	switch (name[0])
 	{
 		case HW_MACHINE:
-			return sysctl_rdstring (oldp, oldlenp, newp, machine);
+			return sysctl_rdstring (oldp, oldlenp, newp, machine_str ());
 
 		case HW_MACHINE_ARCH:
 			return sysctl_rdstring (oldp, oldlenp, newp, machine_arch);

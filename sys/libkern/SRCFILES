@@ -45,6 +45,7 @@ COBJS = \
 	strtoul.c \
 	strtoull.c \
 	strupr.c \
+	strings.c \
 	tolower.c \
 	toupper.c \
 	unaligned.c \

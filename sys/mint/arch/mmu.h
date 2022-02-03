@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -34,17 +32,13 @@
 # ifndef _mint_m68k_mmu_h
 # define _mint_m68k_mmu_h
 
-# if !defined(M68040) && !defined(M68060)
+# if !defined(M68040) && !defined(M68060) && !defined(__mcoldfire__)
 
 /* macro for turning a curproc->base_table pointer into a 16-byte boundary */
 # define ROUND16(ld)	((long_desc *)(((ulong)(ld) + 15) & ~15))
 
-/* TBL_SIZE is the size in entries of the A, B, and C level tables */
-# define TBL_SIZE	(16)
-# define TBL_SIZE_BYTES	(TBL_SIZE * sizeof (long_desc))
-
 typedef struct {
-	short limit;
+	unsigned short limit;
 	unsigned zeros:14;
 	unsigned dt:2;
 	struct long_desc *tbl_address;
@@ -53,7 +47,7 @@ typedef struct {
 /* format of long descriptors, both page descriptors and table descriptors */
 
 typedef struct {
-	unsigned limit;		/* set to $7fff to disable */
+	unsigned short limit; /* set to $7fff to disable */
 	unsigned unused1:6;
 	unsigned unused2:1;
 	unsigned s:1;		/* 1 grants supervisor access only */
@@ -84,7 +78,7 @@ typedef struct {
 	unsigned tid:4;
 } tc_reg;
 
-# else /* !(M68040 || M68060) */
+# else /* !(M68040 || M68060 || mcoldfire) */
 
 /* macro for turning a curproc->base_table pointer into a 512-byte boundary */
 # define ROUND512(ld)	((ulong *)(((ulong)(ld) + 511) & ~511))
@@ -92,7 +86,7 @@ typedef struct {
 typedef ulong crp_reg[2];
 typedef ulong tc_reg;
 
-# endif /* !(M68040 || M68060) */
+# endif /* !(M68040 || M68060 || mcoldfire)) */
 
 
 # endif /* _mint_m68k_mmu_h */

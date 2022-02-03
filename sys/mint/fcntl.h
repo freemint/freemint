@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -79,7 +77,7 @@
 
 # ifdef __KERNEL__
 # define O_USER		0x00000fff	/* isolates user-settable flag bits */
-# define O_GLOBAL	0x00001000	/* for opening a global file */
+# define O_GLOBAL	0x00001000	/* OBSOLETE, DONT USE! */
 # define O_TTY		0x00002000
 # define O_HEAD		0x00004000
 # define O_LOCK		0x00008000
@@ -115,6 +113,8 @@ struct listopens
 	short	lo_flags;		/* file's open flags */
 };
 # endif
+
+#define F_DUPFD_CLOEXEC		1030
 
 /* file descriptor flags (F_GETFD, F_SETFD) */
 # define FD_CLOEXEC	0x01		/* close-on-exec flag */

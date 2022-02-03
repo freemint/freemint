@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -43,7 +41,6 @@
 # include "dosdir.h"
 # include "filesys.h"
 # include "k_exec.h"	/* rts */
-# include "k_fds.h"	/* do_close */
 # include "k_prot.h"	/* free_cred */
 # include "kmemory.h"
 # include "memory.h"
@@ -211,7 +208,7 @@ terminate(struct proc *pcurproc, short code, short que)
 		}
 	}
 
-	if (wakemint)
+	if (wakemint || (pcurproc->p_flag & P_FLAG_SLB))
 	{
 		ushort sr;
 
@@ -399,12 +396,12 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	int ourpid, ourpgrp;
 	int found;
 
-	
+
 	ourpid = get_curproc()->pid;
 	ourpgrp = get_curproc()->pgrp;
 
 	if (ourpid)
-		TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
+		TRACE(("Pwaitpid(%d, %d, %p)", pid, nohang, rusage));
 
 	/* if there are terminated children, clean up and return their info;
 	 * if there are children, but still running, wait for them;
@@ -481,7 +478,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	 * the possibly fatal signal that caused it to die.
 	 */
 	r = (((unsigned long)p->pid) << 16) | (p->wait_cond & 0x0000ffffUL);
-	
+
 	if (retval)
 		*retval = (unsigned short)r;
 

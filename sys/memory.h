@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -47,12 +45,12 @@ MEMREGION *load_region (const char *name, MEMREGION *env, const char *cmdlin, XA
 			long *fp, long *err);
 long	load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 			long nbytes, BASEPAGE *base);
-long	memused (struct proc *p);
+long	memused (const struct proc *p);
 void	recalc_maxmem (struct proc *p, long size);
 int	valid_address (long addr);
 MEMREGION *_cdecl addr2mem (struct proc *p, long addr);
 MEMREGION *addr2region (unsigned long addr);
-MEMREGION *proc_addr2region (struct proc *p, unsigned long addr);
+MEMREGION *proc_addr2region (const struct proc *p, unsigned long addr);
 
 long	realloc_region (MEMREGION *, long);
 long	_cdecl sys_s_realloc (long);
@@ -61,7 +59,7 @@ long	_cdecl sys_s_realloc (long);
 void DUMP_ALL_MEM (void);
 void DUMPMEM (MMAP map);
 # if WITH_KERNFS
-long kern_get_memdebug (SIZEBUF **buffer);
+long kern_get_memdebug (SIZEBUF **buffer, const struct proc *p);
 # endif
 # endif
 

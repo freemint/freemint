@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = arch buildinfo gen-syscall libkern sockets xdd xfs
+SUBDIRS = arch buildinfo gen-syscall libkern sockets usb xdd xfs
 KERNELSUBDIRS = arch buildinfo
 
 srcdir = .
@@ -24,23 +24,31 @@ KERNELSUBDIRS += $(MODULEDIRS)
 # default definitions
 GENFILES = $(compile_all_dirs) mint/*~ sys/*~
 
-
 help:
 	@echo '#'
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - sockets / xdd / xfs'
+	@echo '# - sockets / xdd / xfs / usb'
 	@echo '# - all-kernels'
 	@echo '# - $(kerneltargets)'
 	@echo '#'
 	@echo '# - bakclean'
 	@echo '# - clean'
 	@echo '# - distclean'
+	@echo '# - strip'
 	@echo '# - help'
 	@echo '#'
 	@echo '# example for a Milan kernel: -> make mil'
 	@echo '#'
+
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(kerneltargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.prg) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
 all-kernels:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
@@ -53,5 +61,5 @@ all-kernels:
 $(kerneltargets):
 	$(MAKE) buildkernel kernel=$@
 
-sockets xdd xfs:
+sockets xdd xfs usb:
 	cd $@; $(MAKE) all

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * send(), recv(), socketpair() and connect(), select() and ioctl()
  * routines for datagram unix sockets.
  *
@@ -36,7 +34,7 @@ unix_dgram_socketpair (struct socket *so1, struct socket *so2)
 }
 
 long
-unix_dgram_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+unix_dgram_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	struct un_data *undata = so->data;
 	long r;
@@ -53,13 +51,12 @@ unix_dgram_connect (struct socket *so, struct sockaddr *addr, short addrlen, sho
 
 long
 unix_dgram_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-			short flags, struct sockaddr *addr, short addrlen)
+			short flags, const struct sockaddr *addr, short addrlen)
 {
 	struct un_data *dstdata, *srcdata = so->data;
 	struct dgram_hdr header;
-	long index, r, todo, nbytes;
-	short cando, head, tail;
-	char *buf;
+	long index, r, nbytes;
+	short head, tail;
 
 	if (so->state != SS_ISUNCONNECTED)
 		return ENOTCONN;
@@ -151,8 +148,10 @@ check:
 
 	for (; niov; ++iov, --niov)
 	{
-		todo = iov->iov_len;
-		buf = iov->iov_base;
+		long todo = iov->iov_len;
+		char *buf = iov->iov_base;
+		short cando;
+
 		while (todo > 0)
 		{
 			if (tail >= head)
@@ -187,7 +186,7 @@ unix_dgram_recv (struct socket *so, const struct iovec *iov, short niov, short n
 	struct un_data *undata = so->data;
 	struct dgram_hdr header;
 	short head, tail, cando;
-	long todo, nbytes;
+	long nbytes;
 	char *buf;
 
 	if (so->flags & SO_CANTRCVMORE || so->state != SS_ISUNCONNECTED)
@@ -229,7 +228,7 @@ unix_dgram_recv (struct socket *so, const struct iovec *iov, short niov, short n
 
 	for (nbytes = 0; niov; ++iov, --niov)
 	{
-		todo = iov->iov_len;
+		long todo = iov->iov_len;
 		buf = iov->iov_base;
 		if (nbytes + todo > header.nbytes)
 		{
@@ -270,7 +269,7 @@ unix_dgram_recv (struct socket *so, const struct iovec *iov, short niov, short n
 		undata = un_lookup (header.sender, so->type);
 		if (*addrlen > 0 && undata && undata->flags & UN_ISBOUND)
 		{
-			todo = MIN (*addrlen - 1, undata->addrlen);
+			short todo = MIN (*addrlen - 1, undata->addrlen);
 			memcpy (addr, &undata->addr, todo);
 			((struct sockaddr_un *)addr)->
 				sun_path[todo - UN_PATH_OFFSET] = '\0';

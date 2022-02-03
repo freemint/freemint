@@ -4,7 +4,7 @@
 ETHERNAT_SRCS = \
 	91c111.c \
 	ethernat.c \
-	ethernat_200Hzint.s
+	ethernat_200Hzint.S
 
 COMMON_SRCS = \
 	../main.c

@@ -17,6 +17,9 @@
 # define IFF_NOTRAILERS		0x0020	/* if should not use trailer encaps. */
 # define IFF_RUNNING		0x0040	/* if ressources are allocated */
 # define IFF_NOARP		0x0080	/* if should not use arp */
+# define IFF_PROMISC            0x0100  /* Receive all packets */
+# define IFF_ALLMULTI           0x0200  /* Receive all multicast packets */
+# define IFF_IGMP               0x0400  /* Supports multicast */
 # define IFF_MASK		(IFF_UP|IFF_DEBUG|IFF_NOTRAILERS|IFF_NOARP)
 
 # define IF_NAMSIZ		16	/* maximum if name len */
@@ -147,7 +150,8 @@ struct netif
 	uchar		*base_addr;	/* base address of a board (exact meaning
 					 * depends on the device driver)
 					 */
-	long		reserved[3];
+	void		(*igmp_mac_filter)(struct netif *, ulong, char action);
+	long		reserved[2];
 };
 
 /* interface statistics */
@@ -236,6 +240,7 @@ short		if_putback	(struct ifq *, BUF *, short pri);
 BUF *		if_dequeue	(struct ifq *);
 void		if_flushq	(struct ifq *);
 long		if_register	(struct netif *);
+long		if_deregister	(struct netif *);
 long		if_init		(void);
 short		if_input	(struct netif *, BUF *, long, short);
 
@@ -245,6 +250,7 @@ short		if_input	(struct netif *, BUF *, long, short);
 # define PKTYPE_IP	0x0800
 # define PKTYPE_ARP	0x0806
 # define PKTYPE_RARP	0x8035
+# define PKTYPE_IPV6    0x86DD
 
 long		if_ioctl	(short cmd, long arg);
 long		if_config	(struct ifconf *);
@@ -259,6 +265,5 @@ long		if_open		(struct netif *);
 long		if_close	(struct netif *);
 long		if_send		(struct netif *, BUF *, ulong, short);
 void		if_load		(void);
-
 
 # endif /* _if_h */

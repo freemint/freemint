@@ -1,15 +1,13 @@
-
-#
-# compile coldfire target (requires newer gcc)
-#
-#COLDFIRE = yes
-
 # 
 # cross compiling
 #
 ifneq (yes,$(M68K_ATARI_MINT_CROSS))
+ifeq (no,$(M68K_ATARI_MINT_CROSS))
 CROSS = no
-#CROSS = yes
+else
+EVAL_CROSS := case `uname -s` in *MiNT*) echo no;; *) echo yes; esac
+CROSS := $(shell $(EVAL_CROSS))
+endif
 else
 CROSS = yes
 endif
@@ -20,19 +18,19 @@ endif
 ifeq ($(CROSS),yes)
 
 CROSSPREFIX=m68k-atari-mint-
-#CROSSPREFIX=ozk42-
 
 LANG=C
 NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
 CRLF = echo crlf -s
 
-# e.g. when you don't have the mintlib/gemlib/cflib in
-#      the /usr/m68k-atari/mint
-GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS)
-#	-ffreestanding -I/usr/m68k-atari-mint/include -specs=/home/ozk/specs
+GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS) -fgnu89-inline
+
+NATIVE_COLDFIRE := 0
 
 else
+
+NATIVE_COLDFIRE := $(shell if uname -s -p | grep 'MiNT.*V4e'; then echo 1; else echo 0; fi)
 
 CROSSPREFIX=
 
@@ -40,6 +38,28 @@ NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
 CRLF  = crlf -s
 
+ifeq ($(NATIVE_COLDFIRE),1)
+NATIVECFLAGS += -mcpu=5475
+endif
+
+endif
+
+# If you want to use libcmini instead of mintlib
+# for a smaller footprint of your TOS executables, call the Makefile with LIBCMINI=yes.
+# libcmini must be installed parallel to the freemint top dir for this to work
+ifeq (yes,$(LIBCMINI))
+LIBCMINI_PATH := $(top_srcdir)/../../libcmini
+ifeq (v4e,$(CPU))
+LIBCMINI_CPU := m5475
+else ifeq (000,$(CPU))
+LIBCMINI_CPU := .
+else
+LIBCMINI_CPU := m68020-60
+endif
+LIBCMINI_INCPATH := $(LIBCMINI_PATH)/include
+LIBCMINI_LIBPATH := $(shell if test -d $(LIBCMINI_PATH)/lib; then echo '$(LIBCMINI_PATH)/lib'; elif test -d $(LIBCMINI_PATH)/build; then echo '$(LIBCMINI_PATH)/build'; fi)
+LIBCMINI_STARTUP := $(LIBCMINI_LIBPATH)/crt0.o
+LIBCMINI_LIBPATH := $(LIBCMINI_LIBPATH)/$(LIBCMINI_CPU)
 endif
 
 CC = $(CROSSPREFIX)gcc
@@ -74,10 +94,8 @@ OPTS = -O2 -fomit-frame-pointer
 WARN = \
 	-Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
-	-Wcast-qual \
 	-Waggregate-return
 #	-Werror
 
@@ -90,3 +108,8 @@ DEFINITIONS =
 # model type
 #
 MODEL = 
+
+.PHONY: printvars
+printvars:
+	@$(foreach V,$(.VARIABLES), $(if $(filter-out environment% default automatic, $(origin $V)),$(warning $V=$($V))))
+

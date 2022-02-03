@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -17,6 +15,7 @@
 
 extern FILESYS uni_filesys;
 
+const char *fsname(FILESYS *fs);
 FILESYS *get_filesys (int);
 void unifs_init (void);
 

@@ -37,9 +37,9 @@
 
 # include "buf.h"
 # include "inet4/init.h"
-
+# include "usbnet.h"
 # include "version.h"
-
+# include "cookie.h"
 # include "mint/dcntl.h"
 # include "mint/file.h"
 
@@ -51,9 +51,9 @@
 	"\033p MiNT-Net TCP/IP " MSG_VERSION " PL " str (VER_PL) ", " VER_STATUS " \033q\r\n"
 
 # define MSG_GREET	\
-	" 1993-96 by Kay Roemer.\r\n" \
-	" 1997-99 by Torsten Lang.\r\n" \
-	" " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"\xbd 1993-1996 by Kay Roemer.\r\n" \
+	"\xbd 1997-1999 by Torsten Lang.\r\n" \
+	"\xbd 2000-2010 by Frank Naumann.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
@@ -62,11 +62,71 @@
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
 # define MSG_OLDMINT	\
-	"\033pMiNT too old, this module requires at least a FreeMiNT 1.16!\033q\r\n"
+	"\033pMiNT is not the correct version, this module requires FreeMiNT 1.19!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
 
+
+/*
+ * For USB ethernet devices.
+ */
+#define MAX_USB_ETHERNET_DEVICES 4
+static struct usb_netapi usbNetAPI;
+
+static long
+set_cookie (ulong tag, ulong val)
+{
+	ushort n = 0;
+	struct cookie *cjar = *CJAR;
+
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == tag)
+		{
+			cjar->value = val;
+			return E_OK;
+		}
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = tag;
+		cjar->value = val;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+
+		return E_OK;
+	}
+
+	return ENOMEM;
+}
+
+static long usb_eth_register(struct usb_eth_prob_dev *ethdev)
+{
+	long i;
+
+	for (i = 0; i < usbNetAPI.numDevices; i++) {
+		if (!usbNetAPI.usbnet[i].before_probe) {
+			usbNetAPI.usbnet[i] = *ethdev;
+
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static void usb_eth_deregister(long i)
+{
+	memset(&usbNetAPI.usbnet[i], 0, sizeof(struct usb_eth_prob_dev));
+}
 
 static void (*init_func[])(void) =
 {
@@ -93,7 +153,7 @@ init (struct kerinfo *k)
 # endif
 	c_conws ("\r\n");
 	
-	if (MINT_MAJOR != 1 || MINT_MINOR != 17 || MINT_KVERSION != 2 || !so_register)
+	if (MINT_MAJOR != 1 || MINT_MINOR != 19 || MINT_KVERSION != 2 || !so_register)
 	{
 		c_conws (MSG_OLDMINT);
 		return NULL;
@@ -106,7 +166,23 @@ init (struct kerinfo *k)
 		
 		return NULL;
 	}
-	
+ 
+ 	/* Set the EUSB cookie so that USB ethernet devices can be probed. */
+	memset(&usbNetAPI, 0, sizeof(struct usb_netapi));
+
+	usbNetAPI.majorVersion = 0;
+	usbNetAPI.minorVersion = 0;
+	usbNetAPI.numDevices = MAX_USB_ETHERNET_DEVICES;
+	usbNetAPI.usb_eth_register = usb_eth_register;
+	usbNetAPI.usb_eth_deregister = usb_eth_deregister;
+	usbNetAPI.usbnet = kmalloc(usbNetAPI.numDevices * sizeof(struct usb_eth_prob_dev));
+	if (!usbNetAPI.usbnet) {
+		return NULL;
+	}
+	memset(usbNetAPI.usbnet, 0, usbNetAPI.numDevices * sizeof(struct usb_eth_prob_dev));
+
+	set_cookie (COOKIE_EUSB, (long) &usbNetAPI);
+
 	for (r = 0; init_func[r]; r++)
 		(*init_func[r])();
 	

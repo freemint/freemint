@@ -1,27 +1,28 @@
 
-# 
+#
 # generic flags
-# 
+#
 # -DVERBOSE_BOOT	include extensive messages
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
 # -DC_ONLY		replace some assembly function by C compatible one
+# -DWITH_MMU_SUPPORT	include MMU support
+# -DPCI_BIOS		include PCI_BIOS interface emulation
 
 #
 # machine flags
-#  
+#
 # -DM68000		build for 68000 (no mmu, no caches)
 # -DM68030		build for 68030
 # -DM68040		build for 68040-060
-# -DM68060		build for 68060 (same as M68040, currently)
+# -DM68060		build for 68060
 # -DMILAN		build Milan kernel
 # -DARANYM		build Aranym kernel
-# -DCOLDFIRE		build coldfire kernel
 
-# 
+#
 # debug flags
-# 
+#
 # -DDEBUG_INFO		include debugging information
 # -DPROFILING		include profiling support
 # -DMFP_DEBUG_DIRECT	direct MFP routines to output debug
@@ -32,11 +33,11 @@
 # -DNO_RAMFS		disables the internal ramdisk (/ram)
 # -DNO_FAKE_SUPER	disables the extended bus error handler
 # -DNO_AKP_KEYBOARD	disables the extended keyboard routines
-# -DQUANTUM_SMALLER	changes QUANTUM to 2k, experimental!
 
-# 
+#
 # experimental; for developers only
-# 
+#
+# -DOLDTOSFS		use GEMDOS FS instead of real FAT XFS (pending removal)
 # -DJAR_PRIVATE		make Cookie Jar private for processes
 # -DWITHOUT_TOS		exclude TOS dependencies
 # 			warning, experimental and work in progress
@@ -45,9 +46,13 @@
 # mandatory for kernel source now
 KERNELDEFAULTDEFS = -D__KERNEL__
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
+KERNELDEFAULTDEFS += -DVERBOSE_BOOT
+KERNELDEFAULTDEFS += -DWITH_MMU_SUPPORT
+
+# added this to default-options for test-purpose for now
+KERNELDEFAULTDEFS += -DWITH_SINGLE_TASK_SUPPORT
 
 ifneq ($(kernel),000)
-KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DCRYPTO_CODE
 KERNELDEFAULTDEFS += -DSOFT_UNITABLE
 KERNELDEFAULTDEFS += -DBUILTIN_SHELL
@@ -56,16 +61,14 @@ endif
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
-KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER -DVERBOSE_BOOT
-#KERNELDEFS += -DDEBUG_INFO
-#KERNELDEFS += -DMFP_DEBUG_DIRECT
-OPTS += -fstrength-reduce
+KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DM68030
+KERNELDEFS = -DM68030 -DWITH_NATIVE_FEATURES
 endif
 
 ifeq ($(kernel),040)
@@ -77,48 +80,54 @@ endif
 ifeq ($(kernel),060)
 MINT = mint060.prg
 CPU  = 060
-KERNELDEFS = -DM68040
+KERNELDEFS = -DM68060 -DPCI_BIOS
 endif
 
-ifeq ($(kernel),117)
-MINT = mint117.prg
-CPU  = 020-60
-KERNELDEFS = -DM68040
+ifeq ($(kernel),020)
+MINT = mint020.prg
+CPU  = 020
+KERNELDEFS = -DM68000
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),deb)
-MINT = mintnp.prg
+MINT = mintdeb.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),col)
-MINT = mintnp.prg
+MINT = mintv4e.prg
 CPU  = v4e
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
+KERNELDEFS = -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),mil)
 MINT = mintmil.prg
 CPU  = 020-60
-KERNELDEFS = -DMILAN -DM68040
+KERNELDEFS = -DMILAN -DM68040 -DPCI_BIOS
 endif
 
 ifeq ($(kernel),ara)
 MINT = mintara.prg
-CPU  = 020-60
+CPU  = 040
 KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
 MODULEDIRS = xfs/hostfs
 endif
 
-ifeq ($(kernel),my1)
-MINT = mintnp.prg
-CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
+ifeq ($(kernel),hat)
+MINT = minthat.prg
+CPU  = 000
+KERNELDEFS = -DM68000 -DOLDTOSFS -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
-ifeq ($(kernel),my2)
-MINT = mint040.prg
+# Example for a custom build:
+# Add my1 to "kerneltargets" below
+# Type in your shell "make my1"
+ifeq ($(kernel),my1)
+MINT = mintmy1.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 KERNELDEFS += -DMFP_DEBUG_DIRECT
@@ -127,25 +136,8 @@ KERNELDEFS += -DMFP_DEBUG_DIRECT
 #kernel_nocflags = -fomit-frame-pointer
 endif
 
-ifeq ($(kernel),my3)
-MINT = mint030.prg
-CPU  = 030
-KERNELDEFS = -DDEBUG_INFO -DM68030
-endif
-
-ifeq ($(kernel),my4)
-MINT = mintmdbg.prg
-CPU = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
-endif
-
 #
 # all default targets
 #
-kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4
-cputargets = 000 030 020-60
-
-ifeq (COLDFIRE,yes)
-kerneltargets += col
-cputargets += v4e
-endif
+kerneltargets = 000 020 030 040 060 deb mil ara hat col
+cputargets = 000 020 030 040 060 020-60 v4e

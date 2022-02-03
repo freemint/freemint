@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -481,11 +479,11 @@ Func dos_tab [DOS_MAX] =
 	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
 	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
 	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */
-	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.15.11 */
+	/* 0x15e */		sys_p_sysctl,	/* 1.15.11 */
 	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 
-	/* 0x160 */	(Func)	sys_socket,	/* 1.16 */
-	/* 0x161 */	(Func)	sys_socketpair,	/* 1.16 */
+	/* 0x160 */		sys_socket,	/* 1.16 */
+	/* 0x161 */		sys_socketpair,	/* 1.16 */
 	/* 0x162 */	(Func)	sys_accept,	/* 1.16 */
 	/* 0x163 */	(Func)	sys_connect,	/* 1.16 */
 	/* 0x164 */	(Func)	sys_bind,	/* 1.16 */
@@ -503,7 +501,7 @@ Func dos_tab [DOS_MAX] =
 
 	/* 0x170 */		sys_p_shmget,
 	/* 0x171 */		sys_p_shmctl,
-	/* 0x172 */	(Func)	sys_p_shmat,
+	/* 0x172 */		sys_p_shmat,
 	/* 0x173 */		sys_p_shmdt,
 	/* 0x174 */		sys_p_semget,	/* not implemented */
 	/* 0x175 */		sys_p_semctl,	/* not implemented */
@@ -602,7 +600,7 @@ ushort xbios_max = XBIOS_MAX;
 
 Func xbios_tab [XBIOS_MAX] =
 {
-        /* 0x000 */		NULL,
+	/* 0x000 */		NULL,
 	/* 0x001 */		NULL,
 	/* 0x002 */		NULL,
 	/* 0x003 */		NULL,
@@ -619,11 +617,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x00e */		sys_b_uiorec,
 	/* 0x00f */		sys_b_ursconf,
 
-# ifndef NO_AKP_KEYBOARD
 	/* 0x010 */	(Func)	sys_b_keytbl,
-# else
-	/* 0x010 */		NULL,
-# endif
 	/* 0x011 */		sys_b_random,
 	/* 0x012 */		NULL,
 	/* 0x013 */		NULL,
@@ -631,11 +625,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x015 */		sys_b_cursconf,
 	/* 0x016 */	(Func)	sys_b_settime,
 	/* 0x017 */		sys_b_gettime,
-# ifndef NO_AKP_KEYBOARD
 	/* 0x018 */	(Func)	sys_b_bioskeys,
-# else
-	/* 0x018 */		NULL,
-# endif
 	/* 0x019 */		NULL,
 	/* 0x01a */		NULL,
 	/* 0x01b */		NULL,
@@ -646,13 +636,8 @@ Func xbios_tab [XBIOS_MAX] =
 
 	/* 0x020 */		sys_b_dosound,
 	/* 0x021 */		NULL,
-# ifndef NO_AKP_KEYBOARD
 	/* 0x022 */	(Func)	sys_b_kbdvbase,
 	/* 0x023 */	(Func)	sys_b_kbrate,
-# else
-	/* 0x022 */		NULL,
-	/* 0x023 */		NULL,
-# endif
 	/* 0x024 */		NULL,
 	/* 0x025 */		NULL,
 	/* 0x026 */		sys_b_supexec,

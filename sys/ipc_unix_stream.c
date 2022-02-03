@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * send(), recv(), socketpair(), connect(), select() and ioctl()
  * routines for stream unix sockets.
  * 
@@ -30,7 +28,7 @@ unix_stream_socketpair (struct socket *so1, struct socket *so2)
 }
 
 long
-unix_stream_connect (struct socket *so, struct sockaddr *addr, short addrlen, short nonblock)
+unix_stream_connect (struct socket *so, const struct sockaddr *addr, short addrlen, short nonblock)
 {
 	struct un_data *server_data;
 	long r, index;
@@ -60,12 +58,10 @@ unix_stream_connect (struct socket *so, struct sockaddr *addr, short addrlen, sh
 
 long
 unix_stream_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
-			short flags, struct sockaddr *addr, short addrlen)
+			short flags, const struct sockaddr *addr, short addrlen)
 {
 	struct un_data *undata;
-	char *buf;
-	short cando;
-	long todo, nbytes;
+	long nbytes;
 	
 	switch (so->state)
 	{
@@ -125,8 +121,10 @@ unix_stream_send (struct socket *so, const struct iovec *iov, short niov, short 
 	
 	for (nbytes = 0; niov; --niov, ++iov)
 	{
-		todo = iov->iov_len;
-		buf = iov->iov_base;
+		long todo = iov->iov_len;
+		char *buf = iov->iov_base;
+		short cando;
+
 		nbytes += todo;
 		while (todo > 0)
 		{
@@ -198,9 +196,7 @@ unix_stream_recv (struct socket *so, const struct iovec *iov, short niov, short 
 			short flags, struct sockaddr *addr, short *addrlen)
 {
 	struct un_data *undata = so->data;
-	char *buf;
-	short cando;
-	long todo, nbytes;
+	long nbytes;
 	
 	switch (so->state)
 	{
@@ -249,8 +245,10 @@ unix_stream_recv (struct socket *so, const struct iovec *iov, short niov, short 
 	
 	for (nbytes = 0; niov; ++iov, --niov)
 	{
-		todo = iov->iov_len;
-		buf = iov->iov_base;
+		long todo = iov->iov_len;
+		char *buf = iov->iov_base;
+		short cando;
+
 		nbytes += todo;
 		while (todo > 0)
 		{
@@ -420,7 +418,6 @@ long
 unix_stream_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short peer)
 {
 	struct un_data *undata;
-	short todo;
 	
 	if (peer == PEER_ADDR)
 	{
@@ -444,7 +441,7 @@ unix_stream_getname (struct socket *so, struct sockaddr *addr, short *addrlen, s
 		
 		if (undata->flags & UN_ISBOUND)
 		{
-			todo = MIN (undata->addrlen, *addrlen - 1);
+			short todo = MIN (undata->addrlen, *addrlen - 1);
 			memcpy (addr, &undata->addr, todo);
 			((struct sockaddr_un *)addr)->
 				sun_path[todo - UN_PATH_OFFSET] = '\0';

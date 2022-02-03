@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -83,7 +81,7 @@
 
 # define MSG_GREET	\
 	"½ Jan  1 1995 by TeSche <itschere@techfak.uni-bielefeld.de>\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"½ 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -235,12 +233,12 @@ printc (register long c)
 	
 	__asm__ volatile
 	(
-		"moveml d0-d7/a0-a6,sp@-;"
-		"movl %1,sp@-;"
-		"movl _oldxconout2, a0;"
-		"jbsr a0@;"
-		"addqw #4,sp;"
-		"moveml sp@+,d0-d7/a0-a6;"
+		PUSH_SP("d0-d7/a0-a6", 60)
+		"movl	%1,sp@-\n\t"
+		"movl	_oldxconout2,a0\n\t"
+		"jbsr	a0@\n\t"
+		"addql	#4,sp\n\t"
+		POP_SP("d0-d7/a0-a6", 60)
 		: "=r" (r)			/* outputs */
 		: "g" (c)			/* inputs  */
 	);

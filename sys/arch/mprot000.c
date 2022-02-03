@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -35,10 +33,7 @@
 
 # include "memory.h"
 
-#ifdef M68000
-
-int no_mem_prot = 1;
-ulong mem_prot_flags = 0L; /* Bitvector, currently only bit 0 is used */
+#ifndef WITH_MMU_SUPPORT
 
 void
 init_tables(void)
@@ -110,4 +105,4 @@ mem_access_for(PROC *p, ulong start, long nbytes)
 	return -1;
 }
 
-#endif /* M68000 */
+#endif

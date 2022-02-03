@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  *
@@ -50,33 +48,14 @@ sys_f_open (const char *name, short mode)
 	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
-	int globl = 0;
 	long ret;
 
 	TRACE (("Fopen(%s, %x)", name, mode));
 
-# if O_GLOBAL
-	if (mode & O_GLOBAL)
-	{
-		if (p->p_cred->ucr->euid)
-		{
-			DEBUG (("Fopen(%s): O_GLOBAL denied for non root"));
-			return EPERM;
-		}
-
-		/* from now the sockets are clean */
-		if (!stricmp (name, "u:\\dev\\socket"))
-		{
-			ALERT (MSG_oglobal_denied);
-			return EINVAL;
-		}
-
-		ALERT (MSG_global_handle, name);
-
-		p = rootproc;
-		globl = 1;
-	}
-# endif
+	if (mode & O_GLOBAL) {
+	   ALERT("O_GLOBAL is obsolete, please update your driver (%s)",name);
+	   return EINVAL;
+        }
 
 	/* make sure the mode is legal */
 	mode &= O_USER;
@@ -101,12 +80,6 @@ sys_f_open (const char *name, short mode)
 	/* activate the fp, default is to close non-standard files on exec */
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
 
-# if O_GLOBAL
-	if (globl)
-		/* we just opened a global handle */
-		fd += 100;
-# endif
-
 	TRACE (("Fopen: returning %d", fd));
 	return fd;
 
@@ -126,14 +99,6 @@ sys_f_create (const char *name, short attrib)
 	long ret;
 
 	TRACE (("Fcreate(%s, %x)", name, attrib));
-
-# if O_GLOBAL
-	if (attrib & O_GLOBAL)
-	{
-		DEBUG (("Fcreate(%s): O_GLOBAL denied"));
-		return EPERM;
-	}
-# endif
 
 	assert (p->p_fd && p->p_cwd);
 
@@ -172,7 +137,7 @@ sys_f_create (const char *name, short attrib)
 		ret = do_open (&fp, name, O_RDWR|O_CREAT|O_TRUNC, attrib, NULL);
 		if (ret)
 		{
-			DEBUG (("Fcreate(%s) failed, error %d", name, ret));
+			DEBUG (("Fcreate(%s) failed, error %ld", name, ret));
 			goto error;
 		}
 	}
@@ -197,8 +162,19 @@ sys_f_close (short fd)
 	DIR **where, **_where;
 	long r;
 
-	TRACE (("Fclose: %d", fd));
+	DEBUG (("Fclose: %d", fd));
 
+# ifdef WITH_SINGLE_TASK_SUPPORT
+	/* this is for pure-debugger:
+	 * some progs call Fclose(-1) when they exit which would
+	 * cause pd to lose keyboard
+	 */
+	if( fd < 0 && (p->modeflags & M_SINGLE_TASK) )
+	{
+		DEBUG(("Fclose:return 0 for negative fd in singletask-mode."));
+		return 0;
+	}
+# endif
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
 
@@ -275,7 +251,7 @@ sys_f_read (short fd, long count, char *buf)
 	if (is_terminal (f))
 		return tty_read (f, buf, count);
 
-	TRACELOW (("Fread: %ld bytes from handle %d to %lx", count, fd, buf));
+	TRACELOW (("Fread: %ld bytes from handle %d to %p", count, fd, buf));
 	return xdd_read (f, buf, count);
 }
 
@@ -305,7 +281,7 @@ sys_f_write (short fd, long count, const char *buf)
 	 */
 	if (count <= 0)
 	{
-		DEBUG (("Fwrite: invalid count: %d", count));
+		DEBUG (("Fwrite: invalid count: %ld", count));
 		return 0;
 	}
 
@@ -356,7 +332,7 @@ sys_f_dup (short fd)
 {
 	long r;
 
-	r = do_dup (fd, MIN_OPEN);
+	r = do_dup (fd, 0, 0);
 
 	TRACE (("Fdup(%d) -> %ld", fd, r));
 	return r;
@@ -427,13 +403,10 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 	if (f->fc.fs && f->fc.fs->fsflags & FS_EXT_3)
 	{
 		unsigned long ut = 0;
-		unsigned short dt;
 		if (wflag)
 			ut = unixtime(timeptr[0], timeptr[1]) + timezone;
-		dt = ut >> 16;
-		r = xdd_datime(f, &dt, wflag);
+		r = xdd_datime(f, (ushort *)&ut, wflag);
 		if (!r && !wflag) {
-			ut = (ut & 0x0000ffffUL) | ((unsigned long)dt << 16);
 			ut = dostime(ut - timezone);
 			timeptr[1] = (unsigned short)ut;
 			ut >>= 16;
@@ -496,7 +469,9 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 		return ENOSYS;
 	}
 
-	ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
+	ret = xdd_ioctl(f, FSTAT, xattr);
+	if (ret == ENOSYS)
+		ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
 	if ((ret == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
 	{
 		xtime_to_local_dos(xattr,m);
@@ -510,6 +485,8 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 static long
 sys__ffstat_1_16 (struct file *f, struct stat *st)
 {
+	long ret;
+
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
@@ -523,7 +500,10 @@ sys__ffstat_1_16 (struct file *f, struct stat *st)
 		return ENOSYS;
 	}
 
-	return xfs_stat64 (f->fc.fs, &f->fc, st);
+	ret = xdd_ioctl(f, FSTAT64, st);
+	if (ret == ENOSYS)
+		ret = xfs_stat64 (f->fc.fs, &f->fc, st);
+	return ret;
 }
 
 long _cdecl
@@ -556,8 +536,9 @@ sys_f_cntl (short fd, long arg, short cmd)
 
 	TRACE (("Fcntl(%i, cmd=0x%x)", fd, cmd));
 
-	if (cmd == F_DUPFD)
-  		return do_dup (fd, arg);
+	if (cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
+  		return do_dup (fd, arg, cmd == F_DUPFD_CLOEXEC ? 1: 0);
+	}
 
 	TRACE(("Fcntl getfileptr"));
 	r = GETFILEPTR (&p, &fd, &f);
@@ -675,7 +656,7 @@ sys_f_cntl (short fd, long arg, short cmd)
 
 /* helper function for time outs */
 static void _cdecl
-unselectme (struct proc *p)
+unselectme (struct proc *p, long arg)
 {
 	wakeselect (p);
 }
@@ -684,12 +665,12 @@ long _cdecl
 sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 {
 	long rfd, wfd, xfd, col_rfd, col_wfd, col_xfd;
-	long mask, bytes;
-	int i, count;
+	long mask;
+	long count;
 	FILEPTR *f;
 	struct proc *p;
-	TIMEOUT *t;
-	int rsel;
+	TIMEOUT *t = NULL;
+	int i, rsel;
 	long wait_cond;
 	short sr;
 #if 0
@@ -709,8 +690,6 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	if (rfdp) *rfdp = 0;
 	if (wfdp) *wfdp = 0;
 	if (xfdp) *xfdp = 0;
-
-	t = 0;
 
 	TRACELOW(("Fselect(%u, %lx, %lx, %lx)", timeout, rfd, wfd, xfd));
 	p = get_curproc();			/* help the optimizer out */
@@ -814,38 +793,6 @@ retry_after_collision:
 		mask = mask << 1L;
 	}
 
-#if 0
-
-/* Should we (1999) still keep this code? */
-
-/* GEM kludges part #xxx :(
- *
- * the `last' (1993) GEM AES apparently uses the same etv_timer counter
- * for GEM processes evnt_timer/evnt_multi timeouts and sometimes for
- * some other internal watchdog timer or whatever of always 0x2600 ticks
- * when waking up console/mouse selects, and so sometimes turns your
- * 50ms evnt_timer call into a >3 min one.
- *
- * *sigh* when will atari release source if they don't care about their
- * GEM anymore...  this beast not only needs debugged, it also wants to
- * see a profiler...
- *
- */
-	if (!strcmp (p->name, "AESSYS")) {
-	/* pointer to gems etv_timer handler */
-		char *foo = *(char **)(lineA0()-0x42);
-		long *bar;
-	/* find that counter by looking for the first subql #1,xxxxxx
-	 * instruction (0x53b9), save address and old value
-	 */
-		if (foo && NULL != (foo = memchr (foo, 0x53, 0x40)) &&
-		    !(1 & (long)foo) && foo[1] == (char)0xb9 &&
-		    foo < (char *)(bar = *(long **)(foo+2))) {
-			gemtimer = (long)bar;
-			oldgemtimer = *bar;
-		}
-	}
-#endif
 	if (count == 0)
 	{
 		/* no data is ready yet */
@@ -870,8 +817,14 @@ retry_after_collision:
 			 * curproc. But sleep used to reset curproc->wait_cond
 			 * to wakeselect causing curproc to sleep forever.
 			 */
-			if (sleep (SELECT_Q|0x100, wait_cond))
-				p->wait_cond = 0;
+			if (sleep (SELECT_Q|0x100, wait_cond)) {
+				/* signal happened, abort */
+				if (t) canceltimeout(t);
+
+				count = EINTR;
+
+				goto cancel;
+			}
 			sr = spl7 ();
 		}
 		if (p->wait_cond == (long)&select_coll)
@@ -894,12 +847,11 @@ retry_after_collision:
 				f = p->p_fd->ofiles[i];
 				if (f)
 				{
-				    bytes = 1L;
 				    if (is_terminal(f))
-					(void)tty_ioctl(f, FIONREAD, &bytes);
+					rsel = (int) tty_select(f, (long)p, O_RDONLY);
 				    else
-					(void)(*f->dev->ioctl)(f, FIONREAD,&bytes);
-				    if (bytes > 0)
+					rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
+				    if (rsel == 1)
 				    {
 					*rfdp |= mask;
 					count++;
@@ -911,12 +863,11 @@ retry_after_collision:
 				f = p->p_fd->ofiles[i];
 				if (f)
 				{
-				    bytes = 1L;
 				    if (is_terminal(f))
-					(void)tty_ioctl(f, FIONWRITE, &bytes);
+					rsel = (int) tty_select(f, (long)p, O_WRONLY);
 				    else
-				        (void)(*f->dev->ioctl)(f, FIONWRITE,&bytes);
-				    if (bytes > 0)
+					rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
+				    if (rsel == 1)
 				    {
 					*wfdp |= mask;
 					count++;
@@ -931,9 +882,8 @@ retry_after_collision:
 /*  tesche: since old device drivers won't understand this call,
  * we set up `no exceptional condition' as default.
  */
-				    bytes = 0L;
-				    (void)(*f->dev->ioctl)(f, FIOEXCEPT,&bytes);
-				    if (bytes > 0)
+				    rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
+				    if (rsel == 1)
 				    {
 					*xfdp |= mask;
 					count++;
@@ -951,6 +901,7 @@ retry_after_collision:
 		canceltimeout(t);
 	}
 
+cancel:
 	/* at this point, we either have data or a time out */
 	/* cancel all the selects */
 	mask = 1L;
@@ -978,29 +929,11 @@ retry_after_collision:
 		mask = mask << 1L;
 	}
 
-#if 0
-/* GEM kludgery continued...
- *
- * if the counter was already in use and is somewhere at 3 minutes now
- * then just restore the old value
- */
-	if (oldgemtimer) {
-		long *bar = (long *)gemtimer;
-		short sr = spl7();
-		if ((gemtimer = *bar) <= 0x2600 && gemtimer > 0x2000 &&
-		    gemtimer > oldgemtimer) {
-			*bar = oldgemtimer;
-			spl(sr);
-			DEBUG(("select: restoring gem timer (%lx: %lx -> %lx)", bar, gemtimer, oldgemtimer));
-		}
-		spl(sr);
-	}
-#endif
 	/* wake other processes which got a collision */
 	if (rfd || wfd || xfd)
 		wake(SELECT_Q, (long)&select_coll);
 
-	TRACELOW(("Fselect: returning %d", count));
+	TRACELOW(("Fselect: returning %ld", count));
 	return count;
 }
 
@@ -1223,88 +1156,260 @@ sys_f_seek64 (llong place, short fd, short how, llong *newpos)
 long _cdecl
 sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 {
-	ulong rfds = 0;
-	ulong wfds = 0;
-	ulong xfds = 0;
-	long retval;
+	struct proc *p = get_curproc();
 	register long i;
+	long count = 0;
+	long wait_cond;
+	FILEPTR *f;
+	TIMEOUT *t = NULL;
+	int rsel;
+	short sr;
 
+	/* validate */
 	for (i = 0; i < nfds; i++)
 	{
-		if (fds[i].fd > 31)
-			return EINVAL;
-
-# define LEGAL_FLAGS \
-	(POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP | POLLNVAL | POLLRDNORM | POLLWRNORM)
-
-		if ((fds[i].events | LEGAL_FLAGS) != LEGAL_FLAGS)
-			return EINVAL;
-
-		if (fds[i].events & POLLIN)
-			rfds |= (1L << (fds[i].fd));
-		if (fds[i].events & POLLPRI)
-			xfds |= (1L << (fds[i].fd));
-		if (fds[i].events & POLLOUT)
-			wfds |= (1L << (fds[i].fd));
-	}
-
-	if (timeout == ~0)
-		retval = sys_f_select (0L, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-	else if (timeout == 0)
-		retval = sys_f_select (1L, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-# define USHRT_MAX	65535
-	else if (timeout < USHRT_MAX)
-		retval = sys_f_select (timeout, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-	else
-	{
-		ulong saved_rfds, saved_wfds, saved_xfds;
-		ushort this_timeout;
-		int last_round = 0;
-
-		saved_rfds = rfds;
-		saved_wfds = wfds;
-		saved_xfds = xfds;
-
-		do {
-			if ((ulong) timeout > USHRT_MAX)
-				this_timeout = USHRT_MAX;
-			else
-			{
-				this_timeout = timeout;
-				last_round = 1;
-			}
-
-			retval = sys_f_select (this_timeout, (long *)&rfds, (long *)&wfds, (long *)&xfds);
-			if (retval != 0)
-				break;
-
-			timeout -= this_timeout;
-
-			rfds = saved_rfds;
-			wfds = saved_wfds;
-			xfds = saved_xfds;
+# define LEGAL_INPUT_FLAGS \
+	(POLLIN | POLLPRI | POLLOUT | POLLRDNORM | POLLWRNORM | POLLRDBAND | POLLWRBAND)
+		if (((fds[i].events | LEGAL_INPUT_FLAGS) != LEGAL_INPUT_FLAGS) ||
+		   fds[i].fd >= NDFILE || 
+		   !p->p_fd->ofiles[fds[i].fd]) {
+			fds[i].revents |= POLLNVAL;
+		} else {
+			fds[i].revents = fds[i].events;
 		}
-		while (!last_round);
 	}
 
-	if (retval < 0)
-		return retval;
+        assert (p->p_fd && p->p_cwd);
+
+retry_after_collision:
+	p->wait_cond = (long)wakeselect;                /* flag */
+	wait_cond = (long)wakeselect;
+	count = 0;
 
 	for (i = 0; i < nfds; i++)
 	{
-		if (rfds & (1L << (fds[i].fd)))
-			fds[i].revents = POLLIN;
-		else
-			fds[i].revents = 0;
+		if (fds[i].revents & POLLNVAL)
+			continue;
 
-		if (xfds & (1L << (fds[i].fd)))
-			fds[i].revents |= POLLPRI;
+		f = p->p_fd->ofiles[fds[i].fd];
 
-		if (wfds & (1L << (fds[i].fd)))
-			fds[i].revents |= POLLOUT;
+		if (fds[i].revents & (POLLIN | POLLRDNORM))
+		{
+			if (is_terminal(f))
+				rsel = (int) tty_select(f, (long)p, O_RDONLY);
+			else
+				rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
+			switch (rsel)
+			{
+			case 0:
+				fds[i].revents &= ~(fds[i].events & (POLLIN | POLLRDNORM));
+				break;
+			case 1:
+				fds[i].revents |= (fds[i].events & (POLLIN | POLLRDNORM));
+				count++;
+				break;
+			case 2:
+				wait_cond = (long)&select_coll;
+				break;
+			}
+		}
+		if (fds[i].revents & (POLLOUT | POLLWRNORM))
+		{
+			if (is_terminal(f))
+				rsel = (int) tty_select(f, (long)p, O_WRONLY);
+			else
+				rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
+			switch (rsel)
+			{
+			case 0:
+				fds[i].revents &= ~(fds[i].events & (POLLOUT | POLLWRNORM));
+				break;
+			case 1:
+				fds[i].revents |= (fds[i].events & (POLLOUT | POLLWRNORM));
+				count++;
+				break;
+			case 2:
+				wait_cond = (long)&select_coll;
+				break;
+			}
+		}
+		if (fds[i].revents & POLLPRI)
+		{
+/* tesche: anybody worried about using O_RDWR for exceptional data? ;) */
+			rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
+/*  tesche: for old device drivers, which don't understand this
+ * call, this will never be true and therefore won't disturb us here.
+ */
+			switch (rsel)
+			{
+			case 0:
+				fds[i].revents &= ~(fds[i].events & POLLPRI);
+				break;
+			case 1:
+				fds[i].revents |= (fds[i].events & POLLPRI);
+				count++;
+				break;
+			case 2:
+				wait_cond = (long)&select_coll;
+				break;
+			}
+		}
 	}
 
-	return retval;
+	/* reset timeout for our select call */
+	if (timeout == ~0)
+		timeout = 0;
+	else if (timeout == 0)
+		goto cancel;
+
+	if (count == 0)
+	{
+		/* no data is ready yet */
+		if (timeout && !t)
+		{
+			t = addtimeout (p, (long)timeout, unselectme);
+			timeout = 0;
+		}
+
+		/* curproc->wait_cond changes when data arrives or the timeout happens */
+		sr = spl7 ();
+		while (p->wait_cond == (long)wakeselect)
+		{
+			p->wait_cond = wait_cond;
+			spl (sr);
+			/*
+			 * The 0x100 tells sleep() to return without sleeping
+			 * when curproc->wait_cond changes. This way we don't
+			 * need spl7 (avoiding endless serial overruns).
+			 * Also fixes a deadlock with checkkeys/checkbttys.
+			 * They are called from sleep and may wakeselect()
+			 * curproc. But sleep used to reset curproc->wait_cond
+			 * to wakeselect causing curproc to sleep forever.
+			 */
+			if (sleep (SELECT_Q|0x100, wait_cond)) {
+				/* signal happened, abort */
+				if (t) canceltimeout(t);
+
+				count = EINTR;
+
+				goto cancel;
+			}
+			sr = spl7 ();
+		}
+		if (p->wait_cond == (long)&select_coll)
+		{
+			spl (sr);
+			goto retry_after_collision;
+		}
+		spl (sr);
+
+	/* we can cancel the time out now (if it hasn't already happened) */
+		if (t) canceltimeout(t);
+
+	/* OK, let's see what data arrived (if any) */
+		for (i = 0; i < nfds; i++)
+		{
+			ushort events = fds[i].events;
+	
+			if (fds[i].revents & POLLNVAL)
+				continue;
+
+			f = p->p_fd->ofiles[fds[i].fd];
+			
+			if (events & (POLLIN | POLLRDNORM))
+			{
+				if (f)
+				{
+				    if (is_terminal(f))
+					rsel = (int) tty_select(f, (long)p, O_RDONLY);
+				    else
+					rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
+
+				    if (rsel == 1) {
+					fds[i].revents |= (fds[i].events & (POLLIN | POLLRDNORM));
+					count++;
+				    }
+				}
+			}
+			if (events & (POLLOUT | POLLWRNORM))
+			{
+				if (f)
+				{
+				    if (is_terminal(f))
+					rsel = (int) tty_select(f, (long)p, O_WRONLY);
+				    else
+					rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
+
+				    if (rsel == 1) {
+					fds[i].revents |= (fds[i].events & (POLLOUT | POLLWRNORM));
+					count++;
+				    }
+				}
+			}
+			if (events & POLLPRI)
+			{
+				if (f)
+				{
+/*  tesche: since old device drivers won't understand this call,
+ * we set up `no exceptional condition' as default.
+ */
+				    rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
+				    if (rsel == 1) {
+					fds[i].revents |= (fds[i].events & POLLPRI);
+					count++;
+				    }
+				}
+			}
+		}
+	}
+	else if (t)
+	{
+		/* in case data arrived after a collsion, there
+		 * could be a timeout pending even if count > 0
+		 */
+		canceltimeout(t);
+	}
+
+cancel:
+	/* at this point, we either have data or a time out */
+	/* cancel all the selects */
+
+	for (i = 0; i < nfds; i++)
+	{
+#if 0
+		if (count == EINTR) {
+			fds[i].revents |= POLLHUP;
+			continue;
+		}
+#endif
+		if (fds[i].revents & POLLNVAL) {
+			count++; 
+			continue;
+		}
+
+		f = p->p_fd->ofiles[fds[i].fd];
+
+		if (fds[i].events & (POLLIN | POLLRDNORM))
+		{
+			if (f)
+				(*f->dev->unselect)(f, (long)p, O_RDONLY);
+		}
+		if (fds[i].events & (POLLOUT | POLLWRNORM))
+		{
+			if (f)
+				(*f->dev->unselect)(f, (long)p, O_WRONLY);
+		}
+		if (fds[i].events & POLLPRI)
+		{
+			if (f)
+				(*f->dev->unselect)(f, (long)p, O_RDWR);
+		}
+	}
+
+	/* wake other processes which got a collision */
+	wake(SELECT_Q, (long)&select_coll);
+
+	return count;
 }
 
 long _cdecl
@@ -1314,7 +1419,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 	FILEPTR *f;
 	long r;
 
-	TRACE (("Fwritev(%i, %lx, %li)", fd, iov, niov));
+	TRACE (("Fwritev(%i, %p, %li)", fd, iov, niov));
 
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
@@ -1379,7 +1484,7 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 	FILEPTR *f;
 	long r;
 
-	TRACE (("Freadv(%i, %lx, %li)", fd, iov, niov));
+	TRACE (("Freadv(%i, %p, %li)", fd, iov, niov));
 
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;

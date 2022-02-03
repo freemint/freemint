@@ -1,7 +1,6 @@
 #
 # Makefile for the strace system tool
 #
-TARGET = strace
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,48 +9,76 @@ srcdir = .
 top_srcdir = ..
 subdir = strace
 
-default: all
+default: help
+
+include $(srcdir)/STRACEDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: generator $(TARGET)
+all-here: all-targets
 
 # default overwrites
-NATIVECFLAGS = -I$(top_srcdir)/../shared
-NATIVE_LIBS_DEP += $(top_srcdir)/../shared/libsyscall/libsyscall.a
-NATIVE_LIBS += -L$(top_srcdir)/../shared/libsyscall -lsyscall
-NATIVE_LIBS += -lfl
-
-MASTER = $(top_srcdir)/../sys/syscalls.master
-DEFINITIONS += -D_GNU_SOURCE
-
-NOCFLAGS-print.c = -Wcast-qual
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-OBJS += sysenttab.o
-GENFILES = $(TARGET) sysenttab.* gentables genstamp
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(stracetargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - bakclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
 
-$(TARGET): genstamp $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(stracetargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/strace) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
-sysenttab.c sysenttab.h: genstamp
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(stracetargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-genstamp: $(MASTER) gentables
-	./gentables $<
-	touch $@
+$(stracetargets):
+	$(MAKE) buildstrace strace=$@
 
-generator:
-	cd $(top_srcdir)/../shared/libsyscall; $(MAKE)
-	$(MAKE) gentables \
-		CC="$(NATIVECC)" CFLAGS="$(NATIVECFLAGS)" \
-		LIBS_DEP="$(NATIVE_LIBS_DEP)" LIBS="$(NATIVE_LIBS)"
+#
+# multi target stuff
+#
 
-gentables: gentables.o $(LIBS_DEP)
-	$(CC) -o $@ $(CFLAGS) $< $(LIBS)
+ifneq ($(strace),)
 
+compile_dir = .compile_$(strace)
+stracetarget = _stmp_$(strace)
+realtarget = $(stracetarget)
 
-include $(top_srcdir)/DEPENDENCIES
+$(stracetarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildstrace: $(realtarget)

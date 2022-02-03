@@ -1,0 +1,70 @@
+fec.xif
+==========
+
+The MiNT-Net xif driver for Firebee onboard ethernet interface,
+based on Freescale DMA API.
+
+
+Installation and usage
+======================
+
+Install MiNT-Net and copy the fecdma.xif into your mint folder.
+Then configure the eth0 interface as usual.
+
+Bring up the network interface and assign an specific IP to it:
+ifconfig eth0 addr 192.168.220.101
+
+To add an route to an specific host within you network:
+route add 192.168.220.99 eth0
+
+You can influence driver mode by renaming the .xif file.
+recognized filenames:
+
+"FEC.XIF" 		=> Auto-Negotiate, no promiscuous mode
+"FECP.XIF" 		=> Auto-Negotiate, promiscuous mode
+"FECP10.XIF" 	=> 10Mbit half duplex, promiscuous mode
+"FEC10.XIF" 	=> 10Mbit half duplex, no promiscuous mode
+
+
+
+How it works
+============
+
+The core of this driver is the so called DMA cookie.
+This cookie provides us with pointers to the so called Multichannel
+DMA API. That API is provided by Freescale and built into FireTOS.
+Most FEC drivers (and also many others) are built on top of the
+MCDMA API. For more info read the "Multichannel DMA API User's Guide"
+and MCF5475 Reference Manual provided by Freescale.
+
+Currently nearly the same Network Buffer Scheme as FireTOS uses,
+is used for packet buffering. It makes use of the
+dma_malloc / dma_free functions provided with FireTOS DMA cookie.
+These functions work on memory areas which aren't affected
+by CPU cache. We could also use cache-visible memory,
+but then we would have to flush the cache (regions) before
+we send / receive data. Another Option is to use a static RAM
+area, but there isn't much space, which forces to use less
+buffer descriptors ( around 3 for rx, 3 for tx ) and that slows
+down transfer speeds alot. So the usage of SRAM is a bit
+problematic. (Altough SRAM access time is faster.)
+
+The DMA Cookie also provides us with the Freescale Multichannel
+DMA API + dma utility functions. With these functions we can
+start an so called "DMA task". There are specific DMA
+tasks for Receiving / Transmitting FEC data. It's built within the
+DMA API. So everything we have to do: start the dma task, and
+most of the work is done. The FEC is controlled by the DMA Task,
+and the driver just needs to handle incoming packets and submit
+outgoing packets to the task.
+
+While writing this, there is no official release of FireTOS which
+contains the DMA Cookie. So you either have to look for an
+non-official version, or wait until Didier Mequignon releases the
+next FireTOS version.
+
+Enjoy!
+
+m0n0
+
+7. Nov. 2011

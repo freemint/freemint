@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
@@ -116,9 +114,11 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Cursconf(rate,attr)		(short)	trap_14_emu(0x15,(short)(rate),(short)(attr))
 # define ROM_Settime(time)			(void)	trap_14_emu(0x16,(long)(time))
 # define ROM_Gettime()					trap_14_emu(0x17)
+# define ROM_Bioskeys()					trap_14_emu(0x18)
 # define ROM_Offgibit(ormask)			(void)	trap_14_emu(0x1D,(short)(ormask))
 # define ROM_Ongibit(andmask)			(void)	trap_14_emu(0x1E,(short)(andmask))
 # define ROM_Dosound(ptr)			(void)	trap_14_emu(0x20,(long)(ptr))
+# define ROM_Kbdvbase()					trap_14_emu(0x22)
 # define ROM_Vsync()				(void)	trap_14_emu(0x25)
 # define ROM_Bconmap(dev)				trap_14_emu(0x2c,(short)(dev))
 

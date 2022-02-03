@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -49,10 +47,39 @@
 
 # include "aranym.h"
 
+# ifdef __mcoldfire__
+
+/* FireBee defines */
+# define __MBAR ((volatile uchar*)0xff000000)
+# define MCF_UART_USR3 (*(volatile uchar*)(&__MBAR[0x8904]))
+# define MCF_UART_UTB3 (*(volatile uchar*)(&__MBAR[0x890c]))
+# define MCF_UART_USR_TXRDY 0x04
+
+static bool
+firebee_pic_can_write(void)
+{
+	/* Check if space is available in the FIFO */
+	return MCF_UART_USR3 & MCF_UART_USR_TXRDY;
+}
+
+static void
+firebee_pic_write_byte(uchar b)
+{
+	while (!firebee_pic_can_write())
+	{
+		/* Wait */
+	}
+
+	/* Send the byte */
+	MCF_UART_UTB3 = b;
+}
+
+# endif /* __mcoldfire__ */
+
 void
 hw_poweroff(void)
 {
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 	nf_shutdown();
 # else
 	/* CT60 poweroff */
@@ -65,6 +92,18 @@ hw_poweroff(void)
 	
 		/* does not return */ 
 	}
+
+# ifdef __mcoldfire__
+	/* Firebee poweroff */
+	if (machine == machine_firebee)
+	{
+		firebee_pic_write_byte(0x0c); /* Header */
+		firebee_pic_write_byte('O');
+		firebee_pic_write_byte('F');
+		firebee_pic_write_byte('F');
+	}
+# endif /* __mcoldfire__ */
+
 # endif
 }
 
@@ -98,7 +137,12 @@ hw_halt(void)
 	long r;
 	long key;
 	int scan;
-	
+	int coldfire_native = 0;
+
+#ifdef __mcoldfire__
+	if (!coldfire_68k_emulation)
+		coldfire_native = 1;
+#endif
 	DEBUG(("halt() called, system halting...\r\n"));
 	debug_ws(MSG_system_halted);
 	
@@ -108,7 +152,7 @@ hw_halt(void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
@@ -128,7 +172,7 @@ hw_halt(void)
 	{
 		debug_ws(MSG_system_halted);
 		
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
@@ -146,7 +190,12 @@ HALT (void)
 	long r;
 	long key;
 	int scan;
-	
+	int coldfire_native = 1;
+
+#ifdef __mcoldfire__
+	if (coldfire_68k_emulation)
+		coldfire_native = 0;
+#endif
 	DEBUG(("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
 	debug_ws(MSG_fatal_reboot);
 	
@@ -156,7 +205,7 @@ HALT (void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();
@@ -176,7 +225,7 @@ HALT (void)
 	{
 		debug_ws(MSG_fatal_reboot);
 
-		if (mcpu == 60)
+		if (mcpu == 60 && !coldfire_native)
 			cpu_lpstop();
 		else
 			cpu_stop();

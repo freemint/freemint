@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  * 
@@ -47,7 +45,7 @@
 
 long _cdecl sys_s_lbopen (char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn);
 long _cdecl sys_s_lbclose (SHARED_LIB *sl);
-int slb_close_on_exit (int terminate);
+int slb_close_on_exit (int term);
 void remove_slb (void);
 
 # endif /* _slb_h */

@@ -1,25 +1,25 @@
 /*
  * Filename:     ext2.h
  * Project:      ext2 file system driver for MiNT
- * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list (mint@fishpool.com).
- * 
+ *
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
+ *
  * Copying:      Copyright 1999 Frank Naumann (fnaumann@freemint.de)
- * 
+ *
  * Portions copyright 1992, 1993, 1994, 1995 Remy Card (card@masi.ibp.fr)
  * and 1991, 1992 Linus Torvalds (torvalds@klaava.helsinki.fi)
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -184,12 +184,25 @@ struct ext2_group_desc
 # define EXT2_COMPRBLK_FL		0x00000200 /* One or more compressed clusters */
 # define EXT2_NOCOMP_FL			0x00000400 /* Don't compress */
 # define EXT2_ECOMPR_FL			0x00000800 /* Compression error */
-/* End compression flags --- maybe not all used */	
+/* End compression flags --- maybe not all used */
 # define EXT2_BTREE_FL			0x00001000 /* btree format dir */
+# define EXT2_INDEX_FL			0x00001000 /* hash-indexed directory */
+# define EXT2_IMAGIC_FL			0x00002000
+# define EXT3_JOURNAL_DATA_FL	0x00004000 /* file data should be journaled */
+# define EXT2_NOTAIL_FL			0x00008000 /* file tail should not be merged */
+# define EXT2_DIRSYNC_FL 		0x00010000 /* Synchronous directory modifications */
+# define EXT2_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
+# define EXT4_HUGE_FILE_FL               0x00040000 /* Set to each huge file */
+# define EXT4_EXTENTS_FL 		0x00080000 /* Inode uses extents */
+# define EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
+# define EXT4_EOFBLOCKS_FL		0x00400000 /* Blocks allocated beyond EOF */
+# define EXT4_SNAPFILE_FL		0x01000000  /* Inode is a snapshot */
+# define EXT4_SNAPFILE_DELETED_FL	0x04000000  /* Snapshot is being deleted */
+# define EXT4_SNAPFILE_SHRUNK_FL		0x08000000  /* Snapshot shrink has completed */
 # define EXT2_RESERVED_FL		0x80000000 /* reserved for ext2 lib */
 
-# define EXT2_FL_USER_VISIBLE		0x00001FFF /* User visible flags */
-# define EXT2_FL_USER_MODIFIABLE	0x000000FF /* User modifiable flags */
+# define EXT2_FL_USER_VISIBLE		0x004BDFFF /* User visible flags */
+# define EXT2_FL_USER_MODIFIABLE	0x004B80FF /* User modifiable flags */
 
 
 # if 0 /* moved to our global dcntl.h */
@@ -358,7 +371,7 @@ struct ext2_super_block
 	 * the incompatible feature set is that if there is a bit set
 	 * in the incompatible feature set that the kernel doesn't
 	 * know about, it should refuse to mount the filesystem.
-	 * 
+	 *
 	 * e2fsck's requirements are more strict; if it doesn't know
 	 * about a feature in either the compatible or incompatible
 	 * feature set, it must abort and not try to meddle with
@@ -506,11 +519,11 @@ struct ext2_sb_info
 	__u32	s_blocksize;		/* Size of a block in bytes */
 	__u32	s_blocksize_bits;	/* Size of a block in bits */
 	__u32	s_blocksize_mask;	/* bitmask */
-	
+
 	__u32	s_fragsize;		/* Size of a fragment in bytes */
 	__u32	s_fragsize_bits;	/* Size of a fragment in bits */
 	__u32	s_fragsize_mask;	/* bitmask */
-	
+
 	__u32	s_groups_count;		/* Number of groups in the fs */
 	__u32	s_db_per_group;		/* Number of descriptor blocks per group */
 	__u32	s_itb_per_group;	/* Number of inode table blocks per group */
@@ -521,22 +534,22 @@ struct ext2_sb_info
 	__u32	s_desc_per_block_mask;	/* */
 	__u32	s_addr_per_block;	/* */
 	__u32	s_addr_per_block_bits;	/* */
-	
+
 	long	s_group_desc_size;	/* size of the ptr array */
 	ext2_gd **s_group_desc;		/* ptr array to our group blocks (resident) */
 	ext2_sb	*s_sb;			/* ptr to our superblock (resident) */
-	
+
 	UNIT	**s_group_desc_units;	/* the units for the group descriptors blocks */
 	UNIT	*s_sb_unit;		/* the unit for the superblock */
-	
+
 	__u32	s_dirty;		/* dirty flag for super block */
 	__u32	s_mount_opt;		/* mount options for this super block */
-	
+
 # if 0
 	__u16	s_rename_lock;
 	struct wait_queue *s_rename_wait;
 # endif
-	
+
 	/* mirrored superblock in native endian
 	 * nn - not neccessary
 	 * u  - updateable (not mirrored)
@@ -566,7 +579,7 @@ struct ext2_sb_info
 	__u32	s_rev_level;		/* Revision level */
 	__u16	s_resuid;		/* Default uid for reserved blocks */
 	__u16	s_resgid;		/* Default gid for reserved blocks */
-	
+
 	/* These fields are for EXT2_DYNAMIC_REV superblocks only.
 	 */
 	__u32	s_first_ino; 		/* First non-reserved inode */

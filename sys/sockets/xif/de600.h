@@ -181,10 +181,9 @@ static void		send_block (char *, short);
  * read DE600 status register
  */
 #define recv_stat() ({ \
-	register unsigned char s; \
 	(void)de600_base[READ_STAT]; \
 	wait (); \
-	s =   de600_base[NULL_CMD | HI_NIBBLE]; \
+	de600_base[NULL_CMD | HI_NIBBLE]; \
 })
 
 /*

@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -40,6 +38,9 @@
  * 
  */
 
+# ifdef PROFILING
+
+# include "info.h"
 # include "gmon.h"
 
 # include "mint/file.h"
@@ -53,8 +54,7 @@
 # include "kmemory.h"
 # include "profil.h"
 
-
-# ifdef PROFILING
+#define ffs __builtin_ffs
 
 struct iovec
 {
@@ -104,6 +104,7 @@ moncontrol (long mode)
 	}
 }
 
+
 void
 monstartup (ulong lowpc, ulong highpc)
 {
@@ -125,14 +126,16 @@ monstartup (ulong lowpc, ulong highpc)
 	/* The following test must be kept in sync with the corresponding
 	 * test in mcount.c.
 	 */
+#if 1
 	if ((HASHFRACTION & (HASHFRACTION - 1)) == 0)
 	{
 		/* if HASHFRACTION is a power of two, mcount can use shifting
 		 * instead of integer division.  Precompute shift amount.
 		 */
-		p->log_hashfraction = ffs (p->hashfraction * sizeof (*p->froms)) - 1;
+		//p->log_hashfraction = ffs (p->hashfraction * sizeof (*p->froms)) - 1;
+		p->log_hashfraction = ffs (HASHFRACTION * sizeof (*p->froms)) - 1;
 	}
-	
+#endif
 	p->fromssize = p->textsize / HASHFRACTION;
 	p->tolimit = p->textsize * ARCDENSITY / 100;
 	
@@ -224,10 +227,10 @@ write_hist (FILEPTR *f)
 			{ _gmonparam.kcount, _gmonparam.kcountsize }
 		};
 		
-		*(char **) thdr.low_pc = (char *) _gmonparam.lowpc - offset;
-		*(char **) thdr.high_pc = (char *) _gmonparam.highpc - offset;
-		*(__s32 *) thdr.hist_size = (_gmonparam.kcountsize / sizeof (HISTCOUNTER));
-		*(__s32 *) thdr.prof_rate = profile_frequency ();
+		thdr.low_pc.p = (char *) _gmonparam.lowpc - offset;
+		thdr.high_pc.p = (char *) _gmonparam.highpc - offset;
+		thdr.hist_size.s32 = (_gmonparam.kcountsize / sizeof (HISTCOUNTER));
+		thdr.prof_rate.s32 = profile_frequency ();
 		
 		strncpy (thdr.dimen, "seconds", sizeof (thdr.dimen));
 		thdr.dimen_abbrev = 's';
@@ -272,9 +275,9 @@ write_call_graph (FILEPTR *f)
 			to_index != 0;
 			to_index = _gmonparam.tos[to_index].link)
 		{
-			*(char **) raw_arc[nfilled].from_pc = (char *) frompc - offset;
-			*(char **) raw_arc[nfilled].self_pc = (char *) _gmonparam.tos[to_index].selfpc - offset;
-			*(long *) raw_arc[nfilled].count = _gmonparam.tos[to_index].count;
+			raw_arc[nfilled].from_pc.p = (char *) frompc - offset;
+			raw_arc[nfilled].self_pc.p = (char *) _gmonparam.tos[to_index].selfpc - offset;
+			raw_arc[nfilled].count.l = _gmonparam.tos[to_index].count;
 			
 			if (++nfilled == NARCS_PER_WRITEV)
 			{
@@ -329,7 +332,7 @@ write_bb_counts (FILEPTR *f)
 				nfilled = 0;
 			}
 			
-			bbbody[nfilled++].iov_base = (char *) &grp->addresses[i];
+			bbbody[nfilled++].iov_base = ( void *) &grp->addresses[i];
 			bbbody[nfilled++].iov_base = &grp->counts[i];
 		}
 		
@@ -359,7 +362,7 @@ write_gmon (void)
 		/* write gmon.out header: */
 		mint_bzero (&ghdr, sizeof (struct gmon_hdr));
 		memcpy (&ghdr.cookie[0], GMON_MAGIC, sizeof (ghdr.cookie));
-		*(__s32 *) ghdr.version = GMON_VERSION;
+		ghdr.version.l = GMON_VERSION;
 		(*f->dev->write)(f, (const char *) &ghdr, sizeof (struct gmon_hdr));
 		
 		/* write PC histogram: */

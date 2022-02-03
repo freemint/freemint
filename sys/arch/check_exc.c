@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 1983, 1992, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -536,15 +534,31 @@ check_bus(struct m68k_stack_frames frame)
 long _cdecl
 check_priv(struct privilege_violation_stackframe *frame)
 {
+# ifndef M68000
+	/* Backward compatibility with older processors */
+	bool emulate_obsolete_instructions = true;
+# endif
 	ushort opcode;
 	opcode = *frame->pc;
+	UNUSED(opcode);
+
+# ifdef __mcoldfire__
+	if (!coldfire_68k_emulation)
+	{
+		/* Fortunately, pure ColdFire programs are brand new
+		 * and does not contain any obsolete instruction.
+		 */
+		emulate_obsolete_instructions = false;
+	}
+# endif
+
 # ifndef M68000
 	/* Emulate the "move from sr" instruction,
 	 * which is not privileged on 68000, and privileged later.
 	 * Thus many programs (even Thing Desktop) execute it in
 	 * user mode, if they need an access to the condition codes.
 	 */
-	if ((opcode & MODE_REG_MASK) == MOVE_FROM_SR)
+	if (emulate_obsolete_instructions && (opcode & MODE_REG_MASK) == MOVE_FROM_SR)
 	{
 		ushort mode, reg;
 

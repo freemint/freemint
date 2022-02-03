@@ -62,7 +62,7 @@ routedev_read (FILEPTR *f, char *buf, long nbytes)
 	struct route *rt = NULL;
 	struct route_info info, *infop = (struct route_info *) buf;
 	int i, j;
-	long space;
+	ulong space;
 	
 	for (space = nbytes; space >= sizeof (info); f->pos++)
 	{

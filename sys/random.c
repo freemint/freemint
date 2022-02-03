@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  * 
@@ -462,7 +460,7 @@ INLINE ulong rotate_left (int i, ulong word);
 INLINE ulong
 rotate_left (int i, ulong word)
 {
-# ifdef __GNUC__
+# if defined(__GNUC__) && !defined(__mcoldfire__)
 	__asm__
 	(
 		"roll  %2,%1"
@@ -1387,7 +1385,7 @@ random_read (FILEPTR * file, char * buf, long nbytes)
 		if (n < 0)
 			return n;
 		
-		TRACE (("random_read: got %d new entropy bytes", n));
+		TRACE (("random_read: got %ld new entropy bytes", n));
 		
 		count += n;
 		buf += n;

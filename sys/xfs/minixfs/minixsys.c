@@ -884,9 +884,8 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	long finode, ret;
 	d_inode rip;
 	long pos;
-	char dirmove, dirren;
+	char dirmove;
 	dirmove = 0;
-	dirren = 0;
 	
 	/* Check cross drives */
 	if (olddir->dev != newdir->dev)
@@ -909,7 +908,6 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	/* Sanity check movement of directories */
 	if (IS_DIR (rip))
 	{
-		dirren = 1;
 	 	if (olddir->index != newdir->index)
 		{
 # ifdef MFS_NMOVE_DIR
@@ -1297,7 +1295,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "Minix-FS");
+			strcpy ((char *) arg, "minix");
 			return E_OK;
 		}
 		case FS_INFO:

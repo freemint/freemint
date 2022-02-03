@@ -25,11 +25,11 @@
 static long	udp_attach	(struct in_data *);
 static long	udp_abort	(struct in_data *, short);
 static long	udp_detach	(struct in_data *, short);
-static long	udp_connect	(struct in_data *, struct sockaddr_in *, short, short);
+static long	udp_connect	(struct in_data *, const struct sockaddr_in *, short, short);
 static long	udp_accept	(struct in_data *, struct in_data *, short);
 static long	udp_ioctl	(struct in_data *, short, void *);
 static long	udp_select	(struct in_data *, short, long);
-static long	udp_send	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short);
+static long	udp_send	(struct in_data *, const struct iovec *, short, short, short, const struct sockaddr_in *, short);
 static long	udp_recv	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short *);
 static long	udp_shutdown	(struct in_data *, short);
 static long	udp_setsockopt	(struct in_data *, short, short, char *, long);
@@ -72,6 +72,8 @@ udp_attach (struct in_data *data)
 static long
 udp_abort (struct in_data *data, short ostate)
 {
+	UNUSED(data);
+	UNUSED(ostate);
 	return 0;
 }
 
@@ -83,8 +85,10 @@ udp_detach (struct in_data *data, short wait)
 }
 
 static long
-udp_connect (struct in_data *data, struct sockaddr_in *addr, short addrlen, short nonblock)
+udp_connect (struct in_data *data, const struct sockaddr_in *addr, short addrlen, short nonblock)
 {
+	UNUSED(addrlen);
+	UNUSED(nonblock);
 	if (addr->sin_port == 0)
 	{
 		DEBUG (("udp_connect: port == 0."));
@@ -102,6 +106,9 @@ udp_connect (struct in_data *data, struct sockaddr_in *addr, short addrlen, shor
 static long
 udp_accept (struct in_data *data, struct in_data *newdata, short nonblock)
 {
+	UNUSED(data);
+	UNUSED(newdata);
+	UNUSED(nonblock);
 	return EOPNOTSUPP;
 }
 
@@ -114,7 +121,7 @@ udp_ioctl (struct in_data *data, short cmd, void *buf)
 		{
 			struct udp_dgram *uh;
 			
-			if (data->sock->flags & SO_CANTRCVMORE || data->err)
+			if ((data->sock->flags & SO_CANTRCVMORE) || data->err)
 			{
 				*(long *)buf = UNLIMITED;
 				return 0;
@@ -150,7 +157,7 @@ udp_select (struct in_data *data, short mode, long proc)
 			return 1;
 		
 		case O_RDONLY:
-			if (data->sock->flags & SO_CANTRCVMORE || data->err)
+			if ((data->sock->flags & SO_CANTRCVMORE) || data->err)
 				return 1;
 			return (data->rcv.qfirst ? 1 : so_rselect (data->sock, proc));
 	}
@@ -160,7 +167,7 @@ udp_select (struct in_data *data, short mode, long proc)
 
 static long
 udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonblock,
-		short  flags, struct sockaddr_in *addr, short addrlen)
+		short  flags, const struct sockaddr_in *addr, short addrlen)
 {
 	struct udp_dgram *uh;
 	BUF *buf;
@@ -169,6 +176,8 @@ udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	ushort dstport;
 	short ipflags = 0;
 	
+	UNUSED(nonblock);
+	UNUSED(addrlen);
 	if (flags & ~MSG_DONTROUTE)
 	{
 		DEBUG (("udp_send: invalid flags"));
@@ -231,6 +240,9 @@ udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 		srcaddr = data->src.addr;
 		if (srcaddr == INADDR_ANY)
 			srcaddr = ip_local_addr (dstaddr);
+		if ((dstaddr & 0xf0000000ul) == INADDR_MULTICAST) {
+			srcaddr = data->opts.multicast_ip;
+		}
 		uh->chksum = udp_checksum (uh, srcaddr, dstaddr);
 		if (!uh->chksum) uh->chksum = ~0;
 	}
@@ -239,7 +251,7 @@ udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	if (data->flags & IN_BROADCAST)
 		ipflags |= IP_BROADCAST;
 	
-	if (data->flags & IN_DONTROUTE || flags & MSG_DONTROUTE)
+	if ((data->flags & IN_DONTROUTE) || (flags & MSG_DONTROUTE))
 		ipflags |= IP_DONTROUTE;
 	
 	DEBUG (("udp_send: dstaddr = 0x%lx", dstaddr));
@@ -321,7 +333,7 @@ udp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 	{
 		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (in));
+		*addrlen = MIN ((ushort)*addrlen, sizeof (in));
 		in.sin_family = AF_INET;
 		in.sin_addr.s_addr = IP_SADDR (buf);
 		in.sin_port = uh->srcport;
@@ -351,6 +363,8 @@ udp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 static long
 udp_shutdown (struct in_data *data, short how)
 {
+	UNUSED(data);
+	UNUSED(how);
 	return 0;
 }
 
@@ -360,6 +374,11 @@ udp_setsockopt (struct in_data *data, short level, short optname, char *optval, 
 	/*
 	 * No special UDP socket options
 	 */
+	UNUSED(data);
+	UNUSED(level);
+	UNUSED(optname);
+	UNUSED(optval);
+	UNUSED(optlen);
 	return EOPNOTSUPP;
 }
 
@@ -369,6 +388,11 @@ udp_getsockopt (struct in_data *data, short level, short optname, char *optval, 
 	/*
 	 * No special UDP socket options
 	 */
+	UNUSED(data);
+	UNUSED(level);
+	UNUSED(optname);
+	UNUSED(optval);
+	UNUSED(optlen);
 	return EOPNOTSUPP;
 }
 
@@ -381,8 +405,9 @@ udp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 {
 	struct udp_dgram *uh = (struct udp_dgram *) IP_DATA (buf);
 	struct in_data *data;
-	long pktlen;
+	ulong pktlen;
 	
+	UNUSED(iface);
 	pktlen = (long)buf->dend - (long)uh;
 	if (pktlen < UDP_MINLEN || pktlen != uh->length)
 	{
@@ -420,7 +445,7 @@ udp_input (struct netif *iface, BUF *buf, ulong saddr, ulong daddr)
 		return -1;
 	}
 	pktlen -= sizeof (struct udp_dgram);
-	if (pktlen + data->rcv.curdatalen > data->rcv.maxdatalen)
+	if (pktlen + data->rcv.curdatalen > (ulong)data->rcv.maxdatalen)
 	{
 		DEBUG (("udp_input: Input queue full"));
 		buf_deref (buf, BUF_NORMAL);
@@ -472,7 +497,7 @@ udp_error (short type, short code, BUF *buf, ulong saddr, ulong daddr)
 		buf_deref (buf, BUF_NORMAL);
 		return 0;
 	}
-	KAYDEBUG (("udp_error: destination (%lx, %x) unreachable",
+	DEBUG (("udp_error: destination (%lx, %x) unreachable",
 		daddr, uh->dstport));
 	
 	data->err = icmp_errno (type, code);
@@ -493,82 +518,151 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	/*
 	 * Pseudo IP header checksum
 	 */
-	__asm__
-	(
-		"clrw	d0		\n\t"
-		"movel	%3, %0		\n\t"
-		"addl	%1, %0		\n\t"
-		"addxl	%2, %0		\n\t"
-		"addxw	%4, %0		\n\t"
-		"addxw	d0, %0		\n\t"
-		: "=d"(sum)
-		: "g"(srcadr), "d"(dstadr), "i"(IPPROTO_UDP),
-		  "d"(len), "0"(sum)
-		: "d0"
-	);
-	
+	__asm__(
+		"\tmoveq	#0, d0		\n"
+		"\tmovel	%3, %0		\n"
+		"\taddl	%1, %0		\n"
+		"\taddxl	%2, %0		\n"
+#ifdef __mcoldfire__
+		"\tmvzw	%4, d1		\n"
+		"\taddxl	d1, %0		\n"
+		"\taddxl	d0, %0		\n"
+#else
+		"\taddxw	%4, %0		\n"
+		"\taddxw	d0, %0		\n"
+#endif
+		: "=d"(sum):"g"(srcadr),
+		    "d"(dstadr), "i"(IPPROTO_UDP), "d"(len), "0"(sum)
+#ifdef __mcoldfire__
+		: "d0", "d1", "cc"
+#else
+		: "d0", "cc"
+#endif
+		);
+
 	/*
 	 * UDP datagram & header checksum
 	 */
-	__asm__
-	(
-		"clrl	d0		\n\t"
-		"movew	%2, d1		\n\t"
-		"lsrw	#4, d1		\n\t"
-		"beq	4f		\n\t"
-		"subqw	#1, d1		\n"	/* clears X bit */
-		"1:			\n\t"
-		"moveml	%4@+, d0/d2-d4	\n\t"	/* 16 byte loop */
-		"addxl	d0, %0		\n\t"	/* ~5 clock ticks per byte */
-		"addxl	d2, %0		\n\t"
-		"addxl	d3, %0		\n\t"
-		"addxl	d4, %0		\n\t"
-		"dbra	d1, 1b		\n\t"
-		"clrl	d0		\n\t"
-		"addxl	d0, %0		\n"
-		"4:			\n\t"
-		"movew	%2, d1		\n\t"
-		"andiw	#0xf, d1	\n\t"
-		"lsrw	#2, d1		\n\t"
-		"beq	2f		\n\t"
-		"subqw	#1, d1		\n"
-		"3:			\n\t"
-		"addl	%4@+, %0	\n\t"	/* 4 byte loop */
-		"addxl	d0, %0		\n\t"	/* ~10 clock ticks per byte */
-		"dbra	d1, 3b		\n"
-		"2:			\n\t"
+	__asm__(
+		"\tclrl	d0		\n"
+#ifdef __mcoldfire__
+		"\tmvzw	%2, d1		\n"
+		"\tlsrl	#4, d1		\n"
+#else
+		"\tmovew	%2, d1	\n"
+		"\tlsrw	#4, d1		\n"
+#endif
+		"\tbeq	4f		\n"
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"	/* clears X bit */
+#else
+		"\tsubqw	#1, d1\n"		/* clears X bit */
+#endif
+		"1:\n"
+#ifdef __mcoldfire__
+		"\tmoveml	%4@, d0/d2-d4\n"	/* 16 byte loop */
+		"\tlea	%4@(16), %4	\n"
+#else
+		"\tmoveml	%4@+, d0/d2-d4\n"	/* 16 byte loop */
+#endif
+		"\taddxl	d0, %0\n"	/* ~5 clock ticks per byte */
+		"\taddxl	d2, %0\n"
+		"\taddxl	d3, %0\n"
+		"\taddxl	d4, %0\n"
+#ifdef __mcoldfire__
+		"\tmoveq	#0, d0\n"	/* X not affected */
+		"\taddxl	d0, %0\n"
+		"\tsubql	#1, d1\n"	/* X cloberred */
+		"\tbpls	1b		\n"		/* X not affected */
+#else
+		"\tdbra	d1, 1b\n"
+		"\tclrl	d0\n"
+		"\taddxl	d0, %0\n"
+#endif
+		"4:\n"
+		"\tmovew	%2, d1\n"
+#ifdef __mcoldfire__
+		"\tandil	#0xf, d1\n"
+		"\tlsrl	#2, d1\n"
+#else
+		"\tandiw	#0xf, d1\n"
+		"\tlsrw	#2, d1\n"
+#endif
+		"\tbeq	2f\n"
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n"
+#else
+		"\tsubqw	#1, d1\n"
+#endif
+		"3:\n"
+		"\taddl	%4@+, %0\n"	/* 4 byte loop */
+		"\taddxl	d0, %0\n"	/* ~10 clock ticks per byte */
+#ifdef __mcoldfire__
+		"\tsubql	#1, d1\n" "bpls	3b		\n\t"
+#else
+		"\tdbra	d1, 3b\n"
+#endif
+		"2:\n"
 		: "=d"(sum), "=a"(dgram)
 		: "g"(len), "0"(sum), "1"(dgram)
-		: "d0", "d1", "d2", "d3", "d4"
-	);
-	
+		: "d0", "d1", "d2", "d3", "d4", "cc");
+
 	/*
 	 * Add in extra word, byte (if len not multiple of 4).
 	 * Convert to short
 	 */
-	__asm__
-	(
-		"clrl	d0		\n\t"
-		"btst	#1, %2		\n\t"
-		"beq	5f		\n\t"
-		"addw	%4@+, %0	\n\t"	/* extra word */
-		"addxw	d0, %0		\n"
-		"5:			\n\t"
-		"btst	#0, %2		\n\t"
-		"beq	6f		\n\t"
-		"moveb	%4@+, d1	\n\t"	/* extra byte */
-		"lslw	#8, d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n"
-		"6:			\n\t"
-		"movel	%0, d1		\n\t"	/* convert to short */
-		"swap	d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+	__asm__(
+		"\tclrl	d0\n"
+		"\tbtst	#1, %2\n"
+		"\tbeq	5f\n"
+#ifdef __mcoldfire__
+		"\tmvz.w	%4@+, d2\n"
+		"\taddl	d2, %0\n"	/* no, add in extra word */
+		"\taddxl	d0, %0\n"
+#else
+		"\taddw	%4@+, %0\n"	/* extra word */
+		"\taddxw	d0, %0\n"
+#endif
+		"5:\n"
+		"\tbtst	#0, %2\n"
+		"\tbeq	6f\n"
+#ifdef __mcoldfire__
+		"\tmvzb	%4@+, d1\n"	/* extra byte */
+		"\tlsll	#8, d1\n"
+		"\taddl	d1, %0\n"
+		"\taddxl	d0, %0\n"
+#else
+		"\tmoveb	%4@+, d1\n"	/* extra byte */
+		"\tlslw	#8, d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
+#endif
+		"6:\n\t"
+#ifdef __mcoldfire__
+		"\tswap	%0		\n"		/* convert to short */
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+		"\tswap	%0\n"
+		"\tmvzw	%0, d1\n"
+		"\tclr.w	%0\n"
+		"\tswap	%0\n"
+		"\taddl	d1, %0\n"
+#else
+		"\tmovel	%0, d1\n"	/* convert to short */
+		"\tswap	d1\n"
+		"\taddw	d1, %0\n"
+		"\taddxw	d0, %0\n"
+#endif
 		: "=d"(sum), "=a"(dgram)
 		: "d"(len), "0"(sum), "1"(dgram)
-		: "d0", "d1"
-	);
-	
+#ifdef __mcoldfire__
+		: "d0", "d1", "d2", "cc"
+#else
+		: "d0", "d1", "cc"
+#endif
+		);
+
 	return (short)(~sum & 0xffff);
 }

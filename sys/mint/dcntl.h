@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -226,36 +224,43 @@ struct fs_info
 };
 
 /* values of fs_info.type */
-# define _MAJOR_FAT	(01L << 16)
-# define _MAJOR_VFAT	(02L << 16)
-# define _MAJOR_MINIX	(03L << 16)
-# define _MAJOR_RAMFS	(04L << 16)
-# define _MAJOR_EXT2 	(05L << 16)
-# define _MAJOR_HSIERRA	(06L << 16)
-# define _MAJOR_ISO9660	(07L << 16)
-# define _MAJOR_JOLIET	(08L << 16)
-# define _MAJOR_HFS	(09L << 16)
-# define _MAJOR_CDRAW	(10L << 16)
-# define _MAJOR_STONX	(11L << 16)
-# define _MAJOR_NFS	(12L << 16)
+# define _MAJOR_OLDTOS  ( 0L << 16)
+# define _MAJOR_FAT     ( 1L << 16)
+# define _MAJOR_VFAT    ( 2L << 16)
+# define _MAJOR_MINIX   ( 3L << 16)
+# define _MAJOR_RAMFS   ( 4L << 16)
+# define _MAJOR_EXT2    ( 5L << 16)
+# define _MAJOR_HSIERRA ( 6L << 16)
+# define _MAJOR_ISO9660 ( 7L << 16)
+# define _MAJOR_JOLIET  ( 8L << 16)
+# define _MAJOR_HFS     ( 9L << 16)
+# define _MAJOR_CDRAW   (10L << 16)
+# define _MAJOR_STONX   (11L << 16)
+# define _MAJOR_NFS     (12L << 16)
+# define _MAJOR_HOSTFS  (15L << 16)
 
-# define FS_OLDTOS	(0L)			/* default/unknown */
-# define FS_FAT12	(_MAJOR_FAT  | 0)	/* MiNT 1.15 */
-# define FS_FAT16	(_MAJOR_FAT  | 1)	/* MiNT 1.15 */
-# define FS_FAT32	(_MAJOR_FAT  | 2)	/* MiNT 1.15 */
-# define FS_VFAT12	(_MAJOR_VFAT | 0)	/* MiNT 1.15 */
-# define FS_VFAT16	(_MAJOR_VFAT | 1)	/* MiNT 1.15 */
-# define FS_VFAT32	(_MAJOR_VFAT | 2)	/* MiNT 1.15 */
-# define FS_MINIX	(_MAJOR_MINIX)		/* MinixFS */
-# define FS_RAMFS	(_MAJOR_RAMFS)		/* fnramFS */
-# define FS_EXT2	(_MAJOR_EXT2)		/* Ext2-FS */
-# define FS_HSIERRA	(_MAJOR_HSIERRA)	/* Spin 0.35 */
-# define FS_ISO9660	(_MAJOR_ISO9660)	/* Spin 0.35 */
-# define FS_JOLIET	(_MAJOR_JOLIET)		/* Spin 0.35 */
-# define FS_HFS		(_MAJOR_HFS)		/* Spin 0.35 */
-# define FS_CDRAW	(_MAJOR_CDRAW)		/* Spin 0.35 */
-# define FS_STONX	(_MAJOR_STONX)		/* STonXfs4MiNT */
-# define FS_NFS2	(_MAJOR_NFS  | 0)	/* nfs 0.55 */
+# define _MINOR_FAT12	0
+# define _MINOR_FAT16	1
+# define _MINOR_FAT32	2
+
+# define FS_OLDTOS	(_MAJOR_OLDTOS)			/* default/unknown */
+# define FS_FAT12	(_MAJOR_FAT  | _MINOR_FAT12)	/* MiNT 1.15 */
+# define FS_FAT16	(_MAJOR_FAT  | _MINOR_FAT16)	/* MiNT 1.15 */
+# define FS_FAT32	(_MAJOR_FAT  | _MINOR_FAT32)	/* MiNT 1.15 */
+# define FS_VFAT12	(_MAJOR_VFAT | _MINOR_FAT12)	/* MiNT 1.15 */
+# define FS_VFAT16	(_MAJOR_VFAT | _MINOR_FAT16)	/* MiNT 1.15 */
+# define FS_VFAT32	(_MAJOR_VFAT | _MINOR_FAT32)	/* MiNT 1.15 */
+# define FS_MINIX	(_MAJOR_MINIX)			/* MinixFS */
+# define FS_RAMFS	(_MAJOR_RAMFS)			/* fnramFS */
+# define FS_EXT2	(_MAJOR_EXT2)			/* Ext2-FS */
+# define FS_HSIERRA	(_MAJOR_HSIERRA)		/* Spin 0.35 */
+# define FS_ISO9660	(_MAJOR_ISO9660)		/* Spin 0.35 */
+# define FS_JOLIET	(_MAJOR_JOLIET)			/* Spin 0.35 */
+# define FS_HFS		(_MAJOR_HFS)			/* Spin 0.35 */
+# define FS_CDRAW	(_MAJOR_CDRAW)			/* Spin 0.35 */
+# define FS_STONX	(_MAJOR_STONX)			/* STonXfs4MiNT */
+# define FS_NFS2	(_MAJOR_NFS)			/* nfs 0.55 */
+# define FS_HOSTFS	(_MAJOR_HOSTFS)			/* aranym hostfs */
 
 
 # define FS_USAGE	0xf101		/* xfs fill out the following struct */

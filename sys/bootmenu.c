@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -22,6 +20,7 @@
  *
  *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
+ * Bootfile-option and minor changes: Helmut Karlowski 2012
  *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list
@@ -123,6 +122,7 @@ static const char *debug_levels[] =
 
 static const char *debug_devices[] =
 {
+#define DEBUGDEV 9
 	"(PRN:, printer)",
 	"(AUX:, modem)",
 	"(CON:, console)",
@@ -130,6 +130,20 @@ static const char *debug_devices[] =
 	"(KBD:, keyboard)",
 	"(RAW:, raw console)",
 	"", "", "", ""
+};
+
+static const char *write_boot_levels[] =
+{
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+	"(none)",
+	"(File)",
+	"(File/Host-Console)"
+# define WBOOTLVL 2
+# else
+	"(no)",
+	"(yes)"
+# define WBOOTLVL 1
+# endif
 };
 
 /* Pairs of functions handling each keyword. The do_xxx_yyyy() function
@@ -189,27 +203,23 @@ emit_exe_auto(short fd)
 	return TRAP_Fwrite(fd, strlen(line), line);
 }
 
+# ifdef WITH_MMU_SUPPORT
 static void
 do_mem_prot(char *arg)
 {
-# ifndef M68000
 	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
-# endif
 }
 
 static long
 emit_mem_prot(short fd)
 {
-# ifndef M68000
 	char line[MAX_CMD_LEN];
 
 	ksprintf(line, sizeof(line), "MEM_PROT=%s\n", no_mem_prot ? "NO" : "YES");
 
 	return TRAP_Fwrite(fd, strlen(line), line);
-# else
-	return 0;
-# endif
 }
+# endif
 
 /* INI_STEP=YES makes step_by_step equal to -1 and acts traditionally.
  * INI_STEP=NO makes step by step equal to 0 and acts traditionally
@@ -374,6 +384,24 @@ do_boot_delay(char *arg)
 }
 
 static long
+emit_write_boot(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "WRITE_BOOT=%d\n", write_boot_file );
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_write_boot(char *arg)
+{
+	write_boot_file = *arg - '0';
+	if( write_boot_file < 0 || write_boot_file > 2 )
+		write_boot_file = 1;
+}
+
+static long
 emit_boot_delay(short fd)
 {
 	char line[MAX_CMD_LEN];
@@ -388,22 +416,37 @@ emit_boot_delay(short fd)
  */
 static const char *ini_keywords[] =
 {
-	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=", "MEM_PROT=", "INI_STEP=",
+	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=",
+# ifdef WITH_MMU_SUPPORT
+	"MEM_PROT=",
+# endif
+	"INI_STEP=",
 	"DEBUG_LEVEL=", "DEBUG_DEVNO=", "BOOT_DELAY=",
-	"INI_SAVE=", NULL
+	"WRITE_BOOT=",
+	"INI_SAVE=",
+	NULL
 };
 
 static typeof(do_xfs_load) *do_func[] =
 {
-	do_xfs_load, do_xdd_load, do_exe_auto, do_mem_prot, do_ini_step,
-	do_debug_level, do_debug_devno, do_boot_delay,
+	do_xfs_load, do_xdd_load, do_exe_auto,
+# ifdef WITH_MMU_SUPPORT
+	do_mem_prot,
+# endif
+	do_ini_step,
+	do_debug_level, do_debug_devno, do_boot_delay, do_write_boot,
 	do_ini_save
 };
 
 static typeof(emit_xfs_load) *emit_func[] =
 {
-	emit_xfs_load, emit_xdd_load, emit_exe_auto, emit_mem_prot, emit_ini_step,
+	emit_xfs_load, emit_xdd_load, emit_exe_auto,
+# ifdef WITH_MMU_SUPPORT
+	emit_mem_prot,
+# endif
+	emit_ini_step,
 	emit_debug_level, emit_debug_devno, emit_boot_delay,
+	emit_write_boot,
 	emit_ini_save
 };
 
@@ -565,41 +608,47 @@ read_ini (void)
 int
 boot_kernel_p (void)
 {
-	int option[9];
+	int option[10];
 	int modified;
 
 	option[0] = 1;			/* Load MiNT or not */
 	option[1] = load_xfs_f;		/* Load XFS or not */
 	option[2] = load_xdd_f;		/* Load XDD or not */
 	option[3] = load_auto;		/* Load AUTO or not */
+# ifdef WITH_MMU_SUPPORT
 	option[4] = !no_mem_prot;	/* Use memprot or not */
+# endif
 	option[5] = step_by_step;	/* Enter stepper mode */
 	option[6] = debug_level;
 	option[7] = out_device;
-	option[8] = save_ini;
+	option[8] = write_boot_file;
+	option[9] = save_ini;
 
 	modified = 0;
 
 	for (;;)
 	{
-		int c;
+		int c, off;
 
 		boot_printf(MSG_init_bootmenu, \
 			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 # endif
 			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[6], debug_levels[option[6]],
 			option[7], debug_devices[option[7]],
-			option[8] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
+			option[8], write_boot_levels[option[8]],
+			option[9] ? MSG_init_menu_yesrn : MSG_init_menu_norn);
 
 wait:
 		c = TRAP_Crawcin();
 		c &= 0x7f;
+
+		off = ((c & 0x0f) - 1);	/* not used in all cases */
 
 		switch (c)
 		{
@@ -614,11 +663,14 @@ wait:
 					load_xfs_f   =  option[1];
 					load_xdd_f   =  option[2];
 					load_auto    =  option[3];
+# ifdef WITH_MMU_SUPPORT
 					no_mem_prot  = !option[4];
+# endif
 					step_by_step =  option[5];
 					debug_level  =  option[6];
 					out_device   =  option[7];
-					save_ini     =  option[8];
+					write_boot_file =  option[8];
+					save_ini     =  option[9];
 
 					if (save_ini)
 						write_ini();
@@ -628,16 +680,19 @@ wait:
 			}
 			case '0':
 			{
-				option[8] = option[8] ? 0 : 1;
+				option[9] = option[9] ? 0 : 1;
 
 				modified = 1;
 				break;
 			}
-			case '1' ... '5':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+# ifdef WITH_MMU_SUPPORT
+			case '5':
+# endif
 			{
-				int off;
-
-				off = ((c & 0x0f) - 1);
 				option[off] = option[off] ? 0 : 1;
 
 				modified = 1;
@@ -645,20 +700,14 @@ wait:
 			}
 			case '6':
 			{
-				int off;
-
-				off = ((c & 0x0f) - 1);
-				option[off] = option[off] ? 0 : -1;
+				option[off] = option[off] == -1 ? 0 : -1;
 
 				modified = 1;
 				break;
 			}
 			case '7':
 			{
-				int off, opt;
-
-				off = ((c & 0x0f) - 1);
-				opt = option[off];
+				int opt = option[off];
 
 				opt++;
 				if (opt > LOW_LEVEL)
@@ -671,17 +720,26 @@ wait:
 			}
 			case '8':
 			{
-				int off, opt;
-
-				off = ((c & 0x0f) - 1);
-				opt = option[off];
+				int opt = option[off];
 
 				opt++;
-				if (opt > 9)
+				if (opt > DEBUGDEV)
 					opt = 0;
 
 				option[off] = opt;
 
+				modified = 1;
+				break;
+			}
+			case '9':
+			{
+				int opt = option[off];
+
+				opt++;
+				if (opt > WBOOTLVL)
+					opt = 0;
+
+				option[off] = opt;
 				modified = 1;
 				break;
 			}
@@ -708,8 +766,7 @@ pause_and_ask(void)
 
 		do {
 			newstamp = TRAP_Supexec(get_hz_200);
-
-			if ((TRAP_Kbshift(-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
+			if (TRAP_Kbshift(-1) == MAGIC_SHIFT)
 			{
 				long yn = boot_kernel_p ();
 				if (!yn)

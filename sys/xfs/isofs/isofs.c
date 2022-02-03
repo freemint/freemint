@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -68,7 +66,7 @@
 	"\033p ISO filesystem driver version " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
-	"\275 " MSG_BUILDDATE " by Frank Naumann <fnaumann@freemint.de>.\r\n" \
+	"\275 2000-2010 by Frank Naumann <fnaumann@freemint.de>.\r\n" \
 
 #define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
@@ -1011,7 +1009,7 @@ isofs_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy((char *) arg, "isofs-xfs");
+			strcpy((char *) arg, "isofs");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -1159,7 +1157,7 @@ isofs_lseek(FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 	
-//	if ((where < 0) || (where > c->stat.size))
+//	if (where < 0)
 	{
 		DEBUG(("isofs_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
@@ -1238,9 +1236,11 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
 			
+			cpid = p_getpid();
+			
 			if (mode == F_GETLK)
 			{
-				lck = denylock(c->locks, &t);
+				lck = denylock(cpid, c->locks, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -1248,8 +1248,6 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 				
 				return E_OK;
 			}
-			
-			cpid = p_getpid();
 			
 			if (t.l.l_type == F_UNLCK)
 			{
@@ -1260,8 +1258,10 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == cpid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
@@ -1285,7 +1285,7 @@ isofs_ioctl(FILEPTR *f, int mode, void *buf)
 			DEBUG(("isofs_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 			
 			/* see if there's a conflicting lock */
-			while ((lck = denylock(c->locks, &t)) != 0)
+			while ((lck = denylock(cpid, c->locks, &t)) != 0)
 			{
 				DEBUG(("isofs_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 				if (mode == F_SETLKW)

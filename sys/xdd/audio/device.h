@@ -63,7 +63,7 @@ extern long audio_rsel;
 void  new_timera_vector (void);
 void  new_gpi7_vector (void);
 void  psg_player (void);
-void  (*timer_func) (void);
+extern void  (*timer_func) (void);
 
 
 # endif /* _device_h */

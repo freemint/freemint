@@ -13,26 +13,7 @@
 # include "mint/sockio.h"
 
 
-static struct arp_entry	*arp_alloc (void);
-static short	arp_hash (uchar *, short);
-static void	arp_remove (struct arp_entry *);
-static void	rarp_remove (struct arp_entry *);
-static void	rarp_put (struct arp_entry *);
-static char *	arp_myaddr (struct netif *, short);
-static void	arp_sendreq (struct arp_entry *);
 static void	arp_timeout (long);
-static void	arp_dosend (struct netif *, BUF *, short);
-static void	arp_sendq (struct arp_entry *);
-
-static long	get_praddr (struct hwaddr *, struct sockaddr *, short *);
-static long	get_hwaddr (struct hwaddr *, struct sockaddr *, short *);
-static long	put_hwaddr (struct hwaddr *, struct sockaddr *, short);
-
-# ifdef notused
-static void	arp_put (struct arp_entry *);
-static void	arp_dump (struct arp_entry *);
-static long	put_praddr (struct hwaddr *, struct sockaddr *, short);
-# endif
 
 /*
  * Hash tables for ARP and RARP.
@@ -41,7 +22,7 @@ struct arp_entry *arptab[ARP_HASHSIZE];
 struct arp_entry *rarptab[ARP_HASHSIZE];
 
 
-INLINE short
+static short
 arp_hash (uchar *addr, short len)
 {
 	ulong v;
@@ -183,10 +164,11 @@ arp_alloc (void)
 	{
 		mint_bzero (are, sizeof (*are));
 		are->outq.maxqlen = IF_MAXQ;
-	}
-	else
+	} else
+	{
 		DEBUG (("arp_alloc: out of memory"));
-	
+	}
+
 	return are;
 }
 
@@ -254,7 +236,7 @@ arp_sendreq (struct arp_entry *are)
 		short flags = are->flags;
 		DEBUG (("arp_send: timeout after %d retries", are->retries-1));
 		arp_remove (are);
-		if (flags & ATF_HWCOM);
+		if (flags & ATF_HWCOM)
 			rarp_remove (are);
 		return;
 	}
@@ -338,7 +320,7 @@ arp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 	for (are = arptab[idx]; are; are = are->prnext)
 	{
 		if (are->flags & ATF_PRCOM &&
-		    are->prtype == type &&
+		    are->prtype == (ushort)type &&
 		    (!nif || are->nif == nif) &&
 		    !memcmp (addr, are->praddr.adr.bytes, len))
 			break;
@@ -382,11 +364,12 @@ rarp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 	struct arp_entry *are;
 	short idx;
 	
+	UNUSED(flags);
 	idx = arp_hash ((unsigned char *)addr, len);
 	for (are = rarptab[idx]; are; are = are->hwnext)
 	{
 		if (are->flags & ATF_HWCOM
-			&& are->hwtype == type
+			&& are->hwtype == (ushort)type
 			&& (!nif || are->nif == nif)
 			&& !memcmp (addr, are->hwaddr.adr.bytes, len))
 		{
@@ -433,7 +416,7 @@ arp_input (struct netif *nif, BUF *buf)
 	struct arp_dgram *arphdr;
 	struct arp_entry *are;
 	short forme;
-	long len;
+	unsigned long len;
 	
 	len = buf->dend - buf->dstart;
 	arphdr = (struct arp_dgram *)buf->dstart;
@@ -453,9 +436,9 @@ arp_input (struct netif *nif, BUF *buf)
 	 * Check if we can handle this packet, if not discard.
 	 */
 	myaddr = arp_myaddr (nif, arphdr->prtype);
-	if (arphdr->hwtype != nif->hwtype
+	if (arphdr->hwtype != (ushort)nif->hwtype
 		|| arphdr->hwlen != nif->hwlocal.len
-		|| nif->flags & IFF_NOARP
+		|| (nif->flags & IFF_NOARP)
 		|| myaddr == 0)
 	{
 	    	DEBUG (("arp_input: not for me..."));
@@ -544,7 +527,7 @@ rarp_input (struct netif *nif, BUF *buf)
 	struct arp_dgram *arphdr;
 	struct arp_entry *are;
 	char *myaddr;
-	long len;
+	unsigned long len;
 	
 	len = buf->dend - buf->dstart;
 	arphdr = (struct arp_dgram *) buf->dstart;
@@ -565,8 +548,8 @@ rarp_input (struct netif *nif, BUF *buf)
 	myaddr = arp_myaddr (nif, arphdr->prtype);
 	if (arphdr->op != AROP_RARPREQ
 		|| arphdr->hwlen != nif->hwlocal.len
-		|| arphdr->hwtype != nif->hwtype
-		|| nif->flags & IFF_NOARP
+		|| arphdr->hwtype != (ushort)nif->hwtype
+		|| (nif->flags & IFF_NOARP)
 		|| myaddr == 0)
 	{
 		buf_deref (buf, BUF_NORMAL);
@@ -673,7 +656,7 @@ put_hwaddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short type)
 	shw->shw_family = AF_LINK;
 	shw->shw_type = type;
 	shw->shw_len = hwaddr->len;
-	memcpy (shw->shw_adr.bytes, hwaddr->adr.bytes, MIN (sizeof (shw->shw_adr), hwaddr->len));
+	memcpy (shw->shw_adr.bytes, hwaddr->adr.bytes, MIN (sizeof (shw->shw_adr), (unsigned short)hwaddr->len));
 	
 	return 0;
 }
@@ -802,7 +785,7 @@ arp_init (void)
  * Debugging stuff
  */
 # ifdef notused
-void
+static void
 arp_dump (struct arp_entry *are)
 {
 	uchar *cp;

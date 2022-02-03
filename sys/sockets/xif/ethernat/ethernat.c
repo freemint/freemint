@@ -53,6 +53,7 @@
 #include "mint/mdelay.h"
 #include "mint/sockio.h"
 #include "mint/endian.h"
+#include "mint/arch/asm_spl.h" /* spl() */
 
 #include "91c111.h"
 #include "ethernat_200Hzint.h"
@@ -146,6 +147,10 @@ short ch2i(char);
 // Convert long to hex ascii
 void hex2ascii(ulong l, uchar* c);
 
+/* To know if the EtherNat is present through a bus error*/
+extern void ethernat_probe_asm(void);
+void ethernat_probe_c(void);
+static int found = 0;
 
 // Variable for locking out interrupt when accessing the hardware
 static volatile int in_use = 0;
@@ -207,7 +212,7 @@ ethernat_open (struct netif *nif)
 
 	initializing = 0;
 	in_use = 0;
-	
+
 	return 0;
 }
 
@@ -337,12 +342,13 @@ ethernat_close (struct netif *nif)
  *	addroottimeout (..., ..., 1);
  */
 
- 
+
 static long
 ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	BUF				*nbuf;
 	unsigned char	littlemem;
+	UNUSED(littlemem);
 //	static	uchar	message[100];
 
 //	unsigned long	timeval;
@@ -371,7 +377,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 		return ENOMEM;
 	}
 	nif->out_packets++;
-	
+
 	/*
 	 * Here you should either send the packet to the hardware or
 	 * enqueue the packet and send the next packet as soon as
@@ -399,7 +405,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	Eth_set_bank(2);
 	*LAN_MMU = 0x2000;								//allocate packet
 
-#ifdef USE_200Hz		
+#ifdef USE_200Hz
 	timeval = *TIMER200;
 	while(!((*LAN_IST_ACK) & 0x08))				//wait for ALLOC_INT
 	{
@@ -428,7 +434,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	}
 
 #endif
-		
+
 	return E_OK;
 }
 
@@ -452,7 +458,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 
 
 	bank = Eth_set_bank(2);
-	
+
 	packetnr = (*LAN_ARR);							//read allocated packet nr (and status)
 	if(packetnr & 0x80)								//allocation failed?
 	{
@@ -469,7 +475,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 	/*
 	 * Write data into allocated buffer.
 	 */
-	
+
 	//calculate packet length
 	origlen = (nbuf->dend) - (nbuf->dstart);
 
@@ -496,7 +502,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 		*LAN_DATA = *datapnt++;
 
 //		tmp = *datapnt++;
-//		*LAN_DATA = tmp;		
+//		*LAN_DATA = tmp;
 //		ksprintf(message, "Sent: 0x%08lx\n\r", tmp);
 //		c_conws(message);
 	}
@@ -526,7 +532,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 	/*
 	 *		Order the 91C111 to send the packet!
 	 */
-	 
+
 	Eth_set_bank(0);
 	*LAN_TCR = (*LAN_TCR) | 0x0100;				//enable transmit
 
@@ -539,7 +545,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 #ifdef USE_I6
 	*LAN_INTMSK = (*LAN_INTMSK) | 0x2;			//enable TX_INT, but NOT TX_EMPTY_INT
 #endif
-	
+
 	buf_deref (nbuf, BUF_NORMAL);					//free buf because contents of packet
 															//is now in the 91C111 controller
 	sending = 1;
@@ -547,7 +553,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 
 //	c_conws("Packet queued successfully!\n\r");
 	Eth_set_bank(bank);
-	
+
 	return E_OK;
 }
 
@@ -572,14 +578,14 @@ ethernat_ioctl (struct netif *nif, short cmd, long arg)
 
 //	c_conws("ioctl\n\r");		//debug
 
-	
+
 	switch (cmd)
 	{
 		case SIOCSIFNETMASK:
 		case SIOCSIFFLAGS:
 		case SIOCSIFADDR:
 			return 0;
-		
+
 		case SIOCSIFMTU:
 			/*
 			 * Limit MTU to 1500 bytes. MintNet has alraedy set nif->mtu
@@ -588,7 +594,7 @@ ethernat_ioctl (struct netif *nif, short cmd, long arg)
 			if (nif->mtu > ETH_MAX_DLEN)
 				nif->mtu = ETH_MAX_DLEN;
 			return 0;
-		
+
 		case SIOCSIFOPT:
 			/*
 			 * Interface configuration, handled by dummy_config()
@@ -596,7 +602,7 @@ ethernat_ioctl (struct netif *nif, short cmd, long arg)
 			ifr = (struct ifreq *) arg;
 			return ethernat_config (nif, ifr->ifru.data);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -623,32 +629,40 @@ ethernat_config (struct netif *nif, struct ifopt *ifo)
 //	c_conws("Config\n\r");
 
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
-	
+
 	if (!STRNCMP ("hwaddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set hardware address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("braddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set broadcast address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwbrcst.adr.bytes;
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("debug"))
 	{
@@ -668,7 +682,7 @@ ethernat_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		DEBUG (("dummy: log file is %s", ifo->ifou.v_string));
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -695,8 +709,7 @@ driver_init (void)
 	long	ferror;
 	short	fhandle;
 	char	macbuf[13];
-
-
+	short sr;
 
 //	c_conws("Driver init\n\r");
 
@@ -705,12 +718,14 @@ driver_init (void)
 	in_use = 1;
 
 	// First check that the Ethernat card can be found
-	if((*LAN_BANK & 0x00ff) != 0x0033)
-	{
-//		ksprintf (message, "EtherNat not found! \n\r");
-//		c_conws (message);
+	sr = spl7 ();
+	ethernat_probe_asm();
+	spl (sr);
 
-		return -1;	
+	if(!found)
+	{
+		c_conws ("\n\n\r\033pEtherNat not found!\033q\n\n\r");
+		return -1;
 	}
 
 //	c_conws("Efter koll av ethernat\n\r");
@@ -721,7 +736,14 @@ driver_init (void)
 	//c_conws("*********************************\n\r");
 
 	// Open ethernat.inf to read the MAC address
-	ferror = Fopen("ethernat.inf",0);
+	if((ferror = Fopen("ethernat.inf",0)) < 0) { /* Try first in sysdir */
+		short sysdrv = *((short *) 0x446);	/* get the boot drive number */
+		char ethernat_inf[] = "A:\\ETHERNAT.INF";
+		ethernat_inf[0] = 'A' + sysdrv;
+
+		ferror = Fopen(ethernat_inf,0);/* otherwise in boot drive's root */
+	}
+
 //	c_conws("Efter FOPEN\n\r");
 	if(ferror >= 0)
 	{
@@ -749,7 +771,7 @@ driver_init (void)
 
 		//print what we read from ethernat.inf
 		c_conws (macbuf);
-		//ksprintf(message, "\n\r"); 
+		//ksprintf(message, "\n\r");
 		//c_conws(message);
 	}
 	else
@@ -757,19 +779,19 @@ driver_init (void)
 		//ksprintf (message, "Error opening ethernat.inf!\n\r");
 		//c_conws (message);
 		c_conws("Could not open ethernat.inf\n\r");
-		c_conws("Using default ethernet address 01:02:03:04:05:06\n\r");
+		c_conws("Using default ethernet address 00:01:02:03:04:05\n\r");
 		macbuf[0] = '0';
-		macbuf[1] = '1';
+		macbuf[1] = '0';
 		macbuf[2] = '0';
-		macbuf[3] = '2';
+		macbuf[3] = '1';
 		macbuf[4] = '0';
-		macbuf[5] = '3';
+		macbuf[5] = '2';
 		macbuf[6] = '0';
-		macbuf[7] = '4';
+		macbuf[7] = '3';
 		macbuf[8] = '0';
-		macbuf[9] = '5';
+		macbuf[9] = '4';
 		macbuf[10] = '0';
-		macbuf[11] = '6';
+		macbuf[11] = '5';
 	}
 
 	macbuf[12] = 0;
@@ -824,7 +846,7 @@ driver_init (void)
 	//Transmit-settings
 	Eth_set_bank(0);
 	*LAN_TCR = (*LAN_TCR) | 0x8000;		//Pad enable
-	
+
 
 	/*********************************************
 	 * Here comes functions not using the hardware
@@ -863,7 +885,7 @@ driver_init (void)
 	 * Time in ms between calls to (*if_ethernat.timeout) ();
 	 */
 	if_ethernat.timer = 0;
-	
+
 	/*
 	 * Interface hardware type
 	 */
@@ -874,13 +896,13 @@ driver_init (void)
 	 */
 	if_ethernat.hwlocal.len =
 	if_ethernat.hwbrcst.len = ETH_ALEN;
-	
+
 	/*
 	 * Set interface broadcast address. For real ethernet
 	 * drivers you must get them from the hardware of course!
 	 */
 	memcpy (if_ethernat.hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
-	
+
 	/*
 	 * Set length of send and receive queue. IF_MAXQ is a good value.
 	 */
@@ -899,23 +921,23 @@ driver_init (void)
 	 * Optional timer function that is called every 200ms.
 	 */
 	if_ethernat.timeout = NULL;
-	
+
 	/*
 	 * Here you could attach some more data your driver may need
 	 */
 	if_ethernat.data = 0;
-	
+
 	/*
 	 * Number of packets the hardware can receive in fast succession,
 	 * 0 means unlimited.
 	 */
 	if_ethernat.maxpackets = 0;
-	
+
 	/*
 	 * Register the interface.
 	 */
 	if_register (&if_ethernat);
-	
+
 	/*
 	 * And say we are alive...
 	 */
@@ -926,7 +948,7 @@ driver_init (void)
 	// Install interrupt handler
 	//ksprintf (message, "Installing interrupt handler... ");
 	//c_conws (message);
-	
+
 	ethernat_install_int();
 
 	//ksprintf (message, "OK\n\r");
@@ -948,8 +970,14 @@ driver_init (void)
 	return 0;
 }
 
+void
+ethernat_probe_c (void)
+{
+	if((*LAN_BANK & 0x00ff) != 0x0033)
+		return;
 
-
+	found = 1;
+}
 
 static void
 ethernat_install_int (void)
@@ -1017,7 +1045,7 @@ ethernat_int (void)
 	banktmp = Eth_set_bank(2);
 	pnttmp = *LAN_POINTER;
 	pnrtmp = *LAN_PNR;
-	inttmp = *LAN_INTMSK;	
+	inttmp = *LAN_INTMSK;
 	*LAN_INTMSK = 0x0;			// Mask interrupts
 
 	ethernat_service(&if_ethernat);	//do the work
@@ -1033,7 +1061,7 @@ ethernat_int (void)
 	//Here the interrupt level should be reset to 6 to prevent us from entering
 	//this interrupt again before we have left it properly.
 	set_int_lvl6();
-	
+
 	//Enable CPLD LAN interrupt again
 	*ETH_REG = (*ETH_REG) | 0x02;
 #endif
@@ -1062,6 +1090,7 @@ static void ethernat_service	(struct netif * nif)
 
 //	long		timeval;
 
+	(void) desttmp;
 
 
 	/*
@@ -1069,13 +1098,13 @@ static void ethernat_service	(struct netif * nif)
 	 * have been backed up.
 	 *
 	 */
-	
+
 
 
 	/*
 	 * Check for received packets
 	 */
-	
+
 	Eth_set_bank(2);
 	intstat = *LAN_IST_ACK;
 	while(intstat & 0x01)
@@ -1084,7 +1113,7 @@ static void ethernat_service	(struct netif * nif)
 /*
 		ksprintf(message, "Packet nr: 0x%X\n", packetnr);
 		c_conws(message);
-*/	
+*/
 		*LAN_POINTER = 0x00e0;								//RCV, RD, AUTOINC
 
 		// Read status word and bytecount at the same time
@@ -1110,9 +1139,7 @@ static void ethernat_service	(struct netif * nif)
 /*			ksprintf(message, "Error in RCV packet: 0x%04hx\n\r", status);
 			f_write(loghandle, strlen(message)-1, message);*/
 		}
-		else if ((desttmp[0] == mac_addr[0] && desttmp[1] == mac_addr[1]) ||
-					(desttmp[0] == 0xFFFFFFFF && desttmp[1] == 0xFFFF0000)
-				  )
+		else
 		{
 			b = buf_alloc (bytecount+100, 50, BUF_NORMAL);
 			if(!b)
@@ -1125,12 +1152,12 @@ static void ethernat_service	(struct netif * nif)
 
 				break;
 			}
-	
+
 			//read the data, rounded up to even longwords
 			longcnt = ((bytecount+3)>>2)-1;
-	
+
 			dpnt = (long*)(b->dstart);
-	
+
 			for(i=0; i < longcnt; i++)
 			{
 //				tmp = *LAN_DATA;
@@ -1140,11 +1167,11 @@ static void ethernat_service	(struct netif * nif)
 
 				*dpnt++ = *LAN_DATA;							//read a longword into our buffer
 			}
-/*	
+/*
 			ksprintf(message, "\n\n\r");
 			f_write(loghandle, strlen(message)-1, message);
-*/	
-	
+*/
+
 			// Calc real frame length
 			if(status & 0x1000)									// Oddfrm bit set
 			{
@@ -1154,13 +1181,13 @@ static void ethernat_service	(struct netif * nif)
 			{
 				b->dend += bytecount-6;
 			}
-	
+
 			/* Pass packet to upper layers */
 			if (nif->bpf)
 				bpf_input (nif, b);
-	
+
 			type = eth_remove_hdr(b);
-	
+
 			/* and enqueue packet */
 			if(!if_input(nif, b, 0, type))
 				nif->in_packets++;
@@ -1184,13 +1211,13 @@ static void ethernat_service	(struct netif * nif)
 	// Write acknowledge reg with TXEMPTY bit set
 	Eth_set_bank(2);
 	*LAN_IST_ACK = 0x04;
-	
+
 	//Read interrupt status bits
 	intstat = *LAN_IST_ACK;
 
 	// Keep TXINT and TXEMPTY bits
 	intstat = intstat & 0x06;
-	
+
 	if(intstat == 0)			// Both clear, waiting for completion
 	{
 //		in_use = 0;
@@ -1215,10 +1242,10 @@ static void ethernat_service	(struct netif * nif)
 
 		// Keep only tx packet nr
 		failpnr = failpnr & 0x3f;
-		
+
 		// Write failed packet nr to packet nr register
 		*LAN_PNR = failpnr;
-		
+
 		// Write 0x6000 to pointer register (enables TX, RD, AUTOINC)
 		*LAN_POINTER = 0x0060;
 
@@ -1231,7 +1258,7 @@ static void ethernat_service	(struct netif * nif)
 
 		// Acknowledge TXINT
 		*LAN_IST_ACK = 0x02;
-		
+
 		// Resend packet
 		Eth_set_bank(0);
 		*LAN_TCR = (*LAN_TCR) | 0x0100;						//re-enable TXENA
@@ -1247,9 +1274,9 @@ static void ethernat_service	(struct netif * nif)
 		//Acknowledge TXEMPTY
 		*LAN_IST_ACK = 0x04;
 	}
-	
-	
-	//Check ALLOC_INT, and send a packet that were previously enqueued 
+
+
+	//Check ALLOC_INT, and send a packet that were previously enqueued
 #ifdef USE_I6
 	Eth_set_bank(2);
 	if((*LAN_IST_ACK) & 0x08)					//check ALLOC_INT
@@ -1264,7 +1291,7 @@ static void ethernat_service	(struct netif * nif)
 		{												//then we must deallocate the buffer in 91C111 manually.
 			packetnr = (*LAN_ARR);				//read allocated packet nr (and status)
 			*LAN_PNR = packetnr;
-			
+
 			*LAN_MMU = 0xA000;					//deallocate TX packet
 			while((*LAN_MMU) & 0x0100);		//wait for MMU ready
 		}
@@ -1295,7 +1322,7 @@ void hex2ascii(ulong l, uchar* c)
 {
 	short	i;
 	uchar	t;
-	
+
 	for(i=7; i!=0; i--)
 	{
 		t = (uchar)(l & 0xf);				// Keep only lower nibble

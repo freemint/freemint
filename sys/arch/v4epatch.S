@@ -1,4 +1,4 @@
-#ifdef COLDFIRE
+#ifdef __mcoldfire__
 
 	.data
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -42,6 +40,7 @@
  */
 
 # include "kernget.h"
+# include "init.h"
 # include "global.h"
 
 # if WITH_KERNFS
@@ -78,57 +77,15 @@
 # include "xbios.h"
 
 
-/* Conversion table from `atarist' charset to `latin1' charset.
- * Generated mechanically by GNU recode 3.4.
- *
- * The recoding should be reversible.
- */
-
-uchar const atarist_to_latin1 [256] =
-{
-      0,   1,   2,   3,   4,   5,   6,   7,     /*   0 -   7 */
-      8,   9,  10,  11,  12,  13,  14,  15,     /*   8 -  15 */
-     16,  17,  18,  19,  20,  21,  22,  23,     /*  16 -  23 */
-     24,  25,  26,  27,  28,  29,  30,  31,     /*  24 -  31 */
-     32,  33,  34,  35,  36,  37,  38,  39,     /*  32 -  39 */
-     40,  41,  42,  43,  44,  45,  46,  47,     /*  40 -  47 */
-     48,  49,  50,  51,  52,  53,  54,  55,     /*  48 -  55 */
-     56,  57,  58,  59,  60,  61,  62,  63,     /*  56 -  63 */
-     64,  65,  66,  67,  68,  69,  70,  71,     /*  64 -  71 */
-     72,  73,  74,  75,  76,  77,  78,  79,     /*  72 -  79 */
-     80,  81,  82,  83,  84,  85,  86,  87,     /*  80 -  87 */
-     88,  89,  90,  91,  92,  93,  94,  95,     /*  88 -  95 */
-     96,  97,  98,  99, 100, 101, 102, 103,     /*  96 - 103 */
-    104, 105, 106, 107, 108, 109, 110, 111,     /* 104 - 111 */
-    112, 113, 114, 115, 116, 117, 118, 119,     /* 112 - 119 */
-    120, 121, 122, 123, 124, 125, 126, 127,     /* 120 - 127 */
-    199, 252, 233, 226, 228, 224, 229, 231,     /* 128 - 135 */
-    234, 235, 232, 239, 238, 236, 196, 197,     /* 136 - 143 */
-    201, 230, 198, 244, 246, 242, 251, 249,     /* 144 - 151 */
-    255, 214, 220, 162, 163, 165, 223, 159,     /* 152 - 159 */
-    225, 237, 243, 250, 241, 209, 170, 186,     /* 160 - 167 */
-    191, 190, 172, 189, 188, 161, 171, 187,     /* 168 - 175 */
-    227, 245, 216, 248, 221, 181, 192, 195,     /* 176 - 183 */
-    213, 168, 180, 152, 182, 169, 174, 185,     /* 184 - 191 */
-    166, 193, 194, 156, 142, 143, 146, 128,     /* 192 - 199 */
-    200, 144, 202, 203, 204, 205, 206, 207,     /* 200 - 207 */
-    208, 157, 210, 211, 212, 184, 153, 215,     /* 208 - 215 */
-    253, 217, 218, 219, 154, 167, 222, 158,     /* 216 - 223 */
-    133, 160, 131, 176, 132, 134, 145, 135,     /* 224 - 231 */
-    138, 130, 136, 137, 141, 173, 140, 139,     /* 232 - 239 */
-    240, 177, 149, 155, 147, 164, 247, 148,     /* 240 - 247 */
-    254, 151, 183, 150, 129, 178, 179, 175      /* 248 - 255 */
-};
-
-
 long
-kern_get_unimplemented (SIZEBUF **buffer)
+kern_get_unimplemented (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 
 # define PATIENCE_PLEEZE "Not yet implemented!\n"
 
+	UNUSED(p);
 	len = sizeof PATIENCE_PLEEZE - 1;
 
 	info = kmalloc (sizeof (*info) + len);
@@ -147,11 +104,12 @@ kern_get_unimplemented (SIZEBUF **buffer)
 
 
 long
-kern_get_buildinfo (SIZEBUF **buffer)
+kern_get_buildinfo (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 512;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -168,7 +126,26 @@ kern_get_buildinfo (SIZEBUF **buffer)
 }
 
 long
-kern_get_cookiejar (SIZEBUF **buffer)
+kern_get_bootlog (SIZEBUF **buffer, const struct proc *p)
+{
+	SIZEBUF *info;
+	ulong len = strlen(boot_file) + 1;
+
+	UNUSED(p);
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
+
+	strcpy (info->buf, boot_file);
+	info->len = len - 1;
+
+	*buffer = info;
+	return 0;
+}
+
+
+long
+kern_get_cookiejar (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
@@ -176,10 +153,13 @@ kern_get_cookiejar (SIZEBUF **buffer)
 	ulong used = 0;
 	ulong i;
 	char *crs;
-	uchar name[5];
-	ulong *tagid = (ulong *) name;
+	union{
+		ulong tagid;
+		uchar name[5];
+	}ut;
 	ulong value;
 
+	UNUSED(p);
 	if (get_cookie (NULL, 0, &slots))
 	{
 		DEBUG (("kern_get_cmdline: get_cookie(0) failed!"));
@@ -210,30 +190,30 @@ kern_get_cookiejar (SIZEBUF **buffer)
 		uchar *to;
 		int j;
 
-		get_cookie (NULL, i, (ulong *) name);
+		get_cookie (NULL, i, &ut.tagid );
 
 		to = pretty_print_name;
 		for (j = 0; j < 4; j++)
 		{
-			if (name[j] < ' ')
+			if (ut.name[j] < ' ')
 			{
 				*to++ = '^';
-				*to++ = ('@' + name[j]);
+				*to++ = ('@' + ut.name[j]);
 			}
 			else
 			{
-				*to++ = name[j];
+				*to++ = ut.name[j];
 			}
 		}
 
 		*to++ = '\0';
 
 		/* Now calculate the value of the cookie */
-		get_cookie (NULL, *tagid, &value);
+		get_cookie (NULL, ut.tagid, &value);
 
 		crs += ksprintf (crs, len - (crs - info->buf),
 				"0x%08lx (%s): 0x%08lx\n",
-				*tagid,
+				ut.tagid,
 				pretty_print_name,
 				value
 		);
@@ -246,13 +226,14 @@ kern_get_cookiejar (SIZEBUF **buffer)
 }
 
 long
-kern_get_filesystems (SIZEBUF **buffer)
+kern_get_filesystems (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 	FILESYS *fs;
 	char *crs;
 
+	UNUSED(p);
 	for (fs = active_fs, len = 0; fs != NULL; fs = fs->next, len++)
 		;
 
@@ -315,11 +296,12 @@ kern_get_filesystems (SIZEBUF **buffer)
 }
 
 long
-kern_get_hz (SIZEBUF **buffer)
+kern_get_hz (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 
+	UNUSED(p);
 	/* Enough for a number */
 	len = 16;
 
@@ -327,8 +309,7 @@ kern_get_hz (SIZEBUF **buffer)
 	if (!info)
 		return ENOMEM;
 
-	ksprintf (info->buf, len, "%lu", HZ);
-	info->len = strlen(info->buf);
+	info->len = ksprintf (info->buf, len, "%lu\n", HZ);
 
 	*buffer = info;
 	return 0;
@@ -342,11 +323,10 @@ kern_get_hz (SIZEBUF **buffer)
 # define LOAD_FRAC(x)	LOAD_INT(((x) & (FIXED_1 - 1)) * 100)
 
 long
-kern_get_loadavg (SIZEBUF **buffer)
+kern_get_loadavg (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	struct proc *p;
 	short tasks = 0;
 	short running = 0;
 	int last_pid = 0; /* ??? */
@@ -387,7 +367,7 @@ kern_get_loadavg (SIZEBUF **buffer)
   Flames, Critics, ... to pralle@informatik.uni-hannover.de
  */
 long
-kern_get_meminfo (SIZEBUF **buffer)
+kern_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 512;
@@ -401,6 +381,7 @@ kern_get_meminfo (SIZEBUF **buffer)
 	ulong mem_total  = core_total + alt_total;
 	ulong mem_free   = core_free + alt_free;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -472,11 +453,10 @@ kern_get_meminfo (SIZEBUF **buffer)
  * Other lines will be introduced as soon as they are needed.
  */
 long
-kern_get_stat (SIZEBUF **buffer)
+kern_get_stat (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	struct proc *p;
 	ulong all_systime = 0, all_usrtime = 0, all_nice = 0;
 
 	info = kmalloc (sizeof (*info) + len);
@@ -510,11 +490,12 @@ kern_get_stat (SIZEBUF **buffer)
  * the configuration.
  */
 long
-kern_get_sysdir (SIZEBUF **buffer)
+kern_get_sysdir (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
 
+	UNUSED(p);
 	len = strlen(sysdir) + 1;
 
 	info = kmalloc (sizeof (*info) + len);
@@ -522,7 +503,7 @@ kern_get_sysdir (SIZEBUF **buffer)
 		return ENOMEM;
 
 	strcpy (info->buf, sysdir);
-	info->len = strlen(info->buf);
+	info->len = len - 1;
 
 	*buffer = info;
 	return 0;
@@ -532,11 +513,12 @@ kern_get_sysdir (SIZEBUF **buffer)
  *
  */
 long
-kern_get_time (SIZEBUF **buffer)
+kern_get_time (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -553,12 +535,13 @@ kern_get_time (SIZEBUF **buffer)
 
 
 long
-kern_get_uptime (SIZEBUF **buffer)
+kern_get_uptime (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
 	ulong idle = rootproc->systime + rootproc->usrtime;
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -574,7 +557,7 @@ kern_get_uptime (SIZEBUF **buffer)
 }
 
 long
-kern_get_version (SIZEBUF **buffer)
+kern_get_version (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 256;
@@ -590,19 +573,17 @@ kern_get_version (SIZEBUF **buffer)
 	ksprintf (revision, sizeof (revision), ".%lu", (ulong) PATCH_LEVEL);
 # endif
 
+	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
 	info->len = ksprintf (info->buf, len,
-			"FreeMiNT version %d.%d%s%s (%s@%s.%s) (%s) #%lu %s\n",
+			"FreeMiNT version %d.%d%s%s (%s) #%lu %s\n",
 			(int) MINT_MAJ_VERSION,
 			(int) MINT_MIN_VERSION,
 			revision,
 			beta_ident,
-			build_user,
-			build_host,
-			build_domain,
 			COMPILER_NAME,
 			build_serial,
 			build_ctime
@@ -613,7 +594,7 @@ kern_get_version (SIZEBUF **buffer)
 }
 
 long
-kern_get_welcome (SIZEBUF **buffer)
+kern_get_welcome (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 0;
@@ -621,7 +602,7 @@ kern_get_welcome (SIZEBUF **buffer)
 	{
 		greet1,
 		greet2,
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 		no_mem_prot ? memprot_warning : "",
 # endif
 # ifdef CRYPTO_CODE
@@ -636,6 +617,7 @@ kern_get_welcome (SIZEBUF **buffer)
 	union { const char *cc; unsigned char *c; } from;
 	uchar *to;
 
+	UNUSED(p);
 	for (greet = greets; *greet != NULL; greet++)
 		len += strlen (*greet);
 
@@ -659,7 +641,7 @@ kern_get_welcome (SIZEBUF **buffer)
 				continue;
 			}
 
-			*to++ = (uchar) atarist_to_latin1 [*from.c++];
+			*to++ = *from.c++;
 		}
 	}
 
@@ -717,7 +699,7 @@ kern_procdir_get_cmdline (SIZEBUF **buffer, const struct proc *p)
  * return value EOF.
  */
 long
-kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
+kern_procdir_get_environ (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info = NULL;
 	MEMREGION *baseregion = NULL;
@@ -739,9 +721,9 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 
 	pbase = (long)p->p_mem->base;
 
-	DEBUG (("get_environ: curproc = %lx, p = %lx", get_curproc(), p));
-	DEBUG (("get_environ: curproc->base = %lx, p->base = %lx", get_curproc()->p_mem->base, pbase));
-	DEBUG (("get_environ: %lx, %lx, %lx, %lx",
+	DEBUG (("get_environ: curproc = %p, p = %p", get_curproc(), p));
+	DEBUG (("get_environ: curproc->base = %p, p->base = %lx", get_curproc()->p_mem->base, pbase));
+	DEBUG (("get_environ: %p, %p, %p, %p",
 			proc_addr2region (get_curproc(), pbase),
 			proc_addr2region (p, pbase),
 			addr2mem (get_curproc(), pbase),
@@ -883,14 +865,14 @@ kern_procdir_get_fname (SIZEBUF **buffer, const struct proc *p)
 	SIZEBUF *info;
 	ulong len;
 
-	len = strlen (p->fname);
+	len = strlen (p->fname) + 1;
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
-	memcpy (info->buf, p->fname, len);
-	info->len = len;
+	strcpy(info->buf, p->fname);
+	info->len = len - 1;
 
 	*buffer = info;
 	return 0;
@@ -914,6 +896,9 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 		return ENOMEM;
 
 	crs = info->buf;
+	crs += ksprintf (crs, len - (crs - info->buf),
+		"Base:%08lx\n",
+		(unsigned long) p->p_mem->base);
 	for (i = 0; i < p->p_mem->num_reg; i++)
 	{
 		MEMREGION *m;
@@ -926,9 +911,9 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 # define M_SHTEXT_T	0x0020	/* XXX */
 
 		crs += ksprintf (crs, len - (crs - info->buf),
-				"%08lx-%08lx %3u %c%c%c%c%c%c %08x %02lu:%02lu %lu\n",
-				(ulong) p->p_mem->addr[i],
-				(ulong) p->p_mem->addr[i] + m->len + 1,
+				"%08lx-%08lx %3u %c%c%c%c%c%c %c %08x %02lu:%02lu %lu\n",
+				(ulong) m->loc,
+				(ulong) m->loc + m->len - 1,
 				(unsigned) m->links,
 				m->mflags & M_KEEP ? 'k' : '-',
 				m->mflags & M_SHARED ? 's' : '-',
@@ -939,6 +924,7 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 				m->mflags & M_ALT ? 'a' :
 				m->mflags & M_SWAP ? 's' :
 				m->mflags & M_KER ? 'k' : '-',
+				"PGSRI"[get_prot_mode(m)],
 				0,
 				0UL,
 				0UL,
@@ -984,7 +970,7 @@ timersub (struct timeval *a, struct timeval *b, struct timeval *result)
 }
 
 long
-kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
+kern_procdir_get_stat (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	long base;
@@ -1067,12 +1053,9 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 
 		for (i = 0; i < p->p_mem->num_reg; i++)
 		{
-			if (p->p_mem->addr[i] == base)
+			MEMREGION *m = p->p_mem->mem[i];
+			if (m && m->loc == base)
 			{
-				MEMREGION *m = p->p_mem->mem[i];
-
-				assert(m && m->loc == base);
-
 				endcode = ((unsigned long)base + m->len);
 				break;
 			}
@@ -1188,7 +1171,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
  *
  */
 long
-kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
+kern_procdir_get_statm( SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
@@ -1206,10 +1189,10 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 		return ENOMEM;
 
 
-	// exchange LOG2_EIGHT_K with PAGEBITS. !!!
-	// Why is it in 'kmemory.c' and not in 'kmemory.h' ?
+	/* exchange LOG2_EIGHT_K with PAGEBITS. !!! */
+	/* Why is it in 'kmemory.c' and not in 'kmemory.h' ? */
 
-	ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
+	info->len = ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
 		total >> LOG2_EIGHT_K,
 		resid >> LOG2_EIGHT_K,
 		share >> LOG2_EIGHT_K,
@@ -1218,7 +1201,6 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 		datrs >> LOG2_EIGHT_K,
 		dpage
 	);
-	info->len = len;
 
 	*buffer = info;
 	return 0;

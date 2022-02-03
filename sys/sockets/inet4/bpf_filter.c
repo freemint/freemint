@@ -77,8 +77,8 @@
 ulong
 bpf_filter (struct bpf_insn *pc, register uchar *p, ulong wirelen, ulong buflen)
 {
-	register long A, X;
-	register long k;
+	long A, X;
+	ulong k;
 	long mem[BPF_MEMWORDS];
 	
 	if (pc == 0)
@@ -102,10 +102,10 @@ bpf_filter (struct bpf_insn *pc, register uchar *p, ulong wirelen, ulong buflen)
 				return 0;
 			
 			case BPF_RET|BPF_K:
-				return (ulong) pc->k;
+				return pc->k;
 			
 			case BPF_RET|BPF_A:
-				return (ulong) A;
+				return A;
 			
 			case BPF_LD|BPF_W|BPF_ABS:
 				k = pc->k;

@@ -15,6 +15,7 @@ COBJS = \
 	mprot030.c \
 	mprot040.c \
 	process_reg.c \
+	psc0.c \
 	sig_mach.c \
 	timer.c
 
@@ -28,6 +29,8 @@ SOBJS = \
 	kernel.S \
 	mmu030.S \
 	mmu040.S \
+	pcibios.S \
+	pcibios_emu.S \
 	scsidrv_emu.S \
 	syscall.S \
 	user_things.S \

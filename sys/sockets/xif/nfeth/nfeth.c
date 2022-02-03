@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Native Features ethernet driver.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
@@ -61,14 +59,6 @@ unsigned long inet_aton(const char *cp, long *addr);
  */
 static struct netif ifaces[MAX_ETH];
 
-/*
- * Prototypes for our service functions
- */
-static long	neth_open	(struct netif *);
-static long	neth_close	(struct netif *);
-static long	neth_output	(struct netif *, BUF *, const char *, short, short);
-static long	neth_ioctl	(struct netif *, short, long);
-static long	neth_config	(struct netif *, struct ifopt *);
 
 
 /* ================================================================ */
@@ -77,14 +67,12 @@ long __CDECL (*nf_call)(long id, ...) = 0UL;
 
 /* ================================================================ */
 
-static inline unsigned long
-get_nfapi_version()
+static inline unsigned long get_nfapi_version(void)
 {
 	return nf_call(ETH(GET_VERSION));
 }
 
-static inline unsigned long
-get_int_level()
+static inline unsigned long get_int_level(void)
 {
 	return nf_call(ETH(XIF_INTLEVEL));
 }
@@ -131,8 +119,7 @@ nfeth_install_int(void)
  * This gets called when someone makes an 'ifconfig up' on this interface
  * and the interface was down before.
  */
-static long
-neth_open(struct netif *nif)
+static long neth_open(struct netif *nif)
 {
 	int ethX = nif->unit;
 	DEBUG (("nfeth: open (nif = %08lx)", (long)nif));
@@ -143,8 +130,7 @@ neth_open(struct netif *nif)
  * Opposite of neth_open(), is called when 'ifconfig down' on this interface
  * is done and the interface was up before.
  */
-static long
-neth_close(struct netif *nif)
+static long neth_close(struct netif *nif)
 {
 	int ethX = nif->unit;
 	return nf_call(ETH(XIF_STOP), (unsigned long)ethX);
@@ -264,8 +250,7 @@ neth_close(struct netif *nif)
  *	addroottimeout (..., ..., 1);
  */
 
-static long
-neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
+static long neth_output(struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	BUF *nbuf;
 
@@ -307,14 +292,86 @@ neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
 	{
 		short len = nbuf->dend - nbuf->dstart;
 		int ethX = nif->unit;
-		DEBUG (("nfeth: send %d (%x) bytes", len));
+		DEBUG (("nfeth: send %d (0x%x) bytes", len, len));
 		len = MAX (len, 60);
 
 		send_block (ethX, nbuf->dstart, len);
 	}
 
+	buf_deref (nbuf, BUF_NORMAL);
+
 	return 0;
 }
+
+
+/*
+ * Interface configuration via SIOCSIFOPT. The ioctl is passed a
+ * struct ifreq *ifr. ifr->ifru.data points to a struct ifopt, which
+ * we get as the second argument here.
+ *
+ * If the user MUST configure some parameters before the interface
+ * can run make sure that neth_open() fails unless all the necessary
+ * parameters are set.
+ *
+ * Return values	meaning
+ * ENOSYS		option not supported
+ * ENOENT		invalid option value
+ * 0			Ok
+ */
+static long neth_config(struct netif *nif, struct ifopt *ifo)
+{
+# define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
+
+	if (!STRNCMP ("hwaddr"))
+	{
+		uchar *cp;
+		/*
+		 * Set hardware address
+		 */
+		if (ifo->valtype != IFO_HWADDR)
+			return ENOENT;
+		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwlocal.adr.bytes;
+		UNUSED (cp);
+		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
+				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+	}
+	else if (!STRNCMP ("braddr"))
+	{
+		uchar *cp;
+		/*
+		 * Set broadcast address
+		 */
+		if (ifo->valtype != IFO_HWADDR)
+			return ENOENT;
+		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwbrcst.adr.bytes;
+		UNUSED (cp);
+		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
+				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+	}
+	else if (!STRNCMP ("debug"))
+	{
+		/*
+		 * turn debuggin on/off
+		 */
+		if (ifo->valtype != IFO_INT)
+			return ENOENT;
+		DEBUG (("dummy: debug level is %ld", ifo->ifou.v_long));
+	}
+	else if (!STRNCMP ("log"))
+	{
+		/*
+		 * set log file
+		 */
+		if (ifo->valtype != IFO_STRING)
+			return ENOENT;
+		DEBUG (("dummy: log file is %s", ifo->ifou.v_string));
+	}
+
+	return ENOSYS;
+}
+
 
 /*
  * MintNet notifies you of some noteable IOCLT's. Usually you don't
@@ -325,8 +382,7 @@ neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
  * and getting flags specific to your driver. For an example how to use
  * them look at slip.c
  */
-static long
-neth_ioctl (struct netif *nif, short cmd, long arg)
+static long neth_ioctl(struct netif *nif, short cmd, long arg)
 {
 	char buffer[128];
 	struct ifreq *ifr = (struct ifreq *)arg;
@@ -370,72 +426,6 @@ neth_ioctl (struct netif *nif, short cmd, long arg)
 	return ENOSYS;
 }
 
-/*
- * Interface configuration via SIOCSIFOPT. The ioctl is passed a
- * struct ifreq *ifr. ifr->ifru.data points to a struct ifopt, which
- * we get as the second argument here.
- *
- * If the user MUST configure some parameters before the interface
- * can run make sure that neth_open() fails unless all the necessary
- * parameters are set.
- *
- * Return values	meaning
- * ENOSYS		option not supported
- * ENOENT		invalid option value
- * 0			Ok
- */
-static long
-neth_config (struct netif *nif, struct ifopt *ifo)
-{
-# define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
-
-	if (!STRNCMP ("hwaddr"))
-	{
-		uchar *cp;
-		/*
-		 * Set hardware address
-		 */
-		if (ifo->valtype != IFO_HWADDR)
-			return ENOENT;
-		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwlocal.adr.bytes;
-		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
-				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
-	}
-	else if (!STRNCMP ("braddr"))
-	{
-		uchar *cp;
-		/*
-		 * Set broadcast address
-		 */
-		if (ifo->valtype != IFO_HWADDR)
-			return ENOENT;
-		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwbrcst.adr.bytes;
-		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
-				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
-	}
-	else if (!STRNCMP ("debug"))
-	{
-		/*
-		 * turn debuggin on/off
-		 */
-		if (ifo->valtype != IFO_INT)
-			return ENOENT;
-		DEBUG (("dummy: debug level is %ld", ifo->ifou.v_long));
-	}
-	else if (!STRNCMP ("log"))
-	{
-		/*
-		 * set log file
-		 */
-		if (ifo->valtype != IFO_STRING)
-			return ENOENT;
-		DEBUG (("dummy: log file is %s", ifo->ifou.v_string));
-	}
-
-	return ENOSYS;
-}
 
 /*
  * Initialization. This is called when the driver is loaded. If you

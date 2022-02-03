@@ -2,8 +2,8 @@
  * Filename:     gs_stik.h
  * Project:      GlueSTiK
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * Note:         Please send suggestions, patches or bug reports to
+ *               the MiNT mailing list <freemint-discuss@lists.sourceforge.net>
  * 
  * Copying:      Copyright 1999 Frank Naumann <fnaumann@freemint.de>
  * 
@@ -32,7 +32,11 @@
 
 extern DRV_LIST stik_driver;
 
-char *	do_get_err_text	(struct get_err_text_param p);
+#if TPL_STRUCT_ARGS
+const char *__CDECL do_get_err_text	(struct get_err_text_param p);
+#else
+const char *__CDECL do_get_err_text	(int16 code);
+#endif
 int	init_stik_if	(void);
 void	cleanup_stik_if	(void);
 

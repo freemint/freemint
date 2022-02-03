@@ -1,31 +1,29 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 # ifndef _libkern_kernel_module_h
@@ -491,6 +489,9 @@ extern struct kentry *kentry;
 INLINE long c_conws(const char *str)
 { return ((long _cdecl (*)(const char *)) _c_conws)(str); }
 
+INLINE long c_conout(const int c)
+{ return ((long _cdecl (*)(const int)) _c_conout)(c); }
+
 INLINE long d_setdrv(int drv)
 { return ((long _cdecl (*)(int)) _d_setdrv)(drv); }
 
@@ -508,6 +509,9 @@ INLINE long _cdecl t_gettime(void)
 
 INLINE long f_getdta(void)
 { return ((long _cdecl (*)(void)) _f_getdta)(); }
+
+INLINE long s_version(void)
+{ return ((long _cdecl (*)(void)) _s_version)(); }
 
 INLINE long d_setpath(const char *path)
 { return ((long _cdecl (*)(const char *)) _d_setpath)(path); }
@@ -748,7 +752,79 @@ INLINE long b_setexc(short number, long vector)
 INLINE long b_drvmap(void)
 { return ((long _cdecl (*)(void)) _b_drvmap)(); }
 
+	/* 0x020 */		/* BIOS_MAX */
 
+
+/*
+ * vec_xbios
+ */
+
+//# define _0x000		(*KENTRY->vec_xbios[0x000])
+//# define _0x001		(*KENTRY->vec_xbios[0x001])
+//# define _0x002		(*KENTRY->vec_xbios[0x002])
+//# define _0x003		(*KENTRY->vec_xbios[0x003])
+# define _b_getrez		(*KENTRY->vec_xbios[0x004])
+# define _b_vsetscreen		(*KENTRY->vec_xbios[0x005])
+//# define _0x006		(*KENTRY->vec_xbios[0x006])
+//# define _0x007		(*KENTRY->vec_xbios[0x007])
+//# define _0x008		(*KENTRY->vec_xbios[0x008])
+//# define _0x009		(*KENTRY->vec_xbios[0x009])
+//# define _0x00a		(*KENTRY->vec_xbios[0x00a])
+//# define _0x00b		(*KENTRY->vec_xbios[0x00b])
+# define _b_midiws		(*KENTRY->vec_xbios[0x00c])
+//# define _0x00d		(*KENTRY->vec_xbios[0x00d])
+# define _b_uiorec		(*KENTRY->vec_xbios[0x00e])
+# define _b_ursconf		(*KENTRY->vec_xbios[0x00f])
+
+# define _b_keytbl		(*KENTRY->vec_xbios[0x010])
+# define _b_random		(*KENTRY->vec_xbios[0x011])
+//# define _0x012		(*KENTRY->vec_xbios[0x012])
+//# define _0x013		(*KENTRY->vec_xbios[0x013])
+//# define _0x014		(*KENTRY->vec_xbios[0x014])
+# define _b_cursconf		(*KENTRY->vec_xbios[0x015])
+# define _b_settime		(*KENTRY->vec_xbios[0x016])
+# define _b_gettime		(*KENTRY->vec_xbios[0x017])
+# define _b_bioskeys		(*KENTRY->vec_xbios[0x018])
+//# define _0x019		(*KENTRY->vec_xbios[0x019])
+//# define _0x01a		(*KENTRY->vec_xbios[0x01a])
+//# define _0x01b		(*KENTRY->vec_xbios[0x01b])
+//# define _0x01c		(*KENTRY->vec_xbios[0x01c])
+//# define _0x01d		(*KENTRY->vec_xbios[0x01d])
+//# define _0x01e		(*KENTRY->vec_xbios[0x01e])
+//# define _0x01f		(*KENTRY->vec_xbios[0x01f])
+
+# define _b_dosound		(*KENTRY->vec_xbios[0x020])
+//# define _0x021		(*KENTRY->vec_xbios[0x021])
+# define _b_kbdvbase		(*KENTRY->vec_xbios[0x022])
+# define _b_kbrate		(*KENTRY->vec_xbios[0x023])
+//# define _0x024		(*KENTRY->vec_xbios[0x024])
+//# define _0x025		(*KENTRY->vec_xbios[0x025])
+# define _b_supexec		(*KENTRY->vec_xbios[0x026])
+//# define _0x027		(*KENTRY->vec_xbios[0x027])
+//# define _0x028		(*KENTRY->vec_xbios[0x028])
+//# define _0x029		(*KENTRY->vec_xbios[0x029])
+//# define _0x02a		(*KENTRY->vec_xbios[0x02a])
+//# define _0x02b		(*KENTRY->vec_xbios[0x02b])
+# define _b_bconmap		(*KENTRY->vec_xbios[0x02c])
+//# define _0x02d		(*KENTRY->vec_xbios[0x02d])
+//# define _0x02e		(*KENTRY->vec_xbios[0x02e])
+//# define _0x02f		(*KENTRY->vec_xbios[0x02f])
+
+INLINE short b_getrez(void)
+{ return ((short _cdecl (*)(void)) _b_getrez)(); }
+
+INLINE long b_kbdvbase(void)
+{ return ((long _cdecl (*)(void)) _b_kbdvbase)(); }
+
+INLINE long b_uiorec(int dev)
+{ return ((long _cdecl (*)(int)) _b_uiorec)(dev); }
+
+INLINE long b_supexec(Func funcptr, long a1, long a2, long a3, long a4, long a5)
+{ return ((long _cdecl (*)(Func, long, long, long, long, long)) _b_supexec)(funcptr, a1, a2, a3, a4, a5); }
+
+	/* 0x80 */		/* XBIOS_MAX */
+
+#include "strings.h"
 /*
  * generic version check
  */
@@ -756,14 +832,32 @@ INLINE long b_drvmap(void)
 INLINE long
 check_kentry_version(void)
 {
-        if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION)
-	    || (kentry->version_major != KENTRY_MAJ_VERSION)
-	    || (kentry->version_minor != KENTRY_MIN_VERSION))
+	if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION))
 	{
-		c_conws("Wrong FreeMiNT version!\r\n");
-		c_conws("This module is compiled against " MINT_NAME);
-		c_conws(MINT_VERS_STRING);
-		c_conws("\r\n");
+		c_conws(kstrings[Wrong_FreeMiNT]);
+		c_conws(kstrings[This_module_is_compiled_against]);
+		c_conws(kstrings[MINT_VERS]);
+		c_conws(kstrings[KSTR_NL]);
+		return -1;
+	}
+	if ((kentry->version_major != KENTRY_MAJ_VERSION) || (kentry->version_minor != KENTRY_MIN_VERSION))
+	{
+		int s = 0;
+		c_conws(kstrings[Wrong_kentry]);
+
+		if (kentry->version_major == KENTRY_MAJ_VERSION)
+		{
+			if( kentry->version_minor > KENTRY_MIN_VERSION)
+				s = 1;
+		}
+		else
+			if (kentry->version_major > KENTRY_MAJ_VERSION)
+				s = 2;
+		if( s )
+			c_conws(kstrings[high]);
+		else
+			c_conws(kstrings[low]);
+		c_conws(kstrings[KSTR_NL]);
 		return -1;
 	}
 	return 0;
@@ -774,10 +868,11 @@ check_kentry_version(void)
  * kentry_mch
  */
 
-# define mch			( KENTRY->vec_mch.global->mch)
+# define machine		( KENTRY->vec_mch.global->machine)
 # define fputype		( KENTRY->vec_mch.global->fputype)
 # define tosvers		( KENTRY->vec_mch.global->tosvers)
 # define gl_lang		( KENTRY->vec_mch.global->gl_lang)
+# define gl_kbd		( KENTRY->vec_mch.global->gl_kbd)
 # define sysdrv			( KENTRY->vec_mch.global->sysdrv)
 # define sysdir			( KENTRY->vec_mch.global->sysdir)
 # define loops_per_sec_ptr	( KENTRY->vec_mch.loops_per_sec)
@@ -925,9 +1020,9 @@ check_kentry_version(void)
 # define del_rsvfentry		(*KENTRY->vec_misc.del_rsvfentry)
 # define remaining_proc_time	(*KENTRY->vec_misc.remaining_proc_time)
 
-# define trap_1_emu		(*KENTRY->vec.misc.trap_1_emu)
-# define trap_13_emu		(*KENTRY->vec.misc.trap_13_emu)
-# define trap_14_emu		(*KENTRY->vec.misc.trap_14_emu)
+# define trap_1_emu		(*KENTRY->vec_misc.trap_1_emu)
+# define trap_13_emu		(*KENTRY->vec_misc.trap_13_emu)
+# define trap_14_emu		(*KENTRY->vec_misc.trap_14_emu)
 
 # define ROM_Setexc(vnum,vptr)	(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 
@@ -940,6 +1035,7 @@ check_kentry_version(void)
 # define KERNEL_DEBUG		(*KENTRY->vec_debug.debug)
 # define KERNEL_ALERT		(*KENTRY->vec_debug.alert)
 # define KERNEL_FATAL		(*KENTRY->vec_debug.fatal)
+# define KERNEL_FORCE		(*KENTRY->vec_debug.force)
 
 
 /*
@@ -1038,5 +1134,148 @@ check_kentry_version(void)
 # define xdd_ioctl		(*KENTRY->vec_xdd.ioctl)
 # define xdd_datime		(*KENTRY->vec_xdd.datime)
 # define xdd_close		(*KENTRY->vec_xdd.close)
+
+/*
+ * kentry_pcibios
+ */
+
+#define pcibios_installed		(*KENTRY->vec_pcibios.pcibios_installed)
+#define _Find_pci_device		(*KENTRY->vec_pcibios.Find_pci_device)
+#define _Find_pci_classcode		(*KENTRY->vec_pcibios.Find_pci_classcode)
+#define _Read_config_byte		(*KENTRY->vec_pcibios.Read_config_byte)
+#define _Read_config_word		(*KENTRY->vec_pcibios.Read_config_word)
+#define _Read_config_longword		(*KENTRY->vec_pcibios.Read_config_longword)
+#define _Fast_read_config_byte		(*KENTRY->vec_pcibios.Fast_read_config_byte)
+#define _Fast_read_config_word		(*KENTRY->vec_pcibios.Fast_read_config_word)
+#define _Fast_read_config_longword	(*KENTRY->vec_pcibios.Fast_read_config_longword)
+#define Write_config_byte		(*KENTRY->vec_pcibios.Write_config_byte)
+#define Write_config_word		(*KENTRY->vec_pcibios.Write_config_longword)
+#define Write_config_longword		(*KENTRY->vec_pcibios.Write_config_longword)
+#define Hook_interrupt			(*KENTRY->vec_pcibios.Hook_interrupt)
+#define Unhook_interrupt		(*KENTRY->vec_pcibios.Unhook_interrupt)
+#define _Special_cycle			(*KENTRY->vec_pcibios.Special_cycle)
+#define Get_routing			(*KENTRY->vec_pcibios.Get_routing)
+#define Set_interrupt			(*KENTRY->vec_pcibios.Set_interrupt)
+#define Get_resource			(*KENTRY->vec_pcibios.Get_resource)
+#define Get_card_used			(*KENTRY->vec_pcibios.Get_card_used)
+#define Set_card_used			(*KENTRY->vec_pcibios.Set_card_used)
+#define Read_mem_byte			(*KENTRY->vec_pcibios.Read_mem_byte)
+#define Read_mem_word			(*KENTRY->vec_pcibios.Read_mem_word)
+#define Read_mem_longword		(*KENTRY->vec_pcibios.Read_mem_longword)
+#define Fast_read_mem_byte		(*KENTRY->vec_pcibios.Fast_read_mem_byte)
+#define Fast_read_mem_word		(*KENTRY->vec_pcibios.Fast_read_mem_word)
+#define Fast_read_mem_longword		(*KENTRY->vec_pcibios.Fast_read_mem_longword)
+#define _Write_mem_byte			(*KENTRY->vec_pcibios.Write_mem_byte)
+#define _Write_mem_word			(*KENTRY->vec_pcibios.Write_mem_word)
+#define Write_mem_longword		(*KENTRY->vec_pcibios.Write_mem_longword)
+#define Read_io_byte			(*KENTRY->vec_pcibios.Read_io_byte)
+#define Read_io_word			(*KENTRY->vec_pcibios.Read_io_word)
+#define Read_io_longword		(*KENTRY->vec_pcibios.Read_io_longword)
+#define Fast_read_io_byte		(*KENTRY->vec_pcibios.Fast_read_io_byte)
+#define Fast_read_io_word		(*KENTRY->vec_pcibios.Fast_read_io_word)
+#define Fast_read_io_longword		(*KENTRY->vec_pcibios.Fast_read_io_longword)
+#define _Write_io_byte			(*KENTRY->vec_pcibios.Write_io_byte)
+#define _Write_io_word			(*KENTRY->vec_pcibios.Write_io_word)
+#define Write_io_longword		(*KENTRY->vec_pcibios.Write_io_longword)
+#define Get_machine_id			(*KENTRY->vec_pcibios.Get_machine_id)
+#define Get_pagesize			(*KENTRY->vec_pcibios.Get_pagesize)
+#define Virt_to_bus			(*KENTRY->vec_pcibios.Virt_to_bus)
+#define Bus_to_virt			(*KENTRY->vec_pcibios.Bus_to_virt)
+#define Virt_to_phys			(*KENTRY->vec_pcibios.Virt_to_phys)
+#define Phys_to_virt			(*KENTRY->vec_pcibios.Phys_to_virt)
+
+typedef long (*wrap0)(void);
+typedef long (*wrap1)(long);
+typedef long (*wrap2)(long, long);
+typedef long (*wrap3)(long, long, long);
+
+INLINE long Find_pci_device(unsigned long id, unsigned short index)
+{ wrap2 f = (wrap2) _Find_pci_device; return (*f)(id, index); }
+
+INLINE long Find_pci_classcode(unsigned long class, unsigned short index)
+{ wrap2 f = (wrap2) _Find_pci_classcode; return (*f)(class, index); }
+
+INLINE long Read_config_byte(long handle, unsigned short reg, unsigned char *address)
+{ wrap3 f = (wrap3)_Read_config_byte; return (*f)(handle, reg, (long)address); }
+
+INLINE long Read_config_word(long handle, unsigned short reg, unsigned short *address)
+{ wrap3 f = (wrap3)_Read_config_word; return (*f)(handle, reg, (long)address); }
+
+INLINE long Read_config_longword(long handle, unsigned short reg, unsigned long *address)
+{ wrap3 f = (wrap3)_Read_config_longword; return (*f)(handle, reg, (long)address); }
+
+INLINE unsigned char Fast_read_config_byte(long handle, unsigned short reg)
+{ wrap2 f = (wrap2) _Fast_read_config_byte; return (*f)(handle, reg); }
+
+INLINE unsigned short Fast_read_config_word(long handle, unsigned short reg)
+{ wrap2 f = (wrap2) _Fast_read_config_word; return (*f)(handle, reg); }
+
+INLINE unsigned long Fast_read_config_longword(long handle, unsigned short reg)
+{ wrap2 f = (wrap2) _Fast_read_config_longword; return (*f)(handle, reg); }
+
+INLINE long Special_cycle(unsigned short bus, unsigned long data)
+{ wrap2 f = (wrap2) _Special_cycle; return (*f)(bus, data); }
+
+INLINE long Write_mem_byte(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_mem_byte; return (*f)(handle, offset, val); }
+
+INLINE long Write_mem_word(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_mem_word; return (*f)(handle, offset, val); }
+
+INLINE long Write_io_byte(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_io_byte; return (*f)(handle, offset, val); }
+
+INLINE long Write_io_word(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_io_word; return (*f)(handle, offset, val); }
+
+
+/*
+ * kentry_xhdi
+ */
+
+# define xhgetversion		(*KENTRY->vec_xhdi.XHGetVersion)
+# define xhinqtarget		(*KENTRY->vec_xhdi.XHInqTarget)
+# define xhreserve			(*KENTRY->vec_xhdi.XHReserve)
+# define xhlock				(*KENTRY->vec_xhdi.XHLock)
+# define xhstop				(*KENTRY->vec_xhdi.XHStop)
+# define xheject			(*KENTRY->vec_xhdi.XHEject)
+# define xhdrvmap			(*KENTRY->vec_xhdi.XHDrvMap)
+# define xhinqdev			(*KENTRY->vec_xhdi.XHInqDev)
+# define xhinqdriver		(*KENTRY->vec_xhdi.XHInqDriver)
+# define xhnewcookie		(*KENTRY->vec_xhdi.XHNewCookie)
+# define xhreadwrite		(*KENTRY->vec_xhdi.XHReadWrite)
+# define xhinqtarget		(*KENTRY->vec_xhdi.XHInqTarget)
+# define xhinqdev2			(*KENTRY->vec_xhdi.XHInqDev2)
+# define xhdriverspecial	(*KENTRY->vec_xhdi.XHDriverSpecial)
+# define xhgetcapacity		(*KENTRY->vec_xhdi.XHGetCapacity)
+# define xhmediumchaged		(*KENTRY->vec_xhdi.XHMediumChanged)
+# define xhmintinfo			(*KENTRY->vec_xhdi.XHMiNTInfo)
+# define xhdoslimits		(*KENTRY->vec_xhdi.XHDOSLimits)
+# define xhlastaccess		(*KENTRY->vec_xhdi.XHLastAccess)
+# define xhreaccess			(*KENTRY->vec_xhdi.XHReaccess)
+
+
+/*
+ * kentry_scsidrv
+ */
+
+# define scsidrv_In				(*KENTRY->vec_scsidrv.scsidrv_In)
+# define scsidrv_Out			(*KENTRY->vec_scsidrv.scsidrv_Out)
+# define scsidrv_InquireSCSI	(*KENTRY->vec_scsidrv.scsidrv_InquireSCSI)
+# define scsidrv_InquireBus		(*KENTRY->vec_scsidrv.scsidrv_InquireBus)
+# define scsidrv_CheckDev		(*KENTRY->vec_scsidrv.scsidrv_CheckDev)
+# define scsidrv_RescanBus		(*KENTRY->vec_scsidrv.scsidrv_RescanBus)
+# define scsidrv_Open			(*KENTRY->vec_scsidrv.scsidrv_Open)
+# define scsidrv_Close			(*KENTRY->vec_scsidrv.scsidrv_Close)
+# define scsidrv_Error			(*KENTRY->vec_scsidrv.scsidrv_Error)
+# define scsidrv_Install		(*KENTRY->vec_scsidrv.scsidrv_Install)
+# define scsidrv_Deinstall		(*KENTRY->vec_scsidrv.scsidrv_Deinstall)
+# define scsidrv_GetCmd			(*KENTRY->vec_scsidrv.scsidrv_GetCmd)
+# define scsidrv_SendData		(*KENTRY->vec_scsidrv.scsidrv_SendData)
+# define scsidrv_GetData		(*KENTRY->vec_scsidrv.scsidrv_GetData)
+# define scsidrv_SendStatus		(*KENTRY->vec_scsidrv.scsidrv_SendStatus)
+# define scsidrv_SendMsg		(*KENTRY->vec_scsidrv.scsidrv_SendMsg)
+# define scsidrv_GetMsg			(*KENTRY->vec_scsidrv.scsidrv_GetMsg)
+# define scsidrv_InstallNewDriver	(*KENTRY->vec_scsidrv.scsidrv_InstallNewDriver)
 
 # endif /* _libkern_kernel_module_h */

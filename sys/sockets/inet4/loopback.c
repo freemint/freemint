@@ -18,7 +18,7 @@ static struct netif if_loopback =
 {
 	name:		"lo",
 	unit:		0,
-	flags:		IFF_LOOPBACK | IFF_BROADCAST,
+	flags:		IFF_LOOPBACK | IFF_IGMP,
 	metric:		0,
 	mtu:		2 * 8192,
 	timer:		0,
@@ -40,12 +40,14 @@ static struct netif if_loopback =
 static long
 loop_open (struct netif *nif)
 {
+	UNUSED(nif);
 	return 0;
 }
 
 static long
 loop_close (struct netif *nif)
 {
+	UNUSED(nif);
 	return 0;
 }
 
@@ -54,6 +56,8 @@ loop_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
 {
 	long r;
 	
+	UNUSED(hwaddr);
+	UNUSED(hwlen);
 	nif->out_packets++;
 	if (nif->bpf && BUF_LEAD_SPACE (buf) >= 4)
 	{
@@ -81,13 +85,14 @@ loop_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
 static long
 loop_ioctl (struct netif *nif, short cmd, long arg)
 {
+	UNUSED(arg);
 	switch (cmd)
 	{
 		case SIOCSIFFLAGS:
 			return 0;
 		
 		case SIOCSIFADDR:
-			nif->flags |= (IFF_UP|IFF_RUNNING);
+			nif->flags |= (IFF_UP|IFF_RUNNING|IFF_IGMP);
 			return 0;
 		
 		case SIOCSIFNETMASK:

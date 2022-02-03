@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * The Host OS filesystem access driver - driver main.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
@@ -39,6 +37,11 @@ extern FILESYS * _cdecl init(struct kerinfo *k);
  * global kerinfo structure
  */
 struct kerinfo *KERNEL;
+
+/*
+ * nf_ops->call function reference.
+ */
+long __CDECL (*nf_call)(long id, ...) = 0L;
 
 
 FILESYS * _cdecl init(struct kerinfo *k)

@@ -65,7 +65,7 @@
 /* MiNT definitions */
 
 # define BOOT_MSG	"\033p Motorola DSP 56001 device version " __DATE__ " \033q\r\n" \
-			" � 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
+			" \275 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
 
 # define MSG_FAILURE	"\7Not installed, Dcntl() failed!\r\n"
 
@@ -583,7 +583,7 @@ dsp56k_close(FILEPTR *f, int pid)
 static long _cdecl
 dsp56k_lseek(FILEPTR *f, long where, int whence)
 {
-	return 0;
+	return ESPIPE;
 }
 
 static long _cdecl

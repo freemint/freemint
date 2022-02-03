@@ -148,7 +148,7 @@ static struct dev_descr	ppp_desc =
 	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
-static ushort fcstab[256] =
+static ushort const fcstab[256] =
 {
 	0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 
 	0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7, 
@@ -188,7 +188,7 @@ static ushort fcstab[256] =
 # define FCS_GOOD	0xf0b8u
 
 static ushort
-ppp_fcs (char *cp, long len)
+ppp_fcs (const char *cp, long len)
 {
 	register ushort fcs = FCS_INIT;
 	
@@ -711,7 +711,7 @@ ppp_build_frame (struct ppp *ppp, BUF *buf)
 static volatile short havetimeout = 0;
 
 static void
-wakeup (long p)
+wakeup (PROC *p, long arg)
 {
 	int i;
 	
@@ -935,9 +935,10 @@ pppdev_open (FILEPTR *fp)
 }
 
 static long
-pppdev_write (FILEPTR *fp, const char *buf, long nbytes)
+pppdev_write (FILEPTR *fp, const char *_buf, long nbytes)
 {
 	struct ppp *ppp = &ppp_priv[fp->fc.aux];
+	const unsigned char *buf = (const unsigned char *)_buf;
 	short proto;
 	BUF *b;
 	long r;

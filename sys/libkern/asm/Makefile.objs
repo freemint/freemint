@@ -20,23 +20,6 @@ all-here: asm-files
 # default overwrites
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = 
-#ifeq ($(CPU),030)
-#DEFINITIONS = -DM68030
-#endif
-#ifeq ($(CPU),020-60)
-#DEFINITIONS = -DM68030
-#endif
-
-NOCFLAGS-blockcopy.S = $(MODEL)
-CFLAGS-blockcopy.S = -m68000
-NOCFLAGS-memset.S = $(MODEL)
-CFLAGS-memset.S = -m68000
-NOCFLAGS-quickmove.S = $(MODEL)
-CFLAGS-quickmove.S = -m68000
-NOCFLAGS-quickswap.S = $(MODEL)
-CFLAGS-quickswap.S = -m68000
-NOCFLAGS-quickzero.S = $(MODEL)
-CFLAGS-quickzero.S = -m68000
 
 # default definitions
 OBJS = $(SOBJS:.S=.o)

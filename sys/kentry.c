@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -51,9 +49,11 @@
 # include "kmemory.h"		/* kmalloc, kfree */
 # include "memory.h"		/* addr2mem, attach_region, detach_region */
 # include "module.h"		/* load_modules */
+# include "pcibios.h"
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "proc_help.h"		/* proc_extensions */
 # include "proc_wakeup.h"	/* addprocwakeup */
+# include "scsidrv.h"
 # include "semaphores.h"	/* semaphore_* */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
@@ -62,6 +62,7 @@
 # include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
+# include "xhdi.h"
 
 
 # undef DEFAULT_MODE

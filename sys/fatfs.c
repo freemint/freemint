@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -397,7 +395,7 @@
 	"\033p FAT/VFAT/FAT32 filesystem version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"\275 " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"\275 2000-2010 by Frank Naumann.\r\n"
 
 
 /*
@@ -4222,7 +4220,7 @@ rel_cookie (COOKIE *c)
 	{
 		if (c->unlinked)
 		{
-			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %lx", c->dev+'A', c));
+			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %p", c->dev+'A', c));
 			delete_cookie (c);
 		}
 	}
@@ -5225,7 +5223,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: GEM/BGM detected"));
 
 		xbpb->ftype = FAT_TYPE_16;
-		fvi = (void *) (u->data + sizeof (*fbs));
 	}
 	else
 
@@ -5238,12 +5235,11 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: F32 detected"));
 
 		xbpb->ftype = FAT_TYPE_32;
-		fvi = (void *) (u->data + sizeof (*f32bs));
 	}
 	else
 
 	/*
-	 * step 3: check for dos medium (supported signs: 0x04, 0x06, 0x0b, 0x0c, 0x0e)
+	 * step 3: check for dos medium (supported signs: 0x01, 0x04, 0x06, 0x0b, 0x0c, 0x0e)
 	 */
 
 	if (di->id[0] == '\0' && di->id[1] == 'D')
@@ -5252,19 +5248,22 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 		switch (di->id[2])
 		{
+			case 0x01:
+			{
+				xbpb->ftype = FAT_TYPE_12;
+				break;
+			}
 			case 0x04:
 			case 0x06:
 			case 0x0e: /* FAT16, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_16;
-				fvi = (void *) (u->data + sizeof (*fbs));
 				break;
 			}
 			case 0x0b:
 			case 0x0c: /* FAT32, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_32;
-				fvi = (void *) (u->data + sizeof (*f32bs));
 				break;
 			}
 			default:
@@ -5312,6 +5311,16 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 */
 		return EMEDIUMTYPE;
 
+	/* Don't trust only in the partition ID to identify the FAT's type,
+	 * "Total Logical Sectors" field in the BPB (0x08 offset) must be
+	 * 0 in the FAT32 partitions */
+	if (xbpb->ftype == FAT_TYPE_32 && WPEEK_INTEL (fbs->dir_entries))
+	{
+		/* This must be in reality a FAT12 or FAT16. We assume FAT16
+		 * and we'll confirm it later checking the number of clusters.
+		 */
+		xbpb->ftype = FAT_TYPE_16;
+	}
 
 	xbpb->recsiz = WPEEK_INTEL (fbs->sector_size);
 	xbpb->clsiz = fbs->cluster_size;
@@ -5376,6 +5385,26 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	xbpb->numcl -= xbpb->datrec;
 	xbpb->numcl /= xbpb->clsiz;
 
+	/* Now that we know the number of clusters, we can confirm that we've
+	 * identified the correct partition's FAT type. Microsoft documentation
+	 * states that this is the method that must be used.
+	 */
+	if (xbpb->numcl <= MAX_FAT12_CLUSTERS)
+	{
+		xbpb->ftype = FAT_TYPE_12;
+		fvi = (void *) (u->data + sizeof (*fbs));
+	}
+	else if (xbpb->numcl <= MAX_FAT16_CLUSTERS)
+	{
+		xbpb->ftype = FAT_TYPE_16;
+		fvi = (void *) (u->data + sizeof (*fbs));
+	}
+	else
+	{
+		xbpb->ftype = FAT_TYPE_32;
+		fvi = (void *) (u->data + sizeof (*f32bs));
+	}
+
 	if (xbpb->ftype == FAT_TYPE_32)
 	{
 		xbpb->fflag = le2cpu16 (f32bs->flags);
@@ -5403,6 +5432,8 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		/* update logical sectorsize for block_IO wrapper */
 		bio.set_lshift (di, xbpb->recsiz);
 	}
+
+	UNUSED (fvi);
 
 	FAT_DEBUG (("get_bpb: val_bpb = %li", r));
 	return r;
@@ -6498,7 +6529,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		return EXDEV;
 	}
 
-	/* check if the file exist */
+	/* check if the new file exists */
 	r = search_cookie (newd, NULL, newname, 0);
 	if (r == E_OK)
 	{
@@ -6531,7 +6562,9 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		return r;
 	}
 
-# if 1
+#define RENAME_IN_USE 1
+
+# if !RENAME_IN_USE
 	if (old->links > 1)
 	{
 		rel_cookie (old);
@@ -6694,7 +6727,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	}
 	else
 	{
-# if 1
+# if RENAME_IN_USE
 		/* normal renaming
 		 *
 		 * if a directory is moved the '..' entry must be
@@ -7072,11 +7105,14 @@ fatfs_writelabel (fcookie *dir, const char *name)
 
 	if (r == E_OK)
 	{
-		register union { const char *cc; const unsigned char *c; } nameptr; nameptr.cc = name;
+		register union { const char *cc; const unsigned char *c; } nameptr; 
 		register const char *table = DEFAULT_T (dir->dev);
-		register const uchar *src = nameptr.c;
+		register const uchar *src;
 		register char *dst = odir.info->name;
 		register long i;
+		
+		nameptr.cc = name;
+		src = nameptr.c;
 
 		for (i = 0; i < 11 && *src; i++)
 		{
@@ -7311,7 +7347,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "vfat-xfs");
+			strcpy ((char *) arg, "vfat");
 			return E_OK;
 		}
 		case FS_INFO:
@@ -7337,29 +7373,15 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					info->type = _MAJOR_FAT;
 				}
 
-# ifdef M68000
 				*dst++ = 'f';
 				*dst++ = 'a';
 				*dst++ = 't';
 				*dst++ = ' ';
-# else
-				/* The compiler should optimize this below
-				 * into a single move.
-				 */
-				{
-					ulong *ddest;
-
-					ddest = (ulong *)dst;
-					/* this is 'fat ' */
-					*ddest++ = 0x66617420UL;
-					dst = (char *)ddest;
-				}
-# endif
 				switch (FAT_TYPE (dir->dev))
 				{
 					case FAT_TYPE_12:
 					{
-						info->type |= FS_FAT12;
+						info->type |= _MINOR_FAT12;
 						*dst++ = '1';
 						*dst++ = '2';
 
@@ -7367,7 +7389,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					}
 					case FAT_TYPE_16:
 					{
-						info->type |= FS_FAT16;
+						info->type |= _MINOR_FAT16;
 						*dst++ = '1';
 						*dst++ = '6';
 
@@ -7375,7 +7397,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					}
 					case FAT_TYPE_32:
 					{
-						info->type |= FS_FAT32;
+						info->type |= _MINOR_FAT32;
 						*dst++ = '3';
 						*dst++ = '2';
 
@@ -7678,9 +7700,6 @@ fatfs_dskchng (int drv, int mode)
 
 	FAT_DEBUG (("fatfs_dskchng: invalidate drv (change = %li)", change));
 
-	/* I hope this isn't a failure */
-	bio.sync_drv (DI (drv));
-
 	/* invalid all cookies */
 	{
 		register long i;
@@ -7758,7 +7777,33 @@ fatfs_unmount (int drv)
 	if (CLEAN (drv))
 		clean_flag (drv, CLEANFLAG_SET);
 
-	fatfs_dskchng (drv, 1);
+	/* I hope this isn't a failure */
+	bio.sync_drv (DI (drv));
+
+	/* invalid all cookies */
+	{
+		register long i;
+		for (i = 0; i < COOKIE_CACHE; i++)
+		{
+			register COOKIE *c = &(cookies[i]);
+			if (c->dev == drv)
+			{
+				if (c->name)
+				{
+					c_del_cookie (c);
+				}
+			}
+		}
+	}
+
+	/* free the DI (also invalidate cache units) */
+	bio.free_di (DI (drv));
+
+	/* invalidate the BPB */
+	BPBVALID (drv) = INVALID;
+
+	/* free the dynamically allocated memory */
+	kfree (BPB (drv)); BPB (drv) = NULL;
 
 	return E_OK;
 }
@@ -7902,18 +7947,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	{
 		FAT_DEBUG (("__FIO: ERROR -> bytes = %li)", bytes));
 
-		if (bytes < 0 && mode == READ)
-		{
-			/* hmm, Draco's idea */
-
-			bytes = 2147483647L; /* LONG_MAX */
-			FAT_DEBUG (("__FIO: (fix) mode == READ -> bytes = %li", bytes));
-		}
-		else
-		{
-			FAT_DEBUG (("__FIO: return 0"));
-			return 0;
-		}
+		return 0;
 	}
 
 	if (mode == READ)
@@ -7951,7 +7985,8 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	while (todo > 0)
 	{
 		temp = f->pos / CLUSTSIZE (dev);
-		if (temp > ptr->cl)
+
+		while (temp > ptr->cl)
 		{
 			/* get next cluster */
 
@@ -8030,8 +8065,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 
 			FAT_DEBUG (("__FIO: BYTES (todo = %li, pos = %li)", todo, f->pos));
 
-			data = CLUSTSIZE (dev) - offset;
-			data = MIN (todo, data);
+			data = MIN (todo, CLUSTSIZE (dev) - offset);
 
 			/* read the unit */
 			u = bio_data_read (dev, ptr->current);
@@ -8050,8 +8084,6 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			}
 			else
 			{
-				/* copy and write */
-
 				quickmovb ((u->data + offset), buf, data);
 				bio_MARK_MODIFIED ((&bio), u);
 			}
@@ -8218,6 +8250,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 {
 	register COOKIE *c = (COOKIE *) f->fc.index;
 	register FILE *ptr = (FILE *) f->devinfo;
+	long oldfpos;
 
 	FAT_DEBUG (("fatfs_lseek [%s]: enter (where = %li, whence = %i)", c->name, where, whence));
 
@@ -8229,20 +8262,26 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		default:	return ENOSYS;
 	}
 
-	if (where > c->flen || where < 0)
+	if (where < 0)
 	{
 		FAT_DEBUG (("fatfs_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
 	}
 
+	oldfpos = f->pos;
+	f->pos = where;
+
+	if (where > c->flen) {
+		where = c->flen;
+	}
+
 	if (where == 0)
 	{
-		f->pos = 0;
 		ptr->cl = 0;
 		ptr->current = c->stcl;
 
 		FAT_DEBUG (("fatfs_lseek: leave ok (where = %li)", where));
-		return 0;
+		return f->pos;
 	}
 
 	{	/* calculate and set the new current cluster and position */
@@ -8271,6 +8310,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 			{
 				/* bad clustered or read error */
 				ptr->error = current;
+				f->pos = oldfpos;
 
 				FAT_DEBUG (("fatfs_lseek: leave failure, bad clustered (ptr->error = %li)", ptr->error));
 				return EACCES;
@@ -8279,12 +8319,10 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 			ptr->cl = cl;
 			ptr->current = current;
 		}
-
-		f->pos = where;
 	}
 
 	FAT_DEBUG (("fatfs_lseek: leave ok (f->pos = %li)", f->pos));
-	return where;
+	return f->pos;
 }
 
 /*
@@ -8426,8 +8464,10 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == get_curproc()->pid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
@@ -8795,12 +8835,12 @@ fatfs_dump_hashtable (void)
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			COOKIE *temp = ctable[i];
-			ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
+			ksprintf (buf, buflen, "nr: %li\tptr = %p", i, temp);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (; temp; temp = temp->next)
 			{
 				ksprintf (buf, buflen, "\r\n"
-					"\tnext = %lx\tlinks = %li"
+					"\tnext = %p\tlinks = %li"
 					"\tdev = %i\tname = %s\r\n",
 					temp->next,
 					temp->links,

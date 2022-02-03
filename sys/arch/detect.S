@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -19,6 +17,11 @@
  * Detection of CPU and FPU model (Draco)
  *
  */
+
+#ifndef __mcoldfire__
+	.cpu	68030
+	.arch	68030
+#endif
 
 // Test hardware registers for presence
 
@@ -93,13 +96,21 @@ _test_long_rd:
 
 _detect_hardware:
 
+#ifdef __mcoldfire__
+	move.l	d2,-(sp)
+#endif
 	moveq	#0,d0				// initialize return value
 
 // *** detect ST-ESCC (Harun Scheutzow's extension to normal ST(E)s providing modem2 and serial2)
 
 	move.l	sp,a1				// save stack pointer
 	move.l	(8).w,a0			// save bus error vector
+#ifdef __mcoldfire__
+	move.l	#no_stescc,d2
+	move.l	d2,(8).w			// set temporary new bus error vector
+#else
 	move.l	#no_stescc,(8).w		// set temporary new bus error vector
+#endif
 	nop					// flush write pipeline (>= 040)
 	move.w	SR,d1
 
@@ -107,13 +118,24 @@ _detect_hardware:
 // 700 dec is 0x02bc hex, so it really raised the IPL, but MFP
 // interrupts were't disabled (they're IPL 5 IIRC).
 
+#ifdef __mcoldfire__
+	move.w	SR,d2
+	ori.l	#0x0700,d2			// disable interrupts
+	move.w	d2,SR
+#else
 	ori.w	#0x0700,SR			// disable interrupts
+#endif
 
 // The next instruction will cause a bus error if there is no
 // ST-compatible MFP, which makes the odd addresses 0xFFFFFA01 -
 // 0xFFFFFA3F accessible and is neccessary for the ST-ESCC extension
 
+#ifdef __mcoldfire__
+	moveq	#3,d2
+	move.b	d2,(0xFFFFFA31).w		// select register 3, channel B
+#else
 	move.b	#3,(0xFFFFFA31).w		// select register 3, channel B
+#endif
 
 // If we reach the following instruction we have a ST-compatible MFP.
 // If there is an ST-ESCC we have already selected register 3 of channel B,
@@ -121,10 +143,21 @@ _detect_hardware:
 
 	tst.b	(0xFFFFFA31).w			// register is always 0 if ST-ESCC present
 	bne.s	no_stescc			// no -> no ST-ESCC present
+#ifdef __mcoldfire__
+	move.w	#0xFA35,d2
+	move.w	d2,_ControlRegA+2		// set register adresses to ST-ESCC's
+	move.w	#0xFA37,d2
+	move.w	d2,_DataRegA+2
+	move.w	#0xFA31,d2
+	move.w	d2,_ControlRegB+2
+	move.w	#0xFA33,d2
+	move.w	d2,_DataRegB+2
+#else
 	move.w	#0xFA35,_ControlRegA+2		// set register adresses to ST-ESCC's
 	move.w	#0xFA37,_DataRegA+2
 	move.w	#0xFA31,_ControlRegB+2
 	move.w	#0xFA33,_DataRegB+2
+#endif
 	bset	#0x00,d0			// mark ST-ESCC present
 no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
 	move.w	d1,SR				// enable interrupts
@@ -134,6 +167,9 @@ no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
 
 // next detection should start here
 
+#ifdef __mcoldfire__
+	move.l	(sp)+,a2
+#endif
 	rts
 
 	.data
@@ -166,56 +202,6 @@ _DataRegB:	dc.l 0xFFFF8C87
 
 	.globl	_detect_cpu
 
-#if 0
-
-// old routine
-
-_detect_cpu:
-	movem.l	a0-a2/d1-d2,-(sp)
-	move.l	(0x10).w,a1	// save the illegal instr. exception vector
-	move.l	(0xf4).w,a2	// save the unimplemented instr. exception vector
-	lea	exit.w(PC),a0
-	move.l	a0,(0x10).w	// set either vector
-	move.l	a0,(0xf4).w
-	move.l	sp,a0		// save the ssp
-	nop			// eventually flush pipelines
-
-// on 68000 we try out a `move from CCR'.
-
-	clr.l	d0              // assume 68000
-	move.w	ccr,d0		// legal on 68010+
-	moveq	#0x0a,d0
-
-// CACR is present only in 68020+
-
-	movec	cacr,d1		// get cache control register
-	move.l	d1,d2		// hold a copy for later
-	ori.w	#0x8100,d1	// enable '030 data and '040 instruction caches
-	movec	d1,cacr		// set new cache controls
-	movec	cacr,d1		// read it back to check the effects
-	movec	d2,cacr		// restore original CACR settings
-	tst.w	d1		// if 15th bit was set, this is a 68040+
-	bmi.s	x040
-	moveq	#0x14,d0	// assume 68020
-	btst	#0x08,d1	// check if 68030 data cache was enabled
-	beq.s	exit		// a zero here means no data cache, i.e. 68020
-	moveq	#0x1e,d0	// data cache enabled means 68030
-	bra.s	exit
-
-// 68040 or 68060. Quad word mulu test.
-
-x040:	moveq	#0x3c,d0	// assume 68060
-	dc.l	0x4c102401	// mulu.l (a0),d1-d2
-	moveq	#0x28,d0	// no fault -> this is 68040
-exit:	move.l	a2,(0xf4).w	// restore stuff and exit
-	move.l	a1,(0x10).w
-	move.l	a0,sp
-	nop			// flush pipelines
-	movem.l	(sp)+,a0-a2/d1-d2
-	rts
-
-#else
-
 // new routine, does not change the CPU state (esp. caches)
 // <draco@atari.org>
 //
@@ -224,8 +210,8 @@ exit:	move.l	a2,(0xf4).w	// restore stuff and exit
 //
 
 _detect_cpu:
-#ifdef COLDFIRE
-	moveq	#60,d0
+#ifdef __mcoldfire__
+	moveq	#60,d0		// only true when coldfire_68k_emulation = true
 #else
 	movem.l	a0-a2/d1-d2,-(sp)
 
@@ -281,23 +267,45 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 	cmp.w	#40,d0
 	beq.s	x040
 
+	movec	cacr,d1		/* d1 = get cache control register */
+	move.l	d1,d2		/* hold a copy for later */
+	ori.w	#0x0101,d1	/* enable '020 instr. and '030 data caches */
+	movec	d1,cacr		/* set new cache controls from d1 */
+	movec	cacr,d1		/*   & read it back again to check */
+	movec	d2,cacr		/* restore original CACR */
+	btst	#0,d1		/* if '020 instr. cache was not enabled, this is a 68040+ */
+	beq.s	x040
+	btst	#8,d1		/* check if 68030 data cache was enabled */
+	beq.s	exit		/* a zero here means no data cache, i.e. 68020 */
+
 // this idea is borrowed from Linux/m68k, following the suggestion
 // of Petr Stehlik <joy@sophics.cz>.
 //
 // By the way: gas accepts `pmove tt0,d1' which is illegal. Why?
 //
-
-	clr.l	-(sp)		// make some room on the stack
-	pmove	tt0,(sp)	// 68030 only
-	moveq	#30,d0
+	clr.l	-(sp)		/* make some room on the stack */
+	move.l  #0x0001001e,d0 /* data cache enabled means 68030 - assume 68ec030 */
+	pmove	tc,(a7)		/* try to access the TC register */
+	moveq	#30,d0		/* no fault -> this is a 68030 */
 
 	bra.s	exit
 
-// 68040 or 68060. Quad word mulu test.
+// 68040 or higher.
 
-x040:	moveq	#60,d0		// assume 68060
-	dc.l	0x4c102401	// mulu.l (a0),d1-d2
-	moveq	#40,d0		// no fault -> this is 68040
+x040:	moveq	#40,d0		// assume 68040
+	dc.l	0x4e7a1808	// attempt to access the PCR
+
+// 68060 or Apollo 68080
+
+	moveq	#60,d0		// assume 68060
+	dc.l	0x06d00000	// check for 68080 addiw.l instruction
+
+// Apollo 68080
+	moveq	#40,d0          // force 68040 detection
+	move.w	#1,_is_apollo_68080
+	bra.s	exit
+
+	moveq	#60,d0		// no fault -> this is 68060
 
 exit:	move.l	a1,sp
 
@@ -311,25 +319,26 @@ exit:	move.l	a1,sp
 #endif
 	rts
 
-#endif
-
 // FPU type detection, experimental (draco@atari.org).
 //
 // This can only detect the hardware FPU, any software emulation
 // will be ignored.
 //
-// NOTICE: the _FPU cookie value for 68060 is not defined by Atari!
-//         *** How does it look like on a Hades060? ***
-//
 // Return value is cookie value for _FPU slot or a zero if no FPU
 // is present:
 //
 // 0x00000000, no FPU
-// 0x00020000, 68881 or 68882
-// 0x00040000, 68881 for sure
-// 0x00060000, 68882 for sure
+// 0x00020000, 68881 or 68882 [unused]
+// 0x00040000, 68881
+// 0x00060000, 68882
 // 0x00080000, 68040 internal FPU
 // 0x00100000, 68060 internal FPU
+//
+// The low word is supposed to have following meaning:
+//
+// 0x0000, no Line-F emulator is present
+// other, version number of Line-F emulation (assigned by Atari);
+//        high bit set means it is aware of 040/060 native instructions
 //
 // The detection algorithm goes as follows:
 //
@@ -337,18 +346,15 @@ exit:	move.l	a1,sp
 //   in coprocessor mode. If the CPU is >= 68020, no FPU is assumed.
 // - if FNOP doesn't take an exception, an FPU attached in coprocessor mode
 //   is present. Then if 68040 or 68060 CPU was detected previously, an appropriate
-//   FPU type is assumed. Otherwise the stackframe is checked for magic value
-//   indicating 68882 and if it is different, a 68881 is assumed.
-//
-// I am very interested if this will really work on everything =)
-// On a 68030/68882 tandem it does.
+//   FPU type is assumed. Otherwise the stackframe is checked for stack frame size
+//   indicating 68881 and if it is different, a 68882 is assumed.
 
 	.globl	_detect_fpu
 	.globl	_mcpu
 
 _detect_fpu:
-#ifdef COLDFIRE
-	moveq	#0,d0
+#ifdef __mcoldfire__
+	moveq	#0,d0		// TODO ColdFire FPU
 #else
 	movem.l	a0-a2/d1,-(sp)
 	move.l	sp,a0		// save the ssp
@@ -362,7 +368,7 @@ _detect_fpu:
 
 	move.l	_mcpu,d1	// check if 68000 or 68010
 	cmpi.w	#20,d1
-	bmi.s	sfp
+	bmi.s	fexit
 
 	cmpi.w	#60,d1		// enable FPU on 68060 before the check
 	bmi.s	no60
@@ -389,19 +395,88 @@ no60:	fnop
 	moveq	#0x08,d0	// if not 060, maybe a 040 (cookie 0x00080000)
 	cmpi.w	#40,d1
 	beq.s	fexit
-	moveq	#0x06,d0	// if neither, so maybe a 68882 (cookie 0x00060000)
-	move.b	(sp)+,d1
-	cmpi.b	#0x1f,d1
+	moveq	#0x04,d0	// assume 68881 (cookie 0x00040000)
+	move.b	1(sp),d1
+	cmpi.b	#0x18,d1
 	beq.s	fexit
-	moveq	#0x04,d0	// must be 68881
-	bra.s	fexit
-sfp:	tst.w	(0xfa40).w	// CIR
-	moveq	#0x01,d0	// memory mapped FPU
+	moveq	#0x06,d0	// must be 68882 (cookie 0x00060000)
+
 fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	move.l	a2,(0x08).w
 	move.l	a0,sp
 	nop			// flush pipelines
 	swap	d0
 	movem.l	(sp)+,a0-a2/d1
+#endif
+	rts
+
+// Software FPU emulation detection (SFP-004 or compatible)
+//
+// Return value is compatible with _FPU cookie in coprocessor mode:
+//
+// 0x00000000, no FPU
+// 0x00020000, 68881 or 68882 [unused]
+// 0x00040000, 68881
+// 0x00060000, 68882
+
+	.globl	_detect_sfp
+
+_detect_sfp:
+#ifdef __mcoldfire__
+	moveq	#0,d0		// there is no ColdFire SFP emulation
+#else
+	movem.l	a0-a1/d1,-(sp)
+	move.l	sp,a0		// save the ssp
+	clr.l	d0		// assume no FPU
+	move.l	(0x08).w,a1	// save the bus error vector
+	move.l	#sexit,(0x08).w	// install temporary bus error
+	nop			// flush pipelines
+
+sfp:	move.w	(0xfa44).w,d0	// read the save register
+	move.w	d0,d1
+	andi.w	#0xff00,d1	// isolate the format word
+	beq.s	sfp_store	// if null idle, store the format word
+	cmpi.w	#0x0100,d1	// if the coprocessor busy
+	beq.s	sfp		// keep checking until CP is finished processing
+sfp_store:
+	move.w	d0,d1
+
+	moveq	#0x04,d0	// 68881 (cookie 0x00040000) by default
+	cmpi.b	#0x18,d1	// compare stack frame size
+	beq.s	sexit
+	moveq	#0x06,d0	// must be 68882 (cookie 0x00060000)
+
+sexit:	move.l	a1,(0x08).w	// restore bus error
+	move.l	a0,sp
+	nop			// flush pipelines
+	swap	d0
+	movem.l	(sp)+,a0-a1/d1
+#endif
+	rts
+
+	.globl	_detect_pmmu
+
+// PMMU detection
+//
+// A very basic routine. For 000-020 it assumes none,
+// for 030 always present and for 040/060 it checks TC's 'E' bit, what is not
+// an 100% correct thing to do according to the UM but it seems to work.
+
+_detect_pmmu:
+	moveq	#0,d0		// TODO ColdFire PMMU
+#ifndef __mcoldfire__
+	move.l	d1,-(sp)
+
+	move.l	_mcpu,d1	// check cpu
+	cmp.w	#30,d1
+	blt.b	pexit		// <030 => no pmmu
+	beq.b	pexit1		// 030 => always pmmu for Atari
+
+	dc.w	0x4e7a,0x1003	// movec tc,d1 (040/060)
+	and.w	#0x8000,d1	// check 'E' bit
+	beq.b	pexit
+
+pexit1:	moveq	#1,d0
+pexit:	move.l	(sp)+,d1
 #endif
 	rts

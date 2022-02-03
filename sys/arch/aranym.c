@@ -1,6 +1,4 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -34,7 +32,7 @@
 # include "aranym.h"
 
 
-# ifdef ARANYM
+# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
 
 /* assembler routine */
 int detect_native_features(void);
@@ -45,6 +43,14 @@ static unsigned long nf_call_instr = 0x73014e75UL;
 
 static struct nf_ops _nf_ops = { (void *)&nf_get_id_instr, (void *)&nf_call_instr }; 
 static struct nf_ops *nf_ops = NULL; 
+
+/*
+ * nf_ops->call function reference.
+ */
+#if defined WITH_HOSTFS || defined WITH_ARANYMFS
+long __CDECL (*nf_call)(long id, ...) = 0L;
+#endif
+
 
 struct nf_ops *
 nf_init(void)

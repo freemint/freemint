@@ -1,0 +1,52 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
+ifeq ($(lp),deb)
+TARGET = lp.xdd
+CPU = 020-60
+LPDEFS += -DDEV_DEBUG
+endif
+
+ifeq ($(lp),000)
+TARGET = lp.xdd
+CPU = 000
+LPDEFS +=
+endif
+
+ifeq ($(lp),02060)
+TARGET = lp.xdd
+CPU = 020-60
+LPDEFS +=
+endif
+
+ifeq ($(lp),030)
+TARGET = lp.xdd
+CPU = 030
+LPDEFS +=
+endif
+
+ifeq ($(lp),040)
+TARGET = lp.xdd
+CPU = 040
+LPDEFS +=
+endif
+
+ifeq ($(lp),060)
+TARGET = lp.xdd
+CPU = 060
+LPDEFS +=
+endif
+
+ifeq ($(lp),col)
+TARGET = lp.xdd
+CPU  = v4e
+LPDEFS += 
+endif
+
+#
+# all default targets
+#
+lptargets = 02060 030 040 060 deb 000 col

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
@@ -47,65 +45,9 @@ long __CDECL (*nf_call)(long id, ...) = 0L;
 struct kerinfo *KERNEL;
 
 
-/*
- * filesystem basic description
- */
-static struct fs_descr arafs_descr =
-    {
-	NULL,
-	0, /* this is filled in by MiNT at FS_MOUNT */
-	0, /* FIXME: what about flags? */
-	{0,0,0,0}  /* reserved */
-    };
-
-
-static short mount(FILESYS *fs)
-{
-	long r;
-
-	arafs_descr.file_system = fs;
-
-	/* Install the filesystem */
-	r = d_cntl (FS_INSTALL, "u:\\", (long) &arafs_descr);
-	KERNEL_DEBUG("arafs: Dcntl(FS_INSTALL) descr=%x", &arafs_descr);
-	if (r != 0 && r != (long)KERNEL)
-	{
-		KERNEL_DEBUG("arafs: Dcntl(FS_INSTALL) return value was %li", r);
-
-		/* Nothing installed, so nothing to stay resident */
-		return 0;
-	}
-
-	r = d_cntl(FS_MOUNT, "u:\\host", (long) &arafs_descr);
-	KERNEL_DEBUG("arafs: Dcntl(FS_MOUNT) dev_no: %d", arafs_descr.dev_no);
-	if ( r == arafs_descr.dev_no ) return r; /* mount successfull */
-
-	KERNEL_DEBUG("arafs: Dcntl(FS_MOUNT) return value was %li", r);
-
-	r = d_cntl(FS_UNMOUNT, "u:\\host", (long) &arafs_descr);
-	if ( r < 0 ) {
-		KERNEL_DEBUG("arafs: Dcntl(FS_UNMOUNT) return value was %li", r);
-		/* Can't uninstall, because unmount failed */
-		return -1;
-	}
-
-	/* Something went wrong here -> uninstall the filesystem */
-	r = d_cntl(FS_UNINSTALL, "u:\\", (long) &arafs_descr);
-	if ( r < 0 ) {
-		KERNEL_DEBUG("arafs: Dcntl(FS_UNINSTALL) return value was %li", r);
-		/* Can't uninstall, because unmount failed */
-		return -1;
-	}
-
-       	/* Nothing installed */
-	return 0;
-}
-
-
 FILESYS * _cdecl init(struct kerinfo *k)
 {
-	short dev;
-	FILESYS *fs = &arafs_filesys;
+	FILESYS *fs = NULL;
 
 	KERNEL = k;
 
@@ -130,65 +72,10 @@ FILESYS * _cdecl init(struct kerinfo *k)
 		return NULL;
 	}
 
-	if ( !KERNEL->nf_ops ) {
-		c_conws("Native Features not present on this system\r\n");
-		return NULL;
-	}
-
-	nf_call = KERNEL->nf_ops->call;
-	
-
 	/* install and mount the filesystem */
-	dev = mount(fs);
-
-	/* something went wrong */
-	if ( dev < 0 )
-		return (FILESYS*) -1;
-
-	/* nothing installed */
-	if ( !dev )
-		return NULL;
-
-	
-	if ( arafs_init(dev) ) {
-		static fcookie clipbrd;
-		static fcookie scrap;
-		fcookie root;
-		COOKIE *c;
-
-		/* get the root fcookie */
-	       	if ( fs->root( dev, &root) < 0 )
-			return NULL; /* FIXME!!! */
-
-		/* 'mount' the other files/filesystems */
-
-		if ( nfclip_init() ) {
-			/* /arafs/clipbrd - normal folder */
-			fs->mkdir (&root,  "clipbrd", S_IFDIR | S_IRWXUGO);
-			fs->lookup (&root, "clipbrd", &clipbrd);
-			c = (COOKIE *) clipbrd.index;
-			c->flags |= S_PERSISTENT;
-
-			/* /arafs/clipbrd/scrap.txt - special device file */
-			fs->creat (&clipbrd, "scrap.txt", S_IFREG | S_IRWXUGO, 0, &scrap);
-			/* cannot not be deleted */
-			c = (COOKIE *) scrap.index;
-			c->flags |= S_PERSISTENT;
-			c->cops = &nfclipops;
-
-			/* release the clipbrd cookie */
-			fs->release( &clipbrd);
-		}
-
-		/* set IMMUTABLE so that no more files/folders can be
-		 * created in the root of the filesystem */
-		c = (COOKIE *) root.index;
-		c->flags |= S_IMMUTABLE;
-
-		/* release the root cookie */
-		fs->release( &root);
-	}
+	fs = aranymfs_init();
+	if (fs)
+		fs = arafs_mount_drives(fs);
 
 	return fs;
 }
-

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  */
@@ -43,10 +41,8 @@ extern long old_resvec;
 /* old ikbd vector */
 extern long old_ikbd;
 
-#ifdef MILAN
 /* old ikbd vector (other way) */
 extern long oldkeys;
-#endif
 
 /* BIOS disk vectors */
 extern long old_mediach, old_getbpb, old_rwabs;
