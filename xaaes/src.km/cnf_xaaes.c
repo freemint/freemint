@@ -928,7 +928,7 @@ load_config(void)
 	strcat(path, CNF_NAME);
 
 	DIAGS(("Loading config %s", path));
-	parse_cnf(path, parser_tab, &mydata);
+    parse_cnf(path, parser_tab, &mydata, 0);
 
 #if GENERATE_DIAGS
 	{

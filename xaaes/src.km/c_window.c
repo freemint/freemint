@@ -1775,7 +1775,7 @@ find_window(enum locks lock, short x, short y, short flags)
 		w = nolist_list;
 		while (w)
 		{
-			if (!(w->owner->status & CS_EXITING) & m_inside(x, y, &w->r))
+            if (!(w->owner->status & CS_EXITING) && m_inside(x, y, &w->r))
 				return w;
 			w = w->next;
 		}

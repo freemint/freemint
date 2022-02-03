@@ -509,7 +509,7 @@ XA_handler(void *_pb)
 		raise(SIGKILL);
 #else
 		/* inform user what's going on */
-		ALERT(("XaAES: No AES Parameter Block, returning", p_getpid()));
+        ALERT(("XaAES: No AES Parameter Block, returning (pid %ld)", p_getpid()));
 #endif
 		return 0;
 	}

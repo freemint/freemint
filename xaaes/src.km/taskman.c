@@ -189,7 +189,7 @@ build_tasklist_string(struct xa_client *client)
 				sprintf(tx, tx_len, " %3d/%3ld%s", client->p->pid, prio, client->name);
 		}
 		else
-			sprintf(tx, tx_len, " %3d/    %s", client->p->pid, 0, client->name);
+            sprintf(tx, tx_len, " %3d/    %s", client->p->pid, client->name);
 	}
 	return tx;
 };
