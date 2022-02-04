@@ -524,6 +524,7 @@ Form_Cursor(XA_TREE *wt,
 	o = obj;
 
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
+    UNUSED(last_ob);
 	DIAG((D_form, NULL, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
 		wt, obtree, obj.item, keycode, last_ob, edcnt));
 	/*BLOG((0, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, keystate=%x, lastob=%d, editobjs=%d focusflags=%d",

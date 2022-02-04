@@ -863,6 +863,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			end = base + size;
 		}
 	}
+
+    UNUSED(end);
 	
 	if (!rscs)
 		return NULL;
@@ -1030,8 +1032,12 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 
 	cur = client->resources;
 	
+#if GENERATE_DIAGS
 	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx",
 		cur, client->p->pid, client->rsct, rsc));
+#else
+    UNUSED(rsc);
+#endif
 
 	if (cur && client->rsct)
 	{

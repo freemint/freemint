@@ -168,6 +168,7 @@ Set_desktop(XA_TREE *new_desktop)
 	ob = new_desktop->tree;
 	*(RECT *)&ob->ob_x = root_window->wa;	
 	r = *(RECT*)&ob->ob_x;
+    UNUSED(r);
 
 	/* Now use the root window's auto-redraw function to redraw it
 	 * 

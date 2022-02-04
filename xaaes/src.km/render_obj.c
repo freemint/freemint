@@ -3025,7 +3025,7 @@ static struct xa_data_hdr *pmaps;
 static const struct xa_module_api *api = NULL;
 static const struct xa_screen *screen = NULL;
 
-static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6, 2, 4, 3};
+//static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6, 2, 4, 3};
 static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6, 2, 4, 3};
 static const short efx3d_colour[] =      {8, 9,10,11,12,13,14,15, 0, 1, 2, 3, 4, 5, 6, 7};
 static XA_TREE nil_tree = { 0 };
@@ -6214,13 +6214,9 @@ install_texture(char *fn, struct texture *texture, struct object_theme *obt, sho
 static void
 load_textures(struct theme *theme)
 {
-// 	struct texture *t;
-
 	if (screen->planes >= 8)
 	{
-		struct texture *t;
-
-		t = install_texture("dbox.img"/*steel3.img"*/, NULL, &theme->box, ST_ALL, ST_ALL, 0, 0, 0, 0);
+        install_texture("dbox.img"/*steel3.img"*/, NULL, &theme->box, ST_ALL, ST_ALL, 0, 0, 0, 0);
 		install_texture("popbkg.img", NULL, &theme->popupbkg, ST_ALL, 0, 0, 0,0,0);
 		install_texture("dbutton.img", NULL, &theme->button, ST_ALL, ST_ALL, 0, ST_ALL, ST_ALL,0);
 		install_texture("dtext.img", NULL, &theme->text, ST_ALL, ST_ALL, 0, ST_ALL, ST_ALL, 0);
@@ -6301,8 +6297,8 @@ exit_module(void)
 static void
 free_ob_theme_resources(struct ob_theme *obt)
 {
-	int j;
 #ifndef ST_ONLY
+    int j;
 	{
 		struct xa_gradient *g;
 	

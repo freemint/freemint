@@ -619,6 +619,9 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 // 			src->red, src->green, src->blue, dst->red, dst->green, dst->blue);
 // 		if (D) display(" %04lx xref %d to %d(%d)", closest, i, c, j, cref[i]);
 	}
+
+    UNUSED(s);
+    UNUSED(d);
 }
 /*
  * Remap the bitmap palette referances.
@@ -801,7 +804,9 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 	data = pic->addr;
 
 	s = data;
+    UNUSED(s);
 	e = data + (pic->ximg.img_h * stride);
+    UNUSED(e);
 // 	display("scan %ld, wscan %ld, stride %ld", scan, wscan, stride);
 
 // 	display("size of data should be %ld bytes", (pic->ximg.img_h * stride));
@@ -888,6 +893,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 			sl = (long)((pic->ximg.img_w + 15) & ~15) * 3;
 			rsl = (long)((pic->ximg.img_w + 7) & ~7) * 3;
 			remain = sl - rsl;
+            UNUSED(remain);
 // 			sl = (long)pic->ximg.img_w * 3;			
 // 			display("stride %ld, sl %ld, scan %ld, wscan %ld", stride, sl, scan, wscan);
 
@@ -980,6 +986,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			
 			/* width byte aligned */
 			width = (pic->ximg.img_w + 7) >> 3;
+            UNUSED(width);
 			size = (long)((long)word_aligned * pic->ximg.img_h * pic->ximg.planes);
 
 // 			display("depack_img: size = %ld, width=%d", size, width);
@@ -1364,6 +1371,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			
 			data = pm->mfdb.fd_addr;
 			ed = data + size;
+            UNUSED(ed);
 
 			switch (method)
 			{

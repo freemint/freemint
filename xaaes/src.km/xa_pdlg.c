@@ -3354,6 +3354,7 @@ Keypress(enum locks lock,
 		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		list = object_get_slist(wt->tree + XPDLG_LIST);
 		pdlg = list->data;
+        UNUSED(pdlg);
 	}
 	return no_exit;	
 }

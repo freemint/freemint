@@ -457,9 +457,8 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 static void
 d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	RECT r = wt->r, wa;
+    RECT r = wt->r;
 	SCROLL_INFO *list;
-	SCROLL_ENTRY *this;
 	struct xa_window *w;
 	OBJECT *ob = wt->current.ob;
 
@@ -472,11 +471,6 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	/* for after moving */
 	calc_work_area(w);
-
-	wa = w->wa;
-	//y = wa.y;
-	//maxy = y + wa.h - screen.c_max_h;
-	this = list->top;
 
 	(*v->api->t_color)(v, G_BLACK);
 	

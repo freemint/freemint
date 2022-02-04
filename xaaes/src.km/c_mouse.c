@@ -523,7 +523,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 	struct xa_client *client = ce->client;
 	struct xa_window *wind = ce->ptr1;
 	struct moose_data *md = &ce->md;
-	XA_WIDGET *widg;
+    XA_WIDGET *widg = NULL;
 	
 	if (!cancel)
 	{
@@ -613,10 +613,10 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 						else if (wind->active_widgets & VSLIDE)
 							w = XAW_VSLIDE, s = WM_VSLID;
 
-						if (w == -1)
-							whlarrowed(wind, WA, 1, NULL);
-
-						widg = get_widget(wind, w);
+                        if (w == -1)
+                            whlarrowed(wind, WA, 1, NULL);
+                        else
+                            widg = get_widget(wind, w);
 
 						if (widg)
 						{

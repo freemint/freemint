@@ -669,38 +669,6 @@ sortbydate(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 	return false;
 }
 
-
-//#if PROFILING
-#undef strcmp
-#if KERNELSTRCMP
-typedef long _cdecl (*strcmp_t)(const char *str1, const char *str2);
-static strcmp_t strcmp = 0;
-#else
-/* using builtin */
-#if !defined( __GNUC__) || (OWNSTRCMP==1)
-
-/*
- * strcmp
- */
-static int strcmp( char *t1, char *t2 )
-{
-	for( ; *t1 && *t1 == *t2; t1++, t2++);
-
-	if( !*t1 )
-		return -1;
-	if( !*t2 )
-		return 1;
-
-	if( *t1 > *t2 )
-		return 1;
-	if( *t1 < *t2 )
-		return -1;
-
-	return 0;
-}
-#endif
-#endif
-
 #ifndef SHRT_MAX 
 #  define SHRT_MAX  32767
 #endif

@@ -58,7 +58,7 @@ validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
 	if (obtree <= (OBJECT *)0x1000L)
 	{
 			/* inform user what's going on */
-		ALERT(("%s: validate OBTREE for %s failed, object ptr = %lx, killing it!", fdesc, client->proc_name, obtree));
+        ALERT(("%s: validate OBTREE for %s failed, object ptr = %lx, killing it!", fdesc, client->proc_name, (unsigned long)obtree));
 		raise(SIGKILL);
 		return false;
 	}

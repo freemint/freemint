@@ -1184,6 +1184,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 				pmx = widget_active.m.x;
 				pmy = widget_active.m.y;
 				mb  = widget_active.m.cstate;
+                UNUSED(mb);
 				rect_dist_xy(wind->owner, pmx, pmy, &r, &d);
 				widget_active.m.x = md->sx;
 				widget_active.m.y = md->sy;
@@ -2919,12 +2920,12 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt = widg->stuff;
-	OBJECT *root;
 	/* Convert relative coords and window location to absolute screen location */
-	root = rp_2_ap(wind, widg, NULL);
-
+#if GENERATE_DIAGS
+    OBJECT *root = rp_2_ap(wind, widg, NULL);
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d, form: %d/%d",
 		wind->handle, wt, edit_item(&wt->e), wt->e.pos, root->ob_x, root->ob_y));
+#endif
 
 	if (wind->nolist && (wind->dial & created_for_POPUP))
 	{
@@ -4619,7 +4620,6 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 				if (inside)
 				{
-					short oldstate = -1;
 					bool rtn = false;
 					int ax = 0;
 	
@@ -4657,7 +4657,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						
 						/* We don't auto select & pre-display for a menu or toolbar widget */
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
-							oldstate = redisplay_widget(lock, w, widg, OS_SELECTED);
+                            redisplay_widget(lock, w, widg, OS_SELECTED);
 
 						/*
 						 * Check if the widget has a dragger function if button still pressed

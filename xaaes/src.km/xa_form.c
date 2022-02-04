@@ -445,6 +445,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			alert_window->window_status |= XAWS_FLOAT;
 
 			widg = get_widget(alert_window, XAW_TOOLBAR);
+            UNUSED(widg);
 
 			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or); //(RECT *)&alert_form->ob_x);
 			wt->extra = alertxt;

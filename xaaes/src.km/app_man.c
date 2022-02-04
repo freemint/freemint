@@ -72,10 +72,9 @@ focus_owner(void)
 bool
 wind_has_focus(struct xa_window *wind)
 {
-	struct xa_client *c;
-	struct xa_window *w;
+    struct xa_window *w;
 
-	c = find_focus(true, NULL, NULL, &w);
+    find_focus(true, NULL, NULL, &w);
 
 	return wind == w ? true : false;
 }
