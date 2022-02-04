@@ -41,17 +41,16 @@
 #include "k_exec.h"
 
 
-#define STRINGS 1024 /* number of environment variable allowes in zaaes.cnf */
-static char *strings[STRINGS];
+#define STRINGS 1024 /* number of environment variable allowed in xaaes.cnf */
+static const char *strings[STRINGS];
 
-//char * const * const get_raw_env(void) { return strings; }
-const char ** get_raw_env(void) { return (const char **)strings; }
+const char ** get_raw_env(void) { return strings; }
 
 #if GENERATE_DIAGS
-static void display_env(char **env, int which);
+static void display_env(const char **env, int which);
 #endif
-static int copy_env(char *to, char *s[], const char *without, char **last);
-static long count_env(char *s[], const char *without);
+static int copy_env(char *to, const char *s[], const char *without, char **last);
+static long count_env(const char *s[], const char *without);
 
 static const char ARGV[] = "ARGV=";
 static const int argvl = 5;
@@ -183,9 +182,9 @@ print_x_shell(short x_mode, struct xshelw *x_shell)
 	if (x_mode & SW_ENVIRON)
 	{
 		/* explicit environment */
-		char **env = &(x_shell->env);
+        const char *env = x_shell->env;
 		DIAG((D_shel, NULL, "shel_write: x_mode SW_ENVIRON"));
-		display_env(env, 1);
+        display_env(&env, 1);
 	}
 }
 #endif
@@ -1227,7 +1226,7 @@ XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 #if GENERATE_DIAGS
 static void
-display_env(char **env, int which)
+display_env(const char **env, int which)
 {
 	if (D.debug_level > 2 && D.point[D_shel])
 	{
@@ -1301,7 +1300,7 @@ get_env(enum locks lock, const char *name)
 }
 
 static int
-copy_env(char *to, char *s[], const char *without, char **last)
+copy_env(char *to, const char *s[], const char *without, char **last)
 {
 	int i = 0, j = 0, l = 0;
 
@@ -1327,7 +1326,7 @@ copy_env(char *to, char *s[], const char *without, char **last)
 		i++;
 	}
 
-	strings[j] = '\0';
+    strings[j] = NULL;
 
 	*to = '\0';		/* the last extra \0 */
 	if (last)
@@ -1337,7 +1336,7 @@ copy_env(char *to, char *s[], const char *without, char **last)
 }
 
 static long
-count_env(char *s[], const char *without)
+count_env(const char *s[], const char *without)
 {
 	long ct = 0;
 	int i = 0, l = 0;
@@ -1377,8 +1376,10 @@ put_env(enum locks lock, const char *cmd)
 		ct = count_env(strings, cmd);	
 		/* ct is including the extra \0 at the end! */
 
+        const int l = strlen(cmd);
+
 		/* ends with '=': remove */
-		if (*(cmd + strlen(cmd) - 1) == '=')
+        if (cmd[l - 1] == '=')
 		{
 			newenv = kmalloc(ct);
 			if (newenv)
@@ -1387,18 +1388,17 @@ put_env(enum locks lock, const char *cmd)
 		}
 		else
 		{
-			int l = strlen(cmd) + 1;
 			newenv = kmalloc(ct + l);
 			if (newenv)
 			{
 				char *last;
 				/* copy without */
 				int j = copy_env(newenv, strings, cmd, &last);
-				strings[j] = last;
-				/* add new */
-				strcpy(strings[j], cmd);
-				*(strings[j] + l) = '\0';
-				strings[j + 1] = NULL;
+                /* add new */
+                strcpy(last, cmd);
+                last[l + 1] = '\0';
+                strings[j] = last;
+                strings[j + 1] = NULL;
 			}
 		}
 		if (newenv)
@@ -1418,7 +1418,7 @@ void
 init_env(void)
 {
 	int i = STRINGS;
-	char **s = strings;
+    const char **s = strings;
 
 	for (i = 0; i < STRINGS; i++) *s++ = NULL;
 }

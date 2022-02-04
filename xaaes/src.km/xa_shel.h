@@ -42,7 +42,6 @@ void init_env(void);
 long put_env(enum locks lock, const char *cmd);
 const char *get_env(enum locks lock, const char *name);
 
-// char * const * const get_raw_env(void);
 const char ** get_raw_env(void);
 
 AES_function
