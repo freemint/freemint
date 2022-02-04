@@ -128,10 +128,8 @@ COBJS = \
 	xa_wind.c
 
 SOBJS = \
-	accstart.s \
-	nkcc-gc.s \
-	xa_user_things.s
+	accstart.S \
+	nkcc-gc.S \
+	xa_user_things.S
 
-SSOBJS = 
-
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)

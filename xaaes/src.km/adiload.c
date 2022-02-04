@@ -30,6 +30,7 @@
 #include "adi.h"
 #include "k_mouse.h"
 
+#include "mint/arch/asm_misc.h"
 #include "mint/basepage.h"
 
 static char no_reason[] = "Nothing";

@@ -1,7 +1,0 @@
-.deps
-.compile_*
-*.swp
-*.km
-xaaes.log
-xa_setup.log
-load.prg

@@ -1,7 +1,6 @@
 #
 # Makefile for XaAES loader
 #
-TARGET = xaloader.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,28 +9,76 @@ srcdir = .
 top_srcdir = ..
 subdir = xaloader
 
-default: all
+default: help
+
+include $(srcdir)/XALOADDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: all-targets
 
 # default overwrites
-LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
-LIBS = -lgcc
-CPU = 000
-STRIPFLAGS =
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
-GENFILES = $(TARGET)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(xaloadtargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - bakclean'
+	@echo '# - strip'
+	@echo '# - help'
+	@echo '#'
 
-$(TARGET): $(OBJS)
-	$(LD) -o $@ -Wall $^ $(LIBS)
-	$(STRIP) $@
+strip:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(xaloadtargets); do \
+		(set -x; \
+		($(STRIP) .compile_$$i/*.prg) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
+	done && test -z "$$fail"
 
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(xaloadtargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-include $(top_srcdir)/DEPENDENCIES
+$(xaloadtargets):
+	$(MAKE) buildxaload xaload=$@
+
+#
+# multi target stuff
+#
+
+ifneq ($(xaload),)
+
+compile_dir = .compile_$(xaload)
+xaloadtarget = _stmp_$(xaload)
+realtarget = $(xaloadtarget)
+
+$(xaloadtarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildxaload: $(realtarget)

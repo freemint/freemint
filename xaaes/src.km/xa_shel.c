@@ -235,7 +235,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 {
 	char cmd[260]; /* 2 full paths */
 	char argvtail[4];
-	struct xshelw x_shell;
+    struct xshelw x_shell = {0};
 	struct create_process_opts cpopts;
 	short x_mode, real_mode;
 	const char *pcmd;

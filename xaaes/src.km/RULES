@@ -8,13 +8,12 @@ include $(top_srcdir)/../../RULES
 #
 
 #
-# global CFLAGS and ASFLAGS
+# global CFLAGS
 #
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = 
-MODEL = -m68$(CPU)
+DEFINITIONS =
+
 CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
-ASFLAGS = $(INCLUDES) $(DEFINITIONS) $(GENERAL) -m68030
 
 #
 # libkern target
