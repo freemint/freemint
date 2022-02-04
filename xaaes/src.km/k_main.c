@@ -1507,7 +1507,9 @@ k_main(void *dummy)
 		long tpc;
 
 		C.Aes->block = aesthread_block;
-		tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &C.Aes->tp, "%s", aesthread_name);
+        struct proc *tp = C.Aes->tp;
+        tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &tp, "%s", aesthread_name);
+        C.Aes->tp = tp;
 		if (tpc < 0)
 		{
 			C.Aes->tp = NULL;

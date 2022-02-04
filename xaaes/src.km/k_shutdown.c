@@ -70,9 +70,8 @@ k_shutdown(void)
 
 	if (C.Hlp)
 	{
-		volatile struct xa_client **h = (volatile struct xa_client **)&C.Hlp;
-		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
-		while (*h)
+        post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
+        while (C.Hlp)
 		{
 			Unblock(C.Hlp, 0, 0);
 			yield();
@@ -98,9 +97,8 @@ k_shutdown(void)
 	BLOG((false, "shutting down aes thread .."));
 	if (C.Aes->tp)
 	{
-		volatile struct proc **h = (volatile struct proc **)&C.Aes->tp;
-		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
-		while (*h)
+        post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
+        while (C.Aes->tp)
 		{
 			Unblock(C.Aes, 0, 0);
 			yield();

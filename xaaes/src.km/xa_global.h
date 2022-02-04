@@ -235,7 +235,7 @@ struct common
 	short prev_clip[4];
 
 	struct xa_client *Aes;		/* */
-	struct xa_client *Hlp;
+    struct xa_client *volatile Hlp;
 	void 	*Hlp_pb;
 // 	enum waiting_for Aes_waiting_for;
 	unsigned long	Aes_waiting_for;

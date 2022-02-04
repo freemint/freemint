@@ -2387,7 +2387,7 @@ struct xa_client
 
 	struct proc *p;			/* context back ptr */
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
-	struct proc *tp;		/* Thread */
+    struct proc *volatile tp;	/* Thread */
 	struct xa_wc_cache *wcc;	/* window_calc cache */
 
 	short	swm_newmsg;
