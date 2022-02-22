@@ -1431,6 +1431,10 @@ prep_next_entry:
 	}
 
 	TRACE(("nfs_readdir: got answer"));
+
+	if (mrep->data_len > MAX_READDIR_LEN)
+		KERNEL_DEBUG("returned buffer size (%ld) exceeds buffer limit (%d)", mrep->data_len, MAX_READDIR_LEN);
+
 	bzero(stuff->buffer, MAX_READDIR_LEN);
 	entp = read_res.readdirres_u.readdirok.entries = (entry*)stuff->buffer;
 

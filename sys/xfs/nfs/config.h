@@ -64,7 +64,7 @@
 #define MAX_RPC_HDR_SIZE   4096  /* FIXME: this value is too small */
 
 /* maximum number of bytes in a reply for nfs_readdir */
-#define MAX_READDIR_LEN    3072 
+#define MAX_READDIR_LEN    4108	/* value has been increased because of Ubuntu NFS server problems */
 
 
 
