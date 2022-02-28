@@ -1754,12 +1754,21 @@ void copy_mint_deadkeys(const unsigned char *src)
 #ifdef WITH_GUI
 # error "GUI for main program not supported yet"
 #endif
+#ifdef __PUREC__
+# include <ext.h> /* isatty */
+#endif
 
 static char const progname[] = "mktbl";
 
 static void usage(FILE *fp)
 {
 	fprintf(fp, "Usage: %s [-c|-m|-M|-a|-A] src-file [tbl-file]\n", progname);
+	fprintf(fp, "Options:\n");
+	fprintf(fp, "  -c      output C-source file (*.h)\n");
+	fprintf(fp, "  -m      output MiNT binary file (*.tbl)\n");
+	fprintf(fp, "  -M      output MiNT source file (*.src)\n");
+	fprintf(fp, "  -a      output MagiC binary file (*.sys)\n");
+	fprintf(fp, "  -A      output MagiC source file (*.inc)\n");
 }
 
 
