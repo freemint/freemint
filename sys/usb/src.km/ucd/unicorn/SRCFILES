@@ -14,6 +14,7 @@ SSOBJS = \
 	unicorn_int.S
 
 TOSSSOBJS = \
+        delayasm.S \
         entry.S \
         setstack.S
 

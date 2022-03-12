@@ -18,7 +18,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-SGENFILES = crtinit.c entry.S setstack.S
+SGENFILES = crtinit.c delayasm.S entry.S setstack.S
 
 all-here: all-targets
 
