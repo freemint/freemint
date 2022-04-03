@@ -39,6 +39,7 @@ extern struct nova_data *nova_data;
 extern struct cookie_mvdi mvdi_api;
 
 extern unsigned short next_res;
+extern unsigned short next_dev;
 
 extern char const aes_version[];
 extern char const aes_version_verbose[];

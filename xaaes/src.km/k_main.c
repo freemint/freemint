@@ -1745,12 +1745,16 @@ k_main(void *dummy)
 	/*
 	 * Initialization AES/VDI
 	 */
+
 	if (!next_res)
-		next_res = cfg.videomode;
+			next_res = cfg.videomode;
+
+	if (!next_dev)
+			next_dev = cfg.device;
 
 	pferr = ferr;
 
-	if ((ferr = k_init(next_res)) != 0)
+	if ((ferr = k_init(next_dev, next_res)) != 0)
 	{
 		display(/*00000013*/"ERROR: k_init failed!");
 		goto leave;

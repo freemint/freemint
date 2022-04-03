@@ -2803,7 +2803,8 @@ struct config
 	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
 
 	short allow_setexc;  /* 0: never, 1: no trap-vectors, 2: all */
-	short videomode;		/* ID of screen device opened by v_opnwk() */
+	short videomode;		/* Parameter for video mode selection */
+	short device; /* ID of screen device opened by v_opnwk() */
 
 	struct helpserver *helpservers;	/* configured helpservers */
 	struct cfg_name_list *ctlalta;

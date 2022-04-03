@@ -929,7 +929,13 @@ XA_shel_write(int lock, struct xa_client *client, AESPB *pb)
 					pb->intout[0] = 0;
 					break;
 				}
-				next_res = wisgr;
+
+				if(wiscr == 0)
+					next_dev = wisgr;
+
+				if(wiscr == 1)
+					next_res = wisgr;
+
 				pb->intout[0] = 1;
 				post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, RESOLUTION_CHANGE, 1, NULL, NULL);
 

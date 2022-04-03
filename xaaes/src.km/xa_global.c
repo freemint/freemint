@@ -29,6 +29,7 @@ struct nova_data *nova_data = NULL;
 struct cookie_mvdi mvdi_api;
 
 unsigned short next_res = 0;
+unsigned short next_dev = 0;
 
 char const aes_version[] = AES_ASCII_VERSION;
 char const aes_version_verbose[] = AES_ASCII_VERSION_VERBOSE;

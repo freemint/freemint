@@ -525,7 +525,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	vqt_fontinfo(v->handle, &i, &i, dist, &i, temp);
 }
 int
-k_init(unsigned long vm)
+k_init(unsigned short dev, unsigned short mc)
 {
 	short work_in[16];
 	short work_out[58];
@@ -540,7 +540,9 @@ k_init(unsigned long vm)
 			*t++ = -1;
 	}
 
-	cfg.videomode = (short)vm;
+	cfg.videomode = mc;
+	cfg.device    = dev;
+
 	BLOG((0,"k_init: videomode=%d",cfg.videomode ));
 
 	xa_vdiapi = v->api = init_xavdi_module();
@@ -588,112 +590,75 @@ k_init(unsigned long vm)
 
 	if ( v->handle <= 0 )
 	{
-		short mode = 1;
-		long vdo, r;
+		short device = cfg.device;
+		short modecode = cfg.videomode;
 
-		r = s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&vdo));
-		if (r != 0)
-			vdo = 0;
-
-		BLOG((0,"k_init:vdo=%lx vm=%lx video=%d", vdo, vm, cfg.videomode ));
-
-		if ( cfg.videomode)
+		if(!device)
 		{
-#ifndef ST_ONLY
-			if ((vm & 0x80000000UL) && mvdi_api.dispatch)
+			BLOG((false, "Auto detecting screen device"));
+
+			if(nova_data)
 			{
-				/* Ozk:  Resolution Change on the Milan;
-				 *
-				 * I'm guessing like never before here; I found out that one can select
-				 * the resolution by stuffing the device ID in work_out[45] and then
-				 * open VDI device 5, just like we do it for the Falcon. However, this
-				 * often caused the Milan VDI to freeze up real good. Then I found out
-				 * that on _my_ Milan, vcheckmode() not only checks the validity of the
-				 * passed device ID, it actually sets this mode to be the one to use
-				 * when one opens physical workstation 1! And it works every time.
-				 * We could use vsetmode() too, but that sets the resolution immediately,
-				 * a thing I didnt like much.
-				 * Hopefully this will work on all Milans!
-				 * Update: Ofcourse this didnt work on all Milans!
-				 */
-
-				/*
-				 * First try...
-				 */
-#if 0
-				vcheckmode(vm & 0xffff);	/* Works on my Milan - 040 w/s3 trio */
-								/* Didnt work on Vido's Milan - 060 w/rage. Didnt change res*/
-#endif
-				/*
-				 * Second try...		 * Works on my Milan - 040 w/s3 trio
-				 *				 * Didnt work on Vido's Milan - 060 w/rage. System freeze!
-				 */
-#if 0
-				vsetmode(vm & 0xffff);
-#endif
-
-				/*
-				 * Third try...			 * Works with some resolutio on my Milan - VERY unstable. Whe
-				 * This is the same as		 * it freezes, it freezes so good I have to use reset to recover
-				 * on the Falcon		 * Not tested on Vido's 060 w/rage Milan
-				 */
-#if 0
-				mode = 5;
-				work_out[45] = vm & 0xffffL;
-#endif
-
-				/*
-				 * Fourth try...		* This works perfect on _my_ milan. Dont know how it works on
-				 *				* other machines yet... didnt work with nvdi 5.03 installed!
-				 */
-#if 0
-				mvdi_device(vm & 0x0000ffffUL, 0L, DEVICE_SETDEVICE, (long *)&ret);
-#endif
-
-				/*
-				 * Fifth try...
-				 * this is the same method as used on the Falcon,
-				 * only using devid 7 instead of 5.
-				 */
-				mode = 7;
-				work_out[45] = vcheckmode(vm & 0x0000ffffUL);
-			} else
-#endif
-			if ((vm & 0x80000000UL) && nova_data && nova_data->valid)
-			{
-				if (nova_data->valid)
-					nova_data->xcb->resolution = cfg.videomode;
-				BLOG((false, "nova change res to %d - %s", cfg.videomode, nova_data->next_res.name));
-				nova_data->valid = false;
-				mode = 1;
+				BLOG((false, "Assume NOVA VDI compatibility"));
+				device = 1;
 			}
-#ifndef ST_ONLY
-			else if (vdo == 0x00030000L)
-			{
-				work_out[45] = vcheckmode(cfg.videomode);;
-				mode = 5;
-				BLOG((false, "Falcon video: videomode %d(%x),mode=%d,nvmode=%x", cfg.videomode, cfg.videomode, mode, work_out[45]));
-			}
-#endif
 			else
 			{
-				if (cfg.videomode >= 1 && cfg.videomode <= 10)
+				unsigned short tmp[2];
+
+				if (!s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)tmp))
 				{
-					mode = cfg.videomode;
+					device = 7;
+					BLOG((false, "Assume Milan VDI Compatibility"));
 				}
 				else
 				{
-					BLOG((false, "videomode %d invalid, must be between 1 and 10", cfg.videomode));
+					if(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)tmp))
+						tmp[0] = 0;
+
+					switch(tmp[0])
+					{
+						case 3:
+						case 4:	device = 5;
+							BLOG((false, "Assume Falcon VDI compatibility"));
+							break;
+						default:
+							BLOG((false, "Assume generic VDI compatibility"));
+							device = cfg.videomode;
+							modecode = 0;
+							break;
+					}
 				}
 			}
-		}	/*/if (cfg.videomode)*/
-		else
-		{
-			BLOG((false, "Default screenmode"));
 		}
 
-		BLOG((false, "Screenmode is: %d", mode));
-		
+		if(device > 10)
+		{
+			BLOG((false, "Screen device %d invalid, must be between 1 and 10", device));
+			device = 1;
+			modecode = 0;
+		}
+
+		BLOG((false, "Screen device is: %d", device));
+
+		if(modecode)
+		{
+			if(nova_data)
+			{
+				if(nova_data->valid)
+				{
+					nova_data->xcb->resolution = modecode;
+					nova_data->valid = false;
+					BLOG((false, "Nova mode is: %x", modecode));
+				}
+			}
+			else
+			{
+				work_out[45] = vcheckmode(modecode);
+				BLOG((false, "Modecode is: %x (%x)", modecode, work_out[45]));
+			}
+		}
+
 		/*
 		 * When opening the physical workstation, NVDI/ET4000 (and perhaps other
 		 * drivers, too) tries to load some files from disk needed for the correct
@@ -722,8 +687,8 @@ k_init(unsigned long vm)
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			s_system(S_CTRLCACHE, sc & ~3, cm);
 #endif
-			set_wrkin(work_in, mode);
-			BLOG((0,"k_init: v_opnwk() mode=%d", mode ));
+			set_wrkin(work_in, device);
+			BLOG((0,"k_init: v_opnwk() device=%d", device ));
 			v_opnwk(work_in, &(C.P_handle), work_out);
 			BLOG((0,"k_init: v_opnwk() handle=%d", C.P_handle ));
 #if SAVE_CACHE_WK
@@ -731,7 +696,7 @@ k_init(unsigned long vm)
 #endif
 		}
 #else
-		set_wrkin(work_in, mode);
+		set_wrkin(work_in, device);
 		v_opnwk(work_in, &(C.P_handle), work_out);
 #endif
 		BLOG((false, "Physical work station opened: %d", C.P_handle));
@@ -744,6 +709,7 @@ k_init(unsigned long vm)
 			BLOG((/* 00000001 */true, "v_opnwk failed (%i)!", C.P_handle));
 			return -1;
 		}
+
 		/*
 		 * We need to get rid of the cursor
 		 */
