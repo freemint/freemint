@@ -67,6 +67,7 @@
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
+	.globl	_enter_vdi
 	.globl	_enter_kernel
 	.globl	_leave_kernel
 	.extern	_in_kernel
@@ -315,7 +316,6 @@ pok:
 
 sk:
 	jsr	_enter_kernel
-//	bset	#0x07,_in_kernel
 	clr.w	-(sp)			// no frame format needed
 	pea	4(a0)			// push pointer to syscall context save
 	jsr	_build_context
@@ -387,7 +387,6 @@ _mint_bios:
 
 norm_bios:
 	jsr	_enter_kernel
-//	bset	#0x07,_in_kernel
 	tst.w	_bconbdev		// is BIOS buffering on?
 	bmi	L_bios			// no, skip all this
 
@@ -709,14 +708,7 @@ _mint_trap2:
 	bra	reentrant_trap2
 
 norm_trap2:
-#ifdef __mcoldfire__
-	move.l	a0,-(sp)		// backup a0
-	lea	_in_kernel,a0
-	bset	#0x07,(a0)
-	move.l	(sp)+,a0		// restore a0
-#else
-	bset	#0x07,_in_kernel
-#endif
+	jsr	_enter_vdi
 
 // The AES/VDI passes parameters in D0/D1, so we do not touch
 // them registers..

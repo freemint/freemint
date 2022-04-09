@@ -251,7 +251,7 @@ struct proc
 
 	short	in_dos;			/**< flag: 1 = process is executing a GEMDOS call */
 	short	in_kern;
-	short	unused;
+	short	in_vdi;
 	short	fork_flag;		/**< flag: set to 1 if process has called Pfork() */
 	short	auid;			/* XXX tesche: audit user id */
 	short	last_sig;		/**< Last signal received by the process	*/

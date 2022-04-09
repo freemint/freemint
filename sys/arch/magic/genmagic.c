@@ -86,6 +86,7 @@ magics [] =
 	{ "P_SIGPENDING",	offsetof(struct proc, sigpending)		},
 	{ "P_INDOS",		offsetof(struct proc, in_dos)			},
 	{ "P_INKERN",		offsetof(struct proc, in_kern)			},
+	{ "P_INVDI",		offsetof(struct proc, in_vdi)			},
 
 	{ "SL_HEAD",		offsetof(struct shared_lib, slb_head)		},
 	{ "SL_NAME",		offsetof(struct shared_lib, slb_name)		},
