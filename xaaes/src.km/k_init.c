@@ -432,6 +432,19 @@ setup_xa_module_api(void)
 }
 
 /*
+ * Workaround for buggy TOS3/4 VDI. We have to set the flag explicitly
+ * because we already are in kernel so enter_vdi() wouldn't be called.
+ * See sys_m_xalloc() in dosmem.c for further explanation.
+ */
+static void v_opnvwk_patched(short work_in[], VdiHdl *handle, short work_out[])
+{
+	struct proc *p = get_curproc();
+	p->in_vdi = 1;
+	v_opnvwk(work_in, handle, work_out);
+	p->in_vdi = 0;
+}
+
+/*
  * check if file exist in Aes_home_path
  */
 static char * _cdecl
@@ -524,6 +537,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 
 	vqt_fontinfo(v->handle, &i, &i, dist, &i, temp);
 }
+
 int
 k_init(unsigned short dev, unsigned short mc)
 {
@@ -577,7 +591,7 @@ k_init(unsigned short dev, unsigned short mc)
 		memset( work_out, 0, sizeof(work_out) );
 		set_wrkin(work_in, 1);
 		BLOG((0,"1st v_opnvwk (P_handle=%d)", C.P_handle ));
-		v_opnvwk(work_in, &v->handle, work_out);
+		v_opnvwk_patched(work_in, &v->handle, work_out);
 		BLOG((0,"->%d, wh=%d/%d %d colors", v->handle, work_out[0], work_out[1], work_out[13]));
 		if( !(work_out[0] && work_out[1] && work_out[13]) )
 		{
@@ -723,7 +737,7 @@ k_init(unsigned short dev, unsigned short mc)
 		v->handle = C.P_handle;
 
 		set_wrkin(work_in, 1);
-		v_opnvwk(work_in, &v->handle, work_out);
+		v_opnvwk_patched(work_in, &v->handle, work_out);
 	}	/* /if ( v->handle <= 0 ) */
 
 	if (v->handle == 0)
