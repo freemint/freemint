@@ -24,9 +24,11 @@
 # include "arch/mprot.h"
 # include "arch/detect.h"
 
+# include "cookie.h"	/* get_cookie */
 # include "k_prot.h"
+# include "keyboard.h"	/* emutos */
 # include "memory.h"
-# include "util.h" /* pid2proc */
+# include "util.h"		/* pid2proc */
 
 # include "proc.h"
 
@@ -175,18 +177,22 @@ sys_m_xalloc (long size, int mode)
 
 	TRACE(("Mxalloc(%ld,%x)",size,mode));
 
-	/* AKP: Hack here: if the calling process' PC is in ROM, then this
-	 * is a Malloc call made by VDI's v_opnvwk routine.  So we change
-	 * mode to include "super accessible."  This is temporary, until
-	 * VDI catches up with multitasking TOS.
+#ifndef M68000
+	/* Hack here: if this is a Malloc call made by TOS 3/4 VDI's v_opnvwk routine,
+	 * we change mode to include "super accessible."
 	 */
-	if (((mode & F_PROTMODE) == 0)
-		&& (get_curproc()->ctxt[SYSCALL].pc > 0x00e00000L)
-		&& (get_curproc()->ctxt[SYSCALL].pc < 0x00efffffL))
+	if (((mode & F_PROTMODE) == 0) && get_curproc()->in_vdi)
 	{
-		mode |= (F_PROT_PR) | F_KEEP;
-		TRACE(("m_xalloc: VDI special (call from ROM)"));
+		if (!emutos
+			&& get_cookie(NULL, COOKIE_NVDI, NULL) == EERROR
+			&& get_cookie(NULL, COOKIE_fVDI, NULL) == EERROR
+			&& get_cookie(NULL, COOKIE_NOVA, NULL) == EERROR)
+		{
+			mode |= (F_PROT_PR) | F_KEEP;
+			DEBUG(("m_xalloc: VDI special (call from TOS 3/4)"));
+		}
 	}
+#endif
 
 	/* If the mode argument comes in a zero, then set it to the default
 	 * value from prgflags.  Otherwise subtract one from it to bring it
