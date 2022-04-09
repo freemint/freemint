@@ -25,7 +25,7 @@ WARN =  -Wall \
 	-Wpointer-arith \
 	-Wcast-qual
 LDFLAGS = -nostdlib
-LDFLAGS += -Wl,-Map -Wl,map.txt
+LDFLAGS += -Wl,-Map=map.txt
 # XXX should be come from arch/
 LDFLAGS += -Wl,--entry -Wl,_main
 LIBS = $(LIBKERN) -lgcc
@@ -63,7 +63,7 @@ VPATH = ..
 build: $(MINT)
 
 $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
-	$(CC) $(CFLAGS) $(LDFLAGS) -s -o $@ -Wl,-Map=mint.map \
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ \
 		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/startup` ; \
 			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
 		$(OBJS) $(BUILDINFO) \
