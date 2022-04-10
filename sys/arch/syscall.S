@@ -67,7 +67,9 @@
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
+#ifndef M68000
 	.globl	_enter_vdi
+#endif
 	.globl	_enter_kernel
 	.globl	_leave_kernel
 	.extern	_in_kernel
@@ -708,7 +710,11 @@ _mint_trap2:
 	bra	reentrant_trap2
 
 norm_trap2:
+#ifndef M68000
 	jsr	_enter_vdi
+#else
+	bset	#0x07,_in_kernel	// speed optimization: 'in_vdi' is not used for the 000 builds
+#endif
 
 // The AES/VDI passes parameters in D0/D1, so we do not touch
 // them registers..
