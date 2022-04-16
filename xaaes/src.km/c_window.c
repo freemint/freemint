@@ -2713,8 +2713,8 @@ CE_delete_window(int lock, struct c_event *ce, short cancel)
 	 */
 #if 0
 	if (!cancel)
-		delete_window1(lock, ce->ptr1);
 #endif
+		delete_window1(lock, ce->ptr1);
 }
 
 void _cdecl
