@@ -140,6 +140,12 @@ CFLAGS := $(subst -mshort,,$(CFLAGS))
 ara:: 040
 	@:
 
+hat:: 000
+	@:
+
+hat030:: 030
+	@:
+
 060:
 	$(MAKE) CPU=060
 

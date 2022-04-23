@@ -58,3 +58,9 @@ xaaestargets = deb 000 sto 030 040 060 col 02060
 
 ara:: 040
 	@:
+
+hat:: 000
+	@:
+
+hat030:: 030
+	@:

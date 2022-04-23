@@ -29,7 +29,7 @@ fi
 sed -i -e "s/xaloadtargets = 000 02060 030 040 060 col/xaloadtargets = ${TEMP_CPU_TARGET}/;" ./xaaes/src.km/xaloader/XALOADDEFS
 sed -i -e "s/xaaestargets = deb 000 sto 030 040 060 col 02060/xaaestargets = ${XAAES_TARGETS}/;" ./xaaes/src.km/XAAESDEFS
 sed -i -e "s/moosetargets = 02060 030 040 060 deb 000 col/moosetargets = ${TEMP_CPU_TARGET}/;" ./xaaes/src.km/adi/whlmoose/MOOSEDEFS
-sed -i -e "s/kerneltargets = 000 020 030 040 060 deb mil ara hat col/kerneltargets = ${KERNEL_TARGETS}/;" ./sys/KERNELDEFS
+sed -i -e "s/kerneltargets = 000 020 030 040 060 deb mil ara hat hat030 col/kerneltargets = ${KERNEL_TARGETS}/;" ./sys/KERNELDEFS
 sed -i -e "s/ext2targets = 02060 030 040 060 deb 000 col/ext2targets = ${TEMP_CPU_TARGET}/;" ./sys/xfs/ext2fs/EXT2DEFS
 sed -i -e "s/nfstargets = 02060 030 040 060 deb 000 col/nfstargets = ${TEMP_CPU_TARGET}/;" ./sys/xfs/nfs/NFSDEFS
 sed -i -e "s/minixtargets = 02060 030 040 060 deb 000 col/minixtargets = ${TEMP_CPU_TARGET}/;" ./sys/xfs/minixfs/MINIXDEFS
