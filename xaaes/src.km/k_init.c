@@ -646,11 +646,16 @@ k_init(unsigned short dev, unsigned short mc)
 			}
 		}
 
-		if(device > 10)
+		if(device < 1 || device > 10)
 		{
-			BLOG((false, "Screen device %d invalid, must be between 1 and 10", device));
+			BLOG((false, "Screen device %d invalid, must be between 1 and 10. Forcing device = 1", device));
 			device = 1;
 			modecode = 0;
+		}
+		else if ((device == 5 || device == 7) && !modecode)
+		{
+			BLOG((false, "Video mode not set in Falcon/Milan VDI. Forcing device = 1"));
+			device = 1;
 		}
 
 		BLOG((false, "Screen device is: %d", device));
