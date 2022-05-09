@@ -37,7 +37,7 @@
 #
 # experimental; for developers only
 #
-# -DOLDTOSFS		use GEMDOS FS instead of real FAT XFS (pending removal)
+# -DOLDTOSFS		use GEMDOS FS instead of real FAT XFS
 # -DJAR_PRIVATE		make Cookie Jar private for processes
 # -DWITHOUT_TOS		exclude TOS dependencies
 # 			warning, experimental and work in progress
