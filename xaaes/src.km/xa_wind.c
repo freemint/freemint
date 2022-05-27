@@ -158,7 +158,7 @@ XA_wind_close(int lock, struct xa_client *client, AESPB *pb)
 	if (w == 0)
 	{
 		DIAGS(("WARNING:wind_close for %s: Invalid window handle %d", c_owner(client), pb->intin[0]));
-		pb->intout[0] = 1;
+		pb->intout[0] = 0;
 		return XAC_DONE;
 	}
 
@@ -166,11 +166,10 @@ XA_wind_close(int lock, struct xa_client *client, AESPB *pb)
 	if (w->owner != client)
 	{
 		DIAGS(("WARNING: %s cannot close window %d (not owner)", c_owner(client), w->handle));
-		pb->intout[0] = 1;
+		pb->intout[0] = 0;
 		return XAC_DONE;
 	}
-	close_window(lock, w);
-	pb->intout[0] = 1;
+	pb->intout[0] = close_window(lock, w) ? 1 : 0;
 
 	return XAC_DONE;
 }
