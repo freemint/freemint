@@ -130,25 +130,37 @@
 # describe_widgets = 1
 
 #####################################################################
-# video mode select
-# -----------------
+# Screen device selection
+# -----------------------
 #
-# Selects the video mode that XaAES will boot into. If not set mode = 1
-# will be used, e.g. use current/default video mode.
+# Selects the VDI device that that XaAES will boot into. If not set,
+# device 1 will be used, i.e. the current/default video mode.
 #
-# If you don't have a Falcon <mode> can be:
-# -----------------------------------------
-#   - 2 =  320*200,  16 colour (ST-Low)
-#   - 3 =  640*200,   4 colour (ST-Medium)
-#   - 4 =  640*400,   2 colour (ST-High)
-#   - 6 =  640*480,  16 colour (TT Medium)
-#   - 8 = 1280*960,   2 colour (TT High)
-#   - 9 =  320*480, 256 colour (TT Low)
+# Valid device numbers are:
+# --------------------------------------------
+#   - 2 = 320*200,  16 colour (ST-Low)
+#   - 3 = 640*200,   4 colour (ST-Medium)
+#   - 4 = 640*400,   2 colour (ST-High)
+#   - 5 = Mode specified by modecode (Falcon)
+#   - 6 = 640*480,  16 colour (TT Medium)
+#   - 7 = Mode specified by modecode (Milan)
+#   - 8 = 1280*960,  2 colour (TT High)
+#   - 9 = 320*480, 256 colour (TT Low)
 #
 #   All other values are ignored!
 #
-# If you have a Falcon <mode> is the same argument as to the
-# VsetMode() OS call:
+# Note: screendev (and modecode) replaces the video parameter, which
+#       in turn is now deprecated and subject for future removal.
+#
+# screendev = <device number>
+
+#####################################################################
+# Modecode specifier
+# ------------------
+#
+# For the Falcon, <mode> is the same argument as used for the
+# VsetMode() OS call.
+#
 # ---------------------------------------------------------
 #   BIT     Name     Meaning
 #
@@ -193,16 +205,25 @@
 #
 # For example:
 #
-# video = 26      will select 640*480*16colour VGA mode.
-# video = 0x801a  will select 16 colour VGA mode in
-#                 the resolution preset by centscreen.
-# Note:
-# When you use a screenexpander like Screenblaster, you have to use
-# the video option as well. This will make the Screenblaster-Software
-# to show up the resolution-selection-menu.
+# modecode = 26      will select 640*480*16colour VGA mode.
+# modecode = 0x801a  will select 16 colour VGA mode in
+#                    the resolution preset by centscreen.
+#
+# Note: screendev (and modecode) replaces the video parameter, which
+#       in turn is now deprecated and subject for future removal.
+#
+#modecode = <mode>
+
+#####################################################################
+# Video mode select
+# -----------------
+#
+# This parameter is now deprecated and subject for future removal.
+# Please update your xaaes.cnf accordingly.
+#
+# For more information, see screendev and modecode (above).
 #
 #video = <mode>
-#video = 4
 
 ####################################################
 # gradients = <name|[0|1]>    (default = 0)

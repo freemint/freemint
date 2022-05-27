@@ -253,6 +253,12 @@ otherwise mentioned.
 !item [INCLUDE <character-sequence>] (!nl)
 Include another config file at this place. E.g. include c:\mint\network.cnf.
 
+!item [MODECODE <mode> (default 0x0000)] (!nl)
+See Video Modes
+
+!item [SCREENDEV <device> (default 1)] (!nl)
+See Video Modes
+
 !item [SETENV <string>] (!nl)
 Set an environment variable, or override one previously set. May be used
    multiple times. Same format as for mint.cnf. This is also used in
@@ -261,7 +267,7 @@ Set an environment variable, or override one previously set. May be used
    See Setting a Desktop.
 
 !item [VIDEO <number> (default 1)] (!nl)
-See Video Modes
+Deprecated; see Video Modes
 
 !label USEHOME
 !item [USEHOME <bool> (default true)] (!nl)
@@ -1977,28 +1983,46 @@ However XaAES 24 bit XIMG format is not as common as it should be.
 
 !begin_node Video Modes
 
-Use of the video setting is not meant for normal use with ARAnyM or systems
-with PCI based video cards. In ARAnyM the desktop resolution is set from its
-front end and through the use of (!B)fVDI(!b) and its fdvi.sys configuration file.
+The video settings allow XaAES to switch screen resolution on certain supported
+machine configurations. This includes, but is not limited to, the entire range
+of Atari 16/32-bit machines as well as the Milan 040/060. Other machines, or
+Atari machines equipped with graphics cards, tend to not support the standard
+ways of switching screen resolution. Hence such system configurations usually
+have their own utilities for this purpose.
+
+In this context, Aranym can be considered an Atari machine; it supports VIDEL
+(stock graphics) as well as native graphics, which can be considered akin to a
+graphics card.
+
+The SuperVidel graphics card provides an Atari-compatible way of switching screen
+resolutions and can hence be considered analog to stock graphics.
+
+The FireBee can, depending on the configuration, either be considered as having
+"stock" graphics, or the equivalent of a graphics card, depending on the system
+configuration.
+
+!begin_blist
+
+!item [SCREENDEV <device> (default 1)] (!nl)
+VDI screen device number as follows:
 
 !begin_description
-!item [VIDEO <mode> (default 1)] (!nl)
-This selects the video mode that XaAES will boot into.
-!end_description
 
-If not set, <mode> will be set to "1", which means "use current or default
-video mode".
+!item [0:] Auto
 
-If you don't have a Falcon, <mode> can be:
+!item [1:] Current or default video mode
 
-!begin_description
 !item [2:] 320*200, 16 colour (ST Low)
 
 !item [3:] 640*200, 4 colour (ST Medium)
 
 !item [4:] 640*400, 2 colour (ST High)
 
+!item [5:] Falcon (mode specified by MODECODE)
+
 !item [6:] 640*480, 16 colour (TT Medium)
+
+!item [7:] Milan (mode specified by MODECODE)
 
 !item [8:] 1280*960, 2 colour (TT High)
 
@@ -2007,9 +2031,14 @@ If you don't have a Falcon, <mode> can be:
 
 All other values are ignored!
 
+!item [VIDEO <mode> (default 1)] (!nl)
+This parameter is now deprecated and is provided for backwards compatibility only;
+please update your configuration to use SCREENDEV and (if applicable) MODECODE.
 
-If you have a Falcon, <mode> is the same argument as to the VsetMode()
-OS call:
+!item [MODECODE <modecode> (default 0x0000)] (!nl)
+This parameter specifies the graphics mode for VDI devices 5 (Falcon) and 7 (Milan).
+
+The <modecode> is based on the mode specifier of the VsetMode/Vsetscreen() XBIOS calls:
 
 !begin_description
 !item [BIT:] Name - Meaning
@@ -2128,6 +2157,8 @@ Will select 640*480*256 colour VGA mode.
 !item [video = 0x0018] (!nl)
 Will select 640*480*16 colour VGA mode.
 !end_description
+
+!end_blist
  
 !end_node # Video Modes
 
