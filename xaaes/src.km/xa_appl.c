@@ -1540,7 +1540,7 @@ XA_appl_getinfo(int lock, struct xa_client *client, AESPB *pb)
 				break;
 			}
 			case AES_VERSION: {
-				if (pb->control[N_ADDRIN] >= 3) {
+				if (pb->control[N_ADDRIN] == 4) {
 					char *d;
 
 					if ((d = (char *)pb->addrin[0])) {

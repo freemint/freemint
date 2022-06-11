@@ -36,8 +36,7 @@ init_apgi_infotab(void)
 	 * Build status string
 	 */
 
-#if 0
-	s = mcs(s, version);
+	s = mcs(s, AES_ASCII_VERSION);
 	*s++ = 0x7c;
 
 
@@ -50,7 +49,6 @@ init_apgi_infotab(void)
 	*s++ = 0x7c;
 	s = mcs(s, ASCII_ARCH_TARGET);
 	*s++ = 0x7c;
-#endif
 
 	s = mcs(s, BDATETIME);
 	/*
@@ -58,6 +56,7 @@ init_apgi_infotab(void)
 	s = mcs(s, BTIME);
 	*/
 	*s++ = 0x7c;
+        s = mcs(s, "gcc ");
 	s = mcs(s, BCOMPILER);
 #if 0
 	s = mcs(s, BC_MAJ);

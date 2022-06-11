@@ -27,6 +27,7 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "xversion.h"
 
 #include "xaaes.h"
 
@@ -633,7 +634,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 			(obtree + ABOUT_VERSION)->ob_spec.free_string = (char *)aes_version_verbose;
 			/* Set version date */
 #if !XAAES_RELEASE
-			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
+			(obtree + ABOUT_DATE)->ob_spec.free_string = BDATETIME;
 #else
 			(obtree + ABOUT_DATE)->ob_flags |= OF_HIDETREE;
 			(obtree + ABOUT_DATE-1)->ob_flags |= OF_HIDETREE;

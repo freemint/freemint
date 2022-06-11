@@ -17,5 +17,5 @@ fi
 
 echo making for: $1
 
-D=`date -r $1 "+%b %e %Y %H:%M"`
+D=`LC_ALL=C date -r $1 "+%b %e %Y %H:%M:%S"`
 echo \#define BDATETIME \"$D\" >$TARGET
