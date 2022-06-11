@@ -2855,6 +2855,7 @@ struct xa_module_api
 	OBSPEC *	_cdecl (*object_get_spec)	(OBJECT *ob);
 	void 		_cdecl (*object_set_spec)	(OBJECT *ob, unsigned long cl);
 	POPINFO *	_cdecl (*object_get_popinfo)	(OBJECT *ob);
+	SWINFO *	_cdecl (*object_get_swinfo)	(OBJECT *ob);
 	TEDINFO *	_cdecl (*object_get_tedinfo)	(OBJECT *ob, XTEDINFO **x);
 	void		_cdecl (*object_spec_wh)	(OBJECT *ob, short *w, short *h);
 

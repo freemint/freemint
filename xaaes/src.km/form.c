@@ -420,6 +420,37 @@ Form_Button(XA_TREE *wt,
 	// 					no_exit = false;
 				}
 			}
+			else if (type == G_SWBUTTON)
+			{
+				SWINFO *sinf;
+				DIAGS(("Form_Button: g_swbutton"));
+
+				if (redraw /*&& !(fbflags & FBF_KEYBD) && !(flags & OF_TOUCHEXIT)*/)
+				{
+					obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
+					if (aesobj_sel(&obj))
+					{
+						sinf = object_get_swinfo(aesobj_ob(&obj));
+						if (!(fbflags & FBF_KEYBD)) /* mouse click/double-click */
+						{
+							if (dc || (md->state & MBS_RIGHT))
+								sinf->num--;
+							else
+								sinf->num++;
+						}
+						else /* keyboard */
+						{
+							sinf->num++;
+						}
+
+						if (sinf->num < 0)
+							sinf->num = sinf->maxnum;
+						if (sinf->num > sinf->maxnum)
+							sinf->num = 0;
+						obj_change(wt, v, obj, -1, state & ~OS_SELECTED & ~OS_WHITEBAK & 0x80ff, flags, redraw, clip, *rl, 0);
+					}
+				}
+			}
 			else if (flags & OF_RBUTTON)
 			{
 				DIAGS(("Form_Button: call obj_set_radio_button"));

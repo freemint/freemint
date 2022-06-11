@@ -503,4 +503,11 @@ typedef struct
 	short		obnum;
 } POPINFO;
 
+typedef struct
+{
+	char	*string;
+	short	num;
+	short	maxnum;
+} SWINFO;
+
 #endif /* _xa_aes_h */

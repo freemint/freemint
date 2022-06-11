@@ -5226,7 +5226,7 @@ setup_render_api(struct object_render_api *rapi)
 	objc_jump_table[G_TITLE   ] = d_g_title;
 	objc_jump_table[G_CICON   ] = d_g_cicon;
 
-/*	objc_jump_table[G_SWBUTTON] = d_g_swbutton; */
+	objc_jump_table[G_SWBUTTON] = d_g_button;
 	objc_jump_table[G_POPUP   ] = d_g_button;
 /*	objc_jump_table[G_WINTITLE] = d_g_wintitle; */
 /*	objc_jump_table[G_EDIT    ] = d_g_edit; */
@@ -5621,6 +5621,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 	short thick = obj_thickness(wt, ob), d3t, d, fl3d;
 	ushort selected = ob->ob_state & OS_SELECTED;
 	char *text = NULL;
+	char *textpatch = NULL;
 
 	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 
@@ -5629,6 +5630,27 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 		POPINFO *pi = (*api->object_get_popinfo)(ob);
 		if (pi->obnum > 0)
 			text = (*api->object_get_spec)(pi->tree + pi->obnum)->free_string + 2;
+	}
+	else if (ob->ob_type == G_SWBUTTON)
+	{
+		SWINFO *si = (*api->object_get_swinfo)(ob);
+		short pos = si->num;
+		text = si->string;
+		while (pos && *text)
+		{
+			if (*text == '|')
+			{
+				pos--;
+			}
+			text++;
+		}
+		textpatch = text;
+		while (*textpatch != '|' && *textpatch != '\0')
+			textpatch++;
+		if (*textpatch == '|')
+			*textpatch = '\0';
+		else
+			textpatch = NULL;
 	}
 	else
 		text = (*api->object_get_spec)(ob)->free_string;
@@ -5793,6 +5815,13 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 			ob_text(wt, v, NULL, ct, &gr, &r, NULL, -1, -1, -1, -1, 0,0,0, text, ob->ob_state, 0, und, G_BLACK);
 		}
 	}
+
+	if (textpatch)
+	{
+		*textpatch = '|';
+		textpatch = NULL;
+	}
+
 	done(OS_SELECTED);
 }
 

@@ -91,6 +91,12 @@ object_get_popinfo(OBJECT *ob)
 	return	(POPINFO *)object_get_spec(ob)->index;
 }
 
+static inline SWINFO *
+object_get_swinfo(OBJECT *ob)
+{
+	return	(SWINFO *)object_get_spec(ob)->index;
+}
+
 static inline char *
 object_get_freestr(OBJECT *ob)
 {

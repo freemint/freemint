@@ -1022,6 +1022,7 @@ short flags)
 			break;
 			case G_CICON:
 			case G_BUTTON:
+			case G_SWBUTTON:
 			//case G_FBOXTEXT:
 			case G_BOXTEXT:
 			case G_STRING:

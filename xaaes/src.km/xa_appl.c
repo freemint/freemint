@@ -1428,9 +1428,7 @@ short info_tab[][4] =
 		1,		/* objc_sysvar */
 		0,		/* GDOS fonts */
 		0		/* Extended objects */
-#if 0
 	|	AGI_G_SWBUTTON
-#endif
 	|	AGI_G_POPUP
 	|	AGI_OS_WHITEBAK
 	|	AGI_G_SHORTCUT

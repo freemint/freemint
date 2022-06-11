@@ -99,6 +99,11 @@ api_object_get_popinfo(OBJECT *ob)
 {
 	return object_get_popinfo(ob);
 }
+static SWINFO * _cdecl
+api_object_get_swinfo(OBJECT *ob)
+{
+	return object_get_swinfo(ob);
+}
 static TEDINFO * _cdecl
 api_object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 {
@@ -378,6 +383,7 @@ setup_xa_module_api(void)
 	xam_api.object_get_spec	= api_object_get_spec;
 	xam_api.object_set_spec = api_object_set_spec;
 	xam_api.object_get_popinfo = api_object_get_popinfo;
+	xam_api.object_get_swinfo  = api_object_get_swinfo;
 	xam_api.object_get_tedinfo = api_object_get_tedinfo;
 	xam_api.object_spec_wh	= api_object_spec_wh;
 
