@@ -266,6 +266,7 @@ inquire_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *
 		{
 			mn->wt = at->wt;
 			mn->menu.mn_tree = at->wt->tree;
+			mn->menu.mn_menu = at->menu;
 			mn->menu.mn_item = at->item;
 			mn->menu.mn_scroll = 0;
 			mn->menu.mn_keystate = 0;
@@ -323,7 +324,8 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			attach_to->ob_flags |= OF_SUBMENU;
 			new->to = wt;
 			new->to_item = item;
-			new->item = mn->menu.mn_menu;	 /* This is the submenu */
+			new->menu = mn->menu.mn_menu;	 /* This is the submenu */
+			new->item = mn->menu.mn_item;	 /* This is the start item inside the submenu */
 			new->wt = mn->wt;
 			new->on_open = on_open;
 			new->data = data;
@@ -360,7 +362,7 @@ detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item)
 		char *text;
 
 		DIAG((D_menu, NULL, "detach_menu %lx + %d for %s %lx + %d",
-			(unsigned long)xt->wt->tree, xt->item, client->name, (unsigned long)wt->tree, item));
+			(unsigned long)xt->wt->tree, xt->menu, client->name, (unsigned long)wt->tree, item));
 
 		attach_to->ob_flags &= ~OF_SUBMENU;
 		xt->to = NULL;
@@ -1372,7 +1374,7 @@ do_timeout_popup(Tab *tab)
 	if (at->on_open)
 		(*at->on_open)(at);
 
-	do_popup(new, new_wt, at->item, asel, click, rdx, rdy);
+	do_popup(new, new_wt, at->menu, asel, click, rdx, rdy);
 }
 static void
 do_collapse(Tab *tab)

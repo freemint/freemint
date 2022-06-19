@@ -235,6 +235,7 @@ typedef struct menu_attachments
 	void *data;
 
 	struct widget_tree *wt;
+	short menu;
 	short item;
 	struct widget_tree *to;
 	short to_item;
