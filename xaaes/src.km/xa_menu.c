@@ -592,7 +592,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 			old_y = ob->ob_y;
 
 			ob->ob_x = ob->ob_y = wt->dx = wt->dy = 0;
-			obj_offset(wt, aesobj(wt->tree, mn->menu.mn_menu), &x, &y);
+			obj_offset(wt, aesobj(&wt->tree[mn->menu.mn_menu], mn->menu.mn_item), &x, &y);
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;
@@ -845,14 +845,41 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 /*
  * Align a submenu.
  */
+#define MIS_GETALIGN    0
+#define MIS_SETALIGN    1
 unsigned long
 XA_menu_istart(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(1,1,1)
+	CONTROL(3,1,1)
 
 	DIAG((D_menu,client,"menu_istart"));
 
 	pb->intout[0] = 0;
+
+	XA_TREE *wt = obtree_to_wt(client, (OBJECT *)pb->addrin[0]);
+	assert(wt);
+
+	XA_MENU_ATTACHMENT *a = client->attach;
+	while (a)
+	{
+		if ((a->wt == wt) && (pb->intin[1] == a->menu))
+			break;
+
+		a = client->attach->next;
+	}
+
+	if (a)
+	{        
+		if (pb->intin[0] == MIS_GETALIGN)
+		{
+			pb->intout[0] = a->item;
+		}
+		else if (pb->intin[0] == MIS_SETALIGN)
+		{
+			pb->intout[0] = a->item = pb->intin[2];
+		}
+	}
+
  	return XAC_DONE;
 }
 

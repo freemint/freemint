@@ -1792,7 +1792,7 @@ onopen_advanced(XA_MENU_ATTACHMENT *at)
 
 	if (wind)
 	{
-		OBJECT *t = at->wt->tree + at->item;
+		OBJECT *t = at->wt->tree + at->menu;
 
 		setchecked(t + ADVWC_FLOAT,	(wind->window_status & XAWS_FLOAT));
 		setchecked(t + ADVWC_SINK,	(wind->window_status & XAWS_SINK));
@@ -1808,7 +1808,7 @@ onopen_close(XA_MENU_ATTACHMENT *at)
 
 	if (wind)
 	{
-		OBJECT *t = at->wt->tree + at->item;
+		OBJECT *t = at->wt->tree + at->menu;
 		setchecked(t + WCACT_THIS,	false);
 		setchecked(t + WCACT_ALL,	false);
 		setchecked(t + WCACT_OTHERS,	false);
@@ -1826,7 +1826,7 @@ onopen_hide(XA_MENU_ATTACHMENT *at)
 
 	if (wind)
 	{
-		OBJECT *t = at->wt->tree + at->item;
+		OBJECT *t = at->wt->tree + at->menu;
 		setchecked(t + WCHIDE_THIS, false);
 		setchecked(t + WCHIDE_APP, false);
 		setchecked(t + WCHIDE_OTHER, false);
@@ -1842,7 +1842,7 @@ onopen_iconify(XA_MENU_ATTACHMENT *at)
 
 	if (wind)
 	{
-		OBJECT *t = at->wt->tree + at->item;
+		OBJECT *t = at->wt->tree + at->menu;
 		setchecked(t + WCACT_THIS, false);
 		setchecked(t + WCACT_ALL,  false);
 		setchecked(t + WCACT_OTHERS, false);
@@ -1860,7 +1860,7 @@ onopen_shade(XA_MENU_ATTACHMENT *at)
 
 	if (wind)
 	{
-		OBJECT *t = at->wt->tree + at->item;
+		OBJECT *t = at->wt->tree + at->menu;
 		setchecked(t + WCACT_THIS, false);
 		setchecked(t + WCACT_ALL,  false);
 		setchecked(t + WCACT_OTHERS, false);
