@@ -11,6 +11,10 @@
 #include "usb_storage.h"
 
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
+extern block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
+
+extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
+extern void part_init(long dev_num, block_dev_desc_t *stor_dev);
 
 extern void usb_stor_eject (long);
 extern long usb_request_sense (ccb *srb, struct us_data *ss);
@@ -119,16 +123,25 @@ static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
 static unsigned short USBbus = 3; /* default */
 
-void SCSIDRV_MediaChange(int dev);
-
+void SCSIDRV_MediaChange(long dev);
+void SCSIDRV_PerformMediaChange(long dev);
 /*
  * USB functions
  */
 
 void
-SCSIDRV_MediaChange(int dev)
+SCSIDRV_MediaChange(long dev)
 {
 	private[dev].changed = TRUE;
+}
+
+void
+SCSIDRV_PerformMediaChange(long dev)
+{
+	usb_stor_eject(dev);
+	usb_dev_desc[dev].sw_ejected = 0;
+	if (usb_stor_get_info(usb_dev_desc[dev].priv, &mass_storage_dev[usb_dev_desc[dev].usb_phydrv].usb_stor, &usb_dev_desc[dev]) > 0)
+			part_init(dev, &usb_dev_desc[dev]);
 }
 
 /*
@@ -689,8 +702,12 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 		{
 			struct us_data *ss = &mass_storage_dev[Id->lo].usb_stor;
 
-			/* We only allow SCSI compliant USB devices and CD/DVD class */
-			if ((ss->subclass != US_SC_SCSI) && (ss->subclass != US_SC_8020)) {
+			/* We only handle certain protocols. */
+			if (ss->subclass != US_SC_UFI &&
+				ss->subclass != US_SC_SCSI &&
+				ss->subclass != US_SC_8020 &&
+				ss->subclass != US_SC_8070)
+			{
 				return -1;
 			}
 		} else {
@@ -712,12 +729,15 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 static long
 SCSIDRV_Close (short *handle)
 {
+	SCSIDRV_Data *priv = NULL;
 	long i;
 
 	debug ("CLOSE\r\n");
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (&private[i] == (SCSIDRV_Data *) handle) {
+			priv = (SCSIDRV_Data *) handle;
+			priv->changed = FALSE;
 			return 0;
 		}
 	}
@@ -732,22 +752,47 @@ SCSIDRV_Close (short *handle)
 static long
 SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 {
+	SCSIDRV_Data *priv = NULL;
 	long i;
+	long dev;
 
 	debug ("ERROR\r\n");
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
 		if (&private[i] == (SCSIDRV_Data *) handle) {
-			return 0;
+			priv = (SCSIDRV_Data *) handle;
+			break;
 		}
 	}
 
-	if (oldscsi.version)
+	dev = i;
+
+	if (priv)
 	{
-		return oldscsi.Error (handle, rwflag, ErrNo);
+		if (rwflag == cErrRead)
+		{
+			ushort status = priv->changed;
+			priv->changed = FALSE;
+			return status;
+		}
+		else if (rwflag == cErrWrite)
+		{
+			if (ErrNo == cErrMediach) {
+				priv->changed = TRUE;
+				SCSIDRV_PerformMediaChange(dev);
+			}
+		}
+		return 0;
+	}
+	else
+	{
+		if (oldscsi.version)
+		{
+			return oldscsi.Error (handle, rwflag, ErrNo);
+		}
 	}
 
-	return -1;
+	return SELECTERROR;
 }
 
 void install_scsidrv (void);
@@ -756,7 +801,7 @@ install_scsidrv (void)
 {
 	short i;
 
-	scsidrv.version = SCSIRevision;
+	scsidrv.version = 0x0101;
 	scsidrv.In = SCSIDRV_In;
 	scsidrv.Out = SCSIDRV_Out;
 	scsidrv.InquireSCSI = SCSIDRV_InquireSCSI;
