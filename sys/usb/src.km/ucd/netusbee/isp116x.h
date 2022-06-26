@@ -410,13 +410,7 @@ struct isp116x
 # define DELAY_300NS
 #endif /* (__mc68030__) || (__mc68040__) || (__mc68060__) */
 
-/* This is to create a small delay when reading the romport,
- * the compiler will generate a move instruction (move #1, _dumm)
- * that it's doing a better job than using nop instructions.
- */
-
 static unsigned short volatile dumm;
-#define NOP	dumm = 1;
 
 /* ISP116x registers access */
 
@@ -444,28 +438,33 @@ static inline unsigned read_le16_reg(const volatile unsigned short *addr)
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((reg & 0x00ff)<<1)));
+	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)ISP116x_MSB_CMD_WRITE);
+	DELAY_300NS;
 }
 
 static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short val)
 {
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + (((val & 0xff00)>>8)<<1)));
+	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + ((val & 0x00ff)<<1)));
+	DELAY_150NS;
 }
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((val & 0x00ff)<<1)));
+	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0xff00)>>8)<<1)));
+	DELAY_150NS;
 }
 
 static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	NOP;
-
 	val = readw(ISP116X_DATA_READ);
+	DELAY_150NS;
 
 	return val;
 }
@@ -474,9 +473,8 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 {
 	unsigned short val;
 
-	NOP;
-
 	val = raw_readw(ISP116X_DATA_READ);
+	DELAY_150NS;
 
 	return val;
 }
@@ -484,21 +482,23 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((val & 0x000000ff)<<1)));
+	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0x0000ff00)>>8)<<1)));
-
+	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + (((val & 0x00ff0000)>>16)<<1)));
+	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0xff000000)>>24)<<1)));
+	DELAY_150NS;
 }
 
 static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
 {
 	unsigned long val;
 
-	NOP;
 	val = (unsigned long) raw_readw(ISP116X_DATA_READ);
-
-	NOP;
+	DELAY_150NS;
 	val |= ((unsigned long) raw_readw(ISP116X_DATA_READ)) << 16;
+	DELAY_150NS;
 
 	return val;
 }
