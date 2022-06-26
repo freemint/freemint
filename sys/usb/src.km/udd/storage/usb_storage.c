@@ -152,6 +152,8 @@ extern short num_multilun_dev;
 extern short MagiC;
 #endif
 
+extern int enable_flop_mediach; /* in storage_int.S */
+
 /*
  * CBI style
  */
@@ -285,7 +287,7 @@ block_dev_desc_t *	usb_stor_get_dev	(long);
 static long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CBI_get_status	(ccb *, struct us_data *);
-static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char);
+static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char, bool out);
 static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
@@ -1130,12 +1132,19 @@ usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 
 /* clear a stall on an endpoint - special for BBB devices */
 static long
-usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt)
+usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt, bool out)
 {
 	long result;
 	/* ENDPOINT_HALT = 0, so set value to 0 */
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 	 			USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0, endpt, 0, 0, USB_CNTL_TIMEOUT * 5);
+
+	/* 
+	 * USB standard: "For endpoints using data toggle, regardless of whether an endpoint has the
+	 * Halt feature set, a ClearFeature(ENDPOINT_HALT) request always results in the data toggle
+	 * being reinitialized to DATA0
+	 */
+	usb_settoggle(us->pusb_dev, endpt, out?1:0, 0);
 	return result;
 }
 
@@ -1187,7 +1196,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	{
 		DEBUG(("DATA:stall"));
 		/* clear the STALL on the endpoint */
-		result = usb_stor_BBB_clear_endpt_stall(us, srb->direction == USB_CMD_DIRECTION_IN ? us->ep_in : us->ep_out);
+		result = usb_stor_BBB_clear_endpt_stall(us, srb->direction == USB_CMD_DIRECTION_IN ? us->ep_in : us->ep_out, srb->direction == USB_CMD_DIRECTION_OUT);
 		if(result >= 0)
 			/* continue on to STATUS phase */
 			goto st;
@@ -1228,7 +1237,7 @@ again:
 	{
 		DEBUG(("STATUS:stall"));
 		/* clear the STALL on the endpoint */
-		result = usb_stor_BBB_clear_endpt_stall(us, us->ep_in);
+		result = usb_stor_BBB_clear_endpt_stall(us, us->ep_in, FALSE);
 		if(result >= 0 && (retry++ < 1))
 			/* do a retry */
 			goto again;
@@ -1491,6 +1500,24 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	return 0;
 }
 
+static long
+usb_start_stop_unit(ccb *srb, struct us_data *ss, unsigned char start)
+{
+	DEBUG(("usb_start_stop_unit()"));
+	memset(&srb->cmd[0], 0, 12);
+	srb->cmd[0] = SCSI_START_STP;
+	srb->cmd[4] = start;
+	srb->datalen = 0;
+	srb->cmdlen = 12;
+	srb->direction = USB_CMD_DIRECTION_OUT;
+	srb->timeout = USB_CNTL_TIMEOUT * 5;
+	if (ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
 long
 usb_test_unit_ready(ccb *srb, struct us_data *ss)
 {
@@ -1509,9 +1536,15 @@ usb_test_unit_ready(ccb *srb, struct us_data *ss)
 			return 0;
 		}
 		usb_request_sense(srb, ss);
+		/* Not Ready - medium not present */
 		if ((srb->sense_buf[2] == 0x02) &&
 			(srb->sense_buf[12] == 0x3a))
 				return -1;
+		/* Not Ready - need initialise command (start unit) */
+		if ((srb->sense_buf[2] == 0x02) &&
+			(srb->sense_buf[12] == 0x04) &&
+			(srb->sense_buf[13] == 0x02))
+				usb_start_stop_unit(srb, ss, 1);
 		mdelay(100);
 	}
 	while(retries--);
@@ -2294,7 +2327,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	/* Poll multi-LUN device and floppy drive */
 	if ((mass_storage_dev[i].total_lun > 0 ||
-		 mass_storage_dev[i].usb_stor.subclass == US_SC_UFI) && device_handled)
+		 (enable_flop_mediach && mass_storage_dev[i].usb_stor.subclass == US_SC_UFI)) && device_handled)
 		init_polling();
 
 	usb_disable_asynch(0); /* asynch transfer allowed */

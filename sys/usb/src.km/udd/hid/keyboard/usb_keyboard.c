@@ -41,6 +41,8 @@
 		"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 #endif
 
+#define COOKIE_KINJ (0x4B494E4A)
+
 /****************************************************************************/
 /*
  * BEGIN kernel interface
@@ -66,7 +68,6 @@ extern void (*old_ikbd_int) (void);
 extern void interrupt_ikbd (void);
 #endif
 
-long *vector;
 void *iokbd;
 char *p_kbshift;
 void _cdecl send_data (long func, long iorec, long data);
@@ -78,6 +79,8 @@ void kbd_int (void);
 static void set_led (long);
 static long get_capslock_state(void);
 static long p_kbshift_init(void);
+
+long kbd_entry = 0;
 
 /*
  * END kernel interface
@@ -174,7 +177,7 @@ usb_kbd_irq (struct usb_device *dev)
 	return 0;
 }
 
-#define SEND_SCAN(x) send_data(vector[-1], (long)iokbd, (x)) /* assumes TOS >= 2 */
+#define SEND_SCAN(x) send_data(kbd_entry, (long)iokbd, (x)) /* assumes TOS >= 2 */
 
 static void
 handle_modifiers(unsigned char val, unsigned char offset)
@@ -462,7 +465,6 @@ kbd_int (void)
 	}
 
 	fake_hwint();
-
 	kbd_data.olddata = kbd_data.newdata;
 }
 
@@ -635,7 +637,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 #endif
 {
 	long ret;
-	unsigned short gemdos;
+	unsigned short tosversion;
 
 #ifndef TOSONLY
 	kentry = k;
@@ -653,16 +655,21 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	 * This driver uses the extended KBDVECS structure, if available.
 	 * Since it's undocumented (though present in TOS2/3/4), there is no
 	 * Atari-specified method to determine if it is available.  We use
-	 * the GEMDOS version reported by Sversion() to discriminate:
-	 *  . TOS 1 (which does not have it) reports versions < 0x0019
-	 *  . TOS 2/3/4, MagiC, and EmuTOS (which all have it) report versions >= 0x0019
+	 * the version in the OSHEADER structure to discriminate.
+	 * Note that EmuTOS will always support the extended KBDVECS structure.
 	 */
-	gemdos = s_version();
-	gemdos = (gemdos>>8) | (gemdos<<8); /* major|minor */
-	if (gemdos < 0x0019)
+	tosversion = get_tos_version();
+	if (tosversion < 0x0200)
 	{
-		c_conws ("This driver does not support TOS 1.x\r\n");
-		return -1;
+		if (!getcookie(COOKIE_KINJ, &kbd_entry)) {
+			c_conws ("With TOS 1.x KBDINJ.PRG is required!\r\n");
+			return -1;
+		}
+	}
+	else
+	{
+		long* vector = (long *) b_kbdvbase ();
+		kbd_entry = vector[-1];
 	}
 
 #ifdef TOSONLY
@@ -686,8 +693,8 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
-	vector = (long *) b_kbdvbase ();
 	iokbd = (void *) b_uiorec (1);
+
 	b_supexec(p_kbshift_init, 0L, 0L, 0L, 0L, 0L);
 #ifdef TOSONLY
 #if 0

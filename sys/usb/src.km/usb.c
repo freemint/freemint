@@ -474,7 +474,7 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 	long result, err;
 	unsigned long tmp;
 	struct usb_config_descriptor config;
-	static unsigned char buffer[65536];
+	static unsigned char buffer[USB_CONFIG_BUFFER_SIZE];
 
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, &config, USB_DT_CONFIG_SIZE);
 	if (result < 9) {
@@ -491,6 +491,10 @@ long usb_get_configuration_no(struct usb_device *dev, long cfgno)
 	 * tmp cannot be longer than 65536 bytes as it's length is 2 bytes.
 	 */
 	tmp = le2cpu16(config.wTotalLength);
+	if (tmp > USB_CONFIG_BUFFER_SIZE) {
+		DEBUG(("usb_new_device: Configuration descriptor larger than buffer size\n"));
+		return -1;
+	}
 
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, tmp);
 	DEBUG(("get_conf_no %ld Result %ld, wLength %ld",

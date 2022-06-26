@@ -794,6 +794,7 @@ again:
 		struct usb_hub_device *hub = usb_get_hub_index (i);
 		if (hub)
 		{
+			mdelay(500);
 			if (usb_hub_events (hub) == 1)
 			{
 				for (j = k; j < USB_MAX_DEVICE; j++)

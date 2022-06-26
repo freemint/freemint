@@ -55,6 +55,10 @@ sys/usb/src.km/ucd/ehci/pci_bios.c
 sys/usb/src.km/ucd/ehci/pci_xbios.S
 sys/usb/src.km/ucd/ehci/setstack.S
 sys/usb/src.km/ucd/ehci/tosdelay.c
+sys/usb/src.km/ucd/vttusb/crtinit.c
+sys/usb/src.km/ucd/vttusb/delayasm.S
+sys/usb/src.km/ucd/vttusb/entry.S
+sys/usb/src.km/ucd/vttusb/setstack.S
 sys/usb/src.km/udd/eth/crtinit.c
 sys/usb/src.km/udd/eth/entry.S
 sys/usb/src.km/udd/eth/setstack.S

@@ -212,3 +212,19 @@ my_hdv_mediach:
     addq.l  #8,sp
     move.l  (sp)+,a0                //restore a0
     rts
+
+    .data
+// Config block for SETTER.TTP/.PRG
+    .even
+    .global _enable_flop_mediach
+hkbg:
+    .asciz "hAruNs cONfigER"
+    .dc.l hkbg
+
+    .asciz "Media change detection for USB floppy drives"
+    .even
+    .dc.w 0x0000    // type = 0, boolean
+_enable_flop_mediach:
+    .dc.w 0x0000    // default value = FALSE
+
+    .dc.w 0    // end

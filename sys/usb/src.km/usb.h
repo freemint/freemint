@@ -33,7 +33,9 @@
 #define USB_ALTSETTINGALLOC		4
 #define USB_MAXALTSETTING		128	/* Hard limit */
 
+#if !defined(USB_MAX_DEVICE)
 #define USB_MAX_DEVICE			32
+#endif
 #define USB_MAXCONFIG			8
 #define USB_MAXINTERFACES		8
 #define USB_MAXENDPOINTS		16
@@ -42,6 +44,10 @@
 
 #define USB_CNTL_TIMEOUT 		100	/* 100ms timeout */
 #define USB_BUFSIZ			512
+
+#if !defined(USB_CONFIG_BUFFER_SIZE)
+#define USB_CONFIG_BUFFER_SIZE 65536
+#endif
 
 /*
  * This is the timeout to allow for submitting a message in ms.
