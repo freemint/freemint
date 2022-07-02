@@ -170,7 +170,6 @@ void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
 void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
 long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 
-long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 long	_cdecl _mint_strncmp	(const char *str1, const char *str2, long len);
 char *	_cdecl _mint_strcpy	(char *dst, const char *src);
 char *	_cdecl _mint_strncpy	(char *dst, const char *src, long len);
