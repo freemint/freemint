@@ -148,38 +148,6 @@ int isHddriverModule(void); /* in entry.S */
 #define c_conws (void)Cconws
 
 #define _USB 0x5f555342L
-#define CJAR ((struct cookie **) 0x5a0)
-
-static inline struct usb_module_api *
-get_usb_cookie (void)
-{
-	struct usb_module_api *api;
-	long ret;
-	struct cookie *cjar;
-
-	ret = ENSURE_SUPER;
-
-	api = NULL;
-	cjar = *CJAR;
-
-	while (cjar->tag)
-	{
-		if (cjar->tag == _USB)
-		{
-			api = (struct usb_module_api *)cjar->value;
-	
-			RESTORE_SUPER(ret);
-
-			return api;
-		}
-
-		cjar++;
-	}
-
-	RESTORE_SUPER(ret);
-
-	return NULL;
-}
 
 #endif
 
@@ -2287,8 +2255,8 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	DEBUG (("%s: enter init", __FILE__));
 
 #ifdef TOSONLY
-	api = get_usb_cookie();
-	if (!api) {
+	if (!getcookie(_USB, (long *)&api))
+	{
 		(void)Cconws("Lightning VME/ST failed to get _USB cookie\r\n");
 		return -1;
 	}
