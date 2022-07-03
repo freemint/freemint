@@ -87,6 +87,7 @@ copy_usb "$USBDIR" "$CPU_TARGET"
 if [ "$CPU_TARGET" != "col" ]
 then
 	copy_atari_usb_modules "$USBDIR" "$CPU_TARGET"
+	copy_blitz_usb_modules "$USBDIR" "$CPU_TARGET"
 	if [ "$CPU_TARGET" = "02060" ]
 	then
 		# EtherNAT

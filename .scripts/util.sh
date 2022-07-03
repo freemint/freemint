@@ -355,6 +355,20 @@ copy_atari_usb_modules() {
 	cp "$SRC/sys/usb/src.km/ucd/unicorn/.compile_$TARGET/unicorn.ucd" "$USBDIR"
 }
 
+copy_blitz_usb_modules() {
+	local USBDIR="$1"
+	local TARGET="$2"
+	mkdir -p "$USBDIR"
+	if [ "$TARGET" = "000" ]
+	then
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_$TARGET/blitz.ucd" "$USBDIR"
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_mst/blitz_st.ucd" "$USBDIR"
+	elif [ "$TARGET" = "02060" ] || [ "$TARGET" = "030" ]
+	then
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_030/blitz030.ucd" "$USBDIR"
+	fi
+}
+
 copy_ehci_usb_modules() {
 	local USBDIR="$1"
 	local TARGET="$2"
@@ -378,11 +392,15 @@ copy_usb4tos() {
 	local USB4TOSDIR="$1"
 	mkdir -p "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/.compile_prg/usb.prg" "$USB4TOSDIR"
+	cp "$SRC/sys/usb/src.km/.compile_plm/usb_lmem.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/ucd/aranym/.compile_prg/aranym.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/ucd/unicorn/.compile_prg/unicorn.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/ucd/netusbee/.compile_prg/netusbee.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/ucd/netusbee/.compile_prg_000/netusbee.prg" "$USB4TOSDIR/netus000.prg"
 	cp "$SRC/sys/usb/src.km/ucd/ethernat/.compile_prg/ethernat.prg" "$USB4TOSDIR"
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_prg/blitz.prg" "$USB4TOSDIR"
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_p30/blitz030.prg" "$USB4TOSDIR"
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_pst/blitz_st.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/eth/.compile_prg/eth.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/hid/keyboard/.compile_prg/keyboard.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/hid/mouse/.compile_prg/mouse.prg" "$USB4TOSDIR"
