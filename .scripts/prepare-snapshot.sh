@@ -23,11 +23,12 @@ FONTSDIR="$MINTDIR/fonts"
 # TODO: mintloader doesn't detect Hatari (but it could via trap #1 handler pointing to the cartridge area)
 if [ -n "${VERSIONED+x}" ]
 then
-	copy_auto "$AUTODIR" "$CPU_TARGET" "$CUR"
+	copy_auto "$AUTODIR" "$CPU_TARGET" "-$CUR"
 	copy_kernel "$MINTDIR" "$KERNEL_TARGETS"
 	copy_kernel_docs "$MINTDIR" "yes"
 else
-	copy_kernel "$AUTODIR" "$KERNEL_TARGETS"
+	copy_auto "$AUTODIR" "$CPU_TARGET" "load"
+	copy_kernel "$MINTDIR" "$KERNEL_TARGETS"
 	copy_kernel_docs "$MINTDIR" "no"
 fi
 copy_modules "$MINTDIR" "$CPU_TARGET"

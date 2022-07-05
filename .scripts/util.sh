@@ -5,7 +5,7 @@ copy_auto() {
 	local TARGET="$2"
 	local CUR="$3"
 	mkdir -p "$AUTODIR"
-	cp "$SRC/tools/mintload/.compile_$TARGET/mintload.prg" "$AUTODIR/mint-$CUR.prg"
+	cp "$SRC/tools/mintload/.compile_$TARGET/mintload.prg" "$AUTODIR/mint$CUR.prg"
 }
 
 copy_kernel() {
