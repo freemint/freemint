@@ -547,8 +547,8 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 int
 k_init(unsigned short dev, unsigned short mc)
 {
-	short work_in[16];
-	short work_out[58];
+	static short work_in[16];
+	static short work_out[58];
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
 	struct xa_client *client;
