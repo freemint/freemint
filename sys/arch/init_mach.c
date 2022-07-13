@@ -39,7 +39,7 @@
 # include "arch/info_mach.h"
 # include "arch/mprot.h"
 # include "arch/tosbind.h"
-# include "arch/aranym.h"
+# include "arch/native_features.h"
 
 # include "cookie.h"
 # include "global.h"
@@ -58,7 +58,7 @@ enum special_hw
 	hades,
 	ct2,
 	ct60
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef ARANYM
 	,
 	aranym
 # endif
@@ -171,7 +171,7 @@ _getmch (void)
 					break;
 				}
 
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# if defined(ARANYM) && defined(WITH_NATIVE_FEATURES)
 				case COOKIE_NF:
 				{
 					kernelinfo.nf_ops = nf_init();
@@ -364,7 +364,7 @@ identify (long mch, enum special_hw info)
 		case ct60:
 			machine = machine_ct60;
 			break;
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef ARANYM
 		case aranym:
 			machine = machine_aranym;
 			break;

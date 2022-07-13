@@ -33,13 +33,13 @@
  * Aranym hardware support (experimental)
  */
 
-# ifndef _m68k_aranym_h
-# define _m68k_aranym_h
+# ifndef _native_features_h
+# define _native_features_h
 
 # include "mint/mint.h"
 # include "mint/arch/nf_ops.h"
 
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef WITH_NATIVE_FEATURES
 
 struct nf_ops *nf_init(void);
 
@@ -49,4 +49,4 @@ void nf_shutdown(void);
 
 # endif
 
-# endif /* _m68k_aranym_h */
+# endif /* _native_features_h */

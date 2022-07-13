@@ -4,7 +4,6 @@
 STARTUP = startup.o
 
 COBJS = \
-	aranym.c \
 	check_exc.c \
 	halt.c \
 	info_mach.c \
@@ -14,6 +13,7 @@ COBJS = \
 	mprot000.c \
 	mprot030.c \
 	mprot040.c \
+	native_features.c \
 	process_reg.c \
 	psc0.c \
 	sig_mach.c \
@@ -21,7 +21,6 @@ COBJS = \
 
 SOBJS = \
 	acia.S \
-	aranym_asm.S \
 	context.S \
 	cpu.S \
 	detect.S \
@@ -29,6 +28,7 @@ SOBJS = \
 	kernel.S \
 	mmu030.S \
 	mmu040.S \
+	native_features_asm.S \
 	pcibios.S \
 	pcibios_emu.S \
 	scsidrv_emu.S \

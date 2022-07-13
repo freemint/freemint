@@ -34,7 +34,6 @@
 # include "arch/syscall.h"	/* call_aes */
 # include "arch/timer.h"	/* delay_seconds() */
 # include "arch/tosbind.h"
-# include "arch/aranym.h"
 
 # include "bios.h"		/* */
 # include "block_IO.h"		/* init_block_IO */
@@ -617,7 +616,7 @@ init (void)
 			case machine_firebee:
 				mch_str = "firebee";
 				break;
-#if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+#ifdef ARANYM
 			/* only when really running on aranym */
 			case machine_aranym:
 				if (strcmp(machine_str(), "ARAnyM") == 0)

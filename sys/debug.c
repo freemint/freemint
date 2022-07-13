@@ -18,7 +18,7 @@
 
 # include "libkern/libkern.h"
 
-# include "arch/aranym.h"
+# include "arch/native_features.h"
 # include "arch/halt.h"
 # include "arch/mprot.h"
 # include "arch/syscall.h"
@@ -198,7 +198,7 @@ debug_ws(const char *s)
 	int scan;
 	int stopped;
 	
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef WITH_NATIVE_FEATURES
 	if (nf_debug(s))
 		return;
 # endif

@@ -22,8 +22,8 @@
 # include "filesys.h"
 # include "tty.h"
 # include "proc.h"
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
-# include "arch/aranym.h"
+# ifdef WITH_NATIVE_FEATURES
+# include "arch/native_features.h"
 # endif
 
 /*
@@ -188,7 +188,7 @@ sys_c_conws (const char *str)
 	while (*p++)
 		cnt++;
 
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef WITH_NATIVE_FEATURES
 	if( write_boot_file == 2 )
 		nf_debug(str);
 # endif

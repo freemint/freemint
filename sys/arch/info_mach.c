@@ -31,7 +31,7 @@
  */
 
 # include "info_mach.h"
-# include "arch/aranym.h"
+# include "arch/native_features.h"
 # include "global.h"
 # include "mint/ktypes.h"
 
@@ -79,7 +79,7 @@ char *machine_str (void)
 		case machine_ct60:
 			str = "Atari Falcon/CT60";
 			break;
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# if defined(ARANYM) && defined(WITH_NATIVE_FEATURES)
 		case machine_aranym:
 			str = nf_name();
 			break;

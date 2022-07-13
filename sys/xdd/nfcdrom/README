@@ -3,8 +3,8 @@ NFCDROM.XDD
 
 It should serve as an example of how to use native features in FreeMiNT
 device drivers and other modules. It requires the kernel to be build
-with -DARANYM (common aranym aware FreeMiNT kernel builds) to actually
-work.
+with -DWITH_NATIVE_FEATURES (common aranym aware FreeMiNT kernel builds)
+to actually work.
 
 This implements a device /dev/nfcdrom to MiNT through which you can send
 information to the ARAnyM cdrom driver.
