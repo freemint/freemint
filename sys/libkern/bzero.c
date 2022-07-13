@@ -51,33 +51,6 @@
 void
 _mint_bzero (void *dst, unsigned long size)
 {
-# ifdef C_ONLY
-char *place=(char *) dst;
-unsigned long ladd=(unsigned long)dst;
-long *lplace;
-int cruft;
-	cruft = ladd%4;
-	size-=cruft;
-	while (cruft)
-	{
-		*place++ = '\0';
-		cruft--;
-	}
-	cruft = size % 4;
-	size-=cruft;
-	lplace=(long *) place;
-	while(size)
-	{
-		size --;
-		*lplace++ = 0L;
-	}
-	place = (char *)lplace;
-	while (cruft)
-	{
-		*place++ = '\0';
-		cruft--;
-	}
-#else
 	register char *place = dst;
 	register ulong cruft;
 	register ulong blocksize;
@@ -101,5 +74,4 @@ int cruft;
 		*place++ = '\0';
 		cruft--;
 	}
-#endif
 }
