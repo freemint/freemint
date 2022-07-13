@@ -6,7 +6,6 @@
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
-# -DC_ONLY		replace some assembly function by C compatible one
 # -DWITH_MMU_SUPPORT	include MMU support
 # -DPCI_BIOS		include PCI_BIOS interface emulation
 
@@ -99,7 +98,7 @@ endif
 ifeq ($(kernel),col)
 MINT = mintv4e.prg
 CPU  = v4e
-KERNELDEFS = -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
+KERNELDEFS = -DNO_FAKE_SUPER -DPCI_BIOS
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
@@ -112,7 +111,7 @@ endif
 ifeq ($(kernel),ara)
 MINT = mintara.prg
 CPU  = 040
-KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
+KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE
 MODULEDIRS = xfs/hostfs
 endif
 
