@@ -79,8 +79,8 @@ char *machine_str (void)
 		case machine_ct60:
 			str = "Atari Falcon/CT60";
 			break;
-# if defined(ARANYM) && defined(WITH_NATIVE_FEATURES)
-		case machine_aranym:
+# ifdef WITH_NATIVE_FEATURES
+		case machine_emulator:
 			str = nf_name();
 			break;
 # endif

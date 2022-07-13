@@ -616,9 +616,9 @@ init (void)
 			case machine_firebee:
 				mch_str = "firebee";
 				break;
-#ifdef ARANYM
-			/* only when really running on aranym */
-			case machine_aranym:
+#ifdef WITH_NATIVE_FEATURES
+			case machine_emulator:
+				/* only when really running on aranym */
 				if (strcmp(machine_str(), "ARAnyM") == 0)
 					mch_str = "aranym";
 				break;

@@ -58,9 +58,9 @@ enum special_hw
 	hades,
 	ct2,
 	ct60
-# ifdef ARANYM
+# ifdef WITH_NATIVE_FEATURES
 	,
-	aranym
+	emulator
 # endif
 };
 
@@ -171,18 +171,6 @@ _getmch (void)
 					break;
 				}
 
-# if defined(ARANYM) && defined(WITH_NATIVE_FEATURES)
-				case COOKIE_NF:
-				{
-					kernelinfo.nf_ops = nf_init();
-					kentry.vec_mch.nf_ops = nf_init();
-
-					if (kernelinfo.nf_ops)
-						add_info = aranym;
-					break;
-				}
-# endif
-
 #ifdef __mcoldfire__
 				case COOKIE__CPU:
 				{
@@ -202,6 +190,17 @@ _getmch (void)
 			jar++;
 		}
 	}
+	
+# ifdef WITH_NATIVE_FEATURES
+	/* unconditionally detect native features
+	 * (the emulator / underlying OS doesn't have to provide a __NF cookie)
+	 */
+	kernelinfo.nf_ops = nf_init();
+	kentry.vec_mch.nf_ops = nf_init();
+
+	if (kernelinfo.nf_ops)
+		add_info = emulator;
+# endif
 
 	/* own CPU test */
 	mcpu = detect_cpu();
@@ -364,9 +363,9 @@ identify (long mch, enum special_hw info)
 		case ct60:
 			machine = machine_ct60;
 			break;
-# ifdef ARANYM
-		case aranym:
-			machine = machine_aranym;
+# ifdef WITH_NATIVE_FEATURES
+		case emulator:
+			machine = machine_emulator;
 			break;
 # endif
 	}

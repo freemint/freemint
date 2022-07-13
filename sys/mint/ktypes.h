@@ -122,9 +122,9 @@ typedef enum
 	machine_ct2,
 	machine_ct60,
 	machine_firebee
-#ifdef ARANYM
+#ifdef WITH_NATIVE_FEATURES
 	,
-	machine_aranym
+	machine_emulator
 #endif
 } machine_type;
 

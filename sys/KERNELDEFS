@@ -2,12 +2,13 @@
 #
 # generic flags
 #
-# -DVERBOSE_BOOT	include extensive messages
-# -DCRYPTO_CODE		include the cryptographic filesystem stuff
-# -DSOFT_UNITABLE	loadable unicode tables
-# -DBUILTIN_SHELL	include the built-in minimal shell
-# -DWITH_MMU_SUPPORT	include MMU support
-# -DPCI_BIOS		include PCI_BIOS interface emulation
+# -DVERBOSE_BOOT	 include extensive messages
+# -DCRYPTO_CODE		 include the cryptographic filesystem stuff
+# -DSOFT_UNITABLE	 loadable unicode tables
+# -DBUILTIN_SHELL	 include the built-in minimal shell
+# -DWITH_MMU_SUPPORT	 include MMU support
+# -DPCI_BIOS		 include PCI_BIOS interface emulation
+# -DWITH_NATIVE_FEATURES include native features detection
 
 #
 # machine flags
@@ -17,7 +18,6 @@
 # -DM68040		build for 68040-060
 # -DM68060		build for 68060
 # -DMILAN		build Milan kernel
-# -DARANYM		build Aranym kernel
 
 #
 # debug flags
@@ -111,7 +111,7 @@ endif
 ifeq ($(kernel),ara)
 MINT = mintara.prg
 CPU  = 040
-KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DWITH_NATIVE_FEATURES
+KERNELDEFS = -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DWITH_NATIVE_FEATURES
 MODULEDIRS = xfs/hostfs
 endif
 
