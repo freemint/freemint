@@ -5,7 +5,10 @@ then
 	KERNEL_TARGETS="000 hat"
 elif [ "$CPU_TARGET" = "02060" ]
 then
-	KERNEL_TARGETS="020 030 040 060 mil ara"
+	KERNEL_TARGETS="020 030 040 060 mil ara hat030"
+elif [ "$CPU_TARGET" = "030" ]
+then
+	KERNEL_TARGETS="030 hat030"
 elif [ "$CPU_TARGET" = "040" ]
 then
 	KERNEL_TARGETS="040 mil ara"

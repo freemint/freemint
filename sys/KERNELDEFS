@@ -2,12 +2,13 @@
 #
 # generic flags
 #
-# -DVERBOSE_BOOT	include extensive messages
-# -DCRYPTO_CODE		include the cryptographic filesystem stuff
-# -DSOFT_UNITABLE	loadable unicode tables
-# -DBUILTIN_SHELL	include the built-in minimal shell
-# -DWITH_MMU_SUPPORT	include MMU support
-# -DPCI_BIOS		include PCI_BIOS interface emulation
+# -DVERBOSE_BOOT	 include extensive messages
+# -DCRYPTO_CODE		 include the cryptographic filesystem stuff
+# -DSOFT_UNITABLE	 loadable unicode tables
+# -DBUILTIN_SHELL	 include the built-in minimal shell
+# -DWITH_MMU_SUPPORT	 include MMU support
+# -DPCI_BIOS		 include PCI_BIOS interface emulation
+# -DWITH_NATIVE_FEATURES include native features detection
 
 #
 # machine flags
@@ -17,7 +18,6 @@
 # -DM68040		build for 68040-060
 # -DM68060		build for 68060
 # -DMILAN		build Milan kernel
-# -DARANYM		build Aranym kernel
 
 #
 # debug flags
@@ -67,7 +67,7 @@ endif
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DM68030 -DWITH_NATIVE_FEATURES
+KERNELDEFS = -DM68030
 endif
 
 ifeq ($(kernel),040)
@@ -111,15 +111,21 @@ endif
 ifeq ($(kernel),ara)
 MINT = mintara.prg
 CPU  = 040
-KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE
+KERNELDEFS = -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DWITH_NATIVE_FEATURES
 MODULEDIRS = xfs/hostfs
 endif
 
 ifeq ($(kernel),hat)
-MINT = minthat.prg
+MINT = mint000h.prg
 CPU  = 000
-KERNELDEFS = -DM68000 -DOLDTOSFS -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM
+KERNELDEFS = -DM68000 -DOLDTOSFS -DNO_RAMFS -DNO_FAKE_SUPER -DNO_DEV_RANDOM -DWITH_NATIVE_FEATURES
 kernel_nocflags = -DWITH_MMU_SUPPORT
+endif
+
+ifeq ($(kernel),hat030)
+MINT = mint030h.prg
+CPU  = 030
+KERNELDEFS = -DM68030 -DOLDTOSFS -DWITH_NATIVE_FEATURES
 endif
 
 # Example for a custom build:
@@ -138,5 +144,5 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 020 030 040 060 deb mil ara hat col
+kerneltargets = 000 020 030 040 060 deb mil ara hat hat030 col
 cputargets = 000 020 030 040 060 020-60 v4e

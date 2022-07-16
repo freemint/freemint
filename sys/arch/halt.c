@@ -45,7 +45,7 @@
 # include "proc.h"
 # include "filesys.h"
 
-# include "aranym.h"
+# include "native_features.h"
 
 # ifdef __mcoldfire__
 
@@ -79,7 +79,7 @@ firebee_pic_write_byte(uchar b)
 void
 hw_poweroff(void)
 {
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef WITH_NATIVE_FEATURES
 	nf_shutdown();
 # else
 	/* CT60 poweroff */

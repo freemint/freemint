@@ -22,15 +22,15 @@ all-here:
 # default definitions
 
 # kernel targets (repeated here from sys/KERNELDEFS)
-kerneltargets = 000 020 030 040 060 deb mil ara hat
+kerneltargets = 000 020 030 040 060 deb mil ara hat hat030
 ifeq ($(COLDFIRE),yes)
 kerneltargets += col
 endif
 
-000 020 030 040 060 deb mil col ara hat sockets xdd xfs usb all-kernels::
+000 020 030 040 060 deb mil col ara hat hat030 sockets xdd xfs usb all-kernels::
 	$(MAKE) -C sys $@
 
-000 020 030 040 060 deb mil col ara hat all-kernels::
+000 020 030 040 060 deb mil col ara hat hat030 all-kernels::
 	$(MAKE) -C xaaes $@
 
 all-recursive::

@@ -29,10 +29,10 @@
  * 
  */
 
-# include "aranym.h"
+# include "native_features.h"
 
 
-# if defined(ARANYM) || defined(WITH_NATIVE_FEATURES)
+# ifdef WITH_NATIVE_FEATURES
 
 /* assembler routine */
 int detect_native_features(void);
