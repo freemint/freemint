@@ -92,7 +92,7 @@ endif
 ifeq ($(kernel),deb)
 MINT = mintdeb.prg
 CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DWITH_NATIVE_FEATURES
 endif
 
 ifeq ($(kernel),col)
