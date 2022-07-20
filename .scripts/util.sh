@@ -401,7 +401,7 @@ copy_usb4tos() {
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_prg/blitz.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_p30/blitz030.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_pst/blitz_st.prg" "$USB4TOSDIR"
-	cp "$SRC/sys/usb/src.km/udd/eth/.compile_prg/eth.prg" "$USB4TOSDIR"
+	#cp "$SRC/sys/usb/src.km/udd/eth/.compile_prg/eth.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/hid/keyboard/.compile_prg/keyboard.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/hid/mouse/.compile_prg/mouse.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/hid/tablet/.compile_prg/tablet.prg" "$USB4TOSDIR"
