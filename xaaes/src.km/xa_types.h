@@ -2738,6 +2738,7 @@ struct config
 	bool leave_top_border;	/* windows may be moved higher than top of screen */
 	bool remap_cicons;
 	bool set_rscpalette;
+	bool textures_cache;
 	bool no_xa_fsel;
 	bool point_to_type;
 	bool fsel_cookie;

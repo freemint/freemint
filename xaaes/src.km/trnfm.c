@@ -36,12 +36,14 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "mint/stat.h"
 
 /* define this 1 if vs_color works */
 /* vs_color in libgem broken? */
 #define  HAVE_VS_COLOR	1
 
 #include "trnfm.h"
+#include "util.h"
 #if INCLUDE_UNUSED
 static short systempalette[] =
 {
@@ -150,7 +152,7 @@ static const short devtovdi8[256] =
 0, 2, 3, 6, 4, 7, 5, 8, 9, 10,11,14,12,15,13,255,
 #endif
 #if 0
-0  1  2  3  4  5  6  7  8	 9   10 11 12 13 14 15 
+0  1  2  3  4  5  6  7  8	 9   10 11 12 13 14 15
 #endif
   0, 2, 3, 6, 4, 7, 5, 8, 9, 10, 11,14,12,15,13,255,
  16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
@@ -1635,12 +1637,101 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 #endif	/* ST_ONLY */
 #endif	/* WITH_GRADIENTS */
 
+static void
+image_cache_get(char *name, XATTR *xattr_now, XAMFDB *mimg)
+{
+	struct file *f;
+
+	mimg->mfdb.fd_addr = NULL;
+	f = kernel_open(name, O_RDONLY, NULL, NULL);
+	if (f)
+	{
+		long bmsize, bmread;
+		int invalid;
+		XATTR xattr_src;
+
+		kernel_read(f, &xattr_src, sizeof(XATTR));
+		xattr_now->atime = 0x5843; xattr_now->adate = 0x3031; /* Magic value: 'XC01'*/
+		invalid = memcmp(&xattr_src, xattr_now, sizeof(XATTR));
+
+		if ( !invalid )
+		{
+			kernel_read(f, mimg, sizeof(XAMFDB));
+			bmsize = (long)((long)mimg->mfdb.fd_wdwidth * (mimg->mfdb.fd_nplanes == 15 ? 16 : mimg->mfdb.fd_nplanes) * mimg->mfdb.fd_h) << 1;
+			if ((mimg->mfdb.fd_addr = kmalloc(bmsize)))
+			{
+				bmread = kernel_read(f, mimg->mfdb.fd_addr, bmsize);
+				if (bmread != bmsize)
+				{
+					kfree(mimg->mfdb.fd_addr);
+					mimg->mfdb.fd_addr = NULL;
+					invalid = 1;
+				}
+			}
+		}
+		kernel_close(f);
+		if ( invalid )
+			_f_delete(name);
+	}
+}
+
+static void
+image_cache_put(char *name, XATTR *xattr, XAMFDB *mimg)
+{
+	struct file *f;
+
+	f = kernel_open(name, O_RDWR|O_CREAT|O_TRUNC, NULL, NULL);
+	if (f)
+	{
+		long bmsize = (long)((long)mimg->mfdb.fd_wdwidth * (mimg->mfdb.fd_nplanes == 15 ? 16 : mimg->mfdb.fd_nplanes) * mimg->mfdb.fd_h) << 1;
+		xattr->atime = 0x5843; xattr->adate = 0x3031; /* Magic value: 'XC01'*/
+		kernel_write(f, xattr, sizeof(XATTR));
+		kernel_write(f, mimg, sizeof(XAMFDB));
+		kernel_write(f, mimg->mfdb.fd_addr, bmsize);
+		kernel_close(f);
+	}
+}
+
 void
 load_image(char *name, XAMFDB *mimg)
 {
 	XA_XIMG_HEAD xa_img;
 	struct ximg_header *ximg = &xa_img.ximg;
 	long bmsize;
+	char cache_path[PATH_MAX], cur_palette[PATH_MAX];
+	XATTR xat;
+
+	/* Cache system for textures/images
+	 * - If the requested .img file exists, create an unique file name from eXtended ATTRibutes
+	 *         - Indexed colors:  <device><index><palette name>.<color depth>
+	 *         - HC/TC:           <device><index>.<color depth>
+	 *  - Try to get file from cache
+	 *  - If success, go back to the caller
+	 *  - Else continue as usual (depack, remap, convert pixel format)
+	 *  - Finally, put the converted bitmap into the cache directory
+	 */
+	if (cfg.textures_cache)
+	{
+		long error;
+		error = f_xattr(0, name, &xat);
+		if (!error)
+		{
+			strcpy(cur_palette, cfg.palette);
+			if (cur_palette[0] && (screen.planes <= 8))
+			{
+				char *full_path = strrchr(cur_palette, '/');
+				if (!full_path) full_path = strrchr(cur_palette, '\\');
+				if (full_path)
+					strip_fname (cfg.palette, 0, cur_palette);
+			}
+			else
+				strcpy(cur_palette, "");
+			sprintf(cache_path, PATH_MAX-1, "/var/cache/xaaes/%04x%08lx%s.%d", xat.dev, xat.index, cur_palette, screen.planes);
+			image_cache_get(cache_path, &xat, mimg);
+			if (mimg->mfdb.fd_addr)                      /* Cache hit! */
+				return;
+		}
+	}
 
 	depack_img(name, &xa_img);
 	mimg->mfdb.fd_addr = NULL;
@@ -1765,6 +1856,12 @@ load_image(char *name, XAMFDB *mimg)
 
 		if (xa_img.palette)
 			kfree(xa_img.palette);
+
+		/* Cache system for textures/images
+		 * - If cache is ON and .img successfully loaded, write file
+		 */
+		if (cfg.textures_cache && mimg->mfdb.fd_addr)
+			image_cache_put(cache_path, &xat, mimg);
 	}
 }
 

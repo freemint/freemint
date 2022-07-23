@@ -164,6 +164,7 @@ static struct parser_item parser_tab[] =
 	{ "GRADIENTS",		PI_R_T, cfg.gradients,       { dat: sizeof(cfg.gradients) } },
 #endif
 	{ "TEXTURES", 		PI_R_T, cfg.textures,       { dat: sizeof(cfg.textures) } },
+	{ "TEXTURES_CACHE",	PI_R_B, &cfg.textures_cache		},
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},
