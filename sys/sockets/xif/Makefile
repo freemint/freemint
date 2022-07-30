@@ -3,7 +3,7 @@
 #
 TARGET = 
 DRIVERS = rtl8012 rtl8012st rtl8012ct60 dial plip dummy de600 lance pamsdma biodma \
-	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139
+	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139 picowifi
 
 SHELL = /bin/sh
 SUBDIRS = nfeth daynaport ethernat fec svethlana
@@ -60,6 +60,7 @@ RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012ST_SRCS))))
 RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
 RTL8139_OBJS = $(addsuffix .o, $(basename $(notdir rtl8139.c)))
 ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
+PICOWIFI_OBJS = $(addsuffix .o, $(basename $(notdir $(PICOWIFI_SRCS))))
 
 # entry point
 entry: $(DRIVERS)
@@ -74,6 +75,11 @@ asix:
 	$(MAKE) asix.xif \
 		"TARGET=asix.xif" \
 		"XOBJS=$(COMMON_OBJS) $(ASIX_OBJS)"
+
+picowifi:
+	$(MAKE) picowifi.xif \
+		"TARGET=picowifi.xif" \
+		"XOBJS=$(COMMON_OBJS) $(PICOWIFI_OBJS)"
 
 dial:
 	$(MAKE) dial.xif \
