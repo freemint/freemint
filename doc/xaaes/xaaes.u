@@ -178,7 +178,9 @@ XaAES also reads IMG files from the folder /xaaes/img/. This is needed if you
 want the textured look. If not present, you get the default rendering.
 This does not affect the use of the gradient setting in xaaes.cnf.
 If you use gradients or don't want to use the textures at all, set option
-"textures = 0" in xaaes.cnf, so XaAES will boot faster.
+"textures = 0" in xaaes.cnf, so XaAES will boot faster. However using the
+cache enabled with "textures_cache = yes" makes the speed difference
+neglible.
 
 For more information on texture files, see Theming and Extended Textures.
 !end_node # IMG Files
@@ -408,18 +410,23 @@ When true, standard window widget are automatically highlighted when the
    actually highlighted, they are just animated, that is, redrawn in SELECTED
    state. E.g. widget_auto_highlight = true
 
-!item [GRADIENTS <number> (default 0)] (!nl)
+!item [GRADIENTS <name|[0|1]> (default 0)] (!nl)
 Setting gradients to (!B)default(!b)/(!B)1(!b), or the name of a file in the gradients
    folder (/XAAES/GRADIENT/*.GRD). This allows the use of colour gradients
    in the window widgets/AES object renderer in hicolour or truecolour video
    modes. This replaces the use of texture images. E.g. gradients = n_yellow
 
-!item [TEXTURES = <name|[0|1]> (default = img)] (!nl)
+!item [TEXTURES <name|[0|1]> (default 0)] (!nl)
 Setting textures to a nonzero value or a name turns on the use of textures
    in the window widget and aes object renderer in color modes.
    This is the name of a texture-folder in /xaaes/ directory.
    If you use gradients, set this to 0, XaAES boots faster then.
    E.g. textures = img or textures = 0
+
+!item [TEXTURES_CACHE <bool> (default false)] (!nl)
+Cache textures for current bit depth in <aes_home>/cache. If you update
+   the texture files or change the palette, delete the cache folder, too.
+   E.g. textures_cache = yes
 
 !item [PALETTE <character-sequence> (default (!I)internal(!i))] (!nl)
 Load a specific palette from /XAAES/PAL/*.PAL, resulting in a tra!-di!-ti!-onal
@@ -429,7 +436,7 @@ Load a specific palette from /XAAES/PAL/*.PAL, resulting in a tra!-di!-ti!-onal
 Change the default background colour, colour numbers are in standard colour
    palette order. E.g. back_col = 13
 
-!item [MENUBAR <bool> (default 2)] (!nl)
+!item [MENUBAR <number> (default 2)] (!nl)
 Hideable menubar, where "0" is off, "1" is on, and "2" is always on (default).
    E.g. menubar = 0
 
