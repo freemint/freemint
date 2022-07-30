@@ -33,6 +33,7 @@ RTL8012_SRCS = rtl8012.c rtl8012_vblint.s
 RTL8012ST_SRCS = rtl8012st.c rtl8012_vblint.s
 RTL8012CT60_SRCS = rtl8012ct60.c rtl8012_vblint.s
 ASIX_SRCS = asix.c
+PICOWIFI_SRCS = picowifi.c
 
 COBJS = \
 	$(COMMON_SRCS) \
