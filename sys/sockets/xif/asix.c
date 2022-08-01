@@ -62,28 +62,6 @@ typedef struct
 void asix_poll_thread(void *);
 void asix_poll(PROC *proc, long dummy);
 
-/*
- * Debug section
- */
-
-#if 0
-# define DEV_DEBUG	1
-#endif
-
-#ifdef DEV_DEBUG
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	KERNEL_DEBUG x
-# define TRACE(x)	KERNEL_TRACE x
-# define ASSERT(x)	assert x
-#else
-# define FORCE(x)	
-# define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
-# define ASSERT(x)	assert x
-#endif
-
 /* ASIX AX8817X based USB 2.0 Ethernet Devices */
 
 #define AX_CMD_SET_SW_MII		0x06
@@ -570,7 +548,7 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 	long size;
 	unsigned char *msg;
 
-	DEBUG(("** %s(), len %d\n", __func__, length));
+	DEBUG(("** %s(), len %ld\n", __func__, length));
 	if (dev->pusb_dev == 0) {
 		return E_OK;
 	}
@@ -638,7 +616,7 @@ static int asix_recv(struct eth_device *eth)
 	}
 
 	if (actual_len > AX_RX_URB_SIZE) {
-		DEBUG(("Rx: received too many bytes %d\n", actual_len));
+		DEBUG(("Rx: received too many bytes %ld\n", actual_len));
 		err = -1;
 		goto out;
 	}
@@ -659,7 +637,7 @@ static int asix_recv(struct eth_device *eth)
 		packet_len = le2cpu32(packet_len);
 
 		if (((~packet_len >> 16) & 0x7ff) != (packet_len & 0x7ff)) {
-			DEBUG(("Rx: malformed packet length: %#x (%#x:%#x)\n",
+			DEBUG(("Rx: malformed packet length: %#lx (%#lx:%#lx)\n",
 				packet_len, (~packet_len >> 16) & 0x7ff,
 				packet_len & 0x7ff));
 			err = -1;
@@ -829,7 +807,7 @@ asix_eth_probe(void *vdev, unsigned int ifnum, void *vss)
 	memset(ss, 0, sizeof(struct ueth_data));
 
 	/* At this point, we know we've got a live one */
-	DEBUG(("\n\nUSB Ethernet device detected: %#04x:%#04x\n",
+	DEBUG(("\n\nUSB Ethernet device detected: %04x:%04x\n",
 	      dev->descriptor.idVendor, dev->descriptor.idProduct));
 
 	/* Initialize the ueth_data structure with some useful info */
