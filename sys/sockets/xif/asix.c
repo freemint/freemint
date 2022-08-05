@@ -584,19 +584,13 @@ static long asix_send(struct eth_device *eth, void *packet, long length)
 
 static int asix_recv(struct eth_device *eth)
 {
-	unsigned char *recv_buf;
+	static unsigned char recv_buf[AX_RX_URB_SIZE];
 	struct ueth_data *dev = (struct ueth_data *)eth->data;
 	unsigned char *buf_ptr;
 	long err;
 	long actual_len;
 	u32 packet_len;
 	BUF *buf;
-
-	recv_buf = (unsigned char *)kmalloc(AX_RX_URB_SIZE);
-	if (!recv_buf) {
-		DEBUG(("Out of memory"));
-		return ENOMEM;
-	}
 
 	if (dev->pusb_dev == 0) {
 		err = -1;
@@ -679,12 +673,11 @@ static int asix_recv(struct eth_device *eth)
 	}
 
 out:
-#ifdef M68000
+#ifdef __m68000__
 	addroottimeout(50, asix_poll, 0);
 #else
 	addroottimeout(10, asix_poll, 0);
 #endif
-	kfree(recv_buf);
 	return err;
 }
 
