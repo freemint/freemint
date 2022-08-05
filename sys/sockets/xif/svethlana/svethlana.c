@@ -42,6 +42,7 @@
 #include "global.h"
 
 #include "buf.h"
+#include "cookie.h"
 #include "inet4/if.h"
 #include "inet4/ifeth.h"
 
@@ -55,9 +56,15 @@
 #include "svethlana_i6.h"
 
 #include <mint/osbind.h>
-
-/* #include "vmalloc.h" */
 #define ct60_vmalloc(mode,value) (unsigned long)trap_14_wwl((short)(0xc60e),(short)(mode),(unsigned long)(value))
+
+typedef struct
+{
+	unsigned long  name;
+	unsigned long  val;
+} COOKIE;
+
+#define COOKIEBASE (*(COOKIE **)0x5a0)
 
 
 /*
@@ -704,6 +711,30 @@ driver_init (void)
 		{
 			c_conws( "This driver needs at least SV FW version 10!\n\r" );
 			Bconin(2);
+			return -1;
+		}
+	}
+
+	{
+		int supv_found = 0;
+
+		COOKIE *cookie = COOKIEBASE;
+		if (cookie)
+		{
+			while (cookie->name)
+			{
+				if (cookie->name == COOKIE_SupV)
+				{
+					supv_found = 1;
+					break;
+				}
+				cookie++;
+                        }
+		}
+
+		if (!supv_found)
+		{
+			c_conws("This driver requires SV_XBIOS.PRG!\r\n");
 			return -1;
 		}
 	}

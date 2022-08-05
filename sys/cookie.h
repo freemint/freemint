@@ -74,6 +74,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_HBFS	0x48424653L /* BoxKite File Selector */
 # define COOKIE_DMAC	0x444D4143L /* FireTOS DMA API */
 # define COOKIE__5MS	0x5f354d53L /* 200 Hz system timer alternate vector */
+# define COOKIE_SupV	0x53757056L /* SuperVidel XBIOS */
 
 /* Not that we want to support these below ... */
 # define COOKIE_STiK	0x5354694bL
