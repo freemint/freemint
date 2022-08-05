@@ -256,7 +256,7 @@
 #gradients = n_cyan
 #gradients = n_purple
 
-####################################################
+#####################################################################
 # textures = <name|[0|1]>    (default = 0)
 #
 # setting textures to a nonzero value or a name (default: img) turns on use of
@@ -265,7 +265,14 @@
 #
 # texture-folders are <xaaes-home-dir>/<name>/
 #textures = img
-textures = 0
+
+#####################################################################
+# textures_cache = <bool>       (default is 'no')
+#
+# Cache textures for current bit depth in <aes_home>/cache. If you update
+# the texture files or change the palette, delete the cache folder, too.
+#
+#textures_cache = yes
 
 #####################################################################
 #palette = <name>

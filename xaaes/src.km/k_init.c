@@ -931,8 +931,11 @@ k_init(unsigned short dev, unsigned short mc)
 	main_xa_theme(&client->xmwt);
 	main_object_render(&client->objcr_module);
 
+	if (cfg.textures[0] == '0' && cfg.textures[1] == '\0')
+		cfg.textures[0] = 0;
+
 #if WITH_GRADIENTS
-	if( cfg.gradients[0] == '0' && cfg.gradients[1] == 0 )
+	if (cfg.gradients[0] == '0' && cfg.gradients[1] == '\0')
 		cfg.gradients[0] = 0;
 	if (!(*client->objcr_module->init_module)(&xam_api, &screen, cfg.gradients[0] != 0))
 #else

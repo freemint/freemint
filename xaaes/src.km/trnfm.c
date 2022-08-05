@@ -42,6 +42,7 @@
 #define  HAVE_VS_COLOR	1
 
 #include "trnfm.h"
+#include "util.h"
 #if INCLUDE_UNUSED
 static short systempalette[] =
 {
@@ -150,7 +151,7 @@ static const short devtovdi8[256] =
 0, 2, 3, 6, 4, 7, 5, 8, 9, 10,11,14,12,15,13,255,
 #endif
 #if 0
-0  1  2  3  4  5  6  7  8	 9   10 11 12 13 14 15 
+0  1  2  3  4  5  6  7  8	 9   10 11 12 13 14 15
 #endif
   0, 2, 3, 6, 4, 7, 5, 8, 9, 10, 11,14,12,15,13,255,
  16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
@@ -1635,12 +1636,91 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 #endif	/* ST_ONLY */
 #endif	/* WITH_GRADIENTS */
 
+static void
+image_cache_get(char *name, XAMFDB *mimg)
+{
+	struct file *f;
+
+	mimg->mfdb.fd_addr = NULL;
+	f = kernel_open(name, O_RDONLY, NULL, NULL);
+	if (f)
+	{
+		long bmread, bmsize;
+		bmread = kernel_read(f, mimg, sizeof(XAMFDB));
+		bmsize = (long)((long)mimg->mfdb.fd_wdwidth * (mimg->mfdb.fd_nplanes == 15 ? 16 : mimg->mfdb.fd_nplanes) * mimg->mfdb.fd_h) << 1;
+		if ((mimg->mfdb.fd_addr = kmalloc(bmsize)))
+			bmread += kernel_read(f, mimg->mfdb.fd_addr, bmsize);
+		else
+			BLOG((0,"Not enough memory for %s (%ld bytes)", name, bmsize));
+
+		kernel_close(f);
+		if (bmread != (sizeof(XAMFDB)+bmsize))
+		{
+			BLOG((0,"Read error for %s: read %ld bytes (must be %ld)", name, bmread, sizeof(XAMFDB)+bmsize));
+			if (mimg->mfdb.fd_addr)
+			{
+				kfree(mimg->mfdb.fd_addr);
+				mimg->mfdb.fd_addr = NULL;
+			}
+			_f_delete(name);
+		}
+	}
+	else
+	{
+		BLOG((0,"File %s not found", name));
+	}
+}
+
+static void
+image_cache_put(char *name, XAMFDB *mimg)
+{
+	struct file *f;
+
+	f = kernel_open(name, O_RDWR|O_CREAT|O_TRUNC, NULL, NULL);
+	if (!f)
+	{
+		char path[PATH_MAX];
+		sprintf(path, PATH_MAX-1, "%scache", C.Aes->home_path);
+		long err = _d_create( path );
+		if (err)	/* could not mkdir */
+		{
+			BLOG((0,"image_cache_put: could not create %s", path ));
+			return;
+		}
+		/* Retry */
+		f = kernel_open(name, O_RDWR|O_CREAT|O_TRUNC, NULL, NULL);
+	}
+	if (f)
+	{
+		long bmsize = (long)((long)mimg->mfdb.fd_wdwidth * (mimg->mfdb.fd_nplanes == 15 ? 16 : mimg->mfdb.fd_nplanes) * mimg->mfdb.fd_h) << 1;
+		long bmwrite = kernel_write(f, mimg, sizeof(XAMFDB));
+		bmwrite += kernel_write(f, mimg->mfdb.fd_addr, bmsize);
+		kernel_close(f);
+		if (bmwrite != (sizeof(XAMFDB)+bmsize))
+		{
+			BLOG((0,"Write error for %s: write %ld bytes (must be %ld)", name, bmwrite, sizeof(XAMFDB)+bmsize));
+			_f_delete(name);
+		}
+	}
+}
+
 void
 load_image(char *name, XAMFDB *mimg)
 {
 	XA_XIMG_HEAD xa_img;
 	struct ximg_header *ximg = &xa_img.ximg;
 	long bmsize;
+	char cache_path[PATH_MAX];
+
+	if (cfg.textures_cache)
+	{
+		sprintf(cache_path, PATH_MAX-1, "%scache\\", C.Aes->home_path);
+		strip_fname(name, 0, cache_path+strlen(cache_path));
+		sprintf(strrchr(cache_path, '.')+1, 4, "%d", screen.planes);
+		image_cache_get(cache_path, mimg);
+		if (mimg->mfdb.fd_addr)                      /* Cache hit! */
+			return;
+	}
 
 	depack_img(name, &xa_img);
 	mimg->mfdb.fd_addr = NULL;
@@ -1726,7 +1806,7 @@ load_image(char *name, XAMFDB *mimg)
 #if 0
 						case 15: from = from15b; break;
 #endif
- 						case 16: from = from16b; break;
+						case 16: from = from16b; break;
 						case 24: from = from24b; break;
 						default: from = NULL;    break;
 					}
@@ -1765,6 +1845,12 @@ load_image(char *name, XAMFDB *mimg)
 
 		if (xa_img.palette)
 			kfree(xa_img.palette);
+
+		/* Cache system for textures/images
+		 * - If cache is ON and .img successfully loaded, write file
+		 */
+		if (cfg.textures_cache && mimg->mfdb.fd_addr)
+			image_cache_put(cache_path, mimg);
 	}
 }
 

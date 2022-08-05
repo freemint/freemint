@@ -6681,16 +6681,18 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 #if WITH_GRADIENTS
 	if (grad)
 	{
-		if( api->cfg->gradients[1] != 0 )
+		/* either '1' or path */
+		if (api->cfg->gradients[1] != '\0')
 			load_gradients( xmapi->C->Aes->home_path, api->cfg->gradients );
 	}
 #endif
 	imgpath_file = -1;
-	if (screen->planes >= 8 && api->cfg->textures[0] != '0' )
+	if (screen->planes >= 8 && api->cfg->textures[0] != 0)
 	{
 		char dbuf[128];
 		long d;
-		strcpy(imgpath, api->cfg->textures[1] > ' ' ? api->cfg->textures : "img" );
+		/* either '1' or path */
+		strcpy(imgpath, api->cfg->textures[1] != '\0' ? api->cfg->textures : "img" );
 		strcat(imgpath, screen->planes == 8 ? "\\8b\\" : "\\hc\\");
 		sprintf( dbuf, sizeof(dbuf), "%s%s", xmapi->C->Aes->home_path, imgpath );
 		d = d_opendir( dbuf, 0 );
