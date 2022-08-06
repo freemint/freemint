@@ -709,7 +709,7 @@ driver_init (void)
 
 		if (sv_fw_version < 10)
 		{
-			c_conws( "This driver needs at least SV FW version 10!\n\r" );
+			c_conws( "\n\rThis driver needs at least SV FW version 10!\n\r" );
 			Bconin(2);
 			return -1;
 		}
@@ -734,7 +734,7 @@ driver_init (void)
 
 		if (!supv_found)
 		{
-			c_conws("This driver requires SV_XBIOS.PRG!\r\n");
+			c_conws("\n\rThis driver requires SV_XBIOS.PRG!\r\n");
 			return -1;
 		}
 	}
@@ -755,13 +755,13 @@ driver_init (void)
 		ferror = Fread(fhandle,12,macbuf);
 		if(ferror < 0)
 		{
-			c_conws ("Error reading svethlan.inf!\n\r");
+			c_conws ("\n\rError reading svethlan.inf!\n\r");
 			Fclose(fhandle);
 			return -1;
 		}
 		if(ferror < 12)
 		{
-			c_conws ("svethlan.inf is less than 12 bytes long!\n\r");
+			c_conws ("\n\rsvethlan.inf is less than 12 bytes long!\n\r");
 			Fclose(fhandle);
 			return -1;
 		}
