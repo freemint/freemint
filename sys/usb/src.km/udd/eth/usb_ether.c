@@ -293,7 +293,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 		return 1;
 	}
 
-	memset(usb_eth, 0, sizeof(usb_eth));
+	memset(usb_eth, 0, sizeof(struct ueth_data) * usbNetAPI->numDevices);
 
 	ret = udd_register(&eth_uif);
 	if (ret)
