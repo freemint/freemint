@@ -673,11 +673,8 @@ static int asix_recv(struct eth_device *eth)
 	}
 
 out:
-#ifdef __m68000__
-	addroottimeout(50, asix_poll, 0);
-#else
 	addroottimeout(10, asix_poll, 0);
-#endif
+
 	return err;
 }
 
