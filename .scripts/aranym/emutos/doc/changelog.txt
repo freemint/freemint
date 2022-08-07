@@ -1,3 +1,75 @@
+CHANGES BETWEEN RELEASE 1.1.1 AND RELEASE 1.2
+
+Major changes:
+- AES: Add support for 3D objects (enabled in 512k ROMs and PRG)
+- AES: Add support for new menu_xxx() functions in AES 3.30
+- AES: Allow up to 16 windows for versions with AES 3.30 support
+- BIOS: Add interrupt-driven I/O for SCC serial ports
+- EmuDesk: Resize screen memory in videl modes, just like TOS4
+- General: Make FireBee ROMs single-language
+- VDI: Fix crash under FreeMiNT with memory protect enabled
+
+Other changes:
+- AES: Display better error message if program launch failed
+- AES: Improve error checking for wind_xxx() functions
+- AES: Better looking separators in menus
+- BDOS: Implement undocumented TOS function Srealloc()
+- BIOS: Add support for IKBD/MIDI error vectors
+- BIOS: Increase timeout for IDE transfers
+- EmuDesk: Fix bug in 'Set file mask...'
+- EmuDesk: Fix drag'n'drop bug with desktop icons
+- EmuDesk: Display the 'busy' mouse cursor for some lengthy actions
+- VDI: Allow Falcon video modes to be set in v_opnwk()
+- VDI: Implement v_hardcopy()
+- VDI: Speed up some VDI calls
+- XBIOS: Implement undocumented TOS function VcheckMode()
+- Many minor and/or obscure bugs have been fixed
+
+
+CHANGES BETWEEN RELEASE 1.1 AND RELEASE 1.1.1
+
+The only significant change was to fix a bug in EmuTOS 1.1:
+double-clicking on the desktop background caused a crash in EmuDesk.
+
+
+CHANGES BETWEEN RELEASE 1.0 AND RELEASE 1.1
+
+Major changes:
+- AES: Add support for colour icons
+- AES: Add support for colour windows
+- BIOS: Add support for Falcon DSP
+- BIOS: Add interrupt-driven I/O for MFP and TT-MFP serial ports
+- BIOS: Improve Nova video card support in several areas
+- EmuCON: Allow setting of EmuCON startup folder
+- EmuCON: Initialise EmuCON default path from AES's PATH variable
+- EmuDesk: Remove the non-standard 'menu click' preference
+- General: Add online manual for EmuTOS
+- General: Add support for Hungarian & Turkish languages
+- General: Make the 512K ROMs single-language only
+
+Other changes:
+- AES: Handle '||' and ']]' correctly in form_alert()
+- BIOS: Add early startup message so user knows we are alive
+- BIOS: Add support for UltraSatan RTC
+- BIOS: Fix keyboard tables for Norwegian/Russian/Swedish
+- BIOS: Fix many small bugs in Falcon videl handling
+- BIOS: Fix problem with slow ACSI device (Satandisk)
+- BIOS: Improve support for Spectre GCR partitions
+- BIOS: Speed up boot when no IDE drive is present
+- EmuDesk: Fix 'install application' bug related to default viewer
+- EmuDesk: Fix several bugs associated with desktop icons
+- General: Add multiple-language 1024K ROM image (Hatari only)
+- Many minor and/or obscure bugs have been fixed
+
+
+CHANGES BETWEEN RELEASE 1.0 AND RELEASE 1.0.1
+
+There was only one change to fix a bug in EmuTOS 1.0: On an Atari Falcon
+with 4 MB RAM, when using the 512k ROM version of EmuTOS, a Nova graphics
+card was erroneously detected. This caused a panic during boot, preventing
+the use of the 512k ROM version of EmuTOS 1.0 on such a machine.
+
+
 CHANGES BETWEEN RELEASE 0.9.12 AND RELEASE 1.0
 
 Major changes:

@@ -23,6 +23,7 @@ es - Spanish
 fi - Finnish
 fr - French
 gr - Greek
+hu - Hungarian
 it - Italian
 nl - Dutch
 no - Norwegian
@@ -30,6 +31,7 @@ pl - Polish
 ru - Russian
 se - Swedish
 cd - Swiss German
+tr - Turkish
 us - English (US)
 uk - English (UK)
 
@@ -62,7 +64,10 @@ Vincent Rivière's GCC 4.6.4 cross-compiler.  The custom tools used in
 the build process were built with native GCC 4.8.4.
 
 The source package and other binary packages are available at:
-https://sourceforge.net/projects/emutos/files/emutos/1.0/
+https://sourceforge.net/projects/emutos/files/emutos/1.2/
+
+An online manual is available at the following URL:
+https://emutos.github.io/manual/
 
 The extras directory (if provided) contains:
 (1) one or more alternate desktop icon sets, which you can use to replace
@@ -107,6 +112,7 @@ doc/reschange.txt     - How resolution change works in the desktop
 doc/resource.txt      - Modifying resources in EmuTOS
 doc/startup.txt       - Some notes on the EmuTOS startup sequence
 doc/tos14fix.txt      - Lists bugs fixed by TOS 1.04 & their status in EmuTOS
+doc/version.txt       - Determining the version of EmuTOS at run-time
 
 The following documents are principally of historical interest only:
 

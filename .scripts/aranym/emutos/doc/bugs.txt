@@ -1,34 +1,31 @@
 Video problems:
 
 Atari Falcon / TOS v4 compatibility bugs:
-- Escape Paint icons don't show in image operations window and their
-  place in toolbar window is inverted on mouse click.
-- Falcon FalcAMP button icons aren't visible as EmuTOS doesn't support
-  new style RSC files with CICONs.
-- Videl Inside causes a desktop crash if a resolution is selected that
-  requires more than the standard EmuTOS Falcon video memory allocation
-  (307200 bytes).  It should be able to detect or avoid this situation
-  but does not.
++ Certain versions of Hatari (including 2.3.0) in Falcon emulation mode
+  may issue the following message (or similar) when EmuTOS switches to
+  monochrome mode:
+    WARN : Strange screen size 160x400 -> aspect corrected by 4x1!
+  This is because of the method that EmuTOS uses to bypass a potential
+  Falcon hardware problem (see the relevant code in bios/videl.c), which
+  puts the screen into a nonstandard resolution for one frame.  This
+  method works without problems on real Falcons, and the message may
+  safely be ignored when running under Hatari.
 
 Problems that also occur in Atari TOS:
-- BIOS: Startup time can be slow on a floppy-only system.  You can speed
++ BIOS: Startup time can be slow on a floppy-only system.  You can speed
   things up by ensuring that you have a formatted floppy diskette in
   drive A at boot time.  Boot time will be further reduced if the root
   directory of the diskette contains as few files as possible, and there
   are no "deleted file" entries in it.  This can be achieved by freshly
   formatting the diskette and then copying any desired files to it.
-- VDI: when drawing a wide polyline with squared ends and more than one
++ VDI: when drawing a wide polyline with squared ends and more than one
   segment, if the width of the line is greater than twice the length of
   an ending segment, the end will have a bump rather than being square.
   This is because wideline segments are joined by using filled circles
   whose radius is half the width of the line: the bump is a protruding
   part of the circle that joins the end segment to the previous one.
-- RAM: Cold boot may not be properly detected on some configurations. This
++ RAM: Cold boot may not be properly detected on some configurations. This
   may happen if the computer has been switched off and on too quickly.
   In that case, the welcome screen is not displayed.
 
 Links to programs listed above:
-- Escape Paint:
-  http://www.pouet.net/prod.php?which=25328
-- FalcAMP:
-  http://deunstg.free.fr/sct1/falcamp/

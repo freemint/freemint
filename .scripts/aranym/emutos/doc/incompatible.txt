@@ -46,8 +46,33 @@ Move the program from the AUTO folder to the root of the drive, and run
 it from there.  While STOS programs will then start, most of them will
 remain unusable due to error 1 above.
 
-Note: STOS programs can often be identified by the presence of *.MBK
+Error 3: Any other error you could imagine.
+
+Bug analysis:
+STOS uses a builtin address to point to VDI private variables which it
+then updates.  Needless to say, this could cause just about any kind of
+bug you could imagine.  For example, the Bomb Squad game for the Falcon
+runs four times more slowly under (some versions of) EmuTOS than TOS.
+In this particular case, STOS overwrote the internal 'timer sieve'
+variable so that etv_timer() was called four times less frequently.
+
+Note: STOS programs can sometimes be identified by the presence of *.MBK
 files (STOS memory bank files).
+
+
+Category: program created by ST Adventure Creator (STAC)
+--------------------------------------------------------
+Error 1: crash during startup.
+
+Bug analysis:
+Some (all?) STAC programs copy themselves to a fixed address in RAM at
+around $1F120.  Depending on how much is already loaded into RAM
+(AUTO-folder programs, ACCs), the program can end up overwriting its own
+basepage, leading to crashes when a subsequent GEMDOS call tries to
+access basepage information.  This crash can also happen under TOS 2.
+
+Workaround:
+Boot with a bare system (press Ctrl at the Welcome page).
 
 
 Category: old game using fixed addresses
@@ -101,13 +126,13 @@ Unique issues
 Program: Art for Kids
 ---------------------
 Error: crash during program startup, before anything is displayed, when
-using 512K ROMs
+using 512K/1024K ROMs
 
 Bug analysis:
 The program uses the TOS version in the OS header to decide how to
 interpret the country code in os_conf.  If the version is not 4, the
 program assumes a valid country code and uses it as an index into an
-array of pointers.  EmuTOS 512K ROMs use a TOS version of 2, but set
+array of pointers.  EmuTOS 512K/1024K ROMs use a TOS version of 2, but set
 os_conf to 0xff to indicate multilanguage.  This causes a crash when the
 program indexes beyond the end of the array and loads a garbage pointer.
 
@@ -190,6 +215,95 @@ crash happens on next private function which Cubase tries to search
 for.
 
 
+Program: Flood (game)
+---------------------
+Error: crash while loading
+
+Bug analysis:
+The game deselects the floppy drive too early from an interrupt routine
+while still loading data, causing the read to time out. It does not check if
+the floppy disk read was successful and crashes while processing the only
+partially loaded data.
+Note: Flood works with Atari TOS because Atari TOS reselects and retries
+a floppy disk access when a timeout occurs. As a deliberate design decision,
+EmuTOS only retries in case of floppy disk read errors, but not in case of
+a timeout to not unnecessarily slow down booting.
+
+
+Program: G-Loc (game)
+---------------------
+Error: Fails to load from original floppy disk.
+
+Bug analysis:
+On the floppy disk, sector 6 of the first track is unreadable as part of
+the copy protection. To reliably detect media change, EmuTOS calculates
+a checksum over the first six sectors, which fails. Therefore, the disk
+is considered unreadable by EmuTOS and the game loader (in the AUTO
+folder) is not run.
+
+Note: The game fails to load for the same reason under Atari TOS 2.06,
+which uses a similar media change detection method.
+
+
+Program: GFA Basic
+------------------
+Error: Black background for file selector/form alerts
+
+Bug analysis:
+This only occurs when GFA Basic is launched in ST Low resolution, under
+a version of EmuTOS that supports 3D objects.  After launch, GFA Basic
+automatically switches to ST Medium without notifying the AES.  However,
+with 3D object support, EmuTOS sets up the file selector/form alerts
+differently between ST Low and ST Medium, and this causes the black
+backgrounds.
+
+Workaround:
+On versions of EmuTOS with 3D object support, launch GFA Basic in ST
+Medium.
+
+Note: Other programs which change resolutions without notifying the
+AES may have similar problems.
+
+
+Program: HDCOOKIE
+-----------------
+Error: Fails to set the _FDC cookie.
+
+Bug analysis:
+HDCOOKIE is supposed to set the _FDC cookie to indicate high-density
+(HD) floppy disk support in machines upgraded with a HD module.
+However, it fails when an _FDC cookie already exists, as it is always
+the case under EmuTOS.
+
+Workaround:
+Use a different program to manipulate the _FDC cookie, e.g., ACC.PRG
+by Steffen Engel.
+
+
+Program: Hypnosis 1.5
+---------------------
+Error: crash at start or corrupted display
+
+Bug analysis:
+The program was developed with Omikron BASIC and fails for similar reasons
+as the Omikron BASIC interpreter.  Among other things it expects A0 to
+point to an internal TOS variable upon return from the Mediach BIOS call.
+It also parses the bytes of the 0xA00A line-A routine for specific
+instructions that are only present in Atari TOS.
+
+
+Program: Indigo (game)
+----------------------
+Error: random crashes and glitches (depending on exact EmuTOS version)
+
+Bug analysis:
+This unreleased Psygnosis game loads itself at a fixed address of 0x6000,
+overwriting part of EmuTOS's BSS. It lets the Timer C interrupt run. The
+etv_timer handler of EmuTOS is invoked, which writes to variables in the
+BSS, modifying the game code loaded there. The exact location of these
+variables, and, therefore, the effects depend on EmuTOS version and variant.
+
+
 Program: Luftschloss
 --------------------
 Error: Fails to load with an error message about the MPB variable.
@@ -203,6 +317,23 @@ parameter block (MPB). The heuristic it uses to find the memory
 address of that variable only works with Atari TOS.
 
 
+Program: MidiDraw v1.00
+-----------------------
+Error: Crashes with "Illegal instruction" message.
+
+Bug analysis:
+The program relies on undocumented internal TOS variables.  It expects
+the word at offset 0x12 from the beginning of the system's keyboard/MIDI
+interrupt handler to contain the address of a private system variable.
+This is true on TOS 1.00 only.  MidiDraw installs its own keyboard/MIDI
+interrupt handler which uses that saved address to generate a subroutine
+address; under EmuTOS this gives an address of zero.  When the interrupt
+handler branches to that address, it causes an illegal instruction
+interrupt.
+NOTE: the program also crashes on all versions of Atari TOS except 1.00,
+although the actual details of the crash are slightly different.
+
+
 Program: OMIKRON.BASIC V3.01 (interpreter)
 ------------------------------------------
 Error: Panic (bus error) during start
@@ -210,12 +341,12 @@ Error: Panic (bus error) during start
 Bug analysis:
 The program relies on undocumented internal TOS variables at several
 points.  First, it expects A0 upon return from Mediach (BIOS function)
-to point to wplatch (floppy write protect latch variable).  On EmuTOS
-A0 is 0 and hence a bus error occurs when the program wants to modify
+to point to wplatch (floppy write protect latch variable).  On EmuTOS A0
+is undefined and hence a bus error can occur when the program modifies
 that variable.  Second, it parses the bytes of the 0xA00A (hide cursor)
 line-A routine to get the address of a variable reflecting the internal
 state of the mouse cursor.  This is done with the same code used in
-"Ramses" (see above).  This also fails on EmuTOS, resulting in another
+"Ramses" (see below).  This also fails on EmuTOS, resulting in another
 bus error.  There may be more accesses to undocumented variables.
 
 
@@ -241,6 +372,18 @@ Use an alternate tracker program.  There are many Protracker variants and
 other module tracker programs which work fine with EmuTOS.
 
 
+Program: Quaderno 1.5
+---------------------
+Error: crash at start or corrupted display
+
+Bug analysis:
+The program was developed with Omikron BASIC and fails for similar reasons
+as the Omikron BASIC interpreter.  Among other things it expects A0 to
+point to an internal TOS variable upon return from the Mediach BIOS call.
+It also parses the bytes of the 0xA00A line-A routine for specific
+instructions that are only present in Atari TOS.
+
+
 Program: Ramses
 ---------------
 Error: panic
@@ -252,17 +395,41 @@ undocumented things with the bytes of the actual routine:
     https://sourceforge.net/p/emutos/mailman/message/30605378/
 
 
-Program: Reservoir Gods game (Bugger, Bunion, SkyFall, Sworm)
--------------------------------------------------------------
+Program: Reservoir Gods programs on the Falcon
+----------------------------------------------
+This applies to (at least): Bugger, Bunion, Fractal Playground, SkyFall, Sworm
+
 Error: panic
 
 Bug analysis:
-Games use an undocumented TOS4 vector for keyboard input instead of
-accessing kbdvec correctly.  This causes EmuTOS to panic.
+Programs use an undocumented TOS4 vector for keyboard input instead of
+accessing kbdvec and/or 'shifty' correctly.  This causes EmuTOS to panic.
 
 Workaround:
-This can be worked around with the following hack.prg:
+In the programs listed above, this can be worked around with the following
+hack.prg:
     https://sourceforge.net/p/emutos/mailman/message/26841274/
+This may also work with other Reservoir Gods programs.
+
+
+Program: Sea of Colour
+----------------------
+Error: does not run when started from an ACSI hard disk
+
+Bug analysis:
+To be compatible with all ACSI devices, EmuTOS must wait for five
+milliseconds between ACSI commands, as specified in the "Atari ACSI/DMA
+integration guide." However, the demo expects ACSI transfers to complete
+faster and therefore fails to run correctly. Such faster transfers can
+be achieved with HDDRIVER's "accelerated mode" at the expense of breaking
+compatibility with slower ACSI devices.
+
+Note 1: Sea of Colour fails with similar symptoms and for the same reason
+under Atari TOS when using AHDI or CBHD hard disk drivers or when using
+HDDRIVER without activating the "accelerated mode."
+
+Note 2: Sea of Colour can be run under EmuTOS from an IDE hard disk or an
+emulator's GEMDOS drive.
 
 
 Program: Spectrum 512
@@ -349,19 +516,22 @@ Workaround:
 Use NVDI.
 
 
-Program: Warp9 v3.80 (and probably all other versions)
-------------------------------------------------------
-Errors: Crash during EmuDesk startup (512K versions of EmuTOS)
-        EmuDesk screen drawing errors (other versions)
+Program: Warp9 v3.80 (TT version)
+---------------------------------
+Errors: EmuDesk screen drawing errors with 512K/1024K EmuTOS images on a TT
 
 Bug analysis:
-The crash is caused because Warp9 implicitly assumes that VDI's physical
-workstation structure is in the first 32K of memory.  This is not true
-for the 512K versions of EmuTOS.  The screen drawing errors are under
-investigation, but may be caused by assumptions about the contents of
-internal VDI structures.
+The different versions of Warp9 for different systems correspond to
+differing internal layouts of the virtual workstation structure, which
+are related to the maximum number of bits/pixel supported.  Since the
+512K/1024K EmuTOS images must handle the Falcon (16bpp) as well as the
+TT (8bpp), the virtual workstation layout used by 512K/1024K EmuTOS
+images corresponds to that of the Falcon rather than the TT.
 NOTE: under EmuTOS releases prior to 1.0, Warp9 fails to install and
 therefore no errors are seen.
 
 Workaround:
-Use NVDI.
+When running EmuTOS on emulated or real TT hardware, use the Falcon
+version of Warp9 (WARP9_FA.PRG).
+NOTE: Since 192K/256K versions of EmuTOS only support ST(e) hardware,
+WARP9_ST.PRG is the version to use for them.
