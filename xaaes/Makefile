@@ -21,13 +21,13 @@ all-here:
 
 # default definitions
 
-help 000 020 030 040 060 deb col sockets xdd xfs all-kernels:
+help 000 020 030 040 02060 060 deb col sockets xdd xfs all-kernels:
 	for i in $(SUBDIRS); do $(MAKE) -C $$i $@; done
 
 ara:: 040
 	@:
 
-mil:: 040
+mil:: 02060
 	@:
 
 hat:: 000
