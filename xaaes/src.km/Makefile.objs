@@ -35,8 +35,7 @@ STRIPFLAGS =
 
 # default definitions
 GENFILES = $(TARGET)
-# hack: link .o-file from libkern (todo!)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o) $(top_srcdir)/../../sys/libkern/.compile_$(CPU)/strings.o
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 
 VPATH = ..
 
