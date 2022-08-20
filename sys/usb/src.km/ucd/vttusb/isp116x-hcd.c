@@ -695,7 +695,7 @@ struct blitter {
 	unsigned short misc;
 };
 
-static volatile struct blitter *const BLITTER = (volatile struct blitter *)(0xFFFF8A20L);
+static volatile struct blitter *const BLITTER = (volatile struct blitter *)(0xFFFF8A20UL);
 
 /* Read len bytes from fifo and then read till 32-bit boundary
  */
@@ -707,7 +707,13 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 /* D2.L = length = byte count (0 .. 32000 wegen dbra) */
 
 /* ST, Mega STE: Use Blitter when some conditions are met. In particular, check that Blitter is not already busy. */
+
 if (HAS_BLITTER && use_blitter && (len>=256) && !(len & 1) && !((unsigned long)buf & 1) && !(BLITTER->misc & 0x8000)) {
+
+	struct blitter blitter_save;
+	// we might have interrupted an application that has setup the blitter but not run it yet
+	blitter_save = *BLITTER;
+
 	BLITTER->srcinc_x = 0;
 	BLITTER->srcinc_y = 0;
 	BLITTER->srcaddr = (unsigned long)isp116x->data_reg;
@@ -719,10 +725,27 @@ if (HAS_BLITTER && use_blitter && (len>=256) && !(len & 1) && !((unsigned long)b
 	BLITTER->ycount = 1;
 	BLITTER->hop_op = 0x0203;
 	BLITTER->misc   = 1<<(6+8); // HOG;
-	__asm("blloop: tas %0.w\n\t" // (re)start the BLiTTER
-          "nop\n\t"                     // BLITTER will need a few cycles
-          "bmi.s blloop"               // Loop if register shows "busy"
-		  : "+m"(BLITTER->misc) :  :"cc");
+	__asm volatile("blloop: tas %0.w\n\t" // (re)start the BLiTTER
+          "nop\n\t"                       // BLITTER will need a few cycles
+          "bmi.s blloop"                  // Loop if register shows "busy"
+		  : "+m"(BLITTER->misc) :  :"cc","memory");
+
+	// restore blitter
+	BLITTER->srcinc_x = blitter_save.srcinc_x;
+	BLITTER->srcinc_y = blitter_save.srcinc_y;
+	BLITTER->srcaddr = blitter_save.srcaddr;
+	BLITTER->endmask[0] = blitter_save.endmask[0];
+	BLITTER->endmask[1] = blitter_save.endmask[1];
+	BLITTER->endmask[2] = blitter_save.endmask[2];
+	BLITTER->dstinc_x = blitter_save.dstinc_x;
+	BLITTER->dstinc_y = blitter_save.dstinc_y;
+	BLITTER->dstaddr = blitter_save.dstaddr;
+	BLITTER->xcount = blitter_save.xcount;
+	// do NOT restore ycount of 0, since that primes the Blitter for 65536 rounds
+	if (blitter_save.ycount > 0)
+		BLITTER->ycount = blitter_save.ycount;
+	BLITTER->hop_op = blitter_save.hop_op;
+	BLITTER->misc  = blitter_save.misc;
 } 
 else 
 {
@@ -1010,8 +1033,8 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	long critical_retries = (type == PIPE_INTERRUPT)?0:5;
 	short set_extra_delay = 0;
 	
-#ifdef TOSONLY	
-	long check_keybd = 0;	
+#ifdef TOSONLY
+	long check_keybd = 0;
 	/* When in supervisor mode and int level >=6 then we're probably being called from a timer IRQ */
 	/* In that case, we need to check for the keyboard interrupt so that no characters get dropped */
 	if (Super(1L) && (get_int_lvl() >= 6)) {
