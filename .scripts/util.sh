@@ -85,6 +85,7 @@ copy_m68k_modules() {
 	mkdir -p "$SYSDIR"
 	mkdir -p "$SYSDIR/doc"
 	cp "$SRC/sys/sockets/xif/asix.xif" "$SYSDIR/asix.xix"
+	cp "$SRC/sys/sockets/xif/picowifi.xif" "$SYSDIR/picowifi.xix"
 	cp "$SRC/sys/sockets/xif/plip.xif" "$SYSDIR"
 	cp "$SRC/sys/sockets/xif/PLIP.txt" "$SYSDIR/doc/plip.txt"
 	cp "$SRC/sys/xdd/audio/audiodev.xdd" "$SYSDIR"
