@@ -5978,8 +5978,36 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 		    && (ob->ob_state & OS_DISABLED)
 		    && *text == '-')
 		{
-			/* Draw separator line */
-			r.x += 1, r.w -= 3;
+			/* If optional text is found, remove leading and trailing '-' */
+			short start_pos = 0;
+			char *end_pos;
+			short old_rx, old_rw;
+
+			while (text[start_pos] == '-')
+				start_pos++;
+			if (text[start_pos] != '\0')
+			{
+				end_pos = text + strlen(text) - 1;
+				while (end_pos > text && *end_pos == '-')
+					end_pos--;
+				end_pos[1] = '\0';
+				strcpy(text, text + start_pos);
+			} else
+			{
+				strcpy(text, "");
+			}
+			/* Draw separator line (or line on the left if text is present) */
+			old_rx = r.x;
+			old_rw = r.w;
+			if (*text)
+			{				
+				r.x += 1;
+				r.w = start_pos * screen->c_max_w - 1;
+			} else
+			{
+				r.x += 1;
+				r.w -= 3;				
+			}
 			r.y += (r.h - 2)/2;
 			if (MONO)
 			{
@@ -5995,6 +6023,35 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 				r.x += 2, r.w -= 4;
 				(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     ct->col.bottom); //ct->fnt.fgc); // theme->normal.c.brc);
 				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, ct->col.top); //ct->fnt.bgc); //theme->normal.c.tlc);
+			}
+			/* Draw text if any, ignore underscore/OS_WHITEBAK */
+			if (*text) 
+			{				   
+				/* Draw separator line on the right if there is enough space */
+				r.x = old_rx + (start_pos + strlen(text)) * screen->c_max_w; 
+				r.w = old_rw - (start_pos + strlen(text)) * screen->c_max_w - 2;
+				if (MONO && (r.w > 0))
+				{
+					(*v->api->l_type)(v, 7);
+					(*v->api->l_udsty)(v, 0xaaaa);
+					(*v->api->line)(v, r.x, r.y, r.x + r.w, r.y, G_BLACK);
+					(*v->api->l_udsty)(v, 0x5555);
+					(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, G_BLACK);
+					(*v->api->l_type)(v, 0);
+				}
+				else if (!MONO && (r.w > 4))
+				{
+					r.x += 2, r.w -= 4;
+					(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     ct->col.bottom);
+					(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, ct->col.top);
+				}
+				/* Draw text */
+				(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
+				(*v->api->t_color)(v, ct->fnt.fgc);
+				(*v->api->t_effects)(v, ct->fnt.e);
+				r.y -= (r.h - 2)/2; /* fixes y-coordinate to draw text */
+				r.x = old_rx + start_pos * screen->c_max_w;
+				ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, text, state, 0, -1, G_BLACK);				
 			}
 			done(OS_DISABLED);
 		}
