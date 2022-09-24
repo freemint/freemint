@@ -189,7 +189,7 @@ static long picowifi_init(struct eth_device *eth)
 #define TIMEOUT_RESOLUTION 50	/* ms */
 
 	if (picowifi_load_wificred(&wifi_ssid, &wifi_pass)) {
-		ALERT(("Trying if credentials are stored on PicoWifi.\r\n"));
+		DEBUG(("Trying if credentials are stored on PicoWifi.\n"));
 	} else {
 		DEBUG(("Wifi credentials: '%s', '%s'\r\n", wifi_ssid, wifi_pass?wifi_pass:"(no password)"));
 
@@ -269,11 +269,11 @@ static long picowifi_init(struct eth_device *eth)
 	} while (!link_detected && timeout < WIFI_CONNECT_TIMEOUT);
 	if (link_detected) {
 		if (timeout != 0) {
-			ALERT(("done.\r\n"));
+			ALERT(("done.\n"));
 			//mdelay(500);
 		}
 	} else {
-		ALERT(("unable to connect.\r\n"));
+		ALERT(("unable to connect.\n"));
 		return -1;
 	}
 
