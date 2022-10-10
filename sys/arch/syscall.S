@@ -67,7 +67,6 @@
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
-	.globl	_enter_kernel
 	.globl	_leave_kernel
 	.extern	_in_kernel
 	.globl	_preempt
@@ -314,7 +313,12 @@ pok:
 // _curproc is already in a0 here
 
 sk:
-	jsr	_enter_kernel
+#ifdef __mcoldfire__
+	moveq	#0x7,d0
+	bset	d0,_in_kernel
+#else
+	bset	#0x7,_in_kernel
+#endif
 	clr.w	-(sp)			// no frame format needed
 	pea	4(a0)			// push pointer to syscall context save
 	jsr	_build_context
@@ -385,7 +389,12 @@ _mint_bios:
 	bra	reentrant_trap
 
 norm_bios:
-	jsr	_enter_kernel
+#ifdef __mcoldfire__
+	moveq	#0x7,d0
+	bset	d0,_in_kernel
+#else
+	bset	#0x7,_in_kernel
+#endif
 	tst.w	_bconbdev		// is BIOS buffering on?
 	bmi	L_bios			// no, skip all this
 

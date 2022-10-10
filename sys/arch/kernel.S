@@ -17,7 +17,6 @@
 #include "magic/magic.i"
 
 	.globl	_enter_gemdos
-	.globl	_enter_kernel
 	.globl	_leave_kernel
 
 	.extern	_curproc
@@ -56,21 +55,7 @@ _enter_gemdos:
 	bne.s	g_exit
 	move.l	_curproc,a0
 	move.w	#0x0001,P_INDOS(a0)
-	move.w	#1,P_INKERN(a0)
 g_exit:
-	rts
-
-_enter_kernel:
-#ifdef __mcoldfire__
-	moveq	#0x7,d0
-	bset	d0,_in_kernel
-#else
-	bset	#0x7,_in_kernel
-#endif
-	bne.s	k_exit
-	move.l	_curproc,a0
-	move.w	#1,P_INKERN(a0)
-k_exit:
 	rts
 
 //
@@ -85,7 +70,6 @@ k_exit:
 _leave_kernel:
 	move.l	_curproc,a0
 	clr.w	P_INDOS(a0)
-	clr.w	P_INKERN(a0)
 #ifndef M68000
 	clr.w	P_INVDI(a0)
 #endif
