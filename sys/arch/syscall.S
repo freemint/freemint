@@ -67,9 +67,6 @@
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
-#ifndef M68000
-	.globl	_enter_vdi
-#endif
 	.globl	_enter_kernel
 	.globl	_leave_kernel
 	.extern	_in_kernel
@@ -92,7 +89,7 @@
 	.globl	_sys_b_ubconstat,_do_bconin,_sys_b_ubcostat,_sys_b_kbshift
 
 	.globl	_secure_mode,_falcontos
-	
+
 	.globl	_stop
 
 	.globl _stackerror
@@ -323,7 +320,7 @@ sk:
 	jsr	_build_context
 	lea	_xbios_tab,a5		// set syscall_tab
 	move.w	_xbios_max,d5		// set syscall_max
-	
+
 //
 // copy parameters onto process stack. a0 and a1 were set by _build_context
 //
@@ -710,11 +707,22 @@ _mint_trap2:
 	bra	reentrant_trap2
 
 norm_trap2:
-#ifndef M68000
-	jsr	_enter_vdi
+#ifdef M68000
+	bset	#0x07,_in_kernel	// speed optimization: 'in_vdi' is not used for the 000 build
 #else
-	bset	#0x07,_in_kernel	// speed optimization: 'in_vdi' is not used for the 000 builds
+	move.l	a0,-(sp)		// backup a0
+
+#ifdef __mcoldfire__
+	lea	_in_kernel,a0
+	bset	#0x07,(a0)
+#else
+	bset	#0x07,_in_kernel
 #endif
+	move.l	_curproc,a0
+	move.w	#0x0001,P_INVDI(a0)
+
+	move.l	(sp)+,a0		// restore a0
+#endif	// M68000
 
 // The AES/VDI passes parameters in D0/D1, so we do not touch
 // them registers..
@@ -740,7 +748,7 @@ norm_trap2:
 	beq	trap2_gdosvers
 	cmp.w	#-1,d0			// This returns the address of the VDI handler
 	beq	trap2_vdihandler
-	
+
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 trap2_out:
@@ -771,7 +779,7 @@ enter_aes:
 	bra.s	trap2_out
 
 	// Return the GDOS version if VDI is installed
-	// as a kernel module. 
+	// as a kernel module.
 trap2_gdosvers:
 	move.l	_vdi_handler,d2
 	beq.s	old_trap2
@@ -885,7 +893,7 @@ TE_AV_JMP_OLD:
 	move.l	_old_trap2.w(pc),-(sp)
 	rts
 #endif
-	
+
 _trap_13_emu:
 #ifdef __mcoldfire__
 	tst.w	_coldfire_68k_emulation
@@ -1261,7 +1269,7 @@ reent_fpu:
 	bra.s	reent_save_fpu
 reent_no_060:
 #endif
-	
+
 	tst.b	(sp)
 	beq.s	reent_fpu_notused
 reent_save_fpu:
@@ -1486,7 +1494,7 @@ reent2_fpu:
 	bra.s	reent2_save_fpu
 reent2_no_060:
 #endif
-	
+
 	tst.b	(sp)
 	beq.s	reent2_fpu_notused
 reent2_save_fpu:
@@ -1513,7 +1521,7 @@ reent2_fpu_saved:
 	beq	reent2_trap2_gdosvers
 	cmp.w	#-1,d0			// This returns the address of the VDI handler
 	beq	reent2_trap2_vdihandler
-	
+
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 	moveq	#0,d2
@@ -1546,7 +1554,7 @@ reent2_enter_aes:
 	bra.s	reent2_trap2_out
 
 	// REturn the GDOS version if VDI is installed
-	// as a kernel module. 
+	// as a kernel module.
 reent2_trap2_gdosvers:
 	move.l	_vdi_handler,d2
 	beq.s	reent2_old_trap2

@@ -17,9 +17,6 @@
 #include "magic/magic.i"
 
 	.globl	_enter_gemdos
-#ifndef M68000
-	.globl	_enter_vdi
-#endif
 	.globl	_enter_kernel
 	.globl	_leave_kernel
 
@@ -63,22 +60,6 @@ _enter_gemdos:
 g_exit:
 	rts
 
-#ifndef M68000
-_enter_vdi:
-#ifdef __mcoldfire__
-	moveq	#0x07,d0
-	bset	d0,_in_kernel
-#else
-	bset	#0x07,_in_kernel
-#endif
-	bne.s	v_exit
-	move.l	_curproc,a0
-	move.w	#0x0001,P_INVDI(a0)
-	move.w	#1,P_INKERN(a0)
-v_exit:
-	rts
-#endif
-
 _enter_kernel:
 #ifdef __mcoldfire__
 	moveq	#0x7,d0
@@ -104,9 +85,9 @@ k_exit:
 _leave_kernel:
 	move.l	_curproc,a0
 	clr.w	P_INDOS(a0)
+	clr.w	P_INKERN(a0)
 #ifndef M68000
 	clr.w	P_INVDI(a0)
 #endif
-	clr.w	P_INKERN(a0)
 	clr.w	_in_kernel
 	rts
