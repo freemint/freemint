@@ -843,10 +843,9 @@ DUMPPROC(void)
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		FORCE("state %s sys %s, inkern %s PC: %lx/%lx BP: %p (pgrp %i)",
+		FORCE("state %s sys %s, PC: %lx/%lx BP: %p (pgrp %i)",
 			qname(curproc->wait_q),
 			curproc->p_flag & P_FLAG_SYS ? "yes":" no",
-			curproc->in_kern ? "yes":" no",
 			curproc->ctxt[CURRENT].pc, curproc->ctxt[SYSCALL].pc,
 			curproc->p_mem ? curproc->p_mem->base : NULL,
 			curproc->pgrp);
