@@ -743,7 +743,7 @@ norm_trap2:
 	// A1 set to callers stack by build_context
 	move.l	_curproc,a0
 	move.l	(a0),sp			// fetch our systemstack
-	move.w	6(a0),d0		// D0.w saved by build_context, function code (AES or VDI)
+	move.l	4(a0),d0		// D0.l saved by build_context, function code (AES or VDI)
 	move.l	8(a0),d1		// AES/VDI pb
 	cmp.w	#115,d0			// VDI?
 	beq	enter_vdi
