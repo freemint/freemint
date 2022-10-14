@@ -417,8 +417,8 @@ checkalarms (void)
 		 * need a cast and have to place it in t->arg themselves but
 		 * that way everything else still works without change -nox
 		 */
-		register long args __asm__("d0") = tlist->arg;
-		register PROC *p __asm__("a0") = tlist->proc;
+		register long args = tlist->arg;
+		register PROC *p = tlist->proc;
 		to_func *evnt = tlist->func;
 		register TIMEOUT *old = tlist;
 		
@@ -450,8 +450,11 @@ checkalarms (void)
 		 * to be drivers around that were compiled by it.
 		 */
 		__asm__ __volatile__(
-			"\tmove.l %1,-(%%a7)\n"
-			"\tmove.l %0,-(%%a7)\n"
+			"\tmove.l %1, %%d0\n"
+			"\tmove.l %0, %%a0\n"
+
+			"\tmove.l d0,-(%%a7)\n"
+			"\tmove.l a0,-(%%a7)\n"
 			"\tjsr (%2)\n"
 #ifdef __mcoldfire__
 			"\taddq.l #8,%%a7\n"
@@ -460,7 +463,7 @@ checkalarms (void)
 #endif
 		: /* no outputs */
 		: "a"(p), "d"(args), "a"(evnt)
-		: "d1", "d2", "a1", "a2", "cc", "memory");
+		: "d0", "d1", "d2", "a0", "a1", "a2", "cc", "memory");
 		
 		sr = spl7 ();
 	}
