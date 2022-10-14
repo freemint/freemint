@@ -76,6 +76,12 @@ CPU  = 040
 KERNELDEFS = -DM68040
 endif
 
+ifeq ($(kernel),080)
+MINT = mint080.prg
+CPU  = 040
+KERNELDEFS = -DM68040 -DWITH_68080
+endif
+
 ifeq ($(kernel),060)
 MINT = mint060.prg
 CPU  = 060
@@ -144,5 +150,5 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 020 030 040 060 deb mil ara hat hat030 col
+kerneltargets = 000 020 030 040 060 080 deb mil ara hat hat030 col
 cputargets = 000 020 030 040 060 020-60 v4e

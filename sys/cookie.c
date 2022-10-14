@@ -194,7 +194,11 @@ init_cookies (void)
 		TRACE(("_CPU cookie = %08lx", mcpu));
 
 		newcookie[i].tag = COOKIE__CPU;
+#ifdef WITH_68080
+		newcookie[i].value = 80L; /* quick bad hack */
+#else
 		newcookie[i].value = mcpu;
+#endif
 		i++;
 
 		TRACE(("_FPU cookie = %08lx", fputype));

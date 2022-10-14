@@ -33,6 +33,12 @@ CPU = 040
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 
+ifeq ($(xaaes),080)
+TARGET = xaaes080.km
+CPU = 040
+XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
+endif
+
 ifeq ($(xaaes),060)
 TARGET = xaaes060.km
 CPU = 060
@@ -54,7 +60,7 @@ endif
 #
 # all default targets
 #
-xaaestargets = deb 000 sto 030 040 060 col 02060
+xaaestargets = deb 000 sto 030 040 060 080 col 02060
 
 ara:: 040
 	@:

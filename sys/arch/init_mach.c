@@ -206,11 +206,13 @@ _getmch (void)
 	mcpu = detect_cpu();
 	/* own FPU test; this must be done after the CPU detection */
 	fputype = detect_fpu();
+#ifndef WITH_68080
 	/* own SFP-004 test */
 	sfptype = detect_sfp();
 	
 	if ((sfptype >> 16) > 1)
 	    fputype |= 0x00010000;	// update _FPU cookie with the SFP-004 bit
+#endif
 
 	if ((fputype >> 16) > 1)	// coprocessor mode only
 		fpu = 1;
