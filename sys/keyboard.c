@@ -1781,8 +1781,8 @@ load_internal_table(void)
 long
 load_keyboard_table(const char *path, short flag)
 {
-	char buf[64];
-	const char *name;
+	char buf[64], buf2[64];
+	const char *name, *name2=NULL;
 	FILEPTR *fp;
 	long ret;
 
@@ -1790,8 +1790,16 @@ load_keyboard_table(const char *path, short flag)
 	{
 		/* `keybd.tbl' is already used by gem.sys, we can't conflict
 		 */
+		NVM nvm;
 		ksprintf(buf, sizeof(buf), "%skeyboard.tbl", sysdir);
-		name = buf;
+		if (TRAP_NVMaccess(0, 0, sizeof(NVM), &nvm) == 0)
+		{
+			ksprintf(buf2, sizeof(buf2), "%skeybd%d.tbl", sysdir, (int)nvm.keyboard);
+			name = buf2;
+			name2 = buf;
+		}
+		else
+			name = buf;
 	}
 	else
 		name = path;
@@ -1804,6 +1812,11 @@ load_keyboard_table(const char *path, short flag)
 		XATTR xattr;
 
 		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
+		if (ret != 0 && name2 != NULL)
+		{
+			ret = do_open(&fp, name2, O_RDONLY, 0, &xattr);
+			name = name2;
+		}
 		if (ret == 0)
 		{
 # ifdef VERBOSE_BOOT
@@ -1840,7 +1853,7 @@ void
 init_keybd(void)
 {
 	ushort delayrate;
-	struct keytab *local_keytab;
+	struct keytab *local_keytab = NULL;
 
 	/* Call the underlying XBIOS to get some defaults.
 	 *
