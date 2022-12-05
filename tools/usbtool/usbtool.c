@@ -38,7 +38,7 @@ extern short _app;
 
 short line_0;                  /* 1st line of display */
 short char_0;                  /* 1st character of display */
-short full_flag;
+short full_flag = FALSE;
 short total_height;            /* Total height in number of text lines */
 short total_width;             /* Total width in number of characters */
 
@@ -437,27 +437,27 @@ void sized(short w_handle, short x, short y, short w, short h)
 
 void fulled()
 {
-	short x, y, w, h;
 	short wx, wy, ww, wh;
 	short msg[8];
-	short mode;
 	if (full_flag)	/* If already full screen */
 	{
-		mode = WF_PREVXYWH;
+		wind_get(text_handle, WF_PREVXYWH, &xf, &yf, &wf, &hf);
 		full_flag = FALSE;
 	}
 	else
 	{
-		mode = WF_FULLXYWH;
+		wind_get(text_handle, WF_CURRXYWH, &xf, &yf, &wf, &hf);
+		wind_get(text_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
+		wf = w_char * total_width + wf - ww + 8;
+		hf = h_char * MAX(total_height,3) + hf - wh + 8;
+		wind_get (0, WF_WORKXYWH, &wx, &wy, &ww, &wh);
+		if (hf > wh)
+			hf = wh;
+		if (wf > ww)
+			wf = ww;
 		full_flag = TRUE;
 	}
-	wind_get(text_handle, mode, &x, &y, &w, &h);
-	wind_set(text_handle, WF_CURRXYWH, x, y, w, h);	/* New coordinates */
-	wind_get(text_handle, WF_WORKXYWH, &wx, &wy, &ww, &wh);
-	/* Save the coordinates */
-	wind_get(text_handle, WF_CURRXYWH, &xf, &yf, &wf, &hf);
-	hf = hf - (wh - (wh / h_line * h_line)); /* Normalize to display entire line */
-	wind_set(text_handle, mode, xf, yf, wf, hf);
+	wind_set(text_handle, WF_CURRXYWH, xf, yf, wf, hf);
 	sliders();	/* Adjust sizes and positions of sliders */
 	/* Redraw */
 	msg[0] = WM_REDRAW;
