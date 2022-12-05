@@ -320,7 +320,7 @@ void open_text(void)
 		if (xf == NO_POSITION)
 		{
 			wf = w_char * 64 + 3;
-			hf = h_char * 10 + 3;
+			hf = h_char * 12 + 3;
 			wind_get (0, WF_WORKXYWH, &xf, &yf, &workW, &workH);
 			if (wf > workW)
 				wf = workW;
