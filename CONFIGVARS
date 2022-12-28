@@ -86,7 +86,7 @@ SED   = sed
 #
 # optimizations
 # 
-OPTS = -O2 -fomit-frame-pointer
+OPTS = -O2 -fomit-frame-pointer -fno-strict-aliasing
 
 #
 # warning options
