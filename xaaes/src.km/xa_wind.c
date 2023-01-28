@@ -685,6 +685,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 	/* Extension, send window to the bottom */
 	case WF_BOTTOM:
+	case WF_M_BACKDROP:
 	{
 		if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 			bottom_window(lock, false, true, w);
@@ -1231,7 +1232,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
 
-	CONTROL(2,5,0)
+	CONTROL3(2,5,0, 3,5,0, 4,5,0)
 
 	w = get_wind_by_handle(lock, wind);
 
@@ -1561,6 +1562,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	}
 	/* AES4 compatible stuff */
 	case WF_OWNER:
+	case WF_M_OWNER:
 	{
 		if (w == root_window)
 			/* If it is the root window, things arent that easy. */
@@ -1730,6 +1732,9 @@ oeps:
 			*ro = *sr;
 		break;
 	}
+	case WF_MINXYWH:
+		*ro = w->min;
+		break;
 	case WF_SHADE:
 	{
 		*o = (w->window_status & XAWS_SHADED) ? 1 : 0;
