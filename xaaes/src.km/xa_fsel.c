@@ -3046,7 +3046,7 @@ fs_msg_handler(
 				{
 					/* Ctrl-c: copy path/file to clipbrd */
 					case FSM_COPY:
-						if( fs->path && *fs->path )
+						if( *fs->path )
 						{
 							char t[256];
 							int l = strlen( fs->path )-1;
