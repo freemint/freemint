@@ -1612,7 +1612,7 @@ XA_rsrc_load(int lock, struct xa_client *client, AESPB *pb)
 			if (rsc)
 			{
 				OBJECT **o;
-				o = (OBJECT **)((char *)rsc + rsc->rsh_trindex);
+				o = (OBJECT **)rsc_start(rsc, rsh_trindex);
 				client->trees = o;
 
 				if (client->globl_ptr != (struct aes_global *)pb->global)
