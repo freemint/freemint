@@ -27,15 +27,12 @@
 	.globl	__base
 	.globl	_init
 	.globl	__crtinit
-	.global __PgmSize
 	.globl _isHddriverModule
 	.globl ismodule
 
 
 	.bss
 savsp:
-	ds.l	1
-__PgmSize:
 	ds.l	1
 
 	.text
