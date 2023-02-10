@@ -800,7 +800,7 @@ again:
 				for (j = k; j < USB_MAX_DEVICE; j++)
 				{
 					struct usb_device *pdev = usb_get_dev_index (j);
-					if (pdev && pdev->mf && pdev->prod)
+					if (pdev)
 					{
 						char name[128];
 						memset (name, 0, sizeof(name));

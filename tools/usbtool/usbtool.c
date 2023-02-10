@@ -245,7 +245,7 @@ void update_text(void)
 		for (i = 0; i < api->max_devices; i++)
 		{
 			struct usb_device *dev = usb_get_dev_index (i);
-			if (dev && dev->mf && dev->prod)
+			if (dev)
 			{
 				/* See if it's a root hub */
 				struct usb_interface *iface = &dev->config.if_desc[0L];
