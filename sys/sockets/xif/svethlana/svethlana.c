@@ -35,7 +35,7 @@
  *		ifconfig en0 addr u.v.w.x
  *		route add u.v.w.x en0
  *
- *		20160426	/Henrik and Torbj”rn Gild†
+ *		20160426	/Henrik and Torbjï¿½rn Gildï¿½
  *
  */
 
@@ -57,15 +57,6 @@
 
 #include <mint/osbind.h>
 #define ct60_vmalloc(mode,value) (unsigned long)trap_14_wwl((short)(0xc60e),(short)(mode),(unsigned long)(value))
-
-typedef struct
-{
-	unsigned long  name;
-	unsigned long  val;
-} COOKIE;
-
-#define COOKIEBASE (*(COOKIE **)0x5a0)
-
 
 /*
  * From main.c
@@ -695,12 +686,19 @@ driver_init (void)
 	short	fhandle;
 	char	macbuf[13];
 
+	c_conws("\r\n");
 	c_conws("********************************\r\n");
 	c_conws("*****   SVEthLANa driver   *****\r\n");
 	c_conws("********************************\r\n");
 
-	//Check that the SV version is at least 10
-	//Otherwise the FW doesn't have Ethernet DMA
+	if (get_toscookie (COOKIE_SupV, NULL) != 0) {
+		c_conws("\r\nThis driver requires SV_XBIOS.PRG!\r\n");
+		Bconin(2);
+		return -1;
+	}
+
+	// Check that the SV version is at least 10
+	// Otherwise the FW doesn't have Ethernet DMA
 	{
 		uint32 sv_fw_version = SV_VERSION & 0x3FFUL;
 
@@ -711,30 +709,6 @@ driver_init (void)
 		{
 			c_conws( "\r\nThis driver needs at least SV FW version 10!\r\n" );
 			Bconin(2);
-			return -1;
-		}
-	}
-
-	{
-		int supv_found = 0;
-
-		COOKIE *cookie = COOKIEBASE;
-		if (cookie)
-		{
-			while (cookie->name)
-			{
-				if (cookie->name == COOKIE_SupV)
-				{
-					supv_found = 1;
-					break;
-				}
-				cookie++;
-                        }
-		}
-
-		if (!supv_found)
-		{
-			c_conws("\r\nThis driver requires SV_XBIOS.PRG!\r\n");
 			return -1;
 		}
 	}
