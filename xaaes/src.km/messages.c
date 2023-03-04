@@ -24,7 +24,6 @@
 
 #include "messages.h"
 
-#include "c_message.h"
 #include "desktop.h"
 #include "draw_obj.h"
 #include "k_main.h"

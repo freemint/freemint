@@ -8,7 +8,6 @@ HEADER = \
 	adiload.h \
 	app_man.h \
 	c_keybd.h \
-	c_message.h \
 	c_mouse.h \
 	c_window.h \
 	xacookie.h \
@@ -79,7 +78,6 @@ COBJS = \
 	app_man.c \
 	cnf_xaaes.c \
 	c_keybd.c \
-	c_message.c \
 	c_mouse.c \
 	c_window.c \
 	xacookie.c \
