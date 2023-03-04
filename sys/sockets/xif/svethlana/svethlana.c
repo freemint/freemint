@@ -35,13 +35,14 @@
  *		ifconfig en0 addr u.v.w.x
  *		route add u.v.w.x en0
  *
- *		20160426	/Henrik and Torbj”rn Gild†
+ *		20160426	/Henrik and Torbjï¿½rn Gildï¿½
  *
  */
 
 #include "global.h"
 
 #include "buf.h"
+#include "cookie.h"
 #include "inet4/if.h"
 #include "inet4/ifeth.h"
 
@@ -55,10 +56,7 @@
 #include "svethlana_i6.h"
 
 #include <mint/osbind.h>
-
-/* #include "vmalloc.h" */
 #define ct60_vmalloc(mode,value) (unsigned long)trap_14_wwl((short)(0xc60e),(short)(mode),(unsigned long)(value))
-
 
 /*
  * From main.c
@@ -156,7 +154,7 @@ svethlana_open (struct netif *nif)
 
 //	in_use = 1;
 
-//	c_conws("Svethlana up!\n\r");
+//	c_conws("Svethlana up!\r\n");
 
 	//enable RX, RX error, TX, TX error and Busy int sources
 	ETH_INT_MASK = ETH_INT_MASK_RXF | ETH_INT_MASK_RXE | ETH_INT_MASK_TXE | ETH_INT_MASK_TXB | ETH_INT_MASK_BUSY;
@@ -183,7 +181,7 @@ svethlana_close (struct netif *nif)
 	//disable RX and RX error int sources BEFORE removing I6 handler
 	ETH_INT_MASK = 0;
 
-	c_conws("Svethlana down!\n\r");
+	c_conws("Svethlana down!\r\n");
 
 	initializing = 1;
 
@@ -316,7 +314,7 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 //	unsigned long	timeval;
 
 
-	//c_conws("Output\n\r");		//debug
+	//c_conws("Output\r\n");		//debug
 
 	//*ETH_REG = (*ETH_REG) | 0x80;	//enable LED2
 
@@ -335,7 +333,7 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 	nbuf = eth_build_hdr (buf, nif, hwaddr, pktype);
 	if ( ((uint32)nbuf) == 0UL)
 	{
-		//c_conws("eth_build_hdr() failed!\n\r");
+		//c_conws("eth_build_hdr() failed!\r\n");
 		nif->out_errors++;
 		//*ETH_REG = (*ETH_REG) & 0x7F;	//disable LED2
 		return ENOMEM;
@@ -362,7 +360,7 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 //	littlemem = (*LAN_MIR) & 0x00ff;
 //	if (len == 0)
 //	{
-//		c_conws("Insufficient memory in LAN91C111!\n\r");
+//		c_conws("Insufficient memory in LAN91C111!\r\n");
 //	}
 
 	//shut out TX and RX interrupt, so we can send our packet safely
@@ -518,7 +516,7 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 	struct ifreq *ifr;
 
 
-//	c_conws("ioctl\n\r");		//debug
+//	c_conws("ioctl\r\n");		//debug
 
 
 	switch (cmd)
@@ -568,7 +566,7 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 static long
 svethlana_config (struct netif *nif, struct ifopt *ifo)
 {
-//	c_conws("Config\n\r");
+//	c_conws("Config\r\n");
 
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
 
@@ -688,21 +686,28 @@ driver_init (void)
 	short	fhandle;
 	char	macbuf[13];
 
-	c_conws("********************************\n\r");
-	c_conws("*****   SVEthLANa driver   *****\n\r");
-	c_conws("********************************\n\r");
+	c_conws("\r\n");
+	c_conws("********************************\r\n");
+	c_conws("*****   SVEthLANa driver   *****\r\n");
+	c_conws("********************************\r\n");
 
-	//Check that the SV version is at least 10
-	//Otherwise the FW doesn't have Ethernet DMA
+	if (get_toscookie (COOKIE_SupV, NULL) != 0) {
+		c_conws("\r\nThis driver requires SV_XBIOS.PRG!\r\n");
+		Bconin(2);
+		return -1;
+	}
+
+	// Check that the SV version is at least 10
+	// Otherwise the FW doesn't have Ethernet DMA
 	{
 		uint32 sv_fw_version = SV_VERSION & 0x3FFUL;
 
-		ksprintf (message, "SuperVidel FW version is %lu\n\r", sv_fw_version);
+		ksprintf (message, "SuperVidel FW version is %lu\r\n", sv_fw_version);
 		c_conws  (message);
 
 		if (sv_fw_version < 10)
 		{
-			c_conws( "This driver needs at least SV FW version 10!\n\r" );
+			c_conws( "\r\nThis driver needs at least SV FW version 10!\r\n" );
 			Bconin(2);
 			return -1;
 		}
@@ -724,13 +729,13 @@ driver_init (void)
 		ferror = Fread(fhandle,12,macbuf);
 		if(ferror < 0)
 		{
-			c_conws ("Error reading svethlan.inf!\n\r");
+			c_conws ("\r\nError reading svethlan.inf!\r\n");
 			Fclose(fhandle);
 			return -1;
 		}
 		if(ferror < 12)
 		{
-			c_conws ("svethlan.inf is less than 12 bytes long!\n\r");
+			c_conws ("\r\nsvethlan.inf is less than 12 bytes long!\r\n");
 			Fclose(fhandle);
 			return -1;
 		}
@@ -742,8 +747,8 @@ driver_init (void)
 	}
 	else
 	{
-		c_conws("Could not open svethlan.inf\n\r");
-		c_conws("Using default ethernet address 00:01:02:03:04:05\n\r");
+		c_conws("Could not open svethlan.inf\r\n");
+		c_conws("Using default ethernet address 00:01:02:03:04:05\r\n");
 		macbuf[0] = '0';
 		macbuf[1] = '0';
 		macbuf[2] = '0';
@@ -898,7 +903,7 @@ driver_init (void)
 	/*
 	 * And say we are alive...
 	 */
-	ksprintf (message, "SVEthLANa driver v0.9 (en%d)\n\r", if_svethlana.unit);
+	ksprintf (message, "SVEthLANa driver v0.9 (en%d)\r\n", if_svethlana.unit);
 	c_conws (message);
 
 	//print out all function pointers
@@ -927,7 +932,7 @@ driver_init (void)
 	// Install interrupt handler
 	svethlana_install_int();
 
-	//c_conws("Init succeeded\n\r");
+	//c_conws("Init succeeded\r\n");
 	return 0;
 }
 
@@ -1017,7 +1022,7 @@ int32 Check_Rx_Buffers()
 		tmp2 = eth_rx_bd[cur_rx_slot].len_ctrl;
 		if ((tmp2 & ETH_RX_BD_EMPTY) == 0UL)
 		{
-			ksprintf (message, "Slot %lu RX retried read: 0x%08lx then 0x%08lx\n\r", cur_rx_slot, tmp1, tmp2);
+			ksprintf (message, "Slot %lu RX retried read: 0x%08lx then 0x%08lx\r\n", cur_rx_slot, tmp1, tmp2);
 			c_conws (message);
 			retval = (int32)cur_rx_slot;
 			cur_rx_slot = (cur_rx_slot + 1) & (ETH_PKT_BUFFS-1);
@@ -1069,7 +1074,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 											 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL))
 				{
 					//At least one of the above error flags was set
-					ksprintf (message, "Slot %hu RX errorflags: 0x%08lx \n\r", i, eth_rx_bd[i].len_ctrl);
+					ksprintf (message, "Slot %hu RX errorflags: 0x%08lx \r\n", i, eth_rx_bd[i].len_ctrl);
 					c_conws (message);
 
 					//Clear error flags
@@ -1097,7 +1102,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 			uint32	*dest;
 			uint32	length, len_longs;
 
-			//ksprintf (message, "R%02li 0x%08lx\n\r", slot, eth_rx_bd[slot].len_ctrl);
+			//ksprintf (message, "R%02li 0x%08lx\r\n", slot, eth_rx_bd[slot].len_ctrl);
 			//c_conws(message);
 
 			length = ((eth_rx_bd[slot].len_ctrl) >> 16);	//length in upper word
@@ -1110,7 +1115,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 			if(b == 0)
 			{
 				nif->in_errors++;
-				//ksprintf (message, "buf_alloc RX failed, %lu \n\r", 1518UL + 200UL);
+				//ksprintf (message, "buf_alloc RX failed, %lu \r\n", 1518UL + 200UL);
 				//c_conws(message);
 			}
 			else
@@ -1152,7 +1157,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 				else
 				{
 					nif->in_errors++;
-					c_conws("input packet failed when receiving!\n\r");
+					c_conws("input packet failed when receiving!\r\n");
 				}
 			}
 
@@ -1190,7 +1195,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 
 			//in_queue--;
 
-			//ksprintf (message, "Dequeued, %u left\n\r", nif->snd.qlen);
+			//ksprintf (message, "Dequeued, %u left\r\n", nif->snd.qlen);
 			//c_conws(message);
 		}
 	}
