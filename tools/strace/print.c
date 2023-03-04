@@ -32,11 +32,8 @@
 #include <string.h>
 
 #include <sys/ptrace.h>
+#include <sys/time.h>
 
-/* XXX -> mintlib */
-typedef long long llong;
-
-#include "../../sys/mint/stat.h"
 #include "../../sys/mint/un.h"
 #include <netinet/in.h>
 
@@ -178,7 +175,7 @@ print_struct_timeval(pid_t pid, const void *data)
 	
 	copy_bytes(pid, data, (unsigned char *)(&tv), sizeof(tv));
 	
-	printf("struct timeval { %li, %li }", tv.tv_sec, tv.tv_usec);
+	printf("struct timeval { %d, %li }", tv.tv_sec, tv.tv_usec);
 }
 
 void
