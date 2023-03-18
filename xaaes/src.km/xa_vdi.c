@@ -29,21 +29,21 @@
 #include "trnfm.h"
 
 static void _cdecl
-r2pxy(short *p, short d, const RECT *r)
+r2pxy(short *p, short d, const GRECT *r)
 {
-	*p++ = r->x - d;
-	*p++ = r->y - d;
-	*p++ = r->x + r->w + d - 1;
-	*p   = r->y + r->h + d - 1;
+	*p++ = r->g_x - d;
+	*p++ = r->g_y - d;
+	*p++ = r->g_x + r->g_w + d - 1;
+	*p   = r->g_y + r->g_h + d - 1;
 }
 
 static void _cdecl
-rtopxy(short *p, const RECT *r)
+rtopxy(short *p, const GRECT *r)
 {
-	*p++ = r->x;
-	*p++ = r->y;
-	*p++ = r->x + r->w - 1;
-	*p   = r->y + r->h - 1;
+	*p++ = r->g_x;
+	*p++ = r->g_y;
+	*p++ = r->g_x + r->g_w - 1;
+	*p   = r->g_y + r->g_h - 1;
 }
 
 static void _cdecl
@@ -86,12 +86,12 @@ xa_clear_clip(struct xa_vdi_settings *v)
 {
 	short r[4];
 
-	rtopxy(r, (RECT *)&v->screen);
+	rtopxy(r, (GRECT *)&v->screen);
 	vs_clip(v->handle, 1, r);
 };
 
 static void _cdecl
-xa_restore_clip(struct xa_vdi_settings *v, const RECT *s)
+xa_restore_clip(struct xa_vdi_settings *v, const GRECT *s)
 {
 	short r[4];
 
@@ -101,20 +101,20 @@ xa_restore_clip(struct xa_vdi_settings *v, const RECT *s)
 };
 
 static void _cdecl
-xa_save_clip(struct xa_vdi_settings *v, RECT *s)
+xa_save_clip(struct xa_vdi_settings *v, GRECT *s)
 {
 	*s = v->clip;
 }
 
 static void _cdecl
-xa_set_clip(struct xa_vdi_settings *v, const RECT *clip)
+xa_set_clip(struct xa_vdi_settings *v, const GRECT *clip)
 {
 	short r[4];
 
 	if (!clip)
 		clip = &v->clip;
 
-	if (clip->w > 0 && clip->h > 0)
+	if (clip->g_w > 0 && clip->g_h > 0)
 	{
 		if (clip != &v->clip) v->clip = *clip;
 	}
@@ -137,10 +137,10 @@ xa_wr_mode(struct xa_vdi_settings *v, short m)
 
 static void _cdecl xa_f_color(struct xa_vdi_settings *, short);
 static void _cdecl xa_f_interior(struct xa_vdi_settings *, short);
-static void _cdecl xa_gbar(struct xa_vdi_settings *v, short d, const RECT *r);		/* for perimeter = 0 */
+static void _cdecl xa_gbar(struct xa_vdi_settings *v, short d, const GRECT *r);		/* for perimeter = 0 */
 
 static void _cdecl
-xa_write_disable(struct xa_vdi_settings *v, RECT *r, short colour)
+xa_write_disable(struct xa_vdi_settings *v, GRECT *r, short colour)
 {
 	static short pattern[16] =
 	{
@@ -427,7 +427,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 }
 
 static void _cdecl
-xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, short xoff, short yoff)
+xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, short state, const GRECT *r, short xoff, short yoff)
 {
 	struct xa_fnt_info *wtxt;
 	bool sel = state & OS_SELECTED;
@@ -447,19 +447,19 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));
 	else
-		xa_prop_clipped_name(v, txt, t, r->w - (xoff << 1), &x, &y, 1);
+		xa_prop_clipped_name(v, txt, t, r->g_w - (xoff << 1), &x, &y, 1);
 
 	xa_t_extent(v, t, &x, &y);
-	y = yoff + r->y + ((r->h - y) >> 1);
+	y = yoff + r->g_y + ((r->g_h - y) >> 1);
 
 	if (f & WTXT_CENTER)
 	{
-		x = r->x + ((r->w - x) >> 1);
-		if (x < (r->x + xoff))
-			x += ((r->x + xoff) - x);
+		x = r->g_x + ((r->g_w - x) >> 1);
+		if (x < (r->g_x + xoff))
+			x += ((r->g_x + xoff) - x);
 	}
 	else
-		x = xoff + r->x;
+		x = xoff + r->g_x;
 
 	if (f & WTXT_DRAW3D)
 	{
@@ -510,13 +510,13 @@ xa_f_perimeter(struct xa_vdi_settings *v, short m)
 }
 
 static void _cdecl
-xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
+xa_gbox(struct xa_vdi_settings *v, short d, const GRECT *r)
 {
 	short l[10];
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + d+d;
+	short h = r->g_h + d+d;
 	l[0] = x;
 	l[1] = y;
 	l[2] = x + w - 1;
@@ -531,13 +531,13 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 }
 
 static void _cdecl
-xa_rgbox(struct xa_vdi_settings *v, short d, short rnd, const RECT *r)
+xa_rgbox(struct xa_vdi_settings *v, short d, short rnd, const GRECT *r)
 {
 	short l[10];
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + d+d;
+	short h = r->g_h + d+d;
 
 	l[0] = x + rnd;
 	l[1] = l[3] = y;
@@ -575,13 +575,13 @@ xa_box(struct xa_vdi_settings *v, short d, short x, short y, short w, short h)
 }
 
 static void _cdecl
-xa_gbar(struct xa_vdi_settings *v, short d, const RECT *r)		/* for perimeter = 0 */
+xa_gbar(struct xa_vdi_settings *v, short d, const GRECT *r)		/* for perimeter = 0 */
 {
 	short l[4];
-	l[0] = r->x - d;
-	l[1] = r->y - d;
-	l[2] = r->x + r->w + d - 1;
-	l[3] = r->y + r->h + d - 1;
+	l[0] = r->g_x - d;
+	l[1] = r->g_y - d;
+	l[2] = r->g_x + r->g_w + d - 1;
+	l[3] = r->g_y + r->g_h + d - 1;
 	v_bar(v->handle, l);
 }
 
@@ -598,13 +598,13 @@ xa_bar(struct xa_vdi_settings *v, short d,  short x, short y, short w, short h)
 }
 
 static void _cdecl
-xa_p_gbar(struct xa_vdi_settings *v, short d, const RECT *r)	/* for perimeter = 1 */
+xa_p_gbar(struct xa_vdi_settings *v, short d, const GRECT *r)	/* for perimeter = 1 */
 {
 	short l[10];
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + d+d;
+	short h = r->g_h + d+d;
 	l[0] = x+1;			/* only the inside */
 	l[1] = y+1;
 	l[2] = x+w-2;
@@ -624,13 +624,13 @@ xa_p_gbar(struct xa_vdi_settings *v, short d, const RECT *r)	/* for perimeter = 
 }
 
 static void _cdecl
-xa_top_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
+xa_top_line(struct xa_vdi_settings *v, short d, const GRECT *r, short col)
 {
 	short pnt[4];
 
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + d + d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + d + d;
 
 	xa_l_color(v, col);
 	pnt[0] = x;
@@ -641,14 +641,14 @@ xa_top_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_bottom_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
+xa_bottom_line(struct xa_vdi_settings *v, short d, const GRECT *r, short col)
 {
 	short pnt[4];
 
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + d+d;
+	short h = r->g_h + d+d;
 
 	xa_l_color(v, col);
 	pnt[0] = x;
@@ -659,13 +659,13 @@ xa_bottom_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_left_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
+xa_left_line(struct xa_vdi_settings *v, short d, const GRECT *r, short col)
 {
 	short pnt[4];
 
-	short x = r->x - d;
-	short y = r->y - d;
-	short h = r->h + d+d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short h = r->g_h + d+d;
 
 	xa_l_color(v, col);
 	pnt[0] = x;
@@ -676,14 +676,14 @@ xa_left_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_right_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
+xa_right_line(struct xa_vdi_settings *v, short d, const GRECT *r, short col)
 {
 	short pnt[4];
 
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + d+d;
+	short h = r->g_h + d+d;
 
 	xa_l_color(v, col);
 	pnt[0] = x + w - 1;
@@ -694,13 +694,13 @@ xa_right_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_tl_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
+xa_tl_hook(struct xa_vdi_settings *v, short d, const GRECT *r, short col)
 {
 	short pnt[6];
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + (d+d);
-	short h = r->h + (d+d);
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + (d+d);
+	short h = r->g_h + (d+d);
 	xa_l_color(v, col);
 	pnt[0] = x;
 	pnt[1] = y + h - 1;
@@ -712,13 +712,13 @@ xa_tl_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_br_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
+xa_br_hook(struct xa_vdi_settings *v, short d, const GRECT *r, short col)
 {
 	short pnt[6];
-	short x = r->x - d;
-	short y = r->y - d;
-	short w = r->w + (d+d);
-	short h = r->h + (d+d);
+	short x = r->g_x - d;
+	short y = r->g_y - d;
+	short w = r->g_w + (d+d);
+	short h = r->g_h + (d+d);
 	xa_l_color(v, col);
 	pnt[0] = x;
 	pnt[1] = y + h - 1;
@@ -730,7 +730,7 @@ xa_br_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
+xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, GRECT *r, GRECT *anch)
 {
 	short pnt[8];
 	short x, y, w, h, sy, sh, dy, dh, width, height;
@@ -738,25 +738,25 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 
 	mscreen.fd_addr = NULL;
 
-	x = (long)(r->x - anch->x) % msrc->d_w;
+	x = (long)(r->g_x - anch->g_x) % msrc->d_w;
 	w = msrc->d_w - x;
-	sy = (long)(r->y - anch->y) % msrc->d_h;
+	sy = (long)(r->g_y - anch->g_y) % msrc->d_h;
 	sh = msrc->d_h - sy;
-	dy = r->y;
-	dh = r->h;
+	dy = r->g_y;
+	dh = r->g_h;
 
-	width = r->w;
+	width = r->g_w;
 	while (width > 0)
 	{
 		pnt[0] = x;
-		pnt[4] = r->x;
+		pnt[4] = r->g_x;
 
 		width -= w;
 		if (width <= 0)
 			w += width;
 		else
 		{
-			r->x += w;
+			r->g_x += w;
 			x = 0;
 		}
 		pnt[2] = pnt[0] + w - 1;
@@ -764,20 +764,20 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 
 		y = sy;
 		h = sh;
-		r->y = dy;
-		r->h = dh;
-		height = r->h;
+		r->g_y = dy;
+		r->g_h = dh;
+		height = r->g_h;
 		while (height > 0)
 		{
 			pnt[1] = y;
-			pnt[5] = r->y;
+			pnt[5] = r->g_y;
 
 			height -= h;
 			if (height <= 0)
 				h += height;
 			else
 			{
-				r->y += h;
+				r->g_y += h;
 				y = 0;
 			}
 
@@ -795,54 +795,54 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 #if 0
 /* HR: 1 (good) set of routines for screen saving */
 inline long
-calc_back(const RECT *r, short planes)
+calc_back(const GRECT *r, short planes)
 {
 	return 2L * planes
-		  * ((r->w + 15) >> 4)
-		  * r->h;
+		  * ((r->g_w + 15) >> 4)
+		  * r->g_h;
 }
 #endif
 
 static void _cdecl
-xa_form_save(short d, RECT r, void **area)
+xa_form_save(short d, GRECT r, void **area)
 {
 	MFDB Mscreen = { 0 };
 	MFDB Mpreserve;
 	short pnt[8];
 
-	r.x -= d;
-	r.y -= d;
-	r.w += d * 2;
-	r.h += d * 2;
+	r.g_x -= d;
+	r.g_y -= d;
+	r.g_w += d * 2;
+	r.g_h += d * 2;
 
-	if (r.x < 0)
+	if (r.g_x < 0)
 	{
-		r.w += r.x;
-		r.x = 0;
+		r.g_w += r.g_x;
+		r.g_x = 0;
 	}
-	if (r.y < 0)
+	if (r.g_y < 0)
 	{
-		r.h += r.y;
-		r.y = 0;
+		r.g_h += r.g_y;
+		r.g_y = 0;
 	}
 
-	if (r.w > 0 && r.h > 0)
+	if (r.g_w > 0 && r.g_h > 0)
 	{
 		if( screen.planes == 8 )
 		{
-			short xd = r.x & 0x000f;
-			r.x &= ~0x000f;		/* set x to word-boundary (fVDI)*/
-			r.w += xd;
+			short xd = r.g_x & 0x000f;
+			r.g_x &= ~0x000f;		/* set x to word-boundary (fVDI)*/
+			r.g_w += xd;
 		}
 
 		rtopxy(pnt, &r);
-		ritopxy(pnt + 4, 0, 0, r.w, r.h);
+		ritopxy(pnt + 4, 0, 0, r.g_w, r.g_h);
 
-		DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+		DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.g_x, r.g_y, r.g_w, r.g_h));
 
-		Mpreserve.fd_w = r.w;
-		Mpreserve.fd_h = r.h;
-		Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+		Mpreserve.fd_w = r.g_w;
+		Mpreserve.fd_h = r.g_h;
+		Mpreserve.fd_wdwidth = (r.g_w + 15) / 16;
 		Mpreserve.fd_nplanes = screen.planes;
 		Mpreserve.fd_stand = 0;
 
@@ -865,7 +865,7 @@ xa_form_save(short d, RECT r, void **area)
 }
 
 static void _cdecl
-xa_form_restore(short d, RECT r, void **area)
+xa_form_restore(short d, GRECT r, void **area)
 {
 	if (*area)
 	{
@@ -873,39 +873,39 @@ xa_form_restore(short d, RECT r, void **area)
 		MFDB Mpreserve;
 		short pnt[8];
 
-		r.x -= d;
-		r.y -= d;
-		r.w += d * 2;
-		r.h += d * 2;
+		r.g_x -= d;
+		r.g_y -= d;
+		r.g_w += d * 2;
+		r.g_h += d * 2;
 
-		if (r.x < 0)
+		if (r.g_x < 0)
 		{
-			r.w += r.x;
-			r.x = 0;
+			r.g_w += r.g_x;
+			r.g_x = 0;
 		}
-		if (r.y < 0)
+		if (r.g_y < 0)
 		{
-			r.h += r.y;
-			r.y = 0;
+			r.g_h += r.g_y;
+			r.g_y = 0;
 		}
 
-		if (r.w > 0 && r.h > 0)
+		if (r.g_w > 0 && r.g_h > 0)
 		{
 			if( screen.planes == 8 )
 			{
-				short xd = r.x & 0x000f;
-				r.x &= ~0x000f;		/* set x to word-boundary (fVDI) */
-				r.w += xd;
+				short xd = r.g_x & 0x000f;
+				r.g_x &= ~0x000f;		/* set x to word-boundary (fVDI) */
+				r.g_w += xd;
 			}
 
 			rtopxy(pnt+4, &r);
-			ritopxy(pnt,0,0,r.w,r.h);
+			ritopxy(pnt,0,0,r.g_w,r.g_h);
 
-			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.x, r.y, r.w, r.h, (unsigned long)*area));
+			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.g_x, r.g_y, r.g_w, r.g_h, (unsigned long)*area));
 
-			Mpreserve.fd_w = r.w;
-			Mpreserve.fd_h = r.h;
-			Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+			Mpreserve.fd_w = r.g_w;
+			Mpreserve.fd_h = r.g_h;
+			Mpreserve.fd_wdwidth = (r.g_w + 15) / 16;
 			Mpreserve.fd_nplanes = screen.planes;
 			Mpreserve.fd_stand = 0;
 			Mpreserve.fd_addr = *area;
@@ -920,7 +920,7 @@ xa_form_restore(short d, RECT r, void **area)
 }
 
 static void _cdecl
-xa_form_copy(const RECT *fr, const RECT *to)
+xa_form_copy(const GRECT *fr, const GRECT *to)
 {
 	MFDB Mscreen = { 0 };
 	short pnt[8];

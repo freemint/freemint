@@ -160,7 +160,7 @@ void
 exec_iredraw_queue(int lock, struct xa_client *client)
 {
 	struct xa_window *wind;
-	RECT *r;
+	GRECT *r;
 	long rdrws = -1L;
 	union msg_buf ibuf;
 
@@ -176,7 +176,7 @@ exec_iredraw_queue(int lock, struct xa_client *client)
 
 			if (!xaw && (wind != root_window || (wind == root_window && get_desktop()->owner == client)))
 			{
-				if (!(r->w || r->h))
+				if (!(r->g_w || r->g_h))
 					r = NULL;
 
 				display_window(lock, 14, wind, r);
@@ -558,7 +558,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 	client->em.flags = 0;
 	if (events & (MU_M1|MU_M2|MU_MX)) {
 		if (events & MU_M1) {
-			const RECT *r = (const RECT *)&pb->intin[5];
+			const GRECT *r = (const GRECT *)&pb->intin[5];
 
 			client->em.m1 = *r;
 			client->em.flags = (pb->intin[4] & 1) | MU_M1;
@@ -568,7 +568,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 			client->em.flags = (pb->intin[4] & 1) | MU_MX;
 		}
 		if (events & MU_M2) {
-			const RECT *r = (const RECT *)&pb->intin[10];
+			const GRECT *r = (const GRECT *)&pb->intin[10];
 
 			client->em.m2 = *r;
 			client->em.flags |= ((pb->intin[9] & 1) << 1) | MU_M2;
@@ -708,7 +708,7 @@ XA_evnt_mouse(int lock, struct xa_client *client, AESPB *pb)
 	}
 
 	bzero(&client->em, sizeof(client->em));
-	client->em.m1 = *((const RECT *) &pb->intin[1]);
+	client->em.m1 = *((const GRECT *) &pb->intin[1]);
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
 
 	/* Flag the app as waiting for messages */

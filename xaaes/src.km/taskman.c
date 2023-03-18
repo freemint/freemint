@@ -1064,7 +1064,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 		if (update_locked() != client->p && lock_screen(client->p, true))
 		{
 			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
-			RECT r, d = {0};
+			GRECT r, d = {0};
 			short b = 0, x, y;
 			bool doit = true, snapmsg = false;
 			AESPB *a = C.Hlp_pb;
@@ -1086,11 +1086,11 @@ screen_dump(int lock, struct xa_client *client, short open)
 				while (!b)
 					check_mouse(client, &b, &x, &y);
 
-				r.x = x;
-				r.y = y;
-				r.w = 0;
-				r.h = 0;
-				rubber_box(client, SE, r, &d, 0,0, root_window->r.h, root_window->r.w, &r);
+				r.g_x = x;
+				r.g_y = y;
+				r.g_w = 0;
+				r.g_h = 0;
+				rubber_box(client, SE, r, &d, 0,0, root_window->r.g_h, root_window->r.g_w, &r);
 			}
 			else if (a->intout[0] == 2)	/* full */
 				r = root_window->r;
@@ -1099,9 +1099,9 @@ screen_dump(int lock, struct xa_client *client, short open)
 				struct xa_window *wind = TOP_WINDOW;
 
 				if ( !dest_client ||
-						(wind->r.x > 0 && wind->r.y > 0 &&
-				   (wind->r.x + wind->r.w) < root_window->r.w &&
-				   (wind->r.y + wind->r.h) < root_window->r.h) )
+						(wind->r.g_x > 0 && wind->r.g_y > 0 &&
+				   (wind->r.g_x + wind->r.g_w) < root_window->r.g_w &&
+				   (wind->r.g_y + wind->r.g_h) < root_window->r.g_h) )
 					r = wind->r;
 				else
 				{
@@ -1117,14 +1117,14 @@ screen_dump(int lock, struct xa_client *client, short open)
 
 			if (doit)
 			{
-				if (r.w > 0 && r.h > 0)
+				if (r.g_w > 0 && r.g_h > 0)
 				{
 					if( dest_client )
 					{
-						msg[4] = r.x;
-						msg[5] = r.y;
-						msg[6] = r.w;
-						msg[7] = r.h;
+						msg[4] = r.g_x;
+						msg[5] = r.g_y;
+						msg[6] = r.g_w;
+						msg[7] = r.g_h;
 						send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
 						snapmsg = true;
 					}
@@ -1144,7 +1144,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 							*(cmdlin + 3) = '2';
 						else if (a->intout[0] == 1)	/* box */
 						{
-							int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d", r.x, r.y, r.w, r.h );
+							int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d", r.g_x, r.g_y, r.g_w, r.g_h );
 							*(cmdlin + 3) = '8';
 							*cmdlin = i + 6;
 						}
@@ -1194,7 +1194,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 				else
 				{
 					char s[128];
-					sprintf( s, sizeof(s)-1, "[1][could not snap area:w=%d,h=%d][OK]", r.w, r.h);
+					sprintf( s, sizeof(s)-1, "[1][could not snap area:w=%d,h=%d][OK]", r.g_w, r.g_h);
 					do_form_alert(lock, client, 1, s, XAAESNAME );
 				}
 			}
@@ -1884,7 +1884,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false, NULL, 0 );
 }
 
-RECT taskman_r = { 0, 0, 0, 0 };
+GRECT taskman_r = { 0, 0, 0, 0 };
 
 void
 open_taskmanager(int lock, struct xa_client *client, short open)
@@ -1893,7 +1893,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 	struct xa_window *wind;
 	XA_TREE *wt = NULL;
 	OBJECT *obtree = NULL;
-	RECT or;
+	GRECT or;
 	int redraw = NOREDRAW;
 
 	struct xa_wtxt_inf *wp[] = {&norm_txt, &acc_txt, &prg_txt, &sys_txt, &sys_thrd, &desk_txt, 0};
@@ -1943,10 +1943,10 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		minw = obtree[0].ob_width;
 		minh = obtree[0].ob_height;
-		if (taskman_r.w)
+		if (taskman_r.g_w)
 		{
-			short dw = taskman_r.w - or.w - 8;	/* !! */
-			short dh = taskman_r.h - or.h - 30;	/* !! */
+			short dw = taskman_r.g_w - or.g_w - 8;	/* !! */
+			short dh = taskman_r.g_h - or.g_h - 30;	/* !! */
 			int i;
 			obtree[TM_LIST].ob_width += dw;
 			obtree[TM_LIST].ob_height += dh;
@@ -1970,7 +1970,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 
 		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list, 0, 0);
 		/* Work out sizing */
-		if (!taskman_r.w)
+		if (!taskman_r.g_w)
 		{
 			center_rect(&or);
 			taskman_r = calc_window(lock, client, WC_BORDER,
@@ -1997,9 +1997,9 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 
 		if (!wind) goto fail;
 		/* minimum height for this window */
-		wind->min.h = minh;
+		wind->min.g_h = minh;
 		/* minimum width for this window */
-		wind->min.w = minw;
+		wind->min.g_w = minw;
 
 		wind->sw = 3;	/* border for moving objects when resizing */
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
@@ -2133,7 +2133,7 @@ create_dwind(int lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, s
 {
 	struct xa_window *wind;
 	OBJECT *obtree = wt->tree;
-        RECT r, or;
+        GRECT r, or;
 
 	obj_rectangle(wt, aesobj(obtree, 0), &or);
 
@@ -2826,7 +2826,7 @@ static void add_kerinfo(
 }
 
 
-RECT systemalerts_r = { 0, 0, 0, 0 };
+GRECT systemalerts_r = { 0, 0, 0, 0 };
 
 void
 open_systemalerts(int lock, struct xa_client *client, short open)
@@ -2843,7 +2843,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 	if (!htd->w_sysalrt)
 	{
 		struct scroll_info *list;
-		RECT or;
+		GRECT or;
 		short minw, minh;
 		char *a = xa_strings(RS_ALERTS);
 		char *e = xa_strings(RS_ENV);
@@ -2859,10 +2859,10 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		minw = obtree[SYSALERT_LIST].ob_width;
 		minh = obtree[SYSALERT_LIST].ob_height;
-		if (systemalerts_r.w)
+		if (systemalerts_r.g_w)
 		{
-			short dw = systemalerts_r.w - or.w - 8;	/* !! */
-			short dh = systemalerts_r.h - or.h - 30;	/* !! */
+			short dw = systemalerts_r.g_w - or.g_w - 8;	/* !! */
+			short dh = systemalerts_r.g_h - or.g_h - 30;	/* !! */
 			obtree[SYSALERT_LIST].ob_width += dw;
 			obtree[SYSALERT_LIST].ob_height += dh;
 			obtree[SALERT_CLEAR].ob_x += dw;
@@ -2952,7 +2952,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 					fs = pformats[5];
 
 				sprintf( sstr, sizeof(sstr)-1, xa_strings(RS_VIDEO),/* "Video:%dx%dx%d,%d colours, format: %s" */
-					screen.r.w, screen.r.h, screen.planes, screen.colours, fs );
+					screen.r.g_w, screen.r.g_h, screen.planes, screen.colours, fs );
 			}
 
 			sc.t.text = sstr;
@@ -2980,7 +2980,7 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		obtree[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
-		if (!systemalerts_r.w)
+		if (!systemalerts_r.g_w)
 		{
 			center_rect(&or);
 			systemalerts_r = calc_window(lock, client, WC_BORDER,
@@ -3010,9 +3010,9 @@ open_systemalerts(int lock, struct xa_client *client, short open)
 		if (!wind) goto fail;
 
 		/* minimum height for this window */
-		wind->min.h = minh;
+		wind->min.g_h = minh;
 		/* minimum width for this window */
-		wind->min.w = minw;
+		wind->min.g_w = minw;
 
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 

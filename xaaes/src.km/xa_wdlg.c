@@ -145,7 +145,7 @@ cpy_ev2md(EVNT *e, struct moose_data *m)
 }
 
 void
-wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r)
+wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, GRECT *r)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_rect_list *rl;
@@ -154,7 +154,7 @@ wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, sho
 	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_list.start))
 	{
 		OBJECT *obtree;
-		RECT dr;
+		GRECT dr;
 		bool drwcurs = (!wt->ei && edit_set(&wt->e));
 
 		obtree = wt->tree;
@@ -211,7 +211,7 @@ wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, sho
  * is handled elsewhere
  */
 static void
-wdlg_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r)
+wdlg_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, GRECT *r)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct wdlg_info *wdlg;
@@ -221,7 +221,7 @@ wdlg_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short 
 	{
 		XA_TREE *wt;
 		OBJECT *obtree;
-		RECT dr;
+		GRECT dr;
 		bool drwcurs;
 
 		if (is_iconified(wind))
@@ -237,8 +237,8 @@ wdlg_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short 
 				obtree->ob_y = 0;
 				obj_offset(wt, aesobj(wt->tree, wdlg->ify_obj), &x, &y);
 			}
-			obtree->ob_x = wind->wa.x - x;
-			obtree->ob_y = wind->wa.y - y;
+			obtree->ob_x = wind->wa.g_x - x;
+			obtree->ob_y = wind->wa.g_y - y;
 			start = wdlg->ify_obj >= 0 ? aesobj(obtree, wdlg->ify_obj) : aesobj(obtree, 0);
 			depth = 10;
 		}
@@ -327,7 +327,7 @@ wdialog_message(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 		{
 			if (wh != mh)
 				return -1;
-			(*wep->redraw)(wlock, wind, aesobj(NULL, 0), 10, (RECT *)&msg[4]);
+			(*wep->redraw)(wlock, wind, aesobj(NULL, 0), 10, (GRECT *)&msg[4]);
 			break;
 		}
 		case WM_TOPPED:
@@ -347,43 +347,43 @@ wdialog_message(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 		{
 			if (wh != mh)
 				return -1;
-			move_window(wlock, wind, true, XAWS_FULLED, wind->max.x, wind->max.y, wind->max.w, wind->max.h);
+			move_window(wlock, wind, true, XAWS_FULLED, wind->max.g_x, wind->max.g_y, wind->max.g_w, wind->max.g_h);
 			break;
 		}
 		case WM_SIZED:
 		{
-			RECT mr;
-			RECT r;
+			GRECT mr;
+			GRECT r;
 
 			if (wh != mh)
 				return -1;
 
 			if (wind->opts & XAWO_WCOWORK)
 			{
-				mr = w2f(&wind->delta, (RECT *)(msg + 4), true);
+				mr = w2f(&wind->delta, (GRECT *)(msg + 4), true);
 			}
 			else
-				mr = *(RECT *)(msg + 4);
+				mr = *(GRECT *)(msg + 4);
 
-			r.x = wind->r.x;
-			r.y = wind->r.y;
-			r.w = wind->max.w < mr.w ? wind->max.w : mr.w;
-			r.h = wind->max.h < mr.h ? wind->max.h : mr.h;
+			r.g_x = wind->r.g_x;
+			r.g_y = wind->r.g_y;
+			r.g_w = wind->max.g_w < mr.g_w ? wind->max.g_w : mr.g_w;
+			r.g_h = wind->max.g_h < mr.g_h ? wind->max.g_h : mr.g_h;
 		#if 0
-			r.w = wind->max.w < msg[6] ? wind->max.w : msg[6];
-			r.h = wind->max.h < msg[7] ? wind->max.h : msg[7];
+			r.g_w = wind->max.g_w < msg[6] ? wind->max.g_w : msg[6];
+			r.g_h = wind->max.g_h < msg[7] ? wind->max.g_h : msg[7];
 		#endif
-			if (wind->r.w != r.w || wind->r.h != r.h)
+			if (wind->r.g_w != r.g_w || wind->r.g_h != r.g_h)
 			{
 				inside_root(&r, wind->owner->options.noleft);
-				move_window(wlock, wind, true, -1, r.x, r.y, r.w, r.h);
+				move_window(wlock, wind, true, -1, r.g_x, r.g_y, r.g_w, r.g_h);
 			}
 			break;
 		}
 		case WM_MOVED:
 		{
-			RECT mr;
-			RECT r;
+			GRECT mr;
+			GRECT r;
 
 			if (wh != mh)
 				return -1;
@@ -395,18 +395,18 @@ wdialog_message(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 			}
 			if (wind->opts & XAWO_WCOWORK)
 			{
-				mr = w2f(&wind->delta, (RECT *)(msg + 4), true);
+				mr = w2f(&wind->delta, (GRECT *)(msg + 4), true);
 			}
 			else
-				mr = *(RECT *)(msg + 4);
+				mr = *(GRECT *)(msg + 4);
 
-			r.x = mr.x, r.y = mr.y;
+			r.g_x = mr.g_x, r.g_y = mr.g_y;
 
-			if (wind->r.x != r.x || wind->r.y != r.y)
+			if (wind->r.g_x != r.g_x || wind->r.g_y != r.g_y)
 			{
-				r.w = wind->rc.w, r.h = wind->rc.h;
+				r.g_w = wind->rc.g_w, r.g_h = wind->rc.g_h;
 				inside_root(&r, wind->owner->options.noleft);
-				move_window(wlock, wind, true, -1, r.x, r.y, r.w, r.h);
+				move_window(wlock, wind, true, -1, r.g_x, r.g_y, r.g_w, r.g_h);
 			}
 			break;
 		}
@@ -490,7 +490,7 @@ XA_wdlg_create(int lock, struct xa_client *client, AESPB *pb)
 	{
 		short swtflags = STW_ZEN|STW_GOC|STW_SWC;
 		XA_WIND_ATTR tp = 0;
-		RECT r, or = (RECT){100,100,100,100};
+		GRECT r, or = (GRECT){100,100,100,100};
 		OBJECT *obtree = (OBJECT*)pb->addrin[1];
 
 		pb->addrout[0] = 0;
@@ -579,7 +579,7 @@ XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 
 	if (wind && (wdlg = wind->wdlg))
 	{
-		RECT r = wind->wa;
+		GRECT r = wind->wa;
 		XA_WIND_ATTR tp = (unsigned short)pb->intin[0];
 		char *s;
 
@@ -598,22 +598,22 @@ XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_wdlg, client, "XA_wdlg_open: ob=%lx, obx=%d, oby=%d",
 			(unsigned long)wdlg->std_wt->tree, wdlg->std_wt->tree->ob_x, wdlg->std_wt->tree->ob_y));
 
-		if (pb->intin[1] >= root_window->wa.x)
-			r.x = pb->intin[1];
+		if (pb->intin[1] >= root_window->wa.g_x)
+			r.g_x = pb->intin[1];
 		else
-			r.x = (root_window->wa.w - r.w) >> 1;
+			r.g_x = (root_window->wa.g_w - r.g_w) >> 1;
 
-		if (pb->intin[2] >= root_window->wa.y)
-			r.y = pb->intin[2];
+		if (pb->intin[2] >= root_window->wa.g_y)
+			r.g_y = pb->intin[2];
 		else
-			r.y = (root_window->wa.h - r.h) >> 1;
+			r.g_y = (root_window->wa.g_h - r.g_h) >> 1;
 
 		{
-			RECT or;
+			GRECT or;
 
 			obj_area(wdlg->std_wt, aesobj(wdlg->std_wt->tree, 0), &or);
-			or.x = r.x;
-			or.y = r.y;
+			or.g_x = r.g_x;
+			or.g_y = r.g_y;
 			change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 		}
 		if (!(s = (char *)pb->addrin[1]))
@@ -631,10 +631,10 @@ XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 
 		obj_init_focus(wdlg->std_wt, OB_IF_RESET);
 
-		DIAG((D_wdlg, client, "XA_wdlg_open: wa.x=%d, wa=%d", wind->wa.x, wind->wa.y));
+		DIAG((D_wdlg, client, "XA_wdlg_open: wa.x=%d, wa=%d", wind->wa.g_x, wind->wa.g_y));
 
-		wdlg->std_wt->tree->ob_x = wind->wa.x;
-		wdlg->std_wt->tree->ob_y = wind->wa.y;
+		wdlg->std_wt->tree->ob_x = wind->wa.g_x;
+		wdlg->std_wt->tree->ob_y = wind->wa.g_y;
 		open_window(lock, wind, wind->rc);
 		wdlg->data = (void *)pb->addrin[2];
 		callout_exit(client, wdlg, NULL, HNDL_OPEN, pb->intin[3], wdlg->data, NULL);
@@ -664,8 +664,8 @@ XA_wdlg_close(int lock, struct xa_client *client, AESPB *pb)
 	wind = get_wind_by_handle(lock, handle);
 	if (wind && (wdlg = wind->wdlg))
 	{
-		pb->intout[1] = wind->r.x;
-		pb->intout[2] = wind->r.y;
+		pb->intout[1] = wind->r.g_x;
+		pb->intout[2] = wind->r.g_y;
 		close_window(lock, wind);
 		pb->intout[0] = 1;
 	}
@@ -715,7 +715,7 @@ XA_wdlg_get(int lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
 	short handle;
-	RECT *r;
+	GRECT *r;
 
 	CONTROL(1,0,1)
 
@@ -740,12 +740,12 @@ XA_wdlg_get(int lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_get_tree */
 			case 0:
 			{
-				r = (RECT*)pb->addrin[2];
+				r = (GRECT*)pb->addrin[2];
 				if (r)
 					*r = wind->wa;
 				if (pb->addrin[1])
 					*(OBJECT **)pb->addrin[1] = wdlg->std_wt->tree;
-				DIAG((D_wdlg, client, " -- tree %lx (%d/%d,%d/%d)", (unsigned long)wdlg->std_wt->tree, r->x, r->y, r->w, r->h));
+				DIAG((D_wdlg, client, " -- tree %lx (%d/%d,%d/%d)", (unsigned long)wdlg->std_wt->tree, r->g_x, r->g_y, r->g_w, r->g_h));
 				break;
 			}
 			/* wdlg_get_edit */
@@ -866,7 +866,7 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 
 				if ( obtree != wdlg->std_wt->tree)
 				{
-					RECT r, or;
+					GRECT r, or;
 
 					wt = obtree_to_wt(client, obtree);
 					if (!wt)
@@ -889,11 +889,11 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 							client->options.thinwork,
 							&or);
 
-						r.x = wind->r.x;
-						r.y = wind->r.y;
-						move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
-						obtree->ob_x = wind->wa.x;
-						obtree->ob_y = wind->wa.y;
+						r.g_x = wind->r.g_x;
+						r.g_y = wind->r.g_y;
+						move_window(lock, wind, true, -1, r.g_x, r.g_y, r.g_w, r.g_h);
+						obtree->ob_x = wind->wa.g_x;
+						obtree->ob_y = wind->wa.g_y;
 					}
 				}
 				else
@@ -905,17 +905,17 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_set_size */
 			case 2:
 			{
-				RECT *r = (RECT *)pb->addrin[1];
+				GRECT *r = (GRECT *)pb->addrin[1];
 
 				if (r)
 				{
-					RECT nr = *r;
+					GRECT nr = *r;
 
-					nr.x -= wind->wa.x - wind->rc.x;
-					nr.y -= wind->wa.y - wind->rc.y;
-					nr.w += wind->rc.w - wind->wa.w;
-					nr.h += wind->rc.h - wind->wa.h;
-					move_window(lock, wind, true, -1, nr.x, nr.y, nr.w, nr.h);
+					nr.g_x -= wind->wa.g_x - wind->rc.g_x;
+					nr.g_y -= wind->wa.g_y - wind->rc.g_y;
+					nr.g_w += wind->rc.g_w - wind->wa.g_w;
+					nr.g_h += wind->rc.g_h - wind->wa.g_h;
+					move_window(lock, wind, true, -1, nr.g_x, nr.g_y, nr.g_w, nr.g_h);
 				}
 				break;
 			}
@@ -924,12 +924,12 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 			{
 				if (!is_iconified(wind))
 				{
-					RECT *nr = (RECT *)pb->addrin[1];
+					GRECT *nr = (GRECT *)pb->addrin[1];
 					char *t = (char *)pb->addrin[2];
 					OBJECT *obtree = (OBJECT *)pb->addrin[3];
 					short obj = pb->intin[1];
 					short i;
-					RECT r;
+					GRECT r;
 
 					if (obtree)
 					{
@@ -957,14 +957,14 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 						get_widget(wind, XAW_TITLE)->stuff = wdlg->ify_name;
 					}
 
-					if (!nr || (nr && nr->w == -1 && nr->h == -1))
+					if (!nr || (nr && nr->g_w == -1 && nr->g_h == -1))
 					{
 						r = free_icon_pos(lock, NULL);
 						nr = &r;
 					}
 
 					wind->redraw = NULL;
-					move_window(lock, wind, true, XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
+					move_window(lock, wind, true, XAWS_ICONIFIED, nr->g_x, nr->g_y, nr->g_w, nr->g_h);
 				}
 				break;
 			}
@@ -975,8 +975,8 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 				{
 					OBJECT *obtree = (OBJECT *)pb->addrin[3];
 					char *t = (char *)pb->addrin[2];
-					RECT *nr = (RECT *)pb->addrin[1];
-					RECT r;
+					GRECT *nr = (GRECT *)pb->addrin[1];
+					GRECT r;
 
 					wind->redraw = NULL;
 
@@ -1010,13 +1010,13 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 					if (!nr)
 					{
 						nr = &r;
-						r.x = /*obtree->ob_x =*/ wind->wa.x;
-						r.y = /*obtree->ob_y =*/ wind->wa.y;
-						r.w = obtree->ob_width;
-						r.h = obtree->ob_height;
+						r.g_x = /*obtree->ob_x =*/ wind->wa.g_x;
+						r.g_y = /*obtree->ob_y =*/ wind->wa.g_y;
+						r.g_w = obtree->ob_width;
+						r.g_h = obtree->ob_height;
 					}
 
-					move_window(lock, wind, true, ~XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
+					move_window(lock, wind, true, ~XAWS_ICONIFIED, nr->g_x, nr->g_y, nr->g_w, nr->g_h);
 				}
 				pb->intout[0] = 1;
 				break;
@@ -1370,7 +1370,7 @@ XA_wdlg_redraw(int lock, struct xa_client *client, AESPB *pb)
 		{
 			if (pdlg->current_subdlg)
 			{
-				wdialog_redraw(lock, wind, aesobj(pdlg->current_subdlg->tree, pb->intin[0]), pb->intin[1], (RECT *)&pdlg->current_subdlg->tree->ob_x);
+				wdialog_redraw(lock, wind, aesobj(pdlg->current_subdlg->tree, pb->intin[0]), pb->intin[1], (GRECT *)&pdlg->current_subdlg->tree->ob_x);
 			}
 		}
 #endif
@@ -1385,7 +1385,7 @@ XA_wdlg_redraw(int lock, struct xa_client *client, AESPB *pb)
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
 	if (wind)
-		wdlg_redraw(lock, wind, aesobj(NULL, pb->intin[0]), pb->intin[1], (RECT *)pb->addrin[1]);
+		wdlg_redraw(lock, wind, aesobj(NULL, pb->intin[0]), pb->intin[1], (GRECT *)pb->addrin[1]);
 
 	return XAC_DONE;
 }

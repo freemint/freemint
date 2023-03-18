@@ -28,8 +28,8 @@
 #include "global.h"
 #include "taskman.h"
 
-extern RECT about_r;
-extern RECT view_r;
+extern GRECT about_r;
+extern GRECT view_r;
 
 void reset_about(void);
 void open_about(int lock, struct xa_client *client, bool open, char *fn);

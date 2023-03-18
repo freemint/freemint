@@ -31,37 +31,37 @@
 /* Avoid a clash with the standard function name */
 #define xa_graf_mouse xaaes_xa_graf_mouse
 
-void check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh);
+void check_wh_cp(GRECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh);
 
 void xa_graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm);
 void set_client_mouse(struct xa_client *client, short which, short m_form, MFORM *mf);
 
-//bool rect_changed(const RECT *n, const RECT *o);
+//bool rect_changed(const GRECT *n, const GRECT *o);
 
-//void keep_inside(RECT *r, const RECT *o);
+//void keep_inside(GRECT *r, const GRECT *o);
 
-//const RECT *rect_dist(struct xa_client *client, RECT *r, RECT *d);
-const RECT *rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d);
+//const GRECT *rect_dist(struct xa_client *client, GRECT *r, GRECT *d);
+const GRECT *rect_dist_xy(struct xa_client *client, short x, short y, GRECT *r, GRECT *d);
 
-RECT widen_rectangle(COMPASS c,
+GRECT widen_rectangle(COMPASS c,
                 short mx, short my,
-                RECT start,
-                const RECT *dist);
+                GRECT start,
+                const GRECT *dist);
 
-RECT move_rectangle(short mx, short my,
-                RECT r,
-                const RECT *dist);
+GRECT move_rectangle(short mx, short my,
+                GRECT r,
+                const GRECT *dist);
 
 void rubber_box(struct xa_client *client, COMPASS c,
-                RECT start, const RECT *dist,
+                GRECT start, const GRECT *dist,
                 int minw, int minh,
                 int maxw, int maxg,
-                RECT *last);
+                GRECT *last);
 
-void drag_box(struct xa_client *client, RECT start,
-              const RECT *bound,
-              const RECT *dist,
-              RECT *last);
+void drag_box(struct xa_client *client, GRECT start,
+              const GRECT *bound,
+              const GRECT *dist,
+              GRECT *last);
 
 AES_function
 	XA_xa_graf_mouse,

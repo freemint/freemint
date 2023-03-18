@@ -219,7 +219,7 @@ void
 post_cevent(struct xa_client *client,
 	void (*func)(int, struct c_event *, short cancel),
 	void *ptr1, void *ptr2,
-	int d0, int d1, const RECT *r,
+	int d0, int d1, const GRECT *r,
 	const struct moose_data *md)
 {
 	struct c_event *c;

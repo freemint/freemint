@@ -200,7 +200,7 @@ wt_menu_area(XA_TREE *wt)
 		obj_area(wt, aesobj(wt->tree, titles), &wt->area);
 
 		DIAG((D_menu, wt->owner, "wt_menu_area: %d/%d/%d/%d for %s",
-			wt->area.x, wt->area.y, wt->area.w, wt->area.h, wt->owner->name));
+			wt->area.g_x, wt->area.g_y, wt->area.g_w, wt->area.g_h, wt->owner->name));
 	}
 }
 
@@ -208,7 +208,7 @@ void
 set_rootmenu_area(struct xa_client *client)
 {
 	DIAG((D_menu, client, "set_rootmenu_area: for %s to %d/%d/%d/%d",
-		client->name, client->std_menu->area.x, client->std_menu->area.y, client->std_menu->area.w, client->std_menu->area.h));
+		client->name, client->std_menu->area.g_x, client->std_menu->area.g_y, client->std_menu->area.g_w, client->std_menu->area.g_h));
 
 	if (client->std_menu)
 	{
@@ -1000,34 +1000,34 @@ popout(struct task_administration_block *tab)
 	}
 }
 
-static RECT
-rc_inside(RECT r, RECT o)
+static GRECT
+rc_inside(GRECT r, GRECT o)
 {
-	if (r.x < o.x || r.w > o.w)
-		r.x = o.x;
-	if (r.y < o.y || r.h > o.h)
-		r.y = o.y;
+	if (r.g_x < o.g_x || r.g_w > o.g_w)
+		r.g_x = o.g_x;
+	if (r.g_y < o.g_y || r.g_h > o.g_h)
+		r.g_y = o.g_y;
 
-	if (r.w < o.w && r.h < o.h)
+	if (r.g_w < o.g_w && r.g_h < o.g_h)
 	{
-		if (r.x + r.w > o.x + o.w)
-			r.x = o.x + o.w - r.w;
-		if (r.y + r.h > o.y + o.h)
-			r.y = o.y + o.h - r.h;
+		if (r.g_x + r.g_w > o.g_x + o.g_w)
+			r.g_x = o.g_x + o.g_w - r.g_w;
+		if (r.g_y + r.g_h > o.g_y + o.g_h)
+			r.g_y = o.g_y + o.g_h - r.g_h;
 	}
 	return r;
 }
 
-static RECT
-popup_inside(Tab *tab, RECT r)
+static GRECT
+popup_inside(Tab *tab, GRECT r)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	RECT ir = root_window->wa;
-	RECT rc = rc_inside(r, ir);
+	GRECT ir = root_window->wa;
+	GRECT rc = rc_inside(r, ir);
 
-	if( rc.y < get_menu_height() )
-		rc.y = get_menu_height();
-	if (rc.x != r.x)
+	if( rc.g_y < get_menu_height() )
+		rc.g_y = get_menu_height();
+	if (rc.g_x != r.g_x)
 	{
 		Tab *tx = NEXT_TAB(tab);
 
@@ -1035,20 +1035,20 @@ popup_inside(Tab *tab, RECT r)
 		{
 			MENU_TASK *kx = &tx->task_data.menu;
 
-			rc.x = kx->drop.x - rc.w + 4;
+			rc.g_x = kx->drop.g_x - rc.g_w + 4;
 			rc = rc_inside(rc, ir);
 		#if 0
-			if (m_inside(rc.x, rc.y, &kx->drop))
+			if (m_inside(rc.g_x, rc.g_y, &kx->drop))
 			{
-				rc.x = kx->drop.x - rc.w + 4;
+				rc.g_x = kx->drop.g_x - rc.g_w + 4;
 				rc = rc_inside(rc, ir);
 			}
 		#endif
 		}
 	}
 
-	k->pdx = (k->p.wt->tree->ob_x - (r.x - rc.x));
-	k->pdy = (k->p.wt->tree->ob_y - (r.y - rc.y));
+	k->pdx = (k->p.wt->tree->ob_x - (r.g_x - rc.g_x));
+	k->pdy = (k->p.wt->tree->ob_y - (r.g_y - rc.g_y));
 
 	k->drop = rc;
 
@@ -1056,7 +1056,7 @@ popup_inside(Tab *tab, RECT r)
 }
 
 static int
-find_menu_object(struct widget_tree *wt, short start, short dx, short dy, short mx, short my, RECT *c)
+find_menu_object(struct widget_tree *wt, short start, short dx, short dy, short mx, short my, GRECT *c)
 {
 	OBJECT *obtree = wt->tree;
 	struct xa_aes_object found;
@@ -1089,7 +1089,7 @@ next_menu_object(MENU_TASK *k)
 #endif
 
 static void
-menu_area(struct widget_tree *wt, int item, short dx, short dy, RECT *c)
+menu_area(struct widget_tree *wt, int item, short dx, short dy, GRECT *c)
 {
 	short sx, sy;
 
@@ -1111,7 +1111,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 	MENU_TASK *k = &tab->task_data.menu;
 	struct xa_window *wind;
 	XA_WIND_ATTR tp = TOOLBAR;
-	RECT r;
+	GRECT r;
 	bool mod_h = false;
 	int mg = MONO ? 0 : 0;
 
@@ -1125,45 +1125,45 @@ display_popup(Tab *tab, short rdx, short rdy)
 /* ************ */
 	if (tab->scroll)
 	{
-		if (r.h > (tab->scroll/*8*/ * screen.c_max_h))
+		if (r.g_h > (tab->scroll/*8*/ * screen.c_max_h))
 		{
 			mod_h = true;
-			r.h = tab->scroll/*8*/ * screen.c_max_h;
+			r.g_h = tab->scroll/*8*/ * screen.c_max_h;
 		}
 	}
-	if (cfg.popscroll && r.h > cfg.popscroll * screen.c_max_h)
+	if (cfg.popscroll && r.g_h > cfg.popscroll * screen.c_max_h)
 	{
 		mod_h = true;
-		r.h = cfg.popscroll * screen.c_max_h;
+		r.g_h = cfg.popscroll * screen.c_max_h;
 	}
 
 /* ************ */
-	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", (unsigned long)tab, r.x, r.y, r.w, r.h));
+	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", (unsigned long)tab, r.g_x, r.g_y, r.g_w, r.g_h));
 
 	r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, &r);
 
 	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d (%d/%d/%d/%d)",
-		rdx, rdy, r.x, r.y, r.w, r.h));
+		rdx, rdy, r.g_x, r.g_y, r.g_w, r.g_h));
 	DIAG((D_menu, tab->client, " -- scroll=%d, menu_locking=%d",
 		tab->scroll, cfg.menu_locking));
 
-	if ((r.y + r.h) > (root_window->wa.y + root_window->wa.h))
-		r.y -= ((r.y + r.h) - (root_window->wa.y + root_window->wa.h));
+	if ((r.g_y + r.g_h) > (root_window->wa.g_y + root_window->wa.g_h))
+		r.g_y -= ((r.g_y + r.g_h) - (root_window->wa.g_y + root_window->wa.g_h));
 
-	if (r.y < root_window->wa.y)
+	if (r.g_y < root_window->wa.g_y)
 	{
-		r.y = root_window->wa.y;
-		if (r.h > root_window->wa.h - screen.c_max_h)
+		r.g_y = root_window->wa.g_y;
+		if (r.g_h > root_window->wa.g_h - screen.c_max_h)
 		{
 			mod_h = true;
-			r.h = root_window->wa.h - screen.c_max_h;
+			r.g_h = root_window->wa.g_h - screen.c_max_h;
 		}
 	}
 
-	if (r.y + r.h > root_window->wa.y + root_window->wa.h)
+	if (r.g_y + r.g_h > root_window->wa.g_y + root_window->wa.g_h)
 	{
 		mod_h = true;
-		r.h = root_window->wa.h - r.y;
+		r.g_h = root_window->wa.g_h - r.g_y;
 	}
 
 	/* if client blocked (e.g. nonwindowed dialog) restore background on exit */
@@ -1197,18 +1197,18 @@ display_popup(Tab *tab, short rdx, short rdy)
 
 	if (wind)
 	{
-		RECT or;
+		GRECT or;
 		obj_rectangle(wt, aesobj(wt->tree, pi->parent), &or);
 		k->drop = wind->wa;
 
-		k->pdx = obtree->ob_x + (k->drop.x - or.x);
-		k->pdy = obtree->ob_y + (k->drop.y - or.y);
-		wt->pdx = k->drop.x;
-		wt->pdy = k->drop.y;
+		k->pdx = obtree->ob_x + (k->drop.g_x - or.g_x);
+		k->pdy = obtree->ob_y + (k->drop.g_y - or.g_y);
+		wt->pdx = k->drop.g_x;
+		wt->pdy = k->drop.g_y;
 
 		k->p.wind = wind;
 
-		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r.g_x, r.g_y, r.g_w, r.g_h));
 		set_popup_widget(tab, wind, pi->parent);
 		/* top menu-owner-window */
 		if( tab->wind && tab->wind != TOP_WINDOW && tab->wind != root_window )
@@ -1315,7 +1315,7 @@ static void
 do_timeout_popup(Tab *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	RECT tra;
+	GRECT tra;
 	short asel, rdx, rdy;
 	TASK *click;
 	OBJECT *ob;
@@ -1360,13 +1360,13 @@ do_timeout_popup(Tab *tab)
 	ob->ob_x = 0, ob->ob_y = 0;
 	obj_offset(new_wt, aesobj(new_wt->tree, at->item), &rdx, &rdy);
 
-	rdx = tra.x - rdx;
-	rdy = tra.y - rdy;
+	rdx = tra.g_x - rdx;
+	rdy = tra.g_y - rdy;
 
 	if (click == click_desk_popup)
 		rdy += screen.c_max_h;
 	else
-		rdx += k->drop.w - 4;
+		rdx += k->drop.g_w - 4;
 
 	k->p.at_up = at;
 	new = nest_menutask(tab);
@@ -1595,7 +1595,7 @@ menu_bar(struct task_administration_block *tab, short item)
 	k->m.wt->dx = k->m.wt->dy = 0;
 	if (item == -1)
 	{
-		title = find_menu_object(k->m.wt, k->m.titles, k->rdx, k->rdy, k->x, k->y, tab->widg->r.y == 0 ? &tab->widg->r : &k->bar);	// ??
+		title = find_menu_object(k->m.wt, k->m.titles, k->rdx, k->rdy, k->x, k->y, tab->widg->r.g_y == 0 ? &tab->widg->r : &k->bar);	// ??
 	}
 	else if (item == -2)
 		title = -1;
@@ -1773,10 +1773,10 @@ popup(struct task_administration_block *tab, short item)
 		}
 		else
 		{
-			k->em.m2.x = k->x;
-			k->em.m2.y = k->y;
-			k->em.m2.w = 1;
-			k->em.m2.h = 1;
+			k->em.m2.g_x = k->x;
+			k->em.m2.g_y = k->y;
+			k->em.m2.g_w = 1;
+			k->em.m2.g_h = 1;
 			k->em.flags |= MU_M2;
 			k->em.m2_flag = 1;
 			k->em.t2 = popup;
@@ -1787,7 +1787,7 @@ popup(struct task_administration_block *tab, short item)
 	{
 		short off;
 		short msg[8] = {WM_ARROWED, 0,0, k->p.wind->handle, WA_UPSCAN, 0, 0,0};
-		RECT r;
+		GRECT r;
 
 		if (m != k->p.current)
 		{
@@ -1817,18 +1817,18 @@ popup(struct task_administration_block *tab, short item)
 
 		menu_area(k->p.wt, m, k->pdx, k->pdy, &r);
 
-		if (r.y + r.h > k->drop.y + k->drop.h)
+		if (r.g_y + r.g_h > k->drop.g_y + k->drop.g_h)
 		{
-			off = (r.y + r.h) - (k->drop.y + k->drop.h);
+			off = (r.g_y + r.g_h) - (k->drop.g_y + k->drop.g_h);
 			msg[4] = WA_UPSCAN;
 			msg[5] = off;
 			do_formwind_msg(k->p.wind, tab->client, 0,0, msg);
 			menu_area(k->p.wt, m, k->pdx, k->pdy, &r);
 		}
-		else if (r.y < k->drop.y)
+		else if (r.g_y < k->drop.g_y)
 		{
 			msg[4] = WA_DNSCAN;
-			msg[5] = k->drop.y - r.y;
+			msg[5] = k->drop.g_y - r.g_y;
 			do_formwind_msg(k->p.wind, tab->client, 0,0, msg);
 			menu_area(k->p.wt, m, k->pdx, k->pdy, &r);
 		}
@@ -1853,7 +1853,7 @@ find_pop(short x, short y, Tab **ret)
 
 	FOREACH_TAB(tab)
 	{
-		RECT r = tab->task_data.menu.drop;
+		GRECT r = tab->task_data.menu.drop;
 		in = m_inside(x, y, &r);
 		if (in)
 		{
@@ -2077,7 +2077,7 @@ click_form_popup_entry(struct task_administration_block *tab, short item)
  * The menu, however, can be owned by someone else .. we check that.
 */
 static void
-Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	XA_TREE *wt = widg->stuff;
 	OBJECT *obtree;
@@ -2089,7 +2089,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 
 	if (wind->dial & created_for_POPUP)
 	{
-		RECT r;
+		GRECT r;
 		short dx = wt->dx, dy = wt->dy;
 
 		wt->dx = wt->dy = 0;
@@ -2097,8 +2097,8 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		wt->dx = dx;
 		wt->dy = dy;
 
-		obtree->ob_x = obtree->ob_x + (wt->pdx - r.x);
-		obtree->ob_y = obtree->ob_y + (wt->pdy - r.y);
+		obtree->ob_x = obtree->ob_x + (wt->pdx - r.g_x);
+		obtree->ob_y = obtree->ob_y + (wt->pdy - r.g_y);
 
 		//if (wind->nolist && (wind->dial & created_for_POPUP))
 		//{
@@ -2113,14 +2113,14 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 	}
 	else //if (wt->menu_line)	/* HR 090501  menu in user window.*/
 	{
-		obtree->ob_x = widg->ar.x; //wt->rdx;
-		obtree->ob_y = widg->ar.y; //wt->rdy;
+		obtree->ob_x = widg->ar.g_x; //wt->rdx;
+		obtree->ob_y = widg->ar.g_y; //wt->rdy;
 		//obtree->ob_height = widg->r.h - 1;
-		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
+		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.g_w;
 		wt->rend_flags |= WTR_ROOTMENU;
 		draw_object_tree(0, wt, NULL, wind->vdi_settings, aesobj(wt->tree, 1), MAX_DEPTH, NULL, 0);
 		wt->rend_flags &= ~WTR_ROOTMENU;
-		(*wt->objcr_api->write_menu_line)(wind->vdi_settings, (RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
+		(*wt->objcr_api->write_menu_line)(wind->vdi_settings, (GRECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
 }
 
@@ -2128,11 +2128,11 @@ static void
 CE_display_menu_widg(int lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
-		Display_menu_widg(ce->ptr1, ce->ptr2, (const RECT *)&ce->r);
+		Display_menu_widg(ce->ptr1, ce->ptr2, (const GRECT *)&ce->r);
 }
 
 static bool
-display_menu_widget(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+display_menu_widget(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_TREE *wt = widg->stuff;
@@ -2264,7 +2264,7 @@ keyboard_menu_widget(int lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 menu_title(int lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md)
 {
-	RECT r;
+	GRECT r;
 	MENU_TASK *k;
 	XA_TREE *wt;
 	OBJECT *obtree;
@@ -2312,8 +2312,8 @@ menu_title(int lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *w
 
 	check_mouse(wind->owner, &f, &k->x, &k->y);
 
-	k->rdx = r.x;
-	k->rdy = r.y;
+	k->rdx = r.g_x;
+	k->rdy = r.g_y;
 
 	if (title == -1)
 	{
@@ -2369,7 +2369,7 @@ menu_title(int lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *w
 
 		k->p.wt = wt;
 		k->p.parent = item;
-		display_popup(tab, r.x, r.y);
+		display_popup(tab, r.g_x, r.g_y);
 
 		k->em.flags = MU_M1;
 		k->em.m1_flag = 1;		/* fill out rect event data; out of title */
@@ -2437,9 +2437,9 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	menu->links++;
 
 	/* additional fix to fit in window */
-	obtree->ob_width  = obtree[obtree->ob_head].ob_width  = obtree[obtree->ob_tail].ob_width  = wind->wa.w;
-	obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = widg->r.h - 1;
-	obtree[obtree->ob_tail].ob_y = widg->r.h;
+	obtree->ob_width  = obtree[obtree->ob_head].ob_width  = obtree[obtree->ob_tail].ob_width  = wind->wa.g_w;
+	obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = widg->r.g_h - 1;
+	obtree[obtree->ob_tail].ob_y = widg->r.g_h;
 
 
 	widg->m.r.draw = display_menu_widget;
@@ -2495,10 +2495,10 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 
 	widg->m.r.xaw_idx = XAW_MENU;
  	widg->m.r.draw = display_menu_widget;
-	widg->r.x = k->rdx - wind->r.x - frame;
-	widg->r.y = k->rdy - wind->r.y - frame;
-	widg->r.w = wt->tree->ob_width;
-	widg->r.h = wt->tree->ob_height;
+	widg->r.g_x = k->rdx - wind->r.g_x - frame;
+	widg->r.g_y = k->rdy - wind->r.g_y - frame;
+	widg->r.g_w = wt->tree->ob_width;
+	widg->r.g_h = wt->tree->ob_height;
 
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
@@ -2508,8 +2508,8 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 
 	wind->tool = widg;
 
-	XA_slider(wind, XAW_HSLIDE, wt->tree[obj].ob_width, wind->wa.w, 0);
-	XA_slider(wind, XAW_VSLIDE, wt->tree[obj].ob_height, wind->wa.h, 0);
+	XA_slider(wind, XAW_HSLIDE, wt->tree[obj].ob_width, wind->wa.g_w, 0);
+	XA_slider(wind, XAW_VSLIDE, wt->tree[obj].ob_height, wind->wa.g_h, 0);
 
 	return wt;
 }
@@ -2537,9 +2537,9 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 	titles = root[tbar].ob_head;
 	menus = root[0].ob_tail;
 
-	h = (wind ? get_widget(wind, XAW_MENU)->r.h : get_menu_widg()->r.h) - 1;
+	h = (wind ? get_widget(wind, XAW_MENU)->r.g_h : get_menu_widg()->r.g_h) - 1;
 
-	menu->area.w = root->ob_width = root[tbar].ob_width  = root[menus].ob_width = wind ? get_widget(wind, XAW_MENU)->r.w : get_menu_widg()->r.w; //screen.r.w;
+	menu->area.g_w = root->ob_width = root[tbar].ob_width  = root[menus].ob_width = wind ? get_widget(wind, XAW_MENU)->r.g_w : get_menu_widg()->r.g_w; //screen.r.g_w;
 	root->ob_height = root[titles].ob_height = root[tbar].ob_height = h;
 	root[menus].ob_y = h + 1;
 	wt_menu_area(menu);
@@ -2672,27 +2672,27 @@ menu_scroll_up(Tab *tab)
 
 		if ((wind->nolist && nolist_list == wind) || (!wind->nolist && is_topped(wind)))
 		{
-			RECT r, from, to;
+			GRECT r, from, to;
 
 			obj_rectangle(pi->wt, aesobj(pi->wt->tree, pi->parent), &r);
-			r.y += sy;
-			r.h = scroll_h;
+			r.g_y += sy;
+			r.g_h = scroll_h;
 			if (xa_rect_clip(&wind->wa, &r, &r))
 			{
-				if (r.h > entry_h)
+				if (r.g_h > entry_h)
 				{
-					from.x = to.x = r.x;
-					from.y = to.y = r.y;
-					from.w = to.w = r.w;
-					from.h = to.h = r.h - entry_h;
+					from.g_x = to.g_x = r.g_x;
+					from.g_y = to.g_y = r.g_y;
+					from.g_w = to.g_w = r.g_w;
+					from.g_h = to.g_h = r.g_h - entry_h;
 
-					from.y += entry_h;
+					from.g_y += entry_h;
 
 					hidem();
 					(*xa_vdiapi->form_copy)(&from, &to);
 
-					r.y += r.h - entry_h;
-					r.h = entry_h;
+					r.g_y += r.g_h - entry_h;
+					r.g_h = entry_h;
 
 				}
 				if (flag & 1)
@@ -2775,27 +2775,27 @@ menu_scroll_down(Tab *tab)
 
 		if ((wind->nolist && nolist_list == wind) || (!wind->nolist && is_topped(wind)))
 		{
-			RECT r, from, to;
+			GRECT r, from, to;
 
 			obj_rectangle(pi->wt, aesobj(pi->wt->tree, pi->parent), &r);
-			r.y += sy;
-			r.h = scroll_h;
+			r.g_y += sy;
+			r.g_h = scroll_h;
 			if (xa_rect_clip(&wind->wa, &r, &r))
 			{
-				if (r.h > entry_h)
+				if (r.g_h > entry_h)
 				{
-					from.x = to.x = r.x;
-					from.y = to.y = r.y;
-					from.w = to.w = r.w;
-					from.h = to.h = r.h - entry_h;
+					from.g_x = to.g_x = r.g_x;
+					from.g_y = to.g_y = r.g_y;
+					from.g_w = to.g_w = r.g_w;
+					from.g_h = to.g_h = r.g_h - entry_h;
 
-					to.y += entry_h;
+					to.g_y += entry_h;
 
 					hidem();
 					(*xa_vdiapi->form_copy)(&from, &to);
 
-					r.y += sy;
-					r.h = entry_h;
+					r.g_y += sy;
+					r.g_h = entry_h;
 
 				}
 				if (flag & 1)

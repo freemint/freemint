@@ -47,7 +47,7 @@
 unsigned long
 XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 {
-	const RECT r = *((const RECT *)&pb->intin[1]);
+	const GRECT r = *((const GRECT *)&pb->intin[1]);
 	struct xa_window *new_window;
 	XA_WIND_ATTR kind = (unsigned short)pb->intin[0];
 
@@ -83,11 +83,11 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 		{
 			if (new_window->opts & XAWO_WCOWORK)
 			{
-				*(RECT *)(pb->intout + 1) = new_window->rwa;
+				*(GRECT *)(pb->intout + 1) = new_window->rwa;
 			}
 			else
 			{
-				*(RECT *)(pb->intout + 1) = new_window->rc;
+				*(GRECT *)(pb->intout + 1) = new_window->rc;
 			}
 		}
 		/* Return the window handle in intout[0] */
@@ -104,7 +104,7 @@ XA_wind_create(int lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_open(int lock, struct xa_client *client, AESPB *pb)
 {
-	RECT r;
+	GRECT r;
 	struct xa_window *w;
 
 	CONTROL(5,1,0)
@@ -118,9 +118,9 @@ XA_wind_open(int lock, struct xa_client *client, AESPB *pb)
 	else
 	{
 		if (w->opts & XAWO_WCOWORK)
-			r = w2f(&w->delta, (const RECT *)(pb->intin + 1), true);
+			r = w2f(&w->delta, (const GRECT *)(pb->intin + 1), true);
 		else
-			r = *(const RECT *)(pb->intin + 1);
+			r = *(const GRECT *)(pb->intin + 1);
 
 		/* XXX - ozk:
 		 *	Is it correct to adjust the max size of windows here when they are
@@ -131,10 +131,10 @@ XA_wind_open(int lock, struct xa_client *client, AESPB *pb)
 		if (w->active_widgets & USE_MAX)
 		{
 			/* for convenience: adjust max */
-			if (r.w > w->max.w)
-				w->max.w = r.w;
-			if (r.h > w->max.h)
-				w->max.h = r.h;
+			if (r.g_w > w->max.g_w)
+				w->max.g_w = r.g_w;
+			if (r.g_h > w->max.g_h)
+				w->max.g_h = r.g_h;
 		}
 #endif
 
@@ -482,22 +482,22 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		bool blit = false;
 		bool move = (pb->intin[2] == -1 && pb->intin[3] == -1 &&
 			     pb->intin[4] == -1 && pb->intin[5] == -1) ? true : false;
-		RECT *ir;
-		RECT r;
-		RECT m;
+		GRECT *ir;
+		GRECT r;
+		GRECT m;
 		WINDOW_STATUS status = -1L, msg = -1;
 
 		if (cmd == WF_PREVXYWH)
 		{
 			DIAGS(("wind_set: WF_PREVXYWH"));
-			set_winrect(w, &w->pr, (const RECT *)(pb->intin + 2));
+			set_winrect(w, &w->pr, (const GRECT *)(pb->intin + 2));
 
 			if (pb->control[N_INTOUT] >= 5)
 			{
 				if (w->opts & XAWO_WCOWORK)
-					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->pr, true);
+					*(GRECT *)(pb->intout + 1) = f2w(&w->delta, &w->pr, true);
 				else
-					*(RECT *)(pb->intout + 1) = w->pr;
+					*(GRECT *)(pb->intout + 1) = w->pr;
 				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 			}
 			break;
@@ -506,14 +506,14 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		{
 			DIAGS(("wind_set: WF_FULLXYWH"));
 
-			set_winrect(w, &w->max, (const RECT *)(pb->intin + 2));
+			set_winrect(w, &w->max, (const GRECT *)(pb->intin + 2));
 
 			if (pb->control[N_INTOUT] >= 5)
 			{
 				if (w->opts & XAWO_WCOWORK)
-					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->max, true);
+					*(GRECT *)(pb->intout + 1) = f2w(&w->delta, &w->max, true);
 				else
-					*(RECT *)(pb->intout + 1) = w->max;
+					*(GRECT *)(pb->intout + 1) = w->max;
 				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 			}
 			break;
@@ -529,17 +529,17 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				move = true;
 				if (cmd == WF_WORKXYWH && !(w->opts & XAWO_WCOWORK))
 				{
-					r = w2f(&w->delta, (const RECT *)(pb->intin + 2), true);
+					r = w2f(&w->delta, (const GRECT *)(pb->intin + 2), true);
 				}
 				else
-					r = *(const RECT *)(pb->intin + 2);
+					r = *(const GRECT *)(pb->intin + 2);
 				ir = &r;
 			}
 
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], blit ? "yes":"no", (unsigned long)ir));
 
-			if( !(cfg.menu_bar & 1) || w->rc.y >= root_window->wa.y )
+			if( !(cfg.menu_bar & 1) || w->rc.g_y >= root_window->wa.g_y )
 			{
 				blit = true;
 			}
@@ -553,13 +553,13 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			if (ir)
 			{
 				if (pb->intin[2] != -1)
-					ir->x = pb->intin[2];
+					ir->g_x = pb->intin[2];
 				if (pb->intin[3] != -1)
-					ir->y = pb->intin[3];
+					ir->g_y = pb->intin[3];
 				if (pb->intin[4] != -1)
-					ir->w = pb->intin[4];
+					ir->g_w = pb->intin[4];
 				if (pb->intin[5] != -1)
-					ir->h = pb->intin[5];
+					ir->g_h = pb->intin[5];
 			}
 		}
 		else if (ir)
@@ -567,28 +567,28 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			if (status == -1 && (w->opts & XAWO_WCOWORK))
 			{
 				m = w2f(&w->delta, ir, true);
-				ir = (RECT *)&w->rwa;
+				ir = (GRECT *)&w->rwa;
 			}
 			else
 			{
 				m = *ir;
-				ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
+				ir = cmd == WF_WORKXYWH ? (GRECT *)&w->rwa : (GRECT *)&w->rc;
 			}
 		#if 0
-			mx = ir->x;
-			my = ir->y;
-			mw = ir->w;
-			mh = ir->h;
-			ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
+			mx = ir->g_x;
+			my = ir->g_y;
+			mw = ir->g_w;
+			mh = ir->g_h;
+			ir = cmd == WF_WORKXYWH ? (GRECT *)&w->rwa : (GRECT *)&w->rc;
 		#endif
-			if ( (m.w != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
-			     (m.h != w->rc.h && (w->opts & XAWO_NOBLITH)))
+			if ( (m.g_w != w->rc.g_w && (w->opts & XAWO_NOBLITW)) ||
+			     (m.g_h != w->rc.g_h && (w->opts & XAWO_NOBLITH)))
 				blit = false;
 
 			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
-				m.x, m.y, m.w, m.h, client->name));
+				m.g_x, m.g_y, m.g_w, m.g_h, client->name));
 
-			if (!m.h)
+			if (!m.g_h)
 			{
 				if (!(w->window_status & XAWS_SHADED))
 				{
@@ -603,17 +603,17 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					DIAGS(("wind_set: zero heigh, window %d already shaded for %s",
 						w->handle, client->name));
 				}
-				m.h = w->sh;
+				m.g_h = w->sh;
 			}
 			else
 			{
 				if (!(w->window_status & XAWS_SHADED) && status == -1)
 				{
-					if (w->max.w && w->max.h &&
-					    m.x == w->max.x &&
-					    m.y == w->max.y &&
-					    m.w == w->max.w &&
-					    m.h == w->max.h)
+					if (w->max.g_w && w->max.g_h &&
+					    m.g_x == w->max.g_x &&
+					    m.g_y == w->max.g_y &&
+					    m.g_w == w->max.g_w &&
+					    m.g_h == w->max.g_h)
 					{
 						status = XAWS_FULLED;
 					}
@@ -630,13 +630,13 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 						 */
 						if (blit && w->opts & XAWO_FULLREDRAW)
 						{
-							if (m.x != w->rc.x && m.y != w->rc.y &&
-							    m.w != w->rc.w && m.h != w->rc.h)
+							if (m.g_x != w->rc.g_x && m.g_y != w->rc.g_y &&
+							    m.g_w != w->rc.g_w && m.g_h != w->rc.g_h)
 								blit = false;
 						}
 					}
 				}
-				else if ((w->window_status & XAWS_ZWSHADED) && m.h != w->sh)
+				else if ((w->window_status & XAWS_ZWSHADED) && m.g_h != w->sh)
 				{
 					DIAGS(("wind_set: window %d for %s shaded - unshade by different height",
 						w->handle, client->name));
@@ -649,16 +649,16 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		#if 0
 			if (w->active_widgets & USE_MAX)
 			{
-				if (w->max.w && m.w > w->max.w)
-					m.w = w->max.w;
-				if (w->max.w && m.h > w->max.h)
-					m.h = w->max.h;
+				if (w->max.g_w && m.g_w > w->max.g_w)
+					m.g_w = w->max.g_w;
+				if (w->max.g_w && m.g_h > w->max.g_h)
+					m.g_h = w->max.g_h;
 			}
 		#endif
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %lx", pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], status));
 
-			move_window(lock, w, blit, status, m.x, m.y, m.w, m.h);
+			move_window(lock, w, blit, status, m.g_x, m.g_y, m.g_w, m.g_h);
 
 			if (msg != -1 && w->send_message)
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg, 0, 0, w->handle, 0,0,0,0);
@@ -667,9 +667,9 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (!ir)
-				ir = (RECT *)&w->rc;
-			*(RECT *)(pb->intout + 1) = *ir;
-			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", ir->x, ir->y, ir->w, ir->h));
+				ir = (GRECT *)&w->rc;
+			*(GRECT *)(pb->intout + 1) = *ir;
+			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", ir->g_x, ir->g_y, ir->g_w, ir->g_h));
 		}
 		break;
 	}
@@ -772,21 +772,21 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = 0;
 		else
 		{
-			RECT in;
+			GRECT in;
 
 			if (w->opts & XAWO_WCOWORK)
-				in = w2f(&w->delta, (const RECT *)(pb->intin + 2), true);
+				in = w2f(&w->delta, (const GRECT *)(pb->intin + 2), true);
 			else
-				in = *((const RECT *)(pb->intin + 2));
+				in = *((const GRECT *)(pb->intin + 2));
 
 			iconify_window(lock, w, &in);
 		}
 		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (w->opts & XAWO_WCOWORK)
-				*(RECT *)(pb->intout + 1) = w->rwa;
+				*(GRECT *)(pb->intout + 1) = w->rwa;
 			else
-				*(RECT *)(pb->intout + 1) = w->rc;
+				*(GRECT *)(pb->intout + 1) = w->rc;
 
 			DIAGS(("wind_set: WF_ICONIFY return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 		}
@@ -800,7 +800,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = 0;
 		else
 		{
-			RECT in;
+			GRECT in;
 			if (pb->intin[4] == -1 || pb->intin[5] == -1 || !(pb->intin[4] | pb->intin[5]))
 			{
 				in = w->ro;
@@ -809,19 +809,19 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			{
 				if (w->opts & XAWO_WCOWORK)
 				{
-					in = w2f(&w->save_delta, (const RECT *)(pb->intin + 2), true);
+					in = w2f(&w->save_delta, (const GRECT *)(pb->intin + 2), true);
 				}
 				else
-					in = *((const RECT *)(pb->intin + 2));
+					in = *((const GRECT *)(pb->intin + 2));
 			}
 			uniconify_window(lock, w, &in);
 		}
 		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (w->opts & XAWO_WCOWORK)
-				*(RECT *)(pb->intout + 1) = w->rwa;
+				*(GRECT *)(pb->intout + 1) = w->rwa;
 			else
-				*(RECT *)(pb->intout + 1) = w->rc;
+				*(GRECT *)(pb->intout + 1) = w->rc;
 
 			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 		}
@@ -831,9 +831,9 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 	case WF_UNICONIFYXYWH:
 	{
 		if (w->opts & XAWO_WCOWORK)
-			w->ro = w2f(&w->save_delta, (const RECT *)(pb->intin + 2), true);
+			w->ro = w2f(&w->save_delta, (const GRECT *)(pb->intin + 2), true);
 		else
-			w->ro = *((const RECT *)(pb->intin+2));
+			w->ro = *((const GRECT *)(pb->intin+2));
 		break;
 	}
 	/* */
@@ -852,7 +852,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 			/* if (wt || !widg->stuff)*/	/* new or changed toolbar */
 			{
-				RECT or;
+				GRECT or;
 				int md = widg->stuff ? 1 : 0;
 				short d;
 				OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
@@ -870,9 +870,9 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					d = -ob->ob_height;
 				}
 				/* correct real work-area and min.h */
-				w->min.h -= d;
-				w->rwa.h += d;
-				w->rwa.y -= d;
+				w->min.g_h -= d;
+				w->rwa.g_h += d;
+				w->rwa.g_y -= d;
 
 				/*
 				 * correct vslider to new wa
@@ -884,34 +884,34 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					vsl = w->active_widgets & (VS_WIDGETS|SIZER);
 					w->active_widgets &= ~(VS_WIDGETS|SIZER);
 
-					widg2->r.h += d;
-					widg2->ar.h += d;
-					widg2->r.y -= d;
-					widg2->ar.y -= d;
+					widg2->r.g_h += d;
+					widg2->ar.g_h += d;
+					widg2->r.g_y -= d;
+					widg2->ar.g_y -= d;
 
-					vslw = widg2->r.w;
-					w->wa.w += vslw;
-					w->rwa.w += vslw;
+					vslw = widg2->r.g_w;
+					w->wa.g_w += vslw;
+					w->rwa.g_w += vslw;
 
 					widg2 = get_widget(w, XAW_UPLN1);
-					widg2->r.y -= d;
-					widg2->ar.y -= d;
+					widg2->r.g_y -= d;
+					widg2->ar.g_y -= d;
 				}
 
 				if( !w->thinwork && md == 0 )
 				{
-					w->wa.y -= 2;
-					w->wa.h += 2;
+					w->wa.g_y -= 2;
+					w->wa.g_h += 2;
 				}
-				w->wa.x = w->r.x;
+				w->wa.g_x = w->r.g_x;
 
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
 					wt = new_widget_tree(client, ob);
 				assert(wt);
 
-				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
-				widg->ar.x = ob->ob_x = w->r.x;
+				widg->r.g_w = widg->ar.g_w = ob->ob_width = or.g_w = w->r.g_w;
+				widg->ar.g_x = ob->ob_x = w->r.g_x;
 
 				/* if( md == 1 ) */	/* changed */
 				{
@@ -927,8 +927,8 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
-					wt->tree->ob_x = w->r.x;
-					wt->tree->ob_y = w->wa.y;
+					wt->tree->ob_x = w->r.g_x;
+					wt->tree->ob_y = w->wa.g_y;
 					if (!wt->zen)
 					{
 						wt->tree->ob_x += wt->ox;
@@ -944,7 +944,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					widg->start = pb->intin[4];
 					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
 
-					ob->ob_width = widg->ar.w = w->r.w;
+					ob->ob_width = widg->ar.g_w = w->r.g_w;
 					/* kludge: avoid garbage ... todo: draw frame */
 					(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
 					(*v->api->f_interior)(v, FIS_SOLID);
@@ -957,13 +957,13 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				if( vsl )	/* restore vslider */
 				{
 					w->active_widgets |= vsl;
-					w->wa.w -= vslw;
-					w->rwa.w -= vslw;
+					w->wa.g_w -= vslw;
+					w->rwa.g_w -= vslw;
 				}
 
-				if( w->r.h < w->min.h )	/* height may too small for toolbar */
+				if( w->r.g_h < w->min.g_h )	/* height may too small for toolbar */
 				{
-					move_window(lock, w, true, -1L, w->r.x, w->r.y, w->r.w, w->min.h);
+					move_window(lock, w, true, -1L, w->r.g_x, w->r.g_y, w->r.g_w, w->min.g_h);
 				}
 
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM, WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
@@ -971,23 +971,23 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (widg->stuff)	/* remove toolbar */
 		{
-			w->min.h -= widg->ar.h;
+			w->min.g_h -= widg->ar.g_h;
 			/*
 			 * correct vslider
 			 */
 			if ( (w->active_widgets & VSLIDE) )
 			{
 				XA_WIDGET *widg2 = get_widget(w, XAW_VSLIDE);
-				short d = widg->r.h;
+				short d = widg->r.g_h;
 
-				widg2->r.h += d;
-				widg2->ar.h += d;
-				widg2->r.y -= d;
-				widg2->ar.y -= d;
+				widg2->r.g_h += d;
+				widg2->ar.g_h += d;
+				widg2->r.g_y -= d;
+				widg2->ar.g_y -= d;
 
 				widg2 = get_widget(w, XAW_UPLN1);
-				widg2->r.y -= d;
-				widg2->ar.y -= d;
+				widg2->r.g_y -= d;
+				widg2->ar.g_y -= d;
 			}
 			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
@@ -1027,8 +1027,8 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					rp_2_ap_cs(w, widg, NULL);
 					if (wt && wt->tree)
 					{
-						wt->tree->ob_x = wt->rdx = widg->ar.x;
-						wt->tree->ob_y = wt->rdx = widg->ar.y;
+						wt->tree->ob_x = wt->rdx = widg->ar.g_x;
+						wt->tree->ob_y = wt->rdx = widg->ar.g_y;
 						if (!wt->zen)
 						{
 							wt->tree->ob_x += wt->ox;
@@ -1051,7 +1051,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 	{
 		/* XXX Ozk: Add some boundary checks...?
 		*/
-		w->min = *((const RECT *)pb->intin + 2);
+		w->min = *((const GRECT *)pb->intin + 2);
 		break;
 	}
 	case WF_SHADE:
@@ -1097,7 +1097,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				w->send_message(lock, w, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 					msg, 0, 0, w->handle, 0,0,0,0);
 
-			move_window(lock, w, true, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
+			move_window(lock, w, true, status, w->rc.g_x, w->rc.g_y, w->rc.g_w, w->rc.g_h);
 		}
 		break;
 	}
@@ -1228,7 +1228,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *w;
 	XA_SLIDER_WIDGET *slw;
 	short *o = pb->intout;
-	RECT *ro = (RECT *)&pb->intout[1];
+	GRECT *ro = (GRECT *)&pb->intout[1];
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
 
@@ -1308,10 +1308,10 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			pb->control[N_INTIN], pb->intin[2], pb->intin[3], pb->intin[4], pb->intin[5], w->handle, client->name));
 
 		if (is_shaded(w))
-			ro->x = ro->y = ro->w = ro->h = 0;
+			ro->g_x = ro->g_y = ro->g_w = ro->g_h = 0;
 		else
 		{
-			w->rl_clip = *(const RECT *)(pb->intin + 2);
+			w->rl_clip = *(const GRECT *)(pb->intin + 2);
 			w->use_rlc = true;
 			make_rect_list(w, true, RECT_OPT);
 			rl = rect_get_optimal_first(w);
@@ -1319,9 +1319,9 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			if (rl)
 				*ro = rl->r;
 			else
-				ro->x = ro->y = ro->w = ro->h = 0;
+				ro->g_x = ro->g_y = ro->g_w = ro->g_h = 0;
 
-			if ((ro->w | ro->h) && !w->rect_lock)
+			if ((ro->g_w | ro->g_h) && !w->rect_lock)
 			{
 				w->rect_lock = 1;
 				C.rect_lock++;
@@ -1351,9 +1351,9 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-			ro->x = w->wa.x;
-			ro->y = w->wa.y;
-			ro->w = ro->h = 0;
+			ro->g_x = w->wa.g_x;
+			ro->g_y = w->wa.g_y;
+			ro->g_w = ro->g_h = 0;
 		}
 		break;
 
@@ -1363,9 +1363,9 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		w->use_rlc = false;
 		if (is_shaded(w) || !get_rect(&w->rect_list, &w->rwa, true, ro))
 		{
-			ro->x = w->r.x;
-			ro->y = w->r.y;
-			ro->w = ro->h = 0;
+			ro->g_x = w->r.g_x;
+			ro->g_y = w->r.g_y;
+			ro->g_w = ro->g_h = 0;
 		}
 		else if (!w->rect_lock)
 		{
@@ -1377,7 +1377,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
 	{
 		if (is_shaded(w) || !w->rect_lock)
-			ro->x = ro->y = ro->w = ro->h = 0;
+			ro->g_x = ro->g_y = ro->g_w = ro->g_h = 0;
 		else
 		{
 			if (w->use_rlc)
@@ -1388,16 +1388,16 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 					*ro = rl->r;
 				else
 				{
-					ro->x = ro->y = ro->w = ro->h = 0;
+					ro->g_x = ro->g_y = ro->g_w = ro->g_h = 0;
 				}
 			}
 			else if (!get_rect(&w->rect_list, &w->rwa, false, ro))
 			{
-				ro->x = w->r.x;
-				ro->y = w->r.y;
-				ro->w = ro->h = 0;
+				ro->g_x = w->r.g_x;
+				ro->g_y = w->r.g_y;
+				ro->g_w = ro->g_h = 0;
 			}
-			if (!(ro->w | ro->h))
+			if (!(ro->g_w | ro->g_h))
 			{
 				w->rect_lock = 0L;
 				C.rect_lock--;
@@ -1441,7 +1441,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		else
 			*ro = w->rc;
 		DIAG((D_w, w->owner, "get curr for %d: %d/%d,%d/%d",
-			wind ,ro->x,ro->y,ro->w,ro->h));
+			wind ,ro->g_x,ro->g_y,ro->g_w,ro->g_h));
 		break;
 	}
 	/*
@@ -1451,7 +1451,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	{
 		*ro = w->rwa;
 		DIAG((D_w, w->owner, "get work for %d: %d/%d,%d/%d",
-			wind ,ro->x,ro->y,ro->w,ro->h));
+			wind ,ro->g_x,ro->g_y,ro->g_w,ro->g_h));
 		break;
 	}
 	/*
@@ -1464,7 +1464,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		else
 			*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
-			wind ,ro->x,ro->y,ro->w,ro->h));
+			wind ,ro->g_x,ro->g_y,ro->g_w,ro->g_h));
 		break;
 	}
 	/*
@@ -1479,12 +1479,12 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		if (!w || w == root_window)
 		{
 			/* Ensure the windows don't overlay the menu bar */
-			ro->x = root_window->wa.x;
-			ro->y = root_window->wa.y;
-			ro->w = root_window->wa.w;
-			ro->h = root_window->wa.h;
+			ro->g_x = root_window->wa.g_x;
+			ro->g_y = root_window->wa.g_y;
+			ro->g_w = root_window->wa.g_w;
+			ro->g_h = root_window->wa.g_h;
 			DIAG((D_w, NULL, "get max full: %d/%d,%d/%d",
-				ro->x,ro->y,ro->w,ro->h));
+				ro->g_x,ro->g_y,ro->g_w,ro->g_h));
 		}
 		else
 		{
@@ -1493,7 +1493,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			else
 				*ro = w->max;
 			DIAG((D_w, w->owner, "get full for %d: %d/%d,%d/%d",
-				wind ,ro->x,ro->y,ro->w,ro->h));
+				wind ,ro->g_x,ro->g_y,ro->g_w,ro->g_h));
 		}
 		break;
 	}
@@ -1719,13 +1719,13 @@ oeps:
 	case WF_ICONIFY:
 	{
 		o[1] = (is_iconified(w)) ? 1 : 0;
-		o[2] = C.iconify.w;
-		o[3] = C.iconify.h;
+		o[2] = C.iconify.g_w;
+		o[3] = C.iconify.g_h;
 		break;
 	}
 	case WF_UNICONIFY:
 	{
-		RECT *sr = (is_iconified(w)) ? &w->ro : &w->r;
+		GRECT *sr = (is_iconified(w)) ? &w->ro : &w->r;
 		if (w->opts & XAWO_WCOWORK)
 			*ro = f2w(&w->delta, sr, true);
 		else
@@ -1759,27 +1759,27 @@ oeps:
 
 	case WF_CALCF2W:
 	{
-		*ro = f2w(&w->delta, (const RECT *)&pb->intin[2], true);
+		*ro = f2w(&w->delta, (const GRECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_CALCW2F:
 	{
-		*ro = w2f(&w->delta, (const RECT *)&pb->intin[2], true);
+		*ro = w2f(&w->delta, (const GRECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_CALCF2U:
 	{
-		*ro = f2w(&w->wadelta, (const RECT *)&pb->intin[2], true);
+		*ro = f2w(&w->wadelta, (const GRECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_CALCU2F:
 	{
-		*ro = w2f(&w->wadelta, (const RECT *)&pb->intin[2], true);
+		*ro = w2f(&w->wadelta, (const GRECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_MAXWORKXYWH:
 	{
-		*ro = f2w(&w->delta, (const RECT *)&root_window->wa, true);
+		*ro = f2w(&w->delta, (const GRECT *)&root_window->wa, true);
 		break;
 	}
 	default:
@@ -1837,7 +1837,7 @@ XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 		pb->intin[0], pb->intin[1]));
 
 	if (client->options.wind_opts & XAWO_WCOWORK)
-		*(RECT *)&pb->intout[1] = *(const RECT *)&pb->intin[2];
+		*(GRECT *)&pb->intout[1] = *(const GRECT *)&pb->intin[2];
 	else
 	{
 		tp = (unsigned short)pb->intin[1];
@@ -1845,7 +1845,7 @@ XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 		if (!client->options.nohide)
 			tp |= HIDE;
 
-		*(RECT *) &pb->intout[1] =
+		*(GRECT *) &pb->intout[1] =
 			calc_window(lock,
 				    client,
 				    pb->intin[0],				/* request */
@@ -1853,7 +1853,7 @@ XA_wind_calc(int lock, struct xa_client *client, AESPB *pb)
 				    created_for_CLIENT,
 				    client->options.thinframe,
 				    client->options.thinwork,
-				    (const RECT *)&pb->intin[2]);
+				    (const GRECT *)&pb->intin[2]);
 	}
 	pb->intout[0] = 1;
 	return XAC_DONE;

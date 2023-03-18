@@ -42,8 +42,8 @@
 #include "mint/signal.h"
 
 static struct xa_window *pull_wind_to_top(int lock, struct xa_window *w);
-static void	fitin_root(RECT *r);
-static void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
+static void	fitin_root(GRECT *r);
+static void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, GRECT *new);
 
 /*
  * Window Stack Management Functions
@@ -199,11 +199,11 @@ calc_shade_height(struct xa_window *wind)
 {
 	if (wind->active_widgets & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
-		RECT t;
+		GRECT t;
 		t = w2f(&wind->rbd, &wind->widgets[XAW_TITLE].r, false);
-		if( t.h < 6 )
-			t.h = 6;
-		wind->sh = t.h + wind->y_shadow;
+		if( t.g_h < 6 )
+			t.g_h = 6;
+		wind->sh = t.g_h + wind->y_shadow;
 		if (wind->frame > 0)
 			wind->sh += (wind->frame << 1);
 	}
@@ -220,12 +220,12 @@ clear_wind_rectlist(struct xa_window *wind)
 
 /*
  * Find first free position for iconification.
- * Uses the RECT at wind->t.
+ * Uses the GRECT at wind->t.
  */
-RECT
+GRECT
 free_icon_pos(int lock, struct xa_window *ignore)
 {
-	RECT ic, r;
+	GRECT ic, r;
 	int i = 0;
 
 	for (;;)
@@ -242,7 +242,7 @@ free_icon_pos(int lock, struct xa_window *ignore)
 			{
 				r = ic;
 
-				if (w->t.x == r.x && w->t.y == r.y)
+				if (w->t.g_x == r.g_x && w->t.g_y == r.g_y)
 					/* position occupied; advance with next position in grid. */
 					break;
 			}
@@ -284,9 +284,9 @@ hide_move(struct options *o)
 }
 
 void
-set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
+set_winrect(struct xa_window *wind, GRECT *wr, const GRECT *new)
 {
-	RECT r;
+	GRECT r;
 
 	if (wind->opts & XAWO_WCOWORK)
 		r = w2f(&wind->delta, new, true);
@@ -304,7 +304,7 @@ set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
  * 3 if both
  */
 short
-inside_root(RECT *r, bool noleft)
+inside_root(GRECT *r, bool noleft)
 {
 	short ret = 0;
 	if( !cfg.leave_top_border )
@@ -315,52 +315,52 @@ inside_root(RECT *r, bool noleft)
 		{
 			min = get_menu_height();
 		}
-		if (r->y < min )
+		if (r->g_y < min )
 		{
-			r->y = min;
+			r->g_y = min;
 			ret = 1;
 		}
 	}
 
-	if (noleft && r->x < root_window->wa.x)
+	if (noleft && r->g_x < root_window->wa.g_x)
 	{
-		r->x = root_window->wa.x;
+		r->g_x = root_window->wa.g_x;
 		ret |= 2;
 	}
 	return ret;
 }
 
 static void
-fitin_root(RECT *r)
+fitin_root(GRECT *r)
 {
-	RECT *w = &root_window->wa;
+	GRECT *w = &root_window->wa;
 
-	if (r->x < w->x)
-		r->x = w->x;
-	if (r->y < w->y)
-		r->y = w->y;
-	if (r->w > w->w)
-		r->w = w->w;
-	if (r->h > w->h)
-		r->h = w->h;
+	if (r->g_x < w->g_x)
+		r->g_x = w->g_x;
+	if (r->g_y < w->g_y)
+		r->g_y = w->g_y;
+	if (r->g_w > w->g_w)
+		r->g_w = w->g_w;
+	if (r->g_h > w->g_h)
+		r->g_h = w->g_h;
 }
 
 void
-inside_minmax(RECT *r, struct xa_window *wind)
+inside_minmax(GRECT *r, struct xa_window *wind)
 {
 	bool um = (wind->active_widgets & USE_MAX);
 
 	if (!is_iconified(wind))
 	{
-		if (um && wind->max.w && r->w > wind->max.w)
-			r->w = wind->max.w;
-		if (wind->min.w && r->w < wind->min.w)
-			r->w = wind->min.w;
+		if (um && wind->max.g_w && r->g_w > wind->max.g_w)
+			r->g_w = wind->max.g_w;
+		if (wind->min.g_w && r->g_w < wind->min.g_w)
+			r->g_w = wind->min.g_w;
 
-		if (um && wind->max.h && r->h > wind->max.h)
-			r->h = wind->max.h;
-		if (wind->min.h && r->h < wind->min.h)
-			r->h = wind->min.h;
+		if (um && wind->max.g_h && r->g_h > wind->max.g_h)
+			r->g_h = wind->max.g_h;
+		if (wind->min.g_h && r->g_h < wind->min.g_h)
+			r->g_h = wind->min.g_h;
 	}
 }
 
@@ -620,11 +620,11 @@ hide_window(int lock, struct xa_window *wind)
 {
 	if (!is_hidden(wind))
 	{
-		RECT r = wind->rc;
-		r.x = root_window->rc.x + root_window->rc.w + 16;
-		r.y = root_window->rc.y + root_window->rc.h + 16;
-		wind->hx = wind->rc.x;
-		wind->hy = wind->rc.y;
+		GRECT r = wind->rc;
+		r.g_x = root_window->rc.g_x + root_window->rc.g_w + 16;
+		r.g_y = root_window->rc.g_y + root_window->rc.g_h + 16;
+		wind->hx = wind->rc.g_x;
+		wind->hy = wind->rc.g_y;
 		if (wind->opts & XAWO_WCOWORK)
 			r = f2w(&wind->delta, &r, true);
 		send_moved(lock, wind, AMQ_NORM, &r);
@@ -636,15 +636,15 @@ unhide_window(int lock, struct xa_window *wind, bool check)
 {
 	if (is_hidden(wind))
 	{
-		RECT r;
+		GRECT r;
 
 		if (is_iconified(wind))
 			r = free_icon_pos(lock, wind);
 		else
 		{
 			r = wind->rc;
-			r.x = wind->hx;
-			r.y = wind->hy;
+			r.g_x = wind->hx;
+			r.g_y = wind->hy;
 		}
 		wind->t = r;
 		if (wind->opts & XAWO_WCOWORK)
@@ -690,7 +690,7 @@ void
 show_toolboxwindows(struct xa_client *client)
 {
 	struct xa_window *wind = root_window->next, *nxt;
-	RECT clip;
+	GRECT clip;
 
 	while (wind)
 	{
@@ -753,7 +753,7 @@ set_window_title(struct xa_window *wind, const char *title, bool redraw)
 	/* redraw if necessary */
 	if (redraw && (wind->active_widgets & NAME) && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN))
 	{
-		RECT clip;
+		GRECT clip;
 
 		rp_2_ap(wind, widg, &clip);
 		display_window(0, 45, wind, &clip);
@@ -795,7 +795,7 @@ set_window_info(struct xa_window *wind, const char *info, bool redraw)
 
 	if (redraw && (wind->active_widgets & INFO) && (wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_ICONIFIED|XAWS_HIDDEN)) == XAWS_OPEN)
 	{
-		RECT clip;
+		GRECT clip;
 
 		rp_2_ap(wind, widg, &clip);
 		display_window(0, 46, wind, &clip);
@@ -848,58 +848,58 @@ send_bottomed(int lock, struct xa_window *wind)
 }
 
 void
-send_moved(int lock, struct xa_window *wind, short amq, RECT *r)
+send_moved(int lock, struct xa_window *wind, short amq, GRECT *r)
 {
 	if (wind->send_message)
 	{
 		C.move_block = 2;
 		wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 			WM_MOVED, 0, 0, wind->handle,
-			r->x, r->y, r->w, r->h);
+			r->g_x, r->g_y, r->g_w, r->g_h);
 
 	}
 }
 #define WIND_WMIN	64
 #define WIND_HMIN	64
 void
-send_sized(int lock, struct xa_window *wind, short amq, RECT *r)
+send_sized(int lock, struct xa_window *wind, short amq, GRECT *r)
 {
 	if (!(wind->window_status & XAWS_SHADED))
 	{
 		if (wind->send_message)
 		{
-			if( r->w < WIND_WMIN )
-				r->w = WIND_WMIN;
-			if( r->h < WIND_HMIN )
-				r->h = WIND_HMIN;
+			if( r->g_w < WIND_WMIN )
+				r->g_w = WIND_WMIN;
+			if( r->g_h < WIND_HMIN )
+				r->g_h = WIND_HMIN;
 			C.move_block = 2;
 			wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 				WM_SIZED, 0,0, wind->handle,
-				r->x, r->y, r->w, r->h);
+				r->g_x, r->g_y, r->g_w, r->g_h);
 		}
 	}
 }
 
 void
-send_reposed(int lock, struct xa_window *wind, short amq, RECT *r)
+send_reposed(int lock, struct xa_window *wind, short amq, GRECT *r)
 {
 	if (wind->send_message)
 	{
 		C.move_block = 2;
 		wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 			WM_REPOSED, 0,0, wind->handle,
-			r->x, r->y, r->w, r->h);
+			r->g_x, r->g_y, r->g_w, r->g_h);
 	}
 }
 
 static void
-send_redraw(int lock, struct xa_window *wind, RECT *r)
+send_redraw(int lock, struct xa_window *wind, GRECT *r)
 {
 	if (!(wind->window_status & (XAWS_SHADED|XAWS_HIDDEN)) && wind->send_message)
 	{
 		wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
 			WM_REDRAW, 0,0, wind->handle,
-			r->x, r->y, r->w, r->h);
+			r->g_x, r->g_y, r->g_w, r->g_h);
 	}
 }
 
@@ -974,7 +974,7 @@ setwin_ontop(int lock, struct xa_window *wind, bool snd_ontop)
 }
 
 void
-send_iredraw(int lock, struct xa_window *wind, short xaw, RECT *r)
+send_iredraw(int lock, struct xa_window *wind, short xaw, GRECT *r)
 {
 	if (wind == root_window)
 	{
@@ -983,7 +983,7 @@ send_iredraw(int lock, struct xa_window *wind, short xaw, RECT *r)
 		} else if (r) {
 			send_app_message(lock, wind, get_desktop()->owner, AMQ_IREDRAW, QMF_NORM,
 					 WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
-					 r->x, r->y, r->w, r->h);
+					 r->g_x, r->g_y, r->g_w, r->g_h);
 		} else {
 			send_app_message(lock, wind, get_desktop()->owner, AMQ_IREDRAW, QMF_NORM,
 					 WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
@@ -998,7 +998,7 @@ send_iredraw(int lock, struct xa_window *wind, short xaw, RECT *r)
  			{
 				send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 					WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
-					r->x, r->y, r->w, r->h);
+					r->g_x, r->g_y, r->g_w, r->g_h);
 			}
 		}
 		else
@@ -1011,9 +1011,9 @@ send_iredraw(int lock, struct xa_window *wind, short xaw, RECT *r)
 }
 
 void
-generate_redraws(int lock, struct xa_window *wind, RECT *r, short flags)
+generate_redraws(int lock, struct xa_window *wind, GRECT *r, short flags)
 {
-	RECT b;
+	GRECT b;
 
 	DIAGS(("generate_redraws: on %d of %s", wind->handle, wind->owner->name));
 
@@ -1033,7 +1033,7 @@ generate_redraws(int lock, struct xa_window *wind, RECT *r, short flags)
 				{
 					send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 						WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
-							b.x, b.y, b.w, b.h);
+							b.g_x, b.g_y, b.g_w, b.g_h);
 				}
 			}
 		}
@@ -1066,19 +1066,19 @@ remove_from_iredraw_queue(int lock, struct xa_window *wind)
 }
 
 void
-iconify_window(int lock, struct xa_window *wind, RECT *r)
+iconify_window(int lock, struct xa_window *wind, GRECT *r)
 {
-	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h) || (r->y + r->h + cfg.icnfy_b_y != screen.r.h))
+	if ((r->g_w == -1 && r->g_h == -1) || (!r->g_w && !r->g_h) || (r->g_y + r->g_h + cfg.icnfy_b_y != screen.r.g_h))
 		*r = free_icon_pos(lock, NULL);
 
-	move_window(lock, wind, true, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
+	move_window(lock, wind, true, XAWS_ICONIFIED, r->g_x, r->g_y, r->g_w, r->g_h);
 	wind->window_status &= ~XAWS_CHGICONIF;
 }
 
 void
-uniconify_window(int lock, struct xa_window *wind, RECT *r)
+uniconify_window(int lock, struct xa_window *wind, GRECT *r)
 {
-	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
+	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->g_x, r->g_y, r->g_w, r->g_h);
 	wind->window_status &= ~XAWS_CHGICONIF;
 
 	/* reinstall the menu - maybe theres a better place for this */
@@ -1226,25 +1226,25 @@ create_window(
 	WINDOW_TYPE dial,
 	int frame,
 	bool thinwork,
-	const RECT *R,
-	const RECT *max,
-	RECT *remember)
+	const GRECT *R,
+	const GRECT *max,
+	GRECT *remember)
 {
 	struct xa_window *w;
 	struct xa_widget_theme *wtheme;
-	RECT r;
+	GRECT r;
 
 	r = *R;
 
 	if (max)
 	{
 		DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  max:%d,%d/%d,%d",
-			c_owner(client), r.x,r.y,r.w,r.h,max->x,max->y,max->w,max->h));
+			c_owner(client), r.g_x,r.g_y,r.g_w,r.g_h,max->g_x,max->g_y,max->g_w,max->g_h));
 	}
 	else
 	{
 		DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  no max",
-			c_owner(client), r.x,r.y,r.w,r.h));
+			c_owner(client), r.g_x,r.g_y,r.g_w,r.g_h));
 	}
 
 	w = kmalloc(sizeof(*w));
@@ -1269,7 +1269,7 @@ create_window(
 
 	w->vdi_settings = client->vdi_settings;
 
-	w->min.h = w->min.w = WIND_WMIN;
+	w->min.g_h = w->min.g_w = WIND_WMIN;
 	tp = fix_wind_kind(tp);
 	w->requested_widgets = tp;
 
@@ -1278,17 +1278,17 @@ create_window(
 
 	if (tp & (UPARROW|DNARROW|LFARROW|RTARROW))
 	{
-		w->min.x = w->min.y = -1;
-		w->min.w = 6 * 16; //cfg.widg_w;
-		w->min.h = 7 * 16; //cfg.widg_h;
+		w->min.g_x = w->min.g_y = -1;
+		w->min.g_w = 6 * 16; //cfg.widg_w;
+		w->min.g_h = 7 * 16; //cfg.widg_h;
 	}
 	else
-		w->min.w = w->min.h = 0;
+		w->min.g_w = w->min.g_h = 0;
 
 	if (tp & (MENUBAR))
-		w->min.h += 20;
+		w->min.g_h += 20;
 	if (tp & (INFO))
-		w->min.h += 10;
+		w->min.g_h += 10;
 
 	w->rc = w->r = w->pr = r;
 
@@ -1416,9 +1416,9 @@ create_window(
 #if 0
 	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
-		RECT t;
+		GRECT t;
 		t = w2f(&w->rbd, &w->widgets[XAW_TITLE].r, true);
-		w->sh = t.h + w->y_shadow;
+		w->sh = t.g_h + w->y_shadow;
 	}
 #endif
 	if (remember)
@@ -1435,12 +1435,12 @@ change_window_attribs(int lock,
 		bool r_is_wa,
 		bool insideroot,
 		short noleft,
-		RECT r, RECT *remember)
+		GRECT r, GRECT *remember)
 {
 	XA_WIND_ATTR old_tp = w->active_widgets;
 
 	DIAG((D_wind, client, "change_window_attribs for %s: r:%d,%d/%d,%d  no max",
-		c_owner(client), r.x,r.y,r.w,r.h));
+		c_owner(client), r.g_x,r.g_y,r.g_w,r.g_h));
 
 	tp = fix_wind_kind(tp);
 
@@ -1477,7 +1477,7 @@ change_window_attribs(int lock,
 	w->rc = w->r;
 
 	if ((w->window_status & XAWS_SHADED))
-		w->r.h = w->sh;
+		w->r.g_h = w->sh;
 
 	calc_work_area(w);
 
@@ -1516,8 +1516,8 @@ change_window_attribs(int lock,
 			set_toolbar_coords(w, NULL);
 			if (wt->tree && client->p == get_curproc())
 			{
-				wt->tree->ob_x = w->wa.x;
-				wt->tree->ob_y = w->wa.y;
+				wt->tree->ob_x = w->wa.g_x;
+				wt->tree->ob_y = w->wa.g_y;
 				if (!wt->zen)
 				{
 					wt->tree->ob_x += wt->ox;
@@ -1559,9 +1559,9 @@ void remove_window_widgets(int lock, int full)
 		if( full )
 		{
 			wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
-		  	WM_SIZED, 0, 0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		  	WM_SIZED, 0, 0, wind->handle, wind->r.g_x, wind->r.g_y, wind->r.g_w, wind->r.g_h);
 		}
-		if( memcmp( &wind->r, &screen.r, sizeof(RECT) ) )
+		if( memcmp( &wind->r, &screen.r, sizeof(GRECT) ) )
 		{
 			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
 		}
@@ -1569,14 +1569,14 @@ void remove_window_widgets(int lock, int full)
 }
 
 int _cdecl
-open_window(int lock, struct xa_window *wind, RECT r)
+open_window(int lock, struct xa_window *wind, GRECT r)
 {
 	struct xa_window *wl = window_list;
-	RECT clip, our_win;
+	GRECT clip, our_win;
 	int ignorefocus = 0;
 
 	DIAG((D_wind, wind->owner, "open_window %d for %s to %d/%d,%d/%d status %lx",
-		wind->handle, c_owner(wind->owner), r.x,r.y,r.w,r.h, wind->window_status));
+		wind->handle, c_owner(wind->owner), r.g_x,r.g_y,r.g_w,r.g_h, wind->window_status));
 
 	if (C.redraws) {
 		yield();
@@ -1609,7 +1609,7 @@ open_window(int lock, struct xa_window *wind, RECT r)
 		calc_work_area(wind);
 
 		if ((wind->window_status & XAWS_SHADED))
-			wind->r.h = wind->sh;
+			wind->r.g_h = wind->sh;
 
 		wind->window_status |= XAWS_OPEN;
 
@@ -1691,11 +1691,11 @@ open_window(int lock, struct xa_window *wind, RECT r)
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 			inside_root(&r, wind->owner->options.noleft);
 
-		if (r.w != -1 && r.h != -1)
+		if (r.g_w != -1 && r.g_h != -1)
 			wind->rc = wind->r = r;
 
 		if ((wind->window_status & XAWS_SHADED))
-			wind->r.h = wind->sh;
+			wind->r.g_h = wind->sh;
 
 	}
 	else
@@ -1709,7 +1709,7 @@ open_window(int lock, struct xa_window *wind, RECT r)
 		wind->rc = wind->r = r;
 		if ((wind->window_status & XAWS_SHADED))
 		{
-			wind->r.h = wind->sh;
+			wind->r.g_h = wind->sh;
 
 			if (wind->send_message) {
 				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
@@ -1808,25 +1808,25 @@ open_window(int lock, struct xa_window *wind, RECT r)
 	return 1;
 }
 
-bool clip_off_menu( RECT *cl )
+bool clip_off_menu( GRECT *cl )
 {
-	short d = get_menu_height() - cl->y;
-	if( cl->h <= d )
+	short d = get_menu_height() - cl->g_y;
+	if( cl->g_h <= d )
 		return true;
-	cl->y = get_menu_height();
-	cl->h -= d;
+	cl->g_y = get_menu_height();
+	cl->g_h -= d;
 	return false;
 }
 
 void
-draw_window(int lock, struct xa_window *wind, const RECT *clip)
+draw_window(int lock, struct xa_window *wind, const GRECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	RECT cl = *clip;
+	GRECT cl = *clip;
 
 	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
 		wind->handle, w_owner(wind),
-		wind->r.x, wind->r.y, wind->r.w, wind->r.h));
+		wind->r.g_x, wind->r.g_y, wind->r.g_w, wind->r.g_h));
 
 	if (!(wind->window_status & XAWS_OPEN) || (wind->dial & created_for_MENUBAR) )
 	{
@@ -1836,7 +1836,7 @@ draw_window(int lock, struct xa_window *wind, const RECT *clip)
 	}
 
 	/* is window below menubar? (better should change rectlists?) */
-	if( wind->handle >= 0 && cfg.menu_layout == 0 && cfg.menu_bar && cl.y < get_menu_height() )
+	if( wind->handle >= 0 && cfg.menu_layout == 0 && cfg.menu_bar && cl.g_y < get_menu_height() )
 	{
 		if( clip_off_menu( &cl ) )
 			return;
@@ -1877,7 +1877,7 @@ draw_window(int lock, struct xa_window *wind, const RECT *clip)
 		int f;
 		WINDOW_STATUS status = wind->window_status;
 		XA_WIDGET *widg;
-		RECT r;
+		GRECT r;
 
 		if (wind->draw_canvas)
 		{
@@ -1923,7 +1923,7 @@ draw_window(int lock, struct xa_window *wind, const RECT *clip)
 						widg->m.r.draw(wind, widg, clip );
 					}
 				}
-				else if( f == XAW_MENU && widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
+				else if( f == XAW_MENU && widg->r.g_w && widg->r.g_h )	/* draw a bar to avoid transparence */
 				{
 						(*v->api->gbar)(v, 0, &widg->ar);
 				}
@@ -2042,7 +2042,7 @@ static struct xa_window *
 pull_wind_to_top(int lock, struct xa_window *w)
 {
 	struct xa_window *wl, *below, *above;
-	RECT clip, r;
+	GRECT clip, r;
 
 	DIAG((D_wind, w->owner, "pull_wind_to_top %d for %s", w->handle, w_owner(w)));
 
@@ -2101,7 +2101,7 @@ void _cdecl
 send_wind_to_bottom(int lock, struct xa_window *w)
 {
 	struct xa_window *wl;
-	RECT r, clip;
+	GRECT r, clip;
 
 	if (   w->next == root_window	/* Can't send to the bottom a window that's already there */
 	    || w       == root_window	/* just a safeguard */
@@ -2125,21 +2125,21 @@ send_wind_to_bottom(int lock, struct xa_window *w)
 
 static void redraw_menu_area(void)
 {
-	RECT r = screen.r;
+	GRECT r = screen.r;
 	popout(TAB_LIST_START);
-	r.h = get_menu_height();
+	r.g_h = get_menu_height();
 
 	if( cfg.menu_layout || !cfg.menu_bar )
 	{
-		RECT rc = screen.r;
+		GRECT rc = screen.r;
 		short mb = cfg.menu_bar;
 		cfg.menu_bar = 0;
 		if( mb )
 		{
-			rc.x = get_menu_widg()->r.w;
-			rc.w -= rc.x;
+			rc.g_x = get_menu_widg()->r.g_w;
+			rc.g_w -= rc.g_x;
 		}
-		rc.h = r.h;
+		rc.g_h = r.g_h;
 		update_windows_below(0, &rc, &rc, window_list, NULL);
 		cfg.menu_bar = mb;
 		if( mb )
@@ -2195,7 +2195,7 @@ void set_standard_point(struct xa_client *client)
 	screen.standard_font_point = client->options.standard_font_point;
 	if( new_menu_sz == true && cfg.menu_bar != 2 && cfg.menu_layout == 1 && client->std_menu )
 	{
-		xaw->r.w = xaw->ar.w = client->std_menu->area.w + 1;
+		xaw->r.g_w = xaw->ar.g_w = client->std_menu->area.g_w + 1;
 		//print_rect_list( root_window );
 		if( !cfg.menu_ontop )
 			redraw_menu_area();
@@ -2212,37 +2212,37 @@ void set_standard_point(struct xa_client *client)
 	if( new_menu_sz == true )
 	{
 		C.Aes->std_menu->tree->ob_height = h + 2;
-		xaw->r.h = xaw->ar.h = xat->r.h = xat->ar.h = h + 2;
+		xaw->r.g_h = xaw->ar.g_h = xat->r.g_h = xat->ar.g_h = h + 2;
 
 		if( cfg.menu_bar == 2 || (cfg.menu_bar == 1 && !cfg.menu_layout && !cfg.menu_ontop) )
 		{
-			root_window->wa.h = screen.r.h - xaw->r.h;
-			root_window->wa.y = xaw->r.h;
+			root_window->wa.g_h = screen.r.g_h - xaw->r.g_h;
+			root_window->wa.g_y = xaw->r.g_h;
 		}
 		else
 		{
-			root_window->wa.h = screen.r.h;
-			root_window->wa.y = 0;
+			root_window->wa.g_h = screen.r.g_h;
+			root_window->wa.g_y = 0;
 		}
 		if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )
 		{
-			menu_window->r.w = xaw->r.w;
-			menu_window->r.h = xaw->r.h;
+			menu_window->r.g_w = xaw->r.g_w;
+			menu_window->r.g_h = xaw->r.g_h;
 			if( menu_window->window_status & XAWS_OPEN)
 			{
-				move_window( 0, menu_window, true, 0, menu_window->r.x, menu_window->r.y, menu_window->r.w, menu_window->r.h );
+				move_window( 0, menu_window, true, 0, menu_window->r.g_x, menu_window->r.g_y, menu_window->r.g_w, menu_window->r.g_h );
 				redraw_menu_area();
 			}
 		}
 
-		//RECT rc = screen.r;
+		//GRECT rc = screen.r;
 		//update_windows_below(0, &rc, &rc, window_list, NULL);
 		root_window->rwa = root_window->wa;
 
 		if (get_desktop()->owner == C.Aes)
 		{
-			wt->tree->ob_height = root_window->wa.h;
-			wt->tree->ob_y = root_window->wa.y;
+			wt->tree->ob_height = root_window->wa.g_h;
+			wt->tree->ob_y = root_window->wa.g_y;
 		}
 	}
 }
@@ -2308,23 +2308,23 @@ void _cdecl
 move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short X, short Y, short W, short H)
 {
 	IFDIAG(struct xa_client *client = wind->owner;)
-	RECT old, new;
+	GRECT old, new;
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      (wind->window_status & XAWS_OPEN) ? "open" : "closed",
-	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, X,Y,W,H));
+	      wind->handle, c_owner(client), wind->r.g_x,wind->r.g_y,wind->r.g_w,wind->r.g_h, X,Y,W,H));
 
 
 	if (wind->owner->status & CS_EXITING)
 		return;
 
-	new.x = X;
-	new.y = Y;
-	new.w = W;
-	new.h = H;
+	new.g_x = X;
+	new.g_y = Y;
+	new.g_w = W;
+	new.g_h = H;
 	old = wind->r;
 
-	if( BELOW_FOREIGN_MENU(old.y) )
+	if( BELOW_FOREIGN_MENU(old.g_y) )
 	{
 		blit = false;
 	}
@@ -2346,7 +2346,7 @@ move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate,
 					if (wind->window_status & XAWS_SHADED)
 					{
 						DIAGS(("move_window: %d/%d/%d/%d - uniconify shaded window",
-							new.x, new.y, new.w, new.h));
+							new.g_x, new.g_y, new.g_w, new.g_h));
 					}
 				}
 			}
@@ -2400,7 +2400,7 @@ move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate,
 
 	inside_root(&new, wind->owner->options.noleft);
 
-	if( !cfg.menu_ontop && (cfg.menu_bar&1) && old.y != wind->r.y && old.y < get_menu_height() )
+	if( !cfg.menu_ontop && (cfg.menu_bar&1) && old.g_y != wind->r.g_y && old.g_y < get_menu_height() )
 	{
 		blit = false;
 	}
@@ -2420,7 +2420,7 @@ move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate,
 	if (!C.redraws && C.move_block != 3)
 		C.move_block = 0;
 	{
-		short y = old.y < new.y ? old.y : new.y;
+		short y = old.g_y < new.g_y ? old.g_y : new.g_y;
 		if( !cfg.menu_ontop && cfg.menu_bar && y < get_menu_height() )
 		{
 			C.rdm = 1;
@@ -2438,7 +2438,7 @@ close_window(int lock, struct xa_window *wind)
 {
 	struct xa_window *wl, *w = NULL;
 	struct xa_client *client = wind->owner;
-	RECT r;
+	GRECT r;
 	bool is_top, ignorefocus = false;
 	short dial;
 
@@ -2810,13 +2810,13 @@ do_delayed_delete_window(int lock)
  * which unused!
  */
 void
-display_window(int lock, int which, struct xa_window *wind, RECT *clip)
+display_window(int lock, int which, struct xa_window *wind, GRECT *clip)
 {
 	if (!(wind->owner->status & CS_EXITING) && (wind->window_status & XAWS_OPEN))
 	{
 		{
 			struct xa_rect_list *rl;
-			RECT d;
+			GRECT d;
 
 			rl = (wind->dial & created_for_SLIST) && wind->parent ? wind->parent->rect_list.start : wind->rect_list.start;
 
@@ -2861,9 +2861,9 @@ update_all_windows(int lock, struct xa_window *wl)
  * defines the clip rectangle.
  */
 void
-update_windows_below(int lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend)
+update_windows_below(int lock, const GRECT *old, GRECT *new, struct xa_window *wl, struct xa_window *wend)
 {
-	RECT clip;
+	GRECT clip;
 	int wlock = lock | LOCK_WINLIST;
 
 	DIAGS(("update_windows_below: ..."));
@@ -2881,7 +2881,7 @@ update_windows_below(int lock, const RECT *old, RECT *new, struct xa_window *wl,
 			if (xa_rect_clip(old, &wl->r, &clip))
 			{
 				struct xa_rect_list *rl;
-				RECT d;
+				GRECT d;
 
 				make_rect_list(wl, true, RECT_SYS);
 
@@ -2955,7 +2955,7 @@ redraw_client_windows(int lock, struct xa_client *client)
 	struct xa_rect_list *rl;
 	union msg_buf buf;
 	bool makerl = true;
-	RECT r;
+	GRECT r;
 
 	while (get_lost_redraw_msg(client, &buf))
 	{
@@ -2966,7 +2966,7 @@ redraw_client_windows(int lock, struct xa_client *client)
 			rl = wl->rect_list.start;
 			while (rl)
 			{
-				if (xa_rect_clip(&rl->r, (RECT *)&buf.m[4], &r))
+				if (xa_rect_clip(&rl->r, (GRECT *)&buf.m[4], &r))
 				{
 					generate_redraws(lock, wl, &r, RDRW_ALL);
 				}
@@ -2984,7 +2984,7 @@ redraw_client_windows(int lock, struct xa_client *client)
 				rl = wl->rect_list.start;
 				while (rl)
 				{
-					if (xa_rect_clip(&rl->r, (RECT *)&buf.m[4], &r))
+					if (xa_rect_clip(&rl->r, (GRECT *)&buf.m[4], &r))
 					{
 						generate_redraws(lock, wl, &r, RDRW_ALL);
 					}
@@ -2997,29 +2997,29 @@ redraw_client_windows(int lock, struct xa_client *client)
 	}
 }
 
-RECT
-w2f(RECT *d, const RECT *in, bool chkwh)
+GRECT
+w2f(GRECT *d, const GRECT *in, bool chkwh)
 {
-	RECT r;
-	r.x = in->x - d->x; //(wind->rwa.x - wind->r.x);
-	r.y = in->y - d->y; //(wind->rwa.y - wind->r.y);
-	r.w = in->w + d->w; //(wind->r.w - wind->rwa.w);
-	r.h = in->h + d->h; //(wind->r.h - wind->rwa.h);
-	if (chkwh && (r.w <= 0 || r.h <= 0))
-		r.w = r.h = 0;
+	GRECT r;
+	r.g_x = in->g_x - d->g_x; //(wind->rwa.g_x - wind->r.g_x);
+	r.g_y = in->g_y - d->g_y; //(wind->rwa.g_y - wind->r.g_y);
+	r.g_w = in->g_w + d->g_w; //(wind->r.g_w - wind->rwa.g_w);
+	r.g_h = in->g_h + d->g_h; //(wind->r.g_h - wind->rwa.g_h);
+	if (chkwh && (r.g_w <= 0 || r.g_h <= 0))
+		r.g_w = r.g_h = 0;
 	return r;
 }
 
-RECT
-f2w(RECT *d, const RECT *in, bool chkwh)
+GRECT
+f2w(GRECT *d, const GRECT *in, bool chkwh)
 {
-	RECT r;
-	r.x = in->x + d->x; //(wind->rwa.x - wind->r.x);
-	r.y = in->y + d->y; //(wind->rwa.y - wind->r.y);
-	r.w = in->w - d->w; //(wind->r.w - wind->rwa.w);
-	r.h = in->h - d->h; //(wind->r.h - wind->rwa.h);
-	if (chkwh && (r.w <= 0 || r.h <= 0))
-		r.w = r.h = 0;
+	GRECT r;
+	r.g_x = in->g_x + d->g_x; //(wind->rwa.g_x - wind->r.g_x);
+	r.g_y = in->g_y + d->g_y; //(wind->rwa.g_y - wind->r.g_y);
+	r.g_w = in->g_w - d->g_w; //(wind->r.g_w - wind->rwa.g_w);
+	r.g_h = in->g_h - d->g_h; //(wind->r.g_h - wind->rwa.g_h);
+	if (chkwh && (r.g_w <= 0 || r.g_h <= 0))
+		r.g_w = r.g_h = 0;
 
 	return r;
 }
@@ -3032,16 +3032,16 @@ f2w(RECT *d, const RECT *in, bool chkwh)
  */
 #if 0
 static void
-Xpolate(RECT *r, RECT *o, RECT *i)
+Xpolate(GRECT *r, GRECT *o, GRECT *i)
 {
 	/* If you want to prove the maths here, draw two boxes one inside
 	 * the other, then sit and think about it for a while...
 	 * HR: very clever :-)
 	 */
-	r->x = 2 * o->x - i->x;
-	r->y = 2 * o->y - i->y;
-	r->w = 2 * o->w - i->w;
-	r->h = 2 * o->h - i->h;
+	r->g_x = 2 * o->g_x - i->g_x;
+	r->g_y = 2 * o->g_y - i->g_y;
+	r->g_w = 2 * o->g_w - i->g_w;
+	r->g_h = 2 * o->g_h - i->g_h;
 }
 #endif
 
@@ -3090,14 +3090,14 @@ lookup_wcc_entry(struct xa_client *client, short class, XA_WIND_ATTR tp)
 	return wcc;
 };
 
-RECT
-calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, const RECT *r)
+GRECT
+calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, const GRECT *r)
 {
 	struct xa_window *w_temp;
 	struct xa_wc_cache *wcc;
 	short class;
-	RECT o;
-	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r->x, r->y, r->w, r->h));
+	GRECT o;
+	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r->g_x, r->g_y, r->g_w, r->g_h));
 	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
@@ -3147,19 +3147,19 @@ calc_window(int lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WI
  */
 static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_list *newrl, short flags )
 {
-	short y11 = newrl->r.y, y12 = newrl->r.y + newrl->r.h, y21 = newrl->next->r.y, y22 = newrl->next->r.y + newrl->next->r.h,
-		x12 = newrl->r.x + newrl->r.w, x21 = newrl->next->r.x, x22 = newrl->next->r.x + newrl->next->r.w, x11 = newrl->r.x,
-		way1 = wind->wa.y, way2 = wind->wa.y + wind->wa.h;
+	short y11 = newrl->r.g_y, y12 = newrl->r.g_y + newrl->r.g_h, y21 = newrl->next->r.g_y, y22 = newrl->next->r.g_y + newrl->next->r.g_h,
+		x12 = newrl->r.g_x + newrl->r.g_w, x21 = newrl->next->r.g_x, x22 = newrl->next->r.g_x + newrl->next->r.g_w, x11 = newrl->r.g_x,
+		way1 = wind->wa.g_y, way2 = wind->wa.g_y + wind->wa.g_h;
 
 	/* two x-adjacend rects; y equal or outside wa: join */
 	if( (y11 == y21 || (y11 < way1 && y21 < way1)) && (y12 == y22 || (y12 >= way2 && y22 >= way2)) && (x21 == x12 || x22 == x11) )
 	{
-		RECT r;
-		r.y = y11 < y21 ? y11 : y21;
-		r.h = y12 > y22 ? y12 : y22;
-		r.h -= r.y;
-		r.x = x11 < x21 ? x11 : x21;
-		r.w = newrl->r.w + newrl->next->r.w;
+		GRECT r;
+		r.g_y = y11 < y21 ? y11 : y21;
+		r.g_h = y12 > y22 ? y12 : y22;
+		r.g_h -= r.g_y;
+		r.g_x = x11 < x21 ? x11 : x21;
+		r.g_w = newrl->r.g_w + newrl->next->r.g_w;
 
 		generate_redraws(wlock, wind, &r, flags );
 		return true;
@@ -3168,11 +3168,11 @@ static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_li
 }
 
 static void
-set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new)
+set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, GRECT *new)
 {
 	short dir, resize, xmove, ymove, wlock = 0;
 	struct xa_rect_list *oldrl, *orl, *newrl, *brl, *prev, *next, *rrl, *nrl;
-	RECT bs, bd, old, wa, oldw;
+	GRECT bs, bd, old, wa, oldw;
 
 	DIAGS(("set_and_update_window:"));
 
@@ -3184,7 +3184,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		wind->rc = wind->t = *new;
 		if ((wind->window_status & XAWS_SHADED))
 		{
-			new->h = wind->sh;
+			new->g_h = wind->sh;
 		}
 		wind->r = *new;
 		calc_work_area(wind);
@@ -3194,10 +3194,10 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 	wa = wind->wa;
 
-	xmove = new->x - old.x;
-	ymove = new->y - old.y;
+	xmove = new->g_x - old.g_x;
+	ymove = new->g_y - old.g_y;
 
-	resize	= new->w != old.w || new->h != old.h ? 1 : 0;
+	resize	= new->g_w != old.g_w || new->g_h != old.g_h ? 1 : 0;
 
 #if WITH_BBL_HELP
 	if( !C.boot_focus )
@@ -3226,8 +3226,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				/* this moves the origin of the window -
 					 objects (e.g.buttons) have to be moved by the client
 				*/
-				wt->tree->ob_x = wind->wa.x;
-				wt->tree->ob_y = wind->wa.y;
+				wt->tree->ob_x = wind->wa.g_x;
+				wt->tree->ob_y = wind->wa.g_y;
 				if (!wt->zen)
 				{
 					wt->tree->ob_x += wt->ox;
@@ -3258,7 +3258,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 			//if (!(wind->dial & created_for_SLIST)) // && !(wind->active_widgets & STORE_BACK))
 			{
-				generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
+				generate_redraws(wlock, wind, (GRECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
 			}
 		}
 
@@ -3297,19 +3297,19 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 		brl = NULL;
 
-		oldw.x -= old.x;
-		oldw.y -= old.y;
+		oldw.g_x -= old.g_x;
+		oldw.g_y -= old.g_y;
 
-		wa.x = wind->wa.x - new->x;
-		wa.y = wind->wa.y - new->y;
-		wa.w = wind->wa.w;
-		wa.h = wind->wa.h;
+		wa.g_x = wind->wa.g_x - new->g_x;
+		wa.g_y = wind->wa.g_y - new->g_y;
+		wa.g_w = wind->wa.g_w;
+		wa.g_h = wind->wa.g_h;
 
 		/* increase width of workarea by vslider-width if toolbar installed */
 		if( (wind->active_widgets & TOOLBAR) && (wind->active_widgets & VSLIDE) )
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
-			wa.w += widg->ar.w;
+			wa.g_w += widg->ar.g_w;
  		}
 
 		/*
@@ -3319,8 +3319,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		prev = NULL;
 		while (orl)
 		{
-			orl->r.x -= old.x;
-			orl->r.y -= old.y;
+			orl->r.g_x -= old.g_x;
+			orl->r.g_y -= old.g_y;
 
 			if (resize)
 			{
@@ -3347,10 +3347,10 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		}
 		while (newrl)
 		{
-			bs.x = newrl->r.x - new->x;
-			bs.y = newrl->r.y - new->y;
-			bs.w = newrl->r.w;
-			bs.h = newrl->r.h;
+			bs.g_x = newrl->r.g_x - new->g_x;
+			bs.g_y = newrl->r.g_y - new->g_y;
+			bs.g_w = newrl->r.g_w;
+			bs.g_h = newrl->r.g_h;
 
 			if (resize)
 			{
@@ -3386,14 +3386,14 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 						{
 							case 0:	// up/left
 							{
-								ox2 = bd.x + bd.w;
-								oy2 = bd.y + bd.h;
+								ox2 = bd.g_x + bd.g_w;
+								oy2 = bd.g_y + bd.g_h;
 								n = brl;
 								p = NULL;
 								while (n)
 								{
-									if ( (bd.x < n->r.x && ox2 <= n->r.x) ||
-									     ((n->r.x + n->r.w) > bd.x && oy2 <= n->r.y) )
+									if ( (bd.g_x < n->r.g_x && ox2 <= n->r.g_x) ||
+									     ((n->r.g_x + n->r.g_w) > bd.g_x && oy2 <= n->r.g_y) )
 									{
 										if (p)
 										{
@@ -3419,13 +3419,13 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 							}
 							case 1: // down/left
 							{
-								ox2 = bd.x + bd.w;
+								ox2 = bd.g_x + bd.g_w;
 								n = brl;
 								p = NULL;
 								while (n)
 								{
-									if ( (bd.x < n->r.x && ox2 <= n->r.x) ||
-									     ((n->r.x + n->r.w) > bd.x && (n->r.y + n->r.h) <= bd.y) )
+									if ( (bd.g_x < n->r.g_x && ox2 <= n->r.g_x) ||
+									     ((n->r.g_x + n->r.g_w) > bd.g_x && (n->r.g_y + n->r.g_h) <= bd.g_y) )
 									{
 										if (p)
 										{
@@ -3451,14 +3451,14 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 							}
 							case 2: // up/right
 							{
-								ox2 = bd.x + bd.w;
-								oy2 = bd.y + bd.h;
+								ox2 = bd.g_x + bd.g_w;
+								oy2 = bd.g_y + bd.g_h;
 								n = brl;
 								p = NULL;
 								while (n)
 								{
-									if ( (ox2 > (n->r.x + n->r.w) && bd.x >= (n->r.x + n->r.w)) ||
-									     ((n->r.x + n->r.w) < bd.x && oy2 <= n->r.y) )
+									if ( (ox2 > (n->r.g_x + n->r.g_w) && bd.g_x >= (n->r.g_x + n->r.g_w)) ||
+									     ((n->r.g_x + n->r.g_w) < bd.g_x && oy2 <= n->r.g_y) )
 									{
 										if (p)
 										{
@@ -3484,13 +3484,13 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 							}
 							case 3: // down/right
 							{
-								oy2 = bd.y + bd.h;
+								oy2 = bd.g_y + bd.g_h;
 								n = brl;
 								p = NULL;
 								while (n)
 								{
-									if ( oy2 >= n->r.y &&
-									     bd.x >= n->r.x
+									if ( oy2 >= n->r.g_y &&
+									     bd.g_x >= n->r.g_x
 									   )
 									{
 										if (p)
@@ -3559,20 +3559,20 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				while (nrl)
 				{
 					/* first blit lower rect if two left, moving down and upper rect partly hidden by menubar (see build_rectlist - surely a hack ..) */
-					if( menu_window && cfg.menu_bar && (dir & 1) && nrl->r.y < menu_window->r.h )
-						if( nrl->next && !nrl->next->next && nrl->r.y + nrl->r.h == nrl->next->r.y && !trl )
+					if( menu_window && cfg.menu_bar && (dir & 1) && nrl->r.g_y < menu_window->r.g_h )
+						if( nrl->next && !nrl->next->next && nrl->r.g_y + nrl->r.g_h == nrl->next->r.g_y && !trl )
 						{
 							trl = nrl;
 							nrl = nrl->next;
 							dir = 0;
 						}
 					bd = nrl->r;
-					bs.x = bd.x + new->x;
-					bs.y = bd.y + new->y;
-					bs.w = bd.w;
-					bs.h = bd.h;
-					bd.x += old.x;
-					bd.y += old.y;
+					bs.g_x = bd.g_x + new->g_x;
+					bs.g_y = bd.g_y + new->g_y;
+					bs.g_w = bd.g_w;
+					bs.g_h = bd.g_h;
+					bd.g_x += old.g_x;
+					bd.g_y += old.g_y;
 					//DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
 					//	bd, bs, brl, (long)brl->next));
 					(*xa_vdiapi->form_copy)(&bd, &bs);
@@ -3601,10 +3601,10 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 				//DIAGS(("kmalloc %lx (%ld bytes)", nrl, sizeof(*nrl)));
 				nrl->next = NULL;
-				nrl->r.x = newrl->r.x - new->x;
-				nrl->r.y = newrl->r.y - new->y;
-				nrl->r.w = newrl->r.w;
-				nrl->r.h = newrl->r.h;
+				nrl->r.g_x = newrl->r.g_x - new->g_x;
+				nrl->r.g_y = newrl->r.g_y - new->g_y;
+				nrl->r.g_w = newrl->r.g_w;
+				nrl->r.g_h = newrl->r.g_h;
 
 
 				if (resize)
@@ -3621,45 +3621,45 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				while (orl && nrl)
 				{
 					short w, h, flag;
-					short bx2 = orl->r.x + orl->r.w;
-					short by2 = orl->r.y + orl->r.h;
+					short bx2 = orl->r.g_x + orl->r.g_w;
+					short by2 = orl->r.g_y + orl->r.g_h;
 
 					//DIAGS(("BLITRECT (orl=%lx, nxt=%lx)(nrl=%lx, nxt=%lx) %d/%d/%d/%d, x2/y2=%d/%d",
 					//	orl, (long)orl->next, nrl, (long)nrl->next, orl->r, bx2, by2));
 
 					for (rrl = nrl, prev = NULL; rrl; rrl = next)
 					{
-						RECT our = rrl->r;
-						w = orl->r.x - rrl->r.x;
-						h = orl->r.y - rrl->r.y;
+						GRECT our = rrl->r;
+						w = orl->r.g_x - rrl->r.g_x;
+						h = orl->r.g_y - rrl->r.g_y;
 
 						//DIAGS(("CLIPPING %d/%d/%d/%d, w/h=%d/%d", our, w, h));
 						//DIAGS(("rrl = %lx", rrl));
 
 						next = rrl->next;
 
-						if (   h < our.h   &&
-						       w < our.w   &&
-						     bx2 > our.x   &&
-						     by2 > our.y )
+						if (   h < our.g_h   &&
+						       w < our.g_w   &&
+						     bx2 > our.g_x   &&
+						     by2 > our.g_y )
 						{
-							short nx2 = our.x + our.w;
-							short ny2 = our.y + our.h;
+							short nx2 = our.g_x + our.g_w;
+							short ny2 = our.g_y + our.g_h;
 
 							flag = 0;
-							if (orl->r.y > our.y)
+							if (orl->r.g_y > our.g_y)
 							{
-								rrl->r.x = our.x;
-								rrl->r.y = our.y;
-								rrl->r.w = our.w;
-								rrl->r.h = h;
-								our.y += h;
-								our.h -= h;
+								rrl->r.g_x = our.g_x;
+								rrl->r.g_y = our.g_y;
+								rrl->r.g_w = our.g_w;
+								rrl->r.g_h = h;
+								our.g_y += h;
+								our.g_h -= h;
 								flag = 1;
 								//DIAGS((" -- 1. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
 								//	rrl->r, our));
 							}
-							if (orl->r.x > our.x)
+							if (orl->r.g_x > our.g_x)
 							{
 								if (flag)
 								{
@@ -3673,12 +3673,12 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									prev->next = rrl;
 									//DIAGS((" -- 2. new (%lx)", rrl));
 								}
-								rrl->r.x = our.x;
-								rrl->r.y = our.y;
-								rrl->r.h = our.h;
-								rrl->r.w = w;
-								our.x += w;
-								our.w -= w;
+								rrl->r.g_x = our.g_x;
+								rrl->r.g_y = our.g_y;
+								rrl->r.g_h = our.g_h;
+								rrl->r.g_w = w;
+								our.g_x += w;
+								our.g_w -= w;
 								flag = 1;
 								//DIAGS((" -- 2. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
 								//	rrl->r, our));
@@ -3697,11 +3697,11 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									prev->next = rrl;
 									//DIAGS((" -- 3. new (%lx)", rrl));
 								}
-								rrl->r.x = our.x;
-								rrl->r.y = by2;
-								rrl->r.w = our.w;
-								rrl->r.h = ny2 - by2;
-								our.h -= rrl->r.h;
+								rrl->r.g_x = our.g_x;
+								rrl->r.g_y = by2;
+								rrl->r.g_w = our.g_w;
+								rrl->r.g_h = ny2 - by2;
+								our.g_h -= rrl->r.g_h;
 								flag = 1;
 								//DIAGS((" -- 3. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
 								//	rrl->r, our));
@@ -3720,11 +3720,11 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									prev->next = rrl;
 									//DIAGS((" -- 4. new (%lx)", rrl));
 								}
-								rrl->r.x = bx2;
-								rrl->r.y = our.y;
-								rrl->r.w = nx2 - bx2;
-								rrl->r.h = our.h;
-								our.w -= rrl->r.w;
+								rrl->r.g_x = bx2;
+								rrl->r.g_y = our.g_y;
+								rrl->r.g_w = nx2 - bx2;
+								rrl->r.g_h = our.g_h;
+								our.g_w -= rrl->r.g_w;
 								flag = 1;
 								//DIAGS((" -- 4. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
 								//	rrl->r, our));
@@ -3780,7 +3780,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 								xmove = -xmove;
 							lwind->send_message(wlock, lwind, NULL, AMQ_NORM, QMF_CHKDUP,
 								WM_MOVED, 0,0, lwind->handle,
-								lwind->r.x + xmove, lwind->r.y + ymove, lwind->r.w, lwind->r.h);
+								lwind->r.g_x + xmove, lwind->r.g_y + ymove, lwind->r.g_w, lwind->r.g_h);
 									list = list->next;
 						}
 					}
@@ -3793,11 +3793,11 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				while (nrl)
 				{
 					short flags;
-					nrl->r.x += new->x;
-					nrl->r.y += new->y;
+					nrl->r.g_x += new->g_x;
+					nrl->r.g_y += new->g_y;
 					//DIAGS(("redrawing area (%lx) %d/%d/%d/%d",
 					//	nrl, nrl->r));
-					DIAGS(("redrawing area (%lx) %d/%d/%d/%d", (unsigned long)nrl, nrl->r.x, nrl->r.y, nrl->r.w, nrl->r.h));
+					DIAGS(("redrawing area (%lx) %d/%d/%d/%d", (unsigned long)nrl, nrl->r.g_x, nrl->r.g_y, nrl->r.g_w, nrl->r.g_h));
 					/*
 					 * we only redraw window borders here if wind moves
 					 */

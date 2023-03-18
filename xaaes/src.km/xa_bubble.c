@@ -119,36 +119,36 @@ static int format_string( char *str, int *maxl )
 	return ret;
 }
 
-static void set_bbl_rect_bbl( short np, RECT *r, RECT *ri, RECT *rw, short x, short y )
+static void set_bbl_rect_bbl( short np, GRECT *r, GRECT *ri, GRECT *rw, short x, short y )
 {
-	r->x -= roff;
-	r->y -= roff;
-	r->h += roff * 2;
+	r->g_x -= roff;
+	r->g_y -= roff;
+	r->g_h += roff * 2;
 
-	ri->x = r->x + radius;
-	ri->y = r->y + radius;
-	ri->w = r->w - radius * 2;
-	ri->h = r->h - radius * 2;
+	ri->g_x = r->g_x + radius;
+	ri->g_y = r->g_y + radius;
+	ri->g_w = r->g_w - radius * 2;
+	ri->g_h = r->g_h - radius * 2;
 
-	rw->x = r->x;// - 10;	// + wadd;
-	if( x > r->x )
-		rw->w = r->w + (x - r->x) + 8 + wadd;
+	rw->g_x = r->g_x;// - 10;	// + wadd;
+	if( x > r->g_x )
+		rw->g_w = r->g_w + (x - r->g_x) + 8 + wadd;
 	else
-		rw->w = r->w + (r->x - x) + 8 + wadd;
-	if( y > r->y )
+		rw->g_w = r->g_w + (r->g_x - x) + 8 + wadd;
+	if( y > r->g_y )
 	{
-		rw->y = r->y - 2;
-		rw->h = (y - r->y) + 4;
+		rw->g_y = r->g_y - 2;
+		rw->g_h = (y - r->g_y) + 4;
 	}
 	else
 	{
-		rw->y = y;
-		rw->h = r->h + (r->y - y) + 4;
+		rw->g_y = y;
+		rw->g_h = r->g_h + (r->g_y - y) + 4;
 	}
 
 }
 
-static short set_bbl_rect( short np, short x, short y, short maxl, RECT *r, RECT *ro )
+static short set_bbl_rect( short np, short x, short y, short maxl, GRECT *r, GRECT *ro )
 {
 
 	short rx = rox;
@@ -158,65 +158,65 @@ static short set_bbl_rect( short np, short x, short y, short maxl, RECT *r, RECT
 		maxl = BBL_MINLEN;
 	}
 
-	ro->h = r->h;
+	ro->g_h = r->g_h;
 
-	r->x = x + 8;
-	r->y = y + 2;
+	r->g_x = x + 8;
+	r->g_y = y + 2;
 	if( Style == 1 )
-		r->y += 16;
-	r->w *= (maxl+1);
+		r->g_y += 16;
+	r->g_w *= (maxl+1);
 
-	r->h *= np;
-	r->h += 4;
+	r->g_h *= np;
+	r->g_h += 4;
 
 	if( Style == 3 )
 	{
-		r->y = 0;
-		ro->x = r->x = 2;
-		r->h = screen.c_max_h + 2;
+		r->g_y = 0;
+		ro->g_x = r->g_x = 2;
+		r->g_h = screen.c_max_h + 2;
 	}
 	else if( Style == 1 )
 	{
-		if( r->y + r->h >= screen.r.h - get_menu_height() )
+		if( r->g_y + r->g_h >= screen.r.g_h - get_menu_height() )
 		{
-			r->y = y - r->h - get_menu_height();//	16;
-			r->x = x + 4;
+			r->g_y = y - r->g_h - get_menu_height();//	16;
+			r->g_x = x + 4;
 		}
 	}
 
-	if( r->x + r->w > screen.r.w )
-		r->x = screen.r.w - r->w - 10;
+	if( r->g_x + r->g_w > screen.r.g_w )
+		r->g_x = screen.r.g_w - r->g_w - 10;
 	if( Style != 3 )
 	{
-		if( r->y < 4 )
-			r->y = 4;
-		if( r->x < rx )
-			r->x = rx;
-		ro->x = r->x + rx;
+		if( r->g_y < 4 )
+			r->g_y = 4;
+		if( r->g_x < rx )
+			r->g_x = rx;
+		ro->g_x = r->g_x + rx;
 	}
-	ro->y = r->y;
-	ro->w = 0;
+	ro->g_y = r->g_y;
+	ro->g_w = 0;
 	return maxl;
 }
 
-static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short x, short y )
+static void draw_bbl_window( struct xa_vdi_settings *v, GRECT *r, GRECT *ri, short x, short y )
 {
 	switch( Style )
 	{
 	case 1:	// tooltip
 	case 3:	// app
 		v->api->gbar( v, 0, r );
-		v->api->box( v, 0, r->x, r->y, r->w, r->h );
+		v->api->box( v, 0, r->g_x, r->g_y, r->g_w, r->g_h );
 	break;
 	case 2:	// balloon
 	{
 		short fxy[8], pxy[4], yd;
 		short m = 0, n = 0, xd = 20;
 
-		pxy[0] = r->x + 1;
-		pxy[1] = r->y;
-		pxy[2] = r->x + r->w + wadd;
-		pxy[3] = r->y + r->h;
+		pxy[0] = r->g_x + 1;
+		pxy[1] = r->g_y;
+		pxy[2] = r->g_x + r->g_w + wadd;
+		pxy[3] = r->g_y + r->g_h;
 		memcpy( fxy, pxy, sizeof(pxy) );
 
 		/* border rect */
@@ -227,14 +227,14 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 		v_rbox( v->handle, fxy );
 
 		/* arrow -> down-left!*/
-		if( x >= r->x + (r->w/2))
+		if( x >= r->g_x + (r->g_w/2))
 		{
 			n = 1;	// left
 		}
-		if( y > r->y + r->h )	// up
+		if( y > r->g_y + r->g_h )	// up
 		{
 			m = 1;	// up
-			yd = y - (r->y+r->h);
+			yd = y - (r->g_y+r->g_h);
 		}
 		else		// down
 		{
@@ -244,7 +244,7 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 			}
 			x -= 4;
 			y -= 4;
-			yd = r->y - y;
+			yd = r->g_y - y;
 		}
 
 		x += 4;
@@ -256,14 +256,14 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 			fxy[2] = x + yd;
 
 		if( m )
-			fxy[3] = r->y + r->h;
+			fxy[3] = r->g_y + r->g_h;
 		else
-			fxy[3] = r->y + 1;
+			fxy[3] = r->g_y + 1;
 
-		if( fxy[2] < r->x + 10 )
-			fxy[2] = r->x + 10;
-		if( fxy[2] + xd > r->x + r->w - 6 )
-			fxy[2] = r->x + r->w - 6 - xd;
+		if( fxy[2] < r->g_x + 10 )
+			fxy[2] = r->g_x + 10;
+		if( fxy[2] + xd > r->g_x + r->g_w - 6 )
+			fxy[2] = r->g_x + r->g_w - 6 - xd;
 		fxy[4] = fxy[2];
 		fxy[2] += xd;
 		fxy[5] = fxy[3];
@@ -287,9 +287,9 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 	}
 }
 
-static void bbl_text( struct xa_vdi_settings *v, RECT *ro, char *str, short np )
+static void bbl_text( struct xa_vdi_settings *v, GRECT *ro, char *str, short np )
 {
-	short yt = ro->y, rx = ro->x, h = ro->h, to;
+	short yt = ro->g_y, rx = ro->g_x, h = ro->g_h, to;
 	if( Style == 2 )
 		rx += xtxt_add;
 
@@ -316,30 +316,30 @@ static int open_bbl_window( int lock, char *str, short x, short y )
 {
 	int maxl;
 	int np = format_string( str, &maxl );
-	RECT r, ro, rw;
+	GRECT r, ro, rw;
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 	short y2 = y;
 
-	RECT ri;
+	GRECT ri;
 
 	v->api->t_font( v, C.Aes->options.standard_font_point, cfg.font_id);
-	r.w = v->cell_w;
-	r.h = v->cell_h;
+	r.g_w = v->cell_w;
+	r.g_h = v->cell_h;
 
 	maxl = set_bbl_rect( np, x, y, maxl, &r, &ro );
 	if( Style == 2 )
 	{
-		if( r.y > y )	// prefer up
+		if( r.g_y > y )	// prefer up
 		{
-			r.y = y - ( r.h + 32 );
-			ro.y = r.y;
+			r.g_y = y - ( r.g_h + 32 );
+			ro.g_y = r.g_y;
 		}
-		if( r.y < get_menu_height() )	// too high
+		if( r.g_y < get_menu_height() )	// too high
 		{
 			y2 += 2;	// avoid window covering mouse-point
-			r.y = ro.y = y2 + 32;
+			r.g_y = ro.g_y = y2 + 32;
 		}
-		rw.y = y2;
+		rw.g_y = y2;
 		set_bbl_rect_bbl( np, &r, &ri, &rw, x, y2);
 		// control-box
 		//v->api->box( v, 0, rw.x, rw.y, rw.w, rw.h );

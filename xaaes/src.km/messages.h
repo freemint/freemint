@@ -46,7 +46,7 @@ union msg_buf
 		short msg;
 		short xaw;
 		void *ptr;
-		RECT rect;
+		GRECT rect;
 	} irdrw;
 	struct
 	{
@@ -64,7 +64,7 @@ void cancel_do_winmesag(int lock, struct xa_window *wind);
 
 
 void send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
-//void clip_all_wm_redraws(RECT *r);
+//void clip_all_wm_redraws(GRECT *r);
 //void deliver_message(int lock, struct xa_client *dest_client, union msg_buf *msg);
 //void queue_message(int lock, struct xa_client *dest_client, union msg_buf *msg);
 

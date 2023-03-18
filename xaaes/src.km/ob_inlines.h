@@ -141,7 +141,7 @@ set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, 
 		struct oblink_spec *obl = object_get_oblink(aesobj_ob(c));
 		if (obl)
 		{
-			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
+			obl->save_to_r = *(GRECT *)&obl->to.tree[obl->to.item].ob_x;
 
 			obl->to.tree[obl->to.item].ob_x = aesobj_getx(c);
 			obl->to.tree[obl->to.item].ob_y = aesobj_gety(c);
@@ -164,10 +164,10 @@ set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 
-		tree->ob_x = (*oblink)->save_to_r.x;
-		tree->ob_y = (*oblink)->save_to_r.y;
-		tree->ob_width = (*oblink)->save_to_r.w;
-		tree->ob_height = (*oblink)->save_to_r.h;
+		tree->ob_x = (*oblink)->save_to_r.g_x;
+		tree->ob_y = (*oblink)->save_to_r.g_y;
+		tree->ob_width = (*oblink)->save_to_r.g_w;
+		tree->ob_height = (*oblink)->save_to_r.g_h;
 
 		*t = (*oblink)->from.tree;
 		*c = aesobj((*oblink)->from.tree, (*oblink)->from.item);
@@ -185,10 +185,10 @@ clean_aesobj_links(struct oblink_spec **oblink)
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 
-		tree->ob_x = (*oblink)->save_to_r.x;
-		tree->ob_y = (*oblink)->save_to_r.y;
-		tree->ob_width = (*oblink)->save_to_r.w;
-		tree->ob_height = (*oblink)->save_to_r.h;
+		tree->ob_x = (*oblink)->save_to_r.g_x;
+		tree->ob_y = (*oblink)->save_to_r.g_y;
+		tree->ob_width = (*oblink)->save_to_r.g_w;
+		tree->ob_height = (*oblink)->save_to_r.g_h;
 
 		*oblink = (*oblink)->d.pmisc[1];
 	}

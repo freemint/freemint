@@ -29,7 +29,7 @@
 
 void	click_scroll_list(int lock, OBJECT *form, int objc, const struct moose_data *md);
 void	dclick_scroll_list(int lock, OBJECT *form, int objc, const struct moose_data *md);
-void	draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip);
+void	draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const GRECT *clip);
 
 SCROLL_INFO *set_slist_object(
 		int lock,

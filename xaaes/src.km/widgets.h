@@ -37,12 +37,12 @@ void exit_client_widget_theme(struct xa_client *client);
 
 #define MI_IGN	32767
 
-//COMPASS compass(short d, short x, short y, RECT r);
+//COMPASS compass(short d, short x, short y, GRECT r);
 
 void		display_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
 void		standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void _cdecl	redraw_toolbar(int lock, struct xa_window *wind, short item);
-void		set_toolbar_coords(struct xa_window *wind, const RECT *r);
+void		set_toolbar_coords(struct xa_window *wind, const GRECT *r);
 
 void		set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
 
@@ -50,11 +50,11 @@ void		set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *
 #define STW_GOC	2 /* Get object coordinates */
 #define STW_COC 4 /* Center object coordinates */
 #define STW_SWC 8 /* Set window coordinates */
-XA_TREE *set_toolbar_widget(int lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, struct xa_aes_object item, short properties, short flags, const struct toolbar_handlers *th, const RECT *r);
+XA_TREE *set_toolbar_widget(int lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, struct xa_aes_object item, short properties, short flags, const struct toolbar_handlers *th, const GRECT *r);
 
 void	remove_widget(int lock, struct xa_window *wind, int tool);
-void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
-void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
+void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, GRECT *r);
+void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, GRECT *r);
 
 XA_TREE *	_cdecl	obtree_to_wt(struct xa_client *client, OBJECT *obtree);
 void		_cdecl 	init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
@@ -71,14 +71,14 @@ int	do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct mo
 long	pix_to_sl(long p, long s);
 long	sl_to_pix(long s, long p);
 int	XA_slider(struct xa_window *w, int which, long total, long visible, long start);
-bool	m_inside(short x, short y, RECT *o);
+bool	m_inside(short x, short y, GRECT *o);
 void	redraw_menu(int lock);
 void	done_widget_active(struct xa_window *wind, int i);
 bool iconify_action(int lock, struct xa_window *wind, const struct moose_data *md);
 
 void	free_xawidget_resources(struct xa_widget *widg);
 
-RECT	iconify_grid(int i);
+GRECT	iconify_grid(int i);
 
 DrawWidg display_object_widget; /* for desktop */
 
@@ -97,7 +97,7 @@ static inline XA_WIDGET *get_widget(struct xa_window *wind, int n) { return &(wi
 static inline int bound_sl(int p) { return ((p < 0) ? 0 : ((p > SL_RANGE) ? SL_RANGE : p)); }
 
 static inline bool
-is_rect(short x, short y, int fl, RECT *o)
+is_rect(short x, short y, int fl, GRECT *o)
 {
 	bool in = m_inside(x, y, o);
 	bool f = (fl == 0);

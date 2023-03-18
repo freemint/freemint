@@ -740,7 +740,7 @@ repos_iconified(struct proc *p, long arg)
 {
 	int lock = (int)arg;
 	struct xa_window *w = window_list;
-	RECT ir, r;
+	GRECT ir, r;
 
 	if (!rpi_block && !S.clients_exiting)
 	{
@@ -765,7 +765,7 @@ repos_iconified(struct proc *p, long arg)
 					else
 						r = ir;
 
-					if (w->t.x == r.x && w->t.y == r.y && !(w->window_status & XAWS_SEMA))
+					if (w->t.g_x == r.g_x && w->t.g_y == r.g_y && !(w->window_status & XAWS_SEMA))
 					{
 						w->window_status |= XAWS_SEMA;
 						if (cw)
@@ -776,12 +776,12 @@ repos_iconified(struct proc *p, long arg)
 						}
 						break;
 					}
-					else if (!(w->window_status & XAWS_SEMA) && (!cw || ((cfg.icnfy_orient & 2) ? abs((w->t.x - r.x)) <= cx : abs((w->t.y - r.y)) <= cy)))
+					else if (!(w->window_status & XAWS_SEMA) && (!cw || ((cfg.icnfy_orient & 2) ? abs((w->t.g_x - r.g_x)) <= cx : abs((w->t.g_y - r.g_y)) <= cy)))
 					{
 						if (cw)
 							cw->window_status &= ~XAWS_SEMA;
-						cx = abs(w->t.x - r.x);
-						cy = abs(w->t.y - r.y);
+						cx = abs(w->t.g_x - r.g_x);
+						cy = abs(w->t.g_y - r.g_y);
 						cw = w;
 						cw->window_status |= XAWS_SEMA;
 					}
@@ -797,10 +797,10 @@ repos_iconified(struct proc *p, long arg)
 				{
 					if( (cfg.icnfy_orient & 0xff) == 3 )
 					{
-						r.x = (( r.x + cfg.icnfy_w / 2 ) / cfg.icnfy_w) * cfg.icnfy_w;
-						r.y = cw->r.y;
-						r.w = cw->r.w;
-						r.h = cw->r.h;
+						r.g_x = (( r.g_x + cfg.icnfy_w / 2 ) / cfg.icnfy_w) * cfg.icnfy_w;
+						r.g_y = cw->r.g_y;
+						r.g_w = cw->r.g_w;
+						r.g_h = cw->r.g_h;
 					}
 					/* else we loose .. */
 				}
@@ -973,8 +973,8 @@ any_window(int lock, struct xa_client *client)
 	{
 		if (   w != root_window
 		    && (w->window_status & XAWS_OPEN)
-		    && w->r.w
-		    && w->r.h
+		    && w->r.g_w
+		    && w->r.g_h
 		    && w->owner == client)
 		{
 			ret = true;
@@ -1049,8 +1049,8 @@ next_wind(int lock)
 	{
 		if ( S.focus != wind && wind != root_window
 		  && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN )
-		  && wind->r.w
-		  && wind->r.h )
+		  && wind->r.g_w
+		  && wind->r.g_h )
 		{
 			break;
 		}

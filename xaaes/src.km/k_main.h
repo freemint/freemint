@@ -41,7 +41,7 @@ void cancel_cevents(struct xa_client *client);
 bool CE_exists(struct xa_client *client, void *f);
 void cancel_CE(struct xa_client *client, void *f, bool(*callback)(struct c_event *ce, long arg), long arg);
 
-void post_cevent(struct xa_client *client, void (*func)(int, struct c_event *, short cancel), void *ptr1, void *ptr2, int d0, int d1, const RECT *r, const struct moose_data *md);
+void post_cevent(struct xa_client *client, void (*func)(int, struct c_event *, short cancel), void *ptr1, void *ptr2, int d0, int d1, const GRECT *r, const struct moose_data *md);
 short dispatch_selcevent(struct xa_client *client, void *f, bool cancel);
 
 
@@ -56,7 +56,7 @@ void cancel_evnt_multi(struct xa_client *client, int which);
 void TP_entry(void *client);
 void TP_terminate(int lock, struct c_event *ce, bool cancel);
 void cancel_tpcevents(struct xa_client *client);
-void post_tpcevent(struct xa_client *client, void (*func)(int, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
+void post_tpcevent(struct xa_client *client, void (*func)(int, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, GRECT *r, const struct moose_data *md);
 short dispatch_tpcevent(struct xa_client *client);
 
 void _cdecl dispatch_shutdown(short flags);

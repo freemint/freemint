@@ -2374,12 +2374,12 @@ sl_2_pix(long s, long p)
 }
 
 static void
-draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
+draw_pu_canvas(struct xa_window *wind, GRECT *outer, GRECT *inner, const GRECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_vdi_api *vapi = v->api;
 
-	if (outer->w || outer->h)
+	if (outer->g_w || outer->g_h)
 	{
 		(*vapi->wr_mode)(v, MD_REPLACE);
 		if (MONO)
@@ -2404,13 +2404,13 @@ draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *cli
  * Draw a window widget
  */
 static void
-draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, struct xa_wtexture *t, short state, RECT *wr, RECT *anch)
+draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, struct xa_wtexture *t, short state, GRECT *wr, GRECT *anch)
 {
 	struct xa_wcol *wcol;
 	struct xa_wtexture *wext;
 	bool sel = state & OS_SELECTED;
 	short f = wcoli->flags, o = 0;
-	RECT r = *wr;
+	GRECT r = *wr;
 	struct xa_vdi_api *vapi = v->api;
 
 	(*vapi->wr_mode)(v, wcoli->wr_mode);
@@ -2424,10 +2424,10 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 
 	if (d)
 	{
-		r.x -= d;
-		r.y -= d;
-		r.w += d+d;
-		r.h += d+d;
+		r.g_x -= d;
+		r.g_y -= d;
+		r.g_w += d+d;
+		r.g_h += d+d;
 	}
 
 	if (f & WCOL_BOXED)
@@ -2465,10 +2465,10 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 
 	if (wext)
 	{
-		r.x -= o;
-		r.y -= o;
-		r.w += o + o;
-		r.h += o + o;
+		r.g_x -= o;
+		r.g_y -= o;
+		r.g_w += o + o;
+		r.g_h += o + o;
 		(*vapi->draw_texture)(v, wext->body, &r, anch);
 	}
 }
@@ -2492,22 +2492,22 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 	else
 		aesobj_clrsel(&ob);
 
-	x = widg->ar.x, y = widg->ar.y;
+	x = widg->ar.g_x, y = widg->ar.g_y;
 
 	(*api->object_spec_wh)(aesobj_ob(&ob), &w, &h);
-	x += (widg->ar.w - w) >> 1;
-	y += (widg->ar.h - h) >> 1;
+	x += (widg->ar.g_w - w) >> 1;
+	y += (widg->ar.g_h - h) >> 1;
 	(*api->render_object)(wt, v, ob, x, y);
 }
 
 #include "widgets.h"
 
 static void
-d_waframe(struct xa_window *wind, const RECT *clip)
+d_waframe(struct xa_window *wind, const GRECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_vdi_api *vapi = v->api;
-	RECT wa = (wind->dial & created_for_TOOLBAR) ? wind->rwa : wind->wa;	/*(?)*/
+	GRECT wa = (wind->dial & created_for_TOOLBAR) ? wind->rwa : wind->wa;	/*(?)*/
 
 	if (wind->thinwork)
 	{
@@ -2545,11 +2545,11 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 			if( (wind->active_widgets & VSLIDE) )
 			{
 				XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
-				wa.w += widg->ar.w;
+				wa.g_w += widg->ar.g_w;
 			}
 
-			wa.y = wind->wa.y;
-			wa.h = wind->wa.h;
+			wa.g_y = wind->wa.g_y;
+			wa.g_h = wind->wa.g_h;
 
 			(*vapi->br_hook)(v, 2, &wa, sc);
 			(*vapi->tl_hook)(v, 2, &wa, lc);
@@ -2560,7 +2560,7 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 }
 
 static bool _cdecl
-d_unused(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_unused(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct xa_wcol_inf *wc = &((struct window_colours *)wind->colours)->win;
 	(*api->rp2ap)(wind, widg, &widg->ar);
@@ -2569,73 +2569,73 @@ d_unused(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_borders(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_borders(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short size = wind->frame;
-	RECT r;
+	GRECT r;
 
 	if (wind->frame > 0)
 	{
 		if (wind->frame >= 4)
 		{
 			/* top-left box */
-			r.x = wind->r.x;
-			r.y = wind->r.y;
-			r.w = size;
-			r.h = size;
+			r.g_x = wind->r.g_x;
+			r.g_y = wind->r.g_y;
+			r.g_w = size;
+			r.g_h = size;
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* Left border */
-			r.y += size;
-			r.h = wind->r.h - (size + size + wind->y_shadow);
+			r.g_y += size;
+			r.g_h = wind->r.g_h - (size + size + wind->y_shadow);
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* bottom-left box */
-			r.y = wind->r.y + wind->r.h - (size + wind->y_shadow);
-			r.h = size;
+			r.g_y = wind->r.g_y + wind->r.g_h - (size + wind->y_shadow);
+			r.g_h = size;
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* Bottom border */
-			r.x += size;
-			r.w = wind->r.w - (size + size + wind->x_shadow);
+			r.g_x += size;
+			r.g_w = wind->r.g_w - (size + size + wind->x_shadow);
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* right-bottom box */
-			r.x = wind->r.x + wind->r.w - (size + wind->x_shadow);
-			r.w = size;
+			r.g_x = wind->r.g_x + wind->r.g_w - (size + wind->x_shadow);
+			r.g_w = size;
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* right border */
-			r.y = wind->r.y + size;
-			r.h = wind->r.h - (size + size + wind->y_shadow);
+			r.g_y = wind->r.g_y + size;
+			r.g_h = wind->r.g_h - (size + size + wind->y_shadow);
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* top-right box */
-			r.y = wind->r.y;
-			r.h = size;
+			r.g_y = wind->r.g_y;
+			r.g_h = size;
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* Top border*/
-			r.x = wind->r.x + size;
-			r.w = wind->r.w - (size + size + wind->x_shadow);
+			r.g_x = wind->r.g_x + size;
+			r.g_w = wind->r.g_w - (size + size + wind->x_shadow);
 			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 		}
 		else
 		{
 			int i;
 			r = wind->r;
-			r.w -= wind->x_shadow;
-			r.h -= wind->y_shadow;
+			r.g_w -= wind->x_shadow;
+			r.g_h -= wind->y_shadow;
 			(*v->api->l_color)(v, ((struct window_colours *)wind->colours)->frame_col);
 			for (i = 0; i < wind->frame; i++)
 			{
 				(*v->api->gbox)(v, 0, &r);
-				r.x++;
-				r.y++;
-				r.w -= 2;
-				r.h -= 2;
+				r.g_x++;
+				r.g_y++;
+				r.g_w -= 2;
+				r.g_h -= 2;
 			}
 		}
 	}
@@ -2678,7 +2678,7 @@ free_priv_gradients(struct xa_window *wind, struct xa_widget *widg){}
 #endif
 
 static bool _cdecl
-d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_title(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct options *o = &wind->owner->options;
 	struct window_colours *wc = wind->colours;
@@ -2708,7 +2708,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 				wcol = &wci->selected;
 				allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 			}
-			t = find_gradient(v, wcol, true, allocs, widg->ar.w, widg->ar.h);
+			t = find_gradient(v, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 		}
 #endif
 		widg->prevr = widg->ar;
@@ -2747,7 +2747,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_wcontext(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->closer;
@@ -2770,7 +2770,7 @@ d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2780,7 +2780,7 @@ d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_wappicn(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->closer;
@@ -2803,7 +2803,7 @@ d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2813,7 +2813,7 @@ d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_closer(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->closer;
@@ -2836,7 +2836,7 @@ d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2846,7 +2846,7 @@ d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_fuller(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->fuller;
@@ -2869,7 +2869,7 @@ d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2879,14 +2879,14 @@ d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_info(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->info;
 	struct xa_wtxt_inf *wti = &wc->info_txt;
 	struct xa_wtexture *t = NULL;
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	RECT dr = v->clip;
+	GRECT dr = v->clip;
 
 
 	/* Convert relative coords and window location to absolute screen location */
@@ -2907,7 +2907,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2917,7 +2917,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	if (wti->flags & WTXT_NOCLIP)
 	{
-		RECT r;
+		GRECT r;
 		if (xa_rect_clip(&widg->ar, &dr, &r))
 			(*v->api->set_clip)(wind->vdi_settings, &r);
 		else
@@ -2931,7 +2931,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_sizer(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->sizer;
@@ -2954,7 +2954,7 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2964,7 +2964,7 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_uparrow(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->uparrow;
@@ -2987,7 +2987,7 @@ d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -2996,7 +2996,7 @@ d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	return true;
 }
 static bool _cdecl
-d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->dnarrow;
@@ -3019,7 +3019,7 @@ d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -3028,7 +3028,7 @@ d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	return true;
 }
 static bool _cdecl
-d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->lfarrow;
@@ -3051,7 +3051,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -3060,7 +3060,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	return true;
 }
 static bool _cdecl
-d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->rtarrow;
@@ -3083,7 +3083,7 @@ d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -3119,11 +3119,11 @@ get_widg_gradient(struct xa_vdi_settings *v, struct xa_widget *widg, struct wind
 #endif
 
 static bool _cdecl
-d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_vslide(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	RECT cl;
+	GRECT cl;
 	struct window_colours *wc = wind->colours;
 	struct xa_wtexture *t = 0;
 
@@ -3134,56 +3134,56 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	if (sl->length >= SL_RANGE)
 	{
-		sl->r.x = sl->r.y = 0;
-		sl->r.w = widg->ar.w;
-		sl->r.h = widg->ar.h;
+		sl->r.g_x = sl->r.g_y = 0;
+		sl->r.g_w = widg->ar.g_w;
+		sl->r.g_h = widg->ar.g_h;
 		cl = widg->ar;
 #if WITH_GRADIENTS
-		t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslider, 2, widg->ar.w, widg->ar.h);
+		t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslider, 2, widg->ar.g_w, widg->ar.g_h);
 #endif
 		draw_widg_box(wind->vdi_settings, 0, &wc->vslider, t, 0, &widg->ar, &widg->ar);
 		return true;
 	}
-	len = sl_2_pix(widg->ar.h, sl->length);
+	len = sl_2_pix(widg->ar.g_h, sl->length);
 	if (len < widg_h - 3)
 		len = widg_h - 3;
 
-	offs = widg->ar.y + sl_2_pix(widg->ar.h - len, sl->position);
+	offs = widg->ar.g_y + sl_2_pix(widg->ar.g_h - len, sl->position);
 
-	if (offs < widg->ar.y)
-		offs = widg->ar.y;
-	if (offs + len > widg->ar.y + widg->ar.h)
-		len = widg->ar.y + widg->ar.h - offs;
+	if (offs < widg->ar.g_y)
+		offs = widg->ar.g_y;
+	if (offs + len > widg->ar.g_y + widg->ar.g_h)
+		len = widg->ar.g_y + widg->ar.g_h - offs;
 
 #if WITH_GRADIENTS
-	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslide, 0, widg->ar.w, widg->ar.h);
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslide, 0, widg->ar.g_w, widg->ar.g_h);
 #endif
 	draw_widg_box(wind->vdi_settings, 0, &wc->vslide, t, 0, &widg->ar, &widg->ar);
 
-	sl->r.y = offs - widg->ar.y;
-	sl->r.h = len;
-	sl->r.w = widg->ar.w;
+	sl->r.g_y = offs - widg->ar.g_y;
+	sl->r.g_h = len;
+	sl->r.g_w = widg->ar.g_w;
 
-	cl.x = sl->r.x + widg->ar.x;
-	cl.y = sl->r.y + widg->ar.y;
-	cl.w = sl->r.w;
-	cl.h = sl->r.h;
+	cl.g_x = sl->r.g_x + widg->ar.g_x;
+	cl.g_y = sl->r.g_y + widg->ar.g_y;
+	cl.g_w = sl->r.g_w;
+	cl.g_h = sl->r.g_h;
 
 #if WITH_GRADIENTS
-	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslider, 2, cl.w, cl.h);
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslider, 2, cl.g_w, cl.g_h);
 #endif
 	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->vslider, t, widg->state, &cl, &cl);
 	return true;
 }
 
 static bool _cdecl
-d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_hslide(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	struct window_colours *wc = wind->colours;
 	struct xa_wtexture *t = 0;
-	RECT cl;
+	GRECT cl;
 
 	sl->flags &= ~SLIDER_UPDATE;
 
@@ -3191,49 +3191,49 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	if (sl->length >= SL_RANGE)
 	{
-		sl->r.x = sl->r.y = 0;
-		sl->r.w = widg->ar.w;
-		sl->r.h = widg->ar.h;
+		sl->r.g_x = sl->r.g_y = 0;
+		sl->r.g_w = widg->ar.g_w;
+		sl->r.g_h = widg->ar.g_h;
 #if WITH_GRADIENTS
-		t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, widg->ar.w, widg->ar.h);
+		t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, widg->ar.g_w, widg->ar.g_h);
 #endif
 		draw_widg_box(wind->vdi_settings, 0, &wc->hslider, t, 0, &widg->ar, &widg->ar/*&wind->r*/);
 		return true;
 	}
-	len = sl_2_pix(widg->ar.w, sl->length);
+	len = sl_2_pix(widg->ar.g_w, sl->length);
 	if (len < widg_w - 3)
 		len = widg_w - 3;
 
-	offs = widg->ar.x + sl_2_pix(widg->ar.w - len, sl->position);
+	offs = widg->ar.g_x + sl_2_pix(widg->ar.g_w - len, sl->position);
 
-	if (offs < widg->ar.x)
-		offs = widg->ar.x;
-	if (offs + len > widg->ar.x + widg->ar.w)
-		len = widg->ar.x + widg->ar.w - offs;
+	if (offs < widg->ar.g_x)
+		offs = widg->ar.g_x;
+	if (offs + len > widg->ar.g_x + widg->ar.g_w)
+		len = widg->ar.g_x + widg->ar.g_w - offs;
 
 #if WITH_GRADIENTS
-	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslide, 0, widg->ar.w, widg->ar.h);
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslide, 0, widg->ar.g_w, widg->ar.g_h);
 #endif
 	draw_widg_box(wind->vdi_settings, 0, &wc->hslide, t, 0, &widg->ar, &widg->ar/*&wind->r*/);
 
-	sl->r.x = offs - widg->ar.x;
-	sl->r.w = len;
-	sl->r.h = widg->ar.h;
+	sl->r.g_x = offs - widg->ar.g_x;
+	sl->r.g_w = len;
+	sl->r.g_h = widg->ar.g_h;
 
-	cl.x = sl->r.x + widg->ar.x;
-	cl.y = sl->r.y + widg->ar.y;
-	cl.w = sl->r.w;
-	cl.h = sl->r.h;
+	cl.g_x = sl->r.g_x + widg->ar.g_x;
+	cl.g_y = sl->r.g_y + widg->ar.g_y;
+	cl.g_w = sl->r.g_w;
+	cl.g_h = sl->r.g_h;
 
 #if WITH_GRADIENTS
-	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, cl.w, cl.h);
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, cl.g_w, cl.g_h);
 #endif
 	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->hslider, t, widg->state, &cl, &cl/*&wind->r*/);
 	return true;
 }
 
 static bool _cdecl
-d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_iconifier(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->iconifier;
@@ -3256,7 +3256,7 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -3266,7 +3266,7 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
-d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+d_hider(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->hider;
@@ -3289,7 +3289,7 @@ d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			wcol = &wci->selected;
 			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
 		}
-		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.g_w, widg->ar.g_h);
 	}
 #endif
 	widg->prevr = widg->ar;
@@ -3308,7 +3308,7 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 	struct xa_vdi_api *vapi = v->api;
 	short w, h;
 
-	widg->r.w = widg_w;
+	widg->r.g_w = widg_w;
 
 	if (!wti->normal.font_id)
 	{
@@ -3330,7 +3330,7 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
 		h++;
 
-	widg->r.h = h;
+	widg->r.g_h = h;
 };
 static void _cdecl
 s_info_size(struct xa_window *wind, struct xa_widget *widg)
@@ -3341,7 +3341,7 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	struct xa_vdi_api *vapi = v->api;
 	short w, h;
 
-	widg->r.w = widg_w;
+	widg->r.g_w = widg_w;
 
 	if (!wti->normal.font_id)
 	{
@@ -3358,7 +3358,7 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	(*vapi->text_extent)(v, "X", &wti->normal, &w, &h);
 	(*vapi->t_effects)(v, 0);
  	h += 2;
-	widg->r.h = h;
+	widg->r.g_h = h;
 }
 
 static void _cdecl
@@ -3372,8 +3372,8 @@ s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 	(*vapi->t_effects)(v, 0);
 	(*vapi->t_extent)(v, "A", &w, &h);
 
-	widg->r.h = h + 1 + 1;
-	widg->r.w = wind->r.w;
+	widg->r.g_h = h + 1 + 1;
+	widg->r.g_w = wind->r.g_w;
 }
 
 static void _cdecl
@@ -3390,8 +3390,8 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
  	if (f & WCOL_BOXED)
  		h += 2, w += 2;
 
-	widg->r.w = w;
-	widg->r.h = h;
+	widg->r.g_w = w;
+	widg->r.g_h = h;
 }
 
 static void _cdecl
@@ -4174,13 +4174,13 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 
 		/* get widget object parameters. */
 		{
-			RECT c;
+			GRECT c;
 			OBJECT *tree = (*api->resource_tree)(rsc, 0);
 			(*api->ob_spec_xywh)(tree, 1, &c);
 			(*api->init_widget_tree)(NULL, &m->wwt, tree);
 
-			widg_w = c.w;
-			widg_h = c.h;
+			widg_w = c.g_w;
+			widg_h = c.g_h;
 
 			DIAGS(("widg: %d/%d", widg_w, widg_h));
 		}
@@ -4209,7 +4209,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_otop_cols.title_txt.selected.bg = G_WHITE;
 		}
 
-		if (scrninf->r.h <= 280)
+		if (scrninf->r.g_h <= 280)
 		{
 			def_otop_cols.title_txt.normal.font_point = MEDIUM_FONT_POINT;
 			def_otop_cols.title_txt.selected.font_point = MEDIUM_FONT_POINT;

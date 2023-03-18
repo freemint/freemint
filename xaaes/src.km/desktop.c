@@ -113,8 +113,8 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	widg->r = wind->wa;
 #if 0
 	widg->r = wind->r;
-	widg->r.y += get_menu_widg()->r.h;
-	widg->r.h -= get_menu_widg()->r.h;
+	widg->r.g_y += get_menu_widg()->r.g_h;
+	widg->r.g_h -= get_menu_widg()->r.g_h;
 #endif
 
 	bzero(&widg->m, sizeof(*m));
@@ -173,7 +173,7 @@ Set_desktop(XA_TREE *new_desktop)
 	new_desktop->links++;
 
 	ob = new_desktop->tree;
-	*(RECT *)&ob->ob_x = root_window->wa;
+	*(GRECT *)&ob->ob_x = root_window->wa;
 	/* Now use the root window's auto-redraw function to redraw it
 	 *
 	 * HR: 110601 fixed erroneous use owner->wt.

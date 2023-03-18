@@ -101,7 +101,7 @@ obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 #if 0
 	if (!cfg.menu_layout && ob->ob_width == 80 && ob->ob_type == G_BOX && ob->ob_x == 0)
 	{
-		ob->ob_width = screen.r.w;
+		ob->ob_width = screen.r.g_w;
 	}
 	else
 #endif
@@ -371,7 +371,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 {
 	CICON *best_cicon = NULL;
 	CICON *c;
-	long len = calc_back((RECT *) &icon->monoblk.ib_xicon, 1);
+	long len = calc_back((GRECT *) &icon->monoblk.ib_xicon, 1);
 
 	DIAG((D_s, client, "color icon: '%s' %d*%d %ld tx.w=%d",
 		icon->monoblk.ib_ptext,
@@ -558,7 +558,7 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 		ICONBLK *ib = &cib->monoblk;
 
 		cibh[i] = cib;						/* Put absolute address of this ciconblk into array */
-		isize = calc_back((RECT*)&ib->ib_xicon, 1);
+		isize = calc_back((GRECT*)&ib->ib_xicon, 1);
 
 		addr = (unsigned long *)((char *)cib + sizeof(ICONBLK));
 		numRez = addr[0];

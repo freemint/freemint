@@ -401,12 +401,12 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 
 				if (old[3] == new[3] && old[0] == new[0] )
 				{
-					if ( !memcmp((RECT *)&(old[4]), (RECT *)&(new[4]),sizeof(RECT)) || is_inside((RECT *)&(new[4]), (RECT *)&(old[4])))
+					if ( !memcmp((GRECT *)&(old[4]), (GRECT *)&(new[4]),sizeof(GRECT)) || is_inside((GRECT *)&(new[4]), (GRECT *)&(old[4])))
 					{
 						msg = NULL;
 						break;
 					}
-					if (is_inside((RECT *)&(old[4]), (RECT *)&(new[4])))
+					if (is_inside((GRECT *)&(old[4]), (GRECT *)&(new[4])))
 					{
 						/* old inside new: replace by new. */
 						(*next)->message.s = msg->s;
@@ -635,7 +635,7 @@ queue_message(int lock, struct xa_client *client, short amq, short qmf, union ms
 
 #if 0
 static void
-add_lost_rect(struct xa_client *client, RECT *r)
+add_lost_rect(struct xa_client *client, GRECT *r)
 {
 	struct xa_rect_list **rl = client->lost_redraws.start;
 
@@ -673,7 +673,7 @@ send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, un
 			if (msg->m[0] == WM_REDRAW)
 			{
 				struct xa_vdi_settings *v = dest_client->vdi_settings;
-				RECT *r = (RECT *)&msg->m[4];
+				GRECT *r = (GRECT *)&msg->m[4];
 
 #if 0
 				add_lost_rect(client, r);
@@ -689,7 +689,7 @@ send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, un
 					(*v->api->f_color)(v, 9);
 					(*v->api->wr_mode)(v, MD_REPLACE);
 					(*v->api->f_interior)(v, FIS_SOLID);
-					(*v->api->bar)(v, 0, r->x, r->y, r->w, r->h);
+					(*v->api->bar)(v, 0, r->g_x, r->g_y, r->g_w, r->g_h);
 
 					(*v->api->clear_clip)(v);
 					showm();

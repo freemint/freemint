@@ -320,7 +320,7 @@ static void close_menu_if_move(struct xa_window *wind)
 }
 
 static void
-do_kbd_win( int lock, struct xa_window *wind, RECT *r, int md)
+do_kbd_win( int lock, struct xa_window *wind, GRECT *r, int md)
 {
 	if (wind->opts & XAWO_WCOWORK)
 		*r = f2w(&wind->delta, r, true);
@@ -634,7 +634,7 @@ kernel_key(int lock, struct rawkey *key)
 			{
 				struct xa_window *wind = TOP_WINDOW;
 				short g = WGROW, s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
-				RECT r;
+				GRECT r;
 
 				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
@@ -644,7 +644,7 @@ kernel_key(int lock, struct rawkey *key)
 				if( nk == NK_DOWN )
 					g = -g;
 				g *= 2;
-				r.y -= g;
+				r.g_y -= g;
 
 				if( !s )
 				{
@@ -652,66 +652,66 @@ kernel_key(int lock, struct rawkey *key)
 						|| (wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL))
 						|| (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
 						return true;
-					r.x -= g;
-					r.w += g * 2;
-					r.h += g * 2;
+					r.g_x -= g;
+					r.g_w += g * 2;
+					r.g_h += g * 2;
 
 					if( nk == NK_UP )
 					{
-						if( wind->r.w >= wind->max.w && wind->r.h >= wind->max.h )
+						if( wind->r.g_w >= wind->max.g_w && wind->r.g_h >= wind->max.g_h )
 							return true;
-						if (r.x < 0)
-							r.x = 0;
-						if (r.y < 0)
-							r.y = 0;
+						if (r.g_x < 0)
+							r.g_x = 0;
+						if (r.g_y < 0)
+							r.g_y = 0;
 
-						if( r.w > wind->max.w )
-							r.w = wind->max.w;
+						if( r.g_w > wind->max.g_w )
+							r.g_w = wind->max.g_w;
 
-						if( r.h > wind->max.h )
-							r.h = wind->max.h;
+						if( r.g_h > wind->max.g_h )
+							r.g_h = wind->max.g_h;
 
-						if( r.y < 0 && r.x < 0 )
+						if( r.g_y < 0 && r.g_x < 0 )
 							return true;
 					}
 					else	/* DOWN */
 					{
-						if( wind->r.w <= wind->min.w && wind->r.h <= wind->min.h )
+						if( wind->r.g_w <= wind->min.g_w && wind->r.g_h <= wind->min.g_h )
 							return true;
 
-						if( r.w < WGROW * 8 )
+						if( r.g_w < WGROW * 8 )
 						{
-							r.x = wind->r.x;
-							r.w = wind->r.w;
+							r.g_x = wind->r.g_x;
+							r.g_w = wind->r.g_w;
 						}
-						if( r.h < WGROW * 10 )
+						if( r.g_h < WGROW * 10 )
 						{
-							r.y = wind->r.y;
-							r.h = wind->r.h;
+							r.g_y = wind->r.g_y;
+							r.g_h = wind->r.g_h;
 						}
 
-						if( r.x >= screen.r.w )
-							r.x = screen.r.w + g;
+						if( r.g_x >= screen.r.g_w )
+							r.g_x = screen.r.g_w + g;
 
-						if( r.w < wind->min.w )
+						if( r.g_w < wind->min.g_w )
 						{
-							r.x = wind->r.x;
-							r.w = wind->min.w;
+							r.g_x = wind->r.g_x;
+							r.g_w = wind->min.g_w;
 						}
-						if( r.h < wind->min.h )
+						if( r.g_h < wind->min.g_h )
 						{
-							r.y = wind->r.y;
-							r.h = wind->min.h;
+							r.g_y = wind->r.g_y;
+							r.g_h = wind->min.g_h;
 						}
 					}
 				}
 
-				if( r.y >= screen.r.h )
-					r.y = screen.r.h - WGROW;
-				if( !cfg.leave_top_border && r.y < root_window->wa.y )
-					r.y = root_window->wa.y;
+				if( r.g_y >= screen.r.g_h )
+					r.g_y = screen.r.g_h - WGROW;
+				if( !cfg.leave_top_border && r.g_y < root_window->wa.g_y )
+					r.g_y = root_window->wa.g_y;
 
-				if( memcmp(&r, &wind->r, sizeof(RECT)) )
+				if( memcmp(&r, &wind->r, sizeof(GRECT)) )
 					do_kbd_win( lock, wind, &r, s ? WM_MOVED : WM_SIZED);
 			}
 			return true;
@@ -722,7 +722,7 @@ kernel_key(int lock, struct rawkey *key)
 			{
 				struct xa_window *wind = TOP_WINDOW;
 				short s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
-				RECT r;
+				GRECT r;
 
 				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
@@ -741,24 +741,24 @@ kernel_key(int lock, struct rawkey *key)
 						return true;
 					if( nk == NK_LEFT )
 						g = -g;
-					r.x -= g;
-					r.w += g * 2;
+					r.g_x -= g;
+					r.g_w += g * 2;
 					if( nk == NK_LEFT )
 					{
-						if( wind->r.w <= wind->min.w )
+						if( wind->r.g_w <= wind->min.g_w )
 							return true;
-						if( r.w < wind->min.w )
-							r.w = wind->min.w;
+						if( r.g_w < wind->min.g_w )
+							r.g_w = wind->min.g_w;
 					}
 					else
 					{
-						if( wind->r.w >= wind->max.w )
+						if( wind->r.g_w >= wind->max.g_w )
 							return true;
 						if( inside_root( &r, true) & 2 )
 						{
-							r.w += g;	/* inside_root changes r */
-							if( r.w > screen.r.w )
-								r.w = screen.r.w;
+							r.g_w += g;	/* inside_root changes r */
+							if( r.g_w > screen.r.g_w )
+								r.g_w = screen.r.g_w;
 						}
 					}
 
@@ -768,13 +768,13 @@ kernel_key(int lock, struct rawkey *key)
 				{
 					if( nk == NK_RIGHT )
 					{
-						r.x += WGROW;
-						if( r.x >= screen.r.w - WGROW * 2)
+						r.g_x += WGROW;
+						if( r.g_x >= screen.r.g_w - WGROW * 2)
 							return true;
 					}
 					else{
-						r.x -= WGROW;
-						if( r.x + wind->r.w <= WGROW/2 )
+						r.g_x -= WGROW;
+						if( r.g_x + wind->r.g_w <= WGROW/2 )
 							return true;
 					}
 					if( inside_root( &r, client->options.noleft ) & 2 )
@@ -794,8 +794,8 @@ kernel_key(int lock, struct rawkey *key)
 	
 				/* init moose_data */
 				memset( &md, 0, sizeof(md) );
-				md.x = TOP_WINDOW->r.x + TOP_WINDOW->r.w/2;
-				md.y = TOP_WINDOW->r.y + TOP_WINDOW->r.h/2;
+				md.x = TOP_WINDOW->r.g_x + TOP_WINDOW->r.g_w/2;
+				md.y = TOP_WINDOW->r.g_y + TOP_WINDOW->r.g_h/2;
 				md.state = MBS_LEFT;
 				post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
 			}

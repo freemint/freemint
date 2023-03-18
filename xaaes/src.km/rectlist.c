@@ -33,12 +33,12 @@
 #define min(x,y) (((x)<(y))?(x):(y))
 
 bool inline
-is_inside(const RECT *r, const RECT *o)
+is_inside(const GRECT *r, const GRECT *o)
 {
-	if (   (r->x        < o->x       )
-	    || (r->y        < o->y       )
-	    || (r->x + r->w > o->x + o->w)
-	    || (r->y + r->h > o->y + o->h)
+	if (   (r->g_x        < o->g_x       )
+	    || (r->g_y        < o->g_y       )
+	    || (r->g_x + r->g_w > o->g_x + o->g_w)
+	    || (r->g_y + r->g_h > o->g_y + o->g_h)
 	   )
 		return false;
 
@@ -49,7 +49,7 @@ static struct xa_rect_list *
 build_rect_list(struct build_rl_parms *p)
 {
 	struct xa_rect_list *rl, *nrl, *rl_next, *rl_prev;
-	RECT r_ours, r_win;
+	GRECT r_ours, r_win;
 
 	nrl = kmalloc(sizeof(*nrl));
 	assert(nrl);
@@ -59,30 +59,30 @@ build_rect_list(struct build_rl_parms *p)
 	{
 		short wx2, wy2, sx2, sy2;
 
-		wx2 = nrl->r.x + nrl->r.w;
-		wy2 = nrl->r.y + nrl->r.h;
-		sx2 = screen.r.x + screen.r.w;
-		sy2 = screen.r.y + screen.r.h;
+		wx2 = nrl->r.g_x + nrl->r.g_w;
+		wy2 = nrl->r.g_y + nrl->r.g_h;
+		sx2 = screen.r.g_x + screen.r.g_w;
+		sy2 = screen.r.g_y + screen.r.g_h;
 
-		if (nrl->r.x < screen.r.x)
+		if (nrl->r.g_x < screen.r.g_x)
 		{
-			nrl->r.w -= screen.r.x - nrl->r.x;
-			nrl->r.x = screen.r.x;
+			nrl->r.g_w -= screen.r.g_x - nrl->r.g_x;
+			nrl->r.g_x = screen.r.g_x;
 		}
 		if (wx2 > sx2)
-			nrl->r.w -= wx2 - sx2;
+			nrl->r.g_w -= wx2 - sx2;
 
-		if (nrl->r.y < screen.r.y)
+		if (nrl->r.g_y < screen.r.g_y)
 		{
-			nrl->r.h -= screen.r.y - nrl->r.y;
-			nrl->r.y = screen.r.y;
+			nrl->r.g_h -= screen.r.g_y - nrl->r.g_y;
+			nrl->r.g_y = screen.r.g_y;
 		}
 		if (wy2 > sy2)
-			nrl->r.h -= wy2 - sy2;
+			nrl->r.g_h -= wy2 - sy2;
 	}
 
 	DIAGS(("build_rect_list: area=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
-		p->area->x, p->area->y, p->area->w, p->area->h, nrl->r.x, nrl->r.y, nrl->r.w, nrl->r.h));
+		p->area->g_x, p->area->g_y, p->area->g_w, p->area->g_h, nrl->r.g_x, nrl->r.g_y, nrl->r.g_w, nrl->r.g_h));
 
 	if (nrl)
 	{
@@ -92,8 +92,8 @@ build_rect_list(struct build_rl_parms *p)
 		while (p->getnxtrect(p))
 		{
 			r_win = *p->next_r;
-			win_x2 = r_win.x + r_win.w;
-			win_y2 = r_win.y + r_win.h;
+			win_x2 = r_win.g_x + r_win.g_w;
+			win_y2 = r_win.g_y + r_win.g_h;
 
 			for (rl = nrl, rl_prev = NULL; rl; rl = rl_next)
 			{
@@ -101,31 +101,31 @@ build_rect_list(struct build_rl_parms *p)
 
 				flag = 0;
 
-				h = r_win.y - r_ours.y;
-				w = r_win.x - r_ours.x;
+				h = r_win.g_y - r_ours.g_y;
+				w = r_win.g_x - r_ours.g_x;
 
 				rl_next = rl->next;
 
-				if ( h < r_ours.h	&&
-				     w < r_ours.w	&&
-				     win_x2 > r_ours.x	&&
-				     win_y2 > r_ours.y)
+				if ( h < r_ours.g_h	&&
+				     w < r_ours.g_w	&&
+				     win_x2 > r_ours.g_x	&&
+				     win_y2 > r_ours.g_y)
 				{
-					our_x2 = r_ours.x + r_ours.w;
-					our_y2 = r_ours.y + r_ours.h;
+					our_x2 = r_ours.g_x + r_ours.g_w;
+					our_y2 = r_ours.g_y + r_ours.g_h;
 
-					if (r_win.x > r_ours.x)
+					if (r_win.g_x > r_ours.g_x)
 					{
-						rl->r.x = r_ours.x;
-						rl->r.y = r_ours.y;
-						rl->r.h = r_ours.h;
-						rl->r.w = w;
+						rl->r.g_x = r_ours.g_x;
+						rl->r.g_y = r_ours.g_y;
+						rl->r.g_h = r_ours.g_h;
+						rl->r.g_w = w;
 
-						r_ours.x += w;
-						r_ours.w -= w;
+						r_ours.g_x += w;
+						r_ours.g_w -= w;
 						flag = 1;
 					}
-					if (r_win.y > r_ours.y)
+					if (r_win.g_y > r_ours.g_y)
 					{
 						if (flag)
 						{
@@ -135,13 +135,13 @@ build_rect_list(struct build_rl_parms *p)
 							rl->next = rl_prev->next;
 							rl_prev->next = rl;
 						}
-						rl->r.x = r_ours.x;
-						rl->r.y = r_ours.y;
-						rl->r.w = r_ours.w;
-						rl->r.h = h;
+						rl->r.g_x = r_ours.g_x;
+						rl->r.g_y = r_ours.g_y;
+						rl->r.g_w = r_ours.g_w;
+						rl->r.g_h = h;
 
-						r_ours.y += h;
-						r_ours.h -= h;
+						r_ours.g_y += h;
+						r_ours.g_h -= h;
 
 						flag = 1;
 					}
@@ -156,12 +156,12 @@ build_rect_list(struct build_rl_parms *p)
 							rl_prev->next = rl;
 						}
 
-						rl->r.x = win_x2;
-						rl->r.y = r_ours.y;
-						rl->r.w = our_x2 - win_x2;
-						rl->r.h = r_ours.h;
+						rl->r.g_x = win_x2;
+						rl->r.g_y = r_ours.g_y;
+						rl->r.g_w = our_x2 - win_x2;
+						rl->r.g_h = r_ours.g_h;
 
-						r_ours.w -= rl->r.w;
+						r_ours.g_w -= rl->r.g_w;
 						flag = 1;
 					}
 					if (our_y2 > win_y2)
@@ -174,24 +174,24 @@ build_rect_list(struct build_rl_parms *p)
 							rl->next = rl_prev->next;
 							rl_prev->next = rl;
 						}
-						rl->r.x = r_ours.x;
-						rl->r.y = win_y2;
-						rl->r.w = r_ours.w;
-						rl->r.h = our_y2 - win_y2;
+						rl->r.g_x = r_ours.g_x;
+						rl->r.g_y = win_y2;
+						rl->r.g_w = r_ours.g_w;
+						rl->r.g_h = our_y2 - win_y2;
 						if( flag )
 						{
 #if 1
 							/* a_avoid spltting workarea because of menu */
-							if( cfg.menu_bar == 1 && menu_window && rl_prev->r.y < menu_window->r.h
-								&& rl->r.x + rl->r.w == rl_prev->r.x && rl->r.y + rl->r.h == rl_prev->r.y + rl_prev->r.h )
+							if( cfg.menu_bar == 1 && menu_window && rl_prev->r.g_y < menu_window->r.g_h
+								&& rl->r.g_x + rl->r.g_w == rl_prev->r.g_x && rl->r.g_y + rl->r.g_h == rl_prev->r.g_y + rl_prev->r.g_h )
 							{
-								rl->r.w += rl_prev->r.w;
-								rl_prev->r.h = rl->r.y - rl_prev->r.y;
+								rl->r.g_w += rl_prev->r.g_w;
+								rl_prev->r.g_h = rl->r.g_y - rl_prev->r.g_y;
 							}
 #endif
 						}
 
-						r_ours.h -= rl->r.h;
+						r_ours.g_h -= rl->r.g_h;
 						flag = 1;
 					}
 				}
@@ -258,7 +258,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 	struct xa_rect_list *nrl = NULL;
 	struct xa_rectlist_entry *rle;
 	struct build_rl_parms p;
-	RECT area;
+	GRECT area;
 
 	if ((wind->owner->status & CS_EXITING))
 		return NULL;
@@ -302,10 +302,10 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 
 	if ((wind->window_status & (XAWS_HIDDEN|XAWS_BELOWROOT)) ||
-	    area.x > (screen.r.x + screen.r.w) ||
-	    area.y > (screen.r.y + screen.r.h) ||
-	   (area.x + area.w) < screen.r.x  ||
-	   (area.y + area.h) < screen.r.y )
+	    area.g_x > (screen.r.g_x + screen.r.g_w) ||
+	    area.g_y > (screen.r.g_y + screen.r.g_h) ||
+	   (area.g_x + area.g_w) < screen.r.g_x  ||
+	   (area.g_y + area.g_h) < screen.r.g_y )
 	{
 		DIAGS(("make_rect_list: window is outside screen"));
 		return NULL;
@@ -343,11 +343,11 @@ get_rect_next(struct xa_rectlist_entry *rle)
  * return 1 if found else 0
  */
 int
-get_rect(struct xa_rectlist_entry *rle, RECT *clip, bool first, RECT *ret)
+get_rect(struct xa_rectlist_entry *rle, GRECT *clip, bool first, GRECT *ret)
 {
 	struct xa_rect_list *rl;
 	int rtn = 0;
-	RECT r;
+	GRECT r;
 
 	if (first)
 		rl = get_rect_first(rle);
@@ -476,21 +476,21 @@ rect_get_toolbar_next(struct xa_window *w)
  * March 22, 1985)
  */
 bool
-xa_rc_intersect(const RECT s, RECT *d)
+xa_rc_intersect(const GRECT s, GRECT *d)
 {
-	if (s.w > 0 && s.h > 0 && d->w > 0 && d->h > 0)
+	if (s.g_w > 0 && s.g_h > 0 && d->g_w > 0 && d->g_h > 0)
 	{
-		const short w1 = s.x + s.w;
-		const short w2 = d->x + d->w;
-		const short h1 = s.y + s.h;
-		const short h2 = d->y + d->h;
+		const short w1 = s.g_x + s.g_w;
+		const short w2 = d->g_x + d->g_w;
+		const short h1 = s.g_y + s.g_h;
+		const short h2 = d->g_y + d->g_h;
 
-		d->x = max(s.x, d->x);
-		d->y = max(s.y, d->y);
-		d->w = min(w1, w2) - d->x;
-		d->h = min(h1, h2) - d->y;
+		d->g_x = max(s.g_x, d->g_x);
+		d->g_y = max(s.g_y, d->g_y);
+		d->g_w = min(w1, w2) - d->g_x;
+		d->g_h = min(h1, h2) - d->g_y;
 
-		return (d->w > 0) && (d->h > 0);
+		return (d->g_w > 0) && (d->g_h > 0);
 	}
 	else
 		return false;
@@ -501,21 +501,21 @@ xa_rc_intersect(const RECT s, RECT *d)
  * rectangle structures.
  */
 bool
-xa_rect_clip(const RECT *s, const RECT *d, RECT *r)
+xa_rect_clip(const GRECT *s, const GRECT *d, GRECT *r)
 {
-	if (s->w > 0 && s->h > 0 && d->w > 0 && d->h > 0)
+	if (s->g_w > 0 && s->g_h > 0 && d->g_w > 0 && d->g_h > 0)
 	{
-		const short w1 = s->x + s->w;
-		const short w2 = d->x + d->w;
-		const short h1 = s->y + s->h;
-		const short h2 = d->y + d->h;
+		const short w1 = s->g_x + s->g_w;
+		const short w2 = d->g_x + d->g_w;
+		const short h1 = s->g_y + s->g_h;
+		const short h2 = d->g_y + d->g_h;
 
-		r->x = s->x > d->x ? s->x : d->x;	//max(s->x, d->x);
-		r->y = s->y > d->y ? s->y : d->y;	//max(s->y, d->y);
-		r->w = (w1 < w2 ? w1 : w2) - r->x; 	//min(w1, w2) - d->x;
-		r->h = (h1 < h2 ? h1 : h2) - r->y;	//min(h1, h2) - d->y;
+		r->g_x = s->g_x > d->g_x ? s->g_x : d->g_x;	//max(s->x, d->g_x);
+		r->g_y = s->g_y > d->g_y ? s->g_y : d->g_y;	//max(s->y, d->g_y);
+		r->g_w = (w1 < w2 ? w1 : w2) - r->g_x; 	//min(w1, w2) - d->g_x;
+		r->g_h = (h1 < h2 ? h1 : h2) - r->g_y;	//min(h1, h2) - d->g_y;
 
-		return ((r->w > 0) && (r->h > 0));
+		return ((r->g_w > 0) && (r->g_h > 0));
 	}
 	else
 		return false;
@@ -529,25 +529,25 @@ xa_rect_clip(const RECT *s, const RECT *d, RECT *r)
  *
  */
 int
-xa_rect_chk(const RECT *s, const RECT *d, RECT *r)
+xa_rect_chk(const GRECT *s, const GRECT *d, GRECT *r)
 {
 	int ret = 0;
 
-	if (s->w > 0 && s->h > 0 && d->w > 0 && d->h > 0)
+	if (s->g_w > 0 && s->g_h > 0 && d->g_w > 0 && d->g_h > 0)
 	{
-		const short sw = s->x + s->w;
-		const short dw = d->x + d->w;
-		const short sh = s->y + s->h;
-		const short dh = d->y + d->h;
+		const short sw = s->g_x + s->g_w;
+		const short dw = d->g_x + d->g_w;
+		const short sh = s->g_y + s->g_h;
+		const short dh = d->g_y + d->g_h;
 
-		r->x = s->x < d->x ? d->x : s->x;
-		r->y = s->y < d->y ? d->y : s->y;
-		r->w = (sw < dw ? sw : dw) - r->x;
-		r->h = (sh < dh ? sh : dh) - r->y;
+		r->g_x = s->g_x < d->g_x ? d->g_x : s->g_x;
+		r->g_y = s->g_y < d->g_y ? d->g_y : s->g_y;
+		r->g_w = (sw < dw ? sw : dw) - r->g_x;
+		r->g_h = (sh < dh ? sh : dh) - r->g_y;
 
-		if (r->x == d->x && r->y == d->y && r->w == d->w && r->h == d->h)
+		if (r->g_x == d->g_x && r->g_y == d->g_y && r->g_w == d->g_w && r->g_h == d->g_h)
 			ret = 2;
-		else if ((r->w > 0) && (r->h > 0))
+		else if ((r->g_w > 0) && (r->g_h > 0))
 			ret = 1;
 	}
 	return ret;

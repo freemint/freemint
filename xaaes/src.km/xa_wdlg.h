@@ -30,7 +30,7 @@
 
 #if WDIALOG_WDLG
 
-void  wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r);
+void  wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, GRECT *r);
 short wdialog_event(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep);
 
 

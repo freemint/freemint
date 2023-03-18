@@ -754,7 +754,7 @@ XA_wheel_event(int lock, const struct moose_data *md)
 	}
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
 	wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
-	if( cfg.menu_bar && wind->r.y < screen.c_max_h + 2 )
+	if( cfg.menu_bar && wind->r.g_y < screen.c_max_h + 2 )
 	{
 		toggle_menu(lock, -2);
 	}

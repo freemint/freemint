@@ -145,8 +145,8 @@ void add_keybd_switch(char *k)
 	}
 }
 
-RECT about_r = { 0, 0, 0, 0 };
-RECT view_r = { 0, 0, 0, 0 };
+GRECT about_r = { 0, 0, 0, 0 };
+GRECT view_r = { 0, 0, 0, 0 };
 
 bool
 wind_exist(int lock, struct xa_window *wind);
@@ -173,7 +173,7 @@ about_form_exit(struct xa_client *client,
 			{
 				struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 				list->destroy( list );
-				memcpy( &view_r, &wind->r, sizeof(RECT) );
+				view_r = wind->r;
 				if( htd )
 					htd->w_view = 0;
 				if( wind->parent && wind_exist( lock, wind->parent) && (wind->parent->dial & created_for_AES) )
@@ -519,8 +519,8 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 	struct xa_window *wind;
 	XA_TREE *wt = NULL;
 	OBJECT *obtree = NULL;
-	RECT or;
-	RECT *rem;
+	GRECT or;
+	GRECT *rem;
 	SCROLL_INFO *list;
 	char ebuf[196];
 	bool view_file = false;
@@ -576,7 +576,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 		obj_init_focus(wt, OB_IF_RESET);
 
 		/* Work out sizing */
-		if (!rem->w)
+		if (!rem->g_w)
 		{
 			center_rect(&or);
 			*rem = calc_window(lock, C.Aes, WC_BORDER,
@@ -589,8 +589,8 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 		{
 			//if( !view_file )
 			{
-				dw = rem->w - obtree->ob_width - 4;	/* !! */
-				dh = rem->h - obtree->ob_height - 32;	/* !! */
+				dw = rem->g_w - obtree->ob_width - 4;	/* !! */
+				dh = rem->g_h - obtree->ob_height - 32;	/* !! */
 			}
 		}
 
@@ -610,8 +610,8 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 		if( view_file )
 			htd->w_view = wind;
 
-		wind->min.h = minh;
-		wind->min.w = minw;
+		wind->min.g_h = minh;
+		wind->min.g_w = minw;
 #if 1
 		obtree[ABOUT_LIST].ob_width += dw;
 		obtree[ABOUT_LIST].ob_height += dh;
@@ -648,7 +648,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 		/* WM_SIZED resizes list-window (though not open yet!)*/
 
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-				WM_SIZED, 0,0, wind->handle, rem->x, rem->y, rem->w, rem->h );
+				WM_SIZED, 0,0, wind->handle, rem->g_x, rem->g_y, rem->g_w, rem->g_h );
 		if( !view_file )
 			htd->w_about = wind;
 	}

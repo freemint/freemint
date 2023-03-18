@@ -245,19 +245,19 @@ exit_client_objcrend(struct xa_client *client)
 }
 
 void
-adjust_size(short d, RECT *r)
+adjust_size(short d, GRECT *r)
 {
-	r->x -= d;	/* positive value d means enlarge! :-)   as everywhere. */
-	r->y -= d;
-	r->w += d+d;
-	r->h += d+d;
+	r->g_x -= d;	/* positive value d means enlarge! :-)   as everywhere. */
+	r->g_y -= d;
+	r->g_w += d+d;
+	r->g_h += d+d;
 }
 /* HR: 1 (good) set of routines for screen saving */
 
 void
-shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short colour, short x_thick, short y_thick)
+shadow_area(struct xa_vdi_settings *v, short d, short state, GRECT *rp, short colour, short x_thick, short y_thick)
 {
-	RECT r;
+	GRECT r;
 	short offset, inc;
 
 	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
@@ -271,13 +271,13 @@ shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short col
 			offset	= x_thick > 0 ? x_thick : 0;
 			inc	= -x_thick;
 
-			r.y += offset;
-			r.h -= offset;
-			r.w += inc;
+			r.g_y += offset;
+			r.g_h -= offset;
+			r.g_w += inc;
 
 			for (i = x_thick < 0 ? -x_thick : x_thick; i > 0; i--)
 			{
-				r.w++;
+				r.g_w++;
 				(*v->api->right_line)(v, d, &r, colour);
 			}
 		}
@@ -287,13 +287,13 @@ shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short col
 			offset	= y_thick > 0 ? y_thick : 0;
 			inc	= -y_thick;
 
-			r.x += offset;
-			r.w -= offset;
-			r.h += inc;
+			r.g_x += offset;
+			r.g_w -= offset;
+			r.g_h += inc;
 
 			for (i = y_thick < 0 ? -y_thick : y_thick; i > 0; i--) //(i = 0; i < abs(y_thick); i++)
 			{
-				r.h++;
+				r.g_h++;
 				(*v->api->bottom_line)(v, d, &r, colour);
 			}
 		}
@@ -379,7 +379,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	OBJECT *ob = wt->current.ob;
 	PARMBLK *p;
 	//short r[4];
-	RECT save_clip;
+	GRECT save_clip;
 #if GENERATE_DIAGS
 	struct proc *curproc = get_curproc();
 
@@ -399,7 +399,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 		return;
 
 #if WITH_BKG_IMG || WITH_GRADIENTS
-	if( !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) && wt == get_desktop() )
+	if( !memcmp( &wt->r, &root_window->wa, sizeof(GRECT)) && wt == get_desktop() )
 	{
 
 #if WITH_BKG_IMG
@@ -421,9 +421,9 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	p->pb_prevstate = p->pb_currstate = ob->ob_state;
 
-	*(RECT *)&(p->pb_x) = wt->r;
+	*(GRECT *)&(p->pb_x) = wt->r;
 
-	*(RECT *)&(p->pb_xc) = save_clip = v->clip; //*clip;
+	*(GRECT *)&(p->pb_xc) = save_clip = v->clip; //*clip;
 	userblk(client->ut) = object_get_spec(ob)->userblk;
 	p->pb_parm = userblk(client->ut)->ub_parm;
 
@@ -519,7 +519,7 @@ user-func:%lx TEXT:%lx-%lx (killed)", client->name, get_curproc()->name, wt->sta
 	 *	progdef's, we need to restore the clip-rect used by this 'thread'
 	 */
 
-// 	*(RECT *)&r = v->clip; //*clip;
+// 	*(GRECT *)&r = v->clip; //*clip;
 // 	r[2] += (r[0] - 1);
 // 	r[3] += (r[1] - 1);
 // 	vs_clip(v->handle, 1, (short *)&r);
@@ -539,7 +539,7 @@ user-func:%lx TEXT:%lx-%lx (killed)", client->name, get_curproc()->name, wt->sta
 static void
 d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	RECT r = wt->r;
+	GRECT r = wt->r;
 	SCROLL_INFO *list;
 	struct xa_window *w;
 	OBJECT *ob = wt->current.ob;
@@ -549,8 +549,8 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 	{
 		w = list->wi;
 
-		w->r.x = w->rc.x = r.x;
-		w->r.y = w->rc.y = r.y;
+		w->r.g_x = w->rc.g_x = r.g_x;
+		w->r.g_y = w->rc.g_y = r.g_y;
 
 		/* for after moving */
 		calc_work_area(w);
@@ -642,7 +642,7 @@ init_objects(void)
  * md & 1 1: show, 0: remove
  * md & 2 1: toolbar, 0: other
  */
-static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
+static void do_object_cursor( struct xa_vdi_settings *v, GRECT *sr, short md)
 {
 #if 0
 		union { BFOBSPEC c; unsigned long l; } conv;
@@ -697,7 +697,7 @@ static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
 void
 display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short parent_x, short parent_y, short flags)
 {
-	RECT r, o, sr;
+	GRECT r, o, sr;
 	OBJECT *ob = aesobj_ob(&item);
 	DrawObject *drawer = NULL;
 
@@ -713,21 +713,21 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 
 	(*wt->objcr_api->obj_offsets)(wt, ob, &o);
 
-	r.x = parent_x + ob->ob_x;
-	r.y = parent_y + ob->ob_y;
-	r.w = ob->ob_width;
-	r.h = ob->ob_height;
+	r.g_x = parent_x + ob->ob_x;
+	r.g_y = parent_y + ob->ob_y;
+	r.g_w = ob->ob_width;
+	r.g_h = ob->ob_height;
 	sr = r;
 
-	o.x = r.x + o.x;
-	o.y = r.y + o.y;
-	o.w = r.w - o.w;
-	o.h = r.h - o.h;
+	o.g_x = r.g_x + o.g_x;
+	o.g_y = r.g_y + o.g_y;
+	o.g_w = r.g_w - o.g_w;
+	o.g_h = r.g_h - o.g_h;
 
-	if (   o.x		> (v->clip.x + v->clip.w - 1)
-	    || o.x + o.w - 1	< v->clip.x
-	    || o.y		> (v->clip.y + v->clip.h - 1)
-	    || o.y + o.h - 1	< v->clip.y)
+	if (   o.g_x		> (v->clip.g_x + v->clip.g_w - 1)
+	    || o.g_x + o.g_w - 1	< v->clip.g_x
+	    || o.g_y		> (v->clip.g_y + v->clip.g_h - 1)
+	    || o.g_y + o.g_h - 1	< v->clip.g_y)
 	{
 		return;
 	}
@@ -743,15 +743,15 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 		return;
 	}
 
-	if( cfg.menu_bar != 2 && !cfg.menu_ontop && cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height()-2 )
+	if( cfg.menu_bar != 2 && !cfg.menu_ontop && cfg.menu_bar && wt != get_menu() && v->clip.g_y < get_menu_height()-2 )
 	{
 		if( cfg.menu_layout == 0 )
 		{
-			short d = get_menu_height()-2 - v->clip.y;
-			if( v->clip.h <= d )
+			short d = get_menu_height()-2 - v->clip.g_y;
+			if( v->clip.g_h <= d )
 				return;
-			v->clip.y = get_menu_height()-2;
-			v->clip.h -= d;
+			v->clip.g_y = get_menu_height()-2;
+			v->clip.g_h -= d;
 			(*v->api->set_clip)(v, &v->clip);
 		}
 		else
@@ -763,11 +763,11 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 
 	/* Fill in the object display parameter structure */
 	wt->current = item;
-	wt->r_parent.x = parent_x;
-	wt->r_parent.y = parent_y;
+	wt->r_parent.g_x = parent_x;
+	wt->r_parent.g_y = parent_y;
 // 	wt->parent_x = parent_x;
 // 	wt->parent_y = parent_y;
-	/* absolute RECT, ready for use everywhere. */
+	/* absolute GRECT, ready for use everywhere. */
 	wt->r = r;
 	wt->state_mask = &state_mask;
 
@@ -786,7 +786,7 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 
 		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d [%d: 0x%lx]; %s%s (%x)%s (%x)%s",
 			aesobj_item(&item),
-			 r.x, r.y, r.w, r.h,
+			 r.g_x, r.g_y, r.g_w, r.g_h,
 			 t, display_routine,
 			 object_type(aesobj_tree(&item), aesobj_item(&item)),
 			 object_txt(aesobj_tree(&item), aesobj_item(&item)),
@@ -817,7 +817,7 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 		{
 			(*v->api->t_color)(v, G_BLACK);
 			/* ASCII 8 = checkmark */
-			v_gtext(v->handle, r.x + 2, r.y, "\10");
+			v_gtext(v->handle, r.g_x + 2, r.g_y, "\10");
 		}
 
 		/* Handle DISABLED state: */
@@ -830,13 +830,13 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 		{
 			short p[4];
 			(*v->api->l_color)(v, G_BLACK);
-			p[0] = r.x;
-			p[1] = r.y;
-			p[2] = r.x + r.w - 1;
-			p[3] = r.y + r.h - 1;
+			p[0] = r.g_x;
+			p[1] = r.g_y;
+			p[2] = r.g_x + r.g_w - 1;
+			p[3] = r.g_y + r.g_h - 1;
 			v_pline(v->handle, 2, p);
-			p[0] = r.x + r.w - 1;
-			p[2] = r.x;
+			p[0] = r.g_x + r.g_w - 1;
+			p[2] = r.g_x;
 			v_pline(v->handle, 2, p);
 		}
 
@@ -955,8 +955,8 @@ short flags)
 		set_toolbar_coords(wt->wind, NULL);
 
 		/* used to move/resize objects inside the window */
-		dw = wt->wind->r.w - wt->wind->min.x;
-		dh = wt->wind->r.h - wt->wind->min.y;
+		dw = wt->wind->r.g_w - wt->wind->min.g_x;
+		dh = wt->wind->r.g_h - wt->wind->min.g_y;
 		resized = true;
 		wt->wind->window_status &= ~XAWS_RESIZED;
 		wt->dx = wt->dy = 0;
@@ -1010,11 +1010,11 @@ short flags)
 					if( lwind && lwind->send_message )
 					{
 						short amq = AMQ_REDRAW;
-						RECT dr = v->clip;	/* send_message may change clipping */
+						GRECT dr = v->clip;	/* send_message may change clipping */
 
 						lwind->send_message(lock, lwind, NULL, amq, QMF_CHKDUP,
 							WM_SIZED, 0,0, lwind->handle,
-							lwind->r.x, lwind->r.y, lwind->r.w + dw, lwind->r.h + dh);
+							lwind->r.g_x, lwind->r.g_y, lwind->r.g_w + dw, lwind->r.g_h + dh);
 						(*v->api->set_clip)(v, &dr);	/* restore clip */
 					}
 				}
@@ -1032,17 +1032,17 @@ short flags)
 				 */
 				if( dh || dw )
 				{
-					if( (c->ob->ob_y + c->ob->ob_height) > (wt->wind->min.h) / 2 )
+					if( (c->ob->ob_y + c->ob->ob_height) > (wt->wind->min.g_h) / 2 )
 					{
 						/* keep distance from lower border constant */
 						c->ob->ob_y += dh;
 					}
 
 					{
-						if( c->ob->ob_y < wt->wind->min.h / 2 && c->ob->ob_height > wt->wind->min.h / 2 )
+						if( c->ob->ob_y < wt->wind->min.g_h / 2 && c->ob->ob_height > wt->wind->min.g_h / 2 )
 							/* resize height for high objects */
 							c->ob->ob_height += dh;
-						if( c->ob->ob_x < wt->wind->min.w / 2 && c->ob->ob_width > wt->wind->min.w / 2 )
+						if( c->ob->ob_x < wt->wind->min.g_w / 2 && c->ob->ob_width > wt->wind->min.g_w / 2 )
 							/* resize width for wide objects */
 							c->ob->ob_width += dw;
 						else
@@ -1050,12 +1050,12 @@ short flags)
 							short sw = wt->wind->sw;
 							if( sw == 0 )
 								sw = 2;
-							if( c->ob->ob_x + dw > wt->wind->r.w / sw && c->ob->ob_x > wt->wind->min.w / sw )
+							if( c->ob->ob_x + dw > wt->wind->r.g_w / sw && c->ob->ob_x > wt->wind->min.g_w / sw )
 							{
 								/* keep distance from right border constant */
 								c->ob->ob_x += dw;
-								if( c->ob->ob_x + c->ob->ob_width > wt->wind->r.w )
-									c->ob->ob_x = wt->wind->r.w - c->ob->ob_width - 1;
+								if( c->ob->ob_x + c->ob->ob_width > wt->wind->r.g_w )
+									c->ob->ob_x = wt->wind->r.g_w - c->ob->ob_width - 1;
 							}
 						}
 					}

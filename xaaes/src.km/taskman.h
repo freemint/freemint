@@ -39,8 +39,8 @@ extern struct xa_wtxt_inf sys_txt;
 extern struct xa_wtxt_inf sys_thrd;
 extern struct xa_wtxt_inf desk_txt;
 
-extern RECT systemalerts_r;
-extern RECT taskman_r;
+extern GRECT systemalerts_r;
+extern GRECT taskman_r;
 
 int xaaes_do_form_alert( int lock, struct xa_client *client, int def_butt, char al_text[] );
 

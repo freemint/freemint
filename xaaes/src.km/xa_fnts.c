@@ -124,13 +124,13 @@ struct speedo_header
 struct co_display_parms
 {
 	short	x, y;
-	RECT	*clip;
+	GRECT	*clip;
 	long	id, pt, ratio;
 	char	*txt;
 };
 
 static long
-callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt, short *fw, short *fh)
+callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, GRECT *clip, GRECT *area, char *txt, short *fw, short *fh)
 {
 	if (f)
 	{
@@ -156,13 +156,13 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 
 				wp	= (struct co_display_parms *)(&p->parms);
 
-				wp->clip = (RECT *)((long)wp + sizeof(*wp));
+				wp->clip = (GRECT *)((long)wp + sizeof(*wp));
 				*wp->clip = *clip;
 				wp->txt = (char *)((long)wp + sizeof(*wp) + sizeof(*clip));
 				strcpy(wp->txt, txt);
 
-				wp->x		= area->x;
-				wp->y		= area->y + area->h - 2;
+				wp->x		= area->g_x;
+				wp->y		= area->g_y + area->g_h - 2;
 				wp->id		= f->f.id;
 				wp->pt		= pt;
 				wp->ratio	= ratio;
@@ -218,13 +218,13 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 			if( w > 1280 || h > 128 )
 				return 0;
 			/* position the text (x: center, y: upper) */
-			x = area->x + (area->w >> 1);
-			y = area->y + 4;
+			x = area->g_x + (area->g_w >> 1);
+			y = area->g_y + 4;
 
 			x -= (w >> 1);
 
-			if (x < area->x)
-				x = area->x;
+			if (x < area->g_x)
+				x = area->g_x;
 
 			v_gtext(vdih, x, y, txt);
 			w /= (int)strlen(txt);
@@ -1080,7 +1080,7 @@ XA_fnts_create(int lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = NULL;
 	XA_TREE *wt = NULL;
 	XA_WIND_ATTR tp = MOVER|NAME;
-	RECT r, or;
+	GRECT r, or;
 
 	DIAG((D_fnts, client, "XA_fnts_create"));
 	pb->intout[0] = 0;
@@ -1333,7 +1333,7 @@ XA_fnts_open(int lock, struct xa_client *client, AESPB *pb)
 		{
 			struct widget_tree *wt = fnts->wt;
 			struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
-			RECT r = wind->wa;
+			GRECT r = wind->wa;
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 
 			widg->m.properties |= WIP_NOTEXT | (WIP_ACTIVE|WIP_INSTALLED);
@@ -1343,20 +1343,20 @@ XA_fnts_open(int lock, struct xa_client *client, AESPB *pb)
 
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
 			{
-				r.x = (root_window->wa.w - r.w) / 2;
-				r.y = (root_window->wa.h - r.h) / 2;
+				r.g_x = (root_window->wa.g_w - r.g_w) / 2;
+				r.g_y = (root_window->wa.g_h - r.g_h) / 2;
 			}
 			else
 			{
-				r.x = pb->intin[1];
-				r.y = pb->intin[2];
+				r.g_x = pb->intin[1];
+				r.g_y = pb->intin[2];
 			}
 			{
-				RECT or;
+				GRECT or;
 
 				obj_rectangle(wt, aesobj(wt->tree, 0), &or);
-				or.x = r.x;
-				or.y = r.y;
+				or.g_x = r.g_x;
+				or.g_y = r.g_y;
 				change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 			}
 
@@ -1369,8 +1369,8 @@ XA_fnts_open(int lock, struct xa_client *client, AESPB *pb)
 
 			init_fnts(fnts);
 
-			wt->tree->ob_x = wind->wa.x;
-			wt->tree->ob_y = wind->wa.y;
+			wt->tree->ob_x = wind->wa.g_x;
+			wt->tree->ob_y = wind->wa.g_y;
 			if (!wt->zen)
 			{
 				wt->tree->ob_x += wt->ox;
@@ -1835,7 +1835,7 @@ XA_fnts_do(int lock, struct xa_client *client, AESPB *pb)
 		XA_TREE *wt = fnts->wt;
 		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 		OBJECT *obtree = wt->tree;
-		RECT or;
+		GRECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
 		obj_init_focus(wt, OB_IF_RESET);

@@ -1108,11 +1108,11 @@ static void pVArect(const char *p, const char *line, long val)
 	{
 		for( i = 0; i < 4; i++ )
 			if( i & 1 )
-				ri[i] = (short)( (long)ri[i] * (long)screen.r.h / (long)screen_r[3]);
+				ri[i] = (short)( (long)ri[i] * (long)screen.r.g_h / (long)screen_r[3]);
 			else
-				ri[i] = (short)( (long)ri[i] * (long)screen.r.w / (long)screen_r[2]);
+				ri[i] = (short)( (long)ri[i] * (long)screen.r.g_w / (long)screen_r[2]);
 	}
-	if( ri[2] > 20 && ri[3] > 20 && ri[0] < screen.r.w && ri[1] < screen.r.h && ri[2] <= screen.r.w && ri[3] <= screen.r.h )
+	if( ri[2] > 20 && ri[3] > 20 && ri[0] < screen.r.g_w && ri[1] < screen.r.g_h && ri[2] <= screen.r.g_w && ri[3] <= screen.r.g_h )
 		memcpy( r, ri, sizeof(ri) );
 }
 

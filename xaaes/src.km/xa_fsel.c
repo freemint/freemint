@@ -376,15 +376,15 @@ static void set_tabs( struct scroll_info *list, struct fsel_data *fs, short wd)
 
 	tab.index = FSLIDX_NAME;
 	tab.flags = 0;
-	tab.r = (RECT){0,0,0,0};
+	tab.r = (GRECT){0,0,0,0};
 	if (!fs->treeview && !fs->rtbuild)
-		tab.r.h = -MINWIDTH;
+		tab.r.g_h = -MINWIDTH;
 
 	list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
-	tab.r.w = 0;
+	tab.r.g_w = 0;
 	tab.flags |= SETAB_RJUST;
-	x = list->tabs[FSLIDX_NAME].r.w;
+	x = list->tabs[FSLIDX_NAME].r.g_w;
 	for( i = FSLIDX_SIZE; i <= FSLIDX_FLAG; i++ )
 	{
 		if( wd )
@@ -392,10 +392,10 @@ static void set_tabs( struct scroll_info *list, struct fsel_data *fs, short wd)
 			if( wd < 1000 )
 			{
 				long w;
-				w = (long)list->tabs[i].r.w * wd;
-				list->tabs[i].r.w = w / 1000L;
-				list->tabs[i].r.x = x;
-				x += list->tabs[i].r.w;
+				w = (long)list->tabs[i].r.g_w * wd;
+				list->tabs[i].r.g_w = w / 1000L;
+				list->tabs[i].r.g_x = x;
+				x += list->tabs[i].r.g_w;
 			}
 		}
 		else
@@ -1543,7 +1543,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 					/*list->vdi_settings->api->text_extent(list->vdi_settings, "X", &fs_norm_txt.n, &w, &h);*/
 
-					tab.r = (RECT){0,0,0, -h};
+					tab.r = (GRECT){0,0,0, -h};
 					list->set(list, NULL, SESET_TAB, (long)&tab, false);
 				}
 			}
@@ -3124,7 +3124,7 @@ fs_msg_handler(
 		break;
 		case WM_MOVED:
 		{
-			msg[6] = fs->wind->r.w, msg[7] = fs->wind->r.h;
+			msg[6] = fs->wind->r.g_w, msg[7] = fs->wind->r.g_h;
 			do_formwind_msg(wind, to, amq, qmf, msg);
 			break;
 			/* fall through */
@@ -3136,8 +3136,8 @@ fs_msg_handler(
 			OBJECT *obtree = ((struct widget_tree *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree;
 			struct xa_window *lwind;
 
-			dw = msg[6] - wind->r.w;
-			dh = msg[7] - wind->r.h;
+			dw = msg[6] - wind->r.g_w;
+			dh = msg[7] - wind->r.g_h;
 			obtree->ob_height += dh;
 			obtree->ob_width += dw;
 
@@ -3155,7 +3155,7 @@ fs_msg_handler(
 			{
 				lwind->send_message(0, lwind, NULL, amq, QMF_CHKDUP,
 					WM_SIZED, 0,0, lwind->handle,
-					lwind->r.x, lwind->r.y, lwind->r.w + dw, lwind->r.h + dh);
+					lwind->r.g_x, lwind->r.g_y, lwind->r.g_w + dw, lwind->r.g_h + dh);
 			}
 			move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
 			set_toolbar_coords(wind, NULL);
@@ -3255,7 +3255,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 	char *pat=0,*pbt;
 	struct scroll_info *list;
 	struct xa_vdi_settings *v = client->vdi_settings;
-	RECT remember = {0,0,0,0}, or;
+	GRECT remember = {0,0,0,0}, or;
 	long dmap = 0;
 
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
@@ -3504,8 +3504,8 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			if( fs_data.fs_width == 0 )
 			{
 				/* first open/not initialized */
-				dh = screen.r.h - 7 * screen.c_max_h - form->ob_height - 18;
-				dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
+				dh = screen.r.g_h - 7 * screen.c_max_h - form->ob_height - 18;
+				dw = root_window->wa.g_w - (form->ob_width + (screen.c_max_w * 4));
 				if ((dw + form->ob_width) > 560)
 					dw = 560 - form->ob_width;
 
@@ -3516,8 +3516,8 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			else
 			{
 				dy = screen.c_max_h * fs_data.fs_num;
-				if( fs_data.fs_height + fs_data.fs_y + dy > screen.r.h )
-					fs_data.fs_height = screen.r.h - (fs_data.fs_y + dy);
+				if( fs_data.fs_height + fs_data.fs_y + dy > screen.r.g_h )
+					fs_data.fs_height = screen.r.g_h - (fs_data.fs_y + dy);
 
 				dw = fs_data.fs_width - form->ob_width;
 				dh = fs_data.fs_height - form->ob_height;
@@ -3551,12 +3551,12 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			{
 				fs->point = cfg.xaw_point;
 				center_rect(&or);
-				or.y = 64;
+				or.g_y = 64;
 			}
 			else
 			{
-				or.x = fs_data.fs_x + screen.c_max_w * fs_data.fs_num;
-				or.y = fs_data.fs_y + dy;
+				or.g_x = fs_data.fs_x + screen.c_max_w * fs_data.fs_num;
+				or.g_y = fs_data.fs_y + dy;
 				fs->point = fs_data.fs_point;
 			}
 
@@ -3568,8 +3568,8 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 						&or);
 			if( fs_data.fs_width )
 			{
-				short dw = remember.w - fs_data.fs_width;
-				remember.w = fs_data.fs_width;
+				short dw = remember.g_w - fs_data.fs_width;
+				remember.g_w = fs_data.fs_width;
 				form[FS_LIST].ob_width -= dw;
 				form[FS_OK].ob_x -= dw;
 				form[FS_CANCEL].ob_x -= dw;
@@ -3647,8 +3647,8 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 		 *		 so we supply our own handler,
 		 */
 		dialog_window->keypress = fs_key_form_do;
-		dialog_window->min.h = 222;
-		dialog_window->min.w = fs->menu->area.x + fs->menu->area.w + 32;
+		dialog_window->min.g_h = 222;
+		dialog_window->min.g_w = fs->menu->area.g_x + fs->menu->area.g_w + 32;
 
 		/* HR: set a scroll list object */
 		list = set_slist_object(lock,

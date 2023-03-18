@@ -235,11 +235,6 @@ typedef struct
     unsigned long   unused_2;
 } N_AESINFO;
 
-/* TODO: Usage of RECT should be eliminated somehow
-         and replaced by the gemlib's GRECT.
-         It is quite a lot of work however. :( */
-typedef struct { short x, y, w, h; } RECT;
-
 /*
  * XaAES/oAESis Extended Shell Write structure
  * Extra fields for UID/GID setting of spawned clients.

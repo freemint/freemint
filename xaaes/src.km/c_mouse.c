@@ -272,7 +272,7 @@ cXA_open_menu(int lock, struct c_event *ce, short cancel)
 		{
 			if( cfg.menu_bar )
 			{
-				struct xa_window *w = find_window(lock, MI_IGN, menu->area.h, -1 );
+				struct xa_window *w = find_window(lock, MI_IGN, menu->area.g_h, -1 );
 				if( w && w != root_window )
 				{
 					redraw_menu(lock);	// a window might hide part of menu (not elegant ..)
@@ -635,9 +635,9 @@ cXA_wheel_event(int lock, struct c_event *ce, short cancel)
 							short unit, wh;
 
 							if (s == WM_VSLID)
-								wh = widg->r.h - sl->r.h;
+								wh = widg->r.g_h - sl->r.g_h;
 							else
-								wh = widg->r.w - sl->r.w;
+								wh = widg->r.g_w - sl->r.g_w;
 
 							unit = pix_to_sl(2L, wh) - pix_to_sl(1L, wh);
 

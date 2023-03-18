@@ -43,7 +43,7 @@ struct xa_window * _cdecl create_window(int lock,
 				WINDOW_TYPE dial,
 				int thinframe,
 				bool thinwork,
-				const RECT *r, const RECT *max, RECT *rem);
+				const GRECT *r, const GRECT *max, GRECT *rem);
 
 void change_window_attribs(int lock,
 			   struct xa_client *client,
@@ -52,7 +52,7 @@ void change_window_attribs(int lock,
 			   bool r_is_wa,
 			   bool insideroot,
 			   short noleft,
-			   RECT r, RECT *remember);
+			   GRECT r, GRECT *remember);
 
 void remove_window_widgets(int lock, int full);
 //void wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus);
@@ -70,7 +70,7 @@ struct xa_window *root_w(int lock);
 //XA_WIND_ATTR fix_wind_kind(XA_WIND_ATTR tp);
 
 bool _cdecl	close_window(int lock, struct xa_window *wind);
-int  _cdecl	open_window(int lock, struct xa_window *w, RECT r);
+int  _cdecl	open_window(int lock, struct xa_window *w, GRECT r);
 void _cdecl	send_wind_to_bottom(int lock, struct xa_window *w);
 void set_standard_point(struct xa_client *client);
 void toggle_menu(int lock, short md);
@@ -78,34 +78,34 @@ void _cdecl	move_window(int lock, struct xa_window *wind, bool blit, WINDOW_STAT
 void _cdecl	delete_window(int lock, struct xa_window *wind);
 void _cdecl	delayed_delete_window(int lock, struct xa_window *wind);
 void	do_delayed_delete_window(int lock);
-void	display_window(int lock, int which, struct xa_window *w, RECT *clip);
+void	display_window(int lock, int which, struct xa_window *w, GRECT *clip);
 
-bool clip_off_menu( RECT *cl );
-void	draw_window(int lock, struct xa_window *wind, const RECT *clip);
+bool clip_off_menu( GRECT *cl );
+void	draw_window(int lock, struct xa_window *wind, const GRECT *clip);
 void	update_all_windows(int lock, struct xa_window *wl);
-void	update_windows_below(int lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend);
+void	update_windows_below(int lock, const GRECT *old, GRECT *new, struct xa_window *wl, struct xa_window *wend);
 void	redraw_client_windows(int lock, struct xa_client *client);
 
-RECT	free_icon_pos(int lock, struct xa_window *ignore);
+GRECT	free_icon_pos(int lock, struct xa_window *ignore);
 
-RECT	w2f(RECT *delta, const RECT *in, bool chkwh);
-RECT	f2w(RECT *delta, const RECT *in, bool chkwh);
+GRECT	w2f(GRECT *delta, const GRECT *in, bool chkwh);
+GRECT	f2w(GRECT *delta, const GRECT *in, bool chkwh);
 void	delete_wc_cache(struct xa_wc_cache **wcc);
-RECT	calc_window(int lock, struct xa_client *client, int request,
+GRECT	calc_window(int lock, struct xa_client *client, int request,
 		    XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
-		    const RECT *r);
+		    const GRECT *r);
 
 void _cdecl	top_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	bottom_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	after_top(int lock, bool untop);
 void	remove_windows(int lock, struct xa_client *client);
 void	remove_all_windows(int lock, struct xa_client *client);
-short	inside_root(RECT *r, bool noleft);
-void	inside_minmax(RECT *r, struct xa_window *wind);
-void	set_winrect(struct xa_window *wind, RECT *wr, const RECT *r);
+short	inside_root(GRECT *r, bool noleft);
+void	inside_minmax(GRECT *r, struct xa_window *wind);
+void	set_winrect(struct xa_window *wind, GRECT *wr, const GRECT *r);
 
-void	iconify_window(int lock, struct xa_window *wind, RECT *r);
-void	uniconify_window(int lock, struct xa_window *wind, RECT *r);
+void	iconify_window(int lock, struct xa_window *wind, GRECT *r);
+void	uniconify_window(int lock, struct xa_window *wind, GRECT *r);
 
 void	hide_window(int lock, struct xa_window *wind);
 void	unhide_window(int lock, struct xa_window *wind, bool check);
@@ -115,15 +115,15 @@ void	show_toolboxwindows(struct xa_client *client);
 void	clear_wind_handles(void);
 //void	clear_wind_rectlist(struct xa_window *wind);
 
-void	send_moved	(int lock, struct xa_window *wind, short amq, RECT *r);
-void	send_sized	(int lock, struct xa_window *wind, short amq, RECT *r);
-void	send_reposed	(int lock, struct xa_window *wind, short amq, RECT *r);
+void	send_moved	(int lock, struct xa_window *wind, short amq, GRECT *r);
+void	send_sized	(int lock, struct xa_window *wind, short amq, GRECT *r);
+void	send_reposed	(int lock, struct xa_window *wind, short amq, GRECT *r);
 void	send_vslid	(int lock, struct xa_window *wind, short offs);
 void	send_hslid	(int lock, struct xa_window *wind, short offs);
 void	send_closed	(int lock, struct xa_window *wind);
-//void	send_redraw	(int lock, struct xa_window *wind, RECT *r);
-void	send_iredraw	(int lock, struct xa_window *wind, short xaw, RECT *r);
-void	generate_redraws(int lock, struct xa_window *wind, RECT *r, short flags);
+//void	send_redraw	(int lock, struct xa_window *wind, GRECT *r);
+void	send_iredraw	(int lock, struct xa_window *wind, short xaw, GRECT *r);
+void	generate_redraws(int lock, struct xa_window *wind, GRECT *r, short flags);
 
 //void	send_ontop(int lock);
 //void	send_untop(int lock, struct xa_window *wind);

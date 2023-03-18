@@ -275,16 +275,16 @@ XA_slider(struct xa_window *w, int which, long total, long visible, long start)
 
 /* MI_IGN: don't care */
 bool
-m_inside(short x, short y, RECT *o)
+m_inside(short x, short y, GRECT *o)
 {
 	if( x != MI_IGN && y != MI_IGN )
-		return x >= o->x && y >= o->y && x < o->x+o->w && y < o->y+o->h;
+		return x >= o->g_x && y >= o->g_y && x < o->g_x+o->g_w && y < o->g_y+o->g_h;
 
 	if( y != MI_IGN )
-		return y >= o->y && y < o->y+o->h;
+		return y >= o->g_y && y < o->g_y+o->g_h;
 
 	if( x != MI_IGN )
-		return x >= o->x && x < o->x+o->w;
+		return x >= o->g_x && x < o->g_x+o->g_w;
 
 	return false;
 }
@@ -336,7 +336,7 @@ bound_sl(int p)
 #endif
 
 static OBJECT *
-rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
+rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, GRECT *r)
 {
 	XA_TREE *wt;
 	OBJECT *obtree = NULL;
@@ -346,18 +346,18 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
  		if (!(widg->m.properties & WIP_NOTEXT))
  		{
 			if( wind != root_window || (cfg.menu_layout == 0 && widg->m.r.xaw_idx == XAW_MENU) )
- 				widg->r.w = wind->r.w;
+ 				widg->r.g_w = wind->r.g_w;
  		}
 		if ((wt = widg->stuff))
 		{
 			obtree = wt->tree;
 			if (obtree && wind != root_window)
 			{
-				obtree->ob_x = r->x;
-				obtree->ob_y = r->y;
+				obtree->ob_x = r->g_x;
+				obtree->ob_y = r->g_y;
 
- 				obtree->ob_width = widg->r.w;
- 				obtree->ob_height = widg->r.h;
+ 				obtree->ob_width = widg->r.g_w;
+ 				obtree->ob_height = widg->r.g_h;
 
  				/* is it a good idea to change the object-coords incrementally? */
 				if (!wt->zen)
@@ -377,9 +377,9 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
  * Convert window relative widget coords to absolute screen coords
  */
 void *
-rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
+rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, GRECT *r)
 {
-	RECT dr;
+	GRECT dr;
 	short rtx, rty, ww, wh;
 	int frame = wind->frame;
 
@@ -403,49 +403,49 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	/* HR: window frame size dynamic
 	 *     thanks to the good design these 2 additions are all there is :-)
 	 */
-	rtx = widg->r.x + frame;
-	rty = widg->r.y + frame;
+	rtx = widg->r.g_x + frame;
+	rty = widg->r.g_y + frame;
 
-	r->w = widg->r.w;
-	r->h = widg->r.h;
-	r->x = wind->r.x;
-	r->y = wind->r.y;
+	r->g_w = widg->r.g_w;
+	r->g_h = widg->r.g_h;
+	r->g_x = wind->r.g_x;
+	r->g_y = wind->r.g_y;
 
-	ww = wind->frame < 0 ? wind->r.w : wind->r.w - wind->x_shadow;
-	wh = wind->frame < 0 ? wind->r.h : wind->r.h - wind->y_shadow;
+	ww = wind->frame < 0 ? wind->r.g_w : wind->r.g_w - wind->x_shadow;
+	wh = wind->frame < 0 ? wind->r.g_h : wind->r.g_h - wind->y_shadow;
 
 	switch ((widg->m.r.pos_in_row & (R_BOTTOM|R_RIGHT|R_CENTER)))
 	{
 	case LT:
-		r->x += rtx;
-		r->y += rty;
+		r->g_x += rtx;
+		r->g_y += rty;
 		break;
 	case LB:
-		r->x += rtx;
-		r->y += (wh - rty);
+		r->g_x += rtx;
+		r->g_y += (wh - rty);
 		break;
 	case RT:
-		r->x += (ww - rtx);
-		r->y += rty;
+		r->g_x += (ww - rtx);
+		r->g_y += rty;
 		break;
 	case RB:
-		r->x += (ww - rtx);
-		r->y += (wh - rty);
+		r->g_x += (ww - rtx);
+		r->g_y += (wh - rty);
 		break;
 	case CT:
-		r->x += (ww - r->w) / 2;
-		r->y += rty;
+		r->g_x += (ww - r->g_w) / 2;
+		r->g_y += rty;
 		break;
 	case CR:
-		r->x += (ww - r->w - rtx);
-		r->y += (wh - r->h) / 2;
+		r->g_x += (ww - r->g_w - rtx);
+		r->g_y += (wh - r->g_h) / 2;
 	case CB:
-		r->x += (ww - r->w) / 2;
-		r->y += (wh - r->h - rty);
+		r->g_x += (ww - r->g_w) / 2;
+		r->g_y += (wh - r->g_h - rty);
 		break;
 	case CL:
-		r->x += rtx;
-		r->y += (wh - r->h - rty);
+		r->g_x += rtx;
+		r->g_y += (wh - r->g_h - rty);
 		break;
 	default:;
 	}
@@ -459,7 +459,7 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
  * which widget is under the mouse.
  */
 void
-rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
+rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, GRECT *r)
 {
 	short rtx, rty, ww, wh;
 	int frame = wind->frame;
@@ -484,49 +484,49 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	/* HR: window frame size dynamic
 	 *     thanks to the good design these 2 additions are all there is :-)
 	 */
-	rtx = widg->r.x + frame;
-	rty = widg->r.y + frame;
+	rtx = widg->r.g_x + frame;
+	rty = widg->r.g_y + frame;
 
-	r->w = widg->r.w;
-	r->h = widg->r.h;
-	r->x = wind->r.x;
-	r->y = wind->r.y;
+	r->g_w = widg->r.g_w;
+	r->g_h = widg->r.g_h;
+	r->g_x = wind->r.g_x;
+	r->g_y = wind->r.g_y;
 
-	ww = wind->frame < 0 ? wind->r.w : wind->r.w - wind->x_shadow;
-	wh = wind->frame < 0 ? wind->r.h : wind->r.h - wind->y_shadow;
+	ww = wind->frame < 0 ? wind->r.g_w : wind->r.g_w - wind->x_shadow;
+	wh = wind->frame < 0 ? wind->r.g_h : wind->r.g_h - wind->y_shadow;
 
 	switch ((widg->m.r.pos_in_row & (R_BOTTOM|R_RIGHT|R_CENTER)))
 	{
 	case LT:
-		r->x += rtx;
-		r->y += rty;
+		r->g_x += rtx;
+		r->g_y += rty;
 		break;
 	case LB:
-		r->x += rtx;
-		r->y += (wh - rty);
+		r->g_x += rtx;
+		r->g_y += (wh - rty);
 		break;
 	case RT:
-		r->x += (ww - rtx);
-		r->y += rty;
+		r->g_x += (ww - rtx);
+		r->g_y += rty;
 		break;
 	case RB:
-		r->x += (ww - rtx);
-		r->y += (wh - rty);
+		r->g_x += (ww - rtx);
+		r->g_y += (wh - rty);
 		break;
 	case CT:
-		r->x += (ww - r->w) / 2;
-		r->y += rty;
+		r->g_x += (ww - r->g_w) / 2;
+		r->g_y += rty;
 		break;
 	case CR:
-		r->x += (ww - r->w - rtx);
-		r->y += (wh - r->h) / 2;
+		r->g_x += (ww - r->g_w - rtx);
+		r->g_y += (wh - r->g_h) / 2;
 	case CB:
-		r->x += (ww - r->w) / 2;
-		r->y += (wh - r->h - rty);
+		r->g_x += (ww - r->g_w) / 2;
+		r->g_y += (wh - r->g_h - rty);
 		break;
 	case CL:
-		r->x += rtx;
-		r->y += (wh - r->h - rty);
+		r->g_x += rtx;
+		r->g_y += (wh - r->g_h - rty);
 		break;
 	default:;
 	}
@@ -598,7 +598,7 @@ void _cdecl
 init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree)
 {
 	short sx, sy;
-	RECT r;
+	GRECT r;
 	struct xa_data_hdr *h;
 
 	if (!client) client = C.Aes;
@@ -624,8 +624,8 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 
 	obj_area(wt, aesobj(obtree, 0), &r);
 
-	wt->ox = obtree->ob_x - r.x;
-	wt->oy = obtree->ob_y - r.x;
+	wt->ox = obtree->ob_x - r.g_x;
+	wt->oy = obtree->ob_y - r.g_x;
 
 	if (wt->ox < 0)
 		wt->ox = 0;
@@ -832,7 +832,7 @@ static void
 draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	RECT r;
+	GRECT r;
 
 	DIAG((D_wind, wind->owner, "draw_widget: wind handle %d, widget %d (func=%lx)",
 		wind->handle, widg->m.r.xaw_idx, (unsigned long)widg->m.r.draw));
@@ -856,12 +856,12 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 			}
 			else
 			{
-				if( wind == root_window || !cfg.menu_bar || cfg.menu_layout != 0 || ( rl->r.y > get_menu_height() || !clip_off_menu( &rl->r )) )
+				if( wind == root_window || !cfg.menu_bar || cfg.menu_layout != 0 || ( rl->r.g_y > get_menu_height() || !clip_off_menu( &rl->r )) )
 				{
 					if (xa_rect_clip(&rl->r, &widg->ar, &r))
 					{
 						(*v->api->set_clip)(v, &r);
-						if( !cfg.menu_ontop && widg->m.r.xaw_idx != XAW_MENU && rl->r.y < get_menu_height() &&  rl->r.x < get_menu_widg()->r.w )
+						if( !cfg.menu_ontop && widg->m.r.xaw_idx != XAW_MENU && rl->r.g_y < get_menu_height() &&  rl->r.g_x < get_menu_widg()->r.g_w )
 						{
 							C.rdm = 1;
 						}
@@ -932,8 +932,8 @@ CE_redraw_menu(int lock, struct c_event *ce, short cancel)
 		if (ce->client == mc)
 		{
 			struct xa_rect_list rl = {0, {0, 0, 0, 0} };
-			rl.r.w = get_menu_widg()->r.w;
-			rl.r.h = get_menu_widg()->r.h;
+			rl.r.g_w = get_menu_widg()->r.g_w;
+			rl.r.g_h = get_menu_widg()->r.g_h;
 			display_widget(lock, root_window, widg, &rl);
 		}
 	#if 1
@@ -994,8 +994,8 @@ redraw_menu(int lock)
 			return;
 		}
 		/* menubar always top */
-		rl.r.w = get_menu_widg()->r.w;
-		rl.r.h = get_menu_widg()->r.h;
+		rl.r.g_w = get_menu_widg()->r.g_w;
+		rl.r.g_h = get_menu_widg()->r.g_h;
 
 		display_widget(lock, root_window, widg, &rl);
 	}
@@ -1023,95 +1023,95 @@ static short cfg_icnfy_w = 64;
 static short cfg_icnfy_h = 64;
 #endif
 /* Establish iconified window position from a simple ordinal. */
-RECT
+GRECT
 iconify_grid(int i)
 {
-	short v_num = (root_window->wa.w - cfg.icnfy_l_x - cfg.icnfy_r_x) / cfg.icnfy_w;
-	short h_num = (root_window->wa.h - cfg.icnfy_t_y - cfg.icnfy_b_y) / cfg.icnfy_h;
+	short v_num = (root_window->wa.g_w - cfg.icnfy_l_x - cfg.icnfy_r_x) / cfg.icnfy_w;
+	short h_num = (root_window->wa.g_h - cfg.icnfy_t_y - cfg.icnfy_b_y) / cfg.icnfy_h;
 	short start_x, start_y, column, row;
-	RECT ic = {0,0,cfg.icnfy_w, cfg.icnfy_h};
+	GRECT ic = {0,0,cfg.icnfy_w, cfg.icnfy_h};
 
 	switch ((cfg.icnfy_orient & 0xff))
 	{
 		case 0:
 		{
-			ic.x = start_x = root_window->wa.x + cfg.icnfy_l_x;
+			ic.g_x = start_x = root_window->wa.g_x + cfg.icnfy_l_x;
 			column = i / h_num;
 			if (column)
 			{
-				ic.x += (column * cfg.icnfy_w);
-				if ((ic.x + cfg.icnfy_w) > root_window->wa.w)
-					ic.x = start_x;
+				ic.g_x += (column * cfg.icnfy_w);
+				if ((ic.g_x + cfg.icnfy_w) > root_window->wa.g_w)
+					ic.g_x = start_x;
 			}
 			row = i % h_num;
 			if ((cfg.icnfy_orient & 0x100))
-				ic.y = ((root_window->wa.y + root_window->wa.h) - cfg.icnfy_b_y - cfg.icnfy_h) - (row * cfg.icnfy_h);
+				ic.g_y = ((root_window->wa.g_y + root_window->wa.g_h) - cfg.icnfy_b_y - cfg.icnfy_h) - (row * cfg.icnfy_h);
 			else
-				ic.y = (root_window->wa.y + cfg.icnfy_t_y) + (row * cfg.icnfy_h);
+				ic.g_y = (root_window->wa.g_y + cfg.icnfy_t_y) + (row * cfg.icnfy_h);
 			break;
 		}
 		case 1:
 		{
-			ic.x = start_x = root_window->wa.w - cfg.icnfy_w - cfg.icnfy_r_x;
+			ic.g_x = start_x = root_window->wa.g_w - cfg.icnfy_w - cfg.icnfy_r_x;
 
 			column = i / h_num;
 
 			if (column)
 			{
-				ic.x -= (column * cfg.icnfy_w);
-				if (ic.x < cfg.icnfy_l_x)
-					ic.x = start_x;
+				ic.g_x -= (column * cfg.icnfy_w);
+				if (ic.g_x < cfg.icnfy_l_x)
+					ic.g_x = start_x;
 			}
 			row = i % h_num ;
 
 			if ((cfg.icnfy_orient & 0x100))
-				ic.y = ((root_window->wa.y + root_window->wa.h) - cfg.icnfy_b_y - cfg.icnfy_h) - (row * cfg.icnfy_h);
+				ic.g_y = ((root_window->wa.g_y + root_window->wa.g_h) - cfg.icnfy_b_y - cfg.icnfy_h) - (row * cfg.icnfy_h);
 			else
-				ic.y = (root_window->wa.y + cfg.icnfy_t_y) + (row * cfg.icnfy_h);
+				ic.g_y = (root_window->wa.g_y + cfg.icnfy_t_y) + (row * cfg.icnfy_h);
 
 			break;
 		}
 		case 2:
 		{
-			ic.y = start_y = root_window->wa.y + cfg.icnfy_t_y;
+			ic.g_y = start_y = root_window->wa.g_y + cfg.icnfy_t_y;
 			column = i % v_num;
 			if ((cfg.icnfy_orient & 0x100))
 			{
-				ic.x = ((root_window->wa.x + root_window->wa.w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
+				ic.g_x = ((root_window->wa.g_x + root_window->wa.g_w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
 			}
 			else
 			{
-				ic.x = start_x = root_window->wa.x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
+				ic.g_x = start_x = root_window->wa.g_x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
 			}
 			row = i / v_num;
 			if (row)
 			{
-				ic.y += (row * cfg.icnfy_h);
-				if ((ic.y + cfg.icnfy_h + cfg.icnfy_b_y) > root_window->wa.h)
-					ic.y = start_y;
+				ic.g_y += (row * cfg.icnfy_h);
+				if ((ic.g_y + cfg.icnfy_h + cfg.icnfy_b_y) > root_window->wa.g_h)
+					ic.g_y = start_y;
 			}
 			break;
 		}
 		case 3:
 		{
-			ic.y = start_y = (root_window->wa.y + root_window->wa.h) - cfg.icnfy_h - cfg.icnfy_b_y;
+			ic.g_y = start_y = (root_window->wa.g_y + root_window->wa.g_h) - cfg.icnfy_h - cfg.icnfy_b_y;
 			column = i % v_num;
 
 			if ((cfg.icnfy_orient & 0x100))
 			{
-				ic.x = ((root_window->wa.x + root_window->wa.w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
+				ic.g_x = ((root_window->wa.g_x + root_window->wa.g_w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
 			}
 			else
 			{
-				ic.x = root_window->wa.x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
+				ic.g_x = root_window->wa.g_x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
 			}
 
 			row = i / v_num;
 			if (row)
 			{
-				ic.y -= (row * cfg.icnfy_h);
-				if (ic.y < (root_window->wa.y + cfg.icnfy_t_y))
-					ic.y = start_y;
+				ic.g_y -= (row * cfg.icnfy_h);
+				if (ic.g_y < (root_window->wa.g_y + cfg.icnfy_t_y))
+					ic.g_y = start_y;
 			}
 			break;
 		}
@@ -1129,7 +1129,7 @@ drag_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 	/* You can only move a window if its MOVE attribute is set */
 	if (wind->active_widgets & MOVER)
 	{
-		RECT r = wind->r, d;
+		GRECT r = wind->r, d;
 
 #if PRESERVE_DIALOG_BGD
 		{
@@ -1160,16 +1160,16 @@ drag_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 		    || wind->send_message == NULL
 		    || wind->owner->options.nolive)
 		{
-			RECT bound;
+			GRECT bound;
 
-			bound.x = wind->owner->options.noleft ?
-					0 : -root_window->r.w;
+			bound.g_x = wind->owner->options.noleft ?
+					0 : -root_window->r.g_w;
 			if (cfg.menu_bar && cfg.menu_ontop == 0)
-				bound.y = get_menu_height();
+				bound.g_y = get_menu_height();
 			else
-				bound.y = root_window->wa.y;
-			bound.w = root_window->r.w*3;
-			bound.h = root_window->r.h*2;
+				bound.g_y = root_window->wa.g_y;
+			bound.g_w = root_window->r.g_w*3;
+			bound.g_h = root_window->r.g_h*2;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
@@ -1177,9 +1177,9 @@ drag_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
 
-			if (r.x != wind->rc.x || r.y != wind->rc.y)
+			if (r.g_x != wind->rc.g_x || r.g_y != wind->rc.g_y)
 			{
-				r.h = wind->rc.h;
+				r.g_h = wind->rc.g_h;
 
 				if (wind->opts & XAWO_WCOWORK)
 					r = f2w(&wind->delta, &r, true);
@@ -1217,22 +1217,22 @@ drag_title(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 				widget_active.x = widget_active.m.x;
 				widget_active.y = widget_active.m.y;
 
-				widget_active.d.x = d.x;
-				widget_active.d.y = d.y;
+				widget_active.d.g_x = d.g_x;
+				widget_active.d.g_y = d.g_y;
 
 				if (widget_active.x != pmx || widget_active.y != pmy)
 					r = move_rectangle(widget_active.x, widget_active.y, r, &d);
 
 				if (wind->owner->options.noleft)
-					if (r.x < 0)
-						r.x = 0;
+					if (r.g_x < 0)
+						r.g_x = 0;
 
-				if (r.y < root_window->wa.y)
-					r.y = root_window->wa.y;
+				if (r.g_y < root_window->wa.g_y)
+					r.g_y = root_window->wa.g_y;
 
-				if (r.x != wind->r.x || r.y != wind->r.y)
+				if (r.g_x != wind->r.g_x || r.g_y != wind->r.g_y)
 				{
-					r.h = wind->rc.h;
+					r.g_h = wind->rc.g_h;
 
 					if (wind->opts & XAWO_WCOWORK)
 						r = f2w(&wind->delta, &r, true);
@@ -1270,9 +1270,9 @@ shade_action(int lock, struct xa_window *wind)
 						WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
 
 					/* if window was opened shaded fix rc.h */
-					if( wind->rc.h == wind->r.h && wind->pr.h > wind->rc.h )
-						wind->rc.h = wind->pr.h;
-					move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+					if( wind->rc.g_h == wind->r.g_h && wind->pr.g_h > wind->rc.g_h )
+						wind->rc.g_h = wind->pr.g_h;
+					move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.g_x, wind->rc.g_y, wind->rc.g_w, wind->rc.g_h);
 				}
 			}
 			else
@@ -1282,7 +1282,7 @@ shade_action(int lock, struct xa_window *wind)
 					DIAGS(("Click_title: shading window %d for %s",
 						wind->handle, wind->owner->name));
 
-					move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+					move_window(lock, wind, true, XAWS_SHADED, wind->rc.g_x, wind->rc.g_y, wind->rc.g_w, wind->rc.g_h);
 					wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 						WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
 				}
@@ -1359,7 +1359,7 @@ click_title(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 			{
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   WM_UNICONIFY, 0, 0, wind->handle,
-						   wind->pr.x, wind->pr.y, wind->pr.w, wind->pr.h);
+						   wind->pr.g_x, wind->pr.g_y, wind->pr.g_w, wind->pr.g_h);
 			}
 			else if (wind->active_widgets & FULLER)
 			{
@@ -1454,7 +1454,7 @@ iconify_action(int lock, struct xa_window *wind, const struct moose_data *md)
 	if ((wind->window_status & XAWS_OPEN))
 	{
 		short msg = -1;
-		RECT r;
+		GRECT r;
 
 		if (is_iconified(wind))
 		{
@@ -1472,7 +1472,7 @@ iconify_action(int lock, struct xa_window *wind, const struct moose_data *md)
 			/* Could the whole screen be covered by iconified
 			 * windows? That would be an achievement, wont it?
 			 */
-			if (r.y >= root_window->wa.y)
+			if (r.g_y >= root_window->wa.g_y)
 			{
 				msg = (md && md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
 				wind->window_status |= XAWS_CHGICONIF;
@@ -1486,7 +1486,7 @@ iconify_action(int lock, struct xa_window *wind, const struct moose_data *md)
 			wind->t = r;
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   msg, 0, 0, wind->handle,
-				   r.x, r.y, r.w, r.h);
+				   r.g_x, r.g_y, r.g_w, r.g_h);
 		}
 	}
 	/* Redisplay.... */
@@ -1520,29 +1520,29 @@ click_hide(int lock, struct xa_window *wind, struct xa_widget *widg, const struc
 	return true;
 }
 static COMPASS
-compass(short d, short x, short y, RECT r)
+compass(short d, short x, short y, GRECT r)
 {
-	r.x += d;
-	r.y += d;
-	r.w -= d+d;
-	r.h -= d+d;
+	r.g_x += d;
+	r.g_y += d;
+	r.g_w -= d+d;
+	r.g_h -= d+d;
 
-	r.w += r.x - 1;
-	r.h += r.y - 1;
+	r.g_w += r.g_x - 1;
+	r.g_h += r.g_y - 1;
 
-	if (x < r.x)
+	if (x < r.g_x)
 	{
-		if (y < r.y)	return NW;
-		if (y > r.h)	return SW;
+		if (y < r.g_y)	return NW;
+		if (y > r.g_h)	return SW;
 		return W_;
 	}
-	if (x > r.w)
+	if (x > r.g_w)
 	{
-		if (y < r.y)	return NE;
-		if (y > r.h)	return SE;
+		if (y < r.g_y)	return NE;
+		if (y > r.g_h)	return SE;
 		return E_;
 	}
-	if (y < r.y)	return N_;
+	if (y < r.g_y)	return N_;
 	return S_;
 }
 
@@ -1553,7 +1553,7 @@ static bool
 size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, WidgetBehaviour next, const struct moose_data *md)
 {
 	bool move, size;
-	RECT r = wind->r, d;
+	GRECT r = wind->r, d;
 
 	if (   md->state == MBS_RIGHT /*widg->s == 2*/
 	    || wind->send_message == NULL
@@ -1563,7 +1563,7 @@ size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, Widge
 		short maxw, maxh;
 
 		if (wind->active_widgets & USE_MAX)
-			maxw = wind->max.w, maxh = wind->max.h;
+			maxw = wind->max.g_w, maxh = wind->max.g_h;
 		else
 			maxw = maxh = 0;
 
@@ -1575,17 +1575,17 @@ size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, Widge
 		rubber_box(wind->owner, xy,
 		           r,
 			   rect_dist_xy(wind->owner, md->x, md->y, &r, &d),
-			   wind->min.w,
-			   wind->min.h,
+			   wind->min.g_w,
+			   wind->min.g_h,
 			   maxw,
 			   maxh,
 			   &r);
 		if (!(wind->owner->status & CS_NO_SCRNLOCK))
 			unlock_screen(wind->owner->p);
 
-		size = r.w != wind->r.w || r.h != wind->r.h;
+		size = r.g_w != wind->r.g_w || r.g_h != wind->r.g_h;
 		if( !size )		/* size precedes */
-			move = r.x != wind->r.x || r.y != wind->r.y;
+			move = r.g_x != wind->r.g_x || r.g_y != wind->r.g_y;
 		else
 			move = false;
 
@@ -1654,21 +1654,21 @@ size_window(int lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, Widge
 				short maxw, maxh;
 
 				if (wind->active_widgets & USE_MAX)
-					maxw = wind->max.w, maxh = wind->max.h;
+					maxw = wind->max.g_w, maxh = wind->max.g_h;
 				else
 					maxw = maxh = 0;
 
 				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);
 				check_wh_cp(&r, xy,
-					    wind->min.w,
-					    wind->min.h,
+					    wind->min.g_w,
+					    wind->min.g_h,
 					    maxw,
 					    maxh);
 			}
 
-			size = r.w != wind->r.w || r.h != wind->r.h;
+			size = r.g_w != wind->r.g_w || r.g_h != wind->r.g_h;
 			if( !size && xy != N_ )		/* size precedes - move&size? */
-				move = r.x != wind->r.x || r.y != wind->r.y;
+				move = r.g_x != wind->r.g_x || r.g_y != wind->r.g_y;
 			else
 				move = false;
 
@@ -1951,9 +1951,9 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 	struct windlist_pu *pu = NULL;
 	struct xa_window *wind;
 
-	if( screen.r.w < 800 )
+	if( screen.r.g_w < 800 )
 	{
-		if( md->x > screen.r.w / 4 && md->x < screen.r.w * 3 / 4 )
+		if( md->x > screen.r.g_w / 4 && md->x < screen.r.g_w * 3 / 4 )
 			max_wn_len = 12;
 		else
 			max_wn_len = 32;
@@ -2602,14 +2602,14 @@ click_scroll(int lock, struct xa_window *wind, struct xa_widget *widg, const str
 			{
 				if( dir == 1 )
 				{
-					w = slider->ar.h;
-					x = slider->ar.y;
+					w = slider->ar.g_h;
+					x = slider->ar.g_y;
 					mp = my;
 				}
 				else
 				{
-					w = slider->ar.w;
-					x = slider->ar.x;
+					w = slider->ar.g_w;
+					x = slider->ar.g_x;
 					mp = mx;
 				}
 				pos = w * ((long)sl->position) / 1000L + x;
@@ -2647,9 +2647,9 @@ click_scroll(int lock, struct xa_window *wind, struct xa_widget *widg, const str
 				int offs;
 
 				if (widg->slider_type == XAW_VSLIDE)
-					offs = bound_sl(pix_to_sl(my - slider->ar.y - (sl->r.h >> 1), slider->r.h - sl->r.h));
+					offs = bound_sl(pix_to_sl(my - slider->ar.g_y - (sl->r.g_h >> 1), slider->r.g_h - sl->r.g_h));
 				else
-					offs = bound_sl(pix_to_sl(mx - slider->ar.x - (sl->r.w >> 1), slider->r.w - sl->r.w));
+					offs = bound_sl(pix_to_sl(mx - slider->ar.g_x - (sl->r.g_w >> 1), slider->r.g_w - sl->r.g_w));
 
 				if (offs != sl->position)
 				{
@@ -2748,15 +2748,15 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 		if (widget_active.m.cstate & MBS_RIGHT)
 		{
-			RECT s, b, d, r;
+			GRECT s, b, d, r;
 			rp_2_ap(wind, widg, &widg->ar);
 
 			b = s = widg->ar;
 
-			s.x += sl->r.x;
-			s.y += sl->r.y;
-			s.w = sl->r.w;
-			s.h = sl->r.h;
+			s.g_x += sl->r.g_x;
+			s.g_y += sl->r.g_y;
+			s.g_w = sl->r.g_w;
+			s.g_h = sl->r.g_h;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
@@ -2765,7 +2765,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
 
-			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
+			offs = bound_sl(pix_to_sl(r.g_y - widg->ar.g_y, widg->r.g_h - sl->r.g_h));
 
 			if (offs != sl->position)
 			{
@@ -2783,7 +2783,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 				/* Always have a nice consistent sizer when dragging a box */
 				xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 				rp_2_ap(wind, widg, &widg->ar);
-				widget_active.offs = md->y - (widg->ar.y + sl->r.y);
+				widget_active.offs = md->y - (widg->ar.g_y + sl->r.g_y);
 				widget_active.y = md->y;
 				y = md->sy;
 			}
@@ -2792,7 +2792,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 			if (widget_active.y != y)
 			{
-				offs = bound_sl(pix_to_sl((y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
+				offs = bound_sl(pix_to_sl((y - widget_active.offs) - widg->ar.g_y, widg->r.g_h - sl->r.g_h));
 
 				if (offs != sl->position && wind->send_message)
 				{
@@ -2820,16 +2820,16 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 		if (widget_active.m.cstate & MBS_RIGHT)
 		{
-			RECT s, b, d, r;
+			GRECT s, b, d, r;
 
 			rp_2_ap(wind, widg, &widg->ar);
 
 			b = s = widg->ar;
 
-			s.x += sl->r.x;
-			s.y += sl->r.y;
-			s.w = sl->r.w;
-			s.h = sl->r.h;
+			s.g_x += sl->r.g_x;
+			s.g_y += sl->r.g_y;
+			s.g_w = sl->r.g_w;
+			s.g_h = sl->r.g_h;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
@@ -2838,7 +2838,7 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
 
-			offs = bound_sl(pix_to_sl(r.x - widg->ar.x, widg->r.w - sl->r.w));
+			offs = bound_sl(pix_to_sl(r.g_x - widg->ar.g_x, widg->r.g_w - sl->r.g_w));
 
 			if (offs != sl->position)
 			{
@@ -2856,7 +2856,7 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 				/* Always have a nice consistent sizer when dragging a box */
 				xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 				rp_2_ap(wind, widg, &widg->ar);
-				widget_active.offs = md->x - (widg->ar.x + sl->r.x);
+				widget_active.offs = md->x - (widg->ar.g_x + sl->r.g_x);
 				widget_active.x = md->x;
 				x = md->sx;
 			}
@@ -2866,7 +2866,7 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 			if (widget_active.x != x)
 			{
 
-				offs = bound_sl(pix_to_sl((x - widget_active.offs) - widg->ar.x, widg->r.w - sl->r.w));
+				offs = bound_sl(pix_to_sl((x - widget_active.offs) - widg->ar.g_x, widg->r.g_w - sl->r.g_w));
 
 				if (offs != sl->position && wind->send_message)
 				{
@@ -2888,7 +2888,7 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
  * Generic Object Tree Widget display
  */
 bool
-display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+display_object_widget(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt = widg->stuff;
@@ -2947,59 +2947,59 @@ calc_work_area(struct xa_window *wind)
 
 	if (frame >= 0)
 	{
-		wind->wadelta.x += frame;
-		wind->wadelta.y += frame;
-		wind->wadelta.w += (frame << 1) + wind->x_shadow;
-		wind->wadelta.h += (frame << 1) + wind->y_shadow;
+		wind->wadelta.g_x += frame;
+		wind->wadelta.g_y += frame;
+		wind->wadelta.g_w += (frame << 1) + wind->x_shadow;
+		wind->wadelta.g_h += (frame << 1) + wind->y_shadow;
 
-		wind->outer.x += frame;
-		wind->outer.y += frame;
-		wind->outer.w -= (frame << 1) + wind->x_shadow;
-		wind->outer.h -= (frame << 1) + wind->y_shadow;
+		wind->outer.g_x += frame;
+		wind->outer.g_y += frame;
+		wind->outer.g_w -= (frame << 1) + wind->x_shadow;
+		wind->outer.g_h -= (frame << 1) + wind->y_shadow;
 	}
 	if (frame < 0)
 		frame = 0;
 
 	wind->inner = f2w(&wind->bd, &wind->outer, true);
 
-	wind->ba.x = wind->r.x + frame;
-	wind->ba.y = wind->r.y + frame;
+	wind->ba.g_x = wind->r.g_x + frame;
+	wind->ba.g_y = wind->r.g_y + frame;
 	frame <<= 1;
-	wind->ba.w = wind->r.w - frame;
-	wind->ba.h = wind->r.h - frame;
+	wind->ba.g_w = wind->r.g_w - frame;
+	wind->ba.g_h = wind->r.g_h - frame;
 
 	rp_2_ap_row(wind);
 
-	if (wind->inner.y == wind->outer.y && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if (wind->inner.g_y == wind->outer.g_y && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
-		wind->wadelta.y += t_margin;
-		wind->wadelta.h += t_margin;
+		wind->wadelta.g_y += t_margin;
+		wind->wadelta.g_h += t_margin;
 		wa_borders |= WAB_TOP;
 	}
 
-	if (wind->inner.x == wind->outer.x && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if (wind->inner.g_x == wind->outer.g_x && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
-		wind->wadelta.x += l_margin;
-		wind->wadelta.w += l_margin;
+		wind->wadelta.g_x += l_margin;
+		wind->wadelta.g_w += l_margin;
 		wa_borders |= WAB_LEFT;
 	}
 
-	if ((wind->inner.y + wind->inner.h) == (wind->outer.y + wind->outer.h) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if ((wind->inner.g_y + wind->inner.g_h) == (wind->outer.g_y + wind->outer.g_h) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
-		wind->wadelta.h += b_margin;
+		wind->wadelta.g_h += b_margin;
 		wa_borders |= WAB_BOTTOM;
 	}
 
-	if ((wind->inner.x + wind->inner.w) == (wind->outer.x + wind->outer.w) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if ((wind->inner.g_x + wind->inner.g_w) == (wind->outer.g_x + wind->outer.g_w) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
-		wind->wadelta.w += r_margin;
+		wind->wadelta.g_w += r_margin;
 		wa_borders |= WAB_RIGHT;
 	}
 
 	if (wind->frame >= 0 && !wind->thinwork)
 	{
-		wind->wadelta.x += 2, wind->wadelta.y += 2;
-		wind->wadelta.w += 4, wind->wadelta.h += 4;
+		wind->wadelta.g_x += 2, wind->wadelta.g_y += 2;
+		wind->wadelta.g_w += 4, wind->wadelta.g_h += 4;
 	}
 
 	wind->wa_borders = wa_borders;
@@ -3012,8 +3012,8 @@ calc_work_area(struct xa_window *wind)
 
 		rp_2_ap(wind, widg, &widg->ar);
 
-		wind->delta.y += widg->ar.h;
-		wind->delta.h += widg->ar.h;
+		wind->delta.g_y += widg->ar.g_h;
+		wind->delta.g_h += widg->ar.g_h;
 		wind->rwa = f2w(&wind->delta, &wind->rc, true);
 	}
 	else
@@ -3026,10 +3026,10 @@ calc_work_area(struct xa_window *wind)
 		wind->outer = wind->r;
 		if ((frame = wind->frame) >= 0)
 		{
-			wind->outer.x += frame;
-			wind->outer.y += frame;
-			wind->outer.w -= (frame << 1) + wind->x_shadow;
-			wind->outer.h -= (frame << 1) + wind->y_shadow;
+			wind->outer.g_x += frame;
+			wind->outer.g_y += frame;
+			wind->outer.g_w -= (frame << 1) + wind->x_shadow;
+			wind->outer.g_h -= (frame << 1) + wind->y_shadow;
 		}
 		wind->inner = f2w(&wind->rbd, &wind->outer, true);
 	}
@@ -3037,7 +3037,7 @@ calc_work_area(struct xa_window *wind)
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
 	 */
-	DIAG((D_widg, wind->owner, "workarea %d: %d/%d,%d/%d", wind->handle, wind->wa.x, wind->wa.y, wind->wa.w, wind->wa.h));
+	DIAG((D_widg, wind->owner, "workarea %d: %d/%d,%d/%d", wind->handle, wind->wa.g_x, wind->wa.g_y, wind->wa.g_w, wind->wa.g_h));
 }
 
 /*
@@ -3266,16 +3266,16 @@ reloc_widgets_in_row(struct xa_widget_row *row)
 		{
 			if (widg->m.r.pos_in_row & R_BOTTOM)
 			{
-				widg->r.y = row->rxy + widg->r.h + rxy;
-				rxy += widg->r.h;
+				widg->r.g_y = row->rxy + widg->r.g_h + rxy;
+				rxy += widg->r.g_h;
 			}
 			else
 			{
-				widg->r.y = row->r.y + lxy;
-				lxy += widg->r.h;
+				widg->r.g_y = row->r.g_y + lxy;
+				lxy += widg->r.g_h;
 			}
-			widg->r.x = row->r.x;
-			widg->r.w = row->r.w;
+			widg->r.g_x = row->r.g_x;
+			widg->r.g_w = row->r.g_w;
 			widg = widg->next_in_row;
 		}
 	}
@@ -3286,16 +3286,16 @@ reloc_widgets_in_row(struct xa_widget_row *row)
 		{
 			if (widg->m.r.pos_in_row & R_RIGHT)
 			{
-				widg->r.x = row->rxy + widg->r.w + rxy;
-				rxy += widg->r.w;
+				widg->r.g_x = row->rxy + widg->r.g_w + rxy;
+				rxy += widg->r.g_w;
 			}
 			else
 			{
-				widg->r.x = row->r.x + lxy;
-				lxy += widg->r.w;
+				widg->r.g_x = row->r.g_x + lxy;
+				lxy += widg->r.g_w;
 			}
-			widg->r.y = row->r.y;
-			widg->r.h = row->r.h;
+			widg->r.g_y = row->r.g_y;
+			widg->r.g_h = row->r.g_h;
 			widg = widg->next_in_row;
 		}
 	}
@@ -3306,7 +3306,7 @@ rp_2_ap_row(struct xa_window *wind)
 {
 	struct xa_widget_row *row = wind->widg_rows;
 	struct xa_widget *widg;
-	RECT r;
+	GRECT r;
 	short v, x2, y2, l;
 
 	r = wind->r;
@@ -3315,15 +3315,15 @@ rp_2_ap_row(struct xa_window *wind)
 	{
 		short frame = wind->frame;
 
-		r.x += frame;
-		r.y += frame;
+		r.g_x += frame;
+		r.g_y += frame;
 		frame <<= 1;
-		r.w -= (frame + wind->x_shadow);
-		r.h -= (frame + wind->y_shadow);
+		r.g_w -= (frame + wind->x_shadow);
+		r.g_h -= (frame + wind->y_shadow);
 	}
 
-	x2 = r.x + r.w;
-	y2 = r.y + r.h;
+	x2 = r.g_x + r.g_w;
+	y2 = r.g_y + r.g_h;
 
 	while (row)
 	{
@@ -3342,36 +3342,36 @@ rp_2_ap_row(struct xa_window *wind)
 					{
 						case 0:
 						{
-							widg->ar.x = r.x + widg->r.x;
-							widg->ar.y = r.y + widg->r.y;
+							widg->ar.g_x = r.g_x + widg->r.g_x;
+							widg->ar.g_y = r.g_y + widg->r.g_y;
 							break;
 						}
 						case R_RIGHT:
 						{
-							widg->ar.x = x2 - widg->r.x;
-							widg->ar.y = r.y + widg->r.y;
-							if (l > widg->ar.x)
-								l = widg->ar.x;
+							widg->ar.g_x = x2 - widg->r.g_x;
+							widg->ar.g_y = r.g_y + widg->r.g_y;
+							if (l > widg->ar.g_x)
+								l = widg->ar.g_x;
 							break;
 						}
 						case R_BOTTOM:
 						{
-							widg->ar.x = r.x + widg->r.x;
-							widg->ar.y = y2 - widg->r.y;
+							widg->ar.g_x = r.g_x + widg->r.g_x;
+							widg->ar.g_y = y2 - widg->r.g_y;
 							break;
 						}
 						case (R_BOTTOM|R_RIGHT):
 						{
-							widg->ar.x = x2 - widg->r.x;
-							widg->ar.y = y2 - widg->r.y;
-							if (l > widg->ar.x)
-								l = widg->ar.x;
+							widg->ar.g_x = x2 - widg->r.g_x;
+							widg->ar.g_y = y2 - widg->r.g_y;
+							if (l > widg->ar.g_x)
+								l = widg->ar.g_x;
 							break;
 						}
 						default:;
 					}
-					widg->ar.w = widg->r.w;
-					widg->ar.h = widg->r.h;
+					widg->ar.g_w = widg->r.g_w;
+					widg->ar.g_h = widg->r.g_h;
 					widg = widg->next_in_row;
 				}
 				if (v)
@@ -3381,15 +3381,15 @@ rp_2_ap_row(struct xa_window *wind)
 					{
 						if (widg->m.r.pos_in_row & R_VARIABLE)
 						{
-							widg->ar.w = widg->r.w = (l - widg->ar.x);
+							widg->ar.g_w = widg->r.g_w = (l - widg->ar.g_x);
 						}
 						if (widg->m.r.xaw_idx == XAW_MENU)
 						{
 							XA_TREE *wt = widg->stuff;
 							if (wt && wt->tree)
 							{
-								wt->tree->ob_x = widg->ar.x;
-								wt->tree->ob_y = widg->ar.y;
+								wt->tree->ob_x = widg->ar.g_x;
+								wt->tree->ob_y = widg->ar.g_y;
 								if (!wt->zen)
 								{
 									wt->tree->ob_x += wt->ox;
@@ -3413,36 +3413,36 @@ rp_2_ap_row(struct xa_window *wind)
 					{
 						case 0:
 						{
-							widg->ar.x = r.x + widg->r.x;
-							widg->ar.y = r.y + widg->r.y;
+							widg->ar.g_x = r.g_x + widg->r.g_x;
+							widg->ar.g_y = r.g_y + widg->r.g_y;
 							break;
 						}
 						case R_RIGHT:
 						{
-							widg->ar.x = x2 - widg->r.x;
-							widg->ar.y = r.y + widg->r.y;
+							widg->ar.g_x = x2 - widg->r.g_x;
+							widg->ar.g_y = r.g_y + widg->r.g_y;
 							break;
 						}
 						case R_BOTTOM:
 						{
-							widg->ar.x = r.x + widg->r.x;
-							widg->ar.y = y2 - widg->r.y;
-							if (l > widg->ar.y)
-								l = widg->ar.y;
+							widg->ar.g_x = r.g_x + widg->r.g_x;
+							widg->ar.g_y = y2 - widg->r.g_y;
+							if (l > widg->ar.g_y)
+								l = widg->ar.g_y;
 							break;
 						}
 						case (R_BOTTOM|R_RIGHT):
 						{
-							widg->ar.x = x2 - widg->r.x;
-							widg->ar.y = y2 - widg->r.y;
-							if (l > widg->ar.y)
-								l = widg->ar.y;
+							widg->ar.g_x = x2 - widg->r.g_x;
+							widg->ar.g_y = y2 - widg->r.g_y;
+							if (l > widg->ar.g_y)
+								l = widg->ar.g_y;
 							break;
 						}
 						default:;
 					}
-					widg->ar.w = widg->r.w;
-					widg->ar.h = widg->r.h;
+					widg->ar.g_w = widg->r.g_w;
+					widg->ar.g_h = widg->r.g_h;
 					widg = widg->next_in_row;
 				}
 				if (v)
@@ -3452,15 +3452,15 @@ rp_2_ap_row(struct xa_window *wind)
 					{
 						if (widg->m.r.pos_in_row & R_VARIABLE)
 						{
-							widg->ar.h = widg->r.h = (l - widg->ar.y);
+							widg->ar.g_h = widg->r.g_h = (l - widg->ar.g_y);
 						}
 						if (widg->m.r.xaw_idx == XAW_MENU)
 						{
 							XA_TREE *wt = widg->stuff;
 							if (wt && wt->tree)
 							{
-								wt->tree->ob_x = widg->ar.x;
-								wt->tree->ob_y = widg->ar.y;
+								wt->tree->ob_x = widg->ar.g_x;
+								wt->tree->ob_y = widg->ar.g_y;
 								if (!wt->zen)
 								{
 									wt->tree->ob_x += wt->ox;
@@ -3479,7 +3479,7 @@ rp_2_ap_row(struct xa_window *wind)
 
 
 static void
-position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
+position_widget(struct xa_window *wind, struct xa_widget *widg, GRECT *offsets)
 {
 	struct xa_widget_row *rows = wind->widg_rows;
 	struct xa_widget_methods *m = &widg->m;
@@ -3529,7 +3529,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 			 */
 			rows->start = widg;
 			widg->next_in_row = NULL;
-			rows->r.y = rows->r.x = rows->r.w = rows->r.h = rows->rxy = 0;
+			rows->r.g_y = rows->r.g_x = rows->r.g_w = rows->r.g_h = rows->rxy = 0;
 
 			if (!orient)	/* horizontal */
 			{
@@ -3538,23 +3538,23 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 					case XAR_START:
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
-							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+							rows->r.g_y = nxt_r->r.g_y + nxt_r->r.g_h;
 						else
 						{
-							rows->r.y = offsets->y;
+							rows->r.g_y = offsets->g_y;
 #if 0
-							wind->bd.y -= offsets->y;
-							wind->bd.h -= offsets->h;
+							wind->bd.g_y -= offsets->g_y;
+							wind->bd.g_h -= offsets->g_h;
 #endif
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
-							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+							rows->r.g_x = nxt_r->r.g_x + nxt_r->r.g_w;
 						else
-							rows->r.x = offsets->x;
+							rows->r.g_x = offsets->g_x;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_END))))
-							rows->rxy = nxt_r->r.x;
+							rows->rxy = nxt_r->r.g_x;
 						else
-							rows->rxy = offsets->w;
+							rows->rxy = offsets->g_w;
 
 						wind->ext_borders |= T_BORDER;
 						break;
@@ -3562,19 +3562,19 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 					case XAR_END:
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_END))))
-							rows->r.y = nxt_r->r.y;
+							rows->r.g_y = nxt_r->r.g_y;
 						else
 						{
-							rows->r.y = offsets->h;
+							rows->r.g_y = offsets->g_h;
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
-							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+							rows->r.g_x = nxt_r->r.g_x + nxt_r->r.g_w;
 						else
-							rows->r.x = offsets->w;
+							rows->r.g_x = offsets->g_w;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT|XAR_END))))
-							rows->rxy = nxt_r->r.x;
+							rows->rxy = nxt_r->r.g_x;
 						else
-							rows->rxy = offsets->w;
+							rows->rxy = offsets->g_w;
 						wind->ext_borders |= B_BORDER;
 						break;
 					}
@@ -3588,42 +3588,42 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 					case XAR_START:
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
-							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+							rows->r.g_x = nxt_r->r.g_x + nxt_r->r.g_w;
 						else
 						{
-							rows->r.x = offsets->x;
+							rows->r.g_x = offsets->g_x;
 #if 0
-							wind->bd.x -= offsets->x;
-							wind->bd.w -= offsets->w;
+							wind->bd.g_x -= offsets->g_x;
+							wind->bd.g_w -= offsets->g_w;
 #endif
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
-							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+							rows->r.g_y = nxt_r->r.g_y + nxt_r->r.g_h;
 						else
-							rows->r.y = offsets->y;
+							rows->r.g_y = offsets->g_y;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), XAR_END)))
-							rows->rxy = nxt_r->r.y;
+							rows->rxy = nxt_r->r.g_y;
 						else
-							rows->rxy = offsets->h;
+							rows->rxy = offsets->g_h;
 						wind->ext_borders |= L_BORDER;
 						break;
 					}
 					case XAR_END:
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_END))))
-							rows->r.x = nxt_r->r.x;
+							rows->r.g_x = nxt_r->r.g_x;
 						else
 						{
-							rows->r.x = offsets->w;
+							rows->r.g_x = offsets->g_w;
 						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
-							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+							rows->r.g_y = nxt_r->r.g_y + nxt_r->r.g_h;
 						else
-							rows->r.y = offsets->y;
+							rows->r.g_y = offsets->g_y;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), XAR_END)))
-							rows->rxy = nxt_r->r.y;
+							rows->rxy = nxt_r->r.g_y;
 						else
-							rows->rxy = offsets->h;
+							rows->rxy = offsets->g_h;
 						wind->ext_borders |= R_BORDER;
 						break;
 					}
@@ -3642,8 +3642,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 		 */
 		else
 		{
-			widg->r.w = screen.c_max_w;
-			widg->r.h = screen.c_max_h;
+			widg->r.g_w = screen.c_max_w;
+			widg->r.g_h = screen.c_max_h;
 		}
 		/*
 		 * If Widget height is larger than largest one in this row,
@@ -3655,9 +3655,9 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 			if (placement == XAR_END)
 				m->r.pos_in_row |= R_BOTTOM;
 
-			if ((diff = widg->r.h - rows->r.h) > 0)
+			if ((diff = widg->r.g_h - rows->r.g_h) > 0)
 			{
-				rows->r.h = widg->r.h;
+				rows->r.g_h = widg->r.g_h;
 
 				switch (placement)
 				{
@@ -3666,27 +3666,27 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT|XAR_PM), XAR_START)))
 						{
-							nxt_r->r.y += diff;
+							nxt_r->r.g_y += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, XAR_VERT)))
 						{
-							nxt_r->r.y += diff;
+							nxt_r->r.g_y += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
-						wind->bd.y += diff;
-						wind->bd.h += diff;
+						wind->bd.g_y += diff;
+						wind->bd.g_h += diff;
 
 						break;
 					}
 					case XAR_END:
 					{
-						rows->r.y += diff;
+						rows->r.g_y += diff;
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), XAR_END)))
 						{
-							nxt_r->r.y += diff;
+							nxt_r->r.g_y += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
@@ -3695,13 +3695,13 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 							nxt_r->rxy += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
-						wind->bd.h += diff;
+						wind->bd.g_h += diff;
 						break;
 					}
 				}
 			}
 			else
-				widg->r.h = rows->r.h;
+				widg->r.g_h = rows->r.g_h;
 
 		}
 		else
@@ -3715,9 +3715,9 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 
 			m->r.pos_in_row = rt;
 
-			if ((diff = widg->r.w - rows->r.w) > 0)
+			if ((diff = widg->r.g_w - rows->r.g_w) > 0)
 			{
-				rows->r.w = widg->r.w;
+				rows->r.g_w = widg->r.g_w;
 				switch (placement)
 				{
 					case XAR_START:
@@ -3725,26 +3725,26 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, 0)))
 						{
-							nxt_r->r.x += diff;
+							nxt_r->r.g_x += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START))))
 						{
-							nxt_r->r.x += diff;
+							nxt_r->r.g_x += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
-						wind->bd.x += diff;
-						wind->bd.w += diff;
+						wind->bd.g_x += diff;
+						wind->bd.g_w += diff;
 						break;
 					}
 					case XAR_END:
 					{
-						rows->r.x += diff;
+						rows->r.g_x += diff;
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END))))
 						{
-							nxt_r->r.x += diff;
+							nxt_r->r.g_x += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
@@ -3753,13 +3753,13 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 							nxt_r->rxy += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
-						wind->bd.w += diff;
+						wind->bd.g_w += diff;
 						break;
 					}
 				}
 			}
 			else
-				widg->r.w = rows->r.w;
+				widg->r.g_w = rows->r.g_w;
 		}
 		reloc_widgets_in_row(rows);
 	}
@@ -3767,7 +3767,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 static XA_WIDGET *
 make_widget(struct xa_window *wind,
 	    struct xa_widget_methods *m,
-	    struct xa_client *owner, RECT *offsets)
+	    struct xa_client *owner, GRECT *offsets)
 {
 	XA_WIDGET *widg = get_widget(wind, m->r.xaw_idx);
 
@@ -3835,7 +3835,7 @@ create_widg_layout(struct xa_window *wind)
 
 			xa_rows->start = NULL;
 			xa_rows->rownr = rownr++;
-			xa_rows->r = (RECT){0, 0, 0, 0};
+			xa_rows->r = (GRECT){0, 0, 0, 0};
 			xa_rows->rxy = 0;
 
 			rows++;
@@ -3888,7 +3888,7 @@ static struct xa_widget_methods def_methods[] =
 };
 
 static void
-init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_idx, RECT *offsets)
+init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_idx, GRECT *offsets)
 {
 	struct xa_widget *w;
 	XA_SLIDER_WIDGET *sl;
@@ -3965,7 +3965,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		while (rows)
 		{
 			rows->start = NULL;
-			rows->r = (RECT){0, 0, 0, 0};
+			rows->r = (GRECT){0, 0, 0, 0};
 			rows = rows->next;
 		}
 	}
@@ -3975,22 +3975,22 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		struct xa_widget *widg;
 		short xaw_idx;
 		struct xa_widget_methods dm;
-		RECT *offsets;
-		RECT r_ofs;
+		GRECT *offsets;
+		GRECT r_ofs;
 
 		wind->ext_borders = 0;
 		if (wind->frame >= 0 && (wind->draw_canvas = theme->draw_canvas))
 		{
 			offsets = &theme->outer;
-			wind->bd.x = offsets->x + theme->inner.x;
-			wind->bd.y = offsets->y + theme->inner.y;
-			wind->bd.w = offsets->x + offsets->w + theme->inner.x + theme->inner.w;
-			wind->bd.h = offsets->y + offsets->h + theme->inner.y + theme->inner.h;
+			wind->bd.g_x = offsets->g_x + theme->inner.g_x;
+			wind->bd.g_y = offsets->g_y + theme->inner.g_y;
+			wind->bd.g_w = offsets->g_x + offsets->g_w + theme->inner.g_x + theme->inner.g_w;
+			wind->bd.g_h = offsets->g_y + offsets->g_h + theme->inner.g_y + theme->inner.g_h;
 			wind->rbd = wind->bd;
 		}
 		else
 		{
-			wind->bd = wind->rbd = r_ofs = (RECT){0,0,0,0};
+			wind->bd = wind->rbd = r_ofs = (GRECT){0,0,0,0};
 			wind->draw_canvas = NULL;
 			offsets = &r_ofs;
 		}
@@ -4116,7 +4116,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 }
 
 static bool
-display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+display_toolbar(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	XA_TREE *wt = widg->stuff;
 
@@ -4140,7 +4140,7 @@ redraw_toolbar(int lock, struct xa_window *wind, short item)
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_rect_list *rl;
-	RECT r;
+	GRECT r;
 
 	hidem();
 	widg->start = item;
@@ -4161,16 +4161,16 @@ redraw_toolbar(int lock, struct xa_window *wind, short item)
 }
 
 void
-set_toolbar_coords(struct xa_window *wind, const RECT *r)
+set_toolbar_coords(struct xa_window *wind, const GRECT *r)
 {
 	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 
-	widg->r.x = wind->wa.x - wind->r.x - (wind->frame <= 0 ? 0 : wind->frame);
-	widg->r.y = wind->wa.y - wind->r.y - (wind->frame <= 0 ? 0 : wind->frame);
+	widg->r.g_x = wind->wa.g_x - wind->r.g_x - (wind->frame <= 0 ? 0 : wind->frame);
+	widg->r.g_y = wind->wa.g_y - wind->r.g_y - (wind->frame <= 0 ? 0 : wind->frame);
 	if (r)
 	{
-		widg->r.w = r->w;
-		widg->r.h = r->h;
+		widg->r.g_w = r->g_w;
+		widg->r.g_h = r->g_h;
 	}
 	else
 	{
@@ -4179,13 +4179,13 @@ set_toolbar_coords(struct xa_window *wind, const RECT *r)
 		if( wt && (wind->dial & created_for_FMD_START))
 		{
 			/* use wt-coords for dialog */
-			widg->r.w = wt->tree->ob_width;
-			widg->r.h = wt->tree->ob_height;
+			widg->r.g_w = wt->tree->ob_width;
+			widg->r.g_h = wt->tree->ob_height;
 		}
 		else
 		{
-			widg->r.w = wind->wa.w;
-			widg->r.h = wind->wa.h;
+			widg->r.g_w = wind->wa.g_w;
+			widg->r.g_h = wind->wa.g_h;
 		}
 	}
 }
@@ -4304,12 +4304,12 @@ set_toolbar_widget(int lock,
 		short properties,
 		short flags,
 		const struct toolbar_handlers *th,
-		const RECT *r)
+		const GRECT *r)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-	RECT or,wr;
+	GRECT or,wr;
 
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
 		wind->handle, wind->owner->name, (unsigned long)obtree, edobj.item));
@@ -4397,7 +4397,7 @@ set_toolbar_widget(int lock,
 	if ((flags & STW_SWC))
 	{
 		or = w2f(&wind->wadelta, &or, false);
-		move_window(lock, wind, true, -1, or.x, or.y, or.w, or.h);
+		move_window(lock, wind, true, -1, or.g_x, or.g_y, or.g_w, or.g_h);
 	}
 	set_toolbar_coords(wind, r);
 
@@ -4450,8 +4450,8 @@ is_H_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 {
 	/* but are we in the slider itself, the slidable one :-) */
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	short x  = widg->ar.x + sl->r.x;
-	short x2 = x + sl->r.w;
+	short x  = widg->ar.g_x + sl->r.g_x;
+	short x2 = x + sl->r.g_w;
 
 	if (click > x && click < x2)
 		return 0;
@@ -4482,8 +4482,8 @@ static inline int
 is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	short y  = widg->ar.y + sl->r.y;
-	short y2 = y + sl->r.h;
+	short y  = widg->ar.g_y + sl->r.g_y;
+	short y2 = y + sl->r.g_h;
 
 	if (click > y && click < y2)
 		return 0;
@@ -4536,7 +4536,7 @@ checkif_do_widgets(int lock, struct xa_window *w, short x, short y, XA_WIDGET **
 		{
 			if (!is_page(f))
 			{
-				RECT r;
+				GRECT r;
 
 				widg = w->widgets + f;
 
@@ -4590,7 +4590,7 @@ do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_
 		/* HR 060501: just skip page arrows. These are embedded in the slider background together with the slider itself. */
 		if (!is_page(f))
 		{
-			RECT r;
+			GRECT r;
 
 			widg = w->widgets + f;
 
@@ -4615,8 +4615,8 @@ do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_
 					bool rtn = false;
 					int ax = 0;
 
-					widg->x = md->x - r.x; 		/* Mark where the click occurred (relative to the widget) */
-					widg->y = md->y - r.y;
+					widg->x = md->x - r.g_x; 		/* Mark where the click occurred (relative to the widget) */
+					widg->y = md->y - r.g_y;
 
 	/* In this version page arrows are separate widgets,
 		they are overlapped by the slider widget, hence this kind of a hack.
@@ -4638,8 +4638,8 @@ do_widgets(int lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_
 					if (ax)
 					{
 						widg = w->widgets + ax;
-						widg->x = md->x - r.x; 			/* Mark where the click occurred (relative to the widget) */
-						widg->y = md->y - r.y;
+						widg->x = md->x - r.g_x; 			/* Mark where the click occurred (relative to the widget) */
+						widg->y = md->y - r.g_y;
 						if (widg->m.drag) rtn = widg->m.drag(lock, w, widg, md);	/* we know there is only 1 behaviour for these arrows */
 						else		  rtn = true;
 					}
@@ -4840,7 +4840,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 	struct xa_client *wo;
 	WINDOW_STATUS status = wind->window_status;
 	XA_WIDGET *widg;
-	RECT r;
+	GRECT r;
 
 	if( !wind )
 	{

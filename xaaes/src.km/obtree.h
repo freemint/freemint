@@ -46,7 +46,7 @@ char *			object_get_string(OBJECT *ob);
 
 bool			obj_is_transparent(struct widget_tree *wt, OBJECT *ob, bool progdef_is_transparent);
 // short			object_thickness(OBJECT *ob);
-// void			object_offsets(OBJECT *ob, RECT *r);
+// void			object_offsets(OBJECT *ob, GRECT *r);
 void			object_spec_wh(OBJECT *ob, short *w, short *h);
 
 
@@ -104,10 +104,10 @@ void			ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp);
 struct xa_aes_object 	ob_find_shortcut(OBJECT *tree, ushort nk, short stop_type);
 
 short	ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my);
-// void	ob_rectangle(OBJECT *obtree, struct xa_aes_object obj, RECT *c);
-// void	ob_area(OBJECT *obtree, struct xa_aes_object obj, RECT *c);
-void	obj_border_diff(struct widget_tree *wt, struct xa_aes_object obj1, struct xa_aes_object obj2, RECT *r);
-void	ob_spec_xywh(OBJECT *obtree, short obj, RECT *r);
+// void	ob_rectangle(OBJECT *obtree, struct xa_aes_object obj, GRECT *c);
+// void	ob_area(OBJECT *obtree, struct xa_aes_object obj, GRECT *c);
+void	obj_border_diff(struct widget_tree *wt, struct xa_aes_object obj1, struct xa_aes_object obj2, GRECT *r);
+void	ob_spec_xywh(OBJECT *obtree, short obj, GRECT *r);
 // short	ob_find(OBJECT *obtree, short object, short depth, short mx, short my);
 
 bool	obtree_is_menu(OBJECT *tree);
@@ -122,17 +122,17 @@ void	obj_set_g_popup(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf);
 void	obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt);
 void	obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s);
 short	obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my);
-void	obj_rectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
-void	obj_orectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
-bool	obj_area(XA_TREE *wt, struct xa_aes_object object, RECT *c);
-struct xa_aes_object	obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, RECT *c);
+void	obj_rectangle(XA_TREE *wt, struct xa_aes_object object, GRECT *c);
+void	obj_orectangle(XA_TREE *wt, struct xa_aes_object object, GRECT *c);
+bool	obj_area(XA_TREE *wt, struct xa_aes_object object, GRECT *c);
+struct xa_aes_object	obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, GRECT *c);
 
-void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
-void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const RECT *clip, struct xa_rect_list *r, short flags);
-short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, struct xa_aes_object obj, short keycode, short pos, char *string, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, struct xa_aes_object *ret_obj);
-void _cdecl obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
+void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, short state, short flags, bool redraw, const GRECT *clip, struct xa_rect_list *r, short dflags);
+void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const GRECT *clip, struct xa_rect_list *r, short flags);
+short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, struct xa_aes_object obj, short keycode, short pos, char *string, bool redraw, const GRECT *clip, struct xa_rect_list *rl, short *ret_pos, struct xa_aes_object *ret_obj);
+void _cdecl obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, bool redraw, const GRECT *clip, struct xa_rect_list *rl);
 struct xa_aes_object _cdecl obj_get_radio_button(XA_TREE *wt, struct xa_aes_object parent, short state);
-short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
+short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, short in_state, short out_state, const GRECT *clip, struct xa_rect_list *rl);
 
 int copy_string_to_clipbrd( char *text );
 

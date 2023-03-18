@@ -273,7 +273,7 @@ sizeof_bitblk(BITBLK *bb)
 static long
 sizeof_iconblk(ICONBLK *ib)
 {
-	long size = 2L * calc_back((RECT *)&ib->ib_xicon, 1);
+	long size = 2L * calc_back((GRECT *)&ib->ib_xicon, 1);
 
 	size += sizeof(ICONBLK);
 	if (ib->ib_ptext)
@@ -292,7 +292,7 @@ sizeof_ciconblk(CICONBLK *cb, CICON *i)
 
 	size = sizeof(CICONBLK);
 
-	plen = calc_back((RECT *)&ib->ib_xicon, 1);
+	plen = calc_back((GRECT *)&ib->ib_xicon, 1);
 
 	if (ib->ib_pdata)
 		size += plen;
@@ -1130,7 +1130,7 @@ object_thickness(OBJECT *ob)
  * Return offsets to add to object dimensions to account for borders, etc.
  */
 void
-object_offsets(OBJECT *ob, RECT *c)
+object_offsets(OBJECT *ob, GRECT *c)
 {
 	short dx = 0, dy = 0, dw = 0, dh = 0, db = 0;
 	short thick;
@@ -1166,10 +1166,10 @@ object_offsets(OBJECT *ob, RECT *c)
 			dh += 2 * thick;
 		}
 	}
-	c->x = dx;
-	c->y = dy;
-	c->w = dw;
-	c->h = dh;
+	c->g_x = dx;
+	c->g_y = dy;
+	c->g_w = dw;
+	c->g_h = dh;
 }
 #endif
 
@@ -1782,7 +1782,7 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 	OBJECT *tree = wt->tree, *this;
 	struct oblink_spec *oblink = NULL;
 	struct xa_aes_object curr, next, stop, co;
-	RECT r;
+	GRECT r;
 
 	cx = cy = ax = 32000;
 
@@ -1813,17 +1813,17 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 
 	if ((flags & OBFIND_FIRST))
 	{
-		r.x = r.y = -1;
-		r.w = r.h = 1;
+		r.g_x = r.g_y = -1;
+		r.g_w = r.g_h = 1;
 		flags &= ~(OBFIND_HOR|OBFIND_DOWN|OBFIND_NOWRAP);
 		flags |= OBFIND_DOWN;
 	}
 	else if ((flags & OBFIND_LAST))
 	{
 		obj_rectangle(wt, parent, &r);
-		r.x += r.w;
-		r.y += r.h;
-		r.w = r.h = 1;
+		r.g_x += r.g_w;
+		r.g_y += r.g_h;
+		r.g_w = r.g_h = 1;
 		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN|OBFIND_NOWRAP);
 		flags |= OBFIND_HOR|OBFIND_UP;
 	}
@@ -1883,13 +1883,13 @@ uplink:
 			{
 				if (!(flags & OBFIND_DOWN))
 				{
-					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
+					if ( ((x <= r.g_x && (x + w) > r.g_x) || (x > r.g_x && x < (r.g_x + r.g_w))))
 					{
-						if ((y + h) <= r.y)
+						if ((y + h) <= r.g_y)
 						{
-							if (!cf || (r.y - y) < cy)
+							if (!cf || (r.g_y - y) < cy)
 							{
-								cy = r.y - y;
+								cy = r.g_y - y;
 								co = curr;
 								cf = 1;
 							}
@@ -1897,16 +1897,16 @@ uplink:
 					}
 					if (!cf)
 					{
-						if ((y + h) < r.y)
+						if ((y + h) < r.g_y)
 						{
-							cx = x - r.x;
+							cx = x - r.g_x;
 							if (cx < 0)
 								cx = -cx;
 
-							if (cx < ax || (cx == ax && (r.y - y) < cy))
+							if (cx < ax || (cx == ax && (r.g_y - y) < cy))
 							{
 								ax = cx;
-								cy = r.y - y;
+								cy = r.g_y - y;
 								co = curr;
 							}
 						}
@@ -1914,13 +1914,13 @@ uplink:
 				}
 				else	/*(flags & OBFIND_DOWN)*/
 				{
-					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
+					if ( ((x <= r.g_x && (x + w) > r.g_x) || (x > r.g_x && x < (r.g_x + r.g_w))))
 					{
-						if (y >= (r.y + r.h))
+						if (y >= (r.g_y + r.g_h))
 						{
-							if (!cf || (y - r.y) < cy)
+							if (!cf || (y - r.g_y) < cy)
 							{
-								cy = y - r.y;
+								cy = y - r.g_y;
 								co = curr;
 								cf = 1;
 							}
@@ -1928,21 +1928,21 @@ uplink:
 					}
 					if (!cf)
 					{
-						if (y >= (r.y + r.h))
+						if (y >= (r.g_y + r.g_h))
 						{
-							if ((y - r.y) == cy)
+							if ((y - r.g_y) == cy)
 							{
 								if (x < ax)
 								{
 									ax = x;
-									cy = y - r.y;
+									cy = y - r.g_y;
 									co = curr;
 								}
 							}
-							else if ((y - r.y) < cy)
+							else if ((y - r.g_y) < cy)
 							{
 								ax = x;
-								cy = y - r.y;
+								cy = y - r.g_y;
 								co = curr;
 							}
 						}
@@ -1954,13 +1954,13 @@ uplink:
 			{
 				if (!(flags & OBFIND_DOWN))
 				{
-					if ( (y-h/2 <= r.y && y + h > (r.y + r.h/2)) || (y > r.y && (y + h/2) <= (r.y + r.h)) )
+					if ( (y-h/2 <= r.g_y && y + h > (r.g_y + r.g_h/2)) || (y > r.g_y && (y + h/2) <= (r.g_y + r.g_h)) )
 					{
-						if ((x < r.x))
+						if ((x < r.g_x))
 						{
-							if (!cf || (r.x - x) < cx)
+							if (!cf || (r.g_x - x) < cx)
 							{
-								cx = r.x - x;
+								cx = r.g_x - x;
 								co = curr;
 								cf = 1;
 							}
@@ -1968,12 +1968,12 @@ uplink:
 					}
 					if (!cf)
 					{
-						if (y < r.y)
+						if (y < r.g_y)
 						{
-							if ((r.y - y) <= cy + SY_TOL && y + h/2 < r.y )
+							if ((r.g_y - y) <= cy + SY_TOL && y + h/2 < r.g_y )
 							{
-								if( cy == 32000 || ((r.y - y) < cy )){	/* line better: forget x */
-									cy = r.y - y;
+								if( cy == 32000 || ((r.g_y - y) < cy )){	/* line better: forget x */
+									cy = r.g_y - y;
 									ax = 32000;
 								}
 								if (ax == 32000 || x > ax)
@@ -1987,13 +1987,13 @@ uplink:
 				}
 				else
 				{
-					if ( (y+h/2 >= r.y && y+h/2 < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h/2)) )
+					if ( (y+h/2 >= r.g_y && y+h/2 < (r.g_y + r.g_h)) || (y < r.g_y && (y + h) >= (r.g_y + r.g_h/2)) )
 					{
-						if (x > r.x)
+						if (x > r.g_x)
 						{
-							if (!cf || (x - r.x) < cx)
+							if (!cf || (x - r.g_x) < cx)
 							{
-								cx = x - r.x;
+								cx = x - r.g_x;
 								co = curr;
 								cf = 1;
 
@@ -2003,14 +2003,14 @@ uplink:
 
 					if (!cf)
 					{
-						if (y >= (r.y + r.h) /*|| (y > r.y && (y + h) > (r.y + r.h))*/)
+						if (y >= (r.g_y + r.g_h) /*|| (y > r.g_y && (y + h) > (r.g_y + r.g_h))*/)
 						{
-							if ((y - r.y) <= cy + SY_TOL)
+							if ((y - r.g_y) <= cy + SY_TOL)
 							{
 								if (x < ax)
 								{
 									ax = x;
-									cy = y - r.y;
+									cy = y - r.g_y;
 									co = curr;
 								}
 							}
@@ -2528,7 +2528,7 @@ set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, 
 		struct oblink_spec *obl = object_get_oblink(aesobj_ob(c));
 		if (obl)
 		{
-			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
+			obl->save_to_r = *(GRECT *)&obl->to.tree[obl->to.item].ob_x;
 
 			obl->to.tree[obl->to.item].ob_x = aesobj_getx(c);
 			obl->to.tree[obl->to.item].ob_y = aesobj_gety(c);
@@ -2551,10 +2551,10 @@ set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 
-		tree->ob_x = (*oblink)->save_to_r.x;
-		tree->ob_y = (*oblink)->save_to_r.y;
-		tree->ob_width = (*oblink)->save_to_r.w;
-		tree->ob_height = (*oblink)->save_to_r.h;
+		tree->ob_x = (*oblink)->save_to_r.g_x;
+		tree->ob_y = (*oblink)->save_to_r.g_y;
+		tree->ob_width = (*oblink)->save_to_r.g_w;
+		tree->ob_height = (*oblink)->save_to_r.g_h;
 
 
 		*t = (*oblink)->from.tree;
@@ -2573,10 +2573,10 @@ clean_aesobj_links(struct oblink_spec **oblink)
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 
-		tree->ob_x = (*oblink)->save_to_r.x;
-		tree->ob_y = (*oblink)->save_to_r.y;
-		tree->ob_width = (*oblink)->save_to_r.w;
-		tree->ob_height = (*oblink)->save_to_r.h;
+		tree->ob_x = (*oblink)->save_to_r.g_x;
+		tree->ob_y = (*oblink)->save_to_r.g_y;
+		tree->ob_width = (*oblink)->save_to_r.g_w;
+		tree->ob_height = (*oblink)->save_to_r.g_h;
 
 		*oblink = (*oblink)->d.pmisc[1];
 	}
@@ -2748,26 +2748,26 @@ downlink:
 }
 
 void
-obj_rectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
+obj_rectangle(XA_TREE *wt, struct xa_aes_object obj, GRECT *c)
 {
 	short sx = wt->dx, sy = wt->dy;
 
 	wt->dx = wt->dy = 0;
 
-	if (!obj_offset(wt, obj, &c->x, &c->y))
+	if (!obj_offset(wt, obj, &c->g_x, &c->g_y))
 	{
 		obj = aesobj(wt->tree, 0);
-		obj_offset(wt, obj, &c->x, &c->y);
+		obj_offset(wt, obj, &c->g_x, &c->g_y);
 	}
-	c->w = aesobj_getw(&obj);
-	c->h = aesobj_geth(&obj);
+	c->g_w = aesobj_getw(&obj);
+	c->g_h = aesobj_geth(&obj);
 	wt->dx = sx;
 	wt->dy = sy;
 }
 
 #if INCLUDE_UNUSED
 void
-obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
+obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, GRECT *c)
 {
 	if (!ob_offset(aesobj_tree(&obj), obj, &c->x, &c->y))
 	{
@@ -2779,24 +2779,24 @@ obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 }
 #endif
 bool
-obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
+obj_area(XA_TREE *wt, struct xa_aes_object obj, GRECT *c)
 {
 	bool found = true;
-	RECT r;
+	GRECT r;
 
-	if (!obj_offset(wt, obj, &c->x, &c->y))
+	if (!obj_offset(wt, obj, &c->g_x, &c->g_y))
 	{
 		obj = aesobj(wt->tree, 0);
-		obj_offset(wt, obj, &c->x, &c->y);
+		obj_offset(wt, obj, &c->g_x, &c->g_y);
 		found = false;
 	}
-	c->w = aesobj_getw(&obj);
-	c->h = aesobj_geth(&obj);
+	c->g_w = aesobj_getw(&obj);
+	c->g_h = aesobj_geth(&obj);
 	(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&obj), &r);
-	c->x += r.x;
-	c->y += r.y;
-	c->w -= r.w;
-	c->h -= r.h;
+	c->g_x += r.g_x;
+	c->g_y += r.g_y;
+	c->g_w -= r.g_w;
+	c->g_h -= r.g_h;
 	return found;
 }
 
@@ -2807,21 +2807,21 @@ obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
  * into accrount when positioning/sizing the slider.
  */
 void
-obj_border_diff(struct widget_tree *wt, struct xa_aes_object obj1, struct xa_aes_object obj2, RECT *r)
+obj_border_diff(struct widget_tree *wt, struct xa_aes_object obj1, struct xa_aes_object obj2, GRECT *r)
 {
-	RECT r1, r2;
+	GRECT r1, r2;
 
 	(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&obj1), &r1);
 	(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&obj2), &r2);
 
-	r->x = r1.x - r2.x;
-	r->y = r1.y - r2.y;
-	r->w = r1.w - r2.w;
-	r->h = r1.h - r2.h;
+	r->g_x = r1.g_x - r2.g_x;
+	r->g_y = r1.g_y - r2.g_y;
+	r->g_w = r1.g_w - r2.g_w;
+	r->g_h = r1.g_h - r2.g_h;
 }
 
 void
-ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
+ob_spec_xywh(OBJECT *obtree, short obj, GRECT *r)
 {
 	short type = obtree[obj].ob_type & 0xff;
 
@@ -2831,25 +2831,25 @@ ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 		{
 			BITBLK *bb = object_get_spec(obtree + obj)->bitblk;
 
-			r->x = bb->bi_x;
-			r->y = bb->bi_y;
-			r->w = bb->bi_wb;
-			r->h = bb->bi_hl;
+			r->g_x = bb->bi_x;
+			r->g_y = bb->bi_y;
+			r->g_w = bb->bi_wb;
+			r->g_h = bb->bi_hl;
 			break;
 		}
 		case G_ICON:
 		{
-			*r = *(RECT *)&(object_get_spec(obtree + obj))->iconblk->ib_xicon;
+			*r = *(GRECT *)&(object_get_spec(obtree + obj))->iconblk->ib_xicon;
 			break;
 		}
 		case G_CICON:
 		{
-			*r = *(RECT *)&(object_get_spec(obtree + obj))->ciconblk->monoblk.ib_xicon;
+			*r = *(GRECT *)&(object_get_spec(obtree + obj))->ciconblk->monoblk.ib_xicon;
 			break;
 		}
 		default:
 		{
-			*r = *(RECT *)&(obtree[obj].ob_x);
+			*r = *(GRECT *)&(obtree[obj].ob_x);
 			break;
 		}
 	}
@@ -2898,7 +2898,7 @@ object_spec_wh(OBJECT *ob, short *w, short *h)
  *
  */
 struct xa_aes_object
-obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, RECT *c)
+obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, GRECT *c)
 {
 	OBJECT *obtree = wt->tree;
 	struct xa_aes_object next;
@@ -2907,7 +2907,7 @@ obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short 
 	short x = -wt->dx, y = -wt->dy;
 	bool start_checking = false;
 	struct oblink_spec *oblink = NULL;
-	RECT r, or = (RECT){0,0,0,0};
+	GRECT r, or = (GRECT){0,0,0,0};
 
 	DIAG((D_objc, NULL, "obj_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object.item, depth, (unsigned long)obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
@@ -2928,19 +2928,19 @@ uplink:
 
 			if (start_checking)
 			{
-				RECT cr;
+				GRECT cr;
 				if (depth & 0x8000)
 					(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&current), &or);
 
-				cr.x = x + aesobj_getx(&current) + or.x;
-				cr.y = y + aesobj_gety(&current) + or.y;
-				cr.w = aesobj_getw(&current) - or.w;
-				cr.h = aesobj_geth(&current) - or.h;
+				cr.g_x = x + aesobj_getx(&current) + or.g_x;
+				cr.g_y = y + aesobj_gety(&current) + or.g_y;
+				cr.g_w = aesobj_getw(&current) - or.g_w;
+				cr.g_h = aesobj_geth(&current) - or.g_h;
 
-				if (   cr.x		<= mx
-				    && cr.y		<= my
-				    && cr.x + cr.w	> mx
-				    && cr.y + cr.h	> my )
+				if (   cr.g_x		<= mx
+				    && cr.g_y		<= my
+				    && cr.g_x + cr.g_w	> mx
+				    && cr.g_y + cr.g_h	> my )
 				{
 					/* This is only a possible object, as it may have children on top of it. */
 					if (c)
@@ -3016,7 +3016,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 	short x = 0, y = 0;
 	bool start_checking = false;
 	short pos_object = -1;
-	RECT or;
+	GRECT or;
 
 	DIAG((D_objc, NULL, "ob_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
@@ -3030,7 +3030,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 
 		if (start_checking && !(obtree[current].ob_flags & OF_HIDETREE))
 		{
-			RECT cr;
+			GRECT cr;
 
 			if (depth & 0x8000)
 				object_offsets(obtree + current, &or);
@@ -3130,7 +3130,7 @@ obtree_has_touchexit(OBJECT *obtree)
  *    This is to ensure that transparent objects are drawn correctly.
  * Care must be taken that outside borders or shadows are included in the draw.
  * Only the objects area is redrawn, so it must be intersected with clipping rectangle.
- * New function object_area(RECT *c, tree, item)
+ * New function object_area(GRECT *c, tree, item)
  *
  *	Now we can use this for the standard menu's and titles!!!
  *
@@ -3143,7 +3143,7 @@ obj_change(XA_TREE *wt,
 	   short state,
 	   short flags,
 	   bool redraw,
-	   const RECT *clip,
+	   const GRECT *clip,
 	   struct xa_rect_list *rl, short dflags)
 {
 	bool draw = false;
@@ -3159,14 +3159,14 @@ obj_change(XA_TREE *wt,
 
 	if (draw && redraw) {
 #if 1
-		RECT r;
+		GRECT r;
 		/* "sysinfo"-fix */
 		if( obj.ob->ob_type == G_USERDEF && !clip)
 		{
-			r.x = obj.ob->ob_x;
-			r.y = obj.ob->ob_y;
-			r.w = obj.ob->ob_width;
-			r.h = obj.ob->ob_height;
+			r.g_x = obj.ob->ob_x;
+			r.g_y = obj.ob->ob_y;
+			r.g_w = obj.ob->ob_width;
+			r.g_h = obj.ob->ob_height;
 			clip = &r;
 		}
 #endif
@@ -3178,10 +3178,10 @@ obj_change(XA_TREE *wt,
 }
 
 void
-obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const RECT *clip, struct xa_rect_list *rl, short flags)
+obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const GRECT *clip, struct xa_rect_list *rl, short flags)
 {
 	struct xa_aes_object start = obj;
-	RECT or;
+	GRECT or;
 	bool pd = false;
 
 	if (!obj_area(wt, obj, &or))
@@ -3208,7 +3208,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 	}
 
 	if (rl) {
-		RECT r;
+		GRECT r;
 		do {
 			r = rl->r;
 			if (!clip || xa_rect_clip(clip, &r, &r)) {
@@ -3878,7 +3878,7 @@ obj_xED_END(struct widget_tree *wt,
 	    struct xa_vdi_settings *v,
 	    struct objc_edit_info *ei,
 	    bool redraw,
-	    const RECT *clip,
+	    const GRECT *clip,
 	    struct xa_rect_list *rl)
 {
 	(*wt->objcr_api->undraw_cursor)(wt, v, rl, redraw);
@@ -3920,7 +3920,7 @@ obj_edit(XA_TREE *wt,
 	 short pos,	/* -1 sets position to end of text */
 	 char *string,
 	 bool redraw,
-	 const RECT *clip,
+	 const GRECT *clip,
 	 struct xa_rect_list *rl,
 	/* outputs */
 	 short *ret_pos,
@@ -4535,7 +4535,7 @@ obj_set_radio_button(XA_TREE *wt,
 		      struct xa_vdi_settings *v,
 		      struct xa_aes_object obj,
 		      bool redraw,
-		      const RECT *clip,
+		      const GRECT *clip,
 		      struct xa_rect_list *rl)
 {
 	OBJECT *obtree = wt->tree;
@@ -4610,7 +4610,7 @@ obj_watch(XA_TREE *wt,
 	   struct xa_aes_object obj,
 	   short in_state,
 	   short out_state,
-	   const RECT *clip,
+	   const GRECT *clip,
 	   struct xa_rect_list *rl)
 {
 	struct xa_aes_object obf = obj, pobf = aesobj(wt->tree, -2);

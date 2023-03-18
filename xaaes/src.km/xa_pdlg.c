@@ -127,10 +127,10 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 
 	if (sub->tree)
 	{
-		RECT r;
+		GRECT r;
 		obj_rectangle(pdlg->mwt, aesobj(pdlg->mwt->tree, XPDLG_DIALOG), &r);
-		sub->tree->ob_x = r.x;
-		sub->tree->ob_y = r.y;
+		sub->tree->ob_x = r.g_x;
+		sub->tree->ob_y = r.g_y;
 	}
 
 	switch( which )
@@ -423,7 +423,7 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 	if (obl)
 	{
 		struct xa_aes_object to = aesobj(to_tree, to_obj);
-		RECT r;
+		GRECT r;
 
 		if (init || !same_aesobj(&obl->to, &to))
 		{
@@ -468,8 +468,8 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 			obj_rectangle(wt, aesobj(wt->tree, 0), &r);
 			if (wt->widg)
 			{
-				wt->widg->r.w = r.w;
-				wt->widg->r.h = r.h;
+				wt->widg->r.g_w = r.g_w;
+				wt->widg->r.g_h = r.g_h;
 			}
 
 			if (!pdlg->flags & 1)
@@ -478,7 +478,7 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 				r = w2f(&pdlg->wind->wadelta, &r, true);
 
 
-			move_window(0, pdlg->wind, false, -1, r.x, r.y, r.w, r.h);
+			move_window(0, pdlg->wind, false, -1, r.g_x, r.g_y, r.g_w, r.g_h);
 			upd = false;
 		}
 		if ((upd || resize) && (!wt->ei || !edit_set(wt->ei)))
@@ -2399,7 +2399,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp)
 			else goto fail;
 		}
 		{
-			RECT r, or;
+			GRECT r, or;
 
 			obj_rectangle(mwt, aesobj(mwt->tree, 0), &or);
 
@@ -2809,7 +2809,7 @@ XA_pdlg_open(int lock, struct xa_client *client, AESPB *pb)
 		{
 			struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 			struct widget_tree *wt = pdlg->mwt;
-			RECT r = wind->wa;
+			GRECT r = wind->wa;
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 
 			widg->m.properties |= WIP_NOTEXT;
@@ -2819,20 +2819,20 @@ XA_pdlg_open(int lock, struct xa_client *client, AESPB *pb)
 
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
 			{
-				r.x = (root_window->wa.w - r.w) / 2;
-				r.y = (root_window->wa.h - r.h) / 2;
+				r.g_x = (root_window->wa.g_w - r.g_w) / 2;
+				r.g_y = (root_window->wa.g_h - r.g_h) / 2;
 			}
 			else
 			{
-				r.x = pb->intin[1];
-				r.y = pb->intin[2];
+				r.g_x = pb->intin[1];
+				r.g_y = pb->intin[2];
 			}
 			{
-				RECT or;
+				GRECT or;
 
 				obj_rectangle(wt, aesobj(wt->tree, 0), &or);
-				or.x = r.x;
-				or.y = r.y;
+				or.g_x = r.g_x;
+				or.g_y = r.g_y;
 				change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 			}
 
@@ -2845,8 +2845,8 @@ XA_pdlg_open(int lock, struct xa_client *client, AESPB *pb)
 
 			set_window_title(pdlg->wind, pdlg->document_name, false);
 
-			wt->tree->ob_x = wind->wa.x;
-			wt->tree->ob_y = wind->wa.y;
+			wt->tree->ob_x = wind->wa.g_x;
+			wt->tree->ob_y = wind->wa.g_y;
 			if (!wt->zen)
 			{
 				wt->tree->ob_x += wt->ox;
@@ -3236,7 +3236,7 @@ XA_pdlg_do(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 		XA_TREE *wt = pdlg->mwt;
 		OBJECT *obtree = wt->tree;
-		RECT or;
+		GRECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 		short ret = PDLG_CANCEL;
 

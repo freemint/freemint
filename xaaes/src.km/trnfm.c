@@ -2481,7 +2481,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		(*v->api->line)(v, 0, 0, 0, 0, 0);
 #else
 		{
-		RECT r = {0,0,v->screen.w,v->screen.h};
+		GRECT r = {0,0,v->screen.w,v->screen.h};
 		(*v->api->f_color)(v, 6 );	/* yellow */
 		(*v->api->gbar)( v, 0, &r );
 		}

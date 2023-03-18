@@ -37,7 +37,7 @@ struct xa_window *
 			 struct xa_client *client,
 			 XA_WIND_ATTR kind,
 			 WINDOW_TYPE dial,
-			 RECT *r);
+			 GRECT *r);
 #endif
 
 bool	Setup_form_do	(struct xa_client *client,
@@ -48,8 +48,8 @@ bool	Setup_form_do	(struct xa_client *client,
 			 struct xa_aes_object *ret_edobj);
 
 void	Form_Center	(OBJECT *obtree, short barsizes);
-void	Form_Center_r	(OBJECT *obtree, short barsizes, RECT *r);
-void	center_rect	(RECT *r);
+void	Form_Center_r	(OBJECT *obtree, short barsizes, GRECT *r);
+void	center_rect	(GRECT *r);
 
 #define FBF_REDRAW	1
 #define FBF_DO_SLIST	2

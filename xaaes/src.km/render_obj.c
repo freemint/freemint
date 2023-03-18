@@ -71,7 +71,7 @@
 
 
 static short _cdecl obj_thickness(struct widget_tree *wt, OBJECT *ob);
-static void _cdecl obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c);
+static void _cdecl obj_offsets(struct widget_tree *wt, OBJECT *ob, GRECT *c);
 
 static bool use_gradients = true;
 #if WITH_BKG_IMG || WITH_GRADIENTS
@@ -3139,9 +3139,9 @@ static XA_TREE nil_tree = { 0 };
 /* ************************************************************ */
 
 static void
-chiseled_gbox(struct xa_vdi_settings *v, short d, short litecol, short shadowcol, const RECT *r, const RECT *t)
+chiseled_gbox(struct xa_vdi_settings *v, short d, short litecol, short shadowcol, const GRECT *r, const GRECT *t)
 {
-	RECT rr;
+	GRECT rr;
 
 	if (t)
 	{
@@ -3150,31 +3150,31 @@ chiseled_gbox(struct xa_vdi_settings *v, short d, short litecol, short shadowcol
 		{
 			(*v->api->left_line)(v, d, r, shadowcol);
 			(*v->api->left_line)(v, d - 1, r, litecol);
-			rr.x = r->x;
-			rr.y = r->y;
-			rr.w = t->x - r->x - 1;
-			rr.h = r->h;
+			rr.g_x = r->g_x;
+			rr.g_y = r->g_y;
+			rr.g_w = t->g_x - r->g_x - 1;
+			rr.g_h = r->g_h;
 			(*v->api->top_line)(v, d,     &rr, shadowcol);
 			(*v->api->top_line)(v, d - 1, &rr, litecol);
-			rr.x = t->x + t->w;
-			rr.w = r->x + r->w - rr.x;
-			if (rr.w > 0)
+			rr.g_x = t->g_x + t->g_w;
+			rr.g_w = r->g_x + r->g_w - rr.g_x;
+			if (rr.g_w > 0)
 			{
 				(*v->api->top_line)(v, d,     &rr, shadowcol);
 				(*v->api->top_line)(v, d - 1, &rr, litecol);
 			}
 			else
 			{
-				rr.y += t->h;
-				rr.h -= t->h;
+				rr.g_y += t->g_h;
+				rr.g_h -= t->g_h;
 			}
-			if (rr.h > 0)
+			if (rr.g_h > 0)
 			{
-				rr.y += 1, rr.h -= 1;
+				rr.g_y += 1, rr.g_h -= 1;
 				(*v->api->right_line)(v, d, &rr, litecol);
 				(*v->api->right_line)(v, d - 1, &rr, shadowcol);
 				rr = *r;
-				rr.x += 1, rr.w -= 1;
+				rr.g_x += 1, rr.g_w -= 1;
 				(*v->api->bottom_line)(v, d, &rr, litecol);
 				(*v->api->bottom_line)(v, d-1, &rr, shadowcol);
 			}
@@ -3182,23 +3182,23 @@ chiseled_gbox(struct xa_vdi_settings *v, short d, short litecol, short shadowcol
 		else
 		{
 			(*v->api->left_line)(v, d, r, litecol);
-			rr.x = r->x;
-			rr.y = r->y;
-			rr.w = t->x - r->x;
-			rr.h = r->h;
+			rr.g_x = r->g_x;
+			rr.g_y = r->g_y;
+			rr.g_w = t->g_x - r->g_x;
+			rr.g_h = r->g_h;
 			(*v->api->top_line)(v, d, &rr, litecol);
-			rr.x = t->x + t->w;
-			rr.w = r->x + r->w - rr.x;
-			if (rr.w > 0)
+			rr.g_x = t->g_x + t->g_w;
+			rr.g_w = r->g_x + r->g_w - rr.g_x;
+			if (rr.g_w > 0)
 			{
 				(*v->api->top_line)(v, d, &rr, litecol);
 			}
 			else
 			{
-				rr.y += t->h;
-				rr.h -= t->h;
+				rr.g_y += t->g_h;
+				rr.g_h -= t->g_h;
 			}
-			if (rr.h > 0)
+			if (rr.g_h > 0)
 			{
 				(*v->api->right_line)(v, d, &rr, litecol);
 				(*v->api->bottom_line)(v, d, r, litecol);
@@ -3223,21 +3223,21 @@ chiseled_gbox(struct xa_vdi_settings *v, short d, short litecol, short shadowcol
 }
 
 static void
-d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fg, short bg)
+d3_bottom_line(struct xa_vdi_settings *v, GRECT *r, bool l3d, short fg, short bg)
 {
 	short x, y, w;
 
 	if (l3d)
 	{
-		x = r->x;
-		y = r->y + r->h - 1;
-		w = r->w - 1;
+		x = r->g_x;
+		y = r->g_y + r->g_h - 1;
+		w = r->g_w - 1;
 	}
 	else
 	{
-		x = r->x;
-		y = r->y + r->h;
-		w = r->w;
+		x = r->g_x;
+		y = r->g_y + r->g_h;
+		w = r->g_w;
 	}
 	(*v->api->line)(v, x, y, x + w, y, fg);
 	if (l3d)
@@ -3247,9 +3247,9 @@ d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fg, short bg)
 	}
 }
 static void
-shadow_object(struct xa_vdi_settings *v, short d, short state, RECT *rp, short colour, short thick)
+shadow_object(struct xa_vdi_settings *v, short d, short state, GRECT *rp, short colour, short thick)
 {
-	RECT r = *rp;
+	GRECT r = *rp;
 	short offset, increase;
 
 	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
@@ -3264,21 +3264,21 @@ shadow_object(struct xa_vdi_settings *v, short d, short state, RECT *rp, short c
 		offset = thick > 0 ? thick : 0;
 		increase = -thick;
 
-		r.x += offset;
-		r.y += offset;
-		r.w += increase;
-		r.h += increase;
+		r.g_x += offset;
+		r.g_y += offset;
+		r.g_w += increase;
+		r.g_h += increase;
 
 		for (i = 0; i < abs(thick)*2; i++)
 		{
-			r.w++, r.h++;
+			r.g_w++, r.g_h++;
 			(*v->api->br_hook)(v, d, &r, colour);
 		}
 	}
 }
 #if 0
 static void
-d3_pushbutton(struct xa_vdi_settings *v, struct theme *theme, short d, RECT *r, BFOBSPEC *col, short state, short thick, short mode)
+d3_pushbutton(struct xa_vdi_settings *v, struct theme *theme, short d, GRECT *r, BFOBSPEC *col, short state, short thick, short mode)
 {
 	const unsigned short selected = state & OS_SELECTED;
 	short t, j, outline;
@@ -3419,7 +3419,7 @@ set_colours(OBJECT *ob, struct xa_vdi_settings *v, struct theme *t, BFOBSPEC *co
 }
 #endif
 static void
-draw_3defx(struct xa_vdi_settings *v, struct color_theme *ct, bool selected, short o, short d3_thick, RECT *r)
+draw_3defx(struct xa_vdi_settings *v, struct color_theme *ct, bool selected, short o, short d3_thick, GRECT *r)
 {
 	if (d3_thick)
 	{
@@ -3506,7 +3506,7 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 	if (g && use_gradients && w > 2 && h > 2 && g->n_steps >= 0 )
 	{
 
-		if( g == &box_gradient && w == root_window->wa.w && h == root_window->wa.h )
+		if( g == &box_gradient && w == root_window->wa.g_w && h == root_window->wa.g_h )
 			g = &box_gradient2;
 		w &= g->wmask;
 		w |= g->w;
@@ -3549,7 +3549,7 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 
 long make_bkg_img_path( char *bfn, long l )
 {
-	return sprintf( bfn, l, "%s%d%d.%d", api->C->Aes->home_path, screen->r.w, screen->r.h, screen->planes );
+	return sprintf( bfn, l, "%s%d%d.%d", api->C->Aes->home_path, screen->r.g_w, screen->r.g_h, screen->planes );
 }
 #if WITH_BKG_IMG || WITH_GRADIENTS
 
@@ -3569,7 +3569,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 	MFDB Mscreen = { 0 };
 	MFDB Mpreserve;
 	short pnt[8];
-	RECT r = screen->r;
+	GRECT r = screen->r;
 	long sz = 0;
 	struct xa_vdi_settings *v = client->vdi_settings;
 	static void *background = 0;
@@ -3609,13 +3609,13 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 			strcpy( bfn, fn );
 	}
 	v->api->rtopxy(pnt, &r);
-	v->api->ritopxy(pnt + 4, 0, 0, r.w, r.h);
+	v->api->ritopxy(pnt + 4, 0, 0, r.g_w, r.g_h);
 
-	DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+	DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.g_x, r.g_y, r.g_w, r.g_h));
 
-	Mpreserve.fd_w = r.w;
-	Mpreserve.fd_h = r.h;
-	Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+	Mpreserve.fd_w = r.g_w;
+	Mpreserve.fd_h = r.g_h;
+	Mpreserve.fd_wdwidth = (r.g_w + 15) / 16;
 	Mpreserve.fd_nplanes = screen->planes;
 	Mpreserve.fd_stand = 0;
 
@@ -3650,7 +3650,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 		}
 		else
 		{
-			RECT r2 = v->clip;
+			GRECT r2 = v->clip;
 			if( ierr == -1 || md == 3 )
 			{
 				struct stat st;
@@ -3710,14 +3710,14 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 #endif
 
 static void
-draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short flags, short fg, short box_col, short d, short d3_thick, short box_thick, short shadow_thick, RECT *wr, RECT *anch, RECT *area)
+draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short flags, short fg, short box_col, short d, short d3_thick, short box_thick, short shadow_thick, GRECT *wr, GRECT *anch, GRECT *area)
 {
 #if WITH_GRADIENTS
 	struct xa_wtexture *wgrad = NULL;
 #endif
 	struct xa_wtexture *wext = NULL;
 	short f = ct->col.flags, o = 0, j = 0;
-	RECT r = *wr;
+	GRECT r = *wr;
 	bool selected = (wt->current.ob->ob_state & OS_SELECTED);
 	const short *sc;
 	bool ind = (selected && obj_is_indicator(wt->current.ob));
@@ -3754,11 +3754,11 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 	}
 	if (j)
 	{
-		r.x -= j;
-		r.y -= j;
+		r.g_x -= j;
+		r.g_y -= j;
 		j += j;
-		r.w += j;
-		r.h += j;
+		r.g_w += j;
+		r.g_h += j;
 	}
 
 	if (use_cw)
@@ -3792,18 +3792,18 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 			o -= d3_thick;
 		}
 
-		r.x -= o;
-		r.y -= o;
-		r.w += o + o;
-		r.h += o + o;
+		r.g_x -= o;
+		r.g_y -= o;
+		r.g_w += o + o;
+		r.g_h += o + o;
 
 #if WITH_GRADIENTS
 
 		if ( (ct->col.flags & WCOL_GRADIENT)
-			&& (!cw || (r.w == root_window->wa.w && r.h == root_window->wa.h)
+			&& (!cw || (r.g_w == root_window->wa.g_w && r.g_h == root_window->wa.g_h)
 					|| (cw->interiorcol == G_WHITE || cw->interiorcol == G_BLACK || cw->interiorcol == G_LBLACK || cw->interiorcol == G_LWHITE)) )
 		{
-			if ((wgrad = find_gradient(v, ct, r.w, r.h)))
+			if ((wgrad = find_gradient(v, ct, r.g_w, r.g_h)))
 			{
 				(*v->api->draw_texture)(v, wgrad->body, &r, wr == anch ? &r : anch);
 				flags &= ~(DRAW_BKG|DRAW_TEXTURE);
@@ -3918,18 +3918,18 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 			o -= d3_thick;
 		}
 
-		r.x -= o;
-		r.y -= o;
-		r.w += o + o;
-		r.h += o + o;
+		r.g_x -= o;
+		r.g_y -= o;
+		r.g_w += o + o;
+		r.g_h += o + o;
 #if WITH_GRADIENTS
 		if ((ct->col.flags & WCOL_GRADIENT))
 		{
-			if ((wgrad = find_gradient(v, ct, r.w, r.h)))
+			if ((wgrad = find_gradient(v, ct, r.g_w, r.g_h)))
 			{
-				short y = r.y;
+				short y = r.g_y;
 				(*v->api->draw_texture)(v, wgrad->body, &r, wr == anch ? &r : anch);
-				r.y = y;
+				r.g_y = y;
 				flags &= ~(DRAW_BKG|DRAW_TEXTURE);
 			}
 		}
@@ -3987,7 +3987,7 @@ ob_text(XA_TREE *wt,
 	struct xa_vdi_settings *v,
 	struct objc_edit_info *ei,
 	struct color_theme *ct,
-	RECT *r, RECT *o,
+	GRECT *r, GRECT *o,
 	BFOBSPEC *c,
 	short wr_mode,
 	short fg,	/* foreground */
@@ -4044,7 +4044,7 @@ ob_text(XA_TREE *wt,
 
 		if (wr_mode == MD_REPLACE)
 		{
-			RECT br;
+			GRECT br;
 
 			if (bcol == -1)
 				bcol = ct->fnt.bannercol;
@@ -4052,8 +4052,8 @@ ob_text(XA_TREE *wt,
 			if (bcol == fg)
 				bcol = selected3D_colour[fg];
 
-			br.x = r->x, br.y = r->y - v->dists[5];
-			(*v->api->t_extent)(v, t, &br.w, &br.h);
+			br.g_x = r->g_x, br.g_y = r->g_y - v->dists[5];
+			(*v->api->t_extent)(v, t, &br.g_w, &br.g_h);
 			(*v->api->wr_mode)(v, MD_REPLACE);
 			(*v->api->f_color)(v, bcol);
 			(*v->api->gbar)(v, 0, &br);
@@ -4069,10 +4069,10 @@ ob_text(XA_TREE *wt,
 		if (ei && !(state & OS_DISABLED) && edit_ob(ei) == ob && ei->m_end > ei->m_start)
 		{
 			int sl = strlen(t) + 1;
-			short x = r->x, y = r->y - v->dists[5], w, h;
+			short x = r->g_x, y = r->g_y - v->dists[5], w, h;
 			short start, end;
 			char s[256];
-			RECT br = o ? *o : *r;
+			GRECT br = o ? *o : *r;
 
 			start = ei->m_start + ei->edstart;
 			end = ei->m_end + ei->edstart;
@@ -4093,7 +4093,7 @@ ob_text(XA_TREE *wt,
 			strncpy(s, t + start, end - start);
 			s[end - start] = '\0';
 			(*v->api->t_extent)(v, s, &w, &h);
-			br.x = x, br.w = w;
+			br.g_x = x, br.g_w = w;
 			(*v->api->f_color)(v, markbg);
 			(*v->api->wr_mode)(v, MD_REPLACE);
 			(*v->api->gbar)(v, 0, &br);
@@ -4128,10 +4128,10 @@ ob_text(XA_TREE *wt,
 				if (!MONO && ((ct->fnt.flags & WTXT_DRAW3D) || ((flags & OF_FL3DIND) && !(state & OS_DISABLED))))
 				{
 					(*v->api->t_color)(v, bg);
-					v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
+					v_gtext(v->handle, r->g_x + 1, r->g_y + 1 - v->dists[5], t);
 				}
 				(*v->api->t_color)(v, fg);
-				v_gtext(v->handle, r->x, r->y - v->dists[5], t);
+				v_gtext(v->handle, r->g_x, r->g_y - v->dists[5], t);
 			}
 		}
 		/* Now underline the shortcut character, if any. */
@@ -4144,7 +4144,7 @@ ob_text(XA_TREE *wt,
 				char sc;
 				short x, y, w, h;
 
-				y = r->y;
+				y = r->g_y;
 				x = 0;
 				if( und )
 				{
@@ -4165,7 +4165,7 @@ ob_text(XA_TREE *wt,
 				t[und + 1] = sc;
 				w -= x;
 				y += (h - v->dists[0] + 1);
-				x += r->x;
+				x += r->g_x;
 
 				/* if selected invert underscore */
 				if( (ob->ob_state & OS_SELECTED) )
@@ -4181,22 +4181,22 @@ ob_text(XA_TREE *wt,
 		else if (und == -2)
 		{
 			short w, h;
-			RECT nr = *r;
+			GRECT nr = *r;
 			(*v->api->t_extent)(v, t, &w, &h);
-			nr.w = w;
+			nr.g_w = w;
 
 			d3_bottom_line(v, &nr, (flags & OF_FL3DBAK), G_BLACK, G_WHITE);
 		}
 		else if (und == -3)
 		{
 			short w;
-			RECT nr = *r;
+			GRECT nr = *r;
 			if (o)
 			{
-				nr.x = o->x;
-				nr.w = o->w;
+				nr.g_x = o->g_x;
+				nr.g_w = o->g_w;
 			}
-			(*v->api->t_extent)(v, t, &w, &nr.h);
+			(*v->api->t_extent)(v, t, &w, &nr.g_h);
 			d3_bottom_line(v, &nr, (flags & OF_FL3DBAK), G_BLACK, G_WHITE);
 		}
 		(*v->api->t_effects)(v, 0);
@@ -4316,8 +4316,8 @@ get_tedinformation(OBJECT *ob, TEDINFO **ret_ted, BFOBSPEC *cw, struct objc_edit
 static void
 set_text(OBJECT *ob,
 	 struct xa_vdi_settings *v,
-	 RECT *gr,
-	 RECT *cr,
+	 GRECT *gr,
+	 GRECT *cr,
 	 bool formatted,
 	 short edit_pos,
 	 char *temp_text,
@@ -4325,12 +4325,12 @@ set_text(OBJECT *ob,
 	 short *thick,
 	 short *ret_edstart,
 	 struct objc_edit_info **ret_ei,
-	 RECT r)
+	 GRECT r)
 {
 	union { short jc[2]; BFOBSPEC bfobspec;} col;
 	TEDINFO *ted;
 	XTEDINFO *xted = NULL;
-	RECT cur;
+	GRECT cur;
 	short w, h, cur_x = 0, start_tpos = 0;
 
 	ted = (TEDINFO *)(*api->object_get_spec)(ob)->index;
@@ -4367,23 +4367,23 @@ set_text(OBJECT *ob,
 	case TE_GDOS_BITM:		/* Use a GDOS bitmap font (AES4.1 style) */
 	{
 		(*v->api->t_font)(v, ted->te_fontsize, ted->te_fontid);
-		cur.w = screen->c_max_w;
-		cur.h = screen->c_max_h;
+		cur.g_w = screen->c_max_w;
+		cur.g_h = screen->c_max_h;
 		break;
 	}
 	case TE_SMALL:			/* Use the small system font (probably 8 point) */
 	{
 		(*v->api->t_font)(v, screen->small_font_point, screen->small_font_id);
-		cur.w = screen->c_min_w;
-		cur.h = screen->c_min_h;
+		cur.g_w = screen->c_min_w;
+		cur.g_h = screen->c_min_h;
 		break;
 	}
 	case TE_STANDARD:		/* Use the standard system font (probably 10 point) */
 	default:
 	{
 		(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
-		cur.w = screen->c_max_w;
-		cur.h = screen->c_max_h;
+		cur.g_w = screen->c_max_w;
+		cur.g_h = screen->c_max_h;
 		break;
 	}
 	}
@@ -4404,10 +4404,10 @@ set_text(OBJECT *ob,
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 
 	/* HR 290301 & 070202: Dont let a text violate its object space! (Twoinone packer shell!! :-) */
-	if (w > r.w)
+	if (w > r.g_w)
 	{
-		short	rw  = r.w / cur.w,
-			dif = (w - r.w + cur.w - 1) / cur.w,
+		short	rw  = r.g_w / cur.g_w,
+			dif = (w - r.g_w + cur.g_w - 1) / cur.g_w,
 			h1dif, h2dif;
 
 		switch (ted->te_just)
@@ -4439,23 +4439,23 @@ set_text(OBJECT *ob,
 	{					/* Atari use a different horizontal alignment */
 		case TE_RIGHT:
 		{
-			cur.x = r.x + r.w - w;
+			cur.g_x = r.g_x + r.g_w - w;
 			break;
 		}
 		case TE_CNTR:
 		{
-			cur.x = r.x + ((r.w - w) / 2);
+			cur.g_x = r.g_x + ((r.g_w - w) / 2);
 			break;
 		}
 		default:
 		case TE_LEFT:			/* code for GEM to the one the VDI uses? */
 		{
-			cur.x = r.x;
+			cur.g_x = r.g_x;
 			break;
 		}
 	}
 
-	cur.y = r.y + (r.h - h) / 2;
+	cur.g_y = r.g_y + (r.g_h - h) / 2;
 
 	if (cr)
 	{
@@ -4468,12 +4468,12 @@ set_text(OBJECT *ob,
 		temp_text[cur_x] = sc;
 
 		*cr = cur;
-		cr->x += tw;
-		cr->w = 1;
+		cr->g_x += tw;
+		cr->g_w = 1;
 	}
 
-	cur.w = w;
-	cur.h = h;
+	cur.g_w = w;
+	cur.g_h = h;
 	*gr = cur;
 
 	if (ret_edstart)
@@ -4484,15 +4484,15 @@ set_text(OBJECT *ob,
 static void
 set_obtext(TEDINFO *ted,
 	 struct xa_vdi_settings *v,
-	 RECT *gr,
-	 RECT *cr,
+	 GRECT *gr,
+	 GRECT *cr,
 	 bool formatted,
 	 short edit_pos,
 	 char *temp_text,
 	 short *ret_edstart,
-	 RECT r)
+	 GRECT r)
 {
-	RECT cur;
+	GRECT cur;
 	short w, h, cur_x = 0, start_tpos = 0;
 
 	/* Set the correct text size & font */
@@ -4503,23 +4503,23 @@ set_obtext(TEDINFO *ted,
 	case TE_GDOS_BITM:		/* Use a GDOS bitmap font (AES4.1 style) */
 	{
 		(*v->api->t_font)(v, ted->te_fontsize, ted->te_fontid);
-		cur.w = screen->c_max_w;
-		cur.h = screen->c_max_h;
+		cur.g_w = screen->c_max_w;
+		cur.g_h = screen->c_max_h;
 		break;
 	}
 	case TE_SMALL:			/* Use the small system font (probably 8 point) */
 	{
 		(*v->api->t_font)(v, screen->small_font_point, screen->small_font_id);
-		cur.w = screen->c_min_w;
-		cur.h = screen->c_min_h;
+		cur.g_w = screen->c_min_w;
+		cur.g_h = screen->c_min_h;
 		break;
 	}
 	case TE_STANDARD:		/* Use the standard system font (probably 10 point) */
 	default:
 	{
 		(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
-		cur.w = screen->c_max_w;
-		cur.h = screen->c_max_h;
+		cur.g_w = screen->c_max_w;
+		cur.g_h = screen->c_max_h;
 		break;
 	}
 	}
@@ -4542,10 +4542,10 @@ set_obtext(TEDINFO *ted,
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 
 	/* HR 290301 & 070202: Dont let a text violate its object space! (Twoinone packer shell!! :-) */
-	if (w > r.w)
+	if (w > r.g_w)
 	{
-		short	rw  = r.w / cur.w,
-			dif = (w - r.w + cur.w - 1) / cur.w,
+		short	rw  = r.g_w / cur.g_w,
+			dif = (w - r.g_w + cur.g_w - 1) / cur.g_w,
 			h1dif, h2dif;
 
 		switch (ted->te_just)
@@ -4578,23 +4578,23 @@ set_obtext(TEDINFO *ted,
 					/* Atari use a different horizontal alignment */
 		case TE_RIGHT:
 		{
-			cur.x = r.x + r.w - w;
+			cur.g_x = r.g_x + r.g_w - w;
 			break;
 		}
 		case TE_CNTR:
 		{
-			cur.x = r.x + ((r.w - w) / 2);
+			cur.g_x = r.g_x + ((r.g_w - w) / 2);
 			break;
 		}
 		default:
 		case TE_LEFT:			/* code for GEM to the one the VDI uses? */
 		{
-			cur.x = r.x;
+			cur.g_x = r.g_x;
 			break;
 		}
 	}
 
-	cur.y = r.y + ((r.h - h) / 2);
+	cur.g_y = r.g_y + ((r.g_h - h) / 2);
 
 	if (cr)
 	{
@@ -4608,22 +4608,22 @@ set_obtext(TEDINFO *ted,
 
 		*cr = cur;
 
-		cr->x += tw;
-		cr->w = 1;
+		cr->g_x += tw;
+		cr->g_w = 1;
 	}
 
-	cur.w = w;
-	cur.h = h;
+	cur.g_w = w;
+	cur.g_h = h;
 	*gr = cur;
 
 	if (ret_edstart)
 		*ret_edstart = start_tpos;
 }
-static void _cdecl g2d_box(struct xa_vdi_settings *v, short b, RECT *r, short colour);
-static void _cdecl write_selection(struct xa_vdi_settings *v, short d, RECT *r);
+static void _cdecl g2d_box(struct xa_vdi_settings *v, short b, GRECT *r, short colour);
+static void _cdecl write_selection(struct xa_vdi_settings *v, short d, GRECT *r);
 
 static void
-draw_outline(struct widget_tree *wt, struct xa_vdi_settings *v, short d, RECT *r)
+draw_outline(struct widget_tree *wt, struct xa_vdi_settings *v, short d, GRECT *r)
 {
 	struct bcol *col = &((struct theme *)wt->objcr_theme)->outline;
 
@@ -4654,9 +4654,9 @@ draw_outline(struct widget_tree *wt, struct xa_vdi_settings *v, short d, RECT *r
 #include "desktop.h"
 
 static void
-draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *c, short flags, RECT *area)
+draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *c, short flags, GRECT *area)
 {
-	RECT r = wt->r;
+	GRECT r = wt->r;
 	OBJECT *ob = wt->current.ob;
 	short thick, d, d3t, out;
 
@@ -4677,7 +4677,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 	else if (!c && (ct->col.flags & WCOL_DRAW3D) && (flags & DRAW_3D))
 		d3t--;
 
-	draw_objc_bkg(wt, v, ct, c, flags, -1, c ? c->framecol : -1, d, d3t, thick, thick, &r, (flags & ANCH_PARENT) ? (RECT *)&wt->current.tree->ob_x : &r, area);
+	draw_objc_bkg(wt, v, ct, c, flags, -1, c ? c->framecol : -1, d, d3t, thick, thick, &r, (flags & ANCH_PARENT) ? (GRECT *)&wt->current.tree->ob_x : &r, area);
 
 	draw_outline(wt, v, out, &r);
 }
@@ -4686,21 +4686,21 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 /*        Functions exported in objcr_theme			*/
 /* ************************************************************ */
 static void _cdecl
-write_menu_line(struct xa_vdi_settings *v, RECT *cl)
+write_menu_line(struct xa_vdi_settings *v, GRECT *cl)
 {
 	/* lower */
-	(*v->api->line)(v, cl->x, cl->y + cl->h - 1, cl->x + cl->w - 1, cl->y + cl->h - 1, G_BLACK);
+	(*v->api->line)(v, cl->g_x, cl->g_y + cl->g_h - 1, cl->g_x + cl->g_w - 1, cl->g_y + cl->g_h - 1, G_BLACK);
 	if( api->cfg->menu_layout )
 	{
 		/* right */
-		(*v->api->line)(v, cl->x + cl->w - 1, cl->y + cl->h-1, cl->x + cl->w - 1, cl->y, G_BLACK);
+		(*v->api->line)(v, cl->g_x + cl->g_w - 1, cl->g_y + cl->g_h-1, cl->g_x + cl->g_w - 1, cl->g_y, G_BLACK);
 		/* left */
-		(*v->api->line)(v, cl->x + 8, cl->y + cl->h-1, cl->x + 8, cl->y, G_BLACK);
+		(*v->api->line)(v, cl->g_x + 8, cl->g_y + cl->g_h-1, cl->g_x + 8, cl->g_y, G_BLACK);
 	}
 }
 
 static void _cdecl
-g2d_box(struct xa_vdi_settings *v, short b, RECT *r, short colour)
+g2d_box(struct xa_vdi_settings *v, short b, GRECT *r, short colour)
 {
 	/* inside runs from 3 to 0 */
 	if (b > 0)
@@ -4724,18 +4724,18 @@ g2d_box(struct xa_vdi_settings *v, short b, RECT *r, short colour)
 static void _cdecl
 draw_2d_box(struct xa_vdi_settings *v, short x, short y, short w, short h, short border_thick, short colour)
 {
-	RECT r;
+	GRECT r;
 
-	r.x = x;
-	r.y = y;
-	r.w = w;
-	r.h = h;
+	r.g_x = x;
+	r.g_y = y;
+	r.g_w = w;
+	r.g_h = h;
 
 	g2d_box(v, border_thick, &r, colour);
 }
 
 static void _cdecl
-write_selection(struct xa_vdi_settings *v, short d, RECT *r)
+write_selection(struct xa_vdi_settings *v, short d, GRECT *r)
 {
 	(*v->api->wr_mode)(v, MD_XOR);
 	(*v->api->f_color)(v, G_BLACK);
@@ -4745,7 +4745,7 @@ write_selection(struct xa_vdi_settings *v, short d, RECT *r)
 }
 
 static void
-write_selected(struct xa_vdi_settings *v, RECT *r, short wr_mode, short colour)
+write_selected(struct xa_vdi_settings *v, GRECT *r, short wr_mode, short colour)
 {
 	(*v->api->wr_mode)(v, wr_mode);
 	(*v->api->f_color)(v, colour);
@@ -4755,7 +4755,7 @@ write_selected(struct xa_vdi_settings *v, RECT *r, short wr_mode, short colour)
 }
 
 static void
-write_disable(struct xa_vdi_settings *v, RECT *r, short colour)
+write_disable(struct xa_vdi_settings *v, GRECT *r, short colour)
 {
 	static short pattern[16] =
 	{
@@ -4773,7 +4773,7 @@ write_disable(struct xa_vdi_settings *v, RECT *r, short colour)
 
 
 static void
-rl_xor(struct xa_vdi_settings *v, RECT *r, struct xa_rect_list *rl)
+rl_xor(struct xa_vdi_settings *v, GRECT *r, struct xa_rect_list *rl)
 {
 	if (rl)
 	{
@@ -4796,9 +4796,9 @@ static void _cdecl
 set_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei)
 {
 	char temp_text[256];
-	RECT r;
+	GRECT r;
 	OBJECT *ob;
-	RECT gr;
+	GRECT gr;
 	TEDINFO *ted;
 
  	XTEDINFO *xted;
@@ -4816,15 +4816,15 @@ set_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_i
 
 	set_obtext(ted, v, &gr, &ei->cr, true, ei->pos, temp_text, &ei->edstart, r);
 
-	ei->cr.x -= wt->tree->ob_x;
-	ei->cr.y -= wt->tree->ob_y;
+	ei->cr.g_x -= wt->tree->ob_x;
+	ei->cr.g_y -= wt->tree->ob_y;
 }
 
 static void _cdecl
 eor_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
 {
 	struct objc_edit_info *ei = wt->ei;
-	RECT r;
+	GRECT r;
 
 	if (!ei)
 		ei = &wt->e;
@@ -4833,8 +4833,8 @@ eor_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_lis
 	{
 		set_cursor(wt, v, ei);
 		r = ei->cr;
-		r.x += wt->tree->ob_x;
-		r.y += wt->tree->ob_y;
+		r.g_x += wt->tree->ob_x;
+		r.g_y += wt->tree->ob_y;
 
 		if (!(edit_ob(ei)->ob_flags & OF_HIDETREE))
 		{
@@ -4857,10 +4857,10 @@ draw_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_li
 		{
 			if (rdrw)
 			{
-				RECT r = ei->cr;
+				GRECT r = ei->cr;
 
-				r.x += wt->tree->ob_x;
-				r.y += wt->tree->ob_y;
+				r.g_x += wt->tree->ob_x;
+				r.g_y += wt->tree->ob_y;
 				rl_xor(v, &r, rl);
 			}
 			ei->c_state |= OB_CURS_ENABLED;
@@ -4883,10 +4883,10 @@ undraw_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_
 		{
 			if (rdrw)
 			{
-				RECT r = ei->cr;
+				GRECT r = ei->cr;
 
-				r.x += wt->tree->ob_x;
-				r.y += wt->tree->ob_y;
+				r.g_x += wt->tree->ob_x;
+				r.g_y += wt->tree->ob_y;
 				rl_xor(v, &r, rl);
 			}
 			ei->c_state &= ~OB_CURS_ENABLED;
@@ -4934,7 +4934,7 @@ obj_thickness(struct widget_tree *wt, OBJECT *ob)
  * Return offsets to add to object dimensions to account for borders, etc.
  */
 static void _cdecl
-obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c)
+obj_offsets(struct widget_tree *wt, OBJECT *ob, GRECT *c)
 {
 	short dx = 0, dy = 0, dw = 0, dh = 0, db = 0;
 	short thick;
@@ -4970,10 +4970,10 @@ obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c)
 			dh += 2 * thick;
 		}
 	}
-	c->x = dx;
-	c->y = dy;
-	c->w = dw;
-	c->h = dh;
+	c->g_x = dx;
+	c->g_y = dy;
+	c->g_w = dw;
+	c->g_h = dh;
 }
 
 static short _cdecl
@@ -5281,7 +5281,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #endif
 #if WITH_BKG_IMG
-	if( wt == get_desktop() && !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) )
+	if( wt == get_desktop() && !memcmp( &wt->r, &root_window->wa, sizeof(GRECT)) )
 	{
 
 		if( !do_bkg_img(wt->owner, 0, 0) )
@@ -5327,8 +5327,8 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 		p->r		= wt->r;
 		if ((*api->rect_clip)(&wt->r, &v->clip, &p->clip))
 		{
-			p->clip.w = p->clip.x + p->clip.w - 1;
-			p->clip.h = p->clip.y + p->clip.h - 1;
+			p->clip.g_w = p->clip.g_x + p->clip.g_w - 1;
+			p->clip.g_h = p->clip.g_y + p->clip.g_h - 1;
 
 			(*p->callout)(p);
 		}
@@ -5418,7 +5418,7 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct theme *theme = wt->objcr_theme;
 	struct object_theme *obt = &theme->boxtext;
 	struct color_theme *ct;
-	RECT r = wt->r, gr = r;
+	GRECT r = wt->r, gr = r;
 	OBJECT *ob = wt->current.ob;
 	BFOBSPEC c;
 	short w, h, fl3d, fcol;
@@ -5446,8 +5446,8 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 	(*v->api->t_effects)(v, ct->fnt.effects);
 	(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 	(*v->api->t_extent)(v, temp_text, &w, &h);
-	gr.x += (gr.w - w) >> 1;
-	gr.y += (gr.h - h) >> 1;
+	gr.g_x += (gr.g_w - w) >> 1;
+	gr.g_y += (gr.g_h - h) >> 1;
 
 	if (!disabled)
 	{
@@ -5455,8 +5455,8 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 		{
 			if (fl3d == ACT)
 			{
-				gr.x += PUSH3D_DISTANCE;
-				gr.y += PUSH3D_DISTANCE;
+				gr.g_x += PUSH3D_DISTANCE;
+				gr.g_y += PUSH3D_DISTANCE;
 				fcol = c.textcol;
 			}
 			else
@@ -5483,7 +5483,7 @@ d_g_boxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct color_theme *ct;
 	bool selected, disabled;
 	short fl3d, fcol;
-	RECT r = wt->r, gr;
+	GRECT r = wt->r, gr;
 	OBJECT *ob = wt->current.ob;
 	BFOBSPEC c;
 	TEDINFO *ted;
@@ -5514,8 +5514,8 @@ d_g_boxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 		{
 			if (fl3d == ACT)
 			{
-				gr.x += PUSH3D_DISTANCE;
-				gr.y += PUSH3D_DISTANCE;
+				gr.g_x += PUSH3D_DISTANCE;
+				gr.g_y += PUSH3D_DISTANCE;
 				fcol = c.textcol;
 			}
 			else
@@ -5539,10 +5539,10 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct object_theme *obt = &theme->boxtext;
 	struct color_theme *ct;
 	char temp_text[256];
-	RECT r = wt->r;
+	GRECT r = wt->r;
 	OBJECT *ob = wt->current.ob;
 	TEDINFO *ted;
-	RECT gr;
+	GRECT gr;
 	BFOBSPEC c;
 	struct objc_edit_info *ei;
 	bool selected, disabled;
@@ -5585,8 +5585,8 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 		{
 			if (fl3d == ACT)
 			{
-				gr.x += PUSH3D_DISTANCE;
-				gr.y += PUSH3D_DISTANCE;
+				gr.g_x += PUSH3D_DISTANCE;
+				gr.g_y += PUSH3D_DISTANCE;
 				f_fg = c.textcol;
 				f_bg = G_WHITE;
 			}
@@ -5616,7 +5616,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct theme *theme = wt->objcr_theme;
 	struct object_theme *obt;
 	struct color_theme *ct;
-	RECT r = wt->r, gr = r;
+	GRECT r = wt->r, gr = r;
 	OBJECT *ob = wt->current.ob;
 	short thick = obj_thickness(wt, ob), d3t, d, fl3d;
 	ushort selected = ob->ob_state & OS_SELECTED;
@@ -5665,7 +5665,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 		if (und == -2)
 		{
 			short tlc, brc;
-			RECT rr = r;
+			GRECT rr = r;
 
 			obt = &theme->groupframe;
 			ct = &obt->norm.n[fl3d];
@@ -5683,9 +5683,9 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 				else
 					(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 
-				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
-				rr.y += gr.h / 2;
-				rr.h -= gr.h / 2;
+				(*v->api->t_extent)(v, text, &gr.g_w, &gr.g_h);
+				rr.g_y += gr.g_h / 2;
+				rr.g_h -= gr.g_h / 2;
 			}
 			if ((fl3d & 2)) /* BKG or ACT */
 			{
@@ -5700,8 +5700,8 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 			if (text && *text)
 			{
-				gr.x = r.x + screen->c_max_w;
-				gr.y = r.y;
+				gr.g_x = r.g_x + screen->c_max_w;
+				gr.g_y = r.g_y;
 				chiseled_gbox(v, d, tlc, brc, &rr, &gr);
 				ob_text(wt, v, NULL, ct, &gr, NULL, NULL, -1, -1, -1, -1, 0,0,0, text, ob->ob_state, ob->ob_flags, -1, G_BLACK);
 			}
@@ -5731,15 +5731,15 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 			b.objcr_theme = theme;
 			xobj = aesobj(xobj_rsc, (ob->ob_flags & OF_RBUTTON) ? (selected ? XOBJ_R_SEL : XOBJ_R_DSEL) : (selected ? XOBJ_B_SEL : XOBJ_B_DSEL));
 			(*api->object_spec_wh)(aesobj_ob(&xobj), &w, &h);
-			if (gr.h != h)
-				gr.y += ((gr.h - h) >> 1);
+			if (gr.g_h != h)
+				gr.g_y += ((gr.g_h - h) >> 1);
 
-			(*api->render_object)(&b, v, xobj, gr.x, gr.y);
+			(*api->render_object)(&b, v, xobj, gr.g_x, gr.g_y);
 			if (text)
 			{
 				short undcol;
 				(*v->api->t_color)(v, ct->fnt.fg);
-				r.x += (w + 2);
+				r.g_x += (w + 2);
 				(*v->api->wr_mode)(v, MD_TRANS);
 				(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 				(*v->api->t_effects)(v, ct->fnt.effects);
@@ -5781,8 +5781,8 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 			fp = ct->fnt.font_point ? ct->fnt.font_point : screen->standard_font_point;
 			(*v->api->t_font)(v, fp, fi);
 			(*v->api->t_extent)(v, text, &tw, &th);
-			gr.y += (r.h - th) / 2;
-			gr.x += (r.w - tw) / 2;
+			gr.g_y += (r.g_h - th) / 2;
+			gr.g_x += (r.g_w - tw) / 2;
 		}
 
 		d = 0;
@@ -5808,8 +5808,8 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 		{
 			if (selected)
 			{
-				gr.x += ct->fnt.x_3dact;
-				gr.y += ct->fnt.y_3dact;
+				gr.g_x += ct->fnt.x_3dact;
+				gr.g_y += ct->fnt.y_3dact;
 			}
 			(*v->api->wr_mode)(v, MD_TRANS);
 			ob_text(wt, v, NULL, ct, &gr, &r, NULL, -1, -1, -1, -1, 0,0,0, text, ob->ob_state, 0, und, G_BLACK);
@@ -5906,8 +5906,8 @@ d_g_image(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	bitblk = (*api->object_get_spec)(ob)->bitblk;
 
-	icx = wt->r.x;
-	icy = wt->r.y;
+	icx = wt->r.g_x;
+	icy = wt->r.g_y;
 
 	Mscreen.fd_addr = NULL;
 
@@ -5965,23 +5965,23 @@ d_g_icon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	ICONBLK *iconblk;
 	MFDB Mscreen;
 	MFDB Micon;
-	RECT ic;
+	GRECT ic;
 	short pxy[8], cols[2], obx, oby, msk_col, icn_col, blitmode;
 
 	iconblk = (*api->object_get_spec)(ob)->iconblk;
-	obx = wt->r.x;
-	oby = wt->r.y;
+	obx = wt->r.g_x;
+	oby = wt->r.g_y;
 
-	ic = *(RECT*)&iconblk->ib_xicon;
-	ic.x += obx;
-	ic.y += oby;
+	ic = *(GRECT*)&iconblk->ib_xicon;
+	ic.g_x += obx;
+	ic.g_y += oby;
 
-	(*v->api->ritopxy)(pxy,     0, 0, ic.w, ic.h);
+	(*v->api->ritopxy)(pxy,     0, 0, ic.g_w, ic.g_h);
 	(*v->api->rtopxy) (pxy + 4, &ic);
 
-	Micon.fd_w = ic.w;
-	Micon.fd_h = ic.h;
-	Micon.fd_wdwidth = (ic.w + 15) >> 4;
+	Micon.fd_w = ic.g_w;
+	Micon.fd_h = ic.g_h;
+	Micon.fd_wdwidth = (ic.g_w + 15) >> 4;
 	Micon.fd_nplanes = 1;
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
@@ -6046,7 +6046,7 @@ d_g_icon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	}
 
 	/* should be the same for color & mono */
-	icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
+	icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.g_x, ic.g_y);
 
 	done(OS_SELECTED|OS_DISABLED);
 }
@@ -6064,7 +6064,7 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	MFDB Mscreen;
 	MFDB Micon, Mmask;
 	bool have_sel;
-	RECT ic;
+	GRECT ic;
 	short pxy[8], cols[2] = {0,1}, obx, oby, blitmode;
 
 	best_cicon = (*api->getbest_cicon)((*api->object_get_spec)(ob)->ciconblk);
@@ -6076,20 +6076,20 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	}
 
 	iconblk = (*api->object_get_spec)(ob)->iconblk;
-	obx = wt->r.x;
-	oby = wt->r.y;
+	obx = wt->r.g_x;
+	oby = wt->r.g_y;
 
-	ic = *(RECT *)&iconblk->ib_xicon;
+	ic = *(GRECT *)&iconblk->ib_xicon;
 
-	ic.x += obx;
-	ic.y += oby;
+	ic.g_x += obx;
+	ic.g_y += oby;
 
-	(*v->api->ritopxy)(pxy,     0, 0, ic.w, ic.h);
+	(*v->api->ritopxy)(pxy,     0, 0, ic.g_w, ic.g_h);
 	(*v->api->rtopxy) (pxy + 4, &ic);
 
-	Micon.fd_w = ic.w;
-	Micon.fd_h = ic.h;
-	Micon.fd_wdwidth = (ic.w + 15) >> 4;
+	Micon.fd_w = ic.g_w;
+	Micon.fd_h = ic.g_h;
+	Micon.fd_wdwidth = (ic.g_w + 15) >> 4;
 	Micon.fd_nplanes = 1;
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
@@ -6121,7 +6121,7 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	vro_cpyfm(RASTER_HDL, blitmode, pxy, &Micon, &Mscreen);
 	if( iconblk->ib_char || *iconblk->ib_ptext )
-		icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
+		icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.g_x, ic.g_y);
 
 	if ((ob->ob_state & OS_DISABLED) || ((ob->ob_state & OS_SELECTED) && !have_sel))
 	{
@@ -6164,7 +6164,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 	short fl3d, f_fg, boxflags, fwr_mode;
 	OBJECT *ob = wt->current.ob;
 	TEDINFO *ted;
-	RECT r = wt->r, gr;
+	GRECT r = wt->r, gr;
 	BFOBSPEC c;
 	struct objc_edit_info *ei;
 	bool selected, disabled, writedis = false, writesel = false;
@@ -6223,8 +6223,8 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 	{
 		if (fl3d == ACT)
 		{
-			gr.x += PUSH3D_DISTANCE;
-			gr.y += PUSH3D_DISTANCE;
+			gr.g_x += PUSH3D_DISTANCE;
+			gr.g_y += PUSH3D_DISTANCE;
 			f_fg = -1;
 		}
 		else
@@ -6267,7 +6267,7 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 	struct theme *theme = wt->objcr_theme;
 	struct object_theme *obt;
 	struct color_theme *ct;
-	RECT r = wt->r;
+	GRECT r = wt->r;
 	OBJECT *ob = wt->current.ob;
 	ushort state = ob->ob_state;
 	bool selected, disabled;
@@ -6339,60 +6339,60 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 				strcpy(text, "");
 			}
 			/* Draw separator line (or line on the left if text is present) */
-			old_rx = r.x;
-			old_rw = r.w;
+			old_rx = r.g_x;
+			old_rw = r.g_w;
 			if (*text)
 			{				
-				r.x += 1;
-				r.w = start_pos * screen->c_max_w - 1;
+				r.g_x += 1;
+				r.g_w = start_pos * screen->c_max_w - 1;
 			} else
 			{
-				r.x += 1;
-				r.w -= 3;				
+				r.g_x += 1;
+				r.g_w -= 3;				
 			}
-			r.y += (r.h - 2)/2;
+			r.g_y += (r.g_h - 2)/2;
 			if (MONO)
 			{
 				(*v->api->l_type)(v, 7);
 				(*v->api->l_udsty)(v, 0xaaaa);
-				(*v->api->line)(v, r.x, r.y, r.x + r.w, r.y, G_BLACK);
+				(*v->api->line)(v, r.g_x, r.g_y, r.g_x + r.g_w, r.g_y, G_BLACK);
 				(*v->api->l_udsty)(v, 0x5555);
-				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, G_BLACK);
+				(*v->api->line)(v, r.g_x, r.g_y + 1, r.g_x + r.g_w, r.g_y + 1, G_BLACK);
 				(*v->api->l_type)(v, 0);
 			}
 			else
 			{
-				r.x += 2, r.w -= 4;
-				(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     ct->col.bottom);
-				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, ct->col.top);
+				r.g_x += 2, r.g_w -= 4;
+				(*v->api->line)(v, r.g_x, r.g_y,     r.g_x + r.g_w, r.g_y,     ct->col.bottom);
+				(*v->api->line)(v, r.g_x, r.g_y + 1, r.g_x + r.g_w, r.g_y + 1, ct->col.top);
 			}
 			/* Draw text if any, ignore underscore/OS_WHITEBAK */
 			if (*text) 
 			{				   
 				/* Draw separator line on the right if there is enough space */
-				r.x = old_rx + (start_pos + strlen(text)) * screen->c_max_w; 
-				r.w = old_rw - (start_pos + strlen(text)) * screen->c_max_w - 2;
-				if (MONO && (r.w > 0))
+				r.g_x = old_rx + (start_pos + strlen(text)) * screen->c_max_w; 
+				r.g_w = old_rw - (start_pos + strlen(text)) * screen->c_max_w - 2;
+				if (MONO && (r.g_w > 0))
 				{
 					(*v->api->l_type)(v, 7);
 					(*v->api->l_udsty)(v, 0xaaaa);
-					(*v->api->line)(v, r.x, r.y, r.x + r.w, r.y, G_BLACK);
+					(*v->api->line)(v, r.g_x, r.g_y, r.g_x + r.g_w, r.g_y, G_BLACK);
 					(*v->api->l_udsty)(v, 0x5555);
-					(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, G_BLACK);
+					(*v->api->line)(v, r.g_x, r.g_y + 1, r.g_x + r.g_w, r.g_y + 1, G_BLACK);
 					(*v->api->l_type)(v, 0);
 				}
-				else if (!MONO && (r.w > 4))
+				else if (!MONO && (r.g_w > 4))
 				{
-					r.x += 2, r.w -= 4;
-					(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     ct->col.bottom);
-					(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, ct->col.top);
+					r.g_x += 2, r.g_w -= 4;
+					(*v->api->line)(v, r.g_x, r.g_y,     r.g_x + r.g_w, r.g_y,     ct->col.bottom);
+					(*v->api->line)(v, r.g_x, r.g_y + 1, r.g_x + r.g_w, r.g_y + 1, ct->col.top);
 				}
 				/* Draw text */
 				(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 				(*v->api->t_color)(v, ct->fnt.fg);
 				(*v->api->t_effects)(v, ct->fnt.effects);
-				r.y -= (r.h - 2)/2; /* fixes y-coordinate to draw text */
-				r.x = old_rx + start_pos * screen->c_max_w;
+				r.g_y -= (r.g_h - 2)/2; /* fixes y-coordinate to draw text */
+				r.g_x = old_rx + start_pos * screen->c_max_w;
 				ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, text, state, 0, -1, G_BLACK);				
 			}
 			done(OS_DISABLED);
@@ -6441,7 +6441,7 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if (t)
 	{
 		short und = -1, state = ob->ob_state;
-		RECT r = wt->r;
+		GRECT r = wt->r;
 		char text[256];
 
 		selected = ob->ob_state & OS_SELECTED;
@@ -6725,7 +6725,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	/* get widget object parameters. */
 	{
 		int i;
-		RECT c;
+		GRECT c;
 		OBJECT *tree = (*api->resource_tree)(xobj_rshdr, EXT_AESOBJ);
 
 		(*api->ob_spec_xywh)(tree, 1, &c);

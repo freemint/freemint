@@ -191,7 +191,7 @@ struct xa_rect_list
 {
 	struct xa_rect_list *next;
 	/* Dimensions of segment */
-	RECT r;
+	GRECT r;
 };
 
 struct xa_rectlist_entry
@@ -304,7 +304,7 @@ struct xa_colour_scheme
 
 struct xa_screen
 {
-	RECT r;				/* Screen dimensions */
+	GRECT r;				/* Screen dimensions */
 
 	short colours;			/* Number of colours available */
 	short planes;			/* Number of planes in screen */
@@ -513,7 +513,7 @@ struct xa_mouse_rect
 	short flags;
 	short m1_flag;
 	short m2_flag;
-	RECT m1, m2;
+	GRECT m1, m2;
 	TASK *t1, *t2;	/* used by tasking */
 };
 
@@ -521,9 +521,9 @@ struct xa_mouse_rect
 /* The vdi api
 */
 
-static inline long calc_back(const RECT *r, short planes)
+static inline long calc_back(const GRECT *r, short planes)
 {
-	return 2L * planes * ((r->w + 15) >> 4) * r->h;
+	return 2L * planes * ((r->g_w + 15) >> 4) * r->g_h;
 }
 
 /*-----------------------------------------------------------------
@@ -655,7 +655,7 @@ struct lbox_slide
 	short entries;
 	short pause;
 	short flags;
-	RECT ofs;
+	GRECT ofs;
 
 	lbox_scroll *dr_scroll;
 	lbox_scroll *ul_scroll;
@@ -736,7 +736,7 @@ struct wdlg_evnt_parms
 	EVNT *ev;
 	struct wdlg_info *wdlg;
 	short (*callout)(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback);
-	void  (*redraw)(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r);
+	void  (*redraw)(int lock, struct xa_window *wind, struct xa_aes_object start, short depth, GRECT *r);
 
 	struct xa_aes_object obj;
 };
@@ -876,7 +876,7 @@ struct objc_edit_info
 	short m_end;
 	unsigned short t_offset;
 	unsigned short p_offset;
-	RECT cr;	/* Cursor coordinates, relative */
+	GRECT cr;	/* Cursor coordinates, relative */
 	TEDINFO ti;
 };
 typedef struct objc_edit_info XTEDINFO;
@@ -914,13 +914,13 @@ struct widget_tree
 
 	OBJECT *tree;			/* The object tree */
 	struct xa_aes_object current;
-	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
-					/* And set a usefull RECT as soon as possible, ready for use in
+	GRECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
+					/* And set a usefull GRECT as soon as possible, ready for use in
 					 * all kind of functions. */
-	RECT area;
+	GRECT area;
 	ushort *state_mask;
 
-	RECT r_parent;
+	GRECT r_parent;
 #if 0
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
 	short parent_y;
@@ -1008,7 +1008,7 @@ struct fmd
 	XA_WIND_ATTR kind;		/* Window attributes to be used. */
 	FormKeyInput *keypress;
 	FormMouseInput *mousepress;
-	RECT r;				/* The rectangle for the postponed dialogue window */
+	GRECT r;				/* The rectangle for the postponed dialogue window */
 };
 
 #define CEVNT_MOVEMENT	1
@@ -1024,7 +1024,7 @@ struct c_event
 	void			*ptr2;
 	int			d0;
 	int			d1;
-	RECT			r;
+	GRECT			r;
 	struct	moose_data	md;
 };
 
@@ -1151,11 +1151,11 @@ typedef enum xa_widgets XA_WIDGETS;
 
 struct xa_widget;
 
-typedef bool _cdecl DrawWidg(struct xa_window *wind, struct xa_widget *widg, const RECT *clip);
-typedef void _cdecl DrawCanvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip);
+typedef bool _cdecl DrawWidg(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip);
+typedef void _cdecl DrawCanvas(struct xa_window *wind, GRECT *outer, GRECT *inner, const GRECT *clip);
 typedef void _cdecl SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
 typedef void _cdecl WidgGemColor(struct xa_window *wind, short gem_widget, BFOBSPEC *c);
-typedef void _cdecl DrawFrame(struct xa_window *wind, const RECT *clip);
+typedef void _cdecl DrawFrame(struct xa_window *wind, const GRECT *clip);
 typedef void _cdecl FreePriv(struct xa_window *wind, struct xa_widget *widg);
 
 struct render_widget
@@ -1187,7 +1187,7 @@ struct xa_widget_row
 	XA_WIND_ATTR		tp_mask;
 	struct xa_widget 	*start;
 	short	rownr;
-	RECT r;
+	GRECT r;
 	short rxy;
 };
 
@@ -1201,8 +1201,8 @@ struct widget_theme
 	WidgGemColor		*get_widgcolor;
 	WidgGemColor		*set_widgcolor;
 
-	RECT			outer;
-	RECT			inner;
+	GRECT			outer;
+	GRECT			inner;
 	DrawCanvas		*draw_canvas;
 
 	DrawFrame		*draw_waframe;
@@ -1269,14 +1269,14 @@ struct object_render_api
 	struct xa_data_hdr	h;
 
 	short _cdecl (*objc_sysvar)	(void *theme, short mode, short what, short *val1, short *val2, short *val3, short *val4);
-	void  _cdecl (*obj_offsets)	(struct widget_tree *wt, OBJECT *ob, RECT *c);
+	void  _cdecl (*obj_offsets)	(struct widget_tree *wt, OBJECT *ob, GRECT *c);
 	short _cdecl (*obj_thickness)	(struct widget_tree *wt, OBJECT *ob);
 	short _cdecl (*obj_is_transp)	(struct widget_tree *wt, OBJECT *ob, bool progdef_is_trans);
 
-	void _cdecl  (*write_menu_line)	(struct xa_vdi_settings *v, RECT *r);
-	void _cdecl  (*g2d_box)		(struct xa_vdi_settings *v, short b, RECT *r, short colour);
+	void _cdecl  (*write_menu_line)	(struct xa_vdi_settings *v, GRECT *r);
+	void _cdecl  (*g2d_box)		(struct xa_vdi_settings *v, short b, GRECT *r, short colour);
 	void _cdecl  (*draw_2d_box)	(struct xa_vdi_settings *v, short x, short y, short w, short h, short border_thick, short colour);
-	void _cdecl  (*write_selection)	(struct xa_vdi_settings *v, short d, RECT *r);
+	void _cdecl  (*write_selection)	(struct xa_vdi_settings *v, short d, GRECT *r);
 
 	void _cdecl  (*set_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei);
 	void _cdecl  (*eor_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
@@ -1363,9 +1363,9 @@ struct xa_widget
 
 	short		state;		/* Current status (selected, etc) */
 
-	RECT		r;		/* Relative position */
-	RECT		ar;		/* Absolute position */
-	RECT		prevr;		/* Prevsioiu position - free to use for modules */
+	GRECT		r;		/* Relative position */
+	GRECT		ar;		/* Absolute position */
+	GRECT		prevr;		/* Prevsioiu position - free to use for modules */
 
 #define XAWF_ALLOC		1
 #define XAWF_STUFFKMALLOC	2
@@ -1397,7 +1397,7 @@ struct xa_pending_widget
 	short x, y;
 	struct moose_data m;
 	int offs;			/* slider information */
-	RECT d;				/* distance information */
+	GRECT d;				/* distance information */
 	int xy;				/* compass when border sizing */
 	bool cont;
 };
@@ -1411,7 +1411,7 @@ struct xa_slider_widget
 	short position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
 	short length;			/* Length (0-1000(SL_RANGE)) */
 	short rpos;
-	RECT r;				/* physical */
+	GRECT r;				/* physical */
 };
 typedef struct xa_slider_widget XA_SLIDER_WIDGET;
 
@@ -1445,8 +1445,8 @@ struct xa_wc_cache
 	struct xa_wc_cache *next;
 	short	class;
 	XA_WIND_ATTR tp;
-	RECT delta;
-	RECT wadelta;
+	GRECT delta;
+	GRECT wadelta;
 };
 
 /* Window Descriptor */
@@ -1471,10 +1471,10 @@ struct xa_window
 	XA_WIND_ATTR	active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR	save_widgets;	/* Remember active_widgets if iconified */
 	XA_WIND_ATTR	save_requested_widgets;
-	RECT delta;
-	RECT wadelta;
-	RECT save_delta;
-	RECT save_wadelta;
+	GRECT delta;
+	GRECT wadelta;
+	GRECT save_delta;
+	GRECT save_wadelta;
 
 	/*
 	 * These are pointers to structures holding widget color information for the
@@ -1511,21 +1511,21 @@ struct xa_window
 	short ext_borders;
 	short x_shadow;
 	short y_shadow;
-	RECT max;			/* Creator dimension's, maximum for sizing */
-	RECT min;
-	RECT r;				/* Current dimensions */
-	RECT rc;			/* Real coordinates when shaded */
-	RECT ro;			/* Original dimemsions when iconified */
-	RECT wa;			/* user work area */
-	RECT rwa;			/* work area minus toolbar, if installed - else same as wa */
-	RECT bd;			/* border displacement */
-	RECT rbd;
-	RECT ba;			/* border area for use by border sizing facility. */
-	RECT pr;			/* previous dimensions */
-	RECT t;				/* Temporary coordinates used internally */
+	GRECT max;			/* Creator dimension's, maximum for sizing */
+	GRECT min;
+	GRECT r;				/* Current dimensions */
+	GRECT rc;			/* Real coordinates when shaded */
+	GRECT ro;			/* Original dimemsions when iconified */
+	GRECT wa;			/* user work area */
+	GRECT rwa;			/* work area minus toolbar, if installed - else same as wa */
+	GRECT bd;			/* border displacement */
+	GRECT rbd;
+	GRECT ba;			/* border area for use by border sizing facility. */
+	GRECT pr;			/* previous dimensions */
+	GRECT t;				/* Temporary coordinates used internally */
 
-	RECT outer;
-	RECT inner;
+	GRECT outer;
+	GRECT inner;
 
 	short sw;			/* define middle of window (default 2 -> 1/2), used for resizing */
 	short sh;			/* height to use when SHADED */
@@ -1540,7 +1540,7 @@ struct xa_window
 	struct xa_rectlist_entry rect_toolbar;
 
 	bool use_rlc;
-	RECT rl_clip;
+	GRECT rl_clip;
 
 	void *background;		/* Pointer to a buffer containing the saved background */
 
@@ -1614,9 +1614,9 @@ struct se_tab
 {
 	short flags;
 	short uflags;
-	RECT v;
+	GRECT v;
 
-	RECT r;
+	GRECT r;
 	short widest;
 	short highest;
 };
@@ -1625,7 +1625,7 @@ struct se_tab
 #define SETEXT_ALLOC	2
 struct se_icon
 {
-	RECT r;
+	GRECT r;
 	OBJECT *icon;
 };
 struct se_text;
@@ -1768,7 +1768,7 @@ struct seset_tab
 {
 	short index;
 	short flags;
-	RECT r;
+	GRECT r;
 };
 
 /* scrl_get modes */
@@ -1904,7 +1904,7 @@ struct scroll_entry
 	short level;
 	short indent;
 	short num_content;
-	RECT r;
+	GRECT r;
 	SCROLL_ENTRY_TYPE  type; 	/* type flags */
 	SCROLL_ENTRY_FLAGS iflags;	/* internal flags */
 
@@ -2055,7 +2055,7 @@ struct menu_task
 	short attach_select;
 
 	short clicks, x, y;
-	RECT bar, drop;
+	GRECT bar, drop;
 
 	struct xa_mouse_rect em;
 	void *Mpreserve;
@@ -2313,14 +2313,14 @@ struct extbox_parms
  */
 	struct widget_tree *wt;
 	short	index;
-	RECT r;
-	RECT clip;
+	GRECT r;
+	GRECT clip;
 };
 
 struct oblink_spec
 {
 	struct xa_aes_object to;
-	RECT save_to_r;
+	GRECT save_to_r;
 	struct xa_aes_object from;
 	OBJECT save_obj;
 	struct xa_aes_object savestop;
@@ -2631,7 +2631,7 @@ struct common
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
 
-	RECT iconify;			/* Positioning information for iconifying windows */
+	GRECT iconify;			/* Positioning information for iconifying windows */
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */
 
@@ -2861,27 +2861,27 @@ struct xa_module_api
 	TEDINFO *	_cdecl (*object_get_tedinfo)	(OBJECT *ob, XTEDINFO **x);
 	void		_cdecl (*object_spec_wh)	(OBJECT *ob, short *w, short *h);
 
-	void		_cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, RECT *r);
+	void		_cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, GRECT *r);
 	void		_cdecl	(*render_object)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short px, short py);
 	CICON *		_cdecl	(*getbest_cicon)	(CICONBLK *ciconblk);
 	short		_cdecl	(*obj_offset)		(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my);
-	void		_cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, RECT *r);
+	void		_cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, GRECT *r);
 
 	void _cdecl		(*obj_set_radio_button)	(struct widget_tree *wt,
 							 struct xa_vdi_settings *v,
 							 struct xa_aes_object obj,
 							 bool redraw,
-							 const RECT *clip,
+							 const GRECT *clip,
 							 struct xa_rect_list *rl);
 	struct xa_aes_object _cdecl (*obj_get_radio_button)	(struct widget_tree *wt,
 								struct xa_aes_object parent,
 								short state);
 
 
-	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-	void _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, GRECT *r);
+	void _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, GRECT *r);
 
-	short _cdecl	(*rect_clip)		(RECT *s, RECT *d, RECT *r);
+	short _cdecl	(*rect_clip)		(GRECT *s, GRECT *d, GRECT *r);
 
 	void * _cdecl	(*kmalloc)		(long size);
 	void * _cdecl	(*umalloc)		(long size);
@@ -2912,11 +2912,11 @@ struct xa_module_api
 							WINDOW_TYPE dial,
 							int frame,
 							bool thinwork,
-							const RECT *R,
-							const RECT *max,
-							RECT *remember);
+							const GRECT *R,
+							const GRECT *max,
+							GRECT *remember);
 
-	int _cdecl	(*open_window)		(int lock, struct xa_window *wind, RECT r);
+	int _cdecl	(*open_window)		(int lock, struct xa_window *wind, GRECT r);
 	bool _cdecl	(*close_window)		(int lock, struct xa_window *wind);
 	void _cdecl	(*move_window)		(int lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
 	void _cdecl	(*top_window)		(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);

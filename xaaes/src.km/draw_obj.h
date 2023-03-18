@@ -45,10 +45,10 @@ void	display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_
 short	draw_object_tree(int lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, struct xa_aes_object obj, short depth, short *xy, short flags);
 
 /* Internal utility routines */
-void shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *r, short colour, short x, short y);
+void shadow_area(struct xa_vdi_settings *v, short d, short state, GRECT *r, short colour, short x, short y);
 
 /* intermediate level draw functions & misc. */
-void adjust_size(short d, RECT *r);
+void adjust_size(short d, GRECT *r);
 
 // void enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v);
 // void disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);

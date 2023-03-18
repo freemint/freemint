@@ -111,7 +111,7 @@ api_object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 }
 
 static void _cdecl
-api_ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
+api_ob_spec_xywh(OBJECT *obtree, short obj, GRECT *r)
 {
 	ob_spec_xywh(obtree, obj, r);
 }
@@ -141,24 +141,24 @@ api_obj_offset(struct widget_tree *wt, struct xa_aes_object object, short *mx, s
 }
 
 static void _cdecl
-api_obj_rectangle(struct widget_tree *wt, struct xa_aes_object object, RECT *r)
+api_obj_rectangle(struct widget_tree *wt, struct xa_aes_object object, GRECT *r)
 {
 	obj_rectangle(wt, object, r);
 }
 
 static void * _cdecl
-api_rp2ap(struct xa_window *wind, struct xa_widget *widg, RECT *r)
+api_rp2ap(struct xa_window *wind, struct xa_widget *widg, GRECT *r)
 {
 	return rp_2_ap(wind, widg, r);
 }
 static void _cdecl
-api_rp2apcs(struct xa_window *wind, struct xa_widget *widg, RECT *r)
+api_rp2apcs(struct xa_window *wind, struct xa_widget *widg, GRECT *r)
 {
 	rp_2_ap_cs(wind, widg, r);
 }
 
 static short _cdecl
-api_rect_clip(RECT *s, RECT *d, RECT *r)
+api_rect_clip(GRECT *s, GRECT *d, GRECT *r)
 {
 	return (xa_rect_clip(s, d, r)) ? 1 : 0;
 }
@@ -766,9 +766,9 @@ k_init(unsigned short dev, unsigned short mc)
 		BLOG((false, "Guessing phys-handle is 1"));
 		C.P_handle = 1;	/* HOPE it's 1 .. */
 	}
-	screen.r.x = screen.r.y = 0;
-	screen.r.w = work_out[0] + 1;
-	screen.r.h = work_out[1] + 1;
+	screen.r.g_x = screen.r.g_y = 0;
+	screen.r.g_w = work_out[0] + 1;
+	screen.r.g_h = work_out[1] + 1;
 	screen.colours = work_out[13];
 	v->screen = screen.r;
 
@@ -807,7 +807,7 @@ k_init(unsigned short dev, unsigned short mc)
 
 	screen.pixel_fmt = detect_pixel_format(v);
 	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
-		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt));
+		screen.r.g_w, screen.r.g_h, screen.planes, screen.colours, screen.pixel_fmt));
 
 	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette, client->home_path, cfg.palette ) )
 	{
@@ -833,7 +833,7 @@ k_init(unsigned short dev, unsigned short mc)
 	screen.c_min_w = v->cell_w;
 	screen.c_min_h = v->cell_h;
 	calc_average_fontsize(v, &screen.c_min_w, &screen.c_min_h, &screen.c_min_dist[0]);
-	if (screen.r.h <= 280)
+	if (screen.r.g_h <= 280)
 	{
 		cfg.standard_font_point = cfg.medium_font_point;
 		if (cfg.xaw_point == STANDARD_FONT_POINT)
@@ -870,7 +870,7 @@ k_init(unsigned short dev, unsigned short mc)
 	 * so I just redirect the console to the required file/device
 	 */
 	BLOG((false, "Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
-	BLOG((false, " size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
+	BLOG((false, " size=[%d,%d], colours=%d, bitplanes=%d", screen.r.g_w, screen.r.g_h, screen.colours, screen.planes));
 
 
 	/* Load the system resource files
@@ -1014,9 +1014,9 @@ k_init(unsigned short dev, unsigned short mc)
 	/* Set a default desktop */
 	{
 		OBJECT *ob = get_xa_desktop();
-		*(RECT*)&ob->ob_x = root_window->r;
-		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.w - (ob + DESKTOP_LOGO)->ob_width) / 2;
-		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
+		*(GRECT*)&ob->ob_x = root_window->r;
+		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.g_w - (ob + DESKTOP_LOGO)->ob_width) / 2;
+		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.g_h - (ob + DESKTOP_LOGO)->ob_height) / 2;
 		if( cfg.back_col != -1 )
 			(ob + DESKTOP)->ob_spec.obspec.interiorcol = cfg.back_col;
 		client->desktop = new_widget_tree(client, ob);
@@ -1032,13 +1032,13 @@ k_init(unsigned short dev, unsigned short mc)
 
 	if( cfg.menu_ontop )
 	{
-		RECT r = client->std_menu->area;
+		GRECT r = client->std_menu->area;
 
-		r.x = 0;
+		r.g_x = 0;
 		if( cfg.menu_layout == 0 )
-			r.w = screen.r.w;
+			r.g_w = screen.r.g_w;
 		else
-			r.w += client->std_menu->area.x;
+			r.g_w += client->std_menu->area.g_x;
 		menu_window = create_window(0, NULL, NULL, client, true, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, false, false, &r, 0,0);
 		if( !menu_window )
 			return -1;
@@ -1049,7 +1049,7 @@ k_init(unsigned short dev, unsigned short mc)
 #if WITH_BBL_HELP
 	if( cfg.xa_bubble || cfg.menu_bar != 2 )
 	{
-		RECT r = {0,0,420,420};
+		GRECT r = {0,0,420,420};
 		bool nolist = false;
 
 		bgem_window = create_window(0, 0, 0, client, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, &r, 0,0);
@@ -1075,7 +1075,7 @@ k_init(unsigned short dev, unsigned short mc)
 	cfg.menu_settings.mn_set.drag = cfg.popout_timeout;
 	cfg.menu_settings.mn_set.delay = 250;
 	cfg.menu_settings.mn_set.speed = 0;
-	cfg.menu_settings.mn_set.height = root_window->wa.h / screen.c_max_h;
+	cfg.menu_settings.mn_set.height = root_window->wa.g_h / screen.c_max_h;
 	v_show_c(C.P_handle, 0);
 	return 0;
 }

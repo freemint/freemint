@@ -277,13 +277,13 @@ get_last_visible_item(struct xa_lbox_info *lbox)
  * Redraw an LBOX object
  */
 static void
-redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
+redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, GRECT *r)
 {
 	struct xa_window *wind;
 	struct widget_tree *wt;
 	struct xa_vdi_settings *v = lbox->vdi_settings;
 	struct xa_aes_object start, object, obj;
-	RECT or;
+	GRECT or;
 
 	wt = lbox->wt;
 	wind = wt->wind;
@@ -312,7 +312,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
 		if ((wind->window_status & XAWS_OPEN))
 		{
 			struct xa_rect_list *rl;
-			RECT dr;
+			GRECT dr;
 
 			if (!r)
 				r = &or;
@@ -646,8 +646,8 @@ set_slide_size(struct xa_lbox_info *lbox, struct lbox_slide *s)
 		DIAG((D_lbox, NULL, "old w=%d, old h=%d, new w=%d, new h=%d",
 			obtree[child].ob_width, obtree[child].ob_height, w, h));
 
-		obtree[child].ob_width = w + s->ofs.w;
-		obtree[child].ob_height = h + s->ofs.h;
+		obtree[child].ob_width = w + s->ofs.g_w;
+		obtree[child].ob_height = h + s->ofs.g_h;
 	}
 }
 /*
@@ -656,26 +656,26 @@ set_slide_size(struct xa_lbox_info *lbox, struct lbox_slide *s)
  * 'ofs' ignored on X/Y when using 'sc' instead of childs X or Y.
  */
 static long
-get_slider_relpos(OBJECT *obtree, short sc, short parent, short child, short orient, RECT *ofs)
+get_slider_relpos(OBJECT *obtree, short sc, short parent, short child, short orient, GRECT *ofs)
 {
 	short tmp;
 
 	if (orient)
 	{
-		if (!(tmp = obtree[parent].ob_height - (obtree[child].ob_height - ofs->h)))
+		if (!(tmp = obtree[parent].ob_height - (obtree[child].ob_height - ofs->g_h)))
 			return 0;
 		else if (sc < 0)
-			return (long)(((long)(obtree[child].ob_y + ofs->y) * 1000) / tmp);
+			return (long)(((long)(obtree[child].ob_y + ofs->g_y) * 1000) / tmp);
 		else
 			return (long)(((long)sc * 1000) / tmp);
 
 	}
 	else
 	{
-		if (!(tmp = obtree[parent].ob_width - (obtree[child].ob_width - ofs->w)))
+		if (!(tmp = obtree[parent].ob_width - (obtree[child].ob_width - ofs->g_w)))
 			return 0;
 		else if (sc < 0)
-			return (long)(((long)(obtree[child].ob_x + ofs->x) * 1000) / tmp);
+			return (long)(((long)(obtree[child].ob_x + ofs->g_x) * 1000) / tmp);
 		else
 			return (long)(((long)sc * 1000) / tmp);
 	}
@@ -702,13 +702,13 @@ set_slide_pos(struct xa_lbox_info *lbox, struct lbox_slide *s)
 
 		if (s->flags & LBOX_VERT)
 		{
-			l = obtree[child].ob_height - s->ofs.h;
-			obtree[child].ob_y = ((((long)(obtree[parent].ob_height - l) * relpos) + 500) / 1000) - s->ofs.y;
+			l = obtree[child].ob_height - s->ofs.g_h;
+			obtree[child].ob_y = ((((long)(obtree[parent].ob_height - l) * relpos) + 500) / 1000) - s->ofs.g_y;
 		}
 		else
 		{
-			l = obtree[child].ob_width - s->ofs.w;
-			obtree[child].ob_x = ((((long)(obtree[parent].ob_width -  l) * relpos) + 500) / 1000) - s->ofs.x;
+			l = obtree[child].ob_width - s->ofs.g_w;
+			obtree[child].ob_x = ((((long)(obtree[parent].ob_width -  l) * relpos) + 500) / 1000) - s->ofs.g_x;
 		}
 		DIAG((D_lbox, NULL, "set_slide_pos: parent=%d, child=%d, entries=%d, firstvis=%d, visible=%d, relsiz=%ld",
 			parent, child, s->entries, s->first_visible, s->num_visible, relpos));
@@ -727,8 +727,8 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 		short parent, child, first, max, mx, my;
 		OBJECT *obtree = lbox->wt->tree;
 		long slider_rpos;
-		RECT sl_r;
-		RECT lb_r;
+		GRECT sl_r;
+		GRECT lb_r;
 
 		parent = s->bkg;
 		child = s->sld;
@@ -744,12 +744,12 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 		if (s->flags & LBOX_VERT)
 		{
 			xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
-			max = obtree[parent].ob_height - (obtree[child].ob_height - s->ofs.h);
+			max = obtree[parent].ob_height - (obtree[child].ob_height - s->ofs.g_h);
 		}
 		else
 		{
 			xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
-			max = obtree[parent].ob_width - (obtree[child].ob_width - s->ofs.w);
+			max = obtree[parent].ob_width - (obtree[child].ob_width - s->ofs.g_w);
 		}
 
 		while (mb)
@@ -762,7 +762,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 
 				if (s->flags & LBOX_VERT)
 				{
-					oc = obtree[child].ob_y + s->ofs.y;
+					oc = obtree[child].ob_y + s->ofs.g_y;
 					nc = oc + (my - sy);
 					if (nc < 0)
 						nc = 0;
@@ -799,7 +799,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 				}
 				else
 				{
-					oc = obtree[child].ob_x + s->ofs.x;
+					oc = obtree[child].ob_x + s->ofs.g_x;
 					nc = oc + (mx - sx);
 					if (nc < 0)
 						nc = 0;
@@ -840,7 +840,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 	} /* if (mb) */
 }
 static void
-clear_all_selected(struct xa_lbox_info *lbox, short skip, RECT *r)
+clear_all_selected(struct xa_lbox_info *lbox, short skip, GRECT *r)
 {
 	int i;
 	short *objs;
@@ -938,7 +938,7 @@ item_to_obj(struct xa_lbox_info *lbox, struct lbox_item *item)
 }
 
 static bool
-move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_r, RECT *slide_r)
+move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, GRECT *lbox_r, GRECT *slide_r)
 {
 	bool ret;
 	short x, y, mx, my, dir;
@@ -975,7 +975,7 @@ move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_
 }
 
 static bool
-move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd, RECT *lbox_r, RECT *slide_r)
+move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd, GRECT *lbox_r, GRECT *slide_r)
 {
 	bool ret = false;
 
@@ -1154,7 +1154,7 @@ XA_lbox_update(int lock, struct xa_client *client, AESPB *pb)
 
 	if (lbox)
 	{
-		RECT *r = (RECT *)pb->addrin[1];
+		GRECT *r = (GRECT *)pb->addrin[1];
 
 		setup_lbox_objects(lbox);
 		set_slide_size(lbox, &lbox->aslide);
@@ -1175,7 +1175,7 @@ XA_lbox_update(int lock, struct xa_client *client, AESPB *pb)
 }
 
 static void
-click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, short dc, RECT *r)
+click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, short dc, GRECT *r)
 {
 	short ks;
 	short last_state;
@@ -1228,7 +1228,7 @@ XA_lbox_do(int lock, struct xa_client *client, AESPB *pb)
 		short obj = pb->intin[0];
 		short dc = obj & 0x8000;
 		short ks, mb;
-		RECT r, asr, bsr;
+		GRECT r, asr, bsr;
 
 		vq_key_s(C.P_handle, &ks);
 		obj &= ~0x8000;
@@ -1346,7 +1346,7 @@ XA_lbox_do(int lock, struct xa_client *client, AESPB *pb)
 			struct lbox_item *nitem;
 			short nobj, x2, y2, nx, ny;
 			struct lbox_slide *v, *h;
-			RECT *vsr, *hsr, or;
+			GRECT *vsr, *hsr, or;
 
 			if (lbox->flags & LBOX_VERT)
 			{
@@ -1367,8 +1367,8 @@ XA_lbox_do(int lock, struct xa_client *client, AESPB *pb)
 
 			check_mouse(client, &mb, &nx, &ny);
 
-			x2 = r.x + r.w;
-			y2 = r.y + r.h;
+			x2 = r.g_x + r.g_w;
+			y2 = r.g_y + r.g_h;
 
 			do
 			{
@@ -1428,9 +1428,9 @@ XA_lbox_do(int lock, struct xa_client *client, AESPB *pb)
 								check_mouse(client, &mb, &nx, &ny);
 							}
 						}
-						else if (ny < r.y)
+						else if (ny < r.g_y)
 						{
-							while (mb && ny < r.y)
+							while (mb && ny < r.g_y)
 							{
 								if (move_slider(lbox, v, -1, true, NULL, NULL) &&
 								    (lbox->flags & LBOX_AUTOSLCT))
@@ -1466,9 +1466,9 @@ XA_lbox_do(int lock, struct xa_client *client, AESPB *pb)
 								check_mouse(client, &mb, &nx, &ny);
 							}
 						}
-						else if (nx < r.x)
+						else if (nx < r.g_x)
 						{
-							while (mb && nx < r.x)
+							while (mb && nx < r.g_x)
 							{
 								if (move_slider(lbox, h, -1, true, NULL, NULL))
 								{
@@ -1734,7 +1734,7 @@ XA_lbox_set(int lock, struct xa_client *client, AESPB *pb)
 				short num = pb->intin[1] - lbox->aslide.first_visible;
 				DIAGS(("lbox_set_slider: set to %d, curnt=%d, move=%d",
 					pb->intin[1], lbox->aslide.first_visible, num));
-				move_slider(lbox, &lbox->aslide, num, false, NULL, (RECT *)pb->addrin[1]);
+				move_slider(lbox, &lbox->aslide, num, false, NULL, (GRECT *)pb->addrin[1]);
 				break;
 			}
 			case 1:	/* set items		*/
@@ -1761,7 +1761,7 @@ XA_lbox_set(int lock, struct xa_client *client, AESPB *pb)
 				short num = pb->intin[1] - lbox->aslide.first_visible;
 				DIAGS(("lbox_scroll_to(4): scroll to %d, curnt=%d, move=%d",
 					pb->intin[1], lbox->aslide.first_visible, num));
-				move_slider(lbox, &lbox->aslide, num, false, (RECT *)pb->addrin[1], (RECT *)pb->addrin[2]);
+				move_slider(lbox, &lbox->aslide, num, false, (GRECT *)pb->addrin[1], (GRECT *)pb->addrin[2]);
 				break;
 			}
 			case 5:	/* set slider B		*/
@@ -1769,7 +1769,7 @@ XA_lbox_set(int lock, struct xa_client *client, AESPB *pb)
 				short num = pb->intin[1] - lbox->bslide.first_visible;
 				DIAGS(("lbox_set_Bslider(5): set to %d, curnt=%d, move=%d",
 					pb->intin[1], lbox->bslide.first_visible, num));
-				move_slider(lbox, &lbox->bslide, num, false, NULL, (RECT *)pb->addrin[1]);
+				move_slider(lbox, &lbox->bslide, num, false, NULL, (GRECT *)pb->addrin[1]);
 				break;
 			}
 			case 6: /* set B entries	*/
@@ -1786,7 +1786,7 @@ XA_lbox_set(int lock, struct xa_client *client, AESPB *pb)
 				short num = pb->intin[1] - lbox->bslide.first_visible;
 				DIAGS(("lbox_scroll_tob(7): set to %d, curnt=%d, move=%d",
 					pb->intin[1], lbox->bslide.first_visible, num));
-				move_slider(lbox, &lbox->bslide, num, false, (RECT *)pb->addrin[1], (RECT *)pb->addrin[2]);
+				move_slider(lbox, &lbox->bslide, num, false, (GRECT *)pb->addrin[1], (GRECT *)pb->addrin[2]);
 				break;
 			}
 		}

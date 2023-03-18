@@ -296,7 +296,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 	OBJECT *alert_form;
 	OBJECT *alert_icons;
 	ALERTXT *alertxt;
-	RECT or;
+	GRECT or;
 	short x, w, h;
 	int n_lines, n_buttons, icon = 0, m_butt_w;
 	int  retv = 1, b, f;
@@ -494,7 +494,7 @@ do_form_alert(int lock, struct xa_client *client, int default_button, char *aler
 	/* Create a window and attach the alert object tree centered to it */
 	{
 		bool nolist = false;
-		RECT r;
+		GRECT r;
 
 		wt = new_widget_tree(client, alert_form);
 		assert(wt);
@@ -571,7 +571,7 @@ XA_form_center(int lock, struct xa_client *client, AESPB *pb)
 
 	if (validate_obtree(client, obtree, "XA_form_center:") && o)
 	{
-		RECT r;
+		GRECT r;
 		if( (client->options.alt_shortcuts & ALTSC_DIALOG)
 			&& !client->rsrc && obtree->ob_type == G_BOX && obtree->ob_flags == OF_NONE )	/* not a loaded resource-file */
 		{
@@ -581,24 +581,24 @@ XA_form_center(int lock, struct xa_client *client, AESPB *pb)
 				obtree->ob_state |= OS_WHITEBAK;
 			}
 		}
-		r.w = obtree->ob_width;
-		r.h = obtree->ob_height;
+		r.g_w = obtree->ob_width;
+		r.g_h = obtree->ob_height;
 
 		/* desktop work area */
-		r.x = root_window->wa.x + ((root_window->wa.w - r.w) / 2);
-		r.y = root_window->wa.y + ((root_window->wa.h - r.h) / 2);
+		r.g_x = root_window->wa.g_x + ((root_window->wa.g_w - r.g_w) / 2);
+		r.g_y = root_window->wa.g_y + ((root_window->wa.g_h - r.g_h) / 2);
 
-		obtree->ob_x = r.x;
-		obtree->ob_y = r.y;
+		obtree->ob_x = r.g_x;
+		obtree->ob_y = r.g_y;
 
  		if (obtree->ob_state & OS_OUTLINED)
 			/* This is what other AES's do */
  			adjust_size(3, &r);
 
 		*o++ = 1;
-		*(RECT *)o = r;
+		*(GRECT *)o = r;
 
-		DIAG((D_form, client, "   -->    %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+		DIAG((D_form, client, "   -->    %d/%d,%d/%d", r.g_x, r.g_y, r.g_w, r.g_h));
 	}
 
 	return XAC_DONE;
@@ -908,7 +908,7 @@ XA_form_dial(int lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			/* This was just a redraw request */
-			update_windows_below(lock, (const RECT *)(&(pb->intin[5])), NULL, window_list, NULL);
+			update_windows_below(lock, (const GRECT *)(&(pb->intin[5])), NULL, window_list, NULL);
 
 		bzero(&client->fmd, sizeof(client->fmd));
 		break;
@@ -962,7 +962,7 @@ XA_form_do(int lock, struct xa_client *client, AESPB *pb)
 				*/
 				if( !(client->status & CS_CALLED_EVNT ) && wind->next )
 				{
-					RECT r;
+					GRECT r;
 					int b = xa_rect_chk( &wind->next->r, &wind->r, &r );
 					if( b != 2 )
 						generate_redraws(lock, wind, &wind->r, RDRW_ALL);

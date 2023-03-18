@@ -104,7 +104,7 @@ Set_form_do(struct xa_client *client,
 }
 
 static struct xa_window *
-create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, const RECT *r)
+create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, const GRECT *r)
 {
 	struct xa_window *wind = NULL;
 
@@ -136,7 +136,7 @@ create_fmd_wind(int lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TY
 }
 
 static void
-calc_fmd_wind(struct widget_tree *wt, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
+calc_fmd_wind(struct widget_tree *wt, XA_WIND_ATTR kind, WINDOW_TYPE dial, GRECT *r)
 {
 	DIAG((D_form, wt->owner, "Setup_form_do: Create window for %s", wt->owner->name));
 
@@ -194,7 +194,7 @@ Setup_form_do(struct xa_client *client,
 
 		calc_fmd_wind(wt, kind, wind->dial, &client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, 0, NULL, NULL);
-		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
+		move_window(lock, wind, true, -1, client->fmd.r.g_x, client->fmd.r.g_y, client->fmd.r.g_w, client->fmd.r.g_h);
 	}
 	/*
 	 * Should this client do classic blocking form_do's?
@@ -293,28 +293,28 @@ okexit:
 void
 Form_Center(OBJECT *form, short barsizes)
 {
-	form->ob_x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
-	form->ob_y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
+	form->ob_x = root_window->wa.g_x + (root_window->wa.g_w - form->ob_width) / 2;
+	form->ob_y = root_window->wa.g_y + barsizes + (root_window->wa.g_h - form->ob_height) / 2;
 }
 
 #if INCLUDE_UNUSED
 void
-Form_Center_r(OBJECT *form, short barsizes, RECT *r)
+Form_Center_r(OBJECT *form, short barsizes, GRECT *r)
 {
-	r->x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
-	r->y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
-	r->w = form->ob_width;
-	r->h = form->ob_height;
+	r->g_x = root_window->wa.g_x + (root_window->wa.g_w - form->ob_width) / 2;
+	r->g_y = root_window->wa.g_y + barsizes + (root_window->wa.g_h - form->ob_height) / 2;
+	r->g_w = form->ob_width;
+	r->g_h = form->ob_height;
 }
 #endif
 
 void
-center_rect(RECT *r)
+center_rect(GRECT *r)
 {
 	struct xa_widget *widg = get_menu_widg();
 
-	r->x = root_window->wa.x + ((root_window->wa.w - r->w) >> 1);
-	r->y = root_window->wa.y + widg->ar.h + ((root_window->wa.h - r->h) >> 1);
+	r->g_x = root_window->wa.g_x + ((root_window->wa.g_w - r->g_w) >> 1);
+	r->g_y = root_window->wa.g_y + widg->ar.g_h + ((root_window->wa.g_h - r->g_h) >> 1);
 }
 
 /*
@@ -334,7 +334,7 @@ Form_Button(XA_TREE *wt,
 	    struct xa_aes_object *nxtob,
 	    short *clickmsk)
 {
-	RECT *clip = NULL;
+	GRECT *clip = NULL;
 	OBJECT *obtree = wt->tree;
 	struct  xa_aes_object next_obj = aesobj(wt->tree, 0);
 	short flags, state, pstate;
@@ -1195,7 +1195,7 @@ Click_form_do(int lock,
 // 	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 	struct xa_vdi_settings *v;
 	OBJECT *obtree = NULL;
-	RECT r;
+	GRECT r;
 
 	DIAG((D_form, client, "Click_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
@@ -1304,12 +1304,12 @@ Key_form_do(int lock,
 	    struct fmd_result *ret_fr)
 {
 	struct xa_vdi_settings *v;
-	RECT *clip = NULL;
+	GRECT *clip = NULL;
 	OBJECT *obtree = NULL;
 	struct objc_edit_info *ei;
 	struct xa_rect_list *lrl = NULL, **rl = wind ? &wind->rect_list.start : &lrl;
 	struct fmd_result fr;
-	RECT r;
+	GRECT r;
 
 	fr.no_exit = true;
 	fr.flags = 0;
@@ -1410,13 +1410,13 @@ Key_form_do(int lock,
 }
 
 static void
-dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt, RECT *clip)
+dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt, GRECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 
 	if (wt && wt->tree)
 	{
-		RECT dr;
+		GRECT dr;
 		struct xa_rect_list *rl;
 
 		rl = wind->rect_list.start;
@@ -1471,8 +1471,8 @@ do_formwind_msg(
 	{
 		XA_TREE *wt = widg->stuff;
 		OBJECT *ob = wt->tree + widg->start;
-		short ww = wind->wa.w,			/* window measures */
-		      wh = wind->wa.h,
+		short ww = wind->wa.g_w,			/* window measures */
+		      wh = wind->wa.g_h,
 		      dx = wt->dx,			/* object displacement */
 		      dy = wt->dy,
 		      ow = ob->ob_width,		/* object measures */
@@ -1486,7 +1486,7 @@ do_formwind_msg(
 				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 
-			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
+			dfwm_redraw(wind, widg, wt, (GRECT *)&msg[4]);
 
 			if (!wt->ei && edit_set(&wt->e))
 			{
@@ -1629,17 +1629,17 @@ do_formwind_msg(
 			short n = 0;
 			/* if (!wind->nolist && (wind->active_widgets & SIZE)) */
 			{
-				if( msg[6] < wind->min.w )
+				if( msg[6] < wind->min.g_w )
 				{
-					msg[4] = wind->r.x;
-					msg[6] = wind->min.w;
+					msg[4] = wind->r.g_x;
+					msg[6] = wind->min.g_w;
 					n |= 1;
 				}
 
-				if( msg[7] < wind->min.h )
+				if( msg[7] < wind->min.g_h )
 				{
-					msg[5] = wind->r.y;
-					msg[7] = wind->min.h;
+					msg[5] = wind->r.g_y;
+					msg[7] = wind->min.g_h;
 					n |= 2;
 				}
 				if( n == 3 )
@@ -1652,8 +1652,8 @@ do_formwind_msg(
 				 *
 				 */
 				 /* misuse wind->min.x/y for saving old width/height*/
-				wind->min.x = wind->pr.w;
-				wind->min.y = wind->pr.h;
+				wind->min.g_x = wind->pr.g_w;
+				wind->min.g_y = wind->pr.g_h;
 
 				wind->window_status |= XAWS_RESIZED;
 				move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
@@ -1684,13 +1684,13 @@ do_formwind_msg(
 
 		if (draw)
 		{
-			RECT sc, clip, *clp_p = NULL;
+			GRECT sc, clip, *clp_p = NULL;
 // 			display("getting here?");
 			hidem();
 			if (wt->dy != dy && ((wind->nolist && nolist_list == wind) || (!wind->nolist && is_topped(wind))))
 			{
 				short yoff;
-				RECT from, to;
+				GRECT from, to;
 
 				yoff = dy - wt->dy; // - dy;
 				if (yoff < 0)
@@ -1698,20 +1698,20 @@ do_formwind_msg(
 // 					display("blit up");
 					yoff = -yoff;
 
-					if (yoff < wind->wa.h - 4)
+					if (yoff < wind->wa.g_h - 4)
 					{
 						/* wincontent moving down to show elements above */
-						from.x = to.x = wind->wa.x;
-						from.y = wind->wa.y;
-						from.w = to.w = wind->wa.w;
-						from.h = to.h = wind->wa.h - yoff;
+						from.g_x = to.g_x = wind->wa.g_x;
+						from.g_y = wind->wa.g_y;
+						from.g_w = to.g_w = wind->wa.g_w;
+						from.g_h = to.g_h = wind->wa.g_h - yoff;
 
-						to.y = from.y + yoff;
+						to.g_y = from.g_y + yoff;
 						(*v->api->form_copy)(&from, &to);
-						clip.x = wind->wa.x;
-						clip.y = wind->wa.y;
-						clip.w = wind->wa.w;
-						clip.h = yoff;
+						clip.g_x = wind->wa.g_x;
+						clip.g_y = wind->wa.g_y;
+						clip.g_w = wind->wa.g_w;
+						clip.g_h = yoff;
 						clp_p = &clip;
 					}
 				}
@@ -1719,18 +1719,18 @@ do_formwind_msg(
 				{
 // 					display("blit down");
 					/* wincontent moving up to show elements below */
-					if (yoff < wind->wa.h - 4)
+					if (yoff < wind->wa.g_h - 4)
 					{
-						from.x = to.x = wind->wa.x;
-						from.y = wind->wa.y + yoff;
-						from.w = to.w = wind->wa.w;
-						from.h = to.h = wind->wa.h - yoff;
-						to.y = wind->wa.y;
+						from.g_x = to.g_x = wind->wa.g_x;
+						from.g_y = wind->wa.g_y + yoff;
+						from.g_w = to.g_w = wind->wa.g_w;
+						from.g_h = to.g_h = wind->wa.g_h - yoff;
+						to.g_y = wind->wa.g_y;
 						(*v->api->form_copy)(&from, &to);
-						clip.x = wind->wa.x;
-						clip.y = wind->wa.y + from.h;
-						clip.w = wind->wa.w;
-						clip.h = yoff;
+						clip.g_x = wind->wa.g_x;
+						clip.g_y = wind->wa.g_y + from.g_h;
+						clip.g_w = wind->wa.g_w;
+						clip.g_h = yoff;
 						clp_p = &clip;
 					}
 				}

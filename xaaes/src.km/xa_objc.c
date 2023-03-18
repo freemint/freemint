@@ -41,13 +41,13 @@
 unsigned long
 XA_objc_draw(int lock, struct xa_client *client, AESPB *pb)
 {
-	const RECT *r = (const RECT *)&pb->intin[2];
+	const GRECT *r = (const GRECT *)&pb->intin[2];
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	struct xa_vdi_settings *v = client->vdi_settings;
 	short item = pb->intin[0];
 	CONTROL(6,1,1)
 
-	DIAG((D_objc,client,"objc_draw rectangle: %d/%d,%d/%d", r->x, r->y, r->w, r->h));
+	DIAG((D_objc,client,"objc_draw rectangle: %d/%d,%d/%d", r->g_x, r->g_y, r->g_w, r->g_h));
 
 	DIAG((D_objc, client, "objc_draw (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
@@ -129,11 +129,11 @@ XA_objc_wdraw(int lock, struct xa_client *client, AESPB *pb)
 			hidem();
 			if (rl)
 			{
-				RECT r;
+				GRECT r;
 				do
 				{
 					r = rl->r;
-					if (!pb->addrin[1] || xa_rect_clip((RECT *)pb->addrin[1], &r, &r))
+					if (!pb->addrin[1] || xa_rect_clip((GRECT *)pb->addrin[1], &r, &r))
 					{
 						(*v->api->set_clip)(v, &r);
 						draw_object_tree(0, wt, wt->tree, v, aesobj(wt->tree, item), pb->intin[1], NULL, 0);
@@ -253,7 +253,7 @@ XA_objc_change(int lock, struct xa_client *client, AESPB *pb)
 		assert(wt);
 
 		rl.next = NULL;
-		rl.r = *(const RECT *)(pb->intin + 2);
+		rl.r = *(const GRECT *)(pb->intin + 2);
 
 		obj_change(wt,
 			   C.Aes->vdi_settings,
@@ -299,7 +299,7 @@ XA_objc_wchange(int lock, struct xa_client *client, AESPB *pb)
 				    pb->intin[1],
 				    obtree[obj].ob_flags,
 				    true,
-				    (RECT *)pb->addrin[1],
+				    (GRECT *)pb->addrin[1],
 				    wind->rect_list.start, 0);
 
 			ret = 1;
@@ -591,7 +591,7 @@ XA_objc_sysvar(int lock, struct xa_client *client, AESPB *pb)
  * intin[3] = winhand
  *
  * addrin[0] = tree
- * addrin[1] = clip RECT ptr
+ * addrin[1] = clip GRECT ptr
  *
  * intout[0] - 1 = OK, 0 = error
  *
@@ -611,7 +611,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 		struct widget_tree *wt;
 		struct xa_window *wind = NULL;
 		struct xa_rect_list *rl = NULL;
-		RECT *clip = NULL;
+		GRECT *clip = NULL;
 		struct xa_vdi_settings *v;
 		short obt = obtree[obj].ob_type & 0xff;
 
@@ -622,7 +622,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 
 		if (set)
 		{
-			clip = (RECT *)pb->addrin[1];
+			clip = (GRECT *)pb->addrin[1];
 			wind = get_wind_by_handle(lock, pb->intin[3]);
 		}
 
@@ -657,7 +657,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				 * intin[4] = blen
 				 *
 				 * addrin[0] = tree
-				 * addrin[1] = clip RECT ptr
+				 * addrin[1] = clip GRECT ptr
 				 * addrin[2] = strbuf
 
 				 * intout[0] 1 = sucess - 0 = error
@@ -760,7 +760,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				 * intin[3] = winhand
 				 *
 				 * addrin[0] = tree
-				 * addrin[1] = clip RECT ptr
+				 * addrin[1] = clip GRECT ptr
 				 * addrin[2] = obspec
 				 *
 				 * intout[0] 1 = sucess - 0 = error
@@ -800,7 +800,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				 * intin[3] = winhand
 				 *
 				 * addrin[0] = tree
-				 * addrin[1] = clip RECT ptr
+				 * addrin[1] = clip GRECT ptr
 				 * addrin[2] = obspec ptr
 				 *
 				 * intout[0] 1 = sucess - 0 = error
@@ -828,7 +828,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				 * intin[4] = obflags
 				 *
 				 * addrin[0] = tree
-				 * addrin[1] = clip RECT ptr
+				 * addrin[1] = clip GRECT ptr
 				 *
 				 * intout[0] 1 = sucess - 0 = error
 				 * intout[1] = obflags
@@ -865,7 +865,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 				 * intin[4] = obstate
 				 *
 				 * addrin[0] = tree
-				 * addrin[1] = clip RECT ptr
+				 * addrin[1] = clip GRECT ptr
 				 *
 				 * intout[0] 1 = sucess - 0 = error
 				 * intout[1] = obstate
@@ -893,7 +893,7 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 			{
 				if (!set)
 				{
-					obj_area(wt, aesobj(obtree, obj), (RECT *)(pb->intout + 1));
+					obj_area(wt, aesobj(obtree, obj), (GRECT *)(pb->intout + 1));
 					ret0 = 1;
 				}
 				break;

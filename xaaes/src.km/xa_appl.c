@@ -1178,7 +1178,7 @@ XA_appl_write(int lock, struct xa_client *client, AESPB *pb)
 				struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
 
 				if (wind) {
-					generate_redraws(lock, wind, (RECT *)(m->m + 4), RDRW_WA);
+					generate_redraws(lock, wind, (GRECT *)(m->m + 4), RDRW_WA);
 					m = NULL;
 				} else {
 					amq = AMQ_REDRAW;
@@ -1201,9 +1201,9 @@ XA_appl_write(int lock, struct xa_client *client, AESPB *pb)
 									t |= 2;
 
 								if (t == 1)		/* sender in WCOWORK, receiver in normal */
-									*(RECT *)(m->m + 4) = w2f(&wind->delta, (const RECT *)(m->m + 4), true);
+									*(GRECT *)(m->m + 4) = w2f(&wind->delta, (const GRECT *)(m->m + 4), true);
 								else if (t == 2)	/* sender in normal, receiver in WCOWORK */
-									*(RECT *)(m->m + 4) = f2w(&wind->delta, (const RECT *)(m->m + 4), true);
+									*(GRECT *)(m->m + 4) = f2w(&wind->delta, (const GRECT *)(m->m + 4), true);
 							}
 							break;
 						}

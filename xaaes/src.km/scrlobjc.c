@@ -329,10 +329,10 @@ check_movement(SCROLL_INFO *list)
 	x = obtree->ob_x + list->rel_x;
 	y = obtree->ob_y + list->rel_y;
 
-	if (x != wind->rc.x || y != wind->rc.y )
+	if (x != wind->rc.g_x || y != wind->rc.g_y )
 	{
-		wind->r.x = wind->rc.x = x;
-		wind->r.y = wind->rc.y = y;
+		wind->r.g_x = wind->rc.g_x = x;
+		wind->r.g_y = wind->rc.g_y = y;
 		calc_work_area(list->wi);
 	}
 }
@@ -353,7 +353,7 @@ canredraw(SCROLL_INFO *list)
 
 
 static void
-get_list_rect(struct scroll_info *list, RECT *r)
+get_list_rect(struct scroll_info *list, GRECT *r)
 {
 	check_movement(list);
 	*r = list->wi->wa;
@@ -366,7 +366,7 @@ recalc_tabs(struct scroll_info *list)
 	short listw, x, totalw;
 	short w0;
 	struct se_tab *tabs;
-	RECT r_list;
+	GRECT r_list;
 
 	/* negative is percentage */
 	/* null is width of content */
@@ -375,25 +375,25 @@ recalc_tabs(struct scroll_info *list)
 	tabs = list->tabs;
 	ntabs = list->num_tabs;
 	get_list_rect(list, &r_list);
-	listw = r_list.w;
+	listw = r_list.g_w;
 	x = 0;
 	totalw = 0;
 
 	w0 = 0;
-	if( tabs->v.h < 0 )
+	if( tabs->v.g_h < 0 )
 	{
-		w0 = (-tabs->v.h + 8) * screen.c_max_w;
+		w0 = (-tabs->v.g_h + 8) * screen.c_max_w;
 		if( w0 > listw )
 			w0 = listw;
 	}
 
 	for (i = 0; i < ntabs; i++, tabs++)
 	{
-		tabs->r.x = x;
+		tabs->r.g_x = x;
 
-		if (tabs->v.w < 0)
+		if (tabs->v.g_w < 0)
 		{
-			short p = -tabs->v.w;
+			short p = -tabs->v.g_w;
 			long tmp;
 
 			if (p > 100)
@@ -404,33 +404,33 @@ recalc_tabs(struct scroll_info *list)
 
 			if ((listw - tmp) < 0)
 			{
-				tabs->r.w = 4;
+				tabs->r.g_w = 4;
 			}
 			else
 			{
-				tabs->r.w = tmp;
+				tabs->r.g_w = tmp;
 			}
 		}
-		else if (!tabs->v.w)
+		else if (!tabs->v.g_w)
 		{
-			listw -= tabs->r.w;
+			listw -= tabs->r.g_w;
 			if (listw < 0)
 				listw = 0;
 		}
 		else
 		{
-			listw -= tabs->v.w;
-			tabs->r.w = tabs->v.w;
+			listw -= tabs->v.g_w;
+			tabs->r.g_w = tabs->v.g_w;
 			if (listw < 0)
 				listw = 0;
 		}
-		tabs->r.x = x;
-		tabs->r.y = 0;
+		tabs->r.g_x = x;
+		tabs->r.g_y = 0;
 
 		if( i == 0 && w0 )
-			tabs->r.w = w0;
-		x += tabs->r.w;
-		totalw += tabs->r.w;
+			tabs->r.g_w = w0;
+		x += tabs->r.g_w;
+		totalw += tabs->r.g_w;
 	}
 
 	if (list->widest < totalw)
@@ -519,9 +519,9 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				eh = c->c.text.h;
 				if (c->c.text.icon.icon)
 				{
-					ew += c->c.text.icon.r.w;
-					if (c->c.text.icon.r.h > eh)
-						eh = c->c.text.icon.r.h;
+					ew += c->c.text.icon.r.g_w;
+					if (c->c.text.icon.r.g_h > eh)
+						eh = c->c.text.icon.r.g_h;
 				}
 				else if( list->char_width && (long)this->data > 1 )
 					ew += list->char_width;
@@ -530,8 +530,8 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			}
 			case SECONTENT_ICON:
 			{
-				ew = c->c.icon.r.w + 2;
-				eh = c->c.icon.r.h;
+				ew = c->c.icon.r.g_w + 2;
+				eh = c->c.icon.r.g_h;
 				break;
 			}
 			default:
@@ -542,9 +542,9 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 		}
 
 		tab = &tabs[c->index];
-		if (tab->r.w < ew)
+		if (tab->r.g_w < ew)
 		{
-			tab->r.w = ew + 3;
+			tab->r.g_w = ew + 3;
 			if( !(list->flags & SIF_INLINE_EFFECTS) )
 				PROFRECv(recalc_tabs,(list));
 			fullredraw = true;
@@ -560,31 +560,31 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 
 	if (list->flags & SIF_TREEVIEW)
 		tw += list->char_width * 6;	/* indentation ... */
-	this->r.w = tw;
-	if( this->r.h == 0 )
-		this->r.h = th;	/* dont change height */
+	this->r.g_w = tw;
+	if( this->r.g_h == 0 )
+		this->r.g_h = th;	/* dont change height */
 
 	return fullredraw;
 }
 
 
 static short
-draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *this)
+draw_nesticon(struct xa_vdi_settings *v, short width, GRECT *xy, SCROLL_ENTRY *this)
 {
 	int i;
-	RECT r;
+	GRECT r;
 	short x_center, y_center, x;
 	short pnt[4];
 
 	(*v->api->wr_mode)(v, MD_REPLACE);
 
 	x_center = (width >> 1);
-	y_center = (xy->h >> 1);
+	y_center = (xy->g_h >> 1);
 	if (this->level)
 	{
 		struct scroll_entry *root = this->up;
 
-		x = xy->x + (width * (this->level - 1));
+		x = xy->g_x + (width * (this->level - 1));
 
 		(*v->api->l_color)(v, G_LBLACK);
 		for (i = 0; i < this->level; i++)
@@ -594,9 +594,9 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 				if (root->next)
 				{
 					pnt[0] = x + x_center;
-					pnt[1] = xy->y;
+					pnt[1] = xy->g_y;
 					pnt[2] = pnt[0];
-					pnt[3] = xy->y + xy->h - 1;
+					pnt[3] = xy->g_y + xy->g_h - 1;
 					v_pline(v->handle, 2, pnt);
 				}
 				root = root->up;
@@ -605,15 +605,15 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 		}
 	}
 
-	x = xy->x + (width * this->level);
+	x = xy->g_x + (width * this->level);
 
-	r.x = x + x_center - 4;
-	r.y = xy->y + y_center - 4;
-	r.w = 9;
-	if( this->r.h < 9 )
-		r.h = this->r.h - 2;
+	r.g_x = x + x_center - 4;
+	r.g_y = xy->g_y + y_center - 4;
+	r.g_w = 9;
+	if( this->r.g_h < 9 )
+		r.g_h = this->r.g_h - 2;
 	else
-		r.h = 9;
+		r.g_h = 9;
 
 
 	if (this->down || (this->xstate & OS_NESTICON))
@@ -628,23 +628,23 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 		{
 			(*v->api->l_color)(v, G_LBLACK);
 			pnt[0] = x + x_center;
-			pnt[1] = xy->y;
+			pnt[1] = xy->g_y;
 			pnt[2] = pnt[0];
-			pnt[3] = r.y;
+			pnt[3] = r.g_y;
 			v_pline(v->handle, 2, pnt);
 		}
 		if (this->next)
 		{
 			pnt[0] = x + x_center;
-			pnt[1] = r.y + 9;
+			pnt[1] = r.g_y + 9;
 			pnt[2] = pnt[0];
-			pnt[3] = xy->y + xy->h - 1;
+			pnt[3] = xy->g_y + xy->g_h - 1;
 			v_pline(v->handle, 2, pnt);
 		}
 
 		(*v->api->l_color)(v, G_BLACK);
-		pnt[0] = r.x + 2;
-		pnt[1] = r.y + 4;
+		pnt[0] = r.g_x + 2;
+		pnt[1] = r.g_y + 4;
 		pnt[2] = pnt[0] + 4;
 		pnt[3] = pnt[1];
 
@@ -652,10 +652,10 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 
 		if (!(this->xstate & OS_OPENED))
 		{
-			pnt[0] = r.x + 4;
-			pnt[1] = r.y + 2;
+			pnt[0] = r.g_x + 4;
+			pnt[1] = r.g_y + 2;
 			pnt[2] = pnt[0];
-			pnt[3] = r.y + 6;
+			pnt[3] = r.g_y + 6;
 			v_pline(v->handle, 2, pnt);
 		}
 	}
@@ -665,22 +665,22 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 		if (this->prev || this->up)
 		{
 			pnt[0] = x + x_center;
-			pnt[1] = xy->y;
+			pnt[1] = xy->g_y;
 			pnt[2] = pnt[0];
-			pnt[3] = xy->y + y_center;
+			pnt[3] = xy->g_y + y_center;
 			v_pline(v->handle, 2, pnt);
 		}
 		if (this->next)
 		{
 			pnt[0] = x + x_center;
-			pnt[1] = xy->y + y_center;
+			pnt[1] = xy->g_y + y_center;
 			pnt[2] = pnt[0];
-			pnt[3] = xy->y + xy->h - 1;
+			pnt[3] = xy->g_y + xy->g_h - 1;
 			v_pline(v->handle, 2, pnt);
 		}
 
 		pnt[0] = x + x_center;
-		pnt[1] = xy->y + y_center;
+		pnt[1] = xy->g_y + y_center;
 		pnt[2] = x + width;
 		pnt[3] = pnt[1];
 		v_pline(v->handle, 2, pnt);
@@ -692,7 +692,7 @@ static short ssel;
 static struct xa_fnt_info owtxt = {0};
 static void
 display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
-	struct xa_vdi_settings *v, RECT *xy, const RECT *clip, short TOP, bool NO_ICONS)
+	struct xa_vdi_settings *v, GRECT *xy, const GRECT *clip, short TOP, bool NO_ICONS)
 {
 	bool sel = this->state & OS_SELECTED;
 
@@ -702,7 +702,7 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		struct se_content *c = this->content;
 		struct se_tab *tab;
 		struct xa_fnt_info *wtxt;
-		RECT r, clp;
+		GRECT r, clp;
 
 		if( TOP != 2 || ssel != sel )
 		{
@@ -711,14 +711,14 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 			(*v->api->f_interior)(v, FIS_SOLID);
 			ssel = sel;
 		}
-		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
+		(*v->api->bar)(v, 0, xy->g_x, xy->g_y, xy->g_w, this->r.g_h);
 
 		if (list->flags & SIF_TREEVIEW)
 		{
-			r.x = xy->x;
-			r.y = xy->y;
-			r.w = 16 * (this->level+1);
-			r.h = this->r.h;
+			r.g_x = xy->g_x;
+			r.g_y = xy->g_y;
+			r.g_w = 16 * (this->level+1);
+			r.g_h = this->r.g_h;
 			if ( (TOP || xa_rect_clip(clip, &r, &clp)))
 			{
 				if( !TOP )
@@ -730,27 +730,27 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 			indent += 16;
 		}
 
-		r.h = this->r.h;
+		r.g_h = this->r.g_h;
 
 		while (c)
 		{
 			tab = &list->tabs[c->index];
 
-			r.x = tab->r.x;
-			r.w = tab->r.w - 3;
+			r.g_x = tab->r.g_x;
+			r.g_w = tab->r.g_w - 3;
 
 			if (c->index < list->indent_upto)
 			{
-				r.x += indent;
-				if (tab->v.w < 0)
+				r.g_x += indent;
+				if (tab->v.g_w < 0)
 				{
-					if ((r.w -= indent) < 0 && r.x >= list->tabs[list->indent_upto].r.x)
-						r.w = 0;
+					if ((r.g_w -= indent) < 0 && r.g_x >= list->tabs[list->indent_upto].r.g_x)
+						r.g_w = 0;
 				}
 			}
 
-			r.x += xy->x;
-			r.y = xy->y;
+			r.g_x += xy->g_x;
+			r.g_y = xy->g_y;
 
 			switch (c->type)
 			{
@@ -769,17 +769,17 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						else
 							c->c.icon.icon->ob_state &= ~OS_SELECTED;
 
-						ix = c->c.icon.r.w - c->c.icon.icon->ob_width;
+						ix = c->c.icon.r.g_w - c->c.icon.icon->ob_width;
 						if (ix > 0)
-							ix = r.x + (ix >> 1);
+							ix = r.g_x + (ix >> 1);
 						else
-							ix = r.x;
+							ix = r.g_x;
 
-						iy = c->c.icon.r.h - c->c.icon.icon->ob_height;
+						iy = c->c.icon.r.g_h - c->c.icon.icon->ob_height;
 						if (iy > 0)
-							iy = r.y + (iy >> 1);
+							iy = r.g_y + (iy >> 1);
 						else
-							iy = r.y;
+							iy = r.g_y;
 
 						list->nil_wt->tree = c->c.icon.icon;
 						list->nil_wt->owner = list->wt->owner;
@@ -801,10 +801,10 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							(*v->api->set_clip)(v, &clp);
 						}
 
-						dx = r.x;
-						x2 = dx + r.w;
-						dy = r.y;
-						tw = r.w;
+						dx = r.g_x;
+						x2 = dx + r.g_w;
+						dy = r.g_y;
+						tw = r.g_w;
 						if (c->c.text.icon.icon)
 						{
 							if( NO_ICONS == false )
@@ -816,12 +816,12 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							else
 								c->c.text.icon.icon->ob_state &= ~OS_SELECTED;
 
-							ix = c->c.text.icon.r.w - c->c.text.icon.icon->ob_width;
+							ix = c->c.text.icon.r.g_w - c->c.text.icon.icon->ob_width;
 							if (ix > 0)
 								ix = dx + (ix >> 1);
 							else
 								ix = dx;
-							iy = c->c.text.icon.r.h - c->c.text.icon.icon->ob_height;
+							iy = c->c.text.icon.r.g_h - c->c.text.icon.icon->ob_height;
 							if (iy > 0)
 								iy = dy + (iy >> 1);
 							else
@@ -833,10 +833,10 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							list->nil_wt->objcr_theme = list->wt->owner->objcr_theme;
 							display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 0);
 							}
-							dx += c->c.text.icon.r.w;
+							dx += c->c.text.icon.r.g_w;
 							if( list->icon_w == 0 )
-								list->icon_w = c->c.text.icon.r.w;
-							tw -= c->c.text.icon.r.w;
+								list->icon_w = c->c.text.icon.r.g_w;
+							tw -= c->c.text.icon.r.g_w;
 						}
 						else if (!this->up && this->prev && !c->prev /*&& (long)this->data > 1*/ )
 						{
@@ -954,7 +954,7 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 								dx += list->char_width * c->c.text.tblen - (tw >> 1);
 							}
 
-							dy += ((this->r.h - th) >> 1);
+							dy += ((this->r.g_h - th) >> 1);
 
 							(*v->api->t_color)(v, wtxt->fg);
 
@@ -1075,10 +1075,10 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 			c = c->next;
 		}
 
-		r.x = xy->x;
-		r.y = xy->y;
-		r.w = list->widest;
-		r.h = this->r.h;
+		r.g_x = xy->g_x;
+		r.g_y = xy->g_y;
+		r.g_w = list->widest;
+		r.g_h = this->r.g_h;
 		{
 		bool clipped = false;
 		if ((this->state & OS_BOXED) && (TOP || xa_rect_clip(clip, &r, &clp)) )
@@ -1089,7 +1089,7 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 				(*v->api->set_clip)(v, &clp);
 			}
 
-			(*v->api->box)(v, 0, r.x, r.y, r.w, r.h);
+			(*v->api->box)(v, 0, r.g_x, r.g_y, r.g_w, r.g_h);
 		}
 
 		if( clipped == false )
@@ -1103,12 +1103,12 @@ display_list_element(int lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 }
 
 void
-draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
+draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const GRECT *clip)
 {
 	struct xa_window *wind = list->wi;
 	struct xa_vdi_settings *v = list->vdi_settings;
 	struct scroll_entry *this = list->top;
-	RECT r, xy;
+	GRECT r, xy;
 
 	if (xa_rect_clip(clip, &wind->wa, &r))
 	{
@@ -1124,10 +1124,10 @@ draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
 
 		(*v->api->wr_mode)(v, MD_TRANS);
 
-		xy.x = wind->wa.x - list->start_x;
-		xy.y = wind->wa.y - list->off_y;
-		xy.w = wind->wa.w + list->start_x;
-		xy.h = wind->wa.h + list->off_y;
+		xy.g_x = wind->wa.g_x - list->start_x;
+		xy.g_y = wind->wa.g_y - list->off_y;
+		xy.g_w = wind->wa.g_w + list->start_x;
+		xy.g_h = wind->wa.g_h + list->off_y;
 
 		if( list->flags & SIF_NO_ICONS )
 			no_icons = true;
@@ -1135,14 +1135,14 @@ draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
 		memset( &owtxt, 0, sizeof(owtxt) );
 		ssel = -1;
 		v->font_rid = -1;
-		while (this && xy.y < (wind->wa.y + wind->wa.h))
+		while (this && xy.g_y < (wind->wa.g_y + wind->wa.g_h))
 		{
-			RECT ar;
+			GRECT ar;
 
-			ar.x = xy.x;
-			ar.y = xy.y;
-			ar.w = xy.w;
-			ar.h = this->r.h;
+			ar.g_x = xy.g_x;
+			ar.g_y = xy.g_y;
+			ar.g_w = xy.g_w;
+			ar.g_h = this->r.g_h;
 
 			if (!entry || entry == this)
 			{
@@ -1151,18 +1151,18 @@ draw_slist(int lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
 					TOP = 2;
 			}
 
-			xy.y += this->r.h;
-			xy.h -= this->r.h;
+			xy.g_y += this->r.g_h;
+			xy.g_h -= this->r.g_h;
 			this = next_entry(this, ENT_VISIBLE, -1, NULL);
 		}
 		TOP = 0;
 
 		if (!entry)
 		{
-			if (xy.h > 0)
+			if (xy.g_h > 0)
 			{
 				(*v->api->f_color)(v, G_WHITE);
-				(*v->api->bar)(v, 0, xy.x, xy.y, xy.w, xy.h);
+				(*v->api->bar)(v, 0, xy.g_x, xy.g_y, xy.g_w, xy.g_h);
 			}
 			list->flags &= ~SIF_DIRTY;
 		}
@@ -1185,7 +1185,7 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 
 	if (list->wi)
 	{
-		if (list->widest/*total_w*/ > list->wi->wa.w)
+		if (list->widest/*total_w*/ > list->wi->wa.g_w)
 		{
 			if (as){
 				tp |= (LFARROW|RTARROW|HSLIDE);
@@ -1204,7 +1204,7 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 			}
 		}
 
-		if (list->total_h > list->wi->wa.h)
+		if (list->total_h > list->wi->wa.g_h)
 		{
 			if (as)
 				tp |= (UPARROW|DNARROW|VSLIDE);
@@ -1228,8 +1228,8 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 			if (list->flags & SIF_TREEVIEW)
 			{
 				list->widest = find_widest(list, NULL);
-				if( list->tabs[1].r.w == 0 )
-					list->tabs[0].r.w = list->widest;
+				if( list->tabs[1].r.g_w == 0 )
+					list->tabs[0].r.g_w = list->widest;
 			}
 			recalc_tabs(list);
 			if (canredraw(list))
@@ -1257,14 +1257,14 @@ sliders(struct scroll_info *list, bool rdrw)
 
 	if (XA_slider(list->wi, XAW_VSLIDE,
 		  list->total_h,
-		  list->wi->wa.h,
+		  list->wi->wa.g_h,
 		  list->start_y))
 		rm |= 1;
 
 
 	if (XA_slider(list->wi, XAW_HSLIDE,
 		  list->widest,
-		  list->wi->wa.w,
+		  list->wi->wa.g_w,
 		  list->start_x))
 		rm |= 2;
 
@@ -1400,8 +1400,8 @@ find_widest(SCROLL_INFO *list, SCROLL_ENTRY *start)
 
 	while (start)
 	{
-		if (start->r.w > widest)
-			widest = start->r.w;
+		if (start->r.g_w > widest)
+			widest = start->r.g_w;
 		start = next_entry(start, ENT_VISIBLE, -1, NULL);
 	}
 	return widest;
@@ -1421,7 +1421,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 	{
 		if (e == this)
 			break;
-		y += this->r.h;
+		y += this->r.g_h;
 		if( (l->flags & SIF_TREEVIEW) /*|| this->down*/ ){
 			PROFRECs( this =, next_entry,(this, ENT_VISIBLE, -1, NULL));
 		}
@@ -1430,12 +1430,12 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 	}
 	if (this)
 	{
-		w = this->r.w;
-		h = this->r.h;
+		w = this->r.g_w;
+		h = this->r.g_h;
 		if ((flags & 1))
 		{
 			while (PROFRECa(this =, next_entry,(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level)))
-				w += this->r.w, h += this->r.h;
+				w += this->r.g_w, h += this->r.g_h;
 #if 0
 			this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level);
 			if (this && level)
@@ -1443,7 +1443,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 				level = 0;
 				while (this)
 				{
-					w += this->r.w, h += this->r.h;
+					w += this->r.g_w, h += this->r.g_h;
 					this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level);
 				}
 			}
@@ -1480,7 +1480,7 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 	{
 		LRECT r;
 		get_entry_lrect(list, entry, 0, &r);
-		if (!(r.w | r.h) || ((r.y + r.h) < list->start_y) || (r.y > (list->start_y + list->wi->wa.h)))
+		if (!(r.w | r.h) || ((r.y + r.h) < list->start_y) || (r.y > (list->start_y + list->wi->wa.g_h)))
 		{
 			return;
 		}
@@ -1521,7 +1521,7 @@ canblit(SCROLL_INFO *list)
 		wind = list->wt->wind;
 	if (wind)
 	{
-		RECT r;
+		GRECT r;
 		rl = wind->rect_list.start;
 		while (rl)
 		{
@@ -1829,8 +1829,8 @@ set_setext_icon(struct se_content *this_sc, OBJECT *icon)
 	this_sc->c.text.icon.icon = icon;
 	icon->ob_x = icon->ob_y = 0;
 	ob_spec_xywh(icon, 0, &this_sc->c.text.icon.r);
-	this_sc->c.text.icon.r.w += 2;
-	this_sc->c.text.icon.r.h += 2;
+	this_sc->c.text.icon.r.g_w += 2;
+	this_sc->c.text.icon.r.g_h += 2;
 }
 
 #define PRFSE	1
@@ -2133,7 +2133,7 @@ m_state_done:
 		{
 			short xstate = entry->xstate;
 			LRECT r;
-			RECT s, d;
+			GRECT s, d;
 
 			if (arg)
 			{
@@ -2148,31 +2148,31 @@ m_state_done:
 						get_entry_lrect(list, entry, 1, &r);
 						if ((r.w || r.h))
 						{
-							list->total_h += (r.h - entry->r.h);
+							list->total_h += (r.h - entry->r.g_h);
 							if (list->flags & SIF_TREEVIEW)
 								list->total_w = list->widest = find_widest(list, NULL);
 							if (!reset_listwi_widgets(list, rdrw))
 							{
-								if ((r.y + entry->r.h) < list->start_y)
-									list->start_y += (r.h - entry->r.h);
-								else if (rdrw && canredraw(list) && (r.y < (list->start_y + list->wi->wa.h)))
+								if ((r.y + entry->r.g_h) < list->start_y)
+									list->start_y += (r.h - entry->r.g_h);
+								else if (rdrw && canredraw(list) && (r.y < (list->start_y + list->wi->wa.g_h)))
 								{
 									if (canblit(list))
 									{
 										s = d = list->wi->wa;
-										s.y += ((r.y + entry->r.h) - list->start_y);
-										d.y += ((r.y + r.h) - list->start_y);
-										d.h -= ((r.y + r.h) - list->start_y);
-										s.h = d.h;
+										s.g_y += ((r.y + entry->r.g_h) - list->start_y);
+										d.g_y += ((r.y + r.h) - list->start_y);
+										d.g_h -= ((r.y + r.h) - list->start_y);
+										s.g_h = d.g_h;
 										hidem();
-										if (d.h > 4)
+										if (d.g_h > 4)
 										{
 											(*list->vdi_settings->api->form_copy)(&s, &d);
-											s.h = d.y - s.y;
+											s.g_h = d.g_y - s.g_y;
 										}
 										else
 										{
-											s.h += (d.y - s.y);
+											s.g_h += (d.g_y - s.g_y);
 										}
 										draw_slist(0, list, NULL, &s);
 										showm();
@@ -2200,35 +2200,35 @@ m_state_done:
 					{
 						if ((r.w || r.h))
 						{
-							list->total_h -= (r.h - entry->r.h);
+							list->total_h -= (r.h - entry->r.g_h);
 							list->total_w = list->widest = find_widest(list, NULL);
 							if (!reset_listwi_widgets(list, rdrw))
 							{
 								if ((r.y + r.h) < list->start_y)
-									list->start_y -= (r.h - entry->r.h);
-								else if (rdrw && canredraw(list) && r.y < (list->start_y + list->wi->wa.h))
+									list->start_y -= (r.h - entry->r.g_h);
+								else if (rdrw && canredraw(list) && r.y < (list->start_y + list->wi->wa.g_h))
 								{
 									if (canblit(list))
 									{
 										s = d = list->wi->wa;
-										s.y += ((r.y + r.h) - list->start_y);
-										s.h -= ((r.y + r.h) - list->start_y);
+										s.g_y += ((r.y + r.h) - list->start_y);
+										s.g_h -= ((r.y + r.h) - list->start_y);
 										hidem();
-										if (s.h > 4)
+										if (s.g_h > 4)
 										{
-											d.y += ((r.y + entry->r.h) - list->start_y);
-											d.h = s.h;
+											d.g_y += ((r.y + entry->r.g_h) - list->start_y);
+											d.g_h = s.g_h;
 											(*list->vdi_settings->api->form_copy)(&s, &d);
-											d.h = s.y - d.y;
-											d.y += s.h;
+											d.g_h = s.g_y - d.g_y;
+											d.g_y += s.g_h;
 										}
 										else
 										{
-											d.y += ((r.y + entry->r.h) - list->start_y);
-											d.h -= ((r.y + entry->r.h) - list->start_y);
+											d.g_y += ((r.y + entry->r.g_h) - list->start_y);
+											d.g_h -= ((r.y + entry->r.g_h) - list->start_y);
 										}
 
-										if (d.h > 0)
+										if (d.g_h > 0)
 										{
 											draw_slist(0, list, NULL, &d);
 										}
@@ -2430,7 +2430,7 @@ m_state_done:
 	{
 		LRECT r;
 		get_entry_lrect(list, entry, 0, &r);
-		if (((r.y + r.h) > list->start_y) && (r.y < (list->start_y + list->wi->wa.h)))
+		if (((r.y + r.h) > list->start_y) && (r.y < (list->start_y + list->wi->wa.g_h)))
 			list->redraw(list, entry);
 	}
 	return ret;
@@ -2696,7 +2696,7 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 
 			case SEGET_LISTXYWH:
 			{
-				get_list_rect(list, (RECT *)arg);
+				get_list_rect(list, (GRECT *)arg);
 				break;
 			}
 			case SEGET_PRNTWIND:
@@ -2959,7 +2959,7 @@ add_scroll_entry(SCROLL_INFO *list,
 
 		if( list->start )
 		{
-			((struct se_content *)new->content)->c.text.h = list->start->r.h;
+			((struct se_content *)new->content)->c.text.h = list->start->r.g_h;
 		}
 		PROFRECv(calc_entry_wh,(list, new));
 
@@ -3001,8 +3001,8 @@ add_scroll_entry(SCROLL_INFO *list,
 
 				if( here )
 				{
-					here->r.y += here->r.h;
-					r.y = (long)here->r.y;
+					here->r.g_y += here->r.g_h;
+					r.y = (long)here->r.g_y;
 				}
 				/*else
 					r.y = 0L;*/
@@ -3086,10 +3086,10 @@ add_scroll_entry(SCROLL_INFO *list,
 			new->indent += (new->level * list->nesticn_w);
 			if (list->flags & SIF_TREEVIEW)
 			{
-				if (new->r.h < list->nesticn_h)
-					new->r.h = list->nesticn_h;
-				if (new->r.w < list->nesticn_w)
-					new->r.w = list->nesticn_w;
+				if (new->r.g_h < list->nesticn_h)
+					new->r.g_h = list->nesticn_h;
+				if (new->r.g_w < list->nesticn_w)
+					new->r.g_w = list->nesticn_w;
 			}
 		}
 
@@ -3099,27 +3099,27 @@ add_scroll_entry(SCROLL_INFO *list,
 		}
 		else
 		{
-			/*r.x = new->r.x;
-			r.w = new->r.w;*/
-			r.h = new->r.h;
+			/*r.x = new->r.g_x;
+			r.w = new->r.g_w;*/
+			r.h = new->r.g_h;
 
 			if( !sort )
 			{
 				if( here )
 				{
-					/*here->r.y += here->r.h;
-					r.y = (long)here->r.y;
+					/*here->r.g_y += here->r.g_h;
+					r.y = (long)here->r.g_y;
 					*/
-					new->r.y = here->r.y + r.h;
-					r.y = (long)new->r.y;
+					new->r.g_y = here->r.g_y + r.h;
+					r.y = (long)new->r.g_y;
 				}
 				/*else
 					r.y = 0L;*/
 			}
 		}
 
-		if (new->r.w > list->widest)
-			list->widest = new->r.w;
+		if (new->r.g_w > list->widest)
+			list->widest = new->r.g_w;
 		if ((r.h /*| r.w*/))
 		{
 			/* compensate for not calling next_entry in get_entry_lrect...*/
@@ -3128,9 +3128,9 @@ add_scroll_entry(SCROLL_INFO *list,
 				new->r.h += LSLINDST_PTS;
 			}*/
 
-			if (new->r.h > list->highest)
-				list->highest = new->r.h;
-			list->total_h += new->r.h;
+			if (new->r.g_h > list->highest)
+				list->highest = new->r.g_h;
+			list->total_h += new->r.g_h;
 
 
 			if (r.y < (list->start_y - list->off_y))
@@ -3142,7 +3142,7 @@ add_scroll_entry(SCROLL_INFO *list,
 
 				PROFRECv(reset_listwi_widgets,(list, redraw));
 			}
-			else if (r.y <  (list->start_y + list->wi->wa.h))
+			else if (r.y <  (list->start_y + list->wi->wa.g_h))
 			{
 				if (r.y == (list->start_y - list->off_y))
 				{
@@ -3174,13 +3174,13 @@ add_scroll_entry(SCROLL_INFO *list,
 								PROFRECs(next =, next_entry,(new, ENT_VISIBLE, -1, NULL));
 								if (next)
 								{
-									RECT d, s = list->wi->wa;
+									GRECT d, s = list->wi->wa;
 
-									s.y += sy;
-									s.h -= (sy + r.h);
+									s.g_y += sy;
+									s.g_h -= (sy + r.h);
 									d = s;
-									d.y += r.h;
-									if (d.h > 0){
+									d.g_y += r.h;
+									if (d.g_h > 0){
 										PROFRECp(*list->vdi_settings->api->,form_copy,(&s, &d));
 									}
 								}
@@ -3304,7 +3304,7 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 
 				delete_all_content(this);
 
-				h += this->r.h;
+				h += this->r.g_h;
 
 				free_se(this);
 			}
@@ -3353,7 +3353,7 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 
 		delete_all_content(this);
 
-		h += this->r.h;
+		h += this->r.g_h;
 		free_se(this);
 	}
 
@@ -3383,7 +3383,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	{
 		list->total_h -= lr.h;
 
-		if (list->total_h <= list->wi->wa.h)
+		if (list->total_h <= list->wi->wa.g_h)
 		{
 			list->top = list->start;
 
@@ -3411,7 +3411,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 					get_entry_lrect(list, next, 0, &r);
 					list->top = next;
 					sy = (lr.h + r.y) - list->start_y;
-					if (sy > list->start_y + list->wi->wa.h)
+					if (sy > list->start_y + list->wi->wa.g_h)
 						sy = -1L;
 					dy = 0;
 					list->start_y = r.y;
@@ -3432,7 +3432,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	else
 	{
 		list->total_h -= lr.h;
-		if (list->total_h <= list->wi->wa.h)
+		if (list->total_h <= list->wi->wa.g_h)
 		{
 			list->top = list->start;
 			if (!list->start_y && !list->off_y)
@@ -3455,7 +3455,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 					list->top = next;
 					get_entry_lrect(list, next, 0, &r);
 					sy = (r.y + lr.h) - list->start_y;
-					if (sy > list->wi->wa.h)
+					if (sy > list->wi->wa.g_h)
 						sy = -1L;
 					dy = 0;
 					list->start_y = r.y;
@@ -3471,22 +3471,22 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 				}
 				/* else list is empty */
 			}
-			else if (lr.y < (list->start_y + list->wi->wa.h))
+			else if (lr.y < (list->start_y + list->wi->wa.g_h))
 			{
 				dy = lr.y - list->start_y;
-				if ((lr.y + lr.h) < (list->start_y + list->wi->wa.h))
+				if ((lr.y + lr.h) < (list->start_y + list->wi->wa.g_h))
 				{
 					if (next)
 					{
 						get_entry_lrect(list, next, 0, &r);
 						sy = (r.y + lr.h) - list->start_y;
-						if (sy > list->wi->wa.h)
+						if (sy > list->wi->wa.g_h)
 							sy = -1l;
 					}
 					else
 					{
 						sy = (lr.y + lr.h) - list->start_y;
-						if (sy > list->wi->wa.h)
+						if (sy > list->wi->wa.g_h)
 							sy = -1L;
 					}
 				}
@@ -3503,7 +3503,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	if (!reset_listwi_widgets(list, redraw/*true*/) && redraw && sy)
 	{
 		short h;
-		RECT s, d;
+		GRECT s, d;
 
 		hidem();
 		if (!canblit(list) || sy == -1L)
@@ -3513,22 +3513,22 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 		else
 		{
 			s = list->wi->wa;
-			h = s.h - sy;
+			h = s.g_h - sy;
 			if (h < 8)
 			{
-				s.y += dy;
-				s.h -= s.h - dy;
+				s.g_y += dy;
+				s.g_h -= s.g_h - dy;
 				draw_slist(0, list, NULL, &s);
 			}
 			else
 			{
-				s.h = h;
+				s.g_h = h;
 				d = s;
-				s.y += sy;
-				d.y += dy;
+				s.g_y += sy;
+				d.g_y += dy;
 				(*list->vdi_settings->api->form_copy)(&s, &d);
-				d.y += (d.h - 1);
-				d.h = list->wi->wa.h - (d.y - list->wi->wa.y) + 1;
+				d.g_y += (d.g_h - 1);
+				d.g_h = list->wi->wa.g_h - (d.g_y - list->wi->wa.g_y) + 1;
 				draw_slist(0, list, NULL, &d);
 			}
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
@@ -3584,7 +3584,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 	DIAG((D_fnts, NULL, "scroll_up: %ld lines, top = %lx",
 		num, (unsigned long)list->top));
 
-	n = list->total_h - (list->start_y + list->wi->wa.h);
+	n = list->total_h - (list->start_y + list->wi->wa.g_h);
 	if (n <= 0)
 		return;
 
@@ -3597,7 +3597,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 	if( !(list->flags & OS_SLID) )
 	{
 		/* always scroll up whole lines */
-		h = this->r.h;
+		h = this->r.g_h;
 		n = (n + h/2) / h;
 		if( n < 1 )
 			n = 1;
@@ -3608,7 +3608,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	while (n > 0 && (next = next_entry(this, ENT_VISIBLE, -1, NULL)))
 	{
-		h = this->r.h;
+		h = this->r.g_h;
 		if (list->off_y)
 			h -= list->off_y;
 
@@ -3616,7 +3616,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 		if (n < 0)
 		{
-			list->off_y = n + this->r.h;
+			list->off_y = n + this->r.g_h;
 			list->start_y += (n + h);
 		}
 		else
@@ -3640,7 +3640,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 		/*
 		 * XXX - Ozk: This assumes there's nothing covering our slist window"
 		 */
-			RECT s, d;
+			GRECT s, d;
 
 			hidem();
 			s = list->wi->wa;
@@ -3697,12 +3697,12 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 			else
 			{
 				list->top = prev;
-				h = (list->top->r.h - list->off_y);
+				h = (list->top->r.g_h - list->off_y);
 
 				n -= h;
 				if (n < 0)
 				{
-					list->off_y = list->top->r.h - (n + h);
+					list->off_y = list->top->r.g_h - (n + h);
 					list->start_y -= (n + h);
 				}
 				else
@@ -3715,22 +3715,22 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 	}
 	if (rdrw)
 	{
-		if (!canblit(list) || max > (list->wi->wa.h - 8))
+		if (!canblit(list) || max > (list->wi->wa.g_h - 8))
 		{
 			list->redraw(list, NULL);
 		}
 		else
 		{
-			RECT s, d;
+			GRECT s, d;
 
 			s = list->wi->wa;
 
-			s.h -= max;
+			s.g_h -= max;
 			d = s;
-			d.y += max;
+			d.g_y += max;
 			hidem();
 			(*list->vdi_settings->api->form_copy)(&s, &d);
-			s.h = max;
+			s.g_h = max;
 			draw_slist(0, list, NULL, &s);
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
@@ -3744,12 +3744,12 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 {
 	long n, max;
 
-	if (list->widest < list->wi->wa.w)
+	if (list->widest < list->wi->wa.g_w)
 		return;
 
-	if ((num + list->start_x + list->wi->wa.w) > list->widest)
+	if ((num + list->start_x + list->wi->wa.g_w) > list->widest)
 	{
-		max = n = list->widest - (list->start_x + list->wi->wa.w);
+		max = n = list->widest - (list->start_x + list->wi->wa.g_w);
 		if (max < 0)
 			return;
 	}
@@ -3760,22 +3760,22 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if (!canblit(list) || max > list->wi->wa.w - 8)
+		if (!canblit(list) || max > list->wi->wa.g_w - 8)
 		{
 			list->redraw(list, NULL);
 		}
 		else
 		{
-			RECT s, d;
+			GRECT s, d;
 
 			s = list->wi->wa;
-			s.w -= max;
+			s.g_w -= max;
 			d = s;
-			s.x += max;
+			s.g_x += max;
 			hidem();
 			(*list->vdi_settings->api->form_copy)(&s, &d);
-			d.x += d.w;
-			d.w = max;
+			d.g_x += d.g_w;
+			d.g_w = max;
 			draw_slist(0, list, NULL, &d);
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
@@ -3789,7 +3789,7 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 {
 	long n, max;
 
-	if (list->widest < list->wi->wa.w)
+	if (list->widest < list->wi->wa.g_w)
 		return;
 
 	if (num > list->start_x)
@@ -3801,22 +3801,22 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if ( !canblit(list) || max > list->wi->wa.w - 8)
+		if ( !canblit(list) || max > list->wi->wa.g_w - 8)
 		{
 			list->redraw(list, NULL);
 		}
 		else
 		{
-			RECT s, d;
+			GRECT s, d;
 
 			s = list->wi->wa;
-			s.w -= max;
+			s.g_w -= max;
 			d = s;
-			d.x += max;
+			d.g_x += max;
 
 			hidem();
 			(*list->vdi_settings->api->form_copy)(&s, &d);
-			s.w = max;
+			s.g_w = max;
 			draw_slist(0, list, NULL, &s);
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
@@ -3832,7 +3832,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 	LRECT r;
 
 	DIAGS(("scrl_visible: start_y=%ld, height=%d, total =%ld",
-		list->start_y, list->wi->wa.h, list->total_h));
+		list->start_y, list->wi->wa.g_h, list->total_h));
 
 	if (get_entry_lrect(list, s, 0, &r))
 	{
@@ -3844,7 +3844,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 			if (redraw == NORMREDRAW)
 				rdrw = true;
 
-			if ((r.y + r.h) <= list->start_y || r.y > (list->start_y + list->wi->wa.h))
+			if ((r.y + r.h) <= list->start_y || r.y > (list->start_y + list->wi->wa.g_h))
 			{
 				/*
 				 * If the entry to make visible is the next-up, we only scroll enough
@@ -3863,11 +3863,11 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 					 */
 					r.y -= list->start_y;
 					if (r.y < 0)
-						scroll_down(list, -r.y + (list->wi->wa.h >> 1), rdrw);
+						scroll_down(list, -r.y + (list->wi->wa.g_h >> 1), rdrw);
 					else
 					{
-						r.y -= list->wi->wa.h;
-						scroll_up(list, r.y + (list->wi->wa.h >> 1), rdrw);
+						r.y -= list->wi->wa.g_h;
+						scroll_up(list, r.y + (list->wi->wa.g_h >> 1), rdrw);
 					}
 				}
 				rdrw = false;
@@ -3880,7 +3880,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 				 */
 				scroll_down(list, list->off_y, rdrw);
 			}
-			else if ((r.y + r.h-1) > (list->start_y + list->wi->wa.h))
+			else if ((r.y + r.h-1) > (list->start_y + list->wi->wa.g_h))
 			{
 				/*
 				 * The entry is partially visible at the end of the list, scroll just
@@ -3888,7 +3888,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 				 *
 				 * now: scroll half page
 				 */
-				scroll_up(list, list->wi->wa.h / 2, rdrw);
+				scroll_up(list, list->wi->wa.g_h / 2, rdrw);
 			}
 			if (rdrw){
 				list->redraw(list, s);
@@ -3964,7 +3964,7 @@ entry_action(struct scroll_info *list, struct scroll_entry *this, const struct m
 
 	if (this)
 	{
-		short ni_x = (list->wi->wa.x + this->indent) - list->off_x;
+		short ni_x = (list->wi->wa.g_x + this->indent) - list->off_x;
 		LRECT r;
 
 		if ((list->flags & SIF_TREEVIEW) && (md && md->x > ni_x && md->x < (ni_x + list->nesticn_w)) )
@@ -4060,16 +4060,16 @@ click_scroll_list(int lock, OBJECT *form, int item, const struct moose_data *md)
 			return;
 		}
 
-		cy -= list->wi->wa.y;
+		cy -= list->wi->wa.g_y;
 
 		if ((this = list->top))
 		{
-			y = list->top->r.h - list->off_y;
+			y = list->top->r.g_h - list->off_y;
 
 			while (this && y < cy)
 			{
 				this = next_entry(this, ENT_VISIBLE, -1, NULL);
-				if (this) y += this->r.h;
+				if (this) y += this->r.g_h;
 			}
 		}
 		if (this)
@@ -4134,15 +4134,15 @@ dclick_scroll_list(int lock, OBJECT *form, int item, const struct moose_data *md
 		if (!m_inside(cx, cy, &list->wi->wa))
 			return;
 
-		cy -= list->wi->wa.y;
+		cy -= list->wi->wa.g_y;
 
 		if ((this = list->top))
 		{
-			y = list->top->r.h - list->off_y;
+			y = list->top->r.g_h - list->off_y;
 			while(this && y < cy)
 			{
 				this = next_entry(this, ENT_VISIBLE, -1, NULL);
-				if (this) y += this->r.h;
+				if (this) y += this->r.g_h;
 			}
 		}
 
@@ -4170,16 +4170,16 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 		if (md->cstate & MBS_RIGHT)
 		{
-			RECT s, b, d, r;
+			GRECT s, b, d, r;
 
 			rp_2_ap(wind, widg, &widg->ar);
 
 			b = s = widg->ar;
 
-			s.x += sl->r.x;
-			s.y += sl->r.y;
-			s.w = sl->r.w;
-			s.h = sl->r.h;
+			s.g_x += sl->r.g_x;
+			s.g_y += sl->r.g_y;
+			s.g_w = sl->r.g_w;
+			s.g_h = sl->r.g_h;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
@@ -4188,7 +4188,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
 
-			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
+			offs = bound_sl(pix_to_sl(r.g_y - widg->ar.g_y, widg->r.g_h - sl->r.g_h));
 
 			if (offs != sl->position)
 			{
@@ -4210,7 +4210,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 					/* Always have a nice consistent sizer when dragging a box */
 					xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 					rp_2_ap(wind, widg, &widg->ar);
-					old_offs = md->y - (widg->ar.y + sl->r.y);
+					old_offs = md->y - (widg->ar.g_y + sl->r.g_y);
 					old_y = md->y;
 					y = md->sy;
 				}
@@ -4219,7 +4219,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 				if (old_y != y)
 				{
-					offs = bound_sl(pix_to_sl((y - old_offs) - widg->ar.y, widg->r.h - sl->r.h));
+					offs = bound_sl(pix_to_sl((y - old_offs) - widg->ar.g_y, widg->r.g_h - sl->r.g_h));
 
 					if (offs != sl->position && wind->send_message)
 					{
@@ -4256,23 +4256,23 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 		if (md->cstate & MBS_RIGHT)
 		{
-			RECT s, b, d, r;
+			GRECT s, b, d, r;
 
 			rp_2_ap(wind, widg, &widg->ar);
 
 			b = s = widg->ar;
 
-			s.x += sl->r.x;
-			s.y += sl->r.y;
-			s.w = sl->r.w;
-			s.h = sl->r.h;
+			s.g_x += sl->r.g_x;
+			s.g_y += sl->r.g_y;
+			s.g_w = sl->r.g_w;
+			s.g_h = sl->r.g_h;
 
 			lock_screen(wind->owner->p, false);
 			xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			unlock_screen(wind->owner->p);
 
-			offs = bound_sl(pix_to_sl(r.x - widg->ar.x, widg->r.w - sl->r.w));
+			offs = bound_sl(pix_to_sl(r.g_x - widg->ar.g_x, widg->r.g_w - sl->r.g_w));
 
 			if (offs != sl->position)
 			{
@@ -4294,7 +4294,7 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 					/* Always have a nice consistent sizer when dragging a box */
 					xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 					rp_2_ap(wind, widg, &widg->ar);
-					old_offs = md->x - (widg->ar.x + sl->r.x);
+					old_offs = md->x - (widg->ar.g_x + sl->r.g_x);
 					old_x = md->x;
 					x = md->sx;
 				}
@@ -4303,7 +4303,7 @@ drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 
 				if (old_x != x)
 				{
-					offs = bound_sl(pix_to_sl((x - old_offs) - widg->ar.x, widg->r.w - sl->r.w));
+					offs = bound_sl(pix_to_sl((x - old_offs) - widg->ar.g_x, widg->r.g_w - sl->r.g_w));
 
 					if (offs != sl->position && wind->send_message)
 					{
@@ -4396,7 +4396,7 @@ set_slist_object(int lock,
 	struct scroll_info *list;
 	struct se_tab *tabs;
 	struct widget_tree *nil_wt;
-	RECT r;
+	GRECT r;
 	XA_WIND_ATTR wkind = 0;
 	OBJECT *ob = wt->tree + item;
 
@@ -4460,13 +4460,13 @@ set_slist_object(int lock,
 
 	list->title = title;
 	obj_area(wt, aesobj(wt->tree, item), &r);
-	list->rel_x = r.x - wt->tree->ob_x;
-	list->rel_y = r.y - wt->tree->ob_y;
+	list->rel_x = r.g_x - wt->tree->ob_x;
+	list->rel_y = r.g_y - wt->tree->ob_y;
 
 	if (!(flags & SIF_AUTOSLIDERS))
 	{
 		wkind |= UPARROW|VSLIDE|DNARROW;
-		if (lmax * screen.c_max_w + ICON_W > r.w - 24)
+		if (lmax * screen.c_max_w + ICON_W > r.g_w - 24)
 			wkind |= LFARROW|HSLIDE|RTARROW;
 	}
 
@@ -4513,9 +4513,9 @@ set_slist_object(int lock,
 		list->wi->winob	= wt->tree;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;
 		r = list->wi->wa;
-		dh = list->wi->wa.h - r.h;
+		dh = list->wi->wa.g_h - r.g_h;
 		ob->ob_height -= dh;
-		list->wi->r.h -= dh;
+		list->wi->r.g_h -= dh;
 
 		list->slider	= sliders;
 		list->closer	= closer;
@@ -4619,7 +4619,7 @@ slist_msg_handler(
 		{
 			if ((msgt = msg[4] & 7) < WA_LFPAGE)
 			{
-				p = list->wi->wa.h;
+				p = list->wi->wa.g_h;
 				if (!(amount = (msg[4] >> 8) & 0xff))
 					amount++;
 
@@ -4635,13 +4635,13 @@ slist_msg_handler(
 								scroll_down(list, list->off_y, true);
 							else
 							{
-								long h = n->r.h;
+								long h = n->r.g_h;
 								amount--;
 								while (amount)
 								{
 									if (!(n = prev_entry(n, ENT_VISIBLE)))
 										break;
-									h += n->r.h;
+									h += n->r.g_h;
 									amount--;
 								}
 								scroll_down(list, h, true);
@@ -4654,16 +4654,16 @@ slist_msg_handler(
 						if ((n = next_entry(top, ENT_VISIBLE, -1, NULL)))
 						{
 							if (list->off_y)
-								scroll_up(list, top->r.h - list->off_y, true);
+								scroll_up(list, top->r.g_h - list->off_y, true);
 							else if (n)
 							{
-								long h = n->r.h;
+								long h = n->r.g_h;
 								amount--;
 								while (amount)
 								{
 									if (!(n = next_entry(n, ENT_VISIBLE, -1, NULL)))
 										break;
-									h += n->r.h;
+									h += n->r.g_h;
 									amount--;
 								}
 								scroll_up(list, h, true);
@@ -4673,7 +4673,7 @@ slist_msg_handler(
 					}
 					case WA_UPPAGE:
 					{
-						scroll_down(list, list->wi->wa.h - top->r.h, true);
+						scroll_down(list, list->wi->wa.g_h - top->r.g_h, true);
 						break;
 					}
 					case WA_DNPAGE:
@@ -4684,7 +4684,7 @@ slist_msg_handler(
 						nl = round_to( nl, top->r.h );
 						scroll_up(list, nl, true);
 						*/
-						scroll_up(list, list->wi->wa.h - top->r.h, true);
+						scroll_up(list, list->wi->wa.g_h - top->r.g_h, true);
 						break;
 					}
 					}
@@ -4702,10 +4702,10 @@ slist_msg_handler(
 							scroll_left(list, 4, true);
 							break;
 						case WA_LFPAGE:
-							scroll_right(list, list->wi->wa.w - 8, true);
+							scroll_right(list, list->wi->wa.g_w - 8, true);
 							break;
 						case WA_RTPAGE:
-							scroll_left(list, list->wi->wa.w - 8, true);
+							scroll_left(list, list->wi->wa.g_w - 8, true);
 					}
 				}
 			}
@@ -4716,7 +4716,7 @@ slist_msg_handler(
 	{
 		if (top)
 		{
-			p = list->wi->wa.h;
+			p = list->wi->wa.g_h;
 			if (p < list->total_h)
 			{
 				long new = sl_to_pix(list->total_h - p, msg[4]);
@@ -4737,7 +4737,7 @@ slist_msg_handler(
 	{
 		if (top)
 		{
-			p = list->wi->wa.w;
+			p = list->wi->wa.g_w;
 			if (p < list->widest )
 			{
 				long new = sl_to_pix(list->widest - p, msg[4]);
@@ -5011,11 +5011,11 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	}
 	case SC_SHFT_CLRHOME:	/* 0x4737 */	/* shift + home */
 	{
-		long n = list->total_h - (list->start_y + list->wi->wa.h);
+		long n = list->total_h - (list->start_y + list->wi->wa.g_h);
 		bool top = true;
 		short redraw = NOREDRAW;
 
-		if (n > list->start->r.h / 2){
+		if (n > list->start->r.g_h / 2){
 			scroll_up(list, n, true);
 		}
 		else{

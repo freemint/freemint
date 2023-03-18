@@ -45,106 +45,106 @@
 
 /* HR 150202: make rubber_box omnidirectional; helper functions. */
 
-static const RECT *
-rect_dist(struct xa_client *client, RECT *r, RECT *d)
+static const GRECT *
+rect_dist(struct xa_client *client, GRECT *r, GRECT *d)
 {
 	short mb, x, y;
 
 	check_mouse(client, &mb, &x, &y);
 
-	d->x = r->x - x;
-	d->y = r->y - y;
-	d->w = r->x + r->w - x;
-	d->h = r->y + r->h - y;
+	d->g_x = r->g_x - x;
+	d->g_y = r->g_y - y;
+	d->g_w = r->g_x + r->g_w - x;
+	d->g_h = r->g_y + r->g_h - y;
 
 	return d;
 }
 
-const RECT *
-rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d)
+const GRECT *
+rect_dist_xy(struct xa_client *client, short x, short y, GRECT *r, GRECT *d)
 {
-	d->x = r->x - x;
-	d->y = r->y - y;
-	d->w = r->x + r->w - x;
-	d->h = r->y + r->h - y;
+	d->g_x = r->g_x - x;
+	d->g_y = r->g_y - y;
+	d->g_w = r->g_x + r->g_w - x;
+	d->g_h = r->g_y + r->g_h - y;
 
 	return d;
 }
 
 void
-check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
+check_wh_cp(GRECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 {
 	switch (cp)
 	{
 		case NW:
 		{
-			if (minw && c->w < minw)
+			if (minw && c->g_w < minw)
 			{
-				c->x -= (minw - c->w);
-				c->w = minw;
+				c->g_x -= (minw - c->g_w);
+				c->g_w = minw;
 			}
 		}
 		/* fallthrough */
 		case N_:
 		{
-			if (minh && c->h < minh)
+			if (minh && c->g_h < minh)
 			{
-				c->y -= (minh - c->h);
-				c->h = minh;
+				c->g_y -= (minh - c->g_h);
+				c->g_h = minh;
 			}
 			break;
 		}
 		case SW:
 		{
-			if (minh && c->h < minh)
-				c->h = minh;
+			if (minh && c->g_h < minh)
+				c->g_h = minh;
 		}
 		/* fallthrough */
 		case W_:
 		{
-			if (maxw && c->w > maxw)
+			if (maxw && c->g_w > maxw)
 			{
-				c->x -= (c->w - maxw);
-				c->w = maxw;
+				c->g_x -= (c->g_w - maxw);
+				c->g_w = maxw;
 			}
-			else if (minw && c->w < minw)
+			else if (minw && c->g_w < minw)
 			{
-				c->x -= (minw - c->w);
-				c->w = minw;
+				c->g_x -= (minw - c->g_w);
+				c->g_w = minw;
 			}
 			break;
 		}
 		case SE:
 		{
-			if (minw && c->w < minw)
-				c->w = minw;
+			if (minw && c->g_w < minw)
+				c->g_w = minw;
 		}
 		/* fallthrough */
 		case S_:
 		{
-			if (minh && c->h < minh)
-				c->h = minh;
+			if (minh && c->g_h < minh)
+				c->g_h = minh;
 			break;
 		}
 		case NE:
 		{
-			if (minh && c->h < minh)
+			if (minh && c->g_h < minh)
 			{
-				c->y -= (minh - c->h);
-				c->h = minh;
+				c->g_y -= (minh - c->g_h);
+				c->g_h = minh;
 			}
 		}
 		/* fallthrough */
 		case E_:
 		{
-			if (maxw && c->w > maxw)
+			if (maxw && c->g_w > maxw)
 			{
-				c->x += (c->w - maxw);
-				c->w = maxw;
+				c->g_x += (c->g_w - maxw);
+				c->g_w = maxw;
 			}
-			if (minw && c->w < minw)
+			if (minw && c->g_w < minw)
 			{
-				c->w = minw;
+				c->g_w = minw;
 			}
 			break;
 		}
@@ -154,83 +154,83 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 
 /* fit rectangle r in bounding rectangle b */
 static void
-keep_inside(RECT *r, const RECT *b)
+keep_inside(GRECT *r, const GRECT *b)
 {
-	if (r->x < b->x)
-		r->x = b->x;
+	if (r->g_x < b->g_x)
+		r->g_x = b->g_x;
 	else
-	if (r->x + r->w > b->x + b->w)
-		r->x = b->x + b->w - r->w;
+	if (r->g_x + r->g_w > b->g_x + b->g_w)
+		r->g_x = b->g_x + b->g_w - r->g_w;
 
-	if (r->y < b->y)
-		r->y = b->y;
+	if (r->g_y < b->g_y)
+		r->g_y = b->g_y;
 	else
-	if (r->y + r->h > b->y + b->h)
-		r->y = b->y + b->h - r->h;
+	if (r->g_y + r->g_h > b->g_y + b->g_h)
+		r->g_y = b->g_y + b->g_h - r->g_h;
 }
 
-RECT
-widen_rectangle(COMPASS xy, short mx, short my, RECT start, const RECT *d)
+GRECT
+widen_rectangle(COMPASS xy, short mx, short my, GRECT start, const GRECT *d)
 {
-	RECT r = start;
+	GRECT r = start;
 
-	if( xy < E_ && my + d->y < root_window->wa.y ) /* cannot go above main-menubar */
-		my = root_window->wa.y - d->y;
+	if( xy < E_ && my + d->g_y < root_window->wa.g_y ) /* cannot go above main-menubar */
+		my = root_window->wa.g_y - d->g_y;
 	switch (xy)
 	{
 	case NW:
-		r.x = mx + d->x;
-		r.w = (start.x + start.w) - r.x;
+		r.g_x = mx + d->g_x;
+		r.g_w = (start.g_x + start.g_w) - r.g_x;
 	/* v */
 	case N_:
-		r.y = my + d->y;
-		r.h = (start.y + start.h) - r.y;
+		r.g_y = my + d->g_y;
+		r.g_h = (start.g_y + start.g_h) - r.g_y;
 		break;
 	case SW:
-		r.h = my - r.y + d->h;
+		r.g_h = my - r.g_y + d->g_h;
 	/* v */
 	case W_:
-		r.x = mx + d->x;
-		r.w = (start.x + start.w) - r.x;
+		r.g_x = mx + d->g_x;
+		r.g_w = (start.g_x + start.g_w) - r.g_x;
 		break;
 	case SE:
-		r.w = mx - r.x + d->w;
+		r.g_w = mx - r.g_x + d->g_w;
 	/* v */
 	case S_:
-		r.h = my - r.y + d->h;
+		r.g_h = my - r.g_y + d->g_h;
 		break;
 	case NE:
-		r.y = my + d->y;
-		r.h = (start.y + start.h) - r.y;
+		r.g_y = my + d->g_y;
+		r.g_h = (start.g_y + start.g_h) - r.g_y;
 	/* v */
 	case E_:
-		r.w = mx - r.x + d->w;
+		r.g_w = mx - r.g_x + d->g_w;
 		break;
 	default:;
 	}
 	return r;
 }
 
-RECT
-move_rectangle(short mx, short my, RECT r, const RECT *d)
+GRECT
+move_rectangle(short mx, short my, GRECT r, const GRECT *d)
 {
-	r.x = mx + d->x;
-	r.y = my + d->y;
+	r.g_x = mx + d->g_x;
+	r.g_y = my + d->g_y;
 	return r;
 }
 
 
 static bool
-rect_changed(const RECT *n, const RECT *o)
+rect_changed(const GRECT *n, const GRECT *o)
 {
-	return		 n->x != o->x
-		|| n->y != o->y
-		|| n->w != o->w
-		|| n->h != o->h;
+	return		 n->g_x != o->g_x
+		|| n->g_y != o->g_y
+		|| n->g_w != o->g_w
+		|| n->g_h != o->g_h;
 }
 
 static void
-new_box(struct xa_vdi_settings *v, const RECT *r, RECT *o)
+new_box(struct xa_vdi_settings *v, const GRECT *r, GRECT *o)
 {
 	if (o && !rect_changed(r, o))
 		return;
@@ -258,22 +258,22 @@ new_box(struct xa_vdi_settings *v, const RECT *r, RECT *o)
 
 /* HR 150202: complete redesign of the functions drag_box and rubberbox.
               By removing the mouse distance calculation from these functions
-              and widely use of the RECT structure, they now look rediculously
+              and widely use of the GRECT structure, they now look rediculously
               simple. (Which is what they are, whether in a computer or not).
 */
 /* HR 150202: make rubber_box omnidirectional. ;-) */
 
 void
 rubber_box(struct xa_client *client, COMPASS cp,
-		 RECT r,
-		 const RECT *dist,
+		 GRECT r,
+		 const GRECT *dist,
 		 int minw, int minh,
 		 int maxw, int maxh,
-		 RECT *last)
+		 GRECT *last)
 {
 	struct xa_vdi_settings *v = client->vdi_settings;
 	short x, y, mb;
-	RECT old = r;
+	GRECT old = r;
 
 	(*v->api->l_color)(v, G_BLACK);
 
@@ -297,14 +297,14 @@ rubber_box(struct xa_client *client, COMPASS cp,
 }
 
 void
-drag_box(struct xa_client *client, RECT r,
-	 const RECT *bound,
-	 const RECT *dist,
-	 RECT *last)
+drag_box(struct xa_client *client, GRECT r,
+	 const GRECT *bound,
+	 const GRECT *dist,
+	 GRECT *last)
 {
 	struct xa_vdi_settings *v = client->vdi_settings;
 	short mb, x, y;
-	RECT old = r;
+	GRECT old = r;
 
 	(*v->api->l_color)(v, G_BLACK);
 
@@ -335,21 +335,21 @@ drag_box(struct xa_client *client, RECT r,
 unsigned long
 XA_graf_dragbox(int lock, struct xa_client *client, AESPB *pb)
 {
-	RECT r, last, dist;
+	GRECT r, last, dist;
 
 	CONTROL(8,3,0)
 
-	r.x = pb->intin[2]; /* Strange binding. */
-	r.y = pb->intin[3];
-	r.w = pb->intin[0];
-	r.h = pb->intin[1];
+	r.g_x = pb->intin[2]; /* Strange binding. */
+	r.g_y = pb->intin[3];
+	r.g_w = pb->intin[0];
+	r.g_h = pb->intin[1];
 
-	drag_box(client, r, (const RECT *)&pb->intin[4],
+	drag_box(client, r, (const GRECT *)&pb->intin[4],
 		 rect_dist(client, &r, &dist), &last);
 
 	pb->intout[0] = 1;
-	pb->intout[1] = last.x;
-	pb->intout[2] = last.y;
+	pb->intout[1] = last.g_x;
+	pb->intout[2] = last.g_y;
 
 	DIAG((D_graf,client,"_drag_box"));
 
@@ -359,33 +359,33 @@ XA_graf_dragbox(int lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_graf_rubberbox(int lock, struct xa_client *client, AESPB *pb)
 {
-	RECT r, d = {0};
+	GRECT r, d = {0};
 	short mb, x, y;
 
 	CONTROL(4,3,0)
 
 	check_mouse(client, &mb, &x, &y);
-	r.x = pb->intin[0];
-	r.y = pb->intin[1];
-	r.w = pb->intin[0] - x;
-	if (r.w < 0)
-		r.w = 0;
-	r.h = pb->intin[1] - y;
-	if (r.h < 0)
-		r.h = 0;
+	r.g_x = pb->intin[0];
+	r.g_y = pb->intin[1];
+	r.g_w = pb->intin[0] - x;
+	if (r.g_w < 0)
+		r.g_w = 0;
+	r.g_h = pb->intin[1] - y;
+	if (r.g_h < 0)
+		r.g_h = 0;
 
 	rubber_box(client, SE, r, &d,
 		pb->intin[2], 	/* minimum */
 		pb->intin[3],
-		screen.r.w, 	/* maximum */
-		screen.r.h,
+		screen.r.g_w, 	/* maximum */
+		screen.r.g_h,
 		&r);
 
 	pb->intout[0] = 1;
-	pb->intout[1] = r.w;
-	pb->intout[2] = r.h;
+	pb->intout[1] = r.g_w;
+	pb->intout[2] = r.g_h;
 
-	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d",pb->intin[0],pb->intin[1],r.w,r.h));
+	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d",pb->intin[0],pb->intin[1],r.g_w,r.g_h));
 
 	return XAC_DONE;
 }
@@ -459,7 +459,7 @@ unsigned long
 XA_graf_slidebox(int lock, struct xa_client *client, AESPB *pb)
 {
 	short d;
-	RECT p, c,				/* parent/child rectangles. */
+	GRECT p, c,				/* parent/child rectangles. */
 			 dist, last;			/* mouse distance, result. */
 	OBJECT *tree = (OBJECT*)pb->addrin[0];
 	int 	pi = pb->intin[0],
@@ -468,27 +468,27 @@ XA_graf_slidebox(int lock, struct xa_client *client, AESPB *pb)
 	CONTROL(3,1,1)
 	if (validate_obtree(client, tree, "XA_graf_slidebox:"))
 	{
-		p = *(RECT *)&tree[pi].ob_x;
-		ob_offset(tree, aesobj(tree, pi), &p.x, &p.y);
-		c = *(RECT *)&tree[ci].ob_x;
-		ob_offset(tree, aesobj(tree, ci), &c.x, &c.y);
+		p = *(GRECT *)&tree[pi].ob_x;
+		ob_offset(tree, aesobj(tree, pi), &p.g_x, &p.g_y);
+		c = *(GRECT *)&tree[ci].ob_x;
+		ob_offset(tree, aesobj(tree, ci), &c.g_x, &c.g_y);
 
 		rect_dist(client, &c, &dist); 	/* relative position of mouse in child rectangle */
 
 		DIAG((D_graf,client,"XA_graf_slidebox dx:%d, dy:%d, p:%d/%d,%d/%d c:%d/%d,%d/%d",
-			dist.x, dist.y, p.x, p.y, p.w, p.h, c.x, c.y, c.w, c.h));
+			dist.g_x, dist.g_y, p.g_x, p.g_y, p.g_w, p.g_h, c.g_x, c.g_y, c.g_w, c.g_h));
 
 		drag_box(client, c, &p, &dist, &last);
 
 		if (pb->intin[2])
-			d = pix_to_sl(last.y - p.y, p.h - c.h);
+			d = pix_to_sl(last.g_y - p.g_y, p.g_h - c.g_h);
 		else
-			d = pix_to_sl(last.x - p.x, p.w - c.w);
+			d = pix_to_sl(last.g_x - p.g_x, p.g_w - c.g_w);
 
 		pb->intout[0] = d < 0 ? 0 : (d > SL_RANGE ? SL_RANGE : d);
 
 		DIAG((D_graf,client," 	 -- 		d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d",
-			d, last.x, last.y, p.x, p.y, p.w, p.h, c.x, c.y, c.w, c.h));
+			d, last.g_x, last.g_y, p.g_x, p.g_y, p.g_w, p.g_h, c.g_x, c.g_y, c.g_w, c.g_h));
 	}
 	return XAC_DONE;
 }

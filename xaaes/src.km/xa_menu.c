@@ -56,10 +56,10 @@ void set_menu_width( OBJECT *mnu, XA_TREE *mwt )
 
 	mw = mnu[t].ob_x + mnu[t].ob_width;
 	mwt->lastob = i;
-	mnu[0].ob_width = widg->r.w = mwt->area.w = mw + mwt->area.x;
+	mnu[0].ob_width = widg->r.g_w = mwt->area.g_w = mw + mwt->area.g_x;
 
 	/* !!! */
-	mwt->area.h += 2;
+	mwt->area.g_h += 2;
 }
 /*
  * This file provides the interface between XaAES's (somewhat strange) menu
@@ -742,8 +742,8 @@ XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 			}
 			if (x < 4)
 				x = 4;
-			if (y < get_menu_widg()->r.h)
-				y = get_menu_widg()->r.h;
+			if (y < get_menu_widg()->r.g_h)
+				y = get_menu_widg()->r.g_h;
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 
