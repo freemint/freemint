@@ -220,7 +220,7 @@ install_cookie (void)
 		jar += 2;
 		size++;
 	}
-	if ((unsigned long)size < jar[1])
+	if ((long)size < jar[1])
 	{
 		jar[2] = 0;
 		jar[3] = jar[1];
