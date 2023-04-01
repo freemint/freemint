@@ -855,13 +855,13 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				GRECT or;
 				int md = widg->stuff ? 1 : 0;
 				short d;
-				OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
 				struct xa_vdi_settings *v = w->vdi_settings;
 
 				DIAGS(("  --- Set new toolbar"));
 
 				if( md == 1 /*&& ob != o*/ )	/* changed toolbar */
 				{
+					OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
 					d = o->ob_height - ob->ob_height;
 					remove_widget(lock, w, XAW_TOOLBAR);
 				}
