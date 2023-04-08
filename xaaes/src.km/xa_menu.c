@@ -91,12 +91,10 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 	switch (pb->intin[0])
 	{
 	case MENU_INSTL:
-	{
 		swap = false;
 		/* fall through... */
-	}
+
 	case MENU_INSTALL:
-	{
 		DIAG((D_menu,NULL,"MENU_INSTALL"));
 
 		if (validate_obtree(client, mnu, "XA_menu_bar:"))
@@ -158,9 +156,8 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 			}
 		}
 		break;
-	}
+
 	case MENU_REMOVE:
-	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
 
 		if (!menu)
@@ -173,14 +170,30 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = 1;
 		}
 		break;
-	}
+
 	case MENU_INQUIRE:
-	{
 		DIAG((D_menu, NULL, "MENU_INQUIRE := %d", menu_bar->owner->p->pid));
 
 		pb->intout[0] = menu_bar->owner->p->pid;
 		break;
-	}
+
+	case MENU_GETMODE:
+		DIAG((D_menu, NULL, "MENU_GETMODE"));
+
+		if (cfg.menu_bar != 2)
+			pb->intout[0] |= MENU_HIDDEN;
+		if (cfg.menu_behave == PUSH)
+			pb->intout[0] |= MENU_PULLDOWN;
+		pb->intout[0] |= MENU_SHADOWED; /* always ON */
+		break;
+
+	case MENU_SETMODE:
+		DIAG((D_menu, NULL, "MENU_SETMODE (unimplemented)"));
+		break;
+
+	case MENU_UPDATE:
+		DIAG((D_menu, NULL, "MENU_UPDATE (unimplemented)"));
+		break;
 	}
 
 	DIAG((D_menu,NULL,"done menu_bar()"));
@@ -764,6 +777,26 @@ XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+static unsigned long
+XA_menu_click(int lock, struct xa_client *client, AESPB *pb)
+{
+	CONTROL(2,1,0)
+
+	DIAG((D_menu, client, "menu_click setit=%d, click=%d", pb->intin[1], pb->intin[0]));
+
+	if (pb->intin[1] == MN_CHANGE)
+	{
+		if (pb->intin[0] == 0)
+			cfg.menu_behave = PULL;
+		else if (pb->intin[0] == 1)
+			cfg.menu_behave = PUSH;
+	}
+
+	pb->intout[0] = (cfg.menu_behave == PUSH) ? 1 : 0;
+
+	return XAC_DONE;
+}
+
 /*
  * Attach, remove or inquire a submenu to a menu item.  HR: march 2000
  * attach with NULL is remove
@@ -772,7 +805,12 @@ unsigned long
 XA_menu_attach(int lock, struct xa_client *client, AESPB *pb)
 {
 	short md;
-	CONTROL(2,1,2)
+	CONTROL2(2,1,2, 2,1,0)
+
+	if (pb->control[N_ADDRIN] == 0)
+	{
+		return XA_menu_click(lock, client, pb);
+	}
 
 	md = pb->intin[0];
 

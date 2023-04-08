@@ -604,7 +604,7 @@ exit_proc(int lock, struct proc *p, int code)
 	 *
 	 * a -	if both xaaes and shel_info extension are attached, exit_proc()
 	 *	is called from exit_client(), and does not necessarily mean that
-	 *	the process terimnates (may be an appl_exit())
+	 *	the process terminates (may be an appl_exit())
 	 *
 	 * b -	Only shel_info extension present - the application either crashed
 	 *	before doing appl_init(), or it terminates without ever being an
@@ -1264,11 +1264,11 @@ short info_tab[][4] =
 		1,		/* appl_search */
 		1		/* rsrc_rcfix */
 	},
-	/* 5 PC_GEM (none!) */
+	/* 5 PC_GEM */
 	{
 		1,		/* objc_xfind */
 		0,
-		0,		/* menu_click */
+		1,		/* menu_click */
 		0		/* shel_rdef/wdef */
 	},
 	/* 6 extended inquiry */
@@ -1456,7 +1456,7 @@ short info_tab[][4] =
 	},
 	/*17 <-- 22360 Winx */
 	{
-		0x0008,			/* WF_SHADE is supportd */
+		0x0008,			/* WF_SHADE is supported */
 		(0x0002|0x0004),	/* WM_SHADED/WM_UNSHADED supported */
 		0,
 		0
