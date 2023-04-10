@@ -1512,6 +1512,27 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		break;
 
 	/*
+	 * Get the current coords of the info line (MagiC 6.10)
+	 * Always returns 1
+	 */
+	case WF_INFOXYWH:
+	{
+		XA_WIDGET *widg;
+
+		widg = get_widget(w, XAW_INFO);
+		if (widg->stuff)
+		{
+			*ro = widg->r;
+		}
+		else
+		{
+			*ro = (GRECT){0,0,0,0};
+		}
+		DIAG((D_w, w->owner, "get infoxywh for %d: %d/%d,%d/%d",
+			wind ,ro->g_x,ro->g_y,ro->g_w,ro->g_h));
+		break;
+	}
+	/*
 	 * Return supported window features.
 	 */
 	case WF_BEVENT:
