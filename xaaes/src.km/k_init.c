@@ -56,6 +56,7 @@
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
+#include "mint/falcon.h"
 
 #include "obtree.h"
 #include "draw_obj.h"
@@ -66,17 +67,12 @@
 #include "win_draw.h"
 #include "render_obj.h"
 
-#include "mvdi.h"
 #include "xa_aes.h"
 /* kernel header */
 #include "mint/ssystem.h"
 #include "cookie.h"
 
 #define RSCFILE_VERSION "0.1.6"
-
-#ifndef COOKIE_fVDI
-# define COOKIE_fVDI	0x66564449L
-#endif
 
 struct xa_module_api xam_api;
 
@@ -679,7 +675,7 @@ k_init(unsigned short dev, unsigned short mc)
 			}
 			else
 			{
-				work_out[45] = vcheckmode(modecode);
+				work_out[45] = Validmode(modecode);
 				BLOG((false, "Modecode is: %x (%x)", modecode, work_out[45]));
 			}
 		}

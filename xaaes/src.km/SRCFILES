@@ -28,7 +28,6 @@ HEADER = \
 	matchpat.h \
 	menuwidg.h \
 	messages.h \
-	mvdi.h \
 	nkcc.h \
 	ob_inlines.h \
 	obtree.h \
@@ -98,7 +97,6 @@ COBJS = \
 	menuwidg.c \
 	messages.c \
 	mscall.c \
-	mvdi.c \
 	nkcc.c \
 	obtree.c \
 	rectlist.c \

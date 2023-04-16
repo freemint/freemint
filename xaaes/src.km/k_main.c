@@ -1665,62 +1665,6 @@ k_main(void *dummy)
 		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES, true );
 	}
 	C.reschange = NULL;
-#if 0
-	{
-		long tmp;
-
-		C.reschange = NULL;
-		/*
-		 * Detect video hardware..
-		 */
-		if (!(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&tmp))))
-		{
-			switch (((tmp & 0xffff0000) >> 16))
-			{
-				case 0 ... 2:
-					C.reschange = open_reschange;
-					break;
-#ifndef ST_ONLY
-				case 3 ... 4:
-					C.reschange = open_falcon_reschange;
-					break;
-#endif
-				default:;
-			}
-		}
-
-		/*
-		 * see if we run on a Milan, in which case the _VDI cookie is present
-		 */
-#ifndef ST_ONLY
-		mvdi_api.dispatch = NULL;
-		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&tmp)))
-		{
-			mvdi_api = *(struct cookie_mvdi *)tmp;
-			C.reschange = open_milan_reschange;
-		}
-		else
-#endif
-		{
-			/*
-			 * No _VDI cookie, how about Nova VDI?
-			 */
-			if (!nova_data)
-			{
-				if (!(s_system(S_GETCOOKIE, COOKIE_NOVA, (unsigned long)&tmp)))
-					nova_data = kmalloc(sizeof(struct nova_data));
-
-				if (nova_data)
-				{
-					nova_data->xcb = (struct xcb *)tmp;
-					nova_data->valid = false;
-				}
-			}
-			if (nova_data)
-				C.reschange = open_nova_reschange;
-		}
-	}
-#endif
 	{
 	short x;
 	if( mt_appl_init(my_global_aes) != -1 )

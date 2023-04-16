@@ -26,7 +26,6 @@
 #include "version.h"
 
 struct nova_data *nova_data = NULL;
-struct cookie_mvdi mvdi_api;
 
 unsigned short next_res = 0;
 unsigned short next_dev = 0;

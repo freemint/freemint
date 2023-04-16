@@ -27,7 +27,6 @@
 
 #include "global.h"
 #include "xa_types.h"
-#include "mvdi.h"
 #include "xcb.h"
 
 # define SHUT_POWER	0
@@ -36,7 +35,6 @@
 # define SHUT_HALT	3
 
 extern struct nova_data *nova_data;
-extern struct cookie_mvdi mvdi_api;
 
 extern unsigned short next_res;
 extern unsigned short next_dev;

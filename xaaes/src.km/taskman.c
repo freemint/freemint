@@ -71,8 +71,6 @@
 #include "trnfm.h"
 #include "util.h"
 
-#include "mvdi.h"
-
 #include "mint/signal.h"
 #include "mint/stat.h"
 #include "mint/fcntl.h"
