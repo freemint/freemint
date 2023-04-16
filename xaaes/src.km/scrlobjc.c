@@ -495,7 +495,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				if( list->char_width )
 				{
 					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
-					/* todo: list->char_height, list->const_height */
+					/* TODO list->char_height, list->const_height */
 					if( !c->c.text.h && c->prev && c->prev->c.text.h )
 						c->c.text.h = c->prev->c.text.h;
 				}
@@ -1465,7 +1465,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
  * If entry == NULL, redraw whole box,
  * else redraw only the given entry.
  * If scroll_list has no parent window, nothing is redrawn,
- * as then we do not have a rectanlge list to use.
+ * as then we do not have a rectangle list to use.
  */
 static void
 slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
@@ -1573,7 +1573,7 @@ set_font(struct xa_fnt_info *src, struct xa_fnt_info *dst, struct xa_fnt_info *d
 /*
  * Check if entry has its own wtxt structure or if its using the global
  * default one. If using default, allocate mem for and copy the default
- * one over. Need this so that chaning one entry's fnt info dont affect
+ * one over. Need this so that changing one entry's fnt info dont affect
  * all others
  */
 static void
@@ -2835,7 +2835,7 @@ sort_entry(SCROLL_INFO *list, SCROLL_ENTRY **start, SCROLL_ENTRY *new, scrl_comp
 		{
 			if( not_is_dir )
 			{
-				/* 1st check if new is greatest cmp to eolist (todo: flag if dir is sorted) */
+				/* 1st check if new is greatest cmp to eolist. TODO flag if dir is sorted */
 				for( here = cp = c; cp; here = cp, cp = cp->next )
 					;
 				if( PROFREC(greater,(list, new, here)) ){
@@ -3540,7 +3540,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	return next;
 }	/*/del_scroll_entry*/
 
-/* Modified such that a choise can be made. */
+/* Modified such that a choice can be made. */
 static void
 empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY *this, SCROLL_ENTRY_TYPE type)
 {
@@ -3848,7 +3848,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 			{
 				/*
 				 * If the entry to make visible is the next-up, we only scroll enough
-				 * to make that visisble, i.e., do not scroll so that it is placed
+				 * to make that visible, i.e., do not scroll so that it is placed
 				 * in at the center.
 				 */
 				if ((r.y + r.h) == list->start_y)
@@ -3858,7 +3858,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 				else
 				{
 					/*
-					 * We want to place the entry as  close as possible to the center
+					 * We want to place the entry as close as possible to the center
 					 * of the list (vertical center, that is)
 					 */
 					r.y -= list->start_y;
@@ -4524,16 +4524,6 @@ set_slist_object(int lock,
 		list->del	= del ? del		: del_scroll_entry;
 		list->empty	= empty ? empty		: empty_scroll_list;
 		list->destroy	= destroy ? destroy	: unset_G_SLIST;
-#if 0
-		if (add)	list->add	= add;
-		else		list->add	= add_scroll_entry;
-		if (del)	list->del	= del;
-		else		list->del	= del_scroll_entry;
-		if (empty)	list->empty	= empty;
-		else		list->empty	= empty_scroll_list;
-		if (destroy)	list->destroy	= destroy;
-		else		list->destroy	= unset_G_SLIST;
-#endif
 
 		list->fuller	= fuller;
 		list->vis	= visible;
