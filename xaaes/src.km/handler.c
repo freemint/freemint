@@ -103,9 +103,9 @@ static struct xa_ftab aes_tab[220] =
 	/*  13 */ { XA_appl_find,              NOCLIENT, DESCR("appl_find")       },
 	/*  14 */ { NULL,                      0,        DESCR("appl_tplay")      }, /* unimplemented */
 	/*  15 */ { NULL,                      0,        DESCR("appl_trecord")    }, /* unimplemented */
-	/*  16 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  16 */ { NULL,                      0,        DESCR("appl_bvset")      }, /* unimplemented */
 	/*  17 */ { XA_appl_yield,             0,        DESCR("appl_yield")      },
-	/*  18 */ { XA_appl_search,            0,        DESCR("appl_search")     },
+	/*  18 */ { XA_appl_search,            0,        DESCR("appl_search")     }, /* unimplemented, appl_xbvset/appl_xbvget */
 	/*  19 */ { XA_appl_exit,              0,        DESCR("appl_exit")       },
 
 	/*  20 */ { XA_evnt_keybd,             0,        DESCR("evnt_keybd")      },
@@ -125,8 +125,8 @@ static struct xa_ftab aes_tab[220] =
 	/*  33 */ { XA_menu_tnormal,           0,        DESCR("menu_tnormal")    },
 	/*  34 */ { XA_menu_text,              0,        DESCR("menu_text")       },
 	/*  35 */ { XA_menu_register,          0,        DESCR("menu_register")   },
-	/*  36 */ { XA_menu_popup,             0,        DESCR("menu_popup")      },
-	/*  37 */ { XA_menu_attach,            0,        DESCR("menu_attach")     },
+	/*  36 */ { XA_menu_popup,             0,        DESCR("menu_popup")      }, /* unimplemented, menu_unregister */
+	/*  37 */ { XA_menu_attach,            0,        DESCR("menu_attach")     }, /* menu_click */
 	/*  38 */ { XA_menu_istart,            0,        DESCR("menu_istart")     },
 	/*  39 */ { XA_menu_settings,          0,        DESCR("menu_settings")   },
 
@@ -160,7 +160,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  65 */ { XA_objc_wedit,             0,        DESCR("objc_wedit")      }, /* MagiC 5.10 extension */
 	/*  66 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  67 */ { NULL,                      0,        DESCR(NULL)              },
-	/*  68 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  68 */ { NULL,                      0,        DESCR("graf_vmem")       }, /* unimplemented, MyAES extension */
 	/*  69 */ { NULL,                      0,        DESCR("graf_multirubber")}, /* N.AES extension */
 
 	/*  70 */ { XA_graf_rubberbox,         0,        DESCR("graf_rubberbox")  },
@@ -194,7 +194,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  96 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  97 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  98 */ { NULL,                      0,        DESCR(NULL)              },
-	/*  99 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  99 */ { NULL,                      0,        DESCR("wind_draw")       }, /* unimplemented, N.AES extension */
 
 	/* 100 */ { XA_wind_create,            0,        DESCR("wind_create")     },
 	/* 101 */ { XA_wind_open,              0,        DESCR("wind_open")       },
@@ -216,7 +216,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 116 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 117 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 118 */ { NULL,                      0,        DESCR(NULL)              },
-	/* 119 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 119 */ { NULL,                      0,        DESCR("wind_apfind")     }, /* unimplemented, MultiGEM II extension */
 
 	/* 120 */ { XA_shel_read,              NOCLIENT, DESCR("shel_read")       },
 	/* 121 */ { XA_shel_write,             0,        DESCR("shel_write")      },
@@ -229,18 +229,18 @@ static struct xa_ftab aes_tab[220] =
 	/* 128 */ { NULL,                      0,        DESCR("shel_help")       }, /* unimplemented */
 	/* 129 */ { XA_appl_control,           0,        DESCR("appl_control")    },
 
-	/* 130 */ { XA_appl_getinfo,           NOCLIENT, DESCR("appl_getinfo")    },
-	/* 131 */ { NULL,                      0,        DESCR("appl_getcicon")   }, /* MyAES only */
-	/* 132 */ { NULL,                      0,        DESCR(NULL)              },
-	/* 133 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 130 */ { XA_appl_getinfo,           NOCLIENT, DESCR("appl_getinfo")    }, /* unimplemented, GEM/3 xgrf_stepcalc */
+	/* 131 */ { NULL,                      0,        DESCR("appl_getcicon")   }, /* unimplemented, GEM/3 xgrf_2box / MyAES extension */
+	/* 132 */ { NULL,                      0,        DESCR(NULL)              }, /* unimplemented, ViewMAX xgrf_colour */
+	/* 133 */ { NULL,                      0,        DESCR(NULL)              }, /* unimplemented, ViewMAX xgrf_dtimage */
 	/* 134 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 135 */ { XA_form_popup,             0,        DESCR("form_popup")      },
-	/* 136 */ { NULL,                      0,        DESCR("form_xerr")       }, /* unimplemented */
-	/* 137 */ { XA_appl_options,           0,        DESCR("appl_options")    },
+	/* 136 */ { XA_form_error,             0,        DESCR("form_xerr")       }, /* MagiC extension */
+	/* 137 */ { XA_appl_options,           0,        DESCR("appl_options")    }, /* XaAES extension */
 	/* 138 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 139 */ { NULL,                      0,        DESCR(NULL)              },
 #if WITH_OBJC_DATA
-	/* 140 */ { XA_objc_data,              0,        DESCR("objc_data")       },
+	/* 140 */ { XA_objc_data,              0,        DESCR("objc_data")       }, /* XaAES extension */
 #else
 	/* 140 */ { NULL,                      0,        DESCR(NULL)              },
 #endif
@@ -515,7 +515,7 @@ XA_handler(void *_pb)
 
 		/* XXX	- ozk:
 		 * I dont know how I like this! However, we test force-init/attaching client structure
-		 * to a process calling the AES wihtout prior appl_init() call.
+		 * to a process calling the AES without prior appl_init() call.
 		 */
 		if ((!(client = lookup_extension(NULL, XAAES_MAGIC)) ) && cmd != 10)	/* 10:XA_appl_init */
 		{

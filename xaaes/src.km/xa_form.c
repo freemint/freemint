@@ -830,12 +830,23 @@ XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 
 	const char *msg = "Unknown error.";
 	char icon = '0';
-	int num;
+	long num, oldnum;
 
-	CONTROL(1,1,0)
+	CONTROL2(1,1,0, 2,1,1)
 
+	if (pb->control[0] == 136) /* form_xerr - num is 32bit */
+	{
+		num = (long)pb->intin[0]<<16 | (unsigned short)pb->intin[1];
+		if ( num == 37 || num == -68 || num == 0 ) /* EBREAK or no error */
+		{
+			pb->intout[0] = pb->intin[1];
+			return XAC_DONE;
+		}
+	}
+	else
+		num = (long)pb->intin[0];
 	client->waiting_pb = pb;
-	num = pb->intin[0];
+	oldnum = num;
 	if( num < 0 )
 		num = ~num - 30;
 
@@ -847,14 +858,32 @@ XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 			icon = form_error_msgs[num].icon;
 		}
 	}
+	/* short form_xerr(long num, char *errfile) */
+	if (pb->control[0] == 136) /* form_xerr - errfile is an extra parameter */
+	{
+		const char *errfile = "The program returned:";
 
-	sprintf(error_alert, sizeof(error_alert), "[%c][ ERROR: | %s ][ Ok ]", icon, msg);
+		if (pb->addrin[0] == 0)
+			errfile = "";
+		else if (pb->addrin[0] != -1)
+			errfile = (const char*)pb->addrin[0];
 
-	DIAG((D_form, client, "alert_err %s", error_alert));
+		sprintf(error_alert, sizeof(error_alert), "[%c][ %s%s%s | (Error #%ld) ][ Ok ]", icon, errfile, pb->addrin[0]?"| ":"", msg, oldnum);
+		DIAG((D_form, client, "alert_xerr %s", error_alert));
+	}
+	/* short form_error(short num) */
+	else
+	{
+		sprintf(error_alert, sizeof(error_alert), "[%c][ ERROR: | %s ][ Ok ]", icon, msg);
+		DIAG((D_form, client, "alert_err %s", error_alert));
+	}
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, 1, error_alert, NULL);
 	(*client->block)(client);
 	client->status &= ~CS_FORM_ALERT;
+
+	if (pb->control[0] == 136) /* form_xerr - returns low word of num */
+		pb->intout[0] = pb->intin[1];
 
 	return XAC_DONE;
 }

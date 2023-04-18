@@ -41,6 +41,7 @@ AES_function
 	XA_form_do,
 	XA_form_error,
 	XA_form_keybd,
-	XA_form_wkeybd;		/* MagiC 5.10 */
+	XA_form_wkeybd,		/* MagiC 5.10 */
+	XA_form_xerr;		/* MagiC 5.10 */
 
 #endif /* _xa_form_h */
