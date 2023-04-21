@@ -46,7 +46,6 @@ extern char arch_target[];
 extern char long_name[];
 extern char aes_id[];
 
-extern char info_string[256];
 extern char **xa_strings;
 #if 0 /* for tests */
 #define xa_strings(i) \

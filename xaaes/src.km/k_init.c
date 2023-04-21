@@ -43,7 +43,6 @@
 #include "widgets.h"
 
 #include "xa_appl.h"
-#include "info.h"
 #include "xa_evnt.h"
 #include "xa_form.h"
 #include "xa_fsel.h"
@@ -877,7 +876,15 @@ k_init(unsigned short dev, unsigned short mc)
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
 	 */
-	init_apgi_infotab();
+	info_tab[0][0] = screen.standard_font_height;
+	info_tab[0][1] = screen.standard_font_id;
+	info_tab[0][2] = screen.standard_font_id <= 1 ? 0 : 1;
+
+	info_tab[1][0] = screen.small_font_height;
+	info_tab[1][1] = screen.small_font_id;
+	info_tab[1][2] = screen.small_font_id <= 1 ? 0 : 1;
+
+	info_tab[2][0] = C.P_handle;
 
 	/*
 	 * Open a diagnostics file? All console output can be considered diagnostics,

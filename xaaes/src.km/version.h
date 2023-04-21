@@ -25,6 +25,8 @@
 #ifndef _xaaes_version_h
 #define _xaaes_version_h
 
+#include "xversion.h"
+
 #define DSMASM 0x00ff
 
 /*
@@ -122,5 +124,6 @@
 #define AES_ASCII_STABLE ""
 #endif
 #define AES_ASCII_VERSION_VERBOSE AES_ASCII_VERSION " " AES_ASCII_STABLE ASCII_DEV_STATUS
+#define INFO_STRING AES_ASCII_VERSION "\x7c" AES_ASCII_STABLE ASCII_DEV_STATUS "\x7c" ASCII_ARCH_TARGET "\x7c" BDATETIME "\x7cgcc " BCOMPILER "\0"
 
 #endif /* _xaaes_version_h */

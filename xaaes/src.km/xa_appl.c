@@ -1215,7 +1215,7 @@ short info_tab[][4] =
 		0,		/* -1 not a valid app id for appl_read */
 		0,		/* -1 not a valid length parameter to shel_get */
 		1,		/* -1 is a valid mode parameter to menu_bar */
-		1		/* MENU_INSTL is not a valid mode parameter to menu_bar */
+		1		/* MENU_INSTL is a valid mode parameter to menu_bar */
 	},
 	/* 7 MagiC specific */
 	{
@@ -1488,8 +1488,10 @@ XA_appl_getinfo(int lock, struct xa_client *client, AESPB *pb)
 					}
 					if ((d = (char *)pb->addrin[1]))
 						strcpy(d, long_name);
-					if ((d = (char *)pb->addrin[2]))
-						strcpy(d, info_string);
+					if ((d = (char *)pb->addrin[2])) {
+						strncpy(d, INFO_STRING, 255);
+						d[255] = '\0';
+					}
 				}
 				n_intout = pb->control[N_INTOUT];
 				gi_type = XA_VERSION_INFO;

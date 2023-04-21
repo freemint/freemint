@@ -49,7 +49,6 @@
 
 #include "mint/ssystem.h"
 #include "cookie.h"
-#include "info.h"
 
 #if CHECK_STACK
 short check_stack_alignment( long e );
@@ -67,7 +66,7 @@ static char const Aes_display_name[] = "  XaAES v" AES_ASCII_VERSION_VERBOSE;
 static void
 bootmessage(void)
 {
-	BLOG((true, "%s (%s, %s) (MultiTasking AES for MiNT)", Aes_display_name+2, arch_target, build_date() ));
+	BLOG((true, "%s (%s, %s) (MultiTasking AES for MiNT)", Aes_display_name+2, arch_target, BDATETIME));
 #if DISPCREDITS
 	BLOG((true, ""));
 	BLOG((true, "(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder"));
