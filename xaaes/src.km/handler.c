@@ -239,8 +239,11 @@ static struct xa_ftab aes_tab[220] =
 	/* 137 */ { XA_appl_options,           0,        DESCR("appl_options")    },
 	/* 138 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 139 */ { NULL,                      0,        DESCR(NULL)              },
-
+#if WITH_OBJC_DATA
 	/* 140 */ { XA_objc_data,              0,        DESCR("objc_data")       },
+#else
+	/* 140 */ { NULL,                      0,        DESCR(NULL)              },
+#endif
 	/* 141 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 142 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 143 */ { NULL,                      0,        DESCR(NULL)              },

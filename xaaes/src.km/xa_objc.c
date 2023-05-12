@@ -552,6 +552,7 @@ XA_objc_sysvar(int lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+#if WITH_OBJC_DATA
 /* GET/SET object type
  * If set, ob_type is set to type found in intin[2].
  * Returns (if SET, previous) ob_type in intout[1].
@@ -907,3 +908,4 @@ XA_objc_data(int lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
+#endif

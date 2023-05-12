@@ -40,7 +40,9 @@ AES_function
 	XA_objc_order,
 	XA_objc_edit,
 	XA_objc_wedit,		/* MagiC 5.10 */
-	XA_objc_sysvar,
-	XA_objc_data;		/* XaAES */
+#if WITH_OBJC_DATA
+	XA_objc_data,		/* XaAES */
+#endif
+	XA_objc_sysvar;
 
 #endif /* _xa_objc_h */

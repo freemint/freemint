@@ -1482,7 +1482,9 @@ short info_tab[][4] =
 		0
 	|	AGI_AOPTS	/* appl_options() present */
 	|	AGI_WFORM
+#if WITH_OBJC_DATA
 	|	AGI_OBJCDATA
+#endif
 		,
 		0,
 		0,
