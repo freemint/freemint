@@ -369,6 +369,8 @@ enum xa_mouse
 	XACRS_HORSIZER,		/* The 'resize horizontally' cursor */
 	XACRS_POINTSLIDE,	/* ozk: The 'two-arrows pointing inwards' cursor to pinpoint slider position */
 
+#undef X_LFTRT
+#undef X_UPDOWN
 	X_LFTRT = 9,			/* Horizontal arrows (N.AES) */
 	X_UPDOWN = 10			/* Vertical arrows (N.AES) */
 };
