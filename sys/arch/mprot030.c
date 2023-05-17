@@ -1042,6 +1042,10 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
 			FORCENONL("MMU TREE (before mark_pages)\r\n");
 			init_mmu_info_030(&info, proc->ctxt[0].tc);
+			if (proc->ctxt[0].crp[1] >= TTRAM_START)
+				info.offset_tt_ram = offset_tt_ram;
+			else
+				info.offset_tt_ram = 0;
 			print_tc_info_030(&info);
 			print_rp_info_030("CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
 
@@ -1087,6 +1091,10 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 			if (did_mark)
 			{
 				init_mmu_info_030(&info, proc->ctxt[0].tc);
+				if (proc->ctxt[0].crp[1] >= TTRAM_START)
+					info.offset_tt_ram = offset_tt_ram;
+				else
+					info.offset_tt_ram = 0;
 				FORCENONL("MMU TREE (after mark_pages)\r\n");
 				print_tc_info_030(&info);
 				print_rp_info_030("CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
@@ -1168,14 +1176,14 @@ mem_prot_special(PROC *proc)
  *--------------------------------------------------------------------------*/
 
 static void
-_dump_tree(long_desc tbl, int level)
+_dump_tree(long_desc *tbl, int level)
 {
 	int i, j;
 	long_desc *p;
 	ulong offset;
 	static const char spaces[9] = "        ";
 
-	if ((ulong) &tbl >= TTRAM_START)
+	if ((ulong) tbl->tbl_address >= TTRAM_START)
 		offset = offset_tt_ram;
 	else
 		offset = 0;
@@ -1183,12 +1191,12 @@ _dump_tree(long_desc tbl, int level)
 	/* print the level and display the table descriptor */
 	FORCE("\r%s s:%x wp:%x dt:%x a:%08lx",
 	&spaces[8-(level*2)],
-	tbl.page_type.s,
-	tbl.page_type.wp,
-	tbl.page_type.dt,
-	(unsigned long)((ulong)tbl.tbl_address - offset));
+	tbl->page_type.s,
+	tbl->page_type.wp,
+	tbl->page_type.dt,
+	(unsigned long)((ulong)tbl->tbl_address));
 
-	if (tbl.page_type.dt == MMU030_DESCR_TYPE_VALID8) {
+	if (tbl->page_type.dt == MMU030_DESCR_TYPE_VALID8) {
 		if (level == 0) {
 			j = (1 << tc.tia);
 		}
@@ -1203,9 +1211,9 @@ _dump_tree(long_desc tbl, int level)
 		}
 
 		++level;
-		p = (long_desc *)((ulong)tbl.tbl_address - offset);
+		p = (long_desc *)((ulong)tbl->tbl_address - offset);
 		for (i=0; i<j; i++, p++) {
-			_dump_tree(*p,level);
+			_dump_tree(p,level);
 		}
 	}
 }
@@ -1340,7 +1348,7 @@ gotowner:
 		/* fill in tbl with the only parts used at the top level */
 		tbl.page_type.dt = proc->ctxt[CURRENT].crp.dt;
 		tbl.tbl_address = proc->ctxt[CURRENT].crp.tbl_address;
-		_dump_tree(tbl,0);
+		_dump_tree(&tbl,0);
 	}
 #else
 	UNUSED(proc);

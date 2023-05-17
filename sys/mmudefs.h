@@ -359,6 +359,7 @@ struct mmuinfo {
 	unsigned int page_size_shift;
 	cpuaddr page_size;
 	cpuaddr page_mask;
+	cpuaddr offset_tt_ram;
 	tc_reg tc;
 		
     /* Translation tables (030/68851) */
