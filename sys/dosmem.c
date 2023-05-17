@@ -311,9 +311,9 @@ sys_m_alloc (long size)
 
 	TRACE(("Malloc(%lx)", size));
 	if (get_curproc()->p_mem->memflags & F_ALTALLOC)
-		r = sys_m_xalloc(size, 3);
+		r = sys_m_xalloc(size, F_ALTPREF);
 	else
-		r = sys_m_xalloc(size, 0);
+		r = sys_m_xalloc(size, F_STONLY);
 
 	TRACE(("Malloc: returning %lx", r));
 	return r;

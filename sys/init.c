@@ -982,7 +982,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 	{
 		char *new_env, *es;
 
-		new_env = (char *)sys_m_xalloc(old_size + var_size, 0x0003);
+		new_env = (char *)sys_m_xalloc(old_size + var_size, F_ALTPREF);
 		if (new_env == NULL)
 		{
 			DEBUG(("%s(): failed to alloc %ld bytes", __FUNCTION__, old_size + var_size));
@@ -1056,7 +1056,7 @@ mint_thread(void *arg)
 	DEBUG(("%s(): startup", __FUNCTION__));
 
 	/* Delete old TOS environment, we don't inherit it */
-	_base->p_env = (char *)sys_m_xalloc(QUANTUM, 0x0003);
+	_base->p_env = (char *)sys_m_xalloc(QUANTUM, F_ALTPREF);
 
 	if (_base->p_env == NULL)
 		FATAL ("Can't allocate environment!");
@@ -1112,7 +1112,7 @@ mint_thread(void *arg)
 		unsigned short i;
 		char *cwd;
 
-                cwd = (char *)sys_m_xalloc(PATH_MAX, 0x0003);
+                cwd = (char *)sys_m_xalloc(PATH_MAX, F_ALTPREF);
                 if (!cwd)
                 {
 			FATAL ("Can't allocate OLDTOSFS cwd!");

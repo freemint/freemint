@@ -115,7 +115,7 @@ shell_fprintf(long handle, const char *fmt, ...)
 	char *buf;
 	va_list args;
 
-	buf = (char *)sys_m_xalloc(SHELL_MAXLINE, 3);
+	buf = (char *)sys_m_xalloc(SHELL_MAXLINE, F_ALTPREF);
 
 	if (buf)
 	{
@@ -304,7 +304,7 @@ crunch(char *cmd, char **argv)
 	/* Save the original commandline */
 	if (argv == NULL)
 	{
-		tmp = (char *)sys_m_xalloc(strlen(cmd) + 1, 3);
+		tmp = (char *)sys_m_xalloc(strlen(cmd) + 1, F_ALTPREF);
 		if (!tmp)
 			return ENOMEM;
 		strcpy(tmp, cmd);
@@ -395,7 +395,7 @@ internal_execvp(char **argv)
 	count <<= 1;				/* make this twice as big (will be shrunk later) */
 
 	/* Allocate one buffer that would satisfy all requirements of this function */
-	oldcmd = (char *)sys_m_xalloc(count + 128 + SHELL_MAXPATH + SHELL_MAXFN, 3);
+	oldcmd = (char *)sys_m_xalloc(count + 128 + SHELL_MAXPATH + SHELL_MAXFN, F_ALTPREF);
 	if (!oldcmd)
 		return ENOMEM;
 
@@ -612,7 +612,7 @@ sh_ls(long argc, char **argv)
 
 	sys_t_gettimeofday(&tv, NULL);
 
-	path = (char *)sys_m_xalloc((SHELL_MAXPATH * 2) + SHELL_MAXFN, 3);
+	path = (char *)sys_m_xalloc((SHELL_MAXPATH * 2) + SHELL_MAXFN, F_ALTPREF);
 	link = path + SHELL_MAXPATH;
 	entry = link + SHELL_MAXPATH;
 
@@ -761,7 +761,7 @@ sh_cd(long argc, char **argv)
 
 	if (r == 0)
 	{
-		cwd = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
+		cwd = (char *)sys_m_xalloc(SHELL_MAXPATH, F_ALTPREF);
 		if (!cwd)
 			return ENOMEM;
 
@@ -776,7 +776,7 @@ sh_cd(long argc, char **argv)
 
 		if (pwd && strcmp(pwd, cwd))
 		{
-			opwd = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
+			opwd = (char *)sys_m_xalloc(SHELL_MAXPATH, F_ALTPREF);
 			if (opwd)
 			{
 				strcpy(opwd, pwd);
@@ -977,7 +977,7 @@ copy_from_to(short move, char *from, char *to)
 		return dfd;
 	}
 
-	buf = (char *)sys_m_xalloc(SHELL_COPYBUF, 3);
+	buf = (char *)sys_m_xalloc(SHELL_COPYBUF, F_ALTPREF);
 
 	if (buf)
 	{
@@ -1034,7 +1034,7 @@ sh_cp(long argc, char **argv)
 		return 0;
 	}
 
-	path = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
+	path = (char *)sys_m_xalloc(SHELL_MAXPATH, F_ALTPREF);
 	if (!path)
 		return ENOMEM;
 
@@ -1081,7 +1081,7 @@ sh_mv(long argc, char **argv)
 		return 0;
 	}
 
-	path = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
+	path = (char *)sys_m_xalloc(SHELL_MAXPATH, F_ALTPREF);
 	if (!path)
 		return ENOMEM;
 
@@ -1306,7 +1306,7 @@ execute(char *cmdline)
 	}
 
 	/* Construct the proper ARGV stuff now */
-	argv = (char **)sys_m_xalloc(argc * sizeof(void *), 3);
+	argv = (char **)sys_m_xalloc(argc * sizeof(void *), F_ALTPREF);
 	if (!argv)
 		return ENOMEM;
 
@@ -1359,7 +1359,7 @@ prompt(unsigned char *buffer, long buflen)
 	buffer[0] = LINELEN;
 	buffer[1] = 0;
 
-	cwd = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
+	cwd = (char *)sys_m_xalloc(SHELL_MAXPATH, F_ALTPREF);
 
 	if (cwd)
 	{

@@ -296,7 +296,7 @@ core_malloc (long amt, short mode)
 	long ret;
 
 	if (mxalloc < 0) {
-		ret = (long)TRAP_Mxalloc(-1L, 0);
+		ret = (long)TRAP_Mxalloc(-1L, F_STONLY);
 		if (ret == -32)
 			mxalloc = 0;	/* unknown function */
 		else if (ret >= 0)
@@ -309,8 +309,8 @@ core_malloc (long amt, short mode)
 
 	if (mxalloc)
 		return (long)TRAP_Mxalloc(amt, mode);
-	else if (mode == 1)
-		return 0L;
+	else if (mode == F_ALTONLY)
+		return 0;
 	else
 		return (long)TRAP_Malloc(amt);
 }
@@ -339,7 +339,7 @@ init_core (void)
 # endif
 
 # ifdef OLDTOSFS
-	tossave = (void *)core_malloc((long)TOS_MEM, 0);
+	tossave = (void *)core_malloc((long)TOS_MEM, F_STONLY);
 	if (!tossave)
 		FATAL("Not enough memory to run MiNT");
 # endif
@@ -389,7 +389,7 @@ init_core (void)
 		scrnsize = 0x7fffffffUL;
 		scrndone = 1;
 	} else {
-		temp = (ulong)core_malloc(scrnsize+256L, 0);
+		temp = (ulong)core_malloc(scrnsize+256L, F_STONLY);
 		if (temp) {
 			TRAP_Setscreen((void *)-1L, (void *)((temp + 511) & (0xffffff00L)), -1);
 			if ((long)TRAP_Physbase() != ((temp + 511) & (0xffffff00L))) {
@@ -402,21 +402,21 @@ init_core (void)
 	}
 
 	/* initialize ST RAM */
-	size = (ulong) core_malloc(-1L, 0);
+	size = (ulong) core_malloc(-1L, F_STONLY);
 
 # ifdef VERBOSE_BOOT
 	boot_printf (MSG_mem_core, size);
 # endif
 
 	while (size > 0) {
-		place = (ulong) core_malloc (size, 0);
+		place = (ulong) core_malloc (size, F_STONLY);
 		if (!scrndone && (place + size == scrnplace)) {
 			size += scrnsize;
 			scrndone = 1;
 		}
 		if (!add_region(core, place, size, M_CORE))
 			FATAL("init_mem: unable to add a region");
-		size = (ulong) core_malloc(-1L, 0);
+		size = (ulong) core_malloc(-1L, F_STONLY);
 	}
 
 	if (!scrndone)
@@ -427,7 +427,7 @@ init_core (void)
 # endif
 
 	/* initialize alternate RAM */
- 	size = (ulong)core_malloc(-1L, 1);
+	size = (ulong)core_malloc(-1L, F_ALTONLY);
 
 # ifdef VERBOSE_BOOT
 	if (size)
@@ -437,10 +437,10 @@ init_core (void)
 # endif /* VERBOSE_BOOT */
 
 	while (size > 0) {
-		place = (ulong)core_malloc(size, 1);
+		place = (ulong)core_malloc(size, F_ALTONLY);
 		if (!add_region(alt, place, size, M_ALT))
 			FATAL("init_mem: unable to add a region");
-		size = (ulong)core_malloc (-1L, 1);
+		size = (ulong)core_malloc (-1L, F_ALTONLY);
 	}
 
 # ifdef OLDTOSFS
