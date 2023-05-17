@@ -109,7 +109,7 @@ oldtt1:	dc.l	0
 	.globl	_save_mmu
 
 _save_mmu:
-	pmove	tc,oldcrp+8		// oldtc
+	pmove	tc,oldtc
 	pmove	tt0,oldtt0
 	pmove	tt1,oldtt1
 	pmove	crp,oldcrp
