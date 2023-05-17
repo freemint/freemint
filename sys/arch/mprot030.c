@@ -1042,7 +1042,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
 			FORCENONL("MMU TREE (before mark_pages)\r\n");
 			init_mmu_info_030(&info, proc->ctxt[0].tc);
-			if (proc->ctxt[0].crp[1] >= TTRAM_START)
+			if ((ulong)proc->ctxt[0].crp.tbl_address >= TTRAM_START)
 				info.offset_tt_ram = offset_tt_ram;
 			else
 				info.offset_tt_ram = 0;
@@ -1091,7 +1091,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 			if (did_mark)
 			{
 				init_mmu_info_030(&info, proc->ctxt[0].tc);
-				if (proc->ctxt[0].crp[1] >= TTRAM_START)
+				if ((ulong)proc->ctxt[0].crp.tbl_address >= TTRAM_START)
 					info.offset_tt_ram = offset_tt_ram;
 				else
 					info.offset_tt_ram = 0;

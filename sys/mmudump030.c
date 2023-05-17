@@ -242,7 +242,7 @@ static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level
 	
 	log_addr_inc = 1UL << info->translation.table[level].shift;
 	count = 1 << info->translation.table[level].bits;
-	descr_addr = table_addr - table->offset_tt_ram;
+	descr_addr = table_addr - info->offset_tt_ram;
 	for (table_index = 0; table_index < count; table_index++, log_addr += log_addr_inc, descr_addr += descr_size)
 	{
 		descr[0] = phys_get_long(descr_addr);
