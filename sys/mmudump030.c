@@ -10,8 +10,8 @@ static void mmu_printf(struct mmuinfo *info, const char *format, ...)
 	va_start(args, format);
 	len = kvsprintf(buf, sizeof(buf), format, args);
 	va_end(args);
-	if (info->fp)
-		info->fp->dev->write(info->fp, buf, len);
+	if (info->debugfd > 0)
+		TRAP_Fwrite(info->debugfd, len, buf);
 	else
 		debug_ws(buf);
 }

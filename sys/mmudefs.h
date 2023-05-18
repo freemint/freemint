@@ -364,7 +364,7 @@ struct mmuinfo {
 	cpuaddr page_mask;
 	cpuaddr offset_tt_ram;
 	tc_reg tc;
-	FILEPTR *fp;
+	long debugfd;
 
     /* Translation tables (030/68851) */
     struct {

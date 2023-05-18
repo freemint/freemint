@@ -804,7 +804,7 @@ prot_temp(ulong loc, ulong len, short mode)
 }
 
 #if DEBUG_MMU_TREE
-#include "k_fds.h"
+#include "tosbind.h"	/* TOS calls */
 #include "mmudump030.c"
 #endif
 
@@ -1042,17 +1042,10 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	if (!mmu_is_set_up)
 	{
 		{
-			long ret;
-
-			info.fp = NULL;
-			if (FP_ALLOC(rootproc, &info.fp) == 0)
-				if ((ret = do_open(&info.fp, "U:\\c\\mmudbg.txt", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL)) != 0)
-				{
-					FORCE("cannot create MMU debug file: %ld\r\n", ret);
-					info.fp->links = 0;		/* suppress complaints */
-					FP_FREE(info.fp);
-					info.fp = NULL;
-				}
+			if ((info.debugfd = TRAP_Fcreate("C:\\mmudbg.txt", 0)) < 0)
+			{
+				FORCE("cannot create MMU debug file: %ld\r\n", info.debugfd);
+			}
 			mmu_printf(&info, "MMU TREE (before mark_pages)\r\n");
 			init_mmu_info_030(&info, proc->ctxt[0].tc);
 			if ((ulong)proc->ctxt[0].crp.tbl_address >= TTRAM_START)
@@ -1116,8 +1109,8 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 			{
 				mmu_printf(&info, "MMU TREE (after mark_pages; did not mark anything)\r\n");
 			}
-			if (info.fp)
-				do_close(rootproc, info.fp);
+			if (info.debugfd > 0)
+				TRAP_Fclose(info.debugfd);
 		}
 #endif
 
