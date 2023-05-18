@@ -1,5 +1,22 @@
 #define phys_get_long(addr)  *((cpuaddr *)(addr))
 
+__attribute__((format(printf, 2, 3)))
+static void mmu_printf(struct mmuinfo *info, const char *format, ...)
+{
+	va_list args;
+	char buf[256];
+	long len;
+
+	va_start(args, format);
+	len = kvsprintf(buf, sizeof(buf), format, args);
+	va_end(args);
+	if (info->fp)
+		info->fp->dev->write(info->fp, buf, len);
+	else
+		debug_ws(buf);
+}
+
+
 static void init_mmu_info_030(struct mmuinfo *info, tc_reg tcr)
 {
 	/* Note: 0 = Table A, 1 = Table B, 2 = Table C, 3 = Table D */
@@ -79,29 +96,29 @@ static void print_tc_info_030(struct mmuinfo *info)
 	unsigned char shift;
 	unsigned long *p = (unsigned long *)&info->tc;
 	
-	FORCENONL("TCR    -> " PREG "\r\n", *p);
+	mmu_printf(info, "TCR    -> " PREG "\r\n", *p);
 #define enabled(flag) info->tc.flag ? "enabled" : "disabled"
-	FORCENONL("		  Paged address translation is %s\r\n", enabled(enable));
-	FORCENONL("		  Page size is %lu 0x%lx shift = %u\r\n", info->page_size, info->page_size, info->page_size_shift);
-	FORCENONL("		  Supervisor root pointer is %s\r\n", enabled(sre));
-	FORCENONL("		  Function code lookup is %s\r\n", enabled(fcl));
-	FORCENONL("		  Initial shift %u\r\n", info->translation.init_shift);
+	mmu_printf(info, "		  Paged address translation is %s\r\n", enabled(enable));
+	mmu_printf(info, "		  Page size is %lu 0x%lx shift = %u\r\n", info->page_size, info->page_size, info->page_size_shift);
+	mmu_printf(info, "		  Supervisor root pointer is %s\r\n", enabled(sre));
+	mmu_printf(info, "		  Function code lookup is %s\r\n", enabled(fcl));
+	mmu_printf(info, "		  Initial shift %u\r\n", info->translation.init_shift);
 	for (i = 0; i < 4; i++)
 	{
-		FORCENONL("		  Table %c: mask " PREG ", unused " PREG ", bits %u, shift %u\r\n",
+		mmu_printf(info, "		  Table %c: mask " PREG ", unused " PREG ", bits %u, shift %u\r\n",
 			'A' + i,
 			info->translation.table[i].mask,
 			info->translation.table[i].unused_fields_mask,
 			info->translation.table[i].bits,
 			info->translation.table[i].shift);
 	}
-	FORCENONL("		  Page mask 	" PREG "\r\n", info->page_mask);
-	FORCENONL("		  Last Table: %c\r\n", 'A' + info->translation.last_table);
+	mmu_printf(info, "		  Page mask 	" PREG "\r\n", info->page_mask);
+	mmu_printf(info, "		  Last Table: %c\r\n", 'A' + info->translation.last_table);
 #undef enabled
 
 	if (info->page_size_shift < 8)
 	{
-		FORCE("MMU Configuration Exception: Bad value in TC register! (bad page size: %u)",
+		mmu_printf(info, "MMU Configuration Exception: Bad value in TC register! (bad page size: %u)\r\n",
 			info->page_size_shift);
 	}
 	/* At least one table has to be defined using at least
@@ -112,11 +129,11 @@ static void print_tc_info_030(struct mmuinfo *info)
 	 */
 	if (info->translation.table[0].bits == 0)
 	{
-		FORCE("MMU Configuration Exception: Bad value in TC register! (no first table index defined)");
+		mmu_printf(info, "MMU Configuration Exception: Bad value in TC register! (no first table index defined)\r\n");
 	} else if (info->translation.table[0].bits < 2 && info->translation.table[1].bits == 0)
 	{
-		FORCE("MMU Configuration Exception: Bad value in TC register! (no second table index defined and)");
-		FORCE("MMU Configuration Exception: Bad value in TC register! (only 1 bit for first table index");
+		mmu_printf(info, "MMU Configuration Exception: Bad value in TC register! (no second table index defined and)\r\n");
+		mmu_printf(info, "MMU Configuration Exception: Bad value in TC register! (only 1 bit for first table index\r\n");
 	}
 	
 	/* TI fields are summed up until a zero field is reached (see above
@@ -128,37 +145,37 @@ static void print_tc_info_030(struct mmuinfo *info)
 		shift += info->translation.table[i].bits;
 	if (shift != 32)
 	{
-		FORCE("MMU Configuration Exception: Bad value in TC register! (bad sum)");
+		mmu_printf(info, "MMU Configuration Exception: Bad value in TC register! (bad sum)\r\n");
 	}
 }
 
 
-static void print_rp_info_030(const char *label, const cpuaddr *rp)
+static void print_rp_info_030(struct mmuinfo *info, const char *label, const cpuaddr *rp)
 {
 	unsigned char descriptor_type = (rp[0] & MMU030_DESCR_MASK) >> MMU030_DESCR_SHIFT;
 	unsigned short table_limit = (rp[0] & MMU030_DESCR_LIMIT_MASK) >> MMU030_DESCR_LIMIT_SHIFT;
 	cpureg first_addr = (rp[1] & MMU030_RP1_ADDR_MASK);
 
-	FORCENONL("%s -> " PREG " " PREG "\r\n", label, rp[0], rp[1]);
-	FORCENONL("		  descriptor type = %d (%s)\r\n",
+	mmu_printf(info, "%s -> " PREG " " PREG "\r\n", label, rp[0], rp[1]);
+	mmu_printf(info, "		  descriptor type = %d (%s)\r\n",
 		descriptor_type,
 		descriptor_type == MMU030_DESCR_TYPE_INVALID ? "invalid descriptor" :
 		descriptor_type == MMU030_DESCR_TYPE_PAGE	 ? "early termination page descriptor" :
 		descriptor_type == MMU030_DESCR_TYPE_VALID4  ? "valid 4 byte descriptor" :
 					/*	== MMU030_DESCR_TYPE_VALID8 */ "valid 8 byte descriptor");
-	FORCENONL("		  %s limit = 0x%04x%s\r\n",
+	mmu_printf(info, "		  %s limit = 0x%04x%s\r\n",
 		(rp[0] & MMU030_DESCR_LOWER) ? "lower" : "upper",
 		table_limit,
 		(rp[0] & (MMU030_DESCR_LOWER|MMU030_DESCR_LIMIT_MASK)) == MMU030_DESCR_LIMIT_MASK ||
 		(rp[0] & (MMU030_DESCR_LOWER|MMU030_DESCR_LIMIT_MASK)) == MMU030_DESCR_LOWER ?
 		" (disabled)" : "");
 	
-	FORCENONL("		  first table address = " PREG "\r\n", first_addr);
+	mmu_printf(info, "		  first table address = " PREG "\r\n", first_addr);
 }
 
 
 #if 0 /* unused */
-static void print_ttr_info_030(const char *label, cpureg tt)
+static void print_ttr_info_030(struct mmuinfo *info, const char *label, cpureg tt)
 {
 	cpureg fc_mask, fc_base, addr_base, addr_mask;
 	
@@ -168,21 +185,21 @@ static void print_ttr_info_030(const char *label, cpureg tt)
 	addr_base = tt & MMU030_TT_ADDR_BASE_MASK;
 	addr_mask = ~(((tt & MMU030_TT_ADDR_MASK_MASK) << (MMU030_TT_ADDR_BASE_SHIFT - MMU030_TT_ADDR_MASK_SHIFT)) | ~MMU030_TT_ADDR_BASE_MASK);
 	
-	FORCENONL("%s -> " PREG "\r\n", label, tt);
+	mmu_printf(info, "%s -> " PREG "\r\n", label, tt);
 #define enabled(flag) tt & flag ? "enabled" : "disabled"
-	FORCENONL("		  transparent translation is %s\r\n", enabled(MMU030_TT_ENABLED));
+	mmu_printf(info, "		  transparent translation is %s\r\n", enabled(MMU030_TT_ENABLED));
 	if (tt & MMU030_TT_ENABLED)
 	{
-		FORCENONL("		  caching is %s\r\n", tt & MMU030_TT_CI ? "inhibited" : "enabled");
-		FORCENONL("		  read-modify-write is %s\r\n",
+		mmu_printf(info, "		  caching is %s\r\n", tt & MMU030_TT_CI ? "inhibited" : "enabled");
+		mmu_printf(info, "		  read-modify-write is %s\r\n",
 			tt & MMU030_TT_RWM ? "enabled" :
 			tt & MMU030_TT_RW ? "disabled (read only)" : "disabled (write only)");
-		FORCENONL("		  function code base: 0x%1lx\r\n", fc_base);
-		FORCENONL("		  function code mask: 0x%1lx -> 0x%1lx\r\n",
+		mmu_printf(info, "		  function code base: 0x%1lx\r\n", fc_base);
+		mmu_printf(info, "		  function code mask: 0x%1lx -> 0x%1lx\r\n",
 			(tt & MMU030_TT_FC_MASK_MASK) >> MMU030_TT_FC_MASK_SHIFT,
 			fc_mask);
-		FORCENONL("		  address base: " PREG "\r\n", addr_base);
-		FORCENONL("		  address mask: " PREG " -> " PREG "\r\n",
+		mmu_printf(info, "		  address base: " PREG "\r\n", addr_base);
+		mmu_printf(info, "		  address mask: " PREG " -> " PREG "\r\n",
 			(tt & MMU030_TT_ADDR_MASK_MASK) << (MMU030_TT_ADDR_BASE_SHIFT - MMU030_TT_ADDR_MASK_SHIFT),
 			addr_mask);
 	}
@@ -191,42 +208,42 @@ static void print_ttr_info_030(const char *label, cpureg tt)
 #endif
 
 
-static void indent(int level)
+static void indent(struct mmuinfo *info, int level)
 {
 	int i;
 	
 	for (i = 0; i < level; i++)
-		FORCENONL("        ");
+		mmu_printf(info, "        ");
 }
 
 
-static void mmu030_print_page_descriptor(const cpuaddr *descr, int descr_size, cpuaddr log_addr, cpuaddr page_addr, bool last)
+static void mmu030_print_page_descriptor(struct mmuinfo *info, const cpuaddr *descr, int descr_size, cpuaddr log_addr, cpuaddr page_addr, bool last)
 {
 	unsigned short table_limit;
 	
-	FORCENONL(PREG " -> " PREG, log_addr, page_addr);
+	mmu_printf(info, PREG " -> " PREG, log_addr, page_addr);
 	if (descr_size == 8 && (descr[0] & MMU030_DESCR_S))
-		FORCENONL(", Super");
+		mmu_printf(info, ", Super");
 	if (descr[0] & MMU030_DESCR_WP)
-		FORCENONL(", WP");
+		mmu_printf(info, ", WP");
 	if (descr[0] & MMU030_DESCR_U)
-		FORCENONL(", Updated");
+		mmu_printf(info, ", Updated");
 	if (last && (descr[0] & MMU030_DESCR_M))
-		FORCENONL(", Modified");
+		mmu_printf(info, ", Modified");
 	if (last && (descr[0] & MMU030_DESCR_CI))
-		FORCENONL(", Cache-Inhibit");
+		mmu_printf(info, ", Cache-Inhibit");
 	if (descr_size == 8)
 	{
 		table_limit = (descr[0] & MMU030_DESCR_LIMIT_MASK) >> MMU030_DESCR_LIMIT_SHIFT;
 	
-		FORCENONL(",%s limit = 0x%04x%s\r\n",
+		mmu_printf(info, ",%s limit = 0x%04x%s\r\n",
 			(descr[0] & MMU030_DESCR_LOWER) ? "lower" : "upper",
 			table_limit,
 			(descr[0] & (MMU030_DESCR_LOWER|MMU030_DESCR_LIMIT_MASK)) == MMU030_DESCR_LIMIT_MASK ||
 			(descr[0] & (MMU030_DESCR_LOWER|MMU030_DESCR_LIMIT_MASK)) == MMU030_DESCR_LOWER ?
 			" (disabled)" : "");
 	}
-	FORCENONL("\r\n");
+	mmu_printf(info, "\r\n");
 }
 
 
@@ -256,44 +273,44 @@ static void mmu030_print_table(struct mmuinfo *info, cpuaddr log_addr, int level
 		}
 			
 		descr_type = (descr[0] & MMU030_DESCR_MASK) >> MMU030_DESCR_SHIFT;
-		indent(level);
+		indent(info, level);
 		for (l = 0; l < level; l++)
-			FORCENONL("%04x:", indices[l]);
-		FORCENONL("%04x: %08lx: ", table_index, page_addr);
+			mmu_printf(info, "%04x:", indices[l]);
+		mmu_printf(info, "%04x: %08lx: ", table_index, page_addr);
 		switch (descr_type)
 		{
 		case MMU030_DESCR_TYPE_INVALID:
 			/* stop table walk */
 			if (level < info->translation.last_table)
 			{
-				FORCENONL("INVALID (" PREG ")\r\n", descr[0]);
+				mmu_printf(info, "INVALID (" PREG ")\r\n", descr[0]);
 			} else
 			{
-				FORCENONL("INVALID\r\n");
+				mmu_printf(info, "INVALID\r\n");
 				page_addr &= MMU030_DESCR_PD_ADDR_MASK;
-				indent(level + 1);
-				mmu030_print_page_descriptor(descr, descr_size, log_addr, page_addr, TRUE);
+				indent(info, level + 1);
+				mmu030_print_page_descriptor(info, descr, descr_size, log_addr, page_addr, TRUE);
 			}
 			break;
 		case MMU030_DESCR_TYPE_EARLY_TERM:
-			FORCENONL("Page Descriptor%s\r\n", level < info->translation.last_table ? " (early term)" : "");
+			mmu_printf(info, "Page Descriptor%s\r\n", level < info->translation.last_table ? " (early term)" : "");
 			page_addr &= MMU030_DESCR_PD_ADDR_MASK;
-			indent(level + 1);
-			mmu030_print_page_descriptor(descr, descr_size, log_addr, page_addr, TRUE);
+			indent(info, level + 1);
+			mmu030_print_page_descriptor(info, descr, descr_size, log_addr, page_addr, TRUE);
 			break;
 		case MMU030_DESCR_TYPE_VALID4:
-			FORCENONL("Short Descriptors\r\n");
+			mmu_printf(info, "Short Descriptors\r\n");
 			page_addr &= MMU030_DESCR_TD_ADDR_MASK;
-			indent(level + 1);
-			mmu030_print_page_descriptor(descr, descr_size, log_addr, page_addr, FALSE);
+			indent(info, level + 1);
+			mmu030_print_page_descriptor(info, descr, descr_size, log_addr, page_addr, FALSE);
 			indices[level] = table_index;
 			mmu030_print_table(info, log_addr, level + 1, 4, page_addr, indices);
 			break;
 		case MMU030_DESCR_TYPE_VALID8:
-			FORCENONL("Long Descriptors\r\n");
+			mmu_printf(info, "Long Descriptors\r\n");
 			page_addr &= MMU030_DESCR_TD_ADDR_MASK;
-			indent(level + 1);
-			mmu030_print_page_descriptor(descr, descr_size, log_addr, page_addr, FALSE);
+			indent(info, level + 1);
+			mmu030_print_page_descriptor(info, descr, descr_size, log_addr, page_addr, FALSE);
 			indices[level] = table_index;
 			mmu030_print_table(info, log_addr, level + 1, 8, page_addr, indices);
 			break;
@@ -325,11 +342,11 @@ static void mmu030_print_tree(struct mmuinfo *info, const cpuaddr *crp)
 	descr_type = (descr[0] & MMU030_DESCR_MASK) >> MMU030_DESCR_SHIFT;
 
 	page_addr = (descr[1] & MMU030_RP1_ADDR_MASK);
-	FORCENONL("Root table --> " PREG " ", page_addr);
+	mmu_printf(info, "Root table --> " PREG " ", page_addr);
 	switch (descr_type)
 	{
 	case MMU030_DESCR_TYPE_INVALID:
-		FORCENONL("INVALID (" PREG ")\r\n", descr[0]);
+		mmu_printf(info, "INVALID (" PREG ")\r\n", descr[0]);
 		return;
 	case MMU030_DESCR_TYPE_EARLY_TERM:
 		/*
@@ -341,16 +358,16 @@ static void mmu030_print_tree(struct mmuinfo *info, const cpuaddr *crp)
 		 * case, the processor performs a limit check, regardless of the state of
 		 * the FCL bit in the TC register.
 		 */
-		FORCENONL("Early termination\r\n");
-		indent(1);
-		mmu030_print_page_descriptor(descr, 8, 0, page_addr, FALSE);
+		mmu_printf(info, "Early termination\r\n");
+		indent(info, 1);
+		mmu030_print_page_descriptor(info, descr, 8, 0, page_addr, FALSE);
 		return;
 	case MMU030_DESCR_TYPE_VALID4:
-		FORCENONL("Short Descriptors\r\n");
+		mmu_printf(info, "Short Descriptors\r\n");
 		next_size = 4;
 		break;
 	case MMU030_DESCR_TYPE_VALID8:
-		FORCENONL("Long Descriptors\r\n");
+		mmu_printf(info, "Long Descriptors\r\n");
 		next_size = 8;
 		break;
 	}
@@ -382,26 +399,26 @@ static void mmu030_print_tree(struct mmuinfo *info, const cpuaddr *crp)
 			{
 			case MMU030_DESCR_TYPE_INVALID:
 				/* stop table walk */
-				FORCENONL("INVALID (" PREG ")\r\n", descr[0]);
+				mmu_printf(info, "INVALID (" PREG ")\r\n", descr[0]);
 				break;
 			case MMU030_DESCR_TYPE_EARLY_TERM:
-				FORCENONL("Page Descriptor\r\n");
+				mmu_printf(info, "Page Descriptor\r\n");
 				page_addr &= MMU030_DESCR_PD_ADDR_MASK;
-				indent(1);
-				mmu030_print_page_descriptor(descr, descr_size, 0, page_addr, TRUE);
+				indent(info, 1);
+				mmu030_print_page_descriptor(info, descr, descr_size, 0, page_addr, TRUE);
 				break;
 			case MMU030_DESCR_TYPE_VALID4:
-				FORCENONL("Short Descriptors\r\n");
+				mmu_printf(info, "Short Descriptors\r\n");
 				page_addr &= MMU030_DESCR_TD_ADDR_MASK;
-				indent(1);
-				mmu030_print_page_descriptor(descr, descr_size, 0, page_addr, FALSE);
+				indent(info, 1);
+				mmu030_print_page_descriptor(info, descr, descr_size, 0, page_addr, FALSE);
 				mmu030_print_table(info, 0, 0, 4, page_addr, indices);
 				break;
 			case MMU030_DESCR_TYPE_VALID8:
-				FORCENONL("Long Descriptors\r\n");
+				mmu_printf(info, "Long Descriptors\r\n");
 				page_addr &= MMU030_DESCR_TD_ADDR_MASK;
-				indent(1);
-				mmu030_print_page_descriptor(descr, descr_size, 0, page_addr, FALSE);
+				indent(info, 1);
+				mmu030_print_page_descriptor(info, descr, descr_size, 0, page_addr, FALSE);
 				mmu030_print_table(info, 0, 0, 8, page_addr, indices);
 				break;
 			}

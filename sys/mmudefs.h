@@ -353,6 +353,9 @@ typedef unsigned long cpuaddr;
 #define MMU060_PCR_ID_MASK			BITS16(MMU060_PCR_ID_SHIFT)
 #define MMU060_PCR_VALID_MASK		(MMU060_PCR_ESS | MMU060_PCR_DFP | MMU060_PCR_DEBUG)
 
+/*
+ * for debug dumps only:
+ */
 struct mmuinfo {
 	bool mmu_enabled;
 	bool mmu_valid;
@@ -361,7 +364,8 @@ struct mmuinfo {
 	cpuaddr page_mask;
 	cpuaddr offset_tt_ram;
 	tc_reg tc;
-		
+	FILEPTR *fp;
+
     /* Translation tables (030/68851) */
     struct {
         struct {

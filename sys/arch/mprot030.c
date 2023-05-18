@@ -804,6 +804,7 @@ prot_temp(ulong loc, ulong len, short mode)
 }
 
 #if DEBUG_MMU_TREE
+#include "k_fds.h"
 #include "mmudump030.c"
 #endif
 
@@ -835,6 +836,9 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	long g;
 	MEMREGION **mr;
 	ulong offset;
+#if DEBUG_MMU_TREE
+	struct mmuinfo info;
+#endif
 
 	if (no_mem_prot)
 		return;
@@ -1038,19 +1042,20 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	if (!mmu_is_set_up)
 	{
 		{
-			struct mmuinfo info;
-
-			FORCENONL("MMU TREE (before mark_pages)\r\n");
+			info.fp = NULL;
+			if (FP_ALLOC(rootproc, &info.fp) == 0)
+				do_open(&info.fp, "C:\\mmudbg.txt", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
+			mmu_printf(&info, "MMU TREE (before mark_pages)\r\n");
 			init_mmu_info_030(&info, proc->ctxt[0].tc);
 			if ((ulong)proc->ctxt[0].crp.tbl_address >= TTRAM_START)
 				info.offset_tt_ram = offset_tt_ram;
 			else
 				info.offset_tt_ram = 0;
 			print_tc_info_030(&info);
-			print_rp_info_030("CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
+			print_rp_info_030(&info, "CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
 
 			mmu030_print_tree(&info, (const cpuaddr *)&proc->ctxt[0].crp);
-			FORCENONL("\r\n\r\n");
+			mmu_printf(&info, "\r\n\r\n");
 		}
 	}
 #endif
@@ -1078,7 +1083,6 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 		mmu_is_set_up = 1;
 #if DEBUG_MMU_TREE
 		{
-			struct mmuinfo info;
 			int did_mark = FALSE;
 
 			mr = p_mem->mem;
@@ -1095,15 +1099,17 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 					info.offset_tt_ram = offset_tt_ram;
 				else
 					info.offset_tt_ram = 0;
-				FORCENONL("MMU TREE (after mark_pages)\r\n");
+				mmu_printf(&info, "MMU TREE (after mark_pages)\r\n");
 				print_tc_info_030(&info);
-				print_rp_info_030("CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
+				print_rp_info_030(&info, "CRP   ", (const cpuaddr *)&proc->ctxt[0].crp);
 
 				mmu030_print_tree(&info, (const cpuaddr *)&proc->ctxt[0].crp);
 			} else
 			{
-				FORCENONL("MMU TREE (after mark_pages; did not mark anything)\r\n");
+				mmu_printf(&info, "MMU TREE (after mark_pages; did not mark anything)\r\n");
 			}
+			if (info.fp)
+				do_close(rootproc, info.fp);
 		}
 #endif
 
