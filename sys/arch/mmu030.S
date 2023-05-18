@@ -44,8 +44,7 @@ _set_mmu:
 	move.l	36(sp),tc2
 	lea	set_mmu_called_st_ram.w(pc),a0
 	move.l	a2,a1
-	lsr.l	#1,d1
-	subq.l	#1,d1
+	move.w	#(end_set_mmu_called_st_ram-set_mmu_called_st_ram)/2-1,d1
 copy_st_ram:
 	move.w	(a0)+,(a1)+
 	dbf	d1,copy_st_ram
