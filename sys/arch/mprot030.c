@@ -1042,9 +1042,17 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	if (!mmu_is_set_up)
 	{
 		{
+			long ret;
+
 			info.fp = NULL;
 			if (FP_ALLOC(rootproc, &info.fp) == 0)
-				do_open(&info.fp, "C:\\mmudbg.txt", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
+				if ((ret = do_open(&info.fp, "U:\\c\\mmudbg.txt", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL)) != 0)
+				{
+					FORCE("cannot create MMU debug file: %ld\r\n", ret);
+					info.fp->links = 0;		/* suppress complaints */
+					FP_FREE(info.fp);
+					info.fp = NULL;
+				}
 			mmu_printf(&info, "MMU TREE (before mark_pages)\r\n");
 			init_mmu_info_030(&info, proc->ctxt[0].tc);
 			if ((ulong)proc->ctxt[0].crp.tbl_address >= TTRAM_START)
