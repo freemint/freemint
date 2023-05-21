@@ -207,8 +207,8 @@
 #define PUSH3D_DISTANCE		1	/* Distance text on selected (pushed in) 3D objects will move */
 #define SHADOW_OFFSET		2	/* Offset used for shadowing objects */
 
-#define ICONIFIED_W		80	/* Size of an iconified window */
-#define ICONIFIED_H		80
+#define ICONIFIED_W		72	/* Size of an iconified window */
+#define ICONIFIED_H		72
 
 #define DOUBLE_CLICK_TIME	(250 / 5)	/* Default double click time in timer ticks (0-200) */
 #define MOUSE_PACKET_TIMEGAP	 3	/* Amount of time that have to pass between two packets received from the VDI */

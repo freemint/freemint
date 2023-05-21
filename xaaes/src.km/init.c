@@ -304,8 +304,8 @@ static void configure(void)
 	cfg.hor_wheel_amount = 1;
 
 	cfg.icnfy_orient = 3;
-	cfg.icnfy_w = 72;
-	cfg.icnfy_h = 72;
+	cfg.icnfy_w = ICONIFIED_W;
+	cfg.icnfy_h = ICONIFIED_H;
 
 	cfg.popup_timeout = 10;
 	cfg.popout_timeout = 1000;

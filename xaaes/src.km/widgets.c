@@ -1013,15 +1013,6 @@ redraw_menu(int lock)
 	DIAGS(("redraw_menu - exit OK"));
 }
 
-#if 0
-static short cfg_icnfy_orient = 3;
-static short cfg_icnfy_l_x = 0;
-static short cfg_icnfy_r_x = 0;
-static short cfg_icnfy_t_y = 0;
-static short cfg_icnfy_b_y = 16;
-static short cfg_icnfy_w = 64;
-static short cfg_icnfy_h = 64;
-#endif
 /* Establish iconified window position from a simple ordinal. */
 GRECT
 iconify_grid(int i)
