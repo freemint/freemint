@@ -1640,8 +1640,11 @@ k_main(void *dummy)
 		p_semaphore( SEMRELEASE, XA_SEM, 0 );
 		goto leave;
 	}
-	/* create semaphore, gets released at exit */
+	/* create XaAES semaphore, gets released at exit */
 	p_semaphore( SEMCREATE, XA_SEM, 0 );
+	/* create _SCP semaphore and release it immediately */
+	p_semaphore( SEMCREATE, XA_SCP, 0 );
+	p_semaphore( SEMRELEASE, XA_SCP, 0 );
 
 	/*
 	 * setup kernel thread
@@ -1948,10 +1951,13 @@ k_main(void *dummy)
 leave:
 	{
 		int r;
-		/* delete semaphore */
+		/* delete semaphores */
+		r = p_semaphore( SEMDESTROY, XA_SCP, 0 );
+		if( r )
+			BLOG((0,"k_main:could not destroy _SCP semaphore:%d", r ));
 		r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
 		if( r )
-			BLOG((0,"k_main:could not destroy semaphore:%d", r ));
+			BLOG((0,"k_main:could not destroy XaAES semaphore:%d", r ));
 		/* reset Setexc */
 		if( p_exc != -1 && (r=s_system(S_SETEXC, p_exc, 0 )) < 0 )
 			BLOG((0,"k_main:could not reset setexc:%d", r ));

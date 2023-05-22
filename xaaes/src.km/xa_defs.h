@@ -255,6 +255,7 @@
 
 /* MiNT-semaphores */
 #define XA_SEM 0x58414553L	/*"XAES"*/
+#define XA_SCP 0x5F534350L	/*"_SCP"*/
 #define SEMCREATE	0
 #define SEMDESTROY	1
 #define SEMGET	2
