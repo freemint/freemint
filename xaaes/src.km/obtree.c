@@ -3494,8 +3494,7 @@ obj_ed_char(
 		}
 		else
 		{
-			for(x = 0; txt[x]; x++)
-				;
+			x = strlen(txt);
 
 			if (x != ei->pos)
 			{

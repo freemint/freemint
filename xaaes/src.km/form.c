@@ -506,7 +506,7 @@ Form_Button(XA_TREE *wt,
 							txt = ted->te_ptext;
 							ptxt = ted->te_ptmplt;
 
-							for( ; txt[x]; x++ );
+							x = strlen(txt);
 							for( ; ptxt[y] && ptxt[y] != '_'; y++ );
 						}
 					}
