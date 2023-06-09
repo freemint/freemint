@@ -1812,9 +1812,11 @@ XA_wind_delete(int lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_new(int lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(0,0,0)
+	CONTROL2(0,0,0, 0,1,0)
 
 	remove_windows(lock, client);
+	if (pb->control[2] > 0 && pb->intout)
+		pb->intout[0] = 1;
 
 	return XAC_DONE;
 }
