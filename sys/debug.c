@@ -290,6 +290,7 @@ _ALERT(const char *s)
 	if (!ret)
 	{		
 		const char *alert;
+		char alertbuf[SPRINTF_MAX + 32];
 		
 		/* format the string into an alert box
 		 */
@@ -300,7 +301,6 @@ _ALERT(const char *s)
 		}
 		else
 		{
-			char alertbuf[SPRINTF_MAX + 32];
 			char *ptr, *end = alertbuf+sizeof(alertbuf)-8;	/* strlen "][ OK ]" +1 */
 			char *lastspace;
 			int counter;
