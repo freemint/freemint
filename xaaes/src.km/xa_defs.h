@@ -224,8 +224,6 @@
 #define HK_SHIFT  256        /* add for SHIFT */
 #define HK_FREE   511        /* last index: unused/invalid */
 
-#define WIDGNAME "xaaeswdg.rsc"
-
 /*----------------------------------------------------------------- */
 /* Return codes in the clients reply pipe */
 #define XA_OK			0L	/* Ok, op-code done */
