@@ -74,7 +74,12 @@ static long sys_XHDOSLimits (ushort which, ulong limit);
 
 ushort XHDI_installed = 0;
 
-#define XHDOSLIMITS 17
+#define XHGETVERSION    0
+#define XHEJECT         5
+#define XHDRVMAP        6
+#define XHNEWCOOKIE     9
+#define XHMINTINFO      16
+#define XHDOSLIMITS     17
 
 long
 XHDI_init (void)
@@ -121,7 +126,7 @@ XHDI_init (void)
 		tmp = sys_XHDOSLimits(XH_DL_MAXSEC, 0);
 		XHDOSLimits(XH_DL_MAXSEC, tmp);
 		tmp = sys_XHDOSLimits(XH_DL_DRIVES, 0);
-		XHDOSLimits( XH_DL_DRIVES, tmp);
+		XHDOSLimits(XH_DL_DRIVES, tmp);
 		tmp = sys_XHDOSLimits(XH_DL_CLSIZB, 0);
 		XHDOSLimits(XH_DL_CLSIZB, tmp);
 		tmp = sys_XHDOSLimits(XH_DL_RDLEN, 0);
@@ -241,32 +246,32 @@ sys_xhdi (ushort op,
 		long a5, long a6, long a7)
 {
 	/* version information */
-	if (op == 0)
+	if (op == XHGETVERSION)
 		return XHDI_installed;
 
 	/* XHEject */
 	/* a2 contains do_eject parameter */
-	if (op == 5 && (a2 >> 16) == 1)
+	if (op == XHEJECT && (a2 >> 16) == 1)
 	{
 		bio_sync_all ();
 	}
 
 	/* XHDrvMap */
-	if (op == 6)
-		return XHDI (6);
+	if (op == XHDRVMAP)
+		return XHDI (XHDRVMAP);
 	
 	/* all other functions are restricted to root processes */
 	if (!suser (get_curproc()->p_cred->ucr))
 		return EPERM;
 	
 	/* XHNewCookie and XHMiNTInfo are never allowed */
-	if (op == 9 || op == 16)
+	if (op == XHNEWCOOKIE || op == XHMINTINFO)
 		return ENOSYS;
 	
 	/* applications see our own XHDOSLimits;
 	 * mainly to make Uwe happy
 	 */
-	if (op == 17)
+	if (op == XHDOSLIMITS)
 		return sys_XHDOSLimits ((a1 >> 16), (a1 << 16) | (a2 >> 16));
 	
 	return XHDI (op, a1, a2, a3, a4, a5, a6, a7);
