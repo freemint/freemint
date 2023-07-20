@@ -672,6 +672,8 @@ init (void)
 		{
 			ksprintf (boot_file, sizeof(boot_file), "%s%s", sysdir, "boot.log");
 			r = do_open( &fb, boot_file, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+			if (r == ECHMEDIA)
+			    r = do_open( &fb, boot_file, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
 		}
 
 		if (!r)
