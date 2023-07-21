@@ -46,7 +46,7 @@
 
 /* Unshifted */
 
-static uchar usa_kbd[] =
+static const uchar usa_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,
@@ -123,14 +123,14 @@ static const short default_akp = 0;
 
 static struct keytab sys_keytab =
 {
-	(uchar *)usa_kbd,
-	(uchar *)usa_kbd + 128,
-	(uchar *)usa_kbd + 256,
-	(uchar *)usa_kbd + 384,
-	(uchar *)usa_kbd + 385,
-	(uchar *)usa_kbd + 386,
-	(uchar *)usa_kbd + 387,
-	(uchar *)usa_kbd + 388
+	usa_kbd,
+	usa_kbd + 128,
+	usa_kbd + 256,
+	usa_kbd + 384,
+	usa_kbd + 385,
+	usa_kbd + 386,
+	usa_kbd + 387,
+	usa_kbd + 388
 };
 
 # endif

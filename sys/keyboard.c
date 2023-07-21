@@ -816,7 +816,8 @@ iso_toupper(uchar asc)
 INLINE uchar
 scan2asc(uchar scancode)
 {
-	uchar asc = 0, *vec, shift = *kbshft;
+	uchar asc = 0, shift = *kbshft;
+	const uchar *vec;
 
 	/* The AKP table structure is:
 	 * ss, aa, ss, aa, ss, aa, 0
@@ -1282,10 +1283,10 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','Âƒ' means that '^' followed by 'a' results
-			 * in an 'Âƒ'.
+			 * So '^','a','ƒ' means that '^' followed by 'a' results
+			 * in an 'ƒ'.
 			 */
-			uchar *vec = user_keytab->deadkeys;
+			const uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
 
 			if (vec)
@@ -1432,8 +1433,8 @@ sys_b_kbrate(short delay, short rate)
  */
 
 /* Helper */
-static uchar *
-tbl_scan_fwd(uchar *tmp)
+static const uchar *
+tbl_scan_fwd(const uchar *tmp)
 {
 	while (*tmp)
 		tmp++;
@@ -1694,11 +1695,11 @@ load_internal_table(void)
 	/* Our default keyboard table (see key_table.h) is always
 	 * a complete one.
 	 */
-	size += strlen((char *)tos_keytab->alt) + 1;
-	size += strlen((char *)tos_keytab->altshift) + 1;
-	size += strlen((char *)tos_keytab->altcaps) + 1;
-	size += strlen((char *)tos_keytab->altgr) + 1;
-	size += strlen((char *)tos_keytab->deadkeys) + 1;
+	size += strlen((const char *)tos_keytab->alt) + 1;
+	size += strlen((const char *)tos_keytab->altshift) + 1;
+	size += strlen((const char *)tos_keytab->altcaps) + 1;
+	size += strlen((const char *)tos_keytab->altgr) + 1;
+	size += strlen((const char *)tos_keytab->deadkeys) + 1;
 
 	size += 8; /* add some space */
 
@@ -1739,23 +1740,23 @@ load_internal_table(void)
 	 * a complete one.
 	 */
 
-	len = strlen((char *)tos_keytab->alt) + 1;
+	len = strlen((const char *)tos_keytab->alt) + 1;
 	quickmovb(p, tos_keytab->alt, len);
 	p += len;
 
-	len = strlen((char *)tos_keytab->altshift) + 1;
+	len = strlen((const char *)tos_keytab->altshift) + 1;
 	quickmovb(p, tos_keytab->altshift, len);
 	p += len;
 
-	len = strlen((char *)tos_keytab->altcaps) + 1;
+	len = strlen((const char *)tos_keytab->altcaps) + 1;
 	quickmovb(p, tos_keytab->altcaps, len);
 	p += len;
 
-	len = strlen((char *)tos_keytab->altgr) + 1;
+	len = strlen((const char *)tos_keytab->altgr) + 1;
 	quickmovb(p, tos_keytab->altgr, len);
 	p += len;
 
-	len = strlen((char *)tos_keytab->deadkeys) + 1;
+	len = strlen((const char *)tos_keytab->deadkeys) + 1;
 	quickmovb(p, tos_keytab->deadkeys, len);
 
 	gl_kbd = default_akp;
@@ -1877,8 +1878,8 @@ init_keybd(void)
 				tos_keytab->altgr=local_keytab->altgr;
 		
 		}
+		TRACE(("%s(): BIOS keyboard table at 0x%p", __FUNCTION__, local_keytab));
 	}
-	TRACE(("%s(): BIOS keyboard table at 0x%p", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
 	delayrate = TRAP_Kbrate(-1, -1);

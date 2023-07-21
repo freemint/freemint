@@ -1429,7 +1429,7 @@ escseq (struct tty *tty, int scan)
 # ifdef NO_AKP_KEYBOARD
 	tab = *(((const char **) ROM_Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
 # else
-	tab = (char *)get_keytab()->caps;
+	tab = (const char *)get_keytab()->caps;
 # endif
 	scan = tab[scan];
 	

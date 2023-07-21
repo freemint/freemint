@@ -77,14 +77,14 @@
  */
 struct keytab
 {
-	uchar *unshift;		/* every TOS */
-	uchar *shift;		/* every TOS */
-	uchar *caps;		/* every TOS */
-	uchar *alt;		/* TOS 4.0x and above */
-	uchar *altshift;	/* TOS 4.0x and above */
-	uchar *altcaps;		/* TOS 4.0x and above */
-	uchar *altgr;		/* Milan TOS */
-	uchar *deadkeys;	/* FreeMiNT 1.17 */
+	const uchar *unshift;	/* every TOS */
+	const uchar *shift;		/* every TOS */
+	const uchar *caps;		/* every TOS */
+	const uchar *alt;		/* TOS 4.0x and above */
+	const uchar *altshift;	/* TOS 4.0x and above */
+	const uchar *altcaps;	/* TOS 4.0x and above */
+	const uchar *altgr;		/* Milan TOS */
+	const uchar *deadkeys;	/* FreeMiNT 1.17 */
 };
 
 /* Struct for the default action on C/A/D
