@@ -34,7 +34,7 @@ GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(LD) -s $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 
 include $(top_srcdir)/DEPENDENCIES

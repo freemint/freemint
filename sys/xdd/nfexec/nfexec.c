@@ -203,10 +203,10 @@ init (struct kerinfo *k)
 		goto failure;
 	}
 
-	// this is FILEPTR *f->fc.aux
+	/* this is FILEPTR *f->fc.aux */
 	raw_dev_descriptor.dinfo = 0;
 
-	// install it
+	/* install it */
 	if (d_cntl (DEV_INSTALL2, "u:\\dev\\hostexec", (long) &raw_dev_descriptor) >= 0)
 		DEBUG (("%s: %s installed with BIOS remap", __FILE__, "hostexec"));
 
@@ -239,7 +239,7 @@ nfexec_close (FILEPTR *f, int pid)
 
 	if (f->links <= 0)
 	{
-		//ALERT (("nfexec_close: f->links <= 0!"));
+		/* ALERT (("nfexec_close: f->links <= 0!")); */
 	}
 
 	return E_OK;

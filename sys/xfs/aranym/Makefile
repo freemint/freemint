@@ -8,7 +8,7 @@ SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
-subdir = arafs
+subdir = aranym
 
 default: all
 
