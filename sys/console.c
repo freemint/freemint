@@ -179,7 +179,7 @@ sys_c_necin (void)
 	return file_getchar (get_curproc()->p_fd->ofiles[0], COOKED | NOECHO);
 }
 
-#if __GNUC_PREREQ(13,0)
+#if __GNUC_PREREQ(12,0)
 /* avoid a library call to strlen which we don't have */
 #pragma GCC push_options
 #pragma GCC optimize "-O1"
@@ -199,7 +199,7 @@ sys_c_conws (const char *str)
 # endif
 	return sys_f_write (1, cnt, str);
 }
-#if __GNUC_PREREQ(13,0)
+#if __GNUC_PREREQ(12,0)
 #pragma GCC pop_options
 #endif
 
