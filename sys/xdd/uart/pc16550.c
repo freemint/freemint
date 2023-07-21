@@ -1425,7 +1425,7 @@ init (struct kerinfo *k)
 		0,		/* dinfo -> fc.aux */
 		O_TTY,		/* flags */
 		NULL,		/* struct tty * */
-		44,		/* drvsize */
+		sizeof(DEVDRV),		/* drvsize */
 		S_IFCHR |
 		S_IRUSR |
 		S_IWUSR |
