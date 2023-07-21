@@ -197,9 +197,7 @@ fal_copyout (char *buf, long len)
 }
 
 static long
-fal_ioctl (mode, buf)
-	short mode;
-	void *buf;
+fal_ioctl (short mode, void *buf)
 {
 	long arg = (long)buf;
 
@@ -333,9 +331,7 @@ fal_mix_init (struct device *dev)
 }
 
 static long
-fal_mix_ioctl (mode, buf)
-	short mode;
-	void *buf;
+fal_mix_ioctl (short mode, void *buf)
 {
 	long arg = (long)buf;
 
