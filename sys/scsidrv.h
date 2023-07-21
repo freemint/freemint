@@ -49,9 +49,7 @@ extern ushort scsidrv_installed;
  */
 
 long	scsidrv_init		(void);
-long	_cdecl sys_scsidrv	(ushort op,
-				 long a1, long a2, long a3, long a4,
-				 long a5, long a6, long a7);
+long	_cdecl sys_scsidrv	(ushort op, void *args);
 
 long	scsidrv_InstallNewDriver	(SCSIDRV *newdrv);
 

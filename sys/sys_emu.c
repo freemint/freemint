@@ -69,7 +69,7 @@ sys_emu (ushort which, ushort op,
 		/* SCSIDRV */
 		case 2:
 		{
-			return sys_scsidrv (op, a1, a2, a3, a4, a5, a6, a7);
+			return sys_scsidrv (op, &a1);
 		}
 #ifdef PCI_BIOS
 		/* PCI-BIOS */

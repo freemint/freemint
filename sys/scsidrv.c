@@ -135,15 +135,8 @@ scsidrv_init (void)
 }
 
 long _cdecl
-sys_scsidrv (ushort op,
-	     long a1, long a2, long a3, long a4,
-	     long a5, long a6, long a7)
+sys_scsidrv (ushort op, void *args)
 {
-	typedef long (*wrap1)(long);
-	typedef long (*wrap2)(long, long);
-	typedef long (*wrap3)(long, long, long);
-	typedef long (*wrap4)(long, long, long, long);
-
 	/* only superuser can use this interface */
 	if (!suser (get_curproc()->p_cred->ucr))
 		return EPERM;
@@ -155,62 +148,89 @@ sys_scsidrv (ushort op,
 	{
 		/* SCSIDRV exist */
 		case 0:
-		{
 			return E_OK;
-		}
+
 		/* In */
 		case 1:
 		{
-			wrap1 f = (wrap1) scsidrv_In;
-			return (*f)(a1);
+			struct {
+				SCSICMD *par;
+			} *par = args;
+			return scsidrv_In(par->par);
 		}
 		/* Out */
 		case 2:
 		{
-			wrap1 f = (wrap1) scsidrv_Out;
-			return (*f)(a1);
+			struct {
+				SCSICMD *par;
+			} *par = args;
+			return scsidrv_Out(par->par);
 		}
 		/* InquireSCSI */
 		case 3:
 		{
-			wrap2 f = (wrap2) scsidrv_InquireSCSI;
-			return (*f)(a1, a2);
+			struct {
+				short what;
+				BUSINFO *info;
+			} *par = args;
+			return scsidrv_InquireSCSI(par->what, par->info);
 		}
 		/* InquireBus */
 		case 4:
 		{
-			wrap3 f = (wrap3) scsidrv_InquireBus;
-			return (*f)(a1, a2, a3);
+			struct {
+				short what;
+				short busno;
+				DEVINFO *dev;
+			} *par = args;
+			return scsidrv_InquireBus(par->what, par->busno, par->dev);
 		}
 		/* CheckDev */
 		case 5:
 		{
-			wrap4 f = (wrap4) scsidrv_CheckDev;
-			return (*f)(a1, a2, a3, a4);
+			struct {
+				short busno;
+				const DLONG *SCSIId;
+				char *name;
+				ushort *features;
+			} *par = args;
+			return scsidrv_CheckDev(par->busno, par->SCSIId, par->name, par->features);
 		}
 		/* RescanBus */
 		case 6:
 		{
-			wrap1 f = (wrap1) scsidrv_RescanBus;
-			return (*f)(a1);
+			struct {
+				short busno;
+			} *par = args;
+			return scsidrv_RescanBus(par->busno);
 		}
 		/* Open */
 		case 7:
 		{
-			wrap3 f = (wrap3) scsidrv_Open;
-			return (*f)(a1, a2, a3);
+			struct {
+				short busno;
+				const DLONG *SCSIId;
+				ulong *maxlen;
+			} *par = par;
+			return scsidrv_Open(par->busno, par->SCSIId, par->maxlen);
 		}
 		/* Close */
 		case 8:
 		{
-			wrap1 f = (wrap1) scsidrv_Close;
-			return (*f)(a1);
+			struct {
+				short *handle;
+			} *par = args;
+			return scsidrv_Close(par->handle);
 		}
 		/* Error */
 		case 9:
 		{
-			wrap3 f = (wrap3) scsidrv_Error;
-			return (*f)(a1, a2, a3);
+			struct {
+				short *handle;
+				short rwflag;
+				short ErrNo;
+			} *par = args;
+			return scsidrv_Error(par->handle, par->rwflag, par->ErrNo);
 		}
 
 		/* target interface
@@ -261,7 +281,7 @@ scsidrv_InstallNewDriver (SCSIDRV *newdrv)
 long
 scsidrv_In (SCSICMD *par)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -284,7 +304,7 @@ scsidrv_In (SCSICMD *par)
 long
 scsidrv_Out (SCSICMD *par)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -298,7 +318,7 @@ scsidrv_Out (SCSICMD *par)
 long
 scsidrv_InquireSCSI (short what, BUSINFO *info)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -312,7 +332,7 @@ scsidrv_InquireSCSI (short what, BUSINFO *info)
 long
 scsidrv_InquireBus (short what, short busno, DEVINFO *dev)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -326,7 +346,7 @@ scsidrv_InquireBus (short what, short busno, DEVINFO *dev)
 long
 scsidrv_CheckDev (short busno, const DLONG *SCSIId, char *name, ushort *features)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -340,7 +360,7 @@ scsidrv_CheckDev (short busno, const DLONG *SCSIId, char *name, ushort *features
 long
 scsidrv_RescanBus (short busno)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -354,7 +374,7 @@ scsidrv_RescanBus (short busno)
 long
 scsidrv_Open (short busno, const DLONG *SCSIId, ulong *maxlen)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -368,7 +388,7 @@ scsidrv_Open (short busno, const DLONG *SCSIId, ulong *maxlen)
 long
 scsidrv_Close (short *handle)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -382,7 +402,7 @@ scsidrv_Close (short *handle)
 long
 scsidrv_Error (short *handle, short rwflag, short ErrNo)
 {
-	register long ret;
+	long ret;
 
 	if (!scsidrv)
 		return ENOSYS;
