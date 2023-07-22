@@ -18,7 +18,7 @@
 # include "mint/basepage.h"
 # include "mint/config.h"
 # include "mint/emu_tos.h"
-# include "mint/arch/asm.h"
+# include "mint/arch/asm_misc.h"
 
 
 struct netinfo netinfo =
@@ -71,17 +71,17 @@ xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 
 	__asm__ volatile
 	(
-		PUSH_SP("d3-d7/a3-a6", 36)
+		PUSH_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		"movl	%3,sp@-\n\t"
 		"movl	%2,sp@-\n\t"
 		"movl	%1,a0\n\t"
 		"jsr	a0@\n\t"
 		"addql	#8,sp\n\t"
-		POP_SP("d3-d7/a3-a6", 36)
+		POP_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		: "=r"(ret)				/* outputs */
 		: "g"(initfunc), "g"(k), "g"(n)		/* inputs  */
 		: __CLOBBER_RETURN("d0")
-		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
+		  "d1", "d2", "a0", "a1", "a2",	"cc",	/* clobbered regs */
 		  "memory"
 	);
 	return ret;

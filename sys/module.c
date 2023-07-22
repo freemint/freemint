@@ -455,13 +455,8 @@ module_init(void *initfunc, struct kerinfo *k)
 }
 #else
 
-#if __GNUC__ > 2 || __GNUC_MINOR__ > 5
-# if __GNUC__ >= 3
-   /* gcc 3 does not want a clobbered register to be input or output */
-#  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
-# else
-#  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
-# endif
+#if __GNUC_PREREQ(2, 6)
+# define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "cc", "memory"
 #else
 # define LOCAL_CLOBBER_LIST
 #endif
@@ -473,12 +468,12 @@ module_init(void *initfunc, struct kerinfo *k)
 
 	__asm__ volatile
 	(
-		PUSH_SP("d3-d7/a3-a6", 36)
+		PUSH_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		"move.l	%2,-(sp)\n\t"
 		"move.l	%1,a0\n\t"
 		"jsr	(a0)\n\t"
 		"addq.l	#4,sp\n\t"
-		POP_SP("d3-d7/a3-a6", 36)
+		POP_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		: "=r"(ret)				/* outputs */
 		: "r"(initfunc), "r"(k)			/* inputs  */
 		: LOCAL_CLOBBER_LIST /* clobbered regs */
