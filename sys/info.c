@@ -75,8 +75,9 @@ const ulong build_serial     = BUILD_SERIAL;
 /* definitions in automatically created cdef.h
  */
 
+#define str1(x) str(x)
 const char COMPILER_NAME [] = str (_COMPILER_NAME);
-const char COMPILER_OPTS [] = str (_COMPILER_OPTS);
+const char COMPILER_OPTS [] = str1((_COMPILER_OPTS));
 const char COMPILER_DEFS [] = str (_COMPILER_DEFS);
 
 # ifdef __GNUC__
