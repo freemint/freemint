@@ -256,7 +256,14 @@ long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid) {
 }
 
 long _cdecl hostfs_fs_dev_select   (FILEPTR *f, long proc, int mode) {
-	return nf_call(HOSTFS(DEV_SELECT), f, proc, (long)mode);
+	(void)f;
+	(void)proc;
+	(void)mode;
+#if 0
+	return nf_call(HOSTFS(DEV_SELECT), f, proc, (long)mode); */
+#endif
+	/* we're always ready to read/write */
+	return 1;
 }
 
 void _cdecl hostfs_fs_dev_unselect (FILEPTR *f, long proc, int mode) {
