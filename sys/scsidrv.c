@@ -211,7 +211,7 @@ sys_scsidrv (ushort op, void *args)
 				short busno;
 				const DLONG *SCSIId;
 				ulong *maxlen;
-			} *par = par;
+			} *par = args;
 			return scsidrv_Open(par->busno, par->SCSIId, par->maxlen);
 		}
 		/* Close */
