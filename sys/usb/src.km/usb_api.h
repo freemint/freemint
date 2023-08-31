@@ -234,5 +234,6 @@ struct usb_module_api
 
 struct kentry;
 long _cdecl init_ucd (struct kentry *, struct usb_module_api *, char **) __asm__("init_ucd");
+long _cdecl init_udd (struct kentry *, struct usb_module_api *, long, long) __asm__("init_udd");
 
 #endif /* usb_api_h */

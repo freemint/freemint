@@ -327,8 +327,7 @@ static void configure(void)
 }
 
 
-long
-init(struct kentry *k, const struct kernel_module *km) //const char *path)
+long _cdecl init_km(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
 #if CHECK_STACK
 	long stk = (long)get_sp();

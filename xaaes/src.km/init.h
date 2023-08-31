@@ -34,7 +34,6 @@ extern long loader_pgrp;
 
 extern char version[];
 
-long init(struct kentry *k, const struct kernel_module *km);
 short lang_from_akp( char lang[], int md );
 
 #endif /* _init_h */

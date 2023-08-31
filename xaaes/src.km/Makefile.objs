@@ -29,7 +29,7 @@ WARN = 	-Wall \
 	-Wshadow \
 	-Wpointer-arith
 
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LD = $(CC) -nostdlib -Wl,--entry,init_km -Wl,--fatal-warnings
 LIBS = -lgem -lgcc
 STRIPFLAGS =
 

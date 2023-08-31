@@ -148,10 +148,7 @@ int init(int argc, char **argv, char **env);
 int
 init(int argc, char **argv, char **env)
 #else
-long init(struct kentry *k, const struct kernel_module *km);
-
-long
-init(struct kentry *k, const struct kernel_module *km)
+long _cdecl init_km(struct kentry *k, const struct kernel_module *km)
 #endif
 {
 	long err = 0L;

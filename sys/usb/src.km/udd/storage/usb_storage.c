@@ -2484,9 +2484,7 @@ int init(void);
 int
 init (void)
 #else
-long _cdecl	init			(struct kentry *, struct usb_module_api *, long, long);
-long _cdecl
-init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
+long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 #endif
 {
 	PUN_INFO *pun_ptr;
