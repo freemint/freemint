@@ -458,7 +458,7 @@ long driver_init(void)
 	u_int32_t vbr = 0;
 	__asm__ volatile ( \
 		"	dc.w  0x4e7a,0x0801\n" /* movec VBR,d0 */ \
-		"	move.l d0,%0\n" \
+		"	move.l %%d0,%0\n" \
 		: "=d"(vbr) : : "d0", "cc"
 	);
 	u_int32_t vec = vbr + 0x6C;
