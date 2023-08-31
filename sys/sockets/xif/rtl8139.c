@@ -145,11 +145,11 @@ __extension__	\
 	short _b = (short) (b);	\
 	\
 	__asm__ volatile (	\
-		"movw	%3,sp@-\n\t"	\
-		"movl	%2,sp@-\n\t"	\
-		"movw	%1,sp@-\n\t"	\
+		"movw	%3,%%sp@-\n\t"	\
+		"movl	%2,%%sp@-\n\t"	\
+		"movw	%1,%%sp@-\n\t"	\
 		"trap	#14\n\t"	\
-		"lea	sp@(8),sp"	\
+		"lea	%%sp@(8),%%sp"	\
 		: "=r"(retvalue)	\
 		: "g"(n), "r"(_a), "r"(_b)	\
 		: OSBIND_CLOBBER_LIST	\
@@ -166,11 +166,11 @@ __extension__	\
 	long _b = (long) (b);	\
 	\
 	__asm__ volatile (	\
-		"movl	%3,sp@-\n\t"	\
-		"movl	%2,sp@-\n\t"	\
-		"movw	%1,sp@-\n\t"	\
+		"movl	%3,%%sp@-\n\t"	\
+		"movl	%2,%%sp@-\n\t"	\
+		"movw	%1,%%sp@-\n\t"	\
 		"trap	#14\n\t"	\
-		"lea	sp@(10),sp"	\
+		"lea	%%sp@(10),%%sp"	\
 		: "=r"(retvalue)	\
 		: "g"(n), "r"(_a), "r"(_b)	\
 		: OSBIND_CLOBBER_LIST	\
@@ -188,12 +188,12 @@ __extension__	\
 	short _c = (short) (c);	\
 	\
 	__asm__ volatile (	\
-		"movw	%4,sp@-\n\t"	\
-		"movw	%3,sp@-\n\t"	\
-		"movl	%2,sp@-\n\t"	\
-		"movw	%1,sp@-\n\t"	\
+		"movw	%4,%%sp@-\n\t"	\
+		"movw	%3,%%sp@-\n\t"	\
+		"movl	%2,%%sp@-\n\t"	\
+		"movw	%1,%%sp@-\n\t"	\
 		"trap	#14\n\t"	\
-		"lea	sp@(10),sp"	\
+		"lea	%%sp@(10),%%sp"	\
 		: "=r"(retvalue)	\
 		: "g"(n), "r"(_a), "r"(_b), "r"(_c)	\
 		: OSBIND_CLOBBER_LIST	\
@@ -211,12 +211,12 @@ __extension__	\
 	long  _c = (long) (c);	\
 	\
 	__asm__ volatile (	\
-		"movl	%4,sp@-\n\t"	\
-		"movw	%3,sp@-\n\t"	\
-		"movl	%2,sp@-\n\t"	\
-		"movw	%1,sp@-\n\t"	\
+		"movl	%4,%%sp@-\n\t"	\
+		"movw	%3,%%sp@-\n\t"	\
+		"movl	%2,%%sp@-\n\t"	\
+		"movw	%1,%%sp@-\n\t"	\
 		"trap	#14\n\t"	\
-		"lea	sp@(12),sp"	\
+		"lea	%%sp@(12),%%sp"	\
 		: "=r"(retvalue)	\
 		: "g"(n), "r"(_a), "r"(_b), "r"(_c)	\
 		: OSBIND_CLOBBER_LIST	\
@@ -234,12 +234,12 @@ __extension__	\
 	long  _c = (long) (c);	\
 	\
 	__asm__ volatile (	\
-		"movl	%4,sp@-\n\t"	\
-		"movl	%3,sp@-\n\t"	\
-		"movl	%2,sp@-\n\t"	\
-		"movw	%1,sp@-\n\t"	\
+		"movl	%4,%%sp@-\n\t"	\
+		"movl	%3,%%sp@-\n\t"	\
+		"movl	%2,%%sp@-\n\t"	\
+		"movw	%1,%%sp@-\n\t"	\
 		"trap	#14\n\t"	\
-		"lea	sp@(14),sp"	\
+		"lea	%%sp@(14),%%sp"	\
 		: "=r"(retvalue)	\
 		: "g"(n), "r"(_a), "r"(_b), "r"(_c)	\
 		: OSBIND_CLOBBER_LIST	\
@@ -319,16 +319,16 @@ static int splx(int level)
 {
   register int old_level __asm__("d0");
   asm __volatile__ (
-      " move.l %1, d6\n\t"     /* get argument */
-      " move.w sr, d7\n\t"     /* current SR */
-      " move.l d7, d0\n\t"     /* prepare return value */
-      " and.l #0x700, d0\n\t"  /* mask out IPL */
-      " lsr.l #8, d0\n\t"      /* IPL */
-      " and.l #7, d6\n\t"      /* least significant three bits */
-      " lsl.l #8, d6\n\t"      /* move over to make mask */
-      " and.l #0xF8FF, d7\n\t" /* zero out current IPL */
-      " or.l d6, d7\n\t"       /* place new IPL in SR */
-      " move.w d7, sr"
+      " move.l %1, %%d6\n\t"     /* get argument */
+      " move.w %%sr, %%d7\n\t"     /* current SR */
+      " move.l %%d7, %%d0\n\t"     /* prepare return value */
+      " and.l #0x700, %%d0\n\t"  /* mask out IPL */
+      " lsr.l #8, %%d0\n\t"      /* IPL */
+      " and.l #7, %%d6\n\t"      /* least significant three bits */
+      " lsl.l #8, %%d6\n\t"      /* move over to make mask */
+      " and.l #0xF8FF, %%d7\n\t" /* zero out current IPL */
+      " or.l %%d6, %%d7\n\t"       /* place new IPL in SR */
+      " move.w %%d7, %%sr"
       : "=d" (old_level)
       : "d" (level)
       : "d6", "d7", "cc"
