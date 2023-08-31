@@ -469,10 +469,10 @@ module_init(void *initfunc, struct kerinfo *k)
 	__asm__ volatile
 	(
 		PUSH_SP("%%d3-%%d7/%%a3-%%a6", 36)
-		"move.l	%2,-(sp)\n\t"
-		"move.l	%1,a0\n\t"
-		"jsr	(a0)\n\t"
-		"addq.l	#4,sp\n\t"
+		"move.l	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#4,%%sp\n\t"
 		POP_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		: "=r"(ret)				/* outputs */
 		: "r"(initfunc), "r"(k)			/* inputs  */
