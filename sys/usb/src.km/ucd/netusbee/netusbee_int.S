@@ -31,16 +31,18 @@
  *
  */
 
-	.globl _set_old_int_lvl
-	.globl _set_int_lvl6
-	.globl _fake_ikbd_int
+#include "mint/asmdefs.h"
+
+	.globl SYM(set_old_int_lvl)
+	.globl SYM(set_int_lvl6)
+	.globl SYM(fake_ikbd_int)
 
 	.text
 
 oldSR:	ds.w	1
 
 // Sets interrupt level to what was in the SR
-_set_old_int_lvl:
+SYM(set_old_int_lvl):
 	andi.w	#0x0f00,oldSR		//just keep the int lvl
 	move.w	d0,-(sp)		//save reg
 	move.w	sr,d0
@@ -51,7 +53,7 @@ _set_old_int_lvl:
 	rts
 
 // Sets interrupt level to 6
-_set_int_lvl6:
+SYM(set_int_lvl6):
 	move.w	d0,-(sp)		//save reg
 	move.w	sr,d0
 	move.w	d0,oldSR
@@ -62,7 +64,7 @@ _set_int_lvl6:
 	rts
 
 // calls the keyboard/MIDI handler as though an interrupt has occurred
-_fake_ikbd_int:
+SYM(fake_ikbd_int):
 	tst.w	0x59e.w			//handle 68000/68030 difference
 	beq.b	shortframe
 	move.w	#0x118,-(sp)		//push vector offset

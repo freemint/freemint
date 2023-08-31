@@ -23,13 +23,25 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-	.globl	__start
-	.globl	__base
-	.globl	_init
-	.globl	__crtinit
-	.globl _isHddriverModule
-	.globl ismodule
+/*
+ * cannot include mint/asmdefs.h here,
+ * because this source is also used by programs that link to
+ * mintlib, and thus cannot add any kernel include directories
+ * because they conflict.
+ *
+ * Redefine a minimal set of macros here
+ */
+ 
+#define CONCAT1(a, b) CONCAT2(a, b)
+#define CONCAT2(a, b) a ## b
+#define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
 
+	.globl	__start
+	.globl	SYM(_base)
+	.globl	SYM(init)
+	.extern	SYM(_crtinit)
+	.globl SYM(isHddriverModule)
+	.extern SYM(_PgmSize)
 
 	.bss
 savsp:
@@ -37,90 +49,93 @@ savsp:
 
 	.text
 
+/*
+ * not a C symbol: this is directly referenced in the Makefile
+ */
 __start:
 	bra.w nomodule			//started as regular program
 
 	// module entry
 #ifdef __mcoldfire__
-	move.b #0xff,d0
-	move.b d0,ismodule
+	move.b #0xff,%d0
+	move.b %d0,ismodule
 #else
 	st ismodule			//started as module (Set always True)
 #endif
 
-	move.l	#0x1c,d0		// header size
-	add.l	2(a2),d0		// text size
-	add.l	6(a2),d0		// data size
-	movea.l	a2,a0			// program start
-	adda.l	d0,a0			// bss start
-	add.l	10(a2),d0		// bss size
-	move.l	10(a2),d1		// bss size
+	move.l	#0x1c,%d0		// header size
+	add.l	2(%a2),%d0		// text size
+	add.l	6(%a2),%d0		// data size
+	movea.l	%a2,%a0			// program start
+	adda.l	%d0,%a0			// bss start
+	add.l	10(%a2),%d0		// bss size
+	move.l	10(%a2),%d1		// bss size
 	bra.s	clrbss
 loop:
-	clr.b	(a0)+			// clear BSS
+	clr.b	(%a0)+			// clear BSS
 clrbss:
-	subq.l	#1,d1
+	subq.l	#1,%d1
 	bpl		loop
 
-	move.l	sp,savsp
-	move.l	a0,sp			// end of bss
-	move.l	#STACKSIZE,d1
-	adda.l	d1,sp			// make room for stack
-	add.l	d1,d0
-	move.l	d0,__PgmSize	// total program size
+	move.l	%sp,savsp
+	move.l	%a0,%sp			// end of bss
+	move.l	#STACKSIZE,%d1
+	adda.l	%d1,%sp			// make room for stack
+	add.l	%d1,%d0
+	move.l	%d0,SYM(_PgmSize)	// total program size
 #ifdef __mcoldfire__
-	lea	-44(sp),sp
-	movem.l	d2-d7/a2-a6,(sp)	// D2-D7 and A2-A6 must not be modified
+	lea	-44(%sp),%sp
+	movem.l	%d2-%d7/%a2-%a6,(%sp)	// D2-D7 and A2-A6 must not be modified
 #else
-	movem.l	d2-d7/a2-a6,-(sp)	// D2-D7 and A2-A6 must not be modified
+	movem.l	%d2-%d7/%a2-%a6,-(%sp)	// D2-D7 and A2-A6 must not be modified
 #endif
 	// Mshrink
-	move.l	d0,-(sp)
-	pea		(a2)
-	move.w	#0,-(sp)
-	move.w	#74,-(sp)
+	move.l	%d0,-(%sp)
+	pea		(%a2)
+	move.w	#0,-(%sp)
+	move.w	#74,-(%sp)
 	trap	#1
-	lea		0xC(sp),sp
+	lea		0xC(%sp),%sp
 
 	pea		0				// environ
 	pea		0				// argv
-	clr.w	-(sp)			// argc
-	jsr		_init
-	lea		10(sp),sp
+	clr.w	-(%sp)			// argc
+	jsr		SYM(init)
+	lea		10(%sp),%sp
 
-	tst.w	d0				// init returned an error?
+	tst.w	%d0				// init returned an error?
 	beq		out
 
-	pea		(a2)			// error = Mfree
-	move	#0x49,-(sp)
+	pea		(%a2)			// error = Mfree
+	move	#0x49,-(%sp)
 	trap	#1
-	addq.l	#6,sp
+	addq.l	#6,%sp
 out:
 #ifdef __mcoldfire__
-	movem.l	(sp),d2-d7/a2-a6
-	lea	44(sp),sp
+	movem.l	(%sp),%d2-%d7/%a2-%a6
+	lea	44(%sp),%sp
 #else
-	movem.l	(sp)+,d2-d7/a2-a6
+	movem.l	(%sp)+,%d2-%d7/%a2-%a6
 #endif
-	move.l	savsp,sp
+	move.l	savsp,%sp
 	rts
 
-__base:
+SYM(_base):
 	ds.l	1
 
 nomodule:
 	// Original startup code in entry.S
-	move.l	0x4(sp),a0		// basepage address
-	move.l	a0,__base
+	move.l	0x4(%sp),%a0		// basepage address
+	move.l	%a0,SYM(_base)
 
-	movel	a0@(4),d0		// get _base->p_hitpa
-	bclr	#0,d0			// round off
-	movel	d0,sp			// set stack (temporarily)
-	jmp	__crtinit			// in crtinit.c
+	movel	%a0@(4),%d0		// get _base->p_hitpa
+	bclr	#0,%d0			// round off
+	movel	%d0,%sp			// set stack (temporarily)
+	jmp	SYM(_crtinit)			// in crtinit.c
 
-_isHddriverModule:
-	clr d0
-	move.b ismodule,d0
+SYM(isHddriverModule):
+	clr %d0
+	move.b ismodule,%d0
 	rts
 
 	.data

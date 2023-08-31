@@ -31,6 +31,7 @@
  */
 
 #include "xferlen.h"
+#include "mint/asmdefs.h"
 
 #define RESMAGIC		0x31415926
 #define _resvalid		0x426
@@ -48,31 +49,31 @@
 #define _cpld_cr		0xF80009	// vttusb cpld control reg
 #endif
 
-	.globl _old_int
-	.globl _interrupt
-	.globl _vttusb_int
-	.globl _set_old_int_lvl
-	.globl _set_int_lvl6
-	.globl _hook_reset_vector
-	.globl _vttusb_probe_asm,
-	.globl _vttusb_probe_c
-	.globl _fake_hwint
+	.globl SYM(old_int)
+	.globl SYM(interrupt)
+	.globl SYM(vttusb_int)
+	.globl SYM(set_old_int_lvl)
+	.globl SYM(set_int_lvl6)
+	.globl SYM(hook_reset_vector)
+	.globl SYM(vttusb_probe_asm)
+	.extern SYM(vttusb_probe_c)
+	.globl SYM(fake_hwint)
 	
-	.globl _max_xfer_len
-	.globl _enable_ocp
-	.globl _use_blitter
+	.globl SYM(max_xfer_len)
+	.globl SYM(enable_ocp)
+	.globl SYM(use_blitter)
 
 	.text
 
 #if defined(VTTUSB_HW_INT)
 	dc.l	0x58425241		// XBRA
 	.ascii	"_USB"		    // (cookie)
-_old_int:
+SYM(old_int):
 	ds.l	1
-_interrupt:
+SYM(interrupt):
 	move.w	(sp),oldSR
 	movem.l	a0-a7/d0-d7,-(sp)
-	bsr	_vttusb_int
+	bsr	SYM(vttusb_int)
 	movem.l	(sp)+,a0-a7/d0-d7
 	rte
 #endif
@@ -81,7 +82,7 @@ oldSR:	ds.w	1
 
 
 // Sets interrupt level to what was in the SR
-_set_old_int_lvl:
+SYM(set_old_int_lvl):
 	andi.w	#0x0f00,oldSR		//just keep the int lvl
 	move.l	d0,-(sp)
 	move.w	sr,d0
@@ -92,7 +93,7 @@ _set_old_int_lvl:
 	rts
 
 // Sets interrupt level to 6
-_set_int_lvl6:
+SYM(set_int_lvl6):
 	move.w	d0,-(sp)
 	move.w	sr,d0
 	move.w	d0,oldSR
@@ -103,7 +104,7 @@ _set_int_lvl6:
 	rts
 
 // Hook into the reset vector to turn off interrupt
-_hook_reset_vector:
+SYM(hook_reset_vector):
 	move.l	_resvalid,oldvalid
 	move.l	#RESMAGIC,_resvalid
 	move.l	_resvector,oldreset
@@ -129,14 +130,14 @@ oldvalid:
 // Change bus error exception handler
 // Call probe function
 // Enable again the old bus error handler
-_vttusb_probe_asm:
+SYM(vttusb_probe_asm):
 	movem.l	a0-a7/d0-d7,-(sp)
 	move.w	sr,-(sp)
 	move.l	8,old_berr
 	lea	berr,a0
 	move.l	a0,8
 	move.l	sp,old_stack
-	jbsr	_vttusb_probe_c
+	jbsr	SYM(vttusb_probe_c)
 berr:
 	move.l	old_berr,8
 	move.l	old_stack,sp
@@ -150,7 +151,7 @@ old_berr:
 	ds.l	1
 	
 	
-_fake_hwint:
+SYM(fake_hwint):
 	tst.w	0x59e.w
 	beq	shortframe
 	move.w	#0x118,-(sp)
@@ -174,19 +175,19 @@ hkbg:
 	.dc.w 0x0701	// 1 word config data (type = 7, word w/ limits)
 	.dc.w 0x100  	// min. value = 256
 	.dc.w 0x3ff	// max. value = 1023
-_max_xfer_len:
+SYM(max_xfer_len):
 	.dc.w VTTUSB_DEF_XFER
 	
 	.asciz "Overcurrent protection (disable at your own risk!)"
 	.even
 	.dc.w 0x0000	// type = 0, boolean
-_enable_ocp:
+SYM(enable_ocp):
 	.dc.w 0xFFFF    // default value = TRUE
 
 	.asciz "Use Blitter if available for faster transfers"
 	.even
 	.dc.w 0x0000	// type = 0, boolean
-_use_blitter:
+SYM(use_blitter):
 	.dc.w 0xFFFF    // default value = TRUE
 
 	.dc.w 0		// end

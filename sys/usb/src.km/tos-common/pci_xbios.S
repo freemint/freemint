@@ -19,450 +19,488 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-	.global _tab_funcs_pci,_x_Find_pci_device,_x_Find_pci_classcode,_x_Read_config_byte,_x_Read_config_word,_x_Read_config_longword
-	.global _x_Fast_read_config_byte,_x_Fast_read_config_word,_x_Fast_read_config_longword,_x_Write_config_byte,_x_Write_config_word,_x_Write_config_longword
-	.global _x_Hook_interrupt,_x_Unhook_interrupt,_x_Special_cycle,_x_Get_routing,_x_Set_interrupt
-	.global _x_Get_resource,_x_Get_card_used,_x_Set_card_used,_x_Read_mem_byte,_x_Read_mem_word,_x_Read_mem_longword
-	.global _x_Fast_read_mem_byte,_x_Fast_read_mem_word,_x_Fast_read_mem_longword,_x_Write_mem_byte,_x_Write_mem_word,_x_Write_mem_longword
-	.global _x_Read_io_byte,_x_Read_io_word,_x_Read_io_longword,_x_Fast_read_io_byte,_x_Fast_read_io_word,_x_Fast_read_io_longword
-	.global _x_Write_io_byte,_x_Write_io_word,_x_Write_io_longword,_x_Get_machine_id
-	.global _x_Get_pagesize,_x_Virt_to_bus,_x_Bus_to_virt,_x_Virt_to_phys,_x_Phys_to_virt
+#include "mint/asmdefs.h"
 
-_x_Find_pci_device:
-	move.l 4(SP),D0          // ID
-	move.w 8(SP),D1          // index
-	move.l _tab_funcs_pci,A1
-	move.l (A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+	.globl SYM(tab_funcs_pci)
+	.globl SYM(x_Find_pci_device)
+	.globl SYM(x_Find_pci_classcode)
+	.globl SYM(x_Read_config_byte)
+	.globl SYM(x_Read_config_word)
+	.globl SYM(x_Read_config_longword)
+	.globl SYM(x_Fast_read_config_byte)
+	.globl SYM(x_Fast_read_config_word)
+	.globl SYM(x_Fast_read_config_longword)
+	.globl SYM(x_Write_config_byte)
+	.globl SYM(x_Write_config_word)
+	.globl SYM(x_Write_config_longword)
+	.globl SYM(x_Hook_interrupt)
+	.globl SYM(x_Unhook_interrupt)
+	.globl SYM(x_Special_cycle)
+	.globl SYM(x_Get_routing)
+	.globl SYM(x_Set_interrupt)
+	.globl SYM(x_Get_resource)
+	.globl SYM(x_Get_card_used)
+	.globl SYM(x_Set_card_used)
+	.globl SYM(x_Read_mem_byte)
+	.globl SYM(x_Read_mem_word)
+	.globl SYM(x_Read_mem_longword)
+	.globl SYM(x_Fast_read_mem_byte)
+	.globl SYM(x_Fast_read_mem_word)
+	.globl SYM(x_Fast_read_mem_longword)
+	.globl SYM(x_Write_mem_byte)
+	.globl SYM(x_Write_mem_word)
+	.globl SYM(x_Write_mem_longword)
+	.globl SYM(x_Read_io_byte)
+	.globl SYM(x_Read_io_word)
+	.globl SYM(x_Read_io_longword)
+	.globl SYM(x_Fast_read_io_byte)
+	.globl SYM(x_Fast_read_io_word)
+	.globl SYM(x_Fast_read_io_longword)
+	.globl SYM(x_Write_io_byte)
+	.globl SYM(x_Write_io_word)
+	.globl SYM(x_Write_io_longword)
+	.globl SYM(x_Get_machine_id)
+	.globl SYM(x_Get_pagesize)
+	.globl SYM(x_Virt_to_bus)
+	.globl SYM(x_Bus_to_virt)
+	.globl SYM(x_Virt_to_phys)
+	.globl SYM(x_Phys_to_virt)
+
+SYM(x_Find_pci_device):
+	move.l 4(sp),d0          // ID
+	move.w 8(sp),d1          // index
+	move.l SYM(tab_funcs_pci),a1
+	move.l (a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Find_pci_classcode:
-	move.l 4(SP),D0          // class
-	move.w 8(SP),D1          // index
-	move.l _tab_funcs_pci,A1
-	move.l 4(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Find_pci_classcode):
+	move.l 4(sp),d0          // class
+	move.w 8(sp),d1          // index
+	move.l SYM(tab_funcs_pci),a1
+	move.l 4(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_config_byte:
-	move.l 4(SP),D0          // handle
-	move.w 8(SP),D1          // PCI register
-	move.l 10(SP),A0         // pointer to space for read data
-	move.l _tab_funcs_pci,A1
-	move.l 8(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_config_byte):
+	move.l 4(sp),d0          // handle
+	move.w 8(sp),d1          // PCI register
+	move.l 10(sp),a0         // pointer to space for read data
+	move.l SYM(tab_funcs_pci),a1
+	move.l 8(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_config_word:
-	move.l 4(SP),D0          // handle
-	move.w 8(SP),D1          // PCI register
-	move.l 10(SP),A0         // pointer to space for read data
-	move.l _tab_funcs_pci,A1
-	move.l 12(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_config_word):
+	move.l 4(sp),d0          // handle
+	move.w 8(sp),d1          // PCI register
+	move.l 10(sp),a0         // pointer to space for read data
+	move.l SYM(tab_funcs_pci),a1
+	move.l 12(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_config_longword:
-	move.l 4(SP),D0          // handle
-	move.w 8(SP),D1          // PCI register
-	move.l 10(SP),A0         // pointer to space for read data
-	move.l _tab_funcs_pci,A1
-	move.l 16(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_config_longword):
+	move.l 4(sp),d0          // handle
+	move.w 8(sp),d1          // PCI register
+	move.l 10(sp),a0         // pointer to space for read data
+	move.l SYM(tab_funcs_pci),a1
+	move.l 16(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_config_byte:
-	move.l 4(SP),D0          // handle
-	move.w 8(SP),D1          // PCI register
-	move.l _tab_funcs_pci,A1
-	move.l 20(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_config_byte):
+	move.l 4(sp),d0          // handle
+	move.w 8(sp),d1          // PCI register
+	move.l SYM(tab_funcs_pci),a1
+	move.l 20(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_config_word:
-	move.l 4(SP),D0          // handle
-	move.w 8(SP),D1          // PCI register
-	move.l _tab_funcs_pci,A1
-	move.l 24(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_config_word):
+	move.l 4(sp),d0          // handle
+	move.w 8(sp),d1          // PCI register
+	move.l SYM(tab_funcs_pci),a1
+	move.l 24(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_config_longword:
-	move.l 4(SP),D0          // handle
-	move.w 8(SP),D1          // PCI register
-	move.l _tab_funcs_pci,A1
-	move.l 28(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_config_longword):
+	move.l 4(sp),d0          // handle
+	move.w 8(sp),d1          // PCI register
+	move.l SYM(tab_funcs_pci),a1
+	move.l 28(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_config_byte:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.w 12(SP),D1         // PCI register
-	move.w 14(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 32(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_config_byte):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.w 12(sp),d1         // PCI register
+	move.w 14(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 32(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_config_word:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.w 12(SP),D1         // PCI register
-	move.w 14(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 36(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_config_word):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.w 12(sp),d1         // PCI register
+	move.w 14(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 36(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_config_longword:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.w 12(SP),D1         // PCI register
-	move.l 14(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 40(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_config_longword):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.w 12(sp),d1         // PCI register
+	move.l 14(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 40(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Hook_interrupt:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),A0          // pointer to interrupt handler
-	move.l 12(SP),A1         // parameter for interrupt handler
-	move.l A2,-(SP)
-	move.l _tab_funcs_pci,A2
-	move.l 44(A2),A2
-	move.l D2,-(SP)
-	jsr (A2)
-	move.l (SP)+,D2
-	move.l (SP)+,A2
+SYM(x_Hook_interrupt):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),a0          // pointer to interrupt handler
+	move.l 12(sp),a1         // parameter for interrupt handler
+	move.l a2,-(sp)
+	move.l SYM(tab_funcs_pci),a2
+	move.l 44(a2),a2
+	move.l d2,-(sp)
+	jsr (a2)
+	move.l (sp)+,d2
+	move.l (sp)+,a2
 	rts
 
-_x_Unhook_interrupt:
-	move.l 4(SP),D0          // handle
-	move.l _tab_funcs_pci,A1
-	move.l 48(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Unhook_interrupt):
+	move.l 4(sp),d0          // handle
+	move.l SYM(tab_funcs_pci),a1
+	move.l 48(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Special_cycle:
-	move.w 2(SP),D0          // bus number
-	move.l 6(SP),D1          // special cycle data
-	move.l _tab_funcs_pci,A1
-	move.l 52(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Special_cycle):
+	move.w 2(sp),d0          // bus number
+	move.l 6(sp),d1          // special cycle data
+	move.l SYM(tab_funcs_pci),a1
+	move.l 52(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Get_routing:
-	move.l 4(SP),D0          // handle
-	move.l _tab_funcs_pci,A1
-	move.l 56(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Get_routing):
+	move.l 4(sp),d0          // handle
+	move.l SYM(tab_funcs_pci),a1
+	move.l 56(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Set_interrupt:
-	move.l 4(SP),D0          // handle
-	move.l _tab_funcs_pci,A1
-	move.l 60(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Set_interrupt):
+	move.l 4(sp),d0          // handle
+	move.l SYM(tab_funcs_pci),a1
+	move.l 60(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Get_resource:
-	move.l 4(SP),D0          // handle
-	move.l _tab_funcs_pci,A1
-	move.l 64(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Get_resource):
+	move.l 4(sp),d0          // handle
+	move.l SYM(tab_funcs_pci),a1
+	move.l 64(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Get_card_used:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),A0          // address
-	move.l _tab_funcs_pci,A1
-	move.l 68(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Get_card_used):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),a0          // address
+	move.l SYM(tab_funcs_pci),a1
+	move.l 68(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Set_card_used:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),A0          // callback
-	move.l _tab_funcs_pci,A1
-	move.l 72(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Set_card_used):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),a0          // callback
+	move.l SYM(tab_funcs_pci),a1
+	move.l 72(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_mem_byte:
-	movem.l 4(SP),D0-D1/A0    // handle, address to access (in PCI memory address space), pointer to data in memory
-	move.l _tab_funcs_pci,A1
-	move.l 76(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_mem_byte):
+	movem.l 4(sp),d0-d1/a0    // handle, address to access (in PCI memory address space), pointer to data in memory
+	move.l SYM(tab_funcs_pci),a1
+	move.l 76(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_mem_word:
-	movem.l 4(SP),D0-D1/A0    // handle, address to access (in PCI memory address space), pointer to data in memory
-	move.l _tab_funcs_pci,A1
-	move.l 80(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_mem_word):
+	movem.l 4(sp),d0-d1/a0    // handle, address to access (in PCI memory address space), pointer to data in memory
+	move.l SYM(tab_funcs_pci),a1
+	move.l 80(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_mem_longword:
-	movem.l 4(SP),D0-D1/A0    // handle, address to access (in PCI memory address space), pointer to data in memory
-	move.l _tab_funcs_pci,A1
-	move.l 84(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_mem_longword):
+	movem.l 4(sp),d0-d1/a0    // handle, address to access (in PCI memory address space), pointer to data in memory
+	move.l SYM(tab_funcs_pci),a1
+	move.l 84(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_mem_byte:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI memory address space)
-	move.l _tab_funcs_pci,A1
-	move.l 88(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_mem_byte):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI memory address space)
+	move.l SYM(tab_funcs_pci),a1
+	move.l 88(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_mem_word:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI memory address space)
-	move.l _tab_funcs_pci,A1
-	move.l 92(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_mem_word):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI memory address space)
+	move.l SYM(tab_funcs_pci),a1
+	move.l 92(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_mem_longword:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI memory address space)
-	move.l _tab_funcs_pci,A1
-	move.l 96(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_mem_longword):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI memory address space)
+	move.l SYM(tab_funcs_pci),a1
+	move.l 96(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_mem_byte:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.l 12(SP),D1         // address to access (in PCI memory address space)
-	move.w 16(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 100(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_mem_byte):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.l 12(sp),d1         // address to access (in PCI memory address space)
+	move.w 16(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 100(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_mem_word:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.l 12(SP),D1         // address to access (in PCI memory address space)
-	move.w 16(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 104(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_mem_word):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.l 12(sp),d1         // address to access (in PCI memory address space)
+	move.w 16(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 104(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_mem_longword:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.l 12(SP),D1         // address to access (in PCI memory address space)
-	move.l 16(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 108(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_mem_longword):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.l 12(sp),d1         // address to access (in PCI memory address space)
+	move.l 16(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 108(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_io_byte:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI I/O address space)
-	move.l 12(SP),A0         // pointer to data in memory
-	move.l _tab_funcs_pci,A1
-	move.l 112(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_io_byte):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI I/O address space)
+	move.l 12(sp),a0         // pointer to data in memory
+	move.l SYM(tab_funcs_pci),a1
+	move.l 112(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_io_word:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI I/O address space)
-	move.l 12(SP),A0         // pointer to data in memory
-	move.l _tab_funcs_pci,A1
-	move.l 116(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_io_word):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI I/O address space)
+	move.l 12(sp),a0         // pointer to data in memory
+	move.l SYM(tab_funcs_pci),a1
+	move.l 116(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Read_io_longword:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI I/O address space)
-	move.l 12(SP),A0         // pointer to data in memory
-	move.l _tab_funcs_pci,A1
-	move.l 120(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Read_io_longword):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI I/O address space)
+	move.l 12(sp),a0         // pointer to data in memory
+	move.l SYM(tab_funcs_pci),a1
+	move.l 120(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_io_byte:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI I/O address space)
-	move.l _tab_funcs_pci,A1
-	move.l 124(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_io_byte):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI I/O address space)
+	move.l SYM(tab_funcs_pci),a1
+	move.l 124(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_io_word:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI I/O address space)
-	move.l _tab_funcs_pci,A1
-	move.l 128(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_io_word):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI I/O address space)
+	move.l SYM(tab_funcs_pci),a1
+	move.l 128(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Fast_read_io_longword:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address to access (in PCI I/O address space)
-	move.l _tab_funcs_pci,A1
-	move.l 132(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Fast_read_io_longword):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address to access (in PCI I/O address space)
+	move.l SYM(tab_funcs_pci),a1
+	move.l 132(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_io_byte:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.l 12(SP),D1         // address to access (in PCI I/O address space)
-	move.w 16(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 136(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_io_byte):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.l 12(sp),d1         // address to access (in PCI I/O address space)
+	move.w 16(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 136(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_io_word:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.l 12(SP),D1         // address to access (in PCI I/O address space)
-	move.w 16(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 140(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_io_word):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.l 12(sp),d1         // address to access (in PCI I/O address space)
+	move.w 16(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 140(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Write_io_longword:
-	move.l D2,-(SP)
-	move.l 8(SP),D0          // handle
-	move.l 12(SP),D1         // address to access (in PCI I/O address space)
-	move.l 16(SP),D2         // data to write
-	move.l _tab_funcs_pci,A1
-	move.l 144(A1),A1
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Write_io_longword):
+	move.l d2,-(sp)
+	move.l 8(sp),d0          // handle
+	move.l 12(sp),d1         // address to access (in PCI I/O address space)
+	move.l 16(sp),d2         // data to write
+	move.l SYM(tab_funcs_pci),a1
+	move.l 144(a1),a1
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Get_machine_id:
-	move.l _tab_funcs_pci,A1
-	move.l 148(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Get_machine_id):
+	move.l SYM(tab_funcs_pci),a1
+	move.l 148(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Get_pagesize:
-	move.l _tab_funcs_pci,A1
-	move.l 152(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Get_pagesize):
+	move.l SYM(tab_funcs_pci),a1
+	move.l 152(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Virt_to_bus:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // address in virtual CPU space
-	move.l 12(SP),A0         // ptr
-	move.l _tab_funcs_pci,A1
-	move.l 156(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Virt_to_bus):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // address in virtual CPU space
+	move.l 12(sp),a0         // ptr
+	move.l SYM(tab_funcs_pci),a1
+	move.l 156(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Bus_to_virt:
-	move.l 4(SP),D0          // handle
-	move.l 8(SP),D1          // PCI bus address
-	move.l 12(SP),A0         // ptr
-	move.l _tab_funcs_pci,A1
-	move.l 160(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Bus_to_virt):
+	move.l 4(sp),d0          // handle
+	move.l 8(sp),d1          // PCI bus address
+	move.l 12(sp),a0         // ptr
+	move.l SYM(tab_funcs_pci),a1
+	move.l 160(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Virt_to_phys:
-	move.l 4(SP),D0          // address in virtual CPU space
-	move.l 8(SP),A0          // ptr
-	move.l _tab_funcs_pci,A1
-	move.l 164(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Virt_to_phys):
+	move.l 4(sp),d0          // address in virtual CPU space
+	move.l 8(sp),a0          // ptr
+	move.l SYM(tab_funcs_pci),a1
+	move.l 164(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts
 
-_x_Phys_to_virt:
-	move.l 4(SP),D0          // physical CPU address
-	move.l 8(SP),A0          // ptr
-	move.l _tab_funcs_pci,A1
-	move.l 168(A1),A1
-	move.l D2,-(SP)
-	jsr (A1)
-	move.l (SP)+,D2
+SYM(x_Phys_to_virt):
+	move.l 4(sp),d0          // physical CPU address
+	move.l 8(sp),a0          // ptr
+	move.l SYM(tab_funcs_pci),a1
+	move.l 168(a1),a1
+	move.l d2,-(sp)
+	jsr (a1)
+	move.l (sp)+,d2
 	rts

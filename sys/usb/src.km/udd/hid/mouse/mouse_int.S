@@ -2,35 +2,36 @@
 | Low level and interrupt routines for the USB mouse driver
 |
 
+#include "mint/asmdefs.h"
+
 #ifdef TOSONLY
-	.globl _old_ikbd_int
-	.globl _interrupt_ikbd
-	.globl _mouse_int
-	.globl _set_old_int_lvl
+	.globl SYM(old_ikbd_int)
+	.globl SYM(interrupt_ikbd)
+	.extern SYM(mouse_int)
 
 	.text
 
 	dc.l	0x58425241		| XBRA
 	dc.l	0x554d4f55		| UMOU
-_old_ikbd_int:
+SYM(old_ikbd_int):
 	ds.l	1
-_interrupt_ikbd:
+SYM(interrupt_ikbd):
 	tas	lock
 	bne	skip
 	movem.l	a0-a7/d0-d7,registersave
 	lea	ourSP,a7
-	bsr	_mouse_int
+	bsr	SYM(mouse_int)
 	movem.l	registersave,a0-a7/d0-d7
 	clr.w	lock
-skip:	move.l	_old_ikbd_int(PC),-(sp)
+skip:	move.l	SYM(old_ikbd_int)(pc),-(sp)
 	rts
 #endif
 
-	.globl _send_packet
-	.globl _send_data
-	.globl _fake_hwint
+	.globl SYM(send_packet)
+	.globl SYM(send_data)
+	.globl SYM(fake_hwint)
 
-_send_packet:
+SYM(send_packet):
 	lea	-60(sp),sp
 	movem.l	d0-a6,(sp)
 	move.l	64(sp),a2
@@ -41,7 +42,7 @@ _send_packet:
 	lea	60(sp),sp
 	rts
 
-_send_data:
+SYM(send_data):
 	lea	-60(sp),sp
 	movem.l	d0-a6,(sp)
 	move.l	64(sp),a2
@@ -52,7 +53,7 @@ _send_data:
 	lea	60(sp),sp
 rts
 
-_fake_hwint:
+SYM(fake_hwint):
 	tst.w	0x59e.w
 	beq	shortframe
 	move.w	#0x118,-(sp)

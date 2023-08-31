@@ -31,31 +31,33 @@
  *
  */
 
+#include "mint/asmdefs.h"
+
 #define RESMAGIC		0x31415926
 #define _resvalid		0x426
 #define _resvector		0x42a
 #define _cpld_cr		0x80000023	// Ethernat cpld control reg
 
-	.globl _old_int
-	.globl _interrupt
-	.globl _ethernat_int
-	.globl _set_old_int_lvl
-	.globl _set_int_lvl6
-	.globl _hook_reset_vector
-	.globl _ethernat_probe_asm,
-	.globl _ethernat_probe_c
-	.globl _fake_ikbd_int
+	.globl SYM(old_int)
+	.globl SYM(interrupt)
+	.extern SYM(ethernat_int)
+	.globl SYM(set_old_int_lvl)
+	.globl SYM(set_int_lvl6)
+	.globl SYM(hook_reset_vector)
+	.globl SYM(ethernat_probe_asm)
+	.extern SYM(ethernat_probe_c)
+	.globl SYM(fake_ikbd_int)
 
 	.text
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x00000000		// (no cookie)
-_old_int:
+SYM(old_int):
 	ds.l	1
-_interrupt:
+SYM(interrupt):
 	move.w	(sp),oldSR
 	movem.l	a0-a7/d0-d7,-(sp)
-	bsr	_ethernat_int
+	bsr	SYM(ethernat_int)
 	movem.l	(sp)+,a0-a7/d0-d7
 	rte
 
@@ -63,7 +65,7 @@ oldSR:	ds.w	1
 
 
 // Sets interrupt level to what was in the SR
-_set_old_int_lvl:
+SYM(set_old_int_lvl):
 	andi.w	#0x0f00,oldSR		//just keep the int lvl
 	move.l	d0,-(sp)
 	move.w	sr,d0
@@ -74,7 +76,7 @@ _set_old_int_lvl:
 	rts
 
 // Sets interrupt level to 6
-_set_int_lvl6:
+SYM(set_int_lvl6):
 	move.w	d0,-(sp)
 	move.w	sr,d0
 	move.w	d0,oldSR
@@ -85,7 +87,7 @@ _set_int_lvl6:
 	rts
 
 // Hook into the reset vector to turn off interrupt
-_hook_reset_vector:
+SYM(hook_reset_vector):
 	move.l	_resvalid,oldvalid
 	move.l	#RESMAGIC,_resvalid
 	move.l	_resvector,oldreset
@@ -111,14 +113,14 @@ oldvalid:
 // Change bus error exception handler
 // Call probe function
 // Enable again the old bus error handler
-_ethernat_probe_asm:
+SYM(ethernat_probe_asm):
 	movem.l	a0-a7/d0-d7,-(sp)
 	move.w	sr,-(sp)
 	move.l	8,old_berr
 	lea	berr,a0
 	move.l	a0,8
 	move.l	sp,old_stack
-	bsr	_ethernat_probe_c
+	bsr	SYM(ethernat_probe_c)
 berr:
 	move.l	old_berr,8
 	move.l	old_stack,sp
@@ -132,7 +134,7 @@ old_berr:
 	ds.l	1
 
 // calls the keyboard/MIDI handler as though an interrupt has occurred
-_fake_ikbd_int:
+SYM(fake_ikbd_int):
 	tst.w	0x59e.w			//handle 68000/68030 difference
 	beq.b	shortframe
 	move.w	#0x118,-(sp)		//push vector offset

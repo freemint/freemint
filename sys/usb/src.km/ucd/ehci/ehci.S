@@ -21,8 +21,10 @@
  *
  */
 
-.global _ehci_interrupt_handle
-.global _ehci_int_handle_asm
+#include "mint/asmdefs.h"
+
+	.extern SYM(ehci_interrupt_handle)
+	.globl SYM(ehci_int_handle_asm)
 
 /* PCI_BIOS specification: only a0 and d0 are allowed 
  * to be changed in interrupt handler, so we need to 
@@ -30,12 +32,12 @@
  * registers.
  */
 
-_ehci_int_handle_asm:
+SYM(ehci_int_handle_asm):
 	subq.l #8,sp
 	movem.l d1/a1,(sp)
 	move.l d0,-(sp)		// PCI_BIOS specification: INT not for us leave d0 untouched
 	move.l a0,-(sp)		// PCI_BIOS specification: parameter is in a0
-	jsr _ehci_interrupt_handle
+	jsr SYM(ehci_interrupt_handle)
 	addq.l #8,sp
 	movem.l (sp),d1/a1
 	addq.l #8,sp

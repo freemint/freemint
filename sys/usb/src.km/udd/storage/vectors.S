@@ -23,8 +23,13 @@
  *  MA 02110-1301, USA.
  */
 
-    .global _install_vectors
-    .extern _usb_getbpb,_usb_rwabs,_usb_mediach
+#include "mint/asmdefs.h"
+
+    .global SYM(install_vectors)
+    .extern SYM(usb_getbpb)
+    .extern SYM(usb_rwabs)
+    .extern SYM(usb_mediach)
+	.extern SYM(pun_usb)
 
 /*
  *  miscellaneous definitions
@@ -41,7 +46,7 @@
 /*
  *  install vectors
  */
-_install_vectors:
+SYM(install_vectors):
     lea     -16(sp),sp
     movem.l d0-d1/a0-a1,(sp)        //save registers
     move.w  sr,d0                   //save old status register
@@ -86,7 +91,7 @@ my_hdv_bpb:
     move.l  a0,-(sp)                //save work register
     cmpi.l  #MAX_LOGICAL_DRIVE,d0   //valid drive?
     bcc.s   .bpbnext                //no, go to next handler
-    lea     _pun_usb,a0             //a0 -> pun_usb
+    lea     SYM(pun_usb),a0             //a0 -> pun_usb
     tst.b   pinfo_pun(a0,d0.l)      //is it one of ours?
     bpl.s   .bpbget                 //yes, go get bpb
 .bpbnext:                           //go to next handler
@@ -98,7 +103,7 @@ my_hdv_bpb:
     subq.l  #8,sp
     movem.l d1/a1,(sp)              //save other GCC scratch registers
     move.l  d0,-(sp)                //drive number
-    jsr     _usb_getbpb
+    jsr     SYM(usb_getbpb)
     addq.l  #4,sp
     movem.l (sp),d1/a1              //restore d1, a1
     addq.l  #8,sp
@@ -130,7 +135,7 @@ my_hdv_rw:
     btst    #6,d0                   //is bit 6 set?
     bne.s   .rwnext                 //yes, not ours
                                     //search pun[] for match
-    lea     _pun_usb+pinfo_pun,a0   //a0 -> pun[]
+    lea     SYM(pun_usb)+pinfo_pun,a0   //a0 -> pun[]
 .rwloop:
     tst.b   (a0)                    //entry valid?
     bmi.s   .rwincr                 //no
@@ -138,7 +143,7 @@ my_hdv_rw:
     beq.b   .rwio                   //yes, ok
 .rwincr:
     addq.l  #1,a0
-    cmpa.l  #_pun_usb+pinfo_pun+MAX_LOGICAL_DRIVE,a0
+    cmpa.l  #SYM(pun_usb)+pinfo_pun+MAX_LOGICAL_DRIVE,a0
     bne.s   .rwloop
     bra.s   .rwnext                 //not found, on to next handler
                                     //handle normal requests
@@ -146,7 +151,7 @@ my_hdv_rw:
     andi.l  #0x0000ffff,d0          //d0.l = drive
     cmpi.l  #MAX_LOGICAL_DRIVE,d0   //valid drive?
     bcc.s   .rwnext                 //no, go to next handler
-    lea     _pun_usb,a0             //a0 -> pun_usb
+    lea     SYM(pun_usb),a0             //a0 -> pun_usb
     tst.b   pinfo_pun(a0,d0.l)      //is it one of ours?
     bpl.s   .rwio                   //yes, go do i/o
 
@@ -173,7 +178,7 @@ my_hdv_rw:
     move.l  d2,-(sp)                //logical sector count
     move.l  d1,-(sp)                //logical sector number
     move.l  d0,-(sp)                //drive number
-    jsr     _usb_rwabs
+    jsr     SYM(usb_rwabs)
     lea     20(sp),sp
     movem.l (sp),d1-d2/a1           //restore registers
     lea     12(sp),sp
@@ -194,7 +199,7 @@ my_hdv_mediach:
     move.l  a0,-(sp)                //save work register
     cmpi.l  #MAX_LOGICAL_DRIVE,d0   //valid drive?
     bcc.s   .medianext              //no, go to next handler
-    lea     _pun_usb,a0             //a0 -> pun_usb
+    lea     SYM(pun_usb),a0             //a0 -> pun_usb
     tst.b   pinfo_pun(a0,d0.l)      //is it one of ours?
     bpl.s   .mediatst               //yes, go test mediachange
 .medianext:                         //go to next handler
@@ -206,7 +211,7 @@ my_hdv_mediach:
     subq.l  #8,sp
     movem.l d1/a1,(sp)              //save other GCC scratch registers
     move.l  d0,-(sp)                //drive number
-    jsr     _usb_mediach
+    jsr     SYM(usb_mediach)
     addq.l  #4,sp
     movem.l (sp),d1/a1              //restore d1, a1
     addq.l  #8,sp
@@ -216,7 +221,7 @@ my_hdv_mediach:
     .data
 // Config block for SETTER.TTP/.PRG
     .even
-    .global _enable_flop_mediach
+    .global SYM(enable_flop_mediach)
 hkbg:
     .asciz "hAruNs cONfigER"
     .dc.l hkbg
@@ -224,7 +229,7 @@ hkbg:
     .asciz "Media change detection for USB floppy drives"
     .even
     .dc.w 0x0000    // type = 0, boolean
-_enable_flop_mediach:
+SYM(enable_flop_mediach):
     .dc.w 0x0000    // default value = FALSE
 
     .dc.w 0    // end
