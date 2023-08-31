@@ -21,17 +21,20 @@
 // along with XaAES; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
+
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl _xa_user_things
-	.globl _xa_callout_user
+	.globl SYM(xa_user_things)
+	.globl SYM(xa_callout_user)
 
-_xa_user_things:
-	.long xa_user_end	- _xa_user_things	| Size of xa user things
-	.long progdef_callout	- _xa_user_things	| address of progdef_callout function
-	.long _userblk		- _xa_user_things	| store userblk address here
-	.long _retcode		- _xa_user_things	| return code
-	.long _parmblk		- _xa_user_things	| address of local parmblk
+SYM(xa_user_things):
+	.long xa_user_end	- SYM(xa_user_things)	| Size of xa user things
+	.long progdef_callout	- SYM(xa_user_things)	| address of progdef_callout function
+	.long _userblk		- SYM(xa_user_things)	| store userblk address here
+	.long _retcode		- SYM(xa_user_things)	| return code
+	.long _parmblk		- SYM(xa_user_things)	| address of local parmblk
 
 | This is all that is needed to test this with existing signal
 | handling scheme I think...
@@ -56,10 +59,10 @@ _retcode: dc.l 0
 _parmblk: ds.w 60
 xa_user_end:
 
-_xa_callout_user:
-	.long	_xa_callout_end		- _xa_callout_user
-	.long	callout_user		- _xa_callout_user
-	.long	callout_ret		- _xa_callout_user
+SYM(xa_callout_user):
+	.long	xa_callout_end		- SYM(xa_callout_user)
+	.long	callout_user		- SYM(xa_callout_user)
+	.long	callout_ret		- SYM(xa_callout_user)
 
 callout_user:
 #ifdef __mcoldfire__
@@ -111,4 +114,4 @@ callout_ret:	dc.l 0
 callout_func:	dc.l 0
 callout_plen:	dc.w 0
 callout_parm:
-_xa_callout_end:
+xa_callout_end:

@@ -22,21 +22,37 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-	.globl	__base
+/*
+ * cannot include mint/asmdefs.h here,
+ * because this source is also used by programs that link to
+ * mintlib, and thus cannot add any kernel include directories
+ * because they conflict.
+ *
+ * Redefine a minimal set of macros here
+ */
+ 
+#define CONCAT1(a, b) CONCAT2(a, b)
+#define CONCAT2(a, b) a ## b
+#define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
+
+	.globl	SYM(_base)
 	.globl	__start
-	.globl	__crtinit
+	.globl	SYM(_crtinit)
 
 	.bss
-__base:
+SYM(_base):
 	ds.l	1
 
 	.text
 
+/*
+ * not a C symbol: this is directly referenced in the Makefile
+ */
 __start:
-	move.l	0x4(sp),a0		// basepage address
-	move.l	a0,__base
+	move.l	0x4(%sp),%a0		// basepage address
+	move.l	%a0,SYM(_base)
 
-	movel	a0@(4),d0		// get _base->p_hitpa
-	bclr	#0,d0			// round off
-	movel	d0,sp			// set stack (temporarily)
-	jmp	__crtinit		// in crtinit.c
+	movel	%a0@(4),%d0		// get _base->p_hitpa
+	bclr	#0,%d0			// round off
+	movel	%d0,%sp			// set stack (temporarily)
+	jmp	SYM(_crtinit)		// in crtinit.c

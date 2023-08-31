@@ -1,29 +1,32 @@
-		.globl	_motv
-		.globl	_cmotv
-		.globl	_butv
-		.globl	_cbutv
-		.globl	_whlv
-		.globl	_cwhlv
-		.globl	_timv
+#include "mint/asmdefs.h"
+
+		.globl	SYM(motv)
+		.extern	SYM(cmotv)
+		.globl	SYM(butv)
+		.extern	SYM(cbutv)
+		.globl	SYM(whlv)
+		.extern	SYM(cwhlv)
+		.globl	SYM(timv)
 	
-		.globl _sample_x
-		.globl _sample_y
-		.globl _sample_butt
-		.globl _sample_wheel
-		.globl _sample_wclicks
-		.globl _th_wrapper
-		
+		.extern SYM(sample_x)
+		.extern SYM(sample_y)
+		.extern SYM(sample_butt)
+		.extern SYM(sample_wheel)
+		.extern SYM(sample_wclicks)
+		.globl SYM(th_wrapper)
+		.extern SYM(timer_handler)
+
 		.text
 |** These are exchanged VDI change vectors ****************************************************
-_motv:		move.w	d0,_sample_x
-		move.w	d1,_sample_y
+SYM(motv):		move.w	d0,SYM(sample_x)
+		move.w	d1,SYM(sample_y)
 #ifdef __mcoldfire__
 		lea	-24(sp),sp
 		movem.l	d0-d2/a0-a2,(sp)
 #else
 		movem.l	d0-d2/a0-a2,-(sp)
 #endif
-		jsr	_cmotv
+		jsr	SYM(cmotv)
 #ifdef __mcoldfire__
 		movem.l	(sp),d0-d2/a0-a2
 		lea	24(sp),sp
@@ -32,15 +35,15 @@ _motv:		move.w	d0,_sample_x
 #endif
 		rts
 
-_butv:
+SYM(butv):
 #ifdef __mcoldfire__
 		lea	-24(sp),sp
 		movem.l	d0-d2/a0-a2,(sp)
 #else
 		movem.l	d0-d2/a0-a2,-(sp)
 #endif
-		move.w	d0,_sample_butt
-		jsr	_cbutv
+		move.w	d0,SYM(sample_butt)
+		jsr	SYM(cbutv)
 #ifdef __mcoldfire__
 		movem.l	(sp),d0-d2/a0-a2
 		lea	24(sp),sp
@@ -49,16 +52,16 @@ _butv:
 #endif
 		rts
 
-_whlv:
+SYM(whlv):
 #ifdef __mcoldfire__
 		lea	-24(sp),sp
 		movem.l	d0-d2/a0-a2,(sp)
 #else
 		movem.l	d0-d2/a0-a2,-(sp)
 #endif
-		move.w	d0,_sample_wheel
-		move.w	d1,_sample_wclicks
-		jsr	_cwhlv
+		move.w	d0,SYM(sample_wheel)
+		move.w	d1,SYM(sample_wclicks)
+		jsr	SYM(cwhlv)
 #ifdef __mcoldfire__
 		movem.l	(sp),d0-d2/a0-a2
 		lea	24(sp),sp
@@ -67,16 +70,16 @@ _whlv:
 #endif
 		rts
 
-_timv:		rts
+SYM(timv):		rts
 
-_th_wrapper:
+SYM(th_wrapper):
 #ifdef __mcoldfire__
 		lea	-60(sp),sp
 		movem.l	d0-d7/a0-a6,(sp)
 #else
 		movem.l	d0-d7/a0-a6,-(sp)
 #endif
-		jsr	_timer_handler
+		jsr	SYM(timer_handler)
 #ifdef __mcoldfire__
 		movem.l	(sp),d0-d7/a0-a6
 		lea	60(sp),sp

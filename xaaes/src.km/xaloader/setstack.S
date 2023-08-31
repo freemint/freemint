@@ -32,12 +32,25 @@
  *          destroys a0 and a7 too
  */
 
-	.globl	__setstack
+/*
+ * cannot include mint/asmdefs.h here,
+ * because this source is also used by programs that link to
+ * mintlib, and thus cannot add any kernel include directories
+ * because they conflict.
+ *
+ * Redefine a minimal set of macros here
+ */
+ 
+#define CONCAT1(a, b) CONCAT2(a, b)
+#define CONCAT2(a, b) a ## b
+#define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
+
+	.globl	SYM(_setstack)
 
 	.text
 
-__setstack:
-	movel	sp@+,a0		// save return
-	movel	sp@,sp		// new stack pointer
-	subql	#4,sp		// fixup
-	jmp	a0@		// and jump back
+SYM(_setstack):
+	movel	%sp@+,%a0		// save return
+	movel	%sp@,%sp		// new stack pointer
+	subql	#4,%sp		// fixup
+	jmp	%a0@		// and jump back

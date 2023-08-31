@@ -32,6 +32,8 @@
 | ASSEMBLER CONTROL SECTION
 //**************************************************************************
 
+#include "mint/asmdefs.h"
+
 VERSION		=	0x0294		| NKCCs version
 
 NKFf_FUNC	=	0x8000
@@ -72,11 +74,11 @@ NK_DEL		=	0x1f		| Delete
 | EXPORT
 //**************************************************************************
 
-	.globl	_nkc_init		| init NKCC
-	.globl	_nkc_tos2n		| TOS key code converter
-	.globl	_nkc_n2tos		| NKC to TOS key code converter
-	.globl	_nkc_toupper		| convert character to upper case
-	.globl	_nkc_tolower		| convert character to lower case
+	.globl	SYM(nkc_init)		| init NKCC
+	.globl	SYM(nkc_tos2n)		| TOS key code converter
+	.globl	SYM(nkc_n2tos)		| NKC to TOS key code converter
+	.globl	SYM(nkc_toupper)		| convert character to upper case
+	.globl	SYM(nkc_tolower)		| convert character to lower case
 
 //**************************************************************************
 | LOCAL TEXT SECTION
@@ -162,7 +164,7 @@ found1:
 |
 //**************************************************************************
 
-_nkc_init:
+SYM(nkc_init):
 |------------- fetch addresses of TOS key scan code translation tables
 
 	movel	a2,sp@-			| backup registers
@@ -191,7 +193,7 @@ _nkc_init:
 |
 //**************************************************************************
 
-_nkc_tos2n:
+SYM(nkc_tos2n):
 	movel	sp@(4), d0		| Parameter via Stack!
 #ifdef __mcoldfire__
 	lea	sp@(-12),sp
@@ -566,7 +568,7 @@ tos306:
 |
 //**************************************************************************
 
-_nkc_n2tos:
+SYM(nkc_n2tos):
 	movel	sp@(4),d0		| Parameter Åber Stack!
 
 	movew	d0,d1			| normalized key code
@@ -826,7 +828,7 @@ exit3:
 |
 //**************************************************************************
 
-_nkc_toupper:
+SYM(nkc_toupper):
 	movel	sp@(4),d1		| Parameter via Stack!
 	lea	toupper,a0		| ^upper case translation table
 #ifdef __mcoldfire__
@@ -843,7 +845,7 @@ _nkc_toupper:
 |
 //**************************************************************************
 
-_nkc_tolower:
+SYM(nkc_tolower):
 	movel	sp@(4),d1		| Parameter via Stack!
 	lea	tolower,a0		| ^lower case translation table
 #ifdef __mcoldfire__

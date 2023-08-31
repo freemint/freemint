@@ -21,20 +21,25 @@
 // along with XaAES; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
-	.globl	_accstart
-	.globl	_accend
+
+#define CONCAT1(a, b) CONCAT2(a, b)
+#define CONCAT2(a, b) a ## b
+#define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
+
+	.globl	SYM(accstart)
+	.globl	SYM(accend)
 
 	.text
 
 | Accessory startup code poached from oAESis
 
-_accstart:
-	move.l	4(sp),a0		| pointer to basepage
-	clr.l	36(a0)			| HR: clear pointer to parent basepage
-	move.l	16(a0),a1		| data seg
-	move.l	a1,8(a0)		| --> text seg (reverse xa_shell action)
-	add.l	12(a0),a1		| text + textlen
-	move.l	a1,16(a0)		| --> data seg
-	move.l	8(a0),a1		| start of text segment
-	jmp	(a1)			| jump to text
-_accend:
+SYM(accstart):
+	move.l	4(%sp),%a0		| pointer to basepage
+	clr.l	36(%a0)			| HR: clear pointer to parent basepage
+	move.l	16(%a0),%a1		| data seg
+	move.l	%a1,8(%a0)		| --> text seg (reverse xa_shell action)
+	add.l	12(%a0),%a1		| text + textlen
+	move.l	%a1,16(%a0)		| --> data seg
+	move.l	8(%a0),%a1		| start of text segment
+	jmp	(%a1)			| jump to text
+SYM(accend):
