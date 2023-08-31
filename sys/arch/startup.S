@@ -12,13 +12,18 @@
 
 #include "mint/asmdefs.h"
 
-	.globl	SYM(main)
+	.globl	_main
 	.extern	SYM(init)
 	.extern	SYM(_base)
 
 	.text
-	FUNC(main)
-SYM(main):
+/*
+ * not a C symbol: this is directly referenced in the Makefile
+ */
+#ifdef __ELF__
+	.type _main,function
+#endif
+_main:
 	CFI_STARTPROC()
 	move.l	0x04(sp),a0		// basepage address
 	move.l	a0,SYM(_base)
@@ -39,4 +44,6 @@ SYM(main):
 
 	jmp	SYM(init)
 	CFI_ENDPROC()
-	END(main)
+#ifdef __ELF__
+	.size _main,.-_main
+#endif

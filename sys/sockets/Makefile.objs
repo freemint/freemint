@@ -31,7 +31,7 @@ WARN +=
 LIBINET4TARGET = libinet4.a
 LIBINET4 = -L../inet4/.compile_$(inet4) -Linet4 -linet4
 LIBS = $(LIBINET4) $(LIBKERN) -lgcc
-LD = -nostdlib -Wl,--entry -Wl,_init
+LD = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 STRIPFLAGS =
 GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)

@@ -30,7 +30,7 @@ INCLUDES = -I../.. -I$(top_srcdir)
 XIF_DEFINITIONS =
 DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
-LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
+LD = $(CC) -mshort -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions

@@ -20,7 +20,7 @@ include $(top_srcdir)/PHONY
 all-here: build
 
 # default overwrites
-LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry -Wl,__start
+LD = $(CC) $(CFLAGS) -nostdlib -Wl,--entry,__start -Wl,--fatal-warnings
 LIBS = -lgcc
 STRIPFLAGS =
 

@@ -134,7 +134,7 @@ static void (*init_func[])(void) =
 	NULL
 };
 
-DEVDRV * init (struct kerinfo *k);
+DEVDRV * init (struct kerinfo *k) __asm__("init");
 
 DEVDRV *
 init (struct kerinfo *k)

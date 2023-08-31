@@ -8,7 +8,7 @@
 # include "netinfo.h"
 
 
-long init (struct kerinfo *ker, struct netinfo *net);
+long init (struct kerinfo *ker, struct netinfo *net) __asm__("init");
 long driver_init(void);
 
 

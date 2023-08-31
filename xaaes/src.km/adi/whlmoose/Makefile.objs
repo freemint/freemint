@@ -30,7 +30,7 @@ WARN +=
 
 # default definitions
 LIBS = $(LIBKERN) -lgcc
-LDFLAGS = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LDFLAGS = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 STRIPFLAGS =
 GENFILES = $(TARGET)
 OBJS = $(SOBJS:.S=.o)

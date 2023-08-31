@@ -27,7 +27,7 @@ WARN =  -Wall \
 LDFLAGS = -nostdlib
 LDFLAGS += -Wl,-Map=map.txt
 # XXX should be come from arch/
-LDFLAGS += -Wl,--entry -Wl,_main
+LDFLAGS += -Wl,--entry,_main -Wl,--fatal-warnings
 LIBS = $(LIBKERN) -lgcc
 
 ifeq ($(KMEMDEBUG),yes)
