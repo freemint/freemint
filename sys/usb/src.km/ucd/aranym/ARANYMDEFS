@@ -8,21 +8,21 @@ ifeq ($(aranym),deb)
 TARGET = aranym.ucd
 CPU = 040
 USBDEFS += -DDEV_DEBUG
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+LDEXTRA = -nostdlib -Wl,--entry,init_ucd -Wl,--fatal-warnings
 endif
 
 ifeq ($(aranym),prg)
 TARGET = aranym.prg
 CPU = 040
 USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start -Wl,--fatal-warnings
 endif
 
 ifeq ($(aranym),040)
 TARGET = aranym.ucd
 CPU = 040
 USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+LDEXTRA = -nostdlib -Wl,--entry,init_ucd -Wl,--fatal-warnings
 endif
 
 #

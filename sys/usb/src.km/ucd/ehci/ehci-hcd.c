@@ -284,7 +284,7 @@ static inline void invalidate_dcache(void)
 	s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA);
 #endif
 #if defined(__mc68040__) || defined(__mc68060__)
-	asm ("cinva dc");
+	asm ("cinva %dc");
 #endif
 #ifdef __mc68030__
 	/* 68030 is a writethrough data cache, so we're fine */
@@ -302,7 +302,7 @@ static inline void invalidate_dcache(void)
 static void flush_dcache(void)
 {
 #if defined (__mc68040__) || defined(__mc68060__) || defined(__mcoldfdire__)
-	asm("cpusha dc");
+	asm("cpusha %dc");
 #else
 	/* Nothing */
 #endif
@@ -1404,10 +1404,8 @@ int init(int argc, char **argv, char **env);
 int
 init(int argc, char **argv, char **env)
 #else
-long init (struct kentry *, struct usb_module_api *, char **);
 
-long
-init (struct kentry *k, struct usb_module_api *uapi, char **reason)
+long _cdecl init_ucd (struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;

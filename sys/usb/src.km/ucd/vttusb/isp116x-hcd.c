@@ -202,8 +202,6 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-//long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
-
 /*
  * USB controller interface
  */
@@ -589,40 +587,40 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 /* A0.L = source = memory */
 /* A1.L = destination = fifo */
 /* D2.L = length = byte count (0 .. 32000 wegen dbra) */
-__asm("movea.l %0, A1\n\tmovea.l %1, A0\n\tmove.l %2, D2\n" /* setup inputs */
-	"mem2isp:      move.l    D2,D1\n"           /* set up loop counter */
-	"              asr.l     #1,D1\n"           /* D1.L = word count */
+__asm("movea.l %0, %%a1\n\tmovea.l %1, %%a0\n\tmove.l %2, %%d2\n" /* setup inputs */
+	"mem2isp:      move.l    %%d2,%%d1\n"       /* set up loop counter */
+	"              asr.l     #1,%%d1\n"         /* D1.L = word count */
 	"\n"
-	"              move.l    A0,D0\n"           /* check source alignment */
-	"              andi.l    #1,D0\n"           /* source word-aligned? */
+	"              move.l    %%a0,%%d0\n"       /* check source alignment */
+	"              andi.l    #1,%%d0\n"         /* source word-aligned? */
 	"              beq.s     m2i_ev1\n"         /* yes: jmp */
 	"              bra.s     m2i_od1\n"
 	"\n" /* ------------------------------------ */
-	"m2i_od:       move.b    (A0)+,D0\n"        /* read 1st byte from memory        4/12 */
-	"              lsl.w     #8,D0\n"           /* shift up                         2/22 */
-	"              move.b    (A0)+,D0\n"        /* read 2nd byte from memory        2/12 */
-	"              move.w    D0,(A1)\n"         /* write word to fifo               2/12 */
-	"m2i_od1:      dbra      D1,m2i_od\n"       /*                                  4/10 */
+	"m2i_od:       move.b    (%%a0)+,%%d0\n"    /* read 1st byte from memory        4/12 */
+	"              lsl.w     #8,%%d0\n"         /* shift up                         2/22 */
+	"              move.b    (%%a0)+,%%d0\n"    /* read 2nd byte from memory        2/12 */
+	"              move.w    %%d0,(%%a1)\n"     /* write word to fifo               2/12 */
+	"m2i_od1:      dbra      %%d1,m2i_od\n"     /*                                  4/10 */
 	"              bra.s     m2i_ali\n"         /*                                  2/10 */
 	"\n"
-	"m2i_ev:       move.w    (A0)+,(A1)\n"      /* copy word from memory to fifo    2/12 */
-	"m2i_ev1:      dbra      D1,m2i_ev\n"       /*                                  4/10 */
+	"m2i_ev:       move.w    (%%a0)+,(%%a1)\n"  /* copy word from memory to fifo    2/12 */
+	"m2i_ev1:      dbra      %%d1,m2i_ev\n"     /*                                  4/10 */
 	"\n" /* ------------------------------------ */
-	"m2i_ali:      andi.l    #3,D2\n"           /* len alignment = 0? (long-word)   6/16 */
+	"m2i_ali:      andi.l    #3,%%d2\n"         /* len alignment = 0? (long-word)   6/16 */
 	"              beq.s     m2i_done\n"        /* yes: jmp, nothing left to do     2/10 */
 	"\n"
-	"              cmpi.w    #2,D2\n"           /* len alignment = 2? (word)        4/ 8 */
+	"              cmpi.w    #2,%%d2\n"         /* len alignment = 2? (word)        4/ 8 */
 	"              beq.s     m2i_wal\n"         /* yes: jmp, send one dummy word    2/10 */
 	"\n"
-	"              moveq     #0,D0\n"           /* prepare to read last byte..      2/ 4 */
-	"              move.b    (A0)+,D0\n"        /* ..from memory                    2/12 */
-	"              lsl.w     #8,D0\n"           /* shift up                         2/22 */
-	"              move.w    D0,(A1)\n"         /* write word to fifo               2/12 */
+	"              moveq     #0,%%d0\n"         /* prepare to read last byte..      2/ 4 */
+	"              move.b    (%%a0)+,%%d0\n"    /* ..from memory                    2/12 */
+	"              lsl.w     #8,%%d0\n"         /* shift up                         2/22 */
+	"              move.w    %%d0,(%%a1)\n"     /* write word to fifo               2/12 */
 	"\n"
-	"              cmpi.w    #3,D2\n"           /* len alignment = 3?               2/12 */
+	"              cmpi.w    #3,%%d2\n"         /* len alignment = 3?               2/12 */
 	"              beq.s     m2i_done\n"        /* yes: jmp, nothing left to do     2/10 */
 	"\n"
-	"m2i_wal:      move.w    #0,(A1)\n"         /* write dummy word to fifo         2/12 */
+	"m2i_wal:      move.w    #0,(%%a1)\n"       /* write dummy word to fifo         2/12 */
 	"m2i_done:\n"
         : /* no outputs */
         : "g" (isp116x->data_reg), "g" (buf), "g" (len) /* inputs */
@@ -749,40 +747,40 @@ if (HAS_BLITTER && use_blitter && (len>=256) && !(len & 1) && !((unsigned long)b
 } 
 else 
 {
-	__asm("movea.l %0, A0\n\tmovea.l %1, A1\n\tmove.l %2, D2\n" /* setup inputs */
-		"isp2mem:      move.l    D2,D1\n"           /* set up loop counter */
-		"              asr.l     #1,D1\n"           /* D1.L = word count */
+	__asm("movea.l %0, %%a0\n\tmovea.l %1, %%a1\n\tmove.l %2, %%d2\n" /* setup inputs */
+		"isp2mem:      move.l    %%d2,%%d1\n"       /* set up loop counter */
+		"              asr.l     #1,%%d1\n"         /* D1.L = word count */
 		"\n"
-		"              move.l    A1,D0\n"           /* check destination alignment */
-		"              andi.l    #1,D0\n"           /* destination word-aligned? */
+		"              move.l    %%a1,%%d0\n"       /* check destination alignment */
+		"              andi.l    #1,%%d0\n"         /* destination word-aligned? */
 		"              beq.s     i2m_ev1\n"         /* yes: jmp */
 		"              bra.s     i2m_od1\n"
 		"\n" /* ------------------------------------ */
-		"i2m_od:       move.w    (A0),D0\n"         /* read word from fifo */
-		"              move.b    D0,1(A1)\n"        /* write 2nd byte to memory */
-		"              lsr.w     #8,D0\n"           /* shift down */
-		"              move.b    D0,(A1)\n"         /* write 1st byte to memory */
-		"              addq.l    #2,A1\n"           /* increment destination pointer    2/ 8 */
-		"i2m_od1:      dbra      D1,i2m_od\n"
+		"i2m_od:       move.w    (%%a0),%%D0\n"     /* read word from fifo */
+		"              move.b    %%d0,1(%%a1)\n"    /* write 2nd byte to memory */
+		"              lsr.w     #8,%%d0\n"         /* shift down */
+		"              move.b    %%d0,(%%a1)\n"     /* write 1st byte to memory */
+		"              addq.l    #2,%%a1\n"         /* increment destination pointer    2/ 8 */
+		"i2m_od1:      dbra      %%d1,i2m_od\n"
 		"              bra.s     i2m_ali\n"
 		"\n"
-		"i2m_ev:       move.w    (A0),(A1)+\n"      /* copy word from fifo to memory */
-		"i2m_ev1:      dbra      D1,i2m_ev\n"
+		"i2m_ev:       move.w    (%%a0),(%%a1)+\n"  /* copy word from fifo to memory */
+		"i2m_ev1:      dbra      %%d1,i2m_ev\n"
 		"\n" /* ------------------------------------ */
-		"i2m_ali:      andi.l    #3,D2\n"           /* len alignment = 0? (long-word)   6/16 */
+		"i2m_ali:      andi.l    #3,%%d2\n"         /* len alignment = 0? (long-word)   6/16 */
 		"              beq.s     i2m_done\n"        /* yes: jmp, nothing left to do     2/10 */
 		"\n"
-		"              cmpi.w    #2,D2\n"           /* len alignment = 2? (word)        4/ 8 */
+		"              cmpi.w    #2,%%d2\n"         /* len alignment = 2? (word)        4/ 8 */
 		"              beq.s     i2m_wal\n"         /* yes: jmp, dump one more word     2/10 */
 		"\n"
-		"              move.w    (A0),D0\n"         /* read word from fifo              2/12 */
-		"              lsr.w     #8,D0\n"           /* shift down */
-		"              move.b    D0,(A1)+\n"        /* write last byte to memory        2/12 */
+		"              move.w    (%%a0),%%d0\n"     /* read word from fifo              2/12 */
+		"              lsr.w     #8,%%d0\n"         /* shift down */
+		"              move.b    %%d0,(%%a1)+\n"    /* write last byte to memory        2/12 */
 		"\n"
-		"              cmpi.w    #3,D2\n"           /* len alignment = 3?               2/12 */
+		"              cmpi.w    #3,%%d2\n"         /* len alignment = 3?               2/12 */
 		"              beq.s     i2m_done\n"        /* yes: jmp, nothing left to do     2/10 */
 		"\n"
-		"i2m_wal:      move.w    (A0),D0\n"         /* dump word from fifo              2/12 */
+		"i2m_wal:      move.w    (%%a0),%%d0\n"     /* dump word from fifo              2/12 */
 		"i2m_done:\n"
 			: /* no outputs */
 			: "g" (isp116x->data_reg), "g" (buf), "g" (len) /* inputs */
@@ -1006,7 +1004,7 @@ static inline int keybd_acia_int()
  */
 static inline unsigned int get_int_lvl() {
 	unsigned int sr;
-	__asm("move sr,%0" : "=d" (sr) : /* no inputs */);
+	__asm("move %%sr,%0" : "=d" (sr) : /* no inputs */);
 	return (sr >> 8) & 7;
 }
 
@@ -2232,10 +2230,7 @@ int init(int argc, char **argv, char **env);
 int
 init(int argc, char **argv, char **env)
 #else
-long _cdecl init (struct kentry *, struct usb_module_api *, char **);
-
-long
-init (struct kentry *k, struct usb_module_api *uapi, char **reason)
+long _cdecl init_ucd (struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;

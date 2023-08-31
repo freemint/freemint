@@ -2147,10 +2147,7 @@ int init(int argc, char **argv, char **env);
 int
 init(int argc, char **argv, char **env)
 #else
-long _cdecl init (struct kentry *, struct usb_module_api *, char **);
-
-long _cdecl
-init(struct kentry *k, struct usb_module_api *uapi, char **reason)
+long _cdecl init_ucd(struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;

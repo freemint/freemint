@@ -931,7 +931,7 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
  */
 static inline unsigned int get_int_lvl() {
 	unsigned int sr;
-	__asm("move sr,%0" : "=d" (sr) : /* no inputs */);
+	__asm("move %%sr,%0" : "=d" (sr) : /* no inputs */);
 	return (sr >> 8) & 7;
 }
 
@@ -2108,10 +2108,7 @@ int init(int argc, char **argv, char **env);
 int
 init(int argc, char **argv, char **env)
 #else
-long _cdecl init (struct kentry *, struct usb_module_api *, char **);
-
-long _cdecl
-init(struct kentry *k, struct usb_module_api *uapi, char **reason)
+long _cdecl init_ucd(struct kentry *k, struct usb_module_api *uapi, char **reason)
 #endif
 {
 	long ret;

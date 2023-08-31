@@ -232,4 +232,7 @@ struct usb_module_api
 //#define	usb_hub_configure 	(*api->usb_hub_configure)	
 #endif
 
+struct kentry;
+long _cdecl init_ucd (struct kentry *, struct usb_module_api *, char **) __asm__("init_ucd");
+
 #endif /* usb_api_h */
