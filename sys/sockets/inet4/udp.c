@@ -519,17 +519,17 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	 * Pseudo IP header checksum
 	 */
 	__asm__(
-		"\tmoveq	#0, d0		\n"
+		"\tmoveq	#0, %%d0		\n"
 		"\tmovel	%3, %0		\n"
 		"\taddl	%1, %0		\n"
 		"\taddxl	%2, %0		\n"
 #ifdef __mcoldfire__
-		"\tmvzw	%4, d1		\n"
-		"\taddxl	d1, %0		\n"
-		"\taddxl	d0, %0		\n"
+		"\tmvzw	%4, %%d1		\n"
+		"\taddxl	%%d1, %0		\n"
+		"\taddxl	%%d0, %0		\n"
 #else
 		"\taddxw	%4, %0		\n"
-		"\taddxw	d0, %0		\n"
+		"\taddxw	%%d0, %0		\n"
 #endif
 		: "=d"(sum):"g"(srcadr),
 		    "d"(dstadr), "i"(IPPROTO_UDP), "d"(len), "0"(sum)
@@ -544,63 +544,63 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	 * UDP datagram & header checksum
 	 */
 	__asm__(
-		"\tclrl	d0		\n"
+		"\tclrl	%%d0		\n"
 #ifdef __mcoldfire__
-		"\tmvzw	%2, d1		\n"
-		"\tlsrl	#4, d1		\n"
+		"\tmvzw	%2, %%d1		\n"
+		"\tlsrl	#4, %%d1		\n"
 #else
-		"\tmovew	%2, d1	\n"
-		"\tlsrw	#4, d1		\n"
+		"\tmovew	%2, %%d1	\n"
+		"\tlsrw	#4, %%d1		\n"
 #endif
 		"\tbeq	4f		\n"
 #ifdef __mcoldfire__
-		"\tsubql	#1, d1\n"	/* clears X bit */
+		"\tsubql	#1, %%d1\n"	/* clears X bit */
 #else
-		"\tsubqw	#1, d1\n"		/* clears X bit */
+		"\tsubqw	#1, %%d1\n"		/* clears X bit */
 #endif
 		"1:\n"
 #ifdef __mcoldfire__
-		"\tmoveml	%4@, d0/d2-d4\n"	/* 16 byte loop */
+		"\tmoveml	%4@, %%d0/%%d2-%%d4\n"	/* 16 byte loop */
 		"\tlea	%4@(16), %4	\n"
 #else
-		"\tmoveml	%4@+, d0/d2-d4\n"	/* 16 byte loop */
+		"\tmoveml	%4@+, %%d0/%%d2-%%d4\n"	/* 16 byte loop */
 #endif
-		"\taddxl	d0, %0\n"	/* ~5 clock ticks per byte */
-		"\taddxl	d2, %0\n"
-		"\taddxl	d3, %0\n"
-		"\taddxl	d4, %0\n"
+		"\taddxl	%%d0, %0\n"	/* ~5 clock ticks per byte */
+		"\taddxl	%%d2, %0\n"
+		"\taddxl	%%d3, %0\n"
+		"\taddxl	%%d4, %0\n"
 #ifdef __mcoldfire__
-		"\tmoveq	#0, d0\n"	/* X not affected */
-		"\taddxl	d0, %0\n"
-		"\tsubql	#1, d1\n"	/* X cloberred */
+		"\tmoveq	#0, %%d0\n"	/* X not affected */
+		"\taddxl	%%d0, %0\n"
+		"\tsubql	#1, %%d1\n"	/* X cloberred */
 		"\tbpls	1b		\n"		/* X not affected */
 #else
-		"\tdbra	d1, 1b\n"
-		"\tclrl	d0\n"
-		"\taddxl	d0, %0\n"
+		"\tdbra	%%d1, 1b\n"
+		"\tclrl	%%d0\n"
+		"\taddxl	%%d0, %0\n"
 #endif
 		"4:\n"
-		"\tmovew	%2, d1\n"
+		"\tmovew	%2, %%d1\n"
 #ifdef __mcoldfire__
-		"\tandil	#0xf, d1\n"
-		"\tlsrl	#2, d1\n"
+		"\tandil	#0xf, %%d1\n"
+		"\tlsrl	#2, %%d1\n"
 #else
-		"\tandiw	#0xf, d1\n"
-		"\tlsrw	#2, d1\n"
+		"\tandiw	#0xf, %%d1\n"
+		"\tlsrw	#2, %%d1\n"
 #endif
 		"\tbeq	2f\n"
 #ifdef __mcoldfire__
-		"\tsubql	#1, d1\n"
+		"\tsubql	#1, %%d1\n"
 #else
-		"\tsubqw	#1, d1\n"
+		"\tsubqw	#1, %%d1\n"
 #endif
 		"3:\n"
 		"\taddl	%4@+, %0\n"	/* 4 byte loop */
-		"\taddxl	d0, %0\n"	/* ~10 clock ticks per byte */
+		"\taddxl	%%d0, %0\n"	/* ~10 clock ticks per byte */
 #ifdef __mcoldfire__
-		"\tsubql	#1, d1\n" "bpls	3b		\n\t"
+		"\tsubql	#1, %%d1\n" "bpls	3b		\n\t"
 #else
-		"\tdbra	d1, 3b\n"
+		"\tdbra	%%d1, 3b\n"
 #endif
 		"2:\n"
 		: "=d"(sum), "=a"(dgram)
@@ -612,48 +612,48 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	 * Convert to short
 	 */
 	__asm__(
-		"\tclrl	d0\n"
+		"\tclrl	%%d0\n"
 		"\tbtst	#1, %2\n"
 		"\tbeq	5f\n"
 #ifdef __mcoldfire__
-		"\tmvz.w	%4@+, d2\n"
-		"\taddl	d2, %0\n"	/* no, add in extra word */
-		"\taddxl	d0, %0\n"
+		"\tmvz.w	%4@+, %%d2\n"
+		"\taddl	%%d2, %0\n"	/* no, add in extra word */
+		"\taddxl	%%d0, %0\n"
 #else
 		"\taddw	%4@+, %0\n"	/* extra word */
-		"\taddxw	d0, %0\n"
+		"\taddxw	%%d0, %0\n"
 #endif
 		"5:\n"
 		"\tbtst	#0, %2\n"
 		"\tbeq	6f\n"
 #ifdef __mcoldfire__
-		"\tmvzb	%4@+, d1\n"	/* extra byte */
-		"\tlsll	#8, d1\n"
-		"\taddl	d1, %0\n"
-		"\taddxl	d0, %0\n"
+		"\tmvzb	%4@+, %%d1\n"	/* extra byte */
+		"\tlsll	#8, %%d1\n"
+		"\taddl	%%d1, %0\n"
+		"\taddxl	%%d0, %0\n"
 #else
-		"\tmoveb	%4@+, d1\n"	/* extra byte */
-		"\tlslw	#8, d1\n"
-		"\taddw	d1, %0\n"
-		"\taddxw	d0, %0\n"
+		"\tmoveb	%4@+, %%d1\n"	/* extra byte */
+		"\tlslw	#8, %%d1\n"
+		"\taddw	%%d1, %0\n"
+		"\taddxw	%%d0, %0\n"
 #endif
 		"6:\n\t"
 #ifdef __mcoldfire__
 		"\tswap	%0		\n"		/* convert to short */
-		"\tmvzw	%0, d1\n"
+		"\tmvzw	%0, %%d1\n"
 		"\tclr.w	%0\n"
 		"\tswap	%0\n"
-		"\taddl	d1, %0\n"
+		"\taddl	%%d1, %0\n"
 		"\tswap	%0\n"
-		"\tmvzw	%0, d1\n"
+		"\tmvzw	%0, %%d1\n"
 		"\tclr.w	%0\n"
 		"\tswap	%0\n"
-		"\taddl	d1, %0\n"
+		"\taddl	%%d1, %0\n"
 #else
-		"\tmovel	%0, d1\n"	/* convert to short */
-		"\tswap	d1\n"
-		"\taddw	d1, %0\n"
-		"\taddxw	d0, %0\n"
+		"\tmovel	%0, %%d1\n"	/* convert to short */
+		"\tswap	%%d1\n"
+		"\taddw	%%d1, %0\n"
+		"\taddxw	%%d0, %0\n"
 #endif
 		: "=d"(sum), "=a"(dgram)
 		: "d"(len), "0"(sum), "1"(dgram)
