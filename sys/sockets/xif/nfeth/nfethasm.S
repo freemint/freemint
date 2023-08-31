@@ -21,19 +21,21 @@
 |  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 |
 
-	.globl _old_interrupt
-	.globl _my_interrupt
-	.globl _nfeth_interrupt
+#include "mint/asmdefs.h"
+
+	.globl SYM(old_interrupt)
+	.globl SYM(my_interrupt)
+	.extern SYM(nfeth_interrupt)
 
 	.text
 
 	dc.l	0x58425241		| XBRA
 	dc.l	0x41524165		| ARAe
-_old_interrupt:
+SYM(old_interrupt):
 	ds.l	1
-_my_interrupt:
+SYM(my_interrupt):
 	movem.l	a0-a2/d0-d2,-(sp)
-	bsr	_nfeth_interrupt
+	bsr	SYM(nfeth_interrupt)
 	movem.l	(sp)+,a0-a2/d0-d2
-	move.l	_old_interrupt(PC),-(sp)
+	move.l	SYM(old_interrupt)(pc),-(sp)
 	rts

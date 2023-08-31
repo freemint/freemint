@@ -5,7 +5,7 @@ SCSILINK_SRCS = \
 	scsilink.c \
 	scsilink_func.c \
 	scsidriver.c \
-	lowlevel.s
+	lowlevel.S
 
 COMMON_SRCS = \
 	../main.c

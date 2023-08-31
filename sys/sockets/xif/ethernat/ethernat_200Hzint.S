@@ -30,42 +30,44 @@
 |
 |
 
+#include "mint/asmdefs.h"
+
 	.equ	use_200Hz, 1
 
-	.globl _old_200Hz_int
-	.globl _interrupt_200Hz
-	.globl _old_i6_int
-	.globl _interrupt_i6
-	.globl _ethernat_int
-	.globl _set_old_int_lvl
-	.globl _set_int_lvl6
-	.globl _ethernat_probe_asm,
-	.globl _ethernat_probe_c
+	.globl SYM(old_200Hz_int)
+	.globl SYM(interrupt_200Hz)
+	.globl SYM(old_i6_int)
+	.globl SYM(interrupt_i6)
+	.extern SYM(ethernat_int)
+	.globl SYM(set_old_int_lvl)
+	.globl SYM(set_int_lvl6)
+	.globl SYM(ethernat_probe_asm)
+	.extern SYM(ethernat_probe_c)
 
 	.text
 
 
 	dc.l	0x58425241		| XBRA
 	dc.l	0x00000000		| (no cookie)
-_old_200Hz_int:
+SYM(old_200Hz_int):
 	ds.l	1
-_interrupt_200Hz:
+SYM(interrupt_200Hz):
 	move.w	(sp),oldSR
 	movem.l	a0-a7/d0-d7,-(sp)
-	bsr	_ethernat_int
+	bsr	SYM(ethernat_int)
 	movem.l	(sp)+,a0-a7/d0-d7
-	move.l	_old_200Hz_int(PC),-(sp)	|jump through old handler
+	move.l	SYM(old_200Hz_int)(pc),-(sp)	|jump through old handler
 	rts
 
 
 	dc.l	0x58425241		| XBRA
 	dc.l	0x00000000		| (no cookie)
-_old_i6_int:
+SYM(old_i6_int):
 	ds.l	1
-_interrupt_i6:
+SYM(interrupt_i6):
 	move.w	(sp),oldSR
 	movem.l	a0-a7/d0-d7,-(sp)
-	bsr	_ethernat_int
+	bsr	SYM(ethernat_int)
 	movem.l	(sp)+,a0-a7/d0-d7
 	rte
 
@@ -73,7 +75,7 @@ oldSR:	ds.w	1
 
 
 | Sets interrupt level to what was in the SR
-_set_old_int_lvl:
+SYM(set_old_int_lvl):
 	andi.w	#0x0f00,oldSR		|just keep the int lvl
 	move.l	d0,-(sp)
 	move.w	sr,d0
@@ -84,7 +86,7 @@ _set_old_int_lvl:
 	rts
 
 | Sets interrupt level to 6
-_set_int_lvl6:
+SYM(set_int_lvl6):
 	move.w	d0,-(sp)
 	move.w	sr,d0
 	move.w	d0,oldSR
@@ -98,14 +100,14 @@ _set_int_lvl6:
 | Change bus error exception handler
 | Call probe function
 | Enable again the old bus error handler
-_ethernat_probe_asm:
+SYM(ethernat_probe_asm):
 	movem.l	a0-a7/d0-d7,-(sp)
 	move.w	sr,-(sp)
 	move.l	8,old_berr
 	lea	berr,a0
 	move.l	a0,8
 	move.l	sp,old_stack
-	bsr	_ethernat_probe_c
+	bsr	SYM(ethernat_probe_c)
 berr:
 	move.l	old_berr,8
 	move.l	old_stack,sp

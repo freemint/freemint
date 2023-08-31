@@ -4,6 +4,8 @@
 | 03/13/94, Kay Roemer.
 |
 
+#include "mint/asmdefs.h"
+
 yamaha	  = 0xFFFF8800
 mfp_gpip  = 0xFFFFFA01
 mfp_aer   = mfp_gpip +  2
@@ -42,17 +44,22 @@ IOCTRL    = 7
 |
 | Exports
 |
-	.globl _pl0_set_strobe, _pl0_set_direction
-	.globl _pl0_got_ack, _pl0_send_ack
-	.globl _pl0_send_pkt, _pl0_recv_pkt
-	.globl _pl0_cli, _pl0_sti
-	.globl _pl0_old_busy_int, _pl0_busy_int
-	.globl _pl0_get_busy
+	.globl SYM(pl0_set_strobe)
+	.globl SYM(pl0_set_direction)
+	.globl SYM(pl0_got_ack)
+	.globl SYM(pl0_send_ack)
+	.globl SYM(pl0_send_pkt)
+	.globl SYM(pl0_recv_pkt)
+	.globl SYM(pl0_cli)
+	.globl SYM(pl0_sti)
+	.globl SYM(pl0_old_busy_int)
+	.globl SYM(pl0_busy_int)
+	.globl SYM(pl0_get_busy)
 
 |
 | Imports
 |
-	.globl _plip_int
+	.extern SYM(plip_int)
 
 
 	.text
@@ -60,7 +67,7 @@ IOCTRL    = 7
 | Get BUSY.
 |
 
-_pl0_get_busy:
+SYM(pl0_get_busy):
 	btst	#0, mfp_gpip:w
 	sne	d0
 	extw	d0
@@ -70,7 +77,7 @@ _pl0_get_busy:
 | Set STROBE.
 |
 
-_pl0_set_strobe:
+SYM(pl0_set_strobe):
 	movew	sr, d0
 	oriw	#0x700, sr
 	lea	yamaha:w, a0
@@ -89,7 +96,7 @@ L_101:	moveb	d1, a0@(2)
 | Set the direction of the IO port B. Set to INPUT if argument is zero.
 |
 
-_pl0_set_direction:
+SYM(pl0_set_direction):
 	movew	sr, d1
 	oriw	#0x700, sr
 	lea	yamaha:w, a0
@@ -108,7 +115,7 @@ L_111:	moveb	d0, a0@(2)
 | See if we got an acknoledge (BUSY dropped for some us)
 |
 
-_pl0_got_ack:
+SYM(pl0_got_ack):
 	btst	#0, mfp_iprb:w
 	sne	d0
 	bne	L_140
@@ -120,7 +127,7 @@ L_140:	moveb	#0xfe, mfp_iprb:w
 | Send an acknowledge (drop STROBE for some us)
 |
 
-_pl0_send_ack:
+SYM(pl0_send_ack):
 	movew	sr, d1
 	oriw	#0x700, sr
 	lea	yamaha:w, a0
@@ -141,7 +148,7 @@ _pl0_send_ack:
 | Disable BUSY interrupt.
 |
 
-_pl0_cli:
+SYM(pl0_cli):
 	bclr	#0, mfp_imrb:w
 	rts
 
@@ -149,7 +156,7 @@ _pl0_cli:
 | Enable BUSY interrupt.
 |
 
-_pl0_sti:
+SYM(pl0_sti):
 	bset	#0, mfp_imrb:w
 	rts
 
@@ -159,10 +166,10 @@ _pl0_sti:
 
 	.long	0x58425241	| "XBRA"
 	.long	0x706c6970	| "plip"
-_pl0_old_busy_int:
+SYM(pl0_old_busy_int):
 	.long	0xDEADFACE
 
-_pl0_busy_int:
+SYM(pl0_busy_int):
 	moveml	d0-d1/a0-a1, sp@-
 	movew	sr, d0
 	oriw	#0x700, sr
@@ -177,7 +184,7 @@ _pl0_busy_int:
 	movew	d0, sr		| allow other interrupts
 
 	movew	#0, sp@-	| PLIP channel 0
-	jsr	_plip_int	| handle interrupt
+	jsr	SYM(plip_int)	| handle interrupt
 	addql	#2, sp
 
 	oriw	#0x700, sr
@@ -217,7 +224,7 @@ L_700:
 | long pl0_recv_pkt (short timeout, char *cp, long len)
 |
 
-_pl0_recv_pkt:
+SYM(pl0_recv_pkt):
 	moveml	d2-d5/a2-a3, sp@-
 	clrl	d2
 	movew	sp@(7*4+0), d2		| timeout
@@ -333,7 +340,7 @@ L_160:
 | short pl0_send_pkt (short timeout, char *cp, long len);
 |
 
-_pl0_send_pkt:
+SYM(pl0_send_pkt):
 	moveml	d2-d4/a2, sp@-
 	clrl	d2
 	movew	sp@(5*4+0), d2		| timeout

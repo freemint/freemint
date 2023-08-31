@@ -29,12 +29,14 @@
 |	original, based on moribund MagxNet code
 |
 
-	.globl	_install_interrupts
-	.globl	_interrupt_handler
+#include "mint/asmdefs.h"
+
+	.globl	SYM(install_interrupts)
+	.globl	SYM(interrupt_handler)
 	
-	.globl	_set_lock
-	.globl	_release_lock
-	.globl	_test_lock
+	.globl	SYM(set_lock)
+	.globl	SYM(release_lock)
+	.globl	SYM(test_lock)
 	
 	.text
 |
@@ -46,7 +48,7 @@ old_vbl_interrupt:
 	ds.l	1
 vbl_interrupt:
 	movem.l	d0-d7/a0-a6,-(sp)			|save some regs
-	bsr.w	_interrupt_handler			|call C code
+	bsr.w	SYM(interrupt_handler)		|call C code
 	movem.l	(sp)+,d0-d7/a0-a6			|restore regs
 	move.l	old_vbl_interrupt(pc),-(sp)	|then go to old handler
 	rts
@@ -54,7 +56,7 @@ vbl_interrupt:
 |
 | install interrupt handler
 |
-_install_interrupts:
+SYM(install_interrupts):
 	movem.l	d2/a2,-(sp)					|save some regs
 	pea		vbl_interrupt
 	move.w	#0x70/4,-(sp)
@@ -66,14 +68,14 @@ _install_interrupts:
 	rts
 
 | int set_lock(FASTLOCK *lockptr);
-_set_lock:
+SYM(set_lock):
 	movea.l	4(sp),a0
 	tas		(a0)
 	seq		d0
 	rts
 	
 | int release_lock(FASTLOCK *lockptr);
-_release_lock:
+SYM(release_lock):
 	movea.l	4(sp),a0
 	tst.b	(a0)
 	smi		d0
@@ -81,7 +83,7 @@ _release_lock:
 	rts
 	
 | int test_lock(FASTLOCK *lockptr);
-_test_lock:
+SYM(test_lock):
 	movea.l	4(sp),a0
 	tst.b	(a0)
 	smi		d0

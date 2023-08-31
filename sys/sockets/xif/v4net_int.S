@@ -27,18 +27,19 @@
 
 
 	#include "v4net.h"
+#include "mint/asmdefs.h"
 
-	.globl _v4net_int_old
-	.globl _v4net_int
-	.globl _v4net_recv
-	.globl _v4net_swposcopy
+	.globl SYM(v4net_int_old)
+	.globl SYM(v4net_int)
+	.globl SYM(v4net_recv)
+	.globl SYM(v4net_swposcopy)
 
 	.text
 	dc.l	0x58425241		| XBRA
 	dc.l	0x00000000		| (no cookie)
-_v4net_int_old:
+SYM(v4net_int_old):
 	ds.l	1
-_v4net_int:
+SYM(v4net_int):
 
 #if V4NET_200HZ
 
@@ -48,18 +49,18 @@ _v4net_int:
 
 	movem.l	a2,-(sp)
 	movea.l	(0xde003c),a2				| recieved anything?
-	cmpa.l	(_v4net_swposcopy),a2
+	cmpa.l	(SYM(v4net_swposcopy)),a2
 	beq.s	.v4net_int_skip
 	cmpa.l	#0xfff00000,a2				| offline?
 	bcc.s	.v4net_int_skip
 	movem.l	d0-d2/a0-a1,-(sp)			| call recv function
-	bsr		_v4net_recv
+	bsr		SYM(v4net_recv)
 	movem.l	(sp)+,d0-d2/a0-a2
-	move.l  _v4net_int_old,-(sp)		| call old vector
+	move.l  SYM(v4net_int_old),-(sp)		| call old vector
 	rts
 .v4net_int_skip:
 	move.l	(sp),a2
-	move.l  _v4net_int_old,(sp)			| call old vector
+	move.l  SYM(v4net_int_old),(sp)			| call old vector
 	rts
 
 #else
@@ -70,12 +71,12 @@ _v4net_int:
 
 	btst	#13,(0xdff21e)				| ethernet interrupt requested?
 	bne.s	.v4net_int_requested		| no, jump to old vector
-	move.l  _v4net_int_old,(sp)
+	move.l  SYM(v4net_int_old),(sp)
 	rts
 .v4net_int_requested:
 	movem.l	a2,-(sp)
 	movea.l	(0xde003c),a2				| recieved anything?
-	cmpa.l	(_v4net_swposcopy),a2
+	cmpa.l	(SYM(v4net_swposcopy)),a2
 	beq.s	.v4net_int_skip
 
 	cmpa.l	#0xfff00000,a2				| offline?
@@ -83,17 +84,17 @@ _v4net_int:
 
 	move.w	#0x2000,0xdff29a			| disable ethernet interrupts
 	movem.l	d0-d2/a0-a1,-(sp)
-	bsr		_v4net_recv					| call recv function
+	bsr		SYM(v4net_recv)					| call recv function
 	movem.l	(sp)+,d0-d2/a0-a2
 
 	move.w	#0x2000,0xdff29c			| clear interrupt request flag
 	move.w	#0xa000,0xdff29a			| enable ethernet interrupts
-	move.l  _v4net_int_old,-(sp)		| call old vector
+	move.l  SYM(v4net_int_old),-(sp)		| call old vector
 	rts
 
 .v4net_int_skip:
 	move.l	(sp),a2
-	move.l  _v4net_int_old,(sp)			| call old vector
+	move.l  SYM(v4net_int_old),(sp)			| call old vector
 	rts
 
 #endif

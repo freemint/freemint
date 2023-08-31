@@ -5,19 +5,22 @@
 | 2000-03-24 Vassilis Papathanassiou
 |
 |
-	.globl _old_vbl_int
-	.globl _vbl_interrupt
-	.globl _rtl8012_int
+
+#include "mint/asmdefs.h"
+
+	.globl SYM(old_vbl_int)
+	.globl SYM(vbl_interrupt)
+	.extern SYM(rtl8012_int)
 
 	.text
 
 	dc.l	0x58425241		| XBRA
 	dc.l	0x505a4950		| RTLp
-_old_vbl_int:
+SYM(old_vbl_int):
 	ds.l	1
-_vbl_interrupt:
+SYM(vbl_interrupt):
 	movem.l	a0-a2/d0-d2,-(sp)
-	bsr	_rtl8012_int
+	bsr	SYM(rtl8012_int)
 	movem.l	(sp)+,a0-a2/d0-d2
-	move.l	_old_vbl_int(PC),-(sp)
+	move.l	SYM(old_vbl_int)(pc),-(sp)
 	rts
