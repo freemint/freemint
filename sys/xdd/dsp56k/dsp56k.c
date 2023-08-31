@@ -73,8 +73,6 @@
 # define ALERT(x,y)	KERNEL_ALERT (x,y)
 # define TRACE(x)
 
-DEVDRV * _cdecl init(struct kerinfo *k);
-
 /* MiNT device driver structure */
 
 static long _cdecl dsp56k_open		(FILEPTR *f);
@@ -615,7 +613,7 @@ dsp56k_unselect(FILEPTR *f, long proc, int mode)
 
 
 DEVDRV * _cdecl
-init(struct kerinfo *k)
+init_xdd(struct kerinfo *k)
 {
 	long r;
 	long snd = 0;

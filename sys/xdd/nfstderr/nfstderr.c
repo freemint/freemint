@@ -138,9 +138,6 @@ long nf_stderr_id = 0;
 long (*nf_call)(long id, ...);
 
 
-DEVDRV * _cdecl		init		(struct kerinfo *k);
-
-
 /* END definition part */
 /****************************************************************************/
 
@@ -152,7 +149,7 @@ DEVDRV * _cdecl		init		(struct kerinfo *k);
 
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	struct dev_descr dev_descriptor =
 	{

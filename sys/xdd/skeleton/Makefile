@@ -28,7 +28,7 @@ strip:
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__
 
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions

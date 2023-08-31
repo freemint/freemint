@@ -101,8 +101,6 @@ struct kerinfo *kernel;
 /****************************************************************************/
 /* BEGIN definition part */
 
-DEVDRV * _cdecl init(struct kerinfo *k);
-
 /* NF_STDERR feature ID value fetched by nf_ops->get_id() */
 static long nf_id;
 /* Cache for the nf_ops->call() function pointer */
@@ -157,7 +155,7 @@ static DEVDRV devtab =
 /* BEGIN initialization - top half */
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	struct dev_descr raw_dev_descriptor =
 	{

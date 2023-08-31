@@ -335,7 +335,6 @@ INLINE void	top_txint_off	(IOVAR *iovar);
  */
 static int	init_SCC	(IOVAR **iovar, SCC *regs);
 INLINE void	init_scc	(void);
-DEVDRV *	_cdecl init	(struct kerinfo *k);
 
 
 /*
@@ -1215,7 +1214,7 @@ init_scc (void)
 }
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	int i;
 	

@@ -415,7 +415,6 @@ INLINE int	detect_uart	(UART *regs, ulong *baudbase);
 INLINE int	init_uart	(IOVAR **iovar, ushort base, int intr, long baudbase);
 INLINE void	init_pc16550	(void);
 INLINE void	reset_uart	(IOVAR *iovar);
-DEVDRV *	_cdecl init	(struct kerinfo *k);
 
 
 /*
@@ -1395,7 +1394,7 @@ init_pc16550 (void)
 }
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	long mch;
 	int i;

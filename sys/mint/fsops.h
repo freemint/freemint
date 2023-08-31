@@ -64,6 +64,16 @@ struct devdrv
 	 */
 };
 
+/*
+ * init function for device drivers. This is required.
+ *
+ * the init function is referenced by the linker command as init_xdd.
+ * The make process does not know wether the compiler adds an
+ * underscore, so enforce that here
+ */
+struct kerinfo;
+struct devdrv * _cdecl		init_xdd		(struct kerinfo *k) __asm__("init_xdd");
+
 struct filesys
 {
 	/* kernel data

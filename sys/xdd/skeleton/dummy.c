@@ -124,7 +124,6 @@ struct kerinfo *kernel;
 /****************************************************************************/
 /* BEGIN definition part */
 
-DEVDRV * _cdecl init(struct kerinfo *k);
 
 
 // XXX
@@ -219,7 +218,7 @@ static DEVDRV raw_devtab =
 /* BEGIN initialization - top half */
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 //	long mch;
 	

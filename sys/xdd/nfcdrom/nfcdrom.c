@@ -171,8 +171,6 @@ static long (*nf_call)(long id, ...);
 
 #define NFCDROM(a)      (nf_cdrom_id + a)
 
-DEVDRV * _cdecl		init		(struct kerinfo *k);
-
 static unsigned long drives_mask;
 
 /* END definition part */
@@ -193,7 +191,7 @@ static unsigned long drives_mask;
 #endif
 
 
-DEVDRV * _cdecl init(struct kerinfo *k)
+DEVDRV * _cdecl init_xdd(struct kerinfo *k)
 {
 	struct dev_descr dev_descriptor =
 	{

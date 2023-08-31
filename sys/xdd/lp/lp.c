@@ -52,8 +52,6 @@
 
 struct kerinfo *kernel;
 
-DEVDRV * init(struct kerinfo *k);
-
 static char *buffer_start, *buffer_end, *buffer_tail;
 static volatile char *buffer_head;
 static volatile long buffer_contents;
@@ -162,8 +160,8 @@ init_centr(void)
  *     the memory allocation stuff is already done and we are in
  *     super mode already.
  */
-DEVDRV *
-init(struct kerinfo *k)
+DEVDRV *_cdecl
+init_xdd(struct kerinfo *k)
 {
 	kernel = k;
 	

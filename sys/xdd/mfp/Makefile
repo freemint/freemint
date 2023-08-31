@@ -27,7 +27,7 @@ INCLUDES = -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__ $(XDD_DEFINITIONS)
 XDD_DEFINITIONS = 
 
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions

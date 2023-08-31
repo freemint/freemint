@@ -56,8 +56,6 @@
 # endif
 
 
-DEVDRV * _cdecl init (struct kerinfo *k);
-
 static long _cdecl flop_open	(FILEPTR *f);
 static long _cdecl flop_write	(FILEPTR *f, const char *buf, long bytes);
 static long _cdecl flop_read	(FILEPTR *f, char *buf, long bytes);
@@ -126,7 +124,7 @@ struct floppy_block
 /* Initial setup, return the device driver to the OS
  */
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	struct dev_descr dev_descriptor =
 	{

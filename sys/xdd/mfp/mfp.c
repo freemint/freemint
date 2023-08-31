@@ -277,7 +277,6 @@ INLINE void	top_brk_off	(IOVAR *iovar);
  */
 INLINE int	init_MFP	(IOVAR **iovar, MFP *regs, ushort tt_port);
 INLINE void	init_mfp	(long mch);
-DEVDRV *	_cdecl init	(struct kerinfo *k);
 
 
 /*
@@ -1192,7 +1191,7 @@ init_mfp (long mch)
 }
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	long mch;
 	int i;

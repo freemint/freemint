@@ -152,7 +152,6 @@ static DEVDRV devtab =
 # endif
 
 
-DEVDRV * _cdecl		init		(struct kerinfo *k);
 static void		myxconout2	(long ch);
 
 
@@ -176,7 +175,7 @@ static char		xconbuf [BUFSIZE];
 
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init_xdd (struct kerinfo *k)
 {
 	struct dev_descr dev_descriptor =
 	{
@@ -235,7 +234,7 @@ printc (register long c)
 		"movl	%0,%%sp@-\n\t"
 		"movl	%1,%%a0\n\t"
 		"jsr	%%a0@\n\t"
-		"addql	#4,sp\n\t"
+		"addql	#4,%%sp\n\t"
 		POP_SP("%%d0-%%d7/%%a0-%%a6", 60)
 		: 			/* outputs */
 		: "g" (c), "m"(oldxconout2)			/* inputs  */

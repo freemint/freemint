@@ -95,9 +95,8 @@ ulong memory = 0;
 struct kerinfo *kernel;
 struct dmabuf *dmab;
 
-DEVDRV * init(struct kerinfo *k);
-DEVDRV *
-init (struct kerinfo *k)
+DEVDRV * _cdecl
+init_xdd (struct kerinfo *k)
 {
 	char msg[128];
 	long mch, r;
