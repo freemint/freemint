@@ -39,8 +39,8 @@ setstack (register void *sp)
 	
 	__asm__ volatile
 	(
-		"movel sp,%0;"
-		"movel %2,sp;"
+		"movel %%sp,%0;"
+		"movel %2,%%sp;"
 		: "=a" (osp)
 		: "0" (osp), "a" (sp)
 	);
