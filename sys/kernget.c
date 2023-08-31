@@ -579,13 +579,13 @@ kern_get_version (SIZEBUF **buffer, const struct proc *p)
 		return ENOMEM;
 
 	info->len = ksprintf (info->buf, len,
-			"FreeMiNT version %d.%d%s%s (%s) #%lu %s\n",
+			"FreeMiNT version %d.%d%s%s (%s) #%u %s\n",
 			(int) MINT_MAJ_VERSION,
 			(int) MINT_MIN_VERSION,
 			revision,
 			beta_ident,
 			COMPILER_NAME,
-			build_serial,
+			1 /* build_serial */,
 			build_ctime
 	);
 

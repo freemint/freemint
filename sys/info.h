@@ -45,7 +45,6 @@ extern const ulong MiNT_date;
 extern const ulong MiNT_time;
 
 extern const char  build_ctime  [];
-extern const ulong build_serial;
 
 extern const char COMPILER_NAME [];
 extern const char COMPILER_OPTS [];

@@ -23,7 +23,7 @@ CFLAGS = $(NATIVECFLAGS)
 
 # default definitions
 OBJS = mkbuild.o
-GENFILES = mkbuild buildserial
+GENFILES = mkbuild
 SGENFILES = build.h cdef.h
 
 mkbuild: mkbuild.o

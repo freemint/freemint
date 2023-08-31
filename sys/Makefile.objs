@@ -76,7 +76,7 @@ $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
 			done) \
 		$(LIBS)
 
-$(BUILDINFO): compiler buildheader buildserial
+$(BUILDINFO): compiler buildheader
 
 compiler:
 	(cd $(srcdir)/buildinfo; \
@@ -87,9 +87,6 @@ compiler:
 
 buildheader:
 	cd $(srcdir)/buildinfo; ./mkbuild
-
-buildserial: $(srcdir)/buildinfo/version.h
-	cd $(srcdir)/buildinfo; echo 1 >$@
 
 # default dependencies
 # must be included last

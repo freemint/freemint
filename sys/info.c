@@ -69,7 +69,6 @@ const ulong MiNT_time =
 	| ((ulong) BUILD_SEC);
 
 const char  build_ctime   [] = BUILD_CTIME;
-const ulong build_serial     = BUILD_SERIAL;
 
 
 /* definitions in automatically created cdef.h

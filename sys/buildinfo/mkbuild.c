@@ -107,7 +107,6 @@ main (int argc, char* argv[])
 #else
 		"# define BUILD_CTIME \"%s %s %02d %02d:%02d:%02d %s %04d\"\n"
 #endif
-		"# define BUILD_SERIAL %d\n"
 		"\n"
 		"# endif /* _build_h */\n",
 		now->tm_wday == 0 ? 7 : now->tm_wday, 
@@ -122,8 +121,7 @@ main (int argc, char* argv[])
 #ifndef __CYGWIN__
 		now->tm_zone,
 #endif
-		now->tm_year + 1900,
-		1
+		now->tm_year + 1900
 	);
 	
 	if (ferror (out) != 0)
