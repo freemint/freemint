@@ -4,18 +4,22 @@
 |
 | Also a few low-level functions
 
-	.globl _new_centr_vector
-	.globl _print_byte
+#include "mint/asmdefs.h"
 
-_new_centr_vector:
+	.globl SYM(new_centr_vector)
+	.globl SYM(print_byte)
+	.extern SYM(print_head)
+	.extern SYM(wake_up)
+
+SYM(new_centr_vector):
 #ifdef __mcoldfire__
 	lea	sp@(-16), sp
 	moveml	d0-d1/a0-a1, sp@
 #else
 	moveml	d0-d1/a0-a1, sp@-
 #endif
-	jsr	_print_head		| prints the pending byte(s)
-	jsr	_wake_up		| has someone selected the printer?
+	jsr	SYM(print_head)		| prints the pending byte(s)
+	jsr	SYM(wake_up)		| has someone selected the printer?
 #ifdef __mcoldfire__
 	moveql	#0, d0
 	bclr	d0, 0xFFFFFA11
@@ -41,7 +45,7 @@ strobe_delay:
 	rts
 #endif
 
-_print_byte:
+SYM(print_byte):
 	movew	sp@(4), d0		| character to print
 #ifdef __mcoldfire__
 	movew	sr, d1

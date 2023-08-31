@@ -9,11 +9,14 @@
 | 
 | void *memset(void *s, int val, long len)
 | 
+
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	_memset
+	.globl	SYM(memset)
 
-_memset:
+SYM(memset):
 	move.l	d2,-(sp)	| save old value
 	
 	move.l	4+4(sp),a1

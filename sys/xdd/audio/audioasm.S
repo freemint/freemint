@@ -9,27 +9,29 @@
 | 9705, added gpi7 routines: John Blakeley
 |
 
+#include "mint/asmdefs.h"
+
 mfp_gpip = 0xfffffa01
 mfp_isra = mfp_gpip + 14
 mfp_iera = mfp_gpip +  6
 mfp_imra = mfp_gpip + 18
 mfp_ipra = mfp_gpip + 10
 
-	.globl _new_timera_vector
-	.globl _new_gpi7_vector
-	.globl _timer_func
+	.globl SYM(new_timera_vector)
+	.globl SYM(new_gpi7_vector)
+	.globl SYM(timer_func)
 
-_timer_func:
+SYM(timer_func):
 	.long 0
 
-_new_gpi7_vector:
+SYM(new_gpi7_vector):
 #ifdef __mcoldfire__
 	lea	sp@(-16), sp
 	moveml	d0-d1/a0-a1, sp@
 #else
 	moveml	d0-d1/a0-a1, sp@-
 #endif
-	moveal	_timer_func, a0
+	moveal	SYM(timer_func), a0
 	jsr a0@			| do thangs...
 #ifdef __mcoldfire__
 	lea	mfp_isra:w, a0
@@ -42,14 +44,14 @@ _new_gpi7_vector:
 #endif
 	rte
 
-_new_timera_vector:
+SYM(new_timera_vector):
 #ifdef __mcoldfire__
 	lea	sp@(-16), sp
 	moveml	d0-d1/a0-a1, sp@
 #else
 	moveml	d0-d1/a0-a1, sp@-
 #endif
-	moveal	_timer_func, a0
+	moveal	SYM(timer_func), a0
 	jsr	a0@			| do things...
 #ifdef __mcoldfire__
 	lea	mfp_isra:w, a0
@@ -62,29 +64,32 @@ _new_timera_vector:
 #endif
 	rte
 
-	.globl _digitab, _playptr, _playlen, _psg_player
+	.extern SYM(digitab)
+	.extern SYM(playptr)
+	.extern SYM(playlen)
+	.globl SYM(psg_player)
 
-_psg_player:
+SYM(psg_player):
 #ifdef __mcoldfire__
 	lea	sp@(-16), sp
 	moveml	d0-d1/a0-a1, sp@
 #else
 	moveml	d0-d1/a0-a1, sp@-
 #endif
-	tstl	_playlen
+	tstl	SYM(playlen)
 	bgt	_psg_player_1
-	moveal	_timer_func, a0
+	moveal	SYM(timer_func), a0
 	jsr	a0@		| switch buffers ...
 _psg_player_1:
-	tstl	_playlen
+	tstl	SYM(playlen)
 	ble	_psg_player_2
-	subql	#1, _playlen
-	moveal	_playptr, a0
+	subql	#1, SYM(playlen)
+	moveal	SYM(playptr), a0
 	moveq	#0, d0
 	moveb	a0@+, d0
-	movel	a0, _playptr
+	movel	a0, SYM(playptr)
 	lsll	#3, d0
-	lea	_digitab, a0
+	lea	SYM(digitab), a0
 #ifdef __mcoldfire__
 	addl	d0, a0
 	lea	0xffff8800:w, a1

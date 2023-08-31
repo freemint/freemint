@@ -5,11 +5,14 @@
 | the number of 256 byte blocks in the area, and must be > 0.
 | registers changed: d0 and a0
 |
+
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	__mint_quickzero
+	.globl	SYM(_mint_quickzero)
 
-__mint_quickzero:
+SYM(_mint_quickzero):
 	move.l	4(sp),a0		| place to zero at
 	move.l	8(sp),d0		| number of blocks
 #ifdef __mcoldfire__

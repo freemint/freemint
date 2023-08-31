@@ -9,13 +9,15 @@
 | quickmovb(char *dst, char *src, long nbytes):
 | like memcpy, does unaligned too...  does not check for overlap (memmove).
 
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	__mint_quickcpy
-	.globl	__mint_bcopy
-	.globl	_memcpy
+	.globl	SYM(_mint_quickcpy)
+	.globl	SYM(_mint_bcopy)
+	.globl	SYM(memcpy)
 
-__mint_bcopy:
+SYM(_mint_bcopy):
 #ifdef __mcoldfire__
 	move.l	4(sp),a1
 	move.l	8(sp),a0
@@ -24,7 +26,7 @@ __mint_bcopy:
 	exg	a0,a1
 #endif
 	bra.s	_quickmovb1
-_memcpy:
+SYM(memcpy):
 	movem.l	4(sp),a0/a1		| get dst & src
 _quickmovb1:
 	move.l 12(sp),d0
@@ -73,7 +75,7 @@ sodd:
 	bne.s	quickmov1
 done:	rts
 
-__mint_quickcpy:
+SYM(_mint_quickcpy):
 	movem.l	4(sp),a0/a1		| get dst & src
 	move.l	12(sp),d0		| get nbytes
 	beq.s	done

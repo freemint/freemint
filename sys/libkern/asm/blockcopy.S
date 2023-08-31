@@ -5,16 +5,18 @@
 | _mint_blockcpy(char *dst, char *src, long nblocks)|
 | 512-byte blocks with 16-byte alignment
 
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	__mint_blockcpy
+	.globl	SYM(_mint_blockcpy)
 
-__mint_blockcpy:
+SYM(_mint_blockcpy):
 	movem.l	4(sp),a0/a1		| dst & src
 	move.l	12(sp),d0		| blocks
 #if defined(__mc68040__) || defined(__mc68060__)
 #ifdef __mc68020__	/* -m68020-60 */
-	move.l	_mcpu,d1
+	move.l	SYM(mcpu),d1
 	cmp.w	#40,d1
 	bcc.s	L_040			| for 68000-68030 do quickmove
 	bra	blkmv

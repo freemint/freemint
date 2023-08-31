@@ -10,11 +10,14 @@
 | quickly exchanges "nbytes" bytes from src to dst. Assumes that both
 | src and dst are word aligned.
 |
+
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	__mint_quickswap
+	.globl	SYM(_mint_quickswap)
 
-__mint_quickswap:
+SYM(_mint_quickswap):
 	move.l	4(sp),a0		| get dst
 	move.l	8(sp),a1		| get src
 	move.l	12(sp),d0		| get nbytes

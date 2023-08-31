@@ -24,6 +24,7 @@
 
 	.globl	C_SYMBOL_NAME(main)
 	.globl	C_SYMBOL_NAME(_base)
+	.globl __start
 
 #ifndef STACKSIZE
 #define STACKSIZE 0x20000
@@ -38,6 +39,7 @@ C_SYMBOL_NAME(_base):
 	ds.l	1
 
 	.text
+__start:
 	move.l	0x04(%sp),%a0		| basepage address
 	move.l	%a0,C_SYMBOL_NAME(_base)
 #ifndef BESTFIT
