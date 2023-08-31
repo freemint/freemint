@@ -51,10 +51,7 @@
 
 struct kerinfo *KERNEL;
 
-FILESYS * init(struct kerinfo *k);
-
-FILESYS *
-init (struct kerinfo *k)
+FILESYS *_cdecl init_xfs (struct kerinfo *k)
 {
 	struct fs_descr d = { &nfs_filesys, -1 };
 	long r;

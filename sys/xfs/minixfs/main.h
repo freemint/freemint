@@ -15,8 +15,6 @@
 # include "global.h"
 
 
-FILESYS *init	(struct kerinfo *k);
-
 int	minix_sanity	(int drv);
 
 

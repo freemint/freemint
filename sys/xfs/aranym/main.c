@@ -31,9 +31,6 @@
 # include "mint/arch/nf_ops.h"
 
 
-extern FILESYS * _cdecl init(struct kerinfo *k);
-
-
 /*
  * nf_ops->call function reference.
  */
@@ -45,7 +42,7 @@ long __CDECL (*nf_call)(long id, ...) = 0L;
 struct kerinfo *KERNEL;
 
 
-FILESYS * _cdecl init(struct kerinfo *k)
+FILESYS * _cdecl init_xfs(struct kerinfo *k)
 {
 	FILESYS *fs = NULL;
 

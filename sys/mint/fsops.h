@@ -138,6 +138,14 @@ struct filesys
 	void	_cdecl (*deblock)	(FILESYS *fs, ushort dev, const char *);
 };
 
+/*
+ * init function for filesystem drivers. This is required.
+ *
+ * the init function is referenced by the linker command as init_xfs.
+ * The make process does not know wether the compiler adds an
+ * underscore, so enforce that here
+ */
+FILESYS * _cdecl init_xfs(struct kerinfo *k) __asm__("init_xfs");
 
 /* various character constants and defines for TTY's */
 # define MiNTEOF	0x0000ff1a	/* 1a == ^Z */

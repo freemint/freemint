@@ -25,8 +25,7 @@ static int min_version = MINT_MIN_VERSION;
  * Initialisation routine called first by the kernel
  */
 
-FILESYS *
-init (struct kerinfo *k)
+FILESYS *_cdecl init_xfs (struct kerinfo *k)
 {
 	kernel = k;
 	

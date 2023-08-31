@@ -236,8 +236,7 @@ static DEVDRV devtab =
  */
 int isofs_dev;
 
-FILESYS * _cdecl
-init(struct kerinfo *k)
+FILESYS * _cdecl init_xfs(struct kerinfo *k)
 {
 	struct fs_descr d = { &ftab, -1 };
 	long r;

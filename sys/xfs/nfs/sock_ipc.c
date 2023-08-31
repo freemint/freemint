@@ -291,8 +291,8 @@ volatile char lock = 0;
 	long _tstval = (long)&val;				\
 	__asm__ __volatile__(					\
 		"clrb		%0\n\t"				\
-		"movel		%1,a0\n\t"			\
-		"bsetb		#7,a0@\n\t"			\
+		"movel		%1,%%a0\n\t"			\
+		"bsetb		#7,%%a0@\n\t"			\
 		"beq		1f\n\t"				\
 		"moveb		#1,%0\n\t"			\
 		"1:\n\t"					\

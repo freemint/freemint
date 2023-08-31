@@ -56,11 +56,8 @@
 static int maj_version = MINT_MAJ_VERSION;
 static int min_version = MINT_MIN_VERSION;
 
-FILESYS * init(struct kerinfo *k);
-
 struct kerinfo *KERNEL;
-FILESYS *
-init (struct kerinfo *k)
+FILESYS * _cdecl init_xfs (struct kerinfo *k)
 {
 	KERNEL = k;
 	

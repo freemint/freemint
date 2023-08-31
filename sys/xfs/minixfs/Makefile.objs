@@ -29,7 +29,7 @@ WARN +=
 
 # default definitions
 LIBS = $(LIBKERN) -lgcc
-LDFLAGS = -nostdlib -Wl,--entry -Wl,_init
+LDFLAGS = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 STRIPFLAGS = $(shell for i in `cat syms.mfs` ; do echo -n "-K $$i " ; done)
 GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)

@@ -31,8 +31,6 @@
 #include "hostfs.h"
 
 
-extern FILESYS * _cdecl init(struct kerinfo *k);
-
 /*
  * global kerinfo structure
  */
@@ -44,7 +42,7 @@ struct kerinfo *KERNEL;
 long __CDECL (*nf_call)(long id, ...) = 0L;
 
 
-FILESYS * _cdecl init(struct kerinfo *k)
+FILESYS * _cdecl init_xfs(struct kerinfo *k)
 {
 	FILESYS *fs = NULL;
 
