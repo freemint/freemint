@@ -453,8 +453,8 @@ checkalarms (void)
 			"\tmove.l %1, %%d0\n"
 			"\tmove.l %0, %%a0\n"
 
-			"\tmove.l d0,-(%%a7)\n"
-			"\tmove.l a0,-(%%a7)\n"
+			"\tmove.l %%d0,-(%%a7)\n"
+			"\tmove.l %%a0,-(%%a7)\n"
 			"\tjsr (%2)\n"
 #ifdef __mcoldfire__
 			"\taddq.l #8,%%a7\n"

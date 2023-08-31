@@ -40,21 +40,21 @@ trap_13_wwlwwwl((short)(0x04),(short)(a),(long)(b),(short)(c),(short)(d)\
 	    								\
 	__asm__ volatile						\
 	("\
-		movl	%5,sp@-; \
-		movw    %4,sp@-; \
-		movw    %3,sp@-; \
-		movw    %2,sp@-; \
-		movl    %1,sp@-; \
-		movw    %0,sp@-	"					\
+		movl	%5,%%sp@-; \
+		movw    %4,%%sp@-; \
+		movw    %3,%%sp@-; \
+		movw    %2,%%sp@-; \
+		movl    %1,%%sp@-; \
+		movw    %0,%%sp@-	"					\
 	:					      /* outputs */	\
 	: "r"(_a), "r"(_b), "r"(_c), "r"(_d), "r"(_e), "r"(_f) /* inputs  */ \
 	);								\
 									\
 	__asm__ volatile						\
 	("\
-		movw    %1,sp@-; \
+		movw    %1,%%sp@-; \
 		trap    #13;	\
-		addw    #18,sp "					\
+		addw    #18,%%sp "					\
 	: "=r"(retvalue)			/* outputs */		\
 	: "g"(n)				/* inputs  */		\
 	: "d0", "d1", "d2", "a0", "a1", "a2"    /* clobbered regs */	\
