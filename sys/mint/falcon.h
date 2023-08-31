@@ -24,14 +24,14 @@ __extension__								\
 									\
 	__asm__ volatile						\
 	("\
-		movw	%6,sp@-; \
-		movw	%5,sp@-; \
-		movw	%4,sp@-; \
-		movw	%3,sp@-; \
-		movw	%2,sp@-; \
-		movw	%1,sp@-; \
+		movw	%6,%%sp@-; \
+		movw	%5,%%sp@-; \
+		movw	%4,%%sp@-; \
+		movw	%3,%%sp@-; \
+		movw	%2,%%sp@-; \
+		movw	%1,%%sp@-; \
 		trap	#14; \
-		lea	sp@(12),sp"					\
+		lea	%%sp@(12),%%sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c), "r"(_d), "r"(_e)		\
 	: __CLOBBER_RETURN("d0")					\
@@ -52,13 +52,13 @@ __extension__								\
 									\
 	__asm__ volatile						\
 	("\
-		movl	%5,sp@-; \
-		movl	%4,sp@-; \
-		movl	%3,sp@-; \
-		movl	%2,sp@-; \
-		movw	%1,sp@-; \
+		movl	%5,%%sp@-; \
+		movl	%4,%%sp@-; \
+		movl	%3,%%sp@-; \
+		movl	%2,%%sp@-; \
+		movw	%1,%%sp@-; \
 		trap	#14; \
-		lea	sp@(18),sp"					\
+		lea	%%sp@(18),%%sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c), "r"(_d)			\
 	: __CLOBBER_RETURN("d0")					\
@@ -81,15 +81,15 @@ __extension__								\
 									\
 	__asm__ volatile						\
 	("\
-		movl	%7,sp@-; \
-		movl	%6,sp@-; \
-		movl	%5,sp@-; \
-		movl	%4,sp@-; \
-		movl	%3,sp@-; \
-		movl	%2,sp@-; \
-		movw	%1,sp@-; \
+		movl	%7,%%sp@-; \
+		movl	%6,%%sp@-; \
+		movl	%5,%%sp@-; \
+		movl	%4,%%sp@-; \
+		movl	%3,%%sp@-; \
+		movl	%2,%%sp@-; \
+		movw	%1,%%sp@-; \
 		trap	#14; \
-		lea	sp@(26),sp"					\
+		lea	%%sp@(26),%%sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c), "r"(_d), "r"(_e), "r"(_f)	\
 	: __CLOBBER_RETURN("d0")					\
@@ -108,11 +108,11 @@ __extension__								\
 									\
 	__asm__ volatile						\
 	("\
-		movl	%3,sp@-; \
-		movl	%2,sp@-; \
-		movw	%1,sp@-; \
+		movl	%3,%%sp@-; \
+		movl	%2,%%sp@-; \
+		movw	%1,%%sp@-; \
 		trap	#14; \
-		lea	sp@(10),sp"					\
+		lea	%%sp@(10),%%sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b)					\
 	: __CLOBBER_RETURN("d0")					\
@@ -132,12 +132,12 @@ __extension__								\
 									\
 	__asm__ volatile						\
 	("\
-		movl	%4,sp@-; \
-		movw	%3,sp@-; \
-		movl	%2,sp@-; \
-		movw	%1,sp@-; \
+		movl	%4,%%sp@-; \
+		movw	%3,%%sp@-; \
+		movl	%2,%%sp@-; \
+		movw	%1,%%sp@-; \
 		trap	#14; \
-		lea	sp@(12),sp"					\
+		lea	%%sp@(12),%%sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c)				\
 	: __CLOBBER_RETURN("d0")					\

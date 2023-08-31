@@ -82,10 +82,10 @@ splhigh (void)
 	__asm__ volatile
 	(
 #ifdef __mcoldfire__
-		"movew   sr,%0\n\t"
+		"movew   %%sr,%0\n\t"
 		"movew   %0,%1\n\t"
 		"oril    #0x0700,%1\n\t"
-		"movew   %1,sr"
+		"movew   %1,%%sr"
 		: "=d" (sr), "=d" (tempo)
 #else
 		"movew   %%sr,%0\n\t"
@@ -103,7 +103,7 @@ spl (register __u16 sr)
 {
 	__asm__ volatile
 	(
-		"movew   %0,sr"
+		"movew   %0,%%sr"
 		:
 		: "d" (sr)
 	);

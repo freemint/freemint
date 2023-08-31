@@ -50,7 +50,7 @@
 
 #define POP_SP(regs,size)						\
 	"movml	%%sp@," regs "\n\t"					\
-	"lea	%%sp@(" #size "),sp\n\t"
+	"lea	%%sp@(" #size "),%%sp\n\t"
 
 #else
 

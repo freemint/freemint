@@ -71,14 +71,14 @@ __asm_bswap64 (register __u64 x)
 {
 	__asm__
 	(
-		"movl sp@(4),d1"
-		"movl sp@(8),d0"
-		"rolw #8,d1"
-		"swap d1"
-		"rolw #8,d1"
-		"rolw #8,d0"
-		"swap d0"
-		"rolw #8,d0"
+		"movl %%sp@(4),%%d1"
+		"movl %%sp@(8),%%d0"
+		"rolw #8,%%d1"
+		"swap %%d1"
+		"rolw #8,%%d1"
+		"rolw #8,%%d0"
+		"swap %%d0"
+		"rolw #8,%%d0"
 		
 		
 		: "=d" (x)

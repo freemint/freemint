@@ -64,4 +64,6 @@ struct kernel_module
 	struct proc *caller;
 };
 
+long _cdecl init_km(struct kentry *k, const struct kernel_module *km) __asm__("init_km");
+
 #endif	/* _mint_module_h_ */

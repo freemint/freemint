@@ -64,13 +64,13 @@ __extension__								\
 	    								\
 	__asm__ volatile						\
 	("\
-		movw    %5,sp@-; \
-		movl    %4,sp@-; \
-		movl    %3,sp@-; \
-		movw    %2,sp@-; \
-		movw    %1,sp@-; \
+		movw    %5,%%sp@-; \
+		movl    %4,%%sp@-; \
+		movl    %3,%%sp@-; \
+		movw    %2,%%sp@-; \
+		movw    %1,%%sp@-; \
 		trap    #14;	\
-		lea	sp@(14),sp "					\
+		lea	%%sp@(14),%%sp "					\
 	: "=r"(retvalue)			/* outputs */		\
 	: "g"(n),							\
 	  "r"(_a), "r"(_b), "r"(_c), "r"(_d)    /* inputs  */		\
@@ -93,13 +93,13 @@ __extension__								\
 	    								\
 	__asm__ volatile						\
 	("\
-		movl    %5,sp@-; \
-		movw    %4,sp@-; \
-		movl    %3,sp@-; \
-		movw    %2,sp@-; \
-		movw    %1,sp@-; \
+		movl    %5,%%sp@-; \
+		movw    %4,%%sp@-; \
+		movl    %3,%%sp@-; \
+		movw    %2,%%sp@-; \
+		movw    %1,%%sp@-; \
 		trap    #14;	\
-		lea	sp@(14),sp "					\
+		lea	%%sp@(14),%%sp "					\
 	: "=r"(retvalue)			/* outputs */		\
 	: "g"(n),							\
 	  "r"(_a), "r"(_b), "r"(_c), "r"(_d)    /* inputs  */		\

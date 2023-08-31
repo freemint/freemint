@@ -83,7 +83,7 @@ static __inline__ void set_usp(void *p)
 {
 	__asm__ volatile
 	(
-		"move.l	%0,usp"
+		"move.l	%0,%%usp"
 	:		/* outputs */
 	: "a"(p)	/* inputs */
 	: "memory"	/* clobbered regs */

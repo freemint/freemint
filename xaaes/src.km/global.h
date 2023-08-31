@@ -128,9 +128,9 @@ __extension__								\
 	    								\
 	__asm__ volatile						\
 	("\
-		movw    %1,sp@-; \
+		movw    %1,%%sp@-; \
 		trap    #14;	\
-		addql   #2,sp "						\
+		addql   #2,%%sp "						\
 	: "=r"(retvalue)			/* outputs */		\
 	: "g"(n)				/* inputs  */		\
 	: __CLOBBER_RETURN("d0")					\
