@@ -343,20 +343,15 @@ DEVDRV *	_cdecl init	(struct kerinfo *k);
  */
 INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_scc 		(IOVAR *iovar, SCC *regs);
-static void	scc_txempty	(void) USED;
-static void	scc_rxavail	(void) USED;
-static void	scc_stchange	(void) USED;
-static void	scc_special	(void) USED;
 
-static void	scc_intrwrap	(void) USED;
-       void	scca_txempty	(void);
-       void	scca_rxavail	(void);
-       void	scca_stchange	(void);
-       void	scca_special	(void);
-       void	sccb_txempty	(void);
-       void	sccb_rxavail	(void);
-       void	sccb_stchange	(void);
-       void	sccb_special	(void);
+static void	scca_txempty_asm(void);
+static void scca_rxavail_asm(void);
+static void scca_stchange_asm(void);
+static void scca_special_asm(void);
+static void sccb_txempty_asm(void);
+static void sccb_rxavail_asm(void);
+static void sccb_stchange_asm(void);
+static void sccb_special_asm(void);
 
 
 /*
@@ -1163,10 +1158,10 @@ init_scc (void)
 		
 # define vector(x)	(x / 4)
 		
-		(void) Setexc (vector (0x180), sccb_txempty);
-		(void) Setexc (vector (0x188), sccb_stchange);
-		(void) Setexc (vector (0x190), sccb_rxavail);
-		(void) Setexc (vector (0x198), sccb_special);
+		(void) Setexc (vector (0x180), sccb_txempty_asm);
+		(void) Setexc (vector (0x188), sccb_stchange_asm);
+		(void) Setexc (vector (0x190), sccb_rxavail_asm);
+		(void) Setexc (vector (0x198), sccb_special_asm);
 		
 # undef vector
 	}
@@ -1209,10 +1204,10 @@ init_scc (void)
 		
 # define vector(x)	(x / 4)
 		
-		(void) Setexc (vector (0x1a0), scca_txempty);
-		(void) Setexc (vector (0x1a8), scca_stchange);
-		(void) Setexc (vector (0x1b0), scca_rxavail);
-		(void) Setexc (vector (0x1b8), scca_special);
+		(void) Setexc (vector (0x1a0), scca_txempty_asm);
+		(void) Setexc (vector (0x1a8), scca_stchange_asm);
+		(void) Setexc (vector (0x1b0), scca_rxavail_asm);
+		(void) Setexc (vector (0x1b8), scca_special_asm);
 		
 # undef vector
 	}
@@ -1632,130 +1627,137 @@ scc_special (void)
  * 
  * HACK: Der IOVAR-Zeiger wird in A0 uebergeben!
  */
-static void
-scc_intrwrap (void)
+
+/*
+ * SCC port A
+ */
+	
+static void scca_txempty_asm(void)
 {
-	(void) scc_txempty;
-	(void) scc_rxavail;
-	(void) scc_stchange;
-	(void) scc_special;
-	(void) scc_intrwrap;
-	
-	
-	/*
-	 * SCC port A
-	 */
-	
 	asm volatile
 	(
-		"_scca_txempty:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_scca,%%a0\n\t" \
-		 "bsr     _scc_txempty\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t"
+		 "move.l  %0,%%a0\n\t"
+		 "bsr     %1\n\t"
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t"
 		 "rte"
 		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_scca_rxavail:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_scca,%%a0\n\t" \
-		 "bsr     _scc_rxavail\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_scca_stchange:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_scca,%%a0\n\t" \
-		 "bsr     _scc_stchange\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_scca_special:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_scca,%%a0\n\t" \
-		 "bsr     _scc_special\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	
-	/*
-	 * SCC port B
-	 */
-	
-	asm volatile
-	(
-		"_sccb_txempty:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_sccb,%%a0\n\t" \
-		 "bsr     _scc_txempty\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_sccb_rxavail:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_sccb,%%a0\n\t" \
-		 "bsr     _scc_rxavail\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_sccb_stchange:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_sccb,%%a0\n\t" \
-		 "bsr     _scc_stchange\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-	
-	asm volatile
-	(
-		"_sccb_special:\n\t" \
-		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
-		 "move.l  _iovar_sccb,%%a0\n\t" \
-		 "bsr     _scc_special\n\t" \
-		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
-		 "rte"
-		: 			/* output register */
+		: "m"(iovar_scca), "m"(scc_txempty)  			/* input registers */
 		:  			/* input registers */
 		 			/* clobbered */
 	);
 }
-
+	
+static void scca_rxavail_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  %0,%%a0\n\t" \
+		 "bsr     %1\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_scca), "m"(scc_rxavail)  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
+static void scca_stchange_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  %0,%%a0\n\t" \
+		 "bsr     %1\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_scca), "m"(scc_stchange)  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
+static void scca_special_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  %0,%%a0\n\t" \
+		 "bsr     %1\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_scca), "m"(scc_special)  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
+/*
+ * SCC port B
+ */
+	
+static void sccb_txempty_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t"
+		 "move.l  %0,%%a0\n\t"
+		 "bsr     %1\n\t"
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t"
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_sccb), "m"(scc_txempty)  			/* input registers */
+		:  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
+static void sccb_rxavail_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  %0,%%a0\n\t" \
+		 "bsr     %1\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_sccb), "m"(scc_rxavail)  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
+static void sccb_stchange_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  %0,%%a0\n\t" \
+		 "bsr     %1\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_sccb), "m"(scc_stchange)  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
+static void sccb_special_asm(void)
+{
+	asm volatile
+	(
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  %0,%%a0\n\t" \
+		 "bsr     %1\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
+		: 			/* output register */
+		: "m"(iovar_sccb), "m"(scc_special)  			/* input registers */
+		 			/* clobbered */
+	);
+}
+	
 /* END interrupt handling - bottom half */
 /****************************************************************************/
 

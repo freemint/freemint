@@ -102,8 +102,8 @@ __extension__															 \
 ({register short retvalue __asm__("d0");	\
 	short _a = (short)(a);			\
 	__asm__ volatile			\
-	("move.w sr,d0;				\
-	move.w %1,sr "				\
+	("move.w %%sr,%%d0;				\
+	move.w %1,%%sr "				\
 	: "=r"(retvalue)	 /* outputs */	\
 	: "d"(_a)		/* inputs  */	\
 	: "d0"		 /* clobbered regs */	\
@@ -120,7 +120,7 @@ __extension__															 \
 __extension__															 \
 ({register short retvalue __asm__("d0");	\
 	__asm__ volatile			\
-	("move.w sr,d0 "			\
+	("move.w %%sr,%%d0 "			\
 	: "=r"(retvalue)	/* outputs */	\
 	:			/* inputs  */	\
 	: "d0"		 /* clobbered regs */	\
@@ -368,27 +368,24 @@ signed long floppy_block_io(DI *di, int rwflag, void *buffer, ulong size, long l
 
 #ifdef NONBLOCKING_DMA
 /* THIS NEEDS FIXING */
-void floppy_interrupt_asm1()
-{
-	(void)floppy_interrupt();
-
-	__asm__ volatile
-	(
-		"_floppy_interrupt_asm:"
-		"movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)"
-		"bsr _floppy_interrupt"
-		"movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2"
-		"rte"
-		: 			/* output register */
-		:			/* input registers */
-		 			/* clobbered */
-	);
-}
-
-void floppy_interrupt();
+static void floppy_interrupt(void)
 {
 	if((mfp->gpip & 0x20) == 0) dma.deblock(dma_channel,0);
 	dma.deblock(dma_channel,(void *)1);
+}
+
+static void floppy_interrupt_asm(void)
+{
+	__asm__ volatile
+	(
+		"movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)"
+		"bsr %0"
+		"movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2"
+		"rte"
+		: 			/* output register */
+		: "m"(floppy_interrupt)			/* input registers */
+		 			/* clobbered */
+	);
 }
 #endif
 
@@ -698,7 +695,7 @@ static signed short floprw(signed long buf, signed short rw, signed short dev, s
 
 #ifdef NONBLOCKING_DMA
 		int_vec=(* 0x11C);	/* save interrupt vector */
-		(* 0x11C)=&floppy_interrupt_asm;	/* install interrupt vector */
+		(* 0x11C) = floppy_interrupt_asm;	/* install interrupt vector */
 	
 		old_ierb = mfp->ierb & 0x80;	/* get MFP status */
 		old_imrb = mfp->imrb & 0x80;

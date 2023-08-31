@@ -187,16 +187,21 @@ overflow:
 }
 
 /* exp./todo: gcc -fprofile calls mcount (no _!) so provide it here
- * but the kernel crashes, so only -DPROFILE works
+ * but the kernel crashes, so only -DPROFILE works.
+ *
+ * For toolchains that don't prepend symbols
+ * with an underscore (like elf), it is the other way around.
+ * (__USER_LABEL_PREFIX__ will be either _ or empty)
  */
-__asm__
-(
-	".globl	mcount\n\t"
-"mcount:\n\t"
-	"bra _mcount\n\t"
-);
-
-void mcount (void);
+#define _ 2
+#if (__USER_LABEL_PREFIX__ + 0) != 2
+/* toolchain does not prepend an underscore, and gcc emits call to _mcount */
+void mcount (void) __attribute__((asm("_mcount"));
+#else
+/* toolchain does prepend an underscore, and gcc emits call to mcount */
+void mcount (void) __attribute__((asm("mcount"));
+#endif
+#undef _
 
 void
 mcount (void)

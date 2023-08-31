@@ -285,25 +285,20 @@ DEVDRV *	_cdecl init	(struct kerinfo *k);
  */
 INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_mfp		(IOVAR *iovar, MFP *regs);
-static void	mfp_txerror	(void) USED;
-static void	mfp_txempty	(void) USED;
-static void	mfp_rxavail	(void) USED;
-static void	mfp_dcdint	(void) USED;
-static void	mfp_ctsint	(void) USED;
-static void	mfp_rxerror	(void) USED;
 
-static void	mfp_intrwrap	(void) USED;
-       void	mfp1_dcdint	(void);
-       void	mfp1_ctsint	(void);
-       void	mfp1_txerror	(void);
-       void	mfp1_txempty	(void);
-       void	mfp1_rxavail	(void);
-       void	mfp1_rxerror	(void);
+static void	mfp_dcdint_asm(void);
+static void mfp_ctsint_asm(void);
+static void mfp_txerror_asm(void);
+static void mfp_txempty_asm(void);
+static void mfp_rxerror_asm(void);
+static void mfp_rxavail_asm(void);
 
-       void	ttmfp1_txerror	(void);
-       void	ttmfp1_txempty	(void);
-       void	ttmfp1_rxavail	(void);
-       void	ttmfp1_rxerror	(void);
+#ifndef MILAN
+static void ttmfp_txerror_asm(void);
+static void ttmfp_txempty_asm(void);
+static void ttmfp_rxerror_asm(void);
+static void	ttmfp_rxavail_asm(void);
+#endif
 
 
 /*
@@ -468,7 +463,7 @@ iorec_full (IOREC *iorec)
 INLINE uchar
 iorec_get (IOREC *iorec)
 {
-	register ushort i;
+	ushort i;
 
 	i = inc_ptr (iorec->head);
 	iorec->head = i;
@@ -479,7 +474,7 @@ iorec_get (IOREC *iorec)
 INLINE int
 iorec_put (IOREC *iorec, uchar data)
 {
-	register ushort i = inc_ptr (iorec->tail);
+	ushort i = inc_ptr (iorec->tail);
 
 	if (i == iorec->head)
 	{
@@ -496,7 +491,7 @@ iorec_put (IOREC *iorec, uchar data)
 INLINE long
 iorec_used (IOREC *iorec)
 {
-	register long tmp;
+	long tmp;
 
 	tmp = iorec->tail;
 	tmp -= iorec->head;
@@ -510,7 +505,7 @@ iorec_used (IOREC *iorec)
 INLINE long
 iorec_free (IOREC *iorec)
 {
-	register long tmp;
+	long tmp;
 
 	tmp = iorec->head;
 	tmp -= iorec->tail;
@@ -1094,12 +1089,12 @@ init_mfp (long mch)
 
 		DEBUG (("init_mfp (MFP): installing interrupt handlers ..."));
 
-		Mfpint ( 1, mfp1_dcdint);	/* 0x104 */
-		Mfpint ( 2, mfp1_ctsint);	/* 0x108 */
-		Mfpint ( 9, mfp1_txerror);	/* 0x124 */
-		Mfpint (10, mfp1_txempty);	/* 0x128 */
-		Mfpint (11, mfp1_rxerror);	/* 0x12c */
-		Mfpint (12, mfp1_rxavail);	/* 0x130 */
+		Mfpint ( 1, mfp_dcdint_asm);	/* 0x104 */
+		Mfpint ( 2, mfp_ctsint_asm);	/* 0x108 */
+		Mfpint ( 9, mfp_txerror_asm);	/* 0x124 */
+		Mfpint (10, mfp_txempty_asm);	/* 0x128 */
+		Mfpint (11, mfp_rxerror_asm);	/* 0x12c */
+		Mfpint (12, mfp_rxavail_asm);	/* 0x130 */
 
 		DEBUG (("init_mfp (MFP): done"));
 
@@ -1162,10 +1157,10 @@ init_mfp (long mch)
 
 # define vector(x)	(x / 4)
 
-		(void) Setexc (vector (0x164), ttmfp1_txerror);
-		(void) Setexc (vector (0x168), ttmfp1_txempty);
-		(void) Setexc (vector (0x16c), ttmfp1_rxerror);
-		(void) Setexc (vector (0x170), ttmfp1_rxavail);
+		(void) Setexc (vector (0x164), ttmfp_txerror_asm);
+		(void) Setexc (vector (0x168), ttmfp_txempty_asm);
+		(void) Setexc (vector (0x16c), ttmfp_rxerror_asm);
+		(void) Setexc (vector (0x170), ttmfp_rxavail_asm);
 
 # undef vector
 
@@ -1698,156 +1693,165 @@ mfp_rxerror (void)
 
 /* interrupt wrappers - call the target C routines
  */
-static void
-mfp_intrwrap (void)
+
+/*
+ * MFP port
+ */
+static void mfp_dcdint_asm(void)
 {
-	(void) mfp_dcdint;
-	(void) mfp_ctsint;
-	(void) mfp_txerror;
-	(void) mfp_txempty;
-	(void) mfp_rxerror;
-	(void) mfp_rxavail;
-	(void) mfp_intrwrap;
-
-	/*
-	 * MFP port
-	 */
-	__asm__ volatile
+	__asm__ __volatile__
 	(
-		 "_mfp1_dcdint:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp,%%a0\n\t" \
-		 "bsr     _mfp_dcdint\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp), "m"(mfp_dcdint)  			/* input registers */
+		/* clobbered */
 	);
-
-	asm volatile
-	(
-		"_mfp1_ctsint:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp,%%a0\n\t" \
-		 "bsr     _mfp_ctsint\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_mfp1_txerror:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp,%%a0\n\t" \
-		 "bsr     _mfp_txerror\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_mfp1_txempty:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp,%%a0\n\t" \
-		 "bsr     _mfp_txempty\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_mfp1_rxerror:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp,%%a0\n\t" \
-		 "bsr     _mfp_rxerror\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_mfp1_rxavail:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp,%%a0\n\t" \
-		 "bsr     _mfp_rxavail\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-# ifndef MILAN
-	/*
-	 * TT-MFP port
-	 */
-
-	asm volatile
-	(
-		"_ttmfp1_txerror:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
-		 "bsr     _mfp_txerror\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_ttmfp1_txempty:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
-		 "bsr     _mfp_txempty\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_ttmfp1_rxerror:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
-		 "bsr     _mfp_rxerror\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-
-	asm volatile
-	(
-		"_ttmfp1_rxavail:\n\t" \
-		 PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
-		 "bsr     _mfp_rxavail\n\t" \
-		 POP_SP("%%a0-%%a2/%%d0-%%d2", 24) \
-		 "rte"
-		: 			/* output register */
-		:  			/* input registers */
-		 			/* clobbered */
-	);
-# endif
 }
+
+static void mfp_ctsint_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp), "m"(mfp_ctsint)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void mfp_txerror_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp), "m"(mfp_txerror)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void mfp_txempty_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp), "m"(mfp_txempty)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void mfp_rxerror_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp), "m"(mfp_rxerror)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void mfp_rxavail_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp), "m"(mfp_rxavail)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+#ifndef MILAN
+/*
+ * TT-MFP port
+ */
+static void ttmfp_txerror_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp_tt), "m"(mfp_txerror)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void ttmfp_txempty_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp_tt), "m"(mfp_txempty)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void ttmfp_rxerror_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp_tt), "m"(mfp_rxerror)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+static void ttmfp_rxavail_asm(void)
+{
+	__asm__ __volatile__
+	(
+		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"move.l  %0,%%a0\n\t"
+		"bsr     %1\n\t"
+		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
+		"rte"
+	: 			/* output register */
+	: "m"(iovar_mfp_tt), "m"(mfp_rxavail)  			/* input registers */
+		/* clobbered */
+	);
+}
+
+#endif
 
 /* END interrupt handling - bottom half */
 /****************************************************************************/

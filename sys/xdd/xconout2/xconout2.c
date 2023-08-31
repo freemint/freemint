@@ -229,18 +229,16 @@ init (struct kerinfo *k)
 INLINE void
 printc (register long c)
 {
-	register long r;
-	
 	__asm__ volatile
 	(
 		PUSH_SP("%%d0-%%d7/%%a0-%%a6", 60)
-		"movl	%1,sp@-\n\t"
-		"movl	_oldxconout2,%%a0\n\t"
-		"jbsr	%%a0@\n\t"
+		"movl	%0,%%sp@-\n\t"
+		"movl	%1,%%a0\n\t"
+		"jsr	%%a0@\n\t"
 		"addql	#4,sp\n\t"
 		POP_SP("%%d0-%%d7/%%a0-%%a6", 60)
-		: "=r" (r)			/* outputs */
-		: "g" (c)			/* inputs  */
+		: 			/* outputs */
+		: "g" (c), "m"(oldxconout2)			/* inputs  */
 	);
 }
 
