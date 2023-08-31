@@ -1,4 +1,3 @@
-
 /*
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
@@ -13,9 +12,9 @@
  *
  * The following entry points are defined:
  *
- * _mint_dos:	entry point for GEMDOS calls (trap #1)
- * _mint_bios:	entry point for BIOS calls (trap #13)
- * _mint_xbios: entry point for XBIOS calls (trap #14)
+ * mint_dos:	entry point for GEMDOS calls (trap #1)
+ * mint_bios:	entry point for BIOS calls (trap #13)
+ * mint_xbios: entry point for XBIOS calls (trap #14)
  * _lineA0:	calls the line A initialize routine
  * _call_aes:	calls the GEM AES
  * _do_usrcall: calls a user supplied function (e.g. for Supexec), with
@@ -25,20 +24,20 @@
  *
  * external variables referenced:
  *
- * _bios_tab, _bios_max:
+ * bios_tab, bios_max:
  *    table of entry points for BIOS routines, max # of routines
- * _xbios_tab, _xbios_max:
+ * xbios_tab, xbios_max:
  *    ditto for XBIOS
- * _dos_tab, _dos_max:
+ * dos_tab, dos_max:
  *    ditto for GEMDOS
- * _curproc:
+ * curproc:
  *    pointer to current process table entry, and hence to save area for
  *    context (this is always the first entry in the PROC table).
  *
- * _bconbuf, _bconbsiz, _bconbdev:
+ * bconbuf, bconbsiz, bconbdev:
  *    256 byte buffer for Bconout() output. If _bconbsiz is non-zero,
  *    there are that many bytes in _bconbuf waiting to be flushed. The
- *    output is for device _bconbdev.
+ *    output is for device bconbdev.
  *
  * The function enter_gemdos() is called while entering
  * the kernel and leave_kernel() while leaving the kernel. These are
@@ -57,41 +56,44 @@
 #endif
 
 #include "magic/magic.i"
+#include "mint/asmdefs.h"
 
 	.text
 
-	.globl	_mint_bios,_mint_xbios
-	.globl	_mint_dos
-	.globl	_old_dos,_old_bios,_old_xbios
-	.extern	_build_context
-	.globl	_restore_context
-	.globl	_proc_clock		// controls process' allocation of CPU time
-	.globl	_enter_gemdos
-	.globl	_leave_kernel
-	.extern	_in_kernel
-	.globl	_preempt
-	.globl	_unwound_stack
-	.globl	_check_sigs
+	.globl	SYM(mint_bios)
+	.globl	SYM(mint_xbios)
+	.globl	SYM(mint_dos)
+	.globl	SYM(old_dos),SYM(old_bios),SYM(old_xbios)
+	.extern	SYM(build_context)
+	.extern	SYM(restore_context)
+	.extern	SYM(proc_clock)		// controls process' allocation of CPU time
+	.extern	SYM(enter_gemdos)
+	.extern	SYM(leave_kernel)
+	.extern	SYM(in_kernel)
+	.extern	SYM(preempt)
+	.extern	SYM(unwound_stack)
+	.globl	SYM(check_sigs)
 
-	.globl	_old_trap2
-	.globl	_mint_trap2
-	.globl	_gdos_version,_vdi_handler,_aes_handler
+	.globl	SYM(old_trap2)
+	.globl	SYM(mint_trap2)
+	.globl	SYM(gdos_version),SYM(vdi_handler),SYM(aes_handler)
 
-	.extern	_curproc
-	.globl	_bios_tab,_bios_max
-	.globl	_xbios_tab,_xbios_max,_old_xbios
-	.globl	_dos_tab,_dos_max
+	.extern	SYM(curproc)
+	.globl	SYM(bios_tab),SYM(bios_max)
+	.globl	SYM(xbios_tab),SYM(xbios_max),SYM(old_xbios)
+	.globl	SYM(dos_tab),SYM(dos_max)
 
-	.globl	_bconbuf,_bconbsiz,_bconbdev
-	.globl	_bflush
+	.extern	SYM(bconbuf),SYM(bconbsiz),SYM(bconbdev)
+	.extern	SYM(bflush)
 
-	.globl	_sys_b_ubconstat,_do_bconin,_sys_b_ubcostat,_sys_b_kbshift
+	.extern	SYM(sys_b_ubconstat),SYM(do_bconin),SYM(sys_b_ubcostat),SYM(sys_b_kbshift)
 
-	.globl	_secure_mode,_falcontos
+	.extern	SYM(secure_mode)
+	.extern SYM(falcontos)
+	.extern SYM(fpu)
+	.extern SYM(mcpu)
 
-	.globl	_stop
-
-	.globl _stackerror
+	.extern	SYM(stop)
 
 // ***********************
 // * GEMDOS trap handler *
@@ -104,14 +106,14 @@
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_dos:
+SYM(old_dos):
 	dc.l	0
-_mint_dos:
+SYM(mint_dos):
 
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
-	tst.w	_in_kernel
+	tst.w	SYM(in_kernel)
 	beq.s	norm_gemdos
 
 	movea.l	sp,a0
@@ -121,23 +123,23 @@ _mint_dos:
 #else
 	movem.l	d2-d7/a2-a6,-(sp)
 #endif
-	lea	_dos_tab,a5
-	move.w	_dos_max,d5
+	lea	SYM(dos_tab),a5
+	move.w	SYM(dos_max),d5
 	bra	reentrant_trap
 norm_gemdos:
 	clr.w	-(sp)			// no frame format needed
 // NOTE: FOR NOW, WE PRESERVE A0 ACROSS GEMDOS CALLS. THIS WILL CHANGE
 // SOMEDAY, DON'T RELY ON IT!!!
-	move.l	_curproc,-(sp)		// push pointer to syscall context save
+	move.l	SYM(curproc),-(sp)		// push pointer to syscall context save
 	addq.l	#4,(sp)
 
-	jsr	_build_context		// build_context sets A1 to stack used before we get here
-	lea	_dos_tab,a5		// set syscall_tab
-	move.w	_dos_max,d5		// set syscall_max
+	jsr	SYM(build_context)		// build_context sets A1 to stack used before we get here
+	lea	SYM(dos_tab),a5		// set syscall_tab
+	move.w	SYM(dos_max),d5		// set syscall_max
 //
-// copy parameters onto process stack. a0 and a1 were set by _build_context
+// copy parameters onto process stack. a0 and a1 were set by build_context
 //
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	(a0),sp 		// this puts us in our private stack
 #ifdef NEW_SYSCALL
 #ifdef __mcoldfire__
@@ -145,7 +147,7 @@ norm_gemdos:
 #else
 	move.w (a1),d1
 #endif
-	cmp.w	_dos_max,d1
+	cmp.w	SYM(dos_max),d1
 	bcc	gemdos
 // offset 0 is func pointer, 4 is nr of args, 6 is their size
 nospr:
@@ -172,7 +174,7 @@ cparg:	move.w	(a1,d1.w*2),-(sp)
 	move.l	4(a1),-(sp)
 	move.l	(a1),-(sp)
 #endif
-noargs:	jsr	_enter_gemdos		// set up vectors appropriately
+noargs:	jsr	SYM(enter_gemdos)		// set up vectors appropriately
 #ifdef DEBUG_INFO
 #ifdef __mcoldfire__
 	move.w	#4201,d1
@@ -182,7 +184,7 @@ noargs:	jsr	_enter_gemdos		// set up vectors appropriately
 #endif
 	bne.s	no_sys_printf
 	clr.w	(sp)			// manipulate function number
-	lea	_sys_mon_tab,a5		// tab
+	lea	SYM(sys_mon_tab),a5		// tab
 	move.w	#1,d5			// and max
 no_sys_printf:
 #endif
@@ -200,14 +202,14 @@ no_sys_printf:
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_xbios:
+SYM(old_xbios):
 	dc.l	0
-_mint_xbios:
+SYM(mint_xbios):
 
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
-	tst.w	_in_kernel
+	tst.w	SYM(in_kernel)
 	beq	norm_xbios
 
 	movea.l	sp,a0
@@ -217,13 +219,13 @@ _mint_xbios:
 #else
 	movem.l	d2-d7/a2-a6,-(sp)
 #endif
-	lea	_xbios_tab,a5
-	move.w	_xbios_max,d5
+	lea	SYM(xbios_tab),a5
+	move.w	SYM(xbios_max),d5
 	bra	reentrant_trap
 
 norm_xbios:
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	LX_68k
 
 	btst	#5,2(sp) 		// test for user/super mode
@@ -250,12 +252,12 @@ LX_68k:
 #endif
 	bra.s	LX_check
 LX_usr:
-	move.l	usp,a1			// user mode: args on user stack
+	move.l	%usp,a1			// user mode: args on user stack
 
 // XBIOS is for root, not users - start checking access privileges.
 
 LX_check:
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 #ifdef __mcoldfire__
 	moveq	#17,d1
 	cmp.w	(a1),d1			// no need to forbid Random()
@@ -277,13 +279,13 @@ LX_check:
 	cmp.w	#38,(a1)		// Supexec() has own protection code
 #endif
 	beq.s	pok
-	tst.w	_secure_mode		// the rest is subject to check
+	tst.w	SYM(secure_mode)		// the rest is subject to check
 	beq.s	pok
 	tst.w	P_EUID(a0)		// curproc->euid, is this enough?
 	bne.s	ret
 pok:
 #ifndef M68000
-	tst.w	_falcontos		// on TOS 4.0 - 4.04...
+	tst.w	SYM(falcontos)		// on TOS 4.0 - 4.04...
 	beq.s	sk
 #ifdef __mcoldfire__
 	moveq	#5,d1
@@ -310,25 +312,25 @@ pok:
 #endif
 	beq.s	LX_rom
 #endif
-// _curproc is already in a0 here
+// curproc is already in a0 here
 
 sk:
 #ifdef __mcoldfire__
 	moveq	#0x7,d0
-	bset	d0,_in_kernel
+	bset	d0,SYM(in_kernel)
 #else
-	bset	#0x7,_in_kernel
+	bset	#0x7,SYM(in_kernel)
 #endif
 	clr.w	-(sp)			// no frame format needed
 	pea	4(a0)			// push pointer to syscall context save
-	jsr	_build_context
-	lea	_xbios_tab,a5		// set syscall_tab
-	move.w	_xbios_max,d5		// set syscall_max
+	jsr	SYM(build_context)
+	lea	SYM(xbios_tab),a5		// set syscall_tab
+	move.w	SYM(xbios_max),d5		// set syscall_max
 
 //
-// copy parameters onto process stack. a0 and a1 were set by _build_context
+// copy parameters onto process stack. a0 and a1 were set by build_context
 //
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	(a0),sp 		// this puts us in our private stack
 	move.l	24(a1),-(sp)		// a1 was set by build_context
 	move.l	20(a1),-(sp)
@@ -342,7 +344,7 @@ sk:
 // For Dsp_LodToBinary(), Dsp_LoadProg()
 // jump directly to the ROM vector -- this avoids all hazards.
 #ifndef M68000
-LX_rom:	move.l	_old_xbios.w(pc),a0	// jump to ROM
+LX_rom:	move.l	SYM(old_xbios).w(pc),a0	// jump to ROM
 	jmp	(a0)
 #endif
 
@@ -368,13 +370,13 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_bios:	dc.l	0
-_mint_bios:
+SYM(old_bios):	dc.l	0
+SYM(mint_bios):
 
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
-	tst.w	_in_kernel
+	tst.w	SYM(in_kernel)
 	beq	norm_bios
 
 	movea.l	sp,a0
@@ -384,22 +386,22 @@ _mint_bios:
 #else
 	movem.l	d2-d7/a2-a6,-(sp)
 #endif
-	lea	_bios_tab,a5
-	move.w	_bios_max,d5
+	lea	SYM(bios_tab),a5
+	move.w	SYM(bios_max),d5
 	bra	reentrant_trap
 
 norm_bios:
 #ifdef __mcoldfire__
 	moveq	#0x7,d0
-	bset	d0,_in_kernel
+	bset	d0,SYM(in_kernel)
 #else
-	bset	#0x7,_in_kernel
+	bset	#0x7,SYM(in_kernel)
 #endif
-	tst.w	_bconbdev		// is BIOS buffering on?
+	tst.w	SYM(bconbdev)		// is BIOS buffering on?
 	bmi	L_bios			// no, skip all this
 
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	L_68k
 
 	btst	#5,2(sp) 		// test for user/super mode
@@ -411,10 +413,10 @@ L_68k:
 	btst	#5,(sp) 		// test for user/super mode
 	bne.s	L_bios			// if super, goto L_bios
 L_user:
-	tst.w	_proc_clock		// are we about to be preempted?
+	tst.w	SYM(proc_clock)		// are we about to be preempted?
 	beq.s	L_bios
 
-	move.l	usp,a1			// user mode: args on user stack
+	move.l	%usp,a1			// user mode: args on user stack
 L_ubios:
 	move.w	(a1),d0 		// get command
 	cmp.w	#3,d0			// Bconout?
@@ -422,14 +424,14 @@ L_ubios:
 //
 // most of the remaining functions require BIOS vectors to be properly
 // set up
-	tst.w	_bconbsiz		// is BIOS output waiting?
+	tst.w	SYM(bconbsiz)		// is BIOS output waiting?
 	bne.s	L_bios			// yes -- do regular code
 
 // test for various BIOS functions
 	cmp.w	#1,d0			// Bconstat?
 	bne.s	L_00
 	move.w	2(a1),-(sp)		// push arg
-	jsr	_sys_b_ubconstat
+	jsr	SYM(sys_b_ubconstat)
 L_1out:
 	addq.l	#2,sp
 L_0out:
@@ -440,13 +442,13 @@ L_0out:
 #else
 	ori.w	#0x0400,sr		// spl7()
 #endif
-	jsr	_leave_kernel		// does not change d0
+	jsr	SYM(leave_kernel)		// does not change d0
 	rte				// return to user
 L_00:
 	cmp.w	#2,d0			// Bconin?
 	bne.s	L_01
 	move.w	2(a1),-(sp)		// yes; push argument
-	jsr	_do_bconin
+	jsr	SYM(do_bconin)
 	addq.l	#2,sp
 	cmp.w	#0xdead,d0		// would Bconin block?
 	bne.s	L_0out			// no -- we're done
@@ -455,25 +457,25 @@ L_01:
 	cmp.w	#8,d0			// Bcostat?
 	bne.s	L_02
 	move.w	2(a1),-(sp)		// push device
-	jsr	_sys_b_ubcostat		// get status
+	jsr	SYM(sys_b_ubcostat)		// get status
 	bra.s	L_1out
 L_02:
 	cmp.w	#11,d0			// Kbshift?
 	bne.s	L_bios
 	move.w	2(a1),-(sp)		// push arg
-	jsr	_sys_b_kbshift
+	jsr	SYM(sys_b_kbshift)
 	bra.s	L_1out
 L_bios:
 	clr.w	-(sp)			// no frame format needed
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	pea	4(a0)			// push pointer to syscall context save
-	jsr	_build_context
-	lea	_bios_tab,a5		// set syscall_tab
-	move.w	_bios_max,d5		// set syscall_max
+	jsr	SYM(build_context)
+	lea	SYM(bios_tab),a5		// set syscall_tab
+	move.w	SYM(bios_max),d5		// set syscall_max
 //
-// copy parameters onto process stack. a0 and a1 were set by _build_context
+// copy parameters onto process stack. a0 and a1 were set by build_context
 //
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	(a0),sp 		// this puts us in our private stack
 	move.l	24(a1),-(sp)		// a1 was set by build_context
 	move.l	20(a1),-(sp)
@@ -492,23 +494,23 @@ _syscall:
 //
 // check here to see if we need to flush the Bconout() buffer
 //
-	tst.w	_bconbsiz		// characters in buffer?
+	tst.w	SYM(bconbsiz)		// characters in buffer?
 	beq.s	L_noflush		// no: OK to proceed
 //
 // watch out, this could cause a context switch
 //
-	jsr	_bflush 		// flush the buffer
+	jsr	SYM(bflush) 		// flush the buffer
 
 L_noflush:
 
 // Code for ptrace mode PT_SYSCALL
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	tst.l	P_PTRACER(a0)		// is someone tracing us?
 	beq.s	pt_ende
 	tst.w	P_PTRACEFLAGS(a0)	// are system calls being traced?
 	beq.s	pt_ende
-	move.w	#5,-(SP)		// move.w #SIGTRAP,-(sp)
-	jsr	_stop			// send SIGTRAP to the process
+	move.w	#5,-(sp)		// move.w #SIGTRAP,-(sp)
+	jsr	SYM(stop)			// send SIGTRAP to the process
 	addq.l	#2,sp
 pt_ende:
 // end of code for ptrace mode PT_SYSCALL
@@ -553,7 +555,7 @@ pt_ende:
 
 out:	moveq	#0,d2
 out_select:
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	d0,P_SYSCTXT+C_D0(a0)	// set d0 in the saved context
 	move.w	P_SYSCTXT+C_SR(a0),d0	// get saved status register
 
@@ -571,19 +573,19 @@ out_select:
 notrace:
 	tst.w	d2			// If D2 set, dont preemtp
 	bne.s	nosleep
-	tst.w	_proc_clock		// has process exceeded time slice?
+	tst.w	SYM(proc_clock)		// has process exceeded time slice?
 	bne.s	nosleep 		// no -- continue
 	btst	#13,d0			// caller in supervisor mode?
 	bne.s	nosleep 		// yes -- don't interrupt
 	tst.w	(0x43e).w		// test floppy disk lock variable
 	bne.s	nosleep 		// if locked, can't switch
 sleep:
-	tst.l	_unwound_stack		// did we unwind sysstack?
+	tst.l	SYM(unwound_stack)		// did we unwind sysstack?
 	beq.s	noreload1
-	move.l	_curproc,a0		// then reload it before
+	move.l	SYM(curproc),a0		// then reload it before
 	move.l	(a0),sp 		// doing anything further
 noreload1:
-	jsr	_preempt		// does a sleep(READY_Q)
+	jsr	SYM(preempt)		// does a sleep(READY_Q)
 	bra.s	nosig
 
 nosleep:
@@ -591,12 +593,12 @@ nosleep:
 	not.l	d0
 	and.l	P_SIGPENDING(a0),d0
 	beq.s	nosig
-	tst.l	_unwound_stack		// did we unwind sysstack?
+	tst.l	SYM(unwound_stack)		// did we unwind sysstack?
 	beq.s	noreload2
-	move.l	_curproc,a0		// then reload it before
+	move.l	SYM(curproc),a0		// then reload it before
 	move.l	(a0),sp 		// doing anything further
 noreload2:
-	jsr	_check_sigs
+	jsr	SYM(check_sigs)
 nosig:
 #ifdef __mcoldfire__
 	move.w	sr,d1
@@ -605,13 +607,13 @@ nosig:
 #else
 	ori.w	#0x0400,sr		// spl7()
 #endif
-	clr.l	_unwound_stack
-	jsr	_leave_kernel		// restore vectors (loads a0)
+	clr.l	SYM(unwound_stack)
+	jsr	SYM(leave_kernel)		// restore vectors (loads a0)
 	pea	4(a0)
-	jsr	_restore_context	// never returns
+	jsr	SYM(restore_context)	// never returns
 
 rom_bios:
-	move.l	_old_bios.w(pc),-(sp)
+	move.l	SYM(old_bios).w(pc),-(sp)
 	rts
 
 //
@@ -620,22 +622,22 @@ rom_bios:
 //
 
 do_bconout:
-	tst.w	_bconbdev		// is BIOS buffering on?
+	tst.w	SYM(bconbdev)		// is BIOS buffering on?
 	bmi	L_bios			// no buffering -- skip this code
 	move.w	2(a1),d0		// what device is this for?
 	beq	L_bios			// don't buffer the printer
-	cmp.w	_bconbdev,d0		// same device as is buffered?
+	cmp.w	SYM(bconbdev),d0		// same device as is buffered?
 	bne.s	new_dev 		// no -- maybe we can't do this
 put_buf:
 	move.w	4(a1),d0		// get the character to output
 #ifdef __mcoldfire__
-	mvz.w	_bconbsiz,d1		// get index into buffer table
+	mvz.w	SYM(bconbsiz),d1		// get index into buffer table
 #else
-	move.w	_bconbsiz,d1		// get index into buffer table
+	move.w	SYM(bconbsiz),d1		// get index into buffer table
 #endif
 	cmp.w	#255,d1 		// buffer full?
 	beq	L_bios			// yes -- flush it out
-	lea	_bconbuf,a0
+	lea	SYM(bconbuf),a0
 #ifdef __mcoldfire__
 	add.l	d1,a0
 #else
@@ -647,7 +649,7 @@ put_buf:
 #else
 	addq.w	#1,d1
 #endif
-	move.w	d1,_bconbsiz
+	move.w	d1,SYM(bconbsiz)
 #ifdef __mcoldfire__
 	move.w	sr,d1
 	ori.l	#0x0400,d1		// spl7()
@@ -655,14 +657,14 @@ put_buf:
 #else
 	ori.w	#0x0400,sr		// spl7()
 #endif
-	jsr	_leave_kernel		// restore vectors
+	jsr	SYM(leave_kernel)		// restore vectors
 	moveq.l	#-1,d0			// return character output OK
 	rte
 
 new_dev:
-	tst.w	_bconbsiz		// characters already in buffer?
+	tst.w	SYM(bconbsiz)		// characters already in buffer?
 	bne	L_bios			// yes: we can't buffer this one
-	move.w	d0,_bconbdev		// no: OK, we have a new device
+	move.w	d0,SYM(bconbdev)		// no: OK, we have a new device
 	bra.s	put_buf
 
 //
@@ -672,18 +674,18 @@ new_dev:
 // to figure out which trap we have to call, we use the system call
 // table placed in a5 earlier
 
-error:	cmp.l	#_xbios_tab,a5
+error:	cmp.l	#SYM(xbios_tab),a5
 	bne.s	enosys
-	jsr	_trap_14_emu
+	jsr	SYM(trap_14_emu)
 	bra	out
 enosys:	moveq	#-32,d0		// ENOSYS
 	bra	out
 
-_vdi_handler:
+SYM(vdi_handler):
 	dc.l	0
-_aes_handler:
+SYM(aes_handler):
 	dc.l	0
-_gdos_version:
+SYM(gdos_version):
 	dc.l	0
 
 // ***********************
@@ -696,14 +698,14 @@ _gdos_version:
 //
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_trap2:
+SYM(old_trap2):
 	dc.l	0
-_mint_trap2:
+SYM(mint_trap2):
 
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
-	tst.w	_in_kernel
+	tst.w	SYM(in_kernel)
 	beq.s	norm_trap2
 
 #ifdef __mcoldfire__
@@ -717,17 +719,17 @@ _mint_trap2:
 
 norm_trap2:
 #ifdef M68000
-	bset	#0x07,_in_kernel	// speed optimization: 'in_vdi' is not used for the 000 build
+	bset	#0x07,SYM(in_kernel)	// speed optimization: 'in_vdi' is not used for the 000 build
 #else
 	move.l	a0,-(sp)		// backup a0
 
 #ifdef __mcoldfire__
-	lea	_in_kernel,a0
+	lea	SYM(in_kernel),a0
 	bset	#0x07,(a0)
 #else
-	bset	#0x07,_in_kernel
+	bset	#0x07,SYM(in_kernel)
 #endif
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.w	#0x0001,P_INVDI(a0)
 
 	move.l	(sp)+,a0		// restore a0
@@ -736,12 +738,12 @@ norm_trap2:
 // The AES/VDI passes parameters in D0/D1, so we do not touch
 // them registers..
 	clr.w	-(sp)
-	move.l	_curproc,-(sp)
+	move.l	SYM(curproc),-(sp)
 	addq.l	#4,(sp)
-	jsr	_build_context
+	jsr	SYM(build_context)
 
 	// A1 set to callers stack by build_context
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	(a0),sp			// fetch our systemstack
 	move.l	4(a0),d0		// D0.l saved by build_context, function code (AES or VDI)
 	move.l	8(a0),d1		// AES/VDI pb
@@ -766,8 +768,8 @@ trap2_out:
 	// Call the VDI
 	// long VDI_dispach( VDIpb *pb );
 enter_vdi:
-	move.l	_vdi_handler,d2
-	beq.s	old_trap2
+	move.l	SYM(vdi_handler),d2
+	beq.s	do_old_trap2
 	move.l	d2,a0
 	move.l	d1,-(sp)		// VDI parameter block address
 	jsr	(a0)
@@ -778,8 +780,8 @@ enter_vdi:
 	// Call the AES
 	// long AES_dispatch ( AESpb *pb );
 enter_aes:
-	move.l	_aes_handler,d2
-	beq.s	old_trap2
+	move.l	SYM(aes_handler),d2
+	beq.s	do_old_trap2
 	move.l	d2,a0
 	move.l	d1,-(sp)
 	jsr	(a0)
@@ -790,27 +792,27 @@ enter_aes:
 	// Return the GDOS version if VDI is installed
 	// as a kernel module.
 trap2_gdosvers:
-	move.l	_vdi_handler,d2
-	beq.s	old_trap2
-	move.l	_gdos_version,d0
+	move.l	SYM(vdi_handler),d2
+	beq.s	do_old_trap2
+	move.l	SYM(gdos_version),d0
 	moveq	#1,d2
 	bra.s	trap2_out
 
 	// Deliver the address of the VDI function dispatcher
 	// if we have it.
 trap2_vdihandler:
-	move.l	_vdi_handler,d0
+	move.l	SYM(vdi_handler),d0
 	moveq	#1,d2
 	bne.s	trap2_out
 
 	// Call old trap 2, when no function registered
-old_trap2:
-	bsr	_trap_2_emu
+do_old_trap2:
+	bsr	SYM(trap_2_emu)
 	moveq	#1,d2
 	bra.s	trap2_out
 
 rom_trap2:
-	move.l	_old_trap2,-(sp)
+	move.l	SYM(old_trap2),-(sp)
 	rts
 
 // *********************************
@@ -818,18 +820,18 @@ rom_trap2:
 // *********************************
 //
 // Trap wrapper for calling ROM from the inside of the kernel.
-// Usage: just replace trap #1 with a jsr _trap_1_emu etc.
+// Usage: just replace trap #1 with a jsr trap_1_emu etc.
 
-	.globl	_trap_1_emu
-	.globl	_trap_2_emu
-	.globl	_trap_13_emu
-	.globl	_trap_14_emu
+	.globl	SYM(trap_1_emu)
+	.globl	SYM(trap_2_emu)
+	.globl	SYM(trap_13_emu)
+	.globl	SYM(trap_14_emu)
 
 	.text
 
-_trap_1_emu:
+SYM(trap_1_emu):
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	TE_D_68K
 
 	move.w	sr,d0
@@ -855,17 +857,17 @@ TE_D:
 #endif
 TE_D_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
-	jmp	([_old_dos])
+	jmp	([SYM(old_dos)])
 #else
-	move.l	_old_dos.w(pc),-(sp)
+	move.l	SYM(old_dos).w(pc),-(sp)
 	rts
 #endif
 
 	// Ozk: we cannot use D0/D1 becaues the ugly VDI and AES
 	// passes paremters in these registers.
-_trap_2_emu:
+SYM(trap_2_emu):
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	TE_AV_68K
 
 	subq.l	#6,sp
@@ -897,15 +899,15 @@ TE_AV:
 #endif
 TE_AV_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
-	jmp	([_old_trap2])
+	jmp	([SYM(old_trap2)])
 #else
-	move.l	_old_trap2.w(pc),-(sp)
+	move.l	SYM(old_trap2).w(pc),-(sp)
 	rts
 #endif
 
-_trap_13_emu:
+SYM(trap_13_emu):
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	TE_B_68K
 
 	move.w	sr,d0
@@ -931,15 +933,15 @@ TE_B:
 #endif
 TE_B_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
-	jmp	([_old_bios])
+	jmp	([SYM(old_bios)])
 #else
-	move.l	_old_bios.w(pc),-(sp)
+	move.l	SYM(old_bios).w(pc),-(sp)
 	rts
 #endif
 
-_trap_14_emu:
+SYM(trap_14_emu):
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	TE_X_68K
 
 	move.w	sr,d0
@@ -965,9 +967,9 @@ TE_X:
 #endif
 TE_X_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
-	jmp	([_old_xbios])
+	jmp	([SYM(old_xbios)])
 #else
-	move.l	_old_xbios.w(pc),-(sp)
+	move.l	SYM(old_xbios).w(pc),-(sp)
 	rts
 #endif
 
@@ -981,13 +983,13 @@ TE_X_JMP_OLD:
 // Notice any programs those take these traps should now be loaded
 // *after* MiNT. init_intr() decides which traps to take, see there.
 
-	.globl	_unused_trap
+	.globl	SYM(unused_trap)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
 	dc.l	v_rte
 
-_unused_trap:
+SYM(unused_trap):
 	move.w	#0x010b,-(sp)		// getpid
 	trap	#1
 	move.w	#0x000c,-(sp)		// SIGSYS
@@ -1004,9 +1006,9 @@ v_rte:	rte				// and return :-)
 //
 // _lineA0: MiNT calls this to get the address of the line A variables
 //
-	.globl	_lineA0
+	.globl	SYM(lineA0)
 
-_lineA0:
+SYM(lineA0):
 #ifdef __mcoldfire__
 	move.l	a2,-(sp)		// save scratch registers
 	move.l	d2,-(sp)
@@ -1025,9 +1027,9 @@ _lineA0:
 // a parameter. Used only for doing appl_init(), to see
 // if the AES is active yet
 //
-	.globl	_call_aes
+	.globl	SYM(call_aes)
 
-_call_aes:
+SYM(call_aes):
 	move.l	4(sp),d1		// fetch pointer to parameter block
 	move.l	#200,d0 		// magic number for AES
 #ifdef __mcoldfire__
@@ -1050,15 +1052,15 @@ _call_aes:
 // and return the value from the function. NOTE: we must be careful
 // to save all registers here!
 //
-	.globl	_callout
-	.globl	_callout1
-	.globl	_callout2
-	.globl	_callout6
-	.globl	_callout6spl7
+	.globl	SYM(callout)
+	.globl	SYM(callout1)
+	.globl	SYM(callout2)
+	.globl	SYM(callout6)
+	.globl	SYM(callout6spl7)
 //
-// _callout is the general purpose one
+// callout is the general purpose one
 //
-_callout:
+SYM(callout):
 	lea	8(sp),a0		// pointer to args
 	move.l	4(sp),a1		// pointer to pointer to function
 #ifdef __mcoldfire__
@@ -1085,15 +1087,15 @@ _callout:
 #endif
 	rts
 //
-// _callout2 and _callout1 are for functions with just 1 or
+// callout2 and callout1 are for functions with just 1 or
 // 2 16 bit parameters. We cheat and use the same code for
 // both, since passing 32 bits isn't much more expensive than
 // passing 16 bits (and since the called function will just
 // ignore any extra arg)
 //
 
-_callout1:
-_callout2:
+SYM(callout1):
+SYM(callout2):
 	movem.l	4(sp),a0/a1		// get function ptr & args
 #ifdef __mcoldfire__
 	lea	-44(sp),sp
@@ -1113,9 +1115,9 @@ _callout2:
 #endif
 	rts
 //
-// _callout6 passes 6 words, saving sr
+// callout6 passes 6 words, saving sr
 //
-_callout6:
+SYM(callout6):
 #ifdef __mcoldfire__
 	lea	-44(sp),sp
 	movem.l	d2-d7/a2-a6,(sp)	// save registers
@@ -1146,9 +1148,9 @@ _callout6:
 #endif
 	rts
 //
-// _callout6spl7 passes 6 words at ipl7
+// callout6spl7 passes 6 words at ipl7
 //
-_callout6spl7:
+SYM(callout6spl7):
 #ifdef __mcoldfire__
 	lea	-44(sp),sp
 	movem.l	d2-d7/a2-a6,(sp)	// save registers
@@ -1192,28 +1194,32 @@ _callout6spl7:
 // is placed in usrret. This function is used by the Supexec code
 // in xbios.c.
 
-	.globl	_do_usrcall
-	.globl	_usrret
-	.globl	_usrcall
-	.globl	_usrarg1
-	.globl	_usrarg2
-	.globl	_usrarg3
-	.globl	_usrarg4
-	.globl	_usrarg5
+	.globl	SYM(do_usrcall)
+	.globl	SYM(usrret)
+	.globl	SYM(usrcall)
+	.globl	SYM(usrarg1)
+	.globl	SYM(usrarg2)
+	.globl	SYM(usrarg3)
+	.globl	SYM(usrarg4)
+	.globl	SYM(usrarg5)
 
-_do_usrcall:
-	move.l	_usrarg5,-(sp)
-	move.l	_usrarg4,-(sp)
-	move.l	_usrarg3,-(sp)
-	move.l	_usrarg2,-(sp)
-	move.l	_usrarg1,-(sp)
-	move.l	_usrcall,-(sp)		// the user expects to see this on the stack
+	FUNC(do_usrcall)
+SYM(do_usrcall):
+	CFI_STARTPROC()
+	move.l	SYM(usrarg5),-(sp)
+	move.l	SYM(usrarg4),-(sp)
+	move.l	SYM(usrarg3),-(sp)
+	move.l	SYM(usrarg2),-(sp)
+	move.l	SYM(usrarg1),-(sp)
+	move.l	SYM(usrcall),-(sp)		// the user expects to see this on the stack
 	pea	ucret(pc)		// so rts puts us back here
-	move.l	_usrcall,-(sp)		// this copy is for us to use
+	move.l	SYM(usrcall),-(sp)		// this copy is for us to use
 	rts				// to jump to (we don't want to use registers)
 ucret:	lea	24(sp),sp		// fix up stack
-	move.l	d0,_usrret		// save returned value
+	move.l	d0,SYM(usrret)		// save returned value
 	rts				// back to caller
+	CFI_ENDPROC()
+	END(do_usrcall)
 
 // *****************************
 // * Reentrant syscall handler *
@@ -1233,7 +1239,7 @@ ucret:	lea	24(sp),sp		// fix up stack
 //
 reentrant_trap:
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	reent_68k
 
 	move.w	(a0),d1			// format/vector word
@@ -1266,12 +1272,12 @@ reent_fpu:
 	move.w	#1,-(sp)	// data registers are saved
 	bra.s	reent_fpu_saved
 #else
-	tst.w	_fpu
+	tst.w	SYM(fpu)
 	beq.s	reent_fpu_saved
 	fsave	-(sp)
 
 #ifndef M68000
-	cmp.w	#60,_mcpu+2
+	cmp.w	#60,SYM(mcpu)+2
 	bne.s	reent_no_060
 	tst.b	2(sp)
 	beq.s	reent_fpu_notused
@@ -1315,7 +1321,7 @@ reent_fpu_saved:
  #endif
 	beq.s	reent_nofunc
 	moveq	#24,d5
-	cmpa.l	#_dos_tab,a5
+	cmpa.l	#SYM(dos_tab),a5
 	bne.s	reent_24
  #ifdef __mcoldfire__
 	addq.l	#8,d5
@@ -1397,7 +1403,7 @@ reent_no_fpu_saved:
 	frestore (sp)		// finally the internal state (including fpcr and fpsr)
 	lea	16(sp),sp
 #else
-	tst.w	_fpu
+	tst.w	SYM(fpu)
 	beq.s	reent_out_no_fpu
 	tst.w	(sp)+
 	beq.s	reent_no_fpu_saved
@@ -1423,7 +1429,7 @@ reent_call_rom:
 // ---- What to do when function number is outside function range
 reent_erange:
 	moveq	#0,d5
-	cmpa.l	#_xbios_tab,a5
+	cmpa.l	#SYM(xbios_tab),a5
 	beq.s	reent_rom_xbios
 	bra.s	reent_enosys
 
@@ -1431,9 +1437,9 @@ reent_erange:
 // ---- in the function table
 reent_nofunc:
 	moveq	#0,d5
-	cmpa.l	#_bios_tab,a5
+	cmpa.l	#SYM(bios_tab),a5
 	beq.s	reent_rom_bios
-	cmpa.l	#_xbios_tab,a5
+	cmpa.l	#SYM(xbios_tab),a5
 	beq.s	reent_rom_xbios
 reent_enosys:
 	moveq	#-32,d0
@@ -1442,10 +1448,10 @@ reent_enosys:
 
 // ---- set D1 to point to the old trap entry
 reent_rom_bios:
-	move.l	_old_bios,d1
+	move.l	SYM(old_bios),d1
 	bra.s	reent_out
 reent_rom_xbios:
-	move.l	_old_xbios,d1
+	move.l	SYM(old_xbios),d1
 	bra.s	reent_out
 
 |---------------------------------------------------------------------------------
@@ -1457,7 +1463,7 @@ reentrant_trap2:
 	// we wont bother with it. VDI/AES passes args in D0/D1.
 #ifdef	TRAP2_STACK_PARAMS
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	reent2_68k
 
 	move.w	(a0),d1			// format/vector word
@@ -1491,12 +1497,12 @@ reent2_fpu:
 	move.w	#1,-(sp)	// data registers are saved
 	bra.s	reent2_fpu_saved
 #else
-	tst.w	_fpu
+	tst.w	SYM(fpu)
 	beq.s	reent2_fpu_saved
 	fsave	-(sp)
 
 #ifndef M68000
-	cmp.w	#60,_mcpu+2
+	cmp.w	#60,SYM(mcpu)+2
 	bne.s	reent2_no_060
 	tst.b	2(sp)
 	beq.s	reent2_fpu_notused
@@ -1541,7 +1547,7 @@ reent2_trap2_out:
 	// Call the VDI
 	// long VDI_dispach( VDIpb *pb );
 reent2_enter_vdi:
-	move.l	_vdi_handler,d2
+	move.l	SYM(vdi_handler),d2
 	beq.s	reent2_old_trap2
 	move.l	d2,a0
 	move.l	d1,-(sp)
@@ -1553,7 +1559,7 @@ reent2_enter_vdi:
 	// Call the AES
 	// long AES_dispatch ( AESpb *pb );
 reent2_enter_aes:
-	move.l	_aes_handler,d2
+	move.l	SYM(aes_handler),d2
 	beq.s	reent2_old_trap2
 	move.l	d2,a0
 	move.l	d1,-(sp)
@@ -1565,9 +1571,9 @@ reent2_enter_aes:
 	// REturn the GDOS version if VDI is installed
 	// as a kernel module.
 reent2_trap2_gdosvers:
-	move.l	_vdi_handler,d2
+	move.l	SYM(vdi_handler),d2
 	beq.s	reent2_old_trap2
-	move.l	_gdos_version,d0
+	move.l	SYM(gdos_version),d0
 	moveq	#0,d2
 	bra.s	reent2_trap2_out
 
@@ -1575,7 +1581,7 @@ reent2_trap2_gdosvers:
 	// if we have it.
 reent2_trap2_vdihandler:
 	moveq	#0,d2
-	move.l	_vdi_handler,d0
+	move.l	SYM(vdi_handler),d0
 	bne.s	reent2_trap2_out
 
 reent2_rom_trap2:
@@ -1599,7 +1605,7 @@ reent2_no_fpu_saved:
 	frestore (sp)		// finally the internal state (including fpcr and fpsr)
 	lea	16(sp),sp
 #else
-	tst.w	_fpu
+	tst.w	SYM(fpu)
 	beq.s	reent2_out_no_fpu
 	tst.w	(sp)+
 	beq.s	reent2_no_fpu_saved
@@ -1625,5 +1631,5 @@ reent2_call_old:
 #else
 	movem.l	(sp)+,d1-d7/a0-a6
 #endif
-	move.l	_old_trap2,-(sp)
+	move.l	SYM(old_trap2),-(sp)
 	rts

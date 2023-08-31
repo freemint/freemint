@@ -30,15 +30,16 @@
  */
 
 #include "magic/magic.i"
+#include "mint/asmdefs.h"
 
 // The kernel_things is for the kernel itself and its threads.
 // It is directly addressed, not copied anywhere.
 
 	.data
 
-	.globl	_kernel_things
+	.globl	SYM(kernel_things)
 
-_kernel_things:
+SYM(kernel_things):
 	.long	0,0			// two useless fields, which must be here, see below
 
 // now the jumptable, with +absolute+ addresses
@@ -57,23 +58,23 @@ _kernel_things:
 // The user_things is for user processes. It is copied to the
 // process address space and addressed there.
 
-	.globl	_user_things
+	.globl	SYM(user_things)
 
-_user_things:
-	.long	user_end-_user_things	// total number of bytes (to copy)
+SYM(user_things):
+	.long	user_end-SYM(user_things)	// total number of bytes (to copy)
 usr_bp:	.long	0			// user process' basepage pointer (filled in by Slbopen())
 
 // now the jumptable, with relative addresses
 
-	.long	terminateme-_user_things
-	.long	sig_return-_user_things
-	.long	pc_valid_return-_user_things
-	.long	slb_init_and_exit-_user_things
-	.long	slb_open-_user_things
-	.long	slb_close-_user_things
-	.long	slb_close_and_pterm-_user_things
-	.long	slb_exec-_user_things
-	.long	user_xhdi-_user_things
+	.long	terminateme-SYM(user_things)
+	.long	sig_return-SYM(user_things)
+	.long	pc_valid_return-SYM(user_things)
+	.long	slb_init_and_exit-SYM(user_things)
+	.long	slb_open-SYM(user_things)
+	.long	slb_close-SYM(user_things)
+	.long	slb_close_and_pterm-SYM(user_things)
+	.long	slb_exec-SYM(user_things)
+	.long	user_xhdi-SYM(user_things)
 # ifdef JAR_PRIVATE
 	.long	0
 # endif

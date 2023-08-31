@@ -31,14 +31,16 @@
 
 # ifdef WITH_NATIVE_FEATURES
 
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	_detect_native_features
+	.globl	SYM(detect_native_features)
 
 /* 
  * NatFeats test (routine retuns TRUE/FALSE (1/0) in D0)
  */
-_detect_native_features:
+SYM(detect_native_features):
 
 	clr.l	d0			// assume no NatFeats available
 	move.l	sp,a1			// save the ssp

@@ -15,13 +15,13 @@
  */
 
 #include "magic/magic.i"
+#include "mint/asmdefs.h"
 
-	.globl	_enter_gemdos
-	.globl	_leave_kernel
+	.globl	SYM(enter_gemdos)
+	.globl	SYM(leave_kernel)
 
-	.extern	_curproc
-	.globl	_in_kernel
-	.globl	__base
+	.extern	SYM(curproc)
+	.globl	SYM(in_kernel)
 
 // Formerly, the enter_kernel() was called with an argument, that was
 // copied to the curproc->in_dos. We are compatible with this behaviour
@@ -40,20 +40,20 @@
 
 	.data
 
-_in_kernel:
+SYM(in_kernel):
 	dc.w	0
 
 	.text
 
-_enter_gemdos:
+SYM(enter_gemdos):
 #ifdef __mcoldfire__
 	moveq	#0x07,d0
-	bset	d0,_in_kernel
+	bset	d0,SYM(in_kernel)
 #else
-	bset	#0x07,_in_kernel
+	bset	#0x07,SYM(in_kernel)
 #endif
 	bne.s	g_exit
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.w	#0x0001,P_INDOS(a0)
 g_exit:
 	rts
@@ -64,14 +64,14 @@ g_exit:
 // terminate vector.
 //
 // Notice: the rest of assembler modules rely on the fact, that
-// this function loads the _curproc address to the register a0,
+// this function loads the curproc address to the register a0,
 // and additionally doesn't change the d0. See syscall.spp.
 //
-_leave_kernel:
-	move.l	_curproc,a0
+SYM(leave_kernel):
+	move.l	SYM(curproc),a0
 	clr.w	P_INDOS(a0)
 #ifndef M68000
 	clr.w	P_INVDI(a0)
 #endif
-	clr.w	_in_kernel
+	clr.w	SYM(in_kernel)
 	rts

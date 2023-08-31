@@ -5,13 +5,17 @@
 | it is not a part of the original MiNT distribution
 |
 
+#define CONCAT1(a, b) CONCAT2(a, b)
+#define CONCAT2(a, b) a ## b
+#define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
+
 	.globl	_init
-	.globl	_small_main
-	.globl	__base
+	.globl	SYM(small_main)
+	.globl	SYM(_base)
 
 	.bss
 
-__base:
+SYM(_base):
 	ds.l	1
 __stack:
 	ds.b	4094			| 4k is a minimum
@@ -34,4 +38,4 @@ _init:
 	pea	(0x004a0000).l		| Mshrink()
 	trap	#1
 	lea	0x0c(sp),sp
-	jmp	_small_main
+	jmp	SYM(small_main)

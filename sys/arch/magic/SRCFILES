@@ -5,7 +5,7 @@ COBJS = \
 	genmagic.c
 
 SOBJS = \
-	startup.s
+	startup.S
 
 SPPOBJS = 
 

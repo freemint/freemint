@@ -40,6 +40,8 @@
  * 
  */
 
+#include "mint/asmdefs.h"
+
 #if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
 
 // set_mmu
@@ -53,13 +55,13 @@
 	.arch  68040
 	.text
 
-	.globl	_set_mmu
+	.globl	SYM(set_mmu)
 
-_set_mmu:
+SYM(set_mmu):
 	move.l	4(sp),d0
 	pflusha			// flush the ATCs
-	movec	d0,urp		// set user root pointer
-	movec	d0,srp		// set supervisor root pointer
+	movec	d0,%urp		// set user root pointer
+	movec	d0,%srp		// set supervisor root pointer
 	rts
 
 // save_mmu, restr_mmu: save and restore the root pointers that came from ROM
@@ -71,30 +73,30 @@ oldsrp:	dc.l	0
 
 	.text
 
-	.globl	_save_mmu
+	.globl	SYM(save_mmu)
 
-_save_mmu:
-	movec	urp,d0		// save user root pointer
+SYM(save_mmu):
+	movec	%urp,d0		// save user root pointer
 	move.l	d0,oldurp
-	movec	srp,d0		// and supervisor root pointer
+	movec	%srp,d0		// and supervisor root pointer
 	move.l	d0,oldsrp
 	rts
 
 
-	.globl	_restr_mmu
+	.globl	SYM(restr_mmu)
 
-_restr_mmu:
+SYM(restr_mmu):
 	pflusha			// flush the ATCs
 	move.l	oldurp,d0
 	move.l	oldsrp,d1
-	movec	d0,urp		// restore user root pointer
-	movec	d1,srp		// and supervisor root pointer
+	movec	d0,%urp		// restore user root pointer
+	movec	d1,%srp		// and supervisor root pointer
 	rts
 
 
-	.globl	_flush_mmu
+	.globl	SYM(flush_mmu)
 
-_flush_mmu:
+SYM(flush_mmu):
 	pflusha
 	rts
 
@@ -106,23 +108,23 @@ _flush_mmu:
 // Input:
 // 4(sp): Pointer to seven longwords.
 
-	.globl	_get_mmuregs
+	.globl	SYM(get_mmuregs)
 
-_get_mmuregs:
+SYM(get_mmuregs):
 	move.l	4(sp),a0
-	movec	tc,d0
+	movec	%tc,d0
 	move.l	d0,(a0)+
-	movec	itt0,d0
+	movec	%itt0,d0
 	move.l	d0,(a0)+
-	movec	itt1,d0
+	movec	%itt1,d0
 	move.l	d0,(a0)+
-	movec	dtt0,d0
+	movec	%dtt0,d0
 	move.l	d0,(a0)+
-	movec	dtt1,d0
+	movec	%dtt1,d0
 	move.l	d0,(a0)+
-	movec	urp,d0
+	movec	%urp,d0
 	move.l	d0,(a0)+
-	movec	srp,d0
+	movec	%srp,d0
 	move.l	d0,(a0)+
 	rts
 
@@ -141,9 +143,9 @@ _get_mmuregs:
 // Returns:
 // d0: Long word found at given address
 
-	.globl	_read_phys
+	.globl	SYM(read_phys)
 
-_read_phys:
+SYM(read_phys):
 	move.l	4(sp),a0		// get address to read
 	move	sr,d1
 #ifdef __mcoldfire__
@@ -157,10 +159,10 @@ _read_phys:
 	move.l	#0x00ffe060,d0		// value for DTT0: transparently
 					// translate all data accesses, not using
 					// the cache
-	movec	dtt0,a1			// save DTT0
-	movec	d0,dtt0			// set new DTT0
+	movec	%dtt0,a1			// save DTT0
+	movec	d0,%dtt0			// set new DTT0
 	move.l	(a0),d0			// read the physical longword
-	movec	a1,dtt0			// restore DTT0
+	movec	a1,%dtt0			// restore DTT0
 	move	d1,sr			// restore interrupts
 	rts
 #endif

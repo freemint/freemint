@@ -18,6 +18,8 @@
  *
  */
 
+#include "mint/asmdefs.h"
+
 #ifndef __mcoldfire__
 	.cpu	68030
 	.arch	68030
@@ -25,11 +27,12 @@
 
 // Test hardware registers for presence
 
-	.globl	_test_byte_rd
-	.globl	_test_word_rd
-	.globl	_test_long_rd
+	.globl	SYM(test_byte_rd)
+	.globl	SYM(test_word_rd)
+	.globl	SYM(test_long_rd)
 
-_test_byte_rd:
+	FUNC(test_byte_rd)
+SYM(test_byte_rd):
 	move.l	a2,-(sp)
 	move.l	sp,a0
 	move.l	(8).w,a1
@@ -48,8 +51,11 @@ berr:	move.l	a1,(8).w
 	nop
 	move.l	(sp)+,a2
 	rts
+	END(test_byte_rd)
 
-_test_word_rd:
+	
+	FUNC(test_word_rd)
+SYM(test_word_rd):
 	move.l	a2,-(sp)
 	move.l	sp,a0
 	move.l	(8).w,a1
@@ -62,8 +68,10 @@ _test_word_rd:
 	tst.w	(a2)
 
 	bra.s	pass
+	END(test_word_rd)
 
-_test_long_rd:
+	FUNC(test_long_rd)
+SYM(test_long_rd):
 	move.l	a2,-(sp)
 	move.l	sp,a0
 	move.l	(8).w,a1
@@ -76,8 +84,9 @@ _test_long_rd:
 	tst.l	(a2)
 
 	bra.s	pass
+	END(test_long_rd)
 
-	.globl	_detect_hardware
+	.globl	SYM(detect_hardware)
 
 	.text
 
@@ -94,7 +103,8 @@ _test_long_rd:
 
 	.text
 
-_detect_hardware:
+	FUNC(detect_hardware)
+SYM(detect_hardware):
 
 #ifdef __mcoldfire__
 	move.l	d2,-(sp)
@@ -112,18 +122,18 @@ _detect_hardware:
 	move.l	#no_stescc,(8).w		// set temporary new bus error vector
 #endif
 	nop					// flush write pipeline (>= 040)
-	move.w	SR,d1
+	move.w	sr,d1
 
 // it was ori.w #0700,SR, but i don't think this was really meant so.
 // 700 dec is 0x02bc hex, so it really raised the IPL, but MFP
 // interrupts were't disabled (they're IPL 5 IIRC).
 
 #ifdef __mcoldfire__
-	move.w	SR,d2
+	move.w	sr,d2
 	ori.l	#0x0700,d2			// disable interrupts
-	move.w	d2,SR
+	move.w	d2,sr
 #else
-	ori.w	#0x0700,SR			// disable interrupts
+	ori.w	#0x0700,sr			// disable interrupts
 #endif
 
 // The next instruction will cause a bus error if there is no
@@ -145,22 +155,22 @@ _detect_hardware:
 	bne.s	no_stescc			// no -> no ST-ESCC present
 #ifdef __mcoldfire__
 	move.w	#0xFA35,d2
-	move.w	d2,_ControlRegA+2		// set register adresses to ST-ESCC's
+	move.w	d2,SYM(ControlRegA)+2		// set register adresses to ST-ESCC's
 	move.w	#0xFA37,d2
-	move.w	d2,_DataRegA+2
+	move.w	d2,SYM(DataRegA)+2
 	move.w	#0xFA31,d2
-	move.w	d2,_ControlRegB+2
+	move.w	d2,SYM(ControlRegB)+2
 	move.w	#0xFA33,d2
-	move.w	d2,_DataRegB+2
+	move.w	d2,SYM(DataRegB)+2
 #else
-	move.w	#0xFA35,_ControlRegA+2		// set register adresses to ST-ESCC's
-	move.w	#0xFA37,_DataRegA+2
-	move.w	#0xFA31,_ControlRegB+2
-	move.w	#0xFA33,_DataRegB+2
+	move.w	#0xFA35,SYM(ControlRegA)+2		// set register adresses to ST-ESCC's
+	move.w	#0xFA37,SYM(DataRegA)+2
+	move.w	#0xFA31,SYM(ControlRegB)+2
+	move.w	#0xFA33,SYM(DataRegB)+2
 #endif
 	bset	#0x00,d0			// mark ST-ESCC present
 no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
-	move.w	d1,SR				// enable interrupts
+	move.w	d1,sr				// enable interrupts
 	move.l	a0,(8).w			// restore  bus error vector
 	nop					// flush write pipeline (>= 040)
 	move.l	a1,sp				// restore stack pointer
@@ -171,20 +181,21 @@ no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
 	move.l	(sp)+,a2
 #endif
 	rts
+	END(detect_hardware)
 
 	.data
 
 // variables to set in ST-ESCC detection ****
 
-	.globl _ControlRegA
-	.globl _DataRegA
-	.globl _ControlRegB
-	.globl _DataRegB
+	.globl SYM(ControlRegA)
+	.globl SYM(DataRegA)
+	.globl SYM(ControlRegB)
+	.globl SYM(DataRegB)
 
-_ControlRegA:	dc.l 0xFFFF8C81
-_DataRegA:	dc.l 0xFFFF8C83
-_ControlRegB:	dc.l 0xFFFF8C85
-_DataRegB:	dc.l 0xFFFF8C87
+SYM(ControlRegA):	dc.l 0xFFFF8C81
+SYM(DataRegA):	dc.l 0xFFFF8C83
+SYM(ControlRegB):	dc.l 0xFFFF8C85
+SYM(DataRegB):	dc.l 0xFFFF8C87
 
 	.text
 //
@@ -200,7 +211,7 @@ _DataRegB:	dc.l 0xFFFF8C87
 // 0x003c - 68060
 //
 
-	.globl	_detect_cpu
+	.globl	SYM(detect_cpu)
 
 // new routine, does not change the CPU state (esp. caches)
 // <draco@atari.org>
@@ -209,7 +220,8 @@ _DataRegB:	dc.l 0xFFFF8C87
 //
 //
 
-_detect_cpu:
+	FUNC(detect_cpu)
+SYM(detect_cpu):
 #ifdef __mcoldfire__
 	moveq	#60,d0		// only true when coldfire_68k_emulation = true
 #else
@@ -219,7 +231,7 @@ _detect_cpu:
 	move.l	(0x2c).w,-(sp)	// save the Line-F exception vector (for ColdFire V2)
 	move.l	(0xf4).w,-(sp)	// save the unimplemented instr. exception vector
 
-	lea	exit.w(PC),a0	// set all vectors to point to the label `exit'
+	lea	exit.w(pc),a0	// set all vectors to point to the label `exit'
 	move.l	a0,(0x10).w
 	move.l	a0,(0x2c).w
 	move.l	a0,(0xf4).w
@@ -232,15 +244,15 @@ _detect_cpu:
 
 // on 68000 we try out a `move from CCR'.
 
-	move.w	ccr,d1		// legal on 68010+
+	move.w	%ccr,d1		// legal on 68010+
 	moveq	#10,d0
 
 // CACR is present only in 68020+
 
-	movec	cacr,d1		// get cache control register
+	movec	%cacr,d1		// get cache control register
 	moveq	#20,d0
 
-	lea	no_040.w(PC),a0	// test if 68040 now
+	lea	no_040.w(pc),a0	// test if 68040 now
 	move.l	a0,(0x10).w
 	move.l	a0,(0x2c).w
 	move.l	a0,(0xf4).w
@@ -255,7 +267,7 @@ _detect_cpu:
 
 	moveq	#40,d0
 
-no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
+no_040:	lea	exit.w(pc),a0	// change vectors back to 'exit'
 	move.l	a0,(0x10).w
 	move.l	a0,(0x2c).w
 	move.l	a0,(0xf4).w
@@ -267,12 +279,12 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 	cmp.w	#40,d0
 	beq.s	x040
 
-	movec	cacr,d1		/* d1 = get cache control register */
+	movec	%cacr,d1	/* d1 = get cache control register */
 	move.l	d1,d2		/* hold a copy for later */
 	ori.w	#0x0101,d1	/* enable '020 instr. and '030 data caches */
-	movec	d1,cacr		/* set new cache controls from d1 */
-	movec	cacr,d1		/*   & read it back again to check */
-	movec	d2,cacr		/* restore original CACR */
+	movec	d1,%cacr	/* set new cache controls from d1 */
+	movec	%cacr,d1	/*   & read it back again to check */
+	movec	d2,%cacr	/* restore original CACR */
 	btst	#0,d1		/* if '020 instr. cache was not enabled, this is a 68040+ */
 	beq.s	x040
 	btst	#8,d1		/* check if 68030 data cache was enabled */
@@ -285,7 +297,7 @@ no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 //
 	clr.l	-(sp)		/* make some room on the stack */
 	move.l  #0x0001001e,d0 /* data cache enabled means 68030 - assume 68ec030 */
-	pmove	tc,(a7)		/* try to access the TC register */
+	pmove	%tc,(a7)	/* try to access the TC register */
 	moveq	#30,d0		/* no fault -> this is a 68030 */
 
 	bra.s	exit
@@ -302,7 +314,7 @@ x040:	moveq	#40,d0		// assume 68040
 
 // Apollo 68080
 	moveq	#40,d0          // force 68040 detection
-	move.w	#1,_is_apollo_68080
+	move.w	#1,SYM(is_apollo_68080)
 	bra.s	exit
 
 	moveq	#60,d0		// no fault -> this is 68060
@@ -318,6 +330,7 @@ exit:	move.l	a1,sp
 	movem.l	(sp)+,a0-a2/d1-d2
 #endif
 	rts
+	END(detect_cpu)
 
 // FPU type detection, experimental (draco@atari.org).
 //
@@ -349,10 +362,11 @@ exit:	move.l	a1,sp
 //   FPU type is assumed. Otherwise the stackframe is checked for stack frame size
 //   indicating 68881 and if it is different, a 68882 is assumed.
 
-	.globl	_detect_fpu
-	.globl	_mcpu
+	.globl	SYM(detect_fpu)
+	.globl	SYM(mcpu)
 
-_detect_fpu:
+	FUNC(detect_fpu)
+SYM(detect_fpu):
 #ifdef __mcoldfire__
 	moveq	#0,d0		// TODO ColdFire FPU
 #else
@@ -366,7 +380,7 @@ _detect_fpu:
 	move.l	d1,(0x08).w
 	nop			// flush pipelines
 
-	move.l	_mcpu,d1	// check if 68000 or 68010
+	move.l	SYM(mcpu),d1	// check if 68000 or 68010
 	cmpi.w	#20,d1
 	bmi.s	fexit
 
@@ -409,6 +423,7 @@ fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	movem.l	(sp)+,a0-a2/d1
 #endif
 	rts
+	END(detect_fpu)
 
 // Software FPU emulation detection (SFP-004 or compatible)
 //
@@ -419,9 +434,10 @@ fexit:	move.l	a1,(0x2c).w	// restore Line-F
 // 0x00040000, 68881
 // 0x00060000, 68882
 
-	.globl	_detect_sfp
+	.globl	SYM(detect_sfp)
 
-_detect_sfp:
+	FUNC(detect_sfp)
+SYM(detect_sfp):
 #ifdef __mcoldfire__
 	moveq	#0,d0		// there is no ColdFire SFP emulation
 #else
@@ -453,8 +469,9 @@ sexit:	move.l	a1,(0x08).w	// restore bus error
 	movem.l	(sp)+,a0-a1/d1
 #endif
 	rts
+	END(detect_sfp)
 
-	.globl	_detect_pmmu
+	.globl	SYM(detect_pmmu)
 
 // PMMU detection
 //
@@ -462,12 +479,13 @@ sexit:	move.l	a1,(0x08).w	// restore bus error
 // for 030 always present and for 040/060 it checks TC's 'E' bit, what is not
 // an 100% correct thing to do according to the UM but it seems to work.
 
-_detect_pmmu:
+	FUNC(detect_pmmu)
+SYM(detect_pmmu):
 	moveq	#0,d0		// TODO ColdFire PMMU
 #ifndef __mcoldfire__
 	move.l	d1,-(sp)
 
-	move.l	_mcpu,d1	// check cpu
+	move.l	SYM(mcpu),d1	// check cpu
 	cmp.w	#30,d1
 	blt.b	pexit		// <030 => no pmmu
 	beq.b	pexit1		// 030 => always pmmu for Atari
@@ -480,3 +498,4 @@ pexit1:	moveq	#1,d0
 pexit:	move.l	(sp)+,d1
 #endif
 	rts
+	END(detect_pmmu)

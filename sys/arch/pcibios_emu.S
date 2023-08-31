@@ -22,263 +22,266 @@
  *
  */
 #ifdef PCI_BIOS
+
+#include "mint/asmdefs.h"
+
 	.text
 
-	.global _emu_pcibios_Find_pci_device
-	.global _emu_pcibios_Find_pci_classcode
-	.global _emu_pcibios_Read_config_byte
-	.global _emu_pcibios_Read_config_word
-	.global _emu_pcibios_Read_config_longword
-	.global _emu_pcibios_Fast_read_config_byte
-	.global _emu_pcibios_Fast_read_config_word
-	.global _emu_pcibios_Fast_read_config_longword
-	.global _emu_pcibios_Write_config_byte
-	.global _emu_pcibios_Write_config_word
-	.global _emu_pcibios_Write_config_longword
-	.global _emu_pcibios_Hook_interrupt
-	.global _emu_pcibios_Unhook_interrupt
-	.global _emu_pcibios_Special_cycle
-	.global _emu_pcibios_Get_routing
-	.global _emu_pcibios_Set_interrupt
-	.global _emu_pcibios_Get_resource
-	.global _emu_pcibios_Get_card_used
-	.global _emu_pcibios_Set_card_used
-	.global _emu_pcibios_Read_mem_byte
-	.global _emu_pcibios_Read_mem_word
-	.global _emu_pcibios_Read_mem_longword
-	.global _emu_pcibios_Fast_read_mem_byte
-	.global _emu_pcibios_Fast_read_mem_word
-	.global _emu_pcibios_Fast_read_mem_longword
-	.global _emu_pcibios_Write_mem_byte
-	.global _emu_pcibios_Write_mem_word
-	.global _emu_pcibios_Write_mem_longword
-	.global _emu_pcibios_Read_io_byte
-	.global _emu_pcibios_Read_io_word
-	.global _emu_pcibios_Read_io_longword
-	.global _emu_pcibios_Fast_read_io_byte
-	.global _emu_pcibios_Fast_read_io_word
-	.global _emu_pcibios_Fast_read_io_longword
-	.global _emu_pcibios_Write_io_byte
-	.global _emu_pcibios_Write_io_word
-	.global _emu_pcibios_Write_io_longword
-	.global _emu_pcibios_Get_machine_id
-	.global _emu_pcibios_Get_pagesize
-	.global _emu_pcibios_Virt_to_bus
-	.global _emu_pcibios_Bus_to_virt
-	.global _emu_pcibios_Virt_to_phys
-	.global _emu_pcibios_Phys_to_virt
+	.globl SYM(emu_pcibios_Find_pci_device)
+	.globl SYM(emu_pcibios_Find_pci_classcode)
+	.globl SYM(emu_pcibios_Read_config_byte)
+	.globl SYM(emu_pcibios_Read_config_word)
+	.globl SYM(emu_pcibios_Read_config_longword)
+	.globl SYM(emu_pcibios_Fast_read_config_byte)
+	.globl SYM(emu_pcibios_Fast_read_config_word)
+	.globl SYM(emu_pcibios_Fast_read_config_longword)
+	.globl SYM(emu_pcibios_Write_config_byte)
+	.globl SYM(emu_pcibios_Write_config_word)
+	.globl SYM(emu_pcibios_Write_config_longword)
+	.globl SYM(emu_pcibios_Hook_interrupt)
+	.globl SYM(emu_pcibios_Unhook_interrupt)
+	.globl SYM(emu_pcibios_Special_cycle)
+	.globl SYM(emu_pcibios_Get_routing)
+	.globl SYM(emu_pcibios_Set_interrupt)
+	.globl SYM(emu_pcibios_Get_resource)
+	.globl SYM(emu_pcibios_Get_card_used)
+	.globl SYM(emu_pcibios_Set_card_used)
+	.globl SYM(emu_pcibios_Read_mem_byte)
+	.globl SYM(emu_pcibios_Read_mem_word)
+	.globl SYM(emu_pcibios_Read_mem_longword)
+	.globl SYM(emu_pcibios_Fast_read_mem_byte)
+	.globl SYM(emu_pcibios_Fast_read_mem_word)
+	.globl SYM(emu_pcibios_Fast_read_mem_longword)
+	.globl SYM(emu_pcibios_Write_mem_byte)
+	.globl SYM(emu_pcibios_Write_mem_word)
+	.globl SYM(emu_pcibios_Write_mem_longword)
+	.globl SYM(emu_pcibios_Read_io_byte)
+	.globl SYM(emu_pcibios_Read_io_word)
+	.globl SYM(emu_pcibios_Read_io_longword)
+	.globl SYM(emu_pcibios_Fast_read_io_byte)
+	.globl SYM(emu_pcibios_Fast_read_io_word)
+	.globl SYM(emu_pcibios_Fast_read_io_longword)
+	.globl SYM(emu_pcibios_Write_io_byte)
+	.globl SYM(emu_pcibios_Write_io_word)
+	.globl SYM(emu_pcibios_Write_io_longword)
+	.globl SYM(emu_pcibios_Get_machine_id)
+	.globl SYM(emu_pcibios_Get_pagesize)
+	.globl SYM(emu_pcibios_Virt_to_bus)
+	.globl SYM(emu_pcibios_Bus_to_virt)
+	.globl SYM(emu_pcibios_Virt_to_phys)
+	.globl SYM(emu_pcibios_Phys_to_virt)
 
-_emu_pcibios_Find_pci_device:
+SYM(emu_pcibios_Find_pci_device):
 	move.l	d3,-(sp)
 	move.l	#2,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Find_pci_classcode:
+SYM(emu_pcibios_Find_pci_classcode):
 	move.l	d3,-(sp)
 	moveq	#3,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Read_config_byte:
+SYM(emu_pcibios_Read_config_byte):
 	move.l	d3,-(sp)
 	moveq	#4,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Read_config_word:
+SYM(emu_pcibios_Read_config_word):
 	move.l	d3,-(sp)
 	moveq	#5,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Read_config_longword:
+SYM(emu_pcibios_Read_config_longword):
 	move.l	d3,-(sp)
 	moveq	#6,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Fast_read_config_byte:
+SYM(emu_pcibios_Fast_read_config_byte):
 	move.l	d3,-(sp)
 	moveq	#7,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Fast_read_config_word:
+SYM(emu_pcibios_Fast_read_config_word):
 	move.l	d3,-(sp)
 	moveq	#8,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Fast_read_config_longword:
+SYM(emu_pcibios_Fast_read_config_longword):
 	move.l	d3,-(sp)
 	moveq	#9,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Write_config_byte:
+SYM(emu_pcibios_Write_config_byte):
 	move.l	d3,-(sp)
 	moveq	#10,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Write_config_word:
+SYM(emu_pcibios_Write_config_word):
 	move.l	d3,-(sp)
 	moveq	#11,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Write_config_longword:
+SYM(emu_pcibios_Write_config_longword):
 	move.l	d3,-(sp)
 	moveq	#12,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Hook_interrupt:
+SYM(emu_pcibios_Hook_interrupt):
 	move.l	d3,-(sp)
 	moveq	#13,d3
 	bra	_do_trap_daa
 
-_emu_pcibios_Unhook_interrupt:
+SYM(emu_pcibios_Unhook_interrupt):
 	move.l	d3,-(sp)
 	moveq	#14,d3
 	bra	_do_trap_d
 
-_emu_pcibios_Special_cycle:
+SYM(emu_pcibios_Special_cycle):
 	move.l	d3,-(sp)
 	moveq	#15,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Get_routing:
+SYM(emu_pcibios_Get_routing):
 	move.l	d3,-(sp)
 	moveq	#16,d3
 	bra	_do_trap
 
-_emu_pcibios_Set_interrupt:
+SYM(emu_pcibios_Set_interrupt):
 	move.l	d3,-(sp)
 	moveq	#17,d3
 	bra	_do_trap
 
-_emu_pcibios_Get_resource:
+SYM(emu_pcibios_Get_resource):
 	move.l	d3,-(sp)
 	moveq	#18,d3
 	bra	_do_trap_d
 
-_emu_pcibios_Get_card_used:
+SYM(emu_pcibios_Get_card_used):
 	move.l	d3,-(sp)
 	moveq	#19,d3
 	bra	_do_trap_da
 
-_emu_pcibios_Set_card_used:
+SYM(emu_pcibios_Set_card_used):
 	move.l	d3,-(sp)
 	moveq	#20,d3
 	bra	_do_trap_da
 
-_emu_pcibios_Read_mem_byte:
+SYM(emu_pcibios_Read_mem_byte):
 	move.l	d3,-(sp)
 	moveq	#21,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Read_mem_word:
+SYM(emu_pcibios_Read_mem_word):
 	move.l	d3,-(sp)
 	moveq	#22,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Read_mem_longword:
+SYM(emu_pcibios_Read_mem_longword):
 	move.l	d3,-(sp)
 	moveq	#23,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Fast_read_mem_byte:
+SYM(emu_pcibios_Fast_read_mem_byte):
 	move.l	d3,-(sp)
 	moveq	#24,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Fast_read_mem_word:
+SYM(emu_pcibios_Fast_read_mem_word):
 	move.l	d3,-(sp)
 	moveq	#25,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Fast_read_mem_longword:
+SYM(emu_pcibios_Fast_read_mem_longword):
 	move.l	d3,-(sp)
 	moveq	#26,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Write_mem_byte:
+SYM(emu_pcibios_Write_mem_byte):
 	move.l	d3,-(sp)
 	moveq	#27,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Write_mem_word:
+SYM(emu_pcibios_Write_mem_word):
 	move.l	d3,-(sp)
 	moveq	#28,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Write_mem_longword:
+SYM(emu_pcibios_Write_mem_longword):
 	move.l	d3,-(sp)
 	moveq	#29,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Read_io_byte:
+SYM(emu_pcibios_Read_io_byte):
 	move.l	d3,-(sp)
 	moveq	#30,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Read_io_word:
+SYM(emu_pcibios_Read_io_word):
 	move.l	d3,-(sp)
 	moveq	#31,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Read_io_longword:
+SYM(emu_pcibios_Read_io_longword):
 	move.l	d3,-(sp)
 	moveq	#32,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Fast_read_io_byte:
+SYM(emu_pcibios_Fast_read_io_byte):
 	move.l	d3,-(sp)
 	moveq	#33,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Fast_read_io_word:
+SYM(emu_pcibios_Fast_read_io_word):
 	move.l	d3,-(sp)
 	moveq	#34,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Fast_read_io_longword:
+SYM(emu_pcibios_Fast_read_io_longword):
 	move.l	d3,-(sp)
 	moveq	#35,d3
 	bra	_do_trap_dd
 
-_emu_pcibios_Write_io_byte:
+SYM(emu_pcibios_Write_io_byte):
 	move.l	d3,-(sp)
 	moveq	#36,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Write_io_word:
+SYM(emu_pcibios_Write_io_word):
 	move.l	d3,-(sp)
 	moveq	#37,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Write_io_longword:
+SYM(emu_pcibios_Write_io_longword):
 	move.l	d3,-(sp)
 	moveq	#38,d3
 	bra	_do_trap_ddd
 
-_emu_pcibios_Get_machine_id:
+SYM(emu_pcibios_Get_machine_id):
 	move.l	d3,-(sp)
 	moveq	#39,d3
 	bra	_do_trap_d
 
-_emu_pcibios_Get_pagesize:
+SYM(emu_pcibios_Get_pagesize):
 	move.l	d3,-(sp)
 	moveq	#40,d3
 	bra	_do_trap
 
-_emu_pcibios_Virt_to_bus:
+SYM(emu_pcibios_Virt_to_bus):
 	move.l	d3,-(sp)
 	moveq	#41,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Bus_to_virt:
+SYM(emu_pcibios_Bus_to_virt):
 	move.l	d3,-(sp)
 	moveq	#42,d3
 	bra	_do_trap_dda
 
-_emu_pcibios_Virt_to_phys:
+SYM(emu_pcibios_Virt_to_phys):
 	move.l	d3,-(sp)
 	moveq	#43,d3
 	bra	_do_trap_da
 
-_emu_pcibios_Phys_to_virt:
+SYM(emu_pcibios_Phys_to_virt):
 	move.l	d3,-(sp)
 	moveq	#44,d3
 	bra	_do_trap_da
@@ -340,4 +343,5 @@ _call_sys_emu:
 	lea	34(sp),sp	//  correct stack
 	move.l	(sp)+,d3
 	rts
+
 #endif /* PCI-BIOS */

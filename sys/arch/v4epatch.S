@@ -1,52 +1,54 @@
 #ifdef __mcoldfire__
 
+#include "mint/asmdefs.h"
+
 	.data
 
-	.globl	_patch_memset_purec
-	.globl  _call_stack_func
+	.globl	SYM(patch_memset_purec)
+	.globl  SYM(call_stack_func)
 
-_patch_memset_purec:
+SYM(patch_memset_purec):
 
-	lea -28(SP),SP
-	movem.l D0-D2/A0-A2/A5,(SP)
-	move.l 32(SP),A5                                    // BASEPAGE
-	move.l 0xC(A5),D1                                   // p_tlen
-	lsr.l #1,D1
-	lea 256(A5),A0                                      // text
-	lea memset_purec(PC),A1
+	lea -28(sp),sp
+	movem.l d0-d2/a0-a2/a5,(sp)
+	move.l 32(sp),a5                                    // BASEPAGE
+	move.l 0xC(a5),d1                                   // p_tlen
+	lsr.l #1,d1
+	lea 256(a5),a0                                      // text
+	lea memset_purec(pc),a1
 .loop_search_memset:
-		move.l (A0),D0
-		cmp.l (A1),D0
+		move.l (a0),d0
+		cmp.l (a1),d0
 		bne.s .next_search_memset
-		addq.l #4,A1
-		lea 4(A0),A2
-		moveq #(12*4)-1,D2
+		addq.l #4,a1
+		lea 4(a0),a2
+		moveq #(12*4)-1,d2
 .loop_search_memset_2:
-			move.l (A2)+,D0
-			cmp.l (A1)+,D0
+			move.l (a2)+,d0
+			cmp.l (a1)+,d0
 			bne.s .bad_cmp_memset
-		subq.l #1,D2
+		subq.l #1,d2
 		bgt.s .loop_search_memset_2
 		// patch for incompatible instructions
-		lea 0x14(A0),A0                        // move.b D0,-(SP) move.w (SP)+,D2
-		move.l #0x1400E18A,(A0)                // => move.b D0,D2 lsl.l #8,D2 
+		lea 0x14(a0),a0                        // move.b D0,-(SP) move.w (SP)+,D2
+		move.l #0x1400E18A,(a0)                // => move.b D0,D2 lsl.l #8,D2 
 		bra.s .end_pexec
 .bad_cmp_memset:
-		lea memset_purec(PC),A1	
+		lea memset_purec(pc),a1	
 .next_search_memset:
-		addq.l #2,A0
-	subq.l #1,D1
+		addq.l #2,a0
+	subq.l #1,d1
 	bgt.s .loop_search_memset
 .end_pexec:
-	movem.l (SP),D0-D2/A0-A2/A5
-	lea 28(SP),SP
+	movem.l (sp),d0-d2/a0-a2/a5
+	lea 28(sp),sp
 	rts
 
 |-------------------------------------------------------------------------------------
 | call_stack_func(AESCALL func, AESPB* pb, my_aes_CLIENT* c, void* stack);
 |
 
-_call_stack_func:
+SYM(call_stack_func):
 	move.l 16(sp),a0	| new stack area is now pointed by A0
 	move.l sp, -(a0)
 	move.l 12(sp), -(a0)

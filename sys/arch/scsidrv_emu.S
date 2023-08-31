@@ -29,91 +29,93 @@
  * 
  */
 
+#include "mint/asmdefs.h"
+
 	.text
 
-	.globl	_emu_scsidrv_In
-	.globl	_emu_scsidrv_Out
-	.globl	_emu_scsidrv_InquireSCSI
-	.globl	_emu_scsidrv_InquireBUS
-	.globl	_emu_scsidrv_CheckDev
-	.globl	_emu_scsidrv_RescanBus
-	.globl	_emu_scsidrv_Open
-	.globl	_emu_scsidrv_Close
-	.globl	_emu_scsidrv_Error
-	.globl	_emu_scsidrv_Install
-	.globl	_emu_scsidrv_Deinstall
-	.globl	_emu_scsidrv_GetCmd
-	.globl	_emu_scsidrv_SendData
-	.globl	_emu_scsidrv_GetData
-	.globl	_emu_scsidrv_SendStatus
-	.globl	_emu_scsidrv_SendMsg
-	.globl	_emu_scsidrv_GetMsg
+	.globl	SYM(emu_scsidrv_In)
+	.globl	SYM(emu_scsidrv_Out)
+	.globl	SYM(emu_scsidrv_InquireSCSI)
+	.globl	SYM(emu_scsidrv_InquireBUS)
+	.globl	SYM(emu_scsidrv_CheckDev)
+	.globl	SYM(emu_scsidrv_RescanBus)
+	.globl	SYM(emu_scsidrv_Open)
+	.globl	SYM(emu_scsidrv_Close)
+	.globl	SYM(emu_scsidrv_Error)
+	.globl	SYM(emu_scsidrv_Install)
+	.globl	SYM(emu_scsidrv_Deinstall)
+	.globl	SYM(emu_scsidrv_GetCmd)
+	.globl	SYM(emu_scsidrv_SendData)
+	.globl	SYM(emu_scsidrv_GetData)
+	.globl	SYM(emu_scsidrv_SendStatus)
+	.globl	SYM(emu_scsidrv_SendMsg)
+	.globl	SYM(emu_scsidrv_GetMsg)
 
-_emu_scsidrv_In:
+SYM(emu_scsidrv_In):
 	moveq	#1,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_Out:
+SYM(emu_scsidrv_Out):
 	moveq	#2,d0
 	bra.s	_do_trap
 	
-_emu_scsidrv_InquireSCSI:
+SYM(emu_scsidrv_InquireSCSI):
 	moveq	#3,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_InquireBUS:
+SYM(emu_scsidrv_InquireBUS):
 	moveq	#4,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_CheckDev:
+SYM(emu_scsidrv_CheckDev):
 	moveq	#5,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_RescanBus:
+SYM(emu_scsidrv_RescanBus):
 	moveq	#6,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_Open:
+SYM(emu_scsidrv_Open):
 	moveq	#7,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_Close:
+SYM(emu_scsidrv_Close):
 	moveq	#8,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_Error:
+SYM(emu_scsidrv_Error):
 	moveq	#9,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_Install:
+SYM(emu_scsidrv_Install):
 	moveq	#10,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_Deinstall:
+SYM(emu_scsidrv_Deinstall):
 	moveq	#11,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_GetCmd:
+SYM(emu_scsidrv_GetCmd):
 	moveq	#12,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_SendData:
+SYM(emu_scsidrv_SendData):
 	moveq	#13,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_GetData:
+SYM(emu_scsidrv_GetData):
 	moveq	#14,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_SendStatus:
+SYM(emu_scsidrv_SendStatus):
 	moveq	#15,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_SendMsg:
+SYM(emu_scsidrv_SendMsg):
 	moveq	#16,d0
 	bra.s	_do_trap
 
-_emu_scsidrv_GetMsg:
+SYM(emu_scsidrv_GetMsg):
 	moveq	#17,d0
  	/* bra.s	_do_trap */
 

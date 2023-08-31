@@ -10,13 +10,18 @@
  *
  */
 
-	.globl	_main
-	.extern	_init
-	.extern	__base
+#include "mint/asmdefs.h"
+
+	.globl	SYM(main)
+	.extern	SYM(init)
+	.extern	SYM(_base)
 
 	.text
-_main:	move.l	0x04(sp),a0		// basepage address
-	move.l	a0,__base
+	FUNC(main)
+SYM(main):
+	CFI_STARTPROC()
+	move.l	0x04(sp),a0		// basepage address
+	move.l	a0,SYM(_base)
 
 	move.l	0x000c(a0),d0		// size of the TEXT segment
 	add.l	0x0014(a0),d0		// size of the DATA segment
@@ -32,4 +37,6 @@ _main:	move.l	0x04(sp),a0		// basepage address
 	trap	#1
 	lea	12(sp),sp
 
-	jmp	_init
+	jmp	SYM(init)
+	CFI_ENDPROC()
+	END(main)

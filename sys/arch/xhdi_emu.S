@@ -31,13 +31,14 @@
 
 # define ASM_ONLY
 # include "xhdi_emu.h"
+#include "mint/asmdefs.h"
 
 	.text
 
-	.globl	_emu_xhdi
+	.globl	SYM(emu_xhdi)
 
 	dc.l	0x27011992	// XHDIMAGIC
-_emu_xhdi:
+SYM(emu_xhdi):
 	move.l	30(sp),-(sp)
 	move.l	30(sp),-(sp)
 	move.l	30(sp),-(sp)
@@ -55,18 +56,18 @@ _emu_xhdi:
 
 # ifdef XHDI_MON
 
-	.globl	_xhdi_mon_dispatcher
-	.globl	_xhdi_mon_dispatcher_table
+	.globl	SYM(xhdi_mon_dispatcher)
+	.globl	SYM(xhdi_mon_dispatcher_table)
 
 	dc.l	0x27011992	// XHDIMAGIC
-_xhdi_mon_dispatcher:
+SYM(xhdi_mon_dispatcher):
 	link	a6,#-4
 	movem.l	a0-a5/d1-d7,-(sp)
 	move	8(a6),d2	// function number
 	cmp	#20,d2		// correct function number?
 	bcc.s	out		// no
 	lsl.l	#3,d2		// not `mulu #8,d2' :-)
-	lea	_xhdi_mon_dispatcher_table,a1
+	lea	SYM(xhdi_mon_dispatcher_table),a1
 	moveq	#-1,d0		// #ERROR
 	move.l	4(a1,d2),d0
 	move.l	d0,-4(a6)

@@ -52,39 +52,42 @@
 #endif
 
 #include "magic/magic.i"
+#include "mint/asmdefs.h"
 
 	.text
 
-	.globl	_build_context
-	.globl 	_save_context
-	.globl	_restore_context
-	.globl	_change_context
+	.globl	SYM(build_context)
+	.globl 	SYM(save_context)
+	.globl	SYM(restore_context)
+	.globl	SYM(change_context)
 
-	.globl	_mcpu
-	.globl	_fpu
-	.globl	_framesizes
-	.globl	_new_trace		// from intr.s
+	.globl	SYM(mcpu)
+	.globl	SYM(fpu)
+	.globl	SYM(framesizes)
+	.globl	SYM(new_trace)		// from intr.s
 #ifdef WITH_MMU_SUPPORT
-	.globl	_no_mem_prot
+	.globl	SYM(no_mem_prot)
 #endif
 
 	.text
 
-_build_context:
+	FUNC(build_context)
+SYM(build_context):
+	CFI_STARTPROC()
 	move.l	a0,-(sp)		// save a0; we'll use it for scratch
 	move.l	8(sp),a0		// get address of save area
 
 	movem.l	d0-d7/a0-a6,(a0)	// save registers D0-D7/A0-A6
 
 #ifdef WITH_MMU_SUPPORT
-	tst.w	_no_mem_prot		// is there memory protection?
+	tst.w	SYM(no_mem_prot)		// is there memory protection?
 	bne.s	noprot1
 #if defined (M68040) || defined (M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
 #else
-	pmove	crp,C_CRP(a0)		// save CRP from MMU
-	pmove	tc,C_TC(a0)		// save TC from MMU
+	pmove	%crp,C_CRP(a0)		// save CRP from MMU
+	pmove	%tc,C_TC(a0)		// save TC from MMU
 #endif
 noprot1:
 #endif
@@ -93,7 +96,7 @@ noprot1:
 	move.w	(a1)+,d0		// 68000 fake frame format
 
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	build_68k
 
 	move.w	(a1)+,C_SFMT(a0)	// save format/vector word of context
@@ -138,12 +141,12 @@ nojunk:
 	pea	nofpu(pc)		// return address
 	bra	save_coldfire_fpu
 #else
-	tst.w	_fpu			// is there a true FPU in the system
+	tst.w	SYM(fpu)			// is there a true FPU in the system
 	beq.s	nofpu
 
 	fsave	C_FSTATE(a0)		// save internal state frame
 #ifndef M68000
-	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
 	bne.s	no60
 	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu			// skip programmer's model save
@@ -170,7 +173,7 @@ nofpu:
 	lsr.w	#8,d1			// isolate the frame format identifier
 	lsr.w	#4,d1
 #endif
-	lea	_framesizes,a3
+	lea	SYM(framesizes),a3
 #ifdef	__mcoldfire__
 	move.b	0(a3,d1.l),d1
 #else
@@ -193,7 +196,7 @@ bcover:
 #endif
 short1:
 	move.l	a1,C_SSP(a0)		// a1 now points above the state frame
-	move.l	usp,a1			// save user stack pointer
+	move.l	%usp,a1			// save user stack pointer
 	move.l	a1,C_USP(a0)
 	btst	#13,d0			// check for supervisor mode
 	beq.s	L_CONT1			// user mode// we already have stack in a1
@@ -210,23 +213,27 @@ L_CONT1:
 #endif
 	move.l	(sp)+,C_A0(a0)		// save old register a0
 	rts
+	CFI_ENDPROC()
+	END(build_context)
 
-_save_context:
+	FUNC(save_context)
+SYM(save_context):
+	CFI_STARTPROC()
 	move.l	a0,-(sp)		// save a0
 	move.l	8(sp),a0		// get address of context save area
 
 	movem.l	d0-d7/a0-a6,(a0)	// save D0-D7/A0-A6
 
 #ifdef WITH_MMU_SUPPORT
-	tst.w	_no_mem_prot
+	tst.w	SYM(no_mem_prot)
 	bne.s	noprot2
 	move.w	sr,d1
 #if defined(M68040) || defined(M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
 #else
-	pmove	crp,C_CRP(a0)		// save the CRP from the MMU
-	pmove	tc,C_TC(a0)		// save the TC from the MMU
+	pmove	%crp,C_CRP(a0)		// save the CRP from the MMU
+	pmove	%tc,C_TC(a0)		// save the TC from the MMU
 #endif
 	move.w	d1,sr
 noprot2:
@@ -239,11 +246,11 @@ noprot2:
 #else
 // if running with a true coprocessor we need to save the FPU state
 
-	tst.w	_fpu			// is there a true FPU in the system
+	tst.w	SYM(fpu)			// is there a true FPU in the system
 	beq.s	nofpu2
 	fsave	C_FSTATE(a0)		// save internal state frame
 #ifndef M68000
-	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
 	bne.s	no60_2
 	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu2			// skip programmer's model save
@@ -264,7 +271,7 @@ nofpu2:
 // next line is not however!
 
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	save_68k
 
 	move.w	#0x4000,C_SFMT(a0)	// standard frame/vector word
@@ -280,7 +287,7 @@ save_ptrace:
 	move.l	a1,C_SSP(a0)		// save supervisor stack pointer
 					// note that it should be pointing above the PC
 	move.l	-4(a1),C_PC(a0)		// save PC
-	move.l	usp,a1
+	move.l	%usp,a1
 	move.l	a1,C_USP(a0)		// save user stack pointer
 #ifdef	__mcoldfire__
 	move.w	sr,d1
@@ -294,7 +301,12 @@ save_ptrace:
 	move.l	(sp)+,C_A0(a0)		// save old a0
 	clr.l	d0			// return 0
 	rts
-_restore_context:
+	CFI_ENDPROC()
+	END(save_context)
+
+	FUNC(restore_context)
+SYM(restore_context):
+	CFI_STARTPROC()
 #ifdef	__mcoldfire__
 	move.w	sr,d1
 	ori.l	#0x0400,d1
@@ -313,7 +325,7 @@ _restore_context:
 	tst.b	-63(a1)			// make sure stack can grow
 	move.l	a1,sp
 	move.l	C_USP(a0),a1
-	move.l	a1,usp			// set user stack pointer
+	move.l	a1,%usp			// set user stack pointer
 #ifdef	__mcoldfire__
 	move.l	C_TERM(a0),d1
 	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
@@ -324,14 +336,14 @@ _restore_context:
 // Set memory context now: actually, this isn't necessary, since
 // we're coming back to a context in the same process as is running
 // now.
-//	tst.w	_no_mem_prot
+//	tst.w	SYM(no_mem_prot)
 //	bne.s	noprot3
-//	pmove	C_CRP(a0),crp		// restore MMU root pointer
-//	pmove	C_TC(a0),tc		// restore MMU control register
+//	pmove	C_CRP(a0),%crp		// restore MMU root pointer
+//	pmove	C_TC(a0),%tc		// restore MMU control register
 //noprot3:
 
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	restore_68k
 
 	bsr	restore_coldfire_fpu
@@ -363,7 +375,7 @@ restore_68k:
 	lsr.w	#8,d1			// isolate the frame format identifier
 	lsr.w	#4,d1
 #endif
-	lea	_framesizes,a2
+	lea	SYM(framesizes),a2
 #ifdef	__mcoldfire__
 	move.b	0(a2,d1.l),d1
 #else
@@ -400,10 +412,10 @@ rcovernc:
 	bsr	restore_coldfire_fpu
 #else
 // if running with a true coprocessor we need to restore the FPU state
-	tst.w	_fpu			// is there a true FPU in the system
+	tst.w	SYM(fpu)			// is there a true FPU in the system
 	beq.s	short3
 #ifndef M68000
-	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
 	bne.s	no60_3
 	tst.b	C_FSTATE+2(a0)
 	beq.s	short4
@@ -425,12 +437,16 @@ restore_check_trace:
 	tst.b	C_PTRACE(a0)		// check for a pending trace
 	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
 	beq.s	notrace
-	jmp	_new_trace
+	jmp	SYM(new_trace)
 notrace:
 	rte				// jump back to old context
+	CFI_ENDPROC()
+	END(restore_context)
 
 
-_change_context:
+	FUNC(change_context)
+SYM(change_context):
+	CFI_STARTPROC()
 #ifdef	__mcoldfire__
 	move.w	sr,d1
 	ori.l	#0x0400,d1		// mask interrupts
@@ -449,7 +465,7 @@ _change_context:
 	tst.b	-63(a1)			// make sure stack can grow
 	move.l	a1,sp
 	move.l	C_USP(a0),a1
-	move.l	a1,usp			// set user stack pointer
+	move.l	a1,%usp			// set user stack pointer
 #ifdef	__mcoldfire__
 	move.l	C_TERM(a0),d1
 	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
@@ -459,7 +475,7 @@ _change_context:
 
 #ifdef WITH_MMU_SUPPORT
 // Set memory context now
-	tst.w	_no_mem_prot
+	tst.w	SYM(no_mem_prot)
 	bne.s	noprot4
 	move.w	sr,d1
 #if defined(M68040) || defined(M68060)
@@ -469,15 +485,15 @@ _change_context:
 	dc.w	0x4e7b,0x0807		// movec d0,srp
 #else
 	pflusha
-	pmove	C_CRP(a0),crp		// restore MMU root pointer
-	pmove	C_TC(a0),tc		// restore MMU control register
+	pmove	C_CRP(a0),%crp		// restore MMU root pointer
+	pmove	C_TC(a0),%tc		// restore MMU control register
 #endif
 	move.w	d1,sr
 noprot4:
 #endif
 
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	change_68k
 
 	bsr	restore_coldfire_fpu
@@ -509,7 +525,7 @@ change_68k:
 	lsr.w	#8,d1			// isolate the frame format identifier
 	lsr.w	#4,d1
 #endif
-	lea	_framesizes,a2
+	lea	SYM(framesizes),a2
 #ifdef	__mcoldfire__
 	move.b	0(a2,d1.l),d1
 #else
@@ -547,11 +563,11 @@ rcover2nc:
 #else
 // if running with a true coprocessor we need to restore the FPU state
 
-	tst.w	_fpu			// is there a true FPU in the system
+	tst.w	SYM(fpu)			// is there a true FPU in the system
 	beq.s	short6
 
 #ifndef M68000
-	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
 	bne.s	no60_4
 	tst.b	C_FSTATE+2(a0)
 	beq.s	short5
@@ -573,9 +589,11 @@ change_check_trace:
 	tst.b	C_PTRACE(a0)		// check for a pending trace
 	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
 	beq.s	notrace2
-	jmp	_new_trace
+	jmp	SYM(new_trace)
 notrace2:
 	rte				// jump back to old context
+	CFI_ENDPROC()
+	END(change_context)
 
 #ifdef	__mcoldfire__
 save_coldfire_fpu:

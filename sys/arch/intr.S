@@ -22,6 +22,7 @@
 #endif
 
 #include "magic/magic.i"
+#include "mint/asmdefs.h"
 
 //
 // interrupt wrapping routines; these should just save registers and call
@@ -29,42 +30,42 @@
 //
 	.text
 
-	.globl	_build_context
-	.globl	_restore_context
-	.extern	_curproc
-	.globl	_leave_kernel
-	.globl	_preempt		// C function in proc.c
-	.globl	_proc_clock		// controls process' allocation of CPU time
-	.extern	_in_kernel
-	.globl	__base
-	.globl	_calc_load_average
-	.globl	_uptimetick
-	.globl	_checkbttys_vbl
+	.globl	SYM(build_context)
+	.globl	SYM(restore_context)
+	.extern	SYM(curproc)
+	.globl	SYM(leave_kernel)
+	.globl	SYM(preempt)		// C function in proc.c
+	.globl	SYM(proc_clock)		// controls process' allocation of CPU time
+	.extern	SYM(in_kernel)
+	.globl	SYM(calc_load_average)
+	.globl	SYM(uptimetick)
+	.globl	SYM(checkbttys_vbl)
 
 // AKP: this code is hit once every 5ms
 // it updates the time fields of curproc.
 
-	.globl	_mint_5ms
-	.globl	_old_5ms
+	.globl	SYM(mint_5ms)
+	.globl	SYM(old_5ms)
 #ifdef PROFILING
-	.globl	_profil_on
-	.globl	_profil_counter
+	.globl	SYM(profil_on)
+	.globl	SYM(profil_counter)
 #endif
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_5ms:
+SYM(old_5ms):
 	dc.l	0
 
+	FUNC(mint_5ms)
+SYM(mint_5ms):
 #ifdef __mcoldfire__
-_mint_5ms:
 #ifdef PROFILING
-	tst.w	_profil_on
+	tst.w	SYM(profil_on)
 	beq.s	L_no_profile
 	lea	-24(sp),sp
 	movem.l	d0-d2/a0-a2,(sp)	// save C registers
 	move.l	26(sp),d0		// try to get interrupted PC
 	move.l	d0,-(sp)
-	jsr	_profil_counter		// call profiler
+	jsr	SYM(profil_counter)		// call profiler
 	addq.l	#0x04,sp		// this is better than lea
 	movem.l	(sp),d0-d2/a0-a2	// restore C registers
 	lea	24(sp),sp
@@ -82,7 +83,7 @@ L_novbl_0:
 	bra.s	L_novbl
 L_vbl:
 	// set up an exception stack frame for VBL emulation
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	L_frame060
 
 	// set up a ColdFire stack frame
@@ -91,7 +92,7 @@ L_vbl:
 	move.w	#0x4000,4(sp)	// format/vector word
 	move.w	sr,d0
 	move.w	d0,6(sp)	// return sr
-	move.l	#_mint_vbl,d0
+	move.l	#SYM(mint_vbl),d0
 	move.l	d0,8(sp)	// return pc
 	bra.s	L_novbl
 
@@ -101,24 +102,24 @@ L_frame060:
 	move.l	8(sp),(sp)	// move the d0 backup on the top of the stack
 	move.w	sr,d0
 	move.w	d0,4(sp)	// return sr
-	move.l	#_mint_vbl,d0
+	move.l	#SYM(mint_vbl),d0
 	move.l	d0,6(sp)	// return pc
 	clr.w	10(sp)		// format/vector word
 
 L_novbl:
-	move.w	_uptimetick,d0
+	move.w	SYM(uptimetick),d0
 	subq.l	#1,d0
 	tst.w   d0
 	bpl.s   L_nouptime
-	addq.l  #1,_uptime
+	addq.l  #1,SYM(uptime)
 	move.w  #200,d0
 L_nouptime:
-	move.w	d0,_uptimetick
+	move.w	d0,SYM(uptimetick)
 	move.l	(sp)+,d0		// restore register
-	move.l	_old_5ms.w(pc),-(sp)	// push old vector & save a bit of memory
+	move.l	SYM(old_5ms).w(pc),-(sp)	// push old vector & save a bit of memory
 	move.l	a0,-(sp)
-	move.l	_curproc,a0
-	tst.w	_in_kernel
+	move.l	SYM(curproc),a0
+	tst.w	SYM(in_kernel)
 	bne.s	L_systime
 	addq.l	#5,P_USRTIME(a0)	// update curproc->usrtime
 	move.l	(sp)+,a0
@@ -128,14 +129,14 @@ L_systime:
 	move.l	(sp)+,a0
 	rts
 #elif !defined(M68000)
-_mint_5ms:
+
 #ifdef PROFILING
-	tst.w	_profil_on
+	tst.w	SYM(profil_on)
 	beq.s	L_no_profile
 	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 	move.l	26(sp),d0		// try to get interrupted PC
 	move.l	d0,-(sp)
-	jsr	_profil_counter		// call profiler
+	jsr	SYM(profil_counter)		// call profiler
 	addq.l	#0x04,sp		// this is better than lea
 	movem.l	(sp)+,d0-d2/a0-a2	// restore C registers
 L_no_profile:
@@ -146,32 +147,31 @@ L_no_profile:
 
 	clr.w	-(sp)		// set up a jump to VBL emulation
 L_short_1:
-	pea	_mint_vbl.w(pc)
+	pea	SYM(mint_vbl).w(pc)
 	move.w	sr,-(sp)
 L_novbl:
-	subq.w	#1,_uptimetick
+	subq.w	#1,SYM(uptimetick)
 	bpl.s   L_nouptime
-	addq.l  #1,_uptime
-	move.w  #200,_uptimetick
+	addq.l  #1,SYM(uptime)
+	move.w  #200,SYM(uptimetick)
 L_nouptime:
-	tst.w	_in_kernel
+	tst.w	SYM(in_kernel)
 	bne.s	L_systime
-	addq.l	#5,([_curproc],P_USRTIME)
-	jmp	([_old_5ms],0.w)
+	addq.l	#5,([SYM(curproc)],P_USRTIME)
+	jmp	([SYM(old_5ms)],0.w)
 L_systime:
-	addq.l	#5,([_curproc],P_SYSTIME)
-	jmp	([_old_5ms],0.w)
+	addq.l	#5,([SYM(curproc)],P_SYSTIME)
+	jmp	([SYM(old_5ms)],0.w)
 
 #else
 
-_mint_5ms:
 #ifdef PROFILING
-	tst.w	_profil_on
+	tst.w	SYM(profil_on)
 	beq.s	L_no_profile
 	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 	move.l	26(sp),d0		// try to get interrupted PC
 	move.l	d0,-(sp)
-	jsr	_profil_counter		// call profiler
+	jsr	SYM(profil_counter)		// call profiler
 	addq.l	#0x04,sp		// this is better than lea
 	movem.l	(sp)+,d0-d2/a0-a2	// restore C registers
 L_no_profile:
@@ -184,18 +184,18 @@ L_no_profile:
 	beq.s	L_short_1
 	clr.w	-(sp)			// set up a jump to VBL emulation
 L_short_1:
-	pea	_mint_vbl.w(pc)
+	pea	SYM(mint_vbl).w(pc)
 	move.w	sr,-(sp)
 L_novbl:
-	move.l	_old_5ms.w(pc),-(sp)	// push old vector & save a bit of memory
+	move.l	SYM(old_5ms).w(pc),-(sp)	// push old vector & save a bit of memory
 	move.l	a0,-(sp)
-	subq.w	#1,_uptimetick
+	subq.w	#1,SYM(uptimetick)
 	bpl.s   L_nouptime
-	addq.l  #1,_uptime
-	move.w  #200,_uptimetick
+	addq.l  #1,SYM(uptime)
+	move.w  #200,SYM(uptimetick)
 L_nouptime:
-	move.l	_curproc,a0
-	tst.w	_in_kernel
+	move.l	SYM(curproc),a0
+	tst.w	SYM(in_kernel)
 	bne.s	L_systime
 	addq.l	#5,P_USRTIME(a0)	// update curproc->usrtime
 	move.l	(sp)+,a0
@@ -205,6 +205,7 @@ L_systime:
 	move.l	(sp)+,a0
 	rts
 #endif
+	END(mint_5ms)
 
 // Our VBL handler.
 // In fact this is not a VBL handler, this is the same 5ms interrupt as above
@@ -222,31 +223,32 @@ mod5:	dc.w	5		// initial value matters
 
 	.text
 
-	.globl	_mint_vbl
-	.globl	_uptime
-	.globl	_uptimetick
-	.globl	_c20ms
-	.globl	_keyrec
-	.globl	_kintr
-	.globl	_our_clock
-	.globl	_tlist
+	.globl	SYM(mint_vbl)
+	.globl	SYM(uptime)
+	.globl	SYM(uptimetick)
+	.globl	SYM(c20ms)
+	.globl	SYM(keyrec)
+	.globl	SYM(kintr)
+	.globl	SYM(our_clock)
+	.globl	SYM(tlist)
 #ifndef NO_AKP_KEYBOARD
-	.globl	_autorepeat_timer
+	.globl	SYM(autorepeat_timer)
 #endif
 #ifdef FLOPPY_ROUTINES
-	.globl	_flopvbl
+	.globl	SYM(flopvbl)
 #endif
 
 // timeout things go here (50 times per second at IPL 6)
 
-_mint_vbl:
+	FUNC(mint_vbl)
+SYM(mint_vbl):
 #ifdef __mcoldfire__
 	lea	-24(sp),sp
 	movem.l	d0-d2/a0-a2,(sp)	// save C registers
 #else
 	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 #endif
-	addq.l	#0x01,_c20ms
+	addq.l	#0x01,SYM(c20ms)
 
 // Poll the character buffer.
 // This is mandatory when NO_AKP_KEYBOARD is defined,
@@ -258,17 +260,17 @@ _mint_vbl:
 // ColdFire evaluation boards. ASCII characters are received on the serial
 // port and directly put into the character buffer.
 
-	move.l	_keyrec,a0
+	move.l	SYM(keyrec),a0
 	move.w	6(a0),d0
 	cmp.w	8(a0),d0
 #ifdef __mcoldfire__
 	sne	d0
-	move.b	d0,_kintr+1
+	move.b	d0,SYM(kintr)+1
 #else
-	sne	_kintr+1
+	sne	SYM(kintr)+1
 #endif
 
-	lea	_proc_clock,a0
+	lea	SYM(proc_clock),a0
 #ifdef __mcoldfire__
 	mvz.w	(a0),d0
 #else
@@ -284,14 +286,14 @@ _mint_vbl:
 skip:
 #ifdef __mcoldfire__
 	mvz.w	(0x0442).w,d0
-	mvz.w	_our_clock,d1
+	mvz.w	SYM(our_clock),d1
 	sub.l	d0,d1
-	move.w	d1,_our_clock
+	move.w	d1,SYM(our_clock)
 #else
 	move.w	(0x0442).w,d0
-	sub.w	d0,_our_clock
+	sub.w	d0,SYM(our_clock)
 #endif
-	move.l	_tlist,d1
+	move.l	SYM(tlist),d1
 	beq.s	txit
 
 // update the `when' field of the first TIMEOUT on the list
@@ -308,14 +310,14 @@ skip:
 
 //#ifndef NO_AKP_KEYBOARD
 // Ozk: Now keyboard delay/repeat is done via roottimeouts - see keyboard.c
-//	jsr	_autorepeat_timer	// in keyboard.c
+//	jsr	SYM(autorepeat_timer)	// in keyboard.c
 //#endif
 
 // "VBL" things go here (50 times per second at IPL 3)
 
 txit:
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	txit_68k
 
 	btst	#2,26(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
@@ -349,11 +351,11 @@ L_vbl_emu:
 	subq.w	#0x07,d0
 #endif
 	bne.s	piramida_hejhopsa
-	jsr	_flopvbl
+	jsr	SYM(flopvbl)
 piramida_hejhopsa:
 #endif
 
-	jsr	_checkbttys_vbl
+	jsr	SYM(checkbttys_vbl)
 #ifdef __mcoldfire__
 	lea	mod5,a0
 	mvz.w	(a0),d0
@@ -366,7 +368,7 @@ piramida_hejhopsa:
 	bne.s	L_no_uptime
 	move.w	#0x0005,mod5
 #endif
-	jsr	_calc_load_average	// Go test if it's time to update uptime
+	jsr	SYM(calc_load_average)	// Go test if it's time to update uptime
 L_no_uptime:
 #ifdef __mcoldfire__
 	movem.l	(sp),d0-d2/a0-a2
@@ -374,7 +376,7 @@ L_no_uptime:
 #else
 	movem.l	(sp)+,d0-d2/a0-a2
 #endif
-	tst.w	_proc_clock		// has time expired yet?
+	tst.w	SYM(proc_clock)		// has time expired yet?
 	beq.s	L_expired		// yes -- maybe go switch processes
 L_out:	rte			// no -- just return
 
@@ -394,7 +396,7 @@ L_popnout:
 
 L_expired:
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	L_expired_68k
 
 	btst	#5,2(sp) 		// user mode?
@@ -409,28 +411,28 @@ L_expired2:
 	tst.w	(0x043e).w		// test floppy disk lock variable
 	bne.s	L_out			// if locked, can't switch
 #ifdef __mcoldfire__
-	tst.w	_in_kernel		// are we doing a kernel operation?
+	tst.w	SYM(in_kernel)	// are we doing a kernel operation?
 	bne.s	L_out
 	move.l	d0,-(sp)
 	moveq	#0x07,d0
-	bset	d0,_in_kernel
+	bset	d0,SYM(in_kernel)
 	move.l	(sp)+,d0
 #else
-	bset	#0x07,_in_kernel	// are we doing a kernel operation?
+	bset	#0x07,SYM(in_kernel)	// are we doing a kernel operation?
 	bne.s	L_out
 #endif
 
 L_switch:
 	clr.w	-(sp)			// no frame format needed
-	move.l	_curproc,-(sp)
+	move.l	SYM(curproc),-(sp)
 	addq.l	#P_SYSCTXT,(sp)		// to get &curproc->ctxt[SYSCALL]
-	jsr	_build_context		// build context
-	move.l	_curproc,a0
+	jsr	SYM(build_context)		// build context
+	move.l	SYM(curproc),a0
 	move.l	(a0),sp 		// use curproc->sysstack
 	move.w	P_SYSCTXT+C_SR(a0),d7	// get saved int level
 
 // inlined enter_kernel(0). Notice we can't be in_kernel here (see above),
-// so no need to tst.w _in_kernel & stuff. Also, we don't need to increase
+// so no need to tst.w in_kernel & stuff. Also, we don't need to increase
 // the IPL anymore.
 //
 	move.w	sr,d0		// 2400 -> d0
@@ -445,11 +447,11 @@ L_switch:
 #endif
 	move.w	d0,sr		// vbl allowed again
 
-	jsr	_preempt		// yield processor
+	jsr	SYM(preempt)		// yield processor
 
 // inlined leave_kernel()
 
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 #ifdef __mcoldfire__
 	move.w	sr,d0
 	ori.l	#0x0400,d0		// block VBL
@@ -457,22 +459,25 @@ L_switch:
 #else
 	ori.w	#0x0400,sr		// block VBL
 #endif
-	clr.w	_in_kernel
+	clr.w	SYM(in_kernel)
 	pea	4(a0)
-	jsr	_restore_context	// back to user (never returns)
+	jsr	SYM(restore_context)	// back to user (never returns)
+	END(mint_vbl)
 
 //
 // routine for doing a reboot
 //
-	.globl	_reset
-	.globl	_old_resvec
-	.globl	_restr_intr
-	.globl	_reboot
+	.globl	SYM(reset)
+	.globl	SYM(old_resvec)
+	.extern	SYM(restr_intr)
+	.globl	SYM(reboot)
 
-_reboot:
+	FUNC(reboot)
+SYM(reboot):
 	move.l	(0).w,sp		// get sp after reboot
 	move.l	(4).w,a6		// get new reboot address
-	bra.s	_reset
+	bra.s	SYM(reset)
+	END(reboot)
 
 // reset routine -- called on a warm boot. Note that TOS sends the
 // address to which we should return in register a6. Also note that
@@ -481,10 +486,12 @@ _reboot:
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_resvec:
+SYM(old_resvec):
 	dc.l	0
 
-_reset:	move.w	#0x2700,sr		// avoid interruption here
+	FUNC(reset)
+SYM(reset):
+	move.w	#0x2700,sr		// avoid interruption here
 	move.l	sp,0x0600.w		// save A7
 	lea	0x06fe.w,sp		// set up temporary stack
 #ifdef __mcoldfire__
@@ -493,7 +500,7 @@ _reset:	move.w	#0x2700,sr		// avoid interruption here
 #else
 	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 #endif
-	jsr	_restr_intr		// restore interrupts
+	jsr	SYM(restr_intr)		// restore interrupts
 #ifdef __mcoldfire__
 	movem.l	(sp),d0-d2/a0-a2	// restore registers
 	lea	24(sp),sp
@@ -502,13 +509,14 @@ _reset:	move.w	#0x2700,sr		// avoid interruption here
 #endif
 	move.l	0x0600.w,sp
 	jmp	(a6)		// reset again
+	END(reset)
 
 //
 // routine for mouse packet handling
 //
-	.globl	_newmvec
-	.globl	_newjvec
-	.globl	_mouse_handler
+	.globl	SYM(newmvec)
+	.globl	SYM(newjvec)
+	.extern	SYM(mouse_handler)
 
 // Experimental three button mouse support (by jr@ms.maus.de,
 // August 4, 1992
@@ -518,13 +526,13 @@ _reset:	move.w	#0x2700,sr		// avoid interruption here
 // on ST/STE systems with older IKBD's or keyboards. The middle mouse
 // button is wired to one of the joystick directions on joystick one.
 //
-// _newmvec is the same as before with two exceptions:
+// newmvec is the same as before with two exceptions:
 // 1. the first byte of the packet is saved for the joystick handler
 // 2. the bit for the middle mouse button is ored in
 //
-// _newjvec hooks into the joystick vector and chains to the normal
+// newjvec hooks into the joystick vector and chains to the normal
 // handler. The middle mouse button state is saved in a special
-// register for _newmvec, and a 'fake' mouse packet is set up
+// register for newmvec, and a 'fake' mouse packet is set up
 // (by merging the last mouse packet header, or-ing in the
 // middle button state and using 0/0 for the x/y increment).
 //
@@ -542,7 +550,9 @@ third_button:
 
 	.text
 
-_newmvec:	move.l	a0,-(sp)
+	FUNC(newmvec)
+SYM(newmvec):
+	move.l	a0,-(sp)
 	move.b	(a0),d0
 	move.b	d0,faked_packet
 #ifdef __mcoldfire__
@@ -552,16 +562,20 @@ _newmvec:	move.l	a0,-(sp)
 	or.b	third_button,d0
 #endif
 	move.b	d0,(a0)
-	jsr	_mouse_handler
+	jsr	SYM(mouse_handler)
 	move.l	(sp)+,a0
 	rts
+	END(newmvec)
+
 //
 // routine for joystick packet handling (used for three button mice)
 //
-	.globl	_newjvec
-	.globl	_oldjvec
+	.globl	SYM(newjvec)
+	.globl	SYM(oldjvec)
 
-_newjvec:	move.l	a0,-(sp)		// save a0 on the stack
+	FUNC(newjvec)
+SYM(newjvec):
+	move.l	a0,-(sp)		// save a0 on the stack
 	move.b	2(a0),d0		// joystick direction
 #ifdef __mcoldfire__
 	and.l	#1,d0		// middle mouse button in lowest bit
@@ -593,11 +607,12 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 	move.b	d0,(a0) 		// write it back
 
 	move.l	a0,-(sp)		// pass pointer to fake packet
-	jsr	_mouse_handler		// to /dev/mouse handler
+	jsr	SYM(mouse_handler)		// to /dev/mouse handler
 	addq.l	#4,sp		// pop parameter
 	move.l	(sp)+,a0		// restore original a0 value
-	move.l	_oldjvec,-(sp)		// jump to original joystick handler
+	move.l	SYM(oldjvec),-(sp)		// jump to original joystick handler
 	rts
+	END(newjvec)
 
 // The routine is called by TOS prior to processing the IKBD
 // keyboard scancode. The scancode byte is in d0, IOREC struct
@@ -606,31 +621,32 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 // Note: this vector has only been available since TOS 2.0.
 // For TOS 1.x compatible method, the ikbdsys vector must be hooked.
 // See _ikbdsys_handler and _new_acia for that alternate method.
-// In both cases, the goal is to call _ikbd_scan with keyboard bytes.
+// In both cases, the goal is to call ikbd_scan with keyboard bytes.
 
 #ifndef NO_AKP_KEYBOARD
-	.globl	_newkeys
-	.globl	_oldkeys
-	.globl	_ikbd_scan
+	.globl	SYM(newkeys)
+	.globl	SYM(oldkeys)
+	.globl	SYM(ikbd_scan)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_oldkeys:	dc.l	0
-_newkeys:
+SYM(oldkeys):	dc.l	0
+	FUNC(newkeys)
+SYM(newkeys):
 #ifdef __mcoldfire__
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
 #else
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
-	move.l	_keyrec,-(sp)
+	move.l	SYM(keyrec),-(sp)
 #ifdef __mcoldfire__
 	and.l	#0x00ff,d0
 #else
 	and.w	#0x00ff,d0
 #endif
 	move.w	d0,-(sp)
-	jsr	_ikbd_scan
+	jsr	SYM(ikbd_scan)
 	addq.l	#6,sp
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
@@ -639,12 +655,14 @@ _newkeys:
 	movem.l	(sp)+,d1-d2/a0-a2
 #endif
 	rts
+	END(newkeys)
 
 // Calling the keyclick routines. This is a helper for keyboard driver.
 
-	.globl	_kbdclick
+	.globl	SYM(kbdclick)
 
-_kbdclick:
+	FUNC(kbdclick)
+SYM(kbdclick):
 #ifdef __mcoldfire__
 	move.l	d0,-(sp)
 	moveq	#0,d0
@@ -675,13 +693,15 @@ L_nocl:
 	move.l	(sp)+,d0
 #endif
 	rts
+	END(kbdclick)
 
 // Send mouse packet to mousevec(). This is used to emulate mouse
 // movements with keyboard shortcuts (alt/arrow).
 
-	.globl	_send_packet
+	.globl	SYM(send_packet)
 
-_send_packet:
+	FUNC(send_packet)
+SYM(send_packet):
 #ifdef __mcoldfire__
 	lea	-60(sp),sp
 	movem.l	d0-a6,(sp)
@@ -699,6 +719,7 @@ _send_packet:
 	movem.l	(sp)+,d0-a6
 #endif
 	rts
+	END(send_packet)
 #endif
 
 //
@@ -708,31 +729,51 @@ _send_packet:
 // sig_routine: (signal.c): pointer to which signal catching routine to
 //	   call (e.g. for SIGBUS, or whatever)
 //
-	.globl	_new_bus,_new_addr,_new_ill,_new_divzero,_new_priv,_new_linef
-	.globl	_new_trace,_new_chk,_new_trapv,_new_fpcp,_new_mmu,_new_pmmuacc
-	.globl	_new_uninit,_new_spurious,_new_format,_new_cpv
-	.extern	_in_kernel,_sig_routine
-	.globl	_sigbus,_sigaddr,_sigill,_sigfpe,_sigpriv,_sigtrap
-	.globl	_haltformat,_haltcpv
-	.globl	_sig_exc
-	.globl	_mcpu
+	.globl	SYM(new_bus)
+	.globl	SYM(new_addr)
+	.globl	SYM(new_ill)
+	.globl	SYM(new_divzero)
+	.globl	SYM(new_priv)
+	.globl	SYM(new_linef)
+	.globl	SYM(new_trace)
+	.globl	SYM(new_chk)
+	.globl	SYM(new_trapv)
+	.globl	SYM(new_fpcp)
+	.globl	SYM(new_mmu)
+	.globl	SYM(new_pmmuacc)
+	.globl	SYM(new_uninit)
+	.globl	SYM(new_spurious)
+	.globl	SYM(new_format)
+	.globl	SYM(new_cpv)
+	.extern	SYM(in_kernel)
+	.extern	SYM(sig_routine)
+	.globl	SYM(sigbus)
+	.globl	SYM(sigaddr)
+	.globl	SYM(sigill)
+	.globl	SYM(sigfpe)
+	.globl	SYM(sigpriv)
+	.globl	SYM(sigtrap)
+	.globl	SYM(haltformat)
+	.globl	SYM(haltcpv)
+	.globl	SYM(sig_exc)
+	.globl	SYM(mcpu)
 
 //
 // New bus error handler for memory protection: get the ssp and
 // put it in the proc structure before calling
-// _sigbus.  When the bus error happens in the kernel we don't save
+// sigbus.  When the bus error happens in the kernel we don't save
 // any contexts.
 // We don't want to mess up any registers here because we might bring the
 // page in and RTE.
 //
 
-	.globl	_check_bus,_old_bus
+	.globl	SYM(check_bus),SYM(old_bus)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_bus:
+SYM(old_bus):
 	dc.l	0
-_new_bus:
+SYM(new_bus):
 #ifndef NO_FAKE_SUPER
 #ifdef __mcoldfire__
 	lea	-60(sp),sp
@@ -740,7 +781,7 @@ _new_bus:
 #else
 	movem.l	d0-a6,-(sp)		// check_bus() relies on this!
 #endif
-	jsr	_check_bus
+	jsr	SYM(check_bus)
 	tst.l	d0
 #ifdef __mcoldfire__
 	movem.l	(sp),d0-a6
@@ -749,28 +790,28 @@ _new_bus:
 	movem.l	(sp)+,d0-a6
 #endif
 #if !(defined(M68000) || defined(__mcoldfire__))
-	bne.s	Return_now
+	jbne	Return_now
 #else
 	bne	Return_now
 #endif
 #endif
 #ifdef M68000
-	move.w	#0x8,_sig_exc
-	cmp.l	#30,_mcpu
+	move.w	#0x8,SYM(sig_exc)
+	cmp.l	#30,SYM(mcpu)
 	bmi.s	noMMU
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
+	lea	SYM(sig_routine),a0
 	move.l	#_mmu_sigbus,(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_mmu_sigbus,_sig_routine
+	move.l	#_mmu_sigbus,SYM(sig_routine)
 #endif
 #ifdef M68000
 	bra.s	Do_sig
 noMMU:
-	move.l	#_nommu_sigbus,_sig_routine
+	move.l	#_nommu_sigbus,SYM(sig_routine)
 #endif
 
 Do_sig:
@@ -778,11 +819,11 @@ Do_sig:
 	nop			// flush pipes (better safe than sorry)
 #endif
 	move.l	a0,-(sp)		// save a0
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	sp,P_EXCSSP(a0)
 	addq.l	#4,P_EXCSSP(a0)
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	do_sig_68k
 
 	move.l	8(sp),P_EXCPC(a0)
@@ -794,21 +835,21 @@ do_sig_68k:
 do_sig_restore:
 	move.l	(sp)+,a0
 
-	tst.w	_in_kernel		// are we already in the kernel?
+	tst.w	SYM(in_kernel)		// are we already in the kernel?
 	bne.s	Kernel		// yes
-	move.w	_sig_exc,-(sp)
-	move.l	_curproc,-(sp)
+	move.w	SYM(sig_exc),-(sp)
+	move.l	SYM(curproc),-(sp)
 	addq.l	#4,(sp) 		// push offset of save area
-	jsr	_build_context
-	move.l	_curproc,a4
+	jsr	SYM(build_context)
+	move.l	SYM(curproc),a4
 	move.l	(a4),sp 		// put us in the system stack
 #ifdef __mcoldfire__
 	moveq	#0x07,d0
-	bset	d0,_in_kernel
+	bset	d0,SYM(in_kernel)
 #else
-	bset	#0x07,_in_kernel
+	bset	#0x07,SYM(in_kernel)
 #endif
-	move.l	_sig_routine,a1 	// get signal handling routine
+	move.l	SYM(sig_routine),a1 	// get signal handling routine
 	jsr	(a1)		// go do it
 #ifdef __mcoldfire__
 	move.w	sr,d0
@@ -817,10 +858,10 @@ do_sig_restore:
 #else
 	ori.w	#0x0400,sr	// block VBL
 #endif
-	jsr	_leave_kernel		// leave kernel
+	jsr	SYM(leave_kernel)		// leave kernel
 	addq.l	#4,a4		// get context save area address
 	move.l	a4,-(sp)		// push it
-	jsr	_restore_context	// restore the context
+	jsr	SYM(restore_context)	// restore the context
 //
 // here's what we do if we already were in the kernel
 //
@@ -831,7 +872,7 @@ Kernel:
 #else
 	movem.l	d0-d2/a0-a2,-(sp)	// save reggies
 #endif
-	move.l	_sig_routine,a1 	// get handler
+	move.l	SYM(sig_routine),a1 	// get handler
 	jsr	(a1)		// go do it
 #ifdef __mcoldfire__
 	movem.l (sp),d0-d2/a0-a2
@@ -847,15 +888,15 @@ Return_now:
 	rte
 
 //
-// _mmu_sigbus: a pre-handler for _sigbus.  Check the reason for the bus
+// _mmu_sigbus: a pre-handler for sigbus.  Check the reason for the bus
 // error and report if it was a real access fault.
 //
 _mmu_sigbus:
 	move.l	a2,-(sp)
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	P_EXCSSP(a0),a1 	// a1 is now exception_ssp
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	mmu_sigbus_68k
 
 	// TODO ColdFire MMU
@@ -879,9 +920,9 @@ ms_aa030:
 					// (no, it's the descriptor address
 					// matching (a1) - Gryf)
 	move.l	a2,P_EXCTBL(a0) 	// save table address in curproc
-	pmove	psr,P_EXCMMUSR(a0)	// save resulting mmusr in curproc
+	pmove	%psr,P_EXCMMUSR(a0)	// save resulting mmusr in curproc
 #else
-	move.l	_mcpu,d0
+	move.l	SYM(mcpu),d0
 	cmpi.w	#40,d0			// the 060 uses a different stackframe
 	bne.s	ms_060
 	move.w	0xc(a1),d0		// d0 is SSW
@@ -911,13 +952,13 @@ ms_060:
 #endif
 ms_goon:
 	move.l	(sp)+,a2
-	jmp	_sigbus 		// chain to bus-error handler
+	jmp	SYM(sigbus) 		// chain to bus-error handler
 #ifdef M68000
 //
 // _nommu_sigbus: handler for bus errors on machines without MMU
 
 _nommu_sigbus:
-	move.l	_curproc,a0
+	move.l	SYM(curproc),a0
 	move.l	P_EXCSSP(a0),a1
 	lea	0x10(a1),a1		// point to access address
 	tst.w	(0x59e).w		// test longframe
@@ -925,330 +966,336 @@ _nommu_sigbus:
 	addq.w	#8,a1		// on 68000, address is 8 bytes further
 NOMMU1:
 	move.l	(a1),P_EXCADDR(a0)	// save the access address
-	jmp	_sigbus
+	jmp	SYM(sigbus)
 #endif
 
-	.globl	_old_addr
+	.globl	SYM(old_addr)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_addr:
+SYM(old_addr):
 	dc.l	0
-_new_addr:
+SYM(new_addr):
 #ifdef M68000
-	move.w	#0xc,_sig_exc
+	move.w	#0xc,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigaddr,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigaddr),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigaddr,_sig_routine
+	move.l	#SYM(sigaddr),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_ill
+	.globl	SYM(old_ill)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_ill:
+SYM(old_ill):
 	dc.l	0
-_new_ill:
+SYM(new_ill):
 #ifdef M68000
-	move.w	#0x10,_sig_exc
+	move.w	#0x10,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigill,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigill),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigill,_sig_routine
+	move.l	#SYM(sigill),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_divzero
+	.globl	SYM(old_divzero)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_divzero:
+SYM(old_divzero):
 	dc.l	0
-_new_divzero:
+SYM(new_divzero):
 #ifdef M68000
-	move.w	#0x14,_sig_exc
+	move.w	#0x14,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigfpe,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigfpe),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigfpe,_sig_routine
+	move.l	#SYM(sigfpe),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_linef
+	.globl	SYM(old_linef)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_linef:
+SYM(old_linef):
 	dc.l	0
-_new_linef:
+SYM(new_linef):
 #ifdef M68000
-	move.w	#0x2c,_sig_exc
+	move.w	#0x2c,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigill,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigill),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigill,_sig_routine
+	move.l	#SYM(sigill),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_chk
+	.globl	SYM(old_chk)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_chk:
+SYM(old_chk):
 	dc.l	0
-_new_chk:
+SYM(new_chk):
 #ifdef M68000
-	move.w	#0x18,_sig_exc
+	move.w	#0x18,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigfpe,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigfpe),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigfpe,_sig_routine
+	move.l	#SYM(sigfpe),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_trapv
+	.globl	SYM(old_trapv)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_trapv:
+SYM(old_trapv):
 	dc.l	0
-_new_trapv:
+SYM(new_trapv):
 #ifdef M68000
-	move.w	#0x1c,_sig_exc
+	move.w	#0x1c,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigfpe,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigfpe),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigfpe,_sig_routine
+	move.l	#SYM(sigfpe),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_fpcp_0,_old_fpcp_1,_old_fpcp_2,_old_fpcp_3,_old_fpcp_4
-	.globl	_old_fpcp_5,_old_fpcp_6
+	.globl	SYM(old_fpcp_0)
+	.globl	SYM(old_fpcp_1)
+	.globl	SYM(old_fpcp_2)
+	.globl	SYM(old_fpcp_3)
+	.globl	SYM(old_fpcp_4)
+	.globl	SYM(old_fpcp_5)
+	.globl	SYM(old_fpcp_6)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_0:
+SYM(old_fpcp_0):
 	dc.l	0
-	bra.s	_new_fpcp
+	bra.s	SYM(new_fpcp)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_1:
+SYM(old_fpcp_1):
 	dc.l	0
-	bra.s	_new_fpcp
+	bra.s	SYM(new_fpcp)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_2:
+SYM(old_fpcp_2):
 	dc.l	0
-	bra.s	_new_fpcp
+	bra.s	SYM(new_fpcp)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_3:
+SYM(old_fpcp_3):
 	dc.l	0
-	bra.s	_new_fpcp
+	bra.s	SYM(new_fpcp)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_4:
+SYM(old_fpcp_4):
 	dc.l	0
-	bra.s	_new_fpcp
+	bra.s	SYM(new_fpcp)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_5:
+SYM(old_fpcp_5):
 	dc.l	0
-	bra.s	_new_fpcp
+	bra.s	SYM(new_fpcp)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_fpcp_6:
+SYM(old_fpcp_6):
 	dc.l	0
-_new_fpcp:
-// don't set _sig_exc - only needed for 68000 vectors
+SYM(new_fpcp):
+// don't set sig_exc - only needed for 68000 vectors
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigfpe,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigfpe),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigfpe,_sig_routine
+	move.l	#SYM(sigfpe),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_mmuconf,_new_mmuconf
+	.globl	SYM(old_mmuconf)
+	.globl	SYM(new_mmuconf)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_mmuconf:
+SYM(old_mmuconf):
 	dc.l	0
-_new_mmuconf:
-// don't set _sig_exc - only needed for 68000 vectors
+SYM(new_mmuconf):
+// don't set sig_exc - only needed for 68000 vectors
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigill,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigill),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigill,_sig_routine
+	move.l	#SYM(sigill),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_pmmuill
+	.globl	SYM(old_pmmuill)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_pmmuill:
+SYM(old_pmmuill):
 	dc.l	0
-_new_mmu:
-// don't set _sig_exc - only needed for 68000 vectors
+SYM(new_mmu):
+// don't set sig_exc - only needed for 68000 vectors
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigill,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigill),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigill,_sig_routine
+	move.l	#SYM(sigill),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_pmmuacc
+	.globl	SYM(old_pmmuacc)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_pmmuacc:
+SYM(old_pmmuacc):
 	dc.l	0
 
-_new_pmmuacc:
-// don't set _sig_exc - only needed for 68000 vectors
+SYM(new_pmmuacc):
+// don't set sig_exc - only needed for 68000 vectors
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigbus,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigbus),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigbus,_sig_routine
+	move.l	#SYM(sigbus),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_uninit
+	.globl	SYM(old_uninit)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_uninit:
+SYM(old_uninit):
 	dc.l	0
-_new_uninit:
+SYM(new_uninit):
 #ifdef M68000
-	move.w	#0x3c,_sig_exc
+	move.w	#0x3c,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigbus,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigbus),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigbus,_sig_routine
+	move.l	#SYM(sigbus),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_spurious
+	.globl	SYM(old_spurious)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_spurious:
+SYM(old_spurious):
 	dc.l	0
-_new_spurious:
+SYM(new_spurious):
 #ifdef M68000
-	move.w	#0x60,_sig_exc
+	move.w	#0x60,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigbus,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigbus),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigbus,_sig_routine
+	move.l	#SYM(sigbus),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_format
+	.globl	SYM(old_format)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_format:
+SYM(old_format):
 	dc.l	0
-_new_format:
+SYM(new_format):
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_haltformat,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(haltformat),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_haltformat,_sig_routine
+	move.l	#SYM(haltformat),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_old_cpv
+	.globl	SYM(old_cpv)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_cpv:
+SYM(old_cpv):
 	dc.l	0
-_new_cpv:
+SYM(new_cpv):
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_haltcpv,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(haltcpv),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_haltcpv,_sig_routine
+	move.l	#SYM(haltcpv),SYM(sig_routine)
 #endif
 	bra	Do_sig
 
-	.globl	_check_priv,_old_priv
+	.globl	SYM(check_priv),SYM(old_priv)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_priv:
+SYM(old_priv):
 	dc.l	0
-_new_priv:
+SYM(new_priv):
 #ifdef M68000
-	move.w	#0x20,_sig_exc
+	move.w	#0x20,SYM(sig_exc)
 #endif
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
-	lea	_sig_routine,a0
-	move.l	#_sigpriv,(a0)
+	lea	SYM(sig_routine),a0
+	move.l	#SYM(sigpriv),(a0)
 	move.l	(sp)+,a0
 #else
-	move.l	#_sigpriv,_sig_routine
+	move.l	#SYM(sigpriv),SYM(sig_routine)
 #endif
 #ifdef M68000
 	tst.w	(0x59e).w		// 68000s always get SIGPRIV
@@ -1263,7 +1310,7 @@ _new_priv:
 #endif
 	move.l	sp,d0
 	move.l	d0,-(sp)
-	jsr	_check_priv
+	jsr	SYM(check_priv)
 	addq.l	#4,sp
 	tst.l	d0
 #ifdef __mcoldfire__
@@ -1278,19 +1325,19 @@ _new_priv:
 
 // system entry points from syscall.spp
 
-	.extern	_mint_dos,_mint_bios,_mint_xbios
-	.globl	_old_trace
+	.extern	SYM(mint_dos),SYM(mint_bios),SYM(mint_xbios)
+	.globl	SYM(old_trace)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_trace:
+SYM(old_trace):
 	dc.l	0
-_new_trace:
+SYM(new_trace):
 #ifdef __mcoldfire__
 	move.l	a0,-(sp)
 	move.l	d0,-(sp)
 
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	cf_68k_trace
 
 	lea	10(sp),a0		// native coldfire: sr, pc
@@ -1303,25 +1350,25 @@ cf_trace:
 	btst	#5,(a0) 		// only check when called from supervisor mode
 	beq.s	S_1
 	move.l	2(a0),d0		// pc
-	cmp.l	#_mint_dos,d0		// lets not trace the kernel !
+	cmp.l	#SYM(mint_dos),d0		// lets not trace the kernel !
 	beq.s	S_2
-	cmp.l	#_mint_xbios,d0
+	cmp.l	#SYM(mint_xbios),d0
 	beq.s	S_2
-	cmp.l	#_mint_bios,d0
+	cmp.l	#SYM(mint_bios),d0
 	beq.s	S_2
-	cmp.l	#_new_divzero,d0
+	cmp.l	#SYM(new_divzero),d0
 	beq.s	S_2
-	cmp.l	#_new_trapv,d0
+	cmp.l	#SYM(new_trapv),d0
 	beq.s	S_2
-	cmp.l	#_new_chk,d0
+	cmp.l	#SYM(new_chk),d0
 	beq.s	S_2
 
 // add any other non-traceable entities here...
 
 S_1:	moveq	#0x24,d0
-	move.w	d0,_sig_exc
-	move.l	#_sigtrap,d0
-	move.l	d0,_sig_routine
+	move.w	d0,SYM(sig_exc)
+	move.l	#SYM(sigtrap),d0
+	move.l	d0,SYM(sig_routine)
 	move.l	(sp)+,d0
 	move.l	(sp)+,a0
 	bra	Do_sig
@@ -1334,23 +1381,23 @@ S_2:	move.w	(a0),d0
 #else
 	btst	#5,(sp) 		// only check when called from supervisor mode
 	beq.s	S_1
-	cmp.l	#_mint_dos,2(sp)	// lets not trace the kernel !
+	cmp.l	#SYM(mint_dos),2(sp)	// lets not trace the kernel !
 	beq.s	S_2
-	cmp.l	#_mint_xbios,2(sp)
+	cmp.l	#SYM(mint_xbios),2(sp)
 	beq.s	S_2
-	cmp.l	#_mint_bios,2(sp)
+	cmp.l	#SYM(mint_bios),2(sp)
 	beq.s	S_2
-	cmp.l	#_new_divzero,2(sp)
+	cmp.l	#SYM(new_divzero),2(sp)
 	beq.s	S_2
-	cmp.l	#_new_trapv,2(sp)
+	cmp.l	#SYM(new_trapv),2(sp)
 	beq.s	S_2
-	cmp.l	#_new_chk,2(sp)
+	cmp.l	#SYM(new_chk),2(sp)
 	beq.s	S_2
 
 // add any other non-traceable entities here...
 
-S_1:	move.w	#0x24,_sig_exc
-	move.l	#_sigtrap,_sig_routine
+S_1:	move.w	#0x24,SYM(sig_exc)
+	move.l	#SYM(sigtrap),SYM(sig_routine)
 	bra	Do_sig
 
 S_2:	and.w	#0x3fff,(sp)		// clear both trace bits
@@ -1363,19 +1410,19 @@ S_2:	and.w	#0x3fff,(sp)		// clear both trace bits
 // just in case some program (foolishly) attempts to access these drives
 // directly and gets horribly confused
 //
-	.globl	_old_getbpb		// old Getbpb vector
-	.globl	_old_mediach		// old Mediach vector
-	.globl	_old_rwabs		// old Rwabs vector
-	.globl	_aliasdrv		// array of drive aliases
-	.globl	_new_getbpb
-	.globl	_new_mediach
-	.globl	_new_rwabs
+	.globl	SYM(old_getbpb)		// old Getbpb vector
+	.globl	SYM(old_mediach)		// old Mediach vector
+	.globl	SYM(old_rwabs)		// old Rwabs vector
+	.extern	SYM(aliasdrv)		// array of drive aliases
+	.globl	SYM(new_getbpb)
+	.globl	SYM(new_mediach)
+	.globl	SYM(new_rwabs)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_getbpb:
+SYM(old_getbpb):
 	dc.l	0
-_new_getbpb:
+SYM(new_getbpb):
 #ifdef __mcoldfire__
 	mvz.w	4(sp),d0		// check the drive
 #else
@@ -1390,7 +1437,7 @@ _new_getbpb:
 	move.w	d0,d1		// get index
 	add.w	d0,d1		// convert to index
 #endif
-	lea	_aliasdrv,a0
+	lea	SYM(aliasdrv),a0
 #ifdef __mcoldfire__
 	move.w	0(a0,d1.l),d1		// alias drive?
 #else
@@ -1409,7 +1456,7 @@ noalias0:
 	cmp.w	#0x14,d0 		// drive U:?
 	beq.s	nobpb		// yes, no BPB available
 
-	move.l	_old_getbpb.w(pc),a0	// not our drive
+	move.l	SYM(old_getbpb.w)(pc),a0	// not our drive
 	jmp	(a0)		// call the old vector for it
 nobpb:
 	clr.l	d0		// 0 means "no BPB read"
@@ -1417,9 +1464,9 @@ nobpb:
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_mediach:
+SYM(old_mediach):
 	dc.l	0
-_new_mediach:
+SYM(new_mediach):
 #ifdef __mcoldfire__
 	mvz.w	4(sp),d0		// check the drive
 #else
@@ -1434,7 +1481,7 @@ _new_mediach:
 	move.w	d0,d1		// get index
 	add.w	d0,d1		// convert to index
 #endif
-	lea	_aliasdrv,a0
+	lea	SYM(aliasdrv),a0
 #ifdef __mcoldfire__
 	move.w	0(a0,d1.l),d1		// alias drive?
 #else
@@ -1452,7 +1499,7 @@ _new_mediach:
 noalias1:
 	cmp.w	#0x14,d0 		// drive U:?
 	beq.s	nochng		// yes, no change
-	move.l	_old_mediach.w(pc),a0	// not our drive
+	move.l	SYM(old_mediach.w)(pc),a0	// not our drive
 	jmp	(a0)		// call the old vector for it
 nochng:
 	clr.l	d0		// 0 means "definitely no change"
@@ -1460,9 +1507,9 @@ nochng:
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_rwabs:
+SYM(old_rwabs):
 	dc.l	0
-_new_rwabs:
+SYM(new_rwabs):
 #ifdef __mcoldfire__
 	mvz.w	0xe(sp),d0		// check the drive
 #else
@@ -1477,7 +1524,7 @@ _new_rwabs:
 	move.w	d0,d1		// get index
 	add.w	d0,d1		// convert to index
 #endif
-	lea	_aliasdrv,a0
+	lea	SYM(aliasdrv),a0
 #ifdef __mcoldfire__
 	move.w	0(a0,d1.l),d1		// alias drive?
 #else
@@ -1496,28 +1543,30 @@ noalias2:
 	cmp.w	#0x14,d0 		// drive U:?
 	beq.s	rwdone		// yes, fake it
 
-	move.l	_old_rwabs.w(pc),a0	// not our drive
+	move.l	SYM(old_rwabs.w)(pc),a0	// not our drive
 	jmp	(a0)		// call the old vector for it
 rwdone:
 	clr.l	d0		// 0 means "successful operation"
 	rts
 
-	.globl	_old_criticerr,_new_criticerr
-	.extern _mint_criticerr
+	.globl SYM(old_criticerr)
+	.globl SYM(new_criticerr)
+	.extern SYM(mint_criticerr)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_criticerr:
+SYM(old_criticerr):
 	dc.l	0
-_new_criticerr:
-	jmp	_mint_criticerr
+SYM(new_criticerr):
+	jmp	SYM(mint_criticerr)
 
-	.globl	_old_exec_os,_new_exec_os
-	.extern _do_exec_os
+	.globl SYM(old_exec_os)
+	.globl SYM(new_exec_os)
+	.extern SYM(do_exec_os)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_exec_os:
+SYM(old_exec_os):
 	dc.l	0
-_new_exec_os:
-	jmp	_do_exec_os
+SYM(new_exec_os):
+	jmp	SYM(do_exec_os)

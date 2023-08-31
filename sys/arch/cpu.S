@@ -13,24 +13,28 @@
 //
 // this below is only called from init.c on 68060 or newer
 
+#include "mint/asmdefs.h"
+
 #ifndef M68000
 
-	.globl	_get_superscalar
-	.globl	_mcpu
+	.globl	SYM(get_superscalar)
+	.globl	SYM(mcpu)			// in main.c
 
-_get_superscalar:
+	FUNC(get_superscalar)
+SYM(get_superscalar):
+	CFI_STARTPROC()
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	get_superscalar_68k
 	rts				// nothing to do
 get_superscalar_68k:
 #endif
 #ifdef __mcoldfire__
 	moveq	#60,d1
-	cmp.w	_mcpu+2,d1
+	cmp.w	SYM(mcpu)+2,d1
 	bhi.s	ssret
 #else
-	cmp.w	#60,_mcpu+2
+	cmp.w	#60,SYM(mcpu)+2
 	bmi.s	ssret
 #endif
 	dc.l	0x4e7a0808		// movec pcr,d0
@@ -41,21 +45,25 @@ get_superscalar_68k:
 #endif
 	dc.l	0x4e7b0808		// movec d0,pcr
 ssret:	rts
+	CFI_ENDPROC()
+	END(get_superscalar)
 
-	.globl	_is_superscalar
+	.globl	SYM(is_superscalar)
 
-_is_superscalar:
+	FUNC(is_superscalar)
+SYM(is_superscalar):
+	CFI_STARTPROC()
 	clr.w	d0
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	beq.s	ssret			// not superscalar
 #endif
 #ifdef __mcoldfire__
 	moveq	#60,d1
-	cmp.w	_mcpu+2,d1
+	cmp.w	SYM(mcpu)+2,d1
 	bpl.s	ssret
 #else
-	cmp.w	#60,_mcpu+2
+	cmp.w	#60,SYM(mcpu)+2
 	bmi.s	ssret
 #endif
 	dc.l	0x4e7a0808		// movec pcr,d0
@@ -65,12 +73,13 @@ _is_superscalar:
 	andi.w	#0x0001,d0
 #endif
 	rts
+	CFI_ENDPROC()
+	END(is_superscalar)
 
 //
 // Cache tricks
 //
-	.globl	_mcpu			// in main.c
-	.globl	_init_cache
+	.globl	SYM(init_cache)
 
 // this is a vector for jumping into appropriate cache
 // routine. initialized at startup.
@@ -102,7 +111,9 @@ cacr_saved:	dc.l	0xA4088020
 
 // init cache routines
 
-_init_cache:
+	FUNC(init_cache)
+SYM(init_cache):
+	CFI_STARTPROC()
 #ifdef __mcoldfire__
 	lea	-24(sp),sp
 	movem.l	d0-d1/a0-a3,(sp)
@@ -110,7 +121,7 @@ _init_cache:
 	movem.l	d0-d1/a0-a3,-(sp)
 #endif
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	init_cache_68k
 
 	lea	_cache_coldfire,a0
@@ -121,7 +132,7 @@ _init_cache:
 	bra.s	icset
 init_cache_68k:
 #endif
-	move.l	_mcpu,d0
+	move.l	SYM(mcpu),d0
 	beq	icquit
 	cmp.w	#10,d0
 	beq	icquit
@@ -141,8 +152,8 @@ init_cache_68k:
 	lea	c2l040,a2
 	cmp.w	#40,d0
 	beq.s	icset
-	lea	_cache060,a0
-	lea	_cache060_i,a3
+	lea	_cache060(pc),a0
+	lea	_cache060_i(pc),a3
 	lea	l2c060,a1
 	lea	c2l060,a2
 	cmp.w	#60,d0
@@ -166,6 +177,8 @@ icquit:
 	movem.l	(sp)+,d0-d1/a0-a3
 #endif
 	rts
+	CFI_ENDPROC()
+	END(init_cache)
 
 // Cache control routines.
 //
@@ -225,13 +238,15 @@ ccw_dmasks:
 	dc.l	0x00000000			// 68050 (does not exist)
 	dc.l	0x0000ff07			// 68060
 
-	.globl	_ccw_getdmask
-	.globl	_ccw_get
-	.globl	_ccw_set
+	.globl	SYM(ccw_getdmask)
+	.globl	SYM(ccw_get)
+	.globl	SYM(ccw_set)
 
 // Set the CACR according to the Cache Control Word and Mask
 
-_ccw_set:
+	FUNC(ccw_set)
+SYM(ccw_set):
+	CFI_STARTPROC()
 	tst.w	hascaches
 	beq	clq
 #ifdef __mcoldfire__
@@ -240,7 +255,7 @@ _ccw_set:
 #else
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
-	bsr	_ccw_get		// get the current CCW
+	jbsr	SYM(ccw_get)		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
 	move.l	28(sp),d1		// user specified CCW
 	move.l	32(sp),d2		// user specified CCM
@@ -248,7 +263,7 @@ _ccw_set:
 	not.l	d2			// negate all bits in CCM
 	and.l	d2,d0			// clear bits to change in actual CCW
 	or.l	d0,d1			// apply user CCW bits
-	bsr	_ccw_getdmask
+	jbsr	SYM(ccw_getdmask)
 #ifdef __mcoldfire__
 	and.l	d1,d0
 #else
@@ -260,7 +275,7 @@ _ccw_set:
 	move.l	(sp)+,d2		// restore new CCW
 	move.l	(sp)+,d1		// restore old CCW
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne	cf_68K_emu
 	btst	#0,d2			// instruction cache going to be enabled?
 	beq.s	ic_off_cf
@@ -285,10 +300,10 @@ dc_off_cf:
 	jbsr	_cpusha_dc_cf		// cpusha dc
 	jbra	write_cacr
 cf_68K_emu:
-	move.w	_mcpu+2,a0
+	move.w	SYM(mcpu)+2,a0
 	cmpa.l	#40,a0			// the following is only necessary
 #else
-	cmpi.w	#40,_mcpu+2		// the following is only necessary
+	cmpi.w	#40,SYM(mcpu)+2		// the following is only necessary
 #endif
 	blt.s	lt040			// on 68040 and 68060 (copyback cache!)
 	btst	#0,d2			// instruction cache going to be enabled?
@@ -314,10 +329,10 @@ dc_off:
 	dc.w	0xF478			// cpusha dc
 lt040:					// 020/030 have write-through cache but we
 #ifdef __mcoldfire__			// need to invalidate it before enable it
-	move.w	_mcpu+2,a0
+	move.w	SYM(mcpu)+2,a0
 	cmpa.l	#30,a0			// it's a 68020?
 #else
-	cmpi.w	#30,_mcpu+2		// it's a 68020?
+	cmpi.w	#30,SYM(mcpu)+2		// it's a 68020?
 #endif
 	blt.s	inv_020ic		// 68020 has only intruction cache
 	btst	#1,d2			// 030 data cache going to be enabled?
@@ -332,11 +347,11 @@ inv_020ic:				// invalidate 020 or 030 instruction cache
 	bne.s	write_cacr
 	or.l	#0b000000001000,d0	// ci bit (clear i-cache)
 write_cacr:
-	movec	d0,cacr			// write CACR
+	movec	d0,%cacr			// write CACR
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
 	lea	20(sp),sp
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne clq
 	and.l	#0xfefffeff,d0		// clear cinva bits before saving
 	move.l	d0,cacr_saved		// save new CACR value
@@ -345,16 +360,20 @@ write_cacr:
 #endif
 clq:	clr.l	d0			// E_OK
 	rts
+	CFI_ENDPROC()
+	END(ccw_get)
 
 // Extract Cache Control Word from the CACR
 
-_ccw_get:
+	FUNC(ccw_get)
+SYM(ccw_get):
+	CFI_STARTPROC()
 	tst.w	hascaches
 	beq.s	clq
 #ifdef __mcoldfire__
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	ccw_get_cacr
 	move.l	cacr_saved,d0
 	bra.s	ccw_get_ccw
@@ -367,7 +386,7 @@ ccw_get_ccw:
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
 	move.l	d0,d1
-	bsr.s	_ccw_getdmask
+	jbsr	SYM(ccw_getdmask)
 	and.l	d1,d0
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
@@ -376,18 +395,22 @@ ccw_get_ccw:
 	movem.l	(sp)+,d1-d2/a0-a2
 #endif
 	rts
+	CFI_ENDPROC()
+	END(ccw_get)
 
 // get default Cache Control Mask for currently used CPU
 
-_ccw_getdmask:
+	FUNC(ccw_getdmask)
+SYM(ccw_getdmask):
+	CFI_STARTPROC()
 #ifdef __mcoldfire__
-	tst.w	_coldfire_68k_emulation
+	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	ccw_getdmask_68k
 	move.l	#0x01ffd007,d0		// ColdFire CCW mask
 	rts
 ccw_getdmask_68k:
 #endif
-	move.l	_mcpu,d0		// high word assumed 0
+	move.l	SYM(mcpu),d0		// high word assumed 0
 	divu.w	#5,d0
 	and.l	#0x0000ffff,d0		// better to be safe...
 	lsl.l	#1,d0
@@ -398,6 +421,8 @@ ccw_getdmask_68k:
 	move.l	0(a0,d0.w),d0		// _not_ a (a0,d0.w*2), see divu
 #endif
 	rts
+	CFI_ENDPROC()
+	END(ccw_getdmask)
 
 // These are called by routines above. Notice CACR is ulong,
 // while CCW is in fact ushort, but the user sees it as ulong too.
@@ -688,8 +713,8 @@ ssv4e:	addq.l	#0x04,a0
 	rts
 #endif
 
-	.globl	_cpush
-	.globl	_cpushi
+	.globl	SYM(cpush)
+	.globl	SYM(cpushi)
 
 // Ozk:
 // cpushi(void *base, long length):
@@ -697,7 +722,8 @@ ssv4e:	addq.l	#0x04,a0
 // If length is -1 then the entire cache is flushed/invalidated
 // Usage: When modifying/setting up process text area.
 
-_cpushi:
+	FUNC(cpushi)
+SYM(cpushi):
 #ifndef M68000
 	move.l	4(sp),a0
 	move.l	8(sp),d0
@@ -710,7 +736,7 @@ _cpushi:
 // flush both caches from base over a distance of length. If length is -1
 // then the entire cache is flushed
 //
-_cpush:
+SYM(cpush):
 #ifndef M68000
 	move.l	4(sp),a0
 	move.l	8(sp),d0
@@ -734,7 +760,7 @@ abc030:
 #else
 	or.w	#0x0808,d1
 #endif
-	movec	d1,cacr
+	movec	d1,%cacr
 	bra.s	rescacr
 
 fls030:
@@ -745,7 +771,7 @@ fls030:
 #endif
 // run through d0+1 times (since a0 may not be on a long boundary)
 do030:	dc.w	0x4e7b,0x8802		// movec a0,caar
-	movec	d1,cacr
+	movec	d1,%cacr
 	addq.l	#4,a0
 #ifdef __mcoldfire__
 	subq.l	#1,d0
@@ -755,10 +781,11 @@ do030:	dc.w	0x4e7b,0x8802		// movec a0,caar
 #endif
 rescacr:
 	move.l	(sp)+,d0
-	movec	d0,cacr
+	movec	d0,%cacr
 _cache000:				// 68000 cache (i.e. no cache)
 #endif
 	rts
+	END(cpushi)
 
 // Ozk: I think we'll have to check this code, as on my Milan040
 //	cpush(addr, size) dont work as expected. Gotta check this
@@ -928,7 +955,7 @@ _cache_coldfire:			// ColdFire cache
 	move.l  d0,a0		// initialize cpushl pointer
 
 setloop:
-	cpushl	bc,(a0) 	// push cache line a0 (both caches)
+	cpushl	%bc,(a0) 	// push cache line a0 (both caches)
 	add.l	#0x0010,a0	// increment set index by 1
 	addq.l	#1,d1		// increment set counter
 	cmpi.l	#512,d1 	// are sets for this way done?
@@ -950,7 +977,7 @@ _cpusha_dc_cf:
 	move.l  d0,a0		// initialize cpushl pointer
 
 setloop_dc:
-	cpushl	dc,(a0) 	// push cache line a0
+	cpushl	%dc,(a0) 	// push cache line a0
 	add.l	#0x0010,a0	// increment set index by 1
 	addq.l	#1,d1		// increment set counter
 	cmpi.l	#512,d1 	// are sets for this way done?
@@ -974,7 +1001,7 @@ _cpusha_ic_cf:
 	move.l  d0,a0		// initialize cpushl pointer
 
 setloop_ic:
-	cpushl	ic,(a0) 	// push cache line a0
+	cpushl	%ic,(a0) 	// push cache line a0
 	add.l	#0x0010,a0	// increment set index by 1
 	addq.l	#1,d1		// increment set counter
 	cmpi.l	#512,d1 	// are sets for this way done?
@@ -1016,11 +1043,11 @@ log2phys:
 #ifdef __mcoldfire__
 	lea	-16(sp),sp
 	movem.l	d0-d2/a1,(sp)		// save some registers
-	move.w	_mcpu+2,d0
+	move.w	SYM(mcpu)+2,d0
 	cmpi.w	#60,d0			// is this a 060?
 #else
 	movem.l	d0-d2/a1,-(sp)		// save some registers
-	cmpi.w	#60,_mcpu+2		// is this a 060?
+	cmpi.w	#60,SYM(mcpu)+2		// is this a 060?
 #endif
 	beq.s	l2p_060			// yes, so use plpa
 	dc.w	0x4e7a,0x0003		// movec tc,d0
@@ -1117,25 +1144,37 @@ temp_access:
 // Set the stack pointer to a new value
 // Called when we're starting GEM from the exec_os vector
 //
-	.globl	_setstack
-_setstack:
+	.globl	SYM(setstack)
+	FUNC(setstack)
+SYM(setstack):
+	CFI_STARTPROC()
 	move.l	(sp)+,a0		// pop return address
 	move.l	(sp)+,sp		// set stack pointer
 	jmp	(a0)			// return
+	CFI_ENDPROC()
+	END(setstack)
 
 // used for debugging
 
 #ifdef DEBUG_INFO
-	.globl	_get_ssp
+	.globl	SYM(get_ssp)
 
-_get_ssp:
+	FUNC(get_ssp)
+SYM(get_ssp):
+	CFI_STARTPROC()
 	move.l	sp,d0
 	rts
+	CFI_ENDPROC()
+	END(get_ssp)
 #endif
 
-	.globl	_get_usp
+	.globl	SYM(get_usp)
 
-_get_usp:
-	move.l	usp,a0
+	FUNC(get_usp)
+SYM(get_usp):
+	CFI_STARTPROC()
+	move.l	%usp,a0
 	move.l	a0,d0
 	rts
+	CFI_ENDPROC()
+	END(get_usp)

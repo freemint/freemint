@@ -13,6 +13,8 @@
  * 
  */
 
+#include "mint/asmdefs.h"
+
 # ifndef NO_AKP_KEYBOARD
 
 KBDVEC		=	-4
@@ -30,12 +32,14 @@ IKBDTODO	=	IKBDSTATE+1
 
 	.text
 
-	.globl	_syskey,_keyrec
-	.globl	_old_acia,_new_acia
+	.globl	SYM(syskey),SYM(keyrec)
+	.globl	SYM(old_acia),SYM(new_acia)
+	.extern SYM(has_kbdvec)
+	.extern SYM(newkeys)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_acia:
+SYM(old_acia):
 	dc.l	0
 
 // This handler is installed only when running on FireTOS and CT60 TOS 2, this
@@ -53,14 +57,17 @@ _old_acia:
 // FireTOS and CT60 TOS 2 ACIA handler doesn't process MIDI data so this
 // problem doesn't occur with them, midisys handler in those TOS just return.
 
-_new_acia:
+	
+	FUNC(new_acia)
+SYM(new_acia):
+	CFI_STARTPROC()
 #ifdef __mcoldfire__
 	lea	-32(sp),sp
 	movem.l	d0-d3/a0-a3,(sp)
 #else
 	movem.l	d0-d3/a0-a3,-(sp)
 #endif
-again:	move.l	_syskey,a3
+again:	move.l	SYM(syskey),a3
 	move.l	VMIDISYS(a3),a0
 	jsr	(a0)
 	move.l	VIKBDSYS(a3),a0
@@ -85,6 +92,8 @@ again:	move.l	_syskey,a3
 	nop				// see intr.S and syscall.S
 #endif
 	rte
+	CFI_ENDPROC()
+	END(new_acia)
 
 // TOS passes the following data to the routines pointed by
 // kbdvec and midivec:
@@ -101,14 +110,16 @@ todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 
 	.text
 
-	.globl	_ikbdsys_handler
+	.globl	SYM(ikbdsys_handler)
 
 // We only replace ikbdsys, midisys will be handled in ROM.
 
-_ikbdsys_handler:
-	move.l	_syskey,a3		// if ACIA handler is from ROM get syskey
+	FUNC(kbdsys_handler)
+SYM(ikbdsys_handler):
+	CFI_STARTPROC()
+	move.l	SYM(syskey),a3		// if ACIA handler is from ROM get syskey
 	move.b	(0xfc00).w,d1		// ACIA control
-	move.l	_keyrec,a0
+	move.l	SYM(keyrec),a0
 	btst	#0x07,d1		// interrupt request
 #ifdef __mcoldfire__
 	beq	return
@@ -133,8 +144,8 @@ no_error:
 	bne.s	mid_multiple
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
-	tst.w	_has_kbdvec		// if kvdvec not present call new_keys directly
-	beq	_newkeys
+	tst.w	SYM(has_kbdvec)		// if kvdvec not present call new_keys directly
+	beq	SYM(newkeys)
 	move.l	KBDVEC(a3),a1
 	jmp	(a1)
 
@@ -245,10 +256,12 @@ call:	move.l	a0,-(sp)
 	jsr	(a2)
 	addq.l	#4,sp
 
-	move.l	_syskey,a3
+	move.l	SYM(syskey),a3
 	clr.b	IKBDSTATE(a3)
 
 xret:	rts
+	CFI_ENDPROC()
+	END(ikbdsys_handler)
 
 	.bss
 
