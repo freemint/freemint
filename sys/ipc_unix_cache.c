@@ -46,56 +46,56 @@ chksum (void *buf, short nwords)
 	
 	__asm__
 	(
-		"clrl	d0		\n\t"
+		"clrl	%%d0		\n\t"
 #ifdef __mcoldfire__
-		"mvzw	%2, d1		\n\t"
-		"lsrl	#1, d1		\n\t"	/* # of longs in buf */
+		"mvzw	%2, %%d1		\n\t"
+		"lsrl	#1, %%d1		\n\t"	/* # of longs in buf */
 #else
-		"movew	%2, d1		\n\t"
-		"lsrw	#1, d1		\n\t"	/* # of longs in buf */
+		"movew	%2, %%d1		\n\t"
+		"lsrw	#1, %%d1		\n\t"	/* # of longs in buf */
 #endif
 		"bcc	1f		\n\t"	/* multiple of 4 ? */
 #ifdef __mcoldfire__
-		"mvz.w	%1@+, d2	\n\t"
-		"addl	d2, %0		\n\t"	/* no, add in extra word */
-		"addxl	d0, %0		\n"
+		"mvz.w	%1@+, %%d2	\n\t"
+		"addl	%%d2, %0		\n\t"	/* no, add in extra word */
+		"addxl	%%d0, %0		\n"
 #else
 		"addw	%1@+, %0	\n\t"	/* no, add in extra word */
-		"addxw	d0, %0		\n"
+		"addxw	%%d0, %0		\n"
 #endif
 		"1:			\n\t"
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n\t"	/* decrement for dbeq */
+		"subql	#1, %%d1		\n\t"	/* decrement for dbeq */
 #else
-		"subqw	#1, d1		\n\t"	/* decrement for dbeq */
+		"subqw	#1, %%d1		\n\t"	/* decrement for dbeq */
 #endif
 		"bmi	3f		\n"
 		"2:			\n\t"
 		"addl	%1@+, %0	\n\t"
-		"addxl	d0, %0		\n\t"
+		"addxl	%%d0, %0		\n\t"
 #ifdef __mcoldfire__
-		"subql	#1, d1		\n\t"
+		"subql	#1, %%d1		\n\t"
 		"bpls	2b		\n"	/* loop over all longs */
 #else
-		"dbra	d1, 2b		\n"	/* loop over all longs */
+		"dbra	%%d1, 2b		\n"	/* loop over all longs */
 #endif
 		"3:			\n\t"
 #ifdef __mcoldfire__
 		"swap	%0		\n\t"	/* convert to short */
-		"mvzw	%0, d1		\n\t"
+		"mvzw	%0, %%d1		\n\t"
 		"clr.w	%0		\n\t"
 		"swap	%0		\n\t"
-		"addl	d1, %0		\n\t"
+		"addl	%%d1, %0		\n\t"
 		"swap	%0		\n\t"
-		"mvzw	%0, d1		\n\t"
+		"mvzw	%0, %%d1		\n\t"
 		"clr.w	%0		\n\t"
 		"swap	%0		\n\t"
-		"addl	d1, %0		\n\t"
+		"addl	%%d1, %0		\n\t"
 #else
-		"movel	%0, d1		\n\t"	/* convert to short */
-		"swap	d1		\n\t"
-		"addw	d1, %0		\n\t"
-		"addxw	d0, %0		\n\t"
+		"movel	%0, %%d1		\n\t"	/* convert to short */
+		"swap	%%d1		\n\t"
+		"addw	%%d1, %0		\n\t"
+		"addxw	%%d0, %0		\n\t"
 #endif
 		: "=d"(sum), "=a"(buf)
 		: "g"(nwords), "1"(buf), "0"(sum)
