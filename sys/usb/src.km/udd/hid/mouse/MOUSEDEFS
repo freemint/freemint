@@ -8,7 +8,7 @@ ifeq ($(mouse),deb)
 TARGET = mouse.udd
 CPU = 000
 USBDEFS += -DDEV_DEBUG
-LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(mouse),prg)
