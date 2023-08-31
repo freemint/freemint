@@ -277,56 +277,56 @@ chksum (void *buf, short nwords)
 	ulong sum = 0;
 
 	__asm__(
-		"\tclrl	d0\n"
+		"\tclrl	%%d0\n"
 #ifdef __mcoldfire__
-		"\tmvzw	%2, d1\n"
-		"\tlsrl	#1, d1\n"	/* # of longs in buf */
+		"\tmvzw	%2, %%d1\n"
+		"\tlsrl	#1, %%d1\n"	/* # of longs in buf */
 #else
-		"\tmovew	%2, d1\n"
-		"\tlsrw	#1, d1\n"	/* # of longs in buf */
+		"\tmovew	%2, %%d1\n"
+		"\tlsrw	#1, %%d1\n"	/* # of longs in buf */
 #endif
 		"\tbcc	l1\n"		/* multiple of 4 ? */
 #ifdef __mcoldfire__
-		"\tmvz.w	%1@+, d2\n"
-		"\taddl	d2, %0\n"	/* no, add in extra word */
-		"\taddxl	d0, %0\n"
+		"\tmvz.w	%1@+, %%d2\n"
+		"\taddl	%%d2, %0\n"	/* no, add in extra word */
+		"\taddxl	%%d0, %0\n"
 #else
 		"\taddw	%1@+, %0\n"	/* no, add in extra word */
-		"\taddxw	d0, %0\n"
+		"\taddxw	%%d0, %0\n"
 #endif
 		"l1:\n"
 #ifdef __mcoldfire__
-		"\tsubql	#1, d1\n"	/* decrement for dbeq */
+		"\tsubql	#1, %%d1\n"	/* decrement for dbeq */
 #else
-		"\tsubqw	#1, d1\n"	/* decrement for dbeq */
+		"\tsubqw	#1, %%d1\n"	/* decrement for dbeq */
 #endif
 		"\tbmi	l3\n"
 		"l2:\n"
 		"\taddl	%1@+, %0\n"
-		"\taddxl	d0, %0\n"
+		"\taddxl	%%d0, %0\n"
 #ifdef __mcoldfire__
-		"\tsubql	#1, d1\n"
+		"\tsubql	#1, %%d1\n"
 		"\tbpls	l2\n"	/* loop over all longs */
 #else
-		"\tdbra	d1, l2\n"		/* loop over all longs */
+		"\tdbra	%%d1, l2\n"		/* loop over all longs */
 #endif
 		"l3:\n"
 #ifdef __mcoldfire__
 		"\tswap	%0\n"		/* convert to short */
-		"\tmvzw	%0, d1\n"
+		"\tmvzw	%0, %%d1\n"
 		"\tclr.w	%0\n"
 		"\tswap	%0\n"
-		"\taddl	d1, %0\n"
+		"\taddl	%%d1, %0\n"
 		"\tswap	%0\n"
-		"\tmvzw	%0, d1\n"
+		"\tmvzw	%0, %%d1\n"
 		"\tclr.w	%0\n"
 		"\tswap	%0\n"
-		"\taddl	d1, %0\n"
+		"\taddl	%%d1, %0\n"
 #else
-		"\tmovel	%0, d1\n"	/* convert to short */
-		"\tswap	d1\n"
-		"\taddw	d1, %0\n"
-		"\taddxw	d0, %0\n"
+		"\tmovel	%0, %%d1\n"	/* convert to short */
+		"\tswap	%%d1\n"
+		"\taddw	%%d1, %0\n"
+		"\taddxw	%%d0, %0\n"
 #endif
 		: "=d"(sum), "=a"(buf)
 		: "g"(nwords), "1"(buf), "0"(sum)
