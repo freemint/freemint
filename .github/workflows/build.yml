@@ -13,7 +13,7 @@ jobs:
       matrix:
         cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara" ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install SSH keys
         if: ${{ github.event_name == 'push' }}
         env:
