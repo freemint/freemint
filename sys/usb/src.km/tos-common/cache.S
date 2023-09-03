@@ -21,6 +21,8 @@
 
 #include "mint/asmdefs.h"
 
+/* TODO: Check whether this routine is valid for the 68040 and ColdFire CPUs */
+
 	.globl SYM(cpush)
 
 SYM(cpush):

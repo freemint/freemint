@@ -280,14 +280,22 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
  */
 static inline void invalidate_dcache(void)
 {
-#ifdef __mcoldfire__
-	s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA);
-#endif
 #if defined(__mc68040__) || defined(__mc68060__)
-	asm ("cinva %dc");
-#endif
-#ifdef __mc68030__
-	/* 68030 is a writethrough data cache, so we're fine */
+	__asm__ __volatile__(
+		"cinva %%dc \n\t"
+		/* output */   :
+		/* input */    :
+		/* clobbers */ : "memory"
+		);
+
+	/* An alternative would be to use Ssystem() OS call */
+	/* s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA); */
+#elif __mcoldfire__
+	s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA);
+#else
+	/* There is only PCI hardware for machines with a 040, 060 and
+	 * ColdFire CPUs.
+	 */
 #endif
 }
 
@@ -295,16 +303,26 @@ static inline void invalidate_dcache(void)
  * use the functions exported by the kernel in kentry (cpush) to
  * to flush specific areas of the cache. TOS drivers have support
  * for that function too.
- * There is only PCI hardware for machines with a 040, 060 and
- * ColdFire CPUs, so we use savely the "cpush" instruction.
  */
 
 static void flush_dcache(void)
 {
-#if defined (__mc68040__) || defined(__mc68060__) || defined(__mcoldfdire__)
-	asm("cpusha %dc");
+#if defined (__mc68040__) || defined(__mc68060__)
+	__asm__ __volatile__(
+		"cpusha %%dc \n\t"
+		/* output */   :
+		/* input */    :
+		/* clobbers */ : "memory"
+		);
+#elif (__mcoldfire__)
+	/* TODO: Implement ColdFire asm routine to flush data cache */
+
+	/* An alternative is to use Ssystem() OS call (arg2 = -1 for flushing the entire data cache) */
+	s_system(S_FLUSHCACHE, 0, -1);
 #else
-	/* Nothing */
+	/* There is only PCI hardware for machines with a 040, 060 and
+	 * ColdFire CPUs.
+	 */
 #endif
 }
 
