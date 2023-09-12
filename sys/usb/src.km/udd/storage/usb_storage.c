@@ -1137,7 +1137,7 @@ usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt, bool out)
 	long result;
 	/* ENDPOINT_HALT = 0, so set value to 0 */
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
-	 			USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0, endpt, 0, 0, USB_CNTL_TIMEOUT * 5);
+				USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0, out ? endpt:(endpt | USB_DIR_IN), 0, 0, USB_CNTL_TIMEOUT * 5);
 
 	/* 
 	 * USB standard: "For endpoints using data toggle, regardless of whether an endpoint has the
