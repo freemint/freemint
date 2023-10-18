@@ -1,0 +1,8 @@
+Data Class Driver for TOS, MagiC & MiNT
+Developed by Claude Labelle - Licensed under GPL
+
+This driver is meant to send data to a USB Data Class device, such as to the RetroWave OPL3 Express (https://shop.sudomaker.com/products/retrowave-opl3-express).
+
+It doesn't actually send data. It registers itself with the USB stack and accepts the interface of the device. To actually send data, you need to implement code in your program that finds the interface and send data to its endpoint. You can find a demo program in the datademo directory.
+
+

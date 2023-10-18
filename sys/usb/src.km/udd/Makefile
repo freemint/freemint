@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = eth hid printer storage
+SUBDIRS = data eth hid printer storage
 
 srcdir = .
 top_srcdir = ../../..

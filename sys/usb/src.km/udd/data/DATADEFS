@@ -1,0 +1,66 @@
+# data
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
+ifeq ($(data),deb)
+TARGET = data.udd
+CPU = 000
+USBDEFS += -DDEV_DEBUG
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(data),prg)
+TARGET = data.prg
+CPU = 000
+USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=8192
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
+endif
+
+ifeq ($(data),000)
+TARGET = data.udd
+CPU = 000
+USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(data),02060)
+TARGET = data.udd
+CPU = 020-60
+USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(data),030)
+TARGET = data.udd
+CPU = 030
+USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(data),040)
+TARGET = data.udd
+CPU = 040
+USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(data),060)
+TARGET = data.udd
+CPU = 060
+USBDEFS +=
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+ifeq ($(data),col)
+TARGET = data.udd
+CPU  = v4e
+USBDEFS += -DCOLDFIRE
+LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
+endif
+
+#
+# all default targets
+#
+datatargets = 02060 030 040 060 deb 000 col prg
