@@ -1395,8 +1395,8 @@ wr_scc (IOVAR *iovar, SCC *regs)
 	}
 }
 
-static void
-scc_txempty (void)
+static void scc_txempty (void) __asm__("scc_txempty") __attribute((used));
+static void scc_txempty (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
@@ -1449,8 +1449,8 @@ scc_txempty (void)
 	ZS_WRITE_0 (regs, RHIUS);
 }
 
-static void
-scc_rxavail (void)
+static void scc_rxavail (void) __asm__("scc_rxavail") __attribute__((used));
+static void scc_rxavail (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
@@ -1538,8 +1538,8 @@ out:
 	spl (sr);
 }
 
-static void
-scc_stchange (void)
+static void scc_stchange (void) asm("scc_stchange") __attribute__((used));
+static void scc_stchange (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
@@ -1596,8 +1596,8 @@ scc_stchange (void)
 	ZS_WRITE_0 (regs, RHIUS);
 }
 
-static void
-scc_special (void)
+static void scc_special (void) __asm__("scc_special") __attribute__((used));
+static void scc_special (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
@@ -1637,11 +1637,11 @@ static void scca_txempty_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t"
 		 "move.l  %0,%%a0\n\t"
-		 "bsr     %1\n\t"
+		 "bsr     scc_txempty\n\t"
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t"
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_scca), "m"(scc_txempty)  			/* input registers */
+		: "m"(iovar_scca)  			/* input registers */
 		:  			/* input registers */
 		 			/* clobbered */
 	);
@@ -1653,11 +1653,11 @@ static void scca_rxavail_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
+		 "bsr     scc_rxavail\n\t" \
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_scca), "m"(scc_rxavail)  			/* input registers */
+		: "m"(iovar_scca)  			/* input registers */
 		 			/* clobbered */
 	);
 }
@@ -1668,11 +1668,11 @@ static void scca_stchange_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
+		 "bsr     scc_stchange\n\t" \
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_scca), "m"(scc_stchange)  			/* input registers */
+		: "m"(iovar_scca)  			/* input registers */
 		 			/* clobbered */
 	);
 }
@@ -1683,11 +1683,11 @@ static void scca_special_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
+		 "bsr     scc_special\n\t" \
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_scca), "m"(scc_special)  			/* input registers */
+		: "m"(iovar_scca)  			/* input registers */
 		 			/* clobbered */
 	);
 }
@@ -1702,11 +1702,11 @@ static void sccb_txempty_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t"
 		 "move.l  %0,%%a0\n\t"
-		 "bsr     %1\n\t"
+		 "bsr     scc_txempty\n\t"
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t"
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_sccb), "m"(scc_txempty)  			/* input registers */
+		: "m"(iovar_sccb)  			/* input registers */
 		:  			/* input registers */
 		 			/* clobbered */
 	);
@@ -1718,11 +1718,11 @@ static void sccb_rxavail_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
+		 "bsr     scc_rxavail\n\t" \
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_sccb), "m"(scc_rxavail)  			/* input registers */
+		: "m"(iovar_sccb)  			/* input registers */
 		 			/* clobbered */
 	);
 }
@@ -1733,11 +1733,11 @@ static void sccb_stchange_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
+		 "bsr     scc_stchange\n\t" \
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_sccb), "m"(scc_stchange)  			/* input registers */
+		: "m"(iovar_sccb)  			/* input registers */
 		 			/* clobbered */
 	);
 }
@@ -1748,11 +1748,11 @@ static void sccb_special_asm(void)
 	(
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  %0,%%a0\n\t" \
-		 "bsr     %1\n\t" \
+		 "bsr     scc_special\n\t" \
 		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
 		 "rte"
 		: 			/* output register */
-		: "m"(iovar_sccb), "m"(scc_special)  			/* input registers */
+		: "m"(iovar_sccb)  			/* input registers */
 		 			/* clobbered */
 	);
 }

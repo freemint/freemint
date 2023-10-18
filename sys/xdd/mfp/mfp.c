@@ -1370,8 +1370,8 @@ wr_mfp (IOVAR *iovar, MFP *regs)
 	}
 }
 
-static void
-mfp_dcdint (void)
+static void mfp_dcdint (void) __asm__("mfp_dcdint") __attribute__((used));
+static void mfp_dcdint (void)
 {
 	IOVAR *iovar;
 	MFP *regs;
@@ -1418,8 +1418,8 @@ mfp_dcdint (void)
 }
 
 
-static void
-mfp_ctsint (void)
+static void mfp_ctsint (void) __asm__("mfp_ctsint") __attribute__((used));
+static void mfp_ctsint (void)
 {
 	IOVAR *iovar;
 	MFP *regs;
@@ -1463,8 +1463,8 @@ mfp_ctsint (void)
 	regs->isrb = ~0x04;
 }
 
-static void
-mfp_txerror (void)
+static void mfp_txerror (void) __asm__("mfp_txerror") __attribute__((used));
+static void mfp_txerror (void)
 {
 	IOVAR *iovar;
 	MFP *regs;
@@ -1485,8 +1485,8 @@ mfp_txerror (void)
 	regs->isra = ~0x02;
 }
 
-static void
-mfp_txempty (void)
+static void mfp_txempty (void) __asm__("mfp_txempty") __attribute__((used));
+static void mfp_txempty (void)
 {
 	IOVAR *iovar;
 	MFP *regs;
@@ -1586,8 +1586,9 @@ mfp_read_o (IOVAR *iovar, MFP *regs)
 //	while (regs->rsr & RSR_CHAR_AVAILABLE);
 }
 
-static void
-mfp_rxavail (void)
+
+static void mfp_rxavail (void) __asm__("mfp_rxavail") __attribute__((used));
+static void mfp_rxavail (void)
 {
 	IOVAR *iovar;
 	MFP *regs;
@@ -1634,8 +1635,8 @@ mfp_rxavail (void)
 	regs->isra = ~0x10;
 }
 
-static void
-mfp_rxerror (void)
+static void mfp_rxerror (void) __asm("mfp_rxerror") __attribute__((used));
+static void mfp_rxerror (void)
 {
 	IOVAR *iovar;
 	MFP *regs;
@@ -1702,11 +1703,11 @@ static void mfp_dcdint_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_dcdint\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp), "m"(mfp_dcdint)  			/* input registers */
+	: "m"(iovar_mfp)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1717,11 +1718,11 @@ static void mfp_ctsint_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_ctsint\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp), "m"(mfp_ctsint)  			/* input registers */
+	: "m"(iovar_mfp)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1732,11 +1733,11 @@ static void mfp_txerror_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_txerror\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp), "m"(mfp_txerror)  			/* input registers */
+	: "m"(iovar_mfp)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1747,11 +1748,11 @@ static void mfp_txempty_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_txempty\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp), "m"(mfp_txempty)  			/* input registers */
+	: "m"(iovar_mfp) 			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1762,11 +1763,11 @@ static void mfp_rxerror_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_rxerror\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp), "m"(mfp_rxerror)  			/* input registers */
+	: "m"(iovar_mfp) 			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1777,11 +1778,11 @@ static void mfp_rxavail_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_rxavail\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp), "m"(mfp_rxavail)  			/* input registers */
+	: "m"(iovar_mfp)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1796,11 +1797,11 @@ static void ttmfp_txerror_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_txerror\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp_tt), "m"(mfp_txerror)  			/* input registers */
+	: "m"(iovar_mfp_tt)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1811,11 +1812,11 @@ static void ttmfp_txempty_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_txempty\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp_tt), "m"(mfp_txempty)  			/* input registers */
+	: "m"(iovar_mfp_tt)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1826,11 +1827,11 @@ static void ttmfp_rxerror_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_rxerror\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp_tt), "m"(mfp_rxerror)  			/* input registers */
+	: "m"(iovar_mfp_tt)  			/* input registers */
 		/* clobbered */
 	);
 }
@@ -1841,11 +1842,11 @@ static void ttmfp_rxavail_asm(void)
 	(
 		PUSH_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"move.l  %0,%%a0\n\t"
-		"bsr     %1\n\t"
+		"bsr     mfp_rxavail\n\t"
 		POP_SP("%%a0-%%a2/%%d0-%%d2", 24)
 		"rte"
 	: 			/* output register */
-	: "m"(iovar_mfp_tt), "m"(mfp_rxavail)  			/* input registers */
+	: "m"(iovar_mfp_tt)  			/* input registers */
 		/* clobbered */
 	);
 }
