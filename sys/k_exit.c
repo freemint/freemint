@@ -82,7 +82,7 @@ terminate(struct proc *pcurproc, short code, short que)
 	assert (que == ZOMBIE_Q || que == TSR_Q);
 
 	/* Exit all non-closed shared libraries */
-	while (slb_close_on_exit (1))
+	while (slb_close_on_exit (1, 0))
 		;
 
 	/* Remove structure if curproc is an SLB */
@@ -287,7 +287,7 @@ sys_pterm(short code)
 	{
 		int cont;
 
-		cont = slb_close_on_exit(0);
+		cont = slb_close_on_exit(0, code);
 		if (cont == 1)
 			return code;
 

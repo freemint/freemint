@@ -748,7 +748,7 @@ sys_s_lbclose(SHARED_LIB *sl)
  *     users
  */
 int
-slb_close_on_exit (int term)
+slb_close_on_exit (int term, int code)
 {
 	struct user_things *ut;
 	SHARED_LIB *slb;
@@ -819,9 +819,8 @@ slb_close_on_exit (int term)
 	slb->slb_used--;
 	mark_opened(slb, get_curproc()->pid, 0);
 	usp = (long *)get_curproc()->ctxt[SYSCALL].usp;
-	*(--usp) = get_curproc()->ctxt[SYSCALL].pc;
+	*(--usp) = code;
 	*(--usp) = (long)slb;
-	*(--usp) = (long)get_curproc()->p_mem->base;
 	get_curproc()->ctxt[SYSCALL].pc = ut->slb_close_and_pterm_p;
 	get_curproc()->ctxt[SYSCALL].usp = (long)usp;
 	mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);

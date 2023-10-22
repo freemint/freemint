@@ -150,15 +150,16 @@ failed:	move.l	d0,-(sp)
 // This function is used when a process exited without calling Slbclose().
 
 slb_close_and_pterm:
-	move.l	4(sp),a0
+	move.l	(sp),a0
 	move.l	SL_HEAD(a0),a0
 	move.l	SH_CLOSE(a0),a0
-	move.l	(sp),-(sp)
+	/* slb handle is already on stack */
 	jsr	(a0)
 	addq.l	#4,sp
-	move.l  4(sp),a0        /* SLB_HANDLE */
-	move.l	SL_HEAD(a0),a0
-	bra		slb_exit		// never returns
+	/* exitcode is already on stack */
+	move.w  #76,(sp)
+	trap    #1
+	// never returns
 
 // slb_close
 //

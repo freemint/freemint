@@ -45,7 +45,7 @@
 
 long _cdecl sys_s_lbopen (char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn);
 long _cdecl sys_s_lbclose (SHARED_LIB *sl);
-int slb_close_on_exit (int term);
+int slb_close_on_exit (int term, int code);
 void remove_slb (void);
 
 # endif /* _slb_h */
