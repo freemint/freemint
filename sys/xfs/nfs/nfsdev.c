@@ -79,7 +79,7 @@ nfs_open (FILEPTR *f)
 		r = do_sattr (&f->fc, &attr);
 		if (r != 0)
 		{
-			DEBUG (("nfs_open : truncation to 0 failed -> EACCES", ni->name));
+			DEBUG (("nfs_open : truncation to 0 failed -> EACCES"));
 			return EACCES;
 		}
 	}

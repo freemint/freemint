@@ -127,7 +127,7 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 	if (info->version != NFS_MOUNT_VERS)
 	{
 		DEBUG(("get_mount_slot: wrong version of mount program!"
-		       " Got %ld, expected %ld", info->version, NFS_MOUNT_VERS));
+		       " Got %ld, expected %d", info->version, NFS_MOUNT_VERS));
 		return NULL;
 	}
 	

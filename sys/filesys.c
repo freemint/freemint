@@ -193,6 +193,9 @@ init_drive (int i)
 			release_cookie (&root_dir);
 			DEBUG(("init_drive: drv %d is fs %p", i, fs));
 			break;
+		} else
+		{
+			DEBUG(("init_drive(%d): %ld", i, r));
 		}
 	}
 }

@@ -179,7 +179,7 @@ nfs_root (int drv, fcookie *fc)
 	
 	if (drv != nfs_dev)
 	{
-		DEBUG (("nfs_root(%d) -> ENXIO", drv));
+		DEBUG (("nfs_root(%d) != %d -> ENXIO", drv, nfs_dev));
 		return ENXIO;
 	}
 	
@@ -1352,7 +1352,7 @@ restart:
 			strupr (name);
 		if (strlen(entp->name) >= namelen)
 		{
-			DEBUG(("nfs_readdir(%s): name buffer (%ld) too short",
+			DEBUG(("nfs_readdir(%s): name buffer (%d) too short",
 			                                          ni->name, namelen));
 			res = EBADARG;
 			goto prep_next_entry;
@@ -1867,10 +1867,6 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			{
 				strcpy (info->name, "nfs-xfs");
 				info->version = ((long) VER_MAJOR << 16) | (long) VER_MINOR;
-# ifndef FS_NFS2
-# define _MAJOR_NFS	(12L << 16)
-# define FS_NFS2	(_MAJOR_NFS  | 0)	/* nfs 0.55 */
-# endif
 				info->type = FS_NFS2;
 				strcpy (info->type_asc, "network filesystem");
 			}

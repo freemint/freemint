@@ -86,11 +86,12 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 		/* yeah, save enourmous overhead */
 		native_utc = 1;
 		
-		KERNEL_DEBUG ("nfs (%s): running in native UTC mode!", __FILE__);
+		DEBUG(("nfs (%s): running in native UTC mode!", __FILE__));
 	}
 	else
 	{
 		/* disable extension level 3 */
+		DEBUG(("nfs (%s): old kernel, disabling UTC mode!", __FILE__));
 		nfs_filesys.fsflags &= ~FS_EXT_3;
 	}
 	
@@ -105,6 +106,7 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 	}
 	
 	r = d_cntl (FS_MOUNT, "u:\\nfs", (long) &d);
+	DEBUG(("d_cntl(FS_MOUNT): r=%ld nfs_dev=%d", r, d.dev_no));
 	if (r == d.dev_no)
 	{
 		nfs_dev = d.dev_no;

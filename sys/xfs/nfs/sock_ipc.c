@@ -287,7 +287,7 @@ REQUEST *pending = NULL;
 volatile char lock = 0;
 
 # define TAS(val) ({ 						\
-	register char _locked;					\
+	char _locked;					\
 	long _tstval = (long)&val;				\
 	__asm__ __volatile__(					\
 		"clrb		%0\n\t"				\
@@ -576,7 +576,7 @@ open_connection (struct socket **resultso)
 		goto error;
 	}
 	
-	DEBUG (("open_connection: got socket %lx", so));
+	DEBUG (("open_connection: got socket %p", (void *) so));
 	
 	*resultso = so;
 	return ret;
@@ -633,7 +633,7 @@ rpc_sendmessage (struct socket *so, SERVER_OPT *opt, MESSAGE *mreq)
 	if (ret < 0)
 	{
 		DEBUG (("rpc_sendmessage: error %ld during sending", ret));
-		DEBUG (("rpc_sendmessage: handle is %lx", so));
+		DEBUG (("rpc_sendmessage: handle is %p", (void *) so));
 	}
 	
 	return ret;

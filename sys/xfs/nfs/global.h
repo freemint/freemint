@@ -66,9 +66,9 @@
 extern ulong memory;
 
 INLINE void *
-own_kmalloc (register long size)
+own_kmalloc (long size)
 {
-	register ulong *tmp;
+	ulong *tmp;
 	
 	size += sizeof (*tmp);
 	
@@ -85,7 +85,7 @@ own_kmalloc (register long size)
 INLINE void
 own_kfree (void *dst)
 {
-	register ulong *tmp = dst;
+	ulong *tmp = dst;
 	
 	tmp--;
 	memory -= *tmp;
