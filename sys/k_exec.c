@@ -691,7 +691,24 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 		     /* binutils >= 2.18-mint-20080209 */
 		     || (exec_longs[0] == 0x203a001aL && exec_longs[1] == 0x4efb08faL)
 		   )
+		{
 			exec_longs += (228 / sizeof(long));
+		} else if ((exec_longs[0] & 0xffffff00L) == 0x203a0000L &&              /* binutils >= 2.41-mintelf */
+			exec_longs[1] == 0x4efb08faUL &&
+			/*
+			 * 40 = (minimum) offset of elf header from start of file
+			 * 24 = offset of e_entry in common header
+			 * 30 = branch offset (sizeof(GEMDOS header) + 2)
+			 */
+			(exec_longs[0] & 0xff) >= (40 + 24 - 30))
+		{
+			long elf_offset;
+			long e_entry;
+
+			elf_offset = (exec_longs[0] & 0xff);
+			e_entry = *((long *)((char *)b->p_tbase + elf_offset + 2));
+			exec_longs = (long *) ((char *) b->p_tbase + e_entry);
+		}
 
 		if (exec_longs[0] == SLB_HEADER_MAGIC)
 		{

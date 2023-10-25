@@ -224,50 +224,42 @@ loop:	move.w	d7,-(sp)		// Fclose(x)
 	lea	256(a0),a0		// begin of the TEXT segment
 
 	// Test for original binutils
-#ifdef __mcoldfire__
-	move.l	#0x283a001a,d0
-	cmp.l	(a0),d0
-#else
-	cmp.l	#0x283a001a,(a0)
-#endif
+	move.l	(a0),d0
+	move.l	4(a0),d1
+	cmp.l	#0x283a001a,d0
 	bne.s	binu2
-#ifdef __mcoldfire__
-	move.l	#0x4efb48fa,d0
-	cmp.l	4(a0),d0
-#else
-	cmp.l	#0x4efb48fa,4(a0)
-#endif
-	bne.s	binu2
-	bra.s	newfmt
+	cmp.l	#0x4efb48fa,d1
+	beq.s	newfmt
 
 	// Test for binutils >= 2.18-mint-20080209
 binu2:
-#ifdef __mcoldfire__
-	move.l	#0x203a001a,d0
-	cmp.l	(a0),d0
-#else
-	cmp.l	#0x203a001a,(a0)
-#endif
-	bne.s	oldfmt
-#ifdef __mcoldfire__
-	move.l	#0x4efb08fa,d0
-	cmp.l	4(a0),d0
-#else
-	cmp.l	#0x4efb08fa,4(a0)
-#endif
-	bne.s	oldfmt
+	cmp.l	#0x203a001a,d0
+	bne.s	checkelffmt
+	cmp.l	#0x4efb08fa,d1
+	bne.s	checkelffmt
 
 newfmt:
 	lea	228.w(a0),a0		// the header is a bit bigger (new format)
+	bra.s oldfmt
+
+	// Test for binutils >= 2.41-mintelf
+checkelffmt:
+	clr.b   d0
+	cmp.l	#0x283a0000,d0
+	bne.s	oldfmt
+	cmp.l	#0x4efb08fa,d1
+	bne.s	oldfmt
+	moveq	#0,d0				// get offset to e_entry
+	move.b	3(a0),d0
+	cmp.l   #(40+24-30),d0		// see comments in k_exec.c
+	bcs.s   oldfmt
+	move.l	2(a0,d0.l),d0		// get e_entry
+	lea		0(a0,d0.l),a0		// calc start of text
 
 oldfmt:	move.l	a0,-(sp)		// 4 bytes go to the stack
 
-#ifdef __mcoldfire__
-	move.l	#0x70004afc,d0
-	cmp.l	(a0),d0
-#else
-	cmp.l	#0x70004afc,(a0)	// a0 = SLB header address
-#endif
+	move.l	(a0),d0				// a0 = SLB header address
+	cmp.l	#0x70004afc,d0
 	beq.s	exec
 
 	move.l	8(sp),a0
