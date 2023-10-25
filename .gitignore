@@ -91,6 +91,9 @@ sys/usb/src.km/udd/storage/entry.S
 sys/usb/src.km/udd/storage/magic.c
 sys/usb/src.km/udd/storage/setstack.S
 sys/usb/src.km/udd/storage/tosdelay.c
+sys/usb/src.km/udd/data/crtinit.c
+sys/usb/src.km/udd/data/entry.S
+sys/usb/src.km/udd/data/setstack.S
 sys/xdd/audio/actrl
 sys/xdd/mfp/mfp_mil.c
 tools/crypto/crypto
