@@ -1019,6 +1019,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 
 	/* always OUT to the ep */
 	pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
+	memset(&cbw, 0, sizeof(cbw));
 	cbw.dCBWSignature = cpu2le32(CBWSIGNATURE);
 	cbw.dCBWTag = cpu2le32(CBWTag++);
 	cbw.dCBWDataTransferLength = cpu2le32(srb->datalen);
