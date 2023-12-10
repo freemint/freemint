@@ -178,19 +178,27 @@ sys_m_xalloc (long size, int mode)
 	TRACE(("Mxalloc(%ld,%x)",size,mode));
 
 #ifndef M68000
-	/* Hack here: if this is a Malloc call made by TOS 3/4 VDI's v_opnvwk routine,
-	 * we change mode to include "super accessible."
+	/* AKP: Hack here: if the calling process' PC is in ROM, then this
+	 * is a Malloc call made by VDI's v_opnvwk routine.  So we change
+	 * mode to include "super accessible."  This is temporary, until
+	 * VDI catches up with multitasking TOS.
+	 *
+	 * Unfortunately, the check for PC doesn't work in all cases anymore; it has
+	 * an effect on Milan/CTPCI VDI which are still bugged but if v_opnvwk() is
+	 * called from an application, ctxt contains its PC, not ROM's so further
+	 * checking is necessary.
 	 */
-	if (((mode & F_PROTMODE) == 0) && get_curproc()->in_vdi)
+	if ((mode & F_PROTMODE) == 0
+		&& !emutos
+		&& ((get_curproc()->ctxt[SYSCALL].pc > 0x00e00000L
+			 && get_curproc()->ctxt[SYSCALL].pc < 0x00efffffL)
+			|| (get_curproc()->in_vdi
+				&& get_cookie(NULL, COOKIE_NVDI, NULL) == EERROR
+				&& get_cookie(NULL, COOKIE_fVDI, NULL) == EERROR
+				&& get_cookie(NULL, COOKIE_NOVA, NULL) == EERROR)))
 	{
-		if (!emutos
-			&& get_cookie(NULL, COOKIE_NVDI, NULL) == EERROR
-			&& get_cookie(NULL, COOKIE_fVDI, NULL) == EERROR
-			&& get_cookie(NULL, COOKIE_NOVA, NULL) == EERROR)
-		{
-			mode |= (F_PROT_PR) | F_KEEP;
-			DEBUG(("m_xalloc: VDI special (call from TOS 3/4)"));
-		}
+		mode |= (F_PROT_PR) | F_KEEP;
+		DEBUG(("m_xalloc: VDI special (call from TOS 3/4)"));
 	}
 #endif
 
