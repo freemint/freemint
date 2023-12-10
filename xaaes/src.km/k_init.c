@@ -563,9 +563,14 @@ k_init(unsigned short dev, unsigned short mc)
 
 	xa_vdiapi = v->api = init_xavdi_module();
 	{
+		/*
+		 * This is actually a pointer to struct which happens to have
+		 * its first 16-bit record the BCD version. Applies to both
+		 * NVDI and fVDI.
+		 */
 		short *p;
 
-		if (!(s_system(S_GETCOOKIE, COOKIE_NVDI, (unsigned long)&p)))
+		if (s_system(S_GETCOOKIE, COOKIE_NVDI, (unsigned long)&p) == E_OK)
 		{
 			C.nvdi_version = *p;
 			BLOG((false, "nvdi version = %x", C.nvdi_version));
@@ -573,7 +578,7 @@ k_init(unsigned short dev, unsigned short mc)
 		{
 			BLOG((false, "could not determine nvdi version"));
 		}
-		if (!(s_system(S_GETCOOKIE, COOKIE_fVDI, (unsigned long)&p)))
+		if (s_system(S_GETCOOKIE, COOKIE_fVDI, (unsigned long)&p) == E_OK)
 		{
 			C.fvdi_version = *p;
 			BLOG((false, "fvdi version = %x", C.fvdi_version));
@@ -622,21 +627,22 @@ k_init(unsigned short dev, unsigned short mc)
 			{
 				unsigned short tmp[2];
 
-				if (!s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)tmp))
+				if (s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)tmp) == E_OK)
 				{
 					device = 7;
 					BLOG((false, "Assume Milan VDI Compatibility"));
 				}
 				else
 				{
-					if(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)tmp))
+					if(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)tmp) != E_OK)
 						tmp[0] = 0;
 
 					switch(tmp[0])
 					{
 						case 3:
-						case 4:	device = 5;
+						case 4:
 							BLOG((false, "Assume Falcon VDI compatibility"));
+							device = 5;
 							break;
 						default:
 							BLOG((false, "Assume generic VDI compatibility"));
@@ -656,8 +662,25 @@ k_init(unsigned short dev, unsigned short mc)
 		}
 		else if ((device == 5 || device == 7) && !modecode)
 		{
-			BLOG((false, "Video mode not set in Falcon/Milan VDI. Forcing device = 1"));
-			device = 1;
+			long dummy;
+
+			if (device == 5 &&
+				s_system(S_GETCOOKIE, COOKIE_CT60, (unsigned long)&dummy) == E_OK &&
+				s_system(S_GETCOOKIE, COOKIE__PCI, (unsigned long)&dummy) == E_OK)
+			{
+				/*
+				 * CTPCI VDI is yet another beast: it doesn't accept device == 1
+				 * and reinitializes screen using Vsetscreen(0, 0, 3, work_out[45]),
+				 * if it differs from VsetMode(-1).
+				 */
+				 BLOG((false, "Video mode not set in CTPCI VDI. Keeping device = 5"));
+				 modecode = VsetMode(-1);
+			}
+			else
+			{
+				BLOG((false, "Video mode not set in Falcon/Milan VDI. Forcing device = 1"));
+				device = 1;
+			}
 		}
 
 		BLOG((false, "Screen device is: %d", device));
