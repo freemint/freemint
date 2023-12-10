@@ -1,0 +1,42 @@
+Vampire V2 Expansion Port Ethernet Driver
+
+- 2023-12-10: Initial version
+
+The following resources were used:
+V4 Driver file structure
+V2 Amiga driver assembly sources
+- https://gitlab.com/MHeinrichs/Zorro-LAN-IDE/tree/master/Driver/baxnet
+Microchip ENC28J60 driver
+- https://github.com/maniacbug/EtherBright/blob/22fe88c1b3bb3853c61955b0a0a26212679af078/enc28j60.c#L381
+And the datasheet
+- https://ww1.microchip.com/downloads/en/devicedoc/39662a.pdf
+
+This driver is for the ENC28J60 modules, available on ebay at the time of
+this writing for about $3.  This is an all in one SPI ethernet module.
+
+SPI: SPI on the vampire shares a single data register between read and write.  
+In order to clock out a write you have to read the data register.  So you will
+see various instances of "waitdata" with the results otherwise unused.
+
+The ENC28J60 has 4 register banks. You have to use the SetBank writes to change
+which bank you want to access.  The ECON, EIR and a few other registers are
+available in all banks.
+
+You can read or write from registers or buffer memory.  The phy registers require
+special handling.  The MAC and MII registers require the dummy read you'll see.
+
+Remaining issues:
+* Slow.. but it's slow on the Amiga version too.  ~170KB/sec.  It's slower in
+  AmigaOS ;)
+* If you set the SPI speed too fast (and sometimes even without) there is a 
+  timing issue of some sort. This manifests itself in an ssh to the machine 
+  or from the machine hanging right after key negotiation.  Problem in timing,
+  frame lengths, reset code?  Not sure.  For me it boots and works 98% of the
+  time.  If you have an issue, just restart.  Once it's working it seems to stay
+  working for me.  (note this may already be corrected)
+* Timing.  CIA read delay is how delays were done on the amiga.  I'm not sure
+  what the "right way" is for this.  Timing code across the board can probably 
+  be cleaned up.  Similarly we probably go to high interrupt priority level 
+  unnecessarily in spots.
+
+

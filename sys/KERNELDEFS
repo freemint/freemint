@@ -73,13 +73,13 @@ endif
 ifeq ($(kernel),040)
 MINT = mint040.prg
 CPU  = 040
-KERNELDEFS = -DM68040
+KERNELDEFS = -DM68040 -DDEBUG_INFO -DWITH_68080
 endif
 
 ifeq ($(kernel),080)
 MINT = mint080.prg
 CPU  = 040
-KERNELDEFS = -DM68040 -DWITH_68080
+KERNELDEFS = -DM68040 -DWITH_68080 -DDEBUG_INFO
 endif
 
 ifeq ($(kernel),060)
