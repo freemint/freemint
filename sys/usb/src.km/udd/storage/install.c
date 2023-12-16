@@ -635,7 +635,6 @@ long usb_mediach(long logdrv)
 		return ENXIO;
 
 	rc = (pun_usb.flags[logdrv] & CHANGE_FLAG) ? 2 : 0;
-	pun_usb.flags[logdrv] &= ~CHANGE_FLAG;
 
 	return rc;
 }
