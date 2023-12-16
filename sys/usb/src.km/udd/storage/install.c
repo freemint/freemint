@@ -427,8 +427,14 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		if (!sectors)
 			sectors = getilong(dos_bs->sec2);
 		pun_usb.psize[logdrv] = sectors;
-		/* fake partition type according to FAT16/FAT12 */
-		pun_usb.ptype[logdrv] = pun_usb.bpb[logdrv].bflags?0x00440600L:0x00440100L;
+		/* fake partition type according to FAT32/FAT16/FAT12 */
+		if (pun_usb.bpb[logdrv].clsizb == -1) {
+			/* usb_build_bpb sets clsizb to -1 for FAT32 */
+			pun_usb.ptype[logdrv] = F32 << 8;
+		} else {
+			/* FAT16 or FAT12 */
+			pun_usb.ptype[logdrv] = pun_usb.bpb[logdrv].bflags?0x00440600L:0x00440100L;
+		}
 	}
 
 	/*
