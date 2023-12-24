@@ -2422,12 +2422,17 @@ static PUN_INFO *install_pun(void)
 		return NULL;
 	memset(bufptr, 0, bufcnt*bufsiz);
 
-	pun = &pun_ahdi;
-	pun->cookie = AHDI;
-	pun->cookie_ptr = &pun->cookie;
-	pun->version_num = 0x0300;
-	pun->max_sect_siz = bufsiz;
-	PUN_PTR = pun;
+	/* if an AHDI struct is installed update only the max sector size */
+	if (pun)
+		pun->max_sect_siz = bufsiz;
+	else {
+		pun = &pun_ahdi;
+		pun->cookie = AHDI;
+		pun->cookie_ptr = &pun->cookie;
+		pun->version_num = 0x0300;
+		pun->max_sect_siz = bufsiz;
+		PUN_PTR = pun;
+	}
 
 	/*
 	 * copy existing buffers to new ones, updating the BCBs
@@ -2527,7 +2532,7 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 	}
 
 	/*
-	 * install PUN_INFO if necessary
+	 * Initialize USB_PUN_INFO
 	 */
 	if (pun_usb.cookie != AHDI) {
 		pun_usb.cookie = AHDI;
