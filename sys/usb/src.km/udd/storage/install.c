@@ -36,6 +36,9 @@
 
 #define bootdev			*(short *)0x446
 #define drvbits			*(unsigned long *)0x4C2
+
+#define PUN_PTR			(*((PUN_INFO **) 0x516L))
+
 #define DEFAULT_SECTOR_SIZE 2048						//usb_storage.c
 unsigned long usb_stor_read(long device,unsigned long blknr,
 		unsigned long blkcnt,void *buffer);				//usb_storage.c
@@ -347,6 +350,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	char boot_sector[DEFAULT_SECTOR_SIZE];
 	int logdrv;
 	long mask;
+	PUN_INFO *pun_public;
 
 #ifdef TOSONLY
 	/* goto supervisor mode because of drvbits & handlers */
@@ -405,6 +409,16 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	pun_usb.puns++;
 	pun_usb.pun[logdrv] = dev_num | PUN_USB;
 	pun_usb.partition_start[logdrv] = part_offset;
+
+	/*
+	 * update the public pun_info structure only for the first 16 logical drives
+	 */
+	if (logdrv < 16) {
+		pun_public = PUN_PTR;
+		pun_public->puns++;
+		pun_public->pun[logdrv] = dev_num | PUN_USB;
+		pun_public->partition_start[logdrv] = part_offset;
+	}
 
 	part_type <<= 8;					/* for XHDI, make it a 3-character string */
 	if (part_type&0xff000000L)		    				/* i.e. GEM/BGM/RAW */
@@ -478,12 +492,24 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 
 long uninstall_usb_stor(long logdrv)
 {
+	PUN_INFO *pun_public;
+
 	if ((logdrv < 0) || (logdrv >= dl_maxdrives))
 		return -1L;
 
 	pun_usb.puns--;
 	pun_usb.pun[logdrv] = 0xff;
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
+
+	/*
+	 * update the public pun_info structure only for the first 16 logical drives
+	 */
+	if (logdrv < 16) {
+		pun_public = PUN_PTR;
+		pun_public->puns--;
+		pun_public->pun[logdrv] = 0xff;
+		pun_public->partition_start[logdrv] = 0L;
+	}
 
 #ifdef TOSONLY
 	/* goto supervisor mode because of drvbits */
