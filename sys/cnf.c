@@ -681,7 +681,8 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data, unsigned
 		fp->links = 0;
 		FP_FREE(fp);
 
-		ALERT(MSG_cnf_cant_open, path);
+		if (!(options & SET('Q')))
+			ALERT(MSG_cnf_cant_open, path);
 	}
 	return ret;
 }
