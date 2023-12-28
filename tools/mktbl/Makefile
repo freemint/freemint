@@ -86,7 +86,7 @@ buildmktbl: $(realtarget)
 TBLDIR = ../../sys/tbl
 
 compile-tables:
-	for dir in Britain Czech Netherlands Finland France Germany Greece Hungary Norway Italy Russian Spain Sweden Switzerland USA Poland; do \
+	for dir in Britain Czech Netherlands Finland France Germany Greece Hungary Norway Italy Russian Spain Sweden Switzerland USA Poland Romania; do \
 		mkdir -p $(TBLDIR)/$$dir || exit 1; \
 	done
 	$(NATIVECC) $(NATIVECFLAGS) -DMAIN -o mktbl mktbl.c unitable.c
@@ -116,4 +116,5 @@ compile-tables:
 	./mktbl keyboards/swiss_german-pl.src $(TBLDIR)/Poland/swiss_de.tbl
 	./mktbl keyboards/swiss_french-pl.src $(TBLDIR)/Poland/swiss_fr.tbl
 	./mktbl keyboards/usa-pl.src $(TBLDIR)/Poland/usa.tbl
+	./mktbl keyboards/romanian.src $(TBLDIR)/Romania/romanian.tbl
 	$(RM) mktbl
