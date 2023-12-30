@@ -1,5 +1,8 @@
 # ---------------- FreeMiNT configuration file ---------------------
 #
+# PLEASE SEE FREEMINT.HYP/SECTION "MINT.CNF" FOR DETAILED EXPLANATION
+# OF THE POSSIBLE SETTINGS!
+#
 # The mint.cnf file is loaded, when the entire system is practically
 # up, all device drivers and filesystem drivers have been loaded etc.
 # If you want to control earlier settings, see mint.ini file.
@@ -8,7 +11,7 @@
 # are comments. Other lines are commands for MiNT to execute at boot
 # up, or variables that control how MiNT behaves.
 
-# NOTICE: as of FreeMiNT 1.16.0, the format of most keywords has
+# NOTICE: Since FreeMiNT 1.16.0, the format of most keywords has
 #         changed. Old keywords are still supported, however, you
 #         cannot use this configuration file for older versions
 #         of MiNT!
@@ -22,26 +25,16 @@
 # boot drive is C:, and, if you have installed SpareMiNT distribution,
 # that your SpareMiNT drive is E:. Note, that if you have installed
 # SpareMiNT, you can refer to your sysdir as u:/boot/mint/
-
 #
-# -------------------- ACTUAL CONFIGURATION -----------------------
-#
-
-# Set current working directory to u: respective /
-#
-# FreeMiNT 1.16 does this automatically, this line is only required
-# on previous versions (also on 1.16 alphas compiled before second
-# half of July 2004).
-
-#cd u:/
-
-#
-# ------------------ mint.cnf parser commands ---------------------
-#
-
 # The '#' sign at the begin of the line means that a comment follows.
 # The entire line after the '#' sign will be ignored by the parser.
-
+#
+# Some keywords allow more than one parameter, the entries can be
+# separated with commas or semicolons, e.g.
+# PATH=/bin,/sbin,/usr/bin or PATH=/bin;/sbin;/usr/bin
+# 
+# ------------------ MINT.CNF PARSER COMMANDS ---------------------
+#
 # The "set" directive controls the behaviour of the mint.cnf parser.
 # It accepts one of three parameters:
 #
@@ -51,6 +44,7 @@
 
 #set -q
 
+# -----
 # The include command allows you to include other files while the
 # mint.cnf file is being interpreted. The included file will be
 # interpreted as a part of the mint.cnf file.
@@ -59,15 +53,11 @@
 
 # More commands follow.
 
-#
-# ---------------------- Kernel settings --------------------------
-#
-
+# ---------------------- KERNEL SETTINGS --------------------------
 #
 # Here are things you can change if you want to. There are reasonable
 # defaults for all of these.
 #
-
 # KERN_SLICES controls how long a process may run before being
 # interrupted. The number means an amount of 20 ms time intervals.
 #
@@ -142,17 +132,41 @@
 
 #TPA_INITIALMEM=4096
 
-# FS_NEWFATFS= enables the new FAT filesystem driver for selected FAT
-# filesystems. The old TOS FS will be used otherwise.
+# PROC_MAXMEM= gives the maximum amount of memory that any process
+# may use (in kilobytes). The default is to make this unlimited, but
+# if you have a lot of memory and/or programs that grab more memory
+# than they should, try setting this.
 #
-# The default depends on whether the TOSFS driver is compiled into the
-# kernel or not. If it is, all drives are TOSFS by default. If not,
-# all drives are NEWFATFS by default and this keyword has no effect.
+# E.g. to limit processes to 4096K of memory, remove the '#' at the
+# beginning of the next line.
+#
+# WARNING: the process will not be allowed to allocate memory beyond
+# the limit, and it won't "see" more memory as available from the
+# system.
+# Please understand that programs like "free" (or any other that
+# interrogates the system how much memory is available) is a process
+# as well, thus it will undergo this limit too!
+#
+# Decent shells (desktops) allow you to limit the maximum amount of
+# memory independently for each program.
 
-#FS_NEWFATFS=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
+#PROC_MAXMEM=4096
 
-# FS_VFAT= enables VFAT extension for selected drives specified in the
-# FS_NEWFATFS= command. The VFAT extension is disabled by default.
+# Three commands, that define output files for RS-232, console and
+# printer devices. The argument for each one must be a pathname.
+#
+# For best results, the convention u:/drive/pathname should be used
+# for all specified pathnames from now on.
+
+#GEMDOS_AUX=u:/c/mint/aux.out
+#GEMDOS_CON=u:/c/mint/con.out
+#GEMDOS_PRN=u:/c/mint/prn.out
+
+#
+# -------------------- FILESYSTEM SETTINGS ------------------------
+#
+# FS_VFAT= enables VFAT extension for selected drives.
+# The VFAT extension is disabled by default.
 #
 # If you use both TOS and MiNT, better don't enable VFAT extension
 # on your boot drive.
@@ -196,58 +210,26 @@
 
 #FDC_HIDE_B=YES
 
-# PROC_MAXMEM= gives the maximum amount of memory that any process
-# may use (in kilobytes). The default is to make this unlimited, but
-# if you have a lot of memory and/or programs that grab more memory
-# than they should, try setting this.
 #
-# E.g. to limit processes to 4096K of memory, remove the '#' at the
-# beginning of the next line.
+# -------------------------- COMMANDS ------------------------------
 #
-# WARNING: the process will not be allowed to allocate memory beyond
-# the limit, and it won't "see" more memory as available from the
-# system.
-# Please understand that programs like "free" (or any other that
-# interrogates the system how much memory is available) is a process
-# as well, thus it will undergo this limit too!
+# More commands that you can give to MiNT:
 #
-# Decent shells (desktops) allow you to limit the maximum amount of
-# memory independently for each program.
-
-#PROC_MAXMEM=4096
-
-# Three commands, that define output files for RS-232, console and
-# printer devices. The argument for each one must be a pathname.
-#
-# For best results, the convention u:/drive/pathname should be used
-# for all specified pathnames from now on.
-
-#GEMDOS_AUX=u:/c/mint/aux.out
-#GEMDOS_CON=u:/c/mint/con.out
-#GEMDOS_PRN=u:/c/mint/prn.out
-
-# End of kernel settings
-
-#
-# -------------------------- Commands ------------------------------
-#
-
-# Here are some commands that you can give to MiNT:
-#
-# alias d: path -- make a fake "drive" that actually points to the
-#                  given path
-# cd path       -- changes MiNT's default directory
-# echo message  -- print something on the screen
-# exec program  -- runs a program; you must give the complete path
-#                  and file extensions (e.g. c:/bin/echo.prg)
-# include file  -- include another portion of the MINT.CNF file.
-# sln path link -- make a symbolic link named "link" pointing to
-#                  "path". "link" must be on drive U: for this to work
-
-# Examples follow
+# alias <drive> <path> -- make a fake "drive" that actually points
+#                         to the given path
+# cd <path>            -- changes MiNT's default directory
+# echo <message>       -- print something on the screen
+# exec <program>       -- runs a program; you must give the complete
+#                         path and file extensions (e.g. c:/bin/echo.prg)
+# include <file>       -- include another portion of the MINT.CNF file.
+# sln <path> <link>    -- make a symbolic link named "link" pointing to
+#                         "path". "link" must be on drive U: for this
+#                         to work
 #
 # Notice you have to adjust commands below for your filesystem
 # structure.
+#
+# -----
 #
 # You could use "alias" to provide a quick way of getting at
 # nested directories, e.g. if you do
@@ -255,7 +237,9 @@
 # alias r: u:/c/some/long/path
 #
 # then clicking on drive r: puts you into the folder c:/some/long/path
-
+#
+# -----
+#
 # The "sln" command may be used to create "links" on drive U:. If
 # u:/foo is a link to c:/bar, then u:/foo/foo.txt is another way
 # of saying c:/bar/foo.txt. Judicious use of links can make
@@ -263,25 +247,32 @@
 # use the names on drive u:, it doesn't matter where you put
 # the actual directories).
 
-# Setting up the root filesystem for UNIX environment
-#
-# WARNING: directories listed in the left column must really exist!
+# Setting up the root filesystem:
+# This is only an example and is not essentially needed to run FreeMinT!
+# If you want to use a UNIX environment (with a linux ext2 filesystem,
+# like EasyMinT does), you have to set these symbolic links correctly.
 
-#sln e:/bin      u:/bin
+# WARNING: Directories listed in the left column must really exist!
+#          You have to adjust the commands below for your filesystem
+#          structure.
+
+sln c:/mint/1-19-b8c/sys-root/bin      u:/bin
 #sln e:/boot     u:/boot
-#sln e:/etc      u:/etc
+sln c:/mint/1-19-b8c/sys-root/etc      u:/etc
 #sln e:/home     u:/home
 #sln e:/lib      u:/lib
 #sln e:/mnt      u:/mnt
-#sln e:/opt      u:/opt
-#sln e:/root     u:/root
+sln c:/mint/1-19-b8c/sys-root/opt      u:/opt
+sln c:/mint/1-19-b8c/sys-root/root     u:/root
 #sln e:/sbin     u:/sbin
-#sln e:/tmp      u:/tmp
+sln c:/mint/1-19-b8c/sys-root/share    u:/share
+sln c:/mint/1-19-b8c/sys-root/tmp      u:/tmp
 #sln e:/usr      u:/usr
-#sln e:/var      u:/var
+sln c:/mint/1-19-b8c/sys-root/var      u:/var
+
 
 # Some people want also to do this:
-
+#
 #sln u:/pipe/pty.A u:/dev/pty.A 
 #sln u:/pipe/pty.B u:/dev/pty.B 
 #sln u:/pipe/pty.C u:/dev/pty.C 
@@ -294,72 +285,38 @@
 #sln u:/pipe/pty.J u:/dev/pty.J 
 #sln u:/pipe/pty.K u:/dev/pty.K 
 
-# PCONVERT and UNIXMODE variables control some internals of
-# MiNT Library.
 #
-# FreeMiNT 1.16.0 sets these two below automatically.
-# Default values are as below.
+# --------------------- ENVIRONMENT VARIABLES ----------------------
+#
+# These "basic" environment variables should be set in mint.cnf.
+# Application-related variables are set in file xaaes.cnf.
+#
+# PCONVERT and UNIXMODE variables control some internals of
+# MiNT Library. FreeMiNT sets these two automatically.
 
 #setenv PCONVERT PATH,HOME,SHELL
 #setenv UNIXMODE /brUs
 
-# Default path
-#
-# Default on 1.16.0 is c:/, on 1.16.1 this is the sysdir.
+# Default path(s) to search for MinT executables.
 
 setenv PATH /sbin;/bin;/usr/sbin;/usr/bin
 
-# Default path to search the SLBs (MagiC style 'shared libraries
-# Default - on 1.16.0 - is the system directory (so called sysdir).
-#
+# Default path(s) to search the SLBs (MagiC style 'shared libraries,
+# default is the system directory.
 # Note, that FreeMiNT 1.16.0 and up will search SLBs in the sysdir
 # automatically, if found nowhere else, so it is useless to
 # explicitly add this here.
 
-setenv SLBPATH /c/mint/slb
+setenv SLBPATH /c/mint/slb;/c/gemsys/
 
-# It is advisable to set this here to a preferred name
+# It is advisable to set this here to a preferred name of your
+# computer:
 
-setenv HOSTNAME saturn
+setenv HOSTNAME atari
 
-# This also can be useful
+# Set a path for temporary files also can be useful:
 
 setenv TMPDIR u:/tmp
-
-# Checking filesystem if necessary
-# Note: you need a correct /etc/fstab
-
-#exec u:/c/mint/bin/sh u:/c/mint/bin/fscheck.sh
-#echo
-
-# Alternative method, if you have e2fsck.ttp in /c/mint,
-# and e: is your ext2fs drive.
-
-#exec u:/c/mint/e2fsck.ttp -C 0 -p e:
-
-# Set up time stuff. Note that you need MiNT Lib timezone package
-# (installed along with the library) for this below to work.
-#
-# Such settings are valid if your clock ticks in UTC. For local
-# time you have to add -l to the tzinit.
-
-#setenv TZ 'Europe/London'
-#exec u:/sbin/tzinit
-#exec u:/sbin/tzinit -l
-
-# The "exec" command is used to launch programs. Note that programs
-# so launched are started before GEM is, so they must be TOS/TTP
-# programs.
-
-# Start Draconis to MiNT-Net gateway
-
-#exec u:/c/mint/mgw.prg
-#echo
-
-# Start Gluestik
-
-#exec u:/c/mint/gluestik.prg
-#echo
 
 # Default login variables. Leave them commented out, if you use
 # UNIX style login. If you're using plain MultiTOS and want to
@@ -379,13 +336,67 @@ setenv TMPDIR u:/tmp
 #setenv AESDIR   u:/c/mint/n_aes/
 #setenv THINGDIR u:/c/mint/thing/
 
+#
+# ---------------------- EXECUTE PROGRAMS -------------------------
+#
+# The "exec" command is used to launch programs. Note that programs
+# so launched are started before GEM is, so they must be TOS/TTP
+# programs or MinT executables.
+#
+# Checking filesystems if necessary
+# Note: you need a correct /etc/fstab
+
+#exec u:/bin/bash u:/bin/fscheck.sh
+#echo
+
+# Alternative method, if you have e2fsck.ttp in /c/mint,
+# and e: is your ext2fs drive.
+
+#exec u:/c/mint/e2fsck.ttp -p e:
+
+# Set up time stuff. Note that you need MiNT Lib timezone package
+# (installed along with the library) for this below to work.
+#
+# The first setting is valid if your clock ticks in UTC. For local
+# time you have to add -l to the tzinit command.
+
+#exec u:/sbin/tzinit
+#exec u:/sbin/tzinit -l
+
+# Start network
+#
+# Replace XXX with your used interface name, e.g. "en0" or "rtk0".
+# Replace AAA.AAA.AAA.AAA with the IP address of your Atari.
+# Replace BBB.BBB.BBB.BBB with the IP address of your router.
+# Remove the "#" at the beginning of the two lines.
+
+#exec u:/bin/ifconfig XXX addr AAA.AAA.AAA.AAA netmask 255.255.255.0 up
+#exec u:/bin/route add default XXX gw BBB.BBB.BBB.BBB
+
+# Start Draconis to MiNT-Net gateway
+
+#exec u:/opt/GEM/mgw/mgw.prg
+#echo
+
+# Start Gluestik
+
+#exec u:/opt/GEM/gluestik/gluestik.prg
+#echo
+
+# Load USB kernel module
+#
+#exec u:/c/mint/1-19-b8c/usb/loader.prg
+#echo
+#
+# ------------------------- START SYSTEM --------------------------
+#
 # The best option is to have INIT= command here, after all pathnames
 # are already set up by commands above.
 
-# If the MiNT is supposed to execute GEM, you should specify the full
+# If MiNT is supposed to execute a GEM, you should specify the full
 # path and filename like that:
 
-#GEM=u:/c/mint/xaaes/xaloader.prg
+GEM=u:/c/mint/1-19-b8c/xaaes/xaloader.prg
 
 # You can also request MiNT to execute the TOS AES residing in ROM.
 # WARNING: this is not recommended, you should use a GEM version
@@ -393,27 +404,24 @@ setenv TMPDIR u:/tmp
 
 #GEM=ROM
 
-# Otherwise, if your init program is not GEM, you should use INIT= as
+# Otherwise, if your init program is not a GEM, you should use INIT= as
 # follows:
 
 #INIT=u:/c/mint/init.prg
 
-# If you leave both commands above commented out, the MiNT will
+# If you leave both commands above commented out, MiNT will
 # attempt to execute a file called `sh.tos' found in the system
 # directory (the same where the mint.cnf resides), and if this
 # fails, the internal minimum shell will be executed.
 
 # Before the MiNT executes the rest of the operating system, it is
 # usually the best to change the current directory to the top
-# directory of all filesystems.
-#
-# FreeMiNT 1.16.0 does this automatically.
+# directory of all filesystems. FreeMiNT does this automatically.
 
 #cd u:/
 
 #
 # The "echo" command is really straightforward.
 #
-
 echo Setup complete, now booting the system...
 echo
