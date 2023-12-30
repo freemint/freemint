@@ -1,0 +1,29 @@
+# Example /etc/fstab
+#
+# needed for automatic filesystem check with "fscheck.sh" script
+# and other commands.
+#
+# Parameters are:
+# <Drive> <mountpoint> <type> <owner> <group> <permissions>
+#
+# Edit the driveletters/uncomment the lines below to your needs.
+#
+# ---------------
+# TOS/FAT/VFAT partitions:
+#
+#c	/	dos		root	wheel	755
+#d	/	dos		root	wheel	755
+#e	/	dos		root	wheel	755
+#f	/	dos		root	wheel	755
+#
+#
+# ext2 partitions:
+#
+#g	/	ext2	root	wheel	755
+#h	/	ext2	root	wheel	755
+#
+#
+# minix partitions:
+#
+#i	/	minix	root	wheel	755
+#

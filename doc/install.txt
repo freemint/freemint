@@ -1,0 +1,63 @@
+Installation                                                      FreeMiNT
+
+There are two types of FreeMiNT archives available, built after every
+commit on GitHub. You can choose between a "ready-to-go" bootable, pre-
+configured installation or a "per-cpu build". The pre-configured builds
+are named 1-19-<number>, number is a build "ID code".
+Beside FreeMiNT/XaAES with a suitable configuration, they also contain a
+texteditor (QED) and a desktop (TeraDesk).
+
+The "per-cpu builds" are named 1-19-CUR-<cpu type> and do not contain
+configuration files, desktop or other non-FreeMiNT applications; they are
+created for easy upgrading or testing the latest snapshot without touching
+the current existing installation.
+
+
+Requirements:
+
+- Atari TOS computer, compatible or emulator with at least 4 MB RAM and
+  4 - 9 MB space on harddisc.
+
+- Optional (but recommended): NVDI or fVDI.
+  NVDI is required if you want to run TT/Falcon kernel or higher with
+  memory protection (enabled by default). Without NVDI, memory protection
+  must be disabled in FreeMiNT boot menu in this case.
+
+  NVDI must always be placed before mint*.prg in the AUTO folder!
+
+
+First installation:
+
+1. Download the pre-configured bootable snapshot (1-19-<number>),
+   according to your system architecture.
+2. Unpack the archive to your drive C:/ (boot partition). You can also
+   install FreeMiNT to any other bootable partition, but then you have to
+   adapt all paths in files mint.cnf and xaaes.cnf according to this
+   location before rebooting.
+3. Verify that mint-*.prg is the last program in your AUTO folder
+   (Desktop view/sorting option: unsorted).
+   If you used any MiNT version before, please deactivate it (rename .prg
+   to .prx in auto folder).
+4. Reboot.
+5. Edit the files "mint.cnf" and "xaaes.cnf" with a texteditor according
+   to your needs.
+
+
+Update FreeMiNT:
+
+1. Download the latest version of the per-cpu builds (1-19-CUR-*),
+   according to your system architecture.
+2. Unpack the archive to your drive C:/ (boot partition).
+3. Rename your old mint*.prg in AUTO folder to .prx.
+4. Verify that the new mint-*.prg is the last program in AUTO folder.
+   Special for "020-060" version: This archive contains kernels
+   (mint*.prgs in AUTO folder) for all machines from 020-060 cpus,
+   including AranyM. So please delete (or rename to .prx) the kernels that
+   you don't need.
+   Make sure that there is only one (active) mint*.prg in AUTO folder!
+5. Use your current configuration files "mint.cnf" and "xaaes.cnf", edit
+   the paths (e.g. "1-19-123" to "1-19-cur") where you need.
+   Save them in the new 1-19-cur directory (respectively in xaaes
+   subfolder) and reboot.
+
+Have fun!
