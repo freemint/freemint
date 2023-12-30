@@ -22,9 +22,7 @@ FONTSDIR="$MINTDIR/fonts"
 copy_kernel "$MINTDIR" "ara"
 if [ -n "${VERSIONED+x}" ]
 then
-	copy_kernel_docs "$MINTDIR" "yes"
-else
-	copy_kernel_docs "$MINTDIR" "no"
+	copy_mint_cnf "$MINTDIR"
 fi
 copy_modules "$MINTDIR" "040"
 copy_aranym_modules "$MINTDIR"

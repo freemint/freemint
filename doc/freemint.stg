@@ -37,7 +37,7 @@ three parts (in folder "guides"):
 - This "freemint.hyp" you are reading right now contains FreeMiNT basics
   and advanced user info about installation, configuration etc.
 
-- Background info mostly for programmers can be found in @{"mintprog.hyp" link mintprog.hyp}
+- Background info mostly for programmers can be found in @{"mint-prg.hyp" link mint-prg.hyp}
 
 - XaAES, the application environment system, is explained in @{"xaaes.hyp" link xaaes.hyp}
 
@@ -711,12 +711,11 @@ the current existing installation.
 @{U}Requirements:@{0}
 
 - Atari TOS computer, compatible or emulator with at least 4 MB RAM and
-  4 - 9 MB space on harddisc.
+  4 - 10 MB space on harddisc.
 
 - Optional (but recommended): NVDI or fVDI.
-  NVDI is @{B}required@{0} if you want to run TT/Falcon kernel or higher with
-  @{"memory protection" link mem_prot} (enabled by default). Without NVDI, memory protection
-  must be disabled in @{"FreeMiNT boot menu" link mint.ini} in this case.
+  NVDI used to required if you wanted to run TT/Falcon kernel or higher
+  with @{"memory protection" link mem_prot} but this is no longer the case.
 
   NVDI must always be placed @{B}before@{0} mint*.prg in the AUTO folder!
 
@@ -750,10 +749,10 @@ the current existing installation.
    including AranyM. So please delete (or rename to .prx) the kernels that
    you don't need.
    @{B}Make sure that there is only one (active) mint*.prg@{0} in AUTO folder!
-5. Use your current configuration files "mint.cnf" and "xaaes.cnf", edit
-   the paths (e.g. "1-19-123" to "1-19-cur") where you need.
-   Save them in the new 1-19-cur directory (respectively in xaaes
-   subfolder) and reboot.
+5. In case you have updated from the bootable snaphost: copy your current
+   configuration files "mint.cnf" and "xaaes.cnf" to the new 1-19-cur and
+   1-19-cur/xaaes directories, edit the paths (e.g. "1-19-123" to
+   "1-19-cur") where you need and and reboot.
 
 Have fun!
  
@@ -769,22 +768,28 @@ folder sorting and physical order of its contents @{B}does matter@{0} and has an
 influence on the FreeMiNT operation.
 
 The golden rule is: The FreeMiNT executable should be definitely the @{B}last@{0}
-program executed from the auto sequence.
+program executed from the auto sequence and in general, auto folder should
+contain as few entries as possible (the same applies for the number of
+ACCs and CPXes).
 
 It is so for the following reasons:
 
-- auto folder programs are usually TOS extensions, so they will still work
-  if MiNT passes application calls down to the underlying system (TOS).
-  At the other hand, if they're loaded after MiNT, they usually do not
-  pass the call further down, so MiNT functions aren't extended - they
-  simply are not called at all, and don't work. And it is usually not
-  worth to bypass MiNT code completely, because MiNT code is more advanced
-  and sophisticated than most popular auto folder programs.
+- before first FreeMiNT use, auto folder usually contains many small TSRs
+  or patches, extending features of TOS (or some other OS). These programs
+  are often not needed at all because they patch something for which
+  FreeMiNT already is patched or the patch simply does not apply because
+  it is done differently. And what is worse, they often collide with
+  FreeMiNT and lead to overal system instability.
 
-- MiNT provides several mechanisms to protect the environment from various
-  forms of misuse, including network security. Hence, if the MiNT kernel
-  is loaded as last program from the auto, we can be sure it has an
-  ultimate control on the system resources.
+- if you definitely need some OS-extending TSR (e.g. NVDI), it goes @{B}before@{0}
+  MINT.PRG. That way FreeMiNT can include it into its own address space
+  (basically making it part of the kernel) and treat it as its own
+  extension. Please note that not all OS extensions work even if executed
+  before MINT.PRG: a good example is BigDOS (any version). It is a good
+  replacement for GEMDOS, but the TOS' one. The MiNT GEMDOS is much more
+  sophisticated than these two taken together. In general, any
+  GEMDOS-extending TSR will simply not work because GEMDOS is completely
+  replaced by FreeMiNT.
 
 - although MiNT will execute auto folder programs located after it, this
   way of loading system extensions is generally depreciated. The TOS
@@ -794,12 +799,9 @@ It is so for the following reasons:
   suitable commands provided by mint.cnf or xaaes.cnf
   configuration scripts.
 
-Another golden rule is to reduce the quantity of TSR programs (whether
-they're started from the auto or not) to an absolute minimum. There is a
-number of auto folder TOS programs, which do not work anymore under MiNT
-or their usage is deprecated. A good example is BigDOS (any version).
-It is a good replacement for GEMDOS, but the TOS' one. The MiNT GEMDOS is
-much more sophisticated than these two taken together.
+- for programs executed after MINT.PRG there are stricter rules applied:
+  they can't access memory except their own or they can't just hook on
+  system vectors.
 
 Also, there is a number of auto folder programs, those seem to work under
 MiNT, but make the system unstable. A good (or rather a bad) example is
@@ -809,8 +811,8 @@ use programming techniques which are not valid in a multitasking
 environment.
 
 Finally, there is software  where the documentation explicitly says that
-it should be loaded after MiNT. In this case you should verify such a
-statement on the FreeMiNT mailing list.
+it should be loaded from auto folder after MiNT. In this case you should
+verify such a statement on the FreeMiNT mailing list.
  
 @endnode
 
@@ -924,7 +926,7 @@ Nevertheless, programs written in pre-MultiTOS era (and some written after
 MultiTOS has been revealed too) cannot cope with long filenames.
 FreeMiNT provides various forms of filename truncation mechanisms for such
 software, so that most even very old programs could work on an XFS with
-long filenames.
+long filenames. See also UNIXMODE.
 However, there are programs which completely refuse to run on an extended
 filesystem. Such software should be used on disks where long filenames are
 disabled (e.g. NEWFAT without VFAT).
@@ -2293,43 +2295,43 @@ Note that a commandline shell is only included in the pre-configured
 builds, not in the "per-cpu builds"!
 
 - actrl.ttp: Setting audio device configuration
-- arp:
+- arp: ARP/RARP cache management utility
 - bash: Commandline shell (The "Bourne again shell")
 - cat: Concatenate and write files
 - cp: Copy files/folders
-- crypto:
-- diald:
+- crypto: Initialization tool for FreeMiNT filesystem crypto layer
+- diald: PPP dial interface daemon
 - env: Modify environment variables
-- fatlabel:
-- fdisk:
+- fatlabel: Create/change label for given FAT drive
+- fdisk: Partition manipulation tool
 - fsck.fat: Filesystem check for FAT
 - fsck.minix: Filesystem check for minix
 - ifconfig: Configure network interfaces
-- iflink:
+- iflink: Returns whether or not the system has a network link
 - ifstats: Displays informations about a network interface
 - ln: Create links
-- lpflush:
+- lpflush: Clears the /dev/lp buffer
 - ls: List command
-- masqconf:
+- masqconf: Masquerading utility for MintNet
 - md5sum: Print or check message-digests
 - mflist: List minix files
 - mfsconf: Configure minix filesystem (filename translation)
 - minit: Create a minix filesystem
 - mkdir: Create a directory (folder)
 - mkfatfs: Create TOS and DOS FAT/FAT32 filesystems
-- mktbl:
+- mktbl: Make a keyboard translation table out of the given source file
 - mount_nfs: Mount a remote NFS filesystem
 - mv: Move/rename files/folders
 - netstat: Displays network statistics
-- pppconf:
+- pppconf: Print PPP interface settings
 - rm: Delete files/folders
 - route: Configure network routes
 - sfdisk: Disk partitioning
-- slattach:
+- slattach: Attach a network interface to a serial line
 - slinkctl: Control the SCSILINK interface driver
-- strace:
-- swkbdtbl:
-- sysctl:
+- strace: Trace system calls and signals
+- swkbdtbl: Keyboard table switcher
+- sysctl: Configure kernel parameters at runtime
  
 @endnode
 
