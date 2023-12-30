@@ -256,19 +256,22 @@
 #          You have to adjust the commands below for your filesystem
 #          structure.
 
-sln c:/mint/1-19-b8c/sys-root/bin      u:/bin
-#sln e:/boot     u:/boot
-sln c:/mint/1-19-b8c/sys-root/etc      u:/etc
-#sln e:/home     u:/home
-#sln e:/lib      u:/lib
-#sln e:/mnt      u:/mnt
-sln c:/mint/1-19-b8c/sys-root/opt      u:/opt
-sln c:/mint/1-19-b8c/sys-root/root     u:/root
-#sln e:/sbin     u:/sbin
-sln c:/mint/1-19-b8c/sys-root/share    u:/share
-sln c:/mint/1-19-b8c/sys-root/tmp      u:/tmp
-#sln e:/usr      u:/usr
-sln c:/mint/1-19-b8c/sys-root/var      u:/var
+# Create u:/sysdir
+include "boot.cnf"
+
+sln c:/sysdir/sys-root/bin      u:/bin
+#sln c:/sysdir/sys-root/boot     u:/boot
+sln c:/sysdir/sys-root/etc      u:/etc
+#sln c:/sysdir/sys-root/home     u:/home
+#sln c:/sysdir/sys-root/lib      u:/lib
+#sln c:/sysdir/sys-root/mnt      u:/mnt
+sln c:/sysdir/sys-root/opt      u:/opt
+sln c:/sysdir/sys-root/root     u:/root
+#sln c:/sysdir/sys-root/sbin     u:/sbin
+#sln c:/sysdir/sys-root/share    u:/share
+sln c:/sysdir/sys-root/tmp      u:/tmp
+#sln c:/sysdir/sys-root/usr      u:/usr
+sln c:/sysdir/sys-root/var      u:/var
 
 
 # Some people want also to do this:
@@ -373,6 +376,11 @@ setenv TMPDIR u:/tmp
 #exec u:/bin/ifconfig XXX addr AAA.AAA.AAA.AAA netmask 255.255.255.0 up
 #exec u:/bin/route add default XXX gw BBB.BBB.BBB.BBB
 
+# ARAnyM uses its own script
+
+#exec u:/bin/bash u:/bin/eth0-config.sh
+#echo
+
 # Start Draconis to MiNT-Net gateway
 
 #exec u:/opt/GEM/mgw/mgw.prg
@@ -385,7 +393,7 @@ setenv TMPDIR u:/tmp
 
 # Load USB kernel module
 #
-#exec u:/c/mint/1-19-b8c/usb/loader.prg
+#exec u:/sysdir/usb/loader.prg
 #echo
 #
 # ------------------------- START SYSTEM --------------------------
@@ -396,7 +404,7 @@ setenv TMPDIR u:/tmp
 # If MiNT is supposed to execute a GEM, you should specify the full
 # path and filename like that:
 
-GEM=u:/c/mint/1-19-b8c/xaaes/xaloader.prg
+GEM=u:/sysdir/xaaes/xaloader.prg
 
 # You can also request MiNT to execute the TOS AES residing in ROM.
 # WARNING: this is not recommended, you should use a GEM version
