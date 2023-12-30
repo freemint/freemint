@@ -293,7 +293,7 @@ setenv ACCPATH		C:\
 setenv ACCEXT		ACC,ACX
 setenv GEMEXT		PRG,APP,GTP,OVL,SYS
 setenv TOSEXT		TOS,TTP
-setenv TOSRUN		u:\c\mint\1-19-cur\sys-root\opt\GEM\toswin2\tw-call.app
+setenv TOSRUN		u:\opt\GEM\toswin2\tw-call.app
 #setenv GEMJINGPATH	u:\d\sound\gemjing\gemjing.prg
 setenv SDL_VIDEODRIVER	gem
 
@@ -821,7 +821,7 @@ kill_wo_question = "ST-Guide"
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
-launchpath  = u:\usr\gem
+launchpath  = u:\opt\GEM
 
 #####################################################################
 # define external snapshot-program to be executed if xaaesnap is not loaded
@@ -939,7 +939,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #run u:\opt\taskbar\taskbar.prg
 #run u:\c\system\strngsrv\strngsrv.prg
 
-run u:\c\mint\1-19-cur\sys-root\opt\GEM\toswin2\toswin2.app
+run u:\opt\GEM\toswin2\toswin2.app
 
 #####################################################################
 # system shell

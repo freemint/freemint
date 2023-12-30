@@ -1,0 +1,6 @@
+# This file is included by mint.cnf. If you are updating to a new
+# snapshot/release and want to keep your customisations, copy your mint.cnf
+# over to the new mint folder but keep the new boot.cnf.
+
+# Ideally, one day we could use just $SYSDIR without this workaround
+sln c:/mint/1-19-cur     u:/sysdir

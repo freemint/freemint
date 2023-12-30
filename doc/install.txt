@@ -56,7 +56,6 @@ Update FreeMiNT:
    Make sure that there is only one (active) mint*.prg in AUTO folder!
 5. In case you have updated from the bootable snaphost: copy your current
    configuration files "mint.cnf" and "xaaes.cnf" to the new 1-19-cur and
-   1-19-cur/xaaes directories, edit the paths (e.g. "1-19-123" to
-   "1-19-cur") where you need and and reboot.
+   1-19-cur/xaaes directories, edit the paths if needed and reboot.
 
 Have fun!

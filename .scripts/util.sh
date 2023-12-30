@@ -21,19 +21,13 @@ copy_kernel() {
 copy_mint_cnf() {
 	local MINTDIR="$1"
 	mkdir -p "$MINTDIR"
-	cp "$SRC/doc/examples/mint.cnf" "$MINTDIR"/mint.cnf
-	sed -e "/^#sln e:\/sbin     u:\/sbin/asln c:\/mint\/$VER\/sys-root\/share    u:\/share" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#sln e:\/bin      u:\/bin/sln c:\/mint\/$VER\/sys-root\/bin      u:\/bin/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#sln e:\/etc      u:\/etc/sln c:\/mint\/$VER\/sys-root\/etc      u:\/etc/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#sln e:\/opt      u:\/opt/sln c:\/mint\/$VER\/sys-root\/opt      u:\/opt/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#sln e:\/root     u:\/root/sln c:\/mint\/$VER\/sys-root\/root     u:\/root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#sln e:\/tmp      u:\/tmp/sln c:\/mint\/$VER\/sys-root\/tmp      u:\/tmp/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#sln e:\/var      u:\/var/sln c:\/mint\/$VER\/sys-root\/var      u:\/var/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
+	cp "$SRC/doc/examples/boot.cnf" "$MINTDIR"
+	cp "$SRC/doc/examples/mint.cnf" "$MINTDIR"
+	sed -e "s/sln c:\/mint\/1-19-cur/sln c:\/mint\/$VER/;" "$MINTDIR/boot.cnf" > "$MINTDIR/boot.cnf.tmp" && mv "$MINTDIR/boot.cnf.tmp" "$MINTDIR/boot.cnf"
 	sed -e "s/#setenv LOGNAME root/setenv LOGNAME root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv USER    root/setenv USER    root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv HOME    \/root/setenv HOME    \/root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv SHELL   \/bin\/bash/setenv SHELL   \/bin\/bash/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
-	sed -e "s/#GEM=u:\/c\/mint\/xaaes\/xaloader.prg/GEM=u:\/c\/mint\/$VER\/xaaes\/xaloader.prg/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 }
 
 copy_modules() {
@@ -191,15 +185,13 @@ copy_xaaes() {
 	if [ "$BOOTABLE" = "yes" ]
 	then
 	cp "$SRC/xaaes/src.km/example.cnf" "$XAAESDIR/xaaes.cnf"
-	sed -e "s/^setenv TOSRUN		u:\\\\c\\\\mint\\\\1-19-cur\\\\sys-root\\\\opt\\\\GEM\\\\toswin2\\\\tw-call.app/setenv TOSRUN		u:\\\\c\\\\mint\\\\$VER\\\\sys-root\\\\opt\\\\GEM\\\\toswin2\\\\tw-call.app/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
-	sed -e "s/^run u:\\\\c\\\\mint\\\\1-19-cur\\\\sys-root\\\\opt\\\\GEM\\\\toswin2\\\\toswin2.app/run u:\\\\c\\\\mint\\\\$VER\\\\sys-root\\\\opt\\\\GEM\\\\toswin2\\\\toswin2.app/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
 	sed -e "s/^#setenv AVSERVER   \"DESKTOP \"/setenv AVSERVER   \"DESKTOP \"/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
 	sed -e "s/^#setenv FONTSELECT \"DESKTOP \"/setenv FONTSELECT \"DESKTOP \"/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
 	if [ "$TARGET" = "col" ]
 	then
-	sed -e "s/^#shell = c:\\\\teradesk\\\\desktop.prg/shell = u:\\\\c\\\\mint\\\\$VER\\\\sys-root\\\\opt\\\\GEM\\\\teradesk\\\\desk_cf.prg/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
+	sed -e "s/^#shell = c:\\\\teradesk\\\\desktop.prg/shell = u:\\\\opt\\\\GEM\\\\teradesk\\\\desk_cf.prg/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
 	else
-	sed -e "s/^#shell = c:\\\\teradesk\\\\desktop.prg/shell = u:\\\\c\\\\mint\\\\$VER\\\\sys-root\\\\opt\\\\GEM\\\\teradesk\\\\desktop.prg/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
+	sed -e "s/^#shell = c:\\\\teradesk\\\\desktop.prg/shell = u:\\\\opt\\\\GEM\\\\teradesk\\\\desktop.prg/;" "$XAAESDIR/xaaes.cnf" > "$XAAESDIR/xaaes.cnf.tmp" && mv "$XAAESDIR/xaaes.cnf.tmp" "$XAAESDIR/xaaes.cnf"
 	fi
 	if [ "$ARANYM" = "yes" ]
 	then
@@ -408,6 +400,9 @@ create_filesystem() {
 	echo "alias ls='ls --color'" >> "$SYSROOT/etc/profile"
 
 	touch "$SYSROOT/var/run/utmp"
+
+	cp "$SRC/doc/examples/fscheck.sh" "$SYSROOT/bin"
+	cp "$SRC/doc/examples/fstab" "$SYSROOT/etc"
 
 	cp -r "$TERADESK_DIR" "$SYSROOT/opt/GEM"
 	cp -r "$QED_DIR" "$SYSROOT/opt/GEM"

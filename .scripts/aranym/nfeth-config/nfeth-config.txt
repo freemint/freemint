@@ -1,0 +1,4 @@
+Compiled from https://github.com/aranym/aranym/tree/master/atari/network/ethernet/nfeth-config
+
+aranym  git commit: b196b96d
+mintlib git commit: b77a680f

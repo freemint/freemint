@@ -1,5 +1,5 @@
 #!/bin/bash
-# Check filesystems on normal boot or after systemcrash.
+# Check filesystems on normal boot or after system crash.
 #
 
 if [ -f /etc/fastboot ]; then
@@ -35,7 +35,7 @@ else
 			echo "         filesystem on drive $drv by running fsck.fat"
 			echo "         manually and REBOOT!"
 			echo
-			sh -si < /dev/console > /dev/console 2>&1
+			bash -si < /dev/console > /dev/console 2>&1
 		fi
 	done
 	for drv in $ext2drives; do
@@ -49,7 +49,7 @@ else
 			echo "         filesystem on drive $drv by running e2fsck"
 			echo "         manually and REBOOT!"
 			echo
-			sh -si < /dev/console > /dev/console 2>&1
+			bash -si < /dev/console > /dev/console 2>&1
 		fi
 	done
 	for drv in $mfsdrives; do
@@ -63,7 +63,7 @@ else
 			echo "         filesystem on drive $drv by running fsck.minix"
 			echo "         manually and REBOOT!"
 			echo
-			sh -si < /dev/console > /dev/console 2>&1
+			bash -si < /dev/console > /dev/console 2>&1
 		fi
 	done
 fi
