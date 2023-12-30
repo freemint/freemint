@@ -25,11 +25,10 @@ if [ -n "${VERSIONED+x}" ]
 then
 	copy_auto "$AUTODIR" "$CPU_TARGET" "-$CUR"
 	copy_kernel "$MINTDIR" "$KERNEL_TARGETS"
-	copy_kernel_docs "$MINTDIR" "yes"
+	copy_mint_cnf "$MINTDIR"
 else
 	copy_auto "$AUTODIR" "$CPU_TARGET" "load"
 	copy_kernel "$MINTDIR" "$KERNEL_TARGETS"
-	copy_kernel_docs "$MINTDIR" "no"
 fi
 copy_modules "$MINTDIR" "$CPU_TARGET"
 
