@@ -257,21 +257,21 @@
 #          structure.
 
 # Create u:/sysdir
-include "boot.cnf"
+include u:/c/mint/1-19-cur/boot.cnf
 
-sln c:/sysdir/sys-root/bin      u:/bin
-#sln c:/sysdir/sys-root/boot     u:/boot
-sln c:/sysdir/sys-root/etc      u:/etc
-#sln c:/sysdir/sys-root/home     u:/home
-#sln c:/sysdir/sys-root/lib      u:/lib
-#sln c:/sysdir/sys-root/mnt      u:/mnt
-sln c:/sysdir/sys-root/opt      u:/opt
-sln c:/sysdir/sys-root/root     u:/root
-#sln c:/sysdir/sys-root/sbin     u:/sbin
-#sln c:/sysdir/sys-root/share    u:/share
-sln c:/sysdir/sys-root/tmp      u:/tmp
-#sln c:/sysdir/sys-root/usr      u:/usr
-sln c:/sysdir/sys-root/var      u:/var
+sln u:/sysdir/sys-root/bin      u:/bin
+#sln u:/sysdir/sys-root/boot     u:/boot
+sln u:/sysdir/sys-root/etc      u:/etc
+#sln u:/sysdir/sys-root/home     u:/home
+#sln u:/sysdir/sys-root/lib      u:/lib
+#sln u:/sysdir/sys-root/mnt      u:/mnt
+sln u:/sysdir/sys-root/opt      u:/opt
+sln u:/sysdir/sys-root/root     u:/root
+#sln u:/sysdir/sys-root/sbin     u:/sbin
+#sln u:/sysdir/sys-root/share    u:/share
+sln u:/sysdir/sys-root/tmp      u:/tmp
+#sln u:/sysdir/sys-root/usr      u:/usr
+sln u:/sysdir/sys-root/var      u:/var
 
 
 # Some people want also to do this:

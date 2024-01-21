@@ -24,6 +24,7 @@ copy_mint_cnf() {
 	cp "$SRC/doc/examples/boot.cnf" "$MINTDIR"
 	cp "$SRC/doc/examples/mint.cnf" "$MINTDIR"
 	sed -e "s/sln c:\/mint\/1-19-cur/sln c:\/mint\/$VER/;" "$MINTDIR/boot.cnf" > "$MINTDIR/boot.cnf.tmp" && mv "$MINTDIR/boot.cnf.tmp" "$MINTDIR/boot.cnf"
+	sed -e "s/include u:\/c\/mint\/1-19-cur\/boot.cnf/include u:\/c\/mint\/$VER\/boot.cnf/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv LOGNAME root/setenv LOGNAME root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv USER    root/setenv USER    root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv HOME    \/root/setenv HOME    \/root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
