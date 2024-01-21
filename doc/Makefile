@@ -5,6 +5,7 @@ endif
 .PHONY: all
 
 all: freemint.hyp
+	$(MAKE) -C xaaes $@
 
 freemint.hyp: freemint.stg
 	@if $(HCP) --version >/dev/null 2>&1 && test -f $<; then \
@@ -15,4 +16,5 @@ freemint.hyp: freemint.stg
 	fi
 
 clean::
+	$(MAKE) -C xaaes $@
 	$(RM) *.hyp *.ref

@@ -34,10 +34,10 @@ endif
 	$(MAKE) -C xaaes $@
 
 all-recursive::
-	$(MAKE) -C doc/xaaes
+	$(MAKE) -C doc
 
 clean::
-	$(MAKE) -C doc/xaaes $@
+	$(MAKE) -C doc $@
 
 help:
 	@echo '#'
