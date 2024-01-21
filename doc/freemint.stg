@@ -1,5 +1,11 @@
+@if VERSION >= 6
+@os atari
+@charset atarist
+@inputenc atarist
+@lang "en"
+@endif
 @database "FreeMiNT"
-@options "-is+z"
+@options "-i -s +z"
 @author "Latz"
 @$VER: Version 1.0 (@:"__DATE__")
 @subject "System"
@@ -37,9 +43,9 @@ three parts (in folder "guides"):
 - This "freemint.hyp" you are reading right now contains FreeMiNT basics
   and advanced user info about installation, configuration etc.
 
-- Background info mostly for programmers can be found in @{"mint-prg.hyp" link mint-prg.hyp}
+- Background info mostly for programmers can be found in @{"mint-prg.hyp" link "mint-prg.hyp/Main"}
 
-- XaAES, the application environment system, is explained in @{"xaaes.hyp" link xaaes.hyp}
+- XaAES, the application environment system, is explained in @{"xaaes.hyp" link "xaaes.hyp/Main"}
 
 There is also a FreeMiNT/XaAES wiki on GitHub:
 @{"https://github.com/freemint/freemint/wiki/" system "https://github.com/freemint/freemint/wiki/"}
@@ -1980,7 +1986,7 @@ Slay            0.1             readable        (AV protocol)
 clock.acc       1.9e            readable        (AV protocol)
 Dump!           1.x             supervisor      by DHS (Falcon030 only)
 FlaySID         3.01            supervisor      (Falcon030 only)
-MSA             1.0ÔøΩ            supervisor      by Marwijn Hessel
+MSA             1.0·            supervisor      by Marwijn Hessel
 SND Play        1.0             global          by AssemSoft & DHS
 XBoot           3               supervisor
 
@@ -2217,18 +2223,18 @@ with 68040 and 68060 processors.
 @{B}Fsetter@{0}:
 - Filesystem setter version 0.8
 
-  ÔøΩ 1998 by Christian Felsch
-  ÔøΩ 1999-2000 by Frank Naumann
+  Ω 1998 by Christian Felsch
+  Ω 1999-2000 by Frank Naumann
 
 
 @{B}Gemkfatfs@{0}:
 
 
 @{B}GlueSTiK@{0}:
-- GlueSTiKÔøΩ STiK emulator for MiNTnet version 0.30
+- GlueSTiKΩ STiK emulator for MiNTnet version 0.30
 
-  ÔøΩ 1996-98 Scott Bigham.
-  ÔøΩ 2000-2010 Frank Naumann.
+  Ω 1996-98 Scott Bigham.
+  Ω 2000-2010 Frank Naumann.
 
   Redirect Daemon for net clients which are using STiK/STinG routines.
 
@@ -2240,8 +2246,8 @@ with 68040 and 68060 processors.
 @{B}mgw@{0}:
 - Draconis to MiNTNet gateway version 0.33b4
 
-  ÔøΩ 2000-2010 Jens Heitmann
-  ÔøΩ 2000-2010 Frank Naumann
+  Ω 2000-2010 Jens Heitmann
+  Ω 2000-2010 Frank Naumann
 
   Redirect daemon for net clients which are using the Draconis routines.
 
@@ -2385,8 +2391,8 @@ More information (but partly outdated) can be found on the
 
 Based on the work of Charles Briscoe-Smith and Kay Roemer 1995.
 
-ÔøΩ 1997, 1998 John Blakeley
-ÔøΩ 2001 Frank Naumann
+Ω 1997, 1998 John Blakeley
+Ω 2001 Frank Naumann
 
 This is a audio device driver for most Ataris running MiNT.
 This audiodev is based on audiodev 0.1 by C. Briscoe-Smith which in turn
@@ -2418,16 +2424,16 @@ See actrl for configuration.
 
 @{U}flop_raw.xdd: Raw floppy device driver version 0.20@{0}
 
-ÔøΩ 1992, 1993 by Dave Gymer, Stephane Boisson.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1992, 1993 by Dave Gymer, Stephane Boisson.
+Ω 2000-2010 by Frank Naumann.
 
 
 @{U}inet4.xdd: MiNT-Net TCP/IP driver version 1.6 PL 1@{0}
 
 Based on the work of Kay Roemer 1993-1996.
 
-ÔøΩ 1997-1999 by Torsten Lang.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1997-1999 by Torsten Lang.
+Ω 2000-2010 by Frank Naumann.
 IP  masquerading by Mario Becroft, 1999.
 FTP masquerading support by Torsten Lang, 1999.
 
@@ -2443,8 +2449,8 @@ Printer driver for paralell port.
 
 @{U}xconout.xdd: xconout2 output catcher version 0.3@{0}
 
-ÔøΩ Jan  1 1995 by TeSche <itschere@techfak.uni-bielefeld.de>
-ÔøΩ 2000-2010 by Frank Naumann
+Ω Jan  1 1995 by TeSche <itschere@@techfak.uni-bielefeld.de>
+Ω 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2458,9 +2464,9 @@ Drivers for FAT/VFAT/F32 filesystems are included in FreeMiNT kernel.
 
 @{U}ext2.xfs: Ext2 filesystem driver version 0.63@{0}
 
-ÔøΩ 1998, 1999 by Axel Kaiser.
-ÔøΩ 2000-2010 by Frank Naumann.
-ÔøΩ 2013 by Alan Hourihane.
+Ω 1998, 1999 by Axel Kaiser.
+Ω 2000-2010 by Frank Naumann.
+Ω 2013 by Alan Hourihane.
 
 This is a full working Ext2 filesystem driver for FreeMiNT.
 
@@ -2491,8 +2497,8 @@ Also use the latest "e2fs" progs.
 
 @{U}@{"minix.xfx" link minixfs} (deactivated): Minix filesystem driver version 0.75@{0}
 
-ÔøΩ 1991,1992,1993,1994,1995 S.N.Henson
-ÔøΩ Oct  6 2018 by Frank Naumann.
+Ω 1991,1992,1993,1994,1995 S.N.Henson
+Ω Oct  6 2018 by Frank Naumann.
 
 This is a modified binary version for FreeMiNT > 1.15.
 @{B}Made obsolete by ext2 filesystem.@{0}
@@ -2507,8 +2513,8 @@ If you want to use this filesystem anyway, the procedure is as follows:
 
 @{U}nfs.xfs: Network filesystem driver version 0.57@{0}
 
-ÔøΩ 1993, 1994 by Ulrich KÔøΩhn.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1993, 1994 by Ulrich KÅhn.
+Ω 2000-2010 by Frank Naumann.
 
 The network filesystem driver for shared drives/directories on remote
 computers or NASes (to be mounted into FreeMiNT with "mount_nfs").
@@ -2892,7 +2898,7 @@ interfaces are called pl0, pl1, ... Currently only pl0 is implemented
 
 @{U}biodma.xix (deactivated): Driver for BIODATA DMA ADAPTOR version 1.1@{0}
 
-ÔøΩ 1996, 1997, 1998 by T. Lang
+Ω 1996, 1997, 1998 by T. Lang
 
 
 @{U}de600.xix (deactivated): Driver for DE600 adaptor version ???@{0}
@@ -2902,24 +2908,24 @@ Based on the work of Kay Roemer.
 
 @{U}dial.xix (deactivated): DIAL driver version 0.2 @{0}
 
-ÔøΩ 1999 by Torsten Lang
+Ω 1999 by Torsten Lang
 
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 1998, 1999 by Rainer Mannigel
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}pamsdma.xix (deactivated): Driver for PAM's DMA ADAPTOR version 1.2@{0}
 
-ÔøΩ 1996, 1997, 1998 by T. Lang
+Ω 1996, 1997, 1998 by T. Lang
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2930,26 +2936,26 @@ Based on the work of Kay Roemer.
 
 @{U}@{"lance" link riebl}.xix (deactivated): Version 1.2@{0}
 
-ÔøΩ 1995-1998 by T. Lang
+Ω 1995-1998 by T. Lang
 
 Driver for PAM's Net VME (TT) and MegaST boards.
 
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 1998, 1999 by Rainer Mannigel
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}riebl*.xix (deactivated): Riebl card drivers version 1.2@{0}
 
-ÔøΩ 1995-1999 by T. Lang
+Ω 1995-1999 by T. Lang
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2960,14 +2966,14 @@ Driver for PAM's Net VME (TT) and MegaST boards.
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 1998, 1999 by Rainer Mannigel
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2978,25 +2984,25 @@ Driver for PAM's Net VME (TT) and MegaST boards.
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 1998, 1999 by Rainer Mannigel
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}@{"rieblste" link riebl}.xix (deactivated): Riebl card drivers version 1.2@{0}
 
-ÔøΩ 1995-1999 by T. Lang
+Ω 1995-1999 by T. Lang
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1998, 1999 by Rainer Mannigel.
+Ω 2000-2010 by Frank Naumann.
  
 @endnode
 
@@ -3007,32 +3013,32 @@ Driver for PAM's Net VME (TT) and MegaST boards.
 
 @{U}@{"lance" link riebl}.xix (deactivated): Version 1.2@{0}
 
-ÔøΩ 1995-1998 by T. Lang
+Ω 1995-1998 by T. Lang
 
 Driver for PAM's Net VME (TT) and MegaST boards.
 
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 1998, 1999 by Rainer Mannigel
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}@{"riebltt" link riebl}.xix (deactivated): Riebl card drivers version 1.2@{0}
 
-ÔøΩ 1995-1999 by T. Lang
+Ω 1995-1999 by T. Lang
 
 
 @{U}rtl8012.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1998, 1999 by Rainer Mannigel.
+Ω 2000-2010 by Frank Naumann.
 
 
 @{U}scsilink.xix (deactivated): Driver for Daynaport SCSI/Link version 0.50@{0}
@@ -3048,21 +3054,21 @@ by Roger Burrows
 
 @{U}dsp56k.xdd: Motorola DSP 56001 device version Nov 25 2018@{0}
 
-ÔøΩ 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
+Ω 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
 
 Device driver for Falcon DSP.
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1998, 1999 by Rainer Mannigel.
+Ω 2000-2010 by Frank Naumann.
 
 
 @{U}rtl8012.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}scsilink.xix (deactivated): Driver for Daynaport SCSI/Link version 0.50@{0}
@@ -3078,15 +3084,15 @@ by Roger Burrows
 
 @{U}dsp56k.xdd: Motorola DSP 56001 device version Nov 25 2018@{0}
 
-ÔøΩ 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
+Ω 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
 
 Device driver for Falcon DSP.
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1998, 1999 by Rainer Mannigel.
+Ω 2000-2010 by Frank Naumann.
 
 
 @{U}ethernat.xix (deactivated): Driver for EtherNAT board version ???@{0}
@@ -3096,8 +3102,8 @@ by nature
 
 @{U}rtl8012ct60.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-ÔøΩ 2000 by Vassilis Papathanassiou.
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 2000 by Vassilis Papathanassiou.
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}rtl8139.xix (deactivated): RTL8139 ethernet (CT)PCI driver version 1.0@{0}
@@ -3185,14 +3191,14 @@ wait until Didier Mequignon releases the next FireTOS version.
 
 @{U}@{"mfp_mil" link "mfp"}.xdd: MFP serial driver version 0.31@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel
-ÔøΩ 2000-2010 by Frank Naumann
+Ω 1998, 1999 by Rainer Mannigel
+Ω 2000-2010 by Frank Naumann
 
 
 @{U}uart.xdd: Milan 16550 UART driver version@{0}
 
-ÔøΩ 1998, 1999 Rainer Mannigel, Michael Schwingen
-ÔøΩ 1999, 2000 Frank Naumann
+Ω 1998, 1999 Rainer Mannigel, Michael Schwingen
+Ω 1999, 2000 Frank Naumann
  
 @endnode
 
@@ -3203,8 +3209,8 @@ wait until Didier Mequignon releases the next FireTOS version.
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-ÔøΩ 1998, 1999 by Rainer Mannigel.
-ÔøΩ 2000-2010 by Frank Naumann.
+Ω 1998, 1999 by Rainer Mannigel.
+Ω 2000-2010 by Frank Naumann.
  
 @endnode
 
@@ -3216,7 +3222,7 @@ wait until Didier Mequignon releases the next FireTOS version.
 
 @{U}aranym.xfs: ARAnyM u:\host filesystem driver version 0.1@{0}
 
-ÔøΩ Dec 13 2018 by Standa Opichal
+Ω Dec 13 2018 by Standa Opichal
 
 This .XFS implements the u:/host mountpoint which provides the m68k <->
 host OS communication interface. This, in ARAnyM, is implemented using
@@ -3231,7 +3237,7 @@ copy/paste operations which directly use the host OS clipboard
 
 @{U}hostfs.xfx (deactivated): HostFS Filesystem driver version 0.04@{0}
 
-ÔøΩ Dec 13 2018 by ARAnyM Team
+Ω Dec 13 2018 by ARAnyM Team
 
 This driver uses the "HOSTFS" Native Feature to access an emulator host OS
 filesystem. It requests the drive map from the emulator and maps the
@@ -3296,8 +3302,8 @@ Some related info can be found at the following URLs:
 
 @{U}nfexec.xdd: NF host exec driver version 0.1@{0}
 
-ÔøΩ 1999, 2000, 2001 Frank Naumann
-ÔøΩ Dec 13 2018 by Miro Kropacek
+Ω 1999, 2000, 2001 Frank Naumann
+Ω Dec 13 2018 by Miro Kropacek
 
 This is just an xdd skeleton for those who like to program an xdd.
 Simply rename this folder to the name of your xdd and fix up the names.
@@ -3310,7 +3316,7 @@ devices. Remove the things you don't need!
 
 @{U}nfstderr.xdd: NF_STDERR native feature output device version 0.1@{0}
 
-ÔøΩ Jan  25 2005 by STanda Opichal
+Ω Jan  25 2005 by STanda Opichal
 
 It should serve as an example of how to use native features in FreeMiNT
 device drivers and other modules. It requires the kernel to be build
@@ -3902,7 +3908,7 @@ these pads together with a resistor that is around 200 - 300 ohm. Mind the
 polarity of the LEDs.
 
 /Henrik Gilda
-hencox@hotmail.com
+hencox@@hotmail.com
  
 @endnode
 
@@ -5194,11 +5200,11 @@ MiNT bugs (if you try to change a disk with MiNT 1.04 it crashes
 horribly). A known MiNT 0.95 bug is that it loads filesystems twice ...
 
 Reports should be addressed to:
-shenson@nyx.cs.du.edu
+shenson@@nyx.cs.du.edu
 If you send it to Usenet then I may well miss it. In fact I may take a
 long time to reply anyway, so mailing the MiNT mailing list may be more
 productive.
-I can be contacted by email as shenson@nyx.cs.du.edu . Donations or snail
+I can be contacted by email as shenson@@nyx.cs.du.edu . Donations or snail
 mail should be sent to:
 
 S N Henson.
@@ -5239,18 +5245,18 @@ increase cache sizes
 
 @line 1 69 0 0 5
 
-From: inf03@Uni-Trier.de (Sascha Blank)
-Message-Id: <9409051059.AA07720@Uni-Trier.De>
+From: inf03@@Uni-Trier.de (Sascha Blank)
+Message-Id: <9409051059.AA07720@@Uni-Trier.De>
 Subject: Better personae management for MiNT 1.11beta
 
 use effective instead of real uid for access checking
 
 @line 1 69 0 0 5
 
-From: Andreas Schwab <schwab@issan.informatik.uni-dortmund.de>
+From: Andreas Schwab <schwab@@issan.informatik.uni-dortmund.de>
 Date: Mon, 17 Oct 94 10:46:00 +0100
-Message-Id: <9410170946.AA02849@issan.informatik.uni-dortmund.de>
-To: mint@atari.archive.umich.edu
+Message-Id: <9410170946.AA02849@@issan.informatik.uni-dortmund.de>
+To: mint@@atari.archive.umich.edu
 Subject: MinixFS: directory creation und symlinks
 
 There are two other places where MinixFS uses the ruid instead of the
@@ -5273,8 +5279,8 @@ case.
 
 @line 1 69 0 0 5
 
-From: Ulrich Kuehn <kuehn@GOEDEL.UNI-MUENSTER.DE>
-Message-Id: <9411021016.AA21609@math.uni-muenster.de>
+From: Ulrich Kuehn <kuehn@@GOEDEL.UNI-MUENSTER.DE>
+Message-Id: <9411021016.AA21609@@math.uni-muenster.de>
 Subject: Re: Sync() and shutdown() system call
 
 config.h, filesys.h, minixfs.c:
@@ -5282,9 +5288,9 @@ config.h, filesys.h, minixfs.c:
 
 @line 1 69 0 0 5
 
-From: Juergen Lock <nox@jelal.north.de>
+From: Juergen Lock <nox@@jelal.north.de>
 Subject: Re: MinixFS 0.60 PL10 Patch Collection
-Message-Id: <9411122007.AA00358@jelal.north.de>
+Message-Id: <9411122007.AA00358@@jelal.north.de>
 
 . fix bitmaps Kmalloc calculation for larger filesystems
 . a hack for fsck to check for sparse directories
@@ -5295,32 +5301,32 @@ Message-Id: <9411122007.AA00358@jelal.north.de>
 
 @line 1 69 0 0 5
 
-From: Ulrich Kuehn <kuehn@GOEDEL.UNI-MUENSTER.DE>
-Message-Id: <9411180940.AA27680@math.uni-muenster.de>
+From: Ulrich Kuehn <kuehn@@GOEDEL.UNI-MUENSTER.DE>
+Message-Id: <9411180940.AA27680@@math.uni-muenster.de>
 Subject: Re: sync patch for minixfs pl 10
 
 don't run the update daemon if SYSUPDATE def'd
 
 @line 1 69 0 0 5
 
-From: scott@telle.dmi.stevens-tech.edu (Scott Kolodzieski)
-Message-Id: <9411250353.AA09142@telle.dmi.stevens-tech.edu>
+From: scott@@telle.dmi.stevens-tech.edu (Scott Kolodzieski)
+Message-Id: <9411250353.AA09142@@telle.dmi.stevens-tech.edu>
 Subject: minor diff for minixfs pl10
 
 really don't run the update daemon if MiNT >= 1.12
 
 @line 1 69 0 0 5
 
-From: woodford@esca.com (Steven Woodford)
-Message-Id: <9411290411.AA05910@flash.esca.com>
+From: woodford@@esca.com (Steven Woodford)
+Message-Id: <9411290411.AA05910@@flash.esca.com>
 Subject: One more patch for MinixFs PL10
 
 don't delete "." or ".." even if dir increment > 1
 
 @line 1 69 0 0 5
 
-From: Andreas Schwab <schwab@issan.informatik.uni-dortmund.de>
-Message-Id: <9412160954.AA28843@issan.informatik.uni-dortmund.de>
+From: Andreas Schwab <schwab@@issan.informatik.uni-dortmund.de>
+Message-Id: <9412160954.AA28843@@issan.informatik.uni-dortmund.de>
 Subject: MinixFS: completed support for V2 filesystem
 
 add support for v2 triple indirection blocks
@@ -6266,9 +6272,9 @@ be referred to in the text as "<c>")
           Note that if a file name would contain the character <c> used
           for mapping '.', and automatic symbolic links are active, then
           an automatic link should be made for the name.
-          Example: if ".@LA" is in the UNIXMODE string, and the user
-          enters the name "foo@bar.c", then a link from "foo@bar.c" to
-          "FOO@BAR.C" should be made, so as to distinguish "foo@bar.c"
+          Example: if ".@@LA" is in the UNIXMODE string, and the user
+          enters the name "foo@@bar.c", then a link from "foo@@bar.c" to
+          "FOO@@BAR.C" should be made, so as to distinguish "foo@@bar.c"
           and "foo.bar.c".
 
           The translation character <c> must not be an alphabetic
@@ -7578,5 +7584,5 @@ Edited 2020 by @{"Latz" LINK "Adresse"}.
 @pnode "Adresse"
 Mailto:
 Lars Schmidbauer
-latzmaster@gmx.de
+latzmaster@@gmx.de
 @endnode
