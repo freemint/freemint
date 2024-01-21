@@ -995,7 +995,7 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
  */
 static inline int keybd_acia_int() 
 {
-	unsigned char keyctl = *(unsigned char*)(0xFFFFFC00UL);
+	unsigned char keyctl = *(volatile unsigned char*)(0xFFFFFC00UL);
 	return (keyctl & 0x80);
 }
 
