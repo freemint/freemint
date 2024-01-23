@@ -1,0 +1,6 @@
+sysdir.tos
+==========
+
+Small utility to create u:\sysdir according to $SYSDIR.
+
+

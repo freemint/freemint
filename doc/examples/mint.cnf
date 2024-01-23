@@ -257,7 +257,8 @@
 #          structure.
 
 # Create u:/sysdir
-include u:/c/mint/1-19-cur/boot.cnf
+exec u:/c/mint/sysdir.tos
+echo
 
 sln u:/sysdir/sys-root/bin      u:/bin
 #sln u:/sysdir/sys-root/boot     u:/boot

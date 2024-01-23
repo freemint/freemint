@@ -69,4 +69,5 @@ sed -i -e "s/nohog2targets = 000 02060 030 040 060 col/nohog2targets = ${TEMP_CP
 sed -i -e "s/stracetargets = 000 02060 030 040 060 col/stracetargets = ${TEMP_CPU_TARGET}/;" ./tools/strace/STRACEDEFS
 sed -i -e "s/swkbdtbltargets = 000 02060 030 040 060 col/swkbdtbltargets = ${TEMP_CPU_TARGET}/;" ./tools/swkbdtbl/SWKBDTBLDEFS
 sed -i -e "s/sysctltargets = 000 02060 030 040 060 col/sysctltargets = ${TEMP_CPU_TARGET}/;" ./tools/sysctl/SYSCTLDEFS
+sed -i -e "s/sysdirtargets = 000 02060 030 040 060 col/sysdirtargets = ${TEMP_CPU_TARGET}/;" ./tools/sysdir/SYSDIRDEFS
 sed -i -e "s/usbtooltargets = 000 02060 030 040 060 col/usbtooltargets = ${TEMP_CPU_TARGET}${USB_TOOL_TARGET}/;" ./tools/usbtool/USBTOOLDEFS
