@@ -112,7 +112,7 @@ fi
 copy_fonts "$FONTSDIR"
 copy_tbl "$TBLDIR"
 
-copy_sysroot "$SYSROOT" "$CPU_TARGET"
+copy_sysroot "$SYSROOT" "$CPU_TARGET" "$DST/mint"
 
 copy_guides "$GUIDESDIR"
 
