@@ -501,6 +501,13 @@ long uninstall_usb_stor(long logdrv)
 	pun_usb.pun[logdrv] = 0xff;
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
 
+#ifdef TOSONLY
+	/* goto supervisor mode because of drvbits and PUN_PTR */
+	long ret = 0;
+	if (!Super(1L))
+		ret = Super(0L);
+#endif
+
 	/*
 	 * update the public pun_info structure only for the first 16 logical drives
 	 */
@@ -511,12 +518,6 @@ long uninstall_usb_stor(long logdrv)
 		pun_public->partition_start[logdrv] = 0L;
 	}
 
-#ifdef TOSONLY
-	/* goto supervisor mode because of drvbits */
-	long ret = 0;
-	if (!Super(1L))
-		ret = Super(0L);
-#endif
 	drvbits &= ~(1L<<logdrv);
 	my_drvbits &= ~(1L<<logdrv);
 
