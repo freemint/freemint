@@ -245,7 +245,7 @@ newfmt:
 	// Test for binutils >= 2.41-mintelf
 checkelffmt:
 	clr.b   d0
-	cmp.l	#0x283a0000,d0
+	cmp.l	#0x203a0000,d0
 	bne.s	oldfmt
 	cmp.l	#0x4efb08fa,d1
 	bne.s	oldfmt
