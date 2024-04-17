@@ -15,7 +15,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: objs fpu060sp.prg
+all-here: objs 060sp.prg
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
@@ -34,7 +34,7 @@ VPATH = ..
 objs: $(OBJS)
 	echo $(OBJS) > $@
 
-fpu060sp.prg: $(OBJS)
+060sp.prg: $(OBJS)
 	$(CC) -o $@ $(OBJS) -nostdlib -Wl,--entry -Wl,_init -lgcc
 
 mint060sp.S: fpsp.S isp.S

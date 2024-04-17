@@ -53,13 +53,8 @@ _init:
 	trap	#1
 	add.l	#12,sp
 
-
-	lea	text_01,a0		// Startmeldung
-	bsr	print			// ausgeben
-
-
 	clr.l	-(sp)			// in Supervisormodus umschalten
-	move	#32,-(sp)		// Super
+	move.w	#32,-(sp)		// Super
 	trap	#1
 	addq.l	#6,sp
 	move.l	d0,d7			// Super-Stack-Pointer merken
@@ -67,31 +62,25 @@ _init:
 // nach vorhandener CPU suchen
 // kein 68060 -> raus
 
-	cmpi	#60, 0x059E.w		// CPU == 68060?
-	beq	cpu_060			// Ja
+	movea.l	0x5A0,a5		// cookie jar
+cpu_ident:
+	move.l	(a5)+,d0		// id
+	beq.b	no_cpu060
+	move.l	(a5)+,d1		// value
+	cmp.l	#0x5F435055,d0		// '_CPU' ?
+	bne.b	cpu_ident
+	cmp.l	#60,d1			// 68060 ?
+	beq.b	cpu_060
 
 // keinen 68060 mit CPU gefunden
 
 no_cpu060:
-	lea	text_03,a0		// Fehlertext ausgeben
-	bsr	print
-	bra	err
-
-	// keine FPU gefunden (680 LC/EC 060)
-
-no_fpu:
-	lea	text_04,a0		// Fehlertext ausgeben
-	bsr	print
-	bra	set_res			// Programm resident halten fuer ISP
-
-	// Programm nicht installiert beenden
-err:
 	move.l	d7,-(sp)		// alter SSP
-	move	#32,-(sp)		// Super
+	move.w	#32,-(sp)		// Super
 	trap	#1
 	addq.l	#6,sp
 
-	clr	-(sp)			// Pterm(0)
+	clr.w	-(sp)			// Pterm(0)
 	trap	#1
 
 // ----------------------------------------------------------------------------------
@@ -104,12 +93,9 @@ cpu_060:
 
 	dc.l	0x4e7a0808		// movec.l  PCR, d0
 	btst	#16,d0
-	bne	no_fpu			// EC or LC
+	bne	set_res			// EC or LC
 
 	// die FPU-Vektoren werden nur gesetzt, wenn auch eine da ist!
-
-	lea	text_02,a0
-	bsr	print			// Meldung ausgeben
 
 	move.l	0x2c,old_vec		// alten LINE-F-Vektor merken
 
@@ -126,14 +112,18 @@ cpu_060:
 	fmove.l	#0,fpcr
 
 set_res:				// Programm resident halten und beenden
+
+	lea	text_01,a0		// Startmeldung
+	bsr	print			// ausgeben
+
 	move.l	d7,-(sp)		// in alten Modus zurueckschalten
-	move	#32,-(sp)		// Super
+	move.w	#32,-(sp)		// Super
 	trap	#1
 	addq.l	#6,sp
 
-	clr	-(sp)			// kein Fehler
+	clr.w	-(sp)			// kein Fehler
 	move.l	d6,-(sp)		// Anzahl residenter Bytes
-	move	#49,-(sp)		// Ptermres
+	move.w	#49,-(sp)		// Ptermres
 	trap	#1
 
 // -------------------------------------------------------------------------------
@@ -142,7 +132,7 @@ set_res:				// Programm resident halten und beenden
 // -------------------------------------------------------------------------------
 print:
 	move.l	a0,-(sp)
-	move	#9,-(sp)		// Cconws
+	move.w	#9,-(sp)		// Cconws
 	trap	#1
 	addq.l	#6,sp
 	rts
@@ -156,18 +146,6 @@ text_01:
 	.ascii	" Copyright (c) 1993, 1994 Motorola Inc.      \15\12"
 	.ascii	" All rights reserved                         \15\12"
 	.ascii	"*********************************************\15\12"
-	.ascii	"\0"
-
-text_02:
-	.ascii	"**-> Wird installiert!\15\12"
-	.ascii	"\0"
-
-text_03:
-	.ascii	" *-> Ist kein MC68060!\15\12"
-	.ascii	"\0"
-
-text_04:
-	.ascii	" *-> Wird nicht installiert.\15\12"
 	.ascii	"\0"
 
 	.even
@@ -254,7 +232,7 @@ _copy03:
 	move.b	(a0)+,(a1)+		// 3 Byte kopieren
 
 _copy02:
-	move	(a0)+,(a1)+		// 2 Byte kopieren
+	move.w	(a0)+,(a1)+		// 2 Byte kopieren
 	clr.l	d1
 	rts
 
@@ -270,7 +248,7 @@ _copy07:
 	move.b	(a0)+,(a1)+
 
 _copy06:
-	move	(a0)+,(a1)+
+	move.w	(a0)+,(a1)+
 	move.l	(a0)+,(a1)+
 	clr.l	d1
 	rts
@@ -288,7 +266,7 @@ _copy11:
 	move.b	(a0)+,(a1)+
 
 _copy10:
-	move	(a0)+,(a1)+
+	move.w	(a0)+,(a1)+
 	move.l	(a0)+,(a1)+
 	move.l	(a0)+,(a1)+
 	clr.l	d1
@@ -431,8 +409,12 @@ _060_imem_read_long:
 	rts
 
 _060_real_trace:
+	move.l	0x24,-(sp)
+	rts
+
 _060_real_access:
-	rte
+	move.l	0x08,-(sp)
+	rts
 
 // _060_real_fline():
 //
@@ -478,7 +460,7 @@ _060_fpsp_done:
 // stack frame.
 //
 // The sample routine below clears the exception status bit, clears the NaN
-// bit in the FPSR, and does an Ærte. The instruction that caused the
+// bit in the FPSR, and does an rte. The instruction that caused the
 // bsun will now be re-executed but with the NaN FPSR bit cleared.
 //
 _060_real_bsun:
@@ -617,16 +599,28 @@ _060_real_fpu_disabled:
 	dc.l	0x4e7b0808		// movec.l d0, pcr
 	move.l	(sp)+,d0
 	move.l	12(sp),2(sp)
-
 	fmovem.l	#0,fpcr
-
 	rte
 
 _060_real_chk:
+	tst.b	(sp)			// is tracing enabled?
+	bpl.b	real_chk_end		// no
+	move.b	#0x24,0x7(sp)		// set trace vecno
+	bra.l	_060_real_trace
+real_chk_end:
+	rte
+
 _060_real_divbyzero:
+	tst.b	(sp)			// is tracing enabled?
+	bpl.b	real_divbyzero_end	// no
+	move.b	#0x24,0x7(sp)		// set trace vecno
+	bra.l	_060_real_trace
+real_divbyzero_end:
+	rte
+
 _060_real_lock_page:
 _060_real_unlock_page:
-	move.l	old_vec1,-(sp)
+	clr.l	d0
 	rts
 
 _060_isp_done:
