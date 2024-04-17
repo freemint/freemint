@@ -390,10 +390,14 @@ SYM(detect_fpu):
 	dc.l	0x4e7a0808	// movec pcr,d0
 	swap	d0
 	cmp.w	#0x0431,d0	// "broken" 68LC/EC060
-	beq.s	no60
-	swap	d0
+	bne.b	rc60
+	clr.l   d0
+	bra.s   fexit
+
+rc60:	swap	d0
 	bclr	#0x01,d0
 	dc.l	0x4e7b0808	// movec d0,pcr
+	clr.l   d0
 
 no60:	fnop
 	clr.l	-(sp)		// push NULL frame
