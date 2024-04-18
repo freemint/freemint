@@ -208,7 +208,7 @@ _getmch (void)
 	fputype = detect_fpu();
 #ifndef WITH_68080
 	/* own SFP-004 test */
-	sfptype = (mcpu < 0x20) ? detect_sfp() : 0;
+	sfptype = detect_sfp();
 	
 	if ((sfptype >> 16) > 1)
 	    fputype |= 0x00010000;	// update _FPU cookie with the SFP-004 bit
