@@ -63,7 +63,7 @@ sed -e "s/^Bootstrap = mintara.prg/Bootstrap = drive_c\/mint\/$VER\/mintara.prg/
 
 mkdir -p "$ROOT"
 cp -r "$ARANYM_DIR/fvdi"/* "$ROOT"
-sed -e "/^#exec u:\/c\/mint\/gluestik.prg/a#echo\n\nexec u:\/c\/fvdi\/fvdi.prg" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
+sed -e "/^#exec u:\/opt\/GEM\/gluestik\/gluestik.prg/a#echo\n\nexec u:\/c\/fvdi\/fvdi.prg" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 
 mkdir -p "$SYSROOT/bin"
 cp "$ARANYM_DIR/nfeth-config/eth0-config.sh" "$SYSROOT/bin"
