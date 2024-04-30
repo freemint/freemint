@@ -10,8 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
         cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara" ]
+        cross_tool: [ "m68k-atari-mint" ]
     steps:
       - uses: actions/checkout@v4
       - name: Install SSH keys
@@ -22,6 +24,7 @@ jobs:
       - name: Setup environment
         env:
           CPU_TARGET: ${{ matrix.cpu_target }}
+          CROSS_TOOL: ${{ matrix.cross_tool }}
         run: ./.scripts/setup_env.sh
       - name: Install packages
         env:

@@ -6,6 +6,7 @@ UPLOAD_DIR=$SERVER:/home/www/snapshots
 # zip is default
 DEPLOY_ARCHIVE="zip"
 
+toolsuffix=${CROSS_TOOL##*-}
 
 ARCHIVE_PATH="${DEPLOY_DIR}/${ARCHIVE_NAME}"
 

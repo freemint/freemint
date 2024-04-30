@@ -28,7 +28,7 @@ then
 		make
 		DST="${TMP}/aranym-${SHORT_VERSION}"
 		"$SCRIPT_DIR/prepare-aranym.sh" "${PWD}" "${DST}" "${SHORT_VERSION}" "${ARANYM}"
-		find "${DST}" -type f -perm -a=x -exec m68k-atari-mint-strip -s {} \;
+		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;
 		ARCHIVE_NAME="${PROJECT_NAME}-${LONG_VERSION}-040${VERSIONED}.zip"
 		LATEST_NAME="${PROJECT_NAME}-latest-040${VERSIONED}.zip"
 		cd "${DST}/.." && zip -r -9 "${DEPLOY_DIR}/${ARCHIVE_NAME}" "$(basename ${DST})" && cd -
@@ -38,7 +38,7 @@ then
 		cd tools/usbtool && make all && cd -
 		DST="${TMP}/usb4tos-${SHORT_VERSION}"
 		"$SCRIPT_DIR/prepare-usb4tos.sh" "${PWD}" "${DST}"
-		find "${DST}" -type f -perm -a=x -exec m68k-atari-mint-strip -s {} \;
+		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;
 		ARCHIVE_NAME="usb4tos-${LONG_VERSION}.zip"
 		LATEST_NAME="usb4tos-latest.zip"
 		cd "${DST}/.." && zip -r -9 "${DEPLOY_DIR}/${ARCHIVE_NAME}" "$(basename ${DST})" && cd -
@@ -46,7 +46,7 @@ then
 		make
 		DST="${TMP}/mint-${SHORT_VERSION}-${CPU_TARGET}"
 		"$SCRIPT_DIR/prepare-snapshot.sh" "${PWD}" "${DST}" "${SHORT_VERSION}" "${SHORT_ID}"
-		find "${DST}" -type f -perm -a=x -exec m68k-atari-mint-strip -s {} \;
+		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;
 		ARCHIVE_NAME="${PROJECT_NAME}-${LONG_VERSION}-${CPU_TARGET}${VERSIONED}.zip"
 		LATEST_NAME="${PROJECT_NAME}-latest-${CPU_TARGET}${VERSIONED}.zip"
 		cd "${DST}" && zip -r -9 "${DEPLOY_DIR}/${ARCHIVE_NAME}" * && cd -
