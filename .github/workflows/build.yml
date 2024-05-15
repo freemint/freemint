@@ -14,6 +14,29 @@ jobs:
       matrix:
         cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara" ]
         cross_tool: [ "m68k-atari-mint" ]
+        include:
+          - cpu_target: 000
+            artifact: freemint-cpu-000
+          - cpu_target: 02060
+            artifact: freemint-cpu-020
+          - cpu_target: 030
+            artifact: freemint-cpu-030
+          - cpu_target: 040
+            artifact: freemint-cpu-040
+          - cpu_target: 060
+            artifact: freemint-cpu-060
+          - cpu_target: col
+            artifact: freemint-cpu-coldfire
+          - cpu_target: prg
+            artifact: usb4tos
+          - cpu_target: ste
+            artifact: freemint-st_ste
+          - cpu_target: tt
+            artifact: freemint-tt_falcon_clones
+          - cpu_target: firebee
+            artifact: freemint-firebee
+          - cpu_target: ara
+            artifact: freemint-aranym
     steps:
       - uses: actions/checkout@v4
       - name: Install SSH keys
@@ -36,7 +59,6 @@ jobs:
           ./.scripts/install-udo.sh
           ./.scripts/install-dosfstools.sh
       - name: Install Applications
-        if: ${{ github.event_name == 'push' }}
         run: ./.scripts/install-apps.sh
       - name: libcmini
         run: ./.scripts/install-libcmini.sh
@@ -50,3 +72,10 @@ jobs:
           COMMITER_NAME: ${{ github.event.commits[0].author.name }}
           COMMITER_EMAIL: ${{ github.event.commits[0].author.email }}
         run: ./.scripts/deploy.sh
+      - name: Upload Artifact
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: /tmp/freemint-deploy
+          retention-days: 10
