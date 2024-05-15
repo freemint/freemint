@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <mintbind.h>
 
+/* no need to run global constructors/destructors here */
+void __main(void);
+void __main(void) { }
+
 int main(void)
 {
 	const char *sysdir = getenv("SYSDIR");

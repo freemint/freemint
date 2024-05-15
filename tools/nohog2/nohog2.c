@@ -35,6 +35,10 @@ char alert_running[] = "[1][ NoHog2 ][ Ok ]";
 char alert_no_mint[] = "[1][ NoHog2 only needed | with MiNT. ][ Ok ]";
 char alert_mtask[]   = "[1][ NoHog2 only needed | with ROM AES. ][ Ok ]";
 
+/* no need to run global constructors/destructors here */
+void __main(void);
+void __main(void) { }
+
 int main(void)
 {
 	long c;

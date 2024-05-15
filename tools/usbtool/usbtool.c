@@ -45,6 +45,10 @@ short total_width;             /* Total width in number of characters */
 struct usb_module_api *api = 0;
 short polling_flag = 0;         /* ON=always poll, OFF=poll only when window is opened */
 
+/* no need to run global constructors/destructors here */
+void __main(void);
+void __main(void) { }
+
 int
 main (void)
 {
