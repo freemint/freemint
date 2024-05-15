@@ -57,7 +57,7 @@
 
 struct iso_volume_descriptor
 {
-	char type			[ISODCL(   1,    1)]; /* 711 */
+	uchar type			[ISODCL(   1,    1)]; /* 711 */
 	char id				[ISODCL(   2,    6)]; /* */
 	char version			[ISODCL(   7,    7)]; /* */
 	char data			[ISODCL(   8, 2048)]; /* */
@@ -80,12 +80,12 @@ struct iso_primary_descriptor
 	char system_id			[ISODCL(   9,   40)]; /* achars */
 	char volume_id			[ISODCL(  41,   72)]; /* dchars */
 	char unused2			[ISODCL(  73,   80)]; /* */
-	char volume_space_size		[ISODCL(  81,   88)]; /* 733 */
+	uchar volume_space_size		[ISODCL(  81,   88)]; /* 733 */
 	char unused3			[ISODCL(  89,  120)]; /* */
-	char volume_set_size		[ISODCL( 121,  124)]; /* 723 */
-	char volume_sequence_number	[ISODCL( 125,  128)]; /* 723 */
-	char logical_block_size		[ISODCL( 129,  132)]; /* 723 */
-	char path_table_size		[ISODCL( 133,  140)]; /* 733 */
+	uchar volume_set_size		[ISODCL( 121,  124)]; /* 723 */
+	uchar volume_sequence_number	[ISODCL( 125,  128)]; /* 723 */
+	uchar logical_block_size		[ISODCL( 129,  132)]; /* 723 */
+	uchar path_table_size		[ISODCL( 133,  140)]; /* 733 */
 	char type_l_path_table		[ISODCL( 141,  144)]; /* 731 */
 	char opt_type_l_path_table	[ISODCL( 145,  148)]; /* 731 */
 	char type_m_path_table		[ISODCL( 149,  152)]; /* 732 */
@@ -102,7 +102,7 @@ struct iso_primary_descriptor
 	char modification_date		[ISODCL( 831,  847)]; /* 8.4.26.1 */
 	char expiration_date		[ISODCL( 848,  864)]; /* 8.4.26.1 */
 	char effective_date		[ISODCL( 865,  881)]; /* 8.4.26.1 */
-	char file_structure_version	[ISODCL( 882,  882)]; /* 711 */
+	uchar file_structure_version	[ISODCL( 882,  882)]; /* 711 */
 	char unused4			[ISODCL( 883,  883)]; /* */
 	char application_data		[ISODCL( 884, 1395)]; /* */
 	char unused5			[ISODCL(1396, 2048)]; /* */
@@ -111,21 +111,21 @@ struct iso_primary_descriptor
 
 struct iso_supplementary_descriptor
 {
-	char type			[ISODCL(   1,	 1)]; /* 711 */
+	uchar type			[ISODCL(   1,	 1)]; /* 711 */
 	char id				[ISODCL(   2,	 6)];
-	char version			[ISODCL(   7,	 7)]; /* 711 */
-	char flags			[ISODCL(   8,	 8)]; /* 711? */
+	uchar version			[ISODCL(   7,	 7)]; /* 711 */
+	uchar flags			[ISODCL(   8,	 8)]; /* 711? */
 	char system_id			[ISODCL(   9,   40)]; /* achars */
 	char volume_id			[ISODCL(  41,   72)]; /* dchars */
 	char unused2			[ISODCL(  73,   80)];
-	char volume_space_size		[ISODCL(  81,   88)]; /* 733 */
+	uchar volume_space_size		[ISODCL(  81,   88)]; /* 733 */
 	char escape			[ISODCL(  89,  120)];
 	char volume_set_size		[ISODCL( 121,  124)]; /* 723 */
 	char volume_sequence_number	[ISODCL( 125,  128)]; /* 723 */
 	char logical_block_size		[ISODCL( 129,  132)]; /* 723 */
 	char path_table_size		[ISODCL( 133,  140)]; /* 733 */
-	char type_l_path_table		[ISODCL( 141,  144)]; /* 731 */
-	char opt_type_l_path_table	[ISODCL( 145,  148)]; /* 731 */
+	uchar type_l_path_table		[ISODCL( 141,  144)]; /* 731 */
+	uchar opt_type_l_path_table	[ISODCL( 145,  148)]; /* 731 */
 	char type_m_path_table		[ISODCL( 149,  152)]; /* 732 */
 	char opt_type_m_path_table	[ISODCL( 153,  156)]; /* 732 */
 	char root_directory_record	[ISODCL( 157,  190)]; /* 9.1 */
@@ -140,7 +140,7 @@ struct iso_supplementary_descriptor
 	char modification_date		[ISODCL( 831,  847)]; /* 8.4.26.1 */
 	char expiration_date		[ISODCL( 848,  864)]; /* 8.4.26.1 */
 	char effective_date		[ISODCL( 865,  881)]; /* 8.4.26.1 */
-	char file_structure_version	[ISODCL( 882,  882)]; /* 711 */
+	uchar file_structure_version	[ISODCL( 882,  882)]; /* 711 */
 	char unused4			[ISODCL( 883,  883)]; /* */
 	char application_data		[ISODCL( 884, 1395)]; /* */
 	char unused5			[ISODCL(1396, 2048)]; /* */
@@ -148,16 +148,16 @@ struct iso_supplementary_descriptor
 
 struct iso_directory_record
 {
-	char length			[ISODCL(   1,    1)]; /* 711 */
-	char ext_attr_length		[ISODCL(   2,    2)]; /* 711 */
+	uchar length			[ISODCL(   1,    1)]; /* 711 */
+	uchar ext_attr_length		[ISODCL(   2,    2)]; /* 711 */
 	uchar extent			[ISODCL(   3,   10)]; /* 733 */
 	uchar size			[ISODCL(  11,   18)]; /* 733 */
 	char date			[ISODCL(  19,   25)]; /* 7 by 711 */
 	char flags			[ISODCL(  26,   26)]; /* */
-	char file_unit_size		[ISODCL(  27,   27)]; /* 711 */
-	char interleave			[ISODCL(  28,   28)]; /* 711 */
+	uchar file_unit_size		[ISODCL(  27,   27)]; /* 711 */
+	uchar interleave			[ISODCL(  28,   28)]; /* 711 */
 	char volume_sequence_number	[ISODCL(  29,   32)]; /* 723 */
-	char name_len			[ISODCL(  33,   33)]; /* 711 */
+	uchar name_len			[ISODCL(  33,   33)]; /* 711 */
 	char name			[1];                  /* XXX */
 };
 /* can't take sizeof(iso_directory_record), because of possible alignment
@@ -174,12 +174,12 @@ struct iso_extended_attributes
 	char xtime			[ISODCL(  45,   61)]; /* 8.4.26.1 */
 	char ftime			[ISODCL(  62,   78)]; /* 8.4.26.1 */
 	char recfmt			[ISODCL(  79,   79)]; /* 711 */
-	char recattr			[ISODCL(  80,   80)]; /* 711 */
+	uchar recattr			[ISODCL(  80,   80)]; /* 711 */
 	uchar reclen			[ISODCL(  81,   84)]; /* 723 */
 	char system_id			[ISODCL(  85,  116)]; /* achars */
 	char system_use			[ISODCL( 117,  180)]; /* */
-	char version			[ISODCL( 181,  181)]; /* 711 */
-	char len_esc			[ISODCL( 182,  182)]; /* 711 */
+	uchar version			[ISODCL( 181,  181)]; /* 711 */
+	uchar len_esc			[ISODCL( 182,  182)]; /* 711 */
 	char reserved			[ISODCL( 183,  246)]; /* */
 	uchar len_au			[ISODCL( 247,  250)]; /* 723 */
 };

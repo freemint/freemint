@@ -24,7 +24,7 @@ all-here: $(TARGET)
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XFS__
 
-LD = $(CC) -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
+LD = $(CC) -s -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions

@@ -89,17 +89,17 @@ typedef struct {
 
 typedef struct {
 	ISO_SUSP_HEADER			h;
-	char flags			[ISODCL(  4,   4)];
+	uchar flags			[ISODCL(  4,   4)];
 } ISO_RRIP_ALTNAME;
 
 typedef struct {
 	ISO_SUSP_HEADER			h;
-	char dir_loc			[ISODCL(  4,  11)]; /* 733 */
+	uchar dir_loc			[ISODCL(  4,  11)]; /* 733 */
 } ISO_RRIP_CLINK;
 
 typedef struct {
 	ISO_SUSP_HEADER			h;
-	char dir_loc			[ISODCL(  4,  11)]; /* 733 */
+	uchar dir_loc			[ISODCL(  4,  11)]; /* 733 */
 } ISO_RRIP_PLINK;
 
 typedef struct {
@@ -129,23 +129,23 @@ typedef struct {
 
 typedef struct {
 	ISO_SUSP_HEADER			h;
-	char len_id			[ISODCL(  4,   4)];
-	char len_des			[ISODCL(  5,   5)];
-	char len_src			[ISODCL(  6,   6)];
-	char version			[ISODCL(  7,   7)];
+	uchar len_id			[ISODCL(  4,   4)];
+	uchar len_des			[ISODCL(  5,   5)];
+	uchar len_src			[ISODCL(  6,   6)];
+	uchar version			[ISODCL(  7,   7)];
 } ISO_RRIP_EXTREF;
 
 typedef struct {
 	ISO_SUSP_HEADER			h;
-	char check			[ISODCL(  4,   5)];
-	char skip			[ISODCL(  6,   6)];
+	uchar check			[ISODCL(  4,   5)];
+	uchar skip			[ISODCL(  6,   6)];
 } ISO_RRIP_OFFSET;
 
 typedef struct {
 	ISO_SUSP_HEADER			h;
-	char location			[ISODCL(  4,  11)];
-	char offset			[ISODCL( 12,  19)];
-	char length			[ISODCL( 20,  27)];
+	uchar location			[ISODCL(  4,  11)];
+	uchar offset			[ISODCL( 12,  19)];
+	uchar length			[ISODCL( 20,  27)];
 } ISO_RRIP_CONT;
 
 #endif /* _iso_rrip_h */

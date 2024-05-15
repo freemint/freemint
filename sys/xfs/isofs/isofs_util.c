@@ -84,7 +84,7 @@ isofncmp(const uchar *fn, int fnlen, const uchar *isofn, int isolen, int joliet_
 {
 	const uchar *isoend = isofn + isolen;
 	int i, j;
-	char c;
+	uchar c;
 
 	while (--fnlen >= 0)
 	{
@@ -177,7 +177,7 @@ isofntrans(uchar *infn, int infnlen, uchar *outfn, ushort *outfnlen,
 
 	for (; infn != infnend; fnidx++)
 	{
-		char c;
+		uchar c;
 
 		infn += isochar(infn, infnend, joliet_level, &c);
 

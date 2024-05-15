@@ -635,7 +635,7 @@ iso_mountfs(void)
 	DEBUG(("isofs: volume_space_size   %li",  super->volume_space_size));
 	DEBUG(("isofs: root_extent         %li",  super->root_extent));
 	DEBUG(("isofs: root_size           %li",  super->root_size));
-	DEBUG(("isofs: iso_type            %li",  super->iso_type));
+	DEBUG(("isofs: iso_type            %i",   super->iso_type));
 	DEBUG(("isofs: rr_skip             %li",  super->rr_skip));
 	DEBUG(("isofs: rr_skip0            %li",  super->rr_skip0));
 

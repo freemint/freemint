@@ -477,7 +477,7 @@ cd9660_rrip_loop(struct iso_directory_record *isodir,
 	pwhead = isodir->name + isonum_711(isodir->name_len);
 	if (!(isonum_711(isodir->name_len) & 1))
 		pwhead++;
-	isochar(isodir->name, pwhead, ana->super->im_joliet_level, &c);
+	isochar((const uchar *)isodir->name, (uchar *)pwhead, ana->super->im_joliet_level, &c);
 	
 	/* If it's not the '.' entry of the root dir obey SP field */
 	if (c != 0 || isonum_733(isodir->extent) != ana->super->root_extent)
