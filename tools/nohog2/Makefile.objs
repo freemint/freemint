@@ -40,7 +40,7 @@ $(TARGET): $(OBJS)
 	$(STRIP) $@
 else
 $(TARGET): $(OBJS)
-	$(CC) -I$(LIBCMINI_INCPATH) -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(OBJS) -L$(LIBCMINI_LIBPATH) -lcmini $(LIBS) -lgcc
+	$(CC) -I$(LIBCMINI_INCPATH) -nostdlib -o $@ $(CFLAGS) $(LIBCMINI_STARTUP) $(OBJS) -L$(LIBCMINI_LIBPATH) -lcmini -lgcc -lcmini $(LIBS) -lgcc
 	$(STRIP) $@
 endif
 
