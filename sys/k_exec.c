@@ -346,7 +346,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 
 		base = addr2mem(get_curproc(), ptr_2.l);
 		if (base)
-			env = addr2mem(get_curproc(), *(long *)(base->loc + 0x2c));
+			env = addr2mem(get_curproc(), (long)((BASEPAGE *)(base->loc))->p_env);
 		else
 			env = NULL;
 
