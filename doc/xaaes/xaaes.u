@@ -895,12 +895,6 @@ Setting this will prevent the app from being hidden by XaAES, which is very
    handy for applications like Taskbar, zTask, or FreeGEM. It can be considered
    the same an "always on top" setting found on other OS's.
 
-!item [spaceXinsert <bool> (default false)] (!nl)
-Exchanges space/insert-behaviour in dialogs and lists.
-If false, Insert will select a button in a dialog, space will select a
-list. This option is casesensitive, so for example SPACEXINSERT will not
-be recognized.
-
 !item [CLWTNA <number> (default 1)] (!nl)
 (Close Last Window Tops Next App) Allows you to choose what to do when the
    last window of a client or application that is on top has been closed.

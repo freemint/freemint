@@ -48,7 +48,6 @@ struct key_queue
 	struct key_q q[KEQ_L];
 };
 
-short key_conv( struct xa_client *client, short key );
 void cancel_keyqueue	(struct xa_client *client);
 void queue_key		(struct xa_client *client, const struct rawkey *key);
 bool unqueue_key	(struct xa_client *client, struct rawkey *key);

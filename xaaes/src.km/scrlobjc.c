@@ -44,7 +44,6 @@
 #include "xa_form.h"
 #include "c_window.h"
 #include "keycodes.h"
-#include "k_keybd.h"
 
 #ifdef __GNUC__
 /* using builtin */
@@ -4785,10 +4784,10 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 
 	short msg[8] = { WM_ARROWED,0,0,list->wi->handle,0,0,0,0 };
 
-	switch (key_conv(list->wi->owner, keycode))
+	switch (keycode)
 	{
 	case SC_SPACE:
-	{
+	case SC_INSERT:
 		if (!get_first_state( list, OS_SELECTED))
 		{
 			SCROLL_ENTRY *this = list->top;
@@ -4803,7 +4802,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 			list->cur = NULL;
 		}
 		break;
-	}
+
 	case SC_UPARROW: /* 0x4800 */		/* up arrow */
 	{
 		if (!list->cur)
@@ -4992,13 +4991,12 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	break;
 
 	case SC_CLRHOME:	/* 0x4700 */	/* home */
-	{
 		scroll_down(list, list->start_y, true);
 
 		sl_set_selected( list, true, NORMREDRAW );
 
 		break;
-	}
+
 	case SC_SHFT_CLRHOME:	/* 0x4737 */	/* shift + home */
 	{
 		long n = list->total_h - (list->start_y + list->wi->wa.g_h);

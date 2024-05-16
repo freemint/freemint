@@ -45,7 +45,6 @@
 #include "xa_user_things.h"
 #include "nkcc.h"
 #include "keycodes.h"
-#include "k_keybd.h"
 #include "mint/signal.h"
 
 static WidgetBehaviour click_wdlg_widget;
@@ -1202,7 +1201,7 @@ wdialog_event(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 				}
 				else if (key)
 				{
-					if (key_conv( client, key) == SC_INSERT && focus_set(wt))
+					if (key == SC_SPACE && focus_set(wt) && !(focus_ob(wt)->ob_flags & OF_EDITABLE))
 					{
 						nxtobj = wt->focus;
 					}

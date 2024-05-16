@@ -46,7 +46,6 @@
 #include "xaaes.h"
 
 #include "c_keybd.h"
-#include "k_keybd.h"
 #include "c_window.h"
 #include "taskman.h"
 #include "about.h"
@@ -2533,7 +2532,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 
 				kk = (!was
 					&& (keycode == SC_DNARROW || keycode == SC_UPARROW)) ?
-						key_conv( fs->owner, SC_SPACE) : keycode;
+						SC_SPACE : keycode;
 
 				if (scrl_cursor(list, kk, 0) == 0)
 				{
