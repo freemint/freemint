@@ -1480,7 +1480,7 @@ create_base(const char *cmd, MEMREGION *env,
 	 * be controlled by the calling program. What about a Pexec(7) expansion
 	 * to pass the requested size as third parameter?
 	 */
-	if (flags & F_SMALLTPA && (len > (prgsize + SLB_INIT_STACK)))
+	if ((flags & F_SMALLTPA) && (len > (prgsize + SLB_INIT_STACK)))
 		len = prgsize + SLB_INIT_STACK + 256L; 		/* -> basepage */
 
 	if (initialmem && (len > (prgsize + 1024L * initialmem)))
@@ -1572,7 +1572,7 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 		return NULL;
 	}
 
-	size = xdd_read (f, (void *)&fh, (long)sizeof(fh));
+	size = xdd_read (f, (void *)&fh, sizeof(fh));
 	if (size != sizeof(fh) || fh.fmagic != GEMDOS_MAGIC)
 	{
 		DEBUG (("load_region: file not executable"));
@@ -1602,17 +1602,14 @@ failed:
 	if (!reg)
 		goto failed;
 
-// 	if (reg && ((size + 1024L) > reg->len))
-	if ((size + 1024) > reg->len) {
+	if ((size + 1024) > reg->len)
+	{
 		DEBUG (("load_region: insufficient memory to load"));
 		detach_region (get_curproc(), reg);
 		reg = NULL;
 		*err = ENOMEM;
 		goto failed;
 	}
-
-// 	if (reg == NULL)
-// 		goto failed;
 
 	b = (BASEPAGE *)reg->loc;
 	b->p_flags = fh.flag;
