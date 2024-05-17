@@ -40,7 +40,7 @@ main.o:	../main.c
 	$(CC) -o $@ $(CFLAGS) -c ../main.c
 
 # scsilink driver target
-$(TARGET): $(OBJS) $(LIBKERNSTMP)
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 	$(FLAGS) --mno-altram --mno-altalloc $@
 	

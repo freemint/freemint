@@ -18,6 +18,5 @@ CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
 #
 # libkern target
 #
-LIBKERNTARGET = libkern$(CPU).a
-LIBKERNSTMP = $(top_srcdir)/../../sys/libkern/libkern$(CPU).a
+LIBKERNTARGET = $(top_srcdir)/../../sys/libkern/libkern$(CPU).a
 LIBKERN = -L$(top_srcdir)/../../sys/libkern -lkern$(CPU)

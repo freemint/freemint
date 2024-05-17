@@ -10,5 +10,5 @@ include $(top_srcdir)/../DEPENDENCIES
 #
 # libkern target
 #
-$(LIBKERNTARGET) $(LIBKERNSTMP):
-	cd $(top_srcdir)/libkern; $(MAKE) CPU="$(CPU)" libkern$(CPU).a
+$(LIBKERNTARGET):
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(CPU)" libkern$(CPU).a

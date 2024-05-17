@@ -67,7 +67,7 @@ entry: $(DRIVERS)
 
 
 # generic driver target
-$(TARGET): $(XOBJS) $(LIBKERNSTMP)
+$(TARGET): $(XOBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(XOBJS) $(LIBS)
 
 

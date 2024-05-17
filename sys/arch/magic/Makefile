@@ -35,7 +35,7 @@ GENFILES = $(TARGET) magic.i
 
 #
 # we may end up here by parallel makes from the top directory for different kernels
-$(TARGET): $(OBJS) $(LIBKERNSTMP)
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) $(LDFLAGS) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 

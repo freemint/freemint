@@ -40,7 +40,7 @@ main.o:	../main.c
 	$(CC) -o $@ $(CFLAGS) -c ../main.c
 
 # generic driver target
-$(TARGET): $(OBJS) $(LIBKERNSTMP)
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -s -o $@ $(OBJS) $(LIBS)
 
 

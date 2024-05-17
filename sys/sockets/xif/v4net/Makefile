@@ -40,7 +40,7 @@ main.o:	../main.c
 	$(CC) -o $@ $(CFLAGS) -c ../main.c
 
 # v4net driver target
-$(TARGET): $(OBJS) $(LIBKERNSTMP)
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 include $(top_srcdir)/DEPENDENCIES
