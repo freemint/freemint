@@ -565,7 +565,7 @@ v2expeth_recv(void)
 	short type;
 	u_int16_t frame_len = 0;
 	struct netif *nif = &if_v2expeth;
-	u_int16_t *got_size = 0;
+	u_int16_t got_size = 0;
 
 	// spi corruption or internal data structure problem?
 	while(1)
@@ -590,14 +590,14 @@ v2expeth_recv(void)
 		} enc28j60_packet_header;
 
 		readBuf(sizeof enc28j60_packet_header, (u_int8_t*) &enc28j60_packet_header);
-		*got_size = ((u_int16_t)enc28j60_packet_header.byteCountL + (((u_int16_t)enc28j60_packet_header.byteCountH)<<8)) - 4; // cut off the crc 
-		frame_len = *got_size;
+		got_size = ((u_int16_t)enc28j60_packet_header.byteCountL + (((u_int16_t)enc28j60_packet_header.byteCountH)<<8)) - 4; // cut off the crc
+		frame_len = got_size;
 		u_int16_t nextPacketPtr = (u_int16_t)enc28j60_packet_header.nextPacketL + (((u_int16_t)enc28j60_packet_header.nextPacketH)<<8);
-		//DDBG("np:0x%x gotsize:%d, framelen: %d", nextPacketPtr, *got_size, frame_len);
+		//DDBG("np:0x%x gotsize:%d, framelen: %d", nextPacketPtr, got_size, frame_len);
 
 		if ((enc28j60_packet_header.statusL & 0x80)==0)
 		{
-			DDBG("receive error np:0x%x, size: %d", gNextPacketPtr, *got_size);
+			DDBG("receive error np:0x%x, size: %d", gNextPacketPtr, got_size);
 
 			// does the next packet pointer make sense?
 			if (nextPacketPtr<RXSTART_INIT && nextPacketPtr>RXSTOP_INIT)
