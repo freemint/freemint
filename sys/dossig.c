@@ -44,6 +44,13 @@ sys_p_kill (short pid, short sig)
 		return EBADARG;
 	}
 
+	if (sig == SIGSEGV || sig == SIGBUS)
+	{
+		PROC *curr = get_curproc();
+		curr->exception_pc = curr->ctxt[SYSCALL].pc;
+		curr->exception_addr = -1;
+	}
+
 	if (pid < 0)
 		r = killgroup (-pid, sig, 0);
 	else if (pid == 0)
