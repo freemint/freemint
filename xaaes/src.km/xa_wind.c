@@ -1895,6 +1895,12 @@ XA_wind_update(int lock, struct xa_client *client, AESPB *pb)
 	else
 		p = get_curproc();
 
+	if (p->ptracer)
+	{
+		DIAG((D_sema, NULL, "'%s:wind_update(0x%x) ignored for traced program", p->name, op));
+		return XAC_DONE;
+	}
+
 	switch (op & 0xff)
 	{
 
