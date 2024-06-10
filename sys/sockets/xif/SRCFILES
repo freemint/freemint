@@ -34,8 +34,6 @@ RTL8012ST_SRCS = rtl8012st.c rtl8012_vblint.S
 RTL8012CT60_SRCS = rtl8012ct60.c rtl8012_vblint.S
 ASIX_SRCS = asix.c
 PICOWIFI_SRCS = picowifi.c
-V4NET_SRCS = v4net.c v4net_int.S
-V2EXPETH_SRCS = v2expeth.c v2expeth_int.S
 
 COBJS = \
 	$(COMMON_SRCS) \
@@ -57,7 +55,6 @@ COBJS = \
 	$(RTL8012ST_SRCS) \
 	$(RTL8012CT60_SRCS) \
 	$(ASIX_SRCS) \
-	$(V4NET_SRC) \
-	$(V2EXPETH_SRC)
+	$(PICOWIFI_SRCS)
 
 SRCFILES = $(HEADER) $(COBJS)

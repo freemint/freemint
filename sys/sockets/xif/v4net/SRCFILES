@@ -1,0 +1,18 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	v4net.h
+
+COBJS = \
+	v4net.c
+
+SSOBJS = \
+	v4net_int.S
+
+COMMON_SRCS = \
+	../main.c
+
+V4NET_SRCS = $(COBJS) $(SSOBJS)
+
+SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)

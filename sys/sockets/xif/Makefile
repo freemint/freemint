@@ -3,10 +3,10 @@
 #
 TARGET = 
 DRIVERS = rtl8012 rtl8012st rtl8012ct60 dial plip dummy de600 lance pamsdma biodma \
-	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139 picowifi v4net v2expeth
+	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139 picowifi
 
 SHELL = /bin/sh
-SUBDIRS = nfeth daynaport ethernat fec svethlana
+SUBDIRS = nfeth daynaport ethernat fec svethlana v2expeth v4net
 
 srcdir = .
 top_srcdir = ../..
@@ -61,8 +61,6 @@ RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
 RTL8139_OBJS = $(addsuffix .o, $(basename $(notdir rtl8139.c)))
 ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
 PICOWIFI_OBJS = $(addsuffix .o, $(basename $(notdir $(PICOWIFI_SRCS))))
-V4NET_OBJS = $(addsuffix .o, $(basename $(notdir $(V4NET_SRCS))))
-V2EXPETH_OBJS = $(addsuffix .o, $(basename $(notdir $(V2EXPETH_SRCS))))
 
 # entry point
 entry: $(DRIVERS)
@@ -213,16 +211,6 @@ rtl8139:
 		"TARGET=rtl8139.xif" \
 		"XOBJS=main_020.o $(RTL8139_OBJS)" \
 		CPU=060
-
-v4net:
-	$(MAKE) v4net.xif \
-		"TARGET=v4net.xif" \
-		"XOBJS=$(COMMON_OBJS) $(V4NET_OBJS)"
-
-v2expeth:
-	$(MAKE) v2expeth.xif \
-		"TARGET=v2expeth.xif" \
-		"XOBJS=$(COMMON_OBJS) $(V2EXPETH_OBJS)"
 
 main_020.c: main.c
 	ln -s $< $@

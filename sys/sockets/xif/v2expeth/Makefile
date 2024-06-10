@@ -1,7 +1,7 @@
 #
 # Makefile for
 #
-TARGET = svethlan.xif
+TARGET = v2expeth.xif
 
 GENFILES = $(TARGET)
 
@@ -10,11 +10,11 @@ SUBDIRS =
 
 srcdir = .
 top_srcdir = ../../..
-subdir = svethlana
+subdir = v2expeth
 
 default: all
 
-CPU = 060
+CPU = 000
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -34,12 +34,12 @@ LD = $(CC) -mshort -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions
-OBJS = $(addsuffix .o, $(basename $(notdir $(SVETHLANA_SRCS) $(COMMON_SRCS))))
+OBJS = $(addsuffix .o, $(basename $(notdir $(V2EXPETH_SRCS) $(COMMON_SRCS))))
 
 main.o:	../main.c
 	$(CC) -o $@ $(CFLAGS) -c ../main.c
 
-# svethlana driver target
+# v2expeth driver target
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 

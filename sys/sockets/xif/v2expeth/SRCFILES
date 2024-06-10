@@ -1,0 +1,19 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	enc28j60.h \
+	v2expeth.h
+
+COBJS = \
+	v2expeth.c
+
+SSOBJS = \
+	v2expeth_int.S
+
+COMMON_SRCS = \
+	../main.c
+
+V2EXPETH_SRCS = $(COBJS) $(SSOBJS)
+
+SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
