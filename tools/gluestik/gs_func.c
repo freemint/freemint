@@ -935,7 +935,8 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	static char buf [4096];
 	static volatile char lock = 0;
 	
-	struct hostent *host = NULL;
+	struct hostent *host;
+	int r_errno;
 	char **raddr;
 	int ret;
 	
@@ -954,6 +955,7 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 	{
 		/* MagiCNet: running as a TSR; do the query right away */
 		host = (struct hostent *) gethostbyname(buf);
+		r_errno = h_errno;
 	} else
 	{
 		/* MiNTNet: wake up the daemon to do the work */
@@ -962,10 +964,11 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 
 		pmsg.msg1 = 1;
 		pmsg.msg2 = (long) buf;
+		pmsg.pid = Pgetpid();
 
 		DEBUG (("gs_resolve: Wait for Pmsg receive on [%s]!", buf));
 		r = Pmsg (2, GS_GETHOSTBYNAME, &pmsg);
-		DEBUG (("gs_resolve: Pmsg received = %li, %lx!", r, pmsg.msg2));
+		DEBUG (("gs_resolve: Pmsg received = %li, %lx %d!", r, pmsg.msg2, pmsg.msg1));
 
 		if (r != 0)
 		{
@@ -975,12 +978,13 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 			goto out;
 		}
 		host = (struct hostent *) pmsg.msg2;
+		r_errno = pmsg.msg1;
 	}
 
 	DEBUG (("gs_resolve: gethostbyname() returns %lx", (unsigned long)host));
 	if (!host)
 	{
-		switch (h_errno)
+		switch (r_errno)
 		{
 			case HOST_NOT_FOUND:
 				ret = E_NOHOSTNAME;
@@ -995,7 +999,7 @@ gs_resolve (const char *dn, char **rdn, uint32 *alist, int16 lsize)
 				break;
 		}
 		
-		DEBUG (("gs_resolve: h_errno = %d -> %i", h_errno, ret));
+		DEBUG (("gs_resolve: h_errno = %d -> %i", r_errno, ret));
 		goto out;
 	}
 	

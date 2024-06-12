@@ -358,6 +358,7 @@ main (void)
 		{
 			case 1:
 				pmsg.msg2 = (long) gethostbyname ((char *) pmsg.msg2);
+				pmsg.msg1 = h_errno;
 				break;
 			case 2:
 				pmsg.msg2 = (long) malloc (pmsg.msg2);
