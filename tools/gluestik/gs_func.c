@@ -122,9 +122,14 @@ gs_xlate_error (int err, const char *funcname)
 # ifdef GS_DEBUG
 	if (funcname)
 	{
-		struct get_err_text_param p = { ret };
+#if TPL_STRUCT_ARGS
+		struct get_err_text_param p = { ret, 0 };
 		DEBUG (("%s() returns %i (%s)",
 			funcname, ret, do_get_err_text (p)));
+#else
+		DEBUG (("%s() returns %i (%s)",
+			funcname, ret, do_get_err_text (ret)));
+#endif
 	}
 # endif
 	
