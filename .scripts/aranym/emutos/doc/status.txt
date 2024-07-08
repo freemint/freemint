@@ -10,26 +10,26 @@ a ROM version of EmuTOS.
   system              |  ok?  | who |   date      |  details
   --------------------+-------+-----+-------------+----------------
   Emulators           |       |     |             |
-  ARAnyM 1.1.0        |  yes  | CZ  |  9 Jul 2022 |
-  Hatari v2.4.0       |  yes  | VRI | 31 Jul 2022 |
+  ARAnyM 1.1.0        |  yes  | CZ  | 17 Feb 2024 |
+  Hatari v2.4.1       |  yes  | VRI | 14 Mar 2024 |
   PaCifiST v0.48      |   no  | (7) | 21 Jul 2021 | see (B)
   SainT v2.40         |  yes  | RFB | 29 Aug 2020 | 192k ROM only
-  Steem SSE 4.1.2     |  yes  | CZ  |  9 Jul 2022 | (Win 32 D3D)
+  Steem SSE 4.1.2 R14 |  yes  | CZ  | 17 Feb 2024 | (Win 32 D3D)
   STonC v0.8.1        |  yes  | LVL |  9 Feb 2003 |
   STonX 0.6.7.6       |  yes  | THH | 14 Nov 2008 |
   STonX DOS           |  yes  | CZ  | 22 Jul 2021 | see (A)
   TOSBox 1.10a        |   no  |  ?  |  < Sep 2002 |
   WinSTon v0.5        |   no  | RFB | 29 Aug 2020 |
-  WinUAE 4.4.0        |  yes  | VRI | 31 Jul 2022 |
+  WinUAE 5.2.0        |  yes  | VRI | 14 Mar 2024 |
   --------------------+-------+-----+-------------+----------------
   Atari & compatibles |       |     |             |
-  STf & STfm          |  yes  | CZ  |  2 Jul 2022 |
-  Mega ST             |  yes  | CZ  |  3 Jul 2022 | tested with PRG
-  STe                 |  yes  | CZ  |  9 Jul 2022 |
-  Mega STe            |  yes  | CZ  |  3 Jul 2022 | tested with PRG
-  TT030               |  yes  | CZ  |  2 Jul 2022 |
-  Falcon030           |  yes  | CZ  |  3 Jul 2022 |
-  Falcon030 + CT60    |  yes  | RFB |  3 Jul 2022 | tested with PRG
+  STf & STfm          |  yes  | CZ  | 17 Feb 2024 |
+  Mega ST             |  yes  | CZ  | 17 Feb 2024 | tested w/ prg256
+  STe                 |  yes  | CZ  | 17 Feb 2024 |
+  Mega STe            |  yes  | CZ  | 17 Feb 2024 |
+  TT030               |  yes  | CZ  | 17 Feb 2024 |
+  Falcon030           |  yes  | CZ  | 17 Feb 2024 |
+  Falcon030 + CT60    |  yes  | RFB | 10 Mar 2024 | tested with PRG
   Suska III-C (2K15B) |  yes  | (3) | 23 Apr 2016 |
   --------------------+-------+-----+-------------+----------------
   Other systems       |       |     |             |
@@ -37,9 +37,9 @@ a ROM version of EmuTOS.
   Amiga 500 + Vampire |  yes  | VRI | 13 Oct 2019 | GOLD2.11
   Amiga 600 + Vampire |  yes  | (4) |    Mar 2017 |
   Amiga 1000          |  yes  | (2) |    Jul 2012 |
-  FireBee             |  yes  | VRI | 25 Jul 2022 |
+  FireBee             |  yes  | VRI | 15 Mar 2024 |
   M5484LITE           |  yes  | VRI | 25 Jul 2022 |
-  Vampire V4          |  yes  | CZ  | 24 Aug 2020 |
+  Vampire V4-SA       |  yes  | CZ  | 10 Mar 2024 | Core 9465 + MAPROM
   Apple Lisa          |  yes  | (8) |  4 Feb 2021 |
 
 Remarks:
@@ -529,17 +529,17 @@ GEMDOS v0.30 (TOS v4):
 All AES versions:
  T  10  appl_init
  T  11  appl_read
- t  12  appl_write
- t  13  appl_find
+ T  12  appl_write
+ T  13  appl_find
  T  14  appl_tplay
  T  15  appl_trecord
  X  17  appl_yield          (PC-GEM call)
  T  19  appl_exit
 
- X  20  evnt_keybd
+ T  20  evnt_keybd
  T  21  evnt_button
- t  22  evnt_mouse
- t  23  evnt_mesag
+ T  22  evnt_mouse
+ T  23  evnt_mesag
  T  24  evnt_timer
  T  25  evnt_multi
  T  26  evnt_dclick

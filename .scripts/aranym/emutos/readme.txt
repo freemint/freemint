@@ -28,6 +28,7 @@ it - Italian
 nl - Dutch
 no - Norwegian
 pl - Polish
+ro - Romanian
 ru - Russian
 se - Swedish
 cd - Swiss German
@@ -61,10 +62,10 @@ make aranym
 
 This release has been built on Linux Mint (a Ubuntu derivative), using
 Vincent Rivière's GCC 4.6.4 cross-compiler.  The custom tools used in
-the build process were built with native GCC 4.8.4.
+the build process were built with native GCC 10.2.0
 
 The source package and other binary packages are available at:
-https://sourceforge.net/projects/emutos/files/emutos/1.2.1/
+https://sourceforge.net/projects/emutos/files/emutos/1.3/
 
 An online manual is available at the following URL:
 https://emutos.github.io/manual/
@@ -95,6 +96,7 @@ doc/incompatible.txt  - Programs incompatible with EmuTOS due to program bugs
 doc/license.txt       - The FSF General Public License for EmuTOS
 doc/status.txt        - What is implemented and running (or not yet)
 doc/todo.txt          - What should be done in future versions
+doc/tools.txt         - Tools to customize EmuTOS ROM images
 doc/xhdi.txt          - Current XHDI implementation status
 
 Additional information for developers (just in the source archive):
@@ -102,7 +104,9 @@ Additional information for developers (just in the source archive):
 doc/install.txt       - How to build EmuTOS from sources
 doc/coding.txt        - EmuTOS coding standards (never used :-) )
 doc/country.txt       - An overview of i18n issues in EmuTOS
+doc/dual_kbd.txt      - An explanation of the dual keyboard layout feature
 doc/fat16.txt         - Notes on the FAT16 filesystem in EmuTOS
+doc/m54xx-cards.txt   - Using CF cards on ColdFire V4e Evaluation Boards
 doc/memdetect.txt     - Memory bank detection during EmuTOS startup
 doc/nls.txt           - How to add a native language or use one
 doc/old_changelog.txt - A summarised list of changes up to & including
@@ -111,6 +115,7 @@ doc/osmemory.txt      - All about OS internal memory in EmuTOS
 doc/reschange.txt     - How resolution change works in the desktop
 doc/resource.txt      - Modifying resources in EmuTOS
 doc/startup.txt       - Some notes on the EmuTOS startup sequence
+doc/tools.txt         - User tools to customise EmuTOS ROM images
 doc/tos14fix.txt      - Lists bugs fixed by TOS 1.04 & their status in EmuTOS
 doc/version.txt       - Determining the version of EmuTOS at run-time
 
