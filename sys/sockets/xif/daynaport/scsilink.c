@@ -419,7 +419,6 @@ long rc;
 
 	rc = if_enqueue(&nif->snd,nbuf,nbuf->info);
 	if (rc) {
-		buf_deref(nbuf,BUF_NORMAL);
 		nif->out_errors++;
 		return rc;
 	}

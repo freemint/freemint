@@ -1191,7 +1191,6 @@ static long rtl8139_output(struct netif *nif, BUF *buf, const char *hwaddr, shor
     if(rc)
     {
       DEBUG(("RTL8139: TX buffer full or DMA locked! Buffer lost."));
-			buf_deref(nbuf, BUF_NORMAL);
       nif->out_errors++;
     }
     else

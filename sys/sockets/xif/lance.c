@@ -648,7 +648,6 @@ lance_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 		
 		if (if_enqueue(&nif->snd, nbuf, nbuf->info))
 		{
-			buf_deref(nbuf, BUF_NORMAL);
 			nif->out_errors++;
 			return EINTERNAL;
 		}
