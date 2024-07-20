@@ -145,21 +145,31 @@ icmp_errno (short type, short code)
 {
 	static short icmp_errors[] =
 	{
-		ENETUNREACH,	/* net unreachable */
-		EHOSTUNREACH,	/* host unreachable */
-		ENOPROTOOPT,	/* protocol unreachable */
-		ECONNREFUSED,	/* port unreachable */
-		EOPNOTSUPP,	/* frag needed but DF set */
-		EOPNOTSUPP,	/* source soute failed */
+		ENETUNREACH,	/* ICMPC_NETUR, net unreachable */
+		EHOSTUNREACH,	/* ICMPC_HOSTUR, host unreachable */
+		ENOPROTOOPT,	/* ICMPC_PROTOUR, protocol unreachable */
+		ECONNREFUSED,	/* ICMPC_PORTUR, port unreachable */
+		EMSGSIZE,	/* ICMPC_FNDF, frag needed but DF set */
+		EOPNOTSUPP,	/* ICMPC_SRCRT, source soute failed */
+		ENETUNREACH, /* ICMPC_NET_UNKNOWN, Destination network unknown */
+		EHOSTDOWN, /* ICMPC_HOST_UNKNOWN, Destination host unknown */
+		ENONET, /* ICMPC_HOST_ISOLATED, Source host isolated */
+		ENETUNREACH, /* ICMPC_NET_ANO, Network administratively prohibited */
+		EHOSTUNREACH, /* ICMPC_HOST_ANO, Host administratively prohibited */
+		ENETUNREACH,	/* ICMPC_NET_UNR_TOS Network unreachable for ToS */
+		EHOSTUNREACH,	/* ICMPC_HOST_UNR_TOS, Host unreachable for ToS */
+		EHOSTUNREACH, /* ICMPC_PKT_FILTERED, Communication administratively filtered */
+		EHOSTUNREACH,	/* ICMPC_PREC_VIOLATION, Host Precedence violation */
+		EHOSTUNREACH,	/* ICMP_PREC_CUTOFF, Precedence cut off in effect */
 	};
 	
 	if (type != ICMPT_DSTUR)
 		return EOPNOTSUPP;
 	
-	if ((ushort)code > sizeof (icmp_errors) / sizeof (*icmp_errors))
+	if ((ushort)code >= sizeof (icmp_errors) / sizeof (*icmp_errors))
 	{
 		DEBUG (("icmp_errno: %d: no such code", code));
-		return EINTERNAL;
+		return EHOSTUNREACH;
 	}
 	
 	return icmp_errors[code];

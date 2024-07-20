@@ -21,6 +21,16 @@
 # define	ICMPC_PORTUR	3	/* port unreachable */
 # define	ICMPC_FNDF	4	/* fragmentation needed, but DF set */
 # define	ICMPC_SRCRT	5	/* source route failed */
+# define	ICMPC_NET_UNKNOWN	6 /* Destination network unknown */
+# define	ICMPC_HOST_UNKNOWN	7 /* Destination host unknown */
+# define	ICMPC_HOST_ISOLATED 8 /* Source host isolated */
+# define	ICMPC_NET_ANO		9 /* Network administratively prohibited */
+# define	ICMPC_HOST_ANO		10 /* Host administratively prohibited */
+# define	ICMPC_NET_UNR_TOS	11 /* Network unreachable for ToS */
+# define	ICMPC_HOST_UNR_TOS	12 /* Host unreachable for ToS */
+# define	ICMPC_PKT_FILTERED	13 /* Communication administratively filtered */
+# define	ICMPC_PREC_VIOLATION	14	/* Host Precedence violation */
+# define	ICMP_PREC_CUTOFF	15	/* Precedence cut off in effect */
 
 # define ICMPT_SRCQ	4		/* source quench */
 # define ICMPT_REDIR	5		/* redirect route */
@@ -30,6 +40,10 @@
 # define	ICMPC_TOSHRD	3	/* redirect host for type of service */
 
 # define ICMPT_ECHORQ	8		/* echo request */
+# define ICMPT_ROUTER_ADVERT 9	/* Router Advertisement */
+# define ICMPT_ROUTER_SOLICIT 10	/* Router discovery/selection/solicitation */
+
+# define ICMPT_TIME_EXCEEDED	11	/* Time Exceeded		*/
 # define ICMPT_TIMEX	11		/* time exeeded */
 # define	ICMPC_TTLEX	0	/* ttl exeeded */
 # define	ICMPC_FRAGEX	1	/* fragmentation reassambly timex */
