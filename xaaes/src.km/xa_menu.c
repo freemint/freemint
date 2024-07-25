@@ -816,17 +816,17 @@ XA_menu_attach(int lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_menu, client, "menu_attach %d", pb->intin[0]));
 
-	pb->intout[0] = 0;
+	pb->intout[0] = 1;
 
 	if( pb->addrin[1] == 0 )
 	{
 		if( md != ME_INQUIRE )
 			md = ME_REMOVE;
 		else
-			pb->intout[0] = 1;
+			pb->intout[0] = 0;
 	}
 
-	if (validate_obtree(client, (OBJECT *)pb->addrin[0], "XA_menu_attach:") && pb->intout[0] == 0)
+	if (validate_obtree(client, (OBJECT *)pb->addrin[0], "XA_menu_attach:") && pb->intout[0] != 0)
 	{
 		XA_TREE *wt;
 		MENU *mn;
@@ -889,7 +889,7 @@ XA_menu_attach(int lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 	{
-		pb->intout[0] = 1;
+		pb->intout[0] = 0;
 	}
 
  	return XAC_DONE;

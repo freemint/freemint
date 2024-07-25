@@ -303,8 +303,6 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 
 		if (new)
 		{
-			char *text;
-
 			bzero(new, sizeof(*new));
 
 			new->next = client->attach;
@@ -329,11 +327,6 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			new->on_open = on_open;
 			new->data = data;
 			mn->wt->links++;
-			if ((attach_to->ob_type & 0xff) == G_STRING)
-			{
-				text = object_get_spec(attach_to)->free_string;
-				text[strlen(text) - 1] = mn == &desk_popup ? '\2' : '>';
-			}
 			ret = 1;
 		}
 	}
@@ -343,7 +336,7 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 	}
 
 	Sema_Dn(LOCK_CLIENTS);
-	DIAGS(("attatch_menu exit ok"));
+	DIAGS(("attach_menu exit ok"));
 	return ret;
 }
 
@@ -358,19 +351,12 @@ detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item)
 
 	if (is_attach(client, wt, item, &xt))
 	{
-		char *text;
-
 		DIAG((D_menu, NULL, "detach_menu %lx + %d for %s %lx + %d",
 			(unsigned long)xt->wt->tree, xt->menu, client->name, (unsigned long)wt->tree, item));
 
 		attach_to->ob_flags &= ~OF_SUBMENU;
 		xt->to = NULL;
 		xt->to_item = 0;
-		if ((attach_to->ob_type & 0xff) == G_STRING)
-		{
-			text = object_get_spec(attach_to)->free_string;
-			text[strlen(text) - 1] = ' ';
-		}
 
 		if (xt->prev)
 			xt->prev->next = xt->next;

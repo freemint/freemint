@@ -610,30 +610,6 @@ init_objects(void)
 #endif
 }
 
-/* object types */
-#define G_BOX			20
-#define G_TEXT			21
-#define G_BOXTEXT		22
-#define G_IMAGE			23
-#define G_USERDEF		24
-#define G_PROGDEF		G_USERDEF
-#define G_IBOX			25
-#define G_BUTTON		26
-#define G_BOXCHAR		27
-#define G_STRING		28
-#define G_FTEXT			29
-#define G_FBOXTEXT		30
-#define G_ICON			31
-#define G_TITLE			32
-#define G_CICON			33
-
-/* extended object types, MagiC only */
-#define G_SWBUTTON		34
-#define G_POPUP			35
-#define G_WINTITLE		36
-#define G_EDIT			37
-#define G_SHORTCUT		38
-
 /*
  * display or remove object-cursor
  * sr: coords of object

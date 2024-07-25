@@ -6272,7 +6272,7 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 	ushort state = ob->ob_state;
 	bool selected, disabled;
 	short fl3d;
-	char *t, text[256];
+	char *t;
 
 	t = (*api->object_get_spec)(ob)->free_string;
 
@@ -6280,8 +6280,6 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if (t)
 	{
 		fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
-		strncpy(text, t, 254);
-		text[255] = '\0';
 
 		selected = ob->ob_state & OS_SELECTED;
 
@@ -6318,13 +6316,16 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		if (   wt->is_menu
 		    && (ob->ob_state & OS_DISABLED)
-		    && *text == '-')
+		    && *t == '-')
 		{
 			/* If optional text is found, remove leading and trailing '-' */
 			short start_pos = 0;
 			char *end_pos;
 			short old_rx, old_rw;
+			char text[256];
 
+			strncpy(text, t, 254);
+			text[255] = '\0';
 			while (text[start_pos] == '-')
 				start_pos++;
 			if (text[start_pos] != '\0')
@@ -6333,6 +6334,7 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 				while (end_pos > text && *end_pos == '-')
 					end_pos--;
 				end_pos[1] = '\0';
+				/* FIXME: overlapping strcpy */
 				strcpy(text, text + start_pos);
 			} else
 			{
@@ -6423,6 +6425,26 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 			(*v->api->t_color)(v, ct->fnt.fg);
 			(*v->api->t_effects)(v, ct->fnt.effects);
 			ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, t, state, flags, und, G_BLACK);
+			/*
+			 * draw the submenu indicator,
+			 * at the next to last character if there is a space,
+			 * otherwise at the last character position.
+			 *
+			 * The desktop client menu is excluded from this,
+			 * because it already has a down arrow.
+			 */
+			if (ob->ob_flags & OF_SUBMENU)
+			{
+				int len = strlen(t);
+				if (len > 0 && t[len - 1] != '\002')
+				{
+					if (len >= 2 && t[len - 2] == ' ')
+						r.g_x += (len - 2) * screen->c_max_w;
+					else
+						r.g_x += (len - 1) * screen->c_max_w;
+					ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, "\003", state, flags, -1, G_BLACK);
+				}
+			}
 		}
 	}
 }

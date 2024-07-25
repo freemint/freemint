@@ -1294,14 +1294,14 @@ ru:XaAES: Не выбрана оболочка AES, проверьте переменную 'shell =' в файле xaaes.
 cs:XaAES: Nenastaven ѕбdnэ shell AES; viz promмnnб 'shell =' v xaaes.cnf.
 _
 ### Miscellanous ###
-nn+  Clients 
-de:  Anwendungen 
-fr:  Clients 
-es:  Clientes 
-it:  Clienti 
-hu:  Kliensek 
-ru:  Программы 
-cs:  Klienti 
+nn+  Clients 
+de:  Anwendungen 
+fr:  Clients 
+es:  Clientes 
+it:  Clienti 
+hu:  Kliensek 
+ru:  Программы 
+cs:  Klienti 
 _
 nn:xa_help.txt
 de:xa_help.de
