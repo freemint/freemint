@@ -43,7 +43,7 @@ unix_stream_connect (struct socket *so, const struct sockaddr *addr, short addrl
 	if (!server_data)
 	{
 		DEBUG (("unix_stream_connect: server not found"));
-		return EINVAL;
+		return ECONNREFUSED;
 	}
 	
 	r = so_connect (server_data->sock, so, server_data->backlog, nonblock, 1);

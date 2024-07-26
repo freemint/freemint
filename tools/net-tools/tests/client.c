@@ -9,10 +9,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
-typedef size_t socklen_t;
-# endif
-
 #define OFFSET	offsetof(struct sockaddr_un, sun_path)
 
 int

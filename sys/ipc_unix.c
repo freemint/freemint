@@ -15,6 +15,7 @@
 # include "mint/file.h"
 # include "mint/signal.h"
 # include "mint/stat.h"
+# include "mint/emu_tos.h"
 
 # include "dev-null.h"
 # include "dosdir.h"
@@ -173,6 +174,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 {
 	struct un_data *undata = so->data;
 	long r, fd, index;
+	XATTR attr;
 
 	if (!addr)
 		return EDESTADDRREQ;
@@ -199,6 +201,12 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 		return EAFNOSUPPORT;
 	}
 
+	r = sys_f_xattr (1, undata->addr.sun_path, &attr);
+	if (r == 0)
+	{
+		DEBUG (("unix_bind: Fxattr(%s), file exists", undata->addr.sun_path));
+		return EADDRINUSE;
+	}
 	/* Invalidate cache entries referring to the same file. */
 	r = un_cache_remove (undata->addr.sun_path);
 	if (r < 0) {
@@ -208,7 +216,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	/* To do the creat(), the user must have write access for the
 	 * directory containing the file.
 	 */
-	fd = sys_f_create (undata->addr.sun_path, O_RDWR);
+	fd = sys_f_create (undata->addr.sun_path, FA_HIDDEN);
 	if (fd < 0)
 	{
 		DEBUG (("unix: unix_bind: could not create file %s",
@@ -268,7 +276,7 @@ unix_connect (struct socket *so, const struct sockaddr *addr, short addrlen, sho
 			break;
 	}
 
-	return EINTERNAL;
+	return EPROTOTYPE;
 }
 
 static long
@@ -286,7 +294,7 @@ unix_socketpair (struct socket *so1, struct socket *so2)
 			break;
 	}
 
-	return EINTERNAL;
+	return EPROTOTYPE;
 }
 
 static long
@@ -362,7 +370,7 @@ unix_ioctl (struct socket *so, short cmd, void *buf)
 			break;
 	}
 
-	return EINTERNAL;
+	return EPROTOTYPE;
 }
 
 static long
@@ -411,7 +419,7 @@ unix_send (struct socket *so, const struct iovec *iov, short niov, short nonbloc
 			break;
 	}
 
-	return EINTERNAL;
+	return EPROTOTYPE;
 }
 
 static long
@@ -438,7 +446,7 @@ unix_recv (struct socket *so, const struct iovec *iov, short niov, short nonbloc
 			break;
 	}
 
-	return EINTERNAL;
+	return EPROTOTYPE;
 }
 
 static long
@@ -718,7 +726,7 @@ un_namei (const struct sockaddr *addr, short addrlen, long *index)
 	if (un.sun_family != AF_UNIX)
 	{
 		DEBUG (("unix: un_namei: domain not AF_UNIX"));
-		return EINVAL;
+		return EAFNOSUPPORT;
 	}
 
 	return un_cache_lookup (un.sun_path, index);

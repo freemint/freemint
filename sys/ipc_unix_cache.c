@@ -29,6 +29,7 @@ struct lookup_cache
 	long	inode;
 	long	stamp;
 # define MK_STAMP(time, date)	((((long)(date)) << 16) | (time))
+	long	cksum;
 	long	un_index;
 };
 
@@ -114,7 +115,8 @@ un_cache_lookup (char *name, long *index)
 {
 	XATTR attr;
 	short dirty_idx, i;
-	long r, stamp;
+	long r, fd, stamp;
+	long cksum;
 	static short last_deleted = 0;
 
 	r = sys_f_xattr (1, name, &attr);
@@ -128,42 +130,65 @@ un_cache_lookup (char *name, long *index)
 	stamp = MK_STAMP (attr.mtime, attr.mdate);
 	for (i = 0; i < CACHE_ENTRIES; i++)
 	{
-		if (f_cache[i].valid == CACHE_DIRTY)
-		{
-			dirty_idx = i;
-			break;
-		}
-
-		if (f_cache[i].inode == attr.index
-			&& f_cache[i].dev == attr.dev)
+		if (f_cache[i].valid == CACHE_VALID &&
+			f_cache[i].inode == attr.index &&
+			f_cache[i].dev == attr.dev)
 		{
 			if (f_cache[i].stamp == stamp)
 			{
 				*index = f_cache[i].un_index;
 				return 0;
 			}
-			else
+			f_cache[i].valid = CACHE_DIRTY;
+			dirty_idx = i;
+			break;
+		}
+	}
+
+	if (dirty_idx < 0)
+	{
+		for (i = 0; i < CACHE_ENTRIES; i++)
+		{
+			if (f_cache[i].valid == CACHE_DIRTY)
 			{
-				f_cache[i].valid = CACHE_DIRTY;
 				dirty_idx = i;
 				break;
 			}
 		}
 	}
 
-	*index = chksum(name, 
+	cksum = chksum(name,
 		MIN((strlen(name) + 1), sizeof(struct sockaddr_un) - UN_PATH_OFFSET) >> 1);
-
-	if (dirty_idx == -1)
+	if (dirty_idx < 0)
 	{
 		dirty_idx = last_deleted++;
 		if (last_deleted >= CACHE_ENTRIES)
 			last_deleted = 0;
 	}
 
+	/*
+	 * read back the index that was wriiten in unix_bind
+	 */
+	fd = sys_f_open (name, O_RDONLY);
+	if (fd < 0)
+	{
+		DEBUG (("unix: un_cache_lookup: Fopen(%s) -> %ld", name, fd));
+		return fd;
+	}
+	r = sys_f_read (fd, sizeof (*index), (char *)index);
+	sys_f_close(fd);
+	if (r != sizeof(*index))
+	{
+		DEBUG (("unix: un_cache_lookup: could not read idx from file %s",
+			name));
+		return EACCES;
+	}
+
+
 	f_cache[dirty_idx].dev = attr.dev;
 	f_cache[dirty_idx].inode = attr.index;
 	f_cache[dirty_idx].stamp = stamp;
+	f_cache[dirty_idx].cksum = cksum;
 	f_cache[dirty_idx].un_index = *index;
 	f_cache[dirty_idx].valid = CACHE_VALID;
 
@@ -189,9 +214,9 @@ un_cache_remove (char *name)
 
 	for (i = 0; i < CACHE_ENTRIES; i++)
 	{
-		if (f_cache[i].valid == CACHE_VALID
-			&& f_cache[i].inode == attr.index
-			&& f_cache[i].dev == attr.dev)
+		if (f_cache[i].valid == CACHE_VALID &&
+			f_cache[i].inode == attr.index &&
+			f_cache[i].dev == attr.dev)
 		{
 			f_cache[i].valid = CACHE_DIRTY;
 			return 0;
