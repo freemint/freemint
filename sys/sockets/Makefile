@@ -77,14 +77,21 @@ $$(LIBINET4_DEP_$(1))::
 $(1): $(addprefix .compile_,$(1))/inet4.xdd
 
 $(addprefix .compile_,$(1))/inet4.xdd: $$(OBJS_$(1)) $$(LIBINET4_DEP_$(1)) $$(LIBKERN_DEP_$(1))
-	$(CC) $(LD) -o $$@ $$(MODEL_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	$(CC) $(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 	$(STRIP) $$@
 
+endef
+
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
 endef
 
 $(foreach TARGET,$(inet4targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
 $(foreach TARGET,$(inet4targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
 DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(inet4targets))) > /dev/null 2>&1 || :)
