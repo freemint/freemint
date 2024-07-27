@@ -431,6 +431,7 @@ struct options
 	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
 	unsigned long app_opts;
 	long half_screen;
+	short submenu_indicator; /* if != 0 use '>' for attached submenus */
 
 #if GENERATE_DIAGS
 	enum debug_item point[D_max];

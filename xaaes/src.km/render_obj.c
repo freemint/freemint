@@ -6438,11 +6438,15 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 				int len = strlen(t);
 				if (len > 0 && t[len - 1] != '\002')
 				{
+					char indicator[2];
+
 					if (len >= 2 && t[len - 2] == ' ')
 						r.g_x += (len - 2) * screen->c_max_w;
 					else
 						r.g_x += (len - 1) * screen->c_max_w;
-					ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, "\003", state, flags, -1, G_BLACK);
+					indicator[0] = wt->owner->options.submenu_indicator == 0 ? '\003' : '>';
+					indicator[1] = '\0';
+					ob_text(wt, v, NULL, ct, &r, &wt->r, NULL, -1, -1, -1, -1, 0,0,0, indicator, state, flags, -1, G_BLACK);
 				}
 			}
 		}
