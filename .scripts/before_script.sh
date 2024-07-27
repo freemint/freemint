@@ -47,7 +47,6 @@ sed -i -e "s/netusbeetargets = 02060 030 040 060 deb 000 prg prg_000 #col/netusb
 sed -i -e "s/unicorntargets = 02060 030 040 060 deb 000 col prg/unicorntargets = ${TEMP_CPU_TARGET}${PRG_TARGET}/;" ./sys/usb/src.km/ucd/unicorn/UNICORNDEFS
 sed -i -e "s/vttusbtargets = 030 deb 000 prg p30 pst mst/vttusbtargets = ${VTTUSB_TARGETS}/;" ./sys/usb/src.km/ucd/vttusb/VTTUSBDEFS
 sed -i -e "s/inet4targets = 02060 030 040 060 deb 000 col/inet4targets = ${TEMP_CPU_TARGET}/;" ./sys/sockets/INET4DEFS
-sed -i -e "s/inet4targets = 02060 030 040 060 deb 000 col/inet4targets = ${TEMP_CPU_TARGET}/;" ./sys/sockets/inet4/INET4DEFS
 sed -i -e "s/cryptotargets = 000 02060 030 040 060 col/cryptotargets = ${TEMP_CPU_TARGET}/;" ./tools/crypto/CRYPTODEFS
 sed -i -e "s/fdisktargets = 000 02060 030 040 060 col/fdisktargets = ${TEMP_CPU_TARGET}/;" ./tools/fdisk/FDISKDEFS
 sed -i -e "s/fsettertargets = 000 02060 030 040 060 col/fsettertargets = ${TEMP_CPU_TARGET}/;" ./tools/fsetter/FSETTERDEFS
