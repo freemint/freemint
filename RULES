@@ -18,12 +18,35 @@ else
 MODEL =
 endif
 
+#
+# mapping of CPU names to CFLAGS
+#
+MODEL_000 = -m68000
+MODEL_020 = -m68020
+MODEL_02060 = -m68020-60
+MODEL_030 = -m68030
+MODEL_040 = -m68040
+MODEL_v4e = -mcpu=5475
+
+#
+# mapping of TARGET names to CPU
+#
+CPU_deb = 02060
+CPU_000 = 000
+CPU_020 = 020
+CPU_02060 = 02060
+CPU_030 = 030
+CPU_040 = 040
+CPU_060 = 060
+CPU_col = v4e
+
+
 all: all-recursive all-here
 
 clean:: clean-recursive
 	rm -f *.o lib*.a *.tmp
 	rm -f core report nohup.out errlog
-	test "$(compile_all_dirs)" = "" || rm -f $(compile_all_dirs)/*.o $(compile_all_dirs)/lib*.a
+	test "$(compile_all_dirs)" = "" || rm -f $(addsuffix /*.o,$(compile_all_dirs)) $(addsuffix /lib*.a,$(compile_all_dirs))
 	test "$(GENFILES)" = "" || rm -rf $(GENFILES)
 
 bakclean:: bakclean-recursive
@@ -76,3 +99,21 @@ install-recursive uninstall-recursive dist-recursive strip-recursive::
 	  (cd $$subdir && $(MAKE) -r $$target) \
 	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
+
+define CC_TEMPLATE
+.compile_$(1)/$(2).o: $(2).c
+	@echo "$(CC) $(INCLUDES) $(DEFINITIONS) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -c $$< -o $$@"
+	$(CC) $(INCLUDES) $(DEFINITIONS) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(2).P -c $$< -o $$@
+
+-include .compile_$(1)/.deps/$(2).P
+
+endef
+
+define AS_TEMPLATE
+.compile_$(1)/$(2).o: $(2).S
+	@echo "$(CC) $(INCLUDES) $(DEFINITIONS) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -c $$< -o $$@"
+	$(CC) $(INCLUDES) $(DEFINITIONS) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(2).P -c $$< -o $$@
+
+-include .compile_$(1)/.deps/$(2).P
+
+endef

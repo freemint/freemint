@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(inet4),deb)
-TARGET = inet4.xdd
-CPU = 020-60
-INET4DEFS += -DDEV_DEBUG
-endif
+INET4DEFS_deb = -DDEV_DEBUG
 
-ifeq ($(inet4),000)
-TARGET = inet4.xdd
-CPU = 000
-INET4DEFS +=
-endif
+INET4DEFS_000 =
 
-ifeq ($(inet4),02060)
-TARGET = inet4.xdd
-CPU = 020-60
-INET4DEFS +=
-endif
+INET4DEFS_02060 =
 
-ifeq ($(inet4),030)
-TARGET = inet4.xdd
-CPU = 030
-INET4DEFS +=
-endif
+INET4DEFS_030 =
 
-ifeq ($(inet4),040)
-TARGET = inet4.xdd
-CPU = 040
-INET4DEFS +=
-endif
+INET4DEFS_040 =
 
-ifeq ($(inet4),060)
-TARGET = inet4.xdd
-CPU = 060
-INET4DEFS +=
-endif
+INET4DEFS_060 =
 
-ifeq ($(inet4),col)
-TARGET = inet4.xdd
-CPU  = v4e
-INET4DEFS += 
-endif
+INET4DEFS_col =
 
 #
 # all default targets
