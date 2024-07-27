@@ -11,7 +11,11 @@ subdir =
 
 default: help
 
-include ./EXT2DEFS
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+include $(srcdir)/EXT2DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -21,11 +25,14 @@ include $(top_srcdir)/PHONY
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_XFS__
+INCLUDES += -I$(top_srcdir)/../../sys
+
+WARN += -Wcast-qual
 
 # default definitions
-compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs) *.xfs
-SGENFILES =
+compile_all_dirs = $(addprefix .compile_,$(ext2targets))
+GENFILES = $(compile_all_dirs)
 
 
 help:
@@ -41,46 +48,48 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(addsuffix /ext2.xfs, $(addprefix .compile_,$(ext2targets)))
+
+STRIPFLAGS =
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(ext2targets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.xfs) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(ext2targets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(ext2targets):
-	$(MAKE) buildext2 ext2=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(ext2),)
+LD = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
 
-compile_dir = .compile_$(ext2)
-ext2target = _stmp_$(ext2)
-realtarget = $(ext2target)
+define TARGET_TEMPLATE
 
-$(ext2target): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
+LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(EXT2DEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o))
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+$(1): $(addprefix .compile_,$(1))/ext2.xfs
 
-else
+$(addprefix .compile_,$(1))/ext2.xfs: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
+	$(CC) $(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
-realtarget =
+endef
 
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+$(foreach TARGET,$(ext2targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(ext2targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(ext2targets))) > /dev/null 2>&1 || :)
 endif
-
-buildext2: $(realtarget)
