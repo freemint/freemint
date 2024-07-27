@@ -11,7 +11,11 @@ subdir = sockets
 
 default: help
 
-include ./INET4DEFS
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+include $(srcdir)/INET4DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -20,10 +24,12 @@ include $(top_srcdir)/PHONY
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_XDD__
+INCLUDES += -I$(top_srcdir)/../../sys
 
 # default definitions
-compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs) *.xdd
+compile_all_dirs = $(addprefix .compile_,$(inet4targets))
+GENFILES = $(compile_all_dirs)
 
 help:
 	@echo '#'
@@ -39,46 +45,47 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(addsuffix /inet4.xdd, $(addprefix .compile_,$(inet4targets)))
+
+STRIPFLAGS =
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(inet4targets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.xdd) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(inet4targets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(inet4targets): 
-	$(MAKE) buildinet4 inet4=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(inet4),)
+LD = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
-compile_dir = .compile_$(inet4)
-inet4target = inet4
-realtarget = $(inet4target)
+define TARGET_TEMPLATE
 
-$(inet4target): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
+LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(INET4DEFS_$(1))
+LIBINET4_DEP_$(1) = inet4/.compile_$(1)/libinet4.a
+LIBINET4_$(1) = -Linet4/.compile_$(1) -linet4
+LIBS_$(1) = $$(LIBINET4_$(1)) $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o))
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+$$(LIBINET4_DEP_$(1))::
+	$(MAKE) -C inet4 $(1)
 
-else
+$(1): $(addprefix .compile_,$(1))/inet4.xdd
 
-realtarget =
+$(addprefix .compile_,$(1))/inet4.xdd: $$(OBJS_$(1)) $$(LIBINET4_DEP_$(1)) $$(LIBKERN_DEP_$(1))
+	$(CC) $(LD) -o $$@ $$(MODEL_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	$(STRIP) $$@
 
+endef
+
+$(foreach TARGET,$(inet4targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(inet4targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(inet4targets))) > /dev/null 2>&1 || :)
 endif
-
-buildinet4: $(realtarget)
