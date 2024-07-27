@@ -320,6 +320,7 @@ static void configure(void)
 
 	default_options.clwtna = 0;
 	default_options.alt_shortcuts = 3;
+	default_options.submenu_indicator = 1;
 
 	C.Aes->options = default_options;
 	/* Parse the config file */
