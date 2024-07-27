@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(ext2),deb)
-TARGET = ext2.xfs
-CPU = 020-60
-EXT2DEFS += -DDEV_DEBUG
-endif
+EXT2DEFS_deb = -DDEV_DEBUG
 
-ifeq ($(ext2),000)
-TARGET = ext2.xfs
-CPU = 000
-EXT2DEFS +=
-endif
+EXT2DEFS_000 =
 
-ifeq ($(ext2),02060)
-TARGET = ext2.xfs
-CPU = 020-60
-EXT2DEFS +=
-endif
+EXT2DEFS_02060 =
 
-ifeq ($(ext2),030)
-TARGET = ext2.xfs
-CPU = 030
-EXT2DEFS +=
-endif
+EXT2DEFS_030 =
 
-ifeq ($(ext2),040)
-TARGET = ext2.xfs
-CPU = 040
-EXT2DEFS +=
-endif
+EXT2DEFS_040 =
 
-ifeq ($(ext2),060)
-TARGET = ext2.xfs
-CPU = 060
-EXT2DEFS +=
-endif
+EXT2DEFS_040 =
 
-ifeq ($(ext2),col)
-TARGET = ext2.xfs
-CPU  = v4e
-EXT2DEFS += 
-endif
+EXT2DEFS_col =
 
 #
 # all default targets
