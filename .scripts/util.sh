@@ -44,11 +44,12 @@ copy_modules() {
 # modules compatible with all m68k machines (except the FireBee...)
 copy_m68k_modules() {
 	local SYSDIR="$1"
+	local TARGET="$2"
 	mkdir -p "$SYSDIR"
 	cp "$SRC/sys/sockets/xif/asix.xif" "$SYSDIR/asix.xix"
 	cp "$SRC/sys/sockets/xif/picowifi.xif" "$SYSDIR/picowifi.xix"
 	cp "$SRC/sys/sockets/xif/plip.xif" "$SYSDIR"
-	cp "$SRC/sys/xdd/audio/audiodev.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/audio/.compile_$TARGET/audiodev.xdd" "$SYSDIR"
 	cp "$SRC/sys/xdd/flop-raw/flop_raw.xdd" "$SYSDIR"
 }
 

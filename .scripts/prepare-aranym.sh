@@ -47,7 +47,7 @@ copy_sysroot "$SYSROOT" "040" "$ROOT/mint"
 copy_guides "$GUIDESDIR"
 
 mkdir -p "$SYSROOT/bin"
-cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT/bin"
+cp "$SRC/sys/xdd/audio/.compile_040/actrl" "$SYSROOT/bin"
 
 ############
 # filesystem
