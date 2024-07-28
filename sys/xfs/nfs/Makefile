@@ -11,7 +11,7 @@ subdir = nfs
 
 default: help
 
-include ./NFSDEFS
+include $(srcdir)/NFSDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -20,10 +20,12 @@ include $(top_srcdir)/PHONY
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_XFS__
+INCLUDES = -I$(top_srcdir)
 
 # default definitions
-compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs) *.xfs
+compile_all_dirs = $(addprefix .compile_,$(nfstargets))
+GENFILES = $(compile_all_dirs)
 
 help:
 	@echo '#'
@@ -39,46 +41,48 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(addsuffix /nfs.xfs, $(addprefix .compile_,$(nfstargets)))
+
+STRIPFLAGS =
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(nfstargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.xfs) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(nfstargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(nfstargets):
-	$(MAKE) buildnfs nfs=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(nfs),)
+LD = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
 
-compile_dir = .compile_$(nfs)
-nfstarget = _stmp_$(nfs)
-realtarget = $(nfstarget)
+define TARGET_TEMPLATE
 
-$(nfstarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
+LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(NFSDEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o))
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+$(1): $(addprefix .compile_,$(1))/nfs.xfs
 
-else
+$(addprefix .compile_,$(1))/nfs.xfs: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
+	$(CC) $(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
-realtarget =
+endef
 
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+$(foreach TARGET,$(nfstargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(nfstargets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(nfstargets))) > /dev/null 2>&1 || :)
 endif
-
-buildnfs: $(realtarget)
