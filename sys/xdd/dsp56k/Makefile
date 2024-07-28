@@ -1,8 +1,6 @@
 #
 # Makefile for 
 #
-TARGET = dsp56k.xdd
-
 SHELL = /bin/sh
 SUBDIRS = 
 
@@ -12,30 +10,68 @@ subdir = dsp56k
 
 default: all
 
-CPU = 020-60
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+dsp56ktargets = 02060
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
-
-strip:
-	$(STRIP) $(TARGET)
+all-here: all-targets
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__
 
-LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
-LIBS = $(LIBKERN) -lgcc
-
 # default definitions
-GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
+compile_all_dirs = $(addprefix .compile_,$(dsp56ktargets))
+GENFILES = $(compile_all_dirs) *.xdd
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+ALL_TARGETS = $(addsuffix /dsp56k.xdd, $(addprefix .compile_,$(dsp56ktargets)))
 
+STRIPFLAGS =
+strip:
+	$(STRIP) $(ALL_TARGETS)
 
-include $(top_srcdir)/DEPENDENCIES
+all-targets: $(ALL_TARGETS)
+
+#
+# multi target stuff
+#
+
+LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
+
+define TARGET_TEMPLATE
+
+# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
+LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(DSP56KDEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o)) $(addprefix .compile_$(1)/,$(SOBJS:.S=.o))
+
+$(1): $(addprefix .compile_,$(1))/dsp56k.xdd
+
+$(addprefix .compile_,$(1))/dsp56k.xdd: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+
+endef
+
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+$(foreach TARGET,$(dsp56ktargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(dsp56ktargets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(dsp56ktargets))) > /dev/null 2>&1 || :)
+endif
