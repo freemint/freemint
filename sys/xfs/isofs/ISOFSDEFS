@@ -1,0 +1,24 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
+ISOFSDEFS_deb = -DDEV_DEBUG
+
+ISOFSDEFS_000 =
+
+ISOFSDEFS_02060 =
+
+ISOFSDEFS_030 =
+
+ISOFSDEFS_040 =
+
+ISOFSDEFS_040 =
+
+ISOFSDEFS_col =
+
+#
+# all default targets
+#
+isofstargets = 02060 030 040 060 deb 000 col
