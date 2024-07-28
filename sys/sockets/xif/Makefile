@@ -1,8 +1,7 @@
 #
-# Makefile for 
+# Makefile for most inet drivers
 #
-TARGET = 
-DRIVERS = rtl8012 rtl8012st rtl8012ct60 dial plip dummy de600 lance pamsdma biodma \
+DRIVERS = rtl8012 rtl8012st dial plip dummy de600 lance pamsdma biodma \
 	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix rtl8139 picowifi
 
 SHELL = /bin/sh
@@ -14,205 +13,163 @@ subdir = xif
 
 default: all
 
-CPU = 000
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: entry
+all-here: $(DRIVERS)
 
 strip:
 	$(STRIP) *.xif
 
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
-XIF_DEFINITIONS = 
-DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
-
-LD = $(CC) -mshort -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
-LIBS = $(LIBKERN) -lgcc
+DEFINITIONS = -D__KERNEL_XDD__
 
 # default definitions
 GENFILES = *.xif
-SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c rtl8012ct60.c main_020.c 
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c
 
 
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
 
-COMMON_OBJS = $(addsuffix .o, $(basename $(notdir $(COMMON_SRCS))))
-DIAL_OBJS = $(addsuffix .o, $(basename $(notdir $(DIAL_SRCS))))
-SLIP_OBJS = $(addsuffix .o, $(basename $(notdir $(SLIP_SRCS))))
-PLIP_OBJS = $(addsuffix .o, $(basename $(notdir $(PLIP_SRCS))))
-DUMMY_OBJS = $(addsuffix .o, $(basename $(notdir $(DUMMY_SRCS))))
-DE600_OBJS = $(addsuffix .o, $(basename $(notdir $(DE600_SRCS))))
-LANCE_OBJS = $(addsuffix .o, $(basename $(notdir $(LANCE_SRCS))))
-RIEBL_SPEC_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_SPEC_SRCS))))
-RIEBL_SPEC_FAST_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_SPEC_FAST_SRCS))))
-RIEBL_MST_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_MST_SRCS))))
-RIEBL_MST_FAST_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_MST_FAST_SRCS))))
-RIEBL_MSTE_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_MSTE_SRCS))))
-RIEBL_TT_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_TT_SRCS))))
-PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
-BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
-RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
-RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012ST_SRCS))))
-RTL8012CT60_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012CT60_SRCS))))
-RTL8139_OBJS = $(addsuffix .o, $(basename $(notdir rtl8139.c)))
-ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
-PICOWIFI_OBJS = $(addsuffix .o, $(basename $(notdir $(PICOWIFI_SRCS))))
+COMMON_OBJS = $(basename $(notdir $(COMMON_SRCS)))
+OBJS_dial = $(basename $(notdir $(DIAL_SRCS)))
+OBJS_slip = $(basename $(notdir $(SLIP_SRCS)))
+OBJS_plip = $(basename $(notdir $(PLIP_SRCS)))
+OBJS_dummy = $(basename $(notdir $(DUMMY_SRCS)))
+OBJS_de600 = $(basename $(notdir $(DE600_SRCS)))
+OBJS_lance = $(basename $(notdir $(LANCE_SRCS)))
+OBJS_rieblspc = $(basename $(notdir $(RIEBL_SPEC_SRCS)))
+OBJS_rieblspc_fast = $(basename $(notdir $(RIEBL_SPEC_FAST_SRCS)))
+OBJS_rieblmst = $(basename $(notdir $(RIEBL_MST_SRCS)))
+OBJS_rieblmst_fast = $(basename $(notdir $(RIEBL_MST_FAST_SRCS)))
+OBJS_rieblste = $(basename $(notdir $(RIEBL_MSTE_SRCS)))
+OBJS_riebltt = $(basename $(notdir $(RIEBL_TT_SRCS)))
+OBJS_pamsdma = $(basename $(notdir $(PAMSDMA_SRCS)))
+OBJS_biodma = $(basename $(notdir $(BIODMA_SRCS)))
+OBJS_rtl8012 = $(basename $(notdir $(RTL8012_SRCS)))
+OBJS_rtl8012st = $(basename $(notdir $(RTL8012ST_SRCS)))
+OBJS_rtl8139 = $(basename $(notdir $(RTL8139_SRCS)))
+OBJS_asix = $(basename $(notdir $(ASIX_SRCS)))
+OBJS_picowifi = $(basename $(notdir $(PICOWIFI_SRCS)))
 
-# entry point
-entry: $(DRIVERS)
-
-
-# generic driver target
-$(TARGET): $(XOBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(XOBJS) $(LIBS)
-
-
-asix:
-	$(MAKE) asix.xif \
-		"TARGET=asix.xif" \
-		"XOBJS=$(COMMON_OBJS) $(ASIX_OBJS)"
-
-picowifi:
-	$(MAKE) picowifi.xif \
-		"TARGET=picowifi.xif" \
-		"XOBJS=$(COMMON_OBJS) $(PICOWIFI_OBJS)"
-
-dial:
-	$(MAKE) dial.xif \
-		"TARGET=dial.xif" \
-		"XOBJS=$(COMMON_OBJS) $(DIAL_OBJS)"
-
-slip:
-	$(MAKE) slip.xif \
-		"TARGET=slip.xif" \
-		"XOBJS=$(COMMON_OBJS) $(SLIP_OBJS)"
-
-plip:
-	$(MAKE) plip.xif \
-		"TARGET=plip.xif" \
-		"XOBJS=$(COMMON_OBJS) $(PLIP_OBJS)"
-
-de600:
-	$(MAKE) de600.xif \
-		"TARGET=de600.xif" \
-		"XOBJS=$(COMMON_OBJS) $(DE600_OBJS)"
-
-dummy:
-	$(MAKE) dummy.xif \
-		"TARGET=dummy.xif" \
-		"XOBJS=$(COMMON_OBJS) $(DUMMY_OBJS)"
-
-lance:
-	$(MAKE) lance.xif \
-		"TARGET=lance.xif" \
-		"XOBJS=$(COMMON_OBJS) $(LANCE_OBJS)" \
-		"XIF_DEFINITIONS=-DPAMs_INTERN"
-
-rieblspc:
-	$(MAKE) rieblspc.xif \
-		"TARGET=rieblspc.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_OBJS)" \
-		"XIF_DEFINITIONS=-DSPECIAL -DHACK"
+XIF_DEFS_lance = -DPAMs_INTERN
+XIF_DEFS_rieblspc = -DSPECIAL -DHACK
+XIF_DEFS_rieblspc_fast = -DSPECIAL
+XIF_DEFS_rieblmst = -DMEGA_ST -DHACK
+XIF_LDFLAGS_rieblmst = --msuper-memory
+XIF_DEFS_rieblmst_fast = -DMEGA_ST
+XIF_DEFS_rieblste = -DMEGA_STE
+XIF_DEFS_riebltt = -DATARI_TT
+#biodma: remove the XCPPFLAGS line if you want to speed up things a little bit.
+#        Please notice that standard mode is more reliable especially on faster
+#        machines!
+XIF_DEFS_biodma = -DSTANDARD_SEND_FIRST
+XIF_DEFS_rtl8012st = -DNO_DELAY
 
 rieblspc.c:
 	ln -s lance.c $@
 
-rieblspc_fast:
-	$(MAKE) rieblspc_fast.xif \
-		"TARGET=rieblspc_fast.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_FAST_OBJS)" \
-		"XIF_DEFINITIONS=-DSPECIAL"
-
 rieblspc_fast.c:
 	ln -s lance.c $@
-
-rieblmst:
-	$(MAKE) rieblmst.xif \
-		"TARGET=rieblmst.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RIEBL_MST_OBJS)" \
-		"XIF_DEFINITIONS=-DMEGA_ST -DHACK" \
-		"PRGFLAGS=--msuper-memory"
 
 rieblmst.c:
 	ln -s lance.c $@
 
-rieblmst_fast:
-	$(MAKE) rieblmst_fast.xif \
-		"TARGET=rieblmst_fast.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RIEBL_MST_FAST_OBJS)" \
-		"XIF_DEFINITIONS=-DMEGA_ST"
-
 rieblmst_fast.c:
 	ln -s lance.c $@
-
-rieblste:
-	$(MAKE) rieblste.xif \
-		"TARGET=rieblste.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RIEBL_MSTE_OBJS)" \
-		"XIF_DEFINITIONS=-DMEGA_STE"
 
 rieblste.c:
 	ln -s lance.c $@
 
-riebltt:
-	$(MAKE) riebltt.xif \
-		"TARGET=riebltt.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RIEBL_TT_OBJS)" \
-		"XIF_DEFINITIONS=-DATARI_TT"
-
 riebltt.c:
 	ln -s lance.c $@
-
-pamsdma:
-	$(MAKE) pamsdma.xif \
-		"TARGET=pamsdma.xif" \
-		"XOBJS=$(COMMON_OBJS) $(PAMSDMA_OBJS)"
-
-#biodma: remove the XCPPFLAGS line if you want to speed up things a little bit.
-#        Please notice that standard mode is more reliable especially on faster
-#        machines!
-biodma:
-	$(MAKE) biodma.xif \
-		"TARGET=biodma.xif" \
-		"XOBJS=$(COMMON_OBJS) $(BIODMA_OBJS)" \
-		"XIF_DEFINITIONS=-DSTANDARD_SEND_FIRST"
-
-rtl8012:
-	$(MAKE) rtl8012.xif \
-		"TARGET=rtl8012.xif" \
-		"XOBJS=main_020.o $(RTL8012_OBJS)" \
-		CPU=020-60
-main_020.o: main_020.c
-
-rtl8012st:
-	$(MAKE) rtl8012st.xif \
-		"TARGET=rtl8012st.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)" \
-		"XIF_DEFINITIONS=-DNO_DELAY"
 
 rtl8012st.c:
 	ln -s rtl8012.c $@
 
-rtl8012ct60:
-	$(MAKE) rtl8012ct60.xif \
-		"TARGET=rtl8012ct60.xif" \
-		"XOBJS=main_020.o $(RTL8012CT60_OBJS)" \
-		CPU=060
 
-rtl8012ct60.c:
-	ln -s rtl8012.c $@
 
-rtl8139:
-	$(MAKE) rtl8139.xif \
-		"TARGET=rtl8139.xif" \
-		"XOBJS=main_020.o $(RTL8139_OBJS)" \
-		CPU=060
+#
+# multi target stuff
+#
 
-main_020.c: main.c
-	ln -s $< $@
+LD = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
-include $(top_srcdir)/DEPENDENCIES
+define LIBKERN_TEMPLATE
+
+COMMON_OBJS_$(1) = $(addsuffix _$(1).o,$(COMMON_OBJS))
+
+$(top_srcdir)/libkern/libkern$(subst 02060,020-60,$(1)).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(subst 02060,020-60,$(1))" libkern$(subst 02060,020-60,$(1)).a
+endef
+
+define TARGET_TEMPLATE
+
+# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
+LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(1))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(XDDDEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(2)_$(1) = $(addsuffix _$(1).o, $(OBJS_$(2)))
+
+$(2):: $(2)_$(1).xif
+
+$(2)_$(1).xif: $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBKERN_DEP_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBS_$(1))
+
+endef
+
+define CC_TEMPLATE
+$(2)_$(1).o: $(2).c
+	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $$(XIF_DEFS_$(2)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(2)_$(1).P -c $$< -o $$@
+
+-include .deps/$(2)_$(1).P
+
+endef
+
+define AS_TEMPLATE
+$(2)_$(1).o: $(2).S
+	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $$(XIF_DEFS_$(2)) $$(XIF_LDFLAGS_$(2)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(2)_$(1).P -c $$< -o $$@
+
+-include .deps/$(2)_$(1).P
+
+endef
+
+kerncputargets = $(subst 020-60, 02060, $(cputargets))
+
+$(foreach TARGET,$(kerncputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(kerncputargets),$(foreach OBJ,$(sort $(basename $(filter %.c,$(notdir $(COBJS))))),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(kerncputargets),$(foreach OBJ,$(sort $(basename $(filter %.S,$(notdir $(COBJS))))),$(eval $(call AS_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
+$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
+$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),slip)))
+$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
+$(foreach TARGET,$(filter-out v4e,$(kerncputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),picowifi)))
+$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dummy)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),de600)))
+$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc_fast)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblmst)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblmst_fast)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblste)))
+$(foreach TARGET,02060 030 040 060,$(eval $(call TARGET_TEMPLATE,$(TARGET),riebltt)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),pamsdma)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),biodma)))
+$(foreach TARGET,02060 030 040 060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8012)))
+$(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8012st)))
+$(foreach TARGET,060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8139)))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p .deps) > /dev/null 2>&1 || :)
+endif

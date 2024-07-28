@@ -46,9 +46,9 @@ copy_m68k_modules() {
 	local SYSDIR="$1"
 	local TARGET="$2"
 	mkdir -p "$SYSDIR"
-	cp "$SRC/sys/sockets/xif/asix.xif" "$SYSDIR/asix.xix"
-	cp "$SRC/sys/sockets/xif/picowifi.xif" "$SYSDIR/picowifi.xix"
-	cp "$SRC/sys/sockets/xif/plip.xif" "$SYSDIR"
+	cp "$SRC/sys/sockets/xif/asix_${TARGET}.xif" "$SYSDIR/asix.xix"
+	cp "$SRC/sys/sockets/xif/picowifi_${TARGET}.xif" "$SYSDIR/picowifi.xix"
+	cp "$SRC/sys/sockets/xif/plip_${TARGET}.xif" "$SYSDIR/plip.xif"
 	cp "$SRC/sys/xdd/audio/.compile_$TARGET/audiodev.xdd" "$SYSDIR"
 	cp "$SRC/sys/xdd/flop-raw/.compile_$TARGET/flop_raw.xdd" "$SYSDIR"
 }
@@ -58,52 +58,53 @@ copy_st_modules() {
 	mkdir -p "$MCHDIR"
 	# TODO: perhaps these four are compatible also with other machines
 	#       but they are awfully old and obsolete so let's keep them here
-	cp "$SRC/sys/sockets/xif/biodma.xif" "$MCHDIR/biodma.xix"
-	cp "$SRC/sys/sockets/xif/de600.xif" "$MCHDIR/de600.xix"
-	cp "$SRC/sys/sockets/xif/dial.xif" "$MCHDIR/dial.xix"
-	cp "$SRC/sys/sockets/xif/pamsdma.xif" "$MCHDIR/pamsdma.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/biodma_000.xif" "$MCHDIR/biodma_000.xix"
+	cp "$SRC/sys/sockets/xif/de600_000.xif" "$MCHDIR/de600.xix"
+	cp "$SRC/sys/sockets/xif/dial_000.xif" "$MCHDIR/dial.xix"
+	cp "$SRC/sys/sockets/xif/pamsdma_000.xif" "$MCHDIR/pamsdma.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_megast_modules() {
 	local MCHDIR="$1/megast"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/lance.xif" "$MCHDIR/lance.xix"
-	cp "$SRC/sys/sockets/xif/rieblmst.xif" "$MCHDIR/riebl.xix"
-	cp "$SRC/sys/sockets/xif/rieblmst_fast.xif" "$MCHDIR/riebl_fast.xix"
-	cp "$SRC/sys/sockets/xif/rieblspc.xif" "$MCHDIR/rieblspc.xix"
-	cp "$SRC/sys/sockets/xif/rieblspc_fast.xif" "$MCHDIR/riebls_fast.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/lance_000.xif" "$MCHDIR/lance.xix"
+	cp "$SRC/sys/sockets/xif/rieblmst_000.xif" "$MCHDIR/riebl.xix"
+	cp "$SRC/sys/sockets/xif/rieblmst_fast_000.xif" "$MCHDIR/riebl_fast.xix"
+	cp "$SRC/sys/sockets/xif/rieblspc_000.xif" "$MCHDIR/rieblspc.xix"
+	cp "$SRC/sys/sockets/xif/rieblspc_fast_000.xif" "$MCHDIR/riebls_fast.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_ste_modules() {
 	local MCHDIR="$1/ste"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_megaste_modules() {
 	local MCHDIR="$1/megaste"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/rieblste.xif" "$MCHDIR/rieblste.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/rieblste_000.xif" "$MCHDIR/rieblste.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/.compile_000/scc.xdd" "$MCHDIR"
 }
 copy_tt_modules() {
 	local MCHDIR="$1/tt"
+	local TARGET="$2"
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/daynaport/scsilink.xif" "$MCHDIR/scsilink.xix"
-	cp "$SRC/sys/sockets/xif/lance.xif" "$MCHDIR/lance.xix"
-	cp "$SRC/sys/sockets/xif/riebltt.xif" "$MCHDIR/riebltt.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/xdd/mfp/.compile_030/mfp.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/scc/.compile_030/scc.xdd" "$MCHDIR"
+	cp "$SRC/sys/sockets/xif/lance_${TARGET}.xif" "$MCHDIR/lance.xix"
+	cp "$SRC/sys/sockets/xif/riebltt_${TARGET}.xif" "$MCHDIR/riebltt.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012_${TARGET}.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/xdd/mfp/.compile_${TARGET}/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/scc/.compile_${TARGET}/scc.xdd" "$MCHDIR"
 }
 copy_falcon_modules() {
 	local MCHDIR="$1/falcon"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/rtl8012.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012_02060.xif" "$MCHDIR/rtl8012.xix"
 	cp "$SRC/sys/sockets/xif/daynaport/scsilink.xif" "$MCHDIR/scsilink.xix"
 	cp "$SRC/sys/xdd/dsp56k/.compile_02060/dsp56k.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/.compile_02060/scc.xdd" "$MCHDIR"
@@ -128,8 +129,8 @@ copy_ct60_modules() {
 
 	# we don't need plain st/falcon version
 	rm "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012ct60.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/sockets/xif/rtl8139.xif" "$MCHDIR/rtl8139.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012_060.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/sockets/xif/rtl8139_060.xif" "$MCHDIR/rtl8139.xix"
 	cp "$SRC/sys/sockets/xif/ethernat/ethernat.xif" "$MCHDIR/ethernat.xix"
 	cp "$SRC/sys/sockets/xif/svethlana/svethlan.xif" "$MCHDIR/svethlan.xix"
 }

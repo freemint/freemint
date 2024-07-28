@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-mfptargets = 000 030 mil
+mfptargets = 000 030 02060 040 060 mil
 
 MFPDEFS_mil = -DMILAN
 
