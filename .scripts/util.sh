@@ -38,6 +38,7 @@ copy_modules() {
 	cp "$SRC/sys/xfs/ext2fs/.compile_$TARGET/ext2.xfs" "$MINTDIR"
 	cp "$SRC/sys/xfs/minixfs/.compile_$TARGET/minix.xfs" "$MINTDIR/minix.xfx"
 	cp "$SRC/sys/xfs/nfs/.compile_$TARGET/nfs.xfs" "$MINTDIR"
+	cp "$SRC/sys/xfs/isofs/.compile_$TARGET/isofs.xfs" "$MINTDIR/isofs.xfx"
 }
 
 # modules compatible with all m68k machines (except the FireBee...)
