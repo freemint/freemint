@@ -1,5 +1,5 @@
 #
-# Makefile for scc.xddd
+# Makefile for scc.xdd
 #
 SHELL = /bin/sh
 SUBDIRS = 
