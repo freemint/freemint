@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(nfs),deb)
-TARGET = nfs.xfs
-CPU = 020-60
-NFSDEFS += -DDEV_DEBUG
-endif
+NFSDEFS_deb = -DDEV_DEBUG
 
-ifeq ($(nfs),000)
-TARGET = nfs.xfs
-CPU = 000
-NFSDEFS +=
-endif
+NFSDEFS_000 =
 
-ifeq ($(nfs),02060)
-TARGET = nfs.xfs
-CPU = 020-60
-NFSDEFS +=
-endif
+NFSDEFS_02060 =
 
-ifeq ($(nfs),030)
-TARGET = nfs.xfs
-CPU = 030
-NFSDEFS +=
-endif
+NFSDEFS_030 =
 
-ifeq ($(nfs),040)
-TARGET = nfs.xfs
-CPU = 040
-NFSDEFS +=
-endif
+NFSDEFS_040 =
 
-ifeq ($(nfs),060)
-TARGET = nfs.xfs
-CPU = 060
-NFSDEFS +=
-endif
+NFSDEFS_060 =
 
-ifeq ($(nfs),col)
-TARGET = nfs.xfs
-CPU  = v4e
-NFSDEFS += 
-endif
+NFSDEFS_col =
 
 #
 # all default targets
