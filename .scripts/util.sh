@@ -63,7 +63,7 @@ copy_st_modules() {
 	cp "$SRC/sys/sockets/xif/dial.xif" "$MCHDIR/dial.xix"
 	cp "$SRC/sys/sockets/xif/pamsdma.xif" "$MCHDIR/pamsdma.xix"
 	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
-	cp "$SRC/sys/xdd/mfp/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_megast_modules() {
 	local MCHDIR="$1/megast"
@@ -74,20 +74,20 @@ copy_megast_modules() {
 	cp "$SRC/sys/sockets/xif/rieblspc.xif" "$MCHDIR/rieblspc.xix"
 	cp "$SRC/sys/sockets/xif/rieblspc_fast.xif" "$MCHDIR/riebls_fast.xix"
 	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
-	cp "$SRC/sys/xdd/mfp/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_ste_modules() {
 	local MCHDIR="$1/ste"
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
-	cp "$SRC/sys/xdd/mfp/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_megaste_modules() {
 	local MCHDIR="$1/megaste"
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/rieblste.xif" "$MCHDIR/rieblste.xix"
 	cp "$SRC/sys/sockets/xif/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
-	cp "$SRC/sys/xdd/mfp/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/scc.xdd" "$MCHDIR"
 }
 copy_tt_modules() {
@@ -97,7 +97,7 @@ copy_tt_modules() {
 	cp "$SRC/sys/sockets/xif/lance.xif" "$MCHDIR/lance.xix"
 	cp "$SRC/sys/sockets/xif/riebltt.xif" "$MCHDIR/riebltt.xix"
 	cp "$SRC/sys/sockets/xif/rtl8012.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/xdd/mfp/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_030/mfp.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/scc.xdd" "$MCHDIR"
 }
 copy_falcon_modules() {
@@ -112,7 +112,7 @@ copy_milan_modules() {
 	local MCHDIR="$1/milan"
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/xdd/uart/uart.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/mfp/mfp_mil.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_mil/mfp.xdd" "$MCHDIR"
 }
 copy_hades_modules() {
 	local MCHDIR="$1/hades"
