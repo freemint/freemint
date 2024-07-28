@@ -105,7 +105,7 @@ copy_falcon_modules() {
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/rtl8012.xif" "$MCHDIR/rtl8012.xix"
 	cp "$SRC/sys/sockets/xif/daynaport/scsilink.xif" "$MCHDIR/scsilink.xix"
-	cp "$SRC/sys/xdd/dsp56k/dsp56k.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/dsp56k/.compile_02060/dsp56k.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/scc.xdd" "$MCHDIR"
 }
 copy_milan_modules() {
