@@ -35,7 +35,7 @@ copy_modules "$MINTDIR" "$CPU_TARGET"
 # mchdir: st, ste, megaste, tt, falcon, milan, hades, ct60, firebee, aranym
 if [ "$CPU_TARGET" != "col" ]
 then
-	copy_m68k_modules "$MINTDIR"
+	copy_m68k_modules "$MINTDIR" "$CPU_TARGET"
 	if [ "$CPU_TARGET" = "000" ]
 	then
 		copy_st_modules "$MINTDIR"
@@ -120,7 +120,7 @@ copy_guides "$GUIDESDIR"
 mkdir -p "$SYSROOT/bin"
 if [ "$CPU_TARGET" != "col" ]
 then
-	cp "$SRC/sys/xdd/audio/actrl" "$SYSROOT/bin/actrl"
+	cp "$SRC/sys/xdd/audio/.compile_${CPU_TARGET}/actrl" "$SYSROOT/bin/actrl"
 fi
 
 if [ -n "${VERSIONED+x}" ]
