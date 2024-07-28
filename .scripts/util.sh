@@ -111,7 +111,7 @@ copy_falcon_modules() {
 copy_milan_modules() {
 	local MCHDIR="$1/milan"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/xdd/uart/uart.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/uart/.compile_mil/uart.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/mfp/.compile_mil/mfp.xdd" "$MCHDIR"
 }
 copy_hades_modules() {
