@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(minix),deb)
-TARGET = minix.xfs
-CPU = 020-60
-MINIXDEFS += -DDEV_DEBUG
-endif
+MINIXDEFS_deb = -DDEV_DEBUG
 
-ifeq ($(minix),000)
-TARGET = minix.xfs
-CPU = 000
-MINIXDEFS +=
-endif
+MINIXDEFS_000 =
 
-ifeq ($(minix),02060)
-TARGET = minix.xfs
-CPU = 020-60
-MINIXDEFS +=
-endif
+MINIXDEFS_02060 =
 
-ifeq ($(minix),030)
-TARGET = minix.xfs
-CPU = 030
-MINIXDEFS +=
-endif
+MINIXDEFS_030 =
 
-ifeq ($(minix),040)
-TARGET = minix.xfs
-CPU = 040
-MINIXDEFS +=
-endif
+MINIXDEFS_040 =
 
-ifeq ($(minix),060)
-TARGET = minix.xfs
-CPU = 060
-MINIXDEFS +=
-endif
+MINIXDEFS_060 =
 
-ifeq ($(minix),col)
-TARGET = minix.xfs
-CPU  = v4e
-MINIXDEFS += 
-endif
+MINIXDEFS_col =
 
 #
 # all default targets
