@@ -143,7 +143,8 @@ copy_aranym_modules() {
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/nfeth/nfeth.xif" "$MCHDIR"
 	cp "$SRC/sys/xdd/nfstderr/nfstderr.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/nfexec/nfexec.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/nfexec/.compile_040/nfexec.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/nfcdrom/.compile_040/nfcdrom.xdd" "$MCHDIR/nfcdrom.xdx"
 	cp "$SRC/sys/xfs/aranym/aranym.xfs" "$MCHDIR"
 	# not really needed
 	cp "$SRC/sys/xfs/hostfs/hostfs.xfs" "$MCHDIR/hostfs.xfx"
