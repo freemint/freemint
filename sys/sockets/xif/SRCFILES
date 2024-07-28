@@ -32,6 +32,7 @@ BIODMA_SRCS = biodma.c dmaasm.S
 RTL8012_SRCS = rtl8012.c rtl8012_vblint.S
 RTL8012ST_SRCS = rtl8012st.c rtl8012_vblint.S
 RTL8012CT60_SRCS = rtl8012ct60.c rtl8012_vblint.S
+RTL8139_SRCS = rtl8139.c
 ASIX_SRCS = asix.c
 PICOWIFI_SRCS = picowifi.c
 
@@ -54,6 +55,7 @@ COBJS = \
 	$(RTL8012_SRCS) \
 	$(RTL8012ST_SRCS) \
 	$(RTL8012CT60_SRCS) \
+	$(RTL8139_SRCS) \
 	$(ASIX_SRCS) \
 	$(PICOWIFI_SRCS)
 
