@@ -1,7 +1,6 @@
 #
 # Makefile for xconout2
 #
-
 SHELL = /bin/sh
 SUBDIRS = 
 
@@ -11,7 +10,11 @@ subdir = xconout2
 
 default: help
 
-include ./XCONOUT2DEFS
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+include $(srcdir)/XCONOUT2DEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -20,9 +23,11 @@ include $(top_srcdir)/PHONY
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_XDD__
+INCLUDES = -I$(top_srcdir)
 
 # default definitions
-compile_all_dirs = .compile_*
+compile_all_dirs = $(addprefix .compile_,$(xconout2targets))
 GENFILES = $(compile_all_dirs) *.xdd
 
 help:
@@ -39,46 +44,51 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+
+ALL_TARGETS = $(addsuffix /xconout2.xdd, $(addprefix .compile_,$(xconout2targets)))
+
+STRIPFLAGS =
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(xconout2targets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.xdd) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(xconout2targets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(xconout2targets): 
-	$(MAKE) buildxconout2 xconout2=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(xconout2),)
+LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
 
-compile_dir = .compile_$(xconout2)
-xconout2target = _stmp_$(xconout2)
-realtarget = $(xconout2target)
+define TARGET_TEMPLATE
 
-$(xconout2target): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
+LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(XDDDEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o)) $(addprefix .compile_$(1)/,$(SOBJS:.S=.o))
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+$(1): $(addprefix .compile_,$(1))/xconout2.xdd
 
-else
+$(addprefix .compile_,$(1))/xconout2.xdd: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
-realtarget =
+endef
 
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+$(foreach TARGET,$(xconout2targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(xconout2targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(xconout2targets),$(foreach OBJ,$(SOBJS:.S=),$(eval $(call AS_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(xconout2targets))) > /dev/null 2>&1 || :)
 endif
-
-buildxconout2: $(realtarget)

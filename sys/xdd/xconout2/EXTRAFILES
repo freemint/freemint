@@ -1,4 +1,4 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-SRCFILES += BINFILES EXTRAFILES MISCFILES Makefile Makefile.objs SRCFILES XCONOUT2DEFS
+SRCFILES += BINFILES EXTRAFILES MISCFILES Makefile SRCFILES XCONOUT2DEFS

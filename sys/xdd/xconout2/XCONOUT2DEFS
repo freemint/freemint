@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(xconout2),deb)
-TARGET = xconout2.xdd
-CPU = 020-60
-XCONOUT2DEFS += -DDEV_DEBUG
-endif
+XDDDEFS_deb = -DDEV_DEBUG
 
-ifeq ($(xconout2),000)
-TARGET = xconout2.xdd
-CPU = 000
-XCONOUT2DEFS +=
-endif
+XDDDEFS_000 =
 
-ifeq ($(xconout2),02060)
-TARGET = xconout2.xdd
-CPU = 020-60
-XCONOUT2DEFS +=
-endif
+XDDDEFS_02060 =
 
-ifeq ($(xconout2),030)
-TARGET = xconout2.xdd
-CPU = 030
-XCONOUT2DEFS +=
-endif
+XDDDEFS_030 =
 
-ifeq ($(xconout2),040)
-TARGET = xconout2.xdd
-CPU = 040
-XCONOUT2DEFS +=
-endif
+XDDDEFS_040 =
 
-ifeq ($(xconout2),060)
-TARGET = xconout2.xdd
-CPU = 060
-XCONOUT2DEFS +=
-endif
+XDDDEFS_060 =
 
-ifeq ($(xconout2),col)
-TARGET = xconout2.xdd
-CPU  = v4e
-XCONOUT2DEFS += 
-endif
+XDDDEFS_col =
 
 #
 # all default targets
