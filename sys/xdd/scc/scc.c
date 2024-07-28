@@ -1611,7 +1611,7 @@ static void scc_special (void)
 	);
 	
 	regs = iovar->regs;
-	DEBUG (("scc_special: %lx", regs));
+	DEBUG (("scc_special: %lx", (unsigned long)regs));
 	
 	
 	ZS_READ (regs, RR1);
@@ -1775,7 +1775,7 @@ check_ioevent (PROC *p, long arg)
 		if (iorec_used (&iovar->output) < iovar->output.low_water
 			|| !iorec_empty (&iovar->input))
 		{
-			DEBUG (("scc.xdd: check_ioevent: waking I/O wait (%lu)", iovar->iosleepers));
+			DEBUG (("scc.xdd: check_ioevent: waking I/O wait (%lu)", (unsigned long)iovar->iosleepers));
 			wake (IO_Q, (long) &iovar->tty.state);
 		}
 	}
@@ -1821,7 +1821,7 @@ soft_cdchange (PROC *p, long arg)
 			/* let reads and writes return */
 			wake (IO_Q, (long) &iovar->tty.state);
 			
-			DEBUG (("TS_BLIND set, lost carrier (p = %lx)", p));
+			DEBUG (("TS_BLIND set, lost carrier (p = %lx)", (unsigned long)p));
 		}
 		
 		return;
@@ -2641,7 +2641,7 @@ scc_open (FILEPTR *f)
 	{
 		/* first open */
 		
-		DEBUG (("scc_open [%i]: first open, %lx (%x, %i)", f->fc.aux, f, f->flags, f->links));
+		DEBUG (("scc_open [%i]: first open, %lx (%x, %i)", f->fc.aux, (unsigned long)f, f->flags, f->links));
 		
 		if (LANDEV (iovar))
 		{
@@ -2679,13 +2679,13 @@ scc_open (FILEPTR *f)
 	}
 	else
 	{
-		DEBUG (("scc_open [%i]: next open, %lx (%x, %i)", f->fc.aux, f, f->flags, f->links));
+		DEBUG (("scc_open [%i]: next open, %lx (%x, %i)", f->fc.aux, (unsigned long)f, f->flags, f->links));
 		{
 			FILEPTR *t = iovar->open;
 			
 			while (t)
 			{
-				DEBUG (("  chain t = 0x%lx, t->next = 0x%lx", t, t->next));
+				DEBUG (("  chain t = 0x%lx, t->next = 0x%lx", (unsigned long)t, (unsigned long)t->next));
 				DEBUG (("    links = %i, flags = 0x%x", t->links, t->flags));
 				
 				t = t->next;
@@ -2697,17 +2697,17 @@ scc_open (FILEPTR *f)
 # if DEV_DEBUG > 0
 			FILEPTR *t = iovar->open;
 			
-			DEBUG (("f = 0x%lx, f->next = 0x%lx", f, f->next));
+			DEBUG (("f = 0x%lx, f->next = 0x%lx", (unsigned long)f, (unsigned long)f->next));
 			DEBUG (("  links = %i, flags = 0x%x", f->links, f->flags));
-			DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", f->pos, f->devinfo, f->dev));
-			DEBUG (("  fc.index = %li, fc.dev = 0x%lx, fc.aux = %i", f->fc.index, f->fc.dev, f->fc.aux));
+			DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", f->pos, f->devinfo, (unsigned long)f->dev));
+			DEBUG (("  fc.index = %li, fc.dev = 0x%x, fc.aux = %i", f->fc.index, f->fc.dev, f->fc.aux));
 			
 			while (t)
 			{
-				DEBUG (("chain t = 0x%lx, t->next = 0x%lx", t, t->next));
+				DEBUG (("chain t = 0x%lx, t->next = 0x%lx", (unsigned long)t, (unsigned long)t->next));
 				DEBUG (("  links = %i, flags = 0x%x", t->links, t->flags));
-				DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", t->pos, t->devinfo, t->dev));
-				DEBUG (("  fc.index = %li, fc.dev = 0x%lx, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
+				DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", t->pos, t->devinfo, (unsigned long)t->dev));
+				DEBUG (("  fc.index = %li, fc.dev = 0x%x, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
 				
 				t = t->next;
 			}
@@ -2727,7 +2727,7 @@ scc_open (FILEPTR *f)
 		/* force nonblocking mode on HSMODEM devices */
 		f->flags |= O_NDELAY;
 	
-	DEBUG (("scc_open: return E_OK (added %lx)", f));
+	DEBUG (("scc_open: return E_OK (added %lx)", (unsigned long)f));
 	return E_OK;
 }
 
@@ -2736,7 +2736,7 @@ scc_close (FILEPTR *f, int pid)
 {
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	
-	DEBUG (("scc_close [%i]: enter for %lx", f->fc.aux, f));
+	DEBUG (("scc_close [%i]: enter for %lx", f->fc.aux, (unsigned long)f));
 	
 	if ((f->flags & O_LOCK)
 	    && ((iovar->lockpid == pid) || (f->links <= 0)))
@@ -2755,7 +2755,7 @@ scc_close (FILEPTR *f, int pid)
 		register FILEPTR **temp;
 		register long flag = 1;
 		
-		DEBUG (("scc_close: freeing FILEPTR %lx", f));
+		DEBUG (("scc_close: freeing FILEPTR %lx", (unsigned long)f));
 		
 		/* remove the FILEPTR from the linked list */
 		temp = &iovar->open;
@@ -2819,7 +2819,7 @@ scc_write (FILEPTR *f, const char *buf, long bytes)
 	IOREC *iorec = &iovar->output;
 	long done = 0;
 	
-	DEBUG (("scc_write [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("scc_write [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	/* copy as much as possible */
 	while ((bytes > 0) && iorec_put (iorec, *buf))
@@ -2850,7 +2850,7 @@ scc_read (FILEPTR *f, char *buf, long bytes)
 	IOREC *iorec = &iovar->input;
 	long done = 0;
 	
-	DEBUG (("scc_read [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("scc_read [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	/* copy as much as possible */
 	while ((bytes > 0) && !iorec_empty (iorec))
@@ -2893,7 +2893,7 @@ scc_writeb (FILEPTR *f, const char *buf, long bytes)
 	int ndelay = f->flags & O_NDELAY;
 	long done = 0;
 	
-	DEBUG (("scc_writeb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("scc_writeb [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	if (bytes)
 	do {
@@ -2961,7 +2961,7 @@ scc_readb (FILEPTR *f, char *buf, long bytes)
 	int ndelay = (f->flags & O_NDELAY) || iovar->tty.vtime /* ??? */;
 	long done = 0;
 	
-	DEBUG (("scc_readb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("scc_readb [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	if (!bytes)
 		/* nothing to do... */
@@ -3089,7 +3089,7 @@ scc_twrite (FILEPTR *f, const char *buf, long bytes)
 	long done = 0;
 	const long *r = (const long *) buf;
 	
-	DEBUG (("scc_twrite [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("scc_twrite [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	if (bytes)
 	do {
@@ -3133,7 +3133,7 @@ scc_tread (FILEPTR *f, char *buf, long bytes)
 	long done = 0;
 	long *r = (long *) buf;
 	
-	DEBUG (("scc_tread [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("scc_tread [%i]: enter (%lx, %ld)", f->fc.aux, (unsigned long)buf, bytes));
 	
 	if (bytes)
 	do {
@@ -3183,7 +3183,7 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	long r = E_OK;
 	
-	DEBUG (("scc_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), buf));
+	DEBUG (("scc_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), (unsigned long)buf));
 	
 	switch (mode)
 	{
@@ -3278,14 +3278,14 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case TIOCGFLAGS:
 		{
-			DEBUG (("scc_ioctl(TIOCGFLAGS) [%lx]", (ushort *) buf));
+			DEBUG (("scc_ioctl(TIOCGFLAGS) [%lx]", (unsigned long)buf));
 			
 			*(ushort *) buf = ctl_TIOCGFLAGS (iovar);
 			break;
 		}
 		case TIOCSFLAGS:
 		{
-			DEBUG (("scc_ioctl(TIOCSFLAGS) -> %lx", *(ushort *) buf));
+			DEBUG (("scc_ioctl(TIOCSFLAGS) -> %x", *(ushort *) buf));
 			
 			r = ctl_TIOCSFLAGS (iovar, *(ushort *) buf);
 			break;
@@ -3598,13 +3598,13 @@ scc_select (FILEPTR *f, long proc, int mode)
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	struct tty *tty = (struct tty *) f->devinfo;
 	
-	DEBUG (("scc_select [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, tty));
+	DEBUG (("scc_select [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, (unsigned long)tty));
 	
 	if (mode == O_RDONLY)
 	{
 		if (!iorec_empty (&iovar->input))
 		{
-			TRACE (("scc_select: data present for device %lx", iovar));
+			TRACE (("scc_select: data present for device %lx", (unsigned long)iovar));
 			return 1;
 		}
 		
@@ -3626,7 +3626,7 @@ scc_select (FILEPTR *f, long proc, int mode)
 	{
 		if ((!tty || !(tty->state & (TS_BLIND | TS_HOLD))) && !iorec_empty (&iovar->output))
 		{
-			TRACE (("scc_select: ready to output on %lx", iovar));
+			TRACE (("scc_select: ready to output on %lx", (unsigned long)iovar));
 			return 1;
 		}
 		
@@ -3654,7 +3654,7 @@ scc_unselect (FILEPTR *f, long proc, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
 	
-	DEBUG (("scc_unselect [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, tty));
+	DEBUG (("scc_unselect [%i]: enter (%li, %i, %lx)", f->fc.aux, (unsigned long)proc, mode, (unsigned long)tty));
 	
 	if (tty)
 	{
