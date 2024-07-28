@@ -117,8 +117,8 @@ install-recursive uninstall-recursive dist-recursive strip-recursive::
 
 define CC_TEMPLATE
 .compile_$(1)/$(2).o: $(2).c
-	@echo "$(CC) $(INCLUDES) $(DEFINITIONS) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -c $$< -o $$@"
-	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(2).P -c $$< -o $$@
+	@echo "$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -c $$< -o $$@"
+	@$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(2).P -c $$< -o $$@
 
 -include .compile_$(1)/.deps/$(2).P
 
@@ -126,8 +126,8 @@ endef
 
 define AS_TEMPLATE
 .compile_$(1)/$(2).o: $(2).S
-	@echo "$(CC) $(INCLUDES) $(DEFINITIONS) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -c $$< -o $$@"
-	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(2).P -c $$< -o $$@
+	@echo "$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -c $$< -o $$@"
+	@$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(2).P -c $$< -o $$@
 
 -include .compile_$(1)/.deps/$(2).P
 

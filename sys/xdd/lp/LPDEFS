@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(lp),deb)
-TARGET = lp.xdd
-CPU = 020-60
-LPDEFS += -DDEV_DEBUG
-endif
+LPDEFS_deb = -DDEV_DEBUG
 
-ifeq ($(lp),000)
-TARGET = lp.xdd
-CPU = 000
-LPDEFS +=
-endif
+LPDEFS_000 =
 
-ifeq ($(lp),02060)
-TARGET = lp.xdd
-CPU = 020-60
-LPDEFS +=
-endif
+LPDEFS_02060 =
 
-ifeq ($(lp),030)
-TARGET = lp.xdd
-CPU = 030
-LPDEFS +=
-endif
+LPDEFS_030 =
 
-ifeq ($(lp),040)
-TARGET = lp.xdd
-CPU = 040
-LPDEFS +=
-endif
+LPDEFS_040 =
 
-ifeq ($(lp),060)
-TARGET = lp.xdd
-CPU = 060
-LPDEFS +=
-endif
+LPDEFS_060 =
 
-ifeq ($(lp),col)
-TARGET = lp.xdd
-CPU  = v4e
-LPDEFS += 
-endif
+LPDEFS_col =
 
 #
 # all default targets
