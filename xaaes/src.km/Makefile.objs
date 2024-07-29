@@ -45,7 +45,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(LD) -o $@ $(CFLAGS) -s $(OBJS) $(LIBS)
+	$(LD) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 
 $(OBJS): ../XAAESDEFS
 

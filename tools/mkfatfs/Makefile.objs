@@ -25,7 +25,7 @@ all-here: build
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
 GENFILES = $(TARGET)
 CFLAGS += -Wno-inline
-LDFLAGS += -s -Wl,--entry,__start
+LDFLAGS += -Wl,--entry,__start
 
 INCLUDES = -I$(top_srcdir)/IO
 LIBS += $(LIBIO)
