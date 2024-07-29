@@ -43,7 +43,7 @@ TARGET = \
 	./tcpsv \
 	./udpclnt \
 	./udpserv
-CPU = 020-60
+CPU = 02060
 endif
 
 ifeq ($(tests),030)

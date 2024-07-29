@@ -27,7 +27,7 @@ endif
 
 ifeq ($(data),02060)
 TARGET = data.udd
-CPU = 020-60
+CPU = 02060
 USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif

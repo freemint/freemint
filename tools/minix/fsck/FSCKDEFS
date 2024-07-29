@@ -5,7 +5,7 @@ endif
 
 ifeq ($(fsck),02060)
 TARGET = ./fsck.minix
-CPU = 020-60
+CPU = 02060
 endif
 
 ifeq ($(fsck),030)

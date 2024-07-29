@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-dummytargets = 000
+dummytargets = 02060 030 040 060 deb 000 col
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -46,8 +46,7 @@ LD = $(CC) -s -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 
 define TARGET_TEMPLATE
 
-# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
-LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(DUMMYDEFS_$(1))

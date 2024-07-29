@@ -24,7 +24,7 @@ endif
 
 ifeq ($(tablet),02060)
 TARGET = tablet.udd
-CPU = 020-60
+CPU = 02060
 USBDEFS +=
 endif
 

@@ -6,7 +6,7 @@
 
 ifeq ($(eth),deb)
 TARGET = eth.udd
-CPU = 020-60
+CPU = 02060
 USBDEFS += -DDEV_DEBUG
 endif
 
@@ -24,7 +24,7 @@ endif
 
 ifeq ($(eth),02060)
 TARGET = eth.udd
-CPU = 020-60
+CPU = 02060
 USBDEFS +=
 endif
 

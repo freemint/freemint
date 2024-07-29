@@ -25,7 +25,7 @@ TARGET = \
 	./pppconf \
 	./route \
 	./slattach
-CPU = 020-60
+CPU = 02060
 endif
 
 ifeq ($(nettools),030)

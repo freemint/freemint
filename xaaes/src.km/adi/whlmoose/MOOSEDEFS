@@ -6,7 +6,7 @@
 
 ifeq ($(moose),deb)
 TARGET = moose.adi
-CPU = 020-60
+CPU = 02060
 MOOSEDEFS += -DDEV_DEBUG
 endif
 
@@ -18,7 +18,7 @@ endif
 
 ifeq ($(moose),02060)
 TARGET = moose.adi
-CPU = 020-60
+CPU = 02060
 MOOSEDEFS +=
 endif
 

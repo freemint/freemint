@@ -6,7 +6,7 @@
 
 ifeq ($(unicorn),deb)
 TARGET = unicorn.ucd
-CPU = 020-60
+CPU = 02060
 USBDEFS += -DDEV_DEBUG
 endif
 
@@ -24,7 +24,7 @@ endif
 
 ifeq ($(unicorn),02060)
 TARGET = unicorn.ucd
-CPU = 020-60
+CPU = 02060
 USBDEFS +=
 endif
 

@@ -7,17 +7,6 @@ include $(srcdir)/SRCFILES
 include $(srcdir)/EXTRAFILES
 include $(srcdir)/MISCFILES
 
-ifdef CPU
-ifeq ($(CPU),v4e)
-MODEL = -mcpu=5475
-else
-MODEL = -m68$(CPU)
-endif
-else
-# leave empty/default
-MODEL =
-endif
-
 #
 # mapping of CPU names to CFLAGS
 #
@@ -46,6 +35,13 @@ CPU_mil = 02060
 CPU_hat = 000
 CPU_hat030 = 030
 
+
+ifdef CPU
+MODEL = $(MODEL_$(CPU))
+else
+# leave empty/default
+MODEL =
+endif
 
 CFLAGS_000 = $(MODEL_000) $(INCLUDES) $(DEFINITIONS) $(GENERAL) $(OPTS) $(WARN)
 CFLAGS_020 = $(MODEL_020) $(INCLUDES) $(DEFINITIONS) $(GENERAL) $(OPTS) $(WARN)

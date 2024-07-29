@@ -64,8 +64,7 @@ LD = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
 
 define TARGET_TEMPLATE
 
-# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
-LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(CPU_$(1)))
+LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(EXT2DEFS_$(1))
