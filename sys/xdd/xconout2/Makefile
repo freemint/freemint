@@ -66,7 +66,7 @@ LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(XDDDEFS_$(1))
 LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
-OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o)) $(addprefix .compile_$(1)/,$(SOBJS:.S=.o))
+OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
 
 $(1): $(addprefix .compile_,$(1))/xconout2.xdd
 
@@ -82,9 +82,7 @@ endef
 
 $(foreach TARGET,$(xconout2targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(xconout2targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
-
-$(foreach TARGET,$(xconout2targets),$(foreach OBJ,$(SOBJS:.S=),$(eval $(call AS_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(xconout2targets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 

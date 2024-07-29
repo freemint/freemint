@@ -49,7 +49,7 @@ LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(XIF_DEFS_$(1))
 LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
-OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS) $(SSOBJS)))))
+OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
 
 $(addprefix .compile_,$(1))/svethlan.xif: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
 	$(LD) -o $$@ $$(CFLAGS_$(1)) $$(OBJS_$(1)) $$(LIBS_$(1))
@@ -61,6 +61,7 @@ $(top_srcdir)/libkern/libkern$(1).a:
 	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
 endef
 
+# cannot use the default template here, because first arg is CPU target, not kernel TARGET
 define CC_TEMPLATE
 .compile_$(1)/$(notdir $(basename $(2))).o: $(2)
 	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$(1)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(notdir $(2)).P -c $$< -o $$@
@@ -73,7 +74,7 @@ endef
 
 $(foreach TARGET,$(targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS) $(SSOBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 
