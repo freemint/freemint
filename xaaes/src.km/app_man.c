@@ -366,9 +366,10 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 			 * should not be taken into account when client wants TOP_WINDOW via wind_get(WF_TOP)!
 			 * But the AES may perhaps need to direct some keypresses to those later on..
 			 */
-			    (nlwind && nlwind->owner == client && !(nlwind->dial & created_for_POPUP)) ||
-			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
-			    (S.focus->owner == client /*top->owner == client*/ && top->keypress))		/* Windowed form_do() */
+				(nlwind && nlwind->owner == client && !(nlwind->dial & created_for_POPUP)) ||
+				(client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) ||
+				(top->owner == client && top->keypress) ||		/* Windowed form_do() */
+				(S.focus && S.focus->owner == client))
 			{
 				if (waiting)
 					*waiting = true;
@@ -393,19 +394,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 			}
 		}
 	}
-#if 0
-	if (is_topped(top) && !is_hidden(top))
-	{
-		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
-			*waiting = true;
 
-		if (keywind)
-			*keywind = top;
-
-		DIAGS(("-= 4 =-"));
-		client = top->owner;
-	}
-#endif
 	if ((top = S.focus) && !is_hidden(top))
 	{
 		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
