@@ -14,7 +14,7 @@ subdir = nfeth
 
 default: all
 
-CPU = 020-60
+CPU = 02060
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES

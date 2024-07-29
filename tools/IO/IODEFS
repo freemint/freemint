@@ -4,8 +4,8 @@ CPU = 000
 endif
 
 ifeq ($(io),02060)
-TARGET = ../libIO020-60.a
-CPU = 020-60
+TARGET = ../libIO02060.a
+CPU = 02060
 endif
 
 ifeq ($(io),030)

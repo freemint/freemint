@@ -97,7 +97,7 @@ endif
 
 ifeq ($(kernel),deb)
 MINT = mintdeb.prg
-CPU  = 020-60
+CPU  = 02060
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DWITH_NATIVE_FEATURES
 endif
 
@@ -110,7 +110,7 @@ endif
 
 ifeq ($(kernel),mil)
 MINT = mintmil.prg
-CPU  = 020-60
+CPU  = 02060
 KERNELDEFS = -DMILAN -DM68040 -DPCI_BIOS
 endif
 
@@ -139,7 +139,7 @@ endif
 # Type in your shell "make my1"
 ifeq ($(kernel),my1)
 MINT = mintmy1.prg
-CPU  = 020-60
+CPU  = 02060
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 KERNELDEFS += -DMFP_DEBUG_DIRECT
 #KERNELDEFS += -DPROFILING
@@ -151,4 +151,4 @@ endif
 # all default targets
 #
 kerneltargets = 000 020 030 040 060 080 deb mil ara hat hat030 col
-cputargets = 000 020 030 040 060 020-60 v4e
+cputargets = 000 020 030 040 060 02060 v4e

@@ -6,7 +6,7 @@
 
 ifeq ($(ehci),deb)
 TARGET = ehci.ucd
-CPU = 020-60
+CPU = 02060
 USBDEFS += -DDEV_DEBUG
 endif
 
@@ -24,7 +24,7 @@ endif
 
 ifeq ($(ehci),02060)
 TARGET = ehci.ucd
-CPU = 020-60
+CPU = 02060
 USBDEFS +=
 endif
 

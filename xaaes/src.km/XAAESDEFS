@@ -2,7 +2,7 @@
 
 ifeq ($(xaaes),deb)
 TARGET = xaaesdeb.km
-CPU = 020-60
+CPU = 02060
 XAAESDEFS += -DGENERATE_DIAGS=1 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 
@@ -53,7 +53,7 @@ endif
 
 ifeq ($(xaaes),02060)
 TARGET = xaaes02060.km
-CPU = 020-60
+CPU = 02060
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 

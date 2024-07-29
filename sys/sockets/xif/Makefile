@@ -105,14 +105,13 @@ define LIBKERN_TEMPLATE
 
 COMMON_OBJS_$(1) = $(addsuffix _$(1).o,$(COMMON_OBJS))
 
-$(top_srcdir)/libkern/libkern$(subst 02060,020-60,$(1)).a:
-	$(MAKE) -C $(top_srcdir)/libkern CPU="$(subst 02060,020-60,$(1))" libkern$(subst 02060,020-60,$(1)).a
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
 endef
 
 define TARGET_TEMPLATE
 
-# hack for libkern: CPU is 02060, but library is libkern020-60.a; fixme
-LIBKERN_NAME_$(1) = kern$(subst 02060,020-60,$(1))
+LIBKERN_NAME_$(1) = kern$(1)
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(XDDDEFS_$(1))
@@ -142,22 +141,20 @@ $(2)_$(1).o: $(2).S
 
 endef
 
-kerncputargets = $(subst 020-60, 02060, $(cputargets))
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(kerncputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(basename $(filter %.c,$(notdir $(COBJS))))),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
-$(foreach TARGET,$(kerncputargets),$(foreach OBJ,$(sort $(basename $(filter %.c,$(notdir $(COBJS))))),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(basename $(filter %.S,$(notdir $(COBJS))))),$(eval $(call AS_TEMPLATE,$(TARGET),$(OBJ)))))
 
-$(foreach TARGET,$(kerncputargets),$(foreach OBJ,$(sort $(basename $(filter %.S,$(notdir $(COBJS))))),$(eval $(call AS_TEMPLATE,$(TARGET),$(OBJ)))))
-
-$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
-$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
-$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),slip)))
-$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
-$(foreach TARGET,$(filter-out v4e,$(kerncputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),picowifi)))
-$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dummy)))
+$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
+$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
+$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),slip)))
+$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
+$(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),picowifi)))
+$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dummy)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),de600)))
-$(foreach TARGET,$(kerncputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
+$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc_fast)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblmst)))
@@ -173,3 +170,6 @@ $(foreach TARGET,060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8139)))
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
 DEPS_MAGIC := $(shell mkdir -p .deps) > /dev/null 2>&1 || :)
 endif
+
+echo:
+	@echo $(LIBKERN_NAME_v4e)

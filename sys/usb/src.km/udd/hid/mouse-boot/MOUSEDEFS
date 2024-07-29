@@ -6,7 +6,7 @@
 
 ifeq ($(mouse),deb)
 TARGET = mouse.udd
-CPU = 020-60
+CPU = 02060
 USBDEFS += -DDEV_DEBUG
 endif
 
@@ -24,7 +24,7 @@ endif
 
 ifeq ($(mouse),02060)
 TARGET = mouse.udd
-CPU = 020-60
+CPU = 02060
 USBDEFS +=
 endif
 

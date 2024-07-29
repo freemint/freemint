@@ -150,7 +150,7 @@ hat030:: 030
 	$(MAKE) CPU=060
 
 02060:
-	$(MAKE) CPU=020-60
+	$(MAKE) CPU=02060
 
 col:
 	$(MAKE) CPU=v4e

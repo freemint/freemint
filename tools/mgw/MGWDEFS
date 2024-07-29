@@ -5,7 +5,7 @@ endif
 
 ifeq ($(mgw),02060)
 TARGET = ./mgw.prg
-CPU = 020-60
+CPU = 02060
 endif
 
 ifeq ($(mgw),030)
