@@ -94,7 +94,7 @@ copy_tt_modules() {
 	local MCHDIR="$1/tt"
 	local TARGET="$2"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/daynaport/scsilink.xif" "$MCHDIR/scsilink.xix"
+	cp "$SRC/sys/sockets/xif/daynaport/.compile_${TARGET}/scsilink.xif" "$MCHDIR/scsilink.xix"
 	cp "$SRC/sys/sockets/xif/lance_${TARGET}.xif" "$MCHDIR/lance.xix"
 	cp "$SRC/sys/sockets/xif/riebltt_${TARGET}.xif" "$MCHDIR/riebltt.xix"
 	cp "$SRC/sys/sockets/xif/rtl8012_${TARGET}.xif" "$MCHDIR/rtl8012.xix"
@@ -105,7 +105,7 @@ copy_falcon_modules() {
 	local MCHDIR="$1/falcon"
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/rtl8012_02060.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/sockets/xif/daynaport/scsilink.xif" "$MCHDIR/scsilink.xix"
+	cp "$SRC/sys/sockets/xif/daynaport/.compile_02060/scsilink.xif" "$MCHDIR/scsilink.xix"
 	cp "$SRC/sys/xdd/dsp56k/.compile_02060/dsp56k.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/.compile_02060/scc.xdd" "$MCHDIR"
 }
@@ -131,18 +131,18 @@ copy_ct60_modules() {
 	rm "$MCHDIR/rtl8012.xix"
 	cp "$SRC/sys/sockets/xif/rtl8012_060.xif" "$MCHDIR/rtl8012.xix"
 	cp "$SRC/sys/sockets/xif/rtl8139_060.xif" "$MCHDIR/rtl8139.xix"
-	cp "$SRC/sys/sockets/xif/ethernat/ethernat.xif" "$MCHDIR/ethernat.xix"
-	cp "$SRC/sys/sockets/xif/svethlana/svethlan.xif" "$MCHDIR/svethlan.xix"
+	cp "$SRC/sys/sockets/xif/ethernat/.compile_060/ethernat.xif" "$MCHDIR/ethernat.xix"
+	cp "$SRC/sys/sockets/xif/svethlana/.compile_060/svethlan.xif" "$MCHDIR/svethlan.xix"
 }
 copy_firebee_modules() {
 	local MCHDIR="$1/firebee"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/fec/fec.xif" "$MCHDIR/fec.xif"
+	cp "$SRC/sys/sockets/xif/fec/.compile_v4e/fec.xif" "$MCHDIR/fec.xif"
 }
 copy_aranym_modules() {
 	local MCHDIR="$1/aranym"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/nfeth/nfeth.xif" "$MCHDIR"
+	cp "$SRC/sys/sockets/xif/nfeth/.compile_040/nfeth.xif" "$MCHDIR"
 	cp "$SRC/sys/xdd/nfstderr/.compile_040/nfstderr.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/nfexec/.compile_040/nfexec.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/nfcdrom/.compile_040/nfcdrom.xdd" "$MCHDIR/nfcdrom.xdx"

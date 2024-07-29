@@ -5,15 +5,13 @@ HEADER = \
 	enc28j60.h \
 	v2expeth.h
 
-COBJS = \
-	v2expeth.c
-
-SSOBJS = \
+V2EXPETH_SRCS = \
+	v2expeth.c \
 	v2expeth_int.S
 
 COMMON_SRCS = \
 	../main.c
 
-V2EXPETH_SRCS = $(COBJS) $(SSOBJS)
+COBJS = $(COMMON_SRCS) $(V2EXPETH_SRCS)
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS)

@@ -5,15 +5,15 @@ HEADER = \
 	svethlana_i6.h \
 	sv_regs.h
 
-COBJS = \
-	svethlana.c
-
-SSOBJS = \
-	svethlana_i6.s
+SVETHLANA_SRCS = \
+	svethlana.c \
+	svethlana_i6.S
 
 COMMON_SRCS = \
 	../main.c
 
-SVETHLANA_SRCS = $(COBJS) $(SSOBJS)
+COBJS = \
+	$(COMMON_SRCS) \
+	$(SVETHLANA_SRCS)
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS)

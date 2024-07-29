@@ -4,15 +4,13 @@
 HEADER = \
 	v4net.h
 
-COBJS = \
-	v4net.c
-
-SSOBJS = \
+V4NET_SRCS = \
+	v4net.c \
 	v4net_int.S
 
 COMMON_SRCS = \
 	../main.c
 
-V4NET_SRCS = $(COBJS) $(SSOBJS)
+COBJS = $(COMMON_SRCS) $(V4NET_SRCS)
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS)
