@@ -1,10 +1,6 @@
 #
 # Makefile for
 #
-TARGET = v2expeth.xif
-
-GENFILES = $(TARGET)
-
 SHELL = /bin/sh
 SUBDIRS =
 
@@ -14,33 +10,73 @@ subdir = v2expeth
 
 default: all
 
-CPU = 000
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+targets = 000
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
-
-strip:
-	$(STRIP) $(TARGET)
+DRIVERS = $(addsuffix /v2expeth.xif, $(addprefix .compile_,$(targets)))
 
 # default overwrites
 INCLUDES = -I../.. -I$(top_srcdir)
 XIF_DEFINITIONS =
 DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
-LD = $(CC) -mshort -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
-LIBS = $(LIBKERN) -lgcc
-
 # default definitions
-OBJS = $(addsuffix .o, $(basename $(notdir $(V2EXPETH_SRCS) $(COMMON_SRCS))))
+compile_all_dirs = $(addprefix .compile_,$(targets))
+GENFILES = $(compile_all_dirs) *.xif
 
-main.o:	../main.c
-	$(CC) -o $@ $(CFLAGS) -c ../main.c
+all-here: $(DRIVERS)
 
-# v2expeth driver target
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+strip:
+	$(STRIP) $(DRIVERS)
 
-include $(top_srcdir)/DEPENDENCIES
+#
+# multi target stuff
+#
+
+LD = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
+
+define TARGET_TEMPLATE
+
+LIBKERN_NAME_$(1) = kern$(1)
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(XIF_DEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS) $(SSOBJS)))))
+
+$(addprefix .compile_,$(1))/v2expeth.xif: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$(1)) $$(OBJS_$(1)) $$(LIBS_$(1))
+
+endef
+
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+define CC_TEMPLATE
+.compile_$(1)/$(notdir $(basename $(2))).o: $(2)
+	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$(1)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(notdir $(2)).P -c $$< -o $$@
+
+-include .compile_$(1)/.deps/$(notdir $(2)).P
+
+endef
+
+# driver target
+
+$(foreach TARGET,$(targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS) $(SSOBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(targets))) > /dev/null 2>&1 || :)
+endif
