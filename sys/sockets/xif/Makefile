@@ -37,26 +37,27 @@ SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c rie
 
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
 
-COMMON_OBJS = $(basename $(notdir $(COMMON_SRCS)))
-OBJS_dial = $(basename $(notdir $(DIAL_SRCS)))
-OBJS_slip = $(basename $(notdir $(SLIP_SRCS)))
-OBJS_plip = $(basename $(notdir $(PLIP_SRCS)))
-OBJS_dummy = $(basename $(notdir $(DUMMY_SRCS)))
-OBJS_de600 = $(basename $(notdir $(DE600_SRCS)))
-OBJS_lance = $(basename $(notdir $(LANCE_SRCS)))
-OBJS_rieblspc = $(basename $(notdir $(RIEBL_SPEC_SRCS)))
-OBJS_rieblspc_fast = $(basename $(notdir $(RIEBL_SPEC_FAST_SRCS)))
-OBJS_rieblmst = $(basename $(notdir $(RIEBL_MST_SRCS)))
-OBJS_rieblmst_fast = $(basename $(notdir $(RIEBL_MST_FAST_SRCS)))
-OBJS_rieblste = $(basename $(notdir $(RIEBL_MSTE_SRCS)))
-OBJS_riebltt = $(basename $(notdir $(RIEBL_TT_SRCS)))
-OBJS_pamsdma = $(basename $(notdir $(PAMSDMA_SRCS)))
-OBJS_biodma = $(basename $(notdir $(BIODMA_SRCS)))
-OBJS_rtl8012 = $(basename $(notdir $(RTL8012_SRCS)))
-OBJS_rtl8012st = $(basename $(notdir $(RTL8012ST_SRCS)))
-OBJS_rtl8139 = $(basename $(notdir $(RTL8139_SRCS)))
-OBJS_asix = $(basename $(notdir $(ASIX_SRCS)))
-OBJS_picowifi = $(basename $(notdir $(PICOWIFI_SRCS)))
+# map driver names to source lists
+COMMON_OBJS = $(COMMON_SRCS)
+OBJS_dial = $(DIAL_SRCS)
+OBJS_slip = $(SLIP_SRCS)
+OBJS_plip = $(PLIP_SRCS)
+OBJS_dummy = $(DUMMY_SRCS)
+OBJS_de600 = $(DE600_SRCS)
+OBJS_lance = $(LANCE_SRCS)
+OBJS_rieblspc = $(RIEBL_SPEC_SRCS)
+OBJS_rieblspc_fast = $(RIEBL_SPEC_FAST_SRCS)
+OBJS_rieblmst = $(RIEBL_MST_SRCS)
+OBJS_rieblmst_fast = $(RIEBL_MST_FAST_SRCS)
+OBJS_rieblste = $(RIEBL_MSTE_SRCS)
+OBJS_riebltt = $(RIEBL_TT_SRCS)
+OBJS_pamsdma = $(PAMSDMA_SRCS)
+OBJS_biodma = $(BIODMA_SRCS)
+OBJS_rtl8012 = $(RTL8012_SRCS)
+OBJS_rtl8012st = $(RTL8012ST_SRCS)
+OBJS_rtl8139 = $(RTL8139_SRCS)
+OBJS_asix = $(ASIX_SRCS)
+OBJS_picowifi = $(PICOWIFI_SRCS)
 
 XIF_DEFS_lance = -DPAMs_INTERN
 XIF_DEFS_rieblspc = -DSPECIAL -DHACK
@@ -103,7 +104,7 @@ LD = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
 define LIBKERN_TEMPLATE
 
-COMMON_OBJS_$(1) = $(addsuffix _$(1).o,$(COMMON_OBJS))
+COMMON_OBJS_$(1) = $(addsuffix _$(1).o, $(basename $(notdir $(COMMON_OBJS))))
 
 $(top_srcdir)/libkern/libkern$(1).a:
 	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
@@ -114,9 +115,9 @@ define TARGET_TEMPLATE
 LIBKERN_NAME_$(1) = kern$(1)
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
-DEFINITIONS_$(1) = $(DEFINITIONS) $$(XDDDEFS_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS)
 LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
-OBJS_$(2)_$(1) = $(addsuffix _$(1).o, $(OBJS_$(2)))
+OBJS_$(2)_$(1) = $(addsuffix _$(1).o, $(basename $(notdir $(OBJS_$(2)))))
 
 $(2):: $(2)_$(1).xif
 
@@ -126,26 +127,17 @@ $(2)_$(1).xif: $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBKERN_DEP_$(1))
 endef
 
 define CC_TEMPLATE
-$(2)_$(1).o: $(2).c
-	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $$(XIF_DEFS_$(2)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(2)_$(1).P -c $$< -o $$@
+$(basename $(2))_$(1).o: $(2)
+	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(XIF_DEFS_$(basename $(2))) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(basename $(2))_$(1).P -c $$< -o $$@
 
--include .deps/$(2)_$(1).P
-
-endef
-
-define AS_TEMPLATE
-$(2)_$(1).o: $(2).S
-	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$$(CPU_$(1))) $$(XIF_DEFS_$(2)) $$(XIF_LDFLAGS_$(2)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(2)_$(1).P -c $$< -o $$@
-
--include .deps/$(2)_$(1).P
+-include .deps/$(basename $(2))_$(1).P
 
 endef
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(basename $(filter %.c,$(notdir $(COBJS))))),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
-
-$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(basename $(filter %.S,$(notdir $(COBJS))))),$(eval $(call AS_TEMPLATE,$(TARGET),$(OBJ)))))
+# sorting is needed here to eliminate duplicates
+$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(notdir $(COBJS))),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
 $(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
@@ -170,6 +162,3 @@ $(foreach TARGET,060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8139)))
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
 DEPS_MAGIC := $(shell mkdir -p .deps) > /dev/null 2>&1 || :)
 endif
-
-echo:
-	@echo $(LIBKERN_NAME_v4e)

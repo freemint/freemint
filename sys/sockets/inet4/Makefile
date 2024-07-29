@@ -54,7 +54,7 @@ all-targets: $(ALL_TARGETS)
 define TARGET_TEMPLATE
 
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(INET4DEFS_$(1))
-OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o))
+OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
 
 $(1): $(addprefix .compile_,$(1))/libinet4.a
 
@@ -65,7 +65,7 @@ endef
 
 $(foreach TARGET,$(inet4targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(inet4targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(inet4targets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
 DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(inet4targets))) > /dev/null 2>&1 || :)

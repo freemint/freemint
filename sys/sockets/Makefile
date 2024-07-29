@@ -68,7 +68,7 @@ DEFINITIONS_$(1) = $(DEFINITIONS) $$(INET4DEFS_$(1))
 LIBINET4_DEP_$(1) = inet4/.compile_$(1)/libinet4.a
 LIBINET4_$(1) = -Linet4/.compile_$(1) -linet4
 LIBS_$(1) = $$(LIBINET4_$(1)) $$(LIBKERN_$(1)) -lgcc
-OBJS_$(1) = $(addprefix .compile_$(1)/,$(COBJS:.c=.o))
+OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
 
 $$(LIBINET4_DEP_$(1))::
 	$(MAKE) -C inet4 $(1)
@@ -88,7 +88,7 @@ endef
 
 $(foreach TARGET,$(inet4targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(inet4targets),$(foreach OBJ,$(COBJS:.c=),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(inet4targets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 

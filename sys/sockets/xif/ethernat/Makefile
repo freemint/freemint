@@ -61,6 +61,7 @@ $(top_srcdir)/libkern/libkern$(1).a:
 	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
 endef
 
+# cannot use the default template here, because first arg is CPU target, not kernel TARGET
 define CC_TEMPLATE
 .compile_$(1)/$(notdir $(basename $(2))).o: $(2)
 	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(MODEL_$(1)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(notdir $(2)).P -c $$< -o $$@

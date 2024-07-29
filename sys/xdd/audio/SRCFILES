@@ -14,9 +14,7 @@ COBJS = \
 	falcon.c \
 	lmc.c \
 	psg.c \
-	psgtab.c
-
-SOBJS = \
+	psgtab.c \
 	audioasm.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS)
