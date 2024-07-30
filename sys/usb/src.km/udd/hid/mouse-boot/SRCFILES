@@ -4,16 +4,12 @@
 HEADER =
 
 COBJS = \
-	usb_mouse.c
-
-SSOBJS = \
+	usb_mouse.c \
 	mouse_int.S
 
 TOSCOBJS = \
-	crtinit.c
-
-TOSSSOBJS = \
 	entry.S \
 	setstack.S \
+	crtinit.c
 
-SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

@@ -3,61 +3,44 @@
 #
 # -DDEV_DEBUG		include debugging information
 
-
-ifeq ($(printer),deb)
-TARGET = printer.udd
-CPU = 000
-USBDEFS += -DDEV_DEBUG
-endif
-
-ifeq ($(printer),prg)
-TARGET = printer.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=8192
-endif
-
-ifeq ($(printer),000)
-TARGET = printer.udd
-CPU = 000
-USBDEFS +=
-endif
-
-ifeq ($(printer),02060)
-TARGET = printer.udd
-CPU = 02060
-USBDEFS +=
-endif
-
-ifeq ($(printer),030)
-TARGET = printer.udd
-CPU = 030
-USBDEFS +=
-endif
-
-ifeq ($(printer),040)
-TARGET = printer.udd
-CPU = 040
-USBDEFS +=
-endif
-
-ifeq ($(printer),060)
-TARGET = printer.udd
-CPU = 060
-USBDEFS +=
-endif
-
-ifeq ($(printer),col)
-TARGET = printer.udd
-CPU  = v4e
-USBDEFS += -DCOLDFIRE
-endif
-
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifneq ($(findstring prg,$(printer)),)
-LDEXTRA += -Wl,--entry,__start
-else
-LDEXTRA += -Wl,--entry,init_udd
-endif
+LDEXTRA_udd = -Wl,--entry,init_udd
+
+
+UDDTARGET_deb = printer.udd
+USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_deb = $(LDEXTRA_udd)
+# override from toplevel RULES
+CPU_deb = 000
+
+UDDTARGET_prg = printer.prg
+CPU_prg = 000
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=8192
+LDEXTRA_prg = -Wl,--entry,__start
+
+UDDTARGET_000 = printer.udd
+USBDEFS_000 =
+LDEXTRA_000 = $(LDEXTRA_udd)
+
+UDDTARGET_02060 = printer.udd
+USBDEFS_02060 =
+LDEXTRA_02060 = $(LDEXTRA_udd)
+
+UDDTARGET_030 = printer.udd
+USBDEFS_030 =
+LDEXTRA_030 = $(LDEXTRA_udd)
+
+UDDTARGET_040 = printer.udd
+USBDEFS_040 =
+LDEXTRA_040 = $(LDEXTRA_udd)
+
+UDDTARGET_060 = printer.udd
+USBDEFS_060 =
+LDEXTRA_060 = $(LDEXTRA_udd)
+
+UDDTARGET_col = printer.udd
+USBDEFS_col = -DCOLDFIRE
+LDEXTRA_col = $(LDEXTRA_udd)
 
 #
 # all default targets

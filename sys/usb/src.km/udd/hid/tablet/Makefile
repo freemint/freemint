@@ -11,23 +11,31 @@ subdir = tablet
 toscommon_srcdir = ../../../tos-common
 hidcommon_srcdir = ../hid-common
 
-default:
+default: help
 
-include ./TABLETDEFS
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-SGENFILES = crtinit.c entry.S hid.c hid.h hidparse.c hidparse.h setstack.S
+include $(srcdir)/TABLETDEFS
+include $(srcdir)/../../../STRIPEXDEFS
 
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=tablet $(USBDEFS)
+INCLUDES += -I$(top_srcdir)/../../sys
+WARN += -Wcast-qual
 
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.udd *.prg
+
+GENFILES += crtinit.c entry.S hid.c hid.h hidparse.c hidparse.h setstack.S
 
 help:
 	@echo '#'
@@ -43,26 +51,13 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(foreach TARGET, $(tablettargets), .compile_$(TARGET)/$(UDDTARGET_$(TARGET)))
+
+STRIPFLAGS =
 strip:
-	$(STRIP) .compile_prg/*.prg
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(tablettargets); do \
-		if [ "$$i" = "prg" ]; then continue; fi; \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.udd) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(tablettargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(tablettargets): $(SGENFILES)
-	$(MAKE) buildtablet tablet=$@
+all-targets: $(ALL_TARGETS)
 
 # Link common TOS files
 crtinit.c: $(toscommon_srcdir)/crtinit.c
@@ -72,37 +67,44 @@ entry.S: $(toscommon_srcdir)/entry.S
 setstack.S: $(toscommon_srcdir)/setstack.S
 	ln -sf $< $(srcdir)/$@
 
-# Link common hid files
-hid.c: $(hidcommon_srcdir)/hid.c
-	ln -sf $< $(srcdir)/$@
-hid.h: $(hidcommon_srcdir)/hid.h
-	ln -sf $< $(srcdir)/$@
-hidparse.c: $(hidcommon_srcdir)/hidparse.c
-	ln -sf $< $(srcdir)/$@
-hidparse.h: $(hidcommon_srcdir)/hidparse.h
-	ln -sf $< $(srcdir)/$@
-
 #
 # multi target stuff
 #
 
-ifneq ($(tablet),)
+LD = $(CC) $(LDEXTRA)
 
-compile_dir = .compile_$(tablet)
-tablettarget = _stmp_$(tablet)
-realtarget = $(tablettarget)
+# for HDDRIVER modules to work, TOSCOBJS must be first in OBJS
+OBJS_prg = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg/$(OBJ).o)
 
-$(tablettarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+define TARGET_TEMPLATE
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(USBDEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc -lgem
+OBJS_$(1) += $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
+$$(OBJS_$(1)): TABLETDEFS
 
-else
+$(1): $(addprefix .compile_,$(1))/$(UDDTARGET_$(1))
 
-realtarget =
+$(addprefix .compile_,$(1))/$(UDDTARGET_$(1)): $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1)) $(STRIPEX)
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	@case $$@ in *.prg) echo $(STRIPEX) $$@; $(STRIPEX) $$@; ;; esac
 
+endef
+
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+$(foreach TARGET,$(tablettargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(tablettargets),$(foreach OBJ,$(COBJS) $(TOSCOBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(tablettargets))) > /dev/null 2>&1 || :)
 endif
-
-buildtablet: $(realtarget)

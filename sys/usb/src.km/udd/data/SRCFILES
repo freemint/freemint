@@ -6,15 +6,12 @@ HEADER =
 COBJS = \
 	usb_data.c
 
-SSOBJS = \
-#	data_int.S
+#COBJS += data_int.S
 
+# for HDDRIVER modules to work, entry.S must be first in TOSCOBJS
 TOSCOBJS = \
-        crtinit.c
-
-# for HDDRIVER modules to work, entry.S must be first in TOSSSOBJS
-TOSSSOBJS = \
         entry.S \
         setstack.S \
+        crtinit.c
 
-SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)
