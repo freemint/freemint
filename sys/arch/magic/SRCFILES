@@ -7,7 +7,5 @@ COBJS = \
 SOBJS = \
 	startup.S
 
-SPPOBJS = 
-
-SRCFILES = $(COBJS) $(SPPOBJS) $(SOBJS)
+SRCFILES = $(COBJS) $(SOBJS)
 

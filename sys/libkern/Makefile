@@ -3,13 +3,17 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = asm
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
 subdir = libkern
 
 default: help
+
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -18,6 +22,15 @@ include $(top_srcdir)/PHONY
 all-here: all-libs
 
 # default overwrites
+DEFINITIONS = -D__KERNEL__
+
+NOCFLAGS-strchr.c = -Wcast-qual
+NOCFLAGS-strrchr.c = -Wcast-qual
+NOCFLAGS-strstr.c = -Wcast-qual
+NOCFLAGS-strtol.c = -Wcast-qual
+NOCFLAGS-strtoll.c = -Wcast-qual
+NOCFLAGS-strtoul.c = -Wcast-qual
+NOCFLAGS-strtoull.c = -Wcast-qual
 
 # default definitions
 GENFILES = .compile_* libkern*.a
@@ -27,6 +40,7 @@ help:
 	@echo '#'
 	@echo '# targets:'
 	@echo '# --------'
+	@echo '# - all'
 	@echo '# - $(cputargets)'
 	@echo '#'
 	@echo '# - bakclean'
@@ -37,52 +51,25 @@ help:
 	@echo '# example for a 030 libkern: -> make 030'
 	@echo '#'
 
-all-libs:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(cputargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+ALL_LIBS = $(foreach TARGET,$(cputargets),libkern$(TARGET).a)
 
-$(cputargets):
-	$(MAKE) libkern$@.a CPU=$@
+all-libs: $(ALL_LIBS)
 
-libkern$(CPU).a: objs asm-files
-	$(shell \
-	  if [ ! -e $@ \
-	         -o .compile_$(CPU)/objs -nt $@ \
-	         -o asm/.compile_$(CPU)/asm-files -nt $@ ] ; \
-	  then \
-		objs=`cat .compile_$(CPU)/objs` ; \
-		objs=`for i in $$objs ; do echo .compile_$(CPU)/$$i ; done` ; \
-		\
-		asmobjs=`cat asm/.compile_$(CPU)/asm-files` ; \
-		asmobjs=`for i in $$asmobjs ;  do echo asm/.compile_$(CPU)/$$i ; done` ; \
-		\
-		echo "$(RM) $@; $(AR) rcs $@ $$objs $$asmobjs" ; \
-	  fi \
-	)
+define LIBKERN_TARGET
 
-objs: .compile_$(CPU)
-	cd .compile_$(CPU); $(MAKE)
+$(1): libkern$(1).a
 
-# prevent overriding the same recipe from RULES
-ifneq ($(compile_dir),.compile_$(CPU))
-.compile_$(CPU): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
+DEFINITIONS_$(1) = $(DEFINITIONS)
+
+libkern$(1).a: $$(OBJS_$(1))
+	$(AR) rcs $$@.tmp $$(OBJS_$(1)) && mv $$@.tmp $$@ || { $(RM) $$@.tmp; false; }
+endef
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TARGET,$(TARGET))))
+
+$(foreach TARGET,$(cputargets),$(foreach OBJ,$(COBJS),$(eval $(call CPU_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(cputargets))) > /dev/null 2>&1 || :)
 endif
-
-clean clean-recursive distclean distclean-recursive bakclean bakclean-recursive::
-	@list='$(cputargets)'; for dir in $$list; do \
-	  subdir=".compile_$${dir}"; \
-	  target=`echo $@ | sed s/-recursive//`; \
-	  test -d $$subdir && { echo "Making $$target in $$subdir"; \
-	  (cd $$subdir && $(MAKE) -r $$target); } || true; \
-	  target="libkern$${dir}.a"; \
-	done
-	$(RM) objs
-
-asm-files:
-	cd asm; $(MAKE) CPU="$(CPU)" asm-files

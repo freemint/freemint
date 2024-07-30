@@ -19,35 +19,3 @@ CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
 #
 LIBKERNTARGET = $(top_srcdir)/libkern/libkern$(CPU).a
 LIBKERN = -L$(top_srcdir)/libkern -lkern$(CPU)
-
-#
-# generic kernel target
-#
-compile_all_dirs = .compile_*
-
-ifneq ($(kernel),)
-
-compile_dir = .compile_$(kernel)
-kerneltarget = _stmp_$(kernel)
-realtarget = $(kerneltarget)
-
-$(kerneltarget): $(compile_dir)
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	list='$(KERNELSUBDIRS)'; for subdir in $$list; do \
-	  echo "Making all in $$subdir"; \
-	  (cd $$subdir && $(MAKE) -r all) \
-	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-	cd $(compile_dir); $(MAKE) all
-
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
-
-else
-
-realtarget = 
-
-endif
-
-buildkernel: $(realtarget)

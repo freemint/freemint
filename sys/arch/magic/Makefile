@@ -29,7 +29,7 @@ LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 
 # default definitions
-OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 GENFILES = $(TARGET) magic.i
 
 
@@ -52,7 +52,8 @@ magic.i: $(TARGET)
 
 endif
 
+genmagic.o: genmagic.c
+	$(CC) $(CFLAGS_$(CPU)) $(MODEL_$(CPU)) -c $< -o $@
 
-# default dependencies
-# must be included last
-include $(top_srcdir)/DEPENDENCIES
+startup.o: startup.S
+	$(CC) $(CFLAGS_$(CPU)) $(MODEL_$(CPU)) -c $< -o $@

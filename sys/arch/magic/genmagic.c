@@ -140,6 +140,9 @@ magics [] =
 
 char *outfile = "magic.i";
 
+/* referenced from startup.S */
+void small_main(void);
+
 void
 small_main(void)
 {
@@ -158,7 +161,7 @@ small_main(void)
 	if (fd < 0)
 	{
 		ksprintf(buf, sizeof (buf), "Fopen(%s) -> %li\r\n", outfile, fd);
-		Cconws(buf);
+		(void) Cconws(buf);
 
 		goto leave;
 	}
