@@ -3,62 +3,43 @@
 #
 # -DDEV_DEBUG		include debugging information
 
+LDEXTRA = -nostdlib -Wl,--fatal-warnings
+LDEXTRA_udd = -Wl,--entry,init_udd
 
-ifeq ($(data),deb)
-TARGET = data.udd
-CPU = 000
-USBDEFS += -DDEV_DEBUG
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_deb = data.udd
+USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_deb = $(LDEXTRA_udd)
+# override from toplevel RULES
+CPU_deb = 000
 
-ifeq ($(data),prg)
-TARGET = data.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=8192
-LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
-endif
+UDDTARGET_prg = data.prg
+CPU_prg = 000
+USBDEFS_prg += -DTOSONLY -fno-builtin -DSTACKSIZE=8192
+LDEXTRA_prg = -Wl,--entry -Wl,__start
 
-ifeq ($(data),000)
-TARGET = data.udd
-CPU = 000
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_000 = data.udd
+USBDEFS_000 =
+LDEXTRA_000 = $(LDEXTRA_udd)
 
-ifeq ($(data),02060)
-TARGET = data.udd
-CPU = 02060
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_02060 = data.udd
+USBDEFS_02060 =
+LDEXTRA_02060 = $(LDEXTRA_udd)
 
-ifeq ($(data),030)
-TARGET = data.udd
-CPU = 030
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_030 = data.udd
+USBDEFS_030 =
+LDEXTRA_030 = $(LDEXTRA_udd)
 
-ifeq ($(data),040)
-TARGET = data.udd
-CPU = 040
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_040 = data.udd
+USBDEFS_040 =
+LDEXTRA_040 = $(LDEXTRA_udd)
 
-ifeq ($(data),060)
-TARGET = data.udd
-CPU = 060
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_060 = data.udd
+USBDEFS_060 =
+LDEXTRA_060 = $(LDEXTRA_udd)
 
-ifeq ($(data),col)
-TARGET = data.udd
-CPU  = v4e
-USBDEFS += -DCOLDFIRE
-LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
-endif
+UDDTARGET_col = data.udd
+USBDEFS_col = -DCOLDFIRE
+LDEXTRA_col = $(LDEXTRA_udd)
 
 #
 # all default targets

@@ -5,61 +5,41 @@
 
 
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
+LDEXTRA_udd = -Wl,--entry,init_udd
 
-ifeq ($(storage),deb)
-TARGET = storage.udd
-CPU = 02060
-USBDEFS += -DDEV_DEBUG
-endif
 
-ifeq ($(storage),prg)
-TARGET = storage.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-endif
+UDDTARGET_deb = storage.udd
+USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_deb = $(LDEXTRA_udd)
 
-ifeq ($(storage),000)
-TARGET = storage.udd
-CPU = 000
-USBDEFS +=
-endif
+UDDTARGET_prg = storage.prg
+CPU_prg = 000
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA_prg = -Wl,--entry,__start
 
-ifeq ($(storage),02060)
-TARGET = storage.udd
-CPU = 02060
-USBDEFS +=
-endif
+UDDTARGET_000 = storage.udd
+USBDEFS_000 =
+LDEXTRA_000 = $(LDEXTRA_udd)
 
-ifeq ($(storage),030)
-TARGET = storage.udd
-CPU = 030
-USBDEFS +=
-endif
+UDDTARGET_02060 = storage.udd
+USBDEFS_02060 =
+LDEXTRA_02060 = $(LDEXTRA_udd)
 
-ifeq ($(storage),040)
-TARGET = storage.udd
-CPU = 040
-USBDEFS +=
-endif
+UDDTARGET_030 = storage.udd
+USBDEFS_030 =
+LDEXTRA_030 = $(LDEXTRA_udd)
 
-ifeq ($(storage),060)
-TARGET = storage.udd
-CPU = 060
-USBDEFS +=
-endif
+UDDTARGET_040 = storage.udd
+USBDEFS_040 =
+LDEXTRA_040 = $(LDEXTRA_udd)
 
-ifeq ($(storage),col)
-TARGET = storage.udd
-CPU  = v4e
-USBDEFS += -DCOLDFIRE
-endif
+UDDTARGET_060 = storage.udd
+USBDEFS_060 =
+LDEXTRA_060 = $(LDEXTRA_udd)
 
-LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifneq ($(findstring prg,$(storage)),)
-LDEXTRA += -Wl,--entry,__start -lgem
-else
-LDEXTRA += -Wl,--entry,init_udd
-endif
+UDDTARGET_col = storage.udd
+USBDEFS_col = -DCOLDFIRE
+LDEXTRA_col = $(LDEXTRA_udd)
 
 #
 # all default targets

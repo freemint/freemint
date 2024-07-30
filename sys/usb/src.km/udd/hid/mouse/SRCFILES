@@ -2,23 +2,19 @@
 # the files that should go only into source distributions.
 
 HEADER = \
-	hid.h \
-	hidparser.h
+	$(hidcommon_srcdir)/hid.h \
+	$(hidcommon_srcdir)/hidparser.h
 
 COBJS = \
-	hid.c \
-	hidparse.c \
-	usb_mouse.c
-
-SSOBJS = \
+	$(hidcommon_srcdir)/hid.c \
+	$(hidcommon_srcdir)/hidparse.c \
+	usb_mouse.c \
 	mouse_int.S
 
+# for HDDRIVER modules to work, entry.S must be first in TOSCOBJS
 TOSCOBJS = \
-	crtinit.c
-
-# for HDDRIVER modules to work, entry.S must be first in TOSSSOBJS
-TOSSSOBJS = \
 	entry.S \
 	setstack.S \
+	crtinit.c
 
-SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)
