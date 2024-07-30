@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
@@ -11,11 +11,11 @@ subdir = tests
 
 default: help
 
-include $(srcdir)/TESTSDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
+
+include $(srcdir)/../NETTOOLSDEFS
 
 all-here: all-targets
 
@@ -30,7 +30,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(teststargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,52 +39,59 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+EXES = 	client dgram dgramd hostlookup oobcl oobsv pipes protolookup \
+	server servlookup sockname sockpair speed speed2 \
+	speedd tcpcl tcpsv udpclnt udpserv
+
+ALL_TARGETS = $(foreach TARGET, $(alltargets), $(foreach EXE, $(EXES), .compile_$(TARGET)/$(EXE)))
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(teststargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/client .compile_$$i/dgram .compile_$$i/dgramd \
-		.compile_$$i/hostlookup .compile_$$i/oobcl .compile_$$i/oobsv \
-		.compile_$$i/pipes .compile_$$i/protolookup .compile_$$i/server \
-		.compile_$$i/servlookup .compile_$$i/sockname .compile_$$i/sockpair \
-		.compile_$$i/speed .compile_$$i/speed2 .compile_$$i/speedd \
-		.compile_$$i/tcpcl .compile_$$i/tcpsv .compile_$$i/udpclnt \
-		.compile_$$i/udpserv ) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(teststargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+all-targets: $(ALL_TARGETS)
 
-$(teststargets):
-	$(MAKE) buildtests tests=$@
+# map executable names to source lists
+OBJS_client = client.c $(COMMON_SRCS)
+OBJS_dgram = dgram.c $(COMMON_SRCS)
+OBJS_dgramd = dgramd.c $(COMMON_SRCS)
+OBJS_hostlookup = hostlookup.c $(COMMON_SRCS)
+OBJS_oobcl = oobcl.c $(COMMON_SRCS)
+OBJS_oobsv = oobsv.c $(COMMON_SRCS)
+OBJS_pipes = pipes.c $(COMMON_SRCS)
+OBJS_protolookup = protolookup.c $(COMMON_SRCS)
+OBJS_server = server.c $(COMMON_SRCS)
+OBJS_servlookup = servlookup.c $(COMMON_SRCS)
+OBJS_sockname = sockname.c $(COMMON_SRCS)
+OBJS_sockpair = sockpair.c $(COMMON_SRCS)
+OBJS_speed = speed.c $(COMMON_SRCS)
+OBJS_speed2 = speed2.c $(COMMON_SRCS)
+OBJS_speedd = speedd.c $(COMMON_SRCS)
+OBJS_tcpcl = tcpcl.c $(COMMON_SRCS)
+OBJS_tcpsv = tcpsv.c $(COMMON_SRCS)
+OBJS_udpclnt = udpclnt.c $(COMMON_SRCS)
+OBJS_udpserv = udpserv.c $(COMMON_SRCS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(tests),)
+define TARGET_TEMPLATE
 
-compile_dir = .compile_$(tests)
-teststarget = _stmp_$(tests)
-realtarget = $(teststarget)
+$(1):: .compile_$(1)/$(2)
 
-$(teststarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+LIBS_$(1) =
+OBJS_$(2)_$(1) = $(foreach OBJ, $(notdir $(basename $(OBJS_$(2)))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+.compile_$(1)/$(2): $$(OBJS_$(2)_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(2)_$(1)) $$(LIBS_$(1))
 
-else
+endef
 
-realtarget =
+$(foreach TARGET,$(alltargets), $(foreach EXE, $(EXES), $(eval $(call TARGET_TEMPLATE,$(TARGET),$(EXE)))))
 
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildtests: $(realtarget)

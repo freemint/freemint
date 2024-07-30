@@ -49,18 +49,25 @@ endif
 # libcmini must be installed parallel to the freemint top dir for this to work
 ifeq (yes,$(LIBCMINI))
 LIBCMINI_PATH := $(top_srcdir)/../../libcmini
-ifeq (v4e,$(CPU))
-LIBCMINI_CPU := m5475
-else ifeq (000,$(CPU))
-LIBCMINI_CPU := .
-else
-LIBCMINI_CPU := m68020-60
-endif
+# mapping of CPU names to directory names
+LIBCMINI_CPU_000 =
+LIBCMINI_CPU_020 = m68020-60
+LIBCMINI_CPU_02060 = m68020-60
+LIBCMINI_CPU_030 = m68020-60
+LIBCMINI_CPU_040 = m68020-60
+LIBCMINI_CPU_060 = m68020-60
+LIBCMINI_CPU_v4e = m5475
+
 LIBCMINI_INCPATH := $(LIBCMINI_PATH)/include
-LIBCMINI_LIBPATH := $(LIBCMINI_PATH)/build
-LIBCMINI_STARTUP := $(LIBCMINI_LIBPATH)/$(LIBCMINI_CPU)/objs/crt0.o
-LIBCMINI_LIBPATH := $(LIBCMINI_LIBPATH)/$(LIBCMINI_CPU)
-endif
+
+define LIBCMINI_TEMPLATE
+LIBCMINI_LIBPATH_$(1) = $(LIBCMINI_PATH)/build/$$(LIBCMINI_CPU_$$(CPU_$(1)))
+LIBCMINI_DEP_$(1) = $$(LIBCMINI_LIBPATH_$(1))/libcmini.a
+LIBCMINI_STARTUP_$(1) = $$(LIBCMINI_LIBPATH_$(1))/objs/crt0.o
+endef
+
+endif # LIBCMINI
+
 
 CC = $(CROSSPREFIX)gcc
 AS = $(CC)

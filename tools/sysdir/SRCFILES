@@ -2,6 +2,7 @@
 # the files that should go only into source distributions.
 
 HEADER =
-COBJS = sysdir.c
+OBJS_sysdir.tos = sysdir.c
+COBJS = $(OBJS_sysdir.tos)
 
 SRCFILES = $(HEADER) $(COBJS)

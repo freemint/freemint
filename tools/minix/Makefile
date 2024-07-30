@@ -1,8 +1,6 @@
 #
 # Makefile for minixfs tools
 #
-TARGET = 
-
 SHELL = /bin/sh
 SUBDIRS = docs fsck minit tools
 
@@ -16,9 +14,8 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here:
 
 # default overwrites
 
 # default definitions
-

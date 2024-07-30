@@ -1,31 +1,4 @@
-ifeq ($(usbtool),000)
-TARGET = ./usbtool.acc
-CPU = 000
-endif
+# target changed in util.sh
+CPU_prg = 000
 
-ifeq ($(usbtool),02060)
-TARGET = ./usbtool.acc
-CPU = 02060
-endif
-
-ifeq ($(usbtool),030)
-TARGET = ./usbtool.acc
-CPU = 030
-endif
-
-ifeq ($(usbtool),040)
-TARGET = ./usbtool.acc
-CPU = 040
-endif
-
-ifeq ($(usbtool),060)
-TARGET = ./usbtool.acc
-CPU = 060
-endif
-
-ifeq ($(usbtool),col)
-TARGET = ./usbtool.acc
-CPU = v4e
-endif
-
-usbtooltargets = 000 02060 030 040 060 col
+alltargets = 000 02060 030 040 060 col

@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
@@ -11,11 +11,11 @@ subdir = swkbdtbl
 
 default: help
 
-include $(srcdir)/SWKBDTBLDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
+
+include $(srcdir)/SWKBDTBLDEFS
 
 all-here: all-targets
 
@@ -30,7 +30,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(swkbdtbltargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,46 +39,40 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+EXES = 	swkbdtbl
+
+ALL_TARGETS = $(foreach TARGET, $(alltargets), $(foreach EXE, $(EXES), .compile_$(TARGET)/$(EXE)))
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(swkbdtbltargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/swkbdtbl) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(swkbdtbltargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+all-targets: $(ALL_TARGETS)
 
-$(swkbdtbltargets):
-	$(MAKE) buildswkbdtbl swkbdtbl=$@
+OBJS_swkbdtbl = swkbdtbl.c
 
 #
 # multi target stuff
 #
 
-ifneq ($(swkbdtbl),)
+LIBS =
 
-compile_dir = .compile_$(swkbdtbl)
-swkbdtbltarget = _stmp_$(swkbdtbl)
-realtarget = $(swkbdtbltarget)
+define TARGET_TEMPLATE
 
-$(swkbdtbltarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+$(1):: .compile_$(1)/$(2)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+LIBS_$(1) =
+OBJS_$(2)_$(1) = $(foreach OBJ, $(notdir $(basename $(OBJS_$(2)))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-else
+.compile_$(1)/$(2): $$(OBJS_$(2)_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(2)_$(1)) $(LIBS) $$(LIBS_$(1))
 
-realtarget =
+endef
 
+$(foreach TARGET,$(alltargets), $(foreach EXE, $(EXES), $(eval $(call TARGET_TEMPLATE,$(TARGET),$(EXE)))))
+
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS), $(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildswkbdtbl: $(realtarget)

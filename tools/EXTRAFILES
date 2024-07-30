@@ -1,5 +1,5 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-SRCFILES += BINFILES CONFIGVARS DEPENDENCIES EXTRAFILES \
+SRCFILES += BINFILES CONFIGVARS EXTRAFILES \
 MISCFILES Makefile PHONY RULES SRCFILES mkinstalldirs

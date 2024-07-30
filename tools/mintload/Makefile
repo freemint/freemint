@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
@@ -11,15 +11,16 @@ subdir = mintload
 
 default: help
 
-include $(srcdir)/MINTLOADDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+include $(srcdir)/MINTLOADDEFS
+
 all-here: all-targets
 
 # default overwrites
+LDEXTRA += -nostdlib -Wl,--entry -Wl,__start
 
 # default definitions
 compile_all_dirs = .compile_*
@@ -30,7 +31,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(mintloadtargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,46 +40,34 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(foreach TARGET,$(alltargets),.compile_$(TARGET)/mintload.prg)
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(mintloadtargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.prg) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(mintloadtargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(mintloadtargets):
-	$(MAKE) buildmintload mintload=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(mintload),)
+define TARGET_TEMPLATE
 
-compile_dir = .compile_$(mintload)
-mintloadtarget = _stmp_$(mintload)
-realtarget = $(mintloadtarget)
+$(1): .compile_$(1)/mintload.prg
 
-$(mintloadtarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+LIBS_$(1) = -lgcc
+OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+.compile_$(1)/mintload.prg: $$(OBJS_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
-else
+endef
 
-realtarget =
+$(foreach TARGET,$(alltargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildmintload: $(realtarget)

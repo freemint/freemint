@@ -1,10 +1,8 @@
 #
 # Makefile for minixfs documentation
 #
-TARGET = 
-
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
@@ -16,7 +14,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here:
 
 # default overwrites
 

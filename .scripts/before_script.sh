@@ -18,7 +18,6 @@ TEMP_CPU_TARGET="$CPU_TARGET"
 if [ "$CPU_TARGET" = "prg" ]
 then
 	PRG_TARGET="$CPU_TARGET"
-	USB_TOOL_TARGET="000"
 	TEMP_CPU_TARGET=""
 elif [ "$CPU_TARGET" = "ara" ]
 then
@@ -47,26 +46,26 @@ sed -i -e "s/netusbeetargets = 02060 030 040 060 deb 000 prg prg_000 #col/netusb
 sed -i -e "s/unicorntargets = 02060 030 040 060 deb 000 col prg/unicorntargets = ${TEMP_CPU_TARGET}${PRG_TARGET}/;" ./sys/usb/src.km/ucd/unicorn/UNICORNDEFS
 sed -i -e "s/vttusbtargets = 030 deb 000 prg p30 pst mst/vttusbtargets = ${VTTUSB_TARGETS}/;" ./sys/usb/src.km/ucd/vttusb/VTTUSBDEFS
 sed -i -e "s/inet4targets = 02060 030 040 060 deb 000 col/inet4targets = ${TEMP_CPU_TARGET}/;" ./sys/sockets/INET4DEFS
-sed -i -e "s/cryptotargets = 000 02060 030 040 060 col/cryptotargets = ${TEMP_CPU_TARGET}/;" ./tools/crypto/CRYPTODEFS
-sed -i -e "s/fdisktargets = 000 02060 030 040 060 col/fdisktargets = ${TEMP_CPU_TARGET}/;" ./tools/fdisk/FDISKDEFS
-sed -i -e "s/fsettertargets = 000 02060 030 040 060 col/fsettertargets = ${TEMP_CPU_TARGET}/;" ./tools/fsetter/FSETTERDEFS
-sed -i -e "s/gluestiktargets = 000 02060 030 040 060 col/gluestiktargets = ${TEMP_CPU_TARGET}/;" ./tools/gluestik/GLUESTIKDEFS
-sed -i -e "s/iotargets = 000 02060 030 040 060 col/iotargets = ${TEMP_CPU_TARGET}/;" ./tools/IO/IODEFS
-sed -i -e "s/lpflushtargets = 000 02060 030 040 060 col/lpflushtargets = ${TEMP_CPU_TARGET}/;" ./tools/lpflush/LPFLUSHDEFS
-sed -i -e "s/mgwtargets = 000 02060 030 040 060 col/mgwtargets = ${TEMP_CPU_TARGET}/;" ./tools/mgw/MGWDEFS
-sed -i -e "s/fscktargets = 000 02060 030 040 060 col/fscktargets = ${TEMP_CPU_TARGET}/;" ./tools/minix/fsck/FSCKDEFS
-sed -i -e "s/minittargets = 000 02060 030 040 060 col/minittargets = ${TEMP_CPU_TARGET}/;" ./tools/minix/minit/MINITDEFS
-sed -i -e "s/toolstargets = 000 02060 030 040 060 col/toolstargets = ${TEMP_CPU_TARGET}/;" ./tools/minix/tools/TOOLSDEFS
-sed -i -e "s/mintloadtargets = 000 02060 030 040 060 col/mintloadtargets = ${TEMP_CPU_TARGET}/;" ./tools/mintload/MINTLOADDEFS
-sed -i -e "s/mkfatfstargets = 000 02060 030 040 060 col/mkfatfstargets = ${TEMP_CPU_TARGET}/;" ./tools/mkfatfs/MKFATFSDEFS
-sed -i -e "s/mktbltargets = 000 02060 030 040 060 col/mktbltargets = ${TEMP_CPU_TARGET}/;" ./tools/mktbl/MKTBLDEFS
-sed -i -e "s/nettoolstargets = 000 02060 030 040 060 col/nettoolstargets = ${TEMP_CPU_TARGET}/;" ./tools/net-tools/NETTOOLSDEFS
-sed -i -e "s/slinkctltargets = 000 02060 030 040 060 col/slinkctltargets = ${TEMP_CPU_TARGET}/;" ./tools/net-tools/slinkctl/SLINKCTLDEFS
-sed -i -e "s/teststargets = 000 02060 030 040 060 col/teststargets = ${TEMP_CPU_TARGET}/;" ./tools/net-tools/tests/TESTSDEFS
-sed -i -e "s/nfstargets = 000 02060 030 040 060 col/nfstargets = ${TEMP_CPU_TARGET}/;" ./tools/nfs/NFSDEFS
-sed -i -e "s/nohog2targets = 000 02060 030 040 060 col/nohog2targets = ${TEMP_CPU_TARGET}/;" ./tools/nohog2/NOHOG2DEFS
-sed -i -e "s/stracetargets = 000 02060 030 040 060 col/stracetargets = ${TEMP_CPU_TARGET}/;" ./tools/strace/STRACEDEFS
-sed -i -e "s/swkbdtbltargets = 000 02060 030 040 060 col/swkbdtbltargets = ${TEMP_CPU_TARGET}/;" ./tools/swkbdtbl/SWKBDTBLDEFS
-sed -i -e "s/sysctltargets = 000 02060 030 040 060 col/sysctltargets = ${TEMP_CPU_TARGET}/;" ./tools/sysctl/SYSCTLDEFS
-sed -i -e "s/sysdirtargets = 000 02060 030 040 060 col/sysdirtargets = ${TEMP_CPU_TARGET}/;" ./tools/sysdir/SYSDIRDEFS
-sed -i -e "s/usbtooltargets = 000 02060 030 040 060 col/usbtooltargets = ${TEMP_CPU_TARGET}${USB_TOOL_TARGET}/;" ./tools/usbtool/USBTOOLDEFS
+
+for f in tools/IO/IODEFS \
+	tools/crypto/CRYPTODEFS \
+	tools/fdisk/FDISKDEFS \
+	tools/fsetter/FSETTERDEFS \
+	tools/gluestik/GLUESTIKDEFS \
+	tools/lpflush/LPFLUSHDEFS \
+	tools/mgw/MGWDEFS \
+	tools/minix/MINIXDEFS \
+	tools/mintload/MINTLOADDEFS \
+	tools/mkfatfs/MKFATFSDEFS \
+	tools/mktbl/MKTBLDEFS \
+	tools/net-tools/NETTOOLSDEFS \
+	tools/nfs/NFSDEFS \
+	tools/nohog2/NOHOG2DEFS \
+	tools/strace/STRACEDEFS \
+	tools/swkbdtbl/SWKBDTBLDEFS \
+	tools/sysctl/SYSCTLDEFS \
+	tools/sysdir/SYSDIRDEFS \
+	tools/usbtool/USBTOOLDEFS \
+	; do
+	echo "alltargets = ${TEMP_CPU_TARGET}${PRG_TARGET}" >> $f
+done

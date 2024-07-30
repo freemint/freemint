@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
@@ -11,26 +11,37 @@ subdir = strace
 
 default: help
 
-include $(srcdir)/STRACEDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+include $(srcdir)/STRACEDEFS
+
 all-here: all-targets
 
 # default overwrites
+NATIVECFLAGS += -I$(top_srcdir)/../shared
+NATIVE_LIBS_DEP += $(top_srcdir)/../shared/libsyscall/libsyscall.a
+NATIVE_LIBS += -L$(top_srcdir)/../shared/libsyscall -lsyscall
+#NATIVE_LIBS += -lfl
+
+MASTER = $(top_srcdir)/../sys/syscalls.master
+DEFINITIONS += -D_GNU_SOURCE
+
+NOCFLAGS-print.c = -Wcast-qual
+
+INCLUDES += -I$(srcdir) -I.
 
 # default definitions
 compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs)
+GENFILES = $(compile_all_dirs) sysenttab.* gentables genstamp
 
 help:
 	@echo '#'
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(stracetargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,46 +50,57 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+EXES = 	strace
+
+ALL_TARGETS = $(foreach TARGET, $(alltargets), $(foreach EXE, $(EXES), .compile_$(TARGET)/$(EXE)))
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(stracetargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/strace) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(stracetargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+all-targets: $(ALL_TARGETS)
 
-$(stracetargets):
-	$(MAKE) buildstrace strace=$@
+OBJS_strace = print.c strace.c sysenttab.c
+
+sysenttab.c sysenttab.h: genstamp
+
+genstamp: $(MASTER) gentables
+	./gentables $<
+	touch $@
+
+gentables.o: gentables.c $(top_srcdir)/../shared/libsyscall/syscalldefs.h
+	$(NATIVECC) $(NATIVECFLAGS) -c $< -o $@
+
+gentables: gentables.o $(NATIVE_LIBS_DEP)
+	$(NATIVECC) -o $@ $(NATIVECFLAGS) $< $(NATIVE_LIBS)
+
+$(top_srcdir)/../shared/libsyscall/libsyscall.a:
+	$(MAKE) -C $(top_srcdir)/../shared/libsyscall
 
 #
 # multi target stuff
 #
 
-ifneq ($(strace),)
+LIBS =
 
-compile_dir = .compile_$(strace)
-stracetarget = _stmp_$(strace)
-realtarget = $(stracetarget)
+define TARGET_TEMPLATE
 
-$(stracetarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+$(1):: .compile_$(1)/$(2)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+LIBS_$(1) =
+OBJS_$(2)_$(1) = $(foreach OBJ, $(notdir $(basename $(OBJS_$(2)))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-else
+.compile_$(1)/sysenttab.o .compile_$(1)/strace.o: sysenttab.h
 
-realtarget =
+.compile_$(1)/$(2): $$(OBJS_$(2)_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(2)_$(1)) $(LIBS) $$(LIBS_$(1))
 
+endef
+
+$(foreach TARGET,$(alltargets), $(foreach EXE, $(EXES), $(eval $(call TARGET_TEMPLATE,$(TARGET),$(EXE)))))
+
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS) sysenttab.c,$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildstrace: $(realtarget)

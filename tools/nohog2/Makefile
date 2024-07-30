@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
@@ -11,15 +11,18 @@ subdir = nohog2
 
 default: help
 
-include $(srcdir)/NOHOG2DEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+include $(srcdir)/NOHOG2DEFS
+
 all-here: all-targets
 
 # default overwrites
+ifeq (yes,$(LIBCMINI))
+INCLUDES = -I$(LIBCMINI_INCPATH)
+endif
 
 # default definitions
 compile_all_dirs = .compile_*
@@ -30,7 +33,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(nohog2targets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,46 +42,47 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+EXES = 	nohog2.acc
+
+ALL_TARGETS = $(foreach TARGET, $(alltargets), $(foreach EXE, $(EXES), .compile_$(TARGET)/$(EXE)))
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(nohog2targets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.acc) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(nohog2targets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(nohog2targets):
-	$(MAKE) buildnohog2 nohog2=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(nohog2),)
+LIBS = -lgem
 
-compile_dir = .compile_$(nohog2)
-nohog2target = _stmp_$(nohog2)
-realtarget = $(nohog2target)
+define TARGET_TEMPLATE
 
-$(nohog2target): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+$(1):: .compile_$(1)/$(2)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+LIBS_$(1) =
+OBJS_$(2)_$(1) = $(foreach OBJ, $(notdir $(basename $(OBJS_$(2)))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
+ifneq (yes,$(LIBCMINI))
+.compile_$(1)/$(2): $$(OBJS_$(2)_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(2)_$(1)) $(LIBS) $$(LIBS_$(1))
 else
-
-realtarget =
-
+.compile_$(1)/$(2): $$(OBJS_$(2)_$(1)) $$(LIBCMINI_DEP_$(1))
+	$(LD) -nostdlib -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(LIBCMINI_STARTUP_$(1)) $$(OBJS_$(2)_$(1)) -L$$(LIBCMINI_LIBPATH_$(1)) -lcmini -lgcc -lcmini $(LIBS) $$(LIBS_$(1)) -lgcc
 endif
 
-buildnohog2: $(realtarget)
+endef
+
+ifeq (yes,$(LIBCMINI))
+$(foreach TARGET,$(alltargets),$(eval $(call LIBCMINI_TEMPLATE,$(TARGET))))
+endif
+
+$(foreach TARGET,$(alltargets), $(foreach EXE, $(EXES), $(eval $(call TARGET_TEMPLATE,$(TARGET),$(EXE)))))
+
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
+endif

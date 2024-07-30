@@ -8,3 +8,6 @@ include $(top_srcdir)/../CONFIGVARS
 #
 
 #OPTS = -DGENERATE_DIAGS
+
+# should be save now for all GCC versions up to 14.1
+GENERAL += -Werror
