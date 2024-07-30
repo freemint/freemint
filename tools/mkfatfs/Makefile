@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
@@ -11,15 +11,17 @@ subdir = mkfatfs
 
 default: help
 
-include $(srcdir)/MKFATFSDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
+include $(srcdir)/MKFATFSDEFS
+
 all-here: all-targets
 
 # default overwrites
+INCLUDES = -I$(top_srcdir)/IO
+OPTS += -Wno-inline
 
 # default definitions
 compile_all_dirs = .compile_*
@@ -30,7 +32,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(mkfatfstargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,46 +41,41 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(foreach TARGET,$(alltargets),.compile_$(TARGET)/mkfatfs .compile_$(TARGET)/gemkfatfs.app)
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(mkfatfstargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.app .compile_$$i/mkfatfs) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(mkfatfstargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(mkfatfstargets):
-	$(MAKE) buildmkfatfs mkfatfs=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(mkfatfs),)
+define TARGET_TEMPLATE
 
-compile_dir = .compile_$(mkfatfs)
-mkfatfstarget = _stmp_$(mkfatfs)
-realtarget = $(mkfatfstarget)
+$(1): .compile_$(1)/mkfatfs .compile_$(1)/gemkfatfs.app
 
-$(mkfatfstarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+LIBIO_NAME_$(1) = IO$$(CPU_$(1))
+LIBIO_DEP_$(1) = $(top_srcdir)/IO/lib$$(LIBIO_NAME_$(1)).a
+LIBIO_$(1) = -L$(top_srcdir)/IO -l$$(LIBIO_NAME_$(1))
+LIBS_$(1) =
+OBJS_mkfatfs_$(1) = $(foreach OBJ, mkfatfs, .compile_$(1)/$(OBJ).o)
+OBJS_gemkfatfs_$(1) = $(foreach OBJ, startup gemkfatfs util, .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+.compile_$(1)/mkfatfs: $$(OBJS_mkfatfs_$(1)) $$(LIBIO_DEP_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_mkfatfs_$(1)) $$(LIBS_$(1)) $$(LIBIO_$(1))
 
-else
+.compile_$(1)/gemkfatfs.app: $$(OBJS_gemkfatfs_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -nostartfiles -nostdlib -Wl,--entry,__start -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_gemkfatfs_$(1)) $$(LIBS_$(1)) -lgemma -lc -lgcc
 
-realtarget =
+endef
 
+$(foreach TARGET,$(alltargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildmkfatfs: $(realtarget)

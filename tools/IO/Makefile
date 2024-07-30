@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
@@ -11,13 +11,17 @@ subdir = IO
 
 default: all-here
 
-include $(srcdir)/IODEFS
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: all-targets
+include $(srcdir)/IODEFS
+
+all-here: all-libs
 
 # default overwrites
 
@@ -25,39 +29,29 @@ all-here: all-targets
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) libIO*.a
 
+ALL_LIBS = $(foreach LIB,$(alltargets),libIO$(CPU_$(LIB)).a)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(iotargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(iotargets):
-	$(MAKE) buildio io=$@
+all-libs: $(ALL_LIBS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(io),)
+define LIBIO_TARGET
 
-compile_dir = .compile_$(io)
-iotarget = _stmp_$(io)
-realtarget = $(iotarget)
+$(1): libIO$$(CPU_$(1)).a)
 
-$(iotarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+libIO$$(CPU_$(1)).a: $$(OBJS_$(1))
+	$(AR) rcs $$@.$$$$$$$$ $$(OBJS_$(1)) && mv $$@.$$$$$$$$ $$@ || { $(RM) $$@.$$$$$$$$; false; }
+endef
 
-else
+$(foreach LIB,$(alltargets),$(eval $(call LIBIO_TARGET,$(LIB))))
 
-realtarget =
+$(foreach LIB,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(LIB),$(OBJ)))))
 
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildio: $(realtarget)

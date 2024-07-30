@@ -2,12 +2,7 @@
 # the files that should go only into source distributions.
 
 HEADER = 
+OBJS_usbtool.acc = usbtool.c 
+COBJS = $(OBJS_usbtool.acc)
 
-COBJS = \
-	usbtool.c 
-
-SOBJS = 
-
-SSOBJS = 
-
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS)

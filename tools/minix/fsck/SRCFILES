@@ -2,6 +2,6 @@
 # the files that should go only into source distributions.
 
 HEADER = common.h fs.h fsck.h global.h io.h
-COBJS = common.c fsck.c global.c io.c main.c
+COBJS = common.c fsck.c fsck1.c global.c io.c main.c
 
 SRCFILES = $(HEADER) $(COBJS)

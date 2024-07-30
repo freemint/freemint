@@ -1,5 +1,7 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-SRCFILES = mktbl.c mktbl.h unitable.c unitable.h country.h
+HEADER = mktbl.h unitable.h country.h
+COBJS = mktbl.c unitable.c
 
+SRCFILES = $(HEADER) $(COBJS)

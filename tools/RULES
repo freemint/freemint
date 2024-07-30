@@ -12,6 +12,7 @@ include $(top_srcdir)/../RULES
 #
 INCLUDES = -I$(top_srcdir)
 CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
+LD = $(CC) $(LDEXTRA)
 
 #
 # libIO target
@@ -19,3 +20,10 @@ CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
 LIBIOTARGET = libIO$(CPU).a
 LIBIOSTMP = $(top_srcdir)/IO/libIO$(CPU).a
 LIBIO = -L$(top_srcdir)/IO -lIO$(CPU)
+
+define LIBIO_TEMPLATE
+$(top_srcdir)/IO/libIO$(1).a:
+	$(MAKE) -C $(top_srcdir)/IO libIO$(1).a
+endef
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBIO_TEMPLATE,$(TARGET))))

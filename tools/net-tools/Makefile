@@ -11,11 +11,11 @@ subdir = net-tools
 
 default: help
 
-include $(srcdir)/NETTOOLSDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
+
+include $(srcdir)/NETTOOLSDEFS
 
 all-here: all-targets
 
@@ -30,7 +30,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(nettoolstargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,49 +39,48 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+EXES = arp diald ifconfig iflink ifstats masqconf netstat pppconf route slattach
+
+ALL_TARGETS = $(foreach TARGET, $(alltargets), $(foreach EXE, $(EXES), .compile_$(TARGET)/$(EXE)))
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(nettoolstargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/arp .compile_$$i/diald .compile_$$i/ifconfig \
-		.compile_$$i/iflink .compile_$$i/ifstats .compile_$$i/masqconf \
-		.compile_$$i/netstat .compile_$$i/pppconf .compile_$$i/route \
-		.compile_$$i/slattach) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(nettoolstargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+all-targets: $(ALL_TARGETS)
 
-$(nettoolstargets):
-	$(MAKE) buildnettools nettools=$@
+# map executable names to source lists
+OBJS_arp = arp.c $(COMMON_SRCS)
+OBJS_diald = diald.c $(COMMON_SRCS)
+OBJS_ifconfig = ifconfig.c ifopts.c $(COMMON_SRCS)
+OBJS_iflink = iflink.c $(COMMON_SRCS)
+OBJS_ifstats = ifstats.c $(COMMON_SRCS)
+OBJS_masqconf = masqconf.c $(COMMON_SRCS)
+OBJS_netstat = netstat.c $(COMMON_SRCS)
+OBJS_pppconf = pppconf.c $(COMMON_SRCS)
+OBJS_route = route.c $(COMMON_SRCS)
+OBJS_slattach = slattach.c $(COMMON_SRCS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(nettools),)
+define TARGET_TEMPLATE
 
-compile_dir = .compile_$(nettools)
-nettoolstarget = _stmp_$(nettools)
-realtarget = $(nettoolstarget)
+$(1):: .compile_$(1)/$(2)
 
-$(nettoolstarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+LIBS_$(1) =
+OBJS_$(2)_$(1) = $(foreach OBJ, $(notdir $(basename $(OBJS_$(2)))), .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+.compile_$(1)/$(2): $$(OBJS_$(2)_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(2)_$(1)) $$(LIBS_$(1))
 
-else
+endef
 
-realtarget =
+$(foreach TARGET,$(alltargets), $(foreach EXE, $(EXES), $(eval $(call TARGET_TEMPLATE,$(TARGET),$(EXE)))))
 
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildnettools: $(realtarget)

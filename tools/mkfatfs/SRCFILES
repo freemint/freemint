@@ -6,11 +6,9 @@ HEADER = \
 	util.h
 
 COBJS = \
+	startup.S \
 	gemkfatfs.c \
 	mkfatfs.c \
 	util.c
 
-SOBJS = \
-	startup.S
-
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS)

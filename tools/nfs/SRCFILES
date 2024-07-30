@@ -2,6 +2,7 @@
 # the files that should go only into source distributions.
 
 HEADER = mount.h mount_xdr.h nfsmnt.h
-COBJS = mount.c mount_xdr.c nfsmnt.c
+OBJS_mount_nfs = mount.c mount_xdr.c nfsmnt.c
+COBJS = $(OBJS_mount_nfs)
 
 SRCFILES = $(HEADER) $(COBJS)

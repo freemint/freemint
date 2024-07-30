@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
@@ -11,11 +11,11 @@ subdir = tools
 
 default: help
 
-include $(srcdir)/TOOLSDEFS
-
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
+
+include $(srcdir)/../MINIXDEFS
 
 all-here: all-targets
 
@@ -30,7 +30,7 @@ help:
 	@echo '# targets:'
 	@echo '# --------'
 	@echo '# - all'
-	@echo '# - $(toolstargets)'
+	@echo '# - $(alltargets)'
 	@echo '#'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -39,46 +39,38 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(foreach TARGET,$(alltargets),.compile_$(TARGET)/flist .compile_$(TARGET)/mfsconf)
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(toolstargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/flist .compile_$$i/mfsconf) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(toolstargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(toolstargets):
-	$(MAKE) buildtools tools=$@
+all-targets: $(ALL_TARGETS)
 
 #
 # multi target stuff
 #
 
-ifneq ($(tools),)
+define TARGET_TEMPLATE
 
-compile_dir = .compile_$(tools)
-toolstarget = _stmp_$(tools)
-realtarget = $(toolstarget)
+$(1): .compile_$(1)/flist .compile_$(1)/mfsconf
 
-$(toolstarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+LIBS_$(1) =
+OBJS_flist_$(1) = $(foreach OBJ, flist, .compile_$(1)/$(OBJ).o)
+OBJS_mfsconf_$(1) = $(foreach OBJ, mfsconf, .compile_$(1)/$(OBJ).o)
+DEFINITIONS_$(1) = $(DEFINITIONS)
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+.compile_$(1)/flist: $$(OBJS_flist_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_flist_$(1)) $$(LIBS_$(1))
 
-else
+.compile_$(1)/mfsconf: $$(OBJS_mfsconf_$(1))
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_mfsconf_$(1)) $$(LIBS_$(1))
 
-realtarget =
+endef
 
+$(foreach TARGET,$(alltargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
 endif
-
-buildtools: $(realtarget)

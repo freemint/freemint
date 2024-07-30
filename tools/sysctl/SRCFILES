@@ -2,6 +2,8 @@
 # the files that should go only into source distributions.
 
 HEADER = fparseln.h
-COBJS = fparseln.c sysctl.c
+OBJS_sysctl = fparseln.c sysctl.c
+
+COBJS = $(OBJS_sysctl)
 
 SRCFILES = $(HEADER) $(COBJS)

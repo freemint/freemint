@@ -286,7 +286,7 @@ copy_usb4tos() {
 	cp "$SRC/sys/usb/src.km/udd/printer/.compile_prg/printer.prg" "$USB4TOSDIR"
 	cp "$SRC/sys/usb/src.km/udd/storage/.compile_prg/storage.prg" "$USB4TOSDIR"
 	# TODO: multiple CPU variants?
-	cp "$SRC/tools/usbtool/.compile_000/usbtool.acc" "$USB4TOSDIR"
+	cp "$SRC/tools/usbtool/.compile_prg/usbtool.acc" "$USB4TOSDIR"
 }
 
 copy_fonts() {
