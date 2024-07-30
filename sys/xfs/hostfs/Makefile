@@ -34,46 +34,42 @@ include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 # default overwrites
-# for aranym, this is compiled into the kernel
-ifneq ($(kernel),)
-DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
-targets = ara
-TARGET = .compile_ara/objs
-else
-DEFINITIONS = -D__KERNEL_XFS__
-targets = 000
-COBJS += $(CMODOBJS)
-TARGET = hostfs.xfs
-endif
 INCLUDES = -I$(top_srcdir)
+# for aranym, this is compiled into the kernel
+DEFINITIONS_ara = $(KERNELDEFAULTDEFS) $(KERNELDEFS) $(KERNELDEFS_ara)
+# when compiling standalone
+DEFINITIONS_000 = -D__KERNEL_XFS__
+COBJS_000 = $(CMODOBJS)
 
 # default definitions
 all_compile_dirs = .compile_*
-GENFILES = $(all_compile_dirs) $(TARGET)
+GENFILES = $(all_compile_dirs)
 
-all-here: $(TARGET)
+targets = 000 ara
+
+all-here: $(targets)
 
 strip:
-	$(STRIP) $(TARGET)
+	$(STRIP) .compile_*/*.xfs
 
 LD = $(CC) -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
+
+ara:: .compile_ara/hostfs.a
+000:: .compile_000/hostfs.xfs
 
 define TARGET_TEMPLATE
 
 LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
-DEFINITIONS_$(1) = $(DEFINITIONS)
 LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
-OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
+OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS) $(COBJS_$(1)))), .compile_$(1)/$(OBJ).o)
 
-# util.sh currently expects it in this folder
-hostfs.xfs: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
+.compile_$(1)/hostfs.xfs: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
 	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
-.compile_$(1)/objs: $$(OBJS_$(1))
-	@echo "Kernel: \"$(kernel)\""
-	echo $(addsuffix .o, $(notdir $(basename $(COBJS)))) > $$@
+.compile_$(1)/hostfs.a: $$(OBJS_$(1))
+	$(AR) rcs $$@.tmp $$(OBJS_$(1)) && mv $$@.tmp $$@ || { $(RM) $$@.tmp; false; }
 
 endef
 
@@ -84,7 +80,7 @@ endef
 
 $(foreach TARGET,$(targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS) $(CMODOBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 

@@ -1,7 +1,7 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-STARTUP = startup.o
+STARTUP = startup.S
 
 COBJS = \
 	check_exc.c \
@@ -17,9 +17,8 @@ COBJS = \
 	process_reg.c \
 	psc0.c \
 	sig_mach.c \
-	timer.c
-
-SOBJS = \
+	timer.c \
+	\
 	acia.S \
 	context.S \
 	cpu.S \
@@ -37,4 +36,4 @@ SOBJS = \
 	xhdi_emu.S \
 	v4epatch.S
 
-SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)
+SRCFILES = $(STARTUP) $(COBJS)

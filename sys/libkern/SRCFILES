@@ -51,6 +51,12 @@ COBJS = \
 	unaligned.c \
 	unix2xbios.c \
 	unixtime.c \
-	vsprintf.c
+	vsprintf.c \
+	\
+	asm/blockcopy.S \
+	asm/memset.S \
+	asm/quickmove.S \
+	asm/quickswap.S \
+	asm/quickzero.S
 
 SRCFILES = $(HEADER) $(COBJS)

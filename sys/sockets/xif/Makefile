@@ -126,9 +126,9 @@ $(2)_$(1).xif: $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBKERN_DEP_$(1))
 
 endef
 
-define CC_TEMPLATE
+define CPU_TEMPLATE
 $(basename $(2))_$(1).o: $(2)
-	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(XIF_DEFS_$(basename $(2))) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(basename $(2))_$(1).P -c $$< -o $$@
+	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(XIF_DEFS_$(basename $(2))) $$(MODEL_$(1)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(basename $(2))_$(1).P -Wp,-MT,$$@ -c $$< -o $$@
 
 -include .deps/$(basename $(2))_$(1).P
 
@@ -137,16 +137,16 @@ endef
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 
 # sorting is needed here to eliminate duplicates
-$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(notdir $(COBJS))),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(notdir $(COBJS))),$(eval $(call CPU_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
 $(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
 $(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),slip)))
-$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
+$(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
 $(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),picowifi)))
 $(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dummy)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),de600)))
-$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
+$(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc_fast)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblmst)))

@@ -56,7 +56,6 @@ aranym.xfs: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
 	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 .compile_$(1)/objs: $$(OBJS_$(1))
-	@echo "Kernel: \"$(kernel)\""
 	echo $(addsuffix .o, $(notdir $(basename $(COBJS)))) > $$@
 
 endef

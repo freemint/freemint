@@ -90,6 +90,7 @@ COBJS = \
 	util.c \
 	xbios.c \
 	xfs_xdd.c \
-	xhdi.c
+	xhdi.c \
+	info.c
 
 SRCFILES = $(COBJS)

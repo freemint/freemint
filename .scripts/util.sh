@@ -148,7 +148,7 @@ copy_aranym_modules() {
 	cp "$SRC/sys/xdd/nfcdrom/.compile_040/nfcdrom.xdd" "$MCHDIR/nfcdrom.xdx"
 	cp "$SRC/sys/xfs/aranym/aranym.xfs" "$MCHDIR"
 	# not really needed
-	cp "$SRC/sys/xfs/hostfs/hostfs.xfs" "$MCHDIR/hostfs.xfx"
+	cp "$SRC/sys/xfs/hostfs/.compile_000/hostfs.xfs" "$MCHDIR/hostfs.xfx"
 }
 
 copy_xaloader() {
