@@ -6,21 +6,16 @@ HEADER = \
 
 COBJS = \
 	ehci-hcd.c \
-	ehci-pci.c
+	ehci-pci.c \
+	ehci.S
 
 TOSCOBJS = \
 	crtinit.c \
-	pci_bios.c
-
-SSOBJS = \
-	ehci.S \
-
-TOSSSOBJS = \
+	pci_bios.c \
 	cache.S \
 	delayasm.S \
 	entry.S \
 	pci_xbios.S \
 	setstack.S
 
-
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

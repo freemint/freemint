@@ -3,31 +3,22 @@
 #
 # -DDEV_DEBUG		include debugging information
 
-
-ifeq ($(ethernat),deb)
-TARGET = ethernat.ucd
-CPU = 060
-USBDEFS += -DDEV_DEBUG
-endif
-
-ifeq ($(ethernat),prg)
-TARGET = ethernat.prg
-CPU = 060
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-endif
-
-ifeq ($(ethernat),060)
-TARGET = ethernat.ucd
-CPU = 060
-USBDEFS +=
-endif
-
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifeq ($(ethernat),prg)
-LDEXTRA += -Wl,--entry,__start
-else
-LDEXTRA += -Wl,--entry,init_ucd
-endif
+LDEXTRA_ucd = -Wl,--entry,init_ucd
+
+
+UCDTARGET_deb = ethernat.ucd
+USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_060 = $(LDEXTRA_ucd)
+
+UCDTARGET_prg = ethernat.prg
+CPU_prg = 060
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA_prg = -Wl,--entry,__start
+
+UCDTARGET_060 = ethernat.ucd
+USBDEFS_060 =
+LDEXTRA_060 = $(LDEXTRA_ucd)
 
 #
 # all default targets

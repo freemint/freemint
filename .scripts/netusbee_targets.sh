@@ -6,6 +6,9 @@ then
 elif [ "$CPU_TARGET" = "col" ]
 then
 	NETUSBEE_TARGETS=""
+elif [ "$CPU_TARGET" = "ara" ]
+then
+	NETUSBEE_TARGETS="040"
 else
 	NETUSBEE_TARGETS="$CPU_TARGET"
 fi

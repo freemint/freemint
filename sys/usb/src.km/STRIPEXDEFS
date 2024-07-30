@@ -1,0 +1,5 @@
+STRIPEX = $(top_srcdir)/usb/src.km/tos-common/stripex
+
+$(STRIPEX): $(top_srcdir)/usb/src.km/tos-common/stripex.c
+	gcc $< -o $@
+

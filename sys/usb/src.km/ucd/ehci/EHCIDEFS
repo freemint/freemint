@@ -3,61 +3,40 @@
 #
 # -DDEV_DEBUG		include debugging information
 
-
-ifeq ($(ehci),deb)
-TARGET = ehci.ucd
-CPU = 02060
-USBDEFS += -DDEV_DEBUG
-endif
-
-ifeq ($(ehci),prg)
-TARGET = ehci.prg
-CPU = 040
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-endif
-
-ifeq ($(ehci),000)
-TARGET = ehci.ucd
-CPU = 000
-USBDEFS +=
-endif
-
-ifeq ($(ehci),02060)
-TARGET = ehci.ucd
-CPU = 02060
-USBDEFS +=
-endif
-
-ifeq ($(ehci),030)
-TARGET = ehci.ucd
-CPU = 030
-USBDEFS +=
-endif
-
-ifeq ($(ehci),040)
-TARGET = ehci.ucd
-CPU = 040
-USBDEFS +=
-endif
-
-ifeq ($(ehci),060)
-TARGET = ehci.ucd
-CPU = 060
-USBDEFS +=
-endif
-
-ifeq ($(ehci),col)
-TARGET = ehci.ucd
-CPU  = v4e
-USBDEFS += -DCOLDFIRE
-endif
-
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifeq ($(ehci),prg)
-LDEXTRA += -Wl,--entry,__start
-else
-LDEXTRA += -Wl,--entry,init_ucd
-endif
+LDEXTRA_ucd = -Wl,--entry,init_ucd
+
+USBDEFS_deb = -DDEV_DEBUG
+UCDTARGET_deb = ehci.ucd
+
+CPU_prg = 040
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+UCDTARGET_prg = ehci.pg
+LDEXTRA_prg = -Wl,--entry,__start
+
+USBDEFS_000 =
+UCDTARGET_000 = ehci.ucd
+LDEXTRA_000 = $(LDEXTRA_ucd)
+
+USBDEFS_02060 =
+UCDTARGET_02060 = ehci.ucd
+LDEXTRA_02060 = $(LDEXTRA_ucd)
+
+USBDEFS_030 =
+UCDTARGET_030 = ehci.ucd
+LDEXTRA_030 = $(LDEXTRA_ucd)
+
+USBDEFS_040 =
+UCDTARGET_040 = ehci.ucd
+LDEXTRA_040 = $(LDEXTRA_ucd)
+
+USBDEFS_060 =
+UCDTARGET_060 = ehci.ucd
+LDEXTRA_060 = $(LDEXTRA_ucd)
+
+USBDEFS_col = -DCOLDFIRE
+UCDTARGET_col = ehci.ucd
+LDEXTRA_col = $(LDEXTRA_ucd)
 
 #
 # all default targets
