@@ -94,12 +94,12 @@ copy_tt_modules() {
 	local MCHDIR="$1/tt"
 	local TARGET="$2"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/daynaport/.compile_${TARGET}/scsilink.xif" "$MCHDIR/scsilink.xix"
-	cp "$SRC/sys/sockets/xif/lance_${TARGET}.xif" "$MCHDIR/lance.xix"
-	cp "$SRC/sys/sockets/xif/riebltt_${TARGET}.xif" "$MCHDIR/riebltt.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012_${TARGET}.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/xdd/mfp/.compile_${TARGET}/mfp.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/scc/.compile_${TARGET}/scc.xdd" "$MCHDIR"
+	cp "$SRC/sys/sockets/xif/daynaport/.compile_030/scsilink.xif" "$MCHDIR/scsilink.xix"
+	cp "$SRC/sys/sockets/xif/lance_030.xif" "$MCHDIR/lance.xix"
+	cp "$SRC/sys/sockets/xif/riebltt_030.xif" "$MCHDIR/riebltt.xix"
+	cp "$SRC/sys/sockets/xif/rtl8012_030.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/xdd/mfp/.compile_030/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/scc/.compile_030/scc.xdd" "$MCHDIR"
 }
 copy_falcon_modules() {
 	local MCHDIR="$1/falcon"
