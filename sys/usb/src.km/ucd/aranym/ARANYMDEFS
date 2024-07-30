@@ -3,27 +3,22 @@
 #
 # -DDEV_DEBUG		include debugging information
 
+LDEXTRA = -nostdlib -Wl,--fatal-warnings
 
-ifeq ($(aranym),deb)
-TARGET = aranym.ucd
-CPU = 040
-USBDEFS += -DDEV_DEBUG
-LDEXTRA = -nostdlib -Wl,--entry,init_ucd -Wl,--fatal-warnings
-endif
+USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_deb = -Wl,--entry,init_ucd
+UCDTARGET_deb = aranym.ucd
+# override from toplevel RULES
+CPU_deb = 040
 
-ifeq ($(aranym),prg)
-TARGET = aranym.prg
-CPU = 040
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-LDEXTRA = -nostdlib -Wl,--entry -Wl,__start -Wl,--fatal-warnings
-endif
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA_prg = -Wl,--entry,__start
+UCDTARGET_prg = aranym.prg
+CPU_prg = 040
 
-ifeq ($(aranym),040)
-TARGET = aranym.ucd
-CPU = 040
-USBDEFS +=
-LDEXTRA = -nostdlib -Wl,--entry,init_ucd -Wl,--fatal-warnings
-endif
+USBDEFS_040 =
+LDEXTRA_040 = -Wl,--entry,init_ucd
+UCDTARGET_040 = aranym.ucd
 
 #
 # all default targets

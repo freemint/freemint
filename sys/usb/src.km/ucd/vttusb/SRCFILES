@@ -5,18 +5,14 @@ HEADER = \
 	isp116x.h
 
 COBJS = \
-	isp116x-hcd.c
-
-TOSCOBJS = \
-        crtinit.c
-
-SSOBJS = \
+	isp116x-hcd.c \
 	vttusb_int.S
 
-# for HDDRIVER modules to work, entry.S must be first in TOSSSOBJS
-TOSSSOBJS = \
+# for HDDRIVER modules to work, entry.S must be first in TOSCOBJS
+TOSCOBJS = \
         entry.S \
         setstack.S \
-        delayasm.S
+        delayasm.S \
+        crtinit.c
 
-SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

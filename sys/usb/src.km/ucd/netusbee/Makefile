@@ -3,30 +3,38 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../../../..
 subdir = netusbee
-toscommon_srcdir = ../../tos-common
+toscommon_srcdir = $(srcdir)/../../tos-common
 
 default: help
 
-include ./NETUSBEEDEFS
+# Disable built-in rules
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-SGENFILES = crtinit.c delayasm.S entry.S setstack.S
+include $(srcdir)/NETUSBEEDEFS
+include $(srcdir)/../../STRIPEXDEFS
 
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=netusbee $(USBDEFS)
+INCLUDES += -I$(top_srcdir)/../../sys
+WARN += -Wcast-qual
 
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.ucd *.prg
+
+GENFILES += crtinit.c delayasm.S entry.S setstack.S
 
 help:
 	@echo '#'
@@ -42,27 +50,13 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(foreach TARGET, $(netusbeetargets), .compile_$(TARGET)/$(UCDTARGET_$(TARGET)))
+
+STRIPFLAGS =
 strip:
-	$(STRIP) .compile_prg/*.prg
-	$(STRIP) .compile_prg_000/*.prg
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(netusbeetargets); do \
-		if [ "$$i" = "prg" -o "$$i" = "prg_000" ]; then continue; fi; \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.ucd) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(netusbeetargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(netusbeetargets): $(SGENFILES)
-	$(MAKE) buildnetusbee netusbee=$@
+all-targets: $(ALL_TARGETS)
 
 # Link common TOS files
 crtinit.c: $(toscommon_srcdir)/crtinit.c
@@ -78,23 +72,41 @@ setstack.S: $(toscommon_srcdir)/setstack.S
 # multi target stuff
 #
 
-ifneq ($(netusbee),)
+LD = $(CC) $(LDEXTRA)
 
-compile_dir = .compile_$(netusbee)
-netusbeetarget = _stmp_$(netusbee)
-realtarget = $(netusbeetarget)
+# for HDDRIVER modules to work, TOSSCOBJS must be first in OBJS
+OBJS_prg = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg/$(OBJ).o)
+OBJS_prg_000 = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg_000/$(OBJ).o)
 
-$(netusbeetarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+define TARGET_TEMPLATE
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
+LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
+LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(USBDEFS_$(1))
+LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
+OBJS_$(1) += $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
+$$(OBJS_$(1)): NETUSBEEDEFS
 
-else
+$(1): $(addprefix .compile_,$(1))/$(UCDTARGET_$(1))
 
-realtarget =
+$(addprefix .compile_,$(1))/$(UCDTARGET_$(1)): $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1)) $(STRIPEX)
+	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	@case $$@ in *.prg) echo $(STRIPEX) $$@; $(STRIPEX) $$@; ;; esac
 
+endef
+
+define LIBKERN_TEMPLATE
+$(top_srcdir)/libkern/libkern$(1).a:
+	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+endef
+
+$(foreach TARGET,$(netusbeetargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
+
+$(foreach TARGET,$(netusbeetargets),$(foreach OBJ,$(COBJS) $(TOSCOBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(netusbeetargets))) > /dev/null 2>&1 || :)
 endif
-
-buildnetusbee: $(realtarget)

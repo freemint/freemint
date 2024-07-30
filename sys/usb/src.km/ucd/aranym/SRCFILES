@@ -6,18 +6,14 @@ HEADER = \
 	usbhost_nfapi.h
 
 COBJS = \
-	aranym-hcd.c
+	aranym-hcd.c \
+	nfusbasm.S
 
 TOSCOBJS = \
 	crtinit.c \
-	natfeat.c
-
-SSOBJS = \
-	nfusbasm.S
-
-TOSSSOBJS = \
+	natfeat.c \
 	entry.S \
 	natfeat_asm.S \
 	setstack.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

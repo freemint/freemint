@@ -22,17 +22,11 @@ COBJS = \
 	usb.c \
 	util.c
 
+# for HDDRIVER modules to work, entry.S must be first in TOSCOBJS
 TOSCOBJS = \
-	crtinit.c
-
-SOBJS =
-
-SSOBJS =
-
-# for HDDRIVER modules to work, entry.S must be first in TOSSSOBJS
-TOSSSOBJS = \
 	entry.S \
 	delayasm.S \
-	setstack.S
+	setstack.S \
+	crtinit.c
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)
+SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

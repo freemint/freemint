@@ -58,7 +58,7 @@ copy_st_modules() {
 	mkdir -p "$MCHDIR"
 	# TODO: perhaps these four are compatible also with other machines
 	#       but they are awfully old and obsolete so let's keep them here
-	cp "$SRC/sys/sockets/xif/biodma_000.xif" "$MCHDIR/biodma_000.xix"
+	cp "$SRC/sys/sockets/xif/biodma_000.xif" "$MCHDIR/biodma.xix"
 	cp "$SRC/sys/sockets/xif/de600_000.xif" "$MCHDIR/de600.xix"
 	cp "$SRC/sys/sockets/xif/dial_000.xif" "$MCHDIR/dial.xix"
 	cp "$SRC/sys/sockets/xif/pamsdma_000.xif" "$MCHDIR/pamsdma.xix"

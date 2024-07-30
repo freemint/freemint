@@ -5,55 +5,44 @@
 
 
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
-
-ifeq ($(vttusb),deb)
-TARGET = blitz030.ucd
-CPU = 030
-USBDEFS += -DDEV_DEBUG -DLIGHTNING_VME -DVTTUSB_HW_INT
-LDEXTRA += -Wl,--entry,init_ucd
+ifndef NOSTRIP
+LDEXTRA += -s
 endif
+LDEXTRA_ucd = -Wl,--entry,init_ucd
 
-ifeq ($(vttusb),prg)
-TARGET = blitz.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DLIGHTNING_VME -DSTACKSIZE=16384
-LDEXTRA += -Wl,--entry,__start
-endif
+UCDTARGET_deb = blitz030.ucd
+USBDEFS_deb = -DDEV_DEBUG -DLIGHTNING_VME -DVTTUSB_HW_INT
+LDEXTRA_deb = $(LDEXTRA_ucd)
+# override from toplevel RULES
+CPU_deb = 030
 
-ifeq ($(vttusb),p30)
-TARGET = blitz030.prg
-CPU = 030
-USBDEFS += -DTOSONLY -fno-builtin -DLIGHTNING_VME -DSTACKSIZE=16384
-LDEXTRA += -Wl,--entry,__start
-endif
+UCDTARGET_prg = blitz.prg
+CPU_prg = 000
+USBDEFS_prg = -DTOSONLY -fno-builtin -DLIGHTNING_VME -DSTACKSIZE=16384
+LDEXTRA_prg = -Wl,--entry,__start
 
-ifeq ($(vttusb),pst)
-TARGET = blitz_st.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DLIGHTNING_ST -DSTACKSIZE=16384
-LDEXTRA += -Wl,--entry,__start
-endif
+UCDTARGET_p30 = blitz030.prg
+CPU_p30 = 030
+USBDEFS_p30 = -DTOSONLY -fno-builtin -DLIGHTNING_VME -DSTACKSIZE=16384
+LDEXTRA_p30 = -Wl,--entry,__start
 
-ifeq ($(vttusb),000)
-TARGET = blitz.ucd
-CPU = 000
-USBDEFS +=  -DLIGHTNING_VME -DVTTUSB_HW_INT
-LDEXTRA += -Wl,--entry,init_ucd
-endif
+UCDTARGET_pst = blitz_st.prg
+CPU_pst = 000
+USBDEFS_pst = -DTOSONLY -fno-builtin -DLIGHTNING_ST -DSTACKSIZE=16384
+LDEXTRA_pst = -Wl,--entry,__start
 
-ifeq ($(vttusb),030)
-TARGET = blitz030.ucd
-CPU = 030
-USBDEFS +=  -DLIGHTNING_VME -DVTTUSB_HW_INT
-LDEXTRA += -Wl,--entry,init_ucd
-endif
+UCDTARGET_000 = blitz.ucd
+USBDEFS_000 =  -DLIGHTNING_VME -DVTTUSB_HW_INT
+LDEXTRA_000 = $(LDEXTRA_ucd)
 
-ifeq ($(vttusb),mst)
-TARGET = blitz_st.ucd
-CPU = 000
-USBDEFS +=  -DLIGHTNING_ST
-LDEXTRA += -Wl,--entry,init_ucd
-endif
+UCDTARGET_030 = blitz030.ucd
+USBDEFS_030 =  -DLIGHTNING_VME -DVTTUSB_HW_INT
+LDEXTRA_030 = $(LDEXTRA_ucd)
+
+UCDTARGET_mst = blitz_st.ucd
+CPU_mst = 000
+USBDEFS_mst =  -DLIGHTNING_ST
+LDEXTRA_mst = $(LDEXTRA_ucd)
 
 #
 # all default targets

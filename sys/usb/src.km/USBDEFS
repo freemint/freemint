@@ -5,69 +5,46 @@
 
 
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
+LDEXTRA_km = -Wl,--entry,init_km
+LDEXTRA_tos = -Wl,--entry,__start
 
-ifeq ($(usb),deb)
-TARGET = usbdeb.km
-CPU = 02060
-USBDEFS += -DDEV_DEBUG
-endif
+USBDEFS_deb = -DDEV_DEBUG
+USBKM_deb = usbdeb.km
+LDEXTRA_deb = $(LDEXTRA_km)
 
-ifeq ($(usb),prg)
-TARGET = usb.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=98304
-OBJS += 
-endif
+CPU_prg = 000
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=98304
+USBKM_prg = usb.prg
+LDEXTRA_prg = $(LDEXTRA_tos)
 
-ifeq ($(usb),plm)
-TARGET = usb_lmem.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=65536 -DUSB_CONFIG_BUFFER_SIZE=16384 -DUSB_MAX_DEVICE=8
-OBJS += 
-endif
+CPU_plm = 000
+USBDEFS_plm = -DTOSONLY -fno-builtin -DSTACKSIZE=65536 -DUSB_CONFIG_BUFFER_SIZE=16384 -DUSB_MAX_DEVICE=8
+USBKM_plm = usb_lmem.prg
+LDEXTRA_plm = $(LDEXTRA_tos)
 
-ifeq ($(usb),000)
-TARGET = usb000.km
-CPU = 000
-USBDEFS +=
-endif
+USBDEFS_000 =
+USBKM_000 = usb000.km
+LDEXTRA_000 = $(LDEXTRA_km)
 
-ifeq ($(usb),02060)
-TARGET = usb02060.km
-CPU = 02060
-USBDEFS +=
-endif
+USBDEFS_02060 =
+USBKM_02060 = usb02060.km
+LDEXTRA_02060 = $(LDEXTRA_km)
 
-ifeq ($(usb),030)
-TARGET = usb030.km
-CPU = 030
-USBDEFS +=
-endif
+USBDEFS_030 =
+USBKM_030 = usb030.km
+LDEXTRA_030 = $(LDEXTRA_km)
 
-ifeq ($(usb),040)
-TARGET = usb040.km
-CPU = 040
-USBDEFS +=
-endif
+USBDEFS_040 =
+USBKM_040 = usb040.km
+LDEXTRA_040 = $(LDEXTRA_km)
 
-ifeq ($(usb),060)
-TARGET = usb060.km
-CPU = 060
-USBDEFS +=
-endif
+USBDEFS_060 =
+USBKM_060 = usb040.km
+LDEXTRA_040 = $(LDEXTRA_km)
 
-ifeq ($(usb),col)
-TARGET = usbv4e.km
-CPU  = v4e
-USBDEFS += -DCOLDFIRE
-endif
-
-LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifneq ($(findstring .km,$(TARGET)),)
-LDEXTRA += -Wl,--entry,init_km
-else
-LDEXTRA += -Wl,--entry,__start
-endif
+USBDEFS_col = -DCOLDFIRE
+USBKM_col = usbv4e.km
+LDEXTRA_col = $(LDEXTRA_km)
 
 #
 # all default targets

@@ -3,67 +3,46 @@
 #
 # -DDEV_DEBUG		include debugging information
 
-
-ifeq ($(netusbee),deb)
-TARGET = netusbee.ucd
-CPU = 02060
-USBDEFS += -DDEV_DEBUG
-endif
-
-ifeq ($(netusbee),prg)
-TARGET = netusbee.prg
-CPU = 02060
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-endif
-
-ifeq ($(netusbee),prg_000)
-TARGET = netusbee.prg
-CPU = 000
-USBDEFS += -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-endif
-
-ifeq ($(netusbee),000)
-TARGET = netusbee.ucd
-CPU = 000
-USBDEFS +=
-endif
-
-ifeq ($(netusbee),02060)
-TARGET = netusbee.ucd
-CPU = 02060
-USBDEFS +=
-endif
-
-ifeq ($(netusbee),030)
-TARGET = netusbee.ucd
-CPU = 030
-USBDEFS +=
-endif
-
-ifeq ($(netusbee),040)
-TARGET = netusbee.ucd
-CPU = 040
-USBDEFS +=
-endif
-
-ifeq ($(netusbee),060)
-TARGET = netusbee.ucd
-CPU = 060
-USBDEFS +=
-endif
-
-ifeq ($(netusbee),col)
-TARGET = netusbee.ucd
-CPU  = v4e
-USBDEFS += -DCOLDFIRE
-endif
-
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifneq ($(findstring prg,$(netusbee)),)
-LDEXTRA += -Wl,--entry,__start
-else
-LDEXTRA += -Wl,--entry,init_ucd
-endif
+LDEXTRA_ucd = -Wl,--entry,init_ucd
+
+UCDTARGET_deb = netusbee.ucd
+USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_deb = $(LDEXTRA_ucd)
+
+UCDTARGET_prg = netusbee.prg
+CPU_prg = 02060
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA_prg = -Wl,--entry,__start
+
+UCDTARGET_prg_000 = netusbee.prg
+CPU_prg_000 = 000
+USBDEFS_prg_000 = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+LDEXTRA_prg_000 = -Wl,--entry,__start
+
+UCDTARGET_000 = netusbee.ucd
+USBDEFS_000 =
+LDEXTRA_000 = $(LDEXTRA_ucd)
+
+UCDTARGET_02060 = netusbee.ucd
+USBDEFS_02060 =
+LDEXTRA_02060 = $(LDEXTRA_ucd)
+
+UCDTARGET_030 = netusbee.ucd
+USBDEFS_030 =
+LDEXTRA_030 = $(LDEXTRA_ucd)
+
+UCDTARGET_040 = netusbee.ucd
+USBDEFS_040 =
+LDEXTRA_040 = $(LDEXTRA_ucd)
+
+UCDTARGET_060 = netusbee.ucd
+USBDEFS_060 =
+LDEXTRA_060 = $(LDEXTRA_ucd)
+
+UCDTARGET_col = netusbee.ucd
+USBDEFS_col = -DCOLDFIRE
+LDEXTRA_col = $(LDEXTRA_ucd)
 
 #
 # all default targets

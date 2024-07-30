@@ -4,13 +4,9 @@
 HEADER = 
 
 COBJS = \
-	crtinit.c \
+	$(toscommon_srcdir)/crtinit.c \
 	loader.c \
+	$(toscommon_srcdir)/entry.S \
+	$(toscommon_srcdir)/setstack.S
 
-SOBJS = 
-
-SSOBJS = \
-	entry.S \
-	setstack.S
-
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
+SRCFILES = $(HEADER) $(COBJS)
