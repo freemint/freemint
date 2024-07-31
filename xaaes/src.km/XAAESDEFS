@@ -34,6 +34,8 @@ XAAESDEFS_02060 = -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 #
 xaaestargets = deb 000 sto 030 040 060 080 col 02060
 
+all-kernels: $(xaaestargets)
+
 ara:: 040
 	@:
 

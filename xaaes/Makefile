@@ -21,8 +21,11 @@ all-here:
 
 # default definitions
 
-help 000 020 030 040 02060 060 080 deb col all-kernels:
+help 000 030 040 02060 060 080 deb col all-kernels:
 	$(MAKE) -C src.km $@
+
+020:
+	$(MAKE) -C src.km 02060
 
 ara:: 040
 	@:
