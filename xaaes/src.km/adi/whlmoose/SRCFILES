@@ -1,13 +1,11 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-HEADER = \
-	whlmoose.h
+HEADER = whlmoose.h
 
-COBJS = \
-	whlmoose.c
+OBJS_moose.adi = whlmoose.c vex_x.S
+OBJS_moose_w.adi = whlmoose_w.c vex_x.S
 
-SOBJS = \
-	vex_x.S
+COBJS = $(OBJS_moose.adi) $(OBJS_moose_w.adi)
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS)

@@ -12,11 +12,3 @@ include $(top_srcdir)/../../RULES
 #
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS =
-
-CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
-
-#
-# libkern target
-#
-LIBKERNTARGET = $(top_srcdir)/../../sys/libkern/libkern$(CPU).a
-LIBKERN = -L$(top_srcdir)/../../sys/libkern -lkern$(CPU)

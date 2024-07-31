@@ -130,11 +130,9 @@ COBJS = \
 	xa_wdlg.c \
 	xa_wind.c \
 	xcclib.c \
-	strings.c
-
-SOBJS = \
+	strings.c \
 	accstart.S \
 	nkcc-gc.S \
 	xa_user_things.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS)

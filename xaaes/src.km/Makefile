@@ -18,6 +18,18 @@ include $(top_srcdir)/PHONY
 all-here: all-targets
 
 # default overwrites
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=XaAES
+
+INCLUDES += -I$(top_srcdir)/../../sys
+WARN = 	-Wall \
+	-Wmissing-prototypes \
+	-Winline \
+	-Wshadow \
+	-Wpointer-arith
+
+LD = $(CC) -nostdlib -Wl,--entry,init_km -Wl,--fatal-warnings
+LIBS = -lgem -lgcc
+STRIPFLAGS =
 
 # default definitions
 compile_all_dirs = .compile_*
@@ -38,24 +50,12 @@ help:
 	@echo '# - help'
 	@echo '#'
 
+ALL_TARGETS = $(foreach TARGET,$(xaaestargets),.compile_$(TARGET)/$(XAAESTARGET_$(TARGET)))
+
 strip:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(xaaestargets); do \
-		(set -x; \
-		($(STRIP) .compile_$$i/*.km) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac); \
-	done && test -z "$$fail"
+	$(STRIP) $(ALL_TARGETS)
 
-all-targets:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	for i in $(xaaestargets); do \
-		echo "Making $$i"; \
-		($(MAKE) $$i) \
-		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-
-$(xaaestargets): xversion.h
-	$(MAKE) buildxaaes xaaes=$@
+all-targets: $(ALL_TARGETS)
 
 xversion.h: $(SRCFILES)
 	$(SHELL) xversion.sh $@ $?
@@ -66,24 +66,30 @@ check test::
 #
 # multi target stuff
 #
+LIBS = -lgem -lgcc
 
-ifneq ($(xaaes),)
+define XAAES_TARGET
 
-compile_dir = .compile_$(xaaes)
-xaaestarget = _stmp_$(xaaes)
-realtarget = $(xaaestarget)
+DEFINITIONS_$(1) = $(DEFINITIONS) $$(XAAESDEFS_$(1))
+LIBS_$(1) =
+OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
 
-$(xaaestarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE) all
+$(1): .compile_$(1)/$$(XAAESTARGET_$(1))
 
-$(compile_dir): Makefile.objs
-	$(MKDIR) -p $@
-	$(CP) $< $@/Makefile
+$$(OBJS_$(1)): XAAESDEFS
 
-else
+.compile_$(1)/$$(XAAESTARGET_$(1)): $$(OBJS_$(1))
+	$(LD) $$(CFLAGS_$(CPU_$(1))) $(LDFLAGS) -o $$@ $$(OBJS_$(1)) $(LIBS) $$(LIBS_$(1))
 
-realtarget =
+.compile_$(1)/info.o .compile_$(1)/about.o: xversion.h
 
+endef
+
+$(foreach TARGET,$(xaaestargets),$(eval $(call XAAES_TARGET,$(TARGET))))
+
+$(foreach TARGET,$(xaaestargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+
+
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(xaaestargets))) > /dev/null 2>&1 || :)
 endif
-
-buildxaaes: $(realtarget)

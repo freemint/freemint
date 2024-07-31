@@ -4,47 +4,19 @@
 # -DDEV_DEBUG		include debugging information
 
 
-ifeq ($(moose),deb)
-TARGET = moose.adi
-CPU = 02060
-MOOSEDEFS += -DDEV_DEBUG
-endif
+MOOSEDEFS_deb = -DDEV_DEBUG
 
-ifeq ($(moose),000)
-TARGET = moose.adi
-CPU = 000
-MOOSEDEFS +=
-endif
+MOOSEDEFS_000 =
 
-ifeq ($(moose),02060)
-TARGET = moose.adi
-CPU = 02060
-MOOSEDEFS +=
-endif
+MOOSEDEFS_02060 =
 
-ifeq ($(moose),030)
-TARGET = moose.adi
-CPU = 030
-MOOSEDEFS +=
-endif
+MOOSEDEFS_030 =
 
-ifeq ($(moose),040)
-TARGET = moose.adi
-CPU = 040
-MOOSEDEFS +=
-endif
+MOOSEDEFS_040 =
 
-ifeq ($(moose),060)
-TARGET = moose.adi
-CPU = 060
-MOOSEDEFS +=
-endif
+MOOSEDEFS_060 =
 
-ifeq ($(moose),col)
-TARGET = moose.adi
-CPU  = v4e
-MOOSEDEFS += 
-endif
+MOOSEDEFS_col = 
 
 #
 # all default targets
