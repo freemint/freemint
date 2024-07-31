@@ -27,9 +27,7 @@ cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
 # default definitions
-OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.S=%.o)
-
-VPATH = ..
+OBJS = $(foreach OBJ, $(notdir $(basename $(COBJS))), $(OBJ).o)
 
 objs: $(OBJS)
 	echo $(OBJS) > $@
@@ -44,7 +42,3 @@ fpsp.S: motorola/fpsp.sa
 
 isp.S: motorola/isp.sa
 	$(SHELL) asm2gas $< > $@
-
-# default dependencies
-# must be included last
-include $(top_srcdir)/DEPENDENCIES

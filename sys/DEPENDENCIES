@@ -6,9 +6,3 @@ include $(top_srcdir)/../DEPENDENCIES
 #
 # private definitions
 #
-
-#
-# libkern target
-#
-$(LIBKERNTARGET):
-	$(MAKE) -C $(top_srcdir)/libkern CPU="$(CPU)" libkern$(CPU).a

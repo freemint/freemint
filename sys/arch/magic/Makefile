@@ -1,8 +1,6 @@
 #
 # the m68k genmagic program
 #
-TARGET = genmagic
-
 SHELL = /bin/sh
 SUBDIRS = 
 
@@ -25,18 +23,11 @@ all-here: magic.i
 
 # default overwrites
 CFLAGS = -I$(top_srcdir) $(GENERAL)
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc
+LD = $(CC) -nostdlib -Wl,--entry,_init
+LIBS = -lgcc
 
 # default definitions
-OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
-GENFILES = $(TARGET) magic.i
-
-
-#
-# we may end up here by parallel makes from the top directory for different kernels
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) $(LDFLAGS) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
+GENFILES = genmagic magic.i
 
 
 ifeq ($(CROSS),yes)
@@ -47,13 +38,21 @@ magic.i: genmagic.o
 
 else
 
-magic.i: $(TARGET)
-	./$(TARGET) $@
+OBJS = $(foreach OBJ, $(notdir $(basename $(COBJS))), $(OBJ).o)
+
+#
+# we may end up here by parallel makes from the top directory for different kernels
+genmagic: $(OBJS)
+	$(LD) $(CFLAGS) $(LDFLAGS) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
+
+
+magic.i: genmagic
+	./genmagic $@
 
 endif
 
 genmagic.o: genmagic.c
-	$(CC) $(CFLAGS_$(CPU)) $(MODEL_$(CPU)) -c $< -o $@
+	$(CC) $(CFLAGS_$(CPU)) -c $< -o $@
 
 startup.o: startup.S
-	$(CC) $(CFLAGS_$(CPU)) $(MODEL_$(CPU)) -c $< -o $@
+	$(CC) $(CFLAGS_$(CPU)) -c $< -o $@

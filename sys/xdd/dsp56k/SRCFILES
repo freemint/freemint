@@ -8,6 +8,4 @@ HEADER = \
 COBJS = \
 	dsp56k.c
 
-SOBJS = 
-
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS)

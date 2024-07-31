@@ -143,37 +143,81 @@ char *outfile = "magic.i";
 /* referenced from startup.S */
 void small_main(void);
 
+/*
+ * be careful with standard library functions here,
+ * this is compiled with -mshort just like the kernel,
+ * but we cannot use mintlib
+ */
+static char *mystrcpy(char *dst, const char *src)
+{
+	while ((*dst++ = *src++) != '\0')
+		;
+	return dst - 1;
+}
+
+static char *myltoa(char *dst, long value)
+{
+	char *p;
+	int neg = 0;
+	char tmpbuf[8 * sizeof(long) + 2];
+	short i = 0;
+
+	if (value < 0)
+	{
+		neg = 1;
+		value = -value;
+	}
+	do {
+		tmpbuf[i++] = "0123456789"[value % 10];
+	} while ((value /= 10) != 0);
+
+	if (neg)
+		tmpbuf[i++] = '-';
+	p = dst;
+	while (--i >= 0)	/* reverse it back  */
+		*p++ = tmpbuf[i];
+	*p = '\0';
+
+	return p;
+}
+
 void
 small_main(void)
 {
 	char buf[128];
 	long fd;
 	int i;
+	char *p;
 
-//	if (argc != 2)
-//	{
-//		Cconws("Usage: genmagic outputfile\r\n");
-//
-//		goto leave;
-//	}
+#if 0
+	if (argc != 2)
+	{
+		(void) Cconws("Usage: genmagic outputfile\r\n");
+
+		Pterm(1);
+	}
+#endif
 
 	fd = Fopen(outfile, O_WRONLY | O_CREAT | O_TRUNC);
 	if (fd < 0)
 	{
-		ksprintf(buf, sizeof (buf), "Fopen(%s) -> %li\r\n", outfile, fd);
-		(void) Cconws(buf);
-
-		goto leave;
-	}
-
-	for (i = 0; *magics[i].name; i++)
+		(void) Cconws("cannot create outfile\r\n");
+		Pterm(1);
+	} else
 	{
-		ksprintf(buf, sizeof (buf), "#define %s %ld\n", magics[i].name, magics[i].value);
-		Fwrite(fd, strlen (buf), buf);
+	
+		for (i = 0; *magics[i].name; i++)
+		{
+			p = mystrcpy(buf, "#define ");
+			p = mystrcpy(p, magics[i].name);
+			*p++ = ' ';
+			p = myltoa(p, magics[i].value);
+			p = mystrcpy(p, "\n");
+			Fwrite(fd, p - buf, buf);
+		}
+	
+		Fclose(fd);
 	}
 
-	Fclose(fd);
-
-leave:
 	Pterm0();
 }

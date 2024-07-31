@@ -1,10 +1,7 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-COBJS = 
-
-SOBJS = \
-	copyright.S \
+COBJS = copyright.S \
 	mint060sp.S
 
-SRCFILES = $(COBJS) $(SOBJS)
+SRCFILES = $(COBJS)
