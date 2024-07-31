@@ -22,7 +22,7 @@ include $(top_srcdir)/PHONY
 all-here: magic.i
 
 # default overwrites
-CFLAGS = -I$(top_srcdir) $(GENERAL)
+INCLUDES = -I$(top_srcdir)
 LD = $(CC) -nostdlib -Wl,--entry,_init
 LIBS = -lgcc
 
@@ -43,7 +43,7 @@ OBJS = $(foreach OBJ, $(notdir $(basename $(COBJS))), $(OBJ).o)
 #
 # we may end up here by parallel makes from the top directory for different kernels
 genmagic: $(OBJS)
-	$(LD) $(CFLAGS) $(LDFLAGS) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
+	$(LD) $(CFLAGS_$(CPU)) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
 
 magic.i: genmagic

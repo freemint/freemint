@@ -8,19 +8,14 @@ include $(top_srcdir)/../RULES
 #
 
 #
-# global CFLAGS
+# global definitions
 #
 INCLUDES = -I$(top_srcdir)
-CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
 LD = $(CC) $(LDEXTRA)
 
 #
 # libIO target
 #
-LIBIOTARGET = libIO$(CPU).a
-LIBIOSTMP = $(top_srcdir)/IO/libIO$(CPU).a
-LIBIO = -L$(top_srcdir)/IO -lIO$(CPU)
-
 define LIBIO_TEMPLATE
 $(top_srcdir)/IO/libIO$(1).a:
 	$(MAKE) -C $(top_srcdir)/IO libIO$(1).a

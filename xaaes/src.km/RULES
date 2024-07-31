@@ -8,7 +8,7 @@ include $(top_srcdir)/../../RULES
 #
 
 #
-# global CFLAGS
+# global definitions
 #
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS =

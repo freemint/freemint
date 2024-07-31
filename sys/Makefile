@@ -124,7 +124,7 @@ $(srcdir)/buildinfo/mkbuild:
 
 define LIBKERN_TEMPLATE
 $(top_srcdir)/libkern/libkern$(1).a:
-	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+	$(MAKE) -C $(top_srcdir)/libkern libkern$(1).a
 endef
 
 $(foreach TARGET,$(kerneltargets),$(eval $(call KERNEL_TARGET,$(TARGET))))

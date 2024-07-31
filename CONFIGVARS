@@ -111,11 +111,6 @@ WARN = \
 #
 DEFINITIONS = 
 
-#
-# model type
-#
-MODEL = 
-
 .PHONY: printvars
 printvars:
 	@$(foreach V,$(.VARIABLES), $(if $(filter-out environment% default automatic, $(origin $V)),$(warning $V=$($V))))

@@ -107,7 +107,7 @@ define LIBKERN_TEMPLATE
 COMMON_OBJS_$(1) = $(addsuffix _$(1).o, $(basename $(notdir $(COMMON_OBJS))))
 
 $(top_srcdir)/libkern/libkern$(1).a:
-	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+	$(MAKE) -C $(top_srcdir)/libkern libkern$(1).a
 endef
 
 define TARGET_TEMPLATE
