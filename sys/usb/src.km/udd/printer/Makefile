@@ -54,7 +54,7 @@ ALL_TARGETS = $(foreach TARGET, $(printertargets), .compile_$(TARGET)/$(UDDTARGE
 
 STRIPFLAGS =
 strip:
-	$(STRIP) $(ALL_TARGETS)
+	$(STRIP) $(filter-out %.prg,$(ALL_TARGETS))
 
 all-targets: $(ALL_TARGETS)
 

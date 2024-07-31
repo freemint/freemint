@@ -165,3 +165,5 @@ usb*.km
 *.gmo
 *~
 sys/usb/src.km/tos-common/stripex
+doc/freemint.hyp
+doc/freemint.ref

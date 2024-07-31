@@ -54,7 +54,7 @@ ALL_TARGETS = $(foreach TARGET, $(netusbeetargets), .compile_$(TARGET)/$(UCDTARG
 
 STRIPFLAGS =
 strip:
-	$(STRIP) $(ALL_TARGETS)
+	$(STRIP) $(filter-out %.prg,$(ALL_TARGETS))
 
 all-targets: $(ALL_TARGETS)
 
