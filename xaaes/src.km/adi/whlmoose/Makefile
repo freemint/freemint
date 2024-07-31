@@ -24,7 +24,6 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) moose.adi moose_w.adi
-SGENFILES = whlmoose_w.c
 
 help:
 	@echo '#'
