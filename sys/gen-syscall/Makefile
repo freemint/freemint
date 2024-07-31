@@ -33,7 +33,7 @@ LIBS = $(NATIVE_LIBS)
 LIBS_DEP = $(NATIVE_LIBS_DEP)
 
 # default definitions
-OBJS = gentables.o
+OBJS = gentables.c
 GENFILES = $(TARGET)
 
 libsyscall:
@@ -41,7 +41,3 @@ libsyscall:
 
 $(TARGET): $(OBJS) $(LIBS_DEP)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-
-# default dependencies
-# must be included last
-include $(top_srcdir)/DEPENDENCIES

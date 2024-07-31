@@ -31,7 +31,8 @@ INCLUDES = -I.. -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__
 
 # default definitions
-GENFILES = *.xif
+compile_all_dirs = .deps
+GENFILES = $(compile_all_dirs) *.xif
 SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c
 
 

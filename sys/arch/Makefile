@@ -24,6 +24,7 @@ INCLUDES = -I$(top_srcdir)
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 
 # default definitions
+compile_all_dirs = .compile_* 
 GENFILES = $(compile_all_dirs)
 
 ALL_OBJS = $(foreach TARGET, $(kerneltargets), .compile_$(TARGET)/libarch.a .compile_$(TARGET)/startup.o)

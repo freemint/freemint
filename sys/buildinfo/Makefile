@@ -26,9 +26,5 @@ OBJS = mkbuild.o
 GENFILES = mkbuild
 SGENFILES = build.h cdef.h
 
-mkbuild: mkbuild.o
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-
-# default dependencies
-# must be included last
-include $(top_srcdir)/DEPENDENCIES
+mkbuild: mkbuild.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS)

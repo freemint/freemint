@@ -87,7 +87,7 @@ generate_printer_impl(FILE *out, struct syscall *call, const char *pre)
 				assert(tmp);
 				
 				/* convert blank to underscore */
-				{ char *s = tmp; while (*s) { if (isspace(*s)) *s = '_'; s++; } }
+				{ char *s = tmp; while (*s) { if (isspace((unsigned char)*s)) *s = '_'; s++; } }
 				
 				fprintf(out, "%sprint_%s(pid, args->%s);\n", pre, tmp, arg->name);
 				free(tmp);
