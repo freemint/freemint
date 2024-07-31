@@ -79,7 +79,7 @@ endef
 
 define LIBKERN_TEMPLATE
 $(top_srcdir)/libkern/libkern$(1).a:
-	$(MAKE) -C $(top_srcdir)/libkern CPU="$(1)" libkern$(1).a
+	$(MAKE) -C $(top_srcdir)/libkern libkern$(1).a
 endef
 
 $(foreach TARGET,$(nfexectargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
