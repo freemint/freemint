@@ -1,1 +1,1 @@
-../../sys/libkern/strings.c
+#include "../../sys/libkern/strings.c"
