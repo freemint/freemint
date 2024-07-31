@@ -55,7 +55,7 @@ ALL_TARGETS = $(foreach TARGET, $(tablettargets), .compile_$(TARGET)/$(UDDTARGET
 
 STRIPFLAGS =
 strip:
-	$(STRIP) $(ALL_TARGETS)
+	$(STRIP) $(filter-out %.prg,$(ALL_TARGETS))
 
 all-targets: $(ALL_TARGETS)
 
