@@ -27,7 +27,4 @@ COBJS = \
 	wu_term.c \
 	$(empty)
 
-SOBJS = \
-	$(empty)
-
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(COBJS)
