@@ -2,10 +2,8 @@
 # the files that should go only into source distributions.
 
 COBJS = \
+	startup.S \
 	genmagic.c
 
-SOBJS = \
-	startup.S
-
-SRCFILES = $(COBJS) $(SOBJS)
+SRCFILES = $(COBJS)
 
