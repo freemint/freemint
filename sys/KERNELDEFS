@@ -110,4 +110,5 @@ CPU_my1  = 02060
 # all default targets
 #
 kerneltargets = 000 020 030 040 060 080 deb mil ara hat hat030 col
+# cputargets = $(sort $(foreach TARGET, $(kerneltargets), $(CPU_$(TARGET))))
 cputargets = 000 020 030 040 060 02060 v4e
