@@ -6,6 +6,7 @@ include $(top_srcdir)/../CONFIGVARS
 #
 # private definitions
 #
+LD = $(CC) $(LINKSTRIP) $(LDEXTRA)
 
 #
 # MiNT must be compiled with 16 bit integers (-mshort)

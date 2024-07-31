@@ -42,7 +42,7 @@ all-targets: $(ALL_TARGETS)
 # multi target stuff
 #
 
-LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
 
 define TARGET_TEMPLATE
 
@@ -59,7 +59,7 @@ $(addprefix .compile_,$(1))/audiodev.xdd: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
 	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 $(addprefix .compile_,$(1))/actrl: $(srcdir)/actrl.c
-	$(CC) $$(MODEL_$$(CPU_$(1))) $(OPTS) $(WARN) $$< -o $$@
+	$(CC) $(LINKSTRIP) $$(MODEL_$$(CPU_$(1))) $(OPTS) $(WARN) $$< -o $$@
 
 endef
 

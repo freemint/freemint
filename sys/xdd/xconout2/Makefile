@@ -57,7 +57,7 @@ all-targets: $(ALL_TARGETS)
 # multi target stuff
 #
 
-LD = $(CC) -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,init_xdd -Wl,--fatal-warnings
 
 define TARGET_TEMPLATE
 

@@ -53,7 +53,7 @@ all-targets: $(ALL_TARGETS)
 # multi target stuff
 #
 
-LD = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
+LDEXTRA = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 
 define TARGET_TEMPLATE
 
@@ -67,7 +67,7 @@ OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COB
 $(1): $(addprefix .compile_,$(1))/nfs.xfs
 
 $(addprefix .compile_,$(1))/nfs.xfs: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
-	$(CC) $(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 endef
 

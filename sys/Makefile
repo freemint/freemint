@@ -30,12 +30,12 @@ WARN =  -Wall \
 	-Wshadow \
 	-Wpointer-arith \
 	-Wcast-qual
-LDFLAGS = -nostdlib
+LDEXTRA = -nostdlib
 # XXX should be come from arch/
-LDFLAGS += -Wl,--entry,_main -Wl,--fatal-warnings
+LDEXTRA += -Wl,--entry,_main -Wl,--fatal-warnings
 
 ifeq ($(KMEMDEBUG),yes)
-LDFLAGS += \
+LDEXTRA += \
 	-Wl,--wrap -Wl,_kcore \
 	-Wl,--wrap -Wl,_kmalloc \
 	-Wl,--wrap -Wl,_kfree \
@@ -92,7 +92,7 @@ arch_$(1) = arch/.compile_$(1)/startup.o arch/.compile_$(1)/libarch.a
 kernelsubdirs_$(1) = $$(arch_$(1))
 
 .compile_$(1)/$$(MINT_$(1)): buildinfo/build.h $$(kernelsubdirs_$(1)) $$(OBJS_$(1)) arch/.compile_$(1)/startup.o $$(SUBDIR_OBJS_$(1)) $$(LIBKERN_DEP_$(1))
-	$(CC) $$(CFLAGS_$(1)) $(LDFLAGS) -o $$@ \
+	$(LD) $$(CFLAGS_$(1)) -o $$@ \
 		-Wl,-Map=.compile_$(1)/map.txt \
 		arch/.compile_$(1)/startup.o \
 		$$(OBJS_$(1)) $$(SUBDIR_OBJS_$(1)) \

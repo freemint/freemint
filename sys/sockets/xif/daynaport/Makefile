@@ -40,7 +40,7 @@ strip:
 # multi target stuff
 #
 
-LD = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings -Wl,--mno-altalloc -Wl,--mno-altram
+LDEXTRA = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings -Wl,--mno-altalloc -Wl,--mno-altram
 
 define TARGET_TEMPLATE
 

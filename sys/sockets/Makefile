@@ -57,7 +57,7 @@ all-targets: $(ALL_TARGETS)
 # multi target stuff
 #
 
-LD = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
 define TARGET_TEMPLATE
 
@@ -76,7 +76,7 @@ $$(LIBINET4_DEP_$(1))::
 $(1): $(addprefix .compile_,$(1))/inet4.xdd
 
 $(addprefix .compile_,$(1))/inet4.xdd: $$(OBJS_$(1)) $$(LIBINET4_DEP_$(1)) $$(LIBKERN_DEP_$(1))
-	$(CC) $(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 	$(STRIP) $$@
 
 endef

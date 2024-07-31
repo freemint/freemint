@@ -60,7 +60,7 @@ all-targets: $(ALL_TARGETS)
 # multi target stuff
 #
 
-LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
+LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
 
 define TARGET_TEMPLATE
 

@@ -101,7 +101,7 @@ rtl8012st.c:
 # multi target stuff
 #
 
-LD = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
 define LIBKERN_TEMPLATE
 

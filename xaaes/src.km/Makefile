@@ -27,7 +27,7 @@ WARN = 	-Wall \
 	-Wshadow \
 	-Wpointer-arith
 
-LD = $(CC) -nostdlib -Wl,--entry,init_km -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,init_km -Wl,--fatal-warnings
 LIBS = -lgem -lgcc
 STRIPFLAGS =
 
@@ -79,7 +79,7 @@ $(1): .compile_$(1)/$$(XAAESTARGET_$(1))
 $$(OBJS_$(1)): XAAESDEFS
 
 .compile_$(1)/$$(XAAESTARGET_$(1)): $$(OBJS_$(1))
-	$(LD) $$(CFLAGS_$(CPU_$(1))) $(LDFLAGS) -o $$@ $$(OBJS_$(1)) $(LIBS) $$(LIBS_$(1))
+	$(LD) $$(CFLAGS_$(CPU_$(1))) -o $$@ $$(OBJS_$(1)) $(LIBS) $$(LIBS_$(1))
 
 .compile_$(1)/info.o .compile_$(1)/about.o: xversion.h
 
