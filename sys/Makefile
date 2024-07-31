@@ -44,6 +44,7 @@ LDFLAGS += \
 endif
 
 # default definitions
+compile_all_dirs = .compile_* 
 GENFILES = $(compile_all_dirs) mint/*~ sys/*~
 
 help:

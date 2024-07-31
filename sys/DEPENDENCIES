@@ -1,8 +1,0 @@
-#
-# global definitions
-#
-include $(top_srcdir)/../DEPENDENCIES
-
-#
-# private definitions
-#
