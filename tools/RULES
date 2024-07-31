@@ -11,7 +11,7 @@ include $(top_srcdir)/../RULES
 # global definitions
 #
 INCLUDES = -I$(top_srcdir)
-LD = $(CC) $(LDEXTRA)
+LD = $(CC) $(LINKSTRIP) $(LDEXTRA)
 
 #
 # libIO target

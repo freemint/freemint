@@ -20,7 +20,7 @@ include $(srcdir)/XALOADDEFS
 all-here: all-targets
 
 # default overwrites
-LD = $(CC) -nostdlib -Wl,--entry,__start -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,__start -Wl,--fatal-warnings
 LIBS = -lgcc
 
 # default definitions

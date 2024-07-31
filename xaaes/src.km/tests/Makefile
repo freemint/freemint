@@ -57,7 +57,7 @@ tests: $(TEST_PROGRAMS)
 # we must remove -mshort from CFLAGS here because mintlib is not available for that configuration
 define TEST_TEMPLATE
 $(1): $(basename $(1)).c
-	$(CC) $(subst -mshort,,$(CFLAGS_$(CPU))) $(LDFLAGS) -o $$@ $$< $(LIBS)
+	$(LD) $(subst -mshort,,$(CFLAGS_$(CPU))) -o $$@ $$< $(LIBS)
 endef
 
 $(foreach TARGET,$(TEST_PROGRAMS),$(eval $(call TEST_TEMPLATE,$(TARGET))))

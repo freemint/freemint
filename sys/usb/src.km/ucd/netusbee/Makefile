@@ -72,8 +72,6 @@ setstack.S: $(toscommon_srcdir)/setstack.S
 # multi target stuff
 #
 
-LD = $(CC) $(LDEXTRA)
-
 # for HDDRIVER modules to work, TOSSCOBJS must be first in OBJS
 OBJS_prg = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg/$(OBJ).o)
 OBJS_prg_000 = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg_000/$(OBJ).o)

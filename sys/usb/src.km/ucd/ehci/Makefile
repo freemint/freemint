@@ -76,8 +76,6 @@ setstack.S: $(toscommon_srcdir)/setstack.S
 # multi target stuff
 #
 
-LD = $(CC) $(LDEXTRA)
-
 OBJS_prg = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg/$(OBJ).o)
 
 define TARGET_TEMPLATE

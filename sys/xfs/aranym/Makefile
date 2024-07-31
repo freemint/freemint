@@ -40,7 +40,7 @@ all-here: $(TARGET)
 strip:
 	$(STRIP) $(TARGET)
 
-LD = $(CC) -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
+LDEXTRA = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 
 define TARGET_TEMPLATE
 

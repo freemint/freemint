@@ -52,7 +52,7 @@ all-here: $(targets)
 strip:
 	$(STRIP) .compile_*/*.xfs
 
-LD = $(CC) -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings -s
+LDEXTRA = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 
 ara:: .compile_ara/hostfs.a
 000:: .compile_000/hostfs.xfs

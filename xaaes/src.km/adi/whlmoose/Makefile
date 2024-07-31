@@ -23,7 +23,7 @@ all-here: all-targets
 INCLUDES = -I$(top_srcdir)/../../sys
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose
 LIBS = -lgcc
-LD = $(CC) -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
+LDEXTRA = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
 # default definitions
 compile_all_dirs = .compile_*

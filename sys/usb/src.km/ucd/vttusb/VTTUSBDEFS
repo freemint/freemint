@@ -5,9 +5,6 @@
 
 
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
-ifndef NOSTRIP
-LDEXTRA += -s
-endif
 LDEXTRA_ucd = -Wl,--entry,init_ucd
 
 UCDTARGET_deb = blitz030.ucd

@@ -23,7 +23,7 @@ all-here: magic.i
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
-LD = $(CC) -nostdlib -Wl,--entry,_init
+LDEXTRA = -nostdlib -Wl,--entry,_init
 LIBS = -lgcc
 
 # default definitions
