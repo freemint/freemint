@@ -9,6 +9,7 @@ LDEXTRA_ucd = -Wl,--entry,init_ucd
 
 UCDTARGET_deb = unicorn.ucd
 USBDEFS_deb = -DDEV_DEBUG
+LDEXTRA_deb = $(LDEXTRA_ucd)
 
 UCDTARGET_prg = unicorn.prg
 CPU_prg = 000

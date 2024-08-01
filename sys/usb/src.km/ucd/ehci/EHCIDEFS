@@ -8,6 +8,7 @@ LDEXTRA_ucd = -Wl,--entry,init_ucd
 
 USBDEFS_deb = -DDEV_DEBUG
 UCDTARGET_deb = ehci.ucd
+LDEXTRA_deb = $(LDEXTRA_ucd)
 
 CPU_prg = 040
 USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
