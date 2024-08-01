@@ -7,6 +7,7 @@ TEMP_CPU_TARGET=$CPU_TARGET
 case $CPU_TARGET in
 	prg) TEMP_CPU_TARGET=000 ;;
 	ara) TEMP_CPU_TARGET=040 ;;
+	deb) TEMP_CPU_TARGET=02060 ;;
 esac
 
 cd .scripts

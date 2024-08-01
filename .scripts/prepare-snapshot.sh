@@ -35,7 +35,10 @@ copy_modules "$MINTDIR" "$CPU_TARGET"
 # mchdir: st, ste, megaste, tt, falcon, milan, hades, ct60, firebee, aranym
 if [ "$CPU_TARGET" != "col" ]
 then
-	copy_m68k_modules "$MINTDIR" "$CPU_TARGET"
+	if [ "$CPU_TARGET" != "deb" ]
+	then
+		copy_m68k_modules "$MINTDIR" "$CPU_TARGET"
+	fi
 	if [ "$CPU_TARGET" = "000" ]
 	then
 		copy_st_modules "$MINTDIR"
@@ -69,6 +72,9 @@ then
 		copy_ct60_modules "$MINTDIR"
 		# not needed in 060 builds
 		rm -rf "$MINTDIR/falcon"
+	elif [ "$CPU_TARGET" = "deb" ]
+	then
+		copy_debug_modules "$MINTDIR" "$CPU_TARGET"
 	fi
 else
 	copy_firebee_modules "$MINTDIR"
@@ -91,7 +97,7 @@ then
 	if [ "$CPU_TARGET" = "02060" ]
 	then
 		# EtherNAT
-		copy_ct60_usb_modules "$USBDIR"
+		copy_ct60_usb_modules "$USBDIR" 060
 		# CTPCI / Milan / Hades
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
 	elif [ "$CPU_TARGET" = "040" ]
@@ -101,8 +107,12 @@ then
 	elif [ "$CPU_TARGET" = "060" ]
 	then
 		# EtherNAT
-		copy_ct60_usb_modules "$USBDIR"
+		copy_ct60_usb_modules "$USBDIR" 060
 		# CTPCI / Milan / Hades
+		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
+	elif [ "$CPU_TARGET" = "deb" ]
+	then
+		copy_ct60_usb_modules "$USBDIR" "$CPU_TARGET"
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
 	fi
 else
@@ -118,7 +128,7 @@ copy_guides "$GUIDESDIR"
 
 # Atari hardware only
 mkdir -p "$SYSROOT/bin"
-if [ "$CPU_TARGET" != "col" ]
+if test -f "$SRC/sys/xdd/audio/.compile_${CPU_TARGET}/actrl"
 then
 	cp "$SRC/sys/xdd/audio/.compile_${CPU_TARGET}/actrl" "$SYSROOT/bin/actrl"
 fi
