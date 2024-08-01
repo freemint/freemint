@@ -6,7 +6,7 @@
  * See /COPYING.GPL for details.
  */
 
-#include "../../global.h"
+#include "../global.h"
 
 
 /* PCI_BIOS structure definition */

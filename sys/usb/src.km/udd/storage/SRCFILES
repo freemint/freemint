@@ -18,11 +18,11 @@ COBJS = \
 
 # for HDDRIVER modules to work, entry.S must be first in TOSCOBJS
 TOSCOBJS = \
-	entry.S \
-	delayasm.S \
-	setstack.S \
+	$(toscommon_srcdir)/entry.S \
+	$(toscommon_srcdir)/delayasm.S \
+	$(toscommon_srcdir)/setstack.S \
 	storage_int.S \
-	crtinit.c \
-	magic.c
+	$(toscommon_srcdir)/crtinit.c \
+	$(toscommon_srcdir)/magic.c
 
 SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

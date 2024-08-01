@@ -6,7 +6,7 @@
  * See /COPYING.GPL for details.
  */
 
-#include  "../../global.h"
+#include  "../global.h"
 
 #define MagX_COOKIE    0x4D616758L
 
