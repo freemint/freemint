@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara" ]
+        cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara", "deb" ]
         cross_tool: [ "m68k-atari-mint" ]
         include:
           - cpu_target: 000
@@ -29,6 +29,8 @@ jobs:
             artifact: freemint-cpu-060
           - cpu_target: col
             artifact: freemint-cpu-coldfire
+          - cpu_target: deb
+            artifact: freemint-cpu-debug
           - cpu_target: prg
             artifact: usb4tos
           - cpu_target: ste
@@ -69,13 +71,13 @@ jobs:
           ./.scripts/before_script.sh
           ./.scripts/build.sh
       - name: deploy
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && matrix.cpu_target != 'deb' }}
         env:
           COMMITER_NAME: ${{ github.event.commits[0].author.name }}
           COMMITER_EMAIL: ${{ github.event.commits[0].author.email }}
         run: ./.scripts/deploy.sh
       - name: Upload Artifact
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' || matrix.cpu_target == 'deb' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}

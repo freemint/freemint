@@ -150,6 +150,12 @@ copy_aranym_modules() {
 	# not really needed
 	cp "$SRC/sys/xfs/hostfs/.compile_000/hostfs.xfs" "$MCHDIR/hostfs.xfx"
 }
+copy_debug_modules() {
+	local SYSDIR="$1"
+	local TARGET="$2"
+	mkdir -p "$SYSDIR"
+	cp "$SRC/sys/xdd/scc/.compile_${TARGET}/scc.xdd" "$SYSDIR"
+}
 
 copy_xaloader() {
 	local XAAESDIR="$1"
@@ -244,6 +250,9 @@ copy_blitz_usb_modules() {
 	elif [ "$TARGET" = "02060" ] || [ "$TARGET" = "030" ]
 	then
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_030/blitz030.ucd" "$USBDIR"
+	elif [ "$TARGET" = "deb" ]
+	then
+	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_$TARGET/blitz"*.ucd "$USBDIR"
 	fi
 }
 
@@ -256,8 +265,9 @@ copy_ehci_usb_modules() {
 
 copy_ct60_usb_modules() {
 	local USBDIR="$1"
+	local TARGET="$2"
 	mkdir -p "$USBDIR"
-	cp "$SRC/sys/usb/src.km/ucd/ethernat/.compile_060/ethernat.ucd" "$USBDIR"
+	cp "$SRC/sys/usb/src.km/ucd/ethernat/.compile_${TARGET}/ethernat.ucd" "$USBDIR"
 }
 
 copy_aranym_usb_modules() {
