@@ -27,13 +27,14 @@ all-here: all-targets
 
 # default overwrites
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=storage $(USBDEFS)
-INCLUDES += -I$(top_srcdir)/../../sys
 WARN += -Wcast-qual
 
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.udd *.prg
 
+# Those were generated/linked here by older version of this Makefile
+# only keep this rule to ease transition
 GENFILES += crtinit.c delayasm.S entry.S magic.c setstack.S
 
 help:
@@ -57,18 +58,6 @@ strip:
 	$(STRIP) $(filter-out %.prg,$(ALL_TARGETS))
 
 all-targets: $(ALL_TARGETS)
-
-# Link common TOS files
-crtinit.c: $(toscommon_srcdir)/crtinit.c
-	ln -sf $< $(srcdir)/$@
-delayasm.S: $(toscommon_srcdir)/delayasm.S
-	ln -sf $< $(srcdir)/$@
-entry.S: $(toscommon_srcdir)/entry.S
-	ln -sf $< $(srcdir)/$@
-magic.c: $(toscommon_srcdir)/magic.c
-	ln -sf $< $(srcdir)/$@
-setstack.S: $(toscommon_srcdir)/setstack.S
-	ln -sf $< $(srcdir)/$@
 
 #
 # multi target stuff

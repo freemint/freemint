@@ -26,12 +26,13 @@ all-here: all-targets
 
 # default overwrites
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=ehci $(USBDEFS)
-INCLUDES += -I$(top_srcdir)/../../sys
 
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.ucd *.prg
 
+# Those were generated/linked here by older version of this Makefile
+# only keep this rule to ease transition
 GENFILES += cache.S crtinit.c delayasm.S entry.S pci_bios.c pci_xbios.S setstack.S
 
 help:
@@ -55,22 +56,6 @@ strip:
 	$(STRIP) $(ALL_TARGETS)
 
 all-targets: $(ALL_TARGETS)
-
-# Link common TOS files
-cache.S: $(toscommon_srcdir)/cache.S
-	ln -sf $< $(srcdir)/$@
-crtinit.c: $(toscommon_srcdir)/crtinit.c
-	ln -sf $< $(srcdir)/$@
-delayasm.S: $(toscommon_srcdir)/delayasm.S
-	ln -sf $< $(srcdir)/$@
-entry.S: $(toscommon_srcdir)/entry.S
-	ln -sf $< $(srcdir)/$@
-pci_bios.c: $(toscommon_srcdir)/pci_bios.c
-	ln -sf $< $(srcdir)/$@
-pci_xbios.S: $(toscommon_srcdir)/pci_xbios.S
-	ln -sf $< $(srcdir)/$@
-setstack.S: $(toscommon_srcdir)/setstack.S
-	ln -sf $< $(srcdir)/$@
 
 #
 # multi target stuff

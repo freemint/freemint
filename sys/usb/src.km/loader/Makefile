@@ -31,7 +31,8 @@ DEFINITIONS = -DSTACKSIZE=2048
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs)
 
-# no longer linked here, but maybe still present from old version of this Makefile
+# Those were generated/linked here by older version of this Makefile
+# only keep this rule to ease transition
 GENFILES += crtinit.c entry.S setstack.S
 
 help:

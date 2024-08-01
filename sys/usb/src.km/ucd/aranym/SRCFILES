@@ -10,10 +10,10 @@ COBJS = \
 	nfusbasm.S
 
 TOSCOBJS = \
-	crtinit.c \
-	natfeat.c \
-	entry.S \
-	natfeat_asm.S \
-	setstack.S
+	$(toscommon_srcdir)/crtinit.c \
+	$(toscommon_srcdir)/natfeat.c \
+	$(toscommon_srcdir)/entry.S \
+	$(toscommon_srcdir)/natfeat_asm.S \
+	$(toscommon_srcdir)/setstack.S
 
 SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

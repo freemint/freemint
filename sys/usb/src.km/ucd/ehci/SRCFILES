@@ -10,12 +10,12 @@ COBJS = \
 	ehci.S
 
 TOSCOBJS = \
-	crtinit.c \
-	pci_bios.c \
-	cache.S \
-	delayasm.S \
-	entry.S \
-	pci_xbios.S \
-	setstack.S
+	$(toscommon_srcdir)/crtinit.c \
+	$(toscommon_srcdir)/pci_bios.c \
+	$(toscommon_srcdir)/cache.S \
+	$(toscommon_srcdir)/delayasm.S \
+	$(toscommon_srcdir)/entry.S \
+	$(toscommon_srcdir)/pci_xbios.S \
+	$(toscommon_srcdir)/setstack.S
 
 SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

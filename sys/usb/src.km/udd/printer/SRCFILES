@@ -10,8 +10,8 @@ COBJS = \
 
 # for HDDRIVER modules to work, entry.S must be first in TOSCOBJS
 TOSCOBJS = \
-        entry.S \
-        setstack.S \
-        crtinit.c
+        $(toscommon_srcdir)/entry.S \
+        $(toscommon_srcdir)/setstack.S \
+        $(toscommon_srcdir)/crtinit.c
 
 SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)
