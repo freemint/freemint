@@ -33,10 +33,17 @@
  * version 0.05 from 15.03.2004
  */
 
+#include "mint/asmdefs.h"
+#define fpsr REG(fpsr)
+#define fpcr REG(fpcr)
+
 	.text
 
 	.globl _init
 
+/*
+ * not a C symbol: this is directly referenced in the Makefile
+ */
 _init:
 	movea.l	4(sp),a5
 	move.l	12(a5),d6		//   Groesse des TEXT-Segment
