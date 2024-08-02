@@ -713,7 +713,10 @@ shutdown(void)
 	FORCE("done");
 
 	/* Wait for the disks to flush their write cache */
-	delay_seconds(2);
+#ifdef WITH_NATIVE_FEATURES
+	if (machine != machine_emulator)
+#endif
+		delay_seconds(2);
 }
 
 /*
