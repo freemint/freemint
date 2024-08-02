@@ -7,6 +7,8 @@
 # distribution.
 #                                                                              
 $f = 'genmagic.o';
+$f = $ARGV[0] if $#ARGV >= 0;
+
 $firstsym = 'B_LOWTPA';
 $val = 'Z28N';
 #       const char name[28];

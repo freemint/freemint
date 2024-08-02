@@ -42,7 +42,7 @@ OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COB
 $(1): .compile_$(1)/libarch.a  .compile_$(1)/startup.o
 
 .compile_$(1)/libarch.a: $$(OBJS_$(1))
-	$(AR) rcs $$@.tmp $$(OBJS_$(1)) && mv $$@.tmp $$@ || { $(RM) $$@.tmp; false; }
+	$(AR) rcs $$@.$$$$$$$$ $$(OBJS_$(1)) && mv $$@.$$$$$$$$ $$@ || { $(RM) $$@.$$$$$$$$; false; }
 
 $$(OBJS_$(1)): $(srcdir)/magic/magic.i
 endef

@@ -69,7 +69,7 @@ OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS) $(COBJS_$(1)))), .compil
 	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 .compile_$(1)/hostfs.a: $$(OBJS_$(1))
-	$(AR) rcs $$@.tmp $$(OBJS_$(1)) && mv $$@.tmp $$@ || { $(RM) $$@.tmp; false; }
+	$(AR) rcs $$@.$$$$$$$$ $$(OBJS_$(1)) && mv $$@.$$$$$$$$ $$@ || { $(RM) $$@.$$$$$$$$; false; }
 
 endef
 

@@ -30,18 +30,20 @@ LIBS = -lgcc
 GENFILES = genmagic magic.i
 
 
+#
+# Note: we may end up here by parallel makes from the top directory for different kernels
+#
+
 ifeq ($(CROSS),yes)
 
 # for cross-compiling use this: (assumes you have perl and cnm)
-magic.i: genmagic.o
-	perl genmagic.pl > $@.$$$$ && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
+magic.i: genmagic.c
+	$(CC) $(CFLAGS_$(CPU)) -c $< -o genmagic.$$$$.o && perl genmagic.pl genmagic.$$$$.o > $@.$$$$ && { $(RM) genmagic.$$$$.o; mv $@.$$$$ $@; } || { $(RM) $@.$$$$; genmagic.$$$$.o; false; }
 
 else
 
 OBJS = $(foreach OBJ, $(notdir $(basename $(COBJS))), $(OBJ).o)
 
-#
-# we may end up here by parallel makes from the top directory for different kernels
 genmagic: $(OBJS)
 	$(LD) $(CFLAGS_$(CPU)) -o $@.$$$$ $(OBJS) $(LIBS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
@@ -49,10 +51,10 @@ genmagic: $(OBJS)
 magic.i: genmagic
 	./genmagic $@
 
-endif
-
 genmagic.o: genmagic.c
 	$(CC) $(CFLAGS_$(CPU)) -c $< -o $@
 
 startup.o: startup.S
 	$(CC) $(CFLAGS_$(CPU)) -c $< -o $@
+
+endif

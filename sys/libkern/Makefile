@@ -63,7 +63,7 @@ OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COB
 DEFINITIONS_$(1) = $(DEFINITIONS)
 
 libkern$(1).a: $$(OBJS_$(1))
-	$(AR) rcs $$@.tmp $$(OBJS_$(1)) && mv $$@.tmp $$@ || { $(RM) $$@.tmp; false; }
+	$(AR) rcs $$@.$$$$$$$$ $$(OBJS_$(1)) && mv $$@.$$$$$$$$ $$@ || { $(RM) $$@.$$$$$$$$; false; }
 endef
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TARGET,$(TARGET))))
