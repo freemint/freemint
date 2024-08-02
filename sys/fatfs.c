@@ -5389,7 +5389,12 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 * identified the correct partition's FAT type. Microsoft documentation
 	 * states that this is the method that must be used.
 	 */
-	if (xbpb->numcl <= MAX_FAT12_CLUSTERS)
+	if (WPEEK_INTEL (fbs->dir_entries) == 0)
+	{
+		xbpb->ftype = FAT_TYPE_32;
+		fvi = (void *) (u->data + sizeof (*f32bs));
+	}
+	else if (xbpb->numcl <= MAX_FAT12_CLUSTERS)
 	{
 		xbpb->ftype = FAT_TYPE_12;
 		fvi = (void *) (u->data + sizeof (*fbs));
