@@ -1902,7 +1902,7 @@ click_menu_entry(struct task_administration_block *tab, short item)
 		if (!d)
 			is_attach(menu_client(tab), pop_wt, m, &at);
 
-		if (!at || k->clicks >= 2)
+		if (!at || k->clicks >= 1)
 		{
 			titles = k->m.titles;
 			about = k->m.about;
