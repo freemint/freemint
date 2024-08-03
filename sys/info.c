@@ -481,11 +481,4 @@ const char *MSG_unifs_wrong_getxattr = "ERROR: wrong file system getxattr called
 const char *MSG_unifs_couldnt_match = "unifs: couldn't match a drive with a directory";
 const char *MSG_unifs_fs_doesnt_match_dirs = "unifs: drive's file system doesn't match directory's";
 
-/* ---------- xhdi.c ---------- */
-
-const char *MSG_xhdi_present = "This system features XHDI level %x.%x (kerinfo %s).\r\n\r\n";
-const char *MSG_kerinfo_accepted = "accepted";
-const char *MSG_kerinfo_rejected = "rejected";
-const char *MSG_xhdi_absent = "This system does not feature XHDI.\r\n\r\n";
-
 # endif /* LANG_ENGLISH */

@@ -140,14 +140,19 @@ XHDI_init (void)
 
 # ifdef NONBLOCKING_DMA
 		r = XHMiNTInfo (XH_MI_SETKERINFO, &kernelinfo);
-# else
-		r = 1;
-# endif
-		
+
 		boot_printf (MSG_xhdi_present,
 			XHDI_installed >> 8, XHDI_installed & 0xff,
 			r ? MSG_kerinfo_rejected : MSG_kerinfo_accepted
 		);
+
+# else
+		boot_printf (MSG_xhdi_present,
+			XHDI_installed >> 8, XHDI_installed & 0xff,
+			MSG_kerinfo_unused
+		);
+
+# endif
 		
 		*((long *) 0x4c2L) |= XHDrvMap ();
 		

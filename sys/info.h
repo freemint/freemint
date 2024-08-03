@@ -253,9 +253,10 @@ extern const char *MSG_unifs_couldnt_match;
 extern const char *MSG_unifs_fs_doesnt_match_dirs;
 
 /* xhdi.c */
-extern const char *MSG_xhdi_present;
-extern const char *MSG_kerinfo_accepted;
-extern const char *MSG_kerinfo_rejected;
-extern const char *MSG_xhdi_absent;
+#define MSG_xhdi_present "This system features XHDI level %x.%x (kerinfo %s).\r\n\r\n"
+#define MSG_kerinfo_accepted "accepted"
+#define MSG_kerinfo_rejected "rejected"
+#define MSG_kerinfo_unused "not used"
+#define MSG_xhdi_absent "This system does not feature XHDI.\r\n\r\n"
 
 # endif /* _info_h */
