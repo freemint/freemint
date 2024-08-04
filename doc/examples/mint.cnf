@@ -19,7 +19,7 @@
 # The term `sysdir' we use here is short for `system directory' and
 # means the directory, where you keep your mint.cnf file, your
 # modules (XFS and XDD files) and other such system binaries. The
-# sysdir value is usually u:/c/mint.
+# sysdir value is usually u:/c/mint/1-19-cur.
 #
 # For clarity, it is assumed all over this example file, that your
 # boot drive is C:, and, if you have installed SpareMiNT distribution,
@@ -32,7 +32,26 @@
 # Some keywords allow more than one parameter, the entries can be
 # separated with commas or semicolons, e.g.
 # PATH=/bin,/sbin,/usr/bin or PATH=/bin;/sbin;/usr/bin
-# 
+#
+# ------------------ MINT.CNF ENVIRONMENT -------------------------
+#
+# When mint starts, it already sets some environment variables
+# (ignoring the ones inherited from its parent)
+#
+# - PATH: will be set to $SYSDIR
+# - SYSDIR: the system directory (see above)
+# - MCHDIR: a model-specific version of $SYSDIR (eg. $SYSDIR/st)
+# - MINT_VERSION: the kernel version string (eg. 1-19-cur)
+# - BOOTDRIVE: the gemdos drive we booted from
+#   (just the character, without colon)
+# - TERM: set to st52
+# - SLBPATH: set to $SYSDIR
+# - UNIXMODE: set to "/brUs" (mintlib specific)
+# - PCONVERT: set to "PATH,HOME,SHELL" (mintlib specific)
+#
+# Those variables (and any other that are set using the setenv command)
+# can be referred to as e.g. $SYSDIR or ${SYSDIR}
+#
 # ------------------ MINT.CNF PARSER COMMANDS ---------------------
 #
 # The "set" directive controls the behaviour of the mint.cnf parser.
@@ -41,6 +60,7 @@
 #set -q - silent output (+q for verbose output)
 #set -v - print command lines (+v don't)
 #set -c - control interpretation of escape sequences
+#set -u - report unset environment variables
 
 #set -q
 
@@ -51,7 +71,7 @@
 
 #include u:/c/mint/vars.cnf
 
-# More commands follow.
+# For more commands see below.
 
 # ---------------------- KERNEL SETTINGS --------------------------
 #
@@ -215,16 +235,18 @@
 #
 # More commands that you can give to MiNT:
 #
-# alias <drive> <path> -- make a fake "drive" that actually points
-#                         to the given path
-# cd <path>            -- changes MiNT's default directory
-# echo <message>       -- print something on the screen
-# exec <program>       -- runs a program; you must give the complete
-#                         path and file extensions (e.g. c:/bin/echo.prg)
-# include <file>       -- include another portion of the MINT.CNF file.
-# sln <path> <link>    -- make a symbolic link named "link" pointing to
-#                         "path". "link" must be on drive U: for this
-#                         to work
+# alias <drive> <path>    -- make a fake "drive" that actually points
+#                            to the given path
+# cd <path>               -- changes MiNT's default directory
+# echo <message>          -- print something on the screen
+# exec <program> <args>   -- runs a program; you must give the complete
+#                            path and file extensions (e.g. c:/bin/echo.prg)
+# include <file>          -- include another portion of the MINT.CNF file.
+# sln <path> <link>       -- make a symbolic link named "link" pointing to
+#                            "path". "link" must be on drive U: for this
+#                            to work
+# ren <oldname> <newname> -- rename a file
+# setenv <name> <value>   -- set up environment
 #
 # Notice you have to adjust commands below for your filesystem
 # structure.
@@ -256,38 +278,34 @@
 #          You have to adjust the commands below for your filesystem
 #          structure.
 
-# Create u:/sysdir
-exec u:/c/mint/sysdir.tos
-echo
-
-sln u:/sysdir/sys-root/bin      u:/bin
-#sln u:/sysdir/sys-root/boot     u:/boot
-sln u:/sysdir/sys-root/etc      u:/etc
-#sln u:/sysdir/sys-root/home     u:/home
-#sln u:/sysdir/sys-root/lib      u:/lib
-#sln u:/sysdir/sys-root/mnt      u:/mnt
-sln u:/sysdir/sys-root/opt      u:/opt
-sln u:/sysdir/sys-root/root     u:/root
-#sln u:/sysdir/sys-root/sbin     u:/sbin
-#sln u:/sysdir/sys-root/share    u:/share
-sln u:/sysdir/sys-root/tmp      u:/tmp
-#sln u:/sysdir/sys-root/usr      u:/usr
-sln u:/sysdir/sys-root/var      u:/var
+sln ${SYSDIR}sys-root/bin      u:/bin
+#sln ${SYSDIR}sys-root/boot     u:/boot
+sln ${SYSDIR}sys-root/etc      u:/etc
+#sln ${SYSDIR}sys-root/home     u:/home
+#sln ${SYSDIR}sys-root/lib      u:/lib
+#sln ${SYSDIR}sys-root/mnt      u:/mnt
+sln ${SYSDIR}sys-root/opt      u:/opt
+sln ${SYSDIR}sys-root/root     u:/root
+#sln ${SYSDIR}sys-root/sbin     u:/sbin
+#sln ${SYSDIR}sys-root/share    u:/share
+sln ${SYSDIR}sys-root/tmp      u:/tmp
+#sln ${SYSDIR}sys-root/usr      u:/usr
+sln ${SYSDIR}sys-root/var      u:/var
 
 
 # Some people want also to do this:
 #
-#sln u:/pipe/pty.A u:/dev/pty.A 
-#sln u:/pipe/pty.B u:/dev/pty.B 
-#sln u:/pipe/pty.C u:/dev/pty.C 
-#sln u:/pipe/pty.D u:/dev/pty.D 
-#sln u:/pipe/pty.E u:/dev/pty.E 
-#sln u:/pipe/pty.F u:/dev/pty.F 
-#sln u:/pipe/pty.G u:/dev/pty.G 
-#sln u:/pipe/pty.H u:/dev/pty.H 
-#sln u:/pipe/pty.I u:/dev/pty.I 
-#sln u:/pipe/pty.J u:/dev/pty.J 
-#sln u:/pipe/pty.K u:/dev/pty.K 
+#sln u:/pipe/pty.A u:/dev/pty.A
+#sln u:/pipe/pty.B u:/dev/pty.B
+#sln u:/pipe/pty.C u:/dev/pty.C
+#sln u:/pipe/pty.D u:/dev/pty.D
+#sln u:/pipe/pty.E u:/dev/pty.E
+#sln u:/pipe/pty.F u:/dev/pty.F
+#sln u:/pipe/pty.G u:/dev/pty.G
+#sln u:/pipe/pty.H u:/dev/pty.H
+#sln u:/pipe/pty.I u:/dev/pty.I
+#sln u:/pipe/pty.J u:/dev/pty.J
+#sln u:/pipe/pty.K u:/dev/pty.K
 
 #
 # --------------------- ENVIRONMENT VARIABLES ----------------------
@@ -394,7 +412,7 @@ setenv TMPDIR u:/tmp
 
 # Load USB kernel module
 #
-#exec u:/sysdir/usb/loader.prg
+#exec ${SYSDIR}usb/loader.prg
 #echo
 #
 # ------------------------- START SYSTEM --------------------------
@@ -405,7 +423,7 @@ setenv TMPDIR u:/tmp
 # If MiNT is supposed to execute a GEM, you should specify the full
 # path and filename like that:
 
-GEM=u:/sysdir/xaaes/xaloader.prg
+GEM=${SYSDIR}xaaes/xaloader.prg
 
 # You can also request MiNT to execute the TOS AES residing in ROM.
 # WARNING: this is not recommended, you should use a GEM version

@@ -31,7 +31,7 @@
 extern int init_is_gem;
 
 extern char *init_prg;
-extern char init_tail[256];
+extern char init_tail[128];
 
 void load_config(void);
 

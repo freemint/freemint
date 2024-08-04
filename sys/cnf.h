@@ -9,14 +9,11 @@
 # include "mint/mint.h"
 
 
-extern const char *drv_list;
-
 struct range
 {
 	short a, b;
 };
 
-// #define Range( a, b )   (((long)(a)<<16)|(int)(b))
 #define Range(a,b)	{ range: {(short)a, (short)b} }
 
 struct parsinf
@@ -32,7 +29,13 @@ struct parsinf
 	void *data;		/* parser context data */
 };
 
-#define SET(opt) (1ul << ((opt) -'A'))
+/*
+ * options for parse_cnf()
+ */
+#define INF_QUIET     (1ul << ('Q' - 'A'))
+#define INF_VERBOSE   (1ul << ('V' - 'A'))
+#define INF_CONTROL   (1ul << ('C' - 'A'))
+#define INF_UNSET     (1ul << ('U' - 'A'))
 
 /*============================================================================*/
 /* The parser uses callbacks to start actions. Using the same interfaces, both
@@ -89,22 +92,22 @@ enum pitype
 	PI_C_A   = 0x0005, /*     command gets line as string, e.g. echo */
 	PI_C_D   = 0x0006, /*     command gets drive list */
 	PI_C_US  = 0x0007, /*     command gets ushort */
-	PI_C_TT  = 0x0044, /*     command gets two pathes */
-	PI_C_0TT = 0x0144, /*     command gets zero and two pathes */
-	PI_C_TA  = 0x0054, /*     command gets path and line, e.g. exec */
+	PI_C_TT  = PI_C_T | 0x0040,  /*     command gets two pathes */
+	PI_C_0TT = PI_C_TT | 0x0100, /*     command gets zero and two pathes */
+	PI_C_TA  = PI_C_T | 0x0050,  /*     command gets path and line, e.g. exec */
 	PI_V__   = 0x1000, /* --- variable callbacks */
-	PI_V_L   = 0x1002, /*     variable gets long */
-	PI_V_B   = 0x1003, /*     variable gets bool */
-	PI_V_T   = 0x1004, /*     variable gets path */
-	PI_V_A   = 0x1005, /*     variable gets line */
-	PI_V_ATK = 0x1254, /*     variable gets path, line plus const */
-	PI_V_D   = 0x1006, /*     variable gets drive list */
+	PI_V_L   = PI_V__ | PI_C_L,  /*     variable gets long */
+	PI_V_B   = PI_V__ | PI_C_B,  /*     variable gets bool */
+	PI_V_T   = PI_V__ | PI_C_T,  /*     variable gets path */
+	PI_V_A   = PI_V__ | PI_C_A,  /*     variable gets line */
+	PI_V_ATK = PI_V__ | PI_C_TA | 0x0200, /*     variable gets path, line plus const */
+	PI_V_D   = PI_V__ | PI_C_D,  /*     variable gets drive list */
 	PI_R__   = 0x3000, /* --- references */
-	PI_R_S   = 0x3001, /*     reference gets short */
-	PI_R_L   = 0x3002, /*     reference gets long */
-	PI_R_B   = 0x3003, /*     reference gets bool */
-	PI_R_T   = 0x3004, /*     reference gets path */
-	PI_R_US  = 0x3007, /*     reference get ushort */
+	PI_R_S   = PI_R__ | PI_C_S,  /*     reference gets short */
+	PI_R_L   = PI_R__ | PI_C_L,  /*     reference gets long */
+	PI_R_B   = PI_R__ | PI_C_B,  /*     reference gets bool */
+	PI_R_T   = PI_R__ | PI_C_T,  /*     reference gets path */
+	PI_R_US  = PI_R__ | PI_C_US, /*     reference get ushort */
 };
 
 
@@ -117,7 +120,6 @@ struct parser_item
 		struct range range;
 		long dat;
 	} dat;
-// 	long dat;
 };
 
 

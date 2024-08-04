@@ -177,8 +177,6 @@ static struct parser_item parser_tab[] =
 /* Miscellaneous support routines
  */
 
-#define CHAR2DRV(c) ((int)(strrchr(drv_list, toupper((int)c & 0xff)) - drv_list))
-
 static char *
 skip(char *s)
 {
@@ -1021,7 +1019,7 @@ load_config(void *path )
 
 	DIAGS(("Loading config %s", cpath));
 	BLOG((0,"Loading config %s", cpath));
-	parse_cnf(cpath, parser_tab, &mydata, SET('Q'));
+	parse_cnf(cpath, parser_tab, &mydata, INF_QUIET);
 
 
 #if GENERATE_DIAGS
@@ -1225,6 +1223,5 @@ void read_inf(void)
 	char buf[256];
 	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
 	BLOG((0,"%s:read_inf:%s", get_curproc()->name, buf));
-	parse_cnf(buf, inf_tab, &mydata, SET('Q'));
+	parse_cnf(buf, inf_tab, &mydata, INF_QUIET);
 }
-

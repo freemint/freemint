@@ -109,6 +109,7 @@ static struct kcmd shell_cmdline = { sizeof(shell_cmdline), 0L, 0 };
 
 /* Utility routines */
 
+__attribute__((format(printf, 2, 3)))
 static void
 shell_fprintf(long handle, const char *fmt, ...)
 {
@@ -140,9 +141,12 @@ dos2unix(char *p)
 	if (p[1] == ':')
 	{
 		if (toupper(p[0]) == 'U')
-			strcpy(p, p + 2);	/* eat off a prefix like 'u:' */
-		else
 		{
+			/* FIXME: overlapping strcpy() */
+			strcpy(p, p + 2);	/* eat off a prefix like 'u:' */
+		} else
+		{
+			/* C:/foo/ -> /c/foo/ */
 			p[1] = p[0];
 			p[0] = '/';
 		}

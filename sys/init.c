@@ -93,6 +93,8 @@ void _cdecl do_exec_os (register long basepage);
 
 void mint_thread(void *arg);
 
+static char bootdrv[3];
+
 /* print an additional boot message
  */
 short intr_done = 0;
@@ -354,6 +356,7 @@ init (void)
 	}
 # endif
 	sysdrv = *((short *) 0x446);	/* get the boot drive number */
+	bootdrv[0] = drv_list[sysdrv];
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
@@ -951,14 +954,17 @@ _mint_delenv(BASEPAGE *bp, const char *strng)
 void
 _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 {
-	char *env_str = bp->p_env, *ne;
+	char *env_str, *ne;
 	long old_size, var_size;
 	MEMREGION *m;
 
-	TRACE(("%s(): %s=%s", __FUNCTION__, var, value));
+	TRACE(("%s(): %s=%s", __FUNCTION__, var, value ? value : "(null)"));
 
 	/* If it already exists, delete it */
 	_mint_delenv(bp, var);
+	if (value == NULL)
+		return;
+	env_str = bp->p_env;
 
 	old_size = env_size(env_str);
 	var_size = strlen(var) + strlen(value) + 16;	/* '=', terminating '\0' and some space */
@@ -1072,6 +1078,9 @@ mint_thread(void *arg)
 
 	/* Export the sysdir to the environment */
 	_mint_setenv(_base, "SYSDIR", sysdir);
+	_mint_setenv(_base, "MCHDIR", mchdir[0] ? mchdir : sysdir);
+	_mint_setenv(_base, "MINT_VERSION", MINT_VERS_PATH_STRING);
+	_mint_setenv(_base, "BOOTDRIVE", bootdrv);
 
 	/* Setup some common variables */
 	_mint_setenv(_base, "TERM", "st52");

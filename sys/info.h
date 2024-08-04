@@ -127,6 +127,8 @@ extern const char *MSG_cnf_missing_quotation;
 extern const char *MSG_cnf_junk;
 extern const char *MSG_cnf_unknown_tag;
 extern const char *MSG_cnf_cant_open;
+#define MSG_cnf_unset_variable "%s: unset environment variable\r\n"
+#define MSG_cnf_missing_brace "missing '}'\r\n"
 
 /* debug.c */
 extern const char *MSG_debug_syncing;
