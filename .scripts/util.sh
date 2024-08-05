@@ -92,7 +92,6 @@ copy_megaste_modules() {
 }
 copy_tt_modules() {
 	local MCHDIR="$1/tt"
-	local TARGET="$2"
 	mkdir -p "$MCHDIR"
 	cp "$SRC/sys/sockets/xif/daynaport/.compile_030/scsilink.xif" "$MCHDIR/scsilink.xix"
 	cp "$SRC/sys/sockets/xif/lance_030.xif" "$MCHDIR/lance.xix"

@@ -48,7 +48,7 @@ then
 		copy_megaste_modules "$MINTDIR"
 	elif [ "$CPU_TARGET" = "02060" ]
 	then
-		copy_tt_modules "$MINTDIR" "$CPU_TARGET"
+		copy_tt_modules "$MINTDIR"
 		copy_falcon_modules "$MINTDIR"
 		copy_milan_modules "$MINTDIR"
 		copy_hades_modules "$MINTDIR"
@@ -56,7 +56,7 @@ then
 		copy_aranym_modules "$MINTDIR"
 	elif [ "$CPU_TARGET" = "030" ]
 	then
-		copy_tt_modules "$MINTDIR" "$CPU_TARGET"
+		copy_tt_modules "$MINTDIR"
 		copy_falcon_modules "$MINTDIR"
 	elif [ "$CPU_TARGET" = "040" ]
 	then
