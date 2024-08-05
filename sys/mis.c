@@ -107,6 +107,15 @@ struct kcmd
 
 static struct kcmd shell_cmdline = { sizeof(shell_cmdline), 0L, 0 };
 
+/* These must have not more than 3 characters each
+ * (ls in mis.c relies on it formatting its output)
+ */
+static char const months_abbr_3[12][4] =
+{
+	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
 /* Utility routines */
 
 __attribute__((format(printf, 2, 3)))
@@ -1304,7 +1313,7 @@ execute(char *cmdline)
 	if (argc <= 0)				/* empty command line or parse error */
 	{
 		if (argc == -1000)
-			shell_fprintf(stderr, MSG_shell_syntax_error, argc);
+			shell_fprintf(stderr, MSG_shell_syntax_error);
 
 		return argc;
 	}

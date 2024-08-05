@@ -359,7 +359,7 @@ init (void)
 	bootdrv[0] = drv_list[sysdrv];
 
 # ifdef VERBOSE_BOOT
-	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
+	boot_printf(MSG_init_sysdrv_is, drv_list[sysdrv]);
 # endif
 
 # ifdef WITH_MMU_SUPPORT
