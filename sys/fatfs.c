@@ -5311,15 +5311,19 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 */
 		return EMEDIUMTYPE;
 
-	/* Don't trust only in the partition ID to identify the FAT's type,
-	 * "Total Logical Sectors" field in the BPB (0x08 offset) must be
-	 * 0 in the FAT32 partitions */
-	if (xbpb->ftype == FAT_TYPE_32 && WPEEK_INTEL (fbs->dir_entries))
+	/* Don't trust only the partition ID to identify the FAT's type,
+	 * "Logical sectors per FAT" field in the BPB (0x0B offset) must be
+	 * 0 in a FAT32 partition. We check for 0 so endiannes doesn't matter.
+     */
+	if (fbs->fat_length == 0)
 	{
-		/* This must be in reality a FAT12 or FAT16. We assume FAT16
-		 * and we'll confirm it later checking the number of clusters.
-		 */
-		xbpb->ftype = FAT_TYPE_16;
+		/* This must be in fact a FAT32 */
+		xbpb->ftype = FAT_TYPE_32;
+		fvi = (void *) (u->data + sizeof (*f32bs));
+	}
+	else
+	{
+		/* FAT12 or FAT16 we'll confirm it later checking the number of clusters.*/
 	}
 
 	xbpb->recsiz = WPEEK_INTEL (fbs->sector_size);
@@ -5387,27 +5391,19 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 	/* Now that we know the number of clusters, we can confirm that we've
 	 * identified the correct partition's FAT type. Microsoft documentation
-	 * states that this is the method that must be used.
+	 * sets the limits between a FAT12, FAT16 and FAT32 partitions.
+     * To mimic Windows and Linux behaviour we allow FAT32 with less than
+     * MAX_FAT32_CLUSTERS.
 	 */
-	if (WPEEK_INTEL (fbs->dir_entries) == 0)
-	{
-		xbpb->ftype = FAT_TYPE_32;
-		fvi = (void *) (u->data + sizeof (*f32bs));
-	}
-	else if (xbpb->numcl <= MAX_FAT12_CLUSTERS)
+	if (xbpb->numcl <= MAX_FAT12_CLUSTERS && fbs->fat_length)
 	{
 		xbpb->ftype = FAT_TYPE_12;
 		fvi = (void *) (u->data + sizeof (*fbs));
 	}
-	else if (xbpb->numcl <= MAX_FAT16_CLUSTERS)
+	else if (xbpb->numcl <= MAX_FAT16_CLUSTERS && fbs->fat_length)
 	{
 		xbpb->ftype = FAT_TYPE_16;
 		fvi = (void *) (u->data + sizeof (*fbs));
-	}
-	else
-	{
-		xbpb->ftype = FAT_TYPE_32;
-		fvi = (void *) (u->data + sizeof (*f32bs));
 	}
 
 	if (xbpb->ftype == FAT_TYPE_32)
