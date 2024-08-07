@@ -1680,8 +1680,10 @@ image_cache_put(char *name, XAMFDB *mimg)
 	if (!f)
 	{
 		char path[PATH_MAX];
+		long err;
+
 		sprintf(path, PATH_MAX-1, "%scache", C.Aes->home_path);
-		long err = _d_create( path );
+		err = _d_create( path );
 		if (err)	/* could not mkdir */
 		{
 			BLOG((0,"image_cache_put: could not create %s", path ));

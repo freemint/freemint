@@ -21,11 +21,7 @@ all-here: all-targets
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=XaAES
 
 INCLUDES += -I$(top_srcdir)/../../sys
-WARN = 	-Wall \
-	-Wmissing-prototypes \
-	-Winline \
-	-Wshadow \
-	-Wpointer-arith
+WARN += -Wno-aggregate-return -Winline -Wdeclaration-after-statement -Werror
 
 LDEXTRA = -nostdlib -Wl,--entry,init_km -Wl,--fatal-warnings
 LIBS = -lgem -lgcc

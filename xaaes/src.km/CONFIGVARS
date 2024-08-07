@@ -11,7 +11,7 @@ LD = $(CC) $(LINKSTRIP) $(LDEXTRA)
 #
 # MiNT must be compiled with 16 bit integers (-mshort)
 #
-GENERAL += -Werror -mshort -g
+GENERAL += -mshort -g
 
 #
 # XaAES configuration
