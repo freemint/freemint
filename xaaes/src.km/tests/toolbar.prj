@@ -1,0 +1,7 @@
+toolbar.prg
+=
+cstart0.o
+toolbar.c
+pctoslib.lib
+pcgemlib.lib
+pcstdlib.lib
