@@ -2237,9 +2237,6 @@ struct xa_client
 					 * this also solves the problem that memory allocated for colour icon data
 					 * was left orphaned. */
 
-#if GENERATE_DIAGS
-	char zen_name[NICE_NAME + 2 + 16];
-#endif
 	int xdrive;
 	Path xpath;
 	struct options options;		/* Individual AES options. */
