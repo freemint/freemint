@@ -920,7 +920,7 @@ XA_menu_istart(int lock, struct xa_client *client, AESPB *pb)
 		if ((a->wt == wt) && (pb->intin[1] == a->menu))
 			break;
 
-		a = client->attach->next;
+		a = a->next;
 	}
 
 	if (a)
