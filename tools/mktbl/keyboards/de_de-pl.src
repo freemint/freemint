@@ -1,0 +1,114 @@
+; German keyboard, AKP code 1, with Polish extension ISO-8859-2.
+;
+; Unshifted
+
+	dc.w	$2773
+	dc.w	$0001
+	dc.w 0,2 ; uses iso-8859-2
+
+	dc.b	$00,$1b,'1','2','3','4','5','6'
+	dc.b	'7','8','9','0',$9e,$27,$08,$09
+	dc.b	'q','w','e','r','t','z','u','i'
+	dc.b	'o','p',$81,'+',$0d,$00,'a','s'
+	dc.b	'd','f','g','h','j','k','l',$94
+	dc.b	$84,'#',$00,'~','y','x','c','v'
+	dc.b	'b','n','m',',','.','-',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,'-',$00,$00,$00,'+',$00
+	dc.b	$00,$00,$00,$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	'<',$00,$00,'(',')','/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0','.',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Shifted
+
+	dc.b	$00,$1b,'!','"',$dd,'$','%','&'
+	dc.b	'/','(',')','=','?',$60,$08,$09
+	dc.b	'Q','W','E','R','T','Z','U','I'
+	dc.b	'O','P',$9a,'*',$0d,$00,'A','S'
+	dc.b	'D','F','G','H','J','K','L',$99
+	dc.b	$8e,'^',$00,'|','Y','X','C','V'
+	dc.b	'B','N','M',';',':','_',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,'7'
+	dc.b	'8',$00,'-','4',$00,'6','+',$00
+	dc.b	'2',$00,'0',$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	'>',$00,$00,'(',')','/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0','.',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Caps
+
+	dc.b	$00,$1b,'1','2','3','4','5','6'
+	dc.b	'7','8','9','0',$9e,$27,$08,$09
+	dc.b	'Q','W','E','R','T','Z','U','I'
+	dc.b	'O','P',$9a,'+',$0d,$00,'A','S'
+	dc.b	'D','F','G','H','J','K','L',$99
+	dc.b	$8e,'#',$00,'~','Y','X','C','V'
+	dc.b	'B','N','M',',','.','-',$00,$00
+	dc.b	$00,' ',$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	$00,$00,'-',$00,$00,$00,'+',$00
+	dc.b	$00,$00,$00,$7f,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+	dc.b	'<',$00,$00,'(',')','/','*','7'
+	dc.b	'8','9','4','5','6','1','2','3'
+	dc.b	'0','.',$0d,$00,$00,$00,$00,$00
+	dc.b	$00,$00,$00,$00,$00,$00,$00,$00
+
+; Alternate
+
+	dc.b	$12,$ea    ; U+0119 LATIN SMALL LETTER E WITH OGONEK
+	dc.b	$15,$bf    ; U+017c LATIN SMALL LETTER Z WITH DOT ABOVE
+	dc.b	$18,$f3    ; U+00f3 LATIN SMALL LETTER O WITH ACUTE
+	dc.b	$1a,'@'    ; U+0040 COMMERCIAL AT
+	dc.b	$1e,$b1    ; U+0105 LATIN SMALL LETTER A WITH OGONEK
+	dc.b	$1f,$b6    ; U+015b LATIN SMALL LETTER S WITH ACUTE
+	dc.b	$26,$b3    ; U+0142 LATIN SMALL LETTER L WITH STROKE
+	dc.b	$27,'['    ; U+005b LEFT SQUARE BRACKET
+	dc.b	$28,']'    ; U+005d RIGHT SQUARE BRACKET
+	dc.b	$2d,$bc    ; U+017a LATIN CAPITAL LETTER Y WITH DIAERESIS
+	dc.b	$2e,$e6    ; U+0107 LATIN SMALL LETTER C WITH ACUTE
+	dc.b	$31,$f1    ; U+0144 LATIN SMALL LETTER N WITH ACUTE
+	dc.b	0
+
+; Alternate shifted
+
+	dc.b	$12,$ca    ; U+0118 LATIN CAPITAL LETTER E WITH OGONEK
+	dc.b	$15,$af    ; U+017b LATIN CAPITAL LETTER Z WITH DOT ABOVE
+	dc.b	$18,$d3    ; U+00d3 LATIN CAPITAL LETTER O WITH ACUTE
+	dc.b	$1a,$5c    ; U+005c REVERSE SOLIDUS
+	dc.b	$1e,$a1    ; U+0104 LATIN CAPITAL LETTER A WITH OGONEK
+	dc.b	$1f,$a6    ; U+015a LATIN CAPITAL LETTER S WITH ACUTE
+	dc.b	$26,$a3    ; U+0141 LATIN CAPITAL LETTER L WITH STROKE
+	dc.b	$27,'{'    ; U+007b LEFT CURLY BRACKET
+	dc.b	$28,'}'    ; U+007d RIGHT CURLY BRACKET
+	dc.b	$2d,$ac    ; U+0179 LATIN CAPITAL LETTER Z WITH ACUTE
+	dc.b	$2e,$c6    ; U+0106 LATIN CAPITAL LETTER C WITH ACUTE
+	dc.b	$31,$d1    ; U+0143 LATIN CAPITAL LETTER N WITH ACUTE
+	dc.b	0
+
+; Alternate Caps
+
+	dc.b	$12,$ca    ; U+0118 LATIN CAPITAL LETTER E WITH OGONEK
+	dc.b	$15,$af    ; U+017b LATIN CAPITAL LETTER Z WITH DOT ABOVE
+	dc.b	$18,$d3    ; U+00d3 LATIN CAPITAL LETTER O WITH ACUTE
+	dc.b	$1a,'@'    ; U+0040 COMMERCIAL AT
+	dc.b	$1e,$a1    ; U+0104 LATIN CAPITAL LETTER A WITH OGONEK
+	dc.b	$1f,$a6    ; U+015a LATIN CAPITAL LETTER S WITH ACUTE
+	dc.b	$26,$a3    ; U+0141 LATIN CAPITAL LETTER L WITH STROKE
+	dc.b	$27,'['    ; U+005b LEFT SQUARE BRACKET
+	dc.b	$28,']'    ; U+005d RIGHT SQUARE BRACKET
+	dc.b	$2d,$ac    ; U+0179 LATIN CAPITAL LETTER Z WITH ACUTE
+	dc.b	$2e,$c6    ; U+0106 LATIN CAPITAL LETTER C WITH ACUTE
+	dc.b	$31,$d1    ; U+0143 LATIN CAPITAL LETTER N WITH ACUTE
+	dc.b	0
+
+; AltGr
+
+	dc.b	0

@@ -4,3 +4,33 @@ and reboot.
 
 The *.tbl files in source forms are distributed along with the mktbl
 program in the directory freemint/tools/mktbl/.
+
+Tables currently supported:
+
+- en_uk.tbl, for british keyboards
+- en_us-pc.tbl, for USA pc keyboard
+- cs_cz-is.tbl, for czech keyboard, using iso8859-2
+- cs_cz-ka.tbl, for czech kamenicky keyboard
+- fi_fi.tbl, for finnish keyboard
+- fr_fr.tbl, for french keyboard
+- fr_fr-pc.tbl, for french pc keyboard
+- fr_ch.tbl, for swiss french keyboard
+- de_de.tbl, for german keyboard
+- de_ch.tbl, for swiss german keyboard
+- el_gr.tbl, for greek keyboard
+- hu_hu.tbl, for hungarian keyboard
+- it_it.tbl, for italian keyboard
+- nl_nl.tbl, for dutch keyboard
+- nn_no.tbl, for norwegian keyboard
+- es_es.tbl, for spanish keyboard
+- ro_ro.tbl, for romanian keyboard
+- sv_se.tbl, for swedish keyboard
+
+- en_uk-pl.tbl, for british keyboards, with polish extensions
+- en_us-pl.tbl, for USA pc keyboard, with polish extensions
+- fr_fr-pl.tbl, for french keyboard, with polish extensions
+- fr_ch-pl.tbl, for swiss french keyboard, with polish extensions
+- de_de-pl.tbl, for german keyboard, with polish extensions
+- de_ch-pl.tbl, for swiss german keyboard, with polish extensions
+- it_it-pl.tbl, for italian keyboard, with polish extensions
+- es_es-pl.tbl, for spanish keyboard, with polish extensions
