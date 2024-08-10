@@ -412,10 +412,10 @@ create_filesystem() {
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
 		TEMP_CPU_TARGET="020"
 	fi
-	for f in "$E2FSPROGS_DIR/etc/"*; do cp -a "${f}" "$SYSROOT/etc/${f}"; done
-	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/sbin/"*; do cp -a "${f}" "$SYSROOT/sbin/${f}"; done
-	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/usr/sbin/"*; do cp -a "${f}" "$SYSROOT/usr/sbin/${f}"; done
-	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/usr/bin/"*; do cp -a "${f}" "$SYSROOT/usr/bin/${f}"; done
+	for f in "$E2FSPROGS_DIR/etc/"*; do cp -a "${f}" "$SYSROOT/etc/${f##*/}"; done
+	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/sbin/"*; do cp -a "${f}" "$SYSROOT/sbin/${f##*/}"; done
+	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/usr/sbin/"*; do cp -a "${f}" "$SYSROOT/usr/sbin/${f##*/}"; done
+	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/usr/bin/"*; do cp -a "${f}" "$SYSROOT/usr/bin/${f##*/}"; done
 
 	echo "root:x:0:0::/root:/bin/bash" > "$SYSROOT/etc/passwd"
 
