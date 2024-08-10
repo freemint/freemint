@@ -289,7 +289,7 @@ sln ${SYSDIR}sys-root/root     u:/root
 #sln ${SYSDIR}sys-root/sbin     u:/sbin
 #sln ${SYSDIR}sys-root/share    u:/share
 sln ${SYSDIR}sys-root/tmp      u:/tmp
-#sln ${SYSDIR}sys-root/usr      u:/usr
+sln ${SYSDIR}sys-root/usr      u:/usr
 sln ${SYSDIR}sys-root/var      u:/var
 
 
