@@ -326,6 +326,8 @@ attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XA
 			new->to_item = item;
 			new->menu = mn->menu.mn_menu;	 /* This is the submenu */
 			new->item = mn->menu.mn_item;	 /* This is the start item inside the submenu */
+			mn->wt->tree[mn->menu.mn_menu].ob_x = 0;
+			mn->wt->tree[mn->menu.mn_menu].ob_y = 0;
 			new->wt = mn->wt;
 			new->on_open = on_open;
 			new->data = data;
@@ -1349,7 +1351,8 @@ do_timeout_popup(Tab *tab)
 	DIAG((D_menu, NULL, " --- attach=%lx, wt=%lx, obtree=%lx",
 		at, new_wt, ob));
 
-	ob->ob_x = 0, ob->ob_y = 0;
+	ob->ob_x = 0;
+	ob->ob_y = 0;
 	obj_offset(new_wt, aesobj(new_wt->tree, at->item), &rdx, &rdy);
 
 	rdx = tra.x - rdx;
