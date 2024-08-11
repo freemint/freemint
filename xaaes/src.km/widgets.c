@@ -1834,21 +1834,6 @@ onopen_shade(XA_MENU_ATTACHMENT *at)
 	}
 	return true;
 }
-static on_open_attach *onopen_wctxt[] =
-{
-	NULL,
-	NULL,
-	onopen_advanced,
-	NULL,
-	onopen_close,
-	onopen_hide,
-	onopen_iconify,
-	onopen_shade,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-};
 
 struct parm { char **start; short num; };
 
@@ -2151,15 +2136,15 @@ CE_winctxt(int lock, struct c_event *ce, short cancel)
 	}
 
 	/* attach advanced menu */
-	attach_menu(0, ce->client, wct->wt[0], 2, &wct->xmn[1], onopen_wctxt[2], wind);
+	attach_menu(0, ce->client, wct->wt[0], 2, &wct->xmn[1], onopen_advanced, wind);
 	/* attach close menu */
-	attach_menu(0, ce->client, wct->wt[0], 4, &wct->xmn[2], onopen_wctxt[4], wind);
+	attach_menu(0, ce->client, wct->wt[0], 4, &wct->xmn[2], onopen_close, wind);
 	/* attach hide menu */
-	attach_menu(0, ce->client, wct->wt[0], 5, &wct->xmn[3], onopen_wctxt[5], wind);
+	attach_menu(0, ce->client, wct->wt[0], 5, &wct->xmn[3], onopen_hide, wind);
 	/* attach iconify menu */
-	attach_menu(0, ce->client, wct->wt[0], 6, &wct->xmn[2], onopen_wctxt[6], wind);
+	attach_menu(0, ce->client, wct->wt[0], 6, &wct->xmn[2], onopen_iconify, wind);
 	/* attach shade menu */
-	attach_menu(0, ce->client, wct->wt[0], 7, &wct->xmn[2], onopen_wctxt[7], wind);
+	attach_menu(0, ce->client, wct->wt[0], 7, &wct->xmn[2], onopen_shade, wind);
 
 	obnum = -1;
 	dowhat = -1;
