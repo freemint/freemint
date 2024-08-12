@@ -1,0 +1,12 @@
+This is the a modified version of the original source code from
+Motorola for the 68060 processor support code, providing emulation for
+rarely used m68k instructions not implemented in the 68060 silicon.
+
+The code provided here was changed to assemble out of the box using
+the GNU assembler, and it is being included in order to comply with
+the GNU General Public License. Original sources (only usable by
+sun assembler) can be found in the "orig" directory.
+
+You don't need to actually assemble these files in order to compile a
+working m68k kernel, the precompiled .sa files in the parent directory
+are sufficient.

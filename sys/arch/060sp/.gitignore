@@ -1,2 +1,6 @@
 isp.S
 fpsp.S
+dfpsp
+isp.sa
+fpsp.sa
+*.bin

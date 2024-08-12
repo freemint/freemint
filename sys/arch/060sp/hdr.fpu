@@ -1,0 +1,275 @@
+/*
+ * This file contains a set of define statements for constants
+ * in order to promote readability within the corecode itself.
+ */
+
+	LOCAL_SIZE = 		192			/*  stack frame size(bytes) */
+	LV =			-LOCAL_SIZE		/*  stack offset */
+
+	EXC_SR =		0x4			/*  stack status register */
+	EXC_PC =		0x6			/*  stack pc */
+	EXC_VOFF =		0xa			/*  stacked vector offset */
+	EXC_EA =		0xc			/*  stacked <ea> */
+
+	EXC_FP =		0x0			/*  frame pointer */
+
+	EXC_AREGS =		-68			/*  offset of all address regs */
+	EXC_DREGS =		-100			/*  offset of all data regs */
+	EXC_FPREGS =		-36			/*  offset of all fp regs */
+
+	EXC_A7 =		EXC_AREGS+(7*4)		/*  offset of saved a7 */
+	OLD_A7 =		EXC_AREGS+(6*4)		/*  extra copy of saved a7 */
+	EXC_A6 =		EXC_AREGS+(6*4)		/*  offset of saved a6 */
+	EXC_A5 =		EXC_AREGS+(5*4)
+	EXC_A4 =		EXC_AREGS+(4*4)
+	EXC_A3 =		EXC_AREGS+(3*4)
+	EXC_A2 =		EXC_AREGS+(2*4)
+	EXC_A1 =		EXC_AREGS+(1*4)
+	EXC_A0 =		EXC_AREGS+(0*4)
+	EXC_D7 =		EXC_DREGS+(7*4)
+	EXC_D6 =		EXC_DREGS+(6*4)
+	EXC_D5 =		EXC_DREGS+(5*4)
+	EXC_D4 =		EXC_DREGS+(4*4)
+	EXC_D3 =		EXC_DREGS+(3*4)
+	EXC_D2 =		EXC_DREGS+(2*4)
+	EXC_D1 =		EXC_DREGS+(1*4)
+	EXC_D0 =		EXC_DREGS+(0*4)
+
+	EXC_FP0 =		EXC_FPREGS+(0*12)	/*  offset of saved fp0 */
+	EXC_FP1 =		EXC_FPREGS+(1*12)	/*  offset of saved fp1 */
+	EXC_FP2 =		EXC_FPREGS+(2*12)	/*  offset of saved fp2 (not used) */
+
+	FP_SCR1 =		LV+80			/*  fp scratch 1 */
+	FP_SCR1_EX =		FP_SCR1+0
+	FP_SCR1_SGN =		FP_SCR1+2
+	FP_SCR1_HI =		FP_SCR1+4
+	FP_SCR1_LO =		FP_SCR1+8
+
+	FP_SCR0 =		LV+68			/*  fp scratch 0 */
+	FP_SCR0_EX =		FP_SCR0+0
+	FP_SCR0_SGN =		FP_SCR0+2
+	FP_SCR0_HI =		FP_SCR0+4
+	FP_SCR0_LO =		FP_SCR0+8
+
+	FP_DST =		LV+56			/*  fp destination operand */
+	FP_DST_EX =		FP_DST+0
+	FP_DST_SGN =		FP_DST+2
+	FP_DST_HI =		FP_DST+4
+	FP_DST_LO =		FP_DST+8
+
+	FP_SRC =		LV+44			/*  fp source operand */
+	FP_SRC_EX =		FP_SRC+0
+	FP_SRC_SGN =		FP_SRC+2
+	FP_SRC_HI =		FP_SRC+4
+	FP_SRC_LO =		FP_SRC+8
+
+	USER_FPIAR =		LV+40			/*  FP instr address register */
+
+	USER_FPSR =		LV+36			/*  FP status register */
+	FPSR_CC =		USER_FPSR+0		/*  FPSR condition codes */
+	FPSR_QBYTE =		USER_FPSR+1		/*  FPSR qoutient byte */
+	FPSR_EXCEPT =		USER_FPSR+2		/*  FPSR exception status byte */
+	FPSR_AEXCEPT =		USER_FPSR+3		/*  FPSR accrued exception byte */
+
+	USER_FPCR =		LV+32			/*  FP control register */
+	FPCR_ENABLE =		USER_FPCR+2		/*  FPCR exception enable */
+	FPCR_MODE =		USER_FPCR+3		/*  FPCR rounding mode control */
+
+	L_SCR3 =		LV+28			/*  integer scratch 3 */
+	L_SCR2 =		LV+24			/*  integer scratch 2 */
+	L_SCR1 =		LV+20			/*  integer scratch 1 */
+
+	STORE_FLG =		LV+19			/*  flag: operand store (ie. not fcmp/ftst) */
+
+	EXC_TEMP2 =		LV+24			/*  temporary space */
+	EXC_TEMP =		LV+16			/*  temporary space */
+
+	DTAG =			LV+15			/*  destination operand type */
+	STAG =			LV+14			/*  source operand type */
+
+	SPCOND_FLG =		LV+10			/*  flag: special case (see below) */
+
+	EXC_CC =		LV+8			/*  saved condition codes */
+	EXC_EXTWPTR =		LV+4			/*  saved current PC (active) */
+	EXC_EXTWORD =		LV+2			/*  saved extension word */
+	EXC_CMDREG =		LV+2			/*  saved extension word */
+	EXC_OPWORD =		LV+0			/*  saved operation word */
+
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+
+/*  Helpful macros */
+
+	FTEMP =			0			/*  offsets within an */
+	FTEMP_EX =		0			/*  extended precision */
+	FTEMP_SGN =		2			/*  value saved in memory. */
+	FTEMP_HI =		4
+	FTEMP_LO =		8
+	FTEMP_GRS =		12
+
+	LOCAL =			0			/*  offsets within an */
+	LOCAL_EX =		0			/*  extended precision */
+	LOCAL_SGN =		2			/*  value saved in memory. */
+	LOCAL_HI =		4
+	LOCAL_LO =		8
+	LOCAL_GRS =		12
+
+	DST =			0			/*  offsets within an */
+	DST_EX =		0			/*  extended precision */
+	DST_HI =		4			/*  value saved in memory. */
+	DST_LO =		8
+
+	SRC =			0			/*  offsets within an */
+	SRC_EX =		0			/*  extended precision */
+	SRC_HI =		4			/*  value saved in memory. */
+	SRC_LO =		8
+
+	SGL_LO =		0x3f81			/*  min sgl prec exponent */
+	SGL_HI =		0x407e			/*  max sgl prec exponent */
+	DBL_LO =		0x3c01			/*  min dbl prec exponent */
+	DBL_HI =		0x43fe			/*  max dbl prec exponent */
+	EXT_LO =		0x0			/*  min ext prec exponent */
+	EXT_HI =		0x7ffe			/*  max ext prec exponent */
+
+	EXT_BIAS =		0x3fff			/*  extended precision bias */
+	SGL_BIAS =		0x007f			/*  single precision bias */
+	DBL_BIAS =		0x03ff			/*  double precision bias */
+
+	NORM =			0x00			/*  operand type for STAG/DTAG */
+	ZERO =			0x01			/*  operand type for STAG/DTAG */
+	INF =			0x02			/*  operand type for STAG/DTAG */
+	QNAN =			0x03			/*  operand type for STAG/DTAG */
+	DENORM =		0x04			/*  operand type for STAG/DTAG */
+	SNAN =			0x05			/*  operand type for STAG/DTAG */
+	UNNORM =		0x06			/*  operand type for STAG/DTAG */
+
+/* ;;;;;;;;;;;;;;;;; */
+/*  FPSR/FPCR bits ; */
+/* ;;;;;;;;;;;;;;;;; */
+	neg_bit =		0x3			/*  negative result */
+	z_bit =			0x2			/*  zero result */
+	inf_bit =		0x1			/*  infinite result */
+	nan_bit =		0x0			/*  NAN result */
+
+	q_sn_bit =		0x7			/*  sign bit of quotient byte */
+
+	bsun_bit =		7			/*  branch on unordered */
+	snan_bit =		6			/*  signalling NAN */
+	operr_bit =		5			/*  operand error */
+	ovfl_bit =		4			/*  overflow */
+	unfl_bit =		3			/*  underflow */
+	dz_bit =		2			/*  divide by zero */
+	inex2_bit =		1			/*  inexact result 2 */
+	inex1_bit =		0			/*  inexact result 1 */
+
+	aiop_bit =		7			/*  accrued inexact operation bit */
+	aovfl_bit =		6			/*  accrued overflow bit */
+	aunfl_bit =		5			/*  accrued underflow bit */
+	adz_bit =		4			/*  accrued dz bit */
+	ainex_bit =		3			/*  accrued inexact bit */
+
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+/*  FPSR individual bit masks ; */
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+	neg_mask =		0x08000000		/*  negative bit mask (lw) */
+	inf_mask =		0x02000000		/*  infinity bit mask (lw) */
+	z_mask =		0x04000000		/*  zero bit mask (lw) */
+	nan_mask =		0x01000000		/*  nan bit mask (lw) */
+
+	neg_bmask =		0x08			/*  negative bit mask (byte) */
+	inf_bmask =		0x02			/*  infinity bit mask (byte) */
+	z_bmask =		0x04			/*  zero bit mask (byte) */
+	nan_bmask =		0x01			/*  nan bit mask (byte) */
+
+	bsun_mask =		0x00008000		/*  bsun exception mask */
+	snan_mask =		0x00004000		/*  snan exception mask */
+	operr_mask =		0x00002000		/*  operr exception mask */
+	ovfl_mask =		0x00001000		/*  overflow exception mask */
+	unfl_mask =		0x00000800		/*  underflow exception mask */
+	dz_mask =		0x00000400		/*  dz exception mask */
+	inex2_mask =		0x00000200		/*  inex2 exception mask */
+	inex1_mask =		0x00000100		/*  inex1 exception mask */
+
+	aiop_mask =		0x00000080		/*  accrued illegal operation */
+	aovfl_mask =		0x00000040		/*  accrued overflow */
+	aunfl_mask =		0x00000020		/*  accrued underflow */
+	adz_mask =		0x00000010		/*  accrued divide by zero */
+	ainex_mask =		0x00000008		/*  accrued inexact */
+
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+/*  FPSR combinations used in the FPSP ; */
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+	dzinf_mask =		inf_mask+dz_mask+adz_mask
+	opnan_mask =		nan_mask+operr_mask+aiop_mask
+	nzi_mask =		0x01ffffff		/* clears N, Z, and I */
+	unfinx_mask =		unfl_mask+inex2_mask+aunfl_mask+ainex_mask
+	unf2inx_mask =		unfl_mask+inex2_mask+ainex_mask
+	ovfinx_mask =		ovfl_mask+inex2_mask+aovfl_mask+ainex_mask
+	inx1a_mask =		inex1_mask+ainex_mask
+	inx2a_mask =		inex2_mask+ainex_mask
+	snaniop_mask =		nan_mask+snan_mask+aiop_mask
+	snaniop2_mask =		snan_mask+aiop_mask
+	naniop_mask =		nan_mask+aiop_mask
+	neginf_mask =		neg_mask+inf_mask
+	infaiop_mask =		inf_mask+aiop_mask
+	negz_mask =		neg_mask+z_mask
+	opaop_mask =		operr_mask+aiop_mask
+	unfl_inx_mask =		unfl_mask+aunfl_mask+ainex_mask
+	ovfl_inx_mask =		ovfl_mask+aovfl_mask+ainex_mask
+
+/* ;;;;;;;; */
+/*  misc. ; */
+/* ;;;;;;;; */
+	rnd_stky_bit =		29			/*  stky bit pos in longword */
+
+	sign_bit =		0x7			/*  sign bit */
+	signan_bit =		0x6			/*  signalling nan bit */
+
+	sgl_thresh =		0x3f81			/*  minimum sgl exponent */
+	dbl_thresh =		0x3c01			/*  minimum dbl exponent */
+
+	x_mode =		0x0			/*  extended precision */
+	s_mode =		0x4			/*  single precision */
+	d_mode =		0x8			/*  double precision */
+
+	rn_mode =		0x0			/*  round-to-nearest */
+	rz_mode =		0x1			/*  round-to-zero */
+	rm_mode =		0x2			/*  round-tp-minus-infinity */
+	rp_mode =		0x3			/*  round-to-plus-infinity */
+
+	mantissalen =		64			/*  length of mantissa in bits */
+
+	BYTE =			1			/*  len(byte) == 1 byte */
+	WORD =			2			/*  len(word) == 2 bytes */
+	LONG =			4			/*  len(longword) == 2 bytes */
+
+	BSUN_VEC =		0xc0			/*  bsun    vector offset */
+	INEX_VEC =		0xc4			/*  inexact vector offset */
+	DZ_VEC =		0xc8			/*  dz      vector offset */
+	UNFL_VEC =		0xcc			/*  unfl    vector offset */
+	OPERR_VEC =		0xd0			/*  operr   vector offset */
+	OVFL_VEC =		0xd4			/*  ovfl    vector offset */
+	SNAN_VEC =		0xd8			/*  snan    vector offset */
+
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;; */
+/*  SPecial CONDition FLaGs ; */
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;; */
+	ftrapcc_flg =		0x01			/*  flag bit: ftrapcc exception */
+	fbsun_flg =		0x02			/*  flag bit: bsun exception */
+	mia7_flg =		0x04			/*  flag bit: (a7)+ <ea> */
+	mda7_flg =		0x08			/*  flag bit: -(a7) <ea> */
+	fmovem_flg =		0x40			/*  flag bit: fmovem instruction */
+	immed_flg =		0x80			/*  flag bit: &<data> <ea> */
+
+	ftrapcc_bit =		0x0
+	fbsun_bit =		0x1
+	mia7_bit =		0x2
+	mda7_bit =		0x3
+	immed_bit =		0x7
+
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+/*  TRANSCENDENTAL "LAST-OP" FLAGS ; */
+/* ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
+	FMUL_OP =		0x0			/*  fmul instr performed last */
+	FDIV_OP =		0x1			/*  fdiv performed last */
+	FADD_OP =		0x2			/*  fadd performed last */
+	FMOV_OP =		0x3			/*  fmov performed last */
