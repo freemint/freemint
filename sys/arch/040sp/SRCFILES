@@ -1,0 +1,49 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+COBJS = mint040sp.S
+
+FPSP040_SRCS = \
+	src/tbldo.S \
+	src/x_fline.S \
+	src/x_operr.S \
+	src/x_ovfl.S \
+	src/x_snan.S \
+	src/x_store.S \
+	src/x_unfl.S \
+	src/x_unsupp.S \
+	src/x_unimp.S \
+	src/x_bsun.S \
+	src/bindec.S \
+	src/binstr.S \
+	src/bugfix.S \
+	src/decbin.S \
+	src/do_func.S \
+	src/genexc.S \
+	src/get_op.S \
+	src/kernelex.S \
+	src/res_func.S \
+	src/round.S \
+	src/util.S \
+	src/sacos.S \
+	src/sasin.S \
+	src/satan.S \
+	src/satanh.S \
+	src/scale.S \
+	src/scosh.S \
+	src/setox.S \
+	src/sint.S \
+	src/slog2.S \
+	src/slogn.S \
+	src/smovecr.S \
+	src/srem_mod.S \
+	src/sgetem.S \
+	src/ssin.S \
+	src/ssinh.S \
+	src/stan.S \
+	src/stanh.S \
+	src/sto_res.S \
+	src/stwotox.S \
+	$(empty)
+
+SRCFILES = $(COBJS)
