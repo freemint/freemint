@@ -289,7 +289,7 @@ sln ${SYSDIR}sys-root/root     u:/root
 #sln ${SYSDIR}sys-root/sbin     u:/sbin
 #sln ${SYSDIR}sys-root/share    u:/share
 sln ${SYSDIR}sys-root/tmp      u:/tmp
-sln ${SYSDIR}sys-root/usr      u:/usr
+#sln ${SYSDIR}sys-root/usr      u:/usr
 sln ${SYSDIR}sys-root/var      u:/var
 
 
@@ -371,10 +371,10 @@ setenv TMPDIR u:/tmp
 #exec u:/bin/bash u:/bin/fscheck.sh
 #echo
 
-# Alternative method, if you have e2fsck.ttp in /c/mint,
+# Alternative method, if you have e2fsck in /bin,
 # and e: is your ext2fs drive.
 
-#exec u:/c/mint/e2fsck.ttp -p e:
+#exec u:/bin/e2fsck.ttp -p e:
 
 # Set up time stuff. Note that you need MiNT Lib timezone package
 # (installed along with the library) for this below to work.

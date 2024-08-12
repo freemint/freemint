@@ -394,29 +394,27 @@ copy_guides() {
 }
 
 create_filesystem() {
-	mkdir -p "$SYSROOT"/{bin,sbin,usr/bin,usr/sbin,etc,root,tmp,var/run}
+	mkdir -p "$SYSROOT"/{bin,etc,root,tmp,var/run}
 	local coreutils="cat cp env ln ls md5sum mkdir mv rm"
+	local e2fsprogs="e2fsck mke2fs tune2fs"
 
 	if [ "$CPU_TARGET" = "000" ]
 	then
 		cp "$BASH_DIR/bash000.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
-		TEMP_CPU_TARGET="$CPU_TARGET"
+		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
 	elif [ "$CPU_TARGET" = "col" ]
 	then
 		cp "$BASH_DIR/bashv4e.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
-		TEMP_CPU_TARGET="v4e"
+		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
 	else
 		# 02060, 030, 040, 060
 		cp "$BASH_DIR/bash020.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
-		TEMP_CPU_TARGET="020"
+		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
 	fi
-	for f in "$E2FSPROGS_DIR/etc/"*; do cp -a "${f}" "$SYSROOT/etc/${f##*/}"; done
-	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/sbin/"*; do cp -a "${f}" "$SYSROOT/sbin/${f##*/}"; done
-	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/usr/sbin/"*; do cp -a "${f}" "$SYSROOT/usr/sbin/${f##*/}"; done
-	for f in "$E2FSPROGS_DIR/${TEMP_CPU_TARGET}/usr/bin/"*; do cp -a "${f}" "$SYSROOT/usr/bin/${f##*/}"; done
+	cp "$E2FSPROGS_DIR/mke2fs.conf" "$SYSROOT/etc"
 
 	echo "root:x:0:0::/root:/bin/bash" > "$SYSROOT/etc/passwd"
 
