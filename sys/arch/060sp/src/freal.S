@@ -12,6 +12,9 @@
  *  it makes the FPSP code easier to read and more mainatinable.
  */
 
+#include "mint/asmdefs.h"
+#define usp REG(usp)
+
 	_off_bsun = 0x00
 	_off_snan = 0x04
 	_off_operr = 0x08
@@ -48,9 +51,13 @@
 	.xref _fpsp_unsupp
 	.xref _fpsp_effadd
 
+    .text
+
+	.globl _start
+_start:
+
 _060FPSP_TABLE:
 
-    .text
 /* ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; */
 
 /*  Here's the table of ENTRY POINTS for those linking the package. */

@@ -49,14 +49,14 @@ LDFLAGS = -s
 
 fpsp.bin: $(FPSP060_SRCS) Makefile
 	cat $(FPSP060_SRCS) > tmp.S
-	@$(CC) $(ASFLAGS) -c -o tmp.o $<
+	@$(CC) $(ASFLAGS) -c -o tmp.o tmp.S
 	@if $(OBJDUMP) -r tmp.o | grep -w 32; then \
 		$(OBJDUMP) -r tmp.o; \
 		echo "$< contains relocations" >&2; \
 		exit 1; \
 	fi
 	@$(RM) ftest.o
-	$(CC) $(ASFLAGS) $(LDFLAGS) -Wl,--oformat,binary -o $@ -nostartfiles -nostdlib tmp.S
+	$(CC) $(ASFLAGS) $(LDFLAGS) -Wl,--oformat,binary -Wl,-entry,_start -o $@ -nostartfiles -nostdlib tmp.S
 	$(RM) tmp.S tmp.o
 
 isp.bin: $(ISP060_SRCS) Makefile
@@ -67,7 +67,7 @@ isp.bin: $(ISP060_SRCS) Makefile
 		exit 1; \
 	fi
 	@$(RM) isp.o
-	$(CC) $(ASFLAGS) $(LDFLAGS) -Wl,--oformat,binary -o $@ -nostartfiles -nostdlib $<
+	$(CC) $(ASFLAGS) $(LDFLAGS) -Wl,--oformat,binary -Wl,-entry,_start -o $@ -nostartfiles -nostdlib $<
 
 $(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 

@@ -39,6 +39,12 @@
  *  it makes the ISP code easier to read and more mainatinable.
  */ 
 
+#include "mint/asmdefs.h"
+#define sfc REG(sfc)
+#define dfc REG(dfc)
+#define usp REG(usp)
+#define ccr REG(ccr)
+
         .text
 
 	_off_chk = 0x00
@@ -63,6 +69,9 @@
 	_off_dwb = 0x60
 	_off_dww = 0x64
 	_off_dwl = 0x68
+
+	.globl _start
+_start:
 
 _060ISP_TABLE:
 

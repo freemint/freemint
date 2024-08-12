@@ -36,6 +36,9 @@
 #include "mint/asmdefs.h"
 #define fpsr REG(fpsr)
 #define fpcr REG(fpcr)
+#define sfc REG(sfc)
+#define dfc REG(dfc)
+#define vbr REG(vbr)
 
 XBRA      = 0x58425241              /* "XBRA" */
 XBRA_ID   = 0x4d435350              /* "MCSP" */
