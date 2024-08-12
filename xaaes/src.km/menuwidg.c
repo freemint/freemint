@@ -329,6 +329,25 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			new->on_open = on_open;
 			new->data = data;
 			mn->wt->links++;
+			if (mn != &desk_popup && (attach_to->ob_type & 0xff) == G_STRING)
+			{
+				char *text;
+				int len;
+
+				/*
+				 * Some applications (like RSM) already have an arrow character at
+				 * the position where the submenu indicator should
+				 * be displayed.
+				 * Some other stupid applications like GBE have a totally different
+				 * character at that position, and expects us to replace it.
+				 */
+				text = object_get_spec(attach_to)->free_string;
+				len = (int)strlen(text);
+				if (len >= 3 && text[len - 3] == ' ' && text[len - 1] == ' ')
+					text[len - 2] = ' ';
+				else if (len >= 2 && text[len - 2] == ' ')
+					text[len - 1] = ' ';
+			}
 			ret = 1;
 		}
 	}
