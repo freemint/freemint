@@ -374,7 +374,7 @@ setenv TMPDIR u:/tmp
 # Alternative method, if you have e2fsck in /bin,
 # and e: is your ext2fs drive.
 
-#exec u:/bin/e2fsck.ttp -p e:
+#exec u:/bin/e2fsck -C 0 -p e:
 
 # Set up time stuff. Note that you need MiNT Lib timezone package
 # (installed along with the library) for this below to work.

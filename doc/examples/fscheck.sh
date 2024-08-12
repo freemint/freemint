@@ -41,7 +41,7 @@ else
 	for drv in $ext2drives; do
 		echo; echo "Checking ext2 filesystem on drive $drv"
 		echo "with automatic repair, if needed."
-		e2fsck -p $drv:
+		e2fsck -C 0 -p $drv:
 		if [ $? -ge 2 ]; then
 			echo
 			echo "Warning: e2fsck FAILED ($?)"
