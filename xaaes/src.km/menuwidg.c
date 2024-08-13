@@ -338,7 +338,7 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 				 * Some applications (like RSM) already have an arrow character at
 				 * the position where the submenu indicator should
 				 * be displayed.
-				 * Some other stupid applications like GBE have a totally different
+				 * Some other applications like GBE have a totally different
 				 * character at that position, and expects us to replace it.
 				 */
 				text = object_get_spec(attach_to)->free_string;
