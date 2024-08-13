@@ -63,32 +63,23 @@ extern struct shared S;
 
 /* CLIENT list operations */
 
-#define CLIENT_LIST_INIT() \
-	LIST_INIT(&(S.client_list))
+#define CLIENT_LIST_INIT() LIST_INIT(&(S.client_list))
 
-#define CLIENT_LIST_START \
-	LIST_START(&(S.client_list))
+#define CLIENT_LIST_START LIST_START(&(S.client_list))
 
-#define NEXT_CLIENT(client) \
-	LIST_NEXT(client,client_entry)
+#define NEXT_CLIENT(client) LIST_NEXT(client, client_entry)
 
-#define PREV_CLIENT(client) \
-	LIST_PREV(client,client_entry)
+#define PREV_CLIENT(client) LIST_PREV(client, client_entry)
 
-#define CLIENT_LIST_INSERT_START(client) \
-	LIST_INSERT_START(&(S.client_list), client, client_entry);
+#define CLIENT_LIST_INSERT_START(client) LIST_INSERT_START(&(S.client_list), client, client_entry)
 
-#define CLIENT_LIST_INSERT_END(client) \
-	LIST_INSERT_END(&(S.client_list), client, client_entry, xa_client);
+#define CLIENT_LIST_INSERT_END(client) LIST_INSERT_END(&(S.client_list), client, client_entry, xa_client)
 
-#define CLIENT_LIST_REMOVE(client) \
-	LIST_REMOVE(&(S.client_list), client, client_entry)
+#define CLIENT_LIST_REMOVE(client) LIST_REMOVE(&(S.client_list), client, client_entry)
 
-#define FOREACH_CLIENT(client) \
-	LIST_FOREACH(&(S.client_list), client, client_entry)
+#define FOREACH_CLIENT(client) LIST_FOREACH(&(S.client_list), client, client_entry)
 
-static inline size_t
-client_list_size(void)
+static inline size_t client_list_size(void)
 {
 	struct xa_client *cl;
 	size_t length = 0;
@@ -102,57 +93,40 @@ client_list_size(void)
 
 /* APP list operations */
 
-#define APP_LIST_INIT() \
-	LIST_INIT(&(S.app_list))
+#define APP_LIST_INIT() LIST_INIT(&(S.app_list))
 
-#define APP_LIST_START \
-	LIST_START(&(S.app_list))
+#define APP_LIST_START LIST_START(&(S.app_list))
 
-#define NEXT_APP(client) \
-	LIST_NEXT(client,app_entry)
+#define NEXT_APP(client) LIST_NEXT(client, app_entry)
 
-#define PREV_APP(client) \
-	LIST_PREV(client,app_entry)
+#define PREV_APP(client) LIST_PREV(client, app_entry)
 
-#define APP_LIST_INSERT_START(client) \
-	LIST_INSERT_START(&(S.app_list), client, app_entry);
+#define APP_LIST_INSERT_START(client) LIST_INSERT_START(&(S.app_list), client, app_entry);
 
-#define APP_LIST_INSERT_END(client) \
-	LIST_INSERT_END(&(S.app_list), client, app_entry, xa_client);
+#define APP_LIST_INSERT_END(client) LIST_INSERT_END(&(S.app_list), client, app_entry, xa_client);
 
-#define APP_LIST_REMOVE(client) \
-	LIST_REMOVE(&(S.app_list), client, app_entry)
+#define APP_LIST_REMOVE(client) LIST_REMOVE(&(S.app_list), client, app_entry)
 
-#define FOREACH_APP(client) \
-	LIST_FOREACH(&(S.app_list), client, app_entry)
+#define FOREACH_APP(client) LIST_FOREACH(&(S.app_list), client, app_entry)
 
 /* task administration block list */
-#define TAB_LIST_INIT() \
-	LIST_INIT(&(S.menu_base))
+#define TAB_LIST_INIT() LIST_INIT(&(S.menu_base))
 
-#define TAB_LIST_START \
-	LIST_START(&(S.menu_base))
+#define TAB_LIST_START LIST_START(&(S.menu_base))
 
-#define NEXT_TAB(tab) \
-	LIST_NEXT(tab,tab_entry)
+#define NEXT_TAB(tab) LIST_NEXT(tab, tab_entry)
 
-#define PREV_TAB(tab) \
-	LIST_PREV(tab,tab_entry)
+#define PREV_TAB(tab) LIST_PREV(tab, tab_entry)
 
-#define TAB_LIST_INSERT_START(tab) \
-	LIST_INSERT_START(&(S.menu_base), tab, tab_entry);
+#define TAB_LIST_INSERT_START(tab) LIST_INSERT_START(&(S.menu_base), tab, tab_entry);
 
-#define TAB_LIST_INSERT_END(tab) \
-	LIST_INSERT_END(&(S.menu_base), tab, tab_entry, task_administration_block);
+#define TAB_LIST_INSERT_END(tab) LIST_INSERT_END(&(S.menu_base), tab, tab_entry, task_administration_block);
 
-#define TAB_LIST_REMOVE(tab) \
-	LIST_REMOVE(&(S.menu_base), tab, tab_entry)
+#define TAB_LIST_REMOVE(tab) LIST_REMOVE(&(S.menu_base), tab, tab_entry)
 
-#define FOREACH_TAB(tab) \
-	LIST_FOREACH(&(S.menu_base), tab, tab_entry)
+#define FOREACH_TAB(tab) LIST_FOREACH(&(S.menu_base), tab, tab_entry)
 
-static inline size_t
-tab_list_size(void)
+static inline size_t tab_list_size(void)
 {
 	struct task_administration_block *tab;
 	size_t length = 0;
@@ -180,7 +154,6 @@ extern struct xa_vdi_api *xa_vdiapi;
 
 #define MONO (screen.colours < 16)
 
-//extern struct xa_widget_theme default_widget_theme;
 extern struct options default_options;
 extern struct options local_options;
 
@@ -192,22 +165,20 @@ extern short border_mouse[];
 
 extern const char mnu_clientlistname[];
 
-// extern XA_TREE nil_tree;
-
 #include "mscall.h"
 
 struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);
 
-void *	lookup_xa_data		(struct xa_data_hdr **l,    void *_data);
-void *	lookup_xa_data_byname	(struct xa_data_hdr **list, char *name);
-void *	lookup_xa_data_byid	(struct xa_data_hdr **list, long id);
-void *	lookup_xa_data_byidname	(struct xa_data_hdr **list, long id, char *name);
-void	add_xa_data		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
-void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
-void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
-void	ref_xa_data		(struct xa_data_hdr **list, void *_data, short count);
-long	deref_xa_data		(struct xa_data_hdr **list, void *_data, short flags);
-void	free_xa_data_list	(struct xa_data_hdr **list);
+void *lookup_xa_data(struct xa_data_hdr **l, void *_data);
+void *lookup_xa_data_byname(struct xa_data_hdr **list, char *name);
+void *lookup_xa_data_byid(struct xa_data_hdr **list, long id);
+void *lookup_xa_data_byidname(struct xa_data_hdr **list, long id, char *name);
+void add_xa_data(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl (*destruct)(void *d));
+void remove_xa_data(struct xa_data_hdr **list, void *_data);
+void delete_xa_data(struct xa_data_hdr **list, void *_data);
+void ref_xa_data(struct xa_data_hdr **list, void *_data, short count);
+long deref_xa_data(struct xa_data_hdr **list, void *_data, short flags);
+void free_xa_data_list(struct xa_data_hdr **list);
 
 #endif /* _xa_global_h */
