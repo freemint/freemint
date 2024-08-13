@@ -64,7 +64,6 @@ for f in tools/IO/IODEFS \
 	tools/strace/STRACEDEFS \
 	tools/swkbdtbl/SWKBDTBLDEFS \
 	tools/sysctl/SYSCTLDEFS \
-	tools/sysdir/SYSDIRDEFS \
 	tools/usbtool/USBTOOLDEFS \
 	; do
 	echo "alltargets = ${TEMP_CPU_TARGET}${PRG_TARGET}" >> $f

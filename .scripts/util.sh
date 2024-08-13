@@ -318,11 +318,6 @@ copy_tbl() {
 copy_sysroot() {
 	local SYSROOT="$1"
 	local TARGET="$2"
-	local MINTDIR="$3"
-
-	# temporary workaround
-	mkdir -p "$MINTDIR"
-	cp "$SRC/tools/sysdir/.compile_$TARGET/sysdir.tos" "$MINTDIR"
 
 	mkdir -p "$SYSROOT/opt/GEM"
 

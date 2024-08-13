@@ -710,8 +710,7 @@ texteditor (QED) and a desktop (TeraDesk).
 
 The "per-cpu builds" are named 1-19-CUR-<cpu type> and @{B}do not@{0} contain
 configuration files, desktop or other non-FreeMiNT applications; they are
-created for easy upgrading or testing the latest snapshot without touching
-the current existing installation.
+created for easy upgrading of an already existing setup.
 
 
 @{U}Requirements:@{0}
@@ -731,9 +730,7 @@ the current existing installation.
 1. Download the pre-configured bootable snapshot (1-19-<number>),
    according to your system architecture.
 2. Unpack the archive to your drive C:/ (boot partition). You can also
-   install FreeMiNT to any other bootable partition, but then you have to
-   adapt all paths in files mint.cnf and xaaes.cnf according to this
-   location @{B}before@{0} rebooting.
+   install FreeMiNT to any other bootable partition.
 3. Verify that mint-*.prg is the @{B}last@{0} program in your AUTO folder
    (Desktop view/sorting option: unsorted).
    If you used any MiNT version before, please deactivate it (rename .prg
@@ -748,16 +745,24 @@ the current existing installation.
 1. Download the latest version of the per-cpu builds (1-19-CUR-*),
    according to your system architecture.
 2. Unpack the archive to your drive C:/ (boot partition).
-3. Rename your old mint*.prg in AUTO folder to @{B}.prx@{0}.
-4. Verify that the new mint-*.prg is the @{B}last@{0} program in AUTO folder.
-   Special for "020-060" version: This archive contains kernels
-   (mint*.prgs in AUTO folder) for all machines from 020-060 cpus,
-   including AranyM. So please delete (or rename to .prx) the kernels that
-   you don't need.
-   @{B}Make sure that there is only one (active) mint*.prg@{0} in AUTO folder!
-5. In case you have updated from the bootable snaphost: copy your current
+3. Verify that the new mintload.prg is the @{B}last@{0} program in AUTO folder.
+4. In case you have updated from the bootable snaphost: copy your current
    configuration files "mint.cnf" and "xaaes.cnf" to the new 1-19-cur and
    1-19-cur/xaaes directories, edit the paths if needed and and reboot.
+
+or alternatively:
+
+1. Download the pre-configured bootable snapshot (1-19-<number>),
+   according to your system architecture.
+2. Unpack the archive to your drive C:/ (boot partition). You can also
+   install FreeMiNT to any other bootable partition.
+3. Delete (or rename to .prx) the old mint-*.prg that you don't need.
+   @{B}Make sure that there is only one (active) mint*.prg@{0} in AUTO folder!
+4. Verify that mint-*.prg is the @{B}last@{0} program in your AUTO folder
+   (Desktop view/sorting option: unsorted).
+5. Copy your current configuration files "mint.cnf" and "xaaes.cnf" to the new
+   1-19-<number> and 1-19-<number>/xaaes directories, edit the paths if
+   needed and and reboot.
 
 Have fun!
  
@@ -833,8 +838,8 @@ All these system files are located in the subdirectory /mint/<version>/
 located on the boot drive (e.g. c:/mint/1-19-123/). In this document, we
 refer to this directory as the @{B}<sysdir>@{0}.
 
-FreeMiNT will search for mint.cnf/modules first in <sysdir> and then in
-the "machine subfolders"; so it allows to keep configuration files and
+FreeMiNT will search for mint.cnf/modules first in the "machine subfolders"
+and then in <sysdir>; so it allows to keep configuration files and
 modules for different kernel versions separately on the disk without a
 risk to mix them up.
 
@@ -1741,8 +1746,8 @@ value in mint.ini file with a texteditor.
 FreeMiNT first try to load the global keyboard table (configuration) named
 "keyboard.tbl" located in <sysdir>; if not found the internal default
 table for US keyboard is used.
-For other keyboard layouts, various keyboard tables can be found in the
-respective <sysdir>/keyboard/<language>/ subfolders.
+For other keyboard layouts, various keyboard tables can be found in <sysdir>/keyboard
+and the respective <language> subfolders.
 Please copy the .tbl file for your keyboard layout to the system directory
 <sysdir> (i.e. the same as mint.cnf is) and rename the file to
 "keyboard.tbl".
@@ -1806,7 +1811,7 @@ This manual is for usage of a fixed IP for your Atari.
 
 1. Enable the interface driver for the used network card (if included in
    the <sysdir>/<machine subfolders>) by renaming it from @{B}.xix@{0} to @{B}.xif@{0}.
-   If the driver is not included, copy your driver to <sysdir>.
+   If the driver is not included, copy your driver to <sysdir> or <machine subfolders>.
    Reboot after that.
 
 2. Edit file /etc/resolv.conf with a texteditor. Enter the IP address of
@@ -1868,14 +1873,15 @@ at boot.
 Again, a commandline shell ("bash", for manual execution) is only included
 in the pre-configured builds, not in the "per-cpu builds"!
 
-Filesystem checker for FAT/VFAT/F32 and minix filesystems are included
-in FreeMiNT.
+Filesystem checker for FAT/VFAT/F32, EXT2 and minix filesystems are included
+in FreeMiNT. The EXT2 checker is present only in the pre-configured builds,
+though.
 
 
 @{U}Download additional SpareMiNT packages:@{0}
 
-- If you use an ext2 filesystem, download "e2fsprogs" package (according
-  to your system architecture).
+- If you use an ext2 filesystem  and don't have the pre-configured build,
+  download "e2fsprogs" package (according to your system architecture).
 
 - If you want to use the automatic check at boot you also need the package
   "grep".
@@ -1986,7 +1992,7 @@ Slay            0.1             readable        (AV protocol)
 clock.acc       1.9e            readable        (AV protocol)
 Dump!           1.x             supervisor      by DHS (Falcon030 only)
 FlaySID         3.01            supervisor      (Falcon030 only)
-MSA             1.0·            supervisor      by Marwijn Hessel
+MSA             1.0√ü            supervisor      by Marwijn Hessel
 SND Play        1.0             global          by AssemSoft & DHS
 XBoot           3               supervisor
 
@@ -2223,18 +2229,18 @@ with 68040 and 68060 processors.
 @{B}Fsetter@{0}:
 - Filesystem setter version 0.8
 
-  Ω 1998 by Christian Felsch
-  Ω 1999-2000 by Frank Naumann
+  ‚ïú 1998 by Christian Felsch
+  ‚ïú 1999-2000 by Frank Naumann
 
 
 @{B}Gemkfatfs@{0}:
 
 
 @{B}GlueSTiK@{0}:
-- GlueSTiKΩ STiK emulator for MiNTnet version 0.30
+- GlueSTiK‚ïú STiK emulator for MiNTnet version 0.30
 
-  Ω 1996-98 Scott Bigham.
-  Ω 2000-2010 Frank Naumann.
+  ‚ïú 1996-98 Scott Bigham.
+  ‚ïú 2000-2010 Frank Naumann.
 
   Redirect Daemon for net clients which are using STiK/STinG routines.
 
@@ -2246,8 +2252,8 @@ with 68040 and 68060 processors.
 @{B}mgw@{0}:
 - Draconis to MiNTNet gateway version 0.33b4
 
-  Ω 2000-2010 Jens Heitmann
-  Ω 2000-2010 Frank Naumann
+  ‚ïú 2000-2010 Jens Heitmann
+  ‚ïú 2000-2010 Frank Naumann
 
   Redirect daemon for net clients which are using the Draconis routines.
 
@@ -2296,16 +2302,17 @@ with 68040 and 68060 processors.
 @{U}Binaries in folder BIN                                            FreeMiNT@{0}
 
 These MiNT executables can be run from the commandline shell.
-Note that a commandline shell is only included in the pre-configured
-builds, not in the "per-cpu builds"!
+Note that a commandline shell, coreutils (cp, ls, ...) and e2fsprogs are only
+included in the pre-configured builds, not in the "per-cpu builds"!
 
-- actrl.ttp: Setting audio device configuration
+- actrl: Setting audio device configuration
 - arp: ARP/RARP cache management utility
 - bash: Commandline shell (The "Bourne again shell")
 - cat: Concatenate and write files
 - cp: Copy files/folders
 - crypto: Initialization tool for FreeMiNT filesystem crypto layer
 - diald: PPP dial interface daemon
+- e2fsck: Filesystem check for EXT2
 - env: Modify environment variables
 - fatlabel: Create/change label for given FAT drive
 - fdisk: Partition manipulation tool
@@ -2323,6 +2330,7 @@ builds, not in the "per-cpu builds"!
 - mfsconf: Configure minix filesystem (filename translation)
 - minit: Create a minix filesystem
 - mkdir: Create a directory (folder)
+- mke2fs: Create an EXT2 filesystems
 - mkfatfs: Create TOS and DOS FAT/FAT32 filesystems
 - mktbl: Make a keyboard translation table out of the given source file
 - mount_nfs: Mount a remote NFS filesystem
@@ -2337,6 +2345,7 @@ builds, not in the "per-cpu builds"!
 - strace: Trace system calls and signals
 - swkbdtbl: Keyboard table switcher
 - sysctl: Configure kernel parameters at runtime
+- tune2fs: Configure an EXT2 filesystem
  
 @endnode
 
@@ -2391,8 +2400,8 @@ More information (but partly outdated) can be found on the
 
 Based on the work of Charles Briscoe-Smith and Kay Roemer 1995.
 
-Ω 1997, 1998 John Blakeley
-Ω 2001 Frank Naumann
+‚ïú 1997, 1998 John Blakeley
+‚ïú 2001 Frank Naumann
 
 This is a audio device driver for most Ataris running MiNT.
 This audiodev is based on audiodev 0.1 by C. Briscoe-Smith which in turn
@@ -2424,16 +2433,16 @@ See actrl for configuration.
 
 @{U}flop_raw.xdd: Raw floppy device driver version 0.20@{0}
 
-Ω 1992, 1993 by Dave Gymer, Stephane Boisson.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1992, 1993 by Dave Gymer, Stephane Boisson.
+‚ïú 2000-2010 by Frank Naumann.
 
 
 @{U}inet4.xdd: MiNT-Net TCP/IP driver version 1.6 PL 1@{0}
 
 Based on the work of Kay Roemer 1993-1996.
 
-Ω 1997-1999 by Torsten Lang.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1997-1999 by Torsten Lang.
+‚ïú 2000-2010 by Frank Naumann.
 IP  masquerading by Mario Becroft, 1999.
 FTP masquerading support by Torsten Lang, 1999.
 
@@ -2449,8 +2458,8 @@ Printer driver for paralell port.
 
 @{U}xconout.xdd: xconout2 output catcher version 0.3@{0}
 
-Ω Jan  1 1995 by TeSche <itschere@@techfak.uni-bielefeld.de>
-Ω 2000-2010 by Frank Naumann
+‚ïú Jan  1 1995 by TeSche <itschere@@techfak.uni-bielefeld.de>
+‚ïú 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2464,9 +2473,9 @@ Drivers for FAT/VFAT/F32 filesystems are included in FreeMiNT kernel.
 
 @{U}ext2.xfs: Ext2 filesystem driver version 0.63@{0}
 
-Ω 1998, 1999 by Axel Kaiser.
-Ω 2000-2010 by Frank Naumann.
-Ω 2013 by Alan Hourihane.
+‚ïú 1998, 1999 by Axel Kaiser.
+‚ïú 2000-2010 by Frank Naumann.
+‚ïú 2013 by Alan Hourihane.
 
 This is a full working Ext2 filesystem driver for FreeMiNT.
 
@@ -2497,8 +2506,8 @@ Also use the latest "e2fs" progs.
 
 @{U}@{"minix.xfx" link minixfs} (deactivated): Minix filesystem driver version 0.75@{0}
 
-Ω 1991,1992,1993,1994,1995 S.N.Henson
-Ω Oct  6 2018 by Frank Naumann.
+‚ïú 1991,1992,1993,1994,1995 S.N.Henson
+‚ïú Oct  6 2018 by Frank Naumann.
 
 This is a modified binary version for FreeMiNT > 1.15.
 @{B}Made obsolete by ext2 filesystem.@{0}
@@ -2513,8 +2522,8 @@ If you want to use this filesystem anyway, the procedure is as follows:
 
 @{U}nfs.xfs: Network filesystem driver version 0.57@{0}
 
-Ω 1993, 1994 by Ulrich KÅhn.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1993, 1994 by Ulrich K√ºhn.
+‚ïú 2000-2010 by Frank Naumann.
 
 The network filesystem driver for shared drives/directories on remote
 computers or NASes (to be mounted into FreeMiNT with "mount_nfs").
@@ -2898,7 +2907,7 @@ interfaces are called pl0, pl1, ... Currently only pl0 is implemented
 
 @{U}biodma.xix (deactivated): Driver for BIODATA DMA ADAPTOR version 1.1@{0}
 
-Ω 1996, 1997, 1998 by T. Lang
+‚ïú 1996, 1997, 1998 by T. Lang
 
 
 @{U}de600.xix (deactivated): Driver for DE600 adaptor version ???@{0}
@@ -2908,24 +2917,24 @@ Based on the work of Kay Roemer.
 
 @{U}dial.xix (deactivated): DIAL driver version 0.2 @{0}
 
-Ω 1999 by Torsten Lang
+‚ïú 1999 by Torsten Lang
 
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-Ω 1998, 1999 by Rainer Mannigel
-Ω 2000-2010 by Frank Naumann
+‚ïú 1998, 1999 by Rainer Mannigel
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}pamsdma.xix (deactivated): Driver for PAM's DMA ADAPTOR version 1.2@{0}
 
-Ω 1996, 1997, 1998 by T. Lang
+‚ïú 1996, 1997, 1998 by T. Lang
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2936,26 +2945,26 @@ Based on the work of Kay Roemer.
 
 @{U}@{"lance" link riebl}.xix (deactivated): Version 1.2@{0}
 
-Ω 1995-1998 by T. Lang
+‚ïú 1995-1998 by T. Lang
 
 Driver for PAM's Net VME (TT) and MegaST boards.
 
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-Ω 1998, 1999 by Rainer Mannigel
-Ω 2000-2010 by Frank Naumann
+‚ïú 1998, 1999 by Rainer Mannigel
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}riebl*.xix (deactivated): Riebl card drivers version 1.2@{0}
 
-Ω 1995-1999 by T. Lang
+‚ïú 1995-1999 by T. Lang
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2966,14 +2975,14 @@ Driver for PAM's Net VME (TT) and MegaST boards.
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-Ω 1998, 1999 by Rainer Mannigel
-Ω 2000-2010 by Frank Naumann
+‚ïú 1998, 1999 by Rainer Mannigel
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
  
 @endnode
 
@@ -2984,25 +2993,25 @@ Driver for PAM's Net VME (TT) and MegaST boards.
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-Ω 1998, 1999 by Rainer Mannigel
-Ω 2000-2010 by Frank Naumann
+‚ïú 1998, 1999 by Rainer Mannigel
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}@{"rieblste" link riebl}.xix (deactivated): Riebl card drivers version 1.2@{0}
 
-Ω 1995-1999 by T. Lang
+‚ïú 1995-1999 by T. Lang
 
 
 @{U}rtl8012st.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-Ω 1998, 1999 by Rainer Mannigel.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1998, 1999 by Rainer Mannigel.
+‚ïú 2000-2010 by Frank Naumann.
  
 @endnode
 
@@ -3013,32 +3022,32 @@ Driver for PAM's Net VME (TT) and MegaST boards.
 
 @{U}@{"lance" link riebl}.xix (deactivated): Version 1.2@{0}
 
-Ω 1995-1998 by T. Lang
+‚ïú 1995-1998 by T. Lang
 
 Driver for PAM's Net VME (TT) and MegaST boards.
 
 
 @{U}mfp.xdd: MFP serial driver version 0.31@{0}
 
-Ω 1998, 1999 by Rainer Mannigel
-Ω 2000-2010 by Frank Naumann
+‚ïú 1998, 1999 by Rainer Mannigel
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}@{"riebltt" link riebl}.xix (deactivated): Riebl card drivers version 1.2@{0}
 
-Ω 1995-1999 by T. Lang
+‚ïú 1995-1999 by T. Lang
 
 
 @{U}rtl8012.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-Ω 1998, 1999 by Rainer Mannigel.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1998, 1999 by Rainer Mannigel.
+‚ïú 2000-2010 by Frank Naumann.
 
 
 @{U}scsilink.xix (deactivated): Driver for Daynaport SCSI/Link version 0.50@{0}
@@ -3054,21 +3063,21 @@ by Roger Burrows
 
 @{U}dsp56k.xdd: Motorola DSP 56001 device version Nov 25 2018@{0}
 
-Ω 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
+‚ïú 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
 
 Device driver for Falcon DSP.
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-Ω 1998, 1999 by Rainer Mannigel.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1998, 1999 by Rainer Mannigel.
+‚ïú 2000-2010 by Frank Naumann.
 
 
 @{U}rtl8012.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}scsilink.xix (deactivated): Driver for Daynaport SCSI/Link version 0.50@{0}
@@ -3084,15 +3093,15 @@ by Roger Burrows
 
 @{U}dsp56k.xdd: Motorola DSP 56001 device version Nov 25 2018@{0}
 
-Ω 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
+‚ïú 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson
 
 Device driver for Falcon DSP.
 
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-Ω 1998, 1999 by Rainer Mannigel.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1998, 1999 by Rainer Mannigel.
+‚ïú 2000-2010 by Frank Naumann.
 
 
 @{U}ethernat.xix (deactivated): Driver for EtherNAT board version ???@{0}
@@ -3102,8 +3111,8 @@ by nature
 
 @{U}rtl8012ct60.xix (deactivated): RTL8012 ethernet romport driver version 1.10@{0}
 
-Ω 2000 by Vassilis Papathanassiou.
-Ω 2000-2010 by Frank Naumann
+‚ïú 2000 by Vassilis Papathanassiou.
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}rtl8139.xix (deactivated): RTL8139 ethernet (CT)PCI driver version 1.0@{0}
@@ -3191,14 +3200,14 @@ wait until Didier Mequignon releases the next FireTOS version.
 
 @{U}@{"mfp_mil" link "mfp"}.xdd: MFP serial driver version 0.31@{0}
 
-Ω 1998, 1999 by Rainer Mannigel
-Ω 2000-2010 by Frank Naumann
+‚ïú 1998, 1999 by Rainer Mannigel
+‚ïú 2000-2010 by Frank Naumann
 
 
 @{U}uart.xdd: Milan 16550 UART driver version@{0}
 
-Ω 1998, 1999 Rainer Mannigel, Michael Schwingen
-Ω 1999, 2000 Frank Naumann
+‚ïú 1998, 1999 Rainer Mannigel, Michael Schwingen
+‚ïú 1999, 2000 Frank Naumann
  
 @endnode
 
@@ -3209,8 +3218,8 @@ wait until Didier Mequignon releases the next FireTOS version.
 
 @{U}scc.xdd: SCC serial driver version 0.27@{0}
 
-Ω 1998, 1999 by Rainer Mannigel.
-Ω 2000-2010 by Frank Naumann.
+‚ïú 1998, 1999 by Rainer Mannigel.
+‚ïú 2000-2010 by Frank Naumann.
  
 @endnode
 
@@ -3222,7 +3231,7 @@ wait until Didier Mequignon releases the next FireTOS version.
 
 @{U}aranym.xfs: ARAnyM u:\host filesystem driver version 0.1@{0}
 
-Ω Dec 13 2018 by Standa Opichal
+‚ïú Dec 13 2018 by Standa Opichal
 
 This .XFS implements the u:/host mountpoint which provides the m68k <->
 host OS communication interface. This, in ARAnyM, is implemented using
@@ -3237,7 +3246,7 @@ copy/paste operations which directly use the host OS clipboard
 
 @{U}hostfs.xfx (deactivated): HostFS Filesystem driver version 0.04@{0}
 
-Ω Dec 13 2018 by ARAnyM Team
+‚ïú Dec 13 2018 by ARAnyM Team
 
 This driver uses the "HOSTFS" Native Feature to access an emulator host OS
 filesystem. It requests the drive map from the emulator and maps the
@@ -3302,8 +3311,8 @@ Some related info can be found at the following URLs:
 
 @{U}nfexec.xdd: NF host exec driver version 0.1@{0}
 
-Ω 1999, 2000, 2001 Frank Naumann
-Ω Dec 13 2018 by Miro Kropacek
+‚ïú 1999, 2000, 2001 Frank Naumann
+‚ïú Dec 13 2018 by Miro Kropacek
 
 This is just an xdd skeleton for those who like to program an xdd.
 Simply rename this folder to the name of your xdd and fix up the names.
@@ -3316,7 +3325,7 @@ devices. Remove the things you don't need!
 
 @{U}nfstderr.xdd: NF_STDERR native feature output device version 0.1@{0}
 
-Ω Jan  25 2005 by STanda Opichal
+‚ïú Jan  25 2005 by STanda Opichal
 
 It should serve as an example of how to use native features in FreeMiNT
 device drivers and other modules. It requires the kernel to be build
@@ -6805,7 +6814,7 @@ Info about total, used and free RAM.
 
 @{B}/kern/sysdir@{0}
 This is the pathname to the FreeMiNT system directory, usually
-u:/c/mint.
+u:/c/mint/<version>.
 
 @{B}/kern/time@{0}
 Here is the information about the kernel time, i.e. the number of

@@ -1,8 +1,0 @@
-# This file gets included by the Makefile in this directory to determine
-# the files that should go only into source distributions.
-
-HEADER =
-OBJS_sysdir.tos = sysdir.c
-COBJS = $(OBJS_sysdir.tos)
-
-SRCFILES = $(HEADER) $(COBJS)

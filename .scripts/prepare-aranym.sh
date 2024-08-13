@@ -42,7 +42,7 @@ copy_aranym_usb_modules "$USBDIR"
 copy_fonts "$FONTSDIR"
 copy_tbl "$TBLDIR"
 
-copy_sysroot "$SYSROOT" "040" "$ROOT/mint"
+copy_sysroot "$SYSROOT" "040"
 
 copy_guides "$GUIDESDIR"
 

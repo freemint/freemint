@@ -20,7 +20,6 @@ SUBDIRS = \
 	nohog2 \
 	strace \
 	swkbdtbl \
-	sysdir \
 	sysctl \
 	usbtool
 
