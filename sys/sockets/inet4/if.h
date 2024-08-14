@@ -262,6 +262,7 @@ long		if_setifaddr	(struct netif *, struct sockaddr *);
 struct ifaddr *	if_af2ifaddr	(struct netif *, short fam);
 short		if_getfreeunit	(char *);
 short		if_name2index	(char *);
+char *		if_index2name (short );
 
 long		if_open		(struct netif *);
 long		if_close	(struct netif *);

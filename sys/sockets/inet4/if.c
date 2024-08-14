@@ -586,20 +586,6 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 		}
-		/* fallback ?????? */
-		case SIOCGIFNAME:
-		{
-			struct iflink *ifl;
-			
-			ifl = (struct iflink *) arg;
-			nif = if_name2if (ifl->ifname);
-			if (!nif)
-			{
-				DEBUG (("if_ioctl: %s: no such if", ifl->ifname));
-				return ENOENT;
-			}
-			return (*nif->ioctl)(nif, cmd, arg);
-		}
 		case SIOCGIFCONF:
 		{
 			return if_config ((struct ifconf *) arg);
@@ -616,6 +602,15 @@ if_ioctl (short cmd, long arg)
 				return 0;
 			}
 		}
+		case SIOCGIFNAME:
+		{
+			char * name = if_index2name(ifr->ifru.ifindex);
+			
+			if(ifr->ifr_name){
+				strncpy (ifr->ifr_name, name, IF_NAMSIZ);
+				return 0;
+			}
+		}		
 	}
 	nif = if_name2if (ifr->ifr_name);
 	if (!nif)
@@ -1219,8 +1214,22 @@ if_name2index (char	*ifr_name)
 	for (ifp = allinterfaces; ifp; ifp = ifp->next)
 	{
 		if (!strncmp (ifp->name, ifr_name, IF_NAMSIZ)){
-			return ifp->unit + 1;
+			return (ifp->unit + 1);
 		}
 	}
 	return 0;
+}
+
+char *
+if_index2name (short ifr_ifindex)
+{
+	struct netif *ifp;
+	
+	for (ifp = allinterfaces; ifp; ifp = ifp->next)
+	{
+		if ((ifp->unit + 1) == ifr_ifindex){
+			return ifp->name;
+		}
+	}
+	return NULL;
 }
