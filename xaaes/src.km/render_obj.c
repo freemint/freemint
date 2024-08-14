@@ -3132,7 +3132,6 @@ static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6,
 #endif
 static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6, 2, 4, 3};
 static const short efx3d_colour[] =      {8, 9,10,11,12,13,14,15, 0, 1, 2, 3, 4, 5, 6, 7};
-static XA_TREE nil_tree = { 0 };
 
 /* ************************************************************ */
 /*        Local helper functions				*/
@@ -6314,7 +6313,7 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 			done(OS_SELECTED);
 		}
 
-		if (   wt->is_menu
+		if (wt->is_menu
 		    && (ob->ob_state & OS_DISABLED)
 		    && *t == '-')
 		{
@@ -6489,7 +6488,6 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		strncpy(text, t, 254);
 		text[255] = '\0';
-#if 1
 		if (selected)
 		{
 			d3t = 1;
@@ -6500,14 +6498,6 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 		}
 		thick = d = 0;
 		draw_objc_bkg(wt, v, ct, NULL, DRAW_ALL|DRAW_TEXTURE|ONLY_TEXTURE, -1, -1, d, d3t, thick, 1, &r, &r, NULL);
-#else
-
-		(*v->api->wr_mode)(v, MD_TRANS);
-
-		/* menu in user window.*/
-		if (!wt->menu_line)
-			d3_pushbutton(v, theme, -2, &r, NULL, ob->ob_state, 1, MONO ? 1 : 3);
-#endif
 		/* most AES's allow null string */
 		(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
 		(*v->api->t_color)(v, ct->fnt.fg);
@@ -6795,9 +6785,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 			BLOG((0,"init_module: '%s' not found", dbuf ));
 		}
 	}
-
-	clear_edit(&nil_tree.e);
-	clear_focus(&nil_tree);
 
 	return (void *)1L;
 }

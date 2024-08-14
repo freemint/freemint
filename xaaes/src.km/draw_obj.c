@@ -859,8 +859,8 @@ short flags)
 	if (wt == NULL)
 	{
 		wt = &this;
+		this = nil_wt;
 		clear_edit(&wt->e);
-		this = nil_wt; //nil_tree;
 		wt->ei = NULL;
 		wt->owner = C.Aes;
 		wt->objcr_api = C.Aes->objcr_api;

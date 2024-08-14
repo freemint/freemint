@@ -63,8 +63,6 @@ short border_mouse[CDV] =
 	XACRS_HORSIZER
 };
 
-// XA_TREE nil_tree;
-
 struct xa_client *
 pid2client(short pid)
 {
