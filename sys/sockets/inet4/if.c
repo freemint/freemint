@@ -607,6 +607,16 @@ if_ioctl (short cmd, long arg)
 	}
 	
 	ifr = (struct ifreq *) arg;
+	switch (cmd)
+	{
+		case SIOCGIFINDEX:
+		{
+			ifr->ifru.ifindex = if_name2index(ifr->ifr_name);
+			if(ifr->ifru.ifindex){
+				return 0;
+			}
+		}
+	}
 	nif = if_name2if (ifr->ifr_name);
 	if (!nif)
 	{
@@ -1198,5 +1208,19 @@ if_init (void)
 	if (!if_lo)
 		FATAL ("if_init: no loopback interface");
 	
+	return 0;
+}
+
+short 
+if_name2index (char	*ifr_name)
+{
+	struct netif *ifp;
+	
+	for (ifp = allinterfaces; ifp; ifp = ifp->next)
+	{
+		if (!strncmp (ifp->name, ifr_name, IF_NAMSIZ)){
+			return ifp->unit + 1;
+		}
+	}
 	return 0;
 }
