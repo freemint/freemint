@@ -1220,7 +1220,7 @@ if_init (void)
 	return 0;
 }
 
-unsigned short 
+short 
 if_name2index (char	*ifr_name)
 {
 	struct netif *ifp;
