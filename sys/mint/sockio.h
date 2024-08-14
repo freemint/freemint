@@ -70,8 +70,8 @@
 # define SIOCADDRT	(('S' << 8) | 30)	/* add routing table entry */
 # define SIOCDELRT	(('S' << 8) | 31)	/* delete routing table entry */
 
-#define SIOCGIFINDEX       (('S' << 8) | 32)
-#define SIOGIFINDEX        SIOCGIFINDEX
+# define SIOCGIFNAME_ETH	(('S' << 8) | 32)	/* return the name of the interface */
+# define SIOCGIFINDEX	(('S' << 8) | 33)	/* retrieve the interface index */
 
 # define SIOCDARP	(('S' << 8) | 40)	/* delete ARP table entry */
 # define SIOCGARP	(('S' << 8) | 41)	/* get ARP table entry */

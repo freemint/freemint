@@ -586,6 +586,20 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 		}
+		/* fallback ?????? */
+		case SIOCGIFNAME:
+		{
+			struct iflink *ifl;
+			
+			ifl = (struct iflink *) arg;
+			nif = if_name2if (ifl->ifname);
+			if (!nif)
+			{
+				DEBUG (("if_ioctl: %s: no such if", ifl->ifname));
+				return ENOENT;
+			}
+			return (*nif->ioctl)(nif, cmd, arg);
+		}		
 		case SIOCGIFCONF:
 		{
 			return if_config ((struct ifconf *) arg);
@@ -602,7 +616,7 @@ if_ioctl (short cmd, long arg)
 				return 0;
 			}
 		}
-		case SIOCGIFNAME:
+		case SIOCGIFNAME_ETH:
 		{
 			char * name = if_index2name(ifr->ifru.ifindex);
 			
@@ -610,7 +624,7 @@ if_ioctl (short cmd, long arg)
 				strncpy (ifr->ifr_name, name, IF_NAMSIZ);
 				return 0;
 			}
-		}		
+		}
 	}
 	nif = if_name2if (ifr->ifr_name);
 	if (!nif)
