@@ -412,14 +412,6 @@ wdialog_message(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 		case WM_ONTOP:
 		case WM_NEWTOP:
 		{
-			/*XA_WIDGET *widg = wind->tool;
-			if( widg )
-			{
-				XA_TREE *wt = widg->stuff;
-				if( wt )
-					ob_set_wind( wt->tree, G_SLIST, msg[0] );
-			}*/
-
 			if (wh != mh)
 				return -1;
 			if (wep->callout)

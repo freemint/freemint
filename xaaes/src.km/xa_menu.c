@@ -119,7 +119,6 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 				}
 				/* HR: std_menu is now a complete widget_tree :-) */
 				mwt->is_menu = true;
-				mwt->menu_line = true;
 
 				if (swap)
 				{

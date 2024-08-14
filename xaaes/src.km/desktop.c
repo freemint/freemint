@@ -182,11 +182,6 @@ Set_desktop(XA_TREE *new_desktop)
 
 	DIAGS(("desktop: %d/%d,%d/%d", ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
 
-
-	/* HR 010501: general fix */
-// 	if (root_window->r.h > r.h)
-// 		ob->ob_y = root_window->r.h - r.h;
-
 	wi->stuff = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
 	wi->m.destruct = free_xawidget_resources;

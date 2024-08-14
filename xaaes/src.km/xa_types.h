@@ -506,7 +506,8 @@ struct mbs
 #define XAWAIT_MENU		0x00040000UL	/* XaAES private; menu rectangle event */
 #define XAWAIT_NTO		0x00080000UL	/* XaAES private; timeout value NULL */
 
-typedef struct task_administration_block * TASK(struct task_administration_block *tab, short item);
+typedef struct task_administration_block Tab;
+typedef Tab *TASK(Tab *tab, short item);
 
 struct xa_mouse_rect
 {
@@ -938,7 +939,6 @@ struct widget_tree
 	short pdx, pdy;
 	short pop;
 	bool is_menu;			/* true when the tree is a menu or part of it. */
-	bool menu_line;			/* draw a menu line. */
 	bool zen;			/* true when the tree is embedded in a window.
 	                                 * Do not shadow and border. */
 	short dx, dy;			/* displacement of root from upper left corner of window
@@ -2104,7 +2104,6 @@ struct task_administration_block
 	int dbg3;
 #endif
 };
-typedef struct task_administration_block Tab;
 
 
 /*

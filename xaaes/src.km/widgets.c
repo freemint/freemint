@@ -640,7 +640,7 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 
 
 	if ((obtree[3].ob_type & 0xff) == G_TITLE)
-		wt->is_menu = wt->menu_line = true;
+		wt->is_menu = true;
 }
 
 XA_TREE * _cdecl
@@ -734,10 +734,9 @@ free_wt(XA_TREE *wt)
 	if (wt->links)
 	{
 		BLOG(( 0, "free_wt: links not NULL!! on wt %lx", (unsigned long)wt));
-		BLOG((0, "free_wt: links=%d, flags=%lx, ismenu=%s, menuline=%s, owner=%s",
+		BLOG((0, "free_wt: links=%d, flags=%lx, ismenu=%s, owner=%s",
 			wt->links, wt->flags,
 			wt->is_menu ? "Yes" : "No",
-			wt->menu_line ? "Yes" : "No",
 			wt->owner->name));
 		BLOG((0, "free_wt: C.Aes = %lx, C.Hlp = %lx", (unsigned long)C.Aes, (unsigned long)C.Hlp));
 	}
