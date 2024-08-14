@@ -599,7 +599,7 @@ if_ioctl (short cmd, long arg)
 				return ENOENT;
 			}
 			return (*nif->ioctl)(nif, cmd, arg);
-		}		
+		}
 		case SIOCGIFCONF:
 		{
 			return if_config ((struct ifconf *) arg);
@@ -1220,7 +1220,7 @@ if_init (void)
 	return 0;
 }
 
-short 
+unsigned short 
 if_name2index (char	*ifr_name)
 {
 	struct netif *ifp;
