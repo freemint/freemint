@@ -620,7 +620,7 @@ if_ioctl (short cmd, long arg)
 		{
 			char * name = if_index2name(ifr->ifru.ifindex);
 			
-			if(ifr->ifr_name){
+			if(ifr->ifr_name && name){
 				strncpy (ifr->ifr_name, name, IF_NAMSIZ);
 				return 0;
 			}
