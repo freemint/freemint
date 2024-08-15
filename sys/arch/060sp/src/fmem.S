@@ -413,6 +413,7 @@ load_sgl_immed:
 
 	tst.l		d1			/*  did ifetch fail? */
 	bne.l		funimp_iacc		/*  yes */
+	move.l		d0, L_SCR1(a6)	/*  store src op on stack */
 	bra.b		load_sgl_cont
 
 /*  must convert sgl denorm format to an Xprec denorm fmt suitable for */
