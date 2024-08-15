@@ -92,4 +92,3 @@ usb*.km
 sys/usb/src.km/tos-common/stripex
 doc/freemint.hyp
 doc/freemint.ref
-.vscode/c_cpp_properties.json

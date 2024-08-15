@@ -1211,7 +1211,7 @@ if_init (void)
 	return 0;
 }
 
-long sanitize_ifname(char	*ifr_name, char *name){
+long sanitize_ifname(char *ifr_name, char *name){
 	char *cp;
 	short i;
 	long unit = 0;
@@ -1231,7 +1231,7 @@ long sanitize_ifname(char	*ifr_name, char *name){
 }
 
 short 
-if_name2index (char	*ifr_name)
+if_name2index (char *ifr_name)
 {
 	struct netif *ifp;
 
