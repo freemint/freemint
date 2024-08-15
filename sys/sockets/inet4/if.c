@@ -936,7 +936,7 @@ if_name2if (char *ifname)
 {
 	struct netif *nif;
 	char name[IF_NAMSIZ+1];
-	long unit = sanitize_ifname(ifname, name);
+	long unit = if_sanitizename(ifname, name);
 
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
@@ -1211,7 +1211,8 @@ if_init (void)
 	return 0;
 }
 
-long sanitize_ifname(char *ifr_name, char *name){
+long 
+if_sanitizename(char *ifr_name, char *name){
 	char *cp;
 	short i;
 	long unit = 0;
@@ -1237,7 +1238,7 @@ if_name2index (char *ifr_name)
 
 	char name[IF_NAMSIZ+1];
 
-	long unit = sanitize_ifname(ifr_name, name);
+	long unit = if_sanitizename(ifr_name, name);
 
 	for (ifp = allinterfaces; ifp; ifp = ifp->next)
 	{

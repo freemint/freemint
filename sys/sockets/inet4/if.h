@@ -262,7 +262,7 @@ struct netif *	if_net2if	(ulong);
 long		if_setifaddr	(struct netif *, struct sockaddr *);
 struct ifaddr *	if_af2ifaddr	(struct netif *, short fam);
 short		if_getfreeunit	(char *);
-long		sanitize_ifname	(char *, char *);
+long		if_sanitizename	(char *, char *);
 short		if_name2index	(char *);
 short		if_index2name	(short, char*);
 
