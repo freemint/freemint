@@ -383,8 +383,6 @@ struct xa_wcol_inf
 /*-----------------------------------------------------------------
  * Configuration and options structures
  *-----------------------------------------------------------------*/
-struct widget_theme;
-
 #define ALTSC_ALERT	1
 #define ALTSC_DIALOG	2
 #define ALTSC_ONLY_PREDEF	4
@@ -1222,9 +1220,6 @@ struct widget_theme
 
 struct xa_widget_theme
 {
-#if 0
-	struct widget_theme *active;
-#endif
 	struct widget_theme *client;
 	struct widget_theme *popup;
 	struct widget_theme *alert;
@@ -1339,6 +1334,8 @@ struct toolbar_handlers
 	void (*destruct)(struct xa_widget *w);
 };
 
+typedef struct xa_slider_widget XA_SLIDER_WIDGET;
+
 /* Window Widget */
 struct xa_widget
 {
@@ -1367,9 +1364,13 @@ struct xa_widget
 	short slider_type;		/* which slider should move for scroll widget */
 
 #define STUFF_IS_WT 1
-
 	short stufftype;		/* type of widget dependant pointer */
-	void *stuff;			/* Pointer to widget dependant context data, if any */
+	union {
+		XA_TREE *wt;
+		XA_SLIDER_WIDGET *sl;
+		/* const */ char *name;
+		void *ptr;
+	} stuff;
 
 	short  start;			/* If stuff is a OBJECT tree, we want start drawing here */
 };
@@ -1400,7 +1401,6 @@ struct xa_slider_widget
 	short rpos;
 	GRECT r;				/* physical */
 };
-typedef struct xa_slider_widget XA_SLIDER_WIDGET;
 
 #define ZT_A	1
 #define ZT_B	2

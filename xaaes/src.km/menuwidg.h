@@ -54,7 +54,7 @@ bool	find_pop(short x, short y, Tab **ret);
 
 
 INLINE	struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }
-INLINE	XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
+INLINE	XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff.wt; }
 INLINE	short get_menu_height(void) { return C.Aes->std_menu->tree->ob_height; }
 INLINE	struct xa_client *menu_owner(void) { return get_menu()->owner; }
 

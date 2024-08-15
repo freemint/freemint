@@ -746,7 +746,7 @@ set_window_title(struct xa_window *wind, const char *title, bool redraw)
 	*dst = '\0';
 
 	widg = get_widget(wind, XAW_TITLE);
-	widg->stuff = wind->wname;
+	widg->stuff.name = wind->wname;
 
 	DIAG((D_wind, wind->owner, "    -   %s", wind->wname));
 
@@ -789,7 +789,7 @@ set_window_info(struct xa_window *wind, const char *info, bool redraw)
 	*dst = '\0';
 
 	widg = get_widget(wind, XAW_INFO);
-	widg->stuff = wind->winfo;
+	widg->stuff.name = wind->winfo;
 
 	DIAG((D_wind, wind->owner, "    -   %s", wind->winfo));
 
@@ -936,7 +936,6 @@ send_closed(int lock, struct xa_window *wind)
 	}
 }
 
-void close_window_menu(Tab *tab);
 void
 setwin_untopped(int lock, struct xa_window *wind, bool snd_untopped)
 {
@@ -1085,8 +1084,8 @@ uniconify_window(int lock, struct xa_window *wind, GRECT *r)
 	if( wind->active_widgets & XaMENU )
 	{
 		XA_WIDGET *widg = get_widget( wind, XAW_MENU );
-		if( widg && widg->stuff )
-			set_menu_widget( wind, wind->owner, widg->stuff );
+		if( widg && widg->stuff.wt )
+			set_menu_widget( wind, wind->owner, widg->stuff.wt );
 	}
 
 	/*
@@ -1100,7 +1099,7 @@ uniconify_window(int lock, struct xa_window *wind, GRECT *r)
 
 		intin[0] = wind->handle;
 		intin[1] = WF_TOOLBAR;
-		ptr_to_shorts( ((XA_TREE*)widg->stuff)->tree, intin + 2 );
+		ptr_to_shorts(widg->stuff.wt->tree, intin + 2);
 		pb.intin = intin;
 		pb.intout = intout;
 
@@ -1273,9 +1272,6 @@ create_window(
 	tp = fix_wind_kind(tp);
 	w->requested_widgets = tp;
 
-	/* implement maximum rectangle (needed for at least TosWin2) */
-// 	w->max = max ? *max : root_window->wa;
-
 	if (tp & (UPARROW|DNARROW|LFARROW|RTARROW))
 	{
 		w->min.g_x = w->min.g_y = -1;
@@ -1299,8 +1295,6 @@ create_window(
 			opts |= XAWO_FULLREDRAW;
 		w->opts = opts;
 	}
-
-// 	w->widget_theme = client->widget_theme;
 
 	if (dial & created_for_ALERT)
 	{
@@ -1339,24 +1333,12 @@ create_window(
 	w->nolist = nolist;
 	w->dial = dial;
 	w->send_message = message_handler;
-	w->do_message	= message_doer;
-	get_widget(w, XAW_TITLE)->stuff = client->name;
+	w->do_message = message_doer;
+	get_widget(w, XAW_TITLE)->stuff.name = client->name;
 
-	/*if (dial & created_for_POPUP)
-	{
-		w->x_shadow = 1;
-		w->y_shadow = 1;
-	}
-	else
-	*/
-	{
-		w->x_shadow = 1; //2;
-		w->y_shadow = 1; //2;
-	}
+	w->x_shadow = 1;
+	w->y_shadow = 1;
 	w->wa_frame = true;
-
-// 	if (w->frame > 0)
-// 		tp |= BORDER;
 
 	if (nolist)
 	{
@@ -1511,7 +1493,7 @@ change_window_attribs(int lock,
 	 */
 	{
 		struct widget_tree *wt;
-		if ((wt = get_widget(w, XAW_TOOLBAR)->stuff))
+		if ((wt = get_widget(w, XAW_TOOLBAR)->stuff.wt) != NULL)
 		{
 			set_toolbar_coords(w, NULL);
 			if (wt->tree && client->p == get_curproc())
@@ -2169,7 +2151,7 @@ void set_standard_point(struct xa_client *client)
 	short w, h;
 	bool new_menu_sz = true;
 	struct xa_widget *xaw = get_menu_widg(), *xat = get_widget(root_window, XAW_TOOLBAR);
-	XA_TREE *wt = xat->stuff;
+	XA_TREE *wt = xat->stuff.wt;
 	struct xa_vdi_settings *v = client->vdi_settings;
 
 	if( C.boot_focus && client->p != C.boot_focus)
@@ -3218,7 +3200,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, GRECT *ne
 		//if (xmove || ymove)
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-			XA_TREE *wt = widg->stuff;
+			XA_TREE *wt = widg->stuff.wt;
 
 			/* Temporary hack 070702 */
 			if (wt && wt->tree)
@@ -3766,7 +3748,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, GRECT *ne
 				/* only blitted: if window has a list-window inform list-window to move its widgets */
 				if( !	resize )
 				{
-					struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+					struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 #if 1
 					if( wt && wt->extra && (wt->flags & WTF_EXTRA_ISLIST) ) // &&
 					{

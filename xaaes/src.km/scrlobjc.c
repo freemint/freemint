@@ -4156,7 +4156,7 @@ dclick_scroll_list(int lock, OBJECT *form, int item, const struct moose_data *md
 static bool
 drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff;
+	XA_SLIDER_WIDGET *sl = widg->stuff.sl;
 
 	DIAGS(("scroll object vslide drag!"));
 
@@ -4242,7 +4242,7 @@ drag_vslide(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 static bool
 drag_hslide(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff;
+	XA_SLIDER_WIDGET *sl = widg->stuff.sl;
 
 	DIAGS(("scroll object vslide drag!"));
 

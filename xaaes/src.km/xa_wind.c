@@ -356,11 +356,11 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg;
 
 		widg = get_widget(w, XAW_HSLIDE);
-		if (widg->stuff)
+		if (widg->stuff.sl)
 		{
 			short newpos = bound_sl(pb->intin[2]);
 
-			XA_SLIDER_WIDGET *slw = widg->stuff;
+			XA_SLIDER_WIDGET *slw = widg->stuff.sl;
 			if (client->options.app_opts & XAAO_WF_SLIDE)
 			{
 				short newrpos = bound_sl(pb->intin[3]);
@@ -390,11 +390,11 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 		widg = get_widget(w, XAW_VSLIDE);
 
-		if (widg->stuff)
+		if (widg->stuff.sl)
 		{
 			short newpos = bound_sl(pb->intin[2]);
 
-			XA_SLIDER_WIDGET *slw = widg->stuff;
+			XA_SLIDER_WIDGET *slw = widg->stuff.sl;
 			if (client->options.app_opts & XAAO_WF_SLIDE)
 			{
 				short newrpos = bound_sl(pb->intin[3]);
@@ -423,10 +423,10 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg;
 
 		widg = get_widget(w, XAW_HSLIDE);
-		if (widg->stuff)
+		if (widg->stuff.sl)
 		{
 			short newlen;
-			XA_SLIDER_WIDGET *slw = widg->stuff;
+			XA_SLIDER_WIDGET *slw = widg->stuff.sl;
 			newlen = bound_sl(pb->intin[2]);
 			if (slw->length != newlen)
 			{
@@ -443,10 +443,10 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg;
 
 		widg = get_widget(w, XAW_VSLIDE);
-		if (widg->stuff)
+		if (widg->stuff.sl)
 		{
 			short newlen;
-			XA_SLIDER_WIDGET *slw = widg->stuff;
+			XA_SLIDER_WIDGET *slw = widg->stuff.sl;
 			newlen = bound_sl(pb->intin[2]);
 			if (slw->length != newlen)
 			{
@@ -842,7 +842,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 		OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
 
-		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx", (unsigned long)ob, (unsigned long)widg->stuff));
+		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx", (unsigned long)ob, (unsigned long)widg->stuff.wt));
 
 		if (ob)
 		{
@@ -850,10 +850,10 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			short vslw = 0;
 			long vsl = 0;
 
-			/* if (wt || !widg->stuff)*/	/* new or changed toolbar */
+			/* if (wt || !widg->stuff.wt)*/	/* new or changed toolbar */
 			{
 				GRECT or;
-				int md = widg->stuff ? 1 : 0;
+				int md = widg->stuff.wt ? 1 : 0;
 				short d;
 				struct xa_vdi_settings *v = w->vdi_settings;
 
@@ -861,7 +861,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 
 				if( md == 1 /*&& ob != o*/ )	/* changed toolbar */
 				{
-					OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
+					OBJECT *o = widg->stuff.wt->tree;
 					d = o->ob_height - ob->ob_height;
 					remove_widget(lock, w, XAW_TOOLBAR);
 				}
@@ -967,7 +967,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 		}
-		else if (widg->stuff)	/* remove toolbar */
+		else if (widg->stuff.wt)	/* remove toolbar */
 		{
 			w->min.g_h -= widg->ar.g_h;
 			/*
@@ -1012,7 +1012,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 			{
 				XA_TREE *wt = obtree_to_wt(client, ob);
 
-				if (!wt || (wt != widg->stuff))
+				if (!wt || (wt != widg->stuff.wt))
 				{
 
 					DIAGS(("  --- install new menu"));
@@ -1035,7 +1035,7 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					}
 				}
 			}
-			else if (widg->stuff)
+			else if (widg->stuff.wt)
 			{
 				DIAGS(("  --- Remove menu"));
 				remove_widget(lock, w, XAW_MENU);
@@ -1405,7 +1405,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_TOOLBAR:
 	{
-		XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff;
+		XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff.wt;
 
 		if (wt)
 			ptr_to_shorts(wt->tree, pb->intout + 1);
@@ -1416,7 +1416,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_MENU:
 	{
-		XA_TREE *wt = get_widget(w, XAW_MENU)->stuff;
+		XA_TREE *wt = get_widget(w, XAW_MENU)->stuff.wt;
 
 		if (wt)
 			ptr_to_shorts(wt->tree, pb->intout + 1);
@@ -1589,7 +1589,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	{
 		if (w->active_widgets & VSLIDE)
 		{
-			slw = get_widget(w, XAW_VSLIDE)->stuff;
+			slw = get_widget(w, XAW_VSLIDE)->stuff.sl;
 			o[1] = slw->position;
 			if (client->options.app_opts & XAAO_WF_SLIDE)
 				o[2] = slw->rpos;
@@ -1602,7 +1602,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	{
 		if (w->active_widgets & HSLIDE)
 		{
-			slw = get_widget(w, XAW_HSLIDE)->stuff;
+			slw = get_widget(w, XAW_HSLIDE)->stuff.sl;
 			o[1] = slw->position;
 			if (client->options.app_opts & XAAO_WF_SLIDE)
 				o[2] = slw->rpos;
@@ -1615,7 +1615,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	{
 		if (w->active_widgets & HSLIDE)
 		{
-			slw = get_widget(w, XAW_HSLIDE)->stuff;
+			slw = get_widget(w, XAW_HSLIDE)->stuff.sl;
 			o[1] = slw->length;
 		}
 		else
@@ -1626,7 +1626,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	{
 		if (w->active_widgets & VSLIDE)
 		{
-			slw = get_widget(w, XAW_VSLIDE)->stuff;
+			slw = get_widget(w, XAW_VSLIDE)->stuff.sl;
 			o[1] = slw->length;
 		}
 		else

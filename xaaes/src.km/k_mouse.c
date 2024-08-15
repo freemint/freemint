@@ -519,7 +519,7 @@ XA_button_event(int lock, const struct moose_data *md, bool widgets)
 
 			if( !widg )
 				widg = get_menu_widg();
-			menu = (XA_TREE *)widg->stuff;
+			menu = widg->stuff.wt;
 			client = menu->owner;
 			if (!(client->status & CS_EXITING))
 			{
@@ -664,7 +664,7 @@ XA_move_event(int lock, const struct moose_data *md)
 					if (C.aesmouse != -1)
 						xa_graf_mouse(-1, NULL, NULL, true);
 
-					menu = (XA_TREE *)widg->stuff;
+					menu = widg->stuff.wt;
 					client = menu->owner;
 					if (!(client->status & CS_EXITING))
 					{

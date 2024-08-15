@@ -423,7 +423,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 
 		if (wind && wind != wi)
 		{
-			struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+			struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 			OBJECT *obtree = wt->tree;
 			SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 			struct sesetget_params p = { 0 };
@@ -547,7 +547,7 @@ add_to_tasklist(struct xa_client *client)
 
 	if (wind)
 	{
-		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 		OBJECT *obtree = wt->tree;
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		OBJECT *icon;
@@ -646,7 +646,7 @@ remove_from_tasklist(struct xa_client *client)
 
 	if (wind)
 	{
-		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 		OBJECT *obtree = wt->tree;
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
@@ -698,7 +698,7 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 
 	if (wind)
 	{
-		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 		OBJECT *obtree = wt->tree;
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
@@ -2033,7 +2033,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 			struct proc *rootproc = pid2proc(0);
 			static int first = 1;	/* do full-redraw for correct slider-size */
 
-			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+			wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 			list = object_get_slist(wt->tree + TM_LIST);
 
 			if( first == 0 )

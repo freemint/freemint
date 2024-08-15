@@ -150,7 +150,7 @@ wdialog_redraw(int lock, struct xa_window *wind, struct xa_aes_object start, sho
 	struct xa_rect_list *rl;
 	struct widget_tree *wt;
 
-	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_list.start))
+	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt) && (rl = wind->rect_list.start))
 	{
 		OBJECT *obtree;
 		GRECT dr;
@@ -424,7 +424,7 @@ wdialog_message(int lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 			XA_WIDGET *widg = wind->tool;
 			if( widg )
 			{
-				XA_TREE *wt = widg->stuff;
+				XA_TREE *wt = widg->stuff.wt;
 				if( wt )
 					ob_set_wind( wt->tree, G_SLIST, msg[0] );
 			}
@@ -617,7 +617,7 @@ XA_wdlg_open(int lock, struct xa_client *client, AESPB *pb)
 			for (i = 0; i < (sizeof(wind->wname)-1) && (*d++ = *b++ = *s++); i++)
 				;
 			*d = *b = 0;
-			get_widget(wind, XAW_TITLE)->stuff = wind->wname;
+			get_widget(wind, XAW_TITLE)->stuff.name = wind->wname;
 		}
 
 		obj_init_focus(wdlg->std_wt, OB_IF_RESET);
@@ -820,7 +820,7 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 	{
 		pb->intout[0] = 1;
 
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 
 		switch(pb->intin[0])
 		{
@@ -945,7 +945,7 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 						for (i = 0; i < (sizeof(wdlg->ify_name)-1) && (*d++ = *t++); i++)
 							;
 						*d = 0;
-						get_widget(wind, XAW_TITLE)->stuff = wdlg->ify_name;
+						get_widget(wind, XAW_TITLE)->stuff.name = wdlg->ify_name;
 					}
 
 					if (!nr || (nr && nr->g_w == -1 && nr->g_h == -1))
@@ -979,7 +979,7 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 						d = wind->wname;
 						for (i = 0; i < (sizeof(wind->wname)-1) && (*d++ = *t++); i++)
 							;
-						get_widget(wind, XAW_TITLE)->stuff = wind->wname;
+						get_widget(wind, XAW_TITLE)->stuff.name = wind->wname;
 					}
 
 					if (obtree)
@@ -992,7 +992,7 @@ XA_wdlg_set(int lock, struct xa_client *client, AESPB *pb)
 					else
 						wt = wdlg->std_wt;
 
-					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff)
+					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff.wt)
 					{
 						wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, STW_ZEN|STW_GOC, NULL, NULL);
 						wt->exit_form = NULL;
@@ -1322,7 +1322,7 @@ XA_wdlg_event(int lock, struct xa_client *client, AESPB *pb)
 		struct wdlg_evnt_parms wep;
 
 		wep.wind	= wind;
-		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff;
+		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 		wep.ev		= (EVNT *)pb->addrin[1];
 		wep.wdlg	= wdlg;
 		wep.callout	= callout_exit;

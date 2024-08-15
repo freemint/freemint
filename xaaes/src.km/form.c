@@ -179,7 +179,7 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
-	 	wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+	 	wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 
 	 	if( wt->tree == obtree )
 	 	{
@@ -1165,7 +1165,7 @@ Click_windowed_form_do(	int lock,
 	struct xa_client *client = wind->owner;
 	XA_TREE *wt;
 
-	wt = widg->stuff;
+	wt = widg->stuff.wt;
 
 	DIAG((D_form, client, "Click_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
 		(unsigned long)client, (unsigned long)wind, (unsigned long)wt));
@@ -1221,7 +1221,7 @@ Click_form_do(int lock,
 		{
 			DIAGS(("Click_form_do: using wind->toolbar"));
 // 			display("Click_form_do: using wind->toolbar");
-			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+			wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 		}
 
 		if (wt)
@@ -1229,7 +1229,7 @@ Click_form_do(int lock,
 			obtree = rp_2_ap(wind, wt->widg, &r);
 // 			display("Click_form_do: wt=%lx, wt_tree=%lx, widg=%lx, obtree = %lx",
 // 				wt, wt->tree, wt->widg, obtree);
-// 			display(" ---===---     widg=%lx, widg->stuff=%lx", widg, widg->stuff);
+// 			display(" ---===---     widg=%lx, widg->stuff=%lx", widg, widg->stuff.wt);
 		}
 	}
 	/*
@@ -1323,7 +1323,7 @@ Key_form_do(int lock,
 	if (wind)
 	{
 		DIAGS(("Key_form_do: using wind->toolbar"));
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 		obtree = rp_2_ap(wind, wt->widg, &r);
 		v = wind->vdi_settings;
 	}
@@ -1468,7 +1468,7 @@ do_formwind_msg(
 
 	if (widg)
 	{
-		XA_TREE *wt = widg->stuff;
+		XA_TREE *wt = widg->stuff.wt;
 		OBJECT *ob = wt->tree + widg->start;
 		short ww = wind->wa.g_w,			/* window measures */
 		      wh = wind->wa.g_h,

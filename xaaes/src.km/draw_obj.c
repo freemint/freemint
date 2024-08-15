@@ -555,7 +555,7 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		(*v->api->t_color)(v, G_BLACK);
 
-		get_widget(w, XAW_TITLE)->stuff = list->title;
+		get_widget(w, XAW_TITLE)->stuff.name = list->title;
 		r = v->clip;
 		draw_window(list->lock, w, &r);
 		draw_slist(0, list, NULL, &r);
@@ -941,7 +941,7 @@ short flags)
 				c->ob->ob_height += dh;
 
 				list =
-					object_get_slist(((XA_TREE *)get_widget(wt->wind, XAW_TOOLBAR)->stuff)->tree + c->item);
+					object_get_slist(get_widget(wt->wind, XAW_TOOLBAR)->stuff.wt->tree + c->item);
 
 				if( list ){
 					lwind = list->wi;

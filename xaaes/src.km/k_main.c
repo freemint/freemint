@@ -800,7 +800,7 @@ CE_fa(int lock, struct c_event *ce, short cancel)
 
 			if (wind)
 			{
-				wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+				wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 				form = wt->tree;
 			}
 #if SALERT_IC4 != SALERT_IC3+1 || SALERT_IC3 != SALERT_IC2+1 ||SALERT_IC2 != SALERT_IC1+1

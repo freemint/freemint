@@ -298,7 +298,7 @@ static void bus_error(void)
 static void close_menu_if_move(struct xa_window *wind)
 {
 	XA_WIDGET *widg = get_widget( wind, XAW_MENU );
-	if( widg && widg->stuff )
+	if( widg && widg->stuff.wt )
 		close_window_menu(TAB_LIST_START);
 }
 

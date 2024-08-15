@@ -2131,16 +2131,16 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 			char ns[32];
 			strip_name(ns, ow);
 			if (*ns)
-				sprintf(tn, sizeof(tn), "(%s) %s", ns, (char *)widg->stuff);
+				sprintf(tn, sizeof(tn), "(%s) %s", ns, widg->stuff.name);
 			else
 				ow = NULL;
 		}
 
 		if (!ow)
-			sprintf(tn, sizeof(tn), "(%d) %s", wind->owner->p->pid, (char *)widg->stuff);
+			sprintf(tn, sizeof(tn), "(%d) %s", wind->owner->p->pid, widg->stuff.name);
 	}
 	else
-		strcpy(tn, widg->stuff);
+		strcpy(tn, widg->stuff.name);
 
 	draw_widget_text(v, widg, wti, tn, 4, 0);
 	return true;
@@ -2323,7 +2323,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 		else
 			return true;
 	}
-	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4 + widg->xlimit, 0);
+	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff.name, 4 + widg->xlimit, 0);
 	/* restore clip */
 	if (wti->flags & WTXT_NOCLIP)
 		(*v->api->set_clip)(wind->vdi_settings, &dr);
@@ -2522,7 +2522,7 @@ static bool _cdecl
 d_vslide(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	int len, offs;
-	XA_SLIDER_WIDGET *sl = widg->stuff;
+	XA_SLIDER_WIDGET *sl = widg->stuff.sl;
 	GRECT cl;
 	struct window_colours *wc = wind->colours;
 	struct xa_wtexture *t = 0;
@@ -2580,7 +2580,7 @@ static bool _cdecl
 d_hslide(struct xa_window *wind, struct xa_widget *widg, const GRECT *clip)
 {
 	int len, offs;
-	XA_SLIDER_WIDGET *sl = widg->stuff;
+	XA_SLIDER_WIDGET *sl = widg->stuff.sl;
 	struct window_colours *wc = wind->colours;
 	struct xa_wtexture *t = 0;
 	GRECT cl;

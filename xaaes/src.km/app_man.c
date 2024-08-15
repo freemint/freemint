@@ -246,7 +246,7 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 					if( wind->tool )
 					{
 						XA_WIDGET *widg = wind->tool;
-						XA_TREE *wt = widg->stuff;
+						XA_TREE *wt = widg->stuff.wt;
 						if( wt )
 						{
 							if( wind->owner->p == get_curproc() && !(wind->dial & created_for_FMD_START) )
@@ -530,18 +530,18 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 
 				DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
 
-				if (new->std_menu != widg->stuff)
+				if (new->std_menu != widg->stuff.wt)
 				{
 					if (do_topwind && (top = TOP_WINDOW != root_window ? root_window : NULL))
 						wastop = is_topped(top) ? true : false;
 
-					if ((wt = widg->stuff))
+					if ((wt = widg->stuff.wt) != NULL)
 					{
 						wt->widg = NULL;
 						wt->flags &= ~WTF_STATIC;
 						wt->links--;
 					}
-					widg->stuff = wt = new->std_menu;
+					widg->stuff.wt = wt = new->std_menu;
 					wt->flags |= WTF_STATIC;
 					wt->widg = widg;
 					wt->links++;

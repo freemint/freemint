@@ -573,7 +573,7 @@ cXA_wheel_event(int lock, struct c_event *ce, short cancel)
 
 			if (wind == nolist_list || is_topped(wind))
 			{
-				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 				OBJECT *obtree;
 				struct xa_aes_object obj;
 
@@ -631,7 +631,7 @@ cXA_wheel_event(int lock, struct c_event *ce, short cancel)
 
 						if (widg)
 						{
-							XA_SLIDER_WIDGET *sl = widg->stuff;
+							XA_SLIDER_WIDGET *sl = widg->stuff.sl;
 							short unit, wh;
 
 							if (s == WM_VSLID)

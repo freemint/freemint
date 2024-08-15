@@ -655,7 +655,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 	else{
 		if( !view_file )
 			wind = htd->w_about;
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
 	}
 
 	list = object_get_slist(wt->tree + ABOUT_LIST);
