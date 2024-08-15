@@ -345,7 +345,11 @@ if_register (struct netif *nif)
 	nif->out_packets = 0;
 	nif->out_errors = 0;
 	nif->collisions = 0;
-	
+	if(allinterfaces){
+		nif->index = allinterfaces->index + 1;
+	}else{
+		nif->index = 1;
+	}
 	nif->next = allinterfaces;
 	allinterfaces = nif;
 	if (nif->timeout && !have_timeout)
@@ -618,9 +622,8 @@ if_ioctl (short cmd, long arg)
 		}
 		case SIOCGIFNAME_ETH:
 		{
-			char * name = if_index2name(ifr->ifru.ifindex);
-			
-			if(ifr->ifr_name && name){
+			char name[IF_NAMSIZ+1];
+			if(ifr->ifr_name && if_index2name(ifr->ifru.ifindex, name)){
 				strncpy (ifr->ifr_name, name, IF_NAMSIZ);
 				return 0;
 			}
@@ -931,22 +934,10 @@ if_ioctl (short cmd, long arg)
 struct netif *
 if_name2if (char *ifname)
 {
-	char name[IF_NAMSIZ+1], *cp;
-	short i;
-	long unit = 0;
 	struct netif *nif;
-	
-	for (i = 0, cp = ifname; i < IF_NAMSIZ && *cp; ++cp, ++i)
-	{
-		if (*cp >= '0' && *cp <= '9')
-		{
-			unit = atol (cp);
-			break;
-		}
-		name[i] = *cp;
-	}
-	
-	name[i] = '\0';
+	char name[IF_NAMSIZ+1];
+	long unit = sanitize_ifname(ifname, name);
+
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (!stricmp (nif->name, name) && nif->unit == unit)
@@ -1220,30 +1211,54 @@ if_init (void)
 	return 0;
 }
 
+long sanitize_ifname(char	*ifr_name, char *name){
+	char *cp;
+	short i;
+	long unit = 0;
+	
+	for (i = 0, cp = ifr_name; i < IF_NAMSIZ && *cp; ++cp, ++i)
+	{
+		if (*cp >= '0' && *cp <= '9')
+		{
+			unit = atol (cp);
+			break;
+		}
+		name[i] = *cp;
+	}
+	
+	name[i] = '\0';
+	return unit;
+}
+
 short 
 if_name2index (char	*ifr_name)
 {
 	struct netif *ifp;
-	
+
+	char name[IF_NAMSIZ+1];
+
+	long unit = sanitize_ifname(ifr_name, name);
+
 	for (ifp = allinterfaces; ifp; ifp = ifp->next)
 	{
-		if (!strncmp (ifp->name, ifr_name, IF_NAMSIZ)){
-			return (ifp->unit + 1);
+		if (!strncmp (ifp->name, name, IF_NAMSIZ) && unit == ifp->unit){
+			return (ifp->index);
 		}
 	}
 	return 0;
 }
 
-char *
-if_index2name (short ifr_ifindex)
+short
+if_index2name (short ifr_ifindex, char *name)
 {
 	struct netif *ifp;
 	
 	for (ifp = allinterfaces; ifp; ifp = ifp->next)
 	{
-		if ((ifp->unit + 1) == ifr_ifindex){
-			return ifp->name;
+		if ((ifp->index) == ifr_ifindex){
+			ksprintf(name, "%s%d", ifp->name, ifp->unit);
+			return 1;
 		}
 	}
-	return NULL;
+	return 0;
 }

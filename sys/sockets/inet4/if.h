@@ -101,6 +101,7 @@ struct netif
 {
 	char		name[IF_NAMSIZ];/* interface name */
 	short		unit;		/* interface unit */
+	short		index;		/* interface registration order */
 
 	ushort		flags;		/* interface flags */
 	ulong		metric;		/* routing metric */
@@ -261,8 +262,9 @@ struct netif *	if_net2if	(ulong);
 long		if_setifaddr	(struct netif *, struct sockaddr *);
 struct ifaddr *	if_af2ifaddr	(struct netif *, short fam);
 short		if_getfreeunit	(char *);
+long		sanitize_ifname	(char *, char *);
 short		if_name2index	(char *);
-char *		if_index2name	(short );
+short		if_index2name	(short, char*);
 
 long		if_open		(struct netif *);
 long		if_close	(struct netif *);
