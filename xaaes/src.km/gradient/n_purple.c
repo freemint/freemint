@@ -24,15 +24,17 @@
  */
 
 /*// PURPLE - mauve/lavendar (slist and window-title exchanged)*/
+
+#include <gem.h>
 #include "../gradients.h"
-short start = START;
+short _start asm("_start") = START;
 
 /* ---------------------------------------------------------------------------------- */
 /* -----------  Standard client window colour gradients --------------------------------- */
 /* ---------------------------------------------------------------------------------- */
 struct xa_gradient otop_vslide_gradient =
 {
-	(unsigned long)OTOP_VSLIDE_GRADIENT,
+	(struct xa_data_hdr *)OTOP_VSLIDE_GRADIENT,
 	-1, 0,
 	 0, 16,
 
@@ -41,7 +43,7 @@ struct xa_gradient otop_vslide_gradient =
 };
 struct xa_gradient otop_hslide_gradient =
 {
-	(unsigned long)OTOP_HSLIDE_GRADIENT,
+	(struct xa_data_hdr *)OTOP_HSLIDE_GRADIENT,
 	 0, -1,
 	16,  0,
 
@@ -50,7 +52,7 @@ struct xa_gradient otop_hslide_gradient =
 };
 struct xa_gradient otop_vslider_gradient =
 {
-	(unsigned long)OTOP_VSLIDER_GRADIENT,
+	(struct xa_data_hdr *)OTOP_VSLIDER_GRADIENT,
 	-1, 0,
 	 0, 16,
 
@@ -59,7 +61,7 @@ struct xa_gradient otop_vslider_gradient =
 };
 struct xa_gradient otop_hslider_gradient =
 {
-	(unsigned long)OTOP_HSLIDER_GRADIENT,
+	(struct xa_data_hdr *)OTOP_HSLIDER_GRADIENT,
 	 0, -1,
 	16,  0,
 
@@ -69,7 +71,7 @@ struct xa_gradient otop_hslider_gradient =
 
 struct xa_gradient utop_vslide_gradient =
 {
-	(unsigned long)UTOP_VSLIDE_GRADIENT,
+	(struct xa_data_hdr *)UTOP_VSLIDE_GRADIENT,
 	-1, 0,
 	 0, 16,
 
@@ -78,7 +80,7 @@ struct xa_gradient utop_vslide_gradient =
 };
 struct xa_gradient utop_hslide_gradient =
 {
-	(unsigned long)UTOP_HSLIDE_GRADIENT,
+	(struct xa_data_hdr *)UTOP_HSLIDE_GRADIENT,
 	 0, -1,
 	16,  0,
 
@@ -87,7 +89,7 @@ struct xa_gradient utop_hslide_gradient =
 };
 struct xa_gradient utop_vslider_gradient =
 {
-	(unsigned long)UTOP_VSLIDER_GRADIENT,
+	(struct xa_data_hdr *)UTOP_VSLIDER_GRADIENT,
 	-1, 0,
 	 0, 16,
 
@@ -96,7 +98,7 @@ struct xa_gradient utop_vslider_gradient =
 };
 struct xa_gradient utop_hslider_gradient =
 {
-	(unsigned long)UTOP_HSLIDER_GRADIENT,
+	(struct xa_data_hdr *)UTOP_HSLIDER_GRADIENT,
 	 0, -1,
 	16,  0,
 
@@ -106,7 +108,7 @@ struct xa_gradient utop_hslider_gradient =
 
 struct xa_gradient otop_title_gradient =
 {
-	(unsigned long)OTOP_TITLE_GRADIENT,
+	(struct xa_data_hdr *)OTOP_TITLE_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -115,7 +117,7 @@ struct xa_gradient otop_title_gradient =
 };
 struct xa_gradient utop_title_gradient =
 {
-	(unsigned long)UTOP_TITLE_GRADIENT,
+	(struct xa_data_hdr *)UTOP_TITLE_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -126,7 +128,7 @@ struct xa_gradient utop_title_gradient =
 
 struct xa_gradient otop_info_gradient =
 {
-	(unsigned long)OTOP_INFO_GRADIENT,
+	(struct xa_data_hdr *)OTOP_INFO_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -137,7 +139,7 @@ struct xa_gradient otop_info_gradient =
 };
 struct xa_gradient utop_info_gradient =
 {
-	(unsigned long)UTOP_INFO_GRADIENT,
+	(struct xa_data_hdr *)UTOP_INFO_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -147,7 +149,7 @@ struct xa_gradient utop_info_gradient =
 
 struct xa_gradient otop_grey_gradient =
 {
-	(unsigned long)OTOP_GREY_GRADIENT,
+	(struct xa_data_hdr *)OTOP_GREY_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -156,7 +158,7 @@ struct xa_gradient otop_grey_gradient =
 };
 struct xa_gradient utop_grey_gradient =
 {
-	(unsigned long)UTOP_GREY_GRADIENT,
+	(struct xa_data_hdr *)UTOP_GREY_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -170,7 +172,7 @@ struct xa_gradient utop_grey_gradient =
 /* ---------------------------------------------------------------------------------- */
 struct xa_gradient alert_otop_title_gradient =
 {
-	(unsigned long)ALERT_OTOP_TITLE_GRADIENT,
+	(struct xa_data_hdr *)ALERT_OTOP_TITLE_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -179,7 +181,7 @@ struct xa_gradient alert_otop_title_gradient =
 };
 struct xa_gradient alert_utop_title_gradient =
 {
-	(unsigned long)ALERT_UTOP_TITLE_GRADIENT,
+	(struct xa_data_hdr *)ALERT_UTOP_TITLE_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -190,7 +192,7 @@ struct xa_gradient alert_utop_title_gradient =
 
 struct xa_gradient alert_utop_grey_gradient =
 {
-	(unsigned long)ALERT_UTOP_GREY_GRADIENT,
+	(struct xa_data_hdr *)ALERT_UTOP_GREY_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -204,7 +206,7 @@ struct xa_gradient alert_utop_grey_gradient =
 /* ---------------------------------------------------------------------------------- */
 struct xa_gradient slist_otop_vslide_gradient =
 {
-	(unsigned long)SLIST_OTOP_VSLIDE_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_VSLIDE_GRADIENT,
 	-1, 0,
 	0, 16,
 
@@ -213,7 +215,7 @@ struct xa_gradient slist_otop_vslide_gradient =
 };
 struct xa_gradient slist_otop_hslide_gradient =
 {
-	(unsigned long)SLIST_OTOP_HSLIDE_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_HSLIDE_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -222,7 +224,7 @@ struct xa_gradient slist_otop_hslide_gradient =
 };
 struct xa_gradient slist_otop_vslider_gradient =
 {
-	(unsigned long)SLIST_OTOP_VSLIDER_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_VSLIDER_GRADIENT,
 	-1, 0,
 	0, 16,
 
@@ -231,7 +233,7 @@ struct xa_gradient slist_otop_vslider_gradient =
 };
 struct xa_gradient slist_otop_hslider_gradient =
 {
-	(unsigned long)SLIST_OTOP_HSLIDER_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_HSLIDER_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -240,7 +242,7 @@ struct xa_gradient slist_otop_hslider_gradient =
 };
 struct xa_gradient slist_utop_vslide_gradient =
 {
-	(unsigned long)SLIST_UTOP_VSLIDE_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_VSLIDE_GRADIENT,
 	-1, 0,
 	0, 16,
 
@@ -249,7 +251,7 @@ struct xa_gradient slist_utop_vslide_gradient =
 };
 struct xa_gradient slist_utop_hslide_gradient =
 {
-	(unsigned long)SLIST_UTOP_HSLIDE_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_HSLIDE_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -258,7 +260,7 @@ struct xa_gradient slist_utop_hslide_gradient =
 };
 struct xa_gradient slist_utop_vslider_gradient =
 {
-	(unsigned long)SLIST_UTOP_VSLIDER_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_VSLIDER_GRADIENT,
 	-1, 0,
 	0, 16,
 
@@ -267,7 +269,7 @@ struct xa_gradient slist_utop_vslider_gradient =
 };
 struct xa_gradient slist_utop_hslider_gradient =
 {
-	(unsigned long)SLIST_UTOP_HSLIDER_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_HSLIDER_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -277,7 +279,7 @@ struct xa_gradient slist_utop_hslider_gradient =
 
 struct xa_gradient slist_otop_title_gradient =
 {
-	(unsigned long)SLIST_OTOP_TITLE_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_TITLE_GRADIENT,
 	 0, -1,
 	16,  0,
 
@@ -286,7 +288,7 @@ struct xa_gradient slist_otop_title_gradient =
 };
 struct xa_gradient slist_utop_title_gradient =
 {
-	(unsigned long)SLIST_UTOP_TITLE_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_TITLE_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -296,7 +298,7 @@ struct xa_gradient slist_utop_title_gradient =
 
 struct xa_gradient slist_otop_info_gradient =
 {
-	(unsigned long)SLIST_OTOP_INFO_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_INFO_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -305,7 +307,7 @@ struct xa_gradient slist_otop_info_gradient =
 };
 struct xa_gradient slist_utop_info_gradient =
 {
-	(unsigned long)SLIST_UTOP_INFO_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_INFO_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -314,7 +316,7 @@ struct xa_gradient slist_utop_info_gradient =
 };
 struct xa_gradient slist_otop_grey_gradient =
 {
-	(unsigned long)SLIST_OTOP_GREY_GRADIENT,
+	(struct xa_data_hdr *)SLIST_OTOP_GREY_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -323,7 +325,7 @@ struct xa_gradient slist_otop_grey_gradient =
 };
 struct xa_gradient slist_utop_grey_gradient =
 {
-	(unsigned long)SLIST_UTOP_GREY_GRADIENT,
+	(struct xa_data_hdr *)SLIST_UTOP_GREY_GRADIENT,
 	-1, -1,
 	0, 0,
 
@@ -334,7 +336,7 @@ struct xa_gradient slist_utop_grey_gradient =
 
 struct xa_gradient menu_gradient =
 {
-	(unsigned long)MENU_GRADIENT,
+	(struct xa_data_hdr *)MENU_GRADIENT,
 	 0, -1,
 	16,  0,
 
@@ -344,7 +346,7 @@ struct xa_gradient menu_gradient =
 };
 struct xa_gradient sel_title_gradient =
 {
-	(unsigned long)SEL_TITLE_GRADIENT,
+	(struct xa_data_hdr *)SEL_TITLE_GRADIENT,
 	0, -1,
 	16, 0,
 	0,0,{0},
@@ -352,7 +354,7 @@ struct xa_gradient sel_title_gradient =
 };
 struct xa_gradient sel_popent_gradient =
 {
-	(unsigned long)SEL_POPENT_GRADIENT,
+	(struct xa_data_hdr *)SEL_POPENT_GRADIENT,
 	0, -1,
 	16, 0,
 	0,0,{0},
@@ -361,7 +363,7 @@ struct xa_gradient sel_popent_gradient =
 
 struct xa_gradient indbutt_gradient =
 {
-	(unsigned long)INDBUTT_GRADIENT,
+	(struct xa_data_hdr *)INDBUTT_GRADIENT,
 	-1,   0,
 	 0,  16,
 
@@ -370,7 +372,7 @@ struct xa_gradient indbutt_gradient =
 };
 struct xa_gradient sel_indbutt_gradient =
 {
-	(unsigned long)SEL_INDBUTT_GRADIENT,
+	(struct xa_data_hdr *)SEL_INDBUTT_GRADIENT,
 	-1,   0,
 	 0,  16,
 
@@ -379,7 +381,7 @@ struct xa_gradient sel_indbutt_gradient =
 };
 struct xa_gradient actbutt_gradient =
 {
-	(unsigned long)ACTBUTT_GRADIENT,
+	(struct xa_data_hdr *)ACTBUTT_GRADIENT,
 	0, -1,
 	16, 0,
 
@@ -389,7 +391,7 @@ struct xa_gradient actbutt_gradient =
 
 struct xa_gradient popbkg_gradient =
 {
-	(unsigned long)POPBKG_GRADIENT,
+	(struct xa_data_hdr *)POPBKG_GRADIENT,
 	0, -1,
 	16, 0,
 

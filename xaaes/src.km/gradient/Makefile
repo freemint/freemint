@@ -37,5 +37,8 @@ all-here: $(GRADIENTS)
 # default definitions
 GENFILES = *.grd
 
+#
+# MiNT must be compiled with 16 bit integers (-mshort)
+#
 %.grd: %.c
-	$(CC) -c -o $(@:.c=.grd) $<
+	$(CC) -DWITH_GRADIENTS=1 -mshort -nostdlib -nostartfiles -Wl,--oformat,binary -Wl,-entry,_start -o $@ $<

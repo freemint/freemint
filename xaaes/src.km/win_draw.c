@@ -26,6 +26,7 @@
 #include "xaaeswdg.h"
 #include "win_draw.h"
 #include "rectlist.h"
+#include "gradients.h"
 
 extern struct config cfg;
 
@@ -729,208 +730,89 @@ struct window_colours def_otop_cols =
  G_LBLACK, /* window frame color */
 /*          flags                        wr_mode     color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
-#ifdef ST_ONLY
- { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
+  { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
-#else
- { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
-#endif
-#ifdef ST_ONLY
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
         {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
         {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
         {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-#else
-  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
-        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
-        {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-#endif
 /* Horizontal Slider */
-#if !WITH_GRADIENTS
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_hslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &otop_hslider_gradient}}, /* Highlighted */
-#endif
-#if !WITH_GRADIENTS
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_hslider_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&otop_hslider_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&otop_hslider_gradient) }}, /* Highlighted */
  /* Horizontal Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslide_gradient},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_hslide_gradient},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslide_gradient}}, /* Highlighted */
-#endif
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_hslide_gradient) },	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&otop_hslide_gradient) },	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_hslide_gradient) }}, /* Highlighted */
  /* Vertical Slider */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_vslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &otop_vslider_gradient}}, /* Highlighted */
-#endif
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_vslider_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&otop_vslider_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&otop_vslider_gradient) }}, /* Highlighted */
  /* Vertical Slide */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslide_gradient},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &otop_vslide_gradient},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslide_gradient}}, /* Highlighted */
-#endif
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_vslide_gradient) },	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&otop_vslide_gradient) },	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_vslide_gradient) }}, /* Highlighted */
 /* Title */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_title_gradient},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) },	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&otop_title_gradient) },	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) }}, /* Highlighted */
  /* Info */
-#if !WITH_GRADIENTS
- { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
-#else
  { WCOL_DRAW3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient},	/* Normal */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient}}, /* Highlighted */
-#endif
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&otop_info_gradient) },	/* Normal */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&otop_info_gradient) },	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&otop_info_gradient) }}, /* Highlighted */
  /* Closer */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_title_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) }}, /* Highlighted */
  /* Hider */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_title_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) }}, /* Highlighted */
  /* Iconifier */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_title_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) }}, /* Highlighted */
  /* Fuller */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_title_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_title_gradient) }}, /* Highlighted */
  /* Sizer */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) }}, /* Highlighted */
  /* UP Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) }}, /* Highlighted */
  /* DN Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) }}, /* Highlighted */
  /* LF Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) }}, /* Highlighted */
  /* RT Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&otop_grey_gradient) }}, /* Highlighted */
  /* Title text-info */
 	 { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
      /* id  pnts                 flags wr_mode   efx     fg       bg       banner   x_3dact y_3dact texture */
@@ -954,208 +836,89 @@ struct window_colours def_utop_cols =
 /*          flags                        wr_mode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  /* Window color (when unused window exterior is drawn) */
-#if !WITH_GRADIENTS
  { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
           {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
           {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
           {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
-#else
- { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
-          {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-          {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-          {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
-#endif
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
-	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#endif
  /* H Slider */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_hslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_hslider_gradient}},	/* Highlighted */
-#endif
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_hslider_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&utop_hslider_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&utop_hslider_gradient) }},	/* Highlighted */
  /* H Slide */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslide_gradient},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_hslide_gradient},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslide_gradient}}, /* Highlighted */
-#endif
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_hslide_gradient) },	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_hslide_gradient) },	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_hslide_gradient) }}, /* Highlighted */
   /* V Slider */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_vslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_vslider_gradient}},	/* Highlighted */
-#endif
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_vslider_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&utop_vslider_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&utop_vslider_gradient) }},	/* Highlighted */
  /* V Slide */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslide_gradient},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_vslide_gradient},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslide_gradient}}, /* Highlighted */
-#endif
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_vslide_gradient) },	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_vslide_gradient) },	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_vslide_gradient) }}, /* Highlighted */
  /* Title */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_title_gradient},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_title_gradient},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_title_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_title_gradient) },	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_title_gradient) },	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_title_gradient) }}, /* Highlighted */
  /* Info */
-#if !WITH_GRADIENTS
  { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&utop_info_gradient) },	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&utop_info_gradient) },	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&utop_info_gradient) }}, /* Highlighted */
  /* Closer */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* Hider */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* Iconifier */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* Fuller */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* Sizer */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* UP Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* DN Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* LF Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
  /* RT Arrow */
-#if !WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&utop_grey_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&utop_grey_gradient) }}, /* Highlighted */
 
  /* Title text-info */
      { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
@@ -1205,6 +968,7 @@ struct xa_gradient alert_utop_grey_gradient =
 /*  {{500,500,500},{900,900,900}}, */
 };
 #endif
+
 struct window_colours alert_def_otop_cols =
 {
  { 0 }, /* data header */
@@ -1245,137 +1009,60 @@ struct window_colours alert_def_otop_cols =
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},    /* Selected */
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
 /* Title */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient}, /* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL, &alert_otop_title_gradient}, /* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL}, /* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL}, /* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_otop_title_gradient) }, /* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&alert_otop_title_gradient) }, /* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_otop_title_gradient) }}, /* Highlighted */
  /* Info */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL}, /* Normal */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL}, /* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},   /* Normal */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},   /* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
-#endif
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(NULL) }, /* Normal */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(NULL) }, /* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Closer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &alert_otop_title_gradient},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_otop_title_gradient) },    /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&alert_otop_title_gradient) },    /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_otop_title_gradient) }}, /* Highlighted */
  /* Hider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Iconifier */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },    /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },    /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Fuller */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Sizer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* UP Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* DN Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* LF Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* RT Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+              {G_LWHITE,    FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
 
 /* flags                         fontId  size flags wr_mode   Effect      forground       background x_3dact y_3dact    */
 /*                                              col           col       */
@@ -1428,137 +1115,60 @@ struct window_colours alert_def_utop_cols =
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},   /* Selected */
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Title */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_title_gradient},  /* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &alert_utop_title_gradient},  /* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_utop_title_gradient) },  /* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&alert_utop_title_gradient) },  /* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_utop_title_gradient) }}, /* Highlighted */
  /* Info */
-#if WITH_GRADIENTS
  { WCOL_DRAWBKG|WCOL_GRADIENT,      MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, NULL}, /* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, NULL}, /* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAWBKG|WCOL_GRADIENT,      MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},   /* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},   /* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(NULL) }, /* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(NULL) }, /* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Closer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_grey_gradient}, /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &alert_utop_grey_gradient}, /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_utop_grey_gradient) }, /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&alert_utop_grey_gradient) }, /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&alert_utop_grey_gradient) }}, /* Highlighted */
  /* Hider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Iconifier */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Fuller */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* Sizer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* UP Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* DN Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* LF Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
  /* RT Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},  /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},  /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},    /* Normal */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},    /* Selected */
-             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) },  /* Normal */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(NULL) },  /* Selected */
+             {G_LWHITE, FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(NULL) }}, /* Highlighted */
 
 /* flags                         fontId  size wr_mode    Effect      forground       background */
 /*                                         col            col       */
@@ -1708,6 +1318,7 @@ struct xa_gradient slist_utop_grey_gradient =
 /*	{{500,500,500},{900,900,900}}, */
 };
 #endif
+
 #ifndef ST_ONLY
 struct window_colours slist_def_otop_cols =
 {
@@ -1728,186 +1339,80 @@ struct window_colours slist_def_otop_cols =
                                                     {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
                                                     {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Horizontal Slider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslider_gradient},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_otop_hslider_gradient},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_otop_hslider_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_hslider_gradient) },	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&slist_otop_hslider_gradient) },	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&slist_otop_hslider_gradient) }}, /* Highlighted */
  /* Horizontal Slide */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslide_gradient},	/* Normal */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &slist_otop_hslide_gradient},	/* Selected */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslide_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL },	/* Normal */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
-
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_hslide_gradient) },	/* Normal */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&slist_otop_hslide_gradient) },	/* Selected */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_hslide_gradient) }}, /* Highlighted */
  /* Vertical Slider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslider_gradient},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_otop_vslider_gradient},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_otop_vslider_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_vslider_gradient) },	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&slist_otop_vslider_gradient) },	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&slist_otop_vslider_gradient) }}, /* Highlighted */
  /* Vertical Slide */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslide_gradient},	/* Normal */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &slist_otop_vslide_gradient},	/* Selected */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslide_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL,},	/* Selected */
-             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_vslide_gradient) },	/* Normal */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_vslide_gradient) },	/* Selected */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_vslide_gradient) }}, /* Highlighted */
 /* Title */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
-             {G_BLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
-             {G_LBLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_otop_title_gradient},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
-             {G_BLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LBLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_BLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Normal */
+             {G_LBLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) }}, /* Highlighted */
  /* Info */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_otop_info_gradient},	/* Normal */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_otop_info_gradient},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_otop_info_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
-#endif
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&slist_otop_info_gradient) },	/* Normal */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&slist_otop_info_gradient) },	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL XA_GRADIENT(&slist_otop_info_gradient) }}, /* Highlighted */
  /* Closer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) }}, /* Highlighted */
  /* Hider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) }}, /* Highlighted */
  /* Iconifier */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) }}, /* Highlighted */
  /* Fuller */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_title_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_title_gradient) }}, /* Highlighted */
  /* Sizer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) }}, /* Highlighted */
  /* UP Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) }}, /* Highlighted */
  /* DN Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) }}, /* Highlighted */
  /* LF Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) }}, /* Highlighted */
  /* RT Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_otop_grey_gradient) },	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_otop_grey_gradient) }}, /* Highlighted */
 
    /* Title text-info */
     { /*WTXT_DRAW3D|WTXT_ACT3D|*/WTXT_CENTER,
@@ -1942,185 +1447,80 @@ struct window_colours slist_def_utop_cols =
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* H Slider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_hslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_utop_hslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_utop_hslider_gradient}},	/* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#endif
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_hslider_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&slist_utop_hslider_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&slist_utop_hslider_gradient) }},	/* Highlighted */
  /* H Slide */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_hslide_gradient},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_hslide_gradient},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_hslide_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_hslide_gradient) },	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_hslide_gradient) },	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_hslide_gradient) }}, /* Highlighted */
   /* V Slider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_vslider_gradient},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_utop_vslider_gradient},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_utop_vslider_gradient}},	/* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#endif
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_vslider_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL XA_GRADIENT(&slist_utop_vslider_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL XA_GRADIENT(&slist_utop_vslider_gradient) }},	/* Highlighted */
  /* V Slide */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_vslide_gradient},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_vslide_gradient},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_vslide_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_vslide_gradient) },	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_vslide_gradient) },	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_vslide_gradient) }}, /* Highlighted */
  /* Title */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_BLUE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_title_gradient},	/* Normal */
-             {G_LBLUE, FIS_SOLID,   8,   G_LBLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_title_gradient},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_title_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
-             {G_BLUE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LBLUE, FIS_SOLID,   8,   G_LBLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_BLUE,   FIS_SOLID,   8,   G_LBLACK,    1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_title_gradient) },	/* Normal */
+        {G_LBLUE,  FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_title_gradient) },	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_title_gradient) }}, /* Highlighted */
  /* Info */
-#if WITH_GRADIENTS
  { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &slist_utop_info_gradient},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &slist_utop_info_gradient},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_utop_info_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK, G_BLACK, NULL XA_GRADIENT(&slist_utop_info_gradient) },	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK, G_BLACK, NULL XA_GRADIENT(&slist_utop_info_gradient) },	/* Selected */
+        {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_BLACK, NULL XA_GRADIENT(&slist_utop_info_gradient) }}, /* Highlighted */
  /* Closer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* Hider */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* Iconifier */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* Fuller */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* Sizer */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* UP Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* DN Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* LF Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
  /* RT Arrow */
-#if WITH_GRADIENTS
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
-#else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
-#endif
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Normal */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL XA_GRADIENT(&slist_utop_grey_gradient) },	/* Selected */
+        {G_LWHITE,	FIS_SOLID,  8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL XA_GRADIENT(&slist_utop_grey_gradient) }}, /* Highlighted */
 
 /* Title text-info */
      { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,

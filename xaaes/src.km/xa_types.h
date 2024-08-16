@@ -345,19 +345,6 @@ struct xa_wtexture
 	XAMFDB	*body;
 };
 
-#if WITH_GRADIENTS
-struct xa_gradient
-{
-	struct xa_data_hdr *allocs;
-	short wmask, hmask;
-	short w, h;
-	short method;
-	short n_steps;
-	short steps[8];
-	struct rgb_1000 c[16];
-};
-#endif
-
 struct xa_wcol
 {
 	short	c;	/* color */

@@ -1,16 +1,8 @@
-
-#ifndef _xa_types_h
-/** RGB intesities in promille */
-typedef struct rgb_1000
-{
-	short  red;    /**< Red-Intensity in range [0..1000] */
- 	short  green;  /**< Green-Intensity in range [0..1000] */
- 	short  blue;   /**< Blue-Intensity in range [0..1000] */
-} RGB1000;
+#if WITH_GRADIENTS
 
 struct xa_gradient
 {
-	unsigned long allocs;
+	struct xa_data_hdr *allocs;
 	short wmask, hmask;
 	short w, h;
 	short method;
@@ -18,7 +10,6 @@ struct xa_gradient
 	short steps[8];
 	struct rgb_1000 c[16];
 };
-#endif
 
 #define START 0x1111
 #define STOP  0x1112
@@ -72,3 +63,44 @@ enum {
 	TEXT_GRADIENT
 };
 
+/* import from win_draw.c */
+extern struct xa_gradient otop_vslide_gradient;
+extern struct xa_gradient otop_hslide_gradient;
+extern struct xa_gradient otop_vslider_gradient;
+extern struct xa_gradient otop_hslider_gradient;
+extern struct xa_gradient utop_vslide_gradient;
+extern struct xa_gradient utop_hslide_gradient;
+extern struct xa_gradient utop_vslider_gradient;
+extern struct xa_gradient utop_hslider_gradient;
+extern struct xa_gradient otop_title_gradient;
+extern struct xa_gradient utop_title_gradient;
+extern struct xa_gradient otop_info_gradient;
+extern struct xa_gradient utop_info_gradient;
+extern struct xa_gradient otop_grey_gradient;
+extern struct xa_gradient utop_grey_gradient;
+
+extern struct xa_gradient alert_otop_title_gradient;
+extern struct xa_gradient alert_utop_title_gradient;
+extern struct xa_gradient alert_utop_grey_gradient;
+extern struct xa_gradient slist_otop_vslide_gradient;
+extern struct xa_gradient slist_otop_hslide_gradient;
+extern struct xa_gradient slist_otop_vslider_gradient;
+extern struct xa_gradient slist_otop_hslider_gradient;
+extern struct xa_gradient slist_utop_vslide_gradient;
+extern struct xa_gradient slist_utop_hslide_gradient;
+extern struct xa_gradient slist_utop_vslider_gradient;
+extern struct xa_gradient slist_utop_hslider_gradient;
+extern struct xa_gradient slist_otop_title_gradient;
+extern struct xa_gradient slist_utop_title_gradient;
+extern struct xa_gradient slist_otop_info_gradient;
+extern struct xa_gradient slist_utop_info_gradient;
+extern struct xa_gradient slist_otop_grey_gradient;
+extern struct xa_gradient slist_utop_grey_gradient;
+
+#define XA_GRADIENT(g) , g
+
+#else
+
+#define XA_GRADIENT(g)
+
+#endif
