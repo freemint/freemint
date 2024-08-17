@@ -1161,7 +1161,7 @@ wc_match (const char *name, const char *template, bool nocase)
  * copy found name into result if not 0 (and node != 0)
  */
 static long
-wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
+wc_stat64(int mode, const char *node, const char *fn, struct stat *st, char *result)
 {
 	struct dirstruct dirh;
 	int len;
@@ -1171,7 +1171,7 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
 	long r;
 
 	/*
-	 * If path empth, try the filename on its own (->use pwd?)
+	 * If path empty, try the filename on its own (->use pwd?)
 	 */
 	if (!node)
 	{
@@ -1222,9 +1222,70 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
 }
 
 /*
+ * split 'fn' into filepath and filename, do wildcard-match of (parentpath\\filepath, filename)
+ * and copy into 'path'
+ */
+static long
+wc_split_fn(char *path, int path_len, const char *parentpath, const char *fn, const char *fn_pathsep)
+{
+	long parentpath_len = strlen(parentpath);
+	const char *fname = fn;
+	char fpath[PATH_MAX];
+	long fpath_len = 0;	/* excluding separator */
+	struct stat st;
+	char result[PATH_MAX];
+	long r;
+
+	if (fn_pathsep)
+	{
+		fname = fn_pathsep + 1;
+		fpath_len = fn_pathsep - fn;
+	}
+
+	strcpy(fpath, parentpath);
+	if (parentpath[parentpath_len-1] == '/' || parentpath[parentpath_len-1] == '\\')
+	{
+		fpath[parentpath_len-1] = '\0';
+		parentpath_len--;
+	}
+
+	if (fpath_len > 0)
+	{
+		strcat(fpath, "\\");
+		parentpath_len++;
+
+		memcpy(fpath + parentpath_len, fn, fpath_len);
+		fpath[parentpath_len + fpath_len] = '\0';
+	}
+
+	r = wc_stat64(0, fpath, fname, &st, result);
+	DIAGS(("shell_find: '%s\\%s' :: %ld", fpath, fname, r));
+	if (r == 0)
+	{
+		char *d = "";
+		int n = 0;
+
+		if (*fpath == '/' || *fpath == '\\')
+		{
+			n = 1;
+			d = "u:\\";
+		}
+
+		sprintf(path, path_len, "%s%s\\%s", d, &fpath[n], result);
+	}
+
+	return r;
+}
+
+/*
  * search-strategy:
  *
- * 1. filename has an absolute path -> goto 6.
+ * 1. filename ('fn') is an absolute path -> goto 6.
+ *
+ * Otherwise, treat filename ('fn') as a possible filepath + filename, where filename can
+ * represent a filter for the wildcard search. Always return a valid GEMDOS path
+ * (i.e. unix /path is converted into u:\path -- the backslash is important, some
+ * applications depend on it!)
  *
  * 2. split path from filename -> filepath, filename
  *
@@ -1235,7 +1296,9 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
  *
  * 5. if filename does not contain a path-component do a wildcard-search for filename in $PATH
  *
- * 6. look for filename without any processing
+ * 6. do wildcard-search for clients current path\[filepath\]filename
+ *
+ * 7. look for filename without any processing
  *
  * wildcard-search: case-insensitive, wildcards ? and * possible (DOS-like pattern-matching)
  *
@@ -1243,157 +1306,109 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
 char *
 shell_find(int lock, struct xa_client *client, char *fn)
 {
-	char *path, pathsep;
-	char cwd[256];
-	char result[PATH_MAX];
-
+	const long fn_len = strlen(fn);
+	char *path;
+	const long path_len = PATH_MAX*2 - 1;
 	struct stat st;
 	long r;
+	char* p;
 
-	const char *kh;
-	int f = 0, l, n;
-	long len = PATH_MAX * 2;
+	if (fn_len == 0 || fn[fn_len-1] == '\\' || fn[fn_len-1] == '/')
+		return NULL;
 
-	path = kmalloc(len);
-	if (path)
+	path = kmalloc(path_len + 1);
+	if (!path)
 	{
-		char *p=0, *pf = fn, c=0;
-
-		if ( !( ( isalpha(*fn) && *(fn + 1) == ':' )
-			|| *fn == '/' || *fn == '\\' ) )	/* no absolute path given */
-		{
-			char fpath[PATH_MAX];
-			p = strrchr( fn, '\\');
-			if( !p )
-				p = strrchr( fn, '/');
-			if( p )	/* filename contains directory */
-			{
-				c = *p;
-				*p = 0;
-				strcpy( fpath, fn );
-				fn = p+1;
-			}
-			else if( *client->home_path )
-			{
-				p = strrchr( client->home_path, '\\');
-				if( !p )
-				{
-					p = strrchr( client->home_path, '/');
-					c = '/';
-				}
-				else
-					c = '\\';
-			}
-
-			DIAGS(("shell_find for %s '%s',p='%s'", client->name, fn ? fn : "~", p));
-
-			/* check $HOME directory */
-			if (cfg.usehome )
-			{
-				kh = get_env(lock, "HOME=");
-				if( kh )
-				{
-					if( p )	/* append path from filename */
-					{
-						sprintf( fpath, sizeof(fpath)-1, "%s%c%s", kh, c, pf );
-						kh = fpath;
-					}
-					r = wc_stat64(0, kh, fn, &st, result);
-					DIAGS(("[2]  --   try: '%s\\%s' :: %ld", kh, fn, r));
-					if (r == 0)
-					{
-						sprintf(path, len, "%s%c%s", kh, c, result);
-						return path;
-					}
-				}
-			}
-
-			/* try the file spec in the apps' dir */
-			kh = client->home_path;
-			r = wc_stat64(0, kh, pf, &st, result);
-			DIAGS(("[0]  --    try: '%s' :: %ld", fn, r));
-			if (r == 0 )
-			{
-				sprintf(path, len, "%s%c%s", kh, c, result);
-				return path;
-			}
-
-			if( !p )	/* only search PATH if fn does not contain pathsep */
-			{
-				kh = get_env(lock, "PATH=");
-				/* the PATH env could be simply absent */
-				if (kh)
-				{
-					/* Check our PATH environment variable */
-					/* l = strlen(cwd); */
-					/* cwd uninitialized; after sprintf? or is it kh? or is it sizeof? */
-					l = strlen(kh);
-
-						/* eval path seperator */
-					if( strchr( kh, ',' ) )
-						pathsep = ',';
-					else if( strchr( kh, ';' ) )
-						pathsep = ';';
-					else
-						pathsep = ':';
-
-					strcpy(cwd, kh);
-					while (f < l)
-					{
-						n = f;
-						while ( cwd[n] && cwd[n] != pathsep )
-						{
-							if (cwd[n] == '/')
-								cwd[n] = '\\';
-							n++;
-						}
-						if (cwd[n-1] == '\\')
-							cwd[n-1] = '\0';
-						cwd[n] = '\0';
-
-						r = wc_stat64(0, cwd + f, fn, &st, result);
-						DIAGS(("[3]  --   try: '%s\\%s' :: %ld", cwd + f, fn, r));
-						if (r == 0)
-						{
-							sprintf(path, len, "%s\\%s", cwd + f, result);
-							return path;
-						}
-
-						f = n + 1;
-					}
-				}
-			}
-
-			/* Try clients current path: */
-			sprintf(cwd, sizeof(cwd), "%c:%s", letter_from_drive(client->xdrive), client->xpath);
-			r = wc_stat64(0, cwd, fn, &st, result);
-			DIAGS(("[4]  --   try: '%s\\%s' :: %ld", cwd, fn, r));
-			if (r == 0)
-			{
-				sprintf(path, len, "%c:%s\\%s", letter_from_drive(client->xdrive), client->xpath, result);
-				return path;
-			}
-		}
-
-		if( p )
-		{
-			fn = pf;
-			*p = c;
-		}
-		/* Last ditch - try the file spec on its own */
-		r = wc_stat64(0, NULL, fn, &st, 0);
-		DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
-		if (r == 0)
-		{
-			strncpy(path, fn, len);
-			return path;
-		}
-
-		kfree(path);
-		path = NULL;
+		BLOG((0, "shell_find: out of memory"));
+		return NULL;
 	}
 
-	DIAGS((" - %lx", (unsigned long)path));
+	if (!((isalpha(*fn) && *(fn + 1) == ':') || *fn == '/' || *fn == '\\'))
+	{
+		/* no absolute path given */
+		const char *kh;
+		char cwd[PATH_MAX];
+
+		p = strrchr(fn, '\\');
+		if (!p)
+			p = strrchr(fn, '/');
+
+		DIAGS(("shell_find for %s '%s', p='%s'", client->name, fn ? fn : "~", p ? p : "~"));
+
+		/* check $HOME directory */
+		if (cfg.usehome && (kh = get_env(lock, "HOME="))
+			&& wc_split_fn(path, path_len, kh, fn, p) == 0)
+			goto shell_find_done;
+
+		/* check client-home directory */
+		if (wc_split_fn(path, path_len, client->home_path, fn, p) == 0)
+			goto shell_find_done;
+
+		/* check $PATH environment variable */
+		if (!p && (kh = get_env(lock, "PATH=")))
+		{
+			char pathsep;
+			int i = 0, j;
+
+			/* eval path seperator */
+			if(strchr(kh, ','))
+				pathsep = ',';
+			else if(strchr(kh, ';'))
+				pathsep = ';';
+			else
+				pathsep = ':';
+
+			for (j = 0; kh[j]; j++)
+			{
+				if (kh[j] == pathsep)
+				{
+					memcpy(cwd, &kh[i], j - i);
+					cwd[j - i] = '\0';
+
+					if (wc_split_fn(path, path_len, cwd, fn, p) == 0)
+						goto shell_find_done;
+
+					i = j + 1;
+				}
+			}
+		}
+
+		/* check clients current path */
+		sprintf(cwd, sizeof(cwd), "%c:%s", letter_from_drive(client->xdrive), client->xpath);
+		if (wc_split_fn(path, path_len, cwd, fn, p) == 0)
+			goto shell_find_done;
+	}
+
+	/* last ditch - try the file spec on its own */
+	r = wc_stat64(0, NULL, fn, &st, NULL);
+	DIAGS(("shell_find: '%s' :: %ld", fn, r));
+	if (r == 0)
+	{
+		char *d = "";
+
+		if (*fn == '/' || *fn == '\\')
+		{
+			fn++;
+			d = "u:\\";
+		}
+
+		sprintf(path, path_len, "%s%s", d, fn);
+		goto shell_find_done;
+	}
+
+	kfree(path);
+	path = NULL;
+	return path;
+
+shell_find_done:
+	path[path_len] = '\0';
+	for (p = path; *p; p++)
+	{
+		if (*p == '/')
+			*p = '\\';
+	}
+
+	DIAGS(("shell_find: final path: '%s'", path));
 	return path;
 }
 
