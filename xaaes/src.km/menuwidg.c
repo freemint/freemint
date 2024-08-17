@@ -335,10 +335,21 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			mn->wt->links++;
 			if ((attach_to->ob_type & 0xff) == G_STRING)
 			{
-				char *text;
+				char *text = object_get_spec(attach_to)->free_string;
+				long len = strlen(text);
 
-				text = object_get_spec(attach_to)->free_string;
-				text[strlen(text) - 1] = mn == &desk_popup ? '\2' : '>';
+				if (mn == &desk_popup)
+					text[len - 1] = '\002';
+				else if (len >= 2)
+				{
+					/*
+					 * Atari's AES doesn't enforce the padding whatsoever.
+					 * The indicator must be placed at strlen()-2 per Atari.
+					 * Atari's AES simply clobbers whatever character is there and
+					 * doesn't care what is on either side of it and displays it as is.
+					 */
+					text[len - 2] = '>';
+				}
 			}
 			ret = 1;
 		}
@@ -375,7 +386,8 @@ detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item)
 			char *text;
 
 			text = object_get_spec(attach_to)->free_string;
-			text[strlen(text) - 1] = ' ';
+			/* detach_menu() is never called for desk_popup */
+			text[strlen(text) - 2] = ' ';
 		}
 
 		if (xt->prev)
