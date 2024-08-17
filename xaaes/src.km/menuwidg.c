@@ -314,11 +314,11 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 				client->attach->prev = new;
 			client->attach = new;
 
-		/* A menu is attached by replacing ob_spec (the text string)
-		 * to point to a structure in the above allocated table.
-		 * The text string pointer is moved to the very first location of that
-		 * structure. The remainder being additional information.
-		 */
+			/* A menu is attached by replacing ob_spec (the text string)
+			 * to point to a structure in the above allocated table.
+			 * The text string pointer is moved to the very first location of that
+			 * structure. The remainder being additional information.
+			 */
 
 			/* OK now we can attach the menu */
 			menu_spec(mn->wt->tree, mn->menu.mn_menu);
@@ -333,24 +333,12 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			new->on_open = on_open;
 			new->data = data;
 			mn->wt->links++;
-			if (mn != &desk_popup && (attach_to->ob_type & 0xff) == G_STRING)
+			if ((attach_to->ob_type & 0xff) == G_STRING)
 			{
 				char *text;
-				int len;
 
-				/*
-				 * Some applications (like RSM) already have an arrow character at
-				 * the position where the submenu indicator should
-				 * be displayed.
-				 * Some other applications like GBE have a totally different
-				 * character at that position, and expects us to replace it.
-				 */
 				text = object_get_spec(attach_to)->free_string;
-				len = (int)strlen(text);
-				if (len >= 3 && text[len - 3] == ' ' && text[len - 1] == ' ')
-					text[len - 2] = ' ';
-				else if (len >= 2 && text[len - 2] == ' ')
-					text[len - 1] = ' ';
+				text[strlen(text) - 1] = mn == &desk_popup ? '\2' : '>';
 			}
 			ret = 1;
 		}
@@ -382,6 +370,13 @@ detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item)
 		attach_to->ob_flags &= ~OF_SUBMENU;
 		xt->to = NULL;
 		xt->to_item = 0;
+		if ((attach_to->ob_type & 0xff) == G_STRING)
+		{
+			char *text;
+
+			text = object_get_spec(attach_to)->free_string;
+			text[strlen(text) - 1] = ' ';
+		}
 
 		if (xt->prev)
 			xt->prev->next = xt->next;
