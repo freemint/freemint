@@ -815,9 +815,9 @@ XA_menu_attach(int lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_menu, client, "menu_attach %d", pb->intin[0]));
 
-	pb->intout[0] = 1;
+	pb->intout[0] = 1;	/* non-error return code by default */
 
-	if( pb->addrin[1] == 0 )
+	if( pb->addrin[1] == 0 )	/* mdata NULL? */
 	{
 		if( md != ME_INQUIRE )
 			md = ME_REMOVE;

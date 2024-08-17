@@ -574,6 +574,40 @@ init_objects(void)
 {
 	clear_edit(&nil_wt.e);
 	clear_focus(&nil_wt);
+#if 0
+	short f;
+
+	clear_edit(&nil_tree.e);
+	clear_focus(&nil_tree);
+
+	for (f = 0; f <= G_UNKNOWN; f++)
+		/* Anything with a NULL pointer won't get called */
+		objc_jump_table[f] = NULL;
+
+	objc_jump_table[G_BOX     ] = d_g_box;
+	objc_jump_table[G_TEXT    ] = d_g_text;
+	objc_jump_table[G_BOXTEXT ] = d_g_boxtext;
+	objc_jump_table[G_IMAGE   ] = d_g_image;
+	objc_jump_table[G_PROGDEF ] = d_g_progdef;
+	objc_jump_table[G_IBOX    ] = d_g_ibox;
+	objc_jump_table[G_BUTTON  ] = d_g_button;
+	objc_jump_table[G_BOXCHAR ] = d_g_boxchar;
+	objc_jump_table[G_STRING  ] = d_g_string;
+	objc_jump_table[G_FTEXT   ] = d_g_ftext;
+	objc_jump_table[G_FBOXTEXT] = d_g_fboxtext;
+	objc_jump_table[G_ICON    ] = d_g_icon;
+	objc_jump_table[G_TITLE   ] = d_g_title;
+	objc_jump_table[G_CICON   ] = d_g_cicon;
+
+// 	objc_jump_table[G_SWBUTTON] = d_g_swbutton;
+	objc_jump_table[G_POPUP   ] = d_g_button;
+// 	objc_jump_table[G_WINTITLE] = d_g_wintitle;
+// 	objc_jump_table[G_EDIT    ] = d_g_edit;
+
+	objc_jump_table[G_SHORTCUT] = d_g_string;
+	objc_jump_table[G_SLIST   ] = d_g_slist;
+	objc_jump_table[G_EXTBOX  ] = d_g_box;
+#endif
 }
 
 /*

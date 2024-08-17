@@ -657,8 +657,6 @@ pCB_app_options(char *line)
 #endif
 			else if (!strnicmp(s, "winframe_size", 13))
 				get_argument(s + 13, &opts->thinframe);
-			else if (!strnicmp(s, "submenu_indicator", 17))
-				get_argument(s + 17, &opts->submenu_indicator);
 			else if (!strnicmp(s, "inhibit_hide", 12))
 				get_boolarg(s + 12, &opts->inhibit_hide);
 			else if (!strnicmp(s, "clwtna", 6))
