@@ -633,8 +633,8 @@ msgid  "XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.c
 msgstr "XaAES: Не выбрана оболочка AES, проверьте переменную 'shell =' в файле xaaes.cnf."
 
 #: MNU_CLIENTS:75
-msgid  "  Clients \003"
-msgstr "  Программы "
+msgid  "  Clients \002"
+msgstr "  Программы \002"
 
 #: XA_HELP_FILE:76
 msgid  "xa_help.txt"

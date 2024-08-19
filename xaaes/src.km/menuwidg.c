@@ -333,14 +333,15 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			new->on_open = on_open;
 			new->data = data;
 			mn->wt->links++;
-			if ((attach_to->ob_type & 0xff) == G_STRING)
+			/*
+			 * client menu is excluded here because it already has a down arrow
+			 */
+			if ((attach_to->ob_type & 0xff) == G_STRING && mn != &desk_popup)
 			{
 				char *text = object_get_spec(attach_to)->free_string;
 				long len = strlen(text);
 
-				if (mn == &desk_popup)
-					text[len - 1] = '\002';
-				else if (len >= 2)
+				if (len >= 2)
 				{
 					/*
 					 * Atari's AES doesn't enforce the padding whatsoever.

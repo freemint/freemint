@@ -637,8 +637,8 @@ msgid  "XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.c
 msgstr "XaAES: Nenastaven ¾ádný shell AES; viz promìnná 'shell =' v xaaes.cnf."
 
 #: MNU_CLIENTS:75
-msgid  "  Clients \003"
-msgstr "  Klienti "
+msgid  "  Clients \002"
+msgstr "  Klienti \002"
 
 #: XA_HELP_FILE:76
 msgid  "xa_help.txt"
