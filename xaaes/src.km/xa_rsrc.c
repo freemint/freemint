@@ -1517,7 +1517,7 @@ ResourceBitblk(RSHDR *hdr, int num)
 			is the return value.
 		 Well at least TERADESK now works the same as with other AES's */
 
-static char *
+char *
 ResourceString(RSHDR *hdr, int num)
 {
 	char **index;

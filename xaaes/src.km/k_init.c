@@ -72,8 +72,6 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
-#define RSCFILE_VERSION "0.1.6"
-
 struct xa_module_api xam_api;
 
 static char *xaaes_sysfile(const char *);
@@ -924,21 +922,12 @@ k_init(unsigned short dev, unsigned short mc)
 	 * Version check the aessys resource
 	 */
 	{
-		char *t = 0;
-		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
-		int gt = 0;
-		if( about )
-			t = object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext;
+		const char *rsm_crc;
 
-		if ( !t || about[RSC_VERSION].ob_type != G_TEXT )
+		rsm_crc = ResourceString(C.Aes_rsc, _RSM_CRC_);
+		if (rsm_crc == NULL || strcmp(rsm_crc, _RSM_CRC_STRING_) != 0)
 		{
-			display("ERROR: wrong resource file: %s - use version "RSCFILE_VERSION"!", cfg.rsc_name);
-			return -1;
-		}
-		if ( (ob_count_objs(about, 0, -1) < RSC_VERSION) || ( gt = strcmp(t, RSCFILE_VERSION)) )
-		{
-			const char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
-			display("ERROR: %s resource file (current:%s)(%s) - use version "RSCFILE_VERSION"!", s, t, cfg.rsc_name);
+			display("ERROR: %s: resource version mismatch!", cfg.rsc_name);
 			return -1;
 		}
 	}

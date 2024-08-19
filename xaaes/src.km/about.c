@@ -557,7 +557,7 @@ open_about(int lock, struct xa_client *client, bool open, char *fn)
 
 			(obtree + ABOUT_OK)->ob_y += h * 2;//3 - 2;
 			(obtree + ABOUT_OK)->ob_height -= h;
-			for( i = ABOUT_VERSION - 1; i <= RSC_VERSION; i++ )
+			for( i = ABOUT_VERSION - 1; i <= ABOUT_TARGET; i++ )
 			{
 				if( i != ABOUT_OK )
 					(obtree + i)->ob_flags |= OF_HIDETREE;

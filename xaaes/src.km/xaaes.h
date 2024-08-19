@@ -1,30 +1,34 @@
 /*
  * resource set indices for xaaes
  *
- * created by ORCS 2.17
+ * created by ORCS 2.18
  */
 
 /*
- * Number of Strings:        418
+ * Number of Strings:        416
  * Number of Bitblks:        0
  * Number of Iconblks:       2
  * Number of Color Iconblks: 30
  * Number of Color Icons:    38
- * Number of Tedinfos:       30
- * Number of Free Strings:   118
+ * Number of Tedinfos:       29
+ * Number of Free Strings:   119
  * Number of Free Images:    0
- * Number of Objects:        291
+ * Number of Objects:        290
  * Number of Trees:          13
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          75002
+ * Total file size:          74974
  */
 
+#ifdef RSC_NAME
 #undef RSC_NAME
+#endif
 #ifndef __ALCYON__
 #define RSC_NAME "xaaes"
 #endif
+#ifdef RSC_ID
 #undef RSC_ID
+#endif
 #ifdef xaaes
 #define RSC_ID xaaes
 #else
@@ -35,16 +39,16 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 418
-#define NUM_FRSTR 118
+#define NUM_STRINGS 416
+#define NUM_FRSTR 119
 #define NUM_UD 0
 #define NUM_IMAGES 4
 #define NUM_BB 0
 #define NUM_FRIMG 0
 #define NUM_IB 2
 #define NUM_CIB 30
-#define NUM_TI 30
-#define NUM_OBS 291
+#define NUM_TI 29
+#define NUM_OBS 290
 #define NUM_TREE 13
 #endif
 
@@ -113,7 +117,6 @@
 #define ABOUT_DATE                         9 /* STRING in tree ABOUT_XAAES */
 #define ABOUT_OK                          10 /* BUTTON in tree ABOUT_XAAES */
 #define ABOUT_TARGET                      12 /* STRING in tree ABOUT_XAAES */
-#define RSC_VERSION                       13 /* TEXT in tree ABOUT_XAAES */ /* max len 5 */
 
 #define DEF_DESKTOP                        5 /* form/dialog */
 #define DESKTOP                            0 /* BOX in tree DEF_DESKTOP */
@@ -474,7 +477,7 @@
 /* XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf. */
 
 #define MNU_CLIENTS                       75 /* Free string */
-/*   Clients  */
+/*   Clients  */
 
 #define XA_HELP_FILE                      76 /* Free string */
 /* xa_help.txt */
@@ -603,6 +606,8 @@
 #define BBL_RTPAGE                       117 /* Free string */
 /* Page right */
 
+#define _RSM_CRC_                        118 /* Free string */
+#define _RSM_CRC_STRING_ "& RSM-crc >1D84< crc-MSR $"
 
 
 
