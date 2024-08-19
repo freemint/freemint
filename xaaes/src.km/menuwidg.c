@@ -349,7 +349,7 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 					 * Atari's AES simply clobbers whatever character is there and
 					 * doesn't care what is on either side of it and displays it as is.
 					 */
-					text[len - 2] = wt->owner->options.submenu_indicator == 0 ? '\003' : '>';
+					text[len - 2] = wt->owner->options.submenu_indicator;
 				}
 			}
 			ret = 1;
