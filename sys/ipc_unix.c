@@ -709,6 +709,8 @@ long
 un_namei (const struct sockaddr *addr, short addrlen, long *index)
 {
 	struct sockaddr_un un;
+	XATTR attr;
+	long r;
 
 	if (!addr)
 		return EDESTADDRREQ;
@@ -727,6 +729,19 @@ un_namei (const struct sockaddr *addr, short addrlen, long *index)
 	{
 		DEBUG (("unix: un_namei: domain not AF_UNIX"));
 		return EAFNOSUPPORT;
+	}
+
+	r = sys_f_xattr (0, un.sun_path, &attr);
+	if (r)
+	{
+		DEBUG (("un_namei: Fxattr(%s) -> %ld", un.sun_path, r));
+		return r;
+	}
+
+	if (S_ISFIFO(attr.mode))
+	{
+		DEBUG (("un_namei: %s is a FIFO not a socket", un.sun_path));
+		return EFTYPE;
 	}
 
 	return un_cache_lookup (un.sun_path, index);
