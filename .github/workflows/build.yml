@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install SSH keys
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
         env:
           SSH_ID: ${{ secrets.SSH_ID }}
         run: ./.scripts/install_ssh_id.sh
@@ -71,7 +71,7 @@ jobs:
           ./.scripts/before_script.sh
           ./.scripts/build.sh
       - name: deploy
-        if: ${{ github.event_name == 'push' && matrix.cpu_target != 'deb' }}
+        if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.cpu_target != 'deb' }}
         env:
           COMMITER_NAME: ${{ github.event.commits[0].author.name }}
           COMMITER_EMAIL: ${{ github.event.commits[0].author.email }}
