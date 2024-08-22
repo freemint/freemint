@@ -35,7 +35,7 @@
 # include "mint/mint.h"
 
 
-long un_cache_lookup (char *, long *);
+long un_cache_lookup (char *, long *, XATTR *);
 long un_cache_remove (char *);
 
 

@@ -35,28 +35,20 @@ struct lookup_cache
 static struct lookup_cache f_cache[CACHE_ENTRIES];
 
 long
-un_cache_lookup (char *name, long *index)
+un_cache_lookup (char *name, long *index, XATTR *attr)
 {
-	XATTR attr;
 	short dirty_idx, i;
 	long r, fd, stamp;
 
 	static short last_deleted = 0;
 
-	r = sys_f_xattr (1, name, &attr);
-	if (r)
-	{
-		DEBUG (("unix: un_cache_lookup: Fxattr(%s) -> %ld", name, r));
-		return r;
-	}
-
 	dirty_idx = -1;
-	stamp = MK_STAMP (attr.mtime, attr.mdate);
+	stamp = MK_STAMP (attr->mtime, attr->mdate);
 	for (i = 0; i < CACHE_ENTRIES; i++)
 	{
 		if (f_cache[i].valid == CACHE_VALID &&
-			f_cache[i].inode == attr.index &&
-			f_cache[i].dev == attr.dev)
+			f_cache[i].inode == attr->index &&
+			f_cache[i].dev == attr->dev)
 		{
 			if (f_cache[i].stamp == stamp)
 			{
@@ -107,8 +99,8 @@ un_cache_lookup (char *name, long *index)
 	}
 
 
-	f_cache[dirty_idx].dev = attr.dev;
-	f_cache[dirty_idx].inode = attr.index;
+	f_cache[dirty_idx].dev = attr->dev;
+	f_cache[dirty_idx].inode = attr->index;
 	f_cache[dirty_idx].stamp = stamp;
 	f_cache[dirty_idx].un_index = *index;
 	f_cache[dirty_idx].valid = CACHE_VALID;
