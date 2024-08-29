@@ -103,6 +103,7 @@
 # and have the menu and top-window if any.
 # The special name 'shell' sets the focus to the desktop given by the
 # shell-directive.
+focus = shell
 
 #####################################################################
 # allow_setexc (default:-1)
@@ -646,7 +647,6 @@ redraw_timeout = 2000
 #     2 - This will top the previously topped client, regardless
 #         of windows. Even when the previously active client dont
 #         have any windows, it will get topped.
-#
 #--------------------------------------------------------------------
 # icn_pal_name = <string>
 # (set mapping-palette for icons)
@@ -670,7 +670,6 @@ redraw_timeout = 2000
 #
 # Set widgets-palette
 # app_options = aessys, ..., icn_pal_name = nvdi
-
 #--------------------------------------------------------------------
 #	alt_shortcuts = <value>
 # (Add shortcuts to dialog/alert)
@@ -707,15 +706,15 @@ redraw_timeout = 2000
 #
 #  example:
 #  app_options = HDDRUTIL, standard_font_point = 10
-#
 #--------------------------------------------------------------------
-#  submenu_indicator = <value>  default: '>'
+#  submenu_indicator = <value>  default: 62
 #
 # Controls how the attachment of a submenu is indicated.
 #
 # 0 = Use "right arrow" (0x03)
 # anything else = use that character code
-#                 Classic XaAES uses 62 ('>'), the default
+#                 Classic XaAES uses 62 ('>')
+
 #######################################################################
 #
 # This default setting will make XaAES look closer to n.aes, but
