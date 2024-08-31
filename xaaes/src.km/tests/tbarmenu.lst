@@ -1,0 +1,167 @@
+REM #lib new lib
+'
+@init_vars
+@init_rsc
+'
+DEFFILL 0       !background color
+winh_&=WIND_CREATE(&X111111,_DX,_DY,_DW,_DH)
+~WIND_SET(winh_&,30,HIWORD(tbar_%),CARD(tbar_%),0,0)    !toolbar
+~WIND_OPEN(winh_&,_DX,_DY,_DW\2,_DH\2)
+'
+DO
+  event_&=EVNT_MULTI(&X10011,2,1,1,0,0,0,0,0,0,0,0,0,0,NULL,0,mx_&,my_&,mk_&,sk_&,ky_&,nc_&)
+  IF BTST(event_&,4)          !menu/window event?
+    @event_message
+  ENDIF
+  IF BTST(event_&,1)          !mouse button event?
+    @event_mouse
+  ENDIF
+  IF BTST(event_&,0)          !key event?
+    @event_key
+  ENDIF
+LOOP UNTIL ep_!
+'
+~WIND_CLOSE(winh_&)
+~WIND_DELETE(winh_&)
+~RSRC_FREE()
+EDIT
+> PROCEDURE event_key
+  IF BYTE(ky_&)=27
+    ep_!=TRUE
+  ENDIF
+RETURN
+PROCEDURE event_message
+  LOCAL ob&,ax&,ay&,aw&,ah&,x&,y&,it&
+  '
+  SELECT MSG(0)
+  CASE 20       !redraw?
+    @wind_redraw(MSG(3),MSG(4),MSG(5),MSG(6),MSG(7))
+  CASE 21
+    ~WIND_SET(winh_&,10,0,0,0,0)
+  CASE 22         !close?
+    ep_!=TRUE
+  CASE 23         !full?
+    ~WIND_GET(winh_&,5,ax&,ay&,aw&,ah&)
+    IF RC_EQUAL(ax&,ay&,aw&,ah&,_DX,_DY,_DW,_DH)        !at max?
+      ~WIND_GET(winh_&,6,ax&,ay&,aw&,ah&)
+      ~WIND_SET(winh_&,5,ax&,ay&,aw&,ah&)
+    ELSE
+      ~WIND_GET(winh_&,7,ax&,ay&,aw&,ah&)
+      ~WIND_SET(winh_&,5,ax&,ay&,aw&,ah&)
+    ENDIF
+  CASE 27         !size?
+    ~WIND_SET(winh_&,5,MSG(4),MSG(5),MSG(6),MSG(7))
+  CASE 28         !moved?
+    ~WIND_SET(winh_&,5,MSG(4),MSG(5),MSG(6),MSG(7))
+  CASE 37                               !toolbar?
+    ~WIND_GET(winh_&,4,ax&,ay&,aw&,ah&)
+    ob&=MSG(4)                          !title clicked
+    x&=ax&+OB_X(tbar_%,ob&)
+    y&=ay&+OB_Y(tbar_%,ob&)             !force y to work area y
+    OB_SELECTED(tbar_%,ob&)=TRUE
+    @wind_redraw_toolbar(winh_&,ob&,tbar_%)
+    SELECT ob&
+    CASE desk&
+      it&=POPUP("  item 1 |  item 2|  item 3",x&,y&,TRUE)
+    CASE file&
+      it&=POPUP("  stuff|  bacon |  more",x&,y&,TRUE)
+    CASE text&
+      it&=POPUP("  more bacon |  Atari ST|  poo|  Test app",x&,y&,TRUE)
+    ENDSELECT
+    PRINT "title=";ob&;"  item=";it&
+    OB_SELECTED(tbar_%,ob&)=FALSE
+    @wind_redraw_toolbar(winh_&,ob&,tbar_%)
+  CASE 50
+    ep_!=TRUE
+  ENDSELECT
+RETURN
+> PROCEDURE event_mouse
+RETURN
+> PROCEDURE wind_redraw_toolbar(handle&,ob&,ta%)
+  LOCAL dx&,dy&,dw&,dh&
+  LOCAL rx&,ry&,rw&,rh&
+  LOCAL d&,th&,tl&,th%,tl%,dv&
+  LOCAL ax&,ay&,aw&,ah&
+  LOCAL tw&
+  '
+  ~WIND_UPDATE(1)                     !lock out other activity while we redraw
+  ~WIND_GET(FALSE,10,tw&,dv&,dv&,dv&) !get top window
+  '
+  ' ~WIND_GET(handle&,30,th&,tl&,d&,d&)
+  ' th%=CARD{V:th&} !odd fix
+  ' tl%=CARD{V:tl&} !convert to longs
+  ' PRINT "h/l &=";th&,tl&
+  ' PRINT "h/l %=";th%,tl%
+  ' ta%=th%*65536+tl%
+  '  PRINT ta%
+  ' ta%=toolbar1_%
+  '
+  ' get dirty rectangle -> the object that neends redrawn
+  ~OBJC_OFFSET(ta%,ob&,dx&,dy&) !get object x/y
+  dw&=OB_W(ta%,ob&)             !get object w/h
+  dh&=OB_H(ta%,ob&)
+  '
+  IF tw&=handle&                                !top?
+    '    PRINT "on top"
+    ~WIND_GET(handle&,31,rx&,ry&,rw&,rh&)       !get first rectangle in the list
+    DO WHILE rw&>FALSE AND rh&>FALSE
+      IF RC_INTERSECT(dx&,dy&,dw&,dh&,rx&,ry&,rw&,rh&)=TRUE  !find intersection
+        ~OBJC_DRAW(ta%,ob&,7,rx&,ry&,rw&,rh&)
+      ENDIF
+      ~WIND_GET(handle&,32,rx&,ry&,rw&,rh&)     !get next rectangle in the list
+    LOOP                                        !keep repeating until no more rectangles
+  ELSE                                          !not on top?
+    ~WIND_GET(handle&,31,rx&,ry&,rw&,rh&)       !get first rectangle in the list
+    '  PRINT "not on top -> ";
+    IF dx&=>rx& AND dy&=>ry& AND dx&+dw&-1<=rx&+rw&-1 AND dy&+dh&-1<=ry&+rh&-1          !inside?
+      '    PRINT "not covered"
+      ~OBJC_DRAW(ta%,ob&,7,dx&,dy&,dw&,dh&)     !redraw object only, not the entire rectangle
+    ELSE                                        !not inside first rectangle?
+      PRINT "partially covered"
+      ~FORM_DIAL(0,0,0,0,0,dx&,dy&,dw&,dh&)     !use workaround
+      ~FORM_DIAL(3,0,0,0,0,dx&,dy&,dw&,dh&)
+    ENDIF
+  ENDIF
+  '
+  ~WIND_UPDATE(0)                          !reenable other GEM activity
+  '
+RETURN
+> PROCEDURE wind_redraw(handle&,dx&,dy&,dw&,dh&)
+  LOCAL ax&,ay&,aw&,ah&
+  LOCAL rx&,ry&,rw&,rh&
+  '
+  ~WIND_UPDATE(1)                                            !lock out other activity while we redraw
+  ~WIND_GET(handle&,4,ax&,ay&,aw&,ah&)                       !work area of our window
+  ~WIND_GET(handle&,11,rx&,ry&,rw&,rh&)                      !get first rectangle in the list
+  GHIDEM
+  DO WHILE OR(rw&,rh&)
+    IF RC_INTERSECT(dx&,dy&,dw&,dh&,rx&,ry&,rw&,rh&)         !intersect?
+      CLIP rx&,ry&,rw&,rh&                   !need this for screen edges
+      PBAR rx&,ry&,rw&,rh&
+    ENDIF
+    ~WIND_GET(handle&,12,rx&,ry&,rw&,rh&)                      !next rectangle in the list
+  LOOP
+  GSHOWM
+  ~WIND_UPDATE(0)                         !enable other GEM activity
+RETURN
+> PROCEDURE init_vars
+  CLR ep_!
+RETURN
+> PROCEDURE init_rsc
+  '
+  IF RSRC_LOAD(CURDIR$+"test.rsc")=0
+    ~ALERT(3,"rsc not found",1," Abort ")
+    EDIT
+  ENDIF
+  '
+  REM Resource file indices for TEST.
+  '
+  LET tbar&=0 ! Form/Dialog-box
+  LET desk&=1 ! STRING in tree TBAR
+  LET file&=2 ! STRING in tree TBAR
+  LET text&=3 ! TEXT in tree TBAR
+  '
+  ~RSRC_GADDR(0,tbar&,tbar_%)
+  '
+RETURN
+' eof
