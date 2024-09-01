@@ -141,7 +141,7 @@ report_buserr(void)
 	
 	DEBUG((alertbuf));
 	
-	if (p->debug_level >= ALERT_LEVEL)
+	if (debug_level >= ALERT_LEVEL || p->debug_level >= ALERT_LEVEL)
 	{
 		if (!_ALERT (alertbuf))
 		{
