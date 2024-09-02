@@ -593,6 +593,47 @@ static void *svmotv = NULL;
 static void *svbutv = NULL;
 static void *svwhlv = NULL;
 
+/* shortened NVDI structur */
+struct _nvdi_struct
+{
+	short version;
+	unsigned long date;
+	short conf;
+};
+
+
+static short disable_nvdi_errors(void)
+{
+	unsigned long cookie;
+	struct _nvdi_struct	*nvdi_struct;
+	short ret;
+	
+	if (get_toscookie(COOKIE_NVDI, &cookie) == 0 && cookie != 0)
+	{
+		nvdi_struct = (struct _nvdi_struct *)cookie;
+		ret = nvdi_struct->conf;
+		nvdi_struct->conf |= 0x0002;  /* turn error compatibility on */
+		nvdi_struct->conf &= ~0x0040; /* turn alerts off */
+		return ret;
+	}
+	return 0;
+}
+
+
+static void enable_nvdi_errors(short conf)
+{
+	unsigned long cookie;
+	struct _nvdi_struct	*nvdi_struct;
+	
+	if (get_toscookie(COOKIE_NVDI, &cookie) == 0 && cookie != 0)
+	{
+		nvdi_struct = (struct _nvdi_struct *)cookie;
+		nvdi_struct->conf = conf;
+	}
+}
+
+
+
 /*
  * initialise the mouse device
  */
@@ -646,7 +687,14 @@ init_moose(void)
 
 				if (vecs.whlv)
 				{
+					short conf;
+					
+					/*
+					 * NVDI does not have that call, and may report an error
+					 */
+					conf = disable_nvdi_errors();
 					vex_wheelv(C.P_handle, vecs.whlv, &svwhlv);
+					enable_nvdi_errors(conf);
 					BLOG((false, "Wheel support present"));
 				}
 				else
@@ -2048,7 +2096,16 @@ k_exit(int wait)
 		vex_butv(C.P_handle, svbutv, &b);
 
 		if (svwhlv)
+		{
+			short conf;
+
+			/*
+			 * NVDI does not have that call, and may report an error
+			 */
+			conf = disable_nvdi_errors();
 			vex_wheelv(C.P_handle, svwhlv, &h);
+			enable_nvdi_errors(conf);
+		}
 	}
 
 	k_shutdown();
