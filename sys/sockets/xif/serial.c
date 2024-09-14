@@ -295,8 +295,6 @@ serial_init (void)
 	}
 	
 	glfd = f_open (pname, O_NDELAY|O_WRONLY|O_CREAT|O_GLOBAL);
-	if (glfd < 100)
-		glfd += 100;
 	
 	f_chmod (pname, 0600);
 	
@@ -396,9 +394,7 @@ serial_open (struct netif *nif, char *device,
 		sl->flags &= ~SL_INUSE;
 		return 0;
 	}
-	if (sl->fd < 100)
-		sl->fd += 100;
-	
+
 	if (serial_make_raw (sl->fd))
 	{
 		DEBUG (("serial_open: cannot make tty raw."));
