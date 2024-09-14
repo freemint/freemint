@@ -1,3 +1,10 @@
+ Version 0.71 (22.07.99, fn)
+	- bugfix fr Partitionen gr”žer 4 GB
+ 	
+ Version 0.7 (18.04.99, fn)
+	- Neuer Schalter fr Software-Schreibschutz
+	- Stark erweiterter Info-Dialog
+ 	
  Version 0.6 (03.09.98)
 	- Beim Start als APP wird das Laufwerk vom aktiven Verzeichnis selektiert.
 	  -> Wenn man FSetter bei Thing als Applikation mit Startpfad 'Fenster'
