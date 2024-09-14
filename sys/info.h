@@ -182,8 +182,6 @@ extern char const greet2[];
 #define ERR_dma_deblock_on_inv_handle "dma_deblock on invalid handle %lu"
 #define ERR_dma_addroottimeout "dma_block: addroottimeout failed!"
 
-/* dosfile.c */
-
 /* filesys.c */
 #define ERR_fsys_inv_fdcwd "In changedrv() called from %s, invalid fd/cwd"
 #define MSG_fsys_files_were_open "Files were open on the changed drive (0x%x, %s)!"

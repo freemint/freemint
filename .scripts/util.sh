@@ -49,6 +49,7 @@ copy_m68k_modules() {
 	cp "$SRC/sys/sockets/xif/asix_${TARGET}.xif" "$SYSDIR/asix.xix"
 	cp "$SRC/sys/sockets/xif/picowifi_${TARGET}.xif" "$SYSDIR/picowifi.xix"
 	cp "$SRC/sys/sockets/xif/plip_${TARGET}.xif" "$SYSDIR/plip.xif"
+	cp "$SRC/sys/sockets/xif/slip_${TARGET}.xif" "$SYSDIR/slip.xif"
 	cp "$SRC/sys/xdd/audio/.compile_$TARGET/audiodev.xdd" "$SYSDIR"
 	cp "$SRC/sys/xdd/flop-raw/.compile_$TARGET/flop_raw.xdd" "$SYSDIR"
 }

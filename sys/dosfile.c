@@ -48,14 +48,34 @@ sys_f_open (const char *name, short mode)
 	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
+	int globl = 0;
 	long ret;
 
 	TRACE (("Fopen(%s, %x)", name, mode));
 
-	if (mode & O_GLOBAL) {
-	   ALERT("O_GLOBAL is obsolete, please update your driver (%s)",name);
-	   return EINVAL;
-        }
+# if O_GLOBAL
+	if (mode & O_GLOBAL)
+	{
+		TRACE (("O_GLOBAL Fopen(%s, %x)", name, mode));
+
+		if (stricmp (name, "u:\\dev\\console") == 0 || stricmp (name, "u:\\pipe\\sld") == 0)
+		{
+			if (p->p_cred->ucr->euid)
+			{
+				DEBUG (("Fopen(%s): O_GLOBAL denied for non root", name));
+				return EPERM;
+			}
+
+			p = rootproc;
+			globl = 1;
+		}
+		else
+		{
+			DEBUG (("Fopen(%s): O_GLOBAL denied", name));
+			return EPERM;
+		}
+	}
+# endif
 
 	/* make sure the mode is legal */
 	mode &= O_USER;
@@ -80,8 +100,14 @@ sys_f_open (const char *name, short mode)
 	/* activate the fp, default is to close non-standard files on exec */
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
 
-	TRACE (("Fopen: returning %d", fd));
-	return fd;
+# if O_GLOBAL
+	if (globl)
+		/* we just opened a global handle */
+		fd |= 0x8000;
+# endif
+
+	TRACE (("Fopen: returning %04x", fd));
+	return (long)fd & 0x0000ffffL;
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
@@ -99,6 +125,14 @@ sys_f_create (const char *name, short attrib)
 	long ret;
 
 	TRACE (("Fcreate(%s, %x)", name, attrib));
+
+# if O_GLOBAL
+	if (attrib & O_GLOBAL)
+	{
+		DEBUG (("Fcreate(%s): O_GLOBAL denied", name));
+		return EPERM;
+	}
+# endif
 
 	assert (p->p_fd && p->p_cwd);
 
