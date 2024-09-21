@@ -425,7 +425,6 @@ create_filesystem() {
 	cp -r "$TERADESK_DIR" "$SYSROOT/opt/GEM"
 	cp -r "$QED_DIR" "$SYSROOT/opt/GEM"
 	cp -r "$COPS_DIR" "$SYSROOT/opt/GEM"
-	cp -r "$HYPVIEW_DIR" "$SYSROOT/opt/GEM"
 	cp -r "$TOSWIN2_DIR" "$SYSROOT/opt/GEM"
 	
 	# can't go to copy_guides because that is called for all builds

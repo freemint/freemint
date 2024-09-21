@@ -11,7 +11,7 @@ case $CPU_TARGET in
 esac
 
 cd .scripts
-for package in toswin2 qed cops hypview
+for package in toswin2 qed cops
 do
 	unset PACKAGE_VERSION
 	PACKAGE_VERSION=$(wget -q -O - "$DOWNLOAD_DIR/${package}/.latest_version")
