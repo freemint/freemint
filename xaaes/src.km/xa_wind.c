@@ -1684,22 +1684,25 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 
 	case WF_DCOLOR:
 	case WF_COLOR:
-		if (cmd == WF_DCOLOR)
-			DIAGS(("WF_DCOLOR %d for %s, %d,%d", o[1], c_owner(client),o[2],o[3]));
-		else
-			DIAGS(("WF_COLOR %d for %s", o[1], c_owner(client)));
+		DIAGS(("%s %d for %s", setget(cmd), pb->intin[2], c_owner(client)));
+		/*
+		 * FIXME: WF_DCOLOR should only be valid for window handle 0
+		 *        WF_COLOR should only be valid for window handle != 0
+		 */
 		if (w->active_theme->get_widgcolor)
 		{
-			if (o[1] <= W_BOTTOMER)
-			{
-				union { short c[8]; BFOBSPEC cw[4]; } col;
+			short elem = pb->intin[2];
 
-				(*w->active_theme->get_widgcolor)(w, o[1], col.cw);
+			if (elem >= 0 && elem <= W_BOTTOMER)
+			{
+				union { long l[4]; BFOBSPEC cw[4]; } col;
+
+				(*w->active_theme->get_widgcolor)(w, elem, col.cw);
 				/*
 				 * Colorword is the last 16 bits of BFOBSPEC (low word)
 				 */
-				o[2] = col.c[1];
-				o[3] = col.c[3];
+				o[2] = col.l[0];
+				o[3] = col.l[2];
 			}
 			else
 			{
@@ -1709,8 +1712,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			o[0] = 0;
-
-		DIAGS(("   --   %04x", o[2]));
+		DIAGS(("   --   %04x %04x", o[2], o[3]));
 		break;
 
 	case WF_NEWDESK:
