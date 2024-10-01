@@ -713,7 +713,7 @@ void load_config(void)
 	char cnf_path[128];
 	struct cnfdata mydata;
 
-	if (*mchdir == '\0' || parse_cnf(strcat(strcpy(cnf_path, mchdir), "mint.cnf"), parser_tab, &mydata, INF_UNSET) != 0)
+	if (*mchdir == '\0' || parse_cnf(strcat(strcpy(cnf_path, mchdir), "mint.cnf"), parser_tab, &mydata, INF_UNSET | INF_OPTIONAL) != 0)
 	{
 		/* mchdir/mint.cnf not found, try sysdir/mint.cnf */
 		strcpy(cnf_path, sysdir);

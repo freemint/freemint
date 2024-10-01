@@ -840,7 +840,7 @@ long parse_cnf(const char *path, struct parser_item *parser_tab, void *data, uns
 		fp->links = 0;
 		FP_FREE(fp);
 
-		if (!(options & INF_QUIET))
+		if (!(options & INF_OPTIONAL))
 			ALERT(MSG_cnf_cant_open, path);
 	}
 	return ret;

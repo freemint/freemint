@@ -36,6 +36,7 @@ struct parsinf
 #define INF_VERBOSE   (1ul << ('V' - 'A'))
 #define INF_CONTROL   (1ul << ('C' - 'A'))
 #define INF_UNSET     (1ul << ('U' - 'A'))
+#define INF_OPTIONAL  (1ul << ('O' - 'A'))
 
 /*============================================================================*/
 /* The parser uses callbacks to start actions. Using the same interfaces, both
