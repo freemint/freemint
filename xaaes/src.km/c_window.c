@@ -760,15 +760,6 @@ set_window_title(struct xa_window *wind, const char *title, bool redraw)
 	}
 	add_window_to_tasklist( wind, title );
 }
-void
-get_window_title(struct xa_window *wind, char *dst)
-{
-	if (dst)
-	{
-		char *src = wind->wname;
-		strcpy(dst, src);
-	}
-}
 
 /*
  * ONLY call from from correct context
@@ -801,15 +792,7 @@ set_window_info(struct xa_window *wind, const char *info, bool redraw)
 		display_window(0, 46, wind, &clip);
 	}
 }
-void
-get_window_info(struct xa_window *wind, char *dst)
-{
-	if (dst)
-	{
-		char *src = wind->winfo;
-		strcpy(dst, src);
-	}
-}
+
 #if INCLUDE_UNUSED
 static void
 send_ontop(int lock)
