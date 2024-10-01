@@ -1144,7 +1144,7 @@ void write_inf(void)
 	XA_FILE *of;
 	struct helpthread_data *htd;
 
-	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
+	sprintf( buf, sizeof(buf), "%s%s", C.start_path, inf_fname );
 	of = xa_fopen( buf, O_WRONLY|O_CREAT|O_TRUNC);
 
 	if( !of )
@@ -1225,7 +1225,7 @@ void read_inf(void)
 {
 	struct cnfdata mydata;
 	char buf[256];
-	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
+	sprintf( buf, sizeof(buf), "%s%s", C.start_path, inf_fname );
 	BLOG((0,"%s:read_inf:%s", get_curproc()->name, buf));
 	parse_cnf(buf, inf_tab, &mydata, INF_QUIET);
 }

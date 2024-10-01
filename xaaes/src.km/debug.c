@@ -335,7 +335,7 @@ profile( const char *t, ...)
 	if( !fp ){
 		char *msg = "--profile started--\n";
 
-		sprintf( ebuf, sizeof(ebuf), "%s\\%s", C.start_path, Name );
+		sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, Name );
 		fp = kernel_open( ebuf, O_RDWR, NULL,NULL);
 		if( !fp )
 			fp = kernel_open( ebuf, O_RDWR|O_CREAT|O_TRUNC, NULL,NULL);
