@@ -35,6 +35,7 @@
 
 # include "iov.h"
 
+typedef unsigned short sa_family_t;
 
 /* socket types */
 enum so_type
@@ -97,15 +98,32 @@ struct sockaddr
 	char	sa_data[14];
 };
 
+#define IS_MULTICAST(x)	(((x) & htonl(0xf0000000)) == htonl(0xe0000000))
+
+/*
+ *  Desired design of maximum size and alignment.
+ */
+#define _SS_MAXSIZE 	128
+#define _SS_ALIGNSIZE	sizeof(unsigned short) /* May be unsigned long ?*/
+
+#define _SS_PAD1SIZE   ((2 * _SS_ALIGNSIZE - sizeof (sa_family_t)) % _SS_ALIGNSIZE)
+#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
+
+struct sockaddr_storage {
+    sa_family_t	ss_family;
+    char		__ss_pad1[_SS_PAD1SIZE];
+    unsigned long	__ss_align[_SS_PAD2SIZE / sizeof(unsigned long) + 1];
+};
+
 /* structure used with sendmsg() and recvmsg() */
 struct msghdr
 {
 	struct sockaddr	*msg_name;
-	long		msg_namelen;
+	long			msg_namelen;
 	struct iovec	*msg_iov;
-	long		msg_iovlen;
-	void		*msg_accrights;
-	long		msg_accrightslen;
+	long			msg_iovlen;
+	void			*msg_accrights;
+	long			msg_accrightslen;
 };
 
 
