@@ -642,7 +642,7 @@ XA_wdlg_close(int lock, struct xa_client *client, AESPB *pb)
 	struct wdlg_info *wdlg;
 	short handle;
 
-	CONTROL(0,3,1)
+	CONTROL2(0,3,1, 0,1,1)
 
 	pb->intout[0] = 0;
 	if (*(const unsigned char *)pb->addrin != 0xae)
@@ -655,8 +655,11 @@ XA_wdlg_close(int lock, struct xa_client *client, AESPB *pb)
 	wind = get_wind_by_handle(lock, handle);
 	if (wind && (wdlg = wind->wdlg))
 	{
-		pb->intout[1] = wind->r.g_x;
-		pb->intout[2] = wind->r.g_y;
+		if (pb->control[N_INTOUT] >= 3)
+		{
+			pb->intout[1] = wind->r.g_x;
+			pb->intout[2] = wind->r.g_y;
+		}
 		close_window(lock, wind);
 		pb->intout[0] = 1;
 	}

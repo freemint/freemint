@@ -181,17 +181,17 @@ void diag(enum debug_item item, struct xa_client *client, const char *t, ...) __
 
 #if DEBUG_CONTROL
 #define CONTROL(nintin,nintout,naddrin) {short *co = pb->control; \
-			 if (co[1] != nintin || co[2] != nintout || co[3] != naddrin) \
-				diags(D_cl,nintin,co[1],nintout,co[2],naddrin,co[3]); }
+			 if (co[N_INTIN] != nintin || co[N_INTOUT] != nintout || co[N_ADDRIN] != naddrin) \
+				diags(D_cl,nintin,co[1],nintout,co[N_INTOUT],naddrin,co[N_ADDRIN]); }
 #define CONTROL2(nintin,nintout,naddrin, nintin2,nintout2,naddrin2) {short *co = pb->control; \
-			 if ((co[1] != nintin || co[2] != nintout || co[3] != naddrin) && \
-			     (co[1] != nintin2 || co[2] != nintout2 || co[3] != naddrin2))\
-				diags(D_cl,nintin,co[1],nintout,co[2],naddrin,co[3]); }
+			 if ((co[N_INTIN] != nintin || co[N_INTOUT] != nintout || co[N_ADDRIN] != naddrin) && \
+			     (co[N_INTIN] != nintin2 || co[N_INTOUT] != nintout2 || co[N_ADDRIN] != naddrin2))\
+				diags(D_cl,nintin,co[N_INTIN],nintout,co[N_INTOUT],naddrin,co[N_ADDRIN]); }
 #define CONTROL3(nintin,nintout,naddrin, nintin2,nintout2,naddrin2, nintin3,nintout3,naddrin3) {short *co = pb->control; \
-			 if ((co[1] != nintin || co[2] != nintout || co[3] != naddrin) && \
-			     (co[1] != nintin2 || co[2] != nintout2 || co[3] != naddrin2) && \
-			     (co[1] != nintin3 || co[2] != nintout3 || co[3] != naddrin3))\
-				diags(D_cl,nintin,co[1],nintout,co[2],naddrin,co[3]); }
+			 if ((co[N_INTIN] != nintin || co[N_INTOUT] != nintout || co[N_ADDRIN] != naddrin) && \
+			     (co[N_INTIN] != nintin2 || co[N_INTOUT] != nintout2 || co[N_ADDRIN] != naddrin2) && \
+			     (co[N_INTIN] != nintin3 || co[N_INTOUT] != nintout3 || co[N_ADDRIN] != naddrin3))\
+				diags(D_cl,nintin,co[N_INTIN],nintout,co[N_INTOUT],naddrin,co[N_ADDRIN]); }
 #endif
 
 #else /* GENERATE_DIAGS */
