@@ -381,6 +381,8 @@ inet_ioctl (struct socket *so, short cmd, void *buf)
 	{
 		case SIOCSIFLINK:
 		case SIOCGIFNAME:
+		case SIOCGIFNAME_ETH:
+		case SIOCGIFINDEX:
 		case SIOCGIFCONF:
 		case SIOCGIFFLAGS:
 		case SIOCSIFFLAGS:
