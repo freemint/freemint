@@ -1949,7 +1949,7 @@ change_outfile(struct xa_pdlg_info *pdlg, short idx)
 					  file, "Select output file",
 					  handle_fs, cancel_fs, pdlg);
 			pdlg->client->status |= CS_FSEL_INPUT;
-			(*pdlg->client->block)(pdlg->client, 21);
+			(*pdlg->client->block)(pdlg->client);
 			pdlg->client->status &= ~CS_FSEL_INPUT;
 
 			if (pdlg->filesel[0])
@@ -3258,7 +3258,7 @@ XA_pdlg_do(int lock, struct xa_client *client, AESPB *pb)
 		open_window(lock, wind, wind->rc);
 
 		client->status |= CS_FORM_DO;
-		(*client->block)(client, 0);
+		(*client->block)(client);
 		client->status &= ~CS_FORM_DO;
 
 		pdlg->flags &= ~1;

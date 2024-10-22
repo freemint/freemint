@@ -46,12 +46,12 @@ short dispatch_selcevent(struct xa_client *client, void *f, bool cancel);
 
 
 void do_block(struct xa_client *client);
-void cBlock(struct xa_client *client, int which);
-void Block(struct xa_client *client, int which);
-void Unblock(struct xa_client *client, unsigned long value, int which);
+void cBlock(struct xa_client *client);
+void Block(struct xa_client *client);
+void Unblock(struct xa_client *client, unsigned long value);
 
 void multi_intout(struct xa_client *client, short *o, int evnt);
-void cancel_evnt_multi(struct xa_client *client, int which);
+void cancel_evnt_multi(struct xa_client *client);
 
 void TP_entry(void *client);
 void TP_terminate(int lock, struct c_event *ce, bool cancel);

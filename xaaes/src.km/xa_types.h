@@ -2146,7 +2146,7 @@ struct xa_client
 	struct xa_aesmsg_list *crit_msg;	/* Critical AES messages - these are prioritized */
 	struct xa_aesmsg_list *irdrw_msg;	/* Internal redraw messages */
 
-	void	(*block)(struct xa_client *client, int which);
+	void	(*block)(struct xa_client *client);
 
 #define CS_LAGGING		0x00000001
 #define CS_CE_REDRAW_SENT 	0x00000002

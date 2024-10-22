@@ -644,7 +644,7 @@ menu_popup(int lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result
 				 py - y);
 
 			client->status |= CS_BLOCK_MENU_NAV;
-			(*client->block)(client, 1);
+			(*client->block)(client);
 			client->status &= ~CS_BLOCK_MENU_NAV;
 
 			ob->ob_x = old_x;
@@ -765,7 +765,7 @@ XA_form_popup(int lock, struct xa_client *client, AESPB *pb)
 				 y);
 
 			client->status |= CS_BLOCK_MENU_NAV;
-			(*client->block)(client, 1);
+			(*client->block)(client);
 			client->status &= ~CS_BLOCK_MENU_NAV;
 
 			ob->ob_x = old_x;

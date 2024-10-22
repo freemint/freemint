@@ -1861,7 +1861,7 @@ XA_fnts_do(int lock, struct xa_client *client, AESPB *pb)
 		open_window(lock, wind, wind->rc);
 
 		client->status |= CS_FORM_DO;
-		(*client->block)(client, 0);
+		(*client->block)(client);
 		client->status &= ~CS_FORM_DO;
 		wt->flags &= ~WTF_FBDO_SLIST;
 		close_window(lock, wind);

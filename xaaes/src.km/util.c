@@ -350,29 +350,3 @@ char *xa_readline( char *buf, long size, XA_FILE *fp )
 
 	return 0;
 }
-
-
-#if 0
-bool
-xa_invalid(int which, int pid, void *addr, long size, bool allowNULL)
-{
-	if (allowNULL && addr == NULL)
-		return false;
-
-	{
-		long rep;
-
-		rep = Pvalidate(pid, addr, size, NULL);
-		DIAGS(("[%d]xa_invalid::%ld for %d: %ld(%lx) + %ld(%lx) --> %ld(%lx)",
-			which,
-			rep,
-			pid,
-			addr,addr,
-			size,size,
-			(long)addr+size,
-			(long)addr+size ));
-
-		return rep != 0;
-	}
-}
-#endif

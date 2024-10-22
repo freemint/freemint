@@ -3840,7 +3840,7 @@ do_fsel_exinput(int lock, struct xa_client *client, AESPB *pb, const char *text)
 					cancel_fsel, NULL))
 		{
 			client->status |= CS_FSEL_INPUT;
-			(*client->block)(client, 21);
+			(*client->block)(client);
 			client->status &= ~CS_FSEL_INPUT;
 			pb->intout[0] = 1;
 			if ((pb->intout[1] = fs->ok))

@@ -1073,7 +1073,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 			C.updatelock_count++;
 
 			do_form_alert(lock, client, 4, xa_strings(SDALERT), XAAESNAME);
-			Block(client, 0);
+			Block(client);
 #if WITH_BBL_HELP
 			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
 #endif

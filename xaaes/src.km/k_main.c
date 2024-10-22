@@ -265,7 +265,7 @@ post_cevent(struct xa_client *client,
 		{
 			DIAGS(("kmalloc(%ld) failed, out of memory?", (long)sizeof(*c)));
 		}
-		Unblock(client, 1, 3);
+		Unblock(client, 1);
 	}
 }
 
@@ -366,13 +366,13 @@ do_block(struct xa_client *client)
 
 #if ALT_CTRL_APP_OPS
 void
-Block(struct xa_client *client, int which)
+Block(struct xa_client *client)
 {
-	(*client->block)(client, which);
+	(*client->block)(client);
 }
 #endif
 void
-cBlock(struct xa_client *client, int which)
+cBlock(struct xa_client *client)
 {
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
@@ -388,7 +388,7 @@ cBlock(struct xa_client *client, int which)
 	{
 		if (client->usr_evnt & 1)
 		{
-			cancel_evnt_multi(client, 1);
+			cancel_evnt_multi(client);
 			cancel_mutimeout(client);
 		}
 		else
@@ -413,7 +413,7 @@ cBlock(struct xa_client *client, int which)
 	 */
 	while (!client->usr_evnt)
 	{
-		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+		DIAG((D_kern, client, "Blocked %s", c_owner(client)));
 
 		do_block(client);
 
@@ -436,7 +436,7 @@ cBlock(struct xa_client *client, int which)
 		{
 			if (client->usr_evnt & 1)
 			{
-				cancel_evnt_multi(client, 2);
+				cancel_evnt_multi(client);
  				cancel_mutimeout(client);
 			}
 			else
@@ -452,7 +452,7 @@ cBlock(struct xa_client *client, int which)
 	}
 	if (client->usr_evnt & 1)
 	{
-		cancel_evnt_multi(client, 3);
+		cancel_evnt_multi(client);
 		cancel_mutimeout(client);
 	}
 	else
@@ -460,7 +460,7 @@ cBlock(struct xa_client *client, int which)
 }
 
 static void
-iBlock(struct xa_client *client, int which)
+iBlock(struct xa_client *client)
 {
 	XAESPB *a = C.Hlp_pb;
 
@@ -478,7 +478,7 @@ iBlock(struct xa_client *client, int which)
 	{
 		if (client->usr_evnt & 1)
 		{
-			cancel_evnt_multi(client, 4);
+			cancel_evnt_multi(client);
 			cancel_mutimeout(client);
 		}
 		else
@@ -510,7 +510,7 @@ iBlock(struct xa_client *client, int which)
 	 */
 	while (!client->usr_evnt)
 	{
-		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+		DIAG((D_kern, client, "Blocked %s", c_owner(client)));
 
 		if (client->tp_term)
 		{
@@ -538,7 +538,7 @@ iBlock(struct xa_client *client, int which)
 		{
 			if (client->usr_evnt & 1)
 			{
-				cancel_evnt_multi(client, 5);
+				cancel_evnt_multi(client);
  				cancel_mutimeout(client);
 			}
 			else
@@ -560,7 +560,7 @@ iBlock(struct xa_client *client, int which)
 	}
 	if (client->usr_evnt & 1)
 	{
-		cancel_evnt_multi(client, 6);
+		cancel_evnt_multi(client);
 		cancel_mutimeout(client);
 	}
 	else
@@ -568,7 +568,7 @@ iBlock(struct xa_client *client, int which)
 }
 
 void
-Unblock(struct xa_client *client, unsigned long value, int which)
+Unblock(struct xa_client *client, unsigned long value)
 {
 	/* the following served as a excellent safeguard on the
 	 * internal consistency of the event handling mechanisms.
@@ -578,7 +578,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
  	else
 	{
 		if (value == XA_OK)
-			cancel_evnt_multi(client, 7);
+			cancel_evnt_multi(client);
 
 		if (client->blocktype == XABT_SELECT)
 			wakeselect(client->p);
@@ -586,7 +586,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 			wake(IO_Q, client->sleeplock); //(long)client);
 	}
 
-	DIAG((D_kern, client,"[%d]Unblocked %s 0x%lx", which, client->proc_name, value));
+	DIAG((D_kern, client,"Unblocked %s 0x%lx", client->proc_name, value));
 }
 
 static void *svmotv = NULL;
@@ -1119,7 +1119,7 @@ static const char aesthread_name[] = "aesthred";
 static const char aeshlp_name[] = "XaSYS";
 
 static void
-aesthread_block(struct xa_client *client, int which)
+aesthread_block(struct xa_client *client)
 {
 	while ((client->irdrw_msg || client->cevnt_count))
 	{
@@ -1151,7 +1151,7 @@ aesthread_entry(void *c)
 
 	for (;;)
 	{
-		aesthread_block(client, 0);
+		aesthread_block(client);
 		if (client->tp_term)
 			break;
 	}
@@ -1221,7 +1221,7 @@ helpthread_entry(void *c)
 				client->waiting_pb = (AESPB *)pb;
 				client->waiting_for = MU_MESAG|XAWAIT_MULTI;
 // 				BLOG((true, "enter block %lx", client->waiting_pb->addrin[0]));
-				(*client->block)(client, 0);
+				(*client->block)(client);
 				/*if (*t)
 				{
 					break;
@@ -1345,7 +1345,7 @@ sshutdown_timeout(struct proc *p, long arg)
 						else
 						{
 							flag = client;
-							Unblock(client, 1, 4);
+							Unblock(client, 1);
 						}
 					}
 				}

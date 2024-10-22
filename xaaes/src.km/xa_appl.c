@@ -326,7 +326,7 @@ init_client(int lock, bool sysclient)
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
 	/* Initially, client isn't waiting on any event types */
-	cancel_evnt_multi(client, 0);
+	cancel_evnt_multi(client);
 	/* Initial settings for the clients mouse cursor */
 	client->mouse = ARROW;		/* Default client mouse cursor is an arrow */
 	client->mouse_form = NULL;

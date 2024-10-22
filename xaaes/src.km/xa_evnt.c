@@ -497,7 +497,7 @@ check_queued_events(struct xa_client *client)
 
 got_evnt:
 	client->status |= CS_CALLED_EVNT;
-	cancel_evnt_multi(client, 222);
+	cancel_evnt_multi(client);
 	return true;
 }
 
@@ -605,7 +605,7 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
 
 	client->waiting_for = events | XAWAIT_MULTI;
 	client->waiting_pb = pb;
-	(*client->block)(client, 1);
+	(*client->block)(client);
 	return XAC_DONE;
 }
 
@@ -614,14 +614,14 @@ XA_evnt_multi(int lock, struct xa_client *client, AESPB *pb)
  * - Called when any one of the events we were waiting for occurs
  */
 void
-cancel_evnt_multi(struct xa_client *client, int which)
+cancel_evnt_multi(struct xa_client *client)
 {
 	if (client != C.Aes && client != C.Hlp) {
 		client->waiting_for = 0;
 		client->em.flags = 0;
 		client->waiting_pb = NULL;
 	}
-	DIAG((D_kern,NULL,"[%d]cancel_evnt_multi for %s", which, c_owner(client)));
+	DIAG((D_kern,NULL,"cancel_evnt_multi for %s", c_owner(client)));
 }
 
 /*
@@ -642,7 +642,9 @@ XA_evnt_mesag(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		(*client->block)(client, 2);
+	{
+		(*client->block)(client);
+	}
 
 	return XAC_DONE;
 }
@@ -668,7 +670,9 @@ XA_evnt_button(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_BUTTON;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		(*client->block)(client, 3);
+	{
+		(*client->block)(client);
+	}
 	return XAC_DONE;
 }
 
@@ -689,7 +693,9 @@ XA_evnt_keybd(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_KEYBD;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		(*client->block)(client, 4);
+	{
+		(*client->block)(client);
+	}
 	return XAC_DONE;
 }
 
@@ -717,7 +723,9 @@ XA_evnt_mouse(int lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		(*client->block)(client, 5);
+	{
+		(*client->block)(client);
+	}
 
 	return XAC_DONE;
 }
@@ -742,7 +750,7 @@ XA_evnt_timer(int lock, struct xa_client *client, AESPB *pb)
 		if (client->timeout) {
 			client->timeout->arg = (long)client;
 		}
-		(*client->block)(client, MIN_TIMERVAL	+ 1);
+		(*client->block)(client);
 	}
 
 	return XAC_DONE;

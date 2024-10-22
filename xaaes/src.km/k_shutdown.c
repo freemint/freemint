@@ -78,7 +78,7 @@ k_shutdown(void)
 			post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
 			while (*h && l++ < 1500)
 			{
-				Unblock(C.Hlp, 0, 0);
+				Unblock(C.Hlp, 0);
 				nap( 1500 );
 				//yield();
 			}
@@ -127,7 +127,7 @@ k_shutdown(void)
 			post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
 			while (*h)
 			{
-				Unblock(C.Aes, 0, 0);
+				Unblock(C.Aes, 0);
 				yield();
 			}
 		}

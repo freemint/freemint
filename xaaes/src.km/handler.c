@@ -685,7 +685,7 @@ XA_handler(void *_pb)
 					if (client)
 					{
 						DIAG((D_trap, client, "XA_Hand: Block client %s", client->name));
-						(*client->block)(client, 1);
+						(*client->block)(client);
 						DIAG((D_trap, client, "XA_Hand: Unblocked %s", client->name));
 					}
 					break;

@@ -265,16 +265,17 @@ int xaaes_do_form_alert( int lock, struct xa_client *client, int def_butt, char 
 		{
 			yield();
 		}
+	} else
+	{
+		(*client->block)(client);
 	}
-	else
-		(*client->block)(client, 0);
 
 	client->status &= ~CS_FORM_ALERT;
 
 	C.update_lock = NULL;
 	client->waiting_pb = NULL;
 
-	Unblock(client, 0, 10);
+	Unblock(client, XA_OK);
 
 	return intout[0];
 }
@@ -744,7 +745,7 @@ XA_form_alert(int lock, struct xa_client *client, AESPB *pb)
 	client->status |= CS_FORM_ALERT;
 	release_blocks(client);
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
-	(*client->block)(client, 0);
+	(*client->block)(client);
 	client->status &= ~CS_FORM_ALERT;
 
 	return XAC_DONE;
@@ -852,7 +853,7 @@ XA_form_error(int lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "alert_err %s", error_alert));
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, 1, error_alert, NULL);
-	(*client->block)(client, 0);
+	(*client->block)(client);
 	client->status &= ~CS_FORM_ALERT;
 
 	return XAC_DONE;
@@ -969,7 +970,7 @@ XA_form_do(int lock, struct xa_client *client, AESPB *pb)
 				}
 				client->status &= ~CS_CALLED_EVNT;
 			}
-			(*client->block)(client, 0);
+			(*client->block)(client);
 			client->status &= ~CS_FORM_DO;
 			return XAC_DONE;
 		}

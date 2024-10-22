@@ -946,7 +946,7 @@ CE_redraw_menu(int lock, struct c_event *ce, short cancel)
 				    0, 0,
 				    NULL,
 				    NULL);
-			Unblock(mc, 1, 11);
+			Unblock(mc, 1);
 		}
 	#endif
 	}

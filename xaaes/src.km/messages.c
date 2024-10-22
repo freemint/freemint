@@ -716,7 +716,7 @@ send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, un
 		}
 	}
 	queue_message(lock, dest_client, amq, qmf, msg);
-	Unblock(dest_client, 1, 123);
+	Unblock(dest_client, 1);
 }
 
 /*
