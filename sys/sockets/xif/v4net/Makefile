@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-targets = 000
+targets = 040
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
