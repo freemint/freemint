@@ -619,6 +619,9 @@ init (void)
 			case machine_firebee:
 				mch_str = "firebee";
 				break;
+			case machine_raven:
+				mch_str = "raven";
+				break;
 #ifdef WITH_NATIVE_FEATURES
 			case machine_emulator:
 				/* only when really running on aranym */
