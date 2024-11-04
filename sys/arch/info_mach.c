@@ -79,6 +79,9 @@ char *machine_str (void)
 		case machine_ct60:
 			str = "Atari Falcon/CT60";
 			break;
+		case machine_raven:
+			str = "Raven";
+			break;
 # ifdef WITH_NATIVE_FEATURES
 		case machine_emulator:
 			str = nf_name();

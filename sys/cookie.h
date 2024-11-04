@@ -87,6 +87,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_HADES	0x68616465L
 # define COOKIE__PCI	0x5f504349L
 # define COOKIE__CF_	0x5f43465fL /* ColdFire, set by FireTOS and EmuTOS */
+# define COOKIE_RAVN	0x5241564eL
 
 /* values of MCH cookie */
 # define ST		0

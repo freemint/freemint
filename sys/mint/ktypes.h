@@ -121,7 +121,8 @@ typedef enum
 	machine_hades,
 	machine_ct2,
 	machine_ct60,
-	machine_firebee
+	machine_firebee,
+	machine_raven
 #ifdef WITH_NATIVE_FEATURES
 	,
 	machine_emulator

@@ -1258,8 +1258,16 @@ init_xdd (struct kerinfo *k)
 	if (((mch != ST) && (mch != STE) && (mch != MEGASTE) && (mch != TT)))
 # endif
 	{
-		c_conws (MSG_MACHINE);
-		goto failure;
+		/* raven clone has an ST compatible mfp */
+		if ((s_system(S_GETCOOKIE, COOKIE_RAVN, (long) &mch) == 0))
+		{
+			mch = ST;
+		}
+		else
+		{
+			c_conws (MSG_MACHINE);
+			goto failure;
+		}
 	}
 
 	init_mfp (mch);
