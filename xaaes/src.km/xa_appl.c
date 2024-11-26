@@ -1293,8 +1293,8 @@ short info_tab[][4] =
 	/*10 AES shell support */
 	{
 		0x3f07,		/* supported extended bits + highest mode */
-		0,		/* 0 launch mode */
-		0,		/* 1 launch mode <-- */
+		0,		/* shel_write (0) makes previous shel_write calls invalid (false) */
+		1,		/* shel_write (1) launches program immediately (true) */
 		1		/* ARGV style via wiscr to shel_write supported */
 	},
 	/*11 window functions
