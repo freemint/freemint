@@ -398,6 +398,7 @@ identify (long mch, enum special_hw info)
 	if (fpu)
 	{
 		switch (fputype >> 16)
+		switch ((fputype >> 16) & ~1)
 		{
 			case 0x04:
 				fpu_type = !sfp ? "68881" : (sfp == 0x04 ?  "68881 & 68881 (SFP-004)" : "68881 & 68882 (SFP-004)");
