@@ -397,7 +397,6 @@ identify (long mch, enum special_hw info)
 #endif
 	if (fpu)
 	{
-		switch (fputype >> 16)
 		switch ((fputype >> 16) & ~1)
 		{
 			case 0x04:
