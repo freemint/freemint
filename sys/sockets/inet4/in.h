@@ -5,6 +5,8 @@
 # include <mint/ktypes.h>
 # include <mint/endian.h>
 
+# include <mint/socket.h>
+
 # include "sockaddr_in.h"
 
 /* well-defined IP protocols */
@@ -67,12 +69,33 @@
 # define IP_ADD_MEMBERSHIP 12	/* ip_mreq; add an IP group membership */
 # define IP_DROP_MEMBERSHIP 13	/* ip_mreq; drop an IP group membership */
 
+# define MCAST_JOIN_GROUP 19 /* MCAST_JOIN_GROUP is protocol independent */
+# define MCAST_LEAVE_GROUP 22
+
+/* Not implemented yet */
+/*
+#define IP_UNBLOCK_SOURCE		14
+#define IP_BLOCK_SOURCE			15
+#define IP_ADD_SOURCE_MEMBERSHIP	16
+#define IP_DROP_SOURCE_MEMBERSHIP	17
+#define IP_MSFILTER			18
+
+#define MCAST_BLOCK_SOURCE		20
+#define MCAST_UNBLOCK_SOURCE		21
+
+#define MCAST_JOIN_SOURCE_GROUP		23
+#define MCAST_LEAVE_SOURCE_GROUP	24
+#define MCAST_MSFILTER			25
+
+#define MCAST_EXCLUDE	0
+#define MCAST_INCLUDE	1
+*/
 
 /* structure for use with IP_OPTIONS and IP_RETOPTS */
 struct ip_opts
 {
 	struct in_addr	ip_dst;
-	char		ip_opts[40];
+	char		        ip_opts[40];
 };
 
 struct ip_mreq
@@ -80,4 +103,18 @@ struct ip_mreq
     struct in_addr imr_multiaddr;	/* IP multicast address of group */
     struct in_addr imr_interface;	/* local IP address of interface */
   };
+
+struct ip_mreqn
+{
+	struct in_addr	imr_multiaddr;		/* IP multicast address of group */
+	struct in_addr	imr_address;		/* local IP address of interface */
+	int		imr_ifindex;		/* Interface index */
+};
+
+struct group_req
+{
+	unsigned long          gr_interface;	/* interface index */
+	struct sockaddr_storage gr_group;	/* group address */
+};
+
 # endif	/* _in_h */
