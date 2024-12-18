@@ -58,8 +58,9 @@ LIBS_$(1) =
 OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
 DEFINITIONS_$(1) = $(DEFINITIONS)
 
+# STiK will access our memory, so it has to be global
 .compile_$(1)/gluestik.prg: $$(OBJS_$(1))
-	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
+	$(LD) -Wl,--mprg-flags,0x17 $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 endef
 
