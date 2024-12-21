@@ -89,34 +89,35 @@ struct PCB {
 };
 
 struct ploadinfo {
-	int fnamelen;
+	short fnamelen;
 	char *cmdlin, *fname;
 };
 
-static void error(int err, char *s, ...)
+static int error(int err, const char *s, ...)
 {
 	va_list args;
+	(void)err;
 	va_start(args, s);
 	vprintf(s, args);
 	va_end(args);
-
-	exit(err);
+	return 1;
 }
 
 int main(int argc, char *argv[])
 {
 	long d;
 	int fullpath = false;
+	int err;
 
 	if (Pdomain(1) < 0)
-		error(0, "MiNT not available.\n");
+		return error(0, "MiNT not available.\n");
 
 	if (argc > 1)
 	{
 		if (!strcmp("-f", argv[1]))
 			fullpath = true;
 		else
-			error(0, "-f: Show full path of command.\n");
+			return error(0, "-f: Show full path of command.\n");
 	}
 
 	d = Dopendir("u:\\proc\\", 1); /* /proc is always 8+3 anyway */
@@ -153,22 +154,22 @@ int main(int argc, char *argv[])
 			f = (int) Fopen(procfullname, FO_READ);
 
 			if (f < 0)
-				error(f, "Could not open %s.\n", procfullname);
+				return error(f, "Could not open %s: %d.\n", procfullname, f);
 
-			if (Fcntl(f, &pcbptr, 0x5001) < 0) /* PPROCADDR */
-				error(0, "Fcntl failed.\n");
+			if ((err = Fcntl(f, &pcbptr, 0x5001)) < 0) /* PPROCADDR */
+				return error(err, "Fcntl failed: %d\n", err);
 
 			if (Fseek((long) pcbptr, f, 0) < 0)
-				error(0, "Fseek failed.\n");
+				return error(0, "Fseek failed.\n");
 
 			if (Fread(f, sizeof(struct PCB), &pcb) != sizeof(struct PCB))
-				error(0, "Fread failed.\n");
+				return error(0, "Fread failed.\n");
 
-			if (Fcntl(f, &attr, 0x4600) < 0) /* FSTAT */
-				error(0, "FSTAT failed.\n");
+			if ((err = Fcntl(f, &attr, 0x4600)) < 0) /* FSTAT */
+				return error(0, "FSTAT failed: %d\n", err);
 
-			if (Fcntl(f, &pl,   0x500c) < 0) /* PLOADINFO */
-				error(0, "PLOADINFO failed.\n");
+			if ((err = Fcntl(f, &pl,   0x500c)) < 0) /* PLOADINFO */
+				return error(err, "PLOADINFO failed: %d\n", err);
 
 			if (!fullpath)
 			{
