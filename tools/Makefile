@@ -18,6 +18,7 @@ SUBDIRS = \
 	net-tools \
 	nfs \
 	nohog2 \
+	ps \
 	strace \
 	swkbdtbl \
 	sysctl \
