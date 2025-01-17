@@ -1212,6 +1212,17 @@ tot_rsize (MMAP map, short flag)
 }
 
 long
+totalphysmem (void)
+{
+	long size;
+
+	size = tot_rsize (core, 1);
+	size += tot_rsize (alt, 1);
+
+	return size;
+}
+
+long
 freephysmem (void)
 {
 	long size;
