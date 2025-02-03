@@ -424,16 +424,15 @@ percentage value.
 <center>
 <b>S_FLUSHCACHE</b><br>(0x0016)
 </center>
-<td>Invalidates CPU cache entries. The <b><i>arg1</b></i> is a pointer
-to the memory area whose cache entries should be invalidated, the
+<td>Flushes and invalidates CPU cache entries. The <b><i>arg1</b></i> is a pointer
+to the memory area whose cache entries should be flushed and invalidated, the
 <b><i>arg2</b></i> is the size of the area in bytes. Passing -1 as the
-<b><i>arg2</b></i> invalidates all cache entries. If the CPU features a
-separate instruction and data caches, both are flushed.
+<b><i>arg2</b></i> flushes and invalidates all cache entries. If the CPU features a
+separate instruction and data caches, the data cache is flushed and both caches are invalidated.
 <p>This call automatically recognizes caches in 68020/030/040/060 and
-handles them as appropriate. The 68060 branch cache is
-automatically invalidated too. On 68000/68010 calling this mode has no
-effect. This mode is in fact just an interface to the MiNT function
-<b>cpush()</b> used internally by the system.</p>
+handles them as appropriate. The 68060 branch cache is not invalidated, though. On
+68000/68010 calling this mode has no effect. This mode is in fact just an interface
+to the MiNT function <b>cpushi()</b> used internally by the system.</p>
 <p><i>Root privileges are <b>NOT</b> required to use this mode.</i>
 </td></tr>
 
