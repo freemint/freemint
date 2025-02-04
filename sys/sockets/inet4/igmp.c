@@ -492,93 +492,148 @@ igmp_send(struct igmp_group *group, char type)
 	}
 }
 
-long
-igmp_joingroup(ulong ifaddr, ulong groupaddr)
-{
+static long 
+igmp_joingroup_netif(struct netif *nif, ulong groupaddr){
 	struct igmp_group *group;
-	struct netif *nif;
-        struct ifaddr *ifa = NULL;
 
-	for (nif = allinterfaces; nif; nif = nif->next)
+	group = igmp_lookup_group(nif, groupaddr);
+
+	if (group)
 	{
-		ifa = if_af2ifaddr (nif, AF_INET);
-
-		if ((nif->flags & IFF_IGMP) &&
-			((ifa && ifaddr == ifa->adr.in.sin_addr.s_addr) || (ifaddr == INADDR_ANY))) 
+		if (group->group_state != IGMP_GROUP_NON_MEMBER)
 		{
-			group = igmp_lookup_group(nif, groupaddr);
-
-			if (group)
+			DEBUG(("Non member!"));
+		}
+		else
+		{
+			if ((group->use == 0) && nif->igmp_mac_filter)
 			{
-				if (group->group_state != IGMP_GROUP_NON_MEMBER)
-				{
-					DEBUG(("Non member!"));
-				}
-				else
-				{
-					if ((group->use == 0) && nif->igmp_mac_filter)
-					{
-						nif->igmp_mac_filter(nif, groupaddr, IGMP_ADD_MAC_FILTER);
-					}
-
-					igmp_send(group, IGMP_V2_MEMB_REPORT);
-
-					igmp_start_timer(group, IGMP_JOIN_DELAYING_MEMBER_TMR);
-
-					group->group_state = IGMP_GROUP_DELAYING_MEMBER;
-				}
-
-				group->use++;
-
+				nif->igmp_mac_filter(nif, groupaddr, IGMP_ADD_MAC_FILTER);
 			}
-			else
+
+			igmp_send(group, IGMP_V2_MEMB_REPORT);
+
+			igmp_start_timer(group, IGMP_JOIN_DELAYING_MEMBER_TMR);
+
+			group->group_state = IGMP_GROUP_DELAYING_MEMBER;
+		}
+		group->use++;
+		return 0;
+	}
+	else
+	{
+		return EOPNOTSUPP;
+	}
+}
+
+static long 
+igmp_leavegroup_netif(struct netif *nif, ulong groupaddr){
+	struct igmp_group *group;
+	group = igmp_lookfor_group(nif, groupaddr);
+
+	if (group)
+	{
+		if (group->use <= 1)
+		{
+			igmp_send(group, IGMP_LEAVE_GROUP);
+		}
+
+		if (nif->igmp_mac_filter)
+		{
+			nif->igmp_mac_filter(nif, groupaddr, IGMP_DEL_MAC_FILTER);
+		}
+
+		return igmp_remove_group(group);
+	}
+	else
+	{
+		group->use--;
+		return 0;
+	}
+}
+
+
+long
+igmp_joingroup(ulong ifaddr, ulong groupaddr, unsigned short ifindex)
+{
+	struct netif *nif;
+
+	if(!ifindex){
+		struct ifaddr *ifa = NULL;
+		long res, last_err = 0;
+		for (nif = allinterfaces; nif; nif = nif->next)
+		{
+			ifa = if_af2ifaddr (nif, AF_INET);
+
+			if ((nif->flags & IFF_IGMP) &&
+				((ifa && ifaddr == ifa->adr.in.sin_addr.s_addr) || (ifaddr == INADDR_ANY))) 
 			{
-				return EOPNOTSUPP;
+				res = igmp_joingroup_netif(nif, groupaddr);
+				if(res){
+					last_err = res;
+				}
+			}
+			return last_err;
+		}
+
+	}
+	else {
+
+		for (nif = allinterfaces; nif; nif = nif->next)
+		{
+			if ((nif->flags & IFF_IGMP) && (nif->index == ifindex)) 
+			{
+				if (!IS_MULTICAST(groupaddr)){
+					return EINVAL;
+				}				
+				return igmp_joingroup_netif(nif, groupaddr);
 			}
 		}
+
 	}
 
-	return 0;
+	return EOPNOTSUPP;
 }
 
 long
-igmp_leavegroup(ulong ifaddr, ulong groupaddr)
+igmp_leavegroup(ulong ifaddr, ulong groupaddr, unsigned short ifindex)
 {
-	struct igmp_group *group;
 	struct netif *nif;
+
+	if(!ifindex){
         struct ifaddr *ifa = NULL;
+		long res, last_err = 0;
 
-	for (nif = allinterfaces; nif; nif = nif->next)
-	{
-		ifa = if_af2ifaddr (nif, AF_INET);
-
-		if ((nif->flags & IFF_IGMP) &&
-			((ifa && ifaddr == ifa->adr.in.sin_addr.s_addr) || (ifaddr == INADDR_ANY))) 
+		for (nif = allinterfaces; nif; nif = nif->next)
 		{
-			group = igmp_lookfor_group(nif, groupaddr);
+			ifa = if_af2ifaddr (nif, AF_INET);
 
-			if (group)
+			if ((nif->flags & IFF_IGMP) &&
+				((ifa && ifaddr == ifa->adr.in.sin_addr.s_addr) || (ifaddr == INADDR_ANY))) 
 			{
-				if (group->use <= 1)
-				{
-					igmp_send(group, IGMP_LEAVE_GROUP);
+				res = igmp_leavegroup_netif(nif, groupaddr);
+				if(res){
+					last_err = res;
 				}
-
-				if (nif->igmp_mac_filter)
-				{
-					nif->igmp_mac_filter(nif, groupaddr, IGMP_DEL_MAC_FILTER);
-				}
-
-				igmp_remove_group(group);
-			}
-			else
-			{
-				group->use--;
 			}
 		}
+		return last_err;
 	}
+	else {
 
-	return 0;
+		for (nif = allinterfaces; nif; nif = nif->next)
+		{
+			if ((nif->flags & IFF_IGMP) && (nif->index == ifindex)) 
+			{
+				if (!IS_MULTICAST(groupaddr)){
+					return EINVAL;
+				}
+				return igmp_leavegroup_netif(nif, groupaddr);
+			}
+		}
+
+	}
+	return EOPNOTSUPP;
 }
 
 void
