@@ -97,23 +97,28 @@ then
 	if [ "$CPU_TARGET" = "02060" ]
 	then
 		# EtherNAT
-		copy_ct60_usb_modules "$USBDIR" 060
+		copy_ct60_usb_modules "$USBDIR" "060"
 		# CTPCI / Milan / Hades
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
+		# ARAnyM
+		copy_aranym_usb_modules "$USBDIR" "040"
 	elif [ "$CPU_TARGET" = "040" ]
 	then
 		# Milan / Hades
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
+		# ARAnyM
+		copy_aranym_usb_modules "$USBDIR" "040"
 	elif [ "$CPU_TARGET" = "060" ]
 	then
 		# EtherNAT
-		copy_ct60_usb_modules "$USBDIR" 060
+		copy_ct60_usb_modules "$USBDIR" "060"
 		# CTPCI / Milan / Hades
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
 	elif [ "$CPU_TARGET" = "deb" ]
 	then
 		copy_ct60_usb_modules "$USBDIR" "$CPU_TARGET"
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
+		copy_aranym_usb_modules "$USBDIR" "$CPU_TARGET"
 	fi
 else
 	copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"

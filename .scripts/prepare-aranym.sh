@@ -37,7 +37,7 @@ fi
 
 copy_usbloader "$USBDIR" "040"
 copy_usb "$USBDIR" "040"
-copy_aranym_usb_modules "$USBDIR"
+copy_aranym_usb_modules "$USBDIR" "040"
 
 copy_fonts "$FONTSDIR"
 copy_tbl "$TBLDIR"
