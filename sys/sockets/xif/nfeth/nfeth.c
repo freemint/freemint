@@ -451,7 +451,7 @@ driver_init (void)
 		nfEtherID = KERNEL->nf_ops->get_id("ETHERNET");
 
 	if ( nfEtherID == 0 ) {
-		c_conws(XIF_NAME " not installed - NatFeat not found\n\r");
+		c_conws(XIF_NAME " not installed - NatFeat not found\r\n");
 		return 1;
 	}
 
@@ -460,7 +460,7 @@ driver_init (void)
 
 	/* compare the version */
 	if ( get_nfapi_version() != NFETH_NFAPI_VERSION ) {
-		ksprintf (message, XIF_NAME " not installed - version mismatch: %ld != %d\n\r", get_nfapi_version(), NFETH_NFAPI_VERSION);
+		ksprintf (message, XIF_NAME " not installed - version mismatch: %ld != %d\r\n", get_nfapi_version(), NFETH_NFAPI_VERSION);
 		c_conws(message);
 		return 1;
 	}
@@ -578,7 +578,7 @@ driver_init (void)
 	/*
 	 * And say we are alive...
 	 */
-	strcat(message, " )\n\r");
+	strcat(message, " )\r\n");
 	c_conws (message);
 	return 0;
 }
