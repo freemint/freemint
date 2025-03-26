@@ -1034,10 +1034,35 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 			if_addr = ip_dst_addr(imr->imr_interface.s_addr);
 			multi_addr = ip_dst_addr(imr->imr_multiaddr.s_addr);
 			if (optname == IP_ADD_MEMBERSHIP)
-				return igmp_joingroup(if_addr, multi_addr);
+				return igmp_joingroup(if_addr, multi_addr, 0);
 			else
-				return igmp_leavegroup(if_addr, multi_addr);
+				return igmp_leavegroup(if_addr, multi_addr, 0);
 		}
+
+	case MCAST_JOIN_GROUP:
+	case MCAST_LEAVE_GROUP:
+		{
+			struct group_req *greq = (struct group_req *)optval;
+			struct sockaddr_in *psin;
+
+			ulong multi_addr;
+
+			if (optlen < sizeof(struct group_req) || !optval){
+				return EFAULT;
+			}
+
+			psin = (struct sockaddr_in *)&greq->gr_group;
+			if (psin->sin_family != AF_INET){
+				return EINVAL;
+			}
+			multi_addr = ip_dst_addr(psin->sin_addr.s_addr);
+
+			if (optname == MCAST_JOIN_GROUP)
+				return igmp_joingroup(0, multi_addr, (unsigned short)greq->gr_interface);
+			else
+				return igmp_leavegroup(0, multi_addr, (unsigned short)greq->gr_interface);
+		}
+
 	}
 	
 	return EOPNOTSUPP;

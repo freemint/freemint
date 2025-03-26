@@ -53,8 +53,8 @@ struct igmp_dgram
 
 
 void	igmp_init (void);
-long    igmp_joingroup(ulong ifaddr, ulong groupaddr);
-long    igmp_leavegroup(ulong ifaddr, ulong groupaddr);
+long  igmp_joingroup(ulong ifaddr, ulong groupaddr, unsigned short ifindex);
+long  igmp_leavegroup(ulong ifaddr, ulong groupaddr, unsigned short ifindex);
 long	igmp_start(struct netif *nif);
 long	igmp_stop(struct netif *nif);
 void	igmp_report_groups(struct netif *nif);
