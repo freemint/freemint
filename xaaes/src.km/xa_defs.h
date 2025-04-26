@@ -63,7 +63,7 @@
 #define ALERTTIME	1
 
 /* define 1 if CPU-caches should be saved/restored for opnwk/clswk */
-#define SAVE_CACHE_WK 0
+#define SAVE_CACHE_WK 1
 
 #define DISPLAY_LOGO_IN_TITLE	0	/* Display the XaAES logo in the title bar of each window */
 
