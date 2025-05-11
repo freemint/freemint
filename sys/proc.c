@@ -66,6 +66,629 @@ short time_slice = 2;
 
 struct proc *_cdecl get_curproc(void) { return curproc; }
 
+/* Threads stuff */
+
+void add_to_ready_queue(struct thread *t);
+void remove_from_ready_queue(struct thread *t);
+void thread_switch(struct thread *from, struct thread *to);
+long create_thread(struct proc *p, void (*func)(void*), void *arg);
+void init_thread_context(struct thread *t, void (*func)(void*), void *arg);
+void thread_start(void);
+void schedule(void);
+void thread_exit(void);
+void init_thread0(struct proc *p);
+
+struct thread *ready_queue = NULL;
+
+// Ready queue management
+void add_to_ready_queue(struct thread *t) {
+    if (!t || t->state == THREAD_RUNNING) return;
+    
+    // Check if already in queue
+    struct thread *curr = ready_queue;
+    while (curr) {
+        if (curr == t) {
+            TRACE_THREAD("Thread %d already in ready queue", t->tid);
+            return;  // Already in queue, don't add again
+        }
+        curr = curr->next_ready;
+    }
+    
+    t->state = THREAD_READY;
+    TRACE_THREAD("ADD_TO_READY_Q: Thread %d (pri %d, state %d)", 
+                t->tid, t->priority, t->state);
+    
+    // Add to end of queue to maintain fairness
+    if (!ready_queue) {
+        ready_queue = t;
+        t->next_ready = NULL;
+    } else {
+        struct thread *last = ready_queue;
+        while (last->next_ready) {
+            last = last->next_ready;
+        }
+        last->next_ready = t;
+        t->next_ready = NULL;
+    }
+}
+
+void remove_from_ready_queue(struct thread *t) {
+    if (!t || !ready_queue) return;
+    
+    TRACE_THREAD("REMOVE_FROM_READY_Q: Thread %d", t->tid);
+    
+    struct thread **pp = &ready_queue;
+    while (*pp) {
+        if (*pp == t) {
+            *pp = t->next_ready;
+            t->next_ready = NULL;
+            TRACE_THREAD("Removed thread %d from ready queue", t->tid);
+            return;
+        }
+        pp = &(*pp)->next_ready;
+    }
+    
+    TRACE_THREAD("Thread %d not found in ready queue", t->tid);
+}
+
+// Thread context switching
+void thread_switch(struct thread *from, struct thread *to) {
+    if (!to || from == to) {
+        TRACE_THREAD("Invalid thread switch request");
+        return;
+    }
+    
+    // Disable interrupts during context switch
+    unsigned short sr = splhigh();
+    
+    TRACE_THREAD("Switching threads: %d -> %d", from->tid, to->tid);
+    
+    // Save current context
+    if (save_context(&from->ctxt[CURRENT]) == 0) {
+        // This is the initial save_context call
+        
+        // Update thread states
+        from->state = THREAD_READY;
+        to->state = THREAD_RUNNING;
+        
+        // Update current thread
+        from->proc->current_thread = to;
+        
+        // Set USP for the new thread
+        TRACE_THREAD("Setting USP to %lx", to->ctxt[CURRENT].usp);
+        asm volatile (
+            "move.l %0,%%a0\n\t"
+            "move.l %%a0,%%usp"
+            : 
+            : "r" (to->ctxt[CURRENT].usp)
+            : "a0"
+        );
+        
+        // Final verification before switch
+        TRACE_THREAD("Final context before switch:");
+        TRACE_THREAD("  PC=%lx SSP=%lx USP=%lx SR=%x",
+                    to->ctxt[CURRENT].pc,
+                    to->ctxt[CURRENT].ssp,
+                    to->ctxt[CURRENT].usp,
+                    to->ctxt[CURRENT].sr);
+        
+        // Perform context switch
+        change_context(&to->ctxt[CURRENT]);
+        
+        // We should never reach here
+        TRACE_THREAD("ERROR: Returned from change_context!");
+    } else {
+        // This is the return from context switch
+        TRACE_THREAD("Returned to thread %d after context switch", from->tid);
+        spl(sr);
+    }
+}
+
+// Thread creation
+long create_thread(struct proc *p, void (*func)(void*), void *arg) {
+    // Allocate thread structure
+    struct thread *t = kmalloc(sizeof(struct thread));
+    if (!t) return -ENOMEM;
+    
+    TRACE_THREAD("Creating thread: pid=%d, func=%p, arg=%p", p->pid, func, arg);
+    
+    // Basic initialization
+    memset(t, 0, sizeof(struct thread));
+    t->tid = p->num_threads++;
+    t->proc = p;
+    t->priority = p->pri;
+    t->state = THREAD_READY;
+    
+    // Allocate stack
+    t->stack = kmalloc(STKSIZE);
+    if (!t->stack) {
+        kfree(t);
+        TRACE_THREAD("Stack allocation failed");
+        return -ENOMEM;
+    }
+    
+    t->stack_top = (char*)t->stack + STKSIZE;
+    t->stack_magic = STACK_MAGIC;
+    
+    TRACE_THREAD("Thread %d stack: base=%p, top=%p", t->tid, t->stack, t->stack_top);
+    
+    // Initialize context
+    init_thread_context(t, func, arg);
+    
+    // Link into process
+    t->next = p->threads;
+    p->threads = t;
+    
+    // IMPORTANT: If this is the first thread, set it as the current thread
+    if (p->num_threads == 1) {
+        TRACE_THREAD("Setting thread %d as current thread for process %d", t->tid, p->pid);
+        p->current_thread = t;
+        t->state = THREAD_RUNNING;
+    } else {
+        // Add to ready queue
+        add_to_ready_queue(t);
+    }
+    
+    TRACE_THREAD("Thread %d created successfully", t->tid);
+    return t->tid;
+}
+
+// Thread context initialization
+void init_thread_context(struct thread *t, void (*func)(void*), void *arg) {
+    TRACE_THREAD("Initializing context for thread %d", t->tid);
+    
+    // Clear context
+    memset(&t->ctxt[CURRENT], 0, sizeof(struct context));
+    memset(&t->ctxt[SYSCALL], 0, sizeof(struct context));
+    
+    // Set up stack pointers - ensure proper alignment
+    unsigned long ssp = ((unsigned long)t->stack_top - 64) & ~3L;
+    unsigned long usp = ((unsigned long)t->stack_top - 128) & ~3L;
+    
+    TRACE_THREAD("Stack pointers: SSP=%lx, USP=%lx", ssp, usp);
+    
+    // Store function and argument in thread structure
+    t->func = func;
+    t->arg = arg;
+    
+    // Set up initial context
+    t->ctxt[CURRENT].ssp = ssp;
+    t->ctxt[CURRENT].usp = usp;
+    t->ctxt[CURRENT].pc = (unsigned long)thread_start;
+    t->ctxt[CURRENT].sr = 0x2000;  // Supervisor mode (0x2000)
+    
+    // Create a proper exception frame for RTE
+    unsigned short *frame_ptr = (unsigned short *)(ssp - 8);
+    frame_ptr[0] = 0x0000;  // Format/Vector
+    frame_ptr[1] = 0x2000;  // SR (Supervisor mode)
+    frame_ptr[2] = (unsigned short)((unsigned long)thread_start >> 16);
+    frame_ptr[3] = (unsigned short)((unsigned long)thread_start);
+    
+    // Update SSP to point to our exception frame
+    t->ctxt[CURRENT].ssp = (unsigned long)frame_ptr;
+    
+    TRACE_THREAD("Exception frame created at %p:", frame_ptr);
+    TRACE_THREAD("  SR = %04x (supervisor mode)", frame_ptr[1]);
+    TRACE_THREAD("  PC = %04x%04x", frame_ptr[2], frame_ptr[3]);
+    
+    // Set magic values required by FreeMiNT
+    t->magic = CTXT_MAGIC;
+    
+    // Copy to SYSCALL context
+    memcpy(&t->ctxt[SYSCALL], &t->ctxt[CURRENT], sizeof(struct context));
+}
+
+// Thread start function
+void thread_start(void) {
+    TRACE_THREAD("Thread trampoline started");
+    
+    // Get the current thread
+    struct proc *p = curproc;
+    if (!p || !p->current_thread) {
+        TRACE_THREAD("thread_start: No current thread!");
+        return;
+    }
+    
+    struct thread *t = p->current_thread;
+    
+    // Get function and argument from thread structure
+    void (*func)(void*) = t->func;
+    void *arg = t->arg;
+    
+    TRACE_THREAD("Thread function=%p, arg=%p", func, arg);
+    
+    // Call the function
+    if (func) {
+        TRACE_THREAD("Calling thread function");
+        func(arg);
+        TRACE_THREAD("Thread function returned");
+    }
+    
+    // Exit the thread when done
+    TRACE_THREAD("Thread exiting");
+    thread_exit();
+    
+    // Should never reach here
+    TRACE_THREAD("ERROR: Thread didn't exit properly!");
+    while(1) { /* hang */ }
+}
+
+// Thread scheduling
+void schedule(void) {
+    struct proc *p = curproc;
+    if (!p) {
+        TRACE_THREAD("schedule: Invalid current process");
+        return;
+    }
+
+    struct thread *current = p->current_thread;
+    struct thread *next = ready_queue;
+    
+    TRACE_THREAD("schedule: current=%d ready_queue=%p", 
+                current ? current->tid : -1, ready_queue);
+
+    if (!next) {
+        TRACE_THREAD("No ready threads");
+        return;
+    }
+    
+    // If there's no current thread, just switch to the next one
+    if (!current) {
+        TRACE_THREAD("No current thread, switching to thread %d", next->tid);
+        
+        // Remove next thread from ready queue
+        remove_from_ready_queue(next);
+        
+        // Update thread states
+        next->state = THREAD_RUNNING;
+        p->current_thread = next;
+        
+        // Set USP for the new thread
+        TRACE_THREAD("Setting USP to %lx", next->ctxt[CURRENT].usp);
+        asm volatile (
+            "move.l %0,%%a0\n\t"
+            "move.l %%a0,%%usp"
+            : 
+            : "r" (next->ctxt[CURRENT].usp)
+            : "a0"
+        );
+        
+        // Perform context switch - this should never return
+        change_context(&next->ctxt[CURRENT]);
+        
+        // We should never reach here
+        TRACE_THREAD("ERROR: Returned from change_context!");
+        return;
+    }
+    
+    // IMPORTANT: Always switch to a different thread if possible
+    if (next == current && next->next_ready) {
+        next = next->next_ready;
+        TRACE_THREAD("Skipping current thread, using next=%d", next->tid);
+    }
+    
+    // If next is still current, don't switch
+    if (next == current) {
+        TRACE_THREAD("Only current thread is ready, skipping schedule");
+        return;
+    }
+    
+    TRACE_THREAD("Switching threads: %d -> %d", current->tid, next->tid);
+    
+    // Remove next thread from ready queue
+    remove_from_ready_queue(next);
+    
+    // Add current thread to ready queue if it's still runnable
+    if (current->state == THREAD_RUNNING) {
+        current->state = THREAD_READY;
+        add_to_ready_queue(current);
+        TRACE_THREAD("Added current thread %d to ready queue", current->tid);
+    }
+    
+    // Update thread states
+    next->state = THREAD_RUNNING;
+    p->current_thread = next;
+    
+    // Switch to next thread
+    thread_switch(current, next);
+}
+
+// Thread exit
+void thread_exit(void) {
+    struct proc *p = curproc;
+    if (!p) {
+        TRACE_THREAD("thread_exit: No current process");
+        return;
+    }
+    
+    struct thread *current = p->current_thread;
+    if (!current) {
+        TRACE_THREAD("thread_exit: No current thread");
+        return;
+    }
+    
+    TRACE_THREAD("Thread %d exiting", current->tid);
+    
+    unsigned short sr = splhigh();
+    
+    // Mark thread as exited
+    current->state = THREAD_EXITED;
+    
+    // Remove from ready queue
+    remove_from_ready_queue(current);
+    
+    // Save the thread ID for logging
+    int tid = current->tid;
+    
+    // Find another thread to run
+    struct thread *next = ready_queue;
+    
+    if (next) {
+        // Save context information
+        CONTEXT saved_context;
+        memcpy(&saved_context, &next->ctxt[CURRENT], sizeof(CONTEXT));
+        
+        // Remove from ready queue
+        remove_from_ready_queue(next);
+        
+        // Update thread states
+        next->state = THREAD_RUNNING;
+        p->current_thread = next;
+        
+        TRACE_THREAD("Switching to thread %d", next->tid);
+        
+        // Set USP for the new thread
+        TRACE_THREAD("Setting USP to %lx", next->ctxt[CURRENT].usp);
+        asm volatile (
+            "move.l %0,%%a0\n\t"
+            "move.l %%a0,%%usp"
+            : 
+            : "r" (next->ctxt[CURRENT].usp)
+            : "a0"
+        );
+        
+        // Detach thread from process's thread list
+        struct thread **tp;
+        for (tp = &p->threads; *tp; tp = &(*tp)->next) {
+            if (*tp == current) {
+                *tp = current->next;
+                break;
+            }
+        }
+        
+        // Decrement thread count
+        p->num_threads--;
+        
+        // Perform context switch - this should never return
+        change_context(&saved_context);
+        
+        // If we somehow get here, free resources
+        TRACE_THREAD("ERROR: Returned from change_context!");
+        
+        // Free thread resources
+        TRACE_THREAD("Freeing stack for thread %d", tid);
+        if (current->stack && tid != 0) {  // Don't free thread0's stack
+            kfree(current->stack);
+        }
+        
+        // Free the thread structure
+        TRACE_THREAD("Freeing thread %d structure", tid);
+        kfree(current);
+    } else {
+        // No other threads to run
+        TRACE_THREAD("No other threads to run after thread exit");
+        
+        // If this is thread0, we need to handle it specially
+        if (tid == 0) {
+            TRACE_THREAD("Thread0 exiting, returning to process");
+            
+            // Detach thread from process's thread list
+            struct thread **tp;
+            for (tp = &p->threads; *tp; tp = &(*tp)->next) {
+                if (*tp == current) {
+                    *tp = current->next;
+                    break;
+                }
+            }
+            
+            // Decrement thread count
+            p->num_threads--;
+            
+            // Clear current thread
+            p->current_thread = NULL;
+            
+            // Free the thread structure
+            TRACE_THREAD("Freeing thread %d structure", tid);
+            kfree(current);
+            
+            spl(sr);
+            return;
+        }
+        
+        // For other threads, we need to return to the main process
+        TRACE_THREAD("No other threads to run, returning to main process");
+        
+        // Save the process context
+        CONTEXT saved_proc_context;
+        memcpy(&saved_proc_context, &p->ctxt[CURRENT], sizeof(CONTEXT));
+        
+        // Clear current thread
+        p->current_thread = NULL;
+        
+        // Detach thread from process's thread list
+        struct thread **tp;
+        for (tp = &p->threads; *tp; tp = &(*tp)->next) {
+            if (*tp == current) {
+                *tp = current->next;
+                break;
+            }
+        }
+        
+        // Decrement thread count
+        p->num_threads--;
+        
+        // Return to the main process context
+        TRACE_THREAD("Returning to main process context");
+        change_context(&saved_proc_context);
+        
+        // If we somehow get here, free resources
+        TRACE_THREAD("ERROR: Returned from change_context to main process!");
+        
+        // Free thread resources
+        TRACE_THREAD("Freeing stack for thread %d", tid);
+        if (current->stack && tid != 0) {  // Don't free thread0's stack
+            kfree(current->stack);
+        }
+        
+        // Free the thread structure
+        TRACE_THREAD("Freeing thread %d structure", tid);
+        kfree(current);
+    }
+    
+    // We should never reach here
+    TRACE_THREAD("ERROR: Thread %d returned after exit!", tid);
+    spl(sr);
+}
+
+void init_thread0(struct proc *p) {
+    if (p->current_thread) return; // Already initialized
+    
+    struct thread *t0 = kmalloc(sizeof(struct thread));
+    if (!t0) return;
+    
+    TRACE_THREAD("Initializing thread0 for process %d", p->pid);
+    
+    memset(t0, 0, sizeof(struct thread));
+    t0->tid = 0;
+    t0->proc = p;
+    t0->priority = p->pri;
+    t0->state = THREAD_RUNNING;
+    
+    // Use process stack for thread0
+    t0->stack = p->stack;
+    t0->stack_top = (char*)p->stack + STKSIZE;
+    t0->stack_magic = STACK_MAGIC;
+    
+    // Copy process context to thread context
+    memcpy(&t0->ctxt[CURRENT], &p->ctxt[CURRENT], sizeof(CONTEXT));
+    memcpy(&t0->ctxt[SYSCALL], &p->ctxt[SYSCALL], sizeof(CONTEXT));
+    
+    // Link into process
+    t0->next = NULL;
+    p->threads = t0;
+    p->current_thread = t0;
+    p->num_threads = 1;
+    
+    TRACE_THREAD("Thread0 initialized for process %d", p->pid);
+}
+
+// Thread yielding
+long _cdecl sys_p_yieldthread(void)
+{
+    struct proc *p = curproc;
+    if (!p || !p->current_thread) {
+        TRACE_THREAD("sys_p_yield: invalid current process/thread");
+        return -EINVAL;
+    }
+
+    TRACE_THREAD("sys_p_yield: thread %d (pri %d) yielding", 
+                p->current_thread->tid, p->current_thread->priority);
+
+    struct thread *current = p->current_thread;
+    
+    // Don't yield if we're the only thread
+    if (p->num_threads <= 1) {
+        TRACE_THREAD("Only one thread, not yielding");
+        return 0;
+    }
+    
+    // Check if there are any other ready threads
+    if (!ready_queue) {
+        TRACE_THREAD("No other threads ready, not yielding");
+        return 0;
+    }
+    
+    // Save current SR
+    unsigned short sr = splhigh();
+    
+    // Remove from ready queue if present (shouldn't be necessary for current thread)
+    remove_from_ready_queue(current);
+    
+    // Add to end of ready queue
+    current->state = THREAD_READY;
+    add_to_ready_queue(current);
+    
+    // Find next thread to run
+    struct thread *next = ready_queue;
+    if (!next) {
+        // No other threads to run, just return
+        TRACE_THREAD("No other threads to run after yield");
+        current->state = THREAD_RUNNING;
+        spl(sr);
+        return 0;
+    }
+    
+    // If next is the same as current, don't switch
+    if (next == current) {
+        TRACE_THREAD("Next thread is current, not switching");
+        remove_from_ready_queue(next);
+        current->state = THREAD_RUNNING;
+        spl(sr);
+        return 0;
+    }
+    
+    // Remove next thread from ready queue
+    remove_from_ready_queue(next);
+    
+    // Update thread states
+    next->state = THREAD_RUNNING;
+    p->current_thread = next;
+    
+    // Set USP for the new thread
+    TRACE_THREAD("Setting USP to %lx", next->ctxt[CURRENT].usp);
+    asm volatile (
+        "move.l %0,%%a0\n\t"
+        "move.l %%a0,%%usp"
+        : 
+        : "r" (next->ctxt[CURRENT].usp)
+        : "a0"
+    );
+    
+    // Save current context and switch to next thread
+    if (save_context(&current->ctxt[CURRENT]) == 0) {
+        // This is the initial save_context call
+        
+        // Perform context switch - this should never return
+        change_context(&next->ctxt[CURRENT]);
+        
+        // We should never reach here
+        TRACE_THREAD("ERROR: Returned from change_context!");
+    } else {
+        // This is the return from save_context after another thread has yielded to us
+        TRACE_THREAD("Thread %d resumed after yield", current->tid);
+    }
+    
+    spl(sr);
+    return 0;
+}
+
+// Thread creation syscall
+long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack)
+{
+    TRACE_THREAD("sys_p_createthread: func=%p arg=%p stack=%p", func, arg, stack);
+	// Ensure thread0 is initialized
+	init_thread0(curproc);
+    return create_thread(curproc, func, arg);
+}
+
+// Thread exit syscall
+long _cdecl sys_p_exitthread(void) {
+    TRACE_THREAD("sys_p_exitthread called");
+    thread_exit();
+    return 0;
+}
+
+/* End of Threads stuff */
 
 /*
  * initialize the process table

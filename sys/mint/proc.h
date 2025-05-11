@@ -35,6 +35,40 @@
 # define LOGIN_NAME_MAX	32
 # define MAXLOGNAME	LOGIN_NAME_MAX
 
+/* Threads stuff */
+
+#define THREAD_CREATED  0
+#define THREAD_READY    1
+#define THREAD_RUNNING  2
+#define THREAD_BLOCKED  3
+#define THREAD_EXITED   4
+
+struct thread {
+    int tid;                     // Thread ID
+    struct proc *proc;           // Parent process
+    struct thread *next;         // Next thread in process list
+    void *stack;                 // Stack base address
+    void *stack_top;             // Top of stack area
+    unsigned long stack_magic;   // Stack integrity check
+    CONTEXT ctxt[PROC_CTXTS];    // Thread context (reuse FreeMiNT's context)
+    short state;                 // Thread state (RUNNING/READY/BLOCKED)
+    short priority;              // Thread priority
+    struct thread *next_ready;   // For ready queue
+	unsigned long magic;
+    void (*func)(void*);  // Function to execute
+    void *arg;            // Argument to pass to function	
+};
+
+#define SYS_yieldthread		0x185
+#define SYS_createthread	0x189
+#define SYS_exitthread		0x18a
+
+long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
+long _cdecl sys_p_exitthread(void);
+long _cdecl sys_p_yieldthread(void);
+
+/* End of Threads stuff */
+
 /*
  * One structure allocated per session
  */
@@ -286,6 +320,16 @@ struct proc
 
 	ulong	stack_magic;		/* to detect stack overflows	*/
 	char	stack[STKSIZE+4];	/* stack for system calls	*/
+
+/* Threads stuff */
+
+	// Add to struct proc in proc.h
+	struct thread *threads;        // Thread list
+	struct thread *current_thread; // Current thread
+	int num_threads;               // Thread count
+
+/* End of Threads stuff */
+
 };
 
 
