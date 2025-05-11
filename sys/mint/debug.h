@@ -73,5 +73,11 @@ EXITING	_cdecl	FATAL		(const char *s, ...) __attribute__((format(printf, 1, 2)))
 void		DUMPLOG		(void);
 void		do_func_key	(int);
 
+/* Thread logging */
+
+extern void debug_to_file(const char *filename, const char *fmt, ...);
+#define TRACE_THREAD(...) debug_to_file("c:\\thread.log", __VA_ARGS__)
+
+/* End of Thread logging */
 
 # endif /* _mint_debug_h */
