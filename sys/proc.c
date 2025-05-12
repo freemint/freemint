@@ -830,6 +830,11 @@ init_proc(void)
 		rootproc->p_fd->bconmap = 1;
 	rootproc->logbase = (void *) TRAP_Logbase();
 	rootproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
+
+	/* Initialize thread-related fields for root process */
+	rootproc->current_thread = NULL;
+	rootproc->threads = NULL;
+	rootproc->num_threads = 0;
 }
 
 /* remaining_proc_time():
