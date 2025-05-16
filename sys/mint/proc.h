@@ -43,6 +43,9 @@
 #define THREAD_BLOCKED  3
 #define THREAD_EXITED   4
 
+/* Thread signal handling constants */
+#define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
+
 struct thread {
     int tid;                     // Thread ID
     struct proc *proc;           // Parent process
@@ -56,8 +59,24 @@ struct thread {
     struct thread *next_ready;   // For ready queue
 	unsigned long magic;
     void (*func)(void*);  // Function to execute
-    void *arg;            // Argument to pass to function	
+    void *arg;            // Argument to pass to function
+    
+    /* Signal handling fields */
+    ulong   t_sigpending;        /* Signals pending for this thread */
+    ulong   t_sigmask;           /* Thread-specific signal mask */
+    int     t_sig_in_progress;   /* Signal currently being processed */
+    
+    /* Thread signal context */
+    void    *t_sigctx;           /* Saved context during signal handling */		
 };
+
+// struct thread_timer {
+//     int thread_id;         // Thread actuellement préempté
+//     int enabled;           // Timer actif ?
+//     TIMEOUT *timeout;      // Handle du timeout
+//     unsigned short sr;     // Etat d'interruption sauvegardé
+//     int in_handler;        // Handler en cours ?
+// } ;
 
 #define SYS_yieldthread		0x185
 #define SYS_createthread	0x189
@@ -66,6 +85,20 @@ struct thread {
 long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(void);
 long _cdecl sys_p_yieldthread(void);
+
+long _cdecl sys_p_thread_sigmask(ulong mask);
+long _cdecl sys_p_thread_signal_mode(int enable);
+long _cdecl sys_p_kill_thread(struct thread *t, int sig);
+long _cdecl sys_p_thread_handler(int sig, void (*handler)(int, void*), void *arg);
+long _cdecl sys_p_thread_sigwait(ulong mask, long timeout);
+
+ #define CURTHREAD \
+ 	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)
+ 
+/* Thread safety macros */
+#define LOCK_THREAD_SIGNALS(proc)   /* Implement locking mechanism here */
+#define UNLOCK_THREAD_SIGNALS(proc) /* Implement unlocking mechanism here */
+#define ATOMIC_THREAD_SIG_OP(proc, op) /* Implement atomic operation here */
 
 /* End of Threads stuff */
 
@@ -322,7 +355,15 @@ struct proc
 	char	stack[STKSIZE+4];	/* stack for system calls	*/
 
 /* Threads stuff */
-
+	// struct thread_timer *p_thread_timer;
+	struct {
+		int thread_id;         // Thread actuellement préempté
+		int enabled;           // Timer actif ?
+		TIMEOUT *timeout;      // Handle du timeout
+		unsigned short sr;     // Etat d'interruption sauvegardé
+		int in_handler;        // Handler en cours ?
+	} p_thread_timer;
+	
 	// Add to struct proc in proc.h
 	struct thread *threads;        // Thread list
 	struct thread *current_thread; // Current thread

@@ -111,12 +111,44 @@ struct sigacts
 	sigset_t oldmask;		/* saved mask from before sigpause */
 	long flags;			/* signal flags, below */
 	long links;			/* reference count */
+
+	/* Thread-specific signal handling */
+	int thread_signals;             /* 1 if thread-specific signals enabled */
+	
+	/* Thread-specific signal handlers */
+	struct thread_sighandler {
+		void (*handler)(int, void*);   /* Thread signal handler function */
+		void *arg;                     /* Argument to pass to handler */
+		struct thread *owner;          /* Thread that registered this handler */
+	} thread_handlers[NSIG];	
 };
 
 /* signal flags */
 # define SAS_OLDMASK	0x01		/* need to restore mask before pause */
+# define SAS_THREADED	0x02		/* process uses thread-specific signals */
+
+/* Thread signal constants */
+# define THREAD_SIGUSR1  SIGUSR1
+# define THREAD_SIGUSR2  SIGUSR2
+
+/* Signal context structure for thread signal handling */
+struct thread_sigcontext {
+	long sc_regs[16];              /* D0-D7/A0-A7 register contents */
+	long sc_pc;                    /* Program counter */
+	short sc_sr;                   /* Status register */
+	long sc_usp;                   /* User stack pointer */
+	struct thread *sc_thread;      /* Thread being interrupted */
+	int sc_sig;                    /* Signal number */
+	void *sc_handler_arg;          /* Handler argument */
+};
 
 /* helper macro */
 # define SIGACTION(p, sig)		((p)->p_sigacts->sigact[(sig)])
+
+/* Thread signal handling macros */
+# define THREAD_SIGMASK(t)          ((t)->t_sigmask)
+# define THREAD_SIGPENDING(t)       ((t)->t_sigpending)
+# define IS_THREAD_SIGNAL(sig)      ((sig) >= SIGUSR1 && (sig) <= SIGUSR2)
+# define SET_THREAD_SIGPENDING(t,s) ((t)->t_sigpending |= (1UL << (s)))
 
 # endif /* _mint_signal_h */
