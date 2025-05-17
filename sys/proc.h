@@ -55,4 +55,7 @@ ulong	_cdecl	remaining_proc_time (void);
 
 struct proc *_cdecl get_curproc(void);
 
+/* Thread management functions */
+void thread_timer_init(PROC *p);
+
 # endif /* _proc_h */

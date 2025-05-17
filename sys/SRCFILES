@@ -60,6 +60,7 @@ COBJS = \
 	proc.c \
 	proc_help.c \
 	proc_wakeup.c \
+	proc_threads.c \
 	procfs.c \
 	profil.c \
 	ptrace.c \

@@ -521,7 +521,7 @@ opcode	ret	class name	args */
 0x183		Fdirfd		(long handle) /* since 1.17 */
 0x184		undefined
 0x185	void	Pyieldthread	(void)
-0x186		undefined
+0x186	long	Psleepthread	(long ms)
 0x187		undefined
 0x188		undefined
 0x189	long	Pcreatethread	(void *func, void *arg, void *stack)

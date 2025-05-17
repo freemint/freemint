@@ -37,11 +37,13 @@
 
 /* Threads stuff */
 
-#define THREAD_CREATED  0
-#define THREAD_READY    1
-#define THREAD_RUNNING  2
-#define THREAD_BLOCKED  3
-#define THREAD_EXITED   4
+#define THREAD_CREATED   0
+#define THREAD_READY     1
+#define THREAD_RUNNING   2
+#define THREAD_BLOCKED   3
+#define THREAD_SLEEPING  4
+#define THREAD_EXITED    5
+#define THREAD_IDLE      6
 
 /* Thread signal handling constants */
 #define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
@@ -60,7 +62,9 @@ struct thread {
 	unsigned long magic;
     void (*func)(void*);  // Function to execute
     void *arg;            // Argument to pass to function
-    
+
+	int sleep_reason;   // 0 = réveillé par signal/autre, 1 = timeout
+
     /* Signal handling fields */
     ulong   t_sigpending;        /* Signals pending for this thread */
     ulong   t_sigmask;           /* Thread-specific signal mask */
@@ -70,21 +74,21 @@ struct thread {
     void    *t_sigctx;           /* Saved context during signal handling */		
 };
 
-// struct thread_timer {
-//     int thread_id;         // Thread actuellement préempté
-//     int enabled;           // Timer actif ?
-//     TIMEOUT *timeout;      // Handle du timeout
-//     unsigned short sr;     // Etat d'interruption sauvegardé
-//     int in_handler;        // Handler en cours ?
-// } ;
-
 #define SYS_yieldthread		0x185
+#define SYS_sleepthread		0x186
 #define SYS_createthread	0x189
 #define SYS_exitthread		0x18a
+#define SYS_exitthread           0x18a
+#define SYS_thread_sigmask       0x18b
+#define SYS_thread_signal_mode   0x18c
+#define SYS_kill_thread          0x18d
+#define SYS_thread_handler       0x18e
+#define SYS_thread_sigwait       0x18f
 
 long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(void);
 long _cdecl sys_p_yieldthread(void);
+long _cdecl sys_p_sleepthread(long ms);
 
 long _cdecl sys_p_thread_sigmask(ulong mask);
 long _cdecl sys_p_thread_signal_mode(int enable);
@@ -363,7 +367,7 @@ struct proc
 		unsigned short sr;     // Etat d'interruption sauvegardé
 		int in_handler;        // Handler en cours ?
 	} p_thread_timer;
-	
+
 	// Add to struct proc in proc.h
 	struct thread *threads;        // Thread list
 	struct thread *current_thread; // Current thread
