@@ -53,10 +53,8 @@ struct thread_signal_handler {
 	void *arg;
 };
 
-struct thread *ready_queue = NULL;
-
 static int thread_switch_in_progress = 0;
-static int timer_operation_in_progress = 0;  /* Flag to prevent concurrent timer operations */
+
 static TIMEOUT *thread_switch_timeout = NULL;
 static struct thread *switching_from = NULL;
 static struct thread *switching_to = NULL;
@@ -393,7 +391,7 @@ void thread_timer_init(PROC *p)
     p->p_thread_timer.timeout = NULL;
     p->p_thread_timer.in_handler = 0;
     
-	timer_operation_in_progress = 0;
+	p->timer_operation_in_progress = 0;
     DEBUG(("Thread timer initialized"));
 }
 
@@ -411,7 +409,7 @@ retry_start:
     sr = splhigh();
 
     /* Check if another timer operation is in progress */
-    if (timer_operation_in_progress) {
+    if (p->timer_operation_in_progress) {
         TRACE_THREAD("WARNING: Timer operation in progress, retrying...");
         spl(sr);
         
@@ -430,12 +428,12 @@ retry_start:
         goto retry_start;
     }
     TRACE_THREAD("Starting thread timer for process %d", p->pid);
-    timer_operation_in_progress = 1;
+    p->timer_operation_in_progress = 1;
     	
     /* If timer is already enabled, don't add another timeout */
     if (p->p_thread_timer.enabled && p->p_thread_timer.timeout) {
         TRACE_THREAD("Timer already enabled, not adding another timeout");
-        timer_operation_in_progress = 0;
+        p->timer_operation_in_progress = 0;
         spl(sr);
         return;
     }
@@ -473,7 +471,7 @@ retry_stop:
     sr = splhigh();
     
     /* Check if another timer operation is in progress */
-    if (timer_operation_in_progress) {
+    if (p->timer_operation_in_progress) {
         spl(sr);
         
         /* Simple retry mechanism with limit */
@@ -488,7 +486,7 @@ retry_stop:
         goto retry_stop;
     }
     
-    timer_operation_in_progress = 1;
+    p->timer_operation_in_progress = 1;
     
     /* Check if timer is already disabled */
     TRACE_THREAD("Stopping thread timer for process %d", p->pid);
@@ -504,7 +502,7 @@ retry_stop:
     }
 
     /* Release the lock before calling canceltimeout */
-    timer_operation_in_progress = 0;
+    p->timer_operation_in_progress = 0;
     spl(sr);
     
     /* Now cancel the timeout if we had one */
@@ -587,7 +585,7 @@ void thread_preempt_handler(PROC *p, long arg)
                      current->current_thread->tid, current->pid);
         /* Check if there are threads in the ready queue */
 		spl(sr);
-        if (!ready_queue) {
+        if (!p->ready_queue) {
             TRACE_THREAD("No threads in ready queue, re-adding timeout");
             p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
             p->p_thread_timer.in_handler = 0;
@@ -607,10 +605,10 @@ void thread_preempt_handler(PROC *p, long arg)
         
         TRACE_THREAD("(thread_preempt_handler) Current thread: %d (state %d)", curr_thread->tid, curr_thread->state);
         /* Find next thread to run, skip EXITED threads */
-        struct thread *next = ready_queue;
+        struct thread *next = current->ready_queue;
         while (next && next->state == THREAD_EXITED) {
             remove_from_ready_queue(next);
-            next = ready_queue;
+            next = current->ready_queue;
         }
 
         /* Si aucun thread valide, on ne fait rien */
@@ -655,80 +653,73 @@ void thread_preempt_handler(PROC *p, long arg)
 
 // Ready queue management
 void add_to_ready_queue(struct thread *t) {
+    struct proc *p = t->proc;
     unsigned short sr;
-    
     if (!t || t->state == THREAD_RUNNING || t->state == THREAD_EXITED) return;
-
     if (t->tid == 0 && t->state == THREAD_EXITED) return;
-
     sr = splhigh();
-    
+
     // Check if already in queue
-    struct thread *curr = ready_queue;
+    struct thread *curr = p->ready_queue;
     while (curr) {
         if (curr == t) {
             TRACE_THREAD("Thread %d already in ready queue", t->tid);
             spl(sr);
-            return;  // Already in queue, don't add again
+            return;
         }
         curr = curr->next_ready;
     }
-    
+
     atomic_thread_state_change(t, THREAD_READY);
-    TRACE_THREAD("ADD_TO_READY_Q: Thread %d (pri %d, state %d)", 
-                t->tid, t->priority, t->state);
-    
-    // Add to end of queue to maintain fairness
-    if (!ready_queue) {
-        ready_queue = t;
+    TRACE_THREAD("ADD_TO_READY_Q: Thread %d (pri %d, state %d)", t->tid, t->priority, t->state);
+
+    // Add to end of queue
+    if (!p->ready_queue) {
+        p->ready_queue = t;
         t->next_ready = NULL;
     } else {
-        struct thread *last = ready_queue;
+        struct thread *last = p->ready_queue;
         while (last->next_ready) {
             last = last->next_ready;
         }
         last->next_ready = t;
         t->next_ready = NULL;
     }
-    
     spl(sr);
 }
 
 void remove_from_ready_queue(struct thread *t) {
-    unsigned short sr;
-    
-    if (!t || !ready_queue) return;
-    
-    sr = splhigh();
-    
+    if (!t || !t->proc) return;
+    struct proc *p = t->proc;
+    unsigned short sr = splhigh();
+
+    if (!p->ready_queue) {
+        spl(sr);
+        return;
+    }
+
     TRACE_THREAD("REMOVE_FROM_READY_Q: Thread %d", t->tid);
-    
-    // Use a double pointer to traverse the list
-    // This allows us to modify the pointer that points to the current node
-    struct thread **pp = &ready_queue;
-    struct thread *curr = ready_queue;
+
+    struct thread **pp = &p->ready_queue;
+    struct thread *curr = p->ready_queue;
     int found = 0;
-    
-    // Search through the entire queue
+
     while (curr) {
         if (curr == t) {
-            // Found the thread, remove it from the queue
             *pp = curr->next_ready;
             curr->next_ready = NULL;
             found = 1;
             TRACE_THREAD("Removed thread %d from ready queue", t->tid);
             break;
         }
-        // Move to next node
         pp = &(curr->next_ready);
         curr = curr->next_ready;
     }
-    
+
     if (!found) {
-        // Thread wasn't in the queue
         TRACE_THREAD("Thread %d not found in ready queue", t->tid);
     }
-    
+
     spl(sr);
 }
 
@@ -1031,11 +1022,11 @@ void schedule(void) {
     sr = splhigh();
     
     struct thread *current = p->current_thread;
-    struct thread *next = ready_queue;
+    struct thread *next = p->ready_queue;
 
     while (next && next->state != THREAD_READY) {
         remove_from_ready_queue(next);
-        next = ready_queue;
+        next = p->ready_queue;
     }
 
     TRACE_THREAD("schedule: next=%d", next ? next->tid : -1);
@@ -1233,7 +1224,7 @@ void thread_exit(void) {
         return;
     }
 
-    struct thread *next = ready_queue;
+    struct thread *next = p->ready_queue;
     if (next) {
         remove_from_ready_queue(next);
         atomic_thread_state_change(next, THREAD_RUNNING);
@@ -1318,7 +1309,7 @@ long _cdecl sys_p_yieldthread(void)
     }
     
     // Check if there are any other ready threads
-    if (!ready_queue) {
+    if (!p->ready_queue) {
         TRACE_THREAD("No other threads ready, not yielding");
         return 0;
     }
@@ -1343,7 +1334,7 @@ long _cdecl sys_p_yieldthread(void)
     add_to_ready_queue(current);
     
     // Find next thread to run
-    struct thread *next = ready_queue;
+    struct thread *next = p->ready_queue;
     if (!next) {
         // No other threads to run, just return
         TRACE_THREAD("No other threads to run after yield");
@@ -1366,7 +1357,7 @@ long _cdecl sys_p_yieldthread(void)
         TRACE_THREAD("ERROR: Next thread stack corruption detected!");
         // Try to find another valid thread
         remove_from_ready_queue(next);
-        next = ready_queue;
+        next = p->ready_queue;
         if (!next || next == current || next->stack_magic != STACK_MAGIC) {
             // No valid threads to switch to
             atomic_thread_state_change(current, THREAD_RUNNING);

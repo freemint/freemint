@@ -367,6 +367,8 @@ struct proc
 		unsigned short sr;     // Etat d'interruption sauvegardé
 		int in_handler;        // Handler en cours ?
 	} p_thread_timer;
+	int timer_operation_in_progress;
+	struct thread *ready_queue;
 
 	// Add to struct proc in proc.h
 	struct thread *threads;        // Thread list
