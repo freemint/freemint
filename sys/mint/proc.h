@@ -37,16 +37,41 @@
 
 /* Threads stuff */
 
-#define THREAD_CREATED   0
-#define THREAD_READY     1
-#define THREAD_RUNNING   2
-#define THREAD_BLOCKED   3
-#define THREAD_SLEEPING  4
-#define THREAD_EXITED    5
-#define THREAD_IDLE      6
+/*
+	RUNNING	0x0001	Currently executing
+	READY	0x0002	On run queue, can be scheduled
+	SLEEPING	0x0004	Sleeping, waiting for event
+	WAITING	0x0008	Uninterruptible wait
+	STOPPED	0x0010	Stopped by signal
+	ZOMBIE	0x0020	Exited, not yet reaped
+	DEAD	0x0040	Fully dead, resources can be freed
+*/
+#define THREAD_STATE_RUNNING    0x0001
+#define THREAD_STATE_READY      0x0002
+#define THREAD_STATE_SLEEPING   0x0004
+#define THREAD_STATE_WAITING    0x0008
+#define THREAD_STATE_STOPPED    0x0010
+#define THREAD_STATE_ZOMBIE     0x0020
+#define THREAD_STATE_DEAD       0x0040
+
+// For checks only:
+#define THREAD_STATE_BLOCKED    (THREAD_STATE_SLEEPING | THREAD_STATE_WAITING)
+#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
+#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
 
 /* Thread signal handling constants */
 #define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
+
+/*
+For SCHED_FIFO: pick the highest-priority, first-in thread.
+For SCHED_RR: pick the next thread in round-robin order for its priority.
+For SCHED_OTHER: pick according to your fairness/round-robin logic.
+*/
+enum sched_policy {
+    SCHED_FIFO,
+    SCHED_RR,
+    SCHED_OTHER
+};
 
 struct thread {
     int tid;                     // Thread ID
@@ -58,6 +83,7 @@ struct thread {
     CONTEXT ctxt[PROC_CTXTS];    // Thread context (reuse FreeMiNT's context)
     short state;                 // Thread state (RUNNING/READY/BLOCKED)
     short priority;              // Thread priority
+	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
     struct thread *next_ready;   // For ready queue
 	unsigned long magic;
     void (*func)(void*);  // Function to execute
@@ -77,13 +103,12 @@ struct thread {
 #define SYS_yieldthread		0x185
 #define SYS_sleepthread		0x186
 #define SYS_createthread	0x189
-#define SYS_exitthread		0x18a
-#define SYS_exitthread           0x18a
-#define SYS_thread_sigmask       0x18b
-#define SYS_thread_signal_mode   0x18c
-#define SYS_kill_thread          0x18d
-#define SYS_thread_handler       0x18e
-#define SYS_thread_sigwait       0x18f
+#define SYS_exitthread	0x18a
+#define SYS_thread_sigmask	0x18b
+#define SYS_thread_signal_mode	0x18c
+#define SYS_kill_thread	0x18d
+#define SYS_thread_handler	0x18e
+#define SYS_thread_sigwait	0x18f
 
 long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(void);

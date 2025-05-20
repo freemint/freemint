@@ -80,10 +80,9 @@ void thread_timeout_handler(PROC *p, long arg)
     TRACE_THREAD("thread_timeout_handler: thread %d timeout", t ? t->tid : -1);
     if(!t) return;
     unsigned short sr = splhigh();
-    if (t && t->state == THREAD_BLOCKED) {
+    if (t && (t->state & THREAD_STATE_SLEEPING)) {
         t->sleep_reason = 1; // Timeout
-
-        atomic_thread_state_change(t, THREAD_READY);
+        atomic_thread_state_change(t, THREAD_STATE_READY);
         add_to_ready_queue(t);
         TRACE_THREAD("thread_timeout_handler: waking up thread %d", t->tid);
     }
@@ -217,9 +216,9 @@ int deliver_signal_to_thread(struct proc *p, struct thread *t, int sig)
     t->t_sigpending |= (1UL << sig);
     
     /* If thread is blocked, wake it up */
-    if (t->state == THREAD_BLOCKED) {
+    if ((t->state & THREAD_STATE_BLOCKED)) {
         /* Wake up the thread */
-        t->state = THREAD_READY;
+        atomic_thread_state_change(t, THREAD_STATE_READY);
         add_to_ready_queue(t);
     }
     
@@ -368,7 +367,7 @@ void atomic_thread_state_change(struct thread *t, int new_state)
         return;
 
     /* Check if the new state is valid */
-    if (t->state == THREAD_EXITED && new_state != THREAD_EXITED) {
+    if ((t->state & THREAD_STATE_EXITED) && !(new_state & THREAD_STATE_EXITED)) {
         TRACE_THREAD("ERROR: Attempt to change state of EXITED thread %d from %d to %d", t->tid, t->state, new_state);
         return;
     }
@@ -481,6 +480,10 @@ retry_stop:
         }
         
         /* Introduce a small delay before retrying */
+        int i;
+        for (i = 0; i < 100; i++) {
+            __asm__ __volatile__("nop");
+        }
         // delay5(20);
         
         goto retry_stop;
@@ -606,7 +609,7 @@ void thread_preempt_handler(PROC *p, long arg)
         TRACE_THREAD("(thread_preempt_handler) Current thread: %d (state %d)", curr_thread->tid, curr_thread->state);
         /* Find next thread to run, skip EXITED threads */
         struct thread *next = current->ready_queue;
-        while (next && next->state == THREAD_EXITED) {
+        while (next && (next->state & THREAD_STATE_EXITED)) {
             remove_from_ready_queue(next);
             next = current->ready_queue;
         }
@@ -624,12 +627,12 @@ void thread_preempt_handler(PROC *p, long arg)
         remove_from_ready_queue(next);
         
         /* Add current thread to ready queue uniquement si il est RUNNING et pas EXITED/thread0 */
-        if (curr_thread->state == THREAD_RUNNING && curr_thread->tid != 0) {
+        if ((curr_thread->state & THREAD_STATE_RUNNING) && curr_thread->tid != 0) {
             TRACE_THREAD("(thread_preempt_handler) Adding current thread %d back to ready queue", curr_thread->tid);
-            atomic_thread_state_change(curr_thread, THREAD_READY);
+            atomic_thread_state_change(curr_thread, THREAD_STATE_READY);
             add_to_ready_queue(curr_thread);
         }
-        if (next->state == THREAD_EXITED) {
+        if (next->state & THREAD_STATE_EXITED) {
             TRACE_THREAD("ERROR: Attempt to switch to EXITED thread %d, skipping", next->tid);
             p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
             p->p_thread_timer.in_handler = 0;
@@ -637,7 +640,7 @@ void thread_preempt_handler(PROC *p, long arg)
             return;
         }
         /* Update thread states */
-        atomic_thread_state_change(next, THREAD_RUNNING);
+        atomic_thread_state_change(next, THREAD_STATE_RUNNING);
         current->current_thread = next;
         TRACE_THREAD("(thread_preempt_handler) Switching to thread %d (state %d)", next->tid, next->state);
         /* Perform context switch */
@@ -655,8 +658,8 @@ void thread_preempt_handler(PROC *p, long arg)
 void add_to_ready_queue(struct thread *t) {
     struct proc *p = t->proc;
     unsigned short sr;
-    if (!t || t->state == THREAD_RUNNING || t->state == THREAD_EXITED) return;
-    if (t->tid == 0 && t->state == THREAD_EXITED) return;
+    if (!t || (t->state & THREAD_STATE_RUNNING) || (t->state & THREAD_STATE_EXITED)) return;
+    if (t->tid == 0 && (t->state & THREAD_STATE_EXITED)) return;
     sr = splhigh();
 
     // Check if already in queue
@@ -670,7 +673,7 @@ void add_to_ready_queue(struct thread *t) {
         curr = curr->next_ready;
     }
 
-    atomic_thread_state_change(t, THREAD_READY);
+    atomic_thread_state_change(t, THREAD_STATE_READY);
     TRACE_THREAD("ADD_TO_READY_Q: Thread %d (pri %d, state %d)", t->tid, t->priority, t->state);
 
     // Add to end of queue
@@ -723,9 +726,20 @@ void remove_from_ready_queue(struct thread *t) {
     spl(sr);
 }
 
-// Thread context switching
+/*
+Thread context switching
+Purpose:
+    Actually performs the context switch between two threads.
+    Saves the state of the current thread, restores the state of the next thread, and updates the CPU to run the new thread.
+What it does:
+    Saves the CPU registers, stack pointer, etc. of the "from" thread.
+    Updates the thread states (from becomes READY, to becomes RUNNING).
+    Restores the CPU registers, stack pointer, etc. of the "to" thread.
+    Updates the current thread pointer in the process.
+    Returns only when the "from" thread is scheduled again.
+*/
 void thread_switch(struct thread *from, struct thread *to) {
-    if (!to || from == to || to->state == THREAD_EXITED) {
+    if (!to || from == to || (to->state & THREAD_STATE_EXITED)) {
         TRACE_THREAD("Invalid thread switch request");
         reset_thread_switch_state();
         return;
@@ -787,8 +801,8 @@ void thread_switch(struct thread *from, struct thread *to) {
         // This is the initial save_context call
         
         // Update thread states - ensure proper state transition
-        atomic_thread_state_change(from, THREAD_READY);
-        atomic_thread_state_change(to, THREAD_RUNNING);
+        atomic_thread_state_change(from, THREAD_STATE_READY);
+        atomic_thread_state_change(to, THREAD_STATE_RUNNING);
         
         // Update current thread
         from->proc->current_thread = to;
@@ -857,7 +871,7 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     t->tid = p->num_threads++;
     t->proc = p;
     t->priority = p->pri;
-    atomic_thread_state_change(t, THREAD_READY);
+    atomic_thread_state_change(t, THREAD_STATE_READY);
 
     /* Initialize signal fields */
     t->t_sigpending = 0;
@@ -900,7 +914,7 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     
     // IMPORTANT: If this is the first thread, set it as the current thread
     if (p->num_threads == 1) {
-        atomic_thread_state_change(t, THREAD_RUNNING);
+        atomic_thread_state_change(t, THREAD_STATE_RUNNING);
     } else {
         // Add to ready queue
         add_to_ready_queue(t);
@@ -1009,7 +1023,16 @@ void thread_start(void) {
     while(1) { /* hang */ }
 }
 
-// Thread scheduling
+/*
+Thread scheduling
+Purpose:
+    The scheduler decides which thread should run next.
+    It examines the ready queue, picks the next eligible thread, and (if needed) initiates a context switch.
+What it does:
+    Looks at all threads (or processes) that are ready to run.
+    Picks the "best" one (often the next in the ready queue, or based on priority).
+    If the chosen thread is not the current one, it calls thread_switch(current, next) to actually perform the switch.
+*/
 void schedule(void) {
     struct proc *p = curproc;
     unsigned short sr;
@@ -1024,7 +1047,7 @@ void schedule(void) {
     struct thread *current = p->current_thread;
     struct thread *next = p->ready_queue;
 
-    while (next && next->state != THREAD_READY) {
+    while (next && next->state != THREAD_STATE_READY) {
         remove_from_ready_queue(next);
         next = p->ready_queue;
     }
@@ -1052,7 +1075,7 @@ void schedule(void) {
         remove_from_ready_queue(next);
         
         // Update thread states
-        atomic_thread_state_change(next, THREAD_RUNNING);
+        atomic_thread_state_change(next, THREAD_STATE_RUNNING);
         p->current_thread = next;
         
         // Set USP for the new thread
@@ -1103,15 +1126,15 @@ void schedule(void) {
     remove_from_ready_queue(next);
     
     // Add current thread to ready queue if it's still runnable
-    if (current->state == THREAD_RUNNING) {
+    if (current->state == THREAD_STATE_RUNNING) {
         // Set state to READY before adding to queue
-        atomic_thread_state_change(current, THREAD_READY);
+        atomic_thread_state_change(current, THREAD_STATE_READY);
         add_to_ready_queue(current);
         TRACE_THREAD("Added current thread %d to ready queue", current->tid);
     }
     
     // Update thread states
-    atomic_thread_state_change(next, THREAD_RUNNING);
+    atomic_thread_state_change(next, THREAD_STATE_RUNNING);
     p->current_thread = next;
     
     // Switch to next thread
@@ -1151,7 +1174,7 @@ void thread_exit(void) {
     int tid = current->tid;
 
     // Marquer EXITED et retirer de la ready queue
-    atomic_thread_state_change(current, THREAD_EXITED);
+    atomic_thread_state_change(current, THREAD_STATE_EXITED);
     remove_from_ready_queue(current);
 
     // Annuler les timers éventuels
@@ -1162,7 +1185,7 @@ void thread_exit(void) {
         if (p->num_threads > 1) {
             struct thread *t = p->threads;
             // Cherche un thread vivant différent du courant
-            while (t && (t == current || t->state == THREAD_EXITED)) t = t->next;
+            while (t && (t == current || t->state == THREAD_STATE_EXITED)) t = t->next;
             if (t) {
                 TRACE_THREAD("Rearming thread timer for thread %d", t->tid);
                 thread_timer_start(p, t->tid);
@@ -1198,7 +1221,7 @@ void thread_exit(void) {
             struct thread *t = p->threads;
             int all_exited = 1;
             while (t) {
-                if (t->tid != 0 && t->state != THREAD_EXITED) {
+                if (t->tid != 0 && t->state != THREAD_STATE_EXITED) {
                     all_exited = 0;
                     break;
                 }
@@ -1227,7 +1250,7 @@ void thread_exit(void) {
     struct thread *next = p->ready_queue;
     if (next) {
         remove_from_ready_queue(next);
-        atomic_thread_state_change(next, THREAD_RUNNING);
+        atomic_thread_state_change(next, THREAD_STATE_RUNNING);
         p->current_thread = next;
         TRACE_THREAD("Switching to thread %d", next->tid);
 
@@ -1268,7 +1291,7 @@ void init_thread0(struct proc *p) {
     t0->tid = 0;
     t0->proc = p;
     t0->priority = p->pri;
-    atomic_thread_state_change(t0, THREAD_RUNNING);
+    atomic_thread_state_change(t0, THREAD_STATE_RUNNING);
     
     // Use process stack for thread0
     t0->stack = p->stack;
@@ -1328,7 +1351,7 @@ long _cdecl sys_p_yieldthread(void)
     remove_from_ready_queue(current);
     
     // Set state to READY before adding to queue
-    atomic_thread_state_change(current, THREAD_READY);
+    atomic_thread_state_change(current, THREAD_STATE_READY);
     
     // Add to end of ready queue
     add_to_ready_queue(current);
@@ -1338,7 +1361,7 @@ long _cdecl sys_p_yieldthread(void)
     if (!next) {
         // No other threads to run, just return
         TRACE_THREAD("No other threads to run after yield");
-        atomic_thread_state_change(current, THREAD_RUNNING);
+        atomic_thread_state_change(current, THREAD_STATE_RUNNING);
         spl(sr);
         return 0;
     }
@@ -1347,7 +1370,7 @@ long _cdecl sys_p_yieldthread(void)
     if (next == current) {
         TRACE_THREAD("Next thread is current, not switching");
         remove_from_ready_queue(next);
-        atomic_thread_state_change(current, THREAD_RUNNING);
+        atomic_thread_state_change(current, THREAD_STATE_RUNNING);
         spl(sr);
         return 0;
     }
@@ -1360,7 +1383,7 @@ long _cdecl sys_p_yieldthread(void)
         next = p->ready_queue;
         if (!next || next == current || next->stack_magic != STACK_MAGIC) {
             // No valid threads to switch to
-            atomic_thread_state_change(current, THREAD_RUNNING);
+            atomic_thread_state_change(current, THREAD_STATE_RUNNING);
             spl(sr);
             return -EFAULT;
         }
@@ -1370,7 +1393,7 @@ long _cdecl sys_p_yieldthread(void)
     remove_from_ready_queue(next);
     
     // Update thread states
-    atomic_thread_state_change(next, THREAD_RUNNING);
+    atomic_thread_state_change(next, THREAD_STATE_RUNNING);
     p->current_thread = next;
     
     // Set USP for the new thread
@@ -1439,7 +1462,7 @@ long _cdecl sys_p_sleepthread(long ms)
     t->sleep_reason = 0; // 0 = réveil normal (signal/autre)
 
     TRACE_THREAD("sys_p_sleepthread: thread %d going to sleep", t->tid);
-    atomic_thread_state_change(t, THREAD_BLOCKED);
+    atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
     remove_from_ready_queue(t);
 
     // Programmer le timeout si demandé
