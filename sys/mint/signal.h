@@ -131,6 +131,23 @@ struct sigacts
 # define THREAD_SIGUSR1  SIGUSR1
 # define THREAD_SIGUSR2  SIGUSR2
 
+/* Operation codes for Pthreadsignal */
+#define PTSIG_SETMASK       -1  /* Set thread signal mask */
+#define PTSIG_GETMASK       -2  /* Get thread signal mask (handler=0) */
+#define PTSIG_MODE          -3  /* Set thread signal mode (enable/disable) */
+#define PTSIG_KILL          -4  /* Send signal to thread */
+#define PTSIG_WAIT          -5  /* Wait for signals */
+#define PTSIG_BLOCK         -6  /* Block signals (add to mask) */
+#define PTSIG_UNBLOCK       -7  /* Unblock signals (remove from mask) */
+#define PTSIG_PAUSE         -8  /* Pause with specified mask */
+#define PTSIG_ALARM         -9  /* Set thread alarm */
+#define PTSIG_SLEEP         -10 /* Sleep for specified time */
+#define PTSIG_PENDING       -11 /* Get pending signals */
+#define PTSIG_HANDLER       -12  /* Register thread signal handler */
+#define PTSIG_GETID		  	-13  /* Get thread ID (for signal handling) */
+#define PTSIG_HANDLER_ARG	-14  /* Set argument for thread signal handler */
+#define PTSIG_ALARM_THREAD -16 /* Set alarm for specific thread */
+
 /* Signal context structure for thread signal handling */
 struct thread_sigcontext {
 	long sc_regs[16];              /* D0-D7/A0-A7 register contents */

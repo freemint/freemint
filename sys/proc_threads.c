@@ -1,25 +1,14 @@
-
-# include "libkern/libkern.h" /* memset and memcpy */
-
-#include "proc.h"
-#include "mint/signal.h"
-#include "timeout.h"
-#include "arch/context.h"
-#include "mint/arch/asm_spl.h"
-#include "kmemory.h"
-#include "kentry.h"
+#include "proc_threads.h"
 
 /* Threads stuff */
 
 #define WITH_THTIMER 1
 
-void add_to_ready_queue(struct thread *t);
-void remove_from_ready_queue(struct thread *t);
 void thread_switch(struct thread *from, struct thread *to);
 long create_thread(struct proc *p, void (*func)(void*), void *arg);
 void init_thread_context(struct thread *t, void (*func)(void*), void *arg);
 void thread_start(void);
-void schedule(void);
+
 void thread_exit(void);
 void init_thread0(struct proc *p);
 
@@ -32,26 +21,8 @@ void thread_switch_timeout_handler(PROC *p, long arg);
 void reset_thread_switch_state(void);
 int check_thread_switch_timeout(void);
 
-void atomic_thread_state_change(struct thread *t, int new_state);
-
-/* Thread signal handling function prototypes */
-int deliver_signal_to_thread(struct proc *p, struct thread *t, int sig);
-int thread_aware_raise(struct proc *p, int sig);
-int check_thread_signals(struct thread *t);
-void handle_thread_signal(struct thread *t, int sig);
-void save_thread_context(struct thread *t, struct thread_sigcontext *ctx);
-void restore_thread_context(struct thread *t, struct thread_sigcontext *ctx);
-void thread_signal_trampoline(int sig, void *arg);
-
-void thread_timeout_handler(PROC *p, long arg);
-
-void delay5(long time);
-
-/* Thread signal handler table */
-struct thread_signal_handler {
-	void (*handler)(int, void*);
-	void *arg;
-};
+/* Mutex for timer operations */
+static int timer_mutex_locked = 0;
 
 static int thread_switch_in_progress = 0;
 
@@ -87,210 +58,6 @@ void thread_timeout_handler(PROC *p, long arg)
         TRACE_THREAD("thread_timeout_handler: waking up thread %d", t->tid);
     }
     spl(sr);
-}
-
-/*
- * Save thread execution context before signal handling
- */
-void save_thread_context(struct thread *t, struct thread_sigcontext *ctx)
-{
-    if (!t || !ctx)
-        return;
-        
-    // Copier d0-d7 (8), a0-a6 (7) → total 15 regs
-    for (int i = 0; i < 15; i++)
-        ctx->sc_regs[i] = t->ctxt[CURRENT].regs[i];
-
-    // a7 (user stack pointer) = usp
-    ctx->sc_regs[15] = t->ctxt[CURRENT].usp;
-
-    ctx->sc_usp = t->ctxt[CURRENT].usp;
-    ctx->sc_pc  = t->ctxt[CURRENT].pc;
-    ctx->sc_sr  = t->ctxt[CURRENT].sr;
-
-    ctx->sc_thread = t;
-    // sc_sig et sc_handler_arg sont à remplir dans le trampoline
-}
-
-/*
- * Restore thread execution context after signal handling
- */
-void restore_thread_context(struct thread *t, struct thread_sigcontext *ctx)
-{
-    if (!t || !ctx || ctx->sc_thread != t)
-        return;
-        
-    // Restaurer d0-d7, a0-a6
-    for (int i = 0; i < 15; i++)
-        t->ctxt[CURRENT].regs[i] = ctx->sc_regs[i];
-
-    t->ctxt[CURRENT].usp = ctx->sc_usp;
-    t->ctxt[CURRENT].pc  = ctx->sc_pc;
-    t->ctxt[CURRENT].sr  = ctx->sc_sr;
-}
-
-/*
- * Signal trampoline function to call thread signal handlers
- */
-void thread_signal_trampoline(int sig, void *arg)
-{
-    struct thread *t = CURTHREAD;
-    struct proc *p = curproc;
-    struct thread_sigcontext *ctx;
-    
-    if (!t || !p || !p->p_sigacts || sig <= 0 || sig >= NSIG)
-        return;
-        
-    /* Get handler */
-    void (*handler)(int, void*) = p->p_sigacts->thread_handlers[sig].handler;
-    void *handler_arg = p->p_sigacts->thread_handlers[sig].arg;
-    
-    if (!handler)
-        return;
-    
-    /* Save context */
-    ctx = (struct thread_sigcontext *)kmalloc(sizeof(struct thread_sigcontext));
-    if (!ctx)
-        return;
-        
-    save_thread_context(t, ctx);
-    
-    /* Store context and signal info */
-    ctx->sc_sig = sig;
-    ctx->sc_handler_arg = handler_arg;
-    t->t_sigctx = ctx;
-    
-    /* Call handler */
-    (*handler)(sig, handler_arg);
-    
-    /* Restore context and free it */
-    restore_thread_context(t, ctx);
-    t->t_sigctx = NULL;
-    kfree(ctx);
-    
-    /* Clear signal in progress flag */
-    t->t_sig_in_progress = 0;
-}
-
-/*
- * Process thread signal
- */
-void handle_thread_signal(struct thread *t, int sig)
-{
-    struct proc *p;
-    
-    if (!t || !t->proc || sig <= 0 || sig >= NSIG)
-        return;
-        
-    p = t->proc;
-    
-    /* Check if there's a thread-specific handler */
-    if (p->p_sigacts && p->p_sigacts->thread_handlers[sig].handler) {
-        /* Execute handler in thread context */
-        thread_signal_trampoline(sig, p->p_sigacts->thread_handlers[sig].arg);
-    } else {
-        /* Fall back to process-level signal handling */
-        /* This will use the standard signal dispatcher */
-        p->sigpending |= (1UL << sig);
-    }
-}
-
-/*
- * Deliver a signal to a specific thread
- * Returns 1 if signal was delivered, 0 otherwise
- */
-int deliver_signal_to_thread(struct proc *p, struct thread *t, int sig)
-{
-    if (!p || !t || sig <= 0 || sig >= NSIG)
-        return 0;
-        
-    /* Check if this signal should be handled at thread level */
-    if (!p->p_sigacts->thread_signals && !IS_THREAD_SIGNAL(sig))
-        return 0;  /* Process-level signal, don't handle here */
-        
-    /* Check if signal is blocked by thread */
-    if (t->t_sigmask & (1UL << sig))
-        return 0;
-        
-    /* Mark signal as pending for this thread */
-    t->t_sigpending |= (1UL << sig);
-    
-    /* If thread is blocked, wake it up */
-    if ((t->state & THREAD_STATE_BLOCKED)) {
-        /* Wake up the thread */
-        atomic_thread_state_change(t, THREAD_STATE_READY);
-        add_to_ready_queue(t);
-    }
-    
-    return 1;
-}
-
-/*
- * Modified version of raise() that's thread-aware
- */
-int thread_aware_raise(struct proc *p, int sig)
-{
-    if (!p || sig <= 0 || sig >= NSIG)
-        return -EINVAL;
-        
-    /* Check if this process has thread-specific signal handling enabled */
-    if (p->p_sigacts && p->p_sigacts->thread_signals) {
-        /* For certain signals, deliver to specific thread */
-        if (IS_THREAD_SIGNAL(sig)) {
-            /* For SIGUSR1/SIGUSR2, try to deliver to current thread first */
-            if (p->current_thread && 
-                deliver_signal_to_thread(p, p->current_thread, sig))
-                return 0;
-                
-            /* If that fails, try all threads */
-            struct thread *t;
-            for (t = p->threads; t != NULL; t = t->next) {
-                if (deliver_signal_to_thread(p, t, sig))
-                    return 0;
-            }
-        }
-    }
-    
-    /* Default: deliver to process as before */
-    p->sigpending |= (1UL << sig);
-    return 0;
-}
-
-/*
- * Check for pending signals in a thread
- * Returns signal number if a signal is pending, 0 otherwise
- */
-int check_thread_signals(struct thread *t)
-{
-    int sig;
-    
-    if (!t || !t->proc)
-        return 0;
-        
-    /* Don't process signals if we're already handling one */
-    if (t->t_sig_in_progress)
-        return 0;
-        
-    /* Check for pending signals that aren't masked */
-    ulong pending = t->t_sigpending & ~t->t_sigmask;
-    
-    if (!pending)
-        return 0;
-        
-    /* Find the first pending signal */
-    for (sig = 1; sig < NSIG; sig++) {
-        if (pending & (1UL << sig)) {
-            /* Clear pending flag */
-            t->t_sigpending &= ~(1UL << sig);
-            
-            /* Mark that we're processing a signal */
-            t->t_sig_in_progress = sig;
-            
-            return sig;
-        }
-    }
-    
-    return 0;
 }
 
 /*
@@ -390,8 +157,7 @@ void thread_timer_init(PROC *p)
     p->p_thread_timer.timeout = NULL;
     p->p_thread_timer.in_handler = 0;
     
-	p->timer_operation_in_progress = 0;
-    DEBUG(("Thread timer initialized"));
+    TRACE_THREAD(("Thread timer initialized"));
 }
 
 /*
@@ -400,57 +166,82 @@ void thread_timer_init(PROC *p)
 void thread_timer_start(struct proc *p, int thread_id)
 {
     unsigned short sr, retry_count = 0;
+    TIMEOUT *new_timeout = NULL;
+    
     TRACE_THREAD("thread_timer_start called for process %d", p->pid);
     if (!p)
         return;
 
-retry_start:		
-    sr = splhigh();
-
-    /* Check if another timer operation is in progress */
-    if (p->timer_operation_in_progress) {
-        TRACE_THREAD("WARNING: Timer operation in progress, retrying...");
+    /* Try to acquire the timer mutex with a timeout */
+    while (1) {
+        sr = splhigh();
+        if (!timer_mutex_locked) {
+            timer_mutex_locked = 1;
+            spl(sr);
+            break;
+        }
         spl(sr);
         
-        /* Simple retry mechanism with limit */
-        if (++retry_count > 5) {
-            TRACE_THREAD("WARNING: Failed to start timer after 5 retries");
+        /* If we've tried too many times, give up */
+        if (++retry_count > 10) {
+            TRACE_THREAD("WARNING: Failed to acquire timer mutex after 10 retries");
             return;
         }
-        
-        /* Small delay before retry */
+
+        /* Small delay before retry - just yield CPU briefly */
         {
             volatile int i;
-            for (i = 0; i < 100; i++);
+            for (i = 0; i < 1000; i++);
         }
-        
-        goto retry_start;
     }
+
+    /* CRITICAL SECTION - We now have the mutex */
     TRACE_THREAD("Starting thread timer for process %d", p->pid);
-    p->timer_operation_in_progress = 1;
-    	
+    
+    /* Use a structured approach to ensure cleanup */
+    int success = 0;
+    
+    sr = splhigh();
+    
     /* If timer is already enabled, don't add another timeout */
     if (p->p_thread_timer.enabled && p->p_thread_timer.timeout) {
         TRACE_THREAD("Timer already enabled, not adding another timeout");
-        p->timer_operation_in_progress = 0;
+        success = 1;
         spl(sr);
-        return;
+        goto cleanup;
     }
     
     p->p_thread_timer.thread_id = thread_id;
-    p->p_thread_timer.sr = sr;
     
-    /* Add the initial timeout */
-    p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
+    /* Create the timeout before modifying any state */
+    new_timeout = addtimeout(p, 20, thread_preempt_handler);
+    if (!new_timeout) {
+        TRACE_THREAD("ERROR: Failed to create timeout");
+        spl(sr);
+        goto cleanup;
+    }
+    
+    /* Now that we have a valid timeout, update the timer state */
+    p->p_thread_timer.timeout = new_timeout;
     
     TRACE_THREAD("Setting up preemption timer for thread %d", thread_id);
-
+    
     /* Set enabled flag last to ensure everything is set up */
     TRACE_THREAD("Thread timer started for process %d", p->pid);
     p->p_thread_timer.enabled = 1;
     TRACE_THREAD("thread_timer: enabled set to 1 by %s:%d", __FILE__, __LINE__);
     p->p_thread_timer.in_handler = 0;
+    
+    success = 1;
     spl(sr);
+    
+cleanup:
+    /* Always release the mutex */
+    sr = splhigh();
+    timer_mutex_locked = 0;
+    spl(sr);
+    
+    TRACE_THREAD("thread_timer_start completed with %s", success ? "success" : "failure");
 }
 
 /*
@@ -466,52 +257,60 @@ void thread_timer_stop(PROC *p)
         return;
     }
 
-retry_stop:
-    sr = splhigh();
-    
-    /* Check if another timer operation is in progress */
-    if (p->timer_operation_in_progress) {
+    /* Try to acquire the timer mutex with a timeout */
+    while (1) {
+        sr = splhigh();
+        if (!timer_mutex_locked) {
+            timer_mutex_locked = 1;
+            spl(sr);
+            break;
+        }
         spl(sr);
         
-        /* Simple retry mechanism with limit */
-        if (++retry_count > 5) {
-            TRACE_THREAD("WARNING: Failed to stop timer after 5 retries (FORCING RESET)");
+        /* If we've tried too many times, give up */
+        if (++retry_count > 10) {
+            TRACE_THREAD("WARNING: Failed to acquire timer mutex after 10 retries");
             return;
         }
-        
-        /* Introduce a small delay before retrying */
-        int i;
-        for (i = 0; i < 100; i++) {
-            __asm__ __volatile__("nop");
+
+        /* Small delay before retry - just yield CPU briefly */
+        {
+            volatile int i;
+            for (i = 0; i < 1000; i++);
         }
-        // delay5(20);
-        
-        goto retry_stop;
     }
+
+    /* CRITICAL SECTION - We now have the mutex */
+    TRACE_THREAD("Stopping thread timer for process %d", p->pid);
     
-    p->timer_operation_in_progress = 1;
+    int success = 0;
+    
+    sr = splhigh();
     
     /* Check if timer is already disabled */
-    TRACE_THREAD("Stopping thread timer for process %d", p->pid);
     if (p->num_threads <= 1) {
         p->p_thread_timer.enabled = 0;
         TRACE_THREAD("thread_timer: enabled set to 0 by %s:%d", __FILE__, __LINE__);
     }
     
-    /* Save the timeout pointer locally before canceling */
-    if (p->p_thread_timer.timeout) {
-        timeout_to_cancel = p->p_thread_timer.timeout;
-        p->p_thread_timer.timeout = NULL;
-    }
-
-    /* Release the lock before calling canceltimeout */
-    p->timer_operation_in_progress = 0;
+    /* Save the timeout pointer locally before clearing it */
+    timeout_to_cancel = p->p_thread_timer.timeout;
+    p->p_thread_timer.timeout = NULL;
+    
+    success = 1;
     spl(sr);
     
-    /* Now cancel the timeout if we had one */
+    /* Cancel the timeout outside the critical section */
     if (timeout_to_cancel) {
         canceltimeout(timeout_to_cancel);
     }
+    
+    /* Always release the mutex */
+    sr = splhigh();
+    timer_mutex_locked = 0;
+    spl(sr);
+    
+    TRACE_THREAD("thread_timer_stop completed with %s", success ? "success" : "failure");
 }
 
 /*
@@ -535,6 +334,7 @@ void thread_preempt_handler(PROC *p, long arg)
 {
     struct proc *current;
     unsigned short sr;
+    TIMEOUT *new_timeout = NULL;
     
     // TRACE_THREAD("thread_preempt_handler called");
     if (p != curproc) {
@@ -542,6 +342,7 @@ void thread_preempt_handler(PROC *p, long arg)
         p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
         return;
     }
+    
     /* Prevent reentrance */
     if (p->p_thread_timer.in_handler) {
         TRACE_THREAD("(in_handler) Thread timer already in handler, not re-adding timeout");
@@ -564,10 +365,11 @@ void thread_preempt_handler(PROC *p, long arg)
     p->p_thread_timer.timeout = NULL;
     
     /* If timer is not enabled, just return without re-adding the timeout */
-	sr = splhigh();
+    sr = splhigh();
     if (!p->p_thread_timer.enabled) {
         TRACE_THREAD("(thread_preempt_handler) Thread timer disabled, not re-adding timeout");
         p->p_thread_timer.in_handler = 0;
+        spl(sr);
         return;
     }
     
@@ -576,8 +378,9 @@ void thread_preempt_handler(PROC *p, long arg)
     if (!current) {
         /* No current process, re-add the timeout and return */
         TRACE_THREAD("(thread_preempt_handler) No current process, re-adding timeout");
-		spl(sr);
-        p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
+        new_timeout = addtimeout(p, 20, thread_preempt_handler);
+        spl(sr);
+        p->p_thread_timer.timeout = new_timeout;
         p->p_thread_timer.in_handler = 0;
         return;
     }
@@ -587,18 +390,20 @@ void thread_preempt_handler(PROC *p, long arg)
         TRACE_THREAD("(thread_preempt_handler) Preempting thread %d in process %d", 
                      current->current_thread->tid, current->pid);
         /* Check if there are threads in the ready queue */
-		spl(sr);
+        spl(sr);
         if (!p->ready_queue) {
+            new_timeout = addtimeout(current, 20, thread_preempt_handler);
             TRACE_THREAD("No threads in ready queue, re-adding timeout");
-            p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout = new_timeout;
             p->p_thread_timer.in_handler = 0;
             return;
         }
         
         /* Don't preempt if a thread switch is already in progress */
         if (thread_switch_in_progress) {
+            new_timeout = addtimeout(current, 20, thread_preempt_handler);
             TRACE_THREAD("(thread_preempt_handler) Thread switch in progress, re-adding timeout");
-            p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout = new_timeout;
             p->p_thread_timer.in_handler = 0;
             return;
         }
@@ -617,8 +422,9 @@ void thread_preempt_handler(PROC *p, long arg)
         /* Si aucun thread valide, on ne fait rien */
         if (!next || next == curr_thread) {
             TRACE_THREAD("(thread_preempt_handler) No other valid threads to run, re-adding timeout");
+            new_timeout = addtimeout(current, 20, thread_preempt_handler);
             spl(sr);
-            p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout = new_timeout;
             p->p_thread_timer.in_handler = 0;
             return;
         }
@@ -634,11 +440,19 @@ void thread_preempt_handler(PROC *p, long arg)
         }
         if (next->state & THREAD_STATE_EXITED) {
             TRACE_THREAD("ERROR: Attempt to switch to EXITED thread %d, skipping", next->tid);
-            p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
+            new_timeout = addtimeout(current, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout = new_timeout;
             p->p_thread_timer.in_handler = 0;
             spl(sr);
             return;
         }
+        if (thread_switch_in_progress) {
+            TRACE_THREAD("(thread_preempt_handler) Thread switch in progress, re-adding timeout");
+            new_timeout = addtimeout(current, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout = new_timeout;
+            p->p_thread_timer.in_handler = 0;
+            return;
+        }  
         /* Update thread states */
         atomic_thread_state_change(next, THREAD_STATE_RUNNING);
         current->current_thread = next;
@@ -650,7 +464,8 @@ void thread_preempt_handler(PROC *p, long arg)
     }
     
     /* Re-add the timeout for next preemption */
-    p->p_thread_timer.timeout = addtimeout(current, 20, thread_preempt_handler);
+    new_timeout = addtimeout(current, 20, thread_preempt_handler);
+    p->p_thread_timer.timeout = new_timeout;
     p->p_thread_timer.in_handler = 0;
 }
 
@@ -1501,154 +1316,4 @@ long _cdecl sys_p_sleepthread(long ms)
     
     return t->sleep_reason; // 1 = timeout, 0 = autre
 }
-
-/**
- * System call implementations for thread signal handling
- */
-
-/*
- * Enable/disable thread-specific signal handling for a process
- */
-long _cdecl sys_p_thread_signal_mode(int enable)
-{
-    if (!curproc || !curproc->p_sigacts)
-        return -EINVAL;
-        
-    if (enable) {
-        curproc->p_sigacts->thread_signals = 1;
-        curproc->p_sigacts->flags |= SAS_THREADED;
-    } else {
-        curproc->p_sigacts->thread_signals = 0;
-        curproc->p_sigacts->flags &= ~SAS_THREADED;
-    }
-        
-    return 0;
-}
-
-/*
- * Set signal mask for current thread
- */
-long _cdecl sys_p_thread_sigmask(ulong mask)
-{
-    if (!curproc || !curproc->current_thread)
-        return -EINVAL;
-        
-    ulong old_mask = curproc->current_thread->t_sigmask;
-    
-    /* Don't allow masking of certain signals */
-    curproc->current_thread->t_sigmask = mask & ~UNMASKABLE;
-    
-    return old_mask;
-}
-
-/*
- * Send a signal to a specific thread
- */
-long _cdecl sys_p_kill_thread(struct thread *t, int sig)
-{
-    struct proc *p;
-    
-    /* Validate parameters */
-    if (!t || sig <= 0 || sig >= NSIG)
-        return -EINVAL;
-        
-    p = t->proc;
-    if (!p || !p->p_sigacts)
-        return -EINVAL;
-        
-    /* Check if thread belongs to current process */
-    if (p != curproc)
-        return -EPERM;
-        
-    /* Make sure thread-specific signals are enabled */
-    if (!p->p_sigacts->thread_signals)
-        return -EINVAL;
-        
-    /* Deliver signal to thread */
-    if (deliver_signal_to_thread(p, t, sig))
-        return 0;
-        
-    return -EINVAL;
-}
-
-/*
- * Register a thread-specific signal handler
- */
-long _cdecl sys_p_thread_handler(int sig, void (*handler)(int, void*), void *arg)
-{
-    struct proc *p;
-    
-    /* Validate parameters */
-    if (sig <= 0 || sig >= NSIG)
-        return -EINVAL;
-        
-    p = curproc;
-    if (!p || !p->p_sigacts)
-        return -EINVAL;
-        
-    /* Make sure thread-specific signals are enabled */
-    if (!p->p_sigacts->thread_signals)
-        return -EINVAL;
-        
-    /* Set handler */
-    p->p_sigacts->thread_handlers[sig].handler = handler;
-    p->p_sigacts->thread_handlers[sig].arg = arg;
-    p->p_sigacts->thread_handlers[sig].owner = CURTHREAD;
-    
-    return 0;
-}
-
-/*
- * Wait for signals with timeout
- */
-long _cdecl sys_p_thread_sigwait(ulong mask, long timeout)
-{
-    struct thread *t = CURTHREAD;
-    int sig;
-    
-    if (!t)
-        return -EINVAL;
-        
-    /* Wait for a matching signal */
-    while (timeout > 0) {
-        sig = check_thread_signals(t);
-        if (sig && (mask & (1UL << sig)))
-            return sig;
-            
-        /* Sleep and decrement timeout */
-        timeout -= 10;
-        sys_p_sleepthread(10);
-    }
-    
-    return 0;  /* Timeout */
-}
-
-
 /* End of Threads stuff */
-
-/* Helper functions */
-
-void delay5(long time)
-{
-    long i;
-#ifdef __mcoldfire__
-    // Version ColdFire : utiliser une boucle simple ou une autre méthode compatible
-    for (i = 0; i < time * 1000; i++) {
-        __asm__ __volatile__("nop");
-    }
-#else
-    // Version 68k classique
-    for (i = 0; i < time; i++) {
-        __asm__ __volatile__(
-            "movem.l %%a0/%%d1, -(%%sp)\n\t"
-            "move.l #0x4ba.w, %%a0\n\t"
-            "move.l (%%a0), %%d1\n\t"
-            "1:\n\t"
-            "cmp.l (%%a0), %%d1\n\t"
-            "beq.s 1b\n\t"
-            "movem.l (%%sp)+, %%a0/%%d1\n\t"
-            ::: "memory"
-        );
-    }
-#endif
-}

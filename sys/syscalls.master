@@ -529,7 +529,7 @@ opcode	ret	class name	args */
 0x18b		undefined
 0x18c		undefined
 0x18d		undefined
-0x18e		undefined
+0x18e	long	Pthreadsignal	(long func, long arg1, long arg2)
 0x18f		undefined
 
 0x190	MAX
