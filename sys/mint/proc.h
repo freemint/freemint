@@ -89,7 +89,8 @@ struct thread {
     void (*func)(void*);  // Function to execute
     void *arg;            // Argument to pass to function
 
-	int sleep_reason;   // 0 = réveillé par signal/autre, 1 = timeout
+	int sleep_reason;   /* 0 = woken by signal/other, 1 = timeout */
+	TIMEOUT *alarm_timeout;  /* Per-thread alarm timeout (deprecated - use process alarm) */
 
     /* Signal handling fields */
     ulong   t_sigpending;        /* Signals pending for this thread */
@@ -103,23 +104,26 @@ struct thread {
 #define SYS_yieldthread		0x185
 #define SYS_sleepthread		0x186
 #define SYS_createthread	0x189
-#define SYS_exitthread	0x18a
-#define SYS_thread_sigmask	0x18b
-#define SYS_thread_signal_mode	0x18c
-#define SYS_kill_thread	0x18d
-#define SYS_thread_handler	0x18e
-#define SYS_thread_sigwait	0x18f
+#define SYS_exitthread		0x18a
+
+#define SYS_threadsignal	0x18e
+#define SYS_thread_alarm	0x18f
 
 long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(void);
 long _cdecl sys_p_yieldthread(void);
 long _cdecl sys_p_sleepthread(long ms);
 
-long _cdecl sys_p_thread_sigmask(ulong mask);
-long _cdecl sys_p_thread_signal_mode(int enable);
-long _cdecl sys_p_kill_thread(struct thread *t, int sig);
-long _cdecl sys_p_thread_handler(int sig, void (*handler)(int, void*), void *arg);
-long _cdecl sys_p_thread_sigwait(ulong mask, long timeout);
+/* Thread signal dispatcher */
+long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
+/* Set an alarm for the current thread */
+long _cdecl sys_p_thread_alarm(struct thread *t, long ms);
+/* Thread signal dispatcher */
+long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
+
+/* Thread signal mask manipulation macros */
+#define SET_THREAD_SIGMASK(t, mask) ((t)->t_sigmask = (mask))
+#define GET_THREAD_SIGMASK(t) ((t)->t_sigmask)
 
  #define CURTHREAD \
  	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)
@@ -392,13 +396,13 @@ struct proc
 		unsigned short sr;     // Etat d'interruption sauvegardé
 		int in_handler;        // Handler en cours ?
 	} p_thread_timer;
-	int timer_operation_in_progress;
+
 	struct thread *ready_queue;
 
-	// Add to struct proc in proc.h
 	struct thread *threads;        // Thread list
 	struct thread *current_thread; // Current thread
 	int num_threads;               // Thread count
+	int thread_signals_enabled;   // Cache for quick access
 
 /* End of Threads stuff */
 

@@ -449,12 +449,16 @@ long _cdecl sys_p_thread_sigwait(ulong mask, long timeout)
         
     /* Check for pending signals first */
     sig = check_thread_signals(t);
-    if (sig && (mask & (1UL << sig)))
+    if (sig && (mask & (1UL << sig))){
+        TRACE_THREAD("sys_p_thread_sigwait: returning immediately with signal %d", sig);
         return sig;
+    }
         
     /* If timeout is 0, just check and return */
-    if (timeout == 0)
+    if (timeout == 0){
+        TRACE_THREAD("sys_p_thread_sigwait: timeout is 0, returning immediately");
         return 0;
+    }
         
     /* Set up a timeout if requested */
     if (timeout > 0) {
@@ -469,6 +473,7 @@ long _cdecl sys_p_thread_sigwait(ulong mask, long timeout)
     }
     
     /* Mark thread as sleeping */
+    TRACE_THREAD("sys_p_thread_sigwait: thread %d going to sleep with mask %lx", t->tid, mask);
     unsigned short sr = splhigh();
     t->sleep_reason = 0;
     atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
@@ -476,17 +481,22 @@ long _cdecl sys_p_thread_sigwait(ulong mask, long timeout)
     spl(sr);
     
     /* Schedule other threads */
+    TRACE_THREAD("sys_p_thread_sigwait: scheduling other threads");
     schedule();
     
     /* When we wake up, cancel the timeout if it's still active */
     if (wait_timeout) {
+        TRACE_THREAD("sys_p_thread_sigwait: cancelling timeout after wakeup");
         canceltimeout(wait_timeout);
     }
     
     /* Check if we woke up due to a signal */
+    TRACE_THREAD("sys_p_thread_sigwait: checking for signals after wakeup");
     sig = check_thread_signals(t);
-    if (sig && (mask & (1UL << sig)))
+    if (sig && (mask & (1UL << sig))){
+        TRACE_THREAD("sys_p_thread_sigwait: returning with signal %d", sig);
         return sig;
+    }
         
     return 0;  /* Timeout or no matching signal */
 }
