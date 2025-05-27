@@ -2,8 +2,6 @@
 
 /* Threads stuff */
 
-#define WITH_THTIMER 1
-
 void thread_switch(struct thread *from, struct thread *to);
 long create_thread(struct proc *p, void (*func)(void*), void *arg);
 void init_thread_context(struct thread *t, void (*func)(void*), void *arg);
@@ -20,6 +18,13 @@ void start_thread_timing(struct thread *t);
 void thread_switch_timeout_handler(PROC *p, long arg);
 void reset_thread_switch_state(void);
 int check_thread_switch_timeout(void);
+
+static void init_thread_idle_context(struct thread *t);
+static void thread_idle_loop(struct thread *t);
+static void idle_start(void);
+
+static CONTEXT* get_thread_context(struct thread *t);
+static void set_thread_usp(CONTEXT *ctx);
 
 /* Mutex for timer operations */
 static int timer_mutex_locked = 0;
@@ -51,11 +56,11 @@ void thread_timeout_handler(PROC *p, long arg)
     TRACE_THREAD("thread_timeout_handler: thread %d timeout", t ? t->tid : -1);
     if(!t) return;
     unsigned short sr = splhigh();
-    if (t && (t->state & THREAD_STATE_SLEEPING)) {
+    if ((t->state & THREAD_STATE_BLOCKED) && t->wait_type == WAIT_SIGNAL) {
         t->sleep_reason = 1; // Timeout
+        t->wait_type = WAIT_NONE;
         atomic_thread_state_change(t, THREAD_STATE_READY);
         add_to_ready_queue(t);
-        TRACE_THREAD("thread_timeout_handler: waking up thread %d", t->tid);
     }
     spl(sr);
 }
@@ -211,8 +216,6 @@ void thread_timer_start(struct proc *p, int thread_id)
         goto cleanup;
     }
     
-    p->p_thread_timer.thread_id = thread_id;
-    
     /* Create the timeout before modifying any state */
     new_timeout = addtimeout(p, 20, thread_preempt_handler);
     if (!new_timeout) {
@@ -220,12 +223,11 @@ void thread_timer_start(struct proc *p, int thread_id)
         spl(sr);
         goto cleanup;
     }
-    
+    new_timeout->arg = (long)p->current_thread;
     /* Now that we have a valid timeout, update the timer state */
     p->p_thread_timer.timeout = new_timeout;
-    
-    TRACE_THREAD("Setting up preemption timer for thread %d", thread_id);
-    
+    TRACE_THREAD("Setting up preemption timer for thread %d == %d", p->current_thread->tid, p->p_thread_timer.thread_id);
+    p->p_thread_timer.thread_id = p->current_thread->tid;
     /* Set enabled flag last to ensure everything is set up */
     TRACE_THREAD("Thread timer started for process %d", p->pid);
     p->p_thread_timer.enabled = 1;
@@ -326,149 +328,6 @@ void start_thread_timing(struct thread *t)
     thread_timer_start(t->proc, t->tid);
 }
 
-/*
- * Thread preemption handler - called by the timeout system
- * This is the core function that will be called periodically
- */
-void thread_preempt_handler(PROC *p, long arg)
-{
-    struct proc *current;
-    unsigned short sr;
-    TIMEOUT *new_timeout = NULL;
-    
-    // TRACE_THREAD("thread_preempt_handler called");
-    if (p != curproc) {
-        // TRACE_THREAD("thread_preempt_handler: called for non-current process (p->pid=%d, curproc->pid=%d), skipping", p->pid, curproc ? curproc->pid : -1);
-        p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
-        return;
-    }
-    
-    /* Prevent reentrance */
-    if (p->p_thread_timer.in_handler) {
-        TRACE_THREAD("(in_handler) Thread timer already in handler, not re-adding timeout");
-        /* Re-add the timeout and return */
-        if (!p->p_thread_timer.enabled) {
-            TRACE_THREAD("(in_handler) Thread timer disabled, not re-adding timeout");
-            /* Timer was disabled while we were waiting to enter handler */
-            return;
-        }
-        TRACE_THREAD("(p->p_thread_timer.in_handler == 1) Re-adding timeout for thread %d in process %d", 
-                     p->p_thread_timer.thread_id, p->pid);
-        p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
-        return;
-    }
-    
-    TRACE_THREAD("(in_handler) Entering thread preemption handler for process %d", p->pid);
-    p->p_thread_timer.in_handler = 1;
-    
-    /* Clear the timeout pointer since this timeout has fired */
-    p->p_thread_timer.timeout = NULL;
-    
-    /* If timer is not enabled, just return without re-adding the timeout */
-    sr = splhigh();
-    if (!p->p_thread_timer.enabled) {
-        TRACE_THREAD("(thread_preempt_handler) Thread timer disabled, not re-adding timeout");
-        p->p_thread_timer.in_handler = 0;
-        spl(sr);
-        return;
-    }
-    
-    /* Get current process - IMPORTANT: Don't use the passed-in process pointer */
-    current = curproc;
-    if (!current) {
-        /* No current process, re-add the timeout and return */
-        TRACE_THREAD("(thread_preempt_handler) No current process, re-adding timeout");
-        new_timeout = addtimeout(p, 20, thread_preempt_handler);
-        spl(sr);
-        p->p_thread_timer.timeout = new_timeout;
-        p->p_thread_timer.in_handler = 0;
-        return;
-    }
-    
-    /* Only preempt if process has multiple threads */
-    if (current->num_threads > 1 && current->current_thread) {
-        TRACE_THREAD("(thread_preempt_handler) Preempting thread %d in process %d", 
-                     current->current_thread->tid, current->pid);
-        /* Check if there are threads in the ready queue */
-        spl(sr);
-        if (!p->ready_queue) {
-            new_timeout = addtimeout(current, 20, thread_preempt_handler);
-            TRACE_THREAD("No threads in ready queue, re-adding timeout");
-            p->p_thread_timer.timeout = new_timeout;
-            p->p_thread_timer.in_handler = 0;
-            return;
-        }
-        
-        /* Don't preempt if a thread switch is already in progress */
-        if (thread_switch_in_progress) {
-            new_timeout = addtimeout(current, 20, thread_preempt_handler);
-            TRACE_THREAD("(thread_preempt_handler) Thread switch in progress, re-adding timeout");
-            p->p_thread_timer.timeout = new_timeout;
-            p->p_thread_timer.in_handler = 0;
-            return;
-        }
-
-        /* Get the current thread */
-        struct thread *curr_thread = current->current_thread;
-        
-        TRACE_THREAD("(thread_preempt_handler) Current thread: %d (state %d)", curr_thread->tid, curr_thread->state);
-        /* Find next thread to run, skip EXITED threads */
-        struct thread *next = current->ready_queue;
-        while (next && (next->state & THREAD_STATE_EXITED)) {
-            remove_from_ready_queue(next);
-            next = current->ready_queue;
-        }
-
-        /* Si aucun thread valide, on ne fait rien */
-        if (!next || next == curr_thread) {
-            TRACE_THREAD("(thread_preempt_handler) No other valid threads to run, re-adding timeout");
-            new_timeout = addtimeout(current, 20, thread_preempt_handler);
-            spl(sr);
-            p->p_thread_timer.timeout = new_timeout;
-            p->p_thread_timer.in_handler = 0;
-            return;
-        }
-        
-        /* Remove next thread from ready queue */
-        remove_from_ready_queue(next);
-        
-        /* Add current thread to ready queue uniquement si il est RUNNING et pas EXITED/thread0 */
-        if ((curr_thread->state & THREAD_STATE_RUNNING) && curr_thread->tid != 0) {
-            TRACE_THREAD("(thread_preempt_handler) Adding current thread %d back to ready queue", curr_thread->tid);
-            atomic_thread_state_change(curr_thread, THREAD_STATE_READY);
-            add_to_ready_queue(curr_thread);
-        }
-        if (next->state & THREAD_STATE_EXITED) {
-            TRACE_THREAD("ERROR: Attempt to switch to EXITED thread %d, skipping", next->tid);
-            new_timeout = addtimeout(current, 20, thread_preempt_handler);
-            p->p_thread_timer.timeout = new_timeout;
-            p->p_thread_timer.in_handler = 0;
-            spl(sr);
-            return;
-        }
-        if (thread_switch_in_progress) {
-            TRACE_THREAD("(thread_preempt_handler) Thread switch in progress, re-adding timeout");
-            new_timeout = addtimeout(current, 20, thread_preempt_handler);
-            p->p_thread_timer.timeout = new_timeout;
-            p->p_thread_timer.in_handler = 0;
-            return;
-        }  
-        /* Update thread states */
-        atomic_thread_state_change(next, THREAD_STATE_RUNNING);
-        current->current_thread = next;
-        TRACE_THREAD("(thread_preempt_handler) Switching to thread %d (state %d)", next->tid, next->state);
-        /* Perform context switch */
-        thread_switch(curr_thread, next);
-        
-        spl(sr);
-    }
-    
-    /* Re-add the timeout for next preemption */
-    new_timeout = addtimeout(current, 20, thread_preempt_handler);
-    p->p_thread_timer.timeout = new_timeout;
-    p->p_thread_timer.in_handler = 0;
-}
-
 // Ready queue management
 void add_to_ready_queue(struct thread *t) {
     struct proc *p = t->proc;
@@ -541,18 +400,6 @@ void remove_from_ready_queue(struct thread *t) {
     spl(sr);
 }
 
-/*
-Thread context switching
-Purpose:
-    Actually performs the context switch between two threads.
-    Saves the state of the current thread, restores the state of the next thread, and updates the CPU to run the new thread.
-What it does:
-    Saves the CPU registers, stack pointer, etc. of the "from" thread.
-    Updates the thread states (from becomes READY, to becomes RUNNING).
-    Restores the CPU registers, stack pointer, etc. of the "to" thread.
-    Updates the current thread pointer in the process.
-    Returns only when the "from" thread is scheduled again.
-*/
 void thread_switch(struct thread *from, struct thread *to) {
     if (!to || from == to || (to->state & THREAD_STATE_EXITED)) {
         TRACE_THREAD("Invalid thread switch request");
@@ -572,7 +419,7 @@ void thread_switch(struct thread *from, struct thread *to) {
     }
     
     thread_switch_in_progress = 1;
-
+    
     /* Store thread pointers for timeout handling */
     switching_from = from;
     switching_to = to;
@@ -586,7 +433,7 @@ void thread_switch(struct thread *from, struct thread *to) {
         canceltimeout(thread_switch_timeout);
     }
     thread_switch_timeout = addtimeout(curproc, THREAD_SWITCH_TIMEOUT_MS / 20, thread_switch_timeout_handler);
-    	
+        
     TRACE_THREAD("Switching threads: %d -> %d", from->tid, to->tid);
     
     // Verify stacks are valid
@@ -594,11 +441,23 @@ void thread_switch(struct thread *from, struct thread *to) {
         TRACE_THREAD("ERROR: Stack corruption detected during thread switch!");
         thread_switch_in_progress = 0;
         spl(sr);
-		reset_thread_switch_state();
+        reset_thread_switch_state();
         return;
     }
+
+    // Vérifie si le thread source est dans la sleep queue
+    struct thread *sleep_t = from->proc->sleep_queue;
+    int in_sleep_queue = 0;
     
-    // Save current USP to the current thread's context
+    while (sleep_t) {
+        if (sleep_t == from) {
+            in_sleep_queue = 1;
+            break;
+        }
+        sleep_t = sleep_t->next_sleeping;
+    }
+    
+    // Sauvegarde l'USP du thread courant
     unsigned long current_usp;
     asm volatile (
         "move.l %%a0,-(%%sp)\n\t"
@@ -610,57 +469,151 @@ void thread_switch(struct thread *from, struct thread *to) {
         : "memory"
     );
     from->ctxt[CURRENT].usp = current_usp;
-    
-    // Save current context
-    if (save_context(&from->ctxt[CURRENT]) == 0) {
-        // This is the initial save_context call
+
+    // Si dans sleep queue, pas besoin de sauvegarder le contexte normal
+    if (in_sleep_queue) {
+        atomic_thread_state_change(to, THREAD_STATE_RUNNING);
+        from->proc->current_thread = to;
+        TRACE_THREAD("IN thread_switch: SLEEP QUEUE, Switching from thread %d to thread %d (sleep queue)", from->tid, to->tid);
+        // Prépare le contexte destination
+        CONTEXT *to_ctx = get_thread_context(to);
+        if (!to_ctx) {
+            reset_thread_switch_state();
+            spl(sr);
+            return;
+        }
+        reset_thread_switch_state();
+        set_thread_usp(to_ctx);
+        change_context(to_ctx);
         
-        // Update thread states - ensure proper state transition
+    } else if (save_context(&from->ctxt[CURRENT]) == 0) {
+        // Save normal context OK - prepare destination context
         atomic_thread_state_change(from, THREAD_STATE_READY);
         atomic_thread_state_change(to, THREAD_STATE_RUNNING);
-        
-        // Update current thread
         from->proc->current_thread = to;
+        TRACE_THREAD("IN thread_switch: READY QUEUE, Switching from thread %d to thread %d", from->tid, to->tid);
+        CONTEXT *to_ctx = get_thread_context(to);
+        if (!to_ctx) {
+            reset_thread_switch_state();
+            spl(sr);
+            return;
+        }
+        reset_thread_switch_state();
+        set_thread_usp(to_ctx);
+        change_context(to_ctx);
         
-        // Special handling for thread0 - use process USP if needed
-        unsigned long usp_to_set;
-        if (to->tid == 0) {
-            // For thread0, use the process's USP if available
-            usp_to_set = to->proc->ctxt[CURRENT].usp ? 
-                         to->proc->ctxt[CURRENT].usp : to->ctxt[CURRENT].usp;
-        } else {
-            // For other threads, use their own USP
-            usp_to_set = to->ctxt[CURRENT].usp;
+        TRACE_THREAD("ERROR: Returned from change_context!");
+    }
+    
+    // Return from context switch
+    TRACE_THREAD("Returned to thread %d after context switch", from->tid);
+    reset_thread_switch_state();
+    spl(sr);
+}
+
+void thread_preempt_handler(PROC *p, long arg)
+{
+
+    unsigned short sr;
+    TIMEOUT *new_timeout = NULL;
+    
+    // TRACE_THREAD("thread_preempt_handler called for process %d", p->pid);
+    
+    if (p != curproc) {
+        p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
+        p->p_thread_timer.timeout->arg = arg;
+        return;
+    }
+    
+    /* Protection contre la réentrance */
+    if (p->p_thread_timer.in_handler) {
+        if (!p->p_thread_timer.enabled) {
+            p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout->arg = arg;
+            return;
+        }
+        p->p_thread_timer.timeout = addtimeout(p, 20, thread_preempt_handler);
+        p->p_thread_timer.timeout->arg = arg;
+        return;
+    }
+    
+    p->p_thread_timer.in_handler = 1;
+    p->p_thread_timer.timeout = NULL;
+    
+    sr = splhigh();
+    
+    /* Ne préempte que si plusieurs threads */
+    if (p->num_threads > 1 && p->current_thread) {
+        struct thread *curr_thread = p->current_thread;
+        struct thread *next = p->ready_queue;
+        
+        // Vérifie la sleep queue si pas de thread ready
+        if (!next && p->sleep_queue) {
+            struct thread *sleep_t = p->sleep_queue;
+            while (sleep_t && sleep_t->wakeup_time <= *((volatile unsigned long *)_hz_200)) {
+                struct thread *next_sleep = sleep_t->next_sleeping;
+                remove_from_sleep_queue(sleep_t);
+                if(sleep_t->state & THREAD_STATE_EXITED) {
+                    sleep_t = next_sleep;
+                    continue; // Skip exited threads
+                }
+                atomic_thread_state_change(sleep_t, THREAD_STATE_READY);
+                add_to_ready_queue(sleep_t);
+                sleep_t = next_sleep;
+            }
+            next = p->ready_queue;
         }
         
-        // Set USP for the new thread - IMPORTANT: Do this BEFORE change_context
-        TRACE_THREAD("Setting USP to %lx", usp_to_set);
+        /* Si pas de thread à exécuter */
+        if (!next) {
+            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            p->p_thread_timer.timeout = new_timeout;
+            p->p_thread_timer.in_handler = 0;
+            return;
+        }
         
-        // Use proper assembly to set USP - ensure it's properly aligned
-        unsigned long aligned_usp = usp_to_set & ~3L;
-        asm volatile (
-            "move.l %0,%%a0\n\t"
-            "move.l %%a0,%%usp"
-            : 
-            : "r" (aligned_usp)
-            : "a0"
-        );
+        /* Pas de préemption si switch déjà en cours */
+        if (thread_switch_in_progress) {
+            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            new_timeout->arg = (long)curr_thread;
+            p->p_thread_timer.timeout = new_timeout;
+            p->p_thread_timer.in_handler = 0;
+            return;
+        }
         
-        // Clear the in-progress flag before context switch
-		// Don't reset state here - will be reset when we return from context switch
+        /* Retire next de la ready queue */
+        remove_from_ready_queue(next);
         
-        // Perform context switch
-        change_context(&to->ctxt[CURRENT]);
+        /* Ajoute current à la ready queue si RUNNING et pas thread0 */
+        if ((curr_thread->state == THREAD_STATE_RUNNING) && curr_thread->tid != 0) {
+            atomic_thread_state_change(curr_thread, THREAD_STATE_READY);
+            add_to_ready_queue(curr_thread);
+        }
         
-        // We should never reach here
-        TRACE_THREAD("ERROR: Returned from change_context!");
-    } else {
-        // This is the return from context switch
-        TRACE_THREAD("Returned to thread %d after context switch", from->tid);
-        // Reset thread switch state
-        reset_thread_switch_state();
-        spl(sr);
+        /* Met à jour les états et fait le switch */
+        atomic_thread_state_change(next, THREAD_STATE_RUNNING);
+        p->current_thread = next;
+        
+        /* Réarme le timer avant le switch */
+        TRACE_THREAD("CALLING thread_switch: Switching from thread %d to thread %d", curr_thread->tid, next->tid);
+        thread_switch(curr_thread, next);
+
+        TRACE_THREAD("Returned from thread_switch: now running thread %d, rearming timer", next->tid);
+        new_timeout = addtimeout(p, 20, thread_preempt_handler);
+        new_timeout->arg = (long)next;
+        p->p_thread_timer.timeout = new_timeout;
+        p->p_thread_timer.in_handler = 0;
+
+        spl(sr);        
     }
+    
+    /* Réarme le timer si pas de switch */
+    new_timeout = addtimeout(p, 20, thread_preempt_handler);
+    new_timeout->arg = (long)p->current_thread;
+    p->p_thread_timer.timeout = new_timeout;
+    p->p_thread_timer.in_handler = 0;
+    
+    spl(sr);
 }
 
 // Thread creation
@@ -675,10 +628,12 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
         spl(sr);
         return -EINVAL;
     }
-    	
-    struct thread *t = kmalloc(sizeof(struct thread));
-    if (!t) return -ENOMEM;
     
+    struct thread *t = kmalloc(sizeof(struct thread));
+    if (!t) {
+        return -ENOMEM;
+    }
+    TRACE_THREAD("KMALLOC: Allocated thread structure at %p", t);
     TRACE_THREAD("Creating thread: pid=%d, func=%p, arg=%p", p->pid, func, arg);
     
     // Basic initialization
@@ -698,15 +653,25 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     t->stack = kmalloc(STKSIZE);
     if (!t->stack) {
 		p->num_threads--;  // Revert the thread count increment
+        TRACE_THREAD("KFREE: Stack allocation failed");
         kfree(t);
-        TRACE_THREAD("Stack allocation failed");
         spl(sr);
         return -ENOMEM;
     }
+    TRACE_THREAD("KMALLOC: Allocated stack at %p for thread %d", t->stack, t->tid);
     
     t->stack_top = (char*)t->stack + STKSIZE;
     t->stack_magic = STACK_MAGIC;
     
+    t->idle_stack = NULL;  // No idle stack initially
+    t->idle_stack_top = NULL;  // No idle stack top initially
+    t->wakeup_time = 0;  // No wakeup time initially
+    t->next_sleeping = NULL;  // Not in sleep queue initially
+    t->next_ready = NULL;  // Not in ready queue initially
+    t->next = NULL;  // Not linked to any other thread yet
+    t->wait_type = WAIT_NONE;  // Not waiting for anything initially
+    t->sleep_reason = 0;  // No sleep reason initially
+
     TRACE_THREAD("Thread %d stack: base=%p, top=%p", t->tid, t->stack, t->stack_top);
     
     // Initialize context
@@ -728,25 +693,17 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     t->next = NULL;
     
     // IMPORTANT: If this is the first thread, set it as the current thread
-    if (p->num_threads == 1) {
+    if (p->num_threads == 1 && t->state != THREAD_STATE_EXITED) {
         atomic_thread_state_change(t, THREAD_STATE_RUNNING);
+        p->current_thread = t;
     } else {
-        // Add to ready queue
+        // Add to ready queue and start timing if needed
         add_to_ready_queue(t);
         
-		#ifdef WITH_THTIMER
-        // Start thread timing if this is the second thread
         if (p->num_threads == 2) {
             TRACE_THREAD("(create_thread) Starting thread timer for process %d", p->pid);
             start_thread_timing(t);
         }
-		#endif
-    }
-
-    // Set as current thread AFTER state is set
-    if (p->num_threads == 1) {
-        TRACE_THREAD("Setting thread %d as current thread for process %d", t->tid, p->pid);
-        p->current_thread = t;
     }
 
     TRACE_THREAD("Thread %d created successfully", t->tid);
@@ -862,100 +819,149 @@ void schedule(void) {
     struct thread *current = p->current_thread;
     struct thread *next = p->ready_queue;
 
-    while (next && next->state != THREAD_STATE_READY) {
+    TRACE_THREAD("In schedule: current thread %d, ready queue head %d", 
+                current ? current->tid : -1, 
+                next ? next->tid : -1);
+
+    // Ignore les threads non READY
+    while (next && (next->state & (THREAD_STATE_EXITED | THREAD_STATE_BLOCKED | THREAD_STATE_SLEEPING))) {
+        TRACE_THREAD("Skipping thread %d in ready queue (state: %d)", next->tid, next->state);
+         // Si le thread est dans la sleep queue, le retirer
         remove_from_ready_queue(next);
         next = p->ready_queue;
     }
 
     TRACE_THREAD("schedule: next=%d", next ? next->tid : -1);
 
-    /* Check if there's a stuck thread switch and recover if needed */
-    if (check_thread_switch_timeout()) {
-        TRACE_THREAD("Detected stuck thread switch during schedule, resetting state");
-        reset_thread_switch_state();
-        /* Continue with scheduling */
-    }
-				
-    if (!next) {
-        TRACE_THREAD("No ready threads");
+    if (thread_switch_in_progress) {
+        TRACE_THREAD("Thread switch in progress, waiting");
+        // Au lieu de forcer le reset, on attend que le switch se termine naturellement
         spl(sr);
+        // Petit délai puis on réessaie
+        {
+            volatile int i;
+            for(i = 0; i < 1000; i++);
+        }
+        schedule();  // Réessayer plus tard
         return;
     }
+
+    // Si pas de thread READY, regarder les threads SLEEPING
+    if (!next && p->sleep_queue) {
+        TRACE_THREAD("No READY threads, checking SLEEPING threads");
+        next = p->sleep_queue;
+        
+        // Réveiller les threads dont le temps est écoulé
+        while (next && next->wakeup_time <= *((volatile unsigned long *)_hz_200)) {
+            struct thread *t = next;
+            next = next->next_sleeping;
+            
+            remove_from_sleep_queue(t);
+            if (t->state == THREAD_STATE_EXITED) continue; // Ne pas réveiller les threads EXITED;
+            atomic_thread_state_change(t, THREAD_STATE_READY);
+            add_to_ready_queue(t);
+        }
+        
+        // Si encore des threads sleeping, prendre le premier
+        if (!p->ready_queue && p->sleep_queue) {
+            next = p->sleep_queue;
+        } else {
+            next = p->ready_queue;
+        }
+    }
+
+    // Si pas de thread prêt, chercher thread0
+    if (!next) {
+        struct thread *t0 = p->threads;
+
+        while (t0 && t0->tid != 0) t0 = t0->next;
+
+        if (t0 && !(t0->state & THREAD_STATE_EXITED)) {
+            TRACE_THREAD("No ready threads >0, switching to thread0");
+            next = t0;
+        } else {
+            TRACE_THREAD("No ready threads available");
+            spl(sr);
+            return;
+        }
+    }
     
-    // If there's no current thread, just switch to the next one
+    // Si pas de thread courant, switch direct
     if (!current) {
         TRACE_THREAD("No current thread, switching to thread %d", next->tid);
-        
-        // Remove next thread from ready queue
         remove_from_ready_queue(next);
-        
-        // Update thread states
         atomic_thread_state_change(next, THREAD_STATE_RUNNING);
         p->current_thread = next;
+        TRACE_THREAD("IN schedule: No current thread, Switching to thread %d", next->tid);
+        CONTEXT *next_ctx = get_thread_context(next);
+        set_thread_usp(next_ctx);
         
-        // Set USP for the new thread
-        TRACE_THREAD("Setting USP to %lx", next->ctxt[CURRENT].usp);
-        asm volatile (
-            "move.l %0,%%a0\n\t"
-            "move.l %%a0,%%usp"
-            : 
-            : "r" (next->ctxt[CURRENT].usp)
-            : "a0"
-        );
-        
-        // Perform context switch - this should never return
         change_context(&next->ctxt[CURRENT]);
-        
-        // We should never reach here
         TRACE_THREAD("ERROR: Returned from change_context!");
         spl(sr);
         return;
     }
 
-    // Check for pending signals in the current thread
-    if (current && current->proc && current->proc->p_sigacts && 
-        current->proc->p_sigacts->thread_signals) {
-        int sig = check_thread_signals(current);
-        if (sig) {
-            /* Handle the signal before switching */
-            handle_thread_signal(current, sig);
-        }
-    }
-    
-    // IMPORTANT: Always switch to a different thread if possible
-    if (next == current && next->next_ready) {
-        next = next->next_ready;
-        TRACE_THREAD("Skipping current thread, using next=%d", next->tid);
-    }
-    
-    // If next is still current, don't switch
-    if (next == current) {
-        TRACE_THREAD("Only current thread is ready, skipping schedule");
+    // Ne jamais switcher vers un thread EXITED
+    if (next->state & THREAD_STATE_EXITED) {
+        TRACE_THREAD("Next thread is EXITED, not switching");
+        remove_from_ready_queue(next);
         spl(sr);
         return;
     }
-    
+
+    if (next == current) {
+        // Chercher le prochain thread ready dans la queue
+        next = next->next_ready;
+        while (next && next->state != THREAD_STATE_READY) {
+            next = next->next_ready; 
+        }
+        
+        if (!next) {
+            TRACE_THREAD("No other ready threads available");
+            spl(sr);
+            return;
+        }
+    }
+
     TRACE_THREAD("Switching threads: %d -> %d", current->tid, next->tid);
     
-    // Remove next thread from ready queue
-    remove_from_ready_queue(next);
-    
-    // Add current thread to ready queue if it's still runnable
-    if (current->state == THREAD_STATE_RUNNING) {
-        // Set state to READY before adding to queue
-        atomic_thread_state_change(current, THREAD_STATE_READY);
-        add_to_ready_queue(current);
-        TRACE_THREAD("Added current thread %d to ready queue", current->tid);
+    // Prépare le switch
+    if (is_in_ready_queue(next)) {
+        remove_from_ready_queue(next);
     }
     
-    // Update thread states
+    // Ne modifie l'état du thread courant que s'il est RUNNING
+    if (current->state == THREAD_STATE_RUNNING) {
+        // Vérifie si le thread est dans la sleep queue
+        struct thread *sleep_t = p->sleep_queue;
+        int in_sleep_queue = 0;
+        while (sleep_t) {
+            if (sleep_t == current) {
+                in_sleep_queue = 1;
+                break;
+            }
+            sleep_t = sleep_t->next_sleeping;
+        }
+
+        // Si dans la sleep queue, remettre en SLEEPING, sinon en READY
+        if (in_sleep_queue) {
+            atomic_thread_state_change(current, THREAD_STATE_SLEEPING);
+        } else {
+            if (current->state == THREAD_STATE_EXITED) return; // Ne jamais switcher vers un thread EXITED
+            atomic_thread_state_change(current, THREAD_STATE_READY);
+            add_to_ready_queue(current);
+        }
+    }
+    
+    // Met à jour l'état du prochain thread en dernier
     atomic_thread_state_change(next, THREAD_STATE_RUNNING);
+
     p->current_thread = next;
     
-    // Switch to next thread
+    // Effectue le switch
     thread_switch(current, next);
-    
-    // Interrupts are restored by thread_switch
+    spl(sr);
 }
 
 // Thread exit
@@ -966,6 +972,7 @@ void thread_exit(void) {
         return;
     }
     struct thread *current = p->current_thread;
+    
     if (!current) {
         TRACE_THREAD("thread_exit: No current thread");
         return;
@@ -979,35 +986,20 @@ void thread_exit(void) {
     if (thread_exit_in_progress && exit_owner_tid != current->tid) {
         spl(sr);
         TRACE_THREAD("Thread exit already in progress by thread %d, waiting", exit_owner_tid);
-        volatile int i; for (i = 0; i < 1000; i++);
         thread_exit();
         return;
     }
-    thread_exit_in_progress = 1;
-    exit_owner_tid = current->tid;
 
     int tid = current->tid;
+    thread_exit_in_progress = 1;
+    exit_owner_tid = tid;
 
-    // Marquer EXITED et retirer de la ready queue
+    // Marquer EXITED et retirer des queues
     atomic_thread_state_change(current, THREAD_STATE_EXITED);
     remove_from_ready_queue(current);
+    remove_from_sleep_queue(current);
 
-    // Annuler les timers éventuels
-    if (current->tid == p->p_thread_timer.thread_id && p->p_thread_timer.enabled) {
-        TRACE_THREAD("Stopping thread timer for thread %d", tid);
-        thread_timer_stop(p);
-        // Si le process a encore plusieurs threads, réarmer le timer sur un autre thread
-        if (p->num_threads > 1) {
-            struct thread *t = p->threads;
-            // Cherche un thread vivant différent du courant
-            while (t && (t == current || t->state == THREAD_STATE_EXITED)) t = t->next;
-            if (t) {
-                TRACE_THREAD("Rearming thread timer for thread %d", t->tid);
-                thread_timer_start(p, t->tid);
-            }
-        }
-    }
-    // Retirer de la liste des threads du process
+    // Retirer de la liste des threads
     struct thread **tp;
     for (tp = &p->threads; *tp; tp = &(*tp)->next) {
         if (*tp == current) {
@@ -1017,89 +1009,89 @@ void thread_exit(void) {
     }
     p->num_threads--;
 
-    // Libérer la stack si ce n'est pas thread0
-    if (current->stack && tid != 0) {
-        TRACE_THREAD("Freeing stack for thread %d", tid);
-        kfree(current->stack);
-        current->stack = NULL;
-    }
-
-    // Libérer la structure thread
-    TRACE_THREAD("Freeing thread %d structure", tid);
-    current->magic = 0;
-    kfree(current);
-
-    if (tid == 0) {
-        // Attendre la fin de tous les threads enfants
-        while (p->num_threads > 1) {
-            // Vérifie que tous les threads restants sont bien EXITED
-            struct thread *t = p->threads;
-            int all_exited = 1;
-            while (t) {
-                if (t->tid != 0 && t->state != THREAD_STATE_EXITED) {
-                    all_exited = 0;
-                    break;
-                }
-                t = t->next;
-            }
-            if (all_exited)
-                break;
-
-            spl(sr);
-            TRACE_THREAD("Thread0 waiting for %d threads to finish", p->num_threads - 1);
-            sys_p_sleepthread(40);
-            sr = splhigh();
+    // Gestion des timers
+    if (p->num_threads == 1) {
+        TRACE_THREAD("Only one thread remaining, stopping all timers");
+        if (thread_switch_timeout) {
+            canceltimeout(thread_switch_timeout);
+            thread_switch_timeout = NULL;
         }
-        TRACE_THREAD("Thread0 exiting, returning to process");
         if (p->p_thread_timer.enabled) {
-            TRACE_THREAD("Cleaning up thread timer for process %d", p->pid);
             thread_timer_stop(p);
-        }        
-        p->current_thread = NULL;
-        thread_exit_in_progress = 0;
-        exit_owner_tid = -1;
-        spl(sr);
-        return;
-    }
-
-    struct thread *next = p->ready_queue;
-    if (next) {
-        remove_from_ready_queue(next);
-        atomic_thread_state_change(next, THREAD_STATE_RUNNING);
-        p->current_thread = next;
-        TRACE_THREAD("Switching to thread %d", next->tid);
-
-        thread_exit_in_progress = 0;
-        exit_owner_tid = -1;
-        spl(sr);
-
-        if (save_context(&current->ctxt[CURRENT]) == 0) {
-            change_context(&next->ctxt[CURRENT]);
-            // Ne jamais revenir ici
-            TRACE_THREAD("ERROR: Returned from change_context!");
         }
-        return;
     }
 
-    // Sinon, retourner au contexte process
-    TRACE_THREAD("No other threads to run, returning to main process");
-    p->current_thread = NULL;
+    // Chercher le prochain thread AVANT de libérer quoi que ce soit
+    struct thread *next = p->ready_queue;
+    CONTEXT saved_ctx;
+
+    if (next) {
+        // Sauvegarder le contexte du prochain thread
+        if (is_in_ready_queue(next)) {
+            remove_from_ready_queue(next);
+        }
+
+        if (next->state & THREAD_STATE_EXITED) {
+            next = NULL;
+        } else {
+            CONTEXT *next_ctx = get_thread_context(next);
+            if (next_ctx) {
+                memcpy(&saved_ctx, next_ctx, sizeof(CONTEXT));
+                atomic_thread_state_change(next, THREAD_STATE_RUNNING);
+                p->current_thread = next;
+            } else {
+                p->current_thread = NULL; // Clear current thread if context is invalid
+                next = NULL;
+            }
+        }
+    }
+
+    if (!next) {
+        // Pas de thread suivant, préparer le retour au process
+        memcpy(&saved_ctx, &p->ctxt[CURRENT], sizeof(CONTEXT));
+        p->current_thread = NULL;
+    }
+
+    if(current){
+        // Libérer les ressources du thread courant
+        if (current->t_sigctx) {
+            kfree(current->t_sigctx);
+            current->t_sigctx = NULL;
+        }
+        if (current->idle_stack) {
+            kfree(current->idle_stack);
+            current->idle_stack = NULL;
+        }
+        if (current->stack && tid != 0) {
+            kfree(current->stack);
+            current->stack = NULL;
+        }
+
+        // Libérer la structure thread
+        current->magic = 0;
+        TRACE_THREAD("KFREE: Freeing thread %d", tid);
+        kfree(current);
+        current = NULL;
+        TRACE_THREAD("Thread %d exited", tid);
+    } else {
+        TRACE_THREAD("Attempt to exit thread id %d, but No current thread to free", tid);
+    }
+
     thread_exit_in_progress = 0;
     exit_owner_tid = -1;
     spl(sr);
 
-    if (save_context(&current->ctxt[CURRENT]) == 0) {
-        change_context(&p->ctxt[CURRENT]);
-        TRACE_THREAD("ERROR: Returned from change_context to main process!");
-    }
+    // Switch vers le prochain contexte
+    change_context(&saved_ctx);
 }
 
 void init_thread0(struct proc *p) {
     if (p->current_thread) return; // Already initialized
     
     struct thread *t0 = kmalloc(sizeof(struct thread));
+
     if (!t0) return;
-    
+    TRACE_THREAD("KMALLOC: Allocated thread0 structure at %p for process %d", t0, p->pid);
     TRACE_THREAD("Initializing thread0 for process %d", p->pid);
     
     memset(t0, 0, sizeof(struct thread));
@@ -1165,11 +1157,10 @@ long _cdecl sys_p_yieldthread(void)
     // Remove from ready queue if present (shouldn't be necessary for current thread)
     remove_from_ready_queue(current);
     
-    // Set state to READY before adding to queue
-    atomic_thread_state_change(current, THREAD_STATE_READY);
-    
-    // Add to end of ready queue
-    add_to_ready_queue(current);
+    if (current->state == THREAD_STATE_RUNNING) {
+        atomic_thread_state_change(current, THREAD_STATE_READY);
+        add_to_ready_queue(current);
+    }
     
     // Find next thread to run
     struct thread *next = p->ready_queue;
@@ -1211,23 +1202,14 @@ long _cdecl sys_p_yieldthread(void)
     atomic_thread_state_change(next, THREAD_STATE_RUNNING);
     p->current_thread = next;
     
-    // Set USP for the new thread
-    TRACE_THREAD("Setting USP to %lx", next->ctxt[CURRENT].usp);
-    asm volatile (
-        "move.l %0,%%a0\n\t"
-        "move.l %%a0,%%usp"
-        : 
-        : "r" (next->ctxt[CURRENT].usp)
-        : "a0"
-    );
+    TRACE_THREAD("IN YIELD: Yielding from thread %d to thread %d", current->tid, next->tid);
+    CONTEXT *next_ctx = get_thread_context(next);
+    set_thread_usp(next_ctx);
     
     // Save current context and switch to next thread
     if (save_context(&current->ctxt[CURRENT]) == 0) {
         // This is the initial save_context call
-        
-        // Perform context switch - this should never return
-        change_context(&next->ctxt[CURRENT]);
-        
+        change_context(next_ctx);
         // We should never reach here
         TRACE_THREAD("ERROR: Returned from change_context!");
     } else {
@@ -1262,58 +1244,282 @@ long _cdecl sys_p_exitthread(void) {
     return 0;
 }
 
+int is_in_ready_queue(struct thread *t)
+{
+    if (!t || !t->proc)
+        return 0;
+
+    struct thread *cur = t->proc->ready_queue;
+    while (cur) {
+        if (cur == t)
+            return 1;
+        cur = cur->next_ready;
+    }
+    return 0;
+}
+
+static void thread_idle_loop(struct thread *t)
+{
+    if (!t) return;
+
+    unsigned short sr = splhigh();
+    // Ajoute à la sleep queue si pas déjà dedans
+    add_to_sleep_queue(t);
+    spl(sr);
+
+    // TRACE_THREAD("Thread %d entering idle loop, will wake up at %lu", t->tid, t->wakeup_time);
+    
+    // Boucle d'attente jusqu'au temps de réveil
+    while (*((volatile unsigned long *)_hz_200) < t->wakeup_time) {
+        asm volatile("nop");  // Donne la main aux autres threads
+    }
+
+    sr = splhigh();
+
+    remove_from_sleep_queue(t);
+    atomic_thread_state_change(t, THREAD_STATE_READY);
+    add_to_ready_queue(t);
+    
+    spl(sr);
+    // TRACE_THREAD("Thread %d waking up from idle loop", t->tid);
+    return;
+}
+
+static void init_thread_idle_context(struct thread *t)
+{
+    if (!t) return;
+
+    // Clear contexts
+    memset(&t->idle_ctx[CURRENT], 0, sizeof(struct context));
+    memset(&t->idle_ctx[SYSCALL], 0, sizeof(struct context));
+
+    // Allouer une stack dédiée
+    if (!t->idle_stack) {
+        t->idle_stack = kmalloc(STKSIZE);
+        TRACE_THREAD("KMALLOC: Allocated idle stack at %p for thread %d", t->idle_stack, t->tid);
+    }
+    if (!t->idle_stack) {
+        TRACE_THREAD("Failed to allocate idle stack");
+        return;
+    }
+    t->idle_stack_top = (char*)t->idle_stack + STKSIZE;
+
+    // Utiliser la stack dédiée
+    unsigned long ssp = ((unsigned long)t->idle_stack_top - 128) & ~3L;
+    unsigned long usp = ((unsigned long)t->idle_stack_top - 256) & ~3L;
+    
+    // Set up initial context - utiliser idle_start au lieu de thread_idle_loop
+    t->idle_ctx[CURRENT].ssp = ssp;
+    t->idle_ctx[CURRENT].usp = usp;
+    t->idle_ctx[CURRENT].pc = (unsigned long)idle_start;  // Pointer vers la fonction trampoline
+    t->idle_ctx[CURRENT].sr = 0x2000;
+    
+    // Create exception frame pour RTE - utiliser idle_start
+    unsigned short *frame_ptr = (unsigned short *)(ssp - 8);
+    frame_ptr[0] = 0x0000;          // Format/Vector
+    frame_ptr[1] = 0x2000;          // SR
+    frame_ptr[2] = (unsigned short)((unsigned long)idle_start >> 16);   // PC high
+    frame_ptr[3] = (unsigned short)((unsigned long)idle_start);         // PC low
+    
+    // Update SSP to point to frame
+    t->idle_ctx[CURRENT].ssp = (unsigned long)frame_ptr;
+    
+    // Set thread pointer in D0 pour passage à idle_start
+    t->idle_ctx[CURRENT].regs[0] = (unsigned long)t;
+    
+    // Copy to SYSCALL context
+    memcpy(&t->idle_ctx[SYSCALL], &t->idle_ctx[CURRENT], sizeof(struct context));
+    
+    TRACE_THREAD("Idle context initialized for thread %d:", t->tid);
+    TRACE_THREAD("  SSP=%08lx, USP=%08lx", 
+                 t->idle_ctx[CURRENT].ssp, 
+                 t->idle_ctx[CURRENT].usp);
+}
+
 long _cdecl sys_p_sleepthread(long ms)
 {
-    TRACE_THREAD("sys_p_sleepthread(%ld)", ms);
     struct proc *p = curproc;
     struct thread *t = p ? p->current_thread : NULL;
     unsigned short sr;
-    TIMEOUT *timeout = NULL;
 
-    if (!p || !t)
-        return 1; // Timeout par défaut
+    if (!p || !t) return -EINVAL;
+    if (t->tid == 0) return -EINVAL;
+    if (ms <= 0) return 0;
 
     sr = splhigh();
-    t->sleep_reason = 0; // 0 = réveil normal (signal/autre)
-
-    TRACE_THREAD("sys_p_sleepthread: thread %d going to sleep", t->tid);
-    atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
-    remove_from_ready_queue(t);
-
-    // Programmer le timeout si demandé
-    if (ms > 0) {
-        int ticks = ms / 20;
-        if (ticks < 1) ticks = 1;
-        TRACE_THREAD("sys_p_sleepthread: setting timeout for %ld ms (%d ticks)", ms, ticks);
-        timeout = addtimeout(p, ticks, thread_timeout_handler);
-        timeout->arg = (long)t;
-    }
-
-    spl(sr);
-
-    // Laisser la main à un autre thread
-    TRACE_THREAD("sys_p_sleepthread: yielding to scheduler");
-    schedule();
-
-    // Ici, le thread est réveillé (par signal ou timeout)
-    sr = splhigh();
-    if (timeout) {
-        TRACE_THREAD("sys_p_sleepthread: cancelling timeout");
-        canceltimeout(timeout); // Annule le timeout si réveillé autrement
-    }
-
-    // Check if the thread was woken up by a signal
-    if (t->proc->p_sigacts->thread_signals) {
-        int sig = check_thread_signals(t);
-        if (sig) {
-            // Handle the signal
-            handle_thread_signal(t, sig);
-            t->t_sig_in_progress = 0;
+    // Forcer l'utilisation du contexte idle
+    CONTEXT *idle_ctx = &t->idle_ctx[CURRENT];
+    if (save_context(&t->ctxt[CURRENT]) == 0) {
+        // Configure le temps de réveil
+        if(!t->wakeup_time){
+            t->wakeup_time = *((volatile unsigned long *)_hz_200) + (ms / 5);
+        } else {
+            if (*((volatile unsigned long *)_hz_200) >= t->wakeup_time) {
+                // Déjà l'heure du réveil, ne pas aller en idle
+                TRACE_THREAD("Thread %d wake time already passed", t->tid);
+                t->wakeup_time = 0;  // Reset wakeup time
+                spl(sr);
+                schedule();  // Re-schedule immediately
+                return 0;
+            }
         }
+
+        // Change l'état du thread en SLEEPING et retire de la ready queue
+        atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
+        remove_from_ready_queue(t);
+
+        TRACE_THREAD("Sleeping for thread %d, will wake up in %ld ms", t->tid, ms);
+        // Initialise le contexte idle si pas déjà fait
+        init_thread_idle_context(t);
+
+
+        TRACE_THREAD("IN sys_p_sleepthread: Switching to idle context for thread %d", t->tid);
+        set_thread_usp(idle_ctx);
+        spl(sr);  // Restaure SR avant le change_context
+        change_context(idle_ctx);
+    } else {
+        // Si on revient ici, c'est qu'on a été réveillé
+        TRACE_THREAD("Thread %d woke up from sleep", t->tid);
+        t->wakeup_time = 0;  // Reset wakeup time
+        spl(sr);
+        schedule();  // Re-schedule immediately
+        return 0;
+    }
+
+    // On ne devrait JAMAIS arriver ici
+    TRACE_THREAD("ERROR: Returned from idle context switch!");
+    spl(sr);
+    return -1;
+}
+
+void add_to_sleep_queue(struct thread *t)
+{
+    struct proc *p = t->proc;
+    unsigned short sr;
+
+    if (!t || !p) return;
+
+    sr = splhigh();
+
+    // Ajouter vérification de validité du wakeup_time
+    if (t->wakeup_time == 0) {
+        TRACE_THREAD("ERROR: Invalid wakeup time for thread %d", t->tid);
+        spl(sr);
+        return;
+    }
+
+    // Vérifie si déjà dans la sleep queue
+    struct thread *curr = p->sleep_queue;
+    while (curr) {
+        if (curr == t) {
+            TRACE_THREAD("Thread %d already in sleep queue", t->tid);
+            spl(sr);
+            return;
+        }
+        curr = curr->next_sleeping;
+    }
+
+    // Ajoute à la sleep queue, triée par wakeup_time
+    struct thread **pp = &p->sleep_queue;
+    while (*pp && (*pp)->wakeup_time <= t->wakeup_time) {
+        pp = &(*pp)->next_sleeping;
+    }
+    t->next_sleeping = *pp;
+    *pp = t;
+
+    TRACE_THREAD("ADD_TO_SLEEP_Q: Thread %d (wakeup at %lu)", t->tid, t->wakeup_time);
+    spl(sr);
+}
+
+void remove_from_sleep_queue(struct thread *t)
+{
+    struct proc *p = t->proc;
+    unsigned short sr;
+
+    if (!t || !p) return;
+
+    sr = splhigh();
+
+    struct thread **pp = &p->sleep_queue;
+    while (*pp) {
+        if (*pp == t) {
+            *pp = t->next_sleeping;
+            t->next_sleeping = NULL;
+            TRACE_THREAD("REMOVE_FROM_SLEEP_Q: Thread %d", t->tid);
+            break;
+        }
+        pp = &(*pp)->next_sleeping;
     }
 
     spl(sr);
-    
-    return t->sleep_reason; // 1 = timeout, 0 = autre
 }
+
+static CONTEXT* get_thread_context(struct thread *t)
+{
+    if (!t) return NULL;
+
+    // Pour thread0, utiliser le contexte process
+    if (t->tid == 0) {
+        if (!t->proc || t->proc->magic != CTXT_MAGIC) {
+            TRACE_THREAD("ERROR: Invalid process magic for thread0");
+            return NULL;
+        }
+        TRACE_THREAD("Using process context for thread0");
+        return &t->proc->ctxt[CURRENT];
+    }
+
+    // Pour les autres threads, vérifier leur magic
+    if (t->magic != CTXT_MAGIC) {
+        TRACE_THREAD("ERROR: Invalid thread magic in get_thread_context");
+        return NULL;
+    }
+
+    // Pour les threads SLEEPING, utiliser le contexte idle
+    if (t->state == THREAD_STATE_SLEEPING) {
+        TRACE_THREAD("Using idle context for sleeping thread %d", t->tid);
+        return &t->idle_ctx[CURRENT];
+    }
+
+    TRACE_THREAD("Using current context for thread %d", t->tid);
+    return &t->ctxt[CURRENT];
+}
+
+static void set_thread_usp(CONTEXT *ctx) {
+    if (!ctx) return;
+    
+    unsigned long aligned_usp = ctx->usp & ~3L;
+    asm volatile (
+        "move.l %0,%%a0\n\t"
+        "move.l %%a0,%%usp"
+        : 
+        : "r" (aligned_usp)
+        : "a0"
+    );
+}
+
+// Fonction trampoline pour le contexte idle
+static void idle_start(void) {
+    struct proc *p = curproc;
+    if (!p || !p->current_thread) {
+        TRACE_THREAD("idle_start: No current thread!");
+        return;
+    }
+    
+    struct thread *t = p->current_thread;
+    TRACE_THREAD("Idle trampoline started for thread %d", t->tid);
+    
+    // Appeler la boucle idle avec le thread comme argument
+    thread_idle_loop(t);
+
+    CONTEXT *orig_ctx = &t->ctxt[CURRENT];
+    if (!orig_ctx) {
+        TRACE_THREAD("ERROR: Cannot get original context!");
+        return;
+    }
+
+    // Restaure directement le contexte original
+    set_thread_usp(orig_ctx);
+    change_context(orig_ctx);
+}
+
 /* End of Threads stuff */

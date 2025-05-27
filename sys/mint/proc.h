@@ -53,14 +53,21 @@
 #define THREAD_STATE_STOPPED    0x0010
 #define THREAD_STATE_ZOMBIE     0x0020
 #define THREAD_STATE_DEAD       0x0040
+#define THREAD_STATE_BLOCKED    0x0080
 
 // For checks only:
-#define THREAD_STATE_BLOCKED    (THREAD_STATE_SLEEPING | THREAD_STATE_WAITING)
 #define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
 #define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
 
 /* Thread signal handling constants */
 #define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
+
+/* Thread wait types */
+#define WAIT_NONE    0
+#define WAIT_SIGNAL  1
+#define WAIT_MUTEX   2
+#define WAIT_CONDVAR 3
+#define WAIT_IO      4
 
 /*
 For SCHED_FIFO: pick the highest-priority, first-in thread.
@@ -85,12 +92,23 @@ struct thread {
     short priority;              // Thread priority
 	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
     struct thread *next_ready;   // For ready queue
-	unsigned long magic;
+
+	unsigned long magic;	// Magic number for validation
+
     void (*func)(void*);  // Function to execute
     void *arg;            // Argument to pass to function
 
 	int sleep_reason;   /* 0 = woken by signal/other, 1 = timeout */
-	TIMEOUT *alarm_timeout;  /* Per-thread alarm timeout (deprecated - use process alarm) */
+	TIMEOUT *alarm_timeout;  /* Per-thread alarm timeout */
+	
+	int wait_type;      // WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.
+	void *wait_obj;     // Pointeur vers l'objet attendu (mutex, condvar, etc.)
+
+    unsigned long wakeup_time;         // Temps de réveil en ticks
+    CONTEXT idle_ctx[PROC_CTXTS];	// Contexte d'idle dédié
+	void *idle_stack;              // Stack dédiée pour le contexte idle
+    char *idle_stack_top;          // Pointeur haut de la stack idle
+	struct thread *next_sleeping;  // Pour chaîner les threads en sleep
 
     /* Signal handling fields */
     ulong   t_sigpending;        /* Signals pending for this thread */
@@ -398,6 +416,7 @@ struct proc
 	} p_thread_timer;
 
 	struct thread *ready_queue;
+	struct thread *sleep_queue;    // Liste des threads en sleep
 
 	struct thread *threads;        // Thread list
 	struct thread *current_thread; // Current thread

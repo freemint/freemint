@@ -213,6 +213,9 @@ init_proc(void)
 	rootproc->threads = NULL;
 	rootproc->num_threads = 0;
 
+	rootproc->sleep_queue = NULL;
+	rootproc->ready_queue = NULL;
+	
 	thread_timer_init(rootproc);
   
 }

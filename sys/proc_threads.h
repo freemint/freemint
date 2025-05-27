@@ -14,6 +14,9 @@ void atomic_thread_state_change(struct thread *t, int new_state);
 /* Ready queue management */
 void add_to_ready_queue(struct thread *t);
 void remove_from_ready_queue(struct thread *t);
+int is_in_ready_queue(struct thread *t);
+void add_to_sleep_queue(struct thread *t);
+void remove_from_sleep_queue(struct thread *t);
 
 /* Thread scheduling */
 void schedule(void);
