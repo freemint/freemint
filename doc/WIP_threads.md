@@ -33,7 +33,8 @@ graph TD
 
     %% Scheduling
     subgraph "Scheduling"
-        schedule["schedule()"] --> thread_switch["thread_switch(from, to)"]
+        schedule["schedule()"] --> check_and_wake_sleeping_threads1["check_and_wake_sleeping_threads(p)"]
+        schedule --> thread_switch["thread_switch(from, to)"]
         thread_switch --> save_context["save_context(&from->ctxt[CURRENT])"]
         thread_switch --> change_context["change_context(to_ctx)"]
         thread_switch --> set_thread_usp["set_thread_usp(to_ctx)"]
@@ -48,23 +49,28 @@ graph TD
         add_to_sleep_queue["add_to_sleep_queue(t)"]
         remove_from_sleep_queue["remove_from_sleep_queue(t)"]
         is_in_ready_queue["is_in_ready_queue(t)"]
+        is_in_sleep_queue["is_in_sleep_queue(t)"]
     end
 
     %% Sleep Management
     subgraph "Sleep Management"
-        sys_p_sleepthread["sys_p_sleepthread(ms)"] --> save_context2["save_context(&t->ctxt[CURRENT])"]
-        save_context2 --> init_thread_idle_context["init_thread_idle_context(t)"]
-        init_thread_idle_context --> change_context2["change_context(idle_ctx)"]
-        change_context2 --> idle_start["idle_start()"]
-        idle_start --> thread_idle_loop["thread_idle_loop(t)"]
-        thread_idle_loop --> add_to_sleep_queue1["add_to_sleep_queue(t)"]
+        sys_p_sleepthread["sys_p_sleepthread(ms)"] --> sleep_timeout["addtimeout(p, ticks, thread_sleep_wakeup_handler)"]
+        sys_p_sleepthread --> add_to_sleep_queue1["add_to_sleep_queue(t)"]
+        sys_p_sleepthread --> schedule1["schedule()"]
+        
+        thread_sleep_wakeup_handler["thread_sleep_wakeup_handler(p, arg)"] --> remove_from_sleep_queue1["remove_from_sleep_queue(t)"]
+        thread_sleep_wakeup_handler --> add_to_ready_queue2["add_to_ready_queue(t)"]
+        thread_sleep_wakeup_handler --> schedule2["schedule()"]
+        
+        check_and_wake_sleeping_threads["check_and_wake_sleeping_threads(p)"] --> should_wake_thread["should_wake_thread(t)"]
     end
 
     %% Timer & Preemption
     subgraph "Timer & Preemption"
         thread_timer_init["thread_timer_init(p)"]
         thread_timer_start["thread_timer_start(p, thread_id)"] --> addtimeout1["addtimeout(p, 20, thread_preempt_handler)"]
-        thread_preempt_handler["thread_preempt_handler(p, arg)"] --> schedule1["schedule()"]
+        thread_preempt_handler["thread_preempt_handler(p, arg)"] --> check_and_wake_sleeping_threads2["check_and_wake_sleeping_threads(p)"]
+        thread_preempt_handler --> schedule3["schedule()"]
         thread_timer_stop["thread_timer_stop(p)"] --> canceltimeout1["canceltimeout(timeout)"]
         
         thread_switch_timeout_handler["thread_switch_timeout_handler(p, arg)"] --> reset_thread_switch_state["reset_thread_switch_state()"]
@@ -118,8 +124,8 @@ graph TD
     handle_thread_signal --> thread_signal_trampoline
     
     %% Sleep/Wake Connections
-    thread_timeout_handler --> remove_from_sleep_queue
-    thread_timeout_handler --> add_to_ready_queue
+    thread_sleep_wakeup_handler --> remove_from_sleep_queue
+    thread_sleep_wakeup_handler --> add_to_ready_queue
     
     %% Style
     classDef creation fill:#f9f,stroke:#333,stroke-width:2px
@@ -163,6 +169,7 @@ graph TD
 
 ### 4. Scheduling
 - **schedule**: Selects the next thread to run
+- **check_and_wake_sleeping_threads**: Checks and wakes up any threads that should be awakened
 - **thread_switch**: Performs the context switch between threads
 - **save_context**: Saves the current thread's execution context
 - **change_context**: Restores a thread's execution context
@@ -175,12 +182,13 @@ graph TD
 - **add_to_sleep_queue**: Adds a thread to the sleep queue
 - **remove_from_sleep_queue**: Removes a thread from the sleep queue
 - **is_in_ready_queue**: Checks if a thread is in the ready queue
+- **is_in_sleep_queue**: Checks if a thread is in the sleep queue
 
 ### 6. Sleep Management
 - **sys_p_sleepthread**: Puts a thread to sleep for a specified time
-- **init_thread_idle_context**: Initializes the idle context for sleeping
-- **idle_start**: Entry point for the idle context
-- **thread_idle_loop**: Main loop for sleeping threads
+- **thread_sleep_wakeup_handler**: Direct handler to wake up a thread at the exact time
+- **check_and_wake_sleeping_threads**: Periodically checks for threads that should wake up
+- **should_wake_thread**: Determines if a thread should wake up based on its wake time
 
 ### 7. Timer & Preemption
 - **thread_timer_init**: Initializes the thread timer system
@@ -210,15 +218,48 @@ graph TD
    - sys_p_createthread → create_thread → init_thread_context → add_to_ready_queue → schedule → thread_start → thread function → thread_exit
 
 2. **Thread Scheduling**:
-   - thread_preempt_handler → schedule → thread_switch → save_context → change_context
+   - thread_preempt_handler → check_and_wake_sleeping_threads → schedule → thread_switch → save_context → change_context
 
 3. **Thread Sleep**:
-   - sys_p_sleepthread → save_context → init_thread_idle_context → change_context → idle_start → thread_idle_loop → add_to_sleep_queue
+   - sys_p_sleepthread → add_to_sleep_queue → schedule → thread_sleep_wakeup_handler → remove_from_sleep_queue → add_to_ready_queue → schedule
 
 4. **Signal Handling**:
    - sys_p_kill_thread → deliver_signal_to_thread → check_thread_signals → handle_thread_signal → thread_signal_trampoline
 
 5. **Thread Wakeup**:
-   - thread_timeout_handler → remove_from_sleep_queue → add_to_ready_queue → schedule
+   - thread_sleep_wakeup_handler → remove_from_sleep_queue → add_to_ready_queue → schedule
 
-This diagram and explanation provide a comprehensive overview of the FreeMiNT thread lifecycle, showing how threads are created, scheduled, and terminated, as well as how they interact with timers and signals.
+## Recent Improvements
+
+### Enhanced Sleep Management
+The sleep management system has been significantly improved to provide more accurate and reliable thread wakeups:
+
+1. **Direct Wakeup Mechanism**: Each sleeping thread now has a dedicated timeout that triggers exactly when the thread should wake up, using `thread_sleep_wakeup_handler`.
+
+2. **Regular Sleep Queue Checking**: The `check_and_wake_sleeping_threads` function is called regularly from both the scheduler and preemption handler to ensure no threads remain sleeping past their wake time.
+
+3. **Improved Sleep Queue Management**: The sleep queue is now sorted by wake time, and threads are efficiently added and removed.
+
+4. **Better Timing Precision**: Sleep times are now calculated with better precision, and the system tracks and reports any delays in thread wakeups.
+
+### Preemption Handler Improvements
+The thread preemption handler has been enhanced to be more robust:
+
+1. **Reentrance Protection**: The handler now properly protects against reentrance, preventing issues where it could get stuck in a loop.
+
+2. **Timer Management**: Better management of the preemption timer, including proper handling of timer disabling.
+
+3. **Thread Validation**: More thorough validation of thread pointers and states to prevent operating on invalid threads.
+
+4. **State Management**: The handler now properly manages thread states during context switches.
+
+### Thread Switching Enhancements
+The thread switching mechanism has been improved:
+
+1. **Timeout Detection**: A timeout mechanism detects and recovers from stuck thread switches.
+
+2. **Context Management**: Better handling of thread contexts, including proper saving and restoring of user stack pointers.
+
+3. **Error Recovery**: Enhanced error recovery to handle cases where thread switches fail.
+
+These improvements make the FreeMiNT threading system more robust, responsive, and predictable, especially for time-sensitive applications.
