@@ -30,6 +30,32 @@ void cleanup_thread_signals(struct thread *t);
 void dispatch_thread_signals(struct thread *t);
 void init_thread_signal_subsystem(void);
 
+/* Signal Threads implementation */
+/**
+ * Timeout handler for sleeping threads.
+ *
+ * This function is called when a thread sleeping timeout expires.
+ * It will wake up the thread and put it back into the ready queue,
+ * unless the thread is not sleeping or is not blocked.
+ *
+ * @param p: the process containing the thread
+ * @param arg: ignored
+ */
+void thread_timeout_handler(PROC *p, long arg)
+{
+    struct thread *t = (struct thread *)arg;
+    TRACE_THREAD("thread_timeout_handler: thread %d timeout", t ? t->tid : -1);
+    if(!t) return;
+    unsigned short sr = splhigh();
+    if ((t->state & THREAD_STATE_BLOCKED) && t->wait_type == WAIT_SIGNAL) {
+        t->sleep_reason = 1; // Timeout
+        t->wait_type = WAIT_NONE;
+        atomic_thread_state_change(t, THREAD_STATE_READY);
+        add_to_ready_queue(t);
+    }
+    spl(sr);
+}
+
 /*
  * Get the current thread's ID
  * Returns the thread ID or -1 on error

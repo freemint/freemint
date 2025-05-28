@@ -69,6 +69,13 @@
 #define WAIT_CONDVAR 3
 #define WAIT_IO      4
 
+// Thread scheduling constants
+#define THREAD_MIN_TIMESLICE   5    // Minimum timeslice in ticks (5 = 25ms at 200Hz)
+#define THREAD_DEFAULT_TIMESLICE 20 // Default timeslice in ticks (20 = 100ms)
+
+// Default scheduling policy
+#define DEFAULT_SCHED_POLICY SCHED_FIFO
+
 /*
 For SCHED_FIFO: pick the highest-priority, first-in thread.
 For SCHED_RR: pick the next thread in round-robin order for its priority.
@@ -90,6 +97,8 @@ struct thread {
     CONTEXT ctxt[PROC_CTXTS];    // Thread context (reuse FreeMiNT's context)
     short state;                 // Thread state (RUNNING/READY/BLOCKED)
     short priority;              // Thread priority
+    short timeslice;             // Remaining timeslice for this thread
+    short total_timeslice;       // Total timeslice allocated to this thread	
 	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
     struct thread *next_ready;   // For ready queue
 
@@ -105,9 +114,8 @@ struct thread {
 	void *wait_obj;     // Pointeur vers l'objet attendu (mutex, condvar, etc.)
 
     unsigned long wakeup_time;         // Temps de réveil en ticks
-    CONTEXT idle_ctx[PROC_CTXTS];	// Contexte d'idle dédié
-	void *idle_stack;              // Stack dédiée pour le contexte idle
-    char *idle_stack_top;          // Pointeur haut de la stack idle
+
+    unsigned long last_scheduled;  // Last time this thread was scheduled (in ticks)	
 	struct thread *next_sleeping;  // Pour chaîner les threads en sleep
 
     /* Signal handling fields */
@@ -123,6 +131,7 @@ struct thread {
 #define SYS_sleepthread		0x186
 #define SYS_createthread	0x189
 #define SYS_exitthread		0x18a
+#define SYS_setthreadpolicy 0x18b
 
 #define SYS_threadsignal	0x18e
 #define SYS_thread_alarm	0x18f
@@ -131,6 +140,7 @@ long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(void);
 long _cdecl sys_p_yieldthread(void);
 long _cdecl sys_p_sleepthread(long ms);
+long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, short timeslice);
 
 /* Thread signal dispatcher */
 long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);

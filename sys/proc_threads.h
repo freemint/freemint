@@ -17,12 +17,10 @@ void remove_from_ready_queue(struct thread *t);
 int is_in_ready_queue(struct thread *t);
 void add_to_sleep_queue(struct thread *t);
 void remove_from_sleep_queue(struct thread *t);
+int is_in_sleep_queue(struct thread *t);
 
 /* Thread scheduling */
 void schedule(void);
-
-/* Thread timeout handling */
-void thread_timeout_handler(PROC *p, long arg);
 
 /* Checks for pending signals in a thread, returns signal number or 0 */
 int check_thread_signals(struct thread *t);
@@ -38,3 +36,5 @@ void thread_signal_trampoline(int sig, void *arg);
 void save_thread_context(struct thread *t, struct thread_sigcontext *ctx);
 /* Restores thread execution context after signal handling */
 void restore_thread_context(struct thread *t, struct thread_sigcontext *ctx);
+/* Thread timeout handling */
+void thread_timeout_handler(PROC *p, long arg);
