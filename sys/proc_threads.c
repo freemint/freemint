@@ -315,7 +315,7 @@ void add_to_ready_queue(struct thread *t) {
     struct thread *curr = p->ready_queue;
     while (curr) {
         if (curr == t) {
-            TRACE_THREAD("Thread %d already in ready queue", t->tid);
+            TRACE_THREAD("Ready_Q: Thread %d already in ready queue", t->tid);
             spl(sr);
             return;
         }
@@ -323,7 +323,7 @@ void add_to_ready_queue(struct thread *t) {
     }
 
     atomic_thread_state_change(t, THREAD_STATE_READY);
-    TRACE_THREAD("ADD_TO_READY_Q: Thread %d (pri %d, state %d)", t->tid, t->priority, t->state);
+    TRACE_THREAD("READY_Q: Added Thread %d (pri %d, state %d) to ready queue", t->tid, t->priority, t->state);
 
     // Add to end of queue
     if (!p->ready_queue) {
@@ -350,8 +350,6 @@ void remove_from_ready_queue(struct thread *t) {
         return;
     }
 
-    TRACE_THREAD("REMOVE_FROM_READY_Q: Thread %d", t->tid);
-
     struct thread **pp = &p->ready_queue;
     struct thread *curr = p->ready_queue;
     int found = 0;
@@ -361,7 +359,7 @@ void remove_from_ready_queue(struct thread *t) {
             *pp = curr->next_ready;
             curr->next_ready = NULL;
             found = 1;
-            TRACE_THREAD("Removed thread %d from ready queue", t->tid);
+            TRACE_THREAD("READY_Q: Removed thread %d from ready queue", t->tid);
             break;
         }
         pp = &(curr->next_ready);
@@ -369,7 +367,7 @@ void remove_from_ready_queue(struct thread *t) {
     }
 
     if (!found) {
-        TRACE_THREAD("Thread %d not found in ready queue", t->tid);
+        TRACE_THREAD("READY_Q: Thread %d not found in ready queue", t->tid);
     }
 
     spl(sr);
@@ -378,27 +376,26 @@ void remove_from_ready_queue(struct thread *t) {
 void thread_switch(struct thread *from, struct thread *to) {
 
     if (!to || from == to || (to->state & THREAD_STATE_EXITED) || from == to) {
-        TRACE_THREAD("Invalid thread switch request");
         reset_thread_switch_state();
-        TRACE_THREAD("SWITCH: Invalid request - to=%p, from=%p, to_state=%d", to, from, to ? to->state : -1);        
+        TRACE_THREAD("SWITCH WARNING: Invalid request - to=%p, from=%p, to_state=%d", to, from, to ? to->state : -1);        
         return;
     }
 
     // Check magic numbers separately to identify which thread is invalid
     if (from->magic != CTXT_MAGIC) {
-        TRACE_THREAD("Invalid 'from' thread magic: %p (magic=%lx)", from, from->magic);
+        TRACE_THREAD("SWITCH: Invalid 'from' thread magic: %p (magic=%lx)", from, from->magic);
         reset_thread_switch_state();
         return;
     }
     
     if (to->magic != CTXT_MAGIC) {
-        TRACE_THREAD("Invalid 'to' thread magic: %p (magic=%lx)", to, to->magic);
+        TRACE_THREAD("SWITCH: Invalid 'to' thread magic: %p (magic=%lx)", to, to->magic);
         reset_thread_switch_state();
         return;
     }
 
     if (from->state & THREAD_STATE_EXITED || to->state & THREAD_STATE_EXITED) {
-        TRACE_THREAD("Skipping switch involving exited thread (from:%d to:%d)", 
+        TRACE_THREAD("SWITCH: Skipping switch involving exited thread (from:%d to:%d)", 
                     from->tid, to->tid);
         reset_thread_switch_state();
         return;
@@ -408,7 +405,7 @@ void thread_switch(struct thread *from, struct thread *to) {
     if (from->tid == 0 && (from->state & THREAD_STATE_EXITED)) {
         // Don't switch away from thread0 if it's marked as exited but other threads exist
         if (from->proc->num_threads > 1) {
-            TRACE_THREAD("Preventing thread0 exit while other threads are running");
+            TRACE_THREAD("SWITCH: Preventing thread0 exit while other threads are running");
             atomic_thread_state_change(from, THREAD_STATE_READY);
             reset_thread_switch_state();
             return;
@@ -416,7 +413,7 @@ void thread_switch(struct thread *from, struct thread *to) {
     }
 
     if ((from->state & THREAD_STATE_EXITED) || (to->state & THREAD_STATE_EXITED)) {
-        TRACE_THREAD("Cannot switch to/from exited thread: from=%d (state=%d), to=%d (state=%d)",
+        TRACE_THREAD("SWITCH: Cannot switch to/from exited thread: from=%d (state=%d), to=%d (state=%d)",
                     from->tid, from->state, to->tid, to->state);
         reset_thread_switch_state();
         return;
@@ -445,7 +442,7 @@ void thread_switch(struct thread *from, struct thread *to) {
     
     /* Set up timeout to detect deadlocks */
     if (thread_switch_timeout) {
-        TRACE_THREAD("Cancelling existing thread switch timeout");
+        TRACE_THREAD("SWITCH: Cancelling existing thread switch timeout");
         canceltimeout(thread_switch_timeout);
         thread_switch_timeout = NULL;
     }
@@ -892,8 +889,6 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     t->stack_magic = STACK_MAGIC;
     t->magic = CTXT_MAGIC;
     
-    t->idle_stack = NULL;  // No idle stack initially
-    t->idle_stack_top = NULL;  // No idle stack top initially
     t->wakeup_time = 0;  // No wakeup time initially
     t->next_sleeping = NULL;  // Not in sleep queue initially
     t->next_ready = NULL;  // Not in ready queue initially
@@ -1472,11 +1467,6 @@ void thread_exit(void) {
             old_thread->t_sigctx = NULL;
         }
         
-        if (old_thread->idle_stack) {
-            kfree(old_thread->idle_stack);
-            old_thread->idle_stack = NULL;
-        }
-        
         if (old_thread->stack && tid != 0) {
             kfree(old_thread->stack);
             old_thread->stack = NULL;
@@ -1816,19 +1806,17 @@ long _cdecl sys_p_sleepthread(long ms)
     struct thread *t = p ? p->current_thread : NULL;
     unsigned short sr;
     TIMEOUT *sleep_timeout = NULL;
-
+    
     if (!p || !t) return -EINVAL;
-    if (t->tid == 0) return -EINVAL;  // thread0 can't sleep
-    if (ms <= 0) return 0;  // No need to sleep
-
+    if (t->tid == 0) return -EINVAL; // thread0 can't sleep
+    if (ms <= 0) return 0; // No need to sleep
+    
     TRACE_THREAD("SLEEP: Thread %d sleeping for %ld ms", t->tid, ms);
-
-    sr = splhigh();
     
     // Calculate wake time with better precision
     unsigned long current_time = *((volatile unsigned long *)_hz_200);
-    unsigned long ticks = (ms + 4) / 5;  // Convert ms to ticks, rounding up
-
+    unsigned long ticks = (ms + 4) / 5; // Convert ms to ticks, rounding up
+    
     // Set up a direct timeout for this thread
     sleep_timeout = addtimeout(p, ticks, thread_sleep_wakeup_handler);
     if (sleep_timeout) {
@@ -1836,47 +1824,57 @@ long _cdecl sys_p_sleepthread(long ms)
     } else {
         TRACE_THREAD("SLEEP: Failed to set up sleep timeout");
     }
-    // Set up the thread for sleeping
-    t->wakeup_time = current_time + ticks;
-
-    TRACE_THREAD("SLEEP: Thread %d sleeping for %ld ms, will wake at tick %lu (current: %lu)",
-                t->tid, ms, t->wakeup_time, current_time);
-
-    atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
-    remove_from_ready_queue(t);
-    add_to_sleep_queue(t);
     
-    // Schedule another thread
-    spl(sr);
-    schedule();
-    
-
-    // When we return, check if we woke up on time
-    current_time = *((volatile unsigned long *)_hz_200);
-    if (t->wakeup_time > 0 && current_time > t->wakeup_time) {
-        TRACE_THREAD("SLEEP: Thread %d woke up late by %lu ms", 
-                    t->tid, (current_time - t->wakeup_time) * 5);
-    }
-
+    // CRITICAL: Save the current context
     sr = splhigh();
-    t->wakeup_time = 0;  // Clear wake-up time
-    
-    // Ensure we're not in the sleep queue anymore
-    if (is_in_sleep_queue(t)) {
-        TRACE_THREAD("SLEEP: Thread %d still in sleep queue after wake, removing", t->tid);
-        remove_from_sleep_queue(t);
+    if (save_context(&t->ctxt[CURRENT]) == 0) {
+        // First time through - this is the "going to sleep" path
+        
+        // Set up the thread for sleeping
+        t->wakeup_time = current_time + ticks;
+        TRACE_THREAD("SLEEP: Thread %d sleeping for %ld ms, will wake at tick %lu (current: %lu)",
+                    t->tid, ms, t->wakeup_time, current_time);
+        
+        atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
+        remove_from_ready_queue(t);
+        add_to_sleep_queue(t);
+        
+        // Schedule another thread
+        spl(sr);
+        schedule();
+        
+        // We should never reach here - schedule() will switch to another thread
+        TRACE_THREAD("SLEEP: ERROR - Returned from schedule() in sleep path!");
+        return -1;
+    } else {
+        // Second time through - this is the "waking up" path
+        // This code runs when the thread is awakened and context is restored
+        
+        // When we return, check if we woke up on time
+        current_time = *((volatile unsigned long *)_hz_200);
+        if (t->wakeup_time > 0 && current_time > t->wakeup_time) {
+            TRACE_THREAD("SLEEP: Thread %d woke up late by %lu ms",
+                        t->tid, (current_time - t->wakeup_time) * 5);
+        }
+        
+        t->wakeup_time = 0; // Clear wake-up time
+        
+        // Ensure we're not in the sleep queue anymore
+        if (is_in_sleep_queue(t)) {
+            TRACE_THREAD("SLEEP: Thread %d still in sleep queue after wake, removing", t->tid);
+            remove_from_sleep_queue(t);
+        }
+        
+        // Ensure we're in the RUNNING state
+        if (t->state != THREAD_STATE_RUNNING) {
+            TRACE_THREAD("SLEEP: Thread %d not in RUNNING state after wake, fixing", t->tid);
+            atomic_thread_state_change(t, THREAD_STATE_RUNNING);
+        }
+        
+        TRACE_THREAD("SLEEP: Thread %d woke up after sleeping", t->tid);
+        spl(sr);
+        return 0;
     }
-    
-    // Ensure we're in the RUNNING state
-    if (t->state != THREAD_STATE_RUNNING) {
-        TRACE_THREAD("SLEEP: Thread %d not in RUNNING state after wake, fixing", t->tid);
-        atomic_thread_state_change(t, THREAD_STATE_RUNNING);
-    }
-    
-    spl(sr);
-    
-    TRACE_THREAD("SLEEP: Thread %d woke up after sleeping", t->tid);
-    return 0;
 }
 
 int should_wake_thread(struct thread *t)
@@ -1989,12 +1987,6 @@ static CONTEXT* get_thread_context(struct thread *t)
         }
         TRACE_THREAD("GET_CTX Using process context for thread0");
         return &t->proc->ctxt[CURRENT];
-    }
-
-    // Pour les threads SLEEPING, utiliser le contexte idle
-    if (t->state == THREAD_STATE_SLEEPING) {
-        TRACE_THREAD("GET_CTX: Using idle context for sleeping thread %d", t->tid);
-        return &t->idle_ctx[CURRENT];
     }
 
     TRACE_THREAD("GET_CTX: Using current context for thread %d", t->tid);
@@ -2121,9 +2113,11 @@ void thread_sleep_wakeup_handler(PROC *p, long arg)
         atomic_thread_state_change(t, THREAD_STATE_READY);
         add_to_ready_queue(t);
         
-        // Force a schedule to run this thread immediately
+        // Force a schedule to run this thread immediately if possible
         spl(sr);
-        schedule();
+        if (p == curproc) {  // Only schedule if this is the current process
+            schedule();
+        }
         return;
     }
     
