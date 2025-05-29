@@ -36,6 +36,8 @@ static struct thread *switching_from = NULL;
 static struct thread *switching_to = NULL;
 static unsigned long switch_ticks = 0;
 
+#define THREAD_MIN_TIMESLICE 5  // Minimum time a thread should run (in ticks)
+#define THREAD_PREEMPT_INTERVAL_TICKS 5  // Preemption interval (in ticks)
 #define THREAD_SWITCH_TIMEOUT_MS 500  /* 500ms timeout for thread switches */
 #define MAX_SWITCH_RETRIES 3
 
@@ -88,9 +90,26 @@ void thread_switch_timeout_handler(PROC *p, long arg)
                  switching_from ? switching_from->tid : -1,
                  switching_to ? switching_to->tid : -1,
                  THREAD_SWITCH_TIMEOUT_MS);
+    // Check if the threads are still valid
+    int from_valid = switching_from && switching_from->magic == CTXT_MAGIC;
+    int to_valid = switching_to && switching_to->magic == CTXT_MAGIC;
     
+    TRACE_THREAD("TIMEOUT: From thread %s, To thread %s",
+                from_valid ? "valid" : "invalid",
+                to_valid ? "valid" : "invalid");
+
     if (++recovery_attempts > MAX_SWITCH_RETRIES) {
         TRACE_THREAD("CRITICAL: Max recovery attempts reached, system may be unstable");
+        
+        // More aggressive recovery - try to restore a known good state
+        if (p && p->current_thread && p->current_thread->magic == CTXT_MAGIC) {
+            TRACE_THREAD("TIMEOUT: Attempting to restore current thread %d", 
+                        p->current_thread->tid);
+            
+            // Try to restore the current thread's context
+            change_context(&p->current_thread->ctxt[CURRENT]);
+        }
+        
         recovery_attempts = 0;
     }
     
@@ -194,7 +213,7 @@ void thread_timer_start(struct proc *p, int thread_id)
     }
     
     /* Create the timeout before modifying any state */
-    new_timeout = addtimeout(p, 20, thread_preempt_handler);
+    new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
     if (!new_timeout) {
         TRACE_THREAD("TIMER ERROR: Failed to create timeout");
         spl(sr);
@@ -296,7 +315,7 @@ void thread_timer_stop(PROC *p)
  */
 void start_thread_timing(struct thread *t)
 {
-    TRACE_THREAD("(start_thread_timing) start_thread_timing called for thread %d", t->tid);
+    TRACE_THREAD("(start_thread_timing) start_thread_timing called by thread %d creation", t->tid);
     if (!t || !t->proc) return;
     
     TRACE_THREAD("(start_thread_timing) Starting thread timer for thread %d in process %d", t->tid, t->proc->pid);
@@ -307,8 +326,10 @@ void start_thread_timing(struct thread *t)
 void add_to_ready_queue(struct thread *t) {
     struct proc *p = t->proc;
     unsigned short sr;
+    
     if (!t || (t->state & THREAD_STATE_RUNNING) || (t->state & THREAD_STATE_EXITED)) return;
     if (t->tid == 0 && (t->state & THREAD_STATE_EXITED)) return;
+    
     sr = splhigh();
 
     // Check if already in queue
@@ -323,20 +344,40 @@ void add_to_ready_queue(struct thread *t) {
     }
 
     atomic_thread_state_change(t, THREAD_STATE_READY);
-    TRACE_THREAD("READY_Q: Added Thread %d (pri %d, state %d) to ready queue", t->tid, t->priority, t->state);
+    TRACE_THREAD("READY_Q: Added Thread %d (pri %d, state %d) to ready queue", 
+                t->tid, t->priority, t->state);
 
-    // Add to end of queue
-    if (!p->ready_queue) {
-        p->ready_queue = t;
-        t->next_ready = NULL;
-    } else {
-        struct thread *last = p->ready_queue;
-        while (last->next_ready) {
-            last = last->next_ready;
+    // If thread has priority boost or higher priority than others
+    if (t->priority_boost || t->priority > p->pri) {
+        // Find the right position based on priority
+        // This ensures FIFO order for same-priority threads
+        struct thread **pp = &p->ready_queue;
+        while (*pp && (*pp)->priority >= t->priority) {
+            pp = &(*pp)->next_ready;
         }
-        last->next_ready = t;
-        t->next_ready = NULL;
+        
+        // Insert at the right position
+        t->next_ready = *pp;
+        *pp = t;
+        
+        if (t->priority_boost) {
+            TRACE_THREAD("READY_Q: Thread %d has boosted priority, added in priority order", t->tid);
+        }
+    } else {
+        // Add to end of queue (normal case)
+        if (!p->ready_queue) {
+            p->ready_queue = t;
+            t->next_ready = NULL;
+        } else {
+            struct thread *last = p->ready_queue;
+            while (last->next_ready) {
+                last = last->next_ready;
+            }
+            last->next_ready = t;
+            t->next_ready = NULL;
+        }
     }
+    
     spl(sr);
 }
 
@@ -485,15 +526,19 @@ void thread_switch(struct thread *from, struct thread *to) {
         :
         : "memory"
     );
+    // Make sure USP is properly aligned to avoid issues
+    current_usp &= ~3L;    
     from->ctxt[CURRENT].usp = current_usp;
+
     TRACE_THREAD("SWITCH: Saved USP=%lx for thread %d", current_usp, from->tid);
 
     // Si dans sleep queue, pas besoin de sauvegarder le contexte normal
     if (in_sleep_queue) {
+        // For sleeping threads, just update states and switch directly
         atomic_thread_state_change(to, THREAD_STATE_RUNNING);
         from->proc->current_thread = to;
-        TRACE_THREAD("IN thread_switch: SLEEP QUEUE, Switching from thread %d to thread %d (sleep queue)", from->tid, to->tid);
-        // Prépare le contexte destination
+        TRACE_THREAD("SWITCH: Sleeping thread, Switching from thread %d to thread %d (sleep queue)", from->tid, to->tid);
+        // Prepare destination context
         CONTEXT *to_ctx = get_thread_context(to);
         TRACE_THREAD("SWITCH: Got context %p for thread %d", to_ctx, to->tid);
         if (!to_ctx) {
@@ -504,7 +549,7 @@ void thread_switch(struct thread *from, struct thread *to) {
         reset_thread_switch_state();
         spl(sr);      
         set_thread_usp(to_ctx);
-        TRACE_THREAD("SWITCH: Set USP=%lx for thread %d, calling change_context", to_ctx->usp, to->tid);
+        TRACE_THREAD("SWITCH: calling change_context for thread %d", to->tid);
         change_context(to_ctx);
         TRACE_THREAD("SWITCH ERROR: Returned from change_context in sleep path!");
         
@@ -523,9 +568,9 @@ void thread_switch(struct thread *from, struct thread *to) {
             return;
         }
         reset_thread_switch_state();
-        TRACE_THREAD("SWITCH: Set USP=%lx for thread %d, calling change_context", to_ctx->usp, to->tid);
         spl(sr);     
         set_thread_usp(to_ctx);
+        TRACE_THREAD("SWITCH: calling change_context for thread %d", to->tid);
         change_context(to_ctx);
         
         TRACE_THREAD("SWITCH ERROR: Returned from change_context in normal path!");
@@ -552,7 +597,7 @@ void thread_preempt_handler(PROC *p, long arg)
 
     // If not current process, reschedule the timeout
     if (p != curproc) {
-        new_timeout = addtimeout(p, 20, thread_preempt_handler);
+        new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
         if (new_timeout) {
             new_timeout->arg = arg;
             p->p_thread_timer.timeout = new_timeout;
@@ -575,7 +620,7 @@ void thread_preempt_handler(PROC *p, long arg)
             return;
         }
         
-        new_timeout = addtimeout(p, 20, thread_preempt_handler);
+        new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
         if (new_timeout) {
             new_timeout->arg = (long)p->current_thread;
             p->p_thread_timer.timeout = new_timeout;
@@ -608,7 +653,15 @@ void thread_preempt_handler(PROC *p, long arg)
             spl(sr);
             return;
         }
-        
+
+        // Check if current thread had a priority boost and restore it
+        if (curr_thread->priority_boost) {
+            TRACE_THREAD("PREEMPT: Restoring thread %d priority from %d to %d",
+                        curr_thread->tid, curr_thread->priority, curr_thread->original_priority);
+            curr_thread->priority = curr_thread->original_priority;
+            curr_thread->priority_boost = 0;
+        }
+
         TRACE_THREAD("PREEMPT: Multiple threads (%d), current=%d, ready_queue=%d",
                     p->num_threads,
                     curr_thread->tid,
@@ -667,7 +720,7 @@ void thread_preempt_handler(PROC *p, long arg)
         if (!next) {
             TRACE_THREAD("PREEMPT: No ready threads, rescheduling timer");
             p->p_thread_timer.in_handler = 0;
-            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
             if (new_timeout) {
                 new_timeout->arg = (long)curr_thread;
                 p->p_thread_timer.timeout = new_timeout;
@@ -680,7 +733,7 @@ void thread_preempt_handler(PROC *p, long arg)
         if (thread_switch_in_progress) {
             TRACE_THREAD("PREEMPT: Thread switch already in progress, rescheduling");
             p->p_thread_timer.in_handler = 0;
-            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
             if (new_timeout) {
                 new_timeout->arg = (long)curr_thread;
                 p->p_thread_timer.timeout = new_timeout;
@@ -706,7 +759,7 @@ void thread_preempt_handler(PROC *p, long arg)
             TRACE_THREAD("PREEMPT: Current thread %d hasn't used minimum timeslice (%lu < %d), not switching",
                         curr_thread->tid, elapsed, THREAD_MIN_TIMESLICE);
             p->p_thread_timer.in_handler = 0;
-            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
             if (new_timeout) {
                 new_timeout->arg = (long)curr_thread;
                 p->p_thread_timer.timeout = new_timeout;
@@ -757,7 +810,7 @@ void thread_preempt_handler(PROC *p, long arg)
         if (!should_preempt) {
             // Don't preempt, just reschedule timer
             p->p_thread_timer.in_handler = 0;
-            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
             if (new_timeout) {
                 new_timeout->arg = (long)curr_thread;
                 p->p_thread_timer.timeout = new_timeout;
@@ -795,7 +848,7 @@ void thread_preempt_handler(PROC *p, long arg)
                     curr_thread, curr_thread->tid, next, next->tid);
         
         // Rearm timer before switch
-        new_timeout = addtimeout(p, 20, thread_preempt_handler);
+        new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
         if (new_timeout) {
             new_timeout->arg = (long)next;
             p->p_thread_timer.timeout = new_timeout;
@@ -813,7 +866,7 @@ void thread_preempt_handler(PROC *p, long arg)
         
         // If we do reach here, make sure we rearm the timer
         if (!p->p_thread_timer.timeout) {
-            new_timeout = addtimeout(p, 20, thread_preempt_handler);
+            new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
             if (new_timeout) {
                 new_timeout->arg = (long)p->current_thread;
                 p->p_thread_timer.timeout = new_timeout;
@@ -825,7 +878,7 @@ void thread_preempt_handler(PROC *p, long arg)
         
         // Rearm timer
         p->p_thread_timer.in_handler = 0;
-        new_timeout = addtimeout(p, 20, thread_preempt_handler);
+        new_timeout = addtimeout(p, THREAD_PREEMPT_INTERVAL_TICKS, thread_preempt_handler);
         if (new_timeout) {
             new_timeout->arg = (long)p->current_thread;
             p->p_thread_timer.timeout = new_timeout;
@@ -863,6 +916,12 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     t->tid = p->num_threads++;
     t->proc = p;
     t->priority = p->pri;
+    
+    // Apply priority boost for new thread
+    t->original_priority = t->priority;
+    t->priority += 3;  // Boost by 3 levels - less than wake boost but still significant
+    t->priority_boost = 1;  // Mark as boosted
+
     t->policy = DEFAULT_SCHED_POLICY;  // Default to FIFO
     t->timeslice = THREAD_DEFAULT_TIMESLICE;
     t->total_timeslice = THREAD_DEFAULT_TIMESLICE;
@@ -1032,7 +1091,17 @@ void schedule(void) {
     
     struct thread *current = p->current_thread;
     struct thread *next = NULL;
-    
+
+    // Check if current thread had a priority boost and restore it
+    if (current) {
+        if(current->priority_boost) {
+            TRACE_THREAD("SCHEDULE: Restoring thread %d priority from %d to %d", 
+                        current->tid, current->priority, current->original_priority);
+            current->priority = current->original_priority;
+            current->priority_boost = 0;
+        }
+    }
+
     TRACE_THREAD("SCHEDULE: current thread %d, ready queue head %d",
                 current ? current->tid : -1,
                 p->ready_queue ? p->ready_queue->tid : -1);
@@ -1996,7 +2065,11 @@ static CONTEXT* get_thread_context(struct thread *t)
 static void set_thread_usp(CONTEXT *ctx) {
     if (!ctx) return;
     
+    // Ensure USP is properly aligned
     unsigned long aligned_usp = ctx->usp & ~3L;
+    
+    TRACE_THREAD("SET THREAD USP: Set USP=%lx", aligned_usp);
+    
     asm volatile (
         "move.l %0,%%a0\n\t"
         "move.l %%a0,%%usp"
@@ -2076,8 +2149,14 @@ void check_and_wake_sleeping_threads(struct proc *p)
                         sleep_t->tid, sleep_t->wakeup_time, current_time, 
                         (current_time - sleep_t->wakeup_time) * 5);
                         
-            // Wake up thread
+            // Wake up thread with priority boost
             remove_from_sleep_queue(sleep_t);
+            
+            // Boost priority
+            sleep_t->original_priority = sleep_t->priority;
+            sleep_t->priority = sleep_t->priority + 5;  // Boost by 5 levels instead of using a constant
+            sleep_t->priority_boost = 1;
+
             sleep_t->wakeup_time = 0;  // Clear wake-up time
             atomic_thread_state_change(sleep_t, THREAD_STATE_READY);
             add_to_ready_queue(sleep_t);
@@ -2106,7 +2185,15 @@ void thread_sleep_wakeup_handler(PROC *p, long arg)
     // Only wake up if still sleeping
     if ((t->state & THREAD_STATE_SLEEPING) && t->wakeup_time > 0) {
         TRACE_THREAD("SLEEP_WAKEUP: Direct wakeup for thread %d", t->tid);
+
+        // Save original priority and boost
+        t->original_priority = t->priority;
+        t->priority = t->priority + 5;  // Boost by 5 levels instead of using a constant  // Use highest priority
+        t->priority_boost = 1;
         
+        TRACE_THREAD("SLEEP_WAKEUP: Boosted thread %d priority from %d to %d", 
+                    t->tid, t->original_priority, t->priority);
+
         // Wake up thread
         remove_from_sleep_queue(t);
         t->wakeup_time = 0;  // Clear wake-up time

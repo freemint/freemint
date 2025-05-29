@@ -97,6 +97,8 @@ struct thread {
     CONTEXT ctxt[PROC_CTXTS];    // Thread context (reuse FreeMiNT's context)
     short state;                 // Thread state (RUNNING/READY/BLOCKED)
     short priority;              // Thread priority
+    short original_priority;     // Original priority (for restoration after boost)
+    short priority_boost;        // Flag indicating if priority is currently boosted	
     short timeslice;             // Remaining timeslice for this thread
     short total_timeslice;       // Total timeslice allocated to this thread	
 	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
@@ -107,10 +109,10 @@ struct thread {
     void (*func)(void*);  // Function to execute
     void *arg;            // Argument to pass to function
 
-	int sleep_reason;   /* 0 = woken by signal/other, 1 = timeout */
+	short sleep_reason;   /* 0 = woken by signal/other, 1 = timeout */
 	TIMEOUT *alarm_timeout;  /* Per-thread alarm timeout */
 	
-	int wait_type;      // WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.
+	short wait_type;      // WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.
 	void *wait_obj;     // Pointeur vers l'objet attendu (mutex, condvar, etc.)
 
     unsigned long wakeup_time;         // Temps de réveil en ticks
@@ -121,7 +123,7 @@ struct thread {
     /* Signal handling fields */
     ulong   t_sigpending;        /* Signals pending for this thread */
     ulong   t_sigmask;           /* Thread-specific signal mask */
-    int     t_sig_in_progress;   /* Signal currently being processed */
+    short     t_sig_in_progress;   /* Signal currently being processed */
     
     /* Thread signal context */
     void    *t_sigctx;           /* Saved context during signal handling */		
