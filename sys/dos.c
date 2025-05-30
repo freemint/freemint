@@ -573,22 +573,40 @@ foundtimer:
 
 #define PAGESIZE 8192 /* header file ?? */
 
+/*  It needs to be synced with mintlib/include/bits/confname.h */
+
+/* Values for the argument to `sysconf'.  */
+#define _SC_LAST	-1	/* max limit # for sysconf - NOT POSIX */
+#define _SC_MEMR_MAX	0	/* memory regions per process - NOT POSIX */
+#define _SC_ARG_MAX	1	/* max length of cmdln - NOT quite POSIX */
+#define _SC_OPEN_MAX	2	/* max # of open files per process - POSIX */
+#define _SC_NGROUPS_MAX	3	/* max # supp gids - POSIX */
+#define _SC_CHILD_MAX	4	/* max # processes/user - NOT quite POSIX */
+#define _SC_CLK_TCK	5	/* clock ticks */
+#define _SC_PAGE_SIZE	6	/* pagesize */
+#define _SC_PAGESIZE	_SC_PAGE_SIZE	
+#define _SC_PHYS_PAGES	7	/* physical pages */
+#define _SC_GETPW_R_SIZE_MAX	8 /* passwd buffer size */
+#define _SC_GETGR_R_SIZE_MAX	9 /* group buffer size */
+#define _SC_AVPHYS_PAGES	10	/* available physical pages */
+
 long _cdecl
 sys_s_ysconf (int which)
 {
 	switch (which)
 	{
-		case -1:	return 9;
-		case  0:	return UNLIMITED;
-		case  1:	return 32767; /* matches ARG_MAX */
-		case  2:	return NDFILE;
-		case  3:	return NGROUPS_MAX;
-		case  4:	return UNLIMITED;
-		case  5:	return HZ;
-		case  6:	return PAGESIZE;
-		case  7:	return freephysmem() / PAGESIZE;
-		case  8:	return 1024;
-		case  9:	return 1024;
+		case _SC_LAST:	return 10;
+		case  _SC_MEMR_MAX:	return UNLIMITED;
+		case  _SC_ARG_MAX:	return 32767; /* matches ARG_MAX */
+		case  _SC_OPEN_MAX:	return NDFILE;
+		case  _SC_NGROUPS_MAX:	return NGROUPS_MAX;
+		case  _SC_CHILD_MAX:	return UNLIMITED;
+		case  _SC_CLK_TCK:	return HZ;
+		case  _SC_PAGE_SIZE:	return PAGESIZE;
+		case  _SC_PHYS_PAGES:	return totalphysmem() / PAGESIZE;
+		case  _SC_GETPW_R_SIZE_MAX:	return 1024;
+		case  _SC_GETGR_R_SIZE_MAX:	return 1024;
+		case  _SC_AVPHYS_PAGES:	return freephysmem() / PAGESIZE;		
 		default:	return ENOSYS;
 	}
 }

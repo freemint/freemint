@@ -47,7 +47,8 @@ generate_struct(FILE *out, struct syscall *call, const char *pre, const char *na
 {
 	if (call->args)
 	{
-		char buf[strlen(pre)];
+		/* '\t' + '\0' */
+		char buf[strlen(pre)+1+1];
 		
 		fprintf(out, "%sstruct %s_%s_args\n", pre, name, call->name);
 		fprintf(out, "%s{\n", pre);

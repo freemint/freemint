@@ -1,2 +1,2 @@
 URL: http://vincent.riviere.free.fr/soft/m68k-atari-mint/archives/mint/fvdi
-Version: SVN-20130124-patch-20170425-bin-aranym-20170429
+Version: SVN-20130124-patch-20200418-bin-aranym-20200418

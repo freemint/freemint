@@ -1089,6 +1089,29 @@ screen_dump(int lock, struct xa_client *client, short open)
 				r.g_w = 0;
 				r.g_h = 0;
 				rubber_box(client, SE, r, &d, 0,0, root_window->r.g_h, root_window->r.g_w, &r);
+				/*
+				 * do not send negative coordinates, from selecting bottom to top
+				 */
+				if (r.g_w < 0)
+				{
+					r.g_x += r.g_w;
+					r.g_w = -r.g_w;
+				}
+				if (r.g_x < 0)
+				{
+					r.g_w += r.g_x;
+					r.g_x = 0;
+				}
+				if (r.g_h < 0)
+				{
+					r.g_y += r.g_h;
+					r.g_h = -r.g_h;
+				}
+				if (r.g_y < 0)
+				{
+					r.g_h += r.g_y;
+					r.g_y = 0;
+				}
 			}
 			else if (a->intout[0] == 2)	/* full */
 				r = root_window->r;
@@ -1191,6 +1214,7 @@ screen_dump(int lock, struct xa_client *client, short open)
 				}
 				else
 				{
+					/* should not get here */
 					char s[128];
 					sprintf( s, sizeof(s)-1, "[1][could not snap area:w=%d,h=%d][OK]", r.g_w, r.g_h);
 					do_form_alert(lock, client, 1, s, XAAESNAME );

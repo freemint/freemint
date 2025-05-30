@@ -307,15 +307,10 @@ cf_68K_emu:
 #endif
 	blt.s	lt040			// on 68040 and 68060 (copyback cache!)
 	btst	#0,d2			// instruction cache going to be enabled?
-	beq.s	ic_off
+	beq.s	no_icache
 	btst	#0,d1			// if yes, is it currently disabled?
 	bne.s	no_icache
 	dc.w	0xF498			// yes, so invalidate it (cinva ic)
-	bra.s	no_icache
-ic_off:
-	btst	#0,d1			// if it's going to be disabled,
-	beq.s	no_icache		// is it currently enabled?
-	dc.w	0xF4B8			// yes, so write it back (cpusha ic)
 no_icache:
 	btst	#1,d2			// same as above, but for the data cache
 	beq.s	dc_off
@@ -324,9 +319,9 @@ no_icache:
 	dc.w	0xF458			// cinva dc
 	bra.s	lt040
 dc_off:
-	btst	#1,d1
-	beq.s	write_cacr
-	dc.w	0xF478			// cpusha dc
+	btst	#1,d1			// if it's going to be disabled,			
+	beq.s	write_cacr		// is it currently enabled?
+	dc.w	0xF478			// yes, so write it back (cpusha dc)
 lt040:					// 020/030 have write-through cache but we
 #ifdef __mcoldfire__			// need to invalidate it before enable it
 	move.w	SYM(mcpu)+2,a0
@@ -347,7 +342,7 @@ inv_020ic:				// invalidate 020 or 030 instruction cache
 	bne.s	write_cacr
 	or.l	#0b000000001000,d0	// ci bit (clear i-cache)
 write_cacr:
-	movec	d0,%cacr			// write CACR
+	movec	d0,%cacr		// write CACR
 #ifdef __mcoldfire__
 	movem.l	(sp),d1-d2/a0-a2
 	lea	20(sp),sp
@@ -744,6 +739,7 @@ SYM(cpush):
 	move.l	_cachevec,a1
 	jmp	(a1)
 
+
 _cache030:				// 68030 cache
 	dc.w	0x4e7a,0x1002		// movec cacr,d1
 	move.l	d1,-(sp)
@@ -782,21 +778,18 @@ do030:	dc.w	0x4e7b,0x8802		// movec a0,caar
 rescacr:
 	move.l	(sp)+,d0
 	movec	d0,%cacr
+
 _cache000:				// 68000 cache (i.e. no cache)
 #endif
 	rts
 	END(cpushi)
-
-// Ozk: I think we'll have to check this code, as on my Milan040
-//	cpush(addr, size) dont work as expected. Gotta check this
-//	later. For now, "cpusha bc" is done on every cpush() call
 
 #ifndef M68000
 _cache040:				// 68040 cache
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rts
 	addq.l	#1,d1			// If was -1
-	beq.s	abc040			// then fulsh everything
+	beq.s	abc040			// then flush everything
 	move.l	a0,d1			// extract the position within the cacheline
 	and.l	#0xf,d1			// which we use to calculate
 	subq.l	#1,d1			// one byte at address 0xf in cacheline should still
@@ -804,7 +797,7 @@ _cache040:				// 68040 cache
 	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#256,d0
 	bcs.s	fls040
-abc040:	dc.w	0xF478			// this is "cpusha dc" if your asm knows '040
+abc040:	dc.w	0xF478			// this is "cpusha dc"
 	rts
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
@@ -829,7 +822,7 @@ do040:
 	bsr	log2phys
 	cmpa.l	#-1,a0
 	beq.s	abc040			// if there's no physical address, flush all
-	dc.w	0xF468			// this is "cpushl dc,(a0)" for the '040
+	dc.w	0xF468			// this is "cpushl dc,(a0)"
 	add.l	d1,a1
 #ifdef __mcoldfire__
 	subq.l	#1,d0
@@ -845,7 +838,7 @@ _cache060:
 	beq.s	_c060rts
 #ifndef __mcoldfire__
 	addq.l	#1,d1			// If was -1
-	beq.s	abc040			// then fulsh everything
+	beq.s	abc040			// then flush everything
 	move.l	a0,d1			// extract the position within the cacheline
 	and.l	#0xf,d1			// which we use to calculate
 	subq.l	#1,d1			// one byte at address 0xf in cacheline should still
@@ -854,7 +847,7 @@ _cache060:
 	cmp.l	#512,d0
 	bcs.s	fls040
 #endif
-	dc.w	0xF478			// see abc040
+	dc.w	0xF478			// this is "cpusha dc"
 	rts
 // ---------------------------------------------------
 // Ozk:
@@ -874,8 +867,7 @@ _cache040_i:				// 68040 cache
 	cmp.l	#256,d0
 	bcs.s	fls040i
 abc040i:
-	dc.w	0xF478			// this is "cpusha dc"
-	dc.w	0xF498			// this is "cinva ic"
+	dc.w	0xF4F8			// this is "cpusha bc"
 	rts
 fls040i:
 	// run through d0+1 times (since a0 may not be on a line boundary)
@@ -901,7 +893,8 @@ do040i:
 	cmpa.l	#-1,a0
 	beq.s	abc040i			// if there's no physical address, flush all
 	dc.w	0xF468			// this is "cpushl dc,(a0)"
-	dc.w	0xF488			// this is "cinvl ic,(a0)"
+	dc.w	0xF4C8			// this is "cinvl bc,(a0)" (BC instead of just IC
+					// as DC might not have been invalidated on 060)
 	add.l	d1,a1
 #ifdef __mcoldfire__
 	subq.l	#1,d0
@@ -927,7 +920,7 @@ _cache060_i:
 	bcs.s	fls040i
 #endif
 	dc.w	0xF478			// this is "cpusha dc"
-	dc.w	0xF498			// this is "cinva ic"
+	dc.w	0xF4D8			// this is "cinva bc"
 	rts
 
 #ifdef __mcoldfire__

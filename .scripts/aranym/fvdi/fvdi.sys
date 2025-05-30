@@ -19,7 +19,7 @@ PATH = C:\GEMSYS
 width -90
 height -90
 
-# If fVDI is not being started from the AUTO folder, comment this out.
+# If fVDI is not being started from the AUTO folder, comment this out. 
 booted
 
 
@@ -241,7 +241,25 @@ singlebend
 # It is a very good idea to have a system font in the same sizes as
 # the normal GEM one, but it is not necessary.
 
-01r aranym.sys mode 1024x768x32@60 irq accelerate xxxxxxx
+#01r 1dummy.sys
+#01r 1plane.sys
+#01r 4plane.sys
+#01r 16bit.sys shadow oldmouse accelerate xxxxxx-
+#01r rage.sys screencache onlysrc 4mb mode key imgcache
+
+#01r rage_lc.sys pcibios screencache imgcache mode key accelerate xxxxxxx
+#01r rage.sys pcibios mode key imgcache screencache accelerate xxxxxxx
+#01r rage.sys pcibios mode 800x600x16@72 imgcache screencache accelerate xxxxxxx
+#01r rage.sys pcibios mode key imgcache screencache accelerate xxxxxxx realones
+#01r rage.sys 4mb mode key screencache imgcache 
+#01r rage.sys pcibios mode key accelerate xxxxxxx realones
+#01r rage.sys doblit 4mb mode key accelerate xxxxxxx realones
+#01r rage.sys pcibios experiment 4mb mode key
+
+#01r rage.sys pcibios doblit 4mb mode key
+#01r rage.sys 4mb mode key screencache imgcache
+
+01r aranym.sys mode 1024x768x32@60
 
 #s MONACO08.FNT
 #s MONACO09.FNT
