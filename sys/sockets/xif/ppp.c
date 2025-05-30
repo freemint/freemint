@@ -187,6 +187,29 @@ static ushort const fcstab[256] =
 # define FCS_INIT	0xffffu
 # define FCS_GOOD	0xf0b8u
 
+#ifndef __SIZE_T
+#define __SIZE_T
+typedef unsigned long size_t;
+#endif
+
+static void safe_memcpy(void *dest, const void *src, size_t n)
+{
+    char *d = (char *)dest;
+    const char *s = (const char *)src;
+    if (d < s) {
+        while (n--) {
+            *d++ = *s++;
+        }
+    } else {
+        d += n;
+        s += n;
+        while (n--) {
+            *--d = *--s;
+        }
+    }
+}
+
+
 static ushort
 ppp_fcs (const char *cp, long len)
 {
@@ -862,7 +885,7 @@ ppp_recv_frame (struct ppp *ppp, BUF *b)
 	if ((long) cp & 1)
 	{
 		/* Shit! -- must be word aligned */
-		memcpy (cp-1, cp, len);
+		safe_memcpy (cp-1, cp, len);
 		b->dstart--;
 		b->dend--;
 	}
