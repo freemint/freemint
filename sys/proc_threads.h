@@ -8,6 +8,16 @@
 #include "kmemory.h"
 #include "kentry.h"
 
+#define THREAD_SWITCH_TIMEOUT_MS 100  /* 100ms timeout for thread switches */
+#define MAX_SWITCH_RETRIES 3
+
+/* Thread scheduling constants */
+#define THREAD_MIN_TIMESLICE 4        /* Minimum timeslice in ticks (20ms) */
+#define THREAD_RR_TIMESLICE 20        /* Round-robin timeslice in ticks (100ms) */
+#define THREAD_PREEMPT_INTERVAL_TICKS 10  /* Preemption interval in ticks (100ms) */
+#define MAX_THREAD_PRIORITY 99        /* Maximum thread priority (POSIX compliant) */
+#define THREAD_CREATION_PRIORITY_BOOST 3  // Priority boost for newly created threads
+
 /* Thread state management */
 void atomic_thread_state_change(struct thread *t, int new_state);
 
@@ -38,3 +48,5 @@ void save_thread_context(struct thread *t, struct thread_sigcontext *ctx);
 void restore_thread_context(struct thread *t, struct thread_sigcontext *ctx);
 /* Thread timeout handling */
 void thread_timeout_handler(PROC *p, long arg);
+
+void update_thread_timeslice(struct thread *t);

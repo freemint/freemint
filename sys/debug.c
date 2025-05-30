@@ -721,7 +721,7 @@ do_func_key(int scan)
 }
 
 /* Thread logging */
-
+#ifdef DEBUG_THREAD
 void debug_to_file(const char *filename, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -745,5 +745,5 @@ void debug_to_file(const char *filename, const char *fmt, ...) {
 
     va_end(args);
 }
-
+#endif
 /* End of Thread logging */

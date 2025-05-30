@@ -520,11 +520,11 @@ opcode	ret	class name	args */
 0x182		Ffdopendir	(short fd) /* since 1.17 */
 0x183		Fdirfd		(long handle) /* since 1.17 */
 0x184		undefined
-0x185	void	Pyieldthread	(void)
+0x185	void	Pthread_sched	(long func, long arg1, long arg2, long arg3)
 0x186	long	Psleepthread	(long ms)
 0x187		undefined
 0x188		undefined
-0x189	long	Pcreatethread	(void *func, void *arg, void *stack)
+0x189		undefined
 0x18a	long	Pexitthread	(void)
 0x18b		undefined
 0x18c		undefined

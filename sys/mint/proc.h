@@ -70,17 +70,34 @@
 #define WAIT_IO      4
 
 // Thread scheduling constants
-#define THREAD_MIN_TIMESLICE   5    // Minimum timeslice in ticks (5 = 25ms at 200Hz)
 #define THREAD_DEFAULT_TIMESLICE 20 // Default timeslice in ticks (20 = 100ms)
+
+/* Thread scheduling system call constants */
+#define PSCHED_SETPARAM       1
+#define PSCHED_GETPARAM       2
+#define PSCHED_YIELD          3
+#define PSCHED_GETRRINTERVAL  4
+#define PSCHED_SET_TIMESLICE  5
+#define PSCHED_GET_TIMESLICE  6
 
 // Default scheduling policy
 #define DEFAULT_SCHED_POLICY SCHED_FIFO
+// #define DEFAULT_SCHED_POLICY SCHED_RR
 
 /*
-For SCHED_FIFO: pick the highest-priority, first-in thread.
-For SCHED_RR: pick the next thread in round-robin order for its priority.
-For SCHED_OTHER: pick according to your fairness/round-robin logic.
+Priority Handling:
+	SCHED_FIFO threads maintain their position in the ready queue until they yield, block, or are preempted by higher priority threads.
+	When a SCHED_FIFO thread's priority is raised, it moves to the end of the list for its new priority.
+	When a SCHED_FIFO thread's priority is lowered, it moves to the front of the list for its new priority.
+Time Slicing:
+	SCHED_RR threads use time slicing (THREAD_RR_TIMESLICE).
+	SCHED_FIFO threads don't use time slicing.
+	SCHED_OTHER threads use the default round-robin scheduling.
+Priority Boosting:
+	Threads waking from sleep get a temporary priority boost to prevent starvation.
+	The boost is removed after the thread has run for a while.
 */
+
 enum sched_policy {
     SCHED_FIFO,
     SCHED_RR,
@@ -100,6 +117,7 @@ struct thread {
     short original_priority;     // Original priority (for restoration after boost)
     short priority_boost;        // Flag indicating if priority is currently boosted	
     short timeslice;             // Remaining timeslice for this thread
+	short remaining_timeslice;  // 	remaining_timeslice
     short total_timeslice;       // Total timeslice allocated to this thread	
 	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
     struct thread *next_ready;   // For ready queue
@@ -129,18 +147,17 @@ struct thread {
     void    *t_sigctx;           /* Saved context during signal handling */		
 };
 
-#define SYS_yieldthread		0x185
+#define SYS_thread_sched	0x185
 #define SYS_sleepthread		0x186
-#define SYS_createthread	0x189
 #define SYS_exitthread		0x18a
-#define SYS_setthreadpolicy 0x18b
+// #define SYS_setthreadpolicy 0x18b
 
 #define SYS_threadsignal	0x18e
-#define SYS_thread_alarm	0x18f
+// #define SYS_thread_alarm	0x18f
 
 long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(void);
-long _cdecl sys_p_yieldthread(void);
+long _cdecl sys_p_thread_sched(long func, long arg1, long arg2, long arg3);
 long _cdecl sys_p_sleepthread(long ms);
 long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, short timeslice);
 

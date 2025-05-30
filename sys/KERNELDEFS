@@ -24,6 +24,7 @@
 # -DDEBUG_INFO		include debugging information
 # -DPROFILING		include profiling support
 # -DMFP_DEBUG_DIRECT	direct MFP routines to output debug
+# -DDEBUG_THREAD		include thread logging in c:\thread.log file
 
 #
 # Flags for building a minimal 68000 kernel
@@ -55,6 +56,7 @@ KERNELNON000DEFS += -DCRYPTO_CODE
 KERNELNON000DEFS += -DSOFT_UNITABLE
 KERNELNON000DEFS += -DBUILTIN_SHELL
 
+KERNELNON000DEFS += -DDEBUG_THREAD
 
 #
 # These are mapped according to kerneltargets below

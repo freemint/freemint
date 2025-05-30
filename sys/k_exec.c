@@ -62,6 +62,8 @@
 # include "timeout.h"
 # include "util.h"
 
+#define PE_THREAD       107   /* Create a thread */
+
 void rts (void);
 static struct proc *exec_region(struct proc *p, MEMREGION *mem, int thread);
 
@@ -273,6 +275,15 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			tail_offs = 0;
 # endif
 			break;
+        case PE_THREAD:
+			{
+				/* p1 = function pointer, p2 = argument, p3 = stack (can be NULL) */
+				void (*func)(void*) = (void (*)(void*)) (unsigned long) p1;
+				void *arg = (void*) (unsigned long) p2;
+				void *stack = (void*) (unsigned long) p3;
+				
+				return sys_p_createthread(func, arg, stack);
+			}
 		default:
 		{
 			DEBUG(("Pexec(%d,$%08lx,$%08lx,$%08lx): bad mode\n", mode, ptr_1.l, ptr_2.l, ptr_3.l));
