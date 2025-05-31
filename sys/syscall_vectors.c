@@ -522,8 +522,8 @@ Func dos_tab [DOS_MAX] =
 	/* 0x183 */		sys_f_dirfd,	/* 1.17 */
 	/* 0x184 */		sys_enosys,		/* reserved */
 	/* 0x185 */		sys_p_thread_sched,
-	/* 0x186 */		sys_p_sleepthread,		/* reserved */
-	/* 0x187 */		sys_enosys,		/* reserved */
+	/* 0x186 */		sys_p_sleepthread,
+	/* 0x187 */		sys_p_thread_op,
 	/* 0x188 */		sys_enosys,		/* reserved */
 	/* 0x189 */		sys_enosys,		/* reserved */
 	/* 0x18a */		sys_p_exitthread,

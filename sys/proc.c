@@ -216,7 +216,11 @@ init_proc(void)
 	rootproc->sleep_queue = NULL;
 	rootproc->ready_queue = NULL;
 	
-	thread_timer_init(rootproc);
+	/* Thread timer initialization */
+    rootproc->p_thread_timer.thread_id = 0;
+    rootproc->p_thread_timer.enabled = 0;
+    rootproc->p_thread_timer.timeout = NULL;
+    rootproc->p_thread_timer.in_handler = 0;
   
 }
 

@@ -401,9 +401,8 @@ void update_thread_timeslice(struct thread *t)
 {
     if (!t || t->policy == SCHED_FIFO)  // FIFO threads don't use timeslicing
         return;
-        
-    unsigned long current_ticks = *((volatile unsigned long *)_hz_200);
-    unsigned long elapsed = current_ticks - t->last_scheduled;
+
+    unsigned long elapsed = get_system_ticks() - t->last_scheduled;
     
     // Update remaining timeslice
     if (elapsed < t->remaining_timeslice) {
