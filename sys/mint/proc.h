@@ -48,11 +48,10 @@
 */
 #define THREAD_STATE_RUNNING    0x0001
 #define THREAD_STATE_READY      0x0002
-#define THREAD_STATE_SLEEPING   0x0004
-#define THREAD_STATE_BLOCKED    0x0008
-#define THREAD_STATE_STOPPED    0x0010
-#define THREAD_STATE_ZOMBIE     0x0020
-#define THREAD_STATE_DEAD       0x0040
+#define THREAD_STATE_BLOCKED	0x0004
+#define THREAD_STATE_STOPPED	0x0008
+#define THREAD_STATE_ZOMBIE		0x0010
+#define THREAD_STATE_DEAD		0x0020
 
 // For checks only:
 #define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
@@ -62,12 +61,13 @@
 #define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
 
 /* Thread wait types */
-#define WAIT_NONE    0  // No wait type specified (not waiting on any resource)
-#define WAIT_SIGNAL  1  // Waiting for a signal to be delivered (e.g. SIGINT, SIGTERM)
-#define WAIT_MUTEX   2  // Waiting for a mutex (mutual exclusion) lock to be released
-#define WAIT_CONDVAR 3  // Waiting for a condition variable to be signaled
-#define WAIT_IO      4  // Waiting for I/O (input/output) operation to complete
-#define WAIT_SEMAPHORE 5  // Waiting for a semaphore to be released
+#define WAIT_NONE		0	// No wait type specified (not waiting on any resource)
+#define WAIT_SIGNAL		1	// Waiting for a signal to be delivered (e.g. SIGINT, SIGTERM)
+#define WAIT_MUTEX		2	// Waiting for a mutex (mutual exclusion) lock to be released
+#define WAIT_CONDVAR	3	// Waiting for a condition variable to be signaled
+#define WAIT_IO			4	// Waiting for I/O (input/output) operation to complete
+#define WAIT_SEMAPHORE	5	// Waiting for a semaphore to be released
+#define WAIT_SLEEP		6	// Waiting for sleep timeout
 
 // Thread scheduling constants
 #define THREAD_DEFAULT_TIMESLICE 20 // Default timeslice in ticks (20 = 100ms)
@@ -105,7 +105,7 @@ enum sched_policy {
 };
 
 struct thread {
-    int tid;                     // Thread ID
+    short tid;                     // Thread ID
     struct proc *proc;           // Parent process
 
     void *stack;                 // Stack base address
@@ -118,8 +118,8 @@ struct thread {
     short priority;              // Thread priority
     short original_priority;     // Original priority (for restoration after boost)
     short priority_boost;        // Flag indicating if priority is currently boosted	
-    short timeslice;             // Remaining timeslice for this thread
-	short remaining_timeslice;  // 	remaining_timeslice
+    short timeslice;             // timeslice for this thread
+	short remaining_timeslice;   // Remaining timeslice
     short total_timeslice;       // Total timeslice allocated to this thread	
 	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
 
@@ -144,8 +144,8 @@ struct thread {
     unsigned long last_scheduled;  // Last time this thread was scheduled (in ticks)	
 
     /* Signal handling fields */
-    ulong   t_sigpending;        /* Signals pending for this thread */
-    ulong   t_sigmask;           /* Thread-specific signal mask */
+    unsigned long   t_sigpending;        /* Signals pending for this thread */
+    unsigned long   t_sigmask;           /* Thread-specific signal mask */
     short	t_sig_in_progress;   /* Signal currently being processed */
     
     /* Thread signal context */
@@ -154,6 +154,7 @@ struct thread {
 
 #define SYS_thread_sched	0x185
 #define SYS_sleepthread		0x186
+#define SYS_threadop		0x18d
 #define SYS_exitthread		0x18a
 // #define SYS_setthreadpolicy 0x18b
 
@@ -172,13 +173,14 @@ long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
 long _cdecl sys_p_thread_alarm(struct thread *t, long ms);
 /* Thread signal dispatcher */
 long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
+long _cdecl sys_p_threadop(int operator, void *arg);
 
 #define THREAD_OP_SEM_WAIT  1
 #define THREAD_OP_SEM_POST  2
 #define THREAD_OP_MUTEX_LOCK  3
 #define THREAD_OP_MUTEX_UNLOCK  4
-
-long _cdecl sys_p_thread_op(int op, void *arg);
+#define THREAD_OP_MUTEX_INIT  5
+#define THREAD_OP_SEM_INIT    6
 
 /* Thread signal mask manipulation macros */
 #define SET_THREAD_SIGMASK(t, mask) ((t)->t_sigmask = (mask))
@@ -447,23 +449,24 @@ struct proc
 	char	stack[STKSIZE+4];	/* stack for system calls	*/
 
 /* Threads stuff */
-	// struct thread_timer *p_thread_timer;
 	struct {
-		int thread_id;         // Thread actuellement préempté
-		int enabled;           // Timer actif ?
+		short thread_id;         // Thread actuellement préempté
+		short enabled;           // Timer actif ?
 		TIMEOUT *timeout;      // Handle du timeout
 		unsigned short sr;     // Etat d'interruption sauvegardé
-		int in_handler;        // Handler en cours ?
+		short in_handler;        // Handler en cours ?
 	} p_thread_timer;
 
 	struct thread *ready_queue;
 	struct thread *sleep_queue;    // Liste des threads en sleep
-	struct thread *wait_queue;    // Liste des threads en wait
 
 	struct thread *threads;        // Thread list
 	struct thread *current_thread; // Current thread
-	int num_threads;               // Thread count
-	int thread_signals_enabled;   // Cache for quick access
+
+	short num_threads;             // Thread count
+	short total_threads;           // Total thread count
+
+	short thread_signals_enabled;   // Cache for quick access
 	/* for wait queue */
 
 

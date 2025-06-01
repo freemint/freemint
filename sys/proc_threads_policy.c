@@ -399,19 +399,22 @@ int set_thread_timeslice(struct thread *t, long timeslice)
  */
 void update_thread_timeslice(struct thread *t)
 {
-    if (!t || t->policy == SCHED_FIFO)  // FIFO threads don't use timeslicing
+    if (!t || t->magic != CTXT_MAGIC)
         return;
-
+        
     unsigned long elapsed = get_system_ticks() - t->last_scheduled;
     
-    // Update remaining timeslice
-    if (elapsed < t->remaining_timeslice) {
-        t->remaining_timeslice -= elapsed;
-    } else {
-        // Timeslice expired, reset it
-        t->remaining_timeslice = t->timeslice;
+    // Only update for non-FIFO threads
+    if (t->policy != SCHED_FIFO) {
+        if (t->remaining_timeslice <= elapsed) {
+            // Reset timeslice when expired
+            t->remaining_timeslice = t->timeslice;
+        } else {
+            // Decrement remaining timeslice
+            t->remaining_timeslice -= elapsed;
+        }
     }
     
-    TRACE_THREAD("THREAD_SCHED: Updated thread %d timeslice: elapsed=%lu, remaining=%lu",
-                t->tid, elapsed, t->remaining_timeslice);
+    // Update last scheduled time
+    t->last_scheduled = get_system_ticks();
 }

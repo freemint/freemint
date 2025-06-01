@@ -642,9 +642,14 @@ long _cdecl sys_p_threadsig_sleep(unsigned int n)
 
 wait_again:
     sr = splhigh();
-    t->sleep_reason = 0;
-    atomic_thread_state_change(t, THREAD_STATE_SLEEPING);
+
     remove_from_ready_queue(t);
+    atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
+    
+    t->wait_type = WAIT_SLEEP;
+    t->wait_obj = (void*)sleep_timeout;
+    t->sleep_reason = 0;
+
     spl(sr);
 
     TRACE_THREAD("sys_p_threadsig_sleep: yielding to scheduler");

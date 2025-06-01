@@ -63,6 +63,7 @@ COBJS = \
 	proc_threads.c \
 	proc_threads_signal.c \
 	proc_threads_policy.c \
+	proc_threads_sync.c \
 	procfs.c \
 	profil.c \
 	ptrace.c \
