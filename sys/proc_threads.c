@@ -1506,6 +1506,7 @@ void check_and_wake_sleeping_threads(struct proc *p)
         return;
     }
     unsigned short sr = splhigh();
+    #ifdef DEBUG_THREAD
     unsigned long current_time = get_system_ticks();
     
     TRACE_THREAD("SLEEP_CHECK: Checking sleep queue for process %d at time %lu", 
@@ -1521,7 +1522,7 @@ void check_and_wake_sleeping_threads(struct proc *p)
                     debug_t->state);
         debug_t = debug_t->next_sleeping;
     }
-    
+    #endif
     sr = splhigh();
     struct thread *sleep_t = p->sleep_queue;
     int woke_threads = 0;
