@@ -69,9 +69,6 @@
 #define WAIT_SEMAPHORE	5	// Waiting for a semaphore to be released
 #define WAIT_SLEEP		6	// Waiting for sleep timeout
 
-// Thread scheduling constants
-#define THREAD_DEFAULT_TIMESLICE 20 // Default timeslice in ticks (20 = 100ms)
-
 /* Thread scheduling system call constants */
 #define PSCHED_SETPARAM       1
 #define PSCHED_GETPARAM       2
@@ -85,18 +82,38 @@
 // #define DEFAULT_SCHED_POLICY SCHED_RR
 
 /*
-Priority Handling:
-	SCHED_FIFO threads maintain their position in the ready queue until they yield, block, or are preempted by higher priority threads.
-	When a SCHED_FIFO thread's priority is raised, it moves to the end of the list for its new priority.
-	When a SCHED_FIFO thread's priority is lowered, it moves to the front of the list for its new priority.
-Time Slicing:
-	SCHED_RR threads use time slicing (THREAD_RR_TIMESLICE).
-	SCHED_FIFO threads don't use time slicing.
-	SCHED_OTHER threads use the default round-robin scheduling.
-Priority Boosting:
-	Threads waking from sleep get a temporary priority boost to prevent starvation.
-	The boost is removed after the thread has run for a while.
-*/
+ * Thread Scheduling Implementation (POSIX-compliant)
+ *
+ * Priority Range:
+ * - Thread priorities range from 0 to 99 (MAX_THREAD_PRIORITY)
+ * - Higher numerical values represent higher priorities
+ * - This is opposite to process priorities where lower values are higher priority
+ *
+ * Priority Handling:
+ * - SCHED_FIFO threads maintain their position in the ready queue until they
+ *   yield, block, or are preempted by higher priority threads.
+ * - When a SCHED_FIFO thread's priority is raised, it moves to the end of the
+ *   list for its new priority.
+ * - When a SCHED_FIFO thread's priority is lowered, it moves to the front of
+ *   the list for its new priority.
+ *
+ * Time Slicing:
+ * - SCHED_RR threads use time slicing (thread_rr_timeslice).
+ * - SCHED_FIFO threads don't use time slicing.
+ * - SCHED_OTHER threads use the default time slice (thread_default_timeslice).
+ *
+ * Priority Boosting:
+ * - Threads waking from sleep get a temporary priority boost to prevent starvation.
+ * - The boost is removed after the thread has run for a while.
+ * - Priority inheritance is implemented for mutexes to prevent priority inversion.
+ *
+ * Process Integration:
+ * - Thread scheduling parameters are derived from the parent process's time_slice
+ * - Thread preemption occurs independently of process scheduling
+ * - The make_process_eligible() function ensures the thread-handling process
+ *   gets scheduled frequently
+ */
+
 
 enum sched_policy {
     SCHED_FIFO,
@@ -174,6 +191,8 @@ long _cdecl sys_p_thread_alarm(struct thread *t, long ms);
 /* Thread signal dispatcher */
 long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
 long _cdecl sys_p_threadop(int operator, void *arg);
+
+void cleanup_process_threads(struct proc *pcurproc);
 
 #define THREAD_OP_SEM_WAIT  1
 #define THREAD_OP_SEM_POST  2
@@ -450,11 +469,11 @@ struct proc
 
 /* Threads stuff */
 	struct {
-		short thread_id;         // Thread actuellement préempté
-		short enabled;           // Timer actif ?
-		TIMEOUT *timeout;      // Handle du timeout
-		unsigned short sr;     // Etat d'interruption sauvegardé
-		short in_handler;        // Handler en cours ?
+		short thread_id;		// Thread actuellement préempté
+		short enabled;			// Timer actif ?
+		TIMEOUT *timeout;		// Handle du timeout
+		unsigned short sr;		// Etat d'interruption sauvegardé
+		short in_handler;		// Handler en cours ?
 	} p_thread_timer;
 
 	struct thread *ready_queue;
@@ -463,17 +482,22 @@ struct proc
 	struct thread *threads;        // Thread list
 	struct thread *current_thread; // Current thread
 
-	short num_threads;             // Thread count
-	short total_threads;           // Total thread count
+	short num_threads;             /* Thread count */
+	short total_threads;           /* Total thread count */
 
-	short thread_signals_enabled;   // Cache for quick access
-	/* for wait queue */
+    /* Thread scheduling parameters */
+    unsigned short thread_preempt_interval;    /* Preemption interval in ticks */
+    unsigned short thread_default_timeslice;   /* Default timeslice in ticks */
+    unsigned short thread_min_timeslice;       /* Minimum timeslice in ticks */
+    unsigned short thread_rr_timeslice;        /* Round-robin timeslice in ticks */
 
-
+	short thread_signals_enabled;   /* Cache for quick access */
 /* End of Threads stuff */
 
 };
 
+#define USE_VBL 1
+void vbl_thread_handler(void);
 
 /*
  * our process queues

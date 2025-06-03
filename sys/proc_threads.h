@@ -14,13 +14,8 @@
 #define THREAD_EINTR EINTR     // Interrupted system call (4)
 
 #define MS_PER_TICK 5  // 200Hz = 5ms/tick
-#define THREAD_SWITCH_TIMEOUT_MS 100  /* 100ms timeout for thread switches */
 #define MAX_SWITCH_RETRIES 3
 
-/* Thread scheduling constants */
-#define THREAD_MIN_TIMESLICE 4        /* Minimum timeslice in ticks (20ms) */
-#define THREAD_RR_TIMESLICE 20        /* Round-robin timeslice in ticks (100ms) */
-#define THREAD_PREEMPT_INTERVAL_TICKS 5  /* Preemption interval in ticks (100ms) */
 #define MAX_THREAD_PRIORITY 99        /* Maximum thread priority (POSIX compliant) */
 #define THREAD_CREATION_PRIORITY_BOOST 3  // Priority boost for newly created threads
 
@@ -41,6 +36,7 @@ void atomic_thread_state_change(struct thread *t, int new_state);
 /* Ready queue management */
 void add_to_ready_queue(struct thread *t);
 void remove_from_ready_queue(struct thread *t);
+void remove_from_sleep_queue(struct proc *p, struct thread *t);
 void remove_thread_from_wait_queues(struct thread *t);
 int is_in_ready_queue(struct thread *t);
 
@@ -67,3 +63,6 @@ void thread_timeout_handler(PROC *p, long arg);
 void update_thread_timeslice(struct thread *t);
 
 inline unsigned long get_system_ticks(void);
+
+/* Function to clean up thread synchronization states */
+void cleanup_thread_sync_states(struct proc *p);

@@ -73,6 +73,7 @@ int thread_mutex_lock(struct mutex *mutex) {
     }
     
     TRACE_THREAD("THREAD_MUTEX_LOCK: Slow lock");
+    
     // Add to wait queue with priority
     t->wait_type = WAIT_MUTEX;
     t->wait_obj = mutex;
@@ -87,21 +88,51 @@ int thread_mutex_lock(struct mutex *mutex) {
     
     TRACE_THREAD("THREAD_MUTEX_LOCK: Block thread %d", t->tid);
     atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
+    
+    // Priority inheritance - boost the priority of the mutex owner
+    if (mutex->owner && mutex->owner->priority < t->priority) {
+        TRACE_THREAD("PRI-INHERIT: Thread %d (pri %d) -> owner %d (pri %d)",
+                    t->tid, t->priority,
+                    mutex->owner->tid, mutex->owner->priority);
+        
+        // Save original priority if not already boosted
+        if (!mutex->owner->priority_boost) {
+            mutex->owner->original_priority = mutex->owner->priority;
+            mutex->owner->priority_boost = 1;
+        }
+        
+        // Boost owner's priority
+        mutex->owner->priority = t->priority;
+        
+        // Reinsert owner in ready queue if needed
+        if (mutex->owner->state == THREAD_STATE_READY) {
+            remove_from_ready_queue(mutex->owner);
+            add_to_ready_queue(mutex->owner);
+        }
+    }
+    
     spl(sr);
     
     // Yield CPU - will resume here when woken
     schedule();
     
+    // When we resume, check if we were sleeping
+    sr = splhigh();
+    if (t->wakeup_time > 0) {
+        TRACE_THREAD("THREAD_MUTEX_LOCK: Thread %d was sleeping, clearing sleep state", t->tid);
+        t->wakeup_time = 0;
+        remove_from_sleep_queue(t->proc, t);
+    }
+    
     // When we resume, we should own the lock
     // Double-check that we actually own the lock now
-    sr = splhigh();
     if (mutex->owner != t) {
         TRACE_THREAD("THREAD_MUTEX_LOCK: Thread %d woke up but doesn't own mutex!", t->tid);
         mutex->owner = t;  // Force ownership
         mutex->locked = 1;
     }
-    spl(sr);
     
+    spl(sr);
     return THREAD_SUCCESS;
 }
 
@@ -125,55 +156,98 @@ int thread_mutex_unlock(struct mutex *mutex) {
         return THREAD_EINVAL; // Not owner
     }
     
-    // Clean invalid threads from wait queue first
-    struct thread **pp = &mutex->wait_queue;
-    while (*pp) {
-        if ((*pp)->magic != CTXT_MAGIC || ((*pp)->state & THREAD_STATE_EXITED)) {
-            TRACE_THREAD("THREAD_MUTEX_UNLOCK: Removing invalid thread %d from wait queue", (*pp)->tid);
-            *pp = (*pp)->next_wait;
-        } else {
-            pp = &(*pp)->next_wait;
-        }
-    }
-    
-    // Wake highest priority waiter
+    // If there are waiters, wake the highest priority one
     if (mutex->wait_queue) {
+        // Find highest priority valid thread
         struct thread *t = mutex->wait_queue;
-        mutex->wait_queue = t->next_wait;
-        t->next_wait = NULL;
+        struct thread *highest = NULL;
+        struct thread *prev_highest = NULL;
+        struct thread *prev = NULL;
+        int highest_priority = -1;
         
-        TRACE_THREAD("THREAD_MUTEX_UNLOCK: Waking thread %d", t->tid);
+        // First pass: find highest priority valid thread
+        while (t) {
+            if (t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED) && 
+                t->priority > highest_priority) {
+                highest = t;
+                prev_highest = prev;
+                highest_priority = t->priority;
+            }
+            prev = t;
+            t = t->next_wait;
+        }
         
-        // Transfer lock ownership
-        mutex->owner = t;
-        t->wait_type = WAIT_NONE;
-        t->wait_obj = NULL;
-        
-        // Mark thread as ready and add to ready queue
-        atomic_thread_state_change(t, THREAD_STATE_READY);
-        add_to_ready_queue(t);
-        
-        // Force immediate scheduling if possible
-        if (t->priority > current->priority) {
-            TRACE_THREAD("THREAD_MUTEX_UNLOCK: Forcing immediate schedule due to priority");
-            spl(sr);
-            schedule();
-            return THREAD_SUCCESS;
+        if (highest) {
+            // Remove from wait queue
+            if (prev_highest) {
+                prev_highest->next_wait = highest->next_wait;
+            } else {
+                mutex->wait_queue = highest->next_wait;
+            }
+            highest->next_wait = NULL;
+            
+            TRACE_THREAD("THREAD_MUTEX_UNLOCK: Waking thread %d (priority %d)", 
+                        highest->tid, highest->priority);
+            
+            // Transfer lock ownership
+            mutex->owner = highest;
+            
+            // Clear wait state
+            highest->wait_type = WAIT_NONE;
+            highest->wait_obj = NULL;
+            
+            // Remove from sleep queue if needed
+            if (highest->wakeup_time > 0) {
+                remove_from_sleep_queue(highest->proc, highest);
+                highest->wakeup_time = 0;
+            }
+            
+            // Mark as ready and add to ready queue
+            atomic_thread_state_change(highest, THREAD_STATE_READY);
+            add_to_ready_queue(highest);
+            
+            // Restore original priority if boosted
+            if (current->priority_boost) {
+                TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
+                            current->tid, current->priority, current->original_priority);
+                current->priority = current->original_priority;
+                current->priority_boost = 0;
+            }
+            
+            // Force immediate scheduling if higher priority
+            if (highest->priority > current->priority) {
+                TRACE_THREAD("THREAD_MUTEX_UNLOCK: Forcing immediate schedule due to priority");
+                spl(sr);
+                schedule();
+                return THREAD_SUCCESS;
+            }
+        } else {
+            // No valid waiters, release the mutex
+            TRACE_THREAD("THREAD_MUTEX_UNLOCK: No valid waiters, releasing mutex");
+            mutex->locked = 0;
+            mutex->owner = NULL;
+            
+            // Restore original priority if boosted
+            if (current->priority_boost) {
+                TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
+                            current->tid, current->priority, current->original_priority);
+                current->priority = current->original_priority;
+                current->priority_boost = 0;
+            }
         }
     } else {
-        TRACE_THREAD("THREAD_MUTEX_UNLOCK: No waiters, unlocking mutex");
+        // No waiters, release the mutex
+        TRACE_THREAD("THREAD_MUTEX_UNLOCK: No waiters, releasing mutex");
         mutex->locked = 0;
         mutex->owner = NULL;
-    }
-    
-    // Restore original priority if boosted
-    if (current->priority_boost) {
-        TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
-            current->tid,
-            current->priority,
-            current->original_priority);
-        current->priority = current->original_priority;
-        current->priority_boost = 0;
+        
+        // Restore original priority if boosted
+        if (current->priority_boost) {
+            TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
+                        current->tid, current->priority, current->original_priority);
+            current->priority = current->original_priority;
+            current->priority_boost = 0;
+        }
     }
     
     spl(sr);
@@ -225,8 +299,14 @@ int thread_semaphore_down(struct semaphore *sem) {
     
     // Schedule another thread
     schedule();
-
+    // When we resume, check if we were sleeping
     sr = splhigh();
+    if (t->wait_type == WAIT_SLEEP) {
+        TRACE_THREAD("SEMAPHORE DOWN: Thread %d was sleeping, clearing sleep state", t->tid);
+        t->wait_type = WAIT_NONE;
+        t->wakeup_time = 0;
+    }
+    
     if (t->wait_type == WAIT_SEMAPHORE) {
         TRACE_THREAD("SEMAPHORE DOWN: Thread %d woke up but still waiting!", t->tid);
         t->wait_type = WAIT_NONE;
@@ -250,58 +330,135 @@ int thread_semaphore_up(struct semaphore *sem) {
     
     unsigned short sr = splhigh();
     
-    TRACE_THREAD("SEMAPHORE UP: Count=%d", sem->count);
-    
-    // Clean invalid threads from wait queue first
-    struct thread **pp = &sem->wait_queue;
-    while (*pp) {
-        if ((*pp)->magic != CTXT_MAGIC || 
-            ((*pp)->state & THREAD_STATE_EXITED)) 
-        {
-            TRACE_THREAD("SEMAPHORE UP: Removing invalid thread %d", (*pp)->tid);
-            struct thread *to_remove = *pp;
-            *pp = to_remove->next_wait;  // Remove from list
-            to_remove->next_wait = NULL;
-        } else {
-            pp = &(*pp)->next_wait;  // Move to next pointer
-        }
-    }
-// #ifdef DEBUG_THREADS
-TRACE_THREAD("SEMAPHORE UP: Wait queue after cleanup:");
-struct thread *debug_t = sem->wait_queue;
-while (debug_t) {
-    TRACE_THREAD("  Thread %d (state %d, magic %lx)", 
-                debug_t->tid, debug_t->state, debug_t->magic);
-    debug_t = debug_t->next_wait;
-}
-// #endif    
-    if (sem->wait_queue) {
-        // Wake first waiter
-        struct thread *t = sem->wait_queue;
-        sem->wait_queue = t->next_wait;
-        t->next_wait = NULL;
-        
-        TRACE_THREAD("SEMAPHORE UP: Wake thread %d", t->tid);
-        t->wait_type = WAIT_NONE;
-        t->wait_obj = NULL;
-        
-        atomic_thread_state_change(t, THREAD_STATE_READY);
-        add_to_ready_queue(t);
-        
-        // Force immediate scheduling if possible
-        if (t->priority > current->priority) {
-            TRACE_THREAD("SEMAPHORE UP: Forcing immediate schedule due to priority");
-            spl(sr);
-            schedule();
-            return THREAD_SUCCESS;
-        }
-    } else {
-        TRACE_THREAD("SEMAPHORE UP: No waiters, incrementing count");
+    // If no waiters, just increment count and return
+    if (!sem->wait_queue) {
         sem->count++;
+        TRACE_THREAD("SEMAPHORE UP: No waiters, incremented count to %d", sem->count);
+        spl(sr);
+        return THREAD_SUCCESS;
+    }
+    
+    // Find first valid waiter
+    struct thread *t = sem->wait_queue;
+    struct thread *prev = NULL;
+    
+    while (t && (t->magic != CTXT_MAGIC || (t->state & THREAD_STATE_EXITED))) {
+        prev = t;
+        t = t->next_wait;
+    }
+    
+    if (!t) {
+        // No valid waiters, increment count
+        sem->count++;
+        TRACE_THREAD("SEMAPHORE UP: No valid waiters, incremented count to %d", sem->count);
+        spl(sr);
+        return THREAD_SUCCESS;
+    }
+    
+    // Remove from wait queue
+    if (prev) {
+        prev->next_wait = t->next_wait;
+    } else {
+        sem->wait_queue = t->next_wait;
+    }
+    t->next_wait = NULL;
+    
+    // Wake up thread
+    t->wait_type = WAIT_NONE;
+    t->wait_obj = NULL;
+    
+    // Remove from sleep queue if needed
+    if (t->wakeup_time > 0) {
+        t->wakeup_time = 0;
+        remove_from_sleep_queue(t->proc, t);
+    }
+    
+    // Mark as ready and add to ready queue
+    atomic_thread_state_change(t, THREAD_STATE_READY);
+    add_to_ready_queue(t);
+    
+    // Force immediate scheduling if higher priority
+    if (t->priority > current->priority) {
+        TRACE_THREAD("SEMAPHORE UP: Forcing immediate schedule due to priority");
+        spl(sr);
+        schedule();
+        return THREAD_SUCCESS;
     }
     
     spl(sr);
     return THREAD_SUCCESS;
+}
+
+/**
+ * Clean up thread synchronization states when a process terminates
+ * 
+ * This function should be called from the terminate() function in k_exit.c
+ * to ensure that all threads waiting on synchronization objects are properly
+ * unblocked when a process terminates.
+ * 
+ * @param p The process being terminated
+ */
+void cleanup_thread_sync_states(struct proc *p)
+{
+    if (!p) return;
+    
+    TRACE_THREAD("CLEANUP: Cleaning up thread sync states for process %d", p->pid);
+    
+    unsigned short sr = splhigh();
+    
+    // Clean up any threads waiting on mutexes or semaphores
+    struct thread *t;
+    for (t = p->threads; t; t = t->next) {
+        if (t->magic == CTXT_MAGIC && t->wait_type != WAIT_NONE) {
+            TRACE_THREAD("CLEANUP: Clearing wait state for thread %d (wait_type=%d)",
+                        t->tid, t->wait_type);
+            
+            // Clear wait state
+            t->wait_type = WAIT_NONE;
+            t->wait_obj = NULL;
+            t->next_wait = NULL;
+        }
+    }
+    
+    // For each process in the system
+    struct proc *other_proc;
+    for (other_proc = proclist; other_proc; other_proc = other_proc->gl_next) {
+        // Skip the terminating process
+        if (other_proc == p) continue;
+        
+        // Check each thread in the process
+        for (t = other_proc->threads; t; t = t->next) {
+            if (t->magic != CTXT_MAGIC) continue;
+            
+            // If thread is waiting on a mutex owned by a thread in the terminating process
+            if (t->wait_type == WAIT_MUTEX && t->wait_obj) {
+                struct mutex *mutex = (struct mutex *)t->wait_obj;
+                
+                // If mutex owner is from terminating process
+                if (mutex->owner && mutex->owner->proc == p) {
+                    TRACE_THREAD("CLEANUP: Thread %d in process %d waiting on mutex owned by terminating process",
+                                t->tid, other_proc->pid);
+                    
+                    // Clear mutex owner
+                    mutex->owner = NULL;
+                    mutex->locked = 0;
+                    
+                    // Unblock thread
+                    t->wait_type = WAIT_NONE;
+                    t->wait_obj = NULL;
+                    t->next_wait = NULL;
+                    
+                    // Wake up thread
+                    atomic_thread_state_change(t, THREAD_STATE_READY);
+                    add_to_ready_queue(t);
+                }
+            }
+        }
+    }
+    
+    spl(sr);
+    
+    TRACE_THREAD("CLEANUP: Finished cleaning up thread sync states for process %d", p->pid);
 }
 
 long _cdecl sys_p_threadop(int operator, void *arg) {

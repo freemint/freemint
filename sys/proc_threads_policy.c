@@ -42,17 +42,26 @@ int set_thread_policy(struct thread *t, enum sched_policy policy, int priority)
 {
     if (!t || t->magic != CTXT_MAGIC)
         return -EINVAL;
+
+    // Validate process pointer
+    if (!t->proc)
+        return -EINVAL;
         
+    // Log the request
+    TRACE_THREAD("POLICY: Setting thread %d policy to %d, priority to %d (current: policy=%d, pri=%d)",
+                t->tid, policy, priority, t->policy, t->priority);
+
+    // Acquire lock        
     unsigned short sr = splhigh();
-    
+
     // Validate policy and priority
     if (policy != SCHED_FIFO && policy != SCHED_RR && policy != SCHED_OTHER)
         return -EINVAL;
-        
+
     // SCHED_OTHER can only use priority 0
     if (policy == SCHED_OTHER && priority != 0)
         priority = 0;
-        
+
     // Clamp priority to valid range
     if (priority < 0)
         priority = 0;
@@ -60,8 +69,8 @@ int set_thread_policy(struct thread *t, enum sched_policy policy, int priority)
         priority = MAX_THREAD_PRIORITY;
         
     // Save old values
-    #ifdef DEBUG_THREADS
-    enum sched_policy old_policy = t->policy;
+    #ifdef DEBUG_THREAD
+    int old_policy = t->policy;
     #endif
     int old_priority = t->priority;
     
@@ -70,11 +79,11 @@ int set_thread_policy(struct thread *t, enum sched_policy policy, int priority)
     
     // Update timeslice based on new policy
     if (policy == SCHED_RR) {
-        t->timeslice = THREAD_DEFAULT_TIMESLICE;
+        t->timeslice = t->proc->thread_rr_timeslice;
     } else if (policy == SCHED_FIFO) {
         t->timeslice = 0;  // FIFO threads don't use timeslicing
     } else {
-        t->timeslice = THREAD_DEFAULT_TIMESLICE;
+        t->timeslice = t->proc->thread_default_timeslice;
     }
     
     // Reset remaining timeslice
@@ -114,7 +123,7 @@ int set_thread_policy(struct thread *t, enum sched_policy policy, int priority)
         t->original_priority = priority;
     }
     
-    #ifdef DEBUG_THREADS
+    #ifdef DEBUG_THREAD
     TRACE_THREAD("THREAD_SCHED: Thread %d policy changed from %d to %d, priority from %d to %d, timeslice=%d",
                 t->tid, old_policy, policy, old_priority, priority, t->timeslice);
     #endif
@@ -367,10 +376,17 @@ int set_thread_timeslice(struct thread *t, long timeslice)
 {
     if (!t || t->magic != CTXT_MAGIC)
         return -EINVAL;
+
+    // Validate process pointer
+    if (!t->proc)
+        return -EINVAL;
         
-    if (timeslice < THREAD_MIN_TIMESLICE)
-        timeslice = THREAD_MIN_TIMESLICE;
-        
+    // Enforce minimum timeslice        
+    if (timeslice < t->proc->thread_min_timeslice)
+        timeslice = t->proc->thread_min_timeslice;
+
+    TRACE_THREAD("TIMESLICE: Setting thread %d timeslice to %ld (min=%d)", t->tid, timeslice, t->proc->thread_min_timeslice);
+
     unsigned short sr = splhigh();
     
     // FIFO threads don't use timeslicing
@@ -381,7 +397,7 @@ int set_thread_timeslice(struct thread *t, long timeslice)
     
     t->timeslice = timeslice;
     t->remaining_timeslice = timeslice;
-    
+
     TRACE_THREAD("THREAD_SCHED: Thread %d timeslice set to %ld ticks",
                 t->tid, timeslice);
                 

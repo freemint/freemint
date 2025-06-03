@@ -212,6 +212,13 @@ init_proc(void)
 	rootproc->current_thread = NULL;
 	rootproc->threads = NULL;
 	rootproc->num_threads = 0;
+	rootproc->total_threads = 0;
+
+	/* Initialize thread scheduling parameters */
+	rootproc->thread_preempt_interval = time_slice * 2 + (time_slice >> 1); /* 2.5x time_slice */
+	rootproc->thread_default_timeslice = time_slice * 5; /* 5x time_slice */
+	rootproc->thread_min_timeslice = time_slice; /* 1x time_slice */
+	rootproc->thread_rr_timeslice = time_slice * 5; /* 5x time_slice */	
 
 	rootproc->sleep_queue = NULL;
 	rootproc->ready_queue = NULL;

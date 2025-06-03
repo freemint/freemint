@@ -62,6 +62,16 @@ graph TD
         thread_switch_timeout_handler --> reset_thread_switch_state["reset_thread_switch_state()"]
     end
 
+    %% Process Termination
+    subgraph "Process Termination"
+        terminate --> cleanup_process_threads
+        cleanup_process_threads --> thread_timer_stop
+        cleanup_process_threads --> cancel_thread_timeouts["Cancel thread timeouts"]
+        cleanup_process_threads --> remove_thread_from_wait_queues
+        cleanup_process_threads --> free_thread_resources["Free thread resources"]
+        cleanup_process_threads --> cleanup_thread_sync_states
+    end
+
     %% Style
     classDef creation fill:#f9f,stroke:#333
     classDef execution fill:#6cf,stroke:#333
@@ -69,6 +79,7 @@ graph TD
     classDef scheduling fill:#6f6,stroke:#333
     classDef signals fill:#9cf,stroke:#333
     classDef timing fill:#f96,stroke:#333
+    classDef termination fill:#f66,stroke:#333
     
     class sys_p_createthread,create_thread,init_thread_context creation
     class thread_start,thread_function,thread_exit execution
@@ -76,6 +87,7 @@ graph TD
     class schedule,thread_switch,get_highest_priority_thread scheduling
     class sys_p_kill_thread,deliver_signal_to_thread,thread_signal_trampoline signals
     class thread_timer_start,thread_preempt_handler timing
+    class terminate,cleanup_process_threads,cleanup_thread_sync_states termination
 ```
 
 ## Thread Lifecycle Explanation
@@ -99,7 +111,7 @@ graph TD
 - **READY**: Thread is ready to run but not currently executing
 - **RUNNING**: Thread is currently executing
 - **SLEEPING**: Thread is sleeping for a specified time
-- **BLOCKED**: Thread is waiting for a signal or other resource
+- **BLOCKED**: Thread is waiting for a signal, mutex, semaphore, or other resource
 - **EXITED**: Thread has terminated
 
 ### 4. Scheduling
@@ -108,8 +120,8 @@ graph TD
 - **should_schedule_thread**: Determines if context switch should occur
 - **thread_switch**: Performs context switch between threads
 - **Default policy**: `SCHED_OTHER` (not SCHED_FIFO)
-- **Priority range**: -20 (highest) to +19 (lowest) - POSIX nice values
-- **Timeslice calculation**: Uses `SLICES(pri)` macro
+- **Priority range**: 0 (lowest) to 99 (highest) - POSIX compliant
+- **Timeslice calculation**: Based on process-specific parameters
 
 ### 5. Scheduling Operations
 - **PSCHED_SETPARAM**: Sets scheduling policy and priority
@@ -124,6 +136,7 @@ graph TD
 - **remove_from_ready_queue**: Removes a thread from the ready queue
 - **add_to_sleep_queue**: Adds a thread to the sleep queue
 - **remove_from_sleep_queue**: Removes a thread from the sleep queue
+- **remove_thread_from_wait_queues**: Removes a thread from mutex/semaphore wait queues
 
 ### 7. Sleep Management
 - **sys_p_sleepthread**: Puts a thread to sleep for a specified time
@@ -143,13 +156,21 @@ graph TD
 - **thread_signal_trampoline**: Calls signal handler with proper context
 - **UNMASKABLE**: Certain signals can't be blocked by thread mask
 
+### 10. Process Termination
+- **cleanup_process_threads**: Cleans up all threads when a process terminates
+- **thread_timer_stop**: Stops the thread preemption timer
+- **cancel_thread_timeouts**: Cancels any pending timeouts for threads
+- **remove_thread_from_wait_queues**: Removes threads from mutex/semaphore wait queues
+- **free_thread_resources**: Frees thread stacks, signal contexts, and thread structures
+- **cleanup_thread_sync_states**: Handles synchronization objects during process termination
+
 ## Key Workflows
 
 1. **Thread Creation and Execution**:
    sys_p_createthread → create_thread → init_thread_context → add_to_ready_queue → schedule → thread_start → thread function → thread_exit
 
 2. **Thread Scheduling**:
-   thread_preempt_handler → update_thread_timeslice → schedule → get_highest_priority_thread → thread_switch
+   thread_preempt_handler → update_thread_timeslice → schedule → get_highest_priority_thread → should_schedule_thread → thread_switch
 
 3. **Thread Sleep**:
    sys_p_sleepthread → add_to_sleep_queue → schedule → timeout handler → remove_from_sleep_queue → add_to_ready_queue
@@ -159,6 +180,61 @@ graph TD
 
 5. **Thread Yield**:
    sys_p_thread_sched(PSCHED_YIELD) → schedule → thread_switch
+
+6. **Process Termination**:
+   terminate → cleanup_process_threads → thread_timer_stop → cancel_thread_timeouts → remove_thread_from_wait_queues → free_thread_resources → cleanup_thread_sync_states
+
+## Thread Scheduling Policies
+
+FreeMiNT implements POSIX-compliant thread scheduling with three policies:
+
+### 1. SCHED_FIFO (First-In, First-Out)
+- Real-time scheduling policy
+- No time slicing - threads run until they yield, block, or are preempted by higher priority threads
+- Priority range: 0-99 (higher values = higher priority)
+- When priority is raised: thread moves to end of list for new priority
+- When priority is lowered: thread moves to front of list for new priority
+
+### 2. SCHED_RR (Round-Robin)
+- Real-time scheduling policy with time slicing
+- Threads run for their time quantum, then move to end of same-priority list
+- Priority range: 0-99 (higher values = higher priority)
+- Time quantum determined by process-specific thread_rr_timeslice parameter
+
+### 3. SCHED_OTHER (Default Time-Sharing)
+- Default scheduling policy for normal threads
+- Uses time slicing like SCHED_RR
+- Lower priority than real-time threads (SCHED_FIFO and SCHED_RR)
+- Can be preempted by real-time threads regardless of priority
+- Time quantum determined by process-specific thread_default_timeslice parameter
+
+## Priority Boosting and Inheritance
+
+### Priority Boosting
+- Threads waking from sleep receive temporary priority boost
+- New threads receive THREAD_CREATION_PRIORITY_BOOST
+- Boost decays after thread has run for a while
+- Prevents starvation of woken threads
+
+### Priority Inheritance
+- Implemented for mutexes to prevent priority inversion
+- When high-priority thread blocks on mutex owned by lower-priority thread:
+  - Owner's priority is temporarily raised to blocked thread's priority
+  - Original priority is restored when mutex is unlocked
+- Ensures critical sections complete quickly when high-priority threads are waiting
+
+## Thread Synchronization
+
+### Mutexes
+- Fast path for uncontended locks
+- Priority-ordered wait queues (higher priority threads wake first)
+- Priority inheritance to prevent priority inversion
+- Cleaned up automatically when owner process terminates
+
+### Semaphores
+- FIFO wait queues
+- Count incremented when process with waiting threads terminates
+- Waiting threads woken when count becomes positive
 
 ## Recent Improvements
 
@@ -171,8 +247,8 @@ The scheduling system has been significantly enhanced with more flexible policie
 
 2. **Scheduling Policy Refinements**:
    - Set `SCHED_OTHER` as default scheduling policy (corrected from SCHED_FIFO)
-   - Priority range: -20 (highest) to +19 (lowest) - POSIX nice values
-   - Timeslice calculation uses `SLICES(pri)` macro
+   - Priority range: 0 (lowest) to 99 (highest) - POSIX compliant
+   - Process-specific timeslice parameters for better tuning
    - Time slicing only applies to SCHED_RR/SCHED_OTHER threads
 
 3. **Priority Boosting**:
@@ -190,7 +266,7 @@ The thread preemption handler has been enhanced to be more robust:
 
 1. **Timer Precision**:
    - Preemption timer uses thread-specific timeslice values
-   - Timeslice calculated based on priority: `SLICES(pri)`
+   - Timeslice calculated based on process parameters
    - Improved timeout cancellation during thread exit
 
 2. **State Management**:
@@ -216,21 +292,9 @@ The thread switching mechanism has been improved:
    - Complete signal context cleanup on exit
    - Timeout cancellation during termination
 
+3. **Process Termination**:
+   - Comprehensive thread cleanup during process termination
+   - Proper handling of synchronization objects
+   - Prevention of resource leaks
+
 These improvements make the FreeMiNT threading system more robust, flexible, and predictable, especially for real-time applications, while maintaining POSIX compliance.
-
-
-Key changes made:
-1. Added `init_thread0()` to thread creation flow
-2. Added `CREATED` state and corrected state transitions
-3. Changed default scheduling policy to `SCHED_OTHER`
-4. Added priority range explanation (-20 to +19)
-5. Added `SET_THREAD_SIGPENDING` state in signal handling
-6. Added magic number validation and stack checks
-7. Included `SLICES(pri)` macro in timeslice calculation
-8. Added priority boost decay mechanism
-9. Corrected thread0 cleanup logic
-10. Added UNMASKABLE signal constraint
-11. Fixed BLOCKED state transitions
-12. Added proper timeout cancellation
-
-The diagram now accurately reflects the actual FreeMiNT implementation with proper state transitions, scheduling policies, and signal handling workflow. The explanations match the source code behavior, including recent improvements to scheduling and error handling.

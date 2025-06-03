@@ -210,7 +210,7 @@ int main(void) {
     // Wait for both threads to finish
     while (!thread1_done || !thread2_done) {
         printf("Main: counter = %d, sleeping for 1 second\n", counter);
-        sleep(1);
+        usleep(1000000);  // Sleep for 1 second
     }
     
     printf("Main: all threads finished, counter final = %d\n", counter);
