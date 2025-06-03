@@ -434,3 +434,35 @@ void update_thread_timeslice(struct thread *t)
     // Update last scheduled time
     t->last_scheduled = get_system_ticks();
 }
+
+// Function to set thread scheduling policy
+long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, short timeslice)
+{
+    struct proc *p = curproc;
+    if (!p || !p->current_thread) {
+        TRACE_THREAD("sys_p_setthreadpolicy: invalid current process/thread");
+        return -EINVAL;
+    }
+
+    struct thread *current = p->current_thread;
+    unsigned short sr = splhigh();
+    
+    // Set policy
+    if (policy >= SCHED_FIFO && policy <= SCHED_OTHER) {
+        current->policy = policy;
+    }
+    
+    // Set priority if valid
+    if (priority >= MIN_NICE && priority <= MAX_NICE) {
+        current->priority = priority;
+    }
+    
+    // Set timeslice if valid
+    if (timeslice > 0) {
+        current->timeslice = timeslice;
+        current->total_timeslice = timeslice;
+    }
+    
+    spl(sr);
+    return 0;
+}

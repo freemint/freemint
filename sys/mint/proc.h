@@ -53,6 +53,11 @@
 #define THREAD_STATE_ZOMBIE		0x0010
 #define THREAD_STATE_DEAD		0x0020
 
+/* Thread operation modes for sys_p_exitthread */
+#define THREAD_EXIT     0   /* Exit the current thread */
+#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
+#define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
+
 // For checks only:
 #define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
 #define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
@@ -68,6 +73,7 @@
 #define WAIT_IO			4	// Waiting for I/O (input/output) operation to complete
 #define WAIT_SEMAPHORE	5	// Waiting for a semaphore to be released
 #define WAIT_SLEEP		6	// Waiting for sleep timeout
+#define WAIT_JOIN       7  /* Waiting for thread to exit */
 
 /* Thread scheduling system call constants */
 #define PSCHED_SETPARAM       1
@@ -122,51 +128,74 @@ enum sched_policy {
 };
 
 struct thread {
-    short tid;                     // Thread ID
-    struct proc *proc;           // Parent process
-
-    void *stack;                 // Stack base address
-    void *stack_top;             // Top of stack area
-    unsigned long stack_magic;   // Stack integrity check
-    CONTEXT ctxt[PROC_CTXTS];    // Thread context (reuse FreeMiNT's context)
-
-    short state;                 // Thread state (RUNNING/READY/BLOCKED)
-
-    short priority;              // Thread priority
-    short original_priority;     // Original priority (for restoration after boost)
-    short priority_boost;        // Flag indicating if priority is currently boosted	
-    short timeslice;             // timeslice for this thread
-	short remaining_timeslice;   // Remaining timeslice
-    short total_timeslice;       // Total timeslice allocated to this thread	
-	enum sched_policy policy;    // SCHED_FIFO, SCHED_RR, SCHED_OTHER
-
-	struct thread *next;         // Next thread in process list
-    struct thread *next_ready;   // For ready queue
-	struct thread *next_sleeping;  // For sleep queue	
-    struct thread *next_wait;    // For wait queue
-	
-	unsigned long magic;	// Magic number for validation
-
-    void (*func)(void*);  // Function to execute
-    void *arg;            // Argument to pass to function
-
-	short sleep_reason;   /* 0 = woken by signal/other, 1 = timeout */
-	TIMEOUT *alarm_timeout;  /* Per-thread alarm timeout */
-	
-	short wait_type;      // WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.
-	void *wait_obj;     // Pointeur vers l'objet attendu (mutex, condvar, etc.)
-
-    unsigned long wakeup_time;         // Temps de réveil en ticks
-
-    unsigned long last_scheduled;  // Last time this thread was scheduled (in ticks)	
-
-    /* Signal handling fields */
-    unsigned long   t_sigpending;        /* Signals pending for this thread */
-    unsigned long   t_sigmask;           /* Thread-specific signal mask */
-    short	t_sig_in_progress;   /* Signal currently being processed */
+    /* Thread identification */
+    short tid;                      /* Thread ID */
+    struct proc *proc;              /* Parent process */
+    
+    /* Stack information */
+    void *stack;                    /* Stack base address */
+    void *stack_top;                /* Top of stack area */
+    unsigned long stack_magic;      /* Stack integrity check */
+    
+    /* Thread context */
+    CONTEXT ctxt[PROC_CTXTS];       /* Thread context (reuse FreeMiNT's context) */
+    
+    /* Thread state and scheduling */
+    short state;                    /* Thread state (RUNNING/READY/BLOCKED) */
+    short priority;                 /* Thread priority */
+    short original_priority;        /* Original priority (for restoration after boost) */
+    short priority_boost;           /* Flag indicating if priority is currently boosted */
+    short timeslice;                /* Timeslice for this thread */
+    short remaining_timeslice;      /* Remaining timeslice */
+    short total_timeslice;          /* Total timeslice allocated to this thread */
+    enum sched_policy policy;       /* Scheduling policy (SCHED_FIFO, SCHED_RR, SCHED_OTHER) */
+    
+    /* Thread linking */
+    struct thread *next;            /* Next thread in process list */
+    struct thread *next_ready;      /* For ready queue */
+    struct thread *next_sleeping;   /* For sleep queue */
+    struct thread *next_wait;       /* For wait queue */
+    
+    /* Validation and debugging */
+    unsigned long magic;            /* Magic number for validation */
+    
+    /* Thread execution */
+    void (*func)(void*);            /* Function to execute */
+    void *arg;                      /* Argument to pass to function */
+    
+    /* Sleep and wait information */
+    short sleep_reason;             /* Reason for sleep (0 = woken by signal/other, 1 = timeout) */
+    TIMEOUT *alarm_timeout;         /* Per-thread alarm timeout */
+    short wait_type;                /* Type of wait (WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.) */
+    void *wait_obj;                 /* Object being waited on (mutex, condvar, etc.) */
+    
+    /* Scheduling and timing */
+    unsigned long wakeup_time;      /* Wakeup time in ticks */
+    unsigned long last_scheduled;   /* Last time this thread was scheduled (in ticks) */
+    
+    /* Thread join fields */
+    void *retval;                /* Return value from thread_exit */
+    struct thread *joiner;       /* Thread that is joining this thread */
+    int detached;                /* Whether thread is detached */
+    int joined;                  /* Whether thread has been joined */
+    
+    /* Signal handling */
+    unsigned long t_sigpending;     /* Signals pending for this thread */
+    unsigned long t_sigmask;        /* Thread-specific signal mask */
+    short t_sig_in_progress;        /* Signal currently being processed */
     
     /* Thread signal context */
-    void    *t_sigctx;           /* Saved context during signal handling */
+    void *t_sigctx;                 /* Saved context during signal handling */
+};
+
+/**
+ * Thread join structure to track join relationships
+ */
+struct thread_join {
+    struct thread *target;     /* Thread being joined */
+    struct thread *joiner;     /* Thread doing the joining */
+    void *retval;              /* Return value from target thread */
+    int joined;                /* Flag indicating join completed */
 };
 
 #define SYS_thread_sched	0x185
@@ -179,7 +208,7 @@ struct thread {
 // #define SYS_thread_alarm	0x18f
 
 long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
-long _cdecl sys_p_exitthread(void);
+long _cdecl sys_p_exitthread(long mode, long arg1, long arg2);
 long _cdecl sys_p_thread_sched(long func, long arg1, long arg2, long arg3);
 long _cdecl sys_p_sleepthread(long ms);
 long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, short timeslice);
@@ -193,6 +222,10 @@ long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
 long _cdecl sys_p_threadop(int operator, void *arg);
 
 void cleanup_process_threads(struct proc *pcurproc);
+
+long _cdecl sys_p_jointhread(long tid, void **retval);
+long _cdecl sys_p_detachthread(long tid);
+
 
 #define THREAD_OP_SEM_WAIT  1
 #define THREAD_OP_SEM_POST  2

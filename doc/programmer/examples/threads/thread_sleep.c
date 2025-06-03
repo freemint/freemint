@@ -16,6 +16,11 @@
 /* PE_THREAD mode for Pexec */
 #define PE_THREAD      107
 
+/* Thread operation modes for sys_p_exitthread */
+#define THREAD_EXIT     0   /* Exit the current thread */
+#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
+#define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
+
 /* MiNT system call wrappers */
 long Pthreadsignal(int op, long arg1, long arg2) {
     return trap_1_wlll(P_THREADSIGNAL, op, arg1, arg2);
@@ -25,8 +30,16 @@ long sys_p_sleepthread(long ms) {
     return trap_1_wl(P_SLEEP, ms);
 }
 
-void thread_exit(void) {
-    trap_1_w(P_EXIT);
+void sys_p_thread_exit(void) {
+    trap_1_wlll(P_EXIT, THREAD_EXIT, O, O);
+}
+
+long sys_p_threadjoin(long tid, void **status) {
+    return trap_1_wlll(P_EXIT, THREAD_JOIN, tid, (long)status);
+}
+
+long sys_p_threaddetach(long tid) {
+    return trap_1_wlll(P_EXIT, THREAD_DETACH, tid, O);
 }
 
 /* pthread.h definitions */

@@ -525,7 +525,7 @@ opcode	ret	class name	args */
 0x187		undefined
 0x188		undefined
 0x189		undefined
-0x18a	long	Pexitthread	(void)
+0x18a	long	Pexitthread	(long mode, long arg1, long arg2)
 0x18b		undefined
 0x18c		undefined
 0x18d	long	Pthreadop	(long operator, void *arg)

@@ -16,6 +16,10 @@
 #define PTSIG_GETID     13
 #define PSCHED_YIELD    3
 
+/* Thread operation modes for sys_p_exitthread */
+#define THREAD_EXIT     0   /* Exit the current thread */
+#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
+#define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
 
 /* MiNT system call wrappers */
 
@@ -29,8 +33,16 @@ long sys_p_sleepthread(long ms) {
 }
 
 /* Not needed, for now threads exit once their function end */
-void thread_exit(void) {
-    trap_1_w(P_EXIT);
+void sys_p_thread_exit(void) {
+    trap_1_wlll(P_EXIT, THREAD_EXIT, O, O);
+}
+
+long sys_p_threadjoin(long tid, void **status) {
+    return trap_1_wlll(P_EXIT, THREAD_JOIN, tid, (long)status);
+}
+
+long sys_p_threaddetach(long tid) {
+    return trap_1_wlll(P_EXIT, THREAD_DETACH, tid, O);
 }
 
 /* pthread.h definitions */
