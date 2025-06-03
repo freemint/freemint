@@ -698,7 +698,9 @@ long create_thread(struct proc *p, void (*func)(void*), void *arg) {
     t->wakeup_time = 0;  // No wakeup time initially
     t->next_sleeping = NULL;  // Not in sleep queue initially
     t->next_ready = NULL;  // Not in ready queue initially
-    t->next = NULL;  // Not linked to any other thread yet
+    // Link into process thread list
+    t->next = p->threads;
+    p->threads = t;
     t->wait_type = WAIT_NONE;  // Not waiting for anything initially
     t->sleep_reason = 0;  // No sleep reason initially
     
@@ -2046,23 +2048,29 @@ long _cdecl sys_p_detachthread(long tid)
     
     // Find target thread
     for (target = p->threads; target; target = target->next) {
-        if (target->tid == tid)
+        TRACE_THREAD("DETACH: Checking thread %d", target->tid);
+        if (target->tid == tid){
             break;
+        }
     }
     
-    if (!target)
+    if (!target){
+        TRACE_THREAD("DETACH: No such thread %d", tid);
         return -ESRCH;  // No such thread
-    
+    }
+
     sr = splhigh();
     
     // Check if thread is already joined
     if (target->joined) {
+        TRACE_THREAD("DETACH: Thread %d already joined", target->tid);
         spl(sr);
         return -EINVAL;  // Thread already joined
     }
     
     // Check if thread is already detached
     if (target->detached) {
+        TRACE_THREAD("DETACH: Thread %d already detached", target->tid);
         spl(sr);
         return 0;  // Already detached, not an error
     }
@@ -2111,28 +2119,47 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
         return -EINVAL;
     
     current = p->current_thread;
-    
+
+    TRACE_THREAD("JOIN: sys_p_jointhread called for tid=%ld, retval=%p", tid, retval);
+    struct thread *t;
+    for (t = p->threads; t; t = t->next) {
+        TRACE_THREAD("  Thread %d: state=%d, magic=%lx, detached=%d, joined=%d",
+                    t->tid, t->state, t->magic, t->detached, t->joined);
+    }
     // Cannot join self - would deadlock
-    if (current->tid == tid)
+    if (current->tid == tid){
+        TRACE_THREAD("JOIN: Cannot join self (would deadlock)");
         return -EDEADLK;
-    
+    }
+
+    if(p->threads == NULL){
+        TRACE_THREAD("JOIN: No threads to join - p->threads == NULL");
+        return -EINVAL;
+    }
     // Find target thread
     for (target = p->threads; target; target = target->next) {
-        if (target->tid == tid)
+        TRACE_THREAD("JOIN: Checking thread %ld", target->tid);
+        if (target->tid == tid){
             break;
+        }
     }
     
-    if (!target)
-        return -ESRCH;  // No such thread
+    if (!target){
+        TRACE_THREAD("JOIN: Thread %ld not found", tid);
+        return ESRCH;  // Return positive error code
+    }
     
     // Check if thread is joinable
-    if (target->detached)
-        return -EINVAL;  // Thread is detached, cannot join
+    if (target->detached){
+        TRACE_THREAD("JOIN: Thread %ld is detached, cannot join", tid);
+        return EINVAL;  // Return positive error code
+    }
     
     // Check if thread is already joined
-    if (target->joined)
+    if (target->joined){
+        TRACE_THREAD("JOIN: Thread %ld is already joined", tid);
         return -EINVAL;  // Thread already joined
-    
+    }
     sr = splhigh();
     
     // Check if thread already exited
