@@ -235,7 +235,7 @@ static inline void pthread_exit(void *retval)
 static inline int pthread_join(pthread_t thread, void **retval)
 {
     long result = sys_p_exitthread(THREAD_JOIN, thread, (long)retval);
-    
+
     if (result < 0) {
         switch (result) {
             case -ESRCH:
@@ -247,6 +247,8 @@ static inline int pthread_join(pthread_t thread, void **retval)
             default:
                 return EINVAL;
         }
+    } else {
+        printf("result: %ld\n", result);
     }
     
     return 0;

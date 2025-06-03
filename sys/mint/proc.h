@@ -160,7 +160,7 @@ struct thread {
     unsigned long magic;            /* Magic number for validation */
     
     /* Thread execution */
-    void (*func)(void*);            /* Function to execute */
+    void* (*func)(void*);            /* Function to execute */
     void *arg;                      /* Argument to pass to function */
     
     /* Sleep and wait information */
@@ -178,6 +178,7 @@ struct thread {
     struct thread *joiner;       /* Thread that is joining this thread */
     int detached;                /* Whether thread is detached */
     int joined;                  /* Whether thread has been joined */
+    void **join_retval;          /* Where to store return value for joiner */
     
     /* Signal handling */
     unsigned long t_sigpending;     /* Signals pending for this thread */
@@ -207,7 +208,7 @@ struct thread_join {
 #define SYS_threadsignal	0x18e
 // #define SYS_thread_alarm	0x18f
 
-long _cdecl sys_p_createthread(void (*func)(void*), void *arg, void *stack);
+long _cdecl sys_p_createthread(void *(*func)(void*), void *arg, void *stack);
 long _cdecl sys_p_exitthread(long mode, long arg1, long arg2);
 long _cdecl sys_p_thread_sched(long func, long arg1, long arg2, long arg3);
 long _cdecl sys_p_sleepthread(long ms);

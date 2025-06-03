@@ -278,7 +278,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
         case PE_THREAD:
 			{
 				/* p1 = function pointer, p2 = argument, p3 = stack (can be NULL) */
-				void (*func)(void*) = (void (*)(void*)) (unsigned long) p1;
+				void *(*func)(void*) = (void *(*)(void*)) (unsigned long) p1;
 				void *arg = (void*) (unsigned long) p2;
 				void *stack = (void*) (unsigned long) p3;
 				

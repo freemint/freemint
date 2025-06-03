@@ -54,6 +54,15 @@ void *sleep_thread(void *arg)
     return (void *)sleep_time;
 }
 
+/**
+ * Main function that tests the pthread_join implementation by creating,
+ * running, and joining multiple threads. Alternates between compute and
+ * sleep threads, collects their results, and demonstrates handling of
+ * various error cases, such as joining an invalid thread ID, joining
+ * the current thread (which would cause a deadlock), and attempting to
+ * join a detached thread.
+ */
+
 int main(void)
 {
     pthread_t threads[NUM_THREADS];
