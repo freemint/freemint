@@ -142,6 +142,7 @@ struct thread {
     
     /* Thread state and scheduling */
     short state;                    /* Thread state (RUNNING/READY/BLOCKED) */
+	short is_idle;                    /* Flag indicating if this is an idle thread */
     short priority;                 /* Thread priority */
     short original_priority;        /* Original priority (for restoration after boost) */
     short priority_boost;           /* Flag indicating if priority is currently boosted */
@@ -218,8 +219,7 @@ long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, shor
 long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
 /* Set an alarm for the current thread */
 long _cdecl sys_p_thread_alarm(struct thread *t, long ms);
-/* Thread signal dispatcher */
-long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
+
 long _cdecl sys_p_threadop(int operator, void *arg);
 
 void cleanup_process_threads(struct proc *pcurproc);
@@ -510,11 +510,11 @@ struct proc
 		short in_handler;		// Handler en cours ?
 	} p_thread_timer;
 
-	struct thread *ready_queue;
-	struct thread *sleep_queue;    // Liste des threads en sleep
-
-	struct thread *threads;        // Thread list
-	struct thread *current_thread; // Current thread
+    struct thread *threads;           /* List of all threads in this process */
+    struct thread *current_thread;    /* Currently executing thread */
+    struct thread *ready_queue;       /* Queue of threads ready to run */
+    struct thread *signal_wait_queue; /* Queue of threads waiting for signals */
+    struct thread *sleep_queue;       /* Queue of sleeping threads */
 
 	short num_threads;             /* Thread count */
 	short total_threads;           /* Total thread count */

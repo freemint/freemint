@@ -16,11 +16,6 @@
 /* PE_THREAD mode for Pexec */
 #define PE_THREAD      107
 
-/* Thread operation modes for sys_p_exitthread */
-#define THREAD_EXIT     0   /* Exit the current thread */
-#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
-#define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
-
 /* MiNT system call wrappers */
 long Pthreadsignal(int op, long arg1, long arg2) {
     return trap_1_wlll(P_THREADSIGNAL, op, arg1, arg2);
@@ -30,17 +25,11 @@ long sys_p_sleepthread(long ms) {
     return trap_1_wl(P_SLEEP, ms);
 }
 
-void sys_p_thread_exit(void) {
-    trap_1_wlll(P_EXIT, THREAD_EXIT, O, O);
+static inline long sys_p_exitthread(short mode, long arg1, long arg2) {
+    return trap_1_wlll(P_EXIT, mode, arg1, arg2);
 }
 
-long sys_p_threadjoin(long tid, void **status) {
-    return trap_1_wlll(P_EXIT, THREAD_JOIN, tid, (long)status);
-}
-
-long sys_p_threaddetach(long tid) {
-    return trap_1_wlll(P_EXIT, THREAD_DETACH, tid, O);
-}
+#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
 
 /* pthread.h definitions */
 #ifndef _PTHREAD_H
@@ -67,6 +56,7 @@ typedef struct {
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg);
 int pthread_yield(void);
 pthread_t pthread_self(void);
+int pthread_join(pthread_t thread, void **retval);
 
 #ifdef __cplusplus
 }
@@ -140,6 +130,28 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     return 0;
 }
 
+int pthread_join(pthread_t thread, void **retval)
+{
+    long result = sys_p_exitthread(THREAD_JOIN, thread, (long)retval);
+
+    if (result < 0) {
+        switch (result) {
+            case -ESRCH:
+                return ESRCH;  // No such thread
+            case -EINVAL:
+                return EINVAL; // Thread is detached or already joined
+            case -EDEADLK:
+                return EDEADLK; // Deadlock detected
+            default:
+                return EINVAL;
+        }
+    } else {
+        printf("result: %ld\n", result);
+    }
+    
+    return 0;
+}
+
 /* Global shared variables */
 volatile int counter = 0;
 volatile int thread1_done = 0;
@@ -155,7 +167,12 @@ void *thread1_func(void *arg) {
     
     struct timeval sleep_time, wake_time;
     long delta_ms;
-    
+    // for(int i = 0; i < 20; i++) {
+    //     printf("Thread %ld: counter = %d\n", my_tid, counter);
+    //     printf("Thread %ld: Sleeping for 1 second\n", my_tid);
+    //     sys_p_sleepthread(1000);
+    // }
+
     while (!thread2_done) {
         printf("Thread %ld: counter = %d\n", my_tid, counter);
         printf("Thread %ld: Sleeping for 1 second\n", my_tid);
@@ -199,6 +216,9 @@ void *thread2_func(void *arg) {
 }
 
 int main(void) {
+
+    // setvbuf(stdout, NULL, _IONBF, 0);  // Disable buffering for stdout
+
     pthread_t thread1, thread2;
     int result;
     const char *thread1_name = "This is Thread 1";
@@ -223,9 +243,12 @@ int main(void) {
     // Wait for both threads to finish
     while (!thread1_done || !thread2_done) {
         printf("Main: counter = %d, sleeping for 1 second\n", counter);
-        usleep(1000000);  // Sleep for 1 second
+        sleep(1);
     }
-    
+
+    // pthread_join(thread1, NULL);
+    // pthread_join(thread2, NULL);
+
     printf("Main: all threads finished, counter final = %d\n", counter);
     
     return 0;

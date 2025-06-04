@@ -28,6 +28,9 @@ int should_schedule_thread(struct thread *current, struct thread *next);
 
 void make_process_eligible(struct proc *p);
 
+void *idle_thread_func(void *arg);
+struct thread* get_idle_thread(struct proc *p);
+
 /* Mutex for timer operations */
 static int timer_operation_locked = 0;
 
@@ -70,15 +73,8 @@ void thread_switch_timeout_handler(PROC *p, long arg)
         if (p && p->current_thread && p->current_thread->magic == CTXT_MAGIC) {
             TRACE_THREAD("TIMEOUT: Attempting to restore current thread %d", 
                         p->current_thread->tid);
-            CONTEXT *ctx = get_thread_context(p->current_thread);
-            // if(p->current_thread->tid == 0){
-            //     // Try to restore the current thread's context
-            //     change_context(&p->ctxt[CURRENT]);
-            // } else {
-            //     // Try to restore the current thread's context
-            //     change_context(&p->current_thread->ctxt[CURRENT]);
-            // }
-            change_context(ctx);
+
+            change_context(get_thread_context(p->current_thread));
 
         }
         
@@ -486,7 +482,7 @@ void thread_switch(struct thread *from, struct thread *to)
     }
     
     // Handle context switch based on thread state
-    if (from->wait_type == WAIT_SLEEP) {
+    if (from->wait_type == WAIT_SLEEP  || from->wait_type == WAIT_JOIN) {
         // Sleeping thread path - direct context switch
         atomic_thread_state_change(to, THREAD_STATE_RUNNING);
         from->proc->current_thread = to;
@@ -668,6 +664,7 @@ long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
     // Link into process
     t->proc = p;
 
+    t->is_idle = 0;  // Not an idle thread
     t->priority = p->pri;
     t->original_priority = p->pri;
     t->policy = DEFAULT_SCHED_POLICY;
@@ -865,7 +862,7 @@ void schedule(void)
     
     // Get highest priority thread from ready queue
     struct thread *next = get_highest_priority_thread(p);
-    
+
     TRACE_THREAD("SCHED: Current thread %d, highest priority ready thread %d", 
                 current ? current->tid : -1, 
                 next ? next->tid : -1);
@@ -900,12 +897,16 @@ void schedule(void)
         }
     }
 
-    // If still no next thread, just return
-    if (!next) {
-        TRACE_THREAD("SCHED: No thread to schedule, returning");
-        spl(sr);
-        return;
-    }
+    // // If still no next thread, just return
+    // if (!next) {
+
+    //     // Last resort: try to get an idle thread
+    //     struct thread *idle = get_idle_thread(p);
+    //     if (idle) {
+    //         next = idle;
+    //     }
+    //     TRACE_THREAD("SCHED: IDLE: Next thread %d", next ? next->tid : -1);
+    // }
 
     // If thread switch in progress, wait
     if (thread_switch_in_progress) {
@@ -1148,14 +1149,14 @@ void thread_exit(void *retval) {
             canceltimeout(timelist);
         }
     }
-    
+
     // Remove from all queues
     remove_thread_from_wait_queues(current);
     remove_from_ready_queue(current);
     
     // Mark thread as exited
     atomic_thread_state_change(current, THREAD_STATE_EXITED);
-    
+
     // ALWAYS decrement thread count when a thread exits
     p->num_threads--;
     TRACE_THREAD("EXIT: Thread %d exited, num_threads=%d", tid, p->num_threads);
@@ -1233,9 +1234,12 @@ void thread_exit(void *retval) {
             TRACE_THREAD("EXIT: No ready threads, looking for thread0");
             struct thread *t;
             for (t = p->threads; t != NULL; t = t->next) {
-                if (t->tid == 0 && t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED)) {
+                if (t->tid == 0 && 
+                    t->magic == CTXT_MAGIC && 
+                    !(t->state & THREAD_STATE_EXITED) &&
+                    !(t->wait_type == WAIT_JOIN)) {
                     next_thread = t;
-                    TRACE_THREAD("EXIT: Found thread0 at %p", next_thread);
+                    TRACE_THREAD("EXIT: Found thread0 at %p, state=%d, wait_type=%d", next_thread, next_thread->state, next_thread->wait_type);
                     break;
                 }
             }
@@ -1575,9 +1579,17 @@ void check_and_wake_sleeping_threads(struct proc *p)
     while (sleep_t) {
         struct thread *next_sleep = sleep_t->next_sleeping;
 
-        TRACE_THREAD("SLEEP_CHECK: Checking thread %d (wake at %lu, current %lu)",
-                    sleep_t->tid, sleep_t->wakeup_time, current_time);
-
+        TRACE_THREAD("SLEEP_CHECK: Checking thread %d (wake at %lu, current %lu, state=%d)",
+                    sleep_t->tid, sleep_t->wakeup_time, current_time, sleep_t->state);
+if(sleep_t->magic == CTXT_MAGIC){
+    TRACE_THREAD("SLEEP_CHECK: Thread %d is valid", sleep_t->tid);
+    if(sleep_t->state & THREAD_STATE_BLOCKED){
+        TRACE_THREAD("SLEEP_CHECK: Thread %d is blocked", sleep_t->tid);
+        if(!(sleep_t->state & THREAD_STATE_EXITED)){
+            TRACE_THREAD("SLEEP_CHECK: Thread %d is not exited", sleep_t->tid);
+        }
+    }
+}
         // If thread should wake up
         if (sleep_t->magic == CTXT_MAGIC && 
             (sleep_t->state & THREAD_STATE_BLOCKED) &&
@@ -1684,7 +1696,8 @@ struct thread *get_highest_priority_thread(struct proc *p)
 {
     if (!p || !p->ready_queue) {
         TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Ready queue is empty");
-        return NULL;
+        // return NULL;
+        return get_idle_thread(p);
     }
 
 #ifdef DEBUG_THREAD
@@ -1933,6 +1946,18 @@ void remove_thread_from_wait_queues(struct thread *t)
             }
             pp = &(*pp)->next_wait;
         }
+    } 
+    // Remove from signal wait queue
+    else if (t->wait_type == WAIT_SIGNAL && t->proc) {
+        struct thread **pp = &t->proc->signal_wait_queue;
+        while (*pp) {
+            if (*pp == t) {
+                TRACE_THREAD("Removing thread %d from signal wait queue", t->tid);
+                *pp = t->next_wait;
+                break;
+            }
+            pp = &(*pp)->next_wait;
+        }
     }
     
     // Clear wait state
@@ -1953,8 +1978,9 @@ void make_process_eligible(struct proc *p) {
     unsigned short sr = splhigh();
     
     // Set slices to 0 to ensure it's eligible to run immediately
-    p->slices = 0;
+    // p->slices = 2;
     
+    // && p->wait_q != WAIT_Q && p->wait_q != SELECT_Q
     // If not in READY_Q or CURPROC_Q, add to READY_Q
     if (p->wait_q != READY_Q && p->wait_q != CURPROC_Q) {
         // Remove from current queue if any
@@ -1980,7 +2006,10 @@ void cleanup_process_threads(struct proc *pcurproc) {
 	/* Clean up threads if any exist */
 	if (pcurproc->threads) {
 		TRACE(("terminate: cleaning up threads for pid=%d", pcurproc->pid));
-		
+
+		/* Clean up any thread synchronization objects */
+	    cleanup_thread_sync_states(pcurproc);
+
 		/* Cancel any thread-related timeouts */
 		if (pcurproc->p_thread_timer.enabled) {
 			TRACE(("terminate: stopping thread timer"));
@@ -2007,7 +2036,7 @@ void cleanup_process_threads(struct proc *pcurproc) {
 			/* Only process valid threads */
 			if (t->magic == CTXT_MAGIC) {
 				TRACE(("terminate: cleaning up thread %d", t->tid));
-				
+
 				/* Remove from any wait queues */
 				remove_thread_from_wait_queues(t);
 				remove_from_ready_queue(t);
@@ -2029,14 +2058,12 @@ void cleanup_process_threads(struct proc *pcurproc) {
 			}
 			t = next;
 		}
-		pcurproc->threads = NULL;
 		pcurproc->current_thread = NULL;
 		pcurproc->num_threads = 0;
 		pcurproc->total_threads = 0;
-	}
 
-	/* Clean up any thread synchronization objects */
-	cleanup_thread_sync_states(pcurproc);
+		pcurproc->threads = NULL;        
+	}
 }
 
 /**
@@ -2129,24 +2156,20 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
     current = p->current_thread;
 
     TRACE_THREAD("JOIN: sys_p_jointhread called for tid=%ld, retval=%p", tid, retval);
-    struct thread *t;
-    for (t = p->threads; t; t = t->next) {
-        TRACE_THREAD("  Thread %d: state=%d, magic=%lx, detached=%d, joined=%d",
-                    t->tid, t->state, t->magic, t->detached, t->joined);
-    }
+
     // Cannot join self - would deadlock
     if (current->tid == tid){
         TRACE_THREAD("JOIN: Cannot join self (would deadlock)");
         return EDEADLK;
     }
 
-    if(p->threads == NULL){
-        TRACE_THREAD("JOIN: No threads to join - p->threads == NULL");
-        return EINVAL;
+    for (struct thread *t = p->threads; t; t = t->next) {
+        TRACE_THREAD("  Thread %d: state=%d, magic=%lx, detached=%d, joined=%d",
+                    t->tid, t->state, t->magic, t->detached, t->joined);
     }
+
     // Find target thread
     for (target = p->threads; target; target = target->next) {
-        TRACE_THREAD("JOIN: Checking thread %ld", target->tid);
         if (target->tid == tid){
             break;
         }
@@ -2168,10 +2191,11 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
         TRACE_THREAD("JOIN: Thread %ld is already joined", tid);
         return EINVAL;  // Thread already joined
     }
+
     sr = splhigh();
     
     // Check if thread already exited
-    if (target->state == THREAD_STATE_EXITED) {
+    if (target->state & THREAD_STATE_EXITED) {
         // Thread already exited, get return value and return immediately
         if (retval)
             *retval = target->retval;
@@ -2200,7 +2224,6 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
     
     // Mark target as being joined by current thread
     target->joiner = current;
-    target->joined = 0;  // Will be set to 1 when join completes
 
     // Mark current thread as waiting for join
     current->wait_type = WAIT_JOIN;
@@ -2213,17 +2236,7 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
     // Block the current thread
     atomic_thread_state_change(current, THREAD_STATE_BLOCKED);
     
-    CONTEXT *current_ctxt = get_thread_context(current);
-
-    // CRITICAL: Save the current context before scheduling
-    // This ensures we can resume from this point when the target thread exits
-    // if(current->tid == 0){
-    //     current_ctxt = &current->proc->ctxt[CURRENT];
-    // } else {
-    //     current_ctxt = &current->ctxt[CURRENT];
-    // }
-    
-    if (save_context(current_ctxt) == 0) {
+    if (save_context(get_thread_context(current)) == 0) {
         // First time through - going to sleep
         spl(sr);
         
@@ -2243,7 +2256,44 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
         TRACE_THREAD("JOIN: Thread %d not in RUNNING state after wake, fixing", current->tid);
         atomic_thread_state_change(current, THREAD_STATE_RUNNING);
     }
+
+    if ( (current->wait_obj != target) || (!(target->state & THREAD_STATE_EXITED)) ) {
+        TRACE_THREAD("JOIN: Thread %d woken up incorrectly (current->wait_obj != target) , still waiting for thread %ld", 
+                    current->tid, tid);
+        
+        // Go back to waiting
+        current->wait_type = WAIT_JOIN;
+        current->wait_obj = target;
+        atomic_thread_state_change(current, THREAD_STATE_BLOCKED);
+        
+        // Schedule another thread and continue waiting
+        spl(sr);
+        schedule();
+        return 0;  // Will never reach here
+    }
+
+    // CRITICAL FIX: Make sure target thread still exists and is valid
+    int target_found = 0;
+    for (struct thread *t = p->threads; t; t = t->next) {
+        if (t == target) {
+            target_found = 1;
+            break;
+        }
+    }
     
+    if (!target_found) {
+        // Target thread no longer exists in the thread list
+        // This means it has been properly joined and freed
+        TRACE_THREAD("JOIN: Target thread %ld no longer exists, join successful", tid);
+        
+        // Clear wait state
+        current->wait_type = WAIT_NONE;
+        current->wait_obj = NULL;
+        
+        spl(sr);
+        return 0;
+    }
+
     // Get return value if requested
     if (retval && target && target->magic == CTXT_MAGIC)
         *retval = target->retval;
@@ -2257,5 +2307,70 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
     spl(sr);
     return 0;
 }
+
+/*
+ * Idle thread function - just loops forever
+ */
+void *idle_thread_func(void *arg)
+{
+        volatile unsigned long current_time = get_system_ticks();
+        volatile unsigned long end_time = current_time + 200;
+        while (current_time < end_time) {
+            asm volatile("nop");
+            current_time = get_system_ticks();
+        }
+    // Should never reach here
+    return NULL;
+}
+
+struct thread* get_idle_thread(struct proc *p)
+{
+    if (!p) return NULL;
+    
+    // First check if we already have an idle thread
+    for (struct thread *t = p->threads; t != NULL; t = t->next) {
+        if (t->is_idle && t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED)) {
+            return t;
+        }
+    }
+    
+    // Create a new idle thread
+    struct thread *idle = kmalloc(sizeof(struct thread));
+    if (!idle) return NULL;
+    
+    // Initialize the idle thread
+    mint_bzero(idle, sizeof(*idle));
+    idle->tid = -128;  // Negative tid to indicate idle thread
+    // Don't increment p->num_threads for idle thread
+    idle->proc = p;
+    idle->priority = -1;  // Lowest possible priority
+    idle->original_priority = -1;
+    idle->is_idle = 1;      // Mark as idle thread
+    idle->magic = CTXT_MAGIC;
+    
+    // Allocate stack
+    idle->stack = kmalloc(STKSIZE);
+    if (!idle->stack) {
+        kfree(idle);
+        return NULL;
+    }
+    
+    idle->stack_top = (char*)idle->stack + STKSIZE;
+    idle->stack_magic = STACK_MAGIC;
+    
+    // Initialize context
+    init_thread_context(idle, idle_thread_func, (void *)p);
+    
+    // Link into process thread list
+    idle->next = p->threads;
+    p->threads = idle;
+
+    atomic_thread_state_change(idle, THREAD_STATE_READY);
+    add_to_ready_queue(idle);
+
+    TRACE_THREAD("IDLE: Created idle thread with tid %d", idle->tid);
+    return idle;
+}
+
 
 /* End of Threads stuff */

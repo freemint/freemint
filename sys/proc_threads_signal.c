@@ -49,7 +49,12 @@ void thread_timeout_handler(PROC *p, long arg)
     unsigned short sr = splhigh();
     if ((t->state & THREAD_STATE_BLOCKED) && t->wait_type == WAIT_SIGNAL) {
         t->sleep_reason = 1; // Timeout
+
+        // Remove from any wait queue if present
+        remove_thread_from_wait_queues(t);
         t->wait_type = WAIT_NONE;
+        
+        // Add to ready queue
         atomic_thread_state_change(t, THREAD_STATE_READY);
         add_to_ready_queue(t);
     }
@@ -130,14 +135,21 @@ void thread_signal_trampoline(int sig, void *arg)
     
     if (!handler)
         return;
-    
+
+   /* Mark that we're processing a signal */
+   t->t_sig_in_progress = sig;
+
     /* Save context */
     unsigned short sr = splhigh();
     ctx = (struct thread_sigcontext *)kmalloc(sizeof(struct thread_sigcontext));
     if (!ctx){
+        TRACE_THREAD("Failed to allocate context for thread %d", t->tid);
+        /* Clear signal in progress flag before returning */
+        t->t_sig_in_progress = 0;        
         spl(sr);
         return;
     }
+
     TRACE_THREAD("KMALLOC: Allocated thread signal context at %p", ctx);
     save_thread_context(t, ctx);
     spl(sr);
@@ -169,8 +181,10 @@ void handle_thread_signal(struct thread *t, int sig)
 {
     struct proc *p;
     
-    if (!t || !t->proc || sig <= 0 || sig >= NSIG)
+    if (!t || !t->proc || sig <= 0 || sig >= NSIG){
+        TRACE_THREAD("handle_thread_signal: invalid parameters (t=%p, sig=%d)", t, sig);
         return;
+    }
         
     p = t->proc;
 
@@ -186,6 +200,7 @@ void handle_thread_signal(struct thread *t, int sig)
         /* Execute handler in thread context */
         thread_signal_trampoline(sig, p->p_sigacts->thread_handlers[sig].arg);
     } else {
+        TRACE_THREAD("handle_thread_signal: no thread handler for signal %d, falling back to process handler", sig);
         /* Fall back to process-level signal handling */
         /* This will use the standard signal dispatcher */
         p->sigpending |= (1UL << sig);
@@ -198,36 +213,66 @@ void handle_thread_signal(struct thread *t, int sig)
  */
 int deliver_signal_to_thread(struct proc *p, struct thread *t, int sig)
 {
-    if (!p || !t || sig <= 0 || sig >= NSIG)
+    unsigned short sr;
+    if (!p || !t || sig <= 0 || sig >= NSIG){
+        TRACE_THREAD("ERROR: Invalid parameters for deliver_signal_to_thread");
         return 0;
-
+    }
+    sr = splhigh();  // Protect access to thread state
     if (t->proc != p) {
         TRACE_THREAD("ERROR: Attempt to deliver signal %d to thread %d in wrong process", 
                     sig, t->tid);
+        spl(sr);
         return 0;  /* Don't crash, just fail safely */
     }
 
     /* Check if this signal should be handled at thread level */
-    if ( !p->p_sigacts || (!p->p_sigacts->thread_signals && !IS_THREAD_SIGNAL(sig)) )
+   if ( !p->p_sigacts || !p->p_sigacts->thread_signals ) {
+        TRACE_THREAD("ERROR: Attempt to deliver signal %d to thread %d but no thread handlers are set",
+            sig, t->tid);
+        /* Thread-specific signal handling is disabled */
+        spl(sr);
         return 0;  /* Process-level signal, don't handle here */
-        
+    }
+
+    /* For non-thread signals, only handle if explicitly allowed */
+    if (!IS_THREAD_SIGNAL(sig) && !(p->p_sigacts->flags & SAS_THREADED)) {
+        TRACE_THREAD("ERROR: Attempt to deliver non-thread signal %d to thread %d",
+                    sig, t->tid);
+        spl(sr);
+        return 0;  /* Not a thread signal and thread handling not enabled for all signals */
+    }
+
     /* Check if signal is blocked by thread */
-    if (THREAD_SIGMASK(t) & (1UL << sig))
+    if (THREAD_SIGMASK(t) & (1UL << sig)){
+        TRACE_THREAD("ERROR: Attempt to deliver signal %d to blocked thread %d",
+                    sig, t->tid);
+        spl(sr);
         return 0;
-        
+    }
+
+    TRACE_THREAD("Delivering signal %d to thread %d", sig, t->tid);
     /* Mark signal as pending for this thread */
     SET_THREAD_SIGPENDING(t, sig);
     
     /* If thread is blocked, wake it up */
     if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type == WAIT_SIGNAL)) {
+
+        TRACE_THREAD("Waking up thread %d due to signal %d", t->tid, sig);
         t->sleep_reason = 0; // Signal
+
+        // Remove from any wait queue if present
+        remove_thread_from_wait_queues(t);
         t->wait_type = WAIT_NONE;
+
+        // Add to ready queue if not already there
         atomic_thread_state_change(t, THREAD_STATE_READY);
         if (!is_in_ready_queue(t)) {
             add_to_ready_queue(t);
         }
     }
 
+    spl(sr);
     return 1;
 }
 
@@ -269,14 +314,18 @@ int thread_aware_raise(struct proc *p, int sig)
 int check_thread_signals(struct thread *t)
 {
     int sig;
+    unsigned short sr;
     
     if (!t || !t->proc)
         return 0;
-        
+    
+    sr = splhigh();  // Protect access to thread signal state
+
     /* Don't process signals if we're already handling one */
     if (t->t_sig_in_progress){
         TRACE_THREAD("check_thread_signals: thread %d already processing signal %d", 
                     t->tid, t->t_sig_in_progress);
+        spl(sr);
         return 0;
     }
         
@@ -285,6 +334,7 @@ int check_thread_signals(struct thread *t)
     
     if (!pending){
         TRACE_THREAD("check_thread_signals: no pending signals for thread %d", t->tid);
+        spl(sr);
         return 0;
     }
         
@@ -292,16 +342,18 @@ int check_thread_signals(struct thread *t)
     for (sig = 1; sig < NSIG; sig++) {
         if (pending & (1UL << sig)) {
             // /* Clear pending flag */
-            // t->t_sigpending &= ~(1UL << sig);
+            t->t_sigpending &= ~(1UL << sig);
             
             /* Mark that we're processing a signal */
             t->t_sig_in_progress = sig;
             TRACE_THREAD("check_thread_signals: thread %d processing signal %d", 
                         t->tid, sig);
+            spl(sr);
             return sig;
         }
     }
     TRACE_THREAD("check_thread_signals: no valid pending signals for thread %d", t->tid);
+    spl(sr);
     return 0;
 }
 
@@ -366,13 +418,17 @@ static void thread_alarm_handler(PROC *p, long arg)
  */
 long _cdecl sys_p_thread_signal_mode(int enable)
 {
-    if (!curproc || !curproc->p_sigacts)
+    if (!curproc || !curproc->p_sigacts){
+        TRACE_THREAD("sys_p_thread_signal_mode: invalid process");
         return -EINVAL;
+    }
         
     if (enable) {
+        TRACE_THREAD("sys_p_thread_signal_mode: enabling thread signals");
         curproc->p_sigacts->thread_signals = 1;
         curproc->p_sigacts->flags |= SAS_THREADED;
     } else {
+        TRACE_THREAD("sys_p_thread_signal_mode: disabling thread signals");
         curproc->p_sigacts->thread_signals = 0;
         curproc->p_sigacts->flags &= ~SAS_THREADED;
     }
@@ -390,7 +446,12 @@ long _cdecl sys_p_thread_sigmask(ulong mask)
         
     ulong old_mask = THREAD_SIGMASK(curproc->current_thread);
     
-    /* Don't allow masking of certain signals */
+    /* Ensure we're not masking unmaskable signals */
+    if (mask & UNMASKABLE) {
+        TRACE_THREAD("sys_p_thread_sigmask: attempt to mask unmaskable signals");
+    }
+    
+    /* Directly set new mask while excluding unmaskable signals */
     curproc->current_thread->t_sigmask = mask & ~UNMASKABLE;
     
     return old_mask;
@@ -404,25 +465,35 @@ long _cdecl sys_p_kill_thread(struct thread *t, int sig)
     struct proc *p;
     
     /* Validate parameters */
-    if (!t || sig <= 0 || sig >= NSIG)
+    if (!t || sig <= 0 || sig >= NSIG){
+        TRACE_THREAD("sys_p_kill_thread: invalid parameters (t=%p, sig=%d)", t, sig);
         return -EINVAL;
-        
+    }
+
     p = t->proc;
-    if (!p || !p->p_sigacts)
+
+    if (!p || !p->p_sigacts){
+        TRACE_THREAD("sys_p_kill_thread: invalid process");
         return -EINVAL;
-        
+    }
+
     /* Check if thread belongs to current process */
-    if (p != curproc)
+    if (p != curproc){
+        TRACE_THREAD("sys_p_kill_thread: thread does not belong to current process");
         return -EPERM;
-        
+    }
+
     /* Make sure thread-specific signals are enabled */
-    if (!p->p_sigacts->thread_signals)
+    if (!p->p_sigacts->thread_signals){
+        TRACE_THREAD("sys_p_kill_thread: thread-specific signals are disabled");
         return -EINVAL;
-        
+    }
     /* Deliver signal to thread */
-    if (deliver_signal_to_thread(p, t, sig))
+    if (deliver_signal_to_thread(p, t, sig)){
+        TRACE_THREAD("sys_p_kill_thread: failed to deliver signal to thread");
         return 0;
-        
+    }
+    TRACE_THREAD("sys_p_kill_thread: signal %d delivered to thread %d", sig, t->tid);
     return -EINVAL;
 }
 
@@ -434,17 +505,27 @@ long _cdecl sys_p_thread_handler(int sig, void (*handler)(int, void*), void *arg
     struct proc *p;
     
     /* Validate parameters */
-    if (sig <= 0 || sig >= NSIG)
+    if (sig <= 0 || sig >= NSIG){
+        TRACE_THREAD("sys_p_thread_handler: invalid signal %d", sig);
         return -EINVAL;
+    }
         
     p = curproc;
-    if (!p || !p->p_sigacts)
+
+    if (!p || !p->p_sigacts){
+        TRACE_THREAD("sys_p_thread_handler: invalid process");
         return -EINVAL;
+    }
         
     /* Make sure thread-specific signals are enabled */
-    if (!p->p_sigacts->thread_signals)
+    if (!p->p_sigacts->thread_signals){
+        TRACE_THREAD("sys_p_thread_handler: thread-specific signals are disabled");
         return -EINVAL;
-        
+    }
+
+    TRACE_THREAD("sys_p_thread_handler: PROC ID %d, THREAD ID %d, SIG %d, HANDLER %p, ARG %p",
+                 p->pid, CURTHREAD->tid, sig, handler, arg);
+
     /* Set handler */
     p->p_sigacts->thread_handlers[sig].handler = handler;
     p->p_sigacts->thread_handlers[sig].arg = arg;
@@ -458,24 +539,33 @@ long _cdecl sys_p_thread_handler(int sig, void (*handler)(int, void*), void *arg
  */
 long _cdecl sys_p_thread_handler_arg(int sig, void *arg)
 {
-    struct proc *p;
+    struct proc *p = curproc;
     
     /* Validate parameters */
-    if (sig <= 0 || sig >= NSIG)
+    if (sig <= 0 || sig >= NSIG){
+        TRACE_THREAD("sys_p_thread_handler_arg: invalid signal %d", sig);
         return -EINVAL;
+    }
         
-    p = curproc;
-    if (!p || !p->p_sigacts)
+    if (!p || !p->p_sigacts){
+        TRACE_THREAD("sys_p_thread_handler_arg: invalid process");
         return -EINVAL;
+    }
         
     /* Make sure thread-specific signals are enabled */
-    if (!p->p_sigacts->thread_signals)
+    if (!p->p_sigacts->thread_signals){
+        TRACE_THREAD("sys_p_thread_handler_arg: thread-specific signals are disabled");
         return -EINVAL;
+    }
         
     /* Make sure a handler is already registered */
-    if (!p->p_sigacts->thread_handlers[sig].handler)
+    if (!p->p_sigacts->thread_handlers[sig].handler){
+        TRACE_THREAD("sys_p_thread_handler_arg: no handler registered for signal %d", sig);
         return -EINVAL;
-        
+    }
+
+    TRACE_THREAD("sys_p_thread_handler_arg: PROC ID %d, THREAD ID %d, SIG %d, ARG %p",
+                 p->pid, CURTHREAD->tid, sig, arg);
     /* Set handler argument */
     p->p_sigacts->thread_handlers[sig].arg = arg;
     
@@ -487,13 +577,16 @@ long _cdecl sys_p_thread_handler_arg(int sig, void *arg)
  */
 long _cdecl sys_p_thread_sigwait(ulong mask, long timeout)
 {
+    unsigned short sr;
     struct thread *t = CURTHREAD;
     struct proc *p = curproc;
     int sig;
     TIMEOUT *wait_timeout = NULL;
     
-    if (!t || !p)
+    if (!t || !p){
+        TRACE_THREAD("sys_p_thread_sigwait: invalid thread or process");
         return -EINVAL;
+    }
 
     TRACE_THREAD("sys_p_thread_sigwait: PROC ID %d, THREAD ID %d, mask %lx, timeout %ld", 
                  p->pid, t->tid, mask, timeout);
@@ -523,11 +616,23 @@ long _cdecl sys_p_thread_sigwait(ulong mask, long timeout)
     }
 
     /* Mark thread as waiting for signal */
-    unsigned short sr = splhigh();
+    sr = splhigh();
     t->sleep_reason = 0;
     atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
     t->wait_type = WAIT_SIGNAL;
+
+    // Add to signal wait queue
+    t->next_wait = NULL;
+    if (p->signal_wait_queue) {
+        struct thread *last = p->signal_wait_queue;
+        while (last->next_wait)
+            last = last->next_wait;
+        last->next_wait = t;
+    } else
+        p->signal_wait_queue = t;
+
     t->wait_obj = (void*)mask;
+
     remove_from_ready_queue(t);
     spl(sr);
     
@@ -578,8 +683,13 @@ long _cdecl sys_p_thread_sigblock(ulong mask)
         
     ulong old_mask = THREAD_SIGMASK(t);
     
-    /* Add signals to mask, but don't allow blocking unmaskable signals */
-    t->t_sigmask |= (mask & ~UNMASKABLE);
+   /* Check if any unmaskable signals were attempted to be blocked */
+   if (mask & UNMASKABLE) {
+       TRACE_THREAD("sys_p_thread_sigblock: attempt to block unmaskable signals");
+   }
+   
+   /* Merge assignment to add signals to mask, excluding unmaskable ones */
+   t->t_sigmask |= (mask & ~UNMASKABLE);
     
     return old_mask;
 }
@@ -620,58 +730,14 @@ long _cdecl sys_p_thread_sigpause(ulong mask)
     return sig;
 }
 
-/*
+/**
  * Thread sleep function using signals
+ * This is a wrapper around sys_p_sleepthread
  */
 long _cdecl sys_p_threadsig_sleep(unsigned int n)
 {
-    struct thread *t = CURTHREAD;
-    struct proc *p = curproc;
-    TIMEOUT *sleep_timeout = NULL;
-    unsigned short sr;
-
-    if (!t || !p)
-        return -EINVAL;
-
-    long ticks = (n + 4) / 5;
-    if (ticks < 1) ticks = 1;
-
-    sleep_timeout = addtimeout(p, ticks, thread_timeout_handler);
-    if (sleep_timeout)
-        sleep_timeout->arg = (long)t;
-
-wait_again:
-    sr = splhigh();
-
-    remove_from_ready_queue(t);
-    atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
-    
-    t->wait_type = WAIT_SLEEP;
-    t->wait_obj = (void*)sleep_timeout;
-    t->sleep_reason = 0;
-
-    spl(sr);
-
-    TRACE_THREAD("sys_p_threadsig_sleep: yielding to scheduler");
-    struct thread *waiting_thread = t;
-    schedule();
-    if (CURTHREAD != waiting_thread) {
-        TRACE_THREAD("Not the waiting thread after schedule, returning");
-        return 0;
-    }
-
-    sr = splhigh();
-    if (sleep_timeout) {
-        canceltimeout(sleep_timeout);
-        sleep_timeout = NULL;
-    }
-    if (t->sleep_reason == 1) {
-        spl(sr);
-        return 0; // Timeout
-    }
-    spl(sr);
-    // Faux réveil, recommence l'attente
-    goto wait_again;
+    TRACE_THREAD("sys_p_threadsig_sleep: calling sys_p_sleepthread with n=%u", n);
+    return sys_p_sleepthread(n);
 }
 
 /*
@@ -757,17 +823,43 @@ void dispatch_thread_signals(struct thread *t)
 /*
  * Main entry point for thread signal system calls
  */
-/*
- * Main entry point for thread signal system calls
- */
+
 long _cdecl sys_p_threadsignal(long func, long arg1, long arg2)
 {
     TRACE_THREAD("IN KERNEL:sys_p_threadsignal: func=%ld, arg1=%ld, arg2=%ld", func, arg1, arg2);
     
     switch (func) {
         case PTSIG_MODE:
+            TRACE_THREAD("sys_p_thread_signal_mode: %s thread signals", 
+                        arg1 ? "enabling" : "disabling");
             return sys_p_thread_signal_mode((int)arg1);
+        case PTSIG_KILL:
+            {        
+            TRACE_THREAD("PTSIG_KILL: arg1=%ld, arg2=%ld", arg1, arg2);
+            /* Send signal to specific thread */
+            struct thread *target = NULL;
+            struct proc *p = curproc;
             
+            /* Find thread by ID */
+            unsigned short sr = splhigh();
+            struct thread *t;
+            for (t = p->threads; t != NULL; t = t->next) {
+                if (t->tid == arg1) {
+                    target = t;
+                    break;
+                }
+            }
+            spl(sr);
+            
+            if (!target) {
+                TRACE_THREAD("PTSIG_KILL: Thread with ID %ld not found", arg1);
+                return -ESRCH;
+            }
+            
+            /* Send signal to target thread */
+            TRACE_THREAD("PTSIG_KILL: Sending signal %ld to thread %d", arg2, target->tid);
+            return sys_p_kill_thread(target, (int)arg2);
+            }
         case PTSIG_GETMASK:
             return sys_p_thread_sigmask(0);
             
@@ -790,82 +882,193 @@ long _cdecl sys_p_threadsignal(long func, long arg1, long arg2)
             return sys_p_thread_sigwait(arg1, arg2);
             
         case PTSIG_HANDLER:
-            /* Fix: Use arg1 for signal number and arg2 for handler function */
+            TRACE_THREAD("sys_p_threadsignal -> sys_p_thread_handler: PROC ID %d, THREAD ID %d, SIG %ld, HANDLER %lx, ARG %p", 
+                        curproc ? curproc->pid : -1, 
+                        CURTHREAD ? CURTHREAD->tid : -1,
+                        arg1, arg2, NULL);
             return sys_p_thread_handler((int)arg1, (void (*)(int, void*))arg2, NULL);
             
         case PTSIG_HANDLER_ARG:
-            /* New operation: Set the argument for a previously registered handler */
+            TRACE_THREAD("sys_p_threadsignal -> sys_p_thread_handler_arg: PROC ID %d, THREAD ID %d, SIG %ld, ARG %ld", 
+                        curproc ? curproc->pid : -1, 
+                        CURTHREAD ? CURTHREAD->tid : -1,
+                        arg1, arg2);
             return sys_p_thread_handler_arg((int)arg1, (void*)arg2);
             
         case PTSIG_GETID:
             return sys_p_thread_getid();
-
+            
+        case PTSIG_SLEEP:
+            return sys_p_threadsig_sleep((unsigned int)arg1);
+       case PTSIG_PENDING:
+           {
+               struct thread *t = CURTHREAD;
+               if (!t) return -EINVAL;
+               return t->t_sigpending;
+           }            
         case PTSIG_ALARM:
-            /* Set alarm for current thread */
             return sys_p_thread_alarm(CURTHREAD, arg1);
             
-        case PTSIG_ALARM_THREAD:
-            /* Set alarm for specific thread */
-            {
-                struct thread *t = NULL;
-                
-                /* Find thread by ID */
-                if (arg1 > 0) {
-                    struct thread *curr;
-                    for (curr = curproc->threads; curr; curr = curr->next) {
-                        if (curr->tid == arg1) {
-                            t = curr;
-                            break;
-                        }
-                    }
-                    
-                    if (!t) {
-                        TRACE_THREAD("Thread with ID %ld not found", arg1);
-                        return -ESRCH;
-                    }
-                } else {
-                    /* Use current thread */
-                    t = CURTHREAD;
-                }
-                
-                return sys_p_thread_alarm(t, arg2);
-            }
-
         default:
             if (func > 0 && func < NSIG) {
                 /* Direct signal to thread */
+                TRACE_THREAD("Sending signal %ld to thread ID %ld", func, arg1);
                 struct thread *target = NULL;
+                struct proc *p = curproc;
                 
                 if (arg1 == 0) {
                     /* Signal current thread */
                     target = CURTHREAD;
-                } else if (arg1 > 0 && arg1 < 1000) {
-                    /* Treat arg1 as a thread ID */
-                    struct proc *p = curproc;
+                    TRACE_THREAD("Using current thread (ID %d)", target ? target->tid : -1);
+                } else {
+                    /* Find thread by ID */
+                    unsigned short sr = splhigh();
                     struct thread *t;
-                    
                     for (t = p->threads; t != NULL; t = t->next) {
                         if (t->tid == arg1) {
                             target = t;
+                            TRACE_THREAD("Found thread with ID %ld", arg1);
                             break;
                         }
                     }
+                    spl(sr);
                     
                     if (!target) {
                         TRACE_THREAD("Thread with ID %ld not found", arg1);
                         return -ESRCH;
                     }
-                } else {
-                    /* Treat arg1 as a thread pointer */
-                    target = (struct thread*)arg1;
                 }
                 
-                return sys_p_kill_thread(target, (int)func);
+                /* Now deliver the signal to the target thread */
+                if (target) {
+                    TRACE_THREAD("Sending signal %ld to thread ID %ld", func, target->tid);
+                    return sys_p_kill_thread(target, (int)func);
+                }
             }
             
+            TRACE_THREAD("Invalid function code: %ld", func);
             return -EINVAL;
     }
 }
+
+// long _cdecl sys_p_threadsignal(long func, long arg1, long arg2)
+// {
+//     TRACE_THREAD("IN KERNEL:sys_p_threadsignal: func=%ld, arg1=%ld, arg2=%ld", func, arg1, arg2);
+    
+//     switch (func) {
+//         case PTSIG_MODE:
+//             return sys_p_thread_signal_mode((int)arg1);
+            
+//         case PTSIG_GETMASK:
+//             return sys_p_thread_sigmask(0);
+            
+//         case PTSIG_SETMASK:
+//             return sys_p_thread_sigmask(arg1);
+            
+//         case PTSIG_BLOCK:
+//             return sys_p_thread_sigblock((ulong)arg1);
+            
+//         case PTSIG_UNBLOCK:
+//             {
+//                 struct thread *t = CURTHREAD;
+//                 if (!t) return -EINVAL;
+//                 ulong old_mask = t->t_sigmask;
+//                 t->t_sigmask &= ~(arg1 & ~UNMASKABLE);
+//                 return old_mask;
+//             }
+            
+//         case PTSIG_WAIT:
+//             return sys_p_thread_sigwait(arg1, arg2);
+
+//         case PTSIG_PENDING:
+//             {
+//                 struct thread *t = CURTHREAD;
+//                 if (!t) return -EINVAL;
+//                 return t->t_sigpending;
+//             }
+
+//         case PTSIG_HANDLER:
+//             /* Fix: Use arg1 for signal number and arg2 for handler function */
+//             return sys_p_thread_handler((int)arg1, (void (*)(int, void*))arg2, NULL);
+            
+//         case PTSIG_HANDLER_ARG:
+//             /* New operation: Set the argument for a previously registered handler */
+//             return sys_p_thread_handler_arg((int)arg1, (void*)arg2);
+            
+//         case PTSIG_GETID:
+//             return sys_p_thread_getid();
+
+//         case PTSIG_ALARM:
+//             /* Set alarm for current thread */
+//             return sys_p_thread_alarm(CURTHREAD, arg1);
+            
+//         case PTSIG_ALARM_THREAD:
+//             /* Set alarm for specific thread */
+//             {
+//                 struct thread *t = NULL;
+                
+//                 /* Find thread by ID */
+//                 if (arg1 > 0) {
+//                     struct thread *curr;
+//                     for (curr = curproc->threads; curr; curr = curr->next) {
+//                         if (curr->tid == arg1) {
+//                             t = curr;
+//                             break;
+//                         }
+//                     }
+                    
+//                     if (!t) {
+//                         TRACE_THREAD("Thread with ID %ld not found", arg1);
+//                         return -ESRCH;
+//                     }
+//                 } else {
+//                     /* Use current thread */
+//                     t = CURTHREAD;
+//                 }
+                
+//                 return sys_p_thread_alarm(t, arg2);
+//             }
+
+//         default:
+//             TRACE_THREAD("Invalid function code: %ld", func);
+//             if (func > 0 && func < NSIG) {
+//                 /* Direct signal to thread */
+//                 struct thread *target = NULL;
+                
+//                 if (arg1 == 0) {
+//                     /* Signal current thread */
+//                     target = CURTHREAD;
+//                     TRACE_THREAD("Sending signal %d to current thread t->tid=%d through sys_p_kill_thread",target->tid, func);
+//                 } else if (arg1 > 0 && arg1 < 1000) {
+//                     TRACE_THREAD("Sending signal %d to thread t->tid=%d through sys_p_kill_thread",arg1, func);
+//                     /* Treat arg1 as a thread ID */
+//                     struct proc *p = curproc;
+//                     struct thread *t;
+                    
+//                     for (t = p->threads; t != NULL; t = t->next) {
+//                         if (t->tid == arg1) {
+//                             target = t;
+//                             TRACE_THREAD("Found thread with ID %ld", arg1);
+//                             break;
+//                         }
+//                     }
+                    
+//                     if (!target) {
+//                         TRACE_THREAD("Thread with ID %ld not found", arg1);
+//                         return -ESRCH;
+//                     }
+//                 } else {
+//                     TRACE_THREAD("Sending signal %d to thread %p through sys_p_kill_thread",func, arg1);
+//                     /* Treat arg1 as a thread pointer */
+//                     target = (struct thread*)arg1;
+//                 }
+                
+//                 return sys_p_kill_thread(target, (int)func);
+//             }
+            
+//             return -EINVAL;
+//     }
+// }
 
 /*
  * Initialize the thread signal subsystem

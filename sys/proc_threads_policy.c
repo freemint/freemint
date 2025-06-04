@@ -447,15 +447,8 @@ long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, shor
     struct thread *current = p->current_thread;
     unsigned short sr = splhigh();
     
-    // Set policy
-    if (policy >= SCHED_FIFO && policy <= SCHED_OTHER) {
-        current->policy = policy;
-    }
-    
-    // Set priority if valid
-    if (priority >= MIN_NICE && priority <= MAX_NICE) {
-        current->priority = priority;
-    }
+    // Set the policy and priority
+    int result = set_thread_policy(current, policy, priority);
     
     // Set timeslice if valid
     if (timeslice > 0) {
@@ -464,5 +457,6 @@ long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, shor
     }
     
     spl(sr);
-    return 0;
+    // return 0;
+    return result;
 }

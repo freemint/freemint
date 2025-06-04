@@ -85,7 +85,7 @@ long sys_pthreadop(int op, void *arg) {
 }
 
 long Pthreadsignal(int op, long arg1, long arg2) {
-    return trap_1_wlll(P_THREADSIGNAL, op, arg1, arg2);
+    return trap_1_wlll(P_THREADSIGNAL, (long)(op), (long)(arg1), (long)(arg2));
 }
 
 long sys_p_sleepthread(long ms) {
@@ -93,7 +93,7 @@ long sys_p_sleepthread(long ms) {
 }
 
 void sys_p_thread_exit(void) {
-    trap_1_wlll(P_EXIT, THREAD_EXIT, O, O);
+    return trap_1_wlll(P_EXIT, THREAD_EXIT, O, O);
 }
 
 long sys_p_threadjoin(long tid, void **status) {
