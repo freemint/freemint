@@ -16,6 +16,19 @@
 /* PE_THREAD mode for Pexec */
 #define PE_THREAD      107
 
+#define THREAD_STATE_RUNNING    0x0001
+#define THREAD_STATE_READY      0x0002
+#define THREAD_STATE_BLOCKED	0x0004
+#define THREAD_STATE_STOPPED	0x0008
+#define THREAD_STATE_ZOMBIE		0x0010
+#define THREAD_STATE_DEAD		0x0020
+#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
+#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
+
+#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
+#define THREAD_TRY_JOIN 3   /* Non-blocking join */
+#define THREAD_STATUS   4   /* Get thread status */
+
 /* MiNT system call wrappers */
 long Pthreadsignal(int op, long arg1, long arg2) {
     return trap_1_wlll(P_THREADSIGNAL, op, arg1, arg2);
@@ -29,7 +42,9 @@ static inline long sys_p_exitthread(short mode, long arg1, long arg2) {
     return trap_1_wlll(P_EXIT, mode, arg1, arg2);
 }
 
-#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
+static inline long sys_p_thread_status(long arg1) {
+    return sys_p_exitthread(THREAD_STATUS, arg1, 0);
+}
 
 /* pthread.h definitions */
 #ifndef _PTHREAD_H
@@ -132,25 +147,46 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
 
 int pthread_join(pthread_t thread, void **retval)
 {
-    long result = sys_p_exitthread(THREAD_JOIN, thread, (long)retval);
-
-    if (result < 0) {
-        switch (result) {
-            case -ESRCH:
-                return ESRCH;  // No such thread
-            case -EINVAL:
-                return EINVAL; // Thread is detached or already joined
-            case -EDEADLK:
-                return EDEADLK; // Deadlock detected
-            default:
-                return EINVAL;
+    while (1) {
+        long status = sys_p_thread_status(thread);
+        
+        if (status < 0) {
+            // printf("status: %ld\n", status);
+            return (status == -ESRCH) ? ESRCH : EINVAL;
         }
-    } else {
-        printf("result: %ld\n", result);
+        
+        if (status & THREAD_STATE_EXITED) {
+            // Thread exited, now do the actual join to get return value
+            long result = sys_p_exitthread(THREAD_TRY_JOIN, thread, (long)retval);
+            if (result == 0 || result != -EAGAIN) {
+                return (result == 0) ? 0 : EINVAL;
+            }
+        }
+        usleep(20000); // Sleep for 20ms before checking again
     }
-    
-    return 0;
 }
+
+// int pthread_join(pthread_t thread, void **retval)
+// {
+//     long result = sys_p_exitthread(THREAD_JOIN, thread, (long)retval);
+
+//     if (result < 0) {
+//         switch (result) {
+//             case -ESRCH:
+//                 return ESRCH;  // No such thread
+//             case -EINVAL:
+//                 return EINVAL; // Thread is detached or already joined
+//             case -EDEADLK:
+//                 return EDEADLK; // Deadlock detected
+//             default:
+//                 return EINVAL;
+//         }
+//     } else {
+//         printf("result: %ld\n", result);
+//     }
+    
+//     return 0;
+// }
 
 /* Global shared variables */
 volatile int counter = 0;
@@ -240,14 +276,14 @@ int main(void) {
     
     printf("Main: threads created (tid1=%ld, tid2=%ld)\n", (long)thread1, (long)thread2);
     
-    // Wait for both threads to finish
-    while (!thread1_done || !thread2_done) {
-        printf("Main: counter = %d, sleeping for 1 second\n", counter);
-        sleep(1);
-    }
+    // // Wait for both threads to finish
+    // while (!thread1_done || !thread2_done) {
+    //     // printf("Main: counter = %d, sleeping for 1 second\n", counter);
+    //     // sleep(1);
+    // }
 
-    // pthread_join(thread1, NULL);
-    // pthread_join(thread2, NULL);
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
 
     printf("Main: all threads finished, counter final = %d\n", counter);
     

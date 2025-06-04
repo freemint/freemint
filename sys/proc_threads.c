@@ -533,7 +533,9 @@ void thread_preempt_handler(PROC *p, long arg)
 
     // If not current process, reschedule the timeout
     if (p != curproc) {
-        make_process_eligible(p);
+        /* Boost the timer for the current process */
+        /* Should be disabled for non threaded mintlib's functions like sleep() */
+        // make_process_eligible(p);
         reschedule_preemption_timer(p, (long)p->current_thread);
         return;
     }
@@ -1404,7 +1406,17 @@ long _cdecl sys_p_exitthread(long mode, long arg1, long arg2) {
         case THREAD_DETACH: // Detach thread
             TRACE_THREAD("DETACH: sys_p_detachthread called for tid=%ld", arg1);
             return sys_p_detachthread(arg1);
-            
+
+        case THREAD_TRY_JOIN:
+            TRACE_THREAD("TRYJOIN: sys_p_tryjointhread called for tid=%ld", arg1);
+            // New non-blocking join
+            return sys_p_tryjointhread(arg1, (void **)arg2);
+
+        case THREAD_STATUS:
+            TRACE_THREAD("STATUS: sys_p_thread_status called for tid=%ld", arg1);
+            // Get thread status
+            return sys_p_thread_status(arg1);
+
         default:
             TRACE_THREAD("ERROR: sys_p_exitthread called with invalid mode %d", mode);
             return -EINVAL;
@@ -2308,6 +2320,121 @@ long _cdecl sys_p_jointhread(long tid, void **retval)
     return 0;
 }
 
+/**
+ * Try to join a thread - non-blocking version
+ * 
+ * @param tid Thread ID to join
+ * @param retval Pointer to store the thread's return value
+ * @return 0 on success (thread joined), -EAGAIN if thread still running, error code on failure
+ */
+long _cdecl sys_p_tryjointhread(long tid, void **retval)
+{
+    struct proc *p = curproc;
+    struct thread *current, *target = NULL;
+    unsigned short sr;
+    
+    if (!p || !p->current_thread)
+        return -EINVAL;
+    
+    current = p->current_thread;
+
+    TRACE_THREAD("TRY_JOIN: sys_p_tryjointhread called for tid=%ld, retval=%p", tid, retval);
+
+    // Cannot join self - would deadlock
+    if (current->tid == tid) {
+        TRACE_THREAD("TRY_JOIN: Cannot join self (would deadlock)");
+        return -EDEADLK;
+    }
+
+    // Find target thread
+    for (target = p->threads; target; target = target->next) {
+        if (target->tid == tid) {
+            break;
+        }
+    }
+    
+    if (!target) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld not found", tid);
+        return -ESRCH;
+    }
+    
+    // Check if thread is joinable
+    if (target->detached) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld is detached, cannot join", tid);
+        return -EINVAL;
+    }
+    
+    // Check if thread is already joined
+    if (target->joined) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld is already joined", tid);
+        return -EINVAL;
+    }
+
+    sr = splhigh();
+    
+    // KEY DIFFERENCE: Check if thread exited, but don't block if it hasn't
+    if (target->state & THREAD_STATE_EXITED) {
+        // Thread already exited, get return value and return immediately
+        if (retval)
+            *retval = target->retval;
+        
+        // Mark as joined so resources can be freed
+        target->joined = 1;
+        
+        // Free resources now
+        if (target->t_sigctx) {
+            kfree(target->t_sigctx);
+            target->t_sigctx = NULL;
+        }
+        
+        if (target->stack && target->tid != 0) {
+            kfree(target->stack);
+            target->stack = NULL;
+        }
+        
+        // Clear magic and free
+        target->magic = 0;
+        kfree(target);
+        
+        spl(sr);
+        TRACE_THREAD("TRY_JOIN: Thread %ld joined successfully", tid);
+        return 0;  // Success - thread was joined
+    }
+    
+    // Thread is still running - return immediately with EAGAIN
+    spl(sr);
+    TRACE_THREAD("TRY_JOIN: Thread %ld still running", tid);
+    return -EAGAIN;  // Thread still running, try again later
+}
+
+long _cdecl sys_p_thread_status(long tid)
+{
+    struct proc *p = curproc;
+    struct thread *target = NULL;
+    unsigned short sr;
+    
+    if (!p)
+        return -EINVAL;
+    
+    // Find target thread
+    sr = splhigh();
+    for (target = p->threads; target; target = target->next) {
+        if (target->tid == tid) {
+            break;
+        }
+    }
+    
+    if (!target) {
+        spl(sr);
+        return -ESRCH;  // Thread not found
+    }
+    
+    long status = target->state;
+    spl(sr);
+    
+    return status;
+}
+
 /*
  * Idle thread function - just loops forever
  */
@@ -2371,6 +2498,5 @@ struct thread* get_idle_thread(struct proc *p)
     TRACE_THREAD("IDLE: Created idle thread with tid %d", idle->tid);
     return idle;
 }
-
 
 /* End of Threads stuff */

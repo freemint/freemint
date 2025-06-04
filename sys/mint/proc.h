@@ -52,15 +52,16 @@
 #define THREAD_STATE_STOPPED	0x0008
 #define THREAD_STATE_ZOMBIE		0x0010
 #define THREAD_STATE_DEAD		0x0020
-
+// For checks only:
+#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
+#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
 /* Thread operation modes for sys_p_exitthread */
 #define THREAD_EXIT     0   /* Exit the current thread */
 #define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
 #define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
+#define THREAD_TRY_JOIN 3   /* Non-blocking join (new) */
+#define THREAD_STATUS   4   /* Get thread status */
 
-// For checks only:
-#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
-#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
 
 /* Thread signal handling constants */
 #define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
@@ -204,7 +205,6 @@ struct thread_join {
 #define SYS_sleepthread		0x186
 #define SYS_threadop		0x18d
 #define SYS_exitthread		0x18a
-// #define SYS_setthreadpolicy 0x18b
 
 #define SYS_threadsignal	0x18e
 // #define SYS_thread_alarm	0x18f
@@ -220,13 +220,15 @@ long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
 /* Set an alarm for the current thread */
 long _cdecl sys_p_thread_alarm(struct thread *t, long ms);
 
-long _cdecl sys_p_threadop(int operator, void *arg);
+long _cdecl sys_p_threadop(int operator, void *arg); /* used syscalls */
 
-void cleanup_process_threads(struct proc *pcurproc);
+void cleanup_process_threads(struct proc *pcurproc); /** Called in terminate function - k_exit.c */
 
-long _cdecl sys_p_jointhread(long tid, void **retval);
-long _cdecl sys_p_detachthread(long tid);
+long _cdecl sys_p_jointhread(long tid, void **retval);  /* Called in sys_p_exitthread - proc_thread.c */
+long _cdecl sys_p_tryjointhread(long tid, void **retval); /* New non-blocking join -  called in sys_p_exitthread - proc_thread.c */
+long _cdecl sys_p_detachthread(long tid);                /* Called in sys_p_exitthread - proc_thread.c */
 
+long _cdecl sys_p_thread_status(long tid);
 
 #define THREAD_OP_SEM_WAIT  1
 #define THREAD_OP_SEM_POST  2
