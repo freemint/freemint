@@ -14,7 +14,6 @@
 
 # include "ktypes.h"
 
-
 typedef unsigned long int sigset_t;
 
 # define NSIG		32		/* number of signals recognized */
@@ -87,11 +86,9 @@ struct sigaction
 # define SAPARENT	(0)		/* XXX signal flags which the parent (of ptraced) processes may set */
 # define SAKERNEL	(0)	/* XXX kernel only flags */
 
-
 /* values for ss_flags */
 # define SS_ONSTACK	1
 # define SS_DISABLE	2
-
 
 # define MINSIGSTKSZ	2048		/* minimum stack size */
 # define SIGSTKSZ	8192		/* default stack size */
@@ -123,49 +120,7 @@ struct sigacts
 	} thread_handlers[NSIG];	
 };
 
-/* signal flags */
-# define SAS_OLDMASK	0x01		/* need to restore mask before pause */
-# define SAS_THREADED	0x02		/* process uses thread-specific signals */
-
-/* Thread signal constants */
-# define THREAD_SIGUSR1  SIGUSR1
-# define THREAD_SIGUSR2  SIGUSR2
-
-/* Operation codes for Pthreadsignal */
-#define PTSIG_SETMASK        1  /* Set thread signal mask */
-#define PTSIG_GETMASK        2  /* Get thread signal mask (handler=0) */
-#define PTSIG_MODE           3  /* Set thread signal mode (enable/disable) */
-#define PTSIG_KILL           4  /* Send signal to thread */
-#define PTSIG_WAIT           5  /* Wait for signals */
-#define PTSIG_BLOCK          6  /* Block signals (add to mask) */
-#define PTSIG_UNBLOCK        7  /* Unblock signals (remove from mask) */
-#define PTSIG_PAUSE          8  /* Pause with specified mask */
-#define PTSIG_ALARM          9  /* Set thread alarm */
-#define PTSIG_SLEEP         10  /* Sleep for specified time */
-#define PTSIG_PENDING       11  /* Get pending signals */
-#define PTSIG_HANDLER       12  /* Register thread signal handler */
-#define PTSIG_GETID         13  /* Get thread ID (for signal handling) */
-#define PTSIG_HANDLER_ARG   14  /* Set argument for thread signal handler */
-#define PTSIG_ALARM_THREAD  16  /* Set alarm for specific thread */
-
-/* Signal context structure for thread signal handling */
-struct thread_sigcontext {
-	long sc_regs[16];              /* D0-D7/A0-A7 register contents */
-	long sc_pc;                    /* Program counter */
-	short sc_sr;                   /* Status register */
-	long sc_usp;                   /* User stack pointer */
-	struct thread *sc_thread;      /* Thread being interrupted */
-	int sc_sig;                    /* Signal number */
-	void *sc_handler_arg;          /* Handler argument */
-};
-
 /* helper macro */
 # define SIGACTION(p, sig)		((p)->p_sigacts->sigact[(sig)])
-
-/* Thread signal handling macros */
-# define THREAD_SIGMASK(t)          ((t)->t_sigmask)
-# define THREAD_SIGPENDING(t)       ((t)->t_sigpending)
-# define IS_THREAD_SIGNAL(sig)      ((sig) >= SIGUSR1 && (sig) <= SIGUSR2)
-# define SET_THREAD_SIGPENDING(t,s) ((t)->t_sigpending |= (1UL << (s)))
 
 # endif /* _mint_signal_h */

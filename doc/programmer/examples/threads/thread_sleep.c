@@ -4,189 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-/* MiNT system call numbers */
-#define P_TREADSHED     0x185
-#define P_SLEEP         0x186
-#define P_EXIT          0x18A
-#define P_THREADSIGNAL  0x18E
-
-#define PTSIG_GETID     13
-#define PSCHED_YIELD    3
-
-/* PE_THREAD mode for Pexec */
-#define PE_THREAD      107
-
-#define THREAD_STATE_RUNNING    0x0001
-#define THREAD_STATE_READY      0x0002
-#define THREAD_STATE_BLOCKED	0x0004
-#define THREAD_STATE_STOPPED	0x0008
-#define THREAD_STATE_ZOMBIE		0x0010
-#define THREAD_STATE_DEAD		0x0020
-#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
-#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
-
-#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
-#define THREAD_TRY_JOIN 3   /* Non-blocking join */
-#define THREAD_STATUS   4   /* Get thread status */
-
-/* MiNT system call wrappers */
-long Pthreadsignal(int op, long arg1, long arg2) {
-    return trap_1_wlll(P_THREADSIGNAL, op, arg1, arg2);
-}
-
-long sys_p_sleepthread(long ms) {
-    return trap_1_wl(P_SLEEP, ms);
-}
-
-static inline long sys_p_exitthread(short mode, long arg1, long arg2) {
-    return trap_1_wlll(P_EXIT, mode, arg1, arg2);
-}
-
-static inline long sys_p_thread_status(long arg1) {
-    return sys_p_exitthread(THREAD_STATUS, arg1, 0);
-}
-
-/* pthread.h definitions */
-#ifndef _PTHREAD_H
-#define _PTHREAD_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Thread ID type */
-typedef long pthread_t;
-
-/* Thread attribute type (minimal version) */
-typedef struct {
-    int detachstate;
-    size_t stacksize;
-} pthread_attr_t;
-
-/* Constants */
-#define PTHREAD_CREATE_JOINABLE  0
-#define PTHREAD_CREATE_DETACHED  1
-
-/* Function prototypes */
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg);
-int pthread_yield(void);
-pthread_t pthread_self(void);
-int pthread_join(pthread_t thread, void **retval);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _PTHREAD_H */
-
-/* pthread implementation */
-
-/**
- * Causes the calling thread to relinquish the CPU, allowing other threads to be scheduled.
- * The thread is moved to the end of the queue for its static priority and a new thread
- * is scheduled to run.
- * 
- * @return 0 on success or a negative error code on failure.
- */
-
-int pthread_yield(void)
-{
-    return (int)trap_1_wllll(P_TREADSHED, (long)PSCHED_YIELD, 0, 0, 0);
-}
-
-/**
- * Returns the thread ID of the calling thread.
- * 
- * @return The thread ID of the calling thread
- */
-pthread_t pthread_self(void)
-{
-    /* Call the MiNT function to get the current thread ID */
-    return (pthread_t)Pthreadsignal(PTSIG_GETID, 0, 0);
-}
-
-/**
- * Create a new thread, starting with execution of START-ROUTINE
- * getting passed ARG. Creation attributes come from ATTR.
- * 
- * @param thread    Pointer to pthread_t where thread ID will be stored
- * @param attr      Thread attributes (ignored in this implementation)
- * @param start_routine  Function to be executed by the thread
- * @param arg       Argument to pass to the start_routine
- * @return 0 on success, error code on failure
- */
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                  void *(*start_routine)(void*), void *arg)
-{
-    long tid;
-    
-    /* Validate parameters */
-    if (!thread || !start_routine)
-        return EINVAL;
-    
-    /* Call Pexec with PE_THREAD mode to create the thread */
-    tid = Pexec(PE_THREAD, start_routine, arg, NULL);
-    
-    if (tid < 0) {
-        /* Convert MiNT error code to pthread error code */
-        switch (tid) {
-            case -ENOMEM:
-                return EAGAIN;  /* No resources to create another thread */
-            case -EINVAL:
-                return EINVAL;  /* Invalid parameters */
-            default:
-                return EAGAIN;  /* Generic error */
-        }
-    }
-    
-    /* Store the thread ID */
-    *thread = (pthread_t)tid;
-    
-    return 0;
-}
-
-int pthread_join(pthread_t thread, void **retval)
-{
-    while (1) {
-        long status = sys_p_thread_status(thread);
-        
-        if (status < 0) {
-            // printf("status: %ld\n", status);
-            return (status == -ESRCH) ? ESRCH : EINVAL;
-        }
-        
-        if (status & THREAD_STATE_EXITED) {
-            // Thread exited, now do the actual join to get return value
-            long result = sys_p_exitthread(THREAD_TRY_JOIN, thread, (long)retval);
-            if (result == 0 || result != -EAGAIN) {
-                return (result == 0) ? 0 : EINVAL;
-            }
-        }
-        usleep(20000); // Sleep for 20ms before checking again
-    }
-}
-
-// int pthread_join(pthread_t thread, void **retval)
-// {
-//     long result = sys_p_exitthread(THREAD_JOIN, thread, (long)retval);
-
-//     if (result < 0) {
-//         switch (result) {
-//             case -ESRCH:
-//                 return ESRCH;  // No such thread
-//             case -EINVAL:
-//                 return EINVAL; // Thread is detached or already joined
-//             case -EDEADLK:
-//                 return EDEADLK; // Deadlock detected
-//             default:
-//                 return EINVAL;
-//         }
-//     } else {
-//         printf("result: %ld\n", result);
-//     }
-    
-//     return 0;
-// }
+#include "mint_pthread.h"
 
 /* Global shared variables */
 volatile int counter = 0;
@@ -203,11 +21,6 @@ void *thread1_func(void *arg) {
     
     struct timeval sleep_time, wake_time;
     long delta_ms;
-    // for(int i = 0; i < 20; i++) {
-    //     printf("Thread %ld: counter = %d\n", my_tid, counter);
-    //     printf("Thread %ld: Sleeping for 1 second\n", my_tid);
-    //     sys_p_sleepthread(1000);
-    // }
 
     while (!thread2_done) {
         printf("Thread %ld: counter = %d\n", my_tid, counter);
@@ -215,7 +28,7 @@ void *thread1_func(void *arg) {
         
         // Get current time before sleep
         gettimeofday(&sleep_time, NULL);
-        sys_p_sleepthread(1000);
+        proc_thread_sleep(2700);
         
         // Get current time after wake up
         gettimeofday(&wake_time, NULL);
@@ -253,8 +66,6 @@ void *thread2_func(void *arg) {
 
 int main(void) {
 
-    // setvbuf(stdout, NULL, _IONBF, 0);  // Disable buffering for stdout
-
     pthread_t thread1, thread2;
     int result;
     const char *thread1_name = "This is Thread 1";
@@ -275,15 +86,9 @@ int main(void) {
     }
     
     printf("Main: threads created (tid1=%ld, tid2=%ld)\n", (long)thread1, (long)thread2);
-    
-    // // Wait for both threads to finish
-    // while (!thread1_done || !thread2_done) {
-    //     // printf("Main: counter = %d, sleeping for 1 second\n", counter);
-    //     // sleep(1);
-    // }
 
-    pthread_join(thread1, NULL);
-    pthread_join(thread2, NULL);
+    pthread_tryjoin(thread1, NULL);
+    pthread_tryjoin(thread2, NULL);
 
     printf("Main: all threads finished, counter final = %d\n", counter);
     

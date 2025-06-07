@@ -14,7 +14,7 @@
 #include <signal.h>
 #include "mint_pthread.h"
 
-/* Operation codes for Pthreadsignal */
+/* Operation codes for proc_thread_signal */
 #define PTSIG_SETMASK        1  /* Set thread signal mask */
 #define PTSIG_GETMASK        2  /* Get thread signal mask (handler=0) */
 #define PTSIG_MODE           3  /* Set thread signal mode (enable/disable) */
@@ -24,10 +24,8 @@
 #define PTSIG_UNBLOCK        7  /* Unblock signals (remove from mask) */
 #define PTSIG_PAUSE          8  /* Pause with specified mask */
 #define PTSIG_ALARM          9  /* Set thread alarm */
-#define PTSIG_SLEEP         10  /* Sleep for specified time */
 #define PTSIG_PENDING       11  /* Get pending signals */
 #define PTSIG_HANDLER       12  /* Register thread signal handler */
-#define PTSIG_GETID         13  /* Get thread ID (for signal handling) */
 #define PTSIG_HANDLER_ARG   14  /* Set argument for thread signal handler */
 #define PTSIG_ALARM_THREAD  16  /* Set alarm for specific thread */
 
@@ -57,14 +55,14 @@ void *signal_wait_thread(void *arg)
     printf("Thread %ld starting, waiting for signals\n", thread_id);
     
     /* Enable thread-specific signal handling */
-    Pthreadsignal(PTSIG_MODE, 1, 0);
+    proc_thread_signal(PTSIG_MODE, 1, 0);
     
     /* Register thread-specific signal handlers */
-    Pthreadsignal(PTSIG_HANDLER, TEST_SIGNAL, (long)signal_handler);
-    Pthreadsignal(PTSIG_HANDLER_ARG, TEST_SIGNAL, thread_id);
+    proc_thread_signal(PTSIG_HANDLER, TEST_SIGNAL, (long)signal_handler);
+    proc_thread_signal(PTSIG_HANDLER_ARG, TEST_SIGNAL, thread_id);
     
-    Pthreadsignal(PTSIG_HANDLER, TEST_SIGNAL2, (long)signal_handler);
-    Pthreadsignal(PTSIG_HANDLER_ARG, TEST_SIGNAL2, thread_id);
+    proc_thread_signal(PTSIG_HANDLER, TEST_SIGNAL2, (long)signal_handler);
+    proc_thread_signal(PTSIG_HANDLER_ARG, TEST_SIGNAL2, thread_id);
     
     /* Wait for signals with timeout */
     while (!test_complete) {
@@ -72,7 +70,7 @@ void *signal_wait_thread(void *arg)
         unsigned long mask = (1UL << TEST_SIGNAL) | (1UL << TEST_SIGNAL2);
         
         /* Wait for signal with 1 second timeout */
-        sig = Pthreadsignal(PTSIG_WAIT, mask, 1000);
+        sig = proc_thread_signal(PTSIG_WAIT, mask, 1000);
         
         if (sig > 0) {
             printf("Thread %ld woke up due to signal %d\n", thread_id, sig);
@@ -81,7 +79,8 @@ void *signal_wait_thread(void *arg)
         }
         
         /* Sleep a bit to avoid busy waiting */
-        Pthreadsignal(PTSIG_SLEEP, 100, 0);
+        proc_thread_sleep(100);
+        
     }
     
     printf("Thread %ld exiting\n", thread_id);
@@ -98,7 +97,7 @@ void *signal_send_thread(void *arg)
     printf("Signal sender thread %ld starting\n", thread_id);
     
     /* Wait a bit for other threads to initialize */
-    Pthreadsignal(PTSIG_SLEEP, 500, 0);
+    proc_thread_sleep(500);
     
     /* Send signals to other threads */
     for (i = 0; i < 5; i++) {
@@ -107,22 +106,22 @@ void *signal_send_thread(void *arg)
                thread_id, SIGUSR1, 0);
         
         // /* Use the thread ID directly */
-        // Pthreadsignal(SIGUSR1, 0, 0);
-       /* Use PTSIG_KILL to send a signal to a specific thread */
-       Pthreadsignal(PTSIG_KILL, 0, SIGUSR1);
+        // proc_thread_signal(SIGUSR1, 0, 0);
+        /* Use PTSIG_KILL to send a signal to a specific thread */
+        proc_thread_signal(PTSIG_KILL, 0, SIGUSR1);
 
         /* Wait a bit */
-        Pthreadsignal(PTSIG_SLEEP, 200, 0);
+        proc_thread_sleep(200);
         
         /* Send another signal */
         printf("Thread %ld sending signal %d to thread %d\n", 
                thread_id, SIGUSR2, 0);
         
-        // Pthreadsignal(SIGUSR2, 0, 0);
-        Pthreadsignal(PTSIG_KILL, 0, SIGUSR2);
+        // proc_thread_signal(SIGUSR2, 0, 0);
+        proc_thread_signal(PTSIG_KILL, 0, SIGUSR2);
         
         /* Wait a bit */
-        Pthreadsignal(PTSIG_SLEEP, 200, 0);
+        proc_thread_sleep(200);
     }
     
     printf("Signal sender thread %ld exiting\n", thread_id);

@@ -1,22 +1,384 @@
-#include "proc_threads.h"
+#include "proc_threads_sync.h"
 
-// Function to unlock a mutex
-int thread_mutex_unlock(struct mutex *mutex);
-// Function to lock a mutex
-int thread_mutex_lock(struct mutex *mutex);
-// Function to initialize a mutex
-int thread_mutex_init(struct mutex *mutex);
-// Function to up a semaphore
-int thread_semaphore_up(struct semaphore *sem);
-// Function to down a semaphore
-int thread_semaphore_down(struct semaphore *sem);
-// Function to initialize a semaphore
-int thread_semaphore_init(struct semaphore *sem, short count);
+#include "proc_threads_helper.h"
+#include "proc_threads_queue.h"
+#include "proc_threads_scheduler.h"
+
+/**
+ * Detach a thread - mark it as not joinable
+ * 
+ * @param tid Thread ID to detach
+ * @return 0 on success, error code on failure
+ */
+long proc_thread_detach(long tid)
+{
+    struct proc *p = curproc;
+    struct thread *target = NULL;
+    unsigned short sr;
+    
+    if (!p)
+        return -EINVAL;
+    
+    // Find target thread
+    for (target = p->threads; target; target = target->next) {
+        TRACE_THREAD("DETACH: Checking thread %d", target->tid);
+        if (target->tid == tid){
+            break;
+        }
+    }
+    
+    if (!target){
+        TRACE_THREAD("DETACH: No such thread %d", tid);
+        return -ESRCH;  // No such thread
+    }
+
+    sr = splhigh();
+    
+    // Check if thread is already joined
+    if (target->joined) {
+        TRACE_THREAD("DETACH: Thread %d already joined", target->tid);
+        spl(sr);
+        return -EINVAL;  // Thread already joined
+    }
+    
+    // Check if thread is already detached
+    if (target->detached) {
+        TRACE_THREAD("DETACH: Thread %d already detached", target->tid);
+        spl(sr);
+        return 0;  // Already detached, not an error
+    }
+    
+    // Mark thread as detached
+    target->detached = 1;
+    
+    // If thread already exited, free its resources
+    if (target->state & THREAD_STATE_EXITED) {
+        TRACE_THREAD("DETACH: Thread %d already exited, freeing resources", target->tid);
+        
+        // Check if any thread is waiting to join this one
+        if (target->joiner && target->joiner->magic == CTXT_MAGIC) {
+            struct thread *joiner = target->joiner;
+            TRACE_THREAD("DETACH: Thread %d has a joiner thread %d, waking it up", 
+                        target->tid, joiner->tid);
+            
+            // Wake up the joining thread
+            if (joiner->wait_type == WAIT_JOIN && joiner->wait_obj == target) {
+                joiner->wait_type = WAIT_NONE;
+                joiner->wait_obj = NULL;
+                joiner->join_retval = NULL;
+                
+                // Wake up joiner
+                atomic_thread_state_change(joiner, THREAD_STATE_READY);
+                add_to_ready_queue(joiner);
+            }
+        }
+        
+        // Free resources
+        if (target->t_sigctx) {
+            kfree(target->t_sigctx);
+            target->t_sigctx = NULL;
+        }
+        
+        if (target->stack && target->tid != 0) {
+            kfree(target->stack);
+            target->stack = NULL;
+        }
+        
+        // Clear magic and free
+        target->magic = 0;
+        kfree(target);
+    }
+    
+    spl(sr);
+    return 0;
+}
+
+/**
+ * Join a thread - wait for it to terminate
+ * 
+ * @param tid Thread ID to join
+ * @param retval Pointer to store the thread's return value
+ * @return 0 on success, error code on failure
+ */
+long proc_thread_join(long tid, void **retval)
+{
+    struct proc *p = curproc;
+    struct thread *current, *target = NULL;
+    unsigned short sr;
+    
+    if (!p || !p->current_thread)
+        return EINVAL;
+    
+    current = p->current_thread;
+
+    TRACE_THREAD("JOIN: proc_thread_join called for tid=%ld, retval=%p", tid, retval);
+
+    // Cannot join self - would deadlock
+    if (current->tid == tid){
+        TRACE_THREAD("JOIN: Cannot join self (would deadlock)");
+        return EDEADLK;
+    }
+
+    for (struct thread *t = p->threads; t; t = t->next) {
+        TRACE_THREAD("  Thread %d: state=%d, magic=%lx, detached=%d, joined=%d",
+                    t->tid, t->state, t->magic, t->detached, t->joined);
+    }
+
+    // Find target thread
+    for (target = p->threads; target; target = target->next) {
+        if (target->tid == tid){
+            break;
+        }
+    }
+    
+    if (!target){
+        TRACE_THREAD("JOIN: Thread %ld not found", tid);
+        return ESRCH;  // Return positive error code
+    }
+    
+    // Check if thread is joinable
+    if (target->detached){
+        TRACE_THREAD("JOIN: Thread %ld is detached, cannot join", tid);
+        return EINVAL;  // Return positive error code
+    }
+    
+    // Check if thread is already joined
+    if (target->joined){
+        TRACE_THREAD("JOIN: Thread %ld is already joined", tid);
+        return EINVAL;  // Thread already joined
+    }
+    
+    // Check if another thread is already joining this thread
+    if (target->joiner && target->joiner != current && target->joiner->magic == CTXT_MAGIC) {
+        TRACE_THREAD("JOIN: Thread %ld is already being joined by thread %d", 
+                    tid, target->joiner->tid);
+        return EINVAL;  // Thread is already being joined by another thread
+    }
+
+    sr = splhigh();
+    
+    // Check if thread already exited
+    if (target->state & THREAD_STATE_EXITED) {
+        // Thread already exited, get return value and return immediately
+        if (retval)
+            *retval = target->retval;
+        
+        // Mark as joined so resources can be freed
+        target->joined = 1;
+        
+        // Free resources now
+        if (target->t_sigctx) {
+            kfree(target->t_sigctx);
+            target->t_sigctx = NULL;
+        }
+        
+        if (target->stack && target->tid != 0) {
+            kfree(target->stack);
+            target->stack = NULL;
+        }
+        
+        // Clear magic and free
+        target->magic = 0;
+        kfree(target);
+        
+        // Clear any wait state on the current thread
+        current->wait_type = WAIT_NONE;
+        current->wait_obj = NULL;
+        current->join_retval = NULL;
+        
+        spl(sr);
+        return 0;
+    }
+    
+    // Mark target as being joined by current thread
+    target->joiner = current;
+
+    // Mark current thread as waiting for join
+    current->wait_type = WAIT_JOIN;
+    current->wait_obj = target;
+    current->join_retval = retval;  // Store the pointer where to put the return value
+
+    TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit",
+                current->tid, target->tid);
+    
+    // Block the current thread
+    atomic_thread_state_change(current, THREAD_STATE_BLOCKED);
+    
+    if (save_context(get_thread_context(current)) == 0) {
+        // First time through - going to sleep
+        spl(sr);
+        
+        // Schedule another thread
+        proc_thread_schedule();
+        
+        // Should never reach here
+        TRACE_THREAD("JOIN: ERROR - Returned from proc_thread_schedule() in join path!");
+        return -1;
+    }
+    
+    // Second time through - waking up after target thread exited
+    sr = splhigh();
+    
+    // Ensure we're in the RUNNING state
+    if (current->state != THREAD_STATE_RUNNING) {
+        TRACE_THREAD("JOIN: Thread %d not in RUNNING state after wake, fixing", current->tid);
+        atomic_thread_state_change(current, THREAD_STATE_RUNNING);
+    }
+
+    // Check if we're still waiting for the target thread
+    if (current->wait_type == WAIT_JOIN && current->wait_obj == target) {
+        // Check if target has exited
+        if (!(target->state & THREAD_STATE_EXITED)) {
+            TRACE_THREAD("JOIN: Thread %d woken up but target thread %ld hasn't exited yet", 
+                        current->tid, tid);
+            
+            // Go back to waiting
+            atomic_thread_state_change(current, THREAD_STATE_BLOCKED);
+            
+            // Schedule another thread and continue waiting
+            spl(sr);
+            proc_thread_schedule();
+            return 0;  // Will never reach here
+        }
+    } else {
+        // We're no longer waiting for this thread, which means it has been handled
+        TRACE_THREAD("JOIN: Thread %d no longer waiting for thread %ld", current->tid, tid);
+    }
+
+    // CRITICAL FIX: Make sure target thread still exists and is valid
+    int target_found = 0;
+    for (struct thread *t = p->threads; t; t = t->next) {
+        if (t == target) {
+            target_found = 1;
+            break;
+        }
+    }
+    
+    if (!target_found) {
+        // Target thread no longer exists in the thread list
+        // This means it has been properly joined and freed
+        TRACE_THREAD("JOIN: Target thread %ld no longer exists, join successful", tid);
+        
+        // Clear wait state
+        current->wait_type = WAIT_NONE;
+        current->wait_obj = NULL;
+        
+        spl(sr);
+        return 0;
+    }
+
+    // Get return value if requested
+    if (retval && target && target->magic == CTXT_MAGIC)
+        *retval = target->retval;
+    
+    // Clear wait state
+    current->wait_type = WAIT_NONE;
+    current->wait_obj = NULL;
+    
+    TRACE_THREAD("JOIN: Thread %d successfully joined thread %d", current->tid, tid);
+    
+    spl(sr);
+    return 0;
+}
+
+/**
+ * Try to join a thread - non-blocking version
+ * 
+ * @param tid Thread ID to join
+ * @param retval Pointer to store the thread's return value
+ * @return 0 on success (thread joined), -EAGAIN if thread still running, error code on failure
+ */
+long proc_thread_tryjoin(long tid, void **retval)
+{
+    struct proc *p = curproc;
+    struct thread *current, *target = NULL;
+    unsigned short sr;
+    
+    if (!p || !p->current_thread)
+        return EINVAL;
+    
+    current = p->current_thread;
+
+    TRACE_THREAD("TRY_JOIN: proc_thread_tryjoin called for tid=%ld, retval=%p", tid, retval);
+
+    // Cannot join self - would deadlock
+    if (current->tid == tid) {
+        TRACE_THREAD("TRY_JOIN: Cannot join self (would deadlock)");
+        return EDEADLK;
+    }
+
+    // Find target thread
+    for (target = p->threads; target; target = target->next) {
+        if (target->tid == tid) {
+            break;
+        }
+    }
+    
+    if (!target) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld not found", tid);
+        return ESRCH;
+    }
+    
+    // Check if thread is joinable
+    if (target->detached) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld is detached, cannot join", tid);
+        return EINVAL;
+    }
+    
+    // Check if thread is already joined
+    if (target->joined) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld is already joined", tid);
+        return EINVAL;
+    }
+    
+    // Check if another thread is already joining this thread
+    if (target->joiner && target->joiner != current && target->joiner->magic == CTXT_MAGIC) {
+        TRACE_THREAD("TRY_JOIN: Thread %ld is already being joined by thread %d", 
+                    tid, target->joiner->tid);
+        return EINVAL;  // Thread is already being joined by another thread
+    }
+
+    sr = splhigh();
+    
+    // KEY DIFFERENCE: Check if thread exited, but don't block if it hasn't
+    if (target->state & THREAD_STATE_EXITED) {
+        // Thread already exited, get return value and return immediately
+        if (retval)
+            *retval = target->retval;
+        
+        // Mark as joined so resources can be freed
+        target->joined = 1;
+        
+        // Free resources now
+        if (target->t_sigctx) {
+            kfree(target->t_sigctx);
+            target->t_sigctx = NULL;
+        }
+        
+        if (target->stack && target->tid != 0) {
+            kfree(target->stack);
+            target->stack = NULL;
+        }
+        
+        // Clear magic and free
+        target->magic = 0;
+        kfree(target);
+        
+        spl(sr);
+        TRACE_THREAD("TRY_JOIN: Thread %ld joined successfully", tid);
+        return 0;  // Success - thread was joined
+    }
+    
+    // Thread is still running - return immediately with EAGAIN
+    spl(sr);
+    TRACE_THREAD("TRY_JOIN: Thread %ld still running", tid);
+    return EAGAIN;  // Thread still running, try again later
+}
 
 // Function to initialize a semaphore
 int thread_semaphore_init(struct semaphore *sem, short count) {
     if (!sem || count < 0) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
     
     sem->count = count;
@@ -28,7 +390,7 @@ int thread_semaphore_init(struct semaphore *sem, short count) {
 // Function to initialize a mutex
 int thread_mutex_init(struct mutex *mutex) {
     if (!mutex) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
     
     mutex->locked = 0;
@@ -41,12 +403,12 @@ int thread_mutex_init(struct mutex *mutex) {
 // Improved mutex implementation for uniprocessor
 int thread_mutex_lock(struct mutex *mutex) {
     if (!mutex) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
 
     struct thread *t = CURTHREAD;
     if (!t) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
 
     // Prevent nested blocking
@@ -69,7 +431,7 @@ int thread_mutex_lock(struct mutex *mutex) {
     // Check for deadlock (thread trying to lock mutex it already owns)
     if (mutex->owner == t) {
         spl(sr);
-        return THREAD_EDEADLK;
+        return EDEADLK;
     }
     
     TRACE_THREAD("THREAD_MUTEX_LOCK: Slow lock");
@@ -114,7 +476,7 @@ int thread_mutex_lock(struct mutex *mutex) {
     spl(sr);
     
     // Yield CPU - will resume here when woken
-    schedule();
+    proc_thread_schedule();
     
     // When we resume, check if we were sleeping
     sr = splhigh();
@@ -138,12 +500,12 @@ int thread_mutex_lock(struct mutex *mutex) {
 
 int thread_mutex_unlock(struct mutex *mutex) {
     if (!mutex) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
     
     struct thread *current = CURTHREAD;
     if (!current) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
     
     unsigned short sr = splhigh();
@@ -153,7 +515,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
         TRACE_THREAD("THREAD_MUTEX_UNLOCK: Thread %d is not the owner (owner=%p)", 
                     current->tid, mutex->owner ? mutex->owner->tid : -1);
         spl(sr);
-        return THREAD_EINVAL; // Not owner
+        return EINVAL; // Not owner
     }
     
     // If there are waiters, wake the highest priority one
@@ -218,7 +580,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
             if (highest->priority > current->priority) {
                 TRACE_THREAD("THREAD_MUTEX_UNLOCK: Forcing immediate schedule due to priority");
                 spl(sr);
-                schedule();
+                proc_thread_schedule();
                 return THREAD_SUCCESS;
             }
         } else {
@@ -257,12 +619,12 @@ int thread_mutex_unlock(struct mutex *mutex) {
 // Semaphore implementation
 int thread_semaphore_down(struct semaphore *sem) {
     if (!sem) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
 
     struct thread *t = CURTHREAD;
     if (!t) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
 
     // Prevent nested blocking
@@ -298,7 +660,7 @@ int thread_semaphore_down(struct semaphore *sem) {
     spl(sr);
     
     // Schedule another thread
-    schedule();
+    proc_thread_schedule();
     // When we resume, check if we were sleeping
     sr = splhigh();
     if (t->wait_type == WAIT_SLEEP) {
@@ -320,12 +682,12 @@ int thread_semaphore_down(struct semaphore *sem) {
 
 int thread_semaphore_up(struct semaphore *sem) {
     if (!sem) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
     
     struct thread *current = CURTHREAD;
     if (!current) {
-        return THREAD_EINVAL;
+        return EINVAL;
     }
     
     unsigned short sr = splhigh();
@@ -381,7 +743,7 @@ int thread_semaphore_up(struct semaphore *sem) {
     if (t->priority > current->priority) {
         TRACE_THREAD("SEMAPHORE UP: Forcing immediate schedule due to priority");
         spl(sr);
-        schedule();
+        proc_thread_schedule();
         return THREAD_SUCCESS;
     }
     
@@ -459,45 +821,4 @@ void cleanup_thread_sync_states(struct proc *p)
     spl(sr);
     
     TRACE_THREAD("CLEANUP: Finished cleaning up thread sync states for process %d", p->pid);
-}
-
-long _cdecl sys_p_threadop(int operator, void *arg) {
-    TRACE_THREAD("sys_p_threadop(%d, %p)", operator, arg);
-    
-    if (!arg) {
-        TRACE_THREAD("THREAD_OP: NULL argument");
-        return -EINVAL;
-    }
-    
-    switch (operator) {
-        case THREAD_OP_SEM_WAIT:
-            TRACE_THREAD("THREAD_OP_SEM_WAIT");
-            return thread_semaphore_down((struct semaphore *)arg);
-            
-        case THREAD_OP_SEM_POST:
-            TRACE_THREAD("THREAD_OP_SEM_POST");
-            return thread_semaphore_up((struct semaphore *)arg);
-            
-        case THREAD_OP_MUTEX_LOCK:
-            TRACE_THREAD("THREAD_OP_MUTEX_LOCK");
-            return thread_mutex_lock((struct mutex *)arg);
-            
-        case THREAD_OP_MUTEX_UNLOCK:
-            TRACE_THREAD("THREAD_OP_MUTEX_UNLOCK");
-            return thread_mutex_unlock((struct mutex *)arg);
-            
-        case THREAD_OP_MUTEX_INIT:
-            TRACE_THREAD("THREAD_OP_MUTEX_INIT");
-            return thread_mutex_init((struct mutex *)arg);
-            
-        case THREAD_OP_SEM_INIT: {
-            struct semaphore *sem = (struct semaphore *)arg;
-            TRACE_THREAD("THREAD_OP_SEM_INIT: count=%d", sem->count);
-            return thread_semaphore_init(sem, sem->count);
-        }            
-        
-        default:
-            TRACE_THREAD("THREAD_OP_UNKNOWN: %d", operator);
-            return -EINVAL;
-    }
 }

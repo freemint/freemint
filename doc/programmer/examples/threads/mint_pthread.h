@@ -21,29 +21,40 @@ extern "C" {
 #endif
 
 /* MiNT system call numbers */
-#define P_TREADSHED     0x185
-#define P_SLEEP         0x186
-#define P_THREADOP      0x18D
-#define P_EXIT          0x18A
-#define P_THREADSIGNAL  0x18E
+#define P_TREAD_SHED     0x185
+#define P_THREAD_SYNC      0x18D
+#define P_THREAD_CTRL          0x18A
+#define P_THREAD_SIGNAL  0x18E
 
 /* Define the PE_THREAD mode for Pexec */
 #define PE_THREAD       107
 
-#define PTSIG_GETID     13
-
 /* Thread operation codes */
-#define THREAD_OP_SEM_WAIT      1
-#define THREAD_OP_SEM_POST      2
-#define THREAD_OP_MUTEX_LOCK    3
-#define THREAD_OP_MUTEX_UNLOCK  4
-#define THREAD_OP_MUTEX_INIT    5
-#define THREAD_OP_SEM_INIT      6
+#define THREAD_SYNC_SEM_WAIT      1
+#define THREAD_SYNC_SEM_POST      2
+#define THREAD_SYNC_MUTEX_LOCK    3
+#define THREAD_SYNC_MUTEX_UNLOCK  4
+#define THREAD_SYNC_MUTEX_INIT    5
+#define THREAD_SYNC_SEM_INIT      6
+#define THREAD_SYNC_JOIN     7   /* Join a thread and wait for it to terminate */
+#define THREAD_SYNC_DETACH   8   /* Detach a thread, making it unjoinable */
+#define THREAD_SYNC_TRYJOIN 9   /* Non-blocking join (new) */
+#define THREAD_SYNC_SLEEP			10  /* Sleep for a specified number of milliseconds */
+#define THREAD_SYNC_YIELD			11  /* Yield the current thread */
 
-/* Thread operation modes for sys_p_exitthread */
-#define THREAD_EXIT     0   /* Exit the current thread */
-#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
-#define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
+/* Thread operation modes for sys_p_thread_ctrl */
+#define THREAD_CTRL_EXIT     0   /* Exit the current thread */
+#define THREAD_CTRL_STATUS   4   /* Get thread status */
+#define THREAD_CTRL_GETID    5	/* Get thread ID */
+
+#define THREAD_STATE_RUNNING    0x0001
+#define THREAD_STATE_READY      0x0002
+#define THREAD_STATE_BLOCKED	0x0004
+#define THREAD_STATE_STOPPED	0x0008
+#define THREAD_STATE_ZOMBIE		0x0010
+#define THREAD_STATE_DEAD		0x0020
+#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
+#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
 
 /* Thread scheduling policies */
 #define SCHED_OTHER     0
@@ -55,10 +66,27 @@ extern "C" {
 #define PSCHED_GETPARAM       1
 #define PSCHED_SETSCHEDULER   2
 #define PSCHED_GETSCHEDULER   3
-#define PSCHED_YIELD          4
 #define PSCHED_GETRRINTERVAL  5
 #define PSCHED_SET_TIMESLICE  6
 #define PSCHED_GET_TIMESLICE  7
+
+/* Operation codes for proc_thread_signal */
+typedef enum {
+    PTSIG_SETMASK        = 1,  /* Set thread signal mask */
+    PTSIG_GETMASK        = 2,  /* Get thread signal mask (handler=0) */
+    PTSIG_MODE           = 3,  /* Set thread signal mode (enable/disable) */
+    PTSIG_KILL           = 4,  /* Send signal to thread */
+    PTSIG_WAIT           = 5,  /* Wait for signals */
+    PTSIG_BLOCK          = 6,  /* Block signals (add to mask) */
+    PTSIG_UNBLOCK        = 7,  /* Unblock signals (remove from mask) */
+    PTSIG_PAUSE          = 8,  /* Pause with specified mask */
+    PTSIG_ALARM          = 9,  /* Set thread alarm */
+    PTSIG_PENDING        = 11, /* Get pending signals */
+    PTSIG_HANDLER        = 12, /* Register thread signal handler */
+    PTSIG_HANDLER_ARG    = 14, /* Set argument for thread signal handler */
+    PTSIG_ALARM_THREAD   = 16  /* Set alarm for specific thread */
+} ptsig_op_t;
+
 
 /* Thread ID type */
 typedef long pthread_t;
@@ -153,24 +181,28 @@ typedef struct {
 
 /* MiNT system call wrappers */
 
-static inline long sys_pthreadop(int op, void *arg) {
-    return trap_1_wwl(P_THREADOP, (short)op, (long)arg);
+static inline long sys_p_thread_sync(long op, long arg1, long arg2) {
+    return trap_1_wlll(P_THREAD_SYNC, (long)op, (long)arg1, (long)arg2);
 }
 
-static inline long Pthreadsignal(int op, long arg1, long arg2) {
-    return trap_1_wlll(P_THREADSIGNAL, op, arg1, arg2);
+static inline long proc_thread_signal(int op, long arg1, long arg2) {
+    return trap_1_wlll(P_THREAD_SIGNAL, op, arg1, arg2);
 }
 
-static inline long sys_p_sleepthread(long ms) {
-    return trap_1_wl(P_SLEEP, ms);
+static inline long proc_thread_sleep(long ms) {
+    return sys_p_thread_sync(THREAD_SYNC_SLEEP, ms, 0);
 }
 
-static inline long sys_p_exitthread(short mode, long arg1, long arg2) {
-    return trap_1_wlll(P_EXIT, mode, arg1, arg2);
+static inline long sys_p_thread_ctrl(short mode, long arg1, long arg2) {
+    return trap_1_wlll(P_THREAD_CTRL, mode, arg1, arg2);
 }
 
-static inline long sys_p_thread_sched(long func, long arg1, long arg2, long arg3) {
-    return trap_1_wllll(P_TREADSHED, func, arg1, arg2, arg3);
+static inline long sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3) {
+    return trap_1_wllll(P_TREAD_SHED, func, arg1, arg2, arg3);
+}
+
+static inline long proc_thread_status(long arg1) {
+    return sys_p_thread_ctrl(THREAD_CTRL_STATUS, arg1, 0);
 }
 
 /**
@@ -194,9 +226,9 @@ static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     
     if (tid < 0) {
         switch (tid) {
-            case -ENOMEM:
+            case ENOMEM:
                 return EAGAIN;
-            case -EINVAL:
+            case EINVAL:
                 return EINVAL;
             default:
                 return EAGAIN;
@@ -207,7 +239,7 @@ static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     
     // If detached state is requested, detach the thread
     if (attr && attr->detachstate == PTHREAD_CREATE_DETACHED) {
-        sys_p_exitthread(THREAD_DETACH, tid, 0);
+        sys_p_thread_ctrl(THREAD_SYNC_DETACH, tid, 0);
     }
     
     return 0;
@@ -220,9 +252,17 @@ static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
  */
 static inline void pthread_exit(void *retval)
 {
-    sys_p_exitthread(THREAD_EXIT, (long)retval, 0);
+    sys_p_thread_ctrl(THREAD_CTRL_EXIT, (long)retval, 0);
     /* Should never reach here */
     while(1);
+}
+
+/**
+ * Causes the calling thread to relinquish the CPU
+ */
+static inline int pthread_yield(void)
+{
+    return (int)sys_p_thread_sync(THREAD_SYNC_YIELD, 0, 0);
 }
 
 /**
@@ -232,17 +272,37 @@ static inline void pthread_exit(void *retval)
  * @param retval Pointer to store the thread's return value (can be NULL)
  * @return 0 on success, error code on failure
  */
+
+int pthread_tryjoin(pthread_t thread, void **retval)
+{
+    while (1) {
+        long status = proc_thread_status(thread);
+        if (status == ESRCH) {
+            return (status == ESRCH) ? ESRCH : EINVAL;
+        }
+        if (status & THREAD_STATE_EXITED) {
+            // Thread exited, now do the actual join to get return value
+            long result = sys_p_thread_sync(THREAD_SYNC_TRYJOIN, thread, (long)retval);
+            if (result == 0 || result != EAGAIN) {
+                return (result == 0) ? 0 : EINVAL;
+            }
+        }
+        // pthread_yield();
+        usleep(50000); // Sleep for 20ms before checking again
+    }
+}
+
 static inline int pthread_join(pthread_t thread, void **retval)
 {
-    long result = sys_p_exitthread(THREAD_JOIN, thread, (long)retval);
+    long result = sys_p_thread_sync(THREAD_SYNC_JOIN, thread, (long)retval);
 
-    if (result < 0) {
+    if (result) {
         switch (result) {
-            case -ESRCH:
+            case ESRCH:
                 return ESRCH;  // No such thread
-            case -EINVAL:
+            case EINVAL:
                 return EINVAL; // Thread is detached or already joined
-            case -EDEADLK:
+            case EDEADLK:
                 return EDEADLK; // Deadlock detected
             default:
                 return EINVAL;
@@ -262,13 +322,13 @@ static inline int pthread_join(pthread_t thread, void **retval)
  */
 static inline int pthread_detach(pthread_t thread)
 {
-    long result = sys_p_exitthread(THREAD_DETACH, thread, 0);
+    long result = sys_p_thread_ctrl(THREAD_SYNC_DETACH, thread, 0);
     
     if (result < 0) {
         switch (result) {
-            case -ESRCH:
+            case ESRCH:
                 return ESRCH;  // No such thread
-            case -EINVAL:
+            case EINVAL:
                 return EINVAL; // Thread is already joined
             default:
                 return EINVAL;
@@ -279,19 +339,11 @@ static inline int pthread_detach(pthread_t thread)
 }
 
 /**
- * Causes the calling thread to relinquish the CPU
- */
-static inline int pthread_yield(void)
-{
-    return (int)sys_p_thread_sched(PSCHED_YIELD, 0, 0, 0);
-}
-
-/**
  * Returns the thread ID of the calling thread
  */
 static inline pthread_t pthread_self(void)
 {
-    return (pthread_t)Pthreadsignal(PTSIG_GETID, 0, 0);
+    return (pthread_t)sys_p_thread_ctrl(THREAD_CTRL_GETID, 0, 0);
 }
 
 /**
@@ -442,7 +494,7 @@ static inline int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutex
         return EINVAL;
     
     /* Use MiNT thread operation system call for mutex init */
-    long result = sys_pthreadop(THREAD_OP_MUTEX_INIT, mutex);
+    long result = sys_p_thread_sync(THREAD_SYNC_MUTEX_INIT, (long)mutex, 0);
     
     return (result < 0) ? -result : 0;
 }
@@ -456,7 +508,7 @@ static inline int pthread_mutex_lock(pthread_mutex_t *mutex)
         return EINVAL;
     
     /* Use MiNT thread operation system call for mutex lock */
-    long result = sys_pthreadop(THREAD_OP_MUTEX_LOCK, mutex);
+    long result = sys_p_thread_sync(THREAD_SYNC_MUTEX_LOCK, (long)mutex, 0);
     
     return (result < 0) ? -result : 0;
 }
@@ -485,7 +537,7 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
         return EINVAL;
     
     /* Use MiNT thread operation system call for mutex unlock */
-    long result = sys_pthreadop(THREAD_OP_MUTEX_UNLOCK, mutex);
+    long result = sys_p_thread_sync(THREAD_SYNC_MUTEX_UNLOCK, (long)mutex, 0);
     
     return (result < 0) ? -result : 0;
 }
@@ -573,7 +625,7 @@ static inline int sem_init(sem_t *sem, int pshared, unsigned int value)
     sem->count = value;
     
     /* Use MiNT thread operation system call for semaphore init */
-    long result = sys_pthreadop(THREAD_OP_SEM_INIT, sem);
+    long result = sys_p_thread_sync(THREAD_SYNC_SEM_INIT, (long)sem, 0);
     
     return (result < 0) ? -1 : 0;
 }
@@ -606,7 +658,7 @@ static inline int sem_wait(sem_t *sem)
         return -1;
     
     /* Use MiNT thread operation system call for semaphore wait */
-    long result = sys_pthreadop(THREAD_OP_SEM_WAIT, sem);
+    long result = sys_p_thread_sync(THREAD_SYNC_SEM_WAIT, (long)sem, 0);
     
     return (result < 0) ? -1 : 0;
 }
@@ -644,7 +696,7 @@ static inline int sem_post(sem_t *sem)
         return -1;
     
     /* Use MiNT thread operation system call for semaphore post */
-    long result = sys_pthreadop(THREAD_OP_SEM_POST, sem);
+    long result = sys_p_thread_sync(THREAD_SYNC_SEM_POST, (long)sem, 0);
     
     return (result < 0) ? -1 : 0;
 }
@@ -810,7 +862,7 @@ static inline int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
     /* Wait while there are writers or a writer is waiting */
     while (rwlock->writers > 0 || rwlock->writer_waiting > 0) {
         pthread_mutex_unlock(&rwlock->mutex);
-        sys_p_sleepthread(1);  // Sleep for 1ms
+        proc_thread_sleep(1);  // Sleep for 1ms
         result = pthread_mutex_lock(&rwlock->mutex);
         if (result != 0)
             return result;
@@ -861,7 +913,7 @@ static inline int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
     /* Wait while there are readers or writers */
     while (rwlock->readers > 0 || rwlock->writers > 0) {
         pthread_mutex_unlock(&rwlock->mutex);
-        sys_p_sleepthread(1);  // Sleep for 1ms
+        proc_thread_sleep(1);  // Sleep for 1ms
         result = pthread_mutex_lock(&rwlock->mutex);
         if (result != 0) {
             rwlock->writer_waiting--;
@@ -970,7 +1022,7 @@ static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex
     pthread_mutex_unlock(mutex);
     
     /* Sleep until signaled */
-    sys_p_sleepthread(0xFFFFFFFF);  // Sleep indefinitely
+    proc_thread_sleep(0xFFFFFFFF);  // Sleep indefinitely
     
     /* Reacquire the mutex */
     return pthread_mutex_lock(mutex);
@@ -1001,12 +1053,12 @@ static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *
     pthread_mutex_unlock(mutex);
     
     /* Sleep until signaled or timeout */
-    long result = sys_p_sleepthread(ms);
+    long result = proc_thread_sleep(ms);
     
     /* Reacquire the mutex */
     pthread_mutex_lock(mutex);
     
-    return (result == -ETIMEDOUT) ? ETIMEDOUT : 0;
+    return (result == ETIMEDOUT) ? ETIMEDOUT : 0;
 }
 
 /**
@@ -1049,7 +1101,7 @@ static inline int pthread_setschedparam(pthread_t thread, int policy, const stru
     if (!param)
         return EINVAL;
     
-    long result = sys_p_thread_sched(PSCHED_SETPARAM, thread, policy, param->sched_priority);
+    long result = sys_p_thread_sched_policy(PSCHED_SETPARAM, thread, policy, param->sched_priority);
     
     return (result < 0) ? -result : 0;
 }
@@ -1063,7 +1115,7 @@ static inline int pthread_getschedparam(pthread_t thread, int *policy, struct sc
         return EINVAL;
     
     long p, pri;
-    long result = sys_p_thread_sched(PSCHED_GETPARAM, thread, (long)&p, (long)&pri);
+    long result = sys_p_thread_sched_policy(PSCHED_GETPARAM, thread, (long)&p, (long)&pri);
     
     if (result < 0)
         return -result;
@@ -1161,7 +1213,7 @@ static inline void pthread_testcancel(void)
  */
 static inline int pthread_sleep_ms(long ms)
 {
-    long result = sys_p_sleepthread(ms);
+    long result = proc_thread_sleep(ms);
     return (result < 0) ? -result : 0;
 }
 
@@ -1834,7 +1886,7 @@ static inline void memory_barrier(void)
 static inline void thread_yield_hint(void)
 {
     /* For very short waits, just yield the CPU briefly */
-    sys_p_sleepthread(0);
+    proc_thread_sleep(0);
 }
 
 /**
@@ -1845,7 +1897,7 @@ typedef struct {
     volatile int contention;
 } pthread_optimized_mutex_t;
 
-#define PTHREAD_OPTIMIZED_MUTEX_INITIALIZER {0, 0}
+#define PTHREAD_SYNCTIMIZED_MUTEX_INITIALIZER {0, 0}
 
 /**
  * Initialize an optimized mutex

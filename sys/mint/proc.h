@@ -37,95 +37,19 @@
 
 /* Threads stuff */
 
-/*
-	RUNNING	0x0001	Currently executing
-	READY	0x0002	On run queue, can be scheduled
-	SLEEPING	0x0004	Sleeping, waiting for event
-	WAITING	0x0008	Uninterruptible wait
-	STOPPED	0x0010	Stopped by signal
-	ZOMBIE	0x0020	Exited, not yet reaped
-	DEAD	0x0040	Fully dead, resources can be freed
-*/
-#define THREAD_STATE_RUNNING    0x0001
-#define THREAD_STATE_READY      0x0002
-#define THREAD_STATE_BLOCKED	0x0004
-#define THREAD_STATE_STOPPED	0x0008
-#define THREAD_STATE_ZOMBIE		0x0010
-#define THREAD_STATE_DEAD		0x0020
-// For checks only:
-#define THREAD_STATE_EXITED     (THREAD_STATE_ZOMBIE | THREAD_STATE_DEAD)
-#define THREAD_STATE_LIVE       (THREAD_STATE_RUNNING | THREAD_STATE_READY)
-/* Thread operation modes for sys_p_exitthread */
-#define THREAD_EXIT     0   /* Exit the current thread */
-#define THREAD_JOIN     1   /* Join a thread and wait for it to terminate */
-#define THREAD_DETACH   2   /* Detach a thread, making it unjoinable */
-#define THREAD_TRY_JOIN 3   /* Non-blocking join (new) */
-#define THREAD_STATUS   4   /* Get thread status */
-
-
-/* Thread signal handling constants */
-#define THREAD_SIG_MAX_HANDLERS 32 /* Maximum number of thread-specific signal handlers */
-
-/* Thread wait types */
-#define WAIT_NONE		0	// No wait type specified (not waiting on any resource)
-#define WAIT_SIGNAL		1	// Waiting for a signal to be delivered (e.g. SIGINT, SIGTERM)
-#define WAIT_MUTEX		2	// Waiting for a mutex (mutual exclusion) lock to be released
-#define WAIT_CONDVAR	3	// Waiting for a condition variable to be signaled
-#define WAIT_IO			4	// Waiting for I/O (input/output) operation to complete
-#define WAIT_SEMAPHORE	5	// Waiting for a semaphore to be released
-#define WAIT_SLEEP		6	// Waiting for sleep timeout
-#define WAIT_JOIN       7  /* Waiting for thread to exit */
-
-/* Thread scheduling system call constants */
-#define PSCHED_SETPARAM       1
-#define PSCHED_GETPARAM       2
-#define PSCHED_YIELD          3
-#define PSCHED_GETRRINTERVAL  4
-#define PSCHED_SET_TIMESLICE  5
-#define PSCHED_GET_TIMESLICE  6
-
-// Default scheduling policy
-#define DEFAULT_SCHED_POLICY SCHED_FIFO
-// #define DEFAULT_SCHED_POLICY SCHED_RR
-
-/*
- * Thread Scheduling Implementation (POSIX-compliant)
- *
- * Priority Range:
- * - Thread priorities range from 0 to 99 (MAX_THREAD_PRIORITY)
- * - Higher numerical values represent higher priorities
- * - This is opposite to process priorities where lower values are higher priority
- *
- * Priority Handling:
- * - SCHED_FIFO threads maintain their position in the ready queue until they
- *   yield, block, or are preempted by higher priority threads.
- * - When a SCHED_FIFO thread's priority is raised, it moves to the end of the
- *   list for its new priority.
- * - When a SCHED_FIFO thread's priority is lowered, it moves to the front of
- *   the list for its new priority.
- *
- * Time Slicing:
- * - SCHED_RR threads use time slicing (thread_rr_timeslice).
- * - SCHED_FIFO threads don't use time slicing.
- * - SCHED_OTHER threads use the default time slice (thread_default_timeslice).
- *
- * Priority Boosting:
- * - Threads waking from sleep get a temporary priority boost to prevent starvation.
- * - The boost is removed after the thread has run for a while.
- * - Priority inheritance is implemented for mutexes to prevent priority inversion.
- *
- * Process Integration:
- * - Thread scheduling parameters are derived from the parent process's time_slice
- * - Thread preemption occurs independently of process scheduling
- * - The make_process_eligible() function ensures the thread-handling process
- *   gets scheduled frequently
- */
-
-
 enum sched_policy {
     SCHED_FIFO,
     SCHED_RR,
     SCHED_OTHER
+};
+
+/* Signal context structure for thread signal handling */
+struct thread_sigcontext {
+    CONTEXT sigcontext;              /* Kernel context structure */
+    struct thread *sc_thread;     /* Thread being interrupted */
+    int sc_sig;                   /* Signal number */
+    void *sc_handler_arg;         /* Handler argument */
+    unsigned long sc_sigmask_save; /* Saved signal mask */
 };
 
 struct thread {
@@ -156,6 +80,7 @@ struct thread {
     struct thread *next;            /* Next thread in process list */
     struct thread *next_ready;      /* For ready queue */
     struct thread *next_sleeping;   /* For sleep queue */
+	struct thread *next_sigwait;    /* For signal wait queue */
     struct thread *next_wait;       /* For wait queue */
     
     /* Validation and debugging */
@@ -167,6 +92,7 @@ struct thread {
     
     /* Sleep and wait information */
     short sleep_reason;             /* Reason for sleep (0 = woken by signal/other, 1 = timeout) */
+	TIMEOUT *sleep_timeout;  		// Timeout for sleeping
     TIMEOUT *alarm_timeout;         /* Per-thread alarm timeout */
     short wait_type;                /* Type of wait (WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.) */
     void *wait_obj;                 /* Object being waited on (mutex, condvar, etc.) */
@@ -176,7 +102,7 @@ struct thread {
     unsigned long last_scheduled;   /* Last time this thread was scheduled (in ticks) */
     
     /* Thread join fields */
-    void *retval;                /* Return value from thread_exit */
+    void *retval;                /* Return value from proc_thread_exit */
     struct thread *joiner;       /* Thread that is joining this thread */
     int detached;                /* Whether thread is detached */
     int joined;                  /* Whether thread has been joined */
@@ -201,53 +127,14 @@ struct thread_join {
     int joined;                /* Flag indicating join completed */
 };
 
-#define SYS_thread_sched	0x185
-#define SYS_sleepthread		0x186
-#define SYS_threadop		0x18d
-#define SYS_exitthread		0x18a
+long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2);
+long _cdecl sys_p_thread_signal(long func, long arg1, long arg2);
+long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2);
+long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3);
 
-#define SYS_threadsignal	0x18e
-// #define SYS_thread_alarm	0x18f
+long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack);
 
-long _cdecl sys_p_createthread(void *(*func)(void*), void *arg, void *stack);
-long _cdecl sys_p_exitthread(long mode, long arg1, long arg2);
-long _cdecl sys_p_thread_sched(long func, long arg1, long arg2, long arg3);
-long _cdecl sys_p_sleepthread(long ms);
-long _cdecl sys_p_setthreadpolicy(enum sched_policy policy, short priority, short timeslice);
-
-/* Thread signal dispatcher */
-long _cdecl sys_p_threadsignal(long func, long arg1, long arg2);
-/* Set an alarm for the current thread */
-long _cdecl sys_p_thread_alarm(struct thread *t, long ms);
-
-long _cdecl sys_p_threadop(int operator, void *arg); /* used syscalls */
-
-void cleanup_process_threads(struct proc *pcurproc); /** Called in terminate function - k_exit.c */
-
-long _cdecl sys_p_jointhread(long tid, void **retval);  /* Called in sys_p_exitthread - proc_thread.c */
-long _cdecl sys_p_tryjointhread(long tid, void **retval); /* New non-blocking join -  called in sys_p_exitthread - proc_thread.c */
-long _cdecl sys_p_detachthread(long tid);                /* Called in sys_p_exitthread - proc_thread.c */
-
-long _cdecl sys_p_thread_status(long tid);
-
-#define THREAD_OP_SEM_WAIT  1
-#define THREAD_OP_SEM_POST  2
-#define THREAD_OP_MUTEX_LOCK  3
-#define THREAD_OP_MUTEX_UNLOCK  4
-#define THREAD_OP_MUTEX_INIT  5
-#define THREAD_OP_SEM_INIT    6
-
-/* Thread signal mask manipulation macros */
-#define SET_THREAD_SIGMASK(t, mask) ((t)->t_sigmask = (mask))
-#define GET_THREAD_SIGMASK(t) ((t)->t_sigmask)
-
- #define CURTHREAD \
- 	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)
- 
-/* Thread safety macros */
-#define LOCK_THREAD_SIGNALS(proc)   /* Implement locking mechanism here */
-#define UNLOCK_THREAD_SIGNALS(proc) /* Implement unlocking mechanism here */
-#define ATOMIC_THREAD_SIG_OP(proc, op) /* Implement atomic operation here */
+void proc_thread_cleanup_process(struct proc *pcurproc); /** Called in terminate function - k_exit.c */
 
 /* End of Threads stuff */
 
@@ -531,9 +418,6 @@ struct proc
 /* End of Threads stuff */
 
 };
-
-#define USE_VBL 1
-void vbl_thread_handler(void);
 
 /*
  * our process queues

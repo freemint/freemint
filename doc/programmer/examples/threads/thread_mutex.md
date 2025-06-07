@@ -81,8 +81,8 @@ Main process: Test completed successfully!
 ## What This Proves
 
 1. **Thread Creation Works**: Pexec with PE_THREAD successfully creates threads
-2. **Synchronization Works**: MiNT's THREAD_OP_MUTEX_LOCK/UNLOCK prevent race conditions
-3. **Semaphores Work**: MiNT's THREAD_OP_SEM_WAIT/POST control resource access
+2. **Synchronization Works**: MiNT's THREAD_SYNC_MUTEX_LOCK/UNLOCK prevent race conditions
+3. **Semaphores Work**: MiNT's THREAD_SYNC_SEM_WAIT/POST control resource access
 4. **System Calls Work**: The trap_1_w* wrappers correctly interface with MiNT
 
 If you see interleaved or simultaneous access (both threads holding resources at once), that would indicate a problem with the MiNT threading system calls.

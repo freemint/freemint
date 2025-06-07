@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include "mint_pthread.h"
 
 #define NUM_THREADS 5
@@ -42,13 +43,29 @@ void *sleep_thread(void *arg)
 {
     long thread_id = (long)arg;
     long sleep_time = thread_id * 500; /* Sleep time in milliseconds */
-    
+    sleep_time = sleep_time > 2000 ? 1000 : sleep_time;
+    struct timeval effective_sleep_time, effective_wake_time;
+    long delta_ms;
+
     printf("Thread %ld sleeping for %ld ms...\n", thread_id, sleep_time);
-    
+
+    // Get current time before sleep
+    gettimeofday(&effective_sleep_time, NULL);
+        
+          
     /* Sleep for the specified time */
     pthread_sleep_ms(sleep_time);
-    
+
+    // Get current time after wake up
+    gettimeofday(&effective_wake_time, NULL);
+
+    // Calculate delta in milliseconds
+    delta_ms = (effective_wake_time.tv_sec - effective_sleep_time.tv_sec) * 1000 + 
+                (effective_wake_time.tv_usec - effective_sleep_time.tv_usec) / 1000;
+
     printf("Thread %ld woke up after sleeping\n", thread_id);
+
+    printf("Thread %ld: EFFECTIVE -> Woke up after %ld ms\n", thread_id, delta_ms);  
     
     /* Return the sleep time as the thread's exit value */
     return (void *)sleep_time;
@@ -144,9 +161,6 @@ int main(void)
     
     rc = pthread_create(&detached_thread, &detached_attr, sleep_thread, (void *)999);
     if (rc == 0) {
-        /* Give the thread time to start */
-        pthread_sleep_ms(100);
-        
         /* Try to join the detached thread (should fail) */
         rc = pthread_join(detached_thread, NULL);
         printf("Joining detached thread: %d (expected EINVAL)\n", rc);
