@@ -44,15 +44,15 @@ void check_and_wake_sleeping_threads(struct proc *p) {
         TRACE_THREAD("SLEEP_CHECK: Checking thread %d (wake at %lu, current %lu, state=%d)",
                     sleep_t->tid, sleep_t->wakeup_time, current_time, sleep_t->state);
 
-        if(sleep_t->magic == CTXT_MAGIC){
-            TRACE_THREAD("SLEEP_CHECK: Thread %d is valid", sleep_t->tid);
-            if(sleep_t->state & THREAD_STATE_BLOCKED){
-                TRACE_THREAD("SLEEP_CHECK: Thread %d is blocked", sleep_t->tid);
-                if(!(sleep_t->state & THREAD_STATE_EXITED)){
-                    TRACE_THREAD("SLEEP_CHECK: Thread %d is not exited", sleep_t->tid);
-                }
-            }
-        }
+        // if(sleep_t->magic == CTXT_MAGIC){
+        //     TRACE_THREAD("SLEEP_CHECK: Thread %d is valid", sleep_t->tid);
+        //     if(sleep_t->state & THREAD_STATE_BLOCKED){
+        //         TRACE_THREAD("SLEEP_CHECK: Thread %d is blocked", sleep_t->tid);
+        //         if(!(sleep_t->state & THREAD_STATE_EXITED)){
+        //             TRACE_THREAD("SLEEP_CHECK: Thread %d is not exited", sleep_t->tid);
+        //         }
+        //     }
+        // }
 
         // If thread should wake up
         if (sleep_t->magic == CTXT_MAGIC && 

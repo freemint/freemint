@@ -226,9 +226,9 @@ static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     
     if (tid < 0) {
         switch (tid) {
-            case ENOMEM:
+            case -ENOMEM:
                 return EAGAIN;
-            case EINVAL:
+            case -EINVAL:
                 return EINVAL;
             default:
                 return EAGAIN;
@@ -239,7 +239,7 @@ static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     
     // If detached state is requested, detach the thread
     if (attr && attr->detachstate == PTHREAD_CREATE_DETACHED) {
-        sys_p_thread_ctrl(THREAD_SYNC_DETACH, tid, 0);
+        sys_p_thread_sync(THREAD_SYNC_DETACH, tid, 0);
     }
     
     return 0;
@@ -277,18 +277,18 @@ int pthread_tryjoin(pthread_t thread, void **retval)
 {
     while (1) {
         long status = proc_thread_status(thread);
-        if (status == ESRCH) {
-            return (status == ESRCH) ? ESRCH : EINVAL;
+        if (status == -ESRCH) {
+            return (status == -ESRCH) ? ESRCH : EINVAL;
         }
         if (status & THREAD_STATE_EXITED) {
             // Thread exited, now do the actual join to get return value
             long result = sys_p_thread_sync(THREAD_SYNC_TRYJOIN, thread, (long)retval);
-            if (result == 0 || result != EAGAIN) {
+            if (result == 0 || result != -EAGAIN) {
                 return (result == 0) ? 0 : EINVAL;
             }
         }
         // pthread_yield();
-        usleep(50000); // Sleep for 20ms before checking again
+        usleep(20000); // Sleep for 20ms before checking again
     }
 }
 
@@ -296,15 +296,16 @@ static inline int pthread_join(pthread_t thread, void **retval)
 {
     long result = sys_p_thread_sync(THREAD_SYNC_JOIN, thread, (long)retval);
 
-    if (result) {
+    if (result < 0) {
         switch (result) {
-            case ESRCH:
+            case -ESRCH:
                 return ESRCH;  // No such thread
-            case EINVAL:
+            case -EINVAL:
                 return EINVAL; // Thread is detached or already joined
-            case EDEADLK:
+            case -EDEADLK:
                 return EDEADLK; // Deadlock detected
             default:
+                printf("result: %ld\n", result);
                 return EINVAL;
         }
     } else {
@@ -326,9 +327,9 @@ static inline int pthread_detach(pthread_t thread)
     
     if (result < 0) {
         switch (result) {
-            case ESRCH:
+            case -ESRCH:
                 return ESRCH;  // No such thread
-            case EINVAL:
+            case -EINVAL:
                 return EINVAL; // Thread is already joined
             default:
                 return EINVAL;
@@ -1058,7 +1059,7 @@ static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *
     /* Reacquire the mutex */
     pthread_mutex_lock(mutex);
     
-    return (result == ETIMEDOUT) ? ETIMEDOUT : 0;
+    return (result == -ETIMEDOUT) ? ETIMEDOUT : 0;
 }
 
 /**

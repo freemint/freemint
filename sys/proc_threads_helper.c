@@ -11,8 +11,8 @@
 struct thread *get_highest_priority_thread(struct proc *p) {
     if (!p || !p->ready_queue) {
         TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Ready queue is empty");
-        // return NULL;
-        return get_idle_thread(p);
+        return NULL;
+        // return get_idle_thread(p);
     }
 
 #ifdef DEBUG_THREAD

@@ -622,9 +622,16 @@ void proc_thread_exit(void *retval) {
  * @return 1 if next should preempt current, 0 otherwise
  */
 static int should_schedule_thread(struct thread *current, struct thread *next) {
-    if (!current || !next) {
+    if (!next) {
         TRACE_THREAD("THREAD_SCHED (should_schedule_thread): Invalid thread");
         return 0;
+    }
+    
+    // If no current thread, always schedule next thread
+    if (!current) {
+        TRACE_THREAD("THREAD_SCHED (should_schedule_thread): No current thread, scheduling next thread %d", 
+                    next->tid);
+        return 1;
     }
 
     /* Special case: thread0 is always preemptible by other threads */
@@ -702,10 +709,25 @@ static void thread_switch(struct thread *from, struct thread *to) {
     unsigned short sr;
     
     // Fast validation first
-    if (!from || !to || from == to) {
-        TRACE_THREAD("SWITCH: Invalid thread pointers - from=%p, to=%p", from, to);
+    if (!to) {
+        TRACE_THREAD("SWITCH: Invalid destination thread pointer");
         return;
     }
+    
+    // Special case: if from is NULL, just switch to the destination thread
+    if (!from) {
+        TRACE_THREAD("SWITCH: Switching to thread %d (no source thread)", to->tid);
+        sr = splhigh();
+        change_context(get_thread_context(to));
+        spl(sr);
+        return;
+    }
+    
+    if (from == to) {
+        TRACE_THREAD("SWITCH: Source and destination threads are the same");
+        return;
+    }
+    
     TRACE_THREAD("SWITCH: Switching from %d to %d", from->tid, to->tid);
     // Check magic numbers and states in one go
     if (from->magic != CTXT_MAGIC || to->magic != CTXT_MAGIC ||
