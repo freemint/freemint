@@ -353,7 +353,200 @@ void proc_thread_schedule(void) {
     spl(sr);
 }
 
-// Thread exit
+/**
+ * Handle thread joining during thread exit
+ * 
+ * @param current The exiting thread
+ * @param retval The return value of the exiting thread
+ */
+void handle_thread_joining(struct thread *current, void *retval) {
+    if (!current || !current->joiner || current->joiner->magic != CTXT_MAGIC) {
+        return;
+    }
+    
+    struct thread *joiner = current->joiner;
+    TRACE_THREAD("EXIT: Thread %d is being joined by thread %d", 
+                current->tid, joiner->tid);
+    
+    // If joiner is waiting for this thread
+    if (joiner->wait_type == WAIT_JOIN && joiner->wait_obj == current) {
+        // Wake up the joining thread
+        joiner->wait_type = WAIT_NONE;
+        joiner->wait_obj = NULL;
+        
+        // Store return value directly in joiner's requested location
+        if (joiner->join_retval) {
+            *(joiner->join_retval) = retval;
+        }
+        
+        // Mark as joined
+        current->joined = 1;
+        
+        // Wake up joiner
+        atomic_thread_state_change(joiner, THREAD_STATE_READY);
+        add_to_ready_queue(joiner);
+        TRACE_THREAD("EXIT: Woke up joining thread %d", joiner->tid);
+    }
+}
+
+/**
+ * Cancel all timeouts associated with a thread
+ * 
+ * @param p The process containing the thread
+ * @param t The thread whose timeouts should be cancelled
+ */
+void cancel_thread_timeouts(struct proc *p, struct thread *t) {
+    if (!p || !t) {
+        return;
+    }
+    
+    TIMEOUT *timelist, *next_timelist;
+    for (timelist = tlist; timelist; timelist = next_timelist) {
+        next_timelist = timelist->next;
+        if (timelist->proc == p && timelist->arg == (long)t) {
+            TRACE_THREAD("Cancelling timeout with thread %d as argument", t->tid);
+            canceltimeout(timelist);
+        }
+    }
+}
+
+/**
+ * Find the next thread to run after a thread exits
+ * 
+ * @param p The process containing the threads
+ * @return The next thread to run, or NULL if none found
+ */
+struct thread *find_next_thread_to_run(struct proc *p) {
+    struct thread *next_thread = NULL;
+    
+    if (!p) {
+        return NULL;
+    }
+    
+    // STEP 1: First check the sleep queue for threads that should wake up
+    if (p->sleep_queue) {
+        unsigned long current_time = get_system_ticks();
+        int woke_threads;
+        
+        TRACE_THREAD("EXIT: Checking sleep queue at time %lu", current_time);
+        
+        // Wake threads that have reached their wakeup time
+        woke_threads = wake_threads_by_time(p, current_time);
+        
+        if (woke_threads > 0) {
+            TRACE_THREAD("EXIT: Woke up %d threads from sleep queue", woke_threads);
+        }
+    }
+    
+    // STEP 2: Check the ready queue for the next thread to run
+    next_thread = p->ready_queue;
+    
+    // Make sure the next thread is valid
+    while (next_thread && (next_thread->magic != CTXT_MAGIC || 
+                          (next_thread->state & THREAD_STATE_EXITED))) {
+        TRACE_THREAD("EXIT: Skipping invalid thread %d in ready queue", next_thread->tid);
+        remove_from_ready_queue(next_thread);
+        next_thread = p->ready_queue;
+    }
+    
+    if (next_thread) {
+        TRACE_THREAD("EXIT: Found next thread %d in ready queue", next_thread->tid);
+        remove_from_ready_queue(next_thread);
+        return next_thread;
+    }
+    
+    // STEP 3: If no thread in ready queue, try to find thread0
+    // (but only if we're not already thread0)
+    int current_tid = p->current_thread ? p->current_thread->tid : -1;
+    if (current_tid != 0) {
+        TRACE_THREAD("EXIT: No ready threads, looking for thread0");
+        struct thread *t;
+        int count = 0;
+        for (t = p->threads; t != NULL && count < p->num_threads; t = t->next, count++) {
+            if (t->tid == 0 && 
+                t->magic == CTXT_MAGIC && 
+                !(t->state & THREAD_STATE_EXITED) &&
+                !(t->wait_type == WAIT_JOIN)) {
+                next_thread = t;
+                TRACE_THREAD("EXIT: Found thread0 at %p, state=%d, wait_type=%d", 
+                            next_thread, next_thread->state, next_thread->wait_type);
+                break;
+            }
+        }
+    }
+    
+    return next_thread;
+}
+
+/**
+ * Clean up thread resources during thread exit
+ * 
+ * @param p The process containing the thread
+ * @param t The thread to clean up
+ * @param tid The thread ID (for logging)
+ */
+void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
+    if (!p || !t || t->magic != CTXT_MAGIC) {
+        return;
+    }
+    
+    int should_free = t->detached || t->joined;
+    
+    // Remove from thread list if detached or joined
+    if (should_free) {
+        struct thread **tp;
+        for (tp = &p->threads; *tp; tp = &(*tp)->next) {
+            if (*tp == t) {
+                *tp = t->next;
+                break;
+            }
+        }
+    }
+    
+    // Clear current_thread pointer to prevent use after free
+    if (p->current_thread == t) {
+        p->current_thread = NULL;
+    }
+    
+    // Free resources if detached or joined
+    if (should_free) {
+        if (t->t_sigctx) {
+            kfree(t->t_sigctx);
+            TRACE_THREAD("EXIT: Freed signal context for thread %d", tid);
+            t->t_sigctx = NULL;
+        }
+        
+        if (t->stack && tid != 0) {
+            kfree(t->stack);
+            t->stack = NULL;
+        }
+        
+        TRACE_THREAD("EXIT: Freed resources for thread %d", tid);
+        
+        // Clear magic BEFORE freeing to prevent use after free
+        t->magic = 0;
+        
+        kfree(t);
+        TRACE_THREAD("EXIT: KFREE thread %d", tid);
+    } else {
+        TRACE_THREAD("EXIT: Thread %d not detached or joined, keeping resources", tid);
+    }
+}
+
+/**
+ * Thread exit function
+ * 
+ * This function handles the termination of a thread, including:
+ * - Handling thread joining
+ * - Special handling for thread0
+ * - Cancelling timeouts
+ * - Removing from queues
+ * - Finding the next thread to run
+ * - Cleaning up resources
+ * - Context switching
+ * 
+ * @param retval The return value of the exiting thread
+ */
 void proc_thread_exit(void *retval) {
     struct proc *p = curproc;
     if (!p) {
@@ -388,31 +581,8 @@ void proc_thread_exit(void *retval) {
     
     TRACE_THREAD("EXIT: Thread %d beginning exit process", tid);
     
-    // Check if any thread is joining this one
-    if (current->joiner && current->joiner->magic == CTXT_MAGIC) {
-        struct thread *joiner = current->joiner;
-        TRACE_THREAD("EXIT: Thread %d is being joined by thread %d", 
-                    tid, joiner->tid);
-        
-        // If joiner is waiting for this thread
-        if (joiner->wait_type == WAIT_JOIN && joiner->wait_obj == current) {
-            // Wake up the joining thread
-            joiner->wait_type = WAIT_NONE;
-            joiner->wait_obj = NULL;
-            // Store return value directly in joiner's requested location
-            if (joiner->join_retval) {
-                *(joiner->join_retval) = retval;
-                // TRACE_THREAD("EXIT: Storing return value %p for joiner thread %d", retval, joiner->tid);
-            }            
-            // Mark as joined
-            current->joined = 1;
-            
-            // Wake up joiner
-            atomic_thread_state_change(joiner, THREAD_STATE_READY);
-            add_to_ready_queue(joiner);
-            TRACE_THREAD("EXIT: Woke up joining thread %d", joiner->tid);
-        }
-    }
+    // Handle thread joining
+    handle_thread_joining(current, retval);
     
     // Special handling for thread0 - wait for other threads to complete
     if (current->tid == 0 && p->num_threads > 1) {
@@ -438,16 +608,8 @@ void proc_thread_exit(void *retval) {
         return;
     }
     
-    // CRITICAL: Cancel any timeouts associated with this thread
-    // This is crucial to prevent timer callbacks from using the freed thread
-    TIMEOUT *timelist, *next_timelist;
-    for (timelist = tlist; timelist; timelist = next_timelist) {
-        next_timelist = timelist->next;
-        if (timelist->proc == p && timelist->arg == (long)current) {
-            TRACE_THREAD("Cancelling timeout with thread %d as argument", tid);
-            canceltimeout(timelist);
-        }
-    }
+    // Cancel timeouts associated with this thread
+    cancel_thread_timeouts(p, current);
 
     // Remove from all queues
     remove_thread_from_wait_queues(current);
@@ -473,57 +635,8 @@ void proc_thread_exit(void *retval) {
     }
     
     // Find next thread to run
-    struct thread *next_thread = NULL;
+    struct thread *next_thread = find_next_thread_to_run(p);
     CONTEXT *target_ctx = NULL;
-    
-    // STEP 1: First check the sleep queue for threads that should wake up
-    if (p->sleep_queue) {
-        unsigned long current_time = get_system_ticks();
-        int woke_threads;
-        
-        TRACE_THREAD("EXIT: Checking sleep queue at time %lu", current_time);
-        
-        // Use the extracted function to wake threads
-        woke_threads = wake_threads_by_time(p, current_time);
-        
-        if (woke_threads > 0) {
-            TRACE_THREAD("EXIT: Woke up %d threads from sleep queue", woke_threads);
-        }
-    }
-    
-    // STEP 2: Check the ready queue for the next thread to run
-    next_thread = p->ready_queue;
-    
-    // Make sure the next thread is valid
-    while (next_thread && (next_thread->magic != CTXT_MAGIC || 
-                          (next_thread->state & THREAD_STATE_EXITED))) {
-        TRACE_THREAD("EXIT: Skipping invalid thread %d in ready queue", next_thread->tid);
-        remove_from_ready_queue(next_thread);
-        next_thread = p->ready_queue;
-    }
-    
-    if (next_thread) {
-        TRACE_THREAD("EXIT: Found next thread %d in ready queue", next_thread->tid);
-        remove_from_ready_queue(next_thread);
-    }
-    else {
-        // STEP 3: If no thread in ready queue, try to find thread0 (if we're not thread0)
-        if (tid != 0) {
-            TRACE_THREAD("EXIT: No ready threads, looking for thread0");
-            struct thread *t;
-            int count = 0;
-            for (t = p->threads; t != NULL && count < p->num_threads; t = t->next, count++) {
-                if (t->tid == 0 && 
-                    t->magic == CTXT_MAGIC && 
-                    !(t->state & THREAD_STATE_EXITED) &&
-                    !(t->wait_type == WAIT_JOIN)) {
-                    next_thread = t;
-                    TRACE_THREAD("EXIT: Found thread0 at %p, state=%d, wait_type=%d", next_thread, next_thread->state, next_thread->wait_type);
-                    break;
-                }
-            }
-        }
-    }
     
     // If we found a valid next thread, prepare to switch to it
     if (next_thread && next_thread->magic == CTXT_MAGIC && !(next_thread->state & THREAD_STATE_EXITED)) {
@@ -539,56 +652,15 @@ void proc_thread_exit(void *retval) {
         }
     }
     
-    // STEP 4: If no valid thread found, use process context
+    // If no valid thread found, use process context
     if (!target_ctx) {
         TRACE_THREAD("EXIT: No next thread, returning to process context");
         target_ctx = &p->ctxt[CURRENT];
         p->current_thread = NULL;
     }
     
-    // Store thread info before potentially freeing it
-    struct thread *old_thread = current;
-    int should_free = old_thread->detached || old_thread->joined;
-    
-    // Remove from thread list if detached or joined
-    if (should_free) {
-        struct thread **tp;
-        for (tp = &p->threads; *tp; tp = &(*tp)->next) {
-            if (*tp == old_thread) {
-                *tp = old_thread->next;
-                break;
-            }
-        }
-    }
-    
-    // Clear current_thread pointer to prevent use after free
-    if (p->current_thread == old_thread) {
-        p->current_thread = NULL;
-    }
-    
-    // Free resources if detached or joined
-    if (old_thread && old_thread->magic == CTXT_MAGIC && should_free) {
-        if (old_thread->t_sigctx) {
-            kfree(old_thread->t_sigctx);
-            TRACE_THREAD("EXIT: Freed signal context for thread %d", tid);
-            old_thread->t_sigctx = NULL;
-        }
-        
-        if (old_thread->stack && tid != 0) {
-            kfree(old_thread->stack);
-            old_thread->stack = NULL;
-        }
-        
-        TRACE_THREAD("EXIT: Freed resources for thread %d", tid);
-        
-        // Clear magic BEFORE freeing to prevent use after free
-        old_thread->magic = 0;
-        
-        kfree(old_thread);
-        TRACE_THREAD("EXIT: KFREE thread %d", tid);
-    } else {
-        TRACE_THREAD("EXIT: Thread %d not detached or joined, keeping resources", tid);
-    }
+    // Clean up thread resources
+    cleanup_thread_resources(p, current, tid);
     
     TRACE_THREAD("Thread %d exited", tid);
     

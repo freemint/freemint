@@ -45,4 +45,10 @@ void thread_timer_stop(PROC *p);
 
 void reschedule_preemption_timer(PROC *p, long arg);
 
+/* Thread exit helper functions */
+struct thread *find_next_thread_to_run(struct proc *p);
+void handle_thread_joining(struct thread *current, void *retval);
+void cancel_thread_timeouts(struct proc *p, struct thread *t);
+void cleanup_thread_resources(struct proc *p, struct thread *t, int tid);
+
 #endif //PROC_THREADS_SCHEDULER_H

@@ -74,19 +74,7 @@ long proc_thread_detach(long tid)
         }
         
         // Free resources
-        if (target->t_sigctx) {
-            kfree(target->t_sigctx);
-            target->t_sigctx = NULL;
-        }
-        
-        if (target->stack && target->tid != 0) {
-            kfree(target->stack);
-            target->stack = NULL;
-        }
-        
-        // Clear magic and free
-        target->magic = 0;
-        kfree(target);
+        cleanup_thread_resources(p, target, target->tid);
     }
     
     spl(sr);
@@ -167,19 +155,7 @@ long proc_thread_join(long tid, void **retval)
         target->joined = 1;
         
         // Free resources now
-        if (target->t_sigctx) {
-            kfree(target->t_sigctx);
-            target->t_sigctx = NULL;
-        }
-        
-        if (target->stack && target->tid != 0) {
-            kfree(target->stack);
-            target->stack = NULL;
-        }
-        
-        // Clear magic and free
-        target->magic = 0;
-        kfree(target);
+        cleanup_thread_resources(p, target, tid);
         
         // Clear any wait state on the current thread
         current->wait_type = WAIT_NONE;
@@ -350,19 +326,7 @@ long proc_thread_tryjoin(long tid, void **retval)
         target->joined = 1;
         
         // Free resources now
-        if (target->t_sigctx) {
-            kfree(target->t_sigctx);
-            target->t_sigctx = NULL;
-        }
-        
-        if (target->stack && target->tid != 0) {
-            kfree(target->stack);
-            target->stack = NULL;
-        }
-        
-        // Clear magic and free
-        target->magic = 0;
-        kfree(target);
+        cleanup_thread_resources(p, target, tid);
         
         spl(sr);
         TRACE_THREAD("TRY_JOIN: Thread %ld joined successfully", tid);

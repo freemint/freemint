@@ -297,7 +297,7 @@ void proc_thread_cleanup_process(struct proc *pcurproc) {
 			thread_timer_stop(pcurproc);
 		}
 		
-		/* Cancel any thread-specific timeouts */
+		/* Cancel all timeouts for this process */
 		TIMEOUT *timelist, *next_timelist;
 		for (timelist = tlist; timelist; timelist = next_timelist) {
 			next_timelist = timelist->next;
@@ -322,20 +322,11 @@ void proc_thread_cleanup_process(struct proc *pcurproc) {
 				remove_thread_from_wait_queues(t);
 				remove_from_ready_queue(t);
 				
-				/* Free thread-specific resources */
-				if (t->t_sigctx) {
-					kfree(t->t_sigctx);
-				}
-				
 				/* Mark as exited */
 				t->state |= THREAD_STATE_EXITED;
-				t->magic = 0;  /* Invalidate magic to prevent further use */
 				
-				/* Free thread stack (except for thread0) */
-				if (t->tid != 0 && t->stack) {
-					kfree(t->stack);
-				}
-				kfree(t);
+				/* Free thread resources */
+				cleanup_thread_resources(pcurproc, t, t->tid);
 			}
 			t = next;
 		}
