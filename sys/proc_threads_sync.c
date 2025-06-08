@@ -159,8 +159,7 @@ long proc_thread_join(long tid, void **retval)
     current->wait_obj = target;
     current->join_retval = retval;  // Store the pointer where to put the return value
 
-    TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit",
-                current->tid, target->tid);
+    TRACE_THREAD_JOIN(current, target);
     
     // Block the current thread
     atomic_thread_state_change(current, THREAD_STATE_BLOCKED);
@@ -383,7 +382,7 @@ int thread_mutex_lock(struct mutex *mutex) {
         return EDEADLK;
     }
     
-    TRACE_THREAD("THREAD_MUTEX_LOCK: Slow lock");
+    TRACE_THREAD_MUTEX("locking", t, mutex);
     
     // Add to wait queue with priority
     t->wait_type = WAIT_MUTEX;
@@ -532,7 +531,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
         }
     } else {
         // No waiters, release the mutex
-        TRACE_THREAD("THREAD_MUTEX_UNLOCK: No waiters, releasing mutex");
+        TRACE_THREAD_MUTEX("unlocking", current, mutex);
         mutex->locked = 0;
         mutex->owner = NULL;
         

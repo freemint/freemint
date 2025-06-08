@@ -1,0 +1,37 @@
+#include "proc_threads_debug.h"
+#include "mint/file.h"
+#include "arch/tosbind.h"
+#include "libkern/libkern.h"
+
+#ifdef DEBUG_THREAD
+/**
+ * Write debug message to a file
+ * 
+ * @param filename Path to the log file
+ * @param fmt Format string
+ * @param ... Variable arguments
+ */
+void debug_to_file(const char *filename, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    char buffer[1024];
+    kvsprintf(buffer, sizeof(buffer), fmt, args);
+
+    int fd = Fopen(filename, O_RDWR | O_CREAT | O_APPEND);
+    if (fd < 0) {
+        return; // Handle error if needed
+    }
+
+    // Write the formatted message to the file
+    Fwrite(fd, strlen(buffer), buffer);
+
+    // Write a newline
+    Fwrite(fd, 1, "\n");
+
+    // Close the file
+    Fclose(fd);
+
+    va_end(args);
+}
+#endif

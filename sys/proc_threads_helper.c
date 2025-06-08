@@ -20,8 +20,7 @@ void boost_thread_priority(struct thread *t, int boost_amount) {
     t->priority = t->priority + boost_amount;
     t->priority_boost = 1;
     
-    TRACE_THREAD("PRIORITY: Boosted thread %d priority from %d to %d", 
-                t->tid, t->original_priority, t->priority);
+    TRACE_THREAD_PRIORITY(t, t->original_priority, t->priority);
 }
 
 /**
@@ -34,8 +33,7 @@ void reset_thread_priority(struct thread *t) {
         return;
     }
     
-    TRACE_THREAD("PRIORITY: Resetting thread %d priority from %d to %d",
-                t->tid, t->priority, t->original_priority);
+    TRACE_THREAD_PRIORITY(t, t->priority, t->original_priority);
     
     t->priority = t->original_priority;
     t->priority_boost = 0;
@@ -56,8 +54,8 @@ struct thread *get_highest_priority_thread(struct proc *p) {
         // return get_idle_thread(p);
     }
 
-#ifdef DEBUG_THREAD
-    // Dump ready queue for debugging
+#if defined(DEBUG_THREAD) && (THREAD_DEBUG_LEVEL >= THREAD_DEBUG_ALL)
+    // Dump ready queue for debugging (only at highest verbosity level)
     TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Current ready queue:");
     struct thread *debug_curr = p->ready_queue;
     while (debug_curr) {
@@ -172,7 +170,7 @@ void atomic_thread_state_change(struct thread *t, int new_state) {
     unsigned short sr;
     
     if (!t) {
-        TRACE_THREAD("ERROR: Attempt to change state of NULL thread");
+        TRACE_THREAD_ERROR("Attempt to change state of NULL thread");
         return;
     }
 
@@ -183,18 +181,18 @@ void atomic_thread_state_change(struct thread *t, int new_state) {
 
     // Check if thread is valid
     if (t->magic != CTXT_MAGIC) {
-        TRACE_THREAD("ERROR: Attempt to change state of invalid thread %d, magic=%lx", t->tid, t->magic);
+        TRACE_THREAD_ERROR("Attempt to change state of invalid thread %d, magic=%lx", t->tid, t->magic);
         return;
     }
 
     /* Check if the new state is valid */
     if ((t->state == THREAD_STATE_EXITED) && !(new_state == THREAD_STATE_EXITED)) {
-        TRACE_THREAD("ERROR: Attempt to change state of EXITED thread %d from %d to %d", t->tid, t->state, new_state);
+        TRACE_THREAD_ERROR("Attempt to change state of EXITED thread %d from %d to %d", t->tid, t->state, new_state);
         return;
     }
 
     sr = splhigh();
-    TRACE_THREAD("STATE: Thread %d state change from %d to %d", t->tid, t->state, new_state);
+    TRACE_THREAD_STATE(t, t->state, new_state);
     t->state = new_state;
     spl(sr);
 }

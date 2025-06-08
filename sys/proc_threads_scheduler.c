@@ -172,7 +172,7 @@ void proc_thread_schedule(void) {
         return;
     }
 
-    TRACE_THREAD("SCHED: Entered scheduler");
+    TRACE_THREAD_SCHED("Entered scheduler");
     sr = splhigh();
     
     struct thread *current = p->current_thread;
@@ -183,7 +183,7 @@ void proc_thread_schedule(void) {
     // Get highest priority thread from ready queue
     struct thread *next = get_highest_priority_thread(p);
 
-    TRACE_THREAD("SCHED: Current thread %d, highest priority ready thread %d", 
+    TRACE_THREAD_SCHED("Current thread %d, highest priority ready thread %d", 
                 current ? current->tid : -1, 
                 next ? next->tid : -1);
 
@@ -293,7 +293,7 @@ void proc_thread_schedule(void) {
     
     // Check if we should schedule next thread
     if (should_schedule_thread(current, next)) {
-        TRACE_THREAD("SCHED: Switching threads: %d -> %d", current->tid, next->tid);
+        TRACE_THREAD_SWITCH(current, next);
         
         // Remove next from ready queue if it's there
         if (is_in_ready_queue(next)) {
@@ -838,7 +838,7 @@ static void thread_switch(struct thread *from, struct thread *to) {
     thread_switch_timeout = addtimeout(from->proc, ((from->proc->thread_default_timeslice * MS_PER_TICK) / 20), 
                                       thread_switch_timeout_handler);
     
-    TRACE_THREAD("SWITCH: Switching threads: %d -> %d", from->tid, to->tid);
+    TRACE_THREAD_SWITCH(from, to);
     
     // Verify stack integrity
     if (from->stack_magic != STACK_MAGIC || to->stack_magic != STACK_MAGIC) {

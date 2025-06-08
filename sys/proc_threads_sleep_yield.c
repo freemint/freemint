@@ -175,8 +175,7 @@ long proc_thread_sleep(long ms) {
     // Set wakeup time
     t->wakeup_time = current_time + ticks;
 
-    TRACE_THREAD("SLEEP: Thread %d sleeping for %ld ms (%lu ticks), will wake at tick %lu (current: %lu)",
-                t->tid, ms, ticks, t->wakeup_time, current_time);
+    TRACE_THREAD_SLEEP(t, ms, ticks, t->wakeup_time);
     
     // Add to sleep queue
     sr = splhigh();
@@ -203,8 +202,7 @@ long proc_thread_sleep(long ms) {
     
     if (save_context(&t->ctxt[CURRENT]) == 0) {
         // First time through - this is the "going to sleep" path
-        TRACE_THREAD("SLEEP: Thread %d sleeping for %ld ms, will wake at tick %lu (current: %lu)",
-                    t->tid, ms, t->wakeup_time, current_time);
+        TRACE_THREAD_SLEEP(t, ms, ticks, t->wakeup_time);
         
         atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
         t->wait_type = WAIT_SLEEP;  // Set wait type
@@ -236,7 +234,7 @@ long proc_thread_sleep(long ms) {
             atomic_thread_state_change(t, THREAD_STATE_RUNNING);
         }
         
-        TRACE_THREAD("SLEEP: Thread %d woke up after sleeping", t->tid);
+        TRACE_THREAD_WAKEUP(t);
         spl(sr);
         return 0;
     }

@@ -7,6 +7,7 @@
 #include "mint/arch/asm_spl.h"
 #include "kmemory.h"
 #include "kentry.h"
+#include "proc_threads_debug.h"
 
 #ifndef PROC_THREAD_H
 #define PROC_THREAD_H

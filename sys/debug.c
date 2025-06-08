@@ -720,30 +720,4 @@ do_func_key(int scan)
 	}
 }
 
-/* Thread logging */
-#ifdef DEBUG_THREAD
-void debug_to_file(const char *filename, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
-    char buffer[1024];
-    kvsprintf(buffer, sizeof(buffer), fmt, args);
-
-    int fd = Fopen(filename, O_RDWR | O_CREAT | O_APPEND);
-    if (fd < 0) {
-        return; // Handle error if needed
-    }
-
-    // Write the formatted message to the file
-    Fwrite(fd, strlen(buffer), buffer);
-
-    // Optionally write a newline
-    Fwrite(fd, 1, "\n");
-
-    // Close the file
-    Fclose(fd);
-
-    va_end(args);
-}
-#endif
-/* End of Thread logging */
+/* Thread logging function moved to proc_threads_debug.c */

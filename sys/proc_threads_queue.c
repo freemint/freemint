@@ -41,14 +41,16 @@ void add_to_ready_queue(struct thread *t) {
     TRACE_THREAD("READY_Q: Adding Thread %d (pri %d, policy %d, state %d, boost=%d) to ready queue",
                 t->tid, t->priority, t->policy, t->state, t->priority_boost);
     
-    // Dump current ready queue for debugging
-    TRACE_THREAD("READY_Q: Current queue before adding thread %d:", t->tid);
+    // Dump current ready queue for debugging (only at highest verbosity level)
+    TRACE_THREAD_QUEUE_BEFORE(t);
+#if THREAD_DEBUG_LEVEL >= THREAD_DEBUG_ALL
     curr = p->ready_queue;
     while (curr) {
         TRACE_THREAD("  Thread %d (pri %d, policy %d, boost=%d)", 
                     curr->tid, curr->priority, curr->policy, curr->priority_boost);
         curr = curr->next_ready;
     }
+#endif
     
     // If ready queue is empty, just add the thread
     if (!p->ready_queue) {
@@ -107,14 +109,16 @@ void add_to_ready_queue(struct thread *t) {
         t->next_ready = NULL;
     }
     
-    // Dump final ready queue for debugging
-    TRACE_THREAD("READY_Q: Final queue after adding thread %d:", t->tid);
+    // Dump final ready queue for debugging (only at highest verbosity level)
+    TRACE_THREAD_QUEUE_AFTER(t);
+#if THREAD_DEBUG_LEVEL >= THREAD_DEBUG_ALL
     curr = p->ready_queue;
     while (curr) {
         TRACE_THREAD("  Thread %d (pri %d, policy %d, boost=%d)", 
                     curr->tid, curr->priority, curr->policy, curr->priority_boost);
         curr = curr->next_ready;
     }
+#endif
     
     spl(sr);
 }

@@ -112,7 +112,7 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
         thread_timer_start(t->proc, t->tid);
     }
 
-    TRACE_THREAD("Thread %d created successfully", t->tid);
+    TRACE_THREAD_CREATE(t, t->func, t->arg);
     spl(sr);
     return t->tid;
 }
@@ -164,7 +164,7 @@ static void proc_thread_start(void) {
     }
     
     if (t && t->magic == CTXT_MAGIC) {
-        TRACE_THREAD("START: Thread %d is exiting", t->tid);
+        TRACE_THREAD_EXIT(t, result);
         proc_thread_exit(result);
     }
     
