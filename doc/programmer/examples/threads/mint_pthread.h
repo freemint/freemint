@@ -305,13 +305,9 @@ static inline int pthread_join(pthread_t thread, void **retval)
             case -EDEADLK:
                 return EDEADLK; // Deadlock detected
             default:
-                printf("result: %ld\n", result);
                 return EINVAL;
         }
-    } else {
-        printf("result: %ld\n", result);
     }
-    
     return 0;
 }
 
