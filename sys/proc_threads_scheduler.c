@@ -12,6 +12,10 @@ void thread_switch_timeout_handler(PROC *p, long arg);
 static int should_schedule_thread(struct thread *current, struct thread *next);
 static void thread_switch(struct thread *from, struct thread *to);
 
+/* Thread exit helper functions */
+static void cancel_thread_timeouts(struct proc *p, struct thread *t);
+static struct thread *find_next_thread_to_run(struct proc *p);
+
 /* Mutex for timer operations */
 static int timer_operation_locked = 0;
 static int thread_switch_in_progress = 0;
@@ -395,7 +399,7 @@ void handle_thread_joining(struct thread *current, void *retval) {
  * @param p The process containing the thread
  * @param t The thread whose timeouts should be cancelled
  */
-void cancel_thread_timeouts(struct proc *p, struct thread *t) {
+static void cancel_thread_timeouts(struct proc *p, struct thread *t) {
     if (!p || !t) {
         return;
     }
@@ -416,7 +420,7 @@ void cancel_thread_timeouts(struct proc *p, struct thread *t) {
  * @param p The process containing the threads
  * @return The next thread to run, or NULL if none found
  */
-struct thread *find_next_thread_to_run(struct proc *p) {
+static struct thread *find_next_thread_to_run(struct proc *p) {
     struct thread *next_thread = NULL;
     
     if (!p) {

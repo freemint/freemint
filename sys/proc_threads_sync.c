@@ -55,23 +55,8 @@ long proc_thread_detach(long tid)
     if (target->state & THREAD_STATE_EXITED) {
         TRACE_THREAD("DETACH: Thread %d already exited, freeing resources", target->tid);
         
-        // Check if any thread is waiting to join this one
-        if (target->joiner && target->joiner->magic == CTXT_MAGIC) {
-            struct thread *joiner = target->joiner;
-            TRACE_THREAD("DETACH: Thread %d has a joiner thread %d, waking it up", 
-                        target->tid, joiner->tid);
-            
-            // Wake up the joining thread
-            if (joiner->wait_type == WAIT_JOIN && joiner->wait_obj == target) {
-                joiner->wait_type = WAIT_NONE;
-                joiner->wait_obj = NULL;
-                joiner->join_retval = NULL;
-                
-                // Wake up joiner
-                atomic_thread_state_change(joiner, THREAD_STATE_READY);
-                add_to_ready_queue(joiner);
-            }
-        }
+        // Handle any thread waiting to join this one
+        handle_thread_joining(target, NULL);
         
         // Free resources
         cleanup_thread_resources(p, target, target->tid);
