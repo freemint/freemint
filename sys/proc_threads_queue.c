@@ -152,6 +152,12 @@ void remove_from_ready_queue(struct thread *t) {
     spl(sr);
 }
 
+/**
+ * Remove a thread from its process's sleep queue
+ * 
+ * @param p Process containing the sleep queue
+ * @param t Thread to remove from sleep queue
+ */
 void remove_from_sleep_queue(struct proc *p, struct thread *t) {
     if (!p || !t) return;
     

@@ -9,11 +9,64 @@
 #define ULONG_MAX 0xFFFFFFFFUL
 #endif
 
+/**
+ * Wake threads that have reached their wakeup time
+ * 
+ * @param p Process containing threads to check
+ * @param current_time Current system time in ticks
+ * @return Number of threads woken
+ */
+int wake_threads_by_time(struct proc *p, unsigned long current_time) {
+    if (!p || !p->sleep_queue) {
+        return 0;
+    }
+    
+    struct thread *sleep_t = p->sleep_queue;
+    int woke_threads = 0;
+
+    while (sleep_t) {
+        struct thread *next_sleep = sleep_t->next_sleeping;
+
+        // If thread should wake up
+        if (sleep_t->magic == CTXT_MAGIC && 
+            (sleep_t->state & THREAD_STATE_BLOCKED) &&
+            !(sleep_t->state & THREAD_STATE_EXITED) &&
+            sleep_t->wakeup_time > 0 && 
+            sleep_t->wakeup_time <= current_time) {
+            TRACE_THREAD("SLEEP_CHECK: Thread %d should wake up!", sleep_t->tid);
+            
+            // Remove from sleep queue
+            remove_from_sleep_queue(p, sleep_t);
+
+            // Boost priority and prepare for ready queue
+            boost_thread_priority(sleep_t, 5); // Boost by 5 levels
+            sleep_t->wait_type = WAIT_NONE;
+            sleep_t->wakeup_time = 0; // Clear wake-up time
+            
+            // Update thread state and add to ready queue
+            atomic_thread_state_change(sleep_t, THREAD_STATE_READY);
+            add_to_ready_queue(sleep_t);
+            
+            woke_threads++;
+        }
+        
+        sleep_t = next_sleep;
+    }
+    
+    return woke_threads;
+}
+
+/**
+ * Check and wake sleeping threads that have reached their wakeup time
+ * 
+ * @param p Process containing threads to check
+ */
 void check_and_wake_sleeping_threads(struct proc *p) {
-    if (!p || !p->sleep_queue){
+    if (!p || !p->sleep_queue) {
         return;
     }
     unsigned short sr;
+    int woke_threads;
 
     #ifdef DEBUG_THREAD
     unsigned long current_time = get_system_ticks();
@@ -34,62 +87,9 @@ void check_and_wake_sleeping_threads(struct proc *p) {
     #endif
 
     sr = splhigh();
-
-    struct thread *sleep_t = p->sleep_queue;
-    int woke_threads = 0;
-
-    while (sleep_t) {
-        struct thread *next_sleep = sleep_t->next_sleeping;
-
-        TRACE_THREAD("SLEEP_CHECK: Checking thread %d (wake at %lu, current %lu, state=%d)",
-                    sleep_t->tid, sleep_t->wakeup_time, current_time, sleep_t->state);
-
-        // if(sleep_t->magic == CTXT_MAGIC){
-        //     TRACE_THREAD("SLEEP_CHECK: Thread %d is valid", sleep_t->tid);
-        //     if(sleep_t->state & THREAD_STATE_BLOCKED){
-        //         TRACE_THREAD("SLEEP_CHECK: Thread %d is blocked", sleep_t->tid);
-        //         if(!(sleep_t->state & THREAD_STATE_EXITED)){
-        //             TRACE_THREAD("SLEEP_CHECK: Thread %d is not exited", sleep_t->tid);
-        //         }
-        //     }
-        // }
-
-        // If thread should wake up
-        if (sleep_t->magic == CTXT_MAGIC && 
-            (sleep_t->state & THREAD_STATE_BLOCKED) &&
-            !(sleep_t->state & THREAD_STATE_EXITED) &&
-            sleep_t->wakeup_time > 0 && 
-            sleep_t->wakeup_time <= get_system_ticks()) {
-            TRACE_THREAD("SLEEP_CHECK: Thread %d should wake up!", sleep_t->tid);
-            
-            // Remove from sleep queue
-            struct thread **pp = &p->sleep_queue;
-            while (*pp) {
-                if (*pp == sleep_t) {
-                    *pp = sleep_t->next_sleeping;
-                    break;
-                }
-                pp = &(*pp)->next_sleeping;
-            }
-
-            // Boost priority
-            sleep_t->original_priority = sleep_t->priority;
-            sleep_t->priority = sleep_t->priority + 5; // Boost by 5 levels
-            sleep_t->priority_boost = 1;
-            sleep_t->wait_type = WAIT_NONE;
-            sleep_t->wakeup_time = 0; // Clear wake-up time
-            
-            // Update thread state and add to ready queue
-            atomic_thread_state_change(sleep_t, THREAD_STATE_READY);
-            
-            // For SCHED_FIFO threads, add to end of ready queue as per POSIX
-            add_to_ready_queue(sleep_t);
-            
-            woke_threads++;
-        }
-        
-        sleep_t = next_sleep;
-    }
+    
+    // Wake threads that have reached their wakeup time
+    woke_threads = wake_threads_by_time(p, get_system_ticks());
     
     if (woke_threads > 0) {
         TRACE_THREAD("SLEEP_CHECK: Woke up %d threads from sleep queue", woke_threads);
@@ -101,6 +101,8 @@ void check_and_wake_sleeping_threads(struct proc *p) {
             return;
         }        
     }
+    
+    spl(sr);
 }
 
 void proc_thread_sleep_wakeup_handler(PROC *p, long arg) {
@@ -116,14 +118,9 @@ void proc_thread_sleep_wakeup_handler(PROC *p, long arg) {
     if ((t->state & THREAD_STATE_BLOCKED) && t->wait_type == WAIT_SLEEP) {
         TRACE_THREAD("SLEEP_WAKEUP: Direct wakeup for thread %d", t->tid);
 
-        // Save original priority and boost
-        t->original_priority = t->priority;
-        t->priority = t->priority + 5;  // Boost by 5 levels instead of using a constant  // Use highest priority
-        t->priority_boost = 1;
+        // Boost priority
+        boost_thread_priority(t, 5);  // Boost by 5 levels
         
-        TRACE_THREAD("SLEEP_WAKEUP: Boosted thread %d priority from %d to %d", 
-                    t->tid, t->original_priority, t->priority);
-
         // Wake up thread
         t->wait_type = WAIT_NONE;
         t->wakeup_time = 0;  // Clear wake-up time

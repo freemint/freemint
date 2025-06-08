@@ -1,6 +1,47 @@
 #include "proc_threads_helper.h"
 
 /**
+ * Boost a thread's priority by a specified amount
+ * 
+ * @param t Thread to boost
+ * @param boost_amount Amount to boost the priority by
+ */
+void boost_thread_priority(struct thread *t, int boost_amount) {
+    if (!t || t->magic != CTXT_MAGIC) {
+        return;
+    }
+    
+    // Save original priority if not already boosted
+    if (!t->priority_boost) {
+        t->original_priority = t->priority;
+    }
+    
+    // Apply boost
+    t->priority = t->priority + boost_amount;
+    t->priority_boost = 1;
+    
+    TRACE_THREAD("PRIORITY: Boosted thread %d priority from %d to %d", 
+                t->tid, t->original_priority, t->priority);
+}
+
+/**
+ * Reset a thread's priority to its original value
+ * 
+ * @param t Thread to reset priority for
+ */
+void reset_thread_priority(struct thread *t) {
+    if (!t || t->magic != CTXT_MAGIC || !t->priority_boost) {
+        return;
+    }
+    
+    TRACE_THREAD("PRIORITY: Resetting thread %d priority from %d to %d",
+                t->tid, t->priority, t->original_priority);
+    
+    t->priority = t->original_priority;
+    t->priority_boost = 0;
+}
+
+/**
  * Helper function to get the highest priority thread from the ready queue
  *
  * This function implements POSIX-compliant thread selection:

@@ -94,6 +94,28 @@ void thread_preempt_handler(PROC *p, long arg) {
     
     if (!next) {
         TRACE_THREAD("PREEMPT: No other threads to run, continuing with current thread %d", curr_thread->tid);
+        
+        // If there are sleeping threads, create an idle thread
+        if (p->sleep_queue) {
+            next = get_idle_thread(p);
+            if (next) {
+                TRACE_THREAD("PREEMPT: Created idle thread to wait for sleeping threads");
+                remove_from_ready_queue(next);
+                atomic_thread_state_change(next, THREAD_STATE_RUNNING);
+                p->current_thread = next;
+                next->last_scheduled = get_system_ticks();
+                
+                // Rearm timer before switch
+                reschedule_preemption_timer(p, (long)next);
+                
+                TRACE_THREAD("PREEMPT: Switching from thread %d to idle thread", curr_thread->tid);
+                thread_switch(curr_thread, next);
+                
+                spl(sr);
+                return;
+            }
+        }
+        
         reschedule_preemption_timer(p, (long)curr_thread);
         spl(sr);
         return;
@@ -182,6 +204,10 @@ void proc_thread_schedule(void) {
             TRACE_THREAD("SCHED: Continuing with current thread %d", current->tid);
             spl(sr);
             return;
+        } else if (p->sleep_queue) {
+            // If there are sleeping threads, create an idle thread
+            next = get_idle_thread(p);
+            TRACE_THREAD("SCHED: Created idle thread to wait for sleeping threads");
         }
     }
 
@@ -291,12 +317,8 @@ void proc_thread_schedule(void) {
                                     current->tid, current->priority,
                                     m->owner->tid, m->owner->priority);
                         
-                        // Save original priority if not already boosted
-                        if (!m->owner->priority_boost) {
-                            m->owner->original_priority = m->owner->priority;
-                        }
-                        m->owner->priority = current->priority;
-                        m->owner->priority_boost = 1;
+                        // Boost the mutex owner's priority to the waiting thread's priority
+                        boost_thread_priority(m->owner, current->priority - m->owner->priority);
                         
                         // Reinsert owner in ready queue if needed
                         if (m->owner->state == THREAD_STATE_READY) {
@@ -457,33 +479,12 @@ void proc_thread_exit(void *retval) {
     // STEP 1: First check the sleep queue for threads that should wake up
     if (p->sleep_queue) {
         unsigned long current_time = get_system_ticks();
-        struct thread *sleep_t = p->sleep_queue;
-        int woke_threads = 0;
+        int woke_threads;
         
         TRACE_THREAD("EXIT: Checking sleep queue at time %lu", current_time);
         
-        while (sleep_t) {
-            struct thread *next_sleep = sleep_t->next_sleeping;
-            
-            // If thread should wake up
-            if (sleep_t->magic == CTXT_MAGIC && 
-                !(sleep_t->state & THREAD_STATE_EXITED) &&
-                sleep_t->wakeup_time > 0 && 
-                sleep_t->wakeup_time <= current_time) {
-                
-                TRACE_THREAD("EXIT: Thread %d should wake up (wake at %lu)",
-                            sleep_t->tid, sleep_t->wakeup_time);
-                            
-                // Wake up thread
-                sleep_t->wait_type = WAIT_NONE;
-                sleep_t->wakeup_time = 0;  // Clear wake-up time
-                atomic_thread_state_change(sleep_t, THREAD_STATE_READY);
-                add_to_ready_queue(sleep_t);
-                woke_threads++;
-            }
-            
-            sleep_t = next_sleep;
-        }
+        // Use the extracted function to wake threads
+        woke_threads = wake_threads_by_time(p, current_time);
         
         if (woke_threads > 0) {
             TRACE_THREAD("EXIT: Woke up %d threads from sleep queue", woke_threads);
@@ -779,8 +780,7 @@ static void thread_switch(struct thread *from, struct thread *to) {
         if (elapsed > from->proc->thread_min_timeslice || from->wait_type != WAIT_NONE) {
             TRACE_THREAD("SWITCH: Resetting priority boost for thread %d (current pri: %d, original: %d, elapsed: %lu)",
                         from->tid, from->priority, from->original_priority, elapsed);
-            from->priority = from->original_priority;
-            from->priority_boost = 0;
+            reset_thread_priority(from);
         } else {
             TRACE_THREAD("SWITCH: Keeping priority boost for thread %d (elapsed: %lu < min: %d)",
                         from->tid, elapsed, from->proc->thread_min_timeslice);

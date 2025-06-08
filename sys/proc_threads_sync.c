@@ -457,14 +457,8 @@ int thread_mutex_lock(struct mutex *mutex) {
                     t->tid, t->priority,
                     mutex->owner->tid, mutex->owner->priority);
         
-        // Save original priority if not already boosted
-        if (!mutex->owner->priority_boost) {
-            mutex->owner->original_priority = mutex->owner->priority;
-            mutex->owner->priority_boost = 1;
-        }
-        
-        // Boost owner's priority
-        mutex->owner->priority = t->priority;
+        // Boost owner's priority to the waiting thread's priority
+        boost_thread_priority(mutex->owner, t->priority - mutex->owner->priority);
         
         // Reinsert owner in ready queue if needed
         if (mutex->owner->state == THREAD_STATE_READY) {
@@ -569,12 +563,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
             add_to_ready_queue(highest);
             
             // Restore original priority if boosted
-            if (current->priority_boost) {
-                TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
-                            current->tid, current->priority, current->original_priority);
-                current->priority = current->original_priority;
-                current->priority_boost = 0;
-            }
+            reset_thread_priority(current);
             
             // Force immediate scheduling if higher priority
             if (highest->priority > current->priority) {
@@ -590,12 +579,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
             mutex->owner = NULL;
             
             // Restore original priority if boosted
-            if (current->priority_boost) {
-                TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
-                            current->tid, current->priority, current->original_priority);
-                current->priority = current->original_priority;
-                current->priority_boost = 0;
-            }
+            reset_thread_priority(current);
         }
     } else {
         // No waiters, release the mutex
@@ -604,12 +588,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
         mutex->owner = NULL;
         
         // Restore original priority if boosted
-        if (current->priority_boost) {
-            TRACE_THREAD("PRI-RESTORE: Thread %d pri %d -> %d",
-                        current->tid, current->priority, current->original_priority);
-            current->priority = current->original_priority;
-            current->priority_boost = 0;
-        }
+        reset_thread_priority(current);
     }
     
     spl(sr);
