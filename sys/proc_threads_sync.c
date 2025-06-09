@@ -133,8 +133,10 @@ long proc_thread_join(long tid, void **retval)
     // Check if thread already exited
     if (target->state & THREAD_STATE_EXITED) {
         // Thread already exited, get return value and return immediately
-        if (retval)
+        if (retval) {
+            TRACE_THREAD("JOIN: Thread %ld already exited, getting return value %p", tid, target->retval);
             *retval = target->retval;
+        }
         
         // Mark as joined so resources can be freed
         target->joined = 1;
@@ -158,7 +160,8 @@ long proc_thread_join(long tid, void **retval)
     current->wait_type = WAIT_JOIN;
     current->wait_obj = target;
     current->join_retval = retval;  // Store the pointer where to put the return value
-
+TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit, join_retval=%p",
+            current->tid, target->tid, retval);
     TRACE_THREAD_JOIN(current, target);
     
     // Block the current thread
@@ -303,8 +306,10 @@ long proc_thread_tryjoin(long tid, void **retval)
     // KEY DIFFERENCE: Check if thread exited, but don't block if it hasn't
     if (target->state & THREAD_STATE_EXITED) {
         // Thread already exited, get return value and return immediately
-        if (retval)
+        if (retval) {
+            TRACE_THREAD("TRY_JOIN: Thread %ld already exited, getting return value %p", tid, target->retval);
             *retval = target->retval;
+        }
         
         // Mark as joined so resources can be freed
         target->joined = 1;
@@ -462,24 +467,8 @@ int thread_mutex_unlock(struct mutex *mutex) {
     
     // If there are waiters, wake the highest priority one
     if (mutex->wait_queue) {
-        // Find highest priority valid thread
-        struct thread *t = mutex->wait_queue;
-        struct thread *highest = NULL;
         struct thread *prev_highest = NULL;
-        struct thread *prev = NULL;
-        int highest_priority = -1;
-        
-        // First pass: find highest priority valid thread
-        while (t) {
-            if (t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED) && 
-                t->priority > highest_priority) {
-                highest = t;
-                prev_highest = prev;
-                highest_priority = t->priority;
-            }
-            prev = t;
-            t = t->next_wait;
-        }
+        struct thread *highest = find_highest_priority_thread_in_queue(mutex->wait_queue, &prev_highest);
         
         if (highest) {
             // Remove from wait queue
@@ -627,16 +616,10 @@ int thread_semaphore_up(struct semaphore *sem) {
         return THREAD_SUCCESS;
     }
     
-    // Find first valid waiter
-    struct thread *t = sem->wait_queue;
-    struct thread *prev = NULL;
+    struct thread *prev_highest = NULL;
+    struct thread *highest = find_highest_priority_thread_in_queue(sem->wait_queue, &prev_highest);
     
-    while (t && (t->magic != CTXT_MAGIC || (t->state & THREAD_STATE_EXITED))) {
-        prev = t;
-        t = t->next_wait;
-    }
-    
-    if (!t) {
+    if (!highest) {
         // No valid waiters, increment count
         sem->count++;
         TRACE_THREAD("SEMAPHORE UP: No valid waiters, incremented count to %d", sem->count);
@@ -645,29 +628,32 @@ int thread_semaphore_up(struct semaphore *sem) {
     }
     
     // Remove from wait queue
-    if (prev) {
-        prev->next_wait = t->next_wait;
+    if (prev_highest) {
+        prev_highest->next_wait = highest->next_wait;
     } else {
-        sem->wait_queue = t->next_wait;
+        sem->wait_queue = highest->next_wait;
     }
-    t->next_wait = NULL;
+    highest->next_wait = NULL;
+    
+    TRACE_THREAD("SEMAPHORE UP: Waking thread %d (priority %d)", 
+                highest->tid, highest->priority);
     
     // Wake up thread
-    t->wait_type = WAIT_NONE;
-    t->wait_obj = NULL;
+    highest->wait_type = WAIT_NONE;
+    highest->wait_obj = NULL;
     
     // Remove from sleep queue if needed
-    if (t->wakeup_time > 0) {
-        t->wakeup_time = 0;
-        remove_from_sleep_queue(t->proc, t);
+    if (highest->wakeup_time > 0) {
+        highest->wakeup_time = 0;
+        remove_from_sleep_queue(highest->proc, highest);
     }
     
     // Mark as ready and add to ready queue
-    atomic_thread_state_change(t, THREAD_STATE_READY);
-    add_to_ready_queue(t);
+    atomic_thread_state_change(highest, THREAD_STATE_READY);
+    add_to_ready_queue(highest);
     
     // Force immediate scheduling if higher priority
-    if (t->priority > current->priority) {
+    if (highest->priority > current->priority) {
         TRACE_THREAD("SEMAPHORE UP: Forcing immediate schedule due to priority");
         spl(sr);
         proc_thread_schedule();
@@ -749,3 +735,4 @@ void cleanup_thread_sync_states(struct proc *p)
     
     TRACE_THREAD("CLEANUP: Finished cleaning up thread sync states for process %d", p->pid);
 }
+

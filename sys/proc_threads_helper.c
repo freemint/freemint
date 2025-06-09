@@ -1,5 +1,30 @@
 #include "proc_threads_helper.h"
 
+/* Priority bit lookup table for fast highest bit finding */
+const unsigned char bit_table[256] = {
+    0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
+};
+
+/* Fast function to find highest priority bit in a bitmap */
+inline int find_highest_priority_bit(unsigned char bitmap) {
+    return bit_table[bitmap] - 1;  // Adjust to 0-7 range
+}
+
 /**
  * Boost a thread's priority by a specified amount
  * 
@@ -49,68 +74,66 @@ void reset_thread_priority(struct thread *t) {
  */
 struct thread *get_highest_priority_thread(struct proc *p) {
     if (!p || !p->ready_queue) {
-        TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Ready queue is empty");
         return NULL;
-        // return get_idle_thread(p);
     }
 
-#if defined(DEBUG_THREAD) && (THREAD_DEBUG_LEVEL >= THREAD_DEBUG_ALL)
-    // Dump ready queue for debugging (only at highest verbosity level)
-    TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Current ready queue:");
-    struct thread *debug_curr = p->ready_queue;
-    while (debug_curr) {
-        TRACE_THREAD(" Thread %d (pri %d, policy %d, boost=%d, state=%d)",
-                    debug_curr->tid, debug_curr->priority, debug_curr->policy,
-                    debug_curr->priority_boost, debug_curr->state);
-        debug_curr = debug_curr->next_ready;
-    }
-#endif
-
-    struct thread *highest = NULL;  
-    struct thread *first_valid = NULL;
-    struct thread *curr = p->ready_queue;
-    int highest_priority = -1;
-
-    // Single pass through the queue
-    while (curr) {
-        if (curr->magic == CTXT_MAGIC &&
-            !(curr->state & (THREAD_STATE_EXITED | THREAD_STATE_BLOCKED))) {
+    // Create priority bitmaps
+    unsigned char rt_bitmap = 0;
+    unsigned char normal_bitmap = 0;
+    
+    // Build bitmaps from ready queue
+    struct thread *t = p->ready_queue;
+    while (t) {
+        if (t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED)) {
+            // Use only lower 3 bits of priority for bitmap (0-7 range)
+            unsigned char bit = 1 << (t->priority & 7);
             
-            // Remember first valid thread as fallback
-            if (!first_valid) {
-                first_valid = curr;
-            }
-            
-            // Check for highest priority or same priority with lower TID
-            if (curr->priority > highest_priority) {
-                TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Thread %d has higher priority (%d > %d)",
-                            curr->tid, curr->priority, highest_priority);
-                highest = curr;
-                highest_priority = curr->priority;
-            }
-            else if (curr->priority == highest_priority && highest && curr->tid < highest->tid) {
-                TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Thread %d has same priority but lower TID (%d < %d)",
-                            curr->tid, curr->tid, highest->tid);
-                highest = curr;
+            if (t->policy == SCHED_FIFO || t->policy == SCHED_RR) {
+                rt_bitmap |= bit;
+            } else {
+                normal_bitmap |= bit;
             }
         }
-        curr = curr->next_ready;
-    }
-
-    // Return results with appropriate logging
-    if (highest) {
-        TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Selected highest priority thread %d (priority %d, policy %d)",
-                    highest->tid, highest->priority, highest->policy);
-        return highest;
+        t = t->next_ready;
     }
     
-    if (first_valid) {
-        TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): Selected first valid thread %d as fallback",
-                    first_valid->tid);
-        return first_valid;
+    // Find highest priority thread
+    unsigned char highest_pri = 0;
+    
+    // Check RT bitmap first
+    if (rt_bitmap) {
+        highest_pri = find_highest_priority_bit(rt_bitmap);
+        
+        // Find first thread with this priority
+        t = p->ready_queue;
+        while (t) {
+            if (t->magic == CTXT_MAGIC && 
+                !(t->state & THREAD_STATE_EXITED) &&
+                (t->policy == SCHED_FIFO || t->policy == SCHED_RR) &&
+                (t->priority & 7) == highest_pri) {
+                return t;
+            }
+            t = t->next_ready;
+        }
     }
     
-    TRACE_THREAD("THREAD_SCHED (get_highest_priority_thread): No valid thread found in ready queue");
+    // Check normal bitmap
+    if (normal_bitmap) {
+        highest_pri = find_highest_priority_bit(normal_bitmap);
+        
+        // Find first thread with this priority
+        t = p->ready_queue;
+        while (t) {
+            if (t->magic == CTXT_MAGIC && 
+                !(t->state & THREAD_STATE_EXITED) &&
+                t->policy == SCHED_OTHER &&
+                (t->priority & 7) == highest_pri) {
+                return t;
+            }
+            t = t->next_ready;
+        }
+    }
+    
     return NULL;
 }
 

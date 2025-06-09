@@ -247,3 +247,61 @@ int is_in_ready_queue(struct thread *t) {
     }
     return 0;
 }
+
+/**
+ * Find the highest priority thread in a wait queue using bitmap optimization
+ * 
+ * @param queue The wait queue to search
+ * @param prev_highest Pointer to store the previous thread of the highest priority thread
+ * @return The highest priority thread, or NULL if none found
+ */
+struct thread *find_highest_priority_thread_in_queue(struct thread *queue, struct thread **prev_highest) {
+    if (!queue) {
+        return NULL;
+    }
+    
+    // Create priority bitmap
+    unsigned char wait_bitmap = 0;
+    struct thread *t = queue;
+    
+    // Build bitmap from wait queue
+    while (t) {
+        if (t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED)) {
+            // Use only lower 3 bits of priority for bitmap (0-7 range)
+            unsigned char bit = 1 << (t->priority & 7);
+            wait_bitmap |= bit;
+            TRACE_THREAD("QUEUE: Thread %d priority %d, bit 0x%02x, bitmap now 0x%02x", 
+                        t->tid, t->priority, bit, wait_bitmap);
+        }
+        t = t->next_wait;
+    }
+    
+    // Find highest priority thread
+    struct thread *highest = NULL;
+    *prev_highest = NULL;
+    struct thread *prev = NULL;
+    
+    if (wait_bitmap) {
+        int highest_pri = find_highest_priority_bit(wait_bitmap);
+        TRACE_THREAD("QUEUE: Found highest priority bit %d from bitmap 0x%02x", 
+                    highest_pri, wait_bitmap);
+        
+        // Find first thread with this priority
+        t = queue;
+        prev = NULL;
+        
+        while (t) {
+            if (t->magic == CTXT_MAGIC && 
+                !(t->state & THREAD_STATE_EXITED) &&
+                (t->priority & 7) == highest_pri) {
+                highest = t;
+                *prev_highest = prev;
+                break;
+            }
+            prev = t;
+            t = t->next_wait;
+        }
+    }
+    
+    return highest;
+}

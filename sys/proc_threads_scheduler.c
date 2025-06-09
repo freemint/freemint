@@ -6,6 +6,22 @@
 #include "proc_threads_policy.h"
 #include "proc_threads_sync.h"
 
+void reset_thread_switch_state(void);
+void thread_switch_timeout_handler(PROC *p, long arg);
+
+/* Thread scheduling helper functions */
+static int should_schedule_thread(struct thread *current, struct thread *next);
+static void thread_switch(struct thread *from, struct thread *to);
+
+/* Thread exit helper functions */
+static void cancel_thread_timeouts(struct proc *p, struct thread *t);
+static struct thread *find_next_thread_to_run(struct proc *p);
+
+/* Mutex for timer operations */
+static int timer_operation_locked = 0;
+static int thread_switch_in_progress = 0;
+static TIMEOUT *thread_switch_timeout = NULL;
+
 /* Structure to encapsulate thread switch context and reduce parameter passing */
 struct thread_switch_context {
     struct thread *from;
@@ -24,25 +40,11 @@ struct scheduling_decision {
     unsigned long decision_time;
 };
 
-void reset_thread_switch_state(void);
-void thread_switch_timeout_handler(PROC *p, long arg);
-
-static int should_schedule_thread(struct thread *current, struct thread *next);
-
-/* Thread exit helper functions */
-static void cancel_thread_timeouts(struct proc *p, struct thread *t);
-static struct thread *find_next_thread_to_run(struct proc *p);
-
-/* Mutex for timer operations */
-static int timer_operation_locked = 0;
-static int thread_switch_in_progress = 0;
-static TIMEOUT *thread_switch_timeout = NULL;
-
 /* Forward declarations for new functions */
 static void prepare_thread_switch(struct thread_switch_context *ctx);
+static void execute_thread_switch(struct thread_switch_context *ctx);
 static int prepare_scheduling_decision(struct proc *p, struct scheduling_decision *decision);
 static void execute_scheduling_decision(struct proc *p, struct scheduling_decision *decision);
-static void optimized_thread_switch(struct thread_switch_context *ctx);
 
 /**
  * Thread preemption handler
@@ -135,20 +137,9 @@ void thread_preempt_handler(PROC *p, long arg) {
                 // Rearm timer before switch
                 reschedule_preemption_timer(p, (long)next);
                 
-                // TRACE_THREAD("PREEMPT: Switching from thread %d to idle thread", curr_thread->tid);
-                // thread_switch(curr_thread, next);
-
                 TRACE_THREAD("PREEMPT: Switching from thread %d to idle thread", curr_thread->tid);
-                struct thread_switch_context ctx = {
-                    .from = curr_thread,
-                    .to = next,
-                    .process = p,
-                    .switch_time = get_system_ticks(),
-                    .to_ctx = NULL,
-                    .should_reset_boost = 0
-                };
-                optimized_thread_switch(&ctx);
-
+                thread_switch(curr_thread, next);
+                
                 spl(sr);
                 return;
             }
@@ -178,18 +169,9 @@ void thread_preempt_handler(PROC *p, long arg) {
         // Rearm timer before switch
         reschedule_preemption_timer(p, (long)next);
         
-        // TRACE_THREAD("PREEMPT: Switching from thread %d to thread %d", curr_thread->tid, next->tid);
-        // thread_switch(curr_thread, next);
         TRACE_THREAD("PREEMPT: Switching from thread %d to thread %d", curr_thread->tid, next->tid);
-        struct thread_switch_context ctx = {
-            .from = curr_thread,
-            .to = next,
-            .process = p,
-            .switch_time = get_system_ticks(),
-            .to_ctx = NULL,
-            .should_reset_boost = 0
-        };
-        optimized_thread_switch(&ctx);        
+        thread_switch(curr_thread, next);
+        
         spl(sr);
         return;
     }
@@ -660,105 +642,47 @@ static int should_schedule_thread(struct thread *current, struct thread *next) {
     return 0;
 }
 
-static void optimized_thread_switch(struct thread_switch_context *ctx) {
-    unsigned short sr;
+static void thread_switch(struct thread *from, struct thread *to) {
+    struct thread_switch_context ctx = {0};
     
-    // Validate context
-    if (!ctx || !ctx->to) {
-        TRACE_THREAD("SWITCH: Invalid switch context or destination thread");
+    // Fast validation first
+    if (!to) {
+        TRACE_THREAD("SWITCH: Invalid destination thread pointer");
         return;
     }
     
-    // Prepare thread switch outside critical section
-    prepare_thread_switch(ctx);
-    
-    // If preparation failed, abort
-    if (!ctx->to_ctx) {
-        TRACE_THREAD("SWITCH: Thread switch preparation failed");
-        return;
-    }
-    
-    // Enter critical section for minimal time
-    sr = splhigh();
-    
-    // Check if another switch is in progress
-    if (thread_switch_in_progress) {
-        TRACE_THREAD("SWITCH: Another switch in progress, aborting");
+    // Special case: if from is NULL, just switch to the destination thread
+    if (!from) {
+        TRACE_THREAD("SWITCH: Switching to thread %d (no source thread)", to->tid);
+        unsigned short sr = splhigh();
+        change_context(get_thread_context(to));
         spl(sr);
         return;
     }
     
-    // Set switch in progress and setup deadlock detection
-    thread_switch_in_progress = 1;
-    
-    if (thread_switch_timeout) {
-        canceltimeout(thread_switch_timeout);
+    if (from == to) {
+        TRACE_THREAD("SWITCH: Source and destination threads are the same");
+        return;
     }
     
-    // Setup timeout for deadlock detection
-    if (ctx->from && ctx->from->proc) {
-        thread_switch_timeout = addtimeout(ctx->from->proc, 
-                                         ((ctx->from->proc->thread_default_timeslice * MS_PER_TICK) / 20), 
-                                         thread_switch_timeout_handler);
-    }
+    // Initialize context structure
+    ctx.from = from;
+    ctx.to = to;
+    ctx.process = from->proc;
+    ctx.switch_time = get_system_ticks();
     
-    TRACE_THREAD("SWITCH: Switching threads: %d -> %d", 
-                ctx->from ? ctx->from->tid : -1, ctx->to->tid);
+    // PREPARATION PHASE - Outside critical section
+    prepare_thread_switch(&ctx);
     
-    // Reset priority boost if needed
-    if (ctx->from && ctx->should_reset_boost) {
-        reset_thread_priority(ctx->from);
-    }
-    
-    // Update thread states
-    if (ctx->from) {
-        // Only change state if not blocked on mutex/semaphore
-        if (ctx->from->wait_type == WAIT_NONE) {
-            atomic_thread_state_change(ctx->from, THREAD_STATE_READY);
-        }
-    }
-    
-    // Update destination thread state
-    atomic_thread_state_change(ctx->to, THREAD_STATE_RUNNING);
-    
-    // Update current thread pointer
-    if (ctx->from && ctx->from->proc) {
-        ctx->from->proc->current_thread = ctx->to;
-    } else if (ctx->to->proc) {
-        ctx->to->proc->current_thread = ctx->to;
-    }
-    
-    // Handle context switch based on thread state
-    if (!ctx->from) {
-        // No source thread, just switch to destination
-        reset_thread_switch_state();
+    // Execute the switch if preparation was successful
+    if (ctx.to && ctx.to_ctx) {
+        unsigned short sr = splhigh();
+        execute_thread_switch(&ctx);
         spl(sr);
-        change_context(ctx->to_ctx);
-        
-        TRACE_THREAD("SWITCH ERROR: Returned from change_context!");
     }
-    else if (ctx->from->wait_type == WAIT_SLEEP || ctx->from->wait_type == WAIT_JOIN) {
-        // Sleeping thread path - direct context switch
-        reset_thread_switch_state();
-        spl(sr);
-        change_context(ctx->to_ctx);
-        
-        TRACE_THREAD("SWITCH ERROR: Returned from change_context!");
-    } 
-    else if (save_context(&ctx->from->ctxt[CURRENT]) == 0) {
-        // Normal context switch path
-        reset_thread_switch_state();
-        spl(sr);
-        change_context(ctx->to_ctx);
-        
-        TRACE_THREAD("SWITCH ERROR: Returned from change_context!");
-    }
-    
-    // Return path after being switched back
-    reset_thread_switch_state();
-    spl(sr);
 }
 
+/* Add this new function to prepare thread switch outside critical section */
 static void prepare_thread_switch(struct thread_switch_context *ctx) {
     TRACE_THREAD("SWITCH: Preparing switch from %d to %d", 
                 ctx->from->tid, ctx->to->tid);
@@ -804,6 +728,66 @@ static void prepare_thread_switch(struct thread_switch_context *ctx) {
     }
 }
 
+/* Add this new function to execute thread switch in minimal critical section */
+static void execute_thread_switch(struct thread_switch_context *ctx) {
+    // Check if another switch is in progress
+    if (thread_switch_in_progress) {
+        TRACE_THREAD("SWITCH: Another switch in progress, aborting");
+        return;
+    }
+    
+    // Set switch in progress and setup deadlock detection
+    thread_switch_in_progress = 1;
+    
+    if (thread_switch_timeout) {
+        canceltimeout(thread_switch_timeout);
+    }
+    thread_switch_timeout = addtimeout(ctx->from->proc, 
+                                     ((ctx->from->proc->thread_default_timeslice * MS_PER_TICK) / 20), 
+                                     thread_switch_timeout_handler);
+    
+    TRACE_THREAD("SWITCH: Switching threads: %d -> %d", ctx->from->tid, ctx->to->tid);
+    
+    // Reset priority boost if needed
+    if (ctx->should_reset_boost) {
+        TRACE_THREAD("SWITCH: Resetting priority boost for thread %d (current pri: %d, original: %d)",
+                    ctx->from->tid, ctx->from->priority, ctx->from->original_priority);
+        reset_thread_priority(ctx->from);
+    } else if (ctx->from->priority_boost && ctx->from->tid != 0) {
+        TRACE_THREAD("SWITCH: Keeping priority boost for thread %d",
+                    ctx->from->tid);
+    }
+    
+    // Handle context switch based on thread state
+    if (ctx->from->wait_type == WAIT_SLEEP || ctx->from->wait_type == WAIT_JOIN) {
+        // Sleeping thread path - direct context switch
+        atomic_thread_state_change(ctx->to, THREAD_STATE_RUNNING);
+        ctx->from->proc->current_thread = ctx->to;
+        
+        reset_thread_switch_state();
+        change_context(ctx->to_ctx);
+        
+        TRACE_THREAD("SWITCH ERROR: Returned from change_context!");
+    } 
+    else if (save_context(&ctx->from->ctxt[CURRENT]) == 0) {
+        // Only change state if not blocked on mutex/semaphore
+        if (ctx->from->wait_type == WAIT_NONE) {
+            atomic_thread_state_change(ctx->from, THREAD_STATE_READY);
+        }
+        atomic_thread_state_change(ctx->to, THREAD_STATE_RUNNING);
+        ctx->from->proc->current_thread = ctx->to;
+        
+        reset_thread_switch_state();
+        change_context(ctx->to_ctx);
+        
+        TRACE_THREAD("SWITCH ERROR: Returned from change_context!");
+    }
+    
+    // Return path after being switched back
+    reset_thread_switch_state();
+}
+
+/* Add these functions to optimize proc_thread_schedule */
 static int prepare_scheduling_decision(struct proc *p, struct scheduling_decision *decision) {
     decision->current_thread = p->current_thread;
     decision->decision_time = get_system_ticks();
@@ -926,16 +910,7 @@ static void execute_scheduling_decision(struct proc *p, struct scheduling_decisi
     
     // Use the original thread_switch function for now
     // This ensures compatibility until optimized_thread_switch is fully tested
-    // thread_switch(decision->current_thread, decision->next_thread);
-    struct thread_switch_context ctx = {
-        .from = decision->current_thread,
-        .to = decision->next_thread,
-        .process = p,
-        .switch_time = get_system_ticks(),
-        .to_ctx = NULL,
-        .should_reset_boost = 0
-    };
-    optimized_thread_switch(&ctx);    
+    thread_switch(decision->current_thread, decision->next_thread);
 }
 
 

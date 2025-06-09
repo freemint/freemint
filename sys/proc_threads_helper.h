@@ -14,4 +14,8 @@ void reset_thread_priority(struct thread *t);
 
 long timeout_remaining(TIMEOUT *t);
 
+extern const unsigned char bit_table[256];
+
+int find_highest_priority_bit(unsigned char bitmap);
+
 #endif //PROC_THREADS_HELPER_H
