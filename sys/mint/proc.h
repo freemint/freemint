@@ -43,15 +43,6 @@ enum sched_policy {
     SCHED_OTHER
 };
 
-/* Signal context structure for thread signal handling */
-struct thread_sigcontext {
-    CONTEXT sigcontext;              /* Kernel context structure */
-    struct thread *sc_thread;     /* Thread being interrupted */
-    int sc_sig;                   /* Signal number */
-    void *sc_handler_arg;         /* Handler argument */
-    unsigned long sc_sigmask_save; /* Saved signal mask */
-};
-
 struct thread {
     /* Thread identification */
     short tid;                      /* Thread ID */
@@ -95,7 +86,11 @@ struct thread {
 	TIMEOUT *sleep_timeout;  		// Timeout for sleeping
     TIMEOUT *alarm_timeout;         /* Per-thread alarm timeout */
     short wait_type;                /* Type of wait (WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.) */
-    void *wait_obj;                 /* Object being waited on (mutex, condvar, etc.) */
+	void *mutex_wait_obj;
+	void *sem_wait_obj;
+	void *sig_wait_obj;
+	void *cond_wait_obj;
+	void *join_wait_obj;
     
     /* Scheduling and timing */
     unsigned long wakeup_time;      /* Wakeup time in ticks */
@@ -112,9 +107,14 @@ struct thread {
     unsigned long t_sigpending;     /* Signals pending for this thread */
     unsigned long t_sigmask;        /* Thread-specific signal mask */
     short t_sig_in_progress;        /* Signal currently being processed */
-    
-    /* Thread signal context */
-    void *t_sigctx;                 /* Saved context during signal handling */
+    CONTEXT sig_ctx;           /* Signal handler context */
+    void *sig_stack;           /* Signal handler stack */
+    ulong old_sigmask;         /* Saved signal mask during handler execution */	
+    /* Thread-specific signal handlers */
+    struct {
+        void (*handler)(int, void*);
+        void *arg;
+    } sig_handlers[32];	
 };
 
 /**
@@ -133,8 +133,9 @@ long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2);
 long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3);
 
 long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack);
-
 void proc_thread_cleanup_process(struct proc *pcurproc); /** Called in terminate function - k_exit.c */
+int proc_thread_signal_aware_raise(struct proc *p, int sig);
+void dispatch_thread_signals(struct thread *t);
 
 /* End of Threads stuff */
 

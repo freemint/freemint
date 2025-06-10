@@ -17,7 +17,14 @@
 #define MS_PER_TICK 5 // 200Hz = 5ms/tick
 #define MAX_SWITCH_RETRIES 3
 
-#define MAX_THREAD_PRIORITY 99 /* Maximum thread priority (POSIX compliant) */
+#define MAX_THREAD_PRIORITY 16 /* Maximum thread priority (scaled from POSIX 0-99 range) */
+/* 
+ * Thread priority scaling:
+ * - User-facing API accepts priorities in the standard POSIX range (0-99)
+ * - Internally, priorities are scaled to 0-16 range when set via syscalls
+ * - This allows efficient bitmap operations while maintaining POSIX compatibility
+ * - Scaling uses fast multiply-shift: (priority * 10923) >> 16 ≈ (priority * 16) / 99
+ */
 #define THREAD_CREATION_PRIORITY_BOOST 3  /* Priority boost for newly created threads */
 
 /* Default scheduling policy */
@@ -46,15 +53,16 @@
 #define THREAD_CTRL_STATUS   4   /* Get thread status */
 #define THREAD_CTRL_GETID    5	/* Get thread ID */
 
-/* Thread wait types */
-#define WAIT_NONE		0	// No wait type specified (not waiting on any resource)
-#define WAIT_SIGNAL		1	// Waiting for a signal to be delivered (e.g. SIGINT, SIGTERM)
-#define WAIT_MUTEX		2	// Waiting for a mutex (mutual exclusion) lock to be released
-#define WAIT_CONDVAR	3	// Waiting for a condition variable to be signaled
-#define WAIT_IO			4	// Waiting for I/O (input/output) operation to complete
-#define WAIT_SEMAPHORE	5	// Waiting for a semaphore to be released
-#define WAIT_SLEEP		6	// Waiting for sleep timeout
-#define WAIT_JOIN       7  /* Waiting for thread to exit */
+/* Wait types as bitfields */
+#define WAIT_NONE       0x0000  /* Not waiting */
+#define WAIT_JOIN       0x0001  /* Waiting for thread to exit */
+#define WAIT_MUTEX      0x0002  /* Waiting for mutex */
+#define WAIT_COND       0x0004  /* Waiting for condition variable */
+#define WAIT_SEMAPHORE  0x0008  /* Waiting for semaphore */
+#define WAIT_SIGNAL     0x0010  /* Waiting for signal */
+#define WAIT_IO         0x0020  /* Waiting for I/O */
+#define WAIT_SLEEP      0x0040  /* Sleeping */
+#define WAIT_OTHER      0x0080  /* Other wait reason */
 
 /* Thread scheduling system call constants */
 #define PSCHED_SETPARAM       1

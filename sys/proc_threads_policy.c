@@ -158,7 +158,10 @@ long proc_thread_set_schedparam(long tid, long policy, long priority)
             return ESRCH; // No such thread
     }
     
-    return set_thread_policy(t, (enum sched_policy)policy, (int)priority);
+    // Scale the priority from 0-99 to 0-16 range
+    int scaled_priority = scale_thread_priority((int)priority);
+    
+    return set_thread_policy(t, (enum sched_policy)policy, scaled_priority);
 }
 
 /**
@@ -366,8 +369,11 @@ long proc_thread_set_policy(enum sched_policy policy, short priority, short time
     struct thread *current = p->current_thread;
     unsigned short sr = splhigh();
     
+    // Scale the priority from 0-99 to 0-16 range
+    int scaled_priority = scale_thread_priority(priority);
+    
     // Set the policy and priority
-    int result = set_thread_policy(current, policy, priority);
+    int result = set_thread_policy(current, policy, scaled_priority);
     
     // Set timeslice if valid
     if (timeslice > 0) {

@@ -17,5 +17,7 @@ long timeout_remaining(TIMEOUT *t);
 extern const unsigned char bit_table[256];
 
 int find_highest_priority_bit(unsigned char bitmap);
+int find_highest_priority_bit_word(unsigned short bitmap);
+int scale_thread_priority(int priority);
 
 #endif //PROC_THREADS_HELPER_H

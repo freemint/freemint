@@ -1,276 +1,167 @@
-/**
- * thread_signal_test.c - Test program for FreeMiNT thread signal implementation
- * 
- * This program tests various thread signal operations including:
- * - Setting up thread-specific signal handlers
- * - Sending signals between threads
- * - Waiting for signals with timeouts
- * - Using thread alarms
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
 #include "mint_pthread.h"
 
-/* Operation codes for proc_thread_signal */
-#define PTSIG_SETMASK        1  /* Set thread signal mask */
-#define PTSIG_GETMASK        2  /* Get thread signal mask (handler=0) */
-#define PTSIG_MODE           3  /* Set thread signal mode (enable/disable) */
-#define PTSIG_KILL           4  /* Send signal to thread */
-#define PTSIG_WAIT           5  /* Wait for signals */
-#define PTSIG_BLOCK          6  /* Block signals (add to mask) */
-#define PTSIG_UNBLOCK        7  /* Unblock signals (remove from mask) */
-#define PTSIG_PAUSE          8  /* Pause with specified mask */
-#define PTSIG_ALARM          9  /* Set thread alarm */
-#define PTSIG_PENDING       11  /* Get pending signals */
-#define PTSIG_HANDLER       12  /* Register thread signal handler */
-#define PTSIG_HANDLER_ARG   14  /* Set argument for thread signal handler */
-#define PTSIG_ALARM_THREAD  16  /* Set alarm for specific thread */
+// Global variables
+volatile int signal_count = 0;
+pthread_mutex_t count_mutex;
 
-#define NUM_THREADS 3
-#define TEST_SIGNAL SIGUSR1  // Usually signal 10
-#define TEST_SIGNAL2 SIGUSR2 // Usually signal 12
-
-/* Global variables */
-pthread_t threads[NUM_THREADS];
-volatile int signal_received[NUM_THREADS] = {0};
-volatile int test_complete = 0;
-
-/* Thread-specific signal handler */
-void signal_handler(int sig, void *arg)
-{
-    long thread_id = (long)arg;
-    printf("Thread %ld received signal %d\n", thread_id, sig);
-    signal_received[thread_id] = sig;
+// Signal handler for thread-specific signals
+void thread_signal_handler(int sig, void *arg) {
+    int thread_num = *(int*)arg;
+    printf("Thread %ld (arg=%d) received signal %d\n", pthread_self(), thread_num, sig);
+    
+    pthread_mutex_lock(&count_mutex);
+    signal_count++;
+    pthread_mutex_unlock(&count_mutex);
+    
+    // Sleep briefly to test signal stack handling
+    pthread_sleep_ms(100);
 }
 
-/* Thread function that waits for signals */
-void *signal_wait_thread(void *arg)
-{
-    long thread_id = (long)arg;
-    int sig;
+// Process signal handler
+void process_signal_handler(int sig) {
+    printf("Process received signal %d in thread %ld\n", sig, pthread_self());
     
-    printf("Thread %ld starting, waiting for signals\n", thread_id);
+    pthread_mutex_lock(&count_mutex);
+    signal_count++;
+    pthread_mutex_unlock(&count_mutex);
+}
+
+// Thread function
+void *thread_func(void *arg) {
+    int thread_num = *(int*)arg;
+    int local_arg = thread_num;  // Create a local copy for the signal handler
     
-    /* Enable thread-specific signal handling */
-    proc_thread_signal(PTSIG_MODE, 1, 0);
+    printf("Thread %d (id=%ld) started\n", thread_num, pthread_self());
     
-    /* Register thread-specific signal handlers */
-    proc_thread_signal(PTSIG_HANDLER, TEST_SIGNAL, (long)signal_handler);
-    proc_thread_signal(PTSIG_HANDLER_ARG, TEST_SIGNAL, thread_id);
+    // Register thread-specific signal handlers
+    proc_thread_signal(PTSIG_HANDLER, SIGUSR1, (long)thread_signal_handler);
+    proc_thread_signal(PTSIG_HANDLER_ARG, SIGUSR1, (long)&local_arg);
     
-    proc_thread_signal(PTSIG_HANDLER, TEST_SIGNAL2, (long)signal_handler);
-    proc_thread_signal(PTSIG_HANDLER_ARG, TEST_SIGNAL2, thread_id);
+    // Also register for SIGUSR2
+    proc_thread_signal(PTSIG_HANDLER, SIGUSR2, (long)thread_signal_handler);
+    proc_thread_signal(PTSIG_HANDLER_ARG, SIGUSR2, (long)&local_arg);
     
-    /* Wait for signals with timeout */
-    while (!test_complete) {
-        /* Create signal mask for SIGUSR1 and SIGUSR2 */
-        unsigned long mask = (1UL << TEST_SIGNAL) | (1UL << TEST_SIGNAL2);
-        
-        /* Wait for signal with 1 second timeout */
-        sig = proc_thread_signal(PTSIG_WAIT, mask, 1000);
-        
-        if (sig > 0) {
-            printf("Thread %ld woke up due to signal %d\n", thread_id, sig);
-        } else if (sig == 0) {
-            printf("Thread %ld woke up due to timeout\n", thread_id);
-        }
-        
-        /* Sleep a bit to avoid busy waiting */
-        proc_thread_sleep(100);
-        
+    // Wait for signals using sigwait
+    printf("Thread %d waiting for signals\n", thread_num);
+    
+    // Create a signal mask for SIGUSR1 and SIGUSR2
+    unsigned long mask = (1UL << SIGUSR1) | (1UL << SIGUSR2);
+    
+    // Wait for signals with timeout
+    int sig = proc_thread_signal(PTSIG_WAIT, mask, 5000);  // 5 second timeout
+    
+    if (sig > 0) {
+        printf("Thread %d woke up due to signal %d\n", thread_num, sig);
+    } else if (sig == 0) {
+        printf("Thread %d timed out waiting for signals\n", thread_num);
+    } else {
+        printf("Thread %d sigwait error: %d\n", thread_num, sig);
     }
     
-    printf("Thread %ld exiting\n", thread_id);
+    printf("Thread %d exiting\n", thread_num);
     return NULL;
 }
 
-/* Thread function that sends signals */
-/* Thread function that sends signals */
-void *signal_send_thread(void *arg)
-{
-    long thread_id = (long)arg;
-    int i;
+int main() {
+    pthread_t thread1, thread2, thread3;
+    int t1_arg = 1, t2_arg = 2, t3_arg = 3;
+    void *retval;
     
-    printf("Signal sender thread %ld starting\n", thread_id);
+    // Initialize mutex
+    pthread_mutex_init(&count_mutex, NULL);
     
-    /* Wait a bit for other threads to initialize */
-    proc_thread_sleep(500);
+    printf("Main: Testing thread signal handling\n");
     
-    /* Send signals to other threads */
-    for (i = 0; i < 5; i++) {
-        /* Send signal to thread 0 */
-        printf("Thread %ld sending signal %d to thread %d\n", 
-               thread_id, SIGUSR1, 0);
-        
-        // /* Use the thread ID directly */
-        // proc_thread_signal(SIGUSR1, 0, 0);
-        /* Use PTSIG_KILL to send a signal to a specific thread */
-        proc_thread_signal(PTSIG_KILL, 0, SIGUSR1);
-
-        /* Wait a bit */
-        proc_thread_sleep(200);
-        
-        /* Send another signal */
-        printf("Thread %ld sending signal %d to thread %d\n", 
-               thread_id, SIGUSR2, 0);
-        
-        // proc_thread_signal(SIGUSR2, 0, 0);
-        proc_thread_signal(PTSIG_KILL, 0, SIGUSR2);
-        
-        /* Wait a bit */
-        proc_thread_sleep(200);
-    }
+    // Register process signal handler
+    signal(SIGINT, process_signal_handler);
     
-    printf("Signal sender thread %ld exiting\n", thread_id);
-    return NULL;
-}
-
-int main(void)
-{
-    int i, rc;
-    void *result;
+    // Enable thread-specific signals
+    proc_thread_signal(PTSIG_MODE, 1, 0);  // 1 = enable
     
-    printf("Thread signal test program starting\n");
-    
-    /* Create threads */
-    for (i = 0; i < NUM_THREADS - 1; i++) {
-        /* Signal receiver threads */
-        rc = pthread_create(&threads[i], NULL, signal_wait_thread, (void *)(long)i);
-        
-        if (rc != 0) {
-            printf("ERROR: pthread_create failed with code %d\n", rc);
-            return 1;
-        }
-    }
-    
-    /* Create signal sender thread */
-    rc = pthread_create(&threads[NUM_THREADS-1], NULL, signal_send_thread, 
-                       (void *)(long)(NUM_THREADS-1));
-    
-    if (rc != 0) {
-        printf("ERROR: pthread_create failed with code %d\n", rc);
+    // Create three threads
+    if (pthread_create(&thread1, NULL, thread_func, &t1_arg) != 0) {
+        perror("Failed to create thread 1");
         return 1;
     }
     
-    /* Let the test run for a while */
-    sleep(15);
-    // usleep(8000000);
-    
-    /* Signal test completion */
-    test_complete = 1;
-    
-    /* Wait for threads to complete */
-    for (i = 0; i < NUM_THREADS; i++) {
-        printf("Joining thread %d\n", i);
-        pthread_join(threads[i], &result);
+    if (pthread_create(&thread2, NULL, thread_func, &t2_arg) != 0) {
+        perror("Failed to create thread 2");
+        return 1;
     }
     
-    /* Check results */
-    printf("\nTest results:\n");
-    for (i = 0; i < NUM_THREADS - 1; i++) {
-        printf("Thread %d received signal: %d\n", i, signal_received[i]);
+    if (pthread_create(&thread3, NULL, thread_func, &t3_arg) != 0) {
+        perror("Failed to create thread 3");
+        return 1;
     }
     
-    printf("\nAll tests completed!\n");
+    printf("Main: Threads created (tid1=%ld, tid2=%ld, tid3=%ld)\n", 
+           thread1, thread2, thread3);
+    
+    // Give threads time to initialize
+    // sleep(1);
+    
+    // Send signals to specific threads
+    printf("Main: Sending SIGUSR1 to thread 1\n");
+    proc_thread_signal(PTSIG_KILL, thread1, SIGUSR1);
+    
+    // sleep(1);
+    
+    printf("Main: Sending SIGUSR2 to thread 2\n");
+    proc_thread_signal(PTSIG_KILL, thread2, SIGUSR2);
+    
+    // sleep(1);
+    
+    // Send a process signal
+    printf("Main: Sending SIGINT to process\n");
+    raise(SIGINT);
+    
+    // sleep(1);
+    
+    // Send multiple signals to test handling
+    printf("Main: Sending multiple signals to thread 3\n");
+    proc_thread_signal(PTSIG_KILL, thread3, SIGUSR1);
+    proc_thread_signal(PTSIG_KILL, thread3, SIGUSR2);
+    
+    // Wait for threads to finish
+    printf("Main: Waiting for threads to finish\n");
+    pthread_join(thread1, &retval);
+    pthread_join(thread2, &retval);
+    pthread_join(thread3, &retval);
+    
+    // Clean up
+    pthread_mutex_destroy(&count_mutex);
+    
+    printf("Main: All threads finished, received %d signals\n", signal_count);
     return 0;
 }
 
 /*
-This test program:
 
-1. Creates multiple threads - some that wait for signals and one that sends signals
-2. Registers thread-specific signal handlers for SIGUSR1 and SIGUSR2
-3. Tests sending signals between threads
-4. Tests waiting for signals with timeouts
-5. Tests checking for pending signals
-6. Tests the thread alarm functionality
-
-
-The program demonstrates all the major functionality of the thread signal system, including:
-- Setting up thread-specific signal handlers with PTSIG_HANDLER
-- Setting handler arguments with PTSIG_HANDLER_ARG
-- Waiting for signals with PTSIG_WAIT
-- Checking pending signals with PTSIG_PENDING
-- Using thread alarms with PTSIG_ALARM
-- Sending signals directly to threads
-
-This output shows:
-
-All threads starting successfully
-- Threads 0 and 1 waiting for signals with timeouts
-- Thread 2 sending SIGUSR1 (signal 10) and SIGUSR2 (signal 12) to threads 0 and 1
-- The signal handlers executing and printing messages
-- Thread 2 setting an alarm and receiving the alarm signal (14)
-- All threads exiting cleanly
-- Final test results showing the last signals received by each thread
-
-Here's the expected output for the thread signal test program:
-
-Thread signal test program starting
-Thread 0 starting, waiting for signals
-Thread 1 starting, waiting for signals
-Signal sender thread 2 starting
-Thread 0 woke up due to timeout
-Thread 0 pending signals: 0x0
-Thread 1 woke up due to timeout
-Thread 1 pending signals: 0x0
-Thread 2 sending signal 10 to thread 0
-Thread 0 received signal 10
-Thread 0 woke up due to signal 10
-Thread 2 sending signal 12 to thread 0
-Thread 0 received signal 12
-Thread 0 woke up due to signal 12
-Thread 2 sending signal 10 to thread 1
-Thread 1 received signal 10
-Thread 1 woke up due to signal 10
-Thread 2 sending signal 12 to thread 1
-Thread 1 received signal 12
-Thread 1 woke up due to signal 12
-Thread 2 sending signal 10 to thread 0
-Thread 0 received signal 10
-Thread 0 woke up due to signal 10
-Thread 2 sending signal 12 to thread 0
-Thread 0 received signal 12
-Thread 0 woke up due to signal 12
-Thread 2 sending signal 10 to thread 1
-Thread 1 received signal 10
-Thread 1 woke up due to signal 10
-Thread 2 sending signal 12 to thread 1
-Thread 1 received signal 12
-Thread 1 woke up due to signal 12
-Thread 2 sending signal 10 to thread 0
-Thread 0 received signal 10
-Thread 0 woke up due to signal 10
-Thread 2 sending signal 12 to thread 0
-Thread 0 received signal 12
-Thread 0 woke up due to signal 12
-Thread 2 setting alarm for 500ms
-Thread 2 received alarm signal 14
-Thread 2 received alarm signal 14
-Thread 2 woke up due to signal 14
-Signal sender thread 2 exiting
-Thread 0 woke up due to timeout
-Thread 0 pending signals: 0x0
-Thread 1 woke up due to timeout
-Thread 1 pending signals: 0x0
-Thread 0 woke up due to timeout
-Thread 0 pending signals: 0x0
-Thread 1 woke up due to timeout
-Thread 1 pending signals: 0x0
-Joining thread 0
-Thread 0 exiting
-Joining thread 1
+[root@atari d]# ./thread_signal2
+Main: Testing thread signal handling
+Main: Threads created (tid1=1, tid2=2, tid3=3)
+Main: Sending SIGUSR1 to thread 1
+Main: Sending SIGUSR2 to thread 2
+Main: Sending SIGINT to process
+Process received signal 2 in thread 0
+Thread 1 (id=1) started
+Thread 1 waiting for signals
+Thread 1 woke up due to signal 29
 Thread 1 exiting
-Joining thread 2
-
-Test results:
-Thread 0 received signal: 12
-Thread 1 received signal: 12
-
-All tests completed!
-
+Thread 2 (id=2) started
+Thread 2 waiting for signals
+Thread 2 woke up due to signal 30
+Thread 2 exiting
+Thread 3 (id=3) started
+Thread 3 waiting for signals
+Main: Sending multiple signals to thread 3
+Main: Waiting for threads to finish
+Thread 3 woke up due to signal 30
+Thread 3 exiting
+Main: All threads finished, received 1 signals
 
 */

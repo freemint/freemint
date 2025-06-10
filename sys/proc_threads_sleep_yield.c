@@ -40,7 +40,7 @@ int wake_threads_by_time(struct proc *p, unsigned long current_time) {
 
             // Boost priority and prepare for ready queue
             boost_thread_priority(sleep_t, 5); // Boost by 5 levels
-            sleep_t->wait_type = WAIT_NONE;
+            sleep_t->wait_type &= ~WAIT_SLEEP;
             sleep_t->wakeup_time = 0; // Clear wake-up time
             
             // Update thread state and add to ready queue
@@ -115,14 +115,14 @@ void proc_thread_sleep_wakeup_handler(PROC *p, long arg) {
     unsigned short sr = splhigh();
     
     // Only wake up if still sleeping
-    if ((t->state & THREAD_STATE_BLOCKED) && t->wait_type == WAIT_SLEEP) {
+    if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type & WAIT_SLEEP)) {
         TRACE_THREAD("SLEEP_WAKEUP: Direct wakeup for thread %d", t->tid);
 
         // Boost priority
         boost_thread_priority(t, 5);  // Boost by 5 levels
         
         // Wake up thread
-        t->wait_type = WAIT_NONE;
+        t->wait_type &= ~WAIT_SLEEP;
         t->wakeup_time = 0;  // Clear wake-up time
         remove_from_sleep_queue(p, t);
         atomic_thread_state_change(t, THREAD_STATE_READY);
@@ -205,7 +205,7 @@ long proc_thread_sleep(long ms) {
         TRACE_THREAD_SLEEP(t, ms, ticks, t->wakeup_time);
         
         atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
-        t->wait_type = WAIT_SLEEP;  // Set wait type
+        t->wait_type |= WAIT_SLEEP;  // Set wait type
         remove_from_ready_queue(t);
         
         // Schedule another thread
@@ -225,7 +225,7 @@ long proc_thread_sleep(long ms) {
             TRACE_THREAD("SLEEP: Thread %d woke up late by %lu ms",
                         t->tid, (current_time - t->wakeup_time) * MS_PER_TICK);
         }
-        t->wait_type = WAIT_NONE;
+        t->wait_type &= ~WAIT_SLEEP;
         t->wakeup_time = 0; // Clear wake-up time
         
         // Ensure we're in the RUNNING state

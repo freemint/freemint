@@ -5,6 +5,7 @@
 #include "proc_threads_sleep_yield.h"
 #include "proc_threads_policy.h"
 #include "proc_threads_sync.h"
+#include "proc_threads_signal.h"
 
 void reset_thread_switch_state(void);
 void thread_switch_timeout_handler(PROC *p, long arg);
@@ -233,10 +234,10 @@ void handle_thread_joining(struct thread *current, void *retval) {
                 current->tid, joiner->tid);
     
     // If joiner is waiting for this thread
-    if (joiner->wait_type == WAIT_JOIN && joiner->wait_obj == current) {
+    if ((joiner->wait_type & WAIT_JOIN) && joiner->join_wait_obj == current) {
         // Wake up the joining thread
-        joiner->wait_type = WAIT_NONE;
-        joiner->wait_obj = NULL;
+        joiner->wait_type &= ~WAIT_JOIN;
+        joiner->join_wait_obj = NULL;
         
         // Store return value directly in joiner's requested location
         if (joiner->join_retval) {
@@ -330,7 +331,7 @@ static struct thread *find_next_thread_to_run(struct proc *p) {
             if (t->tid == 0 && 
                 t->magic == CTXT_MAGIC && 
                 !(t->state & THREAD_STATE_EXITED) &&
-                !(t->wait_type == WAIT_JOIN)) {
+                !(t->wait_type & WAIT_JOIN)) {
                 next_thread = t;
                 TRACE_THREAD("EXIT: Found thread0 at %p, state=%d, wait_type=%d", 
                             next_thread, next_thread->state, next_thread->wait_type);
@@ -353,6 +354,23 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
     if (!p || !t || t->magic != CTXT_MAGIC) {
         return;
     }
+
+    /* Clean up signal stack */
+    cleanup_signal_stack(p, (long)t);
+
+    /* Clean up thread signal resources */
+    cleanup_thread_signals(t);
+
+    if (t->alarm_timeout) {
+        canceltimeout(t->alarm_timeout);
+        t->alarm_timeout = NULL;
+        TRACE_THREAD("EXIT: Cancelled alarm timeout for thread %d", tid);
+    }
+    
+    // Clear thread signal state
+    t->t_sigpending = 0;
+    THREAD_SIGMASK_SET(t, 0);
+    t->t_sig_in_progress = 0;
     
     int should_free = t->detached || t->joined;
     
@@ -374,11 +392,6 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
     
     // Free resources if detached or joined
     if (should_free) {
-        if (t->t_sigctx) {
-            kfree(t->t_sigctx);
-            TRACE_THREAD("EXIT: Freed signal context for thread %d", tid);
-            t->t_sigctx = NULL;
-        }
         
         if (t->stack && tid != 0) {
             kfree(t->stack);
@@ -423,7 +436,18 @@ void proc_thread_exit(void *retval) {
         TRACE_THREAD("EXIT ERROR: No current thread");
         return;
     }
-    
+
+    // Check for pending signals before exiting
+    if (current->t_sigpending) {
+        int sig = check_thread_signals(current);
+        if (sig && current->sig_handlers[sig].handler) {
+            TRACE_THREAD("EXIT: Thread %d has pending signals, clearing them before exit", 
+                        current->tid);
+                        current->t_sigpending = 0;  // Just clear pending signals without handling them
+            return;
+        }
+    }
+
     static int thread_exit_in_progress = 0;
     static int exit_owner_tid = -1;
     unsigned short sr = splhigh();
@@ -758,8 +782,17 @@ static void execute_thread_switch(struct thread_switch_context *ctx) {
                     ctx->from->tid);
     }
     
+    /* Check for pending signals in the thread we're switching to */
+    if (ctx->to->proc->p_sigacts && ctx->to->proc->p_sigacts->thread_signals) {
+        /* Skip thread0 - it handles process signals */
+        /* Also skip threads that haven't run yet (last_scheduled == 0) */
+        if (ctx->to->tid > 0 && ctx->to->last_scheduled > 0) {
+            dispatch_thread_signals(ctx->to);
+        }
+    }
+    
     // Handle context switch based on thread state
-    if (ctx->from->wait_type == WAIT_SLEEP || ctx->from->wait_type == WAIT_JOIN) {
+    if ((ctx->from->wait_type & WAIT_SLEEP) || (ctx->from->wait_type & WAIT_JOIN)) {
         // Sleeping thread path - direct context switch
         atomic_thread_state_change(ctx->to, THREAD_STATE_RUNNING);
         ctx->from->proc->current_thread = ctx->to;
@@ -769,7 +802,7 @@ static void execute_thread_switch(struct thread_switch_context *ctx) {
         
         TRACE_THREAD("SWITCH ERROR: Returned from change_context!");
     } 
-    else if (save_context(&ctx->from->ctxt[CURRENT]) == 0) {
+    else if (save_context(get_thread_context(ctx->from)) == 0) {
         // Only change state if not blocked on mutex/semaphore
         if (ctx->from->wait_type == WAIT_NONE) {
             atomic_thread_state_change(ctx->from, THREAD_STATE_READY);
@@ -879,9 +912,9 @@ static void execute_scheduling_decision(struct proc *p, struct scheduling_decisi
                 atomic_thread_state_change(decision->current_thread, THREAD_STATE_BLOCKED);
                 
                 // Priority inheritance for mutexes
-                if (decision->current_thread->wait_type == WAIT_MUTEX && 
-                    decision->current_thread->wait_obj) {
-                    struct mutex *m = (struct mutex*)decision->current_thread->wait_obj;
+                if ((decision->current_thread->wait_type & WAIT_MUTEX) && 
+                    decision->current_thread->mutex_wait_obj) {
+                    struct mutex *m = (struct mutex*)decision->current_thread->mutex_wait_obj;
                     if (m->owner && m->owner->priority < decision->current_thread->priority) {
                         boost_thread_priority(m->owner, 
                                             decision->current_thread->priority - m->owner->priority);

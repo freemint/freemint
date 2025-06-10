@@ -145,8 +145,8 @@ long proc_thread_join(long tid, void **retval)
         cleanup_thread_resources(p, target, tid);
         
         // Clear any wait state on the current thread
-        current->wait_type = WAIT_NONE;
-        current->wait_obj = NULL;
+        current->wait_type &= ~WAIT_JOIN;
+        current->join_wait_obj = NULL;
         current->join_retval = NULL;
         
         spl(sr);
@@ -157,8 +157,8 @@ long proc_thread_join(long tid, void **retval)
     target->joiner = current;
 
     // Mark current thread as waiting for join
-    current->wait_type = WAIT_JOIN;
-    current->wait_obj = target;
+    current->wait_type |= WAIT_JOIN;
+    current->join_wait_obj = target;
     current->join_retval = retval;  // Store the pointer where to put the return value
 TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit, join_retval=%p",
             current->tid, target->tid, retval);
@@ -189,7 +189,7 @@ TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit, join_retval=%p",
     }
 
     // Check if we're still waiting for the target thread
-    if (current->wait_type == WAIT_JOIN && current->wait_obj == target) {
+    if ((current->wait_type & WAIT_JOIN) && current->join_wait_obj == target) {
         // Check if target has exited
         if (!(target->state & THREAD_STATE_EXITED)) {
             TRACE_THREAD("JOIN: Thread %d woken up but target thread %ld hasn't exited yet", 
@@ -223,8 +223,8 @@ TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit, join_retval=%p",
         TRACE_THREAD("JOIN: Target thread %ld no longer exists, join successful", tid);
         
         // Clear wait state
-        current->wait_type = WAIT_NONE;
-        current->wait_obj = NULL;
+        current->wait_type &= ~WAIT_JOIN;
+        current->join_wait_obj = NULL;
         
         spl(sr);
         return 0;
@@ -235,8 +235,8 @@ TRACE_THREAD("JOIN: Thread %d waiting for thread %d to exit, join_retval=%p",
         *retval = target->retval;
     
     // Clear wait state
-    current->wait_type = WAIT_NONE;
-    current->wait_obj = NULL;
+    current->wait_type &= ~WAIT_JOIN;
+    current->join_wait_obj = NULL;
     
     TRACE_THREAD("JOIN: Thread %d successfully joined thread %d", current->tid, tid);
     
@@ -390,8 +390,8 @@ int thread_mutex_lock(struct mutex *mutex) {
     TRACE_THREAD_MUTEX("locking", t, mutex);
     
     // Add to wait queue with priority
-    t->wait_type = WAIT_MUTEX;
-    t->wait_obj = mutex;
+    t->wait_type |= WAIT_MUTEX;
+    t->mutex_wait_obj = mutex;
     
     // Insert in priority order (higher priority first)
     struct thread **pp = &mutex->wait_queue;
@@ -486,8 +486,8 @@ int thread_mutex_unlock(struct mutex *mutex) {
             mutex->owner = highest;
             
             // Clear wait state
-            highest->wait_type = WAIT_NONE;
-            highest->wait_obj = NULL;
+            highest->wait_type &= ~WAIT_MUTEX;
+            highest->mutex_wait_obj = NULL;
             
             // Remove from sleep queue if needed
             if (highest->wakeup_time > 0) {
@@ -561,8 +561,8 @@ int thread_semaphore_down(struct semaphore *sem) {
     TRACE_THREAD("SEMAPHORE DOWN: Count=%d", sem->count);
     
     // Block thread
-    t->wait_type = WAIT_SEMAPHORE;
-    t->wait_obj = sem;
+    t->wait_type |= WAIT_SEMAPHORE;
+    t->sem_wait_obj = sem;
     
     TRACE_THREAD("SEMAPHORE DOWN: Block thread %d", t->tid);
     
@@ -579,16 +579,16 @@ int thread_semaphore_down(struct semaphore *sem) {
     proc_thread_schedule();
     // When we resume, check if we were sleeping
     sr = splhigh();
-    if (t->wait_type == WAIT_SLEEP) {
+    if (t->wait_type & WAIT_SLEEP) {
         TRACE_THREAD("SEMAPHORE DOWN: Thread %d was sleeping, clearing sleep state", t->tid);
-        t->wait_type = WAIT_NONE;
+        t->wait_type &= ~WAIT_SLEEP;
         t->wakeup_time = 0;
     }
     
-    if (t->wait_type == WAIT_SEMAPHORE) {
+    if (t->wait_type & WAIT_SEMAPHORE) {
         TRACE_THREAD("SEMAPHORE DOWN: Thread %d woke up but still waiting!", t->tid);
-        t->wait_type = WAIT_NONE;
-        t->wait_obj = NULL;
+        t->wait_type &= ~WAIT_SEMAPHORE;
+        t->sem_wait_obj = NULL;
     }
     spl(sr);
 
@@ -639,8 +639,8 @@ int thread_semaphore_up(struct semaphore *sem) {
                 highest->tid, highest->priority);
     
     // Wake up thread
-    highest->wait_type = WAIT_NONE;
-    highest->wait_obj = NULL;
+    highest->wait_type &= ~WAIT_SEMAPHORE;
+    highest->sem_wait_obj = NULL;
     
     // Remove from sleep queue if needed
     if (highest->wakeup_time > 0) {
@@ -689,8 +689,9 @@ void cleanup_thread_sync_states(struct proc *p)
                         t->tid, t->wait_type);
             
             // Clear wait state
-            t->wait_type = WAIT_NONE;
-            t->wait_obj = NULL;
+            t->wait_type &= ~WAIT_SEMAPHORE;
+            t->wait_type &= ~WAIT_MUTEX;
+            t->sem_wait_obj = NULL;
             t->next_wait = NULL;
         }
     }
@@ -706,8 +707,8 @@ void cleanup_thread_sync_states(struct proc *p)
             if (t->magic != CTXT_MAGIC) continue;
             
             // If thread is waiting on a mutex owned by a thread in the terminating process
-            if (t->wait_type == WAIT_MUTEX && t->wait_obj) {
-                struct mutex *mutex = (struct mutex *)t->wait_obj;
+            if ((t->wait_type & WAIT_MUTEX) && t->mutex_wait_obj) {
+                struct mutex *mutex = (struct mutex *)t->mutex_wait_obj;
                 
                 // If mutex owner is from terminating process
                 if (mutex->owner && mutex->owner->proc == p) {
@@ -719,8 +720,8 @@ void cleanup_thread_sync_states(struct proc *p)
                     mutex->locked = 0;
                     
                     // Unblock thread
-                    t->wait_type = WAIT_NONE;
-                    t->wait_obj = NULL;
+                    t->wait_type &= ~WAIT_MUTEX;
+                    t->mutex_wait_obj = NULL;
                     t->next_wait = NULL;
                     
                     // Wake up thread

@@ -111,13 +111,7 @@ struct sigacts
 
 	/* Thread-specific signal handling */
 	int thread_signals;             /* 1 if thread-specific signals enabled */
-	
-	/* Thread-specific signal handlers */
-	struct thread_sighandler {
-		void (*handler)(int, void*);   /* Thread signal handler function */
-		void *arg;                     /* Argument to pass to handler */
-		struct thread *owner;          /* Thread that registered this handler */
-	} thread_handlers[NSIG];	
+
 };
 
 /* helper macro */

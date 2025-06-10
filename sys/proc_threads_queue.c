@@ -188,8 +188,8 @@ void remove_thread_from_wait_queues(struct thread *t) {
     unsigned short sr = splhigh();
     
     // Remove from mutex wait queues
-    if (t->wait_type == WAIT_MUTEX && t->wait_obj) {
-        struct mutex *m = (struct mutex *)t->wait_obj;
+    if ((t->wait_type & WAIT_MUTEX) && t->mutex_wait_obj) {
+        struct mutex *m = (struct mutex *)t->mutex_wait_obj;
         struct thread **pp = &m->wait_queue;
         while (*pp) {
             if (*pp == t) {
@@ -199,10 +199,14 @@ void remove_thread_from_wait_queues(struct thread *t) {
             }
             pp = &(*pp)->next_wait;
         }
+        t->wait_type &= ~WAIT_MUTEX;
+        t->next_wait = NULL;
+        t->mutex_wait_obj = NULL;
     }
+    
     // Remove from semaphore wait queues
-    else if (t->wait_type == WAIT_SEMAPHORE && t->wait_obj) {
-        struct semaphore *sem = (struct semaphore *)t->wait_obj;
+    if ((t->wait_type & WAIT_SEMAPHORE) && t->sem_wait_obj) {
+        struct semaphore *sem = (struct semaphore *)t->sem_wait_obj;
         struct thread **pp = &sem->wait_queue;
         while (*pp) {
             if (*pp == t) {
@@ -212,9 +216,13 @@ void remove_thread_from_wait_queues(struct thread *t) {
             }
             pp = &(*pp)->next_wait;
         }
+        t->wait_type &= ~WAIT_SEMAPHORE;
+        t->next_wait = NULL;
+        t->sem_wait_obj = NULL;
     } 
+    
     // Remove from signal wait queue
-    else if (t->wait_type == WAIT_SIGNAL && t->proc) {
+    if ((t->wait_type & WAIT_SIGNAL) && t->sig_wait_obj) {
         struct thread **pp = &t->proc->signal_wait_queue;
         while (*pp) {
             if (*pp == t) {
@@ -224,13 +232,21 @@ void remove_thread_from_wait_queues(struct thread *t) {
             }
             pp = &(*pp)->next_sigwait;
         }
+        t->wait_type &= ~WAIT_SIGNAL;
+        t->next_sigwait = NULL;
+        t->sig_wait_obj = NULL;
     }
     
-    // Clear wait state
-    t->next_wait = NULL;
-    t->wait_type = WAIT_NONE;
-    t->next_sigwait = NULL;
-    t->wait_obj = NULL;
+    if ((t->wait_type & WAIT_JOIN) && t->join_wait_obj) {
+        struct thread *target = (struct thread *)t->join_wait_obj;
+        // No need to remove from a queue, just clear the joiner field if it points to this thread
+        if (target && target->joiner == t) {
+            TRACE_THREAD("Clearing joiner reference for thread %d", target->tid);
+            target->joiner = NULL;
+        }
+        t->wait_type &= ~WAIT_JOIN;
+        t->join_wait_obj = NULL;
+    }
     
     spl(sr);
 }
@@ -261,16 +277,16 @@ struct thread *find_highest_priority_thread_in_queue(struct thread *queue, struc
     }
     
     // Create priority bitmap
-    unsigned char wait_bitmap = 0;
+    unsigned short wait_bitmap = 0;
     struct thread *t = queue;
     
     // Build bitmap from wait queue
     while (t) {
         if (t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED)) {
-            // Use only lower 3 bits of priority for bitmap (0-7 range)
-            unsigned char bit = 1 << (t->priority & 7);
+            // Priority is already scaled when set
+            unsigned short bit = 1 << t->priority;
             wait_bitmap |= bit;
-            TRACE_THREAD("QUEUE: Thread %d priority %d, bit 0x%02x, bitmap now 0x%02x", 
+            TRACE_THREAD("QUEUE: Thread %d priority %d, bit 0x%04x, bitmap now 0x%04x", 
                         t->tid, t->priority, bit, wait_bitmap);
         }
         t = t->next_wait;
@@ -282,8 +298,8 @@ struct thread *find_highest_priority_thread_in_queue(struct thread *queue, struc
     struct thread *prev = NULL;
     
     if (wait_bitmap) {
-        int highest_pri = find_highest_priority_bit(wait_bitmap);
-        TRACE_THREAD("QUEUE: Found highest priority bit %d from bitmap 0x%02x", 
+        int highest_pri = find_highest_priority_bit_word(wait_bitmap);
+        TRACE_THREAD("QUEUE: Found highest priority bit %d from bitmap 0x%04x", 
                     highest_pri, wait_bitmap);
         
         // Find first thread with this priority
@@ -293,7 +309,7 @@ struct thread *find_highest_priority_thread_in_queue(struct thread *queue, struc
         while (t) {
             if (t->magic == CTXT_MAGIC && 
                 !(t->state & THREAD_STATE_EXITED) &&
-                (t->priority & 7) == highest_pri) {
+                t->priority == highest_pri) {
                 highest = t;
                 *prev_highest = prev;
                 break;

@@ -4,6 +4,7 @@
 #include "proc_threads_queue.h"
 #include "proc_threads_scheduler.h"
 #include "proc_threads_sync.h"
+#include "proc_threads_signal.h"
 
 /* Threads stuff */
 
@@ -51,8 +52,11 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
     t->proc = p;
 
     t->is_idle = 0;  // Not an idle thread
-    t->priority = p->pri;
-    t->original_priority = p->pri;
+    
+    /* Map process priority to thread priority (keep positive values) */
+    t->priority = MAX(scale_thread_priority(-p->pri), 1);
+    t->original_priority = t->priority;
+    
     t->policy = DEFAULT_SCHED_POLICY;
     t->timeslice = t->proc->thread_default_timeslice;
     t->remaining_timeslice = t->proc->thread_default_timeslice;
@@ -66,10 +70,15 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
 
     /* Initialize signal fields */
     t->t_sigpending = 0;
-    t->t_sigmask = p->p_sigmask;  /* Inherit process signal mask */
+    THREAD_SIGMASK_SET(t, p->p_sigmask);  /* Inherit process signal mask */
     t->t_sig_in_progress = 0;
-    t->t_sigctx = NULL;
-
+    t->alarm_timeout = NULL;
+    t->sig_stack = NULL;
+    t->old_sigmask = 0;
+    for (int i = 0; i < NSIG; i++) {
+        t->sig_handlers[i].handler = NULL;
+        t->sig_handlers[i].arg = NULL;
+    }
     // Allocate stack
     t->stack = kmalloc(STKSIZE);
     if (!t->stack) {
@@ -91,6 +100,12 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
     // Link into process thread list
     t->next = p->threads;
     p->threads = t;
+    
+	t->mutex_wait_obj = NULL;
+	t->sem_wait_obj = NULL;
+	t->sig_wait_obj = NULL;
+	t->cond_wait_obj = NULL;
+	t->join_wait_obj = NULL;
     t->wait_type = WAIT_NONE;  // Not waiting for anything initially
     t->sleep_reason = 0;  // No sleep reason initially
     
@@ -235,8 +250,8 @@ static void init_main_thread_context(struct proc *p) {
     t0->tid = 0;
     t0->proc = p;
     // t0->priority = p->pri;
-    t0->priority = 0;
-    t0->original_priority = 0;
+    t0->priority = 1;
+    t0->original_priority = 1;
 
     // Use process stack for thread0
     t0->stack = p->stack;
@@ -251,6 +266,24 @@ static void init_main_thread_context(struct proc *p) {
     t0->next = NULL;
 
     t0->magic = CTXT_MAGIC;
+
+    for (int i = 0; i < NSIG; i++) {
+        t0->sig_handlers[i].handler = NULL;
+        t0->sig_handlers[i].arg = NULL;
+    }
+	t0->mutex_wait_obj = NULL;
+	t0->sem_wait_obj = NULL;
+	t0->sig_wait_obj = NULL;
+	t0->cond_wait_obj = NULL;
+	t0->join_wait_obj = NULL;
+    t0->wait_type = WAIT_NONE;  // Not waiting for anything initially
+    t0->sleep_reason = 0;  // No sleep reason initially
+    
+    // Initialize join-related fields
+    t0->retval = NULL;
+    t0->joiner = NULL;
+    t0->detached = 0;  // Default is joinable
+    t0->joined = 0;
 
     p->threads = t0;
     p->current_thread = t0;
@@ -277,6 +310,12 @@ CONTEXT* get_thread_context(struct thread *t) {
         }
         TRACE_THREAD("GET_CTX Using process context for thread0");
         return &t->proc->ctxt[CURRENT];
+    }
+
+    // If thread is handling a signal, return the signal context
+    if (t->t_sig_in_progress) {
+        TRACE_THREAD("GET_CTX: Using signal context for thread %d", t->tid);
+        return &t->sig_ctx;
     }
 
     TRACE_THREAD("GET_CTX: Using current context for thread %d", t->tid);
@@ -406,8 +445,8 @@ static struct thread* create_idle_thread(struct proc *p) {
     idle->tid = -128;  // Negative tid to indicate idle thread
     // Don't increment p->num_threads for idle thread
     idle->proc = p;
-    idle->priority = -1;  // Lowest possible priority
-    idle->original_priority = -1;
+    idle->priority = 0;  // Lowest possible priority
+    idle->original_priority = 0;
     idle->is_idle = 1;      // Mark as idle thread
     idle->magic = CTXT_MAGIC;
     

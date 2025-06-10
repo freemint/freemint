@@ -25,6 +25,31 @@ inline int find_highest_priority_bit(unsigned char bitmap) {
     return bit_table[bitmap] - 1;  // Adjust to 0-7 range
 }
 
+/* Fast function to find highest priority bit in a word bitmap */
+inline int find_highest_priority_bit_word(unsigned short bitmap) {
+    if (bitmap >> 8) {
+        return find_highest_priority_bit(bitmap >> 8) + 8;
+    } else {
+        return find_highest_priority_bit(bitmap);
+    }
+}
+
+/**
+ * Scale thread priority from POSIX range (0-99) to internal bitmap range (0-16)
+ *
+ * This function is used when setting thread priorities via syscalls to convert
+ * from the standard POSIX priority range to our internal optimized range.
+ * The scaling maintains proportional relationships between priorities.
+ *
+ * @param priority The priority value in POSIX range (0-99)
+ * @return The scaled priority value in internal range (0-16)
+ */
+inline int scale_thread_priority(int priority) {
+    /* Fast multiply and shift approach using 32-bit intermediate value */
+    long temp = (long)priority * 10923L;
+    return (int)(temp >> 16);
+}
+
 /**
  * Boost a thread's priority by a specified amount
  * 
@@ -78,15 +103,15 @@ struct thread *get_highest_priority_thread(struct proc *p) {
     }
 
     // Create priority bitmaps
-    unsigned char rt_bitmap = 0;
-    unsigned char normal_bitmap = 0;
+    unsigned short rt_bitmap = 0;
+    unsigned short normal_bitmap = 0;
     
     // Build bitmaps from ready queue
     struct thread *t = p->ready_queue;
     while (t) {
         if (t->magic == CTXT_MAGIC && !(t->state & THREAD_STATE_EXITED)) {
-            // Use only lower 3 bits of priority for bitmap (0-7 range)
-            unsigned char bit = 1 << (t->priority & 7);
+            // Priority is already scaled when set
+            unsigned short bit = 1 << t->priority;
             
             if (t->policy == SCHED_FIFO || t->policy == SCHED_RR) {
                 rt_bitmap |= bit;
@@ -102,7 +127,7 @@ struct thread *get_highest_priority_thread(struct proc *p) {
     
     // Check RT bitmap first
     if (rt_bitmap) {
-        highest_pri = find_highest_priority_bit(rt_bitmap);
+        highest_pri = find_highest_priority_bit_word(rt_bitmap);
         
         // Find first thread with this priority
         t = p->ready_queue;
@@ -110,7 +135,7 @@ struct thread *get_highest_priority_thread(struct proc *p) {
             if (t->magic == CTXT_MAGIC && 
                 !(t->state & THREAD_STATE_EXITED) &&
                 (t->policy == SCHED_FIFO || t->policy == SCHED_RR) &&
-                (t->priority & 7) == highest_pri) {
+                t->priority == highest_pri) {
                 return t;
             }
             t = t->next_ready;
@@ -119,7 +144,7 @@ struct thread *get_highest_priority_thread(struct proc *p) {
     
     // Check normal bitmap
     if (normal_bitmap) {
-        highest_pri = find_highest_priority_bit(normal_bitmap);
+        highest_pri = find_highest_priority_bit_word(normal_bitmap);
         
         // Find first thread with this priority
         t = p->ready_queue;
@@ -127,7 +152,7 @@ struct thread *get_highest_priority_thread(struct proc *p) {
             if (t->magic == CTXT_MAGIC && 
                 !(t->state & THREAD_STATE_EXITED) &&
                 t->policy == SCHED_OTHER &&
-                (t->priority & 7) == highest_pri) {
+                t->priority == highest_pri) {
                 return t;
             }
             t = t->next_ready;

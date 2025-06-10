@@ -66,6 +66,7 @@ typedef enum {
     } \
 } while(0)
 
+/* Function prototypes */
 /* Enables or disables thread-specific signal handling for a process */
 long _cdecl proc_thread_signal_mode(int enable);
 /* Sends a signal to a specific thread within the current process */
@@ -83,13 +84,17 @@ long _cdecl proc_thread_signal_sighandler_arg(int sig, void *arg);
 /* Sets the alarm for the current thread */
 long _cdecl proc_thread_signal_sigalrm(struct thread *t, long ms);
 
-/* Not implemented yet */
+/* System call interfaces */
 /* Sets the signal mask for the current thread, returns previous mask */
 long _cdecl sys_p_thread_sigsetmask(ulong mask);
 /* Temporarily set signal mask and pause until a signal is received */
 long _cdecl sys_p_thread_sigpause(ulong mask);
 
-/* Thread-aware version of raise(), delivers signal to appropriate thread or process */
-int proc_thread_signal_aware_raise(struct proc *p, int sig);
-
+/* Internal functions - to be called from thread lifecycle functions */
+void init_thread_signals(struct proc *p);
+void cleanup_thread_signals(struct thread *t);
+void cleanup_signal_stack(PROC *p, long arg);
+/* Checks for pending signals in a thread, returns signal number or 0 */
+int check_thread_signals(struct thread *t);
+void handle_thread_signal(struct thread *t, int sig);
 #endif /* PROC_THREADS_SIGNAL_H */

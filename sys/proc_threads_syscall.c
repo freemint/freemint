@@ -58,7 +58,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
             
             if (!target) {
                 TRACE_THREAD("PTSIG_KILL: Thread with ID %ld not found", arg1);
-                return -ESRCH;
+                return ESRCH;
             }
             
             /* Send signal to target thread */
