@@ -8,7 +8,7 @@
 
 /* Threads stuff */
 
-static long create_thread(struct proc *p, void *(*func)(void*), void *arg);
+static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void *stack_ptr);
 static void proc_thread_start(void);
 static void init_main_thread_context(struct proc *p);
 static void init_thread_context(struct thread *t, void *(*func)(void*), void *arg);
@@ -20,10 +20,10 @@ long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack) {
     TRACE_THREAD("CREATETHREAD: func=%p arg=%p stack=%p", func, arg, stack);
 
     init_main_thread_context(curproc);
-    return create_thread(curproc, func, arg);
+    return create_thread(curproc, func, arg, stack);
 }
 
-static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
+static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void* stack_ptr) {
     unsigned short sr;
     
     // Allocate thread structure
@@ -80,7 +80,11 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
         t->sig_handlers[i].arg = NULL;
     }
     // Allocate stack
-    t->stack = kmalloc(STKSIZE);
+    if(stack_ptr != NULL){
+        t->stack = stack_ptr;
+    } else {
+        t->stack = kmalloc(STKSIZE);
+    }
     if (!t->stack) {
 		p->num_threads--;  // Revert the thread count increment
         TRACE_THREAD("KFREE: Stack allocation failed");
@@ -100,7 +104,7 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg) {
     // Link into process thread list
     t->next = p->threads;
     p->threads = t;
-    
+
 	t->mutex_wait_obj = NULL;
 	t->sem_wait_obj = NULL;
 	t->sig_wait_obj = NULL;
@@ -192,14 +196,14 @@ static void init_thread_context(struct thread *t, void *(*func)(void*), void *ar
     TRACE_THREAD("INIT CONTEXT: Initializing context for thread %d", t->tid);
     
     // Clear context
-    // memset(&t->ctxt[CURRENT], 0, sizeof(struct context));
     mint_bzero (&t->ctxt[CURRENT], sizeof(t->ctxt[CURRENT]));
-    // memset(&t->ctxt[SYSCALL], 0, sizeof(struct context));
     mint_bzero (&t->ctxt[SYSCALL], sizeof(t->ctxt[SYSCALL]));
     
+    memcpy(&t->ctxt[CURRENT], &t->proc->ctxt[CURRENT], sizeof(struct context));
+
     // Set up stack pointers - ensure proper alignment with more space
-    unsigned long ssp = ((unsigned long)t->stack_top - 128) & ~3L;
-    unsigned long usp = ((unsigned long)t->stack_top - 256) & ~3L;
+    unsigned long ssp = ((unsigned long)t->stack_top - 128) & ~MASKBITS;
+    unsigned long usp = ((unsigned long)t->stack_top - 256) & ~MASKBITS;
     
     TRACE_THREAD("Stack pointers: SSP=%lx, USP=%lx", ssp, usp);
     
@@ -228,6 +232,9 @@ static void init_thread_context(struct thread *t, void *(*func)(void*), void *ar
     
     // Copy to SYSCALL context
     memcpy(&t->ctxt[SYSCALL], &t->ctxt[CURRENT], sizeof(struct context));
+
+    memcpy(&t->ctxt[SYSCALL].crp, &t->proc->ctxt[SYSCALL].crp, sizeof(t->ctxt[SYSCALL].crp));
+    memcpy(&t->ctxt[SYSCALL].tc, &t->proc->ctxt[SYSCALL].tc, sizeof(t->ctxt[SYSCALL].tc));    
 
     TRACE_THREAD("INIT CONTEXT: Thread id. %d initialized for process %d",t->tid, t->proc->pid);
     TRACE_THREAD("Exception frame created at %p:", frame_ptr);

@@ -109,6 +109,9 @@ static void thread_signal_trampoline(int sig, void *arg)
     frame_ptr[2] = (unsigned short)((unsigned long)handler_execute >> 16);
     frame_ptr[3] = (unsigned short)((unsigned long)handler_execute);
     
+    memcpy(&t->ctxt[CURRENT].crp, &t->proc->ctxt[CURRENT].crp, sizeof(t->ctxt[CURRENT].crp));
+    memcpy(&t->ctxt[CURRENT].tc, &t->proc->ctxt[CURRENT].tc, sizeof(t->ctxt[CURRENT].tc));
+        
     /* Update SSP to point to our exception frame */
     t->sig_ctx.ssp = (unsigned long)frame_ptr;
     

@@ -91,11 +91,6 @@
 
  #define CURTHREAD \
  	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)
- 
-/* Thread safety macros */
-#define LOCK_THREAD_SIGNALS(proc)   /* Implement locking mechanism here */
-#define UNLOCK_THREAD_SIGNALS(proc) /* Implement unlocking mechanism here */
-#define ATOMIC_THREAD_SIG_OP(proc, op) /* Implement atomic operation here */
 
 long proc_thread_status(long tid);
 CONTEXT* get_thread_context(struct thread *t);

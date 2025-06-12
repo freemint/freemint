@@ -354,6 +354,7 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
     if (!p || !t || t->magic != CTXT_MAGIC) {
         return;
     }
+    TRACE_THREAD("EXIT: Cleaning up resources for thread %d", tid);
 
     /* Clean up signal stack */
     cleanup_signal_stack(p, (long)t);
@@ -372,7 +373,9 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
     THREAD_SIGMASK_SET(t, 0);
     t->t_sig_in_progress = 0;
     
-    int should_free = t->detached || t->joined;
+    int should_free = (t->detached || t->joined) && tid != 0 && !(t->joiner != NULL && t->joiner->magic == CTXT_MAGIC);
+    TRACE_THREAD("EXIT: Thread %d detached=%d, joined=%d, has_joiner=%d, should_free=%d", 
+                tid, t->detached, t->joined, (t->joiner != NULL), should_free);
     
     // Remove from thread list if detached or joined
     if (should_free) {
@@ -384,21 +387,21 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
             }
         }
     }
+    TRACE_THREAD("EXIT: Removed thread %d from thread list", tid);
     
     // Clear current_thread pointer to prevent use after free
     if (p->current_thread == t) {
         p->current_thread = NULL;
     }
+    TRACE_THREAD("EXIT: Cleared current_thread pointer for thread %d", tid);
     
-    // Free resources if detached or joined
+    // Free resources if detached or joined and no joiner
     if (should_free) {
-        
         if (t->stack && tid != 0) {
+            TRACE_THREAD("EXIT: Freeing stack for thread %d", tid);
             kfree(t->stack);
             t->stack = NULL;
         }
-        
-        TRACE_THREAD("EXIT: Freed resources for thread %d", tid);
         
         // Clear magic BEFORE freeing to prevent use after free
         t->magic = 0;
@@ -406,7 +409,7 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
         kfree(t);
         TRACE_THREAD("EXIT: KFREE thread %d", tid);
     } else {
-        TRACE_THREAD("EXIT: Thread %d not detached or joined, keeping resources", tid);
+        TRACE_THREAD("EXIT: Thread %d not detached or joined or has joiner, keeping resources", tid);
     }
 }
 
