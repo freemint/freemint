@@ -182,13 +182,26 @@ void remove_from_sleep_queue(struct proc *p, struct thread *t) {
     spl(sr);
 }
 
+/**
+ * Legacy function - now calls specific cleanup
+ * Only use this for process termination cleanup
+ */
 void remove_thread_from_wait_queues(struct thread *t) {
+    // Only use for complete cleanup (process termination)
+    remove_thread_from_specific_wait_queue(t, WAIT_MUTEX | WAIT_SEMAPHORE | WAIT_CONDVAR | WAIT_SIGNAL | WAIT_JOIN | WAIT_SLEEP);
+}
+
+/**
+ * Remove thread from specific wait queue type
+ * This is safer than removing from all queues
+ */
+void remove_thread_from_specific_wait_queue(struct thread *t, int wait_type_mask) {
     if (!t) return;
     
     unsigned short sr = splhigh();
     
-    // Remove from mutex wait queues
-    if ((t->wait_type & WAIT_MUTEX) && t->mutex_wait_obj) {
+    // Only clean up the specified wait types
+    if ((wait_type_mask & WAIT_MUTEX) && (t->wait_type & WAIT_MUTEX) && t->mutex_wait_obj) {
         struct mutex *m = (struct mutex *)t->mutex_wait_obj;
         struct thread **pp = &m->wait_queue;
         while (*pp) {
@@ -204,8 +217,7 @@ void remove_thread_from_wait_queues(struct thread *t) {
         t->mutex_wait_obj = NULL;
     }
     
-    // Remove from semaphore wait queues
-    if ((t->wait_type & WAIT_SEMAPHORE) && t->sem_wait_obj) {
+    if ((wait_type_mask & WAIT_SEMAPHORE) && (t->wait_type & WAIT_SEMAPHORE) && t->sem_wait_obj) {
         struct semaphore *sem = (struct semaphore *)t->sem_wait_obj;
         struct thread **pp = &sem->wait_queue;
         while (*pp) {
@@ -219,33 +231,59 @@ void remove_thread_from_wait_queues(struct thread *t) {
         t->wait_type &= ~WAIT_SEMAPHORE;
         t->next_wait = NULL;
         t->sem_wait_obj = NULL;
-    } 
+    }
     
-    // Remove from signal wait queue
-    if ((t->wait_type & WAIT_SIGNAL) && t->sig_wait_obj) {
-        struct thread **pp = &t->proc->signal_wait_queue;
+    if ((wait_type_mask & WAIT_CONDVAR) && (t->wait_type & WAIT_CONDVAR) && t->cond_wait_obj) {
+        struct condvar *cond = (struct condvar *)t->cond_wait_obj;
+        struct thread **pp = &cond->wait_queue;
         while (*pp) {
             if (*pp == t) {
-                TRACE_THREAD("Removing thread %d from signal wait queue", t->tid);
-                *pp = t->next_sigwait;
+                TRACE_THREAD("Removing thread %d from condvar wait queue", t->tid);
+                *pp = t->next_wait;
                 break;
             }
-            pp = &(*pp)->next_sigwait;
+            pp = &(*pp)->next_wait;
+        }
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->next_wait = NULL;
+        t->cond_wait_obj = NULL;
+    }
+
+    if ((wait_type_mask & WAIT_SIGNAL) && (t->wait_type & WAIT_SIGNAL)) {
+        // Signal wait queue is process-level and uses next_sigwait
+        if (t->proc && t->proc->signal_wait_queue) {
+            struct thread **pp = &t->proc->signal_wait_queue;
+            while (*pp) {
+                if (*pp == t) {
+                    TRACE_THREAD("Removing thread %d from signal wait queue", t->tid);
+                    *pp = t->next_sigwait;
+                    break;
+                }
+                pp = &(*pp)->next_sigwait;
+            }
         }
         t->wait_type &= ~WAIT_SIGNAL;
         t->next_sigwait = NULL;
         t->sig_wait_obj = NULL;
     }
     
-    if ((t->wait_type & WAIT_JOIN) && t->join_wait_obj) {
+    if ((wait_type_mask & WAIT_JOIN) && (t->wait_type & WAIT_JOIN) && t->join_wait_obj) {
         struct thread *target = (struct thread *)t->join_wait_obj;
-        // No need to remove from a queue, just clear the joiner field if it points to this thread
-        if (target && target->joiner == t) {
+        // Clear the bidirectional relationship
+        if (target && target->magic == CTXT_MAGIC && target->joiner == t) {
             TRACE_THREAD("Clearing joiner reference for thread %d", target->tid);
             target->joiner = NULL;
         }
         t->wait_type &= ~WAIT_JOIN;
         t->join_wait_obj = NULL;
+        t->join_retval = NULL;
+    }
+        
+    // Handle sleep queue separately if requested
+    if ((wait_type_mask & WAIT_SLEEP) && (t->wait_type & WAIT_SLEEP)) {
+        remove_from_sleep_queue(t->proc, t);
+        t->wait_type &= ~WAIT_SLEEP;
+        t->wakeup_time = 0;
     }
     
     spl(sr);

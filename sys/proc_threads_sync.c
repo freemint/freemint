@@ -4,6 +4,9 @@
 #include "proc_threads_queue.h"
 #include "proc_threads_scheduler.h"
 
+/* Timeout handler */
+static void proc_thread_condvar_timeout_handler(PROC *p, long arg);
+
 /**
  * Detach a thread - mark it as not joinable
  * 
@@ -142,7 +145,8 @@ long proc_thread_join(long tid, void **retval)
         target->joined = 1;
         
         // Free resources now
-        cleanup_thread_resources(p, target, tid);
+        // cleanup_thread_resources(p, target, tid);
+        remove_thread_from_specific_wait_queue(current, WAIT_JOIN);
         
         // Clear any wait state on the current thread
         current->wait_type &= ~WAIT_JOIN;
@@ -665,6 +669,393 @@ int thread_semaphore_up(struct semaphore *sem) {
 }
 
 /**
+ * Initialize a condition variable
+ */
+int proc_thread_condvar_init(struct condvar *cond) {
+    if (!cond) {
+        return EINVAL;
+    }
+    
+    cond->wait_queue = NULL;
+    cond->associated_mutex = NULL;
+    cond->magic = CONDVAR_MAGIC;
+    cond->destroyed = 0;
+    cond->timeout_ms = 0;
+    
+    TRACE_THREAD("CONDVAR INIT: condvar=%p", cond);
+    return THREAD_SUCCESS;
+}
+
+/**
+ * Destroy a condition variable
+ */
+int proc_thread_condvar_destroy(struct condvar *cond) {
+    if (!cond || cond->magic != CONDVAR_MAGIC) {
+        return EINVAL;
+    }
+    
+    unsigned short sr = splhigh();
+    
+    // Check if any threads are waiting
+    if (cond->wait_queue) {
+        spl(sr);
+        TRACE_THREAD("CONDVAR DESTROY: threads still waiting on condvar=%p", cond);
+        return EBUSY;
+    }
+    
+    cond->magic = 0;
+    cond->destroyed = 1;
+    
+    spl(sr);
+    TRACE_THREAD("CONDVAR DESTROY: condvar=%p destroyed", cond);
+    return THREAD_SUCCESS;
+}
+
+/**
+ * Wait on a condition variable
+ */
+int proc_thread_condvar_wait(struct condvar *cond, struct mutex *mutex) {
+    if (!cond || !mutex || cond->magic != CONDVAR_MAGIC) {
+        return EINVAL;
+    }
+
+    struct thread *t = CURTHREAD;
+    if (!t) {
+        return EINVAL;
+    }
+
+    // Prevent nested blocking
+    if (t->wait_type != WAIT_NONE) {
+        TRACE_THREAD("CONDVAR WAIT: Thread %d already blocked", t->tid);
+        return EDEADLK;
+    }
+
+    // Verify thread owns the mutex
+    if (mutex->owner != t) {
+        TRACE_THREAD("CONDVAR WAIT: Thread %d doesn't own mutex", t->tid);
+        return EINVAL;
+    }
+
+    unsigned short sr = splhigh();
+    
+    // Associate mutex with condvar if not already associated
+    if (!cond->associated_mutex) {
+        cond->associated_mutex = mutex;
+    } else if (cond->associated_mutex != mutex) {
+        spl(sr);
+        TRACE_THREAD("CONDVAR WAIT: Different mutex used with same condvar");
+        return EINVAL;
+    }
+    
+    TRACE_THREAD("CONDVAR WAIT: Thread %d waiting on condvar=%p", t->tid, cond);
+    
+    // Add to condition variable wait queue
+    t->wait_type |= WAIT_CONDVAR;
+    t->cond_wait_obj = cond;
+    
+    // Add to wait queue (FIFO order for condition variables)
+    struct thread **tqueue = &cond->wait_queue;
+    while (*tqueue) tqueue = &(*tqueue)->next_wait;
+    *tqueue = t;
+    t->next_wait = NULL;
+    
+    atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
+    
+    spl(sr);
+    
+    // Release the mutex before blocking
+    int unlock_result = thread_mutex_unlock(mutex);
+    if (unlock_result != THREAD_SUCCESS) {
+        // Remove from wait queue if unlock failed
+        sr = splhigh();
+        struct thread **pp = &cond->wait_queue;
+        while (*pp && *pp != t) pp = &(*pp)->next_wait;
+        if (*pp) *pp = t->next_wait;
+        
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->cond_wait_obj = NULL;
+        t->next_wait = NULL;
+        atomic_thread_state_change(t, THREAD_STATE_READY);
+        spl(sr);
+        
+        return unlock_result;
+    }
+    
+    // Block until signaled
+    proc_thread_schedule();
+    
+    // When we wake up, reacquire the mutex
+    int lock_result = thread_mutex_lock(mutex);
+    
+    // Clear wait state (should already be cleared by signal/broadcast)
+    sr = splhigh();
+    if (t->wait_type & WAIT_CONDVAR) {
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->cond_wait_obj = NULL;
+    }
+    spl(sr);
+    
+    return lock_result;
+}
+
+/**
+ * Signal one thread waiting on condition variable
+ */
+int proc_thread_condvar_signal(struct condvar *cond) {
+    if (!cond || cond->magic != CONDVAR_MAGIC) {
+        return EINVAL;
+    }
+    
+    unsigned short sr = splhigh();
+    
+    // Find highest priority waiting thread (like semaphore_up does)
+    struct thread *prev_highest = NULL;
+    struct thread *highest = find_highest_priority_thread_in_queue(cond->wait_queue, &prev_highest);
+    
+    if (!highest) {
+        spl(sr);
+        TRACE_THREAD("CONDVAR SIGNAL: No threads waiting on condvar=%p", cond);
+        return THREAD_SUCCESS;
+    }
+    
+    // Remove from wait queue
+    if (prev_highest) {
+        prev_highest->next_wait = highest->next_wait;
+    } else {
+        cond->wait_queue = highest->next_wait;
+     }
+    highest->next_wait = NULL;
+
+    TRACE_THREAD("CONDVAR SIGNAL: Waking thread %d (priority %d) from condvar=%p", 
+                highest->tid, highest->priority, cond);
+    
+    // Clear wait state
+    highest->wait_type &= ~WAIT_CONDVAR;
+    highest->cond_wait_obj = NULL;
+    
+    // Remove from sleep queue if needed
+    if (highest->wakeup_time > 0) {
+        remove_from_sleep_queue(highest->proc, highest);
+        highest->wakeup_time = 0;
+    }
+    
+    // Mark as ready and add to ready queue
+    atomic_thread_state_change(highest, THREAD_STATE_READY);
+    add_to_ready_queue(highest);
+
+    spl(sr);
+    return THREAD_SUCCESS;
+}
+
+/**
+ * Broadcast to all threads waiting on condition variable
+ */
+int proc_thread_condvar_broadcast(struct condvar *cond) {
+    if (!cond || cond->magic != CONDVAR_MAGIC) {
+        return EINVAL;
+    }
+    
+    unsigned short sr = splhigh();
+    
+    struct thread *t = cond->wait_queue;
+    if (!t) {
+        spl(sr);
+        TRACE_THREAD("CONDVAR BROADCAST: No threads waiting on condvar=%p", cond);
+        return THREAD_SUCCESS; // No threads waiting, not an error
+    }
+    
+    TRACE_THREAD("CONDVAR BROADCAST: Waking all threads from condvar=%p", cond);
+    
+    // Wake up all waiting threads
+    while (t) {
+        struct thread *next = t->next_wait;
+        
+        // Clear wait state
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->cond_wait_obj = NULL;
+        t->next_wait = NULL;
+        
+        // Remove from sleep queue if needed
+        if (t->wakeup_time > 0) {
+            remove_from_sleep_queue(t->proc, t);
+            t->wakeup_time = 0;
+        }
+        
+        // Mark as ready and add to ready queue
+        atomic_thread_state_change(t, THREAD_STATE_READY);
+        add_to_ready_queue(t);
+        
+        TRACE_THREAD("CONDVAR BROADCAST: Woke thread %d", t->tid);
+        
+        t = next;
+    }
+    
+    // Clear the wait queue
+    cond->wait_queue = NULL;
+    
+    spl(sr);
+    return THREAD_SUCCESS;
+}
+
+/**
+ * Timed wait on condition variable
+ */
+int proc_thread_condvar_timedwait(struct condvar *cond, struct mutex *mutex, long timeout_ms) {
+    if (!cond || !mutex || cond->magic != CONDVAR_MAGIC || timeout_ms < 0) {
+        return EINVAL;
+    }
+
+    struct thread *t = CURTHREAD;
+    if (!t) {
+        return EINVAL;
+    }
+
+    // Prevent nested blocking
+    if (t->wait_type != WAIT_NONE) {
+        TRACE_THREAD("CONDVAR TIMEDWAIT: Thread %d already blocked", t->tid);
+        return EDEADLK;
+    }
+
+    // Verify thread owns the mutex
+    if (mutex->owner != t) {
+        TRACE_THREAD("CONDVAR TIMEDWAIT: Thread %d doesn't own mutex", t->tid);
+        return EINVAL;
+    }
+
+    unsigned short sr = splhigh();
+    
+    // Associate mutex with condvar if not already associated
+    if (!cond->associated_mutex) {
+        cond->associated_mutex = mutex;
+    } else if (cond->associated_mutex != mutex) {
+        spl(sr);
+        TRACE_THREAD("CONDVAR TIMEDWAIT: Different mutex used with same condvar");
+        return EINVAL;
+    }
+    
+    TRACE_THREAD("CONDVAR TIMEDWAIT: Thread %d waiting on condvar=%p, timeout=%ld", 
+                t->tid, cond, timeout_ms);
+    
+    // Set up timeout
+    TIMEOUT *wait_timeout = NULL;
+    if (timeout_ms > 0) {
+        wait_timeout = addtimeout(t->proc, timeout_ms, proc_thread_condvar_timeout_handler);
+        if (wait_timeout) {
+            wait_timeout->arg = (long)t;
+        }
+    }
+    
+    // Add to condition variable wait queue
+    t->wait_type |= WAIT_CONDVAR;
+    t->cond_wait_obj = cond;
+    
+    // Add to wait queue (FIFO order for condition variables)
+    struct thread **tqueue = &cond->wait_queue;
+    while (*tqueue) tqueue = &(*tqueue)->next_wait;
+    *tqueue = t;
+    t->next_wait = NULL;
+    
+    atomic_thread_state_change(t, THREAD_STATE_BLOCKED);
+    
+    spl(sr);
+    
+    // Release the mutex before blocking
+    int unlock_result = thread_mutex_unlock(mutex);
+    if (unlock_result != THREAD_SUCCESS) {
+        // Remove from wait queue if unlock failed
+        sr = splhigh();
+        if (wait_timeout) {
+            canceltimeout(wait_timeout);
+        }
+        
+        struct thread **pp = &cond->wait_queue;
+        while (*pp && *pp != t) pp = &(*pp)->next_wait;
+        if (*pp) *pp = t->next_wait;
+        
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->cond_wait_obj = NULL;
+        t->next_wait = NULL;
+        atomic_thread_state_change(t, THREAD_STATE_READY);
+        spl(sr);
+        
+        return unlock_result;
+    }
+    
+    // Block until signaled or timeout
+    proc_thread_schedule();
+    
+    // Cancel timeout if it exists
+    sr = splhigh();
+    if (wait_timeout) {
+        canceltimeout(wait_timeout);
+    }
+    
+    // Check if we timed out
+    int timed_out = (t->sleep_reason == 1);
+    
+    // Clear wait state
+    if (t->wait_type & WAIT_CONDVAR) {
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->cond_wait_obj = NULL;
+    }
+    
+    spl(sr);
+    
+    // Reacquire the mutex
+    int lock_result = thread_mutex_lock(mutex);
+    
+    // Return appropriate result
+    if (timed_out) {
+        return ETIMEDOUT;
+    }
+    
+    return lock_result;
+}
+
+/**
+ * Timeout handler for condition variable timed wait
+ */
+static void proc_thread_condvar_timeout_handler(PROC *p, long arg) {
+    struct thread *t = (struct thread *)arg;
+    
+    if (!t || t->magic != CTXT_MAGIC) {
+        TRACE_THREAD("CONDVAR TIMEOUT: Invalid thread pointer");
+        return;
+    }
+    
+    TRACE_THREAD("CONDVAR TIMEOUT: Thread %d timeout", t->tid);
+    
+    unsigned short sr = splhigh();
+    
+    if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type & WAIT_CONDVAR)) {
+        struct condvar *cond = (struct condvar *)t->cond_wait_obj;
+        
+        t->sleep_reason = 1; // Timeout
+        
+        // Remove from condition variable wait queue
+        if (cond && cond->magic == CONDVAR_MAGIC) {
+            struct thread **pp = &cond->wait_queue;
+            while (*pp && *pp != t) {
+                pp = &(*pp)->next_wait;
+            }
+            if (*pp) {
+                *pp = t->next_wait;
+            }
+        }
+        
+        t->wait_type &= ~WAIT_CONDVAR;
+        t->cond_wait_obj = NULL;
+        t->next_wait = NULL;
+        
+        // Add to ready queue
+        atomic_thread_state_change(t, THREAD_STATE_READY);
+        add_to_ready_queue(t);
+    }
+    
+    spl(sr);
+}
+
+/**
  * Clean up thread synchronization states when a process terminates
  * 
  * This function should be called from the terminate() function in k_exit.c
@@ -737,3 +1128,29 @@ void cleanup_thread_sync_states(struct proc *p)
     TRACE_THREAD("CLEANUP: Finished cleaning up thread sync states for process %d", p->pid);
 }
 
+/**
+ * Clean up condition variable states when a process terminates
+ */
+void cleanup_thread_condvar_states(struct proc *p)
+{
+    if (!p) return;
+    
+    TRACE_THREAD("CLEANUP: Cleaning up condvar states for process %d", p->pid);
+    
+    unsigned short sr = splhigh();
+    
+    // Clean up any threads waiting on condition variables
+    struct thread *t;
+    for (t = p->threads; t; t = t->next) {
+        if (t->magic == CTXT_MAGIC && (t->wait_type & WAIT_CONDVAR)) {
+            TRACE_THREAD("CLEANUP: Clearing condvar wait state for thread %d", t->tid);
+            
+            // Clear wait state
+            t->wait_type &= ~WAIT_CONDVAR;
+            t->cond_wait_obj = NULL;
+            t->next_wait = NULL;
+        }
+    }
+    
+    spl(sr);
+}

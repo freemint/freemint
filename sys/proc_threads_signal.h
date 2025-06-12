@@ -17,7 +17,8 @@ typedef enum {
     PTSIG_PENDING        = 11, /* Get pending signals */
     PTSIG_HANDLER        = 12, /* Register thread signal handler */
     PTSIG_HANDLER_ARG    = 14, /* Set argument for thread signal handler */
-    PTSIG_ALARM_THREAD   = 16  /* Set alarm for specific thread */
+    PTSIG_ALARM_THREAD   = 16,  /* Set alarm for specific thread */
+    PTSIG_BROADCAST      = 17  /* Broadcast signal to all threads */
 } ptsig_op_t;
 
 /* signal flags */
@@ -77,6 +78,8 @@ long _cdecl proc_thread_signal_sigmask(ulong mask);
 long _cdecl proc_thread_signal_sigblock(ulong mask);
 /* Waits for signals with timeout, returns signal number or 0 on timeout */
 long _cdecl proc_thread_signal_sigwait(ulong mask, long timeout);
+long _cdecl proc_thread_signal_sigwait_enhanced(ulong mask, long timeout);
+long _cdecl proc_thread_signal_broadcast(int sig);
 /* Registers a thread-specific signal handler function */
 long _cdecl proc_thread_signal_sighandler(int sig, void (*handler)(int, void*), void *arg);
 /* Registers a thread-specific signal handler function with argument */

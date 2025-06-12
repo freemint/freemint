@@ -57,7 +57,7 @@
 #define WAIT_NONE       0x0000  /* Not waiting */
 #define WAIT_JOIN       0x0001  /* Waiting for thread to exit */
 #define WAIT_MUTEX      0x0002  /* Waiting for mutex */
-#define WAIT_COND       0x0004  /* Waiting for condition variable */
+#define WAIT_CONDVAR    0x0004  /* Waiting for condition variable */
 #define WAIT_SEMAPHORE  0x0008  /* Waiting for semaphore */
 #define WAIT_SIGNAL     0x0010  /* Waiting for signal */
 #define WAIT_IO         0x0020  /* Waiting for I/O */
@@ -82,6 +82,12 @@
 #define THREAD_SYNC_TRYJOIN			9   /* Non-blocking join (new) */
 #define THREAD_SYNC_SLEEP			10  /* Sleep for a specified number of milliseconds */
 #define THREAD_SYNC_YIELD			11  /* Yield the current thread */
+#define THREAD_SYNC_COND_INIT       12
+#define THREAD_SYNC_COND_DESTROY    13
+#define THREAD_SYNC_COND_WAIT       14
+#define THREAD_SYNC_COND_TIMEDWAIT  15
+#define THREAD_SYNC_COND_SIGNAL     16
+#define THREAD_SYNC_COND_BROADCAST  17
 
  #define CURTHREAD \
  	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)

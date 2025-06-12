@@ -108,7 +108,10 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
            }            
         case PTSIG_ALARM:
             return proc_thread_signal_sigalrm(CURTHREAD, arg1);
-            
+
+        case PTSIG_BROADCAST:
+            return proc_thread_signal_broadcast(arg1);
+
         default:
             if (func > 0 && func < NSIG) {
                 /* Direct signal to thread */
@@ -197,6 +200,30 @@ long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2) {
             return proc_thread_sleep((long)arg1);
         case THREAD_SYNC_YIELD:
             return proc_thread_yield();
+        case THREAD_SYNC_COND_INIT:
+            TRACE_THREAD("THREAD_SYNC_COND_INIT");
+            return proc_thread_condvar_init((struct condvar *)arg1);
+            
+        case THREAD_SYNC_COND_DESTROY:
+            TRACE_THREAD("THREAD_SYNC_COND_DESTROY");
+            return proc_thread_condvar_destroy((struct condvar *)arg1);
+            
+        case THREAD_SYNC_COND_WAIT:
+            TRACE_THREAD("THREAD_SYNC_COND_WAIT");
+            return proc_thread_condvar_wait((struct condvar *)arg1, (struct mutex *)arg2);
+            
+        case THREAD_SYNC_COND_TIMEDWAIT:
+            TRACE_THREAD("THREAD_SYNC_COND_TIMEDWAIT");
+            return proc_thread_condvar_timedwait((struct condvar *)arg1, (struct mutex *)arg2, 
+                                          ((struct condvar *)arg1)->timeout_ms);
+            
+        case THREAD_SYNC_COND_SIGNAL:
+            TRACE_THREAD("THREAD_SYNC_COND_SIGNAL");
+            return proc_thread_condvar_signal((struct condvar *)arg1);
+            
+        case THREAD_SYNC_COND_BROADCAST:
+            TRACE_THREAD("THREAD_SYNC_COND_BROADCAST");
+            return proc_thread_condvar_broadcast((struct condvar *)arg1);            
         default:
             TRACE_THREAD("THREAD_SYNC_UNKNOWN: %d", operator);
             return EINVAL;

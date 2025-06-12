@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,12 @@ extern "C" {
 #define THREAD_SYNC_TRYJOIN 9   /* Non-blocking join (new) */
 #define THREAD_SYNC_SLEEP			10  /* Sleep for a specified number of milliseconds */
 #define THREAD_SYNC_YIELD			11  /* Yield the current thread */
+#define THREAD_SYNC_COND_INIT       12  /* Initialize condition variable */
+#define THREAD_SYNC_COND_DESTROY    13  /* Destroy condition variable */
+#define THREAD_SYNC_COND_WAIT       14  /* Wait on condition variable */
+#define THREAD_SYNC_COND_TIMEDWAIT  15  /* Timed wait on condition variable */
+#define THREAD_SYNC_COND_SIGNAL     16  /* Signal condition variable */
+#define THREAD_SYNC_COND_BROADCAST  17  /* Broadcast condition variable */
 
 /* Thread operation modes for sys_p_thread_ctrl */
 #define THREAD_CTRL_EXIT     0   /* Exit the current thread */
@@ -84,7 +91,8 @@ typedef enum {
     PTSIG_PENDING        = 11, /* Get pending signals */
     PTSIG_HANDLER        = 12, /* Register thread signal handler */
     PTSIG_HANDLER_ARG    = 14, /* Set argument for thread signal handler */
-    PTSIG_ALARM_THREAD   = 16  /* Set alarm for specific thread */
+    PTSIG_ALARM_THREAD   = 16,  /* Set alarm for specific thread */
+    PTSIG_BROADCAST      = 17  /* Broadcast signal to all threads */
 } ptsig_op_t;
 
 
@@ -93,6 +101,8 @@ typedef long pthread_t;
 
 #define PTHREAD_BARRIER_SERIAL_THREAD 1
 #define CLOCK_THREAD_CPUTIME_ID 1
+
+#define CONDVAR_MAGIC 0xC0DEC0DE
 
 /* Define sched_param structure */
 struct sched_param {
@@ -113,6 +123,13 @@ typedef struct {
 struct thread {
     long id;
     void *stack;
+};
+
+struct condvar {
+    struct thread *wait_queue;      /* Queue of threads waiting on this condvar */
+    struct mutex *associated_mutex; /* Mutex associated with this condvar */
+    unsigned long magic;            /* Magic number for validation */
+    int destroyed;                  /* Flag indicating if condvar is destroyed */
 };
 
 struct semaphore {
@@ -156,8 +173,11 @@ typedef struct {
 
 /* Condition variable */
 typedef struct {
-    pthread_mutex_t *mutex;
-    struct thread *wait_queue;
+    struct thread *wait_queue;      /* Queue of threads waiting on this condvar */
+    struct mutex *associated_mutex; /* Mutex associated with this condvar */
+    unsigned long magic;            /* Magic number for validation */
+    int destroyed;                  /* Flag indicating if condvar is destroyed */
+    long timeout_ms;                /* Timeout value in milliseconds */
 } pthread_cond_t;
 
 typedef struct {
@@ -177,7 +197,7 @@ typedef struct {
 
 #define PTHREAD_MUTEX_INITIALIZER {0, 0, NULL}
 #define PTHREAD_RWLOCK_INITIALIZER {PTHREAD_MUTEX_INITIALIZER, 0, 0, 0}
-#define PTHREAD_COND_INITIALIZER {NULL, NULL}
+#define PTHREAD_COND_INITIALIZER {NULL, NULL, CONDVAR_MAGIC, 0, 0}
 
 /* MiNT system call wrappers */
 
@@ -981,8 +1001,19 @@ static inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr
     if (!cond)
         return EINVAL;
     
-    cond->mutex = NULL;
+    /* Initialize condition variable fields */
     cond->wait_queue = NULL;
+    cond->associated_mutex = NULL;
+    cond->magic = CONDVAR_MAGIC;
+    cond->destroyed = 0;
+    cond->timeout_ms = 0;
+    
+    /* Use MiNT thread operation system call for condvar init */
+    long result = sys_p_thread_sync(THREAD_SYNC_COND_INIT, (long)cond, 0);
+    
+    if (result < 0) {
+        return -result;
+    }
     
     return 0;
 }
@@ -992,16 +1023,23 @@ static inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr
  */
 static inline int pthread_cond_destroy(pthread_cond_t *cond)
 {
-    if (!cond)
+    if (!cond || cond->magic != CONDVAR_MAGIC)
         return EINVAL;
     
+    /* Check if any threads are waiting */
     if (cond->wait_queue)
         return EBUSY;
     
-    cond->mutex = NULL;
-    cond->wait_queue = NULL;
+    /* Use MiNT thread operation system call for condvar destroy */
+    long result = sys_p_thread_sync(THREAD_SYNC_COND_DESTROY, (long)cond, 0);
     
-    return 0;
+    cond->magic = 0;
+    cond->destroyed = 1;
+    cond->wait_queue = NULL;
+    cond->associated_mutex = NULL;
+    cond->timeout_ms = 0;
+    
+    return (result < 0) ? -result : 0;
 }
 
 /**
@@ -1009,53 +1047,13 @@ static inline int pthread_cond_destroy(pthread_cond_t *cond)
  */
 static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    if (!cond || !mutex)
+    if (!cond || !mutex || cond->magic != CONDVAR_MAGIC)
         return EINVAL;
     
-    /* Store the mutex for later use */
-    cond->mutex = mutex;
+    /* Use MiNT thread operation system call for condvar wait */
+    long result = sys_p_thread_sync(THREAD_SYNC_COND_WAIT, (long)cond, (long)mutex);
     
-    /* Unlock the mutex */
-    pthread_mutex_unlock(mutex);
-    
-    /* Sleep until signaled */
-    proc_thread_sleep(0xFFFFFFFF);  // Sleep indefinitely
-    
-    /* Reacquire the mutex */
-    return pthread_mutex_lock(mutex);
-}
-
-/**
- * Wait on a condition variable with timeout
- */
-static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
-{
-    if (!cond || !mutex || !abstime)
-        return EINVAL;
-    
-    /* Calculate relative timeout in milliseconds */
-    struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-    
-    long ms = (abstime->tv_sec - now.tv_sec) * 1000;
-    ms += (abstime->tv_nsec - now.tv_nsec) / 1000000;
-    
-    if (ms <= 0)
-        return ETIMEDOUT;
-    
-    /* Store the mutex for later use */
-    cond->mutex = mutex;
-    
-    /* Unlock the mutex */
-    pthread_mutex_unlock(mutex);
-    
-    /* Sleep until signaled or timeout */
-    long result = proc_thread_sleep(ms);
-    
-    /* Reacquire the mutex */
-    pthread_mutex_lock(mutex);
-    
-    return (result == -ETIMEDOUT) ? ETIMEDOUT : 0;
+    return (result < 0) ? -result : 0;
 }
 
 /**
@@ -1063,14 +1061,13 @@ static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *
  */
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
-    if (!cond)
+    if (!cond || cond->magic != CONDVAR_MAGIC)
         return EINVAL;
     
-    /* Wake up one thread */
-    /* This is a simplified implementation - in a real implementation,
-       we would need to wake up a specific thread from the wait queue */
-    
-    return 0;
+    /* Use MiNT thread operation system call for condvar signal */
+    long result = sys_p_thread_sync(THREAD_SYNC_COND_SIGNAL, (long)cond, 0);
+
+    return (result < 0) ? -result : 0;
 }
 
 /**
@@ -1078,15 +1075,65 @@ static inline int pthread_cond_signal(pthread_cond_t *cond)
  */
 static inline int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-    if (!cond)
+    if (!cond || cond->magic != CONDVAR_MAGIC)
+        return EINVAL;
+
+    /* Use MiNT thread operation system call for condvar broadcast */
+    long result = sys_p_thread_sync(THREAD_SYNC_COND_BROADCAST, (long)cond, 0);
+
+    return (result < 0) ? -result : 0;
+}
+
+/**
+ * Wait on a condition variable with timeout
+ */
+static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
+{
+    if (!cond || !mutex || cond->magic != CONDVAR_MAGIC || !abstime)
+        return EINVAL;
+
+    /* Calculate relative timeout in milliseconds */
+    struct timespec now;
+    // clock_gettime(CLOCK_REALTIME, &now);  // Not available in MiNT
+    
+    // Simple timeout calculation - use absolute time as relative for now
+    long ms = abstime->tv_sec * 1000 + abstime->tv_nsec / 1000000;
+    
+    if (ms <= 0)
+        return ETIMEDOUT;
+    
+    /* Store timeout in the condition variable */
+    cond->timeout_ms = ms;
+    
+    /* Use MiNT thread operation system call for condvar timedwait */
+    long result = sys_p_thread_sync(THREAD_SYNC_COND_TIMEDWAIT, (long)cond, (long)mutex);
+    
+    return (result < 0) ? -result : 0;
+}
+
+/**
+ * Initialize condition variable attributes
+ */
+static inline int pthread_condattr_init(pthread_condattr_t *attr)
+{
+    if (!attr)
         return EINVAL;
     
-    /* Wake up all threads */
-    /* This is a simplified implementation - in a real implementation,
-       we would need to wake up all threads from the wait queue */
-    
+    attr->type = 0;  // Default type
     return 0;
 }
+
+/**
+ * Destroy condition variable attributes
+ */
+static inline int pthread_condattr_destroy(pthread_condattr_t *attr)
+{
+    if (!attr)
+        return EINVAL;
+        
+    // Nothing to do
+     return 0;
+ }
 
 /* Thread scheduling functions */
 
@@ -1975,6 +2022,124 @@ static inline int pthread_optimized_mutex_destroy(pthread_optimized_mutex_t *mut
         return EBUSY;
     
     return 0;
+}
+
+/**
+ * Set the signal mask for the calling thread
+ *
+ * @param how How to modify the signal mask:
+ *            SIG_BLOCK: Add signals to the mask
+ *            SIG_UNBLOCK: Remove signals from the mask
+ *            SIG_SETMASK: Set the mask to the given set
+ * @param set The signal set to modify the mask with
+ * @param oldset If non-NULL, the previous signal mask is stored here
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset)
+{
+    long old_mask = 0;
+    long new_mask = 0;
+    
+    if (!set && !oldset)
+        return EINVAL;
+    
+    /* Get current mask if oldset is provided */
+    if (oldset) {
+        old_mask = proc_thread_signal(PTSIG_GETMASK, 0, 0);
+        *oldset = old_mask;
+    }
+    
+    /* Return if we're just getting the old mask */
+    if (!set)
+        return 0;
+    
+    /* Convert sigset_t to mask */
+    new_mask = *set;
+    
+    /* Apply the new mask according to 'how' */
+    switch (how) {
+        case SIG_BLOCK:
+            return proc_thread_signal(PTSIG_BLOCK, new_mask, 0);
+        
+        case SIG_UNBLOCK:
+            return proc_thread_signal(PTSIG_UNBLOCK, new_mask, 0);
+        
+        case SIG_SETMASK:
+            return proc_thread_signal(PTSIG_SETMASK, new_mask, 0);
+        
+        default:
+            return EINVAL;
+    }
+}
+
+/**
+ * Send a signal to a specific thread
+ *
+ * @param thread The thread to send the signal to
+ * @param sig The signal to send
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_kill(pthread_t thread, int sig)
+{
+    if (thread <= 0 || sig < 0)
+        return EINVAL;
+    
+    return proc_thread_signal(PTSIG_KILL, thread, sig);
+}
+
+/**
+ * Wait for signals
+ *
+ * @param set The set of signals to wait for
+ * @param sig Pointer to store the received signal
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_sigwait(const sigset_t *set, int *sig)
+{
+    long result;
+    
+    if (!set || !sig)
+        return EINVAL;
+    
+    /* Wait for any signal in the set */
+    result = proc_thread_signal(PTSIG_WAIT, *set, -1);
+    
+    if (result > 0) {
+        *sig = result;
+        return 0;
+    }
+    
+    return -result;  /* Convert negative error code to positive */
+}
+
+/**
+ * Wait for signals with timeout
+ *
+ * @param set The set of signals to wait for
+ * @param sig Pointer to store the received signal
+ * @param timeout Maximum time to wait in milliseconds
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_sigtimedwait(const sigset_t *set, int *sig, long timeout)
+{
+    long result;
+    
+    if (!set || !sig)
+        return EINVAL;
+    
+    /* Wait for any signal in the set with timeout */
+    result = proc_thread_signal(PTSIG_WAIT, *set, timeout);
+    
+    if (result > 0) {
+        *sig = result;
+        return 0;
+    }
+    
+    return -result;  /* Convert negative error code to positive */
+}
+
+static inline int pthread_kill_all(int sig) {
+    return proc_thread_signal(PTSIG_BROADCAST, sig, 0);
 }
 
 /* Utility macros */

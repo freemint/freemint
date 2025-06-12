@@ -254,8 +254,9 @@ int proc_thread_signal_aware_raise(struct proc *p, int sig)
         
     /* Check if this process has thread-specific signal handling enabled */
     if (p->p_sigacts && p->p_sigacts->thread_signals) {
-        /* For user signals (SIGUSR1/SIGUSR2), try to deliver to threads */
-        if (IS_THREAD_USER_SIGNAL(sig)) {
+        /* Try to deliver to threads - prioritize based on signal type and waiting threads */
+        if (IS_THREAD_USER_SIGNAL(sig) || (p->p_sigacts->flags & SAS_THREADED)) {
+            TRACE_THREAD("Attempting thread-aware delivery for signal %d", sig);
             int delivered = 0;
             
             /* Try to deliver to current thread first */
@@ -263,20 +264,44 @@ int proc_thread_signal_aware_raise(struct proc *p, int sig)
                 delivered |= deliver_signal_to_thread(p, p->current_thread, sig);
             }
             
-            /* Try all other threads */
+            /* First pass: prioritize threads explicitly waiting for this signal in sigwait */
             struct thread *t;
             for (t = p->threads; t != NULL; t = t->next) {
                 /* Skip thread0 and current thread */
                 if (t->tid == 0 || t == p->current_thread)
                     continue;
+
+                /* Check if thread is explicitly waiting for this signal in sigwait */
+                if ((t->state & THREAD_STATE_BLOCKED) && 
+                    (t->wait_type & WAIT_SIGNAL) && 
+                    t->sig_wait_obj) {
+                    ulong wait_mask = (ulong)t->sig_wait_obj;
+                    if (wait_mask & (1UL << sig)) {
+                        TRACE_THREAD("Thread %d is waiting for signal %d in sigwait (mask=%lx)", 
+                                   t->tid, sig, wait_mask);
+                        if (deliver_signal_to_thread(p, t, sig)) {
+                            delivered = 1;
+                            TRACE_THREAD("Signal %d delivered to waiting thread %d", sig, t->tid);
+                            break;  /* Deliver to only one waiting thread for efficiency */
+                        }
+                    }
+                }
+            }
+            
+            /* Second pass: if no thread was specifically waiting, try other eligible threads */
+            if (!delivered) {
+                for (t = p->threads; t != NULL; t = t->next) {
+                    /* Skip thread0, current thread, and threads we already checked */
+                    if (t->tid == 0 || t == p->current_thread)
+                        continue;                    
                     
                 delivered |= deliver_signal_to_thread(p, t, sig);
             }
             
             if (delivered)
                 return 0;
+            }
         }
-
     }
     
     /* Default: deliver to process as before */
@@ -369,7 +394,13 @@ static void thread_signal_alarm_handler(PROC *p, long arg)
 
     /* Clear the thread's alarm timeout */
     t->alarm_timeout = NULL;
-    
+
+    /* Verify thread is still valid and not being destroyed */
+    if (t->state == THREAD_STATE_ZOMBIE) {
+        TRACE_THREAD("thread_signal_alarm_handler: thread %d is zombie, ignoring alarm", t->tid);
+        return;
+    }
+
     /* Deliver SIGALRM specifically to this thread */
     deliver_signal_to_thread(p, t, PTSIG_ALARM);
 }
@@ -410,12 +441,90 @@ long _cdecl proc_thread_signal_sigmask(ulong mask)
     /* Ensure we're not masking unmaskable signals */
     if (mask & UNMASKABLE) {
         TRACE_THREAD("proc_thread_signal_sigmask: attempt to mask unmaskable signals");
+        /* Remove unmaskable signals from the mask */
+        mask &= ~UNMASKABLE;
     }
+
+    /* No need to validate mask bits if NSIG is 32 and ulong is 32 bits */
+    #if 0
+    /* Create mask for valid signals 1-31 */
+    #define SIG_VALID_MASK (((1UL << (NSIG-1)) - 1) << 1)
+
+    /* Validate mask only contains valid signal bits */
+
+    if (mask & ~SIG_VALID_MASK) {
+        TRACE_THREAD("proc_thread_signal_sigmask: invalid signal bits in mask %lx", mask);
+        mask &= SIG_VALID_MASK;
+    }
+    #endif
     
     /* Directly set new mask while excluding unmaskable signals */
     THREAD_SIGMASK_SET(curproc->current_thread, mask);
     
     return old_mask;
+}
+
+/*
+ * Enhanced sigwait with better signal mask management
+ * This version temporarily adjusts the thread's signal mask to ensure
+ * proper signal delivery during the wait period
+ */
+long _cdecl proc_thread_signal_sigwait_enhanced(ulong mask, long timeout)
+{
+    int sig;
+    struct thread *t = CURTHREAD;
+    struct proc *p = curproc;
+    unsigned short sr;
+    ulong old_mask;
+    
+    if (!t || !p) {
+        TRACE_THREAD("proc_thread_sigwait_enhanced: invalid thread or process");
+        return -EINVAL;
+    }
+    
+    if (!p->p_sigacts || !p->p_sigacts->thread_signals) {
+        TRACE_THREAD("proc_thread_sigwait_enhanced: thread signals not enabled");
+        return -EINVAL;
+    }
+    
+    TRACE_THREAD("proc_thread_sigwait_enhanced: Thread %d waiting for signals in mask %lx, timeout %ld", 
+                t->tid, mask, timeout);
+    
+    /* Validate mask */
+    if (mask & UNMASKABLE) {
+        TRACE_THREAD("proc_thread_sigwait_enhanced: removing unmaskable signals from wait mask");
+        mask &= ~UNMASKABLE;
+    }
+    
+    /* Save current signal mask and temporarily unblock signals we're waiting for */
+    sr = splhigh();
+    old_mask = THREAD_SIGMASK(t);
+    
+    /* Set mask to block all signals except those we're waiting for */
+    THREAD_SIGMASK_SET(t, old_mask & ~mask);
+    spl(sr);
+    
+    /* Check for already pending signals that match our wait mask */
+    sig = check_thread_signals(t);
+    if (sig && (mask & (1UL << sig))) {
+        /* Found a pending signal we're waiting for */
+        sr = splhigh();
+        THREAD_SIGMASK_SET(t, old_mask);
+        spl(sr);
+        TRACE_THREAD("proc_thread_sigwait_enhanced: returning immediately with pending signal %d", sig);
+        return sig;
+    }
+    
+    /* Call standard sigwait with our adjusted mask */
+    sig = proc_thread_signal_sigwait(mask, timeout);
+    
+    /* Restore original signal mask */
+    sr = splhigh();
+    THREAD_SIGMASK_SET(t, old_mask);
+    spl(sr);
+    
+    TRACE_THREAD("proc_thread_sigwait_enhanced: returning with signal %d", sig);
+    return sig;
 }
 
 /*
@@ -566,7 +675,28 @@ long _cdecl proc_thread_signal_sigwait(ulong mask, long timeout)
         TRACE_THREAD("proc_thread_signal_sigwait: returning immediately with signal %d", sig);
         return sig;
     }
-        
+
+    /* Enhanced validation for wait mask */
+    if (!mask) {
+        TRACE_THREAD("proc_thread_signal_sigwait: empty wait mask");
+        return -EINVAL;
+    }
+    
+    /* Remove unmaskable signals from wait mask */
+    if (mask & UNMASKABLE) {
+        TRACE_THREAD("proc_thread_signal_sigwait: removing unmaskable signals from wait mask");
+        mask &= ~UNMASKABLE;
+        if (!mask) {
+            TRACE_THREAD("proc_thread_signal_sigwait: wait mask became empty after removing unmaskable signals");
+            return -EINVAL;
+        }
+    }
+    
+    /* Store the wait mask in wait_obj for signal routing */
+    sr = splhigh();
+    t->sig_wait_obj = (void*)mask;
+    spl(sr);
+
     /* If timeout is 0, just check and return */
     if (timeout == 0) {
         TRACE_THREAD("proc_thread_signal_sigwait: timeout is 0, returning immediately");
@@ -627,6 +757,11 @@ long _cdecl proc_thread_signal_sigwait(ulong mask, long timeout)
         canceltimeout(wait_timeout);
         wait_timeout = NULL;
     }
+
+    /* Clear wait object */
+    sr = splhigh();
+    t->sig_wait_obj = NULL;
+    spl(sr);
 
     /* Check why we woke up */
     sig = check_thread_signals(t);
@@ -730,6 +865,24 @@ void cleanup_thread_signals(struct thread *t)
             t->sig_handlers[i].arg = NULL;
         }
     }
+
+    /* Cancel any pending alarm for this thread */
+    if (t->alarm_timeout) {
+        canceltimeout(t->alarm_timeout);
+        t->alarm_timeout = NULL;
+    }
+    
+    /* Clear signal-related state */
+    t->t_sig_in_progress = 0;
+    t->t_sigpending = 0;
+    t->sig_wait_obj = NULL;
+    
+    /* Free signal stack if allocated */
+    if (t->sig_stack) {
+        kfree(t->sig_stack);
+        t->sig_stack = NULL;
+    }
+
     spl(sr);
 }
 
@@ -833,4 +986,18 @@ void cleanup_signal_stack(PROC *p, long arg)
         kfree(stack_to_free);
         TRACE_THREAD("Freed signal stack for thread %d", t->tid);
     }
+}
+
+/*
+ * Broadcast a signal to all threads in a process (except thread0)
+ * Useful for implementing process-wide notifications
+ */
+long _cdecl proc_thread_signal_broadcast(int sig)
+{
+    struct proc *p = curproc;
+    if (!p || !p->p_sigacts || !p->p_sigacts->thread_signals)
+        return -EINVAL;
+        
+    /* Use the enhanced raise function which handles broadcasting */
+    return proc_thread_signal_aware_raise(p, sig);
 }
