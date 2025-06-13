@@ -7,6 +7,7 @@
 #include "proc_threads_signal.h"
 #include "proc_threads_sleep_yield.h"
 #include "proc_threads_helper.h"
+#include "proc_threads_tsd.h"
 
 long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2) {
     switch (mode) {
@@ -253,5 +254,34 @@ long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3
             
         default:
             return -EINVAL;
+    }
+}
+
+/**
+ * System call handler for thread-specific data operations
+ * 
+ * @param op Operation code (THREAD_TSD_*)
+ * @param arg1 First argument (key or destructor)
+ * @param arg2 Second argument (value)
+ * @return Operation-specific return value
+ */
+long _cdecl sys_p_thread_tsd(long op, long arg1, long arg2) {
+    TRACE_THREAD("sys_p_thread_tsd: op=%ld, arg1=%ld, arg2=%ld", op, arg1, arg2);
+    
+    switch (op) {
+        case THREAD_TSD_CREATE_KEY:
+            return thread_key_create((void (*)(void*))arg1);
+            
+        case THREAD_TSD_DELETE_KEY:
+            return thread_key_delete(arg1);
+            
+        case THREAD_TSD_GET_SPECIFIC:
+            return (long)thread_getspecific(arg1);
+            
+        case THREAD_TSD_SET_SPECIFIC:
+            return thread_setspecific(arg1, (void*)arg2);
+            
+        default:
+            return EINVAL;
     }
 }

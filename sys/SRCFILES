@@ -70,6 +70,7 @@ COBJS = \
 	proc_threads_sleep_yield.c \
 	proc_threads_syscall.c \
 	proc_threads_debug.c \
+	proc_threads_tsd.c \
 	procfs.c \
 	profil.c \
 	ptrace.c \

@@ -26,6 +26,7 @@ extern "C" {
 #define P_THREAD_SYNC      0x18D
 #define P_THREAD_CTRL          0x18A
 #define P_THREAD_SIGNAL  0x18E
+#define P_THREAD_TSD           0x18F
 
 /* Define the PE_THREAD mode for Pexec */
 #define PE_THREAD       107
@@ -48,6 +49,12 @@ extern "C" {
 #define THREAD_SYNC_COND_TIMEDWAIT  15  /* Timed wait on condition variable */
 #define THREAD_SYNC_COND_SIGNAL     16  /* Signal condition variable */
 #define THREAD_SYNC_COND_BROADCAST  17  /* Broadcast condition variable */
+
+/* Thread-specific data operations */
+#define THREAD_TSD_CREATE_KEY    1   /* Create a new key */
+#define THREAD_TSD_DELETE_KEY    2   /* Delete a key */
+#define THREAD_TSD_GET_SPECIFIC  3   /* Get thread-specific data */
+#define THREAD_TSD_SET_SPECIFIC  4   /* Set thread-specific data */
 
 /* Thread operation modes for sys_p_thread_ctrl */
 #define THREAD_CTRL_EXIT     0   /* Exit the current thread */
@@ -125,6 +132,11 @@ struct thread {
     void *stack;
 };
 
+/**
+ * Thread-specific data key type
+ */
+typedef unsigned int pthread_key_t;
+
 struct condvar {
     struct thread *wait_queue;      /* Queue of threads waiting on this condvar */
     struct mutex *associated_mutex; /* Mutex associated with this condvar */
@@ -200,6 +212,10 @@ typedef struct {
 #define PTHREAD_COND_INITIALIZER {NULL, NULL, CONDVAR_MAGIC, 0, 0}
 
 /* MiNT system call wrappers */
+
+static inline long sys_p_thread_tsd(long op, long arg1, long arg2){
+    return trap_1_wlll(P_THREAD_TSD, (long)op, (long)arg1, (long)arg2);
+}
 
 static inline long sys_p_thread_sync(long op, long arg1, long arg2) {
     return trap_1_wlll(P_THREAD_SYNC, (long)op, (long)arg1, (long)arg2);
@@ -308,7 +324,7 @@ int pthread_tryjoin(pthread_t thread, void **retval)
             }
         }
         // pthread_yield();
-        usleep(20000); // Sleep for 20ms before checking again
+        // usleep(20000); // Sleep for 20ms before checking again
     }
 }
 
@@ -728,80 +744,6 @@ static inline int sem_getvalue(sem_t *sem, int *value)
     
     *value = sem->count;
     return 0;
-}
-
-/* Thread-specific data functions */
-
-/* Internal TSD implementation */
-#define MAX_KEYS 128
-
-static pthread_key_t next_key = 0;
-static void (*destructors[MAX_KEYS])(void*) = {NULL};
-static void *tsd_values[MAX_KEYS] = {NULL};
-
-/**
- * Create a thread-specific data key
- */
-static inline int pthread_key_create(pthread_key_t *key, void (*destructor)(void*))
-{
-    if (!key)
-        return EINVAL;
-    
-    unsigned short sr = 0;
-    asm volatile ("move.w %%sr,%0" : "=d" (sr));
-    asm volatile ("ori.w #0x0700,%%sr" : : : "memory");
-    
-    if (next_key >= MAX_KEYS) {
-        asm volatile ("move.w %0,%%sr" : : "d" (sr) : "memory");
-        return EAGAIN;
-    }
-    
-    *key = next_key++;
-    destructors[*key] = destructor;
-    
-    asm volatile ("move.w %0,%%sr" : : "d" (sr) : "memory");
-    return 0;
-}
-
-/**
- * Delete a thread-specific data key
- */
-static inline int pthread_key_delete(pthread_key_t key)
-{
-    if (key >= next_key)
-        return EINVAL;
-    
-    unsigned short sr = 0;
-    asm volatile ("move.w %%sr,%0" : "=d" (sr));
-    asm volatile ("ori.w #0x0700,%%sr" : : : "memory");
-    
-    destructors[key] = NULL;
-    
-    asm volatile ("move.w %0,%%sr" : : "d" (sr) : "memory");
-    return 0;
-}
-
-/**
- * Set thread-specific data
- */
-static inline int pthread_setspecific(pthread_key_t key, const void *value)
-{
-    if (key >= next_key)
-        return EINVAL;
-    
-    tsd_values[key] = (void*)value;
-    return 0;
-}
-
-/**
- * Get thread-specific data
- */
-static inline void *pthread_getspecific(pthread_key_t key)
-{
-    if (key >= next_key)
-        return NULL;
-    
-    return tsd_values[key];
 }
 
 /* Thread once control */
@@ -2140,6 +2082,71 @@ static inline int pthread_sigtimedwait(const sigset_t *set, int *sig, long timeo
 
 static inline int pthread_kill_all(int sig) {
     return proc_thread_signal(PTSIG_BROADCAST, sig, 0);
+}
+
+/**
+ * Create a thread-specific data key
+ * 
+ * @param key Pointer to store the created key
+ * @param destructor Function to call when thread exits with non-NULL value
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_key_create(pthread_key_t *key, void (*destructor)(void*))
+{
+    if (!key)
+        return EINVAL;
+    
+    long result = sys_p_thread_tsd( THREAD_TSD_CREATE_KEY, (long)destructor, 0);
+    
+    if (result < 0)
+        return -result;
+    
+    *key = (pthread_key_t)result;
+    return 0;
+}
+
+/**
+ * Delete a thread-specific data key
+ * 
+ * @param key The key to delete
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_key_delete(pthread_key_t key)
+{
+    long result = sys_p_thread_tsd( THREAD_TSD_DELETE_KEY, key, 0);
+    
+    if (result < 0)
+        return -result;
+    
+    return 0;
+}
+
+/**
+ * Get thread-specific data for the current thread
+ * 
+ * @param key The key to get data for
+ * @return The data value, or NULL if not set or error
+ */
+static inline void *pthread_getspecific(pthread_key_t key)
+{
+    return (void*)sys_p_thread_tsd( THREAD_TSD_GET_SPECIFIC, key, 0);
+}
+
+/**
+ * Set thread-specific data for the current thread
+ * 
+ * @param key The key to set data for
+ * @param value The value to set
+ * @return 0 on success, error code on failure
+ */
+static inline int pthread_setspecific(pthread_key_t key, const void *value)
+{
+    long result = sys_p_thread_tsd( THREAD_TSD_SET_SPECIFIC, key, (long)value);
+    
+    if (result < 0)
+        return -result;
+    
+    return 0;
 }
 
 /* Utility macros */

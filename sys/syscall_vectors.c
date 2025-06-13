@@ -531,7 +531,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x18c */		sys_enosys,		/* reserved */
 	/* 0x18d */		sys_p_thread_sync,
 	/* 0x18e */		sys_p_thread_signal,
-	/* 0x18f */		sys_enosys,		/* reserved */
+	/* 0x18f */		sys_p_thread_tsd,		/* reserved */
 
 	/* 0x190 */		/* DOS_MAX */
 };

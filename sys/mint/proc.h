@@ -43,6 +43,12 @@ enum sched_policy {
     SCHED_OTHER
 };
 
+/* Thread-specific data key structure */
+typedef struct {
+    int in_use;                      /* Flag indicating if key is in use */
+    void (*destructor)(void*);       /* Destructor function for this key */
+} thread_key_t;
+
 struct thread {
     /* Thread identification */
     short tid;                      /* Thread ID */
@@ -103,6 +109,9 @@ struct thread {
     int joined;                  /* Whether thread has been joined */
     void **join_retval;          /* Where to store return value for joiner */
     
+    /* Thread-specific data */
+    void **tsd_data;             /* Array of thread-specific data pointers */
+    
     /* Signal handling */
     unsigned long t_sigpending;     /* Signals pending for this thread */
     unsigned long t_sigmask;        /* Thread-specific signal mask */
@@ -131,11 +140,13 @@ long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2);
 long _cdecl sys_p_thread_signal(long func, long arg1, long arg2);
 long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2);
 long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3);
+long _cdecl sys_p_thread_tsd(long op, long arg1, long arg2);
 
 long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack);
 void proc_thread_cleanup_process(struct proc *pcurproc); /** Called in terminate function - k_exit.c */
 int proc_thread_signal_aware_raise(struct proc *p, int sig);
 void dispatch_thread_signals(struct thread *t);
+int init_proc_tsd(struct proc *p);
 
 /* End of Threads stuff */
 
@@ -416,6 +427,11 @@ struct proc
     unsigned short thread_rr_timeslice;        /* Round-robin timeslice in ticks */
 
 	short thread_signals_enabled;   /* Cache for quick access */
+
+    /* Thread-specific data management */
+    thread_key_t *thread_keys;    /* Process-specific thread keys */
+    int next_key;                /* Next available key index */
+	void **proc_tsd_data;         /* Process-wide thread-specific data */
 /* End of Threads stuff */
 
 };

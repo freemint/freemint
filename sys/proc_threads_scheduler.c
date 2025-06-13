@@ -6,6 +6,7 @@
 #include "proc_threads_policy.h"
 #include "proc_threads_sync.h"
 #include "proc_threads_signal.h"
+#include "proc_threads_tsd.h"
 
 void reset_thread_switch_state(void);
 void thread_switch_timeout_handler(PROC *p, long arg);
@@ -361,6 +362,9 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
 
     /* Clean up thread signal resources */
     cleanup_thread_signals(t);
+    
+    /* Clean up thread-specific data */
+    cleanup_thread_tsd(t);
 
     if (t->alarm_timeout) {
         canceltimeout(t->alarm_timeout);

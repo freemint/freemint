@@ -5,6 +5,7 @@
 #include "proc_threads_scheduler.h"
 #include "proc_threads_sync.h"
 #include "proc_threads_signal.h"
+#include "proc_threads_tsd.h"
 
 /* Threads stuff */
 
@@ -67,6 +68,10 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
         TRACE_THREAD("Applied priority boost to new thread %d: priority %d", 
                     t->tid, t->priority);        
     }
+
+    /* Initialize thread-specific data */
+    t->tsd_data = NULL;
+    init_thread_tsd(t);
 
     /* Initialize signal fields */
     t->t_sigpending = 0;
@@ -292,6 +297,9 @@ static void init_main_thread_context(struct proc *p) {
     t0->detached = 0;  // Default is joinable
     t0->joined = 0;
 
+    /* Use process TSD data for thread0 */
+    t0->tsd_data = p->proc_tsd_data;
+
     p->threads = t0;
     p->current_thread = t0;
     p->num_threads = 1;
@@ -380,7 +388,8 @@ void proc_thread_cleanup_process(struct proc *pcurproc) {
 		pcurproc->num_threads = 0;
 		pcurproc->total_threads = 0;
 
-		pcurproc->threads = NULL;        
+		pcurproc->threads = NULL;
+        cleanup_proc_tsd(pcurproc);
 	}
 }
 
