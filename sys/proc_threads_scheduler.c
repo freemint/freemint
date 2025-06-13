@@ -832,9 +832,12 @@ static int prepare_scheduling_decision(struct proc *p, struct scheduling_decisio
     decision->current_thread = p->current_thread;
     decision->decision_time = get_system_ticks();
     
-    // Check and wake any sleeping threads
-    check_and_wake_sleeping_threads(p);
-    
+    if (!decision->current_thread || 
+        decision->current_thread->last_scheduled + time_slice < decision->decision_time) {
+        // Check and wake any sleeping threads
+        check_and_wake_sleeping_threads(p);
+    }
+
     // Get highest priority thread from ready queue
     decision->next_thread = get_highest_priority_thread(p);
     
@@ -859,6 +862,7 @@ static int prepare_scheduling_decision(struct proc *p, struct scheduling_decisio
                   !(decision->current_thread->state & THREAD_STATE_BLOCKED)) {
             TRACE_THREAD("SCHED: Continuing with current thread %d", 
                         decision->current_thread->tid);
+                        decision->current_thread->last_scheduled = decision->decision_time;
             return 0; // No switch needed
         } else if (p->sleep_queue) {
             // If there are sleeping threads, create an idle thread
