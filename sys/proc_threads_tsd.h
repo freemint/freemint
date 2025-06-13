@@ -6,6 +6,13 @@
 /* Maximum number of thread-specific data keys per process */
 #define MAX_THREAD_KEYS 32
 
+/* Sparse TSD entry for memory efficiency */
+struct tsd_entry {
+    long key;
+    void *value;
+    struct tsd_entry *next;
+};
+
 /* Thread-specific data operations */
 #define THREAD_TSD_CREATE_KEY    1   /* Create a new key */
 #define THREAD_TSD_DELETE_KEY    2   /* Delete a key */
@@ -13,6 +20,7 @@
 #define THREAD_TSD_SET_SPECIFIC  4   /* Set thread-specific data */
 
 /* Function declarations */
+int init_proc_tsd(struct proc *p);
 int init_thread_tsd(struct thread *t);
 void cleanup_thread_tsd(struct thread *t);
 long thread_key_create(void (*destructor)(void*));
