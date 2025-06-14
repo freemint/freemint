@@ -51,6 +51,5 @@ int proc_thread_condvar_wait(struct condvar *cond, struct mutex *mutex);
 int proc_thread_condvar_timedwait(struct condvar *cond, struct mutex *mutex, long timeout_ms);
 int proc_thread_condvar_signal(struct condvar *cond);
 int proc_thread_condvar_broadcast(struct condvar *cond);
-void cleanup_thread_condvar_states(struct proc *p);
 
 #endif /* PROC_THREADS_SYNC_H */

@@ -16,44 +16,83 @@
  * @param current_time Current system time in ticks
  * @return Number of threads woken
  */
+/**
+ * Bitmap-optimized sleep queue processing
+ * Replaces wake_threads_by_time() with better performance
+ */
 int wake_threads_by_time(struct proc *p, unsigned long current_time) {
     if (!p || !p->sleep_queue) {
         return 0;
     }
     
-    struct thread *sleep_t = p->sleep_queue;
-    int woke_threads = 0;
-
-    while (sleep_t) {
-        struct thread *next_sleep = sleep_t->next_sleeping;
-
-        // If thread should wake up
-        if (sleep_t->magic == CTXT_MAGIC && 
-            (sleep_t->state & THREAD_STATE_BLOCKED) &&
-            !(sleep_t->state & THREAD_STATE_EXITED) &&
-            sleep_t->wakeup_time > 0 && 
-            sleep_t->wakeup_time <= current_time) {
-            TRACE_THREAD("SLEEP_CHECK: Thread %d should wake up!", sleep_t->tid);
+    unsigned short wakeable_bitmap = 0;
+    int total_wakeable = 0;
+    
+    // First pass: build bitmap of wakeable priorities
+    for (struct thread *t = p->sleep_queue; t; t = t->next_sleeping) {
+        if (t->magic == CTXT_MAGIC &&
+            (t->state & THREAD_STATE_BLOCKED) &&
+            !(t->state & THREAD_STATE_EXITED) &&
+            t->wakeup_time > 0 &&
+            t->wakeup_time <= current_time) {
             
-            // Remove from sleep queue
-            remove_from_sleep_queue(p, sleep_t);
-
-            // Boost priority and prepare for ready queue
-            boost_thread_priority(sleep_t, 5); // Boost by 5 levels
-            sleep_t->wait_type &= ~WAIT_SLEEP;
-            sleep_t->wakeup_time = 0; // Clear wake-up time
-            
-            // Update thread state and add to ready queue
-            atomic_thread_state_change(sleep_t, THREAD_STATE_READY);
-            add_to_ready_queue(sleep_t);
-            
-            woke_threads++;
+            wakeable_bitmap |= (1 << t->priority);
+            total_wakeable++;
         }
-        
-        sleep_t = next_sleep;
     }
     
-    return woke_threads;
+    if (!wakeable_bitmap) {
+        return 0;
+    }
+    
+    TRACE_THREAD("SLEEP: Wakeable bitmap: 0x%04x (%d threads)", wakeable_bitmap, total_wakeable);
+    
+    // Wake threads in priority order (highest first)
+    int woken = 0;
+    while (wakeable_bitmap && woken < total_wakeable) {
+        int highest_pri = find_highest_priority_bit_word(wakeable_bitmap);
+        wakeable_bitmap &= ~(1 << highest_pri); // Clear this priority
+        
+        // Wake all threads at this priority level
+        struct thread **tp = &p->sleep_queue;
+        while (*tp && woken < total_wakeable) {
+            struct thread *t = *tp;
+            
+            if (t->magic == CTXT_MAGIC &&
+                (t->state & THREAD_STATE_BLOCKED) &&
+                !(t->state & THREAD_STATE_EXITED) &&
+                t->priority == highest_pri &&
+                t->wakeup_time > 0 &&
+                t->wakeup_time <= current_time) {
+                
+                TRACE_THREAD("SLEEP_CHECK: Thread %d should wake up!", t->tid);
+                
+                // Remove from sleep queue (inline removal for efficiency)
+                *tp = t->next_sleeping;
+                t->next_sleeping = NULL;
+                
+                // Apply priority boost logic
+                boost_thread_priority(t, 5); // Boost by 5 levels
+                
+                // Clear sleep state
+                t->wait_type &= ~WAIT_SLEEP;
+                t->wakeup_time = 0;
+                
+                // Update thread state and add to ready queue
+                atomic_thread_state_change(t, THREAD_STATE_READY);
+                add_to_ready_queue(t);
+                woken++;
+                
+                TRACE_THREAD("SLEEP: Woke thread %d (pri %d)", t->tid, t->priority);
+                
+                // Don't advance tp since we removed current element
+            } else {
+                tp = &t->next_sleeping;
+            }
+        }
+    }
+    
+    return woken;
 }
 
 /**

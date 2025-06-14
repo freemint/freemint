@@ -338,59 +338,70 @@ CONTEXT* get_thread_context(struct thread *t) {
 }
 
 void proc_thread_cleanup_process(struct proc *pcurproc) {
-	/* Clean up threads if any exist */
-	if (pcurproc->threads) {
-		TRACE(("terminate: cleaning up threads for pid=%d", pcurproc->pid));
+    /* Clean up threads if any exist */
+    if (pcurproc->threads) {
+        TRACE(("terminate: cleaning up threads for pid=%d", pcurproc->pid));
 
-		/* Clean up any thread synchronization objects */
-	    cleanup_thread_sync_states(pcurproc);
+        /* 1. FIRST: Stop the thread timer to prevent scheduling during cleanup */
+        if (pcurproc->p_thread_timer.enabled) {
+            TRACE(("terminate: stopping thread timer"));
+            thread_timer_stop(pcurproc);
+        }
 
-		/* Cancel any thread-related timeouts */
-		if (pcurproc->p_thread_timer.enabled) {
-			TRACE(("terminate: stopping thread timer"));
-			thread_timer_stop(pcurproc);
-		}
-		
-		/* Cancel all timeouts for this process */
-		TIMEOUT *timelist, *next_timelist;
-		for (timelist = tlist; timelist; timelist = next_timelist) {
-			next_timelist = timelist->next;
-			if (timelist->proc == pcurproc) {
-				TRACE(("terminate: cancelling timeout for pid=%d", pcurproc->pid));
-				canceltimeout(timelist);
-			}
-		}
-		
-		/* Free all threads */
-		struct thread *t = pcurproc->threads;
-		struct thread *next;
-		
-		while (t) {
-			next = t->next;
-			
-			/* Only process valid threads */
-			if (t->magic == CTXT_MAGIC) {
-				TRACE(("terminate: cleaning up thread %d", t->tid));
+        /* 2. Cancel all timeouts for this process EARLY */
+        TIMEOUT *timelist, *next_timelist;
+        for (timelist = tlist; timelist; timelist = next_timelist) {
+            next_timelist = timelist->next;
+            if (timelist->proc == pcurproc) {
+                TRACE(("terminate: cancelling timeout for pid=%d", pcurproc->pid));
+                canceltimeout(timelist);
+            }
+        }
 
-				/* Remove from any wait queues */
-				remove_thread_from_wait_queues(t);
-				remove_from_ready_queue(t);
-				
-				/* Mark as exited */
-				t->state |= THREAD_STATE_EXITED;
-				
-				/* Free thread resources */
-				cleanup_thread_resources(pcurproc, t, t->tid);
-			}
-			t = next;
-		}
-		pcurproc->current_thread = NULL;
-		pcurproc->num_threads = 0;
-		pcurproc->total_threads = 0;
+        /* 3. Remove all threads from queues BEFORE clearing sync states */
+        struct thread *t;
+        for (t = pcurproc->threads; t; t = t->next) {
+            if (t->magic == CTXT_MAGIC) {
+                TRACE(("terminate: removing thread %d from queues", t->tid));
+                remove_thread_from_wait_queues(t);
+                remove_from_ready_queue(t);
+                /* Mark as exited but don't free yet */
+                t->state |= THREAD_STATE_EXITED;
+            }
+        }
+        // Explicitly clean up idle thread
+        if (pcurproc->idle_thread) {
+            TRACE(("terminate: cleaning up idle thread"));
+            cleanup_thread_resources(pcurproc, pcurproc->idle_thread, pcurproc->idle_thread->tid);
+            pcurproc->idle_thread = NULL;
+        }
+        
+        /* 4. NOW clean up sync states (threads are out of queues) */
+        cleanup_thread_sync_states(pcurproc);
 
-		pcurproc->threads = NULL;
+        /* 5. Free individual threads */
+        t = pcurproc->threads;
+        struct thread *next;
+        while (t) {
+            next = t->next;
+            
+            if (t->magic == CTXT_MAGIC) {
+                TRACE(("terminate: freeing thread %d resources", t->tid));
+                /* Free thread resources (includes individual TSD) */
+                cleanup_thread_resources(pcurproc, t, t->tid);
+            }
+            t = next;
+        }
+
+        /* 6. Clean up process-wide thread state */
+        pcurproc->current_thread = NULL;
+        pcurproc->num_threads = 0;
+        pcurproc->total_threads = 0;
+        pcurproc->threads = NULL;
+
+        /* 7. LAST: Clean up process-wide TSD */
         cleanup_proc_tsd(pcurproc);
-	}
+    }
 }
 
 long proc_thread_status(long tid) {
@@ -458,6 +469,7 @@ static struct thread* create_idle_thread(struct proc *p) {
     
     // Initialize the idle thread
     mint_bzero(idle, sizeof(*idle));
+
     idle->tid = -128;  // Negative tid to indicate idle thread
     // Don't increment p->num_threads for idle thread
     idle->proc = p;
@@ -465,20 +477,59 @@ static struct thread* create_idle_thread(struct proc *p) {
     idle->original_priority = 0;
     idle->is_idle = 1;      // Mark as idle thread
     idle->magic = CTXT_MAGIC;
-    
+
     // Allocate stack
     idle->stack = kmalloc(STKSIZE);
     if (!idle->stack) {
         kfree(idle);
         return NULL;
     }
-    
     idle->stack_top = (char*)idle->stack + STKSIZE;
     idle->stack_magic = STACK_MAGIC;
     
+    idle->policy = DEFAULT_SCHED_POLICY;
+    idle->timeslice = p->thread_default_timeslice;
+    idle->remaining_timeslice = p->thread_default_timeslice;
+    idle->last_scheduled = 0;
+    idle->priority_boost = 0;
+
+    idle->tsd_data = NULL;
+
+    idle->t_sigpending = 0;
+    THREAD_SIGMASK_SET(idle, p->p_sigmask);  /* Inherit process signal mask */
+    idle->t_sig_in_progress = 0;
+    idle->alarm_timeout = NULL;
+    idle->sig_stack = NULL;
+    idle->old_sigmask = 0;
+    for (int i = 0; i < NSIG; i++) {
+        idle->sig_handlers[i].handler = NULL;
+        idle->sig_handlers[i].arg = NULL;
+    }
+    
+    idle->wakeup_time = 0;  // No wakeup time initially
+    idle->next_sleeping = NULL;  // Not in sleep queue initially
+    idle->next_ready = NULL;  // Not in ready queue initially
+
+	idle->mutex_wait_obj = NULL;
+	idle->sem_wait_obj = NULL;
+	idle->sig_wait_obj = NULL;
+	idle->cond_wait_obj = NULL;
+	idle->join_wait_obj = NULL;
+    idle->wait_type = WAIT_NONE;  // Not waiting for anything initially
+    idle->sleep_reason = 0;  // No sleep reason initially
+    
+    // Initialize join-related fields
+    idle->retval = NULL;
+    idle->joiner = NULL;
+    idle->detached = 1;
+    idle->joined = 0;
+
     // Initialize context
     init_thread_context(idle, idle_thread_func, (void *)p);
     
+    /* Set one idle thread per process */
+    p->idle_thread = idle;
+
     // Link into process thread list
     idle->next = p->threads;
     p->threads = idle;
@@ -494,28 +545,10 @@ static struct thread* create_idle_thread(struct proc *p) {
 struct thread* get_idle_thread(struct proc *p) {
     if (!p) return NULL;
     
-    // First check if we already have an idle thread
-    struct thread **tp = &p->threads;
-    while (*tp) {
-        struct thread *t = *tp;
-        if (t->is_idle && t->magic == CTXT_MAGIC) {
-            if (t->state & THREAD_STATE_EXITED) {
-                // Remove from thread list
-                *tp = t->next;
-                
-                // Free resources
-                if (t->stack) {
-                    kfree(t->stack);
-                }
-                kfree(t);
-                // Continue checking for other idle threads
-                continue;
-            }
-            return t;
-        }
-        tp = &(*tp)->next;
-    }
-    return create_idle_thread(p);
+    if(!p->idle_thread)
+        return create_idle_thread(p);
+        
+    return p->idle_thread;
 }
 
 struct thread* get_main_thread(struct proc *p) {

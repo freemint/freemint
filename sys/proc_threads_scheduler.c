@@ -353,6 +353,7 @@ static struct thread *find_next_thread_to_run(struct proc *p) {
  */
 void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
     if (!p || !t || t->magic != CTXT_MAGIC) {
+        TRACE_THREAD("EXIT: Cleaning up resources: Invalid thread %d", tid);
         return;
     }
     TRACE_THREAD("EXIT: Cleaning up resources for thread %d", tid);
@@ -450,8 +451,7 @@ void proc_thread_exit(void *retval) {
         if (sig && current->sig_handlers[sig].handler) {
             TRACE_THREAD("EXIT: Thread %d has pending signal %d, handling before exit", 
                         current->tid, sig);
-            handle_thread_signal(current, sig);  // Just clear pending signals without handling them
-            // return;
+            handle_thread_signal(current, sig);
         }
     }
 

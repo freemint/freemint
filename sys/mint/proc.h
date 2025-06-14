@@ -411,11 +411,13 @@ struct proc
 		short in_handler;		// Handler en cours ?
 	} p_thread_timer;
 
-    struct thread *threads;           /* List of all threads in this process */
-    struct thread *current_thread;    /* Currently executing thread */
-    struct thread *ready_queue;       /* Queue of threads ready to run */
-    struct thread *signal_wait_queue; /* Queue of threads waiting for signals */
-    struct thread *sleep_queue;       /* Queue of sleeping threads */
+    struct thread *threads;				/* List of all threads in this process */
+    struct thread *current_thread;		/* Currently executing thread */
+	struct thread *idle_thread;			/* Explicit idle thread pointer */ 
+
+    struct thread *ready_queue;			/* Queue of threads ready to run */
+    struct thread *signal_wait_queue;	/* Queue of threads waiting for signals */
+    struct thread *sleep_queue;			/* Queue of sleeping threads */
 
 	short num_threads;             /* Thread count */
 	short total_threads;           /* Total thread count */

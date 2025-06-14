@@ -6,6 +6,10 @@
 
 /* Timeout handler */
 static void proc_thread_condvar_timeout_handler(PROC *p, long arg);
+/* Forward declarations */
+static void cleanup_process_semaphores(struct proc *p);
+static void cleanup_process_mutexes(struct proc *p);
+static void cleanup_thread_condvar_states(struct proc *p);
 
 /**
  * Detach a thread - mark it as not joinable
@@ -1064,74 +1068,42 @@ static void proc_thread_condvar_timeout_handler(PROC *p, long arg) {
  * 
  * @param p The process being terminated
  */
+
 void cleanup_thread_sync_states(struct proc *p)
 {
     if (!p) return;
     
-    TRACE_THREAD("CLEANUP: Cleaning up thread sync states for process %d", p->pid);
+    TRACE_THREAD("CLEANUP: Cleaning up sync objects for process %d", p->pid);
     
     unsigned short sr = splhigh();
     
-    // Clean up any threads waiting on mutexes or semaphores
+    // 1. Clean up process-owned mutexes
+    cleanup_process_mutexes(p);
+    
+    // 2. Clean up process-owned semaphores  
+    cleanup_process_semaphores(p);
+    
+    // 3. Clean up process-owned condition variables
+    cleanup_thread_condvar_states(p);
+    
+    // 4. Only clear wait states for THIS process's threads
     struct thread *t;
     for (t = p->threads; t; t = t->next) {
         if (t->magic == CTXT_MAGIC && t->wait_type != WAIT_NONE) {
-            TRACE_THREAD("CLEANUP: Clearing wait state for thread %d (wait_type=%d)",
-                        t->tid, t->wait_type);
-            
-            // Clear wait state
-            t->wait_type &= ~WAIT_SEMAPHORE;
-            t->wait_type &= ~WAIT_MUTEX;
+            t->wait_type = WAIT_NONE;
             t->sem_wait_obj = NULL;
+            t->mutex_wait_obj = NULL;
+            t->cond_wait_obj = NULL;
             t->next_wait = NULL;
         }
     }
     
-    // For each process in the system
-    struct proc *other_proc;
-    for (other_proc = proclist; other_proc; other_proc = other_proc->gl_next) {
-        // Skip the terminating process
-        if (other_proc == p) continue;
-        
-        // Check each thread in the process
-        for (t = other_proc->threads; t; t = t->next) {
-            if (t->magic != CTXT_MAGIC) continue;
-            
-            // If thread is waiting on a mutex owned by a thread in the terminating process
-            if ((t->wait_type & WAIT_MUTEX) && t->mutex_wait_obj) {
-                struct mutex *mutex = (struct mutex *)t->mutex_wait_obj;
-                
-                // If mutex owner is from terminating process
-                if (mutex->owner && mutex->owner->proc == p) {
-                    TRACE_THREAD("CLEANUP: Thread %d in process %d waiting on mutex owned by terminating process",
-                                t->tid, other_proc->pid);
-                    
-                    // Clear mutex owner
-                    mutex->owner = NULL;
-                    mutex->locked = 0;
-                    
-                    // Unblock thread
-                    t->wait_type &= ~WAIT_MUTEX;
-                    t->mutex_wait_obj = NULL;
-                    t->next_wait = NULL;
-                    
-                    // Wake up thread
-                    atomic_thread_state_change(t, THREAD_STATE_READY);
-                    add_to_ready_queue(t);
-                }
-            }
-        }
-    }
-    
     spl(sr);
-    
-    TRACE_THREAD("CLEANUP: Finished cleaning up thread sync states for process %d", p->pid);
 }
-
 /**
  * Clean up condition variable states when a process terminates
  */
-void cleanup_thread_condvar_states(struct proc *p)
+static void cleanup_thread_condvar_states(struct proc *p)
 {
     if (!p) return;
     
@@ -1153,4 +1125,53 @@ void cleanup_thread_condvar_states(struct proc *p)
     }
     
     spl(sr);
+}
+
+/**
+ * Clean up process mutexes
+ */
+static void cleanup_process_mutexes(struct proc *p)
+{
+    if (!p) return;
+    
+    TRACE_THREAD("CLEANUP: Cleaning up mutexes for process %d", p->pid);
+    
+    // Only clean up threads in THIS process that are waiting on mutexes
+    struct thread *t;
+    for (t = p->threads; t; t = t->next) {
+        if (t->magic == CTXT_MAGIC && (t->wait_type & WAIT_MUTEX)) {
+            TRACE_THREAD("CLEANUP: Clearing mutex wait state for thread %d", t->tid);
+            
+            // Clear the wait state - the mutex will be freed with the process
+            t->wait_type &= ~WAIT_MUTEX;
+            t->mutex_wait_obj = NULL;
+            t->next_wait = NULL;
+        }
+    }
+    
+    // Note: We don't need to iterate through other processes because
+    // mutexes are process-private and cannot be shared between processes
+}
+
+/**
+ * Clean up process semaphores
+ */
+static void cleanup_process_semaphores(struct proc *p)
+{
+    if (!p) return;
+    
+    TRACE_THREAD("CLEANUP: Cleaning up semaphores for process %d", p->pid);
+    
+    // Only clean up threads in THIS process that are waiting on semaphores
+    struct thread *t;
+    for (t = p->threads; t; t = t->next) {
+        if (t->magic == CTXT_MAGIC && (t->wait_type & WAIT_SEMAPHORE)) {
+            TRACE_THREAD("CLEANUP: Clearing semaphore wait state for thread %d", t->tid);
+            
+            // Clear the wait state - the semaphore will be freed with the process
+            t->wait_type &= ~WAIT_SEMAPHORE;
+            t->sem_wait_obj = NULL;
+            t->next_wait = NULL;
+        }
+    }
 }
