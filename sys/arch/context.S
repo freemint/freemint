@@ -141,23 +141,8 @@ nojunk:
 	pea	nofpu(pc)		// return address
 	bra	save_coldfire_fpu
 #else
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	nofpu
-
-	fsave	C_FSTATE(a0)		// save internal state frame
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60
-	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu			// skip programmer's model save
-	bra.s	save
-no60:
+	bsr	save_fpu_for_build
 #endif
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu			// skip programmer's model save
-save:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
-	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
-#endif /* __mcoldfire__ */
 
 nofpu:
 	lea	C_SFMT(a0),a2
@@ -245,23 +230,8 @@ noprot2:
 	bra	save_coldfire_fpu
 #else
 // if running with a true coprocessor we need to save the FPU state
-
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	nofpu2
-	fsave	C_FSTATE(a0)		// save internal state frame
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_2
-	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu2			// skip programmer's model save
-	bra.s	save2
-no60_2:
+	bsr	save_fpu_for_save
 #endif
-	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
-	beq.s	nofpu2				// skip programmer's model save
-save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
-	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
-#endif /* __mcoldfire__ */
 
 nofpu2:
 // note: I am somewhat unsure of this assumption, viz that save_context
@@ -412,23 +382,8 @@ rcovernc:
 	bsr	restore_coldfire_fpu
 #else
 // if running with a true coprocessor we need to restore the FPU state
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	short3
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_3
-	tst.b	C_FSTATE+2(a0)
-	beq.s	short4
-	bra.s	save3
-no60_3:
+	bsr	restore_fpu_for_restore
 #endif
-	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
-	beq.s	short4				// skip programmer's model restore
-save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
-short4:
-	frestore C_FSTATE(a0)			// finally the internal state
-#endif /* __mcoldfire__ */
 
 short3:
 	move.l	C_PC(a0),-(sp)		// push the PC
@@ -562,25 +517,8 @@ rcover2nc:
 	bsr	restore_coldfire_fpu
 #else
 // if running with a true coprocessor we need to restore the FPU state
-
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	short6
-
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_4
-	tst.b	C_FSTATE+2(a0)
-	beq.s	short5
-	bra.s	save5
-no60_4:
+	bsr	restore_fpu_for_change
 #endif
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	short5			// skip programmer's model restore
-save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
-short5:
-	frestore C_FSTATE(a0)			// finally the internal state
-#endif /* __mcoldfire__ */
 
 short6:
 	move.l	C_PC(a0),-(sp)		// push the PC
@@ -594,6 +532,109 @@ notrace2:
 	rte				// jump back to old context
 	CFI_ENDPROC()
 	END(change_context)
+
+// FPU handling subroutines
+
+save_fpu_for_build:
+	tst.w	SYM(fpu)			// is there a true FPU in the system
+	beq.s	fpu_build_done
+#ifdef __mcoldfire__
+	bra	save_cf_build
+#else
+	fsave	C_FSTATE(a0)		// save internal state frame
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
+	bne.s	no60_build
+	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
+	beq.s	fpu_build_done		// skip programmer's model save
+	bra.s	save_build
+no60_build:
+#endif
+	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+	beq	fpu_build_done		// skip programmer's model save
+save_build:
+	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
+	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
+#endif
+save_cf_build:	
+fpu_build_done:
+	rts
+
+save_fpu_for_save:
+	tst.w	SYM(fpu)			// is there a true FPU in the system
+	beq.s	fpu_save_done
+#ifdef __mcoldfire__
+	bra	save_cf_save
+#else	
+	fsave	C_FSTATE(a0)		// save internal state frame
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
+	bne.s	no60_2
+	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
+	beq.s	fpu_save_done		// skip programmer's model save
+	bra.s	save2
+no60_2:
+#endif
+	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
+	beq	fpu_save_done			// skip programmer's model save
+save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
+	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
+#endif
+save_cf_save:	
+fpu_save_done:
+	rts
+
+restore_fpu_for_restore:
+	tst.w	SYM(fpu)			// is there a true FPU in the system
+	beq	fpu_restore_done
+ 
+#ifdef __mcoldfire__
+	bra	restore_cf_restore
+#else
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
+	bne.s	no60_3
+	tst.b	C_FSTATE+2(a0)
+	beq	short4
+	bra.s	save3
+no60_3:
+#endif
+	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
+	beq	short4				// skip programmer's model restore
+save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
+	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
+short4:
+	frestore C_FSTATE(a0)			// finally the internal state
+#endif
+restore_cf_restore:	
+fpu_restore_done:
+	rts
+
+restore_fpu_for_change:
+	tst.w	SYM(fpu)			// is there a true FPU in the system
+	beq	fpu_change_done
+ 
+#ifdef __mcoldfire__
+	bra	restore_cf_change
+#else
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
+	bne.s	no60_4
+	tst.b	C_FSTATE+2(a0)
+	beq	short5
+	bra.s	save5
+no60_4:
+#endif
+	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+	beq	short5			// skip programmer's model restore
+save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
+	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
+short5:
+	frestore C_FSTATE(a0)			// finally the internal state
+#endif
+restore_cf_change:	
+fpu_change_done:
+	rts
 
 #ifdef	__mcoldfire__
 save_coldfire_fpu:
