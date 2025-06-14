@@ -450,8 +450,8 @@ void proc_thread_exit(void *retval) {
         if (sig && current->sig_handlers[sig].handler) {
             TRACE_THREAD("EXIT: Thread %d has pending signal %d, handling before exit", 
                         current->tid, sig);
-                        current->t_sigpending = 0;  // Just clear pending signals without handling them
-            return;
+            handle_thread_signal(current, sig);  // Just clear pending signals without handling them
+            // return;
         }
     }
 
