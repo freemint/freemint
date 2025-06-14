@@ -72,11 +72,11 @@
 
 // Stack frame format Macro
 .macro SWITCH_STACKS
-	move.l	C_SSP(a0),a1		// Get saved SSP
+	movem.l	C_PC(a0),d1/a1		// Load PC and SSP together (d1=PC, a1=SSP)
 	tst.b	(a1)			// Touch page for VM
 	tst.b	-63(a1)			// Check stack growth space
-	move.l	a1,sp			// Restore SSP
-	move.l	C_USP(a0),a1
+	move.l	a1,sp			// Restore SSP (a1 = SSP from movem)
+	move.l	C_USP(a0),a1	// Load USP separately (not adjacent)
 	move.l	a1,%usp			// Restore USP
 #ifdef __mcoldfire__
 	move.l	C_TERM(a0),d1
@@ -385,7 +385,7 @@ restore_68k:
 #endif
 
 short3:
-	move.l	C_PC(a0),-(sp)		// Push return PC
+	move.l	C_PC(a0),-(sp)		// Push return PC (load fresh, don't reuse d1)
 	move.w	C_SR(a0),-(sp)		// Push SR
 restore_check_trace:
 	tst.b	C_PTRACE(a0)		// Check for pending trace
