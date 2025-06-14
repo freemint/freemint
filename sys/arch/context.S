@@ -70,6 +70,64 @@
 
 	.text
 
+// Stack frame format Macro
+.macro SWITCH_STACKS
+	move.l	C_SSP(a0),a1		// Get saved SSP
+	tst.b	(a1)			// Touch page for VM
+	tst.b	-63(a1)			// Check stack growth space
+	move.l	a1,sp			// Restore SSP
+	move.l	C_USP(a0),a1
+	move.l	a1,%usp			// Restore USP
+#ifdef __mcoldfire__
+	move.l	C_TERM(a0),d1
+	move.l	d1,(0x408).w		// Restore GEMDOS terminate vector
+#else
+	move.l	C_TERM(a0),(0x408).w	// Restore GEMDOS terminate vector
+#endif
+.endm
+
+.macro SETUP_FRAME_RESTORATION
+	lea	C_SFMT(a0),a1
+	move.w	(a1)+,d0		// Get frame format word
+#ifdef __mcoldfire__
+	moveq	#0,d1
+#endif
+	move.w	d0,d1			// Copy for frame size calc
+#ifdef __mcoldfire__
+	lsr.l	#8,d1			// Isolate frame format ID
+	lsr.l	#4,d1
+#else
+	lsr.w	#8,d1			// Isolate frame format ID
+	lsr.w	#4,d1
+#endif
+	lea	SYM(framesizes),a2
+#ifdef __mcoldfire__
+	move.b	0(a2,d1.l),d1
+#else
+	move.b	0(a2,d1.w),d1
+#endif
+	beq.s	99f			// Skip if no extra data (local label)
+#ifdef __mcoldfire__
+	sub.l	d1,sp			// Allocate space on stack
+	sub.l	d1,sp
+#else
+	sub.w	d1,sp			// Allocate space on stack
+	sub.w	d1,sp
+#endif
+	move.l	sp,a2
+#ifdef __mcoldfire__
+	subq.l	#1,d1			// Adjust loop counter
+98:	move.w	(a1)+,(a2)+		// Copy internal state to stack
+	subq.l	#1,d1
+	bpl.s	98b
+#else
+	subq.w	#1,d1			// Adjust loop counter
+98:	move.w	(a1)+,(a2)+		// Copy internal state to stack
+	dbf	d1,98b
+#endif
+99:	move.w	d0,-(sp)		// Push frame format word
+.endm
+
 	FUNC(build_context)
 SYM(build_context):
 	CFI_STARTPROC()
@@ -169,14 +227,42 @@ nofpu:
 #else
 	subq.w	#1,d1			// Adjust loop counter
 #endif
+#ifdef M68000
+	// 68000: Use simple loop (optimized for code size)
 bcint:
 	move.w	(a1)+,(a2)+		// Copy CPU internal state
 bcover:
+	dbra	d1,bcint
+#elif defined(__mcoldfire__)
+	// ColdFire: Use simple loop (ColdFire restrictions)
+bcint:
+	move.w	(a1)+,(a2)+		// Copy CPU internal state
+bcover:
+	subq.l	#1,d1
+	bpl.s	bcint	
+#else
+	// 68020+: Optimize for small frames using jump table
+	cmp.w	#3,d1			// Check if ≤3 words (most common)
+	bhi.s	bcint_loop		// Use loop for larger frames
+	add.w	d1,d1			// Convert to word offset
+	jmp	build_copy_table(pc,d1.w)
+build_copy_table:
+	bra.s	short1			// 0 words - done
+	bra.s	build_copy_1w		// 1 word
+	bra.s	build_copy_2w		// 2 words
+	bra	build_copy_3w		// 3 words
+build_copy_3w: move.w	(a1)+,(a2)+
+build_copy_2w: move.w	(a1)+,(a2)+
+build_copy_1w: move.w	(a1)+,(a2)+
+	bra.s	short1
+bcint_loop:
+	move.w	(a1)+,(a2)+		// Copy CPU internal state
 #ifdef	__mcoldfire__
 	subq.l	#1,d1
-	bpl.s	bcint
+	bpl.s	bcint_loop
 #else
-	dbra	d1,bcint
+	dbra	d1,bcint_loop
+#endif
 #endif
 short1:
 	move.l	a1,C_SSP(a0)		// Save SSP position
@@ -274,19 +360,7 @@ SYM(restore_context):
 #endif
 	move.l	4(sp),a0		// Get context save area address
 
-// Switch stacks
-	move.l	C_SSP(a0),a1		// Get saved SSP
-	tst.b	(a1)			// Touch page for VM
-	tst.b	-63(a1)			// Check stack growth space
-	move.l	a1,sp			// Restore SSP
-	move.l	C_USP(a0),a1
-	move.l	a1,%usp			// Restore USP
-#ifdef	__mcoldfire__
-	move.l	C_TERM(a0),d1
-	move.l	d1,(0x408).w		// Restore GEMDOS terminate vector
-#else
-	move.l	C_TERM(a0),(0x408).w	// Restore GEMDOS terminate vector
-#endif
+	SWITCH_STACKS			// Common stack switching (macro)
 
 #ifdef __mcoldfire__
 	tst.w	SYM(coldfire_68k_emulation)
@@ -304,50 +378,7 @@ restore_68k:
 	tst.w	(0x59e).w		// Check longframe flag (AKP)
 	beq.s	short3
 #endif
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// Get frame format word
-#ifdef	__mcoldfire__
-	moveq	#0,d1
-#endif
-	move.w	d0,d1			// Copy for frame size calc
-#ifdef	__mcoldfire__
-	lsr.l	#8,d1			// Isolate frame format ID
-	lsr.l	#4,d1
-#else
-	lsr.w	#8,d1			// Isolate frame format ID
-	lsr.w	#4,d1
-#endif
-	lea	SYM(framesizes),a2
-#ifdef	__mcoldfire__
-	move.b	0(a2,d1.l),d1
-#else
-	move.b	0(a2,d1.w),d1
-#endif
-	beq.s	rcovernc		// Skip if no extra data
-#ifdef	__mcoldfire__
-	sub.l	d1,sp			// Allocate space on stack
-	sub.l	d1,sp
-#else
-	sub.w	d1,sp			// Allocate space on stack
-	sub.w	d1,sp
-#endif
-	move.l	sp,a2
-#ifdef	__mcoldfire__
-	subq.l	#1,d1			// Adjust loop counter
-#else
-	subq.w	#1,d1			// Adjust loop counter
-#endif
-rcint:
-	move.w	(a1)+,(a2)+		// Copy internal state to stack
-rcover:
-#ifdef	__mcoldfire__
-	subq.l	#1,d1
-	bpl.s	rcint
-#else
-	dbf	d1,rcint
-#endif
-rcovernc:
-	move.w	d0,-(sp)		// Push frame format word
+	SETUP_FRAME_RESTORATION		// Common frame setup (macro)
 
 // Restore FPU state
 #ifdef __mcoldfire__
@@ -382,19 +413,7 @@ SYM(change_context):
 #endif
 	move.l	4(sp),a0		// Get context save area address
 
-// Switch stacks
-	move.l	C_SSP(a0),a1		// Get saved SSP
-	tst.b	(a1)			// Touch page for VM
-	tst.b	-63(a1)			// Check stack growth space
-	move.l	a1,sp			// Restore SSP
-	move.l	C_USP(a0),a1
-	move.l	a1,%usp			// Restore USP
-#ifdef	__mcoldfire__
-	move.l	C_TERM(a0),d1
-	move.l	d1,(0x408).w		// Restore GEMDOS terminate vector
-#else
-	move.l	C_TERM(a0),(0x408).w	// Restore GEMDOS terminate vector
-#endif
+	SWITCH_STACKS			// Common stack switching (macro)
 
 #ifdef WITH_MMU_SUPPORT
 // Set memory context
@@ -431,50 +450,7 @@ change_68k:
 	tst.w	(0x59e).w		// Check longframe flag (AKP)
 	beq.s	short6
 #endif
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// Get frame format word
-#ifdef	__mcoldfire__
-	moveq	#0,d1
-#endif
-	move.w	d0,d1			// Copy for frame size calc
-#ifdef	__mcoldfire__
-	lsr.l	#8,d1			// Isolate frame format ID
-	lsr.l	#4,d1
-#else
-	lsr.w	#8,d1			// Isolate frame format ID
-	lsr.w	#4,d1
-#endif
-	lea	SYM(framesizes),a2
-#ifdef	__mcoldfire__
-	move.b	0(a2,d1.l),d1
-#else
-	move.b	0(a2,d1.w),d1
-#endif
-	beq.s	rcover2nc		// Skip if no extra data
-#ifdef	__mcoldfire__
-	sub.l	d1,sp			// Allocate space on stack
-	sub.l	d1,sp
-#else
-	sub.w	d1,sp			// Allocate space on stack
-	sub.w	d1,sp
-#endif
-	move.l	sp,a2
-#ifdef	__mcoldfire__
-	subq.l	#1,d1			// Adjust loop counter
-#else
-	subq.w	#1,d1			// Adjust loop counter
-#endif
-rcint2:
-	move.w	(a1)+,(a2)+		// Copy internal state to stack
-rcover2:
-#ifdef	__mcoldfire__
-	subq.l	#1,d1
-	bpl.s	rcint2
-#else
-	dbf	d1,rcint2
-#endif
-rcover2nc:
-	move.w	d0,-(sp)		// Push frame format word
+
 
 // Restore FPU state
 #ifdef __mcoldfire__
@@ -482,6 +458,7 @@ rcover2nc:
 #else
 	bsr	restore_fpu_for_change
 #endif
+	SETUP_FRAME_RESTORATION		// Common frame setup (macro)
 
 short6:
 	move.l	C_PC(a0),-(sp)		// Push return PC
@@ -495,9 +472,6 @@ notrace2:
 	rte				// Return to saved context
 	CFI_ENDPROC()
 	END(change_context)
-
-
-// Common FPU save function - uses macros to avoid register conflicts
 
 // Macro for common FPU save code
 .macro SAVE_FPU_COMMON label_skip, label_cf
