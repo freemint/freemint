@@ -111,6 +111,10 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	p2->q_next = NULL;
 	p2->wait_q = 0;
 
+	/* Initialize thread-related fields */
+	p2->current_thread = NULL;
+	p2->threads = NULL;
+	p2->num_threads = 0;
 
 	/* Duplicate command line */
 # ifndef M68000

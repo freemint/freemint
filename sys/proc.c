@@ -207,6 +207,31 @@ init_proc(void)
 		rootproc->p_fd->bconmap = 1;
 	rootproc->logbase = (void *) TRAP_Logbase();
 	rootproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
+
+	/* Initialize thread-related fields for root process */
+	rootproc->current_thread = NULL;
+	rootproc->threads = NULL;
+	rootproc->num_threads = 0;
+	rootproc->total_threads = 0;
+
+	/* Initialize thread scheduling parameters */
+	rootproc->thread_preempt_interval = time_slice * 2 + (time_slice >> 1); /* 2.5x time_slice */
+	rootproc->thread_default_timeslice = time_slice * 5; /* 5x time_slice */
+	rootproc->thread_min_timeslice = time_slice; /* 1x time_slice */
+	rootproc->thread_rr_timeslice = time_slice * 5; /* 5x time_slice */	
+
+	rootproc->sleep_queue = NULL;
+	rootproc->ready_queue = NULL;
+	
+	/* Thread timer initialization */
+    rootproc->p_thread_timer.thread_id = 0;
+    rootproc->p_thread_timer.enabled = 0;
+    rootproc->p_thread_timer.timeout = NULL;
+    rootproc->p_thread_timer.in_handler = 0;
+
+	/* Initialize process-wide TSD data */
+    init_proc_tsd(rootproc);
+  
 }
 
 /* remaining_proc_time():

@@ -122,6 +122,8 @@ terminate(struct proc *pcurproc, short code, short que)
 			dlockproc[i] = NULL;
 	}
 
+	proc_thread_cleanup_process(pcurproc);
+	
 	free_ext (pcurproc);
 
 	free_fd (pcurproc);

@@ -719,3 +719,5 @@ do_func_key(int scan)
 # endif
 	}
 }
+
+/* Thread logging function moved to proc_threads_debug.c */

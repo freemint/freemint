@@ -60,6 +60,17 @@ COBJS = \
 	proc.c \
 	proc_help.c \
 	proc_wakeup.c \
+	proc_threads.c \
+	proc_threads_signal.c \
+	proc_threads_policy.c \
+	proc_threads_sync.c \
+	proc_threads_queue.c \
+	proc_threads_helper.c \
+	proc_threads_scheduler.c \
+	proc_threads_sleep_yield.c \
+	proc_threads_syscall.c \
+	proc_threads_debug.c \
+	proc_threads_tsd.c \
 	procfs.c \
 	profil.c \
 	ptrace.c \

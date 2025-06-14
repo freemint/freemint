@@ -73,5 +73,6 @@ EXITING	_cdecl	FATAL		(const char *s, ...) __attribute__((format(printf, 1, 2)))
 void		DUMPLOG		(void);
 void		do_func_key	(int);
 
+/* Thread logging moved to proc_threads_debug.h */
 
 # endif /* _mint_debug_h */

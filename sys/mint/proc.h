@@ -35,6 +35,121 @@
 # define LOGIN_NAME_MAX	32
 # define MAXLOGNAME	LOGIN_NAME_MAX
 
+/* Threads stuff */
+
+enum sched_policy {
+    SCHED_FIFO,
+    SCHED_RR,
+    SCHED_OTHER
+};
+
+/* Thread-specific data key structure */
+typedef struct {
+    int in_use;                      /* Flag indicating if key is in use */
+    void (*destructor)(void*);       /* Destructor function for this key */
+} thread_key_t;
+
+struct thread {
+    /* Thread identification */
+    short tid;                      /* Thread ID */
+    struct proc *proc;              /* Parent process */
+    
+    /* Stack information */
+    void *stack;                    /* Stack base address */
+    void *stack_top;                /* Top of stack area */
+    unsigned long stack_magic;      /* Stack integrity check */
+    
+    /* Thread context */
+    CONTEXT ctxt[PROC_CTXTS];       /* Thread context (reuse FreeMiNT's context) */
+    
+    /* Thread state and scheduling */
+    short state;                    /* Thread state (RUNNING/READY/BLOCKED) */
+	short is_idle;                    /* Flag indicating if this is an idle thread */
+    short priority;                 /* Thread priority */
+    short original_priority;        /* Original priority (for restoration after boost) */
+    short priority_boost;           /* Flag indicating if priority is currently boosted */
+    short timeslice;                /* Timeslice for this thread */
+    short remaining_timeslice;      /* Remaining timeslice */
+    short total_timeslice;          /* Total timeslice allocated to this thread */
+    enum sched_policy policy;       /* Scheduling policy (SCHED_FIFO, SCHED_RR, SCHED_OTHER) */
+    
+    /* Thread linking */
+    struct thread *next;            /* Next thread in process list */
+    struct thread *next_ready;      /* For ready queue */
+    struct thread *next_sleeping;   /* For sleep queue */
+	struct thread *next_sigwait;    /* For signal wait queue */
+    struct thread *next_wait;       /* For wait queue */
+    
+    /* Validation and debugging */
+    unsigned long magic;            /* Magic number for validation */
+    
+    /* Thread execution */
+    void* (*func)(void*);            /* Function to execute */
+    void *arg;                      /* Argument to pass to function */
+    
+    /* Sleep and wait information */
+    short sleep_reason;             /* Reason for sleep (0 = woken by signal/other, 1 = timeout) */
+	TIMEOUT *sleep_timeout;  		// Timeout for sleeping
+    TIMEOUT *alarm_timeout;         /* Per-thread alarm timeout */
+    short wait_type;                /* Type of wait (WAIT_SIGNAL, WAIT_MUTEX, WAIT_CONDVAR, WAIT_IO, etc.) */
+	void *mutex_wait_obj;
+	void *sem_wait_obj;
+	void *sig_wait_obj;
+	void *cond_wait_obj;
+	void *join_wait_obj;
+    
+    /* Scheduling and timing */
+    unsigned long wakeup_time;      /* Wakeup time in ticks */
+    unsigned long last_scheduled;   /* Last time this thread was scheduled (in ticks) */
+    
+    /* Thread join fields */
+    void *retval;                /* Return value from proc_thread_exit */
+    struct thread *joiner;       /* Thread that is joining this thread */
+    int detached;                /* Whether thread is detached */
+    int joined;                  /* Whether thread has been joined */
+    void **join_retval;          /* Where to store return value for joiner */
+    
+    /* Thread-specific data */
+    void **tsd_data;             /* Array of thread-specific data pointers */
+    
+    /* Signal handling */
+    unsigned long t_sigpending;     /* Signals pending for this thread */
+    unsigned long t_sigmask;        /* Thread-specific signal mask */
+    short t_sig_in_progress;        /* Signal currently being processed */
+    CONTEXT sig_ctx;           /* Signal handler context */
+    void *sig_stack;           /* Signal handler stack */
+    ulong old_sigmask;         /* Saved signal mask during handler execution */	
+    /* Thread-specific signal handlers */
+    struct {
+        void (*handler)(int, void*);
+        void *arg;
+    } sig_handlers[32];	
+};
+
+/**
+ * Thread join structure to track join relationships
+ */
+struct thread_join {
+    struct thread *target;     /* Thread being joined */
+    struct thread *joiner;     /* Thread doing the joining */
+    void *retval;              /* Return value from target thread */
+    int joined;                /* Flag indicating join completed */
+};
+
+long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2);
+long _cdecl sys_p_thread_signal(long func, long arg1, long arg2);
+long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2);
+long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3);
+long _cdecl sys_p_thread_tsd(long op, long arg1, long arg2);
+
+long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack);
+void proc_thread_cleanup_process(struct proc *pcurproc); /** Called in terminate function - k_exit.c */
+int proc_thread_signal_aware_raise(struct proc *p, int sig);
+void dispatch_thread_signals(struct thread *t);
+int init_proc_tsd(struct proc *p);
+
+/* End of Threads stuff */
+
 /*
  * One structure allocated per session
  */
@@ -286,8 +401,42 @@ struct proc
 
 	ulong	stack_magic;		/* to detect stack overflows	*/
 	char	stack[STKSIZE+4];	/* stack for system calls	*/
-};
 
+/* Threads stuff */
+	struct {
+		short thread_id;		// Thread actuellement préempté
+		short enabled;			// Timer actif ?
+		TIMEOUT *timeout;		// Handle du timeout
+		unsigned short sr;		// Etat d'interruption sauvegardé
+		short in_handler;		// Handler en cours ?
+	} p_thread_timer;
+
+    struct thread *threads;				/* List of all threads in this process */
+    struct thread *current_thread;		/* Currently executing thread */
+	struct thread *idle_thread;			/* Explicit idle thread pointer */ 
+
+    struct thread *ready_queue;			/* Queue of threads ready to run */
+    struct thread *signal_wait_queue;	/* Queue of threads waiting for signals */
+    struct thread *sleep_queue;			/* Queue of sleeping threads */
+
+	short num_threads;             /* Thread count */
+	short total_threads;           /* Total thread count */
+
+    /* Thread scheduling parameters */
+    unsigned short thread_preempt_interval;    /* Preemption interval in ticks */
+    unsigned short thread_default_timeslice;   /* Default timeslice in ticks */
+    unsigned short thread_min_timeslice;       /* Minimum timeslice in ticks */
+    unsigned short thread_rr_timeslice;        /* Round-robin timeslice in ticks */
+
+	short thread_signals_enabled;   /* Cache for quick access */
+
+    /* Thread-specific data management */
+    thread_key_t *thread_keys;    /* Process-specific thread keys */
+    int next_key;                /* Next available key index */
+	void **proc_tsd_data;         /* Process-wide thread-specific data */
+/* End of Threads stuff */
+
+};
 
 /*
  * our process queues

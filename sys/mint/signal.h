@@ -14,7 +14,6 @@
 
 # include "ktypes.h"
 
-
 typedef unsigned long int sigset_t;
 
 # define NSIG		32		/* number of signals recognized */
@@ -87,11 +86,9 @@ struct sigaction
 # define SAPARENT	(0)		/* XXX signal flags which the parent (of ptraced) processes may set */
 # define SAKERNEL	(0)	/* XXX kernel only flags */
 
-
 /* values for ss_flags */
 # define SS_ONSTACK	1
 # define SS_DISABLE	2
-
 
 # define MINSIGSTKSZ	2048		/* minimum stack size */
 # define SIGSTKSZ	8192		/* default stack size */
@@ -111,10 +108,11 @@ struct sigacts
 	sigset_t oldmask;		/* saved mask from before sigpause */
 	long flags;			/* signal flags, below */
 	long links;			/* reference count */
-};
 
-/* signal flags */
-# define SAS_OLDMASK	0x01		/* need to restore mask before pause */
+	/* Thread-specific signal handling */
+	int thread_signals;             /* 1 if thread-specific signals enabled */
+
+};
 
 /* helper macro */
 # define SIGACTION(p, sig)		((p)->p_sigacts->sigact[(sig)])
