@@ -496,106 +496,78 @@ notrace2:
 	CFI_ENDPROC()
 	END(change_context)
 
-// FPU handling subroutines
 
-save_fpu_for_build:
+// Common FPU save function - uses macros to avoid register conflicts
+
+// Macro for common FPU save code
+.macro SAVE_FPU_COMMON label_skip, label_cf
 	tst.w	SYM(fpu)		// FPU present?
-	beq.s	fpu_build_done
+	beq.s	\label_skip
 #ifdef __mcoldfire__
-	bra	save_cf_build
+	bra	\label_cf
 #else
 	fsave	C_FSTATE(a0)		// Save FPU internal state
 #ifndef M68000
 	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
-	bne.s	no60_build
+	bne.s	check_null_frame_\@
 	tst.b	C_FSTATE+2(a0)		// Check for null frame
-	beq.s	fpu_build_done		// Skip if FPU not in use
-	bra.s	save_build
-no60_build:
+	beq.s	\label_skip		// Skip if FPU not in use
+	bra.s	save_fpu_regs_\@
+check_null_frame_\@:
 #endif
 	tst.b	C_FSTATE(a0)		// Check for null frame
-	beq	fpu_build_done		// Skip if FPU not in use
-save_build:
-	fmovem.x fp0-fp7,C_FREGS(a0)		// Save FP data registers
+	beq	\label_skip		// Skip if FPU not in use
+save_fpu_regs_\@:	fmovem.x fp0-fp7,C_FREGS(a0)		// Save FP data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// Save FP control registers
 #endif
+.endm
+
+// Macro for common FPU restore code
+.macro RESTORE_FPU_COMMON label_skip, label_cf
+	tst.w	SYM(fpu)		// FPU present?
+	beq	\label_skip
+#ifdef __mcoldfire__
+	bra	\label_cf
+#else
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
+	bne.s	check_null_frame_\@
+	tst.b	C_FSTATE+2(a0)		// Check for null frame
+	beq	\label_skip		// Skip if FPU not in use
+	bra.s	restore_fpu_regs_\@
+check_null_frame_\@:
+#endif
+	tst.b	C_FSTATE(a0)		// Check for null frame
+	beq	\label_skip		// Skip if FPU not in use
+restore_fpu_regs_\@:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// Restore FP control registers
+	fmovem.x C_FREGS(a0),fp0-fp7		// Restore FP data registers
+	frestore C_FSTATE(a0)			// Restore FP internal state
+#endif
+.endm
+
+save_fpu_for_build:
+	SAVE_FPU_COMMON fpu_build_done, save_cf_build
 save_cf_build:	
 fpu_build_done:
 	rts
 
 save_fpu_for_save:
-	tst.w	SYM(fpu)		// FPU present?
-	beq.s	fpu_save_done
-#ifdef __mcoldfire__
-	bra	save_cf_save
-#else	
-	fsave	C_FSTATE(a0)		// Save FPU internal state
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
-	bne.s	no60_2
-	tst.b	C_FSTATE+2(a0)		// Check for null frame
-	beq.s	fpu_save_done		// Skip if FPU not in use
-	bra.s	save2
-no60_2:
-#endif
-	tst.b	C_FSTATE(a0)		// Check for null frame
-	beq	fpu_save_done		// Skip if FPU not in use
-save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// Save FP data registers
-	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// Save FP control registers
-#endif
+	SAVE_FPU_COMMON fpu_save_done, save_cf_save
 save_cf_save:	
 fpu_save_done:
 	rts
 
 restore_fpu_for_restore:
-	tst.w	SYM(fpu)		// FPU present?
-	beq	fpu_restore_done
- 
-#ifdef __mcoldfire__
-	bra	restore_cf_restore
-#else
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
-	bne.s	no60_3
-	tst.b	C_FSTATE+2(a0)		// Check for null frame
-	beq	short4			// Skip if FPU not in use
-	bra.s	save3
-no60_3:
-#endif
-	tst.b	C_FSTATE(a0)		// Check for null frame
-	beq	short4			// Skip if FPU not in use
-save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// Restore FP control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// Restore FP data registers
-short4:
-	frestore C_FSTATE(a0)			// Restore FP internal state
-#endif
+	RESTORE_FPU_COMMON fpu_restore_skip, restore_cf_restore
 restore_cf_restore:	
+fpu_restore_skip:
 fpu_restore_done:
 	rts
 
 restore_fpu_for_change:
-	tst.w	SYM(fpu)		// FPU present?
-	beq	fpu_change_done
- 
-#ifdef __mcoldfire__
-	bra	restore_cf_change
-#else
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
-	bne.s	no60_4
-	tst.b	C_FSTATE+2(a0)		// Check for null frame
-	beq.s	short5			// Skip if FPU not in use
-	bra.s	save5
-no60_4:
-#endif
-	tst.b	C_FSTATE(a0)		// Check for null frame
-	beq.s	short5			// Skip if FPU not in use
-save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// Restore FP control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// Restore FP data registers
-short5:
-	frestore C_FSTATE(a0)			// Restore FP internal state
-#endif
+	RESTORE_FPU_COMMON fpu_change_skip, restore_cf_change
 restore_cf_change:	
+fpu_change_skip:
 fpu_change_done:
 	rts
 
