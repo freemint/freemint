@@ -88,23 +88,19 @@
 
 .macro SETUP_FRAME_RESTORATION
 	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// Get frame format word
+	move.w	(a1)+,d1		// Get frame format word directly into d1
 #ifdef __mcoldfire__
-	moveq	#0,d1
-#endif
-	move.w	d0,d1			// Copy for frame size calc
-#ifdef __mcoldfire__
-	lsr.l	#8,d1			// Isolate frame format ID
-	lsr.l	#4,d1
+	lsr.l	#8,d1			// ColdFire: First shift by 8
+	lsr.l	#4,d1			// ColdFire: Then shift by 4 (total 12)
+	add.l	d1,d1			// ColdFire: Convert to word offset (long operation)
+	lea	framesizes_table(pc),a2	// ColdFire: Load table address
+	move.w	0(a2,d1.l),d1		// ColdFire: Lookup with long index
 #else
-	lsr.w	#8,d1			// Isolate frame format ID
-	lsr.w	#4,d1
-#endif
-	lea	SYM(framesizes),a2
-#ifdef __mcoldfire__
-	move.b	0(a2,d1.l),d1
-#else
-	move.b	0(a2,d1.w),d1
+	lsr.w	#8,d1			// 68K: First shift by 8
+	lsr.w	#4,d1			// 68K: Then shift by 4 (total 12)
+	add.w	d1,d1			// 68K: Convert to word offset
+	lea	framesizes_table(pc),a2	// 68K: Load table address
+	move.w	0(a2,d1.w),d1		// 68K: Lookup with word index
 #endif
 	beq.s	99f			// Skip if no extra data (local label)
 #ifdef __mcoldfire__
@@ -125,7 +121,8 @@
 98:	move.w	(a1)+,(a2)+		// Copy internal state to stack
 	dbf	d1,98b
 #endif
-99:	move.w	d0,-(sp)		// Push frame format word
+99:	move.w	-2(a1),-(sp)		// Push frame format word (reload from saved location)
+								// a1 was incremented past the format word, so use -2(a1)
 .endm
 
 	FUNC(build_context)
@@ -472,6 +469,26 @@ notrace2:
 	rte				// Return to saved context
 	CFI_ENDPROC()
 	END(change_context)
+
+// Frame size lookup table (PC-relative access)
+// Index by format field (bits 15-12 of format word) * 2 (word offset)
+framesizes_table:
+	.word	0	// Format 0: Normal 4-word frame (0 extra bytes)
+	.word	0	// Format 1: Throwaway frame (0 extra bytes)  
+	.word	4	// Format 2: 6-word frame (4 extra bytes)
+	.word	4	// Format 3: Coprocessor frame (4 extra bytes)
+	.word	8	// Format 4: 8-word frame (8 extra bytes)
+	.word	0	// Format 5: Undefined (0 extra bytes)
+	.word	0	// Format 6: Undefined (0 extra bytes)
+	.word	0	// Format 7: Undefined (0 extra bytes)
+	.word	58	// Format 8: 68010 bus error (58 extra bytes)
+	.word	20	// Format 9: Coprocessor mid-instruction (20 extra bytes)
+	.word	32	// Format A: 68020/030 short bus error (32 extra bytes)
+	.word	92	// Format B: 68020/030 long bus error (92 extra bytes)
+	.word	12	// Format C: 68040 bus error (12 extra bytes)
+	.word	84	// Format D: 68060 bus error (84 extra bytes)
+	.word	0	// Format E: Undefined (0 extra bytes)
+	.word	0	// Format F: Undefined (0 extra bytes)
 
 // Macro for common FPU save code
 .macro SAVE_FPU_COMMON label_skip, label_cf
