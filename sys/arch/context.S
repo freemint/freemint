@@ -72,6 +72,15 @@
 
 // Stack frame format Macro
 .macro SWITCH_STACKS
+#ifdef M68000
+	move.l	C_SSP(a0),a1		// Load SSP
+	tst.b	-64(a1)			// Single touch for stack
+	move.l	a1,sp			// Restore SSP
+	move.l	C_USP(a0),a1		// Load USP
+	move.l	a1,%usp			// Restore USP
+	move.l	C_TERM(a0),d0		// Temp for terminate vector
+	move.l	d0,(0x408).w
+#else
 	movem.l	C_PC(a0),d1/a1		// Load PC and SSP together (d1=PC, a1=SSP)
 	tst.b	-64(a1)			// Single touch for VM + stack growth check
 	move.l	a1,sp			// Restore SSP (a1 = SSP from movem)
@@ -80,84 +89,98 @@
 
 	move.l	C_TERM(a0),d0		// Use d0 as temporary (safe before register restore)
 	move.l	d0,(0x408).w		// Restore GEMDOS terminate vector
-
+#endif
 .endm
 
 .macro SETUP_FRAME_RESTORATION
+    // Save registers once with optimal instruction
 #ifdef __mcoldfire__
-	move.l	d2,-(sp)
-	move.l	d3,-(sp)
+    move.l d2,-(sp)
 #else
-	movem.l	d2-d3,-(sp)		// Save d2-d3 for MMU code
-#endif
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d1		// Get frame format word directly into d1
-#ifdef __mcoldfire__
-	move.l	d1,d2
-	lsr.l	#8,d2			// First shift 8 bits
-	lsr.l	#4,d2			// Then shift 4 bits (total 12)
-	and.l	#0x000F,d2		// Mask to 4-bit frame type
-	add.l	d2,d2			// Word offset (d2*2)
-#else	
-	move.w	d1,d2
-	lsr.w	#8,d2			// First shift 8 bits
-	lsr.w	#4,d2			// Then shift 4 bits (total 12)
-	and.w	#0x000F,d2		// Mask to 4-bit frame type
-	add.w	d2,d2			// Word offset (d2*2)
-#endif
-	lea	framesizes_table(pc),a2
-#ifdef __mcoldfire__
-	move.w	0(a2,d2.l),d1		// Get word count (ColdFire: long index)
-#else
- 	move.w	0(a2,d2.w),d1		// Get word count
-#endif
-	beq.s	99f			// Skip if no extra data (local label)
-
-	// Calculate byte count = word count * 2
-	move.l	d1,d3
-	add.l	d3,d3			// d3 = byte count
-	// Allocate stack space
-#ifdef __mcoldfire__
-	sub.l	d3,sp
-#else
-	sub.w	d3,sp
+	movem.l a2-a3,-(sp)			// Use address registers
 #endif
 
-	move.l	sp,a2
-	// Copy using longwords (2 words/iteration)
+    // Get frame format and calculate table offset in one pass
+    lea C_SFMT(a0),a1
+    move.w (a1)+,d1                // Get frame format word
+    
+    // Extract format bits and create table offset efficiently
 #ifdef __mcoldfire__
-	move.l	d1,d3
-	lsr.l	#1,d3			// Longword count
-	beq.s	1f
-	subq.l	#1,d3
-2:	move.l	(a1)+,(a2)+
-	subq.l	#1,d3
-	bpl.s	2b
-1:	btst	#0,d1			// Odd word?
-	beq.s	3f
-	move.w	(a1)+,(a2)+		// Copy last word
-3:
-	#else
-	move.w	d1,d3
-	lsr.w	#1,d3			// Longword count
-	beq.s	1f
-	subq.w	#1,d3
-2:	move.l	(a1)+,(a2)+
-	dbf	d3,2b
-1:	btst	#0,d1			// Odd word?
-	beq.s	3f
-	move.w	(a1)+,(a2)+		// Copy last word
-3:
-	#endif
-
-99:
-#ifdef __mcoldfire__
-	move.l	(sp)+,d3
-	move.l	(sp)+,d2
+    move.l d1,d2
+    lsr.l #8,d2                    // Shift to get format bits
+    lsr.l #4,d2                    // Total shift of 12
+    and.l #0x000F,d2               // Mask to 4 bits
+    add.l d2,d2                    // Convert to word offset
 #else
-	movem.l	(sp)+,d2-d3		// Restore d2-d3 for MMU code
+    move.w d1,d2
+    lsr.w #8,d2
+    lsr.w #4,d2                    // Total 12-bit shift
+    add.w d2,d2                    // Word offset
 #endif
-	move.w	C_SFMT(a0),-(sp)	// Push frame format word (directly from context)
+
+    // Get frame size with single memory access
+    lea framesizes_table(pc),a2
+#ifdef __mcoldfire__
+    move.w 0(a2,d2.l),a3           // a3 = word count
+#else
+    move.w 0(a2,d2.w),a3           // a3 = word count
+#endif	
+    
+    // Skip if no extra data
+    tst.w a3
+    beq.s 99f
+
+    // Calculate and allocate stack space
+    move.l d2,d3
+    add.l d3,d3                    // d3 = byte count (word count * 2)
+    
+#ifdef __mcoldfire__
+    sub.l d3,sp
+#else
+    sub.w d3,sp
+#endif
+    
+    // Copy data using optimized loop
+    move.l sp,a2
+    
+#ifdef __mcoldfire__
+    // ColdFire: Use longword copy with remainder handling
+    move.l d2,d3
+    lsr.l #1,d3                    // Longword count
+    beq.s 2f
+    
+1:  move.l (a1)+,(a2)+
+    subq.l #1,d3
+    bne.s 1b
+    
+2:  btst #0,d2                     // Check if odd word count
+    beq.s 99f
+    move.w (a1)+,(a2)+             // Copy remaining word
+#else
+    // 68K: Use optimized dbf loop
+    move.w d2,d3
+    lsr.w #1,d3                    // Longword count
+    beq.s 2f
+    subq.w #1,d3                   // Adjust for dbf
+    
+1:  move.l (a1)+,(a2)+
+    dbf d3,1b
+    
+2:  btst #0,d2                     // Check if odd word count
+    beq.s 99f
+    move.w (a1)+,(a2)+             // Copy remaining word
+#endif
+
+99: // Restore registers
+#ifdef __mcoldfire__
+    move.l (sp)+,d3
+    move.l (sp)+,d2
+#else
+    movem.l (sp)+,d2-d3
+#endif
+    
+    // Push frame format word
+    move.w C_SFMT(a0),-(sp)
 .endm
 
 	FUNC(build_context)
@@ -170,7 +193,7 @@ SYM(build_context):
 
 #ifdef WITH_MMU_SUPPORT
 	tst.w	SYM(no_mem_prot)	// Memory protection enabled?
-	bne.s	noprot1
+	bne.s	noprot1				// Predict: MMU protection usually disabled
 #if defined (M68040) || defined (M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)		// Save CRP
@@ -182,6 +205,7 @@ noprot1:
 #endif
 	clr.b	C_PTRACE(a0)		// Clear pending trace flag
 	lea	12(sp),a1		// Stack frame start
+	moveq	#0,d1			// Pre-clear d1 for ColdFire compatibility	
 	move.w	(a1)+,d0		// 68000 fake frame format
 
 #ifdef __mcoldfire__
@@ -237,16 +261,12 @@ nofpu:
 	lea	C_SFMT(a0),a2
 #ifdef	__mcoldfire__
 	moveq	#0,d1
+	move.w	(a1),d1			// Get format word
+	lsr.l	#8,d1
+	lsr.l #4,d1				// Extract format (combined)	
 #endif
-	move.w	(a1)+,d1		// Fetch frame format word
+	move.w	(a1)+,(a2)+		// Store frame format word and advance
 	move.w	d1,(a2)+		// Store frame format
-#ifdef	__mcoldfire__
-	lsr.l	#8,d1			// Isolate frame format ID
-	lsr.l	#4,d1
-#else
-	lsr.w	#8,d1			// Isolate frame format ID
-	lsr.w	#4,d1
-#endif
 	lea	SYM(framesizes),a3
 #ifdef	__mcoldfire__
 	move.b	0(a3,d1.l),d1
@@ -326,8 +346,8 @@ SYM(save_context):
 
 #ifdef WITH_MMU_SUPPORT
 	tst.w	SYM(no_mem_prot)	// Memory protection enabled?
-	bne.s	noprot2
-	move.w	sr,d1
+	bne.s	noprot2				// Predict: MMU protection usually disabled
+	move.w	sr,d1				// Save SR before MMU operations
 #if defined(M68040) || defined(M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)		// Save CRP
@@ -382,9 +402,9 @@ save_ptrace:
 
 	FUNC(restore_context)
 SYM(restore_context):
+	move.l	4(sp),a0		// Get context early (pipeline optimization)
 	CFI_STARTPROC()
 #ifdef	__mcoldfire__
-	move.w	sr,d1
 	ori.l	#0x0400,d1
 	move.w	d1,sr			// Disable interrupts
 #else
@@ -435,9 +455,9 @@ notrace:
 
 	FUNC(change_context)
 SYM(change_context):
+	move.l	4(sp),a0		// Get context early (pipeline optimization)
 	CFI_STARTPROC()
 #ifdef	__mcoldfire__
-	move.w	sr,d1
 	ori.l	#0x0400,d1
 	move.w	d1,sr			// Disable interrupts
 #else
