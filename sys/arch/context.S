@@ -73,8 +73,7 @@
 // Stack frame format Macro
 .macro SWITCH_STACKS
 	movem.l	C_PC(a0),d1/a1		// Load PC and SSP together (d1=PC, a1=SSP)
-	tst.b	(a1)			// Touch page for VM
-	tst.b	-63(a1)			// Check stack growth space
+	tst.b	-64(a1)			// Single touch for VM + stack growth check
 	move.l	a1,sp			// Restore SSP (a1 = SSP from movem)
 	move.l	C_USP(a0),a1	// Load USP separately (not adjacent)
 	move.l	a1,%usp			// Restore USP
@@ -85,42 +84,80 @@
 .endm
 
 .macro SETUP_FRAME_RESTORATION
+#ifdef __mcoldfire__
+	move.l	d2,-(sp)
+	move.l	d3,-(sp)
+#else
+	movem.l	d2-d3,-(sp)		// Save d2-d3 for MMU code
+#endif
 	lea	C_SFMT(a0),a1
 	move.w	(a1)+,d1		// Get frame format word directly into d1
 #ifdef __mcoldfire__
-	lsr.l	#8,d1			// ColdFire: First shift by 8
-	lsr.l	#4,d1			// ColdFire: Then shift by 4 (total 12)
-	add.l	d1,d1			// ColdFire: Convert to word offset (long operation)
-	lea	framesizes_table(pc),a2	// ColdFire: Load table address
-	move.w	0(a2,d1.l),d1		// ColdFire: Lookup with long index
+	move.l	d1,d2
+	lsr.l	#8,d2			// First shift 8 bits
+	lsr.l	#4,d2			// Then shift 4 bits (total 12)
+	and.l	#0x000F,d2		// Mask to 4-bit frame type
+	add.l	d2,d2			// Word offset (d2*2)
+#else	
+	move.w	d1,d2
+	lsr.w	#8,d2			// First shift 8 bits
+	lsr.w	#4,d2			// Then shift 4 bits (total 12)
+	and.w	#0x000F,d2		// Mask to 4-bit frame type
+	add.w	d2,d2			// Word offset (d2*2)
+#endif
+	lea	framesizes_table(pc),a2
+#ifdef __mcoldfire__
+	move.w	0(a2,d2.l),d1		// Get word count (ColdFire: long index)
 #else
-	lsr.w	#8,d1			// 68K: First shift by 8
-	lsr.w	#4,d1			// 68K: Then shift by 4 (total 12)
-	add.w	d1,d1			// 68K: Convert to word offset
-	lea	framesizes_table(pc),a2	// 68K: Load table address
-	move.w	0(a2,d1.w),d1		// 68K: Lookup with word index
+ 	move.w	0(a2,d2.w),d1		// Get word count
 #endif
 	beq.s	99f			// Skip if no extra data (local label)
+
+	// Calculate byte count = word count * 2
+	move.l	d1,d3
+	add.l	d3,d3			// d3 = byte count
+	// Allocate stack space
 #ifdef __mcoldfire__
-	sub.l	d1,sp			// Allocate space on stack
-	sub.l	d1,sp
+	sub.l	d3,sp
 #else
-	sub.w	d1,sp			// Allocate space on stack
-	sub.w	d1,sp
+	sub.w	d3,sp
 #endif
+
 	move.l	sp,a2
+	// Copy using longwords (2 words/iteration)
 #ifdef __mcoldfire__
-	subq.l	#1,d1			// Adjust loop counter
-98:	move.w	(a1)+,(a2)+		// Copy internal state to stack
-	subq.l	#1,d1
-	bpl.s	98b
+	move.l	d1,d3
+	lsr.l	#1,d3			// Longword count
+	beq.s	1f
+	subq.l	#1,d3
+2:	move.l	(a1)+,(a2)+
+	subq.l	#1,d3
+	bpl.s	2b
+1:	btst	#0,d1			// Odd word?
+	beq.s	3f
+	move.w	(a1)+,(a2)+		// Copy last word
+3:
+	#else
+	move.w	d1,d3
+	lsr.w	#1,d3			// Longword count
+	beq.s	1f
+	subq.w	#1,d3
+2:	move.l	(a1)+,(a2)+
+	dbf	d3,2b
+1:	btst	#0,d1			// Odd word?
+	beq.s	3f
+	move.w	(a1)+,(a2)+		// Copy last word
+3:
+	#endif
+
+99:
+#ifdef __mcoldfire__
+	move.l	(sp)+,d3
+	move.l	(sp)+,d2
 #else
-	subq.w	#1,d1			// Adjust loop counter
-98:	move.w	(a1)+,(a2)+		// Copy internal state to stack
-	dbf	d1,98b
+	movem.l	(sp)+,d2-d3		// Restore d2-d3 for MMU code
 #endif
-99:	move.w	-2(a1),-(sp)		// Push frame format word (reload from saved location)
-								// a1 was incremented past the format word, so use -2(a1)
+	move.w	C_SFMT(a0),-(sp)	// Push frame format word (directly from context)
 .endm
 
 	FUNC(build_context)
