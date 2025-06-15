@@ -144,18 +144,55 @@
     move.l sp,a2
     
 #ifdef __mcoldfire__
-    // ColdFire: Use longword copy with remainder handling
-    move.l d2,d3
-    lsr.l #1,d3                    // Longword count
-    beq.s 2f
+    // ColdFire V4e optimized copy using movem
+    move.l d2,d4                   // d4 = word count
+    beq.s   770f                   // Skip if zero length
+
+    // Check for 8+ words (16+ bytes)
+    cmp.l   #8,d4
+    blo.s   760f
     
-1:  move.l (a1)+,(a2)+
-    subq.l #1,d3
-    bne.s 1b
+    // 16-byte block copy (4 words/iteration)
+    move.l  d4,d5
+    lsr.l   #2,d5                  // d5 = block count (4 words per)
+    subq.l  #1,d5                  // Adjust for loop
     
-2:  btst #0,d2                     // Check if odd word count
-    beq.s 99f
-    move.w (a1)+,(a2)+             // Copy remaining word
+750:
+    movem.l (a1),d0-d3             // Load 4 words
+    adda.l  #16,a1                 // Advance source
+    movem.l d0-d3,(a2)             // Store 4 words
+    adda.l  #16,a2                 // Advance destination
+    subq.l  #1,d5
+    bpl.s   750b
+    
+    // Calculate remaining words
+    move.l  d4,d5
+    andi.l  #3,d5                  // Remaining words (0-3)
+    beq.s   770f
+    
+760: // Small copy (1-7 words)
+    // Check for 4+ words
+    cmp.l   #4,d5
+    blo.s   765f
+    movem.l (a1),d0-d1             // Load 2 words
+    adda.l  #8,a1
+    movem.l d0-d1,(a2)
+    adda.l  #8,a2
+    subq.l  #4,d5
+    beq.s   770f
+    
+765: // Copy 1-3 words
+    // Check for 2+ words
+    cmp.l   #2,d5
+    blo.s   768f
+    move.l  (a1)+,(a2)+            // Copy 2 words
+    subq.l  #2,d5
+    beq.s   770f
+    
+768: // Copy final word
+    move.w  (a1)+,(a2)+
+    
+770: // Copy done
 #else
     // 68K: Use optimized dbf loop
     move.w d2,d3
@@ -423,7 +460,7 @@ SYM(restore_context):
 	move.l	C_PC(a0),-(sp)		// Push return PC
 	move.w	C_SR(a0),-(sp)		// Push SR
 	move.w	#0x4000,-(sp)		// Push standard frame marker
-	bra.s	restore_check_trace
+	bra	restore_check_trace
 restore_68k:
 #endif
 #ifdef M68000
@@ -495,7 +532,7 @@ noprot4:
 	move.l	C_PC(a0),-(sp)		// Push return PC
 	move.w	C_SR(a0),-(sp)		// Push SR
 	move.w	#0x4000,-(sp)		// Push standard frame marker
-	bra.s	change_check_trace
+	bra	change_check_trace
 change_68k:
 #endif
 #ifdef M68000
