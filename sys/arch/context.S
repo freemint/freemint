@@ -7,8 +7,7 @@
  * Copyright 1992,1993,1994 Atari Corporation
  * All rights reserved.
  *
- *
- * routines for saving/restoring user contexts
+ * Routines for saving/restoring user contexts:
  *
  * long build_context(struct context *sav, short fmt):
  *	Called from an interrupt handler (such as the trap #1 routine
@@ -71,147 +70,305 @@
 
 	.text
 
+// Stack frame format Macro
+.macro SWITCH_STACKS
+#ifdef M68000
+	move.l	C_SSP(a0),a1		// Load SSP
+	tst.b	-64(a1)			// Single touch for stack
+	move.l	a1,sp			// Restore SSP
+	move.l	C_USP(a0),a1		// Load USP
+	move.l	a1,%usp			// Restore USP
+	move.l	C_TERM(a0),d0		// Temp for terminate vector
+	move.l	d0,(0x408).w
+#else
+	movem.l	C_PC(a0),d1/a1		// Load PC and SSP together (d1=PC, a1=SSP)
+	tst.b	-64(a1)			// Single touch for VM + stack growth check
+	move.l	a1,sp			// Restore SSP (a1 = SSP from movem)
+	move.l	C_USP(a0),a1	// Load USP separately (not adjacent)
+	move.l	a1,%usp			// Restore USP
+
+	move.l	C_TERM(a0),d0		// Use d0 as temporary (safe before register restore)
+	move.l	d0,(0x408).w		// Restore GEMDOS terminate vector
+#endif
+.endm
+
+.macro SETUP_FRAME_RESTORATION
+    // Save registers once with optimal instruction
+#ifdef __mcoldfire__
+    move.l d2,-(sp)
+#else
+	movem.l a2-a3,-(sp)			// Use address registers
+#endif
+
+    // Get frame format and calculate table offset in one pass
+    lea C_SFMT(a0),a1
+    move.w (a1)+,d1                // Get frame format word
+    
+    // Extract format bits and create table offset efficiently
+#ifdef __mcoldfire__
+    move.l d1,d2
+    lsr.l #8,d2                    // Shift to get format bits
+    lsr.l #4,d2                    // Total shift of 12
+    and.l #0x000F,d2               // Mask to 4 bits
+    add.l d2,d2                    // Convert to word offset
+#else
+    move.w d1,d2
+    lsr.w #8,d2
+    lsr.w #4,d2                    // Total 12-bit shift
+    add.w d2,d2                    // Word offset
+#endif
+
+    // Get frame size with single memory access
+    lea framesizes_table(pc),a2
+#ifdef __mcoldfire__
+    move.w 0(a2,d2.l),a3           // a3 = word count
+#else
+    move.w 0(a2,d2.w),a3           // a3 = word count
+#endif	
+    
+    // Skip if no extra data
+    tst.w a3
+    beq.s 99f
+
+    // Calculate and allocate stack space
+    move.l d2,d3
+    add.l d3,d3                    // d3 = byte count (word count * 2)
+    
+#ifdef __mcoldfire__
+    sub.l d3,sp
+#else
+    sub.w d3,sp
+#endif
+    
+    // Copy data using optimized loop
+    move.l sp,a2
+    
+#ifdef __mcoldfire__
+    // ColdFire V4e optimized copy using movem
+    move.l d2,d4                   // d4 = word count
+    beq.s   770f                   // Skip if zero length
+
+    // Check for 8+ words (16+ bytes)
+    cmp.l   #8,d4
+    blo.s   760f
+    
+    // 16-byte block copy (4 words/iteration)
+    move.l  d4,d5
+    lsr.l   #2,d5                  // d5 = block count (4 words per)
+    subq.l  #1,d5                  // Adjust for loop
+    
+750:
+    movem.l (a1),d0-d3             // Load 4 words
+    adda.l  #16,a1                 // Advance source
+    movem.l d0-d3,(a2)             // Store 4 words
+    adda.l  #16,a2                 // Advance destination
+    subq.l  #1,d5
+    bpl.s   750b
+    
+    // Calculate remaining words
+    move.l  d4,d5
+    andi.l  #3,d5                  // Remaining words (0-3)
+    beq.s   770f
+    
+760: // Small copy (1-7 words)
+    // Check for 4+ words
+    cmp.l   #4,d5
+    blo.s   765f
+    movem.l (a1),d0-d1             // Load 2 words
+    adda.l  #8,a1
+    movem.l d0-d1,(a2)
+    adda.l  #8,a2
+    subq.l  #4,d5
+    beq.s   770f
+    
+765: // Copy 1-3 words
+    // Check for 2+ words
+    cmp.l   #2,d5
+    blo.s   768f
+    move.l  (a1)+,(a2)+            // Copy 2 words
+    subq.l  #2,d5
+    beq.s   770f
+    
+768: // Copy final word
+    move.w  (a1)+,(a2)+
+    
+770: // Copy done
+#else
+    // 68K: Use optimized dbf loop
+    move.w d2,d3
+    lsr.w #1,d3                    // Longword count
+    beq.s 2f
+    subq.w #1,d3                   // Adjust for dbf
+    
+1:  move.l (a1)+,(a2)+
+    dbf d3,1b
+    
+2:  btst #0,d2                     // Check if odd word count
+    beq.s 99f
+    move.w (a1)+,(a2)+             // Copy remaining word
+#endif
+
+99: // Restore registers
+#ifdef __mcoldfire__
+    move.l (sp)+,d3
+    move.l (sp)+,d2
+#else
+    movem.l (sp)+,d2-d3
+#endif
+    
+    // Push frame format word
+    move.w C_SFMT(a0),-(sp)
+.endm
+
 	FUNC(build_context)
 SYM(build_context):
 	CFI_STARTPROC()
-	move.l	a0,-(sp)		// save a0; we'll use it for scratch
-	move.l	8(sp),a0		// get address of save area
+	move.l	a0,-(sp)		// Save a0 (scratch use)
+	move.l	8(sp),a0		// Get context save area address
 
-	movem.l	d0-d7/a0-a6,(a0)	// save registers D0-D7/A0-A6
+	movem.l	d0-d7/a0-a6,(a0)	// Save registers D0-D7/A0-A6
 
 #ifdef WITH_MMU_SUPPORT
-	tst.w	SYM(no_mem_prot)		// is there memory protection?
-	bne.s	noprot1
+	tst.w	SYM(no_mem_prot)	// Memory protection enabled?
+	bne.s	noprot1				// Predict: MMU protection usually disabled
 #if defined (M68040) || defined (M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
-	move.l	d0,C_CRP(a0)
+	move.l	d0,C_CRP(a0)		// Save CRP
 #else
-	pmove	%crp,C_CRP(a0)		// save CRP from MMU
-	pmove	%tc,C_TC(a0)		// save TC from MMU
+	pmove	%crp,C_CRP(a0)		// Save MMU CRP
+	pmove	%tc,C_TC(a0)		// Save MMU TC
 #endif
 noprot1:
 #endif
-	clr.b	C_PTRACE(a0)		// no pending traces, thanks!
-	lea	12(sp),a1		// start of the interesting stack area
+	clr.b	C_PTRACE(a0)		// Clear pending trace flag
+	lea	12(sp),a1		// Stack frame start
+	moveq	#0,d1			// Pre-clear d1 for ColdFire compatibility	
 	move.w	(a1)+,d0		// 68000 fake frame format
 
 #ifdef __mcoldfire__
 	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	build_68k
 
-	move.w	(a1)+,C_SFMT(a0)	// save format/vector word of context
-	move.w	(a1)+,d0		// get SR of context
-	move.w	d0,C_SR(a0)		// save it
-	move.l	(a1)+,C_PC(a0)		// save PC of context
+	move.w	(a1)+,C_SFMT(a0)	// Save format/vector word
+	move.w	(a1)+,d0		// Get SR
+	move.w	d0,C_SR(a0)		// Save SR
+	move.l	(a1)+,C_PC(a0)		// Save PC
 
 	move.w	C_SFMT(a0),d1
-	andi.l	#0x3000,d1		// keep the filler size bits
+	andi.l	#0x3000,d1		// Extract filler size bits
 	beq.s	build_stack_fixed
-	addq.l	#2,a1			// assume 2-byte filler after the exception frame
+	addq.l	#2,a1			// Skip 2-byte frame filler
 build_stack_fixed:
 
-	pea	short1(pc)		// return address
+	pea	short1(pc)		// Set return address
 	bra	save_coldfire_fpu
 
 build_68k:
 #endif
 #ifdef M68000
-	move.w	(0x59e).w,d1		// get process frame flag
-	bne.s	nojunk			// we have some junk on the stack
-	move.w	d0,C_SFMT(a0)		// save fake frame format
-	subq.w	#0x8,d0			// if bus error (note: subq is faster than
-	beq.s	group0			// cmp, and we won't need d0 later)
-	subq.w	#0x4,d0			// or address error (0xC==0x8+0x4)
+	move.w	(0x59e).w,d1		// Get process frame flag
+	bne.s	nojunk			// Skip if no stack junk
+	move.w	d0,C_SFMT(a0)		// Save fake frame format
+	subq.w	#0x8,d0			// Check for bus error
+	beq.s	group0			// (faster than cmp)
+	subq.w	#0x4,d0			// Check for address error
 	bne.s	nojunk
 group0:
-	move.l	(a1)+,C_INTERNAL(a0)	// stash it in the internal area
-	move.l	(a1)+,C_INTERNAL+4(a0)	// if a debugger's interested
+	move.l	(a1)+,C_INTERNAL(a0)	// Save internal state part 1
+	move.l	(a1)+,C_INTERNAL+4(a0)	// Save internal state part 2
 nojunk:
 #endif
-	move.w	(a1)+,d0		// get SR of context
-	move.w	d0,C_SR(a0)		// save it
-	move.l	(a1)+,C_PC(a0)		// save PC of context
+	move.w	(a1)+,d0		// Get SR
+	move.w	d0,C_SR(a0)		// Save SR
+	move.l	(a1)+,C_PC(a0)		// Save PC
 #ifdef M68000
-	tst.w	d1			// test longframe (AKP)
-	beq.s	short1			// short
+	tst.w	d1			// Check longframe flag (AKP)
+	beq.s	short1			// Skip if short frame
 #endif
 
-// save the FPU state
+// Save FPU state
 #ifdef	__mcoldfire__
-	pea	nofpu(pc)		// return address
+	pea	nofpu(pc)		// Set return address
 	bra	save_coldfire_fpu
 #else
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	nofpu
-
-	fsave	C_FSTATE(a0)		// save internal state frame
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60
-	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu			// skip programmer's model save
-	bra.s	save
-no60:
+	bsr	save_fpu_for_build
 #endif
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu			// skip programmer's model save
-save:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
-	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
-#endif /* __mcoldfire__ */
 
 nofpu:
 	lea	C_SFMT(a0),a2
 #ifdef	__mcoldfire__
 	moveq	#0,d1
+	move.w	(a1),d1			// Get format word
+	lsr.l	#8,d1
+	lsr.l #4,d1				// Extract format (combined)	
 #endif
-	move.w	(a1)+,d1		// fetch frame format word
-	move.w	d1,(a2)+		// and stash it away for later
-#ifdef	__mcoldfire__
-	lsr.l	#8,d1			// isolate the frame format identifier
-	lsr.l	#4,d1
-#else
-	lsr.w	#8,d1			// isolate the frame format identifier
-	lsr.w	#4,d1
-#endif
+	move.w	(a1)+,(a2)+		// Store frame format word and advance
+	move.w	d1,(a2)+		// Store frame format
 	lea	SYM(framesizes),a3
 #ifdef	__mcoldfire__
 	move.b	0(a3,d1.l),d1
 #else
 	move.b	0(a3,d1.w),d1
 #endif
-	beq.s	short1			// if no data to save, skip this
+	beq.s	short1			// Skip if no extra data
 #ifdef	__mcoldfire__
-	subq.l	#1,d1			// correct for first time through loop
+	subq.l	#1,d1			// Adjust loop counter
 #else
-	subq.w	#1,d1			// correct for first time through loop
+	subq.w	#1,d1			// Adjust loop counter
 #endif
+#ifdef M68000
+	// 68000: Use simple loop (optimized for code size)
 bcint:
-	move.w	(a1)+,(a2)+		// copy CPU internal state
+	move.w	(a1)+,(a2)+		// Copy CPU internal state
 bcover:
+	dbra	d1,bcint
+#elif defined(__mcoldfire__)
+	// ColdFire: Use simple loop (ColdFire restrictions)
+bcint:
+	move.w	(a1)+,(a2)+		// Copy CPU internal state
+bcover:
+	subq.l	#1,d1
+	bpl.s	bcint	
+#else
+	// 68020+: Optimize for small frames using jump table
+	cmp.w	#3,d1			// Check if ≤3 words (most common)
+	bhi.s	bcint_loop		// Use loop for larger frames
+	add.w	d1,d1			// Convert to word offset
+	jmp	build_copy_table(pc,d1.w)
+build_copy_table:
+	bra.s	short1			// 0 words - done
+	bra.s	build_copy_1w		// 1 word
+	bra.s	build_copy_2w		// 2 words
+	bra	build_copy_3w		// 3 words
+build_copy_3w: move.w	(a1)+,(a2)+
+build_copy_2w: move.w	(a1)+,(a2)+
+build_copy_1w: move.w	(a1)+,(a2)+
+	bra.s	short1
+bcint_loop:
+	move.w	(a1)+,(a2)+		// Copy CPU internal state
 #ifdef	__mcoldfire__
 	subq.l	#1,d1
-	bpl.s	bcint
+	bpl.s	bcint_loop
 #else
-	dbra	d1,bcint
+	dbra	d1,bcint_loop
+#endif
 #endif
 short1:
-	move.l	a1,C_SSP(a0)		// a1 now points above the state frame
-	move.l	%usp,a1			// save user stack pointer
-	move.l	a1,C_USP(a0)
-	btst	#13,d0			// check for supervisor mode
-	beq.s	L_CONT1			// user mode// we already have stack in a1
+	move.l	a1,C_SSP(a0)		// Save SSP position
+	move.l	%usp,a1			// Get USP
+	move.l	a1,C_USP(a0)		// Save USP
+	btst	#13,d0			// Check supervisor mode
+	beq.s	L_CONT1			// User mode: USP already saved
 L_SUPER1:
-	// moving from the save state buffer
-	// means not testing longframe again. (AKP)
-	move.l	C_SSP(a0),a1		// was using super stack pointer before interrupt
+	move.l	C_SSP(a0),a1		// Use saved SSP for supervisor mode
 L_CONT1:
 #ifdef	__mcoldfire__
 	move.l	(0x408).w,d1
-	move.l	d1,C_TERM(a0)		// save GEMDOS terminate vector
+	move.l	d1,C_TERM(a0)		// Save GEMDOS terminate vector
 #else
-	move.l	(0x408).w,C_TERM(a0) 	// save GEMDOS terminate vector
+	move.l	(0x408).w,C_TERM(a0) 	// Save GEMDOS terminate vector
 #endif
-	move.l	(sp)+,C_A0(a0)		// save old register a0
+	move.l	(sp)+,C_A0(a0)		// Restore original a0
 	rts
 	CFI_ENDPROC()
 	END(build_context)
@@ -219,128 +376,80 @@ L_CONT1:
 	FUNC(save_context)
 SYM(save_context):
 	CFI_STARTPROC()
-	move.l	a0,-(sp)		// save a0
-	move.l	8(sp),a0		// get address of context save area
+	move.l	a0,-(sp)		// Save a0
+	move.l	8(sp),a0		// Get context save area address
 
-	movem.l	d0-d7/a0-a6,(a0)	// save D0-D7/A0-A6
+	movem.l	d0-d7/a0-a6,(a0)	// Save registers D0-D7/A0-A6
 
 #ifdef WITH_MMU_SUPPORT
-	tst.w	SYM(no_mem_prot)
-	bne.s	noprot2
-	move.w	sr,d1
+	tst.w	SYM(no_mem_prot)	// Memory protection enabled?
+	bne.s	noprot2				// Predict: MMU protection usually disabled
+	move.w	sr,d1				// Save SR before MMU operations
 #if defined(M68040) || defined(M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
-	move.l	d0,C_CRP(a0)
+	move.l	d0,C_CRP(a0)		// Save CRP
 #else
-	pmove	%crp,C_CRP(a0)		// save the CRP from the MMU
-	pmove	%tc,C_TC(a0)		// save the TC from the MMU
+	pmove	%crp,C_CRP(a0)		// Save MMU CRP
+	pmove	%tc,C_TC(a0)		// Save MMU TC
 #endif
 	move.w	d1,sr
 noprot2:
 #endif
 
-// save the FPU state
+// Save FPU state
 #ifdef	__mcoldfire__
-	pea	nofpu2(pc)		// return address
+	pea	nofpu2(pc)		// Set return address
 	bra	save_coldfire_fpu
 #else
-// if running with a true coprocessor we need to save the FPU state
-
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	nofpu2
-	fsave	C_FSTATE(a0)		// save internal state frame
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_2
-	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu2			// skip programmer's model save
-	bra.s	save2
-no60_2:
+	bsr	save_fpu_for_save
 #endif
-	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
-	beq.s	nofpu2				// skip programmer's model save
-save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
-	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
-#endif /* __mcoldfire__ */
 
 nofpu2:
-// note: I am somewhat unsure of this assumption, viz that save_context
-// can never be called in a situation where a co-processor
-// mid-instruction stack frame would be required. I suspect this is a
-// valid assumption, in which case the above FPU code is redundant, the
-// next line is not however!
-
 #ifdef __mcoldfire__
 	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	save_68k
 
-	move.w	#0x4000,C_SFMT(a0)	// standard frame/vector word
-
+	move.w	#0x4000,C_SFMT(a0)	// Standard frame/vector word
 	bra.s	save_ptrace
 save_68k:
 #endif
-	clr.w	C_SFMT(a0)		// mark as a 4 word stack frame
+	clr.w	C_SFMT(a0)		// Mark as 4-word stack frame
 save_ptrace:
-	clr.b	C_PTRACE(a0)		// no pending traces, thanks!
+	clr.b	C_PTRACE(a0)		// Clear pending trace flag
 
 	lea	8(sp),a1
-	move.l	a1,C_SSP(a0)		// save supervisor stack pointer
-					// note that it should be pointing above the PC
-	move.l	-4(a1),C_PC(a0)		// save PC
+	move.l	a1,C_SSP(a0)		// Save current SSP
+	move.l	-4(a1),C_PC(a0)		// Save return address as PC
 	move.l	%usp,a1
-	move.l	a1,C_USP(a0)		// save user stack pointer
+	move.l	a1,C_USP(a0)		// Save USP
 #ifdef	__mcoldfire__
 	move.w	sr,d1
-	move.w	d1,C_SR(a0)		// save status register
+	move.w	d1,C_SR(a0)		// Save SR
 	move.l	(0x408).w,d1
-	move.l	d1,C_TERM(a0)		// save GEMDOS terminate vector
+	move.l	d1,C_TERM(a0)		// Save GEMDOS terminate vector
 #else
-	move.w	sr,C_SR(a0)		// save status register
-	move.l	(0x408).w,C_TERM(a0)	// save GEMDOS terminate vector
+	move.w	sr,C_SR(a0)		// Save SR
+	move.l	(0x408).w,C_TERM(a0)	// Save GEMDOS terminate vector
 #endif
-	move.l	(sp)+,C_A0(a0)		// save old a0
-	clr.l	d0			// return 0
+	move.l	(sp)+,C_A0(a0)		// Restore original a0
+	moveq	#0,d0			// Return 0 (first call)
 	rts
 	CFI_ENDPROC()
 	END(save_context)
 
 	FUNC(restore_context)
 SYM(restore_context):
+	move.l	4(sp),a0		// Get context early (pipeline optimization)
 	CFI_STARTPROC()
 #ifdef	__mcoldfire__
-	move.w	sr,d1
 	ori.l	#0x0400,d1
-	move.w	d1,sr
+	move.w	d1,sr			// Disable interrupts
 #else
-	ori.w	#0x0400,sr
+	ori.w	#0x0400,sr		// Disable interrupts
 #endif
-	move.l	4(sp),a0		// address of context save area
+	move.l	4(sp),a0		// Get context save area address
 
-// Switch stacks now - starting now ssp is in the memory space of
-// the process we're switching to. Thus, we can change memory context
-// to there.
-
-	move.l	C_SSP(a0),a1		// get supervisor stack pointer
-	tst.b	(a1)			// touch the page for virtual memory programs
-	tst.b	-63(a1)			// make sure stack can grow
-	move.l	a1,sp
-	move.l	C_USP(a0),a1
-	move.l	a1,%usp			// set user stack pointer
-#ifdef	__mcoldfire__
-	move.l	C_TERM(a0),d1
-	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
-#else
-	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
-#endif
-
-// Set memory context now: actually, this isn't necessary, since
-// we're coming back to a context in the same process as is running
-// now.
-//	tst.w	SYM(no_mem_prot)
-//	bne.s	noprot3
-//	pmove	C_CRP(a0),%crp		// restore MMU root pointer
-//	pmove	C_TC(a0),%tc		// restore MMU control register
-//noprot3:
+	SWITCH_STACKS			// Common stack switching (macro)
 
 #ifdef __mcoldfire__
 	tst.w	SYM(coldfire_68k_emulation)
@@ -348,145 +457,67 @@ SYM(restore_context):
 
 	bsr	restore_coldfire_fpu
 
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push the status register
-	move.w	#0x4000,-(sp)		// push the frame/vector word
-	// Since we are just going to return using rte very soon,
-	// we can push a standard frame/vector word instead of C_SFMT(a0),
-	// so we don't have to add any extra filler byte.
-
-	bra.s	restore_check_trace
+	move.l	C_PC(a0),-(sp)		// Push return PC
+	move.w	C_SR(a0),-(sp)		// Push SR
+	move.w	#0x4000,-(sp)		// Push standard frame marker
+	bra	restore_check_trace
 restore_68k:
 #endif
 #ifdef M68000
-	tst.w	(0x59e).w		// test longframe (AKP)
+	tst.w	(0x59e).w		// Check longframe flag (AKP)
 	beq.s	short3
 #endif
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// fetch frame format word
-#ifdef	__mcoldfire__
-	moveq	#0,d1
-#endif
-	move.w	d0,d1			// copy it for later
-#ifdef	__mcoldfire__
-	lsr.l	#8,d1			// isolate the frame format identifier
-	lsr.l	#4,d1
-#else
-	lsr.w	#8,d1			// isolate the frame format identifier
-	lsr.w	#4,d1
-#endif
-	lea	SYM(framesizes),a2
-#ifdef	__mcoldfire__
-	move.b	0(a2,d1.l),d1
-#else
-	move.b	0(a2,d1.w),d1
-#endif
-	beq.s	rcovernc		// if no data to copy, skip the copy
-#ifdef	__mcoldfire__
-	sub.l	d1,sp
-	sub.l	d1,sp
-#else
-	sub.w	d1,sp
-	sub.w	d1,sp
-#endif
-	move.l	sp,a2
-#ifdef	__mcoldfire__
-	subq.l	#1,d1			// correct for first time through loop
-#else
-	subq.w	#1,d1			// correct for first time through loop
-#endif
-rcint:
-	move.w	(a1)+,(a2)+
-rcover:
-#ifdef	__mcoldfire__
-	subq.l	#1,d1
-	bpl.s	rcint
-#else
-	dbf	d1,rcint
-#endif
-rcovernc:
-	move.w	d0,-(sp)		// frame format identifier
+	SETUP_FRAME_RESTORATION		// Common frame setup (macro)
 
-// restore the FPU state
+// Restore FPU state
 #ifdef __mcoldfire__
 	bsr	restore_coldfire_fpu
 #else
-// if running with a true coprocessor we need to restore the FPU state
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	short3
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_3
-	tst.b	C_FSTATE+2(a0)
-	beq.s	short4
-	bra.s	save3
-no60_3:
+	bsr	restore_fpu_for_restore
 #endif
-	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
-	beq.s	short4				// skip programmer's model restore
-save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
-short4:
-	frestore C_FSTATE(a0)			// finally the internal state
-#endif /* __mcoldfire__ */
 
 short3:
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push the status register
+	move.l	C_PC(a0),-(sp)		// Push return PC (load fresh, don't reuse d1)
+	move.w	C_SR(a0),-(sp)		// Push SR
 restore_check_trace:
-	tst.b	C_PTRACE(a0)		// check for a pending trace
-	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
+	tst.b	C_PTRACE(a0)		// Check for pending trace
+	movem.l	(a0),d0-d7/a0-a6	// Restore general registers
 	beq.s	notrace
-	jmp	SYM(new_trace)
+	jmp	SYM(new_trace)		// Handle trace exception
 notrace:
-	rte				// jump back to old context
+	rte				// Return to saved context
 	CFI_ENDPROC()
 	END(restore_context)
 
 
 	FUNC(change_context)
 SYM(change_context):
+	move.l	4(sp),a0		// Get context early (pipeline optimization)
 	CFI_STARTPROC()
 #ifdef	__mcoldfire__
-	move.w	sr,d1
-	ori.l	#0x0400,d1		// mask interrupts
-	move.w	d1,sr
+	ori.l	#0x0400,d1
+	move.w	d1,sr			// Disable interrupts
 #else
-	ori.w	#0x0400,sr		// mask interrupts
+	ori.w	#0x0400,sr		// Disable interrupts
 #endif
-	move.l	4(sp),a0		// address of context save area
+	move.l	4(sp),a0		// Get context save area address
 
-// Switch stacks now - starting now ssp is in the memory space of
-// the process we're switching to. Thus, we can change memory context
-// to there.
-
-	move.l	C_SSP(a0),a1		// get supervisor stack pointer
-	tst.b	(a1)			// touch the page for virtual memory programs
-	tst.b	-63(a1)			// make sure stack can grow
-	move.l	a1,sp
-	move.l	C_USP(a0),a1
-	move.l	a1,%usp			// set user stack pointer
-#ifdef	__mcoldfire__
-	move.l	C_TERM(a0),d1
-	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
-#else
-	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
-#endif
+	SWITCH_STACKS			// Common stack switching (macro)
 
 #ifdef WITH_MMU_SUPPORT
-// Set memory context now
-	tst.w	SYM(no_mem_prot)
+// Set memory context
+	tst.w	SYM(no_mem_prot)	// Memory protection enabled?
 	bne.s	noprot4
 	move.w	sr,d1
 #if defined(M68040) || defined(M68060)
 	move.l	C_CRP(a0),d0
-	dc.w	0xf518			// pflusha
+	dc.w	0xf518			// pflusha (flush ATC)
 	dc.w	0x4e7b,0x0806		// movec d0,urp
 	dc.w	0x4e7b,0x0807		// movec d0,srp
 #else
-	pflusha
-	pmove	C_CRP(a0),%crp		// restore MMU root pointer
-	pmove	C_TC(a0),%tc		// restore MMU control register
+	pflusha				// Flush ATC
+	pmove	C_CRP(a0),%crp		// Restore MMU CRP
+	pmove	C_TC(a0),%tc		// Restore MMU TC
 #endif
 	move.w	d1,sr
 noprot4:
@@ -498,119 +529,147 @@ noprot4:
 
 	bsr	restore_coldfire_fpu
 
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push the status register
-	move.w	#0x4000,-(sp)		// push the frame/vector word
-	// Since we are just going to return using rte very soon,
-	// we can push a standard frame/vector word instead of C_SFMT(a0),
-	// so we don't have to add any extra filler byte.
-
-	bra.s	change_check_trace
+	move.l	C_PC(a0),-(sp)		// Push return PC
+	move.w	C_SR(a0),-(sp)		// Push SR
+	move.w	#0x4000,-(sp)		// Push standard frame marker
+	bra	change_check_trace
 change_68k:
 #endif
 #ifdef M68000
-	tst.w	(0x59e).w		// test longframe (AKP)
+	tst.w	(0x59e).w		// Check longframe flag (AKP)
 	beq.s	short6
 #endif
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// fetch frame format word
-#ifdef	__mcoldfire__
-	moveq	#0,d1
-#endif
-	move.w	d0,d1			// copy it for later
-#ifdef	__mcoldfire__
-	lsr.l	#8,d1			// isolate the frame format identifier
-	lsr.l	#4,d1
-#else
-	lsr.w	#8,d1			// isolate the frame format identifier
-	lsr.w	#4,d1
-#endif
-	lea	SYM(framesizes),a2
-#ifdef	__mcoldfire__
-	move.b	0(a2,d1.l),d1
-#else
-	move.b	0(a2,d1.w),d1
-#endif
-	beq.s	rcover2nc		// if no data to copy, skip it
-#ifdef	__mcoldfire__
-	sub.l	d1,sp
-	sub.l	d1,sp
-#else
-	sub.w	d1,sp
-	sub.w	d1,sp
-#endif
-	move.l	sp,a2
-#ifdef	__mcoldfire__
-	subq.l	#1,d1			// correct for first time through loop
-#else
-	subq.w	#1,d1			// correct for first time through loop
-#endif
-rcint2:
-	move.w	(a1)+,(a2)+
-rcover2:
-#ifdef	__mcoldfire__
-	subq.l	#1,d1
-	bpl.s	rcint2
-#else
-	dbf	d1,rcint2
-#endif
-rcover2nc:
-	move.w	d0,-(sp)		// frame format identifier
 
-// restore the FPU state
+
+// Restore FPU state
 #ifdef __mcoldfire__
 	bsr	restore_coldfire_fpu
 #else
-// if running with a true coprocessor we need to restore the FPU state
-
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	short6
-
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_4
-	tst.b	C_FSTATE+2(a0)
-	beq.s	short5
-	bra.s	save5
-no60_4:
+	bsr	restore_fpu_for_change
 #endif
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	short5			// skip programmer's model restore
-save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
-short5:
-	frestore C_FSTATE(a0)			// finally the internal state
-#endif /* __mcoldfire__ */
+	SETUP_FRAME_RESTORATION		// Common frame setup (macro)
 
 short6:
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push status register
+	move.l	C_PC(a0),-(sp)		// Push return PC
+	move.w	C_SR(a0),-(sp)		// Push SR
 change_check_trace:
-	tst.b	C_PTRACE(a0)		// check for a pending trace
-	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
+	tst.b	C_PTRACE(a0)		// Check for pending trace
+	movem.l	(a0),d0-d7/a0-a6	// Restore general registers
 	beq.s	notrace2
-	jmp	SYM(new_trace)
+	jmp	SYM(new_trace)		// Handle trace exception
 notrace2:
-	rte				// jump back to old context
+	rte				// Return to saved context
 	CFI_ENDPROC()
 	END(change_context)
 
+// Frame size lookup table (PC-relative access)
+// Index by format field (bits 15-12 of format word) * 2 (word offset)
+framesizes_table:
+	.word	0	// Format 0: Normal 4-word frame (0 extra bytes)
+	.word	0	// Format 1: Throwaway frame (0 extra bytes)  
+	.word	4	// Format 2: 6-word frame (4 extra bytes)
+	.word	4	// Format 3: Coprocessor frame (4 extra bytes)
+	.word	8	// Format 4: 8-word frame (8 extra bytes)
+	.word	0	// Format 5: Undefined (0 extra bytes)
+	.word	0	// Format 6: Undefined (0 extra bytes)
+	.word	0	// Format 7: Undefined (0 extra bytes)
+	.word	58	// Format 8: 68010 bus error (58 extra bytes)
+	.word	20	// Format 9: Coprocessor mid-instruction (20 extra bytes)
+	.word	32	// Format A: 68020/030 short bus error (32 extra bytes)
+	.word	92	// Format B: 68020/030 long bus error (92 extra bytes)
+	.word	12	// Format C: 68040 bus error (12 extra bytes)
+	.word	84	// Format D: 68060 bus error (84 extra bytes)
+	.word	0	// Format E: Undefined (0 extra bytes)
+	.word	0	// Format F: Undefined (0 extra bytes)
+
+// Macro for common FPU save code
+.macro SAVE_FPU_COMMON label_skip, label_cf
+	tst.w	SYM(fpu)		// FPU present?
+	beq.s	\label_skip
+#ifdef __mcoldfire__
+	bra	\label_cf
+#else
+	fsave	C_FSTATE(a0)		// Save FPU internal state
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
+	bne.s	check_null_frame_\@
+	tst.b	C_FSTATE+2(a0)		// Check for null frame
+	beq.s	\label_skip		// Skip if FPU not in use
+	bra.s	save_fpu_regs_\@
+check_null_frame_\@:
+#endif
+	tst.b	C_FSTATE(a0)		// Check for null frame
+	beq	\label_skip		// Skip if FPU not in use
+save_fpu_regs_\@:	fmovem.x fp0-fp7,C_FREGS(a0)		// Save FP data registers
+	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// Save FP control registers
+#endif
+.endm
+
+// Macro for common FPU restore code
+.macro RESTORE_FPU_COMMON label_skip, label_cf
+	tst.w	SYM(fpu)		// FPU present?
+	beq.s	\label_skip
+#ifdef __mcoldfire__
+	bra	\label_cf
+#else
+#ifndef M68000
+	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
+	bne.s	check_null_frame_\@
+	tst.b	C_FSTATE+2(a0)		// Check for null frame
+	beq.s	\label_skip		// Skip if FPU not in use
+	bra.s	restore_fpu_regs_\@
+check_null_frame_\@:
+#endif
+	tst.b	C_FSTATE(a0)		// Check for null frame
+	beq.s	\label_skip		// Skip if FPU not in use
+restore_fpu_regs_\@:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// Restore FP control registers
+	fmovem.x C_FREGS(a0),fp0-fp7		// Restore FP data registers
+	frestore C_FSTATE(a0)			// Restore FP internal state
+#endif
+.endm
+
+save_fpu_for_build:
+	SAVE_FPU_COMMON fpu_build_done, save_cf_build
+save_cf_build:	
+fpu_build_done:
+	rts
+
+save_fpu_for_save:
+	SAVE_FPU_COMMON fpu_save_done, save_cf_save
+save_cf_save:	
+fpu_save_done:
+	rts
+
+restore_fpu_for_restore:
+	RESTORE_FPU_COMMON fpu_restore_skip, restore_cf_restore
+restore_cf_restore:	
+fpu_restore_skip:
+fpu_restore_done:
+	rts
+
+restore_fpu_for_change:
+	RESTORE_FPU_COMMON fpu_change_skip, restore_cf_change
+restore_cf_change:	
+fpu_change_skip:
+fpu_change_done:
+	rts
+
 #ifdef	__mcoldfire__
 save_coldfire_fpu:
-	fsave	C_FSTATE(a0)		// save internal state frame (including fpcr and fpsr)
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	save_coldfire_fpu_end	// skip programmer's model restore
-	fmovem.d fp0-fp7,C_FREGS(a0)	// save data registers
-	fmove.l	fpiar,C_FCTRL+8(a0)	// and control registers
+	fsave	C_FSTATE(a0)		// Save FPU state (includes control regs)
+	tst.b	C_FSTATE(a0)		// Check for null frame
+	beq.s	save_coldfire_fpu_end	// Skip if FPU not in use
+	fmovem.d fp0-fp7,C_FREGS(a0)	// Save FP data registers
+	fmove.l	fpiar,C_FCTRL+8(a0)	// Save FP instruction address
 save_coldfire_fpu_end:
 	rts
 
 restore_coldfire_fpu:
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	restore_coldfire_fpu_internal	// skip programmer's model restore
-	fmove.l	C_FCTRL+8(a0),fpiar	// restore control registers
-	fmovem.d C_FREGS(a0),fp0-fp7	// and data registers
+	tst.b	C_FSTATE(a0)		// Check for null frame
+	beq.s	restore_coldfire_fpu_internal // Skip if FPU not in use
+	fmove.l	C_FCTRL+8(a0),fpiar	// Restore FP instruction address
+	fmovem.d C_FREGS(a0),fp0-fp7	// Restore FP data registers
 restore_coldfire_fpu_internal:
-	frestore C_FSTATE(a0)		// finally the internal state (including fpcr and fpsr)
+	frestore C_FSTATE(a0)		// Restore FP state (includes control regs)
 	rts
 #endif
