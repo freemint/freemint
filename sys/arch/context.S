@@ -78,12 +78,10 @@
 	move.l	a1,sp			// Restore SSP (a1 = SSP from movem)
 	move.l	C_USP(a0),a1	// Load USP separately (not adjacent)
 	move.l	a1,%usp			// Restore USP
-#ifdef __mcoldfire__
-	move.l	C_TERM(a0),d1
-	move.l	d1,(0x408).w		// Restore GEMDOS terminate vector
-#else
-	move.l	C_TERM(a0),(0x408).w	// Restore GEMDOS terminate vector
-#endif
+
+	move.l	C_TERM(a0),d0		// Use d0 as temporary (safe before register restore)
+	move.l	d0,(0x408).w		// Restore GEMDOS terminate vector
+
 .endm
 
 .macro SETUP_FRAME_RESTORATION
@@ -340,7 +338,7 @@ save_ptrace:
 	move.l	(0x408).w,C_TERM(a0)	// Save GEMDOS terminate vector
 #endif
 	move.l	(sp)+,C_A0(a0)		// Restore original a0
-	clr.l	d0			// Return 0 (first call)
+	moveq	#0,d0			// Return 0 (first call)
 	rts
 	CFI_ENDPROC()
 	END(save_context)
@@ -516,7 +514,7 @@ save_fpu_regs_\@:	fmovem.x fp0-fp7,C_FREGS(a0)		// Save FP data registers
 // Macro for common FPU restore code
 .macro RESTORE_FPU_COMMON label_skip, label_cf
 	tst.w	SYM(fpu)		// FPU present?
-	beq	\label_skip
+	beq.s	\label_skip
 #ifdef __mcoldfire__
 	bra	\label_cf
 #else
@@ -524,12 +522,12 @@ save_fpu_regs_\@:	fmovem.x fp0-fp7,C_FREGS(a0)		// Save FP data registers
 	cmp.w	#60,SYM(mcpu)+2		// 68060 has different frame format
 	bne.s	check_null_frame_\@
 	tst.b	C_FSTATE+2(a0)		// Check for null frame
-	beq	\label_skip		// Skip if FPU not in use
+	beq.s	\label_skip		// Skip if FPU not in use
 	bra.s	restore_fpu_regs_\@
 check_null_frame_\@:
 #endif
 	tst.b	C_FSTATE(a0)		// Check for null frame
-	beq	\label_skip		// Skip if FPU not in use
+	beq.s	\label_skip		// Skip if FPU not in use
 restore_fpu_regs_\@:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// Restore FP control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// Restore FP data registers
 	frestore C_FSTATE(a0)			// Restore FP internal state
