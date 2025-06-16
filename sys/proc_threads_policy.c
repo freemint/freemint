@@ -46,7 +46,7 @@ static int set_thread_policy(struct thread *t, enum sched_policy policy, int pri
                 t->tid, policy, priority, t->policy, t->priority);
 
     // Acquire lock        
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
 
     // Validate policy and priority
     if (policy != SCHED_FIFO && policy != SCHED_RR && policy != SCHED_OTHER)
@@ -309,7 +309,7 @@ static int set_thread_timeslice(struct thread *t, long timeslice)
 
     TRACE_THREAD("TIMESLICE: Setting thread %d timeslice to %ld (min=%d)", t->tid, timeslice, t->proc->thread_min_timeslice);
 
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // FIFO threads don't use timeslicing
     if (t->policy == SCHED_FIFO) {
@@ -367,7 +367,7 @@ long proc_thread_set_policy(enum sched_policy policy, short priority, short time
     }
 
     struct thread *current = p->current_thread;
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Scale the priority from 0-99 to 0-16 range
     int scaled_priority = scale_thread_priority(priority);

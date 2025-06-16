@@ -33,7 +33,7 @@ static void thread_timeout_sighandler(PROC *p, long arg)
     struct thread *t = (struct thread *)arg;
     TRACE_THREAD("thread_timeout_sighandler: thread %d timeout", t ? t->tid : -1);
     if(!t) return;
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type & WAIT_SIGNAL)) {
         t->sleep_reason = 1; // Timeout
 
@@ -181,7 +181,7 @@ void handle_thread_signal(struct thread *t, int sig)
  * Returns 1 if signal was delivered, 0 otherwise
  */
 static int deliver_signal_to_thread(struct proc *p, struct thread *t, int sig) {
-    unsigned short sr;
+    register unsigned short sr;
     if (!p || !t || sig <= 0 || sig >= NSIG){
         TRACE_THREAD("ERROR: Invalid parameters for deliver_signal_to_thread");
         return 0;
@@ -342,7 +342,7 @@ int proc_thread_signal_aware_raise(struct proc *p, int sig)
 int check_thread_signals(struct thread *t)
 {
     int sig;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!t || !t->proc)
         return 0;
@@ -477,7 +477,7 @@ long _cdecl proc_thread_signal_sigwait_enhanced(ulong mask, long timeout)
     int sig;
     struct thread *t = CURTHREAD;
     struct proc *p = curproc;
-    unsigned short sr;
+    register unsigned short sr;
     ulong old_mask;
     
     if (!t || !p) {
@@ -656,7 +656,7 @@ long _cdecl proc_thread_signal_sighandler_arg(int sig, void *arg)
  */
 long _cdecl proc_thread_signal_sigwait(ulong mask, long timeout)
 {
-    unsigned short sr;
+    register unsigned short sr;
     int sig;
 
     struct proc *p = curproc;
@@ -859,7 +859,7 @@ void cleanup_thread_signals(struct thread *t)
     if (!t || !t->proc || !t->proc->p_sigacts)
         return;
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     /* Clean up any signal handlers registered by this thread */
     if (t->magic == CTXT_MAGIC) {
@@ -909,7 +909,7 @@ long _cdecl proc_thread_signal_sigalrm(struct thread *t, long ms)
     /* Calculate remaining time on current alarm */
     if (t->alarm_timeout) {
         remaining = timeout_remaining(t->alarm_timeout);
-        unsigned short sr = splhigh();
+        register unsigned short sr = splhigh();
         canceltimeout(t->alarm_timeout);
         t->alarm_timeout = NULL;
         spl(sr);

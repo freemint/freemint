@@ -182,7 +182,7 @@ inline unsigned long get_system_ticks(void) {
 void make_process_eligible(struct proc *p) {
     if (!p) return;
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Set slices to 0 to ensure it's eligible to run immediately
     // p->slices = 2;
@@ -215,7 +215,6 @@ void make_process_eligible(struct proc *p) {
  * to prevent race conditions between concurrent threads
  */
 void atomic_thread_state_change(struct thread *t, int new_state) {
-    unsigned short sr;
     
     if (!t) {
         TRACE_THREAD_ERROR("Attempt to change state of NULL thread");
@@ -239,7 +238,7 @@ void atomic_thread_state_change(struct thread *t, int new_state) {
         return;
     }
 
-    sr = splhigh();
+    register unsigned short sr = splhigh();
     TRACE_THREAD_STATE(t, t->state, new_state);
     t->state = new_state;
     spl(sr);
@@ -253,7 +252,7 @@ long timeout_remaining(TIMEOUT *t)
     if (!t)
         return 0;
         
-    ushort sr = splhigh();
+    register unsigned short sr = splhigh();
     
     long remaining = 0;
     TIMEOUT *curr;

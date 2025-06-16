@@ -80,19 +80,12 @@ static int set_tsd_entry(struct tsd_entry **head_ptr, long key, void *value) {
  * Free all entries in a sparse TSD list and call destructors
  * 
  * @param head Head of the TSD entry list
- * @param keys Thread keys array for destructor lookup
+ * 
  */
-static void free_tsd_entries(struct tsd_entry *head, thread_key_t *keys) {
+static void free_tsd_entries(struct tsd_entry *head) {
     struct tsd_entry *entry = head;
     while (entry) {
         struct tsd_entry *next = entry->next;
-        
-        /* Call destructor if one exists and value is non-NULL */
-        if (keys && entry->key >= 0 && entry->key < MAX_THREAD_KEYS && 
-            keys[entry->key].in_use && entry->value && keys[entry->key].destructor) {
-            keys[entry->key].destructor(entry->value);
-        }
-        
         kfree(entry);
         entry = next;
     }
@@ -137,7 +130,7 @@ int init_proc_tsd(struct proc *p) {
  * @return 0 on success, error code on failure
  */
 int init_thread_tsd(struct thread *t) {
-    if (!t || t->magic != CTXT_MAGIC) {
+    if (!t) {
         TRACE_THREAD("init_thread_tsd: invalid thread\n");
         return EINVAL;
     }
@@ -186,9 +179,9 @@ void cleanup_thread_tsd(struct thread *t) {
         tsd_head = (struct tsd_entry*)t->tsd_data;
     }
     
-    /* Free TSD entries and call destructors */
-    if (tsd_head && t->tid != 0) {
-        free_tsd_entries(tsd_head, p->thread_keys);
+    /* Free TSD entries */
+    if (tsd_head) {
+        free_tsd_entries(tsd_head);
         t->tsd_data = NULL;
     }
 }
@@ -364,7 +357,7 @@ void cleanup_proc_tsd(struct proc *p) {
     
     /* Free process TSD entries and call destructors */
     if (p->proc_tsd_data) {
-        free_tsd_entries((struct tsd_entry*)p->proc_tsd_data, p->thread_keys);
+        free_tsd_entries((struct tsd_entry*)p->proc_tsd_data);
         p->proc_tsd_data = NULL;
     }
     
@@ -375,29 +368,87 @@ void cleanup_proc_tsd(struct proc *p) {
     }
 }
 
-// /**
-//  * System call handler for thread-specific data operations
-//  * 
-//  * @param op Operation code (THREAD_TSD_*)
-//  * @param arg1 First argument (key or destructor)
-//  * @param arg2 Second argument (value)
-//  * @return Operation-specific return value
-//  */
-// long _cdecl sys_p_thread_tsd(long op, long arg1, long arg2) {
-//     switch (op) {
-//         case THREAD_TSD_CREATE_KEY:
-//             return thread_key_create((void (*)(void*))arg1);
-//             
-//         case THREAD_TSD_DELETE_KEY:
-//             return thread_key_delete(arg1);
-//             
-//         case THREAD_TSD_GET_SPECIFIC:
-//             return (long)thread_getspecific(arg1);
-//             
-//         case THREAD_TSD_SET_SPECIFIC:
-//             return thread_setspecific(arg1, (void*)arg2);
-//             
-//         default:
-//             return -EINVAL;
-//     }
-// }
+void run_tsd_destructors(struct thread *t) {
+    // This runs in user space!
+    struct proc *p;
+    struct tsd_entry *tsd_head;
+    struct tsd_entry *entry;
+    int iterations = 0;
+    const int MAX_DESTRUCTOR_ITERATIONS = 4; // POSIX allows up to 4 iterations
+    
+    if (!t || t->magic != CTXT_MAGIC) {
+        return;
+    }
+    
+    p = t->proc;
+    if (!p || !p->thread_keys) {
+        return;
+    }
+    
+    TRACE_THREAD("run_tsd_destructors: running destructors for thread=%p\n", t);
+    
+    // Get the appropriate TSD head for this thread
+    if (t->tid == 0) {
+        /* Thread0 uses process TSD data */
+        tsd_head = (struct tsd_entry*)p->proc_tsd_data;
+    } else {
+        /* Other threads have their own TSD */
+        tsd_head = (struct tsd_entry*)t->tsd_data;
+    }
+    
+    // POSIX allows destructors to set new values, so we need to iterate
+    // until no more destructors are called or we reach the maximum iterations
+    while (iterations < MAX_DESTRUCTOR_ITERATIONS) {
+        int destructors_called = 0;
+        
+        // Walk through all TSD entries for this thread
+        entry = tsd_head;
+        while (entry) {
+            // Check if this key has a destructor and a non-NULL value
+            if (entry->key >= 0 && entry->key < p->next_key && 
+                p->thread_keys[entry->key].in_use &&
+                p->thread_keys[entry->key].destructor &&
+                entry->value != NULL) {
+                
+                void (*destructor)(void*) = p->thread_keys[entry->key].destructor;
+                void *value = entry->value;
+                
+                TRACE_THREAD("run_tsd_destructors: calling destructor for key=%ld, value=%p\n", 
+                           entry->key, value);
+                
+                // Clear the value before calling destructor to prevent infinite recursion
+                entry->value = NULL;
+                
+                // Call the destructor - this runs in user space
+                destructor(value);
+                
+                destructors_called++;
+            }
+            entry = entry->next;
+        }
+        
+        // If no destructors were called this iteration, we're done
+        if (destructors_called == 0) {
+            break;
+        }
+        
+        iterations++;
+        TRACE_THREAD("run_tsd_destructors: iteration %d completed, %d destructors called\n", 
+                   iterations, destructors_called);
+    }
+    
+    // After all destructor iterations, clean up any remaining TSD entries
+    // that still have non-NULL values (these are implementation-defined behavior)
+    entry = tsd_head;
+    while (entry) {
+        if (entry->value != NULL) {
+            TRACE_THREAD("run_tsd_destructors: warning - key=%ld still has non-NULL value after destructors\n", 
+                       entry->key);
+            // We don't call destructors again, just note the issue
+        }
+        entry = entry->next;
+    }
+    
+    TRACE_THREAD("run_tsd_destructors: completed %d iterations for thread=%p\n", 
+               iterations, t);
+}

@@ -21,7 +21,7 @@ long proc_thread_detach(long tid)
 {
     struct proc *p = curproc;
     struct thread *target = NULL;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!p)
         return -EINVAL;
@@ -84,7 +84,7 @@ long proc_thread_join(long tid, void **retval)
 {
     struct proc *p = curproc;
     struct thread *current, *target = NULL;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!p || !p->current_thread)
         return EINVAL;
@@ -263,7 +263,7 @@ long proc_thread_tryjoin(long tid, void **retval)
 {
     struct proc *p = curproc;
     struct thread *current, *target = NULL;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!p || !p->current_thread)
         return EINVAL;
@@ -378,7 +378,7 @@ int thread_mutex_lock(struct mutex *mutex) {
         return EDEADLK;
     }
 
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Try quick acquisition
     if (mutex->locked == 0) {
@@ -463,7 +463,7 @@ int thread_mutex_unlock(struct mutex *mutex) {
         return EINVAL;
     }
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Check if current thread owns the mutex
     if (mutex->owner != current) {
@@ -557,7 +557,7 @@ int thread_semaphore_down(struct semaphore *sem) {
         return EDEADLK;
     }
 
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     if (sem->count > 0) {
         sem->count--;
@@ -614,7 +614,7 @@ int thread_semaphore_up(struct semaphore *sem) {
         return EINVAL;
     }
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // If no waiters, just increment count and return
     if (!sem->wait_queue) {
@@ -698,7 +698,7 @@ int proc_thread_condvar_destroy(struct condvar *cond) {
         return EINVAL;
     }
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Check if any threads are waiting
     if (cond->wait_queue) {
@@ -740,7 +740,7 @@ int proc_thread_condvar_wait(struct condvar *cond, struct mutex *mutex) {
         return EINVAL;
     }
 
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Associate mutex with condvar if not already associated
     if (!cond->associated_mutex) {
@@ -810,7 +810,7 @@ int proc_thread_condvar_signal(struct condvar *cond) {
         return EINVAL;
     }
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Find highest priority waiting thread (like semaphore_up does)
     struct thread *prev_highest = NULL;
@@ -859,7 +859,7 @@ int proc_thread_condvar_broadcast(struct condvar *cond) {
         return EINVAL;
     }
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     struct thread *t = cond->wait_queue;
     if (!t) {
@@ -926,7 +926,7 @@ int proc_thread_condvar_timedwait(struct condvar *cond, struct mutex *mutex, lon
         return EINVAL;
     }
 
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Associate mutex with condvar if not already associated
     if (!cond->associated_mutex) {
@@ -1029,7 +1029,7 @@ static void proc_thread_condvar_timeout_handler(PROC *p, long arg) {
     
     TRACE_THREAD("CONDVAR TIMEOUT: Thread %d timeout", t->tid);
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type & WAIT_CONDVAR)) {
         struct condvar *cond = (struct condvar *)t->cond_wait_obj;
@@ -1075,7 +1075,7 @@ void cleanup_thread_sync_states(struct proc *p)
     
     TRACE_THREAD("CLEANUP: Cleaning up sync objects for process %d", p->pid);
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // 1. Clean up process-owned mutexes
     cleanup_process_mutexes(p);
@@ -1109,7 +1109,7 @@ static void cleanup_thread_condvar_states(struct proc *p)
     
     TRACE_THREAD("CLEANUP: Cleaning up condvar states for process %d", p->pid);
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Clean up any threads waiting on condition variables
     struct thread *t;

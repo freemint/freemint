@@ -28,5 +28,6 @@ long thread_key_delete(long key);
 void* thread_getspecific(long key);
 long thread_setspecific(long key, void *value);
 void cleanup_proc_tsd(struct proc *p);
+void run_tsd_destructors(struct thread *t);
 
 #endif /* _PROC_THREADS_TSD_H */

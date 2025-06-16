@@ -14,7 +14,7 @@
  */
 void add_to_ready_queue(struct thread *t) {
     struct proc *p;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!t || !t->proc || (t->state & THREAD_STATE_RUNNING) || (t->state & THREAD_STATE_EXITED))
         return;
@@ -126,7 +126,7 @@ void add_to_ready_queue(struct thread *t) {
 void remove_from_ready_queue(struct thread *t) {
     if (!t || !t->proc) return;
     struct proc *p = t->proc;
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
 
     if (!p->ready_queue) {
         spl(sr);
@@ -165,7 +165,7 @@ void remove_from_ready_queue(struct thread *t) {
 void remove_from_sleep_queue(struct proc *p, struct thread *t) {
     if (!p || !t) return;
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     struct thread **pp = &p->sleep_queue;
     
@@ -198,7 +198,7 @@ void remove_thread_from_wait_queues(struct thread *t) {
 void remove_thread_from_specific_wait_queue(struct thread *t, int wait_type_mask) {
     if (!t) return;
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Only clean up the specified wait types
     if ((wait_type_mask & WAIT_MUTEX) && (t->wait_type & WAIT_MUTEX) && t->mutex_wait_obj) {

@@ -104,7 +104,7 @@ void check_and_wake_sleeping_threads(struct proc *p) {
     if (!p || !p->sleep_queue) {
         return;
     }
-    unsigned short sr;
+    register unsigned short sr;
     int woke_threads;
 
     #ifdef DEBUG_THREAD
@@ -151,7 +151,7 @@ void proc_thread_sleep_wakeup_handler(PROC *p, long arg) {
         return;
     }
     
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Only wake up if still sleeping
     if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type & WAIT_SLEEP)) {
@@ -183,7 +183,7 @@ void proc_thread_sleep_wakeup_handler(PROC *p, long arg) {
 long proc_thread_sleep(long ms) {
     struct proc *p = curproc;
     struct thread *t = p ? p->current_thread : NULL;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!p || !t) return EINVAL;
     if (t->tid == 0) return EINVAL; // thread0 can't sleep
@@ -290,7 +290,7 @@ long proc_thread_yield(void) {
     
     // For SCHED_FIFO and SCHED_RR, move to end of same-priority list
     if (t->policy == SCHED_FIFO || t->policy == SCHED_RR) {
-        unsigned short sr = splhigh();
+        register unsigned short sr = splhigh();
         
         // Only if we're in RUNNING state
         if (t->state == THREAD_STATE_RUNNING) {

@@ -47,7 +47,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
             struct proc *p = curproc;
             
             /* Find thread by ID */
-            unsigned short sr = splhigh();
+            register unsigned short sr = splhigh();
             struct thread *t;
             for (t = p->threads; t != NULL; t = t->next) {
                 if (t->tid == arg1) {
@@ -126,7 +126,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
                     TRACE_THREAD("Using current thread (ID %d)", target ? target->tid : -1);
                 } else {
                     /* Find thread by ID */
-                    unsigned short sr = splhigh();
+                    register unsigned short sr = splhigh();
                     struct thread *t;
                     for (t = p->threads; t != NULL; t = t->next) {
                         if (t->tid == arg1) {

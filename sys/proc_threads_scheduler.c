@@ -55,7 +55,7 @@ static void execute_scheduling_decision(struct proc *p, struct scheduling_decisi
  * It checks if the current thread should be preempted and schedules another thread if needed.
  */
 void thread_preempt_handler(PROC *p, long arg) {
-    unsigned short sr;
+    register unsigned short sr;
     struct thread *thread_arg = (struct thread *)arg;
     
     if (!p) {
@@ -192,7 +192,7 @@ void thread_preempt_handler(PROC *p, long arg) {
  */
 void proc_thread_schedule(void) {
     struct proc *p = get_curproc();
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!p) {
         TRACE_THREAD("SCHED: Invalid current process");
@@ -457,7 +457,7 @@ void proc_thread_exit(void *retval) {
 
     static int thread_exit_in_progress = 0;
     static int exit_owner_tid = -1;
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     // Protection against reentrance
     if (thread_exit_in_progress && exit_owner_tid != current->tid) {
@@ -685,7 +685,7 @@ static void thread_switch(struct thread *from, struct thread *to) {
     // Special case: if from is NULL, just switch to the destination thread
     if (!from) {
         TRACE_THREAD("SWITCH: Switching to thread %d (no source thread)", to->tid);
-        unsigned short sr = splhigh();
+        register unsigned short sr = splhigh();
         change_context(get_thread_context(to));
         spl(sr);
         return;
@@ -707,7 +707,7 @@ static void thread_switch(struct thread *from, struct thread *to) {
     
     // Execute the switch if preparation was successful
     if (ctx.to && ctx.to_ctx) {
-        unsigned short sr = splhigh();
+        register unsigned short sr = splhigh();
         execute_thread_switch(&ctx);
         spl(sr);
     }
@@ -990,7 +990,7 @@ void reschedule_preemption_timer(PROC *p, long arg) {
  */
 void reset_thread_switch_state(void) {
 
-    unsigned short sr = splhigh();
+    register unsigned short sr = splhigh();
     
     thread_switch_in_progress = 0;
     
@@ -1038,7 +1038,7 @@ void thread_switch_timeout_handler(PROC *p, long arg) {
  * Start timing a specific process/thread
  */
 void thread_timer_start(struct proc *p, int thread_id) {
-    unsigned short sr, retry_count = 0;
+    register unsigned short sr, retry_count = 0;
     
     TRACE_THREAD("TIMER: thread_timer_start called for process %d", p->pid);
     if (!p)
@@ -1106,7 +1106,7 @@ cleanup:
  */
 void thread_timer_stop(PROC *p)
 {
-    unsigned short sr;
+    register unsigned short sr;
     TIMEOUT *timeout_to_cancel = NULL;
     int retry_count = 0;
 

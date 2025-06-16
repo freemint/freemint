@@ -25,7 +25,7 @@ long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack) {
 }
 
 static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void* stack_ptr) {
-    unsigned short sr;
+    register unsigned short sr;
     
     // Allocate thread structure
     sr = splhigh();  // Disable interrupts before allocation to prevent race conditions
@@ -71,7 +71,6 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
 
     /* Initialize thread-specific data */
     t->tsd_data = NULL;
-    init_thread_tsd(t);
 
     /* Initialize signal fields */
     t->t_sigpending = 0;
@@ -125,7 +124,7 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
     t->joined = 0;
 
     TRACE_THREAD("Thread %d stack: base=%p, top=%p", t->tid, t->stack, t->stack_top);
-    
+    init_thread_tsd(t);
     // Initialize context
     init_thread_context(t, func, arg);
     
@@ -186,7 +185,9 @@ static void proc_thread_start(void) {
         result = func(arg);  // Capture return value
         TRACE_THREAD("START: Thread function returned");
     }
-    
+    if (t && t->magic == CTXT_MAGIC) {
+        run_tsd_destructors(t);  // User-space destructor handler
+    }    
     if (t && t->magic == CTXT_MAGIC) {
         TRACE_THREAD_EXIT(t, result);
         proc_thread_exit(result);
@@ -407,7 +408,7 @@ void proc_thread_cleanup_process(struct proc *pcurproc) {
 long proc_thread_status(long tid) {
     struct proc *p = curproc;
     struct thread *target = NULL;
-    unsigned short sr;
+    register unsigned short sr;
     
     if (!p)
         return -EINVAL;
