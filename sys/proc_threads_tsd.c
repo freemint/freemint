@@ -1,15 +1,26 @@
+/**
+ * @file proc_threads_tsd.c
+ * @brief Kernel-managed Thread-Specific Data
+ * 
+ * Implements TSD key management and storage at kernel level while coordinating
+ * with userspace for destructor execution.
+ * 
+ * Features:
+ *  - Sparse storage management
+ *  - Process-wide key registry
+ *  - Per-thread data isolation
+ *  - Destructor chaining
+ *  - POSIX-compliant TSD semantics
+ * 
+ * Optimized for memory efficiency on 68000 platforms.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads_tsd.h"
 #include "proc_threads_debug.h"
-
-/**
- * Thread-specific data implementation
- * 
- * This file implements POSIX thread-specific data functionality:
- * - pthread_key_create
- * - pthread_getspecific
- * - pthread_setspecific
- * - pthread_key_delete
- */
 
 /* Helper functions for sparse TSD management */
 

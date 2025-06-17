@@ -1,3 +1,39 @@
+/*
+ * FreeMiNT Kernel Threading Implementation
+ * ----------------------------------------
+ * 
+ * POSIX-compliant threading subsystem for FreeMiNT kernel
+ * 
+ * Provides core threading infrastructure including:
+ *  - Thread scheduling and context switching
+ *  - Synchronization primitives (mutexes/condvars/semaphores)
+ *  - Signal handling
+ *  - Thread-specific data
+ *  - Cleanup routines
+ * 
+ * Key components:
+ *  proc_threads_sync.[ch]      - Synchronization objects
+ *  proc_threads_scheduler.[ch] - Scheduler core
+ *  proc_threads_policy.[ch]    - Scheduling policies
+ *  proc_threads_signal.[ch]    - Signal handling
+ *  proc_threads_tsd.[ch]       - Thread-specific data
+ *  proc_threads_cleanup.[ch]   - Cleanup handlers
+ *  proc_threads_sleep_yield.[ch] - Sleep/yield mechanisms
+ *  proc_threads_syscall.c      - System call interface
+ *  proc_threads_queue.[ch]     - Queue management (ready/sleep/wait)
+ *  proc_threads.[ch]           - Core thread management
+ *  proc_threads_helper.[ch]    - Utility functions
+ *  proc_threads_debug.[ch]     - Debugging facilities
+ * 
+ * Optimized for Motorola 68000-series processors
+ * with tight memory constraints (Atari ST/STE/TT/Falcon)
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ * License: GPLv2
+ */
+
 #include "libkern/libkern.h" /* memset and memcpy */
 
 #include "proc.h"
@@ -103,4 +139,5 @@ long proc_thread_status(long tid);
 CONTEXT* get_thread_context(struct thread *t);
 struct thread* get_idle_thread(struct proc *p);
 struct thread* get_main_thread(struct proc *p);
+void proc_thread_exit(void *retval);
 #endif /* PROC_THREAD_H */

@@ -1,17 +1,29 @@
+/**
+ * @file proc_threads_queue.c
+ * @brief Thread Queue Implementation
+ * 
+ * Implements queue management for thread scheduling and synchronization.
+ * 
+ * Features:
+ *  - Priority-based ready queue insertion (SCHED_FIFO/SCHED_RR)
+ *  - Atomic queue operations with interrupt protection
+ *  - Wait queue management for synchronization objects
+ *  - Sleep queue for timed thread suspension
+ *  - Bitmap-optimized priority scanning
+ *  - Thread state validation during queue operations
+ * 
+ * Ensures POSIX-compliant ordering and efficient O(1) priority lookups.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads_queue.h"
 
 #include "proc_threads_helper.h"
 #include "proc_threads_sync.h"
 
-/**
- * Add a thread to the ready queue with proper POSIX scheduling behavior
- * 
- * This function handles different insertion strategies based on:
- * - Thread priority
- * - Scheduling policy (SCHED_FIFO, SCHED_RR, SCHED_OTHER)
- * - Priority changes
- * - Priority boosting
- */
 void add_to_ready_queue(struct thread *t) {
     struct proc *p;
     register unsigned short sr;

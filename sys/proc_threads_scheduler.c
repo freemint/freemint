@@ -1,3 +1,23 @@
+/**
+ * @file proc_threads_scheduler.c
+ * @brief Kernel Thread Scheduler Core
+ * 
+ * Implements preemptive thread scheduling with POSIX policies inside the kernel.
+ * Handles context switching, priority inheritance, and thread exit resource reclamation.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
+ /**
+ * Thread Scheduler Core
+ * 
+ * Implements preemptive thread scheduling with POSIX-compliant policies 
+ * (FIFO, RR, OTHER). Features timeslice management, priority inheritance, 
+ * and robust thread exit handling with resource cleanup.
+ */
+
 #include "proc_threads_scheduler.h"
 
 #include "proc_threads_helper.h"

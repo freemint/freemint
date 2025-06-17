@@ -1,4 +1,14 @@
-#include "proc_threads.h"
+/**
+ * @file proc_threads_scheduler.h
+ * @brief Thread Scheduler Core Interface
+ * 
+ * Declares scheduler control structures and context switching mechanisms.
+ * Defines thread states, preemption handling, and priority inheritance logic.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
 
 /*
  * Thread Scheduling Implementation (POSIX-compliant)
@@ -32,6 +42,8 @@
  * - The make_process_eligible() function ensures the thread-handling process
  *   gets scheduled frequently
  */
+
+#include "proc_threads.h"
 
 #ifndef PROC_THREADS_SCHEDULER_H
 #define PROC_THREADS_SCHEDULER_H

@@ -1,9 +1,20 @@
 /**
- * Thread cleanup handler implementation
+ * @file proc_threads_cleanup.c
+ * @brief Kernel-managed Thread Cleanup
  * 
- * This implements pthread_cleanup_push/pthread_cleanup_pop functionality
- * for the FreeMiNT threading system. The kernel manages the cleanup stack,
- * but userspace is responsible for executing the cleanup routines.
+ * Implements pthread_cleanup_push/pop functionality at kernel level.
+ * 
+ * Manages:
+ *  - Cleanup stack maintenance
+ *  - Exit handler execution
+ *  - Userspace coordination
+ *  - LIFO ordering enforcement
+ * 
+ * Ensures proper resource cleanup during thread cancellation and exit.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
  */
 
 #include "proc_threads_cleanup.h"

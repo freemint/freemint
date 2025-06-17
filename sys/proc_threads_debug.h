@@ -1,3 +1,22 @@
+/**
+ * @file proc_threads_debug.h
+ * @brief Thread Debugging Facility
+ * 
+ * Declares debugging infrastructure for kernel threading subsystem.
+ * Provides configurable logging levels for thread operations:
+ *  - State transitions
+ *  - Scheduling decisions
+ *  - Synchronization events
+ *  - Priority changes
+ * 
+ * Supports both kernel-space and file-based logging targets with
+ * severity-based filtering.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #ifndef PROC_THREADS_DEBUG_H
 #define PROC_THREADS_DEBUG_H
 

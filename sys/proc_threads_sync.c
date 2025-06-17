@@ -1,3 +1,16 @@
+/**
+ * @file proc_threads_sync.c
+ * @brief Kernel-level Thread Synchronization
+ * 
+ * Implements core synchronization primitives (mutexes, condition variables,
+ * semaphores) and thread lifecycle operations within the FreeMiNT kernel.
+ * Handles join/detach operations and process termination cleanup.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads_sync.h"
 
 #include "proc_threads_helper.h"

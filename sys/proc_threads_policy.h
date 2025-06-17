@@ -1,3 +1,24 @@
+/**
+ * @file proc_threads_policy.h
+ * @brief Thread Scheduling Policy Interface
+ * 
+ * Declares POSIX scheduling policy control and timeslice management APIs.
+ * Defines structures for policy enforcement across SCHED_FIFO, SCHED_RR, 
+ * and SCHED_OTHER scheduling classes.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
+ /**
+ * Thread Scheduling Policy Interface
+ * 
+ * Declares POSIX scheduling policy control structures and APIs including
+ * priority management, timeslice configuration, and policy enforcement
+ * for SCHED_FIFO, SCHED_RR, and SCHED_OTHER policies.
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_POLICY_H

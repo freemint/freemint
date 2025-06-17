@@ -1,3 +1,16 @@
+/**
+ * @file proc_threads_signal.h
+ * @brief Thread Signal Handling Interface
+ * 
+ * Declares signal management APIs for threaded environments.
+ * Defines per-thread signal masks, handler registration, and targeted
+ * signal delivery mechanisms with POSIX-compliant semantics.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_SIGNAL_H

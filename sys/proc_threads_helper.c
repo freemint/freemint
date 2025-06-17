@@ -1,3 +1,22 @@
+/**
+ * @file proc_threads_helper.c
+ * @brief Threading Utility Implementation
+ * 
+ * Implements core threading utilities including:
+ *  - Priority bitmap management using fast lookup tables
+ *  - Atomic thread state transitions
+ *  - Priority scaling and boosting
+ *  - Ready queue management
+ *  - System tick access
+ * 
+ * Optimized for performance-critical scheduling operations with
+ * inline functions and bitwise operations for Motorola 68000.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads_helper.h"
 
 /* Priority bit lookup table for fast highest bit finding */

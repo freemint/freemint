@@ -1,3 +1,15 @@
+/**
+ * @file proc_threads_tsd.h
+ * @brief Thread-Specific Data Interface
+ * 
+ * Declares key management and data access APIs for thread-local storage.
+ * Defines TSD entry structures and destructor registration mechanisms.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef _PROC_THREADS_TSD_H

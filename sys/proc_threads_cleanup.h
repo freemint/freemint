@@ -1,3 +1,15 @@
+/**
+ * @file proc_threads_cleanup.h
+ * @brief Thread Cleanup Handlers Interface
+ * 
+ * Declares cleanup stack management for pthread_cleanup_push/pop functionality.
+ * Defines structures for handler registration and execution during thread exit.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_CLEANUP_H

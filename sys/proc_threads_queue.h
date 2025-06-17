@@ -1,3 +1,22 @@
+/**
+ * @file proc_threads_queue.h
+ * @brief Thread Queue Management Interface
+ * 
+ * Declares queue operations for thread scheduling and synchronization.
+ * 
+ * Manages:
+ *  - Ready queues (priority-based scheduling)
+ *  - Sleep queues (timed waits)
+ *  - Wait queues (synchronization objects)
+ * 
+ * Provides atomic queue operations critical for scheduler integrity
+ * and POSIX-compliant thread ordering.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_QUEUE_H

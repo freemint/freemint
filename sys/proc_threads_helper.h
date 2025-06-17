@@ -1,3 +1,21 @@
+/**
+ * @file proc_threads_helper.h
+ * @brief Threading Utility Functions
+ * 
+ * Declares helper functions for kernel threading subsystem including:
+ *  - Priority bitmap operations
+ *  - Thread state management
+ *  - Scheduling utilities
+ *  - System tick access
+ * 
+ * Provides fast lookup tables for priority management and
+ * atomic thread state transitions critical for scheduler operation.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_HELPER_H

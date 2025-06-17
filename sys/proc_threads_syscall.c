@@ -1,3 +1,15 @@
+/**
+ * @file proc_threads_syscall.c
+ * @brief Kernel Thread System Call Dispatcher
+ * 
+ * Routes pthread-related system calls to appropriate kernel subsystems.
+ * Handles synchronization, signaling, scheduling, and cleanup operations.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads.h"
 
 #include "proc_threads_policy.h"

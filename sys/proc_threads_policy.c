@@ -1,3 +1,23 @@
+/**
+ * @file proc_threads_policy.c
+ * @brief Kernel Thread Scheduling Policies
+ * 
+ * Implements scheduling parameter management and policy enforcement in kernel space.
+ * Handles priority control, timeslice allocation, and real-time scheduling.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
+/**
+ * Thread Scheduling Policies
+ * 
+ * Implements POSIX thread scheduling parameter management including priority
+ * control, policy selection (SCHED_FIFO, SCHED_RR, SCHED_OTHER), and timeslice
+ * configuration. Enables real-time scheduling capabilities.
+ */
+
 #include "proc_threads_policy.h"
 #include "proc_threads_queue.h"
 #include "proc_threads_helper.h"

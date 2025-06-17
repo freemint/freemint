@@ -1,3 +1,23 @@
+/**
+ * @file proc_threads_signal.c
+ * @brief Kernel Thread Signal Handling
+ * 
+ * Implements signal management for threaded processes within the kernel.
+ * Handles per-thread signal masking, targeted delivery, and sigwait operations.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
+ /**
+ * Thread Signal Handling
+ * 
+ * Implements POSIX-compliant thread signal management with per-thread signal
+ * masks, queuing, and handlers. Supports targeted signal delivery, sigwait,
+ * and real-time signal management in threaded environments.
+ */
+
 #include "proc_threads_signal.h"
 
 #include "proc_threads_helper.h"

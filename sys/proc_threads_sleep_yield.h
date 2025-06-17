@@ -1,3 +1,15 @@
+/**
+ * @file proc_threads_sleep_yield.h
+ * @brief Thread Timing Operations Interface
+ * 
+ * Declares sleep, yield, and timeout management APIs for FreeMiNT threads.
+ * Defines sleep queue structures and wakeup mechanisms with priority handling.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_SLEEP_H

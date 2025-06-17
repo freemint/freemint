@@ -1,3 +1,22 @@
+/**
+ * @file proc_threads.c
+ * @brief Kernel Thread Management Core
+ * 
+ * Implements core thread operations including:
+ *  - Thread creation and termination
+ *  - Context initialization
+ *  - Idle thread management
+ *  - Process cleanup for multi-threaded processes
+ *  - Thread status and ID retrieval
+ * 
+ * Handles the creation of the initial main thread (thread0)
+ * and manages the thread lifecycle from creation to exit.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads.h"
 
 #include "proc_threads_helper.h"

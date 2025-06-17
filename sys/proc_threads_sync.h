@@ -1,3 +1,16 @@
+/**
+ * @file proc_threads_sync.h
+ * @brief Thread Synchronization Primitives Interface
+ * 
+ * Declares POSIX synchronization mechanisms and thread lifecycle operations.
+ * Defines structures and APIs for mutexes, condition variables, semaphores,
+ * and thread joining/detaching operations.
+ * 
+ * @author Medour Mehdi
+ * @date June 2025
+ * @version 1.0
+ */
+
 #include "proc_threads.h"
 
 #ifndef PROC_THREADS_SYNC_H

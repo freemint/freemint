@@ -1,3 +1,22 @@
+/**
+ * @file proc_threads_debug.c
+ * @brief Thread Debugging Implementation
+ * 
+ * Implements debug logging facility for threading subsystem.
+ * Features:
+ *  - File-based logging to 'c:\thread.log'
+ *  - Atomic log writing using kernel I/O
+ *  - Formatted message support with variadic arguments
+ *  - Severity-based filtering (minimal to verbose)
+ * 
+ * Designed for low-overhead operation in constrained environments
+ * with minimal performance impact when disabled.
+ * 
+ * Author: Medour Mehdi
+ * Date: June 2025
+ * Version: 1.0
+ */
+
 #include "proc_threads_debug.h"
 #include "mint/file.h"
 #include "arch/tosbind.h"
