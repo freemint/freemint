@@ -458,6 +458,12 @@ void proc_thread_exit(void *retval) {
             handle_thread_signal(current, sig);
         }
     }
+    if (current->magic == CTXT_MAGIC) {
+        TRACE_THREAD("EXIT: Running cleanup handlers for thread %d", current->tid);
+        run_cleanup_handlers(current);  // Execute all cleanup handlers automatically
+        TRACE_THREAD("EXIT: Running tsd destructors for thread %d", current->tid);
+        run_tsd_destructors(current);  // User-space destructor handler
+    }
 
     static int thread_exit_in_progress = 0;
     static int exit_owner_tid = -1;

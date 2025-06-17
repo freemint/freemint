@@ -190,10 +190,6 @@ static void proc_thread_start(void) {
         TRACE_THREAD("START: Thread function returned");
     }
     if (t && t->magic == CTXT_MAGIC) {
-        TRACE_THREAD("START: Running cleanup handlers for thread %d", t->tid);
-        run_cleanup_handlers(t);  // Execute all cleanup handlers automatically
-        TRACE_THREAD("START: Running tsd destructors for thread %d", t->tid);
-        run_tsd_destructors(t);  // User-space destructor handler
         TRACE_THREAD_EXIT(t, result);
         proc_thread_exit(result);
     }
@@ -454,14 +450,6 @@ static void *idle_thread_func(void *arg) {
         proc_thread_schedule();
     }
 
-    // volatile unsigned long current_time = get_system_ticks();
-    // volatile unsigned long end_time = current_time + 50;
-
-    // while (current_time < end_time) {
-    //     asm volatile("nop");
-    //     current_time = get_system_ticks();
-    // }
-
     /* Restore original process priority */
     p->pri = p->pri - 1;
 
@@ -567,4 +555,3 @@ struct thread* get_main_thread(struct proc *p) {
     }
     return thread0;
 }
-/* End of Threads stuff */
