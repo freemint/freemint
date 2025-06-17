@@ -6,6 +6,7 @@
 #include "proc_threads_sync.h"
 #include "proc_threads_signal.h"
 #include "proc_threads_tsd.h"
+#include "proc_threads_cleanup.h"
 
 /* Threads stuff */
 
@@ -33,12 +34,12 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
     // Check if process is valid
     if (!p || p->magic != CTXT_MAGIC) {
         spl(sr);
-        return -EINVAL;
+        return EINVAL;
     }
     
     struct thread *t = kmalloc(sizeof(struct thread));
     if (!t) {
-        return -ENOMEM;
+        return ENOMEM;
     }
     TRACE_THREAD("KMALLOC: Allocated thread structure at %p", t);
     TRACE_THREAD("Creating thread: pid=%d, func=%p, arg=%p", p->pid, func, arg);
@@ -94,7 +95,7 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
         TRACE_THREAD("KFREE: Stack allocation failed");
         kfree(t);
         spl(sr);
-        return -ENOMEM;
+        return ENOMEM;
     }
     TRACE_THREAD("KMALLOC: Allocated stack at %p for thread %d", t->stack, t->tid);
     
@@ -124,7 +125,10 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
     t->joined = 0;
 
     TRACE_THREAD("Thread %d stack: base=%p, top=%p", t->tid, t->stack, t->stack_top);
+    
+    init_thread_cleanup(t);
     init_thread_tsd(t);
+
     // Initialize context
     init_thread_context(t, func, arg);
     
@@ -186,9 +190,10 @@ static void proc_thread_start(void) {
         TRACE_THREAD("START: Thread function returned");
     }
     if (t && t->magic == CTXT_MAGIC) {
+        TRACE_THREAD("START: Running cleanup handlers for thread %d", t->tid);
+        run_cleanup_handlers(t);  // Execute all cleanup handlers automatically
+        TRACE_THREAD("START: Running tsd destructors for thread %d", t->tid);
         run_tsd_destructors(t);  // User-space destructor handler
-    }    
-    if (t && t->magic == CTXT_MAGIC) {
         TRACE_THREAD_EXIT(t, result);
         proc_thread_exit(result);
     }
@@ -411,7 +416,7 @@ long proc_thread_status(long tid) {
     register unsigned short sr;
     
     if (!p)
-        return -EINVAL;
+        return EINVAL;
     
     // Find target thread
     sr = splhigh();
@@ -423,7 +428,7 @@ long proc_thread_status(long tid) {
     
     if (!target) {
         spl(sr);
-        return -ESRCH;  // Thread not found
+        return ESRCH;  // Thread not found
     }
     
     long status = target->state;

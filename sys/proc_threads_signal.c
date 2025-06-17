@@ -253,7 +253,7 @@ static int deliver_signal_to_thread(struct proc *p, struct thread *t, int sig) {
 int proc_thread_signal_aware_raise(struct proc *p, int sig)
 {
     if (!p || sig <= 0 || sig >= NSIG)
-        return -EINVAL;
+        return EINVAL;
         
     /* Check if this process has thread-specific signal handling enabled */
     if (p->p_sigacts && p->p_sigacts->thread_signals) {
@@ -415,7 +415,7 @@ long _cdecl proc_thread_signal_mode(int enable)
 {
     if (!curproc || !curproc->p_sigacts){
         TRACE_THREAD("proc_thread_signal_mode: invalid process");
-        return -EINVAL;
+        return EINVAL;
     }
         
     if (enable) {
@@ -437,7 +437,7 @@ long _cdecl proc_thread_signal_mode(int enable)
 long _cdecl proc_thread_signal_sigmask(ulong mask)
 {
     if (!curproc || !curproc->current_thread)
-        return -EINVAL;
+        return EINVAL;
         
     ulong old_mask = THREAD_SIGMASK(curproc->current_thread);
     
@@ -482,12 +482,12 @@ long _cdecl proc_thread_signal_sigwait_enhanced(ulong mask, long timeout)
     
     if (!t || !p) {
         TRACE_THREAD("proc_thread_sigwait_enhanced: invalid thread or process");
-        return -EINVAL;
+        return EINVAL;
     }
     
     if (!p->p_sigacts || !p->p_sigacts->thread_signals) {
         TRACE_THREAD("proc_thread_sigwait_enhanced: thread signals not enabled");
-        return -EINVAL;
+        return EINVAL;
     }
     
     TRACE_THREAD("proc_thread_sigwait_enhanced: Thread %d waiting for signals in mask %lx, timeout %ld", 
@@ -581,24 +581,24 @@ long _cdecl proc_thread_signal_sighandler(int sig, void (*handler)(int, void*), 
     /* Validate parameters */
     if (!t || sig <= 0 || sig >= NSIG){
         TRACE_THREAD("proc_thread_signal_sighandler: invalid signal %d", sig);
-        return -EINVAL;
+        return EINVAL;
     }
         
     if (!p || !p->p_sigacts){
         TRACE_THREAD("proc_thread_signal_sighandler: invalid process");
-        return -EINVAL;
+        return EINVAL;
     }
         
     /* Make sure thread-specific signals are enabled */
     if (!p->p_sigacts->thread_signals){
         TRACE_THREAD("proc_thread_signal_sighandler: thread-specific signals are disabled");
-        return -EINVAL;
+        return EINVAL;
     }
 
     /* Don't allow thread0 to set thread-specific handlers */
     if (t->tid == 0) {
         TRACE_THREAD("proc_thread_signal_sighandler: thread0 cannot set thread-specific handlers");
-        return -EINVAL;
+        return EINVAL;
     }
 
     TRACE_THREAD("proc_thread_signal_sighandler: PROC ID %d, THREAD ID %d, SIG %d, HANDLER %p, ARG %p",
@@ -622,24 +622,24 @@ long _cdecl proc_thread_signal_sighandler_arg(int sig, void *arg)
     /* Validate parameters */
     if (!t || sig <= 0 || sig >= NSIG){
         TRACE_THREAD("proc_thread_signal_sighandler_arg: invalid signal %d", sig);
-        return -EINVAL;
+        return EINVAL;
     }
         
     if (!p || !p->p_sigacts){
         TRACE_THREAD("proc_thread_signal_sighandler_arg: invalid process");
-        return -EINVAL;
+        return EINVAL;
     }
         
     /* Make sure thread-specific signals are enabled */
     if (!p->p_sigacts->thread_signals){
         TRACE_THREAD("proc_thread_signal_sighandler_arg: thread-specific signals are disabled");
-        return -EINVAL;
+        return EINVAL;
     }
         
     /* Make sure a handler is already registered */
     if (!t->sig_handlers[sig].handler){
         TRACE_THREAD("proc_thread_signal_sighandler_arg: no handler registered for signal %d", sig);
-        return -EINVAL;
+        return EINVAL;
     }
 
     TRACE_THREAD("proc_thread_signal_sighandler_arg: PROC ID %d, THREAD ID %d, SIG %d, ARG %p",
@@ -682,7 +682,7 @@ long _cdecl proc_thread_signal_sigwait(ulong mask, long timeout)
     /* Enhanced validation for wait mask */
     if (!mask) {
         TRACE_THREAD("proc_thread_signal_sigwait: empty wait mask");
-        return -EINVAL;
+        return EINVAL;
     }
     
     /* Remove unmaskable signals from wait mask */
@@ -691,7 +691,7 @@ long _cdecl proc_thread_signal_sigwait(ulong mask, long timeout)
         mask &= ~UNMASKABLE;
         if (!mask) {
             TRACE_THREAD("proc_thread_signal_sigwait: wait mask became empty after removing unmaskable signals");
-            return -EINVAL;
+            return EINVAL;
         }
     }
     
@@ -799,7 +799,7 @@ long _cdecl proc_thread_signal_sigblock(ulong mask)
     struct thread *t = CURTHREAD;
     
     if (!t)
-        return -EINVAL;
+        return EINVAL;
         
     ulong old_mask = THREAD_SIGMASK(t);
     
@@ -833,7 +833,7 @@ long _cdecl sys_p_thread_sigpause(ulong mask)
     int sig;
     
     if (!t || !p)
-        return -EINVAL;
+        return EINVAL;
         
     /* Save old mask */
     old_mask = THREAD_SIGMASK(t);
@@ -902,7 +902,7 @@ long _cdecl proc_thread_signal_sigalrm(struct thread *t, long ms)
     long remaining = 0;
 
     if (!t)
-        return -EINVAL;
+        return EINVAL;
 
     struct proc *p = t->proc;
 
@@ -999,7 +999,7 @@ long _cdecl proc_thread_signal_broadcast(int sig)
 {
     struct proc *p = curproc;
     if (!p || !p->p_sigacts || !p->p_sigacts->thread_signals)
-        return -EINVAL;
+        return EINVAL;
         
     /* Use the enhanced raise function which handles broadcasting */
     return proc_thread_signal_aware_raise(p, sig);

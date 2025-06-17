@@ -284,7 +284,7 @@ long proc_thread_yield(void) {
     struct thread *t;
     
     if (!p || !p->current_thread)
-        return -EINVAL;
+        return EINVAL;
         
     t = p->current_thread;
     

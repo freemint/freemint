@@ -8,6 +8,7 @@
 #include "proc_threads_sleep_yield.h"
 #include "proc_threads_helper.h"
 #include "proc_threads_tsd.h"
+#include "proc_threads_cleanup.h"
 
 long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2) {
     switch (mode) {
@@ -78,7 +79,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
         case PTSIG_UNBLOCK:
             {
                 struct thread *t = CURTHREAD;
-                if (!t) return -EINVAL;
+                if (!t) return EINVAL;
                 ulong old_mask = t->t_sigmask;
                 t->t_sigmask &= ~(arg1 & ~UNMASKABLE);
                 return old_mask;
@@ -104,7 +105,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
         case PTSIG_PENDING:
            {
                struct thread *t = CURTHREAD;
-               if (!t) return -EINVAL;
+               if (!t) return EINVAL;
                return t->t_sigpending;
            }            
         case PTSIG_ALARM:
@@ -139,7 +140,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
                     
                     if (!target) {
                         TRACE_THREAD("Thread with ID %ld not found", arg1);
-                        return -ESRCH;
+                        return ESRCH;
                     }
                 }
                 
@@ -151,7 +152,7 @@ long _cdecl sys_p_thread_signal(long func, long arg1, long arg2) {
             }
             
             TRACE_THREAD("Invalid function code: %ld", func);
-            return -EINVAL;
+            return EINVAL;
     }
 }
 
@@ -224,7 +225,20 @@ long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2) {
             
         case THREAD_SYNC_COND_BROADCAST:
             TRACE_THREAD("THREAD_SYNC_COND_BROADCAST");
-            return proc_thread_condvar_broadcast((struct condvar *)arg1);            
+            return proc_thread_condvar_broadcast((struct condvar *)arg1);
+
+        case THREAD_SYNC_CLEANUP_PUSH:
+            TRACE_THREAD("THREAD_SYNC_CLEANUP_PUSH: routine=%p, arg=%p", (void*)arg1, (void*)arg2);
+            return thread_cleanup_push((void (*)(void*))arg1, (void*)arg2);
+            
+        case THREAD_SYNC_CLEANUP_POP:
+            TRACE_THREAD("THREAD_SYNC_CLEANUP_POP: routine_ptr=%p, arg_ptr=%p", (void*)arg1, (void*)arg2);
+            return thread_cleanup_pop((void (**)(void*))arg1, (void**)arg2);
+
+        case THREAD_SYNC_CLEANUP_GET:
+            TRACE_THREAD("THREAD_SYNC_CLEANUP_GET: handlers=%p, max_handlers=%ld", (void*)arg1, arg2);
+            return get_cleanup_handlers(CURTHREAD, (struct cleanup_info*)arg1, (int)arg2);
+
         default:
             TRACE_THREAD("THREAD_SYNC_UNKNOWN: %d", operator);
             return EINVAL;
@@ -253,7 +267,7 @@ long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3
             return proc_thread_get_timeslice(arg1, (long*)arg2, (long*)arg3);
             
         default:
-            return -EINVAL;
+            return EINVAL;
     }
 }
 

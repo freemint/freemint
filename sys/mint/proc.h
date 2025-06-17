@@ -111,7 +111,8 @@ struct thread {
     
     /* Thread-specific data */
     void **tsd_data;             /* Array of thread-specific data pointers */
-    
+	/* Thread cleanup handlers */
+	void *cleanup_stack;           /* Stack of cleanup handlers (LIFO) */
     /* Signal handling */
     unsigned long t_sigpending;     /* Signals pending for this thread */
     unsigned long t_sigmask;        /* Thread-specific signal mask */

@@ -24,7 +24,7 @@ long proc_thread_detach(long tid)
     register unsigned short sr;
     
     if (!p)
-        return -EINVAL;
+        return EINVAL;
     
     // Find target thread
     for (target = p->threads; target; target = target->next) {
@@ -36,7 +36,7 @@ long proc_thread_detach(long tid)
     
     if (!target){
         TRACE_THREAD("DETACH: No such thread %d", tid);
-        return -ESRCH;  // No such thread
+        return ESRCH;  // No such thread
     }
 
     sr = splhigh();
@@ -45,7 +45,7 @@ long proc_thread_detach(long tid)
     if (target->joined) {
         TRACE_THREAD("DETACH: Thread %d already joined", target->tid);
         spl(sr);
-        return -EINVAL;  // Thread already joined
+        return EINVAL;  // Thread already joined
     }
     
     // Check if thread is already detached

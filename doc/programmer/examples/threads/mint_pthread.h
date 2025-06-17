@@ -50,6 +50,11 @@ extern "C" {
 #define THREAD_SYNC_COND_SIGNAL     16  /* Signal condition variable */
 #define THREAD_SYNC_COND_BROADCAST  17  /* Broadcast condition variable */
 
+/* Cleanup operation constants for syscalls */
+#define THREAD_SYNC_CLEANUP_PUSH    18
+#define THREAD_SYNC_CLEANUP_POP     19
+#define THREAD_SYNC_CLEANUP_GET     20
+
 /* Thread-specific data operations */
 #define THREAD_TSD_CREATE_KEY    1   /* Create a new key */
 #define THREAD_TSD_DELETE_KEY    2   /* Delete a key */
@@ -2119,6 +2124,21 @@ static inline int pthread_key_delete(pthread_key_t key)
         return -result;
     
     return 0;
+}
+
+/* Thread cleanup functions */
+static inline void pthread_cleanup_push(void (*routine)(void*), void *arg) {
+    sys_p_thread_sync(THREAD_SYNC_CLEANUP_PUSH, (long)routine, (long)arg);
+}
+
+static inline void pthread_cleanup_pop(int execute) {
+    void (*routine)(void*);
+    void *arg;
+    if (sys_p_thread_sync(THREAD_SYNC_CLEANUP_POP, (long)&routine, (long)&arg) > 0) {
+        if (execute && routine) {
+            routine(arg);
+        }
+    }
 }
 
 /**

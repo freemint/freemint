@@ -11,7 +11,7 @@
 #define THREAD_DEBUG_ALL      4  /* All thread operations including queue dumps */
 
 /* Current thread debug level - change this to adjust verbosity */
-#define THREAD_DEBUG_LEVEL THREAD_DEBUG_NORMAL
+#define THREAD_DEBUG_LEVEL THREAD_DEBUG_NONE
 
 #ifdef DEBUG_THREAD
 /* Function declaration for thread logging */

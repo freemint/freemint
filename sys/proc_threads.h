@@ -82,12 +82,19 @@
 #define THREAD_SYNC_TRYJOIN			9   /* Non-blocking join (new) */
 #define THREAD_SYNC_SLEEP			10  /* Sleep for a specified number of milliseconds */
 #define THREAD_SYNC_YIELD			11  /* Yield the current thread */
+
+/* Condition variable system call constants */
 #define THREAD_SYNC_COND_INIT       12
 #define THREAD_SYNC_COND_DESTROY    13
 #define THREAD_SYNC_COND_WAIT       14
 #define THREAD_SYNC_COND_TIMEDWAIT  15
 #define THREAD_SYNC_COND_SIGNAL     16
 #define THREAD_SYNC_COND_BROADCAST  17
+
+/* Cleanup operation constants for syscalls */
+#define THREAD_SYNC_CLEANUP_PUSH    18
+#define THREAD_SYNC_CLEANUP_POP     19
+#define THREAD_SYNC_CLEANUP_GET     20
 
  #define CURTHREAD \
  	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)

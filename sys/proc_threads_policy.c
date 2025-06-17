@@ -219,7 +219,7 @@ long proc_thread_get_rrinterval(long tid, long *interval)
         }
         
         if (!t)
-            return -ESRCH; // No such thread
+            return ESRCH; // No such thread
     }
     
     return get_rr_interval(t, interval);
@@ -277,7 +277,7 @@ long proc_thread_get_timeslice(long tid, long *timeslice, long *remaining)
         }
         
         if (!t)
-            return -ESRCH; // No such thread
+            return ESRCH; // No such thread
     }
     
     *timeslice = t->timeslice;
