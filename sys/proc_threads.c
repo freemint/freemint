@@ -143,6 +143,10 @@ static long create_thread(struct proc *p, void *(*func)(void*), void *arg, void*
     t->detached = 0;  // Default is joinable
     t->joined = 0;
 
+    t->cancel_state = PTHREAD_CANCEL_ENABLE;
+    t->cancel_type = PTHREAD_CANCEL_DEFERRED;
+    t->cancel_pending = 0;
+    
     TRACE_THREAD("Thread %d stack: base=%p, top=%p", t->tid, t->stack, t->stack_top);
     
     init_thread_cleanup(t);
@@ -210,7 +214,7 @@ static void proc_thread_start(void) {
     }
     if (t && t->magic == CTXT_MAGIC) {
         TRACE_THREAD_EXIT(t, result);
-        proc_thread_exit(result);
+        proc_thread_exit(result, t);
     }
     
     // Should never reach here

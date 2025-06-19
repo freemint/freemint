@@ -86,7 +86,12 @@ struct thread {
     /* Thread execution */
     void* (*func)(void*);            /* Function to execute */
     void *arg;                      /* Argument to pass to function */
-    
+
+    short cancel_state;      // ENABLE/DISABLE
+    short cancel_type;       // DEFERRED/ASYNCHRONOUS
+    short cancel_pending;    // Flag for pending cancellation	
+    short cancel_requested;  // 1 if async cancellation should happen ASAP
+	
     /* Sleep and wait information */
     short sleep_reason;             /* Reason for sleep (0 = woken by signal/other, 1 = timeout) */
 	TIMEOUT *sleep_timeout;  		// Timeout for sleeping
@@ -141,7 +146,6 @@ long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2);
 long _cdecl sys_p_thread_signal(long func, long arg1, long arg2);
 long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2);
 long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3);
-long _cdecl sys_p_thread_tsd(long op, long arg1, long arg2);
 
 long _cdecl proc_thread_create(void *(*func)(void*), void *arg, void *stack);
 void proc_thread_cleanup_process(struct proc *pcurproc); /** Called in terminate function - k_exit.c */

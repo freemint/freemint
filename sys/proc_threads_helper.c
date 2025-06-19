@@ -306,3 +306,29 @@ long sys_p_thread_getid(void) {
     TRACE_THREAD("sys_p_thread_getid: pid=%d, tid=%d", t->proc->pid, t->tid);
     return t->tid;
 }
+
+/*
+ * 
+ * @param p Process to search
+ * @param tid Thread ID to find
+ * @return Pointer to thread if found, NULL otherwise
+ */
+struct thread *get_thread_by_id(struct proc *p, short tid) {
+    if (!p || tid < 0) {
+        return NULL;
+    }
+
+    register unsigned short sr = splhigh();
+    struct thread *t = p->threads;
+    
+    while (t) {
+        if (t->tid == tid && t->magic == CTXT_MAGIC) {
+            spl(sr);
+            return t;
+        }
+        t = t->next;
+    }
+    
+    spl(sr);
+    return NULL;
+}

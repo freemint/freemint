@@ -72,6 +72,7 @@ COBJS = \
 	proc_threads_debug.c \
 	proc_threads_tsd.c \
 	proc_threads_cleanup.c \
+	proc_threads_cancel.c \
 	procfs.c \
 	profil.c \
 	ptrace.c \

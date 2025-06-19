@@ -22,12 +22,123 @@
 #include "proc_threads_tsd.h"
 #include "proc_threads_cleanup.h"
 
+#include "proc_threads_queue.h"
+
+#ifndef __SIZE_T
+#define __SIZE_T
+typedef unsigned long size_t;
+#endif
+
+/* Memory access helper for single-address-space systems */
+#ifndef copyout
+#define copyout(src, dst, len) \
+    (memcpy((void*)(dst), (const void*)(src), (size_t)(len)), 0)
+#endif
+
+#ifndef copyin
+#define copyin(src, dst, len) \
+    (memcpy((void*)(dst), (const void*)(src), (size_t)(len)), 0)
+#endif
+
 long _cdecl sys_p_thread_ctrl(long mode, long arg1, long arg2) {
     switch (mode) {
         case THREAD_CTRL_EXIT: // Exit thread
             TRACE_THREAD("EXIT: sys_p_thread_ctrl called with exit mode");
-            proc_thread_exit((void*)arg1);  // Use arg1 as the return value
+            proc_thread_exit((void*)arg1, NULL);  // Use arg1 as the return value
             return 0;  // Should never reach here
+
+        case THREAD_CTRL_SETCANCELSTATE: {
+            struct thread *t = CURTHREAD;
+            if (!t) return EINVAL;
+            
+            int new_state = (int)arg1;
+            if (new_state != PTHREAD_CANCEL_ENABLE && 
+                new_state != PTHREAD_CANCEL_DISABLE) {
+                return EINVAL;
+            }
+            
+            register unsigned short sr = splhigh();
+            int old_state = t->cancel_state;
+            t->cancel_state = new_state;
+            
+            // If oldstate pointer provided, store previous state
+            if (arg2) {
+                if (copyout(&old_state, (void*)arg2, sizeof(int))) {
+                    spl(sr);
+                    return EFAULT;
+                }
+            }
+            
+            spl(sr);
+            return 0;
+        }
+        
+        case THREAD_CTRL_SETCANCELTYPE: {
+            struct thread *t = CURTHREAD;
+            if (!t) return EINVAL;
+            
+            int new_type = (int)arg1;
+            if (new_type != PTHREAD_CANCEL_DEFERRED && 
+                new_type != PTHREAD_CANCEL_ASYNCHRONOUS) {
+                return EINVAL;
+            }
+            
+            register unsigned short sr = splhigh();
+            int old_type = t->cancel_type;
+            t->cancel_type = new_type;
+            
+            if (arg2) {
+                if (copyout(&old_type, (void*)arg2, sizeof(int))) {
+                    spl(sr);
+                    return EFAULT;
+                }
+            }
+            
+            spl(sr);
+            return 0;
+        }
+        
+        case THREAD_CTRL_TESTCANCEL: {
+            struct thread *t = CURTHREAD;
+            if (!t) return EINVAL;
+            
+            register unsigned short sr = splhigh();
+            int should_cancel = (t->cancel_state == PTHREAD_CANCEL_ENABLE && 
+                                t->cancel_pending);
+            spl(sr);
+            
+            if (should_cancel) {
+                TRACE_THREAD("TESTCANCEL: Thread %d cancelling itself", t->tid);
+                // Exit current thread (t = NULL means current thread exits itself)
+                proc_thread_exit(PTHREAD_CANCELED, NULL);
+            }
+            return 0;
+        }
+        
+        case THREAD_CTRL_CANCEL: {
+            struct thread *target = get_thread_by_id(curproc, (short)arg2);
+            if (!target) return ESRCH;
+            
+            register unsigned short sr = splhigh();
+            target->cancel_pending = 1;
+            
+            // For ASYNCHRONOUS mode, send a signal to interrupt the target thread
+            if (target->cancel_state == PTHREAD_CANCEL_ENABLE && 
+                target->cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS) {
+                
+                // If target is sleeping/waiting, wake it up
+                if (target->state == THREAD_STATE_BLOCKED) {
+                    atomic_thread_state_change(target, THREAD_STATE_READY);
+                    add_to_ready_queue(target);
+                }
+                
+                // Set a flag that the scheduler will check
+                target->cancel_requested = 1;
+            }
+            
+            spl(sr);
+            return 0;
+        }
 
         case THREAD_CTRL_STATUS:
             // TRACE_THREAD("STATUS: proc_thread_status called for tid=%ld", arg1);
@@ -250,6 +361,18 @@ long _cdecl sys_p_thread_sync(long operator, long arg1, long arg2) {
         case THREAD_SYNC_CLEANUP_GET:
             TRACE_THREAD("THREAD_SYNC_CLEANUP_GET: handlers=%p, max_handlers=%ld", (void*)arg1, arg2);
             return get_cleanup_handlers(CURTHREAD, (struct cleanup_info*)arg1, (int)arg2);
+        
+        case THREAD_TSD_CREATE_KEY:
+            return thread_key_create((void (*)(void*))arg1);
+            
+        case THREAD_TSD_DELETE_KEY:
+            return thread_key_delete(arg1);
+            
+        case THREAD_TSD_GET_SPECIFIC:
+            return (long)thread_getspecific(arg1);
+            
+        case THREAD_TSD_SET_SPECIFIC:
+            return thread_setspecific(arg1, (void*)arg2);
 
         default:
             TRACE_THREAD("THREAD_SYNC_UNKNOWN: %d", operator);
@@ -277,35 +400,6 @@ long _cdecl sys_p_thread_sched_policy(long func, long arg1, long arg2, long arg3
             
         case PSCHED_GET_TIMESLICE:
             return proc_thread_get_timeslice(arg1, (long*)arg2, (long*)arg3);
-            
-        default:
-            return EINVAL;
-    }
-}
-
-/**
- * System call handler for thread-specific data operations
- * 
- * @param op Operation code (THREAD_TSD_*)
- * @param arg1 First argument (key or destructor)
- * @param arg2 Second argument (value)
- * @return Operation-specific return value
- */
-long _cdecl sys_p_thread_tsd(long op, long arg1, long arg2) {
-    TRACE_THREAD("sys_p_thread_tsd: op=%ld, arg1=%ld, arg2=%ld", op, arg1, arg2);
-    
-    switch (op) {
-        case THREAD_TSD_CREATE_KEY:
-            return thread_key_create((void (*)(void*))arg1);
-            
-        case THREAD_TSD_DELETE_KEY:
-            return thread_key_delete(arg1);
-            
-        case THREAD_TSD_GET_SPECIFIC:
-            return (long)thread_getspecific(arg1);
-            
-        case THREAD_TSD_SET_SPECIFIC:
-            return thread_setspecific(arg1, (void*)arg2);
             
         default:
             return EINVAL;

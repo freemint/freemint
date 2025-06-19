@@ -22,11 +22,10 @@ extern "C" {
 #endif
 
 /* MiNT system call numbers */
-#define P_TREAD_SHED     0x185
-#define P_THREAD_SYNC      0x18D
-#define P_THREAD_CTRL          0x18A
-#define P_THREAD_SIGNAL  0x18E
-#define P_THREAD_TSD           0x18F
+#define P_TREAD_SHED        0x185
+#define P_THREAD_SYNC       0x18D
+#define P_THREAD_CTRL       0x18A
+#define P_THREAD_SIGNAL     0x18E
 
 /* Define the PE_THREAD mode for Pexec */
 #define PE_THREAD       107
@@ -56,15 +55,19 @@ extern "C" {
 #define THREAD_SYNC_CLEANUP_GET     20
 
 /* Thread-specific data operations */
-#define THREAD_TSD_CREATE_KEY    1   /* Create a new key */
-#define THREAD_TSD_DELETE_KEY    2   /* Delete a key */
-#define THREAD_TSD_GET_SPECIFIC  3   /* Get thread-specific data */
-#define THREAD_TSD_SET_SPECIFIC  4   /* Set thread-specific data */
+#define THREAD_TSD_CREATE_KEY    21   /* Create a new key */
+#define THREAD_TSD_DELETE_KEY    22   /* Delete a key */
+#define THREAD_TSD_GET_SPECIFIC  23   /* Get thread-specific data */
+#define THREAD_TSD_SET_SPECIFIC  24   /* Set thread-specific data */
 
 /* Thread operation modes for sys_p_thread_ctrl */
 #define THREAD_CTRL_EXIT     0   /* Exit the current thread */
+#define THREAD_CTRL_CANCEL   1   /* Cancel a thread */
 #define THREAD_CTRL_STATUS   4   /* Get thread status */
 #define THREAD_CTRL_GETID    5	/* Get thread ID */
+#define THREAD_CTRL_SETCANCELSTATE 6
+#define THREAD_CTRL_SETCANCELTYPE  7
+#define THREAD_CTRL_TESTCANCEL     8
 
 #define THREAD_STATE_RUNNING    0x0001
 #define THREAD_STATE_READY      0x0002
@@ -110,6 +113,13 @@ typedef enum {
 
 /* Thread ID type */
 typedef long pthread_t;
+
+/* Thread cancellation constants */
+#define PTHREAD_CANCEL_ENABLE       0   /* Enable cancellation */
+#define PTHREAD_CANCEL_DISABLE      1   /* Disable cancellation */
+#define PTHREAD_CANCEL_DEFERRED     0   /* Deferred cancellation (at cancellation points) */
+#define PTHREAD_CANCEL_ASYNCHRONOUS 1   /* Asynchronous cancellation (immediate) */
+#define PTHREAD_CANCELED           ((void *)-1)  /* Return value for canceled threads */
 
 #define PTHREAD_BARRIER_SERIAL_THREAD 1
 #define CLOCK_THREAD_CPUTIME_ID 1
@@ -219,7 +229,7 @@ typedef struct {
 /* MiNT system call wrappers */
 
 static inline long sys_p_thread_tsd(long op, long arg1, long arg2){
-    return trap_1_wlll(P_THREAD_TSD, (long)op, (long)arg1, (long)arg2);
+    return trap_1_wlll(P_THREAD_SYNC, (long)op, (long)arg1, (long)arg2);
 }
 
 static inline long sys_p_thread_sync(long op, long arg1, long arg2) {
@@ -1150,48 +1160,59 @@ static inline int pthread_setconcurrency(int level)
 }
 
 /* Thread cancellation functions */
-/* Note: These are stubs - FreeMiNT doesn't support thread cancellation directly */
-
-#define PTHREAD_CANCEL_ENABLE       0
-#define PTHREAD_CANCEL_DISABLE      1
-#define PTHREAD_CANCEL_DEFERRED     0
-#define PTHREAD_CANCEL_ASYNCHRONOUS 1
-#define PTHREAD_CANCELED           ((void *) -1)
 
 /**
- * Cancel a thread (stub implementation)
+ * Cancel a thread
+ * 
+ * @param thread Thread ID to cancel
+ * @return 0 on success, error code on failure
  */
 static inline int pthread_cancel(pthread_t thread)
 {
-    return ENOSYS;  // Not supported
+    // Pass thread ID as second argument, PTHREAD_CANCELED as return value
+    long result = sys_p_thread_ctrl(THREAD_CTRL_CANCEL, 
+                                   (long)PTHREAD_CANCELED, 
+                                   thread);
+    return (result < 0) ? -result : 0;
 }
 
 /**
- * Set cancelability state (stub implementation)
+ * Set cancellation state
+ * 
+ * @param state New state (PTHREAD_CANCEL_ENABLE/DISABLE)
+ * @param oldstate Where to store old state (optional)
+ * @return 0 on success, error code on failure
  */
 static inline int pthread_setcancelstate(int state, int *oldstate)
 {
-    if (oldstate)
-        *oldstate = PTHREAD_CANCEL_DISABLE;
-    return 0;
+    long result = sys_p_thread_ctrl(THREAD_CTRL_SETCANCELSTATE, 
+                                   state, 
+                                   (long)oldstate);
+    return (result < 0) ? -result : 0;
 }
 
 /**
- * Set cancelability type (stub implementation)
+ * Set cancellation type
+ * 
+ * @param type New type (PTHREAD_CANCEL_DEFERRED/ASYNCHRONOUS)
+ * @param oldtype Where to store old type (optional)
+ * @return 0 on success, error code on failure
  */
 static inline int pthread_setcanceltype(int type, int *oldtype)
 {
-    if (oldtype)
-        *oldtype = PTHREAD_CANCEL_DEFERRED;
-    return 0;
+    long result = sys_p_thread_ctrl(THREAD_CTRL_SETCANCELTYPE, 
+                                   type, 
+                                   (long)oldtype);
+    return (result < 0) ? -result : 0;
 }
 
 /**
- * Test for a cancellation point (stub implementation)
+ * Test for pending cancellation
  */
 static inline void pthread_testcancel(void)
 {
-    // Do nothing
+    // Pass 0 for retval and NULL for thread (indicates current thread)
+    sys_p_thread_ctrl(THREAD_CTRL_TESTCANCEL, 0, 0);
 }
 
 /* Thread sleep functions */

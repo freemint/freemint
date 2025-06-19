@@ -86,8 +86,12 @@
 
 /* Thread operation modes for sys_p_thread_ctrl */
 #define THREAD_CTRL_EXIT     0   /* Exit the current thread */
+#define THREAD_CTRL_CANCEL   1   /* Cancel a thread */
 #define THREAD_CTRL_STATUS   4   /* Get thread status */
 #define THREAD_CTRL_GETID    5	/* Get thread ID */
+#define THREAD_CTRL_SETCANCELSTATE 6
+#define THREAD_CTRL_SETCANCELTYPE  7
+#define THREAD_CTRL_TESTCANCEL     8
 
 /* Wait types as bitfields */
 #define WAIT_NONE       0x0000  /* Not waiting */
@@ -132,6 +136,19 @@
 #define THREAD_SYNC_CLEANUP_POP     19
 #define THREAD_SYNC_CLEANUP_GET     20
 
+/* Thread-specific data operations */
+#define THREAD_TSD_CREATE_KEY    21   /* Create a new key */
+#define THREAD_TSD_DELETE_KEY    22   /* Delete a key */
+#define THREAD_TSD_GET_SPECIFIC  23   /* Get thread-specific data */
+#define THREAD_TSD_SET_SPECIFIC  24   /* Set thread-specific data */
+
+/* Thread cancellation constants */
+#define PTHREAD_CANCEL_ENABLE       0   /* Enable cancellation */
+#define PTHREAD_CANCEL_DISABLE      1   /* Disable cancellation */
+#define PTHREAD_CANCEL_DEFERRED     0   /* Deferred cancellation (at cancellation points) */
+#define PTHREAD_CANCEL_ASYNCHRONOUS 1   /* Asynchronous cancellation (immediate) */
+#define PTHREAD_CANCELED           ((void *)-1)  /* Return value for canceled threads */
+
  #define CURTHREAD \
  	((curproc && curproc->current_thread) ? curproc->current_thread : NULL)
 
@@ -139,5 +156,4 @@ long proc_thread_status(long tid);
 CONTEXT* get_thread_context(struct thread *t);
 struct thread* get_idle_thread(struct proc *p);
 struct thread* get_main_thread(struct proc *p);
-void proc_thread_exit(void *retval);
 #endif /* PROC_THREAD_H */

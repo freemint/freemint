@@ -28,6 +28,7 @@
 #include "proc_threads_signal.h"
 #include "proc_threads_tsd.h"
 #include "proc_threads_cleanup.h"
+#include "proc_threads_cancel.h"
 
 void reset_thread_switch_state(void);
 void thread_switch_timeout_handler(PROC *p, long arg);
@@ -388,6 +389,9 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
     /* Clean up thread cleanup handlers */
     cleanup_thread_handlers(t);
 
+    /* Clean up cancellation state */
+    cleanup_thread_cancellation(t);
+
     /* Clean up thread-specific data */
     cleanup_thread_tsd(t);
 
@@ -456,14 +460,20 @@ void cleanup_thread_resources(struct proc *p, struct thread *t, int tid) {
  * 
  * @param retval The return value of the exiting thread
  */
-void proc_thread_exit(void *retval) {
+void proc_thread_exit(void *retval, void *arg) {
     struct proc *p = curproc;
     if (!p) {
         TRACE_THREAD("EXIT ERROR: No current process");
         return;
     }
-    
-    struct thread *current = p->current_thread;
+    struct thread *current = NULL;
+    if(!arg) {
+        current = p->current_thread;
+    } else {
+        current = (struct thread *)arg;
+        TRACE_THREAD("EXIT: Thread %d is exiting (CANCEL THREAD)", current->tid);
+    }
+
     if (!current) {
         TRACE_THREAD("EXIT ERROR: No current thread");
         return;
@@ -493,7 +503,7 @@ void proc_thread_exit(void *retval) {
     if (thread_exit_in_progress && exit_owner_tid != current->tid) {
         spl(sr);
         TRACE_THREAD("EXIT: Thread exit already in progress by thread %d, waiting", exit_owner_tid);
-        proc_thread_exit(retval); // Pass retval to recursive call
+        proc_thread_exit(retval, NULL); // Pass retval to recursive call
         return;
     }
     
@@ -501,6 +511,9 @@ void proc_thread_exit(void *retval) {
     thread_exit_in_progress = 1;
     exit_owner_tid = tid;
     
+    if (retval == PTHREAD_CANCELED) {
+        TRACE_THREAD("EXIT: Thread %d canceled", current->tid);
+    }
     // Store the return value in the thread structure
     current->retval = retval;
     
@@ -562,7 +575,7 @@ void proc_thread_exit(void *retval) {
     // Find next thread to run
     struct thread *next_thread = find_next_thread_to_run(p);
     CONTEXT *target_ctx = NULL;
-    
+    if (next_thread)check_thread_cancellation(next_thread);
     // If we found a valid next thread, prepare to switch to it
     if (next_thread && next_thread->magic == CTXT_MAGIC && !(next_thread->state & THREAD_STATE_EXITED)) {
         TRACE_THREAD("EXIT: Will switch to thread %d", next_thread->tid);

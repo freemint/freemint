@@ -50,7 +50,7 @@
 
 void thread_preempt_handler(PROC *p, long arg);
 void proc_thread_schedule(void);
-void proc_thread_exit(void *retval);
+void proc_thread_exit(void *retval, void *arg);
 
 void thread_timer_start(struct proc *p, int thread_id);
 void thread_timer_stop(PROC *p);

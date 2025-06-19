@@ -38,4 +38,6 @@ int find_highest_priority_bit(unsigned char bitmap);
 int find_highest_priority_bit_word(unsigned short bitmap);
 int scale_thread_priority(int priority);
 
+struct thread *get_thread_by_id(struct proc *p, short tid);
+
 #endif //PROC_THREADS_HELPER_H

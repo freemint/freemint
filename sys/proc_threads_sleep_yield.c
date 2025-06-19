@@ -21,6 +21,7 @@
 #include "proc_threads_helper.h"
 #include "proc_threads_queue.h"
 #include "proc_threads_scheduler.h"
+#include "proc_threads_cancel.h"
 
 /* Maximum value for an unsigned long */
 #ifndef ULONG_MAX
@@ -75,7 +76,10 @@ int wake_threads_by_time(struct proc *p, unsigned long current_time) {
         struct thread **tp = &p->sleep_queue;
         while (*tp && woken < total_wakeable) {
             struct thread *t = *tp;
-            
+            // Check for cancellation before waking up
+            if (t->cancel_pending && t->cancel_state == PTHREAD_CANCEL_ENABLE) {
+                check_thread_cancellation(t);
+            }
             if (t->magic == CTXT_MAGIC &&
                 (t->state & THREAD_STATE_BLOCKED) &&
                 !(t->state & THREAD_STATE_EXITED) &&
@@ -170,7 +174,14 @@ void proc_thread_sleep_wakeup_handler(PROC *p, long arg) {
     }
     
     register unsigned short sr = splhigh();
-    
+
+    // Check for cancellation before waking up
+    if (t->cancel_pending && t->cancel_state == PTHREAD_CANCEL_ENABLE) {
+        spl(sr);
+        check_thread_cancellation(t);
+        return;
+    }
+
     // Only wake up if still sleeping
     if ((t->state & THREAD_STATE_BLOCKED) && (t->wait_type & WAIT_SLEEP)) {
         TRACE_THREAD("SLEEP_WAKEUP: Direct wakeup for thread %d", t->tid);
@@ -206,6 +217,8 @@ long proc_thread_sleep(long ms) {
     if (!p || !t) return EINVAL;
     if (t->tid == 0) return EINVAL; // thread0 can't sleep
     if (ms <= 0) return 0; // No need to sleep
+
+    pthread_testcancel_internal(t);
 
     // Prevent nested blocking
     if (t->wait_type != WAIT_NONE) {
@@ -275,7 +288,7 @@ long proc_thread_sleep(long ms) {
     } else {
         // Second time through - this is the "waking up" path
         // This code runs when the thread is awakened and context is restored
-        
+        pthread_testcancel_internal(t);
         // When we return, check if we woke up on time
         current_time = get_system_ticks();
         if (t->wakeup_time > 0 && current_time > t->wakeup_time) {
