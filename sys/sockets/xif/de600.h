@@ -169,7 +169,7 @@ static void		send_block (char *, short);
  * read a byte from the printer STATUS register
  */
 #define recv_byte(cmd) ({ \
-	register unsigned char c; \
+	unsigned char c; \
 	(void)de600_base[(cmd)]; \
 	wait (); \
 	c =   de600_base[(cmd) | HI_NIBBLE] >> 4; \
@@ -239,9 +239,7 @@ static void		send_block (char *, short);
  * Read 'len' bytes from DE600 mem to 'cp'. Caller must ensure 'len' > 1.
  */
 static inline void
-recv_block (cp, len)
-	register char *cp;
-	register short len;
+recv_block (char *cp, short len)
 {
 	__asm__ volatile (
 		"tstb	%2@(2)		\n"
@@ -265,9 +263,7 @@ recv_block (cp, len)
  * Write `len' bytes from `cp' to DE600. Caller must ensure 'len' > 0.
  */
 static inline void
-send_block (cp, len)
-	register char *cp;
-	register short len;
+send_block (char *cp, short len)
 {
 	__asm__ volatile (
 		"subqw	#1, %0		\n"

@@ -185,9 +185,7 @@ dma_copyout (char *buf, long len)
 }
 
 static long
-dma_ioctl (mode, buf)
-	short mode;
-	void *buf;
+dma_ioctl (short mode, void *buf)
 {
 	long arg = (long)buf;
 
