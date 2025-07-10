@@ -19,6 +19,8 @@
 #include "../hid-common/hidparse.h"
 
 #include <mint/sysvars.h>   /* OSHEADER */
+#include <mint/struct_iorec.h>
+#include <mint/struct_kbdvbase.h>
 
 #ifdef TOSONLY
 #define MSG_VERSION "TOS DRIVERS"
@@ -73,33 +75,8 @@ extern void (*old_ikbd_int) (void);
 extern void interrupt_ikbd (void);
 #endif
 
-struct kbdvbase
-{
-	long midivec;
-	long vkbderr;
-	long vmiderr;
-	long statvec;
-	long mousevec;
-	long clockvec;
-	long joyvec;
-	long midisys;
-	long ikbdsys;
-	short drvstat;			/* Non-zero if a packet is currently
-							 * transmitted. */
-};
-typedef struct kbdvbase KBDVEC;
-
-typedef struct io_rec {
-	unsigned char *buf;         /* input buffer */
-	short size;                 /* buffer size */
-	volatile short head;        /* head index */
-	volatile short tail;        /* tail index */
-	short low;                  /* low water mark */
-	short high;                 /* high water mark */
-} IOREC;
-
 KBDVEC *vector;
-IOREC *iokbd;
+IOREC_T *iokbd;
 unsigned char *conterm_ptr;
 unsigned char *shifty_ptr;
 void (*usb_kbd_send_code)(unsigned short x, char ascii);
@@ -111,7 +88,7 @@ static char mouse_packet[6];
  */
 void _cdecl send_packet (long func, char *buf, char *bufend);
 void _cdecl fake_hwint(void);
-void _cdecl send_data (long func, long iorec, long data);
+void _cdecl send_data (long func, IOREC_T *iorec, long data);
 
 struct usb_module_api *api;
 
@@ -232,7 +209,7 @@ usb_mouse_irq (struct usb_device *dev)
 static void send_via_kbdvecs(unsigned short scancode, char ascii)
 {
 	long *vecptr = (long *)vector;
-	send_data(vecptr[-1], (long)iokbd, scancode);
+	send_data(vecptr[-1], iokbd, scancode);
 }
 
 /*
@@ -259,13 +236,13 @@ static void send_via_buffer(unsigned short scancode, char ascii)
 	DEBUG(("send_via_buffer: pushing value 0x%08lx", keycode));
 
 	tail = iokbd->tail + 4;
-	if (tail >= iokbd->size)    /* handle wrap */
+	if (tail >= iokbd->buflen)    /* handle wrap */
 		tail = 0;
 
 	if (tail == iokbd->head)    /* iorec full */
 		return;
 
-	*(unsigned long *)(iokbd->buf + tail) = keycode;
+	*(unsigned long *)(iokbd->bufaddr + tail) = keycode;
 	iokbd->tail = tail;
 }
 
@@ -837,7 +814,7 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 	DEBUG (("%s: udd register ok", __FILE__));
 
 	vector = (KBDVEC *)b_kbdvbase();
-	iokbd = (IOREC *)b_uiorec(1);
+	iokbd = b_uiorec(1);
 	conterm_ptr = (unsigned char *) 0x484;
 	b_supexec(init_shifty_ptr, 0L, 0L, 0L, 0L, 0L);
 
@@ -852,7 +829,7 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 	gemdos = s_version();
 	gemdos = (gemdos>>8) | (gemdos<<8); /* major|minor */
 	usb_kbd_send_code = (gemdos >= 0x0019) ? send_via_kbdvecs : send_via_buffer;
-	iokbd = (void *)b_uiorec(1);
+	iokbd = b_uiorec(1);
 
 #ifdef TOSONLY
 #if 0

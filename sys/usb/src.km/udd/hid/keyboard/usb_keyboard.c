@@ -16,6 +16,8 @@
 #include "../../../usb_api.h"
 
 #include <mint/sysvars.h>   /* OSHEADER */
+#include <mint/struct_iorec.h>
+#include <mint/struct_kbdvbase.h>
 #define sysbase	((OSHEADER **)0x4f2L)
 #define Kbstate() *p_kbshift
 
@@ -68,9 +70,9 @@ extern void (*old_ikbd_int) (void);
 extern void interrupt_ikbd (void);
 #endif
 
-void *iokbd;
+IOREC_T *iokbd;
 char *p_kbshift;
-void _cdecl send_data (long func, long iorec, long data);
+void _cdecl send_data (long func, IOREC_T *iorec, long data);
 void _cdecl fake_hwint(void);
 
 struct usb_module_api *api;
@@ -177,7 +179,7 @@ usb_kbd_irq (struct usb_device *dev)
 	return 0;
 }
 
-#define SEND_SCAN(x) send_data(kbd_entry, (long)iokbd, (x)) /* assumes TOS >= 2 */
+#define SEND_SCAN(x) send_data(kbd_entry, iokbd, (x)) /* assumes TOS >= 2 */
 
 static void
 handle_modifiers(unsigned char val, unsigned char offset)
@@ -691,7 +693,7 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
-	iokbd = (void *) b_uiorec (1);
+	iokbd = b_uiorec (1);
 
 	b_supexec(p_kbshift_init, 0L, 0L, 0L, 0L, 0L);
 #ifdef TOSONLY

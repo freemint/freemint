@@ -1,8 +1,9 @@
 # ifndef _mint_xbiosvecs_h
 # define _mint_xbiosvecs_h
 
-struct kbdvbase;
-struct io_rec;
+#include "struct_iorec.h"
+#include "struct_kbdvbase.h"
+
 struct pbdef;
 
 /*
@@ -24,7 +25,7 @@ typedef struct {
 	void  _cdecl (*_p_b_dbmsg)(short rsrvd, short msg_num, long msg_arg);
 	long _cdecl (*p_b_midiws)(int, const char *);
 	void _cdecl (*_p_b_mfpint)(short number, short (*vector)(void));
-	struct io_rec *_cdecl (*p_b_iorec)(short dev);
+	IOREC_T *_cdecl (*p_b_iorec)(short dev);
 	long _cdecl (*p_b_rsconf)(int baud, int flow, int uc, int rs, int ts, int sc);
 
 	struct keytab *_cdecl (*p_b_keytbl)(char *unshift, char *shift, char *caps);
@@ -46,7 +47,7 @@ typedef struct {
 
 	long _cdecl (*p_b_dosound)(const char *p);
 	short _cdecl (*_p_b_setprt)(short config);
-	struct kbdvbase *_cdecl (*p_b_kbdvbase)(void);
+	KBDVEC *_cdecl (*p_b_kbdvbase)(void);
 	ushort _cdecl (*p_b_kbrate)(short delay, short rate);
 	short _cdecl (*_p_b_prtblk)(struct pbdef *par);
 	void _cdecl (*_p_b_vsync)(void);

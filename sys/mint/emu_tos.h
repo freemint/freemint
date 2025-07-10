@@ -76,17 +76,8 @@ struct dtabuf
 # define CURS_SETRATE	4
 # define CURS_GETRATE	5
 
-/* structure used to hold i/o buffers */
-typedef struct io_rec
-{
-	char *bufaddr;
-	short buflen;
-	volatile short head;
-	volatile short tail;
-	short low_water;
-	short hi_water;
-	
-} IOREC_T;
+#include "struct_iorec.h"
+#include "struct_kbdvbase.h"
 
 /* Bconmap struct, * returned by Bconmap (-2) */
 typedef struct
@@ -104,20 +95,5 @@ typedef struct
 	short	maptabsize;
 	
 } BCONMAP2_T;
-
-struct kbdvbase
-{
-	long	midivec;
-	long	vkbderr;
-	long	vmiderr;
-	long	statvec;
-	long	mousevec;
-	long	clockvec;
-	long	joyvec;
-	long	midisys;
-	long	ikbdsys;
-	short	drvstat;	/* Non-zero if a packet is currently transmitted. */
-};
-typedef struct kbdvbase KBDVEC;
 
 # endif /* _mint_emu_tos_h */
