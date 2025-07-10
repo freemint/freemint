@@ -131,7 +131,7 @@ norm_gemdos:
 // NOTE: FOR NOW, WE PRESERVE A0 ACROSS GEMDOS CALLS. THIS WILL CHANGE
 // SOMEDAY, DON'T RELY ON IT!!!
 	move.l	SYM(curproc),-(sp)		// push pointer to syscall context save
-	addq.l	#4,(sp)
+	addq.l	#P_SYSCTXT,(sp)
 
 	jsr	SYM(build_context)		// build_context sets A1 to stack used before we get here
 	lea	SYM(dos_tab),a5		// set syscall_tab
@@ -322,7 +322,7 @@ sk:
 	bset	#0x7,SYM(in_kernel)
 #endif
 	clr.w	-(sp)			// no frame format needed
-	pea	4(a0)			// push pointer to syscall context save
+	pea	P_SYSCTXT(a0)		// push pointer to syscall context save
 	jsr	SYM(build_context)
 	lea	SYM(xbios_tab),a5		// set syscall_tab
 	move.w	SYM(xbios_max),d5		// set syscall_max
@@ -468,7 +468,7 @@ L_02:
 L_bios:
 	clr.w	-(sp)			// no frame format needed
 	move.l	SYM(curproc),a0
-	pea	4(a0)			// push pointer to syscall context save
+	pea	P_SYSCTXT(a0)			// push pointer to syscall context save
 	jsr	SYM(build_context)
 	lea	SYM(bios_tab),a5		// set syscall_tab
 	move.w	SYM(bios_max),d5		// set syscall_max
@@ -609,7 +609,7 @@ nosig:
 #endif
 	clr.l	SYM(unwound_stack)
 	jsr	SYM(leave_kernel)		// restore vectors (loads a0)
-	pea	4(a0)
+	pea	P_SYSCTXT(a0)
 	jsr	SYM(restore_context)	// never returns
 
 rom_bios:
@@ -739,14 +739,14 @@ norm_trap2:
 // them registers..
 	clr.w	-(sp)
 	move.l	SYM(curproc),-(sp)
-	addq.l	#4,(sp)
+	addq.l	#P_SYSCTXT,(sp)
 	jsr	SYM(build_context)
 
 	// A1 set to callers stack by build_context
 	move.l	SYM(curproc),a0
 	move.l	(a0),sp			// fetch our systemstack
-	move.l	4(a0),d0		// D0.l saved by build_context, function code (AES or VDI)
-	move.l	8(a0),d1		// AES/VDI pb
+	move.l	P_SYSCTXT+C_D0(a0),d0		// D0.l saved by build_context, function code (AES or VDI)
+	move.l	P_SYSCTXT+C_D1(a0),d1		// AES/VDI pb
 	cmp.w	#115,d0			// VDI?
 	beq	enter_vdi
 	cmp.w	#200,d0			// AES?

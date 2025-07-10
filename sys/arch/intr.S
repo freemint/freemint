@@ -460,7 +460,7 @@ L_switch:
 	ori.w	#0x0400,sr		// block VBL
 #endif
 	clr.w	SYM(in_kernel)
-	pea	4(a0)
+	pea	P_SYSCTXT(a0)
 	jsr	SYM(restore_context)	// back to user (never returns)
 	END(mint_vbl)
 
@@ -839,7 +839,7 @@ do_sig_restore:
 	bne.s	Kernel		// yes
 	move.w	SYM(sig_exc),-(sp)
 	move.l	SYM(curproc),-(sp)
-	addq.l	#4,(sp) 		// push offset of save area
+	addq.l	#P_SYSCTXT,(sp) 	// push offset of save area
 	jsr	SYM(build_context)
 	move.l	SYM(curproc),a4
 	move.l	(a4),sp 		// put us in the system stack
@@ -859,7 +859,7 @@ do_sig_restore:
 	ori.w	#0x0400,sr	// block VBL
 #endif
 	jsr	SYM(leave_kernel)		// leave kernel
-	addq.l	#4,a4		// get context save area address
+	addq.l	#P_SYSCTXT,a4		// get context save area address
 	move.l	a4,-(sp)		// push it
 	jsr	SYM(restore_context)	// restore the context
 //
