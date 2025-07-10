@@ -167,7 +167,7 @@ available to user processes.
 */
 
 long _cdecl
-sys_m_xalloc (long size, int mode)
+sys_m_xalloc (long size, short mode)
 {
 	long r = 0;
 	int protmode;
@@ -404,7 +404,7 @@ sys_m_free (long block)
 }
 
 long _cdecl
-sys_m_shrink (int dummy, unsigned long block, long size)
+sys_m_shrink (short dummy, unsigned long block, long size)
 {
 	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
@@ -453,7 +453,7 @@ error:
 }
 
 long _cdecl
-sys_m_validate (int pid, unsigned long addr, long size, long *flags)
+sys_m_validate (short pid, unsigned long addr, long size, long *flags)
 {
 	struct proc *p = NULL;
 	MEMREGION *m;
@@ -497,7 +497,7 @@ sys_m_validate (int pid, unsigned long addr, long size, long *flags)
 }
 
 long _cdecl
-sys_m_access(unsigned long addr, long size, int mode)
+sys_m_access(unsigned long addr, long size, short mode)
 {
 	struct proc *p = get_curproc();
 	MEMREGION *m;

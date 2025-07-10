@@ -1265,7 +1265,7 @@ sh_echo(long argc, char **argv)
 
 # define MAX_BASIC_CMD	8	/* i.e. echo, counting from exit == 1 */
 
-typedef long FUNC();
+typedef long FUNC(long argc, char **argv);
 
 static FUNC *cmd_routs[] =
 {

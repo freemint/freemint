@@ -109,7 +109,7 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	
 	assert (p->p_sigacts);
 	
-	usrcall = funcptr;
+	usrcall = (long _cdecl (*) (long, long, long, long, long, long)) funcptr;
 	usrarg1 = arg1;
 	usrarg2 = arg2;
 	usrarg3 = arg3;

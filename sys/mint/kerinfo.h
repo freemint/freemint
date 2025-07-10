@@ -66,6 +66,11 @@ struct kerinfo
 	 * ------------
 	 * NOTE: these tables are definitely READ ONLY!!!!
 	 */
+/*
+ * FIXME:
+ * this should really be structures instead of array of pointers,
+ * so we can use correct prototypes instead of ugly casts
+ */
 	Func	*bios_tab;	/* pointer to the BIOS entry points */
 	Func	*dos_tab;	/* pointer to the GEMDOS entry points */
 

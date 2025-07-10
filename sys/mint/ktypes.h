@@ -19,7 +19,10 @@
 # include "kcompiler.h"
 
 
+/* false/true are reserved keywords in C 23 */
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
 typedef enum { false = (0 == 1), true  = (1 == 1) } bool;
+#endif
 
 typedef unsigned char			uchar;
 typedef unsigned short			ushort;

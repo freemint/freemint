@@ -1799,9 +1799,9 @@ MEDIA_DB(("Newgetbpb(%c)", d+'A'));
 if (Oldgetbpb == Newgetbpb) {
 MEDIA_DB(("AARGH!!! BAD BPBs"));
 }
-		*((Func *)0x472L) = Oldgetbpb;
-		*((Func *)0x476L) = Oldrwabs;
-		*((Func *)0x47eL) = Oldmediach;
+		*((Func *)0x472L) = (Func) Oldgetbpb;
+		*((Func *)0x476L) = (Func) Oldrwabs;
+		*((Func *)0x47eL) = (Func) Oldmediach;
 	}
 	return (*Oldgetbpb)(d);
 }
@@ -1839,17 +1839,17 @@ force_mediach(int d)
 MEDIA_DB(("forcing media change on %c", d+'A'));
 
 	chdrv = d;
-	Oldrwabs = *((Func *)0x476L);
-	Oldgetbpb = *((Func *)0x472L);
-	Oldmediach = *((Func *)0x47eL);
+	Oldrwabs = *((long _cdecl (**) (int, void *, int, int, int, long))0x476L);
+	Oldgetbpb = *((long _cdecl (**) (int))0x472L);
+	Oldmediach = *((long _cdecl (**) (int))0x47eL);
 
 	if (Oldrwabs == Newrwabs || Oldgetbpb == Newgetbpb ||
 	    Oldmediach == Newmediach) {
 		FORCE("tosfs: error in media change code");
 	} else {
-		*((Func *)0x476L) = Newrwabs;
-		*((Func *)0x472L) = Newgetbpb;
-		*((Func *)0x47eL) = Newmediach;
+		*((Func *)0x476L) = (Func) Newrwabs;
+		*((Func *)0x472L) = (Func) Newgetbpb;
+		*((Func *)0x47eL) = (Func) Newmediach;
 	}
 
 	fname[0] = d + 'A';
@@ -1862,11 +1862,11 @@ MEDIA_DB(("calling GEMDOS"));
 #endif
 MEDIA_DB(("done calling GEMDOS"));
 	drvchanged[d] = 0;
-	if ( *((Func *)0x476L) == Newrwabs ) {
+	if ( *((long _cdecl (**) (int, void *, int, int, int, long))0x476L) == Newrwabs ) {
 		DEBUG(("WARNING: media change not performed correctly"));
-		*((Func *)0x472L) = Oldgetbpb;
-		*((Func *)0x476L) = Oldrwabs;
-		*((Func *)0x47eL) = Oldmediach;
+		*((Func *)0x472L) = (Func) Oldgetbpb;
+		*((Func *)0x476L) = (Func) Oldrwabs;
+		*((Func *)0x47eL) = (Func) Oldmediach;
 	}
 }
 

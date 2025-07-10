@@ -55,14 +55,14 @@
  */
 
 /* dummy routine */
-static long
+static long __CDECL
 XHDIfail (void)
 {
 	return -ENOSYS;
 }
 
 /* XHDI handler function */
-typedef long (*xhdi_t)();
+typedef long __CDECL (*xhdi_t)(void);
 static xhdi_t XHDI = XHDIfail;
 
 ushort XHDI_installed = 0;
@@ -132,7 +132,7 @@ init_XHDI (void)
 	if (!Super (1L))		\
 		oldstack = Super (0L);	\
 					\
-	r = XHDI (args);		\
+	r = (*((long __CDECL (*)(struct args))XHDI)) (args);		\
 	if (r < 0)			\
 	{				\
 		__set_errno (-r);	\
@@ -147,7 +147,7 @@ init_XHDI (void)
 long
 XHGetVersion (void)
 {
-	struct args_XHGetVersion
+	struct args
 	{
 		ushort	opcode;
 	}
@@ -162,7 +162,7 @@ XHGetVersion (void)
 long
 XHInqTarget (ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name)
 {
-	struct args_XHInqTarget
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -187,7 +187,7 @@ XHInqTarget (ushort major, ushort minor, ulong *block_size, ulong *device_flags,
 long
 XHReserve (ushort major, ushort minor, ushort do_reserve, ushort key)
 {
-	struct args_XHReserve
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -210,7 +210,7 @@ XHReserve (ushort major, ushort minor, ushort do_reserve, ushort key)
 long
 XHLock (ushort major, ushort minor, ushort do_lock, ushort key)
 {
-	struct args_XHLock
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -233,7 +233,7 @@ XHLock (ushort major, ushort minor, ushort do_lock, ushort key)
 long
 XHStop (ushort major, ushort minor, ushort do_stop, ushort key)
 {
-	struct args_XHStop
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -256,7 +256,7 @@ XHStop (ushort major, ushort minor, ushort do_stop, ushort key)
 long
 XHEject (ushort major, ushort minor, ushort do_eject, ushort key)
 {
-	struct args_XHEject
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -279,7 +279,7 @@ XHEject (ushort major, ushort minor, ushort do_eject, ushort key)
 long
 XHDrvMap (void)
 {
-	struct args_XHDrvMap
+	struct args
 	{
 		ushort	opcode;
 	}
@@ -294,7 +294,7 @@ XHDrvMap (void)
 long
 XHInqDev (ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb)
 {
-	struct args_XHInqDev
+	struct args
 	{
 		ushort	opcode;
 		ushort	bios;
@@ -319,7 +319,7 @@ XHInqDev (ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb)
 long
 XHInqDriver (ushort bios, char *name, char *version, char *company, ushort *ahdi_version, ushort *maxIPL)
 {
-	struct args_XHInqDriver
+	struct args
 	{
 		ushort	opcode;
 		ushort	bios;
@@ -346,7 +346,7 @@ XHInqDriver (ushort bios, char *name, char *version, char *company, ushort *ahdi
 long
 XHNewCookie (void *newcookie)
 {
-	struct args_XHNewCookie
+	struct args
 	{
 		ushort	opcode;
 		void	*newcookie;
@@ -363,7 +363,7 @@ XHNewCookie (void *newcookie)
 long
 XHReadWrite (ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf)
 {
-	struct args_XHReadWrite
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -390,7 +390,7 @@ XHReadWrite (ushort major, ushort minor, ushort rwflag, ulong recno, ushort coun
 long
 XHInqTarget2 (ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen)
 {
-	struct args_XHInqTarget2
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -417,7 +417,7 @@ XHInqTarget2 (ushort major, ushort minor, ulong *block_size, ulong *device_flags
 long
 XHInqDev2 (ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb, ulong *blocks, char *partid)
 {
-	struct args_XHInqDev2
+	struct args
 	{
 		ushort	opcode;
 		ushort	bios;
@@ -446,7 +446,7 @@ XHInqDev2 (ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb, 
 long
 XHDriverSpecial (ulong key1, ulong key2, ushort subopcode, void *data)
 {
-	struct args_XHDriverSpecial
+	struct args
 	{
 		ushort	opcode;
 		ulong	key1;
@@ -469,7 +469,7 @@ XHDriverSpecial (ulong key1, ulong key2, ushort subopcode, void *data)
 long
 XHGetCapacity (ushort major, ushort minor, ulong *blocks, ulong *bs)
 {
-	struct args_XHGetCapacity
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -492,7 +492,7 @@ XHGetCapacity (ushort major, ushort minor, ulong *blocks, ulong *bs)
 long
 XHMediumChanged (ushort major, ushort minor)
 {
-	struct args_XHMediumChanged
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -511,7 +511,7 @@ XHMediumChanged (ushort major, ushort minor)
 long
 XHMiNTInfo (ushort op, void *data)
 {
-	struct args_XHMiNTInfo
+	struct args
 	{
 		ushort	opcode;
 		ushort	op;
@@ -530,7 +530,7 @@ XHMiNTInfo (ushort op, void *data)
 long
 XHDOSLimits (ushort which, ulong limit)
 {
-	struct args_XHDOSLimits
+	struct args
 	{
 		ushort	opcode;
 		ushort	which;
@@ -549,7 +549,7 @@ XHDOSLimits (ushort which, ulong limit)
 long
 XHLastAccess (ushort major, ushort minor, ulong *ms)
 {
-	struct args_XHLastAccess
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;
@@ -570,7 +570,7 @@ XHLastAccess (ushort major, ushort minor, ulong *ms)
 long
 XHReaccess (ushort major, ushort minor)
 {
-	struct args_XHReaccess
+	struct args
 	{
 		ushort	opcode;
 		ushort	major;

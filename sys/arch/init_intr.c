@@ -188,7 +188,7 @@ init_intr (void)
 # endif
 	}
 
-	new_xbra_install (&old_criticerr, 0x404L, new_criticerr);
+	new_xbra_install (&old_criticerr, 0x404L, (long (*)(void))new_criticerr);
 
 	/* Hook the 200 Hz system timer. Our handler will do its job,
 	 * then call the previous handler. Every four interrupts, our handler will

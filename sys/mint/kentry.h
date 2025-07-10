@@ -1081,6 +1081,11 @@ struct kentry
 	unsigned long	dos_version;	/* running GEMDOS version */
 
 	/* OS functions */
+/*
+ * FIXME:
+ * this should really be structures instead of array of pointers,
+ * so we can use correct prototypes instead of ugly casts
+ */
 	Func *vec_dos;			/* DOS entry points */
 	Func *vec_bios;			/* BIOS entry points */
 	Func *vec_xbios;		/* XBIOS entry points */
