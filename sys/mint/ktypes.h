@@ -68,7 +68,7 @@ typedef __u32 u_int32_t;
 typedef __u64 u_int64_t;
 
 
-typedef long _cdecl (*Func)();
+typedef long _cdecl (*Func)(void);
 
 /* forward declarations
  */

@@ -601,36 +601,35 @@ Func bios_tab [BIOS_MAX] =
 /* BEGIN XBIOS initialization */
 
 # define XBIOS_MAX 0x80
-ushort xbios_max = XBIOS_MAX;
 
-Func xbios_tab [XBIOS_MAX] =
+xbios_vecs xbios_tab =
 {
 	/* 0x000 */		NULL,
 	/* 0x001 */		NULL,
 	/* 0x002 */		NULL,
 	/* 0x003 */		NULL,
 	/* 0x004 */		NULL,
-	/* 0x005 */		(Func) sys_b_vsetscreen,
+	/* 0x005 */		sys_b_vsetscreen,
 	/* 0x006 */		NULL,
 	/* 0x007 */		NULL,
 	/* 0x008 */		NULL,
 	/* 0x009 */		NULL,
 	/* 0x00a */		NULL,
 	/* 0x00b */		NULL,
-	/* 0x00c */		(Func) sys_b_midiws,
+	/* 0x00c */		sys_b_midiws,
 	/* 0x00d */		NULL,
-	/* 0x00e */		(Func) sys_b_uiorec,
-	/* 0x00f */		(Func) sys_b_ursconf,
+	/* 0x00e */		sys_b_uiorec,
+	/* 0x00f */		sys_b_ursconf,
 
-	/* 0x010 */		(Func) sys_b_keytbl,
-	/* 0x011 */		(Func) sys_b_random,
+	/* 0x010 */		sys_b_keytbl,
+	/* 0x011 */		sys_b_random,
 	/* 0x012 */		NULL,
 	/* 0x013 */		NULL,
 	/* 0x014 */		NULL,
-	/* 0x015 */		(Func) sys_b_cursconf,
-	/* 0x016 */		(Func) sys_b_settime,
-	/* 0x017 */		(Func) sys_b_gettime,
-	/* 0x018 */		(Func) sys_b_bioskeys,
+	/* 0x015 */		sys_b_cursconf,
+	/* 0x016 */		sys_b_settime,
+	/* 0x017 */		sys_b_gettime,
+	/* 0x018 */		sys_b_bioskeys,
 	/* 0x019 */		NULL,
 	/* 0x01a */		NULL,
 	/* 0x01b */		NULL,
@@ -639,19 +638,19 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x01e */		NULL,
 	/* 0x01f */		NULL,
 
-	/* 0x020 */		(Func) sys_b_dosound,
+	/* 0x020 */		sys_b_dosound,
 	/* 0x021 */		NULL,
-	/* 0x022 */		(Func) sys_b_kbdvbase,
-	/* 0x023 */		(Func) sys_b_kbrate,
+	/* 0x022 */		sys_b_kbdvbase,
+	/* 0x023 */		sys_b_kbrate,
 	/* 0x024 */		NULL,
 	/* 0x025 */		NULL,
-	/* 0x026 */		(Func) sys_b_supexec,
+	/* 0x026 */		sys_b_supexec,
 	/* 0x027 */		NULL,
 	/* 0x028 */		NULL,
 	/* 0x029 */		NULL,
 	/* 0x02a */		NULL,
 	/* 0x02b */		NULL,
-	/* 0x02c */		(Func) sys_b_bconmap,
+	/* 0x02c */		sys_b_bconmap,
 	/* 0x02d */		NULL,
 	/* 0x02e */		NULL,
 	/* 0x02f */		NULL,
@@ -740,9 +739,9 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x07d */		NULL,
 	/* 0x07e */		NULL,
 	/* 0x07f */		NULL
-
-	/* 0x080 */		/* XBIOS_MAX */
 };
+
+ushort xbios_max = sizeof(xbios_tab) / sizeof(xbios_tab._p_b_ssbrk);
 
 /* END XBIOS initialization */
 /****************************************************************************/

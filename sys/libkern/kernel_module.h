@@ -759,70 +759,36 @@ INLINE long b_drvmap(void)
  * vec_xbios
  */
 
-//# define _0x000		(*KENTRY->vec_xbios[0x000])
-//# define _0x001		(*KENTRY->vec_xbios[0x001])
-//# define _0x002		(*KENTRY->vec_xbios[0x002])
-//# define _0x003		(*KENTRY->vec_xbios[0x003])
-# define _b_getrez		(*KENTRY->vec_xbios[0x004])
-# define _b_vsetscreen		(*KENTRY->vec_xbios[0x005])
-//# define _0x006		(*KENTRY->vec_xbios[0x006])
-//# define _0x007		(*KENTRY->vec_xbios[0x007])
-//# define _0x008		(*KENTRY->vec_xbios[0x008])
-//# define _0x009		(*KENTRY->vec_xbios[0x009])
-//# define _0x00a		(*KENTRY->vec_xbios[0x00a])
-//# define _0x00b		(*KENTRY->vec_xbios[0x00b])
-# define _b_midiws		(*KENTRY->vec_xbios[0x00c])
-//# define _0x00d		(*KENTRY->vec_xbios[0x00d])
-# define _b_uiorec		(*KENTRY->vec_xbios[0x00e])
-# define _b_ursconf		(*KENTRY->vec_xbios[0x00f])
+# define _b_getrez		(*KENTRY->vec_xbios->p_b_getrez)
+# define _b_vsetscreen	(*KENTRY->vec_xbios->p_b_vsetscreen)
+# define _b_midiws		(*KENTRY->vec_xbios->p_b_midiws)
+# define _b_uiorec		(*KENTRY->vec_xbios->p_b_iorec)
+# define _b_ursconf		(*KENTRY->vec_xbios->p_b_rsconf)
 
-# define _b_keytbl		(*KENTRY->vec_xbios[0x010])
-# define _b_random		(*KENTRY->vec_xbios[0x011])
-//# define _0x012		(*KENTRY->vec_xbios[0x012])
-//# define _0x013		(*KENTRY->vec_xbios[0x013])
-//# define _0x014		(*KENTRY->vec_xbios[0x014])
-# define _b_cursconf		(*KENTRY->vec_xbios[0x015])
-# define _b_settime		(*KENTRY->vec_xbios[0x016])
-# define _b_gettime		(*KENTRY->vec_xbios[0x017])
-# define _b_bioskeys		(*KENTRY->vec_xbios[0x018])
-//# define _0x019		(*KENTRY->vec_xbios[0x019])
-//# define _0x01a		(*KENTRY->vec_xbios[0x01a])
-//# define _0x01b		(*KENTRY->vec_xbios[0x01b])
-//# define _0x01c		(*KENTRY->vec_xbios[0x01c])
-//# define _0x01d		(*KENTRY->vec_xbios[0x01d])
-//# define _0x01e		(*KENTRY->vec_xbios[0x01e])
-//# define _0x01f		(*KENTRY->vec_xbios[0x01f])
+# define _b_keytbl		(*KENTRY->vec_xbios->p_b_keytbl)
+# define _b_random		(*KENTRY->vec_xbios->p_b_random)
+# define _b_cursconf	(*KENTRY->vec_xbios->p_b_cursconf)
+# define _b_settime		(*KENTRY->vec_xbios->p_b_settime)
+# define _b_gettime		(*KENTRY->vec_xbios->p_b_gettime)
+# define _b_bioskeys	(*KENTRY->vec_xbios->p_b_bioskeys)
 
-# define _b_dosound		(*KENTRY->vec_xbios[0x020])
-//# define _0x021		(*KENTRY->vec_xbios[0x021])
-# define _b_kbdvbase		(*KENTRY->vec_xbios[0x022])
-# define _b_kbrate		(*KENTRY->vec_xbios[0x023])
-//# define _0x024		(*KENTRY->vec_xbios[0x024])
-//# define _0x025		(*KENTRY->vec_xbios[0x025])
-# define _b_supexec		(*KENTRY->vec_xbios[0x026])
-//# define _0x027		(*KENTRY->vec_xbios[0x027])
-//# define _0x028		(*KENTRY->vec_xbios[0x028])
-//# define _0x029		(*KENTRY->vec_xbios[0x029])
-//# define _0x02a		(*KENTRY->vec_xbios[0x02a])
-//# define _0x02b		(*KENTRY->vec_xbios[0x02b])
-# define _b_bconmap		(*KENTRY->vec_xbios[0x02c])
-//# define _0x02d		(*KENTRY->vec_xbios[0x02d])
-//# define _0x02e		(*KENTRY->vec_xbios[0x02e])
-//# define _0x02f		(*KENTRY->vec_xbios[0x02f])
+# define _b_dosound		(*KENTRY->vec_xbios->p_b_dosound)
+# define _b_kbdvbase	(*KENTRY->vec_xbios->p_b_kbdvbase)
+# define _b_kbrate		(*KENTRY->vec_xbios->p_b_kbrate)
+# define _b_supexec		(*KENTRY->vec_xbios->p_b_supexec)
+# define _b_bconmap		(*KENTRY->vec_xbios->p_b_bconmap)
 
 INLINE short b_getrez(void)
-{ return ((short _cdecl (*)(void)) _b_getrez)(); }
+{ return _b_getrez(); }
 
-INLINE long b_kbdvbase(void)
-{ return ((long _cdecl (*)(void)) _b_kbdvbase)(); }
+INLINE struct kbdvbase  *b_kbdvbase(void)
+{ return _b_kbdvbase(); }
 
-INLINE long b_uiorec(int dev)
-{ return ((long _cdecl (*)(int)) _b_uiorec)(dev); }
+INLINE struct io_rec *b_uiorec(int dev)
+{ return _b_uiorec(dev); }
 
 INLINE long b_supexec(Func funcptr, long a1, long a2, long a3, long a4, long a5)
-{ return ((long _cdecl (*)(Func, long, long, long, long, long)) _b_supexec)(funcptr, a1, a2, a3, a4, a5); }
-
-	/* 0x80 */		/* XBIOS_MAX */
+{ return _b_supexec(funcptr, a1, a2, a3, a4, a5); }
 
 #include "strings.h"
 /*

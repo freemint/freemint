@@ -204,8 +204,8 @@ mapin (int dev)
 	return 0;
 }
 
-long _cdecl
-sys_b_uiorec (int dev)
+IOREC_T *_cdecl
+sys_b_uiorec (short dev)
 {
 	TRACE (("Iorec(%d)", dev));
 
@@ -221,12 +221,12 @@ sys_b_uiorec (int dev)
 		 */
 		p = get_curproc();
 		if ((unsigned) p->p_fd->bconmap - 6 < btty_max)
-			return (long) MAPTAB[p->p_fd->bconmap-6].iorec;
+			return MAPTAB[p->p_fd->bconmap-6].iorec;
 
 		mapin (p->p_fd->bconmap);
 	}
 
-	return (long) ROM_Iorec (dev);
+	return (IOREC_T *)ROM_Iorec (dev);
 }
 
 long _cdecl
@@ -363,7 +363,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 }
 
 long _cdecl
-sys_b_bconmap (int dev)
+sys_b_bconmap (short dev)
 {
 	PROC *p = get_curproc();
 	int old = p->p_fd->bconmap;

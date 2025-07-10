@@ -88,7 +88,7 @@ struct kbdvbase
 };
 typedef struct kbdvbase KBDVEC;
 
-typedef struct {
+typedef struct io_rec {
 	unsigned char *buf;         /* input buffer */
 	short size;                 /* buffer size */
 	volatile short head;        /* head index */

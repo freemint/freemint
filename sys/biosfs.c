@@ -2153,7 +2153,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 			if (t)
 				ior = t->irec;
 			else
-				ior = (IOREC_T *) sys_b_uiorec(0);
+				ior = sys_b_uiorec(0);
 	/* just resetting iorec pointers here can hang a flow controlled port,
 	 * iread can do better...
 	 */
@@ -2177,7 +2177,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 				ior = midi_btty.irec;
 			} else {
 				/* ikbd */
-				ior = (IOREC_T *) sys_b_uiorec(1);
+				ior = sys_b_uiorec(1);
 			}
 			if (flushtype & 1) {
 				sr = spl7();
@@ -2203,7 +2203,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 			if (t)
 				ior = t->orec;
 			else
-				ior = (IOREC_T *) sys_b_uiorec(0) + 1;
+				ior = sys_b_uiorec(0) + 1;
 			*r = ior->tail - ior->head;
 			if (*r < 0)
 				*r += ior->buflen;
