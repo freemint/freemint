@@ -16,7 +16,7 @@ long _cdecl sys_b_tickcal (void);
 long _cdecl sys_b_drvmap (void);
 long _cdecl sys_b_kbshift (int mode);
 long _cdecl sys_b_mediach (int dev);
-long _cdecl sys_b_getbpb (int dev);
+struct bpb *_cdecl sys_b_getbpb (int dev);
 long _cdecl sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno);
 long _cdecl sys_b_setexc (int number, long vector);
 

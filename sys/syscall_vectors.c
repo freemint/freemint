@@ -552,23 +552,20 @@ Func sys_mon_tab [1] =
 /****************************************************************************/
 /* BEGIN BIOS initialization */
 
-# define BIOS_MAX 0x20
-ushort bios_max = BIOS_MAX;
-
-Func bios_tab [BIOS_MAX] =
+bios_vecs bios_tab =
 {
-	/* 0x000 */		(Func) sys_enosys,		/* getmpb */
-	/* 0x001 */		(Func) sys_b_ubconstat,
-	/* 0x002 */		(Func) sys_b_ubconin,
-	/* 0x003 */		(Func) sys_b_ubconout,
-	/* 0x004 */		(Func) sys_b_rwabs,
-	/* 0x005 */		(Func) sys_b_setexc,
-	/* 0x006 */		(Func) sys_b_tickcal,
-	/* 0x007 */		(Func) sys_b_getbpb,
-	/* 0x008 */		(Func) sys_b_ubcostat,
-	/* 0x009 */		(Func) sys_b_mediach,
-	/* 0x00a */		(Func) sys_b_drvmap,
-	/* 0x00b */		(Func) sys_b_kbshift,
+	/* 0x000 */		(void _cdecl (*)(struct mpb *ptr))sys_enosys,		/* getmpb */
+	/* 0x001 */		sys_b_ubconstat,
+	/* 0x002 */		sys_b_ubconin,
+	/* 0x003 */		sys_b_ubconout,
+	/* 0x004 */		sys_b_rwabs,
+	/* 0x005 */		sys_b_setexc,
+	/* 0x006 */		sys_b_tickcal,
+	/* 0x007 */		sys_b_getbpb,
+	/* 0x008 */		sys_b_ubcostat,
+	/* 0x009 */		sys_b_mediach,
+	/* 0x00a */		sys_b_drvmap,
+	/* 0x00b */		sys_b_kbshift,
 	/* 0x00c */		NULL,
 	/* 0x00d */		NULL,
 	/* 0x00e */		NULL,
@@ -590,9 +587,9 @@ Func bios_tab [BIOS_MAX] =
 	/* 0x01d */		NULL,
 	/* 0x01e */		NULL,
 	/* 0x01f */		NULL,
-
-	/* 0x020 */		/* BIOS_MAX */
 };
+
+ushort bios_max = sizeof(bios_tab) / sizeof(bios_tab.p_b_getmpb);
 
 /* END BIOS initialization */
 /****************************************************************************/

@@ -44,6 +44,7 @@
 # include "kcompiler.h"
 # include "ktypes.h"
 # include "mint/xbiosvecs.h"
+# include "mint/biosvecs.h"
 
 /* forward declarations */
 struct basepage;
@@ -1088,7 +1089,7 @@ struct kentry
  * so we can use correct prototypes instead of ugly casts
  */
 	Func *vec_dos;			/* DOS entry points */
-	Func *vec_bios;			/* BIOS entry points */
+	bios_vecs *vec_bios;	/* BIOS entry points */
 	xbios_vecs *vec_xbios;	/* XBIOS entry points */
 
 	/* kernel exported function vectors */
@@ -1124,7 +1125,7 @@ struct kentry
 	0x00000040, \
 	\
 	dos_tab, \
-	bios_tab, \
+	&bios_tab, \
 	&xbios_tab, \
 	\
 	DEFAULTS_kentry_mch, \

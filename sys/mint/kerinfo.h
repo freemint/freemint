@@ -19,6 +19,7 @@
 # include "kcompiler.h"
 # include "ktypes.h"
 # include "block_IO.h"		/* eXtended kernelinterface */
+# include "biosvecs.h"
 
 struct basepage;
 struct nf_ops;
@@ -71,7 +72,7 @@ struct kerinfo
  * this should really be structures instead of array of pointers,
  * so we can use correct prototypes instead of ugly casts
  */
-	Func	*bios_tab;	/* pointer to the BIOS entry points */
+	bios_vecs	*bios_tab;	/* pointer to the BIOS entry points */
 	Func	*dos_tab;	/* pointer to the GEMDOS entry points */
 
 

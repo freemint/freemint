@@ -728,31 +728,29 @@ INLINE long p_sysctl(long *name, unsigned long namelen, void *old, unsigned long
  * vec_bios
  */
 
-# define _b_ubconstat		(*KENTRY->vec_bios[0x001])
-# define _b_ubconin		(*KENTRY->vec_bios[0x002])
-# define _b_ubconout		(*KENTRY->vec_bios[0x003])
-# define _b_rwabs		(*KENTRY->vec_bios[0x004])
-# define _b_setexc		(*KENTRY->vec_bios[0x005])
-# define _b_tickcal		(*KENTRY->vec_bios[0x006])
-# define _b_getbpb		(*KENTRY->vec_bios[0x007])
-# define _b_ubcostat		(*KENTRY->vec_bios[0x008])
-# define _b_mediach		(*KENTRY->vec_bios[0x009])
-# define _b_drvmap		(*KENTRY->vec_bios[0x00a])
-# define _b_kbshift		(*KENTRY->vec_bios[0x00b])
+# define _b_ubconstat	(*KENTRY->vec_bios->p_b_bconstat)
+# define _b_ubconin		(*KENTRY->vec_bios->p_b_bconin)
+# define _b_ubconout	(*KENTRY->vec_bios->p_b_bconout)
+# define _b_rwabs		(*KENTRY->vec_bios->p_b_rwabs)
+# define _b_setexc		(*KENTRY->vec_bios->p_b_setexc)
+# define _b_tickcal		(*KENTRY->vec_bios->p_b_tickcal)
+# define _b_getbpb		(*KENTRY->vec_bios->p_b_getbpb)
+# define _b_ubcostat	(*KENTRY->vec_bios->p_b_bcostat)
+# define _b_mediach		(*KENTRY->vec_bios->p_b_mediach)
+# define _b_drvmap		(*KENTRY->vec_bios->p_b_drvmap)
+# define _b_kbshift		(*KENTRY->vec_bios->p_b_kbshift)
 
 INLINE long b_ubconin(int dev)
-{ return ((long _cdecl (*)(int)) _b_ubconin)(dev); }
+{ return _b_ubconin(dev); }
 
 INLINE long b_ubconout(short dev, short c)
-{ return ((long _cdecl (*)(short, short)) _b_ubconout)(dev, c); }
+{ return _b_ubconout(dev, c); }
 
 INLINE long b_setexc(short number, long vector)
-{ return ((long _cdecl (*)(short, long)) _b_setexc)(number, vector); }
+{ return _b_setexc(number, vector); }
 
 INLINE long b_drvmap(void)
-{ return ((long _cdecl (*)(void)) _b_drvmap)(); }
-
-	/* 0x020 */		/* BIOS_MAX */
+{ return _b_drvmap(); }
 
 
 /*

@@ -31,10 +31,11 @@
 
 # include "mint/mint.h"
 # include "mint/xbiosvecs.h"
+# include "mint/biosvecs.h"
 
 extern Func dos_tab [];
-extern Func bios_tab [];
 
+extern bios_vecs bios_tab;
 extern xbios_vecs xbios_tab;
 
 # endif /* _syscall_vector_h */
