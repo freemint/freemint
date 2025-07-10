@@ -46,7 +46,9 @@ extern short _app;
 
 #define FALSE 0
 #define TRUE 1
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
 typedef int bool;
+#endif
 
 static WDIALOG	*maindial;
 
@@ -627,7 +629,7 @@ main_open (WDIALOG *wd)
 	}
 }
 
-static bool
+static int
 main_exit (WDIALOG *wd, short obj)
 {
 	bool close = FALSE;

@@ -27,10 +27,6 @@
 #include <gem.h>
 #include <mint/cookie.h>
 
-#ifndef false
-enum { false, true };
-#endif
-
 char alert_running[] = "[1][ NoHog2 ][ Ok ]";
 char alert_no_mint[] = "[1][ NoHog2 only needed | with MiNT. ][ Ok ]";
 char alert_mtask[]   = "[1][ NoHog2 only needed | with ROM AES. ][ Ok ]";
@@ -42,7 +38,7 @@ void __main(void) { }
 int main(void)
 {
 	long c;
-	short exit = false, apid, mint, mtask, e_type = MU_MESAG;
+	short exit = 0, apid, mint, mtask, e_type = MU_MESAG;
 	char *alert = alert_running;
 
 	apid = appl_init();
@@ -81,7 +77,7 @@ int main(void)
 					form_alert(0, alert);
 					break;
 				case AP_TERM:
-					exit = true;
+					exit = 1;
 					break;
 				default:
 					break;
