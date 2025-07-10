@@ -553,7 +553,7 @@ again:
 	/* check if there exist a moose.adi */
 	if (first)
 	{
-		bool flag;
+		int flag;
 
 		flag = sysfile_exists(C.Aes->home_path, "moose_w.adi");
 		if (!flag)
