@@ -261,7 +261,7 @@ sys_f_close (short fd)
 }
 
 long _cdecl
-sys_f_read (short fd, long count, char *buf)
+sys_f_read (short fd, long count, void *buf)
 {
 	struct proc *p = get_curproc();
 	FILEPTR *f;
@@ -290,7 +290,7 @@ sys_f_read (short fd, long count, char *buf)
 }
 
 long _cdecl
-sys_f_write (short fd, long count, const char *buf)
+sys_f_write (short fd, long count, const void *buf)
 {
 	struct proc *p = get_curproc();
 	FILEPTR *f;

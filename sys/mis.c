@@ -135,7 +135,7 @@ shell_fprintf(long handle, const char *fmt, ...)
 
 		sys_f_write(handle, strlen(buf), buf);
 
-		sys_m_free((long)buf);
+		sys_m_free(buf);
 	}
 	else
 		sys_f_write(stderr, 13, "Out of RAM!\n");
@@ -374,7 +374,7 @@ crunch(char *cmd, char **argv)
 		argv[idx] = NULL;
 
 	if (tmp)
-		sys_m_free((long)tmp);
+		sys_m_free(tmp);
 
 	return idx;
 }
@@ -466,7 +466,7 @@ internal_execvp(char **argv)
 
 	*new_var = 0;
 
-	(void)sys_m_shrink(0, (long)oldcmd, env_size(new_env) + SHELL_MAXPATH + SHELL_MAXFN + 128);
+	(void)sys_m_shrink(0, oldcmd, env_size(new_env) + SHELL_MAXPATH + SHELL_MAXFN + 128);
 
 	/* Since crunch() evaluates some arguments, we have now to
 	 * re-create the old GEMDOS style command line string.
@@ -547,7 +547,7 @@ internal_execvp(char **argv)
 	}
 	while (*path && r < 0);
 
-	sys_m_free((long)oldcmd);
+	sys_m_free(oldcmd);
 
 	return r;
 }
@@ -737,7 +737,7 @@ sh_ls(long argc, char **argv)
 		}
 	} while (r == 0);
 
-	sys_m_free((long)path);
+	sys_m_free(path);
 
 	sys_d_closedir(handle);
 
@@ -794,13 +794,13 @@ sh_cd(long argc, char **argv)
 			{
 				strcpy(opwd, pwd);
 				shell_setenv("OLDPWD", opwd);
-				sys_m_free((long)opwd);
+				sys_m_free(opwd);
 			}
 		}
 
 		shell_setenv("PWD", cwd);
 
-		sys_m_free((long)cwd);
+		sys_m_free(cwd);
 	}
 
 	return r;
@@ -1010,7 +1010,7 @@ copy_from_to(short move, char *from, char *to)
 			size -= bufsize;
 		}
 
-		sys_m_free((long)buf);
+		sys_m_free(buf);
 
 		if (r >= 0)
 		{
@@ -1075,7 +1075,7 @@ sh_cp(long argc, char **argv)
 		}
 	}
 
-	sys_m_free((long)path);
+	sys_m_free(path);
 
 	return r;
 }
@@ -1122,7 +1122,7 @@ sh_mv(long argc, char **argv)
 		}
 	}
 
-	sys_m_free((long)path);
+	sys_m_free(path);
 
 	return r;
 }
@@ -1353,10 +1353,10 @@ execute(char *cmdline)
 	for (x = 1; x < argc; x++)
 	{
 		if (argv[x] && !(((long)argv[x] >= (long)cmdline) && ((long)argv[x] <= ((long)cmdline + cmde))))
-			sys_m_free((long)argv[x]);
+			sys_m_free(argv[x]);
 	}
 
-	sys_m_free((long)argv);
+	sys_m_free(argv);
 
 	return r;
 }
@@ -1396,7 +1396,7 @@ prompt(unsigned char *buffer, long buflen)
 	lbuff[--idx] = 0;
 
 	if (cwd)
-		sys_m_free((long)cwd);
+		sys_m_free(cwd);
 
 	return lbuff;
 }

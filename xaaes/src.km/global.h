@@ -141,7 +141,6 @@ __extension__								\
 })
 
 #define xbios_getrez()	(short)trap_14_w((short)(0x04))
-#define _f_sync			(*KENTRY->vec_dos[0x103]) 	/* f_sync */
 #define GL_AES_SZ	16
 extern short my_global_aes[GL_AES_SZ];
 

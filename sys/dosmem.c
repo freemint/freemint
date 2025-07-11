@@ -328,8 +328,9 @@ sys_m_alloc (long size)
 }
 
 long _cdecl
-sys_m_free (long block)
+sys_m_free (void *_block)
 {
+	long block = (long)_block;
 	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
 	int i;
@@ -404,8 +405,9 @@ sys_m_free (long block)
 }
 
 long _cdecl
-sys_m_shrink (short dummy, unsigned long block, long size)
+sys_m_shrink (short dummy, void *_block, long size)
 {
+	unsigned long block = (unsigned long)_block;
 	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
 	int i;
@@ -453,8 +455,9 @@ error:
 }
 
 long _cdecl
-sys_m_validate (short pid, unsigned long addr, long size, long *flags)
+sys_m_validate (short pid, void *_addr, long size, long *flags)
 {
+	unsigned long addr = (unsigned long)_addr;
 	struct proc *p = NULL;
 	MEMREGION *m;
 
@@ -497,8 +500,9 @@ sys_m_validate (short pid, unsigned long addr, long size, long *flags)
 }
 
 long _cdecl
-sys_m_access(unsigned long addr, long size, short mode)
+sys_m_access(void *_addr, long size, short mode)
 {
+	unsigned long addr = (unsigned long)_addr;
 	struct proc *p = get_curproc();
 	MEMREGION *m;
 

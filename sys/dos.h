@@ -31,7 +31,7 @@ long _cdecl sys_t_alarm		(long x);
 long _cdecl sys_t_malarm	(long x);
 long _cdecl sys_t_setitimer	(int which, long *interval, long *value, long *ointerval, long *ovalue);
 long _cdecl sys_s_ysconf	(int which);
-long _cdecl sys_s_alert		(char *msg);
+long _cdecl sys_s_alert		(const char *msg);
 long _cdecl sys_s_uptime	(ulong *cur_uptim, ulong loadave[3]);
 long _cdecl sys_s_hutdown	(long restart);
 

@@ -879,7 +879,7 @@ run_auto_prgs (void)
 	sys_d_setdrv(sysdrv);	/* set above, right after Super() */
 	sys_d_setpath("/");
 
-	dta = (DTABUF *) sys_f_getdta();
+	dta = sys_f_getdta();
 	r = sys_f_sfirst("/auto/*.prg", 0);
 	while (r >= 0)
 	{
@@ -1016,7 +1016,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 		}
 
 		bp->p_env = new_env;
-		sys_m_free((long)env_str);
+		sys_m_free(env_str);
 	}
 
 	/* Append new variable at the end */
@@ -1156,7 +1156,7 @@ mint_thread(void *arg)
 			}
 		}
 
-		(void) sys_m_free((long)cwd);
+		(void) sys_m_free(cwd);
 	}
 # endif
 

@@ -478,7 +478,7 @@ XA_appl_init(int lock, struct xa_client *client, AESPB *pb)
 			ikill(p->pid, SIGTERM);
 			return XAC_DONE;
 		}
-		_f_sync();
+		_s_ync();
 	}
 
 	if (client) {

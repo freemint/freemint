@@ -616,7 +616,7 @@ sys_s_ysconf (int which)
  * the kernel does (i.e. u:\pipe\alert, if it's available
  */
 long _cdecl
-sys_s_alert (char *str)
+sys_s_alert (const char *str)
 {
 	/* how's this for confusing code? _ALERT tries to format the
 	 * string as an alert box; if it fails, we let the full-fledged

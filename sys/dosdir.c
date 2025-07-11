@@ -531,15 +531,15 @@ sys_f_setdta (DTABUF *dta)
 	return E_OK;
 }
 
-long _cdecl
+DTABUF *_cdecl
 sys_f_getdta (void)
 {
 	struct proc *p = get_curproc();
-	long r;
+	DTABUF *r;
 
-	r = (long) p->p_fd->dta;
+	r = p->p_fd->dta;
 
-	TRACE(("Fgetdta: returning %lx", r));
+	TRACE(("Fgetdta: returning %p", r));
 	return r;
 }
 
@@ -1099,7 +1099,7 @@ sys_f_delete (const char *name)
 }
 
 long _cdecl
-sys_f_rename (int junk, const char *old, const char *new)
+sys_f_rename (short junk, const char *old, const char *new)
 {
 	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
@@ -1787,7 +1787,7 @@ sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
  * changes a file's access permissions.
  */
 long _cdecl
-sys_f_chmod (const char *name, unsigned int mode)
+sys_f_chmod (const char *name, unsigned short mode)
 {
 	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;

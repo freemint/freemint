@@ -65,7 +65,7 @@ k_shutdown(void)
 
 	if( cfg.save_windows )
 		write_inf();
-	_f_sync();
+	_s_ync();
 	if( !(C.shutdown & (HALT_SYSTEM | REBOOT_SYSTEM | COLDSTART_SYSTEM)) )
 	{
 		BLOG((false, "wait for AES help thread to terminate....(ferr=%d)", ferr));

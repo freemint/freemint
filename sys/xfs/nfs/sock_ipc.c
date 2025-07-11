@@ -223,7 +223,7 @@ static void
 setup_auth (ulong stamp)
 {
 # define NGROUPS_MAX	8
-	int suppgrps [2 * NGROUPS_MAX];
+	unsigned short suppgrps [2 * NGROUPS_MAX];
 	long ngrp;
 
 	*p_stamp = stamp;
@@ -250,7 +250,7 @@ setup_auth (ulong stamp)
 	unix_auth.len = auth_baselen + sizeof (ulong) * ngrp;
 	
 	for ( ; ngrp >= 0; ngrp -= 1)
-		p_gids [ngrp] = suppgrps [ngrp];
+		p_gids [ngrp] = (short)suppgrps [ngrp];
 }
 
 /*============================================================*/

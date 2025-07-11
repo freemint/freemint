@@ -45,6 +45,7 @@
 # include "ktypes.h"
 # include "mint/xbiosvecs.h"
 # include "mint/biosvecs.h"
+# include "mint/dosvecs.h"
 
 /* forward declarations */
 struct basepage;
@@ -1083,12 +1084,7 @@ struct kentry
 	unsigned long	dos_version;	/* running GEMDOS version */
 
 	/* OS functions */
-/*
- * FIXME:
- * this should really be structures instead of array of pointers,
- * so we can use correct prototypes instead of ugly casts
- */
-	Func *vec_dos;			/* DOS entry points */
+	dos_vecs *vec_dos;		/* DOS entry points */
 	bios_vecs *vec_bios;	/* BIOS entry points */
 	xbios_vecs *vec_xbios;	/* XBIOS entry points */
 
@@ -1124,7 +1120,7 @@ struct kentry
 	\
 	0x00000040, \
 	\
-	dos_tab, \
+	&dos_tab, \
 	&bios_tab, \
 	&xbios_tab, \
 	\

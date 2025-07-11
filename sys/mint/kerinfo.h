@@ -20,6 +20,7 @@
 # include "ktypes.h"
 # include "block_IO.h"		/* eXtended kernelinterface */
 # include "biosvecs.h"
+# include "dosvecs.h"
 
 struct basepage;
 struct nf_ops;
@@ -67,13 +68,8 @@ struct kerinfo
 	 * ------------
 	 * NOTE: these tables are definitely READ ONLY!!!!
 	 */
-/*
- * FIXME:
- * this should really be structures instead of array of pointers,
- * so we can use correct prototypes instead of ugly casts
- */
 	bios_vecs	*bios_tab;	/* pointer to the BIOS entry points */
-	Func	*dos_tab;	/* pointer to the GEMDOS entry points */
+	dos_vecs	*dos_tab;	/* pointer to the GEMDOS entry points */
 
 
 	/* media change vector

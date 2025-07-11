@@ -354,7 +354,7 @@ static void rtl8139_nbuf_free(void *addr)
 {
   if(use_dma_alloc)
     dma_free(addr);
-  _m_free((long)addr);
+  _m_free(addr);
 }
 
 static int rtl8139_set_ip_filter(long ipaddr)
