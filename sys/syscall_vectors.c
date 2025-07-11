@@ -534,13 +534,7 @@ dos_vecs dos_tab =
 	/* 0x18e */		sys_enosys,		/* reserved */
 	/* 0x18f */		sys_enosys,		/* reserved */
 };
-
-ushort dos_max = sizeof(dos_tab) / sizeof(dos_tab.p_pterm0);
-
-Func sys_mon_tab [1] =
-{
-	/* 0x1069 */	(Func) Debug
-};
+/* if you change the size of this table, also change DOS_MAX in syscall.S */
 
 /* END DOS initialization */
 /****************************************************************************/
@@ -584,16 +578,13 @@ bios_vecs bios_tab =
 	/* 0x01e */		NULL,
 	/* 0x01f */		NULL,
 };
-
-ushort bios_max = sizeof(bios_tab) / sizeof(bios_tab.p_b_getmpb);
+/* if you change the size of this table, also change BIOS_MAX in syscall.S */
 
 /* END BIOS initialization */
 /****************************************************************************/
 
 /****************************************************************************/
 /* BEGIN XBIOS initialization */
-
-# define XBIOS_MAX 0x80
 
 xbios_vecs xbios_tab =
 {
@@ -733,8 +724,7 @@ xbios_vecs xbios_tab =
 	/* 0x07e */		NULL,
 	/* 0x07f */		NULL
 };
-
-ushort xbios_max = sizeof(xbios_tab) / sizeof(xbios_tab._p_b_ssbrk);
+/* if you change the size of this table, also change XBIOS_MAX in syscall.S */
 
 /* END XBIOS initialization */
 /****************************************************************************/

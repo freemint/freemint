@@ -24,11 +24,11 @@
  *
  * external variables referenced:
  *
- * bios_tab, bios_max:
- *    table of entry points for BIOS routines, max # of routines
- * xbios_tab, xbios_max:
+ * bios_tab, BIOS_MAX:
+ *    table of entry points for BIOS routines
+ * xbios_tab, XBIOS_MAX:
  *    ditto for XBIOS
- * dos_tab, dos_max:
+ * dos_tab, DOS_MAX:
  *    ditto for GEMDOS
  * curproc:
  *    pointer to current process table entry, and hence to save area for
@@ -79,9 +79,9 @@
 	.globl	SYM(gdos_version),SYM(vdi_handler),SYM(aes_handler)
 
 	.extern	SYM(curproc)
-	.globl	SYM(bios_tab),SYM(bios_max)
-	.globl	SYM(xbios_tab),SYM(xbios_max),SYM(old_xbios)
-	.globl	SYM(dos_tab),SYM(dos_max)
+	.globl	SYM(bios_tab)
+	.globl	SYM(xbios_tab),SYM(old_xbios)
+	.globl	SYM(dos_tab)
 
 	.extern	SYM(bconbuf),SYM(bconbsiz),SYM(bconbdev)
 	.extern	SYM(bflush)
@@ -94,6 +94,10 @@
 	.extern SYM(mcpu)
 
 	.extern	SYM(stop)
+
+	BIOS_MAX = 0x20
+	XBIOS_MAX = 0x80
+	DOS_MAX = 0x190
 
 // ***********************
 // * GEMDOS trap handler *
@@ -124,7 +128,7 @@ SYM(mint_dos):
 	movem.l	d2-d7/a2-a6,-(sp)
 #endif
 	lea	SYM(dos_tab),a5
-	move.w	SYM(dos_max),d5
+	move.w	#DOS_MAX,d5
 	bra	reentrant_trap
 norm_gemdos:
 	clr.w	-(sp)			// no frame format needed
@@ -135,7 +139,7 @@ norm_gemdos:
 
 	jsr	SYM(build_context)		// build_context sets A1 to stack used before we get here
 	lea	SYM(dos_tab),a5		// set syscall_tab
-	move.w	SYM(dos_max),d5		// set syscall_max
+	move.w	#DOS_MAX,d5		// set syscall_max
 //
 // copy parameters onto process stack. a0 and a1 were set by build_context
 //
@@ -147,7 +151,7 @@ norm_gemdos:
 #else
 	move.w (a1),d1
 #endif
-	cmp.w	SYM(dos_max),d1
+	cmp.w	#DOS_MAX,d1
 	bcc	gemdos
 // offset 0 is func pointer, 4 is nr of args, 6 is their size
 nospr:
@@ -184,11 +188,14 @@ noargs:	jsr	SYM(enter_gemdos)		// set up vectors appropriately
 #endif
 	bne.s	no_sys_printf
 	clr.w	(sp)			// manipulate function number
-	lea	SYM(sys_mon_tab),a5		// tab
+	lea	sys_mon_tab(pc),a5		// tab
 	move.w	#1,d5			// and max
 no_sys_printf:
 #endif
 	bra	_syscall
+
+sys_mon_tab:
+	.dc.l	SYM(Debug)
 
 // **********************
 // * XBIOS trap handler *
@@ -220,7 +227,7 @@ SYM(mint_xbios):
 	movem.l	d2-d7/a2-a6,-(sp)
 #endif
 	lea	SYM(xbios_tab),a5
-	move.w	SYM(xbios_max),d5
+	move.w	#XBIOS_MAX,d5
 	bra	reentrant_trap
 
 norm_xbios:
@@ -325,7 +332,7 @@ sk:
 	pea	P_SYSCTXT(a0)		// push pointer to syscall context save
 	jsr	SYM(build_context)
 	lea	SYM(xbios_tab),a5		// set syscall_tab
-	move.w	SYM(xbios_max),d5		// set syscall_max
+	move.w	#XBIOS_MAX,d5		// set syscall_max
 
 //
 // copy parameters onto process stack. a0 and a1 were set by build_context
@@ -387,7 +394,7 @@ SYM(mint_bios):
 	movem.l	d2-d7/a2-a6,-(sp)
 #endif
 	lea	SYM(bios_tab),a5
-	move.w	SYM(bios_max),d5
+	move.w	#BIOS_MAX,d5
 	bra	reentrant_trap
 
 norm_bios:
@@ -471,7 +478,7 @@ L_bios:
 	pea	P_SYSCTXT(a0)			// push pointer to syscall context save
 	jsr	SYM(build_context)
 	lea	SYM(bios_tab),a5		// set syscall_tab
-	move.w	SYM(bios_max),d5		// set syscall_max
+	move.w	#BIOS_MAX,d5		// set syscall_max
 //
 // copy parameters onto process stack. a0 and a1 were set by build_context
 //
