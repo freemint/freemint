@@ -179,6 +179,8 @@ void	_cdecl unix2calendar64(time64_t tv_sec,
 				 unsigned short *day, unsigned short *hour,
 				 unsigned short *minute, unsigned short *second);
 long	_cdecl unix2xbios	(time32_t tv_sec);
+
+#define MAX_TZ_OFFSET (50400UL)
 time32_t _cdecl dostime		(time32_t tv_sec);
 time32_t _cdecl unixtime	(unsigned short time, unsigned short date);
 

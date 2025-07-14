@@ -66,10 +66,18 @@ unixtime (ushort time, ushort date)
 	mon	= ((date >> 5) & 15) - 1;
 	year	= 80 + ((date >> 9) & 127);
 	
+	/*
+	 * Dates after 1.1.2098 would overflow,
+	 * because DOS baseyear is 1980,
+	 * but unix epoch is 1970
+	 */
+	if (year >= 198)
+		return 4294967296UL - MAX_TZ_OFFSET;
+
 	/* calculate tm_yday here */
 	s = (mday - 1) + mth_start[mon] + /* leap year correction */
 		(((year % 4) != 0 ) ? 0 : (mon > 1));
-	
+
 	s = (sec) + (min * 60L) + (hour * 3600L) +
 		(s * 86400L) + ((year - 70) * 31536000L) +
 		((year - 69) / 4) * 86400L;

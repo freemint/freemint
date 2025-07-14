@@ -147,7 +147,7 @@ struct kerinfo
 	 * returned value) and date (in the low word)
 	 */
 	void	*_was_millis_time;
-	long	_cdecl (*unixtime)(ushort, ushort);
+	time32_t _cdecl (*unixtime)(ushort, ushort);
 	long	_cdecl (*dostime)(long);
 
 

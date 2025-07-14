@@ -230,7 +230,7 @@ sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 
 	if (tv != NULL)
 	{
-		if (xtime.tv_sec >= 2147483647L)
+		if (xtime.tv_sec >= 2147483647L - (time32_t)MAX_TZ_OFFSET)
 			return EOVERFLOW;
 		return do_gettimeofday (tv);
 	}
@@ -258,82 +258,83 @@ do_settimeofday (struct timeval* tv)
 		return EBADARG;
 	}
 	/*
-	 * check if tv.sec + sys2tos would overflow the range of signed 32bit
+	 * check if tv.sec + timezone offset would overflow the range of signed 32bit.
+	 * Allow only for signed values up to year 2038 here.
+	 * If that overflows, Tsettimeofday64 has to be used.
 	 */
-	if (tv->tv_sec > (sys2tos < 0 ? 2147483647L + sys2tos : 2147483647L - sys2tos) ||
-		(timezone < 0 && tv->tv_sec > 2147483647L + timezone))
-	{
-		DEBUG (("do_settimeofday: attempt to set time to after year 2038"));
-		return EOVERFLOW;
-	}
+    if (tv->tv_sec >= 2147483647L - (time32_t)MAX_TZ_OFFSET)
+    {
+        DEBUG (("do_settimeofday: attempt to set time to after year 2038"));
+        return EOVERFLOW;
+    }
 
-	/* The timeval we got is always in UTC */
-	xtime = *tv;
+    /* The timeval we got is always in UTC */
+    xtime = *tv;
 
-	/* Now calculate timestamp and datestamp from that */
-	tos_combined = unix2xbios (xtime.tv_sec - timezone);
-	datestamp = (tos_combined >> 16) & 0xffff;
-	timestamp = tos_combined & 0xffff;
+    /* Now calculate timestamp and datestamp from that */
+    tos_combined = unix2xbios (xtime.tv_sec - timezone);
+    datestamp = (tos_combined >> 16) & 0xffff;
+    timestamp = tos_combined & 0xffff;
 
-	hardtime = unix2xbios (xtime.tv_sec + sys2tos);
+    hardtime = unix2xbios (xtime.tv_sec + sys2tos);
 
-	ROM_Settime (hardtime);
+    ROM_Settime (hardtime);
 
-	return E_OK;
+    return E_OK;
 }
 
 long _cdecl
 sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 {
-	TRACE (("Tsettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
+    TRACE (("Tsettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
 
-	if (!suser (get_curproc()->p_cred->ucr))
-	{
-		DEBUG (("t_settimeofday: attempt to change time by unprivileged user"));
-		return EPERM;
-	}
+    if (!suser (get_curproc()->p_cred->ucr))
+    {
+        DEBUG (("t_settimeofday: attempt to change time by unprivileged user"));
+        return EPERM;
+    }
 
-	if (tz != NULL)
-	{
-		long old_timezone = timezone;
+    if (tz != NULL)
+    {
+        long old_timezone = timezone;
 
-		sys_tz = *tz;
-		timezone = sys_tz.tz_minuteswest * 60L;
+        sys_tz = *tz;
+        timezone = sys_tz.tz_minuteswest * 60L;
 
-		/* We have to distinguish now if the clock is ticking in UTC
-		 * or local time.
-		 */
-		if (clock_mode == 0)
-		{
-			/* UTC */
-			sys2tos = 0;
-		}
-		else
-		{
-			sys2tos = -timezone;
+        /* We have to distinguish now if the clock is ticking in UTC
+         * or local time.
+         */
+        if (clock_mode == 0)
+        {
+            /* UTC */
+            sys2tos = 0;
+        }
+        else
+        {
+            sys2tos = -timezone;
 
-			/* If the timezone has really changed we have to
-			 * correct the kernel's UTC time.  If the user has
-			 * supplied a time this will be overwritten in an
-			 * instant below but that doesn't hurt.  If a time
-			 * was supplied it was really in UTC.
-			 */
-			xtime.tv_sec += (old_timezone - timezone);
-		}
+            /* If the timezone has really changed we have to
+             * correct the kernel's UTC time.  If the user has
+             * supplied a time this will be overwritten in an
+             * instant below but that doesn't hurt.  If a time
+             * was supplied it was really in UTC.
+             */
+            xtime.tv_sec += (old_timezone - timezone);
+        }
 
-		/* Update timestamp and datestamp */
-		synch_timers ();
-	}
+        /* Update timestamp and datestamp */
+        synch_timers ();
+    }
 
-	if (tv != NULL)
-	{
-		long retval = do_settimeofday (tv);
-		hardtime = 0;
-		if (retval < 0)
-			return retval;
-	}
+    if (tv != NULL)
+    {
+        long retval = do_settimeofday (tv);
+        hardtime = 0;
+        if (retval < 0)
+            return retval;
+    }
 
-	return E_OK;
+    return E_OK;
 }
 
 /* Adjust the current time of day by the amount in DELTA.
@@ -344,34 +345,34 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 long _cdecl
 sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 {
-	TRACE (("Tadjtime (delta = 0x%p, olddelta = 0x%p)", delta, olddelta));
+    TRACE (("Tadjtime (delta = 0x%p, olddelta = 0x%p)", delta, olddelta));
 
-	if (!suser (get_curproc()->p_cred->ucr))
-	{
-		DEBUG (("t_adjtime: attempt to change time by unprivileged user"));
-		return EPERM;
-	}
+    if (!suser (get_curproc()->p_cred->ucr))
+    {
+        DEBUG (("t_adjtime: attempt to change time by unprivileged user"));
+        return EPERM;
+    }
 
-	if (delta != NULL) {
-		struct timeval tv;
-		long retval = do_gettimeofday(&tv);
-		if (retval < 0)
-			return retval;
+    if (delta != NULL) {
+        struct timeval tv;
+        long retval = do_gettimeofday(&tv);
+        if (retval < 0)
+            return retval;
 
-		tv.tv_usec += delta->tv_usec;
-		if (tv.tv_usec >= 1000000L)
-		{
-			tv.tv_usec -= 1000000L;
-			tv.tv_sec++;
-		}
-		tv.tv_sec += delta->tv_sec;
-		
-		retval = do_settimeofday (&tv);
-		if (retval < 0)
-			return retval;
-	}
+        tv.tv_usec += delta->tv_usec;
+        if (tv.tv_usec >= 1000000L)
+        {
+            tv.tv_usec -= 1000000L;
+            tv.tv_sec++;
+        }
+        tv.tv_sec += delta->tv_sec;
+        
+        retval = do_settimeofday (&tv);
+        if (retval < 0)
+            return retval;
+    }
 
-	return E_OK;
+    return E_OK;
 }
 
 /* Most programs assume that the values returned by Tgettime()
@@ -387,165 +388,165 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 void
 init_time (void)
 {
-	long value;
+    long value;
 
-	if (machine == machine_unknown)
-		value = 0;
-	else
-		value = _mfpregs->tbdr;
-
-# if 0
-	/* See, a piece of code is a function, not just a long integer */
-	extern long _cdecl newcvec();  /* In intr.spp */
-	KBDVEC *kvecs;
-	/* Opcode for getting ikbd clock. */
-	uchar ikbd_clock_get = 0x1c;
-	register short count;
-# endif
-
-	/* Check if we are already initialized.  */
-	if (xtime.tv_sec != 0)
-		return;
-
-	/* Interpolate. */
-	value &= 0x000000ffL;
-	value -= 192L;
-	if (value < 0)
-		value = 0;
+    if (machine == machine_unknown)
+        value = 0;
+    else
+        value = _mfpregs->tbdr;
 
 # if 0
-	/* Get the current setting of the hardware clock. Since we only bend
-	 * the vector once we don't bother about xbra stuff. We can't go
-	 * the fine MiNT way (using syskey, cf. mint.h) because this routine
-	 * is called before the interrupts are initialized.
-	 */
-
-	/* Draco's explanation on why this doesn't work:
-	 *
-	 * 1. because of a bug - this caused bombs on startup (fixed).
-	 * 2. because documentation lies - the Ikbdws() writes `len' chars,
-	 *    not `len+1' (also fixed).
-	 * 3. because documentation lies - the pointer passed to the
-	 *    clock handler doesn't point to the packet header,
-	 *    but to the packet itself (fixed as well).
-	 * 4. finally - because the IKBD clock is not set,
-	 *    at least on Falcon030 TOS. So the returned packet
-	 *    actually consists of zeros only (not fixed).
-	 *
-	 * Notice: even if it worked as (previously) exspected, kernel's
-	 * time package might work incorrectly when no keyboard is present.
-	 *
-	 */
-
-	do {
-		kvecs = (KBDVEC *) TRAP_Kbdvbase ();
-	}
-	while (kvecs->drvstat);
-
-	oldcvec = kvecs->clockvec;
-	kvecs->clockvec = (long) &newcvec;
-	TRAP_Ikbdws (1, &ikbd_clock_get);
-	for (count = 0; count < 9999 && packet_came == 0; count++);
-	kvecs->clockvec = oldcvec;
+    /* See, a piece of code is a function, not just a long integer */
+    extern long _cdecl newcvec();  /* In intr.spp */
+    KBDVEC *kvecs;
+    /* Opcode for getting ikbd clock. */
+    uchar ikbd_clock_get = 0x1c;
+    register short count;
 # endif
 
-	/* initialize datestamp & timestamp */
-	{
-		ulong tostime;
+    /* Check if we are already initialized.  */
+    if (xtime.tv_sec != 0)
+        return;
 
-		tostime = TRAP_Gettime ();
+    /* Interpolate. */
+    value &= 0x000000ffL;
+    value -= 192L;
+    if (value < 0)
+        value = 0;
 
-		datestamp = (tostime >> 16) & 0xffff;
-		timestamp = tostime & 0xffff;
-	}
+# if 0
+    /* Get the current setting of the hardware clock. Since we only bend
+     * the vector once we don't bother about xbra stuff. We can't go
+     * the fine MiNT way (using syskey, cf. mint.h) because this routine
+     * is called before the interrupts are initialized.
+     */
 
-	sys_lastticks = *hz_200;
+    /* Draco's explanation on why this doesn't work:
+     *
+     * 1. because of a bug - this caused bombs on startup (fixed).
+     * 2. because documentation lies - the Ikbdws() writes `len' chars,
+     *    not `len+1' (also fixed).
+     * 3. because documentation lies - the pointer passed to the
+     *    clock handler doesn't point to the packet header,
+     *    but to the packet itself (fixed as well).
+     * 4. finally - because the IKBD clock is not set,
+     *    at least on Falcon030 TOS. So the returned packet
+     *    actually consists of zeros only (not fixed).
+     *
+     * Notice: even if it worked as (previously) exspected, kernel's
+     * time package might work incorrectly when no keyboard is present.
+     *
+     */
 
-	xtime.tv_sec = unixtime (timestamp, datestamp);
-	xtime.tv_usec = (sys_lastticks % CLOCKS_PER_SEC) * MICROSECONDS_PER_CLOCK
-		+ value * MICROSECONDS_PER_CLOCK / 192L;
+    do {
+        kvecs = (KBDVEC *) TRAP_Kbdvbase ();
+    }
+    while (kvecs->drvstat);
 
-	/* set booting time */
-	boottime = xtime;
+    oldcvec = kvecs->clockvec;
+    kvecs->clockvec = (long) &newcvec;
+    TRAP_Ikbdws (1, &ikbd_clock_get);
+    for (count = 0; count < 9999 && packet_came == 0; count++);
+    kvecs->clockvec = oldcvec;
+# endif
+
+    /* initialize datestamp & timestamp */
+    {
+        ulong tostime;
+
+        tostime = TRAP_Gettime ();
+
+        datestamp = (tostime >> 16) & 0xffff;
+        timestamp = tostime & 0xffff;
+    }
+
+    sys_lastticks = *hz_200;
+
+    xtime.tv_sec = unixtime (timestamp, datestamp);
+    xtime.tv_usec = (sys_lastticks % CLOCKS_PER_SEC) * MICROSECONDS_PER_CLOCK
+        + value * MICROSECONDS_PER_CLOCK / 192L;
+
+    /* set booting time */
+    boottime = xtime;
 }
 
 static void
 quick_synch (void)
 {
-	ulong current_ticks;
-	long elapsed;	/* Microseconds elapsed since last quick_synch.
-			 * Because this routine is guaranteed to be
-			 * called at least once per second we don't have
-			 * to care to much about overflows.
-			 */
+    ulong current_ticks;
+    long elapsed;   /* Microseconds elapsed since last quick_synch.
+             * Because this routine is guaranteed to be
+             * called at least once per second we don't have
+             * to care to much about overflows.
+             */
 
-	if (machine == machine_unknown)
-		timerc = 0;
-	else
-		timerc = _mfpregs->tbdr;
+    if (machine == machine_unknown)
+        timerc = 0;
+    else
+        timerc = _mfpregs->tbdr;
 
-	current_ticks = *hz_200;
+    current_ticks = *hz_200;
 
-	/* Make sure that the clock runs monotonic.  */
-	timerc &= 0x000000ffL;
-	if (timerc > 192)
-		timerc = 192;
+    /* Make sure that the clock runs monotonic.  */
+    timerc &= 0x000000ffL;
+    if (timerc > 192)
+        timerc = 192;
 
-	if (current_ticks <= sys_lastticks)
-	{
-		if (timerc > last_timerc)
-			timerc = last_timerc;
-	}
+    if (current_ticks <= sys_lastticks)
+    {
+        if (timerc > last_timerc)
+            timerc = last_timerc;
+    }
 
-	last_timerc = timerc;
+    last_timerc = timerc;
 
-	if (current_ticks < sys_lastticks)
-	{
-		/* We had an overflow in _hz_200. */
-		ulong uelapsed = 0xffffffffL - sys_lastticks;
-		uelapsed += current_ticks;
+    if (current_ticks < sys_lastticks)
+    {
+        /* We had an overflow in _hz_200. */
+        ulong uelapsed = 0xffffffffL - sys_lastticks;
+        uelapsed += current_ticks;
 
-		elapsed = uelapsed * MICROSECONDS_PER_CLOCK;
-		TRACE (("quick_synch: 200-Hz-Timer overflow"));
-	}
-	else
-	{
-		elapsed = (current_ticks - sys_lastticks) * MICROSECONDS_PER_CLOCK;
-	}
+        elapsed = uelapsed * MICROSECONDS_PER_CLOCK;
+        TRACE (("quick_synch: 200-Hz-Timer overflow"));
+    }
+    else
+    {
+        elapsed = (current_ticks - sys_lastticks) * MICROSECONDS_PER_CLOCK;
+    }
 
-	sys_lastticks = current_ticks;
+    sys_lastticks = current_ticks;
 
-	xtime.tv_usec += elapsed;
-	if (xtime.tv_usec >= 1000000L)
-	{
-		xtime.tv_sec += (xtime.tv_usec / 1000000L);
-		xtime.tv_usec = xtime.tv_usec % 1000000L;
-	}
+    xtime.tv_usec += elapsed;
+    if (xtime.tv_usec >= 1000000L)
+    {
+        xtime.tv_sec += (xtime.tv_usec / 1000000L);
+        xtime.tv_usec = xtime.tv_usec % 1000000L;
+    }
 }
 
 /* Calculate timestamp and datestamp.  */
 void _cdecl
 synch_timers (void)
 {
-	ulong tos_combined;
+    ulong tos_combined;
 
-	quick_synch ();
+    quick_synch ();
 
-	/* Now adjust timestamp and datestamp to be in local time.  */
-	tos_combined = unix2xbios (xtime.tv_sec - timezone);
-	datestamp = (tos_combined >> 16) & 0xffff;
-	timestamp = tos_combined & 0xffff;
+    /* Now adjust timestamp and datestamp to be in local time.  */
+    tos_combined = unix2xbios (xtime.tv_sec - timezone);
+    datestamp = (tos_combined >> 16) & 0xffff;
+    timestamp = tos_combined & 0xffff;
 
-	if (hardtime && get_curproc()->pid == 0)
-	{
-		/* Hm, if Tsetdate or Tsettime was called by the user our
-		 * changes get lost. That's why this strange piece of code
-		 * is here.
-		 */
-		hardtime = unix2xbios (xtime.tv_sec + sys2tos);
-		ROM_Settime (hardtime);
-		hardtime = 0;
-	}
+    if (hardtime && get_curproc()->pid == 0)
+    {
+        /* Hm, if Tsetdate or Tsettime was called by the user our
+         * changes get lost. That's why this strange piece of code
+         * is here.
+         */
+        hardtime = unix2xbios (xtime.tv_sec + sys2tos);
+        ROM_Settime (hardtime);
+        hardtime = 0;
+    }
 }
 
 /* Change the kernel's notion of the system time.  If the kernel clock
@@ -555,82 +556,82 @@ synch_timers (void)
 void _cdecl
 warp_clock (int mode)
 {
-	long diff;
+    long diff;
 
-	if ((mode == 0 && clock_mode == 0) || (mode != 0 && clock_mode != 0))
-		return;
+    if ((mode == 0 && clock_mode == 0) || (mode != 0 && clock_mode != 0))
+        return;
 
-	if (clock_mode == 0)
-	{
-		/* Change it from UTC to local time.  */
-		diff = timezone;
-		xtime.tv_sec += diff;
-		sys2tos = -diff;
-		clock_mode = 1;
-	}
-	else
-	{
-		/* Change it back from local time to UTC.  */
-		diff = -timezone;
-		xtime.tv_sec += diff;
-		sys2tos = 0;
-		clock_mode = 0;
-	}
+    if (clock_mode == 0)
+    {
+        /* Change it from UTC to local time.  */
+        diff = timezone;
+        xtime.tv_sec += diff;
+        sys2tos = -diff;
+        clock_mode = 1;
+    }
+    else
+    {
+        /* Change it back from local time to UTC.  */
+        diff = -timezone;
+        xtime.tv_sec += diff;
+        sys2tos = 0;
+        clock_mode = 0;
+    }
 
-	if (diff != 0)
-	{
-		PROC *p;
-		struct fifo *fifo;
-		struct shmfile *shm;
+    if (diff != 0)
+    {
+        PROC *p;
+        struct fifo *fifo;
+        struct shmfile *shm;
 
-		procfs_stmp.tv_sec += diff;
-		for (p = proclist; p != NULL; p = p->gl_next)
-			p->started.tv_sec += diff;
+        procfs_stmp.tv_sec += diff;
+        for (p = proclist; p != NULL; p = p->gl_next)
+            p->started.tv_sec += diff;
 
-		pipestamp.tv_sec += diff;
-		for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
-		{
-			fifo->mtime.tv_sec += diff;
-			fifo->ctime.tv_sec += diff;
-		}
+        pipestamp.tv_sec += diff;
+        for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
+        {
+            fifo->mtime.tv_sec += diff;
+            fifo->ctime.tv_sec += diff;
+        }
 
-		shmfs_stmp.tv_sec += diff;
-		for (shm = shmroot; shm != NULL; shm = shm->next)
-		{
-			shm->mtime.tv_sec += diff;
-			shm->ctime.tv_sec += diff;
-		}
+        shmfs_stmp.tv_sec += diff;
+        for (shm = shmroot; shm != NULL; shm = shm->next)
+        {
+            shm->mtime.tv_sec += diff;
+            shm->ctime.tv_sec += diff;
+        }
 
-		/* The timestamps of the bios devices are a mess anyway.  */
-	}
+        /* The timestamps of the bios devices are a mess anyway.  */
+    }
 
-	/* Set timestamp and datestamp correctly. */
-	synch_timers ();
+    /* Set timestamp and datestamp correctly. */
+    synch_timers ();
 }
 
 long _cdecl
 sys_b_gettime (void)
 {
-	TRACE (("gettime ()"));
+    TRACE (("gettime ()"));
 
-	if (!xtime.tv_sec)
-	{
-		/* We're not initialized */
-		init_time ();
-	}
+    if (!xtime.tv_sec)
+    {
+        /* We're not initialized */
+        init_time ();
+    }
 
-	return (((long) datestamp << 16) | (timestamp & 0xffff));
+    return (((long) datestamp << 16) | (timestamp & 0xffff));
 }
 
 void _cdecl
 sys_b_settime (ulong datetime)
 {
-	if (hardtime)
-	{
-		TRACE (("settime (%li) -> Settime (%li)", datetime, hardtime));
+    if (hardtime)
+    {
+        TRACE (("settime (%li) -> Settime (%li)", datetime, hardtime));
 
-		/* Called from the kernel.  */
-		ROM_Settime (hardtime);
+        /* Called from the kernel.  */
+        ROM_Settime (hardtime);
 	}
 	else
 	{
