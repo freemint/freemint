@@ -28,20 +28,21 @@ RANLIB = ranlib
 OBJS = $(COBJS:.c=.o)
 OBJS += pars.o scan.o
 GENFILES = $(TARGET)
-GENFILES += pars.c pars.h scan.c
+GENFILES += pars.c pars.h scan.c .gen_parse
 
 syscallparser.o: syscallparser.c
 	$(CC) $(CFLAGS) -c $< -o $@
-pars.o: pars.c
-	$(CC) $(CFLAGS) -c $< -o $@
-scan.o: scan.c
+pars.o: .gen_parse
+	$(CC) $(CFLAGS) -c pars.c -o $@
+scan.o: scan.c .gen_parse
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS)
 	$(AR) rcs $@.$$$$ $(OBJS) && mv $@.$$$$ $@ || { $(RM) $@.$$$$; false; }
 
-pars.c pars.h: pars.y
+.gen_parse: pars.y
 	$(YACC) --output=pars.c pars.y
+	@touch $@
 
-scan.c: scan.l pars.y
+scan.c: scan.l
 	$(LEX) -o$@ scan.l
