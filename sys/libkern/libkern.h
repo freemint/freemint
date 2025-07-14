@@ -174,7 +174,6 @@ int	_cdecl _mint_o_strnicmp	(const char *str1, const char *str2, int len);
  * kernel time help functions
  */
 
-void	_cdecl ms_time		(unsigned long ms, short *timeptr);
 void	_cdecl unix2calendar	(long tv_sec,
 				 unsigned short *year, unsigned short *month,
 				 unsigned short *day, unsigned short *hour,

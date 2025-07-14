@@ -22,7 +22,6 @@ COBJS = \
 	md5.c \
 	memchr.c \
 	memcmp.c \
-	ms_time.c \
 	strcat.c \
 	strchr.c \
 	strcmp.c \

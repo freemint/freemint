@@ -138,23 +138,15 @@ struct kerinfo
 	/* utility functions for manipulating time
 	 * ---------------------------------------
 	 *
-	 * millis_time(ms, timeptr)
-	 *
-	 * convert "ms" milliseconds into a DOS time (in td[0]) and date
-	 * (in td[1]) convert a DOS style time and date into a Unix style
+	 * dostime(time):
+	 * convert a DOS style time and date into a Unix style
 	 * time; returns the Unix time
 	 *
-	 * unixtime(time, date)
-	 *
-	 * convert a DOS style time and date into a Unix style time; returns
-	 * the Unix time
-	 *
-	 * dostime(time)
-	 *
+	 * unixtime(time, date):
 	 * convert a Unix time into a DOS time (in the high word of the
 	 * returned value) and date (in the low word)
 	 */
-	void	_cdecl (*millis_time)(ulong, short *);
+	void	*_was_millis_time;
 	long	_cdecl (*unixtime)(ushort, ushort);
 	long	_cdecl (*dostime)(long);
 

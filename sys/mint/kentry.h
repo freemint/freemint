@@ -697,7 +697,7 @@ struct kentry_libkern
 	 * returned value) and date (in the low word)
 	 */
 
-	void	_cdecl (*ms_time)(unsigned long ms, short *timeptr);
+	void	*_was_ms_time;
 	void	_cdecl (*unix2calendar)(long tv_sec,
 					unsigned short *year, unsigned short *month,
 					unsigned short *day, unsigned short *hour,
@@ -751,7 +751,7 @@ struct kentry_libkern
 	_mint_memchr, \
 	_mint_memcmp, \
 	\
-	ms_time, \
+	0, /* was: ms_time */ \
 	unix2calendar, \
 	unix2xbios, \
 	dostime, \

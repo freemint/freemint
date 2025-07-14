@@ -25,8 +25,8 @@
  */
 struct timeval
 {
-	long	tv_sec;		/**< seconds */
-	long	tv_usec;	/**< microseconds */
+	time32_t	tv_sec;		/**< seconds */
+	long		tv_usec;	/**< microseconds */
 };
 struct timeval64
 {
@@ -45,7 +45,7 @@ struct time
 	union {
 		struct {
 			long	high_time;
-			long	time;		/* This has to be signed!  */
+			time32_t	time;		/* This has to be signed!  */
 		};
 		time64_t time64;
 	};

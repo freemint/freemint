@@ -476,7 +476,6 @@ INLINE long p_sysctl(long *name, unsigned long namelen, void *old, unsigned long
 #undef ksprintf
 #define ksprintf       (*KERNEL->ksprintf)
 
-#define ms_time        (*KERNEL->millis_time)
 #define unixtime       (*KERNEL->unixtime)
 #define dostime        (*KERNEL->dostime)
 

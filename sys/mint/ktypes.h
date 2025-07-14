@@ -78,6 +78,7 @@ struct module_callback;
 struct proc_ext;
 struct sigaction;
 struct socket;
+typedef int32_t time32_t;
 typedef int64_t time64_t;
 
 
