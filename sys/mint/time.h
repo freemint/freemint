@@ -37,8 +37,13 @@ typedef struct time TIME;
  */
 struct time
 {
-	long	high_time;
-	long	time;		/* This has to be signed!  */
+	union {
+		struct {
+			long	high_time;
+			long	time;		/* This has to be signed!  */
+		};
+		time64_t time64;
+	};
 	ulong	nanoseconds;
 };
 

@@ -138,6 +138,15 @@ sys_t_setdate (ushort date)
 		return EPERM;
 	}
 
+	/*
+	 * Disallow dates after >= 1.1.2098,
+	 * since that would overflow the year value of a DOSTIME
+	 */
+	if (date >= ((128 - 10) << 9))
+	{
+		DEBUG (("Tsetdate: date overflow"));
+		return EOVERFLOW;
+	}
 	tv.tv_sec = unixtime (timestamp, date) + timezone;
 	return do_settimeofday (&tv);
 }
@@ -217,10 +226,14 @@ sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 	TRACE (("Tgettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
 
 	if (tz != NULL)
-		memcpy (tz, &sys_tz, sizeof (sys_tz));
+		*tz = sys_tz;
 
 	if (tv != NULL)
+	{
+		if (xtime.tv_sec >= 2147483647L)
+			return EOVERFLOW;
 		return do_gettimeofday (tv);
+	}
 
 	return E_OK;
 }
@@ -244,9 +257,18 @@ do_settimeofday (struct timeval* tv)
 		DEBUG (("do_settimeofday: attempt to rewind time to before 1980"));
 		return EBADARG;
 	}
+	/*
+	 * check if tv.sec + sys2tos would overflow the range of signed 32bit
+	 */
+	if (tv->tv_sec > (sys2tos < 0 ? 2147483647L + sys2tos : 2147483647L - sys2tos) ||
+		(timezone < 0 && tv->tv_sec > 2147483647L + timezone))
+	{
+		DEBUG (("do_settimeofday: attempt to set time to after year 2038"));
+		return EOVERFLOW;
+	}
 
 	/* The timeval we got is always in UTC */
-	memcpy (&xtime, tv, sizeof (xtime));
+	xtime = *tv;
 
 	/* Now calculate timestamp and datestamp from that */
 	tos_combined = unix2xbios (xtime.tv_sec - timezone);
@@ -275,7 +297,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 	{
 		long old_timezone = timezone;
 
-		memcpy (&sys_tz, tz, sizeof (sys_tz));
+		sys_tz = *tz;
 		timezone = sys_tz.tz_minuteswest * 60L;
 
 		/* We have to distinguish now if the clock is ticking in UTC
@@ -503,7 +525,7 @@ quick_synch (void)
 
 /* Calculate timestamp and datestamp.  */
 void _cdecl
-synch_timers ()
+synch_timers (void)
 {
 	ulong tos_combined;
 
@@ -587,7 +609,7 @@ warp_clock (int mode)
 }
 
 long _cdecl
-sys_b_gettime ()
+sys_b_gettime (void)
 {
 	TRACE (("gettime ()"));
 

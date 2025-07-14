@@ -106,7 +106,7 @@ about_destructor(int lock, struct xa_window *wind)
 
 static SCROLL_INFO *alist = 0;
 static SCROLL_ENTRY *athis[1] = {0};
-static struct time xah_mtime = {0,0,0};
+static struct time xah_mtime;
 void reset_about(void)
 {
 	alist = 0;

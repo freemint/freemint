@@ -56,7 +56,7 @@ typedef unsigned long long		__u64;
 # error unsigned long long		__u64;
 # endif
 
-/* more conform tyepnames */
+/* more conform typenames */
 typedef __s8  int8_t;
 typedef __s16 int16_t;
 typedef __s32 int32_t;
@@ -78,12 +78,12 @@ struct module_callback;
 struct proc_ext;
 struct sigaction;
 struct socket;
+typedef int64_t time64_t;
 
 
 /* forward declarations: file.h
  */
 typedef struct fcookie		fcookie;
-typedef struct timeval		TIMEVAL;
 typedef struct dtabuf		DTABUF;
 typedef struct dirstruct	DIR;
 typedef struct xattr		XATTR;

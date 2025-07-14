@@ -272,7 +272,7 @@ struct kerinfo
 	BIO	*bio;		/* buffered block I/O, see block_IO.doc */
 
 	/* version 1 extension */
-	TIMEVAL	*xtime;		/* pointer to current kernel time - UTC */
+	struct timeval	*xtime;		/* pointer to current kernel time - UTC */
 
 	long	res;
 
