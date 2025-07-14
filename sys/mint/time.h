@@ -94,8 +94,8 @@ struct time
  */
 struct timespec
 {
-	long	tv_sec;		/**< seconds */
-	long	tv_nsec;	/**< and nanoseconds */
+	time32_t	tv_sec;		/**< seconds */
+	long		tv_nsec;	/**< and nanoseconds */
 };
 
 # define TIMEVAL_TO_TIMESPEC(tv, ts)		\

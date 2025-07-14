@@ -174,13 +174,13 @@ int	_cdecl _mint_o_strnicmp	(const char *str1, const char *str2, int len);
  * kernel time help functions
  */
 
-void	_cdecl unix2calendar	(long tv_sec,
+void	_cdecl unix2calendar64(time64_t tv_sec,
 				 unsigned short *year, unsigned short *month,
 				 unsigned short *day, unsigned short *hour,
 				 unsigned short *minute, unsigned short *second);
-long	_cdecl unix2xbios	(long tv_sec);
-long	_cdecl dostime		(long tv_sec);
-long	_cdecl unixtime		(unsigned short time, unsigned short date);
+long	_cdecl unix2xbios	(time32_t tv_sec);
+time32_t _cdecl dostime		(time32_t tv_sec);
+time32_t _cdecl unixtime	(unsigned short time, unsigned short date);
 
 
 /*

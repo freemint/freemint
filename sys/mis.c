@@ -703,7 +703,7 @@ sh_ls(long argc, char **argv)
 						path[9] = (st.mode & S_ISVTX) ? 't' : 'x';
 
 					/* Now recalculate the time stamp */
-					unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
+					unix2calendar64(st.mtime.time64, &year, &month, &day, &hour, &minute, NULL);
 
 					shell_fprintf(stdout, "%s %5d %8ld %8ld %8ld %s %2d ", \
 							path, (short)st.nlink, st.uid, st.gid, \

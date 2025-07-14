@@ -698,13 +698,10 @@ struct kentry_libkern
 	 */
 
 	void	*_was_ms_time;
-	void	_cdecl (*unix2calendar)(long tv_sec,
-					unsigned short *year, unsigned short *month,
-					unsigned short *day, unsigned short *hour,
-					unsigned short *minute, unsigned short *second);
-	long	_cdecl (*unix2xbios)(long tv_sec);
-	long	_cdecl (*dostime)(long tv_sec);
-	long	_cdecl (*unixtime)(unsigned short time, unsigned short date);
+	void	*_was_unix2calendar;
+	long	_cdecl (*unix2xbios)(time32_t tv_sec);
+	time32_t	_cdecl (*dostime)(long tv_sec);
+	time32_t	_cdecl (*unixtime)(unsigned short time, unsigned short date);
 
 	/*
 	 * kernel block functions
@@ -752,7 +749,7 @@ struct kentry_libkern
 	_mint_memcmp, \
 	\
 	0, /* was: ms_time */ \
-	unix2calendar, \
+	0, /* was: unix2calendar */ \
 	unix2xbios, \
 	dostime, \
 	unixtime, \

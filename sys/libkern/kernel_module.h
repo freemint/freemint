@@ -812,7 +812,6 @@ check_kentry_version(void)
 #define memchr         (*KENTRY->vec_libkern.memchr)
 #define memcmp         (*KENTRY->vec_libkern.memcmp)
 
-#define unix2calendar  (*KENTRY->vec_libkern.unix2calendar)
 #define unix2xbios     (*KENTRY->vec_libkern.unix2xbios)
 #define dostime        (*KENTRY->vec_libkern.dostime)
 #define unixtime       (*KENTRY->vec_libkern.unixtime)

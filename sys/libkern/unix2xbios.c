@@ -75,7 +75,7 @@ static const ushort __mon_yday [2][12] =
 /* Convert Unix time into calendar format
  */
 void _cdecl
-unix2calendar(long tv_sec, ushort *year, ushort *month, ushort *day, ushort *hour, ushort *minute, ushort *second)
+unix2calendar64(time64_t tv_sec, ushort *year, ushort *month, ushort *day, ushort *hour, ushort *minute, ushort *second)
 {
 	long days, rem, y;
 
@@ -109,7 +109,7 @@ unix2calendar(long tv_sec, ushort *year, ushort *month, ushort *day, ushort *hou
 		*year = (ushort)y;
 
 	{
-		register const ushort *ip;
+		const ushort *ip;
 
 		ip = __mon_yday [__isleap (y)];
 		for (y = 11; days < ip [y]; --y)
@@ -125,7 +125,7 @@ unix2calendar(long tv_sec, ushort *year, ushort *month, ushort *day, ushort *hou
 }
 
 long _cdecl
-unix2xbios(long tv_sec)
+unix2xbios(time32_t tv_sec)
 {
 	typedef struct dostime DOSTIME;
 	struct dostime
@@ -142,7 +142,7 @@ unix2xbios(long tv_sec)
 	DOSTIME *xtm = &xtm_struct;
 	ushort year, month, day, hour, minute, second;
 
-	unix2calendar(tv_sec, &year, &month, &day, &hour, &minute, &second);
+	unix2calendar64(tv_sec, &year, &month, &day, &hour, &minute, &second);
 
 	xtm->hour = hour;
 	xtm->minute = minute;
