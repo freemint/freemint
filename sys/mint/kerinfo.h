@@ -62,7 +62,7 @@ struct kerinfo
 	ushort	min_version;	/* minor kernel version number */
 	ushort	default_perm;	/* default file permissions */
 	ushort	version;	/* version number */
-
+#define KERINFO_VERSION 2
 
 	/* OS functions
 	 * ------------

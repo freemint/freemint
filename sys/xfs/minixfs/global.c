@@ -28,8 +28,6 @@
 # include "mint/dcntl.h"
 
 
-ushort native_utc = 0;
-
 UNIT error;
 
 SI *super_ptr[NUM_DRIVES];

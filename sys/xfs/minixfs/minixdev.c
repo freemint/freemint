@@ -696,7 +696,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			rip.i_ctime = CURRENT_TIME;
 			if (buf)
 			{
-				if (native_utc || (mode == FUTIME_UTC))
+				if (mode == FUTIME_UTC)
 				{
 					long *timeptr = (long *) buf;
 					
@@ -768,10 +768,7 @@ m_datime (FILEPTR *f, ushort *timeptr, int flag)
 	{
 		case 0:
 		{
-			if (native_utc)
-				*((long *) timeptr) = rip.i_mtime;
-			else
-				*((long *) timeptr) = dostime (rip.i_mtime);
+			*((long *) timeptr) = rip.i_mtime;
 			
 			break;
 		}
@@ -780,10 +777,7 @@ m_datime (FILEPTR *f, ushort *timeptr, int flag)
 			if (super_ptr [f->fc.dev]->s_flags & MS_RDONLY)
 				return EROFS;
 			
-			if (native_utc)
-				rip.i_mtime = *((long *) timeptr);
-			else
-				rip.i_mtime = unixtime (timeptr[0], timeptr[1]);
+			rip.i_mtime = *((long *) timeptr);
 			
 			rip.i_atime = rip.i_mtime;
 			rip.i_ctime = CURRENT_TIME;

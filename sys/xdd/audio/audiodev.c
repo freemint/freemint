@@ -119,7 +119,7 @@ init_xdd (struct kerinfo *k)
 	}
 	
 	if ((MINT_MAJOR == 0)
-		|| ((MINT_MAJOR == 1) && ((MINT_MINOR < 15) || (MINT_KVERSION < 2))))
+		|| ((MINT_MAJOR == 1) && ((MINT_MINOR < 15) || (MINT_KVERSION < KERINFO_VERSION))))
 	{
 		c_conws ("audio NOT installed, MiNT too old.\r\n\r\n");
 		return NULL;

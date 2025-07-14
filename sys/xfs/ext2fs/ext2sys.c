@@ -340,20 +340,10 @@ e_getxattr (fcookie *fc, XATTR *ptr)
 	/* nblocks is measured in blksize */
 	ptr->nblocks	= le2cpu32 (c->in.i_blocks) / (ptr->blksize >> 9);
 
-	if (native_utc)
-	{
-		/* kernel recalc to local time & DOS style */
-		SET_XATTR_TD(ptr,m,le2cpu32(c->in.i_mtime));
-		SET_XATTR_TD(ptr,a,le2cpu32(c->in.i_atime));
-		SET_XATTR_TD(ptr,c,le2cpu32(c->in.i_ctime));
-	}
-	else
-	{
-		/* the old way */
-		SET_XATTR_TD(ptr,m,dostime(le2cpu32(c->in.i_mtime)));
-		SET_XATTR_TD(ptr,a,dostime(le2cpu32(c->in.i_atime)));
-		SET_XATTR_TD(ptr,c,dostime(le2cpu32(c->in.i_ctime)));
-	}
+	/* kernel recalc to local time & DOS style */
+	SET_XATTR_TD(ptr,m,le2cpu32(c->in.i_mtime));
+	SET_XATTR_TD(ptr,a,le2cpu32(c->in.i_atime));
+	SET_XATTR_TD(ptr,c,le2cpu32(c->in.i_ctime));
 
 	DEBUG (("Ext2-FS [%c]: e_getxattr: #%li -> ok", fc->dev+'A', c->inode));
 	return E_OK;
@@ -2043,7 +2033,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 			if (arg)
 			{
-				if (native_utc || (cmd == FUTIME_UTC))
+				if (cmd == FUTIME_UTC)
 				{
 					long *timeptr = (long *) arg;
 

@@ -447,7 +447,7 @@ driver_init (void)
 
 	/* get the Ethernet NatFeat ID */
 	nfEtherID = 0;
-	if (MINT_KVERSION >= 2 && KERNEL->nf_ops != NULL)
+	if (MINT_KVERSION >= KERINFO_VERSION && KERNEL->nf_ops != NULL)
 		nfEtherID = KERNEL->nf_ops->get_id("ETHERNET");
 
 	if ( nfEtherID == 0 ) {

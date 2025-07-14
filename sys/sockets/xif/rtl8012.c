@@ -1089,7 +1089,7 @@ driver_init (void)
 	c_conws (MSG_GREET);
 	
 	if ((MINT_MAJOR == 0)
-		|| ((MINT_MAJOR == 1) && ((MINT_MINOR < 15) || (MINT_KVERSION < 2))))
+		|| ((MINT_MAJOR == 1) && ((MINT_MINOR < 15) || (MINT_KVERSION < KERINFO_VERSION))))
 	{
 		c_conws (MSG_MINT);
 		goto failure;

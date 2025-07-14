@@ -93,15 +93,10 @@ own_kfree (void *dst, register long size)
 /* global ext2 specials
  */
 
-extern ushort native_utc;
-
 INLINE long
 current_time (void)
 {
-	if (native_utc)
-		return utc.tv_sec;
-	
-	return unixtime (timestamp, datestamp);
+	return utc.tv_sec;
 }
 # define CURRENT_TIME	current_time ()
 

@@ -331,7 +331,7 @@ FILESYS * _cdecl init_xfs (struct kerinfo *k)
 	KERNEL_DEBUG (("dummy.c: init"));
 	
 	/* version check */
-	if (MINT_MAJOR < 1 || (MINT_MAJOR == 1 && MINT_MINOR < 15))
+	if (MINT_KVERSION != KERINFO_VERSION)
 	{
 		c_conws (MSG_OLDMINT);
 		c_conws (MSG_FAILURE);
@@ -355,22 +355,6 @@ FILESYS * _cdecl init_xfs (struct kerinfo *k)
 		c_conws (MSG_FAILURE);
 		
 		return NULL;		
-	}
-	
-# if 0
-	/* check for native UTC timestamps */
-	if (MINT_KVERSION > 0 && KERNEL->xtime)
-	{
-		/* yeah, save enourmous overhead */
-		native_utc = 1;
-		
-		KERNEL_DEBUG ("dummy: running in native UTC mode!");
-	}
-	else
-# endif
-	{
-		/* disable extension level 3 */
-		ftab.fsflags &= ~FS_EXT_3;
 	}
 	
 	KERNEL_DEBUG ("dummy: loaded and ready (k = %lx) -> %lx.", (unsigned long)k, (long) &ftab);

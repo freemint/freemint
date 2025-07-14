@@ -30,4 +30,3 @@
 
 
 unsigned long memory = 0;
-unsigned short native_utc = 0;

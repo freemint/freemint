@@ -136,28 +136,14 @@ fattr2xattr (fattr *fa, XATTR *xa)
 	xa->blksize	= fa->blocksize;
 	xa->nblocks	= fa->blocks;
 	
-	if (native_utc)
-	{
-		SET_XATTR_TD(xa,m,fa->mtime.seconds);
-		SET_XATTR_TD(xa,a,fa->atime.seconds);
-		SET_XATTR_TD(xa,c,fa->ctime.seconds);
+	SET_XATTR_TD(xa,m,fa->mtime.seconds);
+	SET_XATTR_TD(xa,a,fa->atime.seconds);
+	SET_XATTR_TD(xa,c,fa->ctime.seconds);
 #if 0
-		*((long *) &(xa->mtime)) = fa->mtime.seconds;
-		*((long *) &(xa->atime)) = fa->atime.seconds;
-		*((long *) &(xa->ctime)) = fa->ctime.seconds;
+	*((long *) &(xa->mtime)) = fa->mtime.seconds;
+	*((long *) &(xa->atime)) = fa->atime.seconds;
+	*((long *) &(xa->ctime)) = fa->ctime.seconds;
 #endif
-	}
-	else
-	{
-		SET_XATTR_TD(xa,m,dostime(fa->mtime.seconds));
-		SET_XATTR_TD(xa,a,dostime(fa->atime.seconds));
-		SET_XATTR_TD(xa,c,dostime(fa->ctime.seconds));
-#if 0
-		*((long *) &(xa->mtime)) = dostime (fa->mtime.seconds);
-		*((long *) &(xa->atime)) = dostime (fa->atime.seconds);
-		*((long *) &(xa->ctime)) = dostime (fa->ctime.seconds);
-#endif
-	}
 	
 # if 0
 	if ((xa->mode & S_IFMT) == S_IFLNK)
@@ -186,23 +172,11 @@ xattr2fattr (XATTR *xa, fattr *fa)
 	fa->fsid	= xa->dev;
 	fa->fileid	= xa->index;
 	
-	if (native_utc)
-	{
-		fa->atime.seconds  = *((long *) &(xa->atime));
-		fa->atime.useconds = 0;
-		fa->mtime.seconds  = *((long *) &(xa->mtime));
-		fa->mtime.useconds = 0;
-		fa->ctime.seconds  = *((long *) &(xa->ctime));
-		fa->ctime.useconds = 0;
-	}
-	else
-	{
-		fa->atime.seconds  = unixtime (xa->atime, xa->adate);
-		fa->atime.useconds = 0;
-		fa->mtime.seconds  = unixtime (xa->mtime, xa->mdate);
-		fa->mtime.useconds = 0;
-		fa->ctime.seconds  = unixtime (xa->ctime, xa->cdate);
-		fa->ctime.useconds = 0;
-	}
+	fa->atime.seconds  = xa->atime.seconds;
+	fa->atime.useconds = 0;
+	fa->mtime.seconds  = xa->mtime.seconds;
+	fa->mtime.useconds = 0;
+	fa->ctime.seconds  = xa->ctime.seconds;
+	fa->ctime.useconds = 0;
 }
 # endif

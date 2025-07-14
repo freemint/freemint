@@ -89,7 +89,7 @@ struct kerinfo kernelinfo =
 	MINT_MAJ_VERSION,
 	MINT_MIN_VERSION,
 	DEFAULT_MODE,
-	2, /* MINT_KVERSION */
+	KERINFO_VERSION, /* MINT_KVERSION */
 	&bios_tab, &dos_tab,
 	m_changedrv,
 	Trace, Debug, ALERT, FATAL,

@@ -439,7 +439,7 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 			
 			if (arg)
 			{
-				if (native_utc || (mode == FUTIME_UTC))
+				if (mode == FUTIME_UTC)
 				{
 					long *timeptr = arg;
 					
@@ -495,17 +495,8 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 				return r;
 			}
 			
-			if (native_utc)
-			{
-			/*	*((long *) timeptr) = *((long *) &(ni->attr.atime)); */
-				timeptr[0] = ni->attr.atime;
-				timeptr[1] = ni->attr.adate;
-			}
-			else
-			{
-				timeptr[0] = ni->attr.atime;
-				timeptr[1] = ni->attr.adate;
-			}
+			timeptr[0] = ni->attr.atime;
+			timeptr[1] = ni->attr.adate;
 			
 			break;
 		}
@@ -522,16 +513,8 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 			attr.mode = (ulong) -1L;
 			attr.size = (ulong) -1L;
 			
-			if (native_utc)
-			{
-				attr.atime.seconds = *((long *) timeptr);
-				attr.atime.useconds = 0;
-			}
-			else
-			{
-				attr.atime.seconds = unixtime (timeptr[0], timeptr[1]);
-				attr.atime.useconds = 0;
-			}
+			attr.atime.seconds = *((long *) timeptr);
+			attr.atime.useconds = 0;
 			
 			attr.mtime = attr.atime;
 			

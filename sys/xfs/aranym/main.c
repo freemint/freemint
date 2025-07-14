@@ -61,7 +61,7 @@ FILESYS * _cdecl init_xfs(struct kerinfo *k)
 		   (long)MINT_MAJOR, (long)MINT_MINOR, (long)MINT_KVERSION);
 
 	/* check for MiNT version */
-	if ( MINT_MAJOR < 1 || (MINT_MAJOR == 1 && MINT_MINOR < 16))
+	if (MINT_KVERSION != KERINFO_VERSION)
 	{
 		c_conws (MSG_OLDMINT);
 		c_conws (MSG_FAILURE("This filesystem requires MiNT 1.16.x"));

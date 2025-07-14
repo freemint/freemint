@@ -616,7 +616,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			
 			if (arg)
 			{
-				if (native_utc || (mode == FUTIME_UTC))
+				if (mode == FUTIME_UTC)
 				{
 					long *timeptr = arg;
 					
@@ -944,10 +944,7 @@ e_datime (FILEPTR *f, ushort *timeptr, int flag)
 	{
 		case 0:
 		{
-			if (native_utc)
-				*((long *) timeptr) = le2cpu32 (c->in.i_mtime);
-			else
-				*((long *) timeptr) = dostime (le2cpu32 (c->in.i_mtime));
+			*((long *) timeptr) = le2cpu32 (c->in.i_mtime);
 			
 			break;
 		}
@@ -959,10 +956,7 @@ e_datime (FILEPTR *f, ushort *timeptr, int flag)
 			if (IS_IMMUTABLE (c))
 				return EACCES;
 			
-			if (native_utc)
-				c->in.i_mtime = cpu2le32 (*((long *) timeptr));
-			else
-				c->in.i_mtime = cpu2le32 (unixtime (timeptr[0], timeptr[1]));
+			c->in.i_mtime = cpu2le32 (*((long *) timeptr));
 			
 			c->in.i_atime = c->in.i_mtime;
 			c->in.i_ctime = cpu2le32 (CURRENT_TIME);

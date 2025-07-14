@@ -70,29 +70,12 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 	
 	
 	/* version check */
-	if ((MINT_MAJOR < 1)
-	    || (MINT_MAJOR == 1 && MINT_MINOR < 16)
-	    || (!so_create))
+	if (!so_create || MINT_KVERSION != KERINFO_VERSION)
 	{
 		c_conws (MSG_OLDMINT);
 		c_conws (MSG_FAILURE ("MiNT too old"));
 		
 		return NULL;
-	}
-	
-	/* check for native UTC timestamps */
-	if (MINT_KVERSION > 0 && KERNEL->xtime)
-	{
-		/* yeah, save enourmous overhead */
-		native_utc = 1;
-		
-		DEBUG(("nfs (%s): running in native UTC mode!", __FILE__));
-	}
-	else
-	{
-		/* disable extension level 3 */
-		DEBUG(("nfs (%s): old kernel, disabling UTC mode!", __FILE__));
-		nfs_filesys.fsflags &= ~FS_EXT_3;
 	}
 	
 	/* initialize the other services in the xfs */

@@ -29,5 +29,3 @@ SI *super [NUM_DRIVES];
 
 ulong event = 0;
 ulong memory = 0;
-
-ushort native_utc = 0;

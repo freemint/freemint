@@ -28,6 +28,11 @@ struct timeval
 	long	tv_sec;		/**< seconds */
 	long	tv_usec;	/**< microseconds */
 };
+struct timeval64
+{
+	time64_t	tv_sec;		/**< seconds */
+	long		tv_usec;	/**< microseconds */
+};
 
 
 typedef struct time TIME;

@@ -369,28 +369,14 @@ m_getxattr (fcookie *fc, XATTR *xattr)
 	/* measured in blksize (BLOCK_SIZE) byte blocks */
 	xattr->nblocks = nblocks;
 	
-	if (native_utc)
-	{
-		SET_XATTR_TD(xattr,m,rip.i_mtime);
-		SET_XATTR_TD(xattr,a,rip.i_atime);
-		SET_XATTR_TD(xattr,c,rip.i_ctime);
+	SET_XATTR_TD(xattr,m,rip.i_mtime);
+	SET_XATTR_TD(xattr,a,rip.i_atime);
+	SET_XATTR_TD(xattr,c,rip.i_ctime);
 #if 0
-		*((long *) &(xattr->mtime)) = rip.i_mtime;
-		*((long *) &(xattr->atime)) = rip.i_atime;
-		*((long *) &(xattr->ctime)) = rip.i_ctime;
+	*((long *) &(xattr->mtime)) = rip.i_mtime;
+	*((long *) &(xattr->atime)) = rip.i_atime;
+	*((long *) &(xattr->ctime)) = rip.i_ctime;
 #endif
-	}
-	else
-	{
-		SET_XATTR_TD(xattr,m,dostime(rip.i_mtime));
-		SET_XATTR_TD(xattr,a,dostime(rip.i_atime));
-		SET_XATTR_TD(xattr,c,dostime(rip.i_ctime));
-#if 0
-		*((long *) &(xattr->mtime)) = dostime (rip.i_mtime);
-		*((long *) &(xattr->atime)) = dostime (rip.i_atime);
-		*((long *) &(xattr->ctime)) = dostime (rip.i_ctime);
-#endif
-	}
 	
 	xattr->reserved2 = 0;
 	xattr->reserved3[0] = 0;
@@ -1444,7 +1430,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				
 				if (arg)
 				{	
-					if (native_utc || (cmd == FUTIME_UTC))
+					if (cmd == FUTIME_UTC)
 					{
 						long *timeptr = (long *) arg;
 						

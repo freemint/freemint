@@ -17,10 +17,6 @@
 # include "version.h"
 # include "buildinfo/version.h"
 
-static int maj_version = MINT_MAJ_VERSION;
-static int min_version = MINT_MIN_VERSION;
-
-
 /*
  * Initialisation routine called first by the kernel
  */
@@ -42,7 +38,7 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 	c_conws ("½ " __DATE__ " by Frank Naumann.\r\n\r\n");
 	
 	/* check MiNT version */
-	if (MINT_MAJOR != maj_version && MINT_MINOR != min_version)
+	if (MINT_KVERSION != KERINFO_VERSION)
 	{
 		c_conws ("\033pIncorrect MiNT kernel version!\033q\r\n");
 		c_conws ("\7Minix-FS not installed.\r\n\r\n");
@@ -72,19 +68,6 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 		c_conws ("\033pCan't alloc error unit - out of memory?\033q\r\n");
 		c_conws ("\7Minix-FS not installed.\r\n\r\n");
 		return NULL;
-	}
-	
-	/* check for native UTC timestamps */
-	if (MINT_KVERSION > 0 && KERNEL->xtime)
-	{
-		/* yeah, save enourmous overhead */
-		native_utc = 1;
-		DEBUG (("Minix-FS: running in native UTC mode!"));
-	}
-	else
-	{
-		/* disable extension level 3 */
-		minix_filesys.fsflags &= ~FS_EXT_3;
 	}
 	
 	DEBUG (("Minix-FS: loaded and ready (k = %lx).", (unsigned long)k));

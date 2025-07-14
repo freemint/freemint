@@ -27,8 +27,6 @@
 
 ulong memory = 0;
 
-ushort native_utc = 0;
-
 /* the device number we have to deal with
  */
 int nfs_dev;
