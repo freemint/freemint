@@ -255,16 +255,20 @@ proc_lookup (fcookie *dir, const char *name, fcookie *fc)
  */
 static int p_attr [NUM_QUEUES] =
 {
-	0,			/* "RUNNING" */
-	0x01,			/* "READY" */
-	0x20,			/* "WAITING" */
-	0x21,			/* "IOBOUND" */
-	0x22,			/* "ZOMBIE" */
-	0x02,			/* "TSR" */
-	0x24,			/* "STOPPED" */
-	0x21			/* "SELECT" (same as IOBOUND) */
+	0,							/* "RUNNING" */
+	FA_RDONLY,					/* "READY" */
+	FA_CHANGED,					/* "WAITING" */
+	FA_CHANGED | FA_RDONLY,		/* "IOBOUND" */
+	FA_CHANGED | FA_HIDDEN,		/* "ZOMBIE" */
+	FA_HIDDEN,					/* "TSR" */
+	FA_CHANGED | FA_SYSTEM,		/* "STOPPED" */
+	FA_CHANGED | FA_RDONLY		/* "SELECT" (same as IOBOUND) */
 };
 
+/*
+ * FIXME: this is duplicate to proc_stat64,
+ * except for the attr field popuplated from p_attr
+ */
 static long _cdecl 
 proc_getxattr (fcookie *fc, XATTR *xattr)
 {
@@ -339,14 +343,14 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 		ptr->dev = ptr->rdev = PROCDRV;
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		
-		ptr->atime.high_time = 0;	
+		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
 		
-		ptr->mtime.high_time = 0;	
+		ptr->mtime.high_time = 0;
 		ptr->mtime.time = procfs_stmp.tv_sec;
 		ptr->mtime.nanoseconds = 0;	
 		
-		ptr->ctime.high_time = 0;	
+		ptr->ctime.high_time = 0;
 		ptr->ctime.time = rootproc->started.tv_sec;
 		ptr->ctime.nanoseconds = 0;	
 		ptr->nlink = 2;
@@ -361,15 +365,15 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 	ptr->size = ptr->blocks = memused(p);
 	ptr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 
-	ptr->atime.high_time = 0;	
+	ptr->atime.high_time = 0;
 	ptr->atime.time = xtime.tv_sec;
 	ptr->atime.nanoseconds = 0;	
 	
-	ptr->mtime.high_time = 0;	
-	ptr->mtime.time = 
+	ptr->mtime.high_time = 0;
+	ptr->mtime.time = p->started.tv_sec;
 	ptr->mtime.nanoseconds = 0;	
 	
-	ptr->ctime.high_time = 0;	
+	ptr->ctime.high_time = 0;
 	ptr->ctime.time = p->started.tv_sec;
 	ptr->ctime.nanoseconds = 0;	
 	
@@ -495,12 +499,12 @@ proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		/* BUG: we shouldn't have the magic value "MAXPID" for
 		 * maximum proc pid
 		 */
-		if (i >= MAXPID)
+		if (i >= MAXPID + 2)
 		{
 			return ENMFILES;
 		}
 		
-		p = pid2proc (i);
+		p = pid2proc (i - 2);
 		if (p)
 		{
 			pid = p->pid;
