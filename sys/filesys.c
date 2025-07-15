@@ -184,14 +184,14 @@ init_drive (int i)
 
 	for (fs = active_fs; fs; fs = fs->next)
 	{
-		DEBUG(("init_drive: fs %p, drv %d", fs, i));
+		DEBUG(("init_drive: fs %s, drv %d", xfs_fsname(fs), i));
 
 		r = xfs_root (fs, i, &root_dir);
 		if (r == 0)
 		{
 			drives[i] = root_dir.fs;
 			release_cookie (&root_dir);
-			DEBUG(("init_drive: drv %d is fs %p", i, fs));
+			DEBUG(("init_drive: drv %d is fs %s", i, xfs_fsname(fs)));
 			break;
 		} else
 		{
@@ -292,24 +292,21 @@ init_filesys (void)
 }
 
 # ifdef DEBUG_INFO
-char *
-xfs_name (fcookie *fc)
+const char *xfs_fsname(FILESYS *fs)
 {
-	static char buf [SPRINTF_MAX];
+	fcookie fc;
+	static char buf[SPRINTF_MAX];
 	long r;
 
-	buf [0] = '\0';
+	fc.dev = 0;
+	fc.fs = fs;
+	fc.index = 0;
 
-	TRACE(("xfs_name: call xfs_fscntl.. buf = %p, fc %p, fs %p", &buf, fc, fc->fs));
-	if (fc->fs)
-		r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long)&buf);
-	else {
-		r = 0;
-		ksprintf(buf, sizeof(buf), "unknown fs (%p)", fc->fs);
-	}
-	TRACE(("xfs_name: xfs_fctnl returned %lx", r));
+	buf[0] = '\0';
+
+	r = fs->fscntl(&fc, buf, MX_KER_XFSNAME, (long)buf);
 	if (r)
-		ksprintf (buf, sizeof (buf), "unknown (%p -> %li)", fc->fs, r);
+		ksprintf(buf, sizeof (buf), "unknown (%p)", fs);
 
 	return buf;
 }
@@ -445,7 +442,7 @@ _changedrv (ushort d, const char *function)
 	int warned = (d & 0xf000) == PROC_RDEV_BASE;
 	long r;
 
-	TRACE (("changedrv (%u)", d));
+	DEBUG (("changedrv (%u)", d));
 
 	/* if an aliased drive, change the *real* device */
 	if (d < NUM_DRIVES && aliasdrv[d])

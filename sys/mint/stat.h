@@ -15,6 +15,14 @@
 # include "time.h"
 
 
+typedef union _dos_time_date {
+	struct {
+		ushort time;
+		ushort date;
+	};
+	u_int32_t time32;
+} dos_time_date;
+
 /* old stat structure */
 struct xattr
 {
@@ -28,9 +36,9 @@ struct xattr
 	long	size;
 	long	blksize;
 	long	nblocks;
-	ushort	mtime, mdate;
-	ushort	atime, adate;
-	ushort	ctime, cdate;
+	dos_time_date mtime;
+	dos_time_date atime;
+	dos_time_date ctime;
 	short	attr;
 	short	reserved2;
 	long	reserved3[2];

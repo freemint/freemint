@@ -36,10 +36,8 @@ struct fifo
 	struct file *open;	/* open file pointers for this fifo */
 };
 
-extern struct fifo* piperoot;
-extern struct timeval pipestamp;
-
 extern FILESYS pipe_filesys;
 
+void pipefs_warp_clock(long diff);
 
 # endif /* _pipefs_h */

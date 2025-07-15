@@ -12,7 +12,8 @@
 
 extern struct timeval procfs_stmp;
 
-void procfs_init (void);
+void procfs_init(void);
+void procfs_warp_clock(long diff);
 
 extern FILESYS proc_filesys;
 

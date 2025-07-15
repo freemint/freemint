@@ -43,7 +43,7 @@ long cache_lookup(fcookie *dir, char *name, fcookie *res);
 void cache_init(void);
 void clobber_cookie(fcookie *fc);
 void init_filesys(void);
-char *xfs_name(fcookie *fc);
+const char *xfs_fsname(FILESYS *fs);
 void xfs_add(FILESYS *fs);
 void close_filesys(void);
 long _s_ync(void);

@@ -43,7 +43,7 @@ un_cache_lookup (char *name, long *index, XATTR *attr)
 	static short last_deleted = 0;
 
 	dirty_idx = -1;
-	stamp = MK_STAMP (attr->mtime, attr->mdate);
+	stamp = MK_STAMP (attr->mtime.time, attr->mtime.date);
 	for (i = 0; i < CACHE_ENTRIES; i++)
 	{
 		if (f_cache[i].valid == CACHE_VALID &&

@@ -147,7 +147,7 @@ unix2xbios(time32_t tv_sec)
 	 * since this is a file timestamp from old DOS-style filesystems
 	 * and therefor will never be from before 1970
 	 */
-	unix2calendar64((__u32)tv_sec, &year, &month, &day, &hour, &minute, &second);
+	unix2calendar64((u_int32_t)tv_sec, &year, &month, &day, &hour, &minute, &second);
 
 	xtm->hour = hour;
 	xtm->minute = minute;

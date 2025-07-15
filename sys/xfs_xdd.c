@@ -107,15 +107,15 @@ getstat64(FILESYS *fs, fcookie *fc, STAT *stat)
 		 * -> convert to unix UTC
 		 */
 		stat->atime.high_time = 0;
-		stat->atime.time = unixtime (xattr.atime, xattr.adate) + timezone;
+		stat->atime.time = unixtime (xattr.atime.time, xattr.atime.date) + timezone;
 		stat->atime.nanoseconds = 0;
 
 		stat->mtime.high_time = 0;
-		stat->mtime.time = unixtime (xattr.mtime, xattr.mdate) + timezone;
+		stat->mtime.time = unixtime (xattr.mtime.time, xattr.mtime.date) + timezone;
 		stat->mtime.nanoseconds = 0;
 
 		stat->ctime.high_time = 0;
-		stat->ctime.time = unixtime (xattr.ctime, xattr.cdate) + timezone;
+		stat->ctime.time = unixtime (xattr.ctime.time, xattr.ctime.date) + timezone;
 		stat->ctime.nanoseconds = 0;
 
 		stat->size	= xattr.size;

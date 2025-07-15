@@ -45,6 +45,7 @@
 # include "pipefs.h"
 # include "procfs.h"
 # include "shmfs.h"
+# include "ramfs.h"
 
 # include "proc.h"
 
@@ -130,7 +131,7 @@ sys_t_gettime (void)
 long _cdecl
 sys_t_setdate (ushort date)
 {
-	struct timeval tv = { 0, 0 };
+	struct timeval tv;
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
@@ -148,6 +149,7 @@ sys_t_setdate (ushort date)
 		return EOVERFLOW;
 	}
 	tv.tv_sec = unixtime (timestamp, date) + timezone;
+	tv.tv_usec = 0;
 	return do_settimeofday (&tv);
 }
 
@@ -558,7 +560,7 @@ warp_clock (int mode)
 {
     long diff;
 
-    if ((mode == 0 && clock_mode == 0) || (mode != 0 && clock_mode != 0))
+    if (mode == clock_mode)
         return;
 
     if (clock_mode == 0)
@@ -567,7 +569,6 @@ warp_clock (int mode)
         diff = timezone;
         xtime.tv_sec += diff;
         sys2tos = -diff;
-        clock_mode = 1;
     }
     else
     {
@@ -577,32 +578,23 @@ warp_clock (int mode)
         sys2tos = 0;
         clock_mode = 0;
     }
+    clock_mode = mode;
 
     if (diff != 0)
     {
-        PROC *p;
-        struct fifo *fifo;
-        struct shmfile *shm;
-
-        procfs_stmp.tv_sec += diff;
-        for (p = proclist; p != NULL; p = p->gl_next)
-            p->started.tv_sec += diff;
-
-        pipestamp.tv_sec += diff;
-        for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
-        {
-            fifo->mtime.tv_sec += diff;
-            fifo->ctime.tv_sec += diff;
-        }
-
-        shmfs_stmp.tv_sec += diff;
-        for (shm = shmroot; shm != NULL; shm = shm->next)
-        {
-            shm->mtime.tv_sec += diff;
-            shm->ctime.tv_sec += diff;
-        }
+#ifndef NO_RAMFS
+        ramfs_warp_clock(diff);
+#endif
+        procfs_warp_clock(diff);
+        pipefs_warp_clock(diff);
+        shmfs_warp_clock(diff);
 
         /* The timestamps of the bios devices are a mess anyway.  */
+        /*
+         * FIXME: external filesystem will still report a wrong timestamp
+         * on the root directory, because they were loaded before
+         * tzinit was called to set the correct timezone
+         */
     }
 
     /* Set timestamp and datestamp correctly. */

@@ -616,13 +616,13 @@ sys_f_cntl (short fd, long arg, short cmd)
 		}
 		case FSTAT:
 		{
-			TRACE (("Fcntl FSTAT (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name (&(f->fc)), r));
+			TRACE (("Fcntl FSTAT (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_fsname(f->fc.fs), r));
 			return sys__ffstat_1_12 (f, (XATTR *) arg);
 		}
 		case FSTAT64:
 		{
 			TRACE (("Fcntl FSTAT64"));
-			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name(&(f->fc)), r));
+			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_fsname(f->fc.fs), r));
 			return sys__ffstat_1_16 (f, (struct stat *) arg);
 		}
 		case FUTIME:

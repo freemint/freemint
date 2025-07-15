@@ -46,7 +46,8 @@ extern FILESYS ramfs_filesys;
  * exported functions
  */
 
-void ramfs_init (void);
+void ramfs_init(void);
+void ramfs_warp_clock(long diff);
 
 
 # endif /* _ramfs_h */

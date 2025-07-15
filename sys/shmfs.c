@@ -57,8 +57,8 @@ static long	_cdecl shm_ioctl	(FILEPTR *f, int mode, void *buf);
 static long	_cdecl shm_datime	(FILEPTR *f, ushort *time, int flag);
 static long	_cdecl shm_close	(FILEPTR *f, int pid);
 
-SHMFILE *shmroot = NULL;
-struct timeval shmfs_stmp;
+static SHMFILE *shmroot = NULL;
+static struct timeval shmfs_stmp;
 
 void
 shmfs_init (void)
@@ -793,4 +793,17 @@ shm_close (FILEPTR *f, int pid)
 	}
 	
 	return E_OK;
+}
+
+
+void shmfs_warp_clock(long diff)
+{
+	struct shmfile *shm;
+
+	shmfs_stmp.tv_sec += diff;
+	for (shm = shmroot; shm != NULL; shm = shm->next)
+	{
+		shm->mtime.tv_sec += diff;
+		shm->ctime.tv_sec += diff;
+	}
 }

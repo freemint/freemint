@@ -5981,12 +5981,12 @@ fatfs_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->mode = S_IFLNK | 0777;
 	}
 
-	xattr->mtime	= le2cpu16 (c->info.time);
-	xattr->mdate	= le2cpu16 (c->info.date);
-	xattr->atime	= xattr->mtime;
-	xattr->adate	= c->info.adate ? le2cpu16 (c->info.adate) : xattr->mdate;
-	xattr->ctime	= c->info.ctime ? le2cpu16 (c->info.ctime) : xattr->mtime;
-	xattr->cdate	= c->info.cdate ? le2cpu16 (c->info.cdate) : xattr->mdate;
+	xattr->mtime.time	= le2cpu16 (c->info.time);
+	xattr->mtime.date	= le2cpu16 (c->info.date);
+	xattr->atime.time	= xattr->mtime.time;
+	xattr->atime.date	= c->info.adate ? le2cpu16 (c->info.adate) : xattr->mtime.date;
+	xattr->ctime.time	= c->info.ctime ? le2cpu16 (c->info.ctime) : xattr->mtime.time;
+	xattr->ctime.date	= c->info.cdate ? le2cpu16 (c->info.cdate) : xattr->mtime.date;
 	xattr->attr	= c->info.attr & FA_TOSVALID;
 
 	FAT_DEBUG (("fatfs_getxattr: return ok"));

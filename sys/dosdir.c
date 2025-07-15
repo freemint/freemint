@@ -686,8 +686,8 @@ sys_f_sfirst (const char *path, int attrib)
 		}
 		else
 		{
-			dta->dta_time = xattr.mtime;
-			dta->dta_date = xattr.mdate;
+			dta->dta_time = xattr.mtime.time;
+			dta->dta_date = xattr.mtime.date;
 		}
 
 		strncpy (dta->dta_name, slash, TOS_NAMELEN-1);
@@ -930,8 +930,8 @@ baderror:
 	}
 	else
 	{
-		dta->dta_time = xattr.mtime;
-		dta->dta_date = xattr.mdate;
+		dta->dta_time = xattr.mtime.time;
+		dta->dta_date = xattr.mtime.date;
 	}
 
 	dta->dta_attrib = xattr.attr;

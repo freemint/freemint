@@ -691,15 +691,15 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 		stat->rdev	= xattr.rdev;
 		
 		stat->atime.high_time	= 0;
-		stat->atime.time	= XATTRL_TD(xattr,a);
+		stat->atime.time = GET_XATTR_TD(&xattr, a);
 		stat->atime.nanoseconds	= 0;
 		
 		stat->mtime.high_time	= 0;
-		SHORT2LONG(xattr.mtime, xattr.mdate, stat->mtime.time);
+		stat->mtime.time = GET_XATTR_TD(&xattr, m);
 		stat->mtime.nanoseconds	= 0;
 		
 		stat->ctime.high_time	= 0;
-		SHORT2LONG(xattr.ctime, xattr.cdate, stat->ctime.time);
+		stat->ctime.time = GET_XATTR_TD(&xattr, c);
 		stat->ctime.nanoseconds	= 0;
 		
 		stat->size	= xattr.size;

@@ -373,13 +373,13 @@ uni_getxattr (fcookie *fc, XATTR *xattr)
 
 	if (u)
 	{
-		xattr->mtime = xattr->atime = xattr->ctime = u->ctime;
-		xattr->mdate = xattr->adate = xattr->cdate = u->cdate;
+		xattr->mtime.time = xattr->atime.time = xattr->ctime.time = u->ctime;
+		xattr->mtime.date = xattr->atime.date = xattr->ctime.date = u->cdate;
 	}
 	else
 	{
-		xattr->mtime = xattr->atime = xattr->ctime = timestamp;
-		xattr->mdate = xattr->adate = xattr->cdate = datestamp;
+		xattr->mtime.time = xattr->atime.time = xattr->ctime.time = timestamp;
+		xattr->mtime.date = xattr->atime.date = xattr->ctime.date = datestamp;
 	}
 
 	return E_OK;
@@ -1096,26 +1096,4 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 
 	DEBUG (("uni_fscntl(%s, cmd %x, arg %lx) fail!", name, cmd, arg));
 	return ENOSYS;
-}
-
-
-const char *fsname(FILESYS *fs)
-{
-	if (fs == &bios_filesys)
-		return "dev";
-	if (fs == &pipe_filesys)
-		return "pipe";
-	if (fs == &proc_filesys)
-		return "proc";
-#ifndef NO_RAMFS
-	if (fs == &ramfs_filesys)
-		return "ram";
-#endif
-	if (fs == &shm_filesys)
-		return "shm";
-#if WITH_KERNFS
-	if (fs == &kern_filesys)
-		return "kern";
-#endif
-	return "???";
 }

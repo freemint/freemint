@@ -549,7 +549,15 @@ static SUPER *super = &super_struct;
 static COOKIE root_inode;
 static COOKIE *Root = &root_inode;
 
-# define CURRENT_TIME	xtime.tv_sec
+/*
+ * treat is as unsigned, assuming that current time
+ * can never be from before 1970
+ */
+INLINE u_int32_t current_time_utc(void)
+{
+	return xtime.tv_sec;
+}
+#define CURRENT_TIME_UTC current_time_utc()
 
 /* END global data & access implementation */
 /****************************************************************************/
@@ -830,9 +838,9 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 		s->uid		= IS_SETUID (d) ? d->stat.uid : sys_pgetuid ();
 		s->gid		= IS_SETGID (d) ? d->stat.gid : sys_pgetgid ();
 		s->rdev		= d->stat.rdev;
-		s->atime.time	= CURRENT_TIME;
-		s->mtime.time	= CURRENT_TIME;
-		s->ctime.time	= CURRENT_TIME;
+		s->atime.time	= CURRENT_TIME_UTC;
+		s->mtime.time	= CURRENT_TIME_UTC;
+		s->ctime.time	= CURRENT_TIME_UTC;
 		/* size		= 0; */
 		/* blocks	= 0; */
 		s->blksize	= BLOCK_SIZE;
@@ -1003,9 +1011,9 @@ ramfs_init (void)
 	/* uid		= 0; */
 	/* gid		= 0; */
 	s->rdev		= RAM_DRV;
-	s->atime.time	= CURRENT_TIME;
-	s->mtime.time	= CURRENT_TIME;
-	s->ctime.time	= CURRENT_TIME;
+	s->atime.time	= CURRENT_TIME_UTC;
+	s->mtime.time	= CURRENT_TIME_UTC;
+	s->ctime.time	= CURRENT_TIME_UTC;
 	/* size		= 0; */
 	/* blocks	= 0; */
 	s->blksize	= BLOCK_SIZE;
@@ -1023,6 +1031,16 @@ ramfs_init (void)
 	boot_print (MSG_BOOT);
 	boot_print (MSG_GREET);
 	boot_print ("\r\n");
+}
+
+void ramfs_warp_clock(long diff)
+{
+	STAT *s;
+
+	s = &(Root->stat);
+	s->atime.time += diff;
+	s->mtime.time += diff;
+	s->ctime.time += diff;
 }
 
 /* END init & configuration part */
@@ -1211,7 +1229,7 @@ ram_chown (fcookie *fc, int uid, int gid)
 	if (uid != -1) c->stat.uid = uid;
 	if (gid != -1) c->stat.gid = gid;
 
-	c->stat.ctime.time = CURRENT_TIME;
+	c->stat.ctime.time = CURRENT_TIME_UTC;
 
 	return E_OK;
 }
@@ -1960,7 +1978,7 @@ __FUTIME (COOKIE *rc, ulong *timeptr)
 		return EACCES;
 	}
 
-	rc->stat.ctime.time = CURRENT_TIME;
+	rc->stat.ctime.time = CURRENT_TIME_UTC;
 
 	if (timeptr)
 	{
@@ -1969,7 +1987,7 @@ __FUTIME (COOKIE *rc, ulong *timeptr)
 	}
 	else
 	{
-		register long time = rc->stat.ctime.time;
+		time32_t time = rc->stat.ctime.time;
 
 		rc->stat.atime.time = time;
 		rc->stat.mtime.time = time;
@@ -2271,7 +2289,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 	}
 
 leave:
-	c->stat.mtime.time = CURRENT_TIME;
+	c->stat.mtime.time = CURRENT_TIME_UTC;
 
 	return (bytes - todo);
 }
@@ -2385,7 +2403,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		|| IS_IMMUTABLE (c)))
 	{
 		/* update time/datestamp */
-		c->stat.atime.time = CURRENT_TIME;
+		c->stat.atime.time = CURRENT_TIME_UTC;
 	}
 
 	return done;
@@ -2622,7 +2640,7 @@ ram_datime (FILEPTR *f, ushort *time, int flag)
 
 			c->stat.mtime.time = *(ulong *) time;
 			c->stat.atime.time = c->stat.mtime.time;
-			c->stat.ctime.time = CURRENT_TIME;
+			c->stat.ctime.time = CURRENT_TIME_UTC;
 
 			break;
 		}

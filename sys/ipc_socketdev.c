@@ -358,12 +358,12 @@ so_fstat_old (FILEPTR *f, XATTR *xattr)
 	xattr->size	= 0;
 	xattr->blksize	= 1024;
 	xattr->nblocks	= 0;
-	xattr->mtime	= so->time;
-	xattr->mdate	= so->date;
-	xattr->atime	= timestamp;
-	xattr->adate	= datestamp;
-	xattr->ctime	= so->time;
-	xattr->cdate	= so->date;
+	xattr->mtime.time	= so->time;
+	xattr->mtime.date	= so->date;
+	xattr->atime.time	= timestamp;
+	xattr->atime.date	= datestamp;
+	xattr->ctime.time	= so->time;
+	xattr->ctime.date	= so->date;
 	xattr->attr	= 0;
 
 	xattr->reserved2 = 0;

@@ -495,8 +495,8 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 				return r;
 			}
 			
-			timeptr[0] = ni->attr.atime;
-			timeptr[1] = ni->attr.adate;
+			timeptr[0] = ni->attr.atime.time;
+			timeptr[1] = ni->attr.atime.date;
 			
 			break;
 		}

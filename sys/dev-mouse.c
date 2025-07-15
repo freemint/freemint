@@ -273,8 +273,8 @@ mouse_read (FILEPTR *f, char *buf, long nbytes)
 	{
 		struct bios_file *b = (struct bios_file *) f->fc.index;
 		
-		b->xattr.atime = timestamp;
-		b->xattr.adate = datestamp;
+		b->xattr.atime.time = timestamp;
+		b->xattr.atime.date = datestamp;
 	}
 	
 	return count;

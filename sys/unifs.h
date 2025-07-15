@@ -15,7 +15,6 @@
 
 extern FILESYS uni_filesys;
 
-const char *fsname(FILESYS *fs);
 FILESYS *get_filesys (int);
 void unifs_init (void);
 

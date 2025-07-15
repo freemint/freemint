@@ -25,10 +25,8 @@ typedef struct shmfile
 	MEMREGION *reg;
 } SHMFILE;
 
-extern struct timeval shmfs_stmp;
-extern SHMFILE *shmroot;
-
-void shmfs_init (void);
+void shmfs_init(void);
+void shmfs_warp_clock(long diff);
 
 extern FILESYS shm_filesys;
 

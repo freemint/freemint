@@ -38,7 +38,7 @@ struct timeval64
 typedef struct time TIME;
 
 /**
- * DONT KNOW YET. PLEASE FILLOUT.
+ * Structure used to store file related timestamps of struct stat
  */
 struct time
 {
@@ -54,40 +54,38 @@ struct time
 
 # ifdef __KERNEL__
 
+/*
+ * Macros used to get/set the time & date fields of
+ * struct xattr.
+ * Note that, although these are broken down into two shorts,
+ * most of the time they just contain a long value of a unix
+ * timestamp (however in local time, not UTC)
+ */
+#define SET_XATTR_TD(a,x,ut)			\
+{						\
+	(a)->__CONCAT(x,time).time32 = ut;	\
+}
+
+#define GET_XATTR_TD(a,x) ((a)->__CONCAT(x,time).time32)
+
 #define dta_UTC_local_dos(dta,xattr,x)					\
 {									\
 	union { ushort s[2]; ulong l;} data;				\
 									\
 	/* UTC -> localtime -> DOS style */				\
-	data.s[0]	= xattr.__CONCAT(x,time);			\
-	data.s[1]	= xattr.__CONCAT(x,date);			\
-	data.l		= dostime(data.l - timezone);			\
+	data.l = GET_XATTR_TD(&xattr, x);			\
+	data.l = dostime(data.l - timezone);			\
 	dta->dta_time	= data.s[0];					\
 	dta->dta_date	= data.s[1];					\
 }
 
 #define xtime_to_local_dos(a,x)				\
 {							\
-	union { ushort s[2]; ulong l;} data;		\
-	data.s[0] = a->__CONCAT(x,time);		\
-	data.s[1] = a->__CONCAT(x,date);		\
-	data.l = dostime(data.l - timezone);		\
-	a->__CONCAT(x,time) = data.s[0];		\
-	a->__CONCAT(x,date) = data.s[1];		\
+	u_int32_t data;		\
+	data = GET_XATTR_TD(a, x);		\
+	data = dostime(data - timezone);		\
+	SET_XATTR_TD(a, x, data);		\
 }
-
-#define SET_XATTR_TD(a,x,ut)			\
-{						\
-	union { ushort s[2]; ulong l;} data;	\
-	data.l = ut;				\
-	a->__CONCAT(x,time) = data.s[0];	\
-	a->__CONCAT(x,date) = data.s[1];	\
-}
-
-#define XATTRL_TD(a,x) (((unsigned long)a.__CONCAT(x,time) << 16) | a.__CONCAT(x,date))
-#define XATTRP_TD(a,x) (((unsigned long)a->__CONCAT(x,time) << 16) | a->__CONCAT(x,date))
-
-#define SHORT2LONG(a,b,c) { union { long l; short s[2]; } val; val.s[0] = a; val.s[1] = b; c = val.l; }
 
 /**
  * Structure defined by POSIX.1b to be like a timeval.

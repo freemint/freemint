@@ -1295,3 +1295,13 @@ proc_close (FILEPTR *f, int pid)
 	
 	return E_OK;
 }
+
+
+void procfs_warp_clock(long diff)
+{
+	PROC *p;
+
+	procfs_stmp.tv_sec += diff;
+	for (p = proclist; p != NULL; p = p->gl_next)
+		p->started.tv_sec += diff;
+}

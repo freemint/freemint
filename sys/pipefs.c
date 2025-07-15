@@ -160,8 +160,8 @@ struct pipe
 	char	buf[PIPESIZ];	/* pipe data */
 };
 
-struct fifo *piperoot;
-struct timeval pipestamp;
+static struct fifo *piperoot;
+static struct timeval pipestamp;
 
 static long _cdecl
 pipe_root (int drv, fcookie *fc)
@@ -1744,5 +1744,18 @@ pipe_unselect (FILEPTR *f, long proc, int mode)
 			if (is_terminal (f) && !(f->flags & O_HEAD))
 				this->tty->wsel = 0;
 		}
+	}
+}
+
+
+void pipefs_warp_clock(long diff)
+{
+	struct fifo *fifo;
+
+	pipestamp.tv_sec += diff;
+	for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
+	{
+		fifo->mtime.tv_sec += diff;
+		fifo->ctime.tv_sec += diff;
 	}
 }

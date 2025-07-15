@@ -636,17 +636,17 @@ sort_by_date(struct xattr *x1, struct xattr *x2)
 	 * return  1 if x1 is less (older, before) than x2
 	 * return  0 if x1 and x2 has exact same date.
 	 */
-	if ((tmp = ((x1->mdate >> 9) & 127) - ((x2->mdate >> 9) & 127) )) /* Year */
+	if ((tmp = ((x1->mtime.date >> 9) & 127) - ((x2->mtime.date >> 9) & 127) )) /* Year */
 		return (tmp > 0) ? 1 : -1;
-	if ((tmp = ((x1->mdate >> 5) & 15) - ((x2->mdate >> 5) & 15) )) 	/* Month */
+	if ((tmp = ((x1->mtime.date >> 5) & 15) - ((x2->mtime.date >> 5) & 15) )) 	/* Month */
 		return tmp > 0 ? 1 : -1;
-	if ((tmp = (x1->mdate & 31) - (x2->mdate & 31)))			/* day */
+	if ((tmp = (x1->mtime.date & 31) - (x2->mtime.date & 31)))			/* day */
 		return tmp > 0 ? 1 : -1;
-	if ((tmp = ((x1->mtime >> 11) & 31) - ((x2->mtime >> 11) & 31)))	/* hour */
+	if ((tmp = ((x1->mtime.time >> 11) & 31) - ((x2->mtime.time >> 11) & 31)))	/* hour */
 		return tmp > 0 ? 1 : -1;
-	if ((tmp = ((x1->mtime >> 5) & 63) - ((x2->mtime >> 5) & 63)))		/* min */
+	if ((tmp = ((x1->mtime.time >> 5) & 63) - ((x2->mtime.time >> 5) & 63)))		/* min */
 		return tmp > 0 ? 1 : -1;
-	if ((tmp = (x1->mtime & 63) - (x2->mtime & 63)))			/* sec */
+	if ((tmp = (x1->mtime.time & 63) - (x2->mtime.time & 63)))			/* sec */
 		return tmp > 0 ? 1 : -1;
 
 	return 0;
@@ -1462,20 +1462,20 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 					s += l + 1;
 
-					l = sprintf(s, 20, " %02d:%02d:%02d", (xat.mtime >> 11) & 31, (xat.mtime >> 5) & 63, xat.mtime & 63);
+					l = sprintf(s, 20, " %02d:%02d:%02d", (xat.mtime.time >> 11) & 31, (xat.mtime.time >> 5) & 63, xat.mtime.time & 63);
 					s += l + 1;
 
 					{
 						unsigned short year, month, day;
 
-						year = ((xat.mdate >> 9) & 127) + 1980;
+						year = ((xat.mtime.date >> 9) & 127) + 1980;
 
 
-						month = ((xat.mdate >> 5) & 15) - 1;
+						month = ((xat.mtime.date >> 5) & 15) - 1;
 						if (month < 0 || month > 11)
 							month = 0;
 
-						day = xat.mdate & 31;
+						day = xat.mtime.date & 31;
 
 						l = sprintf(s, 20, " %02d %s %04d", day, months[month], year);
 					}

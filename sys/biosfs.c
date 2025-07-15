@@ -318,7 +318,8 @@ rsvf_ioctl (int f, void *arg, int mode)
 #define IS_FD_ENTRY(fc, p) \
 	((fc)->index > 0 && (fc)->index <= ((p)->p_fd->nfiles - MIN_HANDLE))
 
-struct bios_file *broot, *bdevlast;
+static struct bios_file *broot;
+static struct bios_file *bdevlast;
 
 /* a file pointer for BIOS device 1, provided only for insurance
  * in case a Bconmap happens and we can't allocate a new FILEPTR;
@@ -326,13 +327,13 @@ struct bios_file *broot, *bdevlast;
  * way.
  */
 
-FILEPTR *defaultaux;
+static FILEPTR *defaultaux;
 
 /* ts: a xattr field used for the root directory, 'cause there's no
  * bios_file structure for it.
  */
-XATTR rxattr;
-XATTR fdxattr;
+static XATTR rxattr;
+static XATTR fdxattr;
 
 /* ts: a small utility function to set up a xattr structure
  */
@@ -348,8 +349,9 @@ _set_xattr (XATTR *xp, ushort mode, int rdev)
 	xp->nlink	= 1;
 	xp->blksize	= 1024L;
 
-	xp->mtime = xp->atime = xp->ctime = timestamp;
-	xp->mdate = xp->adate = xp->cdate = datestamp;
+	xp->mtime.time = timestamp;
+	xp->mtime.date = datestamp;
+	xp->atime = xp->ctime = xp->mtime;
 
 	/* root directory only */
 	if (S_ISDIR(mode))
@@ -1330,8 +1332,8 @@ bios_twrite (FILEPTR *f, const char *buf, long bytes)
 
 	if (ret > 0)
 	{
-		b->xattr.mtime = b->xattr.atime = timestamp;
-		b->xattr.mdate = b->xattr.adate = datestamp;
+		b->xattr.mtime.time = b->xattr.atime.time = timestamp;
+		b->xattr.mtime.date = b->xattr.atime.date = datestamp;
 	}
 
 	return ret;
@@ -1370,8 +1372,8 @@ bios_tread (FILEPTR *f, char *buf, long bytes)
 
 	if (ret > 0)
 	{
-		b->xattr.atime = timestamp;
-		b->xattr.adate = datestamp;
+		b->xattr.atime.time = timestamp;
+		b->xattr.atime.date = datestamp;
 	}
 
 	return ret;
@@ -1460,8 +1462,8 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 		}
 		if (ret > 0)
 		{
-			b->xattr.mtime = b->xattr.atime = timestamp;
-			b->xattr.mdate = b->xattr.adate = datestamp;
+			b->xattr.mtime.time = b->xattr.atime.time = timestamp;
+			b->xattr.mtime.date = b->xattr.atime.date = datestamp;
 		}
 		return p - buf;
 	}
@@ -1644,8 +1646,8 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 
 			if (b)
 			{
-				b->xattr.mtime = b->xattr.atime = timestamp;
-				b->xattr.mdate = b->xattr.adate = datestamp;
+				b->xattr.mtime.time = b->xattr.atime.time = timestamp;
+				b->xattr.mtime.date = b->xattr.atime.date = datestamp;
 			}
 		}
 	/* if we're blocking loop until everything is written */
@@ -1822,8 +1824,8 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 
 		if (b)
 		{
-			b->xattr.atime = timestamp;
-			b->xattr.adate = datestamp;
+			b->xattr.atime.time = timestamp;
+			b->xattr.atime.date = datestamp;
 		}
 	}
 	if (!buf)
@@ -1861,8 +1863,8 @@ bios_nwrite (FILEPTR *f, const char *buf, long bytes)
 	{
 		struct bios_file *b = (struct bios_file *) f->fc.index;
 
-		b->xattr.mtime = b->xattr.atime = timestamp;
-		b->xattr.mdate = b->xattr.adate = datestamp;
+		b->xattr.mtime.time = b->xattr.atime.time = timestamp;
+		b->xattr.mtime.date = b->xattr.atime.date = datestamp;
 	}
 
 	return ret;
@@ -1886,8 +1888,8 @@ bios_nread(FILEPTR *f, char *buf, long bytes)
 	{
 		struct bios_file *b = (struct bios_file *) f->fc.index;
 
-		b->xattr.atime = timestamp;
-		b->xattr.adate = datestamp;
+		b->xattr.atime.time = timestamp;
+		b->xattr.atime.date = datestamp;
 	}
 
 	return ret;

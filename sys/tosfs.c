@@ -821,8 +821,8 @@ around:
 	if (!xattr->nblocks && (ti->attr & FA_DIR))
 		xattr->nblocks = 1;	/* no dir takes 0 blocks... */
 	
-	xattr->mdate = xattr->cdate = xattr->adate = ti->date;
-	xattr->mtime = xattr->ctime = xattr->atime = ti->time;
+	xattr->mtime.date = xattr->ctime.date = xattr->atime.date = ti->date;
+	xattr->mtime.time = xattr->ctime.time = xattr->atime.time = ti->time;
 	xattr->mode = (ti->attr & FA_DIR) ? (S_IFDIR | DEFAULT_DIRMODE) :
 			 (S_IFREG | DEFAULT_MODE);
 
