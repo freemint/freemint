@@ -139,11 +139,6 @@ fattr2xattr (fattr *fa, XATTR *xa)
 	SET_XATTR_TD(xa,m,fa->mtime.seconds);
 	SET_XATTR_TD(xa,a,fa->atime.seconds);
 	SET_XATTR_TD(xa,c,fa->ctime.seconds);
-#if 0
-	*((long *) &(xa->mtime)) = fa->mtime.seconds;
-	*((long *) &(xa->atime)) = fa->atime.seconds;
-	*((long *) &(xa->ctime)) = fa->ctime.seconds;
-#endif
 	
 # if 0
 	if ((xa->mode & S_IFMT) == S_IFLNK)

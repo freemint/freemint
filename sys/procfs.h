@@ -10,7 +10,7 @@
 # include "mint/file.h"
 
 
-extern struct timeval procfs_stmp;
+extern struct timeval64 procfs_stmp;
 
 void procfs_init(void);
 void procfs_warp_clock(long diff);

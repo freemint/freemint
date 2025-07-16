@@ -387,16 +387,14 @@ so_fstat (FILEPTR *f, struct stat *st)
 	st->gid		= ucr->egid;	/* group ID of the file's group */
 	st->rdev	= 0;		/* device type */
 
-	st->atime.high_time = 0;
-	st->atime.time	= xtime.tv_sec;
+	st->atime.time64	= xtime64.tv_sec;
 	st->atime.nanoseconds = 0;
 
 	st->mtime.high_time = 0;
-	st->mtime.time	= unixtime (so->time, so->date) + timezone;;
+	st->mtime.time	= unixtime (so->time, so->date) + timezone;
 	st->mtime.nanoseconds = 0;
 
-	st->ctime.high_time = 0;
-	st->ctime.time	= st->mtime.time;
+	st->ctime.time64	= st->mtime.time64;
 	st->ctime.nanoseconds = 0;
 
 	st->size	= 0;		/* file size, in bytes */

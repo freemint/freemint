@@ -372,11 +372,6 @@ m_getxattr (fcookie *fc, XATTR *xattr)
 	SET_XATTR_TD(xattr,m,rip.i_mtime);
 	SET_XATTR_TD(xattr,a,rip.i_atime);
 	SET_XATTR_TD(xattr,c,rip.i_ctime);
-#if 0
-	*((long *) &(xattr->mtime)) = rip.i_mtime;
-	*((long *) &(xattr->atime)) = rip.i_atime;
-	*((long *) &(xattr->ctime)) = rip.i_ctime;
-#endif
 	
 	xattr->reserved2 = 0;
 	xattr->reserved3[0] = 0;

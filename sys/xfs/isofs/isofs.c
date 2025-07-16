@@ -748,9 +748,6 @@ isofs_getxattr(fcookie *fc, XATTR *xattr)
 	xattr->size 			= 
 	xattr->blksize			= 
 	xattr->nblocks			= /* number of blocks of size 'blksize' */
-	*((long *) &(xattr->mtime))	= 
-	*((long *) &(xattr->atime))	= 
-	*((long *) &(xattr->ctime))	= 
 # endif
 	
 	/* fake attr field a little bit */

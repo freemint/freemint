@@ -198,7 +198,8 @@ init_proc(void)
 	SIGACTION(rootproc, SIGTSTP).sa_handler = SIG_IGN;
 
 	/* set up some more per-process variables */
-	rootproc->started = xtime;
+	rootproc->started.tv_sec = xtime64.tv_sec;
+	rootproc->started.tv_usec = xtime64.tv_usec;
 
 	if (has_bconmap)
 		/* init_xbios not happened yet */

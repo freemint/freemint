@@ -777,7 +777,7 @@ m_datime (FILEPTR *f, ushort *timeptr, int flag)
 			if (super_ptr [f->fc.dev]->s_flags & MS_RDONLY)
 				return EROFS;
 			
-			rip.i_mtime = *((long *) timeptr);
+			rip.i_mtime = *((ulong *) timeptr);
 			
 			rip.i_atime = rip.i_mtime;
 			rip.i_ctime = CURRENT_TIME;

@@ -86,12 +86,12 @@ static long	_cdecl proc_close	(FILEPTR *f, int pid);
 static long	_cdecl proc_readlabel	(fcookie *dir, char *name, int namelen);
 
 
-struct timeval procfs_stmp;
+struct timeval64 procfs_stmp;
 
 void
 procfs_init (void)
 {
-	procfs_stmp = xtime;
+	procfs_stmp = xtime64;
 }
 
 
@@ -287,7 +287,7 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->size = xattr->nblocks = 0;
 		xattr->nlink = 2;
 
-		SET_XATTR_TD(xattr,a,xtime.tv_sec);
+		SET_XATTR_TD(xattr,a,xtime64.tv_sec);
 		SET_XATTR_TD(xattr,m,procfs_stmp.tv_sec);
 		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
@@ -303,7 +303,7 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->gid = p->p_cred->ucr->egid;
 	xattr->size = xattr->nblocks = memused (p);
 
-	SET_XATTR_TD(xattr,a,xtime.tv_sec);
+	SET_XATTR_TD(xattr,a,xtime64.tv_sec);
 	SET_XATTR_TD(xattr,m,p->started.tv_sec);
 	SET_XATTR_TD(xattr,c,p->started.tv_sec);
 	xattr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
@@ -343,11 +343,9 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 		ptr->dev = ptr->rdev = PROCDRV;
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		
-		ptr->atime.high_time = 0;
-		ptr->atime.time = xtime.tv_sec;
+		ptr->atime.time64 = xtime64.tv_sec;
 		
-		ptr->mtime.high_time = 0;
-		ptr->mtime.time = procfs_stmp.tv_sec;
+		ptr->mtime.time64 = procfs_stmp.tv_sec;
 		ptr->mtime.nanoseconds = 0;	
 		
 		ptr->ctime.high_time = 0;
@@ -365,8 +363,7 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 	ptr->size = ptr->blocks = memused(p);
 	ptr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 
-	ptr->atime.high_time = 0;
-	ptr->atime.time = xtime.tv_sec;
+	ptr->atime.time64 = xtime64.tv_sec;
 	ptr->atime.nanoseconds = 0;	
 	
 	ptr->mtime.high_time = 0;

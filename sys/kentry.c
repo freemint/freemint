@@ -57,7 +57,7 @@
 # include "semaphores.h"	/* semaphore_* */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
-# include "time.h"		/* xtime */
+# include "time.h"		/* xtime64 */
 # include "timeout.h"		/* nap, addtimeout, canceltimeout, addroottimeout, cancelroottimeout */
 # include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */

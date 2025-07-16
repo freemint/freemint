@@ -33,6 +33,20 @@
 # include "proc.h"
 
 
+# define SHMNAME_MAX 15
+
+typedef struct shmfile
+{
+	struct shmfile *next;
+	char filename[SHMNAME_MAX+1];
+	int uid, gid;
+	struct timeval64 mtime;
+	struct timeval64 ctime;
+	unsigned mode;
+	int inuse;
+	MEMREGION *reg;
+} SHMFILE;
+
 static long	_cdecl shm_root		(int drv, fcookie *fc);
 static long	_cdecl shm_creat	(fcookie *dir, const char *name, unsigned mode, int attrib, fcookie *fc);
 static long	_cdecl shm_lookup	(fcookie *dir, const char *name, fcookie *fc);
@@ -58,12 +72,12 @@ static long	_cdecl shm_datime	(FILEPTR *f, ushort *time, int flag);
 static long	_cdecl shm_close	(FILEPTR *f, int pid);
 
 static SHMFILE *shmroot = NULL;
-static struct timeval shmfs_stmp;
+static struct timeval64 shmfs_stmp;
 
 void
 shmfs_init (void)
 {
-	shmfs_stmp = xtime;
+	shmfs_stmp = xtime64;
 }
 
 
@@ -205,12 +219,10 @@ shm_stat64 (fcookie *fc, STAT *ptr)
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		ptr->nlink = 1;
 		
-		ptr->atime.high_time = 0;
-		ptr->atime.time	= xtime.tv_sec;
+		ptr->atime.time64	= xtime64.tv_sec;
 		ptr->atime.nanoseconds = 0;
 		
-		ptr->mtime.high_time = 0;
-		ptr->mtime.time	= shmfs_stmp.tv_sec;
+		ptr->mtime.time64	= shmfs_stmp.tv_sec;
 		ptr->mtime.nanoseconds = 0;
 		
 		ptr->ctime.high_time = 0;
@@ -230,16 +242,13 @@ shm_stat64 (fcookie *fc, STAT *ptr)
 	ptr->gid = s->gid;
 	ptr->rdev = PROC_RDEV_BASE | 0;
 	
-	ptr->atime.high_time = 0;
-	ptr->atime.time	= xtime.tv_sec;
+	ptr->atime.time64	= xtime64.tv_sec;
 	ptr->atime.nanoseconds = 0;
 	
-	ptr->mtime.high_time = 0;
-	ptr->mtime.time	= s->mtime.tv_sec;
+	ptr->mtime.time64	= s->mtime.tv_sec;
 	ptr->mtime.nanoseconds = 0;
 	
-	ptr->ctime.high_time = 0;
-	ptr->ctime.time	= s->ctime.tv_sec;
+	ptr->ctime.time64	= s->ctime.tv_sec;
 	ptr->ctime.nanoseconds = 0;
 	
 	if (s->reg)
@@ -336,7 +345,7 @@ shm_remove (fcookie *dir, const char *name)
 		free_region (s->reg);
 	
 	kfree(s);
-	shmfs_stmp = xtime;
+	shmfs_stmp = xtime64;
 	
 	return E_OK;
 }
@@ -532,7 +541,7 @@ shm_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcooki
 	s->mode = mode;
 	s->next = shmroot;
 	s->reg = 0;
-	s->mtime = s->ctime = xtime;
+	s->mtime = s->ctime = xtime64;
 	shmroot = s;
 	
 	fc->fs = &shm_filesys;
@@ -587,7 +596,7 @@ shm_write(FILEPTR *f, const char *buf, long nbytes)
 	}
 	
 	f->pos += bytes_written;
-	s->mtime = xtime;
+	s->mtime = xtime64;
 	
 	return bytes_written;
 }
@@ -770,7 +779,7 @@ shm_datime (FILEPTR *f, ushort *timeptr, int flag)
 		}
 		case 1:
 		{
-			s->mtime.tv_sec = *(long *) timeptr;
+			s->mtime.tv_sec = *(ulong *) timeptr;
 			break;
 		}
 		default:

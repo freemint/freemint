@@ -62,10 +62,10 @@ static ulong sys_lastticks;
 # define MICROSECONDS_PER_CLOCK (1000000L / CLOCKS_PER_SEC)
 
 /* The current time in UTC. */
-struct timeval xtime = { 0, 0 };
+struct timeval64 xtime64 = { 0, 0 };
 
 /* The boot time in UTC. */
-struct timeval boottime = { 0, 0 };
+struct timeval64 boottime = { 0, 0 };
 
 /* The timezone that we're living in. */
 struct timezone sys_tz = { 0, 0 };
@@ -195,7 +195,8 @@ do_gettimeofday (struct timeval* tv)
 {
 	quick_synch ();
 
-	*tv = xtime;
+	tv->tv_sec = xtime64.tv_sec;
+	tv->tv_usec = xtime64.tv_usec;
 
 	tv->tv_usec += (192L - timerc) * MICROSECONDS_PER_CLOCK / 192L;
 
@@ -232,7 +233,7 @@ sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 
 	if (tv != NULL)
 	{
-		if (xtime.tv_sec >= 2147483647L - (time32_t)MAX_TZ_OFFSET)
+		if (xtime64.tv_sec >= 2147483647L - (time32_t)MAX_TZ_OFFSET)
 			return EOVERFLOW;
 		return do_gettimeofday (tv);
 	}
@@ -271,14 +272,15 @@ do_settimeofday (struct timeval* tv)
     }
 
     /* The timeval we got is always in UTC */
-    xtime = *tv;
+    xtime64.tv_sec = (u_int32_t)tv->tv_sec;
+    xtime64.tv_usec = tv->tv_usec;
 
     /* Now calculate timestamp and datestamp from that */
-    tos_combined = unix2xbios (xtime.tv_sec - timezone);
+    tos_combined = unix2xbios (xtime64.tv_sec - timezone);
     datestamp = (tos_combined >> 16) & 0xffff;
     timestamp = tos_combined & 0xffff;
 
-    hardtime = unix2xbios (xtime.tv_sec + sys2tos);
+    hardtime = unix2xbios (xtime64.tv_sec + sys2tos);
 
     ROM_Settime (hardtime);
 
@@ -321,7 +323,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
              * instant below but that doesn't hurt.  If a time
              * was supplied it was really in UTC.
              */
-            xtime.tv_sec += (old_timezone - timezone);
+            xtime64.tv_sec += (old_timezone - timezone);
         }
 
         /* Update timestamp and datestamp */
@@ -407,7 +409,7 @@ init_time (void)
 # endif
 
     /* Check if we are already initialized.  */
-    if (xtime.tv_sec != 0)
+    if (xtime64.tv_sec != 0)
         return;
 
     /* Interpolate. */
@@ -464,12 +466,12 @@ init_time (void)
 
     sys_lastticks = *hz_200;
 
-    xtime.tv_sec = unixtime (timestamp, datestamp);
-    xtime.tv_usec = (sys_lastticks % CLOCKS_PER_SEC) * MICROSECONDS_PER_CLOCK
+    xtime64.tv_sec = (u_int32_t)unixtime (timestamp, datestamp);
+    xtime64.tv_usec = (sys_lastticks % CLOCKS_PER_SEC) * MICROSECONDS_PER_CLOCK
         + value * MICROSECONDS_PER_CLOCK / 192L;
 
     /* set booting time */
-    boottime = xtime;
+    boottime = xtime64;
 }
 
 static void
@@ -518,11 +520,21 @@ quick_synch (void)
 
     sys_lastticks = current_ticks;
 
-    xtime.tv_usec += elapsed;
-    if (xtime.tv_usec >= 1000000L)
+    xtime64.tv_usec += elapsed;
+    if (xtime64.tv_usec >= 1000000L)
     {
-        xtime.tv_sec += (xtime.tv_usec / 1000000L);
-        xtime.tv_usec = xtime.tv_usec % 1000000L;
+        /*
+         * avoid expensive operations for common cases
+         */
+        if (xtime64.tv_usec < 2000000L)
+        {
+            xtime64.tv_sec += 1;
+            xtime64.tv_usec -= 1000000L;
+        } else
+        {
+            xtime64.tv_sec += xtime64.tv_usec / 1000000L;
+            xtime64.tv_usec = xtime64.tv_usec % 1000000L;
+        }
     }
 }
 
@@ -535,7 +547,7 @@ synch_timers (void)
     quick_synch ();
 
     /* Now adjust timestamp and datestamp to be in local time.  */
-    tos_combined = unix2xbios (xtime.tv_sec - timezone);
+    tos_combined = unix2xbios (xtime64.tv_sec - timezone);
     datestamp = (tos_combined >> 16) & 0xffff;
     timestamp = tos_combined & 0xffff;
 
@@ -545,7 +557,7 @@ synch_timers (void)
          * changes get lost. That's why this strange piece of code
          * is here.
          */
-        hardtime = unix2xbios (xtime.tv_sec + sys2tos);
+        hardtime = unix2xbios (xtime64.tv_sec + sys2tos);
         ROM_Settime (hardtime);
         hardtime = 0;
     }
@@ -563,18 +575,27 @@ warp_clock (int mode)
     if (mode == clock_mode)
         return;
 
+	/*
+	 * you may think: why this is needed? xtime is an UTC value anyway.
+	 * The reason is simply:
+	 * xtime is only UTC, as long as kernel clock is running in UTC mode.
+	 * When tzinit is called durng boot, and tells us that the hardware clock
+	 * is actually in localtime, we have already read a local time from it
+	 * during initialization. This must be fixed here.
+	 * 
+	 */
     if (clock_mode == 0)
     {
         /* Change it from UTC to local time.  */
         diff = timezone;
-        xtime.tv_sec += diff;
+        xtime64.tv_sec += diff;
         sys2tos = -diff;
     }
     else
     {
         /* Change it back from local time to UTC.  */
         diff = -timezone;
-        xtime.tv_sec += diff;
+        xtime64.tv_sec += diff;
         sys2tos = 0;
         clock_mode = 0;
     }
@@ -606,7 +627,7 @@ sys_b_gettime (void)
 {
     TRACE (("gettime ()"));
 
-    if (!xtime.tv_sec)
+    if (xtime64.tv_sec == 0)
     {
         /* We're not initialized */
         init_time ();
@@ -627,7 +648,7 @@ sys_b_settime (ulong datetime)
 	}
 	else
 	{
-		struct timeval tv = { 0, 0 };
+		struct timeval tv;
 		ushort time, date;
 
 		TRACE (("settime (%li) -> do_settimeofday", datetime));
@@ -642,6 +663,7 @@ sys_b_settime (ulong datetime)
 		date = (datetime >> 16) & 0xffff;
 
 		tv.tv_sec = unixtime (time, date) + timezone;
+		tv.tv_usec = 0;
 
 		do_settimeofday (&tv);
 	}

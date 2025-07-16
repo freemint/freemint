@@ -300,10 +300,11 @@ static DEVDRV devtab =
 /****************************************************************************/
 /* BEGIN global data definition & access implementation */
 
-INLINE ulong
-current_time (void)
+INLINE time64_t current_time (void)
 {
-	return utc.tv_sec;
+	if (KERNEL->xtime64)
+		return KERNEL->xtime64->tv_sec;
+	return (u_int32_t)KERNEL->xtime->tv_sec;
 }
 # define CURRENT_TIME	current_time ()
 
@@ -462,9 +463,9 @@ dummy_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->size 			= 
 	xattr->blksize			= 
 	xattr->nblocks			= /* number of blocks of size 'blksize' */
-	*((long *) &(xattr->mtime))	= 
-	*((long *) &(xattr->atime))	= 
-	*((long *) &(xattr->ctime))	= 
+	SET_XATTR_TD(xattr, m, );
+	SET_XATTR_TD(xattr, a, );
+	SET_XATTR_TD(xattr, c, );
 # endif
 	
 	/* fake attr field a little bit */

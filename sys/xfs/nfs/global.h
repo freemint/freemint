@@ -103,10 +103,11 @@ own_kfree (void *dst)
 /* global specials
  */
 
-INLINE long
-current_time (void)
+INLINE time64_t current_time (void)
 {
-	return utc.tv_sec;
+	if (KERNEL->xtime64)
+		return KERNEL->xtime64->tv_sec;
+	return (u_int32_t)KERNEL->xtime->tv_sec;
 }
 # define CURRENT_TIME	current_time ()
 

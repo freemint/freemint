@@ -46,7 +46,7 @@
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
-# include "time.h"		/* xtime */
+# include "time.h"		/* xtime64 */
 # include "timeout.h"		/* nap, addtimeout, canceltimeout, addroottimeout, cancelroottimeout */
 # include "umemory.h"		/* umalloc, ufree */
 
@@ -122,8 +122,13 @@ struct kerinfo kernelinfo =
 	ikill,
 	iwake,
 	&bio,
-	&xtime,		/* version 1 extension */
-	0,
+	/* version 1 extension */
+/*
+ * ugly hack for xtime here: it must point to struct timeval, not timeval64.
+ * Should eventually go away completely, since it is not used by kernel modules
+ */
+	(const struct timeval *)((const char *)&xtime64 + sizeof(u_int32_t)),
+	&xtime64,
 
 	/* version 2
 	 */

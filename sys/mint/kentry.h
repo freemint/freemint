@@ -432,6 +432,10 @@ struct kentry_fs
 	long _cdecl (*relpath2cookie)(struct proc *p, fcookie *relto, const char *path, char *lastname, fcookie *res, int depth);
 	void _cdecl (*release_cookie)(fcookie *fc);
 };
+/*
+ * ugly hack for xtime here: it must point to struct timeval, not timeval64.
+ * Should eventually go away completely, since it is not used by kernel modules
+ */
 #define DEFAULTS_kentry_fs \
 { \
 	DEFAULT_MODE, \
@@ -443,7 +447,7 @@ struct kentry_fs
 	denylock, \
 	\
 	&bio, \
-	&xtime, \
+	(const struct timeval *)((const char *)&xtime64 + sizeof(u_int32_t)), \
 	\
 	kernel_opendir, \
 	kernel_readdir, \

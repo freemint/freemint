@@ -118,6 +118,7 @@ magics [] =
 	{ "KER_IWAKE",		offsetof(struct kerinfo, iwake)			},
 	{ "KER_BIO",		offsetof(struct kerinfo, bio)			},
 	{ "KER_XTIME",		offsetof(struct kerinfo, xtime)			},
+	{ "KER_XTIME64",	offsetof(struct kerinfo, xtime64)		},
 	{ "KER_KILLGROUP",	offsetof(struct kerinfo, killgroup)		},
 	{ "KER_DMA",		offsetof(struct kerinfo, dma)			},
 

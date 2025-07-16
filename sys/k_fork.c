@@ -188,7 +188,8 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	/* Duplicate cookie for the executable file */
 	dup_cookie (&p2->exe, &p1->exe);
 
-	p2->started = xtime;
+	p2->started.tv_sec = xtime64.tv_sec;
+	p2->started.tv_usec = xtime64.tv_usec;
 
 	/* notify proc extensions */
 	proc_ext_on_fork(p1, flags, p2);
@@ -266,7 +267,7 @@ sys_pvfork (void)
 	assert (p->p_mem && p->p_mem->mem);
 
 	/* set u:\proc time+date */
-	procfs_stmp = xtime;
+	procfs_stmp = xtime64;
 
 	p->ctxt[CURRENT] = p->ctxt[SYSCALL];
 	p->ctxt[CURRENT].regs[0] = 0;		/* child returns a 0 from call */
@@ -342,7 +343,7 @@ sys_pfork (void)
 	assert (p->p_mem && p->p_mem->mem);
 
 	/* set u:\proc time+date */
-	procfs_stmp = xtime;
+	procfs_stmp = xtime64;
 
 	/*
 	 * save the parent's address space

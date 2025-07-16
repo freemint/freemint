@@ -513,7 +513,7 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 			attr.mode = (ulong) -1L;
 			attr.size = (ulong) -1L;
 			
-			attr.atime.seconds = *((long *) timeptr);
+			attr.atime.seconds = *((ulong *) timeptr);
 			attr.atime.useconds = 0;
 			
 			attr.mtime = attr.atime;

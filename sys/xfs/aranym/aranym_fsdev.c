@@ -593,9 +593,9 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 		s->uid		= IS_SETUID (d) ? d->stat.uid : p_getuid ();
 		s->gid		= IS_SETGID (d) ? d->stat.gid : p_getgid ();
 		s->rdev		= d->stat.rdev;
-		s->atime.time	= CURRENT_TIME;
-		s->mtime.time	= CURRENT_TIME;
-		s->ctime.time	= CURRENT_TIME;
+		s->atime.time64	= CURRENT_TIME;
+		s->mtime.time64	= CURRENT_TIME;
+		s->ctime.time64	= CURRENT_TIME;
 		/* size		= 0; */
 		/* blocks	= 0; */
 		s->blksize	= BLOCK_SIZE;
@@ -771,9 +771,9 @@ short arafs_init(short dev)
 	/* uid		= 0; */
 	/* gid		= 0; */
 	s->rdev		= dev;
-	s->atime.time	= CURRENT_TIME;
-	s->mtime.time	= CURRENT_TIME;
-	s->ctime.time	= CURRENT_TIME;
+	s->atime.time64	= CURRENT_TIME;
+	s->mtime.time64	= CURRENT_TIME;
+	s->ctime.time64	= CURRENT_TIME;
 	/* size		= 0; */
 	/* blocks	= 0; */
 	s->blksize	= BLOCK_SIZE;
@@ -918,11 +918,6 @@ ara_getxattr (fcookie *fc, XATTR *xattr)
 	SET_XATTR_TD(xattr,m,stat.mtime.time);
 	SET_XATTR_TD(xattr,a,stat.atime.time);
 	SET_XATTR_TD(xattr,c,stat.ctime.time);
-#if 0
-	*((long *) &(xattr->mtime))	= stat.mtime.time;
-	*((long *) &(xattr->atime))	= stat.atime.time;
-	*((long *) &(xattr->ctime))	= stat.ctime.time;
-#endif
 	/* fake attr field a little bit */
 	if (S_ISDIR (xattr->mode))
 	{

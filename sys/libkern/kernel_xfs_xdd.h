@@ -504,6 +504,7 @@ INLINE long p_sysctl(long *name, unsigned long namelen, void *old, unsigned long
 #define iwake              (*KERNEL->iwake)
 #define bio                (*KERNEL->bio)
 #define utc                (*KERNEL->xtime)
+#define utc64              (*KERNEL->xtime64)
 #define add_rsvfentry      (*KERNEL->add_rsvfentry)
 #define del_rsvfentry      (*KERNEL->del_rsvfentry)
 #define killgroup          (*KERNEL->killgroup)

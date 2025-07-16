@@ -513,7 +513,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		}
 
 		/* set the time/date stamp of u:\proc */
-		procfs_stmp = xtime;
+		procfs_stmp = xtime64;
 
 		if (overlay)
 		{
@@ -1005,7 +1005,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	strcpy(p->name, localname);
 
 	/* set the time/date stamp of u:\proc */
-	procfs_stmp = xtime;
+	procfs_stmp = xtime64;
 
 	if (pret)
 		*pret = p;

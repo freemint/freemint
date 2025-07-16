@@ -500,7 +500,7 @@ bios_root(int drv, fcookie *fc)
 	{
 		fc->fs = &bios_filesys;
 		fc->dev = drv;
-		fc->index = 0L;
+		fc->index = 0;
 		fc->aux = 0;
 		return E_OK;
 	}
@@ -531,7 +531,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 			/* root directory */
 			fc->fs = &bios_filesys;
 			fc->dev = dir->dev;
-			fc->index = 0L;
+			fc->index = 0;
 			return E_OK;
 		}
 		if (isdigit(*name) || *name == '-')

@@ -101,11 +101,6 @@ init_mount_attr (XATTR *ap)
 	SET_XATTR_TD(ap,a,CURRENT_TIME);
 	SET_XATTR_TD(ap,m,CURRENT_TIME);
 	SET_XATTR_TD(ap,c,CURRENT_TIME);
-#if 0	
-	*((long *) &(ap->atime)) = CURRENT_TIME;
-	*((long *) &(ap->mtime)) = CURRENT_TIME;
-	*((long *) &(ap->ctime)) = CURRENT_TIME;
-#endif
 	ap->reserved2 = 0;
 	ap->reserved3[0] = 0;
 	ap->reserved3[1] = 0;

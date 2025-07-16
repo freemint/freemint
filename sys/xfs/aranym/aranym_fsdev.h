@@ -139,7 +139,14 @@ struct super
 # define BLOCK_MIN	2	/* preallocate 1/4 smallblock */
 
 /* kernel current time value */
-# define CURRENT_TIME	KERNEL->xtime->tv_sec
+
+INLINE time64_t current_time (void)
+{
+	if (KERNEL->xtime64)
+		return KERNEL->xtime64->tv_sec;
+	return (u_int32_t)KERNEL->xtime->tv_sec;
+}
+# define CURRENT_TIME	current_time ()
 
 
 extern FILESYS arafs_filesys;

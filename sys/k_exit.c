@@ -232,7 +232,7 @@ terminate(struct proc *pcurproc, short code, short que)
 		SIGACTION(pcurproc, i).sa_handler = SIG_IGN;
 
 	/* finally, reset the time/date stamp for /proc and /sys.  */
-	procfs_stmp = xtime;
+	procfs_stmp = xtime64;
 
 	sleep (que, (long)(unsigned)code);
 

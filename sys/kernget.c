@@ -517,6 +517,7 @@ kern_get_time (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 64;
+	u_int32_t xtime32;
 
 	UNUSED(p);
 	info = kmalloc (sizeof (*info) + len);
@@ -525,9 +526,11 @@ kern_get_time (SIZEBUF **buffer, const struct proc *p)
 
 	synch_timers ();
 
+	xtime32 = xtime64.tv_sec;
+	/* FIXME: need long long ksprintf support for 64bit time */
 	info->len = ksprintf (info->buf, len, "%ld.%06ld %ld.%06ld\n",
-		              xtime.tv_sec, xtime.tv_usec,
-			      xtime.tv_sec - timezone, xtime.tv_usec);
+		              xtime32, xtime64.tv_usec,
+			      xtime32 - timezone, xtime64.tv_usec);
 
 	*buffer = info;
 	return 0;
@@ -957,9 +960,9 @@ get_session_id (const struct proc *p)
 }
 
 INLINE void
-timersub (struct timeval *a, struct timeval *b, struct timeval *result)
+timersub (struct timeval64 *a, struct timeval *b, struct timeval *result)
 {
-	result->tv_sec = a->tv_sec - b->tv_sec;
+	result->tv_sec = a->tv_sec - (u_int32_t)b->tv_sec;
 	result->tv_usec = a->tv_usec - b->tv_usec;
 
 	if (result->tv_usec < 0)
@@ -1023,7 +1026,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, const struct proc *p)
 		ttypgrp = tty->pgrp;
 	}
 
-	timersub (&xtime, &rootproc->started, &starttime);
+	timersub (&xtime64, &rootproc->started, &starttime);
 
 	/* FIXME: The various timeout fields in our file should report
 	 * the number of microseconds that elapse before the timeout

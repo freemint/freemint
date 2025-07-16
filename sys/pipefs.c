@@ -37,6 +37,26 @@
 # include "time.h"
 # include "tty.h"
 
+struct fifo
+{
+# define NAME_MAX 14
+	char	name[NAME_MAX+1]; /* FIFO's name */
+	struct timeval64 mtime;	/* mtime */
+	struct timeval64 ctime;	/* ctime */
+	short	dosflags;	/* DOS flags, e.g. FA_RDONLY, FA_HIDDEN */
+	ushort	mode;		/* file access mode, for XATTR */
+	ushort	uid, gid;	/* file owner; uid and gid */
+	fs_ino_t ino;
+	short	flags;		/* various other flags (e.g. O_TTY) */
+	short	lockpid;	/* pid of locking process */
+	short	cursrate;	/* cursor flash rate for pseudo TTY's */
+	struct tty *tty;	/* tty struct for pseudo TTY's */
+	struct pipe *inp;	/* pipe for reads */
+	struct pipe *outp;	/* pipe for writes (0 if unidirectional) */
+	struct fifo *next;	/* link to next FIFO in list */
+	struct file *open;	/* open file pointers for this fifo */
+};
+
 # define ROOT_INODE  1  /* inode number for root directory */
 
 static long	_cdecl pipe_root	(int drv, fcookie *fc);
@@ -161,7 +181,7 @@ struct pipe
 };
 
 static struct fifo *piperoot;
-static struct timeval pipestamp;
+static struct timeval64 pipestamp;
 
 static long _cdecl
 pipe_root (int drv, fcookie *fc)
@@ -253,7 +273,7 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->uid = xattr->gid = 0;
 
 		SET_XATTR_TD(xattr,m,pipestamp.tv_sec);
-		SET_XATTR_TD(xattr,a,xtime.tv_sec);
+		SET_XATTR_TD(xattr,a,xtime64.tv_sec);
 		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
@@ -267,7 +287,7 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 		if (this == NULL)
 			return ENOENT;
 		SET_XATTR_TD(xattr,m,this->mtime.tv_sec);
-		SET_XATTR_TD(xattr,a,xtime.tv_sec);
+		SET_XATTR_TD(xattr,a,xtime64.tv_sec);
 		SET_XATTR_TD(xattr,c,this->ctime.tv_sec);
 		xattr->uid = this->uid;
 		xattr->gid = this->gid;
@@ -318,12 +338,10 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 
-		ptr->atime.high_time = 0;
-		ptr->atime.time = xtime.tv_sec;
+		ptr->atime.time64 = xtime64.tv_sec;
 		ptr->atime.nanoseconds = 0;
 
-		ptr->mtime.high_time = 0;
-		ptr->mtime.time = pipestamp.tv_sec;
+		ptr->mtime.time64 = pipestamp.tv_sec;
 		ptr->mtime.nanoseconds = 0;
 
 		ptr->ctime.high_time = 0;
@@ -342,16 +360,13 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 		ptr->gid = this->gid;
 		ptr->mode = this->mode;
 
-		ptr->atime.high_time = 0;
-		ptr->atime.time = xtime.tv_sec;
+		ptr->atime.time64 = xtime64.tv_sec;
 		ptr->atime.nanoseconds = 0;
 
-		ptr->mtime.high_time = 0;
-		ptr->mtime.time = this->mtime.tv_sec;
+		ptr->mtime.time64 = this->mtime.tv_sec;
 		ptr->mtime.nanoseconds = 0;
 
-		ptr->ctime.high_time = 0;
-		ptr->ctime.time = this->ctime.tv_sec;
+		ptr->ctime.time64 = this->ctime.tv_sec;
 		ptr->ctime.nanoseconds = 0;
 
 		/* note: fifo's that haven't been opened yet can be written to
@@ -646,7 +661,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	}
 	strncpy(b->name, name, NAME_MAX);
 	b->name[NAME_MAX] = '\0';
-	b->mtime = b->ctime = xtime;
+	b->mtime = b->ctime = xtime64;
 	b->dosflags = attrib;
 	b->mode = ((attrib & FA_SYSTEM) ? S_IFCHR : S_IFIFO) | (mode & ~S_IFMT);
 	b->uid = get_curproc()->p_cred->ucr->euid;
@@ -673,7 +688,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	fc->dev = dir->dev;
 
 	/* update time/date stamps for u:\pipe */
-	pipestamp = xtime;
+	pipestamp = xtime64;
 
 	return E_OK;
 }
@@ -786,7 +801,7 @@ pipe_open (FILEPTR *f)
 	/* TTY devices need a tty structure in f->devinfo */
 	f->devinfo = (long) p->tty;
 
-	p->mtime = xtime;
+	p->mtime = xtime64;
 
 	return E_OK;
 }
@@ -946,7 +961,7 @@ check_atomicity:
 		}
 	}
 
-	this->mtime = xtime;
+	this->mtime = xtime64;
 	if (p->len > 0)
 		pipe_wake_readers (p);
 
@@ -1637,7 +1652,7 @@ pipe_close (FILEPTR *f, int pid)
 
 		kfree (this);
 
-		pipestamp = xtime;
+		pipestamp = xtime64;
 	}
 
 	return E_OK;

@@ -623,9 +623,8 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->size = kern_filesize(p, file);
 	stat->blksize = 1;
 
-	stat->atime.high_time = 0;
-	stat->atime.time = xtime.tv_sec;
-	stat->atime.nanoseconds = xtime.tv_usec;
+	stat->atime.time64 = xtime64.tv_sec;
+	stat->atime.nanoseconds = xtime64.tv_usec;
 
 	stat->mtime.high_time = 0;
 	stat->mtime.time = p->started.tv_sec;
@@ -683,8 +682,8 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->blksize = 1;
 	stat->mtime.time = p->started.tv_sec;
 	stat->mtime.nanoseconds = p->started.tv_usec;
-	stat->atime.time = xtime.tv_sec;
-	stat->atime.nanoseconds = xtime.tv_usec;
+	stat->atime.time64 = xtime64.tv_sec;
+	stat->atime.nanoseconds = xtime64.tv_usec;
 	stat->ctime.time = p->started.tv_sec;
 	stat->ctime.nanoseconds = p->started.tv_usec;
 	stat->flags = 0;
@@ -751,8 +750,8 @@ kern_stat64 (fcookie *file, STAT *stat)
 	stat->blksize = 1;
 	stat->mtime.time = rootproc->started.tv_sec;
 	stat->mtime.nanoseconds = rootproc->started.tv_usec;
-	stat->atime.time = xtime.tv_sec;
-	stat->atime.nanoseconds = xtime.tv_usec;
+	stat->atime.time64 = xtime64.tv_sec;
+	stat->atime.nanoseconds = xtime64.tv_usec;
 	stat->ctime.time = rootproc->started.tv_sec;
 	stat->ctime.nanoseconds = rootproc->started.tv_usec;
 	stat->flags = 0;

@@ -36,7 +36,7 @@
 # include "memory.h"
 # include "proc.h"
 # include "signal.h"
-# include "time.h"	/* xtime */
+# include "time.h"	/* xtime64 */
 # include "tty.h"
 
 # include <stddef.h>	/* offsetof */
@@ -643,8 +643,8 @@ init_xrandom (void)
 	 */
 	ulong seed;
 
-	seed  = ( 999 * xtime.tv_sec);
-	seed += (1001 * xtime.tv_usec);
+	seed  = ( 999 * (int32_t)xtime64.tv_sec);
+	seed += (1001 * xtime64.tv_usec);
 	seed += (1003 * jiffies);
 
 	a[0] += seed;

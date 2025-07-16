@@ -37,8 +37,8 @@
 
 
 /* Global variables exported into the kernel. */
-extern struct timeval xtime;		/* Current kernel time (UTC). */
-extern struct timeval boottime;		/* kernel boot time (UTC). */
+extern struct timeval64 xtime64;		/* Current kernel time (UTC). */
+extern struct timeval64 boottime;		/* kernel boot time (UTC). */
 extern struct timezone sys_tz;		/* Timezone for T[gs]ettimeofday. */
 extern long clock_mode;			/* Non-zero if clock is ticking in
 					 * local time instead of UTC

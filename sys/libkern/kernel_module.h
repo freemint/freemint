@@ -702,7 +702,6 @@ check_kentry_version(void)
 #define denylock           (*KENTRY->vec_fs.denylock)
 
 #define bio                ( KENTRY->vec_fs.bio)
-#define utc                (*KENTRY->vec_fs.xtime)
 
 #define kernel_opendir     (*KENTRY->vec_fs.kernel_opendir)
 #define kernel_readdir     (*KENTRY->vec_fs.kernel_readdir)

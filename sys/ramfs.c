@@ -553,9 +553,9 @@ static COOKIE *Root = &root_inode;
  * treat is as unsigned, assuming that current time
  * can never be from before 1970
  */
-INLINE u_int32_t current_time_utc(void)
+INLINE time64_t current_time_utc(void)
 {
-	return xtime.tv_sec;
+	return xtime64.tv_sec;
 }
 #define CURRENT_TIME_UTC current_time_utc()
 
@@ -838,9 +838,9 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 		s->uid		= IS_SETUID (d) ? d->stat.uid : sys_pgetuid ();
 		s->gid		= IS_SETGID (d) ? d->stat.gid : sys_pgetgid ();
 		s->rdev		= d->stat.rdev;
-		s->atime.time	= CURRENT_TIME_UTC;
-		s->mtime.time	= CURRENT_TIME_UTC;
-		s->ctime.time	= CURRENT_TIME_UTC;
+		s->atime.time64	= CURRENT_TIME_UTC;
+		s->mtime.time64	= CURRENT_TIME_UTC;
+		s->ctime.time64	= CURRENT_TIME_UTC;
 		/* size		= 0; */
 		/* blocks	= 0; */
 		s->blksize	= BLOCK_SIZE;
@@ -1011,9 +1011,9 @@ ramfs_init (void)
 	/* uid		= 0; */
 	/* gid		= 0; */
 	s->rdev		= RAM_DRV;
-	s->atime.time	= CURRENT_TIME_UTC;
-	s->mtime.time	= CURRENT_TIME_UTC;
-	s->ctime.time	= CURRENT_TIME_UTC;
+	s->atime.time64	= CURRENT_TIME_UTC;
+	s->mtime.time64	= CURRENT_TIME_UTC;
+	s->ctime.time64	= CURRENT_TIME_UTC;
 	/* size		= 0; */
 	/* blocks	= 0; */
 	s->blksize	= BLOCK_SIZE;
@@ -1229,7 +1229,7 @@ ram_chown (fcookie *fc, int uid, int gid)
 	if (uid != -1) c->stat.uid = uid;
 	if (gid != -1) c->stat.gid = gid;
 
-	c->stat.ctime.time = CURRENT_TIME_UTC;
+	c->stat.ctime.time64 = CURRENT_TIME_UTC;
 
 	return E_OK;
 }
@@ -1978,7 +1978,7 @@ __FUTIME (COOKIE *rc, ulong *timeptr)
 		return EACCES;
 	}
 
-	rc->stat.ctime.time = CURRENT_TIME_UTC;
+	rc->stat.ctime.time64 = CURRENT_TIME_UTC;
 
 	if (timeptr)
 	{
@@ -2289,7 +2289,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 	}
 
 leave:
-	c->stat.mtime.time = CURRENT_TIME_UTC;
+	c->stat.mtime.time64 = CURRENT_TIME_UTC;
 
 	return (bytes - todo);
 }
@@ -2403,7 +2403,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		|| IS_IMMUTABLE (c)))
 	{
 		/* update time/datestamp */
-		c->stat.atime.time = CURRENT_TIME_UTC;
+		c->stat.atime.time64 = CURRENT_TIME_UTC;
 	}
 
 	return done;
@@ -2638,9 +2638,9 @@ ram_datime (FILEPTR *f, ushort *time, int flag)
 			if (IS_IMMUTABLE (c))
 				return EACCES;
 
-			c->stat.mtime.time = *(ulong *) time;
-			c->stat.atime.time = c->stat.mtime.time;
-			c->stat.ctime.time = CURRENT_TIME_UTC;
+			c->stat.mtime.time64 = *(ulong *) time;
+			c->stat.atime.time64 = c->stat.mtime.time64;
+			c->stat.ctime.time64 = CURRENT_TIME_UTC;
 
 			break;
 		}
