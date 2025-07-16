@@ -77,5 +77,6 @@ long _cdecl sys_t_settimeofday64 (struct timeval64 *tv, struct timezone *tz);
 long _cdecl sys_b_gettime (void);
 void _cdecl sys_b_settime (ulong datetime);
 
+void xfs_warp_clock(long diff);
 
 # endif /* _time_h */

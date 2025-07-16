@@ -12,7 +12,6 @@
 
 
 void shmfs_init(void);
-void shmfs_warp_clock(long diff);
 
 extern FILESYS shm_filesys;
 

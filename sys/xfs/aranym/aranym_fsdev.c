@@ -1655,6 +1655,16 @@ ara_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 			return r;
 		}
+		case KER_UTIME_WARP:
+		{
+			STAT *s;
+			
+			s = &root->stat;
+			s->atime.time64 += arg;
+			s->mtime.time64 += arg;
+			s->ctime.time64 += arg;
+		}
+		return E_OK;
 	}
 
 	return ENOSYS;

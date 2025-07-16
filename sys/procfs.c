@@ -615,13 +615,19 @@ proc_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	
 	switch (cmd)
 	{
-		case MX_KER_XFSNAME:
+	case MX_KER_XFSNAME:
+		strcpy ((char *) arg, "proc");
+		return E_OK;
+	case KER_UTIME_WARP:
 		{
-			strcpy ((char *) arg, "proc");
-			return E_OK;
+			PROC *p;
+
+			procfs_stmp.tv_sec += arg;
+			for (p = proclist; p != NULL; p = p->gl_next)
+				p->started.tv_sec += arg;
 		}
+		return E_OK;
 	}
-	
 	return ENOSYS;
 }
 
@@ -1291,14 +1297,4 @@ proc_close (FILEPTR *f, int pid)
 	UNUSED (pid);
 	
 	return E_OK;
-}
-
-
-void procfs_warp_clock(long diff)
-{
-	PROC *p;
-
-	procfs_stmp.tv_sec += diff;
-	for (p = proclist; p != NULL; p = p->gl_next)
-		p->started.tv_sec += diff;
 }

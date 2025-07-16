@@ -139,7 +139,7 @@ FILESYS pipe_filesys =
 	NULL, NULL
 };
 
-DEVDRV pty_device =
+static DEVDRV pty_device =
 {
 	pipe_open,
 	pty_write, pty_read, pipe_lseek,
@@ -149,7 +149,7 @@ DEVDRV pty_device =
 	pty_writeb, pty_readb
 };
 
-DEVDRV pipe_device =
+static DEVDRV pipe_device =
 {
 	pipe_open,
 	pipe_write, pipe_read, pipe_lseek,
@@ -710,11 +710,21 @@ pipe_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 	switch (cmd)
 	{
-		case MX_KER_XFSNAME:
+	case MX_KER_XFSNAME:
+		strcpy ((char *) arg, "pipe");
+		return E_OK;
+	case KER_UTIME_WARP:
 		{
-			strcpy ((char *) arg, "pipe");
-			return E_OK;
+			struct fifo *fifo;
+
+			pipestamp.tv_sec += arg;
+			for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
+			{
+				fifo->mtime.tv_sec += arg;
+				fifo->ctime.tv_sec += arg;
+			}
 		}
+		return E_OK;
 	}
 
 	return ENOSYS;
@@ -1759,18 +1769,5 @@ pipe_unselect (FILEPTR *f, long proc, int mode)
 			if (is_terminal (f) && !(f->flags & O_HEAD))
 				this->tty->wsel = 0;
 		}
-	}
-}
-
-
-void pipefs_warp_clock(long diff)
-{
-	struct fifo *fifo;
-
-	pipestamp.tv_sec += diff;
-	for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
-	{
-		fifo->mtime.tv_sec += diff;
-		fifo->ctime.tv_sec += diff;
 	}
 }

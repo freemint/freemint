@@ -1024,6 +1024,10 @@ isofs_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			}
 			return E_OK;
 		}
+		case KER_UTIME_WARP:
+		{
+		}
+		return E_OK;
 	}
 	
 	return ENOSYS;

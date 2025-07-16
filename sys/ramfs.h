@@ -47,7 +47,6 @@ extern FILESYS ramfs_filesys;
  */
 
 void ramfs_init(void);
-void ramfs_warp_clock(long diff);
 
 
 # endif /* _ramfs_h */

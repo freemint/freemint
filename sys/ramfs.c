@@ -1034,16 +1034,6 @@ ramfs_init (void)
 	boot_print ("\r\n");
 }
 
-void ramfs_warp_clock(long diff)
-{
-	STAT *s;
-
-	s = &(Root->stat);
-	s->atime.time64 += diff;
-	s->mtime.time64 += diff;
-	s->ctime.time64 += diff;
-}
-
 /* END init & configuration part */
 /****************************************************************************/
 
@@ -1891,6 +1881,16 @@ ram_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if (l) r = __FTRUNCATE (l->cookie, arg);
 
 			return r;
+		}
+		case KER_UTIME_WARP:
+		{
+			STAT *s;
+
+			s = &(Root->stat);
+			s->atime.time64 += arg;
+			s->mtime.time64 += arg;
+			s->ctime.time64 += arg;
+			return E_OK;
 		}
 	}
 

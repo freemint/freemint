@@ -1970,6 +1970,13 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			/* for debugging only */
 			return ENOSYS;
 		}
+		case KER_UTIME_WARP:
+		{
+			root_attr.atime.time32 += arg;
+			root_attr.mtime.time32 += arg;
+			root_attr.ctime.time32 += arg;
+		}
+		return E_OK;
 	}
 	
 	DEBUG (("nfs_fcntl -> ENOSYS"));

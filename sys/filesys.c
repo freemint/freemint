@@ -1645,3 +1645,24 @@ samefile(fcookie *a, fcookie *b)
 
 	return 0;
 }
+
+
+void xfs_warp_clock(long diff)
+{
+	FILESYS *fs;
+	fcookie fc;
+
+	if (diff == 0)
+		return;
+
+	for (fs = active_fs; fs; fs = fs->next)
+	{
+		fc.dev = 0;
+		fc.fs = fs;
+		fc.index = 0;
+		fc.aux = 0;
+		fs->fscntl(&fc, NULL, KER_UTIME_WARP, diff);
+	}
+
+    /* The timestamps of the bios devices are a mess anyway.  */
+}

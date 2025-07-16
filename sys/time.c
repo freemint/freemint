@@ -755,22 +755,7 @@ warp_clock (int mode)
     }
     clock_mode = mode;
 
-    if (diff != 0)
-    {
-#ifndef NO_RAMFS
-        ramfs_warp_clock(diff);
-#endif
-        procfs_warp_clock(diff);
-        pipefs_warp_clock(diff);
-        shmfs_warp_clock(diff);
-
-        /* The timestamps of the bios devices are a mess anyway.  */
-        /*
-         * FIXME: external filesystem will still report a wrong timestamp
-         * on the root directory, because they were loaded before
-         * tzinit was called to set the correct timezone
-         */
-    }
+    xfs_warp_clock(diff);
 
     /* Set timestamp and datestamp correctly. */
     synch_timers ();

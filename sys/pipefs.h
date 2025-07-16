@@ -18,6 +18,4 @@ struct tty;
 
 extern FILESYS pipe_filesys;
 
-void pipefs_warp_clock(long diff);
-
 # endif /* _pipefs_h */

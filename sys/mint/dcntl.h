@@ -128,6 +128,9 @@ typedef unsigned long long	ullong;
 # define DL_CHAR	(('D'<< 8) | 17)	/* pointer to a string with legal chars */
 # define DL_SETCHAR	(('D'<< 8) | 18)	/* ask or set valid names */
 
+/* FreeMiNT kernel internal only */
+# define KER_UTIME_WARP (('D'<< 8) | 100)
+
 
 /*
  * (V)FAT filesystem extensions (MiNT/MagiC)
