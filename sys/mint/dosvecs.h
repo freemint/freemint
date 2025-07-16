@@ -8,6 +8,7 @@ struct xattr;
 struct sigaction;
 struct stat;
 struct timeval;
+struct timeval64;
 struct timezone;
 struct pollfd;
 struct iovec;
@@ -434,8 +435,8 @@ typedef struct {
 	long _cdecl (*p_f_chdir)(short fd);
 	long _cdecl (*p_f_opendir)(short fd);
 	long _cdecl (*p_f_dirfd)(long handle);
-	long _cdecl (*_res_184)(void);
-	long _cdecl (*_res_185)(void);
+	long _cdecl (*p_t_gettimeofday64)(struct timeval64 *tv, struct timezone *tz);
+	long _cdecl (*p_t_settimeofday64)(struct timeval64 *tv, struct timezone *tz);
 	long _cdecl (*_res_186)(void);
 	long _cdecl (*_res_187)(void);
 	long _cdecl (*_res_188)(void);

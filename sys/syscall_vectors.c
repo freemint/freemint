@@ -521,8 +521,8 @@ dos_vecs dos_tab =
 	/* 0x181 */		sys_f_chdir,	/* 1.17 */
 	/* 0x182 */		sys_f_opendir,	/* 1.17 */
 	/* 0x183 */		sys_f_dirfd,	/* 1.17 */
-	/* 0x184 */		sys_enosys,		/* reserved */
-	/* 0x185 */		sys_enosys,		/* reserved */
+	/* 0x184 */		sys_t_gettimeofday64,
+	/* 0x185 */		sys_t_settimeofday64,
 	/* 0x186 */		sys_enosys,		/* reserved */
 	/* 0x187 */		sys_enosys,		/* reserved */
 	/* 0x188 */		sys_enosys,		/* reserved */

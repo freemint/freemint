@@ -87,6 +87,8 @@ static ulong last_timerc = 0xffffffffL;
 static ulong hardtime = 0;
 
 static void quick_synch (void);
+static long do_settimeofday (struct timeval *tv);
+static long do_settimeofday64 (struct timeval64 *tv);
 
 # if 0
 /* Time of day in representation of the IKBD-Chip.  If somebody can
@@ -131,7 +133,7 @@ sys_t_gettime (void)
 long _cdecl
 sys_t_setdate (ushort date)
 {
-	struct timeval tv;
+	struct timeval64 tv;
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
@@ -148,15 +150,16 @@ sys_t_setdate (ushort date)
 		DEBUG (("Tsetdate: date overflow"));
 		return EOVERFLOW;
 	}
-	tv.tv_sec = unixtime (timestamp, date) + timezone;
+	tv.tv_sec = (u_int32_t)unixtime (timestamp, date) + timezone;
 	tv.tv_usec = 0;
-	return do_settimeofday (&tv);
+	/* use 64bit version here, so it should work atleast until 2098 */
+	return do_settimeofday64(&tv);
 }
 
 long _cdecl
 sys_t_settime (ushort time)
 {
-	struct timeval tv = { 0, 0 };
+	struct timeval64 tv;
 
 	if (!suser (get_curproc()->p_cred->ucr))
 	{
@@ -164,8 +167,10 @@ sys_t_settime (ushort time)
 		return EPERM;
 	}
 
-	tv.tv_sec = unixtime (time, datestamp) + timezone;
-	return do_settimeofday (&tv);
+	tv.tv_sec = (u_int32_t)unixtime (time, datestamp) + timezone;
+	tv.tv_usec = 0;
+	/* use 64bit version here, so it should work atleast until 2098 */
+	return do_settimeofday64(&tv);
 }
 
 /* This function is like t_gettimeofday except that it doesn't
@@ -187,11 +192,63 @@ sys_t_settime (ushort time)
  * increment this value.  This gives us time for about 26 us.
  * If this isn't enough we have to tell the truth however.
  */
-static struct timeval last_tv = { 0, 0 };
+static struct timeval64 last_tv = { 0, 0 };
 static long micro_adjustment = 0;
 
 long _cdecl
 do_gettimeofday (struct timeval* tv)
+{
+	quick_synch ();
+
+	tv->tv_sec = xtime64.tv_sec;
+	tv->tv_usec = xtime64.tv_usec;
+
+	tv->tv_usec += (192L - timerc) * MICROSECONDS_PER_CLOCK / 192L;
+
+	if (last_tv.tv_sec == tv->tv_sec && last_tv.tv_usec == tv->tv_usec)
+	{
+		if (micro_adjustment < 25)
+			micro_adjustment++;
+	}
+	else
+	{
+		micro_adjustment = 0;
+	}
+
+	last_tv.tv_sec = tv->tv_sec;
+	last_tv.tv_usec = tv->tv_usec;
+
+	tv->tv_usec += micro_adjustment;
+
+	if (tv->tv_usec >= 1000000L)
+	{
+		tv->tv_usec -= 1000000L;
+		tv->tv_sec++;
+	}
+
+	return E_OK;
+}
+
+long _cdecl
+sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
+{
+	TRACE (("Tgettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
+
+	if (tz != NULL)
+		*tz = sys_tz;
+
+	if (tv != NULL)
+	{
+		if (xtime64.tv_sec >= 2147483647L - (time32_t)MAX_TZ_OFFSET)
+			return EOVERFLOW;
+		return do_gettimeofday (tv);
+	}
+
+	return E_OK;
+}
+
+static long _cdecl
+do_gettimeofday64(struct timeval64 *tv)
 {
 	quick_synch ();
 
@@ -224,18 +281,16 @@ do_gettimeofday (struct timeval* tv)
 }
 
 long _cdecl
-sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
+sys_t_gettimeofday64 (struct timeval64 *tv, struct timezone *tz)
 {
-	TRACE (("Tgettimeofday (tv = 0x%p, tz = 0x%p)", tv, tz));
+	TRACE (("Tgettimeofday64 (tv = 0x%p, tz = 0x%p)", tv, tz));
 
 	if (tz != NULL)
 		*tz = sys_tz;
 
 	if (tv != NULL)
 	{
-		if (xtime64.tv_sec >= 2147483647L - (time32_t)MAX_TZ_OFFSET)
-			return EOVERFLOW;
-		return do_gettimeofday (tv);
+		return do_gettimeofday64 (tv);
 	}
 
 	return E_OK;
@@ -280,6 +335,11 @@ do_settimeofday (struct timeval* tv)
     datestamp = (tos_combined >> 16) & 0xffff;
     timestamp = tos_combined & 0xffff;
 
+    /*
+     * FIXME: because hardware clocks typically store
+     * only 2 digits of the year in BCD format, with a base year of 1968,
+     * that may overflow for dates >= 1.1.2068
+     */
     hardtime = unix2xbios (xtime64.tv_sec + sys2tos);
 
     ROM_Settime (hardtime);
@@ -333,6 +393,100 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
     if (tv != NULL)
     {
         long retval = do_settimeofday (tv);
+        hardtime = 0;
+        if (retval < 0)
+            return retval;
+    }
+
+    return E_OK;
+}
+
+/* 64bit time_t version of above
+ */
+long _cdecl
+do_settimeofday64 (struct timeval64 *tv)
+{
+	ulong tos_combined;
+
+	/* FIXME: need long long support for ksprintf */
+	TRACE (("do_settimeofday64 %ld.%ld s", (long)tv->tv_sec, 1000000L * tv->tv_usec));
+
+	if (tv->tv_sec < -377673584008LL)
+	{
+		DEBUG (("do_settimeofday64: attempt to rewind time to before -9999"));
+		return EBADARG;
+	}
+	if (tv->tv_sec >= 253402297200LL)
+	{
+        DEBUG (("do_settimeofday64: attempt to set time to after year 9999"));
+        return EOVERFLOW;
+    }
+
+    /* The timeval we got is always in UTC */
+    xtime64.tv_sec = tv->tv_sec;
+    xtime64.tv_usec = tv->tv_usec;
+
+	if (tv->tv_sec >= JAN_2_1980 && tv->tv_sec < 4294967296UL - MAX_TZ_OFFSET)
+	{
+	    /* Now calculate timestamp and datestamp from that */
+	    tos_combined = unix2xbios (xtime64.tv_sec - timezone);
+	    datestamp = (tos_combined >> 16) & 0xffff;
+	    timestamp = tos_combined & 0xffff;
+
+	    hardtime = unix2xbios (xtime64.tv_sec + sys2tos);
+
+	    ROM_Settime (hardtime);
+	}
+
+    return E_OK;
+}
+
+long _cdecl
+sys_t_settimeofday64 (struct timeval64 *tv, struct timezone *tz)
+{
+    TRACE (("Tsettimeofday64 (tv = 0x%p, tz = 0x%p)", tv, tz));
+
+    if (!suser (get_curproc()->p_cred->ucr))
+    {
+        DEBUG (("t_settimeofday64: attempt to change time by unprivileged user"));
+        return EPERM;
+    }
+
+    if (tz != NULL)
+    {
+        long old_timezone = timezone;
+
+        sys_tz = *tz;
+        timezone = sys_tz.tz_minuteswest * 60L;
+
+        /* We have to distinguish now if the clock is ticking in UTC
+         * or local time.
+         */
+        if (clock_mode == 0)
+        {
+            /* UTC */
+            sys2tos = 0;
+        }
+        else
+        {
+            sys2tos = -timezone;
+
+            /* If the timezone has really changed we have to
+             * correct the kernel's UTC time.  If the user has
+             * supplied a time this will be overwritten in an
+             * instant below but that doesn't hurt.  If a time
+             * was supplied it was really in UTC.
+             */
+            xtime64.tv_sec += (old_timezone - timezone);
+        }
+
+        /* Update timestamp and datestamp */
+        synch_timers ();
+    }
+
+    if (tv != NULL)
+    {
+        long retval = do_settimeofday64(tv);
         hardtime = 0;
         if (retval < 0)
             return retval;

@@ -59,7 +59,6 @@ void warp_clock (int mode);		/* Change the kernel's notion of
 					 */
                                    
 long _cdecl do_gettimeofday (struct timeval *tv);
-long _cdecl do_settimeofday (struct timeval *tv);
 
 /* GEMDOS */
 long _cdecl sys_t_getdate (void);
@@ -71,6 +70,8 @@ long _cdecl sys_t_settime (ushort time);
 long _cdecl sys_t_gettimeofday (struct timeval *tv, struct timezone *tz);
 long _cdecl sys_t_settimeofday (struct timeval *tv, struct timezone *tz);
 long _cdecl sys_t_adjtime      (const struct timeval *delta, struct timeval *olddelta);
+long _cdecl sys_t_gettimeofday64 (struct timeval64 *tv, struct timezone *tz);
+long _cdecl sys_t_settimeofday64 (struct timeval64 *tv, struct timezone *tz);
 
 /* XBIOS */
 long _cdecl sys_b_gettime (void);
