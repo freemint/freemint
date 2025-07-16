@@ -1996,7 +1996,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return bio.config (dir->dev, BIO_WB, arg);
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
 		{
 			fcookie fc;
 			COOKIE *c;
@@ -2033,7 +2033,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 			if (arg)
 			{
-				if (cmd == FUTIME_UTC)
+				if (cmd == FUTIME_UTC32)
 				{
 					long *timeptr = (long *) arg;
 

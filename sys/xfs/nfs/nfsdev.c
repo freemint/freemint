@@ -416,7 +416,7 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 			break;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
 		{
 			NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
 			sattr attr;
@@ -439,7 +439,7 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 			
 			if (arg)
 			{
-				if (mode == FUTIME_UTC)
+				if (mode == FUTIME_UTC32)
 				{
 					long *timeptr = arg;
 					

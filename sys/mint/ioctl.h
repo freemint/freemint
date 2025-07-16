@@ -82,12 +82,22 @@ struct mutimbuf
 	unsigned short actime, acdate;		/* GEMDOS format */
 	unsigned short modtime, moddate;
 };
+/* some tools like usb/loader may have not included this */
+#ifdef _mint_ktypes_h
+struct mutimbuf64
+{
+	time64_t actime;
+	time64_t modtime;
+};
+#endif
 
 # define FTRUNCATE	(('F'<< 8) | 4)
 # define FIOEXCEPT	(('F'<< 8) | 5)
 
 # define FSTAT64	(('F'<< 8) | 6)		/* 1.15.4 extension, optional */
-# define FUTIME_UTC	(('F'<< 8) | 7)		/* 1.15.4 extension, optional */
+# define FUTIME_UTC32	(('F'<< 8) | 7)	/* 1.15.4 extension, optional */
+# define FIONBIO	(('F'<< 8) | 8)		/* used by mintlib; reserved */
+# define FUTIME_UTC64 (('F'<< 8) | 9)	/* new support for 64bit times; optional */
 # define FIBMAP		(('F'<< 8) | 10)
 
 

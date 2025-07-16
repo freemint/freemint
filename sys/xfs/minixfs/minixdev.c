@@ -674,7 +674,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			return E_OK;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
 		{
 			d_inode rip;
 			int uid = p_geteuid ();
@@ -696,7 +696,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			rip.i_ctime = CURRENT_TIME;
 			if (buf)
 			{
-				if (mode == FUTIME_UTC)
+				if (mode == FUTIME_UTC32)
 				{
 					long *timeptr = (long *) buf;
 					

@@ -535,6 +535,7 @@ static long	__unlink	(COOKIE *d, const char *name);
 
 
 static long	__FUTIME	(COOKIE *rc, ulong *timeptr);
+static long __FUTIME64(COOKIE *rc, const struct mutimbuf64 *timeptr);
 static long	__FTRUNCATE	(COOKIE *rc, long size);
 
 /* END definition part */
@@ -1038,9 +1039,9 @@ void ramfs_warp_clock(long diff)
 	STAT *s;
 
 	s = &(Root->stat);
-	s->atime.time += diff;
-	s->mtime.time += diff;
-	s->ctime.time += diff;
+	s->atime.time64 += diff;
+	s->mtime.time64 += diff;
+	s->ctime.time64 += diff;
 }
 
 /* END init & configuration part */
@@ -1841,7 +1842,8 @@ ram_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return r;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
+		case FUTIME_UTC64:
 		{
 			COOKIE *d = (COOKIE *) dir->index;
 			COOKIE *c;
@@ -1871,7 +1873,10 @@ ram_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				return EROFS;
 			}
 
-			r = __FUTIME (c, (ulong *) arg);
+			if (cmd == FUTIME_UTC64)
+				r = __FUTIME64(c, (const struct mutimbuf64 *) arg);
+			else
+				r = __FUTIME(c, (ulong *) arg);
 			return r;
 		}
 		case FTRUNCATE:
@@ -1960,6 +1965,7 @@ check_mode (COOKIE *rc, int euid, int egid, int access)
 	return 1;
 }
 
+/* timeptr is actually struct utimbuf */
 static long
 __FUTIME (COOKIE *rc, ulong *timeptr)
 {
@@ -1982,15 +1988,51 @@ __FUTIME (COOKIE *rc, ulong *timeptr)
 
 	if (timeptr)
 	{
-		rc->stat.atime.time = timeptr[0];
-		rc->stat.mtime.time = timeptr[1];
+		rc->stat.atime.time64 = timeptr[0];
+		rc->stat.mtime.time64 = timeptr[1];
 	}
 	else
 	{
-		time32_t time = rc->stat.ctime.time;
+		time64_t time = rc->stat.ctime.time64;
 
-		rc->stat.atime.time = time;
-		rc->stat.mtime.time = time;
+		rc->stat.atime.time64 = time;
+		rc->stat.mtime.time64 = time;
+	}
+
+	return E_OK;
+}
+
+static long
+__FUTIME64(COOKIE *rc, const struct mutimbuf64 *timeptr)
+{
+	int uid = sys_pgeteuid ();
+	int gid = sys_pgetegid ();
+
+	/*
+	 * The owner or super-user can always touch,
+	 * others only if timeptr == 0 and write
+	 * permission.
+	 */
+	if (uid
+		&& uid != rc->stat.uid
+		&& (timeptr || check_mode (rc, uid, gid, S_IWUSR)))
+	{
+		return EACCES;
+	}
+
+	rc->stat.ctime.time64 = CURRENT_TIME_UTC;
+
+	if (timeptr)
+	{
+		rc->stat.atime.time64 = timeptr->actime;
+		rc->stat.mtime.time64 = timeptr->modtime;
+	}
+	else
+	{
+		time64_t time = rc->stat.ctime.time64;
+
+		rc->stat.atime.time64 = time;
+		rc->stat.mtime.time64 = time;
 	}
 
 	return E_OK;
@@ -2459,7 +2501,8 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			return E_OK;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
+		case FUTIME_UTC64:
 		{
 			if (c->s->flags & MS_RDONLY)
 				return EROFS;
@@ -2467,6 +2510,8 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			if (IS_IMMUTABLE (c))
 				return EACCES;
 
+			if (mode == FUTIME_UTC64)
+				return __FUTIME64 (c, buf);
 			return __FUTIME (c, buf);
 		}
 		case FTRUNCATE:

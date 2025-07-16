@@ -589,7 +589,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			return E_OK;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
 		{
 			COOKIE *c = (COOKIE *) f->fc.index;
 			int uid;
@@ -616,7 +616,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			
 			if (arg)
 			{
-				if (mode == FUTIME_UTC)
+				if (mode == FUTIME_UTC32)
 				{
 					long *timeptr = arg;
 					

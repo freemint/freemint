@@ -297,6 +297,7 @@ static long	__unlink	(COOKIE *d, const char *name);
 
 
 static long	__FUTIME	(COOKIE *rc, ulong *timeptr);
+static long	__FUTIME64	(COOKIE *rc, const struct mutimbuf64 *timeptr);
 static long	__FTRUNCATE	(COOKIE *rc, long size);
 
 /* END definition part */
@@ -988,7 +989,7 @@ ara_chown (fcookie *fc, int uid, int gid)
 	if (uid != -1) c->stat.uid = uid;
 	if (gid != -1) c->stat.gid = gid;
 
-	c->stat.ctime.time = CURRENT_TIME;
+	c->stat.ctime.time64 = CURRENT_TIME;
 
 	return E_OK;
 }
@@ -1604,7 +1605,8 @@ ara_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return r;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
+		case FUTIME_UTC64:
 		{
 			COOKIE *d = (COOKIE *) dir->index;
 			COOKIE *c;
@@ -1634,7 +1636,10 @@ ara_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				return EROFS;
 			}
 
-			r = __FUTIME (c, (ulong *) arg);
+			if (cmd == FUTIME_UTC64)
+				r = __FUTIME64 (c, (struct mutimbuf64 *) arg);
+			else
+				r = __FUTIME (c, (ulong *) arg);
 			return r;
 		}
 		case FTRUNCATE:
@@ -1723,6 +1728,7 @@ check_mode (COOKIE *rc, int euid, int egid, int access)
 	return 1;
 }
 
+/* timeptr is actually struct utimbuf */
 static long
 __FUTIME (COOKIE *rc, ulong *timeptr)
 {
@@ -1741,19 +1747,56 @@ __FUTIME (COOKIE *rc, ulong *timeptr)
 		return EACCES;
 	}
 
-	rc->stat.ctime.time = CURRENT_TIME;
+	rc->stat.ctime.time64 = CURRENT_TIME;
 
 	if (timeptr)
 	{
-		rc->stat.atime.time = timeptr[0];
-		rc->stat.mtime.time = timeptr[1];
+		rc->stat.atime.time64 = timeptr[0];
+		rc->stat.mtime.time64 = timeptr[1];
 	}
 	else
 	{
-		register long time = rc->stat.ctime.time;
+		time64_t time = rc->stat.ctime.time64;
 
-		rc->stat.atime.time = time;
-		rc->stat.mtime.time = time;
+		rc->stat.atime.time64 = time;
+		rc->stat.mtime.time64 = time;
+	}
+
+	return E_OK;
+}
+
+/* timeptr is actually struct utimbuf64 */
+static long
+__FUTIME64 (COOKIE *rc, const struct mutimbuf64 *timeptr)
+{
+	int uid = p_geteuid ();
+	int gid = p_getegid ();
+
+	/*
+	 * The owner or super-user can always touch,
+	 * others only if timeptr == 0 and write
+	 * permission.
+	 */
+	if (uid
+		&& uid != rc->stat.uid
+		&& (timeptr || check_mode (rc, uid, gid, S_IWUSR)))
+	{
+		return EACCES;
+	}
+
+	rc->stat.ctime.time64 = CURRENT_TIME;
+
+	if (timeptr)
+	{
+		rc->stat.atime.time64 = timeptr->actime;
+		rc->stat.mtime.time64 = timeptr->modtime;
+	}
+	else
+	{
+		time64_t time = rc->stat.ctime.time64;
+
+		rc->stat.atime.time64 = time;
+		rc->stat.mtime.time64 = time;
 	}
 
 	return E_OK;
@@ -2059,7 +2102,7 @@ ara_write (FILEPTR *f, const char *buf, long bytes)
 	}
 
 leave:
-	c->stat.mtime.time = CURRENT_TIME;
+	c->stat.mtime.time64 = CURRENT_TIME;
 
 	return (bytes - todo);
 }
@@ -2169,7 +2212,7 @@ ara_read (FILEPTR *f, char *buf, long bytes)
 		|| IS_IMMUTABLE (c)))
 	{
 		/* update time/datestamp */
-		c->stat.atime.time = CURRENT_TIME;
+		c->stat.atime.time64 = CURRENT_TIME;
 	}
 
 	return done;
@@ -2226,7 +2269,8 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 			return E_OK;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
+		case FUTIME_UTC64:
 		{
 			if (c->s->flags & MS_RDONLY)
 				return EROFS;
@@ -2234,6 +2278,8 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 			if (IS_IMMUTABLE (c))
 				return EACCES;
 
+			if (mode == FUTIME_UTC64)
+				return __FUTIME64(c, buf);
 			return __FUTIME (c, buf);
 		}
 		case FTRUNCATE:
@@ -2412,9 +2458,9 @@ ara_datime (FILEPTR *f, ushort *time, int flag)
 			if (IS_IMMUTABLE (c))
 				return EACCES;
 
-			c->stat.mtime.time = *(ulong *) time;
-			c->stat.atime.time = c->stat.mtime.time;
-			c->stat.ctime.time = CURRENT_TIME;
+			c->stat.mtime.time64 = *(ulong *) time;
+			c->stat.atime.time64 = c->stat.mtime.time;
+			c->stat.ctime.time64 = CURRENT_TIME;
 
 			break;
 		}

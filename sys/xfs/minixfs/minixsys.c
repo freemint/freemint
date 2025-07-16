@@ -1394,7 +1394,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 			break;
 		}
 		case FUTIME:
-		case FUTIME_UTC:
+		case FUTIME_UTC32:
 		case FTRUNCATE:
 		{
 			fcookie fc;
@@ -1412,7 +1412,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				return inum;
 			
 			read_inode (fc.index, &rip, fc.dev);
-			if ((cmd == FUTIME) || (cmd == FUTIME_UTC))
+			if ((cmd == FUTIME) || (cmd == FUTIME_UTC32))
 			{
 				/* The owner or super-user can always touch,
 				 * others only if timeptr == 0 and write
@@ -1425,7 +1425,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				
 				if (arg)
 				{	
-					if (cmd == FUTIME_UTC)
+					if (cmd == FUTIME_UTC32)
 					{
 						long *timeptr = (long *) arg;
 						
