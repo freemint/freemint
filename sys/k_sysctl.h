@@ -34,32 +34,6 @@
 
 # include "mint/mint.h"
 
-struct proc;
-
-
 long _cdecl sys_p_sysctl (long *, ulong, void *, ulong *, const void *, ulong);
-
-/*
- * Internal sysctl function calling convention:
- *
- *	(*sysctlfn)(name, namelen, oldval, oldlenp, newval, newlen);
- *
- * The name parameter points at the next component of the name to be
- * interpreted.  The namelen parameter is the number of integers in
- * the name.
- */
-typedef long (sysctlfn)(long *, ulong, void *, ulong *, const void *, ulong, struct proc *);
-
-long sysctl_short (void *, ulong *, const void *, ulong, short *);
-long sysctl_long (void *, ulong *, const void *, ulong, long *);
-long sysctl_rdlong (void *, ulong *, const void *, long);
-long sysctl_quad (void *, ulong *, const void *, ulong, llong *);
-long sysctl_rdquad (void *, ulong *, const void *, llong);
-long sysctl_string (void *, ulong *, const void *, ulong, char *, long);
-long sysctl_rdstring (void *, ulong *, const void *, const char *);
-long sysctl_struct (void *, ulong *, const void *, ulong, void *, long);
-long sysctl_rdstruct (void *, ulong *, const void *, const void *, long);
-long sysctl_rdminstruct (void *, ulong *, const void *, const void *, long);
-
 
 # endif /* _k_sysctl_h */

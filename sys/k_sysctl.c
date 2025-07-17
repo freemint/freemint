@@ -47,95 +47,258 @@
 # include "proc.h"
 # include "time.h"
 
-
-static long kern_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
-			const void *newp, ulong newlen, struct proc *p);
-
-static long hw_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
-		      const void *newp, ulong newlen, struct proc *p);
-
-static long proc_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
-			const void *newp, ulong newlen, struct proc *p);
-
-static long kbd_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
-		       const void *newp, ulong newlen, struct proc *p);
-
-long _cdecl
-sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
-	      const void *new, ulong newlen)
-{
-	struct proc *p = get_curproc();
-
-	long ret;
-	sysctlfn *fn;
-
-
-	/*
-	 * all top-level sysctl names are non-terminal
-	 */
-	if (namelen > CTL_MAXNAME || namelen < 2)
-		return EINVAL;
-
-	/*
-	 * For all but CTL_PROC, must be root to change a value.
-	 * For CTL_PROC, must be root, or owner of the proc (and not suid),
-	 * this is checked in proc_sysctl() (once we know the targer proc).
-	 */
-	if (new != NULL
-# ifdef CTL_PROC
-		&& name[0] != CTL_PROC
-# endif
-	)
-	{
-		if (!suser (p->p_cred->ucr))
-			return EPERM;
-	}
-
-	switch (name[0])
-	{
-		case CTL_KERN:
-			fn = kern_sysctl;
-			break;
-		case CTL_HW:
-			fn = hw_sysctl;
-			break;
-		case CTL_MACHDEP:
-			return EINVAL;
-			// XXX todo
-			// fn = cpu_sysctl;
-			break;
-# ifdef DEBUG_INFO
-		case CTL_DEBUG:
-			return EINVAL;
-			// XXX todo
-			// fn = debug_sysctl;
-			break;
-# endif
-		case CTL_PROC:
-			fn = proc_sysctl;
-			break;
-		case CTL_KBD:
-			fn = kbd_sysctl;
-			break;
-		default:
-			return EOPNOTSUPP;
-	}
-
-	ret = (*fn)(name + 1, namelen - 1, old, oldlenp, new, newlen, p);
-	return ret;
-}
-
+/*
+ * Internal sysctl function calling convention:
+ *
+ *	(*sysctlfn)(name, namelen, oldval, oldlenp, newval, newlen);
+ *
+ * The name parameter points at the next component of the name to be
+ * interpreted.  The namelen parameter is the number of integers in
+ * the name.
+ */
+typedef long (sysctlfn)(long *, ulong, void *, ulong *, const void *, ulong, struct proc *);
 
 /*
  * Attributes stored in the kernel.
  */
-char hostname[MAXHOSTNAMELEN] = "(none)";
-long hostnamelen;
+static char hostname[MAXHOSTNAMELEN] = "(none)";
+static long hostnamelen;
 
-char domainname[MAXHOSTNAMELEN] = "(none)";
-long domainnamelen;
+static char domainname[MAXHOSTNAMELEN] = "(none)";
+static long domainnamelen;
 
 long securelevel = 0;
+
+
+static long copyout(const void *src, void *dst, ulong len) { memcpy (dst, src, len); return 0; }
+static long copyin(const void *src, void *dst, ulong len) { memcpy (dst, src, len); return 0; }
+
+/*
+ * Convenience macros.
+ */
+
+# define SYSCTL_SCALAR_CORE_LEN(oldp, oldlenp, valp, len) 	\
+	if (oldlenp) {						\
+		if (!oldp)					\
+			*oldlenp = len;				\
+		else {						\
+			if (*oldlenp < len)			\
+				return ENOMEM;			\
+			*oldlenp = len;				\
+			error = copyout (valp, oldp, len);	\
+		}						\
+	}
+
+# define SYSCTL_SCALAR_CORE_TYP(oldp, oldlenp, valp, typ)	\
+	SYSCTL_SCALAR_CORE_LEN(oldp, oldlenp, valp, sizeof(typ))
+
+# define SYSCTL_SCALAR_NEWPCHECK_LEN(newp, newlen, len)		\
+	if (newp && newlen != len)				\
+		return EINVAL;
+
+# define SYSCTL_SCALAR_NEWPCHECK_TYP(newp, newlen, typ)		\
+	SYSCTL_SCALAR_NEWPCHECK_LEN(newp, newlen, sizeof(typ))
+
+# define SYSCTL_SCALAR_NEWPCOP_LEN(newp, valp, len)		\
+	if (error == 0 && newp)					\
+		error = copyin (newp, valp, len);
+
+# define SYSCTL_SCALAR_NEWPCOP_TYP(newp, valp, typ)      	\
+	SYSCTL_SCALAR_NEWPCOP_LEN(newp, valp, sizeof(typ))
+
+static long SYSCTL_STRING_CORE (void *oldp, ulong *oldlenp, const char *str)
+{
+	long error = 0;
+
+	if (oldlenp)
+	{
+		long len = strlen (str) + 1;
+
+		if (oldp)
+		{
+			long err2 = 0;
+
+			if (*oldlenp < len)
+			{
+				err2 = ENOMEM;
+				len = *oldlenp;
+			}
+			else
+				*oldlenp = len;
+
+			error = copyout (str, oldp, len);
+			if (error == 0)
+				error = err2;
+		}
+		else
+			*oldlenp = len;
+	}
+
+	return error;
+}
+
+/*
+ * Validate parameters and get old / set new parameters
+ * for an integer-valued sysctl function.
+ */
+static long sysctl_short (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, short *valp)
+{
+	long error = 0;
+
+	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, short)
+	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, short)
+	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, short)
+
+	return error;
+}
+
+/*
+ * Validate parameters and get old / set new parameters
+ * for an integer-valued sysctl function.
+ */
+static long sysctl_long (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, long *valp)
+{
+	long error = 0;
+
+	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, long)
+	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, long)
+	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, long)
+
+	return error;
+}
+
+/*
+ * As above, but read-only.
+ */
+static long sysctl_rdlong (void *oldp, ulong *oldlenp, const void *newp, long val)
+{
+	long error = 0;
+
+	if (newp)
+		return EPERM;
+
+	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, &val, long)
+
+	return error;
+}
+
+/*
+ * Validate parameters and get old / set new parameters
+ * for an quad-valued sysctl function.
+ */
+#if 0 /* currently unused */
+static long sysctl_quad (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, llong *valp)
+{
+	long error = 0;
+
+	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, llong)
+	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, llong)
+	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, llong)
+
+	return error;
+}
+#endif
+
+/*
+ * As above, but read-only.
+ */
+#if 0 /* currently unused */
+static long sysctl_rdquad (void *oldp, ulong *oldlenp, const void *newp, llong val)
+{
+	long error = 0;
+
+	if (newp)
+		return EPERM;
+
+	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, &val, llong)
+
+	return error;
+}
+#endif
+
+/*
+ * Validate parameters and get old / set new parameters
+ * for a string-valued sysctl function.
+ */
+static long sysctl_string (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, char *str, long maxlen)
+{
+	long error;
+
+	if (newp && newlen >= maxlen)
+		return EINVAL;
+
+	error = SYSCTL_STRING_CORE (oldp, oldlenp, str);
+	if (error == 0 && newp)
+	{
+		error = copyin (newp, str, newlen);
+		str[newlen] = 0;
+	}
+
+	return error;
+}
+
+/*
+ * As above, but read-only.
+ */
+static long sysctl_rdstring (void *oldp, ulong *oldlenp, const void *newp, const char *str)
+{
+	if (newp)
+		return EPERM;
+
+	return SYSCTL_STRING_CORE (oldp, oldlenp, str);
+}
+
+/*
+ * Validate parameters and get old / set new parameters
+ * for a structure oriented sysctl function.
+ */
+#if 0 /* currently unused */
+static long sysctl_struct (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, void *sp, long len)
+{
+	long error = 0;
+
+	SYSCTL_SCALAR_NEWPCHECK_LEN (newp, newlen, len)
+	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
+	SYSCTL_SCALAR_NEWPCOP_LEN (newp, sp, len)
+
+	return error;
+}
+#endif
+
+/*
+ * Validate parameters and get old parameters
+ * for a structure oriented sysctl function.
+ */
+static long sysctl_rdstruct (void *oldp, ulong *oldlenp, const void *newp, const void *sp, long len)
+{
+	long error = 0;
+
+	if (newp)
+		return EPERM;
+
+	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
+
+	return error;
+}
+
+/*
+ * As above, but can return a truncated result.
+ */
+#if 0 /* currently unused */
+static long sysctl_rdminstruct (void *oldp, ulong *oldlenp, const void *newp, const void *sp, long len)
+{
+	long error = 0;
+
+	if (newp)
+		return EPERM;
+
+	len = MIN (*oldlenp, len);
+	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
+
+	return error;
+}
+#endif
+
 
 /*
  * kernel related system variables.
@@ -212,7 +375,17 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 			return sysctl_rdlong (oldp, oldlenp, newp, LOGIN_NAME_MAX);
 
 		case KERN_BOOTTIME:
-			return sysctl_rdstruct (oldp, oldlenp, newp, &boottime, sizeof (struct timeval));
+			if (oldlenp && *oldlenp == sizeof(boottime))
+			{
+				return sysctl_rdstruct (oldp, oldlenp, newp, &boottime, sizeof (boottime));
+			} else
+			{
+				struct timeval b;
+				
+				b.tv_sec = boottime.tv_sec;
+				b.tv_usec = boottime.tv_usec;
+				return sysctl_rdstruct (oldp, oldlenp, newp, &b, sizeof (b));
+			}
 
 		case KERN_INITIALTPA:
 			return sysctl_long (oldp, oldlenp, newp, newlen,  (long *)&initialmem);
@@ -358,234 +531,69 @@ kbd_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
 }
 
 
-static long copyout(const void *src, void *dst, ulong len) { memcpy (dst, src, len); return 0; }
-static long copyin(const void *src, void *dst, ulong len) { memcpy (dst, src, len); return 0; }
+long _cdecl
+sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
+	      const void *new, ulong newlen)
+{
+	struct proc *p = get_curproc();
 
-/*
- * Convenience macros.
- */
+	long ret;
+	sysctlfn *fn;
 
-# define SYSCTL_SCALAR_CORE_LEN(oldp, oldlenp, valp, len) 	\
-	if (oldlenp) {						\
-		if (!oldp)					\
-			*oldlenp = len;				\
-		else {						\
-			if (*oldlenp < len)			\
-				return ENOMEM;			\
-			*oldlenp = len;				\
-			error = copyout (valp, oldp, len);	\
-		}						\
-	}
 
-# define SYSCTL_SCALAR_CORE_TYP(oldp, oldlenp, valp, typ)	\
-	SYSCTL_SCALAR_CORE_LEN(oldp, oldlenp, valp, sizeof(typ))
-
-# define SYSCTL_SCALAR_NEWPCHECK_LEN(newp, newlen, len)		\
-	if (newp && newlen != len)				\
+	/*
+	 * all top-level sysctl names are non-terminal
+	 */
+	if (namelen > CTL_MAXNAME || namelen < 2)
 		return EINVAL;
 
-# define SYSCTL_SCALAR_NEWPCHECK_TYP(newp, newlen, typ)		\
-	SYSCTL_SCALAR_NEWPCHECK_LEN(newp, newlen, sizeof(typ))
-
-# define SYSCTL_SCALAR_NEWPCOP_LEN(newp, valp, len)		\
-	if (error == 0 && newp)					\
-		error = copyin (newp, valp, len);
-
-# define SYSCTL_SCALAR_NEWPCOP_TYP(newp, valp, typ)      	\
-	SYSCTL_SCALAR_NEWPCOP_LEN(newp, valp, sizeof(typ))
-
-static long
-SYSCTL_STRING_CORE (void *oldp, ulong *oldlenp, const char *str)
-{
-	long error = 0;
-
-	if (oldlenp)
+	/*
+	 * For all but CTL_PROC, must be root to change a value.
+	 * For CTL_PROC, must be root, or owner of the proc (and not suid),
+	 * this is checked in proc_sysctl() (once we know the targer proc).
+	 */
+	if (new != NULL
+# ifdef CTL_PROC
+		&& name[0] != CTL_PROC
+# endif
+	)
 	{
-		long len = strlen (str) + 1;
-
-		if (oldp)
-		{
-			long err2 = 0;
-
-			if (*oldlenp < len)
-			{
-				err2 = ENOMEM;
-				len = *oldlenp;
-			}
-			else
-				*oldlenp = len;
-
-			error = copyout (str, oldp, len);
-			if (error == 0)
-				error = err2;
-		}
-		else
-			*oldlenp = len;
+		if (!suser (p->p_cred->ucr))
+			return EPERM;
 	}
 
-	return error;
-}
-
-/*
- * Validate parameters and get old / set new parameters
- * for an integer-valued sysctl function.
- */
-long
-sysctl_short (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, short *valp)
-{
-	long error = 0;
-
-	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, short)
-	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, short)
-	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, short)
-
-	return error;
-}
-
-/*
- * Validate parameters and get old / set new parameters
- * for an integer-valued sysctl function.
- */
-long
-sysctl_long (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, long *valp)
-{
-	long error = 0;
-
-	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, long)
-	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, long)
-	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, long)
-
-	return error;
-}
-
-/*
- * As above, but read-only.
- */
-long
-sysctl_rdlong (void *oldp, ulong *oldlenp, const void *newp, long val)
-{
-	long error = 0;
-
-	if (newp)
-		return EPERM;
-
-	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, &val, long)
-
-	return error;
-}
-
-/*
- * Validate parameters and get old / set new parameters
- * for an quad-valued sysctl function.
- */
-long
-sysctl_quad (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, llong *valp)
-{
-	long error = 0;
-
-	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, llong)
-	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, llong)
-	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, llong)
-
-	return error;
-}
-
-/*
- * As above, but read-only.
- */
-long
-sysctl_rdquad (void *oldp, ulong *oldlenp, const void *newp, llong val)
-{
-	long error = 0;
-
-	if (newp)
-		return EPERM;
-
-	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, &val, llong)
-
-	return error;
-}
-
-/*
- * Validate parameters and get old / set new parameters
- * for a string-valued sysctl function.
- */
-long
-sysctl_string (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, char *str, long maxlen)
-{
-	long error;
-
-	if (newp && newlen >= maxlen)
-		return EINVAL;
-
-	error = SYSCTL_STRING_CORE (oldp, oldlenp, str);
-	if (error == 0 && newp)
+	switch (name[0])
 	{
-		error = copyin (newp, str, newlen);
-		str[newlen] = 0;
+		case CTL_KERN:
+			fn = kern_sysctl;
+			break;
+		case CTL_HW:
+			fn = hw_sysctl;
+			break;
+		case CTL_MACHDEP:
+			return EINVAL;
+			// XXX todo
+			// fn = cpu_sysctl;
+			break;
+# ifdef DEBUG_INFO
+		case CTL_DEBUG:
+			return EINVAL;
+			// XXX todo
+			// fn = debug_sysctl;
+			break;
+# endif
+		case CTL_PROC:
+			fn = proc_sysctl;
+			break;
+		case CTL_KBD:
+			fn = kbd_sysctl;
+			break;
+		default:
+			return EOPNOTSUPP;
 	}
 
-	return error;
+	ret = (*fn)(name + 1, namelen - 1, old, oldlenp, new, newlen, p);
+	return ret;
 }
 
-/*
- * As above, but read-only.
- */
-long
-sysctl_rdstring (void *oldp, ulong *oldlenp, const void *newp, const char *str)
-{
-	if (newp)
-		return EPERM;
 
-	return SYSCTL_STRING_CORE (oldp, oldlenp, str);
-}
-
-/*
- * Validate parameters and get old / set new parameters
- * for a structure oriented sysctl function.
- */
-long
-sysctl_struct (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, void *sp, long len)
-{
-	long error = 0;
-
-	SYSCTL_SCALAR_NEWPCHECK_LEN (newp, newlen, len)
-	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
-	SYSCTL_SCALAR_NEWPCOP_LEN (newp, sp, len)
-
-	return error;
-}
-
-/*
- * Validate parameters and get old parameters
- * for a structure oriented sysctl function.
- */
-long
-sysctl_rdstruct (void *oldp, ulong *oldlenp, const void *newp, const void *sp, long len)
-{
-	long error = 0;
-
-	if (newp)
-		return EPERM;
-
-	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
-
-	return error;
-}
-
-/*
- * As above, but can return a truncated result.
- */
-long
-sysctl_rdminstruct (void *oldp, ulong *oldlenp, const void *newp, const void *sp, long len)
-{
-	long error = 0;
-
-	if (newp)
-		return EPERM;
-
-	len = MIN (*oldlenp, len);
-	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
-
-	return error;
-}
