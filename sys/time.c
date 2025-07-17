@@ -512,8 +512,8 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
     }
 
     if (delta != NULL) {
-        struct timeval tv;
-        long retval = do_gettimeofday(&tv);
+        struct timeval64 tv;
+        long retval = do_gettimeofday64(&tv);
         if (retval < 0)
             return retval;
 
@@ -523,12 +523,23 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
             tv.tv_usec -= 1000000L;
             tv.tv_sec++;
         }
+        if (tv.tv_usec < 0)
+        {
+            tv.tv_usec += 1000000L;
+            tv.tv_sec--;
+        }
         tv.tv_sec += delta->tv_sec;
         
-        retval = do_settimeofday (&tv);
+        retval = do_settimeofday64(&tv);
         if (retval < 0)
             return retval;
     }
+
+	if (olddelta != 0)
+	{
+		olddelta->tv_sec = 0;
+		olddelta->tv_usec = 0;
+	}
 
     return E_OK;
 }
