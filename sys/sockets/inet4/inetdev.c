@@ -109,11 +109,11 @@ inetdev_read (FILEPTR *fp, char *buf, long nbytes)
 	ulong space;
 	int i;
 	
-	for (space = nbytes; space >= sizeof (info); fp->pos++)
+	for (space = nbytes; space >= sizeof (info); fp->pos32++)
 	{
 		datap = allindatas;
 		
-		for (i = fp->pos; datap->proto; datap++)
+		for (i = fp->pos32; datap->proto; datap++)
 		{
 			inp = datap->proto->datas;
 			for (; inp && --i >= 0; inp = inp->next)

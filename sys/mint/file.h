@@ -18,18 +18,25 @@
 # include "fcntl.h"
 # include "fsops.h"
 
+/* maximum filesize for filesystems that do not support FS_LARGE_FILE */
+#define MAX_NON_LFS 2147483647L
 
 struct file
 {
 	short	links;		/* number of copies of this descriptor */
 	ushort	flags;		/* file open mode and other file flags */
-	long	pos;		/* position in file */
+	union {
+		struct {
+			long	filler;
+			long	pos32;		/* position in file */
+		};
+		off64_t	pos64;		/* position in file, for FSs that support FS_LARGE_FILE */
+	};
 	long	devinfo;	/* device driver specific info */
 	fcookie	fc;		/* file system cookie for this file */
 	DEVDRV	*dev;		/* device driver that knows how to deal with this */
 	FILEPTR	*next;		/* link to next fileptr for this file */
 };
-
 
 /* structure for internal kernel locks */
 struct ilock

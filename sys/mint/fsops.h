@@ -57,11 +57,8 @@ struct devdrv
 	 */
 	long _cdecl (*writeb)	(FILEPTR *f, const char *buf, long bytes);
 	long _cdecl (*readb)	(FILEPTR *f, char *buf, long bytes);
-	
-	/* what about: scatter/gather io for DMA devices...
-	 * long _cdecl (*writev)(FILEPTR *f, const struct iovec *iov, long cnt);
-	 * long _cdecl (*readv)	(FILEPTR *f, struct iovec *iov, long cnt);
-	 */
+	/* large file support */
+	long _cdecl (*lseek64)  (FILEPTR *f, off64_t where, int whence, off64_t *newpos);
 };
 
 /*
@@ -92,6 +89,7 @@ struct filesys
 # define FS_EXT_1		0x0200	/* extensions level 1 - mknod & unmount */
 # define FS_EXT_2		0x0400	/* extensions level 2 - additional place at the end */
 # define FS_EXT_3		0x0800	/* extensions level 3 - stat & native UTC timestamps */
+# define FS_LARGE_FILE	0x1000	/* file systems supports files >2GB */
 	
 	/* filesystem functions
 	 */
@@ -128,7 +126,9 @@ struct filesys
 	long	_cdecl (*unmount)	(int drv);
 	long	_cdecl (*stat64)	(fcookie *file, STAT *stat);
 	
-	long	res1, res2, res3;	/* reserved */
+	long	res1;				/* reserved (partly used by hostfs) */
+	long	fs_supported;		/* flags the remote fs supports */
+	long	res3;				/* reserved */
 	
 	/* experimental extension
 	 */

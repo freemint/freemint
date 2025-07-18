@@ -833,7 +833,7 @@ dummy_open (FILEPTR *f)
 //		return EACCES;
 //	}
 	
-	f->pos = 0;
+	f->pos32 = 0;
 	f->devinfo = 0;
 //	f->next = c->open;
 //	c->open = f;
@@ -867,7 +867,7 @@ dummy_lseek (FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:				break;
-		case SEEK_CUR:	where += f->pos;	break;
+		case SEEK_CUR:	where += f->pos32;	break;
 //		case SEEK_END:	where += c->stat.size;	break;
 		default:	return EINVAL;
 	}
@@ -878,9 +878,9 @@ dummy_lseek (FILEPTR *f, long where, int whence)
 		return EBADARG;
 	}
 	
-	f->pos = where;
+	f->pos32 = where;
 	
-	DEBUG (("dummy: dummy_lseek: leave ok (f->pos = %li)", f->pos));
+	DEBUG (("dummy: dummy_lseek: leave ok (f->pos = %li)", f->pos32));
 	return where;
 }
 
@@ -895,7 +895,7 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 	{
 		case FIONREAD:
 		{
-			*(long *) buf = 0; //c->stat.size - f->pos;
+			*(long *) buf = 0; //c->stat.size - f->pos32;
 			return E_OK;
 		}
 		case FIONWRITE:

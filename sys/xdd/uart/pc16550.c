@@ -2726,7 +2726,7 @@ uart_open (FILEPTR *f)
 		}
 	}
 	
-	f->pos = 0;
+	f->pos32 = 0;
 	f->next = iovar->open;
 	iovar->open = f;
 	

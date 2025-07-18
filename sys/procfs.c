@@ -654,7 +654,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 	long bytes_written, txtsize;
 	int prot_hold;
 
-	where = f->pos;
+	where = f->pos32;
 
 	TRACE(("proc_write to pid %d: %ld bytes to %lx", p->pid, nbytes, where));
 
@@ -729,7 +729,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 			quickmovb((void *)where, buf, bytes_written);
 
 		cpush((void *)where, bytes_written);	/* flush cached data */
-		f->pos += bytes_written;
+		f->pos32 += bytes_written;
 		return bytes_written;
 # endif
 	}
@@ -739,7 +739,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 		m = proc_addr2region(p, where);
 		if (!m) {
 			DEBUG(("proc_write: Memory not owned by process %d", p->pid));
-			if (where == f->pos)
+			if (where == f->pos32)
 				return EACCES;
 			break;
 		}
@@ -816,9 +816,9 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 			prot_temp(m->loc, m->len, prot_hold);
 	}
 
-	bytes_written = where - f->pos;
+	bytes_written = where - f->pos32;
 
-	f->pos += bytes_written;
+	f->pos32 += bytes_written;
 	return bytes_written;
 }
 
@@ -830,7 +830,7 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 	long where, bytes_read, txtsize;
 	int prot_hold;
 
-	where = f->pos;
+	where = f->pos32;
 
 	TRACE(("proc_read from pid %d: %ld bytes from %lx", p->pid, nbytes, where));
 
@@ -840,7 +840,7 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 		if (bytes_read > nbytes)
 			bytes_read = nbytes;
 		quickmovb(buf, (void *)where, bytes_read);
-		f->pos += bytes_read;
+		f->pos32 += bytes_read;
 		return bytes_read;
 	}
 
@@ -849,7 +849,7 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 		m = proc_addr2region(p, where);
 		if (!m) {
 			DEBUG(("proc_read: Memory not owned by process %d", p->pid));
-			if (where == f->pos)
+			if (where == f->pos32)
 				return EACCES;
 			break;
 		}
@@ -927,9 +927,9 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 			prot_temp(m->loc, m->len, prot_hold);
 	}
 
-	bytes_read = where - f->pos;
+	bytes_read = where - f->pos32;
 
-	f->pos += bytes_read;
+	f->pos32 += bytes_read;
 	return bytes_read;
 }
 
@@ -1249,16 +1249,16 @@ proc_lseek (FILEPTR *f, long where, int whence)
 	{
 		case SEEK_SET:
 		case SEEK_END:
-			f->pos = where;
+			f->pos32 = where;
 			break;
 		case SEEK_CUR:
-			f->pos += where;
+			f->pos32 += where;
 			break;
 		default:
 			return ENOSYS;
 	}
 	
-	return f->pos;
+	return f->pos32;
 }
 
 static long _cdecl 

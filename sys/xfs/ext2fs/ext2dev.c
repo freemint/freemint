@@ -114,7 +114,7 @@ e_open (FILEPTR *f)
 	
 	DEBUG (("Ext2-FS: e_open size: %li", c->i_size));
 	
-	f->pos = 0;
+	f->pos32 = 0;
 	f->next = c->open;
 	c->open = f;
 	c->links++;
@@ -241,7 +241,7 @@ e_write (FILEPTR *f, const char *buf, long bytes)
 	remove_suid (c);
 	
 	if (IS_APPEND (c))	pos = c->i_size;
-	else			pos = f->pos;
+	else			pos = f->pos32;
 	
 	block = pos >> EXT2_BLOCK_SIZE_BITS (s);
 	offset = pos & EXT2_BLOCK_SIZE_MASK (s);
@@ -375,9 +375,9 @@ out:
 	c->in.i_ctime = c->in.i_mtime = cpu2le32 (CURRENT_TIME);
 	mark_inode_dirty (c);
 	
-	f->pos = pos;
+	f->pos32 = pos;
 	
-	DEBUG (("Ext2-FS [%c]: e_write: leave (#%li: pos = %li, written = %li)", f->fc.dev+'A', c->inode, f->pos, written));
+	DEBUG (("Ext2-FS [%c]: e_write: leave (#%li: pos = %li, written = %li)", f->fc.dev+'A', c->inode, f->pos32, written));
 	return written;
 }
 
@@ -390,15 +390,15 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	long todo;		/* characters remaining */
 	long done;		/* characters processed */
 
-	ulong block = f->pos >> EXT2_BLOCK_SIZE_BITS (s);
-	ulong offset = f->pos & EXT2_BLOCK_SIZE_MASK (s);
+	ulong block = f->pos32 >> EXT2_BLOCK_SIZE_BITS (s);
+	ulong offset = f->pos32 & EXT2_BLOCK_SIZE_MASK (s);
 
-	DEBUG (("Ext2-FS [%c]: e_read: enter (#%li: pos = %li, bytes = %li [%lu, %lu])", f->fc.dev+'A', c->inode, f->pos, bytes, block, offset));
+	DEBUG (("Ext2-FS [%c]: e_read: enter (#%li: pos = %li, bytes = %li [%lu, %lu])", f->fc.dev+'A', c->inode, f->pos32, bytes, block, offset));
 
 	if (EXT2_ISDIR (le2cpu16 (c->in.i_mode)))
 		return EISDIR;
 	
-	todo = MAX(0, MIN ((long)(c->i_size - f->pos), bytes));
+	todo = MAX(0, MIN ((long)(c->i_size - f->pos32), bytes));
 	done = 0;
 	
 	if (todo == 0)
@@ -437,7 +437,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 		buf += data;
 		todo -= data;
 		done += data;
-		f->pos += data;
+		f->pos32 += data;
 	}
 	
 	/* full blocks
@@ -489,7 +489,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 		buf += data;
 		todo -= data;
 		done += data;
-		f->pos += data;
+		f->pos32 += data;
 	}
 	
 	DEBUG (("todo = %li", todo));
@@ -512,7 +512,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 		else	bzero (buf, todo);
 		
 		done += todo;
-		f->pos += todo;
+		f->pos32 += todo;
 	}
 	
 out:
@@ -525,7 +525,7 @@ out:
 		mark_inode_dirty (c);
 	}
 	
-	DEBUG (("Ext2-FS [%c]: e_read: leave (#%li: pos = %li, done = %li)", f->fc.dev+'A', c->inode, f->pos, done));
+	DEBUG (("Ext2-FS [%c]: e_read: leave (#%li: pos = %li, done = %li)", f->fc.dev+'A', c->inode, f->pos32, done));
 	return done;
 }
 
@@ -539,7 +539,7 @@ e_lseek (FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:				break;
-		case SEEK_CUR:	where += f->pos;	break;
+		case SEEK_CUR:	where += f->pos32;	break;
 		case SEEK_END:	where += c->i_size;	break;
 		default:	return EINVAL;
 	}
@@ -550,7 +550,7 @@ e_lseek (FILEPTR *f, long where, int whence)
 		return EBADARG;
 	}
 	
-	f->pos = where;
+	f->pos32 = where;
 	
 	DEBUG (("Ext2-FS [%c]: e_lseek: leave (#%li, %li)", f->fc.dev+'A', c->inode, where));
 	return where;
@@ -564,7 +564,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 		case FIONREAD:
 		{
 			COOKIE *c = (COOKIE *) f->fc.index;
-			long read = c->i_size - f->pos;
+			long read = c->i_size - f->pos32;
 			
 			DEBUG (("Ext2-FS: e_ioctl (FIONREAD)"));
 			
@@ -662,7 +662,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			
 			ext2_truncate (c, *(unsigned long *)arg);
 			
-			pos = f->pos;
+			pos = f->pos32;
 			(void) e_lseek (f, 0, SEEK_SET);
 			(void) e_lseek (f, pos, SEEK_SET);
 			

@@ -704,7 +704,7 @@ init (void)
 
 	rootproc->p_fd->aux = f;
 	((struct tty *) f->devinfo)->aux_cnt = 1;
-	f->pos = 1;	/* flag for close to --aux_cnt */
+	f->pos32 = 1;	/* flag for close to --aux_cnt */
 
 	if (has_bconmap)
 	{
@@ -744,7 +744,7 @@ init (void)
 
 		((struct tty *) f->devinfo)->use_cnt++;
 		((struct tty *) f->devinfo)->aux_cnt = 2;
-		f->pos = 1;	/* flag for close to --aux_cnt */
+		f->pos32 = 1;	/* flag for close to --aux_cnt */
 	}
 
 	/* print the warning message if MP is turned off */

@@ -456,7 +456,7 @@ biosfs_init (void)
 
 	defaultaux->links = 1;		/* so it never gets freed */
 	defaultaux->flags = O_RDWR;
-	defaultaux->pos = 0;
+	defaultaux->pos32 = 0;
 	defaultaux->devinfo = 0;
 	defaultaux->fc.fs = &bios_filesys;
 	defaultaux->fc.index = 0;
@@ -2528,7 +2528,7 @@ bios_close (FILEPTR *f, int pid)
 		wake (IO_Q, (long) b);	/* wake anyone waiting for this lock */
 	}
 
-	if (tty && f->links <= 0 && f->pos)
+	if (tty && f->links <= 0 && f->pos32)
 		/* f->pos used as flag that f came from Bconmap (/dev/aux) */
 		tty->aux_cnt--;
 
@@ -2562,7 +2562,7 @@ set_auxhandle (PROC *p, int dev)
 
 		f->links = 1;
 		f->flags = O_RDWR;
-		f->pos = 0;
+		f->pos32 = 0;
 		f->devinfo = 0;
 
 		f->fc.fs = &bios_filesys;
@@ -2624,7 +2624,7 @@ found_device:
 			}
 
 			tty->aux_cnt++;
-			f->pos = 1;	/* flag for close to --aux_cnt */
+			f->pos32 = 1;	/* flag for close to --aux_cnt */
 		}
 	}
 	else

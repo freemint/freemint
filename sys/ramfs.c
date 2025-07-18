@@ -375,7 +375,7 @@ FILESYS ramfs_filesys =
 	/* FS_EXT_3 */
 	stat64:			ram_stat64,
 	res1:			0,
-	res2:			0,
+	fs_supported:	0,
 	res3:			0,
 
 	lock: 0, sleepers: 0,
@@ -2074,7 +2074,7 @@ ram_open (FILEPTR *f)
 		f->flags = (f->flags ^ O_EXEC) | O_RDONLY;
 	}
 
-	f->pos = 0;
+	f->pos32 = 0;
 	f->devinfo = 0;
 	f->next = c->open;
 	c->open = f;
@@ -2133,7 +2133,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 
 	while (todo > 0)
 	{
-		long temp = f->pos >> BLOCK_SHIFT;
+		long temp = f->pos32 >> BLOCK_SHIFT;
 
 		if (temp >= size)
 		{
@@ -2162,7 +2162,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 			}
 		}
 
-		offset = f->pos & BLOCK_MASK;
+		offset = f->pos32 & BLOCK_MASK;
 
 		if ((todo >> BLOCK_SHIFT) && (offset == 0))
 		{
@@ -2192,14 +2192,14 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 
 			buf += BLOCK_SIZE;
 			todo -= BLOCK_SIZE;
-			f->pos += BLOCK_SIZE;
+			f->pos32 += BLOCK_SIZE;
 		}
 		else
 		{
 			char *ptr = table [temp];
 			long data;
 
-			RAM_DEBUG (("ramfs: ram_write: BYTES (todo = %li, pos = %li)", todo, f->pos));
+			RAM_DEBUG (("ramfs: ram_write: BYTES (todo = %li, pos = %li)", todo, f->pos32));
 
 			data = BLOCK_SIZE - offset;
 			data = MIN (todo, data);
@@ -2261,12 +2261,12 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 
 			buf += data;
 			todo -= data;
-			f->pos += data;
+			f->pos32 += data;
 		}
 
-		if (f->pos > c->stat.size)
+		if (f->pos32 > c->stat.size)
 		{
-			c->stat.size = f->pos;
+			c->stat.size = f->pos32;
 		}
 	}
 
@@ -2294,7 +2294,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		return 0;
 	}
 
-	bytes = MIN (c->stat.size - f->pos, bytes);
+	bytes = MIN (c->stat.size - f->pos32, bytes);
 
 	/* At or past EOF */
 	if (bytes <= 0)
@@ -2303,14 +2303,14 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		return 0;
 	}
 
-	chunk = f->pos >> BLOCK_SHIFT;
+	chunk = f->pos32 >> BLOCK_SHIFT;
 
 	/* Are we block aligned? */
-	if (f->pos & BLOCK_MASK)
+	if (f->pos32 & BLOCK_MASK)
 	{
 		char *ptr = table [chunk++];
 
-		register long off = f->pos & BLOCK_MASK;
+		register long off = f->pos32 & BLOCK_MASK;
 		register long data;
 
 		data = BLOCK_SIZE - off;
@@ -2329,7 +2329,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		buf += data;
 		bytes -= data;
 		done += data;
-		f->pos += data;
+		f->pos32 += data;
 	}
 
 	/* Any full blocks to read ? */
@@ -2354,7 +2354,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 			buf += BLOCK_SIZE;
 			end -= BLOCK_SIZE;
 			done += BLOCK_SIZE;
-			f->pos += BLOCK_SIZE;
+			f->pos32 += BLOCK_SIZE;
 		}
 
 		bytes &= BLOCK_MASK;
@@ -2376,7 +2376,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 			mint_bzero (buf, bytes);
 
 		done += bytes;
-		f->pos += bytes;
+		f->pos32 += bytes;
 	}
 
 	if (!((f->flags & O_NOATIME) 
@@ -2401,7 +2401,7 @@ ram_lseek (FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:				break;
-		case SEEK_CUR:	where += f->pos;	break;
+		case SEEK_CUR:	where += f->pos32;	break;
 		case SEEK_END:	where += c->stat.size;	break;
 		default:	return EINVAL;
 	}
@@ -2412,9 +2412,9 @@ ram_lseek (FILEPTR *f, long where, int whence)
 		return EBADARG;
 	}
 
-	f->pos = where;
+	f->pos32 = where;
 
-	RAM_DEBUG (("ramfs: ram_lseek: leave ok (f->pos = %li)", f->pos));
+	RAM_DEBUG (("ramfs: ram_lseek: leave ok (f->pos = %li)", f->pos32));
 	return where;
 }
 
@@ -2429,10 +2429,10 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 	{
 		case FIONREAD:
 		{
-			if (c->stat.size - f->pos < 0) 
+			if (c->stat.size - f->pos32 < 0) 
 				*(long *) buf = 0;
 			else
-				*(long *) buf = c->stat.size - f->pos;
+				*(long *) buf = c->stat.size - f->pos32;
 			return E_OK;
 		}
 		case FIONWRITE:
@@ -2461,7 +2461,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			r = __FTRUNCATE (c, *(long *) buf);
 			if (r == E_OK)
 			{
-				long pos = f->pos;
+				long pos = f->pos32;
 				(void) ram_lseek (f, 0, SEEK_SET);
 				(void) ram_lseek (f, pos, SEEK_SET);
 			}

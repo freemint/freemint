@@ -93,6 +93,8 @@ typedef struct ilock		LOCK;
 typedef struct filesys		FILESYS;
 typedef struct devdrv		DEVDRV;
 typedef struct tty		TTY;
+typedef int32_t off32_t;
+typedef int64_t off64_t;
 
 /* forward declarations: proc.h
  */

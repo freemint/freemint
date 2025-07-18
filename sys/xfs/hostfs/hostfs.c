@@ -46,6 +46,17 @@ static struct fs_descr hostfs_descr =
     };
 
 
+static void check_fs_supported(FILESYS *fs)
+{
+	/*
+	 * double-check which flags are supported by aranym,
+	 * they might be different than ours
+	 */
+	if (!(fs->fs_supported & FS_LARGE_FILE))
+		fs->fsflags &= ~FS_LARGE_FILE;
+}
+
+
 #if __KERNEL__ == 1
 
 FILESYS *hostfs_mount_drives(FILESYS *fs)
@@ -79,7 +90,10 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 				fs, &hostfs_fs_devdrv );
 		/* set the drive bit */
 		if ( !r )
+		{
+			check_fs_supported(fs);
 			*((long *) 0x4c2L) |= 1UL << drv_number;
+		}
 
 		drv_number++; drv_mask>>=1;
 	}
@@ -167,6 +181,7 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 				} else {
 					succ = 0; /* do not unmount */
 					keep = 1; /* at least one is mounted */
+					check_fs_supported(fs);
 				}
 			}
 

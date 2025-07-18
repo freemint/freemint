@@ -334,9 +334,9 @@ static long _cdecl xread(FILEPTR *f, char *buf, long bytes)
 
 	setup_metadev(f, &device);
 
-	if ((off = (f->pos % CD_FRAMESIZE)) != 0 && bytes != 0)
+	if ((off = (f->pos32 % CD_FRAMESIZE)) != 0 && bytes != 0)
 	{
-		first = f->pos / CD_FRAMESIZE;
+		first = f->pos32 / CD_FRAMESIZE;
 		ret = nf_call(NFCDROM(NFCD_READ), &device, secbuf, first, 1l);
 		if (ret < 0)
 			return ret;
@@ -346,12 +346,12 @@ static long _cdecl xread(FILEPTR *f, char *buf, long bytes)
 		memcpy(buf, &secbuf[off], ret);
 		nread += ret;
 		buf += ret;
-		f->pos += ret;
+		f->pos32 += ret;
 		bytes -= ret;
 	}
 	if (bytes >= CD_FRAMESIZE)
 	{
-		first = f->pos / CD_FRAMESIZE;
+		first = f->pos32 / CD_FRAMESIZE;
 		ret = nf_call(NFCDROM(NFCD_READ), &device, buf, first, bytes / CD_FRAMESIZE);
 		if (ret < 0)
 			return ret;
@@ -360,12 +360,12 @@ static long _cdecl xread(FILEPTR *f, char *buf, long bytes)
 			ret = bytes;
 		nread += ret;
 		buf += ret;
-		f->pos += ret;
+		f->pos32 += ret;
 		bytes -= ret;
 	}
 	if (bytes >= 0)
 	{
-		first = f->pos / CD_FRAMESIZE;
+		first = f->pos32 / CD_FRAMESIZE;
 		ret = nf_call(NFCDROM(NFCD_READ), &device, secbuf, first, 1L);
 		if (ret < 0)
 			return ret;
@@ -373,7 +373,7 @@ static long _cdecl xread(FILEPTR *f, char *buf, long bytes)
 		memcpy(buf, secbuf, ret);
 		nread += ret;
 		buf += ret;
-		f->pos += ret;
+		f->pos32 += ret;
 		bytes -= ret;
 	}
 	return nread;
@@ -385,7 +385,7 @@ static long _cdecl xlseek(FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:				break;
-		case SEEK_CUR:	where += f->pos;	break;
+		case SEEK_CUR:	where += f->pos32;	break;
 		/* case SEEK_END:	where += c->i_size;	break; */
 		default:	return EINVAL;
 	}
@@ -395,7 +395,7 @@ static long _cdecl xlseek(FILEPTR *f, long where, int whence)
 		return EBADARG;
 	}
 
-	f->pos = where;
+	f->pos32 = where;
 
 	return where;
 }

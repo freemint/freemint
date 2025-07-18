@@ -67,12 +67,16 @@
 /*
  * Special inodes numbers
  */
-# define EXT2_BAD_INO			1	/* Bad blocks inode */
-# define EXT2_ROOT_INO			2	/* Root inode */
-# define EXT2_ACL_IDX_INO		3	/* ACL inode */
-# define EXT2_ACL_DATA_INO		4	/* ACL inode */
-# define EXT2_BOOT_LOADER_INO		5	/* Boot loader inode */
-# define EXT2_UNDEL_DIR_INO		6	/* Undelete directory inode */
+#define EXT2_BAD_INO			1	/* Bad blocks inode */
+#define EXT2_ROOT_INO			2	/* Root inode */
+#define EXT2_ACL_IDX_INO		3	/* ACL inode */
+#define EXT2_ACL_DATA_INO		4	/* ACL inode */
+#define EXT2_BOOT_LOADER_INO		5	/* Boot loader inode */
+#define EXT2_UNDEL_DIR_INO		6	/* Undelete directory inode */
+#define EXT2_RESIZE_INO		 7	/* Reserved group descriptors inode */
+#define EXT2_JOURNAL_INO	 8	/* Journal inode */
+#define EXT2_EXCLUDE_INO	 9	/* The "exclude" inode, for snapshots */
+#define EXT4_REPLICA_INO	10	/* Used by non-upstream feature */
 
 /* First non-reserved inode for old ext2 filesystems */
 # define EXT2_GOOD_OLD_FIRST_INO	11
@@ -171,35 +175,42 @@ struct ext2_group_desc
 /*
  * Inode flags
  */
-# define EXT2_SECRM_FL			0x00000001 /* Secure deletion */
-# define EXT2_UNRM_FL			0x00000002 /* Undelete */
-# define EXT2_COMPR_FL			0x00000004 /* Compress file */
-# define EXT2_SYNC_FL			0x00000008 /* Synchronous updates */
-# define EXT2_IMMUTABLE_FL		0x00000010 /* Immutable file */
-# define EXT2_APPEND_FL			0x00000020 /* writes to file may only append */
-# define EXT2_NODUMP_FL			0x00000040 /* do not dump file */
-# define EXT2_NOATIME_FL		0x00000080 /* do not update atime */
+#define EXT2_SECRM_FL			0x00000001 /* Secure deletion */
+#define EXT2_UNRM_FL			0x00000002 /* Undelete */
+#define EXT2_COMPR_FL			0x00000004 /* Compress file */
+#define EXT2_SYNC_FL			0x00000008 /* Synchronous updates */
+#define EXT2_IMMUTABLE_FL		0x00000010 /* Immutable file */
+#define EXT2_APPEND_FL			0x00000020 /* writes to file may only append */
+#define EXT2_NODUMP_FL			0x00000040 /* do not dump file */
+#define EXT2_NOATIME_FL			0x00000080 /* do not update atime */
 /* Reserved for compression usage... */
-# define EXT2_DIRTY_FL			0x00000100
-# define EXT2_COMPRBLK_FL		0x00000200 /* One or more compressed clusters */
-# define EXT2_NOCOMP_FL			0x00000400 /* Don't compress */
-# define EXT2_ECOMPR_FL			0x00000800 /* Compression error */
+#define EXT2_DIRTY_FL			0x00000100
+#define EXT2_COMPRBLK_FL		0x00000200 /* One or more compressed clusters */
+#define EXT2_NOCOMPR_FL			0x00000400 /* Access raw compressed data */
+#define EXT2_ECOMPR_FL			0x00000800 /* Compression error */
+#define EXT4_ENCRYPT_FL			0x00000800 /* encrypted inode */
 /* End compression flags --- maybe not all used */
-# define EXT2_BTREE_FL			0x00001000 /* btree format dir */
-# define EXT2_INDEX_FL			0x00001000 /* hash-indexed directory */
-# define EXT2_IMAGIC_FL			0x00002000
-# define EXT3_JOURNAL_DATA_FL	0x00004000 /* file data should be journaled */
-# define EXT2_NOTAIL_FL			0x00008000 /* file tail should not be merged */
-# define EXT2_DIRSYNC_FL 		0x00010000 /* Synchronous directory modifications */
-# define EXT2_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
-# define EXT4_HUGE_FILE_FL               0x00040000 /* Set to each huge file */
-# define EXT4_EXTENTS_FL 		0x00080000 /* Inode uses extents */
-# define EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
-# define EXT4_EOFBLOCKS_FL		0x00400000 /* Blocks allocated beyond EOF */
-# define EXT4_SNAPFILE_FL		0x01000000  /* Inode is a snapshot */
-# define EXT4_SNAPFILE_DELETED_FL	0x04000000  /* Snapshot is being deleted */
-# define EXT4_SNAPFILE_SHRUNK_FL		0x08000000  /* Snapshot shrink has completed */
-# define EXT2_RESERVED_FL		0x80000000 /* reserved for ext2 lib */
+#define EXT2_BTREE_FL			0x00001000 /* btree format dir */
+#define EXT2_INDEX_FL			0x00001000 /* hash-indexed directory */
+#define EXT2_IMAGIC_FL			0x00002000
+#define EXT3_JOURNAL_DATA_FL	0x00004000 /* file data should be journaled */
+#define EXT2_NOTAIL_FL			0x00008000 /* file tail should not be merged */
+#define EXT2_DIRSYNC_FL 		0x00010000 /* Synchronous directory modifications */
+#define EXT2_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
+#define EXT4_HUGE_FILE_FL               0x00040000 /* Set to each huge file */
+#define EXT4_EXTENTS_FL 		0x00080000 /* Inode uses extents */
+#define EXT4_VERITY_FL			0x00100000 /* Verity protected inode */
+#define EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
+#define EXT4_EOFBLOCKS_FL		0x00400000 /* Blocks allocated beyond EOF */
+#define FS_NOCOW_FL				0x00800000 /* Do not cow file */
+#define EXT4_SNAPFILE_FL		0x01000000  /* Inode is a snapshot */
+#define FS_DAX_FL				0x02000000 /* Inode is DAX */
+#define EXT4_SNAPFILE_DELETED_FL	0x04000000  /* Snapshot is being deleted */
+#define EXT4_SNAPFILE_SHRUNK_FL		0x08000000  /* Snapshot shrink has completed */
+#define EXT4_INLINE_DATA_FL		0x10000000 /* Inode has inline data */
+#define EXT4_PROJINHERIT_FL		0x20000000 /* Create with parents projid */
+#define EXT4_CASEFOLD_FL		0x40000000 /* Casefolded file */
+#define EXT2_RESERVED_FL		0x80000000 /* reserved for ext2 lib */
 
 # define EXT2_FL_USER_VISIBLE		0x004BDFFF /* User visible flags */
 # define EXT2_FL_USER_MODIFIABLE	0x004B80FF /* User modifiable flags */
@@ -306,15 +317,16 @@ struct ext2_inode
 /*
  * Mount flags
  */
-# define EXT2_MOUNT_CHECK_NORMAL	0x0001	/* Do some more checks */
-# define EXT2_MOUNT_CHECK_STRICT	0x0002	/* Do again more checks */
-# define EXT2_MOUNT_CHECK		(EXT2_MOUNT_CHECK_NORMAL | EXT2_MOUNT_CHECK_STRICT)
-# define EXT2_MOUNT_GRPID		0x0004	/* Create files with directory's group */
-# define EXT2_MOUNT_DEBUG		0x0008	/* Some debugging messages */
-# define EXT2_MOUNT_ERRORS_CONT		0x0010	/* Continue on errors */
-# define EXT2_MOUNT_ERRORS_RO		0x0020	/* Remount fs ro on errors */
-# define EXT2_MOUNT_ERRORS_PANIC	0x0040	/* Panic on errors */
-# define EXT2_MOUNT_MINIX_DF		0x0080	/* Mimics the Minix statfs */
+#define EXT2_MOUNT_CHECK_NORMAL	0x0001	/* Do some more checks */
+#define EXT2_MOUNT_CHECK_STRICT	0x0002	/* Do again more checks */
+#define EXT2_MOUNT_CHECK		(EXT2_MOUNT_CHECK_NORMAL | EXT2_MOUNT_CHECK_STRICT)
+#define EXT2_MOUNT_GRPID		0x0004	/* Create files with directory's group */
+#define EXT2_MOUNT_DEBUG		0x0008	/* Some debugging messages */
+#define EXT2_MOUNT_ERRORS_CONT		0x0010	/* Continue on errors */
+#define EXT2_MOUNT_ERRORS_RO		0x0020	/* Remount fs ro on errors */
+#define EXT2_MOUNT_ERRORS_PANIC	0x0040	/* Panic on errors */
+#define EXT2_MOUNT_MINIX_DF		0x0080	/* Mimics the Minix statfs */
+#define EXT2_MOUNT_NO_UID32		0x0200  /* Disable 32-bit UIDs */
 
 # define clear_opt(o, opt)		(o &= ~EXT2_MOUNT_##opt)
 # define set_opt(o, opt)		(o |= EXT2_MOUNT_##opt)
@@ -426,14 +438,59 @@ struct ext2_super_block
 # define EXT2_HAS_RO_COMPAT_FEATURE(sb, mask)	(EXT2_SB(sb)->s_feature_ro_compat & (mask))
 # define EXT2_HAS_INCOMPAT_FEATURE(sb, mask)	(EXT2_SB(sb)->s_feature_incompat & (mask))
 
-# define EXT2_FEATURE_COMPAT_DIR_PREALLOC	0x0001
+#define EXT2_FEATURE_COMPAT_DIR_PREALLOC	0x0001
+#define EXT2_FEATURE_COMPAT_IMAGIC_INODES	0x0002
+#define EXT3_FEATURE_COMPAT_HAS_JOURNAL		0x0004
+#define EXT2_FEATURE_COMPAT_EXT_ATTR		0x0008
+#define EXT2_FEATURE_COMPAT_RESIZE_INODE	0x0010
+#define EXT2_FEATURE_COMPAT_DIR_INDEX		0x0020
+#define EXT2_FEATURE_COMPAT_LAZY_BG		0x0040
+#define EXT2_FEATURE_COMPAT_EXCLUDE_INODE	0x0080 /* not used, legacy */
+#define EXT2_FEATURE_COMPAT_EXCLUDE_BITMAP	0x0100
+#define EXT4_FEATURE_COMPAT_SPARSE_SUPER2	0x0200
+#define EXT4_FEATURE_COMPAT_FAST_COMMIT		0x0400
+#define EXT4_FEATURE_COMPAT_STABLE_INODES	0x0800
+#define EXT4_FEATURE_COMPAT_ORPHAN_FILE		0x1000
 
-# define EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
-# define EXT2_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
-# define EXT2_FEATURE_RO_COMPAT_BTREE_DIR	0x0004
+#define EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
+#define EXT2_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
+#define EXT2_FEATURE_RO_COMPAT_BTREE_DIR	0x0004
+#define EXT4_FEATURE_RO_COMPAT_HUGE_FILE	0x0008
+#define EXT4_FEATURE_RO_COMPAT_GDT_CSUM		0x0010
+#define EXT4_FEATURE_RO_COMPAT_DIR_NLINK	0x0020
+#define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE	0x0040
+#define EXT4_FEATURE_RO_COMPAT_HAS_SNAPSHOT	0x0080
+#define EXT4_FEATURE_RO_COMPAT_QUOTA		0x0100
+#define EXT4_FEATURE_RO_COMPAT_BIGALLOC		0x0200
+/*
+ * METADATA_CSUM implies GDT_CSUM.  When METADATA_CSUM is set, group
+ * descriptor checksums use the same algorithm as all other data
+ * structures' checksums.
+ */
+#define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM	0x0400
+#define EXT4_FEATURE_RO_COMPAT_REPLICA		0x0800
+#define EXT4_FEATURE_RO_COMPAT_READONLY		0x1000
+#define EXT4_FEATURE_RO_COMPAT_PROJECT		0x2000 /* Project quota */
+#define EXT4_FEATURE_RO_COMPAT_SHARED_BLOCKS	0x4000
+#define EXT4_FEATURE_RO_COMPAT_VERITY		0x8000
+#define EXT4_FEATURE_RO_COMPAT_ORPHAN_PRESENT	0x10000
 
-# define EXT2_FEATURE_INCOMPAT_COMPRESSION	0x0001
-# define EXT2_FEATURE_INCOMPAT_FILETYPE		0x0002
+#define EXT2_FEATURE_INCOMPAT_COMPRESSION	0x0001
+#define EXT2_FEATURE_INCOMPAT_FILETYPE		0x0002
+#define EXT3_FEATURE_INCOMPAT_RECOVER		0x0004 /* Needs recovery */
+#define EXT3_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008 /* Journal device */
+#define EXT2_FEATURE_INCOMPAT_META_BG		0x0010
+#define EXT3_FEATURE_INCOMPAT_EXTENTS		0x0040
+#define EXT4_FEATURE_INCOMPAT_64BIT		0x0080
+#define EXT4_FEATURE_INCOMPAT_MMP		0x0100
+#define EXT4_FEATURE_INCOMPAT_FLEX_BG		0x0200
+#define EXT4_FEATURE_INCOMPAT_EA_INODE		0x0400
+#define EXT4_FEATURE_INCOMPAT_DIRDATA		0x1000
+#define EXT4_FEATURE_INCOMPAT_CSUM_SEED		0x2000
+#define EXT4_FEATURE_INCOMPAT_LARGEDIR		0x4000 /* >2GB or 3-lvl htree */
+#define EXT4_FEATURE_INCOMPAT_INLINE_DATA	0x8000 /* data in inode */
+#define EXT4_FEATURE_INCOMPAT_ENCRYPT		0x10000
+#define EXT4_FEATURE_INCOMPAT_CASEFOLD		0x20000
 
 # define EXT2_FEATURE_COMPAT_SUPP	0
 # define EXT2_FEATURE_INCOMPAT_SUPP	EXT2_FEATURE_INCOMPAT_FILETYPE

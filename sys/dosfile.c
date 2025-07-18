@@ -1160,24 +1160,25 @@ sys_f_fchmod (short fd, ushort mode)
  *
  * - 64bit clean seek system call
  * - newpos is written only if return value is 0 (no failure)
- * - at the moment only a wrapper around Fseek() as there is no
- *   64bit xfs/xdd support
  */
 
 long _cdecl
 sys_f_seek64 (llong place, short fd, short how, llong *newpos)
 {
+	struct proc *p = get_curproc();
+	FILEPTR *f;
 	long r;
 
-# define LONG_MAX	2147483647L
-	if (place > LONG_MAX)
-		return EBADARG;
+	/* FIXME: need long long support in ksprintf */
+	TRACE (("Fseek64(%ld, %d) on handle %d", (long)place, how, fd));
 
-	r = sys_f_seek ((long) place, fd, how);
-	if (r >= 0)
-		*newpos = (llong) r;
+	r = GETFILEPTR (&p, &fd, &f);
+	if (r) return r;
 
-	return r;
+	if (is_terminal (f))
+		return ESPIPE;
+
+	return xdd_lseek64(f, place, how, newpos);
 }
 
 /*

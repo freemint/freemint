@@ -42,35 +42,155 @@
 /* from ../natfeat/natfeat.c */
 extern long __CDECL (*nf_call)(long id, ...);
 
-long _cdecl hostfs_fs_dev_open     (FILEPTR *f);
-long _cdecl hostfs_fs_dev_write    (FILEPTR *f, const char *buf, long bytes);
-long _cdecl hostfs_fs_dev_read     (FILEPTR *f, char *buf, long bytes);
-long _cdecl hostfs_fs_dev_lseek    (FILEPTR *f, long where, int whence);
-long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf);
-long _cdecl hostfs_fs_dev_datime   (FILEPTR *f, ushort *timeptr, int rwflag);
-long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid);
-long _cdecl hostfs_fs_dev_select   (FILEPTR *f, long proc, int mode);
-void _cdecl hostfs_fs_dev_unselect (FILEPTR *f, long proc, int mode);
+/*
+ * previous file structure, for drivers that dont support FS_LARGE_FILE
+ */
+struct file32
+{
+	short	links;		/* number of copies of this descriptor */
+	ushort	flags;		/* file open mode and other file flags */
+	long	pos32;		/* position in file */
+	long	devinfo;	/* device driver specific info */
+	fcookie	fc;		/* file system cookie for this file */
+	DEVDRV	*dev;		/* device driver that knows how to deal with this */
+	FILEPTR	*next;		/* link to next fileptr for this file */
+};
 
 
+static long _cdecl hostfs_fs_dev_open(FILEPTR *f)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
 
-long _cdecl hostfs_fs_dev_open     (FILEPTR *f) {
-	return nf_call(HOSTFS(DEV_OPEN), f);
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_OPEN), &f32);
+		/*
+		 * offset field is used by aranym to store the FD
+		 */
+		f->pos64 = f32.pos32;
+		f->flags = f32.flags;
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_OPEN), f);
+	}
 }
 
-long _cdecl hostfs_fs_dev_write    (FILEPTR *f, const char *buf, long bytes) {
-	return nf_call(HOSTFS(DEV_WRITE), f, buf, bytes);
+
+static long _cdecl hostfs_fs_dev_write(FILEPTR *f, const char *buf, long bytes)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_WRITE), &f32, buf, bytes);
+		/*
+		 * nothing updated by aranym, no need to copy anything back
+		 */
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_WRITE), f, buf, bytes);
+	}
 }
 
-long _cdecl hostfs_fs_dev_read     (FILEPTR *f, char *buf, long bytes) {
-	return nf_call(HOSTFS(DEV_READ), f, buf, bytes);
+
+static long _cdecl hostfs_fs_dev_read(FILEPTR *f, char *buf, long bytes)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_READ), &f32, buf, bytes);
+		/*
+		 * nothing updated by aranym, no need to copy anything back
+		 */
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_READ), f, buf, bytes);
+	}
 }
 
-long _cdecl hostfs_fs_dev_lseek    (FILEPTR *f, long where, int whence) {
-	return nf_call(HOSTFS(DEV_LSEEK), f, where, (long)whence);
+
+static long _cdecl hostfs_fs_dev_lseek(FILEPTR *f, long where, int whence)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_LSEEK), &f32, where, (long)whence);
+		/*
+		 * nothing updated by aranym, no need to copy anything back
+		 */
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_LSEEK), f, where, (long)whence);
+	}
 }
 
-long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf) {
+
+static long _cdecl do_fs_dev_ioctl(FILEPTR *f, int mode, void *buf)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_IOCTL), &f32, (long)mode, buf);
+		/*
+		 * nothing updated by aranym, no need to copy anything back
+		 */
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_IOCTL), f, (long)mode, buf);
+	}
+}
+
+
+static long _cdecl hostfs_fs_dev_ioctl(FILEPTR *f, int mode, void *buf)
+{
 #ifndef ARAnyM_MetaDOS
 	/*
 	 * The hostfs part in the emulator will never be able to
@@ -93,35 +213,27 @@ long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf) {
 			long r;
 			int cpid;		/* Current proc pid */
 			
-			r = nf_call(HOSTFS(DEV_IOCTL), f, (long)F_GETLK, locks);
+			r = do_fs_dev_ioctl(f, F_GETLK, locks);
 			if (r < 0)
 				return r;
 			t.l = *fl;
 
 			switch (t.l.l_whence)
 			{
-				case SEEK_SET:
-				{
-					break;
-				}
-				case SEEK_CUR:
-				{
-					r = hostfs_fs_dev_lseek (f, 0L, SEEK_CUR);
-					t.l.l_start += r;
-					break;
-				}
-				case SEEK_END:
-				{
-					r = hostfs_fs_dev_lseek (f, 0L, SEEK_CUR);
-					t.l.l_start = hostfs_fs_dev_lseek (f, t.l.l_start, SEEK_END);
-					(void) hostfs_fs_dev_lseek (f, r, SEEK_SET);
-					break;
-				}
-				default:
-				{
-					DEBUG (("hostfs_ioctl: invalid value for l_whence"));
-					return ENOSYS;
-				}
+			case SEEK_SET:
+				break;
+			case SEEK_CUR:
+				r = hostfs_fs_dev_lseek (f, 0L, SEEK_CUR);
+				t.l.l_start += r;
+				break;
+			case SEEK_END:
+				r = hostfs_fs_dev_lseek (f, 0L, SEEK_CUR);
+				t.l.l_start = hostfs_fs_dev_lseek (f, t.l.l_start, SEEK_END);
+				(void) hostfs_fs_dev_lseek (f, r, SEEK_SET);
+				break;
+			default:
+				DEBUG (("hostfs_ioctl: invalid value for l_whence"));
+				return ENOSYS;
 			}
 
 			if (t.l.l_start < 0) t.l.l_start = 0;
@@ -160,7 +272,7 @@ long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf) {
 						wake (IO_Q, (long) lck);
 						kfree (lck);
 
-						nf_call(HOSTFS(DEV_IOCTL), f, (long)F_SETLK, locks);
+						do_fs_dev_ioctl(f, F_SETLK, locks);
 						return E_OK;
 					}
 
@@ -204,20 +316,46 @@ long _cdecl hostfs_fs_dev_ioctl    (FILEPTR *f, int mode, void *buf) {
 
 			/* mark the file as being locked */
 			f->flags |= O_LOCK;
-			nf_call(HOSTFS(DEV_IOCTL), f, (long)F_SETLK, locks);
+			do_fs_dev_ioctl(f, F_SETLK, locks);
 			return E_OK;
 		}
 	}
 #endif /* ARAnyM_MetaDOS */
-		
-	return nf_call(HOSTFS(DEV_IOCTL), f, (long)mode, buf);
+
+	return do_fs_dev_ioctl(f, mode, buf);
 }
 
-long _cdecl hostfs_fs_dev_datime   (FILEPTR *f, ushort *timeptr, int rwflag) {
-	return nf_call(HOSTFS(DEV_DATIME), f, timeptr, (long)rwflag);
+
+static long _cdecl hostfs_fs_dev_datime(FILEPTR *f, ushort *timeptr, int rwflag)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_DATIME), &f32, timeptr, (long)rwflag);
+		f->links = f32.links;
+		f->flags = f32.flags;
+		f->pos64 = f32.pos32;
+		f->devinfo = f32.devinfo;
+		f->fc = f32.fc;
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_DATIME), f, timeptr, (long)rwflag);
+	}
 }
 
-long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid) {
+
+static long _cdecl hostfs_fs_dev_close(FILEPTR *f, int pid)
+{
 #ifndef ARAnyM_MetaDOS
 	if (f->flags & O_LOCK)
 	{
@@ -228,7 +366,7 @@ long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid) {
 		LOCK **locks = &hostfs_lock;
 		long r;
 		
-		r = nf_call(HOSTFS(DEV_IOCTL), f, (long)F_GETLK, locks);
+		r = do_fs_dev_ioctl(f, F_GETLK, locks);
 		if (r == 0)
 		{
 			oldlock = locks;
@@ -248,14 +386,38 @@ long _cdecl hostfs_fs_dev_close    (FILEPTR *f, int pid) {
 				}
 				lock = *oldlock;
 			}
-			r = nf_call(HOSTFS(DEV_IOCTL), f, (long)F_SETLK, locks);
+			r = do_fs_dev_ioctl(f, F_SETLK, locks);
 		}
 	}
 #endif /* ARAnyM_MetaDOS */
-	return nf_call(HOSTFS(DEV_CLOSE), f, (long)pid);
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+		long r;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		r = nf_call(HOSTFS(DEV_CLOSE), &f32, (long)pid);
+		f->links = f32.links;
+		f->flags = f32.flags;
+		f->pos64 = f32.pos32;
+		f->devinfo = f32.devinfo;
+		f->fc = f32.fc;
+		return r;
+	} else
+	{
+		return nf_call(HOSTFS(DEV_CLOSE), f, (long)pid);
+	}
 }
 
-long _cdecl hostfs_fs_dev_select   (FILEPTR *f, long proc, int mode) {
+
+static long _cdecl hostfs_fs_dev_select(FILEPTR *f, long proc, int mode)
+{
 	(void)f;
 	(void)proc;
 	(void)mode;
@@ -266,8 +428,36 @@ long _cdecl hostfs_fs_dev_select   (FILEPTR *f, long proc, int mode) {
 	return 1;
 }
 
-void _cdecl hostfs_fs_dev_unselect (FILEPTR *f, long proc, int mode) {
-	nf_call(HOSTFS(DEV_UNSELECT), f, proc, (long)mode);
+
+static void _cdecl hostfs_fs_dev_unselect(FILEPTR *f, long proc, int mode)
+{
+	if (!(hostfs_filesys.fsflags & FS_LARGE_FILE))
+	{
+		struct file32 f32;
+
+		f32.links = f->links;
+		f32.flags = f->flags;
+		f32.pos32 = f->pos32;
+		f32.devinfo = f->devinfo;
+		f32.fc = f->fc;
+		f32.dev = f->dev;
+		f32.next = f->next;
+		nf_call(HOSTFS(DEV_UNSELECT), &f32, proc, (long)mode);
+		f->links = f32.links;
+		f->flags = f32.flags;
+		f->pos64 = f32.pos32;
+		f->devinfo = f32.devinfo;
+		f->fc = f32.fc;
+	} else
+	{
+		nf_call(HOSTFS(DEV_UNSELECT), f, proc, (long)mode);
+	}
+}
+
+
+static long _cdecl hostfs_fs_dev_lseek64(FILEPTR *f, off64_t where, int whence, off64_t *newpos)
+{
+	return nf_call(HOSTFS(DEV_LSEEK64), f, where, (long)whence, newpos);
 }
 
 
@@ -277,5 +467,6 @@ DEVDRV hostfs_fs_devdrv =
     hostfs_fs_dev_open, hostfs_fs_dev_write, hostfs_fs_dev_read, hostfs_fs_dev_lseek,
     hostfs_fs_dev_ioctl, hostfs_fs_dev_datime, hostfs_fs_dev_close, hostfs_fs_dev_select,
     hostfs_fs_dev_unselect,
-    NULL, NULL /* writeb, readb not needed */
+    NULL, NULL, /* writeb, readb not needed */
+    hostfs_fs_dev_lseek64
 };

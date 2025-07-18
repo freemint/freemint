@@ -49,12 +49,12 @@ dummydev_lseek (FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:
-			f->pos = where;
-			return f->pos;
+			f->pos32 = where;
+			return f->pos32;
 		
 		case SEEK_CUR:
-			f->pos += where;
-			return f->pos;
+			f->pos32 += where;
+			return f->pos32;
 		
 		case SEEK_END:
 			return EACCES;

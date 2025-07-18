@@ -491,7 +491,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 
 	(*f)->links = 1;
 	(*f)->flags = rwmode;
-	(*f)->pos = 0;
+	(*f)->pos64 = 0;
 	(*f)->devinfo = devsp;
 	(*f)->fc = fc;
 	(*f)->dev = dev;

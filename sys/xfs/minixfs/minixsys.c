@@ -139,7 +139,7 @@ FILESYS minix_filesys =
 	/* FS_EXT_3 */
 	stat64:			m_stat64,
 	res1:			0, 
-	res2:			0,
+	fs_supported:	0,
 	res3:			0,
 	
 	lock: 0, sleepers: 0,

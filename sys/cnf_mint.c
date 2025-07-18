@@ -220,7 +220,7 @@ static void pCB_aux(char *path)
 			if (has_bconmap)
 				get_curproc()->p_fd->bconmap = fp->fc.aux;
 			((struct tty *) fp->devinfo)->aux_cnt++;
-			fp->pos = 1;
+			fp->pos32 = 1;
 		}
 	}
 }

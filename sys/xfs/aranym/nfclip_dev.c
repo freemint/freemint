@@ -45,15 +45,15 @@ fetch_host_clipbrd (FILEPTR *f)
 	if ( nf_call( NFCLIP(CLIP_OPEN), 1L, (long)O_WRONLY) )
 		return E_OK;
 
-	f->pos = 0;
+	f->pos32 = 0;
 	
 	f->flags |= O_RDWR;
-	f->dev->ioctl( f, FTRUNCATE, &f->pos);
+	f->dev->ioctl( f, FTRUNCATE, &f->pos32);
 
 	buff = kmalloc (BLOCK_SIZE);
 	if ( buff ) {
 		do {
-			long r = nf_call( NFCLIP(CLIP_READ), 1L, buff, (long)BLOCK_SIZE, (long)f->pos);
+			long r = nf_call( NFCLIP(CLIP_READ), 1L, buff, (long)BLOCK_SIZE, (long)f->pos32);
 			if ( r <= 0 )
 				break;
 
@@ -86,7 +86,7 @@ save_host_clipbrd (FILEPTR *f)
 		f->dev->lseek( f, 0, SEEK_SET);
 
 		do {
-			long pos = f->pos;
+			long pos = f->pos32;
 			long r = f->dev->read( f, buff, BLOCK_SIZE);
 			if ( r <= 0)
 				break;
@@ -140,8 +140,8 @@ nfclip_stat(fcookie *fc, STAT *stat)
 	fc->fs->dupcookie( &f.fc, fc);
 	f.links = 1;
 	f.flags = O_RDONLY;
-	f.pos = 0L;
-	f.devinfo = 0L;
+	f.pos32 = 0;
+	f.devinfo = 0;
 	f.dev = fc->fs->getdev( fc, &devsp);
 
 	/* fetch the clip data */

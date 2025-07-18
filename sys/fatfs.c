@@ -644,7 +644,7 @@ FILESYS fatfs_filesys =
 	/* FS_EXT_3 */
 	stat64:			NULL,
 	res1:			0,
-	res2:			0,
+	fs_supported:	0,
 	res3:			0,
 
 	lock: 0, sleepers: 0,
@@ -7928,13 +7928,13 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	FILE *ptr = (FILE *) f->devinfo;
 	const ushort dev = c->dev;
 	long current = ptr->current;
-	long temp = c->flen - f->pos;
+	long temp = c->flen - f->pos32;
 	long todo;
 	long offset;
 	long data;
 
 	FAT_DEBUG (("__FIO [%s]: enter (bytes = %li, mode: %s)", c->name, bytes, (mode == READ) ? "READ" : "WRITE"));
-	FAT_DEBUG (("__FIO: f->pos = %li, ptr->current = %li", f->pos, ptr->current));
+	FAT_DEBUG (("__FIO: f->pos = %li, ptr->current = %li", f->pos32, ptr->current));
 
 	if (ptr->error < 0)
 	{
@@ -7985,7 +7985,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 
 	while (todo > 0)
 	{
-		temp = f->pos / CLUSTSIZE (dev);
+		temp = f->pos32 / CLUSTSIZE (dev);
 
 		while (temp > ptr->cl)
 		{
@@ -8007,14 +8007,14 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		}
 
 		/* offset */
-		offset = f->pos % CLUSTSIZE (dev);
+		offset = f->pos32 % CLUSTSIZE (dev);
 
 		if ((todo >= CLUSTSIZE (dev)) && (offset == 0))
 		{
 			register long cls = 1;
 			data = CLUSTSIZE (dev);
 
-			FAT_DEBUG (("__FIO: CLUSTER (todo = %li, pos = %li)", todo, f->pos));
+			FAT_DEBUG (("__FIO: CLUSTER (todo = %li, pos = %li)", todo, f->pos32));
 
 			if (todo - data > CLUSTSIZE (dev))
 			{
@@ -8064,7 +8064,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		{
 			UNIT *u;
 
-			FAT_DEBUG (("__FIO: BYTES (todo = %li, pos = %li)", todo, f->pos));
+			FAT_DEBUG (("__FIO: BYTES (todo = %li, pos = %li)", todo, f->pos32));
 
 			data = MIN (todo, CLUSTSIZE (dev) - offset);
 
@@ -8092,15 +8092,15 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 
 		buf += data;
 		todo -= data;
-		f->pos += data;
+		f->pos32 += data;
 	}
 
 	if (mode == WRITE)
 	{
-		if (f->pos > c->flen)
+		if (f->pos32 > c->flen)
 		{
-			c->flen = f->pos;
-			c->info.flen = cpu2le32 (f->pos);
+			c->flen = f->pos32;
+			c->info.flen = cpu2le32 (f->pos32);
 		}
 		if (c->info.attr != FA_SYMLINK
 			&& !(c->info.attr & FA_CHANGED))
@@ -8117,14 +8117,14 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			 * in writethrough mode
 			 */
 			if (bytes > CLUSTSIZE (dev)
-				&& f->pos % CLUSTSIZE (dev) == 0)
+				&& f->pos32 % CLUSTSIZE (dev) == 0)
 			{
 				bio.sync_drv (DI (dev));
 			}
 		}
 	}
 
-	FAT_DEBUG (("__FIO: leave ok (todo = %li, processed = %li, pos = %li)", todo, bytes - todo, f->pos));
+	FAT_DEBUG (("__FIO: leave ok (todo = %li, processed = %li, pos = %li)", todo, bytes - todo, f->pos32));
 	return (bytes - todo);
 }
 
@@ -8198,7 +8198,7 @@ fatfs_open (FILEPTR *f)
 		ptr->mode = (ptr->mode ^ O_EXEC) | O_RDONLY;
 	}
 
-	f->pos = 0;
+	f->pos32 = 0;
 	f->next = c->open;
 	c->open = f;
 	c->links++;
@@ -8258,7 +8258,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:				break;
-		case SEEK_CUR:	where += f->pos;	break;
+		case SEEK_CUR:	where += f->pos32;	break;
 		case SEEK_END:	where += c->flen;	break;
 		default:	return ENOSYS;
 	}
@@ -8269,8 +8269,8 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		return EBADARG;
 	}
 
-	oldfpos = f->pos;
-	f->pos = where;
+	oldfpos = f->pos32;
+	f->pos32 = where;
 
 	if (where > c->flen) {
 		where = c->flen;
@@ -8282,7 +8282,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		ptr->current = c->stcl;
 
 		FAT_DEBUG (("fatfs_lseek: leave ok (where = %li)", where));
-		return f->pos;
+		return f->pos32;
 	}
 
 	{	/* calculate and set the new current cluster and position */
@@ -8311,7 +8311,7 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 			{
 				/* bad clustered or read error */
 				ptr->error = current;
-				f->pos = oldfpos;
+				f->pos32 = oldfpos;
 
 				FAT_DEBUG (("fatfs_lseek: leave failure, bad clustered (ptr->error = %li)", ptr->error));
 				return EACCES;
@@ -8322,8 +8322,8 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		}
 	}
 
-	FAT_DEBUG (("fatfs_lseek: leave ok (f->pos = %li)", f->pos));
-	return f->pos;
+	FAT_DEBUG (("fatfs_lseek: leave ok (f->pos = %li)", f->pos32));
+	return f->pos32;
 }
 
 /*
@@ -8344,7 +8344,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 		{
 			long bytes;
 
-			bytes = c->flen - f->pos;
+			bytes = c->flen - f->pos32;
 			if (bytes < 0)
 				bytes = 0;
 
@@ -8377,7 +8377,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 			r = __FTRUNCATE (c, *((long *) buf));
 			if (r == E_OK)
 			{
-				long pos = f->pos;
+				long pos = f->pos32;
 				(void) fatfs_lseek (f, 0, SEEK_SET);
 				(void) fatfs_lseek (f, pos, SEEK_SET);
 			}

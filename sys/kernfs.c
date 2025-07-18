@@ -1584,10 +1584,10 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 	if (ret || !info)
 		return ret;
 
-	if (bytes + f->pos > info->len)
-		bytes = info->len - f->pos;
+	if (bytes + f->pos32 > info->len)
+		bytes = info->len - f->pos32;
 
-	crs = info->buf + f->pos;
+	crs = info->buf + f->pos32;
 
 	while (bytes-- > 0)
 	{
@@ -1598,7 +1598,7 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 	/* free the buffer */
 	kfree (info);
 
-	f->pos += bytes_read;
+	f->pos32 += bytes_read;
 	return bytes_read;
 }
 
@@ -1638,7 +1638,7 @@ kern_lseek (FILEPTR *f, long where, int whence)
 			newpos = where;
 			break;
 		case SEEK_CUR:
-			newpos = f->pos + where;
+			newpos = f->pos32 + where;
 			break;
 		case SEEK_END:
 			newpos = 0 + where;
@@ -1654,7 +1654,7 @@ kern_lseek (FILEPTR *f, long where, int whence)
 		return EINVAL;
 	}
 
-	f->pos = newpos;
+	f->pos32 = newpos;
 	return newpos;
 }
 

@@ -42,7 +42,7 @@ ulong    _cdecl fs_drive_bits(void)
 }
 
 long     _cdecl fs_native_init(int fs_devnum, char *mountpoint, char *hostroot, int halfsensitive,
-									  void *fs, void *fs_dev)
+									  FILESYS *fs, DEVDRV *fs_dev)
 {
 	return nf_call(HOSTFS(XFS_INIT), (long)fs_devnum, mountpoint, hostroot, (long)halfsensitive, fs, fs_dev);
 }
@@ -281,7 +281,8 @@ FILESYS hostfs_filesys =
 	FS_REENTRANT_L2  |
 	FS_EXT_1         |
 	FS_EXT_2         |
-	FS_EXT_3         ,
+	FS_EXT_3         |
+	FS_LARGE_FILE,
 	hostfs_fs_root, hostfs_fs_lookup, hostfs_fs_creat, hostfs_fs_getdev, hostfs_fs_getxattr,
 	hostfs_fs_chattr, hostfs_fs_chown, hostfs_fs_chmode, hostfs_fs_mkdir, hostfs_fs_rmdir,
 	hostfs_fs_remove, hostfs_fs_getname, hostfs_fs_rename, hostfs_fs_opendir,

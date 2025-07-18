@@ -571,10 +571,10 @@ shm_write(FILEPTR *f, const char *buf, long nbytes)
 	if (!s->reg)
 		return 0;
 	
-	if (nbytes + f->pos > s->reg->len)
-		nbytes = s->reg->len - f->pos;
+	if (nbytes + f->pos32 > s->reg->len)
+		nbytes = s->reg->len - f->pos32;
 	
-	where = (char *)s->reg->loc + f->pos;
+	where = (char *)s->reg->loc + f->pos32;
 	
 	/* BUG: memory read/writes should check for valid addresses */
 	
@@ -586,7 +586,7 @@ shm_write(FILEPTR *f, const char *buf, long nbytes)
 		bytes_written++;
 	}
 	
-	f->pos += bytes_written;
+	f->pos32 += bytes_written;
 	s->mtime = xtime;
 	
 	return bytes_written;
@@ -602,10 +602,10 @@ shm_read (FILEPTR *f, char *buf, long nbytes)
 	if (!(s->reg))
 		return 0;
 	
-	if (nbytes + f->pos > s->reg->len)
-		nbytes = s->reg->len - f->pos;
+	if (nbytes + f->pos32 > s->reg->len)
+		nbytes = s->reg->len - f->pos32;
 	
-	where = (char *) s->reg->loc + f->pos;
+	where = (char *) s->reg->loc + f->pos32;
 	
 	TRACE (("shm_read: %ld bytes from %p", nbytes, where));
 	
@@ -615,7 +615,7 @@ shm_read (FILEPTR *f, char *buf, long nbytes)
 		bytes_read++;
 	}
 	
-	f->pos += bytes_read;
+	f->pos32 += bytes_read;
 	return bytes_read;
 }
 
@@ -647,7 +647,7 @@ shm_ioctl (FILEPTR *f, int mode, void *buf)
 			}
 			else
 			{
-				r = s->reg->len - f->pos;
+				r = s->reg->len - f->pos32;
 				if (r < 0)
 					r = 0;
 			}
@@ -740,7 +740,7 @@ shm_lseek (FILEPTR *f, long where, int whence)
 			newpos = where;
 			break;
 		case SEEK_CUR:
-			newpos = f->pos + where;
+			newpos = f->pos32 + where;
 			break;
 		case SEEK_END:
 			newpos = maxpos + where;
@@ -752,7 +752,7 @@ shm_lseek (FILEPTR *f, long where, int whence)
 	if (newpos < 0 || newpos > maxpos)
 		return EBADARG;
 	
-	f->pos = newpos;
+	f->pos32 = newpos;
 	return newpos;
 }
 

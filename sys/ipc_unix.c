@@ -775,11 +775,11 @@ unixdev_read (FILEPTR *fp, char *buf, long nbytes)
 	struct unix_info info, *infop = (struct unix_info *) buf;
 	long space;
 
-	for (space = nbytes; space >= sizeof (info); ++fp->pos)
+	for (space = nbytes; space >= sizeof (info); ++fp->pos32)
 	{
 		int i, j;
 
-		for (i = fp->pos, j = 0; j < UN_HASH_SIZE && i >= 0; ++j)
+		for (i = fp->pos32, j = 0; j < UN_HASH_SIZE && i >= 0; ++j)
 		{
 			unp = allundatas[j];
 			for (; unp && --i >= 0; unp = unp->next)

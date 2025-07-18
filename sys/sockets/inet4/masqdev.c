@@ -54,7 +54,7 @@ static PORT_DB_RECORD *prev_redir = NULL;
 static long
 masqdev_read (FILEPTR *fp, char *buf, long nbytes)
 {
-	switch (fp->pos)
+	switch (fp->pos32)
 	{
 		case 0:
 			if ((ulong)nbytes >= sizeof (masq.magic))
@@ -137,7 +137,7 @@ masqdev_read (FILEPTR *fp, char *buf, long nbytes)
 			/* fall through */
 		case 100:
 			record = 0;
-			fp->pos += 1;
+			fp->pos32 += 1;
 			/* fall through */
 		case 101:
 			if ((ulong)nbytes >= sizeof (PORT_DB_RECORD))
@@ -153,7 +153,7 @@ masqdev_read (FILEPTR *fp, char *buf, long nbytes)
 			break;
 		case 200:
 			redirection = masq.redirection_db;
-			fp->pos += 1;
+			fp->pos32 += 1;
 			/* fall through */
 		case 201:
 			if ((ulong)nbytes >= sizeof (PORT_DB_RECORD))
@@ -174,7 +174,7 @@ masqdev_read (FILEPTR *fp, char *buf, long nbytes)
 static long
 masqdev_write (FILEPTR *fp, const char *buf, long nbytes)
 {
-	switch (fp->pos)
+	switch (fp->pos32)
 	{
 		case 2:
 			if (nbytes == sizeof (masq.addr))

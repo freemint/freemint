@@ -2699,14 +2699,14 @@ scc_open (FILEPTR *f)
 			
 			DEBUG (("f = 0x%lx, f->next = 0x%lx", (unsigned long)f, (unsigned long)f->next));
 			DEBUG (("  links = %i, flags = 0x%x", f->links, f->flags));
-			DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", f->pos, f->devinfo, (unsigned long)f->dev));
+			DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", f->pos32, f->devinfo, (unsigned long)f->dev));
 			DEBUG (("  fc.index = %li, fc.dev = 0x%x, fc.aux = %i", f->fc.index, f->fc.dev, f->fc.aux));
 			
 			while (t)
 			{
 				DEBUG (("chain t = 0x%lx, t->next = 0x%lx", (unsigned long)t, (unsigned long)t->next));
 				DEBUG (("  links = %i, flags = 0x%x", t->links, t->flags));
-				DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", t->pos, t->devinfo, (unsigned long)t->dev));
+				DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", t->pos32, t->devinfo, (unsigned long)t->dev));
 				DEBUG (("  fc.index = %li, fc.dev = 0x%x, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
 				
 				t = t->next;
@@ -2717,7 +2717,7 @@ scc_open (FILEPTR *f)
 		}
 	}
 	
-	f->pos = 0;
+	f->pos32 = 0;
 	f->next = iovar->open;
 	iovar->open = f;
 	

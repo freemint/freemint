@@ -61,7 +61,9 @@ enum {
 	DEV_OPEN, DEV_WRITE, DEV_READ, DEV_LSEEK, DEV_IOCTL, DEV_DATIME,
 	DEV_CLOSE, DEV_SELECT, DEV_UNSELECT,
 	/* new from 0.04 */
-	XFS_STAT64
+	XFS_STAT64,
+	/* new for FS_LARGE_FILE */
+	DEV_LSEEK64
 };
 
 extern unsigned long nf_hostfs_id;

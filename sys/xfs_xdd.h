@@ -86,6 +86,7 @@ long _cdecl xdd_open(FILEPTR *f);
 long _cdecl xdd_write(FILEPTR *f, const char *buf, long bytes);
 long _cdecl xdd_read(FILEPTR *f, char *buf, long bytes);
 long _cdecl xdd_lseek(FILEPTR *f, long where, int whence);
+long _cdecl xdd_lseek64(FILEPTR *f, llong where, int whence, llong *newpos);
 long _cdecl xdd_ioctl(FILEPTR *f, int mode, void *buf);
 long _cdecl xdd_datime(FILEPTR *f, ushort *timeptr, int rwflag);
 long _cdecl xdd_close(FILEPTR *f, int pid);

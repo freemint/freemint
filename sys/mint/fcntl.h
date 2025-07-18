@@ -96,6 +96,9 @@
 # define F_GETLK	5		/* get record locking information */
 # define F_SETLK	6		/* set record locking information */
 # define F_SETLKW	7		/* F_SETLK; wait if blocked */
+# define F_GETLK64	12		/* Get record locking info, using 'struct flock64' */
+# define F_SETLK64	13		/* Set record locking info (non-blocking), using 'struct flock64' */
+# define F_SETLKW64	14		/* Set record locking info (blocking), using 'struct flock64' */
 
 # ifdef __KERNEL__
 # define F_GETOPENS		8	/* handled by kernel */
@@ -135,10 +138,20 @@ struct flock
 {
 	short	l_type;
 	short	l_whence;
-	long	l_start;		/* XXX off_t */
-	long	l_len;			/* XXX off_t */
+	long	l_start;
+	long	l_len;
 	short	l_pid;
 };
+#ifdef _mint_ktypes_h
+struct flock64
+{
+	short	l_type;
+	short	l_whence;
+	off64_t	l_start;
+	off64_t	l_len;
+	short	l_pid;
+};
+#endif
 
 #if !defined(_POSIX_C_SOURCE) && !defined(_XOPEN_SOURCE)
 /* lock operations for flock(2) */

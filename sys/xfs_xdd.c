@@ -697,6 +697,29 @@ xdd_lseek(FILEPTR *f, long where, int whence)
 	return r;
 }
 long _cdecl
+xdd_lseek64(FILEPTR *f, llong where, int whence, llong *newpos)
+{
+	long r;
+	
+	xfs_lock(f->fc.fs, f->fc.dev, "xdd_lseek");
+	if ((f->fc.fs->fsflags & FS_LARGE_FILE) && f->dev->lseek64)
+	{
+		r = (f->dev->lseek64)(f, where, whence, newpos);
+	} else
+	{
+		if (where > MAX_NON_LFS)
+		{
+			r = EFBIG;
+		} else
+		{
+			r = (f->dev->lseek)(f, where, whence);
+		}
+	}
+	xfs_unlock(f->fc.fs, f->fc.dev, "xdd_lseek");
+	
+	return r;
+}
+long _cdecl
 xdd_ioctl(FILEPTR *f, int mode, void *buf)
 {
 	long r;

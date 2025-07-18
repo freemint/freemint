@@ -2354,7 +2354,7 @@ sys_f_dirfd (long handle)
 
 		fp->links = 1;
 		fp->flags = O_RDONLY;
-		fp->pos = 0;
+		fp->pos64 = 0;
 		fp->devinfo = devsp;
 		fp->dev = dev;
 		dup_cookie(&fp->fc, &dirh->fc);

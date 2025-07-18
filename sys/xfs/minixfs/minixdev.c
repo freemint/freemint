@@ -151,7 +151,7 @@ m_open (FILEPTR *f)
 		sync (f->fc.dev);
 	}
 	
-	f->pos = 0;
+	f->pos32 = 0;
 	return 0;
 }
 
@@ -314,7 +314,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 
 	if (mode == READ)
 	{
-		todo = MIN (rip.i_size - f->pos, len);
+		todo = MIN (rip.i_size - f->pos32, len);
 	}
 	else
 	{
@@ -326,7 +326,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 	if (todo <= 0)
 		return 0;
 	
-	chunk = f->pos >> L_BS;
+	chunk = f->pos32 >> L_BS;
 	
 	/* Every PRE_READ blocks, try to read in PRE_READ zones into cache */
 	if (mode == READ && (chunk >= fch->lzone && (len >> L_BS < PRE_READ )))
@@ -342,10 +342,10 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 	}
 	
 	/* Are we block aligned ? If not read/copy partial block */
-	if (f->pos & (BLOCK_SIZE - 1))
+	if (f->pos32 & (BLOCK_SIZE - 1))
 	{
 		long znew = __next (f, &rip, chunk++, mode);
-		long off = f->pos & (BLOCK_SIZE - 1);
+		long off = f->pos32 & (BLOCK_SIZE - 1);
 		long data = BLOCK_SIZE - off;
 		data = MIN (todo, data);
 		
@@ -374,7 +374,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 		buf += data;
 		todo -= data;
 		done += data;
-		f->pos += data;
+		f->pos32 += data;
 	}
 	
 	/* Any full blocks to read ? */
@@ -439,7 +439,7 @@ cont:
 		buf += data;
 		todo -= data;
 		done += data;
-		f->pos += data;
+		f->pos32 += data;
 	}
 	
 	/* Anything left ? */
@@ -460,7 +460,7 @@ cont:
 				bio_MARK_MODIFIED (&(bio), u);
 			}
 			done += todo;
-			f->pos += todo;
+			f->pos32 += todo;
 		}
 		else
 			if (mode == READ)
@@ -474,7 +474,7 @@ cont:
 	
 out:
 	if (!(f->flags & O_NOATIME))
-		__update_rip (f->fc.index, &rip, f->fc.dev, f->pos, mode);
+		__update_rip (f->fc.index, &rip, f->fc.dev, f->pos32, mode);
 	
 	return done;	
 }
@@ -522,7 +522,7 @@ m_seek (FILEPTR *f, long where, int whence)
 	switch (whence)
 	{
 		case SEEK_SET:				break;
-		case SEEK_CUR:	where += f->pos;	break;
+		case SEEK_CUR:	where += f->pos32;	break;
 		case SEEK_END:	where += rip.i_size;	break;
 		default:	return ENOSYS;
 	}
@@ -533,7 +533,7 @@ m_seek (FILEPTR *f, long where, int whence)
 		return EBADARG;
 	}
 	
-	f->pos = where;
+	f->pos32 = where;
 	
 	return where;
 }
@@ -549,7 +549,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			long nread;
 			
 			read_inode (f->fc.index, &rip, f->fc.dev);
-			nread = rip.i_size - f->pos;
+			nread = rip.i_size - f->pos32;
 			if (nread < 0)
 				nread = 0;
 			
@@ -587,7 +587,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				}
 				case SEEK_CUR:
 				{
-					t.l.l_start += f->pos;
+					t.l.l_start += f->pos32;
 					break;
 				}
 				case SEEK_END:

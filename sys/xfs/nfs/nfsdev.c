@@ -135,7 +135,7 @@ nfs_write (FILEPTR *f, const char *buf, long bytes)
 	TRACE(("nfs_write: writing %ld bytes to file '%s'", bytes, ni->name));
 	
 	written = 0;
-	pos = f->pos;
+	pos = f->pos32;
 	while (bytes > 0)
 	{
 		writeargs write_arg;
@@ -214,7 +214,7 @@ nfs_write (FILEPTR *f, const char *buf, long bytes)
 		bytes -= count;
 	}
 	
-	f->pos = pos;
+	f->pos32 = pos;
 	
 	TRACE (("nfs_write(%s) -> %ld", ni->name, written));
 	return written;
@@ -250,7 +250,7 @@ nfs_read (FILEPTR *f, char *buf, long bytes)
 	TRACE (("nfs_read: reading %ld bytes for file '%s'", bytes, ni->name));
 	
 	read = 0;
-	pos = f->pos;
+	pos = f->pos32;
 	while (bytes > 0)
 	{
 		char req_buf[READBUFSIZE];
@@ -341,7 +341,7 @@ nfs_read (FILEPTR *f, char *buf, long bytes)
 		}
 	}
 	
-	f->pos = pos;
+	f->pos32 = pos;
 	return read;
 }
 
@@ -357,16 +357,16 @@ nfs_lseek (FILEPTR *f, long where, int whence)
 			if (where < 0)
 				return EBADARG;
 			
-			f->pos = where;
-			return f->pos;
+			f->pos32 = where;
+			return f->pos32;
 		}
 		case SEEK_CUR:
 		{
-			if (f->pos + where < 0)
+			if (f->pos32 + where < 0)
 				return EBADARG;
 			
-			f->pos += where;
-			return f->pos;
+			f->pos32 += where;
+			return f->pos32;
 		}
 		case SEEK_END:
 		{
@@ -383,7 +383,7 @@ nfs_lseek (FILEPTR *f, long where, int whence)
 			if (where <  - ni->attr.size)  /* seek before beginning of file */
 				return EBADARG;
 			
-			return (f->pos = ni->attr.size + where);
+			return (f->pos32 = ni->attr.size + where);
 		}
 	}
 	
@@ -407,7 +407,7 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 				return r;
 			}
 			
-			*(long *) arg = MIN (ni->attr.size-f->pos, 0);
+			*(long *) arg = MIN (ni->attr.size-f->pos32, 0);
 			break;
 		}
 		case FIONWRITE:

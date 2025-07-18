@@ -64,10 +64,10 @@ routedev_read (FILEPTR *f, char *buf, long nbytes)
 	int i, j;
 	ulong space;
 	
-	for (space = nbytes; space >= sizeof (info); f->pos++)
+	for (space = nbytes; space >= sizeof (info); f->pos32++)
 	{
 		rt = defroute;
-		i = rt ? f->pos - 1 : f->pos;
+		i = rt ? f->pos32 - 1 : f->pos32;
 		for (j = 0; j < RT_HASH_SIZE && i >= 0; j++)
 		{
 			rt = allroutes[j];
