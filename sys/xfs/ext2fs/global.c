@@ -28,6 +28,8 @@
 SI *super [NUM_DRIVES];
 
 ulong event = 0;
+#ifdef EXT2FS_DEBUG
 ulong memory = 0;
+#endif
 
 ushort native_utc = 0;
