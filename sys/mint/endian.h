@@ -56,7 +56,7 @@
 
 # define cpu2be16(x)	((__u16) (x))
 # define cpu2be32(x)	((__u32) (x))
-# define cpu2be63(x)	((__u64) (x))
+# define cpu2be64(x)	((__u64) (x))
 
 
 # elif BYTE_ORDER == LITTLE_ENDIAN
