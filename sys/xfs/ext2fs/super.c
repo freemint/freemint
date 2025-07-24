@@ -156,7 +156,7 @@ ext2_check_descriptors (SI *s)
 		tmp = le2cpu32 (gdp->bg_inode_bitmap);
 		if (tmp < block || tmp >= block + EXT2_BLOCKS_PER_GROUP (s))
 		{
-			ALERT (("Ext2-FS: ext2_check_descriptors: Inode bitmap for group %d"
+			ALERT (("Ext2-FS: ext2_check_descriptors: Inode bitmap for group %ld"
 				" not in group (block %lu)!", i, tmp));
 			
 			return 0;
@@ -165,7 +165,7 @@ ext2_check_descriptors (SI *s)
 		tmp = le2cpu32 (gdp->bg_inode_table);
 		if (tmp < block || tmp + s->sbi.s_itb_per_group >= block + EXT2_BLOCKS_PER_GROUP (s))
 		{
-			ALERT (("Ext2-FS: ext2_check_descriptors: Inode table for group %d"
+			ALERT (("Ext2-FS: ext2_check_descriptors: Inode table for group %ld"
 				" not in group (block %lu)!", i, tmp));
 			
 			return 0;

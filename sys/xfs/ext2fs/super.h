@@ -42,8 +42,7 @@ ext2_get_group_desc (SI *s, register ulong group, UNIT **u)
 	
 	if (group >= s->sbi.s_groups_count)
 	{
-		ALERT (("ext2_get_group_desc",
-			"group (%li) >= groups_count (%li)",
+		ALERT (("ext2_get_group_desc: group (%li) >= groups_count (%li)",
 			group, s->sbi.s_groups_count));
 		
 		return NULL;

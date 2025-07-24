@@ -146,7 +146,7 @@ d_hash_remove  (register _DIR *dentry)
 
 	if (flag)
 	{
-		ALERT (("Ext2-FS: remove from hashtable fail in: d_hash_remove (addr = %lx, %s)", dentry, dentry->name));
+		ALERT (("Ext2-FS: remove from hashtable fail in: d_hash_remove (addr = %p, %s)", dentry, dentry->name));
 	}
 }
 

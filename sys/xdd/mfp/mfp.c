@@ -2768,7 +2768,7 @@ mfp_close (FILEPTR *f, int pid)
 		}
 
 		if (flag)
-			ALERT (("mfp_close: remove open FILEPTR fail!", f->fc.aux));
+			ALERT (("mfp_close[%i]: remove open FILEPTR fail!", f->fc.aux));
 
 		if (!(iovar->open))
 		{

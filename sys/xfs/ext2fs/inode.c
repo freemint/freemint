@@ -108,7 +108,7 @@ cookie_remove (register COOKIE *c)
 	
 	if (flag)
 	{
-		ALERT (("Ext2-FS: remove from hashtable fail in: cookie_remove (addr = %lx, %li)", c, c->inode));
+		ALERT (("Ext2-FS: remove from hashtable fail in: cookie_remove (addr = %p, %lu)", c, c->inode));
 	}
 }
 

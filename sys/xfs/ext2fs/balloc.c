@@ -582,9 +582,8 @@ ext2_check_blocks_bitmap (SI *s)
 			x = ext2_count_free ((char *)u->data, EXT2_BLOCK_SIZE (s));
 			if (free_blocks != x)
 			{
-				ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
-					"Wrong free blocks count for group %ld, "
-					"stored = %d, counted = %ld", s->dev+'A', i, free_blocks, x));
+				ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: Wrong free blocks count for group %ld, "
+					"stored = %lu, counted = %lu", s->dev+'A', i, free_blocks, x));
 			}
 			
 			bitmap_count += x;

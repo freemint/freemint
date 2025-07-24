@@ -108,7 +108,7 @@ ext2_free_inode (COOKIE *inode)
 	
 	if (!ext2_clear_bit (bit, u->data))
 	{
-		ALERT (("Ext2-FS: ext2_free_inode [%c]: bit already cleared for inode #%li: %lx", s->dev+'A', ino, inode));
+		ALERT (("Ext2-FS: ext2_free_inode [%c]: bit already cleared for inode #%li: %p", s->dev+'A', ino, inode));
 	}
 	else
 	{
@@ -294,7 +294,7 @@ repeat:
 		if (ext2_set_bit (j, u->data))
 		{
 			ALERT (("Ext2-FS: ext2_new_inode [%c]: "
-				"bit already set for inode %ld (%ld)", dir->dev+'A', j));
+				"bit already set for inode %ld", dir->dev+'A', j));
 			
 			goto repeat;
 		}
@@ -444,8 +444,8 @@ ext2_check_inodes_bitmap (SI * s)
 			if (x != free_count)
 			{
 				ALERT (("Ext2-FS: ext2_check_inodes_bitmap [%c]: "
-					"Wrong free inodes count in group %d, "
-					"stored = %d, counted = %ld",
+					"Wrong free inodes count in group %ld, "
+					"stored = %lu, counted = %lu",
 					s->dev+'A', i, free_count, x));
 			}
 			

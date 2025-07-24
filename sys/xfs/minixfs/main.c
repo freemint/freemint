@@ -236,7 +236,7 @@ minix_sanity (int drv)
 			r = BIO_RWABS (di, 2, p, maps, 2);
 			if (r)
 			{
-				ALERT (("Minix-FS (%c): Bitmaps read failure (%li), access read-only!", drv+'A'));
+				ALERT (("Minix-FS (%c): Bitmaps read failure (%li), access read-only!", drv+'A', r));
 				psblk->s_flags |= MS_RDONLY;
 			}
 			

@@ -821,7 +821,7 @@ m_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 		{
 			/* If this happens we're in trouble */
 			
-			ALERT (("Minix-FS (%c): m_getname: no '..' in inode %d", dev+'A', inum));
+			ALERT (("Minix-FS (%c): m_getname: no '..' in inode %lu", dev+'A', inum));
 			return pinum;
 		}
 		
@@ -853,7 +853,7 @@ m_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 		
 		if ((left == 0) && (inum != pinum))
 		{
-			ALERT (("Minix-FS (%c): m_getname: inode %d orphaned or bad '..'", dev+'A', inum));
+			ALERT (("Minix-FS (%c): m_getname: inode %lu orphaned or bad '..'", dev+'A', inum));
 			return EINTERNAL;
 		}
 	}

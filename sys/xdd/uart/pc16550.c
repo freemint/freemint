@@ -2783,7 +2783,7 @@ uart_close (FILEPTR *f, int pid)
 		}
 		
 		if (flag)
-			ALERT (("uart_close: remove open FILEPTR fail!", f->fc.aux));
+			ALERT (("uart_close[%d]: remove open FILEPTR fail!", f->fc.aux));
 		
 		if (!(iovar->open))
 		{

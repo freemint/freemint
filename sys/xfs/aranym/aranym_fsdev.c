@@ -2370,7 +2370,7 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 			lck = kmalloc (sizeof (*lck));
 			if (!lck)
 			{
-				ALERT (("arafs: kmalloc fail in: ara_ioctl (%lx)", c));
+				ALERT (("arafs: kmalloc fail in: ara_ioctl (%p)", c));
 				return ENOMEM;
 			}
 

@@ -2774,7 +2774,7 @@ scc_close (FILEPTR *f, int pid)
 		}
 		
 		if (flag)
-			ALERT (("scc_close: remove open FILEPTR fail!", f->fc.aux));
+			ALERT (("scc_close[%d]: remove open FILEPTR fail!", f->fc.aux));
 		
 		if (!(iovar->open))
 		{
