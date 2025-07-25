@@ -416,7 +416,7 @@ rel_cookie (COOKIE *c)
 		{
 			if (!c->in.i_links_count && !c->open)
 			{
-				DEBUG (("Ext2-FS [%c]: rel_cookie: free deleted inode #%li: %lx", c->dev+'A', c->inode, c));
+				DEBUG (("Ext2-FS [%c]: rel_cookie: free deleted inode #%li", c->dev+'A', c->inode));
 				ext2_delete_inode (c);
 			}
 		}
@@ -1130,6 +1130,6 @@ ext2_bread (COOKIE *inode, long block, long *err)
 	
 	u = bio.read (inode->s->di, nr, EXT2_BLOCK_SIZE (inode->s));
 	
-	DEBUG (("ext2_bread: leave (%li, %li -> %lx)", nr, EXT2_BLOCK_SIZE (inode->s), u));
+	DEBUG (("ext2_bread: leave (%li, %li -> %p)", nr, EXT2_BLOCK_SIZE (inode->s), u));
 	return u;
 }

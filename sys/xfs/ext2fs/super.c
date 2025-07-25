@@ -98,7 +98,7 @@ ext2_setup_super (SI *s)
 		sb->s_mnt_count = cpu2le16 (le2cpu16 (sb->s_mnt_count) + 1);
 		sb->s_mtime = cpu2le32 (CURRENT_TIME);
 		
-		DEBUG (("2: sb = %lx, u = %lx, u->data = %lx, u->size = %li", sb, s->sbi.s_sb_unit, s->sbi.s_sb_unit->data, s->sbi.s_sb_unit->size));
+		DEBUG (("2: sb = %p, u = %p, u->data = %p, u->size = %li", sb, s->sbi.s_sb_unit, s->sbi.s_sb_unit->data, s->sbi.s_sb_unit->size));
 		bio_MARK_MODIFIED (&bio, s->sbi.s_sb_unit);
 		
 		s->sbi.s_dirty = 1;
@@ -236,12 +236,12 @@ read_ext2_sb_info (ushort drv)
 	{
 		sb = (ext2_sb *) (u->data + sb_offset);
 		
-		DEBUG (("sb = %lx, u->data = %lx, u->size = %lu", sb, u->data, u->size));
+		DEBUG (("sb = %p, u->data = %p, u->size = %lu", sb, u->data, u->size));
 		DEBUG (("sb_block = %lu, sb_offset = %lu, blocksize = %lu", sb_block, sb_offset, blocksize));
 	}
 	else
 	{
-		DEBUG (("bio.read (%lx, %lu, %lu) fail", di, sb_block, blocksize));
+		DEBUG (("bio.read (%p, %lu, %lu) fail", di, sb_block, blocksize));
 	}
 	
 	if (sb && (sb->s_magic == cpu2le16 (EXT2_SUPER_MAGIC)))
@@ -316,12 +316,12 @@ read_ext2_sb_info (ushort drv)
 		{
 			sb = (ext2_sb *) (u->data + sb_offset);
 			
-			DEBUG (("sb = %lx, u->data = %lx, u->size = %lu", sb, u->data, u->size));
+			DEBUG (("sb = %p, u->data = %p, u->size = %lu", sb, u->data, u->size));
 			DEBUG (("sb_block = %lu, sb_offset = %lu, blocksize = %lu", sb_block, sb_offset, blocksize));
 		}
 		else
 		{
-			DEBUG (("bio.get_resident (%lx, %lu, %lu) fail", di, sb_block, blocksize));
+			DEBUG (("bio.get_resident (%p, %lu, %lu) fail", di, sb_block, blocksize));
 		}
 	}	
 	else
@@ -351,7 +351,7 @@ read_ext2_sb_info (ushort drv)
 		
 		bzero (s, sizeof (*s));
 		
-		DEBUG (("sb = %lx, u = %lx, u->data = %lx, u->size = %li", sb, u, u->data, u->size));
+		DEBUG (("sb = %p, u = %p, u->data = %p, u->size = %li", sb, u, u->data, u->size));
 		
 		s->sbi.s_sb_unit = u;
 		s->sbi.s_sb = sb;

@@ -357,7 +357,7 @@ __dir_search (COOKIE *dir, const char *name)
 		return tmp;
 	while (tmp)
 	{
-		DEBUG (("arafs: __dir_search: compare '%s' with: '%s',next=%lx", name, tmp->name, tmp->next));
+		DEBUG (("arafs: __dir_search: compare '%s' with: '%s',next=%p", name, tmp->name, tmp->next));
 
 		if ( stricmp (tmp->name, name) == 0)
 		{
@@ -787,7 +787,7 @@ short arafs_init(short dev)
 		FATAL ("arafs: out of memory");
 	}
 
-	DEBUG (("arafs: ok (dev_no = %i)", root->stat.dev));
+	DEBUG (("arafs: ok (dev_no = %i)", (int)root->stat.dev));
 	return dev;
 }
 
@@ -2335,7 +2335,7 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
 
-						DEBUG (("ara_ioctl: unlocked %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
+						DEBUG (("ara_ioctl: unlocked %p: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 						/* wake up anyone waiting on the lock */
 						wake (IO_Q, (long) lck);
@@ -2351,7 +2351,7 @@ ara_ioctl (FILEPTR *f, int mode, void *buf)
 				return ENSLOCK;
 			}
 
-			DEBUG (("ara_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
+			DEBUG (("ara_ioctl: lock %p: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 			/* see if there's a conflicting lock */
 			while ((lck = denylock (cpid, c->locks, &t)) != 0)

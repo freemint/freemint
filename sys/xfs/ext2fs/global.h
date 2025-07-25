@@ -32,15 +32,18 @@
 # include "mint/proc.h"
 # include "mint/time.h"
 
+/*
+ * Define EXT2FS_DEBUG to produce debug messages
+ */
+# if 0
+# define EXT2FS_DEBUG	1
+# endif
+
 # include "ext2.h"
 
 
 /* debug section
  */
-
-# if 0
-# define EXT2FS_DEBUG	1
-# endif
 
 # ifdef EXT2FS_DEBUG
 

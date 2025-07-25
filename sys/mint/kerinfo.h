@@ -91,7 +91,7 @@ struct kerinfo
 	void	_cdecl (*trace)(const char *, ...) __attribute__((format(printf, 1, 2)));
 	void	_cdecl (*debug)(const char *, ...) __attribute__((format(printf, 1, 2)));
 	void	_cdecl (*alert)(const char *, ...) __attribute__((format(printf, 1, 2)));
-	EXITING _cdecl (*fatal)(const char *, ...) NORETURN;
+	EXITING _cdecl (*fatal)(const char *, ...) NORETURN __attribute__((format(printf, 1, 2)));
 
 
 	/* memory allocation functions

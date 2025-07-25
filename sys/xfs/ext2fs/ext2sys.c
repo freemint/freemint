@@ -167,7 +167,7 @@ e_root (int drv, fcookie *fc)
 {
 	SI *s = super [drv];
 
-	DEBUG (("Ext2-FS [%c]: e_root enter (s = %lx, mem = %li)", drv+'A', s, memory));
+	DEBUG (("Ext2-FS [%c]: e_root enter (s = %p, mem = %li)", drv+'A', s, memory));
 
 	if (!s)
 	{
