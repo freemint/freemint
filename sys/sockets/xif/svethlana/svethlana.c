@@ -1074,7 +1074,7 @@ static void svethlana_service (struct netif * nif, uint32 int_src)
 											 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL))
 				{
 					//At least one of the above error flags was set
-					ksprintf (message, "Slot %hu RX errorflags: 0x%08lx \r\n", i, eth_rx_bd[i].len_ctrl);
+					ksprintf (message, "Slot %d RX errorflags: 0x%08lx \r\n", i, eth_rx_bd[i].len_ctrl);
 					c_conws (message);
 
 					//Clear error flags
