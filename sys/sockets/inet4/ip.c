@@ -422,7 +422,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	nbuf2 = ip_brdcst_copy (nbuf, rt->nif, rt, addrtype);
 	if (!nbuf2 && addrtype == IPADDR_MULTICST &&
 	    _opts->multicast_loop)
-		nbuf2 = buf_clone (buf, BUF_NORMAL);
+		nbuf2 = buf_clone (nbuf, BUF_NORMAL);
 	
 	r = ip_frag (nbuf, rt->nif, rt->flags & RTF_GATEWAY ? rt->gway : daddr,
 		     addrtype);
