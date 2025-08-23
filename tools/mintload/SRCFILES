@@ -7,6 +7,8 @@ COBJS = \
 	entry.S \
 	setstack.S \
 	crtinit.c \
-	mintloader.c
+	mintloader.c \
+	natfeat.c \
+	natfeat_asm.S
 
 SRCFILES = $(HEADER) $(COBJS)
