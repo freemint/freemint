@@ -313,11 +313,7 @@ x040:	moveq	#40,d0		// assume 68040
 	dc.l	0x06d00000	// check for 68080 addiw.l instruction
 
 // Apollo 68080
-	moveq	#40,d0          // force 68040 detection
 	move.w	#1,SYM(is_apollo_68080)
-	bra.s	exit
-
-	moveq	#60,d0		// no fault -> this is 68060
 
 exit:	move.l	a1,sp
 
