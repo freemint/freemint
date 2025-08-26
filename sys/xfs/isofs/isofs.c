@@ -341,13 +341,13 @@ rwabs_metados(DI *di, unsigned short rw, void *buf, unsigned long size, unsigned
 
 	if (!n)
 	{
-		ALERT(("rwabs_metados[%c]: n = 0 (failure)!", di->drv+'A'));
+		ALERT(("rwabs_metados[%c]: n = 0 (failure)!", DriveToLetter(di->drv)));
 		return ESECTOR;
 	}
 
 	if (di->size && (recno + n) > di->size)
 	{
-		ALERT(("rwabs_metados[%c]: access outside partition", di->drv+'A'));
+		ALERT(("rwabs_metados[%c]: access outside partition", DriveToLetter(di->drv)));
 		return ESECTOR;
 	}
 
@@ -393,7 +393,7 @@ init_metados(void)
 	DEBUG(("init_metados: using \"%s\"", drvinfo.mdr_name));
 
 	/* XXX lookup free gemdos drive */
-	di = bio.res_di('Z'-'A');
+	di = bio.res_di(DriveFromLetter('Z'));
 	if (!di) return EBUSY;
 
 	*di->rrwabs = rwabs_metados;
@@ -661,7 +661,7 @@ isofs_root(int drv, fcookie *fc)
 //	SI *s = super [drv];
 	long r;
 	
-	DEBUG(("isofs[%c]: isofs_root enter (mem = %li)", drv+'A', memory));
+	DEBUG(("isofs[%c]: isofs_root enter (mem = %li)", DriveToLetter(drv), memory));
 	
 	if (drv != isofs_dev)
 	{
@@ -681,7 +681,7 @@ isofs_root(int drv, fcookie *fc)
 //		i = read_sb_info(drv);
 		if (i)
 		{
-			DEBUG(("isofs[%c]: e_root leave failure", drv+'A'));
+			DEBUG(("isofs[%c]: e_root leave failure", DriveToLetter(drv)));
 			return i;
 		}
 		
@@ -693,7 +693,7 @@ isofs_root(int drv, fcookie *fc)
 	fc->aux = 0;
 //	fc->index = (long) s->root; s->root->links++;
 	
-	DEBUG(("isofs[%c]: e_root leave ok (mem = %li)", drv+'A', memory));
+	DEBUG(("isofs[%c]: e_root leave ok (mem = %li)", DriveToLetter(drv), memory));
 	return E_OK;
 }
 
@@ -703,7 +703,7 @@ isofs_lookup(fcookie *dir, const char *name, fcookie *fc)
 //	COOKIE *c = (COOKIE *) dir->index;
 //	SI *s = super [dir->dev];
 	
-	DEBUG(("isofs[%c]: isofs_lookup (%s)", dir->dev+'A', name));
+	DEBUG(("isofs[%c]: isofs_lookup (%s)", DriveToLetter(dir->dev), name));
 	
 	*fc = *dir;
 	
@@ -712,7 +712,7 @@ isofs_lookup(fcookie *dir, const char *name, fcookie *fc)
 	{	
 //		c->links++;
 	
-		DEBUG(("isofs[%c]: isofs_lookup: leave ok, (name = \".\")", dir->dev+'A'));
+		DEBUG(("isofs[%c]: isofs_lookup: leave ok, (name = \".\")", DriveToLetter(dir->dev)));
 		return E_OK;
 	}
 	
@@ -721,7 +721,7 @@ isofs_lookup(fcookie *dir, const char *name, fcookie *fc)
 	{
 //		if (dir == rootcookie)
 //		{
-//			DEBUG(("isofs[%c]: isofs_lookup: leave ok, EMOUNT, (name = \"..\")", dir->dev+'A'));
+//			DEBUG(("isofs[%c]: isofs_lookup: leave ok, EMOUNT, (name = \"..\")", DriveToLetter(dir->dev)));
 //			return EMOUNT;
 //		}
 	}
@@ -732,7 +732,7 @@ isofs_lookup(fcookie *dir, const char *name, fcookie *fc)
 			return ENOENT;
 	}
 	
-	DEBUG(("isofs[%c]: isofs_lookup: leave ok", dir->dev+'A'));
+	DEBUG(("isofs[%c]: isofs_lookup: leave ok", DriveToLetter(dir->dev)));
 	return E_OK;
 }
 

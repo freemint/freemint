@@ -1421,7 +1421,7 @@ shell(void *arg)
 	xcmdstate();				/* print 'Extended commands are ...' */
 	shell_fprintf(stdout, MSG_shell_type_help);
 
-	sys_d_setdrv('U' - 'A');
+	sys_d_setdrv(UNIDRV);
 	sh_cd(1, NULL);				/* this sets $HOME as current dir */
 
 	for (;;)

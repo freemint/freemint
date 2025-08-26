@@ -216,12 +216,7 @@ open(const char *filename, int iomode, ...)
 	
 	if ((f[1] == ':') && (f[2] == '\0'))
 	{
-		int c = tolower(f[0]);
-		
-		if (c >= 'a' && c <= 'z')
-			c = c - 'a';
-		else if (c >= '1' && c <= '6')
-			c = 26 + (c - '1');
+		int c = DriveFromLetter(f[0]);
 		
 		if ((c >= 0) && (c < 32))
 		{
@@ -258,7 +253,7 @@ open(const char *filename, int iomode, ...)
 	}
 	else if (Dlock(1, mydev->drv))
 	{
-		printf("Can't lock partition %c:!\n", mydev->drv+'A');
+		printf("Can't lock partition %c:!\n", DriveToLetter(mydev->drv));
 		
 		if (mydev)
 			free_device(mydev);
@@ -279,7 +274,7 @@ open(const char *filename, int iomode, ...)
 	if (ret)
 	{
 		printf("XHInqDev2 [%c] fail (ret = %li, errno = %i)\n",
-			mydev->drv+'A', ret, errno);
+			DriveToLetter(mydev->drv), ret, errno);
 		ret = -1;
 	}
 	else
@@ -351,7 +346,7 @@ close(int fd)
 	}
 	else if (Dlock(0, mydev->drv))
 	{
-		printf("Can't unlock partition %c:!\n", 'A'+mydev->drv);
+		printf("Can't unlock partition %c:!\n", DriveToLetter(mydev->drv));
 		
 		__set_errno(EACCES);
 		ret = -1;
@@ -376,13 +371,13 @@ rwabs_xhdi(struct device *mydev, ushort rw, void *buf, ulong size, ulong recno)
 	
 	if (!n || (recno + n) > mydev->xhdi_blocks)
 	{
-		printf("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+mydev->drv);
+		printf("rwabs_xhdi: access outside partition (drv = %c:)\n", DriveToLetter(mydev->drv));
 		exit(2);
 	}
 	
 	if (n > 65535UL)
 	{
-		printf("rwabs_xhdi: n to large (drv = %c)\n", 'A'+mydev->drv);
+		printf("rwabs_xhdi: n to large (drv = %c)\n", DriveToLetter(mydev->drv));
 		exit(2);
 	}
 	

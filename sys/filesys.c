@@ -174,7 +174,7 @@ init_drive (int i)
 	FILESYS *fs;
 	fcookie root_dir;
 
-	TRACE (("init_drive (%c)", i+'A'));
+	TRACE (("init_drive (%c)", DriveToLetter(i)));
 
 	assert (i >= 0 && i < NUM_DRIVES);
 
@@ -636,7 +636,7 @@ disk_changed (ushort d)
 	fs = drives[d];
 	if (!fs)
 	{
-		TRACE (("drive %c not yet initialized", d+'A'));
+		TRACE (("drive %c not yet initialized", DriveToLetter(d)));
 		changedrv (d);
 		return 0;
 	}
@@ -855,13 +855,8 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	 */
 	if (path[2] != ':' && path[1] == ':' && !cwd->root_dir)
 	{
-		char c = tolower ((int)path[0] & 0xff);
-
-		if (c >= 'a' && c <= 'z')
-			drv = c - 'a';
-		else if (c >= '1' && c <= '6')
-			drv = 26 + (c - '1');
-		else
+		drv = DriveFromLetter(path[0]);
+		if (drv < 0)
 			goto nodrive;
 
 # if 1

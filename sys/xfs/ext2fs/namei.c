@@ -235,7 +235,7 @@ d_verify_clean (ushort dev, ulong parent)
 		{
 			if (dentry->name)
 			{
-				ALERT (("Ext2-FS [%c]: d_verify_clean: entry found for #%li (#%li: %s)!", dev+'A', parent, dentry->inode, dentry->name));
+				ALERT (("Ext2-FS [%c]: d_verify_clean: entry found for #%li (#%li: %s)!", DriveToLetter(dev), parent, dentry->inode, dentry->name));
 				d_del_dir (dentry);
 			}
 		}
@@ -285,7 +285,7 @@ dump_dir_cache (char *buf, long bufsize)
 	{
 		_DIR *d = &(cache_dir [i]);
 
-		ksprintf (tmp, "%3li: [%c] - #%06li", i, d->dev+'A', d->inode);
+		ksprintf (tmp, "%3li: [%c] - #%06li", i, DriveToLetter(d->dev), d->inode);
 		len = MIN (strlen (tmp), bufsize);
 		strncpy (buf, tmp, len);
 		buf += len;
@@ -365,7 +365,7 @@ ext2_search_entry (COOKIE *dir, const char *name, long namelen)
 
 	_DIR *dentry;
 
-	DEBUG (("Ext2-FS [%c]: ext2_search_entry (%li, %s)", dir->dev+'A', namelen, name));
+	DEBUG (("Ext2-FS [%c]: ext2_search_entry (%li, %s)", DriveToLetter(dir->dev), namelen, name));
 
 	if (namelen == 0)
 		return NULL;
@@ -448,7 +448,7 @@ failure:
 	update_lastlookup (dir, name, namelen);
 
 
-	DEBUG (("Ext2-FS [%c]: ext2_search_entry: leave not found", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: ext2_search_entry: leave not found", DriveToLetter(dir->dev)));
 	return NULL;
 }
 
@@ -461,7 +461,7 @@ ext2_search_entry_i (COOKIE *dir, long inode, ext2_d2 **res_dir)
 	long block;
 	long offset;
 
-	DEBUG (("Ext2-FS [%c]: ext2_search_entry_i: #%li in #%li", dir->dev+'A', inode, dir->inode));
+	DEBUG (("Ext2-FS [%c]: ext2_search_entry_i: #%li in #%li", DriveToLetter(dir->dev), inode, dir->inode));
 
 	for (block = 0, offset = 0; offset < size; block++)
 	{
@@ -511,7 +511,7 @@ ext2_search_entry_i (COOKIE *dir, long inode, ext2_d2 **res_dir)
 
 failure:
 
-	DEBUG (("Ext2-FS [%c]: ext2_search_entry_i: leave not found", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: ext2_search_entry_i: leave not found", DriveToLetter(dir->dev)));
 	return NULL;
 }
 
@@ -532,7 +532,7 @@ ext2_find_entry (COOKIE *dir, const char *name, long namelen, ext2_d2 **res_dir)
 	long block;
 	long offset;
 
-	DEBUG (("Ext2-FS [%c]: ext2_find_entry (%li, %s)", dir->dev+'A', namelen, name));
+	DEBUG (("Ext2-FS [%c]: ext2_find_entry (%li, %s)", DriveToLetter(dir->dev), namelen, name));
 
 	*res_dir = NULL;
 	if (!dir)
@@ -589,7 +589,7 @@ ext2_find_entry (COOKIE *dir, const char *name, long namelen, ext2_d2 **res_dir)
 	}
 
 failure:
-	DEBUG (("Ext2-FS [%c]: ext2_find_entry: leave not found", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: ext2_find_entry: leave not found", DriveToLetter(dir->dev)));
 	return NULL;
 }
 

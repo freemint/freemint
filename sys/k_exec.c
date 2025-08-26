@@ -124,7 +124,7 @@ make_fname(struct proc *p, const char *source)
 	else
 	{
 		assert(get_curproc()->p_cwd);
-		tmp[0] = get_curproc()->p_cwd->curdrv + ((get_curproc()->p_cwd->curdrv < 26) ? 'A' : '1'-26);
+		tmp[0] = DriveToLetter(get_curproc()->p_cwd->curdrv);
 	}
 
 	/* FIXME: This is completely wrong!!! */
@@ -135,7 +135,7 @@ make_fname(struct proc *p, const char *source)
 	}
 	else
 	{
-		if (!sys_d_getcwd(&tmp[2], tmp[0] - ((tmp[0] <= 'Z'+6) ? 'A' : '1'-26) + 1, PATH_MAX-2))
+		if (!sys_d_getcwd(&tmp[2], DriveFromLetter(tmp[0]) + 1, PATH_MAX-2))
 			ksprintf(p->fname, sizeof(p->fname), "%s\\%s", tmp, source);
 		else
 			ksprintf(p->fname, sizeof(p->fname), "%s", source);

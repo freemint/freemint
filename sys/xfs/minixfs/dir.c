@@ -156,7 +156,7 @@ is_parent (unsigned dir1, unsigned dir2, ushort drive)
 	{
 		if (itemp == dir2)
 		{
-			DEBUG (("Minix-FS (%c): invalid directory move.", drive+'A'));
+			DEBUG (("Minix-FS (%c): invalid directory move.", DriveToLetter(drive)));
 			return 1;
 		}
 		
@@ -166,7 +166,7 @@ is_parent (unsigned dir1, unsigned dir2, ushort drive)
 		itemp = search_dir ("..", itemp, drive, FIND);
 		if (itemp < 0)
 		{
-			ALERT (("Minix-FS (%c): Couldn't trace inode %d back to root.", drive+'A', dir1));
+			ALERT (("Minix-FS (%c): Couldn't trace inode %d back to root.", DriveToLetter(drive), dir1));
 			return EACCES;
 		}
 	}

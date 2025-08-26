@@ -23,18 +23,19 @@
 #ifndef TOSONLY
 #include "util.h"
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 int
 get_drv(const char *p)
 {
 	if (*(p + 1) == ':')
 	{
-		int c = *p;
-		if (c >= 'a' && c <= 'z')
-			return c - 'a';
-		if (c >= 'A' && c <= 'Z')
-			return c - 'A';
-		if (c >= '0' && c <= '9')
-			return (c - '0') + ('z' - ('a' - 1));
+		return DriveFromLetter(*p);
 	}
 	return -1;
 }
@@ -170,7 +171,7 @@ get_drive_and_path(char *path, short plen)
 	int drv;
 
 	drv = d_getdrv();
-	path[0] = (char)drv + 'a';
+	path[0] = DriveToLetter(drv);
 	path[1] = ':';
 	d_getpath(path + 2, 0);
 	drv = strlen(path);

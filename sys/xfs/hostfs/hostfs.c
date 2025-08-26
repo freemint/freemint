@@ -33,6 +33,9 @@
 #include "mint/kerinfo.h"
 #include "mint/arch/nf_ops.h"
 
+#undef DriveToLetter
+#define DriveToLetter(d) ((d) < 26 ? 'a' + (d) : (d) - 26 + '1')
+
 
 /*
  * filesystem basic description
@@ -61,7 +64,7 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 		/* search the 1st log 1 bit position -> drv_number */
 		while( ! (drv_mask & 1) ) { drv_number++; drv_mask>>=1; }
 
-		mount_point[3] = drv_number+'a';
+		mount_point[3] = DriveToLetter(drv_number);
 		mount_point[4] = '\0';
 
 		DEBUG(("hostfs: drive: %d", drv_number));
@@ -141,7 +144,7 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 			/* ready */
 			succ = 0;
 
-			mount_point[3] = drv_number+'a';
+			mount_point[3] = DriveToLetter(drv_number);
 			mount_point[4] = '\0';
 
 			DEBUG(("hostfs: drive: %d", drv_number));

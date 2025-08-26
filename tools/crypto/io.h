@@ -33,6 +33,13 @@
 # include "mytypes.h"
 
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 int	io_init		(void);
 
 int	io_open		(int64_t dev);

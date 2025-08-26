@@ -43,5 +43,13 @@ struct ilock
 /* macros to be applied to FILEPTRS to determine their type */
 # define is_terminal(f) ((f)->flags & O_TTY)
 
+/* drives are A:->Z:, 1:->6: */
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 
 # endif /* _mint_file_h */

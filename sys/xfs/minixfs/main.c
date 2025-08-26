@@ -105,12 +105,12 @@ minix_sanity (int drv)
 	SI *psblk = NULL;
 	long r;
 	
-	DEBUG (("Minix-FS (%c): minix_sanity enter.", drv+'A'));
+	DEBUG (("Minix-FS (%c): minix_sanity enter.", DriveToLetter(drv)));
 	
 	psblk = kmalloc (sizeof (*psblk));
 	if (!psblk)
 	{
-		ALERT (("Minix-FS (%c): No memory for super_info structure.", drv+'A'));
+		ALERT (("Minix-FS (%c): No memory for super_info structure.", DriveToLetter(drv)));
 		
 		r = ENOMEM;
 		goto failure;
@@ -121,7 +121,7 @@ minix_sanity (int drv)
 	di = bio.get_di (drv);
 	if (!di)
 	{
-		DEBUG (("Minix-FS (%c): Cannot access partition.", drv+'A'));
+		DEBUG (("Minix-FS (%c): Cannot access partition.", DriveToLetter(drv)));
 		
 		r = EBUSY;
 		goto failure;
@@ -129,7 +129,7 @@ minix_sanity (int drv)
 	
 	if (di->pssize != 512 && di->pssize != 1024)
 	{
-		DEBUG (("Minix-FS (%c): Cannot access partition with sectorsize > 1024.", drv+'A'));
+		DEBUG (("Minix-FS (%c): Cannot access partition with sectorsize > 1024.", DriveToLetter(drv)));
 		
 		r = ENXIO;
 		goto failure;
@@ -144,7 +144,7 @@ minix_sanity (int drv)
 	u = bio.read (di, SUPER_BLOCK, BLOCK_SIZE);
 	if (!u)
 	{
-		DEBUG (("Minix-FS (%c): bio.read fail.", drv+'A'));
+		DEBUG (("Minix-FS (%c): bio.read fail.", DriveToLetter(drv)));
 		
 		r = EIO;
 		goto failure;
@@ -158,7 +158,7 @@ minix_sanity (int drv)
 		u = bio.get_resident (di, SUPER_BLOCK, BLOCK_SIZE);
 		if (!u)
 		{
-			DEBUG (("Minix-FS (%c): bio.get_resident fail.", drv+'A'));
+			DEBUG (("Minix-FS (%c): bio.get_resident fail.", DriveToLetter(drv)));
 			
 			r = ENOMEM;
 			goto failure;
@@ -173,12 +173,12 @@ minix_sanity (int drv)
 	{
 		if ((sblk->s_magic == SUPER_V1_30) || (sblk->s_magic == SUPER_MAGIC))
 		{
-			ALERT (("Minix-FS (%c): V1 filesystem are no longer supported.", drv+'A'));
+			ALERT (("Minix-FS (%c): V1 filesystem are no longer supported.", DriveToLetter(drv)));
 			r = EMEDIUMTYPE;
 		}
 		else
 		{
-			DEBUG (("Minix-FS (%c): invalid MAGIC in 1.", drv+'A'));
+			DEBUG (("Minix-FS (%c): invalid MAGIC in 1.", DriveToLetter(drv)));
 			r = ENXIO;
 		}
 		
@@ -195,11 +195,11 @@ minix_sanity (int drv)
 		
 		if (sblk->s_log_zsize)
 		{
-			ALERT (("Minix-FS (%c): Cannot read Drive, Zone-size > Block-size", drv+'A'));
+			ALERT (("Minix-FS (%c): Cannot read Drive, Zone-size > Block-size", DriveToLetter(drv)));
 			goto failure;
 		}
 		
-		DEBUG (("Minix-FS (%c): V2 filesystem", drv+'A'));
+		DEBUG (("Minix-FS (%c): V2 filesystem", DriveToLetter(drv)));
 		
 		psblk->ipb = INODES_PER_BLOCK2;
 		psblk->zpind = NR_INDIRECTS2;
@@ -218,13 +218,13 @@ minix_sanity (int drv)
 			int dotdot = -1;
 			int i;
 			
-			DEBUG (("Minix-FS (%c): maps = %li -> %li bytes", drv+'A', maps, maps * BLOCK_SIZE));
+			DEBUG (("Minix-FS (%c): maps = %li -> %li bytes", DriveToLetter(drv), maps, maps * BLOCK_SIZE));
 			
 			maps *= BLOCK_SIZE;
 			p = kmalloc (maps);
 			if (!p)
 			{
-				ALERT (("Minix-FS (%c): No memory for bitmaps!", drv+'A'));
+				ALERT (("Minix-FS (%c): No memory for bitmaps!", DriveToLetter(drv)));
 				
 				r = ENOMEM;
 				goto failure;
@@ -236,7 +236,7 @@ minix_sanity (int drv)
 			r = BIO_RWABS (di, 2, p, maps, 2);
 			if (r)
 			{
-				ALERT (("Minix-FS (%c): Bitmaps read failure (%li), access read-only!", drv+'A', r));
+				ALERT (("Minix-FS (%c): Bitmaps read failure (%li), access read-only!", DriveToLetter(drv), r));
 				psblk->s_flags |= MS_RDONLY;
 			}
 			
@@ -265,7 +265,7 @@ minix_sanity (int drv)
 						}
 						else
 						{
-							ALERT (("Minix-FS (%c): multiple \".\" in root dir!", drv+'A'));
+							ALERT (("Minix-FS (%c): multiple \".\" in root dir!", DriveToLetter(drv)));
 							dot = -1;
 							i = NR_DIR_ENTRIES;
 						}
@@ -279,7 +279,7 @@ minix_sanity (int drv)
 						}
 						else
 						{
-							ALERT (("Minix-FS (%c): multiple \"..\" in root dir!", drv+'A'));
+							ALERT (("Minix-FS (%c): multiple \"..\" in root dir!", DriveToLetter(drv)));
 							dotdot = -1;
 							i = NR_DIR_ENTRIES;
 						}
@@ -289,14 +289,14 @@ minix_sanity (int drv)
 			
 			if ((dotdot == -1) || (dot == -1))
 			{
-				ALERT (("Minix-FS (%c): no '.' or '..' in root dir", drv+'A'));
+				ALERT (("Minix-FS (%c): no '.' or '..' in root dir", DriveToLetter(drv)));
 				goto failure;
 			}
 			
 			psblk->incr = dotdot - dot;
 			if ((psblk->incr < 1) || (psblk->incr > 16) || NPOW2 (psblk->incr))
 			{
-				ALERT (("Minix-FS (%c): weird '.' '..' positions", drv+'A'));
+				ALERT (("Minix-FS (%c): weird '.' '..' positions", DriveToLetter(drv)));
 				goto failure;
 			}
 			
@@ -316,29 +316,29 @@ minix_sanity (int drv)
 			{
 				if (!(psblk->sblk->s_state & MINIX_VALID_FS))
 				{
-					ALERT (("MinixFS [%c]: WARNING: mounting unchecked fs, running fsck is recommended", drv+'A'));
+					ALERT (("MinixFS [%c]: WARNING: mounting unchecked fs, running fsck is recommended", DriveToLetter(drv)));
 				}
 				else if (psblk->sblk->s_state & MINIX_ERROR_FS)
 				{
-					ALERT (("MinixFS [%c]: WARNING: mounting fs with errors, running fsck is recommended", drv+'A'));
+					ALERT (("MinixFS [%c]: WARNING: mounting fs with errors, running fsck is recommended", DriveToLetter(drv)));
 				}
 				
 				psblk->sblk->s_state &= ~MINIX_VALID_FS;
 				bio_MARK_MODIFIED (&bio, psblk->sunit);
 			}
 			
-			DEBUG (("Minix-FS (%c): minix_sanity leave E_OK (incr = %i, mfname = %i).", drv+'A', psblk->incr, psblk->mfname));
+			DEBUG (("Minix-FS (%c): minix_sanity leave E_OK (incr = %i, mfname = %i).", DriveToLetter(drv), psblk->incr, psblk->mfname));
 			return E_OK;
 		}
 		else
 		{
-			ALERT (("Minix-FS (%c): root inode is not a directory?", drv+'A'));
+			ALERT (("Minix-FS (%c): root inode is not a directory?", DriveToLetter(drv)));
 			goto failure;
 		}
 	}
 	else
 	{
-		DEBUG (("Minix-FS (%c): invalid MAGIC.", drv+'A'));
+		DEBUG (("Minix-FS (%c): invalid MAGIC.", DriveToLetter(drv)));
 		r = ENXIO;
 	}
 	
@@ -354,6 +354,6 @@ failure:
 	if (di) bio.free_di (di);
 	super_ptr[drv] = NULL;
 	
-	DEBUG (("Minix-FS (%c): minix_sanity leave r = %li", drv+'A', r));
+	DEBUG (("Minix-FS (%c): minix_sanity leave r = %li", DriveToLetter(drv), r));
 	return r;
 }

@@ -156,7 +156,7 @@ free_zone (ushort drive, long zone)
 	
 	if (!ret)
 	{
-		ALERT (("Minix-FS (%c): zone %ld freeing already free zone !", drive+'A', zone));
+		ALERT (("Minix-FS (%c): zone %ld freeing already free zone !", DriveToLetter(drive), zone));
 	}
 	
 	return ret;
@@ -203,7 +203,7 @@ free_inode (ushort drive, ushort inum)
 	
 	if (!ret)
 	{
-		ALERT (("Minix-FS (%c): inode %d, freeing already free inode!", drive+'A', inum));
+		ALERT (("Minix-FS (%c): inode %d, freeing already free inode!", DriveToLetter(drive), inum));
 	}
 	
 	return ret;

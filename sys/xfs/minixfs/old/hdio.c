@@ -10,9 +10,9 @@
 # include "minixfs.h"
 # include "global.h"
 # define XRWABS RWABS
-# define DWARN(mes,drive) ALERT("Drive %c: " mes,drive+'A')
+# define DWARN(mes,drive) ALERT("Drive %c: " mes,DriveToLetter(drive=)
 # else
-# define DWARN(mes,drive) fprintf(stderr,"Drive %c: " mes "\n",drive+'A')
+# define DWARN(mes,drive) fprintf(stderr,"Drive %c: " mes "\n",DriveToLetter(drive))
 # define ALERT(x)	 fprintf(stderr,x "\n")
 # define NEED_SUPER
 # define RWABS Rwabs

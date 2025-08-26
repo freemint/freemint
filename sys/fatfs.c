@@ -1234,7 +1234,7 @@ bio_fat_getunit (const ushort dev, ulong sector, ulong blocksize)
 		return bio.getunit (DI (dev), sector, blocksize);
 
 	FAT_ALERT (("FATFS [%c]: bio_fat_getunit: out of range (%ld [%ld,%ld]), aborted",
-		    'A'+dev, sector, FATSTART (dev), FATEND (dev)));
+		    DriveToLetter(dev), sector, FATSTART (dev), FATEND (dev)));
 	return NULL;
 # else
 	return bio.getunit (DI (dev), sector, blocksize);
@@ -1249,7 +1249,7 @@ bio_fat_read (const ushort dev, ulong sector, ulong blocksize)
 		return bio.read (DI (dev), sector, blocksize);
 
 	FAT_ALERT (("FATFS [%c]: bio_fat_read: out of range (%ld [%ld,%ld]), aborted",
-		    'A'+dev, sector, FATSTART (dev), FATEND (dev)));
+		    DriveToLetter(dev), sector, FATSTART (dev), FATEND (dev)));
 	return NULL;
 # else
 	return bio.read (DI (dev), sector, blocksize);
@@ -1264,7 +1264,7 @@ bio_fat_l_read (const ushort dev, ulong sector, ulong blocks, ulong blocksize, v
 		return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
 
 	FAT_ALERT (("FATFS [%c]: bio_fat_l_read: out of range (%ld+%ld [%ld,%ld]), aborted",
-		    'A'+dev, sector, blocks, FATSTART (dev), FATEND (dev)));
+		    DriveToLetter(dev), sector, blocks, FATSTART (dev), FATEND (dev)));
 	return EREAD;
 # else
 	return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
@@ -1282,7 +1282,7 @@ bio_root_read (const ushort dev, ulong sector)
 		return bio.read (DI (dev), sector, blocksize);
 
 	FAT_ALERT (("FATFS [%c]: bio_root_read: out of range (%ld [%ld,%ld]), aborted",
-		    'A'+dev, sector, FATEND (dev), CLFIRST (dev)));
+		    DriveToLetter(dev), sector, FATEND (dev), CLFIRST (dev)));
 	return NULL;
 # else
 	return bio.read (DI (dev), sector, blocksize);
@@ -1302,7 +1302,7 @@ bio_data_getunit (const ushort dev, long cluster)
 		return bio.getunit (DI (dev), sector, blocksize);
 
 	FAT_ALERT (("FATFS [%c]: bio_data_getunit: out of range (%ld [%ld] %ld [%ld]), aborted",
-		    'A'+dev, cluster, MAXCL (dev), sector, CLFIRST (dev)));
+		    DriveToLetter(dev), cluster, MAXCL (dev), sector, CLFIRST (dev)));
 	return NULL;
 # else
 	return bio.getunit (DI (dev), sector, blocksize);
@@ -1321,7 +1321,7 @@ bio_data_read (const ushort dev, long cluster)
 		return bio.read (DI (dev), sector, blocksize);
 
 	FAT_ALERT (("FATFS [%c]: bio_data_read: out of range (%ld [%ld] %ld [%ld]), aborted",
-		    'A'+dev, cluster, MAXCL (dev), sector, CLFIRST (dev)));
+		    DriveToLetter(dev), cluster, MAXCL (dev), sector, CLFIRST (dev)));
 	return NULL;
 # else
 	return bio.read (DI (dev), sector, blocksize);
@@ -1340,7 +1340,7 @@ bio_data_l_read (const ushort dev, long cluster, ulong blocks, void *buf)
 		return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
 
 	FAT_ALERT (("FATFS [%c]: bio_data_l_read: out of range (%ld,%ld [%ld] %ld [%ld]), aborted",
-		    'A'+dev, cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
+		    DriveToLetter(dev), cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
 	return EREAD;
 # else
 	return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
@@ -1359,7 +1359,7 @@ bio_data_l_write (const ushort dev, long cluster, ulong blocks, void *buf)
 		return bio.l_write (DI (dev), sector, blocks, blocksize, buf);
 
 	FAT_ALERT (("FATFS [%c]: bio_data_l_write: out of range (%ld,%ld [%ld] %ld [%ld]), aborted",
-		    'A'+dev, cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
+		    DriveToLetter(dev), cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
 	return EWRITE;
 # else
 	return bio.l_write (DI (dev), sector, blocks, blocksize, buf);
@@ -1696,10 +1696,10 @@ c_del_cookie (register COOKIE *c)
 	c_hash_remove (c);
 
 	if (c->open)
-		FAT_ALERT (("FATFS [%c]: open FILEPTR detected in: c_del_cookie (%s)", 'A'+c->dev, c->name));
+		FAT_ALERT (("FATFS [%c]: open FILEPTR detected in: c_del_cookie (%s)", DriveToLetter(c->dev), c->name));
 
 	if (c->locks)
-		FAT_ALERT (("FATFS [%c]: open LOCKS detected in: c_del_cookie (%s)", 'A'+c->dev, c->name));
+		FAT_ALERT (("FATFS [%c]: open LOCKS detected in: c_del_cookie (%s)", DriveToLetter(c->dev), c->name));
 
 	if (c->lastlookup)
 		kfree (c->lastlookup);
@@ -1900,7 +1900,7 @@ getcl12 (long cluster, const ushort dev, ulong n)
 				FAT_BAD12  (cluster) ? (ret = CLBAD) :
 				({
 					ret = CLILLEGAL;
-					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
+					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", DriveToLetter(dev), cluster, prevcluster));
 				});
 
 				FAT_DEBUG (("getcl12: leave failure (invalid entry, ret = %li)", ret));
@@ -1960,7 +1960,7 @@ getcl16 (long cluster, const ushort dev, ulong n)
 				FAT_BAD16  (cluster) ? (ret = CLBAD) :
 				({
 					ret = CLILLEGAL;
-					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
+					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", DriveToLetter(dev), cluster, prevcluster));
 				});
 
 				FAT_DEBUG (("getcl16: leave failure (invalid entry, ret = %li)", ret));
@@ -2023,7 +2023,7 @@ getcl32 (long cluster, const ushort dev, ulong n)
 				FAT_BAD32  (cluster) ? (ret = CLBAD) :
 				({
 					ret = CLILLEGAL;
-					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
+					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", DriveToLetter(dev), cluster, prevcluster));
 				});
 
 				FAT_DEBUG (("getcl32: leave failure (invalid entry, ret = %li)", ret));
@@ -2456,7 +2456,7 @@ static long
 ffree12 (const ushort dev)
 {
 	register long count = 0;
-	FAT_DEBUG (("ffree12: enter (%c)", 'A'+dev));
+	FAT_DEBUG (("ffree12: enter (%c)", DriveToLetter(dev)));
 # if 1
 	/*
 	 * use GETCL (slow)
@@ -2482,7 +2482,7 @@ static long
 ffree16 (const ushort dev)
 {
 	register long count = 0;
-	FAT_DEBUG (("ffree16: enter (%c)", 'A'+dev));
+	FAT_DEBUG (("ffree16: enter (%c)", DriveToLetter(dev)));
 # if 0
 	/*
 	 * use GETCL (slow)
@@ -2545,7 +2545,7 @@ static long
 ffree32 (const ushort dev)
 {
 	register long count = 0;
-	FAT_DEBUG (("ffree32: enter (%c)", 'A'+dev));
+	FAT_DEBUG (("ffree32: enter (%c)", DriveToLetter(dev)));
 # if 0
 	/*
 	 * use GETCL (slow)
@@ -4220,7 +4220,7 @@ rel_cookie (COOKIE *c)
 	{
 		if (c->unlinked)
 		{
-			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %p", c->dev+'A', c));
+			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %p", DriveToLetter(c->dev), c));
 			delete_cookie (c);
 		}
 	}
@@ -4845,7 +4845,7 @@ val_fat32info (register const ushort dev)
 		FREECL (dev) = le2cpu32 (FAT32info (dev)->free_clusters);
 		LASTALLOC (dev) = le2cpu32 (FAT32info (dev)->next_cluster);
 
-		FAT_DEBUG (("val_fat32info [%c]: free_clusters = %li, next_cluster = %li", dev+'A', FREECL (dev), LASTALLOC (dev)));
+		FAT_DEBUG (("val_fat32info [%c]: free_clusters = %li, next_cluster = %li", DriveToLetter(dev), FREECL (dev), LASTALLOC (dev)));
 
 		/* validation of FREECL */
 		if (FREECL (dev) >= CLUSTER (dev))
@@ -5061,8 +5061,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 
 	if (xbpb->clsizb > max)
 	{
-		FAT_ALERT (("FATFS [%c]: unitsize (%li) too small (clsizb = %li)!", 'A'+drv, max, xbpb->clsizb));
-		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: unitsize (%li) too small (clsizb = %li)!", DriveToLetter(drv), max, xbpb->clsizb));
+		FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 		return ENXIO;
 	}
 
@@ -5075,8 +5075,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		&& xbpb->ftype != FAT_TYPE_16
 		&& xbpb->ftype != FAT_TYPE_32)
 	{
-		FAT_ALERT (("FATFS [%c]: unknown FAT type (ftype = %i)!", 'A'+drv, xbpb->ftype));
-		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: unknown FAT type (ftype = %i)!", DriveToLetter(drv), xbpb->ftype));
+		FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 		return EMEDIUMTYPE;
 	}
 
@@ -5085,8 +5085,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		|| xbpb->recsiz == 0
 		|| xbpb->numcl  == 0)
 	{
-		FAT_ALERT (("FATFS [%c]: vital data illegal (recsiz = %li, numcl = %li)", 'A'+drv, xbpb->recsiz, xbpb->numcl));
-		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: vital data illegal (recsiz = %li, numcl = %li)", DriveToLetter(drv), xbpb->recsiz, xbpb->numcl));
+		FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 		return EMEDIUMTYPE;
 	}
 
@@ -5097,8 +5097,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 			|| xbpb->rdrec < 2
 			|| xbpb->rdrec > xbpb->numcl + 1)
 		{
-			FAT_ALERT (("FATFS [%c]: illegal root directory cluster (rdlen = %ld, rdstart = %ld)", 'A'+drv, xbpb->rdlen, xbpb->rdrec));
-			FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+			FAT_ALERT (("FATFS [%c]: illegal root directory cluster (rdlen = %ld, rdstart = %ld)", DriveToLetter(drv), xbpb->rdlen, xbpb->rdrec));
+			FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 			return EMEDIUMTYPE;
 		}
 	}
@@ -5106,8 +5106,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 	{
 		if (xbpb->rdlen == 0)
 		{
-			FAT_ALERT (("FATFS [%c]: illegal root directory len (rdlen = %li)", 'A'+drv, xbpb->rdlen));
-			FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+			FAT_ALERT (("FATFS [%c]: illegal root directory len (rdlen = %li)", DriveToLetter(drv), xbpb->rdlen));
+			FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 			return EMEDIUMTYPE;
 		}
 	}
@@ -5117,11 +5117,11 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		|| (xbpb->ftype == FAT_TYPE_16 && xbpb->numcl >= 0x000ffefL)
 		|| (xbpb->ftype == FAT_TYPE_32 && xbpb->numcl >= 0xfffffefL))
 	{
-		FAT_ALERT (("FATFS [%c]: illegal number of clusters (%li - %s-bit FAT)", 'A'+drv, xbpb->numcl,
+		FAT_ALERT (("FATFS [%c]: illegal number of clusters (%li - %s-bit FAT)", DriveToLetter(drv), xbpb->numcl,
 				(xbpb->ftype == FAT_TYPE_12) ? "12" :
 					(xbpb->ftype == FAT_TYPE_16) ? "16" : "32"
 		));
-		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 		return EMEDIUMTYPE;
 	}
 
@@ -5145,8 +5145,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 
 		if (minfat > xbpb->fsiz)
 		{
-			FAT_ALERT (("FATFS [%c]: FAT too small (FAT size = %li, minfat = %li)", 'A'+drv, xbpb->fsiz, minfat));
-			FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
+			FAT_ALERT (("FATFS [%c]: FAT too small (FAT size = %li, minfat = %li)", DriveToLetter(drv), xbpb->fsiz, minfat));
+			FAT_ALERT (("FATFS [%c]: medium access denied", DriveToLetter(drv)));
 			return EMEDIUMTYPE;
 		}
 	}
@@ -5276,7 +5276,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		/* check media descriptor (must be 0xf8 on harddisks) */
 		if (fbs->media != 0xf8)
 		{
-			FAT_ALERT (("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id[2])));
+			FAT_ALERT (("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)", (int) fbs->media, DriveToLetter(di->drv), (int) (di->id[2])));
 		}
 	}
 	else
@@ -5338,8 +5338,8 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		&& (WPEEK_INTEL (fbs->dir_entries) == 256)
 		&& (xbpb->recsiz >= 16384))
 	{
-		FAT_ALERT (("FATFS [%c]: WARNING: dir_entries have illegal value of 256!", 'A'+di->drv));
-		FAT_ALERT (("FATFS [%c]: Please fix your partition!", 'A'+di->drv));
+		FAT_ALERT (("FATFS [%c]: WARNING: dir_entries have illegal value of 256!", DriveToLetter(di->drv)));
+		FAT_ALERT (("FATFS [%c]: Please fix your partition!", DriveToLetter(di->drv)));
 		xbpb->rdlen = 1;
 	}
 # endif
@@ -5450,7 +5450,7 @@ get_devinfo (const ushort drv, long *err)
 
 	mint_bzero(&xbpb, sizeof(xbpb));
 
-	FAT_DEBUG (("get_devinfo: enter (drv = %i -> %c)", drv, 'A'+drv));
+	FAT_DEBUG (("get_devinfo: enter (drv = %i -> %c)", drv, DriveToLetter(drv)));
 
 	if (BPBVALID (drv) == VALID)
 	{
@@ -5614,7 +5614,7 @@ get_devinfo (const ushort drv, long *err)
 			"%c -> recsize = %ld x clsiz = %ld -> clsizb = %ld\r\n"
 			"rdstart = %ld, rdlen = %ld\r\n"
 			"dstart = %ld, numcl = %ld",
-			'A'+drv, d->recsiz, d->clsiz, d->clsizb,
+			DriveToLetter(drv), d->recsiz, d->clsiz, d->clsizb,
 			d->rdstart, d->rdlen,
 			d->dstart, d->numcl
 		));
@@ -5627,7 +5627,7 @@ get_devinfo (const ushort drv, long *err)
 		if (CLEAN (drv))
 			clean_flag (drv, CLEANFLAG_CLEAR);
 		else
-			Debug ("FAT-FS [%c]: WARNING: mounting unchecked fs, running dosfsck is recommended", drv+'A');
+			Debug ("FAT-FS [%c]: WARNING: mounting unchecked fs, running dosfsck is recommended", DriveToLetter(drv));
 
 		FAT_DEBUG (("get_devinfo: leave ok"));
 		return d;
@@ -5696,7 +5696,7 @@ fatfs_root (int drv, fcookie *fc)
 
 	fc->fs = NULL;
 
-	FAT_DEBUG (("fatfs_root: return ENXIO (drive %c)", 'A'+drv));
+	FAT_DEBUG (("fatfs_root: return ENXIO (drive %c)", DriveToLetter(drv)));
 	return r;
 }
 
@@ -6526,7 +6526,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	/* on same device? */
 	if (oldd->dev != newd->dev)
 	{
-		FAT_DEBUG (("fatfs_rename: cross device rename: [%c] -> [%c]!", olddir->dev+'A', newdir->dev+'A'));
+		FAT_DEBUG (("fatfs_rename: cross device rename: [%c] -> [%c]!", DriveToLetter(olddir->dev), DriveToLetter(newdir->dev)));
 		return EXDEV;
 	}
 
@@ -6606,7 +6606,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 					rel_cookie (old);
 
 					FAT_DEBUG (("fatfs_rename: invalid directory move",
-						    traverse->dev+'A'));
+						    DriveToLetter(traverse->dev)));
 					return EINVAL;
 				}
 
@@ -6760,7 +6760,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			}
 			else
 			{
-				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", old->dev+'A'));
+				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", DriveToLetter(old->dev)));
 			}
 		}
 
@@ -6830,7 +6830,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			}
 			else
 			{
-				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", new->dev+'A'));
+				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", DriveToLetter(new->dev)));
 			}
 		}
 
@@ -7624,7 +7624,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				bio.sync_drv (DI (dir->dev));
 
 				RDONLY (dir->dev) = 1;
-				FAT_ALERT (("FAT-FS [%c]: remounted read-only!", dir->dev+'A'));
+				FAT_ALERT (("FAT-FS [%c]: remounted read-only!", DriveToLetter(dir->dev)));
 			}
 			else if (RDONLY (dir->dev))
 			{
@@ -7635,7 +7635,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 				bio.sync_drv (DI (dir->dev));
 
-				FAT_ALERT (("FAT-FS [%c]: remounted read/write!", dir->dev+'A'));
+				FAT_ALERT (("FAT-FS [%c]: remounted read/write!", DriveToLetter(dir->dev)));
 			}
 
 			return r;
@@ -7685,7 +7685,7 @@ fatfs_dskchng (int drv, int mode)
 {
 	long change = 1;
 
-	FAT_DEBUG (("fatfs_dskchng: enter (drv = %c, mode = %i)", 'A'+drv, mode));
+	FAT_DEBUG (("fatfs_dskchng: enter (drv = %c, mode = %i)", DriveToLetter(drv), mode));
 
 	if (mode == 0)
 	{

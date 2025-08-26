@@ -74,7 +74,7 @@ load_block_bitmap (SI *s, ulong block_group)
 		{
 			ALERT (("Ext2-FS: load_block_bitmap [%c]: "
 				"Cannot read block bitmap - block_group = %ld, block_bitmap = %ld",
-				s->dev+'A', block_group, block));
+				DriveToLetter(s->dev), block_group, block));
 		}
 	}
 	
@@ -105,7 +105,7 @@ ext2_free_blocks (COOKIE *inode, ulong block, ulong count)
 		ALERT (("Ext2-FS: ext2_free_blocks [%c]: "
 			"Freeing blocks not in datazone - "
 			"block = %lu, count = %lu",
-			s->dev+'A', block, count));
+			DriveToLetter(s->dev), block, count));
 		
 		goto error_return;
 	}
@@ -150,7 +150,7 @@ do_more:
 		if (!ext2_clear_bit (bit + i, u->data))
 		{
 			ALERT (("Ext2-FS: ext2_free_blocks [%c]: "
-				"bit already cleared for block %lu", s->dev+'A', block));
+				"bit already cleared for block %lu", DriveToLetter(s->dev), block));
 		}
 		else
 		{
@@ -363,7 +363,7 @@ repeat:
 	if (j >= EXT2_BLOCKS_PER_GROUP (s))
 	{
 		ALERT (("Ext2-FS: ext2_new_block [%c]: "
-			"Free blocks count corrupted for block group %ld", s->dev+'A', i));
+			"Free blocks count corrupted for block group %ld", DriveToLetter(s->dev), i));
 		
 		/* unlock_super (s); */
 		return 0;
@@ -395,7 +395,7 @@ got_block:
 	
 	if (ext2_set_bit(j, u->data))
 	{
-		ALERT (("Ext2-FS: ext2_new_block [%c]: bit already set for block %ld", s->dev+'A', j));
+		ALERT (("Ext2-FS: ext2_new_block [%c]: bit already set for block %ld", DriveToLetter(s->dev), j));
 		goto repeat;
 	}
 	
@@ -441,7 +441,7 @@ got_block:
 	if (j >= s->sbi.s_blocks_count)
 	{
 		ALERT (("Ext2-FS: ext2_new_block [%c]: block >= blocks count - "
-			"block_group = %ld, block = %ld", s->dev+'A', i, j));
+			"block_group = %ld, block = %ld", DriveToLetter(s->dev), i, j));
 		
 		/* unlock_super (s); */
 		return 0;
@@ -540,7 +540,7 @@ ext2_check_blocks_bitmap (SI *s)
 			{
 				ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
 					"Superblock in group %ld "
-					"is marked free", s->dev+'A', i));
+					"is marked free", DriveToLetter(s->dev), i));
 			}
 			
 			for (j = 0; j < desc_blocks; j++)
@@ -549,7 +549,7 @@ ext2_check_blocks_bitmap (SI *s)
 				{
 					ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
 						"Descriptor block #%ld in group "
-						"%ld is marked free", s->dev+'A', j, i));
+						"%ld is marked free", DriveToLetter(s->dev), j, i));
 				}
 			}
 		}
@@ -557,13 +557,13 @@ ext2_check_blocks_bitmap (SI *s)
 		if (!block_in_use (le2cpu32 (gdp->bg_block_bitmap), s, u->data))
 		{
 			ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
-				"Block bitmap for group %ld is marked free", s->dev+'A', i));
+				"Block bitmap for group %ld is marked free", DriveToLetter(s->dev), i));
 		}
 		
 		if (!block_in_use (le2cpu32 (gdp->bg_inode_bitmap), s, u->data))
 		{
 			ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
-				"Inode bitmap for group %ld is marked free", s->dev+'A', i));
+				"Inode bitmap for group %ld is marked free", DriveToLetter(s->dev), i));
 		}
 		
 		for (j = 0; j < s->sbi.s_itb_per_group; j++)
@@ -572,7 +572,7 @@ ext2_check_blocks_bitmap (SI *s)
 			{
 				ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
 					"Block #%ld of the inode table in "
-					"group %ld is marked free", s->dev+'A', j, i));
+					"group %ld is marked free", DriveToLetter(s->dev), j, i));
 			}
 		}
 		
@@ -583,7 +583,7 @@ ext2_check_blocks_bitmap (SI *s)
 			if (free_blocks != x)
 			{
 				ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: Wrong free blocks count for group %ld, "
-					"stored = %lu, counted = %lu", s->dev+'A', i, free_blocks, x));
+					"stored = %lu, counted = %lu", DriveToLetter(s->dev), i, free_blocks, x));
 			}
 			
 			bitmap_count += x;
@@ -595,7 +595,7 @@ ext2_check_blocks_bitmap (SI *s)
 		ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "
 			"Wrong free blocks count in super block, "
 			"stored = %lu, counted = %lu",
-			s->dev+'A', (ulong) le2cpu32 (s->sbi.s_sb->s_free_blocks_count), bitmap_count));
+			DriveToLetter(s->dev), (ulong) le2cpu32 (s->sbi.s_sb->s_free_blocks_count), bitmap_count));
 	}
 	
 	/* unlock_super (s); */

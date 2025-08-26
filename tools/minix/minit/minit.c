@@ -28,6 +28,12 @@
 
 # define VERSION	"0.32"
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
 
 /*
  * global data
@@ -108,12 +114,12 @@ rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 	
 	if (!n || (recno + n) > sectors)
 	{
-		fprintf (stderr, "rwabs_xhdi: access outside partition (drv = %c:)", 'A'+drv);
+		fprintf (stderr, "rwabs_xhdi: access outside partition (drv = %c:)", DriveToLetter(drv));
 		exit (2);
 	}
 	if (n > 65535UL)
 	{
-		fprintf (stderr, "rwabs_xhdi: n to large (drv = %c)", 'A'+drv);
+		fprintf (stderr, "rwabs_xhdi: n to large (drv = %c)", DriveToLetter(drv));
 		exit (2);
 	}
 	
@@ -164,7 +170,7 @@ warn (void)
 	char c;
 	
 	fprintf (stderr, "\n");
-	fprintf (stderr, "WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", 'A'+drv);
+	fprintf (stderr, "WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", DriveToLetter(drv));
 	fprintf (stderr, "Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	scanf ("%c", &c);
 	fprintf (stderr, "\n");
@@ -311,7 +317,7 @@ main (int argc, char **argv)
 	
 	if (argv [optind])
 	{
-		drv = (argv[optind][0] & ~32) - 'A';
+		drv = DriveFromLetter(argv[optind][0]);
 		
 		if (drv > 31)
 		{
@@ -351,13 +357,13 @@ main (int argc, char **argv)
 	}
 	if (r != 0)
 	{
-		fprintf (stderr, "unable to get geometry for '%c'\n", 'A'+drv);
+		fprintf (stderr, "unable to get geometry for '%c'\n", DriveToLetter(drv));
 		exit (1);
 	}
 	
 	id [3] = '\0';
 	
-	fprintf (stderr, "Information about drive %c:\n", 'A'+drv);
+	fprintf (stderr, "Information about drive %c:\n", DriveToLetter(drv));
 	fprintf (stderr, "--------------------------\n");
 	fprintf (stderr, "XHDI major number    : %d\n", major);
 	fprintf (stderr, "XHDI minor number    : %d\n", minor);
@@ -436,7 +442,7 @@ main (int argc, char **argv)
 	i = Dlock (1, drv);
 	if (i && i != ENOSYS)
 	{
-		fprintf (stderr, "Can't lock %c:, drive in use?\n\n", 'A'+drv);
+		fprintf (stderr, "Can't lock %c:, drive in use?\n\n", DriveToLetter(drv));
 		exit (1);
 	}
 	
@@ -642,7 +648,7 @@ main (int argc, char **argv)
 	
 	if (!tst)
 	{
-		fprintf (stderr, "Drive %c: successfully initialised\n", 'A'+drv);
+		fprintf (stderr, "Drive %c: successfully initialised\n", DriveToLetter(drv));
 	}
 	
 	(void) Dlock (0, drv);

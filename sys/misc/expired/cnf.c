@@ -214,7 +214,7 @@ do_line (char *line)
 	{
 		int drv;
 		(void)d_setpath(arg1);
-		drv = toupper(*arg1) - 'A';
+		drv = DriveFromLetter((*arg1);
 		if (arg1[1] == ':') (void)d_setdrv(drv);
 		return;
 	}
@@ -305,10 +305,10 @@ do_line (char *line)
 		fcookie root_dir;
 		extern int aliasdrv[];
 		
-		drv = toupper (*arg1) - 'A';
+		drv = DriveFromLetter(*arg1);
 		if (drv < 0 || drv >= NUM_DRIVES)
 		{
-			ALERT("Bad drive (%c:) in alias", drv+'A');
+			ALERT("Bad drive (%c:) in alias", *arg1);
 			return;
 		}
 		r = path2cookie (arg2, NULL, &root_dir);
@@ -587,17 +587,17 @@ setup_init:
 				case 'Z': case '1': case '2': case '3': case '4':
 				case '5': case '6':
 				{
-					char drv = *val - 'A';
+					char drv = DriveFromLetter(*val);
 					if (drv >= 0 && drv < NUM_DRIVES)
 					{
 						if (flag)
 						{
 							boot_printf ("\033p!!! INFORMATION !!!\033q\r\n");
-							boot_printf ("NEWFATFS on drive %c", (char) (drv + 'A'));
+							boot_printf ("NEWFATFS on drive %c", DriveToLetter(drv));
 							flag = 0;
 						}
 						else
-							boot_printf (", %c", (char) (drv + 'A'));
+							boot_printf (", %c", DriveToLetter(drv));
 						
 						(void) fatfs_config (drv, FATFS_DRV, ENABLE);
 					}
@@ -630,7 +630,7 @@ setup_init:
 				case 'Z': case '1': case '2': case '3': case '4':
 				case '5': case '6':
 				{
-					char drv = *val - 'A';
+					char drv = DriveFromLetter(*val);
 					if (drv >= 0 && drv < NUM_DRIVES)
 						(void) fatfs_config (drv, FATFS_VFAT, ENABLE);
 				}
@@ -665,7 +665,7 @@ setup_init:
 				case 'Z': case '1': case '2': case '3': case '4':
 				case '5': case '6':
 				{
-					char drv = *val - 'A';
+					char drv = DriveFromLetter(*val);
 					if (drv >= 0 && drv < NUM_DRIVES)
 						(void) bio.config (drv, BIO_WB, ENABLE);
 				}
@@ -712,7 +712,7 @@ setup_init:
 				case 'Z': case '1': case '2': case '3': case '4':
 				case '5': case '6':
 				{
-					int drv = *val - 'A';
+					int drv = DriveFromLetter(*val);
 					if (drv >= 0 && drv < NUM_DRIVES)
 					{
 						long bit = 1;

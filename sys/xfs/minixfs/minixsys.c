@@ -215,7 +215,7 @@ m_root (int dev, fcookie *dir)
 {
 	SI **psblk = super_ptr + dev;
 	
-	DEBUG (("Minix-FS (%c): m_root enter", dev+'A'));
+	DEBUG (("Minix-FS (%c): m_root enter", DriveToLetter(dev)));
 	
 	/* If not present, see if it's valid */
 	if (!*psblk)
@@ -223,7 +223,7 @@ m_root (int dev, fcookie *dir)
 		long i = minix_sanity (dev);
 		if (i)
 		{
-			DEBUG (("Minix-FS (%c): m_root leave %li", dev+'A', i));
+			DEBUG (("Minix-FS (%c): m_root leave %li", DriveToLetter(dev), i));
 			return i;
 		}
 		
@@ -241,11 +241,11 @@ m_root (int dev, fcookie *dir)
 		
 		dir->dev = dev;
 		
-		DEBUG (("Minix-FS (%c): m_root leave E_OK", dev+'A'));
+		DEBUG (("Minix-FS (%c): m_root leave E_OK", DriveToLetter(dev)));
 		return E_OK;
 	}
 	
-	DEBUG (("Minix-FS (%c): m_root leave ENXIO", dev+'A'));
+	DEBUG (("Minix-FS (%c): m_root leave ENXIO", DriveToLetter(dev)));
 	return ENXIO;
 }
 
@@ -701,7 +701,7 @@ m_creat (fcookie *dir, const char *name, unsigned int mode, int attr, fcookie *e
 	/* Get new inode */
 	if (!(newfile = alloc_inode (dir->dev)))
 	{
-		DEBUG (("Minix-FS (%c): m_creat: no free inodes.", dir->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_creat: no free inodes.", DriveToLetter(dir->dev)));
 		return EWRITE;
 	}
 	/* Set up inode */
@@ -821,7 +821,7 @@ m_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 		{
 			/* If this happens we're in trouble */
 			
-			ALERT (("Minix-FS (%c): m_getname: no '..' in inode %lu", dev+'A', inum));
+			ALERT (("Minix-FS (%c): m_getname: no '..' in inode %lu", DriveToLetter(dev), inum));
 			return pinum;
 		}
 		
@@ -853,14 +853,14 @@ m_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 		
 		if ((left == 0) && (inum != pinum))
 		{
-			ALERT (("Minix-FS (%c): m_getname: inode %lu orphaned or bad '..'", dev+'A', inum));
+			ALERT (("Minix-FS (%c): m_getname: inode %lu orphaned or bad '..'", DriveToLetter(dev), inum));
 			return EINTERNAL;
 		}
 	}
 	
 	if ((inum == ROOT_INODE) && (root->index != ROOT_INODE))
 	{
-		DEBUG (("Minix-FS (%c): m_getname: Hmmmm root is not a parent of dir.", dev+'A'));
+		DEBUG (("Minix-FS (%c): m_getname: Hmmmm root is not a parent of dir.", DriveToLetter(dev)));
 		return EINTERNAL;
 	}
 	
@@ -919,7 +919,7 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 			if (ret) return EINVAL;
 			read_inode (newdir->index, &riptemp, newdir->dev);
 			if (riptemp.i_nlinks == MINIX2_LINK_MAX) return EACCES;
-			TRACE (("Minix-FS (%c): valid directory move", olddir->dev+'A'));
+			TRACE (("Minix-FS (%c): valid directory move", DriveToLetter(olddir->dev)));
 			dirmove = 1;
 # endif
 		}
@@ -945,11 +945,11 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 		pos = search_dir ("..", finode, newdir->dev, POS);
 		if (pos < 0) 
 		{
-			ALERT (("Minix-FS (%c): m_rename: no '..' in inode %ld.", olddir->dev+'A', finode));
+			ALERT (("Minix-FS (%c): m_rename: no '..' in inode %ld.", DriveToLetter(olddir->dev), finode));
 			return EACCES;
 		}
 		if (pos != DIR_ENTRY_SIZE * super_ptr[newdir->dev]->incr)
-			ALERT (("Minix-FS (%c): m_rename: Unexpected '..' position in inode %ld.", olddir->dev+'A', finode));
+			ALERT (("Minix-FS (%c): m_rename: Unexpected '..' position in inode %ld.", DriveToLetter(olddir->dev), finode));
 		{
 			ushort ino = newdir->index;
 			l_write (finode, pos, 2L, &ino, newdir->dev);
@@ -1155,7 +1155,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
 	
 	if (!*to)
 	{
-		DEBUG (("Minix-FS (%c): m_symlink: invalid null filename.", dir->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_symlink: invalid null filename.", DriveToLetter(dir->dev)));
 		return EACCES;
 	}
 
@@ -1165,7 +1165,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
 
 	if (strlen (to) >= SYMLINK_NAME_MAX)
 	{
-		DEBUG (("Minix-FS (%c): m_symlink: symbolic link name too long.", dir->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_symlink: symbolic link name too long.", DriveToLetter(dir->dev)));
 		return EBADARG;
 	}
 
@@ -1173,7 +1173,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
 
 	if (!(newinode = alloc_inode (dir->dev)))
 	{
-		DEBUG (("Minix-FS (%c): m_symlink: no free inodes.", dir->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_symlink: no free inodes.", DriveToLetter(dir->dev)));
 		return EACCES;
 	}
 	
@@ -1191,7 +1191,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
 	if (!(rip.i_zone[0] = alloc_zone (dir->dev)))
 	{
 		free_inode (dir->dev, newinode);
-		DEBUG (("Minix-FS (%c): m_symlink: no free zones.", dir->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_symlink: no free zones.", DriveToLetter(dir->dev)));
 		return EACCES;
 	}
 	btos_cpy ((char *) &temp, to);
@@ -1213,7 +1213,7 @@ m_readlink (fcookie *file, char *buf, int len)
 	read_inode (inum, &rip, file->dev);
 	if ((rip.i_mode & I_TYPE) != I_SYMLINK)
 	{
-		DEBUG (("Minix-FS (%c): m_readlink: attempted readlink on non-symlink.", file->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_readlink: attempted readlink on non-symlink.", DriveToLetter(file->dev)));
 		return EACCES;
 	}
 	read_zone (rip.i_zone[0], &temp, file->dev);
@@ -1225,11 +1225,11 @@ m_readlink (fcookie *file, char *buf, int len)
 	}
 	if (stob_ncpy (buf, (char *) &temp, len))
 	{
-		DEBUG (("Minix-FS (%c): m_readlink: name too long.", file->dev+'A'));
+		DEBUG (("Minix-FS (%c): m_readlink: name too long.", DriveToLetter(file->dev)));
 		return EBADARG;
 	}
 	
-	TRACE (("Minix-FS (%c): m_readlink returned %s", file->dev+'A', buf));
+	TRACE (("Minix-FS (%c): m_readlink returned %s", DriveToLetter(file->dev), buf));
 	return 0;
 }
 
@@ -1334,7 +1334,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 			sync_bitmaps (super_ptr[dir->dev]);
 			bio.sync_drv (super_ptr[dir->dev]->di);
 			
-			TRACE (("Minix-FS (%c): Done sync", dir->dev+'A'));
+			TRACE (("Minix-FS (%c): Done sync", DriveToLetter(dir->dev)));
 			return E_OK;
 		}
 		case MFS_CINVALID:
@@ -1571,7 +1571,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				bio.sync_drv (s->di);
 				
 				s->s_flags |= MS_RDONLY;
-				ALERT (("MinixFS [%c]: remounted read-only!", dir->dev+'A'));
+				ALERT (("MinixFS [%c]: remounted read-only!", DriveToLetter(dir->dev)));
 				
 				r = E_OK;
 			}
@@ -1583,7 +1583,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				bio.sync_drv (s->di);
 				
 				s->s_flags &= ~MS_RDONLY;
-				ALERT (("MinixFS [%c]: remounted read/write!", dir->dev+'A'));
+				ALERT (("MinixFS [%c]: remounted read/write!", DriveToLetter(dir->dev)));
 				
 				r = E_OK;
 			}
@@ -1610,7 +1610,7 @@ m_dskchng (int drv, int mode)
 	long change = 1;
 	FILEPTR *f, **last;
 	
-	TRACE (("Minix-FS (%c): m_dskchng: enter (mode = %i)", drv+'A', mode));
+	TRACE (("Minix-FS (%c): m_dskchng: enter (mode = %i)", DriveToLetter(drv), mode));
 	
 	if (mode == 0)
 		change = BIO_DSKCHNG (s->di);
@@ -1618,7 +1618,7 @@ m_dskchng (int drv, int mode)
 	if (change == 0)
 	{
 		/* no change */
-		TRACE (("Minix-FS (%c): m_dskchng: leave no change!", drv+'A'));
+		TRACE (("Minix-FS (%c): m_dskchng: leave no change!", DriveToLetter(drv)));
 		return change;
 	}
 	
@@ -1627,11 +1627,11 @@ m_dskchng (int drv, int mode)
 	 */
 	if (s->idirty)
 	{
-		ALERT (("Minix-FS: Inode bitmap not written out when drive %c invalidated", drv+'A'));
+		ALERT (("Minix-FS: Inode bitmap not written out when drive %c invalidated", DriveToLetter(drv)));
 	}
 	if (s->zdirty)
 	{
-		ALERT (("Minix-FS: Zone bitmap not written out when drive %c invalidated", drv+'A'));
+		ALERT (("Minix-FS: Zone bitmap not written out when drive %c invalidated", DriveToLetter(drv)));
 	}
 	
 	s->idirty =	0;

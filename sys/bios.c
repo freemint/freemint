@@ -169,7 +169,7 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 
 		if (dlockproc [dev] && dlockproc [dev] != p)
 		{
-			DEBUG (("Rwabs: device %c is locked", dev+'A'));
+			DEBUG (("Rwabs: device %c is locked", DriveToLetter(dev)));
 			return ELOCKED;
 		}
 	}

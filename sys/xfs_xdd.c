@@ -147,7 +147,7 @@ xfs_block_level_0(FILESYS *fs, ushort dev, const char *func)
 	while (fs->lock)
 	{
 		fs->sleepers++;
-		DMA_DEBUG(("level 0: sleep on %lx, %c (%s, %i)", fs, 'A'+dev, func, fs->sleepers));
+		DMA_DEBUG(("level 0: sleep on %lx, %c (%s, %i)", fs, DriveToLetter(dev), func, fs->sleepers));
 		sleep(IO_Q, (long) fs);
 		fs->sleepers--;
 	}
@@ -162,7 +162,7 @@ xfs_deblock_level_0(FILESYS *fs, ushort dev, const char *func)
 
 	if (fs->sleepers)
 	{
-		DMA_DEBUG(("level 0: wake on %lx, %c (%s, %i)", fs, 'A'+dev, func, fs->sleepers));
+		DMA_DEBUG(("level 0: wake on %lx, %c (%s, %i)", fs, DriveToLetter(dev), func, fs->sleepers));
 		wake(IO_Q, (long) fs);
 	}
 }
@@ -175,7 +175,7 @@ xfs_block_level_1(FILESYS *fs, ushort dev, const char *func)
 	while (fs->lock & bit)
 	{
 		fs->sleepers++;
-		DMA_DEBUG(("level 1: sleep on %lx, %c (%s, %i)", fs, 'A'+dev, func, fs->sleepers));
+		DMA_DEBUG(("level 1: sleep on %lx, %c (%s, %i)", fs, DriveToLetter(dev), func, fs->sleepers));
 		sleep(IO_Q, (long) fs);
 		fs->sleepers--;
 	}
@@ -190,7 +190,7 @@ xfs_deblock_level_1(FILESYS *fs, ushort dev, const char *func)
 
 	if (fs->sleepers)
 	{
-		DMA_DEBUG(("level 1: wake on %lx, %c (%s, %i)", fs, 'A'+dev, func, fs->sleepers));
+		DMA_DEBUG(("level 1: wake on %lx, %c (%s, %i)", fs, DriveToLetter(dev), func, fs->sleepers));
 		wake(IO_Q, (long) fs);
 	}
 }
@@ -210,7 +210,7 @@ xfs_block(FILESYS *fs, ushort dev, const char *func)
 		while (xfs_sema_lock)
 		{
 			xfs_sleepers++;
-			DMA_DEBUG(("[%c: -> %lx] sleep on xfs_sema_lock (%s, %i)", 'A'+dev, fs, func, xfs_sleepers));
+			DMA_DEBUG(("[%c: -> %lx] sleep on xfs_sema_lock (%s, %i)", DriveToLetter(dev), fs, func, xfs_sleepers));
 			sleep(IO_Q, (long) &xfs_sema_lock);
 			xfs_sleepers--;
 		}
@@ -232,7 +232,7 @@ xfs_deblock(FILESYS *fs, ushort dev, const char *func)
 
 		if (xfs_sleepers)
 		{
-			DMA_DEBUG(("[%c: -> %lx] wake on xfs_sema_lock (%s, %i)", 'A'+dev, fs, func, xfs_sleepers));
+			DMA_DEBUG(("[%c: -> %lx] wake on xfs_sema_lock (%s, %i)", DriveToLetter(dev), fs, func, xfs_sleepers));
 			wake(IO_Q, (long) &xfs_sema_lock);
 		}
 	}

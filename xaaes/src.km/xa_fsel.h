@@ -28,8 +28,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-/* FIXME: that are 36??? */
-#define DRV_MAX ('z'-('a'-1) + '9'-('0'-1))
+#define DRV_MAX 32
 #define NAME_MAX 128
 
 struct fsel_data;

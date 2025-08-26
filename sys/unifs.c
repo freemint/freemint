@@ -885,14 +885,9 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			}
 			if (r == ENOTDIR && name[0] && !name[1]) {
 				/* one letter drive mapping check */
-				drvmap_dev_no = tolower(name[0]);
+				drvmap_dev_no = DriveFromLetter(name[0]);
 
-				/* convert the ASCII value to the drive number */
-				drvmap_dev_no = ( drvmap_dev_no < 'a' || drvmap_dev_no > 'z'
-								  ? ( drvmap_dev_no < '1' || drvmap_dev_no > '6' ? -1 : drvmap_dev_no - '1' + 26 )
-								  : drvmap_dev_no - 'a' );
-
-				if (drvmap_dev_no == -1)
+				if (drvmap_dev_no < 0)
 					return r;
 
 				/* check whether it is not already mounted */

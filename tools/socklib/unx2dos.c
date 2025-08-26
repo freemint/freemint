@@ -23,7 +23,7 @@ static int drive_u_exists(void)
 	
 	if (exists < 0)
 	{
-		exists = (Dgetdrv() & (1L << ('U' - 'A'))) != 0;
+		exists = (Dgetdrv() & (1L << (UNIDRV))) != 0;
 	}
 	return exists;
 }

@@ -655,7 +655,7 @@ tos_root(int drv, fcookie *fc)
 {
 	struct tindex *ti;
 	
-	DEBUG (("tos_root [%c]: enter", 'A'+drv));
+	DEBUG (("tos_root [%c]: enter", DriveToLetter(drv)));
 	
 	if (fatfs_config (drv, FATFS_DRV, ASK))
 	{
@@ -669,7 +669,7 @@ tos_root(int drv, fcookie *fc)
 		return ENXIO;
 	}
 	
-	ksprintf(tmpbuf, sizeof (tmpbuf), "%c:", drv+'A');
+	ksprintf(tmpbuf, sizeof (tmpbuf), "%c:", DriveToLetter(drv));
 	fc->fs = &tos_filesys;
 	fc->dev = drv;
 	ti = tstrindex(tmpbuf);
@@ -1678,7 +1678,7 @@ tos_dskchng(int drv, int mode)
 
 	UNUSED(mode);
 
-	dlet = 'A' + drv;
+	dlet = DriveToLetter(drv);
 MEDIA_DB(("tos_dskchng(%c)", dlet));
 	ti = gl_ti;
 	for (i = 0; i < NUM_INDICES; i++, ti++) {
@@ -1795,7 +1795,7 @@ static long  _cdecl
 Newgetbpb(int d)
 {
 	if (d == chdrv) {
-MEDIA_DB(("Newgetbpb(%c)", d+'A'));
+MEDIA_DB(("Newgetbpb(%c)", DriveToLetter(d)));
 if (Oldgetbpb == Newgetbpb) {
 MEDIA_DB(("AARGH!!! BAD BPBs"));
 }
@@ -1810,7 +1810,7 @@ static long _cdecl
 Newmediach(int d)
 {
 	if (d == chdrv) {
-MEDIA_DB(("Newmediach(%c)", d+'A'));
+MEDIA_DB(("Newmediach(%c)", DriveToLetter(d)));
 		return 2;
 	}
 	return (*Oldmediach)(d);
@@ -1835,8 +1835,8 @@ force_mediach(int d)
 	long r;
 	static char fname[] = "X:\\X";
 #endif
-	TRACE(("tosfs: disk change drive %c", d+'A'));
-MEDIA_DB(("forcing media change on %c", d+'A'));
+	TRACE(("tosfs: disk change drive %c", DriveToLetter(d)));
+MEDIA_DB(("forcing media change on %c", DriveToLetter(d)));
 
 	chdrv = d;
 	Oldrwabs = *((long _cdecl (**) (int, void *, int, int, int, long))0x476L);
@@ -1852,7 +1852,7 @@ MEDIA_DB(("forcing media change on %c", d+'A'));
 		*((Func *)0x47eL) = (Func) Newmediach;
 	}
 
-	fname[0] = d + 'A';
+	fname[0] = DriveToLetter(d);
 MEDIA_DB(("calling GEMDOS"));
 #ifdef FSFIRST_MEDIACH
 	(void)ROM_Fsfirst(fname, FA_LABEL);

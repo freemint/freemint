@@ -149,6 +149,12 @@ static ulong xhdi_ssize = 0;
 
 static int64_t xhdi_pos = 0;
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
 
 static long
 rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
@@ -157,13 +163,13 @@ rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 	
 	if (!n || n > xhdi_sectors)
 	{
-		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+xhdi_drv);
+		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", DriveToLetter(xhdi_drv));
 		exit (2);
 	}
 	
 	if (n > 65535UL)
 	{
-		printf ("rwabs_xhdi: n to large (drv = %c)\n", 'A'+xhdi_drv);
+		printf ("rwabs_xhdi: n to large (drv = %c)\n", DriveToLetter(xhdi_drv));
 		exit (2);
 	}
 	
@@ -173,7 +179,7 @@ rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 static int
 _my_open (const char *_dev, int iomode)
 {
-	int16_t dev = toupper (_dev[0]) - 'A';
+	int16_t dev = DriveFromLetter(_dev[0]);
 	long r;
 	
 	init_XHDI ();
@@ -193,7 +199,7 @@ _my_open (const char *_dev, int iomode)
 	r = Dlock (1, dev);
 	if (r && r != -32)
 	{
-		printf ("Can't lock %c:, drive in use?\n", 'A'+dev);
+		printf ("Can't lock %c:, drive in use?\n", DriveToLetter(dev));
 		return -1;
 	}
 	
@@ -205,12 +211,12 @@ _my_open (const char *_dev, int iomode)
 	
 	if (r)
 	{
-		printf ("unable to get geometry for '%c' (%li)\n", 'A'+dev, r);
+		printf ("unable to get geometry for '%c' (%li)\n", DriveToLetter(dev), r);
 		return -1;
 	}
 	
 # if 0
-	printf ("Information about %c:\n", 'A'+dev);
+	printf ("Information about %c:\n", DriveToLetter(dev));
 	printf ("---------------------\n");
 	printf ("XHDI major number : %d\n", xhdi_major);
 	printf ("XHDI minor number : %d\n", xhdi_minor);

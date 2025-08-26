@@ -176,19 +176,19 @@ del_cookie (COOKIE *c)
 	if (c->inode)
 	{
 		if (c->dirty)
-			ALERT (("Ext2-FS [%c]: del_cookie: Inode #%li not written back!", c->dev+'A', c->inode));
+			ALERT (("Ext2-FS [%c]: del_cookie: Inode #%li not written back!", DriveToLetter(c->dev), c->inode));
 		
 		cookie_remove (c);
 	}
 	
 	if (c->open)
 	{
-		DEBUG (("Ext2-FS [%c]: open FILEPTR detect in: del_cookie #%li", c->dev+'A', c->inode));
+		DEBUG (("Ext2-FS [%c]: open FILEPTR detect in: del_cookie #%li", DriveToLetter(c->dev), c->inode));
 		c->open = NULL;
 	}
 	if (c->locks)
 	{
-		ALERT (("Ext2-FS [%c]: open LOCKS detect in: del_cookie #%li", c->dev+'A', c->inode));
+		ALERT (("Ext2-FS [%c]: open LOCKS detect in: del_cookie #%li", DriveToLetter(c->dev), c->inode));
 		c->locks = NULL;
 	}
 	
@@ -223,7 +223,7 @@ get_cookie (SI *s, long inode, COOKIE **in)
 {
 	COOKIE *c;
 	
-	DEBUG (("Ext2-FS [%c]: get_cookie: enter: #%li", s->dev+'A', inode));
+	DEBUG (("Ext2-FS [%c]: get_cookie: enter: #%li", DriveToLetter(s->dev), inode));
 	
 	c = cookie_lookup (inode, s->dev);
 	if (c)
@@ -351,7 +351,7 @@ put_cookie (COOKIE *c)
 	UNIT *u;
 	
 	
-	DEBUG (("Ext2-FS [%c]: put_inode enter (%li)", c->dev+'A', inode));
+	DEBUG (("Ext2-FS [%c]: put_inode enter (%li)", DriveToLetter(c->dev), inode));
 	
 	if ((inode != EXT2_ROOT_INO
 			&& inode != EXT2_ACL_IDX_INO
@@ -416,7 +416,7 @@ rel_cookie (COOKIE *c)
 		{
 			if (!c->in.i_links_count && !c->open)
 			{
-				DEBUG (("Ext2-FS [%c]: rel_cookie: free deleted inode #%li", c->dev+'A', c->inode));
+				DEBUG (("Ext2-FS [%c]: rel_cookie: free deleted inode #%li", DriveToLetter(c->dev), c->inode));
 				ext2_delete_inode (c);
 			}
 		}
@@ -424,7 +424,7 @@ rel_cookie (COOKIE *c)
 	else
 	{
 		DEBUG (("Ext2-FS [%c]: rel_cookie -> links = 0 (#%li)",
-			c->dev+'A', c->inode));
+			DriveToLetter(c->dev), c->inode));
 	}
 }
 
@@ -507,7 +507,7 @@ struct cookie
 # endif
 		ksprintf (tmp, "%3li: [%c] #%06li - %3lu - %06lx - %06lx - %s - %s",
 			i,
-			c->dev+'A',
+			DriveToLetter(c->dev),
 			c->inode,
 			c->links,
 			c->i_flags,

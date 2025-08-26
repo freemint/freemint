@@ -64,7 +64,7 @@ m_open (FILEPTR *f)
 	if (!IS_REG (rip))
 	{
 		if (!(IS_DIR (rip) && ((f->flags & O_RWMODE) == O_RDONLY))) {
-			DEBUG (("Minix-FS (%c): m_open: not a regular file.", f->fc.dev+'A'));
+			DEBUG (("Minix-FS (%c): m_open: not a regular file.", DriveToLetter(f->fc.dev)));
 			return EACCES;
 		}
 	}
@@ -73,7 +73,7 @@ m_open (FILEPTR *f)
 	fch = kmalloc (sizeof (f_cache));
 	if (!fch)
 	{
-		DEBUG (("Minix-FS (%c): m_open: no memory for f_cache structure.", f->fc.dev+'A'));
+		DEBUG (("Minix-FS (%c): m_open: no memory for f_cache structure.", DriveToLetter(f->fc.dev)));
 		return ENOMEM;
 	}
 	
@@ -166,7 +166,7 @@ m_close (FILEPTR *f, int pid)
 	{
 		LOCK *lck, **oldl;
 		
-		TRACE (("Minix-FS (%c): m_close: removing locks for pid %d", f->fc.dev+'A', pid));
+		TRACE (("Minix-FS (%c): m_close: removing locks for pid %d", DriveToLetter(f->fc.dev), pid));
 		
 		oldl = fch->lfirst;
 		lck = *oldl;
@@ -196,7 +196,7 @@ m_close (FILEPTR *f, int pid)
 			{
 				d_inode rip;
 				
-				DEBUG (("Minix-FS (%c): m_close: Deleting unlinked file", f->fc.dev+'A'));
+				DEBUG (("Minix-FS (%c): m_close: Deleting unlinked file", DriveToLetter(f->fc.dev)));
 				
 				read_inode (f->fc.index, &rip, f->fc.dev);
 				trunc_inode (&rip, f->fc.dev, 0L, 0);
@@ -216,7 +216,7 @@ m_close (FILEPTR *f, int pid)
 			}
 			else if (!*last)
 			{
-				ALERT (("Minix-FS (%c): m_close: FILEPTR chain corruption!", f->fc.dev+'A'));
+				ALERT (("Minix-FS (%c): m_close: FILEPTR chain corruption!", DriveToLetter(f->fc.dev)));
 				break;
 			}
 		}
@@ -298,11 +298,11 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 			/* hmm, Draco's idea */
 			
 			len = 2147483647L; /* LONG_MAX */
-			DEBUG (("Minix-FS (%c): __fio: (fix) mode == READ -> bytes = %li", f->fc.dev+'A', len));
+			DEBUG (("Minix-FS (%c): __fio: (fix) mode == READ -> bytes = %li", DriveToLetter(f->fc.dev), len));
 		}
 		else
 		{
-			DEBUG (("Minix-FS (%c): __fio: len = %li (mode %i)", f->fc.dev+'A', len, mode));
+			DEBUG (("Minix-FS (%c): __fio: len = %li (mode %i)", DriveToLetter(f->fc.dev), len, mode));
 			return 0;
 		}
 	}
@@ -393,7 +393,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 				goto out;
 			}
 			
-			DEBUG (("Minix-FS (%c): __fio: MODE == READ, zstart == 0, todo = %li, chunk = %li", f->fc.dev+'A', todo, chunk));
+			DEBUG (("Minix-FS (%c): __fio: MODE == READ, zstart == 0, todo = %li, chunk = %li", DriveToLetter(f->fc.dev), todo, chunk));
 			
 			bzero (buf, data);
 			goto cont;
@@ -599,7 +599,7 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 				}
 				default:
 				{
-					DEBUG (("Minix-FS (%c): m_ioctl: Invalid value for l_whence", f->fc.dev+'A'));
+					DEBUG (("Minix-FS (%c): m_ioctl: Invalid value for l_whence", DriveToLetter(f->fc.dev)));
 					return ENOSYS;
 				}
 			}

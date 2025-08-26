@@ -105,6 +105,13 @@
 #  endif
 #endif
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 /****************************************************************************/
 /* BEGIN definition part */
 
@@ -354,7 +361,6 @@ static char *	vol	= NULL;	/* Volume name */
 static time_t	cr_time	= 0;	/* Creation time */
 
 static ushort	drv	= 0;
-static ushort	drv_char = '?';
 static ushort	major	= 0;
 static ushort	minor	= 0;
 static ulong	start	= 0;
@@ -448,7 +454,7 @@ cdiv (long a, long b)
 static void
 fatal_ (const char *fmt_string)
 {
-	printf (fmt_string, program, drv_char);
+	printf (fmt_string, program, DriveToLetter(drv));
 	
 	exit (1);
 }
@@ -690,7 +696,7 @@ get_geometry (void)
 	
 	ID [3] = '\0';
 	
-	printf ("Physical informations about partition %c:\n", drv_char);
+	printf ("Physical informations about partition %c:\n", DriveToLetter(drv));
 	printf ("----------------------------------------\n");
 	printf ("XHDI major number    : %d\n", MAJOR);
 	printf ("XHDI minor number    : %d\n", MINOR);
@@ -1007,7 +1013,7 @@ setup_tables (void)
 	
 	if (VERBOSE)
 	{
-		printf ("Logical informations about partition %c:\n", drv_char);
+		printf ("Logical informations about partition %c:\n", DriveToLetter(drv));
 		printf ("---------------------------------------\n");
 		printf ("Media descriptor    : 0x%02x\n", (unsigned int)(BOOT.media));
 		printf ("logical sector size : %ld\n", SECSIZE);
@@ -1323,13 +1329,13 @@ verify_user (void)
 	
 	if (ONLY_BS == YES)
 	{
-		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", drv_char);
+		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", DriveToLetter(drv));
 		if (!quiet)
 			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
 	else
 	{
-		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", drv_char);
+		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", DriveToLetter(drv));
 		if (!quiet)
 			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 	}
@@ -1508,14 +1514,8 @@ main (int argc, char **argv)
 		usage ();
 	}
 	
-	drv_char = toupper (c);
-	if (drv_char >= 'A' && drv_char <= 'Z')
-	{
-		drv = drv_char - 'A';
-	} else if (drv_char >= '1' && drv_char <= '6')
-	{
-		drv = (drv_char - '1') + 26;
-	} else
+	drv = DriveFromLetter(c);
+	if (drv < 0)
 	{
 		fatal ("invalid drive");
 	}

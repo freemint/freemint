@@ -1018,7 +1018,7 @@ ramfs_init (void)
 		FATAL ("ramfs: out of memory");
 	}
 
-	RAM_DEBUG (("ramfs: ok (dev_no = %i)", Root->stat.dev));
+	RAM_DEBUG (("ramfs: ok (dev_no = %i)", (int)Root->stat.dev));
 
 	boot_print (MSG_BOOT);
 	boot_print (MSG_GREET);
@@ -1393,7 +1393,7 @@ ram_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	/* on same device? */
 	if (olddir->dev != newdir->dev)
 	{
-		RAM_DEBUG (("ramfs: ram_rename: cross device rename: [%c] -> [%c]!", olddir->dev+'A', newdir->dev+'A'));
+		RAM_DEBUG (("ramfs: ram_rename: cross device rename: [%c] -> [%c]!", DriveToLetter(olddir->dev), DriveToLetter(newdir->dev)));
 		return EXDEV;
 	}
 
@@ -2545,7 +2545,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
 
-						RAM_DEBUG (("ram_ioctl: unlocked %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
+						RAM_DEBUG (("ram_ioctl: unlocked %p: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 						/* wake up anyone waiting on the lock */
 						wake (IO_Q, (long) lck);
@@ -2561,7 +2561,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 				return ENSLOCK;
 			}
 
-			RAM_DEBUG (("ram_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
+			RAM_DEBUG (("ram_ioctl: lock %p: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 			/* see if there's a conflicting lock */
 			while ((lck = denylock (get_curproc()->pid, c->locks, &t)) != 0)

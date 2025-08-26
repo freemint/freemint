@@ -362,12 +362,11 @@ sys_d_setpath0 (struct proc *p, const char *path)
 	{
 		char c = *path;
 
-		if (c >= 'a' && c <= 'z')
-			drv = c-'a';
-		else if (c >= 'A' && c <= 'Z'+6)  /* A..Z[\]^_` */
-			drv = c-'A';
-		else if (c >= '1' && c <= '6')  /* A..Z1..6 */
-			drv = c - '1'+26;
+		/* also accept the result of adding 26 to 'A'; some buggy programs use this */
+		if (c >= 'A' + 26 && c < 'A' + NUM_DRIVES)  /* A..Z[\]^_` */
+			drv = c - 'A';
+		else
+			drv = DriveFromLetter(c);
 	}
 
 	r = xfs_getxattr (dir.fs, &dir, &xattr);
@@ -1854,7 +1853,7 @@ sys_d_lock (int mode, int _dev)
 	int i;
 	ushort dev = _dev;
 
-	TRACE (("Dlock (%x,%c:)", mode, dev+'A'));
+	TRACE (("Dlock (%x,%c:)", mode, DriveToLetter(dev)));
 
 	/* check for alias drives */
 	if (dev < NUM_DRIVES && aliasdrv[dev])
@@ -1958,14 +1957,14 @@ sys_d_lock (int mode, int _dev)
 		{
 			if (fs->fsflags & FS_EXT_1)
 			{
-				DEBUG (("Unmounting %c: ...", 'A'+dev));
+				DEBUG (("Unmounting %c: ...", DriveToLetter(dev)));
 				(void) xfs_unmount (fs, dev);
 			}
 			else
 			{
 				sys_s_ync ();
 
-				DEBUG (("Invalidate %c: ...", 'A'+dev));
+				DEBUG (("Invalidate %c: ...", DriveToLetter(dev)));
 				(void) xfs_dskchng (fs, dev, 1);
 			}
 

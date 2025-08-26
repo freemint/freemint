@@ -23,7 +23,7 @@ chk_zone (long int start, int count, int drive)
 	
 	if (start < psblk->sblk.s_firstdatazn || (start + count) > psblk->sblk.s_zones)
 	{
-		ALERT ("Minixfs Zone Range Error Drive %c Zone %ld Count %d", drive+'A', start, count);
+		ALERT ("Minixfs Zone Range Error Drive %c Zone %ld Count %d", DriveToLetter(drive), start, count);
 		badfilesys();
 	}
 	return;
@@ -34,7 +34,7 @@ chk_iblock (long int start, super_info *psblk)
 {
 	if (start < psblk->ioff || start >= psblk->sblk.s_firstdatazn)
 	{
-		ALERT ("Minixfs Inode Range Error Drive %c Block %ld", psblk->dev+'A', start);
+		ALERT ("Minixfs Inode Range Error Drive %c Block %ld", DriveToLetter(psblk->dev), start);
 		badfilesys();
 	}
 	return;

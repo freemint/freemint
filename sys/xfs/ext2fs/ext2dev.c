@@ -74,7 +74,7 @@ e_open (FILEPTR *f)
 	{
 		if (!(EXT2_ISDIR (le2cpu16 (c->in.i_mode)) && 
 		     ((f->flags & O_RWMODE) == O_RDONLY))) {
-			DEBUG (("Ext2-FS [%c]: e_open: not a regular file or read-only directory (#%ld)", f->fc.dev+'A', c->inode));
+			DEBUG (("Ext2-FS [%c]: e_open: not a regular file or read-only directory (#%ld)", DriveToLetter(f->fc.dev), c->inode));
 			return EACCES;
 		}
 	}
@@ -91,13 +91,13 @@ e_open (FILEPTR *f)
 	
 	if (c->open && denyshare (c->open, f))
 	{
-		DEBUG (("Ext2-FS [%c]: e_open: file sharing denied (#%ld)", f->fc.dev+'A', c->inode));
+		DEBUG (("Ext2-FS [%c]: e_open: file sharing denied (#%ld)", DriveToLetter(f->fc.dev), c->inode));
 		return EACCES;
 	}
 	
 	if (c->in.i_size_high)
 	{
-		DEBUG (("Ext2-FS [%c]: e_open: attempt to open a 64bit file(#%ld)", f->fc.dev+'A', c->inode));
+		DEBUG (("Ext2-FS [%c]: e_open: attempt to open a 64bit file(#%ld)", DriveToLetter(f->fc.dev), c->inode));
 		return EFBIG;
 	}
 	
@@ -229,7 +229,7 @@ e_write (FILEPTR *f, const char *buf, long bytes)
 	long err;
 	
 	
-	DEBUG (("Ext2-FS [%c]: e_write: enter (#%li: %li)", f->fc.dev+'A', c->inode, bytes));
+	DEBUG (("Ext2-FS [%c]: e_write: enter (#%li: %li)", DriveToLetter(f->fc.dev), c->inode, bytes));
 	
 	/* POSIX: mtime/ctime may not change for 0 count */
 	if (bytes <= 0)
@@ -377,7 +377,7 @@ out:
 	
 	f->pos = pos;
 	
-	DEBUG (("Ext2-FS [%c]: e_write: leave (#%li: pos = %li, written = %li)", f->fc.dev+'A', c->inode, f->pos, written));
+	DEBUG (("Ext2-FS [%c]: e_write: leave (#%li: pos = %li, written = %li)", DriveToLetter(f->fc.dev), c->inode, f->pos, written));
 	return written;
 }
 
@@ -393,7 +393,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	ulong block = f->pos >> EXT2_BLOCK_SIZE_BITS (s);
 	ulong offset = f->pos & EXT2_BLOCK_SIZE_MASK (s);
 
-	DEBUG (("Ext2-FS [%c]: e_read: enter (#%li: pos = %li, bytes = %li [%lu, %lu])", f->fc.dev+'A', c->inode, f->pos, bytes, block, offset));
+	DEBUG (("Ext2-FS [%c]: e_read: enter (#%li: pos = %li, bytes = %li [%lu, %lu])", DriveToLetter(f->fc.dev), c->inode, f->pos, bytes, block, offset));
 
 	if (EXT2_ISDIR (le2cpu16 (c->in.i_mode)))
 		return EISDIR;
@@ -403,7 +403,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	
 	if (todo == 0)
 	{
-		DEBUG (("Ext2-FS [%c]: e_read: failure (bytes = %li, todo = 0)", f->fc.dev+'A', bytes));
+		DEBUG (("Ext2-FS [%c]: e_read: failure (bytes = %li, todo = 0)", DriveToLetter(f->fc.dev), bytes));
 		return 0;
 	}
 	else if (todo < 0)
@@ -411,7 +411,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 		/* hmm, Draco's idea */
 		
 		todo = 2147483647L; /* LONG_MAX */
-		DEBUG (("Ext2-FS [%c]: e_read: negative fix (todo = %li)", f->fc.dev+'A', todo));
+		DEBUG (("Ext2-FS [%c]: e_read: negative fix (todo = %li)", DriveToLetter(f->fc.dev), todo));
 	}
 	
 	/* partial block copy
@@ -525,7 +525,7 @@ out:
 		mark_inode_dirty (c);
 	}
 	
-	DEBUG (("Ext2-FS [%c]: e_read: leave (#%li: pos = %li, done = %li)", f->fc.dev+'A', c->inode, f->pos, done));
+	DEBUG (("Ext2-FS [%c]: e_read: leave (#%li: pos = %li, done = %li)", DriveToLetter(f->fc.dev), c->inode, f->pos, done));
 	return done;
 }
 
@@ -534,7 +534,7 @@ e_lseek (FILEPTR *f, long where, int whence)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 	
-	DEBUG (("Ext2-FS [%c]: e_lseek: enter (#%li, where = %li, whence = %i)", f->fc.dev+'A', c->inode, where, whence));
+	DEBUG (("Ext2-FS [%c]: e_lseek: enter (#%li, where = %li, whence = %i)", DriveToLetter(f->fc.dev), c->inode, where, whence));
 	
 	switch (whence)
 	{
@@ -546,13 +546,13 @@ e_lseek (FILEPTR *f, long where, int whence)
 	
 	if (where < 0)
 	{
-		DEBUG (("Ext2-FS [%c]: e_lseek: EBADARG", f->fc.dev+'A'));
+		DEBUG (("Ext2-FS [%c]: e_lseek: EBADARG", DriveToLetter(f->fc.dev)));
 		return EBADARG;
 	}
 	
 	f->pos = where;
 	
-	DEBUG (("Ext2-FS [%c]: e_lseek: leave (#%li, %li)", f->fc.dev+'A', c->inode, where));
+	DEBUG (("Ext2-FS [%c]: e_lseek: leave (#%li, %li)", DriveToLetter(f->fc.dev), c->inode, where));
 	return where;
 }
 
@@ -594,7 +594,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			COOKIE *c = (COOKIE *) f->fc.index;
 			int uid;
 			
-			DEBUG (("Ext2-FS [%c]: e_ioctl (FUTIME%s) on #%li", c->dev+'A', ((mode == FUTIME) ? "" : "_UTC"), c->inode));
+			DEBUG (("Ext2-FS [%c]: e_ioctl (FUTIME%s) on #%li", DriveToLetter(c->dev), ((mode == FUTIME) ? "" : "_UTC"), c->inode));
 			
 			/* The owner or super-user can always touch, others only
 			 * if timeptr == 0 and open for writing
@@ -646,7 +646,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			COOKIE *c = (COOKIE *) f->fc.index;
 			long pos;
 			
-			DEBUG (("Ext2-FS [%c]: e_ioctl (FTRUNCATE) on #%li", c->dev+'A', c->inode));
+			DEBUG (("Ext2-FS [%c]: e_ioctl (FTRUNCATE) on #%li", DriveToLetter(c->dev), c->inode));
 			
 			if (c->s->s_flags & MS_RDONLY)
 				return EROFS;
@@ -938,7 +938,7 @@ e_datime (FILEPTR *f, ushort *timeptr, int flag)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 	
-	DEBUG (("Ext2-FS [%c]: e_datime (#%li : %i)", f->fc.dev+'A', c->inode, flag));
+	DEBUG (("Ext2-FS [%c]: e_datime (#%li : %i)", DriveToLetter(f->fc.dev), c->inode, flag));
 	
 	switch (flag)
 	{
@@ -981,12 +981,12 @@ e_datime (FILEPTR *f, ushort *timeptr, int flag)
 static long _cdecl
 e_select (FILEPTR *f, long proc, int mode)
 {
-	DEBUG (("Ext2-FS [%c]: e_select #%li: -> return 1", f->fc.dev+'A', ((COOKIE *) f->fc.index)->inode));
+	DEBUG (("Ext2-FS [%c]: e_select #%li: -> return 1", DriveToLetter(f->fc.dev), ((COOKIE *) f->fc.index)->inode));
 	return 1;
 }
 
 static void _cdecl
 e_unselect (FILEPTR *f, long proc, int mode)
 {
-	DEBUG (("Ext2-FS [%c]: e_unselect #%li: -> nop", f->fc.dev+'A', ((COOKIE *) f->fc.index)->inode));
+	DEBUG (("Ext2-FS [%c]: e_unselect #%li: -> nop", DriveToLetter(f->fc.dev), ((COOKIE *) f->fc.index)->inode));
 }

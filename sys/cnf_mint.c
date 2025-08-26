@@ -159,14 +159,12 @@ struct cnfdata
 /* Now follows the callback definitions in alphabetical order
  */
 
-#define CHAR2DRV(c) ((int)(strrchr(drv_list, toupper((unsigned char)(c))) - drv_list))
-
 /*----------------------------------------------------------------------------*/
 
 /* alias drive path */
 static void pCB_alias(const char *drive, const char *path, struct parsinf *inf)
 {
-	unsigned short drv = CHAR2DRV(*drive);
+	unsigned short drv = DriveFromLetter(*drive);
 
 	if (drv >= NUM_DRIVES)
 	{
@@ -248,7 +246,7 @@ static void pCB_cd(char *path)
 
 	sys_d_setpath(path);
 
-	drv = CHAR2DRV(*path);
+	drv = DriveFromLetter(*path);
 	if (path[1] == ':')
 		sys_d_setdrv(drv);
 }
@@ -401,7 +399,7 @@ static void pCB_newfatfs(unsigned long list, struct parsinf *inf)
 					boot_printf(MSG_cnf_newfatfs);
 					flag = true;
 				}
-				boot_printf("%c", drv_list[drv]);
+				boot_printf("%c", DriveToLetter(drv));
 			}
 			fatfs_config(drv, FATFS_DRV, ENABLE);
 		}
@@ -467,7 +465,7 @@ static void pCB_vfat(unsigned long list, struct parsinf *inf)
 					boot_printf(MSG_cnf_vfat);
 					flag = true;
 				}
-				boot_printf("%c", drv_list[drv]);
+				boot_printf("%c", DriveToLetter(drv));
 			}
 			/* user will VFAT
 			 * so we activate also the NEWFATFS here
@@ -512,7 +510,7 @@ static void pCB_wb_enable(unsigned long list, struct parsinf *inf)
 					boot_printf(MSG_cnf_wbcache);
 					flag = true;
 				}
-				boot_printf("%c", drv_list[drv]);
+				boot_printf("%c", DriveToLetter(drv));
 			}
 			bio.config(drv, BIO_WB, ENABLE);
 		}
@@ -543,7 +541,7 @@ static void pCB_writeprotect(unsigned long list, struct parsinf *inf)
 					boot_printf("\033pWRITEPROTECT active:\033q ");
 					flag = true;
 				}
-				boot_printf("%c", drv_list[drv]);
+				boot_printf("%c", DriveToLetter(drv));
 			}
 			bio.config(drv, BIO_WP, ENABLE);
 		}

@@ -189,7 +189,7 @@ verify_encrypt_key (void)
 	char c;
 	
 	printf ("\n");
-	printf ("WARNING: THIS WILL TOTALLY ENCRYPT ANY DATA ON %c:\n", 'A'+drv);
+	printf ("WARNING: THIS WILL TOTALLY ENCRYPT ANY DATA ON %c:\n", DriveToLetter(drv));
 	printf ("\n");
 	printf ("         IF YOU FORGET THE PASSPHRASE YOU CAN NEVER ACCESS\n");
 	printf ("         OR DECRYPT THIS PARTITION AND ALL DATA ON IT!\n");
@@ -238,7 +238,7 @@ verify_decrypt_key (void)
 	char buf2 [1024];
 	
 	printf ("\n");
-	printf ("WARNING: THIS WILL TOTALLY DECRYPT ANY DATA ON %c:\n", 'A'+drv);
+	printf ("WARNING: THIS WILL TOTALLY DECRYPT ANY DATA ON %c:\n", DriveToLetter(drv));
 	printf ("\n");
 	printf ("         IF YOU USE THE WRONG PASSPHRASE OR DECRYPT A NOT\n");
 	printf ("         ENCRYPTED PARTITION YOU'LL DESTROY ALL YOUR DATA!\n");
@@ -511,7 +511,7 @@ main (int argc, char **argv)
 		char *s = argv[optind];
 		
 		if (s[1] == ':')
-			drv = toupper (s[0]) - 'A';
+			drv = DriveFromLetter(s[0]);
 		
 		if (drv < 0 || drv > 31)
 			drv = -1;
@@ -822,7 +822,7 @@ doit (const char *rescuefile)
 			char c;
 			
 			printf ("Restart interrupted session from %s", ctime (&rescue.time));
-			printf ("on %c: [%i], starting offset %qi.\n\n", 'A'+drv, drv, rescue.pos);
+			printf ("on %c: [%i], starting offset %qi.\n\n", DriveToLetter(drv), drv, rescue.pos);
 			printf ("With a different passphrase you destroy your data!\n");
 			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
 			scanf ("%c", &c);
@@ -875,8 +875,10 @@ doit (const char *rescuefile)
 	
 	if (mode == ROBUST)
 	{
-		sprintf (SAVEFILE, SAVEFILE_MASK, 'a'+drv);
-		sprintf (LOGFILE, LOGFILE_MASK, 'a'+drv);
+		char c = DriveToLetter(drv);
+		c = tolower(c);
+		sprintf (SAVEFILE, SAVEFILE_MASK, c);
+		sprintf (LOGFILE, LOGFILE_MASK, c);
 		
 		/* open error recovery file */
 		ret = open (SAVEFILE, O_CREAT|O_WRONLY|O_TRUNC, 0600);
@@ -911,7 +913,7 @@ doit (const char *rescuefile)
 		
 		logfile_writeheader (logfile);
 		
-		fprintf (logfile, "# %scrypting drive %c: [%i]\n", action_pre, 'A'+drv, drv);
+		fprintf (logfile, "# %scrypting drive %c: [%i]\n", action_pre, DriveToLetter(drv), drv);
 		fprintf (logfile, "# using cipher %s\n", ciphers[cipher]);
 		fprintf (logfile, "# \n");
 		fprintf (logfile, "# -- partition info --\n");

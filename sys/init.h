@@ -26,6 +26,4 @@ long	env_size	(const char *var);
 void	_mint_delenv	(BASEPAGE *bp, const char *strng);
 void	_mint_setenv	(BASEPAGE *bp, const char *var, const char *value);
 
-extern char const drv_list[];
-
 # endif /* _init_h */

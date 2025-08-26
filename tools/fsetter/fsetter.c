@@ -72,6 +72,13 @@ static char	fs_names[][7] =
 
 #define rsc_string(a) (char *) get_obspec(strings, a)
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 /* -------------------------------------------------------------------------- */
 
 /*
@@ -105,10 +112,7 @@ get_drives (void)
 		
 		if (drive_bits & (1L<<i))
 		{
-			if (i < 26)
-				lw[1] = 'A' + i;
-			else
-				lw[1] = '1' + i - 26;
+			lw[1] = DriveToLetter(i);
 			
 			set_state (maindial->tree, LW_A + i, OS_DISABLED, FALSE);
 			strcpy (drive_list[i], lw);
@@ -167,10 +171,7 @@ send_shwdraw (char lw)
 		short msg[8] = { 72, 0, 0, 0, 0, 0, 0, 0 };
 		
 		msg[1] = gl_apid;
-		if (lw >= '1' && lw <= '6')
-			msg[3] = lw - '1' + 27;
-		else
-			msg[3] = lw - 'A';
+		msg[3] = DriveFromLetter(lw);
 		
 		appl_write (desktop, sizeof (msg), msg);
 	}
@@ -612,7 +613,7 @@ main_open (WDIALOG *wd)
 		{
 			/* aktives Verzeichnis holen und LW selektieren */
 			get_path (str, 0);
-			active_drv = str[0] - 'A';
+			active_drv = DriveFromLetter(str[0]);
 			set_state (wd->tree, active_drv + LW_A, OS_SELECTED, TRUE);
 			show_data (wd);
 		}

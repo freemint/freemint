@@ -105,8 +105,6 @@ typedef struct {
 	"\033pMiNT too old!\033q\r\n"
 
 
-#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '0')
- 
 /*
  * default settings
  */

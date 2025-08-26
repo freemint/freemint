@@ -64,7 +64,7 @@ ext2_setup_super (SI *s)
 	
 	if (s->sbi.s_rev_level > EXT2_MAX_SUPP_REV)
 	{
-		ALERT (("Ext2-FS [%c]: WARNING: revision level too high, forcing read only mode", s->dev+'A'));
+		ALERT (("Ext2-FS [%c]: WARNING: revision level too high, forcing read only mode", DriveToLetter(s->dev)));
 		s->s_flags |= MS_RDONLY;
 	}
 	
@@ -72,20 +72,20 @@ ext2_setup_super (SI *s)
 	{
 		if (!(le2cpu16 (sb->s_state) & EXT2_VALID_FS))
 		{
-			ALERT (("Ext2-FS [%c]: WARNING: mounting unchecked fs, running e2fsck is recommended", s->dev+'A'));
+			ALERT (("Ext2-FS [%c]: WARNING: mounting unchecked fs, running e2fsck is recommended", DriveToLetter(s->dev)));
 		}
 		else if (le2cpu16 (sb->s_state) & EXT2_ERROR_FS)
 		{
-			ALERT (("Ext2-FS [%c]: WARNING: mounting fs with errors, running e2fsck is recommended", s->dev+'A'));
+			ALERT (("Ext2-FS [%c]: WARNING: mounting fs with errors, running e2fsck is recommended", DriveToLetter(s->dev)));
 		}
 		else if (le2cpu16 (sb->s_mnt_count) >= le2cpu16 (sb->s_max_mnt_count))
 		{
-			ALERT (("Ext2-FS [%c]: WARNING: maximal mount count reached, running e2fsck is recommended", s->dev+'A'));
+			ALERT (("Ext2-FS [%c]: WARNING: maximal mount count reached, running e2fsck is recommended", DriveToLetter(s->dev)));
 		}
 		else if (le2cpu32 (sb->s_checkinterval) &&
 			(le2cpu32 (sb->s_lastcheck) + le2cpu32 (sb->s_checkinterval) <= (ulong)CURRENT_TIME))
 		{
-			ALERT (("Ext2-FS [%c]: WARNING: checktime reached, running e2fsck is recommended", s->dev+'A'));
+			ALERT (("Ext2-FS [%c]: WARNING: checktime reached, running e2fsck is recommended", DriveToLetter(s->dev)));
 		}
 		
 		sb->s_state = cpu2le16 (le2cpu16 (sb->s_state) & ~EXT2_VALID_FS);
@@ -133,7 +133,7 @@ ext2_check_descriptors (SI *s)
 	long desc_block = 0;
 	long i;
 	
-	DEBUG (("Ext2-FS [%c]: Checking group descriptors", s->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: Checking group descriptors", DriveToLetter(s->dev)));
 	
 	for (i = 0; i < s->sbi.s_groups_count; i++)
 	{
@@ -191,12 +191,12 @@ read_ext2_sb_info (ushort drv)
 	ulong sb_offset;
 	
 	
-	DEBUG (("Ext2-FS [%c]: read_ext2_sb_info enter", drv+'A'));
+	DEBUG (("Ext2-FS [%c]: read_ext2_sb_info enter", DriveToLetter(drv)));
 	
 	di = bio.get_di (drv);
 	if (!di)
 	{
-		DEBUG (("Ext2-FS [%c]: read_ext2_sb_info: get_di fail", drv+'A'));
+		DEBUG (("Ext2-FS [%c]: read_ext2_sb_info: get_di fail", DriveToLetter(drv)));
 		return EBUSY;
 	}
 	
@@ -255,7 +255,7 @@ read_ext2_sb_info (ushort drv)
 			if (le2cpu32 (sb->s_feature_incompat) & ~EXT2_FEATURE_INCOMPAT_SUPP)
 			{
 				ALERT (("Ext2-FS [%c]: couldn't mount because of "
-					"unsupported optional features.", drv+'A'));
+					"unsupported optional features.", DriveToLetter(drv)));
 				
 				goto leave;
 			}
@@ -264,7 +264,7 @@ read_ext2_sb_info (ushort drv)
 				(le2cpu32 (sb->s_feature_ro_compat) & ~EXT2_FEATURE_RO_COMPAT_SUPP))
 			{
 				ALERT (("Ext2-FS [%c]: couldn't mount RDWR because of "
-					"unsupported optional features.", drv+'A'));
+					"unsupported optional features.", DriveToLetter(drv)));
 				
 				goto leave;
 			}
@@ -279,7 +279,7 @@ read_ext2_sb_info (ushort drv)
 			&& (blocksize != 2048)
 			&& (blocksize != 4096))
 		{
-			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", drv+'A'));
+			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", DriveToLetter(drv)));
 			
 			goto leave;
 		}
@@ -287,7 +287,7 @@ read_ext2_sb_info (ushort drv)
 		/* verify physical blocksize <= logical blocksize */
 		if (blocksize < di->pssize)
 		{
-			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", drv+'A'));
+			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", DriveToLetter(drv)));
 			
 			goto leave;
 		}
@@ -414,7 +414,7 @@ read_ext2_sb_info (ushort drv)
 			     !is_power_of_2(s->sbi.s_inode_size))
 			{
 				ALERT (("Ext2-FS [%c]: unsupported inode size: %d",
-					drv+'A', s->sbi.s_inode_size));
+					DriveToLetter(drv), s->sbi.s_inode_size));
 				
 				kfree (s, sizeof (*s));
 				goto leave;
@@ -478,7 +478,7 @@ read_ext2_sb_info (ushort drv)
 			|| (s->sbi.s_blocksize == 2048)
 			|| (s->sbi.s_blocksize == 4096)))
 		{
-			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", drv+'A'));
+			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", DriveToLetter(drv)));
 			
 			kfree (s, sizeof (*s));
 			goto leave;
@@ -487,7 +487,7 @@ read_ext2_sb_info (ushort drv)
 		if ((s->sbi.s_blocksize != blocksize)
 			|| (s->sbi.s_blocksize < di->pssize))
 		{
-			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", drv+'A'));
+			ALERT (("Ext2-FS [%c]: Unsupported blocksize on dev!", DriveToLetter(drv)));
 			
 			kfree (s, sizeof (*s));
 			goto leave;
@@ -496,7 +496,7 @@ read_ext2_sb_info (ushort drv)
 		if (s->sbi.s_blocksize != s->sbi.s_fragsize)
 		{
 			ALERT (("Ext2-FS [%c]: fragsize %ld != blocksize %ld (not supported yet)",
-				drv+'A', s->sbi.s_fragsize, s->sbi.s_blocksize));
+				DriveToLetter(drv), s->sbi.s_fragsize, s->sbi.s_blocksize));
 			
 			kfree (s, sizeof (*s));
 			goto leave;
@@ -505,7 +505,7 @@ read_ext2_sb_info (ushort drv)
 		if (s->sbi.s_blocks_per_group > s->sbi.s_blocksize * 8)
 		{
 			ALERT (("Ext2-FS [%c]: #blocks per group too big: %ld",
-				drv+'A', s->sbi.s_blocks_per_group));
+				DriveToLetter(drv), s->sbi.s_blocks_per_group));
 			
 			kfree (s, sizeof (*s));
 			goto leave;
@@ -514,7 +514,7 @@ read_ext2_sb_info (ushort drv)
 		if (s->sbi.s_frags_per_group > s->sbi.s_blocksize * 8)
 		{
 			ALERT (("Ext2-FS [%c]: #fragments per group too big: %ld",
-				drv+'A', s->sbi.s_frags_per_group));
+				DriveToLetter(drv), s->sbi.s_frags_per_group));
 			
 			kfree (s, sizeof (*s));
 			goto leave;
@@ -523,7 +523,7 @@ read_ext2_sb_info (ushort drv)
 		if (s->sbi.s_inodes_per_group > s->sbi.s_blocksize * 8)
 		{
 			ALERT (("Ext2-FS [%c]: #inodes per group too big: %lu",
-				drv+'A', s->sbi.s_inodes_per_group));
+				DriveToLetter(drv), s->sbi.s_inodes_per_group));
 			
 			kfree (s, sizeof (*s));
 			goto leave;

@@ -38,6 +38,9 @@
 # include "util.h"
 
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+
+
 /* `flag' tells thou whether to redraw the object being updated */
 
 static void
@@ -219,10 +222,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 
 	cmd = command + strlen(command);
 	*cmd++ = ' ';
-	if (drive < 26)
-		*cmd++ = (char)(drive + 'a');
-	else
-		*cmd++ = (char)(drive - 26 + '1');
+	*cmd++ = DriveToLetter(drive);
 	*cmd++ = ':';
 	*cmd = '\0';
 

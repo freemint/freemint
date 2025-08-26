@@ -226,7 +226,7 @@ trunc_indirect (COOKIE *inode, long offset, ulong parent, ulong parent_offset)
 		{
 			ALERT (("Ext2-FS [%c]: trunc_indirect: "
 				"Read failure, inode = %ld, block = %ld",
-				inode->s->dev+'A', inode->inode, block));
+				DriveToLetter(inode->s->dev), inode->inode, block));
 			
 			clear_entry (inode, parent, parent_offset);
 			return 0;

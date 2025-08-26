@@ -394,7 +394,7 @@ rwabs_log (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 //	if (rw && (di->mode & BIO_WP_MODE))
 //	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", DriveToLetter(di->drv), (rec << di->lshift)));
 //		return EROFS;
 //	}
 
@@ -403,13 +403,13 @@ rwabs_log (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 	if (!n || n > 65535UL)
 	{
-		BIO_ALERT (("block_IO [%c]: rwabs_log: n outside range (%li)", di->drv+'A', n));
+		BIO_ALERT (("block_IO [%c]: rwabs_log: n outside range (%li)", DriveToLetter(di->drv), n));
 		return ESECTOR;
 	}
 
 	if (di->size && (recno + n) > di->size)
 	{
-		BIO_ALERT (("block_IO [%c]: rwabs_log: access outside partition", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: rwabs_log: access outside partition", DriveToLetter(di->drv)));
 		return ESECTOR;
 	}
 
@@ -426,7 +426,7 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 //	if (rw && (di->mode & BIO_WP_MODE))
 //	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", DriveToLetter(di->drv), (rec << di->lshift)));
 //		return EROFS;
 //	}
 
@@ -435,13 +435,13 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 	if (!n || n > 65535UL)
 	{
-		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: n outside range (%li)", di->drv+'A', n));
+		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: n outside range (%li)", DriveToLetter(di->drv), n));
 		return ESECTOR;
 	}
 
 	if (di->size && (recno + n) > di->size)
 	{
-		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: access outside partition", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: access outside partition", DriveToLetter(di->drv)));
 		return ESECTOR;
 	}
 
@@ -459,7 +459,7 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 //	if (rw && (di->mode & BIO_WP_MODE))
 //	{
-//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", DriveToLetter(di->drv), (rec << di->lshift)));
 //		return EROFS;
 //	}
 
@@ -468,13 +468,13 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 	if (!n)
 	{
-		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: n = 0 (failure)!", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: n = 0 (failure)!", DriveToLetter(di->drv)));
 		return ESECTOR;
 	}
 
 	if (/* di->size && */ (recno + n) > di->size)
 	{
-		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: access outside partition", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: access outside partition", DriveToLetter(di->drv)));
 		return ESECTOR;
 	}
 
@@ -714,7 +714,7 @@ bio_readin (DI *di, void *buffer, ulong size, ulong sector)
 	r = BIO_RWABS (di, 0, buffer, size, sector);
 	if (r)
 	{
-		BIO_ALERT (("block_IO [%c]: bio_readin: RWABS fail (%li))", di->drv+'A', r));
+		BIO_ALERT (("block_IO [%c]: bio_readin: RWABS fail (%li))", DriveToLetter(di->drv), r));
 	}
 	else
 	{
@@ -745,7 +745,7 @@ bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 	r = BIO_RWABS (di, 1, ptr.b, size, sector);
 	if (r)
 	{
-		BIO_ALERT (("block_IO [%c]: bio_writeout: RWABS fail (ignored, %li))", di->drv+'A', r));
+		BIO_ALERT (("block_IO [%c]: bio_writeout: RWABS fail (ignored, %li))", DriveToLetter(di->drv), r));
 	}
 	else
 	{
@@ -796,7 +796,7 @@ bio_unit_wait (register UNIT *u)
 {
 	if (u->io_pending != BIO_UNIT_READY)
 	{
-		FORCE ("block_IO [%c]: sleeping in bio_unit_wait [%lu, %lu]", u->di->drv+'A', u->sector, u->size);
+		FORCE ("block_IO [%c]: sleeping in bio_unit_wait [%lu, %lu]", DriveToLetter(u->di->drv), u->sector, u->size);
 
 		u->io_sleep = 1;
 		sleep (IO_Q, (long) u);
@@ -1077,9 +1077,9 @@ bio_unit_remove_cache (register UNIT *u)
 	bio_hash_remove (u);
 
 	if (u->io_pending != BIO_UNIT_READY)
-		BIO_ALERT (("block_IO [%c]: io_pending != BIO_UNIT_READY (%ld)", u->di->drv+'A', u->sector));
+		BIO_ALERT (("block_IO [%c]: io_pending != BIO_UNIT_READY (%ld)", DriveToLetter(u->di->drv), u->sector));
 	if (u->io_sleep)
-		BIO_ALERT (("block_IO [%c]: someone sleep here??? (%ld)", u->di->drv+'A', u->sector));
+		BIO_ALERT (("block_IO [%c]: someone sleep here??? (%ld)", DriveToLetter(u->di->drv), u->sector));
 
 	if (u->cbl)
 	{
@@ -1152,7 +1152,7 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 
 		if (!num)
 		{
-			BIO_ALERT (("block_IO [%c]: bio_unit_get n = 0 failure!", di->drv+'A'));
+			BIO_ALERT (("block_IO [%c]: bio_unit_get n = 0 failure!", DriveToLetter(di->drv)));
 
 			*err = ESECTOR;
 			return NULL;
@@ -1160,7 +1160,7 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 
 		if (di->size && (recno + num) > di->size)
 		{
-			BIO_ALERT (("block_IO [%c]: bio_unit_get: access outside partition", di->drv+'A'));
+			BIO_ALERT (("block_IO [%c]: bio_unit_get: access outside partition", DriveToLetter(di->drv)));
 
 			*err = ESECTOR;
 			return NULL;
@@ -1203,7 +1203,7 @@ retry:
 			goto retry;
 		}
 
-		BIO_ALERT (("block_IO [%c]: abort, no free unit in cache! (cache too small?)", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: abort, no free unit in cache! (cache too small?)", DriveToLetter(di->drv)));
 
 		*err = ENOMEM;
 		return NULL;
@@ -1301,7 +1301,7 @@ retry:
 	else
 	{
 		BIO_DEBUG (("bio_unit_get: leave can't get free UNIT (kmalloc (%lu) fail)", sizeof (*new)));
-		BIO_ALERT (("block_IO [%c]: bio_unit_get: kmalloc (%lu) fail, out of memory?", di->drv+'A', sizeof (*new)));
+		BIO_ALERT (("block_IO [%c]: bio_unit_get: kmalloc (%lu) fail, out of memory?", DriveToLetter(di->drv), sizeof (*new)));
 
 		*err = ENOMEM;
 	}
@@ -1647,7 +1647,7 @@ bio_get_di (ushort drv)
 	di->table = kmalloc (HASHSIZE * sizeof (*(di->table)));
 	if (!di->table)
 	{
-		BIO_ALERT (("block_IO [%c]: kmalloc fail in bio_get_di, out of memory?", 'A'+drv));
+		BIO_ALERT (("block_IO [%c]: kmalloc fail in bio_get_di, out of memory?", DriveToLetter(drv)));
 		return NULL;
 	}
 
@@ -1664,7 +1664,7 @@ bio_get_di (ushort drv)
 		long r;
 
 		r = XHInqDev2 (drv, &(di->major), &(di->minor), &(di->start), &dummy, &(di->size), di->id);
-		if (r) BIO_DEBUG (("bio_get_di: XHInqDev2(%c) failed (%li)", 'A'+drv, r));
+		if (r) BIO_DEBUG (("bio_get_di: XHInqDev2(%c) failed (%li)", DriveToLetter(drv), r));
 
 		if (r == E_OK)
 		{
@@ -1840,7 +1840,7 @@ bio_res_di (ushort drv)
 	di->table = kmalloc (HASHSIZE * sizeof (*(di->table)));
 	if (!di->table)
 	{
-		BIO_ALERT (("block_IO [%c]: kmalloc fail in bio_get_di, out of memory?", 'A'+drv));
+		BIO_ALERT (("block_IO [%c]: kmalloc fail in bio_get_di, out of memory?", DriveToLetter(drv)));
 		return NULL;
 	}
 
@@ -1885,7 +1885,7 @@ bio_free_di (DI *di)
 static void _cdecl
 bio_set_pshift (DI *di, ulong physical)
 {
-	BIO_DEBUG (("bio_set_pshift: %c -> %lu bytes", di->drv+'A', physical));
+	BIO_DEBUG (("bio_set_pshift: %c -> %lu bytes", DriveToLetter(di->drv), physical));
 
 	assert (((physical & 511) == 0));
 
@@ -1904,7 +1904,7 @@ bio_set_pshift (DI *di, ulong physical)
 static void _cdecl
 bio_set_lshift (DI *di, ulong logical)
 {
-	BIO_DEBUG (("bio_set_lshift: %c -> %lu bytes", di->drv+'A', logical));
+	BIO_DEBUG (("bio_set_lshift: %c -> %lu bytes", DriveToLetter(di->drv), logical));
 
 	assert (((logical & 511) == 0));
 	assert (((logical >= di->pssize)));
@@ -2140,7 +2140,7 @@ bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *_buf)
 
 	if (r)
 	{
-		BIO_ALERT (("block_IO [%c]: bio_l_read: leave failure, RWABS fail (%li)", di->drv+'A', r));
+		BIO_ALERT (("block_IO [%c]: bio_l_read: leave failure, RWABS fail (%li)", DriveToLetter(di->drv), r));
 	}
 	else
 	{
@@ -2196,7 +2196,7 @@ restart:
 	i = bio_writeout (di, buf, size, sector);
 	if (i)
 	{
-		BIO_ALERT (("block_IO [%c]: bio_large_write: leave failure, RWABS fail (%li)", di->drv+'A', i));
+		BIO_ALERT (("block_IO [%c]: bio_large_write: leave failure, RWABS fail (%li)", DriveToLetter(di->drv), i));
 	}
 	else
 	{
@@ -2344,12 +2344,12 @@ bio_mark_modified (UNIT *u)
 static void _cdecl
 bio_sync_drv (DI *di)
 {
-	BIO_DEBUG (("bio_sync_drv: sync %c:", 'A' + di->drv));
+	BIO_DEBUG (("bio_sync_drv: sync %c:", DriveToLetter(di->drv)));
 
 	/* writeback queue */
 	bio_wb_queue (di);
 
-	BIO_DEBUG (("bio_sync_drv: wb_queue on %c: flushed.", 'A' + di->drv));
+	BIO_DEBUG (("bio_sync_drv: wb_queue on %c: flushed.", DriveToLetter(di->drv)));
 
 	if ((di->mode & BIO_REMOVABLE) && (di->lock == 1))
 	{
@@ -2368,7 +2368,7 @@ bio_sync_all (void)
 
 		if (di->valid)
 		{
-			BIO_DEBUG (("bio_sync_all: sync %c:", 'A' + di->drv));
+			BIO_DEBUG (("bio_sync_all: sync %c:", DriveToLetter(di->drv)));
 
 			/* writeback queue */
 			bio_wb_queue (di);
@@ -2420,7 +2420,7 @@ bio_invalidate (DI *di)
 
 	if (di->lock > 1)
 	{
-		BIO_DEBUG (("block_IO [%c]: invalidate on LOCKED di", di->drv+'A'));
+		BIO_DEBUG (("block_IO [%c]: invalidate on LOCKED di", DriveToLetter(di->drv)));
 	}
 
 restart:
@@ -2445,7 +2445,7 @@ restart:
 				u->dirty = 0;
 
 				/* inform user */
-				BIO_DEBUG (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", di->drv+'A', u->sector, u->size));
+				BIO_DEBUG (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", DriveToLetter(di->drv), u->sector, u->size));
 			}
 
 			/* remove from table */

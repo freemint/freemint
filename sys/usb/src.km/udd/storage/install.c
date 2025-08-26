@@ -60,6 +60,14 @@ extern BPB* usb_global_bpb;
  */
 
 
+/* drives are A:->Z:, 1:->6: */
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 /*
  * these should be in e.g. install.h
  */
@@ -281,7 +289,7 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
 
 	memset(string, 0, 128);
 
-	drv[0] = ('A' + logdrv);
+	drv[0] = DriveToLetter(logdrv);
 	drv[1] = 0;
 
 	strcat(string, "[1][Installed|");
@@ -295,7 +303,7 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
 #else
 	display_usb(dev_num,vendor,revision,product);
 	c_conws(": installed as drive ");
-	c_conout(logdrv<26?'A'+logdrv:'1'+(logdrv-26));	/* drives are A:->Z:, 1:->6: */
+	c_conout(DriveToLetter(logdrv));	/* drives are A:->Z:, 1:->6: */
 	c_conws("\r\n");
 #endif
 }
@@ -381,7 +389,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * find first free non-floppy drive
 	 */
-	for (logdrv = 'C'-'A', mask = (1L<<logdrv); logdrv < dl_maxdrives; logdrv++, mask<<=1)
+	for (logdrv = DriveFromLetter('C'), mask = (1L<<logdrv); logdrv < dl_maxdrives; logdrv++, mask<<=1)
 		if (!(drvbits&mask))
 			break;
 	if (logdrv >= dl_maxdrives) {
@@ -456,7 +464,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	 */
 	drvbits |= 1L << logdrv;
 	my_drvbits |= 1L << logdrv;			/* used for XHDI */
-	if (logdrv == 'C'-'A') {			/* if drive C, make it the boot drive */
+	if (logdrv == DriveFromLetter('C')) {			/* if drive C, make it the boot drive */
 		//bootdev = logdrv;				/* (is this correct?)                 */
 		d_setdrv(logdrv);
 	}
@@ -467,7 +475,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		char drv[2];
 		long fh;
 
-		drv[0] = ('A' + logdrv);
+		drv[0] = DriveToLetter(logdrv);
 		drv[1] = 0;
 
 		memset(tmpname, 0, sizeof(tmpname));

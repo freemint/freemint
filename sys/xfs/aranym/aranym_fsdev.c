@@ -1180,7 +1180,7 @@ ara_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	/* on same device? */
 	if (olddir->dev != newdir->dev)
 	{
-		DEBUG (("arafs: ara_rename: cross device rename: [%c] -> [%c]!", olddir->dev+'A', newdir->dev+'A'));
+		DEBUG (("arafs: ara_rename: cross device rename: [%c] -> [%c]!", DriveToLetter(olddir->dev), DriveToLetter(newdir->dev)));
 		return EXDEV;
 	}
 

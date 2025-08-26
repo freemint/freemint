@@ -55,13 +55,13 @@ rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 	
 	if (!n || (recno + n) > sectors)
 	{
-		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+drv);
+		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", DriveToLetter(drv));
 		exit (2);
 	}
 	
 	if (n > 65535UL)
 	{
-		printf ("rwabs_xhdi: n to large (drv = %c)\n", 'A'+drv);
+		printf ("rwabs_xhdi: n to large (drv = %c)\n", DriveToLetter(drv));
 		exit (2);
 	}
 	
@@ -110,12 +110,12 @@ io_open (int64_t _dev)
 	
 	if (r)
 	{
-		printf ("unable to get geometry for '%c' (%li)\n", 'A'+dev, r);
+		printf ("unable to get geometry for '%c' (%li)\n", DriveToLetter(dev), r);
 		return -1;
 	}
 	
 # if 0
-	printf ("Information about %c:\n", 'A'+dev);
+	printf ("Information about %c:\n", DriveToLetter(dev));
 	printf ("---------------------\n");
 	printf ("XHDI major number    : %d\n", major);
 	printf ("XHDI minor number    : %d\n", minor);
@@ -128,7 +128,7 @@ io_open (int64_t _dev)
 	r = Dlock (1, dev);
 	if (r && r != -32)
 	{
-		printf ("Can't lock %c:, drive in use?\n", 'A'+dev);
+		printf ("Can't lock %c:, drive in use?\n", DriveToLetter(dev));
 		return -1;
 	}
 	

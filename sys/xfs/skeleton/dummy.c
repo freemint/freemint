@@ -388,7 +388,7 @@ dummy_root (int drv, fcookie *fc)
 {
 //	SI *s = super [drv];
 	
-	DEBUG (("dummy [%c]: e_root enter (mem = %li)", drv+'A', memory));
+	DEBUG (("dummy [%c]: e_root enter (mem = %li)", DriveToLetter(drv), memory));
 	
 //	if (!s)
 	{
@@ -397,7 +397,7 @@ dummy_root (int drv, fcookie *fc)
 //		i = read_sb_info (drv);
 		if (i)
 		{
-			DEBUG (("dummy [%c]: e_root leave failure", drv+'A'));
+			DEBUG (("dummy [%c]: e_root leave failure", DriveToLetter(drv)));
 			return i;
 		}
 		
@@ -409,7 +409,7 @@ dummy_root (int drv, fcookie *fc)
 	fc->aux = 0;
 //	fc->index = (long) s->root; s->root->links++;
 	
-	DEBUG (("dummy [%c]: e_root leave ok (mem = %li)", drv+'A', memory));
+	DEBUG (("dummy [%c]: e_root leave ok (mem = %li)", DriveToLetter(drv), memory));
 	return E_OK;
 }
 
@@ -419,7 +419,7 @@ dummy_lookup (fcookie *dir, const char *name, fcookie *fc)
 //	COOKIE *c = (COOKIE *) dir->index;
 //	SI *s = super [dir->dev];
 	
-	DEBUG (("dummy [%c]: dummy_lookup (%s)", dir->dev+'A', name));
+	DEBUG (("dummy [%c]: dummy_lookup (%s)", DriveToLetter(dir->dev), name));
 	
 	*fc = *dir;
 	
@@ -428,7 +428,7 @@ dummy_lookup (fcookie *dir, const char *name, fcookie *fc)
 	{	
 //		c->links++;
 	
-		DEBUG (("dummy [%c]: dummy_lookup: leave ok, (name = \".\")", dir->dev+'A'));
+		DEBUG (("dummy [%c]: dummy_lookup: leave ok, (name = \".\")", DriveToLetter(dir->dev)));
 		return E_OK;
 	}
 	
@@ -437,7 +437,7 @@ dummy_lookup (fcookie *dir, const char *name, fcookie *fc)
 	{
 //		if (dir == rootcookie)
 //		{
-//			DEBUG (("dummy [%c]: dummy_lookup: leave ok, EMOUNT, (name = \"..\")", dir->dev+'A'));
+//			DEBUG (("dummy [%c]: dummy_lookup: leave ok, EMOUNT, (name = \"..\")", DriveToLetter(dir->dev)));
 //			return EMOUNT;
 //		}
 	}
@@ -448,7 +448,7 @@ dummy_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return ENOENT;
 	}
 	
-	DEBUG (("dummy [%c]: dummy_lookup: leave ok", dir->dev+'A'));
+	DEBUG (("dummy [%c]: dummy_lookup: leave ok", DriveToLetter(dir->dev)));
 	return E_OK;
 }
 

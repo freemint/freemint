@@ -54,7 +54,7 @@ load_inode_bitmap (SI *s, ulong block_group)
 		{
 			ALERT (("Ext2-FS: read_inode_bitmap [%c]: "
 				"Cannot read inode bitmap - block_group = %ld, inode_bitmap = %ld",
-				s->dev+'A', block_group, block));
+				DriveToLetter(s->dev), block_group, block));
 		}
 	}
 	
@@ -74,26 +74,26 @@ ext2_free_inode (COOKIE *inode)
 	ulong bit;
 	
 	
-	DEBUG (("ext2_free_inode [%c]: enter #%li", inode->dev+'A', ino));
+	DEBUG (("ext2_free_inode [%c]: enter #%li", DriveToLetter(inode->dev), ino));
 	
 	if (SYNC_COOKIE (inode))
 	{
-		ALERT (("Ext2-FS: ext2_free_inode [%c]: can't sync inode #%li", inode->dev+'A', ino));
+		ALERT (("Ext2-FS: ext2_free_inode [%c]: can't sync inode #%li", DriveToLetter(inode->dev), ino));
 		return;
 	}
 	if (inode->links > 0)
 	{
-		ALERT (("Ext2-FS: ext2_free_inode [%c]: inode #%li has count = %ld\n", inode->dev+'A', ino, inode->links));
+		ALERT (("Ext2-FS: ext2_free_inode [%c]: inode #%li has count = %ld\n", DriveToLetter(inode->dev), ino, inode->links));
 		return;
 	}
 	if (inode->in.i_links_count)
 	{
-		ALERT (("Ext2-FS: ext2_free_inode [%c]: inode #%li has nlink = %d\n", inode->dev+'A', ino, le2cpu16 (inode->in.i_links_count)));
+		ALERT (("Ext2-FS: ext2_free_inode [%c]: inode #%li has nlink = %d\n", DriveToLetter(inode->dev), ino, le2cpu16 (inode->in.i_links_count)));
 		return;
 	}
 	if (ino < EXT2_FIRST_INO (s) || ino > s->sbi.s_inodes_count)
 	{
-		ALERT (("Ext2-FS: ext2_free_inode [%c]: reserved or nonexistent inode #%li", inode->dev+'A', ino));
+		ALERT (("Ext2-FS: ext2_free_inode [%c]: reserved or nonexistent inode #%li", DriveToLetter(inode->dev), ino));
 		return;
 	}
 	
@@ -108,7 +108,7 @@ ext2_free_inode (COOKIE *inode)
 	
 	if (!ext2_clear_bit (bit, u->data))
 	{
-		ALERT (("Ext2-FS: ext2_free_inode [%c]: bit already cleared for inode #%li: %p", s->dev+'A', ino, inode));
+		ALERT (("Ext2-FS: ext2_free_inode [%c]: bit already cleared for inode #%li: %p", DriveToLetter(s->dev), ino, inode));
 	}
 	else
 	{
@@ -294,7 +294,7 @@ repeat:
 		if (ext2_set_bit (j, u->data))
 		{
 			ALERT (("Ext2-FS: ext2_new_inode [%c]: "
-				"bit already set for inode %ld", dir->dev+'A', j));
+				"bit already set for inode %ld", DriveToLetter(dir->dev), j));
 			
 			goto repeat;
 		}
@@ -306,7 +306,7 @@ repeat:
 		if (le2cpu16 (gdp->bg_free_inodes_count) != 0)
 		{
 			ALERT (("Ext2-FS: ext2_new_inode [%c]: "
-				"Free inodes count corrupted in group %ld", dir->dev+'A', i));
+				"Free inodes count corrupted in group %ld", DriveToLetter(dir->dev), i));
 			
 			goto error;
 		}
@@ -319,7 +319,7 @@ repeat:
 	{
 		ALERT (("Ext2-FS: ext2_new_inode [%c]: "
 			"reserved inode or inode > inodes count - "
-			"block_group = %ld, inode = %ld", dir->dev+'A', i, j));
+			"block_group = %ld, inode = %ld", DriveToLetter(dir->dev), i, j));
 		
 		goto error;
 	}
@@ -446,7 +446,7 @@ ext2_check_inodes_bitmap (SI * s)
 				ALERT (("Ext2-FS: ext2_check_inodes_bitmap [%c]: "
 					"Wrong free inodes count in group %ld, "
 					"stored = %lu, counted = %lu",
-					s->dev+'A', i, free_count, x));
+					DriveToLetter(s->dev), i, free_count, x));
 			}
 			
 			bitmap_count += x;
@@ -458,7 +458,7 @@ ext2_check_inodes_bitmap (SI * s)
 		ALERT (("Ext2-FS: ext2_check_inodes_bitmap [%c]: "
 			"Wrong free inodes count in super block, "
 			"stored = %ld, counted = %ld",
-			s->dev+'A', le2cpu32 (s->sbi.s_sb->s_free_inodes_count), bitmap_count));
+			DriveToLetter(s->dev), le2cpu32 (s->sbi.s_sb->s_free_inodes_count), bitmap_count));
 	}
 	
 	/* unlock_super (s); */

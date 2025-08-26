@@ -167,7 +167,7 @@ e_root (int drv, fcookie *fc)
 {
 	SI *s = super [drv];
 
-	DEBUG (("Ext2-FS [%c]: e_root enter (s = %p, mem = %li)", drv+'A', s, memory));
+	DEBUG (("Ext2-FS [%c]: e_root enter (s = %p, mem = %li)", DriveToLetter(drv), s, memory));
 
 	if (!s)
 	{
@@ -176,7 +176,7 @@ e_root (int drv, fcookie *fc)
 		i = read_ext2_sb_info (drv);
 		if (i)
 		{
-			DEBUG (("Ext2-FS [%c]: e_root leave failure", drv+'A'));
+			DEBUG (("Ext2-FS [%c]: e_root leave failure", DriveToLetter(drv)));
 			return i;
 		}
 
@@ -188,7 +188,7 @@ e_root (int drv, fcookie *fc)
 	fc->aux = 0;
 	fc->index = (long) s->root; s->root->links++;
 
-	DEBUG (("Ext2-FS [%c]: e_root leave ok (mem = %li)", drv+'A', memory));
+	DEBUG (("Ext2-FS [%c]: e_root leave ok (mem = %li)", DriveToLetter(drv), memory));
 	return E_OK;
 }
 
@@ -198,7 +198,7 @@ e_lookup (fcookie *dir, const char *name, fcookie *fc)
 	COOKIE *c = (COOKIE *) dir->index;
 	SI *s = super [dir->dev];
 
-	DEBUG (("Ext2-FS [%c]: e_lookup (%s)", dir->dev+'A', name));
+	DEBUG (("Ext2-FS [%c]: e_lookup (%s)", DriveToLetter(dir->dev), name));
 
 	*fc = *dir;
 
@@ -207,7 +207,7 @@ e_lookup (fcookie *dir, const char *name, fcookie *fc)
 	{
 		c->links++;
 
-		DEBUG (("Ext2-FS [%c]: e_lookup: leave ok, (name = \".\")", dir->dev+'A'));
+		DEBUG (("Ext2-FS [%c]: e_lookup: leave ok, (name = \".\")", DriveToLetter(dir->dev)));
 		return E_OK;
 	}
 
@@ -216,7 +216,7 @@ e_lookup (fcookie *dir, const char *name, fcookie *fc)
 	{
 		if (c->inode == EXT2_ROOT_INO)
 		{
-			DEBUG (("Ext2-FS [%c]: e_lookup: leave ok, EMOUNT, (name = \"..\")", dir->dev+'A'));
+			DEBUG (("Ext2-FS [%c]: e_lookup: leave ok, EMOUNT, (name = \"..\")", DriveToLetter(dir->dev)));
 			return EMOUNT;
 		}
 	}
@@ -229,21 +229,21 @@ e_lookup (fcookie *dir, const char *name, fcookie *fc)
 		dentry = ext2_search_entry (c, name, strlen (name));
 		if (!dentry)
 		{
-			DEBUG (("Ext2-FS [%c]: e_lookup: leave ENOENT", dir->dev+'A'));
+			DEBUG (("Ext2-FS [%c]: e_lookup: leave ENOENT", DriveToLetter(dir->dev)));
 			return ENOENT;
 		}
 
 		ret = get_cookie (s, dentry->inode, &c);
 		if (ret)
 		{
-			DEBUG (("Ext2-FS [%c]: e_lookup: leave ret = %li", dir->dev+'A', ret));
+			DEBUG (("Ext2-FS [%c]: e_lookup: leave ret = %li", DriveToLetter(dir->dev), ret));
 			return ret;
 		}
 
 		fc->index = (long) c;
 	}
 
-	DEBUG (("Ext2-FS [%c]: e_lookup: leave ok", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_lookup: leave ok", DriveToLetter(dir->dev)));
 	return E_OK;
 }
 
@@ -355,7 +355,7 @@ e_getxattr (fcookie *fc, XATTR *ptr)
 		SET_XATTR_TD(ptr,c,dostime(le2cpu32(c->in.i_ctime)));
 	}
 
-	DEBUG (("Ext2-FS [%c]: e_getxattr: #%li -> ok", fc->dev+'A', c->inode));
+	DEBUG (("Ext2-FS [%c]: e_getxattr: #%li -> ok", DriveToLetter(fc->dev), c->inode));
 	return E_OK;
 }
 
@@ -447,7 +447,7 @@ e_stat64 (fcookie *fc, STAT *ptr)
 
 	bzero (ptr->res, sizeof (ptr->res));
 
-	DEBUG (("Ext2-FS [%c]: e_stat: #%li -> ok", fc->dev+'A', c->inode));
+	DEBUG (("Ext2-FS [%c]: e_stat: #%li -> ok", DriveToLetter(fc->dev), c->inode));
 	return E_OK;
 }
 
@@ -460,7 +460,7 @@ e_chattr (fcookie *fc, int attr)
 	COOKIE *c = (COOKIE *) fc->index;
 	ushort mode;
 
-	DEBUG (("Ext2-FS [%c]: e_chattr: #%li, %x", fc->dev+'A', c->inode, attr));
+	DEBUG (("Ext2-FS [%c]: e_chattr: #%li, %x", DriveToLetter(fc->dev), c->inode, attr));
 
 	if (c->s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -477,7 +477,7 @@ e_chattr (fcookie *fc, int attr)
 			/* turn off write permission */
 			mode &= ~S_IWUGO;
 
-			DEBUG (("Ext2-FS [%c]: e_chattr: turn off", fc->dev+'A'));
+			DEBUG (("Ext2-FS [%c]: e_chattr: turn off", DriveToLetter(fc->dev)));
 			goto write;
 		}
 		else
@@ -487,13 +487,13 @@ e_chattr (fcookie *fc, int attr)
 				/* turn write permission back on */
 				mode |= (mode & 0444) >> 1;
 
-				DEBUG (("Ext2-FS [%c]: e_chattr: turn on", fc->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: e_chattr: turn on", DriveToLetter(fc->dev)));
 				goto write;
 			}
 		}
 	}
 
-	DEBUG (("Ext2-FS [%c]: e_chattr: return E_OK, nothing done", fc->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_chattr: return E_OK, nothing done", DriveToLetter(fc->dev)));
 	return E_OK;
 
 write:
@@ -503,7 +503,7 @@ write:
 
 	bio_SYNC_DRV (&bio, c->s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_chattr: done (%x), return E_OK", fc->dev+'A', mode));
+	DEBUG (("Ext2-FS [%c]: e_chattr: done (%x), return E_OK", DriveToLetter(fc->dev), mode));
 	return E_OK;
 }
 
@@ -512,7 +512,7 @@ e_chown (fcookie *fc, int uid, int gid)
 {
 	COOKIE *c = (COOKIE *) fc->index;
 
-	DEBUG (("Ext2-FS [%c]: e_chown", fc->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_chown", DriveToLetter(fc->dev)));
 
 	if (c->s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -536,7 +536,7 @@ e_chmod (fcookie *fc, unsigned mode)
 {
 	COOKIE *c = (COOKIE *) fc->index;
 
-	DEBUG (("Ext2-FS [%c]: e_chmod", fc->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_chmod", DriveToLetter(fc->dev)));
 
 	if (c->s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -564,7 +564,7 @@ e_mkdir (fcookie *dir, const char *name, unsigned mode)
 	long err = E_OK;
 
 
-	DEBUG (("Ext2-FS [%c]: e_mkdir", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_mkdir", DriveToLetter(dir->dev)));
 
 	if (s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -667,7 +667,7 @@ out:
 
 	bio_SYNC_DRV (&bio, s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_mkdir: leave (%li)", dir->dev+'A', err));
+	DEBUG (("Ext2-FS [%c]: e_mkdir: leave (%li)", DriveToLetter(dir->dev), err));
 	return err;
 }
 
@@ -689,7 +689,7 @@ empty_dir (COOKIE *inode)
 	if (i_size < EXT2_DIR_REC_LEN (1) + EXT2_DIR_REC_LEN (2)
 		|| !(u = ext2_read (inode, 0, &err)))
 	{
-	    	ALERT (("Ext2-FS [%c]: empty_dir: bad directory (dir #%li) - no data block", 'A'+inode->dev, inode->inode));
+	    	ALERT (("Ext2-FS [%c]: empty_dir: bad directory (dir #%li) - no data block", DriveToLetter(inode->dev), inode->inode));
 		return 1;
 	}
 
@@ -701,7 +701,7 @@ empty_dir (COOKIE *inode)
 		|| (de->name [0] != '.' || de->name [1] != '\0')
 		|| (de1->name [0] != '.' || de1->name [1] != '.' || de1->name [2] != '\0'))
 	{
-	    	ALERT (("Ext2-FS [%c]: empty_dir: bad directory (dir #%li) - no `.' or `..'", 'A'+inode->dev, inode->inode));
+	    	ALERT (("Ext2-FS [%c]: empty_dir: bad directory (dir #%li) - no `.' or `..'", DriveToLetter(inode->dev), inode->inode));
 		return 1;
 	}
 
@@ -715,7 +715,7 @@ empty_dir (COOKIE *inode)
 			if (!u)
 			{
 				ALERT (("Ext2-FS [%c]: empty_dir: directory #%lu contains a hole at offset %lu",
-					s->dev+'A', inode->inode, offset));
+					DriveToLetter(s->dev), inode->inode, offset));
 
 				offset += EXT2_BLOCK_SIZE (s);
 				continue;
@@ -749,7 +749,7 @@ e_rmdir (fcookie *dir, const char *name)
 	long retval = E_OK;
 
 
-	DEBUG (("Ext2-FS [%c]: e_rmdir (%s)", dir->dev+'A', name));
+	DEBUG (("Ext2-FS [%c]: e_rmdir (%s)", DriveToLetter(dir->dev), name));
 
 	if (namelen > EXT2_NAME_LEN)
 		return ENAMETOOLONG;
@@ -837,7 +837,7 @@ e_rmdir (fcookie *dir, const char *name)
 	}
 
 	if (le2cpu16 (inode->in.i_links_count) != 2)
-		ALERT (("Ext2-FS [%c]: e_rmdir: empty directory has nlink != 2 (%u)", dir->dev+'A', le2cpu16 (inode->in.i_links_count)));
+		ALERT (("Ext2-FS [%c]: e_rmdir: empty directory has nlink != 2 (%u)", DriveToLetter(dir->dev), le2cpu16 (inode->in.i_links_count)));
 
 	inode->in.i_version = cpu2le32 (++event);
 	inode->in.i_links_count = 0;
@@ -855,7 +855,7 @@ out:
 
 	bio_SYNC_DRV (&bio, s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_rmdir: leave (%li)", dir->dev+'A', retval));
+	DEBUG (("Ext2-FS [%c]: e_rmdir: leave (%li)", DriveToLetter(dir->dev), retval));
 	return retval;
 }
 
@@ -869,7 +869,7 @@ e_creat (fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc)
 	long err = EIO;
 
 
-	DEBUG (("Ext2-FS [%c]: e_creat enter (%s)", dir->dev+'A', name));
+	DEBUG (("Ext2-FS [%c]: e_creat enter (%s)", DriveToLetter(dir->dev), name));
 
 	if (dirc->s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -919,7 +919,7 @@ e_creat (fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc)
 
 	bio_SYNC_DRV (&bio, inode->s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_creat leave OK (#%li, uid = %i, gid = %i)", dir->dev+'A', inode->inode, le2cpu16 (inode->in.i_uid), le2cpu16 (inode->in.i_gid)));
+	DEBUG (("Ext2-FS [%c]: e_creat leave OK (#%li, uid = %i, gid = %i)", DriveToLetter(dir->dev), inode->inode, le2cpu16 (inode->in.i_uid), le2cpu16 (inode->in.i_gid)));
 	return E_OK;
 }
 
@@ -935,7 +935,7 @@ e_remove (fcookie *dir, const char *name)
 	long retval;
 
 
-	DEBUG (("Ext2-FS [%c]: e_remove: enter (%s)", dir->dev+'A', name));
+	DEBUG (("Ext2-FS [%c]: e_remove: enter (%s)", DriveToLetter(dir->dev), name));
 
 	if (namelen > EXT2_NAME_LEN)
 		return ENAMETOOLONG;
@@ -970,7 +970,7 @@ e_remove (fcookie *dir, const char *name)
 
 	if (!inode->in.i_links_count)
 	{
-		ALERT (("Ext2-FS [%c]: ext2_unlink: Deleting nonexistent file (%lu), %d", inode->dev+'A', inode->inode, le2cpu16 (inode->in.i_links_count)));
+		ALERT (("Ext2-FS [%c]: ext2_unlink: Deleting nonexistent file (%lu), %d", DriveToLetter(inode->dev), inode->inode, le2cpu16 (inode->in.i_links_count)));
 		inode->in.i_links_count = cpu2le16 (1);
 	}
 
@@ -1014,7 +1014,7 @@ out:
 
 	bio_SYNC_DRV (&bio, dirc->s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_remove: leave (%li)", dir->dev+'A', retval));
+	DEBUG (("Ext2-FS [%c]: e_remove: leave (%li)", DriveToLetter(dir->dev), retval));
 	return retval;
 }
 
@@ -1027,7 +1027,7 @@ e_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 	char *dst = pathname;
 	long len = 0;
 
-	DEBUG (("Ext2-FS [%c]: e_getname: #%li -> #%li", root->dev+'A', ((COOKIE *) root->index)->inode, ((COOKIE *) dir->index)->inode));
+	DEBUG (("Ext2-FS [%c]: e_getname: #%li -> #%li", DriveToLetter(root->dev), ((COOKIE *) root->index)->inode, ((COOKIE *) dir->index)->inode));
 	ASSERT ((((COOKIE *) root->index)->inode == EXT2_ROOT_INO));
 
 	*pathname = '\0';
@@ -1054,7 +1054,7 @@ e_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 		{
 			/* If this happens we're in trouble */
 
-			ALERT (("Ext2-FS [%c]: e_getname: no '..' in inode #%li", c->dev+'A', c->inode));
+			ALERT (("Ext2-FS [%c]: e_getname: no '..' in inode #%li", DriveToLetter(c->dev), c->inode));
 			return inum;
 		}
 
@@ -1137,19 +1137,19 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	long retval = ENOENT;
 
 
-	DEBUG (("Ext2-FS [%c]: e_rename: #%li: %s -> #%li: %s", olddir->dev+'A', olddirc->inode, oldname, newdirc->inode, newname));
+	DEBUG (("Ext2-FS [%c]: e_rename: #%li: %s -> #%li: %s", DriveToLetter(olddir->dev), olddirc->inode, oldname, newdirc->inode, newname));
 
 	/* check cross drives */
 	if (olddir->dev != newdir->dev)
 	{
-		DEBUG (("Ext2-FS [%c]: e_rename: cross device [%c] -> EXDEV!", olddir->dev+'A', newdir->dev+'A'));
+		DEBUG (("Ext2-FS [%c]: e_rename: cross device [%c] -> EXDEV!", DriveToLetter(olddir->dev), DriveToLetter(newdir->dev)));
 		return EXDEV;
 	}
 # if 0	/* paranoia check :-) */
 	/* check cross drives - redundant here */
 	if (olddirc->dev != newdirc->dev)
 	{
-		ALERT (("Ext2-FS [%c]: e_rename: !!! cross device [%c] -> EXDEV!", olddirc->dev+'A', newdirc->dev+'A'));
+		ALERT (("Ext2-FS [%c]: e_rename: !!! cross device [%c] -> EXDEV!", DriveToLetter(olddirc->dev), DriveToLetter(newdirc->dev)));
 		return EXDEV;
 	}
 # endif
@@ -1212,7 +1212,7 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 
 			if (check->inode == inode->inode)
 			{
-				DEBUG (("Ext2-FS [%c]: invalid directory move", check->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: invalid directory move", DriveToLetter(check->dev)));
 
 				rel_cookie (check);
 
@@ -1229,7 +1229,7 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 			tmp = ext2_search_entry (check, "..", 2);
 			if (!tmp)
 			{
-				DEBUG (("Ext2-FS [%c]: ext2_search_entry fail in e_rename", check->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: ext2_search_entry fail in e_rename", DriveToLetter(check->dev)));
 
 				rel_cookie (check);
 
@@ -1242,7 +1242,7 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 			retval = get_cookie (s, tmp->inode, &check);
 			if (retval)
 			{
-				DEBUG (("Ext2-FS [%c]: get_cookie fail in e_rename", check->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: get_cookie fail in e_rename", DriveToLetter(check->dev)));
 
 				goto end_rename;
 			}
@@ -1323,7 +1323,7 @@ end_rename:
 	if (new_u) bio.unlock (new_u);
 	if (dir_u) bio.unlock (dir_u);
 
-	DEBUG (("Ext2-FS [%c]: e_rename: leave r = %li", olddir->dev+'A', retval));
+	DEBUG (("Ext2-FS [%c]: e_rename: leave r = %li", DriveToLetter(olddir->dev), retval));
 	return retval;
 }
 
@@ -1343,7 +1343,7 @@ e_opendir (DIR *dirh, int flag)
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
 
-	DEBUG (("Ext2-FS [%c]: e_opendir: #%li", dirh->fc.dev+'A', c->inode));
+	DEBUG (("Ext2-FS [%c]: e_opendir: #%li", DriveToLetter(dirh->fc.dev), c->inode));
 
 	c->links++;
 
@@ -1351,7 +1351,7 @@ e_opendir (DIR *dirh, int flag)
 	dirptr.dirinfo->size = le2cpu32 (c->in.i_size);
 	dirptr.dirinfo->version = c->in.i_version;
 
-	DEBUG (("Ext2-FS [%c]: e_opendir: leave ok", dirh->fc.dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_opendir: leave ok", DriveToLetter(dirh->fc.dev)));
 	return E_OK;
 }
 
@@ -1365,7 +1365,7 @@ e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	ulong offset = dirptr.dirinfo->pos & EXT2_BLOCK_SIZE_MASK (s);
 
 
-	DEBUG (("Ext2-FS [%c]: e_readdir: #%li", dirh->fc.dev+'A', c->inode));
+	DEBUG (("Ext2-FS [%c]: e_readdir: #%li", DriveToLetter(dirh->fc.dev), c->inode));
 
 	while (dirptr.dirinfo->pos < dirptr.dirinfo->size)
 	{
@@ -1450,7 +1450,7 @@ e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		mark_inode_dirty (c);
 	}
 
-	DEBUG (("Ext2-FS [%c]: e_readdir leave ENMFILES", dirh->fc.dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_readdir leave ENMFILES", DriveToLetter(dirh->fc.dev)));
 	return ENMFILES;
 
 found:
@@ -1495,7 +1495,7 @@ found:
 			mark_inode_dirty (c);
 		}
 
-		DEBUG (("Ext2-FS [%c]: e_readdir ok (#%li: %s)", dirh->fc.dev+'A', inode, name));
+		DEBUG (("Ext2-FS [%c]: e_readdir ok (#%li: %s)", DriveToLetter(dirh->fc.dev), inode, name));
 		return E_OK;
 	}
 }
@@ -1504,7 +1504,7 @@ static long _cdecl
 e_rewinddir (DIR *dirh)
 {
 	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
-	DEBUG (("Ext2-FS [%c]: e_rewinddir: #%li", dirh->fc.dev+'A', ((COOKIE *) dirh->fc.index)->inode));
+	DEBUG (("Ext2-FS [%c]: e_rewinddir: #%li", DriveToLetter(dirh->fc.dev), ((COOKIE *) dirh->fc.index)->inode));
 
 	dirptr.dirinfo->pos = 0;
 
@@ -1516,7 +1516,7 @@ e_closedir (DIR *dirh)
 {
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 
-	DEBUG (("Ext2-FS [%c]: e_closedir: #%li", dirh->fc.dev+'A', c->inode));
+	DEBUG (("Ext2-FS [%c]: e_closedir: #%li", DriveToLetter(dirh->fc.dev), c->inode));
 
 	rel_cookie (c);
 	return E_OK;
@@ -1525,7 +1525,7 @@ e_closedir (DIR *dirh)
 static long _cdecl
 e_pathconf (fcookie *dir, int which)
 {
-	DEBUG (("Ext2-FS [%c]: e_pathconf (%i)", dir->dev+'A', which));
+	DEBUG (("Ext2-FS [%c]: e_pathconf (%i)", DriveToLetter(dir->dev), which));
 
 	switch (which)
 	{
@@ -1572,7 +1572,7 @@ e_dfree (fcookie *dir, long *buffer)
 {
 	SI *s = super [dir->dev];
 
-	DEBUG (("Ext2-FS [%c]: e_dfree", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_dfree", DriveToLetter(dir->dev)));
 
 	buffer[0] = le2cpu32 (s->sbi.s_sb->s_free_blocks_count);
 	buffer[1] = s->sbi.s_blocks_count;
@@ -1597,7 +1597,7 @@ e_wlabel (fcookie *dir, const char *name)
 	long namelen = strlen (name);
 	long r = E_OK;
 
-	DEBUG (("Ext2-FS [%c]: e_wlabel enter (%s)", dir->dev+'A', name));
+	DEBUG (("Ext2-FS [%c]: e_wlabel enter (%s)", DriveToLetter(dir->dev), name));
 
 	if (namelen > 16)
 	{
@@ -1620,7 +1620,7 @@ e_wlabel (fcookie *dir, const char *name)
 		}
 	}
 
-	DEBUG (("Ext2-FS [%c]: e_wlabel leave (ret = %li)", dir->dev+'A', r));
+	DEBUG (("Ext2-FS [%c]: e_wlabel leave (ret = %li)", DriveToLetter(dir->dev), r));
 	return r;
 }
 
@@ -1633,7 +1633,7 @@ e_rlabel (fcookie *dir, char *name, int namelen)
 	long len;
 	char *src;
 
-	DEBUG (("Ext2-FS [%c]: e_rlabel enter", dir->dev+'A'));
+	DEBUG (("Ext2-FS [%c]: e_rlabel enter", DriveToLetter(dir->dev)));
 
 	len = 0;
 	src = s->sbi.s_sb->s_volume_name;
@@ -1649,7 +1649,7 @@ e_rlabel (fcookie *dir, char *name, int namelen)
 	strncpy (name, s->sbi.s_sb->s_volume_name, len);
 	name [len] = '\0';
 
-	DEBUG (("Ext2-FS [%c]: e_rlabel leave (ret = %li)", dir->dev+'A', ret));
+	DEBUG (("Ext2-FS [%c]: e_rlabel leave (ret = %li)", DriveToLetter(dir->dev), ret));
 	return ret;
 }
 
@@ -1666,7 +1666,7 @@ e_symlink (fcookie *dir, const char *name, const char *to)
 	long err;
 
 
-	DEBUG (("Ext2-FS [%c]: e_symlink: enter (%s, %s)", dir->dev+'A', name, to));
+	DEBUG (("Ext2-FS [%c]: e_symlink: enter (%s, %s)", DriveToLetter(dir->dev), name, to));
 
 	if (dirc->s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -1758,7 +1758,7 @@ out:
 
 	bio_SYNC_DRV (&bio, dirc->s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_symlink: leave (%li)", dir->dev+'A', err));
+	DEBUG (("Ext2-FS [%c]: e_symlink: leave (%li)", DriveToLetter(dir->dev), err));
 	return err;
 
 }
@@ -1796,7 +1796,7 @@ e_readlink (fcookie *fc, char *buf, int len)
 	i = strlen (link);
 	if (i != le2cpu32 (inode->in.i_size))
 	{
-		ALERT (("Ext2-FS [%c]: e_readlink: bad inode (#%li -> %li != %li)", inode->dev+'A', inode->inode, i, le2cpu32 (inode->in.i_size)));
+		ALERT (("Ext2-FS [%c]: e_readlink: bad inode (#%li -> %li != %li)", DriveToLetter(inode->dev), inode->inode, i, le2cpu32 (inode->in.i_size)));
 	}
 	i++;
 # endif
@@ -1822,7 +1822,7 @@ e_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char *
 	long err;
 
 
-	DEBUG (("Ext2-FS [%c]: e_hardlink enter (%s -> %s)", fromdir->dev+'A', fromname, toname));
+	DEBUG (("Ext2-FS [%c]: e_hardlink enter (%s -> %s)", DriveToLetter(fromdir->dev), fromname, toname));
 
 	if (fromdirc->s->s_flags & MS_RDONLY)
 		return EROFS;
@@ -1913,7 +1913,7 @@ out:
 
 	bio_SYNC_DRV (&bio, fromdirc->s->di);
 
-	DEBUG (("Ext2-FS [%c]: e_hardlink: leave (%li)", fromdir->dev+'A', err));
+	DEBUG (("Ext2-FS [%c]: e_hardlink: leave (%li)", DriveToLetter(fromdir->dev), err));
 	return err;
 }
 
@@ -1922,7 +1922,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
 	SI *s = super [dir->dev];
 
-	DEBUG (("Ext2-FS [%c]: e_fscntl (cmd = %i)", dir->dev+'A', cmd));
+	DEBUG (("Ext2-FS [%c]: e_fscntl (cmd = %i)", DriveToLetter(dir->dev), cmd));
 
 	switch (cmd)
 	{
@@ -1982,7 +1982,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				bio.sync_drv (s->di);
 
 				s->s_flags |= MS_RDONLY;
-				ALERT (("Ext2-FS [%c]: remounted read-only!", dir->dev+'A'));
+				ALERT (("Ext2-FS [%c]: remounted read-only!", DriveToLetter(dir->dev)));
 
 				r = E_OK;
 			}
@@ -1994,7 +1994,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				bio.sync_drv (s->di);
 
 				s->s_flags &= ~MS_RDONLY;
-				ALERT (("Ext2-FS [%c]: remounted read/write!", dir->dev+'A'));
+				ALERT (("Ext2-FS [%c]: remounted read/write!", DriveToLetter(dir->dev)));
 
 				r = E_OK;
 			}
@@ -2021,7 +2021,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				c = (COOKIE *) fc.index;
 			}
 
-			DEBUG (("Ext2-FS [%c]: e_fscntl (FUTIME%s) on #%li", c->dev+'A', ((cmd == FUTIME) ? "" : "_UTC"), c->inode));
+			DEBUG (("Ext2-FS [%c]: e_fscntl (FUTIME%s) on #%li", DriveToLetter(c->dev), ((cmd == FUTIME) ? "" : "_UTC"), c->inode));
 
 			/* only the owner or super-user can touch
 			 */
@@ -2084,7 +2084,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				c = (COOKIE *) fc.index;
 			}
 
-			DEBUG (("Ext2-FS [%c]: e_fscntl (FTRUNCATE) on #%li", c->dev+'A', c->inode));
+			DEBUG (("Ext2-FS [%c]: e_fscntl (FTRUNCATE) on #%li", DriveToLetter(c->dev), c->inode));
 
 			if (s->s_flags & MS_RDONLY)
 			{
@@ -2144,11 +2144,11 @@ e_dskchng (int drv, int mode)
 	if (change == 0)
 	{
 		/* no change */
-		DEBUG (("Ext2-FS [%c]: e_dskchng (mode = %i): leave no change", drv+'A', mode));
+		DEBUG (("Ext2-FS [%c]: e_dskchng (mode = %i): leave no change", DriveToLetter(drv), mode));
 		return change;
 	}
 
-	DEBUG (("Ext2-FS [%c]: e_dskchng (mode = %i): invalidate drv (change = %li, memory = %li)", drv+'A', mode, change, memory));
+	DEBUG (("Ext2-FS [%c]: e_dskchng (mode = %i): invalidate drv (change = %li, memory = %li)", DriveToLetter(drv), mode, change, memory));
 
 	/* free the DI (invalidate also the cache units) */
 	bio.free_di (s->di);
@@ -2174,7 +2174,7 @@ e_release (fcookie *fc)
 {
 	register COOKIE *c = (COOKIE *) fc->index;
 
-	DEBUG (("Ext2-FS [%c]: e_release: #%li : %li", fc->dev+'A', c->inode, c->links));
+	DEBUG (("Ext2-FS [%c]: e_release: #%li : %li", DriveToLetter(fc->dev), c->inode, c->links));
 
 	rel_cookie (c);
 

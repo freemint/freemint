@@ -16,7 +16,7 @@ crwabs (int rw, void *buf, unsigned int num, long int recno, int dev)
 
 	if (!super_ptr[dev])
 	{
-		ALERT("Minixfs: attempted I/O with illegal Drive %c:", dev+'A');
+		ALERT("Minixfs: attempted I/O with illegal Drive %c:", DriveToLetter(dev);
 		ALERT("Minixfs: please submit a bug report!");
 		return;
 	}
@@ -30,7 +30,7 @@ crwabs (int rw, void *buf, unsigned int num, long int recno, int dev)
 	r = block_rwabs (rw, buf, num, recno, &disk[dev]);
 
 	if (r)
-		ALERT ("minixfs: Rwabs returned %ld sector %ld drive %c:", r, recno, dev+'A');
+		ALERT ("minixfs: Rwabs returned %ld sector %ld drive %c:", r, recno, DriveToLetter(dev));
 
 	return;
 }

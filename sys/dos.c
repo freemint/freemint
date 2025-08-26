@@ -715,12 +715,12 @@ shutdown(void)
 		{
 			if (fs->fsflags & FS_EXT_1)
 			{
-				FORCE("Unmounting %c: ...", 'A'+i);
+				FORCE("Unmounting %c: ...", DriveToLetter(i));
 				xfs_unmount(fs, i);
 			}
 			else
 			{
-				DEBUG(("Invalidate %c: ...", 'A'+i));
+				DEBUG(("Invalidate %c: ...", DriveToLetter(i)));
 				xfs_dskchng(fs, i, 1);
 			}
 		}

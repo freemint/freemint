@@ -48,8 +48,6 @@ union genarg
 	char *c;
 };
 
-char const drv_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
-
 
 /*============================================================================*/
 /* The parser itself and its functions ...
@@ -279,12 +277,9 @@ static union genarg parse_drvlst(struct parsinf *inf)
 
 	while (*(inf->src))
 	{
-		long drv = strchr(drv_list, toupper((unsigned char) *(inf->src))) - drv_list;
+		int drv = DriveFromLetter(*(inf->src));
 
 		if (drv < 0)
-			break;
-
-		if (drv >= NUM_DRIVES)
 		{
 			ret._err = ARG_RANG;
 			break;

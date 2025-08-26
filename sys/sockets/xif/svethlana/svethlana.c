@@ -58,6 +58,8 @@
 #include <mint/osbind.h>
 #define ct60_vmalloc(mode,value) (unsigned long)trap_14_wwl((short)(0xc60e),(short)(mode),(unsigned long)(value))
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+
 /*
  * From main.c
  */
@@ -717,7 +719,7 @@ driver_init (void)
 	if((ferror = Fopen("svethlan.inf",0)) < 0) { /* Try first in sysdir */
 		short sysdrv = *((short *) 0x446);	/* get the boot drive number */
 		char svethlan_inf[] = "A:\\SVETHLAN.INF";
-		svethlan_inf[0] = 'A' + sysdrv;
+		svethlan_inf[0] = DriveToLetter(sysdrv);
 
 		ferror = Fopen(svethlan_inf,0);/* otherwise in boot drive's root */
 	}

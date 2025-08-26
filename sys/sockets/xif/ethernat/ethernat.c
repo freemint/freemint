@@ -60,6 +60,8 @@
 
 #include <mint/osbind.h>
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+
 // Define the 91c111 hardware registers
 
 pVUWORD const LAN_BANK = (pVUWORD) LANADDR_BANK;
@@ -739,7 +741,7 @@ driver_init (void)
 	if((ferror = Fopen("ethernat.inf",0)) < 0) { /* Try first in sysdir */
 		short sysdrv = *((short *) 0x446);	/* get the boot drive number */
 		char ethernat_inf[] = "A:\\ETHERNAT.INF";
-		ethernat_inf[0] = 'A' + sysdrv;
+		ethernat_inf[0] = DriveToLetter(sysdrv);
 
 		ferror = Fopen(ethernat_inf,0);/* otherwise in boot drive's root */
 	}

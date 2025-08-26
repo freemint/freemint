@@ -115,6 +115,12 @@ write_blocks (ulong rec, ushort count, void *buff)
 # define MFS_MAGIC	(0x18970431)	/* Magic number from MFS_VERIFY */
 
 
+#define DriveFromLetter(d) \
+	(((d) >= 'A' && (d) <= 'Z') ? ((d) - 'A') : \
+	 ((d) >= 'a' && (d) <= 'z') ? ((d) - 'a') : \
+	 ((d) >= '1' && (d) <= '6') ? ((d) - '1' + 26) : \
+	 -1)
+
 int
 init_device (char *name, int rw)
 {
@@ -125,7 +131,7 @@ init_device (char *name, int rw)
 	
 	/* calc and validate drv number
 	 */
-	drv = (name [0] - 'A') & ~32;
+	drv = DriveFromLetter(name[0]);
 	if (drv > 31)
 	{
 		fprintf (stderr, "Invalid drive name %s\n", name);

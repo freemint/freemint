@@ -73,6 +73,8 @@ char *DRIVER_NAME = "FreeMiNT USB";
 #endif
 char *DRIVER_COMPANY = "FreeMiNT list";
 
+#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+
 /*--- External variables ---*/
 
 extern char *drv_version;
@@ -337,7 +339,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	BPB *myBPB;
 
 	DEBUG(("XHInqDev2(%c:) drv=%d pun %x",
-		'A' + drv, drv, pun_usb.pun[drv]));
+		DriveToLetter(drv), drv, pun_usb.pun[drv]));
 
 	if (next_handler) {
 		long ret = next_handler(XHINQDEV2, drv, major, minor, start,
@@ -393,7 +395,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	if (blocks) {
 		*blocks = pun_usb.psize[drv];
 		DEBUG(("XHInqDev2(%c:) blocks=%ld",
-			'A' + drv, *blocks));
+			DriveToLetter(drv), *blocks));
 	}
 
 	if (partid) {
@@ -401,11 +403,11 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 
 		if (partid[0] == '\0') /* DOS partitiopn */
 			DEBUG(("XHInqDev2(%c:) major=%d, partid=%08lx, type=0x%lx",
-				'A' + drv, *major, *((long *)partid),
+				DriveToLetter(drv), *major, *((long *)partid),
 				pun_usb.ptype[drv]));
 		else
 			DEBUG(("XHInqDev2(%c:) major=%d, ID=%c%c%c",
-				'A' + drv, *major, partid[0], partid[1],
+				DriveToLetter(drv), *major, partid[0], partid[1],
 				partid[2]));
 	}
 
