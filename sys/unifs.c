@@ -38,6 +38,7 @@
 # include "procfs.h"
 # include "ramfs.h"
 # include "shmfs.h"
+# include "fatfs.h"
 
 # include "proc.h"
 
@@ -1058,6 +1059,21 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			}
 			return E_OK;
 		}
+		case VFAT_CNFDFLN:
+			{
+				FILESYS *fs;
+
+				for (fs = active_fs; fs; fs = fs->next)
+					if (fs == &fatfs_filesys)
+					{
+						fc.dev = 0;
+						fc.fs = fs;
+						fc.index = 0;
+						fc.aux = 0;
+						return fs->fscntl(&fc, NULL, cmd, arg);
+					}
+			}
+			break;
 		default:
 		{
 			/* see if we should just pass this along to another file system */

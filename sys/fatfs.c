@@ -7435,20 +7435,28 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		}
 		case VFAT_CNFDFLN:
 		{
-			long drv = 1;
-			long i;
+			long drv;
+			long old;
+			int i;
 
-			for (i = 0; i < NUM_DRIVES; i++)
+			old = 0;
+			for (i = 0, drv = 1; i < NUM_DRIVES; i++, drv <<= 1)
 			{
-				if (arg & drv)
-					VFAT (i) = ENABLE;
-				else
-					VFAT (i) = DISABLE;
-
-				drv <<= 1;
+				if (VFAT(i))
+					old |= drv;
 			}
-
-			return E_OK;
+			if (arg != ASK)
+			{
+				for (i = 0, drv = 1; i < NUM_DRIVES; i++, drv <<= 1)
+				{
+					/*
+					 * Note: no check for valid FAT fs here,
+					 * we must be able to set this even before it is mounted
+					 */
+					fatfs_config(i, FATFS_VFAT, (arg & drv) ? ENABLE : DISABLE);
+				}
+			}
+			return old;
 		}
 		case VFAT_CNFLN:
 		{
