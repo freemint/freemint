@@ -27,8 +27,6 @@
 
 #include "global.h"
 
-extern short my_global_aes[];
-
 extern long loader_pid;
 extern long loader_pgrp;
 
