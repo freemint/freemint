@@ -59,9 +59,6 @@
 #include "taskman.h"
 #include "widgets.h"
 #include "xa_appl.h"
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
 #include "xa_form.h"
 #include "xa_graf.h"
 #include "xa_menu.h"
@@ -1074,9 +1071,6 @@ screen_dump(int lock, struct xa_client *client, short open)
 
 			do_form_alert(lock, client, 4, xa_strings(SDALERT), XAAESNAME);
 			Block(client);
-#if WITH_BBL_HELP
-			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
-#endif
 
 			if (a->intout[0] == 1)
 			{
@@ -1233,9 +1227,6 @@ screen_dump(int lock, struct xa_client *client, short open)
 				client->waiting_for = XAWAIT_MULTI|MU_MESAG;
 				client->waiting_pb = a;
 			}
-#if WITH_BBL_HELP
-			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
-#endif
 			showm();
 		}
 	}

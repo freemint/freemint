@@ -50,9 +50,6 @@
 #include "xa_menu.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
@@ -1054,20 +1051,6 @@ k_init(unsigned short dev, unsigned short mc)
 		if( cfg.menu_bar )
 			open_window(0, menu_window, r);
 	}
-#if WITH_BBL_HELP
-	if( cfg.xa_bubble || cfg.menu_bar != 2 )
-	{
-		GRECT r = {0,0,420,420};
-		bool nolist = false;
-
-		bgem_window = create_window(0, 0, 0, client, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, &r, 0,0);
-		if( !bgem_window )
-			return -1;
-		strcpy( bgem_window->wname, "bgem" );
-		bgem_window->x_shadow = bgem_window->y_shadow = 0;
-		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
-	}
-#endif
 
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);

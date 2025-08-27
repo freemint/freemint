@@ -52,9 +52,6 @@
 #include "trnfm.h"
 #include "render_obj.h"
 #include "keycodes.h"
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
@@ -475,12 +472,6 @@ kernel_key(int lock, struct rawkey *key)
 				key->raw.conin.state &= ~(K_RSHIFT|K_LSHIFT);
 		}
 
-#if WITH_BBL_HELP
-		if( nk != 'D' )	/* allow screenshot */
-		{
-			xa_bubble( lock, bbl_close_bubble2, 0, 0 );
-		}
-#endif
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
@@ -991,9 +982,6 @@ keyboard_input(int lock)
 
 		if (kernel_key(lock, &key) == false )
 		{
-#if WITH_BBL_HELP
-			xa_bubble( lock, bbl_close_bubble2, 0, 0 );
-#endif
 			XA_keyboard_event(lock, &key);
 		}
 #if EIFFEL_SUPPORT

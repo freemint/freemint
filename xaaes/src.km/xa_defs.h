@@ -102,11 +102,6 @@
 #endif
 #define BKGIMG_EXT "mfd"
 
-/* enable builtin bubble-gem */
-#ifndef WITH_BBL_HELP
-#define WITH_BBL_HELP 1
-#endif
-
 #define PRESERVE_DIALOG_BGD	0	/* Preserve the background of dialogs */
 
 #define FILESELECTOR		1	/* Build a XaAES with fileselector */

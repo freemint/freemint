@@ -122,8 +122,5 @@ INLINE void ping(void) { b_ubconout(2, 7); }
 extern short my_global_aes[GL_AES_SZ];
 
 extern struct xa_window *root_window, *menu_window;
-#if WITH_BBL_HELP
-extern struct xa_window *bgem_window;
-#endif
 
 #endif /* _global_h */
