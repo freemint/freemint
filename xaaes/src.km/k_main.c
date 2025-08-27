@@ -73,9 +73,6 @@
 #include "xa_graf.h"	//graf_mouse
 #include "xa_rsrc.h"
 #include "xa_shel.h"
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
@@ -977,8 +974,7 @@ display_alert(struct proc *p, long arg)
 
 typedef void XA_CONF (void *p);
 
-void show_bubble( void *str );
-static XA_CONF *xa_config[] = {load_grd, show_bubble, load_config};
+static XA_CONF *xa_config[] = {load_grd, load_config};
 #if ALERTTIME
 #define ALERTPL	10
 #else
@@ -1589,23 +1585,6 @@ void set_tty_mode( short md )
 #endif
 }
 
-void show_bubble( void *str )
-{
-#if WITH_BBL_HELP
-	union msg_buf msg;
-	short br, xr, yr;
-	check_mouse( C.Aes, &br, &xr, &yr );
-	msg.m[0] = BUBBLEGEM_SHOW;
-	msg.m[1] = C.AESpid;
-	msg.m[2] = 0;
-	msg.m[3] = xr;
-	msg.m[4] = yr;
-	msg.sb.p56 = str;
-	msg.m[7] = 0;
-	xa_bubble( 0, bbl_process_event, &msg, C.AESpid );
-#endif
-}
-
 void load_grd( void *fn )
 {
 #if WITH_GRADIENTS
@@ -2119,10 +2098,6 @@ k_exit(int wait)
 	{
 		delete_cookie( (void**)&c_naes, C_nAES, 1 );
 	}
-#if WITH_BBL_HELP
-	if( cfg.xa_bubble )
-		xa_bubble( 0, bbl_disable_and_free, 0, 0 );
-#endif
 	/*
 	 * deinstall trap #2 handler
 	 */

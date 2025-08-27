@@ -45,7 +45,6 @@ HEADER = \
 	win_draw.h \
 	xa_aes.h \
 	xa_appl.h \
-	xa_bubble.h \
 	xa_defs.h \
 	xa_evnt.h \
 	xa_fnts.h \
@@ -110,7 +109,6 @@ COBJS = \
 	widgets.c \
 	win_draw.c \
 	xa_appl.c \
-	xa_bubble.c \
 	xa_evnt.c \
 	xa_fnts.c \
 	xa_form.c \

@@ -44,9 +44,6 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
 #include "mint/signal.h"
@@ -916,32 +913,6 @@ static TIMEOUT *b_to = NULL;
 static TIMEOUT *m_to = NULL;
 static TIMEOUT *m_rto = NULL;
 
-#if WITH_BBL_HELP
-
-static TIMEOUT *ms_to = NULL;
-static short bbl_cnt = 0;
-static long bbl_to = BBL_MIN_TO;
-static void
-m_not_move_timeout(struct proc *p, long arg)
-{
-	BBL_STATUS b = xa_bubble( 0, bbl_get_status, 0, 3 );
-	struct xa_window *wind;
-
-	ms_to = NULL;
-	if( bbl_cnt == 0 )
-		bbl_cnt = 1;
-	if( bbl_to > BBL_MIN_TO )
-		bbl_to -= BBL_MIN_TO;
-	if( b == bs_open || --bbl_cnt )
-		return;
-
-	wind = find_window( 0, last_x, last_y, FNDW_NOLIST | FNDW_NORMAL );
-	if( wind && wind->owner && wind->owner->p)
-	{
-		bubble_request( wind->owner->p->pid, wind->handle, x_mouse, y_mouse );
-	}
-}
-#endif
 static void move_timeout(struct proc *, long arg);
 
 /*
@@ -1012,10 +983,7 @@ move_timeout(struct proc *p, long arg)
 		/*
 		 * Did mouse move since last time?
 		*/
-		if (last_x == x_mouse && last_y == y_mouse)
-		{
-		}
-		else
+		if (last_x != x_mouse || last_y != y_mouse)
 		{
 			last_x = x_mouse;
 			last_y = y_mouse;
@@ -1082,29 +1050,8 @@ move_timeout(struct proc *p, long arg)
 				}
 			}
 		}
-
 	}
 }
-#if WITH_BBL_HELP
-static void new_bbl_timeout(unsigned long to)
-{
-	BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 2 );
-	if( s == bs_open )
-	{
-		post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_CLOSE1, 0, NULL, NULL);
-	}
-
-	if (cfg.xa_bubble)
-	{
-		if (ms_to)
-		{
-			cancelroottimeout(ms_to);
-			ms_to = NULL;
-		}
-		ms_to = addroottimeout(to, m_not_move_timeout, 1);
-	}
-}
-#endif
 /*
  * adi_move() AES Device Interface entry point,
  * taken whenever mouse moves.
@@ -1137,9 +1084,6 @@ adi_move(struct adif *a, short x, short y)
 		if (!m_to)
 			m_to = addroottimeout(0L, move_timeout, 1);
 	}
-#if WITH_BBL_HELP
-	new_bbl_timeout(bbl_to);
-#endif
 }
 
 /*
@@ -1192,17 +1136,6 @@ button_timeout(struct proc *p, long arg)
 			DIAGA(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks.chars[0], md.iclicks.chars[1], sizeof(struct moose_data) ));
-#if WITH_BBL_HELP
-			if( xa_bubble( 0, bbl_get_status, 0, 11 ) == bs_open )
-			{
-				if( md.state == 1 )
-					xa_bubble( 0, bbl_close_bubble2, 0, 0 );	/* left click: bubble off */
-				bubble_show( 0 );	/* any click: close widget-bubble */
-			}
-			bbl_cnt = 2;
-			if( bbl_to < BBL_MAX_TO )
-				bbl_to += BBL_MIN_TO;
-#endif
 			vq_key_s(C.P_handle, &md.kstate);
 
 			new_moose_pkt(0, 0, &md);

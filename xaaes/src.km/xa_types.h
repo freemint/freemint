@@ -2712,10 +2712,6 @@ struct config
 					/* 1 = Keep client whose last window was closed infront. */
 #endif
 
-#if WITH_BBL_HELP
-	short xa_bubble;	/* use XaAES for bubble-help: 1: tooltip-style, 2: ballon-style */
-	short describe_widgets;	/* display widget-name/function */
-#endif
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
 	bool leave_top_border;	/* windows may be moved higher than top of screen */
