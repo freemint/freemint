@@ -585,10 +585,10 @@ foundtimer:
 #define _SC_CLK_TCK	5	/* clock ticks */
 #define _SC_PAGE_SIZE	6	/* pagesize */
 #define _SC_PAGESIZE	_SC_PAGE_SIZE	
-#define _SC_PHYS_PAGES	7	/* physical pages */
+#define _SC_AVPHYS_PAGES	7	/* available physical pages */
 #define _SC_GETPW_R_SIZE_MAX	8 /* passwd buffer size */
 #define _SC_GETGR_R_SIZE_MAX	9 /* group buffer size */
-#define _SC_AVPHYS_PAGES	10	/* available physical pages */
+#define _SC_PHYS_PAGES	10	/* physical pages */
 
 long _cdecl
 sys_s_ysconf (int which)
@@ -603,10 +603,10 @@ sys_s_ysconf (int which)
 		case  _SC_CHILD_MAX:	return UNLIMITED;
 		case  _SC_CLK_TCK:	return HZ;
 		case  _SC_PAGE_SIZE:	return PAGESIZE;
-		case  _SC_PHYS_PAGES:	return totalphysmem() / PAGESIZE;
+		case  _SC_AVPHYS_PAGES:	return freephysmem() / PAGESIZE;
 		case  _SC_GETPW_R_SIZE_MAX:	return 1024;
 		case  _SC_GETGR_R_SIZE_MAX:	return 1024;
-		case  _SC_AVPHYS_PAGES:	return freephysmem() / PAGESIZE;		
+		case  _SC_PHYS_PAGES:	return totalphysmem() / PAGESIZE;
 		default:	return ENOSYS;
 	}
 }
