@@ -98,10 +98,6 @@ static struct parser_item parser_tab[] =
 	{ "USEHOME",               PI_R_B,   & cfg.usehome		},
 	{ "NAES_COOKIE",           PI_R_B,   & cfg.naes_cookie		},
 	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},
-#if WITH_BBL_HELP
-	{ "XA_BUBBLE",	           PI_R_S,   & cfg.xa_bubble},
-	{ "DESCRIBE_WIDGETS",      PI_R_S,   & cfg.describe_widgets},
-#endif
 	{ "LRMB_SWAP",	           PI_R_B,   & cfg.lrmb_swap		},
 	{ "WIDGET_AUTO_HIGHLIGHT", PI_R_B,   & cfg.widg_auto_highlight	},
 	{ "LEAVE_TOP_BORDER",      PI_R_B,   & cfg.leave_top_border},
