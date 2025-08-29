@@ -124,6 +124,9 @@ int main(int argc, char *argv[])
 
 	if (d >= 0 )
 	{
+#ifdef PROC_0_1_FIX
+		int found_0 = false, found_1 = false;
+#endif
 		char procfullname[22];
 		char procname[14];
 
@@ -139,7 +142,15 @@ int main(int argc, char *argv[])
 			struct ploadinfo pl = { 127, cmd, name };
 
 #ifdef PROC_0_1_FIX
-			/* Workaround for hidden proc 0 & 1 in /proc */
+			/*
+			 * Workaround for hidden proc 0 & 1 in /proc:
+			 * - old kernels had a bug that caused Dreaddir only to return
+			 *   the process list, but no "." or ".." entries
+			 * - kernels from around 2020-2025 had a bug that returned those
+			 *   entries, but skipped the first 2 processes instead
+			 * - in recent kernels, Dreaddir() returns all entries,
+			 *   including "." and ".."
+			 */
 			if (!strcmp(procname, "."))
 				strcpy(procname, "MiNT.000");
 
@@ -157,7 +168,7 @@ int main(int argc, char *argv[])
 				return error(f, "Could not open %s: %d.\n", procfullname, f);
 
 			if ((err = Fcntl(f, &pcbptr, 0x5001)) < 0) /* PPROCADDR */
-				return error(err, "Fcntl failed: %d\n", err);
+				return error(err, "Fcntl %s failed: %d\n", procname, err);
 
 			if (Fseek((long) pcbptr, f, 0) < 0)
 				return error(0, "Fseek failed.\n");
@@ -199,6 +210,9 @@ int main(int argc, char *argv[])
 
 			state = state_name(attr.st_attr == 0 ? 0xff : attr.st_attr);
 
+#ifdef PROC_0_1_FIX
+			if ( !((pcb.pid == 0 && found_0) || (pcb.pid == 1 && found_1)) )
+#endif
 			{
 				long time, hour, min, sec, frac;
 				
@@ -207,6 +221,14 @@ int main(int argc, char *argv[])
 				min  = (time / 1000 / 60) % 60;
 				sec  = (time / 1000) % 60;
 				frac = (time % 1000) / 10;
+
+#ifdef PROC_0_1_FIX
+				if (pcb.pid == 0)
+					found_0 = true;
+				
+				if (pcb.pid == 1)
+					found_1 = true;
+#endif
 
 				if (hour)
 				{
