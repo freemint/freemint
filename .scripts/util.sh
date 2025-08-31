@@ -377,6 +377,7 @@ copy_sysroot() {
 	cp "$SRC/tools/strace/.compile_$TARGET/strace" "$SYSROOT/bin/strace"
 	cp "$SRC/tools/swkbdtbl/.compile_$TARGET/swkbdtbl" "$SYSROOT/bin/swkbdtbl"
 	cp "$SRC/tools/sysctl/.compile_$TARGET/sysctl" "$SYSROOT/bin/sysctl"
+	cp "$SRC/tools/ps/.compile_$TARGET/ps" "$SYSROOT/bin/ps"
 }
 
 copy_guides() {
