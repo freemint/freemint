@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
 			struct PCB *pcbptr, pcb;
 			static char cmd[128], name[128];
 			struct ploadinfo pl = { 127, cmd, name };
+			char *c;
 
 #ifdef PROC_0_1_FIX
 			/*
@@ -188,7 +189,7 @@ int main(int argc, char *argv[])
 				/* Workaround for hidden proc 0 & 1 in /proc */
 				if (*procname == '.')
 				{
-					char *c = strrchr(pl.fname, '\\');
+					c = strrchr(pl.fname, '\\');
 					
 					if (!c)
 						c = strrchr(pl.fname, '/');
@@ -201,12 +202,27 @@ int main(int argc, char *argv[])
 					strncpy(procname, c, 13);
 				}
 #endif	
-				if (strchr(procname, '.'))
-					*strchr(procname, '.') = '\0';
 			}
+			if ((c = strchr(procname, '.')) != NULL)
+				*c = '\0';
 
-			if (!strcmp(pl.cmdlin, pl.fname)) /* Workaround for kernel-threads */
+			/* Workaround for kernel-threads */
+			if (!strcmp(pl.cmdlin, pl.fname))
 				pl.cmdlin[1] = '\0';
+
+			/*
+			 * Workaround for SLBs, which have their filename at the first byte of the cmdline
+			 * and also return the name of the loading application in the filename
+			 */
+			if (!(pl.cmdlin[0] >= 'A' && pl.cmdlin[0] <= 'Z' && pl.cmdlin[1] == ':'))
+			{
+				strcpy(pl.cmdlin, pl.cmdlin + 1);
+			} else
+			{
+				if (fullpath)
+					strcpy(pl.fname, pl.cmdlin);
+				pl.cmdlin[0] = '\0';
+			}
 
 			state = state_name(attr.st_attr == 0 ? 0xff : attr.st_attr);
 
@@ -247,7 +263,7 @@ int main(int argc, char *argv[])
 						attr.st_size,
 						(int) min, (int) sec, (int) frac,
 						fullpath ? pl.fname : procname,
-						&pl.cmdlin[1]
+						pl.cmdlin
 					);
 				}
 			}
