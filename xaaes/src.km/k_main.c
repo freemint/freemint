@@ -750,12 +750,6 @@ struct display_alert_data
 
 static void display_alert(struct proc *p, long arg);
 
-static unsigned short alert_masks[] =
-{
-	0x0001, 0x0002, 0x0004, 0x0008,
-	0x0010, 0x0020, 0x0040, 0x0080
-};
-
 /*
  * replace all occurences of in by out in s
  * replace string of rep1 by one rep1
@@ -855,12 +849,12 @@ CE_fa(int lock, struct c_event *ce, short cancel)
 				{
 					if( wind )
 						icon = form + SALERT_IC1 + c - 1;	/* numbers for SALERT_IC? are consecutive */
-					amask = alert_masks[c];
+					amask = 1 << c;
 				}
 				else
 				{
 					//icon = NULL;
-					amask = alert_masks[0];
+					amask = 1;
 				}
 			if (wind)
 			{
@@ -1773,24 +1767,39 @@ k_main(void *dummy)
 	 * Initialization I/O
 	 */
 
-	/* Open the MiNT Salert() pipe to be polite about system errors */
-	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
-	if (C.alert_pipe < 0)
+	/*
+	 * if all alerts are suppressed, do not open the alert_pipe at all
+	 */
+	if (cfg.alert_winds != 0)
 	{
-		display(/*00000014*/"ERROR: Can't open alert pipe '%s' :: %ld",
-			alert_pipe_name, C.alert_pipe);
-
-		ferr = 1;
-		goto leave;
+		/* Open the MiNT Salert() pipe to be polite about system errors */
+		C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
+		if (C.alert_pipe < 0 || C.alert_pipe >= 32) /* we need to use f_select on it */
+		{
+			display(/*00000014*/"ERROR: Can't open alert pipe '%s' :: %ld",
+				alert_pipe_name, C.alert_pipe);
+	
+			if (C.alert_pipe >= 0)
+				f_close(C.alert_pipe);
+			C.alert_pipe = -1;
+			ferr = 1;
+			goto leave;
+		}
+	} else
+	{
+		C.alert_pipe = -1;
 	}
 
 	/* Open the u:/dev/console device to get keyboard input */
 	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY);
-	if (C.KBD_dev < 0)
+	if (C.KBD_dev < 0 || C.KBD_dev >= 32) /* we need to use f_select on it */
 	{
 		display(/*00000015*/"ERROR: Can't open keyboard device '%s' :: %ld",
 			KBD_dev_name, C.KBD_dev);
 
+		if (C.KBD_dev >= 0)
+			f_close(C.KBD_dev);
+		C.KBD_dev = -1;
 		ferr = 2;
 		goto leave;
 	}
@@ -1877,7 +1886,8 @@ k_main(void *dummy)
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	default_input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
-	default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
+	if (C.alert_pipe >= 0)
+		default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 	tty = (struct tty *)C.Aes->p->p_fd->ofiles[C.KBD_dev]->devinfo;
 
 	if( pferr )
@@ -1952,7 +1962,7 @@ k_main(void *dummy)
 				keyboard_input(lock);
 			}
 
-			if (input_channels & (1UL << C.alert_pipe))
+			if (C.alert_pipe >= 0 && (input_channels & (1UL << C.alert_pipe)))
 			{
 				alert_input(lock);
 			}
@@ -2154,19 +2164,21 @@ k_exit(int wait)
 	 */
 	if( cfg.keyboards.c )
 		switch_keyboard( "keyboard" );
-	if (C.alert_pipe > 0)
+	if (C.alert_pipe >= 0)
 	{
 		f_close(C.alert_pipe);
+		C.alert_pipe = -1;
 	}
 	BLOG((1,"wake loader: %lx;shutdown=%x", (long)&loader_pid, C.shutdown));
 	wake(WAIT_Q, (long)&loader_pid);
 
 	/* XXX todo -> module_exit */
 
-	if (C.KBD_dev > 0)
+	if (C.KBD_dev >= 0)
 	{
 		f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		f_close(C.KBD_dev);
+		C.KBD_dev = -1;
 	}
 
 	/* reset single-flags in case of previous fault */
