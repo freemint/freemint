@@ -165,10 +165,6 @@ ndisplay(const char *fmt, ...)
 
 #define PRFUSETRAP	1
 #if PRFUSETRAP
-#ifdef trap_14_w
-#undef trap_14_w	/* "redefined" warning */
-#endif
-
 #include <mintbind.h>	/* Tgettimeofday */
 #else
 #define Tgettimeofday	_t_gettimeofday

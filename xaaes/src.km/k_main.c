@@ -32,9 +32,6 @@
 
 /* add time to alerts in syslog */
 #if ALERTTIME
-#ifdef trap_14_w
-#undef trap_14_w	/* "redefined" warning */
-#endif
 #include <mintbind.h>	/* Tgettimeofday */
 #define MAXALERTLEN	196
 

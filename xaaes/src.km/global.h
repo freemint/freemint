@@ -118,29 +118,6 @@ typedef char Path[PATH_MAX];
 INLINE void ping(void) { b_ubconout(2, 7); }
 
 
-/* XXX move to a better place */
-#define AND_MEMORY , "memory"
-#undef trap_14_w
-#define trap_14_w(n)							\
-__extension__								\
-({									\
-	register long retvalue __asm__("d0");				\
-	    								\
-	__asm__ volatile						\
-	("\
-		movw    %1,%%sp@-; \
-		trap    #14;	\
-		addql   #2,%%sp "						\
-	: "=r"(retvalue)			/* outputs */		\
-	: "g"(n)				/* inputs  */		\
-	: __CLOBBER_RETURN("d0")					\
-	  "d1", "d2", "a0", "a1", "a2"		/* clobbered regs */	\
-	  AND_MEMORY							\
-	);								\
-	retvalue;							\
-})
-
-#define xbios_getrez()	(short)trap_14_w((short)(0x04))
 #define GL_AES_SZ	16
 extern short my_global_aes[GL_AES_SZ];
 

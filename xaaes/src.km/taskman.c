@@ -1731,10 +1731,6 @@ static void make_tm_ticks( OBJECT *obtree, int ticks[] )
  *
  * return load with maximum 234
  */
-#ifdef trap_14_w
-#undef trap_14_w	/* "redefined" warning */
-#endif
-
 #include <mintbind.h>	/* Tgettimeofday */
 
 static long calc_new_ld(struct proc *rootproc)
