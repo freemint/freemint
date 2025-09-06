@@ -63,14 +63,22 @@ static char *state_name(char state)
 {
 	static char *state_names[] = {
 		"Run   ", "Ready ", "Wait  ", "I/O   ", "Zombie", "TSR   ", "Stop  " };
-	static char states[] = { 0xff, 0x01, 0x20, 0x21, 0x22, 0x02, 0x24 };
+	static char states[] = {
+		0,
+		0x01, /* FA_RDONLY */
+		0x20, /* FA_CHANGED */
+		0x21, /* FA_CHANGED | FA_RDONLY */
+		0x22, /* FA_CHANGED | FA_HIDDEN */
+		0x02, /* FA_HIDDEN */
+		0x24  /* FA_CHANGED | FA_SYSTEM */
+	};
 	int i;
 	
 	for (i = 0; i < 7; i++)
 		if (states[i] == state)
 			return state_names[i];
 
-	return NULL;
+	return "#ERR#";
 }
 
 /* Process Control Block - part of MiNT's proc struct */
@@ -214,6 +222,8 @@ int main(int argc, char *argv[])
 			 * Workaround for SLBs, which have their filename at the first byte of the cmdline
 			 * and also return the name of the loading application in the filename
 			 */
+			if (pl.cmdlin[0] == '\0' && pl.cmdlin[1] == ':')
+				pl.cmdlin[1] = '\0';
 			if (!(pl.cmdlin[0] >= 'A' && pl.cmdlin[0] <= 'Z' && pl.cmdlin[1] == ':'))
 			{
 				strcpy(pl.cmdlin, pl.cmdlin + 1);
@@ -224,19 +234,21 @@ int main(int argc, char *argv[])
 				pl.cmdlin[0] = '\0';
 			}
 
-			state = state_name(attr.st_attr == 0 ? 0xff : attr.st_attr);
+			state = state_name(attr.st_attr);
 
 #ifdef PROC_0_1_FIX
 			if ( !((pcb.pid == 0 && found_0) || (pcb.pid == 1 && found_1)) )
 #endif
 			{
-				long time, hour, min, sec, frac;
-				
+				long time;
+				int hour, min, sec, frac;
+				char sep;
+
 				time = pcb.systime + pcb.usrtime;
-				hour = (time / 1000 / 60 / 60);
-				min  = (time / 1000 / 60) % 60;
-				sec  = (time / 1000) % 60;
-				frac = (time % 1000) / 10;
+				hour = (int)((time / 1000 / 60 / 60));
+				min  = (int)((time / 1000 / 60) % 60);
+				sec  = (int)((time / 1000) % 60);
+				frac = (int)((time % 1000) / 10);
 
 #ifdef PROC_0_1_FIX
 				if (pcb.pid == 0)
@@ -246,26 +258,21 @@ int main(int argc, char *argv[])
 					found_1 = true;
 #endif
 
-				if (hour)
+				sep = ':';
+				if (hour == 0)
 				{
-					printf("%03d  %03d %3d   %3d   %s %8ld %02d:%02d:%02d  %s %s\n",
-						pcb.pid, pcb.ppid, pcb.pri, pcb.curpri, state ? state : "#ERR#",
-						attr.st_size,
-						(int) hour, (int) min, (int) sec,
-						fullpath ? pl.fname : procname,
-						&pl.cmdlin[1]
-					);
+					hour = min;
+					min = sec;
+					sec = frac;
+					sep = '.';
 				}
-				else
-				{
-					printf("%03d  %03d %3d   %3d   %s %8ld %02d:%02d.%02d  %s %s\n",
-						pcb.pid, pcb.ppid, pcb.pri, pcb.curpri, state ? state : "#ERR#",
-						attr.st_size,
-						(int) min, (int) sec, (int) frac,
-						fullpath ? pl.fname : procname,
-						pl.cmdlin
-					);
-				}
+				printf("%03d  %03d %3d   %3d   %s %8ld %02d:%02d%c%02d  %s %s\n",
+					pcb.pid, pcb.ppid, pcb.pri, pcb.curpri, state,
+					attr.st_size,
+					hour, min, sep, sec,
+					fullpath ? pl.fname : procname,
+					pl.cmdlin
+				);
 			}
 
 			Fclose(f);
