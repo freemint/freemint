@@ -677,7 +677,7 @@ shutdown(void)
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
-				if (p->wait_q && p->wait_q != READY_Q)
+				if (p->wait_q != CURPROC_Q && p->wait_q != READY_Q)
 				{
 					ushort sr = spl7();
 					rm_q(p->wait_q, p);

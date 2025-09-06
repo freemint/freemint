@@ -300,7 +300,7 @@ void
 add_q(int que, struct proc *proc)
 {
 	/* "proc" should not already be on a list */
-	assert(proc->wait_q == 0);
+	assert(proc->wait_q == CURPROC_Q);
 	assert(proc->q_next == 0);
 
 	if (sysq[que].tail) {
@@ -337,7 +337,7 @@ rm_q(int que, struct proc *proc)
 		if ((sysq[que].tail = proc->q_prev))
 			proc->q_prev->q_next = NULL;
 	}
-	proc->wait_q = 0;
+	proc->wait_q = CURPROC_Q;
 	proc->q_next = proc->q_prev = NULL;
 }
 
@@ -767,7 +767,7 @@ iwake(int que, long cond, short pid)
 			return;
 		}
 
-		if (curproc->pid == pid && !curproc->wait_q)
+		if (curproc->pid == pid && curproc->wait_q == CURPROC_Q)
 			iwakecond = cond;
 
 		spl(s);
@@ -815,13 +815,13 @@ wakeselect(struct proc *p)
  */
 
 # ifdef DEBUG_INFO
-static const char *qstring[] =
+static const char *qstring[NUM_QUEUES] =
 {
 	"run", "ready", "wait", "iowait", "zombie", "tsr", "stop", "select"
 };
 
 /* UNSAFE macro for qname, evaluates x 1, 2, or 3 times */
-# define qname(x) ((x >= 0 && x < NUM_QUEUES) ? qstring[x] : "unkn")
+# define qname(x) ((((x) + 0U) < NUM_QUEUES) ? qstring[x] : "unkn")
 # endif
 
 unsigned long uptime = 0;

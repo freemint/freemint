@@ -324,7 +324,7 @@ build_tasklist_string( int md, void *app, long pid)
 		struct proc *p;
 		/*unsigned*/ char *name, c=0, *cp;
 		long pinfo[4], utim, ptim, l;
-		static char *state_str[] = {"Cur ", "Run ", "Wait", "IO  ", "Zomb", "TSR ", "STOP", "Slct"};
+		static char *state_str[NUM_QUEUES] = {"Cur ", "Run ", "Wait", "IO  ", "Zomb", "TSR ", "STOP", "Slct"};
 
 		if( md == AES_CLIENT )
 		{

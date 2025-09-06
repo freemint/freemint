@@ -975,7 +975,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, const struct proc *p)
 	SIZEBUF *info;
 	long base;
 	ulong len = 512;
-	char state = '.';
+	char state;
 	int ttypgrp = 0;
 	struct timeval starttime;
 	ulong startcode = 0;
@@ -1014,6 +1014,9 @@ kern_procdir_get_stat (SIZEBUF **buffer, const struct proc *p)
 			break;
 		case STOP_Q:
 			state = 'T';
+			break;
+		default:
+			state = '?';
 			break;
 	}
 
