@@ -37,7 +37,7 @@ static KBDVEC oldkey;
 
 long old_term;
 long old_resval;	/* old reset validation */
-long olddrvs;		/* BIOS drive map */
+long old_drvbits;	/* BIOS drive map */
 
 
 /* table of processor frame sizes in _words_ (not used on MC68000) */
@@ -242,7 +242,7 @@ init_intr (void)
 	new_xbra_install (&old_mediach, 0x47eL, new_mediach);
 	new_xbra_install (&old_rwabs, 0x476L, new_rwabs);
 	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
-	olddrvs = *((long *) 0x4c2L);
+	old_drvbits = *((long *) 0x4c2L);
 
 	/* we'll be making GEMDOS calls */
 	enter_gemdos ();
@@ -323,7 +323,7 @@ restr_intr (void)
 	*((long *) 0x476L) = old_rwabs;
 	*((long *) 0x47eL) = old_mediach;
 	*((long *) 0x472L) = old_getbpb;
-	*((long *) 0x4c2L) = olddrvs;
+	*((long *) 0x4c2L) = old_drvbits;
 
 	spl (savesr);
 }
