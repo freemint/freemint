@@ -65,18 +65,21 @@ uchar framesizes[16] =
 
 /* New XBRA installer. The XBRA structure must be located
  * directly before the routine it belongs to.
+ * old_handler: will return the address of the previous handler for the vector
+ * vector: address of the vector to set
+ * new_handler: address of the new handler
  */
 
 void
-new_xbra_install (long *xv, long addr, long _cdecl (*func)())
+new_xbra_install (long *old_handler, long vector, long _cdecl (*new_handler)())
 {
-	*xv = *(long *)addr;
-	*(long *)addr = (long)func;
+	*old_handler = *(long *)vector;
+	*(long *)vector = (long)new_handler;
 
 	/* better to be safe... */
 # ifndef M68000
-	cpush ((long *) addr, sizeof (addr)); 
-	cpush (xv, sizeof (xv));
+	cpush ((long *) vector, sizeof (vector)); 
+	cpush (old_handler, sizeof (old_handler));
 # endif
 }
 
