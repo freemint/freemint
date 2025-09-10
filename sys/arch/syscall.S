@@ -988,7 +988,7 @@ TE_X_JMP_OLD:
 // on remote) can draw bombs on the console freely. So this is sorta
 // security patch.
 // Notice any programs those take these traps should now be loaded
-// *after* MiNT. init_intr() decides which traps to take, see there.
+// *after* MiNT. install_TOS_vectors() decides which traps to take, see there.
 
 	.globl	SYM(unused_trap)
 

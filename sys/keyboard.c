@@ -1283,8 +1283,8 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','ƒ' means that '^' followed by 'a' results
-			 * in an 'ƒ'.
+			 * So '^','a','ï¿½' means that '^' followed by 'a' results
+			 * in an 'ï¿½'.
 			 */
 			const uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
@@ -1848,7 +1848,7 @@ load_keyboard_table(const char *path, short flag)
 }
 
 /* Pre-initialize the built-in keyboard tables.
- * This must be done before init_intr()!
+ * This must be done before install_TOS_vectors()!
  */
 void
 init_keybd(void)
