@@ -1283,8 +1283,8 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','�' means that '^' followed by 'a' results
-			 * in an '�'.
+			 * So '^','a','X' means that '^' followed by 'a' results
+			 * in an 'X'.
 			 */
 			const uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
