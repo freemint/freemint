@@ -1169,7 +1169,7 @@ mint_thread(void *arg)
 	if (init_is_gem && init_prg)
 	{
 		boot_printf("init is gem and init_prg = %s\r\n", init_prg);
-		new_xbra_install(&old_exec_os, EXEC_OS, (long _cdecl (*)())new_exec_os);
+		install_vector(&old_exec_os, EXEC_OS, (long _cdecl (*)())new_exec_os);
 	}
 
 	/* run any programs appearing after us in the AUTO folder */

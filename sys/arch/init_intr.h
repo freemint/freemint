@@ -11,7 +11,7 @@
 
 extern KBDVEC *syskey;
 
-void	new_xbra_install(long *old_handler, long vector, long _cdecl (*new_handler)());
+void	install_vector(long *old_handler, long vector, long _cdecl (*new_handler)());
 
 void	init_intr	(void);
 void	restr_intr	(void);
