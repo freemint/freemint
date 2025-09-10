@@ -14,6 +14,6 @@ extern KBDVEC *syskey;
 void	install_vector(long *old_handler, long vector, long _cdecl (*new_handler)());
 
 void	init_intr	(void);
-void	restr_intr	(void);
+void	restore_TOS_vectors	(void);
 
 # endif /* _arch_init_intr_h */

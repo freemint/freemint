@@ -265,7 +265,7 @@ init_intr (void)
  */
 
 void
-restr_intr (void)
+restore_TOS_vectors (void)
 {
 	ushort savesr;
 
