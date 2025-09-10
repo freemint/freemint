@@ -159,7 +159,7 @@ hw_halt(void)
 	debug_ws(MSG_system_halted);
 	
 	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;	/* prevent conext switches */
-	restr_intr();		/* restore interrupts to normal */
+	restore_TOS_vectors();		/* restore interrupts to normal */
 	
 	for (;;)
 	{
@@ -212,7 +212,7 @@ HALT (void)
 	debug_ws(MSG_fatal_reboot);
 	
 	sysq[READY_Q].head = sysq[READY_Q].tail = NULL; /* prevent context switches */
-	restr_intr ();		/* restore interrupts to normal */
+	restore_TOS_vectors ();		/* restore interrupts to normal */
 	
 	for (;;)
 	{

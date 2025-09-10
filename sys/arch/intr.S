@@ -469,7 +469,7 @@ L_switch:
 //
 	.globl	SYM(reset)
 	.globl	SYM(old_resvec)
-	.extern	SYM(restr_intr)
+	.extern	SYM(restore_TOS_vectors)
 	.globl	SYM(reboot)
 
 	FUNC(reboot)
@@ -500,7 +500,7 @@ SYM(reset):
 #else
 	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 #endif
-	jsr	SYM(restr_intr)		// restore interrupts
+	jsr	SYM(restore_TOS_vectors)		// restore interrupts
 #ifdef __mcoldfire__
 	movem.l	(sp),d0-d2/a0-a2	// restore registers
 	lea	24(sp),sp
