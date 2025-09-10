@@ -33,7 +33,8 @@
 
 /* structures for keyboard/MIDI interrupt vectors */
 KBDVEC *syskey;
-static KBDVEC oldkey;
+static long old_kbdvec;
+static KBDVEC old_kbdvecs;
 
 long old_term;
 long old_resval;	/* old reset validation */
@@ -96,7 +97,7 @@ init_intr (void)
 	ushort savesr;
 
 	syskey = (KBDVEC *) TRAP_Kbdvbase ();
-	oldkey = *syskey;
+	old_kbdvecs = *syskey;
 
 # ifndef NO_AKP_KEYBOARD
 	if (!has_kbdvec) /* TOS versions without the KBDVEC vector */
@@ -121,7 +122,7 @@ init_intr (void)
 		 * hadler hooked above if we're running over TOS < 2.00 will call it.
 		 */
 		long *kbdvec = ((long *)syskey)-1;
-		install_vector (&oldkeys, (long)kbdvec, newkeys);
+		install_vector (&old_kbdvec, (long)kbdvec, newkeys);
 	}
 
 	/* Workaround for FireTOS and CT60 TOS 2.xx.
@@ -270,7 +271,7 @@ restr_intr (void)
 
 	savesr = splhigh();
 
-	*syskey = oldkey;	/* restore keyboard vectors */
+	*syskey = old_kbdvecs;	/* restore keyboard vectors */
 
 # ifndef NO_AKP_KEYBOARD
 	if (tosvers < 0x0200)
@@ -280,7 +281,7 @@ restr_intr (void)
 	else
 	{
 		long *kbdvec = ((long *)syskey)-1;
-		*kbdvec = (long) oldkeys;
+		*kbdvec = (long) old_kbdvec;
 	}
 # endif
 
