@@ -1882,7 +1882,7 @@ load_keyboard_table(const char *path, short flag)
 }
 
 /* Pre-initialize the built-in keyboard tables.
- * This must be done before init_intr()!
+ * This must be done before install_TOS_vectors()!
  */
 void
 init_keybd(void)

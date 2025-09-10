@@ -92,7 +92,7 @@ install_vector (long *old_handler, long vector, long _cdecl (*new_handler)())
  */
 
 void
-init_intr (void)
+install_TOS_vectors (void)
 {
 	ushort savesr;
 

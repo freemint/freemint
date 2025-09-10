@@ -26,7 +26,7 @@
 # include "arch/cpu.h"		/* init_cache, cpush, setstack */
 # include "arch/context.h"	/* restore_context */
 # include "arch/intr.h"		/* new_mediach, new_rwabs, new_getbpb, same for old_ */
-# include "arch/init_intr.h"	/* init_intr() */
+# include "arch/init_intr.h"	/* install_TOS_vectors() */
 # include "arch/init_mach.h"	/* */
 # include "arch/info_mach.h"	/* machine_str() */
 # include "arch/mmu.h"		/* save_mmu */
@@ -506,14 +506,14 @@ init (void)
 # endif
 
 	/* initialize interrupt vectors */
-	init_intr ();
+	install_TOS_vectors ();
 
-	/* after init_intr we are in kernel
+	/* after install_TOS_vectors we are in kernel
 	 * trapping isn't allowed anymore; use direct calls
 	 * from now on
 	 */
 	intr_done = 1;
-	DEBUG (("init_intr() ok!"));
+	DEBUG (("install_TOS_vectors() ok!"));
 
 	/* Enable superscalar dispatch on 68060 */
 # ifndef M68000
@@ -642,7 +642,7 @@ init (void)
 	}
 
 	/* set up standard file handles for the current process
-	 * do this here, *after* init_intr has set the Rwabs vector,
+	 * do this here, *after* install_TOS_vectors has set the Rwabs vector,
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
 
