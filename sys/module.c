@@ -601,61 +601,6 @@ load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 	return -1;
 }
 
-long _cdecl
-register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
-{
-	long _cdecl (**handler)(void *) = NULL;
-	long *x = NULL;
-	long ret = EINVAL;
-
-	DEBUG(("register_trap2(0x%p, %i, %i)", dispatch, mode, flag));
-
-	if (flag == 0)
-	{
-		handler = &aes_handler;
-	}
-	else if (flag == 1)
-	{
-		handler = &vdi_handler;
-		x = &gdos_version;
-	}
-
-	if (mode == 0)
-	{
-		/* install */
-
-		if (*handler == NULL)
-		{
-			DEBUG(("register_trap2: installing handler at 0x%p", dispatch));
-
-			*handler = dispatch;
-			if (x)
-				*x = extra;
-			ret = 0;
-
-			/* if trap #2 is not active install it now */
-			if (old_trap2 == 0)
-				install_vector(&old_trap2, 0x88L, mint_trap2); /* trap #2, GEM */
-		}
-	}
-	else if (mode == 1)
-	{
-		/* deinstall */
-
-		if (*handler == dispatch)
-		{
-			DEBUG(("register_trap2: removing handler at 0x%p", dispatch));
-
-			*handler = NULL;
-			if (x)
-				*x = 0;
-			ret = 0;
-		}
-	}
-
-	return ret;
-}
-
 static long _cdecl
 load_km(const char *path, struct kernel_module **res_km)
 {

@@ -34,6 +34,7 @@
 # include "mint/arch/mfp.h"
 # include "arch/cpu.h"
 # include "arch/syscall.h"
+# include "arch/init_intr.h" /* register_trap2 */
 
 # include "block_IO.h"		/* bio */
 # include "cookie.h"		/* add_rsvfentry, del_rsvfentry, get_toscookie */
