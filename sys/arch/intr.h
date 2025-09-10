@@ -9,7 +9,7 @@
 # include "mint/mint.h"
 
 
-/* interrupt vectors linked by new_xbra_install() */
+/* interrupt vectors linked by install_vector() */
 extern long old_5ms;
 extern long old_bus;
 extern long old_addr;

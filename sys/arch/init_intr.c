@@ -71,7 +71,7 @@ uchar framesizes[16] =
  */
 
 void
-new_xbra_install (long *old_handler, long vector, long _cdecl (*new_handler)())
+install_vector (long *old_handler, long vector, long _cdecl (*new_handler)())
 {
 	*old_handler = *(long *)vector;
 	*(long *)vector = (long)new_handler;
@@ -121,7 +121,7 @@ init_intr (void)
 		 * hadler hooked above if we're running over TOS < 2.00 will call it.
 		 */
 		long *kbdvec = ((long *)syskey)-1;
-		new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
+		install_vector (&oldkeys, (long)kbdvec, newkeys);
 	}
 
 	/* Workaround for FireTOS and CT60 TOS 2.xx.
@@ -146,7 +146,7 @@ init_intr (void)
 		savesr = splhigh();
 		syskey->ikbdsys = (long)ikbdsys_handler;
 		cpush(&syskey->ikbdsys, sizeof(long));
-		new_xbra_install(&old_acia, 0x0118L, new_acia);
+		install_vector(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
 	}
 # endif /* NO_AKP_KEYBOARD */
@@ -169,29 +169,29 @@ init_intr (void)
 	{
 	long dummy;
 
-	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
-	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */	
+	install_vector (&dummy, 0x80L, unused_trap);		/* trap #0 */
+	install_vector (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */	
 # if 0	/* we only install this on request yet */
-	new_xbra_install (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
+	install_vector (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
 # endif
-	new_xbra_install (&dummy, 0x8cL, unused_trap);		/* trap #3 */
-	new_xbra_install (&dummy, 0x90L, unused_trap);		/* trap #4 */
-	new_xbra_install (&dummy, 0x94L, unused_trap);		/* trap #5 */
-	new_xbra_install (&dummy, 0x98L, unused_trap);		/* trap #6 */
-	new_xbra_install (&dummy, 0x9cL, unused_trap);		/* trap #7 */
-	new_xbra_install (&dummy, 0xa0L, unused_trap);		/* trap #8 */
-	new_xbra_install (&dummy, 0xa4L, unused_trap);		/* trap #9 */
-	new_xbra_install (&dummy, 0xa8L, unused_trap);		/* trap #10 */
-	new_xbra_install (&dummy, 0xacL, unused_trap);		/* trap #11 */
-	new_xbra_install (&dummy, 0xb0L, unused_trap);		/* trap #12 */
-	new_xbra_install (&old_bios, 0xb4L, mint_bios);		/* trap #13, BIOS */
-	new_xbra_install (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
+	install_vector (&dummy, 0x8cL, unused_trap);		/* trap #3 */
+	install_vector (&dummy, 0x90L, unused_trap);		/* trap #4 */
+	install_vector (&dummy, 0x94L, unused_trap);		/* trap #5 */
+	install_vector (&dummy, 0x98L, unused_trap);		/* trap #6 */
+	install_vector (&dummy, 0x9cL, unused_trap);		/* trap #7 */
+	install_vector (&dummy, 0xa0L, unused_trap);		/* trap #8 */
+	install_vector (&dummy, 0xa4L, unused_trap);		/* trap #9 */
+	install_vector (&dummy, 0xa8L, unused_trap);		/* trap #10 */
+	install_vector (&dummy, 0xacL, unused_trap);		/* trap #11 */
+	install_vector (&dummy, 0xb0L, unused_trap);		/* trap #12 */
+	install_vector (&old_bios, 0xb4L, mint_bios);		/* trap #13, BIOS */
+	install_vector (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
 # if 0
-	new_xbra_install (&dummy, 0xbcL, unused_trap);		/* trap #15 */
+	install_vector (&dummy, 0xbcL, unused_trap);		/* trap #15 */
 # endif
 	}
 
-	new_xbra_install (&old_criticerr, 0x404L, (long (*)(void))new_criticerr);
+	install_vector (&old_criticerr, 0x404L, (long (*)(void))new_criticerr);
 
 	/* Hook the 200 Hz system timer. Our handler will do its job,
 	 * then call the previous handler. Every four interrupts, our handler will
@@ -200,10 +200,10 @@ init_intr (void)
 	 * to mimic a 50 Hz VBL interrupt.
 	 */
 
-	new_xbra_install (&old_5ms, (long)p5msvec, mint_5ms);
+	install_vector (&old_5ms, (long)p5msvec, mint_5ms);
 
 #if 0	/* this should really not be necessary ... rincewind */
-	new_xbra_install (&old_resvec, 0x042aL, reset);
+	install_vector (&old_resvec, 0x042aL, reset);
 	old_resval = *((long *)0x426L);
 	*((long *) 0x426L) = RES_MAGIC;
 #endif
@@ -211,40 +211,40 @@ init_intr (void)
 	spl (savesr);
 
 	/* set up signal handlers */
-	new_xbra_install (&old_bus, 8L, new_bus);
-	new_xbra_install (&old_addr, 12L, new_addr);
-	new_xbra_install (&old_ill, 16L, new_ill);
-	new_xbra_install (&old_divzero, 20L, new_divzero);
-	new_xbra_install (&old_trace, 36L, new_trace);
+	install_vector (&old_bus, 8L, new_bus);
+	install_vector (&old_addr, 12L, new_addr);
+	install_vector (&old_ill, 16L, new_ill);
+	install_vector (&old_divzero, 20L, new_divzero);
+	install_vector (&old_trace, 36L, new_trace);
 
-	new_xbra_install (&old_priv, 32L, new_priv);
+	install_vector (&old_priv, 32L, new_priv);
 
 	if (tosvers >= 0x106)
-		new_xbra_install (&old_linef, 44L, new_linef);
+		install_vector (&old_linef, 44L, new_linef);
 
-	new_xbra_install (&old_chk, 24L, new_chk);
-	new_xbra_install (&old_trapv, 28L, new_trapv);
+	install_vector (&old_chk, 24L, new_chk);
+	install_vector (&old_trapv, 28L, new_trapv);
 
-	new_xbra_install (&old_fpcp_0, 192L + (0 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_1, 192L + (1 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_2, 192L + (2 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_3, 192L + (3 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_4, 192L + (4 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_5, 192L + (5 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_6, 192L + (6 * 4), new_fpcp);
+	install_vector (&old_fpcp_0, 192L + (0 * 4), new_fpcp);
+	install_vector (&old_fpcp_1, 192L + (1 * 4), new_fpcp);
+	install_vector (&old_fpcp_2, 192L + (2 * 4), new_fpcp);
+	install_vector (&old_fpcp_3, 192L + (3 * 4), new_fpcp);
+	install_vector (&old_fpcp_4, 192L + (4 * 4), new_fpcp);
+	install_vector (&old_fpcp_5, 192L + (5 * 4), new_fpcp);
+	install_vector (&old_fpcp_6, 192L + (6 * 4), new_fpcp);
 
-	new_xbra_install (&old_mmuconf, 224L, new_mmuconf);
-	new_xbra_install (&old_pmmuill, 228L, new_mmu);
-	new_xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
-	new_xbra_install (&old_format, 56L, new_format);
-	new_xbra_install (&old_cpv, 52L, new_cpv);
-	new_xbra_install (&old_uninit, 60L, new_uninit);
-	new_xbra_install (&old_spurious, 96L, new_spurious);
+	install_vector (&old_mmuconf, 224L, new_mmuconf);
+	install_vector (&old_pmmuill, 228L, new_mmu);
+	install_vector (&old_pmmuacc, 232L, new_pmmuacc);
+	install_vector (&old_format, 56L, new_format);
+	install_vector (&old_cpv, 52L, new_cpv);
+	install_vector (&old_uninit, 60L, new_uninit);
+	install_vector (&old_spurious, 96L, new_spurious);
 
 	/* set up disk vectors */
-	new_xbra_install (&old_mediach, 0x47eL, new_mediach);
-	new_xbra_install (&old_rwabs, 0x476L, new_rwabs);
-	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
+	install_vector (&old_mediach, 0x47eL, new_mediach);
+	install_vector (&old_rwabs, 0x476L, new_rwabs);
+	install_vector (&old_getbpb, 0x472L, new_getbpb);
 	old_drvbits = *((long *) 0x4c2L);
 
 	/* we'll be making GEMDOS calls */
