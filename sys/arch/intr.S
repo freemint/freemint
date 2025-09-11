@@ -227,7 +227,7 @@ mod5:	dc.w	5		// initial value matters
 	.globl	SYM(uptime)
 	.globl	SYM(uptimetick)
 	.globl	SYM(c20ms)
-	.globl	SYM(keyrec)
+	.globl	SYM(kbd_iorec)
 	.globl	SYM(kintr)
 	.globl	SYM(our_clock)
 	.globl	SYM(tlist)
@@ -260,7 +260,7 @@ SYM(mint_vbl):
 // ColdFire evaluation boards. ASCII characters are received on the serial
 // port and directly put into the character buffer.
 
-	move.l	SYM(keyrec),a0
+	move.l	SYM(kbd_iorec),a0
 	move.w	6(a0),d0
 	cmp.w	8(a0),d0
 #ifdef __mcoldfire__
@@ -639,7 +639,7 @@ SYM(newkeys):
 #else
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
-	move.l	SYM(keyrec),-(sp)
+	move.l	SYM(kbd_iorec),-(sp)
 #ifdef __mcoldfire__
 	and.l	#0x00ff,d0
 #else

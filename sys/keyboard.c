@@ -61,7 +61,7 @@
 # include "arch/tosbind.h"
 # include "arch/syscall.h"
 
-# include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
+# include "bios.h"		/* kbshft, kintr, *kbd_iorec, ...  */
 # include "biosfs.h"		/* struct tty */
 # include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */

@@ -32,7 +32,7 @@ IKBDTODO	=	IKBDSTATE+1
 
 	.text
 
-	.globl	SYM(syskey),SYM(keyrec)
+	.globl	SYM(syskey),SYM(kbd_iorec)
 	.globl	SYM(old_acia),SYM(new_acia)
 	.extern SYM(has_kbdvec)
 	.extern SYM(newkeys)
@@ -119,7 +119,7 @@ SYM(ikbdsys_handler):
 	CFI_STARTPROC()
 	move.l	SYM(syskey),a3		// if ACIA handler is from ROM get syskey
 	move.b	(0xfc00).w,d1		// ACIA control
-	move.l	SYM(keyrec),a0
+	move.l	SYM(kbd_iorec),a0
 	btst	#0x07,d1		// interrupt request
 #ifdef __mcoldfire__
 	beq	return
