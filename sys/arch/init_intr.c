@@ -21,6 +21,7 @@
 # include "arch/kernel.h"	/* enter_gemdos() */
 # include "arch/syscall.h"	/* new_xxx */
 # include "arch/tosbind.h"	/* TRAP_xxx() */
+# include "arch/tos_vars.h" /* Address of TOS variables */
 
 # include "arch/init_intr.h"
 
@@ -152,7 +153,7 @@ install_TOS_vectors (void)
 	}
 # endif /* NO_AKP_KEYBOARD */
 
-	old_term = (long) TRAP_Setexc (0x102, -1UL);
+	old_term = (long) TRAP_Setexc (ETV_TERM/4, -1UL);
 
 	savesr = splhigh();
 
@@ -192,7 +193,7 @@ install_TOS_vectors (void)
 # endif
 	}
 
-	install_vector (&old_criticerr, 0x404L, (long (*)(void))new_criticerr);
+	install_vector (&old_criticerr, ETV_CRITIC, (long (*)(void))new_criticerr);
 
 	/* Hook the 200 Hz system timer. Our handler will do its job,
 	 * then call the previous handler. Every four interrupts, our handler will
@@ -243,10 +244,10 @@ install_TOS_vectors (void)
 	install_vector (&old_spurious, 96L, new_spurious);
 
 	/* set up disk vectors */
-	install_vector (&old_mediach, 0x47eL, new_mediach);
-	install_vector (&old_rwabs, 0x476L, new_rwabs);
-	install_vector (&old_getbpb, 0x472L, new_getbpb);
-	old_drvbits = *((long *) 0x4c2L);
+	install_vector (&old_mediach, HDV_MEDIACH, new_mediach);
+	install_vector (&old_rwabs, HDV_RW, new_rwabs);
+	install_vector (&old_getbpb, HDV_BPB, new_getbpb);
+	old_drvbits = *((long *) _DRVBITS);
 
 	/* we'll be making GEMDOS calls */
 	enter_gemdos ();
@@ -317,17 +318,17 @@ restore_TOS_vectors (void)
 	*((long *) 0x084L) = old_dos;
 	*((long *) 0x0b4L) = old_bios;
 	*((long *) 0x0b8L) = old_xbios;
-	*((long *) 0x408L) = old_term;
-	*((long *) 0x404L) = old_criticerr;
+	*((long *) ETV_TERM) = old_term;
+	*((long *) ETV_CRITIC) = old_criticerr;
 	*p5msvec = old_5ms;
 #if 0	//
-	*((long *) 0x426L) = old_resval;
-	*((long *) 0x42aL) = old_resvec;
+	*((long *) RESVALID) = old_resval;
+	*((long *) RESVECTOR) = old_resvec;
 #endif
-	*((long *) 0x476L) = old_rwabs;
-	*((long *) 0x47eL) = old_mediach;
-	*((long *) 0x472L) = old_getbpb;
-	*((long *) 0x4c2L) = old_drvbits;
+	*((long *) HDV_RW) = old_rwabs;
+	*((long *) HDV_MEDIACH) = old_mediach;
+	*((long *) HDV_BPB) = old_getbpb;
+	*((long *) _DRVBITS) = old_drvbits;
 
 	spl (savesr);
 }
