@@ -32,7 +32,7 @@
 # define RES_MAGIC	0x31415926L
 
 /* structures for keyboard/MIDI interrupt vectors */
-KBDVEC *syskey;
+KBDVEC *kbdvecs;
 static long old_kbdvec;
 static KBDVEC old_kbdvecs;
 
@@ -96,8 +96,8 @@ install_TOS_vectors (void)
 {
 	ushort savesr;
 
-	syskey = (KBDVEC *) TRAP_Kbdvbase ();
-	old_kbdvecs = *syskey;
+	kbdvecs = (KBDVEC *) TRAP_Kbdvbase ();
+	old_kbdvecs = *kbdvecs; /* structure copy */
 
 # ifndef NO_AKP_KEYBOARD
 	if (!has_kbdvec) /* TOS versions without the KBDVEC vector */
@@ -106,9 +106,9 @@ install_TOS_vectors (void)
 		 * with ACIA registers, and to call the appropriate KBDVEC vectors
 		 * for keyboard, mouse, joystick, status and time packets. */
 		savesr = splhigh();
-		syskey->ikbdsys = (long)ikbdsys_handler;
+		kbdvecs->ikbdsys = (long)ikbdsys_handler;
 #ifndef M68000
-		cpush(&syskey->ikbdsys, sizeof(long));
+		cpush(&kbdvecs->ikbdsys, sizeof(long));
 #endif
 		spl(savesr);
 	}
@@ -121,7 +121,7 @@ install_TOS_vectors (void)
 		 * TOS < 2.00 doesn't know about this vector but the new ikdsys
 		 * hadler hooked above if we're running over TOS < 2.00 will call it.
 		 */
-		long *kbdvec = ((long *)syskey)-1;
+		long *kbdvec = ((long *)kbdvecs)-1;
 		install_vector (&old_kbdvec, (long)kbdvec, newkeys);
 	}
 
@@ -145,8 +145,8 @@ install_TOS_vectors (void)
 	if (version >= 2)
 	{
 		savesr = splhigh();
-		syskey->ikbdsys = (long)ikbdsys_handler;
-		cpush(&syskey->ikbdsys, sizeof(long));
+		kbdvecs->ikbdsys = (long)ikbdsys_handler;
+		cpush(&kbdvecs->ikbdsys, sizeof(long));
 		install_vector(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
 	}
@@ -271,7 +271,7 @@ restore_TOS_vectors (void)
 
 	savesr = splhigh();
 
-	*syskey = old_kbdvecs;	/* restore keyboard vectors */
+	*kbdvecs = old_kbdvecs;	/* restore keyboard vectors (structure copy) */
 
 # ifndef NO_AKP_KEYBOARD
 	if (tosvers < 0x0200)
@@ -280,7 +280,7 @@ restore_TOS_vectors (void)
 	}
 	else
 	{
-		long *kbdvec = ((long *)syskey)-1;
+		long *kbdvec = ((long *)kbdvecs)-1;
 		*kbdvec = (long) old_kbdvec;
 	}
 # endif

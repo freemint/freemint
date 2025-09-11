@@ -9,7 +9,7 @@
 # include "mint/mint.h"
 # include "mint/emu_tos.h"
 
-extern KBDVEC *syskey;
+extern KBDVEC *kbdvecs;
 
 void	install_vector(long *old_handler, long vector, long _cdecl (*new_handler)());
 

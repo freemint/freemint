@@ -56,7 +56,7 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
-# include "arch/init_intr.h"	/* syskey */
+# include "arch/init_intr.h"	/* kbdvecs */
 # include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"
 # include "arch/syscall.h"
@@ -236,7 +236,7 @@ mouse_up(PROC *p, long pixels)
 	mouse_packet[1] = 0;					/* X axis */
 	mouse_packet[2] = -pixels;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -264,7 +264,7 @@ mouse_down(PROC *p, long pixels)
 	mouse_packet[1] = 0;				/* X axis */
 	mouse_packet[2] = pixels;			/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -292,7 +292,7 @@ mouse_left(PROC *p, long pixels)
 	mouse_packet[1] = -pixels;			/* X axis */
 	mouse_packet[2] = 0;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -321,7 +321,7 @@ mouse_right(PROC *p, long pixels)
 	mouse_packet[1] = pixels;			/* X axis */
 	mouse_packet[2] = 0;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -348,7 +348,7 @@ mouse_noclick(PROC *p, long arg)
 	mouse_packet[1] = 0;				/* X axis */
 	mouse_packet[2] = 0;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 }
 
 /* Generate right click */
@@ -365,7 +365,7 @@ mouse_rclick(PROC *p, long arg)
 
 	*kbshft &= ~MM_ALTERNATE;
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	*kbshft |= MM_ALTERNATE;
 }
@@ -380,7 +380,7 @@ mouse_lclick(PROC *p, long arg)
 
 	*kbshft &= ~MM_ALTERNATE;
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	*kbshft |= MM_ALTERNATE;
 }
@@ -1582,7 +1582,7 @@ sys_b_bioskeys(void)
 KBDVEC * _cdecl
 sys_b_kbdvbase(void)
 {
-	return syskey;
+	return kbdvecs;
 }
 
 /* Init section
