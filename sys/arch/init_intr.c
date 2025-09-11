@@ -129,7 +129,7 @@ install_TOS_vectors (void)
 	}
 # endif /* NO_AKP_KEYBOARD */
 
-	/* Documentation says that we should set etv_term using Setexc (probably to give
+	/* Documentation says that we should set etv_term using Setexc (this is to give
 	 * the OS a chance to maintain it per-program). We need to save it now, before we
 	 * hook TRAP #13 */
 	old_term = (long) TRAP_Setexc (ETV_TERM/4, -1UL);
