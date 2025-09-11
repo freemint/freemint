@@ -35,7 +35,7 @@ IKBDTODO	=	IKBDSTATE+1
 	.globl	SYM(kbdvecs),SYM(kbd_iorec)
 	.globl	SYM(old_acia),SYM(new_acia)
 	.extern SYM(has_kbdvec)
-	.extern SYM(newkeys)
+	.extern SYM(kbdvec_handler)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
@@ -145,7 +145,7 @@ no_error:
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
 	tst.w	SYM(has_kbdvec)		// if kvdvec not present call new_keys directly
-	beq	SYM(newkeys)
+	beq	SYM(kbdvec_handler)
 	move.l	KBDVEC(a3),a1
 	jmp	(a1)
 
