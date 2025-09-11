@@ -624,15 +624,15 @@ SYM(newjvec):
 // In both cases, the goal is to call ikbd_scan with keyboard bytes.
 
 #ifndef NO_AKP_KEYBOARD
-	.globl	SYM(newkeys)
+	.globl	SYM(kbdvec_handler)
 	.globl	SYM(oldkeys)
 	.globl	SYM(ikbd_scan)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
 SYM(oldkeys):	dc.l	0
-	FUNC(newkeys)
-SYM(newkeys):
+	FUNC(kbdvec_handler)
+SYM(kbdvec_handler):
 #ifdef __mcoldfire__
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
@@ -655,7 +655,7 @@ SYM(newkeys):
 	movem.l	(sp)+,d1-d2/a0-a2
 #endif
 	rts
-	END(newkeys)
+	END(kbdvec_handler)
 
 // Calling the keyclick routines. This is a helper for keyboard driver.
 

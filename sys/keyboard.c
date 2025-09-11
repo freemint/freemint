@@ -910,13 +910,13 @@ output_scancode(PROC *p, long arg)
 
 /* Keyboard interrupt routine.
  *
- * The scancode is passed from newkeys(), which in turn is called
+ * The scancode is passed from kbdvec_handler(), which in turn is called
  * by BIOS.
  *
  */
 
 /* `scancode' is short, but only low byte matters. The high byte
- * is zeroed by newkeys().
+ * is zeroed by kbdvec_handler().
  */
 
 struct scanb_entry

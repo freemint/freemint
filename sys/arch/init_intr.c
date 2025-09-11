@@ -122,7 +122,7 @@ install_TOS_vectors (void)
 		 * hadler hooked above if we're running over TOS < 2.00 will call it.
 		 */
 		long *kbdvec = ((long *)kbdvecs)-1;
-		install_vector (&old_kbdvec, (long)kbdvec, newkeys);
+		install_vector (&old_kbdvec, (long)kbdvec, kbdvec_handler);
 	}
 
 	/* Workaround for FireTOS and CT60 TOS 2.xx.
