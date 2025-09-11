@@ -41,30 +41,6 @@ long old_term;
 long old_resval;	/* old reset validation */
 long old_drvbits;	/* BIOS drive map */
 
-
-/* table of processor frame sizes in _words_ (not used on MC68000) */
-uchar framesizes[16] =
-{
-	/*0*/	0,	/* MC68010/M68020/M68030/M68040 short */
-	/*1*/	0,	/* M68020/M68030/M68040 throwaway */
-	/*2*/	2,	/* M68020/M68030/M68040 instruction error */
-	/*3*/	2,	/* M68040 floating point post instruction */
-	/*4*/	3,	/* MC68LC040/MC68EC040 unimplemented floating point instruction */
-			/* or */
-			/* MC68060 access error */
-	/*5*/	0,	/* NOTUSED */
-	/*6*/	0,	/* NOTUSED */
-	/*7*/	26,	/* M68040 access error */
-	/*8*/	25,	/* MC68010 long */
-	/*9*/	6,	/* M68020/M68030 mid instruction */
-	/*A*/	12,	/* M68020/M68030 short bus cycle */
-	/*B*/	42,	/* M68020/M68030 long bus cycle */
-	/*C*/	8,	/* CPU32 bus error */
-	/*D*/	0,	/* NOTUSED */
-	/*E*/	0,	/* NOTUSED */
-	/*F*/	13	/* 68070 and 9xC1xx microcontroller address error */
-};
-
 /* New XBRA installer. The XBRA structure must be located
  * directly before the routine it belongs to.
  * old_handler: will return the address of the previous handler for the vector
@@ -153,6 +129,9 @@ install_TOS_vectors (void)
 	}
 # endif /* NO_AKP_KEYBOARD */
 
+	/* Documentation says that we should set etv_term using Setexc (probably to give
+	 * the OS a chance to maintain it per-program). We need to save it now, before we
+	 * hook TRAP #13 */
 	old_term = (long) TRAP_Setexc (ETV_TERM/4, -1UL);
 
 	savesr = splhigh();
@@ -317,6 +296,7 @@ restore_TOS_vectors (void)
 	*((long *) TRAP1) = old_dos;
 	*((long *) TRAP13) = old_bios;
 	*((long *) TRAP14) = old_xbios;
+
 	*((long *) ETV_TERM) = old_term;
 	*((long *) ETV_CRITIC) = old_criticerr;
 	*p5msvec = old_5ms;
