@@ -171,25 +171,25 @@ install_TOS_vectors (void)
 	{
 	long dummy;
 
-	install_vector (&dummy, 0x80L, unused_trap);		/* trap #0 */
-	install_vector (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */	
+	install_vector (&dummy, TRAP0, unused_trap);		/* trap #0 */
+	install_vector (&old_dos, TRAP1, mint_dos);		/* trap #1, GEMDOS */	
 # if 0	/* we only install this on request yet */
-	install_vector (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
+	install_vector (&old_trap2, TRAP2, mint_trap2);	/* trap #2, GEM */
 # endif
-	install_vector (&dummy, 0x8cL, unused_trap);		/* trap #3 */
-	install_vector (&dummy, 0x90L, unused_trap);		/* trap #4 */
-	install_vector (&dummy, 0x94L, unused_trap);		/* trap #5 */
-	install_vector (&dummy, 0x98L, unused_trap);		/* trap #6 */
-	install_vector (&dummy, 0x9cL, unused_trap);		/* trap #7 */
-	install_vector (&dummy, 0xa0L, unused_trap);		/* trap #8 */
-	install_vector (&dummy, 0xa4L, unused_trap);		/* trap #9 */
-	install_vector (&dummy, 0xa8L, unused_trap);		/* trap #10 */
-	install_vector (&dummy, 0xacL, unused_trap);		/* trap #11 */
-	install_vector (&dummy, 0xb0L, unused_trap);		/* trap #12 */
-	install_vector (&old_bios, 0xb4L, mint_bios);		/* trap #13, BIOS */
-	install_vector (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
+	install_vector (&dummy, TRAP3, unused_trap);		/* trap #3 */
+	install_vector (&dummy, TRAP4, unused_trap);		/* trap #4 */
+	install_vector (&dummy, TRAP5, unused_trap);		/* trap #5 */
+	install_vector (&dummy, TRAP6, unused_trap);		/* trap #6 */
+	install_vector (&dummy, TRAP7, unused_trap);		/* trap #7 */
+	install_vector (&dummy, TRAP8, unused_trap);		/* trap #8 */
+	install_vector (&dummy, TRAP9, unused_trap);		/* trap #9 */
+	install_vector (&dummy, TRAP10, unused_trap);		/* trap #10 */
+	install_vector (&dummy, TRAP11, unused_trap);		/* trap #11 */
+	install_vector (&dummy, TRAP12, unused_trap);		/* trap #12 */
+	install_vector (&old_bios, TRAP13, mint_bios);		/* trap #13, BIOS */
+	install_vector (&old_xbios, TRAP14, mint_xbios);	/* trap #14, XBIOS */
 # if 0
-	install_vector (&dummy, 0xbcL, unused_trap);		/* trap #15 */
+	install_vector (&dummy, TRAP15, unused_trap);		/* trap #15 */
 # endif
 	}
 
@@ -213,35 +213,35 @@ install_TOS_vectors (void)
 	spl (savesr);
 
 	/* set up signal handlers */
-	install_vector (&old_bus, 8L, new_bus);
-	install_vector (&old_addr, 12L, new_addr);
-	install_vector (&old_ill, 16L, new_ill);
-	install_vector (&old_divzero, 20L, new_divzero);
-	install_vector (&old_trace, 36L, new_trace);
+	install_vector (&old_bus, VEC_BUS_ERROR, new_bus);
+	install_vector (&old_addr, VEC_ADDRESS_ERROR, new_addr);
+	install_vector (&old_ill, VEC_ILLEGAL_INSTRUCTION, new_ill);
+	install_vector (&old_divzero, VEC_DIVISION_BY_ZERO, new_divzero);
+	install_vector (&old_trace, VEC_TRACE, new_trace);
 
-	install_vector (&old_priv, 32L, new_priv);
+	install_vector (&old_priv, VEC_PRIVILEGE_VIOLATION, new_priv);
 
 	if (tosvers >= 0x106)
-		install_vector (&old_linef, 44L, new_linef);
+		install_vector (&old_linef, VEC_LINE_F, new_linef);
 
-	install_vector (&old_chk, 24L, new_chk);
-	install_vector (&old_trapv, 28L, new_trapv);
+	install_vector (&old_chk, VEC_CHK, new_chk);
+	install_vector (&old_trapv, VEC_TRAPV, new_trapv);
 
-	install_vector (&old_fpcp_0, 192L + (0 * 4), new_fpcp);
-	install_vector (&old_fpcp_1, 192L + (1 * 4), new_fpcp);
-	install_vector (&old_fpcp_2, 192L + (2 * 4), new_fpcp);
-	install_vector (&old_fpcp_3, 192L + (3 * 4), new_fpcp);
-	install_vector (&old_fpcp_4, 192L + (4 * 4), new_fpcp);
-	install_vector (&old_fpcp_5, 192L + (5 * 4), new_fpcp);
-	install_vector (&old_fpcp_6, 192L + (6 * 4), new_fpcp);
+	install_vector (&old_fpcp_0, VEC_FFCP0, new_fpcp);
+	install_vector (&old_fpcp_1, VEC_FFCP1, new_fpcp);
+	install_vector (&old_fpcp_2, VEC_FFCP2, new_fpcp);
+	install_vector (&old_fpcp_3, VEC_FFCP3, new_fpcp);
+	install_vector (&old_fpcp_4, VEC_FFCP4, new_fpcp);
+	install_vector (&old_fpcp_5, VEC_FFCP5, new_fpcp);
+	install_vector (&old_fpcp_6, VEC_FFCP6, new_fpcp);
 
-	install_vector (&old_mmuconf, 224L, new_mmuconf);
-	install_vector (&old_pmmuill, 228L, new_mmu);
-	install_vector (&old_pmmuacc, 232L, new_pmmuacc);
-	install_vector (&old_format, 56L, new_format);
-	install_vector (&old_cpv, 52L, new_cpv);
-	install_vector (&old_uninit, 60L, new_uninit);
-	install_vector (&old_spurious, 96L, new_spurious);
+	install_vector (&old_mmuconf, VEC_MMU_CONFIG_ERROR, new_mmuconf);
+	install_vector (&old_pmmuill, VEC_MMU1, new_mmu);
+	install_vector (&old_pmmuacc, VEC_MMU2, new_pmmuacc);
+	install_vector (&old_format, VEC_FORMAT_ERROR, new_format);
+	install_vector (&old_cpv, VEC_COPRO_PROTOCOL_VIOLATION, new_cpv);
+	install_vector (&old_uninit, VEC_UNINITIALIZED, new_uninit);
+	install_vector (&old_spurious, VEC_SPURIOUS_INTERRUPT, new_spurious);
 
 	/* set up disk vectors */
 	install_vector (&old_mediach, HDV_MEDIACH, new_mediach);
@@ -286,38 +286,37 @@ restore_TOS_vectors (void)
 	}
 # endif
 
-	*((long *) 0x008L) = old_bus;
-
-	*((long *) 0x00cL) = old_addr;
-	*((long *) 0x010L) = old_ill;
-	*((long *) 0x014L) = old_divzero;
-	*((long *) 0x024L) = old_trace;
+	*((long *) VEC_BUS_ERROR) = old_bus;
+	*((long *) VEC_ADDRESS_ERROR) = old_addr;
+	*((long *) VEC_ILLEGAL_INSTRUCTION) = old_ill;
+	*((long *) VEC_DIVISION_BY_ZERO) = old_divzero;
+	*((long *) VEC_TRACE) = old_trace;
 
 	if (old_linef)
-		*((long *) 0x2cL) = old_linef;
+		*((long *) VEC_LINE_F) = old_linef;
 
-	*((long *) 0x018L) = old_chk;
-	*((long *) 0x01cL) = old_trapv;
+	*((long *) VEC_CHK) = old_chk;
+	*((long *) VEC_TRAPV) = old_trapv;
 
-	((long *) 0x0c0L)[0] = old_fpcp_0;
-	((long *) 0x0c0L)[1] = old_fpcp_1;
-	((long *) 0x0c0L)[2] = old_fpcp_2;
-	((long *) 0x0c0L)[3] = old_fpcp_3;
-	((long *) 0x0c0L)[4] = old_fpcp_4;
-	((long *) 0x0c0L)[5] = old_fpcp_5;
-	((long *) 0x0c0L)[6] = old_fpcp_6;
+	*((long *) VEC_FFCP0) = old_fpcp_0;
+	*((long *) VEC_FFCP1) = old_fpcp_1;
+	*((long *) VEC_FFCP2) = old_fpcp_2;
+	*((long *) VEC_FFCP3) = old_fpcp_3;
+	*((long *) VEC_FFCP4) = old_fpcp_4;
+	*((long *) VEC_FFCP5) = old_fpcp_5;
+	*((long *) VEC_FFCP6) = old_fpcp_6;
 
-	*((long *) 0x0e0L) = old_mmuconf;
-	*((long *) 0x0e4L) = old_pmmuill;
-	*((long *) 0x0e8L) = old_pmmuacc;
-	*((long *) 0x038L) = old_format;
-	*((long *) 0x034L) = old_cpv;
-	*((long *) 0x03cL) = old_uninit;
-	*((long *) 0x060L) = old_spurious;
+	*((long *) VEC_MMU_CONFIG_ERROR) = old_mmuconf;
+	*((long *) VEC_MMU1) = old_pmmuill;
+	*((long *) VEC_MMU2) = old_pmmuacc;
+	*((long *) VEC_FORMAT_ERROR) = old_format;
+	*((long *) VEC_COPRO_PROTOCOL_VIOLATION) = old_cpv;
+	*((long *) VEC_UNINITIALIZED) = old_uninit;
+	*((long *) VEC_SPURIOUS_INTERRUPT) = old_spurious;
 
-	*((long *) 0x084L) = old_dos;
-	*((long *) 0x0b4L) = old_bios;
-	*((long *) 0x0b8L) = old_xbios;
+	*((long *) TRAP1) = old_dos;
+	*((long *) TRAP13) = old_bios;
+	*((long *) TRAP14) = old_xbios;
 	*((long *) ETV_TERM) = old_term;
 	*((long *) ETV_CRITIC) = old_criticerr;
 	*p5msvec = old_5ms;
@@ -368,7 +367,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 
 			/* if trap #2 is not active install it now */
 			if (old_trap2 == 0)
-				install_vector(&old_trap2, 0x88L, mint_trap2); /* trap #2, GEM */
+				install_vector(&old_trap2, TRAP2, mint_trap2); /* trap #2, GEM */
 		}
 	}
 	else if (mode == 1)
