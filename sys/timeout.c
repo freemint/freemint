@@ -372,7 +372,7 @@ timeout (void)
 	
 	c20ms++;
 	
-	kintr = keyrec->head != keyrec->tail;
+	kintr = kbd_iorec->head != kbd_iorec->tail;
 	
 	if (proc_clock)
 		proc_clock--;

@@ -20,7 +20,7 @@ struct bpb *_cdecl sys_b_getbpb (int dev);
 long _cdecl sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno);
 long _cdecl sys_b_setexc (int number, long vector);
 
-extern IOREC_T *keyrec; /* keyboard i/o record pointer */
+extern IOREC_T *kbd_iorec; /* keyboard i/o record pointer */
 extern BCONMAP2_T *bconmap2;
 #define MAPTAB (bconmap2->maptab)
 extern short kintr;
