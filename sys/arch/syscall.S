@@ -110,7 +110,7 @@
 //         doing same changes twice! (draco)
 
 	dc.l	XBRA_MAGIC
-	dc.l	0x4d694e54		// MiNT
+	dc.l	MINT_MAGIC
 SYM(old_dos):
 	dc.l	0
 SYM(mint_dos):
@@ -209,7 +209,7 @@ sys_mon_tab:
 // They call GEMDOS *a lot* (Fgetdta, Fsetdta, Malloc, Mfree...)
 
 	dc.l	XBRA_MAGIC
-	dc.l	0x4d694e54		// MiNT
+	dc.l	MINT_MAGIC
 SYM(old_xbios):
 	dc.l	0
 SYM(mint_xbios):
@@ -377,7 +377,7 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 // the shortcuts are also turned off if BIOSBUF=n
 
 	dc.l	XBRA_MAGIC
-	dc.l	0x4d694e54		// MiNT
+	dc.l	MINT_MAGIC
 SYM(old_bios):	dc.l	0
 SYM(mint_bios):
 
@@ -705,7 +705,7 @@ SYM(gdos_version):
 // symbol when a handler is installed in vdi_handler
 //
 	dc.l	XBRA_MAGIC
-	dc.l	0x4d694e54		// MiNT
+	dc.l	MINT_MAGIC
 SYM(old_trap2):
 	dc.l	0
 SYM(mint_trap2):
@@ -994,7 +994,7 @@ TE_X_JMP_OLD:
 	.globl	SYM(unused_trap)
 
 	dc.l	XBRA_MAGIC
-	dc.l	0x4d694e54		// MiNT
+	dc.l	MINT_MAGIC
 	dc.l	v_rte
 
 SYM(unused_trap):

@@ -39,7 +39,7 @@ IKBDTODO	=	IKBDSTATE+1
 	.extern SYM(kbdvec_handler)
 
 	dc.l	XBRA_MAGIC
-	dc.l	0x4d694e54		// MiNT
+	dc.l	MINT_MAGIC
 SYM(old_acia):
 	dc.l	0
 
