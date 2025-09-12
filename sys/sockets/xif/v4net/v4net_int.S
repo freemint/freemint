@@ -28,6 +28,7 @@
 
 	#include "v4net.h"
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(v4net_int_old)
 	.globl SYM(v4net_int)
@@ -35,7 +36,7 @@
 	.globl SYM(v4net_swposcopy)
 
 	.text
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x00000000		| (no cookie)
 SYM(v4net_int_old):
 	ds.l	1

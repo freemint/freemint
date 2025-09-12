@@ -3,6 +3,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(old_mfp_int)
 	.globl SYM(interrupt_mfp)
@@ -13,7 +14,7 @@
 
 oldSR:  ds.w    1
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x554e4943		| UNIC
 SYM(old_mfp_int):
 	ds.l	1

@@ -32,6 +32,7 @@
 
 #include "xferlen.h"
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 #define RESMAGIC		0x31415926
 #define _resvalid		0x426
@@ -66,7 +67,7 @@
 	.text
 
 #if defined(VTTUSB_HW_INT)
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	.ascii	"_USB"		    // (cookie)
 SYM(old_int):
 	ds.l	1
@@ -111,7 +112,7 @@ SYM(hook_reset_vector):
 	move.l	#newreset,_resvector
 	rts
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	.ascii	"_USB"		    // (cookie)
 oldreset:
 	dc.l	0

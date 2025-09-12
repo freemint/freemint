@@ -31,6 +31,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.equ	use_200Hz, 1
 
@@ -47,7 +48,7 @@
 	.text
 
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x00000000		| (no cookie)
 SYM(old_200Hz_int):
 	ds.l	1
@@ -60,7 +61,7 @@ SYM(interrupt_200Hz):
 	rts
 
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x00000000		| (no cookie)
 SYM(old_i6_int):
 	ds.l	1

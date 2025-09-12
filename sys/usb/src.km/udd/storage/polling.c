@@ -14,6 +14,8 @@
 #include "../../global.h"
 #include "../../usb.h"
 
+#include "mint/xbra.h"
+
 #include "part.h"
 #include "scsi.h"
 #include "usb_storage.h"
@@ -124,7 +126,6 @@ void storage_int(void)
 		struct xbra *tmp_xbra;
 
 #define ETV_TIMER 0x400
-#define XBRA 0x58425241
 #define USTR 0x55535452
 		/* Uninstall the polling routine if no multi-LUN devices remain;
 		 * single-LUN and floppy polling is optional (user-enabled)
@@ -133,10 +134,10 @@ void storage_int(void)
 			first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
 			tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
 
-			if (!first_etv_timer_int || tmp_xbra->xbra != XBRA)
+			if (!first_etv_timer_int || tmp_xbra->xbra != XBRA_MAGIC)
 				return;
 
-			if (tmp_xbra->xbra == XBRA && tmp_xbra->id == USTR) {
+			if (tmp_xbra->xbra == XBRA_MAGIC && tmp_xbra->id == USTR) {
 				*(volatile unsigned long *) ETV_TIMER = (unsigned long) tmp_xbra->oldvec;
 				polling_on = 0;
 				return;
@@ -144,7 +145,7 @@ void storage_int(void)
 
 			tmp_etv_timer_int = (unsigned long *) tmp_xbra->oldvec;
 			tmp_xbra = (struct xbra *)((long)tmp_xbra->oldvec - sizeof(struct xbra));
-			while (tmp_xbra->xbra == XBRA) {
+			while (tmp_xbra->xbra == XBRA_MAGIC) {
 				if (tmp_xbra->id == USTR) {
 					*tmp_etv_timer_int = (long)tmp_xbra->oldvec;
 					polling_on = 0;

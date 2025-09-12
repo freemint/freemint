@@ -57,6 +57,7 @@
 
 #include "magic/magic.i"
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.text
 
@@ -108,7 +109,7 @@
 //         below only waste space and CPU time. And btw I really hate
 //         doing same changes twice! (draco)
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x4d694e54		// MiNT
 SYM(old_dos):
 	dc.l	0
@@ -207,7 +208,7 @@ sys_mon_tab:
 // Same kludge for Dsp_LoadProg() and Dsp_LodToBinary.
 // They call GEMDOS *a lot* (Fgetdta, Fsetdta, Malloc, Mfree...)
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x4d694e54		// MiNT
 SYM(old_xbios):
 	dc.l	0
@@ -375,7 +376,7 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 //
 // the shortcuts are also turned off if BIOSBUF=n
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x4d694e54		// MiNT
 SYM(old_bios):	dc.l	0
 SYM(mint_bios):
@@ -703,7 +704,7 @@ SYM(gdos_version):
 // gdos_version, because this trap handler returns what is at that
 // symbol when a handler is installed in vdi_handler
 //
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x4d694e54		// MiNT
 SYM(old_trap2):
 	dc.l	0
@@ -992,7 +993,7 @@ TE_X_JMP_OLD:
 
 	.globl	SYM(unused_trap)
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x4d694e54		// MiNT
 	dc.l	v_rte
 

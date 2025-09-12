@@ -3,6 +3,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 #ifdef TOSONLY
 	.globl SYM(old_ikbd_int)
@@ -11,7 +12,7 @@
 
 	.text
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x554d4f55		| UMOU
 SYM(old_ikbd_int):
 	ds.l	1
