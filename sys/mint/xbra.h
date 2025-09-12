@@ -21,18 +21,6 @@
  * The below helps implement that.
  */
 
-typedef struct xbra xbra_vec;
-
-struct xbra
-{
-	long		xbra_magic; /* should be XBRA_MAGIC     */
-	long		xbra_id;    /* our id is MINT_MAGIC     */
-	xbra_vec	*next;      /* original handler         */
-	short		jump;       /* this does "jump to this" */
-	long _cdecl	(*this)();
-};
-
-
 # define XBRA_MAGIC	0x58425241L /* "XBRA" */
 # define MINT_MAGIC	0x4d694e54L /* "MiNT" */
 # define JMP_OPCODE	0x4EF9
