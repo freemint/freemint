@@ -7,6 +7,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(old_vbl_int)
 	.globl SYM(vbl_interrupt)
@@ -14,7 +15,7 @@
 
 	.text
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x505a4950		| RTLp
 SYM(old_vbl_int):
 	ds.l	1

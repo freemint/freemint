@@ -22,6 +22,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(old_interrupt)
 	.globl SYM(my_interrupt)
@@ -29,7 +30,7 @@
 
 	.text
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x41524165		| ARAe
 SYM(old_interrupt):
 	ds.l	1

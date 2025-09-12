@@ -27,13 +27,14 @@
 
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(v2expeth_int_old)
 	.globl SYM(v2expeth_int_handler)
 	.globl SYM(v2expeth_int)
 
 	.text
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x00000000		| (no cookie)
 SYM(v2expeth_int_old):
 	ds.l	1

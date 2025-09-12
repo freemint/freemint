@@ -18,7 +18,7 @@
  * - the long at address "handler-8" is a 4 ASCII character id of the owner of the handler
  * - the long at address "handler-4" is the previous handler
  * - the long at address "handler" is the handler itself (obviously).
- * The below helps implement that.
+ * This file contains definitions only, so it can be included in assembly files.
  */
 
 # define XBRA_MAGIC	0x58425241L /* "XBRA" */

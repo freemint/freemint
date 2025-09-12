@@ -14,6 +14,7 @@
  */
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 # ifndef NO_AKP_KEYBOARD
 
@@ -37,7 +38,7 @@ IKBDTODO	=	IKBDSTATE+1
 	.extern SYM(has_kbdvec)
 	.extern SYM(kbdvec_handler)
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x4d694e54		// MiNT
 SYM(old_acia):
 	dc.l	0
