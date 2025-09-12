@@ -24,9 +24,13 @@
 #define HDV_RW		0x476
 #define HDV_MEDIACH	0x47e
 
-
 /* These are variables */
 
+#define FLOCK		0x43e
+#define _TIMR_MS	0x442
 #define _DRVBITS	0x4c2
+#define CONTERM		0x484
+#define _LONGFRAME	0x59e
+#define KCL_HOOK	0x5b0
 
 #endif
