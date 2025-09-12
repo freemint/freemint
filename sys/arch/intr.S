@@ -23,6 +23,7 @@
 
 #include "magic/magic.i"
 #include "mint/asmdefs.h"
+#include "arch/tos_vars.h"
 
 //
 // interrupt wrapping routines; these should just save registers and call
@@ -180,7 +181,7 @@ L_no_profile:
 	bne.s	L_novbl
 	move.w	#0x0004,vblcnt
 	
-	tst.w	(0x059e).w
+	tst.w	(_LONGFRAME).w
 	beq.s	L_short_1
 	clr.w	-(sp)			// set up a jump to VBL emulation
 L_short_1:
@@ -285,12 +286,12 @@ SYM(mint_vbl):
 	move.w	d0,(a0)
 skip:
 #ifdef __mcoldfire__
-	mvz.w	(0x0442).w,d0
+	mvz.w	(_TIMR_MS).w,d0
 	mvz.w	SYM(our_clock),d1
 	sub.l	d0,d1
 	move.w	d1,SYM(our_clock)
 #else
-	move.w	(0x0442).w,d0
+	move.w	(_TIMR_MS).w,d0
 	sub.w	d0,SYM(our_clock)
 #endif
 	move.l	SYM(tlist),d1
@@ -408,7 +409,7 @@ L_expired_68k:
 	btst	#5,(sp) 		// user mode?
 	bne.s	L_out			// no -- switching is not possible
 L_expired2:
-	tst.w	(0x043e).w		// test floppy disk lock variable
+	tst.w	(FLOCK).w		// test floppy disk lock variable
 	bne.s	L_out			// if locked, can't switch
 #ifdef __mcoldfire__
 	tst.w	SYM(in_kernel)	// are we doing a kernel operation?
@@ -666,16 +667,16 @@ SYM(kbdclick):
 #ifdef __mcoldfire__
 	move.l	d0,-(sp)
 	moveq	#0,d0
-	btst	d0,(0x0484).w	// conterm
+	btst	d0,(CONTERM).w
 	beq.s	L_nocl
 	lea	-56(sp),sp
 	movem.l	d1-a6,(sp)
 #else
-	btst	#0,(0x0484).w	// conterm
+	btst	#0,(CONTERM).w
 	beq.s	L_nocl
 	movem.l	d0-a6,-(sp)
 #endif
-	move.l	(0x05b0).w,d0	// vector to the keyclick routine
+	move.l	(KCL_HOOK).w,d0	// vector to the keyclick routine
 	beq.s	L_pop
 	move.l	d0,a0
 	clr.l	d0
