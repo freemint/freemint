@@ -557,23 +557,23 @@ Set first focus. The program given by <program> will be the first to receive
    input after startup and have the menu and top-window if any. The special
    name 'shell' sets the focus to the desktop given by the shell-directive.
 
-!item [XA_BUBBLE <number> (default:0)] (!nl)
-If you want to use the XaAES-builtin bubble-help, set this. You can
-   deactivate any external bubble-app if you use xa_bubble.
-   !begin_xlist !compressed
-   !item [1:] windows-tooltip-style
-   !item [2:] apple-ballon-help-style
-   !end_xlist
-   E.g. xa_bubble = 1
+#!item [XA_BUBBLE <number> (default:0)] (!nl)
+#If you want to use the XaAES-builtin bubble-help, set this. You can
+#   deactivate any external bubble-app if you use xa_bubble.
+#   !begin_xlist !compressed
+#   !item [1:] windows-tooltip-style
+#   !item [2:] apple-ballon-help-style
+#   !end_xlist
+#   E.g. xa_bubble = 1
 
-!item [DESCRIBE_WIDGETS <number> (default:0)] (!nl)
-If set not 0, display name/function of a widget when the mouse is placed
-   (not moved!) twice above a widget.
-   !begin_xlist !compressed
-   !item [1:] windows-tooltip-style (recommended)
-   !item [2:] apple-ballon-help-style
-   !end_xlist
-   E.g. describe_widgets = 1
+#!item [DESCRIBE_WIDGETS <number> (default:0)] (!nl)
+#If set not 0, display name/function of a widget when the mouse is placed
+#   (not moved!) twice above a widget.
+#   !begin_xlist !compressed
+#   !item [1:] windows-tooltip-style (recommended)
+#   !item [2:] apple-ballon-help-style
+#   !end_xlist
+#   E.g. describe_widgets = 1
 
 !item [KEYBOARDS = <key>, <layout1>, <layout2>, ...] (!nl)
 If set, you can switch between different keyboard tables.

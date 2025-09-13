@@ -53,9 +53,6 @@
 #include "rectlist.h"
 #include "taskman.h"
 
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
 #include "xa_evnt.h"
 #include "xa_graf.h"
 #include "xa_rsrc.h"
@@ -4866,15 +4863,8 @@ wind_mshape(struct xa_window *wind, short x, short y)
 					if (C.mouse_form != wind->owner->mouse_form)
 						xa_graf_mouse(wo->mouse, wo->mouse_form, wo, false);
 				}
-				if (!update_locked() && (cfg.widg_auto_highlight
-#if WITH_BBL_HELP
-					|| cfg.describe_widgets
-#endif
-				) )
+				if (!update_locked() && (cfg.widg_auto_highlight))
 				{
-#if WITH_BBL_HELP
-					int bbl_closed = 0;
-#endif
 					struct xa_window *rwind = NULL;
 					struct xa_widget *hwidg, *rwidg = NULL;
 
@@ -4901,11 +4891,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 							}
 						}
 					}
-					if( (hwidg && !hwidg->owner)
-#if WITH_BBL_HELP
-						&& wind != bgem_window	/* ? root_window,menu_window ? */
-#endif
-						)
+					if (hwidg && !hwidg->owner)
 					{
 						if (wind != C.hover_wind || hwidg != C.hover_widg)
 						{
@@ -4913,18 +4899,6 @@ wind_mshape(struct xa_window *wind, short x, short y)
 							rwidg = C.hover_widg;
 							if( cfg.widg_auto_highlight )
 								redisplay_widget(0, wind, hwidg, OS_SELECTED);
-#if WITH_BBL_HELP
-
-							if (cfg.describe_widgets)
-							{
-								if (rwind)
-								{
-									xa_bubble( 0, bbl_close_bubble2, 0, 0 );
-									bbl_closed = 1;
-								}
-								bubble_show(xa_strings(f - 1 + BBL_RESIZE));
-							}
-#endif
 							C.hover_wind = wind;
 							C.hover_widg = hwidg;
 						}
@@ -4939,12 +4913,6 @@ wind_mshape(struct xa_window *wind, short x, short y)
 					{
 						if( cfg.widg_auto_highlight )
 							redisplay_widget(0, rwind, rwidg, OS_NORMAL);
-#if WITH_BBL_HELP
-						if( cfg.describe_widgets && !bbl_closed )
-						{
-							xa_bubble( 0, bbl_close_bubble2, 0, 0 );
-						}
-#endif
 					}
 				}
 			}

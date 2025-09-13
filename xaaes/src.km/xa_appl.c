@@ -24,10 +24,6 @@
 #include "xa_appl.h"
 #include "xa_global.h"
 
-#if WITH_BBL_HELP
-#include "xa_bubble.h"
-#endif
-
 #include "xaaes.h"
 
 #include "app_man.h"
@@ -378,8 +374,6 @@ static char  *strip_uni_drive( char *in )
 
 }
 
-
-#define F_FORCE_MINT	0x40000
 
 struct file *xconout_dev = 0;
 /*
@@ -781,14 +775,6 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 		FreeResources(client, NULL, NULL);
 	}
 
-#if WITH_BBL_HELP
-	if( cfg.xa_bubble )
-	{
-		if( !C.shutdown && xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strcmp( "  BubbleGEM ", client->name ) )
-			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_ENABLE, 0, NULL, NULL);
-	}
-	xa_bubble( 0, bbl_close_bubble1, 0, 0 );
-#endif
 	/* Free name *only if* it is malloced: */
 	if ( client->tail_is_heap) {
 		kfree(client->cmd_tail);
@@ -1077,29 +1063,6 @@ handle_XaAES_msgs(int lock, union msg_buf *msg)
 		default:
 			break;
 	}
-#if WITH_BBL_HELP
-	if( cfg.xa_bubble && xa_bubble( lock, bbl_get_status, 0, 0 ) >= bs_closed )
-	{
-		switch (mt) {
-			case BUBBLEGEM_SHOW:
-			case BUBBLEGEM_HIDE:
-				xa_bubble( lock, bbl_process_event, msg, 0 );
-			return;
-			/*
-			case BUBBLEGEM_ACK:
-			case BUBBLEGEM_REQUEST:
-			case BUBBLEGEM_ASKFONT:
-			case BUBBLEGEM_FONT:
-			*/
-			default:
-			{
-				BLOG((0,"handle_XaAES_msgs: unhandled BUBBLE: %x, from %d, win=%d(%s)", mt, m.m[1], m.m[3], get_curproc()->name));
-				return;
-			}
-			break;
-		}
-	}
-#endif
 	dest_clnt = pid2client(m.m[1]);
 	if (dest_clnt)
 		send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, &m);
@@ -1710,13 +1673,6 @@ XA_appl_find(int lock, struct xa_client *client, AESPB *pb)
 				struct xa_client *cl;
 
 				DIAG((D_appl, client, "   Mode search for '%s'", name));
-#if WITH_BBL_HELP
-				if( cfg.xa_bubble && xa_bubble( lock, bbl_get_status, 0, 0 ) >= bs_closed && !strnicmp( "BUBBLE  ", name, 8 ) )
-				{
-					pb->intout[0] = C.AESpid;
-					break;
-				}
-#endif
 
 				Sema_Up(LOCK_CLIENTS);
 
