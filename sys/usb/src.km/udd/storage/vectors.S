@@ -24,6 +24,7 @@
  */
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
     .global SYM(install_vectors)
     .extern SYM(usb_getbpb)
@@ -81,7 +82,7 @@ SYM(install_vectors):
 /*
  *  hdv_bpb intercept
  */
-    dc.l    0x58425241              //XBRA
+    dc.l    XBRA_MAGIC
     dc.l    0x5f555342              //id _USB
 save_hdv_bpb:
     dc.l    0
@@ -113,7 +114,7 @@ my_hdv_bpb:
 /*
  *  hdv_rw intercept
  */
-    dc.l    0x58425241              //XBRA
+    dc.l    XBRA_MAGIC
     dc.l    0x5f555342              //id _USB
 save_hdv_rw:
     dc.l    0
@@ -188,7 +189,7 @@ my_hdv_rw:
 /*
  *  hdv_mediach intercept
  */
-    dc.l    0x58425241              //XBRA
+    dc.l    XBRA_MAGIC
     dc.l    0x5f555342              //id _USB
 save_hdv_mediach:
     dc.l    0

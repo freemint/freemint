@@ -1171,3 +1171,28 @@ SYM(get_usp):
 	rts
 	CFI_ENDPROC()
 	END(get_usp)
+
+	.data
+
+/* table of processor frame sizes in _words_ (not used on MC68000) */
+	.globl	SYM(framesizes)
+SYM(framesizes): .byte
+	/*0*/	.byte	0	/* MC68010/M68020/M68030/M68040 short */
+	/*1*/	.byte	0	/* M68020/M68030/M68040 throwaway */
+	/*2*/	.byte	2	/* M68020/M68030/M68040 instruction error */
+	/*3*/	.byte	2	/* M68040 floating point post instruction */
+	/*4*/	.byte	3	/* MC68LC040/MC68EC040 unimplemented floating point instruction */
+			/* or */
+			/* MC68060 access error */
+	/*5*/	.byte	0	/* NOTUSED */
+	/*6*/	.byte	0	/* NOTUSED */
+	/*7*/	.byte	26	/* M68040 access error */
+	/*8*/	.byte	25	/* MC68010 long */
+	/*9*/	.byte	6	/* M68020/M68030 mid instruction */
+	/*A*/	.byte	12	/* M68020/M68030 short bus cycle */
+	/*B*/	.byte	42	/* M68020/M68030 long bus cycle */
+	/*C*/	.byte	8	/* CPU32 bus error */
+	/*D*/	.byte	0	/* NOTUSED */
+	/*E*/	.byte	0	/* NOTUSED */
+	/*F*/	.byte	13	/* 68070 and 9xC1xx microcontroller address error */
+

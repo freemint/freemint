@@ -63,7 +63,7 @@
 
 	.globl	SYM(mcpu)
 	.globl	SYM(fpu)
-	.globl	SYM(framesizes)
+	.globl	SYM(framesizes)		// from cpu.S
 	.globl	SYM(new_trace)		// from intr.s
 #ifdef WITH_MMU_SUPPORT
 	.globl	SYM(no_mem_prot)

@@ -416,7 +416,7 @@ init_time (void)
 # if 0
 	/* Get the current setting of the hardware clock. Since we only bend
 	 * the vector once we don't bother about xbra stuff. We can't go
-	 * the fine MiNT way (using syskey, cf. mint.h) because this routine
+	 * the fine MiNT way (using kbdvecs, cf. mint.h) because this routine
 	 * is called before the interrupts are initialized.
 	 */
 

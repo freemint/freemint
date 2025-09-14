@@ -1,11 +1,12 @@
 |
 | Low level and interrupt routines for the Svethlana driver
 |
-| 2010-12-17 Torbj”rn & Henrik Gild†
+| 2010-12-17 Torbjï¿½rn & Henrik Gildï¿½
 |
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(old_i6_int)
 	.globl SYM(interrupt_i6)
@@ -18,7 +19,7 @@
 	.text
 
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x00000000		| (no cookie)
 SYM(old_i6_int):
 	ds.l	1

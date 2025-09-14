@@ -23,6 +23,8 @@
 
 #include "magic/magic.i"
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
+#include "arch/tos_vars.h"
 
 //
 // interrupt wrapping routines; these should just save registers and call
@@ -50,8 +52,8 @@
 	.globl	SYM(profil_on)
 	.globl	SYM(profil_counter)
 #endif
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_5ms):
 	dc.l	0
 
@@ -180,7 +182,7 @@ L_no_profile:
 	bne.s	L_novbl
 	move.w	#0x0004,vblcnt
 	
-	tst.w	(0x059e).w
+	tst.w	(_LONGFRAME).w
 	beq.s	L_short_1
 	clr.w	-(sp)			// set up a jump to VBL emulation
 L_short_1:
@@ -227,7 +229,7 @@ mod5:	dc.w	5		// initial value matters
 	.globl	SYM(uptime)
 	.globl	SYM(uptimetick)
 	.globl	SYM(c20ms)
-	.globl	SYM(keyrec)
+	.globl	SYM(kbd_iorec)
 	.globl	SYM(kintr)
 	.globl	SYM(our_clock)
 	.globl	SYM(tlist)
@@ -260,7 +262,7 @@ SYM(mint_vbl):
 // ColdFire evaluation boards. ASCII characters are received on the serial
 // port and directly put into the character buffer.
 
-	move.l	SYM(keyrec),a0
+	move.l	SYM(kbd_iorec),a0
 	move.w	6(a0),d0
 	cmp.w	8(a0),d0
 #ifdef __mcoldfire__
@@ -285,12 +287,12 @@ SYM(mint_vbl):
 	move.w	d0,(a0)
 skip:
 #ifdef __mcoldfire__
-	mvz.w	(0x0442).w,d0
+	mvz.w	(_TIMR_MS).w,d0
 	mvz.w	SYM(our_clock),d1
 	sub.l	d0,d1
 	move.w	d1,SYM(our_clock)
 #else
-	move.w	(0x0442).w,d0
+	move.w	(_TIMR_MS).w,d0
 	sub.w	d0,SYM(our_clock)
 #endif
 	move.l	SYM(tlist),d1
@@ -408,7 +410,7 @@ L_expired_68k:
 	btst	#5,(sp) 		// user mode?
 	bne.s	L_out			// no -- switching is not possible
 L_expired2:
-	tst.w	(0x043e).w		// test floppy disk lock variable
+	tst.w	(FLOCK).w		// test floppy disk lock variable
 	bne.s	L_out			// if locked, can't switch
 #ifdef __mcoldfire__
 	tst.w	SYM(in_kernel)	// are we doing a kernel operation?
@@ -469,7 +471,7 @@ L_switch:
 //
 	.globl	SYM(reset)
 	.globl	SYM(old_resvec)
-	.extern	SYM(restr_intr)
+	.extern	SYM(restore_TOS_vectors)
 	.globl	SYM(reboot)
 
 	FUNC(reboot)
@@ -484,8 +486,8 @@ SYM(reboot):
 // the stack pointer is in an unknown state, so we set up our own.
 // There is a free page at 0x0600-0x06ff.
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_resvec):
 	dc.l	0
 
@@ -500,7 +502,7 @@ SYM(reset):
 #else
 	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 #endif
-	jsr	SYM(restr_intr)		// restore interrupts
+	jsr	SYM(restore_TOS_vectors)		// restore interrupts
 #ifdef __mcoldfire__
 	movem.l	(sp),d0-d2/a0-a2	// restore registers
 	lea	24(sp),sp
@@ -624,22 +626,22 @@ SYM(newjvec):
 // In both cases, the goal is to call ikbd_scan with keyboard bytes.
 
 #ifndef NO_AKP_KEYBOARD
-	.globl	SYM(newkeys)
+	.globl	SYM(kbdvec_handler)
 	.globl	SYM(oldkeys)
 	.globl	SYM(ikbd_scan)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(oldkeys):	dc.l	0
-	FUNC(newkeys)
-SYM(newkeys):
+	FUNC(kbdvec_handler)
+SYM(kbdvec_handler):
 #ifdef __mcoldfire__
 	lea	-20(sp),sp
 	movem.l	d1-d2/a0-a2,(sp)
 #else
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
-	move.l	SYM(keyrec),-(sp)
+	move.l	SYM(kbd_iorec),-(sp)
 #ifdef __mcoldfire__
 	and.l	#0x00ff,d0
 #else
@@ -655,7 +657,7 @@ SYM(newkeys):
 	movem.l	(sp)+,d1-d2/a0-a2
 #endif
 	rts
-	END(newkeys)
+	END(kbdvec_handler)
 
 // Calling the keyclick routines. This is a helper for keyboard driver.
 
@@ -666,16 +668,16 @@ SYM(kbdclick):
 #ifdef __mcoldfire__
 	move.l	d0,-(sp)
 	moveq	#0,d0
-	btst	d0,(0x0484).w	// conterm
+	btst	d0,(CONTERM).w
 	beq.s	L_nocl
 	lea	-56(sp),sp
 	movem.l	d1-a6,(sp)
 #else
-	btst	#0,(0x0484).w	// conterm
+	btst	#0,(CONTERM).w
 	beq.s	L_nocl
 	movem.l	d0-a6,-(sp)
 #endif
-	move.l	(0x05b0).w,d0	// vector to the keyclick routine
+	move.l	(KCL_HOOK).w,d0	// vector to the keyclick routine
 	beq.s	L_pop
 	move.l	d0,a0
 	clr.l	d0
@@ -769,8 +771,8 @@ SYM(send_packet):
 
 	.globl	SYM(check_bus),SYM(old_bus)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_bus):
 	dc.l	0
 SYM(new_bus):
@@ -971,8 +973,8 @@ NOMMU1:
 
 	.globl	SYM(old_addr)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_addr):
 	dc.l	0
 SYM(new_addr):
@@ -991,8 +993,8 @@ SYM(new_addr):
 
 	.globl	SYM(old_ill)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_ill):
 	dc.l	0
 SYM(new_ill):
@@ -1011,8 +1013,8 @@ SYM(new_ill):
 
 	.globl	SYM(old_divzero)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_divzero):
 	dc.l	0
 SYM(new_divzero):
@@ -1031,8 +1033,8 @@ SYM(new_divzero):
 
 	.globl	SYM(old_linef)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_linef):
 	dc.l	0
 SYM(new_linef):
@@ -1051,8 +1053,8 @@ SYM(new_linef):
 
 	.globl	SYM(old_chk)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_chk):
 	dc.l	0
 SYM(new_chk):
@@ -1071,8 +1073,8 @@ SYM(new_chk):
 
 	.globl	SYM(old_trapv)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_trapv):
 	dc.l	0
 SYM(new_trapv):
@@ -1097,44 +1099,44 @@ SYM(new_trapv):
 	.globl	SYM(old_fpcp_5)
 	.globl	SYM(old_fpcp_6)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_0):
 	dc.l	0
 	bra.s	SYM(new_fpcp)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_1):
 	dc.l	0
 	bra.s	SYM(new_fpcp)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_2):
 	dc.l	0
 	bra.s	SYM(new_fpcp)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_3):
 	dc.l	0
 	bra.s	SYM(new_fpcp)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_4):
 	dc.l	0
 	bra.s	SYM(new_fpcp)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_5):
 	dc.l	0
 	bra.s	SYM(new_fpcp)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_fpcp_6):
 	dc.l	0
 SYM(new_fpcp):
@@ -1152,8 +1154,8 @@ SYM(new_fpcp):
 	.globl	SYM(old_mmuconf)
 	.globl	SYM(new_mmuconf)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_mmuconf):
 	dc.l	0
 SYM(new_mmuconf):
@@ -1170,8 +1172,8 @@ SYM(new_mmuconf):
 
 	.globl	SYM(old_pmmuill)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_pmmuill):
 	dc.l	0
 SYM(new_mmu):
@@ -1188,8 +1190,8 @@ SYM(new_mmu):
 
 	.globl	SYM(old_pmmuacc)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_pmmuacc):
 	dc.l	0
 
@@ -1207,8 +1209,8 @@ SYM(new_pmmuacc):
 
 	.globl	SYM(old_uninit)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_uninit):
 	dc.l	0
 SYM(new_uninit):
@@ -1227,8 +1229,8 @@ SYM(new_uninit):
 
 	.globl	SYM(old_spurious)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_spurious):
 	dc.l	0
 SYM(new_spurious):
@@ -1247,8 +1249,8 @@ SYM(new_spurious):
 
 	.globl	SYM(old_format)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_format):
 	dc.l	0
 SYM(new_format):
@@ -1264,8 +1266,8 @@ SYM(new_format):
 
 	.globl	SYM(old_cpv)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_cpv):
 	dc.l	0
 SYM(new_cpv):
@@ -1281,8 +1283,8 @@ SYM(new_cpv):
 
 	.globl	SYM(check_priv),SYM(old_priv)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_priv):
 	dc.l	0
 SYM(new_priv):
@@ -1328,8 +1330,8 @@ SYM(new_priv):
 	.extern	SYM(mint_dos),SYM(mint_bios),SYM(mint_xbios)
 	.globl	SYM(old_trace)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_trace):
 	dc.l	0
 SYM(new_trace):
@@ -1418,8 +1420,8 @@ S_2:	and.w	#0x3fff,(sp)		// clear both trace bits
 	.globl	SYM(new_mediach)
 	.globl	SYM(new_rwabs)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_getbpb):
 	dc.l	0
 SYM(new_getbpb):
@@ -1462,8 +1464,8 @@ nobpb:
 	clr.l	d0		// 0 means "no BPB read"
 	rts
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_mediach):
 	dc.l	0
 SYM(new_mediach):
@@ -1505,8 +1507,8 @@ nochng:
 	clr.l	d0		// 0 means "definitely no change"
 	rts
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_rwabs):
 	dc.l	0
 SYM(new_rwabs):
@@ -1553,8 +1555,8 @@ rwdone:
 	.globl SYM(new_criticerr)
 	.extern SYM(mint_criticerr)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_criticerr):
 	dc.l	0
 SYM(new_criticerr):
@@ -1564,8 +1566,8 @@ SYM(new_criticerr):
 	.globl SYM(new_exec_os)
 	.extern SYM(do_exec_os)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_exec_os):
 	dc.l	0
 SYM(new_exec_os):

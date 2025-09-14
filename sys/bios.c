@@ -396,7 +396,7 @@ init_bios(void)
 {
 	int i;
 
-	keyrec = (IOREC_T *)TRAP_Iorec(1);
+	kbd_iorec = (IOREC_T *)TRAP_Iorec(1);
 
 	for (i = 0; i < BDEVMAP_MAX; i++)
 	{
@@ -587,7 +587,7 @@ const short boutput[MAX_BHANDLE] = { -3, -2, -1, -5 };
 		callout1(MAPTAB[dev-SERDEV].bconin, dev) : ROM_Bconin(dev)))
 
 /* variables for monitoring the keyboard */
-IOREC_T *keyrec;		/* keyboard i/o record pointer */
+IOREC_T *kbd_iorec;		/* keyboard i/o record pointer */
 BCONMAP2_T *bconmap2;		/* bconmap struct */
 short	kintr = 0;		/* keyboard interrupt pending (see intr.s) */
 
@@ -1015,7 +1015,7 @@ bconstat (int dev)
 		if (checkkeys ())
 			return 0;
 
-		return (keyrec->head != keyrec->tail) ? -1 : 0;
+		return (kbd_iorec->head != kbd_iorec->tail) ? -1 : 0;
 	}
 
 	if (dev == AUXDEV && has_bconmap)
@@ -1053,7 +1053,7 @@ bconin (int dev)
 
 	if (dev == CONSDEV)
 	{
-		IOREC_T *k = keyrec;
+		IOREC_T *k = kbd_iorec;
 		long r;
 
 again:
@@ -1552,7 +1552,7 @@ checkkeys (void)
 	static short oldktail = 0;
 
 	ret = 0;
-	while (oldktail != keyrec->tail)
+	while (oldktail != kbd_iorec->tail)
 	{
 
 /* BUG: we really should check the shift status _at the time the key was
@@ -1561,7 +1561,7 @@ checkkeys (void)
 		sig = 0;
 		shift = mshift;
 		oldktail += 4;
-		if (oldktail >= keyrec->buflen)
+		if (oldktail >= kbd_iorec->buflen)
 			oldktail = 0;
 
 /* check for special control keys, etc. */
@@ -1575,7 +1575,7 @@ checkkeys (void)
 		 */
 		if (!(tty->sg.sg_flags & T_RAW) && ((tty->state & TS_COOKED) || (shift & MM_CTRLALT) == MM_CTRLALT))
 		{
-			ch = (keyrec->bufaddr + keyrec->tail)[3];
+			ch = (kbd_iorec->bufaddr + kbd_iorec->tail)[3];
 			if (ch == UNDEF)
 				;	/* do nothing */
 			else if (ch == tty->tc.t_intrc)
@@ -1588,14 +1588,14 @@ checkkeys (void)
 			{
 				tty->state |= TS_HOLD;
 				ret = 1;
-				keyrec->head = oldktail;
+				kbd_iorec->head = oldktail;
 				continue;
 			}
 			else if (ch == tty->tc.t_startc)
 			{
 				tty->state &= ~TS_HOLD;
 				ret = 1;
-				keyrec->head = oldktail;
+				kbd_iorec->head = oldktail;
 				continue;
 			}
 
@@ -1603,7 +1603,7 @@ checkkeys (void)
 			{
 				tty->state &= ~TS_HOLD;
 				if (!(tty->sg.sg_flags & T_NOFLSH))
-				    oldktail = keyrec->head = keyrec->tail;
+				    oldktail = kbd_iorec->head = kbd_iorec->tail;
 
 				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig));
 				killgroup(tty->pgrp, sig, 1);
@@ -1611,7 +1611,7 @@ checkkeys (void)
 			}
 			else if (tty->state & TS_HOLD)
 			{
-				keyrec->head = oldktail;
+				kbd_iorec->head = oldktail;
 				ret = 1;
 			}
 		}
@@ -1619,7 +1619,7 @@ checkkeys (void)
 
 	/* XXX: move this later to ikbd_scan()
 	 */
-	if (keyrec->head != keyrec->tail)
+	if (kbd_iorec->head != kbd_iorec->tail)
 	{
 	/* wake up any processes waiting in bconin() */
 		wake(IO_Q, (long)&console_in);

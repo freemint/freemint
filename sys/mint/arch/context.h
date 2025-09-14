@@ -29,6 +29,8 @@
  * 
  */
 
+/* tabSize=8 */
+
 # ifndef _mint_m68k_context_h
 # define _mint_m68k_context_h
 
@@ -45,7 +47,7 @@ struct context
 	unsigned short	sr;		/* status register */
 	unsigned long	pc;		/* program counter */
 	unsigned long	ssp;		/* supervisor stack pointer */
-	unsigned long	term_vec;	/* GEMDOS terminate vector (0x102) */
+	unsigned long	term_vec;	/* GEMDOS terminate vector etv_term (0x102) at 0x408 */
 	
 	/* AGK: if running on a TT and the user is playing with the FPU then we
 	 * must save and restore the context. We should also consider this for

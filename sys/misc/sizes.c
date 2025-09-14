@@ -72,7 +72,6 @@ main (void)
 	printf ("sizeof (PROC)\t\t= %li\n", sizeof (PROC));
 	printf ("sizeof (IOREC_T)\t= %li\n", sizeof (IOREC_T));
 	printf ("sizeof (BCONMAP2_T)\t= %li\n", sizeof (BCONMAP2_T));
-	printf ("sizeof (xbra_vec)\t= %li\n", sizeof (xbra_vec));
 	
 	return 0;
 }

@@ -5,6 +5,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 yamaha	  = 0xFFFF8800
 mfp_gpip  = 0xFFFFFA01
@@ -68,7 +69,7 @@ SYM(de600_sti):
 | BUSY interrupt routine.
 |
 
-	.long	0x58425241	| "XBRA"
+	.long	XBRA_MAGIC
 	.long	0x64653030	| "de600"
 SYM(de600_old_busy_int):
 	.long	0xDEADFACE

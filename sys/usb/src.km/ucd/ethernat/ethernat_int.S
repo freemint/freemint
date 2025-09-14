@@ -32,6 +32,7 @@
  */
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 #define RESMAGIC		0x31415926
 #define _resvalid		0x426
@@ -50,7 +51,7 @@
 
 	.text
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x00000000		// (no cookie)
 SYM(old_int):
 	ds.l	1
@@ -94,7 +95,7 @@ SYM(hook_reset_vector):
 	move.l	#newreset,_resvector
 	rts
 
-	dc.l	0x58425241		// XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x45544E55		// ETNU
 oldreset:
 	dc.l	0

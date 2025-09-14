@@ -3,11 +3,11 @@
  */
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 #define sfc REG(sfc)
 #define dfc REG(dfc)
 #define vbr REG(vbr)
 
-XBRA      = 0x58425241              /* "XBRA" */
 XBRA_ID   = 0x4d435350              /* "MCSP" */
 
 XBRA_AB40 = 0x41423430              /* "AB40" */

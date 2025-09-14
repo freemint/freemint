@@ -14,6 +14,7 @@
  */
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 # ifndef NO_AKP_KEYBOARD
 
@@ -32,13 +33,13 @@ IKBDTODO	=	IKBDSTATE+1
 
 	.text
 
-	.globl	SYM(syskey),SYM(keyrec)
+	.globl	SYM(kbdvecs),SYM(kbd_iorec)
 	.globl	SYM(old_acia),SYM(new_acia)
 	.extern SYM(has_kbdvec)
-	.extern SYM(newkeys)
+	.extern SYM(kbdvec_handler)
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
+	dc.l	XBRA_MAGIC
+	dc.l	MINT_MAGIC
 SYM(old_acia):
 	dc.l	0
 
@@ -67,7 +68,7 @@ SYM(new_acia):
 #else
 	movem.l	d0-d3/a0-a3,-(sp)
 #endif
-again:	move.l	SYM(syskey),a3
+again:	move.l	SYM(kbdvecs),a3
 	move.l	VMIDISYS(a3),a0
 	jsr	(a0)
 	move.l	VIKBDSYS(a3),a0
@@ -117,9 +118,9 @@ todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 	FUNC(kbdsys_handler)
 SYM(ikbdsys_handler):
 	CFI_STARTPROC()
-	move.l	SYM(syskey),a3		// if ACIA handler is from ROM get syskey
+	move.l	SYM(kbdvecs),a3		// if ACIA handler is from ROM get kbdvecs
 	move.b	(0xfc00).w,d1		// ACIA control
-	move.l	SYM(keyrec),a0
+	move.l	SYM(kbd_iorec),a0
 	btst	#0x07,d1		// interrupt request
 #ifdef __mcoldfire__
 	beq	return
@@ -145,7 +146,7 @@ no_error:
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
 	tst.w	SYM(has_kbdvec)		// if kvdvec not present call new_keys directly
-	beq	SYM(newkeys)
+	beq	SYM(kbdvec_handler)
 	move.l	KBDVEC(a3),a1
 	jmp	(a1)
 
@@ -156,7 +157,7 @@ not_keyboard:
 	sub.b	#0xf6,d0
 #endif
 
-// unlike some documentation states, syskey->ikbdstate contains
+// unlike some documentation states, kbdvecs->ikbdstate contains
 // the type of the packet, and not the number of bytes transmitted.
 
 	lea	type,a1
@@ -256,7 +257,7 @@ call:	move.l	a0,-(sp)
 	jsr	(a2)
 	addq.l	#4,sp
 
-	move.l	SYM(syskey),a3
+	move.l	SYM(kbdvecs),a3
 	clr.b	IKBDSTATE(a3)
 
 xret:	rts

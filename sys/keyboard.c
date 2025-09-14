@@ -56,12 +56,12 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
-# include "arch/init_intr.h"	/* syskey */
+# include "arch/init_intr.h"	/* kbdvecs */
 # include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"
 # include "arch/syscall.h"
 
-# include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
+# include "bios.h"		/* kbshft, kintr, *kbd_iorec, ...  */
 # include "biosfs.h"		/* struct tty */
 # include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */
@@ -218,7 +218,7 @@ mouse_up(PROC *p, long pixels)
 	mouse_packet[1] = 0;					/* X axis */
 	mouse_packet[2] = -pixels;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -246,7 +246,7 @@ mouse_down(PROC *p, long pixels)
 	mouse_packet[1] = 0;				/* X axis */
 	mouse_packet[2] = pixels;			/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -274,7 +274,7 @@ mouse_left(PROC *p, long pixels)
 	mouse_packet[1] = -pixels;			/* X axis */
 	mouse_packet[2] = 0;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -303,7 +303,7 @@ mouse_right(PROC *p, long pixels)
 	mouse_packet[1] = pixels;			/* X axis */
 	mouse_packet[2] = 0;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -330,7 +330,7 @@ mouse_noclick(PROC *p, long arg)
 	mouse_packet[1] = 0;				/* X axis */
 	mouse_packet[2] = 0;				/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 }
 
 /* Generate right click */
@@ -347,7 +347,7 @@ mouse_rclick(PROC *p, long arg)
 
 	*kbshft &= ~MM_ALTERNATE;
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	*kbshft |= MM_ALTERNATE;
 }
@@ -362,7 +362,7 @@ mouse_lclick(PROC *p, long arg)
 
 	*kbshft &= ~MM_ALTERNATE;
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+	send_packet(kbdvecs->mousevec, mouse_packet, mouse_packet + 3);
 
 	*kbshft |= MM_ALTERNATE;
 }
@@ -910,13 +910,13 @@ output_scancode(PROC *p, long arg)
 
 /* Keyboard interrupt routine.
  *
- * The scancode is passed from newkeys(), which in turn is called
+ * The scancode is passed from kbdvec_handler(), which in turn is called
  * by BIOS.
  *
  */
 
 /* `scancode' is short, but only low byte matters. The high byte
- * is zeroed by newkeys().
+ * is zeroed by kbdvec_handler().
  */
 
 struct scanb_entry
@@ -1283,8 +1283,8 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','ƒ' means that '^' followed by 'a' results
-			 * in an 'ƒ'.
+			 * So '^','a','X' means that '^' followed by 'a' results
+			 * in an 'X'.
 			 */
 			const uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
@@ -1548,7 +1548,7 @@ sys_b_bioskeys(void)
 KBDVEC * _cdecl
 sys_b_kbdvbase(void)
 {
-	return syskey;
+	return kbdvecs;
 }
 
 /* Init section
@@ -1848,7 +1848,7 @@ load_keyboard_table(const char *path, short flag)
 }
 
 /* Pre-initialize the built-in keyboard tables.
- * This must be done before init_intr()!
+ * This must be done before install_TOS_vectors()!
  */
 void
 init_keybd(void)
