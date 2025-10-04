@@ -313,20 +313,20 @@ skip:
 //	jsr	SYM(autorepeat_timer)	// in keyboard.c
 //#endif
 
-// "VBL" things go here (50 times per second at IPL 3)
+// "VBL" things go here (50 times per second at IPL 4)
 
 txit:
 #ifdef __mcoldfire__
 	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	txit_68k
 
-	btst	#2,26(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+	btst	#2,26(sp)		// don't perform if saved IPL mask is 4 or higher (bit 2 set)
 	bne.s	L_popnout
 
 	bra.s	L_vbl_emu
 txit_68k:
 #endif
-	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+	btst	#2,24(sp)		// don't perform if saved IPL mask is 4 or higher (bit 2 set)
 	bne.s	L_popnout
 
 L_vbl_emu:
