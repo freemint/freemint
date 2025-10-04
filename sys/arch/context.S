@@ -227,7 +227,6 @@ SYM(save_context):
 #ifdef WITH_MMU_SUPPORT
 	tst.w	SYM(no_mem_prot)
 	bne.s	noprot2
-	move.w	sr,d1
 #if defined(M68040) || defined(M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
@@ -235,7 +234,6 @@ SYM(save_context):
 	pmove	%crp,C_CRP(a0)		// save the CRP from the MMU
 	pmove	%tc,C_TC(a0)		// save the TC from the MMU
 #endif
-	move.w	d1,sr
 noprot2:
 #endif
 
@@ -477,7 +475,6 @@ SYM(change_context):
 // Set memory context now
 	tst.w	SYM(no_mem_prot)
 	bne.s	noprot4
-	move.w	sr,d1
 #if defined(M68040) || defined(M68060)
 	move.l	C_CRP(a0),d0
 	dc.w	0xf518			// pflusha
@@ -488,7 +485,6 @@ SYM(change_context):
 	pmove	C_CRP(a0),%crp		// restore MMU root pointer
 	pmove	C_TC(a0),%tc		// restore MMU control register
 #endif
-	move.w	d1,sr
 noprot4:
 #endif
 
