@@ -726,21 +726,6 @@ init_moose(void)
 }
 
 
-/*
- * Ozk: multi_intout() may be called by processes not yet called
- * appl_init(). So, it must not depend on client being valid!
- */
-void
-multi_intout(struct xa_client *client, short *o, int evnt)
-{
-	check_mouse(client, &o[3], &o[1], &o[2]);
-	o[0] = evnt;
-	vq_key_s(C.P_handle, &o[4]);
-	if (evnt)
-	{
-		o[5] = o[6] = 0;
-	}
-}
 struct display_alert_data
 {
 	int lock;

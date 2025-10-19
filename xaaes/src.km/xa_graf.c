@@ -1397,9 +1397,11 @@ XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 		pb->intout[2] = mbs.y;
 		pb->intout[3] = mbs.b;
 		pb->intout[4] = mbs.ks;
+	} else
+	{
+		check_mouse(NULL, &pb->intout[3], &pb->intout[1], &pb->intout[2]);
+		vq_key_s(C.P_handle, &pb->intout[4]);
 	}
-	else
-		multi_intout(NULL, pb->intout, 0);
 
 	pb->intout[0] = 1;
 
