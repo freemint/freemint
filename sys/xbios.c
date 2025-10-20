@@ -517,12 +517,13 @@ vsetmode (int modecode)
 long _cdecl
 sys_b_vsetscreen (long log, long phys, int rez, int mode)
 {
+	long r;
 	/* STE shifter ST-high syncbug workaround */
-	ROM_VsetScreen (log, phys, rez, mode);
+	r = ROM_VsetScreen (log, phys, rez, mode);
 	if (ste_video && rez == 2)
 		shifter_patch();
 
-	return E_OK;
+	return r;
 
 }
 
