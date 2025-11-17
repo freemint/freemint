@@ -150,7 +150,7 @@ long
 fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 {
 # if O_GLOBAL
-	if (*fd & 0x8000)
+	if ((*fd < -5 || *fd > -1) && (*fd & 0x8000))
 	{
 		*fd &= ~0x8000;
 		*p = rootproc;
