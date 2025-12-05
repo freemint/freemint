@@ -21,6 +21,7 @@
 # include "arch/kernel.h"	/* enter_gemdos() */
 # include "arch/syscall.h"	/* new_xxx */
 # include "arch/tosbind.h"	/* TRAP_xxx() */
+# include "arch/tos_vars.h" /* Address of TOS variables */
 
 # include "arch/init_intr.h"
 
@@ -32,51 +33,31 @@
 # define RES_MAGIC	0x31415926L
 
 /* structures for keyboard/MIDI interrupt vectors */
-KBDVEC *syskey;
-static KBDVEC oldkey;
+KBDVEC *kbdvecs;
+static long old_kbdvec;
+static KBDVEC old_kbdvecs;
 
 long old_term;
 long old_resval;	/* old reset validation */
-long olddrvs;		/* BIOS drive map */
-
-
-/* table of processor frame sizes in _words_ (not used on MC68000) */
-uchar framesizes[16] =
-{
-	/*0*/	0,	/* MC68010/M68020/M68030/M68040 short */
-	/*1*/	0,	/* M68020/M68030/M68040 throwaway */
-	/*2*/	2,	/* M68020/M68030/M68040 instruction error */
-	/*3*/	2,	/* M68040 floating point post instruction */
-	/*4*/	3,	/* MC68LC040/MC68EC040 unimplemented floating point instruction */
-			/* or */
-			/* MC68060 access error */
-	/*5*/	0,	/* NOTUSED */
-	/*6*/	0,	/* NOTUSED */
-	/*7*/	26,	/* M68040 access error */
-	/*8*/	25,	/* MC68010 long */
-	/*9*/	6,	/* M68020/M68030 mid instruction */
-	/*A*/	12,	/* M68020/M68030 short bus cycle */
-	/*B*/	42,	/* M68020/M68030 long bus cycle */
-	/*C*/	8,	/* CPU32 bus error */
-	/*D*/	0,	/* NOTUSED */
-	/*E*/	0,	/* NOTUSED */
-	/*F*/	13	/* 68070 and 9xC1xx microcontroller address error */
-};
+long old_drvbits;	/* BIOS drive map */
 
 /* New XBRA installer. The XBRA structure must be located
  * directly before the routine it belongs to.
+ * old_handler: will return the address of the previous handler for the vector
+ * vector: address of the vector to set
+ * new_handler: address of the new handler
  */
 
 void
-new_xbra_install (long *xv, long addr, long _cdecl (*func)())
+install_vector (long *old_handler, long vector, long _cdecl (*new_handler)())
 {
-	*xv = *(long *)addr;
-	*(long *)addr = (long)func;
+	*old_handler = *(long *)vector;
+	*(long *)vector = (long)new_handler;
 
 	/* better to be safe... */
 # ifndef M68000
-	cpush ((long *) addr, sizeof (addr)); 
-	cpush (xv, sizeof (xv));
+	cpush ((long *) vector, sizeof (vector)); 
+	cpush (old_handler, sizeof (old_handler));
 # endif
 }
 
@@ -88,12 +69,12 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func)())
  */
 
 void
-init_intr (void)
+install_TOS_vectors (void)
 {
 	ushort savesr;
 
-	syskey = (KBDVEC *) TRAP_Kbdvbase ();
-	oldkey = *syskey;
+	kbdvecs = (KBDVEC *) TRAP_Kbdvbase ();
+	old_kbdvecs = *kbdvecs; /* structure copy */
 
 # ifndef NO_AKP_KEYBOARD
 	if (!has_kbdvec) /* TOS versions without the KBDVEC vector */
@@ -102,9 +83,9 @@ init_intr (void)
 		 * with ACIA registers, and to call the appropriate KBDVEC vectors
 		 * for keyboard, mouse, joystick, status and time packets. */
 		savesr = splhigh();
-		syskey->ikbdsys = (long)ikbdsys_handler;
+		kbdvecs->ikbdsys = (long)ikbdsys_handler;
 #ifndef M68000
-		cpush(&syskey->ikbdsys, sizeof(long));
+		cpush(&kbdvecs->ikbdsys, sizeof(long));
 #endif
 		spl(savesr);
 	}
@@ -117,8 +98,8 @@ init_intr (void)
 		 * TOS < 2.00 doesn't know about this vector but the new ikdsys
 		 * hadler hooked above if we're running over TOS < 2.00 will call it.
 		 */
-		long *kbdvec = ((long *)syskey)-1;
-		new_xbra_install (&oldkeys, (long)kbdvec, newkeys);
+		long *kbdvec = ((long *)kbdvecs)-1;
+		install_vector (&old_kbdvec, (long)kbdvec, kbdvec_handler);
 	}
 
 	/* Workaround for FireTOS and CT60 TOS 2.xx.
@@ -141,14 +122,17 @@ init_intr (void)
 	if (version >= 2)
 	{
 		savesr = splhigh();
-		syskey->ikbdsys = (long)ikbdsys_handler;
-		cpush(&syskey->ikbdsys, sizeof(long));
-		new_xbra_install(&old_acia, 0x0118L, new_acia);
+		kbdvecs->ikbdsys = (long)ikbdsys_handler;
+		cpush(&kbdvecs->ikbdsys, sizeof(long));
+		install_vector(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
 	}
 # endif /* NO_AKP_KEYBOARD */
 
-	old_term = (long) TRAP_Setexc (0x102, -1UL);
+	/* Documentation says that we should set etv_term using Setexc (this is to give
+	 * the OS a chance to maintain it per-program). We need to save it now, before we
+	 * hook TRAP #13 */
+	old_term = (long) TRAP_Setexc (ETV_TERM/4, -1UL);
 
 	savesr = splhigh();
 
@@ -166,29 +150,29 @@ init_intr (void)
 	{
 	long dummy;
 
-	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
-	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */	
+	install_vector (&dummy, TRAP0, unused_trap);		/* trap #0 */
+	install_vector (&old_dos, TRAP1, mint_dos);		/* trap #1, GEMDOS */	
 # if 0	/* we only install this on request yet */
-	new_xbra_install (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
+	install_vector (&old_trap2, TRAP2, mint_trap2);	/* trap #2, GEM */
 # endif
-	new_xbra_install (&dummy, 0x8cL, unused_trap);		/* trap #3 */
-	new_xbra_install (&dummy, 0x90L, unused_trap);		/* trap #4 */
-	new_xbra_install (&dummy, 0x94L, unused_trap);		/* trap #5 */
-	new_xbra_install (&dummy, 0x98L, unused_trap);		/* trap #6 */
-	new_xbra_install (&dummy, 0x9cL, unused_trap);		/* trap #7 */
-	new_xbra_install (&dummy, 0xa0L, unused_trap);		/* trap #8 */
-	new_xbra_install (&dummy, 0xa4L, unused_trap);		/* trap #9 */
-	new_xbra_install (&dummy, 0xa8L, unused_trap);		/* trap #10 */
-	new_xbra_install (&dummy, 0xacL, unused_trap);		/* trap #11 */
-	new_xbra_install (&dummy, 0xb0L, unused_trap);		/* trap #12 */
-	new_xbra_install (&old_bios, 0xb4L, mint_bios);		/* trap #13, BIOS */
-	new_xbra_install (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
+	install_vector (&dummy, TRAP3, unused_trap);		/* trap #3 */
+	install_vector (&dummy, TRAP4, unused_trap);		/* trap #4 */
+	install_vector (&dummy, TRAP5, unused_trap);		/* trap #5 */
+	install_vector (&dummy, TRAP6, unused_trap);		/* trap #6 */
+	install_vector (&dummy, TRAP7, unused_trap);		/* trap #7 */
+	install_vector (&dummy, TRAP8, unused_trap);		/* trap #8 */
+	install_vector (&dummy, TRAP9, unused_trap);		/* trap #9 */
+	install_vector (&dummy, TRAP10, unused_trap);		/* trap #10 */
+	install_vector (&dummy, TRAP11, unused_trap);		/* trap #11 */
+	install_vector (&dummy, TRAP12, unused_trap);		/* trap #12 */
+	install_vector (&old_bios, TRAP13, mint_bios);		/* trap #13, BIOS */
+	install_vector (&old_xbios, TRAP14, mint_xbios);	/* trap #14, XBIOS */
 # if 0
-	new_xbra_install (&dummy, 0xbcL, unused_trap);		/* trap #15 */
+	install_vector (&dummy, TRAP15, unused_trap);		/* trap #15 */
 # endif
 	}
 
-	new_xbra_install (&old_criticerr, 0x404L, (long (*)(void))new_criticerr);
+	install_vector (&old_criticerr, ETV_CRITIC, (long (*)(void))new_criticerr);
 
 	/* Hook the 200 Hz system timer. Our handler will do its job,
 	 * then call the previous handler. Every four interrupts, our handler will
@@ -197,10 +181,10 @@ init_intr (void)
 	 * to mimic a 50 Hz VBL interrupt.
 	 */
 
-	new_xbra_install (&old_5ms, (long)p5msvec, mint_5ms);
+	install_vector (&old_5ms, (long)p5msvec, mint_5ms);
 
 #if 0	/* this should really not be necessary ... rincewind */
-	new_xbra_install (&old_resvec, 0x042aL, reset);
+	install_vector (&old_resvec, 0x042aL, reset);
 	old_resval = *((long *)0x426L);
 	*((long *) 0x426L) = RES_MAGIC;
 #endif
@@ -208,41 +192,41 @@ init_intr (void)
 	spl (savesr);
 
 	/* set up signal handlers */
-	new_xbra_install (&old_bus, 8L, new_bus);
-	new_xbra_install (&old_addr, 12L, new_addr);
-	new_xbra_install (&old_ill, 16L, new_ill);
-	new_xbra_install (&old_divzero, 20L, new_divzero);
-	new_xbra_install (&old_trace, 36L, new_trace);
+	install_vector (&old_bus, VEC_BUS_ERROR, new_bus);
+	install_vector (&old_addr, VEC_ADDRESS_ERROR, new_addr);
+	install_vector (&old_ill, VEC_ILLEGAL_INSTRUCTION, new_ill);
+	install_vector (&old_divzero, VEC_DIVISION_BY_ZERO, new_divzero);
+	install_vector (&old_trace, VEC_TRACE, new_trace);
 
-	new_xbra_install (&old_priv, 32L, new_priv);
+	install_vector (&old_priv, VEC_PRIVILEGE_VIOLATION, new_priv);
 
 	if (tosvers >= 0x106)
-		new_xbra_install (&old_linef, 44L, new_linef);
+		install_vector (&old_linef, VEC_LINE_F, new_linef);
 
-	new_xbra_install (&old_chk, 24L, new_chk);
-	new_xbra_install (&old_trapv, 28L, new_trapv);
+	install_vector (&old_chk, VEC_CHK, new_chk);
+	install_vector (&old_trapv, VEC_TRAPV, new_trapv);
 
-	new_xbra_install (&old_fpcp_0, 192L + (0 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_1, 192L + (1 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_2, 192L + (2 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_3, 192L + (3 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_4, 192L + (4 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_5, 192L + (5 * 4), new_fpcp);
-	new_xbra_install (&old_fpcp_6, 192L + (6 * 4), new_fpcp);
+	install_vector (&old_fpcp_0, VEC_FFCP0, new_fpcp);
+	install_vector (&old_fpcp_1, VEC_FFCP1, new_fpcp);
+	install_vector (&old_fpcp_2, VEC_FFCP2, new_fpcp);
+	install_vector (&old_fpcp_3, VEC_FFCP3, new_fpcp);
+	install_vector (&old_fpcp_4, VEC_FFCP4, new_fpcp);
+	install_vector (&old_fpcp_5, VEC_FFCP5, new_fpcp);
+	install_vector (&old_fpcp_6, VEC_FFCP6, new_fpcp);
 
-	new_xbra_install (&old_mmuconf, 224L, new_mmuconf);
-	new_xbra_install (&old_pmmuill, 228L, new_mmu);
-	new_xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
-	new_xbra_install (&old_format, 56L, new_format);
-	new_xbra_install (&old_cpv, 52L, new_cpv);
-	new_xbra_install (&old_uninit, 60L, new_uninit);
-	new_xbra_install (&old_spurious, 96L, new_spurious);
+	install_vector (&old_mmuconf, VEC_MMU_CONFIG_ERROR, new_mmuconf);
+	install_vector (&old_pmmuill, VEC_MMU1, new_mmu);
+	install_vector (&old_pmmuacc, VEC_MMU2, new_pmmuacc);
+	install_vector (&old_format, VEC_FORMAT_ERROR, new_format);
+	install_vector (&old_cpv, VEC_COPRO_PROTOCOL_VIOLATION, new_cpv);
+	install_vector (&old_uninit, VEC_UNINITIALIZED, new_uninit);
+	install_vector (&old_spurious, VEC_SPURIOUS_INTERRUPT, new_spurious);
 
 	/* set up disk vectors */
-	new_xbra_install (&old_mediach, 0x47eL, new_mediach);
-	new_xbra_install (&old_rwabs, 0x476L, new_rwabs);
-	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
-	olddrvs = *((long *) 0x4c2L);
+	install_vector (&old_mediach, HDV_MEDIACH, new_mediach);
+	install_vector (&old_rwabs, HDV_RW, new_rwabs);
+	install_vector (&old_getbpb, HDV_BPB, new_getbpb);
+	old_drvbits = *((long *) _DRVBITS);
 
 	/* we'll be making GEMDOS calls */
 	enter_gemdos ();
@@ -261,13 +245,13 @@ init_intr (void)
  */
 
 void
-restr_intr (void)
+restore_TOS_vectors (void)
 {
 	ushort savesr;
 
 	savesr = splhigh();
 
-	*syskey = oldkey;	/* restore keyboard vectors */
+	*kbdvecs = old_kbdvecs;	/* restore keyboard vectors (structure copy) */
 
 # ifndef NO_AKP_KEYBOARD
 	if (tosvers < 0x0200)
@@ -276,56 +260,112 @@ restr_intr (void)
 	}
 	else
 	{
-		long *kbdvec = ((long *)syskey)-1;
-		*kbdvec = (long) oldkeys;
+		long *kbdvec = ((long *)kbdvecs)-1;
+		*kbdvec = (long) old_kbdvec;
 	}
 # endif
 
-	*((long *) 0x008L) = old_bus;
-
-	*((long *) 0x00cL) = old_addr;
-	*((long *) 0x010L) = old_ill;
-	*((long *) 0x014L) = old_divzero;
-	*((long *) 0x024L) = old_trace;
+	*((long *) VEC_BUS_ERROR) = old_bus;
+	*((long *) VEC_ADDRESS_ERROR) = old_addr;
+	*((long *) VEC_ILLEGAL_INSTRUCTION) = old_ill;
+	*((long *) VEC_DIVISION_BY_ZERO) = old_divzero;
+	*((long *) VEC_TRACE) = old_trace;
 
 	if (old_linef)
-		*((long *) 0x2cL) = old_linef;
+		*((long *) VEC_LINE_F) = old_linef;
 
-	*((long *) 0x018L) = old_chk;
-	*((long *) 0x01cL) = old_trapv;
+	*((long *) VEC_CHK) = old_chk;
+	*((long *) VEC_TRAPV) = old_trapv;
 
-	((long *) 0x0c0L)[0] = old_fpcp_0;
-	((long *) 0x0c0L)[1] = old_fpcp_1;
-	((long *) 0x0c0L)[2] = old_fpcp_2;
-	((long *) 0x0c0L)[3] = old_fpcp_3;
-	((long *) 0x0c0L)[4] = old_fpcp_4;
-	((long *) 0x0c0L)[5] = old_fpcp_5;
-	((long *) 0x0c0L)[6] = old_fpcp_6;
+	*((long *) VEC_FFCP0) = old_fpcp_0;
+	*((long *) VEC_FFCP1) = old_fpcp_1;
+	*((long *) VEC_FFCP2) = old_fpcp_2;
+	*((long *) VEC_FFCP3) = old_fpcp_3;
+	*((long *) VEC_FFCP4) = old_fpcp_4;
+	*((long *) VEC_FFCP5) = old_fpcp_5;
+	*((long *) VEC_FFCP6) = old_fpcp_6;
 
-	*((long *) 0x0e0L) = old_mmuconf;
-	*((long *) 0x0e4L) = old_pmmuill;
-	*((long *) 0x0e8L) = old_pmmuacc;
-	*((long *) 0x038L) = old_format;
-	*((long *) 0x034L) = old_cpv;
-	*((long *) 0x03cL) = old_uninit;
-	*((long *) 0x060L) = old_spurious;
+	*((long *) VEC_MMU_CONFIG_ERROR) = old_mmuconf;
+	*((long *) VEC_MMU1) = old_pmmuill;
+	*((long *) VEC_MMU2) = old_pmmuacc;
+	*((long *) VEC_FORMAT_ERROR) = old_format;
+	*((long *) VEC_COPRO_PROTOCOL_VIOLATION) = old_cpv;
+	*((long *) VEC_UNINITIALIZED) = old_uninit;
+	*((long *) VEC_SPURIOUS_INTERRUPT) = old_spurious;
 
-	*((long *) 0x084L) = old_dos;
-	*((long *) 0x0b4L) = old_bios;
-	*((long *) 0x0b8L) = old_xbios;
-	*((long *) 0x408L) = old_term;
-	*((long *) 0x404L) = old_criticerr;
+	*((long *) TRAP1) = old_dos;
+	*((long *) TRAP13) = old_bios;
+	*((long *) TRAP14) = old_xbios;
+
+	*((long *) ETV_TERM) = old_term;
+	*((long *) ETV_CRITIC) = old_criticerr;
 	*p5msvec = old_5ms;
 #if 0	//
-	*((long *) 0x426L) = old_resval;
-	*((long *) 0x42aL) = old_resvec;
+	*((long *) RESVALID) = old_resval;
+	*((long *) RESVECTOR) = old_resvec;
 #endif
-	*((long *) 0x476L) = old_rwabs;
-	*((long *) 0x47eL) = old_mediach;
-	*((long *) 0x472L) = old_getbpb;
-	*((long *) 0x4c2L) = olddrvs;
+	*((long *) HDV_RW) = old_rwabs;
+	*((long *) HDV_MEDIACH) = old_mediach;
+	*((long *) HDV_BPB) = old_getbpb;
+	*((long *) _DRVBITS) = old_drvbits;
 
 	spl (savesr);
+}
+
+
+long _cdecl
+register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
+{
+	long _cdecl (**handler)(void *) = NULL;
+	long *x = NULL;
+	long ret = EINVAL;
+
+	DEBUG(("register_trap2(0x%p, %i, %i)", dispatch, mode, flag));
+
+	if (flag == 0)
+	{
+		handler = &aes_handler;
+	}
+	else if (flag == 1)
+	{
+		handler = &vdi_handler;
+		x = &gdos_version;
+	}
+
+	if (mode == 0)
+	{
+		/* install */
+
+		if (*handler == NULL)
+		{
+			DEBUG(("register_trap2: installing handler at 0x%p", dispatch));
+
+			*handler = dispatch;
+			if (x)
+				*x = extra;
+			ret = 0;
+
+			/* if trap #2 is not active install it now */
+			if (old_trap2 == 0)
+				install_vector(&old_trap2, TRAP2, mint_trap2); /* trap #2, GEM */
+		}
+	}
+	else if (mode == 1)
+	{
+		/* deinstall */
+
+		if (*handler == dispatch)
+		{
+			DEBUG(("register_trap2: removing handler at 0x%p", dispatch));
+
+			*handler = NULL;
+			if (x)
+				*x = 0;
+			ret = 0;
+		}
+	}
+
+	return ret;
 }
 
 /* EOF */

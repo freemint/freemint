@@ -111,7 +111,6 @@ void storage_int(void)
 		struct xbra *tmp_xbra;
 
 #define ETV_TIMER 0x400
-#define XBRA 0x58425241
 #define USTR 0x55535452
 
 		/* If there is no devices with more than 1 LUN then uninstall polling routine */

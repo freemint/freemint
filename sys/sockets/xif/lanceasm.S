@@ -1,4 +1,5 @@
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 	.globl SYM(lance_hbi_int)
 	.globl SYM(lance_v5_int)
@@ -14,7 +15,7 @@ SYM(lance_hbi_int):
 	oriw	#0x0200, sp@
 	rte
 
-	.long	0x58425241	| "XBRA"	
+	.long	XBRA_MAGIC	
 	.long	0x6c616e63	| "lanc"
 SYM(old_vbi):
 	.long	0

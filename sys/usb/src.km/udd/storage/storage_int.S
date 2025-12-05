@@ -3,6 +3,7 @@
 |
 
 #include "mint/asmdefs.h"
+#include "mint/xbra.h"
 
 #ifdef TOSONLY
 	.globl SYM(old_etv_timer_int)
@@ -11,7 +12,7 @@
 
 	.text
 
-	dc.l	0x58425241		| XBRA
+	dc.l	XBRA_MAGIC
 	dc.l	0x55535452		| USTR
 SYM(old_etv_timer_int):
 	ds.l	1

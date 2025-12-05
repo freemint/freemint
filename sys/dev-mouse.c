@@ -187,15 +187,15 @@ mouse_open (FILEPTR *f)
 		*gcurx = *gcury = 32;
 	}
 	
-	oldvec = syskey->mousevec;
+	oldvec = kbdvecs->mousevec;
 	
 	/* jr: save old joystick vector */
-	oldjvec = syskey->joyvec;
+	oldjvec = kbdvecs->joyvec;
 	
 	ROM_Initmous (1, parameters, newmvec);
 	
 	/* jr: set up new joystick handler */
-	syskey->joyvec = (long) newjvec;
+	kbdvecs->joyvec = (long) newjvec;
 	
 	mousehead = mousetail = 0;
 	
@@ -228,7 +228,7 @@ mouse_close (FILEPTR *f, int pid)
 		ROM_Initmous (1, parameters, oldvec);
 		
 		/* jr: restore old joystick handler */
-		syskey->joyvec = oldjvec;
+		kbdvecs->joyvec = oldjvec;
 		
 		oldvec = 0;
 	}

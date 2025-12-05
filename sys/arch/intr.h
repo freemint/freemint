@@ -9,7 +9,7 @@
 # include "mint/mint.h"
 
 
-/* interrupt vectors linked by new_xbra_install() */
+/* interrupt vectors linked by install_vector() */
 extern long old_5ms;
 extern long old_bus;
 extern long old_addr;
@@ -59,7 +59,7 @@ long _cdecl	reset		(void);
 void _cdecl	reboot		(void) NORETURN;
 void _cdecl	newmvec		(void);
 void _cdecl	newjvec		(void);
-long _cdecl	newkeys		(void);
+long _cdecl	kbdvec_handler		(void);
 void _cdecl	kbdclick	(short scancode);
 long _cdecl	new_rwabs	(void);
 long _cdecl	new_mediach	(void);
