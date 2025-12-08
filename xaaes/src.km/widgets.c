@@ -1364,6 +1364,42 @@ click_title(int lock, struct xa_window *wind, struct xa_widget *widg, const stru
 	}
 	return false;
 }
+/*======================================================
+	INFO WIDGET BEHAVIOUR
+========================================================*/
+static bool
+click_info(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+{
+	bool nolist = wind->nolist;
+
+	if (nolist && (wind->window_status & XAWS_NOFOCUS))
+		return true;
+
+	if (md->clicks == 1)
+	{
+		if (md->state == MBS_LEFT)
+		{
+			if (nolist)
+			{
+				if (!wind_has_focus(wind)) {
+					send_topped(lock, wind);
+				}
+			}
+			else
+			{
+				/* if not on top or on top and not focus */
+				if (!is_topped(wind))
+				{
+					send_topped(lock, wind);
+				}
+				else if (!wind_has_focus(wind) && !(wind->window_status & XAWS_NOFOCUS))
+					setnew_focus(wind, NULL, true, true, true);
+			}
+		}
+		return true;
+	}
+	return false;
+}
 static bool
 click_wcontext(int lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
@@ -3837,7 +3873,7 @@ static struct xa_widget_methods def_methods[] =
  {0,XAWS_ICONIFIED,			{0},	click_wappicn,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources },/* wappicn */
  {0,XAWS_ICONIFIED,			{0},	click_close,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* closer */
  {0,XAWS_ICONIFIED,			{0},	click_full,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* fuller */
- {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_title,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* info */
+ {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_info,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* info */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	NULL,		drag_resize,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* resize */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* uparrow */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* uparrow */
