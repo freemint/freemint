@@ -4425,34 +4425,60 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 static void _cdecl
 d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-/* !! TEST! */
-#if 1
-	done(OS_SELECTED|OS_DISABLED);
-	return;
-#else
 	OBJECT *ob = wt->current.ob;
 	struct theme *theme = wt->objcr_theme;
-	struct object_theme *obt = &theme->box;
+	struct object_theme *obt;
 	struct color_theme *ct;
 	BFOBSPEC c;
-	short fl3d;
+	short fl3d, bkg_flags;
 	bool selected;
 
 	c = (*api->object_get_spec)(ob)->obspec;
 	fl3d = (ob->ob_flags & OF_FL3DMASK) >> 9;
 	selected = ob->ob_state & OS_SELECTED;
 
+	obt = NULL;
+	bkg_flags = DRAW_BOX|DRAW_3D;
+	/* do nothing if inside a menu */
+	if (wt->is_menu)
+	{
+		done(OS_SELECTED|OS_DISABLED);
+		return;
+	}
+	if (!obt)
+	{
+		obt = &theme->box;
+		if (fl3d && (c.fillpattern == IP_HOLLOW && !c.interiorcol))
+			bkg_flags |= DRAW_TEXTURE|ONLY_TEXTURE;
+	}
 	if (ob->ob_state & OS_DISABLED)
 	{
-		ct = selected ? &obt->dis.s[fl3d] : &obt->dis.n[fl3d];
+		if (selected)
+		{
+			ct = &obt->dis.s[fl3d];
+			write_selection(v, 0, &wt->r);
+			write_disable(v, &wt->r, G_LBLACK);
+		}
+		else
+		{
+			ct = &obt->dis.n[fl3d];
+			write_disable(v, &wt->r, (fl3d == BKG) ? G_LWHITE : G_WHITE);
+		}
 	}
 	else
 	{
-		ct = selected ? &obt->norm.s[fl3d] : &obt->norm.n[fl3d];
+		if (selected)
+		{
+			ct = &obt->norm.s[fl3d];
+			write_selection(v, 0, &wt->r);
+		}
+		else
+		{
+			ct = &obt->norm.n[fl3d];
+		}
 	}
-	draw_g_box(wt, v, ct, &c, DRAW_BOX|DRAW_3D, NULL);
+	draw_g_box(wt, v, ct, &c, bkg_flags, NULL);
 	done(OS_SELECTED|OS_DISABLED);
-#endif
 }
 
 /*

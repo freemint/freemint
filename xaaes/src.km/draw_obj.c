@@ -640,6 +640,7 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 	GRECT r, o, sr;
 	OBJECT *ob = aesobj_ob(&item);
 	DrawObject *drawer = NULL;
+	short int wmode;
 
 	/* HR: state_mask is for G_PROGDEF originally.
 	 * But it means that other objects must unflag what they
@@ -712,7 +713,8 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 	wt->state_mask = &state_mask;
 
 	/* Better do this before AND after (fail safe) */
-	(*v->api->wr_mode)(v, MD_TRANS);
+	wmode = MD_TRANS;
+	(*v->api->wr_mode)(v, wmode);
 
 #if 0
 #if GENERATE_DIAGS
@@ -737,13 +739,19 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 #endif
 
 	if( !(flags & UNDRAW_FOCUS) && screen.planes > 1 )	/* else on TT/ST-high checked is not visible if selected */
-		(*v->api->wr_mode)(v, MD_TRANS);
+	{
+		wmode = MD_TRANS;
+		(*v->api->wr_mode)(v, wmode);
+	}
 	else
 	{
 		if (flags & UNDRAW_FOCUS)
 			do_object_cursor(v, &sr, (wt->wind->dial & created_for_TOOLBAR) ? 2 : 0);
 		else
-			(*v->api->wr_mode)(v, MD_REPLACE);
+		{
+			wmode = MD_REPLACE;
+			(*v->api->wr_mode)(v, wmode);
+		}
 	}
 
 	/* Call the appropriate display routine */
@@ -755,9 +763,11 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 		/* Handle CHECKED object state: */
 		if ((ob->ob_state & state_mask) & OS_CHECKED)
 		{
+			(*v->api->wr_mode)(v, MD_TRANS);
 			(*v->api->t_color)(v, G_BLACK);
 			/* ASCII 8 = checkmark */
 			v_gtext(v->handle, r.g_x + 2, r.g_y, "\10");
+			(*v->api->wr_mode)(v, wmode);
 		}
 
 		/* Handle DISABLED state: */
@@ -769,7 +779,7 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 		if ((ob->ob_state & state_mask) & OS_CROSSED)
 		{
 			short p[4];
-			(*v->api->l_color)(v, G_BLACK);
+			(*v->api->l_color)(v, G_WHITE);
 			p[0] = r.g_x;
 			p[1] = r.g_y;
 			p[2] = r.g_x + r.g_w - 1;
