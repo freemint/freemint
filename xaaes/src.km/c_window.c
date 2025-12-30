@@ -35,7 +35,6 @@
 #include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
-#include "xa_bubble.h"
 #include "xa_graf.h"
 #include "xa_wind.h"
 
@@ -1106,13 +1105,6 @@ top_window(int lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 	}
 	else
 	{
-#if WITH_BBL_HELP
-		if( w != bgem_window && !(w->dial == (created_for_ALERT | created_for_AES)) )
-		{
-	if( !C.boot_focus )
-			xa_bubble( 0, bbl_close_bubble1, 0, 2 );
-		}
-#endif
 		pull_wind_to_top(lock, w);
 		setnew_focus(w, NULL, true, snd_untopped, snd_ontop);
 	}
@@ -1633,13 +1625,6 @@ open_window(int lock, struct xa_window *wind, GRECT r)
 	else if( (C.boot_focus && wind->owner->p != C.boot_focus))
 		ignorefocus = 2;
 
-#if WITH_BBL_HELP
-	if( wind != bgem_window && wind->handle >= 0 && !ignorefocus
-		&& !(wind->dial && (created_for_ALERT | created_for_AES | created_for_WDIAL)) )
-	{
-		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
-	}
-#endif
 	if (wind != root_window && (wind->window_status & XAWS_BINDFOCUS) && get_app_infront() != wind->owner)
 	{
 		wi_put_blast(&S.open_windows, wind, false, true);
@@ -2246,9 +2231,6 @@ void toggle_menu(int lock, short md)
 	set_standard_point( client );
 	if( cfg.menu_bar )
 	{
-#if WITH_BBL_HELP
-		xa_bubble( 0, bbl_close_bubble1, 0, 4 );
-#endif
 		if( cfg.menu_ontop )
 		{
 			open_window(0, menu_window, menu_window->r );
@@ -2422,10 +2404,6 @@ close_window(int lock, struct xa_window *wind)
 
 	if (wind == C.hover_wind)
 	{
-#if WITH_BBL_HELP
-	//if( !C.boot_focus )
-		bubble_show(0);	// cancel pending bubble
-#endif
 		C.hover_wind = NULL;
 		C.hover_widg = NULL;
 	}
@@ -3164,10 +3142,6 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, GRECT *ne
 
 	resize	= new->g_w != old.g_w || new->g_h != old.g_h ? 1 : 0;
 
-#if WITH_BBL_HELP
-	if( !C.boot_focus )
-		bubble_show(0);	// cancel pending bubble
-#endif
 	if (xmove || ymove || resize)
 	{
 		/*
