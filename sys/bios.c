@@ -362,16 +362,7 @@ sys_b_setexc (int number, long vector)
 			/* We would do just *place = vector except that
 			 * someone else might be intercepting Setexc looking
 			 * for something in particular...
-			 *
-			 * psigintr() exception shadow area.
-			 * if curproc->in_dos varies from a zero,
-			 * it may be a call from psigintr() and shadow
-			 * must not be updated that time.
 			 */
-# if 0
-			if (intr_shadow && number < 0x0100 && p->in_dos == 0)
-				intr_shadow[number] = vector;
-# endif
 			old = (long)ROM_Setexc (number, (void (*)()) vector);
 		}
 	}
