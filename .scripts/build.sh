@@ -15,6 +15,7 @@ then
 	export BASH_DIR="$SCRIPT_DIR/bash"
 	export COREUTILS_DIR="$SCRIPT_DIR/coreutils"
 	export E2FSPROGS_DIR="$SCRIPT_DIR/e2fsprogs"
+	export PING_DIR="$SCRIPT_DIR/ping"
 	export QED_DIR="$SCRIPT_DIR/qed"
 	export DOSFSTOOLS_DIR="$SCRIPT_DIR/dosfstools"
 	export COPS_DIR="$SCRIPT_DIR/cops"

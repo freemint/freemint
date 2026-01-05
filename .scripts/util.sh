@@ -401,20 +401,26 @@ create_filesystem() {
 		cp "$BASH_DIR/bash000.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
 		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
+		cp "$PING_DIR/ping000.ttp" "$SYSROOT/bin/bash"
 	elif [ "$CPU_TARGET" = "col" ]
 	then
 		cp "$BASH_DIR/bashv4e.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
 		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
+		cp "$PING_DIR/pingv4e.ttp" "$SYSROOT/bin/bash"
 	else
 		# 02060, 030, 040, 060
 		cp "$BASH_DIR/bash020.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
 		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
+		cp "$PING_DIR/ping020.ttp" "$SYSROOT/bin/bash"
 	fi
 	cp "$E2FSPROGS_DIR/mke2fs.conf" "$SYSROOT/etc"
 
 	echo "root:x:0:0::/root:/bin/bash" > "$SYSROOT/etc/passwd"
+
+	echo "nameserver 8.8.8.8" > "$SYSROOT/etc/resolv.conf"
+	echo "nameserver 8.8.4.4" >> "$SYSROOT/etc/resolv.conf"
 
 	echo "PS1='[\\[\\e[31m\\]\\u\\[\\e[m\\]@\\[\\e[32m\\]\\h\\[\\e[m\\] \\W]\\$ '" > "$SYSROOT/etc/profile"
 	echo "export PS1" >> "$SYSROOT/etc/profile"
