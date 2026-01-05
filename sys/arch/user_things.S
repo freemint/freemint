@@ -49,9 +49,6 @@ SYM(kernel_things):
 	.long	pc_valid_return
 	.long	0,0,0,0,0		// SLB stuff is currently useless for the kernel/threads
 	.long	user_xhdi
-# ifdef JAR_PRIVATE
-	.long	0
-# endif
 
 	.text
 
@@ -75,9 +72,6 @@ usr_bp:	.long	0			// user process' basepage pointer (filled in by Slbopen())
 	.long	slb_close_and_pterm-SYM(user_things)
 	.long	slb_exec-SYM(user_things)
 	.long	user_xhdi-SYM(user_things)
-# ifdef JAR_PRIVATE
-	.long	0
-# endif
 
 terminateme:
 	move.w	4(sp),-(sp)

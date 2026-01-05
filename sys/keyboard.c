@@ -1283,8 +1283,8 @@ IkbdScan(PROC *p, long arg)
 			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
 			 * Where dd is the deadkey character, aa is the base
 			 * character and aa the accented character.
-			 * So '^','a','ƒ' means that '^' followed by 'a' results
-			 * in an 'ƒ'.
+			 * So '^','a','ï¿½' means that '^' followed by 'a' results
+			 * in an 'ï¿½'.
 			 */
 			const uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
@@ -1511,10 +1511,7 @@ sys_b_bioskeys(void)
 	/* and the deadkeys */
 	pointers->deadkeys = tbl_scan_fwd(pointers->altgr);
 
-	/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
-	 *
-	 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
-	 */
+	/* Fix the _AKP cookie, gl_kbd may get changed in load_table() */
 
 	/* _AKP specifies the hardware keyboard layout */
 	r = get_cookie(NULL, COOKIE__AKP, (unsigned long *)&akp_val);

@@ -38,10 +38,6 @@
 # include "mint/file.h"
 # include "mint/proc_extensions.h"
 
-# ifdef JAR_PRIVATE
-# include "cookie.h"
-# endif
-
 # include "filesys.h"
 # include "k_fds.h"
 # include "kmemory.h"
@@ -148,25 +144,9 @@ copy_mem (struct proc *p)
 	m->mem = ptr.v;
 	m->addr = (void *)(ptr.c + m->num_reg * sizeof (char *));
 	
-	/* Trampoline. Space is added for user cookie jar */
-
-# ifdef JAR_PRIVATE
-	/* When the jar is not global, it is more than doubtful,
-	 * that anybody would need so many cookies.
-	 */
-# define PRIV_JAR_SLOTS	64
-# define PRIV_JAR_SIZE	(PRIV_JAR_SLOTS * sizeof(struct cookie))
-
-# else
-
-# define PRIV_JAR_SLOTS	0
-# define PRIV_JAR_SIZE	0
-
-# endif
-
-	m->tp_reg = get_region(alt, user_things.len + PRIV_JAR_SIZE, PROT_P);
+	m->tp_reg = get_region(alt, user_things.len, PROT_P);
 	if (!m->tp_reg)
-		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
+		m->tp_reg = get_region(core, user_things.len, PROT_P);
 	
 	TRACE(("copy_mem: ptr=%p, m->pt_mem = %p, m->tp_reg = %p, mp=%s", ptr.v, m->pt_mem, m->tp_reg,
 #ifdef WITH_MMU_SUPPORT
@@ -216,42 +196,6 @@ copy_mem (struct proc *p)
 
 	ut->user_xhdi_p += (long)ut;
 
-# ifdef JAR_PRIVATE
-	/* Cookie Jar is appended at the end of the trampoline */
-	ut->user_jar_p = (struct cookie *)((long)ut + user_things.len);
-
-	/* Copy the cookies over */
-	{
-		struct user_things *ct;
-		struct cookie *ctj, *utj;
-
-		/* The child inherits the jar from the parent
-		 */
-		ct = p->p_mem->tp_ptr;
-
-		utj = ut->user_jar_p;
-		ctj = ct->user_jar_p;
-
-		for (i = 0; ctj->tag && i < PRIV_JAR_SLOTS - 1; i++)
-		{
-			utj->tag = ctj->tag;
-
-			/* Setup private XHDI cookie for new process */
-			if (ctj->tag == COOKIE_XHDI)
-				utj->value = ut->user_xhdi_p;
-			else
-				utj->value = ctj->value;
-
-			utj++;
-			ctj++;
-		}
-
-		/* User jars have less slots, than the kernel one (1024) */
-		utj->tag = 0;
-		utj->value = PRIV_JAR_SLOTS;
-	}
-
-# endif
 #ifndef M68000
 	cpushi(ut, sizeof(*ut));
 #endif

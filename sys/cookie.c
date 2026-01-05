@@ -57,11 +57,6 @@
 # include "biosfs.h"	/* rsvf */
 # include "memory.h"	/* get_region, attach_region */
 
-# ifdef JAR_PRIVATE
-# include "arch/user_things.h"
-# include "proc.h"
-# endif
-
 # ifdef OLDTOSFS
 # include "tosfs.h"
 # endif
@@ -75,14 +70,9 @@
 static struct cookie *oldcookie = NULL;
 static struct cookie *newcookie;
 
-# ifdef JAR_PRIVATE
-# define MASTERCOOKIES	128
-static struct cookie master_jar[MASTERCOOKIES];
-# else
 /* memory region that hold the cookie jar
  */
 static MEMREGION *newjar_region;
-# endif
 
 /* cookies to skip on MINT cookie jar
  */
@@ -158,16 +148,6 @@ init_cookies (void)
 		}
 	}
 
-# ifdef JAR_PRIVATE
-	/* Processes use own copies of the cookie jar located in their
-	 * memory. Jar is no more global, thus the master copy of it
-	 * can be located in kernel's BSS.
-	 */
-	ncsize = MASTERCOOKIES * sizeof(struct cookie);
-	if (ncookies > MASTERCOOKIES)
-		ncookies = MASTERCOOKIES;
-	newcookie = master_jar;
-# else
 	ncsize = MIN (cookie->value, 240);	/* avoid too big tag values */
 	if (ncookies > ncsize)
 		ncsize = ncookies;
@@ -181,7 +161,6 @@ init_cookies (void)
 	ncsize = ROUND (ncsize);
 	newjar_region = get_region (core, ncsize, PROT_G);
 	newcookie = (struct cookie *) attach_region (rootproc, newjar_region);
-# endif
 
 #ifdef __mcoldfire__
 	/* do not set _CPU and _FPU on native ColdFire */
@@ -347,9 +326,6 @@ init_cookies (void)
 	newcookie[i].value = ncsize / sizeof(struct cookie);
 
 	/* setup new COOKIE Jar */
-# ifdef JAR_PRIVATE
-	kernel_things.user_jar_p = newcookie;
-# endif
 	*CJAR = newcookie;
 }
 
@@ -424,12 +400,7 @@ set_toscookie (ulong tag, ulong val)
 long
 get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 {
-# ifdef JAR_PRIVATE
-	struct user_things *ut;
 	struct cookie *cjar;
-# else
-	struct cookie *cjar;
-# endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
 	union { char a [5]; long l; } asc;
@@ -441,12 +412,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 
 	if( !cj )
 	{
-# ifdef JAR_PRIVATE
-		ut = get_curproc()->p_mem->tp_ptr;
-		cjar = ut->user_jar_p;
-# else
 		cjar = *CJAR;
-# endif
 	}
 	else
 		cjar = cj;
@@ -551,20 +517,11 @@ long
 set_cookie (struct cookie *cj, ulong tag, ulong val)
 {
 	ushort n = 0;
-# ifdef JAR_PRIVATE
-	struct user_things *ut;
-	struct cookie *cjar;
-# else
 	struct cookie *cjar = *CJAR;
-# endif
 # ifdef DEBUG_INFO
 	union {  char a[5]; long l; } asc;
 	asc.l = tag;
 	asc.a[4] = '\0';
-# endif
-# ifdef JAR_PRIVATE
-	ut = get_curproc()->p_mem->tp_ptr;
-	cjar = ut->user_jar_p;
 # endif
 
 	if (cj)
@@ -624,17 +581,7 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 long
 del_cookie (struct cookie *cj, ulong tag)
 {
-# ifdef JAR_PRIVATE
-	struct user_things *ut;
-	struct cookie *cjar;
-# else
 	struct cookie *cjar = *CJAR;
-# endif
-
-# ifdef JAR_PRIVATE
-	ut = get_curproc()->p_mem->tp_ptr;
-	cjar = ut->user_jar_p;
-# endif
 
 	TRACE (("del_cookie: tag %lx", tag));
 

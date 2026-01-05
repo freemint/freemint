@@ -192,10 +192,6 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			lpointer = (ulong *) arg1;
 			if (arg1 < 0x0420 || arg1 > 0xfffcUL)
 				DEBUG (("GET_LVAL: address out of range"));
-# ifdef JAR_PRIVATE
-			else if (arg1 == 0x5a0)
-				r = sys_b_setexc(0x0168, -1L);
-# endif
 			else
 				r = *lpointer;
 			break;
@@ -235,14 +231,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				r = EBADARG;
 				break;
 			}
-# ifdef JAR_PRIVATE
-			if (arg1 == 0x5a0)
-				r = sys_b_setexc(0x0168, arg2);
-			else
-				*lpointer = arg2;
-# else
 			*lpointer = arg2;
-# endif
 			break;
 		}
 		case S_SETWVAL:
@@ -293,76 +282,22 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_SETCOOKIE:
 		{
-# ifndef JAR_PRIVATE
 			if (isroot == 0)
 			{
 				DEBUG (("SET_COOKIE: access denied"));
 				r = EPERM;
 			}
 			else	r = set_cookie (NULL, arg1, arg2);
-# else
-			/* Gluestik kludges, part I */
-			if (isroot && (arg1 == COOKIE_STiK || arg1 == COOKIE_ICIP))
-			{
-				struct user_things *ut;
-				PROC *p;
-
-				for (p = proclist; p; p = p->gl_next)
-				{
-					if (p != get_curproc() && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
-					{
-						if (p->p_mem->tp_reg)
-						{
-							attach_region(get_curproc(), p->p_mem->tp_reg);
-							ut = p->p_mem->tp_ptr;
-							set_cookie(ut->user_jar_p, arg1, arg2);
-							detach_region(get_curproc(), p->p_mem->tp_reg);
-						}
-						else if (p->pid == 0)
-							set_cookie(kernel_things.user_jar_p, arg1, arg2);
-					}
-				}
-			}
-
-			r = set_cookie(NULL, arg1, arg2);
-# endif
 			break;
 		}
 		case S_DELCOOKIE:
 		{
-# ifndef JAR_PRIVATE
 			if (isroot == 0)
 			{
 				DEBUG (("DEL_COOKIE: access denied"));
 				r = EPERM;
 			}
 			else	r = del_cookie (NULL, arg1);
-# else
-			/* Gluestik kludges, part II */
-			if (isroot && (arg1 == COOKIE_STiK || arg1 == COOKIE_ICIP))
-			{
-				struct user_things *ut;
-				PROC *p;
-
-				for (p = proclist; p; p = p->gl_next)
-				{
-					if (p != get_curproc() && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
-					{
-						if (p->p_mem->tp_reg)
-						{
-							attach_region(get_curproc(), p->p_mem->tp_reg);
-							ut = p->p_mem->tp_ptr;
-							del_cookie(ut->user_jar_p, arg1);
-							detach_region(get_curproc(), p->p_mem->tp_reg);
-						}
-						else if (p->pid == 0)
-							del_cookie(kernel_things.user_jar_p, arg1);
-					}
-				}
-			}
-
-			r = del_cookie(NULL, arg1);
-# endif
 			break;
 		}
 

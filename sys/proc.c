@@ -461,9 +461,6 @@ do_wakeup_things(short sr, int newslice, long cond)
 	 * this means that the process has changed it directly, not through
 	 * Setexc(). We don't like that.
 	 */
-# ifdef JAR_PRIVATE
-	*CJAR = p->p_mem->tp_ptr->user_jar_p;
-# endif
 
 	if (newslice)
 	{

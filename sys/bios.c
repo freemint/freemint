@@ -210,28 +210,17 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 long _cdecl
 sys_b_setexc (int number, long vector)
 {
-# ifdef JAR_PRIVATE
-	struct user_things *ut;
-# endif
 	PROC *p = get_curproc();
 	long *place;
 	long old;
 
-# ifdef JAR_PRIVATE
-	ut = p->p_mem->tp_ptr;
-# endif
 	/* If the caller has no root privileges, we'll attempt
 	 * to terminate it. We allow to change the critical error handler
 	 * and the GEMDOS terminate vector (and the cookie jar pointer too),
 	 * because these are private for each process
 	 */
-# ifdef JAR_PRIVATE
-	if (vector != -1 && number != 0x0101 && number != 0x0102 && number != 0x0168 && \
-		secure_mode && p->in_dos == 0)
-# else
 	if (vector != -1 && number != 0x0101 && number != 0x0102 && \
 		secure_mode && p->in_dos == 0)
-# endif
 	{
 # ifdef WITH_SINGLE_TASK_SUPPORT
 		if( !(get_curproc()->modeflags & M_SINGLE_TASK) )
@@ -287,11 +276,6 @@ sys_b_setexc (int number, long vector)
 	if (number == 0x102)
 		/* GEMDOS term vector */
 		old = p->ctxt[SYSCALL].term_vec;
-# ifdef JAR_PRIVATE
-	else if (number == 0x0168)
-		/* The cookie jar pointer */
-		old = (long)ut->user_jar_p;
-# endif
 	else
 		old = *place;
 
@@ -314,10 +298,6 @@ sys_b_setexc (int number, long vector)
 		{
 			p->ctxt[SYSCALL].term_vec = vector;
 		}
-# ifdef JAR_PRIVATE
-		else if (number == 0x0168)
-			ut->user_jar_p = (struct cookie *)vector;
-# endif
 		else if (number == 0x101)
 		{
 			/* problem:
