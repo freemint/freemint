@@ -51,10 +51,6 @@ extern long old_mediach, old_getbpb, old_rwabs;
 extern long old_criticerr;
 extern long old_exec_os;
 
-# if 0
-extern long 	*intr_shadow;
-# endif
-
 long _cdecl	reset		(void);
 void _cdecl	reboot		(void) NORETURN;
 void _cdecl	newmvec		(void);
