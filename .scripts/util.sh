@@ -401,19 +401,19 @@ create_filesystem() {
 		cp "$BASH_DIR/bash000.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
 		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
-		cp "$PING_DIR/ping000.ttp" "$SYSROOT/bin/bash"
+		cp "$PING_DIR/ping000.ttp" "$SYSROOT/bin/ping"
 	elif [ "$CPU_TARGET" = "col" ]
 	then
 		cp "$BASH_DIR/bashv4e.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
 		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
-		cp "$PING_DIR/pingv4e.ttp" "$SYSROOT/bin/bash"
+		cp "$PING_DIR/pingv4e.ttp" "$SYSROOT/bin/ping"
 	else
 		# 02060, 030, 040, 060
 		cp "$BASH_DIR/bash020.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
 		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
-		cp "$PING_DIR/ping020.ttp" "$SYSROOT/bin/bash"
+		cp "$PING_DIR/ping020.ttp" "$SYSROOT/bin/ping"
 	fi
 	cp "$E2FSPROGS_DIR/mke2fs.conf" "$SYSROOT/etc"
 
