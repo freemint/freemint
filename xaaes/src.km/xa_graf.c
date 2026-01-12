@@ -910,7 +910,7 @@ static MFORM M_MOVER_MOUSE =
 	0x0220, 0x0140, 0x0080, 0x0000 }
 };
 
-/*static*/ MFORM M_POINTSLIDE_MOUSE =
+static MFORM M_POINTSLIDE_MOUSE =
 {
 	0x0008, 0x0007, 0x0001, 0x0000, 0x0001,
 	{ /* Mask data */

@@ -94,14 +94,6 @@ k_shutdown(void)
 		BLOG((false, "Freeing delayed deleted windows"));
 		do_delayed_delete_window(NOLOCKING);
 
-#if WITH_BBL_HELP
-		if (bgem_window)
-		{
-			close_window(NOLOCKING, bgem_window);
-			delete_window(NOLOCKING, bgem_window);
-			bgem_window = NULL;
-		}
-#endif
 		if (menu_window)
 		{
 			close_window(NOLOCKING, menu_window);
