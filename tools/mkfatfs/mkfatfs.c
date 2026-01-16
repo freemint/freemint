@@ -84,6 +84,7 @@
 # include <getopt.h>
 # include <unistd.h>
 # include <mintbind.h>
+# include <mint/errno.h>
 
 # include "xhdi.h"
 # include "mytypes.h"
@@ -1529,8 +1530,9 @@ main (int argc, char **argv)
 		fatal ("-c and -l are incompatible");
 	}
 	
-	/* lock the drv */
-	if (Dlock (1, drv))
+	/* lock the drv, don't fail if Dlock does not exist */
+	i = Dlock (1, drv);
+	if (i && (i != -ENOSYS))
 	{
 		fatal ("Can't lock %c:");
 	}
