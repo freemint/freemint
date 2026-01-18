@@ -1,1 +1,1 @@
-e2fsprogs 1.42.12 compiled by Vincent Rivière: http://vincent.riviere.free.fr/soft/m68k-atari-mint/archives/mint/e2fsprogs/
+e2fsprogs 1.47.3: https://github.com/freemint/e2fsprogs/releases/tag/v1.47.3-mint
