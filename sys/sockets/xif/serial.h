@@ -37,7 +37,7 @@ struct slbuf
 # define SL_CLOSING	0x04		/* close in progress */
 	
 	char		dev[PATH_MAX];	/* device name */
-	short		fd;		/* file descriptor */
+	long		fd;		/* file descriptor */
 	struct netif	*nif;		/* interface this belongs to */
 	
 	short		isize;		/* input ring buffer size */

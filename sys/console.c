@@ -319,10 +319,10 @@ sys_f_instat (int fh)
 	PROC *proc;
 
 # if O_GLOBAL
-	if (fh & 0x8000)
+	if (fh & O_GLOBAL_BITPATTERN)
 	{
 		proc = rootproc;
-		fh &= ~0x8000;
+		fh &= ~O_GLOBAL_BITPATTERN;
 	}
 	else
 # endif
@@ -343,10 +343,10 @@ sys_f_outstat (int fh)
 	PROC *proc;
 
 # if O_GLOBAL
-	if (fh & 0x8000)
+	if (fh & O_GLOBAL_BITPATTERN)
 	{
 		proc = rootproc;
-		fh &= ~0x8000;
+		fh &= ~O_GLOBAL_BITPATTERN;
 	}
 	else
 # endif
@@ -367,10 +367,10 @@ sys_f_getchar (int fh, int mode)
 	PROC *proc;
 
 # if O_GLOBAL
-	if (fh & 0x8000)
+	if (fh & O_GLOBAL_BITPATTERN)
 	{
 		proc = rootproc;
-		fh &= ~0x8000;
+		fh &= ~O_GLOBAL_BITPATTERN;
 	}
 	else
 # endif
@@ -391,10 +391,10 @@ sys_f_putchar (int fh, long c, int mode)
 	PROC *proc;
 
 # if O_GLOBAL
-	if (fh & 0x8000)
+	if (fh & O_GLOBAL_BITPATTERN)
 	{
 		proc = rootproc;
-		fh &= ~0x8000;
+		fh &= ~O_GLOBAL_BITPATTERN;
 	}
 	else
 # endif
