@@ -21,6 +21,7 @@ extern void usb_stor_eject (long);
 extern long usb_request_sense (ccb *srb, struct us_data *ss);
 
 #define USBNAME "USB Mass Storage"
+#define MAX_HANDLES 32
 
 //#define DEBUGSCSIDRV
 #ifdef DEBUGSCSIDRV
@@ -117,35 +118,14 @@ typedef struct SCSIDRV_Data
 {
 	ushort features; /* this has to be at the top ! */
 	short changed;
+	short handleOpened;
+	short devID;
 } SCSIDRV_Data;
 
 static SCSIDRV_Data* private = NULL;
 static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
 static unsigned short USBbus = 3; /* default */
-
-void SCSIDRV_MediaChange(long dev);
-void SCSIDRV_PerformMediaChange(long dev);
-/*
- * USB functions
- */
-
-void
-SCSIDRV_MediaChange(long dev)
-{
-	// On TOS this is called during boot, before install_scsidrv() has the chance to allocate 'private'.
-	if (private)
-		private[dev].changed = TRUE;
-}
-
-void
-SCSIDRV_PerformMediaChange(long dev)
-{
-	usb_stor_eject(dev);
-	usb_dev_desc[dev].sw_ejected = 0;
-	if (usb_stor_get_info(usb_dev_desc[dev].priv, &mass_storage_dev[usb_dev_desc[dev].usb_phydrv].usb_stor, &usb_dev_desc[dev]) > 0)
-			part_init(dev, &usb_dev_desc[dev]);
-}
 
 /*
  * SCSIDRV handlers
@@ -203,11 +183,11 @@ static long
 SCSIDRV_In (SCSICMD *parms)
 {
 	SCSIDRV_Data *priv = NULL;
-	long i;
+	long i, dev;
 
 	debug ("IN\r\n");
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
+	for (i = 0; i < MAX_HANDLES; i++) {
 		if (&private[i] == (SCSIDRV_Data *) parms->handle) {
 			priv = (SCSIDRV_Data *) parms->handle;
 			break;
@@ -216,12 +196,18 @@ SCSIDRV_In (SCSICMD *parms)
 
 	if (priv)
 	{
-		if (mass_storage_dev[i].target != 0xff)
+		if (! priv->handleOpened) {
+			return EBADF;
+		}
+
+		dev = priv->devID;
+
+		if (mass_storage_dev[dev].target != 0xff)
 		{
-			struct us_data *ss = &mass_storage_dev[i].usb_stor;
+			struct us_data *ss = &mass_storage_dev[dev].usb_stor;
 			long retries = 0;
 			ccb srb;
-			long r, dev = i;
+			long r;
 
 			if (parms->cmdlen > 16) {
 				return STATUSERROR;
@@ -232,7 +218,7 @@ SCSIDRV_In (SCSICMD *parms)
 			/* will be in the sense buffer, */
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].total_lun) {
 				parms->sense[0] = 0x70;
 				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
 				parms->sense[7] = 0x0A;
@@ -428,23 +414,28 @@ static long
 SCSIDRV_Out (SCSICMD *parms)
 {
 	SCSIDRV_Data *priv = NULL;
-	long i;
+	long i, dev;
 
 	debug ("OUT\r\n");
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
+	for (i = 0; i < MAX_HANDLES; i++) {
 		if (&private[i] == (SCSIDRV_Data *) parms->handle) {
 			priv = (SCSIDRV_Data *) parms->handle;
 			break;
 		}
 	}
 
-
 	if (priv)
 	{
-		if (mass_storage_dev[i].target != 0xff)
+		if (! priv->handleOpened) {
+			return EBADF;
+		}
+
+		dev = priv->devID;
+
+		if (mass_storage_dev[dev].target != 0xff)
 		{
-			struct us_data *ss = &mass_storage_dev[i].usb_stor;
+			struct us_data *ss = &mass_storage_dev[dev].usb_stor;
 			long retries = 0;
 			ccb srb;
 			long r;
@@ -454,7 +445,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			}
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[i].total_lun) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].total_lun) {
 				parms->sense[0] = 0x70;
 				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
 				parms->sense[7] = 0x0A;
@@ -695,14 +686,31 @@ SCSIDRV_RescanBus (short busno)
 static long
 SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 {
+	SCSIDRV_Data *priv;
+	long i;
+
 	debug ("OPEN\r\n");
+
 	if (bus == USBbus)
 	{
 		if (Id->hi != 0)
-			return -1;
+			return ENODEV;
 
 		if (Id->lo >= USB_MAX_STOR_DEV)
-			return -1;
+			return ENODEV;
+
+		/* Find a free handle*/
+		for (i = 0; i < MAX_HANDLES; i++)
+			if (! private[i].handleOpened)
+				break;
+
+		if (i >= MAX_HANDLES)
+			return EMFILE;
+
+		priv = &private[i];
+		priv->changed = FALSE;
+		priv->handleOpened = TRUE;
+		priv->devID = Id->lo;
 
 		if (mass_storage_dev[Id->lo].target != 0xff)
 		{
@@ -714,13 +722,13 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 				ss->subclass != US_SC_8020 &&
 				ss->subclass != US_SC_8070)
 			{
-				return -1;
+				return ENODEV;
 			}
 		} else {
-			return -1;
+			return ENODEV;
 		}
 		*MaxLen = 64 * 1024L;
-		return (long) &private[Id->lo];
+		return (long) priv;
 	}
 	else
 	{
@@ -729,7 +737,7 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 			return oldscsi.Open (bus, Id, MaxLen);
 		}
 	}
-	return -1;
+	return ENODEV;
 }
 
 static long
@@ -740,19 +748,30 @@ SCSIDRV_Close (short *handle)
 
 	debug ("CLOSE\r\n");
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
-		if (&private[i] == (SCSIDRV_Data *) handle) {
-			priv = (SCSIDRV_Data *) handle;
+	for (i = 0; i < MAX_HANDLES; i++)
+		if (&private[i] == (SCSIDRV_Data *) handle)
+			break;
+
+	if (i < MAX_HANDLES)
+		priv = &private[i];
+
+	if (priv)
+	{
+		if (priv->handleOpened) {
+			priv->handleOpened = FALSE;
 			priv->changed = FALSE;
+
 			return 0;
+		} else {
+			return EMFILE;
+		}
+	} else {
+		if (oldscsi.version) {
+			return oldscsi.Close (handle);
 		}
 	}
 
-	if (oldscsi.version) {
-		return oldscsi.Close (handle);
-	}
-
-	return -1;
+	return EMFILE;
 }
 
 static long
@@ -764,17 +783,17 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 
 	debug ("ERROR\r\n");
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++) {
+	for (i = 0; i < MAX_HANDLES; i++) {
 		if (&private[i] == (SCSIDRV_Data *) handle) {
 			priv = (SCSIDRV_Data *) handle;
 			break;
 		}
 	}
 
-	dev = i;
-
 	if (priv)
 	{
+		dev = priv->devID;
+
 		if (rwflag == cErrRead)
 		{
 			ushort status = priv->changed;
@@ -784,8 +803,18 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 		else if (rwflag == cErrWrite)
 		{
 			if (ErrNo == cErrMediach) {
-				priv->changed = TRUE;
-				SCSIDRV_PerformMediaChange(dev);
+				/* Report Media Change to storage driver */
+				usb_stor_eject(dev);
+				usb_dev_desc[dev].sw_ejected = 0;
+				if (usb_stor_get_info(usb_dev_desc[dev].priv, &mass_storage_dev[usb_dev_desc[dev].usb_phydrv].usb_stor, &usb_dev_desc[dev]) > 0)
+						part_init(dev, &usb_dev_desc[dev]);
+				/* Report Media Change to all opened handles on this device */
+				for (i = 0; i < MAX_HANDLES; i++) {
+					priv = (SCSIDRV_Data *) &private[i];
+					if (priv->devID == dev && priv->handleOpened) {
+						priv->changed = TRUE;
+					}
+				}
 			}
 		}
 		return 0;
@@ -833,17 +862,18 @@ install_scsidrv (void)
 	 * As per SCSIDRV spec the caller is allowed to read the memory pointed to by the handle.
 	 */
 #ifndef TOSONLY
-	private = (SCSIDRV_Data*)m_xalloc(USB_MAX_STOR_DEV * sizeof(SCSIDRV_Data), 0x20|0);
+	private = (SCSIDRV_Data*)m_xalloc(MAX_HANDLES * sizeof(SCSIDRV_Data), 0x20|0);
 #else
-	private = (SCSIDRV_Data*)Malloc(USB_MAX_STOR_DEV * sizeof(SCSIDRV_Data));
+	private = (SCSIDRV_Data*)Malloc(MAX_HANDLES * sizeof(SCSIDRV_Data));
 #endif
 	if (private == NULL)
 		return;
 
-	for (i = 0; i < USB_MAX_STOR_DEV; i++)
+	for (i = 0; i < MAX_HANDLES; i++)
 	{
 		private[i].features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
 		private[i].changed = FALSE;
+		private[i].handleOpened = FALSE;
 	}
 
 #ifdef TOSONLY

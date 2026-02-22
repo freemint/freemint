@@ -139,7 +139,6 @@ extern void install_scsidrv(void);                             //usb_scsidrv.c
 extern long XHDOSLimits(ushort which, ulong limit);
 extern void init_polling(void);
 #ifdef TOSONLY
-extern void SCSIDRV_MediaChange(long dev_num);
 extern short InqMagX(void);
 #endif
 
@@ -396,9 +395,6 @@ part_init(long dev_num, block_dev_desc_t *stor_dev)
 		}
 		else
 		{
-#ifdef TOSONLY
-			SCSIDRV_MediaChange(dev_num);
-#endif
 			bios_part[dev_num].biosnum[part_num - 1] = r;
 			bios_part[dev_num].partnum = part_num;
 		}
