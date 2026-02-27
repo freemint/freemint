@@ -218,8 +218,6 @@ slip_ioctl (struct netif *nif, short cmd, long arg)
 			ifl = (struct iflink *) arg;
 			if (!(slp->flags & SLF_LINKED))
 			{
-				DEBUG (("slip_ioctl: IFLINK: chan %d not linked",
-					nif->mtu));
 				return EINVAL;
 			}
 			strncpy (ifl->device, slp->slbuf->dev, sizeof (ifl->device));
