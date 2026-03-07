@@ -341,20 +341,18 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	DEBUG(("XHInqDev2(%c:) drv=%d pun %x",
 		DriveToLetter(drv), drv, pun_usb.pun[drv]));
 
-	if (next_handler) {
-		long ret = next_handler(XHINQDEV2, drv, major, minor, start,
-					bpb, blocks, partid);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (drv >= dl_maxdrives || (pun_usb.pun[drv] & PUN_VALID)) {
+		/* not our drive */
+		if (next_handler) {
+			return next_handler(XHINQDEV2, drv, major, minor, start,
+						bpb, blocks, partid);
+		} else {
+			return ENODEV;
+		}
 	}
 
-	if (drv >= dl_maxdrives)
-		return ENODEV;
 
 	pstart = pun_usb.partition_start[drv];
-
-	if (pun_usb.pun[drv] & PUN_VALID)
-		return ENODEV;
 
 	if (major) {
 		*major = (PUN_DEV+PUN_USB) & pun_usb.pun[drv];
@@ -417,18 +415,14 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 static long
 XHInqDev(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb)
 {
-	if (next_handler) {
-		long ret = next_handler(XHINQDEV, drv, major, minor,
-					start, bpb);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (drv >= dl_maxdrives || (pun_usb.pun[drv] & PUN_VALID)) {
+		/* not our drive */
+		if (next_handler) {
+			return next_handler(XHINQDEV, drv, major, minor, start, bpb);
+		} else {
+			return ENODEV;
+		}
 	}
-
-	if (drv >= dl_maxdrives)
-		return ENODEV;
-
-	if (pun_usb.pun[drv] & PUN_VALID)
-		return ENODEV;
 
 	return XHInqDev2(drv, major, minor, start, bpb, NULL, NULL);
 }
@@ -436,60 +430,43 @@ XHInqDev(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb)
 static long
 XHReserve(ushort major, ushort minor, ushort do_reserve, ushort key)
 {
-	if (next_handler) {
-		long ret = next_handler(XHRESERVE, major, minor, do_reserve,
-					key);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB) && next_handler) {
+		return next_handler(XHRESERVE, major, minor, do_reserve, key);
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
-
-	return ENOSYS;
+	return EERROR; /* not yet implemented */
 }
 
 static long
 XHLock(ushort major, ushort minor, ushort do_lock, ushort key)
 {
-	if (next_handler) {
-		long ret = next_handler(XHLOCK, major, minor, do_lock, key);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB) && next_handler) {
+		return next_handler(XHLOCK, major, minor, do_lock, key);
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
-
-	return ENOSYS;
+	return EERROR; /* not yet implemented */
 }
 
 static long
 XHStop(ushort major, ushort minor, ushort do_stop, ushort key)
 {
-	if (next_handler) {
-		long ret = next_handler(XHSTOP, major, minor, do_stop, key);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB) && next_handler) {
+		return next_handler(XHSTOP, major, minor, do_stop, key);
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
-
-	return ENOSYS;
+	return EERROR; /* not yet implemented */
 }
 
 static long
 XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 {
-	if (next_handler) {
-		long ret = next_handler(XHEJECT, major, minor, do_eject, key);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB)) {
+		if (next_handler) {
+			return next_handler(XHEJECT, major, minor, do_eject, key);
+		} else {
+			return ENODEV;
+		}
 	}
-
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
 
 	/* mass storage logical device number in the USB bus */
 	short dev = major & PUN_DEV;
@@ -509,18 +486,15 @@ static long
 XHInqDriver(ushort dev, char *name, char *version, char *company,
 		ushort *ahdi_version, ushort *max_IPL)
 {
-	if (next_handler) {
-		long ret = next_handler(XHINQDRIVER, dev, name, version, company,
-					ahdi_version, max_IPL);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if ((dev >= dl_maxdrives) || (pun_usb.pun[dev] & PUN_VALID)) {
+		/* not our drive */
+		if (next_handler) {
+			return next_handler(XHINQDRIVER, dev, name, version, company,
+						ahdi_version, max_IPL);
+		} else {
+			return ENODEV;
+		}
 	}
-
-	if (dev >= dl_maxdrives)
-		return ENODEV;
-
-	if (pun_usb.pun[dev] & PUN_VALID)
-		return ENODEV;
 
 	if(name)
 		strncpy(name, DRIVER_NAME, DRIVER_NAME_MAXLEN);
@@ -540,40 +514,30 @@ static long
 XHDriverSpecial(ulong key1, ulong key2, ushort subopcode, void *data)
 {
 	if (next_handler) {
-		long ret = next_handler(XHDRIVERSPECIAL, key1, key2, subopcode,
-					data);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+		return next_handler(XHDRIVERSPECIAL, key1, key2, subopcode, data);
 	}
 
-	return ENOSYS;
+	return ENOSYS; /* optional function */
 }
 
 static long
 XHMediumChanged(ushort major, ushort minor)
 {
-	if (next_handler) {
-		long ret = next_handler(XHMEDIUMCHANGED, major, minor);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB) && next_handler) {
+		return next_handler(XHMEDIUMCHANGED, major, minor);
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
-
-	return ENOSYS;
+	return ENOSYS; /* optional function */
 }
 
 static long
 XHMiNTInfo(void *data)
 {
 	if (next_handler) {
-		long ret = next_handler(XHMINTINFO, data);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+		return next_handler(XHMINTINFO, data);
 	}
 
-	return ENOSYS;
+	return ENOSYS; /* optional function */
 }
 
 long
@@ -584,10 +548,7 @@ XHDOSLimits(ushort which, ulong limit)
 	}
 
 	if (next_handler) {
-		long ret = next_handler(XHDOSLIMITS, which, limit);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO) {
-			return ret;
-		}
+		return next_handler(XHDOSLIMITS, which, limit);
 	}
 
 	return sys_XHDOSLimits(which, limit);
@@ -596,31 +557,21 @@ XHDOSLimits(ushort which, ulong limit)
 static long
 XHLastAccess(ushort major, ushort minor, ulong *ms)
 {
-	if (next_handler) {
-		long ret = next_handler(XHLASTACCESS, major, minor, ms);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB) && next_handler) {
+		return next_handler(XHLASTACCESS, major, minor, ms);
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
-
-	return ENOSYS;
+	return EERROR; /* not yet implemented */
 }
 
 static long
 XHReaccess(ushort major, ushort minor)
 {
-	if (next_handler) {
-		long ret = next_handler(XHREACCESS, major, minor);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB) && next_handler) {
+		return next_handler(XHREACCESS, major, minor);
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
-
-	return ENOSYS;
+	return EERROR; /* not yet implemented */
 }
 
 static long
@@ -629,44 +580,41 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 {
 	DEBUG(("XHInqTarget2(%d.%d)", major, minor));
 
-	if (next_handler) {
-		long ret = next_handler(XHINQTARGET2, major, minor, blocksize,
-					deviceflags, productname, stringlen);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB)) {
+		if (next_handler) {
+			return next_handler(XHINQTARGET2, major, minor, blocksize,
+						deviceflags, productname, stringlen);
+		} else {
+			return ENODEV;
+		}
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
+	short dev = major & PUN_DEV;
+	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
-	{
-		short dev = major & PUN_DEV;
-		block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
-	
-		if (blocksize) {
-			*blocksize = dev_desc->blksz;
-			DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
-				major, minor, *blocksize));
-		}
+	if (blocksize) {
+		*blocksize = dev_desc->blksz;
+		DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
+			major, minor, *blocksize));
+	}
 
-		if (deviceflags) {
-			if (dev_desc->removable)
-				*deviceflags = XH_TARGET_REMOVABLE | XH_TARGET_EJECTABLE;
-			DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
-				major, minor, *deviceflags));
-		}
+	if (deviceflags) {
+		if (dev_desc->removable)
+			*deviceflags = XH_TARGET_REMOVABLE | XH_TARGET_EJECTABLE;
+		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
+			major, minor, *deviceflags));
+	}
 
-		if (productname) {
-			char devName[64];
+	if (productname) {
+		char devName[64];
 
-			DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
+		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
 
-			memset(devName, 0, 64);
-			strcat(devName, dev_desc->vendor);
-			strcat(devName, " ");
-			strcat(devName, dev_desc->product);
-			strncpy(productname, devName, stringlen);
-		}
+		memset(devName, 0, 64);
+		strcat(devName, dev_desc->vendor);
+		strcat(devName, " ");
+		strcat(devName, dev_desc->product);
+		strncpy(productname, devName, stringlen);
 	}
 
 	return E_OK;
@@ -676,16 +624,14 @@ static long
 XHInqTarget(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		char *productname)
 {
-	if (next_handler) {
-		long ret = next_handler(XHINQTARGET, major, minor, blocksize,
-					deviceflags, productname);
-
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB)) {
+		if (next_handler) {
+			return next_handler(XHINQTARGET, major, minor, blocksize,
+						deviceflags, productname);
+		} else {
+			return ENODEV;
+		}
 	}
-
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
 
 	return XHInqTarget2(major, minor, blocksize, deviceflags,
 				productname, STRINGLEN);
@@ -696,24 +642,20 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 		ulong *blocksize)
 {
 	DEBUG(("XHGetCapacity(%d.%d)\n", major, minor));
-	
-	if (next_handler) {
-		long ret = next_handler(XHGETCAPACITY, major, minor, blocks,
-					blocksize);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+
+	if (!(major & PUN_USB)) {
+		if (next_handler) {
+			return next_handler(XHGETCAPACITY, major, minor, blocks, blocksize);
+		} else {
+			return ENODEV;
+		}
 	}
 
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
+	short dev = major & PUN_DEV;
+	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
-	{
-		short dev = major & PUN_DEV;
-		block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
-
-		*blocks = dev_desc->lba;
-		*blocksize = dev_desc->blksz;
-	}
+	*blocks = dev_desc->lba;
+	*blocksize = dev_desc->blksz;
 
 	return E_OK;
 }
@@ -727,15 +669,13 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	DEBUG(("XH%s(device=%d.%d, sector=%ld, count=%d, buf=%lx)",
 		rw ? "Write" : "Read", major, minor, sector, count, (unsigned long)buf));
 
-	if (next_handler) {
-		ret = next_handler(XHREADWRITE, major, minor, rw, sector,
-				   count, buf);
-		if (ret != ENOSYS && ret != ENODEV && ret != ENXIO)
-			return ret;
+	if (!(major & PUN_USB)) {
+		if (next_handler) {
+			return next_handler(XHREADWRITE, major, minor, rw, sector, count, buf);
+		} else {
+			return ENODEV;
+		}
 	}
-
-	if ((major & PUN_USB) == 0)
-		return ENODEV;
 
 	if (minor != 0)
 		return ENODEV;
