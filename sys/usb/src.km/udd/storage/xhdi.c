@@ -1030,7 +1030,7 @@ install_xhdi_driver(void)
 
 	/* For querying a limit with XHDOSLimit(), the limit parameter
 	 * must be set to 0, if we place 0 as value in the functions
-	 * below the compiler will push it to the satck as a short
+	 * below the compiler will push it to the stack as a short
 	 * and the limit parameter must be a long. We use a long
 	 * variable to avoid this.
 	 */
