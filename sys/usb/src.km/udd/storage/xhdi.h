@@ -46,7 +46,6 @@ struct usb_pun_info
 {
 	ushort	puns;			/* Number of HD's */
 	uchar	pun [MAX_LOGICAL_DRIVE];		/* AND with masks below: */
-# define PUN_DEV	0x1f			/* device number of HD */
 # define PUN_UNIT	0x7			/* Unit number */
 # define PUN_SCSI	0x8			/* 1=SCSI 0=ACSI */
 # define PUN_IDE	0x10			/* Falcon IDE */

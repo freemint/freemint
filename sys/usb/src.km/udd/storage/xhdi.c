@@ -355,7 +355,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	pstart = pun_usb.partition_start[drv];
 
 	if (major) {
-		*major = (PUN_DEV+PUN_USB) & pun_usb.pun[drv];
+		*major = (PUN_UNIT+PUN_USB) & pun_usb.pun[drv];
 		DEBUG(("XHInqDev2() major: %d", *major));
 	}
 
@@ -469,7 +469,7 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	}
 
 	/* mass storage logical device number in the USB bus */
-	short dev = major & PUN_DEV;
+	short dev = major & PUN_UNIT;
 
 	if (do_eject == 1)
 		usb_stor_eject(dev);
@@ -589,7 +589,7 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		}
 	}
 
-	short dev = major & PUN_DEV;
+	short dev = major & PUN_UNIT;
 	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
 	if (blocksize) {
@@ -651,7 +651,7 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 		}
 	}
 
-	short dev = major & PUN_DEV;
+	short dev = major & PUN_UNIT;
 	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
 	*blocks = dev_desc->lba;
@@ -684,7 +684,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		return EERROR;
 
 	/* device number in the USB bus */
-	short dev = major & PUN_DEV;
+	short dev = major & PUN_UNIT;
 
 	if (rw & 0x0001) {
 		ret = usb_stor_write(dev, sector, (long)count, buf);

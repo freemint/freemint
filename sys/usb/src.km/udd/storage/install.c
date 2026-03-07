@@ -370,7 +370,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * check input parameters
 	 */
-	if (dev_num > PUN_DEV) {
+	if (dev_num > PUN_UNIT) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
 		display_error(dev_num,vendor,revision,product,"invalid device number");
@@ -622,7 +622,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	 * Tell the user that the media has changed, so call getbpb first !
 	 */
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
-		physdev = logdrv & PUN_DEV;	/*  has already allowed for floppies     */
+		physdev = logdrv & PUN_UNIT;	/*  has already allowed for floppies     */
 	} else {
 		BPB *bpbptr;
 		unsigned short phys_per_log;	/* physical sectors per logical sector */
@@ -645,7 +645,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 			return EBADR;
 
 		start += pun_usb.partition_start[logdrv];
-		physdev = pun_usb.pun[logdrv] & PUN_DEV;
+		physdev = pun_usb.pun[logdrv] & PUN_UNIT;
 	}
 
 	/*
