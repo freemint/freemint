@@ -66,6 +66,11 @@
 #define DRIVER_VERSION_MAXLEN	7
 #define DRIVER_COMPANY_MAXLEN	17
 
+#define XHDI_USB_MAJOR_ID	24
+#define PUN_TO_MAJOR(x)		(PUN_UNIT & (x)) | XHDI_USB_MAJOR_ID
+#define MAJOR_TO_DEV(x)		(PUN_UNIT & (x))
+#define IS_USB(x)		XHDI_USB_MAJOR_ID & (x)
+
 #ifdef TOSONLY
 char *DRIVER_NAME = "TOS USB";
 #else
@@ -355,7 +360,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	pstart = pun_usb.partition_start[drv];
 
 	if (major) {
-		*major = (PUN_UNIT+PUN_USB) & pun_usb.pun[drv];
+		*major = PUN_TO_MAJOR(pun_usb.pun[drv]);
 		DEBUG(("XHInqDev2() major: %d", *major));
 	}
 
@@ -430,7 +435,7 @@ XHInqDev(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb)
 static long
 XHReserve(ushort major, ushort minor, ushort do_reserve, ushort key)
 {
-	if (!(major & PUN_USB) && next_handler) {
+	if (!(IS_USB(major)) && next_handler) {
 		return next_handler(XHRESERVE, major, minor, do_reserve, key);
 	}
 
@@ -440,7 +445,7 @@ XHReserve(ushort major, ushort minor, ushort do_reserve, ushort key)
 static long
 XHLock(ushort major, ushort minor, ushort do_lock, ushort key)
 {
-	if (!(major & PUN_USB) && next_handler) {
+	if (!(IS_USB(major)) && next_handler) {
 		return next_handler(XHLOCK, major, minor, do_lock, key);
 	}
 
@@ -450,7 +455,7 @@ XHLock(ushort major, ushort minor, ushort do_lock, ushort key)
 static long
 XHStop(ushort major, ushort minor, ushort do_stop, ushort key)
 {
-	if (!(major & PUN_USB) && next_handler) {
+	if (!(IS_USB(major)) && next_handler) {
 		return next_handler(XHSTOP, major, minor, do_stop, key);
 	}
 
@@ -460,7 +465,7 @@ XHStop(ushort major, ushort minor, ushort do_stop, ushort key)
 static long
 XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 {
-	if (!(major & PUN_USB)) {
+	if (!(IS_USB(major))) {
 		if (next_handler) {
 			return next_handler(XHEJECT, major, minor, do_eject, key);
 		} else {
@@ -469,7 +474,7 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	}
 
 	/* mass storage logical device number in the USB bus */
-	short dev = major & PUN_UNIT;
+	short dev = MAJOR_TO_DEV(major);
 
 	if (do_eject == 1)
 		usb_stor_eject(dev);
@@ -523,7 +528,7 @@ XHDriverSpecial(ulong key1, ulong key2, ushort subopcode, void *data)
 static long
 XHMediumChanged(ushort major, ushort minor)
 {
-	if (!(major & PUN_USB) && next_handler) {
+	if (!(IS_USB(major)) && next_handler) {
 		return next_handler(XHMEDIUMCHANGED, major, minor);
 	}
 
@@ -557,7 +562,7 @@ XHDOSLimits(ushort which, ulong limit)
 static long
 XHLastAccess(ushort major, ushort minor, ulong *ms)
 {
-	if (!(major & PUN_USB) && next_handler) {
+	if (!(IS_USB(major)) && next_handler) {
 		return next_handler(XHLASTACCESS, major, minor, ms);
 	}
 
@@ -567,7 +572,7 @@ XHLastAccess(ushort major, ushort minor, ulong *ms)
 static long
 XHReaccess(ushort major, ushort minor)
 {
-	if (!(major & PUN_USB) && next_handler) {
+	if (!(IS_USB(major)) && next_handler) {
 		return next_handler(XHREACCESS, major, minor);
 	}
 
@@ -580,7 +585,7 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 {
 	DEBUG(("XHInqTarget2(%d.%d)", major, minor));
 
-	if (!(major & PUN_USB)) {
+	if (!(IS_USB(major))) {
 		if (next_handler) {
 			return next_handler(XHINQTARGET2, major, minor, blocksize,
 						deviceflags, productname, stringlen);
@@ -589,7 +594,7 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		}
 	}
 
-	short dev = major & PUN_UNIT;
+	short dev = MAJOR_TO_DEV(major);
 	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
 	if (blocksize) {
@@ -624,7 +629,7 @@ static long
 XHInqTarget(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		char *productname)
 {
-	if (!(major & PUN_USB)) {
+	if (!(IS_USB(major))) {
 		if (next_handler) {
 			return next_handler(XHINQTARGET, major, minor, blocksize,
 						deviceflags, productname);
@@ -643,7 +648,7 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 {
 	DEBUG(("XHGetCapacity(%d.%d)\n", major, minor));
 
-	if (!(major & PUN_USB)) {
+	if (!(IS_USB(major))) {
 		if (next_handler) {
 			return next_handler(XHGETCAPACITY, major, minor, blocks, blocksize);
 		} else {
@@ -651,7 +656,7 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 		}
 	}
 
-	short dev = major & PUN_UNIT;
+	short dev = MAJOR_TO_DEV(major);
 	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
 
 	*blocks = dev_desc->lba;
@@ -669,7 +674,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	DEBUG(("XH%s(device=%d.%d, sector=%ld, count=%d, buf=%lx)",
 		rw ? "Write" : "Read", major, minor, sector, count, (unsigned long)buf));
 
-	if (!(major & PUN_USB)) {
+	if (!(IS_USB(major))) {
 		if (next_handler) {
 			return next_handler(XHREADWRITE, major, minor, rw, sector, count, buf);
 		} else {
@@ -684,7 +689,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		return EERROR;
 
 	/* device number in the USB bus */
-	short dev = major & PUN_UNIT;
+	short dev = MAJOR_TO_DEV(major);
 
 	if (rw & 0x0001) {
 		ret = usb_stor_write(dev, sector, (long)count, buf);
