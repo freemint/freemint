@@ -69,7 +69,7 @@
 #define XHDI_USB_MAJOR_ID	24
 #define PUN_TO_MAJOR(x)		(PUN_UNIT & (x)) | XHDI_USB_MAJOR_ID
 #define MAJOR_TO_DEV(x)		(PUN_UNIT & (x))
-#define IS_USB(x)		XHDI_USB_MAJOR_ID & (x)
+#define IS_USB(x)		XHDI_USB_MAJOR_ID <= x && x <= XHDI_USB_MAJOR_ID + PUN_UNIT
 
 #ifdef TOSONLY
 char *DRIVER_NAME = "TOS USB";
