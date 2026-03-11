@@ -219,22 +219,7 @@ SCSIDRV_In (SCSICMD *parms)
 
 			/* Filter commands for non existent LUNs */
 			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].total_lun) {
-				parms->sense[0] = 0x70;
-				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
-				parms->sense[7] = 0x0A;
-				parms->sense[12] = 0x25;
-				parms->sense[13] = 0x00;
-				if (parms->cmd[0] == SCSI_REQ_SENSE) {
-					char *buffer = (char *) parms->buf;
-					for (i = 0; i < parms->transferlen; i++)
-					{
-						buffer[i] = parms->sense[i];
-					}
-					parms->sense[2] = parms->sense[12] = 0x00;
-					return NOSCSIERROR;
-				} else {
-					return S_CHECK_COND;
-				}
+				return  SELECTERROR;
 			}
 
 			memset (&srb, 0, sizeof (srb));
@@ -310,10 +295,7 @@ SCSIDRV_In (SCSICMD *parms)
 			}
 
 			if (srb.cmd[0] == SCSI_REPORT_LUN) {
-				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
-				parms->sense[12] = 0x20;
-				parms->sense[13] = 0x00;
-				return S_CHECK_COND;
+				return SELECTERROR;
 			}
 
 			/* promote read6 to read10 */
@@ -446,22 +428,7 @@ SCSIDRV_Out (SCSICMD *parms)
 
 			/* Filter commands for non existent LUNs */
 			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].total_lun) {
-				parms->sense[0] = 0x70;
-				parms->sense[2] = SENSE_ILLEGAL_REQUEST;
-				parms->sense[7] = 0x0A;
-				parms->sense[12] = 0x25;
-				parms->sense[13] = 0x00;
-				if (parms->cmd[0] == SCSI_REQ_SENSE) {
-					char *buffer = (char *) parms->buf;
-					for (i = 0; i < parms->transferlen; i++)
-					{
-						buffer[i] = parms->sense[i];
-					}
-					parms->sense[2] = parms->sense[12] = 0x00;
-					return NOSCSIERROR;
-				} else {
-					return S_CHECK_COND;
-				}
+				return  SELECTERROR;
 			}
 
 			memset (&srb, 0, sizeof (srb));
