@@ -125,7 +125,7 @@ typedef struct SCSIDRV_Data
 static SCSIDRV_Data* private = NULL;
 static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
-static unsigned short USBbus = 3; /* default */
+static unsigned short USBbus = 4; /* default */
 
 /*
  * SCSIDRV handlers
@@ -894,7 +894,7 @@ install_scsidrv (void)
 		}
 
 		/*
-		 * Find a free busno for USB bus. We use a fixed bus number of 3.
+		 * Find a free busno for USB bus. We use a fixed bus number of 4.
 		 * If it's occupied, we don't install.
 		 */
 
@@ -936,13 +936,13 @@ install_scsidrv (void)
 	}
 
 	/*
-	 * Find a free busno for USB bus. We use a fixed bus number of 3.
+	 * Find a free busno for USB bus. We use a fixed bus number of 4.
 	 * If it's occupied, we don't install.
 	 */
 
 	if (info->busids & 1<<USBbus)
 	{
-		c_conws("Bus ID 3 already exists. SCSIDRV not installed.\r\n");
+		c_conws("Bus ID 4 already exists. SCSIDRV not installed.\r\n");
 		return;
 	}
 
