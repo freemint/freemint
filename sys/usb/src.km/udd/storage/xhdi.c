@@ -66,7 +66,7 @@
 #define DRIVER_VERSION_MAXLEN	7
 #define DRIVER_COMPANY_MAXLEN	17
 
-#define XHDI_USB_MAJOR_ID	24
+#define XHDI_USB_MAJOR_ID	(PUN_USB) /* 0x20 = 32 */
 #define PUN_TO_MAJOR(x)		(PUN_UNIT & (x)) | XHDI_USB_MAJOR_ID
 #define MAJOR_TO_DEV(x)		(PUN_UNIT & (x))
 #define IS_USB(x)		XHDI_USB_MAJOR_ID <= x && x <= XHDI_USB_MAJOR_ID + PUN_UNIT
