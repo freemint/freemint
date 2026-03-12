@@ -39,42 +39,6 @@
 #define DEF_WHLMODE	WHEEL_ARROWED
 
 
-/* bubble-gem */
-typedef struct
-{
-	long   magic;   /* 'BGEM'                                   */
-	long   size;    /* Größe dieser Struktur, derzeit 18        */
-	short  release; /* derzeit 7, nie kleiner als 5             */
-	short  active;  /* <>0, wenn gerade eine Hilfe angezeigt wird;  0  sonst                               */
-	struct mouse_form *mhelp;   /* Zeiger auf Hilfe-Mausform                */
-	short  dtimer;  /* Dämon-Timer; Default 200ms; ab Release 6 */
-} BGEM;
-
-typedef struct
-{
-#define BGC_FONTCHANGED 0x0001
-#define BGC_NOWINSTYLE  0x0002
-#define BGC_SENDKEY     0x0004
-#define BGC_DEMONACTIVE 0x0008
-#define BGC_TOPONLY     0x0010
-	short flags;
-	short display_time;	/* ms */
-} BHLP;
-
-#define C_BGEM 	0x4247454dL
-
-#define BGS7_USRHIDE 0x0001
-#define BGS7_USRHIDE2 0x0002	/* XaAES */
-#define BGS7_MOUSE   0x0004
-#define BGS7_DISPCL  0x0080	/* display client: XaAES-special */
-
-#define BUBBLEGEM_REQUEST  0xBABA
-#define BUBBLEGEM_SHOW     0xBABB
-#define BUBBLEGEM_ACK      0xBABC
-#define BUBBLEGEM_ASKFONT  0xBABD
-#define BUBBLEGEM_FONT     0xBABE
-#define BUBBLEGEM_HIDE     0xBABF
-
 typedef struct
 {
     unsigned int    version;
