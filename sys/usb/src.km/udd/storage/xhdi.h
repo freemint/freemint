@@ -50,7 +50,6 @@ struct usb_pun_info
 # define PUN_SCSI	0x8			/* 1=SCSI 0=ACSI */
 # define PUN_IDE	0x10			/* Falcon IDE */
 # define PUN_USB        0x20			/* USB */
-# define PUN_REMOVABLE	0x40			/* Removable media */
 # define PUN_VALID	0x80			/* zero if valid */
 	long	partition_start [MAX_LOGICAL_DRIVE];
 	long	cookie;			/* 'AHDI' if following valid */
