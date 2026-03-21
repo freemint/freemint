@@ -110,6 +110,33 @@ add_cookie (COOKIE * cook)
 
 long ssp;
 static COOKIE SCSIDRV_COOKIE;
+
+/* The SCSI driver routines use D0–D2 and A0–A1. D2 is the delicate one, since it
+ * isn’t a GCC scratch register, so we should save it before calling InquireSCSI().
+ * Note that this is only necessary for the TOS driver. On MiNT, the call goes
+ * through the kernel, and D2 should be saved and restored there.
+ */
+
+static long
+old_InquireSCSI(void *func, short what, BUSINFO *info)
+{
+	register long ret __asm__("d0");
+
+	__asm__ volatile
+	(
+		"move.l	%3,-(%%sp)\n\t"
+		"move.w	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addql	#6,%%sp\n\t"
+		: "=r"(ret)				/* outputs */
+		: "g"(func), "g"(what), "g"(info)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",		/* clobbered regs */
+		  "memory"
+	);
+	return ret;
+}
 #endif /* TOSONLY */
 
 static REQDATA reqdata;
@@ -853,11 +880,11 @@ install_scsidrv (void)
 
 		/* Scan for busses reported by previous driver */
 
-		ret = tmp->InquireSCSI(cInqFirst, info);
+		ret = old_InquireSCSI(tmp->InquireSCSI, cInqFirst, info);
 
 		while (ret == 0)
 		{
-			ret = tmp->InquireSCSI(cInqNext, info);
+			ret = old_InquireSCSI(tmp->InquireSCSI, cInqNext, info);
 		}
 
 		/*

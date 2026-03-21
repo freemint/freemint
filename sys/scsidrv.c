@@ -281,7 +281,7 @@ scsidrv_InstallNewDriver (SCSIDRV *newdrv)
 long
 scsidrv_In (SCSICMD *par)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
@@ -296,7 +296,19 @@ scsidrv_In (SCSICMD *par)
 	}
 
 	SCSIDRV_DEBUG (("scsidrv_In (%p)", par));
-	ret = (*scsidrv->In)(par);
+	/* Mark D2 as clobbered and call In() */
+	__asm__ volatile
+	(
+		"move.l	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#4,%%sp\n\t"
+		: "=r"(ret)			/* outputs */
+		: "g"(*scsidrv->In), "g"(par)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",	/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_In (...) -> %li", ret));
 	return ret;
 }
@@ -304,13 +316,25 @@ scsidrv_In (SCSICMD *par)
 long
 scsidrv_Out (SCSICMD *par)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_Out (%p)", par));
-	ret = (*scsidrv->Out)(par);
+	/* Mark D2 as clobbered and call Out() */
+	__asm__ volatile
+	(
+		"move.l	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#4,%%sp\n\t"
+		: "=r"(ret)			/* outputs */
+		: "g"(*scsidrv->Out), "g"(par)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",	/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_Out (...) -> %li", ret));
 	return ret;
 }
@@ -318,13 +342,26 @@ scsidrv_Out (SCSICMD *par)
 long
 scsidrv_InquireSCSI (short what, BUSINFO *info)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (%i, %p)", what, info));
-	ret = (*scsidrv->InquireSCSI)(what, info);
+	/* Mark D2 as clobbered and call InquireSCSI() */
+	__asm__ volatile
+	(
+		"move.l	%3,-(%%sp)\n\t"
+		"move.w	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#6,%%sp\n\t"
+		: "=r"(ret)						/* outputs */
+		: "g"(*scsidrv->InquireSCSI), "g"(what), "g"(info)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",				/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_InquireSCSI (...) -> %li", ret));
 	return ret;
 }
@@ -332,13 +369,27 @@ scsidrv_InquireSCSI (short what, BUSINFO *info)
 long
 scsidrv_InquireBus (short what, short busno, DEVINFO *dev)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_InquireBUS (%i, %i, %p)", what, busno, dev));
-	ret = (*scsidrv->InquireBus)(what, busno, dev);
+	/* Mark D2 as clobbered and call InquireBus() */
+	__asm__ volatile
+	(
+		"move.l	%4,-(%%sp)\n\t"
+		"move.w	%3,-(%%sp)\n\t"
+		"move.w	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#8,%%sp\n\t"
+		: "=r"(ret)							/* outputs */
+		: "g"(*scsidrv->InquireBus), "g"(what), "g"(busno), "g"(dev)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",					/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_InquireBUS (...) -> %li", ret));
 	return ret;
 }
@@ -346,13 +397,28 @@ scsidrv_InquireBus (short what, short busno, DEVINFO *dev)
 long
 scsidrv_CheckDev (short busno, const DLONG *SCSIId, char *name, ushort *features)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_CheckDev (%i, %p, %p, %p)", busno, SCSIId, name, features));
-	ret = (*scsidrv->CheckDev)(busno, SCSIId, name, features);
+	/* Mark D2 as clobbered and call CheckDev() */
+	__asm__ volatile
+	(
+		"move.l	%5,-(%%sp)\n\t"
+		"move.l	%4,-(%%sp)\n\t"
+		"move.l	%3,-(%%sp)\n\t"
+		"move.w	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"add.l	#14,%%sp\n\t"
+		: "=r"(ret)									/* outputs */
+		: "g"(*scsidrv->CheckDev), "g"(busno), "g"(SCSIId), "g"(name), "g"(features)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",							/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_CheckDev (...) -> %li", ret));
 	return ret;
 }
@@ -360,13 +426,25 @@ scsidrv_CheckDev (short busno, const DLONG *SCSIId, char *name, ushort *features
 long
 scsidrv_RescanBus (short busno)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_RescanBus (%i)", busno));
-	ret = (*scsidrv->RescanBus)(busno);
+	/* Mark D2 as clobbered and call RescanBus() */
+	__asm__ volatile
+	(
+		"move.w	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#2,%%sp\n\t"
+		: "=r"(ret)				/* outputs */
+		: "g"(*scsidrv->RescanBus), "g"(busno)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",		/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_RescanBus (...) -> %li", ret));
 	return ret;
 }
@@ -374,13 +452,27 @@ scsidrv_RescanBus (short busno)
 long
 scsidrv_Open (short busno, const DLONG *SCSIId, ulong *maxlen)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_Open (%i, %p, %p)", busno, SCSIId, maxlen));
-	ret = (*scsidrv->Open)(busno, SCSIId, maxlen);
+	/* Mark D2 as clobbered and call Open() */
+	__asm__ volatile
+	(
+		"move.l	%4,-(%%sp)\n\t"
+		"move.l	%3,-(%%sp)\n\t"
+		"move.w	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"add.l	#10,%%sp\n\t"
+		: "=r"(ret)							/* outputs */
+		: "g"(*scsidrv->Open), "g"(busno), "g"(SCSIId), "g"(maxlen)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",					/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_Open (...) -> %li", ret));
 	return ret;
 }
@@ -388,13 +480,25 @@ scsidrv_Open (short busno, const DLONG *SCSIId, ulong *maxlen)
 long
 scsidrv_Close (short *handle)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_Close (%p)", handle));
-	ret = (*scsidrv->Close)(handle);
+	/* Mark D2 as clobbered and call Close() */
+	__asm__ volatile
+	(
+		"move.l	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#4,%%sp\n\t"
+		: "=r"(ret)				/* outputs */
+		: "g"(*scsidrv->Close), "g"(handle)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",		/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_Close (...) -> %li", ret));
 	return ret;
 }
@@ -402,13 +506,27 @@ scsidrv_Close (short *handle)
 long
 scsidrv_Error (short *handle, short rwflag, short ErrNo)
 {
-	long ret;
+	register long ret __asm__("d0");
 
 	if (!scsidrv)
 		return ENOSYS;
 
 	SCSIDRV_DEBUG (("scsidrv_Error (%p, %i, %i)", handle, rwflag, ErrNo));
-	ret = (*scsidrv->Error)(handle, rwflag, ErrNo);
+	/* Mark D2 as clobbered and call Error() */
+	__asm__ volatile
+	(
+		"move.w	%4,-(%%sp)\n\t"
+		"move.w	%3,-(%%sp)\n\t"
+		"move.l	%2,-(%%sp)\n\t"
+		"move.l	%1,%%a0\n\t"
+		"jsr	(%%a0)\n\t"
+		"addq.l	#8,%%sp\n\t"
+		: "=r"(ret)							/* outputs */
+		: "g"(*scsidrv->Error), "g"(handle), "g"(rwflag), "g"(ErrNo)	/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "cc",					/* clobbered regs */
+		  "memory"
+	);
 	SCSIDRV_DEBUG (("scsidrv_Error (...) -> %li", ret));
 	return ret;
 }
