@@ -557,7 +557,7 @@ SCSIDRV_InquireSCSI (short what, BUSINFO * info)
 	}
 
 	/*
-	 * We assign our BUS id no. 3
+	 * We assign our BUS id no. 4
 	 * We shouldn't fail here as we scanned the busses when we installed
 	 * so our USBbus number should be valid.
 	 */
@@ -894,7 +894,7 @@ install_scsidrv (void)
 
 		if (info->busids & 1<<USBbus)
 		{
-			c_conws("Bus ID 3 already exists. SCSIDRV not installed.\r\n");
+			c_conws("Bus ID 4 already exists. SCSIDRV not installed.\r\n");
 			return;
 		}
 		/* Take a copy of the old pointers, and replace with ours.
