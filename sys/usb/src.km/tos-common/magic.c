@@ -66,7 +66,7 @@ typedef struct
 } MAGX_COOKIE;
 
 /* Are we running on MagiC? */
-int MagiC = -1;
+short MagiC = -1;
 
 
 /* Code taken from TOS.HYP
