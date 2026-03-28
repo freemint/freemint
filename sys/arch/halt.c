@@ -92,6 +92,16 @@ hw_poweroff(void)
 	
 		/* does not return */ 
 	}
+    else if ((get_cookie(NULL, COOKIE_RAVN, &dummy) == E_OK) && dummy)
+    {
+        /* call bootrom poweroff function */
+        long(*raven_poweroff)(long) = *((long(**)(long))(dummy + 0x104));
+        if (raven_poweroff)
+        {
+            /* returns if unsupported, otherwise powers off */
+            raven_poweroff(1);
+        }
+    }
 
 # ifdef __mcoldfire__
 	/* Firebee poweroff */
