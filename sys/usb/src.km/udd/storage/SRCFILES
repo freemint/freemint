@@ -23,6 +23,7 @@ TOSCOBJS = \
 	$(toscommon_srcdir)/setstack.S \
 	storage_int.S \
 	$(toscommon_srcdir)/crtinit.c \
-	$(toscommon_srcdir)/magic.c
+	$(toscommon_srcdir)/magic.c \
+	$(toscommon_srcdir)/emutos.c
 
 SRCFILES = $(HEADER) $(COBJS) $(TOSCOBJS)

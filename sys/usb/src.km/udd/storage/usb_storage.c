@@ -140,6 +140,7 @@ extern long XHDOSLimits(ushort which, ulong limit);
 extern void init_polling(void);
 #ifdef TOSONLY
 extern short InqMagX(void);
+extern long InqEmuTOS (void);
 #endif
 
 /*
@@ -149,6 +150,7 @@ extern long dl_maxdrives;
 extern short num_multilun_dev;
 #ifdef TOSONLY
 extern short MagiC;
+extern long EmuTOS;
 #endif
 
 extern int enable_flop_mediach; /* in storage_int.S */
@@ -2515,6 +2517,9 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 
 	/* Are we running on MagiC */
 	MagiC = InqMagX();
+
+	/* Are we running on EmuTOS */
+	EmuTOS = InqEmuTOS();
 #endif
 
 	pun_ptr = get_pun();
