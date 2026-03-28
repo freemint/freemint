@@ -82,9 +82,9 @@ hw_poweroff(void)
 # ifdef WITH_NATIVE_FEATURES
 	nf_shutdown();
 # else
-	/* CT60 poweroff */
 	unsigned long int dummy;
 
+	/* CT60 poweroff */
 	if (get_cookie(NULL, COOKIE_CT60, &dummy) == E_OK)
 	{
 		/* any write to that address causes poweroff */
@@ -92,6 +92,8 @@ hw_poweroff(void)
 	
 		/* does not return */ 
 	}
+
+    /* Raven poweroff*/
     else if ((get_cookie(NULL, COOKIE_RAVN, &dummy) == E_OK) && dummy)
     {
         /* call bootrom poweroff function */
