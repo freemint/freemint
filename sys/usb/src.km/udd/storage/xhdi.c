@@ -294,7 +294,8 @@ sys_XHDOSLimits(ushort which,ulong limit)
 	/* Rebuild BPB based on XHDOSLimit changes */
 	if (limit != 0) {
 		for (i = 0; i < dl_maxdrives; i++) {
-			usb_build_bpb(&pun_usb.bpb[i], NULL);
+			if (my_drvbits & 1L << i)
+				usb_build_bpb(&pun_usb.bpb[i], NULL);
 		}
 	}
 
