@@ -82,15 +82,27 @@ hw_poweroff(void)
 # ifdef WITH_NATIVE_FEATURES
 	nf_shutdown();
 # else
-	/* CT60 poweroff */
 	unsigned long int dummy;
 
+	/* CT60 poweroff */
 	if (get_cookie(NULL, COOKIE_CT60, &dummy) == E_OK)
 	{
 		/* any write to that address causes poweroff */
 		*(volatile char *) 0xFA800000L = 1;
 	
 		/* does not return */ 
+	}
+
+	/* Raven poweroff*/
+	else if ((get_cookie(NULL, COOKIE_RAVN, &dummy) == E_OK) && dummy)
+	{
+		/* call bootrom poweroff function */
+		long(*raven_poweroff)(long) = *((long(**)(long))(dummy + 0x104));
+		if (raven_poweroff)
+		{
+			/* returns if unsupported, otherwise powers off */
+			raven_poweroff(1);
+		}
 	}
 
 # ifdef __mcoldfire__
