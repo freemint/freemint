@@ -562,11 +562,8 @@ long
 XHDOSLimits(ushort which, ulong limit)
 {
 	if (limit != 0) {
-		(void)sys_XHDOSLimits(which, limit);
-	}
-
-	if (next_handler) {
-		return next_handler(XHDOSLIMITS, which, limit);
+		if (next_handler)
+			next_handler(XHDOSLIMITS, which, limit);
 	}
 
 	return sys_XHDOSLimits(which, limit);
