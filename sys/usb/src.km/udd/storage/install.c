@@ -594,7 +594,7 @@ BPB *usb_getbpb(long logdrv)
  	 * ensure that filesystem inside partition is suitable for TOS
 	 * (paranoia rules).
  	 */
-	if (bpbptr->clsizb == 0) {
+	if (bpbptr->clsizb == 0 || bpbptr->clsizb ==-1) {
 		bpbptr = NULL;
 	}
 exit:
