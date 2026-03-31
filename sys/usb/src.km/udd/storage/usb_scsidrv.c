@@ -566,7 +566,7 @@ SCSIDRV_InquireSCSI (short what, BUSINFO * info)
 		strncpy (info->busname, USBNAME, sizeof(info->busname));
 		info->busids |= 1<<USBbus;
 		info->busno = USBbus;
-		info->features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
+		info->features = cAllCmds;
 		info->maxlen = 64L * 1024L;
 		return 0;
 	}
