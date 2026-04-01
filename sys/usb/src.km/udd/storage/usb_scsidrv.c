@@ -644,7 +644,7 @@ SCSIDRV_CheckDev (short busno,
 		}
 		if (mass_storage_dev[DevNo->lo].target != 0xff)
 		{
-			*Features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
+			*Features = cAllCmds;
 			return 0;
 		} 
 		return ENODEV;
@@ -865,7 +865,7 @@ install_scsidrv (void)
 
 	for (i = 0; i < MAX_HANDLES; i++)
 	{
-		private[i].features = cArbit | cAllCmds | cTargCtrl | cTarget | cCanDisconnect;
+		private[i].features = cAllCmds;
 		private[i].changed = FALSE;
 		private[i].handleOpened = FALSE;
 	}
