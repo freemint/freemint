@@ -40,8 +40,8 @@
 
 
 /* FIXME:  Is this necessary?  */
-#define _PATH_IFCONFIG	"/sbin/ifconfig"
-#define _PATH_ROUTE	"/sbin/route"
+#define _PATH_IFCONFIG	"/bin/ifconfig"
+#define _PATH_ROUTE	"/bin/route"
 
 #define FLOW_HARD	2
 
