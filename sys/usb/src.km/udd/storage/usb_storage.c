@@ -132,7 +132,7 @@ static struct uddif storage_uif =
 extern long install_usb_stor	(long dev_num, unsigned long part_type, 
 					 unsigned long part_offset, unsigned long part_size, 
 					 char *vendor, char *revision, char *product);
-extern long uninstall_usb_stor	(long dev_num);
+extern long uninstall_usb_stor	(long dev_num, long logdrv);
 extern long install_xhdi_driver(void);                         //xhdi.c
 extern void install_vectors(void);                             //vectors.S
 extern void install_scsidrv(void);                             //usb_scsidrv.c
@@ -2160,7 +2160,7 @@ usb_stor_eject(long device)
 
 	long idx = bios_part[device].partnum;
 	while (idx > 0) {
-		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
+		uninstall_usb_stor(device, bios_part[device].biosnum[idx - 1]);
 		idx--;
 	}
 	bios_part[device].partnum = 0;
@@ -2195,7 +2195,7 @@ storage_disconnect(struct usb_device *dev)
 
 			long idx;
 			for (idx = 1; idx <= bios_part[i].partnum; idx++) {
-				uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
+				uninstall_usb_stor(i, bios_part[i].biosnum[idx - 1]);
 			}
 			how_many_luns++;
 			bios_part[i].partnum = 0;

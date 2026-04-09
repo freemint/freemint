@@ -73,7 +73,7 @@ extern BPB* usb_global_bpb;
  */
 long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_offset,
 					unsigned long part_size,char *vendor,char *revision,char *product);
-long uninstall_usb_stor(long logdrv);
+long uninstall_usb_stor(long dev_num, long logdrv);
 BPB *usb_getbpb(long logdrv);
 long usb_mediach(long logdrv);
 long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode);
@@ -359,6 +359,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	int logdrv;
 	long mask;
 	PUN_INFO *pun_public;
+	int i;
 
 #ifdef TOSONLY
 	/* goto supervisor mode because of drvbits & handlers */
@@ -414,16 +415,34 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * update the usb_pun_info structure
 	 */
-	pun_usb.puns++;
+
+	/* Skip puns increment if device(LUN) already has a mounted partition */
+	for (i = 0; i < MAX_LOGICAL_DRIVE; i++) {
+		if (pun_usb.pun[i] == (dev_num | PUN_USB)) {
+			break;
+		}
+	}
+	if (i == MAX_LOGICAL_DRIVE) {
+		pun_usb.puns++;
+	}
 	pun_usb.pun[logdrv] = dev_num | PUN_USB;
 	pun_usb.partition_start[logdrv] = part_offset;
 
 	/*
 	 * update the public pun_info structure only for the first 16 logical drives
 	 */
+
+	/* Skip puns increment if device(LUN) already has a mounted partition */
 	if (logdrv < 16) {
 		pun_public = PUN_PTR;
-		pun_public->puns++;
+		for (i = 0; i < 16; i++) {
+			if (pun_public->pun[i] == (dev_num | PUN_USB)) {
+				break;
+			}
+		}
+		if (i == 16) {
+			pun_public->puns++;
+		}
 		pun_public->pun[logdrv] = dev_num | PUN_USB;
 		pun_public->partition_start[logdrv] = part_offset;
 	}
@@ -498,15 +517,25 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	return logdrv;
 }
 
-long uninstall_usb_stor(long logdrv)
+long uninstall_usb_stor(long dev_num, long logdrv)
 {
 	PUN_INFO *pun_public;
+	int i;
 
 	if ((logdrv < 0) || (logdrv >= dl_maxdrives))
 		return -1L;
 
-	pun_usb.puns--;
+	/* update the usb_pun_info structure */
 	pun_usb.pun[logdrv] = 0xff;
+	/* Skip puns decrement until all partitions for this LUN are unmounted */
+	for (i = 0; i < MAX_LOGICAL_DRIVE; i++) {
+		if (pun_usb.pun[i] == (dev_num | PUN_USB)) {
+			break;
+		}
+	}
+	if (i == MAX_LOGICAL_DRIVE) {
+		pun_usb.puns--;
+	}
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
 
 #ifdef TOSONLY
@@ -521,8 +550,16 @@ long uninstall_usb_stor(long logdrv)
 	 */
 	if (logdrv < 16) {
 		pun_public = PUN_PTR;
-		pun_public->puns--;
 		pun_public->pun[logdrv] = 0xff;
+		/* Skip puns decrement until all partitions for this LUN are unmounted */
+		for (i = 0; i < 16; i++) {
+			if (pun_public->pun[i] == (dev_num | PUN_USB)) {
+				break;
+			}
+		}
+		if (i == 16) {
+			pun_public->puns--;
+		}
 		pun_public->partition_start[logdrv] = 0L;
 	}
 
