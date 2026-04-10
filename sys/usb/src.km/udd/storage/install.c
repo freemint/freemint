@@ -40,9 +40,9 @@
 #define PUN_PTR			(*((PUN_INFO **) 0x516L))
 
 #define DEFAULT_SECTOR_SIZE 2048						//usb_storage.c
-unsigned long usb_stor_read(long device,unsigned long blknr,
+unsigned long usb_stor_read(long global_lun_id,unsigned long blknr,
 		unsigned long blkcnt,void *buffer);				//usb_storage.c
-unsigned long usb_stor_write(long device,unsigned long blknr,
+unsigned long usb_stor_write(long global_lun_id,unsigned long blknr,
 		unsigned long blkcnt,const void *buffer);		//usb_storage.c
 
 extern USB_PUN_INFO pun_usb;							//xhdi.c
@@ -71,9 +71,9 @@ extern BPB* usb_global_bpb;
 /*
  * these should be in e.g. install.h
  */
-long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_offset,
+long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long part_offset,
 					unsigned long part_size,char *vendor,char *revision,char *product);
-long uninstall_usb_stor(long dev_num, long logdrv);
+long uninstall_usb_stor(long global_lun_id, long logdrv);
 BPB *usb_getbpb(long logdrv);
 long usb_mediach(long logdrv);
 long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode);
@@ -142,9 +142,9 @@ static long valid_drive(long logdrv);
 
 //#define DEBUGGING_ROUTINES
 #ifdef DEBUGGING_ROUTINES
-static void display_error(long dev_num,char *vendor,char *revision,char *product,char *msg);
-static void display_installed(long dev_num,char *vendor,char *revision,char *product,int logdrv);
-static void display_usb(long dev_num,char *vendor,char *revision,char *product);
+static void display_error(long global_lun_id,char *vendor,char *revision,char *product,char *msg);
+static void display_installed(long global_lun_id,char *vendor,char *revision,char *product,int logdrv);
+static void display_usb(long global_lun_id,char *vendor,char *revision,char *product);
 #endif
 
 /*
@@ -261,10 +261,10 @@ void usb_build_bpb(BPB *bpbptr, void *bs)
 }
 
 #ifdef DEBUGGING_ROUTINES
-static void display_usb(long dev_num,char *vendor,char *revision,char *product)
+static void display_usb(long global_lun_id,char *vendor,char *revision,char *product)
 {
 	c_conws("USB ");
-	c_conout('0'+dev_num);		/* we assume dev_num <= 9 */
+	c_conout('0'+global_lun_id);		/* we assume global_lun_id <= 9 */
 	c_conws(".0 ");
 	c_conws(vendor);
 	c_conout(' ');
@@ -273,15 +273,15 @@ static void display_usb(long dev_num,char *vendor,char *revision,char *product)
 	c_conws(product);
 }
 
-static void display_error(long dev_num,char *vendor,char *revision,char *product,char *msg)
+static void display_error(long global_lun_id,char *vendor,char *revision,char *product,char *msg)
 {
-	display_usb(dev_num,vendor,revision,product);
+	display_usb(global_lun_id,vendor,revision,product);
 	c_conws(": ");
 	c_conws(msg);
 	c_conws("\r\n");
 }
 
-static void display_installed(long dev_num,char *vendor,char *revision,char *product,int logdrv)
+static void display_installed(long global_lun_id,char *vendor,char *revision,char *product,int logdrv)
 {
 #ifdef TOSONLY
 	char string[128];
@@ -301,7 +301,7 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
 	strcat(string, ":][OK]");
 	form_alert(1, string);
 #else
-	display_usb(dev_num,vendor,revision,product);
+	display_usb(global_lun_id,vendor,revision,product);
 	c_conws(": installed as drive ");
 	c_conout(DriveToLetter(logdrv));	/* drives are A:->Z:, 1:->6: */
 	c_conws("\r\n");
@@ -352,7 +352,7 @@ static int valid_partition(unsigned long type)
  *
  *	returns -1 for error, otherwise the drive number assigned
  */
-long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_offset,
+long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long part_offset,
 			unsigned long part_size,char *vendor,char *revision,char *product)
 {
 	char boot_sector[DEFAULT_SECTOR_SIZE];
@@ -371,10 +371,10 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * check input parameters
 	 */
-	if (dev_num > PUN_UNIT) {
+	if (global_lun_id > PUN_UNIT) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
-		display_error(dev_num,vendor,revision,product,"invalid device number");
+		display_error(global_lun_id,vendor,revision,product,"invalid device number");
 #endif
 		return -1L;
 	}
@@ -382,7 +382,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	if (!valid_partition(part_type) && (part_type != 0)) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
-		display_error(dev_num,vendor,revision,product,"invalid partition type");
+		display_error(global_lun_id,vendor,revision,product,"invalid partition type");
 #endif
 		return -1L;
 	}
@@ -396,7 +396,7 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	if (logdrv >= dl_maxdrives) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
-		display_error(dev_num,vendor,revision,product,"no drives available");
+		display_error(global_lun_id,vendor,revision,product,"no drives available");
 #endif
 		return -1L;
 	}
@@ -404,10 +404,10 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	/*
 	 * read in the first sector, which we'll get BPB info from
 	 */
-	if (usb_stor_read(dev_num,part_offset,1,boot_sector) != 1) {
+	if (usb_stor_read(global_lun_id,part_offset,1,boot_sector) != 1) {
 		restore_old_state(ret);
 #ifdef DEBUGGING_ROUTINES
-		display_error(dev_num,vendor,revision,product,"boot sector not readable");
+		display_error(global_lun_id,vendor,revision,product,"boot sector not readable");
 #endif
 		return -1L;
 	}
@@ -418,14 +418,14 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 
 	/* Skip puns increment if device(LUN) already has a mounted partition */
 	for (i = 0; i < MAX_LOGICAL_DRIVE; i++) {
-		if (pun_usb.pun[i] == (dev_num | PUN_USB)) {
+		if (pun_usb.pun[i] == (global_lun_id | PUN_USB)) {
 			break;
 		}
 	}
 	if (i == MAX_LOGICAL_DRIVE) {
 		pun_usb.puns++;
 	}
-	pun_usb.pun[logdrv] = dev_num | PUN_USB;
+	pun_usb.pun[logdrv] = global_lun_id | PUN_USB;
 	pun_usb.partition_start[logdrv] = part_offset;
 
 	/*
@@ -436,14 +436,14 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	if (logdrv < 16) {
 		pun_public = PUN_PTR;
 		for (i = 0; i < 16; i++) {
-			if (pun_public->pun[i] == (dev_num | PUN_USB)) {
+			if (pun_public->pun[i] == (global_lun_id | PUN_USB)) {
 				break;
 			}
 		}
 		if (i == 16) {
 			pun_public->puns++;
 		}
-		pun_public->pun[logdrv] = dev_num | PUN_USB;
+		pun_public->pun[logdrv] = global_lun_id | PUN_USB;
 		pun_public->partition_start[logdrv] = part_offset;
 	}
 
@@ -511,13 +511,13 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	restore_old_state(ret);
 
 #ifdef DEBUGGING_ROUTINES
-	display_installed(dev_num,vendor,revision,product,logdrv);
+	display_installed(global_lun_id,vendor,revision,product,logdrv);
 #endif
 
 	return logdrv;
 }
 
-long uninstall_usb_stor(long dev_num, long logdrv)
+long uninstall_usb_stor(long global_lun_id, long logdrv)
 {
 	PUN_INFO *pun_public;
 	int i;
@@ -529,7 +529,7 @@ long uninstall_usb_stor(long dev_num, long logdrv)
 	pun_usb.pun[logdrv] = 0xff;
 	/* Skip puns decrement until all partitions for this LUN are unmounted */
 	for (i = 0; i < MAX_LOGICAL_DRIVE; i++) {
-		if (pun_usb.pun[i] == (dev_num | PUN_USB)) {
+		if (pun_usb.pun[i] == (global_lun_id | PUN_USB)) {
 			break;
 		}
 	}
@@ -553,7 +553,7 @@ long uninstall_usb_stor(long dev_num, long logdrv)
 		pun_public->pun[logdrv] = 0xff;
 		/* Skip puns decrement until all partitions for this LUN are unmounted */
 		for (i = 0; i < 16; i++) {
-			if (pun_public->pun[i] == (dev_num | PUN_USB)) {
+			if (pun_public->pun[i] == (global_lun_id | PUN_USB)) {
 				break;
 			}
 		}
@@ -647,7 +647,7 @@ exit:
 long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 {
 	long rc;
-	long physdev;				/* physical device */
+	long global_lun_id;
 
 	if (count == 0L)
 		return 0;
@@ -659,7 +659,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	 * Tell the user that the media has changed, so call getbpb first !
 	 */
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
-		physdev = logdrv & PUN_UNIT;	/*  has already allowed for floppies     */
+		global_lun_id = logdrv & PUN_UNIT;	/*  has already allowed for floppies     */
 	} else {
 		BPB *bpbptr;
 		unsigned short phys_per_log;	/* physical sectors per logical sector */
@@ -682,16 +682,16 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 			return EBADR;
 
 		start += pun_usb.partition_start[logdrv];
-		physdev = pun_usb.pun[logdrv] & PUN_UNIT;
+		global_lun_id = pun_usb.pun[logdrv] & PUN_UNIT;
 	}
 
 	/*
 	 * set up for read or write
 	 */
 	if (mode&RWFLAG)
-		rc = usb_stor_write(physdev,start,count,buffer);
+		rc = usb_stor_write(global_lun_id,start,count,buffer);
 	else 
-		rc = usb_stor_read(physdev,start,count,buffer);
+		rc = usb_stor_read(global_lun_id,start,count,buffer);
 
 	return (rc==count) ? 0 : rc;
 }

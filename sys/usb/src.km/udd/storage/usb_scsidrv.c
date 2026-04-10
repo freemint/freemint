@@ -15,7 +15,7 @@ extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 extern block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
 
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
-extern void part_init(long dev_num, block_dev_desc_t *stor_dev);
+extern void part_init(long global_lun_id, block_dev_desc_t *stor_dev);
 
 extern void usb_stor_eject (long);
 extern long usb_request_sense (ccb *srb, struct us_data *ss);
@@ -314,7 +314,7 @@ SCSIDRV_In (SCSICMD *parms)
 				!(srb.cmd[4] & SCSI_START_STP_START) &&
 				!(srb.cmd[4] & SCSI_START_STP_PWCO))
 			{
-				usb_stor_eject(mass_storage_dev[dev].usb_dev_desc[srb.lun]->usb_logdrv);
+				usb_stor_eject(mass_storage_dev[dev].usb_dev_desc[srb.lun]->global_lun_id);
 			}
 
 			if (srb.cmd[0] == SCSI_TST_U_RDY) {

@@ -38,7 +38,7 @@ extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
 extern long poll_floppy_ready(ccb *srb, struct us_data *ss);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
-extern void part_init(long dev_num, block_dev_desc_t *stor_dev);
+extern void part_init(long global_lun_id, block_dev_desc_t *stor_dev);
 #ifdef TOSONLY
 extern long *old_etv_timer_int;
 extern void interrupt_storage (void);
@@ -81,7 +81,7 @@ void storage_int(void)
 			mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass != US_SC_UFI))
 			continue;
 
-		pccb.lun = usb_dev_desc[i].lun;
+		pccb.lun = usb_dev_desc[i].local_lun_id;
 		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass == US_SC_UFI) {
 			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
 			if (r > 0)
@@ -101,7 +101,7 @@ void storage_int(void)
 				part_init(i, &usb_dev_desc[i]);
 
 			ALERT(("USB Mass Storage Device (%d) LUN (%d) inserted %s",
-				usb_dev_desc[i].usb_phydrv, usb_dev_desc[i].lun, usb_dev_desc[i].product));
+				usb_dev_desc[i].usb_phydrv, usb_dev_desc[i].local_lun_id, usb_dev_desc[i].product));
 		}
 	}
 #ifdef TOSONLY /* TOS driver code for uninstalling polling routine */
