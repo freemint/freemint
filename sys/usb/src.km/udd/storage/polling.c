@@ -31,14 +31,14 @@ short num_multilun_dev = 0;
 static int polling_on = 0;
 
 /* External declarations */
-extern block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
+extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];;
 
 extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
 extern long poll_floppy_ready(ccb *srb, struct us_data *ss);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
-extern void part_init(long global_lun_id, block_dev_desc_t *stor_dev);
+extern void part_init(long global_lun_id, block_dev_desc_t *block_desc);
 #ifdef TOSONLY
 extern long *old_etv_timer_int;
 extern void interrupt_storage (void);
@@ -71,37 +71,36 @@ void storage_int(void)
 #endif
 
 	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
-		if (usb_dev_desc[i].target == 0xff) {
+		if (usb_block_desc[i].target == 0xff) {
 			continue;
 		}
 
 		/* If the device has only one LUN and is not a floppy drive or floppy drive mediach is disabled we don't poll */
-		if (mass_storage_dev[usb_dev_desc[i].storage_dev_id].total_lun <= 1 &&
-			(!enable_flop_mediach ||
-			mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
+		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].total_lun <= 1 && (!enable_flop_mediach ||
+			mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
 			continue;
 
-		pccb.lun = usb_dev_desc[i].local_lun_id;
-		if (mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor.subclass == US_SC_UFI) {
-			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor);
+		pccb.lun = usb_block_desc[i].local_lun_id;
+		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass == US_SC_UFI) {
+			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor);
 			if (r > 0)
 				continue;
 		}
 		else {
-			r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor);
+			r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor);
 		}
-		if ((r) && (usb_dev_desc[i].ready)) { /* Card unplugged */
-			if (!usb_dev_desc[i].sw_ejected)
+		if ((r) && (usb_block_desc[i].ready)) { /* Card unplugged */
+			if (!usb_block_desc[i].sw_ejected)
 				usb_stor_eject(i);
-			usb_dev_desc[i].ready = 0;
-			usb_dev_desc[i].sw_ejected = 0;
+			usb_block_desc[i].ready = 0;
+			usb_block_desc[i].sw_ejected = 0;
 		}
-		else if ((!r) && (!usb_dev_desc[i].ready)) { /* Card plugged */
-			if (usb_stor_get_info(usb_dev_desc[i].priv, &mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor, &usb_dev_desc[i]) > 0)
-				part_init(i, &usb_dev_desc[i]);
+		else if ((!r) && (!usb_block_desc[i].ready)) { /* Card plugged */
+			if (usb_stor_get_info(usb_block_desc[i].priv, &mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor, &usb_block_desc[i]) > 0)
+				part_init(i, &usb_block_desc[i]);
 
 			ALERT(("USB Mass Storage Device (%d) LUN (%d) inserted %s",
-				usb_dev_desc[i].storage_dev_id, usb_dev_desc[i].local_lun_id, usb_dev_desc[i].product));
+				usb_block_desc[i].storage_dev_id, usb_block_desc[i].local_lun_id, usb_block_desc[i].product));
 		}
 	}
 #ifdef TOSONLY /* TOS driver code for uninstalling polling routine */

@@ -200,7 +200,7 @@ typedef struct
 #define UMASS_BBB_CSW_SIZE	13
 
 /* There is a copy of this struct for every logical device (LUN) */
-block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
+block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
 
 struct bios_partitions
 {
@@ -295,7 +295,7 @@ void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
 long		poll_floppy_ready(ccb *srb, struct us_data *ss);
 long 		usb_request_sense	(ccb *srb, struct us_data *ss);
-void		part_init		(long global_lun_id, block_dev_desc_t *stor_dev);
+void		part_init		(long global_lun_id, block_dev_desc_t *block_desc);
 
 /* --- Interface functions -------------------------------------------------- */
 
@@ -323,20 +323,20 @@ static unsigned long usb_get_max_lun(struct us_data *us)
 
 block_dev_desc_t *usb_stor_get_dev(long idx)
 {
-	return(idx < MAX_TOTAL_LUN_NUM) ? &usb_dev_desc[idx] : NULL;
+	return(idx < MAX_TOTAL_LUN_NUM) ? &usb_block_desc[idx] : NULL;
 }
 
 void
-init_part(block_dev_desc_t *dev_desc)
+init_part(block_dev_desc_t *block_desc)
 {
 	unsigned char *buffer = readbuf;
 
-	if((dev_desc->block_read(dev_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
+	if((block_desc->block_read(block_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
 	 || (buffer[DOS_PART_MAGIC_OFFSET + 0] != 0x55) || (buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa))
 	{
 		return;
 	}
-	dev_desc->part_type = PART_TYPE_DOS;
+	block_desc->part_type = PART_TYPE_DOS;
 	DEBUG(("DOS partition table found"));
 #ifdef USB_STOR_DEBUG
 	{
@@ -377,7 +377,7 @@ init_part(block_dev_desc_t *dev_desc)
 }
 
 void
-part_init(long global_lun_id, block_dev_desc_t *stor_dev)
+part_init(long global_lun_id, block_dev_desc_t *block_desc)
 {
 	long r;
 
@@ -385,13 +385,13 @@ part_init(long global_lun_id, block_dev_desc_t *stor_dev)
 	unsigned long part_type, part_offset, part_size;
 
 	/* Now find partitions in this storage device */
-	while (!fat_register_device(stor_dev, part_num, &part_type,
+	while (!fat_register_device(block_desc, part_num, &part_type,
 				    &part_offset, &part_size))
 	{
 		/* install partition */
 		r = install_usb_stor(global_lun_id, part_type, part_offset,
-					     part_size, stor_dev->vendor,
-				     stor_dev->revision, stor_dev->product);
+					     part_size, block_desc->vendor,
+				     block_desc->revision, block_desc->product);
 		if (r == -1) {
 			DEBUG(("unable to install storage device\r\n"));
 		}
@@ -470,7 +470,7 @@ update_atari_info(long offset,atari_partition_t *pt, disk_partition_t *info)
  *				N	partition not found, next partition to process is N
  */
 static long
-get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long part_num, long which_part, disk_partition_t *info)
+get_partinfo_atari_extended(block_dev_desc_t *block_desc, long xgm_start, long part_num, long which_part, disk_partition_t *info)
 {
 	unsigned char *buffer = readbuf;
 	atari_partition_t part[4], *pt;
@@ -478,9 +478,9 @@ get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long par
 
 	while(1)
 	{
-		if (dev_desc->block_read(dev_desc->global_lun_id, xgm_start+offset, 1, (unsigned long *)buffer) != 1)
+		if (block_desc->block_read(block_desc->global_lun_id, xgm_start+offset, 1, (unsigned long *)buffer) != 1)
 		{
-			DEBUG(("Can't read subpartition table on %d:%ld", dev_desc->global_lun_id, xgm_start+offset));
+			DEBUG(("Can't read subpartition table on %d:%ld", block_desc->global_lun_id, xgm_start+offset));
 			return -1;
 		}
 
@@ -522,22 +522,22 @@ get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long par
  *  are encountered, rather than after all primary partitions as in MSDOS
  */
 static long
-get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, disk_partition_t *info)
+get_partinfo_atari(block_dev_desc_t *block_desc, long part_num, long which_part, disk_partition_t *info)
 {
 	unsigned char *buffer = readbuf;
 	atari_partition_t part[4], *pt;
 	long i, rc;
 
-	if (dev_desc->block_read(dev_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
+	if (block_desc->block_read(block_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read partition table on %d:0", dev_desc->global_lun_id));
+		DEBUG(("Can't read partition table on %d:0", block_desc->global_lun_id));
 		return -1;
 	}
 
 	pt = (atari_partition_t *)(buffer + ATARI_PART_TBL_OFFSET);
 	if (is_active_atari(pt->id) && is_extended_atari(pt->id))
 	{
-		DEBUG(("Error: extended partition in slot0 of partition table on %d:0", dev_desc->global_lun_id));
+		DEBUG(("Error: extended partition in slot0 of partition table on %d:0", block_desc->global_lun_id));
 		return -1;
 	}
 
@@ -554,7 +554,7 @@ get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, d
 
 		if (is_extended_atari(pt->id))
 		{
-			rc = get_partinfo_atari_extended(dev_desc, be2cpu32(pt->start), part_num, which_part, info);
+			rc = get_partinfo_atari_extended(block_desc, be2cpu32(pt->start), part_num, which_part, info);
 			if (rc <= 0)
 				return rc;
 			part_num = rc;
@@ -582,15 +582,15 @@ is_extended_dos(long part_type)
  * 	extract partition info for specified DOS-style partition
  */
 static long
-get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
+get_partinfo_dos(block_dev_desc_t *block_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
 {
 	unsigned char *buffer = readbuf;
 	dos_partition_t part[4], *pt;
 	long i;
 
-	if(dev_desc->block_read(dev_desc->global_lun_id, ext_part_sector, 1, (unsigned long *)buffer) != 1)
+	if(block_desc->block_read(block_desc->global_lun_id, ext_part_sector, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read partition table on %d:%ld", dev_desc->global_lun_id, ext_part_sector));
+		DEBUG(("Can't read partition table on %d:%ld", block_desc->global_lun_id, ext_part_sector));
 		return -1;
 	}
 	
@@ -639,7 +639,7 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
 		if(is_extended_dos(pt->sys_ind))
 		{
 			long lba_start = le2cpu32(pt->start4) + relative;
-			return get_partinfo_dos(dev_desc, lba_start, ext_part_sector == 0 ? lba_start : relative, part_num, which_part, info);
+			return get_partinfo_dos(block_desc, lba_start, ext_part_sector == 0 ? lba_start : relative, part_num, which_part, info);
 		}
 	}
 	return -1;
@@ -651,13 +651,13 @@ get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative
  *  Note: the first partition is numbered as 1, not zero
  */
 static long
-get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
+get_partition_info_extended(block_dev_desc_t *block_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
 {
 	unsigned char *buffer = readbuf;
 
-	if(dev_desc->block_read(dev_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
+	if(block_desc->block_read(block_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read boot sector from device %d", dev_desc->global_lun_id));
+		DEBUG(("Can't read boot sector from device %d", block_desc->global_lun_id));
 		return -1;
 	}
 
@@ -666,14 +666,14 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 	* specific code such as GEM, BGM etc.
 	*/
 	DEBUG(("Try looking up Atari MBR sector"));
-	if (get_partinfo_atari(dev_desc,part_num,which_part,info) == 0) {
+	if (get_partinfo_atari(block_desc,part_num,which_part,info) == 0) {
 		return 0;
 	}
 
 	if(buffer[DOS_PART_MAGIC_OFFSET] == 0x55 && buffer[DOS_PART_MAGIC_OFFSET+1] == 0xaa)
 	{
 		DEBUG(("found DOS MBR sector"));
-		return get_partinfo_dos(dev_desc,ext_part_sector,relative,part_num,which_part,info);
+		return get_partinfo_dos(block_desc,ext_part_sector,relative,part_num,which_part,info);
 	}
 
 	return -1;
@@ -712,17 +712,17 @@ is_fat_filesystem(const unsigned char* bootsector)
 }
 
 long
-fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *part_type, unsigned long *part_offset, unsigned long *part_size)
+fat_register_device(block_dev_desc_t *block_desc, long part_no, unsigned long *part_type, unsigned long *part_offset, unsigned long *part_size)
 {
 	unsigned char *buffer = readbuf;
 	disk_partition_t info = { 0L, 0L, 0L, 0L };
 
-	if(!dev_desc->block_read) {
+	if(!block_desc->block_read) {
 		return -1;
 	}
 
 	/* First we assume, there is a MBR */
-	if(!get_partition_info_extended(dev_desc, 0, 0, 1, part_no, &info))
+	if(!get_partition_info_extended(block_desc, 0, 0, 1, part_no, &info))
 	{
 		*part_type = info.type;
 		*part_offset = info.start;
@@ -731,9 +731,9 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 	}
 
 	/* no MBR, check for PBR */
-	if(dev_desc->block_read(dev_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
+	if(block_desc->block_read(block_desc->global_lun_id, 0, 1, (unsigned long *)buffer) != 1)
 	{
-		DEBUG(("Can't read boot sector from device %d", dev_desc->global_lun_id));
+		DEBUG(("Can't read boot sector from device %d", block_desc->global_lun_id));
 		return -1;
 	}
 
@@ -746,29 +746,29 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 		return 0;
 	}
 
-	DEBUG(("Partition %ld not valid on device %d", part_no, dev_desc->global_lun_id));
+	DEBUG(("Partition %ld not valid on device %d", part_no, block_desc->global_lun_id));
 	return -1;
 }
 
 
 void
-dev_print(block_dev_desc_t *dev_desc)
+dev_print(block_dev_desc_t *block_desc)
 {
 #ifdef CONFIG_LBA48
 	uint64_t lba512; /* number of blocks if 512bytes block size */
 #else
 	lbaint_t lba512;
 #endif
-	if(dev_desc->type == DEV_TYPE_UNKNOWN)
+	if(block_desc->type == DEV_TYPE_UNKNOWN)
 	{
 		DEBUG(("not available"));
 		return;
 	}
-	if((dev_desc->lba * dev_desc->blksz) > 0L)
+	if((block_desc->lba * block_desc->blksz) > 0L)
 	{
 		unsigned long mb, mb_quot, mb_rem, gb, gb_quot, gb_rem;
-		lbaint_t lba = dev_desc->lba;
-		lba512 = (lba * (dev_desc->blksz / 512));
+		lbaint_t lba = block_desc->lba;
+		lba512 = (lba * (block_desc->blksz / 512));
 		mb = (10 * lba512) / 2048;	/* 2048 = (1024 * 1024) / 512 MB */
 		/* round to 1 digit */
 		mb_quot	= mb / 10;
@@ -779,10 +779,10 @@ dev_print(block_dev_desc_t *dev_desc)
 		gb_rem	= gb - (10 * gb_quot);
 		UNUSED(gb_rem);
 #ifdef CONFIG_LBA48
-		if(dev_desc->lba48)
+		if(block_desc->lba48)
 			DEBUG(("Supports 48-bit addressing"));
 #endif
-		DEBUG(("Capacity: %ld.%ld MB = %ld.%ld GB (%ld x %ld)", mb_quot, mb_rem, gb_quot, gb_rem, (unsigned long)lba, dev_desc->blksz));
+		DEBUG(("Capacity: %ld.%ld MB = %ld.%ld GB (%ld x %ld)", mb_quot, mb_rem, gb_quot, gb_rem, (unsigned long)lba, block_desc->blksz));
 	}
 	else
 	{
@@ -1753,10 +1753,10 @@ usb_stor_read(long global_lun_id, unsigned long blknr, unsigned long blkcnt, voi
 	global_lun_id &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_read: dev %ld ", global_lun_id));
-	dev = usb_dev_desc[global_lun_id].priv;
+	dev = usb_block_desc[global_lun_id].priv;
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
-	srb.lun = usb_dev_desc[global_lun_id].local_lun_id;
+	srb.lun = usb_block_desc[global_lun_id].local_lun_id;
 	start = blknr;
 	blks = blkcnt;
 
@@ -1771,7 +1771,7 @@ usb_stor_read(long global_lun_id, unsigned long blknr, unsigned long blkcnt, voi
 		else
 			smallblks = (unsigned short) blks;
 retry_it:
-		srb.datalen = usb_dev_desc[global_lun_id].blksz * smallblks;
+		srb.datalen = usb_block_desc[global_lun_id].blksz * smallblks;
 		srb.pdata = buf_addr;
 		if(usb_read_10(&srb, ss, start, smallblks))
 		{
@@ -1815,10 +1815,10 @@ usb_stor_write(long global_lun_id, unsigned long blknr, unsigned long blkcnt, vo
 	global_lun_id &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_write: dev %ld ", global_lun_id));
-	dev = usb_dev_desc[global_lun_id].priv;
+	dev = usb_block_desc[global_lun_id].priv;
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
-	srb.lun = usb_dev_desc[global_lun_id].local_lun_id;
+	srb.lun = usb_block_desc[global_lun_id].local_lun_id;
 	start = blknr;
 	blks = blkcnt;
 
@@ -1833,7 +1833,7 @@ usb_stor_write(long global_lun_id, unsigned long blknr, unsigned long blkcnt, vo
 		else
 			smallblks = (unsigned short)blks;
 retry_it:
-		srb.datalen = usb_dev_desc[global_lun_id].blksz * smallblks;
+		srb.datalen = usb_block_desc[global_lun_id].blksz * smallblks;
 		srb.pdata = buf_addr;
 		
 		if(usb_write_10(&srb, ss, start, smallblks))
@@ -2003,7 +2003,7 @@ usb_stor_probe(struct usb_device *dev, unsigned int ifnum, struct us_data *ss)
 }
 
 long
-usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *dev_desc)
+usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *block_desc)
 {
 	unsigned char perq, modi;
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned long, cap, 2);
@@ -2033,9 +2033,9 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 #endif
 
 	pccb.pdata = usb_stor_buf;
-	dev_desc->priv = dev;
-	dev_desc->target = dev->devnum;
-	pccb.lun = dev_desc->local_lun_id;
+	block_desc->priv = dev;
+	block_desc->target = dev->devnum;
+	pccb.lun = block_desc->local_lun_id;
 
 	if(usb_inquiry(&pccb, ss)) {
 		return -1;
@@ -2050,24 +2050,24 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 
 	/* drive is removable */
 	if((modi&0x80) == 0x80)
-		dev_desc->removable = 1;
-	memcpy(&dev_desc->vendor[0], &usb_stor_buf[8], 8);
-	memcpy(&dev_desc->product[0], &usb_stor_buf[16], 16);
-	memcpy(&dev_desc->revision[0], &usb_stor_buf[32], 4);
-	dev_desc->vendor[8] = 0;
-	dev_desc->product[16] = 0;
-	dev_desc->revision[4] = 0;
-	DEBUG(("Vendor: %s Rev: %s Prod: %s", dev_desc->vendor, dev_desc->revision, dev_desc->product)); /* Galvez debug temp */
+		block_desc->removable = 1;
+	memcpy(&block_desc->vendor[0], &usb_stor_buf[8], 8);
+	memcpy(&block_desc->product[0], &usb_stor_buf[16], 16);
+	memcpy(&block_desc->revision[0], &usb_stor_buf[32], 4);
+	block_desc->vendor[8] = 0;
+	block_desc->product[16] = 0;
+	block_desc->revision[4] = 0;
+	DEBUG(("Vendor: %s Rev: %s Prod: %s", block_desc->vendor, block_desc->revision, block_desc->product)); /* Galvez debug temp */
 #ifdef CONFIG_USB_BIN_FIXUP
-	usb_bin_fixup(dev->descriptor, (uchar *)dev_desc->vendor, (uchar *)dev_desc->product);
+	usb_bin_fixup(dev->descriptor, (uchar *)block_desc->vendor, (uchar *)block_desc->product);
 #endif /* CONFIG_USB_BIN_FIXUP */
 	DEBUG(("ISO Vers %x, Response Data %x", usb_stor_buf[2], usb_stor_buf[3]));
 	if(usb_test_unit_ready(&pccb, ss))
 	{
 		DEBUG(("Device NOT ready\r\n   Request Sense returned %02x %02x %02x", pccb.sense_buf[2], pccb.sense_buf[12], pccb.sense_buf[13]));
-		if(dev_desc->removable == 1)
+		if(block_desc->removable == 1)
 		{
-			dev_desc->type = perq;
+			block_desc->type = perq;
 		}
 		return 0;
 	}
@@ -2092,10 +2092,10 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	capacity = &cap[0];
 	blksz = &cap[1];
 	DEBUG(("Capacity = 0x%lx, blocksz = 0x%lx", *capacity, *blksz));
-	dev_desc->lba = *capacity;
-	dev_desc->blksz = *blksz;
-	dev_desc->type = perq;
-	dev_desc->ready = 1;
+	block_desc->lba = *capacity;
+	block_desc->blksz = *blksz;
+	block_desc->type = perq;
+	block_desc->ready = 1;
 
 	/* write-protection */
 	/* request 8 bytes, the size of the mode parameter header
@@ -2106,14 +2106,14 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	 * as some USB sticks are known to fail otherwise
 	 * in contrast, USB floppy drives (UFI subclass) want MODE SENSE (10)
 	 */
-	if ((dev_desc->type == DEV_TYPE_HARDDISK) && (ss->subclass == US_SC_SCSI))
+	if ((block_desc->type == DEV_TYPE_HARDDISK) && (ss->subclass == US_SC_SCSI))
 		usb_mode_sense_6(&pccb, ss, 0x3F, 0x00, 8);
 	else
 		usb_mode_sense_10(&pccb, ss, 0x3F, 0x00, 8);
 
 #if 0 /* Why? */
-	init_part(dev_desc);
-	DEBUG(("partype: %d", dev_desc->part_type));
+	init_part(block_desc);
+	DEBUG(("partype: %d", block_desc->part_type));
 #endif
 	return 1;
 }
@@ -2121,33 +2121,33 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 void
 usb_stor_reset(long i)
 {
-	memset(&usb_dev_desc[i], 0, sizeof(block_dev_desc_t));
-	usb_dev_desc[i].target = 0xff;
-	usb_dev_desc[i].local_lun_id = 0xff;
-	usb_dev_desc[i].if_type = IF_TYPE_USB;
-	usb_dev_desc[i].global_lun_id = i;
-	usb_dev_desc[i].storage_dev_id = 0xff;
-	usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
-	usb_dev_desc[i].type = DEV_TYPE_UNKNOWN;
-	usb_dev_desc[i].ready = 0;
-	usb_dev_desc[i].removable = 0;
-	usb_dev_desc[i].block_read = usb_stor_read;
-	usb_dev_desc[i].block_write = usb_stor_write;
+	memset(&usb_block_desc[i], 0, sizeof(block_dev_desc_t));
+	usb_block_desc[i].target = 0xff;
+	usb_block_desc[i].local_lun_id = 0xff;
+	usb_block_desc[i].if_type = IF_TYPE_USB;
+	usb_block_desc[i].global_lun_id = i;
+	usb_block_desc[i].storage_dev_id = 0xff;
+	usb_block_desc[i].part_type = PART_TYPE_UNKNOWN;
+	usb_block_desc[i].type = DEV_TYPE_UNKNOWN;
+	usb_block_desc[i].ready = 0;
+	usb_block_desc[i].removable = 0;
+	usb_block_desc[i].block_read = usb_stor_read;
+	usb_block_desc[i].block_write = usb_stor_write;
 }
 
 void
 usb_stor_eject(long device)
 {
 #ifndef TOSONLY
-	long storage_dev_id = usb_dev_desc[device].storage_dev_id;
+	long storage_dev_id = usb_block_desc[device].storage_dev_id;
 #endif
-	long lun = usb_dev_desc[device].local_lun_id;
+	long lun = usb_block_desc[device].local_lun_id;
 	char product[20+1];
 	long i = 0, f = 0;
 
 	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
-		if ((usb_dev_desc[i].local_lun_id == lun) && (usb_dev_desc[i].global_lun_id == device)) {
-			usb_dev_desc[i].sw_ejected = 1;
+		if ((usb_block_desc[i].local_lun_id == lun) && (usb_block_desc[i].global_lun_id == device)) {
+			usb_block_desc[i].sw_ejected = 1;
 			f = 1;
 		}
 	}
@@ -2165,7 +2165,7 @@ usb_stor_eject(long device)
 	}
 	bios_part[device].partnum = 0;
 
-	strncpy(product, usb_dev_desc[device].product, PRODUCT_STRING_LENGTH);
+	strncpy(product, usb_block_desc[device].product, PRODUCT_STRING_LENGTH);
 #ifndef TOSONLY
 	ALERT(("USB Mass Storage Device (%ld) LUN (%ld) ejected: %s", storage_dev_id, lun, product));
 #endif
@@ -2189,7 +2189,7 @@ storage_disconnect(struct usb_device *dev)
 
 	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++)
 	{
-		if (dev->devnum == usb_dev_desc[i].target)
+		if (dev->devnum == usb_block_desc[i].target)
 		{
 			usb_stor_reset(i);
 
@@ -2258,7 +2258,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	for (global_lun_id = 0; i < MAX_TOTAL_LUN_NUM; global_lun_id++)
 	{
-		if (usb_dev_desc[global_lun_id].target == 0xff)
+		if (usb_block_desc[global_lun_id].target == 0xff)
 		{
 			break;
 		}
@@ -2274,8 +2274,8 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		/* ok, it is a storage device
 		 * get info and fill it in
 		 */
-		usb_dev_desc[global_lun_id].local_lun_id = lun;
-		r = usb_stor_get_info(dev, &mass_storage_dev[i].usb_stor, &usb_dev_desc[global_lun_id]);
+		usb_block_desc[global_lun_id].local_lun_id = lun;
+		r = usb_stor_get_info(dev, &mass_storage_dev[i].usb_stor, &usb_block_desc[global_lun_id]);
 		if(r < 0) {
 			/* There was an error, invalidate entry */
 				usb_stor_reset(global_lun_id);
@@ -2283,7 +2283,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 
 
-		//dev_print(&usb_dev_desc[global_lun_id]);
+		//dev_print(&usb_block_desc[global_lun_id]);
 #if 0
 		if(ss->subclass == US_SC_UFI)
 		{
@@ -2296,32 +2296,32 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 
 		/* Skip everything apart from HARDDISKS and CDROM */
-		if((usb_dev_desc[global_lun_id].type & 0x1f) != DEV_TYPE_HARDDISK
-		   && (usb_dev_desc[global_lun_id].type & 0x1f) != DEV_TYPE_CDROM) {
+		if((usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_HARDDISK
+		   && (usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_CDROM) {
 /*
-		c_conws(usb_dev_desc[global_lun_id].vendor);
+		c_conws(usb_block_desc[global_lun_id].vendor);
 		c_conout(' ');
-		c_conws(usb_dev_desc[global_lun_id].product);
+		c_conws(usb_block_desc[global_lun_id].product);
 		c_conout(' ');
 		c_conws(", type : ");
-		hex_long(usb_dev_desc[global_lun_id].type & 0x1f);
+		hex_long(usb_block_desc[global_lun_id].type & 0x1f);
 		c_conws(" not installed\r\n");
 */
 			//usb_stor_reset(global_lun_id);
 			//continue;
 		}
 #endif
-		usb_dev_desc[global_lun_id].storage_dev_id = i;
-		mass_storage_dev[i].usb_dev_desc[lun] = &usb_dev_desc[global_lun_id];
+		usb_block_desc[global_lun_id].storage_dev_id = i;
+		mass_storage_dev[i].usb_block_desc[lun] = &usb_block_desc[global_lun_id];
 
 		if (r > 0) /* Only init partitions when LUN is ready */
-			part_init(global_lun_id, &usb_dev_desc[global_lun_id]);
+			part_init(global_lun_id, &usb_block_desc[global_lun_id]);
 
 		device_handled = TRUE;
 
 		do {
 			global_lun_id++;
-		} while (usb_dev_desc[global_lun_id].target != 0xff && global_lun_id < MAX_TOTAL_LUN_NUM);
+		} while (usb_block_desc[global_lun_id].target != 0xff && global_lun_id < MAX_TOTAL_LUN_NUM);
 	}
 
 	/* Poll multi-LUN device and floppy drive */

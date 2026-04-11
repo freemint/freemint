@@ -12,10 +12,10 @@
 #include "usb_storage.h"
 
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
-extern block_dev_desc_t usb_dev_desc[MAX_TOTAL_LUN_NUM];
+extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
 
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
-extern void part_init(long global_lun_id, block_dev_desc_t *stor_dev);
+extern void part_init(long global_lun_id, block_dev_desc_t *block_desc);
 
 extern void usb_stor_eject (long);
 extern long usb_request_sense (ccb *srb, struct us_data *ss);
@@ -314,7 +314,7 @@ SCSIDRV_In (SCSICMD *parms)
 				!(srb.cmd[4] & SCSI_START_STP_START) &&
 				!(srb.cmd[4] & SCSI_START_STP_PWCO))
 			{
-				usb_stor_eject(mass_storage_dev[dev].usb_dev_desc[srb.lun]->global_lun_id);
+				usb_stor_eject(mass_storage_dev[dev].usb_block_desc[srb.lun]->global_lun_id);
 			}
 
 			if (srb.cmd[0] == SCSI_TST_U_RDY) {
@@ -799,9 +799,9 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 			if (ErrNo == cErrMediach) {
 				/* Report Media Change to storage driver */
 				usb_stor_eject(dev);
-				usb_dev_desc[dev].sw_ejected = 0;
-				if (usb_stor_get_info(usb_dev_desc[dev].priv, &mass_storage_dev[usb_dev_desc[dev].storage_dev_id].usb_stor, &usb_dev_desc[dev]) > 0)
-						part_init(dev, &usb_dev_desc[dev]);
+				usb_block_desc[dev].sw_ejected = 0;
+				if (usb_stor_get_info(usb_block_desc[dev].priv, &mass_storage_dev[usb_block_desc[dev].storage_dev_id].usb_stor, &usb_block_desc[dev]) > 0)
+						part_init(dev, &usb_block_desc[dev]);
 				/* Report Media Change to all opened handles on this device */
 				for (i = 0; i < MAX_HANDLES; i++) {
 					priv = (SCSIDRV_Data *) &private[i];
