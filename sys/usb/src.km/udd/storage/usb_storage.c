@@ -2126,7 +2126,7 @@ usb_stor_reset(long i)
 	usb_dev_desc[i].local_lun_id = 0xff;
 	usb_dev_desc[i].if_type = IF_TYPE_USB;
 	usb_dev_desc[i].global_lun_id = i;
-	usb_dev_desc[i].usb_phydrv = 0xff;
+	usb_dev_desc[i].storage_dev_id = 0xff;
 	usb_dev_desc[i].part_type = PART_TYPE_UNKNOWN;
 	usb_dev_desc[i].type = DEV_TYPE_UNKNOWN;
 	usb_dev_desc[i].ready = 0;
@@ -2139,7 +2139,7 @@ void
 usb_stor_eject(long device)
 {
 #ifndef TOSONLY
-	long usb_phydrv = usb_dev_desc[device].usb_phydrv;
+	long storage_dev_id = usb_dev_desc[device].storage_dev_id;
 #endif
 	long lun = usb_dev_desc[device].local_lun_id;
 	char product[20+1];
@@ -2167,7 +2167,7 @@ usb_stor_eject(long device)
 
 	strncpy(product, usb_dev_desc[device].product, PRODUCT_STRING_LENGTH);
 #ifndef TOSONLY
-	ALERT(("USB Mass Storage Device (%ld) LUN (%ld) ejected: %s", usb_phydrv, lun, product));
+	ALERT(("USB Mass Storage Device (%ld) LUN (%ld) ejected: %s", storage_dev_id, lun, product));
 #endif
 }
 
@@ -2311,7 +2311,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			//continue;
 		}
 #endif
-		usb_dev_desc[global_lun_id].usb_phydrv = i;
+		usb_dev_desc[global_lun_id].storage_dev_id = i;
 		mass_storage_dev[i].usb_dev_desc[lun] = &usb_dev_desc[global_lun_id];
 
 		if (r > 0) /* Only init partitions when LUN is ready */

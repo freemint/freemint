@@ -800,7 +800,7 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 				/* Report Media Change to storage driver */
 				usb_stor_eject(dev);
 				usb_dev_desc[dev].sw_ejected = 0;
-				if (usb_stor_get_info(usb_dev_desc[dev].priv, &mass_storage_dev[usb_dev_desc[dev].usb_phydrv].usb_stor, &usb_dev_desc[dev]) > 0)
+				if (usb_stor_get_info(usb_dev_desc[dev].priv, &mass_storage_dev[usb_dev_desc[dev].storage_dev_id].usb_stor, &usb_dev_desc[dev]) > 0)
 						part_init(dev, &usb_dev_desc[dev]);
 				/* Report Media Change to all opened handles on this device */
 				for (i = 0; i < MAX_HANDLES; i++) {

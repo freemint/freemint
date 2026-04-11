@@ -76,19 +76,19 @@ void storage_int(void)
 		}
 
 		/* If the device has only one LUN and is not a floppy drive or floppy drive mediach is disabled we don't poll */
-		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].total_lun <= 1 &&
+		if (mass_storage_dev[usb_dev_desc[i].storage_dev_id].total_lun <= 1 &&
 			(!enable_flop_mediach ||
-			mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass != US_SC_UFI))
+			mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
 			continue;
 
 		pccb.lun = usb_dev_desc[i].local_lun_id;
-		if (mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor.subclass == US_SC_UFI) {
-			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
+		if (mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor.subclass == US_SC_UFI) {
+			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor);
 			if (r > 0)
 				continue;
 		}
 		else {
-			r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor);
+			r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor);
 		}
 		if ((r) && (usb_dev_desc[i].ready)) { /* Card unplugged */
 			if (!usb_dev_desc[i].sw_ejected)
@@ -97,11 +97,11 @@ void storage_int(void)
 			usb_dev_desc[i].sw_ejected = 0;
 		}
 		else if ((!r) && (!usb_dev_desc[i].ready)) { /* Card plugged */
-			if (usb_stor_get_info(usb_dev_desc[i].priv, &mass_storage_dev[usb_dev_desc[i].usb_phydrv].usb_stor, &usb_dev_desc[i]) > 0)
+			if (usb_stor_get_info(usb_dev_desc[i].priv, &mass_storage_dev[usb_dev_desc[i].storage_dev_id].usb_stor, &usb_dev_desc[i]) > 0)
 				part_init(i, &usb_dev_desc[i]);
 
 			ALERT(("USB Mass Storage Device (%d) LUN (%d) inserted %s",
-				usb_dev_desc[i].usb_phydrv, usb_dev_desc[i].local_lun_id, usb_dev_desc[i].product));
+				usb_dev_desc[i].storage_dev_id, usb_dev_desc[i].local_lun_id, usb_dev_desc[i].product));
 		}
 	}
 #ifdef TOSONLY /* TOS driver code for uninstalling polling routine */

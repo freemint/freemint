@@ -32,7 +32,7 @@ typedef unsigned long lbaint_t;
 typedef struct block_dev_desc
 {
 	long		if_type;	/* type of the interface */
-	unsigned char	usb_phydrv;	/* USB physical drive (USB mass storage device number) */
+	unsigned char	storage_dev_id;	/* USB storage device this LUN belongs to */
 	unsigned char	global_lun_id;	/* USB logical unit number (LUN), unique across all USB mass storage devices */
 	unsigned char	part_type;	/* partition table type */
 	unsigned char	target;		/* target SCSI ID (= USB device ID)*/
