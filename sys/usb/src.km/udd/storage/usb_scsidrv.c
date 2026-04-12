@@ -245,7 +245,7 @@ SCSIDRV_In (SCSICMD *parms)
 			/* will be in the sense buffer, */
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].total_lun) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].num_luns) {
 				return  SELECTERROR;
 			}
 
@@ -454,7 +454,7 @@ SCSIDRV_Out (SCSICMD *parms)
 			}
 
 			/* Filter commands for non existent LUNs */
-			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].total_lun) {
+			if (((parms->cmd[1] & 0xE0) >> 5 ) > mass_storage_dev[dev].num_luns) {
 				return  SELECTERROR;
 			}
 

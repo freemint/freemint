@@ -39,7 +39,7 @@ struct mass_storage_dev {
 	unsigned char	target;					/* USB device ID */
 	struct us_data usb_stor;
 	block_dev_desc_t *usb_block_desc[MAX_LUN_NUM_PER_DEV];	/* LUNs structs */
-	char total_lun;						/* Total LUNs number in this device */
+	char num_luns;						/* Number of LUNs exposed by this device */
 };
 
 #define USB_STOR_TRANSPORT_GOOD         0

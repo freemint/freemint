@@ -2264,10 +2264,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		}
 	}
 
-	mass_storage_dev[i].total_lun = usb_get_max_lun(&mass_storage_dev[i].usb_stor);
+	mass_storage_dev[i].num_luns = usb_get_max_lun(&mass_storage_dev[i].usb_stor);
 
 	for (lun = 0;
-		lun <= mass_storage_dev[i].total_lun &&
+		lun <= mass_storage_dev[i].num_luns &&
 		lun < MAX_LUN_NUM_PER_DEV &&
 		global_lun_id < MAX_TOTAL_LUN_NUM;
 		lun++) {
@@ -2325,7 +2325,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 	}
 
 	/* Poll multi-LUN device and floppy drive */
-	if ((mass_storage_dev[i].total_lun > 0 ||
+	if ((mass_storage_dev[i].num_luns > 0 ||
 		 (enable_flop_mediach && mass_storage_dev[i].usb_stor.subclass == US_SC_UFI)) && device_handled)
 		init_polling();
 

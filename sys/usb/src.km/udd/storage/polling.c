@@ -76,7 +76,7 @@ void storage_int(void)
 		}
 
 		/* If the device has only one LUN and is not a floppy drive or floppy drive mediach is disabled we don't poll */
-		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].total_lun <= 1 && (!enable_flop_mediach ||
+		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].num_luns <= 1 && (!enable_flop_mediach ||
 			mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
 			continue;
 
