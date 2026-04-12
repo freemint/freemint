@@ -32,7 +32,9 @@ struct us_data
 };
 
 #define MAX_LUN_NUM_PER_DEV	8	/* Max number of LUNs per device */
-#define MAX_TOTAL_LUN_NUM	16	/* Total number of LUNs between all USB mass storage devices */
+#define MAX_TOTAL_LUN_NUM	8	/* Total number of LUNs between all USB mass storage devices.
+					 * Although XHDI allows up to 255 LUNs per device, the use of the PUN_INFO
+					 * structure internally limits us to a global maximum of 8 LUNs */
 #define USB_MAX_STOR_DEV 	8	/* Total number of USB mass storage devices */
 
 struct mass_storage_dev {
