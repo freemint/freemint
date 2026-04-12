@@ -284,7 +284,8 @@ long 		usb_stor_read		(long, unsigned long, unsigned long, void *);
 long 		usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
 void		usb_stor_reset		(long);
-block_dev_desc_t *	usb_stor_get_dev	(long);
+block_dev_desc_t *	usb_stor_get_block_desc	(long);
+struct mass_storage_dev	*usb_stor_get_dev_desc	(long);
 static long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
 static long 		usb_stor_CBI_get_status	(ccb *, struct us_data *);
@@ -321,9 +322,16 @@ static unsigned long usb_get_max_lun(struct us_data *us)
 	return (len > 0) ? *result : 0;
 }
 
-block_dev_desc_t *usb_stor_get_dev(long idx)
+block_dev_desc_t*
+usb_stor_get_block_desc(long idx)
 {
 	return(idx < MAX_TOTAL_LUN_NUM) ? &usb_block_desc[idx] : NULL;
+}
+
+struct mass_storage_dev*
+usb_stor_get_dev_desc(long idx)
+{
+	return(idx < USB_MAX_STOR_DEV) ? &mass_storage_dev[idx] : NULL;
 }
 
 void

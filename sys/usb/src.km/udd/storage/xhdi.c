@@ -53,7 +53,8 @@
 
 #include "part.h"
 #include "xhdi.h"
-
+#include "scsi.h"
+#include "usb_storage.h"
 
 /*--- Defines ---*/
 
@@ -67,8 +68,9 @@
 #define DRIVER_COMPANY_MAXLEN	17
 
 #define XHDI_USB_MAJOR_ID	(PUN_USB) /* 0x20 = 32 */
-#define PUN_TO_MAJOR(x)		(PUN_UNIT & (x)) | XHDI_USB_MAJOR_ID
+#define DEV_TO_MAJOR(x)		(PUN_UNIT & (x)) | XHDI_USB_MAJOR_ID
 #define MAJOR_TO_DEV(x)		(PUN_UNIT & (x))
+#define PUN_TO_LUN(x)		(PUN_UNIT & (x))
 #define IS_USB(x)		XHDI_USB_MAJOR_ID <= x && x <= XHDI_USB_MAJOR_ID + PUN_UNIT
 
 #ifdef TOSONLY
@@ -90,7 +92,8 @@ extern long EmuTOS;
 
 /* --- External functions ---*/
 
-extern block_dev_desc_t *usb_stor_get_dev(long);
+extern block_dev_desc_t *usb_stor_get_block_desc(long dev);
+extern struct mass_storage_dev *usb_stor_get_dev_desc(long dev);
 extern ulong usb_stor_read(long, ulong, ulong, void *);
 extern ulong usb_stor_write(long, ulong, ulong, const void *);
 extern void usb_stor_eject(long);
@@ -355,9 +358,14 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 {
 	long pstart;
 	BPB *myBPB;
+	block_dev_desc_t *block_desc;
 
 	DEBUG(("XHInqDev2(%c:) drv=%d pun %x",
 		DriveToLetter(drv), drv, pun_usb.pun[drv]));
+
+	block_desc = usb_stor_get_block_desc(PUN_TO_LUN(pun_usb.pun[drv]));
+	if (!block_desc)
+		return ENODEV;
 
 	if (drv >= dl_maxdrives || (pun_usb.pun[drv] & PUN_VALID)) {
 		/* not our drive */
@@ -373,12 +381,13 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	pstart = pun_usb.partition_start[drv];
 
 	if (major) {
-		*major = PUN_TO_MAJOR(pun_usb.pun[drv]);
+		*major = DEV_TO_MAJOR(block_desc->storage_dev_id);
 		DEBUG(("XHInqDev2() major: %d", *major));
 	}
 
-	if (minor)
-		*minor = 0;
+	if (minor) {
+		*minor = block_desc->local_lun_id;
+		}
 
 	if (bpb)
 		bpb->recsiz = 0;
@@ -487,10 +496,12 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	}
 
 	/* mass storage logical device number in the USB bus */
-	short dev = MAJOR_TO_DEV(major);
+	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(major);
+	if (!storage_dev_desc)
+		return ENODEV;
 
 	if (do_eject == 1)
-		usb_stor_eject(dev);
+		usb_stor_eject(storage_dev_desc->usb_block_desc[minor]->global_lun_id);
 	else
 	/* When we eject a device it's removed from the PUN struct,
 	 * so we shouldn't get an insert medium parameter (do_eject=0).
@@ -605,16 +616,18 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 	}
 
 	short dev = MAJOR_TO_DEV(major);
-	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
+	if (!storage_dev_desc)
+		return ENODEV;
 
 	if (blocksize) {
-		*blocksize = dev_desc->blksz;
+		*blocksize = storage_dev_desc->usb_block_desc[minor]->blksz;
 		DEBUG(("XHInqTarget2(%d.%d) blocksize: %ld",
 			major, minor, *blocksize));
 	}
 
 	if (deviceflags) {
-		if (dev_desc->removable)
+		if (storage_dev_desc->usb_block_desc[minor]->removable)
 			*deviceflags = XH_TARGET_REMOVABLE | XH_TARGET_EJECTABLE;
 		DEBUG(("XHInqTarget2(%d.%d) flags: %08lx",
 			major, minor, *deviceflags));
@@ -626,9 +639,9 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
 
 		memset(devName, 0, 64);
-		strcat(devName, dev_desc->vendor);
+		strcat(devName, storage_dev_desc->usb_block_desc[minor]->vendor);
 		strcat(devName, " ");
-		strcat(devName, dev_desc->product);
+		strcat(devName, storage_dev_desc->usb_block_desc[minor]->product);
 		strncpy(productname, devName, stringlen);
 	}
 
@@ -667,10 +680,12 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 	}
 
 	short dev = MAJOR_TO_DEV(major);
-	block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
+	if (!storage_dev_desc)
+		return ENODEV;
 
-	*blocks = dev_desc->lba;
-	*blocksize = dev_desc->blksz;
+	*blocks = storage_dev_desc->usb_block_desc[minor]->lba;
+	*blocksize = storage_dev_desc->usb_block_desc[minor]->blksz;
 
 	return E_OK;
 }
@@ -692,7 +707,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		}
 	}
 
-	if (minor != 0)
+	if (minor > MAX_LUN_NUM_PER_DEV)
 		return ENODEV;
 
 	if (!count)
@@ -700,14 +715,17 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 
 	/* device number in the USB bus */
 	short dev = MAJOR_TO_DEV(major);
+	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
+	if (!storage_dev_desc)
+		return ENODEV;
 
 	if (rw & 0x0001) {
-		ret = usb_stor_write(dev, sector, (long)count, buf);
+		ret = usb_stor_write(storage_dev_desc->usb_block_desc[minor]->global_lun_id, sector, (long)count, buf);
 
 		DEBUG(("usb_stor_write() returned %ld", ret));
 	}
 	else {
-		ret = usb_stor_read(dev, sector, (long)count, buf);
+		ret = usb_stor_read(storage_dev_desc->usb_block_desc[minor]->global_lun_id, sector, (long)count, buf);
 
 		DEBUG(("usb_stor_read() returned %ld", ret));
 	}
