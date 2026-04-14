@@ -332,7 +332,7 @@ SCSIDRV_In (SCSICMD *parms)
 				srb.cmd[0] = SCSI_READ10;
 				block = (long) (srb.cmd[1] & 0x1f) << 16 |
 					(long) srb.cmd[2] << 8 | (long) srb.cmd[3];
-                		/* do 4 & 5 here as we overwrite them later */
+				/* do 4 & 5 here as we overwrite them later */
 				srb.cmd[8] = srb.cmd[4];
 				srb.cmd[9] = srb.cmd[5];
 				srb.cmd[2] = (block >> 24) & 0xff;
@@ -479,7 +479,7 @@ SCSIDRV_Out (SCSICMD *parms)
 				block = (long) (srb.cmd[1] & 0x1f) << 16 |
 					(long) srb.cmd[2] << 8 | (long) srb.cmd[3];
 
-                		/* do 4 & 5 here as we overwrite them later */
+				/* do 4 & 5 here as we overwrite them later */
 				srb.cmd[8] = srb.cmd[4];
 				srb.cmd[9] = srb.cmd[5];
 				srb.cmd[2] = (block >> 24) & 0xff;
@@ -624,8 +624,7 @@ again:
 }
 
 static long
-SCSIDRV_CheckDev (short busno,
-					  const DLONG * DevNo, char *Name, ushort * Features)
+SCSIDRV_CheckDev (short busno, const DLONG * DevNo, char *Name, ushort * Features)
 {
 	debug ("CHECKDEV\r\n");
 
@@ -801,7 +800,7 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 				usb_stor_eject(dev);
 				usb_block_desc[dev].sw_ejected = 0;
 				if (usb_stor_get_info(usb_block_desc[dev].priv, &mass_storage_dev[usb_block_desc[dev].storage_dev_id].usb_stor, &usb_block_desc[dev]) > 0)
-						part_init(dev, &usb_block_desc[dev]);
+					part_init(dev, &usb_block_desc[dev]);
 				/* Report Media Change to all opened handles on this device */
 				for (i = 0; i < MAX_HANDLES; i++) {
 					priv = (SCSIDRV_Data *) &private[i];

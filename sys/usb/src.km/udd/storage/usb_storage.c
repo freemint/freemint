@@ -279,7 +279,7 @@ typedef struct disk_partition
 /* Functions prototypes */
 long 		usb_stor_get_info	(struct usb_device *, struct us_data *, block_dev_desc_t *);
 long 		usb_stor_probe		(struct usb_device *, unsigned int, struct us_data *);
-static long			error_no(unsigned char asc);
+static long	error_no		(unsigned char asc);
 long 		usb_stor_read		(long, unsigned long, unsigned long, void *);
 long 		usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
@@ -398,7 +398,7 @@ part_init(long global_lun_id, block_dev_desc_t *block_desc)
 	{
 		/* install partition */
 		r = install_usb_stor(global_lun_id, part_type, part_offset,
-					     part_size, block_desc->vendor,
+				     part_size, block_desc->vendor,
 				     block_desc->revision, block_desc->product);
 		if (r == -1) {
 			DEBUG(("unable to install storage device\r\n"));
@@ -798,7 +798,6 @@ dev_print(block_dev_desc_t *block_desc)
 	}
 }
 
-//# endif /* CONFIG_USB_OHCI */
 
 
 static long
@@ -2065,7 +2064,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	block_desc->vendor[8] = 0;
 	block_desc->product[16] = 0;
 	block_desc->revision[4] = 0;
-	DEBUG(("Vendor: %s Rev: %s Prod: %s", block_desc->vendor, block_desc->revision, block_desc->product)); /* Galvez debug temp */
+	DEBUG(("Vendor: %s Rev: %s Prod: %s", block_desc->vendor, block_desc->revision, block_desc->product));
 #ifdef CONFIG_USB_BIN_FIXUP
 	usb_bin_fixup(dev->descriptor, (uchar *)block_desc->vendor, (uchar *)block_desc->product);
 #endif /* CONFIG_USB_BIN_FIXUP */

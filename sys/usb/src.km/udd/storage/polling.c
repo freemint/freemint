@@ -32,7 +32,7 @@ static int polling_on = 0;
 
 /* External declarations */
 extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
-extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];;
+extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
 extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
 extern long poll_floppy_ready(ccb *srb, struct us_data *ss);

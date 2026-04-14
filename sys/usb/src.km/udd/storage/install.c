@@ -72,7 +72,7 @@ extern BPB* usb_global_bpb;
  * these should be in e.g. install.h
  */
 long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long part_offset,
-					unsigned long part_size,char *vendor,char *revision,char *product);
+			unsigned long part_size,char *vendor,char *revision,char *product);
 long uninstall_usb_stor(long global_lun_id, long logdrv);
 BPB *usb_getbpb(long logdrv);
 long usb_mediach(long logdrv);
@@ -211,18 +211,18 @@ void usb_build_bpb(BPB *bpbptr, void *bs)
 		bpbptr->recsiz = bps;
 		bpbptr->rdlen = 0;
 		bpbptr->clsiz = dosbs->spc;				/* sectors per cluster */
-		bpbptr->rdlen = (32L*getiword(dosbs->dir)) / bps;/* root dir len, rounded up */
+		bpbptr->rdlen = (32L*getiword(dosbs->dir)) / bps;	/* root dir len, rounded up */
 
 		res = getiword(dosbs->res);				/* reserved sectors */
-		if (res == 0)							/* shouldn't happen:          */
-			res = 1;							/*  we use the TOS assumption */
+		if (res == 0)						/* shouldn't happen:          */
+			res = 1;					/*  we use the TOS assumption */
 		spf = getiword(dosbs->spf);				/* sectors per fat */
 		bpbptr->fsiz = spf;
 		bpbptr->fatrec = res + spf;				/* start of fat #2 */
 		bpbptr->datrec = res + dosbs->fat*spf + bpbptr->rdlen;	/* start of data */
 
 		sectors = getiword(dosbs->sec);			/* old sector count */
-		if (!sectors) 							/* zero => more than 65535, */
+		if (!sectors) 					/* zero => more than 65535, */
 			sectors = getilong(dosbs->sec2);	/*  so use new sector count */
 
 		clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
@@ -448,7 +448,7 @@ long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long p
 	}
 
 	part_type <<= 8;					/* for XHDI, make it a 3-character string */
-	if (part_type&0xff000000L)		    				/* i.e. GEM/BGM/RAW */
+	if (part_type&0xff000000L)						/* i.e. GEM/BGM/RAW */
 		pun_usb.ptype[logdrv] = part_type;				/* e.g. 0x47454d00 */
 	else 
 		pun_usb.ptype[logdrv] = 0x00440000L | part_type;/* e.g. 0x00440600 */
@@ -483,8 +483,8 @@ long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long p
 	 */
 	drvbits |= 1L << logdrv;
 	my_drvbits |= 1L << logdrv;			/* used for XHDI */
-	if (logdrv == DriveFromLetter('C')) {			/* if drive C, make it the boot drive */
-		//bootdev = logdrv;				/* (is this correct?)                 */
+	if (logdrv == DriveFromLetter('C')) {		/* if drive C, make it the boot drive */
+		//bootdev = logdrv;			/* (is this correct?)                 */
 		d_setdrv(logdrv);
 	}
 
