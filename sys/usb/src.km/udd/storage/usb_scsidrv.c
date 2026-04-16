@@ -22,6 +22,7 @@ extern long usb_request_sense (ccb *srb, struct us_data *ss);
 
 #define USBNAME "USB Mass Storage"
 #define MAX_HANDLES 32
+#define SCSIDRV_USB_BUS 4 /* The USB bus is always assigned the value 4 */
 
 //#define DEBUGSCSIDRV
 #ifdef DEBUGSCSIDRV
@@ -152,7 +153,7 @@ typedef struct SCSIDRV_Data
 static SCSIDRV_Data* private = NULL;
 static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
-static unsigned short USBbus = 4; /* default */
+static unsigned short USBbus = SCSIDRV_USB_BUS; /* 4 is the default */
 
 /*
  * SCSIDRV handlers
@@ -548,14 +549,6 @@ SCSIDRV_InquireSCSI (short what, BUSINFO * info)
 			info->res[i] = 0;
 	}
 
-	/* We call the previous driver to get its bus ids */
-	if (oldscsi.version)
-	{
-		ret = oldscsi.InquireSCSI (what, info);
-		if (ret == 0)
-			return 0;
-	}
-
 	/*
 	 * We assign our BUS id no. 4
 	 * We shouldn't fail here as we scanned the busses when we installed
@@ -569,6 +562,14 @@ SCSIDRV_InquireSCSI (short what, BUSINFO * info)
 		info->features = cAllCmds;
 		info->maxlen = 64L * 1024L;
 		return 0;
+	}
+
+	/* We call the previous driver to get its bus ids */
+	if (oldscsi.version)
+	{
+		ret = oldscsi.InquireSCSI (what, info);
+		if (ret == 0)
+			return 0;
 	}
 
 	return ENODEV;
@@ -881,7 +882,7 @@ install_scsidrv (void)
 
 		ret = old_InquireSCSI(tmp->InquireSCSI, cInqFirst, info);
 
-		while (ret == 0)
+		while (ret == 0 && info->busno != SCSIDRV_USB_BUS)
 		{
 			ret = old_InquireSCSI(tmp->InquireSCSI, cInqNext, info);
 		}
@@ -891,7 +892,7 @@ install_scsidrv (void)
 		 * If it's occupied, we don't install.
 		 */
 
-		if (info->busids & 1<<USBbus)
+		if (info->busno == USBbus)
 		{
 			c_conws("Bus ID 4 already exists. SCSIDRV not installed.\r\n");
 			return;
@@ -923,7 +924,7 @@ install_scsidrv (void)
 
 	ret = scsidrv_InquireSCSI(cInqFirst, info);
 
-	while (ret == 0)
+	while (ret == 0 && info->busno != SCSIDRV_USB_BUS)
 	{
 		ret = scsidrv_InquireSCSI(cInqNext, info);
 	}
@@ -933,7 +934,7 @@ install_scsidrv (void)
 	 * If it's occupied, we don't install.
 	 */
 
-	if (info->busids & 1<<USBbus)
+	if (info->busno == USBbus)
 	{
 		c_conws("Bus ID 4 already exists. SCSIDRV not installed.\r\n");
 		return;
