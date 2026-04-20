@@ -347,6 +347,30 @@ static int valid_partition(unsigned long type)
 #define restore_old_state(ret)
 #endif
 
+#ifdef TOSONLY
+/*
+ * Force media change, the recommended AHDI way.....
+ */
+static void usb_tos_force_mediach(long logdrv)
+{
+	char tmpname[16];
+	char drv[2];
+	long fh;
+
+	drv[0] = DriveToLetter(logdrv);
+	drv[1] = 0;
+	memset(tmpname, 0, sizeof(tmpname));
+	strcat(tmpname, drv);
+	strcat(tmpname, ":\\test");
+	fh = f_open(tmpname, 0);
+	if (fh < 0) {
+		/* don't worry about it for now, unless it presents problems. */
+	} else {
+		f_close(fh);
+	}
+}
+#endif
+
 /*
  *  install the new device
  *
@@ -488,25 +512,8 @@ long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long p
 		d_setdrv(logdrv);
 	}
 
-	/* Force media change, the recommended AHDI way..... */
-	{
-		char tmpname[16];
-		char drv[2];
-		long fh;
-
-		drv[0] = DriveToLetter(logdrv);
-		drv[1] = 0;
-
-		memset(tmpname, 0, sizeof(tmpname));
-		strcat(tmpname, drv);
-		strcat(tmpname, ":\\test");
-		fh = f_open(tmpname, 0);
-		if (fh < 0) {
-			/* don't worry about it for now, unless it presents problems. */
-		} else {
-			f_close(fh);
-		}
-	}
+	/* Force media change */
+	changedrv(logdrv);
 
 	restore_old_state(ret);
 
@@ -566,8 +573,17 @@ long uninstall_usb_stor(long global_lun_id, long logdrv)
 	drvbits &= ~(1L<<logdrv);
 	my_drvbits &= ~(1L<<logdrv);
 
+	/* Inform the kernel that USB mass storage devices and their
+	 * partitions are no longer installed; otherwise, the update
+	 * daemon may crash.
+	 *
+	 * For the TOS driver, forcing a media change here is probably
+	 * redundant; media changes should be handled in the install
+	 * function when new media is detected.
+	 */
+#ifndef TOSONLY
 	changedrv(logdrv);
-
+#endif
 	restore_old_state(ret);
 
 	return 0L;

@@ -68,14 +68,8 @@ typedef char Path[PATH_MAX];
 
 #include "mint/pcibios.h"
 
-/* BIOS */
 
-/* DavidGZ: changedrv doesn't seem equivalent to Mediach BIOS function.
- * I don't know why this was done, just in case I'm missing something
- * I've commented the define instead of removing it.
- */
-#undef changedrv
-#define changedrv(x) /* (void)Mediach */
+/* BIOS */
 #undef b_setexc
 #define b_setexc Setexc
 
@@ -160,6 +154,10 @@ long Virt_to_bus(long handle, unsigned long address, struct pci_conv_adr *pointe
 long Bus_to_virt(long handle, unsigned long address, struct pci_conv_adr *pointer);
 long Virt_to_phys(unsigned long address, struct pci_conv_adr *pointer);
 long Phys_to_virt(unsigned long address, struct pci_conv_adr *pointer);
+
+/* Force media change function */
+#undef changedrv
+#define changedrv (void)usb_tos_force_mediach
 
 /* library declarations from libkern */
 
