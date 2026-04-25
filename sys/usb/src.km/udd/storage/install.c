@@ -1,6 +1,8 @@
 /*
  *      install.c: install functions for USB storage under TOS/FreeMiNT
- *      
+ *
+ *      Copyright (c) 2026 The FreeMiNT development team
+ *
  *      Based on the assembler code by David Galvez (2010-2012), which
  *      was itself extracted from the USB disk utility assembler code by
  *      Didier Mequignon (2005-2009).

@@ -1,6 +1,8 @@
 /*
  *  vectors.S: bios vector intercepts for USB storage under TOS/FreeMiNT
  *
+ *  Copyright (c) 2026 The FreeMiNT development team
+ *
  *  Based on the assembler code by David Galvez (2010-2012), which
  *  was itself extracted from the USB disk utility assembler code by
  *  Didier Mequignon (2005-2009).
@@ -29,7 +31,7 @@
     .extern SYM(usb_getbpb)
     .extern SYM(usb_rwabs)
     .extern SYM(usb_mediach)
-	.extern SYM(pun_usb)
+    .extern SYM(pun_usb)
 
 /*
  *  miscellaneous definitions
@@ -199,7 +201,7 @@ my_hdv_mediach:
     move.l  a0,-(sp)                //save work register
     cmpi.l  #MAX_LOGICAL_DRIVE,d0   //valid drive?
     bcc.s   .medianext              //no, go to next handler
-    lea     SYM(pun_usb),a0             //a0 -> pun_usb
+    lea     SYM(pun_usb),a0         //a0 -> pun_usb
     tst.b   pinfo_pun(a0,d0.l)      //is it one of ours?
     bpl.s   .mediatst               //yes, go test mediachange
 .medianext:                         //go to next handler

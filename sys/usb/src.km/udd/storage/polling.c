@@ -1,6 +1,7 @@
 /*
  * USB mass storage driver
  *
+ * Copyright (c) 2026 The FreeMiNT development team
  * Copyright (C) 2019 by David Galvez
  *
  * This file is distributed under the GPL, version 2 or at your

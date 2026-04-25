@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
+ *
  * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2011
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham

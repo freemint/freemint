@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
+ *
  * USB Storage SCSIDRV Implementation (C) 2014-2015.
  * By Alan Hourihane <alanh@fairlite.co.uk>
  * Improved by Claude Labelle

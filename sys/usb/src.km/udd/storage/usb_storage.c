@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
+ *
  * Modified for the FreeMiNT USB subsystem by David Galvez. 2010-2019
  * Modified for Atari by Didier Mequignon 2009
  *
@@ -1740,6 +1742,7 @@ error_no(unsigned char asc)
 }
 
 #define USB_MAX_READ_BLK 65535 /* SCSI command read/write(10) max. block transfer */
+
 /* returns block count or negative error code */
 long
 usb_stor_read(long global_lun_id, unsigned long blknr, unsigned long blkcnt, void *buffer)
@@ -2289,10 +2292,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		r = usb_stor_get_info(dev, &mass_storage_dev[i].usb_stor, &usb_block_desc[global_lun_id]);
 		if(r < 0) {
 			/* There was an error, invalidate entry */
-				usb_stor_reset(global_lun_id);
-				continue;
+			usb_stor_reset(global_lun_id);
+			continue;
 		}
-
 
 		//dev_print(&usb_block_desc[global_lun_id]);
 #if 0

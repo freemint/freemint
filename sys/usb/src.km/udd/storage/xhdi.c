@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
  * Copyright (c) 2012-2026 David Galvez
  *
  * Parts of this file has been inspired by code typed by:
