@@ -147,14 +147,14 @@ extern long InqEmuTOS (void);
  * External variables
  */
 extern long dl_maxdrives;
-extern short num_multilun_dev;
+extern short devices_to_poll_count;
 #ifdef TOSONLY
 extern short MagiC;
 extern long EmuTOS;
 #endif
 
-extern int enable_flop_mediach; /* in storage_int.S */
-
+extern int enable_flop_mediach;       /* in storage_int.S */
+extern int enable_single_lun_mediach; /* in storage_int.S */
 /*
  * CBI style
  */
@@ -2186,12 +2186,16 @@ usb_stor_eject(long device)
 static long
 storage_disconnect(struct usb_device *dev)
 {
-	long i, f = 0, how_many_luns = 0;
+	long i, f = 0, how_many_luns = 0, is_floppy = 0;
 
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
-		if (dev->devnum == mass_storage_dev[i].target)
+		if (dev->devnum == mass_storage_dev[i].target) {
 			mass_storage_dev[i].target = 0xff;
+
+			if (mass_storage_dev[i].usb_stor.subclass == US_SC_UFI)
+				is_floppy = 1;
+		}
 	}
 
 	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++)
@@ -2217,8 +2221,8 @@ storage_disconnect(struct usb_device *dev)
 		return -1;
 	}
 
-	if (how_many_luns > 1)
-		num_multilun_dev--;
+	if (how_many_luns > 1 || enable_single_lun_mediach || (enable_flop_mediach && is_floppy))
+		devices_to_poll_count--;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
 
@@ -2331,9 +2335,11 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 		} while (usb_block_desc[global_lun_id].target != 0xff && global_lun_id < MAX_TOTAL_LUN_NUM);
 	}
 
-	/* Poll multi-LUN device and floppy drive */
-	if ((mass_storage_dev[i].num_luns > 0 ||
-		 (enable_flop_mediach && mass_storage_dev[i].usb_stor.subclass == US_SC_UFI)) && device_handled)
+	/* By default, poll multi-LUN devices; polling floppy drives and
+	 * single-LUN devices is optional and can be enabled by the user.
+	 */
+	if ((mass_storage_dev[i].num_luns > 0 || enable_single_lun_mediach ||
+		(enable_flop_mediach && mass_storage_dev[i].usb_stor.subclass == US_SC_UFI)) && device_handled)
 		init_polling();
 
 	usb_disable_asynch(0); /* asynch transfer allowed */

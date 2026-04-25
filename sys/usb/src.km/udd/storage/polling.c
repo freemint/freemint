@@ -27,7 +27,7 @@ struct xbra
 #endif
 
 /* Global variables */
-short num_multilun_dev = 0;
+short devices_to_poll_count = 0;
 static int polling_on = 0;
 
 /* External declarations */
@@ -45,7 +45,8 @@ extern void interrupt_storage (void);
 extern int transfer_running;
 #endif
 
-extern int enable_flop_mediach; /* in storage_int.S */
+extern int enable_flop_mediach;       /* in storage_int.S */
+extern int enable_single_lun_mediach; /* in storage_int.S */
 
 /* Functions prototypes */
 void init_polling(void);
@@ -53,6 +54,16 @@ void storage_int(void);
 #ifndef TOSONLY
 static void stor_poll_thread(void *dummy);
 #endif
+
+
+/* For single-LUN devices, polling is optional and can be configured
+ * via SETTER.PRG.
+ *
+ * Polling is disabled by default, as most single-LUN devices are
+ * regular USB flash drives. For single-LUN card readers, users can
+ * unplug and replug the device instead of swapping cards; media
+ * changes will then be detected by the USB hub.
+ */
 
 void storage_int(void)
 {
@@ -75,9 +86,11 @@ void storage_int(void)
 			continue;
 		}
 
-		/* If the device has only one LUN and is not a floppy drive or floppy drive mediach is disabled we don't poll */
-		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].num_luns <= 1 && (!enable_flop_mediach ||
-			mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
+		/* Do not poll if the device has only one LUN, is not a floppy drive,
+		 * and both floppy media change and single-LUN media change are disabled.
+		 */
+		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].num_luns <= 1 && !enable_single_lun_mediach &&
+			(!enable_flop_mediach || mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
 			continue;
 
 		pccb.lun = usb_block_desc[i].local_lun_id;
@@ -112,9 +125,10 @@ void storage_int(void)
 #define ETV_TIMER 0x400
 #define XBRA 0x58425241
 #define USTR 0x55535452
-
-		/* If there is no devices with more than 1 LUN then uninstall polling routine */
-		if (!num_multilun_dev) {
+		/* Uninstall the polling routine if no multi-LUN devices remain;
+		 * single-LUN and floppy polling is optional (user-enabled)
+		 */
+		if (!devices_to_poll_count) {
 			first_etv_timer_int = (unsigned long) *(volatile unsigned long *) 0x400;
 			tmp_xbra = (struct xbra *)(first_etv_timer_int - sizeof(struct xbra));
 
@@ -157,10 +171,11 @@ stor_poll(PROC *proc, long dummy)
 static void
 stor_poll_thread(void *dummy)
 {
-	/* This thread is only running while there are
-	 * devices with more than 1 LUN connected
+
+	/* This thread runs only while multi-LUN devices are connected.
+	 * Floppy and single-LUN polling is optional (user-enabled).
 	 */
-	while(num_multilun_dev)
+	while(devices_to_poll_count)
 	{
 		storage_int();
 		addtimeout(2000L, stor_poll);
@@ -176,7 +191,7 @@ void init_polling(void)
 {
 	long r = 0;
 
-	num_multilun_dev++;
+	devices_to_poll_count++;
 
 	if (!polling_on) {
 #ifndef TOSONLY

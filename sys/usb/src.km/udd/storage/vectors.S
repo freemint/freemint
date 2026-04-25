@@ -222,6 +222,7 @@ my_hdv_mediach:
 // Config block for SETTER.TTP/.PRG
     .even
     .global SYM(enable_flop_mediach)
+    .global SYM(enable_single_lun_mediach)
 hkbg:
     .asciz "hAruNs cONfigER"
     .dc.l hkbg
@@ -230,6 +231,12 @@ hkbg:
     .even
     .dc.w 0x0000    // type = 0, boolean
 SYM(enable_flop_mediach):
+    .dc.w 0x0000    // default value = FALSE
+
+    .asciz "Media change detection for single-LUN devices"
+    .even
+    .dc.w 0x0000    // type = 0, boolean
+SYM(enable_single_lun_mediach):
     .dc.w 0x0000    // default value = FALSE
 
     .dc.w 0    // end
