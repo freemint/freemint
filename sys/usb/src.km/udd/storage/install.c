@@ -50,6 +50,8 @@ extern unsigned long my_drvbits;						//xhdi.c
 extern long dl_maxdrives;
 #if TOSONLY
 extern short MagiC;
+extern int lock;
+#define IN_POLL_ISR lock
 #endif
 extern long XHDOSLimits(ushort which, ulong limit);
 
@@ -350,12 +352,28 @@ static int valid_partition(unsigned long type)
 #ifdef TOSONLY
 /*
  * Force media change, the recommended AHDI way.....
+ *
+ * This function may be called from an ISR (polling).
+ * It invokes the GEMDOS calls Fopen() and Fclose(),
+ * but GEMDOS is not reentrant.
+ *
+ * A media-change flag is set so that Mediach() can
+ * report the change when queried by GEMDOS.
+ * Forcing a media change here is an extra precaution.
+ *
+ * If called from an ISR, the media change is not
+ * forced; this should be safe, as GEMDOS is expected
+ * to call Mediach() before performing file operations.
  */
 static void usb_tos_force_mediach(long logdrv)
 {
 	char tmpname[16];
 	char drv[2];
 	long fh;
+
+	/* If called from polling code do nothing. */
+	if (IN_POLL_ISR)
+		return;
 
 	drv[0] = DriveToLetter(logdrv);
 	drv[1] = 0;
