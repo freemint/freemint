@@ -481,7 +481,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 		{
 			tbl_b++;
 			/* if crossing a 256MB boundary, get the next b-table */
-			if (tbl_b == (long_desc *)((ulong)&tbl_b->tbl_address[TBLB_SIZE] - offset))
+			if (tbl_b == (long_desc *)((ulong)&tbl_a->tbl_address[TBLB_SIZE] - offset))
 			{
 				tbl_a++;
 				tbl_b = (long_desc *)((ulong)tbl_a->tbl_address - offset);
@@ -576,7 +576,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 		{
 			tbl_b++;
 			/* if crossing a 256MB boundary, get the next b-table */
-			if (tbl_b == (long_desc *)((ulong)&tbl_b->tbl_address[TBLB_SIZE] - offset))
+			if (tbl_b == (long_desc *)((ulong)&tbl_a->tbl_address[TBLB_SIZE] - offset))
 			{
 				tbl_a++;
 				tbl_b = (long_desc *)((ulong)tbl_a->tbl_address - offset);
