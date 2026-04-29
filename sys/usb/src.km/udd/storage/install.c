@@ -507,10 +507,17 @@ long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long p
 	 */
 	drvbits |= 1L << logdrv;
 	my_drvbits |= 1L << logdrv;			/* used for XHDI */
+
+	/* This code is inherited from Didier's ROM-based driver.
+	 * Since this driver runs from disk, setting the boot drive
+	 * does not make sense here.
+	 */
+#if 0
 	if (logdrv == DriveFromLetter('C')) {		/* if drive C, make it the boot drive */
-		//bootdev = logdrv;			/* (is this correct?)                 */
+		bootdev = logdrv;
 		d_setdrv(logdrv);
 	}
+#endif
 
 	/* Force media change */
 	changedrv(logdrv);
