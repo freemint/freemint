@@ -972,14 +972,8 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 			tbl_c[j].page_type = page_ptr;
 			tbl_c[j].tbl_address = (long_desc *)((ulong)tptr + offset);
 			/* k counts pages (8K) */
-			for (r = q, k = 0; k < TBLD_SIZE && r < mint_top_tt; k++, r += PHYS_PAGESIZE, g++) {
+			for (r = q, k = 0; k < TBLD_SIZE; k++, r += PHYS_PAGESIZE, g++) {
 				tptr->page_type = *proto_page_type[global_mode_table[g]];
-				tptr->tbl_address = (long_desc *)(r + offset_tt_ram);
-				tptr++;
-			}
-			for ( ; k < TBLD_SIZE; k++, r += PHYS_PAGESIZE, g++) {
-				/* fill in the rest of this MB */
-				tptr->page_type = invalid_page;
 				tptr->tbl_address = (long_desc *)(r + offset_tt_ram);
 				tptr++;
 			}
