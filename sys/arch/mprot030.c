@@ -449,7 +449,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 		offset = 0;
 
 	/* precompute the table addresses */
-	tbl_a = (long_desc *)((ulong)&base_tbl[a_index] - offset);
+	tbl_a = &base_tbl[a_index];
 	tbl_b = (long_desc *)((ulong)&tbl_a->tbl_address[b_index] - offset);
 	tbl_c = (long_desc *)((ulong)&tbl_b->tbl_address[c_index] - offset);
 	tbl = (long_desc *)((ulong)&tbl_c->tbl_address[d_index] - offset);
@@ -525,7 +525,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 		offset = 0;
 
 	/* precompute the table addresses */
-	tbl_a = (long_desc *)((ulong)&base_tbl[a_index] - offset);
+	tbl_a = &base_tbl[a_index];
 	tbl_b = (long_desc *)((ulong)&tbl_a->tbl_address[b_index] - offset);
 	tbl_c = (long_desc *)((ulong)&tbl_b->tbl_address[c_index] - offset);
 	tbl = (long_desc *)((ulong)&tbl_c->tbl_address[d_index] - offset);
