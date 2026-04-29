@@ -1013,7 +1013,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 			tbl_b[i].page_type = s_page;
 		else
 			tbl_b[i].page_type = invalid_page;
-		tbl_b[i].tbl_address = (long_desc *)(p + offset_tt_ram);
+		tbl_b[i].tbl_address = (long_desc *)p;
 	}
 
 	/* done with TT RAM in table b0; do table bf */
