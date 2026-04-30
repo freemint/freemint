@@ -1001,12 +1001,9 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	assert((ulong)tptr == (ulong)p_mem->page_table + page_table_size);
 	assert(tbl_b == (tbl_b0 + b_tables * TBLB_SIZE));
 
-	/* fill in the rest of $00-$0F as supervisor, but cacheable */
+	/* fill in the rest of $00-$0F as invalid */
 	for ( ; i < TBLB_SIZE; i++, p += TBLB_MEMSIZE) {
-		if (a == 0)
-			tbl_b[i].page_type = s_page;
-		else
-			tbl_b[i].page_type = invalid_page;
+		tbl_b[i].page_type = invalid_page;
 		tbl_b[i].tbl_address = (long_desc *)p;
 	}
 
