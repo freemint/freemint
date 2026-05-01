@@ -12,6 +12,7 @@
 #include "../../usb.h"
 #include "../../usb_api.h"
 #include "usb_storage.h"
+#include "usb_scsidrv.h"
 
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
@@ -24,7 +25,6 @@ extern long usb_request_sense (ccb *srb, struct us_data *ss);
 
 #define USBNAME "USB Mass Storage"
 #define MAX_HANDLES 32
-#define SCSIDRV_USB_BUS 4 /* The USB bus is always assigned the value 4 */
 
 //#define DEBUGSCSIDRV
 #ifdef DEBUGSCSIDRV
@@ -153,8 +153,9 @@ typedef struct SCSIDRV_Data
 } SCSIDRV_Data;
 
 static SCSIDRV_Data* private = NULL;
-static SCSIDRV scsidrv;
 static SCSIDRV oldscsi;
+SCSIDRV scsidrv;
+
 static unsigned short USBbus = SCSIDRV_USB_BUS; /* 4 is the default */
 
 /*
@@ -209,7 +210,7 @@ SCSIDRV_GetMsg (ushort bus, ushort * msg)
 	return 0;
 }
 
-static long
+long
 SCSIDRV_In (SCSICMD *parms)
 {
 	SCSIDRV_Data *priv = NULL;
@@ -422,7 +423,7 @@ retry:
 	return SELECTERROR;
 }
 
-static long
+long
 SCSIDRV_Out (SCSICMD *parms)
 {
 	SCSIDRV_Data *priv = NULL;
@@ -679,7 +680,7 @@ SCSIDRV_RescanBus (short busno)
 	return -1;
 }
 
-static long
+long
 SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 {
 	SCSIDRV_Data *priv;
@@ -736,7 +737,7 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 	return ENODEV;
 }
 
-static long
+long
 SCSIDRV_Close (short *handle)
 {
 	SCSIDRV_Data *priv = NULL;

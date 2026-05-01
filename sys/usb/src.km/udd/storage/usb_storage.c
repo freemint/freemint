@@ -61,11 +61,13 @@
 #include "scsi.h"
 #include "xhdi.h"                   /* for PUN_XXX */
 
+#include "mint/scsidrv.h"
 #include "mint/endian.h"
 
 #include "../../usb.h"
 #include "../../usb_api.h"
 #include "usb_storage.h"
+#include "usb_scsidrv.h"
 
 #define MSG_VERSION "1.0"
 char *drv_version = MSG_VERSION;
@@ -137,7 +139,6 @@ extern long install_usb_stor	(long global_lun_id, unsigned long part_type,
 extern long uninstall_usb_stor	(long global_lun_id, long logdrv);
 extern long install_xhdi_driver(void);                         //xhdi.c
 extern void install_vectors(void);                             //vectors.S
-extern void install_scsidrv(void);                             //usb_scsidrv.c
 extern long XHDOSLimits(ushort which, ulong limit);
 extern void init_polling(void);
 #ifdef TOSONLY
@@ -153,6 +154,7 @@ extern short devices_to_poll_count;
 #ifdef TOSONLY
 extern short MagiC;
 extern long EmuTOS;
+extern SCSIDRV scsidrv;               /* from usb_scsidrv.c */
 #endif
 
 extern int enable_flop_mediach;       /* in storage_int.S */
