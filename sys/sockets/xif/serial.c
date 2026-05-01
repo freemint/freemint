@@ -387,7 +387,7 @@ serial_open (struct netif *nif, char *device,
 	sl->fd = f_open (sl->dev, O_RDWR|O_NDELAY|O_GLOBAL);
 	if (sl->fd < 0)
 	{
-		DEBUG (("serial_open: fopen(%s) returned %d", sl->fd));
+		DEBUG (("serial_open: fopen(%s) returned %ld", sl->dev, sl->fd));
 		kfree (sl->ibuf);
 		kfree (sl->obuf);
 		sl->ibuf = sl->obuf = 0;
