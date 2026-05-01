@@ -19,6 +19,7 @@
 #include "part.h"
 #include "scsi.h"
 #include "usb_storage.h"
+#include "usb_scsidrv.h"
 
 #ifdef TOSONLY
 struct xbra
@@ -37,7 +38,7 @@ static int polling_on = 0;
 extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
-extern long usb_test_unit_ready(ccb *srb, struct us_data *ss);
+extern long usb_test_unit_ready(short *handle, unsigned char lun);
 extern long poll_floppy_ready(ccb *srb, struct us_data *ss);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
@@ -72,6 +73,10 @@ void storage_int(void)
 {
 	int i, r;
 	ccb pccb;
+	DLONG id;
+	unsigned long maxlen;
+	short *handle;
+
 #ifndef TOSONLY
 	static int lock = 0;
 
@@ -96,15 +101,23 @@ void storage_int(void)
 			(!enable_flop_mediach || mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass != US_SC_UFI))
 			continue;
 
-		pccb.lun = usb_block_desc[i].local_lun_id;
+		id.hi = 0;
+		id.lo = (ulong)usb_block_desc[i].storage_dev_id;
+		handle = (short *)SCSIDRV_Open(SCSIDRV_USB_BUS, &id, &maxlen);
+		if ((long)handle < 0)
+			continue;
+
 		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass == US_SC_UFI) {
+			pccb.lun = usb_block_desc[i].local_lun_id;
 			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor);
 			if (r > 0)
 				continue;
 		}
 		else {
-			r = usb_test_unit_ready(&pccb, &mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor);
+			r = usb_test_unit_ready(handle, usb_block_desc[i].local_lun_id);
 		}
+		SCSIDRV_Close(handle);
+
 		if ((r) && (usb_block_desc[i].ready)) { /* Card unplugged */
 			if (!usb_block_desc[i].sw_ejected)
 				usb_stor_eject(i);

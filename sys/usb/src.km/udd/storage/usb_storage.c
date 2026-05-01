@@ -297,7 +297,7 @@ static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char, b
 static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
-long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
+long		usb_test_unit_ready	(short *handle, unsigned char lun);
 long		poll_floppy_ready(ccb *srb, struct us_data *ss);
 long		usb_request_sense	(short *handle, unsigned char lun, char *sense_buf);
 void		part_init		(long global_lun_id, block_dev_desc_t *block_desc);
@@ -1561,57 +1561,91 @@ usb_request_sense(short *handle, unsigned char lun, char *sense_buf)
 }
 
 static long
-usb_start_stop_unit(ccb *srb, struct us_data *ss, unsigned char start)
+usb_start_stop_unit(short *handle, unsigned char lun, unsigned char start)
 {
 	DEBUG(("usb_start_stop_unit()"));
-	memset(&srb->cmd[0], 0, 12);
-	srb->cmd[0] = SCSI_START_STP;
-	srb->cmd[4] = start;
-	srb->datalen = 0;
-	srb->cmdlen = 12;
-	srb->direction = USB_CMD_DIRECTION_OUT;
-	srb->timeout = USB_CNTL_TIMEOUT * 5;
-	if (ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
-		return 0;
-	} else {
-		return -1;
-	}
+
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
+
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_START_STP;
+	cmd[1] = lun << 5;
+	cmd[4] = start;
+
+	parms.handle      = handle;
+	parms.cmd         = (char *)cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = NULL;
+	parms.transferlen = 0;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;   /* scsidrv_Out multiplies by 10 */
+	parms.flags       = 0;
+	return SCSIDRV_Out(&parms) == NOSCSIERROR ? 0 : -1;
 }
 
 long
-usb_test_unit_ready(ccb *srb, struct us_data *ss)
+usb_test_unit_ready(short *handle, unsigned char lun)
 {
-	long retries = 10;
 	DEBUG(("usb_test_unit_ready()"));
-	do
-	{
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_TST_U_RDY;
-		srb->cmd[1] = srb->lun << 5;
-		srb->datalen = 0;
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD) {
+
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
+	long r;
+	int retries = 10;
+
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_TST_U_RDY;
+	cmd[1] = lun << 5;
+
+	parms.handle      = handle;
+	parms.cmd         = (char *)cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = NULL;
+	parms.transferlen = 0;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;   /* scsidrv_In multiplies by 5 */
+	parms.flags       = 0;
+
+	do {
+		r = SCSIDRV_In(&parms);
+		if (r == NOSCSIERROR)
 			return 0;
+		/* For BBB, SCSIDRV already issued REQUEST SENSE.
+		 * For CB, SCSIDRV returns STATUSERROR with an
+		 * empty sense buffer, so we must issue REQUEST SENSE ourselves.
+		 */
+		if (r != S_CHECK_COND) {
+			memset(sense, 0, sizeof(sense));
+			usb_request_sense(handle, lun, sense);
 		}
-		usb_request_sense(srb, ss);
+		DEBUG(("TUR r=%ld tries=%d sk=%02x asc=%02x ascq=%02x",
+			r, retries,
+			(unsigned char)sense[2],
+			(unsigned char)sense[12],
+			(unsigned char)sense[13]));
 		/* Not Ready - medium not present */
-		if ((srb->sense_buf[2] == 0x02) &&
-			(srb->sense_buf[12] == 0x3a))
-				return -1;
+		if ((sense[2] == 0x02) && (sense[12] == 0x3a))
+			return -1;
 		/* Not Ready - need initialise command (start unit) */
-		if ((srb->sense_buf[2] == 0x02) &&
-			(srb->sense_buf[12] == 0x04) &&
-			(srb->sense_buf[13] == 0x02))
-				usb_start_stop_unit(srb, ss, 1);
-		mdelay(100);
-	}
-	while(retries--);
+		if ((sense[2] == 0x02) && (sense[12] == 0x04) && (sense[13] == 0x02))
+			usb_start_stop_unit(handle, lun, 1);
+		if (retries > 0)
+			mdelay(100);
+	} while (retries-- > 0);
 	return -1;
 }
 
-/* Limit floppy polling to one command per cycle, because of the time it takes. */
+/*
+ * Limit floppy polling to one command per cycle due to its latency.
+ *
+ * Not migrated to SCSIDRV: this function is called from an ISR (TOSONLY) and
+ * must issue at most one USB command per invocation. SCSIDRV_In internally
+ * issues a REQUEST SENSE on CHECK CONDITION, making the command count
+ * uncontrollable from outside the driver.
+ */
 long
 poll_floppy_ready(ccb *srb, struct us_data *ss)
 {
@@ -2226,9 +2260,9 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	usb_bin_fixup(dev->descriptor, (uchar *)block_desc->vendor, (uchar *)block_desc->product);
 #endif /* CONFIG_USB_BIN_FIXUP */
 	DEBUG(("ISO Vers %x, Response Data %x", usb_stor_buf[2], usb_stor_buf[3]));
-	if(usb_test_unit_ready(&pccb, ss))
+	if (usb_test_unit_ready(handle, block_desc->local_lun_id))
 	{
-		DEBUG(("Device NOT ready\r\n   Request Sense returned %02x %02x %02x", pccb.sense_buf[2], pccb.sense_buf[12], pccb.sense_buf[13]));
+		DEBUG(("Device NOT ready"));
 		if(block_desc->removable == 1)
 		{
 			block_desc->type = perq;
