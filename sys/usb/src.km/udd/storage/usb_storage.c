@@ -1391,6 +1391,22 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #endif
 		return (result < 0)?USB_STOR_TRANSPORT_FAILED:USB_STOR_TRANSPORT_GOOD;
 	}
+	if (srb->cmd[0] == SCSI_INQUIRY)
+	{
+		/* On first access after device reset, some devices (usually USB floppy
+		 * drives) report UNIT ATTENTION (sense key 0x06), causing S_CHECK_COND
+		 * even though the INQUIRY data transfer completed successfully.
+		 * If the transfer succeeded the response is already in the buffer.
+		 * Auto-sense is not needed and would expose transient UNIT ATTENTION
+		 * or NOT READY conditions that are unrelated to whether the device
+		 * identified itself correctly. Linux applies the same logic:
+		 * auto-sense on CB is skipped for commands that read data from the device.
+		 */
+#ifdef TOSONLY
+		transfer_running = 0;
+#endif
+		return (result < 0)?USB_STOR_TRANSPORT_FAILED:USB_STOR_TRANSPORT_GOOD;
+	}
 
 	/* issue an request_sense */
 	memset(&reqsrb.cmd[0], 0, 12);
@@ -1460,33 +1476,62 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 }
 
 static long
-usb_inquiry(ccb *srb, struct us_data *ss)
+usb_inquiry(short *handle, unsigned char lun, void *buf)
 {
-	DEBUG(("usb_inquiry()")); 
+	DEBUG(("usb_inquiry()"));
 
-	long retry, i;
-	retry = 5;
-	while (retry--)
+	SCSICMD parms;
+	char cmd[12];
+	char sense[18];
+	long ret;
+
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_INQUIRY;
+	cmd[1] = lun << 5;
+	cmd[4] = 36;
+
+	parms.handle      = handle;
+	parms.cmd         = cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = buf;
+	parms.transferlen = 36;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;   /* scsidrv_In multiplies by 5 */
+	parms.flags       = 0;
+
+	memset(sense, 0, sizeof(sense));
+	ret = SCSIDRV_In(&parms);
+
+	if (ret == NOSCSIERROR)
+		return 0;
+
+	/* On first access after device reset, some devices (usually USB floppy
+	 * drives) report UNIT ATTENTION (sense key 0x06):
+	 *
+	 * - CB transport would normally issue REQUEST SENSE automatically after
+	 * every command, but we suppress it for INQUIRY, the data transfer
+	 * already succeeded, and surfacing transient UNIT ATTENTION here would
+	 * turn a successful INQUIRY into a spurious failure.
+	 *
+	 * - BBB protocol, SCSIDRV populates the sense buffer and returns
+	 * S_CHECK_COND, the loop below retries to clear the condition.
+	 *
+	 * Transport errors are retried internally by SCSIDRV
+	 */
 	{
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_INQUIRY;
-		srb->cmd[1] = srb->lun << 5;
-		srb->cmd[4] = 36;
-		srb->datalen = 36;
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		i = ss->transport(srb, ss);
-		DEBUG(("inquiry returns %ld", i));
-		if(i == 0)
-			break;
+		int retries = 5;
+		while (ret == S_CHECK_COND && (sense[2] & 0x0f) == SENSE_UNIT_ATTENTION && retries--) {
+			DEBUG(("usb_inquiry: UNIT ATTENTION, retrying (%d left)", retries));
+			memset(sense, 0, sizeof(sense));
+			ret = SCSIDRV_In(&parms);
+			if (ret == NOSCSIERROR)
+				return 0;
+		}
 	}
-	if(!retry)
-	{
-		DEBUG(("error in inquiry"));
-		return -1;
-	}
-	return 0;
+
+	DEBUG(("usb_inquiry error: ret=%ld sense=[%02x %02x %02x]", ret,
+		(unsigned char)sense[2], (unsigned char)sense[12], (unsigned char)sense[13]));
+	return -1;
 }
 
 long
@@ -2022,6 +2067,12 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, usb_stor_buf, 36);
 	unsigned long *capacity, *blksz;
 	ccb pccb;
+	DLONG id;
+	unsigned long maxlen;
+	short *handle;
+	long storage_dev_id;
+	long ret = -1;
+
 	DEBUG(("usb_stor_get_info()"));
 
 #if 0
@@ -2044,20 +2095,34 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	}
 #endif
 
-	pccb.pdata = usb_stor_buf;
+	/* Find the mass_storage_dev index for this us_data */
+	for (storage_dev_id = 0; storage_dev_id < USB_MAX_STOR_DEV; storage_dev_id++) {
+		if (&mass_storage_dev[storage_dev_id].usb_stor == ss)
+			break;
+	}
+	if (storage_dev_id >= USB_MAX_STOR_DEV)
+		return -1;
+
+	id.hi = 0;
+	id.lo = (ulong)storage_dev_id;
+
+	handle = (short *)SCSIDRV_Open(SCSIDRV_USB_BUS, &id, &maxlen);
+
+	if ((long)handle < 0)
+		return -1;
+
 	block_desc->priv = dev;
 	block_desc->target = dev->devnum;
 	pccb.lun = block_desc->local_lun_id;
 
-	if(usb_inquiry(&pccb, ss)) {
-		return -1;
-	}
+	if (usb_inquiry(handle, block_desc->local_lun_id, usb_stor_buf))
+		goto cleanup;
 	perq = usb_stor_buf[0];
 	modi = usb_stor_buf[1];
 
 	/* skip unknown devices */
 	if((perq & 0x1f) == 0x1f) {
-		return -1;
+		goto cleanup;
 	}
 
 	/* drive is removable */
@@ -2081,7 +2146,8 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 		{
 			block_desc->type = perq;
 		}
-		return 0;
+		ret = 0;
+		goto cleanup;
 	}
 
 	pccb.pdata = (unsigned char *)&cap[0];
@@ -2127,7 +2193,10 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	init_part(block_desc);
 	DEBUG(("partype: %d", block_desc->part_type));
 #endif
-	return 1;
+	ret = 1;
+cleanup:
+	SCSIDRV_Close(handle);
+	return ret;
 }
 
 void
