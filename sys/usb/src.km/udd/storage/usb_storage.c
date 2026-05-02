@@ -1634,54 +1634,87 @@ poll_floppy_ready(ccb *srb, struct us_data *ss)
 }
 
 static long
-usb_mode_sense_10(ccb *srb, struct us_data *ss, unsigned char pagecode, unsigned char subpagecode, unsigned short len)
+usb_mode_sense_10(short *handle, unsigned char lun, unsigned char pagecode, unsigned char subpagecode, unsigned short len, void *buf)
 {
-	long retry;
-	/* XXX retries */
-	retry = 3;
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
+	int retries = 3;
+	int r;
+
 	DEBUG(("usb_mode_sense_10()"));
-	do
-	{
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_MODE_SEN10;
-		srb->cmd[1] = srb->lun << 5;
-		srb->cmd[2] = pagecode;
-		srb->cmd[3] = subpagecode;
-		srb->cmd[7] = ((unsigned char) (len >> 8)) & 0xff;
-		srb->cmd[8] = ((unsigned char) (len)) & 0xff;
-		srb->datalen = (unsigned long) len;
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_MODE_SEN10;
+	cmd[1] = lun << 5;
+	cmd[2] = pagecode;
+	cmd[3] = subpagecode;
+	cmd[7] = ((unsigned char)(len >> 8)) & 0xff;
+	cmd[8] = ((unsigned char)(len)) & 0xff;
+
+	parms.handle      = handle;
+	parms.cmd         = (char *)cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = buf;
+	parms.transferlen = len;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;
+	parms.flags       = 0;
+
+	do {
+		memset(sense, 0, sizeof(sense));
+		r = SCSIDRV_In(&parms);
+		if (r == NOSCSIERROR)
 			return 0;
-	}
-	while(retry--);
+		/* Do not retry on CHECK_CONDITION: SCSIDRV_In issues REQUEST SENSE on every
+		* SENSE response, so retrying multiplies USB round-trips for what is often a
+		* permanent device answer (e.g. unsupported page code). Transport errors are
+		* still retried via the do/while loop.
+		*/
+		if (r == S_CHECK_COND)
+			return -1;
+	} while (retries--);
 	return -1;
 }
 
 static long
-usb_mode_sense_6(ccb *srb, struct us_data *ss, unsigned char pagecode, unsigned char subpagecode, unsigned char len)
+usb_mode_sense_6(short *handle, unsigned char lun, unsigned char pagecode, unsigned char subpagecode, unsigned char len, void *buf)
 {
-	long retry;
-	/* XXX retries */
-	retry = 3;
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
+	int retries = 3;
+	int r;
+
 	DEBUG(("usb_mode_sense_6()"));
-	do
-	{
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_MODE_SEN6;
-		srb->cmd[2] = pagecode;
-		srb->cmd[3] = subpagecode;
-		srb->cmd[4] = len;
-		srb->datalen = (unsigned long) len;
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_MODE_SEN6;
+	cmd[1] = lun << 5;
+	cmd[2] = pagecode;
+	cmd[3] = subpagecode;
+	cmd[4] = len;
+
+	parms.handle      = handle;
+	parms.cmd         = (char *)cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = buf;
+	parms.transferlen = len;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;
+	parms.flags       = 0;
+
+	do {
+		memset(sense, 0, sizeof(sense));
+		r = SCSIDRV_In(&parms);
+		if (r == NOSCSIERROR)
 			return 0;
-	}
-	while(retry--);
+		/* Do not retry on CHECK_CONDITION: SCSIDRV_In issues REQUEST SENSE on every
+		* SENSE response, so retrying multiplies USB round-trips for what is often a
+		* permanent device answer (e.g. unsupported page code). Transport errors are
+		* still retried via the do/while loop.
+		*/
+		if (r == S_CHECK_COND)
+			return -1;
+	} while (retries--);
 	return -1;
 }
 
@@ -2066,7 +2099,6 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned long, cap, 2);
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, usb_stor_buf, 36);
 	unsigned long *capacity, *blksz;
-	ccb pccb;
 	DLONG id;
 	unsigned long maxlen;
 	short *handle;
@@ -2113,7 +2145,6 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 
 	block_desc->priv = dev;
 	block_desc->target = dev->devnum;
-	pccb.lun = block_desc->local_lun_id;
 
 	if (usb_inquiry(handle, block_desc->local_lun_id, usb_stor_buf))
 		goto cleanup;
@@ -2150,7 +2181,6 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 		goto cleanup;
 	}
 
-	pccb.pdata = (unsigned char *)&cap[0];
 	memset(&cap[0], 0, 8);
 	if (usb_read_capacity(handle, block_desc->local_lun_id, &cap[0]) != 0)
 	{
@@ -2185,9 +2215,9 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	 * in contrast, USB floppy drives (UFI subclass) want MODE SENSE (10)
 	 */
 	if ((block_desc->type == DEV_TYPE_HARDDISK) && (ss->subclass == US_SC_SCSI))
-		usb_mode_sense_6(&pccb, ss, 0x3F, 0x00, 8);
+		usb_mode_sense_6(handle, block_desc->local_lun_id, 0x3F, 0x00, 8, usb_stor_buf);
 	else
-		usb_mode_sense_10(&pccb, ss, 0x3F, 0x00, 8);
+		usb_mode_sense_10(handle, block_desc->local_lun_id, 0x3F, 0x00, 8, usb_stor_buf);
 
 #if 0 /* Why? */
 	init_part(block_desc);
