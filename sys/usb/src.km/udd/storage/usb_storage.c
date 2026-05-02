@@ -1686,26 +1686,26 @@ usb_mode_sense_6(ccb *srb, struct us_data *ss, unsigned char pagecode, unsigned 
 }
 
 static long
-usb_read_capacity(ccb *srb, struct us_data *ss)
+usb_read_capacity(short *handle, unsigned char lun, void *buf)
 {
-	long retry;
-	/* XXX retries */
-	retry = 3;
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
+
 	DEBUG(("usb_read_capacity()"));
-	do
-	{
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_RD_CAPAC;
-		srb->cmd[1] = srb->lun << 5;
-		srb->datalen = 8;
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		if(ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
-			return 0;
-	}
-	while(retry--);
-	return -1;
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_RD_CAPAC;
+	cmd[1] = lun << 5;
+
+	parms.handle      = handle;
+	parms.cmd         = (char *)cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = buf;
+	parms.transferlen = 8;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;
+	parms.flags       = 0;
+	return SCSIDRV_In(&parms) == NOSCSIERROR ? 0 : -1;
 }
 
 static inline long
@@ -2151,8 +2151,8 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	}
 
 	pccb.pdata = (unsigned char *)&cap[0];
-	memset(pccb.pdata, 0, 8);
-	if(usb_read_capacity(&pccb, ss) != 0)
+	memset(&cap[0], 0, 8);
+	if (usb_read_capacity(handle, block_desc->local_lun_id, &cap[0]) != 0)
 	{
 		DEBUG(("READ_CAP ERROR"));
 		cap[0] = 2880;
