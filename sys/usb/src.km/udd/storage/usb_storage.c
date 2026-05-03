@@ -1741,42 +1741,64 @@ usb_read_capacity(short *handle, unsigned char lun, void *buf)
 	return SCSIDRV_In(&parms) == NOSCSIERROR ? 0 : -1;
 }
 
-static inline long
-usb_read_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short blocks)
+static long
+usb_read_10(short *handle, unsigned char lun, unsigned long start,
+            unsigned short blocks, void *buf, unsigned long transferlen, char *sense)
 {
-	memset(&srb->cmd[0], 0, 12);
-	srb->cmd[0] = SCSI_READ10;
-	srb->cmd[1] = srb->lun << 5;
-	srb->cmd[2] = ((unsigned char) (start >> 24)) & 0xff;
-	srb->cmd[3] = ((unsigned char) (start >> 16)) & 0xff;
-	srb->cmd[4] = ((unsigned char) (start >> 8)) & 0xff;
-	srb->cmd[5] = ((unsigned char) (start)) & 0xff;
-	srb->cmd[7] = ((unsigned char) (blocks >> 8)) & 0xff;
-	srb->cmd[8] = (unsigned char) blocks & 0xff;
-	srb->cmdlen = 12;
-	srb->direction = USB_CMD_DIRECTION_IN;
-	srb->timeout = USB_CNTL_TIMEOUT * 5;
+	SCSICMD parms;
+	char cmd[12];
+
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_READ10;
+	cmd[1] = lun << 5;
+	cmd[2] = (unsigned char)(start >> 24);
+	cmd[3] = (unsigned char)(start >> 16);
+	cmd[4] = (unsigned char)(start >> 8);
+	cmd[5] = (unsigned char) start;
+	cmd[7] = (unsigned char)(blocks >> 8);
+	cmd[8] = (unsigned char) blocks;
+
+	parms.handle      = handle;
+	parms.cmd         = cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = buf;
+	parms.transferlen = transferlen;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;
+	parms.flags       = 0;
+
 	DEBUG(("read10: start %lx blocks %x", start, blocks));
-	return ss->transport(srb, ss);
+	return SCSIDRV_In(&parms);
 }
 
-static inline long
-usb_write_10(ccb *srb, struct us_data *ss, unsigned long start, unsigned short blocks)
+static long
+usb_write_10(short *handle, unsigned char lun, unsigned long start,
+             unsigned short blocks, void *buf, unsigned long transferlen, char *sense)
 {
-	memset(&srb->cmd[0], 0, 12);
-	srb->cmd[0] = SCSI_WRITE10;
-	srb->cmd[1] = srb->lun << 5;
-	srb->cmd[2] = ((unsigned char) (start >> 24)) & 0xff;
-	srb->cmd[3] = ((unsigned char) (start >> 16)) & 0xff;
-	srb->cmd[4] = ((unsigned char) (start >> 8)) & 0xff;
-	srb->cmd[5] = ((unsigned char) (start)) & 0xff;
-	srb->cmd[7] = ((unsigned char) (blocks >> 8)) & 0xff;
-	srb->cmd[8] = (unsigned char) blocks & 0xff;
-	srb->cmdlen = 12;
-	srb->direction = USB_CMD_DIRECTION_OUT;
-	srb->timeout = USB_CNTL_TIMEOUT * 5;
+	SCSICMD parms;
+	char cmd[12];
+
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_WRITE10;
+	cmd[1] = lun << 5;
+	cmd[2] = (unsigned char)(start >> 24);
+	cmd[3] = (unsigned char)(start >> 16);
+	cmd[4] = (unsigned char)(start >> 8);
+	cmd[5] = (unsigned char) start;
+	cmd[7] = (unsigned char)(blocks >> 8);
+	cmd[8] = (unsigned char) blocks;
+
+	parms.handle      = handle;
+	parms.cmd         = cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = buf;
+	parms.transferlen = transferlen;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;
+	parms.flags       = 0;
+
 	DEBUG(("write10: start %lx blocks %x", start, blocks));
-	return ss->transport(srb, ss);
+	return SCSIDRV_Out(&parms);
 }
 
 #ifdef CONFIG_USB_BIN_FIXUP
@@ -1827,14 +1849,16 @@ error_no(unsigned char asc)
 long
 usb_stor_read(long global_lun_id, unsigned long blknr, unsigned long blkcnt, void *buffer)
 {
-	unsigned long start, blks;
+	unsigned long start, blks, transferlen;
 	unsigned short smallblks;
 	unsigned char *buf_addr = buffer;
-	struct us_data *ss;
-	struct usb_device *dev;
+	unsigned char lun;
 	long retry;
 	long error_code = 0;
-	ccb srb;
+	DLONG id;
+	short *handle;
+	ulong maxlen;
+	char sense[18];
 
 
 	if(blkcnt == 0)
@@ -1843,10 +1867,19 @@ usb_stor_read(long global_lun_id, unsigned long blknr, unsigned long blkcnt, voi
 	global_lun_id &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_read: dev %ld ", global_lun_id));
-	dev = usb_block_desc[global_lun_id].priv;
-	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
-	srb.lun = usb_block_desc[global_lun_id].local_lun_id;
+
+	id.hi = 0;
+	id.lo = usb_block_desc[global_lun_id].storage_dev_id;
+	handle = (short *)SCSIDRV_Open(SCSIDRV_USB_BUS, &id, &maxlen);
+	if ((long)handle < 0)
+	{
+		DEBUG(("usb_stor_read: SCSIDRV_Open failed %ld", (long)handle));
+		usb_disable_asynch(0);
+		return -1;
+	}
+
+	lun = usb_block_desc[global_lun_id].local_lun_id;
 	start = blknr;
 	blks = blkcnt;
 
@@ -1861,29 +1894,28 @@ usb_stor_read(long global_lun_id, unsigned long blknr, unsigned long blkcnt, voi
 		else
 			smallblks = (unsigned short) blks;
 retry_it:
-		srb.datalen = usb_block_desc[global_lun_id].blksz * smallblks;
-		srb.pdata = buf_addr;
-		if(usb_read_10(&srb, ss, start, smallblks))
+		transferlen = usb_block_desc[global_lun_id].blksz * smallblks;
+		memset(sense, 0, sizeof(sense));
+		if(usb_read_10(handle, lun, start, smallblks, buf_addr, transferlen, sense))
 		{
 			DEBUG(("Read ERROR"));
 
-			if (ss->protocol != US_PR_CB)
-				usb_request_sense(&srb, ss);
-			error_code = error_no(srb.sense_buf[12]);
+			error_code = error_no((unsigned char)sense[12]);
 
 			if (retry-- && ! error_code)
 				goto retry_it;
 
-			memset(srb.pdata, 0xaa, srb.datalen);
+			memset(buf_addr, 0xaa, transferlen);
 			blkcnt -= blks;
 			break;
 		}
 		start += smallblks;
 		blks -= smallblks;
-		buf_addr += srb.datalen;
+		buf_addr += transferlen;
 	}
 	while(blks != 0);
 	DEBUG(("usb_read: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
+	SCSIDRV_Close(handle);
 	usb_disable_asynch(0); /* asynch transfer allowed */
 	return (error_code)?error_code:blkcnt;
 }
@@ -1891,24 +1923,35 @@ retry_it:
 long
 usb_stor_write(long global_lun_id, unsigned long blknr, unsigned long blkcnt, void *buffer)
 {
-	unsigned long start, blks;
+	unsigned long start, blks, transferlen;
 	unsigned short smallblks;
 	unsigned char *buf_addr = buffer;
-	struct us_data *ss;
-	struct usb_device *dev;
+	unsigned char lun;
 	long retry;
 	long error_code = 0;
-	ccb srb;
-	
+	DLONG id;
+	short *handle;
+	ulong maxlen;
+	char sense[18];
+
 	if(blkcnt == 0)
 		return 0;
 	global_lun_id &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_write: dev %ld ", global_lun_id));
-	dev = usb_block_desc[global_lun_id].priv;
-	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
-	srb.lun = usb_block_desc[global_lun_id].local_lun_id;
+
+	id.hi = 0;
+	id.lo = usb_block_desc[global_lun_id].storage_dev_id;
+	handle = (short *)SCSIDRV_Open(SCSIDRV_USB_BUS, &id, &maxlen);
+	if ((long)handle < 0)
+	{
+		DEBUG(("usb_stor_write: SCSIDRV_Open failed %ld", (long)handle));
+		usb_disable_asynch(0);
+		return -1;
+	}
+
+	lun = usb_block_desc[global_lun_id].local_lun_id;
 	start = blknr;
 	blks = blkcnt;
 
@@ -1923,30 +1966,29 @@ usb_stor_write(long global_lun_id, unsigned long blknr, unsigned long blkcnt, vo
 		else
 			smallblks = (unsigned short)blks;
 retry_it:
-		srb.datalen = usb_block_desc[global_lun_id].blksz * smallblks;
-		srb.pdata = buf_addr;
-		
-		if(usb_write_10(&srb, ss, start, smallblks))
+		transferlen = usb_block_desc[global_lun_id].blksz * smallblks;
+		memset(sense, 0, sizeof(sense));
+
+		if(usb_write_10(handle, lun, start, smallblks, buf_addr, transferlen, sense))
 		{
 			DEBUG(("Write ERROR"));
 
-			if (ss->protocol != US_PR_CB)
-				usb_request_sense(&srb, ss);
-			error_code = error_no(srb.sense_buf[12]);
+			error_code = error_no((unsigned char)sense[12]);
 
 			if (retry-- && ! error_code)
 				goto retry_it;
 
-			memset(srb.pdata, 0xaa, srb.datalen);
+			memset(buf_addr, 0xaa, transferlen);
 			blkcnt -= blks;
 			break;
 		}
 		start += smallblks;
 		blks -= smallblks;
-		buf_addr += srb.datalen;
+		buf_addr += transferlen;
 	}
 	while(blks != 0);
 	DEBUG(("usb_write: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
+	SCSIDRV_Close(handle);
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
 	return (error_code)?error_code:blkcnt;

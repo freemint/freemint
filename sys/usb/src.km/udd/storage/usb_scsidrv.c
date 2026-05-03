@@ -306,7 +306,9 @@ SCSIDRV_In (SCSICMD *parms)
 					|| r == USB_STOR_TRANSPORT_ERROR)
 					return STATUSERROR;
 				else if(r == USB_STOR_TRANSPORT_SENSE) {
-					usb_request_sense(&srb, ss);
+					/* CBI/CB transport already issues REQUEST SENSE internally */
+					if (ss->protocol == US_PR_BULK)
+						usb_request_sense(&srb, ss);
 					memcpy(parms->sense, srb.sense_buf, 18);
 					return S_CHECK_COND;
 				}
@@ -372,7 +374,9 @@ retry:
 			r = ss->transport (&srb, ss);
 			
 			if (r == USB_STOR_TRANSPORT_SENSE) {
-				usb_request_sense(&srb, ss);
+				/* CBI/CB transport already issues REQUEST SENSE internally */
+				if (ss->protocol == US_PR_BULK)
+					usb_request_sense(&srb, ss);
 				memcpy(parms->sense, srb.sense_buf, 18);
 				return S_CHECK_COND;
 			}
@@ -499,7 +503,9 @@ retry:
 			r = ss->transport (&srb, ss);
 			
 			if (r == USB_STOR_TRANSPORT_SENSE) {
-				usb_request_sense(&srb, ss);
+				/* CBI/CB transport already issues REQUEST SENSE internally */
+				if (ss->protocol == US_PR_BULK)
+					usb_request_sense(&srb, ss);
 				memcpy(parms->sense, srb.sense_buf, 18);
 				return S_CHECK_COND;
 			}
