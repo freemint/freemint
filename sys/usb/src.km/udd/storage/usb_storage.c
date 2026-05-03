@@ -2496,7 +2496,7 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 #endif
 {
 	PUN_INFO *pun_ptr;
-	long ret;
+	long ret = 0;
 
 #ifndef TOSONLY
 	kentry	= k;
@@ -2558,13 +2558,6 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 
 	usb_storage_init();
 
-	ret = udd_register(&storage_uif);
-	if (ret)
-	{
-		DEBUG (("%s: udd register failed!", __FILE__));
-		return -1;
-	}
-
 #ifdef TOSONLY
 	if (!Super(1L))
 		ret = Super(0L);
@@ -2572,13 +2565,21 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 	install_vectors();
 	install_xhdi_driver();
 	install_scsidrv();
+#ifdef TOSONLY
+	if (ret)
+		SuperToUser((void *)ret);
+#endif
+
+	ret = udd_register(&storage_uif);
+	if (ret)
+	{
+		DEBUG (("%s: udd register failed!", __FILE__));
+		return -1;
+	}
 
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
-	if (ret)
-		SuperToUser(ret);
-
 	c_conws("USB storage driver installed.\r\n");
 
 	Ptermres(_PgmSize,0);
