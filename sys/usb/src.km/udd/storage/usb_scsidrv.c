@@ -21,7 +21,7 @@ extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_d
 extern void part_init(long global_lun_id, block_dev_desc_t *block_desc);
 
 extern void usb_stor_eject (long);
-extern long usb_request_sense (ccb *srb, struct us_data *ss);
+extern long usb_request_sense (short *handle, unsigned char lun, char *sense_buf);
 
 #define USBNAME "USB Mass Storage"
 #define MAX_HANDLES 32
@@ -210,6 +210,23 @@ SCSIDRV_GetMsg (ushort bus, ushort * msg)
 	return 0;
 }
 
+static void
+fetch_sense(ccb *srb, struct us_data *ss)
+{
+	char *ptr = (char *)srb->pdata;
+	memset(&srb->cmd[0], 0, 12);
+	srb->cmd[0] = SCSI_REQ_SENSE;
+	srb->cmd[1] = srb->lun << 5;
+	srb->cmd[4] = 18;
+	srb->datalen = 18;
+	srb->pdata = &srb->sense_buf[0];
+	srb->cmdlen = 12;
+	srb->direction = USB_CMD_DIRECTION_IN;
+	srb->timeout = USB_CNTL_TIMEOUT * 5;
+	ss->transport(srb, ss);
+	srb->pdata = (unsigned char *)ptr;
+}
+
 long
 SCSIDRV_In (SCSICMD *parms)
 {
@@ -308,7 +325,7 @@ SCSIDRV_In (SCSICMD *parms)
 				else if(r == USB_STOR_TRANSPORT_SENSE) {
 					/* CBI/CB transport already issues REQUEST SENSE internally */
 					if (ss->protocol == US_PR_BULK)
-						usb_request_sense(&srb, ss);
+						fetch_sense(&srb, ss);
 					memcpy(parms->sense, srb.sense_buf, 18);
 					return S_CHECK_COND;
 				}
@@ -372,19 +389,19 @@ SCSIDRV_In (SCSICMD *parms)
 
 retry:
 			r = ss->transport (&srb, ss);
-			
+
 			if (r == USB_STOR_TRANSPORT_SENSE) {
 				/* CBI/CB transport already issues REQUEST SENSE internally */
 				if (ss->protocol == US_PR_BULK)
-					usb_request_sense(&srb, ss);
+					fetch_sense(&srb, ss);
 				memcpy(parms->sense, srb.sense_buf, 18);
 				return S_CHECK_COND;
 			}
-			
+
 			if (r != USB_STOR_TRANSPORT_GOOD && retries--) {
 				goto retry;
 			}
-			
+
 			switch(r)
 			{
 				case USB_STOR_TRANSPORT_GOOD :
@@ -505,7 +522,7 @@ retry:
 			if (r == USB_STOR_TRANSPORT_SENSE) {
 				/* CBI/CB transport already issues REQUEST SENSE internally */
 				if (ss->protocol == US_PR_BULK)
-					usb_request_sense(&srb, ss);
+					fetch_sense(&srb, ss);
 				memcpy(parms->sense, srb.sense_buf, 18);
 				return S_CHECK_COND;
 			}

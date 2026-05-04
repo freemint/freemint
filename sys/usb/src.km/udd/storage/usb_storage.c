@@ -299,7 +299,7 @@ static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(ccb *srb, struct us_data *ss);
 long		poll_floppy_ready(ccb *srb, struct us_data *ss);
-long 		usb_request_sense	(ccb *srb, struct us_data *ss);
+long		usb_request_sense	(short *handle, unsigned char lun, char *sense_buf);
 void		part_init		(long global_lun_id, block_dev_desc_t *block_desc);
 
 /* --- Interface functions -------------------------------------------------- */
@@ -1535,24 +1535,29 @@ usb_inquiry(short *handle, unsigned char lun, void *buf)
 }
 
 long
-usb_request_sense(ccb *srb, struct us_data *ss)
+usb_request_sense(short *handle, unsigned char lun, char *sense_buf)
 {
 	DEBUG(("usb_request_sense()"));
-	char *ptr;
-	ptr = (char *)srb->pdata;
-	memset(&srb->cmd[0], 0, 12);
-	srb->cmd[0] = SCSI_REQ_SENSE;
-	srb->cmd[1] = srb->lun << 5;
-	srb->cmd[4] = 18;
-	srb->datalen = 18;
-	srb->pdata = &srb->sense_buf[0];
-	srb->cmdlen = 12;
-	srb->direction = USB_CMD_DIRECTION_IN;
-	srb->timeout = USB_CNTL_TIMEOUT * 5;
-	ss->transport(srb, ss);
-	DEBUG(("Request Sense returned %02x %02x %02x", srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
-	srb->pdata = (unsigned char *)ptr;
-	return 0;
+
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
+
+	memset(cmd, 0, sizeof(cmd));
+	cmd[0] = SCSI_REQ_SENSE;
+	cmd[1] = lun << 5;
+	cmd[4] = 18;
+
+	parms.handle      = handle;
+	parms.cmd         = (char *)cmd;
+	parms.cmdlen      = 12;
+	parms.buf         = sense_buf;
+	parms.transferlen = 18;
+	parms.sense       = sense;
+	parms.timeout     = USB_CNTL_TIMEOUT;
+	parms.flags       = 0;
+
+	return SCSIDRV_In(&parms) == NOSCSIERROR ? 0 : -1;
 }
 
 static long
@@ -1624,7 +1629,16 @@ poll_floppy_ready(ccb *srb, struct us_data *ss)
 		request_sense = 1;
 		return 1;
 	}else {
-		usb_request_sense(srb, ss);
+		memset(&srb->cmd[0], 0, 12);
+		srb->cmd[0] = SCSI_REQ_SENSE;
+		srb->cmd[1] = srb->lun << 5;
+		srb->cmd[4] = 18;
+		srb->datalen = 18;
+		srb->pdata = &srb->sense_buf[0];
+		srb->cmdlen = 12;
+		srb->direction = USB_CMD_DIRECTION_IN;
+		srb->timeout = USB_CNTL_TIMEOUT * 5;
+		ss->transport(srb, ss);
 		request_sense = 0;
 		if (srb->sense_buf[12] == 0x00 || srb->sense_buf[12] == 0x28)
 			return 0;
