@@ -39,7 +39,7 @@ extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
 extern long usb_test_unit_ready(short *handle, unsigned char lun);
-extern long poll_floppy_ready(ccb *srb, struct us_data *ss);
+extern long poll_floppy_ready(short *handle, unsigned char lun);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
 extern void part_init(long global_lun_id, block_dev_desc_t *block_desc);
@@ -72,7 +72,6 @@ static void stor_poll_thread(void *dummy);
 void storage_int(void)
 {
 	int i, r;
-	ccb pccb;
 	DLONG id;
 	unsigned long maxlen;
 	short *handle;
@@ -108,10 +107,11 @@ void storage_int(void)
 			continue;
 
 		if (mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor.subclass == US_SC_UFI) {
-			pccb.lun = usb_block_desc[i].local_lun_id;
-			r = poll_floppy_ready(&pccb, &mass_storage_dev[usb_block_desc[i].storage_dev_id].usb_stor);
-			if (r > 0)
+			r = poll_floppy_ready(handle, usb_block_desc[i].local_lun_id);
+			if (r > 0) {
+				SCSIDRV_Close(handle);
 				continue;
+			}
 		}
 		else {
 			r = usb_test_unit_ready(handle, usb_block_desc[i].local_lun_id);

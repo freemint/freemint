@@ -298,7 +298,7 @@ static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
 long		usb_test_unit_ready	(short *handle, unsigned char lun);
-long		poll_floppy_ready(ccb *srb, struct us_data *ss);
+long		poll_floppy_ready	(short *handle, unsigned char lun);
 long		usb_request_sense	(short *handle, unsigned char lun, char *sense_buf);
 void		part_init		(long global_lun_id, block_dev_desc_t *block_desc);
 
@@ -1638,46 +1638,38 @@ usb_test_unit_ready(short *handle, unsigned char lun)
 	return -1;
 }
 
-/*
- * Limit floppy polling to one command per cycle due to its latency.
- *
- * Not migrated to SCSIDRV: this function is called from an ISR (TOSONLY) and
- * must issue at most one USB command per invocation. SCSIDRV_In internally
- * issues a REQUEST SENSE on CHECK CONDITION, making the command count
- * uncontrollable from outside the driver.
- */
+/* NoAutoSense suppresses the automatic REQUEST SENSE inside
+ * SCSIDRV_In; the caller issues it on the next cycle instead. */
 long
-poll_floppy_ready(ccb *srb, struct us_data *ss)
+poll_floppy_ready(short *handle, unsigned char lun)
 {
 	static short request_sense = 0;
+	SCSICMD parms;
+	unsigned char cmd[12];
+	char sense[18];
 
-	if (! request_sense) {
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_TST_U_RDY;
-		srb->cmd[1] = srb->lun << 5;
-		srb->datalen = 0;
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		ss->transport(srb, ss);
+	if (!request_sense) {
+		memset(cmd, 0, sizeof(cmd));
+		cmd[0] = SCSI_TST_U_RDY;
+		cmd[1] = lun << 5;
+		parms.handle      = handle;
+		parms.cmd         = (char *)cmd;
+		parms.cmdlen      = 12;
+		parms.buf         = NULL;
+		parms.transferlen = 0;
+		parms.sense       = sense;
+		parms.timeout     = USB_CNTL_TIMEOUT;
+		parms.flags       = NoAutoSense;
+		SCSIDRV_In(&parms);
 		request_sense = 1;
 		return 1;
-	}else {
-		memset(&srb->cmd[0], 0, 12);
-		srb->cmd[0] = SCSI_REQ_SENSE;
-		srb->cmd[1] = srb->lun << 5;
-		srb->cmd[4] = 18;
-		srb->datalen = 18;
-		srb->pdata = &srb->sense_buf[0];
-		srb->cmdlen = 12;
-		srb->direction = USB_CMD_DIRECTION_IN;
-		srb->timeout = USB_CNTL_TIMEOUT * 5;
-		ss->transport(srb, ss);
+	} else {
+		char sense_buf[18];
 		request_sense = 0;
-		if (srb->sense_buf[12] == 0x00 || srb->sense_buf[12] == 0x28)
+		usb_request_sense(handle, lun, sense_buf);
+		if (sense_buf[12] == 0x00 || sense_buf[12] == 0x28)
 			return 0;
-		else
-			return -1;
+		return -1;
 	}
 }
 
