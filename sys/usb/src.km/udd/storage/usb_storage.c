@@ -414,6 +414,7 @@ part_init(long global_lun_id, block_dev_desc_t *block_desc)
 		}
 		part_num++;
 	}
+	scsidrv_set_mediach(global_lun_id);
 }
 
 /*
@@ -2357,6 +2358,7 @@ usb_stor_eject(long device)
 		idx--;
 	}
 	bios_part[device].partnum = 0;
+	scsidrv_set_mediach(device);
 
 	strncpy(product, usb_block_desc[device].product, PRODUCT_STRING_LENGTH);
 #ifndef TOSONLY

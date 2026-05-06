@@ -147,7 +147,7 @@ static REQDATA reqdata;
 typedef struct SCSIDRV_Data
 {
 	ushort features; /* this has to be at the top ! */
-	short changed;
+	ushort changed;  /* bitmask: bit N set when LUN N has a pending media change */
 	short handleOpened;
 	short devID;
 } SCSIDRV_Data;
@@ -225,6 +225,23 @@ fetch_sense(ccb *srb, struct us_data *ss)
 	srb->timeout = USB_CNTL_TIMEOUT * 5;
 	ss->transport(srb, ss);
 	srb->pdata = (unsigned char *)ptr;
+}
+
+void
+scsidrv_set_mediach(long global_lun_id)
+{
+	short dev_id;
+	unsigned char lun;
+	long i;
+
+	if (!private || global_lun_id < 0 || global_lun_id >= MAX_TOTAL_LUN_NUM)
+		return;
+	dev_id = usb_block_desc[global_lun_id].storage_dev_id;
+	lun    = (unsigned char)usb_block_desc[global_lun_id].local_lun_id;
+	for (i = 0; i < MAX_HANDLES; i++) {
+		if (private[i].devID == dev_id && private[i].handleOpened)
+			private[i].changed |= (ushort)(1u << lun);
+	}
 }
 
 long
@@ -367,25 +384,17 @@ SCSIDRV_In (SCSICMD *parms)
 				srb.cmdlen = 10;
 			}
 
-			/* XXXX: Needs verification !!!!!
-			 */
-			/* This failed sdrvtest on a USB key. */
-			/* priv->changed is set in part_init() in usb_storage.c */
-			/* by SCSIDRV_MediaChange but is not need to detect media changes */
-#if 0
-			if (srb.cmd[0] == SCSI_TST_U_RDY && priv->changed) {
-				/* Report Media Change sense key */
-				/* 2 = sense key (bits 0 to 3) */
-				/* 12 = ASC. 28h = media was inserted. */
-				/* 13 = ASCQ. Set to 00h */
+			/* Return UNIT ATTENTION on any command to a LUN whose media has
+			 * changed, mirroring real SCSI device behaviour. The changed bit
+			 * is set by scsidrv_set_mediach() from part_init()/usb_stor_eject(). */
+
+			if (priv->changed & (1u << srb.lun)) {
 				parms->sense[2] = SENSE_UNIT_ATTENTION;
 				parms->sense[12] = 0x28;
 				parms->sense[13] = 0x00;
-				priv->changed = FALSE;
+				priv->changed &= ~(ushort)(1u << srb.lun);
 				return S_CHECK_COND;
 			}
-#endif
-
 
 retry:
 			r = ss->transport (&srb, ss);
@@ -516,9 +525,21 @@ SCSIDRV_Out (SCSICMD *parms)
 				srb.cmdlen = 10;
 			}
 
+			/* Return UNIT ATTENTION on any command to a LUN whose media has
+			 * changed, mirroring real SCSI device behaviour. The changed bit
+			 * is set by scsidrv_set_mediach() from part_init()/usb_stor_eject(). */
+
+			if (priv->changed & (1u << srb.lun)) {
+				parms->sense[2] = SENSE_UNIT_ATTENTION;
+				parms->sense[12] = 0x28;
+				parms->sense[13] = 0x00;
+				priv->changed &= ~(ushort)(1u << srb.lun);
+				return S_CHECK_COND;
+			}
+
 retry:
 			r = ss->transport (&srb, ss);
-			
+
 			if (r == USB_STOR_TRANSPORT_SENSE) {
 				/* CBI/CB transport already issues REQUEST SENSE internally */
 				if (ss->protocol == US_PR_BULK)
@@ -728,7 +749,7 @@ SCSIDRV_Open (short bus, const DLONG * Id, ulong * MaxLen)
 			return EMFILE;
 
 		priv = &private[i];
-		priv->changed = FALSE;
+		priv->changed = 0;
 		priv->handleOpened = TRUE;
 		priv->devID = Id->lo;
 
@@ -779,7 +800,7 @@ SCSIDRV_Close (short *handle)
 	{
 		if (priv->handleOpened) {
 			priv->handleOpened = FALSE;
-			priv->changed = FALSE;
+			priv->changed = 0;
 
 			return 0;
 		} else {
@@ -816,8 +837,8 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 
 		if (rwflag == cErrRead)
 		{
-			ushort status = priv->changed;
-			priv->changed = FALSE;
+			short status = (priv->changed != 0) ? TRUE : FALSE;
+			priv->changed = 0;
 			return status;
 		}
 		else if (rwflag == cErrWrite)
@@ -828,12 +849,12 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 				usb_block_desc[dev].sw_ejected = 0;
 				if (usb_stor_get_info(usb_block_desc[dev].priv, &mass_storage_dev[usb_block_desc[dev].storage_dev_id].usb_stor, &usb_block_desc[dev]) > 0)
 					part_init(dev, &usb_block_desc[dev]);
-				/* Report Media Change to all opened handles on this device */
+				/* Report Media Change to all opened handles on this device
+				 * SCSIDRV_Error has no LUN parameter; mark all LUNs changed
+				 */
 				for (i = 0; i < MAX_HANDLES; i++) {
-					priv = (SCSIDRV_Data *) &private[i];
-					if (priv->devID == dev && priv->handleOpened) {
-						priv->changed = TRUE;
-					}
+					if (private[i].devID == dev && private[i].handleOpened)
+						private[i].changed = (ushort)((1u << mass_storage_dev[dev].num_luns) - 1);
 				}
 			}
 		}
@@ -892,7 +913,7 @@ install_scsidrv (void)
 	for (i = 0; i < MAX_HANDLES; i++)
 	{
 		private[i].features = cAllCmds;
-		private[i].changed = FALSE;
+		private[i].changed = 0;
 		private[i].handleOpened = FALSE;
 	}
 

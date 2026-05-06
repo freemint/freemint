@@ -32,6 +32,7 @@ long SCSIDRV_In(SCSICMD *par);
 long SCSIDRV_Out(SCSICMD *par);
 long SCSIDRV_Open(short busno, const DLONG *SCSIId, ulong *maxlen);
 long SCSIDRV_Close(short *handle);
+void scsidrv_set_mediach(long global_lun_id);
 
 void install_scsidrv(void);
 
