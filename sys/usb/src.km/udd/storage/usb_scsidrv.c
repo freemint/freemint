@@ -853,7 +853,8 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 					if (usb_block_desc[i].target == 0xff ||
 					    usb_block_desc[i].storage_dev_id != dev)
 						continue;
-					usb_stor_eject(i);
+					if (usb_block_desc[i].ready && !usb_block_desc[i].sw_ejected)
+						usb_stor_eject(i);
 					if (usb_stor_get_info(usb_block_desc[i].priv,
 					                      &mass_storage_dev[dev].usb_stor,
 					                      &usb_block_desc[i]) > 0) {
