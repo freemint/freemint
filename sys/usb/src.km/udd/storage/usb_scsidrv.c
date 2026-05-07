@@ -844,17 +844,29 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 		else if (rwflag == cErrWrite)
 		{
 			if (ErrNo == cErrMediach) {
-				/* Report Media Change to storage driver */
-				usb_stor_eject(dev);
-				usb_block_desc[dev].sw_ejected = 0;
-				if (usb_stor_get_info(usb_block_desc[dev].priv, &mass_storage_dev[usb_block_desc[dev].storage_dev_id].usb_stor, &usb_block_desc[dev]) > 0)
-					part_init(dev, &usb_block_desc[dev]);
+				/* Report Media Change to storage driver.
+				 * dev is the mass storage device index; usb_stor_eject/part_init
+				 * take the global LUN (block descriptor) index, so iterate
+				 * usb_block_desc to find all LUNs belonging to this device.
+				 */
+				for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
+					if (usb_block_desc[i].target == 0xff ||
+					    usb_block_desc[i].storage_dev_id != dev)
+						continue;
+					usb_stor_eject(i);
+					if (usb_stor_get_info(usb_block_desc[i].priv,
+					                      &mass_storage_dev[dev].usb_stor,
+					                      &usb_block_desc[i]) > 0) {
+						part_init(i, &usb_block_desc[i]);
+						usb_block_desc[i].sw_ejected = 0;
+					}
+				}
 				/* Report Media Change to all opened handles on this device
 				 * SCSIDRV_Error has no LUN parameter; mark all LUNs changed
 				 */
 				for (i = 0; i < MAX_HANDLES; i++) {
 					if (private[i].devID == dev && private[i].handleOpened)
-						private[i].changed = (ushort)((1u << mass_storage_dev[dev].num_luns) - 1);
+						private[i].changed |= (ushort)((1u << mass_storage_dev[dev].num_luns) - 1);
 				}
 			}
 		}
