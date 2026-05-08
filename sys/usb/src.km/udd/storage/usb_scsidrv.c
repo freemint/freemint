@@ -859,7 +859,6 @@ SCSIDRV_Error (short *handle, short rwflag, short ErrNo)
 					                      &mass_storage_dev[dev].usb_stor,
 					                      &usb_block_desc[i]) > 0) {
 						part_init(i, &usb_block_desc[i]);
-						usb_block_desc[i].sw_ejected = 0;
 					}
 				}
 				/* Report Media Change to all opened handles on this device

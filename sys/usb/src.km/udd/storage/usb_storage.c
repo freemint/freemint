@@ -2287,6 +2287,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	block_desc->blksz = *blksz;
 	block_desc->type = perq;
 	block_desc->ready = 1;
+	block_desc->sw_ejected = 0;
 
 	/* write-protection */
 	/* request 8 bytes, the size of the mode parameter header
