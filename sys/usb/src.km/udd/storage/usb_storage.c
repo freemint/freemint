@@ -2335,23 +2335,16 @@ usb_stor_eject(long device)
 {
 #ifndef TOSONLY
 	long storage_dev_id = usb_block_desc[device].storage_dev_id;
-#endif
 	long lun = usb_block_desc[device].local_lun_id;
+#endif
 	char product[20+1];
-	long i = 0, f = 0;
 
-	for (i = 0; i < MAX_TOTAL_LUN_NUM; i++) {
-		if ((usb_block_desc[i].local_lun_id == lun) && (usb_block_desc[i].global_lun_id == device)) {
-			usb_block_desc[i].sw_ejected = 1;
-			f = 1;
-		}
-	}
-
-	if (!f)
+	if (usb_block_desc[device].sw_ejected)
 	{
-		DEBUG(("USB mass storage device was already ejected"));
+		DEBUG(("USB mass storage device was already ejected %ld",device));
 		return;
 	}
+	usb_block_desc[device].sw_ejected = 1;
 
 	long idx = bios_part[device].partnum;
 	while (idx > 0) {
