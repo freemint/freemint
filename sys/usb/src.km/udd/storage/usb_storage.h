@@ -51,3 +51,7 @@ struct mass_storage_dev {
 #define USB_STOR_TRANSPORT_DATA_FAILED -4
 #define USB_STOR_TRANSPORT_PHASE_ERROR -5
 #define USB_STOR_TRANSPORT_TIMEOUT     -6
+
+/* Polling flags (defined in vectors.S, configured by SETTER.PRG) */
+extern int enable_flop_mediach;
+extern int enable_single_lun_mediach;

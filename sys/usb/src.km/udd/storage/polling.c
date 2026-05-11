@@ -49,9 +49,6 @@ extern void interrupt_storage (void);
 extern int transfer_running;
 #endif
 
-extern int enable_flop_mediach;       /* in storage_int.S */
-extern int enable_single_lun_mediach; /* in storage_int.S */
-
 /* Functions prototypes */
 void init_polling(void);
 void storage_int(void);

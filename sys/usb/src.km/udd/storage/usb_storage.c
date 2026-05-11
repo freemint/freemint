@@ -157,8 +157,6 @@ extern long EmuTOS;
 extern SCSIDRV scsidrv;               /* from usb_scsidrv.c */
 #endif
 
-extern int enable_flop_mediach;       /* in storage_int.S */
-extern int enable_single_lun_mediach; /* in storage_int.S */
 /*
  * CBI style
  */
