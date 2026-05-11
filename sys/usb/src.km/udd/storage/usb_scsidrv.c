@@ -347,15 +347,6 @@ SCSIDRV_In (SCSICMD *parms)
 					return S_CHECK_COND;
 				}
 			}
-			
-			/* an EJECT command? */
-			if (srb.cmd[0] == SCSI_START_STP &&
-				srb.cmd[4] & SCSI_START_STP_LOEJ &&
-				!(srb.cmd[4] & SCSI_START_STP_START) &&
-				!(srb.cmd[4] & SCSI_START_STP_PWCO))
-			{
-				usb_stor_eject(mass_storage_dev[dev].usb_block_desc[srb.lun]->global_lun_id);
-			}
 
 			if (srb.cmd[0] == SCSI_TST_U_RDY) {
 				retries = 10;
@@ -414,6 +405,17 @@ retry:
 			switch(r)
 			{
 				case USB_STOR_TRANSPORT_GOOD :
+					/* an EJECT command? */
+					if (srb.cmd[0] == SCSI_START_STP &&
+						srb.cmd[4] & SCSI_START_STP_LOEJ &&
+						!(srb.cmd[4] & SCSI_START_STP_START) &&
+						!(srb.cmd[4] & SCSI_START_STP_PWCO))
+					{
+						/* Logically eject only the devices that we do not poll */
+						if (mass_storage_dev[dev].num_luns <= 1 && !enable_single_lun_mediach &&
+						   (!enable_flop_mediach || mass_storage_dev[dev].usb_stor.subclass != US_SC_UFI))
+							usb_stor_eject(mass_storage_dev[dev].usb_block_desc[srb.lun]->global_lun_id);
+					}
 					return NOSCSIERROR;
 				case USB_STOR_TRANSPORT_DATA_FAILED :
 					return TRANSERROR;
