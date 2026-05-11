@@ -348,10 +348,6 @@ SCSIDRV_In (SCSICMD *parms)
 				}
 			}
 
-			if (srb.cmd[0] == SCSI_TST_U_RDY) {
-				retries = 10;
-			}
-
 			if (srb.cmd[0] == SCSI_REPORT_LUN) {
 				return SELECTERROR;
 			}

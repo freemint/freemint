@@ -38,7 +38,7 @@ static int polling_on = 0;
 extern block_dev_desc_t usb_block_desc[MAX_TOTAL_LUN_NUM];
 extern struct mass_storage_dev mass_storage_dev[USB_MAX_STOR_DEV];
 
-extern long usb_test_unit_ready(short *handle, unsigned char lun);
+extern long usb_test_unit_ready(short *handle, unsigned char lun, int retries);
 extern long poll_floppy_ready(short *handle, unsigned char lun);
 extern void usb_stor_eject(long device);
 extern long usb_stor_get_info(struct usb_device *, struct us_data *, block_dev_desc_t *);
@@ -111,7 +111,7 @@ void storage_int(void)
 			}
 		}
 		else {
-			r = usb_test_unit_ready(handle, usb_block_desc[i].local_lun_id);
+			r = usb_test_unit_ready(handle, usb_block_desc[i].local_lun_id, 0);
 		}
 		SCSIDRV_Close(handle);
 

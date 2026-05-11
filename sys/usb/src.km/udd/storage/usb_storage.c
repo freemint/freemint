@@ -295,7 +295,7 @@ static long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char, b
 static long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 static long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
-long		usb_test_unit_ready	(short *handle, unsigned char lun);
+long		usb_test_unit_ready	(short *handle, unsigned char lun, int retries);
 long		poll_floppy_ready	(short *handle, unsigned char lun);
 long		usb_request_sense	(short *handle, unsigned char lun, char *sense_buf);
 void		part_init		(long global_lun_id, block_dev_desc_t *block_desc);
@@ -1585,7 +1585,7 @@ usb_start_stop_unit(short *handle, unsigned char lun, unsigned char start)
 }
 
 long
-usb_test_unit_ready(short *handle, unsigned char lun)
+usb_test_unit_ready(short *handle, unsigned char lun, int retries)
 {
 	DEBUG(("usb_test_unit_ready()"));
 
@@ -1593,7 +1593,6 @@ usb_test_unit_ready(short *handle, unsigned char lun)
 	unsigned char cmd[12];
 	char sense[18];
 	long r;
-	int retries = 10;
 
 	memset(cmd, 0, sizeof(cmd));
 	cmd[0] = SCSI_TST_U_RDY;
@@ -2251,7 +2250,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	usb_bin_fixup(dev->descriptor, (uchar *)block_desc->vendor, (uchar *)block_desc->product);
 #endif /* CONFIG_USB_BIN_FIXUP */
 	DEBUG(("ISO Vers %x, Response Data %x", usb_stor_buf[2], usb_stor_buf[3]));
-	if (usb_test_unit_ready(handle, block_desc->local_lun_id))
+	if (usb_test_unit_ready(handle, block_desc->local_lun_id, 10))
 	{
 		DEBUG(("Device NOT ready"));
 		if(block_desc->removable == 1)
