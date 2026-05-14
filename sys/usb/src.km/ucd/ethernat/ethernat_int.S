@@ -42,7 +42,6 @@
 	.globl SYM(set_int_lvl6)
 	.globl SYM(ethernat_probe_asm)
 	.extern SYM(ethernat_probe_c)
-	.globl SYM(fake_ikbd_int)
 
 	.text
 
@@ -105,17 +104,4 @@ old_stack:
 	ds.l	1
 old_berr:
 	ds.l	1
-
-// calls the keyboard/MIDI handler as though an interrupt has occurred
-SYM(fake_ikbd_int):
-	tst.w	0x59e.w			//handle 68000/68030 difference
-	beq.b	shortframe
-	move.w	#0x118,-(sp)		//push vector offset
-shortframe:
-	pea		retaddr(pc)	// return address
-	move	sr,-(sp)		//  and SR
-	move.l	0x118,a0
-	jmp		(a0)		//go to interrupt handler
-retaddr:				// (returns here)
-	rts
 

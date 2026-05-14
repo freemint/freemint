@@ -121,6 +121,7 @@
 # include "mint/pci_ids.h"
 
 # include "libkern/libkern.h"
+# include "libkern/ikbd_poll.h"
 
 /* XXX: shouldn't be used in a kernel driver... */
 # include <mint/osbind.h>
@@ -465,6 +466,9 @@ accept_frame:
     cur_rx = (cur_rx + rx_size + 4 + 3) & ~3;
     RTL_W16_F(RxBufPtr, cur_rx - 16);
     mine = multicast_packet = arp_request_for_me = 1;
+    /* the CTPCI interrupt runs at IPL 6, which masks the IKBD ACIA */
+    if(ikbd_int_pending())
+      fake_ikbd_int();
   }
   rtl_8139_tp->cur_rx = cur_rx;
 }
@@ -534,6 +538,8 @@ static int rtl8139_interrupt(struct rtl8139_private *rtl_8139_tp)
   unsigned short status = 0, link_changed = 0; /* avoid bogus "uninit" warning */
   do
   {
+    if(ikbd_int_pending())
+      fake_ikbd_int();
     if(rtl_8139_tp->ctpci_dma_lock != NULL)
     {
       int i = 0;
@@ -863,6 +869,8 @@ static int rtl8139_send_packet(const char *buffer, long size)
   rtl8139_tp.trans_start = jiffies;
   if(rtl8139_tp.ctpci_dma_lock != NULL)
     rtl8139_tp.ctpci_dma_lock(0);
+  if(ikbd_int_pending())
+    fake_ikbd_int();
   splx(level); /* restore interrupts */
   return(size);
 }

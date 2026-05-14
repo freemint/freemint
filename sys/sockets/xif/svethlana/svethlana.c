@@ -54,6 +54,7 @@
 # include "mint/sockio.h"
 # include "mint/time.h"
 # include "mint/arch/asm_spl.h"
+# include "libkern/ikbd_poll.h"
 
 # include <mint/osbind.h>
 
@@ -497,6 +498,16 @@ static long ethoc_update_rx_stats(struct ethoc *dev,
 	return ret;
 }
 
+/*
+ * Not in Linux. The receive and transmit work runs at IPL 6 (see
+ * ethoc_poll()), which masks the MFP and with it the IKBD ACIA.
+ */
+static inline void ethoc_poll_ikbd(void)
+{
+	while (ikbd_int_pending())
+		fake_ikbd_int();
+}
+
 static long ethoc_rx(struct netif *dev, long limit)
 {
 	struct ethoc *priv = dev->data;
@@ -569,6 +580,8 @@ static long ethoc_rx(struct netif *dev, long limit)
 		ethoc_write_bd(priv, entry, &bd);
 		if (++priv->cur_rx == priv->num_rx)
 			priv->cur_rx = 0;
+
+		ethoc_poll_ikbd();
 	}
 
 	return count;
@@ -759,6 +772,7 @@ static long ethoc_get_mac_address(struct netif *dev, void *addr)
  * drivers do; MiNTNet takes the packets from there through its own root
  * timeout. Nothing can interrupt it there, so the interrupts are not
  * masked around it and the interrupt source is not filtered by the mask.
+ * ethoc_rx() services the IKBD ACIA after each frame instead.
  */
 static long ethoc_poll(struct ethoc *priv, long budget)
 {

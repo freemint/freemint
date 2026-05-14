@@ -42,8 +42,7 @@
 	.globl SYM(set_int_lvl6)
 	.globl SYM(vttusb_probe_asm)
 	.extern SYM(vttusb_probe_c)
-	.globl SYM(fake_hwint)
-	
+
 	.globl SYM(max_xfer_len)
 	.globl SYM(enable_ocp)
 	.globl SYM(use_blitter)
@@ -111,20 +110,6 @@ old_stack:
 	ds.l	1
 old_berr:
 	ds.l	1
-	
-	
-SYM(fake_hwint):
-	tst.w	0x59e.w
-	beq	shortframe
-	move.w	#0x118,-(sp)
-shortframe:
-	pea	retaddr(pc)
-	move	sr,d0
-	move.w	d0,-(sp)
-	move.l	0x118,a0
-	jmp	(a0)
-retaddr:
-	rts
 
 	.data
 // Config block for SETTER.TTP/.PRG

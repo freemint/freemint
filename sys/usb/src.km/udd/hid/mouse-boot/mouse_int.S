@@ -32,7 +32,6 @@ skip:	move.l	SYM(old_ikbd_int)(pc),-(sp)
 
 	.globl SYM(send_packet)
 	.globl SYM(send_data)
-	.globl SYM(fake_hwint)
 
 SYM(send_packet):
 	lea	-60(sp),sp
@@ -55,19 +54,6 @@ SYM(send_data):
 	movem.l	(sp),d0-a6
 	lea	60(sp),sp
 rts
-
-SYM(fake_hwint):
-	tst.w	0x59e.w
-	beq	shortframe
-	move.w	#0x118,-(sp)
-shortframe:
-	pea	retaddr(pc)
-	move	sr,d0
-	move.w	d0,-(sp)
-	move.l	0x118,a0
-	jmp	(a0)
-retaddr:
-	rts
 
 	.bss
 lock:	ds.w 1

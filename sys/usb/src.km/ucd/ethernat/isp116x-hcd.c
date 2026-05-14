@@ -73,6 +73,7 @@
 #include "../../usb_api.h"
 
 #include "ethernat_int.h"
+#include "libkern/ikbd_poll.h"
 
 #define VER_MAJOR	0
 #define VER_MINOR	2
@@ -532,24 +533,6 @@ inline static char lock_usb(char *lock) {
 
 inline static void unlock_usb(char *lock) {
 	*lock = 0;
-}
-
-/*
- * Check if there is a pending interrupt request from the keyboard ACIA.
- * We use this while the CPU priority is set to 6, causing interrupts to
- * be disabled.  The major problem with this is that some keyboard/mouse
- * interrupt data is lost, which typically results in mouse movements
- * being interpreted as keyclicks, then repeating keys and other nasties.
- *
- * We call this routine to poll for ikbd interrupts, which are then serviced
- * by calling the keyboard interrupt routine ourselves.
- *
- * Returns != 0 if there is a pending interrupt request.
- */
-static inline int ikbd_int_pending(void)
-{
-	unsigned char keyctl = *(volatile unsigned char *)0xFFFFFC00UL;
-	return keyctl & 0x80;
 }
 
 

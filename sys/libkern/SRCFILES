@@ -5,6 +5,7 @@ HEADER = \
 	bf_tab.h \
 	blowfish.h \
 	fstring.h \
+	ikbd_poll.h \
 	kernel_module.h \
 	kernel_xfs_xdd.h \
 	libkern.h \
@@ -54,6 +55,7 @@ COBJS = \
 	vsprintf.c \
 	\
 	asm/blockcopy.S \
+	asm/fake_ikbd_int.S \
 	asm/memset.S \
 	asm/quickmove.S \
 	asm/quickswap.S \

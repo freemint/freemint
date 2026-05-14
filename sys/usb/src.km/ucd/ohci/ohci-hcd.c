@@ -70,6 +70,7 @@
 #include "../../usb_api.h"
 
 #include "ohci.h"
+#include "libkern/ikbd_poll.h"
 
 #define VER_MAJOR	0
 #define VER_MINOR	1
@@ -1654,19 +1655,6 @@ static void ed_cancel_queued_tds(ed_t *ed)
 }
 
 #ifdef TOSONLY
-/* Synthesize an IKBD interrupt (jumps to *0x118)
- * Implemented in ohci.S.
- */
-extern void fake_ikbd_int(void);
-
-/* Read bit 7 of the IKBD ACIA control register — set when the ACIA
- * has data waiting.
- */
-static inline int ikbd_int_pending(void)
-{
-	return *(volatile unsigned char *)0xFFFFFC00UL & 0x80;
-}
-
 /* Read the current IPL from SR. Supervisor-only instruction; safe here
  * because submit_common_msg enters supervisor mode via Super() first.
  */

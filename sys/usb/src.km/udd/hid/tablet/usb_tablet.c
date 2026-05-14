@@ -22,6 +22,7 @@
 #include <mint/sysvars.h>   /* OSHEADER */
 #include <mint/struct_iorec.h>
 #include <mint/struct_kbdvbase.h>
+#include "libkern/ikbd_poll.h"
 
 #ifdef TOSONLY
 #define MSG_VERSION "TOS DRIVERS"
@@ -87,7 +88,6 @@ static char mouse_packet[6];
  * the following functions are defined in tablet_int.S
  */
 void _cdecl send_packet (long func, char *buf, char *bufend);
-void _cdecl fake_hwint(void);
 void _cdecl send_data (long func, IOREC_T *iorec, long data);
 
 struct usb_module_api *api;
@@ -584,7 +584,7 @@ send_mouse_packets(long tip, long barrel, long x, long y)
 		byte_y = (y < 0)?MAX(y, -128):MIN(y, 127);
 		mouse_packet[1] = byte_x;
 		mouse_packet[2] = byte_y;
-		fake_hwint();
+		fake_ikbd_int();
 		send_packet (vector->mousevec, mouse_packet, mouse_packet + 3);
 		x -= byte_x;
 		y -= byte_y;
@@ -776,7 +776,7 @@ tablet_int (void)
 					 mouse_packet[5]);
 
 		/* sending packet doesn't work, no mouse reaction. */
-		fake_hwint();
+		fake_ikbd_int();
 		send_packet (vector->mousevec, mouse_packet, mouse_packet + 6);
 		
 #endif
@@ -796,7 +796,7 @@ tablet_int (void)
 		mouse_packet[2] = (word_x&0xFF);
 		mouse_packet[3] = (word_y>>8);
 		mouse_packet[4] = (word_y&0xFF);
-		fake_hwint();
+		fake_ikbd_int();
 		send_packet (vector->mousevec, mouse_packet, mouse_packet + 5);
 #endif
 }

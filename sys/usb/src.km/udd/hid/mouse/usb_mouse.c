@@ -21,6 +21,7 @@
 #include <mint/sysvars.h>   /* OSHEADER */
 #include <mint/struct_iorec.h>
 #include <mint/struct_kbdvbase.h>
+#include "libkern/ikbd_poll.h"
 
 #ifdef TOSONLY
 #define MSG_VERSION "TOS DRIVERS"
@@ -87,7 +88,6 @@ static char mouse_packet[6];
  * the following functions are defined in mouse_int.S
  */
 void _cdecl send_packet (long func, char *buf, char *bufend);
-void _cdecl fake_hwint(void);
 void _cdecl send_data (long func, IOREC_T *iorec, long data);
 
 struct usb_module_api *api;
@@ -577,7 +577,7 @@ mouse_int (void)
 	#endif
 		if (mouse_change || wheel_change || ac_pan_change)
 		{
-			fake_hwint();
+			fake_ikbd_int();
 			cpu_saver = 0;
 			cpu_saver_interval = 0;
 		}

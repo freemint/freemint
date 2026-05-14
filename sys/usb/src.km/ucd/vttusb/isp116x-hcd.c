@@ -77,6 +77,7 @@
 #include "../../usb_api.h"
 
 #include "vttusb_int.h"
+#include "libkern/ikbd_poll.h"
 
 #define VER_MAJOR	1
 #define VER_MINOR	0
@@ -989,16 +990,6 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
 	}
 }
 
-/* Check if there is an interrupt request by the keyboard ACIA.
- * TOS might not be able it by itself due to the interrupt level.
- * Returns != 0 if there is a pending interrupt request.
- */
-static inline int keybd_acia_int()
-{
-	unsigned char keyctl = *(volatile unsigned char*)(0xFFFFFC00UL);
-	return (keyctl & 0x80);
-}
-
 /* Returns the current interrupt level of the CPU.
  * Must only be called in supervisor mode.
  */
@@ -1157,10 +1148,10 @@ retry_same:
 			break;
 		}
 
-#ifdef TOSONLY		
+#ifdef TOSONLY
 		/* Check the keyboard  */
-		if (check_keybd && keybd_acia_int()) {
-			fake_hwint();
+		if (check_keybd && ikbd_int_pending()) {
+			fake_ikbd_int();
 		}
 #endif
 	}

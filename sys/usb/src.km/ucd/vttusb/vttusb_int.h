@@ -43,7 +43,4 @@ void vttusb_probe_c(void);
 
 //unsigned short rd_dport();
 
-// fake a keyboard (ACIA) HW interrupt
-void fake_hwint(void);
-
 #endif // _vttusb_int_h

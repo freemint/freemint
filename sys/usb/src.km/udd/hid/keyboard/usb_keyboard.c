@@ -18,6 +18,7 @@
 #include <mint/sysvars.h>   /* OSHEADER */
 #include <mint/struct_iorec.h>
 #include <mint/struct_kbdvbase.h>
+#include "libkern/ikbd_poll.h"
 #define sysbase	((OSHEADER **)0x4f2L)
 #define Kbstate() *p_kbshift
 
@@ -73,7 +74,6 @@ extern void interrupt_ikbd (void);
 IOREC_T *iokbd;
 char *p_kbshift;
 void _cdecl send_data (long func, IOREC_T *iorec, long data);
-void _cdecl fake_hwint(void);
 
 struct usb_module_api *api;
 
@@ -466,7 +466,7 @@ kbd_int (void)
 		}
 	}
 
-	fake_hwint();
+	fake_ikbd_int();
 	kbd_data.olddata = kbd_data.newdata;
 }
 
