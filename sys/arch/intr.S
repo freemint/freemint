@@ -657,6 +657,28 @@ SYM(newkeys):
 	rts
 	END(newkeys)
 
+// Forward a single kbdvec event to the previous (TOS) handler.
+// Used by IkbdScan when it sees a break code for a key that we never
+// observed pressed -- the matching make was processed by the old TOS
+// kbdvec before our handler was installed, so its internal "key X
+// down" state is stale and its VBL-driven auto-repeat keeps firing.
+// We jmp (not jsr) to the old vector so its rts returns straight to
+// our C caller.
+
+	.globl	SYM(chain_oldkeys)
+
+	FUNC(chain_oldkeys)
+SYM(chain_oldkeys):
+	move.l	SYM(oldkeys),d0
+	beq.s	chain_oldkeys_skip	// TOS 1.x: no chain target, no-op
+	movea.l	d0,a1			// chained vector address
+	move.w	4(sp),d0		// scancode (passed as short)
+	movea.l	SYM(keyrec),a0		// iorec ptr in a0, per kbdvec ABI
+	jmp	(a1)
+chain_oldkeys_skip:
+	rts
+	END(chain_oldkeys)
+
 // Calling the keyclick routines. This is a helper for keyboard driver.
 
 	.globl	SYM(kbdclick)

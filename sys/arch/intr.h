@@ -56,6 +56,7 @@ void _cdecl	reboot		(void) NORETURN;
 void _cdecl	newmvec		(void);
 void _cdecl	newjvec		(void);
 long _cdecl	newkeys		(void);
+void _cdecl	chain_oldkeys	(ushort scancode);
 void _cdecl	kbdclick	(short scancode);
 long _cdecl	new_rwabs	(void);
 long _cdecl	new_mediach	(void);

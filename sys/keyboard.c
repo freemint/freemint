@@ -170,6 +170,24 @@ static	uchar last_key[4];	/* last pressed key */
 //static	ushort krpdel;
 //static	ushort kdel, krep;	/* actual counters */
 
+#ifndef MILAN
+/* Per-scancode pressed-state table (indexed by 7-bit scancode). Used to
+ * detect "orphan" break events that arrive after init_intr() swapped our
+ * kbdvec in while a key (typically Return, accepting the boot menu) was
+ * still held: the make went to the previous (TOS) handler, so when we see
+ * the break we know we never observed the press and forward the break to
+ * the chained vector via chain_oldkeys() -- otherwise TOS's VBL-driven
+ * auto-repeat keeps firing make codes for that key forever.
+ *
+ * Only effective on TOS 2.x+ (including CT60 TOS 2 and FireTOS) where
+ * init_intr() XBRA-installs newkeys at the kbdvec and oldkeys holds the
+ * chained vector. On TOS 1.x the syskey->ikbdsys is replaced wholesale,
+ * oldkeys stays 0, and chain_oldkeys() no-ops -- we still clear our
+ * bitmap but cannot synchronize the original ROM ikbdsys state.
+ */
+static	uchar keys_pressed[128];
+#endif
+
 static	long keydel_time;
 static	long keyrep_time;
 static	TIMEOUT *m_to;
@@ -1007,6 +1025,25 @@ IkbdScan(PROC *p, long arg)
 # endif
 		scan &= 0x7f;
 		make = (scancode & 0x80) ? 0 : 1;
+
+#ifndef MILAN
+		if (make)
+			keys_pressed[scan] = 1;
+		else if (keys_pressed[scan])
+			keys_pressed[scan] = 0;
+		else
+		{
+			/* Orphan break: handler was installed while this
+			 * key was held, so its matching make went to the
+			 * previous (TOS) kbdvec. TOS still believes the
+			 * key is pressed and its VBL-driven auto-repeat
+			 * keeps inserting make codes into keyrec. Forward
+			 * the break to oldkeys so TOS can clear that state.
+			 */
+			chain_oldkeys(scancode);
+			continue;
+		}
+#endif
 
 		/* We handle modifiers first
 		 */
