@@ -610,7 +610,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		{
 			if (!isroot)		r = EPERM;
 			else if (arg1 == -1)	r = out_device;
-			else if (arg1 >= 0 && arg1 <= 9) out_device = arg1;
+			else if (arg1 >= 0 && arg1 <= 10) out_device = arg1;
 			else			r = EBADARG;
 
 			break;

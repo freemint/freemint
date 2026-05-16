@@ -122,14 +122,15 @@ static const char *debug_levels[] =
 
 static const char *debug_devices[] =
 {
-#define DEBUGDEV 9
+#define DEBUGDEV 10
 	"(PRN:, printer)",
 	"(AUX:, modem)",
 	"(CON:, console)",
 	"(MID:, midi)",
 	"(KBD:, keyboard)",
 	"(RAW:, raw console)",
-	"", "", "", ""
+	"", "", "", "",
+	"(SCT:, SidecarTridge)"
 };
 
 static const char *write_boot_levels[] =
@@ -337,10 +338,10 @@ do_debug_devno(char *arg)
 
 	val = atol(arg);
 
-	if (val < 0 || val > 9)
+	if (val < 0 || val > 10)
 	{
 		boot_printf(MSG_init_value_out_of_range, mint_ini,
-			 	"DEBUG_DEVNO", val, (short)0, (short)9);
+			 	"DEBUG_DEVNO", val, (short)0, (short)10);
 
 		return;
 	}

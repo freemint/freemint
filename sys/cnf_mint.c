@@ -647,7 +647,7 @@ static struct parser_item parser_tab[] = {
 	{ "FS_WRITE_PROTECT", PI_V_D, pCB_writeprotect, { { 0, 0 } } },
 	{ "FS_NEWFATFS", PI_V_D, pCB_newfatfs, { { 0, 0 } } },
 	{ "KERN_BIOSBUF", PI_V_B, pCB_biosbuf, { { 0, 0 } } },
-	{ "KERN_DEBUG_DEVNO", PI_R_S, &out_device, Range(0, 9) },
+	{ "KERN_DEBUG_DEVNO", PI_R_S, &out_device, Range(0, 10) },
 	{ "KERN_DEBUG_LEVEL", PI_R_S, &debug_level, Range(0, 9) },
 #ifdef WITH_MMU_SUPPORT
 	{ "KERN_MPFLAGS", PI_R_L, &mem_prot_flags, { { 0, 0 } } },
@@ -675,7 +675,7 @@ static struct parser_item parser_tab[] = {
 	{ "CACHE", PI_V_L, bio_set_cache_size, { { 0, 0 } } },
 	{ "PERCENTAGE", PI_V_L, bio_set_percentage, { { 0, 0 } } },
 	{ "CON", PI_V_T, pCB_con, { { 0, 0 } } },
-	{ "DEBUG_DEVNO", PI_R_S, &out_device, Range(0, 9) },
+	{ "DEBUG_DEVNO", PI_R_S, &out_device, Range(0, 10) },
 	{ "DEBUG_LEVEL", PI_R_S, &debug_level, Range(0, 9) },
 	{ "FASTLOAD", PI_R_B, &forcefastload, { { 0, 0 } } },
 	{ "HIDE_B", PI_V_B, pCB_hide_b, { { 0, 0 } } },

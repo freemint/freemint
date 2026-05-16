@@ -65,14 +65,28 @@ int out_device = 2;	/* BIOS device to write errors to */
 /*
  * out_next[i] is the out_device value to use when the current
  * device is i and the user hits F3.
- * Cycle is CON -> PRN -> AUX -> MIDI -> 6 -> 7 -> 8 -> 9 -> CON
+ * Cycle is CON -> PRN -> AUX -> MIDI -> 6 -> 7 -> 8 -> 9 -> SCT -> CON
  * (Note: BIOS devices 6-8 exist on Mega STe and TT, 9 on TT.)
  *
  * out_device and this table are exported to bios.c and used here in HALT().
  */
 
-/*		    0  1  2  3  4  5  6  7  8  9 */
-char out_next[] = { 1, 3, 0, 6, 0, 0, 7, 8, 9, 2 };
+/*		    0  1  2  3  4  5  6  7  8  9   10 */
+char out_next[] = { 1, 3, 0, 6, 0, 0, 7, 8, 9, 10, 2 };
+
+/* Device number 10 is a virtual debug channel that emits characters via
+ * reads from the cartridge port to a SidecarTridge running the atari-debug-cart
+ * firmware (https://github.com/czietz/atari-debug-cart). The cartridge decodes
+ * the address bus to recover the character that was sent.
+ */
+#define SIDECART_DEV		10
+#define SIDECART_ROM3		0xFB0000UL
+
+static void
+sidecart_putc(int c)
+{
+	(void)(*((volatile unsigned short *)(SIDECART_ROM3 + ((c & 0xFF) << 1))));
+}
 
 /*
  * debug log modes:
@@ -115,6 +129,11 @@ safe_Bconout(short dev, int c)
 	if (dev == 0)
 		mfp_kgdb_putc(c);
 #endif
+	if (dev == SIDECART_DEV)
+	{
+		sidecart_putc(c);
+		return;
+	}
 	if (intr_done)
 		ROM_Bconout(dev, c);
 	else
@@ -138,6 +157,8 @@ safe_Bconstat(short dev)
 	if (dev == 0)
 		return 0;
 #endif
+	if (dev == SIDECART_DEV)
+		return 0;
 	if (intr_done)
 		return ROM_Bconstat(dev);
 
@@ -158,6 +179,8 @@ safe_Bconin(short dev)
 	if (dev == 0)
 		return mfp_kgdb_getc();
 #endif
+	if (dev == SIDECART_DEV)
+		return 0;
 	if (intr_done)
 		return ROM_Bconin(dev);
 
