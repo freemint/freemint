@@ -325,8 +325,6 @@ ppp_ioctl (struct netif *nif, short cmd, long arg)
 			ifl = (struct iflink *) arg;
 			if (!(ppp->flags & PPPF_LINKED))
 			{
-				DEBUG (("ppp_ioctl: IFLINK: chan %d not linked",
-					nif->mtu));
 				return EINVAL;
 			}
 			strncpy (ifl->device, ppp->slbuf->dev, sizeof (ifl->device));

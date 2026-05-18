@@ -57,23 +57,14 @@ sys_f_open (const char *name, short mode)
 	if (mode & O_GLOBAL)
 	{
 		TRACE (("O_GLOBAL Fopen(%s, %x)", name, mode));
-
-		if (stricmp (name, "u:\\dev\\console") == 0 || stricmp (name, "u:\\pipe\\sld") == 0)
+		if (p->p_cred->ucr->euid)
 		{
-			if (p->p_cred->ucr->euid)
-			{
-				DEBUG (("Fopen(%s): O_GLOBAL denied for non root", name));
-				return EPERM;
-			}
-
-			p = rootproc;
-			globl = 1;
-		}
-		else
-		{
-			DEBUG (("Fopen(%s): O_GLOBAL denied", name));
+			DEBUG (("Fopen(%s): O_GLOBAL denied for non root", name));
 			return EPERM;
 		}
+
+		p = rootproc;
+		globl = 1;
 	}
 # endif
 
@@ -103,7 +94,7 @@ sys_f_open (const char *name, short mode)
 # if O_GLOBAL
 	if (globl)
 		/* we just opened a global handle */
-		fd |= 0x8000;
+		fd |= O_GLOBAL_BITPATTERN;
 # endif
 
 	TRACE (("Fopen: returning %04x", fd));
