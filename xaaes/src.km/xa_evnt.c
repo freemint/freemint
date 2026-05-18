@@ -301,7 +301,8 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 		y = md->y;
 		ks = md->kstate;
 	} else {
-		mbutts = md->cstate;
+		/* use the global state so clicks outside its windows are visible (matches N.AES/MagiC/Geneva). */
+		mbutts = mainmd.cstate;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.P_handle, &ks);
 	}
