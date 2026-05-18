@@ -39,6 +39,7 @@
 # include "inet4/init.h"
 # include "usbnet.h"
 # include "version.h"
+# include "buildinfo/version.h"
 # include "cookie.h"
 # include "mint/dcntl.h"
 # include "mint/file.h"
@@ -62,7 +63,8 @@
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
 # define MSG_OLDMINT	\
-	"\033pMiNT is not the correct version, this module requires FreeMiNT 1.19!\033q\r\n"
+	"\033pMiNT is not the correct version, this module requires FreeMiNT " \
+	str (MINT_MAJ_VERSION) "." str (MINT_MIN_VERSION) "!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
@@ -153,7 +155,8 @@ init (struct kerinfo *k)
 # endif
 	c_conws ("\r\n");
 	
-	if (MINT_MAJOR != 1 || MINT_MINOR != 19 || MINT_KVERSION != 2 || !so_register)
+	if (MINT_MAJOR != MINT_MAJ_VERSION || MINT_MINOR != MINT_MIN_VERSION
+	    || MINT_KVERSION != 2 || !so_register)
 	{
 		c_conws (MSG_OLDMINT);
 		return NULL;

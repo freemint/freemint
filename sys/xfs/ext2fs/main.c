@@ -53,9 +53,6 @@
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
 
-static int maj_version = MINT_MAJ_VERSION;
-static int min_version = MINT_MIN_VERSION;
-
 struct kerinfo *KERNEL;
 FILESYS * _cdecl init_xfs (struct kerinfo *k)
 {
@@ -74,14 +71,14 @@ FILESYS * _cdecl init_xfs (struct kerinfo *k)
 	KERNEL_DEBUG ("ext2 (%s): init", __FILE__);
 	
 	/* version check */
-	if (MINT_MAJOR != maj_version && MINT_MINOR != min_version)
+	if (MINT_MAJOR != MINT_MAJ_VERSION || MINT_MINOR != MINT_MIN_VERSION)
 	{
 		c_conws (MSG_INCVERS);
 		c_conws (MSG_FAILURE);
-		
+
 		return NULL;
 	}
-	
+
 # if 1
 	/* check for native UTC timestamps */
 	if (MINT_KVERSION > 0 && KERNEL->xtime)
