@@ -92,7 +92,7 @@ volatile long *hz_200 = _hz_200;
  * debugging stuff
  */
 
-# if 1
+# if 0
 # define XIF_DEBUG
 # endif
 
