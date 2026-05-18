@@ -37,7 +37,7 @@ then
 	then
 		cd sys/usb && make && cd -
 		cd tools/usbtool && make all && cd -
-		DST="${TMP}/usb4tos-${SHORT_VERSION}"
+		DST="${TMP}/usb4tos.${SHORT_ID}"
 		"$SCRIPT_DIR/prepare-usb4tos.sh" "${PWD}" "${DST}"
 		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;
 		ARCHIVE_NAME="usb4tos-${LONG_VERSION}.zip"
