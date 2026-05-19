@@ -59,7 +59,7 @@ static _WORD phys_handle;
 
 
 /* AES variables */
-_WORD gl_apid;
+extern _WORD gl_apid;
 static _WORD gl_wchar, gl_hchar;
 static _WORD gl_wbox, gl_hbox;
 
