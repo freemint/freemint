@@ -756,7 +756,7 @@ built_desk_popup(int lock, short x, short y)
 	ob[0].ob_height = obs-1;
 
 	xw = 0;
-	fo = find_focus(false, NULL, NULL, NULL);
+	fo = menu_owner();
 	DIAGS(("built_desk_popup: client with focus = %s", fo->name));
 
 	/* fix the tree */
