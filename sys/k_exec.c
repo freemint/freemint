@@ -289,6 +289,37 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 	if (mkname)
 		make_name(localname, ptr_1.cc);
 
+	/* Fast-fail: if path lookup proves the file isn't there, return
+	 * before allocating env/base regions.  Only short-circuit on the
+	 * "really missing" errors -- any other condition is left to the
+	 * regular code path so existing semantics are preserved.
+	 */
+	if (mkload)
+	{
+		fcookie dir, exe;
+		char temp[PATH_MAX];
+		long ret;
+
+		ret = path2cookie(get_curproc(), ptr_1.cc, temp, &dir);
+		if (ret == ENOENT || ret == ENOTDIR)
+		{
+			DEBUG(("Pexec: path lookup failed early: %ld", ret));
+			return ret;
+		}
+		if (ret == 0)
+		{
+			ret = relpath2cookie(get_curproc(), &dir, temp, follow_links, &exe, 0);
+			release_cookie(&dir);
+			if (ret == ENOENT || ret == ENOTDIR)
+			{
+				DEBUG(("Pexec: name lookup failed early: %ld", ret));
+				return ret;
+			}
+			if (ret == 0)
+				release_cookie(&exe);
+		}
+	}
+
 	if (mkload || mkbase)
 	{
 		TRACE(("creating environment"));
