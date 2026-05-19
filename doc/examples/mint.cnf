@@ -69,7 +69,7 @@
 # mint.cnf file is being interpreted. The included file will be
 # interpreted as a part of the mint.cnf file.
 
-#include u:/c/mint/vars.cnf
+#include u:/${BOOTDRIVE}/mint/vars.cnf
 
 # For more commands see below.
 
@@ -178,9 +178,9 @@
 # For best results, the convention u:/drive/pathname should be used
 # for all specified pathnames from now on.
 
-#GEMDOS_AUX=u:/c/mint/aux.out
-#GEMDOS_CON=u:/c/mint/con.out
-#GEMDOS_PRN=u:/c/mint/prn.out
+#GEMDOS_AUX=u:/${BOOTDRIVE}/mint/aux.out
+#GEMDOS_CON=u:/${BOOTDRIVE}/mint/con.out
+#GEMDOS_PRN=u:/${BOOTDRIVE}/mint/prn.out
 
 #
 # -------------------- FILESYSTEM SETTINGS ------------------------
@@ -329,7 +329,7 @@ setenv PATH /sbin;/bin;/usr/sbin;/usr/bin
 # automatically, if found nowhere else, so it is useless to
 # explicitly add this here.
 
-setenv SLBPATH /c/mint/slb;/c/gemsys/
+setenv SLBPATH /${BOOTDRIVE}/mint/slb;/${BOOTDRIVE}/gemsys/
 
 # It is advisable to set this here to a preferred name of your
 # computer:
@@ -355,8 +355,8 @@ setenv TMPDIR u:/tmp
 # Note that of you don't set the THINGDIR, the Thing desktop
 # will store all its files in your $HOME.
 
-#setenv AESDIR   u:/c/mint/n_aes/
-#setenv THINGDIR u:/c/mint/thing/
+#setenv AESDIR   u:/${BOOTDRIVE}/mint/n_aes/
+#setenv THINGDIR u:/${BOOTDRIVE}/mint/thing/
 
 #
 # ---------------------- EXECUTE PROGRAMS -------------------------
@@ -434,7 +434,7 @@ GEM=${SYSDIR}xaaes/xaloader.prg
 # Otherwise, if your init program is not a GEM, you should use INIT= as
 # follows:
 
-#INIT=u:/c/mint/init.prg
+#INIT=u:/${BOOTDRIVE}/mint/init.prg
 
 # If you leave both commands above commented out, MiNT will
 # attempt to execute a file called `sh.tos' found in the system
