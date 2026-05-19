@@ -307,10 +307,7 @@ extern char const greet2[];
 #define MSG_unifs_fs_doesnt_match_dirs "unifs: drive's file system doesn't match directory's"
 
 /* xhdi.c */
-#define MSG_xhdi_present "This system features XHDI level %x.%x (kerinfo %s).\r\n\r\n"
-#define MSG_kerinfo_accepted "accepted"
-#define MSG_kerinfo_rejected "rejected"
-#define MSG_kerinfo_unused "not used"
+#define MSG_xhdi_present "This system features XHDI level %x.%x.\r\n\r\n"
 #define MSG_xhdi_absent "This system does not feature XHDI.\r\n\r\n"
 
 # endif /* _info_h */

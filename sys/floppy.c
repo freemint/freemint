@@ -39,9 +39,6 @@
 # include "global.h"
 # include "kmemory.h"
 # include "console.h"
-#ifdef NONBLOCKING_DMA
-# include "dma.h"
-#endif
 # include "floppy.h"
 
 # define flock			((short *) 0x43EL)
@@ -219,9 +216,6 @@ static void select(signed short dev, signed short side);
 static signed short set_track(signed short track, signed short rate);
 
 /* returns 1 if the timeout elapsed before the gpip changed */
-#ifdef NONBLOCKING_DMA
-void timeout_gpip();	/* delay in milliseconds */
-#endif
 static signed short old_timeout_gpip(signed long delay);	/* delay in milliseconds */
 #define TIMEOUT 1500L	 /* default one second and a half */
 
@@ -276,10 +270,6 @@ static unsigned char deselected;
 /* Pointer to FastRAM buffer if exists, otherwise 0 */
 int cookie_frb;
 
-#ifdef NONBLOCKING_DMA
-ulong	dma_channel;
-#endif
-
 
 /*==== hdv_init and hdv_boot ==============================================*/
 
@@ -306,10 +296,6 @@ void init_floppy(void)
 	floppies[1].rate = *seekrate;
 	flopini(0);
 	flopini(1);
-
-#ifdef NONBLOCKING_DMA
-	dma_channel = dma.get_channel();
-#endif
 }
 
 static void flopini(signed short dev)
@@ -365,29 +351,6 @@ signed long floppy_block_io(DI *di, int rwflag, void *buffer, ulong size, long l
 	return (signed long)floppy_rw(rwflag, (signed long)buffer, count, lrecno, floppies[di->drv].spt, floppies[di->drv].sides, di->drv);
 }
 
-
-#ifdef NONBLOCKING_DMA
-/* THIS NEEDS FIXING */
-static void floppy_interrupt(void)
-{
-	if((mfp->gpip & 0x20) == 0) dma.deblock(dma_channel,0);
-	dma.deblock(dma_channel,(void *)1);
-}
-
-static void floppy_interrupt_asm(void)
-{
-	__asm__ volatile
-	(
-		"movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)"
-		"bsr %0"
-		"movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2"
-		"rte"
-		: 			/* output register */
-		: "m"(floppy_interrupt)			/* input registers */
-		 			/* clobbered */
-	);
-}
-#endif
 
 long floppy_mediach(ushort drv)
 {
@@ -664,21 +627,13 @@ static signed short floprw(signed long buf, signed short rw, signed short dev, s
 	signed short err;
 	signed short status;
 	signed short timeout;
-#ifdef NONBLOCKING_DMA
-	void *int_vec;
-	MFP *mfp = MFP_BASE;
-	uchar old_ierb, old_imrb;
-#endif
 
 	if(dev < 0 || dev > 1) return ENODEV;	/* unknown disk */
-	
+
 //	if((rw == RW_WRITE) && (track == 0) && (sect == 1) && (side == 0)) {
 //		/* TODO, maybe media changed ? */
 //	}
-	
-#ifdef NONBLOCKING_DMA
-	dma.dma_start(dma_channel);
-#endif
+
 	floplock(dev);
 
 	select(dev, side);
@@ -693,18 +648,7 @@ static signed short floprw(signed long buf, signed short rw, signed short dev, s
 		set_fdc_reg(FDC_SR, sect);
 		set_dma_addr((ulong) buf);
 
-#ifdef NONBLOCKING_DMA
-		int_vec=(* 0x11C);	/* save interrupt vector */
-		(* 0x11C) = floppy_interrupt_asm;	/* install interrupt vector */
-	
-		old_ierb = mfp->ierb & 0x80;	/* get MFP status */
-		old_imrb = mfp->imrb & 0x80;
-	
-		mfp->ierb |= 0x80;
-		mfp->imrb |= 0x80;	/* setup MFP to run interrupt */
-#endif
-
-		if(rw == RW_READ) 
+		if(rw == RW_READ)
 		{
 			fdc_start_dma_read(count);
 			set_fdc_reg(FDC_CS, FDC_READ);
@@ -714,17 +658,8 @@ static signed short floprw(signed long buf, signed short rw, signed short dev, s
 			fdc_start_dma_write(count);
 			set_fdc_reg(FDC_CS, FDC_WRITE);
 		}
-		
-#ifdef NONBLOCKING_DMA
-		timeout = (signed short)dma.block(dma_channel, TIMEOUT, &timeout_gpip);
-	
-		mfp->ierb |= old_ierb;	/* restore MFP status */
-		mfp->imrb |= old_imrb;
-	
-		(* 0x11C)=int_vec;	/* restore interrupt vector */
-#else
+
 		timeout = old_timeout_gpip(TIMEOUT);
-#endif
 		
 		if(timeout)
 		{
@@ -768,9 +703,6 @@ static signed short floprw(signed long buf, signed short rw, signed short dev, s
 		}
 	}
 	flopunlk(dev);
-#ifdef NONBLOCKING_DMA
-	dma.dma_end(dma_channel);
-#endif
 	return err;
 }
 
@@ -959,16 +891,6 @@ static signed short set_track(signed short track, signed short rate)
 }
 
 /* returns 1 if the timeout (milliseconds) elapsed before gpip went low */
-#ifdef NONBLOCKING_DMA
-void timeout_gpip() /* for dma transfers */
-{
-	MFP *mfp = MFP_BASE;
-
-	if((mfp->gpip & 0x20) == 0) dma.deblock(dma_channel,0);
-	dma.deblock(dma_channel,(void *)1);
-}
-#endif
-
 static signed short old_timeout_gpip(signed long delay) /* for blocking transfers */
 {
 	MFP *mfp = MFP_BASE;

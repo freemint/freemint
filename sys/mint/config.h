@@ -51,12 +51,6 @@
 # define WITH_KERNFS 1
 
 /*
- * activating non blocking xfs extension
- * highly alpha at the moment!!!
- */
-# undef NONBLOCKING_DMA
-
-/*
  * add /dev/random and /dev/urandom
  */
 

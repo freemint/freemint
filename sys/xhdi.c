@@ -138,22 +138,10 @@ XHDI_init (void)
 		tmp = sys_XHDOSLimits(XH_DL_BFLAGS, 0);
 		XHDOSLimits(XH_DL_BFLAGS, tmp);
 
-# ifdef NONBLOCKING_DMA
-		r = XHMiNTInfo (XH_MI_SETKERINFO, &kernelinfo);
-
 		boot_printf (MSG_xhdi_present,
-			XHDI_installed >> 8, XHDI_installed & 0xff,
-			r ? MSG_kerinfo_rejected : MSG_kerinfo_accepted
+			XHDI_installed >> 8, XHDI_installed & 0xff
 		);
 
-# else
-		boot_printf (MSG_xhdi_present,
-			XHDI_installed >> 8, XHDI_installed & 0xff,
-			MSG_kerinfo_unused
-		);
-
-# endif
-		
 		*((long *) 0x4c2L) |= XHDrvMap ();
 		
 		set_toscookie (COOKIE_XHDI, (long) emu_xhdi);

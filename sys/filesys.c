@@ -70,71 +70,12 @@ xfs_dismiss (FILESYS *fs);
 static void
 xfs_blocking_init (FILESYS *fs)
 {
-# ifdef NONBLOCKING_DMA
-	if (fs->fsflags & FS_EXT_2)
-	{
-		if (!(fs->fsflags & FS_REENTRANT_L1))
-		{
-			fs->block = xfs_block_level_0;
-			fs->deblock = xfs_deblock_level_0;
-		}
-		else if (!(fs->fsflags & FS_REENTRANT_L2))
-		{
-			fs->block = xfs_block_level_1;
-			fs->deblock = xfs_deblock_level_1;
-		}
-		else
-		{
-			fs->block = NULL;
-			fs->deblock = NULL;
-		}
-	}
-# endif
 }
 
 INLINE long
 xfs_sync (FILESYS *fs)
 {
-# ifdef NONBLOCKING_DMA
-	if (!(fs->fsflags & FS_REENTRANT_L2))
-	{
-		register long r;
-
-		if ((fs->fsflags & FS_EXT_2) && (fs->fsflags & FS_REENTRANT_L1))
-		{
-			while (fs->lock)
-			{
-				fs->sleepers++;
-				DMA_DEBUG (("special sync: sleep on %lx, %i (%s, %i)", fs, "xfs_sync", fs->sleepers));
-				sleep (IO_Q, (long) fs);
-				fs->sleepers--;
-			}
-
-			fs->lock |= 0xffffffff;
-		}
-		else
-			xfs_lock (fs, 0, "xfs_sync");
-
-		r = (*fs->sync)();
-
-		if ((fs->fsflags & FS_EXT_2) && (fs->fsflags & FS_REENTRANT_L1))
-		{
-			fs->lock = 0;
-
-			if (fs->sleepers)
-			{
-				DMA_DEBUG (("special sync: wake on %lx (%s, %i)", fs, "xfs_sync", fs->sleepers));
-				wake (IO_Q, (long) fs);
-			}
-		}
-		else
-			xfs_unlock (fs, 0, "xfs_sync");
-
-		return r;
-	}
-	else
-# endif
-		return (*fs->sync)();
+	return (*fs->sync)();
 }
 
 FILESYS *active_fs;
