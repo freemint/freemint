@@ -11,6 +11,7 @@ then
 	. "$SCRIPT_DIR/version.sh"
 
 	ARANYM="$SCRIPT_DIR/aranym"
+	export FVDI_DIR="$SCRIPT_DIR/fvdi"
 	export TERADESK_DIR="$SCRIPT_DIR/teradesk"
 	export BASH_DIR="$SCRIPT_DIR/bash"
 	export COREUTILS_DIR="$SCRIPT_DIR/coreutils"

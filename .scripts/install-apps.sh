@@ -18,6 +18,13 @@ do
 	wget -q -O temp.zip "$DOWNLOAD_DIR/${package}/${PACKAGE_VERSION}-${TEMP_CPU_TARGET}.zip" && unzip -q temp.zip && rm temp.zip
 done
 
+# fvdi is only needed for the ARAnyM bootable snapshot; archives are only
+# published for 000/020/v4e, so map ara (040) onto the 020 build.
+if [ "$CPU_TARGET" = "ara" ]
+then
+	wget -q -O temp.zip "$DOWNLOAD_DIR/fvdi/fvdi-latest-ft2.10.4-020.zip" && unzip -q temp.zip && rm temp.zip
+fi
+
 # teradesk is packaged differently
 for package in teradesk
 do
