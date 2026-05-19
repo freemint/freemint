@@ -2,7 +2,7 @@
 
 #include "mint/asmdefs.h"
 
-	.data
+	.text
 
 	.globl	SYM(patch_memset_purec)
 	.globl  SYM(call_stack_func)

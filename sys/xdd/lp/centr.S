@@ -37,10 +37,9 @@ SYM(new_centr_vector):
 | active long enough according to the standards
 |
 strobe_delay:
-	move.l	(sp)+,d0		| 1
 1:
 	nop				| 6
-	subq.l	#1,d0			| 1
+	subq.l	#1,d1			| 1
 	bne	1b			| 0 = 8 clocks at best
 	rts
 #endif
@@ -61,10 +60,8 @@ SYM(print_byte):
 	moveb	d0, a0@(2)		| and write the character
 
 #ifdef __mcoldfire__
-	move.l	d0,-(sp)
-	move.l	#21,-(sp)		| 773 ns according to my calculations
+	moveq	#22,d1			| was #21 (773ns) but now strobe_delay takes less time
 	bsr	strobe_delay		| ieee 1284 requires at least 750 ns
-	move.l	(sp)+,d0
 #endif
 
 	moveb	#14, a0@		| select port A
@@ -72,10 +69,8 @@ SYM(print_byte):
 	bclr	#5, d0
 	moveb	d0, a0@(2)		| strobe low
 #ifdef __mcoldfire__
-	move.l	d0,-(sp)
-	move.l	#21,-(sp)		| see above
+	moveq	#22,d1			| see above
 	bsr	strobe_delay
-	move.l	(sp)+,d0
 #else
 	nop
 	nop
