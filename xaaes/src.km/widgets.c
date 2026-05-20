@@ -4396,7 +4396,7 @@ set_toolbar_widget(int lock,
 	widg->start	= 0;
 	wind->tool	= widg;
 
-	widg->m.statusmask = XAWS_SHADED;
+	widg->m.statusmask = XAWS_SHADED | XAWS_ICONIFIED;
 	widg->m.r.pos_in_row = LT;
 	widg->m.r.tp = TOOLBAR;
 	widg->m.r.xaw_idx = XAW_TOOLBAR;

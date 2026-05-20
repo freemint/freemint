@@ -123,6 +123,7 @@ usertoolbar_installed(struct xa_window *wind)
 	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 	if ( (wind->active_widgets & TOOLBAR) &&
 		 !(widg->m.properties & WIP_NOTEXT) &&
+		 !(wind->window_status & widg->m.statusmask) &&
 		 wdg_is_inst(widg))
 		return widg;
 	else
