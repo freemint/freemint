@@ -656,6 +656,7 @@ XA_move_event(int lock, const struct moose_data *md)
 			{
 				if (/*   cfg.menu_behave != PUSH && */
 				    !update_locked() &&
+				    !mouse_locked() &&
 				     is_rect(md->x, md->y, aesp->em.flags & 1, &aesp->em.m1))
 				{
 					XA_WIDGET *widg = get_widget(root_window, XAW_MENU);
