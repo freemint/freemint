@@ -5174,6 +5174,9 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	UNIT *u;
 	long r;
 
+	ushort xhdi_ftype;
+	int xhdi_explicit;
+
 	FAT_DEBUG (("get_bpb: enter (drv = %i)", di->drv));
 
 
@@ -5311,6 +5314,13 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 */
 		return EMEDIUMTYPE;
 
+	/* Remember the XHDI-derived FAT type and whether the partition has
+	 * an explicit XHDI ID; used below to warn when the BPB disagrees with
+	 * the ID written by the user's partition tool.
+	 */
+	xhdi_ftype = xbpb->ftype;
+	xhdi_explicit = !(di->id[0] == '\0' && di->id[1] == '\0' && di->id[2] == '\0');
+
 	/* Don't trust only the partition ID to identify the FAT's type,
 	 * "Logical sectors per FAT" field in the BPB (0x0B offset) must be
 	 * 0 in a FAT32 partition. We check for 0 so endiannes doesn't matter.
@@ -5404,6 +5414,33 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	{
 		xbpb->ftype = FAT_TYPE_16;
 		fvi = (void *) (u->data + sizeof (*fbs));
+	}
+
+	/* If the partition ID and the BPB disagree on the FAT type, the
+	 * user's partition tool wrote inconsistent metadata. We trust the
+	 * BPB (matches Windows/Linux) but warn so the mismatch is visible.
+	 */
+	if (xhdi_explicit && xbpb->ftype != xhdi_ftype)
+	{
+		const char *id_name = xhdi_ftype == FAT_TYPE_32 ? "FAT32" :
+		                      xhdi_ftype == FAT_TYPE_12 ? "FAT12" : "FAT16";
+		const char *bpb_name = xbpb->ftype == FAT_TYPE_32 ? "FAT32" :
+		                       xbpb->ftype == FAT_TYPE_12 ? "FAT12" : "FAT16";
+
+		if (di->id[0] == '\0' && di->id[1] == 'D')
+		{
+			FAT_ALERT (("FATFS [%c]: partition ID (DOS 0x%02x) implies %s but BPB says %s; using BPB",
+				DriveToLetter(di->drv),
+				(unsigned char) di->id[2],
+				id_name, bpb_name));
+		}
+		else
+		{
+			FAT_ALERT (("FATFS [%c]: partition ID (%c%c%c) implies %s but BPB says %s; using BPB",
+				DriveToLetter(di->drv),
+				di->id[0], di->id[1], di->id[2],
+				id_name, bpb_name));
+		}
 	}
 
 	if (xbpb->ftype == FAT_TYPE_32)
