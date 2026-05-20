@@ -182,7 +182,7 @@ sys_XHDOSLimits (ushort which, ulong limit)
 			
 			/* maximal number of FATs */
 			case XH_DL_MAXFAT:
-				return 4L;
+				return 2L;
 			
 			/* sectors per cluster minimal */
 			case XH_DL_MINSPC:

@@ -2076,8 +2076,8 @@ fixcl12 (long cluster, const ushort dev, long next)
 
 		FAT_DEBUG (("fixcl12: (1) start = %li, sectors = %li", sector, sectors));
 
-		/* update FAT#2 */
-		u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev) * sectors);
+		/* update FAT#1 */
+		u = bio_fat_read (dev, sector, SECSIZE (dev) * sectors);
 		if (u)
 		{
 			register long newcl;
@@ -2104,8 +2104,8 @@ fixcl12 (long cluster, const ushort dev, long next)
 			{
 				FAT_DEBUG (("fixcl12: (2) start = %li, sectors = %li", sector + FATSIZE (dev), sectors));
 
-				/* update FAT#1 */
-				u = bio_fat_read (dev, sector, SECSIZE (dev) * sectors);
+				/* update FAT#2 */
+				u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev) * sectors);
 				if (u)
 				{
 					/* write the entry to the second FAT */
@@ -2150,8 +2150,8 @@ fixcl16 (long cluster, const ushort dev, long next)
 
 		UNIT *u;
 
-		/* update FAT#2 */
-		u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev));
+		/* update FAT#1 */
+		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
 			/* write the entry to the first FAT */
@@ -2161,8 +2161,8 @@ fixcl16 (long cluster, const ushort dev, long next)
 
 			if (FAT2ON (dev))
 			{
-				/* update FAT#1 */
-				u = bio_fat_read (dev, sector, SECSIZE (dev));
+				/* update FAT#2 */
+				u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev));
 				if (u)
 				{
 					/* write the entry to the second FAT */
@@ -4913,8 +4913,8 @@ clean_flag16 (const ushort dev, ushort action)
 {
 	UNIT *u;
 
-	/* update FAT#2 */
-	u = bio_fat_read (dev, FATSTART (dev) + FATSIZE (dev), SECSIZE (dev));
+	/* update FAT#1 */
+	u = bio_fat_read (dev, FATSTART (dev), SECSIZE (dev));
 	if (u)
 	{
 		const int offset = 1; /* FAT entry 1 */
@@ -4946,8 +4946,8 @@ clean_flag16 (const ushort dev, ushort action)
 
 		if (FAT2ON (dev))
 		{
-			/* update FAT#1 */
-			u = bio_fat_read (dev, FATSTART (dev), SECSIZE (dev));
+			/* update FAT#2 */
+			u = bio_fat_read (dev, FATSTART (dev) + FATSIZE (dev), SECSIZE (dev));
 			if (u)
 			{
 				/* write the entry to the second FAT */
