@@ -1547,7 +1547,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		{
 			if (w != root_window)
 			{
-				if (wind_has_focus(w))
+				if (wind < 0 || wind_has_focus(w))
 				{
 					DIAG((D_w, client, " -- top window=%d, owner='%s' has focus", w->handle, w->owner->name));
 					o[1] = w->handle;
