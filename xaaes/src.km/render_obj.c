@@ -4877,6 +4877,19 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 		else if (ob->ob_flags & OF_EXIT)
 			thick--;
 
+		/* Use inward rendering for extended type 18 ("Exitbutton").
+		 * Negative depths cause draw_objc_bkg to grow the bounding box
+		 * outward before drawing the 3D border (AES 4.x behaviour) and
+		 * makes the button bulge into neighbouring objects. Flip the depths
+		 * positive so the border draws inside the resource-supplied
+		 * rectangle (MagiC behaviour). Maybe to be extended to other objects? */
+		if (((ob->ob_type >> 8) & 0xff) == 18)
+		{
+			d = -d;
+			d3t = -d3t;
+			thick = -thick;
+		}
+
 		draw_objc_bkg(wt, v, ct, NULL, DRAW_ALL | (fl3d ? DRAW_TEXTURE|ONLY_TEXTURE : 0), -1, -1, d, d3t, thick, 2, &r, &r, NULL);
 
 		if (text)
