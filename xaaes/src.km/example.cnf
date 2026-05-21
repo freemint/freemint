@@ -58,41 +58,10 @@
 #leave_top_border = 1
 
 #####################################################################
-# logfile <filename> (default xa_boot.log in the xaaes-startup-directory)
-#
-# set the name of the logfile
-# if empty ("") debug-output to file is disabled.
-#
-# examples:
-#
-#logfile = ""
-#logfile = ${BOOTDRIVE}:\xaaes.log
-#logfile = my.log
-
-#####################################################################
 # save_windows  = <bool>          (default is 'no')
 #
 # save XaAES-windows-setting when exiting XaAES
 # windows are saved in <XaAES-home>/xaaes.inf
-
-#####################################################################
-# loglvl <positive number> (default: 1 in snapshot, 0 in release)
-#
-# set verbosity of debug-output
-# the higher the more gets printed.
-# bit 1 (value 2) of loglvl causes all debug-output also to go to console.
-# A value of 0 disables debug-output
-#
-# examples:
-#
-# debug-output to file
-#loglvl = 1
-# debug-output to console
-#loglvl = 2
-# debug-output to console and file
-#loglvl = 3
-# no debug-output
-#loglvl = 0
 
 #####################################################################
 # focus <program>

@@ -494,14 +494,6 @@ kernel_key(int lock, struct rawkey *key)
 			toggle_menu(lock, -1);
 			return true;
 
-		case '+':
-			C.loglvl++;
-			return true;
-
-		case '-':
-			if( --C.loglvl < 0 )
-				C.loglvl = 0;
-			return true;
 		case ' ':
 			{
 				struct xa_window *wind;

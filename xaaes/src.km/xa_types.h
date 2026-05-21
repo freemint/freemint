@@ -2649,7 +2649,6 @@ struct common
 	struct xa_client	*do_widget_repeat_client;
 	int		 do_widget_repeat_lock;
 	struct proc *boot_focus;
-	short loglvl;
 	char bootlog_path[200];
 };
 

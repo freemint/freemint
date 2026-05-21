@@ -285,27 +285,6 @@ E.g. cancel = cancel,abbruch,annuler,avbryt,anuluj,afbryd,undo
 List of patterns that will be contained in the filter-menu of
 the fileselector.
 
-!item [LOGFILE <filename> (default /xaaes/xa_boot.log)] (!nl)
-Set the name of the logfile. If empty, debug-output to file is dis!-abled.
-   Examples:
-   !begin_itemize !compressed
-   !item logfile = ("")
-   !item logfile = C:\xaaes.log
-   !item logfile = my.log
-   !end_itemize
-
-!item [LOGLVL <positive number> (default: 1 in snapshot, 0 in release)] (!nl)
-Set verbosity of debug-output, the higher the more gets printed.
-   Bit 1 (value 2) of loglvl causes all debug-output also to go to console.
-   A value of 0 disables debug-output.
-   Examples:
-   !begin_itemize !compressed
-   !item loglvl = 1 : Debug-output to file
-   !item loglvl = 2 : Debug-output to console
-   !item loglvl = 3 : Debug-output to console and file
-   !item loglvl = 0 : No debug-output
-   !end_itemize
-
 !item [SAVE_WINDOWS  = <bool> (default is 'no')] (!nl)
 Save XaAES-windows settings when exiting XaAES.
 Windows are saved in file /xaaes/xaaes.inf.
@@ -1454,6 +1433,13 @@ Default search paths. Usually already set by mint.cnf or the system
 !item [SDMASTER]
  Shutdown master. If set to an existing program, it is executed when leaving
    XaAES by a hotkey. See Ctrl-Alt-Shortcuts
+
+!item [XAAES_LOGFILE]
+Full path of the boot/debug log file. Because the log is opened
+   before xaaes.cnf is read, this variable has to be set in mint.cnf,
+   before the line that launches xaloader.prg. If unset or empty, no
+   log file is written. (!nl)
+   E.g. setenv XAAES_LOGFILE ${SYSDIR}xaaes/xa_boot.log
 
 !end_blist
 

@@ -60,11 +60,6 @@ bootlog(short disp, const char *fmt, ...)
 	va_list args;
 	long l;
 	int lvl;
-	short dlvl = disp >> 1, llvl = C.loglvl;
-	disp = (disp & 1) | (C.loglvl & 2);
-
-	if( !disp && llvl <= dlvl )
-		return;
 
 	lvl = DEBUG_LEVEL;
 	DEBUG_LEVEL = 0;
@@ -73,18 +68,16 @@ bootlog(short disp, const char *fmt, ...)
 	l = vsprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
-	if( llvl > dlvl )
-	{
-		buf[l] = '\n';
+	buf[l] = '\n';
 #if GENERATE_DIAGS
-		if (D.debug_file)
-		{
-			kernel_write(D.debug_file, buf, l+1);
-		}
-#endif
-		write_bootlog(buf, l+1);
+	if (D.debug_file)
+	{
+		kernel_write(D.debug_file, buf, l+1);
 	}
-	if (disp)
+#endif
+	write_bootlog(buf, l+1);
+
+	if (disp & 1)
 	{
 		buf[l] = '\r';
 		buf[l+1] = '\n';
@@ -121,8 +114,7 @@ display(const char *fmt, ...)
 	}
 #endif
 #ifdef BOOTLOG
-	if( C.loglvl & 1 )
-		write_bootlog(buf, l+1);
+	write_bootlog(buf, l+1);
 #endif
 #if 1
 	buf[l] = '\r';
@@ -152,8 +144,7 @@ ndisplay(const char *fmt, ...)
 	}
 #endif
 #ifdef BOOTLOG
-	if( C.loglvl & 1 )
-		write_bootlog(buf, l);
+	write_bootlog(buf, l);
 #endif
 #if 1
 	buf[l] = '\0';

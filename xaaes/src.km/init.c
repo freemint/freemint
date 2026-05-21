@@ -351,7 +351,6 @@ long _cdecl init_km(struct kentry *k, const struct kernel_module *km) //const ch
 		goto error;
 	}
 
-	C.bootlog_path[0] = '\0';
 	get_drive_and_path(start_path, sizeof(start_path));
 
 	setup_xa_module_api();
@@ -363,11 +362,6 @@ again:
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
-#if XAAES_RELEASE
-	C.loglvl = 0;
-#else
-	C.loglvl = 1;
-#endif
 #if CHECK_STACK
 	stack_align = 0;
 #endif
@@ -377,10 +371,33 @@ again:
 
 	strcpy(C.start_path, start_path);
 #ifdef BOOTLOG
-	if (!C.bootlog_path[0])
+	/*
+	 * Read XAAES_LOGFILE from the loader's env directly.  init_env()
+	 * and the loader-env copy loop run later, so get_env() is not
+	 * available here yet.  km->b->p_env is NULL (the kernel module's
+	 * own basepage is zeroed in load_module), so go via curproc which
+	 * at this point is still the loader (xaloader.prg).
+	 */
 	{
-		strcpy(C.bootlog_path, C.start_path);
-		strcat(C.bootlog_path, "xa_boot.log");
+		const char *e = get_curproc()->p_mem->base->p_env;
+		static const char prefix[] = "XAAES_LOGFILE=";
+
+		if (e)
+		{
+			while (*e)
+			{
+				if (!strncmp(e, prefix, sizeof(prefix) - 1))
+				{
+					strncpy(C.bootlog_path, e + sizeof(prefix) - 1,
+						sizeof(C.bootlog_path) - 1);
+					C.bootlog_path[sizeof(C.bootlog_path) - 1] = '\0';
+					break;
+				}
+				while (*e)
+					e++;
+				e++;
+			}
+		}
 	}
 
 	if (first)

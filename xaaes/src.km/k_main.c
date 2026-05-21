@@ -2082,7 +2082,14 @@ k_exit(int wait)
 	k_shutdown();
 	if (wait)
 	{
-		display("XaAES: see %s - press any key to continue ...", C.bootlog_path);
+#ifdef BOOTLOG
+		if (C.bootlog_path[0])
+			display("XaAES: see %s - press any key to continue ...", C.bootlog_path);
+		else
+			display("XaAES: set XAAES_LOGFILE in mint.cnf to capture boot log - press any key to continue ...");
+#else
+		display("XaAES: press any key to continue ...");
+#endif
 		_c_conin();
 	}
 

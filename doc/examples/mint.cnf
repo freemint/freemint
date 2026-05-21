@@ -423,6 +423,12 @@ setenv TMPDIR u:/tmp
 # If MiNT is supposed to execute a GEM, you should specify the full
 # path and filename like that:
 
+# XaAES writes its boot/debug log to the file named by the
+# XAAES_LOGFILE environment variable.  It must be set here (before
+# xaloader.prg is launched) because the log is opened before
+# xaaes.cnf is read.  Leave it unset/empty to disable logging.
+setenv XAAES_LOGFILE ${SYSDIR}xaaes/xa_boot.log
+
 GEM=${SYSDIR}xaaes/xaloader.prg
 
 # You can also request MiNT to execute the TOS AES residing in ROM.

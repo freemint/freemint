@@ -84,8 +84,6 @@ static struct parser_item parser_tab[] =
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
 	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		       , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
-	{ "LOGFILE",               PI_R_T,     C.bootlog_path          , { dat: sizeof(C.bootlog_path)    } },
-	{ "LOGLVL",                PI_R_S,   & C.loglvl   },
 	{ "SAVE_WINDOWS",          PI_R_B,   & cfg.save_windows},
 	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },
 	{ "FOCUS",                 PI_R_T,     cfg.focus	             , { dat: sizeof(cfg.focus)   } },
