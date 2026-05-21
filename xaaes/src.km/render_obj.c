@@ -4908,12 +4908,34 @@ icon_characters(struct xa_vdi_settings *v, struct theme *theme, ICONBLK *iconblk
 		}
 		else
 		{
-			(*v->api->f_color)(v, (state & OS_SELECTED) ? G_BLACK : G_WHITE);
+			short text_fg, text_bg;
+
+			/* Text foreground comes from ib_char bits 12-15 and the
+			 * background from bits 8-11; swap them when the icon is
+			 * selected, mirroring d_g_icon. */
+			if (state & OS_SELECTED)
+			{
+				text_fg = (iconblk->ib_char >> 8) & 0x0f;
+				text_bg = (iconblk->ib_char >> 12) & 0x0f;
+			}
+			else
+			{
+				text_fg = (iconblk->ib_char >> 12) & 0x0f;
+				text_bg = (iconblk->ib_char >> 8) & 0x0f;
+			}
+
+			(*v->api->f_color)(v, text_bg);
 			(*v->api->f_interior)(v, FIS_SOLID);
 			v_bar(v->handle, pnt);
 
+			(*v->api->t_color)(v, text_fg);
+			/* The strip was just filled with text_bg by v_bar above;
+			 * draw the glyphs transparently so v_gtext's MD_REPLACE
+			 * does not repaint the character cells with G_WHITE. */
 			if (state & OS_SELECTED)
 				(*v->api->wr_mode)(v, MD_XOR);
+			else
+				(*v->api->wr_mode)(v, MD_TRANS);
 			if (state & OS_DISABLED)
 				(*v->api->t_effects)(v, FAINT);
 		}
@@ -4923,8 +4945,19 @@ icon_characters(struct xa_vdi_settings *v, struct theme *theme, ICONBLK *iconblk
 	if (lc != 0 && lc != ' ')
 	{
 		char ch[2];
+		short char_fg;
+
+		if (state & OS_SELECTED)
+			char_fg = (iconblk->ib_char >> 8) & 0x0f;
+		else
+			char_fg = (iconblk->ib_char >> 12) & 0x0f;
+
 		ch[0] = lc;
 		ch[1] = 0;
+		/* Draw the icon char over the existing background; MD_REPLACE
+		 * would clear a white rectangle behind it. */
+		(*v->api->wr_mode)(v, MD_TRANS);
+		(*v->api->t_color)(v, char_fg);
 		v_gtext(v->handle, icx + iconblk->ib_xchar, icy + iconblk->ib_ychar, ch);
 		/* Seemingly the ch is supposed to be relative to the image */
 	}
