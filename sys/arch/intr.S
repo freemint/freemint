@@ -627,12 +627,13 @@ SYM(newjvec):
 
 #ifndef NO_AKP_KEYBOARD
 	.globl	SYM(kbdvec_handler)
-	.globl	SYM(oldkeys)
+	.globl	SYM(old_kbdvec)
 	.globl	SYM(ikbd_scan)
 
 	dc.l	XBRA_MAGIC
 	dc.l	MINT_MAGIC
-SYM(oldkeys):	dc.l	0
+SYM(old_kbdvec):
+	dc.l	0
 	FUNC(kbdvec_handler)
 SYM(kbdvec_handler):
 #ifdef __mcoldfire__
@@ -671,8 +672,8 @@ SYM(kbdvec_handler):
 
 	FUNC(chain_oldkeys)
 SYM(chain_oldkeys):
-	move.l	SYM(oldkeys),d0
-	beq.s	chain_oldkeys_skip	// TOS 1.x: no chain target, no-op
+	move.l	SYM(old_kbdvec),d0
+	beq.s	chain_oldkeys_skip
 	movea.l	d0,a1			// chained vector address
 	move.w	4(sp),d0		// scancode (passed as short)
 	movea.l	SYM(kbd_iorec),a0	// iorec ptr in a0, per kbdvec ABI

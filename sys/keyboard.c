@@ -180,10 +180,11 @@ static	uchar last_key[4];	/* last pressed key */
  * auto-repeat keeps firing make codes for that key forever.
  *
  * Only effective on TOS 2.x+ (including CT60 TOS 2 and FireTOS) where
- * init_intr() XBRA-installs newkeys at the kbdvec and oldkeys holds the
- * chained vector. On TOS 1.x the syskey->ikbdsys is replaced wholesale,
- * oldkeys stays 0, and chain_oldkeys() no-ops -- we still clear our
- * bitmap but cannot synchronize the original ROM ikbdsys state.
+ * install_TOS_vectors() chains kbdvec_handler in at the kbdvec slot and
+ * old_kbdvec holds the chained vector. On TOS 1.x kbdvecs->ikbdsys is
+ * replaced wholesale, old_kbdvec stays 0, and chain_oldkeys() no-ops --
+ * we still clear our bitmap but cannot synchronize the original ROM
+ * ikbdsys state.
  */
 static	uchar keys_pressed[128];
 #endif

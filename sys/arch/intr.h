@@ -42,7 +42,7 @@ extern long old_resvec;
 extern long old_ikbd;
 
 /* old ikbd vector (other way) */
-extern long oldkeys;
+extern long old_kbdvec;
 
 /* BIOS disk vectors */
 extern long old_mediach, old_getbpb, old_rwabs;

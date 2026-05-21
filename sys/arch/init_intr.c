@@ -34,7 +34,6 @@
 
 /* structures for keyboard/MIDI interrupt vectors */
 KBDVEC *kbdvecs;
-static long old_kbdvec;
 static KBDVEC old_kbdvecs;
 
 long old_term;
