@@ -82,7 +82,6 @@ static struct parser_item parser_tab[] =
 	/* config variables */
 	{ "LAUNCHPATH",            PI_R_T,     cfg.launch_path       , { dat: sizeof(cfg.launch_path) } },
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
-	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		       , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
 	{ "SAVE_WINDOWS",          PI_R_B,   & cfg.save_windows},
 	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },

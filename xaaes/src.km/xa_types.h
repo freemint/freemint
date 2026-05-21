@@ -2559,7 +2559,6 @@ struct common
 	bool f_phys;	/* using physical wk */
 	unsigned long gdos_version;
 
-	void (*reschange)(int lock, struct xa_client *client, bool open);
 	struct kernkey_entry *kernkeys;
 
 	short AESpid;			/* The AES's MiNT process ID */
@@ -2690,7 +2689,6 @@ struct config
 
 	Path launch_path;		/* Initial path for launcher */
 	Path scrap_path;		/* Path to the scrap directory */
-	Path snapper;				/* if !0 this is launched on C-A-D */
 	Path acc_path;			/* Path to desk accessory directory */
 
 	Path widg_name;			/* Path to XaAES widget rsc */

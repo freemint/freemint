@@ -486,10 +486,6 @@ iBlock(struct xa_client *client)
 	 */
 	if (check_queued_events(client))
 	{
-		if (a->intout[0] & MU_MESAG)
-		{
-			CHlp_aesmsg(client);
-		}
 		a->addrin[0] = (long)a->msg;
 		client->usr_evnt = 0;
 		client->waiting_for = XAWAIT_MULTI|MU_MESAG;
@@ -542,10 +538,6 @@ iBlock(struct xa_client *client)
 
 		if (check_queued_events(client))
 		{
-			if (a->intout[0] & MU_MESAG)
-			{
-				CHlp_aesmsg(client);
-			}
 			a->addrin[0] = (long)a->msg;
 			client->usr_evnt = 0;
 			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
@@ -1670,7 +1662,6 @@ k_main(void *dummy)
 	{
 		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES, true );
 	}
-	C.reschange = NULL;
 	{
 	short x;
 	if( mt_appl_init(my_global_aes) != -1 )

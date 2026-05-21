@@ -520,23 +520,6 @@ msgstr "[2][Arresto sistema][Annulla|OK]"
 msgid  "[2][XaAES had a problem][Continue|Halt]"
 msgstr "[2][XaAES ha avuto un problema][Continua|Arresta]"
 
-#: SNAP_ERR1:50
-#, c-format
-msgid  "[1][Snapper could not save snap!|ERROR: %d][OK]"
-msgstr "[1][Impossibile salvare l'immagine!|ERRORE: %d][OK]"
-
-#: SNAP_ERR2:51
-msgid  "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]"
-msgstr "[1][Impossibile catturare la|finestra superiore. Si trova|parzialmente fuori dallo schermo!][OK]"
-
-#: SNAP_ERR3:52
-msgid  "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]"
-msgstr "[1][Processo 'xaaesnap' non trovato.|Avvia 'xaaesnap.prg' e prova ancora|o definisci lo snapshot in xaaes.cnf][OK]"
-
-#: SDALERT:53
-msgid  "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]"
-msgstr "[2][Cosa vuoi catturare?][Blocco|Schermo intero|Finestra superiore|Annulla]"
-
 #: AL_RSCSZ:54
 #, c-format
 msgid  "[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]"

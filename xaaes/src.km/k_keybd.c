@@ -332,8 +332,6 @@ do_kbd_win( int lock, struct xa_window *wind, GRECT *r, int md)
 |----------------------+-----------------------------------------------------------------------------------------------------|
 |CTRL+ALT+A            |Terminates all applications (A list of exceptions can be specified)                                  |
 |----------------------+-----------------------------------------------------------------------------------------------------|
-|CTRL+ALT+D            |Open the screenshot dialog (XAAESNAP.PRG is required. See 6.6.2)                                     |
-|----------------------+-----------------------------------------------------------------------------------------------------|
 |CTRL+ALT+H            |Halt the system                                                                                      |
 |----------------------+-----------------------------------------------------------------------------------------------------|
 |CTRL+ALT+L            |Open task manager                                                                                    |
@@ -342,7 +340,7 @@ do_kbd_win( int lock, struct xa_window *wind, GRECT *r, int md)
 |----------------------+-----------------------------------------------------------------------------------------------------|
 |CTRL+ALT+Q            |Quit XaAES                                                                                           |
 |----------------------+-----------------------------------------------------------------------------------------------------|
-|CTRL+ALT+R            |Change resolution                                                                                    |
+|CTRL+ALT+R            |Attempt to recover a hung system                                                                     |
 |----------------------+-----------------------------------------------------------------------------------------------------|
 |CTRL+ALT+V            |Unhide all applications                                                                              |
 |----------------------+-----------------------------------------------------------------------------------------------------|
@@ -546,21 +544,8 @@ kernel_key(int lock, struct rawkey *key)
 					cfg.menu_bar = -1;
 			}
 			return true;
-#if GENERATE_DIAGS == 0
-		case 'D':	/* screen-dump */
-			post_cevent(C.Hlp, ceExecfunc, screen_dump, NULL, 1, 0, NULL,NULL);
-			return true;
-#endif
 		case 'R':				/* attempt to recover a hung system */
-			if ((key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
-			{
-				if (C.reschange )
-					post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 1,0, NULL, NULL);
-			}
-			else
-			{
-				recover();
-			}
+			recover();
 			return true;
 
 		case 'L':				/* open the task manager */

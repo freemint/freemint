@@ -806,11 +806,6 @@ accpath   = ${BOOTDRIVE}:\
 launchpath  = u:\opt\GEM
 
 #####################################################################
-# define external snapshot-program to be executed if xaaesnap is not loaded
-#
-#snapshot=u:/usr/local/bin/snapshot
-
-#####################################################################
 # widgets  = <file>
 # resource = <file>
 #

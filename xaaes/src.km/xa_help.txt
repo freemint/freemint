@@ -32,8 +32,6 @@
 A             Terminates all applications (list of
               exceptions in xaaes.cnf)
 B             Open System/Log-window
-D             Open the screenshot dialog
-              (XAAESNAP.PRG is required)
 E             Open windows-submenu
 L             Open task-manager
 SHIFT+L       Load Config

@@ -520,23 +520,6 @@ msgstr "[2][Arrêter le système][Annuler|OK]"
 msgid  "[2][XaAES had a problem][Continue|Halt]"
 msgstr "[2][XaAES a rencontré un problème][Continuer|Arrêter]"
 
-#: SNAP_ERR1:50
-#, c-format
-msgid  "[1][Snapper could not save snap!|ERROR: %d][OK]"
-msgstr "[1][Impossible de sauver l'image !|ERROR: %d][OK]"
-
-#: SNAP_ERR2:51
-msgid  "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]"
-msgstr "[1][Impossible de capturer la|fenêtre supérieure. Une partie|se trouve hors de l'écran !][OK]"
-
-#: SNAP_ERR3:52
-msgid  "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]"
-msgstr "[1][Programme 'xaaesnap' non|trouvé. Lancer 'xaaesnap.prg'|et réessayez ou déclarez un|programme dans xaaes.cnf][OK]"
-
-#: SDALERT:53
-msgid  "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]"
-msgstr "[2][Quelle partie capturer ?][Région|Tout l'écran|Fenêtre supérieure|Annuler]"
-
 #: AL_RSCSZ:54
 #, c-format
 msgid  "[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]"

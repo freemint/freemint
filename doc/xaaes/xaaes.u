@@ -697,15 +697,6 @@ Set the location that XaAES will try to load accessories from. When ACCPATH
 
 !begin_description
 
-!label snapshot
-!item [SNAPSHOT	<character-sequence>] (!nl)
-Define a snapshot program or screen grabber. The external snapshot program
-   is called with the arguments: ' 0 T 1 [x y w h] ' where T=0: full screen and
-   T=2: top window. (!nl)
-   If x, y, w, h are provided, this rectangle should be snapped. If XaAESSnap
-   is not loaded, the here defined program is called, if present.
-   E.g. snapshot = c:\apps\snapshot.prg
-
 !item [HELPSERVER <comma-separated string-list>] (!nl)
 Help file formats and where to find the program you want to handle them.
    This variable may be defined more than once to allow different programs for
@@ -1002,8 +993,6 @@ selected language.
 !item CTRL + ALT + B : Open System window
 
 !item CTRL + ALT + E : Open window sub menu
-
-!item CTRL + ALT + D : Open the screenshot dialog - see snapshot config option
 
 !item CTRL + ALT + F , CTRL + ALT + L : Open or refresh task-manager
 
