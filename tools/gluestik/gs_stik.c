@@ -96,6 +96,21 @@ static int flags [64] =
 
 #define UNUSED(x) ((void)(x))
 
+/*
+ * Trampolines whose body is just "return f(p.x);" let GCC -O2 turn the
+ * call into a sibling jump and reuse the caller's argument slot. The
+ * struct-by-value ABI here makes that slot 8 bytes wide on the GCC side,
+ * but non-GCC STiK clients (Pure C, GFA, ...) push only int16 (2 bytes)
+ * via the macros in transprt.h. The sibcall's 4-byte argument writeback
+ * then stomps two bytes of the caller's stack frame. Suppress sibcall
+ * on the affected trampolines.
+ */
+#if defined(__GNUC__) && TPL_STRUCT_ARGS
+#define NO_SIBCALL __attribute__((optimize("no-optimize-sibling-calls")))
+#else
+#define NO_SIBCALL
+#endif
+
 
 #if TPL_STRUCT_ARGS
 static void * __CDECL do_KRmalloc (struct KRmalloc_param p)
@@ -116,7 +131,7 @@ static void __CDECL do_KRfree (void *mem)
 }
 
 #if TPL_STRUCT_ARGS
-static int32 __CDECL do_KRgetfree (struct KRgetfree_param p)
+static int32 __CDECL NO_SIBCALL do_KRgetfree (struct KRgetfree_param p)
 #else
 static int32 __CDECL do_KRgetfree (int16 flag)
 #endif
@@ -135,7 +150,7 @@ static void *__CDECL do_KRrealloc (void *mem, int32 newsize)
 
 
 #if TPL_STRUCT_ARGS
-const char *__CDECL do_get_err_text (struct get_err_text_param p)
+const char *__CDECL NO_SIBCALL do_get_err_text (struct get_err_text_param p)
 #else
 const char *__CDECL do_get_err_text (int16 code)
 #endif
@@ -384,7 +399,7 @@ static int16 __CDECL do_CNget_char (int16 fd)
 }
 
 #if TPL_STRUCT_ARGS
-static NDB * __CDECL do_CNget_NDB (struct CNget_NDB_param p)
+static NDB * __CDECL NO_SIBCALL do_CNget_NDB (struct CNget_NDB_param p)
 #else
 static NDB * __CDECL do_CNget_NDB (int16 fd)
 #endif
