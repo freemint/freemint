@@ -348,7 +348,7 @@ kern_get_loadavg (SIZEBUF **buffer, const struct proc *p)
 			running++;
 	}
 
-	info->len = ksprintf (info->buf, len, "%lu.%03lu %lu.%03lu %lu.%03lu %d/%d %d\n",
+	info->len = ksprintf (info->buf, len, "%lu.%02lu %lu.%02lu %lu.%02lu %d/%d %d\n",
 			      LOAD_INT (avenrun[0]), LOAD_FRAC (avenrun[0]),
 			      LOAD_INT (avenrun[1]), LOAD_FRAC (avenrun[1]),
 			      LOAD_INT (avenrun[2]), LOAD_FRAC (avenrun[2]),
