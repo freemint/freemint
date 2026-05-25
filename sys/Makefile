@@ -109,12 +109,22 @@ CFLAGS-$(1)-info.c = -I$(srcdir)/.compile_$(1)
 
 .compile_$(1)/info.o: .compile_$(1)/cdef.h buildinfo/build.h
 
-$$(arch_$(1)):
+$$(arch_$(1)): FORCE
 	$(MAKE) -C arch $(1)
 
 endef
 
-xfs/hostfs/.compile_ara/hostfs.a:
+# FORCE prerequisite on subdir-built file targets below (libarch.a,
+# libkern*.a, hostfs.a). Without it, make sees the .a/.o already exists,
+# has no prereqs in this Makefile, considers it up-to-date, and skips
+# the recursive $(MAKE) -- so changes inside arch/, libkern/, xfs/hostfs/
+# go undetected by `make <kernel-target>`. With FORCE the sub-make always
+# runs; the .a is only re-touched when its own sources actually changed,
+# so downstream link rules still fire only when needed.
+.PHONY: FORCE
+FORCE:
+
+xfs/hostfs/.compile_ara/hostfs.a: FORCE
 	$(MAKE) -C xfs/hostfs ara
 
 buildinfo/build.h: $(srcdir)/buildinfo/mkbuild
@@ -124,7 +134,7 @@ $(srcdir)/buildinfo/mkbuild:
 	$(MAKE) -C $(srcdir)/buildinfo
 
 define LIBKERN_TEMPLATE
-$(top_srcdir)/libkern/libkern$(1).a:
+$(top_srcdir)/libkern/libkern$(1).a: FORCE
 	$(MAKE) -C $(top_srcdir)/libkern libkern$(1).a
 endef
 
