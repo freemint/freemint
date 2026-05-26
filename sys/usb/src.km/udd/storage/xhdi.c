@@ -498,7 +498,9 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 
 	/* mass storage logical device number in the USB bus */
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(major);
-	if (!storage_dev_desc)
+	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
+		return ENODEV;
+	if (minor >= storage_dev_desc->num_luns)
 		return ENODEV;
 
 	if (do_eject == 1)
@@ -618,8 +620,12 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 
 	short dev = MAJOR_TO_DEV(major);
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
-	if (!storage_dev_desc)
+	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
+	if (minor >= storage_dev_desc->num_luns)
+		return ENODEV;
+	if (!storage_dev_desc->usb_block_desc[minor]->ready)
+		return EBUSY;
 
 	if (blocksize) {
 		*blocksize = storage_dev_desc->usb_block_desc[minor]->blksz;
@@ -682,8 +688,12 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 
 	short dev = MAJOR_TO_DEV(major);
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
-	if (!storage_dev_desc)
+	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
+	if (minor >= storage_dev_desc->num_luns)
+		return ENODEV;
+	if (!storage_dev_desc->usb_block_desc[minor]->ready)
+		return EBUSY;
 
 	*blocks = storage_dev_desc->usb_block_desc[minor]->lba;
 	*blocksize = storage_dev_desc->usb_block_desc[minor]->blksz;
@@ -717,8 +727,12 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	/* device number in the USB bus */
 	short dev = MAJOR_TO_DEV(major);
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
-	if (!storage_dev_desc)
+	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
+	if (minor >= storage_dev_desc->num_luns)
+		return ENODEV;
+	if (!storage_dev_desc->usb_block_desc[minor]->ready)
+		return EBUSY;
 
 	if (rw & 0x0001) {
 		ret = usb_stor_write(storage_dev_desc->usb_block_desc[minor]->global_lun_id, sector, (long)count, buf);
