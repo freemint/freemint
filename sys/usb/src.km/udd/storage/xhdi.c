@@ -497,7 +497,7 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	}
 
 	/* mass storage logical device number in the USB bus */
-	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(major);
+	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(MAJOR_TO_DEV(major));
 	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
 	if (minor >= storage_dev_desc->num_luns)
