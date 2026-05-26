@@ -718,9 +718,6 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		}
 	}
 
-	if (minor > MAX_LUN_NUM_PER_DEV)
-		return ENODEV;
-
 	if (!count)
 		return EERROR;
 
