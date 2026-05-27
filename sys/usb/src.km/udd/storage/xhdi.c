@@ -500,7 +500,7 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(MAJOR_TO_DEV(major));
 	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
-	if (minor >= storage_dev_desc->num_luns)
+	if (minor > storage_dev_desc->num_luns)
 		return ENODEV;
 
 	if (do_eject == 1)
@@ -622,7 +622,7 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
 	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
-	if (minor >= storage_dev_desc->num_luns)
+	if (minor > storage_dev_desc->num_luns)
 		return ENODEV;
 	if (!storage_dev_desc->usb_block_desc[minor]->ready)
 		return EBUSY;
@@ -690,7 +690,7 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
 	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
-	if (minor >= storage_dev_desc->num_luns)
+	if (minor > storage_dev_desc->num_luns)
 		return ENODEV;
 	if (!storage_dev_desc->usb_block_desc[minor]->ready)
 		return EBUSY;
@@ -726,7 +726,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 	struct mass_storage_dev *storage_dev_desc = usb_stor_get_dev_desc(dev);
 	if (!storage_dev_desc || storage_dev_desc->target == 0xff)
 		return ENODEV;
-	if (minor >= storage_dev_desc->num_luns)
+	if (minor > storage_dev_desc->num_luns)
 		return ENODEV;
 	if (!storage_dev_desc->usb_block_desc[minor]->ready)
 		return EBUSY;
