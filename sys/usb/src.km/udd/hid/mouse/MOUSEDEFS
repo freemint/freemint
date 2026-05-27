@@ -26,18 +26,6 @@ UDDTARGET_02060 = mouse.udd
 USBDEFS_02060 =
 LDEXTRA_02060 = $(LDEXTRA_udd)
 
-UDDTARGET_030 = mouse.udd
-USBDEFS_030 =
-LDEXTRA_030 = $(LDEXTRA_udd)
-
-UDDTARGET_040 = mouse.udd
-USBDEFS_040 =
-LDEXTRA_040 = $(LDEXTRA_udd)
-
-UDDTARGET_060 = mouse.udd
-USBDEFS_060 =
-LDEXTRA_060 = $(LDEXTRA_udd)
-
 UDDTARGET_col = mouse.udd
 USBDEFS_col = -DCOLDFIRE
 LDEXTRA_col = $(LDEXTRA_udd)
@@ -45,4 +33,4 @@ LDEXTRA_col = $(LDEXTRA_udd)
 #
 # all default targets
 #
-mousetargets = 02060 030 040 060 deb 000 col prg
+mousetargets = 02060 deb 000 col prg

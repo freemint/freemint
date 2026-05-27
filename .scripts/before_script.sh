@@ -21,7 +21,7 @@ then
 	TEMP_CPU_TARGET=""
 elif [ "$CPU_TARGET" = "ara" ]
 then
-	TEMP_CPU_TARGET="040"
+	TEMP_CPU_TARGET="02060"
 fi
 
 # limit building to selected CPU targets

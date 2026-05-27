@@ -25,14 +25,23 @@ then
 
 	mkdir -p "${DEPLOY_DIR}"
 
+	# bootable archives (VERSIONED set, e.g. -st_ste, -tt_falcon_clones,
+	# -firebee, -aranym) are CPU-agnostic in name; CPU builds keep the
+	# CPU indicator.
+	if [ -n "${VERSIONED+x}" ]
+	then
+		ARCHIVE_NAME="${PROJECT_NAME}-${LONG_VERSION}${VERSIONED}.zip"
+		LATEST_NAME="${PROJECT_NAME}-latest${VERSIONED}.zip"
+	else
+		ARCHIVE_NAME="${PROJECT_NAME}-${LONG_VERSION}-${CPU_TARGET}.zip"
+		LATEST_NAME="${PROJECT_NAME}-latest-${CPU_TARGET}.zip"
+	fi
 	if [ "$CPU_TARGET" = "ara" ]
 	then
 		make
 		DST="${TMP}/aranym-${SHORT_VERSION}"
 		"$SCRIPT_DIR/prepare-aranym.sh" "${PWD}" "${DST}" "${SHORT_VERSION}" "${ARANYM}"
 		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;
-		ARCHIVE_NAME="${PROJECT_NAME}-${LONG_VERSION}-040${VERSIONED}.zip"
-		LATEST_NAME="${PROJECT_NAME}-latest-040${VERSIONED}.zip"
 		cd "${DST}/.." && zip -r -9 "${DEPLOY_DIR}/${ARCHIVE_NAME}" "$(basename ${DST})" && cd -
 	elif [ "$CPU_TARGET" = "prg" ]
 	then
@@ -49,8 +58,6 @@ then
 		DST="${TMP}/mint-${SHORT_VERSION}-${CPU_TARGET}"
 		"$SCRIPT_DIR/prepare-snapshot.sh" "${PWD}" "${DST}" "${SHORT_VERSION}" "${SHORT_ID}"
 		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;
-		ARCHIVE_NAME="${PROJECT_NAME}-${LONG_VERSION}-${CPU_TARGET}${VERSIONED}.zip"
-		LATEST_NAME="${PROJECT_NAME}-latest-${CPU_TARGET}${VERSIONED}.zip"
 		cd "${DST}" && zip -r -9 "${DEPLOY_DIR}/${ARCHIVE_NAME}" * && cd -
 	fi
 else

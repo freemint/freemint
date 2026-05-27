@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-dummytargets = 02060 030 040 060 deb 000 col
+dummytargets = 02060 deb 000 col
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES

@@ -3,12 +3,9 @@
 if [ "$CPU_TARGET" = "prg" ]
 then
 	NETUSBEE_TARGETS="prg prg_000"
-elif [ "$CPU_TARGET" = "col" ]
+elif [ "$CPU_TARGET" = "col" ] || [ "$CPU_TARGET" = "ara" ]
 then
 	NETUSBEE_TARGETS=""
-elif [ "$CPU_TARGET" = "ara" ]
-then
-	NETUSBEE_TARGETS="040"
 else
 	NETUSBEE_TARGETS="$CPU_TARGET"
 fi

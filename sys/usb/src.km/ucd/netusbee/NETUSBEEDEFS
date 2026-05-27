@@ -28,18 +28,6 @@ UCDTARGET_02060 = netusbee.ucd
 USBDEFS_02060 =
 LDEXTRA_02060 = $(LDEXTRA_ucd)
 
-UCDTARGET_030 = netusbee.ucd
-USBDEFS_030 =
-LDEXTRA_030 = $(LDEXTRA_ucd)
-
-UCDTARGET_040 = netusbee.ucd
-USBDEFS_040 =
-LDEXTRA_040 = $(LDEXTRA_ucd)
-
-UCDTARGET_060 = netusbee.ucd
-USBDEFS_060 =
-LDEXTRA_060 = $(LDEXTRA_ucd)
-
 UCDTARGET_col = netusbee.ucd
 USBDEFS_col = -DCOLDFIRE
 LDEXTRA_col = $(LDEXTRA_ucd)
@@ -47,4 +35,4 @@ LDEXTRA_col = $(LDEXTRA_ucd)
 #
 # all default targets
 #
-netusbeetargets = 02060 030 040 060 deb 000 prg prg_000 #col
+netusbeetargets = 02060 deb 000 prg prg_000 #col

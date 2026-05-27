@@ -24,18 +24,6 @@ UCDTARGET_02060 = unicorn.ucd
 USBDEFS_02060 =
 LDEXTRA_02060 = $(LDEXTRA_ucd)
 
-UCDTARGET_030 = unicorn.ucd
-USBDEFS_030 =
-LDEXTRA_030 = $(LDEXTRA_ucd)
-
-UCDTARGET_040 = unicorn.ucd
-USBDEFS_040 =
-LDEXTRA_040 = $(LDEXTRA_ucd)
-
-UCDTARGET_060 = unicorn.ucd
-USBDEFS_060 =
-LDEXTRA_060 = $(LDEXTRA_ucd)
-
 UCDTARGET_col = unicorn.ucd
 USBDEFS_col = -DCOLDFIRE
 LDEXTRA_col = $(LDEXTRA_ucd)
@@ -43,4 +31,4 @@ LDEXTRA_col = $(LDEXTRA_ucd)
 #
 # all default targets
 #
-unicorntargets = 02060 030 040 060 deb 000 col prg
+unicorntargets = 02060 deb 000 col prg

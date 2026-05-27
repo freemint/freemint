@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-nfexectargets = 000 02060 030 040 060 deb col
+nfexectargets = 000 02060 deb
 
 NFEXECDEFS_deb = -DDEV_DEBUG
 

@@ -14,19 +14,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cpu_target: [ "000", "02060", "030", "040", "060", "col", "prg", "ste", "tt", "firebee", "ara", "deb" ]
+        cpu_target: [ "000", "02060", "col", "prg", "ste", "tt", "firebee", "ara", "deb" ]
         cross_tool: [ "m68k-atari-mint" ]
         include:
           - cpu_target: 000
             artifact: freemint-cpu-000
           - cpu_target: 02060
-            artifact: freemint-cpu-020
-          - cpu_target: 030
-            artifact: freemint-cpu-030
-          - cpu_target: 040
-            artifact: freemint-cpu-040
-          - cpu_target: 060
-            artifact: freemint-cpu-060
+            artifact: freemint-cpu-02060
           - cpu_target: col
             artifact: freemint-cpu-coldfire
           - cpu_target: deb

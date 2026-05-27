@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-dummytargets = 000 02060 030 040 060 deb col
+dummytargets = 000 02060 deb col
 
 XDDDEFS_deb = -DDEV_DEBUG
 

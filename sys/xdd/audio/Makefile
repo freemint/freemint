@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-audiotargets = 000 02060 030 040 060
+audiotargets = 000 02060
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES

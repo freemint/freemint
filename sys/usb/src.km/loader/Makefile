@@ -70,7 +70,7 @@ LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(USBLOADDEFS_$(1))
 LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
-OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(STARTUP_$(1)) $(COBJS))), .compile_$(1)/$(OBJ).o)
+OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
 
 $(1): $(addprefix .compile_,$(1))/loader.prg
 

@@ -10,15 +10,9 @@ MINIXDEFS_000 =
 
 MINIXDEFS_02060 =
 
-MINIXDEFS_030 =
-
-MINIXDEFS_040 =
-
-MINIXDEFS_060 =
-
 MINIXDEFS_col =
 
 #
 # all default targets
 #
-minixtargets = 02060 030 040 060 deb 000 col
+minixtargets = 02060 deb 000 col

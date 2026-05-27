@@ -10,15 +10,9 @@ LPDEFS_000 =
 
 LPDEFS_02060 =
 
-LPDEFS_030 =
-
-LPDEFS_040 =
-
-LPDEFS_060 =
-
 LPDEFS_col =
 
 #
 # all default targets
 #
-lptargets = 02060 030 040 060 deb 000 col
+lptargets = 02060 deb 000 col

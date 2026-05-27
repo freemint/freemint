@@ -14,9 +14,11 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-uarttargets = mil
+uarttargets = deb mil
 
 UARTDEFS_mil = -DMILAN
+# uart hardware is Milan-only, so the debug build keeps -DMILAN
+UARTDEFS_deb = -DMILAN -DDEV_DEBUG
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES

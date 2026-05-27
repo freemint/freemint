@@ -10,15 +10,9 @@ MOOSEDEFS_000 =
 
 MOOSEDEFS_02060 =
 
-MOOSEDEFS_030 =
-
-MOOSEDEFS_040 =
-
-MOOSEDEFS_060 =
-
-MOOSEDEFS_col = 
+MOOSEDEFS_col =
 
 #
 # all default targets
 #
-moosetargets = 02060 030 040 060 deb 000 col
+moosetargets = 02060 deb 000 col

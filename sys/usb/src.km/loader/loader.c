@@ -218,15 +218,12 @@ init(int argc, char **argv, char **env)
 		{
 			switch(cpu)
 			{
+			case 20:
 			case 30:
-				name = "usb030.km";
-			break;
 			case 40:
-				name = "usb040.km";
-			break;
 			case 60:
-				name = "usb060.km";
-			break;
+				name = "usb02060.km";
+				break;
 			default:
 				name = "usb000.km";
 			}
@@ -241,13 +238,6 @@ init(int argc, char **argv, char **env)
 
 	/* check if file exists */
 	fh = Fopen(name, O_RDONLY);
-#ifndef __mcoldfire__
-	if (fh < 0 && (cpu == 30 || cpu == 40 || cpu == 60))
-	{
-		name = "usb02060.km";
-		fh = Fopen(name, O_RDONLY);
-	}
-#endif
 	if (fh < 0)
 	{
 		name = DEFAULT;

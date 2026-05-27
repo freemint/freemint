@@ -10,15 +10,9 @@ INET4DEFS_000 =
 
 INET4DEFS_02060 =
 
-INET4DEFS_030 =
-
-INET4DEFS_040 =
-
-INET4DEFS_060 =
-
 INET4DEFS_col =
 
 #
 # all default targets
 #
-inet4targets = 02060 030 040 060 deb 000 col
+inet4targets = 02060 deb 000 col

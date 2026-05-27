@@ -38,6 +38,11 @@ then
 	if [ "$CPU_TARGET" != "deb" ]
 	then
 		copy_m68k_modules "$MINTDIR" "$CPU_TARGET"
+		copy_nf_modules "$MINTDIR" "$CPU_TARGET"
+		if [ -z "${VERSIONED+x}" ] && [ "$CPU_TARGET" = "02060" ]
+		then
+			copy_aranym_modules "$MINTDIR"
+		fi
 	fi
 	if [ "$CPU_TARGET" = "000" ]
 	then
@@ -53,25 +58,6 @@ then
 		copy_milan_modules "$MINTDIR"
 		copy_hades_modules "$MINTDIR"
 		copy_ct60_modules "$MINTDIR"
-		copy_aranym_modules "$MINTDIR"
-	elif [ "$CPU_TARGET" = "030" ]
-	then
-		copy_tt_modules "$MINTDIR"
-		copy_falcon_modules "$MINTDIR"
-	elif [ "$CPU_TARGET" = "040" ]
-	then
-		copy_falcon_modules "$MINTDIR"
-		copy_milan_modules "$MINTDIR"
-		copy_hades_modules "$MINTDIR"
-		copy_aranym_modules "$MINTDIR"
-	elif [ "$CPU_TARGET" = "060" ]
-	then
-		copy_milan_modules "$MINTDIR"
-		copy_hades_modules "$MINTDIR"
-		copy_falcon_modules "$MINTDIR"
-		copy_ct60_modules "$MINTDIR"
-		# not needed in 060 builds
-		rm -rf "$MINTDIR/falcon"
 	elif [ "$CPU_TARGET" = "deb" ]
 	then
 		copy_debug_modules "$MINTDIR" "$CPU_TARGET"
@@ -102,18 +88,6 @@ then
 		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
 		# ARAnyM
 		copy_aranym_usb_modules "$USBDIR" "040"
-	elif [ "$CPU_TARGET" = "040" ]
-	then
-		# Milan / Hades
-		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
-		# ARAnyM
-		copy_aranym_usb_modules "$USBDIR" "040"
-	elif [ "$CPU_TARGET" = "060" ]
-	then
-		# EtherNAT
-		copy_ct60_usb_modules "$USBDIR" "060"
-		# CTPCI / Milan / Hades
-		copy_ehci_usb_modules "$USBDIR" "$CPU_TARGET"
 	elif [ "$CPU_TARGET" = "deb" ]
 	then
 		copy_ct60_usb_modules "$USBDIR" "$CPU_TARGET"

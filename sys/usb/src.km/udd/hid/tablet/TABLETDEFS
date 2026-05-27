@@ -26,18 +26,6 @@ UDDTARGET_02060 = tablet.udd
 USBDEFS_02060 =
 LDEXTRA_02060 = $(LDEXTRA_udd)
 
-UDDTARGET_030 = tablet.udd
-USBDEFS_030 =
-LDEXTRA_030 = $(LDEXTRA_udd)
-
-UDDTARGET_040 = tablet.udd
-USBDEFS_040 =
-LDEXTRA_040 = $(LDEXTRA_udd)
-
-UDDTARGET_060 = tablet.udd
-USBDEFS_060 =
-LDEXTRA_060 = $(LDEXTRA_udd)
-
 UDDTARGET_col = tablet.udd
 USBDEFS_col = -DCOLDFIRE
 LDEXTRA_col = $(LDEXTRA_udd)
@@ -45,4 +33,4 @@ LDEXTRA_col = $(LDEXTRA_udd)
 #
 # all default targets
 #
-tablettargets = 02060 030 040 060 deb 000 col prg
+tablettargets = 02060 deb 000 col prg

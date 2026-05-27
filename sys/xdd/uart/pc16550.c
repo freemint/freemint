@@ -1064,7 +1064,7 @@ detect_uart (UART *regs, ulong *baudbase)
 	if ((regs->msr & 0xf0) != 0xf0)
 		return 0;
 	
-	DEBUG (("uart: on %lx seems to be a 16550, check intr", regs));
+	DEBUG (("uart: on %p seems to be a 16550, check intr", regs));
 	
 # if 0
 	int_autoprobe_start ();
@@ -1166,11 +1166,11 @@ detect_uart (UART *regs, ulong *baudbase)
 	
 	if ((regs->iir & 0xc0) != 0xc0)
 	{
-		DEBUG (("no 16550A at %lx, INT %i", regs, intr));
+		DEBUG (("no 16550A at %p, INT %i", regs, intr));
 		return 0;
 	}
 	
-	DEBUG (("detected 16550A at %lx, INT %i", regs, intr));
+	DEBUG (("detected 16550A at %p, INT %i", regs, intr));
 	return intr;
 }
 
@@ -1379,8 +1379,7 @@ init_pc16550 (void)
 			
 			intr_iovar[intr_num] = IOVARS (i);
 			(void) Setexc (80 + IOVARS (i)->intr, intr_handler[intr_num]);
-			DEBUG (("old int handler = %lx", old));
-			
+
 			intr_num++;
 		}
 		else
@@ -1871,7 +1870,7 @@ check_ioevent (PROC *p, long arg)
 		if (iorec_used (&iovar->output) < iovar->output.low_water
 			|| !iorec_empty (&iovar->input))
 		{
-			DEBUG (("uart.xdd: check_ioevent: waking I/O wait (%lu)", iovar->iosleepers));
+			DEBUG (("uart.xdd: check_ioevent: waking I/O wait (%u)", iovar->iosleepers));
 			wake (IO_Q, (long) &iovar->tty.state);
 		}
 	}
@@ -1924,7 +1923,7 @@ soft_cdchange (PROC *p, long arg)
 			/* let reads and writes return */
 			wake (IO_Q, (long) &iovar->tty.state);
 			
-			DEBUG (("TS_BLIND set, lost carrier (p = %lx, tty.pgrp = %i)", p, iovar->tty.pgrp));
+			DEBUG (("TS_BLIND set, lost carrier (p = %p, tty.pgrp = %i)", p, iovar->tty.pgrp));
 		}
 		
 		return;
@@ -2685,7 +2684,7 @@ uart_open (FILEPTR *f)
 	ushort dev = f->fc.aux;
 	IOVAR *iovar;
 	
-	DEBUG (("uart_open [%i]: enter (%lx)", f->fc.aux, f->flags));
+	DEBUG (("uart_open [%i]: enter (%x)", f->fc.aux, f->flags));
 	
 	if (dev >= IOVAR_REAL_MAX)
 		return EACCES;
@@ -2712,10 +2711,10 @@ uart_open (FILEPTR *f)
 			FILEPTR *t = iovar->open;
 			while (t)
 			{
-				DEBUG (("t = %lx, t->next = %lx", t, t->next));
+				DEBUG (("t = %p, t->next = %p", t, t->next));
 				DEBUG (("  links = %i, flags = %x", t->links, t->flags));
 				DEBUG (("  pos = %li, devinfo = %lx", t->pos, t->devinfo));
-				DEBUG (("  dev = %lx, next = %lx", t->dev, t->next));
+				DEBUG (("  dev = %p, next = %p", t->dev, t->next));
 				DEBUG (("  fc.index = %li, fc.dev = %i, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
 				
 				t = t->next;
@@ -2736,7 +2735,7 @@ uart_open (FILEPTR *f)
 		/* force nonblocking on HSMODEM devices */
 		f->flags |= O_NDELAY;
 	
-	DEBUG (("uart_open: return E_OK (added %lx)", f));
+	DEBUG (("uart_open: return E_OK (added %p)", f));
 	return E_OK;
 }
 
@@ -2764,7 +2763,7 @@ uart_close (FILEPTR *f, int pid)
 		register FILEPTR **temp;
 		register long flag = 1;
 		
-		DEBUG (("uart_close: freeing FILEPTR %lx", f));
+		DEBUG (("uart_close: freeing FILEPTR %p", f));
 		
 		/* remove the FILEPTR from the linked list */
 		temp = &iovar->open;
@@ -2827,7 +2826,7 @@ uart_write (FILEPTR *f, const char *buf, long bytes)
 	IOREC *iorec = &iovar->output;
 	long done = 0;
 	
-	DEBUG (("uart_write [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("uart_write [%i]: enter (%p, %ld)", f->fc.aux, buf, bytes));
 	
 	/* copy as much as possible */
 	while ((bytes > 0) && iorec_put (iorec, *buf))
@@ -2858,7 +2857,7 @@ uart_read (FILEPTR *f, char *buf, long bytes)
 	IOREC *iorec = &iovar->input;
 	long done = 0;
 	
-	DEBUG (("uart_read [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("uart_read [%i]: enter (%p, %ld)", f->fc.aux, buf, bytes));
 	
 	/* copy as much as possible */
 	while ((bytes > 0) && !iorec_empty (iorec))
@@ -2901,7 +2900,7 @@ uart_writeb (FILEPTR *f, const char *buf, long bytes)
 	int ndelay = f->flags & O_NDELAY;
 	long done = 0;
 	
-	DEBUG (("uart_writeb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("uart_writeb [%i]: enter (%p, %ld)", f->fc.aux, buf, bytes));
 	
 	if (bytes)
 	do {
@@ -2969,7 +2968,7 @@ uart_readb (FILEPTR *f, char *buf, long bytes)
 	int ndelay = (f->flags & O_NDELAY) || iovar->tty.vtime /* ??? */;
 	long done = 0;
 	
-	DEBUG (("uart_readb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("uart_readb [%i]: enter (%p, %ld)", f->fc.aux, buf, bytes));
 	
 	if (!bytes)
 		/* nothing to do... */
@@ -3103,7 +3102,7 @@ uart_twrite (FILEPTR *f, const char *buf, long bytes)
 	long done = 0;
 	const long *r = (const long *) buf;
 	
-	DEBUG (("uart_twrite [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("uart_twrite [%i]: enter (%p, %ld)", f->fc.aux, buf, bytes));
 	
 	if (bytes)
 	do {
@@ -3147,7 +3146,7 @@ uart_tread (FILEPTR *f, char *buf, long bytes)
 	long done = 0;
 	long *r = (long *) buf;
 	
-	DEBUG (("uart_tread [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	DEBUG (("uart_tread [%i]: enter (%p, %ld)", f->fc.aux, buf, bytes));
 	
 	if (bytes)
 	do {
@@ -3197,7 +3196,7 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	long r = E_OK;
 	
-	DEBUG (("uart_ioctl [%i]: (%x, (%c %i), %lx)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), buf));
+	DEBUG (("uart_ioctl [%i]: (%x, (%c %i), %p)", f->fc.aux, mode, (char) (mode >> 8), (mode & 0xff), buf));
 	
 	switch (mode)
 	{
@@ -3294,14 +3293,14 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case TIOCGFLAGS:
 		{
-			DEBUG (("uart_ioctl(TIOCGFLAGS) [%lx]", (ushort *) buf));
+			DEBUG (("uart_ioctl(TIOCGFLAGS) [%p]", (ushort *) buf));
 			
 			*(ushort *) buf = ctl_TIOCGFLAGS (iovar);
 			break;
 		}
 		case TIOCSFLAGS:
 		{
-			DEBUG (("uart_ioctl(TIOCSFLAGS) -> %lx", *(ushort *) buf));
+			DEBUG (("uart_ioctl(TIOCSFLAGS) -> %x", *(ushort *) buf));
 			
 			r = ctl_TIOCSFLAGS (iovar, *(ushort *) buf);
 			break;
@@ -3605,13 +3604,13 @@ uart_select (FILEPTR *f, long proc, int mode)
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	struct tty *tty = (struct tty *) f->devinfo;
 	
-	DEBUG (("uart_select [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, tty));
+	DEBUG (("uart_select [%i]: enter (%li, %i, %p)", f->fc.aux, proc, mode, tty));
 	
 	if (mode == O_RDONLY)
 	{
 		if (!(tty->state & TS_BLIND) && !iorec_empty (&iovar->input))
 		{
-			TRACE (("uart_select: data present for device %lx", iovar));
+			TRACE (("uart_select: data present for device %p", iovar));
 			return 1;
 		}
 		
@@ -3633,7 +3632,7 @@ uart_select (FILEPTR *f, long proc, int mode)
 	{
 		if ((!tty || !(tty->state & (TS_BLIND | TS_HOLD))) && !iorec_empty (&iovar->output))
 		{
-			TRACE (("uart_select: ready to output on %lx", iovar));
+			TRACE (("uart_select: ready to output on %p", iovar));
 			return 1;
 		}
 		
@@ -3661,7 +3660,7 @@ uart_unselect (FILEPTR *f, long proc, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
 	
-	DEBUG (("uart_unselect [%i]: enter (%li, %i, %lx)", f->fc.aux, proc, mode, tty));
+	DEBUG (("uart_unselect [%i]: enter (%li, %i, %p)", f->fc.aux, proc, mode, tty));
 	
 	if (tty)
 	{

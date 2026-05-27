@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-nfcdromtargets = 000 02060 030 040 060 deb col
+nfcdromtargets = 000 02060 deb
 
 NFCDROMDEFS_deb = -DDEV_DEBUG
 

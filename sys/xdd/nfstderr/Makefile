@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-nfstderrtargets = 000 02060 030 040 060 deb col
+nfstderrtargets = 000 02060 deb
 
 XDDDEFS_deb = -DDEV_DEBUG
 

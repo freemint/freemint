@@ -30,18 +30,6 @@ USBDEFS_02060 =
 USBKM_02060 = usb02060.km
 LDEXTRA_02060 = $(LDEXTRA_km)
 
-USBDEFS_030 =
-USBKM_030 = usb030.km
-LDEXTRA_030 = $(LDEXTRA_km)
-
-USBDEFS_040 =
-USBKM_040 = usb040.km
-LDEXTRA_040 = $(LDEXTRA_km)
-
-USBDEFS_060 =
-USBKM_060 = usb060.km
-LDEXTRA_060 = $(LDEXTRA_km)
-
 USBDEFS_col = -DCOLDFIRE
 USBKM_col = usbv4e.km
 LDEXTRA_col = $(LDEXTRA_km)
@@ -49,4 +37,4 @@ LDEXTRA_col = $(LDEXTRA_km)
 #
 # all default targets
 #
-usbtargets = 02060 030 040 060 deb 000 col prg plm
+usbtargets = 02060 deb 000 col prg plm

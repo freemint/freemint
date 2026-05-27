@@ -24,15 +24,15 @@ include $(top_srcdir)/PHONY
 all-here: $(DRIVERS)
 
 strip:
-	$(STRIP) *.xif
+	$(STRIP) .compile_*/*.xif
 
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__
 
 # default definitions
-compile_all_dirs = .deps
-GENFILES = $(compile_all_dirs) *.xif
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs)
 SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c
 
 
@@ -105,7 +105,7 @@ LDEXTRA = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings
 
 define LIBKERN_TEMPLATE
 
-COMMON_OBJS_$(1) = $(addsuffix _$(1).o, $(basename $(notdir $(COMMON_OBJS))))
+COMMON_OBJS_$(1) = $(addprefix .compile_$(1)/,$(addsuffix .o,$(basename $(notdir $(COMMON_OBJS)))))
 
 $(top_srcdir)/libkern/libkern$(1).a:
 	$(MAKE) -C $(top_srcdir)/libkern libkern$(1).a
@@ -113,53 +113,64 @@ endef
 
 define TARGET_TEMPLATE
 
-LIBKERN_NAME_$(1) = kern$(1)
+LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS)
 LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
-OBJS_$(2)_$(1) = $(addsuffix _$(1).o, $(basename $(notdir $(OBJS_$(2)))))
+OBJS_$(2)_$(1) = $(addprefix .compile_$(1)/,$(addsuffix .o,$(basename $(notdir $(OBJS_$(2))))))
 
-$(2):: $(2)_$(1).xif
+$(2):: .compile_$(1)/$(2).xif
 
-$(2)_$(1).xif: $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBKERN_DEP_$(1))
+.compile_$(1)/$(2).xif: $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBKERN_DEP_$(1))
 	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(COMMON_OBJS_$(1)) $$(OBJS_$(2)_$(1)) $$(LIBS_$(1))
 
 endef
 
 define CPU_TEMPLATE
-$(basename $(2))_$(1).o: $(2)
-	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(XIF_DEFS_$(basename $(2))) $$(MODEL_$(1)) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.deps/$(basename $(2))_$(1).P -Wp,-MT,$$@ -c $$< -o $$@
+.compile_$(1)/$(basename $(2)).o: $(2)
+	$(CC) $(INCLUDES) $$(DEFINITIONS_$(1)) $$(XIF_DEFS_$(basename $(2))) $$(MODEL_$$(CPU_$(1))) $(GENERAL) $(OPTS) $(WARN) $(CPPFLAGS) -Wp,-MD,.compile_$(1)/.deps/$(basename $(2)).P -Wp,-MT,$$@ -c $$< -o $$@
 
--include .deps/$(basename $(2))_$(1).P
+-include .compile_$(1)/.deps/$(basename $(2)).P
 
 endef
 
-$(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
+drivertargets = 000 02060
+# union of every target used in any TARGET_TEMPLATE invocation below;
+# CPU_TEMPLATE / LIBKERN_TEMPLATE / DEPS_MAGIC need to cover them all,
+# otherwise riebltt (030) and dummy (col/deb) lack .o build rules
+xif_alltargets = $(sort $(drivertargets) 000 02060 030 col)
+
+# LIBKERN_TEMPLATE needs both: target names (so COMMON_OBJS_$(target) gets
+# defined for col/deb/etc.) AND CPU names (so libkern<CPU>.a rules cover
+# the deps requested by LIBKERN_NAME = kern$(CPU_$(target))). Iterate the
+# union of target names and their CPU mappings.
+xif_libkern_targets = $(sort $(xif_alltargets) $(foreach T,$(xif_alltargets),$(CPU_$(T))))
+$(foreach TARGET,$(xif_libkern_targets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 
 # sorting is needed here to eliminate duplicates
-$(foreach TARGET,$(cputargets),$(foreach OBJ,$(sort $(notdir $(COBJS))),$(eval $(call CPU_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(xif_alltargets),$(foreach OBJ,$(sort $(notdir $(COBJS))),$(eval $(call CPU_TEMPLATE,$(TARGET),$(OBJ)))))
 
-$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
-$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
-$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),slip)))
-$(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
-$(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),picowifi)))
-$(foreach TARGET,$(cputargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dummy)))
+$(foreach TARGET,$(drivertargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),asix)))
+$(foreach TARGET,$(drivertargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),dial)))
+$(foreach TARGET,$(drivertargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),slip)))
+$(foreach TARGET,$(drivertargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),plip)))
+$(foreach TARGET,$(drivertargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),picowifi)))
+$(foreach TARGET,$(drivertargets) col,$(eval $(call TARGET_TEMPLATE,$(TARGET),dummy)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),de600)))
-$(foreach TARGET,$(filter-out v4e,$(cputargets)),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
+$(foreach TARGET,$(drivertargets),$(eval $(call TARGET_TEMPLATE,$(TARGET),lance)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblspc_fast)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblmst)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblmst_fast)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rieblste)))
-$(foreach TARGET,02060 030 040 060,$(eval $(call TARGET_TEMPLATE,$(TARGET),riebltt)))
+$(foreach TARGET,030,$(eval $(call TARGET_TEMPLATE,$(TARGET),riebltt)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),pamsdma)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),biodma)))
-$(foreach TARGET,02060 030 040 060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8012)))
+$(foreach TARGET,02060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8012)))
 $(foreach TARGET,000,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8012st)))
-$(foreach TARGET,060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8139)))
+$(foreach TARGET,02060,$(eval $(call TARGET_TEMPLATE,$(TARGET),rtl8139)))
 
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-DEPS_MAGIC := $(shell mkdir -p .deps) > /dev/null 2>&1 || :)
+DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(xif_alltargets))) > /dev/null 2>&1 || :)
 endif

@@ -10,9 +10,9 @@ USBDEFS_deb = -DDEV_DEBUG
 UCDTARGET_deb = ehci.ucd
 LDEXTRA_deb = $(LDEXTRA_ucd)
 
-CPU_prg = 040
+CPU_prg = 02060
 USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
-UCDTARGET_prg = ehci.pg
+UCDTARGET_prg = ehci.prg
 LDEXTRA_prg = -Wl,--entry,__start
 
 USBDEFS_000 =
@@ -23,18 +23,6 @@ USBDEFS_02060 =
 UCDTARGET_02060 = ehci.ucd
 LDEXTRA_02060 = $(LDEXTRA_ucd)
 
-USBDEFS_030 =
-UCDTARGET_030 = ehci.ucd
-LDEXTRA_030 = $(LDEXTRA_ucd)
-
-USBDEFS_040 =
-UCDTARGET_040 = ehci.ucd
-LDEXTRA_040 = $(LDEXTRA_ucd)
-
-USBDEFS_060 =
-UCDTARGET_060 = ehci.ucd
-LDEXTRA_060 = $(LDEXTRA_ucd)
-
 USBDEFS_col = -DCOLDFIRE
 UCDTARGET_col = ehci.ucd
 LDEXTRA_col = $(LDEXTRA_ucd)
@@ -42,4 +30,4 @@ LDEXTRA_col = $(LDEXTRA_ucd)
 #
 # all default targets
 #
-ehcitargets = 02060 030 040 060 deb 000 col prg
+ehcitargets = 02060 deb 000 col prg

@@ -25,18 +25,6 @@ UDDTARGET_02060 = storage.udd
 USBDEFS_02060 =
 LDEXTRA_02060 = $(LDEXTRA_udd)
 
-UDDTARGET_030 = storage.udd
-USBDEFS_030 =
-LDEXTRA_030 = $(LDEXTRA_udd)
-
-UDDTARGET_040 = storage.udd
-USBDEFS_040 =
-LDEXTRA_040 = $(LDEXTRA_udd)
-
-UDDTARGET_060 = storage.udd
-USBDEFS_060 =
-LDEXTRA_060 = $(LDEXTRA_udd)
-
 UDDTARGET_col = storage.udd
 USBDEFS_col = -DCOLDFIRE
 LDEXTRA_col = $(LDEXTRA_udd)
@@ -44,4 +32,4 @@ LDEXTRA_col = $(LDEXTRA_udd)
 #
 # all default targets
 #
-storagetargets = 02060 030 040 060 deb 000 col prg
+storagetargets = 02060 deb 000 col prg

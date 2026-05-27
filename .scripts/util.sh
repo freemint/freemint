@@ -46,10 +46,10 @@ copy_m68k_modules() {
 	local SYSDIR="$1"
 	local TARGET="$2"
 	mkdir -p "$SYSDIR"
-	cp "$SRC/sys/sockets/xif/asix_${TARGET}.xif" "$SYSDIR/asix.xix"
-	cp "$SRC/sys/sockets/xif/picowifi_${TARGET}.xif" "$SYSDIR/picowifi.xix"
-	cp "$SRC/sys/sockets/xif/plip_${TARGET}.xif" "$SYSDIR/plip.xif"
-	cp "$SRC/sys/sockets/xif/slip_${TARGET}.xif" "$SYSDIR/slip.xif"
+	cp "$SRC/sys/sockets/xif/.compile_${TARGET}/asix.xif" "$SYSDIR/asix.xix"
+	cp "$SRC/sys/sockets/xif/.compile_${TARGET}/picowifi.xif" "$SYSDIR/picowifi.xix"
+	cp "$SRC/sys/sockets/xif/.compile_${TARGET}/plip.xif" "$SYSDIR/plip.xif"
+	cp "$SRC/sys/sockets/xif/.compile_${TARGET}/slip.xif" "$SYSDIR/slip.xif"
 	cp "$SRC/sys/xdd/audio/.compile_$TARGET/audiodev.xdd" "$SYSDIR"
 	cp "$SRC/sys/xdd/flop-raw/.compile_$TARGET/flop_raw.xdd" "$SYSDIR"
 }
@@ -59,52 +59,52 @@ copy_st_modules() {
 	mkdir -p "$MCHDIR"
 	# TODO: perhaps these four are compatible also with other machines
 	#       but they are awfully old and obsolete so let's keep them here
-	cp "$SRC/sys/sockets/xif/biodma_000.xif" "$MCHDIR/biodma.xix"
-	cp "$SRC/sys/sockets/xif/de600_000.xif" "$MCHDIR/de600.xix"
-	cp "$SRC/sys/sockets/xif/dial_000.xif" "$MCHDIR/dial.xix"
-	cp "$SRC/sys/sockets/xif/pamsdma_000.xif" "$MCHDIR/pamsdma.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/biodma.xif" "$MCHDIR/biodma.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/de600.xif" "$MCHDIR/de600.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/dial.xif" "$MCHDIR/dial.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/pamsdma.xif" "$MCHDIR/pamsdma.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_megast_modules() {
 	local MCHDIR="$1/megast"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/lance_000.xif" "$MCHDIR/lance.xix"
-	cp "$SRC/sys/sockets/xif/rieblmst_000.xif" "$MCHDIR/riebl.xix"
-	cp "$SRC/sys/sockets/xif/rieblmst_fast_000.xif" "$MCHDIR/riebl_fast.xix"
-	cp "$SRC/sys/sockets/xif/rieblspc_000.xif" "$MCHDIR/rieblspc.xix"
-	cp "$SRC/sys/sockets/xif/rieblspc_fast_000.xif" "$MCHDIR/riebls_fast.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/lance.xif" "$MCHDIR/lance.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rieblmst.xif" "$MCHDIR/riebl.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rieblmst_fast.xif" "$MCHDIR/riebl_fast.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rieblspc.xif" "$MCHDIR/rieblspc.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rieblspc_fast.xif" "$MCHDIR/riebls_fast.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_ste_modules() {
 	local MCHDIR="$1/ste"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 }
 copy_megaste_modules() {
 	local MCHDIR="$1/megaste"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/rieblste_000.xif" "$MCHDIR/rieblste.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012st_000.xif" "$MCHDIR/rtl8012st.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rieblste.xif" "$MCHDIR/rieblste.xix"
+	cp "$SRC/sys/sockets/xif/.compile_000/rtl8012st.xif" "$MCHDIR/rtl8012st.xix"
 	cp "$SRC/sys/xdd/mfp/.compile_000/mfp.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/.compile_000/scc.xdd" "$MCHDIR"
 }
 copy_tt_modules() {
 	local MCHDIR="$1/tt"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/daynaport/.compile_030/scsilink.xif" "$MCHDIR/scsilink.xix"
-	cp "$SRC/sys/sockets/xif/lance_030.xif" "$MCHDIR/lance.xix"
-	cp "$SRC/sys/sockets/xif/riebltt_030.xif" "$MCHDIR/riebltt.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012_030.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/xdd/mfp/.compile_030/mfp.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/scc/.compile_030/scc.xdd" "$MCHDIR"
+	cp "$SRC/sys/sockets/xif/daynaport/.compile_02060/scsilink.xif" "$MCHDIR/scsilink.xix"
+	cp "$SRC/sys/sockets/xif/.compile_02060/lance.xif" "$MCHDIR/lance.xix"
+	cp "$SRC/sys/sockets/xif/.compile_030/riebltt.xif" "$MCHDIR/riebltt.xix"
+	cp "$SRC/sys/sockets/xif/.compile_02060/rtl8012.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/xdd/mfp/.compile_02060/mfp.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/scc/.compile_02060/scc.xdd" "$MCHDIR"
 }
 copy_falcon_modules() {
 	local MCHDIR="$1/falcon"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/rtl8012_02060.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/sockets/xif/.compile_02060/rtl8012.xif" "$MCHDIR/rtl8012.xix"
 	cp "$SRC/sys/sockets/xif/daynaport/.compile_02060/scsilink.xif" "$MCHDIR/scsilink.xix"
 	cp "$SRC/sys/xdd/dsp56k/.compile_02060/dsp56k.xdd" "$MCHDIR"
 	cp "$SRC/sys/xdd/scc/.compile_02060/scc.xdd" "$MCHDIR"
@@ -129,32 +129,41 @@ copy_ct60_modules() {
 
 	# we don't need plain st/falcon version
 	rm "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/sockets/xif/rtl8012_060.xif" "$MCHDIR/rtl8012.xix"
-	cp "$SRC/sys/sockets/xif/rtl8139_060.xif" "$MCHDIR/rtl8139.xix"
+	cp "$SRC/sys/sockets/xif/.compile_02060/rtl8012.xif" "$MCHDIR/rtl8012.xix"
+	cp "$SRC/sys/sockets/xif/.compile_02060/rtl8139.xif" "$MCHDIR/rtl8139.xix"
 	cp "$SRC/sys/sockets/xif/ethernat/.compile_060/ethernat.xif" "$MCHDIR/ethernat.xix"
 	cp "$SRC/sys/sockets/xif/svethlana/.compile_060/svethlan.xif" "$MCHDIR/svethlan.xix"
 }
 copy_firebee_modules() {
 	local MCHDIR="$1/firebee"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/fec/.compile_v4e/fec.xif" "$MCHDIR/fec.xif"
+	cp "$SRC/sys/sockets/xif/fec/.compile_col/fec.xif" "$MCHDIR/fec.xif"
 }
 copy_aranym_modules() {
 	local MCHDIR="$1/aranym"
 	mkdir -p "$MCHDIR"
-	cp "$SRC/sys/sockets/xif/nfeth/.compile_040/nfeth.xif" "$MCHDIR"
-	cp "$SRC/sys/xdd/nfstderr/.compile_040/nfstderr.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/nfexec/.compile_040/nfexec.xdd" "$MCHDIR"
-	cp "$SRC/sys/xdd/nfcdrom/.compile_040/nfcdrom.xdd" "$MCHDIR/nfcdrom.xdx"
-	cp "$SRC/sys/xfs/aranym/aranym.xfs" "$MCHDIR"
-	# not really needed
-	cp "$SRC/sys/xfs/hostfs/.compile_000/hostfs.xfs" "$MCHDIR/hostfs.xfx"
+	cp "$SRC/sys/xdd/nfstderr/.compile_02060/nfstderr.xdd" "$MCHDIR"
+	cp "$SRC/sys/sockets/xif/nfeth/.compile_02060/nfeth.xif" "$MCHDIR"
+	cp "$SRC/sys/xdd/nfexec/.compile_02060/nfexec.xdd" "$MCHDIR"
+	cp "$SRC/sys/xdd/nfcdrom/.compile_02060/nfcdrom.xdd" "$MCHDIR"
+	cp "$SRC/sys/xfs/aranym/.compile_02060/aranym.xfs" "$MCHDIR"
+	# hostfs is also statically linked into the aranym kernel, ship disabled
+	cp "$SRC/sys/xfs/hostfs/.compile_02060/hostfs.xfs" "$MCHDIR/hostfs.xfx"
+}
+# For mint000h.prg/mint030h.prg
+copy_nf_modules() {
+	local DIR="$1"
+	local TARGET="$2"
+	mkdir -p "$DIR"
+	cp "$SRC/sys/xdd/nfstderr/.compile_$TARGET/nfstderr.xdd" "$DIR/nfstderr.xdx"
 }
 copy_debug_modules() {
 	local SYSDIR="$1"
 	local TARGET="$2"
 	mkdir -p "$SYSDIR"
 	cp "$SRC/sys/xdd/scc/.compile_${TARGET}/scc.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_${TARGET}/mfp.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/uart/.compile_${TARGET}/uart.xdd" "$SYSDIR"
 }
 
 copy_xaloader() {
@@ -177,6 +186,9 @@ copy_xaaes() {
 	then
 	cp "$SRC/xaaes/src.km/.compile_sto/xaaesst.km" "$XAAESDIR/xaaesst.km"
 	cp "$SRC/xaaes/src.km/.compile_$TARGET/xaaes$TARGET.km" "$XAAESDIR/xaaes.km"
+	elif [ "$TARGET" = "02060" ]
+	then
+	cp "$SRC/xaaes/src.km/.compile_$TARGET/xaaes020.km" "$XAAESDIR/xaaes.km"
 	else
 	cp "$SRC/xaaes/src.km/.compile_$TARGET/xaaes$TARGET.km" "$XAAESDIR/xaaes.km"
 	fi
@@ -247,7 +259,7 @@ copy_blitz_usb_modules() {
 	then
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_$TARGET/blitz.ucd" "$USBDIR"
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_mst/blitz_st.ucd" "$USBDIR"
-	elif [ "$TARGET" = "02060" ] || [ "$TARGET" = "030" ]
+	elif [ "$TARGET" = "02060" ]
 	then
 	cp "$SRC/sys/usb/src.km/ucd/vttusb/.compile_030/blitz030.ucd" "$USBDIR"
 	elif [ "$TARGET" = "deb" ]

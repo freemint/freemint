@@ -10,15 +10,9 @@ NFSDEFS_000 =
 
 NFSDEFS_02060 =
 
-NFSDEFS_030 =
-
-NFSDEFS_040 =
-
-NFSDEFS_060 =
-
 NFSDEFS_col =
 
 #
 # all default targets
 #
-nfstargets = 02060 030 040 060 deb 000 col
+nfstargets = 02060 deb 000 col

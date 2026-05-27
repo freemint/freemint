@@ -230,14 +230,11 @@ again:
 		{
 			switch(cpu)
 			{
+			case 20:
 			case 30:
-				name = "xaaes030.km";
-			break;
 			case 40:
-				name = "xaaes040.km";
-			break;
 			case 60:
-				name = "xaaes060.km";
+				name = "xaaes020.km";
 			break;
 			default:
 				name = "xaaes000.km";

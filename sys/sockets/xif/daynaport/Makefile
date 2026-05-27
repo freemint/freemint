@@ -14,7 +14,7 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-targets = 030 02060
+targets = 02060
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -44,7 +44,7 @@ LDEXTRA = -nostdlib -Wl,--entry,init -Wl,--fatal-warnings -Wl,--mno-altalloc -Wl
 
 define TARGET_TEMPLATE
 
-LIBKERN_NAME_$(1) = kern$(1)
+LIBKERN_NAME_$(1) = kern$$(CPU_$(1))
 LIBKERN_DEP_$(1) = $(top_srcdir)/libkern/lib$$(LIBKERN_NAME_$(1)).a
 LIBKERN_$(1) = -L$(top_srcdir)/libkern -l$$(LIBKERN_NAME_$(1))
 DEFINITIONS_$(1) = $(DEFINITIONS) $$(XIF_DEFS_$(1))
@@ -52,7 +52,7 @@ LIBS_$(1) = $$(LIBKERN_$(1)) -lgcc
 OBJS_$(1) = $(addsuffix .o, $(addprefix .compile_$(1)/,$(notdir $(basename $(COBJS)))))
 
 $(addprefix .compile_,$(1))/scsilink.xif: $$(OBJS_$(1)) $$(LIBKERN_DEP_$(1))
-	$(LD) -o $$@ $$(CFLAGS_$(1)) $$(OBJS_$(1)) $$(LIBS_$(1))
+	$(LD) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 endef
 
@@ -65,7 +65,7 @@ endef
 
 $(foreach TARGET,$(targets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS),$(eval $(call CPU_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(targets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 $(foreach TARGET,$(cputargets),$(eval $(call LIBKERN_TEMPLATE,$(TARGET))))
 

@@ -2,19 +2,13 @@
 
 if [ "$CPU_TARGET" = "000" ]
 then
-	KERNEL_TARGETS="000 hat"
+	# both the bootable st_ste archive and the plain 000 CPU
+	# archive ship an 030 kernel for accelerator-card users
+	# (TF536, PAK030, ...)
+	KERNEL_TARGETS="000 030 hat hat030"
 elif [ "$CPU_TARGET" = "02060" ]
 then
-	KERNEL_TARGETS="020 030 040 060 mil ara hat030"
-elif [ "$CPU_TARGET" = "030" ]
-then
-	KERNEL_TARGETS="030 hat030"
-elif [ "$CPU_TARGET" = "040" ]
-then
-	KERNEL_TARGETS="040 mil ara"
-elif [ "$CPU_TARGET" = "060" ]
-then
-	KERNEL_TARGETS="060 mil"
+	KERNEL_TARGETS="030 040 060 mil ara hat030"
 elif [ "$CPU_TARGET" != "prg" ]
 then
 	KERNEL_TARGETS="$CPU_TARGET"

@@ -14,9 +14,10 @@ default: all
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-mfptargets = 000 030 02060 040 060 mil
+mfptargets = 000 02060 deb mil
 
 MFPDEFS_mil = -DMILAN
+MFPDEFS_deb = -DDEV_DEBUG
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES

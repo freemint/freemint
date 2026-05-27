@@ -10,15 +10,9 @@ EXT2DEFS_000 =
 
 EXT2DEFS_02060 =
 
-EXT2DEFS_030 =
-
-EXT2DEFS_040 =
-
-EXT2DEFS_040 =
-
 EXT2DEFS_col =
 
 #
 # all default targets
 #
-ext2targets = 02060 030 040 060 deb 000 col
+ext2targets = 02060 deb 000 col

@@ -24,30 +24,30 @@ if [ -n "${VERSIONED+x}" ]
 then
 	copy_mint_cnf "$MINTDIR"
 fi
-copy_modules "$MINTDIR" "040"
+copy_modules "$MINTDIR" "02060"
 copy_aranym_modules "$MINTDIR"
 
-copy_xaloader "$XAAESDIR" "040"
+copy_xaloader "$XAAESDIR" "02060"
 if [ -n "${VERSIONED+x}" ]
 then
-	copy_xaaes "$XAAESDIR" "040" "yes" "yes"
+	copy_xaaes "$XAAESDIR" "02060" "yes" "yes"
 else
-	copy_xaaes "$XAAESDIR" "040" "no" "yes"
+	copy_xaaes "$XAAESDIR" "02060" "no" "yes"
 fi
 
-copy_usbloader "$USBDIR" "040"
-copy_usb "$USBDIR" "040"
+copy_usbloader "$USBDIR" "02060"
+copy_usb "$USBDIR" "02060"
 copy_aranym_usb_modules "$USBDIR" "040"
 
 copy_fonts "$FONTSDIR"
 copy_tbl "$TBLDIR"
 
-copy_sysroot "$SYSROOT" "040"
+copy_sysroot "$SYSROOT" "02060"
 
 copy_guides "$GUIDESDIR"
 
 mkdir -p "$SYSROOT/bin"
-cp "$SRC/sys/xdd/audio/.compile_040/actrl" "$SYSROOT/bin"
+cp "$SRC/sys/xdd/audio/.compile_02060/actrl" "$SYSROOT/bin"
 
 ############
 # filesystem

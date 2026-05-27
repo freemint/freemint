@@ -24,18 +24,6 @@ UDDTARGET_02060 = eth.udd
 USBDEFS_02060 =
 LDEXTRA_02060 = $(LDEXTRA_udd)
 
-UDDTARGET_030 = eth.udd
-USBDEFS_030 =
-LDEXTRA_030 = $(LDEXTRA_udd)
-
-UDDTARGET_040 = eth.udd
-USBDEFS_040 =
-LDEXTRA_040 = $(LDEXTRA_udd)
-
-UDDTARGET_060 = eth.udd
-USBDEFS_060 =
-LDEXTRA_060 = $(LDEXTRA_udd)
-
 UDDTARGET_col = eth.udd
 USBDEFS_col = -DCOLDFIRE
 LDEXTRA_col = $(LDEXTRA_udd)
@@ -43,4 +31,4 @@ LDEXTRA_col = $(LDEXTRA_udd)
 #
 # all default targets
 #
-ethtargets = 02060 030 040 060 deb 000 col prg
+ethtargets = 02060 deb 000 col prg

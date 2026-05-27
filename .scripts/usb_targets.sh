@@ -5,7 +5,7 @@ then
 	USB_TARGETS="prg plm"
 elif [ "$CPU_TARGET" = "ara" ]
 then
-	USB_TARGETS="040"
+	USB_TARGETS="02060"
 else
 	USB_TARGETS="$CPU_TARGET"
 fi

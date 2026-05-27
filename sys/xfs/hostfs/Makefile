@@ -37,15 +37,19 @@ include $(top_srcdir)/PHONY
 INCLUDES = -I$(top_srcdir)
 # for aranym, this is compiled into the kernel
 DEFINITIONS_ara = $(KERNELDEFAULTDEFS) $(KERNELDEFS) $(KERNELDEFS_ara)
-# when compiling standalone
+# when compiling standalone (each CPU variant)
 DEFINITIONS_000 = -D__KERNEL_XFS__
 COBJS_000 = $(CMODOBJS)
+DEFINITIONS_02060 = -D__KERNEL_XFS__
+COBJS_02060 = $(CMODOBJS)
+DEFINITIONS_deb = -D__KERNEL_XFS__
+COBJS_deb = $(CMODOBJS)
 
 # default definitions
 all_compile_dirs = .compile_*
 GENFILES = $(all_compile_dirs)
 
-targets = 000 ara
+targets = 000 02060 deb ara
 
 all-here: $(targets)
 
@@ -56,6 +60,8 @@ LDEXTRA = -nostdlib -Wl,--entry,init_xfs -Wl,--fatal-warnings
 
 ara:: .compile_ara/hostfs.a
 000:: .compile_000/hostfs.xfs
+02060:: .compile_02060/hostfs.xfs
+deb:: .compile_deb/hostfs.xfs
 
 define TARGET_TEMPLATE
 

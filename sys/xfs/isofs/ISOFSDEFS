@@ -10,15 +10,9 @@ ISOFSDEFS_000 =
 
 ISOFSDEFS_02060 =
 
-ISOFSDEFS_030 =
-
-ISOFSDEFS_040 =
-
-ISOFSDEFS_040 =
-
 ISOFSDEFS_col =
 
 #
 # all default targets
 #
-isofstargets = 02060 030 040 060 deb 000 col
+isofstargets = 02060 deb 000 col

@@ -73,9 +73,6 @@ KERNELDEFS_080 = $(KERNELNON000DEFS) -DM68040 -DWITH_68080 $(MMU_SUPPORT)
 MINT_060 = mint060.prg
 KERNELDEFS_060 = $(KERNELNON000DEFS) -DM68060 -DPCI_BIOS $(MMU_SUPPORT)
 
-MINT_020 = mint020.prg
-KERNELDEFS_020 = $(KERNELNON000DEFS) -DM68000
-
 MINT_deb = mintdeb.prg
 KERNELDEFS_deb = $(KERNELNON000DEFS) -DDEBUG_INFO -DM68040 -DWITH_NATIVE_FEATURES $(MMU_SUPPORT)
 
@@ -108,6 +105,6 @@ CPU_my1  = 02060
 #
 # all default targets
 #
-kerneltargets = 000 020 030 040 060 080 deb mil ara hat hat030 col
+kerneltargets = 000 030 040 060 080 deb mil ara hat hat030 col
 # cputargets = $(sort $(foreach TARGET, $(kerneltargets), $(CPU_$(TARGET))))
-cputargets = 000 020 030 040 060 02060 v4e
+cputargets = 000 030 040 060 02060 v4e

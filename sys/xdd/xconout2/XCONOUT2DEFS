@@ -10,15 +10,9 @@ XDDDEFS_000 =
 
 XDDDEFS_02060 =
 
-XDDDEFS_030 =
-
-XDDDEFS_040 =
-
-XDDDEFS_060 =
-
 XDDDEFS_col =
 
 #
 # all default targets
 #
-xconout2targets = 02060 030 040 060 deb 000 col
+xconout2targets = 02060 deb 000 col

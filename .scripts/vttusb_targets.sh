@@ -6,7 +6,7 @@ then
 elif [ "$CPU_TARGET" = "000" ]
 then
 	VTTUSB_TARGETS="000 mst"
-elif [ "$CPU_TARGET" = "02060" ] || [ "$CPU_TARGET" = "030" ]
+elif [ "$CPU_TARGET" = "02060" ]
 then
 	VTTUSB_TARGETS="030"
 elif [ "$CPU_TARGET" = "deb" ]

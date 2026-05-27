@@ -26,7 +26,6 @@ typedef struct
 #define DEFAULT         "mint.prg"
 #define DEFAULT_68000   "mint000.prg"
 #define DEFAULT_68000_HATARI "mint000h.prg"
-#define DEFAULT_68020   "mint020.prg"
 #define DEFAULT_68030   "mint030.prg"
 #define DEFAULT_68030_HATARI "mint030h.prg"
 #define DEFAULT_68040   "mint040.prg"
@@ -180,8 +179,6 @@ loader_init(int argc, char **argv, char **env)
 		switch(cpu)
 		{
 			case 20:
-				name = DEFAULT_68020;
-				break;
 			case 30:
 				name = hatari ? DEFAULT_68030_HATARI : DEFAULT_68030;
 				break;
