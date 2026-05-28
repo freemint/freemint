@@ -159,11 +159,17 @@ copy_nf_modules() {
 }
 copy_debug_modules() {
 	local SYSDIR="$1"
-	local TARGET="$2"
 	mkdir -p "$SYSDIR"
-	cp "$SRC/sys/xdd/scc/.compile_${TARGET}/scc.xdd" "$SYSDIR"
-	cp "$SRC/sys/xdd/mfp/.compile_${TARGET}/mfp.xdd" "$SYSDIR"
-	cp "$SRC/sys/xdd/uart/.compile_${TARGET}/uart.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/scc/.compile_deb/scc.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/mfp/.compile_deb/mfp.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/uart/.compile_deb/uart.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/skeleton/.compile_deb/dummy.xdd" "$SYSDIR"
+	cp "$SRC/sys/xfs/skeleton/.compile_deb/dummy.xfs" "$SYSDIR"
+	cp "$SRC/sys/xdd/nfstderr/.compile_deb/nfstderr.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/nfexec/.compile_deb/nfexec.xdd" "$SYSDIR"
+	cp "$SRC/sys/xdd/nfcdrom/.compile_deb/nfcdrom.xdd" "$SYSDIR"
+	cp "$SRC/sys/xfs/aranym/.compile_deb/aranym.xfs" "$SYSDIR"
+	cp "$SRC/sys/xfs/hostfs/.compile_deb/hostfs.xfs" "$SYSDIR"
 }
 
 copy_xaloader() {

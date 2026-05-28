@@ -60,7 +60,7 @@ then
 		copy_ct60_modules "$MINTDIR"
 	elif [ "$CPU_TARGET" = "deb" ]
 	then
-		copy_debug_modules "$MINTDIR" "$CPU_TARGET"
+		copy_debug_modules "$MINTDIR"
 	fi
 else
 	copy_firebee_modules "$MINTDIR"
