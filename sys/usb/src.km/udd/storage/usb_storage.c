@@ -2296,9 +2296,6 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			continue;
 		}
 
-		usb_block_desc[global_lun_id].storage_dev_id = i;
-		mass_storage_dev[i].usb_block_desc[lun] = &usb_block_desc[global_lun_id];
-
 		/* Supported device types: hard disks, CD-ROMs, and floppy drives (UFI subclass) */
 		if ((usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_HARDDISK
 		   && (usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_CDROM
@@ -2306,6 +2303,9 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			usb_stor_reset(global_lun_id);
 			continue;
 		}
+
+		usb_block_desc[global_lun_id].storage_dev_id = i;
+		mass_storage_dev[i].usb_block_desc[lun] = &usb_block_desc[global_lun_id];
 
 		/* Only init partitions when LUN is ready.
 		 * Skip partition scanning for CD-ROMs.
