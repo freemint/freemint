@@ -301,8 +301,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 		y = md->y;
 		ks = md->kstate;
 	} else {
-		/* use the global state so clicks outside its windows are visible (matches N.AES/MagiC/Geneva). */
-		mbutts = mainmd.cstate;
+		mbutts = md->cstate;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.P_handle, &ks);
 	}
@@ -423,7 +422,7 @@ check_queued_events(struct xa_client *client)
 				*out++ = 1;
 				*out++ = mbs.x;
 				*out++ = mbs.y;
-				*out++ = mbs.b;
+				*out++ = mainmd.cstate;
 				*out   = mbs.ks;
 				goto got_evnt;
 			}
@@ -487,7 +486,10 @@ check_queued_events(struct xa_client *client)
 		*out++ = events;
 		*out++ = mbs.x;
 		*out++ = mbs.y;
-		*out++ = mbs.b;
+		/* For a real MU_BUTTON event report the state at the click;
+		 * otherwise report the live physical button state so it is
+		 * visible regardless of focus (matches N.AES/MagiC/Geneva). */
+		*out++ = (events & MU_BUTTON) ? mbs.b : mainmd.cstate;
 		*out++ = mbs.ks;
 		*out++ = key;
 		*out   = mbs.c;

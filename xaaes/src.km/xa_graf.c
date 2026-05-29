@@ -1395,7 +1395,7 @@ XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 		get_mbstate(client, &mbs);
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
-		pb->intout[3] = mbs.b;
+		pb->intout[3] = mainmd.cstate;
 		pb->intout[4] = mbs.ks;
 	} else
 	{

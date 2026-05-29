@@ -229,7 +229,7 @@ cXA_deliver_rect_event(int lock, struct c_event *ce, short cancel)
 				*out++ = events;
 				*out++ = mbs.x;
 				*out++ = mbs.y;
-				*out++ = mbs.b;
+				*out++ = mainmd.cstate;
 				*out++ = mbs.ks;
 				*out++ = 0;
 				*out   = 0;
@@ -239,7 +239,7 @@ cXA_deliver_rect_event(int lock, struct c_event *ce, short cancel)
 				*out++ = 1;
 				*out++ = mbs.x;
 				*out++ = mbs.y;
-				*out++ = mbs.b;
+				*out++ = mainmd.cstate;
 				*out   = mbs.ks;
 			}
 		}
