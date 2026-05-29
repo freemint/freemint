@@ -2296,38 +2296,17 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 			continue;
 		}
 
-		//dev_print(&usb_block_desc[global_lun_id]);
-#if 0
-		if(ss->subclass == US_SC_UFI)
-		{
-			DEBUG(("detected USB floppy not supported at this time\r\n"));
-			/* This is a floppy drive, so give it a drive letter ? B ?. */
-			/* Also, we may be better to intercept the TRAP #1 floppy handlers
-			 * and deal with them here. ??? */
-			//usb_stor_reset(global_lun_id);
-			//continue;
-		}
-
-		/* Skip everything apart from HARDDISKS and CDROM */
-		if((usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_HARDDISK
-		   && (usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_CDROM) {
-/*
-		c_conws(usb_block_desc[global_lun_id].vendor);
-		c_conout(' ');
-		c_conws(usb_block_desc[global_lun_id].product);
-		c_conout(' ');
-		c_conws(", type : ");
-		hex_long(usb_block_desc[global_lun_id].type & 0x1f);
-		c_conws(" not installed\r\n");
-*/
-			//usb_stor_reset(global_lun_id);
-			//continue;
-		}
-#endif
 		usb_block_desc[global_lun_id].storage_dev_id = i;
 		mass_storage_dev[i].usb_block_desc[lun] = &usb_block_desc[global_lun_id];
 
 		if (r > 0) /* Only init partitions when LUN is ready */
+		/* Supported device types: hard disks, CD-ROMs, and floppy drives (UFI subclass) */
+		if ((usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_HARDDISK
+		   && (usb_block_desc[global_lun_id].type & 0x1f) != DEV_TYPE_CDROM
+		   && mass_storage_dev[i].usb_stor.subclass != US_SC_UFI) {
+			usb_stor_reset(global_lun_id);
+			continue;
+		}
 			part_init(global_lun_id, &usb_block_desc[global_lun_id]);
 
 		device_handled = TRUE;
