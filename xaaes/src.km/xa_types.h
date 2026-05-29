@@ -2702,13 +2702,6 @@ struct config
 	short backname;
 	*/
 
-	short next_active;		/* 0 = set owner of previous topped (or only) window upon client termination */
-					/* 1 = set previous active client active upon client termination */
-#if 0
-	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
-					/* 1 = Keep client whose last window was closed infront. */
-#endif
-
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
 	bool leave_top_border;	/* windows may be moved higher than top of screen */

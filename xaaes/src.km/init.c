@@ -296,7 +296,6 @@ static void configure(void)
 	cfg.back_col = -1;
 	cfg.menu_bar = 2;	// always on
 	cfg.allow_setexc = -1;	/* dont change */
-	cfg.next_active = 0;
 
 	cfg.ver_wheel_id = 0;
 	cfg.ver_wheel_amount = 1;

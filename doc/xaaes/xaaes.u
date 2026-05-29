@@ -498,11 +498,6 @@ Time in milliseconds before popups close. E.g. popuot_timeout = 800
 Set number of lines of a popup above which it will be made scrollable.
    E.g. popscroll = 5
 
-!item [NEXT_ACTIVE <'client' or 'window'> (default 'window')] (!nl)
-Selects whether the previous active application or the owner of the previous
-   topped (or only) window should be set active upon client termination.
-   E.g. next_active = client
-
 !item [ALERT_WINDOWS <bitmask> default 0xffff] (!nl)
 alert_window is a bitmask indicating which alerts coming via the alert pipe
    will be shown in a window. The idea is that this mask is used to tell the
@@ -847,7 +842,7 @@ Setting this will prevent the app from being hidden by XaAES, which is very
    handy for applications like Taskbar, zTask, or FreeGEM. It can be considered
    the same an "always on top" setting found on other OS's.
 
-!item [CLWTNA <number> (default 1)] (!nl)
+!item [CLWTNA <number> (default 0)] (!nl)
 (Close Last Window Tops Next App) Allows you to choose what to do when the
    last window of a client or application that is on top has been closed.
    This argument takes a value of 0, 1 or 2, which have the following meaning:

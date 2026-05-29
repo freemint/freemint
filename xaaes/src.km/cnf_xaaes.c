@@ -56,7 +56,6 @@ struct cnfdata
 
 static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
-static PCB_T	pCB_next_active;
 static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
@@ -125,7 +124,6 @@ static struct parser_item parser_tab[] =
 	/* config settings */
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
 
-	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
 	{ "INCLUDE",               PI_C_T,		pCB_include	},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
@@ -457,44 +455,6 @@ pCB_toppage(char *str)
 
 	DIAGS(("pCB_toppage: %s (topname %i, backname %i)",
 		str, cfg.topname, cfg.backname));
-}
-#endif
-static void
-pCB_next_active(char *str)
-{
-	if (stricmp(str, "client") == 0)
-	{
-		cfg.next_active = 1;
-	}
-	else if (stricmp(str, "window") == 0)
-	{
-		cfg.next_active = 0;
-	}
-	else
-	{
-		// XXX print error, invalid string
-	}
-	DIAGS(("pCB_next_active: %s (next_active %i)",
-		str, cfg.next_active));
-}
-#if 0
-static void
-pCB_close_lastwind(char *str)
-{
-	if (stricmp(str, "client") == 0)
-	{
-		cfg.last_wind = 1;
-	}
-	else if (stricmp(str, "window") == 0)
-	{
-		cfg.last_wind = 0;
-	}
-	else
-	{
-		// XXX print error, invalid string
-	}
-	DIAGS(("pCB_close_lastwind: %s (last_wind %i)",
-		str, cfg.last_wind));
 }
 #endif
 

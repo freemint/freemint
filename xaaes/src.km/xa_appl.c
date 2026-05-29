@@ -712,17 +712,9 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 
 	if (is_infront(client)) {
 		was_infront = true;
-		if (cfg.next_active == 1) {
-			top_owner = APP_LIST_START;
-			if (top_owner == client)
-				top_owner = previous_client(lock, 1);
-		} else if (cfg.next_active == 0) {
-			struct xa_window *tw = get_topwind(lock, client, window_list, true, XAWS_OPEN|XAWS_HIDDEN, XAWS_OPEN);
-			if (!tw)
-				tw = get_topwind(lock, client, window_list, true, XAWS_OPEN, XAWS_OPEN);
-			if (tw)
-				top_owner = tw->owner;
-		}
+		top_owner = APP_LIST_START;
+		if (top_owner == client)
+			top_owner = previous_client(lock, 1);
 	}
 
 	swap_menu(lock, client, NULL, SWAPM_REMOVE);
