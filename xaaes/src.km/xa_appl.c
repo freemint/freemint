@@ -712,9 +712,7 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 
 	if (is_infront(client)) {
 		was_infront = true;
-		top_owner = APP_LIST_START;
-		if (top_owner == client)
-			top_owner = previous_client(lock, 1);
+		top_owner = previous_client(lock, 1);
 	}
 
 	swap_menu(lock, client, NULL, SWAPM_REMOVE);

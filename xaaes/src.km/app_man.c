@@ -1081,7 +1081,7 @@ next_app(int lock, bool wwom, bool no_acc)
 	{
 		while (client)
 		{
-			if (!(client->type & APP_SYSTEM) || !(no_acc && (client->type & APP_ACCESSORY)))
+			if (!(client->type & APP_SYSTEM) && !(no_acc && (client->type & APP_ACCESSORY)))
 			{
 				if (client->std_menu || client->nxt_menu ||
 				    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
