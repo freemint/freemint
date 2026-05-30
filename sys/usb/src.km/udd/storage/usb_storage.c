@@ -2270,6 +2270,10 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	mass_storage_dev[i].target = dev->devnum;
 
+	/* Optical drives need extra time to settle */
+	if (mass_storage_dev[i].usb_stor.subclass == US_SC_8020)
+		mdelay(2000);
+
 	for (global_lun_id = 0; i < MAX_TOTAL_LUN_NUM; global_lun_id++)
 	{
 		if (usb_block_desc[global_lun_id].target == 0xff)
