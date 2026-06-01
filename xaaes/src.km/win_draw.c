@@ -3049,6 +3049,114 @@ fix_widg(OBJECT *widg)
 	widg->ob_y = 0;
 }
 
+/* Vertical 2:1 squash: OR-combine adjacent scanlines (scanline = all planes).
+ * OR preserves thin lines better than dropping rows. */
+static void
+squash_rows(unsigned short *p, short scanline, short h)
+{
+	short r, c;
+
+	if (!p)
+		return;
+	for (r = 0; r < h / 2; r++)
+		for (c = 0; c < scanline; c++)
+			p[r * scanline + c] = p[(2 * r) * scanline + c] | p[(2 * r + 1) * scanline + c];
+}
+
+/* Horizontal 2:1 squash: OR-combine adjacent bit pairs in each word (16->8,
+ * left-aligned). Valid only for icons <= 16px wide, where every word is one
+ * plane's complete pixel row - so this works for color (planar) data too. */
+static void
+squash_cols(unsigned short *p, long nwords)
+{
+	long i;
+	short k;
+
+	if (!p)
+		return;
+	for (i = 0; i < nwords; i++)
+	{
+		unsigned short v = p[i], o = 0;
+
+		for (k = 0; k < 8; k++)
+			if ((v >> (14 - 2 * k)) & 3)
+				o |= 0x8000 >> k;
+		p[i] = o;
+	}
+}
+
+/*
+ * Window-widget icons are designed for square pixels and look wrong on the
+ * low-res ST screens. ST-medium (640x200) makes them twice as tall; ST-low
+ * (320x200) twice as tall AND twice as wide. In those modes squash the widget
+ * icons 2:1 vertically (always) and horizontally (doX, ST-low only), and
+ * halve ib_hicon/ib_wicon to match. The widget size (set_widg_size) is read
+ * straight from the ICONBLK, so the widgets shrink and the icon still fits
+ * exactly - no clipping. Color (G_CICON) sets are squashed in place across the
+ * mono fallback and every colour/resolution variant, keeping them in colour.
+ */
+static void
+squash_widg_icon(OBJECT *widg, bool doX)
+{
+	OBSPEC *spec;
+	ICONBLK *ib;
+	short type = widg->ob_type & 0xff;
+	short wpl, h;
+	long half;
+
+	if (type != G_ICON && type != G_CICON)
+		return;
+
+	spec = (*api->object_get_spec)(widg);
+	ib = spec->iconblk;			/* == &ciconblk->monoblk for G_CICON */
+	h = ib->ib_hicon;
+	if (h < 2)
+		return;
+
+	wpl = (ib->ib_wicon + 15) >> 4;		/* words per line per plane */
+	if (wpl != 1)				/* horizontal squash needs <= 16px wide */
+		doX = false;
+	half = (long)wpl * (h / 2);
+
+	/* mono icon / B&W fallback (1 plane) */
+	squash_rows((unsigned short *)ib->ib_pdata, wpl, h);
+	squash_rows((unsigned short *)ib->ib_pmask, wpl, h);
+	if (doX)
+	{
+		squash_cols((unsigned short *)ib->ib_pdata, half);
+		squash_cols((unsigned short *)ib->ib_pmask, half);
+	}
+
+	if (type == G_CICON)
+	{
+		CICON *ci = spec->ciconblk->mainlist;
+
+		while (ci)
+		{
+			short sd = wpl * ci->num_planes;	/* data scanline, planar */
+
+			squash_rows((unsigned short *)ci->col_data, sd, h);
+			squash_rows((unsigned short *)ci->col_mask, wpl, h);
+			squash_rows((unsigned short *)ci->sel_data, sd, h);
+			squash_rows((unsigned short *)ci->sel_mask, wpl, h);
+			if (doX)
+			{
+				squash_cols((unsigned short *)ci->col_data, (long)sd * (h / 2));
+				squash_cols((unsigned short *)ci->col_mask, half);
+				squash_cols((unsigned short *)ci->sel_data, (long)sd * (h / 2));
+				squash_cols((unsigned short *)ci->sel_mask, half);
+			}
+			ci = ci->next_res;
+		}
+	}
+
+	ib->ib_hicon = h / 2;
+	if (doX)
+		ib->ib_wicon = (ib->ib_wicon + 1) / 2;
+	if (ib->ib_ytext >= ib->ib_hicon)
+		ib->ib_ytext = 0;
+}
+
 /* Standard Widget Set from widget resource file */
 static void
 fix_default_widgets(void *rsc)
@@ -3576,9 +3684,19 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		{
 			GRECT c;
 			OBJECT *tree = (*api->resource_tree)(rsc, 0);
-			(*api->ob_spec_xywh)(tree, 1, &c);
 			(*api->init_widget_tree)(NULL, &m->wwt, tree);
 
+			/* low/medium res: render widgets at half height (and half
+			 * width too in ST-low 320x200, where they are also too wide) */
+			if (scrninf->r.g_h <= 280)
+			{
+				bool doX = scrninf->r.g_w <= 400;
+				int i;
+				for (i = 1; i < WIDG_CFG; i++)
+					squash_widg_icon(tree + i, doX);
+			}
+
+			(*api->ob_spec_xywh)(tree, 1, &c);
 			widg_w = c.g_w;
 			widg_h = c.g_h;
 
@@ -3617,6 +3735,12 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_utop_cols.title_txt.normal.font_point = MEDIUM_FONT_POINT;
 			def_utop_cols.title_txt.selected.font_point = MEDIUM_FONT_POINT;
 			def_utop_cols.title_txt.highlighted.font_point = MEDIUM_FONT_POINT;
+			mono_def_otop_cols.title_txt.normal.font_point = MEDIUM_FONT_POINT;
+			mono_def_otop_cols.title_txt.selected.font_point = MEDIUM_FONT_POINT;
+			mono_def_otop_cols.title_txt.highlighted.font_point = MEDIUM_FONT_POINT;
+			mono_def_utop_cols.title_txt.normal.font_point = MEDIUM_FONT_POINT;
+			mono_def_utop_cols.title_txt.selected.font_point = MEDIUM_FONT_POINT;
+			mono_def_utop_cols.title_txt.highlighted.font_point = MEDIUM_FONT_POINT;
 		}
 
 		/* set window-title and info-font-id */
