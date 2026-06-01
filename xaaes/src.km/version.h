@@ -38,9 +38,6 @@
 #define DEV_STATUS	AES_DEVSTATUS_BETA
 //#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 
-/* This is only used in wind_get(WF_XAAES) which will be removed */
-#define HEX_VERSION	0x09
-
 #define SHORT_NAME		"XaAES"
 #define AES_ID		"   " SHORT_NAME
 

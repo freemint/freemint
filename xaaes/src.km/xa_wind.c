@@ -1248,8 +1248,6 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			case WF_SCREEN:
 			case WF_WHEEL:
 			case WF_OPTS:
-			case WF_XAAES: /* 'XA', idee stolen from WINX */
-				break;
 			default:
 				DIAGS(("WARNING:wind_get for %s: Invalid window handle %d", c_owner(client), wind));
 				o[0] = 0;	/* Invalid window handle, return error */
@@ -1746,12 +1744,6 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 	case WF_SHADE:
 		*o = (w->window_status & XAWS_SHADED) ? 1 : 0;
 		o[1] = *o;
-		break;
-
-	case WF_XAAES: /* 'XA' */
-		o[0] = WF_XAAES;
-		o[1] = HEX_VERSION;
-		DIAGS(("hex_version = v%04x",o[1]));
 		break;
 
 	case WF_OPTS:
