@@ -1520,7 +1520,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg;
 
 		widg = get_widget(w, XAW_INFO);
-		if (widg->stuff)
+		if (widg->stuff.ptr)
 		{
 			*ro = widg->r;
 		}
