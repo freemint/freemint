@@ -2169,11 +2169,11 @@ long _cdecl init_ucd(struct kentry *k, struct usb_module_api *uapi, char **reaso
 
 #if defined(__mc68030__) || defined(__mc68040__) || defined(__mc68060__)
 #ifdef TOSONLY
-	delay_150ns = loopcount_1_msec * 15 / 100000;
-	delay_300ns = loopcount_1_msec * 3 / 10000;
+	delay_150ns = loopcount_1_msec * 15 / 100000 + 1;
+	delay_300ns = loopcount_1_msec * 3 / 10000 + 1;
 #else
-	delay_150ns = getloops4ns(150);
-	delay_300ns = getloops4ns(300);
+	delay_150ns = getloops4ns(150) + 1;
+	delay_300ns = getloops4ns(300) + 1;
 #endif /* TOSONLY */
 #endif /* (__mc68030__) || (__mc68040__) || (__mc68060__) */
 
