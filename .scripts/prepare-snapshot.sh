@@ -39,10 +39,6 @@ then
 	then
 		copy_m68k_modules "$MINTDIR" "$CPU_TARGET"
 		copy_nf_modules "$MINTDIR" "$CPU_TARGET"
-		if [ -z "${VERSIONED+x}" ] && [ "$CPU_TARGET" = "02060" ]
-		then
-			copy_aranym_modules "$MINTDIR"
-		fi
 	fi
 	if [ "$CPU_TARGET" = "000" ]
 	then
@@ -58,6 +54,7 @@ then
 		copy_milan_modules "$MINTDIR"
 		copy_hades_modules "$MINTDIR"
 		copy_ct60_modules "$MINTDIR"
+		copy_aranym_modules "$MINTDIR"
 	elif [ "$CPU_TARGET" = "deb" ]
 	then
 		copy_debug_modules "$MINTDIR"
