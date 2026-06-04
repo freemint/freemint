@@ -16,7 +16,7 @@ include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
 # default overwrites
-LDEXTRA = -nostdlib -Wl,--entry,_init
+LDEXTRA = -nostdlib -Wl,--entry,_init -Wl,--msuper-memory
 GENERAL += -Wa,--defsym,GAS=1
 INCLUDES += -I$(srcdir)/src
 

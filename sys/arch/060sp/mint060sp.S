@@ -48,7 +48,6 @@ XBRA_AB40 = 0x41423430              /* "AB40" */
 XBRA_MCSP = 0x4d435350              /* "MCSP" */
 
 C__CPU    = 0x5f435055              /* "_CPU" */
-C_CT60    = 0x43543630              /* "CT60" */
 
     .text
 
@@ -91,8 +90,6 @@ _init:
 /*
  * check cookie for CPU
  * - exit if no '060 found
- * - also check for CT60, which has the FPSP in ROM,
- *   but does not use XBRA for the vectors.
  */
     movea.l 0x5A0,a5        /* cookie jar */
     clr.l   d1
@@ -100,8 +97,6 @@ cpu_ident:
     move.l  (a5)+,d0        /* id */
     beq.b   cpu_ident_end
     move.l  (a5)+,d2        /* value */
-    cmp.l   #C_CT60,d0
-    beq.b   is_ct60
     cmp.l   #C__CPU,d0      /* '_CPU' ? */
     bne.b   cpu_ident
     move.l  d2,d1
@@ -125,10 +120,6 @@ exit:
     clr.w   -(sp)           /* Pterm(0) */
     trap    #1
 
-is_ct60:
-    lea ct60_msg(pc),a0
-    bra.s print_and_exit
-
 already_installed:
     lea already_installed_msg(pc),a0
     bra.s print_and_exit
@@ -139,7 +130,7 @@ already_installed:
 cpu_060:
 
     move.l   0xf4(a1),a0
-    cmp.l    #XBRA,-12(a0)
+    cmp.l    #XBRA_MAGIC,-12(a0)
     bne.s    doinstall
     /*
      * skip if any other similar package already installed
@@ -248,23 +239,19 @@ no_060_msg:
     .ascii "No 060 CPU detected, FPSP not installed!"
     .dc.b  13,10,0
 
-ct60_msg:
-    .ascii "CT60 detected, FPSP not installed!"
-    .dc.b  13,10,0
-
 already_installed_msg:
     .ascii "FPSP already installed!"
     .dc.b  13,10,0
 
     .even
 
-    .dc.l XBRA
+    .dc.l XBRA_MAGIC
     .dc.l XBRA_ID
     .dc.l 0
 new_fline:
     bra _top_fpsp+0x80+0x30
 
-    .dc.l XBRA
+    .dc.l XBRA_MAGIC
     .dc.l XBRA_ID
     .dc.l 0
 new_int_instr:

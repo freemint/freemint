@@ -94,7 +94,7 @@ already_installed:
 /* ---------------------------------------------------------------------------------- */
 cpu_040:
 	move.l   0x2c(a1),a0
-	cmp.l    #XBRA,-12(a0)
+	cmp.l    #XBRA_MAGIC,-12(a0)
 	bne.s    doinstall
 	cmp.l    #XBRA_ID,-8(a0)
 	beq      already_installed
@@ -239,7 +239,7 @@ already_installed_msg:
  * 	All dz exceptions are 'real', hence no fpsp_dz entry point.
  */
 	.globl	_040_fpsp_dz
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_dz:
@@ -272,7 +272,7 @@ _040_fpsp_dz:
  *
  */
 	.globl	_040_fpsp_inex
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_inex:
@@ -343,7 +343,7 @@ inex_done:
 	.xref	fpsp_ovfl
 	.globl	real_ovfl
 	.globl	_040_fpsp_ovfl
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_ovfl:
@@ -366,7 +366,7 @@ ovfl_done:
 	.xref	fpsp_unfl
 	.globl	real_unfl
 	.globl	_040_fpsp_unfl
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_unfl:
@@ -388,7 +388,7 @@ unfl_done_skel:
 	.xref	fpsp_snan
 	.globl	real_snan
 	.globl	_040_fpsp_snan
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_snan:
@@ -407,7 +407,7 @@ real_snan:
 	.xref	fpsp_operr
 	.globl	real_operr
 	.globl	_040_fpsp_operr
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_operr:
@@ -428,7 +428,7 @@ real_operr:
 	.xref	fpsp_bsun
 	.globl	real_bsun
 	.globl	_040_fpsp_bsun
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_bsun:
@@ -455,7 +455,7 @@ real_bsun:
 	.xref	fpsp_fline
 	.globl	real_fline
 	.globl	_040_fpsp_fline
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_fline:
@@ -469,7 +469,7 @@ real_fline:
 	.xref	fpsp_unsupp
 	.globl	real_unsupp
 	.globl	_040_fpsp_unsupp
-	.dc.l XBRA
+	.dc.l XBRA_MAGIC
 	.dc.l XBRA_ID
 	.dc.l 0
 _040_fpsp_unsupp:
