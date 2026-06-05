@@ -639,7 +639,7 @@ get_partinfo_dos(block_dev_desc_t *block_desc, long ext_part_sector, long relati
 			return 0;
 		}
 		/* Reverse engr the fdisk part# assignment rule! */
-		if((ext_part_sector == 0) || (pt->sys_ind != 0 && !is_extended_dos(pt->sys_ind)))
+		if((ext_part_sector == 0 || pt->sys_ind != 0) && !is_extended_dos(pt->sys_ind))
 			part_num++;
 	}
 
