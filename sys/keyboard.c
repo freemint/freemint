@@ -132,15 +132,13 @@
 static const uchar modifiers[] =
 {
 	/* Don't add CAPS here, it's handled separately */
-	CONTROL, RSHIFT, LSHIFT, ALTERNATE, CLRHOME, INSERT,
-	ALTGR, 0
+	CONTROL, RSHIFT, LSHIFT, ALTERNATE, ALTGR, 0
 };
 
 /* Masks correspond to the above modifier scancodes */
 static const uchar mmasks[] =
 {
-	MM_CTRL, MM_RSHIFT, MM_LSHIFT, MM_ALTERNATE, MM_CLRHOME, MM_INSERT,
-	MM_ALTGR
+	MM_CTRL, MM_RSHIFT, MM_LSHIFT, MM_ALTERNATE, MM_ALTGR
 };
 
 /* Exported variables */
@@ -1109,8 +1107,9 @@ IkbdScan(PROC *p, long arg)
 			*kbshft = mshift = shift;
 
 			/*
-			 * CapsLock, ClrHome, Insert make keyclick,
-			 * Alt, AltGr, Control and Shift don't.
+			 * CapsLock makes a keyclick here; Insert and Clr/Home
+			 * also click, but as ordinary keys below. The real
+			 * modifiers (Shift, Control, Alt, AltGr) don't click.
 			 */
 			if (clk && make)
 				kbdclick(scan);
@@ -1119,8 +1118,7 @@ IkbdScan(PROC *p, long arg)
 			 * CapsLock key cannot be auto-repeated (unlike on original TOS).
 			 * ClrHome and Insert must be handled as other keys.
 			 */
-			if ((scan != CLRHOME) && (scan != INSERT))
-				continue;
+			continue;
 		}
 
 		/* Here we handle keys of `system wide' meaning. These are:
