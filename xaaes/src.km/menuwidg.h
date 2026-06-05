@@ -47,7 +47,7 @@ int	detach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item);
 void	free_attachments(struct xa_client *client);
 void	remove_attachments(int lock, struct xa_client *client, XA_TREE *wt);
 void	set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu);
-void	fix_menu(struct xa_client *client, XA_TREE *root, struct xa_window *w, bool do_desk);
+void	fix_menu(XA_TREE *root, struct xa_window *w);
 
 Tab *	collapse(Tab *from, Tab *upto);
 bool	find_pop(short x, short y, Tab **ret);

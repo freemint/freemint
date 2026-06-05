@@ -162,8 +162,6 @@ extern struct moose_data mainmd;
 
 extern short border_mouse[];
 
-extern const char mnu_clientlistname[];
-
 #include "mscall.h"
 
 struct xa_client *pid2client(short pid);

@@ -26,6 +26,7 @@
 #include "menuwidg.h"
 #include "xa_global.h"
 
+#include "about.h"
 #include "app_man.h"
 #include "c_window.h"
 #include "k_main.h"
@@ -52,8 +53,24 @@ static TASK click_menu_entry;
 static TASK menu_bar;
 
 
-static XAMENU desk_popup;
 static XA_TREE desk_wt;
+
+/*
+ * Sentinel stored in appmenu[].client to mark the "About..." row.
+ * It is never a real client pointer, so click_desk_popup() can tell it
+ * apart and act on the menu-owner's About entry.
+ */
+#define DESK_ABOUT	((struct xa_client *)-1L)
+
+/*
+ * The "About..." row mirrors the desk-menu About entry of whichever client
+ * owns the menu bar. These remember that entry so click_desk_popup() can
+ * either open the XaAES About box (when XaAES owns the menu) or forward the
+ * selection to the owning application.
+ */
+static struct xa_client *desk_about_owner;
+static OBJECT *desk_about_tree;
+static short desk_about_title, desk_about_item, desk_about_parent;
 static bool menu_title(int lock, Tab *tab, short item, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md);
 static XA_TREE *set_popup_widget(Tab *tab, struct xa_window *wind, int item);
 
@@ -333,10 +350,7 @@ attach_menu(int lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *m
 			new->on_open = on_open;
 			new->data = data;
 			mn->wt->links++;
-			/*
-			 * client menu is excluded here because it already has a down arrow
-			 */
-			if ((attach_to->ob_type & 0xff) == G_STRING && mn != &desk_popup)
+			if ((attach_to->ob_type & 0xff) == G_STRING)
 			{
 				char *text = object_get_spec(attach_to)->free_string;
 				long len = strlen(text);
@@ -623,14 +637,14 @@ free_desk_popup(void)
 static OBJECT *
 built_desk_popup(int lock, short x, short y)
 {
-	int n, i, xw, obs, split;
+	int n, i, xw, obs, split, about_split;
 	OBJECT *ob;
 	struct xa_client *client, *fo;
 	size_t maxclients;
 
 	Sema_Up(LOCK_CLIENTS);
 
-	maxclients = client_list_size() + 2; /* how many apps do we have */
+	maxclients = client_list_size() + 4; /* clients + About + 2 separators + slack */
 	maxclients = (maxclients + 31) & ~31; /* increase by 32 slots */
 
 	if (appmenusize < maxclients)
@@ -667,6 +681,31 @@ built_desk_popup(int lock, short x, short y)
 	DIAGS(("built_desk_popup: fetch ACC/AES names.."));
 
 	n = 0;
+
+	/*
+	 * Flat desk menu: start the list with the AES "About..." entry and a
+	 * separator, mimicking a classic TOS desk menu, then list
+	 * the clients (accessories first, then applications) directly below.
+	 */
+	{
+		XA_TREE *amenu = get_menu();
+		OBJECT *mtree = amenu->tree;
+		short box = mtree[mtree[0].ob_tail].ob_head;	/* first dropdown box */
+
+		/* mirror the menu-owner's own About entry (text + action target) */
+		desk_about_owner  = amenu->owner;
+		desk_about_tree   = mtree;
+		desk_about_title  = mtree[mtree[0].ob_head].ob_head;	/* first title */
+		desk_about_parent = box;
+		desk_about_item   = mtree[box].ob_head;			/* About = first item */
+
+		appmenu[n].client = DESK_ABOUT;
+		strcpy(appmenu[n].name, mtree[desk_about_item].ob_spec.free_string);
+		n++;
+	}
+	appmenu[n].client = NULL;
+	strcpy(appmenu[n].name, "-");
+	about_split = n++;
 
 	FOREACH_CLIENT(client)
 	{
@@ -766,9 +805,14 @@ built_desk_popup(int lock, short x, short y)
 		int m;
 
 		ob[j] = drop_choice;
-		if (i == split)
+		if (i == split || i == about_split)
 		{
 			ob[j].ob_state = OS_DISABLED;
+		}
+		else if (appmenu[i].client == DESK_ABOUT)
+		{
+			ob[j].ob_state &= ~OS_CHECKED;
+			ob[j].ob_spec.free_string = appmenu[i].name;
 		}
 		else
 		{
@@ -889,9 +933,6 @@ menu_pop(Tab *tab)
 	{
 		if (!NEXT_TAB(tab))
 			obtree[k->p.parent].ob_flags |= OF_HIDETREE;
-		if (desk_menu(tab))
-			/* remove attached clients popup */
-			detach_menu(tab->lock, C.Aes, k->m.wt, k->m.about + 2);
 	}
 
 	if (NEXT_TAB(tab))
@@ -1557,7 +1598,22 @@ click_desk_popup(struct task_administration_block *tab, short item)
 	if (m >= 0 && m < appmenusize)
 		client = appmenu[m].client;
 
-	if (client)
+	if (client == DESK_ABOUT)
+	{
+		/*
+		 * "About..." row of the flat desk menu. If XaAES owns the menu,
+		 * open the XaAES About box; otherwise forward the selection to the
+		 * owning application's own About entry, exactly as selecting it in
+		 * that application's desk menu would.
+		 */
+		if (desk_about_owner && desk_about_owner != C.Aes)
+			send_app_message(lock, wind, desk_about_owner, AMQ_NORM | AMQ_ANYCASE, QMF_CHKDUP,
+					 MN_SELECTED, 0, 0, desk_about_title,
+					 desk_about_item, (long)desk_about_tree >> 16, (long)desk_about_tree, desk_about_parent);
+		else
+			post_cevent(C.Hlp, ceExecfunc, open_about, NULL, 1, 0, NULL, NULL);
+	}
+	else if (client)
 	{
 		DIAG((D_menu, NULL, "got client %s", c_owner(client)));
 
@@ -2342,24 +2398,21 @@ menu_title(int lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *w
 
 		if (desk_menu(tab))
 		{
-			desk_popup.menu.mn_tree = built_desk_popup(tab->lock, 24,24);
-			desk_popup.menu.mn_menu = 0;
-			desk_popup.menu.mn_item = 0;
-			desk_popup.menu.mn_scroll = 0;
-			desk_popup.menu.mn_keystate = 0;
-
-			desk_popup.wt = &desk_wt;
-
-			desk_wt.tree = desk_popup.menu.mn_tree;
+			desk_wt.tree = built_desk_popup(tab->lock, 24, 24);
 			desk_wt.owner = C.Aes;
 			clear_edit(&desk_wt.e);
 			clear_focus(&desk_wt);
 
-			attach_menu(tab->lock, C.Aes, wt, k->m.about + 2, &desk_popup, NULL,NULL);
+			k->entry = menuclick;
+			k->select = click_desk_popup;
+			k->p.wt = &desk_wt;
+			k->p.parent = 0;
 		}
-
-		k->p.wt = wt;
-		k->p.parent = item;
+		else
+		{
+			k->p.wt = wt;
+			k->p.parent = item;
+		}
 		display_popup(tab, r.g_x, r.g_y);
 
 		k->em.flags = MU_M1;
@@ -2515,7 +2568,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
  */
 
 void
-fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool do_desk)
+fix_menu(XA_TREE *menu, struct xa_window *wind)
 {
 	int titles, menus, tbar, s_ob, t_ob;
 	short h;
@@ -2551,46 +2604,6 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 		root[s_ob].ob_y = 0;
 		t_ob = root[t_ob].ob_next;
 		s_ob = root[s_ob].ob_next;
-	}
-
-	/* fix desk menu */
-	if (do_desk)
-	{
-		int o;
-		s_ob = root[menus].ob_head;
-		t_ob = root[s_ob ].ob_head;
-
-		/* LASTOB in next 3 entries - bogus structure? */
-		for( o = 0; o < 3; o++ )
-		{
-			if( (root[t_ob+o].ob_flags & OF_LASTOB) )
-			{
-				break;
-			}
-		}
-		if( o == 3 )
-		{
-			t_ob += 3;
-			root[s_ob].ob_height = root[t_ob].ob_y - root[s_ob].ob_y;
-
-			/* client->mnu_clientlistname is umalloced area */
-			root[t_ob-1].ob_spec.free_string = client->mnu_clientlistname;
-			DIAG((D_menu, NULL, "menufix for %s - adding object at %lx", client->name, (unsigned long)client->mnu_clientlistname));
-		}
-		else
-			t_ob = 0;
-
-		while (t_ob != s_ob)
-		{
-			root[t_ob].ob_flags |= OF_HIDETREE|OS_DISABLED;
-			t_ob = root[t_ob].ob_next;
-			if( t_ob < 0 || (root[t_ob].ob_flags & OF_LASTOB) )
-				break;
-		}
-		if( t_ob != s_ob )
-		{
-			BLOG((0,"%s: fix_menu: wrong links? (s=%d,t=%d)", client->name, s_ob, t_ob));
-		}
 	}
 
 	DIAG((D_menu, NULL, "done fix_menu()"));

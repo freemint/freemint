@@ -1016,11 +1016,11 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 				{
 
 					DIAGS(("  --- install new menu"));
-					/* fix_menu(client, ob, false); */
+					/* fix_menu(ob, w); */
 					if (!wt)
 						wt = new_widget_tree(client, ob);
 					assert(wt);
-					fix_menu(client, wt, w, false);
+					fix_menu(wt, w);
 					set_menu_widget(w, client, wt);
 					rp_2_ap_cs(w, widg, NULL);
 					if (wt && wt->tree)

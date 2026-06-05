@@ -1016,10 +1016,7 @@ k_init(unsigned short dev, unsigned short mc)
 	wt_menu_area(client->std_menu);
 	set_rootmenu_area(client);
 
-	client->mnu_clientlistname = kmalloc(strlen(xa_strings(MNU_CLIENTS)) + 1);
-	assert(client->mnu_clientlistname);
-	strcpy(client->mnu_clientlistname, xa_strings(MNU_CLIENTS));
-	fix_menu(client, client->std_menu, root_window, true);
+	fix_menu(client->std_menu, root_window);
 	set_menu_widget(root_window, client, client->std_menu);
 	set_menu_width( client->std_menu->tree, client->std_menu );
 

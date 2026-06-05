@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        412
+ * Number of Strings:        411
  * Number of Bitblks:        0
  * Number of Iconblks:       2
  * Number of Color Iconblks: 30
  * Number of Color Icons:    38
  * Number of Tedinfos:       29
- * Number of Free Strings:   115
+ * Number of Free Strings:   114
  * Number of Free Images:    0
  * Number of Objects:        290
  * Number of Trees:          13
  * Number of Userblks:       0
  * Number of Images:         4
- * Total file size:          74674
+ * Total file size:          74658
  */
 
 #undef RSC_NAME
@@ -35,8 +35,8 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 412
-#define NUM_FRSTR 115
+#define NUM_STRINGS 411
+#define NUM_FRSTR 114
 #define NUM_UD 0
 #define NUM_IMAGES 4
 #define NUM_BB 0
@@ -389,95 +389,93 @@
 
 #define AL_NOSHELL                        70 /* Free string */
 
-#define MNU_CLIENTS                       71 /* Free string */
+#define XA_HELP_FILE                      71 /* Free string */
 
-#define XA_HELP_FILE                      72 /* Free string */
+#define XS_KEY_CURSOR_UP                  72 /* Free string */
 
-#define XS_KEY_CURSOR_UP                  73 /* Free string */
+#define XS_KEY_CURSOR_DOWN                73 /* Free string */
 
-#define XS_KEY_CURSOR_DOWN                74 /* Free string */
+#define XS_KEY_CURSOR_RIGHT               74 /* Free string */
 
-#define XS_KEY_CURSOR_RIGHT               75 /* Free string */
+#define XS_KEY_CURSOR_LEFT                75 /* Free string */
 
-#define XS_KEY_CURSOR_LEFT                76 /* Free string */
+#define XS_KEY_SPACE                      76 /* Free string */
 
-#define XS_KEY_SPACE                      77 /* Free string */
+#define XS_KEY_ESC                        77 /* Free string */
 
-#define XS_KEY_ESC                        78 /* Free string */
+#define XS_KEY_DOT                        78 /* Free string */
 
-#define XS_KEY_DOT                        79 /* Free string */
+#define XS_KEY_BACKSPACE                  79 /* Free string */
 
-#define XS_KEY_BACKSPACE                  80 /* Free string */
+#define XS_KEY_TAB                        80 /* Free string */
 
-#define XS_KEY_TAB                        81 /* Free string */
+#define XS_KEY_ENTER                      81 /* Free string */
 
-#define XS_KEY_ENTER                      82 /* Free string */
+#define XS_KEY_INSERT                     82 /* Free string */
 
-#define XS_KEY_INSERT                     83 /* Free string */
+#define XS_KEY_HOME                       83 /* Free string */
 
-#define XS_KEY_HOME                       84 /* Free string */
+#define XS_KEY_RETURN                     84 /* Free string */
 
-#define XS_KEY_RETURN                     85 /* Free string */
+#define XS_KEY_DELETE                     85 /* Free string */
 
-#define XS_KEY_DELETE                     86 /* Free string */
+#define XS_KEY_HELP                       86 /* Free string */
 
-#define XS_KEY_HELP                       87 /* Free string */
-
-#define XS_KEY_UNDO                       88 /* Free string */
+#define XS_KEY_UNDO                       87 /* Free string */
 
 /* Border */
-#define BBL_BORDER                        89 /* Free string */
+#define BBL_BORDER                        88 /* Free string */
 
-#define BBL_MOVE                          90 /* Free string */
+#define BBL_MOVE                          89 /* Free string */
 
-#define BBL_WCONTEXT                      91 /* Free string */
+#define BBL_WCONTEXT                      90 /* Free string */
 
-#define BBL_WAPPICN                       92 /* Free string */
+#define BBL_WAPPICN                       91 /* Free string */
 
-#define BBL_CLOSE                         93 /* Free string */
+#define BBL_CLOSE                         92 /* Free string */
 
-#define BBL_FULL                          94 /* Free string */
+#define BBL_FULL                          93 /* Free string */
 
-#define BBL_INFO                          95 /* Free string */
+#define BBL_INFO                          94 /* Free string */
 
-#define BBL_RESIZE                        96 /* Free string */
+#define BBL_RESIZE                        95 /* Free string */
 
-#define BBL_UPLN                          97 /* Free string */
+#define BBL_UPLN                          96 /* Free string */
 
-#define BBL_UPLN1                         98 /* Free string */
+#define BBL_UPLN1                         97 /* Free string */
 
-#define BBL_DNLN                          99 /* Free string */
+#define BBL_DNLN                          98 /* Free string */
 
-#define BBL_VSLIDE                       100 /* Free string */
+#define BBL_VSLIDE                        99 /* Free string */
 
-#define BBL_LFLN                         101 /* Free string */
+#define BBL_LFLN                         100 /* Free string */
 
-#define BBL_LFLN1                        102 /* Free string */
+#define BBL_LFLN1                        101 /* Free string */
 
-#define BBL_RTLN                         103 /* Free string */
+#define BBL_RTLN                         102 /* Free string */
 
-#define BBL_HSLIDE                       104 /* Free string */
+#define BBL_HSLIDE                       103 /* Free string */
 
-#define BBL_ICONIFY                      105 /* Free string */
+#define BBL_ICONIFY                      104 /* Free string */
 
-#define BBL_HIDE                         106 /* Free string */
+#define BBL_HIDE                         105 /* Free string */
 
-#define BBL_TOOLBAR                      107 /* Free string */
+#define BBL_TOOLBAR                      106 /* Free string */
 
-#define BBL_MENU                         108 /* Free string */
+#define BBL_MENU                         107 /* Free string */
 
-#define BBL_MOVER                        109 /* Free string */
+#define BBL_MOVER                        108 /* Free string */
 
-#define BBL_UPPAGE                       110 /* Free string */
+#define BBL_UPPAGE                       109 /* Free string */
 
-#define BBL_DNPAGE                       111 /* Free string */
+#define BBL_DNPAGE                       110 /* Free string */
 
-#define BBL_LFPAGE                       112 /* Free string */
+#define BBL_LFPAGE                       111 /* Free string */
 
-#define BBL_RTPAGE                       113 /* Free string */
+#define BBL_RTPAGE                       112 /* Free string */
 
-#define _RSM_CRC_                        114 /* Free string */
-#define _RSM_CRC_STRING_ "& RSM-crc >1D50< crc-MSR $"
+#define _RSM_CRC_                        113 /* Free string */
+#define _RSM_CRC_STRING_ "& RSM-crc >1D43< crc-MSR $"
 
 
 

@@ -146,10 +146,6 @@ k_shutdown(void)
 		if (C.Aes->attach)
 			kfree(C.Aes->attach);
 
-		BLOG((false, "free clientlistname"));
-		if (C.Aes->mnu_clientlistname)
-			kfree(C.Aes->mnu_clientlistname);
-
 		/*
 		 * Exit the widget theme module
 		 */

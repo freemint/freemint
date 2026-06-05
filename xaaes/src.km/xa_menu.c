@@ -108,7 +108,7 @@ XA_menu_bar(int lock, struct xa_client *client, AESPB *pb)
 				assert(mwt);
 
 				/* Do a special fix on the menu  */
-				fix_menu(client, mwt, root_window, true);
+				fix_menu(mwt, root_window);
 				DIAG((D_menu,NULL,"fixed menu"));
 
 				/* ->fix menu */

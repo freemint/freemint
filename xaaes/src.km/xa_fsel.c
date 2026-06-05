@@ -3618,7 +3618,7 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			goto memerr;
 
 		dialog_window->opts &= ~XAWO_WCOWORK;
-		fix_menu(client, fs->menu, dialog_window, false);
+		fix_menu(fs->menu, dialog_window);
 		fs_init_menu(fs);
 
 		/* Set the window title */

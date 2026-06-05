@@ -181,20 +181,12 @@ init_client(int lock, bool sysclient)
 
 	if (sysclient) {
 		client->ut = kmalloc(xa_user_things.len);
-		client->mnu_clientlistname = kmalloc(strlen(xa_strings(MNU_CLIENTS))+1);
 	} else {
 		client->ut = umalloc(xa_user_things.len);
-		client->mnu_clientlistname = umalloc(strlen(xa_strings(MNU_CLIENTS))+1);
 	}
 
-	if (!client->ut || !client->mnu_clientlistname) {
+	if (!client->ut) {
 		ALERT((xa_strings(AL_MEM)/*"umalloc for %u failed, out of memory?"*/, p->pid));
-
-		if (client->ut)
-			ufree(client->ut);
-
-		if (client->mnu_clientlistname)
-			ufree(client->mnu_clientlistname);
 
 		detach_extension(NULL, XAAES_MAGIC);
 		return NULL;
@@ -222,14 +214,6 @@ init_client(int lock, bool sysclient)
 	cpushi(client->ut, xa_user_things.len);
 
 	client->cmd_tail = "\0";
-
-	/* Ozk: About the fix_menu() thing; This is just as bad as it
-	 * originally was, the client should have an attachment with
-	 * umalloced space for such things as this. Did it like this
-	 * temporarily...
-	 * When changing this, also change it in k_init.c for the AESSYS
-	 */
-	strcpy(client->mnu_clientlistname, xa_strings(MNU_CLIENTS));
 
 	strncpy(client->proc_name, client->p->name, 8);
 	f = strlen(client->proc_name);
@@ -817,13 +801,9 @@ exit_client(int lock, struct xa_client *client, int code, bool pexit, bool detac
 	if (client == C.Aes || client == C.Hlp) {
 		if (client->ut)
 			kfree(client->ut);
-		if (client->mnu_clientlistname)
-			kfree(client->mnu_clientlistname);
 	} else {
 		if (client->ut)
 			ufree(client->ut);
-		if (client->mnu_clientlistname)
-			ufree(client->mnu_clientlistname);
 	}
 
 	client->cmd_tail = "\0";

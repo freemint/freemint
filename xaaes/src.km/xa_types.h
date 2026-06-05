@@ -2226,8 +2226,6 @@ struct xa_client
 	int xdrive;
 	Path xpath;
 	struct options options;		/* Individual AES options. */
-
-	char	*mnu_clientlistname;	/* This holds the text of the menu-entry for client-list */
 /*
  * This part is for Client event dispatching
 */
