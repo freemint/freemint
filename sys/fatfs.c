@@ -5276,10 +5276,19 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			}
 		}
 
-		/* check media descriptor (must be 0xf8 on harddisks) */
-		if (fbs->media != 0xf8)
+		if (xbpb->ftype == FAT_TYPE_12)
 		{
-			FAT_ALERT (("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)", (int) fbs->media, DriveToLetter(di->drv), (int) (di->id[2])));
+			/* FAT12 (floppy): valid descriptors are 0xF0 and 0xF8–0xFF */
+			if (fbs->media != 0xf0 && fbs->media < 0xf8)
+				FAT_ALERT(("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)",
+					   (int) fbs->media, DriveToLetter(di->drv), (int) (di->id[2])));
+		}
+		else
+		{
+			/* FAT16/FAT32 (hard disk): must be 0xF8 */
+			if (fbs->media != 0xf8)
+				FAT_ALERT(("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)",
+					   (int) fbs->media, DriveToLetter(di->drv), (int) (di->id[2])));
 		}
 	}
 	else
