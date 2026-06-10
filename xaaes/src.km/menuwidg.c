@@ -691,16 +691,25 @@ built_desk_popup(int lock, short x, short y)
 		XA_TREE *amenu = get_menu();
 		OBJECT *mtree = amenu->tree;
 		short box = mtree[mtree[0].ob_tail].ob_head;	/* first dropdown box */
+		short titles = mtree[mtree[0].ob_head].ob_head;	/* the titles box */
+		OBJECT *entry;
 
 		/* mirror the menu-owner's own About entry (text + action target) */
 		desk_about_owner  = amenu->owner;
 		desk_about_tree   = mtree;
-		desk_about_title  = mtree[mtree[0].ob_head].ob_head;	/* first title */
+		desk_about_title  = mtree[titles].ob_head;	/* first title */
 		desk_about_parent = box;
-		desk_about_item   = mtree[box].ob_head;			/* About = first item */
+		desk_about_item   = mtree[box].ob_head;		/* About = first item */
 
 		appmenu[n].client = DESK_ABOUT;
-		strcpy(appmenu[n].name, mtree[desk_about_item].ob_spec.free_string);
+		entry = mtree + desk_about_item;
+		if ((entry->ob_type & 0xff) == G_STRING)
+		{
+			strncpy(appmenu[n].name, object_get_spec(entry)->free_string, sizeof(appmenu[n].name) - 1);
+			appmenu[n].name[sizeof(appmenu[n].name) - 1] = '\0';
+		}
+		else
+			strcpy(appmenu[n].name, "  About...");
 		n++;
 	}
 	appmenu[n].client = NULL;
