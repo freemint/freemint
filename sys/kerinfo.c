@@ -103,7 +103,7 @@ struct kerinfo kernelinfo =
 	_mint_strupr,
 	ksprintf_old,
 	ms_time, unixtime, dostime,
-	nap, sleep, wake, (void _cdecl (*)(long)) wakeselect,
+	nap, sleep, wake, wakeselect_shim,
 	denyshare, denylock,
 	addtimeout_curproc, canceltimeout,
 	addroottimeout, cancelroottimeout,

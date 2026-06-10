@@ -47,6 +47,7 @@ int	_cdecl	sleep		(int que, long cond);
 void	_cdecl	wake		(int que, long cond);
 void	_cdecl	iwake		(int que, long cond, short pid);
 void	_cdecl	wakeselect	(struct proc *p);
+void	_cdecl	wakeselect_shim	(long param);	/* kerinfo slot: wakeselect on a private stack */
 
 void		DUMPPROC	(void);
 void		calc_load_average (void);

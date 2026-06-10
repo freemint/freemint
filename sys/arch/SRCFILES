@@ -33,6 +33,7 @@ COBJS = \
 	scsidrv_emu.S \
 	syscall.S \
 	user_things.S \
+	wakeselect_shim.S \
 	xhdi_emu.S \
 	v4epatch.S
 
