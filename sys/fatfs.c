@@ -1850,7 +1850,7 @@ getcl12 (long cluster, const ushort dev, ulong n)
 		UNIT *u = NULL;
 
 		do {
-			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + ((cluster / entrys) * 3);
+			register const ulong sector = FATSTART (dev) + ((cluster / entrys) * 3);
 			register const ulong offset = ((cluster % entrys) * 12) / 8;
 			register long newcl;
 			long prevcluster = cluster;
@@ -1859,12 +1859,12 @@ getcl12 (long cluster, const ushort dev, ulong n)
 			{
 				register long sectors;
 
-				sectors = FATSIZE (dev) - (sector - (FATSTART (dev) + FATSIZE (dev)));
+				sectors = FATSIZE (dev) - (sector - FATSTART (dev));
 				sectors = MIN (3, sectors);
 
 				FAT_ASSERT ((sectors == 1 || sectors == 2 || sectors == 3));
-				FAT_ASSERT (((sector + sectors) >= (FATSTART (dev) + FATSIZE (dev))));
-				FAT_ASSERT (((sector + sectors) <= (FATSTART (dev) + 2 * FATSIZE (dev))));
+				FAT_ASSERT (((sector + sectors) >= FATSTART (dev)));
+				FAT_ASSERT (((sector + sectors) <= (FATSTART (dev) + FATSIZE (dev))));
 
 				FAT_DEBUG (("getcl12: start = %li, sectors = %li", sector, sectors));
 
@@ -1932,7 +1932,7 @@ getcl16 (long cluster, const ushort dev, ulong n)
 		UNIT *u = NULL;
 
 		do {
-			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + cluster / entrys;
+			register const ulong sector = FATSTART (dev) + cluster / entrys;
 			register const ulong offset = cluster % entrys;
 			long prevcluster = cluster;
 
