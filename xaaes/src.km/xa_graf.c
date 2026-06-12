@@ -1395,7 +1395,13 @@ XA_graf_mkstate(int lock, struct xa_client *client, AESPB *pb)
 		get_mbstate(client, &mbs);
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
-		pb->intout[3] = mainmd.cstate;
+		/* Report the live physical button state so buttons are
+		 * visible regardless of focus. But if this client owns the
+		 * current button-hold (it is the button_waiter) or just consumed
+		 * one of its own button events, report the per-client state
+		 * instead (mainmd is updated after the release packet arrives)
+		 */
+		pb->intout[3] = (mbs.c || C.button_waiter == client) ? mbs.b : mainmd.cstate;
 		pb->intout[4] = mbs.ks;
 	} else
 	{
