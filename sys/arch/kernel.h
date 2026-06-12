@@ -9,6 +9,7 @@
 # include "mint/mint.h"
 
 extern short in_kernel;
+extern short in_reentrant;
 
 void enter_gemdos (void);
 void leave_kernel (void);

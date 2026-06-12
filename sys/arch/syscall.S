@@ -71,6 +71,7 @@
 	.extern	SYM(enter_gemdos)
 	.extern	SYM(leave_kernel)
 	.extern	SYM(in_kernel)
+	.extern	SYM(in_reentrant)
 	.extern	SYM(preempt)
 	.extern	SYM(unwound_stack)
 	.globl	SYM(check_sigs)
@@ -1391,8 +1392,10 @@ reent_cpyargs:
 #endif
 reent_noargs:
 
+	move.w	#1,SYM(in_reentrant)	// tell the wrapper it is called from kernel context
 	move.l	d2,a0		// Function address
 	jsr	(a0)
+	clr.w	SYM(in_reentrant)
 	moveq	#0,d1		// Clear D1 -- we're not gonna call anything else
 reent_out:
 #ifdef __mcoldfire__

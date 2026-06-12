@@ -101,12 +101,15 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Bconstat(dev)			(short)	trap_13_emu(0x01,(short)(dev))
 # define ROM_Bconin(dev)				trap_13_emu(0x02,(short)(dev))
 # define ROM_Bconout(dev,c)				trap_13_emu(0x03,(short)(dev),(short)((c) & 0xff))
+# define ROM_Rwabs(rw,buf,n,recno,dev,lrecno)		trap_13_emu(0x04,(short)(rw),(long)(buf),\
+								    (short)(n),(short)(recno),(short)(dev),(long)(lrecno))
 # define ROM_Setexc(vnum,vptr)		(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 # define ROM_Bcostat(dev)			(short)	trap_13_emu(0x08,(short)(dev))
 # define ROM_Kbshift(data)				trap_13_emu(0x0B,(short)(data))
 
 # define ROM_Initmous(type,param,vptr)		(void)	trap_14_emu(0x00,(short)(type),(long)(param),(long)(vptr))
 # define ROM_Getrez()				(short)	trap_14_emu(0x04)
+# define ROM_Midiws(cnt,ptr)				trap_14_emu(0x0C,(short)(cnt),(long)(ptr))
 # define ROM_Iorec(ioDEV)			(void *)trap_14_emu(0x0E,(short)(ioDEV))
 # define ROM_Rsconf(baud,flow,uc,rs,ts,sc)		trap_14_emu(0x0F,(short)(baud),(short)(flow),\
 								    (short)(uc),(short)(rs),(short)(ts),(short)(sc))
@@ -119,6 +122,7 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Ongibit(andmask)			(void)	trap_14_emu(0x1E,(short)(andmask))
 # define ROM_Dosound(ptr)			(void)	trap_14_emu(0x20,(long)(ptr))
 # define ROM_Kbdvbase()					trap_14_emu(0x22)
+# define ROM_Supexec(func)				trap_14_emu(0x26,(long)(func))
 # define ROM_Vsync()				(void)	trap_14_emu(0x25)
 # define ROM_Bconmap(dev)				trap_14_emu(0x2c,(short)(dev))
 

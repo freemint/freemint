@@ -43,6 +43,10 @@
 SYM(in_kernel):
 	dc.w	0
 
+	.globl	SYM(in_reentrant)
+SYM(in_reentrant):
+	dc.w	0
+
 	.text
 
 SYM(enter_gemdos):

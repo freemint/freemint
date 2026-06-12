@@ -24,6 +24,7 @@
 # include "mint/signal.h"
 
 # include "arch/detect.h"
+# include "arch/kernel.h"
 # include "arch/mprot.h"
 # include "arch/syscall.h"
 # include "arch/timer.h"
@@ -92,6 +93,12 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 		TRACE(("Supexec() error no valid function"));
 		return EPERM;
 	}
+
+	if (in_reentrant)
+	{
+		DEBUG (("Supexec(%p) from kernel context -> ROM", funcptr));
+		return ROM_Supexec (funcptr);
+	}
 	/* For SECURELEVEL > 1 only the Superuser can set the CPU into supervisor
 	 * mode.
 	 */
@@ -138,6 +145,12 @@ sys_b_midiws (int cnt, const char *buf)
 {
 	FILEPTR *f;
 	long towrite = cnt+1;
+
+	if (in_reentrant)
+	{
+		DEBUG (("Midiws(%d) from kernel context -> ROM", cnt));
+		return ROM_Midiws (cnt, buf);
+	}
 
 	f = get_curproc()->p_fd->midiout;	/* MIDI output handle */
 	if (!f)
@@ -370,6 +383,12 @@ sys_b_bconmap (short dev)
 
 	TRACE (("Bconmap(%d)", dev));
 
+	if (in_reentrant)
+	{
+		FORCE ("Bconmap(%d) from kernel context rejected", dev);
+		return ENOSYS;
+	}
+
 	if (has_bconmap)
 	{
 		if (dev == -2)
@@ -417,6 +436,12 @@ sys_b_cursconf (int cmd, int op)
 {
 	FILEPTR *f;
 	long r;
+
+	if (in_reentrant)
+	{
+		DEBUG (("Cursconf(%d) from kernel context -> ROM", cmd));
+		return ROM_Cursconf (cmd, op);
+	}
 
 	f = get_curproc()->p_fd->control;
 	if (!f || !is_terminal(f))

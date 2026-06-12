@@ -26,6 +26,7 @@
 
 # include "arch/detect.h"
 # include "arch/intr.h"
+# include "arch/kernel.h"
 # include "arch/mprot.h"
 # include "arch/syscall.h"
 # include "arch/timer.h"
@@ -160,6 +161,12 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 	PROC *p = get_curproc();
 	long r;
 
+	if (in_reentrant)
+	{
+		DEBUG (("Rwabs(%d, dev %d) from kernel context -> ROM", rwflag, dev));
+		return ROM_Rwabs (rwflag, buffer, number, recno, dev, lrecno);
+	}
+
 	/* jr: inspect bit 3 of rwflag!!!
 	 */
 	if (!(rwflag & 8) && dev >= 0 && dev < NUM_DRIVES)
@@ -213,6 +220,12 @@ sys_b_setexc (int number, long vector)
 	PROC *p = get_curproc();
 	long *place;
 	long old;
+
+	if (in_reentrant)
+	{
+		DEBUG (("Setexc(0x%x) from kernel context -> ROM", number));
+		return (long) ROM_Setexc (number, vector);
+	}
 
 	/* If the caller has no root privileges, we'll attempt
 	 * to terminate it. We allow to change the critical error handler
@@ -442,6 +455,12 @@ overlay_bdevmap (int dev, BDEVMAP *newmap)
 long _cdecl
 sys_b_ubconstat (int dev)
 {
+	if (in_reentrant)
+	{
+		DEBUG (("Bconstat(%d) from kernel context -> ROM", dev));
+		return ROM_Bconstat (dev);
+	}
+
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].instat)
@@ -454,6 +473,12 @@ sys_b_ubconstat (int dev)
 long _cdecl
 sys_b_ubconin (int dev)
 {
+	if (in_reentrant)
+	{
+		DEBUG (("Bconin(%d) from kernel context -> ROM", dev));
+		return ROM_Bconin (dev);
+	}
+
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].in)
@@ -466,6 +491,12 @@ sys_b_ubconin (int dev)
 long _cdecl
 sys_b_ubcostat (int dev)
 {
+	if (in_reentrant)
+	{
+		DEBUG (("Bcostat(%d) from kernel context -> ROM", dev));
+		return ROM_Bcostat (dev);
+	}
+
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].outstat)
@@ -478,6 +509,12 @@ sys_b_ubcostat (int dev)
 long _cdecl
 sys_b_ubconout (int dev, int c)
 {
+	if (in_reentrant)
+	{
+		DEBUG (("Bconout(%d) from kernel context -> ROM", dev));
+		return ROM_Bconout (dev, c);
+	}
+
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].out)
@@ -490,6 +527,12 @@ sys_b_ubconout (int dev, int c)
 long _cdecl
 sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
+	if (in_reentrant)
+	{
+		FORCE ("Rsconf(%d) from kernel context rejected", baud);
+		return ENOSYS;
+	}
+
 	if (has_bconmap)
 	{
 		ushort dev = get_curproc()->p_fd->bconmap;
