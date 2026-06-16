@@ -313,6 +313,12 @@ long ehci_interrupt_handle(long param, long biosparam)
 	if (oldmode) SuperToUser(oldmode);
 #endif
 	status = ehci_readl(&ehci->hcor->or_usbsts);
+	if (!status)
+		return biosparam; /* not our interrupt */
+
+	/* Acknowledge all status bits to stop the interrupt line being re-asserted */
+	ehci_writel(&ehci->hcor->or_usbsts, status);
+
 	if(status & STS_PCD) /* port change detect */
 	{
 		unsigned long reg = ehci_readl(&ehci->hccr->cr_hcsparams);
@@ -332,11 +338,6 @@ long ehci_interrupt_handle(long param, long biosparam)
 				usb_rh_wakeup(ehci->controller);
 		}
 	}
-	else /* not our interrupt */
-		return biosparam;
-
-	/* Disable interrupt */
-	ehci_writel(&ehci->hcor->or_usbsts, status);
 
 	/* PCI_BIOS specification: if interrupt was for us set D0.0 */
 	return 1;
