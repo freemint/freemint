@@ -319,14 +319,14 @@ long ehci_interrupt_handle(long param, long biosparam)
 		unsigned long i = HCS_N_PORTS(reg);
 		while(i--)
 		{
-			unsigned long pstatus = ehci_readl(&ehci->hcor->or_portsc[i-1]);
+			unsigned long pstatus = ehci_readl(&ehci->hcor->or_portsc[i]);
 			if(pstatus & EHCI_PS_PO)
 				continue;
 			if(ehci->companion & (1 << i))
 			{
 				/* Low speed device, give up ownership. */
 				pstatus |= EHCI_PS_PO;
-				ehci_writel(&ehci->hcor->or_portsc[i-1], pstatus);
+				ehci_writel(&ehci->hcor->or_portsc[i], pstatus);
 			}
 			else if((pstatus & EHCI_PS_CSC))
 				usb_rh_wakeup(ehci->controller);
