@@ -81,6 +81,8 @@
 # define O_TTY		0x00002000
 # define O_HEAD		0x00004000
 # define O_LOCK		0x00008000
+
+# define O_GLOBAL_HANDLE	0x4000
 # endif
 
 /*
