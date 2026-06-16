@@ -1392,7 +1392,12 @@ reent_cpyargs:
 #endif
 reent_noargs:
 
+#ifdef __mcoldfire__
+	lea	SYM(in_reentrant),a0	// move.w #imm to absolute is not a ColdFire mode
+	move.w	#1,(a0)			// tell the wrapper it is called from kernel context
+#else
 	move.w	#1,SYM(in_reentrant)	// tell the wrapper it is called from kernel context
+#endif
 	move.l	d2,a0		// Function address
 	jsr	(a0)
 	clr.w	SYM(in_reentrant)
