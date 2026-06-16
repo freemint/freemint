@@ -2,6 +2,7 @@
 # debug flags
 #
 # -DDEV_DEBUG		include debugging information
+# -DEHCI_POLL		enable root hub polling thread (disabled by default)
 
 LDEXTRA = -nostdlib -Wl,--fatal-warnings
 LDEXTRA_ucd = -Wl,--entry,init_ucd

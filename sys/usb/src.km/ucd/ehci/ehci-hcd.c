@@ -1013,10 +1013,9 @@ static void hc_free_buffers(struct ehci *ehci)
 }
 
 /*
- * Polling functions for the root hub (disable by default)
+ * Polling functions for the root hub (disabled by default, enable via -DEHCI_POLL in EHCIDEFS)
  */
 
-#define EHCI_POLL
 #if defined(EHCI_POLL) && !defined(TOSONLY)
 static void ehci_hub_poll_thread(void *);
 static void ehci_hub_poll(PROC *proc, long dummy);
