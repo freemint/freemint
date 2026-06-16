@@ -218,7 +218,6 @@ ehci_pci_probe(void)
 {
 	short index;
 	long err;
-	int loop_counter = 0;
 
 	long handle;
 	struct pci_device_id *board;
@@ -240,61 +239,57 @@ ehci_pci_probe(void)
 
 	/* PCI devices detection */
 	index = 0;
+
 	do
 	{
-		do
+		handle = Find_pci_device(0x0000FFFFL, index++);
+		if(handle >= 0)
 		{
-			handle = Find_pci_device(0x0000FFFFL, index++);
-			if(handle >= 0)
+			unsigned long id = 0;
+			err = Read_config_longword(handle, PCIIDR, &id);
+			/* test USB devices */
+			if((err >= 0))
 			{
-				unsigned long id = 0;
-				err = Read_config_longword(handle, PCIIDR, &id);
-				/* test USB devices */
-				if((err >= 0))
+				unsigned long class;
+				if(Read_config_longword(handle, PCIREV, &class) >= 0
+				   && ((class >> 16) == PCI_CLASS_SERIAL_USB))
 				{
-					unsigned long class;
-					if(Read_config_longword(handle, PCIREV, &class) >= 0
-					   && ((class >> 16) == PCI_CLASS_SERIAL_USB))
+					if((class >> 8) == PCI_CLASS_SERIAL_USB_EHCI)
 					{
-						if((class >> 8) == PCI_CLASS_SERIAL_USB_EHCI)
+						board = ehci_usb_pci_table; /* compare table */
+						while(board->vendor)
 						{
-							board = ehci_usb_pci_table; /* compare table */
-							while(board->vendor)
+							if((board->vendor == (id & 0xFFFF))
+							    && (board->device == (id >> 16)))
 							{
-								if((board->vendor == (id & 0xFFFF))
-								    && (board->device == (id >> 16)))
+								err = ehci_alloc_ucdif(&ehci_uif);
+								if (err < 0)
+									break;
+
+								struct ehci *gehci = (struct ehci *)ehci_uif->ucd_priv;
+								gehci->bus = (struct ehci_pci *)kmalloc (sizeof(struct ehci_pci));
+								((struct ehci_pci *)gehci->bus)->handle = handle;
+								((struct ehci_pci *)gehci->bus)->ent = board;
+
+								/* assign an interface */
+								gehci->controller = ehci_uif;
+								err = ucd_register(ehci_uif, &root_hub_dev);
+								if (err)
 								{
-									err = ehci_alloc_ucdif(&ehci_uif);
-									if (err < 0)
-										break;
-
-									struct ehci *gehci = (struct ehci *)ehci_uif->ucd_priv;
-									gehci->bus = (struct ehci_pci *)kmalloc (sizeof(struct ehci_pci));
-									((struct ehci_pci *)gehci->bus)->handle = handle;
-									((struct ehci_pci *)gehci->bus)->ent = board;
-
-									/* assign an interface */
-									err = ucd_register(ehci_uif, &root_hub_dev);
-									if (err) 
-									{
-										DEBUG (("%s: ucd register failed!", __FILE__));
-										break;
-									}
-									gehci->controller = ehci_uif;
-									DEBUG (("%s: ucd register ok", __FILE__));
+									DEBUG (("%s: ucd register failed!", __FILE__));
+									gehci->controller = NULL;
 									break;
 								}
-								board++;
+								DEBUG (("%s: ucd register ok", __FILE__));
 							}
+							board++;
 						}
 					}
 				}
 			}
 		}
-		while(handle >= 0);
-		loop_counter++;
 	}
-	while(loop_counter <= 2); /* Number of card slots */
+	while(handle >= 0);
 
 	return 0;
 }
