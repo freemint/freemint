@@ -1447,7 +1447,7 @@ long _cdecl init_ucd (struct kentry *k, struct usb_module_api *uapi, char **reas
 	set_tos_delay();
 #endif
 	ret = ehci_bus_probe();
-	if (ret < 0) 
+	if (ret < 0)
 	{
 #ifndef TOSONLY
 		*reason = fail_probe;

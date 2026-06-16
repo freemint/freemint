@@ -128,7 +128,7 @@ ehci_pci_error(struct ehci *gehci)
 long
 ehci_pci_reset(struct ehci *gehci)
 {
-	if (machine == machine_firebee) 
+	if (machine == machine_firebee)
 	{
 		if((((struct ehci_pci *)gehci->bus)->ent->vendor == PCI_VENDOR_ID_NEC)
 		 && (((struct ehci_pci *)gehci->bus)->ent->device == PCI_DEVICE_ID_NEC_USB_2))
