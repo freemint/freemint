@@ -888,9 +888,9 @@ check_kentry_version(void)
 #define _Fast_read_config_byte  (*KENTRY->vec_pcibios.Fast_read_config_byte)
 #define _Fast_read_config_word  (*KENTRY->vec_pcibios.Fast_read_config_word)
 #define _Fast_read_config_longword  (*KENTRY->vec_pcibios.Fast_read_config_longword)
-#define Write_config_byte       (*KENTRY->vec_pcibios.Write_config_byte)
-#define Write_config_word       (*KENTRY->vec_pcibios.Write_config_longword)
-#define Write_config_longword   (*KENTRY->vec_pcibios.Write_config_longword)
+#define _Write_config_byte      (*KENTRY->vec_pcibios.Write_config_byte)
+#define _Write_config_word      (*KENTRY->vec_pcibios.Write_config_word)
+#define _Write_config_longword  (*KENTRY->vec_pcibios.Write_config_longword)
 #define Hook_interrupt          (*KENTRY->vec_pcibios.Hook_interrupt)
 #define Unhook_interrupt        (*KENTRY->vec_pcibios.Unhook_interrupt)
 #define _Special_cycle          (*KENTRY->vec_pcibios.Special_cycle)
@@ -934,6 +934,15 @@ INLINE long Find_pci_device(unsigned long id, unsigned short index)
 
 INLINE long Find_pci_classcode(unsigned long class, unsigned short index)
 { wrap2 f = (wrap2) _Find_pci_classcode; return (*f)(class, index); }
+
+INLINE long Write_config_byte(long handle, unsigned short reg, unsigned short val)
+{ wrap3 f = (wrap3)_Write_config_byte; return (*f)(handle, (long)reg, (long)val); }
+
+INLINE long Write_config_word(long handle, unsigned short reg, unsigned short val)
+{ wrap3 f = (wrap3)_Write_config_word; return (*f)(handle, (long)reg, (long)val); }
+
+INLINE long Write_config_longword(long handle, unsigned short reg, unsigned long val)
+{ wrap3 f = (wrap3)_Write_config_longword; return (*f)(handle, (long)reg, (long)val); }
 
 INLINE long Read_config_byte(long handle, unsigned short reg, unsigned char *address)
 { wrap3 f = (wrap3)_Read_config_byte; return (*f)(handle, reg, (long)address); }
