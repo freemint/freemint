@@ -604,7 +604,6 @@ _060_real_snan:
     fsave       -(sp)
     move.w      #0x6000,2(sp)
     frestore    (sp)+
-    fmovem.l    #0,fpcr
     rte
 
 /*
@@ -623,7 +622,6 @@ _060_real_operr:
     fsave       -(sp)
     move.w      #0x6000,2(sp)
     frestore    (sp)+
-    fmovem.l    #0,fpcr
     rte
 
 /*
@@ -641,7 +639,6 @@ _060_real_ovfl:
     fsave       -(sp)
     move.w      #0x6000,2(sp)
     frestore    (sp)+
-    fmovem.l    #0,fpcr
     rte
 
 /*
@@ -659,7 +656,6 @@ _060_real_unfl:
     fsave       -(sp)
     move.w      #0x6000,2(sp)
     frestore    (sp)+
-    fmovem.l    #0,fpcr
     rte
 
 /*
@@ -678,7 +674,6 @@ _060_real_dz:
     fsave       -(sp)
     move.w      #0x6000,2(sp)
     frestore    (sp)+
-    fmovem.l    #0,fpcr
     rte
 
 /*
@@ -697,7 +692,6 @@ _060_real_inex:
     fsave       -(sp)
     move.w      #0x6000,2(sp)
     frestore    (sp)+
-    fmovem.l    #0,fpcr
     rte
 
 /*
