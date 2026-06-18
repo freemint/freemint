@@ -430,7 +430,7 @@ retry:
 				default:
 					return STATUSERROR;
 			}
-			
+
 #if 0		/* Fix up INQUIRY NUL bytes to spaces. */
 			/* Doesn't seem to be needed. */
 			/* If so, move higher, this code isn't executed. */
@@ -563,7 +563,7 @@ retry:
 			if (r != USB_STOR_TRANSPORT_GOOD && retries--) {
 				goto retry;
 			}
-			
+
 			switch(r)
 			{
 				case USB_STOR_TRANSPORT_GOOD :
@@ -705,7 +705,7 @@ SCSIDRV_CheckDev (short busno, const DLONG * DevNo, char *Name, ushort * Feature
 		{
 			*Features = cAllCmds;
 			return 0;
-		} 
+		}
 		return ENODEV;
 	}
 	else
@@ -922,7 +922,7 @@ install_scsidrv (void)
 	scsidrv.SendMsg = SCSIDRV_SendMsg;
 	scsidrv.GetMsg = SCSIDRV_GetMsg;
 	scsidrv.ReqData = &reqdata;
-	
+
 	/* Allocate globally accessible memory for SCSIDRV handles.
 	 * As per SCSIDRV spec the caller is allowed to read the memory pointed to by the handle.
 	 */

@@ -113,7 +113,7 @@ static long	storage_disconnect	(struct usb_device *);
 
 static char lname[] = "USB mass storage class driver\0";
 
-static struct uddif storage_uif = 
+static struct uddif storage_uif =
 {
 	0,			/* *next */
 	USB_API_VERSION,	/* API */
@@ -353,7 +353,7 @@ init_part(block_dev_desc_t *block_desc)
 		char buf[128];
 		char build_str[64];
 		long j;
-		
+
 		sprintf(buf, sizeof(buf), "\0");
 
 		for(j = 0; j < 512; j++)
@@ -372,7 +372,7 @@ init_part(block_dev_desc_t *block_desc)
 				{
 					if(buffer[k] < ' ' || buffer[k] >= 127)
 						strcat(buf, ".");
-					else 
+					else
 					{
 						sprintf(build_str, sizeof(build_str), "%c", buffer[k]);
 						strcat(buf, build_str);
@@ -604,7 +604,7 @@ get_partinfo_dos(block_dev_desc_t *block_desc, long ext_part_sector, long relati
 		DEBUG(("Can't read partition table on %d:%ld", block_desc->global_lun_id, ext_part_sector));
 		return -1;
 	}
-	
+
 	if(buffer[DOS_PART_MAGIC_OFFSET] != 0x55 || buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa)
 	{
 		DEBUG(("bad MBR sector signature 0x%02x%02x", buffer[DOS_PART_MAGIC_OFFSET], buffer[DOS_PART_MAGIC_OFFSET + 1]));
@@ -634,8 +634,8 @@ get_partinfo_dos(block_dev_desc_t *block_desc, long ext_part_sector, long relati
 			info->blksz = 512;
 			info->start = ext_part_sector + le2cpu32(pt->start4);
 			info->size = le2cpu32(pt->size4);
-			DEBUG(("DOS partition at offset 0x%lx, size 0x%lx, type 0x%x %s", 
-					info->start, info->size, pt->sys_ind, 
+			DEBUG(("DOS partition at offset 0x%lx, size 0x%lx, type 0x%x %s",
+					info->start, info->size, pt->sys_ind,
 					(is_extended_dos(pt->sys_ind) ? " Extd" : "")));
 			return 0;
 		}
@@ -673,7 +673,7 @@ get_partition_info_extended(block_dev_desc_t *block_desc, long ext_part_sector, 
 	}
 
 	/*
-	* We lookup atari partitions first as they're identified with 
+	* We lookup atari partitions first as they're identified with
 	* specific code such as GEM, BGM etc.
 	*/
 	DEBUG(("Try looking up Atari MBR sector"));
@@ -975,7 +975,7 @@ usb_stor_CB_reset(struct us_data *us)
 	memset(cmd, 0xff, sizeof(cmd));
 	cmd[0] = SCSI_SEND_DIAG;
 	cmd[1] = 4;
-	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0), 
+	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 	 US_CBI_ADSC, USB_TYPE_CLASS | USB_RECIP_INTERFACE, 0, us->ifnum, cmd, sizeof(cmd), USB_CNTL_TIMEOUT * 5);
 	UNUSED(result);
 	/* long wait for reset */
@@ -1009,7 +1009,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	DEBUG(("dir %d lun %d cmdlen %d cmd %lx datalen %ld pdata %lx", srb->direction, srb->lun, srb->cmdlen, srb->cmd, srb->datalen, srb->pdata));
 	if(srb->cmdlen)
 	{
-		for(result = 0; result < srb->cmdlen; result++) 
+		for(result = 0; result < srb->cmdlen; result++)
 		{
 			sprintf(build_str, sizeof(build_str), "cmd[%ld] 0x%x ", result, srb->cmd[result]);
 			strcat(buf, build_str);
@@ -1148,7 +1148,7 @@ usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt, bool out)
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 				USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0, out ? endpt:(endpt | USB_DIR_IN), 0, 0, USB_CNTL_TIMEOUT * 5);
 
-	/* 
+	/*
 	 * USB standard: "For endpoints using data toggle, regardless of whether an endpoint has the
 	 * Halt feature set, a ClearFeature(ENDPOINT_HALT) request always results in the data toggle
 	 * being reinitialized to DATA0
@@ -1197,9 +1197,9 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 		pipe = pipein;
 	else
 		pipe = pipeout;
-	
+
 	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen, &data_actlen, srb->timeout, 0);
-	
+
 	/* special handling of STALL in DATA phase */
 	if((result < 0) && (us->pusb_dev->status & USB_ST_STALLED))
 	{
@@ -2146,9 +2146,9 @@ usb_stor_probe(struct usb_device *dev, unsigned int ifnum, struct us_data *ss)
 	 * the only ones.
 	 * The SFF8070 accepts the requests used in u-boot
 	 */
-	if(ss->subclass != US_SC_UFI && 
-		ss->subclass != US_SC_SCSI && 
-		ss->subclass != US_SC_8020 && 
+	if(ss->subclass != US_SC_UFI &&
+		ss->subclass != US_SC_SCSI &&
+		ss->subclass != US_SC_8020 &&
 		ss->subclass != US_SC_8070)
 	{
 		DEBUG(("Sorry, protocol %d not yet supported.", ss->subclass));
@@ -2356,8 +2356,8 @@ usb_stor_eject(long device)
 
 
 /*******************************************************************************
- * 
- * 
+ *
+ *
  */
 static long
 storage_disconnect(struct usb_device *dev)
@@ -2407,8 +2407,8 @@ storage_disconnect(struct usb_device *dev)
 
 
 /*******************************************************************************
- * 
- * 
+ *
+ *
  */
 static long
 storage_probe(struct usb_device *dev, unsigned int ifnum)
@@ -2418,7 +2418,7 @@ storage_probe(struct usb_device *dev, unsigned int ifnum)
 
 	if(dev == NULL)
 		return -1;
-	
+
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
 		if (mass_storage_dev[i].target == 0xff)
@@ -2570,7 +2570,7 @@ static PUN_INFO *install_pun(void)
 	bufsiz = XHDOSLimits(XH_DL_SECSIZ,0);
 
 	memset(&pun_ahdi,0x00,sizeof(PUN_INFO));
-	memset(&pun_ahdi.pun,0xff,16); 
+	memset(&pun_ahdi.pun,0xff,16);
 
 	pun = PUN_PTR;
 	if (pun)
