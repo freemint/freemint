@@ -368,15 +368,18 @@ super_write:
  *  d1 - 0 = success, !0 = failure
  */
 _060_dmem_read_byte:
-    clr.l   d1              /* assume success */
     clr.l   d0              /* clear whole longword */
     btst    #5,EXC_SR(a6)   /* check for supervisor state */
     bne.s   dmrbs           /* supervisor */
 dmrbuae:
+    moveq.l #1,d1
+    movec   d1,sfc          /* set sfc for user space */
     moves.b (a0),d0         /* fetch user byte */
+    clr.l   d1              /* return success */
     rts
 dmrbs:
     move.b  (a0),d0         /* fetch byte */
+    clr.l   d1              /* return success */
     rts
 
 /*
@@ -393,14 +396,17 @@ dmrbs:
  *  d1 - 0 = success, !0 = failure
  */
 _060_dmem_write_byte:
-    clr.l   d1              /* assume success */
     btst    #5,EXC_SR(a6)   /* check for supervisor state */
     bne.s   dmwbs           /* supervisor */
 dmwbuae:
+    moveq.l #1,d1
+    movec   d1,dfc          /* set dfc for user space */
     moves.b d0,(a0)         /* store user byte */
+    clr.l   d1              /* return success */
     rts
 dmwbs:
     move.b  d0,(a0)         /* store super byte */
+    clr.l   d1              /* return success */
     rts
 
 /*
@@ -417,14 +423,17 @@ dmwbs:
  *  d1 - 0 = success, !0 = failure
  */
 _060_dmem_write_word:
-    clr.l   d1              /* assume success */
     btst    #5,EXC_SR(a6)   /* check for supervisor state */
     bne.s   dmwws           /* supervisor */
 dmwwuae:
+    moveq.l #1,d1
+    movec   d1,dfc          /* set dfc for user space */
     moves.w d0,(a0)         /* store user word */
+    clr.l   d1              /* return success */
     rts
 dmwws:
     move.w  d0,(a0)         /* store super word */
+    clr.l   d1              /* return success */
     rts
 
 /*
@@ -441,14 +450,17 @@ dmwws:
  *  d1 - 0 = success, !0 = failure
  */
 _060_dmem_write_long:
-    clr.l   d1              /* assume success */
     btst    #5,EXC_SR(a6)   /* check for supervisor state */
     bne.s   dmwls           /* supervisor */
 dmwluae:
+    moveq.l #1,d1
+    movec   d1,dfc          /* set dfc for user space */
     moves.l d0,(a0)         /* store user longword */
+    clr.l   d1              /* return success */
     rts
 dmwls:
     move.l  d0,(a0)         /* store super longword */
+    clr.l   d1              /* return success */
     rts
 
 /*
@@ -466,15 +478,18 @@ dmwls:
  */
 _060_dmem_read_word:
 _060_imem_read_word:
-    clr.l   d1              /* assume success */
     clr.l   d0              /* clear whole longword */
     btst    #5,EXC_SR(a6)   /* check for supervisor state */
     bne.s   dmrws           /* supervisor */
 dmrwuae:
+    moveq.l #1,d1
+    movec   d1,sfc          /* set sfc for user space */
     moves.w (a0),d0         /* fetch user word */
+    clr.l   d1              /* return success */
     rts
 dmrws:
     move.w  (a0),d0         /* fetch super word */
+    clr.l   d1              /* return success */
     rts
 
 /*
@@ -492,14 +507,17 @@ dmrws:
  */
 _060_dmem_read_long:
 _060_imem_read_long:
-    clr.l   d1              /* assume success */
     btst    #5,EXC_SR(a6)   /* check for supervisor state */
     bne.s   dmrls           /* supervisor */
 dmrluae:
+    moveq.l #1,d1
+    movec   d1,sfc          /* set sfc for user space */
     moves.l (a0),d0         /* fetch user longword */
+    clr.l   d1              /* return success */
     rts
 dmrls:
     move.l  (a0),d0         /* fetch super longword */
+    clr.l   d1              /* return success */
     rts
 
 _060_real_trace:
