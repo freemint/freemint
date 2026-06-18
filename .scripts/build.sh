@@ -55,6 +55,11 @@ then
 		cd "${DST}/.." && zip -r -9 "${DEPLOY_DIR}/${ARCHIVE_NAME}" "$(basename ${DST})" && cd -
 	else
 		make
+		if [ "$CPU_TARGET" = "02060" ]
+		then
+			make -C sys/arch/040sp
+			make -C sys/arch/060sp
+		fi
 		DST="${TMP}/mint-${SHORT_VERSION}-${CPU_TARGET}"
 		"$SCRIPT_DIR/prepare-snapshot.sh" "${PWD}" "${DST}" "${SHORT_VERSION}" "${SHORT_ID}"
 		find "${DST}" -type f -perm -a=x -exec ${CROSS_TOOL}-strip -s {} \;

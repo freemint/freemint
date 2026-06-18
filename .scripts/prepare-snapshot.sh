@@ -55,6 +55,7 @@ then
 		copy_hades_modules "$MINTDIR"
 		copy_ct60_modules "$MINTDIR"
 		copy_aranym_modules "$MINTDIR"
+		copy_fpsp "$MINTDIR"
 	elif [ "$CPU_TARGET" = "deb" ]
 	then
 		copy_debug_modules "$MINTDIR"

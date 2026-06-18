@@ -26,6 +26,10 @@ copy_mint_cnf() {
 	sed -e "s/#setenv USER    root/setenv USER    root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv HOME    \/root/setenv HOME    \/root/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
 	sed -e "s/#setenv SHELL   \/bin\/bash/setenv SHELL   \/bin\/bash/;" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
+	if [ "$CPU_TARGET" = "02060" ]
+	then
+		sed -e "/^# programs or MinT executables\./{N;s|^# programs or MinT executables\.\n#\$|# programs or MinT executables.\n\n# 68040/68060 FPSP/ISP support package installers\necho\nexec \${SYSDIR}040sp.prg\necho\nexec \${SYSDIR}060sp.prg\n|}" "$MINTDIR/mint.cnf" > "$MINTDIR/mint.cnf.tmp" && mv "$MINTDIR/mint.cnf.tmp" "$MINTDIR/mint.cnf"
+	fi
 }
 
 copy_modules() {
@@ -39,6 +43,13 @@ copy_modules() {
 	cp "$SRC/sys/xfs/minixfs/.compile_$TARGET/minix.xfs" "$MINTDIR/minix.xfx"
 	cp "$SRC/sys/xfs/nfs/.compile_$TARGET/nfs.xfs" "$MINTDIR"
 	cp "$SRC/sys/xfs/isofs/.compile_$TARGET/isofs.xfs" "$MINTDIR/isofs.xfx"
+}
+
+copy_fpsp() {
+	local SYSDIR="$1"
+	mkdir -p "$SYSDIR"
+	cp "$SRC/sys/arch/040sp/040sp.prg" "$SYSDIR"
+	cp "$SRC/sys/arch/060sp/060sp.prg" "$SYSDIR"
 }
 
 # modules compatible with all m68k machines (except the FireBee...)
