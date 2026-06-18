@@ -371,6 +371,12 @@ SCSIDRV_In (SCSICMD *parms)
 				srb.cmdlen = 10;
 			}
 
+			/* UFI (floppy) mandates all CBDs be exactly 12 bytes.
+			 * The srb was zeroed above, so trailing bytes are already 0-padded.
+			 */
+			if (ss->subclass == US_SC_UFI && srb.cmdlen < 12)
+				srb.cmdlen = 12;
+
 			/* Return UNIT ATTENTION on any command to a LUN whose media has
 			 * changed, mirroring real SCSI device behaviour. The changed bit
 			 * is set by scsidrv_set_mediach() from part_init()/usb_stor_eject(). */
@@ -522,6 +528,11 @@ SCSIDRV_Out (SCSICMD *parms)
 				srb.cmd[7] = 0;
 				srb.cmdlen = 10;
 			}
+
+			/* UFI (floppy) mandates all CBDs be exactly 12 bytes.
+			 * The srb was zeroed above, so trailing bytes are already 0-padded. */
+			if (ss->subclass == US_SC_UFI && srb.cmdlen < 12)
+				srb.cmdlen = 12;
 
 			/* Return UNIT ATTENTION on any command to a LUN whose media has
 			 * changed, mirroring real SCSI device behaviour. The changed bit
