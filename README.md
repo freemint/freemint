@@ -1,8 +1,8 @@
 [![Build Status](https://github.com/freemint/freemint/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/freemint/freemint/actions) 
 
-Bootable builds: [Download](https://tho-otto.de/snapshots/freemint/bootable/)
-Per CPU builds: [Download](https://tho-otto.de/snapshots/freemint/cpu/)
-TOS USB drivers: [Download](https://tho-otto.de/snapshots/freemint/usb4tos/)
+Bootable builds: [Download](https://atari.joska.no/snapshots/freemint/bootable/)
+Per CPU builds: [Download](https://atari.joska.no/snapshots/freemint/cpu/)
+TOS USB drivers: [Download](https://atari.joska.no/snapshots/freemint/usb4tos/)
 
 This is FreeMiNT. Please see the file `COPYING` for licensing conditions. Please send electronic mail to <freemint-discuss@lists.sourceforge.net> for further information as well as concerning the kernel development subjects.
 
