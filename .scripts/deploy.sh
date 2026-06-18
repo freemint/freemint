@@ -1,7 +1,7 @@
 #!/bin/sh -x
 
-SERVER=web196@server43.webgo24.de
-UPLOAD_DIR=$SERVER:/home/www/snapshots
+SERVER=joska@login.domeneshop.no
+UPLOAD_DIR=$SERVER:www/atari/snapshots
 
 # zip is default
 DEPLOY_ARCHIVE="zip"
@@ -41,7 +41,7 @@ link_file() {
 	local to="$2"
 	for i in 1 2 3
 	do
-		ssh -o "StrictHostKeyChecking no" $SERVER -- "cd www/snapshots/${PROJECT_DIR}/${subdir}; ln -sf $from $to"
+		ssh -o "StrictHostKeyChecking no" $SERVER -- "cd www/atari/snapshots/${PROJECT_DIR}/${subdir}; ln -sf $from $to"
 		[ $? = 0 ] && return 0
 		sleep 1
 	done

@@ -40,7 +40,7 @@ jobs:
       - name: Install SSH keys
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
         env:
-          SSH_ID: ${{ secrets.SSH_ID }}
+          SSH_ID: ${{ secrets.SSH_ID_JOSKA }}
         run: ./.scripts/install_ssh_id.sh
       - name: Setup environment
         env:
