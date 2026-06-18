@@ -488,7 +488,7 @@ ssincosz:
 sincosp:
 	fmove.x PZERO.w(pc),fp0
 sincoscom:
-	fmovem.x PONE.w(pc),fp1-fp1	/* do not allow FPSR to be affected */
+	fmovem.x PONE,fp1-fp1	/* absolute addr: gas rejects fmovem with (pc); do not allow FPSR to be affected */
 	bra	sto_cos		/* store cosine result */
 
 	.globl	ssincosi
