@@ -395,7 +395,7 @@ retry:
 
 			if (r == USB_STOR_TRANSPORT_SENSE) {
 				/* CBI/CB transport already issues REQUEST SENSE internally */
-				if (ss->protocol == US_PR_BULK && parms->sense && !(parms->flags & NoAutoSense))
+				if (ss->protocol == US_PR_BULK && parms->sense)
 					fetch_sense(&srb, ss);
 				if (parms->sense)
 					memcpy(parms->sense, srb.sense_buf, 18);

@@ -1636,15 +1636,12 @@ usb_test_unit_ready(short *handle, unsigned char lun, int retries)
 	return -1;
 }
 
-/* NoAutoSense suppresses the automatic REQUEST SENSE inside
- * SCSIDRV_In; the caller issues it on the next cycle instead. */
 long
 poll_floppy_ready(short *handle, unsigned char lun)
 {
 	static short request_sense = 0;
 	SCSICMD parms;
 	unsigned char cmd[12];
-	char sense[18];
 
 	if (!request_sense) {
 		memset(cmd, 0, sizeof(cmd));
@@ -1655,9 +1652,9 @@ poll_floppy_ready(short *handle, unsigned char lun)
 		parms.cmdlen      = 12;
 		parms.buf         = NULL;
 		parms.transferlen = 0;
-		parms.sense       = sense;
+		parms.sense       = NULL;
 		parms.timeout     = USB_CNTL_TIMEOUT;
-		parms.flags       = NoAutoSense;
+		parms.flags       = 0;
 		SCSIDRV_In(&parms);
 		request_sense = 1;
 		return 1;

@@ -17,14 +17,6 @@
 /* The USB bus is always assigned bus number 4 in the SCSIDRV cookie */
 #define SCSIDRV_USB_BUS  4
 
-/* Driver-private flag for SCSICMD.flags. Valid only when calling SCSIDRV_In()
- * directly (internal driver use). Not part of the SCSIDRV specification.
- * Suppresses automatic REQUEST SENSE on CHECK CONDITION so the caller can
- * issue it separately on its own schedule.
- * (e.g. TOSONLY poll_floppy_ready(), one cmd/cycle).
- */
-#define NoAutoSense 0x20
-
 extern SCSIDRV scsidrv;
 
 /* Direct entry points — bypass the SCSIDRV cookie/chain for internal use */
