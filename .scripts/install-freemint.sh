@@ -3,7 +3,7 @@
 # -u: Treat unset variables as an error when substituting.
 # -x: Display expanded script commands
 
-DOWNLOAD_DIR=http://tho-otto.de/snapshots
+DOWNLOAD_DIR=https://atari.joska.no/snapshots
 echo "DOWNLOAD_DIR=$DOWNLOAD_DIR" >> $GITHUB_ENV
 SYSROOT_DIR=${SYSROOT_DIR:-"/usr/${CROSS_TOOL}/sys-root"}
 

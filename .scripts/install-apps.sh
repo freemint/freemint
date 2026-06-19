@@ -6,16 +6,14 @@
 TEMP_CPU_TARGET=$CPU_TARGET
 case $CPU_TARGET in
 	prg) TEMP_CPU_TARGET=000 ;;
-	ara) TEMP_CPU_TARGET=040 ;;
+	ara) TEMP_CPU_TARGET=02060 ;;
 	deb) TEMP_CPU_TARGET=02060 ;;
 esac
 
 cd .scripts
 for package in toswin2 qed cops
 do
-	unset PACKAGE_VERSION
-	PACKAGE_VERSION=$(wget -q -O - "$DOWNLOAD_DIR/${package}/.latest_version")
-	wget -q -O temp.zip "$DOWNLOAD_DIR/${package}/${PACKAGE_VERSION}-${TEMP_CPU_TARGET}.zip" && unzip -q temp.zip && rm temp.zip
+	wget -q -O temp.zip "$DOWNLOAD_DIR/${package}/${package}-latest-${TEMP_CPU_TARGET}.zip" && unzip -q temp.zip && rm temp.zip
 done
 
 # fvdi is only needed for the ARAnyM bootable snapshot; archives are only
@@ -28,9 +26,7 @@ fi
 # teradesk is packaged differently
 for package in teradesk
 do
-	unset PACKAGE_VERSION
-	PACKAGE_VERSION=$(wget -q -O - "$DOWNLOAD_DIR/${package}/.latest_version")
-	wget -q -O temp.zip "$DOWNLOAD_DIR/${package}/${PACKAGE_VERSION}"
+	wget -q -O temp.zip "$DOWNLOAD_DIR/${package}/${package}-latest.zip"
 	mkdir -p $package
 	cd $package
 	unzip -q ../temp.zip

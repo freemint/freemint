@@ -7,7 +7,7 @@
 HCP=~/tmp/hcp/bin/hcp
 echo "HCP=$HCP" >> $GITHUB_ENV
 
-HCP_VERSION="1.0.4"
+HCP_VERSION="1.0.5"
 
 mkdir -p ~/tmp
 cd ~/tmp

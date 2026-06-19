@@ -8,23 +8,23 @@
 # manually authorized on the remote server.
 
 # Our private key is the critical security component, it must remain secret.
-# We store it in the SSH_ID environment variable in Travis CI project settings.
-# As environment variables can only contain text, our key files are transformed
-# like this: tar, xz, base64. Then then can be decoded here. This is safe as
-# Travis CI never shows the contents of secure variables.
+# We store it in the SSH_ID secret in the GitHub repository settings.
+# As secrets can only contain text, our key files are transformed
+# like this: tar, xz, base64. Then they can be decoded here. This is safe as
+# GitHub Actions never shows the contents of secrets.
 
-# To generate the contents of the SSH_ID variable:
+# To generate the contents of the SSH_ID secret:
 # Be sure to be in an empty, temporary directory.
 #
 # mkdir .ssh
-# ssh-keygen -t rsa -b 4096 -C travis-ci.org/$USER/$PROJECT -N '' -f .ssh/id_rsa
+# ssh-keygen -t rsa -b 4096 -C github.com/$USER/$PROJECT -N '' -f .ssh/id_rsa
 # tar Jcvf id.tar.xz .ssh
 # base64 -w 0 id.tar.xz
 #
 # Select the resulting encoded text (several lines) to copy it to the clipboard.
-# Then go to the Travis CI project settings:
-# https://travis-ci.org/$USER/$PROJECT/settings
-# Create a new environment variable named SSH_ID, and paste the value.
+# Then go to the GitHub repository settings:
+# https://github.com/$USER/$PROJECT/settings/secrets/actions
+# Create a new repository secret named SSH_ID, and paste the value.
 # The script below will recreate the key files from that variable contents.
 
 if [ -z ${SSH_ID+x} ]
