@@ -963,6 +963,12 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	 * For interrupt transfers (e.g. mouse/keyboard), we expect to receive a NAK
 	 * most of the time.  So we don't retry, we just report an error and let the
 	 * upper level driver retry the transfer at regular intervals.
+	 *
+	 * NOTE: time_out is NOT used as a real timeout in milliseconds. Upper layers
+	 * set it expecting ms semantics, but here it becomes a plain retry count:
+	 * the number of times we re-submit the PTD to the chip after the device NAKs
+	 * or fails to complete a USB frame. The hardware PTD completion wait is
+	 * handled separately by a hardcoded polling loop below (5ms for bulk, 1ms otherwise).
 	 */
 	short retries = ((type==PIPE_INTERRUPT) || (flags&USB_BULK_FLAG_EARLY_TIMEOUT)) ? 0 : time_out;
 	short set_extra_delay = 0;
