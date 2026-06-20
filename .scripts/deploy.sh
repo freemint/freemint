@@ -56,3 +56,9 @@ upload_file "$ARCHIVE_PATH" "${UPLOAD_DIR}/${PROJECT_DIR}/${subdir}/${ARCHIVE_NA
 
 link_file "$ARCHIVE_NAME" "$LATEST_NAME"
 
+if [ "$CPU_TARGET" = "ara" ]
+then
+	upload_file "doc/freemint.hyp" "${UPLOAD_DIR}/guides/freemint.hyp"
+	upload_file "doc/xaaes/xaaes.hyp" "${UPLOAD_DIR}/guides/xaaes.hyp"
+fi
+
