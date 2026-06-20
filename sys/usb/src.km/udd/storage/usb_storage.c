@@ -1454,6 +1454,35 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 		case 0x02: /* Not Ready */
 			DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)",
 					srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
+			/* ASC 0x04: the LUN is not ready because a physical operation
+			 * (write, format, etc.) is still in progress. Some drives
+			 * transition to NOT READY immediately after the data phase
+			 * while completing the operation on the medium. Poll with
+			 * repeated REQUEST SENSE until the device becomes ready
+			 * rather than failing the command immediately.
+			 * Guard on CB protocol: CBI gets status via interrupt pipe
+			 * and is not affected by this issue.
+			 */
+			if (srb->sense_buf[12] == 0x04 && us->protocol != US_PR_CBI)
+			{
+				int poll;
+				for (poll = 0; poll < 100; poll++)
+				{
+					mdelay(100);
+					result = usb_stor_CB_comdat(&reqsrb, us);
+					if (result < 0)
+						break;
+					if (srb->sense_buf[2] == 0 || srb->sense_buf[2] == 0x01)
+					{
+#ifdef TOSONLY
+						transfer_running = 0;
+#endif
+						return USB_STOR_TRANSPORT_GOOD;
+					}
+					if (srb->sense_buf[12] != 0x04)
+						break;
+				}
+			}
 #ifdef TOSONLY
 			transfer_running = 0;
 #endif
