@@ -1189,7 +1189,11 @@ long usb_lowlevel_init(void *ucd_priv)
 #endif /* EHCI_POLL && !TOSONLY */
 
 	/* turn on interrupts */
+#ifdef EHCI_POLL
+	ehci_writel(&gehci->hcor->or_usbintr, 0); /* polling mode: no hw interrupts */
+#else
 	ehci_writel(&gehci->hcor->or_usbintr, INTR_PCDE);
+#endif
 
 	gehci->rootdev = 0;
 	gehci->ehci_inited = 1;
