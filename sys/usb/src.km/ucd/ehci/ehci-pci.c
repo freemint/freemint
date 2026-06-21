@@ -32,6 +32,7 @@
 #include "../../global.h"
 
 #ifndef TOSONLY
+#include "mint/mint.h"
 #include "mint/time.h"
 #include "arch/timer.h"
 #include "mint/mdelay.h"
@@ -294,6 +295,19 @@ ehci_pci_probe(void)
 	return 0;
 }
 
+static struct ucdif *ehci_pending_wakeup = NULL;
+#ifdef TOSONLY
+static void ehci_int_handle_tophalf(void)
+#else
+static void _cdecl ehci_int_handle_tophalf(PROC *process, long arg)
+#endif
+{
+	if (ehci_pending_wakeup)
+		usb_rh_wakeup(ehci_pending_wakeup);
+	ehci_pending_wakeup = NULL;
+}
+
+
 long ehci_interrupt_handle(long param, long biosparam)
 {
 	struct ehci *ehci = (struct ehci *)param;
@@ -330,7 +344,14 @@ long ehci_interrupt_handle(long param, long biosparam)
 				ehci_writel(&ehci->hcor->or_portsc[i], pstatus);
 			}
 			else if((pstatus & EHCI_PS_CSC))
-				usb_rh_wakeup(ehci->controller);
+			{
+#ifdef TOSONLY
+				ehci_int_handle_tophalf();
+#else
+				ehci_pending_wakeup = ehci->controller;
+				addroottimeout(0L, ehci_int_handle_tophalf, 0x1);
+#endif
+			}
 		}
 	}
 
