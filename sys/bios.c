@@ -158,14 +158,8 @@ sys_b_getbpb (int dev)
 long _cdecl
 sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 {
-	PROC *p = get_curproc();
+	PROC *p = in_reentrant ? rootproc : get_curproc();
 	long r;
-
-	if (in_reentrant)
-	{
-		DEBUG (("Rwabs(%d, dev %d) from kernel context -> ROM", rwflag, dev));
-		return ROM_Rwabs (rwflag, buffer, number, recno, dev, lrecno);
-	}
 
 	/* jr: inspect bit 3 of rwflag!!!
 	 */
@@ -217,15 +211,9 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 long _cdecl
 sys_b_setexc (int number, long vector)
 {
-	PROC *p = get_curproc();
+	PROC *p = in_reentrant ? rootproc : get_curproc();
 	long *place;
 	long old;
-
-	if (in_reentrant)
-	{
-		DEBUG (("Setexc(0x%x) from kernel context -> ROM", number));
-		return (long) ROM_Setexc (number, vector);
-	}
 
 	/* If the caller has no root privileges, we'll attempt
 	 * to terminate it. We allow to change the critical error handler
@@ -236,9 +224,9 @@ sys_b_setexc (int number, long vector)
 		secure_mode && p->in_dos == 0)
 	{
 # ifdef WITH_SINGLE_TASK_SUPPORT
-		if( !(get_curproc()->modeflags & M_SINGLE_TASK) )
+		if( !(p->modeflags & M_SINGLE_TASK) )
 # endif
-			if( vector != -1 && allow_setexc < 2 && !(get_curproc()->pid <= 1 || get_curproc()->ppid == 0) )
+			if( vector != -1 && allow_setexc < 2 && !(p->pid <= 1 || p->ppid == 0) )
 			{
 				if( allow_setexc == 0 || number <= 15 )
 				{
@@ -455,12 +443,6 @@ overlay_bdevmap (int dev, BDEVMAP *newmap)
 long _cdecl
 sys_b_ubconstat (int dev)
 {
-	if (in_reentrant)
-	{
-		DEBUG (("Bconstat(%d) from kernel context -> ROM", dev));
-		return ROM_Bconstat (dev);
-	}
-
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].instat)
@@ -473,12 +455,6 @@ sys_b_ubconstat (int dev)
 long _cdecl
 sys_b_ubconin (int dev)
 {
-	if (in_reentrant)
-	{
-		DEBUG (("Bconin(%d) from kernel context -> ROM", dev));
-		return ROM_Bconin (dev);
-	}
-
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].in)
@@ -491,12 +467,6 @@ sys_b_ubconin (int dev)
 long _cdecl
 sys_b_ubcostat (int dev)
 {
-	if (in_reentrant)
-	{
-		DEBUG (("Bcostat(%d) from kernel context -> ROM", dev));
-		return ROM_Bcostat (dev);
-	}
-
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].outstat)
@@ -509,12 +479,6 @@ sys_b_ubcostat (int dev)
 long _cdecl
 sys_b_ubconout (int dev, int c)
 {
-	if (in_reentrant)
-	{
-		DEBUG (("Bconout(%d) from kernel context -> ROM", dev));
-		return ROM_Bconout (dev, c);
-	}
-
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		if (bdevmap [dev].out)
@@ -527,12 +491,6 @@ sys_b_ubconout (int dev, int c)
 long _cdecl
 sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
-	if (in_reentrant)
-	{
-		FORCE ("Rsconf(%d) from kernel context rejected", baud);
-		return ENOSYS;
-	}
-
 	if (has_bconmap)
 	{
 		ushort dev = get_curproc()->p_fd->bconmap;
@@ -988,9 +946,11 @@ checkbtty_nsig (struct bios_tty *b)
 static long _cdecl
 _ubconstat (int dev)
 {
+	PROC *p = in_reentrant ? rootproc : get_curproc();
+
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = get_curproc()->p_fd->ofiles[binput [dev]];
+		FILEPTR *f = p->p_fd->ofiles[binput [dev]];
 		if (file_instat(f))
 			goto reset;
 		else
@@ -1003,8 +963,8 @@ _ubconstat (int dev)
 			/* Data is coming - quick! We need some CPU!
 			 */
 reset:
-			get_curproc()->slices = SLICES (get_curproc()->curpri);
-			get_curproc()->curpri = get_curproc()->pri;
+			p->slices = SLICES (p->curpri);
+			p->curpri = p->pri;
 			return -1;
 
 		}
@@ -1013,8 +973,8 @@ reset:
 			/* Process is polling like mad - punish it!
 			 */
 punish:
-			if (get_curproc()->curpri > MIN_NICE)
-				get_curproc()->curpri -= 1;
+			if (p->curpri > MIN_NICE)
+				p->curpri -= 1;
 
 			return 0;
 		}
@@ -1046,9 +1006,11 @@ bconstat (int dev)
 static long _cdecl
 _ubconin (int dev)
 {
+	PROC *p = in_reentrant ? rootproc : get_curproc();
+
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = get_curproc()->p_fd->ofiles [binput [dev]];
+		FILEPTR *f = p->p_fd->ofiles [binput [dev]];
 
 		return file_getchar (f, RAW);
 	}
@@ -1156,12 +1118,13 @@ again:
 static long _cdecl
 _ubconout (int dev, int c)
 {
+	PROC *p = in_reentrant ? rootproc : get_curproc();
 	FILEPTR *f;
 	char outp;
 
 	if (dev < MAX_BHANDLE)
 	{
-		f = get_curproc()->p_fd->ofiles [boutput [dev]];
+		f = p->p_fd->ofiles [boutput [dev]];
 		if (!f)
 			return 0;
 
@@ -1174,7 +1137,7 @@ _ubconout (int dev, int c)
 	else if (dev == 5)
 	{
 		c &= 0x00ff;
-		f = get_curproc()->p_fd->control;
+		f = p->p_fd->control;
 		if (!f)
 			return 0;
 
@@ -1268,6 +1231,7 @@ bconout (int dev, int c)
 static long _cdecl
 _ubcostat (int dev)
 {
+	PROC *p = in_reentrant ? rootproc : get_curproc();	/* see _ubconstat */
 	FILEPTR *f;
 
 	/* the BIOS switches MIDI (3) and IKBD (4)
@@ -1276,7 +1240,7 @@ _ubcostat (int dev)
 	if (dev == 4)
 	{
 		/* really the MIDI port */
-		f = get_curproc()->p_fd->ofiles [boutput [3]];
+		f = p->p_fd->ofiles [boutput [3]];
 		return file_outstat (f) ? -1 : 0;
 	}
 
@@ -1285,7 +1249,7 @@ _ubcostat (int dev)
 
 	if (dev < MAX_BHANDLE)
 	{
-		f = get_curproc()->p_fd->ofiles [boutput [dev]];
+		f = p->p_fd->ofiles [boutput [dev]];
 		return file_outstat (f) ? -1 : 0;
 	}
 	else

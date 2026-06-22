@@ -37,6 +37,7 @@
 
 # include "libkern/libkern.h"
 # include "mint/arch/mfp.h"
+# include "arch/kernel.h"
 # include "arch/syscall.h"
 # include "arch/timer.h"
 # include "arch/tosbind.h"
@@ -639,7 +640,7 @@ sys_b_settime (ulong datetime)
 
 		TRACE (("settime (%li) -> do_settimeofday", datetime));
 
-		if (!suser (get_curproc()->p_cred->ucr))
+		if (!suser ((in_reentrant ? rootproc : get_curproc())->p_cred->ucr))
 		{
 			DEBUG (("Settime: attempt to change time by unprivileged user"));
 			return;
