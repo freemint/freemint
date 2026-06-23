@@ -563,6 +563,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	endpt = (1UL << 30) | (dev->portnr << 23) | (dev->parent->devnum << 16) | (0 << 8) | (0 << 0);
 	qh->qh_endpt2 = cpu_to_hc32(endpt);
 	qh->qh_overlay.qt_next = cpu_to_hc32(QT_NEXT_TERMINATE);
+	qh->qh_overlay.qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
 
 	td = NULL;
 	tdp = &qh->qh_overlay.qt_next;
