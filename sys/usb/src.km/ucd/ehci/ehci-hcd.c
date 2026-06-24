@@ -273,56 +273,130 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
  * Cache functions
  */
 
-/*
- * The kernel doesn't export a function in kentry to invalidate
- * caches, so until then we have our own function here. Also
- * we're lazy and for now we invalidate the entire data cache.
- */
-static inline void invalidate_dcache(void)
+static void flush_dcache_range(void *begin, long size)
 {
 #if defined(__mc68040__) || defined(__mc68060__)
-	__asm__ __volatile__(
-		"cinva %%dc \n\t"
-		/* output */   :
-		/* input */    :
-		/* clobbers */ : "memory"
-		);
-
-	/* An alternative would be to use Ssystem() OS call */
-	/* s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA); */
-#elif __mcoldfire__
-	s_system(S_CTRLCACHE, CTRLCACHE_DCINVA, CTRLCACHE_DCINVA);
-#else
-	/* There is only PCI hardware for machines with a 040, 060 and
-	 * ColdFire CPUs.
+	cpush(begin, size);
+#elif defined(__mcoldfire__)
+	/* On ColdFire the kernel-exported cpush() ignores the range arguments
+	 * entirely and flushes the whole D+I cache, so we provide our own
+	 * range-aware version here.
 	 */
+	unsigned long p = (unsigned long)begin & ~15UL;
+	unsigned long end = (unsigned long)begin + (unsigned long)size;
+	unsigned short saved_sr;
+	/* Mask IRQs across the cpushl loop so a handler can't dirty
+	 * cache lines (or evict ours) mid-flush. The D-cache is 4-way
+	 * set-associative and cpushl encodes the way in bits 1:0 of its
+	 * operand, so each line needs four cpushls (at +0/+1/+2/+3) to
+	 * cover all four ways. A single cpushl at the aligned line address
+	 * would only flush way 0 and miss the line if it sits in a
+	 * different way.
+	 */
+	__asm__ __volatile__("move.w %%sr,%0\n\t"
+	                     "move.w #0x2700,%%sr"
+	                     : "=d"(saved_sr) : : "memory");
+	__asm__ __volatile__("nop" : : : "memory");
+	while (p < end)
+	{
+		__asm__ __volatile__(
+			"move.l %0,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 0 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 1 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 2 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)"       /* way 3 */
+			: : "g"(p) : "a0", "memory");
+		p += 16;
+	}
+	__asm__ __volatile__("move.w %0,%%sr" : : "d"(saved_sr) : "memory");
 #endif
 }
 
-/* Function to flush the entire data cache, MiNT drivers can also
- * use the functions exported by the kernel in kentry (cpush) to
- * to flush specific areas of the cache. TOS drivers have support
- * for that function too.
+/* Push and invalidate every line in the D-cache. On 68040/060 a single
+ * cpusha %dc does this. On ColdFire V4e there is no cpusha, so we walk
+ * every set/way index by hand. Kept available for callers that need a
+ * whole-cache push without enumerating ranges; not currently used.
  */
-
-static void flush_dcache(void)
+static void ehci_flush_dcache_all(void) __attribute__((unused));
+static void ehci_flush_dcache_all(void)
 {
-#if defined (__mc68040__) || defined(__mc68060__)
+#if defined(__mc68040__) || defined(__mc68060__)
+	__asm__ __volatile__("cpusha %%dc" : : : "memory");
+#elif defined(__mcoldfire__)
 	__asm__ __volatile__(
-		"cpusha %%dc \n\t"
-		/* output */   :
-		/* input */    :
-		/* clobbers */ : "memory"
-		);
-#elif (__mcoldfire__)
-	/* TODO: Implement ColdFire asm routine to flush data cache */
+		"nop\n\t"
+		"move.w  %%sr, %%d2\n\t"    /* save IRQ state */
+		"move.w  #0x2700, %%sr\n\t" /* mask IRQs so handlers can't dirty
+		                              cache lines mid-walk */
+		"moveq.l #0, %%d0\n\t"      /* way counter */
+		"moveq.l #0, %%d1\n\t"      /* set counter */
+		"move.l  %%d0, %%a0\n"      /* a0 starts at way index */
+	"1:\n\t"
+		"cpushl  %%dc, (%%a0)\n\t"
+		"add.l   #0x10, %%a0\n\t"   /* next set */
+		"addq.l  #1, %%d1\n\t"
+		"cmpi.l  #512, %%d1\n\t"
+		"bne     1b\n\t"
+		"moveq.l #0, %%d1\n\t"
+		"addq.l  #1, %%d0\n\t"
+		"move.l  %%d0, %%a0\n\t"    /* next way, set back to 0 */
+		"cmpi.l  #4, %%d0\n\t"
+		"bne     1b\n\t"
+		"move.w  %%d2, %%sr\n\t"    /* restore IRQ state */
+		: : : "d0", "d1", "d2", "a0", "memory"
+	);
+#endif
+}
 
-	/* An alternative is to use Ssystem() OS call (arg2 = -1 for flushing the entire data cache) */
-	s_system(S_FLUSHCACHE, 0, -1);
-#else
-	/* There is only PCI hardware for machines with a 040, 060 and
-	 * ColdFire CPUs.
+/* The kernel doesn't export a function in kentry to invalidate caches,
+ * so until then we have our own function.
+ */
+static void invalidate_dcache_range(void *begin, long size)
+{
+#if defined(__mc68040__) || defined(__mc68060__)
+	/* cinvl invalidates without pushing dirty data to RAM.
+	 * Caller must ensure flush_dcache_range() was called on this range
+	 * before DMA started, otherwise dirty lines are silently discarded.
 	 */
+	unsigned long p = (unsigned long)begin & ~15UL;
+	unsigned long end = (unsigned long)begin + (unsigned long)size;
+	while (p < end)
+	{
+		__asm__ __volatile__("cinvl %%dc,(%0)" : : "a"(p) : "memory");
+		p += 16;
+	}
+#elif defined(__mcoldfire__)
+	/* ColdFire has no invalidate-without-push instruction. cpushl pushes
+	 * any dirty lines to RAM before invalidating. If the cache has dirty
+	 * data in this range it will overwrite what DMA wrote to RAM.
+	 * Caller MUST call flush_dcache_range() on this range before DMA
+	 * starts and must not write to it again until DMA completes. The
+	 * D-cache is 4-way set-associative and cpushl encodes the way in
+	 * bits 1:0 of its operand, so each line needs four cpushls (at
+	 * +0/+1/+2/+3) to cover all four ways. A single cpushl at the
+	 * aligned line address would only flush way 0 and miss the line if
+	 * it sits in a different way.
+	 */
+	unsigned long p = (unsigned long)begin & ~15UL;
+	unsigned long end = (unsigned long)begin + (unsigned long)size;
+	__asm__ __volatile__("nop" : : : "memory");
+	while (p < end)
+	{
+		__asm__ __volatile__(
+			"move.l %0,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 0 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 1 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 2 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)"       /* way 3 */
+			: : "g"(p) : "a0", "memory");
+		p += 16;
+	}
 #endif
 }
 
@@ -478,7 +552,7 @@ static long ehci_td_buffer(struct ehci *gehci, struct qTD *td, void *buf, size_t
 	if (addr & (M68K_CACHE_LINE_SIZE - 1))
 		DEBUG(("EHCI-HCD: Misaligned buffer address (0x%08lx)", (unsigned long)buf));
 
-	cpush(buf, sz);
+	flush_dcache_range(buf, sz);
 
 	idx = 0;
 	while(idx < 5)
@@ -632,8 +706,13 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	}
 
 	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_busaddr) | QH_LINK_TYPE_QH);
-	/* Flush data cache */
-	flush_dcache();
+
+	/* Flush data cache before handing the QH/TDs to EHCI. */
+	flush_dcache_range(gehci->qh_list, sizeof(struct QH));
+	flush_dcache_range(gehci->qh, sizeof(struct QH));
+	flush_dcache_range(gehci->td[0], sizeof(struct qTD));
+	flush_dcache_range(gehci->td[1], sizeof(struct qTD));
+	flush_dcache_range(gehci->td[2], sizeof(struct qTD));
 	usbsts = ehci_readl(&gehci->hcor->or_usbsts);
 	ehci_writel(&gehci->hcor->or_usbsts, (usbsts & 0x3f));
 
@@ -654,7 +733,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	do
 	{
 		/* Invalidate dcache */
-		invalidate_dcache();
+		invalidate_dcache_range((void *)vtd, sizeof(struct qTD));
 		token = hc32_to_cpu(vtd->qt_token);
 		if(!(token & 0x80))
 			break;
@@ -663,14 +742,9 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	}
 	while(ts < timeout);
 
-	/* Invalidate the memory area occupied by buffer */
-	/* invalidate_dcache(); */
-
-	/* Our function to invalidate the data cache invalidates
-	 * the entire cache so we don't need to invalidate the
-	 * data cache again, as long as we don't invalidate
-	 * "per address" we are good.
-	 */
+	/* Invalidate the buffer so the CPU sees data written by the EHCI (IN transfers) */
+	if (buffer && length)
+		invalidate_dcache_range(buffer, length);
 
 
 	/* Check that the TD processing happened */
@@ -1147,6 +1221,8 @@ long usb_lowlevel_init(void *ucd_priv)
 	gehci->qh_list->qh_overlay.qt_next = cpu_to_hc32(QT_NEXT_TERMINATE);
 	gehci->qh_list->qh_overlay.qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
 	gehci->qh_list->qh_overlay.qt_token = cpu_to_hc32(0x40);
+
+	flush_dcache_range(gehci->qh_list, sizeof(struct QH));
 
 	/* Set async. queue head pointer. */
 	ehci_writel(&gehci->hcor->or_asynclistaddr, (unsigned long)gehci->qh_list_busaddr);
