@@ -416,6 +416,40 @@ inline static char lock_usb(char *lock) {
 
 inline static void unlock_usb(char *lock) {
 	*lock = 0;
+#ifdef __mcoldfire__
+	/* tas bypasses the D-cache on ColdFire (MCF547x RM: a tas not
+	 * hitting a RAMBAR is non-cacheable and precise), so this cached
+	 * write to *lock is invisible to the next tas until the dirty line
+	 * reaches RAM. Push it now via cpushl on the cache line containing
+	 * the lock byte.
+	 *
+	 * IMPORTANT: cpushl encodes the cache "way" in bits 1:0 of its
+	 * operand. The D-cache is 4-way set-associative, so a single cpushl
+	 * at the line-aligned address only flushes way 0. To guarantee the
+	 * dirty line is pushed regardless of which way the cache placed it
+	 * in, we have to issue cpushl four times — at aligned+0, +1, +2,
+	 * +3 — to walk all four ways of this set. The other three ways
+	 * also get flushed as a side effect (pushed and invalidated).
+	 * Safe to push the whole 16-byte lines because the gehci allocation
+	 * is cache-line aligned and padded (see ehci_alloc_ucdif), so the
+	 * line is exclusively ours.
+	 */
+	{
+		unsigned long line = ((unsigned long)lock) & ~15UL;
+		__asm__ __volatile__(
+			"move.l %0,%%a0\n\t"
+			"nop\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 0 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 1 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)\n\t"   /* way 2 */
+			"addq.l #1,%%a0\n\t"
+			"cpushl %%dc,(%%a0)"       /* way 3 */
+			: : "g"(line)
+			: "a0", "memory");
+	}
+#endif
 }
 
 /*
@@ -1559,8 +1593,20 @@ ehci_alloc_ucdif(struct ucdif **u)
 	ehci_uif->ioctl = ehci_ioctl;
 	ehci_uif->resrvd2 = 0;
 	strcpy(ehci_uif->name, "ehci-pci");
-	if(!(ehci_uif->ucd_priv = (void *)kmalloc(sizeof(struct ehci))))
-		return -1;
+	{
+		/* gehci is allocate-once for the controller's lifetime (never
+		 * kfree'd), so we over-allocate and align up without keeping
+		 * the raw pointer.
+		 */
+		long ehci_padded = (sizeof(struct ehci) + M68K_CACHE_LINE_SIZE - 1)
+		                   & ~((long)M68K_CACHE_LINE_SIZE - 1);
+		void *raw = (void *)kmalloc(ehci_padded + M68K_CACHE_LINE_SIZE);
+		if (raw == NULL)
+			return -1;
+		ehci_uif->ucd_priv = (void *)(((unsigned long)raw
+		                               + M68K_CACHE_LINE_SIZE - 1)
+		                              & ~((unsigned long)M68K_CACHE_LINE_SIZE - 1));
+	}
 
 	return 0;
 }
