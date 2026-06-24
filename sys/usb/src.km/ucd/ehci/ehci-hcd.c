@@ -598,6 +598,9 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	unsigned long cmd;
 	long ret = 0;
 	unsigned long td_offset = 0;	/* make compiler happy */
+	void *bounce_alloc = NULL;
+	void *orig_buffer = buffer;
+	int bounce_is_in = 0;
 
 	struct ehci *gehci = (struct ehci *)dev->controller->ucd_priv;
 
@@ -607,6 +610,63 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		DEBUG(("Another USB job in progress -- must not happen"));
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
+	}
+
+	/* The data buffer is flushed before DMA and invalidated after.
+	 *
+	 * On ColdFire both ops are cpushl (push-then-invalidate), even on
+	 * 040/060 the post-DMA invalidate must not share a cache line with
+	 * memory the CPU dirties during the transfer.
+	 *
+	 * Callers hand us 8-byte setup packets and stack-allocated
+	 * non-cache-line-sized buffers (e.g.the 31-byte CBW in usb_storage.c),
+	 * both can share cache-line edges with neighbour memory, which can
+	 * let cpushl either clobber RAM EHCI just DMA'd (data buffer post-DMA)
+	 * or RAM some other DMA agent wrote (req pre-DMA).
+	 *
+	 * Bounce req and/or the data buffer through a cache-line-aligned
+	 * scratch buffer so the pre-DMA flush and post-DMA invalidate only
+	 * touch cache lines we exclusively own.
+	 *
+	 */
+	{
+		long req_pad = (req != NULL) ? M68K_CACHE_LINE_SIZE : 0;
+		long buf_pad = 0;
+		int need_buf_bounce = (buffer != NULL && length > 0
+		                       && (((unsigned long)buffer & (M68K_CACHE_LINE_SIZE - 1))
+		                           || (length & (M68K_CACHE_LINE_SIZE - 1))));
+		if (need_buf_bounce)
+			buf_pad = (length + (M68K_CACHE_LINE_SIZE - 1))
+			          & ~((long)M68K_CACHE_LINE_SIZE - 1);
+		if (req_pad || buf_pad)
+		{
+			char *base;
+			bounce_alloc = (void *)kmalloc(req_pad + buf_pad + M68K_CACHE_LINE_SIZE);
+			if (bounce_alloc == NULL)
+			{
+				DEBUG(("EHCI: bounce alloc failed (%ld bytes)",
+				       req_pad + buf_pad + M68K_CACHE_LINE_SIZE));
+				unlock_usb(&gehci->job_in_progress);
+				dev->status = USB_ST_BUF_ERR;
+				return -1;
+			}
+			base = (char *)(((unsigned long)bounce_alloc
+			                 + (M68K_CACHE_LINE_SIZE - 1))
+			                & ~((unsigned long)M68K_CACHE_LINE_SIZE - 1));
+			if (req_pad)
+			{
+				memcpy(base, req, sizeof(*req));
+				req = (struct devrequest *)base;
+				base += req_pad;
+			}
+			if (buf_pad)
+			{
+				buffer = base;
+				bounce_is_in = usb_pipein(pipe) ? 1 : 0;
+				if (!bounce_is_in)
+					memcpy(buffer, orig_buffer, length);
+			}
+		}
 	}
 
 	DEBUG(("dev=0x%lx, pipe=0x%lx, buffer=0x%lx, length=%ld, req=0x%lx", (unsigned long)dev, pipe, (unsigned long)buffer, length, (unsigned long)req));
@@ -619,6 +679,8 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	if(qh == NULL)
 	{
 		DEBUG(("unable to allocate QH"));
+		if (bounce_alloc != NULL)
+			kfree(bounce_alloc);
 		unlock_usb(&gehci->job_in_progress);
 		return -1;
 	}
@@ -792,6 +854,11 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 				break;
 		}
 		dev->act_len = length - ((token >> 16) & 0x7fff);
+		if (buffer != orig_buffer && bounce_is_in && dev->act_len > 0)
+		{
+			long copy_len = (dev->act_len < length) ? dev->act_len : length;
+			memcpy(orig_buffer, buffer, copy_len);
+		}
 	}
 	else
 	{
@@ -802,6 +869,8 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
+	if (bounce_alloc != NULL)
+		kfree(bounce_alloc);
 	unlock_usb(&gehci->job_in_progress);
 	return (dev->status != USB_ST_NOT_PROC) ? 0 : -1;
 fail:
@@ -813,6 +882,8 @@ fail:
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
+	if (bounce_alloc != NULL)
+		kfree(bounce_alloc);
 	unlock_usb(&gehci->job_in_progress);
 	return -1;
 }
