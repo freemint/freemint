@@ -28,7 +28,7 @@
  *		ifconfig en0 addr u.v.w.x
  *		route add u.v.w.x en0
  *
- *		20050131		/Henrik and Torbjîrn GildÜ
+ *		20050131		/Henrik and Torbj√∂rn Gild√•
  *
  *
  *		Uses the I6 line for interrupt and does not use addroottimeout
@@ -201,6 +201,7 @@ ethernat_open (struct netif *nif)
 #ifdef USE_I6
 	Eth_set_bank(2);
 	*LAN_INTMSK = (*LAN_INTMSK) | 0x1;					//enable RCV_INT
+	*ETH_REG = (*ETH_REG) | 0x02;						//enable LAN interrupt in the CPLD
 #endif
 
 /*
@@ -226,6 +227,16 @@ static long
 ethernat_close (struct netif *nif)
 {
 	c_conws("Ethernat down!\n\r");
+
+#ifdef USE_I6
+	Eth_set_bank(2);
+	*LAN_INTMSK = (*LAN_INTMSK) & ~0x1;					//disable RCV_INT
+	*ETH_REG = (*ETH_REG) & ~0x02;						//disable LAN interrupt in the CPLD
+#endif
+
+	Eth_set_bank(0);
+	*LAN_RCR = (*LAN_RCR) & ~0x0001;					//receive disable
+
 	initializing = 1;
 	return 0;
 }
@@ -958,14 +969,8 @@ driver_init (void)
 
 
 #ifdef USE_I6
-	// Enable LAN interrupts in the Ethernat control register
-	//ksprintf (message, "Enable LAN interrupts in the Ethernat... ");
-	//c_conws (message);
-
-	*ETH_REG = (*ETH_REG) | 0x82;			//Disable Led2, enable led 1
-
-	//ksprintf (message, "OK\n\r");
-	//c_conws (message);
+	// LED setup; the LAN interrupt gate (0x02) is enabled in ethernat_open()
+	*ETH_REG = (*ETH_REG) | 0x80;			//Disable Led2, enable led 1
 #endif
 
 	c_conws("Init succeeded\n\r");

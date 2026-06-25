@@ -48,6 +48,8 @@ void load_all_modules(unsigned long mask);
 void _cdecl load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *));
 void _cdecl load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *, short *, short *));
 
+void _cdecl shutdown_all_modules(void);
+
 extern DEVDRV module_device;
 
 # endif /* _module_h */

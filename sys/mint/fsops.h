@@ -57,11 +57,13 @@ struct devdrv
 	 */
 	long _cdecl (*writeb)	(FILEPTR *f, const char *buf, long bytes);
 	long _cdecl (*readb)	(FILEPTR *f, char *buf, long bytes);
-	
+
 	/* what about: scatter/gather io for DMA devices...
 	 * long _cdecl (*writev)(FILEPTR *f, const struct iovec *iov, long cnt);
 	 * long _cdecl (*readv)	(FILEPTR *f, struct iovec *iov, long cnt);
 	 */
+
+	void	_cdecl (*shutdown)(void);
 };
 
 /*
