@@ -43,6 +43,7 @@
 struct basepage;
 struct dirstruct;
 struct kentry;
+struct devdrv;
 
 struct km_api
 {
@@ -59,6 +60,8 @@ struct kernel_module
 	short subclass;
 	unsigned long flags;
 	struct km_api *kmapi;
+	struct devdrv *dev;
+	long drvsize;
 	char path[PATH_MAX];
 	char name[64];
 	struct proc *caller;
