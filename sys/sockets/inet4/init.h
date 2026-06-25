@@ -37,5 +37,8 @@
 
 void inet4_init (void);
 
+/* if.c: bring all interfaces down at the driver level (called at shutdown) */
+void xif_stop (void);
+
 
 # endif /* _init_h */

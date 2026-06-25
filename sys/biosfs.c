@@ -367,6 +367,32 @@ set_xattr (XATTR *xp, ushort mode, int rdev)
 
 
 void
+shutdown_all_devices (void)
+{
+	struct bios_file *b;
+
+	for (b = broot; b; b = b->next)
+	{
+		struct bios_file *p;
+
+		if (b->drvsize <= (long) offsetof (DEVDRV, shutdown)
+		    || !b->device || !b->device->shutdown)
+			continue;
+
+		/* A driver may install several u:\dev nodes that share one
+		 * DEVDRV (e.g. the two SCC ports); call its shutdown() once.
+		 */
+		for (p = broot; p != b; p = p->next)
+			if (p->device == b->device
+			    && p->drvsize > (long) offsetof (DEVDRV, shutdown))
+				break;
+
+		if (p == b)
+			(*b->device->shutdown) ();
+	}
+}
+
+void
 biosfs_init (void)
 {
 	struct bios_file *b, *c;

@@ -89,7 +89,7 @@ struct kerinfo kernelinfo =
 	MINT_MAJ_VERSION,
 	MINT_MIN_VERSION,
 	DEFAULT_MODE,
-	2, /* MINT_KVERSION */
+	3, /* MINT_KVERSION */
 	&bios_tab, &dos_tab,
 	m_changedrv,
 	Trace, Debug, ALERT, FATAL,
@@ -140,6 +140,11 @@ struct kerinfo kernelinfo =
 	NULL, /* nf_ops */
 
 	remaining_proc_time,
+
+	/* version 3
+	 * init_xdd()/init_xfs() get a 'long *drvsize' out argument;
+	 * no kerinfo struct change but it is an ABI change
+	 */
 
 	{
 		0

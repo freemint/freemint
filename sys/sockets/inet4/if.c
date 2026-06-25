@@ -484,6 +484,18 @@ if_close (struct netif *nif)
 	return 0;
 }
 
+void
+xif_stop (void)
+{
+	struct netif *nif;
+
+	for (nif = allinterfaces; nif; nif = nif->next)
+	{
+		if (nif->flags & IFF_UP)
+			(*nif->close) (nif);
+	}
+}
+
 long
 if_send (struct netif *nif, BUF *buf, ulong nexthop, short addrtype)
 {
