@@ -34,17 +34,12 @@
 #include "mint/asmdefs.h"
 #include "mint/xbra.h"
 
-#define RESMAGIC		0x31415926
-#define _resvalid		0x426
-#define _resvector		0x42a
-#define _cpld_cr		0x80000023	// Ethernat cpld control reg
 
 	.globl SYM(old_int)
 	.globl SYM(interrupt)
 	.extern SYM(ethernat_int)
 	.globl SYM(set_old_int_lvl)
 	.globl SYM(set_int_lvl6)
-	.globl SYM(hook_reset_vector)
 	.globl SYM(ethernat_probe_asm)
 	.extern SYM(ethernat_probe_c)
 	.globl SYM(fake_ikbd_int)
@@ -87,29 +82,6 @@ SYM(set_int_lvl6):
 	move.w	(sp)+,d0
 	rts
 
-// Hook into the reset vector to turn off interrupt
-SYM(hook_reset_vector):
-	move.l	_resvalid,oldvalid
-	move.l	#RESMAGIC,_resvalid
-	move.l	_resvector,oldreset
-	move.l	#newreset,_resvector
-	rts
-
-	dc.l	XBRA_MAGIC
-	dc.l	0x45544E55		// ETNU
-oldreset:
-	dc.l	0
-
-newreset:
-	move.b	_cpld_cr,d0
-	and.b	0xF9,d0			//0xFB USB, 0xF9 USB+ETH 
-	move.b	d0,_cpld_cr
-	move.l	oldreset,_resvector
-	move.l	oldvalid,_resvalid
-	jmp	(a6)
-
-oldvalid:
-	.ds.l	1
 
 // Change bus error exception handler
 // Call probe function

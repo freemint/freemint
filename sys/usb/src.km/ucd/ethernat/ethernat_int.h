@@ -44,7 +44,6 @@ extern void (*old_int)(void);
 
 // interrupt wrapper routine
 void interrupt(void);
-void hook_reset_vector(void);
 
 void set_old_int_lvl(void);
 void set_int_lvl6(void);
