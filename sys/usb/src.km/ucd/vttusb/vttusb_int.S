@@ -34,28 +34,12 @@
 #include "mint/asmdefs.h"
 #include "mint/xbra.h"
 
-#define RESMAGIC		0x31415926
-#define _resvalid		0x426
-#define _resvector		0x42a
-// The CPLD Control Register is connected to VME-D(7..0)
-// This results in an odd address, accessed with LDSn active
-
-#if defined(LIGHTNING_VME)
-#ifndef __mc68030__
-#define _cpld_cr		0xDF8009	// vttusb cpld control reg
-#else
-#define _cpld_cr		0xFEFF8009	// vttusb cpld control reg
-#endif
-#elif defined(LIGHTNING_ST)
-#define _cpld_cr		0xF80009	// vttusb cpld control reg
-#endif
 
 	.globl SYM(old_int)
 	.globl SYM(interrupt)
 	.globl SYM(vttusb_int)
 	.globl SYM(set_old_int_lvl)
 	.globl SYM(set_int_lvl6)
-	.globl SYM(hook_reset_vector)
 	.globl SYM(vttusb_probe_asm)
 	.extern SYM(vttusb_probe_c)
 	.globl SYM(fake_hwint)
@@ -104,29 +88,6 @@ SYM(set_int_lvl6):
 	move.w	(sp)+,d0
 	rts
 
-// Hook into the reset vector to turn off interrupt
-SYM(hook_reset_vector):
-	move.l	_resvalid,oldvalid
-	move.l	#RESMAGIC,_resvalid
-	move.l	_resvector,oldreset
-	move.l	#newreset,_resvector
-	rts
-
-	dc.l	XBRA_MAGIC
-	.ascii	"_USB"		    // (cookie)
-oldreset:
-	dc.l	0
-
-newreset:
-	move.b	_cpld_cr,d0
-	and.b	0xF9,d0			//0xFB USB, 0xF9 USB+ETH 
-	move.b	d0,_cpld_cr
-	move.l	oldreset,_resvector
-	move.l	oldvalid,_resvalid
-	jmp	(a6)
-
-oldvalid:
-	.ds.l	1
 
 // Change bus error exception handler
 // Call probe function

@@ -47,8 +47,11 @@ struct devdrv;
 
 struct km_api
 {
+	long size;			/* sizeof(*this); */
+
 	long _cdecl (*install)(struct kentry *, const char *path);
 	long _cdecl (*uninstall)(void);
+	void _cdecl (*shutdown)(void);
 };
 
 struct kernel_module
@@ -67,6 +70,6 @@ struct kernel_module
 	struct proc *caller;
 };
 
-long _cdecl init_km(struct kentry *k, const struct kernel_module *km) __asm__("init_km");
+long _cdecl init_km(struct kentry *k, struct kernel_module *km) __asm__("init_km");
 
 #endif	/* _mint_module_h_ */

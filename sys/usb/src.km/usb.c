@@ -83,10 +83,10 @@ void usb_init(void)
 }
 
 /******************************************************************************
- * Stop USB this stops the LowLevel Part and deregisters USB devices.
+ * Stop USB: bring every host controller down at the driver level. Unlike
+ * ucd_unregister() this does not touch allucdifs.
  */
 extern struct ucdif *allucdifs;
-extern long ucd_unregister(struct ucdif *a);
 void usb_stop(void)
 {
 	struct ucdif *a;
@@ -94,7 +94,8 @@ void usb_stop(void)
 	asynch_allowed = 1;
 
 	for (a = allucdifs; a; a = a->next) {
-		ucd_unregister(a);
+		(*a->close)(a);
+		(*a->ioctl)(a, LOWLEVEL_STOP, 0);
 	}
 }
 

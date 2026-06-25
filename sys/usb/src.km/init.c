@@ -79,7 +79,9 @@ struct kentry *kentry;
 
 #ifndef TOSONLY
 Path start_path;
-static const struct kernel_module *self = NULL;
+static struct kernel_module *self = NULL;
+
+static struct km_api km_shutdown_api = { .size = sizeof(km_shutdown_api), .shutdown = usb_stop };
 #else
 
 extern unsigned long _PgmSize;
@@ -148,7 +150,7 @@ int init(int argc, char **argv, char **env);
 int
 init(int argc, char **argv, char **env)
 #else
-long _cdecl init_km(struct kentry *k, const struct kernel_module *km)
+long _cdecl init_km(struct kentry *k, struct kernel_module *km)
 #endif
 {
 	long err = 0L;
@@ -167,6 +169,8 @@ long _cdecl init_km(struct kentry *k, const struct kernel_module *km)
 		err = ENOSYS;
 		goto error;
 	}
+
+	self->kmapi = &km_shutdown_api;
 
 	/* remember loader */
 
