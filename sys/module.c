@@ -221,6 +221,11 @@ shutdown_all_modules(void)
 		    && km->drvsize > (long) offsetof(DEVDRV, shutdown)
 		    && dev->shutdown)
 			(*dev->shutdown)();
+
+		if (km->class == MODCLASS_KM && km->kmapi
+		    && km->kmapi->size > (long) offsetof(struct km_api, shutdown)
+		    && km->kmapi->shutdown)
+			(*km->kmapi->shutdown)();
 	}
 }
 
@@ -711,12 +716,12 @@ run_km(const char *path)
 
 	if (err == E_OK && km_loaded(km))
 	{
-		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
+		long _cdecl (*run)(struct kentry *, struct kernel_module *);
 
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, (unsigned long)km->b);
 //		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
-		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
+		run = (long _cdecl(*)(struct kentry *, struct kernel_module *))km->b->p_tbase;
 		km->caller = curproc;
 		FORCE("run_km: run=0x%lx", (unsigned long)run);
 		err = (*run)(&kentry, km); //km->path);

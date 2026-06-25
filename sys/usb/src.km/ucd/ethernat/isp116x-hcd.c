@@ -2114,13 +2114,6 @@ usb_lowlevel_init(void *dummy)
 	isp116x->disabled = 1;
 	isp116x->sleeping = 0;
 
-	/* Hook a routine into the reset vector to turning off
-	 * main USB interrupt in case something goes wrong.
-	 * In the future if this module could be loaded/unloaded
-	 * we should check that we didn't hook before
-	 */
-	hook_reset_vector();
-
 	isp116x_reset(isp116x);
 	isp116x_start(isp116x);
 

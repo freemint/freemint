@@ -106,8 +106,8 @@ ucd_unregister(struct ucdif *a)
 {
 	struct ucdif **list = &allucdifs;
 
-	(*a->ioctl)(a, LOWLEVEL_STOP, 0);
 	(*a->close)(a);
+	(*a->ioctl)(a, LOWLEVEL_STOP, 0);
 
 	while (*list)
 	{
