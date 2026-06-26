@@ -1248,6 +1248,7 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 			case WF_SCREEN:
 			case WF_WHEEL:
 			case WF_OPTS:
+				break;
 			default:
 				DIAGS(("WARNING:wind_get for %s: Invalid window handle %d", c_owner(client), wind));
 				o[0] = 0;	/* Invalid window handle, return error */
@@ -1566,15 +1567,10 @@ XA_wind_get(int lock, struct xa_client *client, AESPB *pb)
 		{
 			if (w != root_window)
 			{
-				if (wind < 0 || wind_has_focus(w))
-				{
-					DIAG((D_w, client, " -- top window=%d, owner='%s' has focus", w->handle, w->owner->name));
-					o[1] = w->handle;
-					o[2] = w->owner->p->pid;
-				} else
-				{
-					DIAG((D_w, client, " -- top window=%d, owner='%s' NOT in focus", w->handle, w->owner->name));
-				}
+				DIAG((D_w, client, " -- top window=%d, owner='%s'", w->handle, w->owner->name));
+				o[1] = w->handle;
+				o[2] = w->owner->p->pid;
+
 				if (w->next && w->next != root_window)
 				{
 					o[3] = w->next->handle;
