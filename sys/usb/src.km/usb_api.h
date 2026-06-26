@@ -26,7 +26,7 @@
 /*
  * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
  */
-#define USB_API_VERSION 4
+#define USB_API_VERSION 5
 
 /*
  * UCD - USB Controller Driver.
@@ -39,8 +39,6 @@
 /*
  * ioctl opcodes
  */
-#define LOWLEVEL_INIT		(('U'<< 8) | 0)
-#define LOWLEVEL_STOP		(('U'<< 8) | 1)
 #define SUBMIT_CONTROL_MSG	(('U'<< 8) | 2)
 #define SUBMIT_BULK_MSG		(('U'<< 8) | 3)
 #define SUBMIT_INT_MSG		(('U'<< 8) | 4)
