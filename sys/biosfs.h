@@ -69,6 +69,7 @@ extern struct tty sccb_tty, scca_tty, ttmfp_tty;
 extern long rsvf;
 
 void biosfs_init (void);
+void shutdown_all_devices (void);
 
 long rsvf_ioctl (int f, void *arg, int mode);
 long iwrite	(int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b);

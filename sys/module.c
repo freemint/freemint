@@ -28,6 +28,8 @@
 
 # include "module.h"
 
+# include <stddef.h>		/* offsetof */
+
 # include "arch/cpu.h"
 # include "arch/init_intr.h"
 # include "arch/syscall.h"
@@ -204,6 +206,28 @@ load_all_modules(unsigned long mask)
 }
 
 static struct kernel_module *loaded_modules = NULL;
+
+void _cdecl
+shutdown_all_modules(void)
+{
+	struct kernel_module *km;
+
+	for (km = loaded_modules; km; km = km->next)
+	{
+		DEVDRV *dev = km->dev;
+
+		/* XFS uses unmount(), see xfs_unmount() */
+		if (km->class == MODCLASS_XDD && dev
+		    && km->drvsize > (long) offsetof(DEVDRV, shutdown)
+		    && dev->shutdown)
+			(*dev->shutdown)();
+
+		if (km->class == MODCLASS_KM && km->kmapi
+		    && km->kmapi->size > (long) offsetof(struct km_api, shutdown)
+		    && km->kmapi->shutdown)
+			(*km->kmapi->shutdown)();
+	}
+}
 
 static void
 free_km(struct kernel_module *km)
@@ -446,12 +470,12 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
  * all the modules are gcc compiled too ...
  */
 static void *
-module_init(void *initfunc, struct kerinfo *k)
+module_init(void *initfunc, struct kerinfo *k, long *drvsize)
 {
-	void * _cdecl (*init)(struct kerinfo *);
+	void * _cdecl (*init)(struct kerinfo *, long *);
 
 	init = initfunc;
-	return (*init)(k);
+	return (*init)(k, drvsize);
 }
 #else
 
@@ -462,20 +486,21 @@ module_init(void *initfunc, struct kerinfo *k)
 #endif
 
 static void *
-module_init(void *initfunc, struct kerinfo *k)
+module_init(void *initfunc, struct kerinfo *k, long *drvsize)
 {
 	register void *ret __asm__("d0");
 
 	__asm__ volatile
 	(
 		PUSH_SP("%%d3-%%d7/%%a3-%%a6", 36)
+		"move.l	%3,-(%%sp)\n\t"
 		"move.l	%2,-(%%sp)\n\t"
 		"move.l	%1,%%a0\n\t"
 		"jsr	(%%a0)\n\t"
-		"addq.l	#4,%%sp\n\t"
+		"addq.l	#8,%%sp\n\t"
 		POP_SP("%%d3-%%d7/%%a3-%%a6", 36)
 		: "=r"(ret)				/* outputs */
-		: "r"(initfunc), "r"(k)			/* inputs  */
+		: "r"(initfunc), "r"(k), "r"(drvsize)	/* inputs  */
 		: LOCAL_CLOBBER_LIST /* clobbered regs */
 	);
 
@@ -497,7 +522,7 @@ load_xfs(struct basepage *b, const char *name, short *class, short *subclass)
 	DEBUG(("load_xfs: enter (0x%p, %s)", b, name));
 	DEBUG(("load_xfs: init 0x%p, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	fs = module_init(initfunc, &kernelinfo);
+	fs = module_init(initfunc, &kernelinfo, NULL);
 	if (fs)
 	{
 		DEBUG(("load_xfs: %s loaded OK (%p)", name, fs));
@@ -555,12 +580,18 @@ long
 load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 {
 	void *initfunc = (void *)b->p_tbase;
+	/* This module is at the head of loaded_modules right now. Save it before
+	 * its init() runs: init() may itself load further modules (e.g. inet4
+	 * loads its .xif drivers via if_load()), which would move the head.
+	 */
+	struct kernel_module *km = loaded_modules;
 	DEVDRV *dev;
+	long drvsize = 0;
 
 	DEBUG(("load_xdd: enter (0x%p, %s)", b, name));
 	DEBUG(("load_xdd: init 0x%p, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	dev = module_init(initfunc, &kernelinfo);
+	dev = module_init(initfunc, &kernelinfo, &drvsize);
 	if (dev)
 	{
 		DEBUG(("load_xdd: %s loaded OK", name));
@@ -569,6 +600,16 @@ load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 		*subclass = 0;
 		if ((DEVDRV *) 1L != dev)
 		{
+			if (drvsize)
+			{
+				DEBUG(("load_xdd: %s dev stored (drvsize %li)", name, drvsize));
+
+				km->dev = dev;
+				km->drvsize = drvsize;
+
+				return 0;
+			}
+
 			/* we need to install the device driver ourselves */
 
 			char dev_name[PATH_MAX];
@@ -675,12 +716,12 @@ run_km(const char *path)
 
 	if (err == E_OK && km_loaded(km))
 	{
-		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
+		long _cdecl (*run)(struct kentry *, struct kernel_module *);
 
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, (unsigned long)km->b);
 //		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
-		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
+		run = (long _cdecl(*)(struct kentry *, struct kernel_module *))km->b->p_tbase;
 		km->caller = curproc;
 		FORCE("run_km: run=0x%lx", (unsigned long)run);
 		err = (*run)(&kentry, km); //km->path);

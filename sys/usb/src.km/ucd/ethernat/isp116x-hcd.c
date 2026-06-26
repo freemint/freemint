@@ -1978,13 +1978,13 @@ isp116x_start(struct isp116x *isp116x)
 static long _cdecl
 ethernat_open(struct ucdif *u)
 {
-	return E_OK;
+	return usb_lowlevel_init (u->ucd_priv);
 }
 
 static long _cdecl
 ethernat_close(struct ucdif *u)
 {
-	return E_OK;
+	return usb_lowlevel_stop (u->ucd_priv);
 }
 
 static long _cdecl
@@ -1997,16 +1997,6 @@ ethernat_ioctl(struct ucdif *u, short cmd, long arg)
 		case FS_INFO:
 		{
 			*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
-			break;
-		}
-		case LOWLEVEL_INIT :
-		{
-			ret = usb_lowlevel_init (u->ucd_priv);
-			break;
-		}
-		case LOWLEVEL_STOP :
-		{
-			ret = usb_lowlevel_stop (u->ucd_priv);
 			break;
 		}
 		case SUBMIT_CONTROL_MSG :
@@ -2113,13 +2103,6 @@ usb_lowlevel_init(void *dummy)
 
 	isp116x->disabled = 1;
 	isp116x->sleeping = 0;
-
-	/* Hook a routine into the reset vector to turning off
-	 * main USB interrupt in case something goes wrong.
-	 * In the future if this module could be loaded/unloaded
-	 * we should check that we didn't hook before
-	 */
-	hook_reset_vector();
 
 	isp116x_reset(isp116x);
 	isp116x_start(isp116x);

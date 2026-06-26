@@ -25,11 +25,13 @@
 # include "mint/signal.h"
 # include "mint/stat.h"
 
+# include "biosfs.h"		/* shutdown_all_devices */
 # include "console.h"
 # include "cookie.h"
 # include "filesys.h"
 # include "k_prot.h"
 # include "memory.h"
+# include "module.h"		/* shutdown_all_modules */
 # include "proc.h"
 # include "proc_help.h"
 # include "signal.h"
@@ -667,6 +669,9 @@ shutdown(void)
 	SIGACTION(get_curproc(), SIGABRT).sa_handler = SIG_IGN;
 	SIGACTION(get_curproc(), SIGQUIT).sa_handler = SIG_IGN;
 	SIGACTION(get_curproc(), SIGHUP).sa_handler = SIG_IGN;
+
+	shutdown_all_modules();		/* non-device drivers, e.g. inet4 */
+	shutdown_all_devices();		/* installed u:\dev devices */
 
 	for (p = proclist; p; p = p->gl_next)
 	{

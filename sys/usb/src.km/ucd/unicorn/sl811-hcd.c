@@ -1309,13 +1309,13 @@ static long
 sl811_open (struct ucdif *u)
 {
 	DEBUG(("sl811 open"));
-	return E_OK;
+	return usb_lowlevel_init (u->ucd_priv);
 }
 
 static long
 sl811_close (struct ucdif *u)
 {
-	return E_OK;
+	return usb_lowlevel_stop (u->ucd_priv);
 }
 
 static long
@@ -1325,16 +1325,6 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 
 	switch (cmd)
 	{
-		case LOWLEVEL_INIT :
-		{
-			ret = usb_lowlevel_init (u->ucd_priv);
-			break;
-		}
-		case LOWLEVEL_STOP :
-		{
-			ret = usb_lowlevel_stop (u->ucd_priv);
-			break;
-		}
 		case SUBMIT_CONTROL_MSG :
 		{
 			struct control_msg *ctrl_msg = (struct control_msg *)arg;

@@ -43,6 +43,7 @@
 # include "cookie.h"
 # include "mint/dcntl.h"
 # include "mint/file.h"
+# include "mint/fsops.h"		/* DEVDRV */
 
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR)
@@ -136,13 +137,19 @@ static void (*init_func[])(void) =
 	NULL
 };
 
-DEVDRV * init (struct kerinfo *k) __asm__("init");
+static DEVDRV inet4_dev =
+{
+	/* this driver doesn't provide any I/O, only shutdown() */
+	shutdown:	xif_stop,
+};
+
+DEVDRV * init (struct kerinfo *k, long *drvsize) __asm__("init");
 
 DEVDRV *
-init (struct kerinfo *k)
+init (struct kerinfo *k, long *drvsize)
 {
 	long r;
-	
+
 	KERNEL = k;
 	
 	c_conws (MSG_BOOT);
@@ -156,7 +163,7 @@ init (struct kerinfo *k)
 	c_conws ("\r\n");
 	
 	if (MINT_MAJOR != MINT_MAJ_VERSION || MINT_MINOR != MINT_MIN_VERSION
-	    || MINT_KVERSION != 2 || !so_register)
+	    || MINT_KVERSION < 3 || !so_register)
 	{
 		c_conws (MSG_OLDMINT);
 		return NULL;
@@ -188,7 +195,11 @@ init (struct kerinfo *k)
 
 	for (r = 0; init_func[r]; r++)
 		(*init_func[r])();
-	
+
 	c_conws ("\r\n");
-	return (DEVDRV *) 1;
+
+	if (drvsize)
+		*drvsize = sizeof (inet4_dev);
+
+	return &inet4_dev;
 }

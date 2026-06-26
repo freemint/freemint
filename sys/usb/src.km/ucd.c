@@ -66,13 +66,6 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 		return -1;
 	}
 
-		result = (*a->ioctl)(a, LOWLEVEL_INIT, 0);
-		if (result)
-		{
-			DEBUG (("%s: ucd low level init failed!", __FILE__));
-			return -1;
-	}
-
 	hub = usb_alloc_new_device(a);
 	if (!hub) 
 	{
@@ -106,7 +99,6 @@ ucd_unregister(struct ucdif *a)
 {
 	struct ucdif **list = &allucdifs;
 
-	(*a->ioctl)(a, LOWLEVEL_STOP, 0);
 	(*a->close)(a);
 
 	while (*list)

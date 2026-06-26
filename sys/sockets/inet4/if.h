@@ -265,5 +265,6 @@ long		if_open		(struct netif *);
 long		if_close	(struct netif *);
 long		if_send		(struct netif *, BUF *, ulong, short);
 void		if_load		(void);
+void		xif_stop	(void);
 
 # endif /* _if_h */
