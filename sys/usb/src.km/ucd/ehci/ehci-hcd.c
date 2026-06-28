@@ -967,6 +967,13 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 		return -1;
 	}
 
+#ifdef TOSONLY
+	/* Reads/writes through gehci->hcor->or_portsc[] (PCI MMIO) below
+	 * need supervisor mode on TOSONLY. Restore at every exit.
+	 */
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
+
 	status_reg = (unsigned long *)&gehci->hcor->or_portsc[le2cpu16(req->index) - 1];
 	srclen = 0;
 	DEBUG(("ehci_submit_root req=%u (0x%x), type=%u (0x%x), value=%u, index=%u",
@@ -1182,12 +1189,18 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 		DEBUG(("Len is 0"));
 	dev->act_len = len;
 	dev->status = 0;
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	return 0;
 unknown:
 	DEBUG(("requesttype=%x, request=%x, value=%x, index=%x, length=%x",
 	 req->requesttype, req->request, le2cpu16(req->value), le2cpu16(req->index), le2cpu16(req->length)));
 	dev->act_len = 0;
 	dev->status = USB_ST_STALLED;
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	return -1;
 }
 
@@ -1309,6 +1322,13 @@ long usb_lowlevel_init(void *ucd_priv)
 		hc_free_buffers(gehci);
 		return (-1);
 	};
+
+#ifdef TOSONLY
+	/* From here on we touch EHCI PCI MMIO at gehci->hccr/hcor; on TOSONLY
+	 * that window is supervisor-only
+	 */
+	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
+#endif
 	gehci->hcor = (struct ehci_hcor *)((unsigned long)gehci->hccr + HC_LENGTH(ehci_readl(&gehci->hccr->cr_capbase)));
 
 	/* Get bus addresses */
@@ -1316,16 +1336,14 @@ long usb_lowlevel_init(void *ucd_priv)
 	if(r < 0)
 	{
 		DEBUG(("Getting qh_list bus address failed"));
-		hc_free_buffers(gehci);
-		return(-1);
+		goto super_fail;
 	}
 
 	r = ehci_bus_getaddr(gehci, (unsigned long)gehci->qh, (unsigned long *)&gehci->qh_busaddr);
 	if(r < 0)
 	{
 		DEBUG(("Getting qh bus address failed"));
-		hc_free_buffers(gehci);
-		return(-1);
+		goto super_fail;
 	}
 
 	for(i = 0; i < 3; i++)
@@ -1334,8 +1352,7 @@ long usb_lowlevel_init(void *ucd_priv)
 		if(r < 0)
 		{
 			DEBUG(("Getting td bus address failed"));
-			hc_free_buffers(gehci);
-			return(-1);
+			goto super_fail;
 		}
 		gehci->td_offset[i] = (unsigned long)gehci->td[i] - (unsigned long)gehci->td_busaddr[i];
 	}
@@ -1343,8 +1360,7 @@ long usb_lowlevel_init(void *ucd_priv)
 	/* EHCI spec section 4.1 */
 	if(ehci_reset(gehci) != 0)
 	{
-		hc_free_buffers(gehci);
-		return(-1);
+		goto super_fail;
 	}
 	/* Set head of reclaim list */
 	gehci->qh_list->qh_link = cpu_to_hc32(((unsigned long)gehci->qh_list_busaddr) | QH_LINK_TYPE_QH);
@@ -1407,7 +1423,16 @@ long usb_lowlevel_init(void *ucd_priv)
 	gehci->rootdev = 0;
 	gehci->ehci_inited = 1;
 
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
 	return 0;
+super_fail:
+#ifdef TOSONLY
+	if (oldmode) SuperToUser(oldmode);
+#endif
+	hc_free_buffers(gehci);
+	return -1;
 }
 
 long usb_lowlevel_stop(void *ucd_priv)
