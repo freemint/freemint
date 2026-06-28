@@ -180,6 +180,10 @@ struct QH {
 	unsigned char fill[16];
 };
 
+#ifdef TOSONLY
+#define EHCI_TOS_BOUNCE_SIZE 65536
+#endif
+
 struct ehci {
 	void *bus;				/* Inteface with bus/platform. (ex: pci) */
 	struct ucdif *controller;
@@ -205,6 +209,9 @@ struct ehci {
 	unsigned short portreset;
 	unsigned short companion;
 	char job_in_progress;
+#ifdef TOSONLY
+	unsigned char tos_bounce[EHCI_TOS_BOUNCE_SIZE + M68K_CACHE_LINE_SIZE];
+#endif
 };
 
 /* Functions prototypes */

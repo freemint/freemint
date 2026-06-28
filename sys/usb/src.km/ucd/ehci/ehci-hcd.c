@@ -622,6 +622,29 @@ static inline unsigned char ehci_encode_speed(enum usb_device_speed speed)
 	return QH_FULL_SPEED;
 }
 
+static void *bounce_alloc(struct ehci *gehci, long size)
+{
+#ifdef TOSONLY
+	if (size > EHCI_TOS_BOUNCE_SIZE) {
+		ALERT(("EHCI: static bounce too small (need %ld, have %ld)", size, (long)EHCI_TOS_BOUNCE_SIZE));
+		return NULL;
+	}
+	return (void *)(((unsigned long)gehci->tos_bounce + (M68K_CACHE_LINE_SIZE - 1))
+	                & ~((unsigned long)M68K_CACHE_LINE_SIZE - 1));
+#else
+	return (void *)kmalloc(size);
+#endif
+}
+
+static void bounce_free(void *ptr)
+{
+#ifndef TOSONLY
+	kfree(ptr);
+#else
+	(void)ptr;
+#endif
+}
+
 static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer, long length, struct devrequest *req, unsigned long timeout)
 {
 	struct QH *qh;
@@ -634,7 +657,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	unsigned long cmd;
 	long ret = 0;
 	unsigned long td_offset = 0;	/* make compiler happy */
-	void *bounce_alloc = NULL;
+	void *bounce_buf = NULL;
 	void *orig_buffer = buffer;
 	int bounce_is_in = 0;
 
@@ -677,8 +700,8 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		if (req_pad || buf_pad)
 		{
 			char *base;
-			bounce_alloc = (void *)kmalloc(req_pad + buf_pad + M68K_CACHE_LINE_SIZE);
-			if (bounce_alloc == NULL)
+			bounce_buf = bounce_alloc(gehci, req_pad + buf_pad + M68K_CACHE_LINE_SIZE);
+			if (bounce_buf == NULL)
 			{
 				DEBUG(("EHCI: bounce alloc failed (%ld bytes)",
 				       req_pad + buf_pad + M68K_CACHE_LINE_SIZE));
@@ -686,7 +709,7 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 				dev->status = USB_ST_BUF_ERR;
 				return -1;
 			}
-			base = (char *)(((unsigned long)bounce_alloc
+			base = (char *)(((unsigned long)bounce_buf
 			                 + (M68K_CACHE_LINE_SIZE - 1))
 			                & ~((unsigned long)M68K_CACHE_LINE_SIZE - 1));
 			if (req_pad)
@@ -715,8 +738,8 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 	if(qh == NULL)
 	{
 		DEBUG(("unable to allocate QH"));
-		if (bounce_alloc != NULL)
-			kfree(bounce_alloc);
+		if (bounce_buf != NULL)
+			bounce_free(bounce_buf);
 		unlock_usb(&gehci->job_in_progress);
 		return -1;
 	}
@@ -902,12 +925,14 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		DEBUG(("dev=%ld, usbsts=0x%lx, p[1]=0x%lx, p[2]=0x%lx",
 		 dev->devnum, ehci_readl(&gehci->hcor->or_usbsts), ehci_readl(&gehci->hcor->or_portsc[0]), ehci_readl(&gehci->hcor->or_portsc[1])));
 	}
+	if (bounce_buf != NULL)
+		bounce_free(bounce_buf);
+
+	unlock_usb(&gehci->job_in_progress);
+
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
-	if (bounce_alloc != NULL)
-		kfree(bounce_alloc);
-	unlock_usb(&gehci->job_in_progress);
 	return (dev->status != USB_ST_NOT_PROC) ? 0 : -1;
 fail:
 	if(ehci_readl(&gehci->hcor->or_usbsts) & STS_HSE) /* Host System Error */
@@ -918,8 +943,8 @@ fail:
 #ifdef TOSONLY
 	if (oldmode) SuperToUser(oldmode);
 #endif
-	if (bounce_alloc != NULL)
-		kfree(bounce_alloc);
+	if (bounce_buf != NULL)
+		bounce_free(bounce_buf);
 	unlock_usb(&gehci->job_in_progress);
 	return -1;
 }
