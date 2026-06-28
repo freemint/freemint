@@ -52,12 +52,12 @@
 extern struct usb_module_api   *api;
 
 extern void ehci_int_handle_asm(void);
+extern void flush_dcache_range(const void *, long);
 
 #ifdef TOSONLY
 extern long pcibios_installed;
 
 extern int pcibios_init(void);
-extern void cpush(const void *, long);
 
 static void is_firebee (void);
 #endif
@@ -314,13 +314,8 @@ long ehci_interrupt_handle(long param, long biosparam)
 	unsigned long status;
 
 	/* flush data cache */
-#ifdef TOSONLY
-	unsigned long oldmode = (Super(1L) ? 0L: Super(0L));
-#endif
-	cpush(ehci, sizeof(struct ehci));
-#ifdef TOSONLY
-	if (oldmode) SuperToUser(oldmode);
-#endif
+	flush_dcache_range(ehci, sizeof(struct ehci));
+
 	status = ehci_readl(&ehci->hcor->or_usbsts);
 	if (!status)
 		return biosparam; /* not our interrupt */

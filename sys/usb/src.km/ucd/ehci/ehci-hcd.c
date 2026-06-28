@@ -113,6 +113,8 @@ long		submit_bulk_msg		(struct usb_device *, unsigned long, void *, long, long, 
 long		submit_control_msg	(struct usb_device *, unsigned long, void *, long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
+void flush_dcache_range(void *begin, long size);
+
 /*
  * Structures
  */
@@ -273,7 +275,7 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
  * Cache functions
  */
 
-static void flush_dcache_range(void *begin, long size)
+void flush_dcache_range(void *begin, long size)
 {
 #if defined(__mc68040__) || defined(__mc68060__)
 	cpush(begin, size);
