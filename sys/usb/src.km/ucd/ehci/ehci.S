@@ -31,7 +31,7 @@
  * preserve a1 and d1 since GCC use them too as scratch
  * registers.
  */
-
+#if !defined(EHCI_POLL) && !defined(TOSONLY)
 SYM(ehci_int_handle_asm):
 	subq.l #8,sp
 	movem.l d1/a1,(sp)
@@ -42,3 +42,4 @@ SYM(ehci_int_handle_asm):
 	movem.l (sp),d1/a1
 	addq.l #8,sp
 	rts
+#endif

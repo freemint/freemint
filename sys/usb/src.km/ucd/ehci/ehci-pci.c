@@ -195,7 +195,7 @@ ehci_pci_init(void *ucd_priv)
 			default: gehci->slot_name = "generic"; break;
 		}
 	}
-#ifndef EHCI_POLL
+#if !defined(EHCI_POLL) && !defined(TOSONLY)
 	/* hook interrupt handler */
 	Hook_interrupt(((struct ehci_pci *)gehci->bus)->handle, (void *)ehci_int_handle_asm, (unsigned long *)gehci);
 #endif
@@ -204,7 +204,7 @@ ehci_pci_init(void *ucd_priv)
 
 void ehci_pci_stop(struct ehci *gehci)
 {
-#ifndef EHCI_POLL
+#if !defined(EHCI_POLL) && !defined(TOSONLY)
 	Unhook_interrupt(((struct ehci_pci *)gehci->bus)->handle);
 #endif
 }
@@ -295,12 +295,10 @@ ehci_pci_probe(void)
 	return 0;
 }
 
+#ifndef TOSONLY
 static struct ucdif *ehci_pending_wakeup = NULL;
-#ifdef TOSONLY
-static void ehci_int_handle_tophalf(void)
-#else
+
 static void _cdecl ehci_int_handle_tophalf(PROC *process, long arg)
-#endif
 {
 	if (ehci_pending_wakeup)
 		usb_rh_wakeup(ehci_pending_wakeup);
@@ -340,12 +338,8 @@ long ehci_interrupt_handle(long param, long biosparam)
 			}
 			else if((pstatus & EHCI_PS_CSC))
 			{
-#ifdef TOSONLY
-				ehci_int_handle_tophalf();
-#else
 				ehci_pending_wakeup = ehci->controller;
 				addroottimeout(0L, ehci_int_handle_tophalf, 0x1);
-#endif
 			}
 		}
 	}
@@ -353,6 +347,7 @@ long ehci_interrupt_handle(long param, long biosparam)
 	/* PCI_BIOS specification: if interrupt was for us set D0.0 */
 	return 1;
 }
+#endif /* TOSONLY */
 
 unsigned long ehci_pci_getaddr(struct ehci *gehci, unsigned long addr, unsigned long *pciaddr)
 {
