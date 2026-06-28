@@ -17,6 +17,11 @@ CPU_prg = 000
 USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
 LDEXTRA_prg = -Wl,--entry,__start
 
+UDDTARGET_prg_col = storage.prg
+CPU_prg_col = v4e
+USBDEFS_prg_col = -DTOSONLY -fno-builtin -DSTACKSIZE=16384 -DCOLDFIRE
+LDEXTRA_prg_col = -Wl,--entry,__start
+
 UDDTARGET_000 = storage.udd
 USBDEFS_000 =
 LDEXTRA_000 = $(LDEXTRA_udd)
@@ -32,4 +37,4 @@ LDEXTRA_col = $(LDEXTRA_udd)
 #
 # all default targets
 #
-storagetargets = 02060 deb 000 col prg
+storagetargets = 02060 deb 000 col prg prg_col

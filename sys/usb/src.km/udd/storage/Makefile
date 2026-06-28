@@ -65,6 +65,7 @@ all-targets: $(ALL_TARGETS)
 
 # for HDDRIVER modules to work, TOSCOBJS must be first in OBJS
 OBJS_prg = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg/$(OBJ).o)
+OBJS_prg_col = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg_col/$(OBJ).o)
 
 define TARGET_TEMPLATE
 

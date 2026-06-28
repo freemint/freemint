@@ -62,6 +62,7 @@ all-targets: $(ALL_TARGETS)
 #
 
 OBJS_prg = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg/$(OBJ).o)
+OBJS_prg_col = $(foreach OBJ, $(notdir $(basename $(TOSCOBJS))), .compile_prg_col/$(OBJ).o)
 
 define TARGET_TEMPLATE
 

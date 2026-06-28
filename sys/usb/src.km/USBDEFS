@@ -17,6 +17,11 @@ USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=98304
 USBKM_prg = usb.prg
 LDEXTRA_prg = $(LDEXTRA_tos)
 
+CPU_prg_col = v4e
+USBDEFS_prg_col = -DTOSONLY -fno-builtin -DSTACKSIZE=98304 -DCOLDFIRE
+USBKM_prg_col = usb.prg
+LDEXTRA_prg_col = $(LDEXTRA_tos)
+
 CPU_plm = 000
 USBDEFS_plm = -DTOSONLY -fno-builtin -DSTACKSIZE=65536 -DUSB_CONFIG_BUFFER_SIZE=16384 -DUSB_MAX_DEVICE=8
 USBKM_plm = usb_lmem.prg
@@ -37,4 +42,4 @@ LDEXTRA_col = $(LDEXTRA_km)
 #
 # all default targets
 #
-usbtargets = 02060 deb 000 col prg plm
+usbtargets = 02060 deb 000 col prg prg_col plm

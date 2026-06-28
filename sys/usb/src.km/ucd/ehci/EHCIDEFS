@@ -16,6 +16,11 @@ USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
 UCDTARGET_prg = ehci.prg
 LDEXTRA_prg = -Wl,--entry,__start
 
+CPU_prg_col = v4e
+USBDEFS_prg_col = -DTOSONLY -fno-builtin -DSTACKSIZE=16384 -DCOLDFIRE
+UCDTARGET_prg_col = ehci.prg
+LDEXTRA_prg_col = -Wl,--entry,__start
+
 USBDEFS_000 =
 UCDTARGET_000 = ehci.ucd
 LDEXTRA_000 = $(LDEXTRA_ucd)
@@ -31,4 +36,4 @@ LDEXTRA_col = $(LDEXTRA_ucd)
 #
 # all default targets
 #
-ehcitargets = 02060 deb 000 col prg
+ehcitargets = 02060 deb 000 col prg prg_col
