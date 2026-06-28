@@ -21,10 +21,11 @@
 
 #include "mint/asmdefs.h"
 
-/* TODO: Check whether this routine is valid for the 68040 and ColdFire CPUs */
+/* TODO: Implement a version for ColdFire CPUs (not needed for now) */
 
 	.globl SYM(cpush)
 
+#ifndef __mcoldfire__
 SYM(cpush):
 	move.l 8(sp),d0          // size
 	beq.s .csh1
@@ -53,3 +54,4 @@ SYM(cpush):
 	cpusha %dc                // flush all
 .csh1:
 	rts
+#endif
