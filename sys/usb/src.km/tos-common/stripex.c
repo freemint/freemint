@@ -1,5 +1,5 @@
 /*
- * stripex.c 
+ * stripex.c
  * strip symbol table, GNU binutils aexec header, and ELF headers from TOS executables.
  * Needed e.g. for SLB shared library files or CPX modules to get the header back
  * to the start of the text segment.
@@ -23,7 +23,7 @@
 #  else
 #    define O_BINARY 0
 #  endif
-#endif 
+#endif
 
 #define NEWBUFSIZ	16384L
 

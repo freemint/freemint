@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
+ *
  * Adapted for FreeMiNT by David Galvez 2014
  * Ported for Atari by Didier Mequignon
  *
@@ -220,7 +222,7 @@ void ehci_show_registers(struct ehci *gehci)
 		unsigned long *ptr = (unsigned long *)&gehci->hccr->cr_hcsp_portrt[i - 1];
 		(void)ptr;
 		
-		DEBUG(("capability reg port[%d] 0x%08lx", 
+		DEBUG(("capability reg port[%d] 0x%08lx",
 			i, ehci_readl(ptr)));
 		i--;
 	};
@@ -235,7 +237,7 @@ void ehci_show_registers(struct ehci *gehci)
 	DEBUG(("[CNFLAG] %08lx", ehci_readl(&gehci->hcor->or_configflag)));
 	i = gehci->descriptor->hub.bNbrPorts;
 	while (i) {
-		DEBUG(("status reg port[%d] 0x%08lx", 
+		DEBUG(("status reg port[%d] 0x%08lx",
 			i, ehci_readl(&gehci->hcor->or_portsc[i - 1])));
 		i--;
 	};
@@ -256,17 +258,17 @@ void ehci_show_qh(struct QH *qh, struct ehci *gehci)
 
 	if (qh->qh_curtd != 0) {
 		DEBUG(("--- current qTD ---"));
-		DEBUG(("[0x%08lx] [0x%08lx]- next qTD", 
-					hc32_to_cpu(qh->qh_curtd + gehci->dma_offset), 
+		DEBUG(("[0x%08lx] [0x%08lx]- next qTD",
+					hc32_to_cpu(qh->qh_curtd + gehci->dma_offset),
 					hc32_to_cpu(qh->qh_curtd)));
-		DEBUG(("[0x%08lx] %08lx", 
-					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 4), 
+		DEBUG(("[0x%08lx] %08lx",
+					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 4),
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 1))));
-		DEBUG(("[0x%08lx] %08lx - token", 
-					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 8), 
+		DEBUG(("[0x%08lx] %08lx - token",
+					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 8),
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 2))));
-		DEBUG(("[0x%08lx] %08lx - buffer", 
-					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 12), 
+		DEBUG(("[0x%08lx] %08lx - buffer",
+					(((unsigned long)hc32_to_cpu(qh->qh_curtd)) + 12),
 					hc32_to_cpu(*(((unsigned long *)hc32_to_cpu(qh->qh_curtd)) + 3))));
 	}
 }
@@ -1317,7 +1319,7 @@ long usb_lowlevel_init(void *ucd_priv)
 	}
 	memcpy(gehci->descriptor, &rom_descriptor, sizeof(struct descriptor));
 
-	if(ehci_bus_init(gehci)) 
+	if(ehci_bus_init(gehci))
 	{
 		hc_free_buffers(gehci);
 		return (-1);

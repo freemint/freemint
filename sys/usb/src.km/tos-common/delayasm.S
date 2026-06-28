@@ -1,6 +1,7 @@
 /*
  * delayasm.S - assembler functions for delay calibration
  *
+ * Copyright (c) 2026 The FreeMiNT development team
  * Copyright (C) 2013-2017 The EmuTOS development team
  *
  * Authors:

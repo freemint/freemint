@@ -8,17 +8,17 @@
  *      Didier Mequignon (2005-2009).
  *
  *      Copyright 2014 Roger Burrows <rfburrows@ymail.com>
- *      
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation; either version 2 of the License, or
  *      (at your option) any later version.
- *      
+ *
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *      GNU General Public License for more details.
- *      
+ *
  *      You should have received a copy of the GNU General Public License
  *      along with this program; if not, write to the Free Software
  *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -258,7 +258,7 @@ void usb_build_bpb(BPB *bpbptr, void *bs)
 
 	if (bpbptr->numcl > XHDOSLimits(XH_DL_CLUSTS12,0))
 		bpbptr->bflags = 1;				/* FAT16 */
-	else 
+	else
 		bpbptr->bflags = 0;				/* FAT12 */
 
 	bpbptr->clsizb = bpbptr->clsiz * bpbptr->recsiz;
@@ -494,7 +494,7 @@ long install_usb_stor(long global_lun_id,unsigned long part_type,unsigned long p
 	part_type <<= 8;					/* for XHDI, make it a 3-character string */
 	if (part_type&0xff000000L)						/* i.e. GEM/BGM/RAW */
 		pun_usb.ptype[logdrv] = part_type;				/* e.g. 0x47454d00 */
-	else 
+	else
 		pun_usb.ptype[logdrv] = 0x00440000L | part_type;/* e.g. 0x00440600 */
 
 	pun_usb.psize[logdrv] = part_size;
@@ -698,7 +698,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	if ((start < 0L) || (count < 0L) || !buffer)
 		return EBADR;			/* same as EBADRQ */
 
-	/* 
+	/*
 	 * Tell the user that the media has changed, so call getbpb first !
 	 */
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
@@ -733,7 +733,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 	 */
 	if (mode&RWFLAG)
 		rc = usb_stor_write(global_lun_id,start,count,buffer);
-	else 
+	else
 		rc = usb_stor_read(global_lun_id,start,count,buffer);
 
 	return (rc==count) ? 0 : rc;

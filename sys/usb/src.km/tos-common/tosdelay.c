@@ -5,6 +5,7 @@
  * note that the timings are quite imprecise (but conservative) unless
  * you are running on at least a 32MHz 68030 processor
  *
+ * Copyright (c) 2026 The FreeMiNT development team
  * Copyright (C) 2013-2017 The EmuTOS development team
  *
  * Authors:
@@ -129,7 +130,6 @@ static inline void calibrate_delay(void)
 	 * so, loops per millisecond = (loopcount*960)/(intcount*1000)
 	 * = (loopcount*24)/(intcount*25).
 	 */
-	
 	if (intcount)	   /* check for valid */
 		loopcount_1_msec = (loopcount * 24) / (intcount * 25);
 

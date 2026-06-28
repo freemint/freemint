@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
+ *
  * Adapted for FreeMiNT by David Galvez 2014
  * Ported for Atari by Didier Mequignon
  *
@@ -78,9 +80,9 @@ struct ehci_pci {
 };
 
 struct pci_device_id ehci_usb_pci_table[] = {
-	{ PCI_VENDOR_ID_NEC, PCI_DEVICE_ID_NEC_USB_2, 
+	{ PCI_VENDOR_ID_NEC, PCI_DEVICE_ID_NEC_USB_2,
 	  PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_SERIAL_USB_EHCI, 0, 0 }, /* NEC PCI EHCI module ids */
-	{ PCI_VENDOR_ID_PHILIPS, PCI_DEVICE_ID_PHILIPS_ISP1561_2, 
+	{ PCI_VENDOR_ID_PHILIPS, PCI_DEVICE_ID_PHILIPS_ISP1561_2,
 	  PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_SERIAL_USB_EHCI, 0, 0 }, /* Philips 1561 PCI EHCI module ids */
 	/* Please add supported PCI EHCI controller ids here */
 	{ 0, 0, 0, 0, 0, 0, 0 }

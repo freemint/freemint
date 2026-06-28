@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2026 The FreeMiNT development team
+ *
  * cache.S - cache control functions for USB TOS drivers
  *
  * David Galvez     2019

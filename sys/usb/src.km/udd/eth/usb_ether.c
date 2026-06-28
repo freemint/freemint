@@ -70,7 +70,7 @@ static long ethernet_ioctl		(struct uddif *, short, long);
 
 static char lname[] = "USB ethernet class driver\0";
 
-static struct uddif eth_uif = 
+static struct uddif eth_uif =
 {
 	0,			/* *next */
 	USB_API_VERSION,	/* API */
@@ -234,7 +234,7 @@ long _cdecl init_udd (struct kentry *k, struct usb_module_api *uapi, long arg, l
 
 #ifdef TOSONLY
 	/*
-	 * GET _USB COOKIE to REGISTER 
+	 * GET _USB COOKIE to REGISTER
 	 */
 	if (!getcookie(_USB, (long *)&api))
 	{

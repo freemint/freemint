@@ -8,7 +8,7 @@
 #ifdef TOSONLY
 	.globl SYM(old_etv_timer_int)
 	.globl SYM(interrupt_storage)
-    .globl SYM(lock)
+	.globl SYM(lock)
 	.extern SYM(storage_int)
 
 	.text

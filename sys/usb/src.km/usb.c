@@ -1041,7 +1041,7 @@ long usb_new_device(struct usb_device *dev)
 
 /********************************************************************
  * USB device driver handling:
- * 
+ *
  */
 
 
@@ -1053,13 +1053,13 @@ long usb_new_device(struct usb_device *dev)
  *
  * The probe return value is changed to be a private pointer.  This way
  * the drivers don't have to dig around in our structures to set the
- * private pointer if they only need one interface. 
+ * private pointer if they only need one interface.
  *
  * Returns: 0 if a driver accepted the interface, -1 otherwise
  */
 extern struct uddif *alluddifs;
 
-long 
+long
 usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 {
 	struct uddif *driver = alluddifs;

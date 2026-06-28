@@ -2,7 +2,7 @@
  * Brought to the Atari by Alan Hourihane <alanh@fairlite.co.uk>
  *
  * Hardware designed by Alan Hourihane <alanh@fairlite.co.uk>
- * 
+ *
  * The "Unicorn-USB" adapter driver !
  *
  * (C) Copyright 2004
@@ -123,7 +123,7 @@ static long sl811_ioctl		(struct ucdif *, short, long);
 
 static char lname[] = "Unicorn USB driver\0";
 
-static struct ucdif sl811_uif = 
+static struct ucdif sl811_uif =
 {
 	0,			/* *next */
 	USB_API_VERSION,	/* API */
@@ -173,7 +173,7 @@ static struct ucdif sl811_uif =
 	{   \
 		__asm__ volatile("1: tas.b 0x43e");        \
 		__asm__ volatile("bne.b 1b");        \
-	} 
+	}
 
 #define UNLOCKUSB  \
 	__asm__ volatile("clr.w 0x43e");
@@ -314,7 +314,7 @@ static void inline sl811_read_buf(unsigned char offset, unsigned char *buf, unsi
 	}
 
 	while (size--) {
-		/* Auto-increment would have been nice, but it's 
+		/* Auto-increment would have been nice, but it's
 		 * a hw bug of the SL811. So the workaround is baked
 		 * into the ACSI adapter HW too.
 		 *
@@ -443,7 +443,7 @@ static void inline sl811_write_buf(unsigned char offset, unsigned char *buf, uns
 	}
 
 	while (size--) {
-		/* Auto-increment would have been nice, but it's 
+		/* Auto-increment would have been nice, but it's
 		 * a hw bug of the SL811. So the workaround is baked
 		 * into the ACSI adapter HW too.
 		 *
@@ -600,7 +600,7 @@ usb_lowlevel_init(void *dummy)
 	return 0;
 }
 
-long 
+long
 usb_lowlevel_stop(void *dummy)
 {
 	DEBUG(("USB SL811 DISABLED DUE TO LOWLEVEL STOP!"));
@@ -1347,7 +1347,7 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-				         bulk_msg->data, bulk_msg->len, 
+				         bulk_msg->data, bulk_msg->len,
 					 bulk_msg->flags, bulk_msg->timeout);
 
 			break;
@@ -1357,7 +1357,7 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 			struct int_msg *int_msg = (struct int_msg *)arg;
 
 			ret = submit_int_msg(int_msg->dev, int_msg->pipe,
-				       int_msg->buffer, int_msg->transfer_len, 
+				       int_msg->buffer, int_msg->transfer_len,
 				       int_msg->interval);
 
 			break;
@@ -1433,9 +1433,9 @@ unicorn_int (void)
 	if (!(MFP_GPIP & 0x20)) {
 		unsigned char status;
 
-		if (check_flock() != 0) { 
-			return; 
-		} 
+		if (check_flock() != 0) {
+			return;
+		}
 
 		status = sl811_read(SL811_INTRSTS);
 		sl811_write(SL811_INTRSTS, 0xfe);
@@ -1464,11 +1464,11 @@ sl811_hub_poll(PROC *proc, long dummy)
 	wake(WAIT_Q, (long)&sl811_hub_poll_thread);
 }
 
-void 
+void
 sl811_hub_poll_thread(void *dummy)
 {
 
-	/* join process group of loader, 
+	/* join process group of loader,
 	 * otherwise doesn't ends when shutingdown
 	 */
 

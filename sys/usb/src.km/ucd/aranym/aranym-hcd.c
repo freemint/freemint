@@ -80,7 +80,7 @@ struct usb_module_api *api;
 /* END kernel interface */
 
 static struct usb_device *root_hub_dev = NULL;
-unsigned long rh_port_status[NUMBER_OF_PORTS]; 
+unsigned long rh_port_status[NUMBER_OF_PORTS];
 
 
 /*--- Function prototypes ---*/
@@ -107,7 +107,7 @@ static long _cdecl	aranym_close		(struct ucdif *);
 static long _cdecl	aranym_ioctl		(struct ucdif *, short, long);
 
 
-static struct ucdif aranym_uif = 
+static struct ucdif aranym_uif =
 {
 	0,			/* *next */
 	USB_API_VERSION,	/* API */
@@ -338,7 +338,7 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 			struct int_msg *int_msg = (struct int_msg *)arg;
 
 			ret = submit_int_msg(int_msg->dev, int_msg->pipe,
-				       int_msg->buffer, int_msg->transfer_len, 
+				       int_msg->buffer, int_msg->transfer_len,
 				       int_msg->interval);
 
 			break;
@@ -354,14 +354,14 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 
 /* --- Init functions ------------------------------------------------------ */
 
-long 
+long
 usb_lowlevel_init(void *dummy)
 {
 	int r;
 
 	r = nf_call(USBHOST(USBHOST_LOWLEVEL_INIT));
 
-	if (!r) 
+	if (!r)
 		(void) c_conws("Aranym USB Controller Driver init \r\n");
 	else
 		(void) c_conws("Couldn't init aranym host chip emulator \r\n");
@@ -370,7 +370,7 @@ usb_lowlevel_init(void *dummy)
 }
 
 
-long 
+long
 usb_lowlevel_stop(void *dummy)
 {
 	int r;

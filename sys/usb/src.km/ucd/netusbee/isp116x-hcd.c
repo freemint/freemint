@@ -1083,7 +1083,7 @@ retry_same:
 # ifdef EXTRA_DELAY
 	mdelay(EXTRA_DELAY);
 # endif
-	if(set_extra_delay) 
+	if(set_extra_delay)
 	{
 		mdelay(2);
 	}
@@ -1823,7 +1823,7 @@ netusbee_hub_poll(PROC *proc, long dummy)
 	wake(WAIT_Q, (long)&netusbee_hub_poll_thread);
 }
 
-void 
+void
 netusbee_hub_poll_thread(void *dummy)
 {
 	for (;;)

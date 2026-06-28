@@ -125,7 +125,7 @@ struct kentry	*kentry;
 /* Debug console output for TOS */
 static char debugbuffer[512];
 long	_cdecl kvsprintf	(char *buf, long buflen, const char *fmt, va_list args) __attribute__((format(printf, 3, 0)));
-static void my_printmsg(const char *fmt, ...) 
+static void my_printmsg(const char *fmt, ...)
 {
 	va_list args;
 	
@@ -744,8 +744,8 @@ if (HAS_BLITTER && use_blitter && (len>=256) && !(len & 1) && !((unsigned long)b
 		BLITTER->ycount = blitter_save.ycount;
 	BLITTER->hop_op = blitter_save.hop_op;
 	BLITTER->misc  = blitter_save.misc;
-} 
-else 
+}
+else
 {
 	__asm("movea.l %0, %%a0\n\tmovea.l %1, %%a1\n\tmove.l %2, %%d2\n" /* setup inputs */
 		"isp2mem:      move.l    %%d2,%%d1\n"       /* set up loop counter */
@@ -981,7 +981,7 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
 	 */
 	
 	if (max_xfer_len < mpck) {
-		/* Regardless of user's setting, always allow 
+		/* Regardless of user's setting, always allow
 		 * at least one packet or 1023 bytes, whichever is less. */
 		return min1_t(long,mpck,1023L);
 	} else {
@@ -993,7 +993,7 @@ max_transfer_len(struct usb_device *dev, unsigned long pipe)
  * TOS might not be able it by itself due to the interrupt level.
  * Returns != 0 if there is a pending interrupt request.
  */
-static inline int keybd_acia_int() 
+static inline int keybd_acia_int()
 {
 	unsigned char keyctl = *(volatile unsigned char*)(0xFFFFFC00UL);
 	return (keyctl & 0x80);
@@ -1887,7 +1887,7 @@ vttusb_hub_poll(PROC *proc, long dummy)
 	wake(WAIT_Q, (long)&vttusb_hub_poll_thread);
 }
 
-void 
+void
 vttusb_hub_poll_thread(void *dummy)
 {
 	for (;;)

@@ -45,7 +45,7 @@
 #include "mint/signal.h"
 #include "mint/proc.h"
 #include "time.h"
-#endif 
+#endif
 
 /****************************************************************************
  * HUB "Driver"
@@ -298,7 +298,7 @@ long usb_hub_port_connect_change(struct usb_device *dev, long port, unsigned sho
 
 	/* Allocate a new device struct for it */
 	usb = usb_alloc_new_device(dev->controller);
-	if (!usb) 
+	if (!usb)
 	{
 		return -1;
 	}
@@ -468,7 +468,7 @@ errout:
 	return hub;
 }
 
-long 
+long
 usb_hub_events(struct usb_hub_device *hub)
 {
 	long i;
@@ -501,7 +501,7 @@ usb_hub_events(struct usb_hub_device *hub)
 			/* If something disconnected, return now, as it
 			 * could have been our hub.
 			 */
-			if (usb_hub_port_connect_change(dev, i, portstatus) == 0) 
+			if (usb_hub_port_connect_change(dev, i, portstatus) == 0)
 			{
 				return changed;
 			}
@@ -602,7 +602,7 @@ usb_hub_poll(PROC *p, long device)
 	wake(WAIT_Q, device);
 }
 
-void 
+void
 usb_hub_poll_thread(void *ptr)
 {
 	struct usb_device *dev = (struct usb_device *)ptr;
@@ -655,7 +655,7 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 	dev->privptr = usb_hub_configure(dev);
 
 #ifndef TOSONLY
-	/* 
+	/*
 	 * DavidGZ: As long as our Host Controller drivers don't support
 	 * interrupt transfers  we poll the hub devices attached to the
 	 * root hub

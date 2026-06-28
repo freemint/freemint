@@ -74,7 +74,7 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 	}
 
 	hub = usb_alloc_new_device(a);
-	if (!hub) 
+	if (!hub)
 	{
 		return -1;
 	}
@@ -82,7 +82,7 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 	/* Give the host controller driver it's USB device struct */
 	*dev = hub;
 	
-	if (usb_new_device(hub)) 
+	if (usb_new_device(hub))
 	{
 		/* Something went wrong, clear device */
 		usb_free_device(hub->devnum);
