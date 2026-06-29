@@ -25,6 +25,9 @@
 #define LOOPS_68060		110000	/* 68060 timing assumes 110MHz for safety */
 #define LOOPS_68030		3800	/* 68030 timing assumes 32MHz */
 #define LOOPS_68000		760	/* 68000 timing assumes 16MHz */
+#ifdef __mcoldfire__
+#define LOOPS_COLDFIRE		264000	/* ColdFire V4e (MCF547x at 264 MHz) */
+#endif
 
 #define CALIBRATION_TIME	100	/* target # millisecs to run calibration */
 
@@ -57,6 +60,9 @@ static inline void set_tos_delay(void)
 }
 static inline void init_delay(void)
 {
+#ifdef __mcoldfire__
+	loopcount_1_msec = LOOPS_COLDFIRE;
+#else
 	unsigned int mcpu = getmCPU();
 	switch(mcpu) {
 		case 60:
@@ -72,6 +78,7 @@ static inline void init_delay(void)
 			loopcount_1_msec = LOOPS_68000;
 			//c_conws("68000 CPU.\r\n");
 	}
+#endif
 }
 
 /*

@@ -61,9 +61,16 @@ SYM(run_calibration):
 #endif
 
         move.l  4(a7),d0            //loopcount
+#ifdef __mcoldfire__
+        .balignw 4,0x4a8e           //longword-align for consistent ColdFire speed
+cal_loop:
+        subq.l  #1,d0
+        jcc     cal_loop
+#else
 cal_loop:                           //just like asm.h inline function
         subq.l  #1,d0
         jpl     cal_loop
+#endif
 
         move.l  intcount,d0         //d0 = interrupt count
         move.l  d0,intsave          //save it

@@ -45,6 +45,23 @@ static inline int getmCPU(void);
  * current system, use the value in the global 'loopcount_1_msec'.
  */
 
+#ifdef __mcoldfire__
+#define delay_loop(count)                                      \
+	__extension__                                          \
+	({                                                     \
+		ulong _count = (count);                        \
+		__asm__ volatile                               \
+		(                                              \
+			".balignw 4, 0x4a8e\n\t"               \
+			"0:\n\t"                               \
+			"subq.l #1,%0\n\t"                     \
+			"jcc    0b"                            \
+			: "=d"(_count)      /* outputs */      \
+			: "0"(_count)       /* inputs  */      \
+			: "cc", "memory"    /* clobbered */    \
+		);                                             \
+	})
+#else
 #define delay_loop(count)                                      \
 	__extension__                                          \
 	({                                                     \
@@ -59,5 +76,6 @@ static inline int getmCPU(void);
 			: "cc", "memory"    /* clobbered */    \
 		);                                             \
 	})
+#endif
 
 #endif /* tosdelay_h */
