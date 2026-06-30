@@ -795,7 +795,7 @@ again:
 		if (hub)
 		{
 			mdelay(500);
-			if (usb_hub_events (hub) == 1)
+			if (usb_hub_events (hub) & USB_PORT_STAT_C_CONNECTION)
 			{
 				for (j = k; j < USB_MAX_DEVICE; j++)
 				{
