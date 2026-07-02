@@ -48,10 +48,9 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 
 	while (list)
 	{
-		if (!strncmp(a->name, list->name, UCD_NAMSIZ))
+		if (a == list)
 		{
-			/* FIXME - more than one controller ??? */
-			c_conws("Driver already installed\r\n");
+			c_conws("Controller already registered\r\n");
 			return -1;
 		}
 		list = list->next;
