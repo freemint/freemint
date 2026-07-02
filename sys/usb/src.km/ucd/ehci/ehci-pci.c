@@ -211,11 +211,6 @@ void ehci_pci_stop(struct ehci *gehci)
 #endif
 }
 
-/* temporary, need multiple versions and alloc, but the new ucd_register
- * doesn't support more than one at this time.
- */
-static struct usb_device *root_hub_dev = NULL;
-
 long
 ehci_pci_probe(void)
 {
@@ -265,6 +260,7 @@ ehci_pci_probe(void)
 							if((board->vendor == (id & 0xFFFF))
 							    && (board->device == (id >> 16)))
 							{
+								struct usb_device *root_hub_dev = NULL;
 								err = ehci_alloc_ucdif(&ehci_uif);
 								if (err < 0)
 									break;
