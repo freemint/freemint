@@ -779,7 +779,9 @@ display_object(int lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_o
 		if ((ob->ob_state & state_mask) & OS_CROSSED)
 		{
 			short p[4];
-			(*v->api->l_color)(v, G_WHITE);
+			(*v->api->l_color)(v,
+				((ob->ob_state & OS_SELECTED) && !(state_mask & OS_SELECTED))
+					? G_BLACK : G_WHITE);
 			p[0] = r.g_x;
 			p[1] = r.g_y;
 			p[2] = r.g_x + r.g_w - 1;
