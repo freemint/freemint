@@ -1,0 +1,38 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+LDEXTRA = -nostdlib -Wl,--fatal-warnings
+LDEXTRA_ucd = -Wl,--entry,init_ucd
+
+USBDEFS_deb = -DDEV_DEBUG
+UCDTARGET_deb = ohci.ucd
+LDEXTRA_deb = $(LDEXTRA_ucd)
+
+CPU_prg = 02060
+USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=16384
+UCDTARGET_prg = ohci.prg
+LDEXTRA_prg = -Wl,--entry,__start
+
+CPU_prg_col = v4e
+USBDEFS_prg_col = -DTOSONLY -fno-builtin -DSTACKSIZE=16384 -DCOLDFIRE
+UCDTARGET_prg_col = ohci.prg
+LDEXTRA_prg_col = -Wl,--entry,__start
+
+USBDEFS_000 =
+UCDTARGET_000 = ohci.ucd
+LDEXTRA_000 = $(LDEXTRA_ucd)
+
+USBDEFS_02060 =
+UCDTARGET_02060 = ohci.ucd
+LDEXTRA_02060 = $(LDEXTRA_ucd)
+
+USBDEFS_col = -DCOLDFIRE
+UCDTARGET_col = ohci.ucd
+LDEXTRA_col = $(LDEXTRA_ucd)
+
+#
+# all default targets
+#
+ohcitargets = 02060 deb 000 col prg prg_col

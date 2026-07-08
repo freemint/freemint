@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = aranym ehci ethernat netusbee unicorn vttusb
+SUBDIRS = aranym ehci ethernat netusbee ohci unicorn vttusb
 
 srcdir = .
 top_srcdir = ../../..
