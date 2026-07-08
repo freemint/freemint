@@ -21,6 +21,7 @@ COBJS = \
 	\
 	acia.S \
 	context.S \
+	context_cf.S \
 	cpu.S \
 	detect.S \
 	intr.S \
