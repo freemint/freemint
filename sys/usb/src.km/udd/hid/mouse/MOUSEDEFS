@@ -18,6 +18,11 @@ CPU_prg = 000
 USBDEFS_prg = -DTOSONLY -fno-builtin -DSTACKSIZE=8192
 LDEXTRA_prg = -Wl,--entry,__start
 
+UDDTARGET_prg_col = mouse.prg
+CPU_prg_col = v4e
+USBDEFS_prg_col = -DTOSONLY -fno-builtin -DSTACKSIZE=8192 -DCOLDFIRE
+LDEXTRA_prg_col = -Wl,--entry,__start
+
 UDDTARGET_000 = mouse.udd
 USBDEFS_000 =
 LDEXTRA_000 = $(LDEXTRA_udd)
@@ -33,4 +38,4 @@ LDEXTRA_col = $(LDEXTRA_udd)
 #
 # all default targets
 #
-mousetargets = 02060 deb 000 col prg
+mousetargets = 02060 deb 000 col prg prg_col
