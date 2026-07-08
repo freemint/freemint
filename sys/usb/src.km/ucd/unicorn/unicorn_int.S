@@ -30,9 +30,13 @@ SYM(interrupt_mfp):
 | Checks & Sets FLOCK
 SYM(check_flock):
 	tst.w 0x43e
-	bne.w done
-	dc.w 0x50f9
-	dc.l 0x43e
+	bne.s done
+#ifdef __mcoldfire__
+	st	d0
+	move.b	d0,0x43e
+#else
+	st	0x43e
+#endif
 	move.b #0, d0
 	rts
 done:
