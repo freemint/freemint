@@ -189,31 +189,11 @@ SYM(save_context):
 noprot2:
 #endif
 
-// save the FPU state
-// if running with a true coprocessor we need to save the FPU state
+// No FPU state to save: the kernel itself does not use the FPU and any
+// user FPU activity was already suspended and saved by build_context on
+// kernel entry. Mark the state frame as NULL so the restore skips the FPU.
 
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	nofpu2
-	fsave	C_FSTATE(a0)		// save internal state frame
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_2
-	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu2			// skip programmer's model save
-	bra.s	save2
-no60_2:
-#endif
-	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
-	beq.s	nofpu2				// skip programmer's model save
-save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
-	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
-
-nofpu2:
-// note: I am somewhat unsure of this assumption, viz that save_context
-// can never be called in a situation where a co-processor
-// mid-instruction stack frame would be required. I suspect this is a
-// valid assumption, in which case the above FPU code is redundant, the
-// next line is not however!
+	clr.l	C_FSTATE(a0)
 
 	clr.w	C_SFMT(a0)		// mark as a 4 word stack frame
 save_ptrace:

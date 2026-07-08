@@ -107,19 +107,11 @@ SYM(save_context):
 
 	movem.l	d0-d7/a0-a6,(a0)	// save D0-D7/A0-A6
 
-// save the FPU state
-	fsave	C_FSTATE(a0)		// save internal state frame (including fpcr and fpsr)
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu2			// skip programmer's model save
-	fmovem.d fp0-fp7,C_FREGS(a0)	// save data registers
-	fmove.l	fpiar,C_FCTRL+8(a0)	// and control registers
+// No FPU state to save: the kernel itself does not use the FPU and any
+// user FPU activity was already suspended and saved by build_context on
+// kernel entry. Mark the state frame as NULL so the restore skips the FPU.
 
-nofpu2:
-// note: I am somewhat unsure of this assumption, viz that save_context
-// can never be called in a situation where a co-processor
-// mid-instruction stack frame would be required. I suspect this is a
-// valid assumption, in which case the above FPU code is redundant, the
-// next line is not however!
+	clr.l	C_FSTATE(a0)
 
 	tst.w	SYM(coldfire_68k_emulation)
 	bne.s	save_68k
