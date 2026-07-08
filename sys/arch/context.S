@@ -233,36 +233,9 @@ save_ptrace:
 	CFI_ENDPROC()
 	END(save_context)
 
-	FUNC(restore_context)
-SYM(restore_context):
-	CFI_STARTPROC()
-	ori.w	#0x0400,sr
-	move.l	4(sp),a0		// address of context save area
-
-// Switch stacks now - starting now ssp is in the memory space of
-// the process we're switching to. Thus, we can change memory context
-// to there.
-
-	move.l	C_SSP(a0),a1		// get supervisor stack pointer
-	tst.b	(a1)			// touch the page for virtual memory programs
-	tst.b	-63(a1)			// make sure stack can grow
-	move.l	a1,sp
-	move.l	C_USP(a0),a1
-	move.l	a1,%usp			// set user stack pointer
-	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
-
-// Set memory context now: actually, this isn't necessary, since
-// we're coming back to a context in the same process as is running
-// now. So skip change_context's MMU switch and share the rest of
-// the restoration code.
-
-	bra	restore_common
-	CFI_ENDPROC()
-	END(restore_context)
-
-
 	FUNC(change_context)
 SYM(change_context):
+#ifdef WITH_MMU_SUPPORT
 	CFI_STARTPROC()
 	ori.w	#0x0400,sr		// mask interrupts
 	move.l	4(sp),a0		// address of context save area
@@ -279,10 +252,9 @@ SYM(change_context):
 	move.l	a1,%usp			// set user stack pointer
 	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
 
-#ifdef WITH_MMU_SUPPORT
 // Set memory context now
 	tst.w	SYM(no_mem_prot)
-	bne.s	noprot4
+	bne.s	restore_common
 #if defined(M68040) || defined(M68060)
 	move.l	C_CRP(a0),d0
 	pflusha
@@ -293,8 +265,32 @@ SYM(change_context):
 	pmove	C_CRP(a0),%crp		// restore MMU root pointer
 	pmove	C_TC(a0),%tc		// restore MMU control register
 #endif
-noprot4:
+	bra.s	restore_common
+	CFI_ENDPROC()
+	END(change_context)
 #endif
+
+	FUNC(restore_context)
+SYM(restore_context):
+	CFI_STARTPROC()
+	ori.w	#0x0400,sr		// mask interrupts
+	move.l	4(sp),a0		// address of context save area
+
+// Switch stacks now - starting now ssp is in the memory space of
+// the process we're switching to. Thus, we can change memory context
+// to there.
+
+	move.l	C_SSP(a0),a1		// get supervisor stack pointer
+	tst.b	(a1)			// touch the page for virtual memory programs
+	tst.b	-63(a1)			// make sure stack can grow
+	move.l	a1,sp
+	move.l	C_USP(a0),a1
+	move.l	a1,%usp			// set user stack pointer
+	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
+
+// Set memory context now: actually, this isn't necessary, since
+// we're coming back to a context in the same process as is running
+// now.
 
 restore_common:
 #ifdef M68000
@@ -351,6 +347,9 @@ short3:
 notrace:
 	rte				// jump back to old context
 	CFI_ENDPROC()
+	END(restore_context)
+#ifndef WITH_MMU_SUPPORT
 	END(change_context)
+#endif
 
 #endif /* not __mcoldfire__ */
