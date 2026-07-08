@@ -89,7 +89,7 @@ _fpsp_fline:
  * but, if the FPU is disabled, then we need to jump to the FPU disabled
  * entry point.
  */
-	.dc.w 0x4e7a,0x0808 /* movec		pcr,d0 */
+	movec		%pcr,d0
 	btst		#0x1,d0
 	beq.b		fline_fmovecr
 

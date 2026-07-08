@@ -76,6 +76,23 @@
 #define fpsr REG(fpsr)
 #define fpiar REG(fpiar)
 
+/* Some instructions are rejected by the assembler when targeting plain
+   68000 or ColdFire even though they can never be reached there at run
+   time.  Temporarily switch the assembler to the required CPU with e.g.
+   ".chip 68040" and switch back with ".chip CHIP_DEFAULT" afterwards,
+   which matches the CPU selected by the build flags.  */
+#if defined(__mcoldfire__)
+#define CHIP_DEFAULT	5475
+#elif defined(M68060)
+#define CHIP_DEFAULT	68060
+#elif defined(M68040)
+#define CHIP_DEFAULT	68040
+#elif defined(M68030)
+#define CHIP_DEFAULT	68030
+#else
+#define CHIP_DEFAULT	68000
+#endif
+
 #ifdef __GCC_HAVE_DWARF2_CFI_ASM
 #define CFI_STARTPROC()		.cfi_startproc
 #define CFI_OFFSET(reg,off)	.cfi_offset	reg,off

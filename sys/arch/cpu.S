@@ -306,22 +306,24 @@ cf_68K_emu:
 	cmpi.w	#40,SYM(mcpu)+2		// the following is only necessary
 #endif
 	blt.s	lt040			// on 68040 and 68060 (copyback cache!)
+	.chip	68040
 	btst	#0,d2			// instruction cache going to be enabled?
 	beq.s	no_icache
 	btst	#0,d1			// if yes, is it currently disabled?
 	bne.s	no_icache
-	dc.w	0xF498			// yes, so invalidate it (cinva ic)
+	cinva	%ic			// yes, so invalidate it
 no_icache:
 	btst	#1,d2			// same as above, but for the data cache
 	beq.s	dc_off
 	btst	#1,d1
 	bne.s	write_cacr
-	dc.w	0xF458			// cinva dc
+	cinva	%dc
 	bra.s	lt040
 dc_off:
 	btst	#1,d1			// if it's going to be disabled,			
 	beq.s	write_cacr		// is it currently enabled?
-	dc.w	0xF478			// yes, so write it back (cpusha dc)
+	cpusha	%dc			// yes, so write it back
+	.chip	CHIP_DEFAULT
 lt040:					// 020/030 have write-through cache but we
 #ifdef __mcoldfire__			// need to invalidate it before enable it
 	move.w	SYM(mcpu)+2,a0
@@ -376,7 +378,9 @@ SYM(ccw_get):
 	movem.l	d1-d2/a0-a2,-(sp)
 #endif
 ccw_get_cacr:
-	dc.w	0x4e7a,0x0002		// movec cacr,d0
+	.chip	68020
+	movec	%cacr,d0
+	.chip	CHIP_DEFAULT
 ccw_get_ccw:
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
@@ -741,7 +745,8 @@ SYM(cpush):
 
 
 _cache030:				// 68030 cache
-	dc.w	0x4e7a,0x1002		// movec cacr,d1
+	.chip	68030
+	movec	%cacr,d1
 	move.l	d1,-(sp)
 	addq.l	#1,d0			// if was -1
 	beq.s	abc030			// then flush everything
@@ -766,7 +771,7 @@ fls030:
 	or.w	#0x0404,d1		// clear DC/IC entries
 #endif
 // run through d0+1 times (since a0 may not be on a long boundary)
-do030:	dc.w	0x4e7b,0x8802		// movec a0,caar
+do030:	movec	a0,%caar
 	movec	d1,%cacr
 	addq.l	#4,a0
 #ifdef __mcoldfire__
@@ -778,6 +783,7 @@ do030:	dc.w	0x4e7b,0x8802		// movec a0,caar
 rescacr:
 	move.l	(sp)+,d0
 	movec	d0,%cacr
+	.chip	CHIP_DEFAULT
 
 _cache000:				// 68000 cache (i.e. no cache)
 #endif
@@ -797,7 +803,9 @@ _cache040:				// 68040 cache
 	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#256,d0
 	bcs.s	fls040
-abc040:	dc.w	0xF478			// this is "cpusha dc"
+abc040:	.chip	68040
+	cpusha	%dc
+	.chip	CHIP_DEFAULT
 	rts
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
@@ -822,7 +830,9 @@ do040:
 	bsr	log2phys
 	cmpa.l	#-1,a0
 	beq.s	abc040			// if there's no physical address, flush all
-	dc.w	0xF468			// this is "cpushl dc,(a0)"
+	.chip	68040
+	cpushl	%dc,(a0)
+	.chip	CHIP_DEFAULT
 	add.l	d1,a1
 #ifdef __mcoldfire__
 	subq.l	#1,d0
@@ -847,7 +857,9 @@ _cache060:
 	cmp.l	#512,d0
 	bcs.s	fls040
 #endif
-	dc.w	0xF478			// this is "cpusha dc"
+	.chip	68040
+	cpusha	%dc
+	.chip	CHIP_DEFAULT
 	rts
 // ---------------------------------------------------
 // Ozk:
@@ -867,7 +879,9 @@ _cache040_i:				// 68040 cache
 	cmp.l	#256,d0
 	bcs.s	fls040i
 abc040i:
-	dc.w	0xF4F8			// this is "cpusha bc"
+	.chip	68040
+	cpusha	%bc
+	.chip	CHIP_DEFAULT
 	rts
 fls040i:
 	// run through d0+1 times (since a0 may not be on a line boundary)
@@ -892,9 +906,11 @@ do040i:
 	jbsr	log2phys
 	cmpa.l	#-1,a0
 	beq.s	abc040i			// if there's no physical address, flush all
-	dc.w	0xF468			// this is "cpushl dc,(a0)"
-	dc.w	0xF4C8			// this is "cinvl bc,(a0)" (BC instead of just IC
-					// as DC might not have been invalidated on 060)
+	.chip	68040
+	cpushl	%dc,(a0)
+	cinvl	%bc,(a0)		// BC instead of just IC
+					// as DC might not have been invalidated on 060
+	.chip	CHIP_DEFAULT
 	add.l	d1,a1
 #ifdef __mcoldfire__
 	subq.l	#1,d0
@@ -919,8 +935,10 @@ _cache060_i:
 	cmp.l	#512,d0
 	bcs.s	fls040i
 #endif
-	dc.w	0xF478			// this is "cpusha dc"
-	dc.w	0xF4D8			// this is "cinva bc"
+	.chip	68040
+	cpusha	%dc
+	cinva	%bc
+	.chip	CHIP_DEFAULT
 	rts
 
 #ifdef __mcoldfire__
@@ -1043,7 +1061,8 @@ log2phys:
 	cmpi.w	#60,SYM(mcpu)+2		// is this a 060?
 #endif
 	beq.s	l2p_060			// yes, so use plpa
-	dc.w	0x4e7a,0x0003		// movec tc,d0
+	.chip	68040
+	movec	%tc,d0
 	btst	#15,d0
 	beq.s	l2p_exit		// MMU is disabled, logical == physical
 	// determine the current pagesize - 1
@@ -1054,8 +1073,9 @@ log2phys:
 l2p_goon:
 	move.l	d1,d2
 	not.l	d2			// ~(pagesize - 1)
-	dc.w	0xf568			// let the MMU translate the address (ptestr (a0))
-	dc.w	0x4e7a,0x0805		// movec mmusr,d0
+	ptestr	(a0)			// let the MMU translate the address
+	movec	%mmusr,d0
+	.chip	CHIP_DEFAULT
 	btst	#1,d0			// match with a transparent translation register?
 	bne.s	l2p_exit		// yes, logical == physical
 	btst	#0,d0			// was a valid desriptor found?
@@ -1087,7 +1107,8 @@ l2p_exit:
 	// access exception handler because plpa may trigger such an exception
 	// if the logical address doesn't have a valid physical counterpart
 l2p_060:
-	dc.w	0x4e7a,0x0003		// movec tc,d0
+	.chip	68060
+	movec	%tc,d0
 	btst	#15,d0
 	beq.s	l2p_exit
 	// Install the temporary access exception handler
@@ -1099,7 +1120,7 @@ l2p_060:
 #else
 	ori	#0x700,sr
 #endif
-	dc.w	0x4e7a,0x9801		// movec vbr,a1
+	movec	%vbr,a1
 #ifdef __mcoldfire__
 	move.l	8(a1),d0
 	move.l	d0,old_access
@@ -1110,9 +1131,10 @@ l2p_060:
 	move.l	#temp_access,8(a1)
 #endif
 	move.l	sp,a1
-	dc.w	0xf5c8			// translate the address (plpar (a0))
+	plpar	(a0)			// translate the address
 lp2_rte:
-	dc.w	0x4e7a,0x9801		// movec vbr,a1
+	movec	%vbr,a1
+	.chip	CHIP_DEFAULT
 #ifdef __mcoldfire__
 	move.l	old_access,d0
 	move.l	d0,8(a1)

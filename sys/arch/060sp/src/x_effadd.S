@@ -118,7 +118,7 @@ _fpsp_effadd:
 /*  exception. Therefore, the FPU could be disabled when entering here. */
 /*  So, we must check to see if it's disabled and handle that case separately. */
 	move.l		d0,-(sp)		/*  save d0 */
-	.dc.w 0x4e7a,0x0808	/* movec		pcr,d0		load proc cr */
+	movec		%pcr,d0		/*  load proc cr */
 	btst		#0x1,d0		/*  is FPU disabled? */
 	bne.w		iea_disabled		/*  yes */
 	move.l		(sp)+,d0		/*  restore d0 */
@@ -678,7 +678,7 @@ iea_dis_cont:
 
 	.globl iea_iacc
 iea_iacc:
-	.dc.w 0x4e7a,0x0808	/* movec		pcr,d0 */
+	movec		%pcr,d0
 	btst		#0x1,d0
 	bne.b		iea_iacc_cont
 	fmovem.l		USER_FPCR(a6),fpcr/fpsr/fpiar /*  restore ctrl regs */
@@ -707,7 +707,7 @@ iea_acc_done2:
 iea_dacc:
 	lea		-LOCAL_SIZE(a6),sp
 
-	.dc.w 0x4e7a,0x1808	/* movec		pcr,d1 */
+	movec		%pcr,d1
 	btst		#0x1,d1
 	bne.b		iea_dacc_cont
 	fmovem.x		EXC_FPREGS(a6),fp0-fp1	/*  restore fp0-fp1 on stack */

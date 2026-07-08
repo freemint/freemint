@@ -141,7 +141,7 @@ doinstall:
 	move.l     0xdc(a1),-4(a0)
 	move.l     a0,0xdc(a1)
 
-	.dc.w      0xf23c,0x9000,0,0                /* fmovem.l #0,fpcr */
+	fmove.l    #0,fpcr
 
     lea welcome_msg(pc),a0  /* Startmeldung */
     bsr print               /* ausgeben */

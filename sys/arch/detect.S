@@ -490,7 +490,9 @@ SYM(detect_pmmu):
 	blt.b	pexit		// <030 => no pmmu
 	beq.b	pexit1		// 030 => always pmmu for Atari
 
-	dc.w	0x4e7a,0x1003	// movec tc,d1 (040/060)
+	.chip	68040
+	movec	%tc,d1		// (040/060)
+	.chip	68030
 	and.w	#0x8000,d1	// check 'E' bit
 	beq.b	pexit
 

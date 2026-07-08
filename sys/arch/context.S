@@ -48,8 +48,11 @@
 
 #ifndef __mcoldfire__
 
-	.arch	68030
+#if defined(M68040) || defined(M68060)
+	.cpu	68040
+#else
 	.cpu	68030
+#endif
 
 #include "magic/magic.i"
 #include "mint/asmdefs.h"
@@ -83,7 +86,7 @@ SYM(build_context):
 	tst.w	SYM(no_mem_prot)		// is there memory protection?
 	bne.s	noprot1
 #if defined (M68040) || defined (M68060)
-	dc.w	0x4e7a,0x0806		// movec urp,d0
+	movec	%urp,d0
 	move.l	d0,C_CRP(a0)
 #else
 	pmove	%crp,C_CRP(a0)		// save CRP from MMU
@@ -177,7 +180,7 @@ SYM(save_context):
 	tst.w	SYM(no_mem_prot)
 	bne.s	noprot2
 #if defined(M68040) || defined(M68060)
-	dc.w	0x4e7a,0x0806		// movec urp,d0
+	movec	%urp,d0
 	move.l	d0,C_CRP(a0)
 #else
 	pmove	%crp,C_CRP(a0)		// save the CRP from the MMU
@@ -337,9 +340,9 @@ SYM(change_context):
 	bne.s	noprot4
 #if defined(M68040) || defined(M68060)
 	move.l	C_CRP(a0),d0
-	dc.w	0xf518			// pflusha
-	dc.w	0x4e7b,0x0806		// movec d0,urp
-	dc.w	0x4e7b,0x0807		// movec d0,srp
+	pflusha
+	movec	d0,%urp
+	movec	d0,%srp
 #else
 	pflusha
 	pmove	C_CRP(a0),%crp		// restore MMU root pointer

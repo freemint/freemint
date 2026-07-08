@@ -29,9 +29,8 @@
  * 
  * 
  * Purpose:
- * Contains code to deal with the MMU found in the MC68040 and MC68060. Most
- * of it is in dc.w-notation, as some assemblers don't know the new calls/
- * registers. Note that pflush on the 040 is a different opcode than on the 030!
+ * Contains code to deal with the MMU found in the MC68040 and MC68060.
+ * Note that pflush on the 040 is a different opcode than on the 030!
  *
  * History:
  * 99/04/14: - Added read_phys, a function to access a long at a given physical
@@ -52,7 +51,6 @@
 // 4(sp): New root pointer to write into URP and SRP
 
 	.cpu   68040
-	.arch  68040
 	.text
 
 	.globl	SYM(set_mmu)
