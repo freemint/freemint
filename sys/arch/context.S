@@ -253,65 +253,10 @@ SYM(restore_context):
 
 // Set memory context now: actually, this isn't necessary, since
 // we're coming back to a context in the same process as is running
-// now.
-//	tst.w	SYM(no_mem_prot)
-//	bne.s	noprot3
-//	pmove	C_CRP(a0),%crp		// restore MMU root pointer
-//	pmove	C_TC(a0),%tc		// restore MMU control register
-//noprot3:
+// now. So skip change_context's MMU switch and share the rest of
+// the restoration code.
 
-#ifdef M68000
-	tst.w	(0x59e).w		// test longframe (AKP)
-	beq.s	short3
-#endif
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// fetch frame format word
-	move.w	d0,d1			// copy it for later
-	lsr.w	#8,d1			// isolate the frame format identifier
-	lsr.w	#4,d1
-	lea	SYM(framesizes),a2
-	move.b	0(a2,d1.w),d1
-	beq.s	rcovernc		// if no data to copy, skip the copy
-	sub.w	d1,sp
-	sub.w	d1,sp
-	move.l	sp,a2
-	subq.w	#1,d1			// correct for first time through loop
-rcint:
-	move.w	(a1)+,(a2)+
-rcover:
-	dbf	d1,rcint
-rcovernc:
-	move.w	d0,-(sp)		// frame format identifier
-
-// restore the FPU state
-// if running with a true coprocessor we need to restore the FPU state
-	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	short3
-#ifndef M68000
-	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_3
-	tst.b	C_FSTATE+2(a0)
-	beq.s	short4
-	bra.s	save3
-no60_3:
-#endif
-	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
-	beq.s	short4				// skip programmer's model restore
-save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
-	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
-short4:
-	frestore C_FSTATE(a0)			// finally the internal state
-
-short3:
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push the status register
-restore_check_trace:
-	tst.b	C_PTRACE(a0)		// check for a pending trace
-	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
-	beq.s	notrace
-	jmp	SYM(new_trace)
-notrace:
-	rte				// jump back to old context
+	bra	restore_common
 	CFI_ENDPROC()
 	END(restore_context)
 
@@ -351,9 +296,10 @@ SYM(change_context):
 noprot4:
 #endif
 
+restore_common:
 #ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
-	beq.s	short6
+	beq.s	short3
 #endif
 	lea	C_SFMT(a0),a1
 	move.w	(a1)+,d0		// fetch frame format word
@@ -362,48 +308,47 @@ noprot4:
 	lsr.w	#4,d1
 	lea	SYM(framesizes),a2
 	move.b	0(a2,d1.w),d1
-	beq.s	rcover2nc		// if no data to copy, skip it
+	beq.s	rcovernc		// if no data to copy, skip the copy
 	sub.w	d1,sp
 	sub.w	d1,sp
 	move.l	sp,a2
 	subq.w	#1,d1			// correct for first time through loop
-rcint2:
+rcint:
 	move.w	(a1)+,(a2)+
-rcover2:
-	dbf	d1,rcint2
-rcover2nc:
+rcover:
+	dbf	d1,rcint
+rcovernc:
 	move.w	d0,-(sp)		// frame format identifier
 
 // restore the FPU state
 // if running with a true coprocessor we need to restore the FPU state
 
 	tst.w	SYM(fpu)			// is there a true FPU in the system
-	beq.s	short6
+	beq.s	short3
 
 #ifndef M68000
 	cmp.w	#60,SYM(mcpu)+2		// on 68060 frame format is different
-	bne.s	no60_4
+	bne.s	no60_3
 	tst.b	C_FSTATE+2(a0)
-	beq.s	short5
-	bra.s	save5
-no60_4:
+	beq.s	short4
+	bra.s	save3
+no60_3:
 #endif
 	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	short5			// skip programmer's model restore
-save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
+	beq.s	short4			// skip programmer's model restore
+save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
-short5:
+short4:
 	frestore C_FSTATE(a0)			// finally the internal state
 
-short6:
+short3:
 	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push status register
-change_check_trace:
+	move.w	C_SR(a0),-(sp)		// push the status register
 	tst.b	C_PTRACE(a0)		// check for a pending trace
 	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
-	beq.s	notrace2
+	beq.s	notrace
 	jmp	SYM(new_trace)
-notrace2:
+notrace:
 	rte				// jump back to old context
 	CFI_ENDPROC()
 	END(change_context)

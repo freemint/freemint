@@ -148,11 +148,17 @@ save_ptrace:
 	CFI_ENDPROC()
 	END(save_context)
 
+// On ColdFire there is no MMU-based memory protection, so change_context
+// (which on 68k additionally flushes the ATC and reloads the MMU root
+// pointers) is identical to restore_context.
+
 	FUNC(restore_context)
+	FUNC(change_context)
 SYM(restore_context):
+SYM(change_context):
 	CFI_STARTPROC()
 	move.w	sr,d1
-	ori.l	#0x0400,d1
+	ori.l	#0x0400,d1		// mask interrupts
 	move.w	d1,sr
 	move.l	4(sp),a0		// address of context save area
 
@@ -217,7 +223,6 @@ rcovernc:
 restore_fpu_done_68k:
 	frestore C_FSTATE(a0)		// finally the internal state (including fpcr and fpsr)
 
-short3:
 	move.l	C_PC(a0),-(sp)		// push the PC
 	move.w	C_SR(a0),-(sp)		// push the status register
 restore_check_trace:
@@ -229,88 +234,6 @@ notrace:
 	rte				// jump back to old context
 	CFI_ENDPROC()
 	END(restore_context)
-
-
-	FUNC(change_context)
-SYM(change_context):
-	CFI_STARTPROC()
-	move.w	sr,d1
-	ori.l	#0x0400,d1		// mask interrupts
-	move.w	d1,sr
-	move.l	4(sp),a0		// address of context save area
-
-// Switch stacks now - starting now ssp is in the memory space of
-// the process we're switching to. Thus, we can change memory context
-// to there.
-
-	move.l	C_SSP(a0),a1		// get supervisor stack pointer
-	tst.b	(a1)			// touch the page for virtual memory programs
-	tst.b	-63(a1)			// make sure stack can grow
-	move.l	a1,sp
-	move.l	C_USP(a0),a1
-	move.l	a1,%usp			// set user stack pointer
-	move.l	C_TERM(a0),d1
-	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
-
-	tst.w	SYM(coldfire_68k_emulation)
-	bne.s	change_68k
-
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	change_fpu_done		// skip programmer's model restore
-	fmove.l	C_FCTRL+8(a0),fpiar	// restore control registers
-	fmovem.d C_FREGS(a0),fp0-fp7	// and data registers
-change_fpu_done:
-	frestore C_FSTATE(a0)		// finally the internal state (including fpcr and fpsr)
-
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push the status register
-	move.w	#0x4000,-(sp)		// push the frame/vector word
-	// Since we are just going to return using rte very soon,
-	// we can push a standard frame/vector word instead of C_SFMT(a0),
-	// so we don't have to add any extra filler byte.
-
-	bra.s	change_check_trace
-change_68k:
-	lea	C_SFMT(a0),a1
-	move.w	(a1)+,d0		// fetch frame format word
-	moveq	#0,d1
-	move.w	d0,d1			// copy it for later
-	lsr.l	#8,d1			// isolate the frame format identifier
-	lsr.l	#4,d1
-	lea	SYM(framesizes),a2
-	move.b	0(a2,d1.l),d1
-	beq.s	rcover2nc		// if no data to copy, skip it
-	sub.l	d1,sp
-	sub.l	d1,sp
-	move.l	sp,a2
-	subq.l	#1,d1			// correct for first time through loop
-rcint2:
-	move.w	(a1)+,(a2)+
-rcover2:
-	subq.l	#1,d1
-	bpl.s	rcint2
-rcover2nc:
-	move.w	d0,-(sp)		// frame format identifier
-
-// restore the FPU state
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	change_fpu_done_68k	// skip programmer's model restore
-	fmove.l	C_FCTRL+8(a0),fpiar	// restore control registers
-	fmovem.d C_FREGS(a0),fp0-fp7	// and data registers
-change_fpu_done_68k:
-	frestore C_FSTATE(a0)		// finally the internal state (including fpcr and fpsr)
-
-short6:
-	move.l	C_PC(a0),-(sp)		// push the PC
-	move.w	C_SR(a0),-(sp)		// push status register
-change_check_trace:
-	tst.b	C_PTRACE(a0)		// check for a pending trace
-	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
-	beq.s	notrace2
-	jmp	SYM(new_trace)
-notrace2:
-	rte				// jump back to old context
-	CFI_ENDPROC()
 	END(change_context)
 
 #endif /* __mcoldfire__ */
