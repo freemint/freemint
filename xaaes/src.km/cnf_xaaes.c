@@ -417,21 +417,17 @@ static void
 pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 {
 	char p[512];
-	unsigned long len;
+	int len;
 
-	len = strlen(var) + strlen(arg) + 2;
+	len = snprintf(p, sizeof(p), "%s=%s", var, arg);
 
-	if (len < sizeof(p))
+	if (len > 0 && len < (int)sizeof(p))
 	{
-		strcpy(p, var);
-		strcat(p, "=");
-		strcat(p, arg);
-
 		put_env(NOLOCKING, p);
 		DIAGS(("pCB_setenv: %s=%s", var, arg));
 	}
 	else
-		DIAGS(("pCB_setenv: len %lu > sizeof(p) %lu", len, sizeof(p)));
+		DIAGS(("pCB_setenv: len %d >= sizeof(p) %lu", len, (unsigned long)sizeof(p)));
 }
 #if 0
 /*----------------------------------------------------------------------------*/
@@ -517,7 +513,7 @@ pCB_cancel(char *line)
 
 		if (strlen(s) < CB_L)
 		{
-			strcpy(cfg.cancel_buttons[i++], s);
+			snprintf(cfg.cancel_buttons[i++], CB_L, "%s", s);
 			DIAGS(("pCB_cancel[%i]: %s", i-1, s));
 		}
 	}
@@ -568,7 +564,7 @@ pCB_app_options(char *line)
 				bzero(op, sizeof(*op));
 				op->next = S.app_options;
 				S.app_options = op;
-				strcpy(op->name, s);
+				snprintf(op->name, sizeof(op->name), "%s", s);
 				opts = &op->options;
 				*opts = default_options;
 
