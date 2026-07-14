@@ -11,6 +11,6 @@ HCP_VERSION="1.0.5"
 
 mkdir -p ~/tmp
 cd ~/tmp
-wget -q -O - "http://tho-otto.de/download/hcp-${HCP_VERSION}-linux.tar.bz2" | tar xjf -
+wget -q -O - "https://mikro.atari.org/tho-otto.de/hcp-${HCP_VERSION}-linux.tar.bz2" | tar xjf -
 mv "hcp-${HCP_VERSION}" hcp
 cd -

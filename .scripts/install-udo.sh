@@ -11,5 +11,5 @@ UDO_VERSION="7.12"
 
 mkdir -p ~/tmp/udo
 cd ~/tmp/udo
-wget -q -O - "http://www.tho-otto.de/download/udo-${UDO_VERSION}-linux.tar.bz2" | tar xjf -
+wget -q -O - "https://mikro.atari.org/tho-otto.de/udo-${UDO_VERSION}-linux.tar.bz2" | tar xjf -
 cd -
