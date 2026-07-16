@@ -49,8 +49,10 @@
 #ifndef __mcoldfire__
 
 #if defined(M68040) || defined(M68060)
+	.arch	68040
 	.cpu	68040
 #else
+	.arch	68030
 	.cpu	68030
 #endif
 

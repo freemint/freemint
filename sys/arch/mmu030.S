@@ -14,6 +14,7 @@
 
 #include "mint/asmdefs.h"
 
+	.arch	68030
 	.cpu	68030
 	.data
 nulltc:
