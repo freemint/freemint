@@ -1,4 +1,6 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into binary distributions.
 
-BINFILES = ethernat.ucd
+BINFILES = \
+	.compile_*/ethernat.ucd \
+	.compile_*/ethernat.prg

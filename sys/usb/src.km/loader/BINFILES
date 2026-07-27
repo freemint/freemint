@@ -1,5 +1,5 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into binary distributions.
 
-BINFILES = loader.prg
+BINFILES = .compile_*/loader.prg
 
