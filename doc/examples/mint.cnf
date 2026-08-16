@@ -389,10 +389,14 @@ setenv TMPDIR u:/tmp
 #
 # Replace XXX with your used interface name, e.g. "en0" or "rtk0".
 # Replace AAA.AAA.AAA.AAA with the IP address of your Atari.
+# Replace NNN.NNN.NNN.NNN with your network address, i.e. the IP address
+# of your Atari with the host portion set to zero (with the usual
+# 255.255.255.0 netmask that is AAA.AAA.AAA.0).
 # Replace BBB.BBB.BBB.BBB with the IP address of your router.
-# Remove the "#" at the beginning of the two lines.
+# Remove the "#" at the beginning of the three lines.
 
 #exec u:/bin/ifconfig XXX addr AAA.AAA.AAA.AAA netmask 255.255.255.0 up
+#exec u:/bin/route add NNN.NNN.NNN.NNN XXX
 #exec u:/bin/route add default XXX gw BBB.BBB.BBB.BBB
 
 # ARAnyM uses its own script
