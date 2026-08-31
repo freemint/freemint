@@ -685,8 +685,23 @@ new_dev:
 
 error:	cmp.l	#SYM(xbios_tab),a5
 	bne.s	enosys
+// keep the function number: the ROM's trap handler pops it off our
+// stack, since the emulated call looks like it came from supervisor mode
+	move.w	(sp),d3
 	jsr	SYM(trap_14_emu)
-	bra	out
+	moveq	#0,d2
+// Vsync just returned at a vblank boundary: suppress the time slice
+// check so the caller can act on it before being preempted
+#ifdef __mcoldfire__
+	moveq	#0x25,d1
+	cmp.w	d3,d1
+#else
+	cmp.w	#0x25,d3
+#endif
+	bne.s	no_vsync
+	moveq	#1,d2		// nonzero D2 prevents preempt
+no_vsync:
+	bra	out_select
 enosys:	moveq	#-32,d0		// ENOSYS
 	bra	out
 
