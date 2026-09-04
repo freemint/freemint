@@ -48,4 +48,6 @@ void		sigtrap		(void);
 void		haltformat	(void);
 void		haltcpv		(void);
 
+void	_cdecl	stray_int	(long sr, long vector, long pc);
+
 # endif /* _m68k_sig_mach_h */

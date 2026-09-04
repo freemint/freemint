@@ -780,6 +780,7 @@ SYM(send_packet):
 	.globl	SYM(sigtrap)
 	.globl	SYM(haltformat)
 	.globl	SYM(haltcpv)
+	.globl	SYM(stray_int)
 	.globl	SYM(sig_exc)
 	.globl	SYM(mcpu)
 
@@ -1237,18 +1238,14 @@ SYM(new_pmmuacc):
 SYM(old_uninit):
 	dc.l	0
 SYM(new_uninit):
-#ifdef M68000
-	move.w	#0x3c,SYM(sig_exc)
-#endif
 #ifdef __mcoldfire__
-	move.l	a0,-(sp)
-	lea	SYM(sig_routine),a0
-	move.l	#SYM(sigbus),(a0)
-	move.l	(sp)+,a0
+	lea	-24(sp),sp
+	movem.l	d0-d2/a0-a2,(sp)	// save C registers
 #else
-	move.l	#SYM(sigbus),SYM(sig_routine)
+	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 #endif
-	bra	Do_sig
+	moveq	#0x3c,d1		// VEC_UNINITIALIZED
+	bra	Stray_int
 
 	.globl	SYM(old_spurious)
 
@@ -1257,18 +1254,45 @@ SYM(new_uninit):
 SYM(old_spurious):
 	dc.l	0
 SYM(new_spurious):
-#ifdef M68000
-	move.w	#0x60,SYM(sig_exc)
-#endif
 #ifdef __mcoldfire__
-	move.l	a0,-(sp)
-	lea	SYM(sig_routine),a0
-	move.l	#SYM(sigbus),(a0)
-	move.l	(sp)+,a0
+	lea	-24(sp),sp
+	movem.l	d0-d2/a0-a2,(sp)	// save C registers
 #else
-	move.l	#SYM(sigbus),SYM(sig_routine)
+	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 #endif
-	bra	Do_sig
+	moveq	#0x60,d1		// VEC_SPURIOUS_INTERRUPT
+
+Stray_int:
+// the exception frame starts below the 24 bytes of saved registers
+#ifdef __mcoldfire__
+	tst.w	SYM(coldfire_68k_emulation)
+	bne.s	stray_int_68k
+
+	move.l	28(sp),d0		// pc of the interrupted instruction
+	bra.s	stray_int_call
+
+stray_int_68k:
+#endif
+	move.l	26(sp),d0		// pc of the interrupted instruction
+stray_int_call:
+	moveq	#0,d2
+	move.w	sr,d2			// interrupt mask = level of the stray interrupt
+	move.l	d0,-(sp)		// pc
+	move.l	d1,-(sp)		// vector
+	move.l	d2,-(sp)		// sr
+	jsr	SYM(stray_int)
+	lea	12(sp),sp
+#ifdef __mcoldfire__
+	movem.l	(sp),d0-d2/a0-a2	// restore C registers
+	lea	24(sp),sp
+#else
+	movem.l	(sp)+,d0-d2/a0-a2	// restore C registers
+#endif
+// 68000 processor bug: rte right after movem can eat interrupts...
+#ifdef M68000
+	nop
+#endif
+	rte
 
 	.globl	SYM(old_format)
 

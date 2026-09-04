@@ -25,6 +25,7 @@
 # include "signal.h"
 
 # include "context.h"	/* save_context, restore_context */
+# include "cpu.h"	/* VEC_xxx */
 # include "kernel.h"
 # include "mprot.h"
 # include "syscall.h"
@@ -574,4 +575,37 @@ void
 haltcpv(void)
 {
 	FATAL("halt: coprocessor protocol violation");
+}
+
+# define STRAY_INT_REPORTS	8
+
+void _cdecl
+stray_int(long sr, long vector, long pc)
+{
+	static ulong spurious_count = 0;
+	static ulong uninit_count = 0;
+	const char *what;
+	ulong *count;
+
+	if (vector == VEC_SPURIOUS_INTERRUPT)
+	{
+		what = "Spurious";
+		count = &spurious_count;
+	}
+	else
+	{
+		what = "Uninitialized";
+		count = &uninit_count;
+	}
+
+	(*count)++;
+
+	if (*count <= STRAY_INT_REPORTS)
+	{
+		FORCENONL("%s interrupt at level %ld (interrupted: pid %d (%s), PC %lx)\r\n",
+			what, (sr >> 8) & 7, curproc->pid, curproc->name, pc);
+
+		if (*count == STRAY_INT_REPORTS)
+			FORCENONL("%s interrupt: further reports suppressed\r\n", what);
+	}
 }
