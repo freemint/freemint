@@ -1,21 +1,24 @@
-/*****************************************************************************
-*******************************************************************************/
-
-
-
-
 /*
- * Svethlana ethernet driver for FreeMiNT.
+ * SVEthlana driver for FreeMiNT: the OpenCores 10/100 Mbps Ethernet MAC
+ * in the SuperVidel FPGA.
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
- * Copyright (c) 2007-2016 Torbjorn and Henrik Gilda
+ * This is a port of the Linux ethoc driver, drivers/net/ethernet/ethoc.c
+ * (Linux 7.3). The parts of the Linux PHY library that ethoc relies on
+ * when the generic PHY driver binds to the Micrel KSZ8041 on the
+ * SuperVidel are in phy.c. Function, variable and register names are kept as in Linux
+ * so that fixes can be carried over; the MiNTNet interface (svethlana_*)
+ * at the end of this file takes the place of the Linux net_device, NAPI
+ * and platform glue. What is not ported: ethtool, ring size changes, DT/OF
+ * probing, clock handling and power management.
+ *
+ * The kernel is built with -mshort, so Linux "int" is "long" here.
  *
  * This file is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -27,123 +30,1231 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+// SPDX-License-Identifier: GPL-2.0-only
 /*
- *	Svethlana packet driver version 0.9
- *  SuperVidel FW v10 is required by this driver
+ * linux/drivers/net/ethernet/ethoc.c
  *
- *	Usage:
- *		ifconfig en0 addr u.v.w.x
- *		route add u.v.w.x en0
+ * Copyright (C) 2007-2008 Avionic Design Development GmbH
+ * Copyright (C) 2008-2009 Avionic Design GmbH
  *
- *		20160426	/Henrik and Torbj�rn Gild�
- *
+ * Written by Thierry Reding <thierry.reding@avionic-design.de>
  */
 
-#include "global.h"
+# include "global.h"
 
-#include "buf.h"
-#include "cookie.h"
-#include "inet4/if.h"
-#include "inet4/ifeth.h"
+# include "buf.h"
+# include "cookie.h"
+# include "inet4/if.h"
+# include "inet4/ifeth.h"
+# include "inet4/igmp.h"
+# include "netinfo.h"
 
-#include "netinfo.h"
-#include "mint/delay.h"
-#include "mint/mdelay.h"
-#include "mint/sockio.h"
-#include "mint/endian.h"
+# include "mint/delay.h"
+# include "mint/fcntl.h"
+# include "mint/sockio.h"
+# include "mint/time.h"
+# include "mint/arch/asm_spl.h"
 
-#include "sv_regs.h"
-#include "svethlana_i6.h"
+# include <mint/osbind.h>
 
-#include <mint/osbind.h>
-#define ct60_vmalloc(mode,value) (unsigned long)trap_14_wwl((short)(0xc60e),(short)(mode),(unsigned long)(value))
+# include "sv_regs.h"
+# include "svethlana_i6.h"
+# include "phy.h"
 
-#define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
 
-/*
- * From main.c
+# define IRQ_NONE	0L
+# define IRQ_HANDLED	1L
+
+# define likely(x)	__builtin_expect(!!(x), 1)
+# define unlikely(x)	__builtin_expect(!!(x), 0)
+
+/* default NAPI budget, net/core/dev.c */
+# define NAPI_POLL_WEIGHT	64
+
+
+/* register offsets */
+#define	MODER		0x00
+#define	INT_SOURCE	0x04
+#define	INT_MASK	0x08
+#define	IPGT		0x0c
+#define	IPGR1		0x10
+#define	IPGR2		0x14
+#define	PACKETLEN	0x18
+#define	COLLCONF	0x1c
+#define	TX_BD_NUM	0x20
+#define	CTRLMODER	0x24
+#define	MIIMODER	0x28
+#define	MIICOMMAND	0x2c
+#define	MIIADDRESS	0x30
+#define	MIITX_DATA	0x34
+#define	MIIRX_DATA	0x38
+#define	MIISTATUS	0x3c
+#define	MAC_ADDR0	0x40
+#define	MAC_ADDR1	0x44
+#define	ETH_HASH0	0x48
+#define	ETH_HASH1	0x4c
+#define	ETH_TXCTRL	0x50
+#define	ETH_END		0x54
+
+/* mode register */
+#define	MODER_RXEN	(1UL <<  0) /* receive enable */
+#define	MODER_TXEN	(1UL <<  1) /* transmit enable */
+#define	MODER_NOPRE	(1UL <<  2) /* no preamble */
+#define	MODER_BRO	(1UL <<  3) /* broadcast address */
+#define	MODER_IAM	(1UL <<  4) /* individual address mode */
+#define	MODER_PRO	(1UL <<  5) /* promiscuous mode */
+#define	MODER_IFG	(1UL <<  6) /* interframe gap for incoming frames */
+#define	MODER_LOOP	(1UL <<  7) /* loopback */
+#define	MODER_NBO	(1UL <<  8) /* no back-off */
+#define	MODER_EDE	(1UL <<  9) /* excess defer enable */
+#define	MODER_FULLD	(1UL << 10) /* full duplex */
+#define	MODER_RESET	(1UL << 11) /* FIXME: reset (undocumented) */
+#define	MODER_DCRC	(1UL << 12) /* delayed CRC enable */
+#define	MODER_CRC	(1UL << 13) /* CRC enable */
+#define	MODER_HUGE	(1UL << 14) /* huge packets enable */
+#define	MODER_PAD	(1UL << 15) /* padding enabled */
+#define	MODER_RSM	(1UL << 16) /* receive small packets */
+
+/* interrupt source and mask registers */
+#define	INT_MASK_TXF	(1UL << 0) /* transmit frame */
+#define	INT_MASK_TXE	(1UL << 1) /* transmit error */
+#define	INT_MASK_RXF	(1UL << 2) /* receive frame */
+#define	INT_MASK_RXE	(1UL << 3) /* receive error */
+#define	INT_MASK_BUSY	(1UL << 4)
+#define	INT_MASK_TXC	(1UL << 5) /* transmit control frame */
+#define	INT_MASK_RXC	(1UL << 6) /* receive control frame */
+
+#define	INT_MASK_TX	(INT_MASK_TXF | INT_MASK_TXE)
+#define	INT_MASK_RX	(INT_MASK_RXF | INT_MASK_RXE)
+
+#define	INT_MASK_ALL ( \
+		INT_MASK_TXF | INT_MASK_TXE | \
+		INT_MASK_RXF | INT_MASK_RXE | \
+		INT_MASK_TXC | INT_MASK_RXC | \
+		INT_MASK_BUSY \
+	)
+
+/* packet length register */
+#define	PACKETLEN_MIN(min)		(((min) & 0xffffUL) << 16)
+#define	PACKETLEN_MAX(max)		(((max) & 0xffffUL) <<  0)
+#define	PACKETLEN_MIN_MAX(min, max)	(PACKETLEN_MIN(min) | \
+					PACKETLEN_MAX(max))
+
+/* transmit buffer number register */
+#define	TX_BD_NUM_VAL(x)	(((x) <= 0x80) ? (x) : 0x80)
+
+/* control module mode register */
+#define	CTRLMODER_PASSALL	(1UL << 0) /* pass all receive frames */
+#define	CTRLMODER_RXFLOW	(1UL << 1) /* receive control flow */
+#define	CTRLMODER_TXFLOW	(1UL << 2) /* transmit control flow */
+
+/* MII mode register */
+#define	MIIMODER_CLKDIV(x)	((x) & 0xfe) /* needs to be an even number */
+#define	MIIMODER_NOPRE		(1UL << 8) /* no preamble */
+
+/* MII command register */
+#define	MIICOMMAND_SCAN		(1UL << 0) /* scan status */
+#define	MIICOMMAND_READ		(1UL << 1) /* read status */
+#define	MIICOMMAND_WRITE	(1UL << 2) /* write control data */
+
+/* MII address register */
+#define	MIIADDRESS_FIAD(x)		(((x) & 0x1fUL) << 0)
+#define	MIIADDRESS_RGAD(x)		(((x) & 0x1fUL) << 8)
+#define	MIIADDRESS_ADDR(phy, reg)	(MIIADDRESS_FIAD(phy) | \
+					MIIADDRESS_RGAD(reg))
+
+/* MII transmit data register */
+#define	MIITX_DATA_VAL(x)	((x) & 0xffffUL)
+
+/* MII receive data register */
+#define	MIIRX_DATA_VAL(x)	((x) & 0xffffUL)
+
+/* MII status register */
+#define	MIISTATUS_LINKFAIL	(1UL << 0)
+#define	MIISTATUS_BUSY		(1UL << 1)
+#define	MIISTATUS_INVALID	(1UL << 2)
+
+/* TX buffer descriptor */
+#define	TX_BD_CS		(1UL <<  0) /* carrier sense lost */
+#define	TX_BD_DF		(1UL <<  1) /* defer indication */
+#define	TX_BD_LC		(1UL <<  2) /* late collision */
+#define	TX_BD_RL		(1UL <<  3) /* retransmission limit */
+#define	TX_BD_RETRY_MASK	(0x00f0UL)
+#define	TX_BD_RETRY(x)		(((x) & 0x00f0UL) >>  4)
+#define	TX_BD_UR		(1UL <<  8) /* transmitter underrun */
+#define	TX_BD_CRC		(1UL << 11) /* TX CRC enable */
+#define	TX_BD_PAD		(1UL << 12) /* pad enable for short packets */
+#define	TX_BD_WRAP		(1UL << 13)
+#define	TX_BD_IRQ		(1UL << 14) /* interrupt request enable */
+#define	TX_BD_READY		(1UL << 15) /* TX buffer ready */
+#define	TX_BD_LEN(x)		(((x) & 0xffffUL) << 16)
+#define	TX_BD_LEN_MASK		(0xffffUL << 16)
+
+#define	TX_BD_STATS		(TX_BD_CS | TX_BD_DF | TX_BD_LC | \
+				TX_BD_RL | TX_BD_RETRY_MASK | TX_BD_UR)
+
+/* RX buffer descriptor */
+#define	RX_BD_LC	(1UL <<  0) /* late collision */
+#define	RX_BD_CRC	(1UL <<  1) /* RX CRC error */
+#define	RX_BD_SF	(1UL <<  2) /* short frame */
+#define	RX_BD_TL	(1UL <<  3) /* too long */
+#define	RX_BD_DN	(1UL <<  4) /* dribble nibble */
+#define	RX_BD_IS	(1UL <<  5) /* invalid symbol */
+#define	RX_BD_OR	(1UL <<  6) /* receiver overrun */
+#define	RX_BD_MISS	(1UL <<  7)
+#define	RX_BD_CF	(1UL <<  8) /* control frame */
+#define	RX_BD_WRAP	(1UL << 13)
+#define	RX_BD_IRQ	(1UL << 14) /* interrupt request enable */
+#define	RX_BD_EMPTY	(1UL << 15)
+#define	RX_BD_LEN(x)	(((x) & 0xffffUL) << 16)
+
+#define	RX_BD_STATS	(RX_BD_LC | RX_BD_CRC | RX_BD_SF | RX_BD_TL | \
+			RX_BD_DN | RX_BD_IS | RX_BD_OR | RX_BD_MISS)
+
+#define	ETHOC_BUFSIZ		1536
+#define	ETHOC_ZLEN		64
+#define	ETHOC_BD_BASE		0x400
+#define	ETHOC_TIMEOUT		(HZ / 2)
+#define	ETHOC_MII_TIMEOUT	(1 + (HZ / 5))
+
+
+/**
+ * struct ethoc - driver-private device structure
+ * @iobase:	pointer to I/O memory region
+ * @membase:	pointer to buffer memory region
+ * @num_bd:	number of buffer descriptors
+ * @num_tx:	number of send buffers
+ * @cur_tx:	last send buffer written
+ * @dty_tx:	last buffer actually sent
+ * @num_rx:	number of receive buffers
+ * @cur_rx:	current receive buffer
+ * @vma:        pointer to array of virtual memory addresses for buffers
+ * @netdev:	pointer to network device structure
+ * @napi:	the pending poll, a root timeout here
+ * @napi_scheduled: a poll is due
+ * @napi_enabled: polls may be scheduled
+ * @queue_stopped: transmit ring full, packets wait in netdev->snd
+ * @watchdog:	ticks the queue has been stopped, for ethoc_tx_timeout()
+ * @mc_refcnt:	users of each multicast hash bit, the mc list of Linux
+ * @mdio:	MDIO bus for PHY access
+ * @phydev:	the attached PHY, dev->phydev on Linux
+ * @phy_id:	address of attached PHY
+ * @old_link:	previous link info
+ * @old_duplex: previous duplex info
  */
-extern long driver_init (void);
+struct ethoc {
+	char *iobase;
+	char *membase;
 
-// to make compiler happy
-void _cdecl svethlana_int (void);
+	u32 num_bd;
+	u32 num_tx;
+	u32 cur_tx;
+	u32 dty_tx;
 
+	u32 num_rx;
+	u32 cur_rx;
 
-/*
- * Our interface structure
+	void **vma;
+
+	struct netif *netdev;
+
+	TIMEOUT *napi;
+	short napi_scheduled;
+	short napi_enabled;
+
+	short queue_stopped;
+	short watchdog;
+
+	u8 mc_refcnt[64];
+
+	struct mii_bus *mdio;
+	struct phy_device *phydev;
+	s8 phy_id;
+
+	long old_link;
+	long old_duplex;
+};
+
+/**
+ * struct ethoc_bd - buffer descriptor
+ * @stat:	buffer statistics
+ * @addr:	physical memory address
  */
+struct ethoc_bd {
+	u32 stat;
+	u32 addr;
+};
+
+
 static struct netif if_svethlana;
+static struct ethoc ethoc_priv;
+static struct mii_bus ethoc_mdio;
+static void *ethoc_vma[128];
 
+static long ethoc_mdio_read (struct mii_bus *bus, long phy, long reg);
+static long ethoc_mdio_write (struct mii_bus *bus, long phy, long reg, u16 val);
+static void ethoc_mdio_poll (struct netif *dev);
+static void ethoc_set_multicast_list (struct netif *dev);
+static long ethoc_start_xmit (BUF *skb, struct netif *dev);
+static void _cdecl ethoc_poll (PROC *p, long arg);
 
 
 /*
- * Prototypes for our service functions
+ * Register and buffer access. The SuperVidel is big endian
+ * (ethoc_platform_data.big_endian), so ethoc_read() is ioread32be().
  */
+
+static inline u32 ethoc_read(struct ethoc *dev, long offset)
+{
+	return *(volatile u32 *)(dev->iobase + offset);
+}
+
+static inline void ethoc_write(struct ethoc *dev, long offset, u32 data)
+{
+	*(volatile u32 *)(dev->iobase + offset) = data;
+}
+
+/*
+ * memcpy_toio() and memcpy_fromio() are memcpy() on Linux/m68k, and
+ * libkern's memcpy moves longwords like the Linux one.
+ */
+#define memcpy_toio(dst, src, count)	memcpy((dst), (src), (count))
+#define memcpy_fromio(dst, src, count)	memcpy((dst), (src), (count))
+#define memset_io(dst, val, count)	memset((dst), (val), (count))
+
+static inline void ethoc_read_bd(struct ethoc *dev, long index,
+		struct ethoc_bd *bd)
+{
+	long offset = ETHOC_BD_BASE + (index * sizeof(struct ethoc_bd));
+	bd->stat = ethoc_read(dev, offset + 0);
+	bd->addr = ethoc_read(dev, offset + 4);
+}
+
+static inline void ethoc_write_bd(struct ethoc *dev, long index,
+		const struct ethoc_bd *bd)
+{
+	long offset = ETHOC_BD_BASE + (index * sizeof(struct ethoc_bd));
+	ethoc_write(dev, offset + 0, bd->stat);
+	ethoc_write(dev, offset + 4, bd->addr);
+}
+
+static inline void ethoc_enable_irq(struct ethoc *dev, u32 mask)
+{
+	u32 imask = ethoc_read(dev, INT_MASK);
+	imask |= mask;
+	ethoc_write(dev, INT_MASK, imask);
+}
+
+static inline void ethoc_disable_irq(struct ethoc *dev, u32 mask)
+{
+	u32 imask = ethoc_read(dev, INT_MASK);
+	imask &= ~mask;
+	ethoc_write(dev, INT_MASK, imask);
+}
+
+static inline void ethoc_ack_irq(struct ethoc *dev, u32 mask)
+{
+	ethoc_write(dev, INT_SOURCE, mask);
+}
+
+static inline void ethoc_enable_rx_and_tx(struct ethoc *dev)
+{
+	u32 mode = ethoc_read(dev, MODER);
+	mode |= MODER_RXEN | MODER_TXEN;
+	ethoc_write(dev, MODER, mode);
+}
+
+static inline void ethoc_disable_rx_and_tx(struct ethoc *dev)
+{
+	u32 mode = ethoc_read(dev, MODER);
+	mode &= ~(MODER_RXEN | MODER_TXEN);
+	ethoc_write(dev, MODER, mode);
+}
+
+
+/*
+ * NAPI. On Linux the interrupt handler masks the receive and transmit
+ * interrupts and hands the work to ethoc_poll() in softirq context. Here
+ * the work goes to a root timeout, which the kernel runs from the
+ * scheduler with interrupts enabled, and MiNTNet delivers received
+ * packets (if_input) through the very same mechanism, so nothing is
+ * added to the delivery latency. Only the interrupt entry runs at IPL 6.
+ */
+
+static void napi_enable(struct ethoc *priv)
+{
+	priv->napi = NULL;
+	priv->napi_scheduled = 0;
+	priv->napi_enabled = 1;
+}
+
+static void napi_disable(struct ethoc *priv)
+{
+	ushort sr = spl7();
+
+	priv->napi_enabled = 0;
+	if (priv->napi)
+		cancelroottimeout(priv->napi);
+	priv->napi = NULL;
+	priv->napi_scheduled = 0;
+
+	spl(sr);
+}
+
+/* schedules ethoc_poll(), from the interrupt (flags 1) or not */
+static void __napi_schedule(struct ethoc *priv, ushort flags)
+{
+	priv->napi = addroottimeout(0, ethoc_poll, flags);
+	if (priv->napi)
+		priv->napi->arg = (long) priv;
+	/* else the slow timer retries, see svethlana_timeout() */
+}
+
+static void napi_schedule(struct ethoc *priv)
+{
+	if (!priv->napi_enabled || priv->napi_scheduled)
+		return;
+
+	priv->napi_scheduled = 1;
+	__napi_schedule(priv, 1);
+}
+
+static void napi_complete_done(struct ethoc *priv)
+{
+	priv->napi_scheduled = 0;
+}
+
+
+/*
+ * netif_{start,stop,wake}_queue(). Linux stops calling
+ * ethoc_start_xmit() while the queue is stopped and its qdisc keeps the
+ * packets. Here svethlana_output() puts them into dev->snd and
+ * netif_wake_queue() pushes them into the ring again.
+ */
+
+static void netif_start_queue(struct ethoc *priv)
+{
+	priv->queue_stopped = 0;
+	priv->watchdog = 0;
+}
+
+static void netif_stop_queue(struct ethoc *priv)
+{
+	priv->queue_stopped = 1;
+}
+
+static void netif_wake_queue(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+	BUF *skb;
+
+	netif_start_queue(priv);
+
+	while (!priv->queue_stopped && (skb = if_dequeue(&dev->snd)) != NULL)
+		ethoc_start_xmit(skb, dev);
+}
+
+
+static long ethoc_init_ring(struct ethoc *dev, unsigned long mem_start)
+{
+	struct ethoc_bd bd;
+	long i;
+	char *vma;
+
+	dev->cur_tx = 0;
+	dev->dty_tx = 0;
+	dev->cur_rx = 0;
+
+	ethoc_write(dev, TX_BD_NUM, dev->num_tx);
+
+	/* setup transmission buffers */
+	bd.addr = mem_start;
+	bd.stat = TX_BD_IRQ | TX_BD_CRC;
+	vma = dev->membase;
+
+	for (i = 0; i < dev->num_tx; i++) {
+		if (i == dev->num_tx - 1)
+			bd.stat |= TX_BD_WRAP;
+
+		ethoc_write_bd(dev, i, &bd);
+		bd.addr += ETHOC_BUFSIZ;
+
+		dev->vma[i] = vma;
+		vma += ETHOC_BUFSIZ;
+	}
+
+	bd.stat = RX_BD_EMPTY | RX_BD_IRQ;
+
+	for (i = 0; i < dev->num_rx; i++) {
+		if (i == dev->num_rx - 1)
+			bd.stat |= RX_BD_WRAP;
+
+		ethoc_write_bd(dev, dev->num_tx + i, &bd);
+		bd.addr += ETHOC_BUFSIZ;
+
+		dev->vma[dev->num_tx + i] = vma;
+		vma += ETHOC_BUFSIZ;
+	}
+
+	return 0;
+}
+
+static long ethoc_reset(struct ethoc *dev)
+{
+	u32 mode;
+
+	/* TODO: reset controller? */
+
+	ethoc_disable_rx_and_tx(dev);
+
+	/* TODO: setup registers */
+
+	/* enable FCS generation and automatic padding */
+	mode = ethoc_read(dev, MODER);
+	mode |= MODER_CRC | MODER_PAD;
+	ethoc_write(dev, MODER, mode);
+
+	/* set full-duplex mode */
+	mode = ethoc_read(dev, MODER);
+	mode |= MODER_FULLD;
+	ethoc_write(dev, MODER, mode);
+	ethoc_write(dev, IPGT, 0x15);
+
+	ethoc_ack_irq(dev, INT_MASK_ALL);
+	ethoc_enable_irq(dev, INT_MASK_ALL);
+	ethoc_enable_rx_and_tx(dev);
+	return 0;
+}
+
+/*
+ * Linux keeps a counter per error type and prints each one; MiNTNet has
+ * in_errors and collisions.
+ */
+static long ethoc_update_rx_stats(struct ethoc *dev,
+		struct ethoc_bd *bd)
+{
+	struct netif *netdev = dev->netdev;
+	long ret = 0;
+
+	if (bd->stat & RX_BD_TL) {
+		DEBUG(("RX: frame too long"));
+		netdev->in_errors++;
+		ret++;
+	}
+
+	if (bd->stat & RX_BD_SF) {
+		DEBUG(("RX: frame too short"));
+		netdev->in_errors++;
+		ret++;
+	}
+
+	if (bd->stat & RX_BD_DN) {
+		DEBUG(("RX: dribble nibble"));
+		netdev->in_errors++;
+	}
+
+	if (bd->stat & RX_BD_CRC) {
+		DEBUG(("RX: wrong CRC"));
+		netdev->in_errors++;
+		ret++;
+	}
+
+	if (bd->stat & RX_BD_OR) {
+		DEBUG(("RX: overrun"));
+		netdev->in_errors++;
+		ret++;
+	}
+
+	if (bd->stat & RX_BD_MISS)
+		netdev->in_errors++;
+
+	if (bd->stat & RX_BD_LC) {
+		DEBUG(("RX: late collision"));
+		netdev->collisions++;
+		ret++;
+	}
+
+	return ret;
+}
+
+static long ethoc_rx(struct netif *dev, long limit)
+{
+	struct ethoc *priv = dev->data;
+	long count;
+
+	for (count = 0; count < limit; ++count) {
+		long entry;
+		struct ethoc_bd bd;
+
+		entry = priv->num_tx + priv->cur_rx;
+		ethoc_read_bd(priv, entry, &bd);
+		if (bd.stat & RX_BD_EMPTY) {
+			ethoc_ack_irq(priv, INT_MASK_RX);
+			/* If packet (interrupt) came in between checking
+			 * BD_EMTPY and clearing the interrupt source, then we
+			 * risk missing the packet as the RX interrupt won't
+			 * trigger right away when we reenable it; hence, check
+			 * BD_EMTPY here again to make sure there isn't such a
+			 * packet waiting for us...
+			 */
+			ethoc_read_bd(priv, entry, &bd);
+			if (bd.stat & RX_BD_EMPTY)
+				break;
+		}
+
+		if (ethoc_update_rx_stats(priv, &bd) == 0) {
+			long size = bd.stat >> 16;
+			BUF *skb;
+
+			size -= 4; /* strip the CRC */
+			/*
+			 * netdev_alloc_skb_ip_align(); the frame is copied
+			 * to a longword aligned start
+			 */
+			skb = buf_alloc(size + 4 + 16, 16, BUF_NORMAL);
+
+			if (likely(skb)) {
+				void *src = priv->vma[entry];
+				short type;
+
+				skb->dstart = (char *)(((ulong) skb->dstart + 3) & ~3UL);
+				skb->dend = skb->dstart + size;
+				memcpy_fromio(skb->dstart, src, size);
+
+				/* eth_type_trans(): the packet filter sees the
+				 * frame before the header goes
+				 */
+				if (dev->bpf)
+					bpf_input(dev, skb);
+				type = eth_remove_hdr(skb);
+
+				/* netif_receive_skb(); if_input() frees the
+				 * buffer when its queue is full
+				 */
+				if (if_input(dev, skb, 0, type))
+					dev->in_errors++;
+				else
+					dev->in_packets++;
+			} else {
+				DEBUG(("low on memory - packet dropped"));
+
+				dev->in_errors++;
+				break;
+			}
+		}
+
+		/* clear the buffer descriptor so it can be reused */
+		bd.stat &= ~RX_BD_STATS;
+		bd.stat |=  RX_BD_EMPTY;
+		ethoc_write_bd(priv, entry, &bd);
+		if (++priv->cur_rx == priv->num_rx)
+			priv->cur_rx = 0;
+	}
+
+	return count;
+}
+
+static void ethoc_update_tx_stats(struct ethoc *dev, struct ethoc_bd *bd)
+{
+	struct netif *netdev = dev->netdev;
+
+	if (bd->stat & TX_BD_LC) {
+		DEBUG(("TX: late collision"));
+	}
+
+	if (bd->stat & TX_BD_RL) {
+		DEBUG(("TX: retransmit limit"));
+	}
+
+	if (bd->stat & TX_BD_UR) {
+		DEBUG(("TX: underrun"));
+	}
+
+	if (bd->stat & TX_BD_CS) {
+		DEBUG(("TX: carrier sense lost"));
+	}
+
+	if (bd->stat & TX_BD_STATS)
+		netdev->out_errors++;
+
+	netdev->collisions += (bd->stat >> 4) & 0xf;
+	netdev->out_packets++;
+}
+
+static long ethoc_tx(struct netif *dev, long limit)
+{
+	struct ethoc *priv = dev->data;
+	long count;
+	struct ethoc_bd bd;
+
+	for (count = 0; count < limit; ++count) {
+		long entry;
+
+		entry = priv->dty_tx & (priv->num_tx-1);
+
+		ethoc_read_bd(priv, entry, &bd);
+
+		if (bd.stat & TX_BD_READY || (priv->dty_tx == priv->cur_tx)) {
+			ethoc_ack_irq(priv, INT_MASK_TX);
+			/* If interrupt came in between reading in the BD
+			 * and clearing the interrupt source, then we risk
+			 * missing the event as the TX interrupt won't trigger
+			 * right away when we reenable it; hence, check
+			 * BD_EMPTY here again to make sure there isn't such an
+			 * event pending...
+			 */
+			ethoc_read_bd(priv, entry, &bd);
+			if (bd.stat & TX_BD_READY ||
+			    (priv->dty_tx == priv->cur_tx))
+				break;
+		}
+
+		ethoc_update_tx_stats(priv, &bd);
+		priv->dty_tx++;
+	}
+
+	if ((priv->cur_tx - priv->dty_tx) <= (priv->num_tx / 2))
+		netif_wake_queue(dev);
+
+	return count;
+}
+
+/* called from svethlana_interrupt at IPL 6, or from ethoc_tx_timeout() */
+long _cdecl ethoc_interrupt(void)
+{
+	struct ethoc *priv = &ethoc_priv;
+	struct netif *dev = priv->netdev;
+	u32 pending;
+	u32 mask;
+
+	/* Figure out what triggered the interrupt...
+	 * The tricky bit here is that the interrupt source bits get
+	 * set in INT_SOURCE for an event regardless of whether that
+	 * event is masked or not.  Thus, in order to figure out what
+	 * triggered the interrupt, we need to remove the sources
+	 * for all events that are currently masked.  This behaviour
+	 * is not particularly well documented but reasonable...
+	 */
+	mask = ethoc_read(priv, INT_MASK);
+	pending = ethoc_read(priv, INT_SOURCE);
+	pending &= mask;
+
+	if (unlikely(pending == 0))
+		return IRQ_NONE;
+
+	ethoc_ack_irq(priv, pending);
+
+	/* We always handle the dropped packet interrupt */
+	if (pending & INT_MASK_BUSY) {
+		/* rx_dropped */
+		dev->in_errors++;
+	}
+
+	/* Handle receive/transmit event by switching to polling */
+	if (pending & (INT_MASK_TX | INT_MASK_RX)) {
+		ethoc_disable_irq(priv, INT_MASK_TX | INT_MASK_RX);
+		napi_schedule(priv);
+	}
+
+	return IRQ_HANDLED;
+}
+
+static long ethoc_get_mac_address(struct netif *dev, void *addr)
+{
+	struct ethoc *priv = dev->data;
+	u8 *mac = (u8 *)addr;
+	u32 reg;
+
+	reg = ethoc_read(priv, MAC_ADDR0);
+	mac[2] = (reg >> 24) & 0xff;
+	mac[3] = (reg >> 16) & 0xff;
+	mac[4] = (reg >>  8) & 0xff;
+	mac[5] = (reg >>  0) & 0xff;
+
+	reg = ethoc_read(priv, MAC_ADDR1);
+	mac[0] = (reg >>  8) & 0xff;
+	mac[1] = (reg >>  0) & 0xff;
+
+	return 0;
+}
+
+static void _cdecl ethoc_poll(PROC *p, long arg)
+{
+	struct ethoc *priv = (struct ethoc *) arg;
+	long budget = NAPI_POLL_WEIGHT;
+	long rx_work_done = 0;
+	long tx_work_done = 0;
+
+	UNUSED(p);
+
+	priv->napi = NULL;
+
+	rx_work_done = ethoc_rx(priv->netdev, budget);
+	tx_work_done = ethoc_tx(priv->netdev, budget);
+
+	if (rx_work_done < budget && tx_work_done < budget) {
+		napi_complete_done(priv);
+		ethoc_enable_irq(priv, INT_MASK_TX | INT_MASK_RX);
+	} else {
+		/* budget used up, poll again before reenabling interrupts */
+		__napi_schedule(priv, 0);
+	}
+}
+
+static long ethoc_mdio_read(struct mii_bus *bus, long phy, long reg)
+{
+	struct ethoc *priv = bus->priv;
+	long i;
+
+	ethoc_write(priv, MIIADDRESS, MIIADDRESS_ADDR(phy, reg));
+	ethoc_write(priv, MIICOMMAND, MIICOMMAND_READ);
+
+	for (i = 0; i < 5; i++) {
+		u32 status = ethoc_read(priv, MIISTATUS);
+		if (!(status & MIISTATUS_BUSY)) {
+			u32 data = ethoc_read(priv, MIIRX_DATA);
+			/* reset MII command register */
+			ethoc_write(priv, MIICOMMAND, 0);
+			return data;
+		}
+		udelay(100);
+	}
+
+	return EBUSY;
+}
+
+static long ethoc_mdio_write(struct mii_bus *bus, long phy, long reg, u16 val)
+{
+	struct ethoc *priv = bus->priv;
+	long i;
+
+	ethoc_write(priv, MIIADDRESS, MIIADDRESS_ADDR(phy, reg));
+	ethoc_write(priv, MIITX_DATA, val);
+	ethoc_write(priv, MIICOMMAND, MIICOMMAND_WRITE);
+
+	for (i = 0; i < 5; i++) {
+		u32 stat = ethoc_read(priv, MIISTATUS);
+		if (!(stat & MIISTATUS_BUSY)) {
+			/* reset MII command register */
+			ethoc_write(priv, MIICOMMAND, 0);
+			return 0;
+		}
+		udelay(100);
+	}
+
+	return EBUSY;
+}
+
+
+static void ethoc_mdio_poll(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+	struct phy_device *phydev = priv->phydev;
+	long changed = 0;
+	u32 mode;
+
+	if (priv->old_link != phydev->link) {
+		changed = 1;
+		priv->old_link = phydev->link;
+	}
+
+	if (priv->old_duplex != phydev->duplex) {
+		changed = 1;
+		priv->old_duplex = phydev->duplex;
+	}
+
+	if (!changed)
+		return;
+
+	mode = ethoc_read(priv, MODER);
+	if (phydev->duplex == DUPLEX_FULL)
+		mode |= MODER_FULLD;
+	else
+		mode &= ~MODER_FULLD;
+	ethoc_write(priv, MODER, mode);
+
+	phy_print_status(phydev);
+}
+
+static long ethoc_mdio_probe(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+	struct phy_device *phy;
+	long err;
+
+	if (priv->phy_id != -1)
+		phy = mdiobus_get_phy(priv->mdio, priv->phy_id);
+	else
+		phy = phy_find_first(priv->mdio);
+
+	if (!phy) {
+		ALERT(("svethlana: no PHY found"));
+		return ENXIO;
+	}
+
+	priv->old_duplex = -1;
+	priv->old_link = -1;
+
+	err = phy_connect_direct(dev, phy, ethoc_mdio_poll);
+	if (err) {
+		ALERT(("svethlana: could not attach to PHY"));
+		return err;
+	}
+	/* phy_attach_direct() sets dev->phydev */
+	priv->phydev = phy;
+
+	phy_set_max_speed(phy, SPEED_100);
+
+	return 0;
+}
+
+static long ethoc_open(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+
+	/* request_irq(): the vector is installed once, in driver_init() */
+
+	napi_enable(priv);
+
+	ethoc_init_ring(priv, (unsigned long) priv->membase);
+	ethoc_reset(priv);
+
+	if (priv->queue_stopped) {
+		DEBUG((" resuming queue"));
+		netif_wake_queue(dev);
+	} else {
+		DEBUG((" starting queue"));
+		netif_start_queue(priv);
+	}
+
+	priv->old_link = -1;
+	priv->old_duplex = -1;
+
+	phy_start(priv->phydev);
+
+	return 0;
+}
+
+static long ethoc_stop(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+
+	napi_disable(priv);
+
+	if (priv->phydev)
+		phy_stop(priv->phydev);
+
+	ethoc_disable_rx_and_tx(priv);
+
+	/* free_irq(): the vector stays, so the MAC is silenced instead */
+	ethoc_disable_irq(priv, INT_MASK_ALL);
+	ethoc_ack_irq(priv, INT_MASK_ALL);
+
+	if (!priv->queue_stopped)
+		netif_stop_queue(priv);
+
+	return 0;
+}
+
+static void ethoc_do_set_mac_address(struct netif *dev)
+{
+	const unsigned char *mac = dev->hwlocal.adr.bytes;
+	struct ethoc *priv = dev->data;
+
+	ethoc_write(priv, MAC_ADDR0, ((u32) mac[2] << 24) | ((u32) mac[3] << 16) |
+				     ((u32) mac[4] <<  8) | ((u32) mac[5] <<  0));
+	ethoc_write(priv, MAC_ADDR1, ((u32) mac[0] <<  8) | ((u32) mac[1] <<  0));
+}
+
+/* is_valid_ether_addr(): not multicast, not all zeros */
+static long is_valid_ether_addr(const u8 *addr)
+{
+	long i;
+
+	if (addr[0] & 0x01)
+		return 0;
+
+	for (i = 0; i < ETH_ALEN; i++)
+		if (addr[i])
+			return 1;
+
+	return 0;
+}
+
+/*
+ * eth_hw_addr_random(): a locally administered address. The kernel has
+ * no entropy source, the 200 Hz counter and the time of day will do for
+ * a fallback that is reported at boot.
+ */
+static void eth_hw_addr_random(struct netif *dev)
+{
+	u8 *addr = dev->hwlocal.adr.bytes;
+	u32 r = *(volatile u32 *) 0x4baUL;
+	long i;
+
+	if (KERNEL->xtime)
+		r ^= KERNEL->xtime->tv_sec ^ (KERNEL->xtime->tv_usec << 12);
+
+	for (i = 0; i < ETH_ALEN; i++) {
+		r = r * 1103515245UL + 12345UL;
+		addr[i] = r >> 24;
+	}
+
+	addr[0] &= 0xfe;	/* clear multicast bit */
+	addr[0] |= 0x02;	/* set local assignment bit (IEEE802) */
+}
+
+static long ethoc_set_mac_address(struct netif *dev, const void *p)
+{
+	const u8 *addr = p;
+
+	if (!is_valid_ether_addr(addr))
+		return EADDRNOTAVAIL;
+	memcpy(dev->hwlocal.adr.bytes, addr, ETH_ALEN);
+	ethoc_do_set_mac_address(dev);
+	return 0;
+}
+
+/*
+ * ether_crc(): the FCS polynomial over the address, bit 26 upwards select
+ * the hash bit.
+ */
+static u32 ether_crc(long length, const u8 *data)
+{
+	long crc = -1;
+
+	while (--length >= 0) {
+		u8 current_octet = *data++;
+		long bit;
+
+		for (bit = 0; bit < 8; bit++, current_octet >>= 1) {
+			crc = (crc << 1) ^
+				((crc < 0) ^ (current_octet & 1) ? 0x04c11db7L : 0);
+		}
+	}
+
+	return crc;
+}
+
+/*
+ * The multicast list of Linux is the per-hash-bit reference count kept
+ * by svethlana_igmp_mac_filter().
+ */
+static void ethoc_set_multicast_list(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+	u32 mode = ethoc_read(priv, MODER);
+	u32 hash[2] = { 0, 0 };
+
+	/* set loopback mode if requested */
+	if (dev->flags & IFF_LOOPBACK)
+		mode |=  MODER_LOOP;
+	else
+		mode &= ~MODER_LOOP;
+
+	/* receive broadcast frames if requested */
+	if (dev->flags & IFF_BROADCAST)
+		mode &= ~MODER_BRO;
+	else
+		mode |=  MODER_BRO;
+
+	/* enable promiscuous mode if requested */
+	if (dev->flags & IFF_PROMISC)
+		mode |=  MODER_PRO;
+	else
+		mode &= ~MODER_PRO;
+
+	ethoc_write(priv, MODER, mode);
+
+	/* receive multicast frames */
+	if (dev->flags & IFF_ALLMULTI) {
+		hash[0] = 0xffffffffUL;
+		hash[1] = 0xffffffffUL;
+	} else {
+		long bit;
+
+		for (bit = 0; bit < 64; bit++)
+			if (priv->mc_refcnt[bit])
+				hash[bit >> 5] |= 1UL << (bit & 0x1f);
+	}
+
+	ethoc_write(priv, ETH_HASH0, hash[0]);
+	ethoc_write(priv, ETH_HASH1, hash[1]);
+}
+
+/* ethoc_change_mtu() returns -ENOSYS: the MTU stays at 1500 */
+
+/* the netdev watchdog's tx_timeout, called by svethlana_timeout() */
+static void ethoc_tx_timeout(struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+	u32 pending = ethoc_read(priv, INT_SOURCE);
+	if (likely(pending)) {
+		ushort sr = spl7();
+		ethoc_interrupt();
+		spl(sr);
+	}
+}
+
+/*
+ * The buffer is the Linux skb: dstart to dend hold the complete Ethernet
+ * frame. It is consumed here, whether it was sent or dropped.
+ * skb_put_padto() becomes zero padding in the DMA buffer.
+ */
+static long ethoc_start_xmit(BUF *skb, struct netif *dev)
+{
+	struct ethoc *priv = dev->data;
+	struct ethoc_bd bd;
+	long entry;
+	long len = skb->dend - skb->dstart;
+	long padded_len = len < ETHOC_ZLEN ? ETHOC_ZLEN : len;
+	void *dest;
+	ushort sr;
+
+	if (unlikely(len > ETHOC_BUFSIZ)) {
+		dev->out_errors++;
+		goto out;
+	}
+
+	entry = priv->cur_tx % priv->num_tx;
+	sr = spl7();
+	priv->cur_tx++;
+
+	ethoc_read_bd(priv, entry, &bd);
+	if (unlikely(padded_len < ETHOC_ZLEN))
+		bd.stat |=  TX_BD_PAD;
+	else
+		bd.stat &= ~TX_BD_PAD;
+
+	dest = priv->vma[entry];
+	memcpy_toio(dest, skb->dstart, len);
+	if (padded_len > len)
+		memset_io((char *) dest + len, 0, padded_len - len);
+
+	bd.stat &= ~(TX_BD_STATS | TX_BD_LEN_MASK);
+	bd.stat |= TX_BD_LEN(padded_len);
+	ethoc_write_bd(priv, entry, &bd);
+
+	bd.stat |= TX_BD_READY;
+	ethoc_write_bd(priv, entry, &bd);
+
+	if (priv->cur_tx == (priv->dty_tx + priv->num_tx)) {
+		DEBUG(("stopping queue"));
+		netif_stop_queue(priv);
+	}
+
+	spl(sr);
+out:
+	buf_deref(skb, BUF_NORMAL);
+	return 0;
+}
+
+/**
+ * ethoc_probe - initialize OpenCores ethernet MAC
+ * @netdev:	the interface
+ * @hwaddr:	the address from SVETHLAN.INF, all zeros if there was none
+ *
+ * The resources come from sv_regs.h and driver_init() instead of the
+ * platform device.
+ */
+static long ethoc_probe(struct netif *netdev, char *membase, const u8 *hwaddr)
+{
+	struct ethoc *priv = NULL;
+	long num_bd;
+	long ret = 0;
+
+	netdev->data = priv = &ethoc_priv;
+	priv->netdev = netdev;
+
+	priv->iobase = (char *) ATARI_SVETHLANA_PHYS_ADDR;
+	priv->membase = membase;
+
+	/*
+	 * The MAC may still be running from before a warm boot, and must not
+	 * raise anything before the vector is ours.
+	 */
+	ethoc_write(priv, MODER, 0);
+	ethoc_write(priv, INT_MASK, 0);
+	ethoc_ack_irq(priv, INT_MASK_ALL);
+
+	/* calculate the number of TX/RX buffers, maximum 128 supported */
+	num_bd = SVETHLANA_BUF_SIZE / ETHOC_BUFSIZ;
+	if (num_bd > 128)
+		num_bd = 128;
+	if (num_bd < 4) {
+		ret = ENODEV;
+		goto free;
+	}
+	priv->num_bd = num_bd;
+	/* num_tx must be a power of two */
+	priv->num_tx = 1;
+	while (priv->num_tx * 2 <= (num_bd >> 1))
+		priv->num_tx *= 2;
+	priv->num_rx = num_bd - priv->num_tx;
+
+	DEBUG(("ethoc: num_tx: %ld num_rx: %ld", priv->num_tx, priv->num_rx));
+
+	priv->vma = ethoc_vma;
+
+	/* Allow the platform setup code to pass in a MAC address. */
+	memcpy(netdev->hwlocal.adr.bytes, hwaddr, ETH_ALEN);
+	priv->phy_id = -1;
+
+	/* Check that the given MAC address is valid. If it isn't, read the
+	 * current MAC from the controller.
+	 */
+	if (!is_valid_ether_addr(netdev->hwlocal.adr.bytes)) {
+		u8 addr[ETH_ALEN];
+
+		ethoc_get_mac_address(netdev, addr);
+		memcpy(netdev->hwlocal.adr.bytes, addr, ETH_ALEN);
+	}
+
+	/* Check the MAC again for validity, if it still isn't choose and
+	 * program a random one.
+	 */
+	if (!is_valid_ether_addr(netdev->hwlocal.adr.bytes)) {
+		eth_hw_addr_random(netdev);
+		c_conws("SVEthlana: no address in SVETHLAN.INF, using a random one\r\n");
+	}
+
+	ethoc_do_set_mac_address(netdev);
+
+	/* The MII management bus clock is left at its reset value, as on
+	 * Linux, where the Atari platform data carries no eth_clkfreq.
+	 */
+
+	/* register MII bus */
+	priv->mdio = &ethoc_mdio;
+	priv->mdio->read = ethoc_mdio_read;
+	priv->mdio->write = ethoc_mdio_write;
+	priv->mdio->priv = priv;
+
+	ret = ethoc_mdio_probe(netdev);
+	if (ret) {
+		ALERT(("svethlana: failed to probe MDIO bus"));
+		goto free;
+	}
+
+	return 0;
+
+free:
+	return ret;
+}
+
+
+/*
+ * The MiNTNet side: what net_device, its ops and arch/m68k/atari/config.c
+ * do on Linux.
+ */
+
 static long	svethlana_open		(struct netif *);
 static long	svethlana_close		(struct netif *);
 static long	svethlana_output	(struct netif *, BUF *, const char *, short, short);
 static long	svethlana_ioctl		(struct netif *, short, long);
 static long	svethlana_config	(struct netif *, struct ifopt *);
-
-//does actual sending of packets for svethlana_output() and svethlana_service()
-static long send_packet			(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint32 slot, uint32 last_packet);
-
-// Service function to check for incoming and outgoing packets
-static void svethlana_service (struct netif * nif, uint32 int_src);
-
-// For our interrupt
-static void svethlana_install_int (void);
-
-void Init_BD(void);
-int32 Check_Rx_Buffers(void);
-
-
-/* Convert single hex char to short */
-short ch2i(char);
-
-// Convert long to hex ascii
-void hex2ascii(ulong l, uchar* c);
-
-
-// Variable for locking out interrupt when accessing the hardware
-//static volatile int in_use = 0;
-
-// If this variable equals 1, then the interrupt will do nothing until init is done (=0)
-static volatile int initializing = 1;
-
-//static volatile int autoneg = 0;
-
-// Keep track of when sending so we don't get fooled by TXEMPTY
-//static volatile int sending = 0;
-
-//handle for all logging
-//static ushort loghandle;
-
-static char message[100];
-
-//global MAC address in longword format for RX use
-static unsigned long mac_addr[2];
-
-//next TX slot to be used
-static volatile uint32	slot_index = 0UL;
-
-//We keep track of which slot we checked last time this function was called.
-//Since the MAC controller probably does round robin on the RX slots, we
-//shouldn't require Mintnet to reorganise our packets, if we always started
-//with checking slot 0.
-static uint32 cur_rx_slot = 0;
-
-//static volatile uint32	has_printed_functions = 0UL;
-
-//static volatile uint32	in_queue = 0UL;
-
-//static uchar upperleft[] = {27,'H',0};
-//static uchar col40[] = {27,'Y',32,72,0};
-
-//This is the pointer to the whole memory block for all the packet buffers needed.
-//It's allocated in Init_BD() and deallocated at shutdown. The allocation is and
-//must be done in SuperVidel video RAM (DDR RAM).
-static char* packets_base = 0;
+static void	svethlana_igmp_mac_filter (struct netif *, ulong, char);
+static void	svethlana_timeout	(struct netif *);
 
 /*
  * This gets called when someone makes an 'ifconfig up' on this interface
@@ -152,20 +1263,14 @@ static char* packets_base = 0;
 static long
 svethlana_open (struct netif *nif)
 {
-//	short		tmp;
+	long error;
 
-//	in_use = 1;
+	error = ethoc_open (nif);
+	if (error)
+		return error;
 
-//	c_conws("Svethlana up!\r\n");
-
-	//enable RX, RX error, TX, TX error and Busy int sources
-	ETH_INT_MASK = ETH_INT_MASK_RXF | ETH_INT_MASK_RXE | ETH_INT_MASK_TXE | ETH_INT_MASK_TXB | ETH_INT_MASK_BUSY;
-
-	//Enable Transmit, full duplex, and CRC appending
-	ETH_MODER = ETH_MODER_TXEN | ETH_MODER_RXEN | ETH_MODER_FULLD | ETH_MODER_CRCEN | ETH_MODER_RECSMALL | ETH_MODER_PAD;
-
-	initializing = 0;
-//	in_use = 0;
+	/* __dev_open() applies the receive mode after ndo_open */
+	ethoc_set_multicast_list (nif);
 
 	return 0;
 }
@@ -177,17 +1282,7 @@ svethlana_open (struct netif *nif)
 static long
 svethlana_close (struct netif *nif)
 {
-	// disable RX and TX
-	ETH_MODER = 0;
-
-	//disable RX and RX error int sources BEFORE removing I6 handler
-	ETH_INT_MASK = 0;
-
-	c_conws("Svethlana down!\r\n");
-
-	initializing = 1;
-
-	return 0;
+	return ethoc_stop (nif);
 }
 
 /*
@@ -220,7 +1315,7 @@ svethlana_close (struct netif *nif)
  * You can dequeue a packet later by doing:
  *	buf = if_dequeue (&nif->snd);
  *
- * This will return NULL if no more packets are left in the queue.
+ * This will return NULL is no more packets are left in the queue.
  *
  * The buffer handling uses the structure BUF that is defined in buf.h.
  * Basically a BUF looks like this:
@@ -303,205 +1398,33 @@ svethlana_close (struct netif *nif)
  *	eth_remove_hdr ();
  *	addroottimeout (..., ..., 1);
  */
-
-
+/* ndo_start_xmit with the qdisc in front of it */
 static long
 svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
-	BUF			*nbuf;
-	int32			result;
-//	unsigned char	littlemem;
-//	static	uchar	message[100];
+	struct ethoc *priv = nif->data;
+	BUF *nbuf;
 
-//	unsigned long	timeval;
-
-
-	//c_conws("Output\r\n");		//debug
-
-	//*ETH_REG = (*ETH_REG) | 0x80;	//enable LED2
-
-	/*
-	 * Attach eth header. MintNet provides you with the eth_build_hdr
-	 * function that attaches an ethernet header to the packet in
-	 * buf. It takes the BUF (buf), the interface (nif), the hardware
-	 * address (hwaddr) and the packet type (pktype).
-	 *
-	 * Returns NULL if the header could not be attached (the passed
-	 * buf is thrown away in this case).
-	 *
-	 * Otherwise a pointer to a new BUF with the packet and attached
-	 * header is returned and the old buf pointer is no longer valid.
-	 */
 	nbuf = eth_build_hdr (buf, nif, hwaddr, pktype);
-	if ( ((uint32)nbuf) == 0UL)
+	if (nbuf == NULL)
 	{
-		//c_conws("eth_build_hdr() failed!\r\n");
 		nif->out_errors++;
-		//*ETH_REG = (*ETH_REG) & 0x7F;	//disable LED2
 		return ENOMEM;
 	}
-	nif->out_packets++;
 
-	/*
-	 * Here you should either send the packet to the hardware or
-	 * enqueue the packet and send the next packet as soon as
-	 * the hardware is finished.
-	 *
-	 * If you are done sending the packet free it with buf_deref().
-	 *
-	 * Before sending it pass it to the packet filter.
-	 */
 	if (nif->bpf)
 		bpf_input (nif, nbuf);
 
-
-	//in_use = 1;											//don't let interrupt disturb us now
-
-	// Check available memory in LAN91C111
-	//Eth_set_bank(0);
-//	littlemem = (*LAN_MIR) & 0x00ff;
-//	if (len == 0)
-//	{
-//		c_conws("Insufficient memory in LAN91C111!\r\n");
-//	}
-
-	//shut out TX and RX interrupt, so we can send our packet safely
-//	ETH_INT_MASK = 0UL;
-	//Turn off interrupts completely
-	int_off();
-
-	result = send_packet(nif, nbuf, BUF_NORMAL, slot_index, slot_index == (ETH_PKT_BUFFS-1) );
-
-	int_on();
-
-	if(result == 0L)
+	if (priv->queue_stopped)
 	{
-		//Use the next TX slot for next packet to send
-		slot_index = (slot_index + 1) & (ETH_PKT_BUFFS-1);
-	}
-	else if(result == -2L)
-	{
-//		//packet too large, just throw away
-//		buf_deref(nbuf, BUF_NORMAL);
-
-		//Turn on TX interrupt sources again
-//		ETH_INT_MASK = ETH_INT_MASK_RXF | ETH_INT_MASK_RXE | ETH_INT_MASK_TXE | ETH_INT_MASK_TXB;
-
-		c_conws("Sveth_output: too large\r\n");
-
-//		int_on();
-//		return EMSGSIZE;
-		return E_OK;
-	}
-	else
-	{
-		//no free buffer, enqueue the nbuf and wait for TX interrupt
-		if_enqueue (&nif->snd, nbuf, nbuf->info);
-//		in_queue++;
+		/* if_enqueue() frees the buffer when the queue is full */
+		if (if_enqueue (&nif->snd, nbuf, nbuf->info))
+			nif->out_errors++;
+		return 0;
 	}
 
-	//Turn on TX and RX interrupt sources again
-//	ETH_INT_MASK = ETH_INT_MASK_RXF | ETH_INT_MASK_RXE | ETH_INT_MASK_TXE | ETH_INT_MASK_TXB;
-
-	//*ETH_REG = (*ETH_REG) & 0x7F;	//disable LED2
-	return E_OK;
+	return ethoc_start_xmit (nbuf, nif);
 }
-
-
-/*This function sends a packet, but it should only be called by svethlana_output() or
-  the svethlana_service() routine.
-*/
-//There is a risk that the TX ISR gets here too, when the svethlana_output() (working in usermode)
-//is alredy writing a packet to the MAC controller. Therefore TX interrupt must be shut off before
-//calling send_packet(). This assumes that a TX interrupt is not missed while the TXIE is disabled (check
-//this in the MAC controller docs).
-static long send_packet	(struct netif *nif, BUF *nbuf, long buf_alloc_type, uint32 slot, uint32 last_packet)
-{
-	uint32					 i;
-	volatile	uint32 j;
-	volatile	uint32 *datapnt;
-	volatile	uint32 *eth_dst_pnt;
-	uint32					 rounded_len;
-	uint32					 origlen;
-//	uchar	message[80];
-
-
-	//calculate packet length
-	origlen = (nbuf->dend) - (nbuf->dstart);
-
-	//Round the packet length up to even 4 bytes
-	rounded_len = (origlen + 3) & 0xFFFC;
-
-	//If the packet is greater than 1536 we return error
-	if (rounded_len > 1536UL)
-	{
-		//we have no intention to send this packet, so just free it
-		buf_deref (nbuf, buf_alloc_type);
-		return -2;
-	}
-
-	//Check the wanted TX BD slot if it's free
-	if (((uint32)(eth_tx_bd[slot].len_ctrl & ETH_TX_BD_READY)) != 0UL)
-		return -1;
-
-	//Divide rounded len by 4
-	rounded_len = rounded_len >> 2;
-
-	//Write packet data
-//	eth_dst_pnt = &ETH_DATA_BASE_PNT[slot * (1536/4)];
-	eth_dst_pnt = (uint32*)(eth_tx_bd[slot].data_pnt);
-	datapnt = (uint32*)nbuf->dstart;
-	for(i=0; i < rounded_len; i++)
-	{
-		/*
-		if (eth_dst_pnt == 0UL)
-		{
-			c_conws("Send_packet: eth_dst_pnt is 0\r\n");
-			//Bconin(2);
-		}
-		if (datapnt == 0UL)
-		{
-			c_conws("Send_packet: datapnt is 0\r\n");
-			//Bconin(2);
-		}
-		*/
-
-		*eth_dst_pnt++ = *datapnt++;
-	}
-
-/*
-	if ((((uint32)eth_dst_pnt) > (ETH_DATA_BASE_ADDR + (1536*2))) ||
-		(((uint32)eth_dst_pnt) < ETH_DATA_BASE_ADDR))
-	{
-		c_conws("Send_packet: eth_dst_pnt outside tx slots!\r\n");
-	}
-	*/
-
-	//Dummy loop to wait for the CT60 write FIFO to empty
-	for (j = 0; j < 1000; j++)
-	{
-		asm("nop;");
-	}
-
-	//Write length of data, BD ready, BD CRC enable
-	//We set the wrap bit if this packet is the last one in a sequence (may be just this packet too).
-	if(last_packet)
-		eth_tx_bd[slot].len_ctrl = (uint32)(origlen << 16) | ETH_TX_BD_READY | ETH_TX_BD_IRQ | ETH_TX_BD_CRC | ETH_TX_BD_WRAP;
-	else
-		eth_tx_bd[slot].len_ctrl = (uint32)(origlen << 16) | ETH_TX_BD_READY | ETH_TX_BD_IRQ | ETH_TX_BD_CRC;
-
-	//ksprintf (message, "T%02lu 0x%08lx\r\n", slot, eth_tx_bd[slot].len_ctrl);
-	//c_conws (message);
-
-	buf_deref (nbuf, buf_alloc_type);						//free buf because contents of packet
-																							//is now in the MAC controller
-
-	return 0L;
-}
-
-
-
-
 
 /*
  * MintNet notifies you of some noteable IOCLT's. Usually you don't
@@ -517,30 +1440,29 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 {
 	struct ifreq *ifr;
 
-
-//	c_conws("ioctl\r\n");		//debug
-
-
 	switch (cmd)
 	{
 		case SIOCSIFNETMASK:
-		case SIOCSIFFLAGS:
 		case SIOCSIFADDR:
+			return 0;
+
+		case SIOCSIFFLAGS:
+			/* ndo_set_rx_mode */
+			if (nif->flags & IFF_UP)
+				ethoc_set_multicast_list (nif);
 			return 0;
 
 		case SIOCSIFMTU:
 			/*
-			 * Limit MTU to 1500 bytes. MintNet has alraedy set nif->mtu
-			 * to the new value, we only limit it here.
+			 * ethoc_change_mtu() refuses everything, the frame
+			 * buffers are ETHOC_BUFSIZ. MintNet has already set
+			 * nif->mtu to the new value, we only limit it here.
 			 */
 			if (nif->mtu > ETH_MAX_DLEN)
 				nif->mtu = ETH_MAX_DLEN;
 			return 0;
 
 		case SIOCSIFOPT:
-			/*
-			 * Interface configuration, handled by dummy_config()
-			 */
 			ifr = (struct ifreq *) arg;
 			return svethlana_config (nif, ifr->ifru.data);
 	}
@@ -548,16 +1470,13 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 	return ENOSYS;
 }
 
-
-
-
 /*
  * Interface configuration via SIOCSIFOPT. The ioctl is passed a
  * struct ifreq *ifr. ifr->ifru.data points to a struct ifopt, which
  * we get as the second argument here.
  *
  * If the user MUST configure some parameters before the interface
- * can run make sure that dummy_open() fails unless all the necessary
+ * can run make sure that svethlana_open() fails unless all the necessary
  * parameters are set.
  *
  * Return values	meaning
@@ -568,104 +1487,157 @@ svethlana_ioctl (struct netif *nif, short cmd, long arg)
 static long
 svethlana_config (struct netif *nif, struct ifopt *ifo)
 {
-//	c_conws("Config\r\n");
-
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
 
 	if (!STRNCMP ("hwaddr"))
 	{
-#ifdef SVETHLANA_DEBUG
-		uchar *cp;
-#endif
 		/*
-		 * Set hardware address
+		 * Set hardware address, ndo_set_mac_address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
-#ifdef SVETHLANA_DEBUG
-		cp = nif->hwlocal.adr.bytes;
-		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
-			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
-#endif
+		return ethoc_set_mac_address (nif, ifo->ifou.v_string);
 	}
 	else if (!STRNCMP ("braddr"))
 	{
-#ifdef SVETHLANA_DEBUG
-		uchar *cp;
-#endif
 		/*
 		 * Set broadcast address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
-#ifdef SVETHLANA_DEBUG
-		cp = nif->hwbrcst.adr.bytes;
-		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
-			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
-#endif
-	}
-	else if (!STRNCMP ("debug"))
-	{
-		/*
-		 * turn debuggin on/off
-		 */
-		if (ifo->valtype != IFO_INT)
-			return ENOENT;
-		DEBUG (("dummy: debug level is %ld", ifo->ifou.v_long));
-	}
-	else if (!STRNCMP ("log"))
-	{
-		/*
-		 * set log file
-		 */
-		if (ifo->valtype != IFO_STRING)
-			return ENOENT;
-		DEBUG (("dummy: log file is %s", ifo->ifou.v_string));
+		return 0;
 	}
 
 	return ENOSYS;
 }
 
-
-
-void Init_BD()
+/*
+ * The IGMP code reports groups one at a time; Linux recomputes the hash
+ * from the complete list, so the users of every hash bit are counted.
+ */
+static void
+svethlana_igmp_mac_filter (struct netif *nif, ulong group, char action)
 {
-	uint32_t	i;
-	char*			even_packet_base;
+	struct ethoc *priv = nif->data;
+	u8 addr[ETH_ALEN];
+	long bit;
 
-	packets_base = (char*) ct60_vmalloc(0, ETH_PKT_BUFFS * 2UL * 2048UL + 2048UL);
-	even_packet_base = (char*)((((unsigned long)packets_base) + 2047UL) & 0xFFFFF800UL);	//Make it all start at even 2048 bytes
+	/* ip_eth_mc_map(): 01:00:5e plus the low 23 bits of the group */
+	addr[0] = 0x01;
+	addr[1] = 0x00;
+	addr[2] = 0x5e;
+	addr[3] = (group >> 16) & 0x7f;
+	addr[4] = (group >>  8) & 0xff;
+	addr[5] = (group >>  0) & 0xff;
 
-	//Set number of TX packet BDs and RX BDs
-	ETH_TX_BD_NUM = ETH_PKT_BUFFS;
+	bit = (ether_crc (ETH_ALEN, addr) >> 26) & 0x3f;
 
-	//Init each BD ctrl longword
-	//Init all RX slots to empty, so they can receive a packet
-	//Init all data pointers, so they get 2048 bytes each.
-	for (i = 0; i < ETH_PKT_BUFFS; i++)
+	if (action == IGMP_ADD_MAC_FILTER)
 	{
-		if (i != (ETH_PKT_BUFFS-1))
-		{
-			eth_tx_bd[i].len_ctrl = ETH_TX_BD_CRC;																	// no wrap
-			eth_rx_bd[i].len_ctrl = ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ;								// no wrap
-		}
-		else
-		{
-			eth_tx_bd[i].len_ctrl = ETH_TX_BD_CRC   | ETH_TX_BD_WRAP;									// wrap on last TX BD
-			eth_rx_bd[i].len_ctrl = ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ | ETH_RX_BD_WRAP;	// wrap on last RX BD
-		}
-		eth_tx_bd[i].data_pnt = ((uint32_t)even_packet_base) + (i*2048UL);		//TX buffers come first
-		eth_rx_bd[i].data_pnt = ((uint32_t)even_packet_base) + ((ETH_PKT_BUFFS+i)*2048UL);		//then all RX buffers
+		if (priv->mc_refcnt[bit] < 255)
+			priv->mc_refcnt[bit]++;
+	}
+	else
+	{
+		if (priv->mc_refcnt[bit])
+			priv->mc_refcnt[bit]--;
 	}
 
+	if (nif->flags & IFF_UP)
+		ethoc_set_multicast_list (nif);
 }
 
+/*
+ * Called every IF_SLOWTIMEOUT (one second) while the interface is up.
+ * That is PHY_STATE_TIME, the Linux PHY polling period, and it also
+ * stands in for the netdev watchdog.
+ */
+static void
+svethlana_timeout (struct netif *nif)
+{
+	struct ethoc *priv = nif->data;
 
+	phy_state_machine (priv->phydev);
 
+	/* a poll that could not be scheduled for lack of a timeout */
+	if (priv->napi_scheduled && !priv->napi)
+		__napi_schedule (priv, 0);
 
+	/* netdev watchdog: the ring stays full only when completions stop */
+	if (priv->queue_stopped)
+	{
+		if (priv->watchdog++)
+			ethoc_tx_timeout (nif);
+	}
+	else
+		priv->watchdog = 0;
+}
 
+/*
+ * SVETHLAN.INF holds the address as 12 hex digits, optionally separated
+ * by ':' or '-'. This is the hwaddr the platform data carries on Linux,
+ * looked for in the current directory (the sysdir at boot) and then in
+ * the root of the boot drive.
+ */
+# define DriveToLetter(d) ((d) < 26 ? 'A' + (d) : (d) - 26 + '1')
+
+static long
+svethlana_read_inf (u8 *hwaddr)
+{
+	char buf[32];
+	char path[] = "A:\\SVETHLAN.INF";
+	long fd, n, i, digits = 0;
+	u8 value = 0;
+
+	memset (hwaddr, 0, ETH_ALEN);
+
+	fd = f_open ("svethlan.inf", O_RDONLY);
+	if (fd < 0)
+	{
+		path[0] = DriveToLetter (*(short *) 0x446L);
+		fd = f_open (path, O_RDONLY);
+	}
+	if (fd < 0)
+		return fd;
+
+	n = f_read (fd, sizeof (buf), buf);
+	f_close (fd);
+	if (n < 0)
+		return n;
+
+	for (i = 0; i < n && digits < 12; i++)
+	{
+		char c = buf[i];
+		u8 nibble;
+
+		if (c >= '0' && c <= '9')
+			nibble = c - '0';
+		else if (c >= 'a' && c <= 'f')
+			nibble = c - 'a' + 10;
+		else if (c >= 'A' && c <= 'F')
+			nibble = c - 'A' + 10;
+		else if (c == ':' || c == '-')
+			continue;
+		else
+			break;
+
+		value = (value << 4) | nibble;
+		if (digits & 1)
+			hwaddr[digits >> 1] = value;
+		digits++;
+	}
+
+	if (digits != 12)
+	{
+		memset (hwaddr, 0, ETH_ALEN);
+		return EINVAL;
+	}
+
+	return 0;
+}
+
+long driver_init (void);
 
 /*
  * Initialization. This is called when the driver is loaded. If you
@@ -681,571 +1653,129 @@ void Init_BD()
 long
 driver_init (void)
 {
-//	char message[50];
-	//static char eth_fname[128];
+	static char message[128];
+	struct netif *nif = &if_svethlana;
+	struct ethoc *priv;
+	u8 hwaddr[ETH_ALEN];
+	const u8 *mac;
+	u32 version;
+	long membase;
 
-	long	ferror;
-	short	fhandle;
-	char	macbuf[13];
-
-	c_conws("\r\n");
-	c_conws("********************************\r\n");
-	c_conws("*****   SVEthLANa driver   *****\r\n");
-	c_conws("********************************\r\n");
-
-	if (get_toscookie (COOKIE_SupV, NULL) != 0) {
-		c_conws("\r\nThis driver requires SV_XBIOS.PRG!\r\n");
-		Bconin(2);
+	/*
+	 * hwreg_present() and the version check of the Linux platform code.
+	 * The SuperVidel XBIOS is needed for the buffer memory anyway, and
+	 * its cookie proves the hardware is there before its registers are
+	 * touched.
+	 */
+	if (get_toscookie (COOKIE_SupV, NULL) != 0)
+	{
+		c_conws ("SVEthlana: SuperVidel XBIOS not found (no SupV cookie)\r\n");
 		return -1;
 	}
 
-	// Check that the SV version is at least 10
-	// Otherwise the FW doesn't have Ethernet DMA
+	version = *(volatile u32 *) ATARI_SV_VERSION_PHYS_ADDR & ATARI_SV_VERSION_MASK;
+	if (version < ATARI_SV_MIN_VERSION)
 	{
-		uint32 sv_fw_version = SV_VERSION & 0x3FFUL;
-
-		ksprintf (message, "SuperVidel FW version is %lu\r\n", sv_fw_version);
-		c_conws  (message);
-
-		if (sv_fw_version < 10)
-		{
-			c_conws( "\r\nThis driver needs at least SV FW version 10!\r\n" );
-			Bconin(2);
-			return -1;
-		}
+		ksprintf (message, "SVEthlana: SuperVidel firmware %lu is too old, %d or newer is required\r\n",
+			version, ATARI_SV_MIN_VERSION);
+		c_conws (message);
+		return -1;
 	}
 
-	// Open svethlan.inf to read the MAC address
-	if((ferror = Fopen("svethlan.inf",0)) < 0) { /* Try first in sysdir */
-		short sysdrv = *((short *) 0x446);	/* get the boot drive number */
-		char svethlan_inf[] = "A:\\SVETHLAN.INF";
-		svethlan_inf[0] = DriveToLetter(sysdrv);
-
-		ferror = Fopen(svethlan_inf,0);/* otherwise in boot drive's root */
-	}
-
-	if(ferror >= 0)
+	membase = ct60_vmalloc (0, SVETHLANA_BUF_SIZE + SVETHLANA_BUF_ALIGN);
+	if (membase == 0 || membase == -1)
 	{
-		fhandle = (short)(ferror & 0xffff);
-		memset(macbuf, 0, 13);
-		ferror = Fread(fhandle,12,macbuf);
-		if(ferror < 0)
-		{
-			c_conws ("\r\nError reading svethlan.inf!\r\n");
-			Fclose(fhandle);
-			return -1;
-		}
-		if(ferror < 12)
-		{
-			c_conws ("\r\nsvethlan.inf is less than 12 bytes long!\r\n");
-			Fclose(fhandle);
-			return -1;
-		}
-		Fclose(fhandle);
-
-		//print what we read from ethernat.inf
-		c_conws(macbuf);
-		c_conws("\r\n");
+		c_conws ("SVEthlana: cannot allocate the packet buffers in SuperVidel RAM\r\n");
+		return -1;
 	}
-	else
-	{
-		c_conws("Could not open svethlan.inf\r\n");
-		c_conws("Using default ethernet address 00:01:02:03:04:05\r\n");
-		macbuf[0] = '0';
-		macbuf[1] = '0';
-		macbuf[2] = '0';
-		macbuf[3] = '1';
-		macbuf[4] = '0';
-		macbuf[5] = '2';
-		macbuf[6] = '0';
-		macbuf[7] = '3';
-		macbuf[8] = '0';
-		macbuf[9] = '4';
-		macbuf[10] = '0';
-		macbuf[11] = '5';
-	}
+	membase = (membase + SVETHLANA_BUF_ALIGN - 1) & ~(SVETHLANA_BUF_ALIGN - 1);
 
-	macbuf[12] = 0;
-
-	// Extract MAC address from macbuf
-	if_svethlana.hwlocal.adr.bytes[0] = (uchar)(ch2i(macbuf[0]) * 16 + ch2i(macbuf[1]));
-	if_svethlana.hwlocal.adr.bytes[1] = (uchar)(ch2i(macbuf[2]) * 16 + ch2i(macbuf[3]));
-	if_svethlana.hwlocal.adr.bytes[2] = (uchar)(ch2i(macbuf[4]) * 16 + ch2i(macbuf[5]));
-	if_svethlana.hwlocal.adr.bytes[3] = (uchar)(ch2i(macbuf[6]) * 16 + ch2i(macbuf[7]));
-	if_svethlana.hwlocal.adr.bytes[4] = (uchar)(ch2i(macbuf[8]) * 16 + ch2i(macbuf[9]));
-	if_svethlana.hwlocal.adr.bytes[5] = (uchar)(ch2i(macbuf[10]) * 16 + ch2i(macbuf[11]));
-
-
-
-	/*
-	 * The actual init of the hardware
-	 *
-	 */
-	//Then write to the MODER register to reset the MAC controller
-	ETH_MODER = ETH_MODER_RST;
-
-	//Then release reset of the MAC controller
-	ETH_MODER = 0L;
-
-	//Set MAC address in MAC controller
-	ETH_MAC_ADDR1 = (((uint32)(if_svethlana.hwlocal.adr.bytes[0])) <<  8) +
-					(((uint32)(if_svethlana.hwlocal.adr.bytes[1])) <<  0);
-	ETH_MAC_ADDR0 = (((uint32)(if_svethlana.hwlocal.adr.bytes[2])) << 24) +
-					(((uint32)(if_svethlana.hwlocal.adr.bytes[3])) << 16) +
-					(((uint32)(if_svethlana.hwlocal.adr.bytes[4])) <<  8) +
-					(((uint32)(if_svethlana.hwlocal.adr.bytes[5])) <<  0);
-
-	//Inter packet gap
-	ETH_IPGT = 0x15UL;
-
-
-	//Create longword MAC address for RX use
-	mac_addr[0] = (((unsigned long)(if_svethlana.hwlocal.adr.bytes[0])) << 24) +
-					  (((unsigned long)(if_svethlana.hwlocal.adr.bytes[1])) << 16) +
-					  (((unsigned long)(if_svethlana.hwlocal.adr.bytes[2])) <<  8) +
-					  (((unsigned long)(if_svethlana.hwlocal.adr.bytes[3])));
-
-	mac_addr[1] = (((unsigned long)(if_svethlana.hwlocal.adr.bytes[4])) << 24) +
-					  (((unsigned long)(if_svethlana.hwlocal.adr.bytes[5])) << 16);
-
-
-	Init_BD();
-
-
-	/*********************************************
-	 * Here comes functions not using the hardware
-	 *********************************************
-	 */
+	svethlana_read_inf (hwaddr);
 
 	/*
 	 * Set interface name
 	 */
-	strcpy (if_svethlana.name, "en");
-
+	strcpy (nif->name, "en");
 	/*
 	 * Set interface unit. if_getfreeunit("name") returns a yet
 	 * unused unit number for the interface type "name".
 	 */
-	if_svethlana.unit = if_getfreeunit ("en");
-
+	nif->unit = if_getfreeunit ("en");
 	/*
 	 * Alays set to zero
 	 */
-	if_svethlana.metric = 0;
-
+	nif->metric = 0;
 	/*
 	 * Initial interface flags, should be IFF_BROADCAST for
 	 * Ethernet.
 	 */
-	if_svethlana.flags = IFF_BROADCAST;
-
+	nif->flags = IFF_BROADCAST;
 	/*
 	 * Maximum transmission unit, should be >= 46 and <= 1500 for
 	 * Ethernet
 	 */
-	if_svethlana.mtu = 1500;
-
+	nif->mtu = 1500;
 	/*
-	 * Time in ms between calls to (*if_svethlana.timeout) ();
+	 * Time in ms between calls to (*nif->timeout) ();
 	 */
-	if_svethlana.timer = 0;
+	nif->timer = 0;
 
 	/*
 	 * Interface hardware type
 	 */
-	if_svethlana.hwtype = HWTYPE_ETH;
-
+	nif->hwtype = HWTYPE_ETH;
 	/*
 	 * Hardware address length, 6 bytes for Ethernet
 	 */
-	if_svethlana.hwlocal.len =
-	if_svethlana.hwbrcst.len = ETH_ALEN;
+	nif->hwlocal.len =
+	nif->hwbrcst.len = ETH_ALEN;
 
-	/*
-	 * Set interface broadcast address. For real ethernet
-	 * drivers you must get them from the hardware of course!
-	 */
-	memcpy (if_svethlana.hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
+	memcpy (nif->hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
 
 	/*
 	 * Set length of send and receive queue. IF_MAXQ is a good value.
 	 */
-	if_svethlana.rcv.maxqlen = IF_MAXQ;
-	if_svethlana.snd.maxqlen = IF_MAXQ;
-
+	nif->rcv.maxqlen = IF_MAXQ;
+	nif->snd.maxqlen = IF_MAXQ;
 	/*
 	 * Setup pointers to service functions
 	 */
-	if_svethlana.open = svethlana_open;
-	if_svethlana.close = svethlana_close;
-	if_svethlana.output = svethlana_output;
-	if_svethlana.ioctl = svethlana_ioctl;
-
+	nif->open = svethlana_open;
+	nif->close = svethlana_close;
+	nif->output = svethlana_output;
+	nif->ioctl = svethlana_ioctl;
+	nif->igmp_mac_filter = svethlana_igmp_mac_filter;
 	/*
-	 * Optional timer function that is called every 200ms.
+	 * Timer function that is called every second.
 	 */
-	if_svethlana.timeout = NULL;
+	nif->timeout = svethlana_timeout;
 
-	/*
-	 * Here you could attach some more data your driver may need
-	 */
-	if_svethlana.data = 0UL;
+	if (ethoc_probe (nif, (char *) membase, hwaddr) != 0)
+	{
+		c_conws ("SVEthlana: initialization failed\r\n");
+		ct60_vmalloc (1, membase);
+		return -1;
+	}
+	priv = nif->data;
 
 	/*
 	 * Number of packets the hardware can receive in fast succession,
 	 * 0 means unlimited.
 	 */
-	if_svethlana.maxpackets = ETH_PKT_BUFFS;
+	nif->maxpackets = priv->num_rx;
 
 	/*
 	 * Register the interface.
 	 */
-	if_register (&if_svethlana);
+	if_register (nif);
 
-	/*
-	 * And say we are alive...
-	 */
-	ksprintf (message, "SVEthLANa driver v0.9 (en%d)\r\n", if_svethlana.unit);
+	svethlana_old_vector = (void (*)(void)) Setexc (ATARI_SVETHLANA_VECTOR, (long) svethlana_interrupt);
+
+	mac = nif->hwlocal.adr.bytes;
+	ksprintf (message, "SVEthlana driver v1.0 (%s%d): SuperVidel FW %lu, PHY %08lx at %ld, %02x:%02x:%02x:%02x:%02x:%02x\r\n",
+		nif->name, nif->unit, version, priv->phydev->phy_id, priv->phydev->mdio_addr,
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 	c_conws (message);
 
-	//print out all function pointers
-//	if (!has_printed_functions)
-//	{
-//		ksprintf(message, "svethlana_open 0x%08lx\r\n", (uint32)(svethlana_open));
-//		c_conws(message);
-//		ksprintf(message, "svethlana_close 0x%08lx\r\n", (uint32)(svethlana_close));
-//		c_conws(message);
-//		ksprintf(message, "svethlana_output 0x%08lx\r\n", (uint32)(svethlana_output));
-//		c_conws(message);
-//		ksprintf(message, "svethlana_ioctl 0x%08lx\r\n", (uint32)(svethlana_ioctl));
-//		c_conws(message);
-//		ksprintf(message, "svethlana_config 0x%08lx\r\n", (uint32)svethlana_config);
-//		c_conws(message);
-//		ksprintf(message, "send_packet 0x%08lx\r\n", (uint32)(send_packet));
-//		c_conws(message);
-//		ksprintf(message, "svethlana_service 0x%08lx\r\n", (uint32)svethlana_service);
-//		c_conws(message);
-
-//		has_printed_functions = 1UL;
-//	}
-
-
-
-	// Install interrupt handler
-	svethlana_install_int();
-
-	//c_conws("Init succeeded\r\n");
 	return 0;
 }
-
-
-static void
-svethlana_install_int (void)
-{
-//	uint32	old_sp;
-
-//	old_sp = Super(0L);
-
-	old_i6_int = Setexc (0xC5, (long) interrupt_i6);
-
-//	Super(old_sp);
-
-	//c_conws("Installed ISR\r\n");
-}
-
-
-
-
-/*
- * Interrupt routine
- */
-void _cdecl
-svethlana_int (void)
-{
-	uint32	int_src;
-	volatile uint16 temp;
-
-	//Dummy read from motherboard to satisfy ABE-chip (should be done before interrupt
-	//source is quenched? Interrupt is effectively shut off above)
-	temp = *((volatile uint16*)0xffff8240);
-        (void)temp;
-
-	int_src = ETH_INT_SOURCE;
-
-	//Clear all flags by writing 1 to them
-	ETH_INT_SOURCE = 0x7FUL;
-
-	svethlana_service(&if_svethlana, int_src);	//do the work
-}
-
-
-/*
-//Returns 0 if there is a new packet received in slot 0, 1 if in slot 1 and -1 otherwise
-int32 Check_Rx_Buffers()
-{
-	uint32 i;
-	int32  retval = -1L;
-
-	//We check two slots, starting at the slot not checked the last time
-	//we were here.
-	for (i = 0; i < 2; i++)
-	{
-		if((eth_rx_bd[cur_rx_slot].len_ctrl & ETH_RX_BD_EMPTY) == 0UL)
-		{
-			retval = (int32)cur_rx_slot;
-			cur_rx_slot = (cur_rx_slot + 1) & 0x1UL;
-			break;
-		}
-		cur_rx_slot = (cur_rx_slot + 1) & 0x1UL;
-	}
-	return retval;
-}
-*/
-
-//Returns 0 if there is a new packet received in slot 0, 1 if in slot 1 and -1 otherwise
-int32 Check_Rx_Buffers()
-{
-	int32  retval = -1L;
-	uint32 tmp1;
-	uint32 tmp2;
-
-	//We check only one slot, which is the one not checked the last time
-	//we were here. We only move to the other slot if we found a packet in the current slot.
-	tmp1 = eth_rx_bd[cur_rx_slot].len_ctrl;
-	if ((tmp1 & ETH_RX_BD_EMPTY) == 0UL)
-	{
-		retval = (int32)cur_rx_slot;
-		cur_rx_slot = (cur_rx_slot + 1) & (ETH_PKT_BUFFS-1);
-	}
-	else
-	{
-		//No packet in the expected slot
-		//Try again
-		tmp2 = eth_rx_bd[cur_rx_slot].len_ctrl;
-		if ((tmp2 & ETH_RX_BD_EMPTY) == 0UL)
-		{
-			//ksprintf (message, "Slot %lu RX retried read: 0x%08lx then 0x%08lx\r\n", cur_rx_slot, tmp1, tmp2);
-			//c_conws (message);
-			retval = (int32)cur_rx_slot;
-			cur_rx_slot = (cur_rx_slot + 1) & (ETH_PKT_BUFFS-1);
-		}
-	}
-	return retval;
-}
-
-
-
-
-/* Service function called by the interrupt handler
- * In here we check the interrupt bits, and do receive and transmit if necessary
- *
- * Nothing reached from here may write to the console. c_conws() is GEMDOS
- * Cconws, which is f_write() on file handle 1 of the current process. Called
- * from an interrupt the current process is whatever was running, so the text
- * lands in an unrelated terminal or file, and the write descends into the tty
- * layer where it can sleep - which an interrupt handler must not do. The
- * in_packets and in_errors counters carry the same information and are
- * readable through ifstat, so the console calls below stay commented out.
- */
-static void svethlana_service (struct netif * nif, uint32 int_src)
-{
-//	uchar	intstat;
-//	uchar		oldpnr;
-//	uchar	failpnr;
-//	ushort	fifo_reg;
-//	ushort	status, bytecount, longcnt;
-	short	type, i;
-//	char	packetnr;
-//	char	message[80];
-//	long	tmp, *dpnt;
-	BUF		*b;
-	volatile uint32	j;
-
-//	long		timeval;
-
-
-
-	if (int_src & ETH_INT_BUSY)
-	{
-		//c_conws ("Busy\r\n");
-	}
-
-	if (int_src & ETH_INT_RXE)
-	{
-		//c_conws("RX error!\r\n");
-		//printf("E");
-
-		// Check which BD has the error and clear it
-		for (i = 0; i < ETH_PKT_BUFFS; i++)
-		{
-			if((eth_rx_bd[i].len_ctrl & ETH_RX_BD_EMPTY) == 0UL)
-			{
-				if (eth_rx_bd[i].len_ctrl & (ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
-											 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL))
-				{
-					//At least one of the above error flags was set
-					//ksprintf (message, "Slot %d RX errorflags: 0x%08lx \r\n", i, eth_rx_bd[i].len_ctrl);
-					//c_conws (message);
-
-					//Clear error flags
-					eth_rx_bd[i].len_ctrl &= ~(ETH_RX_BD_OVERRUN | ETH_RX_BD_INVSIMB | ETH_RX_BD_DRIBBLE |
-																		 ETH_RX_BD_TOOLONG | ETH_RX_BD_SHORT | ETH_RX_BD_CRCERR | ETH_RX_BD_LATECOL);
-
-					//mark the buffer as empty and free to use
-					eth_rx_bd[i].len_ctrl |= ETH_RX_BD_EMPTY;
-					nif->in_errors++;
-				}
-			}
-		}
-	}
-
-
-	// Check for received packets
-	if (int_src & ETH_INT_RXB)
-	{
-		//printf("RX frame!\r\n");
-
-		int32 slot = Check_Rx_Buffers();
-		while (slot != -1)
-		{
-			uint32	*src;
-			uint32	*dest;
-			uint32	length, len_longs;
-
-			//ksprintf (message, "R%02li 0x%08lx\r\n", slot, eth_rx_bd[slot].len_ctrl);
-			//c_conws(message);
-
-			length = ((eth_rx_bd[slot].len_ctrl) >> 16);	//length in upper word
-			len_longs = (length + 3UL) >> 2;
-//			src = &ETH_DATA_BASE_PNT[(1536UL / 4UL) * (slot+2L)];	//2 TX buffers before the RX buffers
-			src = (uint32*)eth_rx_bd[slot].data_pnt;
-
-//			b = buf_alloc (length+200, 100, BUF_ATOMIC);
-			b = buf_alloc (1518UL + 128UL, 64UL, BUF_ATOMIC);
-			if(b == 0)
-			{
-				nif->in_errors++;
-				//ksprintf (message, "buf_alloc RX failed, %lu \r\n", 1518UL + 200UL);
-				//c_conws(message);
-			}
-			else
-			{
-				//dstart must be on whole word, but we set to whole longword.
-				//should make the 060 use longword accesses and not risk that
-				//it is split into byte-word-byte.
-				b->dstart = (char*)(((uint32)(b->dstart)) & 0xFFFFFFFCUL);
-				b->dend = (char*)(((uint32)(b->dend)) & 0xFFFFFFFCUL);
-
-				//Dummy loop to wait for the MAC write FIFO to empty
-				for (j = 0; j < 1000; j++)
-				{
-					asm("nop;");
-				}
-
-				//read the data, rounded up to even longwords
-				dest = (uint32*)(b->dstart);
-				for(i=0; i < len_longs; i++)
-				{
-					*dest++ = *src++;
-				}
-//				b->dend += length - 4;							//TODO: should we subtract 4 here, to skip the CRC?
-				b->dend += (uint32)(length - 4UL);				//TODO: should we subtract 4 here, to skip the CRC?
-				if((b->dend) < (b->dstart))
-				{
-					//c_conws("RX: dend < dstart!\r\n");
-				}
-
-				// Pass packet to upper layers
-				if (nif->bpf)
-					bpf_input (nif, b);
-
-				type = eth_remove_hdr(b);
-
-				// and enqueue packet
-				if(!if_input(nif, b, 0UL, type))
-					nif->in_packets++;
-				else
-				{
-					//A full input queue is ordinary congestion during a bulk
-					//transfer, not a fault worth reporting per packet
-					nif->in_errors++;
-					//c_conws("input packet failed when receiving!\r\n");
-				}
-			}
-
-			//now mark the buffer as empty and free to use
-			eth_rx_bd[slot].len_ctrl |= ETH_RX_BD_EMPTY;
-
-			slot = Check_Rx_Buffers();
-		}
-	}
-
-
-	// Check for transmitted packets
-	if ((int_src & (ETH_INT_TXB | ETH_INT_TXE)) != 0)	// Transmit complete or error
-	{
-		if(int_src & ETH_INT_TXE)				// TX eror set => failed!
-		{
-			nif->out_errors++;
-		}
-
-		//A Transmit Error means that the slot is free to be used.
-		//TODO: Check first that the slot that is in turn to be used is free.
-		//Then we dequeue a packet and send it, if one exists. Then we toggle the slot index variable.
-		//Finally we check again if the new slot is free. If so we dequeue a packet again.
-		if (((uint32)(eth_tx_bd[slot_index].len_ctrl & ETH_TX_BD_READY)) != 0UL)
-			return;
-
-		b = if_dequeue(&nif->snd);				//fetch a previously enqueued packet
-		if( ((uint32)b) != 0UL)
-		{
-			//Possible errors returned are -1 and -2, meaning "no free slot" and "too large packet" respectively.
-			//-1 isn't possible because of the check above, and -2 isn't possible either, because
-			//we don't enqueue packets in svethlana_output() that are too large.
-			send_packet(nif, b, BUF_ATOMIC, slot_index, slot_index == (ETH_PKT_BUFFS-1) );
-			slot_index = (slot_index + 1) & (ETH_PKT_BUFFS-1);
-
-			//in_queue--;
-
-			//ksprintf (message, "Dequeued, %u left\r\n", nif->snd.qlen);
-			//c_conws(message);
-		}
-	}
-
-}
-
-
-
-/* Convert one ASCII char to a hex nibble */
-short ch2i(char c)
-{
-	if(c >= '0' && c <= '9')
-		return (short)(c - '0');
-	if(c >= 'A' && c <= 'F')
-		return (short)(c - 'A' + 10);
-	if(c >= 'a' && c <= 'f')
-		return (short)(c - 'a' + 10);
-	return 0;
-}
-
-
-
-// Convert an unsigned long to ASCII
-void hex2ascii(ulong l, uchar* c)
-{
-	short	i;
-	uchar	t;
-
-	for(i=7; i!=0; i--)
-	{
-		t = (uchar)(l & 0xf);				// Keep only lower nibble
-		if(t < 0xA)
-			c[i] = t + '0';					// Output '0' to '9'
-		else
-			c[i] = t + 'A' - 0xA;			// Output 'A' to 'F'
-		c[i] = '0';
-		l = l >> 4;
-	}
-}
-
-

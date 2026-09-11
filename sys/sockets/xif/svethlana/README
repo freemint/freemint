@@ -1,1 +1,30 @@
-Svethlana v0.9
+SVEthlana driver for FreeMiNT
+
+The OpenCores 10/100 Mbps Ethernet MAC in the SuperVidel FPGA. Needs
+SuperVidel firmware 10 or newer and SV_XBIOS.PRG (the packet buffers are
+allocated in SuperVidel RAM through it).
+
+The driver is a port of the Linux ethoc driver (drivers/net/ethernet/ethoc.c)
+and of the part of the Linux PHY library the generic PHY driver uses. Names
+are kept as in Linux so that fixes can be carried over. See the comments at
+the top of svethlana.c for what was left out.
+
+Installation
+
+Copy svethlan.xif to the MiNT directory. The MAC address is read from
+SVETHLAN.INF in the same place or in the root of the boot drive: twelve
+hex digits, optionally separated by ':' or '-', for example
+
+	00:20:43:58:78:3c
+
+Without the file the driver keeps whatever the MAC registers hold, and if
+that is not a valid address it makes up a locally administered one and
+says so at boot. The address can also be set at any time with
+
+	ifconfig en0 hwaddr 00:20:43:58:78:3c
+
+The MAC has no EEPROM, so an address set this way lasts until the next
+cold boot; put it in the network startup script or in SVETHLAN.INF.
+
+Link state and negotiated speed/duplex are reported through the kernel's
+alert channel when they change.

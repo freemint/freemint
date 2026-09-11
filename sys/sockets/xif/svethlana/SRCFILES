@@ -2,10 +2,12 @@
 # the files that should go only into source distributions.
 
 HEADER = \
+	phy.h \
 	svethlana_i6.h \
 	sv_regs.h
 
 SVETHLANA_SRCS = \
+	phy.c \
 	svethlana.c \
 	svethlana_i6.S
 
