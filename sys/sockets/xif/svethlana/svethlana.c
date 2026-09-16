@@ -374,6 +374,10 @@ static inline void ethoc_disable_rx_and_tx(struct ethoc *dev)
 }
 
 
+/*
+ * The buffers are SVETHLANA_BUF_STRIDE apart, starting at
+ * SVETHLANA_BUF_OFFSET into the block.
+ */
 static long ethoc_init_ring(struct ethoc *dev, unsigned long mem_start)
 {
 	struct ethoc_bd bd;
@@ -387,19 +391,17 @@ static long ethoc_init_ring(struct ethoc *dev, unsigned long mem_start)
 	ethoc_write(dev, TX_BD_NUM, dev->num_tx);
 
 	/* setup transmission buffers */
-	bd.addr = mem_start;
 	bd.stat = TX_BD_IRQ | TX_BD_CRC;
-	vma = dev->membase;
+	vma = (char *) mem_start + SVETHLANA_BUF_OFFSET;
 
 	for (i = 0; i < dev->num_tx; i++) {
 		if (i == dev->num_tx - 1)
 			bd.stat |= TX_BD_WRAP;
 
-		ethoc_write_bd(dev, i, &bd);
-		bd.addr += ETHOC_BUFSIZ;
-
 		dev->vma[i] = vma;
-		vma += ETHOC_BUFSIZ;
+		bd.addr = (u32) vma;
+		ethoc_write_bd(dev, i, &bd);
+		vma += SVETHLANA_BUF_STRIDE;
 	}
 
 	bd.stat = RX_BD_EMPTY | RX_BD_IRQ;
@@ -408,11 +410,10 @@ static long ethoc_init_ring(struct ethoc *dev, unsigned long mem_start)
 		if (i == dev->num_rx - 1)
 			bd.stat |= RX_BD_WRAP;
 
-		ethoc_write_bd(dev, dev->num_tx + i, &bd);
-		bd.addr += ETHOC_BUFSIZ;
-
 		dev->vma[dev->num_tx + i] = vma;
-		vma += ETHOC_BUFSIZ;
+		bd.addr = (u32) vma;
+		ethoc_write_bd(dev, dev->num_tx + i, &bd);
+		vma += SVETHLANA_BUF_STRIDE;
 	}
 
 	return 0;
@@ -1124,14 +1125,8 @@ static long ethoc_probe(struct netif *netdev, char *membase, const u8 *hwaddr)
 	ethoc_write(priv, INT_MASK, 0);
 	ethoc_ack_irq(priv, INT_MASK_ALL);
 
-	/* calculate the number of TX/RX buffers, maximum 128 supported */
-	num_bd = SVETHLANA_BUF_SIZE / ETHOC_BUFSIZ;
-	if (num_bd > 128)
-		num_bd = 128;
-	if (num_bd < 4) {
-		ret = ENODEV;
-		goto free;
-	}
+	/* the number of TX/RX buffers, maximum 128 supported */
+	num_bd = SVETHLANA_NUM_BUF;
 	priv->num_bd = num_bd;
 	/* num_tx must be a power of two */
 	priv->num_tx = 1;

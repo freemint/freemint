@@ -32,20 +32,18 @@
 #define ATARI_SV_MIN_VERSION		10
 
 /*
- * ethoc-buf: 128 packet buffers of 1536 bytes each, the maximum ethoc
- * supports. The MAC can only DMA within the SuperVidel DDR RAM. Linux
- * takes the top of the DDR for this; here the memory is requested from the
- * SuperVidel XBIOS, which owns the DDR under TOS and MiNT, so the
- * framebuffer and the packet buffers cannot collide.
+ * ethoc-buf: 128 packet buffers, the maximum ethoc supports, 2 KB apart
+ * and 512 bytes past a 2 KB boundary, so that a frame meets a 1 KB
+ * boundary 512 bytes in and not 1024. The MAC can only DMA within the
+ * SuperVidel DDR RAM. Linux takes the top of the DDR for this; here the
+ * memory is requested from the SuperVidel XBIOS, which owns the DDR under
+ * TOS and MiNT, so the framebuffer and the packet buffers cannot collide.
  */
-#define SVETHLANA_BUF_SIZE		(128UL * 1536UL)
-
-/*
- * Linux places the buffers 64 KB aligned, which with 1536 byte spacing
- * makes every buffer at least 512 byte aligned. Aligning the allocation
- * to 2048 gives the same alignment for every buffer.
- */
+#define SVETHLANA_NUM_BUF		128UL
+#define SVETHLANA_BUF_STRIDE		2048UL
+#define SVETHLANA_BUF_OFFSET		512UL
 #define SVETHLANA_BUF_ALIGN		2048UL
+#define SVETHLANA_BUF_SIZE		(SVETHLANA_NUM_BUF * SVETHLANA_BUF_STRIDE)
 
 /* CT60/SuperVidel XBIOS: mode 0 allocates from DDR, mode 1 frees */
 #define ct60_vmalloc(mode, value) \
