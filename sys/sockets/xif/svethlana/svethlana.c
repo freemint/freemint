@@ -217,6 +217,9 @@
 #define	ETHOC_TIMEOUT		(HZ / 2)
 #define	ETHOC_MII_TIMEOUT	(1 + (HZ / 5))
 
+/* not in Linux: times a frame aborted by a transmit underrun is queued again */
+#define	ETHOC_MAX_RESEND	3
+
 /*
  * Frames pending in the transmit ring at most. On SuperVidel firmware 10,
  * copying a frame into the SuperVidel RAM while another is on the wire
@@ -243,6 +246,8 @@
  * @phy_id:	address of attached PHY
  * @old_link:	previous link info
  * @old_duplex: previous duplex info
+ * @tx_resent:	times the frame in each send buffer has been queued again,
+ *		not in Linux
  */
 struct ethoc {
 	char *iobase;
@@ -268,6 +273,8 @@ struct ethoc {
 
 	long old_link;
 	long old_duplex;
+
+	u8 tx_resent[128];
 };
 
 /**
@@ -566,6 +573,71 @@ static long ethoc_rx(struct netif *dev, long limit)
 	return count;
 }
 
+/*
+ * Hands a send buffer holding a complete frame of @len bytes to the MAC:
+ * the length first, then the ready bit. The buffer address is written
+ * along, as ethoc_resend() moves buffers between descriptors. Called with
+ * interrupts off.
+ */
+static void ethoc_hand_bd(struct ethoc *priv, long entry,
+		struct ethoc_bd *bd, long len)
+{
+	bd->addr = (u32) priv->vma[entry];
+	bd->stat &= ~(TX_BD_STATS | TX_BD_LEN_MASK);
+	bd->stat |= TX_BD_LEN(len);
+	ethoc_write_bd(priv, entry, bd);
+
+	bd->stat |= TX_BD_READY;
+	ethoc_write_bd(priv, entry, bd);
+}
+
+/*
+ * Not in Linux. On SuperVidel firmware 10 the MAC regularly aborts a
+ * frame with a transmit underrun (TX_BD_UR): it could not fetch the
+ * frame from the SuperVidel RAM in time. The frame is still intact in
+ * its buffer, as dty_tx has only just moved past it, so the buffer is
+ * handed over again under the next free descriptor, swapping buffers
+ * with it, and no copy is needed. Left to TCP, every such loss stalls a
+ * MiNTNet connection for the retransmission timeout of at least 200 ms,
+ * because MiNTNet does not retransmit on duplicate acknowledgements
+ * while it is sending.
+ *
+ * The frame is given up on after ETHOC_MAX_RESEND attempts.
+ */
+static void ethoc_resend(struct netif *dev, long from,
+		const struct ethoc_bd *done)
+{
+	struct ethoc *priv = dev->data;
+	struct ethoc_bd bd;
+	long len = done->stat >> 16;
+	long entry;
+	ushort sr;
+
+	if (priv->tx_resent[from] >= ETHOC_MAX_RESEND)
+		return;
+
+	sr = spl7();
+
+	/* dty_tx is past @from, so at least one descriptor is free */
+	entry = priv->cur_tx % priv->num_tx;
+	priv->cur_tx++;
+	priv->tx_resent[entry] = priv->tx_resent[from] + 1;
+
+	if (entry != from) {
+		void *buf = priv->vma[entry];
+
+		priv->vma[entry] = priv->vma[from];
+		priv->vma[from] = buf;
+	}
+
+	ethoc_read_bd(priv, entry, &bd);
+	bd.stat &= ~TX_BD_PAD;
+	bd.stat |= done->stat & TX_BD_PAD;
+	ethoc_hand_bd(priv, entry, &bd, len);
+
+	spl(sr);
+}
+
 static void ethoc_update_tx_stats(struct ethoc *dev, struct ethoc_bd *bd)
 {
 	struct netif *netdev = dev->netdev;
@@ -623,6 +695,9 @@ static long ethoc_tx(struct netif *dev, long limit)
 
 		ethoc_update_tx_stats(priv, &bd);
 		priv->dty_tx++;
+
+		if (unlikely(bd.stat & TX_BD_UR))
+			ethoc_resend(dev, entry, &bd);
 	}
 
 	return count;
@@ -984,14 +1059,14 @@ static long ethoc_start_xmit(BUF *skb, struct netif *dev)
 		goto out;
 	}
 
-	entry = priv->cur_tx % priv->num_tx;
-
 	/* wait for a completion; only the interrupt handler moves dty_tx */
 	while ((priv->cur_tx - *(volatile u32 *) &priv->dty_tx) >= ETHOC_TX_PENDING)
 		;
 
 	sr = spl7();
+	entry = priv->cur_tx % priv->num_tx;
 	priv->cur_tx++;
+	priv->tx_resent[entry] = 0;
 
 	ethoc_read_bd(priv, entry, &bd);
 	if (unlikely(padded_len < ETHOC_ZLEN))
@@ -1004,12 +1079,7 @@ static long ethoc_start_xmit(BUF *skb, struct netif *dev)
 	if (padded_len > len)
 		memset_io((char *) dest + len, 0, padded_len - len);
 
-	bd.stat &= ~(TX_BD_STATS | TX_BD_LEN_MASK);
-	bd.stat |= TX_BD_LEN(padded_len);
-	ethoc_write_bd(priv, entry, &bd);
-
-	bd.stat |= TX_BD_READY;
-	ethoc_write_bd(priv, entry, &bd);
+	ethoc_hand_bd(priv, entry, &bd, padded_len);
 
 	spl(sr);
 out:
