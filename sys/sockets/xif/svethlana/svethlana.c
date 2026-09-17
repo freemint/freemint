@@ -1039,6 +1039,13 @@ static void ethoc_set_multicast_list(struct netif *dev)
 
 /* ethoc_change_mtu() returns -ENOSYS: the MTU stays at 1500 */
 
+static void ethoc_flush_writes(struct ethoc *priv, long entry, long len)
+{
+	long off = ((len + 3) & ~3L) - 4;
+
+	(void) *(volatile u32 *) ((char *) priv->vma[entry] + off);
+}
+
 /*
  * The buffer is the Linux skb: dstart to dend hold the complete Ethernet
  * frame. It is consumed here, whether it was sent or dropped.
@@ -1078,6 +1085,8 @@ static long ethoc_start_xmit(BUF *skb, struct netif *dev)
 	memcpy_toio(dest, skb->dstart, len);
 	if (padded_len > len)
 		memset_io((char *) dest + len, 0, padded_len - len);
+
+	ethoc_flush_writes(priv, entry, padded_len);
 
 	ethoc_hand_bd(priv, entry, &bd, padded_len);
 
