@@ -10,8 +10,8 @@
  * when the generic PHY driver binds to the Micrel KSZ8041 on the
  * SuperVidel are in phy.c. Function, variable and register names are kept as in Linux
  * so that fixes can be carried over; the MiNTNet interface (svethlana_*)
- * at the end of this file takes the place of the Linux net_device, NAPI
- * and platform glue. What is not ported: ethtool, ring size changes, DT/OF
+ * at the end of this file takes the place of the Linux net_device and
+ * platform glue. What is not ported: ethtool, ring size changes, DT/OF
  * probing, clock handling and power management.
  *
  * The kernel is built with -mshort, so Linux "int" is "long" here.
@@ -230,9 +230,6 @@
  * @cur_rx:	current receive buffer
  * @vma:        pointer to array of virtual memory addresses for buffers
  * @netdev:	pointer to network device structure
- * @napi:	the pending poll, a root timeout here
- * @napi_scheduled: a poll is due
- * @napi_enabled: polls may be scheduled
  * @queue_stopped: transmit ring full, packets wait in netdev->snd
  * @watchdog:	ticks the queue has been stopped, for ethoc_tx_timeout()
  * @mc_refcnt:	users of each multicast hash bit, the mc list of Linux
@@ -257,10 +254,6 @@ struct ethoc {
 	void **vma;
 
 	struct netif *netdev;
-
-	TIMEOUT *napi;
-	short napi_scheduled;
-	short napi_enabled;
 
 	short queue_stopped;
 	short watchdog;
@@ -296,7 +289,7 @@ static long ethoc_mdio_write (struct mii_bus *bus, long phy, long reg, u16 val);
 static void ethoc_mdio_poll (struct netif *dev);
 static void ethoc_set_multicast_list (struct netif *dev);
 static long ethoc_start_xmit (BUF *skb, struct netif *dev);
-static void _cdecl ethoc_poll (PROC *p, long arg);
+static long ethoc_poll (struct ethoc *priv, long budget);
 
 
 /*
@@ -369,59 +362,6 @@ static inline void ethoc_disable_rx_and_tx(struct ethoc *dev)
 	u32 mode = ethoc_read(dev, MODER);
 	mode &= ~(MODER_RXEN | MODER_TXEN);
 	ethoc_write(dev, MODER, mode);
-}
-
-
-/*
- * NAPI. On Linux the interrupt handler masks the receive and transmit
- * interrupts and hands the work to ethoc_poll() in softirq context. Here
- * the work goes to a root timeout, which the kernel runs from the
- * scheduler with interrupts enabled, and MiNTNet delivers received
- * packets (if_input) through the very same mechanism, so nothing is
- * added to the delivery latency. Only the interrupt entry runs at IPL 6.
- */
-
-static void napi_enable(struct ethoc *priv)
-{
-	priv->napi = NULL;
-	priv->napi_scheduled = 0;
-	priv->napi_enabled = 1;
-}
-
-static void napi_disable(struct ethoc *priv)
-{
-	ushort sr = spl7();
-
-	priv->napi_enabled = 0;
-	if (priv->napi)
-		cancelroottimeout(priv->napi);
-	priv->napi = NULL;
-	priv->napi_scheduled = 0;
-
-	spl(sr);
-}
-
-/* schedules ethoc_poll(), from the interrupt (flags 1) or not */
-static void __napi_schedule(struct ethoc *priv, ushort flags)
-{
-	priv->napi = addroottimeout(0, ethoc_poll, flags);
-	if (priv->napi)
-		priv->napi->arg = (long) priv;
-	/* else the slow timer retries, see svethlana_timeout() */
-}
-
-static void napi_schedule(struct ethoc *priv)
-{
-	if (!priv->napi_enabled || priv->napi_scheduled)
-		return;
-
-	priv->napi_scheduled = 1;
-	__napi_schedule(priv, 1);
-}
-
-static void napi_complete_done(struct ethoc *priv)
-{
-	priv->napi_scheduled = 0;
 }
 
 
@@ -611,7 +551,7 @@ static long ethoc_rx(struct netif *dev, long limit)
 			 * netdev_alloc_skb_ip_align(); the frame is copied
 			 * to a longword aligned start
 			 */
-			skb = buf_alloc(size + 4 + 16, 16, BUF_NORMAL);
+			skb = buf_alloc(size + 4 + 16, 16, BUF_ATOMIC);
 
 			if (likely(skb)) {
 				void *src = priv->vma[entry];
@@ -725,19 +665,8 @@ long _cdecl ethoc_interrupt(void)
 	struct ethoc *priv = &ethoc_priv;
 	struct netif *dev = priv->netdev;
 	u32 pending;
-	u32 mask;
 
-	/* Figure out what triggered the interrupt...
-	 * The tricky bit here is that the interrupt source bits get
-	 * set in INT_SOURCE for an event regardless of whether that
-	 * event is masked or not.  Thus, in order to figure out what
-	 * triggered the interrupt, we need to remove the sources
-	 * for all events that are currently masked.  This behaviour
-	 * is not particularly well documented but reasonable...
-	 */
-	mask = ethoc_read(priv, INT_MASK);
 	pending = ethoc_read(priv, INT_SOURCE);
-	pending &= mask;
 
 	if (unlikely(pending == 0))
 		return IRQ_NONE;
@@ -750,11 +679,10 @@ long _cdecl ethoc_interrupt(void)
 		dev->in_errors++;
 	}
 
-	/* Handle receive/transmit event by switching to polling */
-	if (pending & (INT_MASK_TX | INT_MASK_RX)) {
-		ethoc_disable_irq(priv, INT_MASK_TX | INT_MASK_RX);
-		napi_schedule(priv);
-	}
+	/* Handle receive/transmit event by polling */
+	if (pending & (INT_MASK_TX | INT_MASK_RX))
+		while (ethoc_poll(priv, NAPI_POLL_WEIGHT))
+			;
 
 	return IRQ_HANDLED;
 }
@@ -778,27 +706,25 @@ static long ethoc_get_mac_address(struct netif *dev, void *addr)
 	return 0;
 }
 
-static void _cdecl ethoc_poll(PROC *p, long arg)
+/*
+ * On Linux the interrupt handler masks the receive and transmit
+ * interrupts and leaves this to a softirq that runs as soon as the
+ * handler returns. Here it runs at the end of the interrupt handler
+ * itself, at IPL 6, as the receive loops of the EtherNAT and NetUSBee
+ * drivers do; MiNTNet takes the packets from there through its own root
+ * timeout. Nothing can interrupt it there, so the interrupts are not
+ * masked around it and the interrupt source is not filtered by the mask.
+ */
+static long ethoc_poll(struct ethoc *priv, long budget)
 {
-	struct ethoc *priv = (struct ethoc *) arg;
-	long budget = NAPI_POLL_WEIGHT;
 	long rx_work_done = 0;
 	long tx_work_done = 0;
-
-	UNUSED(p);
-
-	priv->napi = NULL;
 
 	rx_work_done = ethoc_rx(priv->netdev, budget);
 	tx_work_done = ethoc_tx(priv->netdev, budget);
 
-	if (rx_work_done < budget && tx_work_done < budget) {
-		napi_complete_done(priv);
-		ethoc_enable_irq(priv, INT_MASK_TX | INT_MASK_RX);
-	} else {
-		/* budget used up, poll again before reenabling interrupts */
-		__napi_schedule(priv, 0);
-	}
+	/* done when both loops ran dry */
+	return rx_work_done >= budget || tx_work_done >= budget;
 }
 
 static long ethoc_mdio_read(struct mii_bus *bus, long phy, long reg)
@@ -914,8 +840,6 @@ static long ethoc_open(struct netif *dev)
 
 	/* request_irq(): the vector is installed once, in driver_init() */
 
-	napi_enable(priv);
-
 	ethoc_init_ring(priv, (unsigned long) priv->membase);
 	ethoc_reset(priv);
 
@@ -938,8 +862,6 @@ static long ethoc_open(struct netif *dev)
 static long ethoc_stop(struct netif *dev)
 {
 	struct ethoc *priv = dev->data;
-
-	napi_disable(priv);
 
 	if (priv->phydev)
 		phy_stop(priv->phydev);
@@ -1145,7 +1067,7 @@ static long ethoc_start_xmit(BUF *skb, struct netif *dev)
 
 	spl(sr);
 out:
-	buf_deref(skb, BUF_NORMAL);
+	buf_deref(skb, BUF_ATOMIC);
 	return 0;
 }
 
@@ -1559,10 +1481,6 @@ svethlana_timeout (struct netif *nif)
 	struct ethoc *priv = nif->data;
 
 	phy_state_machine (priv->phydev);
-
-	/* a poll that could not be scheduled for lack of a timeout */
-	if (priv->napi_scheduled && !priv->napi)
-		__napi_schedule (priv, 0);
 
 	/* netdev watchdog: the ring stays full only when completions stop */
 	if (priv->queue_stopped)
