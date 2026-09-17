@@ -217,6 +217,13 @@
 #define	ETHOC_TIMEOUT		(HZ / 2)
 #define	ETHOC_MII_TIMEOUT	(1 + (HZ / 5))
 
+/*
+ * Frames pending in the transmit ring at most. On SuperVidel firmware 10,
+ * copying a frame into the SuperVidel RAM while another is on the wire
+ * starves the MAC's fetch of that one.
+ */
+#define	ETHOC_TX_PENDING	1
+
 
 /**
  * struct ethoc - driver-private device structure
@@ -230,8 +237,6 @@
  * @cur_rx:	current receive buffer
  * @vma:        pointer to array of virtual memory addresses for buffers
  * @netdev:	pointer to network device structure
- * @queue_stopped: transmit ring full, packets wait in netdev->snd
- * @watchdog:	ticks the queue has been stopped, for ethoc_tx_timeout()
  * @mc_refcnt:	users of each multicast hash bit, the mc list of Linux
  * @mdio:	MDIO bus for PHY access
  * @phydev:	the attached PHY, dev->phydev on Linux
@@ -254,9 +259,6 @@ struct ethoc {
 	void **vma;
 
 	struct netif *netdev;
-
-	short queue_stopped;
-	short watchdog;
 
 	u8 mc_refcnt[64];
 
@@ -362,36 +364,6 @@ static inline void ethoc_disable_rx_and_tx(struct ethoc *dev)
 	u32 mode = ethoc_read(dev, MODER);
 	mode &= ~(MODER_RXEN | MODER_TXEN);
 	ethoc_write(dev, MODER, mode);
-}
-
-
-/*
- * netif_{start,stop,wake}_queue(). Linux stops calling
- * ethoc_start_xmit() while the queue is stopped and its qdisc keeps the
- * packets. Here svethlana_output() puts them into dev->snd and
- * netif_wake_queue() pushes them into the ring again.
- */
-
-static void netif_start_queue(struct ethoc *priv)
-{
-	priv->queue_stopped = 0;
-	priv->watchdog = 0;
-}
-
-static void netif_stop_queue(struct ethoc *priv)
-{
-	priv->queue_stopped = 1;
-}
-
-static void netif_wake_queue(struct netif *dev)
-{
-	struct ethoc *priv = dev->data;
-	BUF *skb;
-
-	netif_start_queue(priv);
-
-	while (!priv->queue_stopped && (skb = if_dequeue(&dev->snd)) != NULL)
-		ethoc_start_xmit(skb, dev);
 }
 
 
@@ -653,13 +625,10 @@ static long ethoc_tx(struct netif *dev, long limit)
 		priv->dty_tx++;
 	}
 
-	if ((priv->cur_tx - priv->dty_tx) <= (priv->num_tx / 2))
-		netif_wake_queue(dev);
-
 	return count;
 }
 
-/* called from svethlana_interrupt at IPL 6, or from ethoc_tx_timeout() */
+/* called from svethlana_interrupt at IPL 6 */
 long _cdecl ethoc_interrupt(void)
 {
 	struct ethoc *priv = &ethoc_priv;
@@ -843,14 +812,6 @@ static long ethoc_open(struct netif *dev)
 	ethoc_init_ring(priv, (unsigned long) priv->membase);
 	ethoc_reset(priv);
 
-	if (priv->queue_stopped) {
-		DEBUG((" resuming queue"));
-		netif_wake_queue(dev);
-	} else {
-		DEBUG((" starting queue"));
-		netif_start_queue(priv);
-	}
-
 	priv->old_link = -1;
 	priv->old_duplex = -1;
 
@@ -871,9 +832,6 @@ static long ethoc_stop(struct netif *dev)
 	/* free_irq(): the vector stays, so the MAC is silenced instead */
 	ethoc_disable_irq(priv, INT_MASK_ALL);
 	ethoc_ack_irq(priv, INT_MASK_ALL);
-
-	if (!priv->queue_stopped)
-		netif_stop_queue(priv);
 
 	return 0;
 }
@@ -1006,18 +964,6 @@ static void ethoc_set_multicast_list(struct netif *dev)
 
 /* ethoc_change_mtu() returns -ENOSYS: the MTU stays at 1500 */
 
-/* the netdev watchdog's tx_timeout, called by svethlana_timeout() */
-static void ethoc_tx_timeout(struct netif *dev)
-{
-	struct ethoc *priv = dev->data;
-	u32 pending = ethoc_read(priv, INT_SOURCE);
-	if (likely(pending)) {
-		ushort sr = spl7();
-		ethoc_interrupt();
-		spl(sr);
-	}
-}
-
 /*
  * The buffer is the Linux skb: dstart to dend hold the complete Ethernet
  * frame. It is consumed here, whether it was sent or dropped.
@@ -1039,6 +985,11 @@ static long ethoc_start_xmit(BUF *skb, struct netif *dev)
 	}
 
 	entry = priv->cur_tx % priv->num_tx;
+
+	/* wait for a completion; only the interrupt handler moves dty_tx */
+	while ((priv->cur_tx - *(volatile u32 *) &priv->dty_tx) >= ETHOC_TX_PENDING)
+		;
+
 	sr = spl7();
 	priv->cur_tx++;
 
@@ -1059,11 +1010,6 @@ static long ethoc_start_xmit(BUF *skb, struct netif *dev)
 
 	bd.stat |= TX_BD_READY;
 	ethoc_write_bd(priv, entry, &bd);
-
-	if (priv->cur_tx == (priv->dty_tx + priv->num_tx)) {
-		DEBUG(("stopping queue"));
-		netif_stop_queue(priv);
-	}
 
 	spl(sr);
 out:
@@ -1324,7 +1270,6 @@ svethlana_close (struct netif *nif)
 static long
 svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
-	struct ethoc *priv = nif->data;
 	BUF *nbuf;
 
 	nbuf = eth_build_hdr (buf, nif, hwaddr, pktype);
@@ -1336,14 +1281,6 @@ svethlana_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, 
 
 	if (nif->bpf)
 		bpf_input (nif, nbuf);
-
-	if (priv->queue_stopped)
-	{
-		/* if_enqueue() frees the buffer when the queue is full */
-		if (if_enqueue (&nif->snd, nbuf, nbuf->info))
-			nif->out_errors++;
-		return 0;
-	}
 
 	return ethoc_start_xmit (nbuf, nif);
 }
@@ -1472,8 +1409,7 @@ svethlana_igmp_mac_filter (struct netif *nif, ulong group, char action)
 
 /*
  * Called every IF_SLOWTIMEOUT (one second) while the interface is up.
- * That is PHY_STATE_TIME, the Linux PHY polling period, and it also
- * stands in for the netdev watchdog.
+ * That is PHY_STATE_TIME, the Linux PHY polling period.
  */
 static void
 svethlana_timeout (struct netif *nif)
@@ -1481,15 +1417,6 @@ svethlana_timeout (struct netif *nif)
 	struct ethoc *priv = nif->data;
 
 	phy_state_machine (priv->phydev);
-
-	/* netdev watchdog: the ring stays full only when completions stop */
-	if (priv->queue_stopped)
-	{
-		if (priv->watchdog++)
-			ethoc_tx_timeout (nif);
-	}
-	else
-		priv->watchdog = 0;
 }
 
 /*
