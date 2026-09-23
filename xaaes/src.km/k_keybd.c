@@ -239,23 +239,15 @@ XA_keyboard_event(int lock, const struct rawkey *key)
 					post_cevent(client, cXA_keybd_event, rk, NULL, 0,0, NULL,NULL);
 				} else
 				{
-					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));
+					queue_key(client, key);
+					kfree(rk);
 				}
 			}
 		}
 	}
 	else
 	{
-		/*!!!TEST!!!*/
 		queue_key(client, key);
-		/*
-		 * We dont queue the key when we are sure the client dont want it
-		 */
-		/*if ( !client->waiting_pb )
-			queue_key(client, key);
-		else
-			cancel_keyqueue(client);
-			*/
 	}
 }
 
