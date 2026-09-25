@@ -56,6 +56,48 @@ char whatmsg[] =
 "@(#)mount for nfs v3, derived from the nfs v2 mount tool, " __DATE__;
 
 
+/* Compare two path names, treating '/' and '\\' as the same separator and
+ * any run of separators as one.
+ *
+ * \etc\mtab holds the directory with its backslashes doubled, so
+ * getmntent() hands back "\\nfs3\\falcon" where our own name is
+ * "\nfs3\falcon". A plain strcmp() misses that: the unmount then found
+ * no entry and never called Dcntl() -- silently, reporting success --
+ * and the table grew one stale line per mount because the filter below
+ * never matched either.
+ */
+# define IS_SEP(c)	((c) == '/' || (c) == '\\')
+
+static int
+same_path (const char *a, const char *b)
+{
+	while (*a && *b)
+	{
+		if (IS_SEP (*a) && IS_SEP (*b))
+		{
+			while (IS_SEP (a[1]))
+				a++;
+			while (IS_SEP (b[1]))
+				b++;
+		}
+		else if (*a != *b)
+			return 0;
+
+		a++;
+		b++;
+	}
+
+	/* A trailing separator does not make two paths different -- one
+	 * gets typed as often as not.
+	 */
+	while (IS_SEP (*a))
+		a++;
+	while (IS_SEP (*b))
+		b++;
+
+	return *a == '\0' && *b == '\0';
+}
+
 static void
 usage (void)
 {
@@ -266,6 +308,7 @@ update_mtab (int mode, char *filesys, char *dir, char *type,
 	{
 		FILE *fl;
 		struct mntent *mnt;
+		int kept, dropped;
 
 		fp = setmntent (MOUNTED, "r");
 		if (!fp)
@@ -274,24 +317,59 @@ update_mtab (int mode, char *filesys, char *dir, char *type,
 			return 1;
 		}
 
-		fl = setmntent (LOCKED, "a+");
+		/* "a+" appended to whatever a previous, failed run had left
+		 * behind, so the table could only ever grow. Truncate.
+		 */
+		fl = setmntent (LOCKED, "w");
 		if (!fl)
 		{
-			fprintf (stderr, "%s: could not update mount table\n", commandname);
+			fprintf (stderr, "%s: could not write %s\n",
+				 commandname, LOCKED);
+			endmntent (fp);
 			return 1;
 		}
 
+		kept = 0;
+		dropped = 0;
+
 		while ((mnt = getmntent (fp)) != NULL)
 		{
-			if ( (strcmp (mnt->mnt_dir, dir) != 0) &&
-			     (strcmp (mnt->mnt_fsname, dir) != 0) )
-				addmntent (fl, mnt);
+			if (same_path (mnt->mnt_dir, dir)
+			    || same_path (mnt->mnt_fsname, dir))
+			{
+				dropped++;
+				continue;
+			}
+
+			addmntent (fl, mnt);
+			kept++;
 		}
 
 		endmntent (fp);
 		endmntent (fl);
 
-		rename (LOCKED, MOUNTED);
+		/* GEMDOS refuses to rename onto an existing file, and the
+		 * return value used to be ignored -- so the rewritten table
+		 * was thrown away and the stale lines stayed forever.
+		 */
+		if (remove (MOUNTED) != 0)
+		{
+			fprintf (stderr, "%s: cannot remove %s\n",
+				 commandname, MOUNTED);
+			remove (LOCKED);
+			return 1;
+		}
+
+		if (rename (LOCKED, MOUNTED) != 0)
+		{
+			fprintf (stderr, "%s: cannot rename %s to %s\n",
+				 commandname, LOCKED, MOUNTED);
+			return 1;
+		}
+
+		if (verbose)
+			printf ("%s: %s: %d entries removed, %d kept\n",
+				commandname, MOUNTED, dropped, kept);
 
 		return 0;
 	}
@@ -469,8 +547,9 @@ main (int argc, char *argv[])
 	else
 	{
 		FILE *fp;
-		struct mntent *mnt;
-		int which;
+		struct mntent *mnt = NULL;
+		char remote[PATH_MAX+1];
+		int have_remote = 0;
 
 		if (!dir)
 		{
@@ -478,40 +557,48 @@ main (int argc, char *argv[])
 			return 1;
 		}
 
+		/* The mount table is consulted only to find out which server
+		 * to notify. Not finding an entry must NOT stop the unmount:
+		 * the kernel is the authority on what is mounted, and a mount
+		 * made before \etc was writable -- from mint.cnf, say -- has
+		 * no entry at all. The old code skipped the Dcntl() in that
+		 * case and still reported success.
+		 */
 		fp = setmntent (MOUNTED, "r");
-		if (!fp)
+		if (fp)
 		{
-			fprintf (stderr, "%s: cannot open mount table\n", commandname);
+			while ((mnt = getmntent (fp)) != NULL)
+			{
+				if (same_path (mnt->mnt_dir, dir)
+				    || same_path (mnt->mnt_fsname, dir))
+					break;
+			}
+
+			if (mnt)
+			{
+				strncpy (remote, mnt->mnt_fsname, sizeof (remote) - 1);
+				remote[sizeof (remote) - 1] = '\0';
+				have_remote = 1;
+			}
+
+			endmntent (fp);
+		}
+
+		if (verbose && !have_remote)
+			printf ("%s: %s is not listed in %s, "
+				"unmounting it anyway\n",
+				commandname, dir, MOUNTED);
+
+		r = do_nfs_unmount (have_remote ? remote : NULL, dir);
+		if (r != 0)
+		{
+			fprintf (stderr, "%s: could not unmount %s\n",
+				 commandname, dir);
 			return 1;
 		}
 
-		which = 0;
-		while ((mnt = getmntent (fp)) != NULL)
-		{
-			if (!strcmp (mnt->mnt_dir, dir))
-			{
-				which = 2;
-				break;
-			}
-			if (!strcmp (mnt->mnt_fsname, dir))
-			{
-				which = 1;
-				break;
-			}
-		}
-		(void) which;
-
-		if (mnt)
-		{
-			r = do_nfs_unmount (mnt->mnt_fsname, mnt->mnt_dir);
-			if (r != 0)
-			{
-				fprintf (stderr, "%s: could not do NFS unmount\n", commandname);
-				return 1;
-			}
-		}
-
-		fclose (fp);
+		if (verbose)
+			printf ("unmounted %s\n", dir);
 
 		/* update the mount table file */
 		if (!without_mtab)
