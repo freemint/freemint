@@ -33,6 +33,11 @@ struct message
 # define FROM_LIST	0x01000000
 # define DATA_FLAGS	(FREE_BUFFER|FREE_DATA|FREE_HEADER)
 
+	/* Credentials to send this request with, NULL for those of the
+	 * calling process.
+	 */
+	NFS_CRED *cred;
+
 	/* This is used only internally */
 	MESSAGE	*next;		/* internal link */
 	ulong	xid;		/* transaction id */
@@ -43,6 +48,9 @@ MESSAGE *	alloc_message (MESSAGE *m, char *buf, long buf_len, long data_size);
 
 long	rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep);
 int	init_ipc (ulong prog, ulong version);
+
+/* Remember the calling process' credentials for later use */
+void	nfs_capture_cred (NFS_CRED *c);
 
 
 # endif /* _sock_ipc_h */

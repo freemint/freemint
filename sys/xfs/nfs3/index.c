@@ -228,6 +228,7 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 	ni->stamp = 0;
 	ni->size = 0;
 	ni->wdirty = 0;
+	ni->wcred.valid = 0;
 	ni->handle.len = 0;
 	init_mount_attr(&ni->attr);
 
@@ -297,6 +298,7 @@ init_cluster (INDEX_CLUSTER *icp, int number)
 		icp->index[i].flags = 0;
 		icp->index[i].name = NULL;
 		icp->index[i].handle.len = 0;
+		icp->index[i].wcred.valid = 0;
 	}
 
 	icp->n_used = 0;
@@ -507,6 +509,7 @@ init_slot:
 	ni->attr.dev = 0;
 	ni->size = 0;
 	ni->wdirty = 0;
+	ni->wcred.valid = 0;
 	ni->handle.len = 0;
 	ni->stamp = 0;
 

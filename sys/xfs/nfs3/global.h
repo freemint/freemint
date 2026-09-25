@@ -181,6 +181,21 @@ struct nfs_mount_opt
 };
 
 
+/* AUTH_UNIX credentials of a process, captured so that a deferred
+ * operation can be sent with the rights of whoever caused it.
+ */
+# define NFS_NGROUPS	8
+
+typedef struct nfs_cred
+{
+	long	valid;
+	ulong	uid;
+	ulong	gid;
+	long	ngroups;
+	ushort	groups[NFS_NGROUPS];
+} NFS_CRED;
+
+
 typedef struct index_cluster INDEX_CLUSTER;
 typedef struct nfs_index NFS_INDEX;
 
@@ -202,6 +217,14 @@ struct nfs_index
 	uint64	size;		/* full 64 bit size, XATTR.size is 32 bit */
 	long	wdirty;		/* unstable write data pending on the server */
 	char	wverf[NFS3_WRITEVERFSIZE];	/* verifier of those writes */
+
+
+	/* Credentials of the process whose unstable data is pending.
+	 * nfs_sync() issues the COMMIT3 from the update daemon's context,
+	 * so without these it would go out as root and a server with
+	 * root_squash could refuse it.
+	 */
+	NFS_CRED wcred;
 	long	stamp;		/* time stamp when this xattr struct was filled */
 	struct nfs_index *dir;	/* index of directory this one is in */
 	struct nfs_index *aux;	/* this is used for getname() */

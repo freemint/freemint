@@ -24,6 +24,9 @@
 
 static long	_cdecl nfs_open		(FILEPTR *f);
 static long	_cdecl nfs_write	(FILEPTR *f, const char *buf, long bytes);
+static long	write_range	(NFS_INDEX *ni, const char *buf, long bytes,
+				 long pos, long stable, char *verf,
+				 int *all_stable);
 static long	_cdecl nfs_read		(FILEPTR *f, char *buf, long bytes);
 static long	_cdecl nfs_lseek	(FILEPTR *f, long where, int whence);
 static long	_cdecl nfs_ioctl	(FILEPTR *f, int mode, void *buf);
@@ -114,10 +117,9 @@ nfs_open (FILEPTR *f)
  * Returns the number of bytes written, or a negative error code.
  */
 static long
-write_range (FILEPTR *f, const char *buf, long bytes, long pos,
+write_range (NFS_INDEX *ni, const char *buf, long bytes, long pos,
 	     long stable, char *verf, int *all_stable)
 {
-	NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
 	long wsize = ni->opt->wsize;
 	long written = 0;
 	int have_verf = 0;
@@ -230,13 +232,34 @@ write_range (FILEPTR *f, const char *buf, long bytes, long pos,
 	return written;
 }
 
+/* Note the unstable state after a write. The data is only in the
+ * server's memory until a COMMIT3, which nfs_close() and nfs_sync() do.
+ */
+static void
+note_unstable (NFS_INDEX *ni, const char *verf, int all_stable)
+{
+	if (all_stable)
+		return;
+
+	if (!ni->wdirty)
+	{
+		memcpy (ni->wverf, verf, NFS3_WRITEVERFSIZE);
+
+		/* nfs_sync() may issue the COMMIT3 from the update daemon's
+		 * context, so remember who wrote the data.
+		 */
+		nfs_capture_cred (&ni->wcred);
+	}
+
+	ni->wdirty = 1;
+}
+
 static long _cdecl
 nfs_write (FILEPTR *f, const char *buf, long bytes)
 {
 	NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
 	char verf[NFS3_WRITEVERFSIZE];
-	long start = f->pos;
-	long written;
+	long start, written;
 	int all_stable;
 
 	if (ROOT_INDEX == ni)
@@ -255,29 +278,21 @@ nfs_write (FILEPTR *f, const char *buf, long bytes)
 		return 0;
 
 	if (nfs_get_handle (ni) != 0)
+	{
+		ALERT (("nfs3: nfs_write(%s): no file handle", ni->name));
 		return EWRITE;
+	}
 
 	TRACE (("nfs_write: writing %ld bytes to file '%s'", bytes, ni->name));
 
-	written = write_range (f, buf, bytes, start, UNSTABLE, verf, &all_stable);
+	start = f->pos;
+
+	written = write_range (ni, buf, bytes, start, UNSTABLE, verf, &all_stable);
 	if (written < 0)
 		return written;
 
-	if (!all_stable && written > 0)
-	{
-		/* The data is only in the server's memory so far. Do NOT
-		 * commit here: applications write in small pieces, and one
-		 * COMMIT3 per write() call doubles the number of round trips
-		 * -- which is exactly what made writing four times slower
-		 * than reading. Remember the state instead and flush once in
-		 * nfs_close(), the way RFC 1813 intends it.
-		 */
-		if (!ni->wdirty)
-		{
-			memcpy (ni->wverf, verf, NFS3_WRITEVERFSIZE);
-			ni->wdirty = 1;
-		}
-	}
+	if (written > 0)
+		note_unstable (ni, verf, all_stable);
 
 	f->pos = start + written;
 

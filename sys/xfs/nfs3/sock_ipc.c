@@ -213,38 +213,58 @@ init_auth (void)
 }
 
 
-static void
-setup_auth (ulong stamp)
+void
+nfs_capture_cred (NFS_CRED *c)
 {
-# define NGROUPS_MAX	8
-	unsigned short suppgrps [2 * NGROUPS_MAX];
-	long ngrp;
+	ushort suppgrps [2 * NFS_NGROUPS];
+	long ngrp, i;
 
-	*p_stamp = stamp;
-	*p_uid = (ulong) p_geteuid ();
-	*p_gid = (ulong) p_getegid ();
+	c->uid = (ulong) p_geteuid ();
+	c->gid = (ulong) p_getegid ();
 
-	{
-		char *p = (char *) & the_xdr_auth[0];
-
-		(void) p; /* suppress warning */
-		DEBUG (("setup_auth: machine name has len %ld, `%c%c%c...'",
-		          *(long*)(p+sizeof(long)), (p+2*sizeof(long))[0],
-		          (p+2*sizeof(long))[1], (p+2*sizeof(long))[2]));
-		DEBUG (("setup_auth: setting uid %ld/gid %ld", *p_uid, *p_gid));
-	}
-
-	ngrp = p_getgroups (2 * NGROUPS_MAX, suppgrps);
+	ngrp = p_getgroups (2 * NFS_NGROUPS, suppgrps);
 	if (ngrp < 0)
 		ngrp = 0;
-	else if (ngrp > NGROUPS_MAX)
-		ngrp = NGROUPS_MAX;
+	else if (ngrp > NFS_NGROUPS)
+		ngrp = NFS_NGROUPS;
 
-	*p_ngid = ngrp;
-	unix_auth.len = auth_baselen + sizeof (ulong) * ngrp;
+	for (i = 0; i < ngrp; i++)
+		c->groups[i] = suppgrps[i];
 
-	for ( ; ngrp >= 0; ngrp -= 1)
-		p_gids [ngrp] = (short)suppgrps [ngrp];
+	c->ngroups = ngrp;
+	c->valid = 1;
+}
+
+/* Build the AUTH_UNIX credential for the next request. With `c' set the
+ * stored credentials are used, otherwise those of the calling process.
+ */
+static void
+setup_auth (ulong stamp, const NFS_CRED *c)
+{
+	NFS_CRED own;
+	long i;
+
+	if (!c || !c->valid)
+	{
+		nfs_capture_cred (&own);
+		c = &own;
+	}
+
+	*p_stamp = stamp;
+	*p_uid = c->uid;
+	*p_gid = c->gid;
+
+	DEBUG (("setup_auth: uid %ld, gid %ld, %ld groups",
+		c->uid, c->gid, c->ngroups));
+
+	*p_ngid = c->ngroups;
+	unix_auth.len = auth_baselen + sizeof (ulong) * c->ngroups;
+
+	/* NOTE: the original loop ran from ngroups down to 0 and so wrote
+	 * one entry more than it announced.
+	 */
+	for (i = 0; i < c->ngroups; i++)
+		p_gids [i] = (ulong) c->groups[i];
 }
 
 /*============================================================*/
@@ -461,6 +481,7 @@ alloc_message (MESSAGE *m, char *buf, long buf_len, long data_size)
 
 	m->data = m->buffer = m->header = NULL;
 	m->data_len = m->hdr_len = 0;
+	m->cred = NULL;
 
 	if (0 == data_size)
 		return m;
@@ -692,6 +713,7 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 	/* SECURITY: here we should bother about the address of the sender so that
 	 *           we can later check for the correct sender.
 	 */
+	mrep->cred = NULL;
 	mrep->buffer = buf;
 	mrep->flags |= FREE_BUFFER;
 	mrep->data = buf;
@@ -739,7 +761,7 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		else
 			do_auth_init -= 1;
 	}
-	setup_auth (our_xid);
+	setup_auth (our_xid, mreq->cred);
 	hdr.cbody.cred = unix_auth;
 	hdr.cbody.verf = null_auth;
 

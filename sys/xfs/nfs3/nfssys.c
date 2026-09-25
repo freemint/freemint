@@ -935,6 +935,12 @@ do_commit (fcookie *fc, uint64 offset, ulong count, char *verf)
 	if (!mreq)
 		return ENOMEM;
 
+	/* nfs_sync() commits from the update daemon's context, so use the
+	 * credentials of the process whose data we are flushing
+	 */
+	if (ni->wcred.valid)
+		mreq->cred = &ni->wcred;
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	if (!xdr_commit3args (&x, &arg))
 	{
