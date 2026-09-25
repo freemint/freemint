@@ -358,9 +358,8 @@ do_nfs_unmount (const char *remote, const char *local)
 		return -1;
 
 	unx2dos (local, mountname);
-	remote = split_remote (remote, hostname, sizeof (hostname));
 
-	/* do unmount on the local kernel */
+	/* do unmount on the local kernel -- this is the part that matters */
 	r = Dcntl (NFS3_UNMOUNT, mountname, 0);
 	if (r != 0)
 	{
@@ -368,6 +367,20 @@ do_nfs_unmount (const char *remote, const char *local)
 			 commandname, r);
 		return r;
 	}
+
+	/* Telling the server is courtesy: it only drops the entry from the
+	 * server's rmtab. Without a remote name we cannot, and that is no
+	 * reason to fail.
+	 */
+	if (!remote || !strchr (remote, ':'))
+	{
+		if (verbose)
+			printf ("%s: no server known for %s, "
+				"skipping MOUNT3 UMNT\n", commandname, local);
+		return 0;
+	}
+
+	remote = split_remote (remote, hostname, sizeof (hostname));
 
 	/* no error checks here, as we should not fail the unmount if there was
 	 * no contact with the nfs server.
