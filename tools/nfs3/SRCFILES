@@ -1,0 +1,8 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = mount.h mount_xdr3.h nfsmnt3.h
+OBJS_mount_nfs3 = mount.c mount_xdr3.c nfsmnt3.c
+COBJS = $(OBJS_mount_nfs3)
+
+SRCFILES = $(HEADER) $(COBJS)

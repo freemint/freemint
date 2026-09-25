@@ -260,6 +260,7 @@ struct fs_info
 # define FS_CDRAW	(_MAJOR_CDRAW)			/* Spin 0.35 */
 # define FS_STONX	(_MAJOR_STONX)			/* STonXfs4MiNT */
 # define FS_NFS2	(_MAJOR_NFS)			/* nfs 0.55 */
+# define FS_NFS3	(_MAJOR_NFS | 1)		/* nfs3 (RFC 1813) */
 # define FS_HOSTFS	(_MAJOR_HOSTFS)			/* aranym hostfs */
 
 

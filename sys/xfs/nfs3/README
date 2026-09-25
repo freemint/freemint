@@ -1,0 +1,226 @@
+nfs3.xfs -- an NFS version 3 client file system for FreeMiNT
+============================================================
+
+This is a client implementation of NFS version 3 (RFC 1813) for FreeMiNT.
+It is derived from the NFS version 2 driver (sys/xfs/nfs, RFC 1094),
+which stays in the tree unchanged: the two drivers can be
+installed at the same time and mount their exports independently.
+
+The reason this driver exists is simple: current Linux distributions
+(Ubuntu 24.04 among them) no longer ship NFSv2 support in their kernel
+nfsd, so nfs.xfs cannot mount anything from them any more. NFSv3 is still
+supported everywhere.
+
+
+INSTALLATION
+============
+
+  - Make sure the MiNT socket device (inet4) is working and that
+    u:\etc\hosts, u:\etc\services and u:\etc\resolv.conf are in place.
+  - Copy nfs3.xfs into your \mint\<version>\ directory so that MiNT loads
+    it at boot time. It installs itself as u:\nfs3.
+  - Copy mount_nfs3 (from tools/nfs3) somewhere in your PATH.
+
+On the server side, export the directory as usual, for example in
+/etc/exports on a Linux box:
+
+    /srv/atari  192.168.1.0/24(rw,sync,no_subtree_check,insecure)
+
+`insecure' is only needed if the Atari cannot bind a reserved port.
+No special nfsvers= option is required -- Linux offers NFSv3 by default.
+
+Mounting:
+
+    mount_nfs3 server:/srv/atari /nfs3/atari
+    mount_nfs3 -o ro,rsize=8192 server:/srv/pub /nfs3/pub
+
+Unmounting:
+
+    mount_nfs3 -u /nfs3/atari
+
+The mount point below /nfs3 is created by the driver, it does not have
+to exist beforehand.
+
+
+OPTIONS
+=======
+
+  ro, rw            mount read only / read write
+  nosuid, suid      ignore / honour the set-uid bit
+  rsize=n, wsize=n  transfer sizes; clamped to what FSINFO3 reports
+  timeo=n           initial timeout in tenths of a second
+  retrans=n         number of retries before giving up
+  port=n            NFS port on the server (default 2049)
+  actimeo=n         attribute cache lifetime in tenths of a second
+
+
+LIMITATIONS
+===========
+
+  - Files larger than 2 GB can be looked at (Fstat64 reports the true
+    size) but not read or written past the 2 GB mark, because MiNT's
+    file position is a signed 32 bit value.
+  - ACCESS3 is implemented in the XDR layer but not wired into the file
+    system yet; permission checks still rely on the mode bits, as they
+    did under NFS2.
+  - READDIRPLUS3 and MKNOD3 are not implemented. READDIRPLUS would need
+    considerably more buffer space than a small machine can spare, and
+    MiNT's XFS interface only offers mknod through FS_EXT_1, which this
+    driver does not implement (neither does the NFS2 one).
+  - Only AUTH_UNIX is supported, as in the NFS2 driver. There is no
+    Kerberos (RPCSEC_GSS).
+  - UDP only, no NFS over TCP.
+
+
+FILES
+=====
+
+  nfs3_xdr.c/h   the RFC 1813 data types
+  xdr.c/h        generic XDR, extended with 64 bit and variable opaque
+  rpc_xdr.c/h    ONC RPC message headers (unchanged from the NFS2 driver)
+  sock_ipc.c/h   UDP transport, retransmission (unchanged)
+  nfssys.c       the FILESYS entry points
+  nfsdev.c       the DEVDRV entry points (read, write, ioctl, ...)
+  nfsutil.c      fattr3 <-> XATTR conversion, error mapping
+  index.c        file index management (unchanged from the NFS2 driver)
+  cache.c        lookup cache (unchanged from the NFS2 driver)
+  main.c         installation
+
+
+WHAT IS DIFFERENT IN NFS VERSION 3
+==================================
+
+The following is the list of protocol changes that actually mattered for
+this implementation. Section numbers refer to RFC 1813.
+
+File handles (2.5, 3.3)
+-----------------------
+NFS2 file handles are a fixed 32 byte blob. NFS3 handles are variable
+sized, up to 64 bytes ("opaque data<NFS3_FHSIZE>"), and Linux really uses
+that: the handle length depends on the exported file system and on the
+export options. Every place that stores or transmits a handle therefore
+has to carry the length as well; see nfs_fh3 in nfs3_xdr.h.
+
+64 bit file sizes and offsets (2.5)
+-----------------------------------
+size3, offset3, fileid3 and cookie3 are 64 bit. This is the change that
+lifts the 2/4 GB file size limit of NFS2. MiNT's XATTR, FILEPTR.pos and
+the GEMDOS interface are 32 bit, so the driver keeps the full 64 bit size
+in NFS_INDEX.size (used by Fstat64() and by lseek(SEEK_END)) and clamps
+to 0x7fffffff wherever it has to hand a value to a 32 bit interface.
+
+File type and mode (2.5)
+------------------------
+In NFS2 the file type was encoded into the high bits of fattr.mode, using
+the traditional Unix S_IF* values -- which are *not* MiNT's S_IF* values,
+so the old driver needed its own N_IF* constants and a translation table.
+NFS3 has a separate ftype3 field and mode3 carries the protection bits
+only. ftype3 maps one to one onto MiNT's file types, including sockets
+and fifos, which NFS2 could not express properly at all.
+
+Also new in fattr3: `used' (bytes actually allocated, 64 bit) replaces
+`blocks' (512 byte units), `blocksize' is gone, `rdev' became a
+structured specdata3 and `fsid' became 64 bit.
+
+Setting attributes (3.3.2)
+--------------------------
+NFS2's sattr used the convention "a field of all ones means do not
+change this". NFS3's sattr3 is a discriminated union per attribute, and
+for the two time stamps it can additionally say "set it to the server's
+current time" (SET_TO_SERVER_TIME), which the driver uses for touch(1)
+style operations so that a wrong Atari clock does not matter.
+SETATTR3 also gained an optional guard (sattrguard3) that makes the
+operation conditional on the object's ctime; the driver does not use it.
+
+Optional attributes in every reply (2.6)
+----------------------------------------
+Nearly every NFS3 reply carries a post_op_attr (the object's attributes
+after the operation) or a wcc_data (attributes before and after, for
+"weak cache consistency"), and it carries them in the failure case too.
+They have to be decoded whether they are wanted or not. The driver feeds
+them into its attribute cache, so a lookup, a read or a write refreshes
+the cached attributes for free -- something NFS2 needed extra GETATTR
+round trips for.
+
+Procedure numbering and new procedures (3.3)
+--------------------------------------------
+LOOKUP moved from procedure 4 to 3, the obsolete NFS2 procedures ROOT (3)
+and WRITECACHE (7) are gone, and everything behind LOOKUP shifted. New
+procedures are ACCESS (4), MKNOD (11), READDIRPLUS (17), FSINFO (19),
+PATHCONF (20) and COMMIT (21); STATFS (17) was replaced by FSSTAT (18).
+
+FSINFO3 is used at mount time to find out the transfer sizes the server
+prefers and whether it supports hard links and symbolic links at all;
+NFS2 clients had to guess, and the old driver simply hard wired 4 kB.
+
+FSSTAT3 reports free space in bytes as 64 bit numbers instead of NFS2's
+block counts. nfs_dfree() converts that into the 32 bit
+clusters/sectors that GEMDOS expects, using 1 kB units so that even
+multi terabyte exports do not overflow.
+
+Object creation (3.3.8 - 3.3.11)
+--------------------------------
+CREATE3 has three modes (UNCHECKED, GUARDED, EXCLUSIVE); the driver uses
+UNCHECKED, which is what NFS2's CREATE did, because MiNT's kernel already
+handles O_EXCL. More importantly, CREATE3/MKDIR3/SYMLINK3/MKNOD3 return
+the new file handle only *optionally* (post_op_fh3). When the server
+leaves it out, the driver marks the new index as handle-less and does a
+LOOKUP3 the first time the handle is actually needed -- the same
+mechanism that was already there for entries coming out of READDIR.
+
+Note also that SYMLINK3 sends the attributes *before* the target path,
+where NFS2 sent the path first.
+
+The driver no longer asks for a specific uid/gid when creating a file.
+NFS2's driver did, which fails on servers that squash the client's
+credentials; NFS3 servers assign owner and group from the RPC credentials
+anyway.
+
+READDIR (3.3.16)
+----------------
+Directory cookies are 64 bit, and the reply carries an 8 byte cookie
+verifier that has to be sent back unchanged with every follow-up request
+so that the server can detect that the directory was rewritten in
+between. The driver keeps both in the DIR handle's fsstuff area.
+
+READDIRPLUS (17), which would deliver attributes and file handles along
+with the names and would save the follow-up LOOKUP3 per entry, is not
+implemented: it costs a lot of buffer space on a machine with a few
+megabytes of RAM, and many servers turn it off anyway.
+
+WRITE and COMMIT (3.3.7, 3.3.21)
+--------------------------------
+This is the big performance change. NFS2's WRITE was always synchronous:
+the server had to have the data on disk before it could answer. NFS3
+lets the client write UNSTABLE and flush later with COMMIT3.
+
+nfs_write() writes UNSTABLE and issues a single COMMIT3 for the whole
+range before it returns, so a write() call is as durable as it was under
+NFS2 but needs only one synchronous round trip instead of one per
+wsize-sized chunk. If the write verifier that COMMIT3 returns differs
+from the one the WRITE3 replies carried, the server rebooted and lost the
+data; the driver then rewrites the range with FILE_SYNC.
+
+Error codes (2.6)
+-----------------
+NFS3 added NFS3ERR_INVAL, NFS3ERR_XDEV, NFS3ERR_MLINK, NFS3ERR_NOTSUPP,
+NFS3ERR_BAD_COOKIE, NFS3ERR_JUKEBOX, NFS3ERR_SERVERFAULT and others, and
+dropped NFSERR_WFLUSH. The NFS2 driver mostly answered EACCES no matter
+what went wrong; this one translates the status properly (nfs3_error()
+in nfsutil.c), so applications see ENOSPC, EDQUOT, ENOTEMPTY, ESTALE and
+friends.
+
+MOUNT protocol
+--------------
+Version 3 of the MOUNT protocol (RFC 1813 appendix I) is used, because
+version 1 can only return a 32 byte handle. Its reply also lists the
+authentication flavours the server accepts. This lives in the
+mount_nfs3 utility, see tools/nfs3.
+
+What did *not* change
+---------------------
+The ONC RPC layer (RFC 1057), AUTH_UNIX credentials and the UDP
+transport are the same as in NFS2, so rpc_xdr.c and sock_ipc.c were
+taken over from the NFS2 driver unchanged. The general shape of the
+driver -- index clusters, lookup cache, mount slots -- was kept from the
+NFS version 2 driver, so that fixes can be moved between the two.
