@@ -98,11 +98,28 @@ clamp64 (uint64 v)
 }
 
 
+/* Round a transfer size down to a power of two and return its shift, so
+ * that the block count stays exact: nblocks * blksize == bytes used,
+ * which is what nfs_stat64() relies on.
+ */
+static long
+blk_shift (long blksize)
+{
+	long s = 9;			/* 512 bytes */
+
+	while (((long) 1 << (s + 1)) <= blksize && s < 20)
+		s++;
+
+	return s;
+}
+
 /* convert an NFS3 fattr3 structure into a MiNT xattr structure
  */
 void
-fattr2xattr (fattr3 *fa, XATTR *xa)
+fattr2xattr (fattr3 *fa, XATTR *xa, long blksize)
 {
+	long shift = blk_shift (blksize > 0 ? blksize : 512);
+
 	xa->mode = mint_type (fa->type) | (ushort) (fa->mode & N3MODE_PERM);
 	xa->attr = 0;
 
@@ -120,11 +137,15 @@ fattr2xattr (fattr3 *fa, XATTR *xa)
 	xa->gid		= (ushort) fa->gid;
 	xa->size	= clamp64 (fa->size);
 
-	/* NFS3 reports the number of bytes really allocated instead of
-	 * NFS2's count of 512 byte blocks
+	/* st_blksize is the size programs pick their I/O buffers from, so
+	 * it has to be the transfer size we negotiated -- not 512, which
+	 * makes cp and friends do 512 byte reads and writes. NFS3 has no
+	 * fattr3.blocksize any more, it reports the bytes allocated
+	 * instead of NFS2's count of 512 byte blocks.
 	 */
-	xa->blksize	= 512;
-	xa->nblocks	= clamp64 ((fa->used + 511ULL) >> 9);
+	xa->blksize	= (long) 1 << shift;
+	xa->nblocks	= clamp64 ((fa->used + (((uint64) 1 << shift) - 1))
+				   >> shift);
 
 	if (native_utc)
 	{
@@ -147,7 +168,20 @@ fattr2xattr (fattr3 *fa, XATTR *xa)
 void
 set_index_attr (NFS_INDEX *ni, fattr3 *fa)
 {
-	fattr2xattr (fa, &ni->attr);
+	long blksize = 512;
+
+	if (ni->opt)
+	{
+		/* Never advertise more than either direction can carry in a
+		 * single request, so a program using st_blksize always hits
+		 * exactly one RPC per buffer.
+		 */
+		blksize = MIN (ni->opt->rsize, ni->opt->wsize);
+		if (blksize < 512)
+			blksize = 512;
+	}
+
+	fattr2xattr (fa, &ni->attr, blksize);
 	ni->size = fa->size;
 	ni->stamp = get_timestamp ();
 }

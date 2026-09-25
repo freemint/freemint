@@ -28,7 +28,12 @@ ulong	nfs3_mode (ushort mode);
  */
 long	nfs3_error (enum_t status, long dflt);
 
-void	fattr2xattr (fattr3 *fa, XATTR *xa);
+/* `blksize' is what gets reported as st_blksize, i.e. the block size
+ * programs size their I/O buffers from. NFS3 dropped fattr3.blocksize,
+ * so the caller has to supply the transfer size negotiated for the
+ * mount; passing 0 falls back to 512.
+ */
+void	fattr2xattr (fattr3 *fa, XATTR *xa, long blksize);
 
 /* store a freshly received fattr3 in an index and restamp it */
 void	set_index_attr (NFS_INDEX *ni, fattr3 *fa);
