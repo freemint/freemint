@@ -45,6 +45,9 @@ to exist beforehand.
 OPTIONS
 =======
 
+  tcp, udp          pin the transport, also spelled proto=tcp and
+                    proto=udp. Without either, TCP is tried first and
+                    UDP is used if that fails; see TRANSPORT below
   ro, rw            mount read only / read write
   nosuid, suid      ignore / honour the set-uid bit
   rsize=n, wsize=n  transfer sizes; clamped to what FSINFO3 reports
@@ -52,6 +55,35 @@ OPTIONS
   retrans=n         number of retries before giving up
   port=n            NFS port on the server (default 2049)
   actimeo=n         attribute cache lifetime in tenths of a second
+
+
+TRANSPORT: UDP OR TCP
+=====================
+
+TCP is the default: the driver connects, and only if that fails does it
+fall back to UDP for that mount. Two reasons TCP comes first:
+
+  - A current Linux nfsd serves TCP out of the box, while UDP has to be
+    switched on with udp=y in /etc/nfs.conf. Over TCP the driver works
+    against an unmodified server.
+  - A reply larger than the MTU travels as several IP fragments over UDP,
+    and losing any one of them loses the whole reply. On a busy WLAN that
+    happens often enough to matter. TCP retransmits the missing segment
+    instead, and does its own congestion control.
+
+The implementation adds RPC record marking (RFC 5531, section 11) and
+reassembly of records that arrive in pieces, keeps one connection per
+server and rebuilds it when the stream breaks. Retransmission is left to
+TCP: a request is sent once and only sent again after a reconnect.
+
+"-o tcp" and "-o udp" pin the transport, so a mount that must not
+silently change protocol can say so. Which one a mount ended up using is
+printed when it succeeds:
+
+    nfs3: mounted 'atari' from fileserver over TCP
+
+That line matters because an "-o tcp" against a driver too old to know
+the option looks exactly like a working TCP mount from the outside.
 
 
 LIMITATIONS
@@ -69,7 +101,8 @@ LIMITATIONS
     driver does not implement (neither does the NFS2 one).
   - Only AUTH_UNIX is supported, as in the NFS2 driver. There is no
     Kerberos (RPCSEC_GSS).
-  - UDP only, no NFS over TCP.
+  - The UDP fallback is decided once, at mount time. A server that
+    stops answering over TCP later does not switch protocol.
 
 
 FILES
@@ -78,7 +111,7 @@ FILES
   nfs3_xdr.c/h   the RFC 1813 data types
   xdr.c/h        generic XDR, extended with 64 bit and variable opaque
   rpc_xdr.c/h    ONC RPC message headers (unchanged from the NFS2 driver)
-  sock_ipc.c/h   UDP transport, retransmission (unchanged)
+  sock_ipc.c/h   UDP and TCP transport, retransmission
   nfssys.c       the FILESYS entry points
   nfsdev.c       the DEVDRV entry points (read, write, ioctl, ...)
   nfsutil.c      fattr3 <-> XATTR conversion, error mapping
@@ -219,8 +252,8 @@ mount_nfs3 utility, see tools/nfs3.
 
 What did *not* change
 ---------------------
-The ONC RPC layer (RFC 1057), AUTH_UNIX credentials and the UDP
-transport are the same as in NFS2, so rpc_xdr.c and sock_ipc.c were
-taken over from the NFS2 driver unchanged. The general shape of the
+The ONC RPC layer (RFC 1057) and the AUTH_UNIX credentials are the same
+as in NFS2, so rpc_xdr.c was taken over from the NFS2 driver unchanged
+and sock_ipc.c kept its UDP path. The general shape of the
 driver -- index clusters, lookup cache, mount slots -- was kept from the
 NFS version 2 driver, so that fixes can be moved between the two.

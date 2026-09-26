@@ -51,6 +51,12 @@ int secure = 0;
 int noac = 0;
 int nosuid = 0;
 
+/* Transport: -1 means try TCP and fall back to UDP, which is the
+ * default because a current Linux nfsd serves TCP without any extra
+ * configuration. 0 pins UDP, 1 pins TCP.
+ */
+int transport = -1;
+
 
 #define OPT_DEFAULT 0x0000
 
@@ -64,6 +70,8 @@ int nosuid = 0;
 #define OPT_NOAC    0x0100
 #define OPT_NOCTO   0x0200
 #define OPT_POSIX   0x0400
+#define OPT_TCP     0x0800
+#define OPT_UDPFALL 0x1000
 
 
 #define MOUNT_PORT  2050
@@ -240,6 +248,10 @@ do_nfs_mount (const char *remote, const char *localdir)
 		info.flags |= OPT_INTR;
 	if (secure)
 		info.flags |= OPT_SECURE;
+	if (transport != 0)
+		info.flags |= OPT_TCP;
+	if (transport < 0)
+		info.flags |= OPT_UDPFALL;
 
 	info.retrans = retrans;
 	info.timeo = timeo * CLOCKS_PER_SEC/10;

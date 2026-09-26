@@ -29,6 +29,8 @@ extern int intr;
 extern int secure;
 extern long actimeo;
 extern int noac;
+/* -1 = try TCP and fall back to UDP, 0 = UDP only, 1 = TCP only */
+extern int transport;
 
 
 long do_nfs_mount (const char *remote, const char *local);

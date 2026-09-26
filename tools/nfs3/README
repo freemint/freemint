@@ -27,6 +27,9 @@ localdir has to be below u:\nfs3, which is where nfs3.xfs installs
 itself. The directory is created by the driver.
 
     -r      mount read only (same as -o ro)
+    -o tcp  pin NFS over TCP (also proto=tcp); by default TCP is tried
+            first and UDP is used if the connection fails
+    -o udp  pin NFS over UDP (also proto=udp)
     -o      comma separated list of options, see mount_nfs3.8
     -v      verbose
     -n      do not update \etc\mtab

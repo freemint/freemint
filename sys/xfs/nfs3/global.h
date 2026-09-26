@@ -144,9 +144,11 @@ current_time (void)
 # define OPT_NOAC		0x0100
 # define OPT_NOCTO		0x0200
 # define OPT_POSIX		0x0400
+# define OPT_TCP		0x0800	/* NFS over TCP instead of UDP */
+# define OPT_UDPFALL		0x1000	/* may fall back to UDP if TCP fails */
 
 # define OPT_USE_DEFAULTS	0x8000   /* use defaults for timeout, port etc */
-# define SERVER_OPTS		(OPT_SOFT | OPT_INTR)
+# define SERVER_OPTS		(OPT_SOFT | OPT_INTR | OPT_TCP | OPT_UDPFALL)
 
 typedef struct
 {
