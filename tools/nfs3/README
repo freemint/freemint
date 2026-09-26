@@ -1,0 +1,46 @@
+mount_nfs3 -- mount an NFS version 3 export under FreeMiNT
+==========================================================
+
+mount_nfs3 is the companion utility of the nfs3.xfs file system driver
+(sys/xfs/nfs3). It talks version 3 of the MOUNT protocol (RFC 1813,
+appendix I) to the server's rpc.mountd, gets a file handle for the
+exported directory and hands it to the kernel driver with a Dcntl().
+
+It is a separate program from mount_nfs, the NFS version 2 utility, and
+the two are not interchangeable:
+
+  - MOUNT version 1 returns a fixed 32 byte file handle, version 3
+    returns a variable sized one of up to 64 bytes. That alone makes the
+    Dcntl() structure incompatible, which is why mount_nfs3 uses its own
+    opcodes (NFS3_MOUNT/NFS3_UNMOUNT) and a version 3 NFS_MOUNT_INFO.
+  - The version 3 reply also lists the authentication flavours the
+    server accepts; `-v' prints them.
+  - Version 3 uses the mountstat3 status codes instead of plain errno
+    values, so the error messages are more precise.
+
+Usage:
+
+    mount_nfs3 [ -rvnf ] [ -o options ] host:/remotedir localdir
+    mount_nfs3 -u [ -vn ] localdir
+
+localdir has to be below u:\nfs3, which is where nfs3.xfs installs
+itself. The directory is created by the driver.
+
+    -r      mount read only (same as -o ro)
+    -o tcp  pin NFS over TCP (also proto=tcp); by default TCP is tried
+            first and UDP is used if the connection fails
+    -o udp  pin NFS over UDP (also proto=udp)
+    -o      comma separated list of options, see mount_nfs3.8
+    -v      verbose
+    -n      do not update \etc\mtab
+    -f      fake: only update \etc\mtab, do not really mount
+    -u      unmount
+
+Examples:
+
+    mount_nfs3 fileserver:/srv/atari u:\nfs3\atari
+    mount_nfs3 -o ro,rsize=8192,timeo=20 fileserver:/pub u:\nfs3\pub
+    mount_nfs3 -u u:\nfs3\atari
+
+See sys/xfs/nfs3/README for the driver side and for what changed between
+NFS version 2 and version 3.
