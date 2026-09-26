@@ -63,6 +63,11 @@
 
 #define MAX_RPC_HDR_SIZE  1024   /* xid, prog/vers/proc and AUTH_UNIX */
 
+/* Largest RPC record we accept over TCP: a READ reply with a full rsize
+ * of data plus its headers. Used as the reassembly buffer per connection.
+ */
+#define MAX_TCP_RECORD    (MAXDATA + 1024)
+
 /* maximum number of bytes we ask for in a single nfs_readdir request */
 #define MAX_READDIR_LEN    4096
 

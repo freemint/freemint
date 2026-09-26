@@ -43,6 +43,12 @@ setsockopt (struct socket *so, short level, short optname, void *optval, long op
 }
 
 static inline long
+do_connect (struct socket *so, const struct sockaddr *addr, short addrlen)
+{
+	return (*so->ops->connect)(so, addr, addrlen, 0);
+}
+
+static inline long
 so_ioctl (struct socket *so, int cmd, void *buf)
 {
 	return (*so->ops->ioctl)(so, cmd, buf);
@@ -601,6 +607,370 @@ error:
 	return ret;
 }
 
+/*============================================================*/
+
+/* NFS over TCP.
+ *
+ * RPC on a stream needs record marking (RFC 5531, section 11): every
+ * message is preceded by a four byte header whose top bit marks the last
+ * fragment and whose lower 31 bits give the fragment length. A stream
+ * hands back arbitrary amounts of data, so both the header and the body
+ * have to be reassembled across reads -- the state for that lives in the
+ * connection, not on the stack.
+ *
+ * One connection per server, created on first use and then kept. There
+ * are never more than a handful of servers, so they are not reference
+ * counted or closed on unmount.
+ */
+
+typedef struct nfs_conn NFS_CONN;
+struct nfs_conn
+{
+	NFS_CONN	*next;
+	struct sockaddr_in addr;	/* server this is connected to */
+	struct socket	*so;
+
+	/* reassembly state of the record currently coming in */
+	char		hdr[4];		/* record marking header */
+	short		hdrlen;		/* header bytes collected, 0..4 */
+	short		last;		/* last fragment flag of that header */
+	long		want;		/* payload bytes still due */
+	char		*rbuf;		/* record being assembled */
+	long		rbuf_size;
+	long		rlen;		/* payload collected so far */
+
+	short		broken;		/* needs to be reconnected */
+};
+
+static NFS_CONN *conns = NULL;
+
+
+static long
+open_stream (struct socket **resultso, struct sockaddr_in *addr)
+{
+	struct socket *so;
+	long arg, ret;
+
+	ret = so_create (&so, PF_INET, SOCK_STREAM, 0);
+	if (ret < 0)
+	{
+		DEBUG (("nfs3: could not create stream socket -> %ld", ret));
+		return ret;
+	}
+
+	arg = 2 * MAX_TCP_RECORD;
+	setsockopt (so, SOL_SOCKET, SO_RCVBUF, &arg, sizeof (arg));
+	setsockopt (so, SOL_SOCKET, SO_SNDBUF, &arg, sizeof (arg));
+
+	/* Servers exported with the default `secure' option insist on a
+	 * privileged source port, same as for UDP.
+	 */
+	ret = bindresvport (so);
+	if (ret < 0)
+	{
+		DEBUG (("nfs3: could not bind a reserved port -> %ld", ret));
+		so_free (so);
+		return ret;
+	}
+
+	ret = do_connect (so, (struct sockaddr *) addr, sizeof (*addr));
+	if (ret < 0)
+	{
+		DEBUG (("nfs3: connect failed -> %ld", ret));
+		so_free (so);
+		return ret;
+	}
+
+	*resultso = so;
+	return 0;
+}
+
+/* Find the connection to this server, reconnecting or creating it as
+ * needed. Returns NULL when the server cannot be reached at all.
+ */
+static NFS_CONN *
+conn_get (SERVER_OPT *opt)
+{
+	NFS_CONN *c;
+
+	for (c = conns; c; c = c->next)
+	{
+		if (c->addr.sin_addr.s_addr == opt->addr.sin_addr.s_addr
+		    && c->addr.sin_port == opt->addr.sin_port)
+			break;
+	}
+
+	if (c && c->broken)
+	{
+		/* Drop the old socket and start over. Anything half read is
+		 * worthless now.
+		 */
+		if (c->so)
+			so_free (c->so);
+
+		c->so = NULL;
+		c->broken = 0;
+		c->hdrlen = 0;
+		c->rlen = 0;
+		c->want = 0;
+	}
+
+	if (!c)
+	{
+		c = kmalloc (sizeof (*c));
+		if (!c)
+			return NULL;
+
+		bzero (c, sizeof (*c));
+		c->addr = opt->addr;
+		c->rbuf_size = MAX_TCP_RECORD;
+		c->rbuf = kmalloc (c->rbuf_size);
+		if (!c->rbuf)
+		{
+			kfree (c);
+			return NULL;
+		}
+
+		c->next = conns;
+		conns = c;
+	}
+
+	if (!c->so && open_stream (&c->so, &c->addr) < 0)
+		return NULL;
+
+	return c;
+}
+
+/* Send everything in the iovec, however many writes it takes. A stream
+ * socket may accept less than offered, and a silently short write would
+ * desynchronise the record stream for good.
+ */
+static long
+send_all (struct socket *so, struct iovec *iov, short niov)
+{
+	long total = 0;
+	long done = 0;
+	short i;
+	int idle = 0;
+
+	for (i = 0; i < niov; i++)
+		total += iov[i].iov_len;
+
+	while (done < total)
+	{
+		struct iovec v[4];
+		struct msghdr msg;
+		long skip = done;
+		long r;
+		short n = 0;
+
+		for (i = 0; i < niov; i++)
+		{
+			if (skip >= (long) iov[i].iov_len)
+			{
+				skip -= iov[i].iov_len;
+				continue;
+			}
+
+			v[n].iov_base = (char *) iov[i].iov_base + skip;
+			v[n].iov_len = iov[i].iov_len - skip;
+			skip = 0;
+			n++;
+		}
+
+		msg.msg_name = NULL;
+		msg.msg_namelen = 0;
+		msg.msg_iov = v;
+		msg.msg_iovlen = n;
+		msg.msg_accrights = NULL;
+		msg.msg_accrightslen = 0;
+
+		r = sendmsg (so, &msg, 0);
+		if (r < 0)
+			return r;
+
+		if (r == 0)
+		{
+			/* should not happen on a blocking socket */
+			if (++idle > 1000)
+				return EWRITE;
+
+			s_yield ();
+			continue;
+		}
+
+		idle = 0;
+		done += r;
+	}
+
+	return done;
+}
+
+static long
+tcp_sendmessage (NFS_CONN *c, MESSAGE *mreq)
+{
+	struct iovec iov[3];
+	char rm[4];
+	ulong len;
+	long r;
+
+	len = (ulong) mreq->hdr_len + (ulong) mreq->data_len;
+
+	/* one record, and it is the last one */
+	len |= 0x80000000UL;
+	rm[0] = (char) (len >> 24);
+	rm[1] = (char) (len >> 16);
+	rm[2] = (char) (len >> 8);
+	rm[3] = (char) len;
+
+	iov[0].iov_base = rm;
+	iov[0].iov_len = sizeof (rm);
+	iov[1].iov_base = mreq->header;
+	iov[1].iov_len = mreq->hdr_len;
+	iov[2].iov_base = mreq->data;
+	iov[2].iov_len = mreq->data_len;
+
+	r = send_all (c->so, iov, 3);
+	if (r < 0)
+	{
+		DEBUG (("nfs3: tcp send failed -> %ld", r));
+		c->broken = 1;
+	}
+
+	return r;
+}
+
+/* Make as much progress on the incoming stream as the socket allows.
+ * Returns mrep once a whole record has been assembled, NULL when more
+ * data is needed (or the connection died, see c->broken).
+ */
+static MESSAGE *
+tcp_receivemessage (NFS_CONN *c, MESSAGE *mrep)
+{
+	for (;;)
+	{
+		long avail = 0;
+		long chunk, r;
+
+		if (so_ioctl (c->so, FIONREAD, &avail) < 0)
+		{
+			c->broken = 1;
+			return NULL;
+		}
+
+		if (avail == 0)
+			return NULL;		/* nothing more for now */
+
+		if ((ulong) avail >= 0x7ffffffful)
+		{
+			/* an asynchronous error is pending on the socket */
+			char ch;
+
+			so_read (c->so, &ch, sizeof (ch));
+			c->broken = 1;
+			return NULL;
+		}
+
+		if (c->hdrlen < 4)
+		{
+			chunk = 4 - c->hdrlen;
+			if (chunk > avail)
+				chunk = avail;
+
+			r = so_read (c->so, c->hdr + c->hdrlen, chunk);
+			if (r <= 0)
+			{
+				c->broken = 1;
+				return NULL;
+			}
+
+			c->hdrlen += r;
+			if (c->hdrlen < 4)
+				continue;
+
+			{
+				ulong rm;
+
+				rm  = (ulong)(uchar) c->hdr[0] << 24;
+				rm |= (ulong)(uchar) c->hdr[1] << 16;
+				rm |= (ulong)(uchar) c->hdr[2] << 8;
+				rm |= (ulong)(uchar) c->hdr[3];
+
+				c->last = (rm & 0x80000000UL) ? 1 : 0;
+				c->want = (long) (rm & 0x7fffffffUL);
+			}
+
+			if (c->want < 0 || c->rlen + c->want > c->rbuf_size)
+			{
+				ALERT (("nfs3: tcp record of %ld bytes exceeds "
+					"the %ld byte buffer",
+					c->rlen + c->want, c->rbuf_size));
+				c->broken = 1;
+				return NULL;
+			}
+
+			continue;
+		}
+
+		if (c->want > 0)
+		{
+			chunk = c->want;
+			if (chunk > avail)
+				chunk = avail;
+
+			r = so_read (c->so, c->rbuf + c->rlen, chunk);
+			if (r <= 0)
+			{
+				c->broken = 1;
+				return NULL;
+			}
+
+			c->rlen += r;
+			c->want -= r;
+		}
+
+		if (c->want > 0)
+			continue;
+
+		if (!c->last)
+		{
+			c->hdrlen = 0;		/* another fragment follows */
+			continue;
+		}
+
+		/* the record is complete */
+		{
+			char *buf = kmalloc (c->rlen);
+
+			c->hdrlen = 0;
+
+			if (!buf)
+			{
+				DEBUG (("nfs3: no memory for a %ld byte reply",
+					c->rlen));
+				c->rlen = 0;
+				return NULL;
+			}
+
+			memcpy (buf, c->rbuf, c->rlen);
+
+			mrep->buffer = mrep->data = buf;
+			mrep->data_len = c->rlen;
+			mrep->header = NULL;
+			mrep->hdr_len = 0;
+			mrep->flags |= FREE_BUFFER;
+			mrep->cred = NULL;
+			mrep->next = NULL;
+			mrep->xid = 0;
+
+			c->rlen = 0;
+			return mrep;
+		}
+	}
+}
+
+/*============================================================*/
+
 static void
 scratch_message (struct socket *so)
 {
@@ -802,19 +1172,40 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 	 * list if it was waited for. Otherwise silently discard it.
 	 */
 	{
-		struct socket *so = nfs_so;
+		NFS_CONN *conn = NULL;
+		struct socket *so;
 		long timeout, stamp, toread;
 		int retry;
 
-		if (!so)
+		if (opt->flags & OPT_TCP)
 		{
-			/* Do NOT return EACCES here: a missing socket is not
-			 * a permission problem, and reporting it as one sends
-			 * everybody hunting for export options.
-			 */
-			ALERT (("nfs3: no socket, RPC layer is not usable"));
-			free_message (mreq);
-			return ENETUNREACH;
+			conn = conn_get (opt);
+			if (!conn)
+			{
+				ALERT (("nfs3: cannot connect to the server "
+					"over TCP"));
+				free_message (mreq);
+				return ENETUNREACH;
+			}
+
+			so = conn->so;
+		}
+		else
+		{
+			so = nfs_so;
+
+			if (!so)
+			{
+				/* Do NOT return EACCES here: a missing socket
+				 * is not a permission problem, and reporting
+				 * it as one sends everybody hunting for
+				 * export options.
+				 */
+				ALERT (("nfs3: no socket, RPC layer is not "
+					"usable"));
+				free_message (mreq);
+				return ENETUNREACH;
+			}
 		}
 
 		/* A retrans count of zero would skip the send loop below
@@ -840,7 +1231,41 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		 */
 		for (retry = 0; retry < opt->retrans; retry++, timeout += opt->timeo)
 		{
-		    r = rpc_sendmessage (so, opt, mreq);
+		    int need_send = 1;
+
+		    if (conn)
+		    {
+			if (conn->broken || !conn->so)
+			{
+			    /* The stream died. Build it up again and send
+			     * once more: the server either never saw the
+			     * request or could not answer it.
+			     */
+			    conn = conn_get (opt);
+			    if (!conn)
+			    {
+				ALERT (("nfs3: lost the TCP connection"));
+				free_message (mreq);
+				delete_request (our_xid);
+				return ENETUNREACH;
+			    }
+
+			    so = conn->so;
+			}
+			else if (retry > 0)
+			{
+			    /* TCP retransmits on its own, so sending again
+			     * would only duplicate the request.
+			     */
+			    need_send = 0;
+			}
+		    }
+
+		    r = need_send
+			? (conn ? tcp_sendmessage (conn, mreq)
+				: rpc_sendmessage (so, opt, mreq))
+			: 0;
+
 		    if (r < 0)
 		    {
 			DEBUG (("rpc_request: could not write message -> %ld", (long)r));
@@ -891,36 +1316,50 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 			while (1)
 			{
 			    TRACE(("rpc_req: checking socket for reply"));
-			    toread = 0;
-			    r = so_ioctl (so, FIONREAD, &toread);
-			    if (r < 0)
-			    {
-				DEBUG(("rpc_req: so_ioctl(FIONREAD) failed -> %ld", r));
-
-				free_message(mreq);
-				delete_request(our_xid);
-				return r;
-			    }
-			    if (toread == 0) break;
-			    else if ((ulong) toread >= 0x7ffffffful)
-			    {
-				char c;
-
-				/* Fcntl tells us that an asynchronous error
-				 * is pending on the socket, caused eg. by
-				 * an ICMP error message. The Fread() returns
-				 * the error condition. */
-
-				free_message (mreq);
-				delete_request (our_xid);
-				return so_read (so, &c, sizeof(c));
-			    }
-
-			    TRACE (("rpc_req: socket has something"));
 
 			    mbuf.flags = 0;
-			    reply = rpc_receivemessage (so, &mbuf, toread);
-			    if (!reply) break;
+
+			    if (conn)
+			    {
+				reply = tcp_receivemessage (conn, &mbuf);
+
+				/* Either not a whole record yet, or the stream
+				 * broke -- the retry loop reconnects then.
+				 */
+				if (!reply) break;
+			    }
+			    else
+			    {
+				toread = 0;
+				r = so_ioctl (so, FIONREAD, &toread);
+				if (r < 0)
+				{
+				    DEBUG(("rpc_req: so_ioctl(FIONREAD) failed -> %ld", r));
+
+				    free_message(mreq);
+				    delete_request(our_xid);
+				    return r;
+				}
+				if (toread == 0) break;
+				else if ((ulong) toread >= 0x7ffffffful)
+				{
+				    char c;
+
+				    /* Fcntl tells us that an asynchronous error
+				     * is pending on the socket, caused eg. by an
+				     * ICMP error message. The Fread() returns the
+				     * error condition. */
+
+				    free_message (mreq);
+				    delete_request (our_xid);
+				    return so_read (so, &c, sizeof(c));
+				}
+
+				TRACE (("rpc_req: socket has something"));
+
+				reply = rpc_receivemessage (so, &mbuf, toread);
+				if (!reply) break;
+			    }
 
 			    /* Here we know that reply points to mbuf which
 			     * holds a reply message. If we got already the

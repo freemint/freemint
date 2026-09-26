@@ -2369,13 +2369,35 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			{
 				long fr = do_fsinfo (ni);
 
+				/* TCP is the default because a current Linux
+				 * nfsd serves it out of the box while UDP has
+				 * to be switched on. Where TCP cannot be
+				 * reached, drop back to UDP once -- unless the
+				 * mount pinned the transport explicitly.
+				 */
+				if (IS_TRANSPORT_ERROR (fr)
+				    && (ni->opt->server.flags & OPT_TCP)
+				    && (ni->opt->server.flags & OPT_UDPFALL))
+				{
+					ALERT (("nfs3: %s does not answer over "
+						"TCP (error %ld), trying UDP",
+						ni->opt->server.hostname, fr));
+
+					ni->opt->server.flags &= ~OPT_TCP;
+					ni->opt->flags &= ~OPT_TCP;
+
+					fr = do_fsinfo (ni);
+				}
+
 				if (IS_TRANSPORT_ERROR (fr))
 				{
 					ALERT (("nfs3: no answer from %s over "
-						"UDP (error %ld); check that "
-						"nfsd serves NFSv3 over UDP and "
-						"that udp/2049 is not filtered",
-						ni->opt->server.hostname, fr));
+						"%s (error %ld); check that "
+						"nfsd serves NFSv3 and that "
+						"port 2049 is not filtered",
+						ni->opt->server.hostname,
+						(ni->opt->server.flags & OPT_TCP)
+							? "TCP" : "UDP", fr));
 
 					/* ni->link is still the 1 we set above,
 					 * which is what release_mount_slot()
@@ -2389,6 +2411,16 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					DEBUG (("nfs_fscntl: FSINFO3 failed (%ld), "
 						"using defaults", fr));
 			}
+
+			/* Say which transport is in use. Without this an
+			 * "-o tcp" against an older driver looks exactly
+			 * like a working TCP mount, because the flag is
+			 * simply ignored.
+			 */
+			ALERT (("nfs3: mounted '%s' from %s over %s",
+				ni->name, ni->opt->server.hostname,
+				(ni->opt->server.flags & OPT_TCP)
+					? "TCP" : "UDP"));
 
 			DEBUG (("nfs_fscntl: mounting dir '%s'", ni->name));
 			return 0;
