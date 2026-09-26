@@ -193,19 +193,63 @@ split_remote (const char *remote, char *hostname, size_t hostlen)
 	return p + 1;
 }
 
+/* RPC_ANYSOCK lives in <rpc/svc.h>, which we do not need otherwise. */
+#ifndef RPC_ANYSOCK
+# define RPC_ANYSOCK (-1)
+#endif
+
+/* The MOUNT protocol has a transport of its own, independent of the one the
+ * driver later uses for NFS itself.  A host that serves NFS over TCP only --
+ * which is what a current Linux nfsd does unless UDP is switched on -- answers
+ * MOUNT over TCP only as well.  Asking over UDP alone then yields nothing but
+ * "RPC: Timed out", and "-o tcp" does not help, because that flag only travels
+ * to the kernel driver and never reaches this request.
+ */
 static CLIENT *
 mount_client (struct sockaddr_in *server, int *s)
 {
 	struct timeval retry_time = { 1, 0 };  /* every second */
-	CLIENT *cl;
+	CLIENT *cl = NULL;
 
-	server->sin_port = htons (0);  /* ask the port mapper for the port */
-	cl = clntudp_create (server, MOUNT_PROGRAM, MOUNT_V3, retry_time, s);
-	if (!cl)
+	if (transport != 0)
 	{
-		/* also try a fallback method with a fixed port number */
-		server->sin_port = htons (MOUNT_PORT);
-		cl = clntudp_create (server, MOUNT_PROGRAM, MOUNT_V3, retry_time, s);
+		*s = RPC_ANYSOCK;
+		server->sin_port = htons (0);  /* ask the port mapper */
+		cl = clnttcp_create (server, MOUNT_PROGRAM, MOUNT_V3, s, 0, 0);
+		if (!cl)
+		{
+			/* also try a fallback with a fixed port number */
+			*s = RPC_ANYSOCK;
+			server->sin_port = htons (MOUNT_PORT);
+			cl = clnttcp_create (server, MOUNT_PROGRAM, MOUNT_V3,
+					     s, 0, 0);
+		}
+
+		if (cl && verbose)
+			printf ("%s: MOUNT3 over TCP, port %d\n", commandname,
+				(int) ntohs (server->sin_port));
+	}
+
+	/* Unless the transport was pinned to TCP, fall back to UDP. */
+	if (!cl && transport <= 0)
+	{
+		*s = make_socket ();
+		if (*s < 0)
+			return NULL;
+
+		server->sin_port = htons (0);  /* ask the port mapper */
+		cl = clntudp_create (server, MOUNT_PROGRAM, MOUNT_V3,
+				     retry_time, s);
+		if (!cl)
+		{
+			server->sin_port = htons (MOUNT_PORT);
+			cl = clntudp_create (server, MOUNT_PROGRAM, MOUNT_V3,
+					     retry_time, s);
+		}
+
+		if (cl && verbose)
+			printf ("%s: MOUNT3 over UDP, port %d\n", commandname,
+				(int) ntohs (server->sin_port));
 	}
 
 	return cl;
@@ -268,9 +312,8 @@ do_nfs_mount (const char *remote, const char *localdir)
 		info.hostname[hl] = '\0';
 	}
 
-	s = make_socket ();
-	if (s < 0)
-		return 1;
+	/* the transport, and with it the socket, is chosen in mount_client() */
+	s = RPC_ANYSOCK;
 
 	/* get the server address from the net database */
 	hp = gethostbyname (hostname);
@@ -292,8 +335,13 @@ do_nfs_mount (const char *remote, const char *localdir)
 	cl = mount_client (&server, &s);
 	if (!cl)
 	{
-		fprintf (stderr, "%s: failed to create RPC client for "
-			 "MOUNT version 3\n", commandname);
+		fprintf (stderr, "%s: failed to reach MOUNT version 3 on %s "
+			 "over %s\n", commandname, hostname,
+			 transport > 0 ? "TCP" :
+			 transport == 0 ? "UDP" : "TCP or UDP");
+		fprintf (stderr, "%s: check that rpcbind and rpc.mountd run "
+			 "and that mountd serves MOUNT version 3\n",
+			 commandname);
 		return 1;
 	}
 
@@ -397,9 +445,7 @@ do_nfs_unmount (const char *remote, const char *local)
 	/* no error checks here, as we should not fail the unmount if there was
 	 * no contact with the nfs server.
 	 */
-	s = make_socket ();
-	if (s < 0)
-		return 0;
+	s = RPC_ANYSOCK;
 
 	/* get the server address from the net database */
 	hp = gethostbyname (hostname);
