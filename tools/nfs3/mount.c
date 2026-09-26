@@ -191,6 +191,30 @@ parse_option (char *s)
 			nosuid = 0;
 			p = s + 4;
 		}
+		else if (!strncmp (s, "proto=tcp", 9))
+		{
+			add_opt ("proto=tcp");
+			transport = 1;
+			p = s + 9;
+		}
+		else if (!strncmp (s, "proto=udp", 9))
+		{
+			add_opt ("proto=udp");
+			transport = 0;
+			p = s + 9;
+		}
+		else if (!strncmp (s, "tcp", 3))
+		{
+			add_opt ("tcp");
+			transport = 1;
+			p = s + 3;
+		}
+		else if (!strncmp (s, "udp", 3))
+		{
+			add_opt ("udp");
+			transport = 0;
+			p = s + 3;
+		}
 		else if (!strncmp (s, "rsize=", 6))
 		{
 			rsize = strtol (&s[6], &p, 10);

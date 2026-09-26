@@ -91,6 +91,17 @@ Initial RPC timeout in tenths of a second. The default is 2 seconds.
 .BI retrans= n
 Number of retransmissions before the request fails. The default is 5.
 .TP
+.BR tcp ", " udp
+Pin the transport, also spelled
+.B proto=tcp
+and
+.BR proto=udp .
+Given neither, TCP is tried first and UDP is used for that mount if the
+connection fails. TCP is preferred because a current Linux nfsd serves it
+without extra configuration, while UDP has to be switched on, and because
+a reply is not split into IP fragments, which makes it far more robust on
+a lossy link.
+.TP
 .BI port= n
 Port the NFS service listens on. The default is 2049.
 .TP
@@ -113,7 +124,7 @@ table of mounted file systems
 .BR exports (5),
 RFC 1813
 .SH BUGS
-Only AUTH_UNIX authentication and UDP transport are supported.
+Only AUTH_UNIX authentication is supported.
 .PP
 Files beyond 2 GB cannot be read or written, because MiNT's file
 position is a signed 32 bit value.
