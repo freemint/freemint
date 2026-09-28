@@ -1,0 +1,145 @@
+This is an early beta version of an networking file system for MiNT.
+
+Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+
+
+DISCLAIMER:
+===========
+THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
+EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
+FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
+RISK.
+
+See also the file COPYING for further details.
+
+
+
+EXPLANATION:
+============
+A network file system allows computers to access file that are physically
+located on another computer transparently. Therefor the must be a means of
+data transport between these two computers (see above for the current 
+situation). The computer accessing the remote file is called the client, 
+the computer being physically the owner of that file is the server.
+On the server, there must be a service program running, that satisfies the
+access requests of the client. This program is called nfs daemon, short
+named nfsd. Because normally the client does not know which files can be
+accessed by it, it must be told so; this is called mounting of a remote
+directory or file and done with a program called mount on the client.
+On the server side there must run another service program, the mount daemon
+called mountd, which serves these mount requests by clients. 
+So: without nfsd no file access, without mountd no mounts to access files.
+
+Another point is that both server and client can be the same computer!
+Then the daemon programs run on that machine, and also the mount program is
+executed there. This is the easiest way to test this package.
+
+
+
+INSTALLATION:
+=============
+There are a few things to do (better try first server and client on the
+same computer) :
+- (both server and client) make sure to have Kay Roemer's mint-net (a socket
+  device) installed correctly. Version >= 0.30
+  (eMail: roemer@hera.rbi.informatik.uni-frankfurt.de)
+  This includes:
+    - make sure to have a directory u:\etc  (make a symbolic link to 
+      your preferred place in mint.cnf)
+	  - place the following files in u:\etc
+	      hostname, hosts, networks, services, resolv.conf
+    - name your host by writing a name into u:\etc\hostname
+- (client) copy the nfs.xfs (the client filesystem driver) to a place where
+  MiNT can find it at boot time (that is \mint or \multitos on your boot drive)
+- (server) install the portmapper daemon from the sun rpc package. Place 
+  the rpc file into u:\etc
+	The portmapper is essential as both the mount daemon and the mount 
+	command rely on that, but as a temporary hack, they can also work without
+	the portmapper.
+- (server) create a file u:\etc\xtab containing all the exported directories
+  or files. This file is necessary for both nfsd and mountd (if necessary,
+  rename them to nfsd.ttp and mountd.ttp). Please look into the bundled 
+  example, as no further docs are availbale at the moment. (or look into 
+  some unix adm doc)
+- reboot
+
+
+Then start the mountd and the nfsd. Now the system is ready to do some
+nfs mounts. Here an example: (suppose \etc\xtab contains a line
+\f\source ....)
+mount hostname:\f\source \nfs\source
+where hostname is the name of your host. (all operations done while drive 
+u: is the current. It should be, as mount treats the ':' as separator 
+betweeen hostname and directory name)
+Another point is that if you are trying to run server and client stuff on
+the same machine, the hostname for the mount command must be 'localhost'
+or 'loopback' (there should be such a line in \etc\hosts), as the resolver
+otherwise does not find the correct host (this behavior might depend on the
+version of the mint-net your are using, or on your configuration)
+After this operation you should have a directory source in u:\nfs which has
+all the contents of the original \f\source
+
+All this can be done within mint.cnf (or better use a shell script which
+is started from mint.cnf -- look at the example rc.mup and mint.cnf)
+
+A new feature of the mountd and nfsd is that they can be started by
+the inetd and terminate themselfes in this case after a short time, so
+there is no need to hold the all the time running in memory. Just install
+the inetd and make sure that the mount and nfs lines in u:\etc\inetd.conf
+are correct, that means they are active and the paths are correct.
+
+
+
+COMPILATION:
+============
+If you want to rebuild the binaries by yourself, you have first to edit
+the paths in the Makevars file, especially the BUILDDIR variable.
+Then simply type make all or make install and wait...
+
+
+
+BUGS:
+=====
+- the nfsd is not able to find a file on a TOSFS (in the state of MiNT 
+  <= 1.10) if it has only its nfs handle and no internal information. So 
+  it does not work properly on such a file system, sorry. But it works on
+  a patched TOSFS with Julian Reschke's crc patch applied and enabled.
+  This patch is included in MiNT 1.12 (get this anyway, as binaries are
+  available!), but it seems to be disabled by default (take a look into 
+  tosfs.c in the MiNT source).
+- no caching of results for nonidempotent requests. So if the anser of a
+  file remove request gets lost and the client resends this request, it 
+  will fail because the file is already gone.
+- no exportfs command, so you have to edit your \etc\xtab yourself and
+  cannot use the \etc\exports file.
+- several mount options are still not supported by the XFS, such as 
+  hard mounts
+
+
+
+MY CONFIGURATION:
+=================
+I am running this system on a TT030 with 4/4 Mb ram, TOS 3.06, a patched 
+MiNT 1.12, using both minixfs and the patched tosfs, and it seems to be 
+quite stable now, but who knows?
+
+
+THANKS:
+=======
+Many thanks go to Kay Roemer for his great socket device, which made this
+nfs possible. He also constantly supplied me with critics, suggestions,
+ideas and bug fixes.
+
+
+CONTACT ADDRESS:
+================
+If you have questions, bug reports, suggestions, etc. please contact 
+me under:
+
+kuehn@math.uni-muenster.de  (Ulrich Kuehn)                 preferred
+
+Ulrich Kuehn, Geibelstr.9, 48161 Muenster, Germany  
+
+
+Have fun
+Ulrich

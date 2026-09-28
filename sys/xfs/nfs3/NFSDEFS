@@ -1,0 +1,18 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
+NFSDEFS_deb = -DDEV_DEBUG
+
+NFSDEFS_000 =
+
+NFSDEFS_02060 =
+
+NFSDEFS_col =
+
+#
+# all default targets
+#
+nfstargets = 02060 deb 000 col
