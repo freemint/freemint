@@ -16,6 +16,7 @@ SUBDIRS = \
 	mktbl \
 	net-tools \
 	nfs \
+	nfs3 \
 	nohog2 \
 	ps \
 	strace \

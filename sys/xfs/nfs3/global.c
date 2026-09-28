@@ -1,34 +1,26 @@
 /*
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
- * All rights reserved.
+ * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
+ * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
+ * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
+ * RISK.
  *
- * This file is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
- *
- * This file is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this file; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
+ */
+
+/*
+ * File : global.c
+ *        the few variables that are shared across the whole driver
  */
 
 # include "global.h"
 
 
+/* bytes currently allocated through own_kmalloc(), for leak hunting */
 ulong memory = 0;
 
+/* set when the kernel supports native UTC time stamps */
 ushort native_utc = 0;
 
-/* the device number we have to deal with
- */
+/* the device number we have to deal with */
 int nfs_dev;

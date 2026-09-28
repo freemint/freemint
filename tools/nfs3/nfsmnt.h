@@ -1,14 +1,15 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
- * File : common.h
+ * File : nfsmnt.h
  *        common declarations
  */
 
@@ -30,11 +31,13 @@ extern long actimeo;
 extern int noac;
 
 
-
-long do_nfs_mount(const char *remote, const char *local);
-long do_nfs_unmount(const char *remote, const char *local);
+long do_nfs_mount (const char *remote, const char *local);
+long do_nfs_unmount (const char *remote, const char *local);
 
 
 extern char *commandname;
+
+/* name this file system goes under in \etc\mtab */
+extern const char *fstype;
 
 # endif

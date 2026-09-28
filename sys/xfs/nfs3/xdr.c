@@ -1,17 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich K�hn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
@@ -368,4 +362,134 @@ xdr_pointer (xdrs *x, char **objpp, long objlen, xdrproc_t proc)
 	}
 
 	return (*proc)(x, where);
+}
+
+/* 64 bit integers.
+ *
+ * NFS3 uses these for file sizes, offsets, file ids, fsids and directory
+ * cookies. XDR transmits them as two 32 bit words, most significant word
+ * first (RFC 4506, "Hyper Integer and Unsigned Hyper Integer").
+ */
+bool_t
+xdr_uint64 (xdrs *x, uint64 *val)
+{
+	ulong *p;
+
+	if (x->length < 2 * (long) sizeof (ulong))
+		return FALSE;
+
+	p = (ulong *) x->current;
+
+	if (XDR_DECODE == x->op)
+	{
+		*val = ((uint64) p[0] << 32) | (uint64) p[1];
+	}
+	else if (XDR_ENCODE == x->op)
+	{
+		p[0] = (ulong) (*val >> 32);
+		p[1] = (ulong) (*val & 0xffffffffUL);
+	}
+	else if (XDR_FREE == x->op)
+		return TRUE;
+	else
+		return FALSE;
+
+	x->current += 2 * sizeof (ulong);
+	x->length -= 2 * sizeof (ulong);
+
+	return TRUE;
+}
+
+bool_t
+xdr_int64 (xdrs *x, int64 *val)
+{
+	union { int64 *s; uint64 *u; } p;
+
+	p.s = val;
+	return xdr_uint64 (x, p.u);
+}
+
+/* Variable sized opaque data that is stored in a fixed size buffer
+ * supplied by the caller (used for nfs_fh3). On decoding the length is
+ * checked against maxlen, on encoding the caller has to provide it.
+ */
+bool_t
+xdr_varopaque (xdrs *x, opaque *val, ulong *len, long maxlen)
+{
+	long rawlen;
+
+	if (x->length < (long) sizeof (ulong))
+		return FALSE;
+
+	if (XDR_DECODE == x->op)
+	{
+		ulong l = *(ulong *) x->current;
+
+		if (l > (ulong) maxlen)
+			return FALSE;
+
+		x->current += sizeof (ulong);
+		x->length -= sizeof (ulong);
+
+		rawlen = XDR_ROUNDUP (l);
+		if (x->length < rawlen)
+			return FALSE;
+
+		memcpy (val, x->current, l);
+		*len = l;
+
+		x->current += rawlen;
+		x->length -= rawlen;
+
+		return TRUE;
+	}
+	else if (XDR_ENCODE == x->op)
+	{
+		ulong l = *len;
+
+		if (l > (ulong) maxlen)
+			return FALSE;
+
+		*(ulong *) x->current = l;
+		x->current += sizeof (ulong);
+		x->length -= sizeof (ulong);
+
+		rawlen = XDR_ROUNDUP (l);
+		if (x->length < rawlen)
+			return FALSE;
+
+		if (rawlen > (long) l)
+		{
+			/* clear the fringe at the end of the buffer
+			 * NOTE: we know that rawlen is at least 4
+			 */
+			*(long *)(x->current + rawlen - 4) = 0L;
+		}
+
+		memcpy (x->current, val, l);
+
+		x->current += rawlen;
+		x->length -= rawlen;
+
+		return TRUE;
+	}
+	else if (XDR_FREE == x->op)
+		return TRUE;
+
+	return FALSE;
+}
+
+/* Skip over `len' bytes of the stream. Needed to step over the parts of
+ * an NFS3 reply we are not interested in (e.g. the write verifier).
+ */
+bool_t
+xdr_skip (xdrs *x, long len)
+{
+	if (x->length < len)
+		return FALSE;
+
+	x->current += len;
+	x->length -= len;
+
+	return TRUE;
 }

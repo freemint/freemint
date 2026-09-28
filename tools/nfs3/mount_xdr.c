@@ -1,15 +1,16 @@
 /*
- * Copyright 1993 by Ulrich Khn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
  * File : mount_xdr.c
- *        xdr the structures for the mount protocol
+ *        xdr the structures for version 3 of the mount protocol
  */
 
 
@@ -34,165 +35,55 @@ xdr_name (XDR *x, char *s)
 
 
 bool_t
-xdr_fhandle (XDR *x, fhandle *fhp)
+xdr_fhandle3 (XDR *x, fhandle3 *fhp)
 {
-	return xdr_opaque (x, fhp->data, MNTFHSIZE);
+	char *p = fhp->data;
+
+	/* variable length now; version 1 had a fixed 32 byte handle */
+	return xdr_bytes (x, &p, &fhp->len, FHSIZE3);
 }
 
 
 bool_t
-xdr_fhstatus (XDR *x, fhstatus *fhsp)
+xdr_mountres3 (XDR *x, mountres3 *mrp)
 {
-	if (!xdr_u_long (x, &fhsp->status))
+	int *p = mrp->auth_flavors;
+
+	if (!xdr_u_int (x, &mrp->status))
 		return FALSE;
 
-	if (0 == fhsp->status)
-		return xdr_fhandle (x, &fhsp->fhstatus_u.directory);
-
-	return TRUE;
-}
-
-long
-xdr_size_fhstatus (fhstatus *fhsp)
-{
-	long r = sizeof (u_long);
-
-	if (0 == fhsp->status)
-		r += xdr_size_fhandle (&fhsp->fhstatus_u.directory);
-
-	return r;
-}
-
-
-bool_t
-xdr_mountlist (XDR *x, mountlist *mlp)
-{
-	char *p = (char *) mlp;
-
-	if (XDR_DECODE == x->x_op)
+	if (mrp->status != MNT3_OK)
 	{
-		p += sizeof (mountlist);
-		mlp->ml_hostname = p;
+		mrp->fhandle.len = 0;
+		mrp->nauth = 0;
+		return TRUE;
 	}
 
-	if (!xdr_string (x, &mlp->ml_hostname, MNTNAMLEN))
+	if (!xdr_fhandle3 (x, &mrp->fhandle))
 		return FALSE;
 
-	if (XDR_DECODE == x->x_op)
-	{
-		p += strlen (mlp->ml_hostname) + 1;
-		mlp->ml_directory = p;
-	}
-
-	if (!xdr_string (x, &mlp->ml_directory, MNTPATHLEN))
-		return FALSE;
-
-	if (XDR_DECODE == x->x_op)
-	{
-		p += strlen (mlp->ml_directory);
-		mlp->ml_next = (mountlist *)(((long) p + 1) & (~1L));
-	}
-
-	return xdr_pointer (x, (char **) &mlp->ml_next,
-	                          sizeof (mountlist), (xdrproc_t) xdr_mountlist);
+	/* the list of accepted auth flavours is new in version 3 */
+	return xdr_array (x, (char **) &p, &mrp->nauth, MAX_AUTH_FLAVORS,
+			  sizeof (int), (xdrproc_t) xdr_int);
 }
 
-long
-xdr_size_mountlist (mountlist *mlp)
+
+const char *
+mountstat3_str (u_int status)
 {
-	long r = 0;
-
-	while (mlp)
+	switch (status)
 	{
-		r += 3 * sizeof (u_long);
-		r += (strlen (mlp->ml_hostname) + 3) & (~3L);
-		r += (strlen (mlp->ml_directory) + 3) & (~3L);
-		mlp = mlp->ml_next;
-	}
-	return r;
-}
-
-bool_t
-xdr_groups(XDR *x, groups *gp)
-{
-	char *p = (char *) gp;
-
-	if (XDR_DECODE == x->x_op)
-	{
-		p += sizeof (groups);
-		gp->gr_name = p;
+		case MNT3_OK:			return "no error";
+		case MNT3ERR_PERM:		return "not owner";
+		case MNT3ERR_NOENT:		return "no such file or directory";
+		case MNT3ERR_IO:		return "I/O error";
+		case MNT3ERR_ACCES:		return "permission denied";
+		case MNT3ERR_NOTDIR:		return "not a directory";
+		case MNT3ERR_INVAL:		return "invalid argument";
+		case MNT3ERR_NAMETOOLONG:	return "file name too long";
+		case MNT3ERR_NOTSUPP:		return "operation not supported";
+		case MNT3ERR_SERVERFAULT:	return "server fault";
 	}
 
-	if (!xdr_string (x, &gp->gr_name, MNTNAMLEN))
-		return FALSE;
-
-	if (XDR_DECODE == x->x_op)
-	{
-		p += strlen (gp->gr_name) + 1;
-		gp->gr_next = (groups *)(((long) p + 1) & (~1L));
-	}
-
-	return xdr_pointer (x, (char **) &gp->gr_next,
-	                          sizeof (groups), (xdrproc_t) xdr_groups);
-}
-
-long
-xdr_size_groups (groups *gp)
-{
-	long r = 0;
-
-	while (gp)
-	{
-		r += 2 * sizeof (u_long);
-		r += (strlen (gp->gr_name) + 3) & (~3L);
-		gp = gp->gr_next;
-	}
-	return r;
-}
-
-bool_t
-xdr_exportlist (XDR *x, exportlist *elp)
-{
-	char *p = (char *) elp;
-
-	if (XDR_DECODE == x->x_op)
-	{
-		p += sizeof (exportlist);
-		elp->ex_filesys = p;
-	}
-
-	if (!xdr_string (x, &elp->ex_filesys, MNTPATHLEN))
-		return FALSE;
-
-	if (XDR_DECODE == x->x_op)
-	{
-		groups *gp = elp->ex_groups;
-
-		if (gp)
-		{
-			while (gp->gr_next)
-				gp = gp->gr_next;
-			p = gp->gr_name + strlen (gp->gr_name) + 1;
-		}
-		elp->ex_next = (exportlist *)(((long) p + 1) & (~1L));
-	}
-
-	return xdr_pointer (x, (char **) &elp->ex_next,
-	                         sizeof (exportlist), (xdrproc_t) xdr_exportlist);
-}
-
-long
-xdr_size_exportlist (exportlist *elp)
-{
-	long r = 0;
-
-	while (elp)
-	{
-		r += 3 * sizeof (u_long);
-		r += (strlen (elp->ex_filesys) + 3) & (~3L);
-		r += xdr_size_groups (elp->ex_groups);
-		elp = elp->ex_next;
-	}
-
-	return r;
+	return "unknown error";
 }

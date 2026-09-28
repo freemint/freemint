@@ -1,113 +1,119 @@
-
-
-
-MOUNT(8)              MAINTENANCE COMMANDS               MOUNT(8)
-
-
-
-NAME
-     mount, umount - mount and unmount file systems
-
-SYNOPSIS
-     /usr/etc/mount [ -fnrv ] [ -t _t_y_p_e ] [ -o _o_p_t_i_o_n_s ] _f_i_l_e_s_y_s_-
-     _t_e_m _d_i_r_e_c_t_o_r_y
-     /usr/etc/umount [ -v ] _f_i_l_e_s_y_s_t_e_m|_d_i_r_e_c_t_o_r_y  ...
-
-DESCRIPTION
-     mount attaches a named _f_i_l_e_s_y_s_t_e_m to the file system hierar-
-     chy  at  the pathname location _d_i_r_e_c_t_o_r_y, which must already
-     exist.  If _d_i_r_e_c_t_o_r_y has any contents  prior  to  the  mount
-     operation,  these remain hidden until the _f_i_l_e_s_y_s_t_e_m is once
-     again   unmounted.    If   _f_i_l_e_s_y_s_t_e_m   is   of   the   form
-     _h_o_s_t:_p_a_t_h_n_a_m_e,  it is assumed to be an NFS file system (type
-     nfs).
-
-     umount unmounts a currently mounted file system,  which  can
-     be specified either as a _d_i_r_e_c_t_o_r_y or a _f_i_l_e_s_y_s_t_e_m.
-
-     mount and umount maintain a table of mounted file systems in
-     /etc/mtab,  described  in  fstab(5).   If invoked without an
-     argument, mount displays the  contents  of  this  table.
-
-OPTIONS
-  mount
-     -f   Fake an /etc/mtab entry, but do not actually mount  any
-          file systems.
-
-     -n   Mount the  file  system  without  making  an  entry  in
-          /etc/mtab.
-
-     -v   Verbose.  Display a message indicating each file system
-          being mounted.
-
-     -r   Mount the specified file system read-only, even if  the
-          entry  in /etc/fstab specifies that it is to be mounted
-          read-write.
-
-          Physically write-protected and magnetic-tape file  sys-
-          tems  must be mounted read-only. Otherwise errors occur
-          when the system attempts to update access  times,  even
-          if no write operation is attempted.
-
-     -o _o_p_t_i_o_n_s
-          Specify file system _o_p_t_i_o_n_s, a comma-separated list  of
-          words  from the list below.  Some options are valid for
-          all file system types, while others apply to a specific
-          type only.
-
-          _o_p_t_i_o_n_s valid on _a_l_l file systems:
-
-               rw|ro         Read/write or read-only.
-               suid|nosuid   Setuid execution allowed  or  disal-
-                             lowed.
-
-               The default is `rw,suid'.
-
-          _o_p_t_i_o_n_s specific to nfs (NFS) file systems:
-
-               rsize=_n       Set the read buffer size to _n bytes.
-               wsize=_n       Set  the  write  buffer  size  to  _n
-                             bytes.
-               timeo=_n       Set the NFS timeout to _n tenths of a
-                             second.
-               retrans=_n     The number of NFS retransmissions.
-               port=_n        The server IP port number.
-               acregmin=_n    Hold cached attributes for at  least
-                             _n seconds after file modification.
-               acregmax=_n    Hold cached attributes for  no  more
-                             than  _n seconds after file modifica-
-                             tion.
-               acdirmin=_n    Hold cached attributes for at  least
-                             _n seconds after directory update.
-               acdirmax=_n    Hold cached attributes for  no  more
-                             than   _n   seconds  after  directory
-                             update.
-               actimeo=_n     Set _m_i_n and _m_a_x  times  for  regular
-                             files and directories to _n seconds.
-
-               actimeo has no default; it sets  acregmin,  acreg-
-               max, acdirmin and acdirmax
-
-               Defaults for rsize and wsize are set internally by
-               the system kernel.
-
-  umount
-     -v   Verbose.  Display a message indicating each file system
-          being unmounted.
-
-EXAMPLES
-          To mount a remote file system:
-               mount serv:/usr/src /usr/src
-          To mount a remote file system read-only:
-               mount -o ro serv:/usr/src /usr/src
-
-FILES
-     /etc/mtab           table of mounted file systems
-
-SEE ALSO
-     mkdir(2V),  open(2V),  fstab(5),  mtab(5),  automount(8),
-     mountd(8C), nfsd(8)
-
-BUGS
-     As for now, it is only possible to mount a remote file system in
-     /nfs.
+.TH MOUNT_NFS3 8 "FreeMiNT" "System Manager's Manual"
+.SH NAME
+mount_nfs3 \- mount an NFS version 3 file system
+.SH SYNOPSIS
+.B mount_nfs3
+[
+.B \-rvnf
+] [
+.B \-o
+.I options
+]
+.I host:/remotedir localdir
+.br
+.B mount_nfs3 \-u
+[
+.B \-vn
+]
+.I localdir
+.SH DESCRIPTION
+.B mount_nfs3
+attaches the directory
+.I remotedir
+exported by
+.I host
+to the local directory
+.IR localdir ,
+using version 3 of the NFS protocol (RFC 1813).
+.PP
+It asks the server's
+.BR rpc.mountd (8)
+over version 3 of the MOUNT protocol for a file handle and passes that
+handle, together with the mount options, to the
+.B nfs3.xfs
+kernel driver.
+.I localdir
+must be below
+.BR u:\enfs3 ,
+the directory the driver installs itself into; it is created by the
+driver and need not exist beforehand.
+.PP
+For NFS version 2 servers use
+.BR mount_nfs (8)
+instead. The two protocols and the two drivers are independent and may
+be used at the same time.
+.SH OPTIONS
+.TP
+.B \-r
+Mount the file system read only. Same as
+.BR "\-o ro" .
+.TP
+.BI \-o " options"
+A comma separated list of options, see
+.B "MOUNT OPTIONS"
+below.
+.TP
+.B \-v
+Verbose. Also prints the size of the file handle the server returned and
+the authentication flavours it accepts.
+.TP
+.B \-n
+Do not update
+.BR \eetc\emtab .
+.TP
+.B \-f
+Fake the mount: only update
+.BR \eetc\emtab .
+.TP
+.B \-u
+Unmount
+.I localdir
+instead of mounting.
+.SH MOUNT OPTIONS
+.TP
+.BR ro ", " rw
+Mount read only or read write. The default is
+.BR rw .
+.TP
+.BR suid ", " nosuid
+Honour or ignore the set-uid bit on files of this mount.
+.TP
+.BI rsize= n
+.TP
+.BI wsize= n
+Preferred read and write transfer size in bytes. The driver asks the
+server for its limits with FSINFO3 at mount time and reduces these
+values if the server cannot handle them. The default is 4096.
+.TP
+.BI timeo= n
+Initial RPC timeout in tenths of a second. The default is 2 seconds.
+.TP
+.BI retrans= n
+Number of retransmissions before the request fails. The default is 5.
+.TP
+.BI port= n
+Port the NFS service listens on. The default is 2049.
+.TP
+.BI actimeo= n
+How long attributes may be cached, in tenths of a second. The default is
+30 seconds.
+.SH EXAMPLES
+.nf
+mount_nfs3 fileserver:/srv/atari u:\enfs3\eatari
+mount_nfs3 \-o ro,rsize=8192 fileserver:/pub u:\enfs3\epub
+mount_nfs3 \-u u:\enfs3\eatari
+.fi
+.SH FILES
+.TP
+.B \eetc\emtab
+table of mounted file systems
+.SH SEE ALSO
+.BR mount_nfs (8),
+.BR mtab (5),
+.BR exports (5),
+RFC 1813
+.SH BUGS
+Only AUTH_UNIX authentication and UDP transport are supported.
+.PP
+Files beyond 2 GB cannot be read or written, because MiNT's file
+position is a signed 32 bit value.

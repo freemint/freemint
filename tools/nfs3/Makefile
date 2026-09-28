@@ -1,5 +1,5 @@
 #
-# Makefile for nfs
+# Makefile for nfs3
 #
 
 SHELL = /bin/sh
@@ -7,7 +7,7 @@ SUBDIRS =
 
 srcdir = .
 top_srcdir = ..
-subdir = nfs
+subdir = nfs3
 
 default: help
 
@@ -39,7 +39,7 @@ help:
 	@echo '# - help'
 	@echo '#'
 
-EXES = 	mount_nfs
+EXES = 	mount_nfs3
 
 ALL_TARGETS = $(foreach TARGET, $(alltargets), $(foreach EXE, $(EXES), .compile_$(TARGET)/$(EXE)))
 

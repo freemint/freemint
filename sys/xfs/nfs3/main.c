@@ -1,10 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich K�hn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
@@ -23,11 +24,10 @@
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
-	"\033p Network file system driver version " MSG_VERSION " \033q\r\n"
+	"\033p NFS version 3 file system driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"\xbd 1993, 1994 by Ulrich K\x81hn.\r\n" \
-	"\xbd 2000-2010 by Frank Naumann.\r\n" \
+	"Derived from the NFS v2 driver, see RFC 1813.\r\n" \
 	"See the file COPYING for copying and using conditions.\r\n"
 
 # define MSG_ALPHA	\
@@ -39,19 +39,16 @@
 # define MSG_OLDMINT	\
 	"\033pMiNT too old, this xfs requires at least a FreeMiNT 1.16!\033q\r\n"
 
-# define MSG_BIOVERSION	\
-	"\033pIncompatible FreeMiNT buffer cache version!\033q\r\n"
-
-# define MSG_BIOREVISION	\
-	"\033pFreeMiNT buffer cache revision too old!\033q\r\n"
-
 # define MSG_FAILURE(s)	\
-	"\7Sorry, nfs.xfs NOT installed: " s "!\r\n\r\n"
+	"\7Sorry, nfs3.xfs NOT installed: " s "!\r\n\r\n"
 
 
 struct kerinfo *KERNEL;
 
-FILESYS *_cdecl init_xfs (struct kerinfo *k)
+FILESYS *_cdecl init_xfs (struct kerinfo *k);
+
+FILESYS *_cdecl
+init_xfs (struct kerinfo *k)
 {
 	struct fs_descr d = { &nfs_filesys, -1 };
 	long r;
@@ -86,12 +83,12 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 		/* yeah, save enourmous overhead */
 		native_utc = 1;
 
-		DEBUG(("nfs (%s): running in native UTC mode!", __FILE__));
+		DEBUG(("nfs3 (%s): running in native UTC mode!", __FILE__));
 	}
 	else
 	{
 		/* disable extension level 3 */
-		DEBUG(("nfs (%s): old kernel, disabling UTC mode!", __FILE__));
+		DEBUG(("nfs3 (%s): old kernel, disabling UTC mode!", __FILE__));
 		nfs_filesys.fsflags &= ~FS_EXT_3;
 	}
 
@@ -105,7 +102,7 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 		return NULL;
 	}
 
-	r = d_cntl (FS_MOUNT, "u:\\nfs", (long) &d);
+	r = d_cntl (FS_MOUNT, NFS3_MOUNTPOINT, (long) &d);
 	DEBUG(("d_cntl(FS_MOUNT): r=%ld nfs_dev=%d", r, d.dev_no));
 	if (r == d.dev_no)
 	{
@@ -115,7 +112,7 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 
 	c_conws (MSG_FAILURE ("Dcntl(FS_MOUNT) failed"));
 
-	if (d_cntl (FS_UNINSTALL, "u:\\nfs", (long) &d))
+	if (d_cntl (FS_UNINSTALL, NFS3_MOUNTPOINT, (long) &d))
 	{
 		/* can't return NULL here because FS_UNINSTALL failed */
 		return (FILESYS *) 1;

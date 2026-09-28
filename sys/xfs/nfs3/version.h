@@ -7,14 +7,14 @@
 # define _version_h
 
 
-# define VER_MAJOR	0
-# define VER_MINOR	57
+# define VER_MAJOR	1
+# define VER_MINOR	0
 
 # if 0
 # define ALPHA
 # endif
 
-# if 0
+# if 1
 # define BETA
 # endif
 

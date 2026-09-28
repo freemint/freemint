@@ -1,17 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 # ifndef _nfsutil_h
@@ -23,12 +17,29 @@
 INLINE int	after (ulong u, ulong v);
 INLINE long	get_timestamp (void);
 
-int 		nfs_mode (int mode, int attrib);
+/* protection bits to be put into a sattr3. Unlike NFS2 the file type
+ * must NOT be encoded here.
+ */
+ulong	nfs3_mode (ushort mode);
 
-void fattr2xattr (fattr *fa, XATTR *xa);
-# if 0
-void xattr2fattr (XATTR *xa, fattr *fa);
-# endif
+/* Map an nfsstat3 to a MiNT error code. NFS2 knew so few errors that the
+ * old driver just returned EACCES for everything; NFS3 is precise enough
+ * to be worth translating.
+ */
+long	nfs3_error (enum_t status, long dflt);
+
+void	fattr2xattr (fattr3 *fa, XATTR *xa);
+
+/* store a freshly received fattr3 in an index and restamp it */
+void	set_index_attr (NFS_INDEX *ni, fattr3 *fa);
+
+/* the same for the optional attributes NFS3 attaches to nearly every
+ * reply; does nothing when the server did not send them
+ */
+void	update_index_attr (NFS_INDEX *ni, post_op_attr *ap);
+
+/* clamp a 64 bit size to what MiNT's 32 bit XATTR/FILEPTR can express */
+long	clamp64 (uint64 v);
 
 
 /* Was time stamp u build after timestamp v? Make sure to watch for
