@@ -1,0 +1,33 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	cache.h \
+	config.h \
+	global.h \
+	index.h \
+	kernel.h \
+	nfs_xdr.h \
+	nfsdev.h \
+	nfssys.h \
+	nfsutil.h \
+	rpc_xdr.h \
+	sock_ipc.h \
+	version.h \
+	xdr.h
+
+COBJS = \
+	cache.c \
+	global.c \
+	index.c \
+	main.c \
+	nfs_xdr.c \
+	nfsdev.c \
+	nfssys.c \
+	nfsutil.c \
+	rpc_xdr.c \
+	sock_ipc.c \
+	xdr.c
+
+
+SRCFILES = $(HEADER) $(COBJS)
