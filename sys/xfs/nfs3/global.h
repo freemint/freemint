@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -40,7 +40,7 @@
 
 # ifdef NFS_DEBUG
 
-# define FORCE(x)	
+# define FORCE(x)
 # define ALERT(x)	KERNEL_ALERT x
 # define DEBUG(x)	KERNEL_DEBUG x
 # define TRACE(x)	KERNEL_TRACE x
@@ -48,17 +48,17 @@
 
 # else
 
-# define FORCE(x)	
+# define FORCE(x)
 # define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
+# define DEBUG(x)
+# define TRACE(x)
 # define ASSERT(x)	assert x
 
 # endif
 
 
 /* memory allocation
- * 
+ *
  * include statistic analysis to detect
  * memory leaks
  */
@@ -69,16 +69,16 @@ INLINE void *
 own_kmalloc (long size)
 {
 	ulong *tmp;
-	
+
 	size += sizeof (*tmp);
-	
+
 	tmp = kmalloc (size);
 	if (tmp)
 	{
 		*tmp++ = size;
 		memory += size;
 	}
-	
+
 	return tmp;
 }
 
@@ -86,10 +86,10 @@ INLINE void
 own_kfree (void *dst)
 {
 	ulong *tmp = dst;
-	
+
 	tmp--;
 	memory -= *tmp;
-	
+
 	kfree (tmp);
 }
 
@@ -110,7 +110,7 @@ current_time (void)
 {
 	if (native_utc)
 		return utc.tv_sec;
-	
+
 	return unixtime (timestamp, datestamp);
 }
 # define CURRENT_TIME	current_time ()
@@ -181,7 +181,7 @@ struct nfs_index
 # define NO_HANDLE	0x4000	/* we have no handle (this is set by */
 				/* nfs_readdir, as the remote procedure */
 				/* does not provide a handle */
-	
+
 	NFS_MOUNT_OPT *opt;	/* options for this mount and subdirs */
 	INDEX_CLUSTER *cluster;	/* cluster this is in */
 	nfs_fh	handle;		/* file handle for this on the server */
@@ -217,12 +217,12 @@ typedef struct
 	long	flags;		/* same as NFS_MOUNT_OPT.flags */
 	long	rsize;
 	long	wsize;
-	
+
 	int	retrans;	/* number of request retries */
 	long	timeo;		/* initial timeout in 1/200 sec */
 	long	actimeo;	/* attr cache timeout */
 	long	reserved[8];	/* for future enhancements */
-	
+
 	struct sockaddr_in server;	/* address of the server */
 	char hostname[256];
 } NFS_MOUNT_INFO;

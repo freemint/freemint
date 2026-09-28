@@ -60,7 +60,7 @@ daemon/auth.c:
 daemon/mountd.c:
 daemon/nfsd.c:
 daemon/nfssvc.c:
-	Implemented support for system logger. Logging of several rpc actions 
+	Implemented support for system logger. Logging of several rpc actions
 	can be enabled at debug level > 0 (start daemon with -d), logging priority
 	is LOG_INFO in domain LOG_AUTH.
 daemon/nfssvc.c:
@@ -91,7 +91,7 @@ xfs/netfs.c:
 	from the cache.
 daemon/mountd.c:
 daemon/nfsd.c:
-	Replaced the compile time option DYNAMIC_RPC by a run-time check 
+	Replaced the compile time option DYNAMIC_RPC by a run-time check
 	for stdin being a	socket. So one version fits all needs again :)
 daemon/mountd.c:
 daemon/nfsd.c:
@@ -140,7 +140,7 @@ daemon/fh.c:
 	next entry was the same as the first at all in the directory.
 	Also removed a problem which released the wrong malloced string.
 daemon/fh.c:
-	Fixed a bug that caused a crash when the inode number of a file was 
+	Fixed a bug that caused a crash when the inode number of a file was
 	negative (long <-> u_long). This could only happen on a TOSFS with
 	Julian's crc inode patch applied.
 daemon/mountd.c:
@@ -152,7 +152,7 @@ xfs/sock_ipc.c:
 	\etc\hostname file could not be read at boot time.
 daemon/util.c:
 xfs/nfsutil.c:
-	Implemented a better scheme of converting between nfs and mint file 
+	Implemented a better scheme of converting between nfs and mint file
 	attributes and types.
 daemon/nfssvc.c:
 daemon/mountd.c:
@@ -163,7 +163,7 @@ xfs/config.h:
 	Reduced the default packet size to a value that will result in IP packet
 	sizes < 4kb.
 xfs/index.c:
-	Mount slots are now allocated dynamically, because if we get an auto 
+	Mount slots are now allocated dynamically, because if we get an auto
 	mounter, there can be a lot of mounts at the same time.
 lib/svc.c:
 lib/rpc.c:
@@ -174,7 +174,7 @@ xfs/sock_ipc.c:
 	use it, as mint is not capable of setting the euid/egid via system call.
 daemon/mountd.c:
 mount/nfsmnt.c:
-	Try to get a known port number, so if the port mapper is not running, 
+	Try to get a known port number, so if the port mapper is not running,
 	mounts might still work.
 
 
@@ -191,7 +191,7 @@ lib/svc_main.c:
 xfs/netfs.c:
 	When deleting a file, the corresponding cookie is no longer removed.
 daemon/nfssvc.c:  ++Kay Roemer
-	Fixed a bug that caused some functions to overwrite memory because some 
+	Fixed a bug that caused some functions to overwrite memory because some
 	buffers were used in a braindead way....
 lib/thread.c:
 	Changed the name of the function to avoid confusion with a function of the
@@ -207,7 +207,7 @@ xfs/netdir.c:
 	Made the cache coherent before unmounts.
 xfs/sock_ipc.c:
 	The nfs socket is no longer opened at boot time. Instead, it is opened
-	when the first access occurs. This was necessary because MiNT gave us 
+	when the first access occurs. This was necessary because MiNT gave us
 	a non-global handle regardless the fact that the kernel socket lib
 	opens it with O_GLOBAL. Strange!
 everywhere:
@@ -220,7 +220,7 @@ mount/mount.c:
 VERSION 0.3 PL 2
 
 mount/mount.c:
-	Added code to convert the local pathname into MiNTs native format, so 
+	Added code to convert the local pathname into MiNTs native format, so
 	now paths like /d/foo are handled correctly.
 daemon/fh.c:
 	Rewrote a major part of the cache index handling code. Now recreating
@@ -264,7 +264,7 @@ mount/nfsmnt.c:
 VERSION 0.3
 
 mount/mount.c:
-	Reorganized the code and added the possibility to give some options like 
+	Reorganized the code and added the possibility to give some options like
 	read-only, nosuid etc.
 xfs/netfs.c:
 xfs/netdev.c:
@@ -285,7 +285,7 @@ xfs/*.c:
 	in config.h, but can be modified at mount time. There are still things to
 	do on this.
 mount/mount.c:
-	Changed the order of arguments, server name is now stripped off the 
+	Changed the order of arguments, server name is now stripped off the
 	remote path name. Also the file \etc\mtab is updated with each mount.
 xfs/sock_ipc.c:
 	Fixed a bug that caused some strange behavior when doing concurrent
@@ -366,12 +366,12 @@ xfs/index.c:
 xfs/netfs.c:
 xfs/netdir.c:
 xfs/netdev.c:
-	All functions doing communication have now a small buffer on the stack, so 
+	All functions doing communication have now a small buffer on the stack, so
 	we do not have to bother MiNT's memory management so often.
 all communication functions:
 	Now sockets are used instead of pipes.
 daemon/svc_ipc:   ++Kay Roemer
-	Fixed a bug that caused the daemons to lose track of the allocated memory 
+	Fixed a bug that caused the daemons to lose track of the allocated memory
 	for a message.
 xfs/netdev.c:    ++Kay Roemer
 	Fixed bug in the seek function.

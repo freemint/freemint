@@ -72,10 +72,10 @@ parse_option (char *s)
 	{
 		if (*s == ',')
 			s += 1;
-		
+
 		if (!noopt)
 			strcat (optionstr, ",");
-		
+
 		if (!strncmp(s, "ro", 2))
 		{
 			strcat (optionstr, "ro");
@@ -153,7 +153,7 @@ parse_option (char *s)
 		}
 		else
 			fprintf (stderr, "unknown option '%s', ignoring it.\n", s);
-		
+
 		noopt = 0;
 		s = p;
 	}
@@ -164,64 +164,64 @@ update_mtab (int mode, char *filesys, char *dir, char *type,
 	     char *opt, int freq, int pass)
 {
 	FILE *fp;
-	
+
 	if (mode == UPDATE_MOUNT)
 	{
 		struct mntent mnt;
-		
+
 		fp = setmntent (MOUNTED, "a+");
 		if (!fp)
 		{
 			fprintf (stderr, "%s: could not update %s\n", commandname, MOUNTED);
 			return 1;
 		}
-		
+
 		mnt.mnt_fsname = filesys;
 		mnt.mnt_dir = dir;
 		mnt.mnt_type = type;
 		mnt.mnt_opts = opt;
 		mnt.mnt_freq = freq;
 		mnt.mnt_passno = pass;
-		
+
 		addmntent (fp, &mnt);
 		endmntent (fp);
-		
+
 		return 0;
 	}
 	else if (mode == UPDATE_UNMOUNT)
 	{
 		FILE *fl;
 		struct mntent *mnt;
-		
+
 		fp = setmntent (MOUNTED, "r");
 		if (!fp)
 		{
 			fprintf (stderr, "%s: could not update mount table\n", commandname);
 			return 1;
 		}
-		
+
 		fl = setmntent (LOCKED, "a+");
 		if (!fl)
 		{
 			fprintf (stderr, "%s: could not update mount table\n", commandname);
 			return 1;
 		}
-		
+
 		while ((mnt = getmntent (fp)) != NULL)
 		{
 			if ( (strcmp (mnt->mnt_dir, dir) != 0) &&
 			     (strcmp (mnt->mnt_fsname, dir) != 0) )
 				addmntent (fl, mnt);
 		}
-		
+
 		endmntent (fp);
 		endmntent (fl);
-		
+
 		rename (LOCKED, MOUNTED);
-		
+
 		return 0;
 	}
-	
+
 	return 1;
 }
 
@@ -233,10 +233,10 @@ convert_localname (const char *s, char *d)
 {
 	if (!s || !d)
 		return NULL;
-	
+
 	/* convert into MiNTs native representation */
 	unx2dos (s, d);
-	
+
 	/* get rid of the leading drive letter */
 	if (d[1] == ':')
 	{
@@ -251,13 +251,13 @@ convert_localname (const char *s, char *d)
 			d[0] = '\\';
 		}
 	}
-	
+
 	if (d[0] != '\\')
 	{
 		fprintf (stderr, "%s: cannot convert '%s' into absolute name.\n", commandname, s);
 		exit (1);
 	}
-	
+
 	return d;
 }
 
@@ -272,14 +272,14 @@ main (int argc, char *argv[])
 	int n;
 	char *mounted, *dir;
 	char path[PATH_MAX+1];
-	
-	
+
+
 	/* switch to the real root */
 	Dsetdrv ('u'-'a');
 	if (argv[0] && *argv[0])
 		commandname = argv[0];
-	
-	
+
+
 	/* parse options */
 	mounted = NULL;
 	dir = NULL;
@@ -346,21 +346,21 @@ main (int argc, char *argv[])
 			}
 		}
 	}
-	
+
 	if (optionstr[0] == '\0')
 	{
 		/* no options set */
 		strcpy (optionstr, "defaults");
 	}
-	
+
 	if (!dir)
 	{
 		usage();
 		exit(1);
 	}
-	
+
 	dir = convert_localname (dir, path);
-	
+
 	r = 0;
 	if (!unmount)
 	{
@@ -369,22 +369,22 @@ main (int argc, char *argv[])
 			usage ();
 			return 1;
 		}
-		
+
 		if (!fake_mtab)
 			r = do_nfs_mount (mounted, dir);
 		else
 			r = 0;
-		
+
 		if (r != 0)
 		{
 			fprintf (stderr, "%s: could not do NFS mount\n", commandname);
 			return 1;
 		}
-		
+
 		if (verbose)
 			printf ("mounted %s on %s, type %s (%s)\n",
 			                  mounted, dir, "nfs", optionstr);
-		
+
 		/* update the mount table file accordingly */
 		if (!without_mtab)
 			return update_mtab (UPDATE_MOUNT, mounted, dir, "nfs", optionstr, 0, 0);
@@ -396,20 +396,20 @@ main (int argc, char *argv[])
 		FILE *fp;
 		struct mntent *mnt;
 		int which;
-		
+
 		if (!dir)
 		{
 			usage ();
 			return 1;
 		}
-		
+
 		fp = setmntent (MOUNTED, "r");
 		if (!fp)
 		{
 			fprintf (stderr, "%s: cannot open mount table\n", commandname);
 			return 1;
 		}
-		
+
 		which = 0;
 		while ((mnt = getmntent (fp)) != NULL)
 		{
@@ -425,7 +425,7 @@ main (int argc, char *argv[])
 			}
 		}
 		(void) which;
-		
+
 		if (mnt)
 		{
 			r = do_nfs_unmount (mnt->mnt_fsname, mnt->mnt_dir);
@@ -435,15 +435,15 @@ main (int argc, char *argv[])
 				return 1;
 			}
 		}
-		
+
 		fclose (fp);
-		
+
 		/* update the mount table file */
 		if (!without_mtab)
 			return update_mtab (UPDATE_UNMOUNT, NULL, dir, NULL, NULL, 0, 0);
 		else
 			return 0;
 	}
-	
+
 	return r;
 }

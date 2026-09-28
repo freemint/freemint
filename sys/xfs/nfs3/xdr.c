@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -41,7 +41,7 @@ xdr_init (xdrs *s, char *buffer, long len, int op, MEMSVC *ms)
 	s->data = s->current = buffer;
 	s->length = len;
 	s->op = op;
-	
+
 	if (ms)
 	{
 		s->x_malloc = ms->alloc;
@@ -52,7 +52,7 @@ xdr_init (xdrs *s, char *buffer, long len, int op, MEMSVC *ms)
 		s->x_malloc = dummy_alloc;
 		s->x_free = dummy_free;
 	}
-	
+
 	return TRUE;
 }
 
@@ -61,7 +61,7 @@ xdr_getpos (xdrs *x)
 {
 	if (x->length >= 0)
 		return (long)(x->current) - (long)(x->data);
-	
+
 	return 0;
 }
 
@@ -70,10 +70,10 @@ xdr_setpos (xdrs *x, long pos)
 {
 	if (x->length <= pos)
 		return FALSE;
-	
+
 	x->length -= pos;
 	x->current += pos;
-	
+
 	return TRUE;
 }
 
@@ -82,7 +82,7 @@ long *
 xdr_inline (xdrs *x, long len)
 {
 	long *p;
-	
+
 	if (len <= x->length)
 	{
 		p = (long *) x->current;
@@ -90,7 +90,7 @@ xdr_inline (xdrs *x, long len)
 		x->current += len;
 		return p;
 	}
-	
+
 	return FALSE;
 }
 
@@ -100,7 +100,7 @@ xdr_void (xdrs *x, ...)
 	/* nothing to do */
 	if (x->length >= 0)
 		return TRUE;
-	
+
 	return FALSE;
 }
 
@@ -109,7 +109,7 @@ xdr_long (xdrs *x, long *val)
 {
 	if (x->length < sizeof (long))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 		*val = *(long *) x->current;
 	else if (XDR_ENCODE == x->op)
@@ -118,10 +118,10 @@ xdr_long (xdrs *x, long *val)
 		return TRUE;
 	else
 		return FALSE;
-	
+
 	x->current += sizeof (long);
 	x->length -= sizeof (long);
-	
+
 	return TRUE;
 }
 
@@ -130,7 +130,7 @@ xdr_enum (xdrs *x, enum_t *val)
 {
 	if (x->length < sizeof (ulong))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 		*val = *(ulong *) x->current;
 	else if (XDR_ENCODE == x->op)
@@ -139,10 +139,10 @@ xdr_enum (xdrs *x, enum_t *val)
 		return TRUE;
 	else
 		return FALSE;
-	
+
 	x->current += sizeof (ulong);
 	x->length -= sizeof (ulong);
-	
+
 	return TRUE;
 }
 
@@ -151,7 +151,7 @@ xdr_bool (xdrs *x, bool_t *val)
 {
 	if (x->length < sizeof (ulong))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 		*val = *(ulong *) x->current;
 	else if (XDR_ENCODE == x->op)
@@ -160,10 +160,10 @@ xdr_bool (xdrs *x, bool_t *val)
 		return TRUE;
 	else
 		return FALSE;
-	
+
 	x->current += sizeof (ulong);
 	x->length -= sizeof (ulong);
-	
+
 	return TRUE;
 }
 
@@ -172,7 +172,7 @@ xdr_ulong (xdrs *x, ulong *val)
 {
 	if (x->length < sizeof (ulong))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 		*val = *(ulong *) x->current;
 	else if (XDR_ENCODE == x->op)
@@ -181,10 +181,10 @@ xdr_ulong (xdrs *x, ulong *val)
 		return TRUE;
 	else
 		return FALSE;
-	
+
 	x->current += sizeof (ulong);
 	x->length -= sizeof (ulong);
-	
+
 	return TRUE;
 }
 
@@ -193,10 +193,10 @@ xdr_string (xdrs *x, const char **cpp, long maxlen)
 {
 	long rawlen;
 	union { const char **cc; char **c; } cp;
-	
+
 	if (x->length < sizeof (ulong))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 	{
 		ulong l = *(ulong *) x->current;
@@ -218,7 +218,7 @@ xdr_string (xdrs *x, const char **cpp, long maxlen)
 #endif
 		x->current += rawlen;
 		x->length -= rawlen;
-		
+
 		return TRUE;
 	}
 	else if (XDR_ENCODE == x->op)
@@ -245,7 +245,7 @@ xdr_string (xdrs *x, const char **cpp, long maxlen)
 		memcpy (x->current, *cp.c/* *cpp */, l);
 		x->current += rawlen;
 		x->length -= rawlen;
-		
+
 		return TRUE;
 	}
 	else if (XDR_FREE == x->op)
@@ -258,10 +258,10 @@ bool_t
 xdr_opaque (xdrs *x, const opaque **opp, long *len, long maxlen)
 {
 	long rawlen;
-	
+
 	if (x->length < sizeof (ulong))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 	{
 		union { const char **cc; char **c; } cp;
@@ -280,15 +280,15 @@ xdr_opaque (xdrs *x, const opaque **opp, long *len, long maxlen)
 		memcpy (*cp.c/* *opp */, x->current, l);
 		x->current += rawlen;
 		x->length -= rawlen;
-		
+
 		return TRUE;
 	}
 	else if (XDR_ENCODE == x->op)
 	{
 		ulong l = *len;
-		
+
 		*(ulong *) x->current = l;
-		
+
 		x->current += sizeof (ulong);
 		x->length -= sizeof (ulong);
 		rawlen = (l + 3) & ~0x03L;
@@ -296,7 +296,7 @@ xdr_opaque (xdrs *x, const opaque **opp, long *len, long maxlen)
 			return FALSE;
 		if (x->length < rawlen)
 			return FALSE;
-		
+
 		if (rawlen > l)
 		{
 			/* clear the fringe at the end of the buffer
@@ -304,11 +304,11 @@ xdr_opaque (xdrs *x, const opaque **opp, long *len, long maxlen)
 			 */
 			*(long *)(x->current + rawlen - 4) = 0L;
 		}
-		
+
 		memcpy (x->current, *opp, l);
 		x->current += rawlen;
 		x->length -= rawlen;
-		
+
 		return TRUE;
 	}
 	else if (XDR_FREE == x->op)
@@ -325,7 +325,7 @@ xdr_fixedopaq (xdrs *x, opaque *val, long len)
 	rawlen = (len + 3) & ~0x03;
 	if (x->length < rawlen)
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->op)
 	{
 		memcpy (val, x->current, len);
@@ -345,10 +345,10 @@ xdr_fixedopaq (xdrs *x, opaque *val, long len)
 		return TRUE;
 	else
 		return FALSE;
-	
+
 	x->current += rawlen;
 	x->length -= rawlen;
-	
+
 	return TRUE;
 }
 
@@ -357,7 +357,7 @@ xdr_pointer (xdrs *x, char **objpp, long objlen, xdrproc_t proc)
 {
 	char *where = *objpp;
 	bool_t more_data;
-	
+
 	more_data = (where != NULL);
 	if (!xdr_bool (x, &more_data))
 		return FALSE;
@@ -366,6 +366,6 @@ xdr_pointer (xdrs *x, char **objpp, long objlen, xdrproc_t proc)
 		*objpp = NULL;
 		return TRUE;
 	}
-	
+
 	return (*proc)(x, where);
 }
