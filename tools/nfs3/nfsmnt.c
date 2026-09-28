@@ -1,18 +1,20 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
  * File : nfsmnt.c
- *        do an nfs mount
+ *        do an NFS version 3 mount
  */
 
 # include <errno.h>
+# include <stdio.h>
 # include <string.h>
 # include <support.h>
 # include <time.h>
@@ -31,6 +33,8 @@
 # include "mount_xdr.h"
 # include "nfsmnt.h"
 
+
+const char *fstype = "nfs3";
 
 /* nfs specific option values */
 long rsize = 0;
@@ -63,12 +67,12 @@ int nosuid = 0;
 
 
 #define MOUNT_PORT  2050
-#define NFS_MOUNT_VERS 1
+#define NFS3_MOUNT_VERS 3
 
 
 typedef struct myxattr MYXATTR;
 
-/* structure for getxattr */
+/* structure for getxattr, must match the kernel's XATTR */
 struct myxattr
 {
 	ushort	mode;
@@ -89,19 +93,29 @@ struct myxattr
 	long	reserved3[2];
 };
 
+/* Must match nfs_fh3 in the driver: a length word followed by up to 64
+ * bytes of handle. Version 1 of this interface had a fixed 32 byte
+ * array here, which is why the version field had to be bumped.
+ */
 typedef struct
 {
-	long	version;
-	fhandle	handle;		/* initial file handle from the server's mountd */
-	MYXATTR	mntattr;	/* not used yet */
-	long	flags;
-	long	rsize;
-	long	wsize;
+	unsigned long	len;
+	char		data[FHSIZE3];
+} my_nfs_fh3;
 
-	short	retrans;
-	long	timeo;
-	long	actimeo;
-	long	reserved[8];
+typedef struct
+{
+	long		version;
+	my_nfs_fh3	handle;	/* initial file handle from the server's mountd */
+	MYXATTR		mntattr;	/* not used yet */
+	long		flags;
+	long		rsize;
+	long		wsize;
+
+	short		retrans;	/* `int' in the kernel, which is -mshort */
+	long		timeo;
+	long		actimeo;
+	long		reserved[8];
 
 	struct sockaddr_in server;
 	char hostname[256];
@@ -109,21 +123,20 @@ typedef struct
 
 
 
-# define NFS_MOUNT	(('N' << 8) | 1)
-# define NFS_UNMOUNT	(('N' << 8) | 2)
+# define NFS3_MOUNT	(('N' << 8) | 3)
+# define NFS3_UNMOUNT	(('N' << 8) | 4)
 
 /* only for debugging purposes */
-# define NFS_MNTDUMP	(('N' << 8) | 42)
-# define NFS_DUMPALL	(('N' << 8) | 43)
+# define NFS3_MNTDUMP	(('N' << 8) | 42)
+# define NFS3_DUMPALL	(('N' << 8) | 43)
 
 
 # define IPNAMELEN	256
-# define MOUNT_PORT	2050
 
 
 
 static int
-make_socket (long maxmsgsize)
+make_socket (void)
 {
 	struct sockaddr_in in;
 	long res;
@@ -149,6 +162,47 @@ make_socket (long maxmsgsize)
 	return fd;
 }
 
+/* Split "host:/exported/path" into its two halves. */
+static const char *
+split_remote (const char *remote, char *hostname, size_t hostlen)
+{
+	const char *p = strchr (remote, ':');
+	size_t n;
+
+	if (!p)
+	{
+		hostname[0] = '\0';
+		return remote;
+	}
+
+	n = (size_t) (p - remote);
+	if (n >= hostlen)
+		n = hostlen - 1;
+
+	memcpy (hostname, remote, n);
+	hostname[n] = '\0';
+
+	return p + 1;
+}
+
+static CLIENT *
+mount_client (struct sockaddr_in *server, int *s)
+{
+	struct timeval retry_time = { 1, 0 };  /* every second */
+	CLIENT *cl;
+
+	server->sin_port = htons (0);  /* ask the port mapper for the port */
+	cl = clntudp_create (server, MOUNT_PROGRAM, MOUNT_V3, retry_time, s);
+	if (!cl)
+	{
+		/* also try a fallback method with a fixed port number */
+		server->sin_port = htons (MOUNT_PORT);
+		cl = clntudp_create (server, MOUNT_PROGRAM, MOUNT_V3, retry_time, s);
+	}
+
+	return cl;
+}
+
 #pragma GCC diagnostic ignored "-Wcast-qual"
 
 long
@@ -158,12 +212,9 @@ do_nfs_mount (const char *remote, const char *localdir)
 	NFS_MOUNT_INFO info;
 	char mountname[MNTPATHLEN+1];
 	char hostname[IPNAMELEN+1];
-	struct timeval retry_time = { 1, 0 };  /* every second */
 	struct timeval total_time = { 5, 0 };  /* total timeout */
-	long maxmsgsize = MNTPATHLEN+RPCSMALLMSGSIZE;
 	enum clnt_stat res;
-	fhstatus fh;
-	char *p;
+	mountres3 mres;
 	CLIENT *cl;
 	int s;
 	struct sockaddr_in server;
@@ -171,19 +222,10 @@ do_nfs_mount (const char *remote, const char *localdir)
 
 
 	unx2dos (localdir, mountname);
-	p = strchr (remote, ':');    /* find end of hostname */
-	if (!p)
-		strcpy (hostname, "");
-	else
-	{
-		char c = *p;
-		*p = '\0';
-		strcpy (hostname, remote);
-		*p = c;
-		remote = p+1;
-	}
+	remote = split_remote (remote, hostname, sizeof (hostname));
 
-	info.version = NFS_MOUNT_VERS;
+	memset (&info, 0, sizeof (info));
+	info.version = NFS3_MOUNT_VERS;
 	info.flags = OPT_DEFAULT;
 
 	if (readonly)
@@ -204,10 +246,17 @@ do_nfs_mount (const char *remote, const char *localdir)
 	info.rsize = rsize;
 	info.wsize = wsize;
 	info.actimeo = actimeo * CLOCKS_PER_SEC/10;
-	strncpy (info.hostname, hostname, sizeof (info.hostname) - 1);
-	info.hostname[sizeof(info.hostname)-1] = '\0';
+	{
+		size_t hl = strlen (hostname);
 
-	s = make_socket (maxmsgsize);
+		if (hl > sizeof (info.hostname) - 1)
+			hl = sizeof (info.hostname) - 1;
+
+		memcpy (info.hostname, hostname, hl);
+		info.hostname[hl] = '\0';
+	}
+
+	s = make_socket ();
 	if (s < 0)
 		return 1;
 
@@ -215,40 +264,35 @@ do_nfs_mount (const char *remote, const char *localdir)
 	hp = gethostbyname (hostname);
 	if (!hp)
 	{
-		fprintf (stderr, "do_nfs_mount: failed to look up server address\n");
+		fprintf (stderr, "%s: failed to look up server address\n", commandname);
 		return 1;
 	}
 
 	if (hp->h_addrtype != AF_INET)
 	{
-		fprintf(stderr, "do_nfs_mount: not AF_INET address type\n");
+		fprintf (stderr, "%s: not AF_INET address type\n", commandname);
 		return 1;
 	}
 
 	server.sin_family = AF_INET;
-	memcpy ((char*) &server.sin_addr, hp->h_addr, hp->h_length);
-	server.sin_port = htons (0);  /* ask the port mapper for that port */
+	memcpy ((char *) &server.sin_addr, hp->h_addr, hp->h_length);
 
-	cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
+	cl = mount_client (&server, &s);
 	if (!cl)
 	{
-		/* also try a fallback method with a fixed port number */
-		server.sin_port = htons(MOUNT_PORT);
-		cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
-		if (!cl)
-		{
-			fprintf (stderr, "do_nfs_mount: failed to create RPC client\n");
-			return 1;
-		}
+		fprintf (stderr, "%s: failed to create RPC client for "
+			 "MOUNT version 3\n", commandname);
+		return 1;
 	}
 
-	res = clnt_call (cl, MOUNTPROC_MNT,
-	                (xdrproc_t) xdr_dirpath, (void *)remote,
-	                (xdrproc_t) xdr_fhstatus, (void *)&fh, total_time);
+	memset (&mres, 0, sizeof (mres));
+	res = clnt_call (cl, MOUNTPROC3_MNT,
+	                (xdrproc_t) xdr_dirpath, (void *) remote,
+	                (xdrproc_t) xdr_mountres3, (void *) &mres, total_time);
 
 	if (res != RPC_SUCCESS)
 	{
-		clnt_perror (cl, "do_nfs_mount");
+		clnt_perror (cl, commandname);
 		clnt_destroy (cl);
 
 		return res;
@@ -256,20 +300,43 @@ do_nfs_mount (const char *remote, const char *localdir)
 
 	clnt_destroy (cl);
 
-	if (fh.status != 0)
+	if (mres.status != MNT3_OK)
 	{
-		fprintf (stderr, "do_nfs_mount: mount request failed with %ld\n", fh.status);
+		fprintf (stderr, "%s: mount request failed: %s (%lu)\n",
+			 commandname, mountstat3_str (mres.status),
+			 (unsigned long) mres.status);
 		return -1;
 	}
 
-	info.server.sin_family = AF_INET;
-	memcpy ((char*) &info.server.sin_addr, hp->h_addr, hp->h_length);
-	info.server.sin_port = htons (port);
-	info.handle = fh.fhstatus_u.directory;
+	if (mres.fhandle.len == 0 || mres.fhandle.len > FHSIZE3)
+	{
+		fprintf (stderr, "%s: server returned a bogus file handle "
+			 "of %lu bytes\n", commandname,
+			 (unsigned long) mres.fhandle.len);
+		return -1;
+	}
 
-	r = Dcntl (NFS_MOUNT, mountname, &info);
+	if (verbose)
+	{
+		unsigned int i;
+
+		printf ("got a %lu byte file handle, auth flavors:",
+			(unsigned long) mres.fhandle.len);
+		for (i = 0; i < mres.nauth; i++)
+			printf (" %d", mres.auth_flavors[i]);
+		printf ("\n");
+	}
+
+	info.server.sin_family = AF_INET;
+	memcpy ((char *) &info.server.sin_addr, hp->h_addr, hp->h_length);
+	info.server.sin_port = htons (port);
+	info.handle.len = mres.fhandle.len;
+	memcpy (info.handle.data, mres.fhandle.data, mres.fhandle.len);
+
+	r = Dcntl (NFS3_MOUNT, mountname, &info);
 	if (r != 0)
-		fprintf (stderr, "%s: mount request to kernel failed\n", commandname);
+		fprintf (stderr, "%s: mount request to kernel failed (%ld)\n",
+			 commandname, r);
 
 	return r;
 }
@@ -280,12 +347,9 @@ do_nfs_unmount (const char *remote, const char *local)
 	long r;
 	char mountname[MNTPATHLEN+1];
 	char hostname[IPNAMELEN+1];
-	struct timeval retry_time = { 1, 0 };  /* every second */
 	struct timeval total_time = { 5, 0 };  /* total timeout */
-	long maxmsgsize = MNTPATHLEN+RPCSMALLMSGSIZE;
 	CLIENT *cl;
 	int s;
-	char *p;
 	struct sockaddr_in server;
 	struct hostent *hp;
 
@@ -294,31 +358,21 @@ do_nfs_unmount (const char *remote, const char *local)
 		return -1;
 
 	unx2dos (local, mountname);
-
-	p = strchr (remote, ':');    /* find end of hostname */
-	if (!p)
-		strcpy(hostname, "");
-	else
-	{
-		char c = *p;
-		*p = '\0';
-		strcpy (hostname, remote);
-		*p = c;
-		remote = p+1;
-	}
+	remote = split_remote (remote, hostname, sizeof (hostname));
 
 	/* do unmount on the local kernel */
-	r = Dcntl (NFS_UNMOUNT, mountname, 0);
+	r = Dcntl (NFS3_UNMOUNT, mountname, 0);
 	if (r != 0)
 	{
-		fprintf (stderr, "%s: unmount request to kernel failed\n", commandname);
+		fprintf (stderr, "%s: unmount request to kernel failed (%ld)\n",
+			 commandname, r);
 		return r;
 	}
 
 	/* no error checks here, as we should not fail the unmount if there was
 	 * no contact with the nfs server.
 	 */
-	s = make_socket (maxmsgsize);
+	s = make_socket ();
 	if (s < 0)
 		return 0;
 
@@ -326,33 +380,27 @@ do_nfs_unmount (const char *remote, const char *local)
 	hp = gethostbyname (hostname);
 	if (!hp)
 	{
-		fprintf(stderr, "do_nfs_mount: failed to look up server address\n");
-		return 1;
+		fprintf (stderr, "%s: failed to look up server address\n", commandname);
+		return 0;
 	}
 
 	if (hp->h_addrtype != AF_INET)
 	{
-		fprintf(stderr, "do_nfs_mount: not AF_INET address type\n");
-		return 1;
+		fprintf (stderr, "%s: not AF_INET address type\n", commandname);
+		return 0;
 	}
 
 	server.sin_family = AF_INET;
-	memcpy ((char*) &server.sin_addr, hp->h_addr, hp->h_length);
-	server.sin_port = htons (0);  /* ask the port mapper for the port */
+	memcpy ((char *) &server.sin_addr, hp->h_addr, hp->h_length);
 
-	cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
+	cl = mount_client (&server, &s);
 	if (!cl)
-	{
-		/* Also try a fallback method with a fixed port number */
-		server.sin_port = htons (MOUNT_PORT);
-		cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
-		if (!cl)
-			return 0;
-	}
+		return 0;
 
-	(void) clnt_call (cl, MOUNTPROC_UMNT,
-	                  (xdrproc_t)xdr_dirpath, (caddr_t)remote,
-	                  (xdrproc_t)xdr_void, (caddr_t)NULL, total_time);
+	(void) clnt_call (cl, MOUNTPROC3_UMNT,
+	                  (xdrproc_t) xdr_dirpath, (caddr_t) remote,
+	                  (xdrproc_t) xdr_void, (caddr_t) NULL, total_time);
 	clnt_destroy (cl);
+
 	return 0;
 }

@@ -4,12 +4,8 @@
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*

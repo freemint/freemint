@@ -1,17 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
@@ -61,6 +55,21 @@ nfs_cache_del (int i)
 	nfs_cache[i].dir = NULL;
 	nfs_cache[i].name = NULL;
 	nfs_cache[i].index = NULL;
+}
+
+
+/* Drop every entry, no matter how fresh. Needed on unmount: a cached
+ * entry holds a reference on its parent directory, so a mount point
+ * cannot be released while any of its children is still cached.
+ */
+void
+nfs_cache_flush (void)
+{
+	long i;
+
+	for (i = 0; i < LOOKUP_CACHE_SIZE; i++)
+		if (nfs_cache[i].dir)
+			nfs_cache_del (i);
 }
 
 

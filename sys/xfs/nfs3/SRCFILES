@@ -6,7 +6,6 @@ HEADER = \
 	config.h \
 	global.h \
 	index.h \
-	kernel.h \
 	nfs_xdr.h \
 	nfsdev.h \
 	nfssys.h \

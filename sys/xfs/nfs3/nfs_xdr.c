@@ -1,598 +1,904 @@
 /*
- * Copyright 1993 by Ulrich K�hn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
  * File : nfs_xdr.c
- *        some utility functions for dealing with the nfs xdr types
+ *        (de)serialisation of the RFC 1813 data types
+ *
+ * The xdr_size_*() functions return an upper bound for the number of
+ * bytes an encoded request occupies, so that a buffer of the right size
+ * can be allocated before encoding starts.
  */
 
 # include "global.h"
 
 
+/* ---------------------------------------------------------------- */
+/* basic types                                                      */
+/* ---------------------------------------------------------------- */
+
 bool_t
-xdr_nfsstat (xdrs *x, nfsstat *sp)
+xdr_nfs_fh3 (xdrs *x, nfs_fh3 *fhp)
 {
-	return xdr_enum (x, (enum_t*)sp);
+	return xdr_varopaque (x, fhp->data, &fhp->len, NFS3_FHSIZE);
 }
 
 long
-xdr_size_nfsstat (nfsstat *sp)
+xdr_size_nfs_fh3 (nfs_fh3 *fhp)
 {
-	return sizeof (ulong);
+	return XDR_STRSIZE (fhp->len);
 }
 
 bool_t
-xdr_ftype (xdrs *x, ftype *fp)
-{
-	return xdr_enum (x, (int*)fp);
-}
-
-bool_t
-xdr_nfscookie (xdrs *x, nfscookie cookie)
-{
-	return xdr_fixedopaq (x, cookie, COOKIESIZE);
-}
-
-bool_t
-xdr_nfsfh (xdrs *x, nfs_fh *fp)
-{
-	return xdr_fixedopaq (x, fp->data, FHSIZE);
-}
-
-
-bool_t
-xdr_nfstime (xdrs *x, nfstime *tp)
+xdr_nfstime3 (xdrs *x, nfstime3 *tp)
 {
 	if (!xdr_ulong (x, &tp->seconds))
 		return FALSE;
 
-	return xdr_ulong (x, &tp->useconds);
+	return xdr_ulong (x, &tp->nseconds);
 }
 
 bool_t
-xdr_fattr (xdrs *x, fattr *fp)
+xdr_specdata3 (xdrs *x, specdata3 *sp)
 {
-	long *buf;
+	if (!xdr_ulong (x, &sp->specdata1))
+		return FALSE;
 
+	return xdr_ulong (x, &sp->specdata2);
+}
+
+bool_t
+xdr_fattr3 (xdrs *x, fattr3 *fp)
+{
 	if (XDR_FREE == x->op)
 		return TRUE;
 
-	xdr_ftype (x, &fp->type);
-# ifndef NO_INLINE
-	buf = xdr_inline (x, 10 * BYTES_PER_XDR_UNIT);
-# else
-	buf = NULL;
-# endif
-	if (buf)
-	{
-		if (x->op == XDR_DECODE)
-		{
-			fp->mode	= IXDR_GET_ULONG (buf);
-			fp->nlink	= IXDR_GET_ULONG (buf);
-			fp->uid		= IXDR_GET_ULONG (buf);
-			fp->gid		= IXDR_GET_ULONG (buf);
-			fp->size	= IXDR_GET_ULONG (buf);
-			fp->blocksize	= IXDR_GET_ULONG (buf);
-			fp->rdev	= IXDR_GET_ULONG (buf);
-			fp->blocks	= IXDR_GET_ULONG (buf);
-			fp->fsid	= IXDR_GET_ULONG (buf);
-			fp->fileid	= IXDR_GET_ULONG (buf);
-		}
-		else if (x->op == XDR_ENCODE)
-		{
-			IXDR_PUT_ULONG (buf, fp->mode);
-			IXDR_PUT_ULONG (buf, fp->nlink);
-			IXDR_PUT_ULONG (buf, fp->uid);
-			IXDR_PUT_ULONG (buf, fp->gid);
-			IXDR_PUT_ULONG (buf, fp->size);
-			IXDR_PUT_ULONG (buf, fp->blocksize);
-			IXDR_PUT_ULONG (buf, fp->rdev);
-			IXDR_PUT_ULONG (buf, fp->blocks);
-			IXDR_PUT_ULONG (buf, fp->fsid);
-			IXDR_PUT_ULONG (buf, fp->fileid);
-		}
-	}
-	else
-	{
-		if (!xdr_ulong (x, &fp->mode))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->nlink))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->uid))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->gid))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->size))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->blocksize))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->rdev))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->blocks))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->fsid))
-			return FALSE;
-		if (!xdr_ulong (x, &fp->fileid))
-			return FALSE;
-	}
+	if (!xdr_enum (x, &fp->type))
+		return FALSE;
+	if (!xdr_ulong (x, &fp->mode))
+		return FALSE;
+	if (!xdr_ulong (x, &fp->nlink))
+		return FALSE;
+	if (!xdr_ulong (x, &fp->uid))
+		return FALSE;
+	if (!xdr_ulong (x, &fp->gid))
+		return FALSE;
+	if (!xdr_uint64 (x, &fp->size))
+		return FALSE;
+	if (!xdr_uint64 (x, &fp->used))
+		return FALSE;
+	if (!xdr_specdata3 (x, &fp->rdev))
+		return FALSE;
+	if (!xdr_uint64 (x, &fp->fsid))
+		return FALSE;
+	if (!xdr_uint64 (x, &fp->fileid))
+		return FALSE;
+	if (!xdr_nfstime3 (x, &fp->atime))
+		return FALSE;
+	if (!xdr_nfstime3 (x, &fp->mtime))
+		return FALSE;
 
-	if (!xdr_nfstime (x, &fp->atime))
+	return xdr_nfstime3 (x, &fp->ctime);
+}
+
+bool_t
+xdr_post_op_attr (xdrs *x, post_op_attr *ap)
+{
+	if (!xdr_bool (x, &ap->attributes_follow))
 		return FALSE;
-	if (!xdr_nfstime (x, &fp->mtime))
+
+	if (ap->attributes_follow)
+		return xdr_fattr3 (x, &ap->attributes);
+
+	return TRUE;
+}
+
+static bool_t
+xdr_wcc_attr (xdrs *x, wcc_attr *ap)
+{
+	if (!xdr_uint64 (x, &ap->size))
 		return FALSE;
-	if (!xdr_nfstime (x, &fp->ctime))
+	if (!xdr_nfstime3 (x, &ap->mtime))
 		return FALSE;
+
+	return xdr_nfstime3 (x, &ap->ctime);
+}
+
+static bool_t
+xdr_pre_op_attr (xdrs *x, pre_op_attr *ap)
+{
+	if (!xdr_bool (x, &ap->attributes_follow))
+		return FALSE;
+
+	if (ap->attributes_follow)
+		return xdr_wcc_attr (x, &ap->attributes);
 
 	return TRUE;
 }
 
 bool_t
-xdr_sattr (xdrs *x, sattr *sp)
+xdr_wcc_data (xdrs *x, wcc_data *wp)
 {
-	long *buf;
+	if (!xdr_pre_op_attr (x, &wp->before))
+		return FALSE;
 
+	return xdr_post_op_attr (x, &wp->after);
+}
+
+bool_t
+xdr_post_op_fh3 (xdrs *x, post_op_fh3 *fp)
+{
+	if (!xdr_bool (x, &fp->handle_follows))
+		return FALSE;
+
+	if (fp->handle_follows)
+		return xdr_nfs_fh3 (x, &fp->handle);
+
+	fp->handle.len = 0;
+	return TRUE;
+}
+
+
+/* Prepare a sattr3 structure that changes nothing at all. NFS2 used
+ * "all bits set" for this, NFS3 has an explicit flag per attribute.
+ */
+void
+sattr3_init (sattr3 *sp)
+{
+	sp->set_mode = FALSE;
+	sp->mode = 0;
+	sp->set_uid = FALSE;
+	sp->uid = 0;
+	sp->set_gid = FALSE;
+	sp->gid = 0;
+	sp->set_size = FALSE;
+	sp->size = 0;
+	sp->set_atime = DONT_CHANGE;
+	sp->atime.seconds = 0;
+	sp->atime.nseconds = 0;
+	sp->set_mtime = DONT_CHANGE;
+	sp->mtime.seconds = 0;
+	sp->mtime.nseconds = 0;
+}
+
+bool_t
+xdr_sattr3 (xdrs *x, sattr3 *sp)
+{
 	if (XDR_FREE == x->op)
 		return TRUE;
 
-# ifndef NO_INLINE
-	buf = xdr_inline (x, 4 * BYTES_PER_XDR_UNIT);
-# else
-	buf = NULL;
-# endif
-	if (buf)
+	if (!xdr_bool (x, &sp->set_mode))
+		return FALSE;
+	if (sp->set_mode && !xdr_ulong (x, &sp->mode))
+		return FALSE;
+
+	if (!xdr_bool (x, &sp->set_uid))
+		return FALSE;
+	if (sp->set_uid && !xdr_ulong (x, &sp->uid))
+		return FALSE;
+
+	if (!xdr_bool (x, &sp->set_gid))
+		return FALSE;
+	if (sp->set_gid && !xdr_ulong (x, &sp->gid))
+		return FALSE;
+
+	if (!xdr_bool (x, &sp->set_size))
+		return FALSE;
+	if (sp->set_size && !xdr_uint64 (x, &sp->size))
+		return FALSE;
+
+	if (!xdr_enum (x, &sp->set_atime))
+		return FALSE;
+	if (sp->set_atime == SET_TO_CLIENT_TIME && !xdr_nfstime3 (x, &sp->atime))
+		return FALSE;
+
+	if (!xdr_enum (x, &sp->set_mtime))
+		return FALSE;
+	if (sp->set_mtime == SET_TO_CLIENT_TIME && !xdr_nfstime3 (x, &sp->mtime))
+		return FALSE;
+
+	return TRUE;
+}
+
+long
+xdr_size_sattr3 (sattr3 *sp)
+{
+	long r = 6L * sizeof (ulong);	/* the six discriminators */
+
+	if (sp->set_mode)
+		r += sizeof (ulong);
+	if (sp->set_uid)
+		r += sizeof (ulong);
+	if (sp->set_gid)
+		r += sizeof (ulong);
+	if (sp->set_size)
+		r += 2L * sizeof (ulong);
+	if (sp->set_atime == SET_TO_CLIENT_TIME)
+		r += 2L * sizeof (ulong);
+	if (sp->set_mtime == SET_TO_CLIENT_TIME)
+		r += 2L * sizeof (ulong);
+
+	return r;
+}
+
+bool_t
+xdr_diropargs3 (xdrs *x, diropargs3 *ap)
+{
+	if (!xdr_nfs_fh3 (x, &ap->dir))
+		return FALSE;
+
+	return xdr_string (x, &ap->name, MAXNAMLEN);
+}
+
+long
+xdr_size_diropargs3 (diropargs3 *ap)
+{
+	return xdr_size_nfs_fh3 (&ap->dir) + XDR_STRSIZE (strlen (ap->name));
+}
+
+
+/* ---------------------------------------------------------------- */
+/* GETATTR / SETATTR                                                */
+/* ---------------------------------------------------------------- */
+
+bool_t
+xdr_getattr3res (xdrs *x, getattr3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+
+	if (NFS3_OK == rp->status)
+		return xdr_fattr3 (x, &rp->obj_attributes);
+
+	return TRUE;
+}
+
+bool_t
+xdr_setattr3args (xdrs *x, setattr3args *ap)
+{
+	if (!xdr_nfs_fh3 (x, &ap->object))
+		return FALSE;
+	if (!xdr_sattr3 (x, &ap->new_attributes))
+		return FALSE;
+	if (!xdr_bool (x, &ap->check))
+		return FALSE;
+
+	if (ap->check)
+		return xdr_nfstime3 (x, &ap->obj_ctime);
+
+	return TRUE;
+}
+
+long
+xdr_size_setattr3args (setattr3args *ap)
+{
+	long r = xdr_size_nfs_fh3 (&ap->object);
+
+	r += xdr_size_sattr3 (&ap->new_attributes);
+	r += sizeof (ulong);
+	if (ap->check)
+		r += 2L * sizeof (ulong);
+
+	return r;
+}
+
+/* Result of SETATTR, REMOVE and RMDIR: status plus wcc_data, which is
+ * present in the failure case as well.
+ */
+bool_t
+xdr_wcc3res (xdrs *x, wcc3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+
+	return xdr_wcc_data (x, &rp->wcc);
+}
+
+
+/* ---------------------------------------------------------------- */
+/* LOOKUP / ACCESS                                                  */
+/* ---------------------------------------------------------------- */
+
+bool_t
+xdr_lookup3res (xdrs *x, lookup3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+
+	if (NFS3_OK == rp->status)
 	{
-		if (XDR_DECODE == x->op)
-		{
-			sp->mode = IXDR_GET_ULONG (buf);
-			sp->uid  = IXDR_GET_ULONG (buf);
-			sp->gid  = IXDR_GET_ULONG (buf);
-			sp->size = IXDR_GET_ULONG (buf);
-		}
-		else if (XDR_ENCODE == x->op)
-		{
-			IXDR_PUT_ULONG (buf, sp->mode);
-			IXDR_PUT_ULONG (buf, sp->uid);
-			IXDR_PUT_ULONG (buf, sp->gid);
-			IXDR_PUT_ULONG (buf, sp->size);
-		}
+		if (!xdr_nfs_fh3 (x, &rp->object))
+			return FALSE;
+		if (!xdr_post_op_attr (x, &rp->obj_attributes))
+			return FALSE;
 	}
 	else
-	{
-		if (!xdr_ulong (x, &sp->mode))
-			return FALSE;
-		if (!xdr_ulong (x, &sp->uid))
-			return FALSE;
-		if (!xdr_ulong (x, &sp->gid))
-			return FALSE;
-		if (!xdr_ulong (x, &sp->size))
-			return FALSE;
-	}
+		rp->obj_attributes.attributes_follow = FALSE;
 
-	if (!xdr_nfstime (x, &sp->atime))
-			return FALSE;
-
-	return xdr_nfstime (x, &sp->mtime);
+	return xdr_post_op_attr (x, &rp->dir_attributes);
 }
 
 bool_t
-xdr_attrstat (xdrs *x, attrstat *ap)
+xdr_access3args (xdrs *x, access3args *ap)
 {
-	if (!xdr_enum (x, &ap->status))
+	if (!xdr_nfs_fh3 (x, &ap->object))
 		return FALSE;
 
-	if (NFS_OK == ap->status)
-		return xdr_fattr (x, &ap->attrstat_u.attributes);
-
-	return TRUE;
+	return xdr_ulong (x, &ap->access);
 }
 
 long
-xdr_size_attrstat (attrstat *ap)
+xdr_size_access3args (access3args *ap)
 {
-	ulong r = sizeof (ulong);
-
-	if (NFS_OK == ap->status)
-		r += sizeof (fattr);
-
-	return r;
+	return xdr_size_nfs_fh3 (&ap->object) + sizeof (ulong);
 }
 
 bool_t
-xdr_sattrargs (xdrs *x, sattrargs *argp)
-{
-	if (!xdr_nfsfh (x, &argp->file))
-		return FALSE;
-
-	return xdr_sattr (x, &argp->attributes);
-}
-
-long
-xdr_size_sattrargs (sattrargs *ap)
-{
-	return xdr_size_nfsfh (&ap->file) + xdr_size_sattr (&ap->attributes);
-}
-
-bool_t
-xdr_diropres (xdrs *x, diropres *rp)
+xdr_access3res (xdrs *x, access3res *rp)
 {
 	if (!xdr_enum (x, &rp->status))
 		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->obj_attributes))
+		return FALSE;
 
-	if (NFS_OK == rp->status)
-	{
-		if (!xdr_nfsfh (x, &rp->diropres_u.diropok.file))
-			return FALSE;
+	if (NFS3_OK == rp->status)
+		return xdr_ulong (x, &rp->access);
 
-		return xdr_fattr (x, &rp->diropres_u.diropok.attributes);
-	}
-
+	rp->access = 0;
 	return TRUE;
 }
 
-long
-xdr_size_diropres (diropres *rp)
-{
-	long r = sizeof (ulong);
 
-	if (NFS_OK == rp->status)
-	{
-		r += xdr_size_nfsfh (&rp->diropres_u.diropok.file);
-		r += xdr_size_fattr (&rp->diropres_u.diropok.attributes);
-	}
-
-	return r;
-}
+/* ---------------------------------------------------------------- */
+/* READLINK / READ / WRITE                                          */
+/* ---------------------------------------------------------------- */
 
 bool_t
-xdr_diropargs (xdrs *x, diropargs *ap)
-{
-	if (!xdr_nfsfh (x, &ap->dir))
-		return FALSE;
-
-	return xdr_string (x, (const char **)&ap->name, MAXNAMLEN);
-}
-
-long
-xdr_size_diropargs (diropargs *ap)
-{
-	long r = xdr_size_nfsfh (&ap->dir);
-
-	r += sizeof (ulong);
-	r += (strlen (ap->name)+3) & (~3L);  /* round up to four bytes */
-
-	return r;
-}
-
-
-bool_t
-xdr_readlinkres (xdrs *x, readlinkres *rp)
+xdr_readlink3res (xdrs *x, readlink3res *rp)
 {
 	if (!xdr_enum (x, &rp->status))
 		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->symlink_attributes))
+		return FALSE;
 
-	if (NFS_OK == rp->status) {
-		const char *name = rp->readlinkres_u.data;
+	if (NFS3_OK == rp->status)
+	{
+		const char *path = rp->data;
 
-		return xdr_string (x, &name, MAXPATHLEN);
+		return xdr_string (x, &path, MAXPATHLEN);
 	}
 
 	return TRUE;
 }
 
-long
-xdr_size_readlinkres (readlinkres *rp)
-{
-	long r = sizeof (ulong);
-
-	if (NFS_OK == rp->status)
-	{
-		r += sizeof (ulong);
-		r += (strlen (rp->readlinkres_u.data) + 3) & (~3L);
-	}
-
-	return r;
-}
-
 bool_t
-xdr_readres (xdrs *x, readres *rp)
+xdr_read3args (xdrs *x, read3args *ap)
 {
-	if (!xdr_enum (x, &rp->status))
+	if (!xdr_nfs_fh3 (x, &ap->file))
 		return FALSE;
-
-	if (NFS_OK == rp->status)
-	{
-		const char *name;
-
-		if (!xdr_fattr (x, &rp->readres_u.read_ok.attributes))
-			return FALSE;
-
-		name = rp->readres_u.read_ok.data_val;
-
-		if (!xdr_opaque (x, &name,
-				    (long *)&rp->readres_u.read_ok.data_len, MAXDATA))
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
-long
-xdr_size_readres (readres *rp)
-{
-	long r = sizeof (ulong);
-
-	if (NFS_OK == rp->status)
-	{
-		r += xdr_size_fattr (&rp->readres_u.read_ok.attributes);
-		r += sizeof (ulong);
-		r += (rp->readres_u.read_ok.data_len + 3) & (~3L);
-	}
-
-	return r;
-}
-
-bool_t
-xdr_readargs (xdrs *x, readargs *ap)
-{
-	if (!xdr_nfsfh (x, &ap->file))
-		return FALSE;
-
-	xdr_ulong (x, &ap->offset);
-	xdr_ulong (x, &ap->count);
-
-	return xdr_ulong (x, &ap->totalcount);
-}
-
-long
-xdr_size_readargs (readargs *ap)
-{
-	return xdr_size_nfsfh (&ap->file) + 3 * sizeof (ulong);
-}
-
-bool_t
-xdr_writeargs (xdrs *x, writeargs *ap)
-{
-	if (!xdr_nfsfh (x, &ap->file))
-		return FALSE;
-
-	xdr_ulong (x, &ap->beginoffset);
-	xdr_ulong (x, &ap->offset);
-	xdr_ulong (x, &ap->totalcount);
-
-	return xdr_opaque (x, (const opaque **)&ap->data_val, (long *)&ap->data_len, MAXDATA);
-}
-
-long
-xdr_size_writeargs (writeargs *ap)
-{
-	long r;
-
-	r  = sizeof (nfs_fh);
-	r += 4 * sizeof (ulong);
-	r += (ap->totalcount + 3) & (~3L);
-
-	return r;
-}
-
-bool_t
-xdr_createargs (xdrs *x, createargs *ap)
-{
-	if (!xdr_diropargs (x, &ap->where))
-		return FALSE;
-
-	return xdr_sattr (x, &ap->attributes);
-}
-
-long
-xdr_size_createargs (createargs *ap)
-{
-	return xdr_size_diropargs (&ap->where) + xdr_size_sattr (&ap->attributes);
-}
-
-
-bool_t
-xdr_renameargs (xdrs *x, renameargs *ap)
-{
-	if (!xdr_diropargs (x, &ap->from))
-		return FALSE;
-
-	return xdr_diropargs (x, &ap->to);
-}
-
-long
-xdr_size_renameargs (renameargs *ap)
-{
-	return xdr_size_diropargs (&ap->from) + xdr_size_diropargs (&ap->to);
-}
-
-bool_t
-xdr_linkargs (xdrs *x, linkargs *ap)
-{
-	if (!xdr_nfsfh (x, &ap->from))
-		return FALSE;
-
-	return xdr_diropargs (x, &ap->to);
-}
-
-long
-xdr_size_linkargs (linkargs *ap)
-{
-	return xdr_size_nfsfh (&ap->from) + xdr_size_diropargs (&ap->to);
-}
-
-bool_t
-xdr_symlinkargs (xdrs *x, symlinkargs *ap)
-{
-	if (!xdr_diropargs (x, &ap->from))
-		return FALSE;
-
-	if (!xdr_string (x, &ap->to, MAXPATHLEN))
-		return FALSE;
-
-	return xdr_sattr (x, &ap->attributes);
-}
-
-long
-xdr_size_symlinkargs (symlinkargs *ap)
-{
-	long r = xdr_size_diropargs (&ap->from);
-
-	r += sizeof (ulong);
-	r += (strlen (ap->to) + 3) & (~3L);
-	r += xdr_size_sattr (&ap->attributes);
-
-	return r;
-}
-
-bool_t
-xdr_entry (xdrs *x, entry *ep)
-{
-	const char *name;
-
-	if (!xdr_ulong (x, &ep->fileid))
-		return FALSE;
-
-	if (XDR_DECODE == x->op)
-		ep->name = (char *) ep + sizeof (entry);
-
-	name = ep->name;
-
-	if (!xdr_string (x, &name, MAXNAMLEN))
-		return FALSE;
-
-	if (!xdr_nfscookie (x, ep->cookie))
-		return FALSE;
-
-	if (XDR_DECODE == x->op)
-	{
-		char *p = (char*)ep;
-
-		p += sizeof (entry) + strlen (ep->name) + 1;
-		p = (char *)(((long) p + 1) & (~1L));  /* round up */
-
-		ep->nextentry = (entry *) p;
-	}
-
-	return xdr_pointer (x, (char **)((entry *)&ep->nextentry), sizeof(entry), (xdrproc_t) xdr_entry);
-}
-
-long
-xdr_size_entry (entry *ep)
-{
-	long r = 0;
-
-	while (ep)
-	{
-		r += sizeof (ulong);
-		r += sizeof (ulong);
-		r += (strlen (ep->name) + 3) & (~3L);
-		r += xdr_size_nfscookie (ep->cookie);
-		r += sizeof (ulong);
-
-		ep = ep->nextentry;
-	}
-
-	return r;
-}
-
-bool_t
-xdr_readdirres (xdrs *x, readdirres *rp)
-{
-	if (!xdr_enum (x, &rp->status))
-		return FALSE;
-
-	if (NFS_OK == rp->status)
-	{
-		if (!xdr_pointer (x, (char**)((entry *)&rp->readdirres_u.readdirok.entries),
-			sizeof(entry), (xdrproc_t) xdr_entry))
-		{
-			return FALSE;
-		}
-
-		return xdr_bool (x, &rp->readdirres_u.readdirok.eof);
-	}
-
-	return TRUE;
-}
-
-long
-xdr_size_readdirres (readdirres *rp)
-{
-	long r = sizeof (ulong);
-
-	if (NFS_OK == rp->status)
-	{
-		r += sizeof (ulong);   /* the first boolean "pointer" */
-		r += xdr_size_entry (rp->readdirres_u.readdirok.entries);
-		r += sizeof (ulong);
-	}
-
-	return r;
-}
-
-bool_t
-xdr_readdirargs (xdrs *x, readdirargs *ap)
-{
-	if (!xdr_nfsfh (x, &ap->dir))
-		return FALSE;
-
-	if (!xdr_nfscookie (x, ap->cookie))
+	if (!xdr_uint64 (x, &ap->offset))
 		return FALSE;
 
 	return xdr_ulong (x, &ap->count);
 }
 
 long
-xdr_size_readdirargs (readdirargs *ap)
+xdr_size_read3args (read3args *ap)
 {
-	long r;
+	return xdr_size_nfs_fh3 (&ap->file) + 3L * sizeof (ulong);
+}
 
-	r  = xdr_size_nfsfh (&ap->dir);
-	r += xdr_size_nfscookie (ap->cookie);
-	r += sizeof (ulong);
+bool_t
+xdr_read3res (xdrs *x, read3res *rp)
+{
+	ulong len;
+
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->file_attributes))
+		return FALSE;
+
+	rp->data_len = 0;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	if (!xdr_ulong (x, &rp->count))
+		return FALSE;
+	if (!xdr_bool (x, &rp->eof))
+		return FALSE;
+
+	/* the opaque data carries its own length, which has to agree
+	 * with `count' (RFC 1813, 3.3.6)
+	 */
+	if (x->length < (long) sizeof (ulong))
+		return FALSE;
+
+	len = *(ulong *) x->current;
+	if (len != rp->count || len > rp->data_max)
+		return FALSE;
+
+	x->current += sizeof (ulong);
+	x->length -= sizeof (ulong);
+
+	if (x->length < (long) XDR_ROUNDUP (len))
+		return FALSE;
+
+	memcpy (rp->data_val, x->current, len);
+	rp->data_len = len;
+
+	x->current += XDR_ROUNDUP (len);
+	x->length -= XDR_ROUNDUP (len);
+
+	return TRUE;
+}
+
+bool_t
+xdr_write3args (xdrs *x, write3args *ap)
+{
+	if (!xdr_nfs_fh3 (x, &ap->file))
+		return FALSE;
+	if (!xdr_uint64 (x, &ap->offset))
+		return FALSE;
+	if (!xdr_ulong (x, &ap->count))
+		return FALSE;
+	if (!xdr_enum (x, &ap->stable))
+		return FALSE;
+
+	{
+		/* xdr_opaque() wants a long, and ap->data_len is a
+		 * count3; do not alias the two
+		 */
+		long len = (long) ap->data_len;
+		bool_t ok;
+
+		ok = xdr_opaque (x, (const opaque **) &ap->data_val, &len, MAXDATA);
+		ap->data_len = (ulong) len;
+
+		return ok;
+	}
+}
+
+long
+xdr_size_write3args (write3args *ap)
+{
+	long r = xdr_size_nfs_fh3 (&ap->file);
+
+	r += 2L * sizeof (ulong);		/* offset */
+	r += sizeof (ulong);			/* count */
+	r += sizeof (ulong);			/* stable */
+	r += XDR_STRSIZE (ap->data_len);
 
 	return r;
 }
 
 bool_t
-xdr_statfsres (xdrs *x, statfsres *rp)
+xdr_write3res (xdrs *x, write3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_wcc_data (x, &rp->file_wcc))
+		return FALSE;
+
+	rp->count = 0;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	if (!xdr_ulong (x, &rp->count))
+		return FALSE;
+	if (!xdr_enum (x, &rp->committed))
+		return FALSE;
+
+	return xdr_fixedopaq (x, rp->verf, NFS3_WRITEVERFSIZE);
+}
+
+
+/* ---------------------------------------------------------------- */
+/* CREATE / MKDIR / SYMLINK                                         */
+/* ---------------------------------------------------------------- */
+
+bool_t
+xdr_create3res (xdrs *x, create3res *rp)
 {
 	if (!xdr_enum (x, &rp->status))
 		return FALSE;
 
-	if (NFS_OK == rp->status)
+	if (NFS3_OK == rp->status)
 	{
-		xdr_ulong (x, &rp->statfsres_u.info.tsize);
-		xdr_ulong (x, &rp->statfsres_u.info.bsize);
-		xdr_ulong (x, &rp->statfsres_u.info.blocks);
-		xdr_ulong (x, &rp->statfsres_u.info.bfree);
-
-		return xdr_ulong (x, &rp->statfsres_u.info.bavail);
+		if (!xdr_post_op_fh3 (x, &rp->obj))
+			return FALSE;
+		if (!xdr_post_op_attr (x, &rp->obj_attributes))
+			return FALSE;
+	}
+	else
+	{
+		rp->obj.handle_follows = FALSE;
+		rp->obj.handle.len = 0;
+		rp->obj_attributes.attributes_follow = FALSE;
 	}
 
-	return TRUE;
+	return xdr_wcc_data (x, &rp->dir_wcc);
+}
+
+bool_t
+xdr_create3args (xdrs *x, create3args *ap)
+{
+	if (!xdr_diropargs3 (x, &ap->where))
+		return FALSE;
+	if (!xdr_enum (x, &ap->how))
+		return FALSE;
+
+	if (EXCLUSIVE == ap->how)
+		return xdr_fixedopaq (x, ap->verf, NFS3_CREATEVERFSIZE);
+
+	return xdr_sattr3 (x, &ap->obj_attributes);
 }
 
 long
-xdr_size_statfsres (statfsres *rp)
+xdr_size_create3args (create3args *ap)
 {
-	long r = sizeof (ulong);
+	long r = xdr_size_diropargs3 (&ap->where);
 
-	if (NFS_OK == rp->status)
-		r += 5 * sizeof (ulong);
+	r += sizeof (ulong);
+	if (EXCLUSIVE == ap->how)
+		r += NFS3_CREATEVERFSIZE;
+	else
+		r += xdr_size_sattr3 (&ap->obj_attributes);
 
 	return r;
+}
+
+bool_t
+xdr_mkdir3args (xdrs *x, mkdir3args *ap)
+{
+	if (!xdr_diropargs3 (x, &ap->where))
+		return FALSE;
+
+	return xdr_sattr3 (x, &ap->attributes);
+}
+
+long
+xdr_size_mkdir3args (mkdir3args *ap)
+{
+	return xdr_size_diropargs3 (&ap->where)
+		+ xdr_size_sattr3 (&ap->attributes);
+}
+
+bool_t
+xdr_symlink3args (xdrs *x, symlink3args *ap)
+{
+	if (!xdr_diropargs3 (x, &ap->where))
+		return FALSE;
+
+	/* NFS2 sent the target path before the attributes, NFS3 sends
+	 * the attributes first
+	 */
+	if (!xdr_sattr3 (x, &ap->symlink_attributes))
+		return FALSE;
+
+	return xdr_string (x, &ap->symlink_data, MAXPATHLEN);
+}
+
+long
+xdr_size_symlink3args (symlink3args *ap)
+{
+	long r = xdr_size_diropargs3 (&ap->where);
+
+	r += xdr_size_sattr3 (&ap->symlink_attributes);
+	r += XDR_STRSIZE (strlen (ap->symlink_data));
+
+	return r;
+}
+
+
+/* ---------------------------------------------------------------- */
+/* RENAME / LINK                                                    */
+/* ---------------------------------------------------------------- */
+
+bool_t
+xdr_rename3args (xdrs *x, rename3args *ap)
+{
+	if (!xdr_diropargs3 (x, &ap->from))
+		return FALSE;
+
+	return xdr_diropargs3 (x, &ap->to);
+}
+
+long
+xdr_size_rename3args (rename3args *ap)
+{
+	return xdr_size_diropargs3 (&ap->from) + xdr_size_diropargs3 (&ap->to);
+}
+
+bool_t
+xdr_rename3res (xdrs *x, rename3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_wcc_data (x, &rp->fromdir_wcc))
+		return FALSE;
+
+	return xdr_wcc_data (x, &rp->todir_wcc);
+}
+
+bool_t
+xdr_link3args (xdrs *x, link3args *ap)
+{
+	if (!xdr_nfs_fh3 (x, &ap->file))
+		return FALSE;
+
+	return xdr_diropargs3 (x, &ap->link);
+}
+
+long
+xdr_size_link3args (link3args *ap)
+{
+	return xdr_size_nfs_fh3 (&ap->file) + xdr_size_diropargs3 (&ap->link);
+}
+
+bool_t
+xdr_link3res (xdrs *x, link3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->file_attributes))
+		return FALSE;
+
+	return xdr_wcc_data (x, &rp->linkdir_wcc);
+}
+
+
+/* ---------------------------------------------------------------- */
+/* READDIR                                                          */
+/* ---------------------------------------------------------------- */
+
+bool_t
+xdr_readdir3args (xdrs *x, readdir3args *ap)
+{
+	if (!xdr_nfs_fh3 (x, &ap->dir))
+		return FALSE;
+	if (!xdr_uint64 (x, &ap->cookie))
+		return FALSE;
+	if (!xdr_fixedopaq (x, ap->cookieverf, NFS3_COOKIEVERFSIZE))
+		return FALSE;
+
+	return xdr_ulong (x, &ap->count);
+}
+
+long
+xdr_size_readdir3args (readdir3args *ap)
+{
+	long r = xdr_size_nfs_fh3 (&ap->dir);
+
+	r += 2L * sizeof (ulong);		/* cookie */
+	r += NFS3_COOKIEVERFSIZE;
+	r += sizeof (ulong);			/* count */
+
+	return r;
+}
+
+/* Decode the entry list of a READDIR3 reply into the caller's buffer.
+ *
+ * On the wire the list is a chain of "value follows" booleans, each one
+ * followed by an entry3. We build a linked list of entry3 structures in
+ * `buffer', with the (zero terminated) name stored directly behind each
+ * structure. Everything is bounded by `buflen', so a hostile or just
+ * unexpectedly large reply cannot run past the end of the buffer.
+ */
+static bool_t
+decode_dirlist3 (xdrs *x, readdir3res *rp)
+{
+	char *p = rp->buffer;
+	char *end = rp->buffer + rp->buflen;
+	entry3 *last = NULL;
+	bool_t follows;
+
+	rp->entries = NULL;
+
+	for (;;)
+	{
+		entry3 *ep;
+		const char *name;
+		ulong namelen;
+		char *q;
+
+		if (!xdr_bool (x, &follows))
+			return FALSE;
+
+		if (!follows)
+			break;
+
+		/* place the entry structure, 4 byte aligned */
+		q = (char *) ((((long) p) + 3L) & ~3L);
+		if (q + sizeof (entry3) > end)
+			return FALSE;
+
+		ep = (entry3 *) q;
+		p = q + sizeof (entry3);
+
+		if (!xdr_uint64 (x, &ep->fileid))
+			return FALSE;
+
+		/* the name goes right behind the structure; check that
+		 * the announced length still fits before copying
+		 */
+		if (x->length < (long) sizeof (ulong))
+			return FALSE;
+
+		namelen = *(ulong *) x->current;
+		if (namelen > MAXNAMLEN)
+			return FALSE;
+		if (p + namelen + 1 > end)
+			return FALSE;
+
+		ep->name = p;
+		name = p;
+		if (!xdr_string (x, &name, MAXNAMLEN))
+			return FALSE;
+
+		p += namelen + 1;
+
+		if (!xdr_uint64 (x, &ep->cookie))
+			return FALSE;
+
+		ep->nextentry = NULL;
+
+		if (last)
+			last->nextentry = ep;
+		else
+			rp->entries = ep;
+
+		last = ep;
+	}
+
+	return xdr_bool (x, &rp->eof);
+}
+
+bool_t
+xdr_readdir3res (xdrs *x, readdir3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->dir_attributes))
+		return FALSE;
+
+	rp->entries = NULL;
+	rp->eof = FALSE;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	if (!xdr_fixedopaq (x, rp->cookieverf, NFS3_COOKIEVERFSIZE))
+		return FALSE;
+
+	return decode_dirlist3 (x, rp);
+}
+
+
+/* ---------------------------------------------------------------- */
+/* FSSTAT / FSINFO / PATHCONF / COMMIT                              */
+/* ---------------------------------------------------------------- */
+
+bool_t
+xdr_fsstat3res (xdrs *x, fsstat3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->obj_attributes))
+		return FALSE;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	if (!xdr_uint64 (x, &rp->tbytes))
+		return FALSE;
+	if (!xdr_uint64 (x, &rp->fbytes))
+		return FALSE;
+	if (!xdr_uint64 (x, &rp->abytes))
+		return FALSE;
+	if (!xdr_uint64 (x, &rp->tfiles))
+		return FALSE;
+	if (!xdr_uint64 (x, &rp->ffiles))
+		return FALSE;
+	if (!xdr_uint64 (x, &rp->afiles))
+		return FALSE;
+
+	return xdr_ulong (x, &rp->invarsec);
+}
+
+bool_t
+xdr_fsinfo3res (xdrs *x, fsinfo3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->obj_attributes))
+		return FALSE;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	if (!xdr_ulong (x, &rp->rtmax))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->rtpref))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->rtmult))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->wtmax))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->wtpref))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->wtmult))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->dtpref))
+		return FALSE;
+	if (!xdr_uint64 (x, &rp->maxfilesize))
+		return FALSE;
+	if (!xdr_nfstime3 (x, &rp->time_delta))
+		return FALSE;
+
+	return xdr_ulong (x, &rp->properties);
+}
+
+bool_t
+xdr_pathconf3res (xdrs *x, pathconf3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_post_op_attr (x, &rp->obj_attributes))
+		return FALSE;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	if (!xdr_ulong (x, &rp->linkmax))
+		return FALSE;
+	if (!xdr_ulong (x, &rp->name_max))
+		return FALSE;
+	if (!xdr_bool (x, &rp->no_trunc))
+		return FALSE;
+	if (!xdr_bool (x, &rp->chown_restricted))
+		return FALSE;
+	if (!xdr_bool (x, &rp->case_insensitive))
+		return FALSE;
+
+	return xdr_bool (x, &rp->case_preserving);
+}
+
+bool_t
+xdr_commit3args (xdrs *x, commit3args *ap)
+{
+	if (!xdr_nfs_fh3 (x, &ap->file))
+		return FALSE;
+	if (!xdr_uint64 (x, &ap->offset))
+		return FALSE;
+
+	return xdr_ulong (x, &ap->count);
+}
+
+long
+xdr_size_commit3args (commit3args *ap)
+{
+	return xdr_size_nfs_fh3 (&ap->file) + 3L * sizeof (ulong);
+}
+
+bool_t
+xdr_commit3res (xdrs *x, commit3res *rp)
+{
+	if (!xdr_enum (x, &rp->status))
+		return FALSE;
+	if (!xdr_wcc_data (x, &rp->file_wcc))
+		return FALSE;
+
+	if (NFS3_OK != rp->status)
+		return TRUE;
+
+	return xdr_fixedopaq (x, rp->verf, NFS3_WRITEVERFSIZE);
 }

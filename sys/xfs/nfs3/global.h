@@ -1,17 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 # ifndef _global_h
@@ -128,6 +122,15 @@ current_time (void)
 # define ERPC_AUTHERROR    -105  /* authentification error */
 
 
+/* rpc_request() failed to talk to the server at all, as opposed to the
+ * server answering with an NFS status. These must not be turned into
+ * EACCES, or every network problem looks like a permission problem.
+ */
+# define IS_TRANSPORT_ERROR(r)	((r) == ETIMEDOUT \
+				 || (r) == ENETUNREACH \
+				 || (r) == ENOMEM)
+
+
 
 # define OPT_DEFAULT		0x0000   /* not really an option */
 
@@ -165,7 +168,16 @@ struct nfs_mount_opt
 	long	rsize;
 	long	wsize;
 	long	actimeo;	/* attr cache timeout */
-	long	res[8];
+
+	/* limits reported by the server through FSINFO3; rsize/wsize are
+	 * clamped to them at mount time. NFS2 had no way of asking, so the
+	 * old driver simply hoped that 4k would do.
+	 */
+	long	rtmax;
+	long	wtmax;
+	long	dtpref;
+	long	properties;	/* FSF3_* */
+	long	res[4];
 };
 
 
@@ -180,13 +192,16 @@ struct nfs_index
 # define IS_MOUNT_DIR	0x8000	/* this is a mounted directory */
 # define NO_HANDLE	0x4000	/* we have no handle (this is set by */
 				/* nfs_readdir, as the remote procedure */
-				/* does not provide a handle */
+				/* does not provide a handle) */
 
 	NFS_MOUNT_OPT *opt;	/* options for this mount and subdirs */
 	INDEX_CLUSTER *cluster;	/* cluster this is in */
-	nfs_fh	handle;		/* file handle for this on the server */
+	nfs_fh3	handle;		/* file handle for this on the server */
 	long	link;		/* no of times this cookie is in use */
 	XATTR	attr;
+	uint64	size;		/* full 64 bit size, XATTR.size is 32 bit */
+	long	wdirty;		/* unstable write data pending on the server */
+	char	wverf[NFS3_WRITEVERFSIZE];	/* verifier of those writes */
 	long	stamp;		/* time stamp when this xattr struct was filled */
 	struct nfs_index *dir;	/* index of directory this one is in */
 	struct nfs_index *aux;	/* this is used for getname() */
@@ -207,12 +222,16 @@ extern INDEX_CLUSTER *cluster[MAX_CLUSTER];
 extern NFS_MOUNT_OPT *opt_list;
 
 
-# define NFS_MOUNT_VERS  1
+/* Version of the NFS_MOUNT_INFO structure that is handed down from the
+ * mount_nfs3 utility. Version 1 was the NFS2 layout with its fixed 32
+ * byte file handle; version 3 uses nfs_fh3 and is not compatible.
+ */
+# define NFS3_MOUNT_VERS  3
 
 typedef struct
 {
-	long	version;	/* version of this structure, currently 1 */
-	nfs_fh	handle;		/* initial file handle from the server's mountd */
+	long	version;	/* version of this structure, currently 3 */
+	nfs_fh3	handle;		/* initial file handle from the server's mountd */
 	XATTR	mntattr;	/* not used yet */
 	long	flags;		/* same as NFS_MOUNT_OPT.flags */
 	long	rsize;
@@ -228,11 +247,15 @@ typedef struct
 } NFS_MOUNT_INFO;
 
 
-# define NFS_MOUNT	(('N'<< 8) | 1)
-# define NFS_UNMOUNT	(('N'<< 8) | 2)
+/* Dcntl() opcodes. They differ from the NFS2 ones ('N'<<8|1 and |2) so
+ * that an old mount_nfs cannot feed a version 1 structure into this
+ * driver by accident.
+ */
+# define NFS3_MOUNT	(('N'<< 8) | 3)
+# define NFS3_UNMOUNT	(('N'<< 8) | 4)
 
-# define NFS_MNTDUMP	(('N'<< 8) | 42)
-# define NFS_DUMPALL	(('N'<< 8) | 43)
+# define NFS3_MNTDUMP	(('N'<< 8) | 42)
+# define NFS3_DUMPALL	(('N'<< 8) | 43)
 
 
 /* the device number we have to deal with

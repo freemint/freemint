@@ -1,17 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich K�hn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
@@ -676,11 +670,23 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 	/* read message
 	 */
 	ret = recvmsg (so, &msg, 0);
-	if (ret != toread)
+	if (ret <= 0)
 	{
-		DEBUG (("rpc_receivemessage: could not read message body"));
+		ALERT (("nfs3: recvmsg failed -> %ld (expected %ld bytes)",
+			ret, toread));
 		kfree (buf);
 		return NULL;
+	}
+
+	if (ret != toread)
+	{
+		/* FIONREAD and the datagram that actually arrived disagree.
+		 * The NFS2 driver threw the reply away here, which turns into
+		 * a retransmit storm and finally a bogus timeout -- the reply
+		 * was there all along. Go with what we really received.
+		 */
+		ALERT (("nfs3: short datagram: FIONREAD said %ld, got %ld",
+			toread, ret));
 	}
 
 	/* SECURITY: here we should bother about the address of the sender so that
@@ -689,7 +695,7 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 	mrep->buffer = buf;
 	mrep->flags |= FREE_BUFFER;
 	mrep->data = buf;
-	mrep->data_len = toread;
+	mrep->data_len = ret;
 	mrep->next = NULL;
 	mrep->xid = 0;
 
@@ -780,10 +786,28 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 
 		if (!so)
 		{
-			DEBUG (("rpc_req: no open connection"));
+			/* Do NOT return EACCES here: a missing socket is not
+			 * a permission problem, and reporting it as one sends
+			 * everybody hunting for export options.
+			 */
+			ALERT (("nfs3: no socket, RPC layer is not usable"));
 			free_message (mreq);
-			return EACCES;
+			return ENETUNREACH;
 		}
+
+		/* A retrans count of zero would skip the send loop below
+		 * entirely and report a timeout without ever having put a
+		 * packet on the wire -- a very confusing failure.
+		 */
+		if (opt->retrans <= 0)
+		{
+			ALERT (("nfs3: retrans is %d, forcing %d",
+				opt->retrans, DEFAULT_RETRANS));
+			opt->retrans = DEFAULT_RETRANS;
+		}
+
+		if (opt->timeo <= 0)
+			opt->timeo = DEFAULT_TIMEO;
 
 		/* Now send the message and wait for answer */
 		timeout = opt->timeo;
@@ -917,10 +941,11 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 
 		}  /* for retry < max_retry */
 
-		DEBUG (("rpc: RPC timed out, no reply"));
+		ALERT (("nfs3: no reply for prog %ld proc %ld after %d tries",
+			rpc_program, proc, opt->retrans));
 		delete_request (our_xid);
 		free_message (mreq);
-		return EACCES;
+		return ETIMEDOUT;
 	}
 
 have_reply:

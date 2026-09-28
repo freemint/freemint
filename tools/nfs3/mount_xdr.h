@@ -1,15 +1,23 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
  * File : mount_xdr.h
- *        specification of the mount protocol
+ *        version 3 of the MOUNT protocol, RFC 1813 appendix I
+ *
+ * Differences to version 1 (the one mount_nfs speaks):
+ *  - the file handle is variable sized (up to 64 bytes) instead of a
+ *    fixed 32 byte blob,
+ *  - the reply carries the list of authentication flavours the server
+ *    is willing to accept,
+ *  - the status codes are the nfsstat3 ones, not errnos.
  */
 
 # ifndef _mount_xdr_h
@@ -19,80 +27,63 @@
 # include <rpc/xdr.h>
 
 
-/* request numbers for nfs mount service */
-#define MOUNTPROC_NULL     0
-#define MOUNTPROC_MNT      1
-#define MOUNTPROC_DUMP     2
-#define MOUNTPROC_UMNT     3
-#define MOUNTPROC_UMNTALL  4
-#define MOUNTPROC_EXPORT   5
+/* request numbers for the nfs mount service */
+#define MOUNTPROC3_NULL     0
+#define MOUNTPROC3_MNT      1
+#define MOUNTPROC3_DUMP     2
+#define MOUNTPROC3_UMNT     3
+#define MOUNTPROC3_UMNTALL  4
+#define MOUNTPROC3_EXPORT   5
 
 #define MOUNT_PROGRAM   100005
-#define MOUNT_VERSION   1
+#define MOUNT_V3        3
 #define MOUNT_MAXPROC   5
 
 
 #define MNTPATHLEN   1024
 #define MNTNAMLEN     255
-#define MNTFHSIZE      32
+#define FHSIZE3        64
+
+/* mountstat3 */
+#define MNT3_OK                 0
+#define MNT3ERR_PERM            1
+#define MNT3ERR_NOENT           2
+#define MNT3ERR_IO              5
+#define MNT3ERR_ACCES          13
+#define MNT3ERR_NOTDIR         20
+#define MNT3ERR_INVAL          22
+#define MNT3ERR_NAMETOOLONG    63
+#define MNT3ERR_NOTSUPP     10004
+#define MNT3ERR_SERVERFAULT 10006
+
+#define MAX_AUTH_FLAVORS       8
 
 
 bool_t xdr_dirpath (XDR *x, char *s);
 bool_t xdr_name (XDR *x, char *s);
 
 
-typedef struct fhandle
+/* fhandle3: opaque data<FHSIZE3> */
+typedef struct fhandle3
 {
-	char data[MNTFHSIZE];
-} fhandle;
+	u_int	len;
+	char	data[FHSIZE3];
+} fhandle3;
 
-extern bool_t xdr_fhandle (XDR *x, fhandle *fhp);
-#define xdr_size_fhandle(fhp)  (sizeof(fhandle))
+bool_t xdr_fhandle3 (XDR *x, fhandle3 *fhp);
 
 
-typedef struct fhstatus
+typedef struct mountres3
 {
-	u_long status;
-	union
-	{
-		fhandle directory;   /* if status == 0 */
-	} fhstatus_u;
-} fhstatus;
+	u_int		status;			/* mountstat3 */
+	fhandle3	fhandle;
+	u_int		nauth;
+	int		auth_flavors[MAX_AUTH_FLAVORS];
+} mountres3;
 
-bool_t xdr_fhstatus (XDR *x, fhstatus *fhsp);
-long xdr_size_fhstatus (fhstatus *fhsp);
+bool_t xdr_mountres3 (XDR *x, mountres3 *mrp);
 
-
-typedef struct mountlist
-{
-	char *ml_hostname;
-	char *ml_directory;
-	struct mountlist *ml_next;
-} mountlist;
-
-bool_t xdr_mountlist (XDR *x, mountlist *mlp);
-long xdr_size_mountlist (mountlist *mlp);
-
-
-typedef struct groups
-{
-	char *gr_name;
-	struct groups *gr_next;
-} groups;
-
-bool_t xdr_groups (XDR *x, groups *gp);
-long xdr_size_groups (groups *gp);
-
-
-typedef struct exportlist
-{
-	char *ex_filesys;
-	groups *ex_groups;
-	struct exportlist *ex_next;
-} exportlist;
-
-bool_t xdr_exportlist (XDR *x, exportlist *elp);
-long xdr_size_exportlist (exportlist *elp);
+const char *mountstat3_str (u_int status);
 
 
 # endif

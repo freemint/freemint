@@ -1,17 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich K�hn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
@@ -124,10 +118,10 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 
 	DEBUG(("get_mount_slot: for %s (server %s)", name, info->hostname));
 
-	if (info->version != NFS_MOUNT_VERS)
+	if (info->version != NFS3_MOUNT_VERS)
 	{
 		DEBUG(("get_mount_slot: wrong version of mount program!"
-		       " Got %ld, expected %d", info->version, NFS_MOUNT_VERS));
+		       " Got %ld, expected %d", info->version, NFS3_MOUNT_VERS));
 		return NULL;
 	}
 
@@ -191,6 +185,12 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 	opt->rsize = DEFAULT_RSIZE;
 	opt->wsize = DEFAULT_WSIZE;
 
+	/* until FSINFO3 tells us better */
+	opt->rtmax = MAXDATA;
+	opt->wtmax = MAXDATA;
+	opt->dtpref = MAX_READDIR_LEN;
+	opt->properties = FSF3_LINK | FSF3_SYMLINK;
+
 	/* look for the optional values from the mount command */
 	if (!(info->flags & OPT_USE_DEFAULTS))
 	{
@@ -226,6 +226,9 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 	ni->link = 0;
 	ni->search_val = 0;
 	ni->stamp = 0;
+	ni->size = 0;
+	ni->wdirty = 0;
+	ni->handle.len = 0;
 	init_mount_attr(&ni->attr);
 
 	ni->next = mounted;
@@ -250,8 +253,12 @@ release_mount_slot (NFS_INDEX *ni)
 
 	if (ni->link != 1)
 	{
-		DEBUG(("release_mount_slot: fs is still in use (%ld)!", ni->link));
-		return EACCES;
+		/* EACCES would suggest a permission problem; the mount is
+		 * simply still in use (open file, current directory, ...).
+		 */
+		ALERT (("nfs3: '%s' still in use (%ld references), not unmounting",
+			ni->name, ni->link));
+		return EBUSY;
 	}
 
 	kfree (ni->opt);
@@ -289,6 +296,7 @@ init_cluster (INDEX_CLUSTER *icp, int number)
 		icp->index[i].link = 0;
 		icp->index[i].flags = 0;
 		icp->index[i].name = NULL;
+		icp->index[i].handle.len = 0;
 	}
 
 	icp->n_used = 0;
@@ -497,6 +505,9 @@ init_slot:
 	ni->attr.size = 0;
 	ni->attr.nblocks = 0;
 	ni->attr.dev = 0;
+	ni->size = 0;
+	ni->wdirty = 0;
+	ni->handle.len = 0;
 	ni->stamp = 0;
 
 	return ni;

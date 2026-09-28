@@ -1,10 +1,11 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
@@ -38,7 +39,7 @@
 #define UPDATE_UNMOUNT 1
 
 
-char *commandname = "mount";
+char *commandname = "mount_nfs3";
 
 /* common option values, set here the default values */
 
@@ -52,15 +53,55 @@ char optionstr[64+1] = "";
 char noopt = 1;
 
 char whatmsg[] =
-"@(#)mount for nfs, Copyright Ulrich Kuehn, " __DATE__;
+"@(#)mount for nfs v3, derived from the nfs v2 mount tool, " __DATE__;
 
 
 static void
 usage (void)
 {
 	printf ("%s usage:\n", commandname);
-	printf ("  mount [ -rvnf ] { -o option } remotedir localdir\n");
-	printf ("  mount -u [ vn ] localdir\n");
+	printf ("  %s [ -rvnf ] { -o option } host:/remotedir localdir\n", commandname);
+	printf ("  %s -u [ -vn ] localdir\n", commandname);
+	printf ("\n");
+	printf ("  localdir has to be below u:\\nfs3, which is where the\n");
+	printf ("  nfs3.xfs driver installs itself.\n");
+}
+
+/* Append to optionstr without running past its end. The original code
+ * used unchecked strcat()/_ltoa() into a 65 byte buffer.
+ */
+static void
+add_opt (const char *text)
+{
+	size_t have = strlen (optionstr);
+	size_t room = sizeof (optionstr) - 1 - have;
+
+	if (room == 0)
+		return;
+
+	strncpy (optionstr + have, text, room);
+	optionstr[sizeof (optionstr) - 1] = '\0';
+}
+
+static void
+add_opt_num (const char *name, long value)
+{
+	char buf[32];
+
+	_ltoa (value, buf, 10);
+	add_opt (name);
+	add_opt (buf);
+}
+
+/* Length of the option token starting at s, i.e. up to the next comma
+ * or the end of the string.
+ */
+static size_t
+opt_len (const char *s)
+{
+	const char *comma = strchr (s, ',');
+
+	return comma ? (size_t) (comma - s) : strlen (s);
 }
 
 static void
@@ -73,62 +114,83 @@ parse_option (char *s)
 		if (*s == ',')
 			s += 1;
 
-		if (!noopt)
-			strcat (optionstr, ",");
+		if (!*s)
+			break;
 
-		if (!strncmp(s, "ro", 2))
+		/* Make sure p is always defined: the original fell through
+		 * the final else without setting it and then did s = p.
+		 */
+		p = s + opt_len (s);
+
+		if (!noopt)
+			add_opt (",");
+
+		if (!strncmp (s, "ro", 2))
 		{
-			strcat (optionstr, "ro");
+			add_opt ("ro");
 			readonly = 1;
-			p = s+2;
+			p = s + 2;
 		}
 		else if (!strncmp (s, "rw", 2))
 		{
-			strcat (optionstr, "rw");
+			add_opt ("rw");
 			readonly = 0;
-			p = s+2;
+			p = s + 2;
 		}
 		else if (!strncmp (s, "nosuid", 6))
 		{
-			strcat (optionstr, "nosuid");
+			add_opt ("nosuid");
 			nosuid = 1;
-			p = s+6;
+			p = s + 6;
 		}
 		else if (!strncmp (s, "suid", 4))
 		{
-			strcat (optionstr, "suid");
+			add_opt ("suid");
 			nosuid = 0;
-			p = s+4;
+			p = s + 4;
 		}
 		else if (!strncmp (s, "rsize=", 6))
 		{
 			rsize = strtol (&s[6], &p, 10);
-			strcat (optionstr, "rsize=");
-			_ltoa (rsize, &optionstr[strlen (optionstr)], 10);
+			add_opt_num ("rsize=", rsize);
 		}
 		else if (!strncmp (s, "wsize=", 6))
 		{
 			wsize = strtol (&s[6], &p, 10);
-			strcat (optionstr, "wsize=");
-			_ltoa (wsize, &optionstr[strlen (optionstr)], 10);
+			add_opt_num ("wsize=", wsize);
 		}
 		else if (!strncmp (s, "timeo=", 6))
 		{
 			timeo = strtol (&s[6], &p, 10);
-			strcat (optionstr, "timeo=");
-			_ltoa (timeo, &optionstr[strlen (optionstr)], 10);
+			add_opt_num ("timeo=", timeo);
 		}
 		else if (!strncmp (s, "retrans=", 8))
 		{
-			retrans = strtol(&s[8], &p, 10);
-			strcat (optionstr, "retrans=");
-			_ltoa (retrans, &optionstr[strlen (optionstr)], 10);
+			retrans = strtol (&s[8], &p, 10);
+			add_opt_num ("retrans=", retrans);
 		}
 		else if (!strncmp (s, "port=", 5))
 		{
 			port = strtol (&s[5], &p, 10);
-			strcat (optionstr, "port=");
-			_ltoa (port, &optionstr[strlen (optionstr)], 10);
+			add_opt_num ("port=", port);
+		}
+		else if (!strncmp (s, "noac", 4))
+		{
+			add_opt ("noac");
+			noac = 1;
+			p = s + 4;
+		}
+		else if (!strncmp (s, "soft", 4))
+		{
+			add_opt ("soft");
+			soft = 1;
+			p = s + 4;
+		}
+		else if (!strncmp (s, "intr", 4))
+		{
+			add_opt ("intr");
+			intr = 1;
+			p = s + 4;
 		}
 		else if (!strncmp (s, "acregmin=", 9))
 		{
@@ -148,11 +210,23 @@ parse_option (char *s)
 		else if (!strncmp (s, "actimeo=", 8))
 		{
 			actimeo = strtol (&s[8], &p, 10);
-			strcat (optionstr, "actimeo=");
-			_ltoa (actimeo, &optionstr[strlen (optionstr)], 10);
+			add_opt_num ("actimeo=", actimeo);
+		}
+		else if (!strncmp (s, "vers=", 5) || !strncmp (s, "nfsvers=", 8))
+		{
+			/* accepted and ignored: this tool only speaks v3 */
+			long v = strtol (strchr (s, '=') + 1, &p, 10);
+
+			if (v != 3)
+				fprintf (stderr, "%s: only NFS version 3 is "
+					 "supported, ignoring vers=%ld\n",
+					 commandname, v);
 		}
 		else
-			fprintf (stderr, "unknown option '%s', ignoring it.\n", s);
+		{
+			fprintf (stderr, "%s: unknown option '%.*s', ignoring it.\n",
+				 commandname, (int) opt_len (s), s);
+		}
 
 		noopt = 0;
 		s = p;
@@ -383,11 +457,12 @@ main (int argc, char *argv[])
 
 		if (verbose)
 			printf ("mounted %s on %s, type %s (%s)\n",
-			                  mounted, dir, "nfs", optionstr);
+			                  mounted, dir, fstype, optionstr);
 
 		/* update the mount table file accordingly */
 		if (!without_mtab)
-			return update_mtab (UPDATE_MOUNT, mounted, dir, "nfs", optionstr, 0, 0);
+			return update_mtab (UPDATE_MOUNT, mounted, dir,
+					    (char *) fstype, optionstr, 0, 0);
 		else
 			return 0;
 	}

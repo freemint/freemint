@@ -1,21 +1,15 @@
 /*
- * Copyright 1993, 1994 by Ulrich K�hn. All rights reserved.
- *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
  *
- * Modified for FreeMiNT CVS
- * by Frank Naumann <fnaumann@freemint.de>
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- *
+ * NFS version 3 (RFC 1813) support, derived from the NFS version 2
+ * driver. See the file COPYING for copying and using conditions.
  */
 
 /*
- * netdev.c networking filesystem driver, device driver functions
+ * nfsdev.c networking filesystem driver, device driver functions
  */
 
 
@@ -59,29 +53,14 @@ nfs_open (FILEPTR *f)
 		return EACCES;
 	}
 
-	if ((f->flags & O_TRUNC) && (ni->attr.size != 0))
+	/* A file that was just created may not have a handle yet: NFS3
+	 * servers are allowed to answer CREATE3 without one. Fetch it now,
+	 * before anybody tries to read or write through this FILEPTR.
+	 */
+	if (nfs_get_handle (ni) != 0)
 	{
-		/* The file has to be truncated...
-		 * NOTE: if this file has been just created, the length field
-		 *       is set to 0, so we do not get here.
-		 */
-		sattr attr;
-
-		DEBUG (("nfs_open: truncating file to 0 length"));
-
-		attr.mode = (ulong) -1L;
-		attr.uid = (ulong) -1L;
-		attr.gid = (ulong) -1L;
-		attr.size = 0;
-		attr.atime.seconds = attr.atime.useconds = (ulong) -1L;
-		attr.mtime.seconds = attr.mtime.useconds = (ulong) -1L;
-
-		r = do_sattr (&f->fc, &attr);
-		if (r != 0)
-		{
-			DEBUG (("nfs_open : truncation to 0 failed -> EACCES"));
-			return EACCES;
-		}
+		DEBUG (("nfs_open(%s): no file handle -> ENOENT", ni->name));
+		return ENOENT;
 	}
 
 	if (ni->opt->flags & OPT_RO)
@@ -89,8 +68,30 @@ nfs_open (FILEPTR *f)
 		if (((f->flags & O_RWMODE) == O_RDWR)
 			|| ((f->flags & O_RWMODE) == O_WRONLY))
 		{
-			DEBUG(("nfs_open: mount is read-only ->EACCES"));
+			DEBUG (("nfs_open: mount is read-only ->EACCES"));
 			return EACCES;
+		}
+	}
+
+	if ((f->flags & O_TRUNC) && (ni->size != 0))
+	{
+		/* The file has to be truncated...
+		 * NOTE: if this file has been just created, the length field
+		 *       is set to 0, so we do not get here.
+		 */
+		sattr3 attr;
+
+		DEBUG (("nfs_open: truncating file to 0 length"));
+
+		sattr3_init (&attr);
+		attr.set_size = TRUE;
+		attr.size = 0;
+
+		r = do_sattr (&f->fc, &attr);
+		if (r != 0)
+		{
+			DEBUG (("nfs_open : truncation to 0 failed -> %ld", r));
+			return r;
 		}
 	}
 
@@ -98,27 +99,145 @@ nfs_open (FILEPTR *f)
 	return 0;
 }
 
-/* BUG: should we really allways return EWRITE? Better might be the number of
- *      already written bytes.
+
+/* Write `bytes' bytes at file offset `pos'.
+ *
+ * `stable' selects the NFS3 write mode; with UNSTABLE the server may
+ * keep the data in volatile memory until a COMMIT3 arrives, which is
+ * what makes NFS3 writes so much faster than NFS2's, where every single
+ * request had to hit the disk.
+ *
+ * If the caller passes a `verf' buffer, the write verifier of the first
+ * reply is stored there; it has to be compared with the one COMMIT3
+ * returns to notice a server reboot.
+ *
+ * Returns the number of bytes written, or a negative error code.
  */
+static long
+write_range (FILEPTR *f, const char *buf, long bytes, long pos,
+	     long stable, char *verf, int *all_stable)
+{
+	NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
+	long wsize = ni->opt->wsize;
+	long written = 0;
+	int have_verf = 0;
+
+	/* If somehow mounted with too big wsize reduce it here. */
+	if (wsize > ni->opt->wtmax)
+		wsize = ni->opt->wsize = ni->opt->wtmax;
+	if (wsize <= 0)
+		wsize = ni->opt->wsize = DEFAULT_WSIZE;
+
+	*all_stable = 1;
+
+	while (bytes > 0)
+	{
+		write3args write_arg;
+		write3res write_res;
+		xdrs x;
+
+		MESSAGE *mreq;
+		MESSAGE *mrep;
+		MESSAGE m;
+
+		long count = (bytes > wsize) ? wsize : bytes;
+		long r;
+
+		write_arg.file = ni->handle;
+		write_arg.offset = (uint64) (ulong) pos;
+		write_arg.count = count;
+		write_arg.stable = stable;
+		write_arg.data_val = buf + written;
+		write_arg.data_len = count;
+
+		mreq = alloc_message (&m, NULL, 0, xdr_size_write3args (&write_arg));
+		if (!mreq)
+		{
+			DEBUG (("nfs_write: could not allocate message buffer"));
+			return written ? written : EWRITE;
+		}
+
+		xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
+		if (!xdr_write3args (&x, &write_arg))
+		{
+			DEBUG (("nfs_write: failed to encode arguments -> EWRITE"));
+			free_message (mreq);
+			return written ? written : EWRITE;
+		}
+
+		r = rpc_request (&ni->opt->server, mreq, NFSPROC3_WRITE, &mrep);
+		if (r != 0)
+		{
+			DEBUG (("nfs_write: could not contact server -> %ld", r));
+			if (written)
+				return written;
+			return IS_TRANSPORT_ERROR (r) ? r : EWRITE;
+		}
+
+		xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
+		if (!xdr_write3res (&x, &write_res))
+		{
+			free_message (mrep);
+
+			DEBUG (("nfs_write: failed to decode results -> EWRITE"));
+			return written ? written : EWRITE;
+		}
+
+		free_message (mrep);
+
+		update_index_attr (ni, &write_res.file_wcc.after);
+
+		if (write_res.status != NFS3_OK)
+		{
+			/* Reduce the wsize and try again; some servers
+			 * answer with NFS3ERR_IO when a request is too
+			 * big for their liking.
+			 */
+			if (write_res.status == NFS3ERR_IO && wsize > 1024)
+			{
+				wsize >>= 1;
+				continue;
+			}
+
+			DEBUG (("nfs_write: write failed rpc->%ld", write_res.status));
+			return written ? written : nfs3_error (write_res.status, EWRITE);
+		}
+
+		if (write_res.count == 0)
+		{
+			DEBUG (("nfs_write: server wrote nothing -> EWRITE"));
+			return written ? written : EWRITE;
+		}
+
+		/* the server is free to write less than we asked for */
+		if (write_res.count < (ulong) count)
+			count = (long) write_res.count;
+
+		if (write_res.committed == UNSTABLE)
+			*all_stable = 0;
+
+		if (verf && !have_verf)
+		{
+			memcpy (verf, write_res.verf, NFS3_WRITEVERFSIZE);
+			have_verf = 1;
+		}
+
+		written += count;
+		pos += count;
+		bytes -= count;
+	}
+
+	return written;
+}
+
 static long _cdecl
 nfs_write (FILEPTR *f, const char *buf, long bytes)
 {
 	NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
-
-	long pos;
+	char verf[NFS3_WRITEVERFSIZE];
+	long start = f->pos;
 	long written;
-
-	/* TL: If we get an NFSERR_IO we'll reduce the wsize for this request
-	 * and retry.
-	 * It would be better to adjust wsize dynamically but this is better
-	 * than nothing.
-	 */
-	long wsize = ni->opt->wsize;
-
-	/* TL: If somehow mounted with too big wsize reduce it here. */
-	if (wsize > MAXDATA)
-		wsize = ni->opt->wsize = MAXDATA;
+	int all_stable;
 
 	if (ROOT_INDEX == ni)
 	{
@@ -132,114 +251,50 @@ nfs_write (FILEPTR *f, const char *buf, long bytes)
 		return EACCES;
 	}
 
-	TRACE(("nfs_write: writing %ld bytes to file '%s'", bytes, ni->name));
+	if (bytes <= 0)
+		return 0;
 
-	written = 0;
-	pos = f->pos;
-	while (bytes > 0)
+	if (nfs_get_handle (ni) != 0)
+		return EWRITE;
+
+	TRACE (("nfs_write: writing %ld bytes to file '%s'", bytes, ni->name));
+
+	written = write_range (f, buf, bytes, start, UNSTABLE, verf, &all_stable);
+	if (written < 0)
+		return written;
+
+	if (!all_stable && written > 0)
 	{
-		writeargs write_arg;
-		attrstat write_res;
-		xdrs x;
-
-		MESSAGE *mreq;
-		MESSAGE *mrep;
-		MESSAGE m;
-
-		long count = (bytes > wsize) ? wsize : bytes;
-		long r;
-
-		write_arg.file = ni->handle;
-		write_arg.beginoffset = 0;
-		write_arg.offset = pos;
-		write_arg.totalcount = count;
-		write_arg.data_val = buf + written;
-		write_arg.data_len = count;
-
-		mreq = alloc_message (&m, NULL, 0, xdr_size_writeargs (&write_arg));
-		if (!mreq)
+		/* The data is only in the server's memory so far. Do NOT
+		 * commit here: applications write in small pieces, and one
+		 * COMMIT3 per write() call doubles the number of round trips
+		 * -- which is exactly what made writing four times slower
+		 * than reading. Remember the state instead and flush once in
+		 * nfs_close(), the way RFC 1813 intends it.
+		 */
+		if (!ni->wdirty)
 		{
-			DEBUG(("nfs_write: could not allocate message buffer -> EWRITE"));
-			return EWRITE;
+			memcpy (ni->wverf, verf, NFS3_WRITEVERFSIZE);
+			ni->wdirty = 1;
 		}
-
-		xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
-		if (!xdr_writeargs (&x, &write_arg))
-		{
-			DEBUG (("nfs_write: failed to encode arguments -> EWRITE"));
-			return EWRITE;
-		}
-
-		r = rpc_request (&ni->opt->server, mreq, NFSPROC_WRITE, &mrep);
-		if (r != 0)
-		{
-			DEBUG (("nfs_write: could not contact server -> EWRITE"));
-			return EWRITE;
-		}
-
-		xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
-		if (!xdr_attrstat (&x, &write_res))
-		{
-			free_message (mrep);
-
-			DEBUG (("nfs_write: failed to decode results -> EWRITE"));
-			return EWRITE;
-		}
-
-		free_message (mrep);
-
-		if (write_res.status != NFS_OK)
-		{
-			/* TL: Reduce the wsize and try again */
-			if (write_res.status == NFSERR_IO)
-			{
-				if (wsize > 1023)
-				{
-					wsize >>= 1;
-					continue;
-				}
-				else
-				{
-					DEBUG(("nfs_write: write failed -> EWRITE"));
-					return EWRITE;
-				}
-			}
-		}
-
-		fattr2xattr (&write_res.attrstat_u.attributes, &ni->attr);
-		ni->stamp = get_timestamp ();
-
-		written += count;
-		pos += count;
-		bytes -= count;
 	}
 
-	f->pos = pos;
+	f->pos = start + written;
+
+	if (ni->size < (uint64) (ulong) f->pos)
+		ni->size = (uint64) (ulong) f->pos;
 
 	TRACE (("nfs_write(%s) -> %ld", ni->name, written));
 	return written;
 }
 
-/* BUG: should we really allways return EREAD? Better might be the number of
- *      already read bytes.
- */
 static long _cdecl
 nfs_read (FILEPTR *f, char *buf, long bytes)
 {
 	NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
 	long pos;
-	long read;
-
-	/* TL: If we get an NFSERR_IO try to reduce the rsize for this request
-	 * and retry.
-	 * It would be better to adjust rsize dynamically but this is better
-	 * than nothing.
-	 */
-	long rsize = ni->opt->rsize;
-
-	/* TL: If somehow mounted with too big rsize reduce it here */
-	if (rsize > MAXDATA)
-		rsize = ni->opt->rsize = MAXDATA;
+	long total;
+	long rsize;
 
 	if (ROOT_INDEX == ni)
 	{
@@ -247,102 +302,116 @@ nfs_read (FILEPTR *f, char *buf, long bytes)
 		return 0;
 	}
 
+	if (nfs_get_handle (ni) != 0)
+	{
+		ALERT (("nfs3: nfs_read(%s): no file handle", ni->name));
+		return EREAD;
+	}
+
+	rsize = ni->opt->rsize;
+	if (rsize > ni->opt->rtmax)
+		rsize = ni->opt->rsize = ni->opt->rtmax;
+	if (rsize <= 0)
+		rsize = ni->opt->rsize = DEFAULT_RSIZE;
+
 	TRACE (("nfs_read: reading %ld bytes for file '%s'", bytes, ni->name));
 
-	read = 0;
+	total = 0;
 	pos = f->pos;
 	while (bytes > 0)
 	{
-		char req_buf[READBUFSIZE];
+		long req_buf [READBUFSIZE / sizeof (long)];
 
-		readargs read_arg;
-		readres read_res;
+		read3args read_arg;
+		read3res read_res;
 		xdrs x;
 
 		MESSAGE *mreq;
 		MESSAGE *mrep;
 		MESSAGE m;
 
-		long count = (bytes > ni->opt->rsize) ? ni->opt->rsize : bytes;
+		long count = (bytes > rsize) ? rsize : bytes;
 		long r;
 
 		read_arg.file = ni->handle;
-		read_arg.offset = pos;
+		read_arg.offset = (uint64) (ulong) pos;
 		read_arg.count = count;
-		read_arg.totalcount = count;
 
-		mreq = alloc_message (&m, req_buf, READBUFSIZE, xdr_size_readargs(&read_arg));
+		mreq = alloc_message (&m, (char *) req_buf, READBUFSIZE,
+				      xdr_size_read3args (&read_arg));
 		if (!mreq)
 		{
-			DEBUG (("nfs_read: failed to allocate message buffer, -> EREAD"));
-			return EREAD;
+			ALERT (("nfs3: nfs_read(%s): out of memory for a %ld "
+				"byte request", ni->name,
+				xdr_size_read3args (&read_arg)));
+			return total ? total : EREAD;
 		}
 
 		xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
-		if (!xdr_readargs (&x, &read_arg))
+		if (!xdr_read3args (&x, &read_arg))
 		{
-			DEBUG (("nfs_read: failed to encode arguments, -> EREAD"));
-			return EREAD;
+			ALERT (("nfs3: nfs_read(%s): cannot encode request "
+				"(fh %ld bytes, buffer %ld) - please report",
+				ni->name, ni->handle.len, mreq->data_len));
+			free_message (mreq);
+			return total ? total : EREAD;
 		}
 
-		r = rpc_request (&ni->opt->server, mreq, NFSPROC_READ, &mrep);
+		r = rpc_request (&ni->opt->server, mreq, NFSPROC3_READ, &mrep);
 		if (r != 0)
 		{
-			DEBUG (("nfs_read: failed to contact server, -> EREAD"));
-			return EREAD;
+			DEBUG (("nfs_read: failed to contact server, -> %ld", r));
+			if (total)
+				return total;
+			return IS_TRANSPORT_ERROR (r) ? r : EREAD;
 		}
 
-		read_res.readres_u.read_ok.data_val = buf + read;
+		read_res.data_val = buf + total;
+		read_res.data_max = count;
 
 		xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
-		if (!xdr_readres (&x, &read_res))
+		if (!xdr_read3res (&x, &read_res))
 		{
 			free_message (mrep);
 
 			DEBUG (("nfs_read: could not decode results, -> EREAD"));
-			return EREAD;
+			return total ? total : EREAD;
 		}
 
 		free_message (mrep);
 
-		if (read_res.status != NFS_OK)
+		update_index_attr (ni, &read_res.file_attributes);
+
+		if (read_res.status != NFS3_OK)
 		{
-			/* TL: Try to reduce the rsize */
-			if (read_res.status == NFSERR_IO)
+			/* Try to reduce the rsize; see nfs_write() */
+			if (read_res.status == NFS3ERR_IO && rsize > 1024)
 			{
-				if (rsize > 1023)
-				{
-					rsize >>= 1;
-					continue;
-				}
-				else
-				{
-					/* read failed for some reason */
-					DEBUG (("nfs_read: request failed, -> EREAD"));
-					return EREAD;
-				}
+				rsize >>= 1;
+				continue;
 			}
+
+			DEBUG (("nfs_read: request failed rpc->%ld", read_res.status));
+			return total ? total : nfs3_error (read_res.status, EREAD);
 		}
 
-		r = read_res.readres_u.read_ok.data_len;
-		read += r;
+		r = (long) read_res.data_len;
+		total += r;
 		pos += r;
 		bytes -= r;
 
-		fattr2xattr (&read_res.readres_u.read_ok.attributes, &ni->attr);
-		ni->stamp = get_timestamp ();
-
-		if (r < count)
+		/* NFS3 tells us explicitly whether we reached the end of
+		 * the file; NFS2 could only be guessed at by a short read
+		 */
+		if (read_res.eof || r == 0)
 		{
-			/* no more data */
-
-			DEBUG (("nfs_read: read only %ld bytes, -> ok", r));
+			DEBUG (("nfs_read: eof after %ld bytes", total));
 			break;
 		}
 	}
 
 	f->pos = pos;
-	return read;
+	return total;
 }
 
 static long _cdecl
@@ -371,6 +440,7 @@ nfs_lseek (FILEPTR *f, long where, int whence)
 		case SEEK_END:
 		{
 			NFS_INDEX *ni;
+			long size;
 
 			long r = nfs_getxattr (&f->fc, NULL);
 			if (r)
@@ -380,10 +450,16 @@ nfs_lseek (FILEPTR *f, long where, int whence)
 			}
 
 			ni = (NFS_INDEX *) f->fc.index;
-			if (where <  - ni->attr.size)  /* seek before beginning of file */
+
+			/* files may well be bigger than 2 GB on an NFS3
+			 * server, but MiNT's file position is a signed long
+			 */
+			size = clamp64 (ni->size);
+
+			if (where < -size)  /* seek before beginning of file */
 				return EBADARG;
 
-			return (f->pos = ni->attr.size + where);
+			return (f->pos = size + where);
 		}
 	}
 
@@ -398,16 +474,17 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 		case FIONREAD:
 		{
 			NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
-			long r;
+			long r, avail;
 
 			r = nfs_getxattr (&f->fc, NULL);
 			if (r)
 			{
-				DEBUG (("nf_ioctl: cant get file attributes, -> %ld", r));
+				DEBUG (("nfs_ioctl: cant get file attributes, -> %ld", r));
 				return r;
 			}
 
-			*(long *) arg = MIN (ni->attr.size-f->pos, 0);
+			avail = clamp64 (ni->size) - f->pos;
+			*(long *) arg = (avail > 0) ? avail : 0;
 			break;
 		}
 		case FIONWRITE:
@@ -419,7 +496,7 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 		case FUTIME_UTC:
 		{
 			NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
-			sattr attr;
+			sattr3 attr;
 			int uid;
 
 			/* The owner or super-user can always touch, others only
@@ -432,38 +509,36 @@ nfs_ioctl (FILEPTR *f, int mode, void *arg)
 				return EACCES;
 			}
 
-			attr.uid = (ulong) -1L;
-			attr.gid = (ulong) -1L;
-			attr.mode = (ulong) -1L;
-			attr.size = (ulong) -1L;
+			sattr3_init (&attr);
 
 			if (arg)
 			{
+				attr.set_atime = SET_TO_CLIENT_TIME;
+				attr.set_mtime = SET_TO_CLIENT_TIME;
+
 				if (native_utc || (mode == FUTIME_UTC))
 				{
 					long *timeptr = arg;
 
 					attr.atime.seconds = timeptr[0];
-					attr.atime.useconds = 0;
 					attr.mtime.seconds = timeptr[1];
-					attr.mtime.useconds = 0;
 				}
 				else
 				{
 					MUTIMBUF *buf = arg;
 
 					attr.atime.seconds = unixtime (buf->actime, buf->acdate);
-					attr.atime.useconds = 0;
 					attr.mtime.seconds = unixtime (buf->modtime, buf->moddate);
-					attr.mtime.useconds = 0;
 				}
 			}
 			else
 			{
-				attr.atime.seconds = CURRENT_TIME;
-				attr.atime.useconds = 0;
-				attr.mtime.seconds = CURRENT_TIME;
-				attr.mtime.useconds = 0;
+				/* NFS3 can ask the server to use its own clock,
+				 * which avoids a skewed time stamp when the
+				 * Atari's clock is off
+				 */
+				attr.set_atime = SET_TO_SERVER_TIME;
+				attr.set_mtime = SET_TO_SERVER_TIME;
 			}
 
 			return do_sattr (&f->fc, &attr);
@@ -491,21 +566,12 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 			r = nfs_getxattr (&f->fc, NULL);
 			if (r != 0)
 			{
-				DEBUG (("nfs_datime: nfs_getattr failed, -> %ld", r));
+				DEBUG (("nfs_datime: nfs_getxattr failed, -> %ld", r));
 				return r;
 			}
 
-			if (native_utc)
-			{
-			/*	*((long *) timeptr) = *((long *) &(ni->attr.atime)); */
-				timeptr[0] = ni->attr.atime;
-				timeptr[1] = ni->attr.adate;
-			}
-			else
-			{
-				timeptr[0] = ni->attr.atime;
-				timeptr[1] = ni->attr.adate;
-			}
+			timeptr[0] = ni->attr.atime;
+			timeptr[1] = ni->attr.adate;
 
 			break;
 		}
@@ -515,23 +581,16 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 			 * dont have any chance to change the creation time,
 			 * as the nfs protcol does not specify this
 			 */
-			sattr attr;
+			sattr3 attr;
 
-			attr.uid = (ulong) -1L;
-			attr.gid = (ulong) -1L;
-			attr.mode = (ulong) -1L;
-			attr.size = (ulong) -1L;
+			sattr3_init (&attr);
+			attr.set_atime = SET_TO_CLIENT_TIME;
+			attr.set_mtime = SET_TO_CLIENT_TIME;
 
 			if (native_utc)
-			{
 				attr.atime.seconds = *((long *) timeptr);
-				attr.atime.useconds = 0;
-			}
 			else
-			{
 				attr.atime.seconds = unixtime (timeptr[0], timeptr[1]);
-				attr.atime.useconds = 0;
-			}
 
 			attr.mtime = attr.atime;
 
@@ -549,15 +608,51 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 static long _cdecl
 nfs_close (FILEPTR *f, int pid)
 {
-	TRACE (("nfs_close -> ok"));
+	NFS_INDEX *ni = (NFS_INDEX *) f->fc.index;
+	char cverf[NFS3_WRITEVERFSIZE];
+	long r;
 
-	/* nothing to do */
+	(void) pid;
+
+	TRACE (("nfs_close"));
+
+	if (ROOT_INDEX == ni || !ni->wdirty)
+		return 0;
+
+	/* Flush the unstable data of this file. A count of zero means
+	 * "from offset to the end of file" (RFC 1813, 3.3.21).
+	 */
+	r = do_commit (&f->fc, 0, 0, cverf);
+	if (r != E_OK)
+	{
+		ALERT (("nfs3: COMMIT3 of '%s' failed -> %ld", ni->name, r));
+		return r;
+	}
+
+	ni->wdirty = 0;
+
+	if (memcmp (ni->wverf, cverf, NFS3_WRITEVERFSIZE) != 0)
+	{
+		/* The server rebooted between our writes and this commit,
+		 * so the data is gone. We have no page cache to write it
+		 * again from, so all we can do is report the loss -- which
+		 * is why write errors surface at close() on NFS.
+		 */
+		ALERT (("nfs3: server lost unstable data of '%s'", ni->name));
+		return EIO;
+	}
+
+	TRACE (("nfs_close -> ok"));
 	return 0;
 }
 
 static long _cdecl
 nfs_select (FILEPTR *f, long proc, int mode)
 {
+	(void) f;
+	(void) proc;
+	(void) mode;
+
 	TRACE (("nfs_select"));
 	return 1;
 }
@@ -565,6 +660,10 @@ nfs_select (FILEPTR *f, long proc, int mode)
 static void _cdecl
 nfs_unselect (FILEPTR *f, long proc, int mode)
 {
+	(void) f;
+	(void) proc;
+	(void) mode;
+
 	TRACE (("nfs_unselect"));
 	/* do nothing */
 }
