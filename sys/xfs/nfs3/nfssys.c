@@ -29,6 +29,7 @@
 
 static long	do_remove	(long nfs_opcode, fcookie *dir, const char *name);
 static long	do_fsinfo	(NFS_INDEX *ni);
+static void	do_pathconf	(NFS_INDEX *ni);
 
 
 static long	_cdecl nfs_root		(int drv, fcookie *fc);
@@ -1772,19 +1773,54 @@ nfs_pathconf (fcookie *dir, int which)
 		case DP_IOPEN:		return UNLIMITED;
 		case DP_MAXLINKS:
 		{
-			/* FSINFO3 tells us whether the server can do hard
-			 * links at all; NFS2 had no way of asking
+			/* Two questions, two sources: FSINFO3 says whether the
+			 * server does hard links at all, PATHCONF3 says how
+			 * many. Without either, NFS2 could only guess.
 			 */
 			if (ROOT_INDEX == ni)
 				return 1;
 
-			return (ni->opt->properties & FSF3_LINK) ? UNLIMITED : 1;
+			if (!(ni->opt->properties & FSF3_LINK))
+				return 1;
+
+			if (ni->opt->has_pathconf && ni->opt->linkmax > 0)
+				return ni->opt->linkmax;
+
+			return UNLIMITED;
 		}
-		case DP_PATHMAX:	return MAXPATHLEN;
-		case DP_NAMEMAX:	return MAXNAMLEN;
+		case DP_PATHMAX:
+			/* PATHCONF3 has no counterpart for this: a path is
+			 * built by the client, so the limit is ours.
+			 */
+			return MAXPATHLEN;
+		case DP_NAMEMAX:
+		{
+			/* Never promise more than our own buffers hold, even
+			 * if the server would allow longer names.
+			 */
+			if (ni->opt->has_pathconf && ni->opt->name_max > 0)
+				return MIN (ni->opt->name_max, (long) MAXNAMLEN);
+
+			return MAXNAMLEN;
+		}
 		case DP_ATOMIC:		return 512;
-		case DP_TRUNC:		return DP_NOTRUNC;
-		case DP_CASE:		return DP_CASESENS;
+		case DP_TRUNC:
+			if (!ni->opt->has_pathconf)
+				return DP_NOTRUNC;
+
+			/* no_trunc set means the server rejects a name that is
+			 * too long; cleared means it silently shortens it.
+			 */
+			return ni->opt->no_trunc ? DP_NOTRUNC : DP_AUTOTRUNC;
+		case DP_CASE:
+			if (!ni->opt->has_pathconf)
+				return DP_CASESENS;
+
+			if (!ni->opt->case_insensitive)
+				return DP_CASESENS;
+
+			return ni->opt->case_preserving ? DP_CASEINSENS
+							: DP_CASECONV;
 		case DP_MODEATTR:	return (DP_ATTRBITS | DP_MODEBITS
 						| DP_FT_DIR
 						| DP_FT_CHR
@@ -2292,6 +2328,74 @@ do_fsinfo (NFS_INDEX *ni)
 	return E_OK;
 }
 
+/*
+ * Ask the server what its limits really are.
+ *
+ * PATHCONF3 is an optional procedure, so a server may refuse it. In that
+ * case the values stay unset and nfs_pathconf() keeps answering from what
+ * the driver can guarantee on its own -- which is what the NFSv2 driver
+ * always did, because version 2 had no way of asking. Failing here must
+ * therefore not fail the mount, and that is why this returns nothing.
+ */
+static void
+do_pathconf (NFS_INDEX *ni)
+{
+	long req_buf [FSINFOBUFSIZE / sizeof (long)];
+	MESSAGE *mreq, *mrep, m;
+	pathconf3res res;
+	xdrs x;
+	long r;
+
+	mreq = alloc_message (&m, (char *) req_buf, FSINFOBUFSIZE,
+			      xdr_size_nfs_fh3 (&ni->handle));
+	if (!mreq)
+		return;
+
+	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
+	if (!xdr_nfs_fh3 (&x, &ni->handle))
+	{
+		free_message (mreq);
+		return;
+	}
+
+	r = rpc_request (&ni->opt->server, mreq, NFSPROC3_PATHCONF, &mrep);
+	if (r != 0)
+	{
+		DEBUG (("do_pathconf: no answer -> %ld, keeping the defaults", r));
+		return;
+	}
+
+	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
+	if (!xdr_pathconf3res (&x, &res))
+	{
+		free_message (mrep);
+		DEBUG (("do_pathconf: undecodable reply, keeping the defaults"));
+		return;
+	}
+
+	free_message (mrep);
+
+	if (res.status != NFS3_OK)
+	{
+		DEBUG (("do_pathconf: server says %ld, keeping the defaults",
+			(long) res.status));
+		return;
+	}
+
+	ni->opt->linkmax = (long) res.linkmax;
+	ni->opt->name_max = (long) res.name_max;
+	ni->opt->no_trunc = res.no_trunc ? 1 : 0;
+	ni->opt->case_insensitive = res.case_insensitive ? 1 : 0;
+	ni->opt->case_preserving = res.case_preserving ? 1 : 0;
+	ni->opt->has_pathconf = 1;
+
+	DEBUG (("do_pathconf: linkmax %ld, name_max %ld, no_trunc %d, "
+		"case_insensitive %d, case_preserving %d",
+		ni->opt->linkmax, ni->opt->name_max, (int) ni->opt->no_trunc,
+		(int) ni->opt->case_insensitive, (int) ni->opt->case_preserving));
+}
+
+
 static long _cdecl
 nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
@@ -2410,6 +2514,11 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				if (fr != E_OK)
 					DEBUG (("nfs_fscntl: FSINFO3 failed (%ld), "
 						"using defaults", fr));
+
+				/* Optional, and allowed to fail: it only
+				 * replaces guesses with what the server says.
+				 */
+				do_pathconf (ni);
 			}
 
 			/* Say which transport is in use. Without this an
