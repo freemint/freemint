@@ -8,7 +8,7 @@
  */
 
 /*
- * File : main.c 
+ * File : main.c
  *        installation functions
  */
 
@@ -55,9 +55,9 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 {
 	struct fs_descr d = { &nfs_filesys, -1 };
 	long r;
-	
+
 	KERNEL = k;
-	
+
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 # ifdef ALPHA
@@ -67,8 +67,8 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 	c_conws (MSG_BETA);
 # endif
 	c_conws ("\r\n");
-	
-	
+
+
 	/* version check */
 	if ((MINT_MAJOR < 1)
 	    || (MINT_MAJOR == 1 && MINT_MINOR < 16)
@@ -76,16 +76,16 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 	{
 		c_conws (MSG_OLDMINT);
 		c_conws (MSG_FAILURE ("MiNT too old"));
-		
+
 		return NULL;
 	}
-	
+
 	/* check for native UTC timestamps */
 	if (MINT_KVERSION > 0 && KERNEL->xtime)
 	{
 		/* yeah, save enourmous overhead */
 		native_utc = 1;
-		
+
 		DEBUG(("nfs (%s): running in native UTC mode!", __FILE__));
 	}
 	else
@@ -94,17 +94,17 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 		DEBUG(("nfs (%s): old kernel, disabling UTC mode!", __FILE__));
 		nfs_filesys.fsflags &= ~FS_EXT_3;
 	}
-	
+
 	/* initialize the other services in the xfs */
 	init_fs ();
-	
+
 	r = d_cntl (FS_INSTALL, "u:\\", (long) &d);
 	if (r != (long) kernel)
 	{
 		c_conws (MSG_FAILURE ("Dcntl(FS_INSTALL) failed"));
 		return NULL;
 	}
-	
+
 	r = d_cntl (FS_MOUNT, "u:\\nfs", (long) &d);
 	DEBUG(("d_cntl(FS_MOUNT): r=%ld nfs_dev=%d", r, d.dev_no));
 	if (r == d.dev_no)
@@ -112,14 +112,14 @@ FILESYS *_cdecl init_xfs (struct kerinfo *k)
 		nfs_dev = d.dev_no;
 		return (FILESYS *) 1L;
 	}
-	
+
 	c_conws (MSG_FAILURE ("Dcntl(FS_MOUNT) failed"));
-	
+
 	if (d_cntl (FS_UNINSTALL, "u:\\nfs", (long) &d))
 	{
 		/* can't return NULL here because FS_UNINSTALL failed */
 		return (FILESYS *) 1;
 	}
-	
+
 	return NULL;
 }

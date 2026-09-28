@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -58,10 +58,10 @@ static inline long
 so_read (struct socket *so, char *buf, long buflen)
 {
 	struct iovec iov[1] = {{ buf, buflen }};
-	
+
 	if (so->state == SS_VIRGIN)
 		return EINVAL;
-	
+
 	return (*so->ops->recv)(so, iov, 1, nonblock, 0, 0, 0);
 }
 
@@ -78,11 +78,11 @@ recvmsg (struct socket *so, struct msghdr *msg, short flags)
 {
 	short namelen = msg->msg_namelen;
 	long ret;
-	
+
 	ret = (*so->ops->recv)(so, msg->msg_iov, msg->msg_iovlen,
 				nonblock, flags,
 				msg->msg_name, &namelen);
-	
+
 	msg->msg_namelen = namelen;
 	return ret;
 }
@@ -139,17 +139,17 @@ init_auth (void)
 {
 	long res, r;
 	char *p;
-	
+
 	/* try first the new syscall */
 	{
 		char buf[MAXHOSTNAMELEN];
 		long mib[2];
 		long size;
-		
+
 		mib[0] = CTL_KERN;
 		mib[1] = KERN_HOSTNAME;
 		size = sizeof(buf);
-		
+
 		r = p_sysctl(mib, 2, buf, (unsigned long *)&size, NULL, 0);
 		if (r == 0)
 		{
@@ -158,7 +158,7 @@ init_auth (void)
 			else
 				r = -1;
 		}
-		
+
 		/* try /etc/hostname */
 		if (r)
 		{
@@ -179,7 +179,7 @@ init_auth (void)
 						p += 1;
 					}
 					*p = '\0';
-					
+
 					if (buf[0])
 					{
 						strcpy (hostname, buf);
@@ -189,7 +189,7 @@ init_auth (void)
 			}
 		}
 	}
-	
+
 	/* set up xdred auth_unix structure */
 	bzero (&the_xdr_auth [0], AUTH_UNIX_MAX);
 	p = &the_xdr_auth [0];
@@ -210,11 +210,11 @@ init_auth (void)
 	p_ngid = (ulong *) p;
 	p += sizeof (ulong);
 	p_gids = (ulong *) p;
-	
+
 	res = p - &the_xdr_auth[0];
 	unix_auth.len = res;
-	auth_baselen = res;	
-	
+	auth_baselen = res;
+
 	return r;
 }
 
@@ -239,16 +239,16 @@ setup_auth (ulong stamp)
 		          (p+2*sizeof(long))[1], (p+2*sizeof(long))[2]));
 		DEBUG (("setup_auth: setting uid %ld/gid %ld", *p_uid, *p_gid));
 	}
-	
+
 	ngrp = p_getgroups (2 * NGROUPS_MAX, suppgrps);
 	if (ngrp < 0)
 		ngrp = 0;
 	else if (ngrp > NGROUPS_MAX)
 		ngrp = NGROUPS_MAX;
-	
+
 	*p_ngid = ngrp;
 	unix_auth.len = auth_baselen + sizeof (ulong) * ngrp;
-	
+
 	for ( ; ngrp >= 0; ngrp -= 1)
 		p_gids [ngrp] = (short)suppgrps [ngrp];
 }
@@ -310,24 +310,24 @@ static int
 insert_request (ulong xid)
 {
 	REQUEST *p;
-	
+
 	while (TAS (lock))
 		s_yield ();
-	
+
 	p = kmalloc (sizeof (*p));
 	if (!p)
 	{
 		lock = 0;
 		return -1;
 	}
-	
+
 	p->have_answer = 0;
 	p->msg.flags = FREE_MSG;
 	p->pid = p_getpid ();
 	p->xid = xid;
 	p->next = pending;
 	pending = p;
-	
+
 	lock = 0;
 	return 0;
 }
@@ -336,28 +336,28 @@ static int
 delete_request (ulong xid)
 {
 	REQUEST *p, **pp;
-	
+
 	while (TAS (lock))
 		s_yield ();
-	
+
 	for (p = pending, pp = &pending; p; pp = &p->next, p = p->next)
 	{
 		if (p->xid == xid)
 			break;
 	}
-	
+
 	if (!p)
 	{
 		lock = 0;
 		return -1;
 	}
-	
+
 	if (p->have_answer)
 		free_message_body (&p->msg);
-	
+
 	*pp = p->next;
 	kfree (p);
-	
+
 	lock = 0;
 	return 0;
 }
@@ -375,27 +375,27 @@ remove_request (ulong xid)
 		if (p->xid == xid)
 			break;
 	}
-	
+
 	if (!p)
 	{
 		lock = 0;
 		return -1;
 	}
-	
+
 	*pp = p->next;
-	
+
 	lock = 0;
 	return 0;
-}	
+}
 
 static REQUEST *
 search_request (ulong xid)
 {
 	REQUEST *p;
-	
+
 	while (TAS (lock))
 		s_yield ();
-	
+
 	for (p = pending;  p;  p = p->next)
 	{
 		if (p->xid == xid)
@@ -404,7 +404,7 @@ search_request (ulong xid)
 			return p;
 		}
 	}
-	
+
 	lock = 0;
 	return NULL;
 }
@@ -422,7 +422,7 @@ free_message_body (MESSAGE *m)
 		kfree (m->data);
 	if (m->flags & FREE_BUFFER)
 		kfree (m->buffer);
-	
+
 	m->flags &= ~DATA_FLAGS;
 }
 
@@ -457,20 +457,20 @@ alloc_message (MESSAGE *m, char *buf, long buf_len, long data_size)
 		m = kmalloc (sizeof (*m));
 		if (!m)
 			return NULL;
-		
+
 		m->flags = FREE_MSG;
 	}
 	else
 	{
 		m->flags = 0;
 	}
-	
+
 	m->data = m->buffer = m->header = NULL;
 	m->data_len = m->hdr_len = 0;
-	
+
 	if (0 == data_size)
 		return m;
-	
+
 	if (!buf || (buf_len < data_size))
 	{
 		m->data = kmalloc (data_size);
@@ -483,15 +483,15 @@ alloc_message (MESSAGE *m, char *buf, long buf_len, long data_size)
 		m->data = m->buffer = buf;
 		m->buf_len = buf_len;
 	}
-	
+
 	if (!m->data)
 	{
 		if (m->flags & FREE_MSG)
 			kfree (m);
-		
+
 		return NULL;
 	}
-	
+
 	m->data_len = data_size;
 	return m;
 }
@@ -504,7 +504,7 @@ bindresvport (struct socket *so)
 	struct sockaddr_in t;
 	short port;
 	long r;
-	
+
 	t.sin_family = AF_INET;
 	t.sin_addr.s_addr = htonl (INADDR_ANY);
 	for (port = IPPORT_RESERVED - 1; port > IPPORT_RESERVED / 2; port--)
@@ -513,11 +513,11 @@ bindresvport (struct socket *so)
 		r = bind (so, (struct sockaddr *) &t, sizeof (t));
 		if (r == 0)
 			return 0;
-		
+
 		if (r < 0 && r != EADDRINUSE)
 			return r;
 	}
-	
+
 	return EADDRINUSE;
 }
 
@@ -526,7 +526,7 @@ open_connection (struct socket **resultso)
 {
 	struct socket *so;
 	long arg, ret;
-	
+
 	/* Open socket. The file handle will be global as it is specified in the
 	 * kernel socket library.
 	 */
@@ -536,12 +536,12 @@ open_connection (struct socket **resultso)
 		DEBUG (("rpcfs: could not open socket -> %ld", ret));
 		return ret;
 	}
-	
+
 	assert (so);
-	
+
 	/* Do some settings on the socket so that it becomes usable
 	 */
-	
+
 	arg = 10240;
 	ret = setsockopt (so, SOL_SOCKET, SO_RCVBUF, &arg, sizeof (arg));
 	if (ret < 0)
@@ -549,7 +549,7 @@ open_connection (struct socket **resultso)
 		DEBUG (("rpcfs: could not set socket options -> %ld", ret));
 		goto error;
 	}
-	
+
 	arg = 10240;
 	ret = setsockopt (so, SOL_SOCKET, SO_SNDBUF, &arg, sizeof (arg));
 	if (ret < 0)
@@ -557,7 +557,7 @@ open_connection (struct socket **resultso)
 		DEBUG (("rpcfs: could not set socket options -> %ld", ret));
 		goto error;
 	}
-	
+
 	/* Now bind the socket to a local address so that we can use it.
 	 * Bind to an priviledged (reserved) port, because most NFS
 	 * servers refuse connections to clients on non priviledged
@@ -575,12 +575,12 @@ open_connection (struct socket **resultso)
 		DEBUG (("rpcfs: could not bind socket to local address -> %ld", ret));
 		goto error;
 	}
-	
+
 	DEBUG (("open_connection: got socket %p", (void *) so));
-	
+
 	*resultso = so;
 	return ret;
-	
+
 error:
 	so_free (so);
 	return ret;
@@ -590,7 +590,7 @@ static void
 scratch_message (struct socket *so)
 {
 	char buf[8];
-	
+
 	so_read (so, buf, 8);
 }
 
@@ -615,27 +615,27 @@ rpc_sendmessage (struct socket *so, SERVER_OPT *opt, MESSAGE *mreq)
 	struct iovec iov[2];
 	struct msghdr msg;
 	long ret;
-	
+
 	/* set up structures for sendmsg() */
 	iov[0].iov_base = mreq->header;
 	iov[0].iov_len = mreq->hdr_len;
 	iov[1].iov_base = mreq->data;
 	iov[1].iov_len = mreq->data_len;
-	
+
 	msg.msg_name = (void *) &opt->addr;
 	msg.msg_namelen = sizeof (opt->addr);
 	msg.msg_iov = iov;
 	msg.msg_iovlen = 2;
 	msg.msg_accrights = NULL;
 	msg.msg_accrightslen = 0;
-	
+
 	ret = sendmsg (so, &msg, 0);
 	if (ret < 0)
 	{
 		DEBUG (("rpc_sendmessage: error %ld during sending", ret));
 		DEBUG (("rpc_sendmessage: handle is %p", (void *) so));
 	}
-	
+
 	return ret;
 }
 
@@ -650,9 +650,9 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 	struct iovec iov[1];
 	struct msghdr msg;
 	struct sockaddr_in addr;
-	
+
 	mrep->buffer = mrep->data = mrep->header = NULL;
-	
+
 	/* allocate buffer for message body
 	 */
 	buf = kmalloc (toread);
@@ -662,17 +662,17 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 		DEBUG (("rpc_receivemessage: failed to allocate receive buffer"));
 		return NULL;
 	}
-	
+
 	iov[0].iov_base = buf;
 	iov[0].iov_len = toread;
-	
+
 	msg.msg_name = (void *) &addr;
 	msg.msg_namelen = sizeof (addr);
 	msg.msg_iov = iov;
 	msg.msg_iovlen = 1;
 	msg.msg_accrights = NULL;
 	msg.msg_accrightslen = 0;
-	
+
 	/* read message
 	 */
 	ret = recvmsg (so, &msg, 0);
@@ -682,7 +682,7 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 		kfree (buf);
 		return NULL;
 	}
-	
+
 	/* SECURITY: here we should bother about the address of the sender so that
 	 *           we can later check for the correct sender.
 	 */
@@ -692,7 +692,7 @@ rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 	mrep->data_len = toread;
 	mrep->next = NULL;
 	mrep->xid = 0;
-	
+
 	return mrep;
 }
 
@@ -715,8 +715,8 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 	static volatile ulong xid = 0;
 	ulong our_xid;
 	long r;
-	
-	
+
+
 	/* make a header */
 	our_xid = xid++;
 	hdr.xid = our_xid;
@@ -725,7 +725,7 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 	hdr.cbody.prog = rpc_program;
 	hdr.cbody.vers = rpc_progversion;
 	hdr.cbody.proc = proc;
-	
+
 	if (do_auth_init)
 	{
 		if (init_auth () == 0)
@@ -736,10 +736,10 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 	setup_auth (our_xid);
 	hdr.cbody.cred = unix_auth;
 	hdr.cbody.verf = null_auth;
-	
+
 	/* HACK: to prevent xdr_rpc_msg from encoding arguments */
 	hdr.cbody.xproc = NULL;
-	
+
 	mreq->hdr_len = xdr_size_rpc_msg (&hdr);
 	if (mreq->hdr_len > MAX_RPC_HDR_SIZE)
 	{
@@ -750,12 +750,12 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 			free_message (mreq);
 			return ENOMEM;
 		}
-		
+
 		mreq->flags |= FREE_HEADER;
 	}
 	else
 		mreq->header = req_buf;
-	
+
 	xdr_init (&xhdr, mreq->header, mreq->hdr_len, XDR_ENCODE, NULL);
 	if (!xdr_rpc_msg (&xhdr, &hdr))
 	{
@@ -763,8 +763,8 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		free_message (mreq);
 		return EBADARG;
 	}
-	
-	
+
+
 	/* This is the main send/resend code. We have to send the message, wait
 	 * for reply, and if it times out, resend the message. But make sure
 	 * that the code is reentrant at some points, as several processes can
@@ -777,19 +777,19 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		struct socket *so = nfs_so;
 		long timeout, stamp, toread;
 		int retry;
-		
+
 		if (!so)
 		{
 			DEBUG (("rpc_req: no open connection"));
 			free_message (mreq);
 			return EACCES;
 		}
-		
+
 		/* Now send the message and wait for answer */
 		timeout = opt->timeo;
 		stamp = *_hz_200;
 		insert_request (our_xid);
-		/* TL: we have to increase the timeout by opt->timeo instead of just 
+		/* TL: we have to increase the timeout by opt->timeo instead of just
                  *     multiplying it by 2
 		 */
 		for (retry = 0; retry < opt->retrans; retry++, timeout += opt->timeo)
@@ -798,12 +798,12 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		    if (r < 0)
 		    {
 			DEBUG (("rpc_request: could not write message -> %ld", (long)r));
-			
+
 			free_message (mreq);
 			delete_request (our_xid);
 			return r;
 		    }
-		
+
 		    /* Wait for reply. Any reply for anybody! So we have
 		     * to store the message somewhere when it is not for
 		     * us. Also we should look there to see if another
@@ -818,10 +818,10 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		    {
 			REQUEST *rq;
 			MESSAGE *pm;
-			
+
 			/* give up CPU */
 			s_yield ();
-			
+
 			rq = search_request (our_xid);
 			if (rq && rq->have_answer)
 			{
@@ -864,7 +864,7 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 				 * is pending on the socket, caused eg. by
 				 * an ICMP error message. The Fread() returns
 				 * the error condition. */
-				
+
 				free_message (mreq);
 				delete_request (our_xid);
 				return so_read (so, &c, sizeof(c));
@@ -922,21 +922,21 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		free_message (mreq);
 		return EACCES;
 	}
-	
+
 have_reply:
-	
+
 	delete_request (our_xid);
 	free_message_body (mreq);    /* for reusing the message header */
-	
+
 	/* SECURITY: here we might want to check for the correct sender address
 	 *           to not get faked answers.
 	 */
-	
+
 	xdr_init (&xhdr, reply->data, reply->data_len, XDR_DECODE, NULL);
-	
+
 	/* HACK: to prevent xdr_rpc_msg from decoding the results */
 	hdr.rbody.rb_arpl.ar_result.xproc = NULL;
-	
+
 	if (!xdr_rpc_msg (&xhdr, &hdr))
 	{
 		DEBUG (("rpc_request: failed to break down rpc header"));
@@ -944,10 +944,10 @@ have_reply:
 		free_message (reply);
 		return ERPC_GARBAGEARGS;
 	}
-	
+
 	reply->data += xdr_getpos (&xhdr);
 	reply->data_len -= xdr_getpos (&xhdr);
-	
+
 	if (MSG_ACCEPTED != hdr.rbody.rb_stat)
 	{
 		free_message_header (mreq);  /* free the rest of that */
@@ -963,7 +963,7 @@ have_reply:
 			return ERPC_AUTHERROR;
 		}
 	}
-	
+
 	if (hdr.rbody.rb_arpl.ar_stat != SUCCESS)
 	{
 		free_message_header (mreq);  /* free the rest of that */
@@ -984,13 +984,13 @@ have_reply:
 				return -1;
 		}
 	}
-	
+
 	r = mreq->flags & ~DATA_FLAGS;
 	*mreq = *reply;
 	mreq->flags &= DATA_FLAGS;
 	mreq->flags |= r;
 	*mrep = mreq;
-	
+
 	/* `reply' might or might not point to `mbuf'. So we have to do this
 	 */
 	free_message_header (reply);
@@ -1001,21 +1001,21 @@ int
 init_ipc (ulong prog, ulong version)
 {
 	long ret;
-	
+
 	rpc_program = prog;
 	rpc_progversion = version;
-	
+
 	if (init_auth () == 0)
 		do_auth_init = 0;
 	else
 		do_auth_init -= 1;
-	
+
 	ret = open_connection (&nfs_so);
 	if (ret < 0)
 	{
 		nfs_so = NULL;
 		DEBUG (("init_ipc: cannot initialize socket -> %ld", ret));
 	}
-	
+
 	return 0;
 }

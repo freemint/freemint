@@ -45,10 +45,10 @@ xdr_fhstatus (XDR *x, fhstatus *fhsp)
 {
 	if (!xdr_u_long (x, &fhsp->status))
 		return FALSE;
-	
+
 	if (0 == fhsp->status)
 		return xdr_fhandle (x, &fhsp->fhstatus_u.directory);
-	
+
 	return TRUE;
 }
 
@@ -56,10 +56,10 @@ long
 xdr_size_fhstatus (fhstatus *fhsp)
 {
 	long r = sizeof (u_long);
-	
+
 	if (0 == fhsp->status)
 		r += xdr_size_fhandle (&fhsp->fhstatus_u.directory);
-	
+
 	return r;
 }
 
@@ -68,32 +68,32 @@ bool_t
 xdr_mountlist (XDR *x, mountlist *mlp)
 {
 	char *p = (char *) mlp;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		p += sizeof (mountlist);
 		mlp->ml_hostname = p;
 	}
-	
+
 	if (!xdr_string (x, &mlp->ml_hostname, MNTNAMLEN))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		p += strlen (mlp->ml_hostname) + 1;
 		mlp->ml_directory = p;
 	}
-	
+
 	if (!xdr_string (x, &mlp->ml_directory, MNTPATHLEN))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		p += strlen (mlp->ml_directory);
 		mlp->ml_next = (mountlist *)(((long) p + 1) & (~1L));
 	}
-	
-	return xdr_pointer (x, (char **) &mlp->ml_next, 
+
+	return xdr_pointer (x, (char **) &mlp->ml_next,
 	                          sizeof (mountlist), (xdrproc_t) xdr_mountlist);
 }
 
@@ -116,23 +116,23 @@ bool_t
 xdr_groups(XDR *x, groups *gp)
 {
 	char *p = (char *) gp;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		p += sizeof (groups);
 		gp->gr_name = p;
 	}
-	
+
 	if (!xdr_string (x, &gp->gr_name, MNTNAMLEN))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		p += strlen (gp->gr_name) + 1;
 		gp->gr_next = (groups *)(((long) p + 1) & (~1L));
 	}
-	
-	return xdr_pointer (x, (char **) &gp->gr_next, 
+
+	return xdr_pointer (x, (char **) &gp->gr_next,
 	                          sizeof (groups), (xdrproc_t) xdr_groups);
 }
 
@@ -154,20 +154,20 @@ bool_t
 xdr_exportlist (XDR *x, exportlist *elp)
 {
 	char *p = (char *) elp;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		p += sizeof (exportlist);
 		elp->ex_filesys = p;
 	}
-	
+
 	if (!xdr_string (x, &elp->ex_filesys, MNTPATHLEN))
 		return FALSE;
-	
+
 	if (XDR_DECODE == x->x_op)
 	{
 		groups *gp = elp->ex_groups;
-		
+
 		if (gp)
 		{
 			while (gp->gr_next)
@@ -176,8 +176,8 @@ xdr_exportlist (XDR *x, exportlist *elp)
 		}
 		elp->ex_next = (exportlist *)(((long) p + 1) & (~1L));
 	}
-	
-	return xdr_pointer (x, (char **) &elp->ex_next, 
+
+	return xdr_pointer (x, (char **) &elp->ex_next,
 	                         sizeof (exportlist), (xdrproc_t) xdr_exportlist);
 }
 
@@ -185,7 +185,7 @@ long
 xdr_size_exportlist (exportlist *elp)
 {
 	long r = 0;
-	
+
 	while (elp)
 	{
 		r += 3 * sizeof (u_long);
@@ -193,6 +193,6 @@ xdr_size_exportlist (exportlist *elp)
 		r += xdr_size_groups (elp->ex_groups);
 		elp = elp->ex_next;
 	}
-	
+
 	return r;
 }

@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -27,7 +27,7 @@ typedef void *             caddr_t;
 # ifndef FALSE
 # define FALSE 0
 # endif
- 
+
 # ifndef TRUE
 # define TRUE  1
 # endif
@@ -45,7 +45,7 @@ typedef struct
 # define XDR_ENCODE	0
 # define XDR_DECODE	1
 # define XDR_FREE	2
-	
+
 	long	length;	/* number of bytes to go until end of buffer */
 	char	*data;
 	char	*current;

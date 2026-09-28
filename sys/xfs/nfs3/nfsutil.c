@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -44,7 +44,7 @@ nfs_type (int mode, int attrib)
 		case S_IFLNK:
 			return NFLNK;
 	}
-	
+
 	return NFNON;
 }
 
@@ -53,7 +53,7 @@ int
 nfs_mode (int mode, int attrib)
 {
 	int newmode = mode & ~S_IFMT;
-	
+
 	switch (mode & S_IFMT)
 	{
 		case S_IFCHR:
@@ -77,7 +77,7 @@ nfs_mode (int mode, int attrib)
 			newmode |= N_IFLNK;
 			break;
 	}
-	
+
 	return newmode;
 }
 
@@ -107,8 +107,8 @@ mint_mode (int mode, int type)
 		case N_IFLNK:
 			newmode |= S_IFLNK;
 			break;
-	}	
-	
+	}
+
 	return newmode;
 }
 
@@ -120,12 +120,12 @@ fattr2xattr (fattr *fa, XATTR *xa)
 {
 	xa->mode = mint_mode (fa->mode, fa->type);
 	xa->attr = 0;
-	
+
 	if ((xa->mode & S_IFMT) == S_IFDIR)
 		xa->attr |= FA_DIR;
 	if ((xa->mode & (S_IWUSR | S_IWGRP | S_IWOTH)) == 0)
 		xa->attr |= FA_RDONLY;
-	
+
 	xa->index	= fa->fileid;
 	xa->dev		= fa->fsid;
 	xa->rdev	= fa->fsid;
@@ -135,7 +135,7 @@ fattr2xattr (fattr *fa, XATTR *xa)
 	xa->size	= fa->size;
 	xa->blksize	= fa->blocksize;
 	xa->nblocks	= fa->blocks;
-	
+
 	if (native_utc)
 	{
 		SET_XATTR_TD(xa,m,fa->mtime.seconds);
@@ -158,13 +158,13 @@ fattr2xattr (fattr *fa, XATTR *xa)
 		*((long *) &(xa->ctime)) = dostime (fa->ctime.seconds);
 #endif
 	}
-	
+
 # if 0
 	if ((xa->mode & S_IFMT) == S_IFLNK)
 		/* fix for buffer size when reading symlinks */
 		++xa->size;
 # endif
-	
+
 	xa->reserved2 = 0;
 	xa->reserved3 [0] = 0;
 	xa->reserved3 [1] = 0;
@@ -185,7 +185,7 @@ xattr2fattr (XATTR *xa, fattr *fa)
 	fa->blocks	= xa->nblocks;
 	fa->fsid	= xa->dev;
 	fa->fileid	= xa->index;
-	
+
 	if (native_utc)
 	{
 		fa->atime.seconds  = *((long *) &(xa->atime));

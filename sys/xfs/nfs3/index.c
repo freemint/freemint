@@ -5,17 +5,17 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
  */
 
 /*
- * File : index.c 
+ * File : index.c
  *        functions dealing with file indices
  */
 
@@ -35,10 +35,10 @@ void
 init_index (void)
 {
 	long i;
-	
+
 	for (i = 0; i < MAX_CLUSTER; i++)
 		cluster [i] = NULL;
-	
+
 	mounted = NULL;
 }
 
@@ -101,7 +101,7 @@ init_mount_attr (XATTR *ap)
 	SET_XATTR_TD(ap,a,CURRENT_TIME);
 	SET_XATTR_TD(ap,m,CURRENT_TIME);
 	SET_XATTR_TD(ap,c,CURRENT_TIME);
-#if 0	
+#if 0
 	*((long *) &(ap->atime)) = CURRENT_TIME;
 	*((long *) &(ap->mtime)) = CURRENT_TIME;
 	*((long *) &(ap->ctime)) = CURRENT_TIME;
@@ -121,60 +121,60 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 {
 	NFS_MOUNT_OPT *opt;
 	NFS_INDEX *ni;
-	
+
 	DEBUG(("get_mount_slot: for %s (server %s)", name, info->hostname));
-	
+
 	if (info->version != NFS_MOUNT_VERS)
 	{
 		DEBUG(("get_mount_slot: wrong version of mount program!"
 		       " Got %ld, expected %d", info->version, NFS_MOUNT_VERS));
 		return NULL;
 	}
-	
+
 	if (!name)
 	{
 		DEBUG(("get_mount_slot: no mount name specified"));
 		return NULL;
 	}
-	
+
 	if (name[0] == '\0')
 	{
 	illegal:
 		DEBUG(("get_mount_slot: illegal name '%s'", name));
 		return NULL;
 	}
-	
+
 	if (name[0] == '.' && name[1] == '\0')
 		goto illegal;
-	
+
 	if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 		goto illegal;
-	
+
 	ni = mounted;
 	while (ni)
 	{
 		if (!strcmp (name, ni->name))
 			return ni;
-		
+
 		ni = ni->next;
 	}
-	
+
 	ni = kmalloc (sizeof (NFS_INDEX));
 	if (!ni)
 	{
 		DEBUG(("get_mount_slot: no memory for slot"));
 		return NULL;
 	}
-	
+
 	opt = kmalloc (sizeof (NFS_MOUNT_OPT));
 	if (!opt)
 	{
 		DEBUG (("get_mount_slot: no memory for mount options"));
-		
+
 		kfree (ni);
 		return NULL;
 	}
-	
+
 	strcpy (opt->server.hostname, info->hostname);
 	DEBUG (("get_mount_slot: mounting for server '%s'",
 	                                   opt->server.hostname));
@@ -207,7 +207,7 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 		if (info->wsize > 0)
 			opt->wsize = info->wsize;
 	}
-	
+
 	ni->name = kmalloc (strlen (name) + 1);
 	if (!ni->name)
 	{
@@ -215,9 +215,9 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 		kfree (ni);
 		return NULL;
 	}
-	
+
 	strcpy (ni->name, name);
-	
+
 	ni->opt = opt;
 	ni->dir = ROOT_INDEX;
 	ni->aux = NULL;
@@ -241,22 +241,22 @@ int
 release_mount_slot (NFS_INDEX *ni)
 {
 	NFS_INDEX *pn, **ppn;
-	
+
 	if (!(ni->flags & IS_MOUNT_DIR))
 	{
 		DEBUG(("release_mount_slot: is not a mounted dir"));
 		return EACCES;
 	}
-	
+
 	if (ni->link != 1)
 	{
 		DEBUG(("release_mount_slot: fs is still in use (%ld)!", ni->link));
 		return EACCES;
 	}
-	
+
 	kfree (ni->opt);
 	kfree (ni->name);
-	
+
 	/* now unlink mount index from chain of mounted directories
 	 */
 	ppn = &mounted;
@@ -266,12 +266,12 @@ release_mount_slot (NFS_INDEX *ni)
 		{
 			*ppn = pn->next;
 			kfree (ni);
-			
+
 			return 0;
 		}
 		ppn = &pn->next;
 	}
-	
+
 	return 0;
 }
 
@@ -290,7 +290,7 @@ init_cluster (INDEX_CLUSTER *icp, int number)
 		icp->index[i].flags = 0;
 		icp->index[i].name = NULL;
 	}
-	
+
 	icp->n_used = 0;
 	icp->next = NULL;
 	icp->cl_no = number;
@@ -311,13 +311,13 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 	long sval;
 	union { char c[5]; long l; } buf;
 	long (*cmp)(const char *, const char *);
-	
+
 	if (!dir)
 		DEBUG (("get_slot: PANIC -- no parent dir for '%s'", name));
-	
+
 	if (!stricmp (".", name) || !stricmp ("..", name))
 		DEBUG (("get_slot: PANIC -- getting slot for '%s'", name));
-	
+
 	/* search through all indices to find an already allocated index
 	 */
 	buf.l = 0;
@@ -325,13 +325,13 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 	buf.c[4] = 0;
 	strlwr (buf.c);
 	sval = buf.l;
-	
+
 	if (dom == 0)
 		/* set comparision function, kludge for tos-domain */
 		cmp = mystricmp;
 	else
 		cmp = strcmp;
-	
+
 	for (i = 0; i < MAX_CLUSTER - 1; i++)
 	{
 		icp = cluster[i];
@@ -343,7 +343,7 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 						return &icp->index[j];
 		}
 	}
-	
+
 	icp = cluster[MAX_CLUSTER - 1];
 	while (icp)
 	{
@@ -356,7 +356,7 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 		}
 		icp = icp->next;
 	}
-	
+
 	/* get a new slot for name, as no old one is in use */
 	ni = NULL;
 	for (i = 0; i < MAX_CLUSTER; i++)
@@ -366,7 +366,7 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 		{
 			/* here is no cluster, get one
 			 */
-			
+
 			if ((icp = cluster[MAX_CLUSTER - 1]))
 			{
 				/* if there is a linked list at the last
@@ -391,17 +391,17 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 				if (!icp)
 					/* out of memory */
 					return NULL;
-				
+
 				init_cluster (icp, i);
-				
+
 				/* we take an index */
 				icp->n_used += 1;
 				ni = &icp->index[0];
-				
+
 				goto init_slot;
 			}
 		}
-		
+
 		if (icp->n_used < CLUSTER_SIZE)
 		{
 			for (j = 0;  j < CLUSTER_SIZE;  j++)
@@ -413,11 +413,11 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 				}
 		}
 	}
-	
+
 	if (!ni)
 	{
 		/* all indices used and all clusters allocated
-		 * 
+		 *
 		 * try to look into a linked list beginning at the last cluster.
 		 * If nothing is found, allocate a new cluster.
 		 * NOTE: this is a not very efficient fallback method.
@@ -444,7 +444,7 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 			icp = icp->next;
 			n += 1;
 		}
-		
+
 		if (!ni)
 		{
 			/* still nothing found
@@ -456,7 +456,7 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 			if (!icp)
 				/* out of memory */
 				return NULL;
-			
+
 			init_cluster (icp, n);
 			*ipp = icp;
 			icp->n_used += 1;
@@ -464,18 +464,18 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 			goto init_slot;
 		}
 	}
-	
+
 	if (!ni)
 		return NULL;
-	
+
 init_slot:
-	
+
 	if (ni->name)
 	{
 		DEBUG (("get_slot: internal error, file has already a name"));
 		return NULL;
 	}
-	
+
 	ni->search_val = sval;
 	ni->aux = 0L;
 	ni->link = 0;
@@ -490,7 +490,7 @@ init_slot:
 	ni->dir = dir;
 	dir->link += 1;
 	ni->opt = dir->opt;
-	
+
 	/* init also the basic fields of the xattr struct, so there are some
 	 * useful values, i.e. when opening a new file....
 	 */
@@ -498,7 +498,7 @@ init_slot:
 	ni->attr.nblocks = 0;
 	ni->attr.dev = 0;
 	ni->stamp = 0;
-	
+
 	return ni;
 }
 
@@ -509,7 +509,7 @@ void
 free_cluster(INDEX_CLUSTER *icp)
 {
 	INDEX_CLUSTER **ipp, *cp;
-	
+
 	if (icp->cl_no >= MAX_CLUSTER)
 	{
 		cp = cluster[MAX_CLUSTER-1];
@@ -520,7 +520,7 @@ free_cluster(INDEX_CLUSTER *icp)
 			ipp = &cp->next;
 			cp = cp->next;
 		}
-		
+
 		if (!cp)
 		{
 			DEBUG(("free_cluster: internal inconsistency: cluster not found."));
@@ -533,9 +533,9 @@ free_cluster(INDEX_CLUSTER *icp)
 		if (icp->next)
 			icp->next->cl_no = icp->cl_no;
 	}
-	
+
 	*ipp = icp->next;
-	
+
 	kfree (icp);
 }
 
@@ -547,42 +547,42 @@ free_slot (NFS_INDEX *ni)
 {
 	INDEX_CLUSTER *icp;
 	NFS_INDEX *newi;
-	
+
 	while (ni)
 	{
 		if (ni->link > 0)
 			return;
-		
+
 		if (ni->link < 0)
 		{
 			DEBUG (("free_slot: internal error, '%s'->link < 0", ni->name));
 			return;
 		}
-		
+
 		newi = ni->dir;
 		if (newi)
 			newi->link -= 1;
-		
+
 		if (ni->name)
 		{
 			ni->name[0] = '$';
 			kfree (ni->name);
 		}
-		
+
 		ni->name = NULL;
 		if (ni->cluster)
 		{
 			ni->cluster->n_used--;
 			if (ni->cluster->n_used < 0)
 				DEBUG (("free_slot: internal inconsistency."));
-			
+
 			if (0 == ni->cluster->n_used)
 			{
 				icp = ni->cluster;
 				free_cluster (icp);
 			}
 		}
-		
+
 		ni = newi;
 	}
 }
@@ -602,7 +602,7 @@ remove_slot_by_name(NFS_INDEX *dir, char *name)
 	long sval;
 	char buf[5];
 	int (*cmp)(const char *, const char*);
-	
+
 	*(long *) buf = 0L;
 	strncpy (buf, name, 4);
 	buf[4] = 0;

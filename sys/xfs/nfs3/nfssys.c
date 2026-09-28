@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -72,7 +72,7 @@ static long	_cdecl nfs_dupcookie	(fcookie *dst, fcookie *src);
 FILESYS nfs_filesys =
 {
 	NULL,
-	
+
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -95,7 +95,7 @@ FILESYS nfs_filesys =
 /*	FS_REENTRANT_L2		| */
 	FS_EXT_2		|
 	FS_EXT_3		,
-	
+
 	nfs_root,
 	nfs_lookup, nfs_creat, nfs_getdev, nfs_getxattr,
 	nfs_chattr, nfs_chown, nfs_chmode,
@@ -105,16 +105,16 @@ FILESYS nfs_filesys =
 	nfs_symlink, nfs_readlink, nfs_hardlink, nfs_fscntl, nfs_dskchng,
 	nfs_release, nfs_dupcookie,
 	NULL, /* sync */
-	
+
 	/* FS_EXT_1 */
 	NULL, NULL,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	nfs_stat64,
-	
+
 	0, 0, 0, 0, 0,
 	NULL, NULL
 };
@@ -129,21 +129,21 @@ get_handle (NFS_INDEX *ni)
 		NFS_INDEX *newi;
 		fcookie fc1, fc2;
 		long r;
-		
+
 		TRACE (("get_handle: file '%s' without handle, looking up", (ni) ? ni->name : "root"));
-		
+
 		fc1.fs = &nfs_filesys;
 		fc1.dev = nfs_dev;
 		fc1.aux = 0;
 		fc1.index = (long)ni->dir;
-		
+
 		r = nfs_lookup (&fc1, ni->name, &fc2);
 		if (r != 0)
 		{
 			DEBUG(("get_handle: failed to get handle, -> ENOENT"));
 			return ENOENT;
 		}
-		
+
 		newi = (NFS_INDEX *) fc2.index;
 		if (newi != ni)
 		{
@@ -151,11 +151,11 @@ get_handle (NFS_INDEX *ni)
 			ni->attr = newi->attr;
 			ni->stamp = newi->stamp;
 		}
-		
+
 		nfs_release (&fc2);
 		ni->flags &= ~NO_HANDLE;
 	}
-	
+
 	return 0;
 }
 
@@ -176,20 +176,20 @@ static long _cdecl
 nfs_root (int drv, fcookie *fc)
 {
 	TRACE (("nfs_root"));
-	
+
 	if (drv != nfs_dev)
 	{
 		DEBUG (("nfs_root(%d) != %d -> ENXIO", drv, nfs_dev));
 		return ENXIO;
 	}
-	
+
 	root_cookie.dev = nfs_dev;
-	
+
 	fc->fs = &nfs_filesys;
 	fc->dev = nfs_dev;
 	fc->aux = 0;
 	fc->index = (long) ROOT_INDEX;
-	
+
 	TRACE (("nfs_root(%d) -> OK", drv));
 	return 0;
 }
@@ -208,13 +208,13 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 	diropargs dirargs;
 	diropres dirres;
 	xdrs x;
-	
-	
+
+
 	ni = (NFS_INDEX *) dir->index;
-	
+
 	/* get process domain */
 	dom = p_domain (-1);
-	
+
 # ifdef TOSDOMAIN_LOWERCASE
 	if (dom == 0)
 	{
@@ -226,16 +226,16 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 		name = lower_buf;
 	}
 # endif
-	
+
 	DEBUG (("nfs_lookup('%s' in dir '%s')", name, (ni) ? ni->name : "root"));
-	
+
 	if (!*name || !strcmp (name, "."))
 	{
 		nfs_dupcookie (fc, dir);
 		TRACE (("nfs_lookup(%s in itself) -> ok", name));
 		return 0;
 	}
-	
+
 	if (!strcmp (name, ".."))
 	{
 		if (ROOT_INDEX == ni)
@@ -256,7 +256,7 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return 0;
 		}
 	}
-	
+
 	/* if we are in the root dir, we have to search in our own data for a
 	 * dir with that name
 	 */
@@ -271,19 +271,19 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 				ni = ni->next;
 				continue;
 			}
-			
+
 			if (dom == 0)
 			{
 				if (!stricmp (name, ni->name))
 					break;
 			}
-			
+
 			if (!strcmp (name, ni->name))
 				break;
-			
+
 			ni = ni->next;
 		}
-		
+
 		if (ni)
 		{
 			ni->link += 1;
@@ -292,7 +292,7 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 			fc->dev = nfs_dev;
 			fc->aux = 0;
 			fc->index = (long) ni;
-			
+
 			TRACE (("nfs_lookup(%s) in root dir -> ok", name));
 			return 0;
 		}
@@ -302,12 +302,12 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return ENOENT;
 		}
 	}
-	
+
 	/* here, we have to ask the nfs server to look up the name
 	 */
-	 
+
 	ni = (NFS_INDEX *) dir->index;
-	
+
 # ifdef USE_CACHE
 	/* first, consult the lookup cache, if we already have looked this one
 	 * up, so that we dont have to ask the server again.
@@ -320,12 +320,12 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 		fc->dev = nfs_dev;
 		fc->aux = 0;
 		fc->index = (long) newi;
-		
+
 		DEBUG (("nfs_lookup('%s' in '%s') from cache", name, (ni)?ni->name:"root"));
 		return 0;
-	}		
+	}
 # endif
-	
+
 	/* check if the directory itself has already got a handle from the server
 	 * (see nfs_readdir)
 	 */
@@ -334,27 +334,27 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 		DEBUG (("nfs_lookup(%s): no handle for current dir, -> ENOTDIR", name));
 		return ENOTDIR;
 	}
-	
+
 	dirargs.dir = ni->handle;
 	dirargs.name = name;
-	
+
 	mreq = alloc_message (&m, req_buf, LOOKUPBUFSIZE, xdr_size_diropargs (&dirargs));
 	if (!mreq)
 	{
 		DEBUG (("nfs_lookup(%s): failed to alloc request msg, -> ENOENT", name));
 		return ENOENT;
 	}
-	
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_diropargs (&x, &dirargs);
-	
+
 	r = rpc_request (&ni->opt->server, mreq, NFSPROC_LOOKUP, &mrep);
 	if (r != 0)
 	{
 		DEBUG (("nfs_lookup(%s): couldn't contact server, -> ENOENT", name));
 		return ENOENT;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
 	if (!xdr_diropres (&x, &dirres))
 	{
@@ -362,34 +362,34 @@ nfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 		free_message (mrep);
 		return ENOENT;
 	}
-	
+
 	free_message (mrep);
-	
+
 	if (dirres.status != NFS_OK)
 	{
 		DEBUG (("nfs_lookup(%s) rpc->%d -> ENOENT", name, dirres.status));
 		return ENOENT;
 	}
-	
+
 	newi = get_slot (ni, name, dom);
 	if (!newi)
 		return EMFILE;
-	
+
 	newi->dir = ni;
 	newi->link += 1;
 	newi->handle = dirres.diropres_u.diropok.file;
 	fattr2xattr (&dirres.diropres_u.diropok.attributes, &newi->attr);
-	
+
 	newi->stamp = get_timestamp ();
 	fc->fs = &nfs_filesys;
 	fc->dev = nfs_dev;
 	fc->aux = 0;
 	fc->index = (long) newi;
-	
+
 # ifdef USE_CACHE
 	nfs_cache_add (ni, newi);
 # endif
-	
+
 	DEBUG (("nfs_lookup('%s' in '%s') -> OK", name, (ni)?ni->name:"root"));
 	return 0;
 }
@@ -405,21 +405,21 @@ do_create (long nfs_opcode, fcookie *dir, const char *name, unsigned mode, int a
 	diropres dirres;
 	xdrs x;
 	NFS_INDEX *newi, *ni = (NFS_INDEX *) dir->index;
-	
+
 	TRACE (("do_create(%s)", name));
-	
+
 	if (ni->opt->flags & OPT_RO)
 	{
 		DEBUG (("do_create: mount is read-only -> EACCES"));
 		return EACCES;
 	}
-	
+
 	if (get_handle (ni) != 0)
 	{
 		DEBUG (("do_creat(%s): no handle for current dir, -> ENOTDIR", name));
 		return ENOTDIR;
 	}
-	
+
 	createarg.where.dir = ni->handle;
 	createarg.where.name = name;
 	createarg.attributes.mode = nfs_mode (mode, attrib);
@@ -430,54 +430,54 @@ do_create (long nfs_opcode, fcookie *dir, const char *name, unsigned mode, int a
 	createarg.attributes.atime.useconds = 0;
 	createarg.attributes.mtime.seconds = createarg.attributes.atime.seconds;
 	createarg.attributes.mtime.useconds = 0;
-	
+
 	mreq = alloc_message (&m, req_buf, CREATEBUFSIZE, xdr_size_createargs(&createarg));
 	if (!mreq)
 	{
 		DEBUG (("do_create(%s): failed to alloc request msg, -> EACCES", name));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_createargs (&x, &createarg);
-	
+
 	r = rpc_request (&ni->opt->server, mreq, nfs_opcode, &mrep);
 	if (r != 0)
 	{
 		DEBUG (("do_create(%s): couldn't contact server, -> EACCES", name));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
-	
+
 	if (!xdr_diropres (&x, &dirres))
 	{
 		DEBUG (("do_create(%s): couldnt decode results, -> EACCES", name));
 		free_message (mrep);
 		return EACCES;
 	}
-	
+
 	free_message (mrep);
-	
+
 	if (dirres.status != NFS_OK)
 	{
 		DEBUG (("do_create(%s) -> EACCES", name));
 		return EACCES;
 	}
-	
+
 	newi = get_slot (ni, name, p_domain (-1));
 	if (!newi)
 	{
 		DEBUG (("do_create: no slot found -> EACCES"));
 		return EACCES;
 	}
-	
+
 	newi->dir = (NFS_INDEX *) dir->index;
 	newi->link += 1;
 	newi->handle = dirres.diropres_u.diropok.file;
 	fattr2xattr (&dirres.diropres_u.diropok.attributes, &newi->attr);
 	newi->stamp = get_timestamp ();
-	
+
 	if (fc)
 	{
 		fc->fs = &nfs_filesys;
@@ -485,7 +485,7 @@ do_create (long nfs_opcode, fcookie *dir, const char *name, unsigned mode, int a
 		fc->aux = 0;
 		fc->index = (long) newi;
 	}
-	
+
 	TRACE (("do_create(%s) -> OK", name));
 	return 0;
 }
@@ -494,16 +494,16 @@ static long _cdecl
 nfs_creat (fcookie *dir, const char *name, unsigned mode, int attrib, fcookie *fc)
 {
 	long r;
-	
+
 	TRACE (("nfs_creat"));
-	
+
 	if (ROOT_INDEX == (NFS_INDEX *) dir->index)
 	{
 		/* only mount dcntl() is allowed in the root dir */
 		DEBUG (("nfs_creat(%s): no creation in root dir -> EACCES", name));
 		return EACCES;
 	}
-	
+
 	r = do_create (NFSPROC_CREATE, dir, name, mode, attrib, fc);
 	return r;
 }
@@ -512,16 +512,16 @@ static long _cdecl
 nfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 {
 	long r;
-	
+
 	TRACE (("nfs_mkdir"));
-	
+
 	if (ROOT_INDEX == (NFS_INDEX *) dir->index)
 	{
 		/* only mount dcntl() is allowed in the root dir */
 		DEBUG (("nfs_mkdir(%s): no creation in root dir -> EACCES", name));
 		return EACCES;
 	}
-	
+
 	r = do_create (NFSPROC_MKDIR, dir, name, mode, FA_DIR, NULL);
 	return r;
 }
@@ -530,13 +530,13 @@ static DEVDRV * _cdecl
 nfs_getdev (fcookie *fc, long *devsp)
 {
 	TRACE (("nfs_getdev"));
-	
+
 	if (nfs_dev != fc->dev)
 	{
 		*devsp = EBADF;
 		return NULL;
 	}
-	
+
 	*devsp = 0;
 	return &nfs_device;
 }
@@ -550,9 +550,9 @@ nfs_getxattr (fcookie *fc, XATTR *xattr)
 	MESSAGE *mreq, *mrep, m;
 	attrstat stat_res;
 	xdrs x;
-	
+
 	DEBUG (("nfs_getxattr(%s)", (ni) ? ni->name : "root"));
-	
+
 	if (ROOT_INDEX == ni)
 	{
 		/* attributes for the root dir */
@@ -562,17 +562,17 @@ nfs_getxattr (fcookie *fc, XATTR *xattr)
 			xattr->index = (long) ROOT_INDEX;
 			xattr->dev = fc->dev;
 		}
-		
+
 		TRACE (("nfs_getxattr(root) -> mode 0%o, ok", root_attr.mode));
 		return E_OK;
 	}
-	
+
 	if (get_handle (ni) != 0)
 	{
 		DEBUG (("nfs_getxattr(%s): failed to get handle, -> ENOENT", ni->name));
 		return ENOENT;
 	}
-	
+
 	/* look if we have the right attributes already cached, that means
 	 * that the lifetime of the attributes in the index struct is not
 	 * exceeded. If so, return the cached values, but only if the mount
@@ -590,23 +590,23 @@ nfs_getxattr (fcookie *fc, XATTR *xattr)
 # if 0   /* BUG: which device is this file on???? */
 				xattr->index = (long) ni;
 # endif
-				
+
 				if (ni->opt->flags & OPT_RO)
 				{
 					xattr->mode &= ~(S_IWOTH|S_IWGRP|S_IWUSR);
 					xattr->attr |= FA_RDONLY;
 				}
-				
+
 				if ((xattr->mode & S_IFMT) == S_IFLNK)
 					/* fix for buffer size when reading symlinks */
 					++xattr->size;
 			}
-			
+
 			DEBUG (("nfs_getxattr(%s): from cache -> mode 0%o, ok", ni->name, ni->attr.mode));
 			return E_OK;
 		}
 	}
-	
+
 	mreq = alloc_message (&m, req_buf, XATTRBUFSIZE, xdr_size_nfsfh (&ni->handle));
 	if (!mreq)
 	{
@@ -615,7 +615,7 @@ nfs_getxattr (fcookie *fc, XATTR *xattr)
 	}
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_nfsfh (&x, &ni->handle);
-	
+
 	r = rpc_request (&ni->opt->server, mreq, NFSPROC_GETATTR, &mrep);
 	if (r != 0)
 	{
@@ -637,7 +637,7 @@ nfs_getxattr (fcookie *fc, XATTR *xattr)
 	}
 	fattr2xattr (&stat_res.attrstat_u.attributes, &ni->attr);
 	ni->stamp = get_timestamp ();
-	
+
 	if (xattr)
 	{
 		*xattr = ni->attr;
@@ -645,26 +645,26 @@ nfs_getxattr (fcookie *fc, XATTR *xattr)
 # if 0 /* BUG: which device is this object on???? */
 		xattr->index = (long) ni;
 # endif
-		
+
 		if (ni->opt->flags & OPT_RO)
 		{
 			xattr->mode &= ~(S_IWOTH|S_IWGRP|S_IWUSR);
 			xattr->attr |= FA_RDONLY;
 		}
-		
+
 		if (ni->opt->flags & OPT_NOSUID)
 		{
 			/* mount with no set uid bit */
 			xattr->mode &= ~S_ISUID;
 		}
-		
+
 		if ((xattr->mode & S_IFMT) == S_IFLNK)
 		{
 			/* fix for buffer size when reading symlinks */
 			++xattr->size;
 		}
 	}
-	
+
 	DEBUG (("nfs_getxattr(%s) -> mode 0%o, ok", ni->name, ni->attr.mode));
 	return E_OK;
 }
@@ -675,10 +675,10 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 	NFS_INDEX *ni = (NFS_INDEX *) fc->index;
 	XATTR xattr;
 	long r;
-	
+
 	(void) ni;		/* suppress warning */
 	DEBUG (("nfs_getxattr(%s)", (ni) ? ni->name : "root"));
-	
+
 	r = nfs_getxattr (fc, &xattr);
 	if (!r)
 	{
@@ -689,29 +689,29 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 		stat->uid	= xattr.uid;
 		stat->gid	= xattr.gid;
 		stat->rdev	= xattr.rdev;
-		
+
 		stat->atime.high_time	= 0;
 		stat->atime.time	= XATTRL_TD(xattr,a);
 		stat->atime.nanoseconds	= 0;
-		
+
 		stat->mtime.high_time	= 0;
 		SHORT2LONG(xattr.mtime, xattr.mdate, stat->mtime.time);
 		stat->mtime.nanoseconds	= 0;
-		
+
 		stat->ctime.high_time	= 0;
 		SHORT2LONG(xattr.ctime, xattr.cdate, stat->ctime.time);
 		stat->ctime.nanoseconds	= 0;
-		
+
 		stat->size	= xattr.size;
 		stat->blocks	= (xattr.nblocks * xattr.blksize) >> 9;
 		stat->blksize	= xattr.blksize;
-		
+
 		stat->flags	= 0;
 		stat->gen	= 0;
-		
+
 		bzero (stat->res, sizeof (stat->res));
 	}
-	
+
 	return r;
 }
 
@@ -725,52 +725,52 @@ do_sattr (fcookie *fc, sattr *ap)
 	sattrargs s_arg;
 	attrstat stat_res;
 	xdrs x;
-	
+
 	TRACE (("do_sattr(%s)", ni->name));
-	
+
 	if (ni->opt->flags & OPT_RO)
 	{
 		DEBUG (("do_sattr: mount is read-only -> EACCES"));
 		return EACCES;
 	}
-	
+
 	if (get_handle (ni) != 0)
 	{
 		DEBUG (("do_sattr(%s): failed to get handle, -> ENOENT", ni->name));
 		return ENOENT;
 	}
-	
+
 	s_arg.file = ni->handle;
 	s_arg.attributes = *ap;
-	
+
 	mreq = alloc_message (&m, req_buf, SATTRBUFSIZE, xdr_size_sattrargs (&s_arg));
 	if (!mreq)
 	{
 		DEBUG (("do_sattr(%s): failed to allocate request message", ni->name));
 		return ENOENT;
 	}
-	
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_sattrargs (&x, &s_arg);
-	
+
 	r = rpc_request (&ni->opt->server, mreq, NFSPROC_SETATTR, &mrep);
 	if (r != 0)
 	{
 		DEBUG (("do_sattr(%s): couldn't contact server, -> EACCES", ni->name));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
 	if (!xdr_attrstat (&x, &stat_res))
 	{
 		free_message (mrep);
-		
+
 		DEBUG (("do_sattr(%s): couldnt decode results, -> EACCES", ni->name));
 		return EACCES;
 	}
-	
+
 	free_message (mrep);
-	
+
 	if (stat_res.status != NFS_OK)
 	{
 		DEBUG (("do_sattr(%s) -> EACCES", ni->name));
@@ -778,7 +778,7 @@ do_sattr (fcookie *fc, sattr *ap)
 	}
 	fattr2xattr (&stat_res.attrstat_u.attributes, &ni->attr);
 	ni->stamp = get_timestamp ();
-	
+
 	TRACE (("do_sattr(%s) -> OK", ni->name));
 	return E_OK;
 }
@@ -790,7 +790,7 @@ nfs_chattr (fcookie *fc, int attrib)
 	sattr attr;
 	long r;
 	int wperm;
-	
+
 	TRACE (("nfs_chattr(%d)", attrib));
 	if (ROOT_INDEX == ni)
 	{
@@ -798,20 +798,20 @@ nfs_chattr (fcookie *fc, int attrib)
 		root_attr.attr = attrib;
 		if (attrib & FA_RDONLY)
 			root_attr.mode &= ~(S_IWOTH|S_IWGRP|S_IWUSR);
-		
+
 		return 0;
 	}
-	
+
 	/* get current attributes */
 	r = nfs_getxattr (fc, NULL);
 	if (r != 0)
 		return r;
-	
+
 	wperm = ((attrib & FA_RDONLY) &&
 			(ni->attr.mode & (S_IWOTH|S_IWGRP|S_IWUSR)))
 		|| (!(attrib & FA_RDONLY) &&
 			!(ni->attr.mode & (S_IWOTH|S_IWGRP|S_IWUSR)));
-	
+
 	if (wperm)
 	{
 		/* set write permissions correctly */
@@ -819,7 +819,7 @@ nfs_chattr (fcookie *fc, int attrib)
 		attr.mode |= S_IWOTH|S_IWGRP|S_IWUSR;
 		if (attrib & FA_RDONLY)
 			attr.mode &= ~(S_IWOTH|S_IWGRP|S_IWUSR);
-		
+
 		attr.uid = (ulong) -1L;
 		attr.gid = (ulong) -1L;
 		attr.size = (ulong) -1L;
@@ -827,10 +827,10 @@ nfs_chattr (fcookie *fc, int attrib)
 		attr.atime.useconds = (ulong) -1L;
 		attr.mtime.seconds = (ulong) -1L;
 		attr.mtime.useconds = (ulong) -1L;
-		
+
 		return do_sattr (fc, &attr);
 	}
-	
+
 	/* BUG: we should do some time calculations on which the archive
 	 *      attribute setting could be based. Also, the system and hidden
 	 *      attribute should be maintained somehow. ANY IDEAS? we could
@@ -846,19 +846,19 @@ nfs_chown (fcookie *fc, int uid, int gid)
 {
 	NFS_INDEX *ni = (NFS_INDEX *) fc->index;
 	sattr attr;
-	
+
 	TRACE (("nfs_chown"));
-	
+
 	if (ROOT_INDEX == ni)
 	{
 		TRACE (("nfs_chown on root dir"));
-		
+
 		if (uid != -1) root_attr.uid = uid;
 		if (gid != -1) root_attr.gid = gid;
-		
+
 		return 0;
 	}
-	
+
 	attr.uid = uid;
 	attr.gid = gid;
 	attr.mode = (ulong) -1L;
@@ -867,7 +867,7 @@ nfs_chown (fcookie *fc, int uid, int gid)
 	attr.atime.useconds = (ulong) -1L;
 	attr.mtime.seconds = (ulong) -1L;
 	attr.mtime.useconds = (ulong) -1L;
-	
+
 	return do_sattr (fc, &attr);
 }
 
@@ -876,19 +876,19 @@ nfs_chmode (fcookie *fc, unsigned mode)
 {
 	NFS_INDEX *ni = (NFS_INDEX *) fc->index;
 	sattr attr;
-	
+
 	TRACE (("nfs_chmode"));
-	
+
 	if (ROOT_INDEX == ni)
 	{
 		TRACE (("nfs_chmode on root dir"));
-		
+
 		/* make sure to preserve the file type
 		 */
 		root_attr.mode = (root_attr.mode & S_IFMT) | (mode & ~S_IFMT);
 		return 0;
 	}
-	
+
 	attr.uid = (ulong) -1;
 	attr.gid = (ulong) -1;
 	attr.mode = mode;
@@ -897,7 +897,7 @@ nfs_chmode (fcookie *fc, unsigned mode)
 	attr.atime.useconds = (ulong) -1L;
 	attr.mtime.seconds = (ulong) -1L;
 	attr.mtime.useconds = (ulong) -1L;
-	
+
 	return do_sattr (fc, &attr);
 }
 
@@ -911,15 +911,15 @@ do_remove (long nfs_opcode, fcookie *dir, const char *name)
 	nfsstat stat_res;
 	xdrs x;
 	NFS_INDEX *ni = (NFS_INDEX *) dir->index;
-	
+
 	DEBUG (("do_remove(%s)", name));
-	
+
 	if (ni->opt->flags & OPT_RO)
 	{
 		DEBUG (("do_remove: mount is read-only ->EACCES"));
 		return EACCES;
 	}
-	
+
 	if (get_handle (ni) != 0)
 	{
 		DEBUG (("do_remove(%s): failed to get handle, -> ENOTDIR", name));
@@ -941,7 +941,7 @@ do_remove (long nfs_opcode, fcookie *dir, const char *name)
 		DEBUG (("do_remove(%s): couldn't contact server, -> EACCES", name));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
 	if (!xdr_nfsstat (&x, &stat_res))
 	{
@@ -955,11 +955,11 @@ do_remove (long nfs_opcode, fcookie *dir, const char *name)
 		DEBUG (("do_remove(%s, %ld) -> EACCES", name, nfs_opcode));
 		return EACCES;
 	}
-	
+
 # ifdef USE_CACHE
 	nfs_cache_removebyname (ni, name);
 # endif
-	
+
 	DEBUG (("do_remove(%s, %ld) -> OK", name, nfs_opcode));
 	return 0;
 }
@@ -999,31 +999,31 @@ nfs_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 {
 	NFS_INDEX *ni, *oni, *reli;
 	int len, copy_name;
-	
+
 	(void) reli;		/* suppress warning */
 
 	if (size < 0)
 		return EBADARG;
 	if (size == 0)
 		return 0;
-	
+
 	/* make a linked list of nfs_index using the aux field from the
 	 * top directory to the searched dir
 	 */
 	oni = (NFS_INDEX *) dir->index;
 	reli = (NFS_INDEX *) relto->index;
 	copy_name = 0;
-	
+
 	if (!oni)
 		return ENOTDIR;
-	
+
 	TRACE (("nfs_getname: relto = '%s', dir = '%s'",
 	           (reli==ROOT_INDEX)?"root":reli->name, oni->name));
-	
+
 	while (oni != (NFS_INDEX*)relto->index)
 	{
 		ni = oni->dir;
-		
+
 		/* stop if root dir reached
 		 */
 		if (ni == ROOT_INDEX)
@@ -1038,11 +1038,11 @@ nfs_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 				break;
 			}
 		}
-		
+
 		ni->aux = oni;
 		oni= ni;
 	}
-	
+
 	/* now fill pathname with up to size characters by going down the
 	 * directory structure build up above
 	 */
@@ -1108,7 +1108,7 @@ nfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 		DEBUG (("nfs_rename(%s): no handle for new dir, -> ENOTDIR", oldname));
 		return ENOTDIR;
 	}
-	
+
 	if (get_handle (oldi) != 0)
 	{
 		DEBUG (("nfs_rename(%s): no handle for old dir, -> ENOTDIR", oldname));
@@ -1119,43 +1119,43 @@ nfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	renarg.from.name = oldname;
 	renarg.to.dir = newi->handle;
 	renarg.to.name = newname;
-	
+
 	mreq = alloc_message (&m, req_buf, RENBUFSIZE, xdr_size_renameargs (&renarg));
 	if (!mreq)
 	{
 		DEBUG (("nfs_rename(%s): failed to allocate buffer -> EACCES", oldname));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_renameargs (&x, &renarg);
-	
+
 	r = rpc_request (&oldi->opt->server, mreq, NFSPROC_RENAME, &mrep);
 	if (r != 0)
 	{
 		DEBUG (("nfs_rename(%s): couldn't contact server, -> EACCES", oldname));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
-	
+
 	if (!xdr_nfsstat (&x, &stat_res))
 	{
 		DEBUG (("nfs_rename(%s): couldnt decode results, -> EACCES", oldname));
 		free_message (mrep);
 		return EACCES;
 	}
-	
+
 	free_message (mrep);
-	
+
 	if (stat_res != NFS_OK)
 	{
 		DEBUG (("nfs_rename(%s) -> EACCES", oldname));
 		return EACCES;
 	}
-	
+
 	nfs_cache_removebyname (oldi, oldname);
-	
+
 	TRACE (("nfs_rename('%s' -> '%s') -> OK", oldname, newname));
 	return 0;
 }
@@ -1187,7 +1187,7 @@ nfs_opendir (DIR *dirh, int flags)
 	union { char *c; NETFS_STUFF *nf; long *l; } stuff; stuff.c = dirh->fsstuff;
 	union { long *l; void *v; } ptr;
 	NFS_INDEX *ni = (NFS_INDEX *) dirh->fc.index;
-	
+
 	if (ROOT_INDEX != ni)
 	{
 		if (get_handle(ni) != 0)
@@ -1195,7 +1195,7 @@ nfs_opendir (DIR *dirh, int flags)
 			DEBUG (("nfs_opendir(%s): no handle for dir, -> ENOTDIR", ni->name));
 			return ENOTDIR;
 		}
-		
+
 		stuff.nf->buffer = kmalloc (MAX_READDIR_LEN + ADD_BUF_LEN);
 		if (!stuff.nf->buffer)
 		{
@@ -1205,13 +1205,13 @@ nfs_opendir (DIR *dirh, int flags)
 	}
 	else
 		stuff.nf->buffer = NULL;
-	
+
 	stuff.nf->curr_entry = NULL;
 	ptr.v = &stuff.nf->lastcookie[0];
 	*ptr.l = 0L;
 	stuff.nf->eof = 0;
 	dirh->index = 0;
-	
+
 	TRACE (("nfs_opendir(%s) -> ok", (ni) ? ni->name : "root"));
 	return 0;
 }
@@ -1221,7 +1221,7 @@ nfs_rewinddir (DIR *dirh)
 {
 	union { char *c; NETFS_STUFF *nf; long *l; } stuff; stuff.c = dirh->fsstuff;
 	union { long *l; void *v; } ptr;
-	
+
 	if (ROOT_INDEX != (NFS_INDEX *) dirh->fc.index)
 	{
 		stuff.nf->curr_entry = NULL;
@@ -1229,9 +1229,9 @@ nfs_rewinddir (DIR *dirh)
 		*ptr.l = 0L;
 		stuff.nf->eof = 0;
 	}
-	
+
 	dirh->index = 0;
-	
+
 	TRACE (("nfs_rewinddir -> ok"));
 	return 0;
 }
@@ -1240,13 +1240,13 @@ static long _cdecl
 nfs_closedir (DIR *dirh)
 {
 	NETFS_STUFF *stuff = (NETFS_STUFF *) &dirh->fsstuff;
-	
+
 	if (ROOT_INDEX != (NFS_INDEX *) dirh->fc.index)
 	{
 		if (stuff->buffer)
 			kfree (stuff->buffer);
 	}
-	
+
 	TRACE (("nfs_closedir -> ok"));
 	return 0;
 }
@@ -1269,7 +1269,7 @@ nfs_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	readdirres read_res;
 	xdrs x;
 	NETFS_STUFF *stuff = (NETFS_STUFF *) dirh->fsstuff;
-	
+
 	/* we know that ni has a handle, as we did get one in
 	 * or before nfs_opendir
 	 */
@@ -1288,7 +1288,7 @@ nfs_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			name += sizeof(long);
 		}
 
-		/* Skip the given amount of used indices. Especially skip unused 
+		/* Skip the given amount of used indices. Especially skip unused
 		 * indices without counting them.
 		 */
 		ni = mounted;
@@ -1467,7 +1467,7 @@ static long _cdecl
 nfs_pathconf (fcookie *dir, int which)
 {
 	TRACE (("nfs_pathconf(%d)", which));
-	
+
 	switch (which)
 	{
 		case DP_INQUIRE:	return DP_VOLNAMEMAX;
@@ -1503,7 +1503,7 @@ nfs_pathconf (fcookie *dir, int which)
 					);
 		case DP_VOLNAMEMAX:	return MAX_LABEL;
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -1516,34 +1516,34 @@ nfs_dfree (fcookie *dir, long *buf)
 	xdrs x;
 	statfsres stat_res;
 	NFS_INDEX *ni = (NFS_INDEX*)dir->index;
-	
+
 	TRACE (("nfs_dfree"));
 	if (ROOT_INDEX == ni)
 	{
 		TRACE (("nfs_dfree(root)"));
-		
+
 		/* these are really silly values; who knows better ones? */
 		buf[0] = 0;   /* number of free clusters */
 		buf[1] = 0;   /* total number of clusters */
 		buf[2] = 0;   /* bytes per sector */
 		buf[3] = 0;   /* sectors per cluster */
-		
+
 		return E_OK;
 	}
-	
+
 	if (get_handle (ni) != 0)
 	{
 		DEBUG (("nfs_dfree: failed to get handle, -> ENOTDIR"));
 		return ENOTDIR;
 	}
-	
+
 	mreq = alloc_message(&m, req_buf, DFREEBUFSIZE, xdr_size_nfsfh(&ni->handle));
 	if (!mreq)
 	{
 		DEBUG(("nfs_dfree: failed to allocate buffer, -> ENOTDIR"));
 		return ENOTDIR;
 	}
-	
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_nfsfh (&x, &ni->handle);
 	r = rpc_request (&ni->opt->server, mreq, NFSPROC_STATFS, &mrep);
@@ -1552,29 +1552,29 @@ nfs_dfree (fcookie *dir, long *buf)
 		DEBUG (("nfs_dfree: couldn't contact server, -> ENOTDIR"));
 		return ENOTDIR;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
 	if (!xdr_statfsres (&x, &stat_res))
 	{
 		free_message (mrep);
-		
+
 		DEBUG (("nfs_dfree: couldnt decode results, -> ENOTDIR"));
 		return ENOTDIR;
 	}
-	
+
 	free_message (mrep);
-	
+
 	if (stat_res.status != NFS_OK)
 	{
 		DEBUG (("nfs_dfree -> ENOTDIR"));
 		return ENOTDIR;
 	}
-	
+
 	buf[0] = stat_res.statfsres_u.info.bavail;
 	buf[1] = stat_res.statfsres_u.info.blocks;
 	buf[2] = stat_res.statfsres_u.info.bsize;
 	buf[3] = 1;
-	
+
 	return E_OK;
 }
 
@@ -1584,18 +1584,18 @@ static long _cdecl
 nfs_writelabel (fcookie *dir, const char *name)
 {
 	TRACE (("nfs_writelabel"));
-	
+
 	if (ROOT_INDEX == (NFS_INDEX *) dir->index)
 	{
 		if (strlen (name) > MAX_LABEL)
 			return EBADARG;
-		
+
 		strncpy (nfs_label, name, MAX_LABEL);
 		nfs_label[MAX_LABEL] = '\0';
-		
+
 		return E_OK;
 	}
-	
+
 	return EACCES;
 }
 
@@ -1603,18 +1603,18 @@ static long _cdecl
 nfs_readlabel (fcookie *dir, char *name, int namelen)
 {
 	TRACE (("nfs_readlabel"));
-	
+
 	if (ROOT_INDEX == (NFS_INDEX *) dir->index)
 	{
 		if (namelen <= (strlen (nfs_label) + 1))
 			return EBADARG;
-		
+
 		strncpy (name, nfs_label, namelen - 1);
 		name[namelen - 1] = '\0';
-		
+
 		return E_OK;
 	}
-	
+
 	return EACCES;
 }
 
@@ -1628,27 +1628,27 @@ nfs_symlink (fcookie *dir, const char *name, const char *to)
 	nfsstat stat_res;
 	xdrs x;
 	NFS_INDEX *ni = (NFS_INDEX *) dir->index;
-	
+
 	TRACE (("nfs_symlink(%s -> %s)", name, to));
-	
+
 	if (ROOT_INDEX == ni)
 	{
 		DEBUG (("nfs_symlink not allowed in root dir"));
 		return EACCES;
 	}
-	
+
 	if (ni->opt->flags & OPT_RO)
 	{
 		DEBUG (("nfs_symlink: mount is read-only -> EACCES"));
 		return EACCES;
 	}
-	
+
 	if (get_handle (ni) != 0)
 	{
 		DEBUG (("nfs_symlink: failed to get handle, -> ENOTDIR"));
 		return ENOTDIR;
 	}
-	
+
 	symarg.from.dir = ni->handle;
 	symarg.from.name = name;
 	symarg.to = to;
@@ -1660,41 +1660,41 @@ nfs_symlink (fcookie *dir, const char *name, const char *to)
 	symarg.attributes.atime.useconds = 0;
 	symarg.attributes.mtime.seconds = symarg.attributes.atime.seconds;
 	symarg.attributes.mtime.useconds = 0;
-	
+
 	mreq = alloc_message (&m, req_buf, SYMLNBUFSIZE, xdr_size_symlinkargs (&symarg));
 	if (!mreq)
 	{
 		DEBUG (("nfs_symlink: failed to allocate buffer, -> EACCES"));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mreq->data, mreq->data_len, XDR_ENCODE, NULL);
 	xdr_symlinkargs (&x, &symarg);
-	
+
 	r = rpc_request (&ni->opt->server, mreq, NFSPROC_SYMLINK, &mrep);
 	if (r != 0)
 	{
 		DEBUG (("nfs_symlink: couldn't contact server, -> EACCES"));
 		return EACCES;
 	}
-	
+
 	xdr_init (&x, mrep->data, mrep->data_len, XDR_DECODE, NULL);
-	
+
 	if (!xdr_nfsstat (&x, &stat_res))
 	{
 		DEBUG (("nfs_symlink: couldnt decode results, -> EACCES"));
 		free_message (mrep);
 		return EACCES;
 	}
-	
+
 	free_message (mrep);
-	
+
 	if (stat_res != NFS_OK)
 	{
 		DEBUG (("nfs_symlink -> EACCES"));
 		return EACCES;
 	}
-	
+
 	TRACE (("nfs_symlink -> OK"));
 	return 0;
 }
@@ -1850,7 +1850,7 @@ static long _cdecl
 nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
 	TRACE (("nfs_fscntl"));
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -1861,7 +1861,7 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		case FS_INFO:
 		{
 			struct fs_info *info;
-			
+
 			info = (struct fs_info *) arg;
 			if (info)
 			{
@@ -1870,14 +1870,14 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				info->type = FS_NFS2;
 				strcpy (info->type_asc, "network filesystem");
 			}
-			
+
 			return E_OK;
 		}
 # if 0
 		case FS_USAGE:
 		{
 			struct fs_usage *usage;
-			
+
 			usage = (struct fs_usage *) arg;
 			if (usage)
 			{
@@ -1887,7 +1887,7 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				usage->inodes = FS_UNLIMITED;
 				usage->free_inodes = FS_UNLIMITED;
 			}
-			
+
 			return E_OK;
 		}
 # endif
@@ -1895,34 +1895,34 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		{
 			NFS_MOUNT_INFO *info = (NFS_MOUNT_INFO*)arg;
 			NFS_INDEX *ni;
-			
+
 			if (!arg)
 				return EACCES;
-			
+
 			if (ROOT_INDEX != (NFS_INDEX *) dir->index)
 			{
 				DEBUG (("nfs_fscntl: mount only allowed in root dir"));
 				return EACCES;
 			}
-			
+
 			ni = get_mount_slot (name, info);
 			if (!ni)
 			{
 				DEBUG (("nfs_fscntl: failure"));
 				return EACCES;
 			}
-			
+
 			if (ni->link > 0)
 			{
 				/* this file was mounted before */
-				
+
 				DEBUG (("nfs_fscntl: no remount allowed, -> EACCES"));
 				return EACCES;
 			}
-			
+
 			ni->link = 1;
 			ni->handle = info->handle;
-			
+
 			DEBUG (("nfs_fscntl: mounting dir '%s'", ni->name));
 			return 0;
 		}
@@ -1931,23 +1931,23 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			fcookie fc;
 			NFS_INDEX *ni;
 			long r;
-			
+
 			r = nfs_lookup (&root_cookie, name, &fc);
 			if (r)
 			{
 				DEBUG (("nfs_fscntl: unmount on not mounted directory, -> ENOENT"));
 				return ENOENT;
 			}
-			
+
 			ni = (NFS_INDEX *) fc.index;
 			nfs_release (&fc);
-			
+
 			if (!(ni->flags & IS_MOUNT_DIR))
 			{
 				DEBUG (("nfs_fscntl: unmount failed, not a mounted directory"));
 				return EACCES;
 			}
-			
+
 			DEBUG (("nfs_fscntl: unmounting '%s'", ni->name));
 # ifdef USE_CACHE
 			/* make sure that the cache is coherent */
@@ -1957,7 +1957,7 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			r = release_mount_slot (ni);
 			if (r != 0)
 				DEBUG (("nfs_fscntl: unmount fialed with %ld", r));
-			
+
 			return r;
 		}
 		case NFS_MNTDUMP:
@@ -1971,7 +1971,7 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return ENOSYS;
 		}
 	}
-	
+
 	DEBUG (("nfs_fcntl -> ENOSYS"));
 	return ENOSYS;
 }
@@ -1987,19 +1987,19 @@ static long _cdecl
 nfs_release (fcookie *fc)
 {
 	NFS_INDEX *ni = (NFS_INDEX*)fc->index;
-	
+
 	if (ni != ROOT_INDEX)
 	{
 		ni->link -= 1;
-		
+
 		if (ni->link < 0)
 			/* this was invalid! */
 			return EBADF;
-		
+
 		if (0 == ni->link)
 			free_slot (ni);
 	}
-	
+
 	return 0;
 }
 
@@ -2007,13 +2007,13 @@ static long _cdecl
 nfs_dupcookie (fcookie *dest, fcookie *src)
 {
 	NFS_INDEX *ni = (NFS_INDEX *) src->index;
-	
+
 	*dest = *src;
 	if (ni != ROOT_INDEX)
 	{
 		/* index is in use once more */
 		ni->link += 1;
 	}
-	
+
 	return 0;
 }

@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -38,7 +38,7 @@ struct message
 # define FREE_MSG	0x08000000
 # define FROM_LIST	0x01000000
 # define DATA_FLAGS	(FREE_BUFFER|FREE_DATA|FREE_HEADER)
-	
+
 	/* This is used only internally */
 	MESSAGE	*next;		/* internal link */
 	ulong	xid;		/* transaction id */

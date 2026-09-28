@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -37,8 +37,8 @@
 #define DEFAULT_ACTIMEO  6000   /* 30 seconds */
 
 
-#define DEFAULT_RSIZE 4096 
-#define DEFAULT_WSIZE 4096 
+#define DEFAULT_RSIZE 4096
+#define DEFAULT_WSIZE 4096
 
 
 
@@ -69,7 +69,7 @@
 
 
 /* configuration values for the resend code */
-#define DEFAULT_RETRANS  5 
+#define DEFAULT_RETRANS  5
 #define DEFAULT_TIMEO    400      /* 2 sec in ticks */
 
 
