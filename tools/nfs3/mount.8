@@ -1,0 +1,130 @@
+.TH MOUNT_NFS3 8 "FreeMiNT" "System Manager's Manual"
+.SH NAME
+mount_nfs3 \- mount an NFS version 3 file system
+.SH SYNOPSIS
+.B mount_nfs3
+[
+.B \-rvnf
+] [
+.B \-o
+.I options
+]
+.I host:/remotedir localdir
+.br
+.B mount_nfs3 \-u
+[
+.B \-vn
+]
+.I localdir
+.SH DESCRIPTION
+.B mount_nfs3
+attaches the directory
+.I remotedir
+exported by
+.I host
+to the local directory
+.IR localdir ,
+using version 3 of the NFS protocol (RFC 1813).
+.PP
+It asks the server's
+.BR rpc.mountd (8)
+over version 3 of the MOUNT protocol for a file handle and passes that
+handle, together with the mount options, to the
+.B nfs3.xfs
+kernel driver.
+.I localdir
+must be below
+.BR u:\enfs3 ,
+the directory the driver installs itself into; it is created by the
+driver and need not exist beforehand.
+.PP
+For NFS version 2 servers use
+.BR mount_nfs (8)
+instead. The two protocols and the two drivers are independent and may
+be used at the same time.
+.SH OPTIONS
+.TP
+.B \-r
+Mount the file system read only. Same as
+.BR "\-o ro" .
+.TP
+.BI \-o " options"
+A comma separated list of options, see
+.B "MOUNT OPTIONS"
+below.
+.TP
+.B \-v
+Verbose. Also prints the size of the file handle the server returned and
+the authentication flavours it accepts.
+.TP
+.B \-n
+Do not update
+.BR \eetc\emtab .
+.TP
+.B \-f
+Fake the mount: only update
+.BR \eetc\emtab .
+.TP
+.B \-u
+Unmount
+.I localdir
+instead of mounting.
+.SH MOUNT OPTIONS
+.TP
+.BR ro ", " rw
+Mount read only or read write. The default is
+.BR rw .
+.TP
+.BR suid ", " nosuid
+Honour or ignore the set-uid bit on files of this mount.
+.TP
+.BI rsize= n
+.TP
+.BI wsize= n
+Preferred read and write transfer size in bytes. The driver asks the
+server for its limits with FSINFO3 at mount time and reduces these
+values if the server cannot handle them. The default is 4096.
+.TP
+.BI timeo= n
+Initial RPC timeout in tenths of a second. The default is 2 seconds.
+.TP
+.BI retrans= n
+Number of retransmissions before the request fails. The default is 5.
+.TP
+.BR tcp ", " udp
+Pin the transport, also spelled
+.B proto=tcp
+and
+.BR proto=udp .
+Given neither, TCP is tried first and UDP is used for that mount if the
+connection fails. TCP is preferred because a current Linux nfsd serves it
+without extra configuration, while UDP has to be switched on, and because
+a reply is not split into IP fragments, which makes it far more robust on
+a lossy link.
+.TP
+.BI port= n
+Port the NFS service listens on. The default is 2049.
+.TP
+.BI actimeo= n
+How long attributes may be cached, in tenths of a second. The default is
+30 seconds.
+.SH EXAMPLES
+.nf
+mount_nfs3 fileserver:/srv/atari u:\enfs3\eatari
+mount_nfs3 \-o ro,rsize=8192 fileserver:/pub u:\enfs3\epub
+mount_nfs3 \-u u:\enfs3\eatari
+.fi
+.SH FILES
+.TP
+.B \eetc\emtab
+table of mounted file systems
+.SH SEE ALSO
+.BR mount_nfs (8),
+.BR mtab (5),
+.BR exports (5),
+RFC 1813
+.SH BUGS
+Only AUTH_UNIX authentication is supported.
+.PP
+Files beyond 2 GB cannot be read or written, because MiNT's file
+position is a signed 32 bit value.

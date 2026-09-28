@@ -1,0 +1,24 @@
+#
+# debug flags
+#
+# -DNFS_DEBUG		include debugging information
+
+
+NFS3DEFS_deb = -DNFS_DEBUG
+
+NFS3DEFS_000 =
+
+NFS3DEFS_02060 =
+
+NFS3DEFS_030 =
+
+NFS3DEFS_040 =
+
+NFS3DEFS_060 =
+
+NFS3DEFS_col =
+
+#
+# all default targets
+#
+nfs3targets = 02060 030 040 060 deb 000 col
