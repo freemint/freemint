@@ -1,35 +1,35 @@
 /*
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1998-09-07
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Description: Constants for Dcntl() calls.
- * 
+ *
  */
 
 # ifndef _mint_dcntl_h
@@ -132,7 +132,7 @@ typedef unsigned long long	ullong;
 /*
  * (V)FAT filesystem extensions (MiNT/MagiC)
  */
-    
+
 # define VFAT_CNFDFLN	(('V'<< 8) | 0)		/* MiNT/MagiC */
 # define VFAT_CNFLN	(('V'<< 8) | 1)		/* MiNT/MagiC */
 # define V_CNTR_SLNK	(('V'<< 8) | 2)		/* MiNT, works on FAT and VFAT */
@@ -243,6 +243,9 @@ struct fs_info
 # define _MINOR_FAT16	1
 # define _MINOR_FAT32	2
 
+# define _MINOR_NFS2	0
+# define _MINOR_NFS3	1
+
 # define FS_OLDTOS	(_MAJOR_OLDTOS)			/* default/unknown */
 # define FS_FAT12	(_MAJOR_FAT  | _MINOR_FAT12)	/* MiNT 1.15 */
 # define FS_FAT16	(_MAJOR_FAT  | _MINOR_FAT16)	/* MiNT 1.15 */
@@ -259,8 +262,8 @@ struct fs_info
 # define FS_HFS		(_MAJOR_HFS)			/* Spin 0.35 */
 # define FS_CDRAW	(_MAJOR_CDRAW)			/* Spin 0.35 */
 # define FS_STONX	(_MAJOR_STONX)			/* STonXfs4MiNT */
-# define FS_NFS2	(_MAJOR_NFS)			/* nfs 0.55 */
-# define FS_NFS3	(_MAJOR_NFS | 1)		/* nfs3 (RFC 1813) */
+# define FS_NFS2	(_MAJOR_NFS | _MINOR_NFS2)	/* nfs 0.55 */
+# define FS_NFS3	(_MAJOR_NFS | _MINOR_NFS3)	/* nfs3 (RFC 1813) */
 # define FS_HOSTFS	(_MAJOR_HOSTFS)			/* aranym hostfs */
 
 
