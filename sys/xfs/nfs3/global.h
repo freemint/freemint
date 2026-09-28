@@ -179,6 +179,19 @@ struct nfs_mount_opt
 	long	wtmax;
 	long	dtpref;
 	long	properties;	/* FSF3_* */
+
+	/* what the server answered to PATHCONF3. It is an optional
+	 * procedure, so has_pathconf says whether these hold anything; if
+	 * not, nfs_pathconf() falls back to what the driver can promise on
+	 * its own.
+	 */
+	short	has_pathconf;
+	short	no_trunc;		/* too long a name is an error */
+	short	case_insensitive;
+	short	case_preserving;
+	long	linkmax;
+	long	name_max;
+
 	long	res[4];
 };
 
