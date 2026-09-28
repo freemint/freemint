@@ -56,6 +56,14 @@
 # define NFSPROC3_GETATTR	1
 # define NFSPROC3_SETATTR	2
 # define NFSPROC3_LOOKUP	3
+/* ACCESS is deliberately never called. MiNT has no hook that asks the file
+ * system whether an operation would be permitted -- the kernel decides
+ * from the mode bits that nfs_getxattr() reports. Calling ACCESS3 would
+ * cost one round trip per open to learn what the following request reports
+ * anyway, and nfs3_error() already turns the server's refusal into the
+ * right errno. The procedure number stays listed because this header
+ * documents the protocol.
+ */
 # define NFSPROC3_ACCESS	4
 # define NFSPROC3_READLINK	5
 # define NFSPROC3_READ		6
@@ -165,13 +173,6 @@
 # define DATA_SYNC	1
 # define FILE_SYNC	2
 
-/* ACCESS3 bits */
-# define ACCESS3_READ		0x0001
-# define ACCESS3_LOOKUP		0x0002
-# define ACCESS3_MODIFY		0x0004
-# define ACCESS3_EXTEND		0x0008
-# define ACCESS3_DELETE		0x0010
-# define ACCESS3_EXECUTE	0x0020
 
 /* FSINFO3 properties */
 # define FSF3_LINK		0x0001
@@ -362,24 +363,6 @@ typedef struct lookup3res
 bool_t	xdr_lookup3res	(xdrs *x, lookup3res *rp);
 
 
-/* ACCESS */
-typedef struct access3args
-{
-	nfs_fh3	object;
-	ulong	access;
-} access3args;
-
-bool_t	xdr_access3args	(xdrs *x, access3args *ap);
-long	xdr_size_access3args (access3args *ap);
-
-typedef struct access3res
-{
-	enum_t		status;
-	post_op_attr	obj_attributes;
-	ulong		access;
-} access3res;
-
-bool_t	xdr_access3res	(xdrs *x, access3res *rp);
 
 
 /* READLINK */

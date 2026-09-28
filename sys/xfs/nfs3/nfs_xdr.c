@@ -325,36 +325,6 @@ xdr_lookup3res (xdrs *x, lookup3res *rp)
 	return xdr_post_op_attr (x, &rp->dir_attributes);
 }
 
-bool_t
-xdr_access3args (xdrs *x, access3args *ap)
-{
-	if (!xdr_nfs_fh3 (x, &ap->object))
-		return FALSE;
-
-	return xdr_ulong (x, &ap->access);
-}
-
-long
-xdr_size_access3args (access3args *ap)
-{
-	return xdr_size_nfs_fh3 (&ap->object) + sizeof (ulong);
-}
-
-bool_t
-xdr_access3res (xdrs *x, access3res *rp)
-{
-	if (!xdr_enum (x, &rp->status))
-		return FALSE;
-	if (!xdr_post_op_attr (x, &rp->obj_attributes))
-		return FALSE;
-
-	if (NFS3_OK == rp->status)
-		return xdr_ulong (x, &rp->access);
-
-	rp->access = 0;
-	return TRUE;
-}
-
 
 /* ---------------------------------------------------------------- */
 /* READLINK / READ / WRITE                                          */
