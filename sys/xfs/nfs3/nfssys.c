@@ -458,6 +458,28 @@ finish_create (fcookie *dir, const char *name, create3res *res, fcookie *fc)
 		fc->aux = 0;
 		fc->index = (long) newi;
 	}
+	else
+	{
+		/*
+		 * Nobody is going to release this one.
+		 *
+		 * The reference above is taken unconditionally, because the
+		 * index has to stay alive while the fields below are filled
+		 * in. When a caller wants the cookie it takes that reference
+		 * over and the kernel releases it later -- but nfs_mkdir()
+		 * passes NULL, because MiNT's mkdir has no cookie to return.
+		 *
+		 * Without giving it back here, every mkdir left an index
+		 * behind that held a reference on its parent directory, all
+		 * the way up to the mount point. The mount could then never
+		 * be unmounted again: release_mount_slot() saw more than one
+		 * reference and refused, with nothing visible to explain it.
+		 */
+		newi->link -= 1;
+
+		if (newi->link == 0)
+			free_slot (newi);
+	}
 
 	return 0;
 }
