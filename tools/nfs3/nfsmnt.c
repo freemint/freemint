@@ -133,6 +133,7 @@ typedef struct
 
 # define NFS3_MOUNT	(('N' << 8) | 3)
 # define NFS3_UNMOUNT	(('N' << 8) | 4)
+# define NFS3_DUMPALL	(('N' << 8) | 43)
 
 /* only for debugging purposes */
 # define NFS3_MNTDUMP	(('N' << 8) | 42)
@@ -474,4 +475,24 @@ do_nfs_unmount (const char *remote, const char *local)
 	clnt_destroy (cl);
 
 	return 0;
+}
+
+/*
+ * Make the driver report what it still holds.
+ *
+ * It writes to the console rather than handing anything back, because the
+ * point is a list of indices whose length is not known in advance -- and
+ * because the console is where the driver's other complaints appear.
+ */
+long
+do_nfs_dump (void)
+{
+	long r = Dcntl (NFS3_DUMPALL, "u:\\nfs3", 0L);
+
+	if (r != 0)
+		fprintf (stderr, "%s: the driver refused the dump (%ld); is "
+			 "nfs3.xfs loaded, and recent enough to know it?\n",
+			 commandname, r);
+
+	return r;
 }

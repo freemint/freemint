@@ -34,6 +34,9 @@ extern int transport;
 
 
 long do_nfs_mount (const char *remote, const char *local);
+/* Make the driver list what it still holds; it prints to the console. */
+long do_nfs_dump (void);
+
 long do_nfs_unmount (const char *remote, const char *local);
 
 

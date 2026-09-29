@@ -37,31 +37,46 @@ init_index (void)
 }
 
 
-# if 0
-/* this is for debugging: these functions do a dump of used nfs indices
- * so that one can see whats going on (hopefully)
+/*
+ * These print with ALERT and not DEBUG on purpose: they answer the one
+ * question a user cannot otherwise answer, namely why an unmount says the
+ * mount is still in use. That has to work in a normal build, or the answer
+ * is only available to somebody who can reproduce the problem with a
+ * different binary.
  */
 void
 index_statistics (void)
 {
-	int i,j;
+	int i, j;
 	NFS_INDEX *ni;
+	long held = 0;
 
-	DEBUG(("Index statistics"));
-	for (i = 0; i < MAX_CLUSTER;  i++)
-		if (cluster[i])
+	ALERT (("nfs3: indices in use:"));
+
+	for (i = 0; i < MAX_CLUSTER; i++)
+	{
+		if (!cluster[i])
+			continue;
+
+		for (j = 0; j < CLUSTER_SIZE; j++)
 		{
-			DEBUG(("cluster %ld has %ld used indices",
-			            (long)i, (long)cluster[i]->n_used));
-			for (j = 0; j < CLUSTER_SIZE;  j++)
-			{
-				ni = &cluster[i]->index[j];
-				if (ni->link > 0)
-					DEBUG(("C %ld, I %ld, L %ld, '%s' in '%s'",(long)i,(long)j,
-					           ni->link,ni->name,
-					           (ni->dir) ? ni->dir->name : "root"));
-			}
+			ni = &cluster[i]->index[j];
+
+			if (ni->link <= 0)
+				continue;
+
+			held++;
+
+			ALERT (("nfs3:   %ld refs  '%s' in '%s'%s",
+				ni->link,
+				ni->name ? ni->name : "?",
+				(ni->dir && ni->dir->name) ? ni->dir->name : "root",
+				(ni->flags & IS_MOUNT_DIR) ? "  (mount point)" : ""));
 		}
+	}
+
+	if (!held)
+		ALERT (("nfs3:   none"));
 }
 
 
@@ -70,14 +85,21 @@ do_mountdump (void)
 {
 	NFS_INDEX *ni;
 
-	DEBUG(("Dump of mounted directories"));
-	for (ni = mounted;  ni;  ni = ni->next)
+	ALERT (("nfs3: mounted directories:"));
+
+	for (ni = mounted; ni; ni = ni->next)
 	{
-		DEBUG(("'%s' in dir '%s', L %ld, F 0x%lx", ni->name,
-		            (ni->dir) ? ni->dir->name : "root", ni->link, ni->flags));
+		ALERT (("nfs3:   %ld refs  '%s' flags 0x%lx%s",
+			ni->link,
+			ni->name ? ni->name : "?",
+			ni->flags,
+			(ni->link == 1) ? "  (can be unmounted)"
+					: "  (in use)"));
 	}
+
+	if (!mounted)
+		ALERT (("nfs3:   none"));
 }
-# endif
 
 
 void

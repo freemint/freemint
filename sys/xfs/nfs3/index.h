@@ -18,6 +18,10 @@ void init_mount_data (void);
 void init_index (void);
 
 void init_mount_attr (XATTR *ap);
+/* Diagnostics, reachable through Dcntl(NFS3_MNTDUMP) and NFS3_DUMPALL. */
+void do_mountdump (void);
+void index_statistics (void);
+
 NFS_INDEX *get_mount_slot (const char *name, NFS_MOUNT_INFO *info);
 int release_mount_slot (NFS_INDEX *ni);
 NFS_INDEX *get_slot (NFS_INDEX *dir, const char *name, int dom);

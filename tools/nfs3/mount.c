@@ -46,6 +46,7 @@ char *commandname = "mount_nfs3";
 int verbose = 0;
 int readonly = 0;
 int unmount = 0;
+int dump = 0;
 int without_mtab = 0;
 int fake_mtab = 0;
 
@@ -104,7 +105,11 @@ usage (void)
 	printf ("%s usage:\n", commandname);
 	printf ("  %s [ -rvnf ] { -o option } host:/remotedir localdir\n", commandname);
 	printf ("  %s -u [ -vn ] localdir\n", commandname);
+	printf ("  %s -d\n", commandname);
 	printf ("\n");
+	printf ("  -d makes the driver list every mount and every index it\n");
+	printf ("  still holds a reference on. That is what tells you why an\n");
+	printf ("  unmount reports the mount as still in use.\n");
 	printf ("  localdir has to be below u:\\nfs3, which is where the\n");
 	printf ("  nfs3.xfs driver installs itself.\n");
 }
@@ -488,6 +493,14 @@ main (int argc, char *argv[])
 				case 'v':
 					verbose = 1;
 					break;
+				case 'd':
+				case 'D':
+					/* Ask the driver what it still holds. The
+					 * only way to find out why an unmount
+					 * says the mount is in use.
+					 */
+					dump = 1;
+					break;
 				case 'n':
 					without_mtab = 1;
 					break;
@@ -523,6 +536,12 @@ main (int argc, char *argv[])
 			}
 		}
 	}
+
+	/* Before the checks below: a dump needs no directory and no options,
+	 * it just asks the driver what it is holding.
+	 */
+	if (dump)
+		return do_nfs_dump () ? 1 : 0;
 
 	if (optionstr[0] == '\0')
 	{

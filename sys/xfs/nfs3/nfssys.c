@@ -2597,13 +2597,23 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		}
 		case NFS3_MNTDUMP:
 		{
-			/* for debugging only */
-			return ENOSYS;
+			/* Which mounts exist and whether each could be
+			 * unmounted right now.
+			 */
+			do_mountdump ();
+			return E_OK;
 		}
 		case NFS3_DUMPALL:
 		{
-			/* for debugging only */
-			return ENOSYS;
+			/* Every index still holding a reference, with the
+			 * directory it sits in. This is what answers "why does
+			 * the unmount say the mount is still in use": a child
+			 * index holds a reference on its parent, so whatever is
+			 * listed here below the mount point is the reason.
+			 */
+			do_mountdump ();
+			index_statistics ();
+			return E_OK;
 		}
 	}
 
