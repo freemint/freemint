@@ -185,6 +185,24 @@ struct nfs_mount_opt
 	 * not, nfs_pathconf() falls back to what the driver can promise on
 	 * its own.
 	 */
+	/*
+	 * A request buffer for writes, allocated once per mount so that
+	 * nfs_write() does not have to allocate one per WRITE3.
+	 *
+	 * Size matters here: MiNT's kmalloc serves anything above roughly
+	 * 8112 bytes from km_lb_malloc(), which is markedly more expensive
+	 * than the medium path, and a wsize of 8192 puts every message over
+	 * that line.
+	 *
+	 * busy exists because this driver sleeps while it waits for the
+	 * reply. The kernel serialises calls into an xfs that claims no
+	 * reentrancy, but whether that holds across a sleep is not something
+	 * to bet a shared buffer on, so a second writer allocates its own.
+	 */
+	char	*wbuf;
+	long	wbuflen;
+	short	wbuf_busy;
+
 	short	has_pathconf;
 	short	no_trunc;		/* too long a name is an error */
 	short	case_insensitive;

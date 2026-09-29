@@ -284,6 +284,9 @@ release_mount_slot (NFS_INDEX *ni)
 		return EBUSY;
 	}
 
+	if (ni->opt->wbuf)
+		kfree (ni->opt->wbuf);
+
 	kfree (ni->opt);
 	kfree (ni->name);
 
