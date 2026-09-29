@@ -493,6 +493,7 @@ main (int argc, char *argv[])
 					break;
 				case 'f':
 					fake_mtab = 1;
+					break;
 				default:
 					usage();
 					return 1;
