@@ -2540,6 +2540,23 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				 * replaces guesses with what the server says.
 				 */
 				do_pathconf (ni);
+
+				/* Now that wsize is final, get the write
+				 * buffer once instead of once per request.
+				 * Failure is not fatal: nfs_write() then
+				 * allocates per request instead.
+				 */
+				ni->opt->wbuflen = ni->opt->wsize + 256;
+				ni->opt->wbuf = kmalloc (ni->opt->wbuflen);
+				ni->opt->wbuf_busy = 0;
+
+				if (!ni->opt->wbuf)
+				{
+					ni->opt->wbuflen = 0;
+					DEBUG (("nfs_fscntl: no write buffer, "
+						"falling back to allocating "
+						"one per request"));
+				}
 			}
 
 			/* Say which transport is in use. Without this an

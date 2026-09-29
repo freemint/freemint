@@ -141,6 +141,7 @@ write_range (NFS_INDEX *ni, const char *buf, long bytes, long pos,
 		MESSAGE *mreq;
 		MESSAGE *mrep;
 		MESSAGE m;
+		short used_wbuf;
 
 		long count = (bytes > wsize) ? wsize : bytes;
 		long r;
@@ -152,10 +153,36 @@ write_range (NFS_INDEX *ni, const char *buf, long bytes, long pos,
 		write_arg.data_val = buf + written;
 		write_arg.data_len = count;
 
-		mreq = alloc_message (&m, NULL, 0, xdr_size_write3args (&write_arg));
+		{
+			/* Use the mount's buffer when it is free and big
+			 * enough, otherwise let alloc_message() allocate one.
+			 * It frees only what it allocated itself, so the
+			 * shared buffer survives free_message().
+			 */
+			long need = xdr_size_write3args (&write_arg);
+
+			if (ni->opt->wbuf && !ni->opt->wbuf_busy
+			    && (ni->opt->wbuflen >= need))
+			{
+				ni->opt->wbuf_busy = 1;
+				used_wbuf = 1;
+				mreq = alloc_message (&m, ni->opt->wbuf,
+						      ni->opt->wbuflen, need);
+			}
+			else
+			{
+				used_wbuf = 0;
+				mreq = alloc_message (&m, NULL, 0, need);
+			}
+		}
+
 		if (!mreq)
 		{
 			DEBUG (("nfs_write: could not allocate message buffer"));
+
+			if (used_wbuf)
+				ni->opt->wbuf_busy = 0;
+
 			return written ? written : EWRITE;
 		}
 
@@ -164,10 +191,24 @@ write_range (NFS_INDEX *ni, const char *buf, long bytes, long pos,
 		{
 			DEBUG (("nfs_write: failed to encode arguments -> EWRITE"));
 			free_message (mreq);
+
+			if (used_wbuf)
+				ni->opt->wbuf_busy = 0;
+
 			return written ? written : EWRITE;
 		}
 
 		r = rpc_request (&ni->opt->server, mreq, NFSPROC3_WRITE, &mrep);
+
+		/* rpc_request() frees mreq on every path of its own, so the
+		 * buffer is free again the moment it returns. Releasing it
+		 * here, before anything below can return, is what keeps the
+		 * release points down to three: this one and the two failure
+		 * exits above.
+		 */
+		if (used_wbuf)
+			ni->opt->wbuf_busy = 0;
+
 		if (r != 0)
 		{
 			DEBUG (("nfs_write: could not contact server -> %ld", r));
