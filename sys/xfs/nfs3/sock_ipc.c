@@ -29,6 +29,14 @@ static void free_message_body (MESSAGE *);
 static struct socket *nfs_so = NULL;
 static short nonblock = 0;
 
+/* From the inet4 headers, which this driver does not include. */
+# ifndef IPPROTO_TCP
+#  define IPPROTO_TCP	6
+# endif
+# ifndef TCP_NODELAY
+#  define TCP_NODELAY	1
+# endif
+
 
 static inline long
 bind (struct socket *so, struct sockaddr *addr, short addrlen)
@@ -40,6 +48,13 @@ static inline long
 setsockopt (struct socket *so, short level, short optname, void *optval, long optlen)
 {
 	return (*so->ops->setsockopt)(so, level, optname, optval, optlen);
+}
+
+static inline long
+getsockopt (struct socket *so, short level, short optname, void *optval,
+	    long *optlen)
+{
+	return (*so->ops->getsockopt)(so, level, optname, optval, optlen);
 }
 
 static inline long
@@ -658,9 +673,71 @@ open_stream (struct socket **resultso, struct sockaddr_in *addr)
 		return ret;
 	}
 
+	/*
+	 * Room for two full records in each direction, and then a look at what
+	 * we actually got.
+	 *
+	 * The size matters more than it appears: a send buffer smaller than
+	 * one RPC record splits every write across several sendmsg() rounds,
+	 * and send_all() yields the CPU between them -- a scheduler tick
+	 * each, which costs far more than the transfer itself.
+	 */
 	arg = 2 * MAX_TCP_RECORD;
-	setsockopt (so, SOL_SOCKET, SO_RCVBUF, &arg, sizeof (arg));
-	setsockopt (so, SOL_SOCKET, SO_SNDBUF, &arg, sizeof (arg));
+	ret = setsockopt (so, SOL_SOCKET, SO_RCVBUF, &arg, sizeof (arg));
+	if (ret < 0)
+		ALERT (("nfs3: could not set the receive buffer to %ld -> %ld",
+			arg, ret));
+
+	arg = 2 * MAX_TCP_RECORD;
+	ret = setsockopt (so, SOL_SOCKET, SO_SNDBUF, &arg, sizeof (arg));
+	if (ret < 0)
+		ALERT (("nfs3: could not set the send buffer to %ld -> %ld",
+			arg, ret));
+
+	/*
+	 * Nagle off.
+	 *
+	 * This is a synchronous request/response protocol: every send is one
+	 * complete RPC record, the server needs all of it before it can
+	 * answer, and nothing follows until that answer arrives. Nagle exists
+	 * to coalesce an application's small consecutive writes, which cannot
+	 * happen here. All it can do is hold back a record's last, partial
+	 * segment until an outstanding segment has been acknowledged.
+	 *
+	 * That wait is not hypothetical. Both stacks acknowledge at least
+	 * every other segment, so whether a record's final segment goes out
+	 * promptly depends on whether the number of full segments before it
+	 * is even. A 4 KB record makes two full segments and is acknowledged
+	 * at once; an 8 KB record makes five, leaves the fifth unacknowledged,
+	 * and its tail waits for the delayed acknowledgement timer. Measured:
+	 * copying 2.4 MB took 12 s at wsize 4096 and 23 s at 8192, and the
+	 * 300 records that is at 8 KB, times a 40 ms timer, account for the
+	 * difference.
+	 *
+	 * send_all() hands a whole record to one sendmsg(), so switching this
+	 * off costs nothing in packets: TCP still segments it the same way.
+	 */
+	arg = 1;
+	ret = setsockopt (so, IPPROTO_TCP, TCP_NODELAY, &arg, sizeof (arg));
+	if (ret < 0)
+		ALERT (("nfs3: could not switch off Nagle -> %ld; writes will "
+			"be slower than they need to be", ret));
+
+	{
+		long got_snd = -1, got_rcv = -1;
+		long len = sizeof (got_snd);
+
+		if (getsockopt (so, SOL_SOCKET, SO_SNDBUF, &got_snd, &len) < 0)
+			got_snd = -1;
+
+		len = sizeof (got_rcv);
+		if (getsockopt (so, SOL_SOCKET, SO_RCVBUF, &got_rcv, &len) < 0)
+			got_rcv = -1;
+
+		DEBUG (("nfs3: socket buffers: send %ld, receive %ld, one "
+			"record is up to %ld", got_snd, got_rcv,
+			(long) MAX_TCP_RECORD));
+	}
 
 	/* Servers exported with the default `secure' option insist on a
 	 * privileged source port, same as for UDP.
@@ -748,8 +825,10 @@ conn_get (SERVER_OPT *opt)
 static long
 send_all (struct socket *so, struct iovec *iov, short niov)
 {
+	static short reported = 0;
 	long total = 0;
 	long done = 0;
+	short rounds = 0;
 	short i;
 	int idle = 0;
 
@@ -801,6 +880,22 @@ send_all (struct socket *so, struct iovec *iov, short niov)
 
 		idle = 0;
 		done += r;
+		rounds++;
+	}
+
+	/*
+	 * One sendmsg() per message is the cheap case. More than one means the
+	 * socket could not take the whole record at once, and send_all() then
+	 * goes round again -- which is worth knowing about, because it is the
+	 * difference between a transfer and a transfer plus a wait. Said once
+	 * per driver lifetime, not once per write.
+	 */
+	if ((rounds > 1) && !reported)
+	{
+		reported = 1;
+		ALERT (("nfs3: a %ld byte record needed %d sendmsg rounds; the "
+			"send buffer is too small for one record",
+			total, (int) rounds));
 	}
 
 	return done;

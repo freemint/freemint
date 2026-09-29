@@ -83,7 +83,8 @@ Honour or ignore the set-uid bit on files of this mount.
 .BI wsize= n
 Preferred read and write transfer size in bytes. The driver asks the
 server for its limits with FSINFO3 at mount time and reduces these
-values if the server cannot handle them. The default is 4096.
+values if the server cannot handle them. The default is 8192, which is
+also the largest this driver supports.
 .TP
 .BI timeo= n
 Initial RPC timeout in tenths of a second. The default is 2 seconds.

@@ -2354,10 +2354,9 @@ do_fsinfo (NFS_INDEX *ni)
  * Ask the server what its limits really are.
  *
  * PATHCONF3 is an optional procedure, so a server may refuse it. In that
- * case the values stay unset and nfs_pathconf() keeps answering from what
- * the driver can guarantee on its own -- which is what the NFSv2 driver
- * always did, because version 2 had no way of asking. Failing here must
- * therefore not fail the mount, and that is why this returns nothing.
+ * case the values stay unset and nfs_pathconf() answers from what the
+ * driver can guarantee on its own. A refusal must therefore not fail the
+ * mount, which is why this returns nothing.
  */
 static void
 do_pathconf (NFS_INDEX *ni)

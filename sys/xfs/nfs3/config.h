@@ -32,8 +32,18 @@
 #define DEFAULT_ACTIMEO  6000   /* 30 seconds */
 
 
-#define DEFAULT_RSIZE 4096
-#define DEFAULT_WSIZE 4096
+/* What a mount asks for when it names no size of its own. FSINFO3 then
+ * clamps it to what the server offers and to MAXDATA, so this is an upper
+ * wish rather than a promise.
+ *
+ * 8192 is MAXDATA, which is as far as this driver goes: the request buffer
+ * for a write is wsize plus a little, and above roughly 8112 bytes MiNT's
+ * kmalloc serves it from km_lb_malloc() instead of the cheaper medium
+ * path. Going further means raising MAXDATA and paying that on every
+ * allocation the driver makes for a request.
+ */
+#define DEFAULT_RSIZE 8192
+#define DEFAULT_WSIZE 8192
 
 
 /* To speed up buffer allocation, some space on the stack is used. These

@@ -24,10 +24,11 @@ INSTALLATION
 On the server side, export the directory as usual, for example in
 /etc/exports on a Linux box:
 
-    /srv/atari  192.168.1.0/24(rw,sync,no_subtree_check,insecure)
+    /srv/atari  192.168.1.0/24(rw,sync,no_subtree_check)
 
-`insecure' is only needed if the Atari cannot bind a reserved port.
-No special nfsvers= option is required -- Linux offers NFSv3 by default.
+No special nfsvers= option is required -- Linux offers NFSv3 by default,
+and nothing has to be changed in /etc/nfs.conf: nfsd listens on TCP and
+serves NFSv3 out of the box, which is what this driver uses.
 
 Mounting:
 
