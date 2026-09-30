@@ -3172,6 +3172,7 @@ static int
 fs_destructor(int lock, struct xa_window *wind)
 {
 	DIAG((D_fsel,NULL,"fsel destructed"));
+	fs_data.fs_num--;
 	return true;
 }
 
@@ -3514,15 +3515,18 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			}
 			else
 			{
+				short h = fs_data.fs_height;
+
 				dy = screen.c_max_h * fs_data.fs_num;
-				if( fs_data.fs_height + fs_data.fs_y + dy > screen.r.g_h )
-					fs_data.fs_height = screen.r.g_h - (fs_data.fs_y + dy);
+				if( h + fs_data.fs_y + dy > screen.r.g_h )
+					h = screen.r.g_h - (fs_data.fs_y + dy);
+				fs->cut_h = fs_data.fs_height - h;
 
 				dw = fs_data.fs_width - form->ob_width;
-				dh = fs_data.fs_height - form->ob_height;
+				dh = h - form->ob_height;
 
 				form->ob_width = fs_data.fs_width;
-				form->ob_height = fs_data.fs_height;
+				form->ob_height = h;
 				form->ob_x = fs_data.fs_x;
 				form->ob_y = fs_data.fs_y;
 			}
@@ -3554,8 +3558,10 @@ open_fileselector1(int lock, struct xa_client *client, struct fsel_data *fs,
 			}
 			else
 			{
-				or.g_x = fs_data.fs_x + screen.c_max_w * fs_data.fs_num;
-				or.g_y = fs_data.fs_y + dy;
+				fs->off_x = screen.c_max_w * fs_data.fs_num;
+				fs->off_y = dy;
+				or.g_x = fs_data.fs_x + fs->off_x;
+				or.g_y = fs_data.fs_y + fs->off_y;
 				fs->point = fs_data.fs_point;
 			}
 
@@ -3731,10 +3737,10 @@ void fs_save(struct fsel_data *fs)
 		return;
 	fs_data.rtbuild = fs->rtbuild;
 	fs_data.treeview = fs->treeview;
-	fs_data.fs_height = fs->form->tree->ob_height;
+	fs_data.fs_height = fs->form->tree->ob_height + fs->cut_h;
 	fs_data.fs_width = fs->form->tree->ob_width;
-	fs_data.fs_x = fs->form->tree->ob_x;
-	fs_data.fs_y = fs->form->tree->ob_y;
+	fs_data.fs_x = fs->form->tree->ob_x - fs->off_x;
+	fs_data.fs_y = fs->form->tree->ob_y - fs->off_y;
 
 	fs_data.fs_point = fs->point;
 	fs_data.fs_sort = fs->sort;
@@ -3748,7 +3754,6 @@ close_fileselector(int lock, struct fsel_data *fs)
 	close_window(lock, fs->wind);
 	delete_window(lock, fs->wind);
 
-	fs_data.fs_num--;
 	fs->wind = NULL;
 	fs->menu = NULL;
 	fs->form = NULL;

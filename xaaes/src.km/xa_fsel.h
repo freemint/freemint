@@ -63,6 +63,8 @@ struct fsel_data
 	short rtflags;	/* runtime-flags */
 	short fntinc;	/* increment/decrement font-size for file-selector */
 	short point;	/* font-size */
+	short off_x, off_y;	/* offset from the stored position when several are open */
+	short cut_h;	/* height removed to fit the offset window on screen */
 	bool tfile;
 	bool kbdnav;
 	bool treeview;
