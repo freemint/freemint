@@ -443,6 +443,18 @@ init_core (void)
 		size = (ulong)core_malloc (-1L, F_ALTONLY);
 	}
 
+	/*
+	 * TOS doesn't touch _ramtop on a warm boot, so it may still describe
+	 * TT-RAM which is gone now (e.g. after switching a CT60 from 68060
+	 * to 68030 mode). If GEMDOS has no alternative RAM, there is no TT-RAM:
+	 * clear _ramtop.
+	 */
+	if (!*alt && *(ulong *)0x05a4L)
+	{
+		DEBUG(("init_core: no alternative RAM, clearing _ramtop 0x%lx", *(ulong *)0x05a4L));
+		*(ulong *)0x05a4L = 0;
+	}
+
 # ifdef OLDTOSFS
 	(void) TRAP_Mfree (tossave); /* leave some memory for TOS to use */
 # endif
