@@ -1745,7 +1745,10 @@ isp116x_sw_reset(struct isp116x *isp116x)
 		/* It should reset within 1 msec */
 		mdelay(1);
 		if (!(isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR))
+		{
+			MINT_INT_ON;
 			return 0;
+		}
 	}
 	MINT_INT_ON;
 
