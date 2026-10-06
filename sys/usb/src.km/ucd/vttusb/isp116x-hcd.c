@@ -2180,7 +2180,8 @@ usb_lowlevel_init(void *dummy)
 	isp116x->disabled = 1;
 	isp116x->sleeping = 0;
 
-	isp116x_reset(isp116x);
+	if (isp116x_reset(isp116x) < 0)
+		return (-1);
 	isp116x_start(isp116x);
 
 	return 0;
