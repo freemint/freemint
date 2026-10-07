@@ -696,7 +696,7 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	FILEPTR *f;
 	struct proc *p;
 	TIMEOUT *t = NULL;
-	int i, rsel;
+	int i, rsel, nfds;
 	long wait_cond;
 	short sr;
 #if 0
@@ -722,9 +722,15 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 
 	assert (p->p_fd && p->p_cwd);
 
+	/* only handles up to the highest bit set in the masks are of interest */
+	for (nfds = 0; nfds < 32 && ((unsigned long)(rfd | wfd | xfd) >> nfds); nfds++)
+		;
+	if (nfds > p->p_fd->nfiles)
+		nfds = p->p_fd->nfiles;
+
 	/* first, validate the masks */
 	mask = 1L;
-	for (i = 0; i < p->p_fd->nfiles; i++)
+	for (i = 0; i < nfds; i++)
 	{
 		if (((rfd & mask) || (wfd & mask) || (xfd & mask)) && !(p->p_fd->ofiles[i]))
 		{
@@ -750,7 +756,7 @@ retry_after_collision:
 	wait_cond = (long)wakeselect;
 	count = 0;
 
-	for (i = 0; i < p->p_fd->nfiles; i++)
+	for (i = 0; i < nfds; i++)
 	{
 		if (col_rfd & mask)
 		{
@@ -866,7 +872,7 @@ retry_after_collision:
 
 	/* OK, let's see what data arrived (if any) */
 		mask = 1L;
-		for (i = 0; i < p->p_fd->nfiles; i++)
+		for (i = 0; i < nfds; i++)
 		{
 			if (rfd & mask)
 			{
@@ -932,7 +938,7 @@ cancel:
 	/* cancel all the selects */
 	mask = 1L;
 
-	for (i = 0; i < p->p_fd->nfiles; i++)
+	for (i = 0; i < nfds; i++)
 	{
 		if (rfd & mask)
 		{
