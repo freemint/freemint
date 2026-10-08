@@ -51,7 +51,8 @@ OPTIONS
                     UDP is used if that fails; see TRANSPORT below
   ro, rw            mount read only / read write
   nosuid, suid      ignore / honour the set-uid bit
-  rsize=n, wsize=n  transfer sizes; clamped to what FSINFO3 reports
+  rsize=n, wsize=n  transfer sizes; default 8192, clamped to what
+                    FSINFO3 reports and to MAXDATA
   timeo=n           initial timeout in tenths of a second
   retrans=n         number of retries before giving up
   port=n            NFS port on the server (default 2049)
@@ -77,6 +78,15 @@ reassembly of records that arrive in pieces, keeps one connection per
 server and rebuilds it when the stream breaks. Retransmission is left to
 TCP: a request is sent once and only sent again after a reconnect.
 
+Nagle is switched off on the connection. This is a request/response
+protocol, so there are no small consecutive writes to coalesce; all Nagle
+can do is hold back a record's last, partial segment until an outstanding
+segment is acknowledged. Whether that happens depends on the parity of
+the full segments before it, which made a wsize of 8192 slower than 4096
+-- every record waited for a delayed acknowledgement. With TCP_NODELAY
+each record goes out in one burst and 8192 is the faster size, which is
+why it is the default.
+
 "-o tcp" and "-o udp" pin the transport, so a mount that must not
 silently change protocol can say so. Which one a mount ended up using is
 printed when it succeeds:
@@ -93,9 +103,11 @@ LIMITATIONS
   - Files larger than 2 GB can be looked at (Fstat64 reports the true
     size) but not read or written past the 2 GB mark, because MiNT's
     file position is a signed 32 bit value.
-  - ACCESS3 is implemented in the XDR layer but not wired into the file
-    system yet; permission checks still rely on the mode bits, as they
-    did under NFS2.
+  - ACCESS3 is not used. MiNT has no hook that asks a file system
+    whether an operation would be permitted -- the kernel decides from
+    the mode bits nfs_getxattr() reports -- so a call would cost a round
+    trip per open to learn what the next request reports anyway. Only
+    the procedure number is kept, in nfs_xdr.h.
   - READDIRPLUS3 and MKNOD3 are not implemented. READDIRPLUS would need
     considerably more buffer space than a small machine can spare, and
     MiNT's XFS interface only offers mknod through FS_EXT_1, which this
@@ -104,6 +116,10 @@ LIMITATIONS
     Kerberos (RPCSEC_GSS).
   - The UDP fallback is decided once, at mount time. A server that
     stops answering over TCP later does not switch protocol.
+  - Reads have no read-ahead: one READ3 is outstanding at a time, so the
+    client's own turnaround between requests does not overlap with the
+    transfer. Measured against a Linux server over a NE2000-type card,
+    that turnaround is about as large as the transfer itself.
 
 
 FILES
