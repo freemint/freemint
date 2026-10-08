@@ -1,6 +1,6 @@
 /*
  * File : version.h
- *        Version numbers and patchlevel info
+ *        the version this driver reports through Dcntl(FS_INFO)
  */
 
 # ifndef _version_h
@@ -9,14 +9,6 @@
 
 # define VER_MAJOR	1
 # define VER_MINOR	0
-
-# if 0
-# define ALPHA
-# endif
-
-# if 1
-# define BETA
-# endif
 
 
 # endif /* _version_h */
