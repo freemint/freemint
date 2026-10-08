@@ -15,26 +15,22 @@
 
 # include "global.h"
 # include "nfssys.h"
-# include "version.h"
 
 # include "mint/dcntl.h"
 
 
-# define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR)
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
-	"\033p NFS version 3 file system driver version " MSG_VERSION " \033q\r\n"
+	"\033p NFS version 3 file system driver \033q\r\n"
 
+/* An xfs is loaded at boot time, so overwriting the file does nothing until
+ * the next reboot. The build date is what tells you which binary is running.
+ */
 # define MSG_GREET	\
 	"Derived from the NFS v2 driver, see RFC 1813.\r\n" \
-	"See the file COPYING for copying and using conditions.\r\n"
-
-# define MSG_ALPHA	\
-	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
-
-# define MSG_BETA	\
-	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
+	"See the file COPYING for copying and using conditions.\r\n" \
+	"Compiled " MSG_BUILDDATE ".\r\n"
 
 # define MSG_OLDMINT	\
 	"\033pMiNT too old, this xfs requires at least a FreeMiNT 1.16!\033q\r\n"
@@ -57,12 +53,6 @@ init_xfs (struct kerinfo *k)
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
-# ifdef ALPHA
-	c_conws (MSG_ALPHA);
-# endif
-# ifdef BETA
-	c_conws (MSG_BETA);
-# endif
 	c_conws ("\r\n");
 
 
