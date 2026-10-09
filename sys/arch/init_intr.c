@@ -101,24 +101,16 @@ install_TOS_vectors (void)
 		install_vector (&old_kbdvec, (long)kbdvec, kbdvec_handler);
 	}
 
-	/* Workaround for FireTOS and CT60 TOS 2.xx.
-	 * Needed because those TOS doesn't call the undocumented kbdvec vector
-	 * from their ikbdsys vector handler, besides they install the ikbdsys
-	 * routine as a ACIA interrupt handler, so we can't simply replace their
-	 * ikbdsys handler by ours. We need to hook a new ACIA handler which
-	 * will call our ikbdsys.
-	 */
-	unsigned short version = 0;
 #ifdef __mcoldfire__
-	const unsigned short *FT_TOS_VERSION_ADDR = (unsigned short *)0x00e80000;
+	/* Workaround for FireTOS up to 2.02.
+	 * Its ACIA interrupt handler services the IKBD ACIA only and hands the
+	 * data to FireTOS internal routines, calling neither ikbdsys nor the
+	 * undocumented kbdvec vector, so the kbdvec hook above never sees a
+	 * key. We need to hook a new ACIA handler which will call our ikbdsys.
+	 * The next FireTOS release (planned as 2.03, version word at 0x00e80000)
+	 * installs the TOS 4.04 ACIA handler and does not need this.
+	 */
 	if (coldfire_68k_emulation)
-		version = *FT_TOS_VERSION_ADDR;
-#else
-	const unsigned short *CT60_TOS_VERSION_ADDR = (unsigned short *)0xffe80000;
-	if (machine == machine_ct60)
-		version = *CT60_TOS_VERSION_ADDR;
-#endif
-	if (version >= 2)
 	{
 		savesr = splhigh();
 		kbdvecs->ikbdsys = (long)ikbdsys_handler;
@@ -126,6 +118,7 @@ install_TOS_vectors (void)
 		install_vector(&old_acia, 0x0118L, new_acia);
 		spl(savesr);
 	}
+#endif
 # endif /* NO_AKP_KEYBOARD */
 
 	/* Documentation says that we should set etv_term using Setexc (this is to give

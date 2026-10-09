@@ -43,20 +43,17 @@ IKBDTODO	=	IKBDSTATE+1
 SYM(old_acia):
 	dc.l	0
 
-// This handler is installed only when running on FireTOS and CT60 TOS 2, this
-// is needed to workaround a problem with keyboard handling. Those TOS install
-// directly in the ACIA vector the ikbdsys handler which never calls the
-// undocumented kbdvec vector handler which take care of the keyboard scancode
-// processing.
+// This handler is installed only when running on FireTOS, to work around a
+// problem with keyboard handling. FireTOS up to 2.02 installs in the ACIA
+// vector an IKBD-only handler which calls neither ikbdsys nor the undocumented
+// kbdvec vector handler which takes care of the keyboard scancode processing.
 //
 // For the rest of architectures this handler is disabled, the main reason is
-// because we don't have a midisys vector handler and using the one from ROM
-// crashes the system. Some ROM kbdvecs interrupt hadlers expect to have in an
-// address register a value to reference its internal variables, they expect
-// ROM's ACIA handler to put that adrress there for them. So while we depend
-// on calling those ROM vectors handlers we can't use our own ACIA routine.
-// FireTOS and CT60 TOS 2 ACIA handler doesn't process MIDI data so this
-// problem doesn't occur with them, midisys handler in those TOS just return.
+// because we don't have a midisys vector handler and the one from ROM can't
+// always be called from here: the TOS 1.x ACIA handler clears A5 before
+// calling midisys, whose code addresses its variables relative to A5. The
+// TOS 2.x and 4.x midisys set up their own registers. FireTOS up to 2.02
+// has a midisys that just returns.
 
 	
 	FUNC(new_acia)
