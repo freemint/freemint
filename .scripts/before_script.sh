@@ -31,6 +31,7 @@ echo "moosetargets = ${TEMP_CPU_TARGET}" >> ./xaaes/src.km/adi/whlmoose/MOOSEDEF
 echo "kerneltargets = ${KERNEL_TARGETS}" >> ./sys/KERNELDEFS
 echo "ext2targets = ${TEMP_CPU_TARGET}" >> ./sys/xfs/ext2fs/EXT2DEFS
 echo "nfstargets = ${TEMP_CPU_TARGET}" >> ./sys/xfs/nfs/NFSDEFS
+echo "nfs3targets = ${TEMP_CPU_TARGET}" >> ./sys/xfs/nfs3/NFSDEFS
 echo "minixtargets = ${TEMP_CPU_TARGET}" >> ./sys/xfs/minixfs/MINIXDEFS
 echo "xconout2targets = ${TEMP_CPU_TARGET}" >> ./sys/xdd/xconout2/XCONOUT2DEFS
 echo "lptargets = ${TEMP_CPU_TARGET}" >> ./sys/xdd/lp/LPDEFS
@@ -60,6 +61,7 @@ for f in tools/IO/IODEFS \
 	tools/mktbl/MKTBLDEFS \
 	tools/net-tools/NETTOOLSDEFS \
 	tools/nfs/NFSDEFS \
+	tools/nfs3/NFSDEFS \
 	tools/nohog2/NOHOG2DEFS \
 	tools/strace/STRACEDEFS \
 	tools/swkbdtbl/SWKBDTBLDEFS \
