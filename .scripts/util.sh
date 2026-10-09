@@ -42,6 +42,7 @@ copy_modules() {
 	cp "$SRC/sys/xfs/ext2fs/.compile_$TARGET/ext2.xfs" "$MINTDIR"
 	cp "$SRC/sys/xfs/minixfs/.compile_$TARGET/minix.xfs" "$MINTDIR/minix.xfx"
 	cp "$SRC/sys/xfs/nfs/.compile_$TARGET/nfs.xfs" "$MINTDIR"
+	cp "$SRC/sys/xfs/nfs3/.compile_$TARGET/nfs3.xfs" "$MINTDIR"
 	cp "$SRC/sys/xfs/isofs/.compile_$TARGET/isofs.xfs" "$MINTDIR/isofs.xfx"
 }
 
@@ -403,6 +404,7 @@ copy_sysroot() {
 	cp "$SRC/tools/net-tools/.compile_$TARGET/slattach" "$SYSROOT/bin/slattach"
 	cp "$SRC/tools/net-tools/slinkctl/.compile_$TARGET/slinkctl" "$SYSROOT/bin/slinkctl"
 	cp "$SRC/tools/nfs/.compile_$TARGET/mount_nfs" "$SYSROOT/bin/mount_nfs"
+	cp "$SRC/tools/nfs3/.compile_$TARGET/mount_nfs3" "$SYSROOT/bin/mount_nfs3"
 	cp "$SRC/tools/strace/.compile_$TARGET/strace" "$SYSROOT/bin/strace"
 	cp "$SRC/tools/swkbdtbl/.compile_$TARGET/swkbdtbl" "$SYSROOT/bin/swkbdtbl"
 	cp "$SRC/tools/sysctl/.compile_$TARGET/sysctl" "$SYSROOT/bin/sysctl"
