@@ -1,1 +1,1 @@
-e2fsprogs 1.47.3: https://github.com/freemint/e2fsprogs/releases/tag/v1.47.3-mint
+e2fsprogs 1.47.4: https://github.com/freemint/e2fsprogs/releases/tag/v1.47.4-mint
