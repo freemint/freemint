@@ -37,6 +37,8 @@ jobs:
             artifact: freemint-aranym
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install SSH keys
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
         env:

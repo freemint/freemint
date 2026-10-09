@@ -4,7 +4,6 @@
 
 SHELL = /bin/sh
 SUBDIRS = \
-	IO \
 	crypto \
 	fdisk \
 	fsetter \

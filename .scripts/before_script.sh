@@ -47,8 +47,7 @@ echo "unicorntargets = ${TEMP_CPU_TARGET}${PRG_TARGET}" >> ./sys/usb/src.km/ucd/
 echo "vttusbtargets = ${VTTUSB_TARGETS}" >> ./sys/usb/src.km/ucd/vttusb/VTTUSBDEFS
 echo "inet4targets = ${TEMP_CPU_TARGET}" >> ./sys/sockets/INET4DEFS
 
-for f in tools/IO/IODEFS \
-	tools/crypto/CRYPTODEFS \
+for f in tools/crypto/CRYPTODEFS \
 	tools/fdisk/FDISKDEFS \
 	tools/fsetter/FSETTERDEFS \
 	tools/gluestik/GLUESTIKDEFS \

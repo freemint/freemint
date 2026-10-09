@@ -23,6 +23,7 @@
 
 # include <mintbind.h>
 
+# include "mytypes.h"
 # include "xhdi.h"
 
 

@@ -20,11 +20,12 @@ include $(srcdir)/CRYPTODEFS
 all-here: all-targets
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)/IO
+INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/libIO
 
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs)
+LIBIO_COBJS = $(top_srcdir)/libIO/mint_io.c $(top_srcdir)/libIO/xhdi.c
 
 help:
 	@echo '#'
@@ -55,21 +56,18 @@ define TARGET_TEMPLATE
 
 $(1): .compile_$(1)/crypto
 
-LIBIO_NAME_$(1) = IO$$(CPU_$(1))
-LIBIO_DEP_$(1) = $(top_srcdir)/IO/lib$$(LIBIO_NAME_$(1)).a
-LIBIO_$(1) = -L$(top_srcdir)/IO -l$$(LIBIO_NAME_$(1))
-LIBS_$(1) = $$(LIBIO_$(1))
-OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS))), .compile_$(1)/$(OBJ).o)
+LIBS_$(1) =
+OBJS_$(1) = $(foreach OBJ, $(notdir $(basename $(COBJS) $(LIBIO_COBJS))), .compile_$(1)/$(OBJ).o)
 DEFINITIONS_$(1) = $(DEFINITIONS)
 
-.compile_$(1)/crypto: $$(OBJS_$(1)) $$(LIBIO_DEP_$(1))
+.compile_$(1)/crypto: $$(OBJS_$(1))
 	$(LD) $$(LDEXTRA_$(1)) -o $$@ $$(CFLAGS_$$(CPU_$(1))) $$(OBJS_$(1)) $$(LIBS_$(1))
 
 endef
 
 $(foreach TARGET,$(alltargets),$(eval $(call TARGET_TEMPLATE,$(TARGET))))
 
-$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
+$(foreach TARGET,$(alltargets),$(foreach OBJ,$(COBJS) $(LIBIO_COBJS),$(eval $(call CC_TEMPLATE,$(TARGET),$(OBJ)))))
 
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
 DEPS_MAGIC := $(shell mkdir -p $(addsuffix /.deps,$(addprefix .compile_,$(alltargets))) > /dev/null 2>&1 || :)
