@@ -246,15 +246,15 @@ restore_TOS_vectors (void)
 	*kbdvecs = old_kbdvecs;	/* restore keyboard vectors (structure copy) */
 
 # ifndef NO_AKP_KEYBOARD
-	if (tosvers < 0x0200)
-	{
-		*((long *) 0x0118L) = old_acia;
-	}
-	else
+	if (has_kbdvec)
 	{
 		long *kbdvec = ((long *)kbdvecs)-1;
 		*kbdvec = (long) old_kbdvec;
 	}
+
+	/* the ACIA vector is hooked on FireTOS only */
+	if (old_acia)
+		*((long *) 0x0118L) = old_acia;
 # endif
 
 	*((long *) VEC_BUS_ERROR) = old_bus;
