@@ -412,6 +412,28 @@ struct isp116x
 
 static unsigned short volatile dumm;
 
+static long netusbee_ct2;
+static inline void netusbee_ct2_romport_write(unsigned long first, unsigned long second)
+{
+	__asm__ volatile
+	(
+		"move.l	%%sp,%%a0\n\t"		/* first pass on the stack */
+		"move.l	%%sp,%%a1\n\t"
+		"moveq	#2-1,%%d1\n"		/* 2 passes */
+
+		"1:\ttst.w	(%%a0)\n\t"
+		"nop\n\tnop\n\tnop\n\tnop\n\t"
+		"tst.w	(%%a1)\n\t"
+
+		"move.l	%0,%%a0\n\t"		/* second pass on supplied addresses */
+		"move.l	%1,%%a1\n\t"
+		"dbra	%%d1,1b"
+		:
+		: "d"(first), "d"(second)
+		: "d1", "a0", "a1", "cc", "memory"
+	);
+}
+
 /* ISP116x registers access */
 
 /*
@@ -437,6 +459,14 @@ static inline unsigned read_le16_reg(const volatile unsigned short *addr)
 
 static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 {
+	if (netusbee_ct2)
+	{
+		netusbee_ct2_romport_write(
+			ISP116X_LSB_WRITE + ((reg & 0x00ff)<<1),
+			ISP116x_MSB_CMD_WRITE);
+		return;
+	}
+
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((reg & 0x00ff)<<1)));
 	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)ISP116x_MSB_CMD_WRITE);
@@ -445,6 +475,14 @@ static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 
 static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short val)
 {
+	if (netusbee_ct2)
+	{
+		netusbee_ct2_romport_write(
+			ISP116X_LSB_WRITE + (((val & 0xff00)>>8)<<1),
+			ISP116X_MSB_DATA_WRITE + ((val & 0x00ff)<<1));
+		return;
+	}
+
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + (((val & 0xff00)>>8)<<1)));
 	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + ((val & 0x00ff)<<1)));
@@ -453,6 +491,14 @@ static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short 
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
 {
+	if (netusbee_ct2)
+	{
+		netusbee_ct2_romport_write(
+			ISP116X_LSB_WRITE + ((val & 0x00ff)<<1),
+			ISP116X_MSB_DATA_WRITE + (((val & 0xff00)>>8)<<1));
+		return;
+	}
+
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((val & 0x00ff)<<1)));
 	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0xff00)>>8)<<1)));
@@ -481,6 +527,17 @@ static inline unsigned short isp116x_raw_read_data16(struct isp116x *isp116x)
 
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
 {
+	if (netusbee_ct2)
+	{
+		netusbee_ct2_romport_write(
+			ISP116X_LSB_WRITE + ((val & 0x000000ff)<<1),
+			ISP116X_MSB_DATA_WRITE + (((val & 0x0000ff00)>>8)<<1));
+		netusbee_ct2_romport_write(
+			ISP116X_LSB_WRITE + (((val & 0x00ff0000)>>16)<<1),
+			ISP116X_MSB_DATA_WRITE + (((val & 0xff000000)>>24)<<1));
+		return;
+	}
+
 	dumm = raw_readw((unsigned short*)(ISP116X_LSB_WRITE + ((val & 0x000000ff)<<1)));
 	DELAY_150NS;
 	dumm = raw_readw((unsigned short*)((ISP116X_MSB_DATA_WRITE) + (((val & 0x0000ff00)>>8)<<1)));

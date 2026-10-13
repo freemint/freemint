@@ -2168,6 +2168,7 @@ long _cdecl init_ucd(struct kentry *k, struct usb_module_api *uapi, char **reaso
 	delay_150ns = getloops4ns(150) + 1;
 	delay_300ns = getloops4ns(300) + 1;
 #endif /* TOSONLY */
+	getcookie(COOKIE__CT2, &netusbee_ct2);
 #endif /* (__mc68030__) || (__mc68040__) || (__mc68060__) */
 
 	ret = ucd_register(&netusbee_uif, &root_hub_dev);
