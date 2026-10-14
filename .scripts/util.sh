@@ -424,7 +424,7 @@ copy_guides() {
 
 create_filesystem() {
 	mkdir -p "$SYSROOT"/{bin,etc,root,tmp,var/run}
-	local coreutils="cat cp env ln ls md5sum mkdir mv rm"
+	local coreutils="cat cp dd env ln ls md5sum mkdir mv rm"
 	local e2fsprogs="e2fsck mke2fs tune2fs"
 
 	if [ "$CPU_TARGET" = "000" ]
