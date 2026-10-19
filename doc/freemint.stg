@@ -2331,7 +2331,7 @@ included in the pre-configured builds, not in the "per-cpu builds"!
 - minit: Create a minix filesystem
 - mkdir: Create a directory (folder)
 - mke2fs: Create an EXT2 filesystems
-- mkfatfs: Create TOS and DOS FAT/FAT32 filesystems
+- mkfs.fat: Create TOS and DOS FAT/FAT32 filesystems
 - mktbl: Make a keyboard translation table out of the given source file
 - mount_nfs: Mount a remote NFS filesystem
 - mv: Move/rename files/folders
@@ -5339,48 +5339,6 @@ Message-Id: <9412160954.AA28843@@issan.informatik.uni-dortmund.de>
 Subject: MinixFS: completed support for V2 filesystem
 
 add support for v2 triple indirection blocks
- 
-@endnode
-
-
-@node "mkfatfs" "mkfatfs"
-@toc "BIN"
-@{U}mkfatfs                                                           FreeMiNT@{0}
-
-Here is the first public release of mkfatfs, a filesystem creation tool.
-Main reason for this programm is to build TOS and DOS FAT32 partitions
-also on ATARI computers. Sorry, it's a commandline tool.
-
-Ok, what is FAT32 you ask now?
-
-FAT32 is a extension of the existing FAT definition. The FAT (File
-Allocation Table) on existing partitions is 16 bit wide.
-This limits the maximum number of cluster to 65536 (under TOS
-to 32768 because of some bugs). So if you need large partitions
-you must increase cluster size. 
-
-It requires a harddiskdriver that support at least XHDI level 1.10.
-
-If you start mkfatfs without any parameter, you get the following output:
-
-@line 1 73 0
-./mkfatfs 0.2b, 1998-08-01 for TOS and DOS FAT/FAT32-FS
-Found XHDI level 1.30.
-
-No drive specified.
-
-Usage: ./mkfatfs [OPTIONS] drv:
-  -c            Check filesystem as is gets built
-  -f <num>      Number of FATs (between 1 and 4)
-  -F <num>      FAT size (12, 16, or 32)
-  -i <id>       Volume ID as hexadecimal number (i.e. 0x0410)
-  -l <filename> Bad block filename
-  -m <filename> Boot message filename--text is used as a boot message
-  -n <name>     Volume name
-  -r <num>      Root directory entries (not applicable to FAT32)
-  -s <num>      Sectors per cluster (2, 4, 8, 16, 32, 64, or 128)
-  -a            Create filesystem always (disables partition ID checking)
-@line 1 73 0
  
 @endnode
 

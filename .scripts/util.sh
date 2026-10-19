@@ -390,7 +390,6 @@ copy_sysroot() {
 	cp "$SRC/tools/minix/minit/.compile_$TARGET/minit" "$SYSROOT/bin/minit"
 	cp "$SRC/tools/minix/tools/.compile_$TARGET/flist" "$SYSROOT/bin/mflist"
 	cp "$SRC/tools/minix/tools/.compile_$TARGET/mfsconf" "$SYSROOT/bin/mfsconf"
-	cp "$SRC/tools/mkfatfs/.compile_$TARGET/mkfatfs" "$SYSROOT/bin/mkfatfs"
 	cp "$SRC/tools/mktbl/.compile_$TARGET/mktbl" "$SYSROOT/bin/mktbl"
 	cp "$SRC/tools/net-tools/.compile_$TARGET/arp" "$SYSROOT/bin/arp"
 	cp "$SRC/tools/net-tools/.compile_$TARGET/diald" "$SYSROOT/bin/diald"
@@ -426,27 +425,26 @@ create_filesystem() {
 	mkdir -p "$SYSROOT"/{bin,etc,root,tmp,var/run}
 	local coreutils="cat cp dd env ln ls md5sum mkdir mv rm"
 	local e2fsprogs="e2fsck mke2fs tune2fs"
+	local dosfstools="fsck.fat fatlabel mkfs.fat"
 
 	if [ "$CPU_TARGET" = "000" ]
 	then
 		cp "$BASH_DIR/bash000.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
-		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}000.ttp" "$SYSROOT/bin/${exe}"; done
 		cp "$PING_DIR/ping000.ttp" "$SYSROOT/bin/ping"
 	elif [ "$CPU_TARGET" = "col" ]
 	then
 		cp "$BASH_DIR/bashv4e.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
-		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}v4e.ttp" "$SYSROOT/bin/${exe}"; done
 		cp "$PING_DIR/pingv4e.ttp" "$SYSROOT/bin/ping"
 	else
 		# 02060, 030, 040, 060
 		cp "$BASH_DIR/bash020.ttp" "$SYSROOT/bin/bash"
 		for exe in $coreutils; do cp "$COREUTILS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
-		for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/${exe}020.ttp" "$SYSROOT/bin/${exe}"; done
 		cp "$PING_DIR/ping020.ttp" "$SYSROOT/bin/ping"
 	fi
-	cp "$E2FSPROGS_DIR/mke2fs.conf" "$SYSROOT/etc"
+	for exe in $e2fsprogs; do cp "$E2FSPROGS_DIR/sbin/${exe}" "$SYSROOT/bin"; done
+	for exe in $dosfstools; do cp "$DOSFSTOOLS_DIR/sbin/${exe}" "$SYSROOT/bin"; done
 
 	echo "root:x:0:0::/root:/bin/bash" > "$SYSROOT/etc/passwd"
 
@@ -491,7 +489,4 @@ create_filesystem() {
 	cp "$TERADESK_DIR/DOC/RU/TERADESK.HYP" "$GUIDESDIR/ru/teradesk.hyp"
 	cp "$TERADESK_DIR/DOC/RU/TERADESK.REF" "$GUIDESDIR/ru/teradesk.ref"
 	cp "/usr/${CROSS_TOOL}/sys-root/stguide"/cflib.{hyp,ref} "$GUIDESDIR"
-
-	cp "$DOSFSTOOLS_DIR/sbin/fsck.fat" "$SYSROOT/bin"
-	cp "$DOSFSTOOLS_DIR/sbin/fatlabel" "$SYSROOT/bin"
 }

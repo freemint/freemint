@@ -8,7 +8,6 @@ HEADER = \
 COBJS = \
 	startup.S \
 	gemkfatfs.c \
-	mkfatfs.c \
 	util.c
 
 SRCFILES = $(HEADER) $(COBJS)

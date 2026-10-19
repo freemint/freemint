@@ -125,7 +125,7 @@ static const short option[] = 	{ SETVOLUMELABEL, BADBLOCKFILENAME, SETVOLUMEID,
 			  BOOTMESSAGE, SETROOTENTRIES, SETSPC,
 			  NOPARTITIONIDCHK, CHECKFAT };
 static const short argums[] =	{ 1, 2, 1, 2, 1, 3, 0, 0 };
-static const char *const cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-a", "-c" };
+static const char *const cmd_sw[] =	{ "-n ", "-l ", "-i 0x", "-m ", "-r ", "-s ", "-I", "-c" };
 static long argfdd[] =		{ VOLUMELABEL, 0, VOLUMEID, 0, ROOTENTRIES, SPC, 0, 0 };
 
 static void sig_child(void)
@@ -159,7 +159,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 
 	cmd = command;
 
-	strcpy(cmd, "-q ");
+	*cmd = '\0';
 
 	for (x = 0; x < 8; x++)
 	{
@@ -231,7 +231,7 @@ exec_mkfatfs(WINDIAL *wd, short drive)
 		return 0;
 
 	Psignal(SIGCHLD, sig_child);
-	r = proc_exec(100, 0x1, "mkfatfs", command, NULL);
+	r = proc_exec(100, 0x1, "mkfs.fat", command, NULL);
 
 	return r;
 }

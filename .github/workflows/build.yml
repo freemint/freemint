@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-    branches: [ master ]
 
 jobs:
   build:
@@ -57,7 +56,7 @@ jobs:
           ./.scripts/install-freemint.sh mintlib fdlibm gemlib cflib gemma
           ./.scripts/install-hcp.sh
           ./.scripts/install-udo.sh
-          ./.scripts/install-dosfstools.sh
+          ./.scripts/install-release.sh dosfstools e2fsprogs
       - name: Install Applications
         run: ./.scripts/install-apps.sh
       - name: libcmini

@@ -29,7 +29,6 @@ tools/minix/fsck/fsck.minix
 tools/minix/minit/minit
 tools/minix/tools/flist
 tools/minix/tools/mfsconf
-tools/mkfatfs/mkfatfs
 tools/mktbl/mktbl
 tools/net-tools/arp
 tools/net-tools/diald
