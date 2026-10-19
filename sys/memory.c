@@ -568,11 +568,28 @@ retry:
 static inline void
 unref_memreg(struct proc *p, MEMREGION *m)
 {
+	struct memspace *mem = p->p_mem;
+	int i;
+
 	m->links--;
-	if (!m->links)
+	if (!m->links) {
 		free_region(m);
-	else
-		mark_proc_region(p->p_mem, m, PROT_I, p->pid);
+		return;
+	}
+
+	/* A memory space can hold the same region in more than one slot:
+	 * a Pexec(104) thread shares its parent's memory space and gets
+	 * its basepage and environment attached to it once more. Keep the
+	 * pages accessible as long as any slot still holds the region,
+	 * otherwise the parent's Mfree() of the thread's basepage unmaps
+	 * the stack of the running thread.
+	 */
+	for (i = 0; i < mem->num_reg; i++) {
+		if (mem->mem[i] == m)
+			return;
+	}
+
+	mark_proc_region(mem, m, PROT_I, p->pid);
 }
 /*
  * detach_region(proc, reg): remove region from the procedure's address
