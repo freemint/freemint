@@ -313,6 +313,7 @@ long ehci_interrupt_handle(long param, long biosparam)
 	flush_dcache_range(ehci, sizeof(struct ehci));
 
 	status = ehci_readl(&ehci->hcor->or_usbsts);
+	status &= ehci_readl(&ehci->hcor->or_usbintr);
 	if (!status)
 		return biosparam; /* not our interrupt */
 
