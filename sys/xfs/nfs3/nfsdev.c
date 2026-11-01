@@ -456,6 +456,11 @@ nfs_read (FILEPTR *f, char *buf, long bytes)
 		pos += r;
 		bytes -= r;
 
+		/* The error paths above return what was read so far, so the
+		 * position has to keep up with `total' at all times.
+		 */
+		f->pos = pos;
+
 		/* NFS3 tells us explicitly whether we reached the end of
 		 * the file; NFS2 could only be guessed at by a short read
 		 */
@@ -466,7 +471,6 @@ nfs_read (FILEPTR *f, char *buf, long bytes)
 		}
 	}
 
-	f->pos = pos;
 	return total;
 }
 
