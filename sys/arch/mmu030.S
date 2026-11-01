@@ -120,12 +120,18 @@ SYM(save_mmu):
 
 	.globl	SYM(restr_mmu)
 
+// The tree has to be switched with the MMU turned off. set_mmu takes care
+// of running that part from ST-RAM when the kernel lives in TT-RAM which
+// is not mapped 1:1 (CT2). TT0/TT1 can be loaded with the MMU enabled.
 SYM(restr_mmu):
-	pmove	(nulltc).l,%tc
+	move.l	oldtc,-(sp)
+	move.l	oldcrp+4,-(sp)
+	move.l	oldcrp,-(sp)
+	jsr	SYM(set_mmu)
+	lea	12(sp),sp
 	pmove	oldtt0,%tt0
 	pmove	oldtt1,%tt1
-	pmove	oldcrp,%crp
-	pmove	oldtc,%tc
+	pflusha
 	rts
 
 

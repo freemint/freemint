@@ -473,9 +473,26 @@ L_switch:
 	.globl	SYM(old_resvec)
 	.extern	SYM(restore_TOS_vectors)
 	.globl	SYM(reboot)
+#ifdef WITH_MMU_SUPPORT
+	.extern	SYM(no_mem_prot)
+	.extern	SYM(restr_mmu)
+#endif
 
 	FUNC(reboot)
 SYM(reboot):
+	move.w	#0x2700,sr		// no interrupts or context switches from here on
+#ifdef WITH_MMU_SUPPORT
+	// The ROM's reset code is reached through the MMU tree that is active
+	// when we jump to it. With memory protection on, that is our own tree,
+	// which maps $00E00000 1:1 to the physical ROM. Systems that run TOS
+	// from a RAM copy mapped by their own tree (e.g. CenTurbo II) would
+	// then execute the unpatched ROM reset code instead of their own.
+	// Hand the MMU setup TOS gave us back to it first.
+	tst.w	SYM(no_mem_prot)
+	bne.s	1f
+	jsr	SYM(restr_mmu)
+1:
+#endif
 	move.l	(0).w,sp		// get sp after reboot
 	move.l	(4).w,a6		// get new reboot address
 	bra.s	SYM(reset)
