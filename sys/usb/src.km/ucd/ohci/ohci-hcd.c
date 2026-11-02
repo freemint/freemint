@@ -1274,6 +1274,13 @@ static int takeback_td(ohci_t *ohci, td_t *td_list)
 		ALERT(("OHCI usb-%s-%c cannot get error code ED is null", ohci->slot_name, (char)ohci->ctrl_num + '0'));
 		return stat;
 	}
+	/* HC may retire the dummy TD at hwTailP; ignore so the URB
+	 * waits for its real TD instead of being falsely finished.
+	 */
+	invalidate_dcache_range((void *)ed, sizeof(ed_t));
+	if (((unsigned long)td_list - ohci->dma_offset)
+	    == (cpu2le32(ed->hwTailP) & ~0xfUL))
+		return 0;
 	lurb_priv = ed->purb;
 	dl_transfer_length(ohci, td_list);
 	lurb_priv->td_cnt++;
