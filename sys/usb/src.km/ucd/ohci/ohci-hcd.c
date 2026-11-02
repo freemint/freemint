@@ -211,7 +211,7 @@ static void *bounce_alloc(ohci_t *ohci, long size)
 #ifdef TOSONLY
 	if (size > OHCI_TOS_BOUNCE_SIZE)
 	{
-		ALERT(("OHCI: static bounce too small (need %ld, have %ld)",
+		FORCE(("OHCI: static bounce too small (need %ld, have %ld)",
 		       size, (long)OHCI_TOS_BOUNCE_SIZE));
 		return NULL;
 	}
@@ -676,7 +676,7 @@ static int sohci_submit_job(ohci_t *ohci, urb_priv_t *urb, struct devrequest *se
 	if(ohci->disabled)
 	{
 		urb_free_priv(purb_priv);
-		ALERT(("sohci_submit_job: EPIPE"));
+		DEBUG(("sohci_submit_job: EPIPE"));
 		return -1;
 	}
 	/* we're about to begin a new transaction here so mark the
@@ -687,7 +687,7 @@ static int sohci_submit_job(ohci_t *ohci, urb_priv_t *urb, struct devrequest *se
 	if(!ed)
 	{
 		urb_free_priv(purb_priv);
-		ALERT(("sohci_submit_job: ENOMEM"));
+		FORCE(("sohci_submit_job: ENOMEM"));
 		return -1;
 	}
 	/* for the private part of the URB we need the number of TDs (size) */
@@ -707,7 +707,7 @@ static int sohci_submit_job(ohci_t *ohci, urb_priv_t *urb, struct devrequest *se
 	if(size >= (N_URB_TD - 1))
 	{
 		urb_free_priv(purb_priv);
-		ALERT(("need %d TDs, only have %d", size, N_URB_TD));
+		FORCE(("need %d TDs, only have %d", size, N_URB_TD));
 		return -1;
 	}
 	purb_priv->pipe = pipe;
@@ -724,14 +724,14 @@ static int sohci_submit_job(ohci_t *ohci, urb_priv_t *urb, struct devrequest *se
 		{
 			purb_priv->length = i;
 			urb_free_priv(purb_priv);
-			ALERT(("sohci_submit_job: ENOMEM"));
+			FORCE(("sohci_submit_job: ENOMEM"));
 			return -1;
 		}
 	}
 	if(ed->state == ED_NEW || (ed->state & ED_DEL))
 	{
 		urb_free_priv(purb_priv);
-		ALERT(("sohci_submit_job: EINVAL"));
+		DEBUG(("sohci_submit_job: EINVAL"));
 		return -1;
 	}
 	/* link the ed into a chain if is not already */
@@ -1024,7 +1024,7 @@ static ed_t *ep_add_ed(ohci_t *ohci, struct usb_device *usb_dev, unsigned long p
 	ed = ed_ret = &ohci_dev->ed[(usb_pipeendpoint(pipe) << 1) | (usb_pipecontrol(pipe)? 0: usb_pipeout(pipe))];
 	if((ed->state & ED_DEL) || (ed->state & ED_URB_DEL))
 	{
-		ALERT(("ep_add_ed: pending delete"));
+		DEBUG(("ep_add_ed: pending delete"));
 		return NULL;
 	}
 	if(ed->state == ED_NEW)
@@ -1063,7 +1063,7 @@ static void td_fill(ohci_t *ohci, unsigned long info, void *data, int len,
 	volatile td_t *td, *td_pt;
 	if(index > urb_priv->length)
 	{
-		ALERT(("index > length"));
+		DEBUG(("index > length"));
 		return;
 	}
 	/* use this td as the next dummy */
@@ -1206,7 +1206,7 @@ static void check_status(ohci_t *ohci, td_t *td_list)
 	int cc = TD_CC_GET(cpu2le32(td_list->hwINFO));
 	if(cc)
 	{
-		ALERT(("OHCI usb-%s-%c error: %s (%x)", ohci->slot_name, (char)ohci->ctrl_num + '0', cc_to_string[cc], cc));
+		FORCE(("OHCI usb-%s-%c error: %s (%x)", ohci->slot_name, (char)ohci->ctrl_num + '0', cc_to_string[cc], cc));
 		if(*phwHeadP & cpu2le32(0x1))
 		{
 			if(lurb_priv && ((td_list->index + 1) < urb_len))
@@ -1271,7 +1271,7 @@ static int takeback_td(ohci_t *ohci, td_t *td_list)
 	ed = td_list->ed;
 	if(ed == NULL)
 	{
-		ALERT(("OHCI usb-%s-%c cannot get error code ED is null", ohci->slot_name, (char)ohci->ctrl_num + '0'));
+		DEBUG(("OHCI usb-%s-%c cannot get error code ED is null", ohci->slot_name, (char)ohci->ctrl_num + '0'));
 		return stat;
 	}
 	/* HC may retire the dummy TD at hwTailP; ignore so the URB
@@ -1288,7 +1288,7 @@ static int takeback_td(ohci_t *ohci, td_t *td_list)
 	cc = TD_CC_GET(tdINFO);
 	if(cc)
 	{
-		ALERT(("OHCI usb-%s-%c error: %s (%x)", ohci->slot_name, (char)ohci->ctrl_num + '0', cc_to_string[cc], cc));
+		FORCE(("OHCI usb-%s-%c error: %s (%x)", ohci->slot_name, (char)ohci->ctrl_num + '0', cc_to_string[cc], cc));
 		stat = cc_to_error[cc];
 	}
 	/* see if this done list makes for all TD's of current URB,
@@ -1733,7 +1733,7 @@ static int submit_common_msg(ohci_t *ohci, struct usb_device *dev, unsigned long
 	urb = (urb_priv_t *)kmalloc(sizeof(urb_priv_t));
 	if(urb == NULL)
 	{
-		ALERT(("submit_common_msg malloc failed"));
+		FORCE(("submit_common_msg malloc failed"));
 		unlock_usb(&ohci->job_in_progress);
 		return -1;
 	}
@@ -1768,7 +1768,7 @@ static int submit_common_msg(ohci_t *ohci, struct usb_device *dev, unsigned long
 #endif
 	if(!maxsize)
 	{
-		ALERT(("submit_common_message: pipesize for pipe %lx is zero", pipe));
+		DEBUG(("submit_common_message: pipesize for pipe %lx is zero", pipe));
 		kfree(urb);
 		unlock_usb(&ohci->job_in_progress);
 #ifdef TOSONLY
@@ -1798,7 +1798,7 @@ static int submit_common_msg(ohci_t *ohci, struct usb_device *dev, unsigned long
 			urb->bounce_buf = bounce_alloc(ohci, req_pad + buf_pad + M68K_CACHE_LINE_SIZE);
 			if (urb->bounce_buf == NULL)
 			{
-				ALERT(("submit_common_msg: bounce alloc failed"));
+				FORCE(("submit_common_msg: bounce alloc failed"));
 				kfree(urb);
 				unlock_usb(&ohci->job_in_progress);
 #ifdef TOSONLY
@@ -1826,7 +1826,7 @@ static int submit_common_msg(ohci_t *ohci, struct usb_device *dev, unsigned long
 	}
 	if(sohci_submit_job(ohci, urb, setup) < 0)
 	{
-		ALERT(("sohci_submit_job failed"));
+		DEBUG(("sohci_submit_job failed"));
 		/* sohci_submit_job's failure paths call urb_free_priv,
 		 * which also frees urb->bounce_buf.
 		 */
@@ -1952,7 +1952,7 @@ long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer
 #endif
 	if(!maxsize)
 	{
-		ALERT(("submit_control_message: pipesize for pipe %lx is zero", pipe));
+		DEBUG(("submit_control_message: pipesize for pipe %lx is zero", pipe));
 		return -1;
 	}
 	if(((pipe >> 8) & 0x7f) == ohci->rh.devnum)
@@ -2017,7 +2017,7 @@ static int hc_reset(ohci_t *ohci)
 									{
 										if(ehci_timeout-- <= 0)
 										{
-											ALERT(("USB RootHub reset timed out!\r\n"));
+											FORCE(("USB RootHub reset timed out!\r\n"));
 											break;
 										}
 										udelay(1);
