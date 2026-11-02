@@ -1888,7 +1888,7 @@ static int submit_common_msg(ohci_t *ohci, struct usb_device *dev, unsigned long
 	 * into it.
 	 */
 	dev->status = stat;
-	dev->act_len = transfer_len;
+	dev->act_len = urb->actual_length;
 #ifdef DEV_DEBUG
 	pkt_print(ohci, urb, dev, pipe, buffer, transfer_len, setup, "RET(ctlr)", usb_pipeout(pipe));
 #else
