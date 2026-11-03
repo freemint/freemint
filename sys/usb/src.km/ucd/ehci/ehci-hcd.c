@@ -1111,7 +1111,7 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 						DEBUG(("port %d low speed --> companion", le2cpu16(req->index)));
 						reg |= EHCI_PS_PO;
 						ehci_writel(status_reg, reg);
-						gehci->companion |= (1 << le2cpu16(req->index));
+						gehci->companion |= (1 << (le2cpu16(req->index) - 1));
 						break;
 					}
 					else
