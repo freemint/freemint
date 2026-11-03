@@ -361,7 +361,7 @@ struct virt_root_hub {
 #define RH_A_POTPGT	(0xffUL << 24)		/* power on to power good time */
 
 /* urb */
-#define N_URB_TD 48
+#define N_URB_TD 128
 typedef struct
 {
 	ed_t *ed;
@@ -469,7 +469,7 @@ static ed_t * ep_add_ed(ohci_t * ohci, struct usb_device * usb_dev, unsigned lon
 /*-------------------------------------------------------------------------*/
 
 /* we need more TDs than EDs */
-#define NUM_TD 64
+#define NUM_TD 144
 
 /* TDs ... */
 static inline struct td *td_alloc(ohci_t *ohci, struct usb_device *usb_dev)
