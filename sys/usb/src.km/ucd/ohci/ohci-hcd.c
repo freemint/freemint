@@ -199,7 +199,7 @@ static inline unsigned long roothub_portstatus(ohci_t *ohci, int i) { return rea
 
 static int hc_interrupt(ohci_t *ohci);
 static void td_submit_job(ohci_t *ohci, struct usb_device *dev, unsigned long pipe,
- void *buffer, int transfer_len, struct devrequest *setup, urb_priv_t *urb, int interval);
+ void *buffer, long transfer_len, struct devrequest *setup, urb_priv_t *urb, int interval);
 
 
 /*-------------------------------------------------------------------------*
@@ -450,10 +450,10 @@ static int sohci_get_current_frame_number(ohci_t *ohci, struct usb_device *dev);
  * small: 0) header + data packets 1) just header */
 
 static void pkt_print(ohci_t *ohci, urb_priv_t *purb, struct usb_device *dev,
-		      unsigned long pipe, void *buffer, int transfer_len,
+		      unsigned long pipe, void *buffer, long transfer_len,
 		      struct devrequest *setup, char *str, int small)
 {
-	DEBUG(("%s URB:[%4x] dev:%2lu,ep:%2lu-%c,type:%s,len:%d/%d stat:%#lx",
+	DEBUG(("%s URB:[%4x] dev:%2lu,ep:%2lu-%c,type:%s,len:%ld/%ld stat:%#lx",
 			str,
 			sohci_get_current_frame_number(ohci, dev),
 			usb_pipedevice(pipe),
@@ -467,7 +467,7 @@ static void pkt_print(ohci_t *ohci, urb_priv_t *purb, struct usb_device *dev,
 #ifdef OHCI_VERBOSE_DEBUG
 	if(!small)
 	{
-		int i, len;
+		long i, len;
 		if(usb_pipecontrol(pipe))
 		{
 			FORCE(("%s: cmd(8):", __FILE__));
@@ -477,7 +477,7 @@ static void pkt_print(ohci_t *ohci, urb_priv_t *purb, struct usb_device *dev,
 		}
 		if(transfer_len > 0 && buffer)
 		{
-			FORCE(("%s: data(%d/%d):", __FILE__, (purb ? purb->actual_length : 0), transfer_len));
+			FORCE(("%s: data(%ld/%ld):", __FILE__, (purb ? purb->actual_length : 0), transfer_len));
 			len = usb_pipeout(pipe)? transfer_len : (purb ? purb->actual_length : 0);
 			for(i = 0; i < 16 && i < len; i++)
 				FORCE((" %02x", ((unsigned char *)buffer)[i]));
@@ -669,7 +669,7 @@ static int sohci_submit_job(ohci_t *ohci, urb_priv_t *urb, struct devrequest *se
 	struct usb_device *dev = urb->dev;
 	unsigned long pipe = urb->pipe;
 	void *buffer = urb->transfer_buffer;
-	int transfer_len = urb->transfer_buffer_length;
+	long transfer_len = urb->transfer_buffer_length;
 	int interval = urb->interval;
 	/* when controller's hung, permit only roothub cleanup attempts
 	 * such as powering down ports */
@@ -1057,7 +1057,7 @@ static ed_t *ep_add_ed(ohci_t *ohci, struct usb_device *usb_dev, unsigned long p
 
 /* enqueue next TD for this URB (OHCI spec 5.2.8.2) */
 
-static void td_fill(ohci_t *ohci, unsigned long info, void *data, int len,
+static void td_fill(ohci_t *ohci, unsigned long info, void *data, long len,
  struct usb_device *dev, int index, urb_priv_t *urb_priv)
 {
 	volatile td_t *td, *td_pt;
@@ -1104,9 +1104,9 @@ static void td_fill(ohci_t *ohci, unsigned long info, void *data, int len,
 /* prepare all TDs of a transfer */
 
 static void td_submit_job(ohci_t *ohci, struct usb_device *dev, unsigned long pipe,
- void *buffer, int transfer_len, struct devrequest *setup, urb_priv_t *urb, int interval)
+ void *buffer, long transfer_len, struct devrequest *setup, urb_priv_t *urb, int interval)
 {
-	int data_len = transfer_len;
+	long data_len = transfer_len;
 	unsigned char *data;
 	int cnt = 0;
 	unsigned long info = 0;
@@ -1440,11 +1440,11 @@ int rh_check_port_status(ohci_t *controller)
 
 /* request to virtual root hub */
 static int ohci_submit_rh_msg(ohci_t *ohci, struct usb_device *dev, unsigned long pipe,
- void *buffer, int transfer_len, struct devrequest *cmd)
+ void *buffer, long transfer_len, struct devrequest *cmd)
 {
 	void *data = buffer;
-	int leni = transfer_len;
-	int len = 0;
+	long leni = transfer_len;
+	long len = 0;
 	int stat = 0;
 	unsigned long datab[4];
 	unsigned char *data_buf = (unsigned char *)datab;
@@ -1697,7 +1697,7 @@ static void ohci_mdelay_1_ikbd(void)
 
 /* common code for handling submit messages - used for all but root hub accesses. */
 static int submit_common_msg(ohci_t *ohci, struct usb_device *dev, unsigned long pipe, void *buffer,
- int transfer_len, struct devrequest *setup, int interval)
+ long transfer_len, struct devrequest *setup, int interval)
 {
 	int stat = 0;
 	int maxsize = usb_maxpacket(dev, pipe);
@@ -1935,7 +1935,7 @@ long submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 {
 	ohci_t *ohci = (ohci_t *)dev->controller->ucd_priv;
 	DEBUG(("submit_bulk_msg dev 0x%p ohci 0x%p buffer 0x%p len %ld", dev, ohci, buffer, transfer_len));
-	return submit_common_msg(ohci, dev, pipe, buffer, (int)transfer_len, NULL, 0);
+	return submit_common_msg(ohci, dev, pipe, buffer, transfer_len, NULL, 0);
 }
 
 long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
@@ -1945,7 +1945,7 @@ long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer
 	int maxsize = usb_maxpacket(dev, pipe);
 	DEBUG(("submit_control_msg dev 0x%p ohci 0x%p", dev, ohci));
 #ifdef DEV_DEBUG
-	pkt_print(ohci, NULL, dev, pipe, buffer, (int)transfer_len, setup, "SUB", usb_pipein(pipe));
+	pkt_print(ohci, NULL, dev, pipe, buffer, transfer_len, setup, "SUB", usb_pipein(pipe));
 #else
 	if(ohci->irq)
 		mdelay(1);
@@ -1958,9 +1958,9 @@ long submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer
 	if(((pipe >> 8) & 0x7f) == ohci->rh.devnum)
 	{
 		ohci->rh.dev = dev;
-		return ohci_submit_rh_msg(ohci, dev, pipe, buffer, (int)transfer_len, setup);
+		return ohci_submit_rh_msg(ohci, dev, pipe, buffer, transfer_len, setup);
 	}
-	return submit_common_msg(ohci, dev, pipe, buffer, (int)transfer_len, setup, 0);
+	return submit_common_msg(ohci, dev, pipe, buffer, transfer_len, setup, 0);
 }
 
 long submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
@@ -1968,7 +1968,7 @@ long submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 {
 	ohci_t *ohci = (ohci_t *)dev->controller->ucd_priv;
 	DEBUG(("submit_int_msg dev 0x%p ohci 0x%p buffer 0x%p len %ld", dev, ohci, buffer, transfer_len));
-	return submit_common_msg(ohci, dev, pipe, buffer, (int)transfer_len, NULL, (int)interval);
+	return submit_common_msg(ohci, dev, pipe, buffer, transfer_len, NULL, (int)interval);
 }
 
 /*-------------------------------------------------------------------------*

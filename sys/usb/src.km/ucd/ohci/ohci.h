@@ -148,7 +148,7 @@ struct td {
 	struct ed *ed;
 	struct td *next_dl_td;
 	struct usb_device *usb_dev;
-	int transfer_len;
+	long transfer_len;
 	unsigned long data;
 
 	unsigned long unused2[2];
@@ -371,9 +371,9 @@ typedef struct
 	int   state;
 	unsigned long pipe;
 	void *transfer_buffer;
-	int transfer_buffer_length;
+	long transfer_buffer_length;
 	int interval;
-	int actual_length;
+	long actual_length;
 	int finished;
 	td_t *td[N_URB_TD];	/* list pointer to all corresponding TDs associated with this request */
 	void *bounce_buf;	/* bounce buffer owned by the URB */
