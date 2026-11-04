@@ -1053,6 +1053,12 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 		case USB_REQ_GET_STATUS | ((USB_RT_PORT | USB_DIR_IN) << 8):
 			memset(tmpbuf, 0, 4);
 			reg = ehci_readl(status_reg);
+			if(reg & EHCI_PS_PO)
+			{
+				srcptr = tmpbuf;
+				srclen = 4;
+				break;
+			}
 			if(reg & EHCI_PS_CS)
 				tmpbuf[0] |= USB_PORT_STAT_CONNECTION;
 			if(reg & EHCI_PS_PE)
