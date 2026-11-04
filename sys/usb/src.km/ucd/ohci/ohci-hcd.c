@@ -2211,13 +2211,11 @@ static int hc_interrupt(ohci_t *ohci)
 }
 
 #ifndef TOSONLY
-static struct ucdif *ohci_pending_wakeup = NULL;
-
 static void _cdecl ohci_int_handle_tophalf(PROC *process, long arg)
 {
-	if(ohci_pending_wakeup)
-		usb_rh_wakeup(ohci_pending_wakeup);
-	ohci_pending_wakeup = NULL;
+	struct ucdif *controller_if = (struct ucdif *)arg;
+	if(controller_if)
+		usb_rh_wakeup(controller_if);
 }
 
 long ohci_interrupt_handle(long param, long biosparam)
@@ -2247,8 +2245,9 @@ long ohci_interrupt_handle(long param, long biosparam)
 	{
 		if(rh_check_port_status(ohci) >= 0)
 		{
-			ohci_pending_wakeup = ohci->controller_if;
-			addroottimeout(0L, ohci_int_handle_tophalf, 0x1);
+			TIMEOUT *t = addroottimeout(0L, ohci_int_handle_tophalf, 0x1);
+			if(t)
+				t->arg = (long)ohci->controller_if;
 		}
 	}
 

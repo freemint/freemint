@@ -294,13 +294,11 @@ ehci_pci_probe(void)
 }
 
 #ifndef TOSONLY
-static struct ucdif *ehci_pending_wakeup = NULL;
-
 static void _cdecl ehci_int_handle_tophalf(PROC *process, long arg)
 {
-	if (ehci_pending_wakeup)
-		usb_rh_wakeup(ehci_pending_wakeup);
-	ehci_pending_wakeup = NULL;
+	struct ucdif *controller_if = (struct ucdif *)arg;
+	if (controller_if)
+		usb_rh_wakeup(controller_if);
 }
 
 
@@ -337,8 +335,9 @@ long ehci_interrupt_handle(long param, long biosparam)
 			}
 			else if((pstatus & EHCI_PS_CSC))
 			{
-				ehci_pending_wakeup = ehci->controller;
-				addroottimeout(0L, ehci_int_handle_tophalf, 0x1);
+				TIMEOUT *t = addroottimeout(0L, ehci_int_handle_tophalf, 0x1);
+				if(t)
+					t->arg = (long)ehci->controller;
 			}
 		}
 	}
