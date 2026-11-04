@@ -1660,6 +1660,7 @@ ehci_alloc_ucdif(struct ucdif **u)
 		ehci_uif->ucd_priv = (void *)(((unsigned long)raw
 		                               + M68K_CACHE_LINE_SIZE - 1)
 		                              & ~((unsigned long)M68K_CACHE_LINE_SIZE - 1));
+		memset(ehci_uif->ucd_priv, 0, sizeof(struct ehci));
 	}
 
 	return 0;
