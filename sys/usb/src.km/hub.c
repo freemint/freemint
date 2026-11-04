@@ -498,10 +498,12 @@ usb_hub_events(struct usb_hub_device *hub)
 			changed |= USB_PORT_STAT_C_CONNECTION;
 			DEBUG(("port %ld connection change", i + 1));
 
-			/* If something disconnected, return now, as it
-			 * could have been our hub.
+			/* If something disconnected on an external hub, return
+			 * now, as it could have been our hub. A root hub cannot
+			 * disconnect from itself, so keep iterating its ports.
 			 */
-			if (usb_hub_port_connect_change(dev, i, portstatus) == 0)
+			if (usb_hub_port_connect_change(dev, i, portstatus) == 0
+			    && dev->parent != NULL)
 			{
 				return changed;
 			}
@@ -526,10 +528,11 @@ usb_hub_events(struct usb_hub_device *hub)
 						"disabled by hub (EMI?), " \
 						"re-enabling...", i + 1));
 
-				/* If something disconnected, return now, as it
-				 * could have been our hub.
+				/* Same rationale as above: only bail on external
+				 * hubs, keep iterating on root hubs.
 				 */
-				if (usb_hub_port_connect_change(dev, i, portstatus) == 0)
+				if (usb_hub_port_connect_change(dev, i, portstatus) == 0
+				    && dev->parent != NULL)
 				{
 					return changed;
 				}
