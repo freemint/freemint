@@ -296,11 +296,15 @@ ehci_pci_probe(void)
 #ifndef TOSONLY
 static void _cdecl ehci_int_handle_tophalf(PROC *process, long arg)
 {
-	struct ucdif *controller_if = (struct ucdif *)arg;
-	if (controller_if)
-		usb_rh_wakeup(controller_if);
+	struct ehci *gehci = (struct ehci *)arg;
+	if (gehci)
+	{
+		/* Re-enable PCD interrupt: hub is about to process pending changes */
+		unsigned long intr_en = ehci_readl(&gehci->hcor->or_usbintr);
+		ehci_writel(&gehci->hcor->or_usbintr, intr_en | (unsigned long)STS_PCD);
+		usb_rh_wakeup(gehci->controller);
+	}
 }
-
 
 long ehci_interrupt_handle(long param, long biosparam)
 {
@@ -322,6 +326,7 @@ long ehci_interrupt_handle(long param, long biosparam)
 	{
 		unsigned long reg = ehci_readl(&ehci->hccr->cr_hcsparams);
 		unsigned long i = HCS_N_PORTS(reg);
+		int need_wakeup = 0;
 		while(i--)
 		{
 			unsigned long pstatus = ehci_readl(&ehci->hcor->or_portsc[i]);
@@ -333,12 +338,23 @@ long ehci_interrupt_handle(long param, long biosparam)
 				pstatus |= EHCI_PS_PO;
 				ehci_writel(&ehci->hcor->or_portsc[i], pstatus);
 			}
-			else if((pstatus & EHCI_PS_CSC))
+			else if(pstatus & EHCI_PS_CSC)
 			{
-				TIMEOUT *t = addroottimeout(0L, ehci_int_handle_tophalf, 0x1);
-				if(t)
-					t->arg = (long)ehci->controller;
+				need_wakeup = 1;
 			}
+		}
+		if (need_wakeup)
+		{
+			/*
+			 * Mask PCDE: while CSC is set, hardware re-asserts PCD on
+			 * every RTE, triggering an IRQ storm.  The tophalf re-enables
+			 * PCDE after scheduling the hub to clear CSC.
+			 */
+			unsigned long intr_en = ehci_readl(&ehci->hcor->or_usbintr);
+			ehci_writel(&ehci->hcor->or_usbintr, intr_en & ~(unsigned long)STS_PCD);
+			TIMEOUT *t = addroottimeout(0L, ehci_int_handle_tophalf, 0x1);
+			if(t)
+				t->arg = (long)ehci;
 		}
 	}
 
