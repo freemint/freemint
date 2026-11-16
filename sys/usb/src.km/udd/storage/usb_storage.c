@@ -1524,7 +1524,7 @@ usb_inquiry(short *handle, unsigned char lun, void *buf)
 	parms.buf         = buf;
 	parms.transferlen = 36;
 	parms.sense       = sense;
-	parms.timeout     = USB_CNTL_TIMEOUT;   /* scsidrv_In multiplies by 5 */
+	parms.timeout     = USB_CNTL_TIMEOUT * 4;  /* scsidrv_In multiplies by 5: 2000ms actual */
 	parms.flags       = 0;
 
 	memset(sense, 0, sizeof(sense));
