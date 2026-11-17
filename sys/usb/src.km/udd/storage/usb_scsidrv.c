@@ -429,6 +429,8 @@ retry:
 							usb_stor_eject(mass_storage_dev[dev].usb_block_desc[srb.lun]->global_lun_id);
 					}
 					return NOSCSIERROR;
+				case USB_STOR_TRANSPORT_ERROR :
+					return TRANSERROR;
 				case USB_STOR_TRANSPORT_DATA_FAILED :
 					return TRANSERROR;
 				case USB_STOR_TRANSPORT_PHASE_ERROR :
@@ -582,6 +584,8 @@ retry:
 			{
 				case USB_STOR_TRANSPORT_GOOD :
 					return NOSCSIERROR;
+				case USB_STOR_TRANSPORT_ERROR :
+					return TRANSERROR;
 				case USB_STOR_TRANSPORT_DATA_FAILED :
 					return TRANSERROR;
 				case USB_STOR_TRANSPORT_PHASE_ERROR :

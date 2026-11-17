@@ -1640,11 +1640,13 @@ usb_test_unit_ready(short *handle, unsigned char lun, int retries)
 		r = SCSIDRV_In(&parms);
 		if (r == NOSCSIERROR)
 			return 0;
-		/* For BBB, SCSIDRV already issued REQUEST SENSE.
-		 * For CB, SCSIDRV returns STATUSERROR with an
-		 * empty sense buffer, so we must issue REQUEST SENSE ourselves.
+		/* Transport error: no sense data possible, retrying won't help. */
+		if (r != S_CHECK_COND && r != STATUSERROR)
+			return -1;
+		/* S_CHECK_COND: sense already populated by SCSIDRV.
+		 * STATUSERROR: CB/UFI TUR stall; fetch sense ourselves.
 		 */
-		if (r != S_CHECK_COND) {
+		if (r == STATUSERROR) {
 			memset(sense, 0, sizeof(sense));
 			usb_request_sense(handle, lun, sense);
 		}
