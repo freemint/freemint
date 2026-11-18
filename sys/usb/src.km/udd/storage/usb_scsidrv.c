@@ -335,16 +335,12 @@ SCSIDRV_In (SCSICMD *parms)
 				pccb.cmdlen = 12;
 				pccb.lun = srb.lun;
 				r = ss->transport(&pccb, ss);
-				if (r == USB_STOR_TRANSPORT_SENSE) {
-					/* CBI/CB: auto-sense done inside transport */
-					if (ss->protocol == US_PR_BULK && parms->sense)
-						fetch_sense(&srb, ss);
+				if (r == USB_STOR_TRANSPORT_NO_SENSE) {
 					if (parms->sense)
 						memcpy(parms->sense, srb.sense_buf, 18);
 					return S_CHECK_COND;
 				}
-				if (r == USB_STOR_TRANSPORT_FAILED) {
-					/* command failed, no auto-sense; fetch sense now */
+				if (r == USB_STOR_TRANSPORT_SENSE) {
 					if (parms->sense)
 						fetch_sense(&srb, ss);
 					if (parms->sense)
@@ -399,9 +395,15 @@ SCSIDRV_In (SCSICMD *parms)
 retry:
 			r = ss->transport (&srb, ss);
 
+			if (r == USB_STOR_TRANSPORT_NO_SENSE) {
+				/* CB/CBI: auto-sense done inside transport, sense in srb.sense_buf */
+				if (parms->sense)
+					memcpy(parms->sense, srb.sense_buf, 18);
+				return S_CHECK_COND;
+			}
 			if (r == USB_STOR_TRANSPORT_SENSE) {
-				/* CBI/CB transport already issues REQUEST SENSE internally */
-				if (ss->protocol == US_PR_BULK && parms->sense)
+				/* BBB: CSW FAILED; CB/CBI: TUR/INQUIRY stall — fetch sense now */
+				if (parms->sense)
 					fetch_sense(&srb, ss);
 				if (parms->sense)
 					memcpy(parms->sense, srb.sense_buf, 18);
@@ -557,9 +559,15 @@ SCSIDRV_Out (SCSICMD *parms)
 retry:
 			r = ss->transport (&srb, ss);
 
+			if (r == USB_STOR_TRANSPORT_NO_SENSE) {
+				/* CB/CBI: auto-sense done inside transport, sense in srb.sense_buf */
+				if (parms->sense)
+					memcpy(parms->sense, srb.sense_buf, 18);
+				return S_CHECK_COND;
+			}
 			if (r == USB_STOR_TRANSPORT_SENSE) {
-				/* CBI/CB transport already issues REQUEST SENSE internally */
-				if (ss->protocol == US_PR_BULK && parms->sense)
+				/* BBB: CSW FAILED; CB/CBI: TUR/INQUIRY stall — fetch sense now */
+				if (parms->sense)
 					fetch_sense(&srb, ss);
 				if (parms->sense)
 					memcpy(parms->sense, srb.sense_buf, 18);

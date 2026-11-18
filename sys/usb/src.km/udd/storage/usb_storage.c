@@ -1125,7 +1125,7 @@ usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 		if(srb->cmd[0] == SCSI_REQ_SENSE || srb->cmd[0] == SCSI_INQUIRY)
 			return USB_STOR_TRANSPORT_GOOD; /* Good */
 		else if(us->ip_data)
-			return USB_STOR_TRANSPORT_FAILED;
+			return USB_STOR_TRANSPORT_SENSE;
 		else
 			return USB_STOR_TRANSPORT_GOOD;
 	}
@@ -1133,7 +1133,7 @@ usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 	switch(us->ip_data)
 	{
 		case 0x0001: return USB_STOR_TRANSPORT_GOOD;
-		case 0x0002: return USB_STOR_TRANSPORT_FAILED;
+		case 0x0002: return USB_STOR_TRANSPORT_SENSE;
 		default: return USB_STOR_TRANSPORT_ERROR;
 	}
 	return USB_STOR_TRANSPORT_ERROR;
@@ -1388,7 +1388,7 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
-		return (result < 0)?USB_STOR_TRANSPORT_FAILED:USB_STOR_TRANSPORT_GOOD;
+		return (result < 0)?USB_STOR_TRANSPORT_ERROR:USB_STOR_TRANSPORT_GOOD;
 	}
 	if (srb->cmd[0] == SCSI_INQUIRY)
 	{
@@ -1404,7 +1404,7 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
-		return (result < 0)?USB_STOR_TRANSPORT_FAILED:USB_STOR_TRANSPORT_GOOD;
+		return (result < 0)?USB_STOR_TRANSPORT_ERROR:USB_STOR_TRANSPORT_GOOD;
 	}
 
 	/* issue an request_sense */
@@ -1486,7 +1486,7 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 			transfer_running = 0;
 #endif
-			return USB_STOR_TRANSPORT_SENSE;
+			return USB_STOR_TRANSPORT_NO_SENSE;
 
 		default:
 			DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x",
@@ -1495,12 +1495,12 @@ usb_stor_CB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 			transfer_running = 0;
 #endif
-			return USB_STOR_TRANSPORT_SENSE;
+			return USB_STOR_TRANSPORT_NO_SENSE;
 	}
 #ifdef TOSONLY
 	transfer_running = 0;
 #endif
-	return USB_STOR_TRANSPORT_FAILED;
+	return USB_STOR_TRANSPORT_SENSE;
 }
 
 static long

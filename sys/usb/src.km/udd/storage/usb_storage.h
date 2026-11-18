@@ -44,13 +44,30 @@ struct mass_storage_dev {
 	char num_luns;						/* Number of LUNs exposed by this device */
 };
 
-#define USB_STOR_TRANSPORT_GOOD         0
-#define USB_STOR_TRANSPORT_FAILED      -1
-#define USB_STOR_TRANSPORT_ERROR       -2
-#define USB_STOR_TRANSPORT_SENSE       -3
-#define USB_STOR_TRANSPORT_DATA_FAILED -4
-#define USB_STOR_TRANSPORT_PHASE_ERROR -5
-#define USB_STOR_TRANSPORT_TIMEOUT     -6
+/*
+ * Transport return codes. Every transport function (usb_stor_BBB_transport,
+ * usb_stor_CB_transport) returns exactly one of these values.
+ *
+ * TRANSPORT_GOOD        -- command completed successfully.
+ * TRANSPORT_SENSE       -- command failed; no auto-sense was performed;
+ *                          caller must issue REQUEST SENSE to get sense data.
+ *                          BBB: CSW FAILED status.  CB/CBI: TUR or INQUIRY
+ *                          stall where auto-sense is deliberately skipped.
+ * TRANSPORT_ERROR       -- transport-level failure; no sense data available.
+ * TRANSPORT_NO_SENSE    -- command failed; auto-sense was performed inside
+ *                          the transport (CB/CBI inline REQUEST SENSE);
+ *                          sense data is already in srb->sense_buf.
+ * TRANSPORT_DATA_FAILED -- BBB: data phase bulk transfer failed.
+ * TRANSPORT_PHASE_ERROR -- BBB: phase error (CSW PHASE status).
+ * TRANSPORT_TIMEOUT     -- BBB: data phase CRC error.
+ */
+#define USB_STOR_TRANSPORT_GOOD          0
+#define USB_STOR_TRANSPORT_SENSE        -1
+#define USB_STOR_TRANSPORT_ERROR        -2
+#define USB_STOR_TRANSPORT_NO_SENSE     -3
+#define USB_STOR_TRANSPORT_DATA_FAILED  -4
+#define USB_STOR_TRANSPORT_PHASE_ERROR  -5
+#define USB_STOR_TRANSPORT_TIMEOUT      -6
 
 /* Polling flags (defined in vectors.S, configured by SETTER.PRG) */
 extern int enable_flop_mediach;
