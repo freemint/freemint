@@ -335,18 +335,24 @@ SCSIDRV_In (SCSICMD *parms)
 				pccb.cmdlen = 12;
 				pccb.lun = srb.lun;
 				r = ss->transport(&pccb, ss);
-				if (r == USB_STOR_TRANSPORT_FAILED
-					|| r == USB_STOR_TRANSPORT_DATA_FAILED
-					|| r == USB_STOR_TRANSPORT_ERROR)
-					return STATUSERROR;
-				else if(r == USB_STOR_TRANSPORT_SENSE) {
-					/* CBI/CB transport already issues REQUEST SENSE internally */
+				if (r == USB_STOR_TRANSPORT_SENSE) {
+					/* CBI/CB: auto-sense done inside transport */
 					if (ss->protocol == US_PR_BULK && parms->sense)
 						fetch_sense(&srb, ss);
 					if (parms->sense)
 						memcpy(parms->sense, srb.sense_buf, 18);
 					return S_CHECK_COND;
 				}
+				if (r == USB_STOR_TRANSPORT_FAILED) {
+					/* command failed, no auto-sense; fetch sense now */
+					if (parms->sense)
+						fetch_sense(&srb, ss);
+					if (parms->sense)
+						memcpy(parms->sense, srb.sense_buf, 18);
+					return S_CHECK_COND;
+				}
+				if (r != USB_STOR_TRANSPORT_GOOD)
+					return TRANSERROR;
 			}
 
 			if (srb.cmd[0] == SCSI_REPORT_LUN) {
