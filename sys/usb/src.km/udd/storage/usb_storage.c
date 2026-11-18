@@ -1183,7 +1183,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
-		return USB_STOR_TRANSPORT_FAILED;
+		return USB_STOR_TRANSPORT_ERROR;
 	}
 	pipein = usb_rcvbulkpipe(us->pusb_dev, (long)us->ep_in);
 	pipeout = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
@@ -1256,7 +1256,7 @@ again:
 	{
 		DEBUG(("usb_bulk_msg error status %lx", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 #ifdef BBB_XPORT_TRACE
@@ -1279,21 +1279,21 @@ again:
 	{
 		DEBUG(("!CSWSIGNATURE"));
 		usb_stor_BBB_reset(us);
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if((CBWTag - 1) != le2cpu32(csw.dCSWTag))
 	{
 		DEBUG(("!Tag"));
 		usb_stor_BBB_reset(us);
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if(csw.bCSWStatus > CSWSTATUS_PHASE)
 	{
 		DEBUG((">PHASE"));
 		usb_stor_BBB_reset(us);
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if(csw.bCSWStatus == CSWSTATUS_PHASE)
@@ -1306,7 +1306,7 @@ again:
 	else if(data_actlen > srb->datalen)
 	{
 		DEBUG(("transferred %ldB instead of %ldB", data_actlen, srb->datalen));
-		result = USB_STOR_TRANSPORT_FAILED;
+		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if(csw.bCSWStatus == CSWSTATUS_FAILED)
