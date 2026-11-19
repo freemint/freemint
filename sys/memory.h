@@ -27,6 +27,8 @@ long	change_prot_status (struct proc *proc, long start, short newmode);
 long	_cdecl attach_region (struct proc *proc, MEMREGION *reg);
 void	_cdecl detach_region (struct proc *proc, MEMREGION *reg);
 long	detach_region_by_addr (struct proc *p, unsigned long block);
+void	hold_thread_regions (struct proc *p, MEMREGION *base, MEMREGION *env);
+void	release_thread_regions (struct proc *p, int detach);
 
 MEMREGION *get_region (MMAP map, ulong size, short mode);
 MEMREGION *_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);

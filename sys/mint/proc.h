@@ -283,6 +283,12 @@ struct proc
 	ushort	exception_mmusr;	/* result from ptest insn	*/
 	ushort	exception_access;	/* cause of the bus error (read, write, read/write) */
 
+	/* basepage and environment of a process that shares the memory
+	 * space of its parent, see hold_thread_regions()
+	 */
+	MEMREGION *thread_base;
+	MEMREGION *thread_env;
+
 
 	ulong	stack_magic;		/* to detect stack overflows	*/
 	char	stack[STKSIZE+4];	/* stack for system calls	*/

@@ -682,6 +682,60 @@ detach_region_by_addr(struct proc *p, unsigned long block)
 	return EBADARG;
 }
 
+/*
+ * A process started by Pexec(4) or Pexec(104) shares the memory space of
+ * its parent. sys_pexec() attaches its basepage and its environment to
+ * that memory space once more, and these two attachments are the
+ * references the new process holds. They do not go away with a memory
+ * space of its own when it terminates, so the process remembers the two
+ * regions and release_thread_regions() detaches them.
+ *
+ * The link taken here keeps the region descriptors valid until then, no
+ * matter how often Mfree() detaches the regions in the meantime.
+ */
+
+void
+hold_thread_regions (struct proc *p, MEMREGION *base, MEMREGION *env)
+{
+	base->links++;
+	env->links++;
+
+	p->thread_base = base;
+	p->thread_env = env;
+}
+
+/*
+ * release_thread_regions(p, detach): forget the regions remembered by
+ * hold_thread_regions(). If detach is set, one attachment of each region
+ * is removed from the memory space of p as well, if there is still one.
+ */
+
+void
+release_thread_regions (struct proc *p, int detach)
+{
+	MEMREGION *reg[2];
+	int i;
+
+	reg[0] = p->thread_env;
+	reg[1] = p->thread_base;
+
+	p->thread_env = NULL;
+	p->thread_base = NULL;
+
+	for (i = 0; i < 2; i++) {
+		MEMREGION *m = reg[i];
+
+		if (!m)
+			continue;
+
+		m->links--;
+		if (!m->links)
+			free_region (m);
+		else if (detach)
+			detach_region (p, m);
+	}
+}
+
 /**
  * Allocate a new region of the given size in the given memory map.
  * The "links" field in the region is set to 1.

@@ -506,10 +506,15 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		/* notify proc extensions */
 		proc_ext_on_exec(get_curproc());
 
-		/* exec_region frees the memory attached to p;
-		 * that's always what we want, since fork_proc duplicates
-		 * the memory, and since if we didn't call fork_proc
-		 * then we're overlaying.
+		/* Unless p is a thread, exec_region frees the memory
+		 * attached to p; that's what we want, since fork_proc
+		 * duplicates the memory, and since if we didn't call
+		 * fork_proc then we're overlaying.
+		 *
+		 * A thread shares the memory space of its parent and keeps
+		 * everything. Its attachments of env and base go into that
+		 * memory space as well, so they have to be remembered to be
+		 * detached when the thread terminates.
 		 *
 		 * NOTE: after this call, we may not be able to access the
 		 * original address space that the Pexec was taking place in
@@ -518,6 +523,8 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		exec_region(p, base, thread);
 		attach_region(p, env);
 		attach_region(p, base);
+		if (thread)
+			hold_thread_regions(p, base, env);
 
 		if (mkname)
 		{
@@ -661,7 +668,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
  * "p" is the process structure set up by the parent; it may be "curproc",
  * if we're overlaying. "mem" is the loaded memory region returned by
  * "load region". Any open files (other than the standard handles) owned
- * by "p" are closed, and if thread !=0 all memory is released; the caller
+ * by "p" are closed, and if thread == 0 all memory is released; the caller
  * must explicitly attach the environment and base region. The caller must
  * also put "p" on the appropriate queue (most likely READY_Q).
  */

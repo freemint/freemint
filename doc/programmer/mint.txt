@@ -1294,9 +1294,13 @@ set up by Pexec() mode 3, 5, or 7. The caller does not wait for
 the child to finish. Returns a negative error code, or the process ID
 of the child. Note that the child's environment and basepage are
 owned by both the child and the parent (indeed, the child shares all
-memory owned by the parent). \name\ is a pointer to a string
-to be used to supply a name for the new process; if it is NULL, then
-the parent's name is used.
+memory owned by the parent). The child owns them until it terminates.
+The parent owns them until it calls Mfree() for each of them, which it
+may do as soon as Pexec() has returned, or until it terminates. The
+two blocks are released when neither owns them anymore; this also
+applies to a child started with Pexec(4, ...). \name\ is a pointer to
+a string to be used to supply a name for the new process; if it is
+NULL, then the parent's name is used.
 
 Pexec(106, name, basepage, 0L)
 Similar to Pexec(104,...) except that the child's environment and

@@ -128,6 +128,11 @@ terminate(struct proc *pcurproc, short code, short que)
 
 	free_cwd (pcurproc);
 
+	/* a thread shares its memory space, so free_mem() does not detach
+	 * its basepage and environment
+	 */
+	release_thread_regions (pcurproc, que == ZOMBIE_Q);
+
 	/* attention, this invalidates the MMU table */
 	if (que == ZOMBIE_Q)
 		free_mem (pcurproc);
