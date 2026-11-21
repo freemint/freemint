@@ -162,6 +162,13 @@ long _cdecl		init		(struct kentry *k, struct adiinfo *ai, char **reason) __asm__
 
 #define MAX_DC_TIME	200
 #define MAX_TIMEGAP	20
+/*
+ * How far (in pixels) the mouse may move away from where a button was
+ * pressed before the pending button event is sent at once. With the button
+ * still held that is a drag (a window mover, a slider, a rubber box), which
+ * must not wait for the double-click time.
+ */
+#define DRAG_THRESHOLD	3
 #define SYSTIMER	0x4baL
 #define SYSVBI		0x456L
 #define SYSNVBI		0x454L
@@ -320,6 +327,16 @@ cmotv(void)
 	(*ainf->move)(&moose_aif, sample_x, sample_y);
 }
 
+static short
+dragged(void)
+{
+	short dx = sample_x - click_x;
+	short dy = sample_y - click_y;
+
+	return dx > DRAG_THRESHOLD || dx < -DRAG_THRESHOLD ||
+	       dy > DRAG_THRESHOLD || dy < -DRAG_THRESHOLD;
+}
+
 static void
 chk_but_timeout(short tm)
 {
@@ -329,7 +346,9 @@ chk_but_timeout(short tm)
 		t		-= last_time;
 		last_time	= tm;
 		timeout		-= t;
-		if (timeout <= 0)
+		/* Waiting for a double click is pointless once the mouse
+		 * is dragged with the button held down. */
+		if (timeout <= 0 || (last_state && dragged()))
 			do_button_packet();
 	}
 }
