@@ -314,6 +314,8 @@ load_module(const char *path, const char *filename, long *err)
 	}
 
 	km->next = loaded_modules;
+	if (loaded_modules)
+		loaded_modules->prev = km;
 	km->b = b;
 	km->flags = MOD_LOADED;
 	if (path)
