@@ -1843,17 +1843,36 @@ popup(struct task_administration_block *tab, short item)
 
 		cancel_popin_timeout();
 
-		if (p > 0 && (!at || (at->to_item != p)) && !(obtree[p].ob_state & OS_DISABLED))
+		if (m > 0 && m != k->p.parent)
 		{
-			change_entry(tab, 0);
-			k->p.current = -1;
-			set_popout_timeout(tab, false);
+			/*
+			 * On a separator or another disabled entry: highlight
+			 * nothing, not even the entry whose submenu is still open,
+			 * and let that submenu close after popout_timeout, as it
+			 * does when the mouse rests on any other entry.
+			 */
+			if (p > 0 && !(obtree[p].ob_state & OS_DISABLED))
+			{
+				change_entry(tab, 0);
+				k->p.current = -1;
+			}
+			if (at)
+				set_popout_timeout(tab, false);
 		}
-		if (at && at->to_item != p)
+		else
 		{
-			k->p.current = at->to_item;
-			change_entry(tab, 1);
-			cancel_popout_timeout();
+			if (p > 0 && (!at || (at->to_item != p)) && !(obtree[p].ob_state & OS_DISABLED))
+			{
+				change_entry(tab, 0);
+				k->p.current = -1;
+				set_popout_timeout(tab, false);
+			}
+			if (at && at->to_item != p)
+			{
+				k->p.current = at->to_item;
+				change_entry(tab, 1);
+				cancel_popout_timeout();
+			}
 		}
 
 		if (m < 0)
