@@ -2597,6 +2597,18 @@ click_scroll(int lock, struct xa_window *wind, struct xa_widget *widg, const str
 	short my = md->y;
 	short mb = md->state;
 
+	/*
+	 * The button-release packet that ends a held-down (repeating) scroll
+	 * comes here too. It has no button state, so it must not scroll once
+	 * more: with reverse = false that last step went the wrong way after
+	 * scrolling with the right button.
+	 */
+	if (!md->state)
+	{
+		cancel_widget_active(wind, 2);
+		return true;
+	}
+
 	if (!(   widget_active.widg
 	      && slider
 	      && slider->stuff.sl
