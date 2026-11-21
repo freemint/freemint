@@ -42,6 +42,7 @@
 # include "mint/ioctl.h"
 # include "mint/mem.h"
 # include "mint/proc.h"
+# include "mint/stat.h"
 # include "mint/arch/asm.h"
 
 # include "dosdir.h"
@@ -52,6 +53,7 @@
 # include "k_prot.h"
 # include "kentry.h"
 # include "kerinfo.h"
+# include "kernget.h"
 # include "kmemory.h"
 # include "memory.h"
 # include "time.h"
@@ -243,6 +245,78 @@ free_km(struct kernel_module *km)
 	kfree(km);
 }
 
+# if WITH_KERNFS
+/*
+ * u:\kern\modules: one line per loaded module (drivers and kernel modules),
+ * newest first:
+ *
+ * type, text address, memory taken (bytes), file date, file path
+ *
+ * type text           size date       path
+ * xdd  0x0012AB00    84999 2026-11-21 c:\mint\1-19-cur\inet4.xdd
+ */
+static const char *
+module_type(short class)
+{
+	switch (class)
+	{
+		case MODCLASS_XIF:	return "xif";
+		case MODCLASS_XDD:	return "xdd";
+		case MODCLASS_XFS:	return "xfs";
+		case MODCLASS_KM:
+		case MODCLASS_KMDEF:	return "km";
+	}
+	return "?";
+}
+
+/* the full file name: xdd/xfs/xif keep it in name, kernel modules in path + name */
+static int
+module_name_is_full(const struct kernel_module *km)
+{
+	return strchr(km->name, '\\') || strchr(km->name, '/');
+}
+
+long
+kern_get_modules(SIZEBUF **buffer, const struct proc *p)
+{
+	struct kernel_module *km;
+	SIZEBUF *info;
+	ulong len = 48;
+	char *crs;
+
+	UNUSED(p);
+
+	for (km = loaded_modules; km; km = km->next)
+		len += 48 + strlen(km->path) + strlen(km->name);
+
+	info = kmalloc(sizeof(*info) + len);
+	if (!info)
+		return ENOMEM;
+
+	crs = info->buf;
+	crs += ksprintf(crs, len - (crs - info->buf), "%s\n",
+			"type text           size date       path");
+
+	for (km = loaded_modules; km; km = km->next)
+	{
+		struct basepage *b = km->b;
+
+		crs += ksprintf(crs, len - (crs - info->buf),
+				"%4s 0x%08lx %8ld %04d-%02d-%02d %s%s\n",
+				module_type(km->class),
+				b ? (unsigned long)b->p_tbase : 0UL,
+				b ? (long)(b->p_hitpa - (long)km) : 0L,
+				1980 + (km->mdate >> 9), (km->mdate >> 5) & 15, km->mdate & 31,
+				module_name_is_full(km) ? "" : km->path,
+				km->name);
+	}
+
+	info->len = crs - info->buf;
+	*buffer = info;
+	return 0;
+}
+# endif
+
 static struct kernel_module *
 load_module(const char *path, const char *filename, long *err)
 {
@@ -293,6 +367,20 @@ load_module(const char *path, const char *filename, long *err)
 	b->p_blen = fh.fbss;
 
 	*err = load_and_reloc(f, &fh, (char *)b + 256, 0, fh.ftext + fh.fdata, b);
+
+	/* the file's date, shown in u:\kern\modules */
+	if (*err == 0)
+	{
+		XATTR xattr, *xa = &xattr;
+
+		if (xfs_getxattr(f->fc.fs, &f->fc, xa) == 0)
+		{
+			if (f->fc.fs->fsflags & FS_EXT_3)
+				xtime_to_local_dos(xa, m);
+			km->mtime = xa->mtime;
+			km->mdate = xa->mdate;
+		}
+	}
 
 	/* close file */
 // 	kernel_close(f);

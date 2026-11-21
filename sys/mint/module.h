@@ -68,6 +68,8 @@ struct kernel_module
 	char path[PATH_MAX];
 	char name[64];
 	struct proc *caller;
+	unsigned short mtime;		/* modification time and date of the file */
+	unsigned short mdate;		/* at loading, GEMDOS format (u:\kern\modules) */
 };
 
 long _cdecl init_km(struct kentry *k, struct kernel_module *km) __asm__("init_km");
