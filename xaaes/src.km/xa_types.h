@@ -2007,6 +2007,7 @@ struct xa_popinfo
 	short	*objs;
 
 	short	current;		/* Currently selected, or pointed to, object */
+	short	first;			/* menu_popup()'s mn_item: first entry shown when the popup scrolls */
 
 	XA_MENU_ATTACHMENT *at_up;
 	XA_MENU_ATTACHMENT *at_down;

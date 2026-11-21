@@ -489,6 +489,7 @@ clear_popinfo(struct xa_popinfo *pi)
 	pi->objs = NULL;
 
 	pi->current = -1;
+	pi->first = -1;
 
 	pi->at_up = pi->at_down = NULL;
 }
@@ -1181,6 +1182,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 	GRECT r;
 	bool mod_h = false;
 	int mg = MONO ? 0 : 0;
+	short full_h, scroll = 0;
 
 	wt->dx = 0;
 	wt->dy = 0;
@@ -1189,6 +1191,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 	obtree->ob_y = k->rdy = rdy;
 
 	obj_rectangle(wt, aesobj(wt->tree, pi->parent), &r);
+	full_h = r.g_h;
 /* ************ */
 	if (tab->scroll)
 	{
@@ -1202,6 +1205,24 @@ display_popup(Tab *tab, short rdx, short rdy)
 	{
 		mod_h = true;
 		r.g_h = cfg.popscroll * screen.c_max_h;
+	}
+
+	/*
+	 * A popup that scrolls shows menu_popup()'s mn_item as its first
+	 * entry, as far as possible: the window goes where that entry was
+	 * placed (at the position asked for), and is scrolled to it below.
+	 */
+	if (mod_h && pi->first > 0 && pi->first != pi->parent)
+	{
+		short fx, fy;
+
+		obj_offset(wt, aesobj(wt->tree, pi->first), &fx, &fy);
+		scroll = fy - r.g_y;
+		if (scroll > full_h - r.g_h)
+			scroll = full_h - r.g_h;
+		if (scroll < 0)
+			scroll = 0;
+		r.g_y += scroll;
 	}
 
 /* ************ */
@@ -1289,6 +1310,13 @@ display_popup(Tab *tab, short rdx, short rdy)
 			DIAG((D_menu, tab->client, "locking pop window %lx + %d", (unsigned long)obtree, pi->parent));
 		}
 		open_window(tab->lock, wind, r);
+
+		if (scroll)
+		{
+			short msg[8] = { WM_ARROWED, 0, 0, wind->handle, WA_UPSCAN, scroll, 0, 0 };
+
+			do_formwind_msg(wind, tab->client, 0, 0, msg);
+		}
 	}
 }
 

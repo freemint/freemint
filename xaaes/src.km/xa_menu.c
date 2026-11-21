@@ -601,6 +601,8 @@ menu_popup(int lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result
 			mn->wt = wt;
 
 			init_popinfo(mn, &tab->task_data.menu.p);
+			if (!tab->task_data.menu.p.objs)	/* not scrolled by init_popinfo() */
+				tab->task_data.menu.p.first = mn->menu.mn_item;
 
 			result->menu = mn->menu;
 			result->at = NULL;
