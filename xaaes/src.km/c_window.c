@@ -3244,8 +3244,20 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, GRECT *ne
 		wa.g_w = wind->wa.g_w;
 		wa.g_h = wind->wa.g_h;
 
+		if (wind->dial & created_for_TOOLBAR)
+		{
+			/*
+			 * The toolbar also covers the top of the column right of
+			 * the work area: blit and redraw it with the work area,
+			 * whatever widgets that column has.
+			 */
+			GRECT ta;
+
+			toolbar_clip(wind, &ta);
+			wa.g_w = ta.g_x + ta.g_w - new->g_x - wa.g_x;
+		}
 		/* increase width of workarea by vslider-width if toolbar installed */
-		if( (wind->active_widgets & TOOLBAR) && (wind->active_widgets & VSLIDE) )
+		else if( (wind->active_widgets & TOOLBAR) && (wind->active_widgets & VSLIDE) )
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
 			wa.g_w += widg->ar.g_w;

@@ -828,13 +828,18 @@ static void
 draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	GRECT r;
+	GRECT r, wa;
 
 	DIAG((D_wind, wind->owner, "draw_widget: wind handle %d, widget %d (func=%lx)",
 		wind->handle, widg->m.r.xaw_idx, (unsigned long)widg->m.r.draw));
 
 	if (!rl)
 		rl = wind->rect_list.start;
+
+	if (widg->m.r.xaw_idx == XAW_TOOLBAR)
+		toolbar_clip(wind, &wa);
+	else
+		wa = wind->wa;
 
 	if (rl)
 	{
@@ -844,7 +849,7 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 		{
 			if (widg->m.properties & WIP_WACLIP)
 			{
-				if (xa_rect_clip(&rl->r, &wind->wa, &r))
+				if (xa_rect_clip(&rl->r, &wa, &r))
 				{
 					(*v->api->set_clip)(v, &r);
 					widg->m.r.draw(wind, widg, &r);
@@ -4148,15 +4153,16 @@ redraw_toolbar(int lock, struct xa_window *wind, short item)
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	struct xa_rect_list *rl;
-	GRECT r;
+	GRECT r, wa;
 
 	hidem();
 	widg->start = item;
 
+	toolbar_clip(wind, &wa);
 	rl = wind->rect_list.start;
 	while (rl)
 	{
-		if (xa_rect_clip(&rl->r, &wind->wa, &r))
+		if (xa_rect_clip(&rl->r, &wa, &r))
 		{
 			(*v->api->set_clip)(v, &r);
 			widg->m.r.draw(wind, widg, &r);
@@ -4166,6 +4172,28 @@ redraw_toolbar(int lock, struct xa_window *wind, short item)
 	(*v->api->clear_clip)(v);
 	showm();
 	widg->start = wind->winitem;
+}
+
+/*
+ * The area the toolbar is drawn in. A toolbar set with wind_set(WF_TOOLBAR)
+ * is as wide as the window (see there): it also covers the top of the
+ * column right of the work area (vertical slider, arrows, sizer), so its
+ * area is the work area widened to the right edge of that column. Other
+ * toolbars (the AES' own dialogs) stay within the work area.
+ */
+void
+toolbar_clip(struct xa_window *wind, GRECT *r)
+{
+	*r = wind->wa;
+
+	if (wind->dial & created_for_TOOLBAR)
+	{
+		short frame = wind->frame > 0 ? wind->frame : 0;
+		short right = wind->r.g_x + wind->r.g_w - frame - (wind->frame < 0 ? 0 : wind->x_shadow);
+
+		if (right > r->g_x + r->g_w)
+			r->g_w = right - r->g_x;
+	}
 }
 
 void
