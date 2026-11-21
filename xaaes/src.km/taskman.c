@@ -898,11 +898,31 @@ free_namelist(struct cfg_name_list **list)
 	}
 }
 
+/*
+ * Processes that are not AES clients (TOS/TTP programs, daemons) are not
+ * announced to the AES when they start or end, so the task manager list
+ * is rebuilt every TM_REFRESH_MS while its window is open.
+ */
+#define TM_REFRESH_MS	2000
+
+static TIMEOUT *tm_refresh_to = NULL;
+
+static void
+cancel_tm_refresh(void)
+{
+	if (tm_refresh_to)
+	{
+		cancelroottimeout(tm_refresh_to);
+		tm_refresh_to = NULL;
+	}
+}
+
 static int
 taskmanager_destructor(int lock, struct xa_window *wind)
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 
+	cancel_tm_refresh();
 	if (htd)
 		htd->w_taskman = NULL;
 	return true;
@@ -1679,6 +1699,124 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 
 GRECT taskman_r = { 0, 0, 0, 0 };
 
+/*
+ * Update the CPU chart and the process list of the open task manager:
+ * AES clients, other processes (from u:/kern), memory info; entries of
+ * processes that have gone are deleted.
+ */
+static void
+refresh_tasklist(int lock, struct helpthread_data *htd, struct xa_window *wind)
+{
+	struct xa_client *client;
+	SCROLL_INFO *list;
+	struct proc *rootproc = pid2proc(0);
+	static int first = 1;	/* do full-redraw for correct slider-size */
+	int redraw = NOREDRAW;
+	XA_TREE *wt;
+
+	wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
+	list = object_get_slist(wt->tree + TM_LIST);
+
+	if( first == 0 )
+		redraw = NORMREDRAW;
+	do_tm_chart(lock, wt, rootproc, wind);
+
+	if( list )
+	{
+		struct scroll_entry *this;
+		/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
+
+		for( this = list->start; this; this = this->next )
+			this->usr_flags &= ~TM_UPDATED;
+
+		FOREACH_CLIENT(client)
+		{				/* */
+			update_tasklist_entry( AES_CLIENT, client, htd, 0, redraw);
+		}
+		/* add non-client-procs */
+		{
+			long i = d_opendir("u:/kern", 0);
+			if (i > 0)
+			{
+				char nm[128];
+				struct proc *pr;
+				long pid;
+
+				update_tasklist_entry( NO_AES_CLIENT, 0, htd, 0, redraw );	/* kernel */
+
+				while( d_readdir(127, i, nm) == 0)
+				{
+					if( isdigit( nm[4] ) )
+					{
+						pid = atol(nm+4);
+						pr = pid2proc( pid );
+						if( pr )
+						{
+							if( !is_aes_client(pr) )
+							{
+								update_tasklist_entry( NO_AES_CLIENT, 0, htd, pid, redraw );
+							}
+						}
+					}
+				}
+				d_closedir(i);
+
+				add_meminfo( list, this );
+
+				/* delete exited entries */
+				{
+				struct scroll_entry *this_next;
+				for( this = list->start; this; this = this_next )
+				{
+					this_next = this->next;
+					if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
+					{
+						list->del( list, this, redraw );
+					}
+				}
+				}
+			}
+		}
+		if( first == 1 )
+		{
+			list->redraw( list, NULL );
+			first = 0;
+		}
+	}	/* /if( list ) */
+}
+
+static void set_tm_refresh(void);
+
+/* Runs in the helper thread, posted by tm_refresh_timeout() */
+static void
+refresh_taskmanager(int lock, struct xa_client *client, short b)
+{
+	struct helpthread_data *htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
+	struct xa_window *wind = htd ? htd->w_taskman : NULL;
+
+	if (wind && (wind->window_status & XAWS_OPEN))
+	{
+		if (!(wind->window_status & (XAWS_ICONIFIED | XAWS_SHADED | XAWS_HIDDEN)))
+			refresh_tasklist(lock, htd, wind);
+		set_tm_refresh();
+	}
+}
+
+static void
+tm_refresh_timeout(struct proc *p, long arg)
+{
+	tm_refresh_to = NULL;
+	if (C.Hlp)
+		post_cevent(C.Hlp, ceExecfunc, refresh_taskmanager, NULL, 0, 0, NULL, NULL);
+}
+
+static void
+set_tm_refresh(void)
+{
+	if (!tm_refresh_to)
+		tm_refresh_to = addroottimeout(TM_REFRESH_MS, tm_refresh_timeout, 1);
+}
+
 void
 open_taskmanager(int lock, struct xa_client *client, short open)
 {
@@ -1687,7 +1825,6 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 	XA_TREE *wt = NULL;
 	OBJECT *obtree = NULL;
 	GRECT or;
-	int redraw = NOREDRAW;
 
 	struct xa_wtxt_inf *wp[] = {&norm_txt, &acc_txt, &prg_txt, &sys_txt, &sys_thrd, &desk_txt, 0};
 	int objs[] = {TM_ICN_MENU, TM_ICN_XAAES, 0};
@@ -1817,6 +1954,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
+			set_tm_refresh();
 		}
 	}
 	else
@@ -1824,79 +1962,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 		wind = htd->w_taskman;
 		if (open)
 		{
-			SCROLL_INFO *list;
-			struct proc *rootproc = pid2proc(0);
-			static int first = 1;	/* do full-redraw for correct slider-size */
-
-			wt = get_widget(wind, XAW_TOOLBAR)->stuff.wt;
-			list = object_get_slist(wt->tree + TM_LIST);
-
-			if( first == 0 )
-				redraw = NORMREDRAW;
-			do_tm_chart(lock, wt, rootproc, wind);
-
-			if( list )
-			{
-				struct scroll_entry *this;
-				/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
-
-				for( this = list->start; this; this = this->next )
-					this->usr_flags &= ~TM_UPDATED;
-
-				FOREACH_CLIENT(client)
-				{				/* */
-					update_tasklist_entry( AES_CLIENT, client, htd, 0, redraw);
-				}
-				/* add non-client-procs */
-				{
-					long i = d_opendir("u:/kern", 0);
-					if (i > 0)
-					{
-						char nm[128];
-						struct proc *pr;
-						long pid;
-
-						update_tasklist_entry( NO_AES_CLIENT, 0, htd, 0, redraw );	/* kernel */
-
-						while( d_readdir(127, i, nm) == 0)
-						{
-							if( isdigit( nm[4] ) )
-							{
-								pid = atol(nm+4);
-								pr = pid2proc( pid );
-								if( pr )
-								{
-									if( !is_aes_client(pr) )
-									{
-										update_tasklist_entry( NO_AES_CLIENT, 0, htd, pid, redraw );
-									}
-								}
-							}
-						}
-						d_closedir(i);
-
-						add_meminfo( list, this );
-
-						/* delete exited entries */
-						{
-						struct scroll_entry *this_next;
-						for( this = list->start; this; this = this_next )
-						{
-							this_next = this->next;
-							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
-							{
-								list->del( list, this, redraw );
-							}
-						}
-						}
-					}
-				}
-				if( first == 1 )
-				{
-					list->redraw( list, NULL );
-					first = 0;
-				}
-			}	/* /if( list ) */
+			refresh_tasklist(lock, htd, wind);
 
 			if( S.focus != wind )
 			{
@@ -1904,6 +1970,7 @@ open_taskmanager(int lock, struct xa_client *client, short open)
 				open_window(lock, wind, wind->r);
 				force_window_top( lock, wind );
 			}
+			set_tm_refresh();
 		}
 	}
 	return;
