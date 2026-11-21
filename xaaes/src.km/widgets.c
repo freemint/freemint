@@ -4188,24 +4188,28 @@ redraw_toolbar(int lock, struct xa_window *wind, short item)
 
 /*
  * The area the toolbar is drawn in. A toolbar set with wind_set(WF_TOOLBAR)
- * is as wide as the window (see there): it also covers the top of the
- * column right of the work area (vertical slider, arrows, sizer), so its
- * area is the work area widened to the right edge of that column. Other
- * toolbars (the AES' own dialogs) stay within the work area.
+ * is a band as wide as the window (see there), between its borders: it
+ * also covers the top of the column right of the work area (vertical
+ * slider, arrows, sizer) and the margins left for the work area frame,
+ * which frames only the work area below the toolbar. Other toolbars (the
+ * AES' own dialogs) stay within the work area.
  */
 void
 toolbar_clip(struct xa_window *wind, GRECT *r)
 {
-	*r = wind->wa;
-
 	if (wind->dial & created_for_TOOLBAR)
 	{
+		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 		short frame = wind->frame > 0 ? wind->frame : 0;
-		short right = wind->r.g_x + wind->r.g_w - frame - (wind->frame < 0 ? 0 : wind->x_shadow);
+		short shadow = wind->frame < 0 ? 0 : wind->x_shadow;
 
-		if (right > r->g_x + r->g_w)
-			r->g_w = right - r->g_x;
+		r->g_x = wind->r.g_x + frame;
+		r->g_w = wind->r.g_w - (frame << 1) - shadow;
+		r->g_y = widg->ar.g_y;
+		r->g_h = widg->ar.g_h;
 	}
+	else
+		*r = wind->wa;
 }
 
 void

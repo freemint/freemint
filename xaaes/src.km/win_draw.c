@@ -1940,17 +1940,9 @@ d_waframe(struct xa_window *wind, const GRECT *clip)
 		(*vapi->br_hook)(v, 1, &wa, lc);
 
 		/* fill gap between upper toolbar and wa */
-		if( (wind->active_widgets & TOOLBAR) )
+		if( (wind->active_widgets & TOOLBAR) && !(wind->dial & created_for_TOOLBAR) )
 		{
-			if (wind->dial & created_for_TOOLBAR)
-			{
-				/* as wide as the toolbar, see toolbar_clip() */
-				GRECT ta;
-
-				toolbar_clip(wind, &ta);
-				wa.g_w = ta.g_x + ta.g_w - wa.g_x;
-			}
-			else if( (wind->active_widgets & VSLIDE) )
+			if( (wind->active_widgets & VSLIDE) )
 			{
 				XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
 				wa.g_w += widg->ar.g_w;
