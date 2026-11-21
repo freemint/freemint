@@ -247,6 +247,38 @@ static const char *setget(int i)
 }
 #endif /* GENERATE_DIAGS */
 
+/*
+ * The arrows of the column right of the work area, and the sizer when
+ * there is no bottom row, must stay below the toolbar: make the minimum
+ * window height the height above the column (title, info, menu,
+ * toolbar), plus those widgets, plus what lies below the work area.
+ */
+static void
+toolbar_min_height(struct xa_window *w)
+{
+	static const short column[] = { XAW_UPLN, XAW_UPLN1, XAW_DNLN };
+	XA_WIDGET *tb = get_widget(w, XAW_TOOLBAR);
+	XA_WIDGET *widg;
+	short need = 0, min_h;
+	int i;
+
+	for (i = 0; i < sizeof(column) / sizeof(column[0]); i++)
+	{
+		widg = get_widget(w, column[i]);
+		if (wdg_is_inst(widg))
+			need += widg->ar.g_h;
+	}
+	widg = get_widget(w, XAW_RESIZE);
+	if (wdg_is_inst(widg) && !(w->active_widgets & (HSLIDE|LFARROW|RTARROW)))
+		need += widg->ar.g_h;
+
+	min_h = (tb->ar.g_y + tb->ar.g_h - w->r.g_y)			/* down to the toolbar's bottom */
+	      + need
+	      + (w->r.g_y + w->r.g_h - (w->rwa.g_y + w->rwa.g_h));	/* frame, bottom row */
+
+	if (w->min.g_h < min_h)
+		w->min.g_h = min_h;
+}
 
 unsigned long
 XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
@@ -960,6 +992,8 @@ XA_wind_set(int lock, struct xa_client *client, AESPB *pb)
 					w->wa.g_w -= vslw;
 					w->rwa.g_w -= vslw;
 				}
+
+				toolbar_min_height(w);
 
 				if( w->r.g_h < w->min.g_h )	/* height may too small for toolbar */
 				{
