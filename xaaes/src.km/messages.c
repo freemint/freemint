@@ -668,7 +668,12 @@ send_a_message(int lock, struct xa_client *dest_client, short amq, short qmf, un
 
 	if (amq != AMQ_IREDRAW  && !(amq & AMQ_ANYCASE))
 	{
-		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT))
+		/*
+		 * A client blocked in menu_popup() or form_popup() cannot answer
+		 * either. Counting its WM_REDRAWs would hold up the mouse, and so
+		 * the menu it waits for, until redraw_timeout.
+		 */
+		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT | CS_BLOCK_MENU_NAV))
 		{
 			if (msg->m[0] == WM_REDRAW)
 			{
