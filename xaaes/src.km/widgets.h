@@ -43,6 +43,7 @@ void		display_widget(int lock, struct xa_window *wind, XA_WIDGET *widg, struct x
 void		standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void _cdecl	redraw_toolbar(int lock, struct xa_window *wind, short item);
 void		set_toolbar_coords(struct xa_window *wind, const GRECT *r);
+void		toolbar_clip(struct xa_window *wind, GRECT *r);
 
 void		set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
 
