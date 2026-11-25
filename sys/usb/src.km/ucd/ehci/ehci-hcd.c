@@ -53,6 +53,7 @@
 #include "../../usb_api.h"
 
 #include "ehci.h"
+#include "libkern/ikbd_poll.h"
 
 
 #define VER_MAJOR	0
@@ -457,6 +458,41 @@ inline static void unlock_usb(char *lock) {
 }
 
 /*
+ * IKBD polling functions
+ */
+
+#ifdef TOSONLY
+/* Read the current IPL from SR. Supervisor-only instruction; safe here
+ * because the EHCI submit paths enter supervisor mode via Super() first.
+ */
+static inline unsigned int get_int_lvl(void)
+{
+	unsigned int sr;
+	__asm("move %%sr,%0" : "=d"(sr));
+	return (sr >> 8) & 7;
+}
+
+/* 1 ms wait that services the IKBD ACIA every µs while spinning. Used
+ * in place of plain mdelay(1), so legacy IKBD mouse/keyboard bytes
+ * don't overrun the 1-byte ACIA FIFO when the caller holds IPL >= 6
+ */
+static void ehci_mdelay_1_ikbd(void)
+{
+	if (get_int_lvl() >= 6) {
+		int i;
+		for (i = 0; i < 1000; i++) {
+			if (ikbd_int_pending())
+				fake_ikbd_int();
+			udelay(1);
+		}
+	} else {
+		mdelay(1);
+	}
+}
+#endif /* TOSONLY */
+
+
+/*
  * EHCI functions
  */
 
@@ -499,9 +535,21 @@ void ehci_powerup_fixup(unsigned long *status_reg, unsigned long *reg)
 static long handshake(unsigned long *ptr, unsigned long mask, unsigned long done, long usec)
 {
 	unsigned long result;
+#ifdef TOSONLY
+	/* If this loop is entered at IPL >= 6 (e.g. from the storage
+	 * driver's ETV_TIMER polling ISR), drain any IKBD ACIA byte in
+	 * each iteration so keyboard/mouse packets are not overrun
+	 * during the udelay(5) spin.
+	 */
+	int at_high_ipl = (get_int_lvl() >= 6);
+#endif
 	do
 	{
 		result = ehci_readl(ptr);
+#ifdef TOSONLY
+		if (at_high_ipl && ikbd_int_pending())
+			fake_ikbd_int();
+#endif
 		udelay(5);
 		if(result == ~(unsigned long)0)
 			return -1;
@@ -860,7 +908,11 @@ static long ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *
 		token = hc32_to_cpu(vtd->qt_token);
 		if(!(token & 0x80))
 			break;
+#ifdef TOSONLY
+		ehci_mdelay_1_ikbd();
+#else
 		mdelay(1);
+#endif
 		ts++;
 	}
 	while(ts < timeout);
@@ -1189,7 +1241,11 @@ static long ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *b
 			DEBUG(("Unknown request"));
 			goto unknown;
 	}
+#ifdef TOSONLY
+	ehci_mdelay_1_ikbd();
+#else
 	mdelay(1);
+#endif
 	len = MIN3(srclen, le2cpu16(req->length), length);
 	if(srcptr != NULL && len > 0)
 		memcpy(buffer, srcptr, len);
