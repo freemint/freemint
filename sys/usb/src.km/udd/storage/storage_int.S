@@ -18,11 +18,7 @@
 SYM(old_etv_timer_int):
 	ds.l	1
 SYM(interrupt_storage):
-#ifdef __mcoldfire__
 	subq.l	#1,count
-#else
-	subq.w	#1,count
-#endif
 	bne	skip
 	tas	SYM(lock)
 	bne	skip
@@ -38,12 +34,12 @@ SYM(interrupt_storage):
 	move.l	oldSP,a7
 #ifdef __mcoldfire__
 	lea	count,a0
-	move.w	#100,(a0)
+	move.l	#100,(a0)
 	movem.l (sp),a0-a7/d0-d7
 	lea	64(sp),sp
 #else
 	movem.l	(sp)+,a0-a7/d0-d7
-	move.w	#100,count
+	move.l	#100,count
 #endif
 	clr.w	SYM(lock)
 skip:	move.l	SYM(old_etv_timer_int)(pc),-(sp)
@@ -52,7 +48,8 @@ skip:	move.l	SYM(old_etv_timer_int)(pc),-(sp)
 
 	.data
 SYM(lock):	ds.w 1
-count:	dc.w 100
+	.balign 4
+count:	dc.l 100
 	.bss
 oldSP:	ds.l 1
 	ds.l 1024
