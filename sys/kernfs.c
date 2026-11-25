@@ -234,6 +234,7 @@ struct ktab
 # define ROOTDIR_BUILDINFO	0x12
 # define ROOTDIR_STAT       	0x13
 # define ROOTDIR_SYSDIR		0x14
+# define ROOTDIR_MODULES	0x15
 
 static KENTRY __rootdir [] =
 {
@@ -252,6 +253,7 @@ static KENTRY __rootdir [] =
 	{ ROOTDIR_MEMDEBUG,	S_IFREG | 0444,	"memdebug",	kern_get_memdebug	},
 # endif
 	{ ROOTDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_get_meminfo	},
+	{ ROOTDIR_MODULES,	S_IFREG | 0444,	"modules",	kern_get_modules	},
 	{ ROOTDIR_SELF,		S_IFLNK | 0777,	"self",		kern_get_unimplemented	},
 	{ ROOTDIR_STAT,		S_IFREG | 0444,	"stat",		kern_get_stat		},
 	{ ROOTDIR_SYSDIR,	S_IFREG | 0444, "sysdir",	kern_get_sysdir		},

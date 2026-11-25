@@ -49,6 +49,7 @@ long kern_get_filesystems	(SIZEBUF **buffer, const struct proc *p);
 long kern_get_hz		(SIZEBUF **buffer, const struct proc *p);
 long kern_get_loadavg		(SIZEBUF **buffer, const struct proc *p);
 long kern_get_meminfo		(SIZEBUF **buffer, const struct proc *p);
+long kern_get_modules		(SIZEBUF **buffer, const struct proc *p);	/* module.c */
 long kern_get_stat              (SIZEBUF **buffer, const struct proc *p);
 long kern_get_sysdir		(SIZEBUF **buffer, const struct proc *p);
 long kern_get_time		(SIZEBUF **buffer, const struct proc *p);
