@@ -1168,6 +1168,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	long idx;
 #endif
 	umass_bbb_csw_t csw;
+	long data_was_stalled = 0;
 
 #ifdef TOSONLY
 	transfer_running = 1;
@@ -1178,8 +1179,25 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	result = usb_stor_BBB_comdat(srb, us);
 	if(result < 0)
 	{
-		DEBUG(("failed to send CBW status %lx", us->pusb_dev->status));
-		usb_stor_BBB_reset(us);
+		/* BOT §6.6.1 / §6.6.2: a STALLed Bulk-Out during command transport
+		 * means the device will hold that state until Reset Recovery, so
+		 * we must invoke it. Any other CBW failure is a USB-level transport
+		 * issue (timeout, CRC, no response) the spec does not require us
+		 * to recover from; leaving the device alone lets it self-heal and
+		 * avoids provoking firmware bugs in readers that misbehave when
+		 * hammered with CLEAR_FEATURE(HALT).
+		 */
+		if (us->pusb_dev->status & USB_ST_STALLED)
+		{
+			DEBUG(("CBW STALLed cmd=%02x lun=%d -> BBB_reset",
+				srb->cmd[0], srb->lun));
+			usb_stor_BBB_reset(us);
+		}
+		else
+		{
+			DEBUG(("CBW fail cmd=%02x lun=%d status=%lx (no reset)",
+				srb->cmd[0], srb->lun, us->pusb_dev->status));
+		}
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
@@ -1204,6 +1222,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	if((result < 0) && (us->pusb_dev->status & USB_ST_STALLED))
 	{
 		DEBUG(("DATA:stall"));
+		data_was_stalled = 1;
 		/* clear the STALL on the endpoint */
 		result = usb_stor_BBB_clear_endpt_stall(us, srb->direction == USB_CMD_DIRECTION_IN ? us->ep_in : us->ep_out, srb->direction == USB_CMD_DIRECTION_OUT);
 		if(result >= 0)
@@ -1212,8 +1231,26 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	}
 	if(result < 0)
 	{
-		DEBUG(("usb_bulk_msg error status %lx", us->pusb_dev->status));
-		usb_stor_BBB_reset(us);
+		/* A data-phase STALL that single-endpoint CLEAR_FEATURE(HALT) did
+		 * not clear usually means the device is in the §6.6.2 "internal
+		 * device error" state and needs Reset Recovery to unstick. A pure
+		 * USB-level failure (no STALL on the endpoint) is not spec-mandated
+		 * to trigger Reset Recovery, and skipping it avoids the
+		 * CLEAR_FEATURE storm that keeps some readers wedged.
+		 */
+		if (data_was_stalled)
+		{
+			DEBUG(("DATA stall-clear failed cmd=%02x lun=%d dir=%s -> BBB_reset",
+				srb->cmd[0], srb->lun,
+				srb->direction == USB_CMD_DIRECTION_IN ? "IN" : "OUT"));
+			usb_stor_BBB_reset(us);
+		}
+		else
+		{
+			DEBUG(("DATA fail cmd=%02x lun=%d status=%lx dir=%s (no reset)",
+				srb->cmd[0], srb->lun, us->pusb_dev->status,
+				srb->direction == USB_CMD_DIRECTION_IN ? "IN" : "OUT"));
+		}
 #ifdef TOSONLY
 		transfer_running = 0;
 #endif
@@ -1254,8 +1291,26 @@ again:
 
 	if(result < 0)
 	{
-		DEBUG(("usb_bulk_msg error status %lx", us->pusb_dev->status));
-		usb_stor_BBB_reset(us);
+		/* A persistently STALLed Bulk-In (after the one-shot CLEAR_FEATURE
+		 * retry above) usually means §6.6.2 "internal device error" and
+		 * needs full Reset Recovery. Anything else here is a USB-level
+		 * timeout on reading the CSW: the device never produced a status
+		 * packet. BOT §6.5 ("host shall perform a Reset Recovery") applies
+		 * when the host *receives* an invalid CSW, not when it receives
+		 * nothing, so skipping Reset Recovery is both spec-correct and
+		 * necessary for readers that dislike our CLEAR_FEATURE sequence.
+		 */
+		if (us->pusb_dev->status & USB_ST_STALLED)
+		{
+			DEBUG(("CSW STALLed cmd=%02x lun=%d -> BBB_reset",
+				srb->cmd[0], srb->lun));
+			usb_stor_BBB_reset(us);
+		}
+		else
+		{
+			DEBUG(("CSW fail cmd=%02x lun=%d status=%lx (no reset)",
+				srb->cmd[0], srb->lun, us->pusb_dev->status));
+		}
 		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
@@ -1277,28 +1332,36 @@ again:
 		pipe = srb->datalen - data_actlen;
 	if(CSWSIGNATURE != le2cpu32(csw.dCSWSignature))
 	{
-		DEBUG(("!CSWSIGNATURE"));
+		/* BOT §6.5: invalid CSW received -> host shall perform Reset Recovery */
+		DEBUG(("!CSWSIGNATURE cmd=%02x lun=%d got=%08lx -> BBB_reset",
+			srb->cmd[0], srb->lun, le2cpu32(csw.dCSWSignature)));
 		usb_stor_BBB_reset(us);
 		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if((CBWTag - 1) != le2cpu32(csw.dCSWTag))
 	{
-		DEBUG(("!Tag"));
+		/* BOT §6.5: invalid CSW received -> host shall perform Reset Recovery */
+		DEBUG(("!Tag cmd=%02x lun=%d expected=%08lx got=%08lx -> BBB_reset",
+			srb->cmd[0], srb->lun, CBWTag - 1, le2cpu32(csw.dCSWTag)));
 		usb_stor_BBB_reset(us);
 		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if(csw.bCSWStatus > CSWSTATUS_PHASE)
 	{
-		DEBUG((">PHASE"));
+		/* BOT §6.5: CSW bCSWStatus out of range -> host shall perform Reset Recovery */
+		DEBUG((">PHASE cmd=%02x lun=%d status=%02x -> BBB_reset",
+			srb->cmd[0], srb->lun, csw.bCSWStatus));
 		usb_stor_BBB_reset(us);
 		result = USB_STOR_TRANSPORT_ERROR;
 		goto out;
 	}
 	else if(csw.bCSWStatus == CSWSTATUS_PHASE)
 	{
-		DEBUG(("=PHASE"));
+		/* BOT §6.6.3 / §6.7: Phase Error -> host shall perform Reset Recovery */
+		DEBUG(("=PHASE cmd=%02x lun=%d -> BBB_reset",
+			srb->cmd[0], srb->lun));
 		usb_stor_BBB_reset(us);
 		result = USB_STOR_TRANSPORT_PHASE_ERROR;
 		goto out;
